@@ -1,5 +1,7 @@
 # Proposer-Based Time - Part II
 
+This specification is **OUTDATED**. Please refer to the [new version][v2].
+
 ## Updated Consensus Algorithm
 
 ### Outline
@@ -156,5 +158,4 @@ Back to [main document][main].
 
 [arXiv]: https://arxiv.org/abs/1807.04938
 
-
-
+[v2]: ./pbts-algorithm_002_draft.md

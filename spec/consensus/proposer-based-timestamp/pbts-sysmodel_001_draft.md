@@ -1,5 +1,7 @@
 # Proposer-Based Time - Part I
 
+This specification is **OUTDATED**. Please refer to the [new version][v2].
+
 ## System Model
 
 ### Time and Clocks
@@ -189,3 +191,5 @@ Back to [main document][main].
 [arXiv]: https://arxiv.org/abs/1807.04938
 
 [CMBC-FM-2THIRDS-link]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#cmbc-fm-2thirds1
+
+[v2]: ./pbts-sysmodel_002_draft.md

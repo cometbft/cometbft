@@ -71,6 +71,7 @@ type validatorStub struct {
 	Index  int32 // Validator index. NOTE: we don't assume validator set changes.
 	Height int64
 	Round  int32
+	clock  cmttime.Source
 	types.PrivValidator
 	VotingPower int64
 	lastVote    *types.Vote
@@ -83,13 +84,14 @@ func newValidatorStub(privValidator types.PrivValidator, valIndex int32) *valida
 		Index:         valIndex,
 		PrivValidator: privValidator,
 		VotingPower:   testMinPower,
+		clock:         cmttime.DefaultSource{},
 	}
 }
 
 func (vs *validatorStub) signVote(
 	voteType types.SignedMsgType,
-	hash []byte,
-	header types.PartSetHeader,
+	chainID string,
+	blockID types.BlockID,
 	voteExtension []byte,
 	extEnabled bool,
 ) (*types.Vote, error) {
@@ -101,14 +103,14 @@ func (vs *validatorStub) signVote(
 		Type:             voteType,
 		Height:           vs.Height,
 		Round:            vs.Round,
-		BlockID:          types.BlockID{Hash: hash, PartSetHeader: header},
-		Timestamp:        cmttime.Now(),
+		BlockID:          blockID,
+		Timestamp:        vs.clock.Now(),
 		ValidatorAddress: pubKey.Address(),
 		ValidatorIndex:   vs.Index,
 		Extension:        voteExtension,
 	}
 	v := vote.ToProto()
-	if err = vs.PrivValidator.SignVote(test.DefaultTestChainID, v); err != nil {
+	if err = vs.PrivValidator.SignVote(chainID, v); err != nil {
 		return nil, fmt.Errorf("sign vote failed: %w", err)
 	}
 
@@ -131,18 +133,18 @@ func (vs *validatorStub) signVote(
 }
 
 // Sign vote for type/hash/header.
-func signVote(vs *validatorStub, voteType types.SignedMsgType, hash []byte, header types.PartSetHeader, extEnabled bool) *types.Vote {
+func signVote(vs *validatorStub, voteType types.SignedMsgType, chainID string, blockID types.BlockID, extEnabled bool) *types.Vote {
 	var ext []byte
 	// Only non-nil precommits are allowed to carry vote extensions.
 	if extEnabled {
 		if voteType != types.PrecommitType {
 			panic(fmt.Errorf("vote type is not precommit but extensions enabled"))
 		}
-		if len(hash) != 0 || !header.IsZero() {
+		if len(blockID.Hash) != 0 || !blockID.PartSetHeader.IsZero() {
 			ext = []byte("extension")
 		}
 	}
-	v, err := vs.signVote(voteType, hash, header, ext, extEnabled)
+	v, err := vs.signVote(voteType, chainID, blockID, ext, extEnabled)
 	if err != nil {
 		panic(fmt.Errorf("failed to sign vote: %v", err))
 	}
@@ -154,14 +156,14 @@ func signVote(vs *validatorStub, voteType types.SignedMsgType, hash []byte, head
 
 func signVotes(
 	voteType types.SignedMsgType,
-	hash []byte,
-	header types.PartSetHeader,
+	chainID string,
+	blockID types.BlockID,
 	extEnabled bool,
 	vss ...*validatorStub,
 ) []*types.Vote {
 	votes := make([]*types.Vote, len(vss))
 	for i, vs := range vss {
-		votes[i] = signVote(vs, voteType, hash, header, extEnabled)
+		votes[i] = signVote(vs, voteType, chainID, blockID, extEnabled)
 	}
 	return votes
 }
@@ -240,7 +242,7 @@ func decideProposal(
 
 	// Make proposal
 	polRound, propBlockID := validRound, types.BlockID{Hash: block.Hash(), PartSetHeader: blockParts.Header()}
-	proposal := types.NewProposal(height, round, polRound, propBlockID)
+	proposal := types.NewProposal(height, round, polRound, propBlockID, block.Header.Time)
 	p := proposal.ToProto()
 	if err := vs.SignProposal(chainID, p); err != nil {
 		panic(err)
@@ -260,12 +262,12 @@ func addVotes(to *State, votes ...*types.Vote) {
 func signAddVotes(
 	to *State,
 	voteType types.SignedMsgType,
-	hash []byte,
-	header types.PartSetHeader,
+	chainID string,
+	blockID types.BlockID,
 	extEnabled bool,
 	vss ...*validatorStub,
 ) {
-	votes := signVotes(voteType, hash, header, extEnabled, vss...)
+	votes := signVotes(voteType, chainID, blockID, extEnabled, vss...)
 	addVotes(to, votes...)
 }
 
@@ -361,6 +363,24 @@ func subscribeToVoter(cs *State, addr []byte) <-chan cmtpubsub.Message {
 		panic(fmt.Sprintf("failed to subscribe %s to %v", testSubscriber, types.EventQueryVote))
 	}
 	ch := make(chan cmtpubsub.Message)
+	go func() {
+		for msg := range votesSub.Out() {
+			vote := msg.Data().(types.EventDataVote)
+			// we only fire for our own votes
+			if bytes.Equal(addr, vote.Vote.ValidatorAddress) {
+				ch <- msg
+			}
+		}
+	}()
+	return ch
+}
+
+func subscribeToVoterBuffered(cs *State, addr []byte) <-chan cmtpubsub.Message {
+	votesSub, err := cs.eventBus.Subscribe(context.Background(), testSubscriber, types.EventQueryVote, 10)
+	if err != nil {
+		panic(fmt.Sprintf("failed to subscribe %s to %v with outcapacity 10", testSubscriber, types.EventQueryVote))
+	}
+	ch := make(chan cmtpubsub.Message, 10)
 	go func() {
 		for msg := range votesSub.Out() {
 			vote := msg.Data().(types.EventDataVote)
@@ -550,6 +570,7 @@ func ensureNewEvent(ch <-chan cmtpubsub.Message, height int64, round int32, time
 		}
 		// TODO: We could check also for a step at this point!
 	}
+	panic("unreachable")
 }
 
 func ensureNewRound(roundCh <-chan cmtpubsub.Message, height int64, round int32) {
@@ -569,6 +590,7 @@ func ensureNewRound(roundCh <-chan cmtpubsub.Message, height int64, round int32)
 			panic(fmt.Sprintf("expected round %v, got %v", round, newRoundEvent.Round))
 		}
 	}
+	panic("unreachable")
 }
 
 func ensureNewTimeout(timeoutCh <-chan cmtpubsub.Message, height int64, round int32, timeout int64) {
@@ -594,6 +616,7 @@ func ensureNewProposal(proposalCh <-chan cmtpubsub.Message, height int64, round 
 			panic(fmt.Sprintf("expected round %v, got %v", round, proposalEvent.Round))
 		}
 	}
+	panic("unreachable")
 }
 
 func ensureNewValidBlock(validBlockCh <-chan cmtpubsub.Message, height int64, round int32) {
@@ -615,6 +638,7 @@ func ensureNewBlock(blockCh <-chan cmtpubsub.Message, height int64) {
 			panic(fmt.Sprintf("expected height %v, got %v", height, blockEvent.Block.Height))
 		}
 	}
+	panic("unreachable")
 }
 
 func ensureNewBlockHeader(blockCh <-chan cmtpubsub.Message, height int64, blockHash cmtbytes.HexBytes) {
@@ -634,6 +658,7 @@ func ensureNewBlockHeader(blockCh <-chan cmtpubsub.Message, height int64, blockH
 			panic(fmt.Sprintf("expected header %X, got %X", blockHash, blockHeaderEvent.Header.Hash()))
 		}
 	}
+	panic("unreachable")
 }
 
 func ensureLock(lockCh <-chan cmtpubsub.Message, height int64, round int32) {
@@ -647,8 +672,12 @@ func ensureRelock(relockCh <-chan cmtpubsub.Message, height int64, round int32) 
 }
 
 func ensureProposal(proposalCh <-chan cmtpubsub.Message, height int64, round int32, propID types.BlockID) {
+	ensureProposalWithTimeout(proposalCh, height, round, &propID, ensureTimeout)
+}
+
+func ensureProposalWithTimeout(proposalCh <-chan cmtpubsub.Message, height int64, round int32, propID *types.BlockID, timeout time.Duration) {
 	select {
-	case <-time.After(ensureTimeout):
+	case <-time.After(timeout):
 		panic("Timeout expired while waiting for NewProposal event")
 	case msg := <-proposalCh:
 		proposalEvent, ok := msg.Data().(types.EventDataCompleteProposal)
@@ -662,10 +691,13 @@ func ensureProposal(proposalCh <-chan cmtpubsub.Message, height int64, round int
 		if proposalEvent.Round != round {
 			panic(fmt.Sprintf("expected round %v, got %v", round, proposalEvent.Round))
 		}
-		if !proposalEvent.BlockID.Equals(propID) {
-			panic(fmt.Sprintf("Proposed block does not match expected block (%v != %v)", proposalEvent.BlockID, propID))
+		if propID != nil {
+			if !proposalEvent.BlockID.Equals(*propID) {
+				panic(fmt.Sprintf("Proposed block does not match expected block (%v != %v)", proposalEvent.BlockID, *propID))
+			}
 		}
 	}
+	panic("unreachable")
 }
 
 func ensurePrecommit(voteCh <-chan cmtpubsub.Message, height int64, round int32) {
@@ -699,6 +731,7 @@ func ensureVote(voteCh <-chan cmtpubsub.Message, height int64, round int32,
 			panic(fmt.Sprintf("expected type %v, got %v", voteType, vote.Type))
 		}
 	}
+	panic("unreachable")
 }
 
 func ensurePrevoteMatch(t *testing.T, voteCh <-chan cmtpubsub.Message, height int64, round int32, hash []byte) {
@@ -731,6 +764,7 @@ func ensureVoteMatch(t *testing.T, voteCh <-chan cmtpubsub.Message, height int64
 			require.True(t, bytes.Equal(vote.BlockID.Hash, hash), "Expected prevote to be for %X, got %X", hash, vote.BlockID.Hash)
 		}
 	}
+	panic("unreachable")
 }
 
 func ensurePrecommitTimeout(ch <-chan cmtpubsub.Message) {
@@ -739,6 +773,7 @@ func ensurePrecommitTimeout(ch <-chan cmtpubsub.Message) {
 		panic("Timeout expired while waiting for the Precommit to Timeout")
 	case <-ch:
 	}
+	panic("unreachable")
 }
 
 func ensureNewEventOnChannel(ch <-chan cmtpubsub.Message) {
@@ -747,6 +782,7 @@ func ensureNewEventOnChannel(ch <-chan cmtpubsub.Message) {
 		panic("Timeout expired while waiting for new activity on the channel")
 	case <-ch:
 	}
+	panic("unreachable")
 }
 
 //-------------------------------------------------------------------------------
@@ -920,7 +956,7 @@ func randGenesisState(
 func newMockTickerFunc(onlyOnce bool) func() TimeoutTicker {
 	return func() TimeoutTicker {
 		return &mockTicker{
-			c:        make(chan timeoutInfo, 10),
+			c:        make(chan timeoutInfo, 100),
 			onlyOnce: onlyOnce,
 		}
 	}

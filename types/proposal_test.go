@@ -13,6 +13,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/protoio"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 var (
@@ -63,7 +64,7 @@ func TestProposalVerifySignature(t *testing.T) {
 
 	prop := NewProposal(
 		4, 2, 2,
-		BlockID{cmtrand.Bytes(tmhash.Size), PartSetHeader{777, cmtrand.Bytes(tmhash.Size)}})
+		BlockID{cmtrand.Bytes(tmhash.Size), PartSetHeader{777, cmtrand.Bytes(tmhash.Size)}}, cmttime.Now())
 	p := prop.ToProto()
 	signBytes := ProposalSignBytes("test_chain_id", p)
 
@@ -153,7 +154,7 @@ func TestProposalValidateBasic(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			prop := NewProposal(
 				4, 2, 2,
-				blockID)
+				blockID, cmttime.Now())
 			p := prop.ToProto()
 			err := privVal.SignProposal("test_chain_id", p)
 			prop.Signature = p.Signature
@@ -165,9 +166,9 @@ func TestProposalValidateBasic(t *testing.T) {
 }
 
 func TestProposalProtoBuf(t *testing.T) {
-	proposal := NewProposal(1, 2, 3, makeBlockID([]byte("hash"), 2, []byte("part_set_hash")))
+	proposal := NewProposal(1, 2, 3, makeBlockID([]byte("hash"), 2, []byte("part_set_hash")), cmttime.Now())
 	proposal.Signature = []byte("sig")
-	proposal2 := NewProposal(1, 2, 3, BlockID{})
+	proposal2 := NewProposal(1, 2, 3, BlockID{}, cmttime.Now())
 
 	testCases := []struct {
 		msg     string
@@ -189,5 +190,101 @@ func TestProposalProtoBuf(t *testing.T) {
 		} else {
 			require.Error(t, err)
 		}
+	}
+}
+
+func TestIsTimely(t *testing.T) {
+	genesisTime, err := time.Parse(time.RFC3339, "2019-03-13T23:00:00Z")
+	require.NoError(t, err)
+	testCases := []struct {
+		name           string
+		genesisHeight  int64
+		proposalHeight int64
+		proposalTime   time.Time
+		recvTime       time.Time
+		precision      time.Duration
+		msgDelay       time.Duration
+		expectTimely   bool
+	}{
+		// proposalTime - precision <= localTime <= proposalTime + msgDelay + precision
+		{
+			// Checking that the following inequality evaluates to true:
+			// 0 - 2 <= 1 <= 0 + 1 + 2
+			name:           "basic timely",
+			genesisHeight:  1,
+			proposalHeight: 2,
+			proposalTime:   genesisTime,
+			recvTime:       genesisTime.Add(1 * time.Nanosecond),
+			precision:      time.Nanosecond * 2,
+			msgDelay:       time.Nanosecond,
+			expectTimely:   true,
+		},
+		{
+			// Checking that the following inequality evaluates to false:
+			// 0 - 2 <= 4 <= 0 + 1 + 2
+			name:           "local time too large",
+			genesisHeight:  1,
+			proposalHeight: 2,
+			proposalTime:   genesisTime,
+			recvTime:       genesisTime.Add(4 * time.Nanosecond),
+			precision:      time.Nanosecond * 2,
+			msgDelay:       time.Nanosecond,
+			expectTimely:   false,
+		},
+		{
+			// Checking that the following inequality evaluates to false:
+			// 4 - 2 <= 0 <= 4 + 2 + 1
+			name:           "proposal time too large",
+			genesisHeight:  1,
+			proposalHeight: 2,
+			proposalTime:   genesisTime.Add(4 * time.Nanosecond),
+			recvTime:       genesisTime,
+			precision:      time.Nanosecond * 2,
+			msgDelay:       time.Nanosecond,
+			expectTimely:   false,
+		},
+		{
+			// Checking that the following inequality evaluates to true:
+			// 0 - 2 <= 4
+			// and the following check is skipped
+			// 4 <= 0 + 1 + 2
+			name:           "local time too large but proposal is for genesis",
+			genesisHeight:  1,
+			proposalHeight: 1,
+			proposalTime:   genesisTime,
+			recvTime:       genesisTime.Add(4 * time.Nanosecond),
+			precision:      time.Nanosecond * 2,
+			msgDelay:       time.Nanosecond,
+			expectTimely:   true,
+		},
+		{
+			// Checking that the following inequality evaluates to false:
+			// 4 - 2 <= 0
+			name:           "proposal time too large for genesis block proposal",
+			genesisHeight:  1,
+			proposalHeight: 1,
+			proposalTime:   genesisTime.Add(4 * time.Nanosecond),
+			recvTime:       genesisTime,
+			precision:      time.Nanosecond * 2,
+			msgDelay:       time.Nanosecond,
+			expectTimely:   false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			p := Proposal{
+				Height:    testCase.proposalHeight,
+				Timestamp: testCase.proposalTime,
+			}
+
+			sp := SynchronyParams{
+				Precision:    testCase.precision,
+				MessageDelay: testCase.msgDelay,
+			}
+
+			ti := p.IsTimely(testCase.recvTime, sp, testCase.genesisHeight)
+			assert.Equal(t, testCase.expectTimely, ti)
+		})
 	}
 }

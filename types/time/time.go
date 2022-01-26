@@ -17,6 +17,21 @@ func Canonical(t time.Time) time.Time {
 	return t.Round(0).UTC()
 }
 
+//go:generate ../../scripts/mockery_generate.sh Source
+
+// Source is an interface that defines a way to fetch the current time.
+type Source interface {
+	Now() time.Time
+}
+
+// DefaultSource implements the Source interface using the system clock provided by the standard library.
+type DefaultSource struct{}
+
+func (DefaultSource) Now() time.Time {
+	return Now()
+}
+
+// TODO: find which commit removed this and make sure it's in our list
 // WeightedTime for computing a median.
 type WeightedTime struct {
 	Time   time.Time

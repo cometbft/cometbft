@@ -361,7 +361,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	ensureNewRound(newRoundCh, height, 0)
 	ensureNewProposal(proposalCh, height, round)
 	rs := css[0].GetRoundState()
-	signAddVotes(css[0], types.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, vss[1:nVals]...)
+	signAddVotes(css[0], types.PrecommitType, css[0].state.ChainID, types.BlockID{Hash: rs.ProposalBlock.Hash(), PartSetHeader: rs.ProposalBlockParts.Header()}, true, vss[1:nVals]...)
 	ensureNewRound(newRoundCh, height+1, 0)
 
 	// HEIGHT 2
@@ -380,7 +380,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	require.NoError(t, err)
 	blockID := types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
 
-	proposal := types.NewProposal(vss[1].Height, round, -1, blockID)
+	proposal := types.NewProposal(vss[1].Height, round, -1, blockID, propBlock.Header.Time)
 	p := proposal.ToProto()
 	if err := vss[1].SignProposal(test.DefaultTestChainID, p); err != nil {
 		t.Fatal("failed to sign bad proposal", err)
@@ -393,7 +393,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	}
 	ensureNewProposal(proposalCh, height, round)
 	rs = css[0].GetRoundState()
-	signAddVotes(css[0], types.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, vss[1:nVals]...)
+	signAddVotes(css[0], types.PrecommitType, css[0].state.ChainID, types.BlockID{Hash: rs.ProposalBlock.Hash(), PartSetHeader: rs.ProposalBlockParts.Header()}, true, vss[1:nVals]...)
 	ensureNewRound(newRoundCh, height+1, 0)
 
 	// HEIGHT 3
@@ -412,7 +412,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	require.NoError(t, err)
 	blockID = types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
 
-	proposal = types.NewProposal(vss[2].Height, round, -1, blockID)
+	proposal = types.NewProposal(vss[2].Height, round, -1, blockID, propBlock.Header.Time)
 	p = proposal.ToProto()
 	if err := vss[2].SignProposal(test.DefaultTestChainID, p); err != nil {
 		t.Fatal("failed to sign bad proposal", err)
@@ -425,7 +425,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	}
 	ensureNewProposal(proposalCh, height, round)
 	rs = css[0].GetRoundState()
-	signAddVotes(css[0], types.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, vss[1:nVals]...)
+	signAddVotes(css[0], types.PrecommitType, css[0].state.ChainID, types.BlockID{Hash: rs.ProposalBlock.Hash(), PartSetHeader: rs.ProposalBlockParts.Header()}, true, vss[1:nVals]...)
 	ensureNewRound(newRoundCh, height+1, 0)
 
 	// HEIGHT 4
@@ -471,7 +471,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 
 	selfIndex := valIndexFn(0)
 
-	proposal = types.NewProposal(vss[3].Height, round, -1, blockID)
+	proposal = types.NewProposal(vss[3].Height, round, -1, blockID, propBlock.Header.Time)
 	p = proposal.ToProto()
 	if err := vss[3].SignProposal(test.DefaultTestChainID, p); err != nil {
 		t.Fatal("failed to sign bad proposal", err)
@@ -493,7 +493,8 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 		if i == selfIndex {
 			continue
 		}
-		signAddVotes(css[0], types.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, newVss[i])
+		signAddVotes(css[0], types.PrecommitType, css[0].state.ChainID,
+			types.BlockID{Hash: rs.ProposalBlock.Hash(), PartSetHeader: rs.ProposalBlockParts.Header()}, true, newVss[i])
 	}
 
 	ensureNewRound(newRoundCh, height+1, 0)
@@ -512,7 +513,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 		if i == selfIndex {
 			continue
 		}
-		signAddVotes(css[0], types.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, newVss[i])
+		signAddVotes(css[0], types.PrecommitType, css[0].state.ChainID, types.BlockID{Hash: rs.ProposalBlock.Hash(), PartSetHeader: rs.ProposalBlockParts.Header()}, true, newVss[i])
 	}
 	ensureNewRound(newRoundCh, height+1, 0)
 
@@ -532,7 +533,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	sort.Sort(ValidatorStubsByPower(newVss))
 
 	selfIndex = valIndexFn(0)
-	proposal = types.NewProposal(vss[1].Height, round, -1, blockID)
+	proposal = types.NewProposal(vss[1].Height, round, -1, blockID, propBlock.Header.Time)
 	p = proposal.ToProto()
 	if err := vss[1].SignProposal(test.DefaultTestChainID, p); err != nil {
 		t.Fatal("failed to sign bad proposal", err)
@@ -549,7 +550,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 		if i == selfIndex {
 			continue
 		}
-		signAddVotes(css[0], types.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, newVss[i])
+		signAddVotes(css[0], types.PrecommitType, css[0].state.ChainID, types.BlockID{Hash: rs.ProposalBlock.Hash(), PartSetHeader: rs.ProposalBlockParts.Header()}, true, newVss[i])
 	}
 	ensureNewRound(newRoundCh, height+1, 0)
 
@@ -938,7 +939,8 @@ func TestHandshakePanicsIfAppReturnsWrongAppHash(t *testing.T) {
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
-	genDoc, _ := sm.MakeGenesisDocFromFile(config.GenesisFile())
+	genDoc, err := sm.MakeGenesisDocFromFile(config.GenesisFile())
+	require.NoError(t, err)
 	state.LastValidators = state.Validators.Copy()
 	// mode = 0 for committing all the blocks
 	blocks, err := makeBlocks(3, state, []types.PrivValidator{privVal})

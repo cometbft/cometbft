@@ -376,7 +376,10 @@ func TestSwitchToConsensusVoteExtensions(t *testing.T) {
 			} else {
 				voteSet = types.NewVoteSet(cs.state.ChainID, testCase.storedHeight, 0, types.PrecommitType, cs.state.Validators)
 			}
-			signedVote := signVote(validator, types.PrecommitType, propBlock.Hash(), blockParts.Header(), testCase.includeExtensions)
+			signedVote := signVote(validator, types.PrecommitType, cs.state.ChainID, types.BlockID{
+				Hash:          propBlock.Hash(),
+				PartSetHeader: blockParts.Header(),
+			}, testCase.includeExtensions)
 
 			var veHeight int64
 			if testCase.includeExtensions {

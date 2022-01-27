@@ -21,15 +21,10 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-// For some reason the empty node used in tests has a time of
-// 2018-10-10 08:20:13.695936996 +0000 UTC
-// this is because the test genesis time is set here
-// so in order to validate evidence we need evidence to be the same time.
-var defaultTestTime = time.Date(2018, 10, 10, 8, 20, 13, 695936996, time.UTC)
-
 func newEvidence(t *testing.T, val *privval.FilePV,
 	vote *types.Vote, vote2 *types.Vote,
 	chainID string,
+	timestamp time.Time,
 ) *types.DuplicateVoteEvidence {
 	t.Helper()
 	var err error
@@ -46,7 +41,7 @@ func newEvidence(t *testing.T, val *privval.FilePV,
 	validator := types.NewValidator(val.Key.PubKey, 10)
 	valSet := types.NewValidatorSet([]*types.Validator{validator})
 
-	ev, err := types.NewDuplicateVoteEvidence(vote, vote2, defaultTestTime, valSet)
+	ev, err := types.NewDuplicateVoteEvidence(vote, vote2, timestamp, valSet)
 	require.NoError(t, err)
 	return ev
 }
@@ -55,6 +50,7 @@ func makeEvidences(
 	t *testing.T,
 	val *privval.FilePV,
 	chainID string,
+	timestamp time.Time,
 ) (correct *types.DuplicateVoteEvidence, fakes []*types.DuplicateVoteEvidence) {
 	t.Helper()
 	vote := types.Vote{
@@ -63,7 +59,7 @@ func makeEvidences(
 		Height:           1,
 		Round:            0,
 		Type:             types.PrevoteType,
-		Timestamp:        defaultTestTime,
+		Timestamp:        timestamp,
 		BlockID: types.BlockID{
 			Hash: tmhash.Sum(cmtrand.Bytes(tmhash.Size)),
 			PartSetHeader: types.PartSetHeader{
@@ -75,7 +71,7 @@ func makeEvidences(
 
 	vote2 := vote
 	vote2.BlockID.Hash = tmhash.Sum([]byte("blockhash2"))
-	correct = newEvidence(t, val, &vote, &vote2, chainID)
+	correct = newEvidence(t, val, &vote, &vote2, chainID, timestamp)
 
 	fakes = make([]*types.DuplicateVoteEvidence, 0)
 
@@ -83,34 +79,34 @@ func makeEvidences(
 	{
 		v := vote2
 		v.ValidatorAddress = []byte("some_address")
-		fakes = append(fakes, newEvidence(t, val, &vote, &v, chainID))
+		fakes = append(fakes, newEvidence(t, val, &vote, &v, chainID, timestamp))
 	}
 
 	// different height
 	{
 		v := vote2
 		v.Height = vote.Height + 1
-		fakes = append(fakes, newEvidence(t, val, &vote, &v, chainID))
+		fakes = append(fakes, newEvidence(t, val, &vote, &v, chainID, timestamp))
 	}
 
 	// different round
 	{
 		v := vote2
 		v.Round = vote.Round + 1
-		fakes = append(fakes, newEvidence(t, val, &vote, &v, chainID))
+		fakes = append(fakes, newEvidence(t, val, &vote, &v, chainID, timestamp))
 	}
 
 	// different type
 	{
 		v := vote2
 		v.Type = types.PrecommitType
-		fakes = append(fakes, newEvidence(t, val, &vote, &v, chainID))
+		fakes = append(fakes, newEvidence(t, val, &vote, &v, chainID, timestamp))
 	}
 
 	// exactly same vote
 	{
 		v := vote
-		fakes = append(fakes, newEvidence(t, val, &vote, &v, chainID))
+		fakes = append(fakes, newEvidence(t, val, &vote, &v, chainID, timestamp))
 	}
 
 	return correct, fakes
@@ -124,7 +120,10 @@ func TestBroadcastEvidence_DuplicateVoteEvidence(t *testing.T) {
 	)
 
 	for i, c := range GetClients() {
-		correct, fakes := makeEvidences(t, pv, chainID)
+		evidenceHeight := int64(1)
+		block, _ := c.Block(ctx, &evidenceHeight)
+		ts := block.Block.Time
+		correct, fakes := makeEvidences(t, pv, chainID, ts)
 		t.Logf("client %d", i)
 
 		result, err := c.BroadcastEvidence(context.Background(), correct)

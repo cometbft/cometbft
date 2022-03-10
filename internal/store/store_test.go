@@ -972,3 +972,102 @@ func initStateStoreRetainHeights(stateStore sm.Store, appBlockRH, dcBlockRH, dcB
 	}
 	return nil
 }
+
+func TestRollback(t *testing.T) {
+    setupBlockStore := func() (*BlockStore, sm.State) {
+        state, bs, _, _, cleanup, _ := makeStateAndBlockStoreAndIndexers()
+        defer cleanup()
+
+        // Add blocks to the store
+        for h := int64(1); h <= 10; h++ {
+            block := state.MakeBlock(h, nil, new(types.Commit), nil, state.Validators.GetProposer().Address)
+            partSet, err := block.MakePartSet(2)
+            require.NoError(t, err)
+            seenCommit := makeTestExtCommit(h, time.Now())
+            bs.SaveBlock(block, partSet, seenCommit.ToCommit())
+        }
+        return bs, state
+    }
+
+    t.Run("Successful Rollback", func(t *testing.T) {
+        bs, _ := setupBlockStore()
+        initialHeight := bs.Height()
+        require.NoError(t, bs.Rollback(), "Rollback failed")
+        assert.Equal(t, initialHeight-1, bs.Height(), "Block height did not decrement after rollback")
+    })
+
+    t.Run("Rollback at Height Zero", func(t *testing.T) {
+        bs, _ := setupBlockStore()
+        bs.height = 0
+        err := bs.Rollback()
+        assert.Error(t, err, "Expected error when rolling back at height zero")
+    })
+
+    t.Run("Rollback on Empty Store", func(t *testing.T) {
+        emptyBs, _ := newInMemoryBlockStore()
+        err := emptyBs.Rollback()
+        assert.Error(t, err, "Expected error when rolling back an empty block store")
+    })
+
+    t.Run("Rollback State Consistency", func(t *testing.T) {
+        bs, state := setupBlockStore()
+        require.NoError(t, bs.Rollback(), "Rollback failed")
+        heightAfterRollback := bs.Height()
+
+        newBlock := state.MakeBlock(heightAfterRollback+1, nil, new(types.Commit), nil, state.Validators.GetProposer().Address)
+        partSet, err := newBlock.MakePartSet(2)
+        require.NoError(t, err)
+        seenCommit := makeTestExtCommit(heightAfterRollback+1, time.Now())
+        bs.SaveBlock(newBlock, partSet, seenCommit.ToCommit())
+
+        assert.Equal(t, heightAfterRollback+1, bs.Height(), "Block height did not increment correctly after adding a new block post-rollback")
+    })
+
+    // Add more test cases as needed...
+}
+
+type FailableDB struct {
+    dbm.DB
+    failWriteSync bool
+}
+
+func (fdb *FailableDB) NewBatch() dbm.Batch {
+    return &FailableBatch{Batch: fdb.DB.NewBatch(), failWriteSync: fdb.failWriteSync}
+}
+
+type FailableBatch struct {
+    dbm.Batch
+    failWriteSync bool
+}
+
+func (fb *FailableBatch) WriteSync() error {
+    if fb.failWriteSync {
+        return fmt.Errorf("simulated WriteSync failure")
+    }
+    return fb.Batch.WriteSync()
+}
+
+func TestRollback_WriteSyncFailure(t *testing.T) {
+    // Setup state and block store with a failable DB
+    state, _, _, _, cleanup, _ := makeStateAndBlockStoreAndIndexers()
+    defer cleanup()
+
+    failableDB := &FailableDB{DB: dbm.NewMemDB(), failWriteSync: true}
+    bs := NewBlockStore(failableDB)
+
+    // Create and add blocks to the store
+    for h := int64(1); h <= 10; h++ {
+        block := state.MakeBlock(h, nil, new(types.Commit), nil, state.Validators.GetProposer().Address)
+        partSet, err := block.MakePartSet(2)
+        require.NoError(t, err)
+        seenCommit := makeTestExtCommit(h, time.Now())
+        bs.SaveBlock(block, partSet, seenCommit.ToCommit())
+    }
+
+    initialHeight := bs.Height()
+    err := bs.Rollback()
+    assert.Error(t, err, "Expected error due to WriteSync failure")
+
+    // Verify that bs.height has not changed due to the failed WriteSync
+    assert.Equal(t, initialHeight, bs.Height(), "Block height should not change on failed WriteSync")
+}

@@ -349,28 +349,8 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 			evidencePoint = h
 		}
 
-		// if height is beyond the evidence point we dont delete the header
-		if h < evidencePoint {
-			if err := batch.Delete(calcBlockMetaKey(h)); err != nil {
-				return 0, -1, err
-			}
-		}
-		if err := batch.Delete(calcBlockHashKey(meta.BlockID.Hash)); err != nil {
+		if err := bs.deleteBlock(batch, meta, evidencePoint); err != nil {
 			return 0, -1, err
-		}
-		// if height is beyond the evidence point we dont delete the commit data
-		if h < evidencePoint {
-			if err := batch.Delete(calcBlockCommitKey(h)); err != nil {
-				return 0, -1, err
-			}
-		}
-		if err := batch.Delete(calcSeenCommitKey(h)); err != nil {
-			return 0, -1, err
-		}
-		for p := 0; p < int(meta.BlockID.PartSetHeader.Total); p++ {
-			if err := batch.Delete(calcBlockPartKey(h, p)); err != nil {
-				return 0, -1, err
-			}
 		}
 		pruned++
 
@@ -390,6 +370,34 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 		return 0, -1, err
 	}
 	return pruned, evidencePoint, nil
+}
+
+func (bs *BlockStore) deleteBlock(batch dbm.Batch, meta *types.BlockMeta, evidencePoint int64) error {
+	h := meta.Header.Height
+	// if height is beyond the evidence point we dont delete the header
+	if h < evidencePoint {
+		if err := batch.Delete(calcBlockMetaKey(h)); err != nil {
+			return err
+		}
+	}
+	if err := batch.Delete(calcBlockHashKey(meta.BlockID.Hash)); err != nil {
+		return err
+	}
+	// if height is beyond the evidence point we dont delete the commit data
+	if h < evidencePoint {
+		if err := batch.Delete(calcBlockCommitKey(h)); err != nil {
+			return err
+		}
+	}
+	if err := batch.Delete(calcSeenCommitKey(h)); err != nil {
+		return err
+	}
+	for p := 0; p < int(meta.BlockID.PartSetHeader.Total); p++ {
+		if err := batch.Delete(calcBlockPartKey(h, p)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // SaveBlock persists the given block, blockParts, and seenCommit to the underlying db.
@@ -538,6 +546,35 @@ func (bs *BlockStore) SaveSeenCommit(height int64, seenCommit *types.Commit) err
 
 func (bs *BlockStore) Close() error {
 	return bs.db.Close()
+}
+
+// Rollback rollbacks the latest block from BlockStore.
+func (bs *BlockStore) Rollback() error {
+	if bs.height <= 0 {
+		return fmt.Errorf("can't rollback height %v", bs.height)
+	}
+
+	meta := bs.LoadBlockMeta(bs.height)
+	if meta == nil {
+		return fmt.Errorf("block not found: %v", bs.height)
+	}
+
+	batch := bs.db.NewBatch()
+	defer batch.Close()
+	// Passing bs.height as the evidencePoint to satisfy the function signature.
+	// This assumes that rollback does not need to consider the evidencePoint logic
+	if err := bs.deleteBlock(batch, meta, bs.height); err != nil {
+		return fmt.Errorf("failed to delete block %v: %w", bs.height, err)
+	}
+
+	if err := batch.WriteSync(); err != nil {
+		return fmt.Errorf("failed to delete block %v: %w", bs.height, err)
+	}
+
+	bs.height--
+	bs.saveState()
+
+	return nil
 }
 
 //-----------------------------------------------------------------------------

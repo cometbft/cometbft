@@ -268,8 +268,8 @@ func TestConsensusParamsUpdate(t *testing.T) {
 			intialParams: makeParams(makeParamsArgs{evidenceAge: 3, precision: time.Second, messageDelay: 3 * time.Second}),
 			updates: &cmtproto.ConsensusParams{
 				Synchrony: &cmtproto.SynchronyParams{
-					Precision:    time.Second * 2,
-					MessageDelay: time.Second * 4,
+					Precision:    durationPtr(time.Second * 2),
+					MessageDelay: durationPtr(time.Second * 4),
 				},
 			},
 			updatedParams: makeParams(makeParamsArgs{evidenceAge: 3, precision: 2 * time.Second, messageDelay: 4 * time.Second}),
@@ -409,4 +409,8 @@ func TestProto(t *testing.T) {
 
 		assert.Equal(t, params[i], oriParams)
 	}
+}
+
+func durationPtr(t time.Duration) *time.Duration {
+	return &t
 }

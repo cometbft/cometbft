@@ -55,6 +55,11 @@ func (r ResponseVerifyVoteExtension) IsAccepted() bool {
 	return r.Status == ResponseVerifyVoteExtension_ACCEPT
 }
 
+// IsStatusUnknown returns true if Code is Unknown
+func (r ResponseVerifyVoteExtension) IsStatusUnknown() bool {
+	return r.Status == ResponseVerifyVoteExtension_UNKNOWN
+}
+
 //---------------------------------------------------------------------------
 // override JSON marshaling so we emit defaults (ie. disable omitempty)
 

@@ -11,13 +11,14 @@ functionality as well as the parameters and constraints of the this algorithm.
 The PBTS algorithm defines a way for a blockchain to create block
 timestamps that are within a reasonable bound of the clocks of the validators on
 the network. This replaces the original BFT Time algorithm for timestamp
-assignment that relied on the timestamps included in precommit messages.
+assignment that computed a timestamp using the timestamps included in precommit
+messages.
 
 ## Algorithm Parameters
 
 The functionality of the PBTS algorithm is governed by two parameters.
 These two parameters are [consensus parameters][consensus-parameters],
-meaning they are configured by the ABCI application and are expected to be the
+meaning they are configured by the ABCI application and are therefore the
 same across all nodes on the network.
 
 ### `SynchronyParams.Precision`
@@ -48,7 +49,7 @@ useful for the protocols and applications built on top of CometBFT.
 The following protocols and application features require a reliable source of time:
 
 * Light Clients [rely on correspondence between their known time][light-client-verification] and the block time for block verification.
-* Evidence validity is determined [either in terms of heights or in terms of time][evidence-verification].
+* Evidence expiration is determined [either in terms of heights or in terms of time][evidence-verification].
 * Unbonding of staked assets in the Cosmos Hub [occurs after a period of 21
  days](https://github.com/cosmos/governance/blob/master/params-change/Staking.md#unbondingtime).
 * IBC packets can use either a [timestamp or a height to timeout packet

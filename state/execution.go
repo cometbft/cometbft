@@ -218,6 +218,14 @@ func (blockExec *BlockExecutor) ApplyBlock(
 		return state, err
 	}
 
+	blockExec.logger.Info(
+		"finalized block",
+		"height", block.Height,
+		"num_txs_res", len(abciResponse.TxResults),
+		"num_val_updates", len(abciResponse.ValidatorUpdates),
+		"block_app_hash", fmt.Sprintf("%X", abciResponse.AgreedAppData),
+	)
+
 	// Assert that the application correctly returned tx results for each of the transactions provided in the block
 	if len(block.Data.Txs) != len(abciResponse.TxResults) {
 		return state, fmt.Errorf("expected tx results length to match size of transactions in block. Expected %d, got %d", len(block.Data.Txs), len(abciResponse.TxResults))
@@ -363,6 +371,7 @@ func (blockExec *BlockExecutor) Commit(
 	blockExec.logger.Info(
 		"committed state",
 		"height", block.Height,
+		"block_app_hash", fmt.Sprintf("%X", block.AppHash),
 	)
 
 	// Update mempool.
@@ -687,13 +696,14 @@ func ExecCommitBlock(
 
 	logger.Info("executed block", "height", block.Height, "agreed_app_data", resp.AgreedAppData)
 
-	// Commit block, get hash back
+	// Commit block
 	_, err = appConnConsensus.Commit(context.TODO())
 	if err != nil {
-		logger.Error("client error during proxyAppConn.CommitSync", "err", err)
+		logger.Error("client error during proxyAppConn.Commit", "err", err)
 		return nil, err
 	}
 
+	// ResponseCommit has no error or log
 	return resp.AgreedAppData, nil
 }
 

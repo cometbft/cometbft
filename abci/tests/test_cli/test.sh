@@ -31,7 +31,7 @@ function testExample() {
 		echo "Expected:"
 		cat "${INPUT}.out"
 		echo "Diff:"
-		diff "${INPUT}.out" "${INPUT}.out.new"
+		diff -u "${INPUT}.out" "${INPUT}.out.new"
 		exit 1
 	fi
 

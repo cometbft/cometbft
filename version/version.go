@@ -1,7 +1,5 @@
 package version
 
-var TMCoreSemVer = TMVersionDefault
-
 const (
 	// TMVersionDefault is the used as the fallback version of Tendermint Core
 	// when not using git describe. It is formatted with semantic versioning.
@@ -20,4 +18,10 @@ var (
 	// BlockProtocol versions all block data structures and processing.
 	// This includes validity of blocks and state updates.
 	BlockProtocol uint64 = 11
+)
+
+var (
+	// TMGitCommitHash uses git rev-parse HEAD to find commit hash which is helpful
+	// for the engineering team when working with the tendermint binary. See Makefile
+	TMGitCommitHash = ""
 )

@@ -16,6 +16,7 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
+	cosmostx "github.com/cosmos/cosmos-sdk/types/tx"
 )
 
 // CListMempool is an ordered in-memory pool for transactions before they are
@@ -419,6 +420,18 @@ func (mem *CListMempool) resCbFirstTime(
 				"height", memTx.height,
 				"total", mem.Size(),
 			)
+
+			// If this transaction is a `PlaceOrder` or `CancelOrder` transaction,
+			// don't call `notifyTxsAvailable()`. The `notifyTxsAvailable()` function
+			// uses a channel in the mempool called `txsAvailable` to signal to the
+			// consensus algorithm that transactions are available to be included in
+			// the next proposal. If no transactions are available for inclusion in
+			// the next proposal, the consensus algorithm will wait for `create_empty_blocks_interval`
+			// before proposing an empty block instead.
+			if mem.isClobOrderTransaction(memTx) {
+				return
+			}
+
 			mem.notifyTxsAvailable()
 		} else {
 			// ignore bad transaction
@@ -440,6 +453,25 @@ func (mem *CListMempool) resCbFirstTime(
 	default:
 		// ignore other messages
 	}
+}
+
+// isClobOrderTransaction returns true if the provided `mempoolTx` is a
+// Cosmos transaction containing a `MsgPlaceOrder` or `MsgCancelOrder` message.
+func (mem *CListMempool) isClobOrderTransaction(memTx *mempoolTx) bool {
+	cosmosTx := &cosmostx.Tx{}
+	err := cosmosTx.Unmarshal(memTx.tx)
+	if err != nil {
+		mem.logger.Error("isClobOrderTransaction error. Invalid Cosmos Transaction.")
+		return false
+	}
+
+	if len(cosmosTx.Body.Messages) == 1 &&
+		(cosmosTx.Body.Messages[0].TypeUrl == "/dydxprotocol.clob.MsgPlaceOrder" ||
+			cosmosTx.Body.Messages[0].TypeUrl == "/dydxprotocol.clob.MsgCancelOrder") {
+		return true
+	}
+
+	return false
 }
 
 // callback, which is called after the app rechecked the tx.
@@ -548,6 +580,12 @@ func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
 		memTx := e.Value.(*mempoolTx)
 
+		// If this transaction is Cosmos transaction containing a `PlaceOrder` or `CancelOrder` message,
+		// don't include it in the next proposed block.
+		if mem.isClobOrderTransaction(memTx) {
+			continue
+		}
+
 		txs = append(txs, memTx.tx)
 
 		dataSize := types.ComputeProtoSizeForTxs([]types.Tx{memTx.tx})
@@ -655,6 +693,15 @@ func (mem *CListMempool) Update(
 func (mem *CListMempool) recheckTxs() {
 	if mem.Size() == 0 {
 		panic("recheckTxs is called, but the mempool is empty")
+	}
+
+	for e := mem.txs.Front(); e != nil; e = e.Next() {
+		memTx := e.Value.(*mempoolTx)
+		// If this transaction is Cosmos transaction containing a `PlaceOrder` or `CancelOrder` message,
+		// remove it from the mempool instead of rechecking.
+		if mem.isClobOrderTransaction(memTx) {
+			mem.removeTx(memTx.tx, e, false)
+		}
 	}
 
 	mem.recheckCursor = mem.txs.Front()

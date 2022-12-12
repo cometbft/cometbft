@@ -387,7 +387,7 @@ func (cs *State) OnStart() error {
 }
 
 // timeoutRoutine: receive requests for timeouts on tickChan and fire timeouts on tockChan
-// receiveRoutine: serializes processing of proposoals, block parts, votes; coordinates state transitions
+// receiveRoutine: serializes processing of proposals, block parts, votes; coordinates state transitions
 func (cs *State) startRoutines(maxSteps int) {
 	err := cs.timeoutTicker.Start()
 	if err != nil {
@@ -2001,7 +2001,7 @@ func (cs *State) handleCompleteProposal(blockHeight int64) {
 	if cs.Step <= cstypes.RoundStepPropose && cs.isProposalComplete() {
 		// Move onto the next step
 		cs.enterPrevote(blockHeight, cs.Round)
-		if hasTwoThirds { // this is optimisation as this will be triggered when prevote is added
+		if hasTwoThirds { // this is an optimization as this will be triggered when prevote is added
 			cs.enterPrecommit(blockHeight, cs.Round)
 		}
 	} else if cs.Step == cstypes.RoundStepCommit {

@@ -175,3 +175,134 @@ Removing tuple is exactly how stale messages get removed.
 
 > **TODO** Define conditions for tuple removal. Reference
 
+## The tuple space as a CRDT
+
+Conflict-free Replicated Data Types (CRDT) are distributed data structures that explore commutativity in update operations to achieve [Strong Eventual Consistency](https://en.wikipedia.org/wiki/Eventual_consistency#Strong_eventual_consistency).
+As an example of CRDT, consider a counter which updated by increment operations, known as Grown only counter (G-Counter): as long as the same set of operations are executed by two replicas, their views of the counter will be the same, irrespective of the execution order.
+
+More relevant CRDT are the Grown only Set (G-Set), in which operations add elements to a set, and the [2-Phase Set](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type#2P-Set_(Two-Phase_Set)) (2P-Set), which combines two G-Set to collect inclusions and exclusions to a set.
+
+CRDT may be defined in two ways, operation- and state-based.
+Operation-based CRDT use reliable communication to ensure that all updates (operations) are delivered to all replicas.
+If the reliable communication primitive precludes duplication, then applying all operations will lead to the same state, irrespective of the delivery order since operations are commutative.
+If duplications are allowed, then the operations must be made idempotent somehow.
+
+State-based CRDT do not rely on reliable communication.
+Instead it assumes that replicas will compare their states and converge two-by-two using a merge function; as long as the function is commutative, associative and idempotent, the states will converge.
+For example, in the G-Set case, the merge operator is simply the union of the sets.
+
+The two approaches for converging the message sets in the Tendermint algorithm described [earlier](#nodes-state-as-a-tuple-space), without the deletion of entries, correspond to the operation-based and state-based [Grow-only Set](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type#G-Set_(Grow-only_Set)) CRDT and removals may be handled using a 2P-Set, explained next.
+
+### Set with Superseding Elements - CRDT
+
+We define here the Set with Superseding Elements CRDT (SSE) as a set in which the containing of some elements may render other elements stale or superseded.
+Stale elements are irrelevant from the point of view of the set's users and therefore may be removed from the set.
+Our definition of SSE is as a state-based CRDT, but an equivalent operations-based definition must exist.
+
+- The SSE is defined in terms of the generic element type `Entry`.
+
+  ```bash
+  type Entry: ??? //TODO: best way to define?
+  ```
+
+- The value of the SSE is called its `View` and it is formed by two sets, `addSet` and `delSet`.
+
+- `addSet` is the set of elements known to have been added but not known to have been removed from the SSE;
+- `delSet` is the set of elements known to have been removed, in case adding elements back to the set must be prevented through explicit reminders and if this is not the case, then `delSet` will always be empty;
+- the empty SSE is the `View` in which both `addSet` and `delSet` are empty;
+
+  ```bash
+  type View = {addSet: Set[Entry], delSet: Set[Entry]}
+
+  pure def makeView(adds: Set[Entry], dels: Set[Entry]): View =
+    {addSet: adds, delSet: dels}
+
+  pure val bot:View = {addSet:Set(), delSet:Set()}
+  ```
+
+- given Entry `e` and View `v`, we say that
+
+  ```bash
+  all {
+    v.contains(e).implies(
+      all {
+        v.addSet.contains(e),
+        not(v.delSet.contains(e))
+      }
+    )
+  }
+  ```
+
+- `addEntry`/`delEntry` adds/removes an entry to/from the `View` and returns the modified view
+
+  ```bash
+  pure def addEntry(v:View, e: Entry): View =
+    if (v.delSet.contains(e))
+      v
+    else
+        v.with("addSet", v.addSet.union(Set(e)))
+
+  pure def delEntry(v:View, e: Entry): View =
+    v.with("addSet", v.addSet.exclude(Set(e)))
+      .with("delSet", v.delSet.union(Set(e)))
+  ```
+
+- the `merge` operator combines two `View` into a new `View` that is a superset of the inputs, with stale entries removed.
+
+  ```bash
+  pure def merge(lhs: View, rhs: View): View =
+      val dels = lhs.delSet.union(rhs.delSet)
+      val adds = lhs.addSet.union(rhs.addSet).exclude(dels)
+      removeStale(makeView(adds, dels))
+  ```
+
+- the `removeStale` operator removes all stale elements from the SSE removing it from `addSet`, adding it to `delSet`, or both, depending on the SSE use.
+
+  ```bash
+  pure def removeStale(v: View): View //Application dependent.
+  ```
+
+- about supersession
+
+    1. transitive: if `a` supersedes `b` and `b` supersedes `c` then `a` supersedes `c`
+    1. asymmetric: if `a` supersedes `b` then `b` does not supersede `a`
+    1. non-reflexive: `a` does not supersede `a`
+    1. `view.exists(e => e.isStale(view)).implies(e.isStale(removeStale(view.addEntry(e)))`
+
+    > :warning:
+    > TODO: wrong usage of `exists` in the previous definition. `e` is not quantified in the `implies`
+    > TODO: Is non-reflexivity needed?
+    > TODO: this should ensure no cycles.
+
+    Hence the `merge` operator is:
+
+    - associative:
+    - commutative
+    - idempotent.
+
+    > :warning:
+    > TODO: there is a leap of faith here. Be skeptical.
+
+
+## TODO
+
+- Tombstones
+    - implicit staleness - regular entries
+    - explicit staleness - special tombstone entry
+        - Gossiping
+            - If tombstones are not to be gossiped, they do not need to be signed
+            - If they are to be gossiped
+                - either they need to carry proof for the reason they were created in the form of other entries, defeating the purpose of gossiping the tombstone
+                - they need to be signed to allow detection of misbehavior
+        - Tombstones removal may lead to entry revival in the local views
+            - breaks the CRDT properties
+                - still useful, for example as a mempool
+                - Although the Tendermint algorithm shouldn't require tombstones at all, there may be cases in which their addition for messages already staled by others helps clean up the tuple space quickly, but their removal will not break correctness.
+
+
+
+
+- @josef-widder We should try to understand what we need to do about Byzantine validators. In principle, we could say that the tuple space only contains entries for correct validators, and factor in Byzantine behavior by adapting semantics of the query belows.
+- @josef-widder Here (when querying) we could say if p is faulty, query can give any result (allowing for two-faces perceptions of Byzantine faults).
+- @lasarojc $T$ is the actual tuple space, the global view if you will, and combines the values of all local views.
+No node can see it and I've defined it here expecting to be useful from a formalization point of view. I may be exactly the case for dealing with byzantine validators. That is, byzantine nodes can poison local views with tuples not with the global view (because the collide). But I will need to think more about it before committing to a solution.

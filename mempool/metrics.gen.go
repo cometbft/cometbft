@@ -46,6 +46,18 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "evicted_txs",
 			Help:      "Number of evicted transactions.",
 		}, labels).With(labelsAndValues...),
+		PurgedDurationTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "purged_duration_txs",
+			Help:      "Number of purged transactions due to TTLDuration.",
+		}, labels).With(labelsAndValues...),
+		PurgedNumBlocksTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "purged_num_blocks_txs",
+			Help:      "Number of purged transactions due to TTLNumBlocks.",
+		}, labels).With(labelsAndValues...),
 		RecheckTimes: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -57,11 +69,13 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 
 func NopMetrics() *Metrics {
 	return &Metrics{
-		Size:         discard.NewGauge(),
-		TxSizeBytes:  discard.NewHistogram(),
-		FailedTxs:    discard.NewCounter(),
-		RejectedTxs:  discard.NewCounter(),
-		EvictedTxs:   discard.NewCounter(),
-		RecheckTimes: discard.NewCounter(),
+		Size:               discard.NewGauge(),
+		TxSizeBytes:        discard.NewHistogram(),
+		FailedTxs:          discard.NewCounter(),
+		RejectedTxs:        discard.NewCounter(),
+		EvictedTxs:         discard.NewCounter(),
+		PurgedDurationTxs:  discard.NewCounter(),
+		PurgedNumBlocksTxs: discard.NewCounter(),
+		RecheckTimes:       discard.NewCounter(),
 	}
 }

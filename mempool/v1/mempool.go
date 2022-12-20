@@ -675,14 +675,22 @@ func (txmp *TxMempool) recheckTransactions() {
 
 	// Collect transactions currently in the mempool requiring recheck.
 	wtxs := make([]*WrappedTx, 0, txmp.txs.Len())
-	for e := txmp.txs.Front(); e != nil; e = e.Next() {
+	for e := txmp.txs.Front(); e != nil; {
+		// N.B. Grab the next element first, since if we remove cur its successor
+		// will be invalidated.
+		next := e.Next()
+
 		wtx := e.Value.(*WrappedTx)
 		// If this transaction is Cosmos transaction containing a `PlaceOrder` or `CancelOrder` message,
 		// remove it from the mempool instead of rechecking.
 		if mempool.IsClobOrderTransaction(wtx.tx, txmp.logger) {
 			txmp.removeTxByElement(e)
+		} else {
+			wtxs = append(wtxs, wtx)
 		}
-		wtxs = append(wtxs, wtx)
+
+		// Iterate.
+		e = next
 	}
 
 	// If none of the transactions require recheck, return early.

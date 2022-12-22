@@ -28,6 +28,7 @@ var (
 	ErrVoteNonDeterministicSignature = errors.New("non-deterministic signature")
 	ErrVoteNil                       = errors.New("nil vote")
 	ErrVoteExtensionAbsent           = errors.New("vote extension absent")
+	ErrInvalidVoteExtension          = errors.New("invalid vote extension")
 )
 
 type ErrVoteConflictingVotes struct {

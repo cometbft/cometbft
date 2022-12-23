@@ -1,6 +1,6 @@
 name: Docker
 # Build & Push rebuilds the Tendermint docker image on every push to main and creation of tags
-# and pushes the image to https://hub.docker.com/r/tendermint/tendermint
+# and pushes the image to https://hub.docker.com/r/cometbft/tendermint
 on:
   push:
     branches:
@@ -19,7 +19,7 @@ jobs:
       - name: Prepare
         id: prep
         run: |
-          DOCKER_IMAGE=tendermint/tendermint
+          DOCKER_IMAGE=cometbft/tendermint
           VERSION=noop
           if [[ $GITHUB_REF == refs/tags/* ]]; then
             VERSION=${GITHUB_REF#refs/tags/}

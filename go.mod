@@ -25,7 +25,7 @@ require (
 	github.com/prometheus/client_model v0.3.0
 	github.com/prometheus/common v0.39.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
-	github.com/rs/cors v1.8.2
+	github.com/rs/cors v1.8.3
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/snikch/goodman v0.0.0-20171125024755-10e37e294daa
 	github.com/spf13/cobra v1.6.1

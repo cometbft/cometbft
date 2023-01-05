@@ -39,7 +39,6 @@ Friendly reminder, we have a [bug bounty program](https://hackerone.com/tendermi
 ### FEATURES
 
 - [abci] \#9301 New ABCI methods `PrepareProposal` and `ProcessProposal` which give the app control over transactions proposed and allows for verification of proposed blocks.
-- [rpc] \#9759 Added `match_event` query parameter to indicate to Tendermint that the query should match event attributes within events, not only within a height.(@jmalicevic)
 
 ### IMPROVEMENTS
 

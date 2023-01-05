@@ -190,3 +190,14 @@ func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) bool {
 	}
 	return true
 }
+
+// Deprecated: This function is replaced with dedupHeight
+func lookForHeight(conditions []query.Condition) (int64, bool, int) {
+	for i, c := range conditions {
+		if c.CompositeKey == types.BlockHeightKey && c.Op == query.OpEqual {
+			return c.Operand.(int64), true, i
+		}
+	}
+
+	return 0, false, -1
+}

@@ -112,7 +112,7 @@ func (idx *BlockerIndexer) Search(ctx context.Context, q *query.Query) ([]int64,
 
 	// Extract ranges. If both upper and lower bounds exist, it's better to get
 	// them in order as to not iterate over kvs that are not within range.
-	ranges, rangeIndexes, heightRange := indexer.LookForRanges(conditions)
+	ranges, rangeIndexes, heightRange := indexer.LookForRangesWithHeight(conditions)
 	heightInfo.heightRange = heightRange
 
 	// If we have additional constraints and want to query per event
@@ -149,7 +149,6 @@ func (idx *BlockerIndexer) Search(ctx context.Context, q *query.Query) ([]int64,
 			// blocks in this height range. We remember the height range info
 			// and pass it on to match() to take into account when processing events.
 			if qr.Key == types.BlockHeightKey && !heightInfo.onlyHeightRange {
-				// heightRanges = qr
 				// If the query contains ranges other than the height then we need to treat the height
 				// range when querying the conditions of the other range.
 				// Otherwise we can just return all the blocks within the height range (as there is no

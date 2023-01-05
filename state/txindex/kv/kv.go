@@ -224,7 +224,7 @@ func (txi *TxIndex) Search(ctx context.Context, q *query.Query) ([]*abci.TxResul
 	// extract ranges
 	// if both upper and lower bounds exist, it's better to get them in order not
 	// no iterate over kvs that are not within range.
-	ranges, rangeIndexes, heightRange := indexer.LookForRanges(conditions)
+	ranges, rangeIndexes, heightRange := indexer.LookForRangesWithHeight(conditions)
 	heightInfo.heightRange = heightRange
 	if len(ranges) > 0 {
 		skipIndexes = append(skipIndexes, rangeIndexes...)
@@ -639,4 +639,15 @@ func checkBounds(ranges indexer.QueryRange, v int64) bool {
 	}
 
 	return include
+}
+
+// Deprecated: The functionality of this function is entirely replaced with
+// dedupHeight.
+func lookForHeight(conditions []query.Condition) (height int64) {
+	for _, c := range conditions {
+		if c.CompositeKey == types.TxHeightKey && c.Op == query.OpEqual {
+			return c.Operand.(int64)
+		}
+	}
+	return 0
 }

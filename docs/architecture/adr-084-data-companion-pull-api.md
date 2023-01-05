@@ -280,6 +280,15 @@ method = "basic"
 password_file = "/path/to/.htpasswd"
 ```
 
+### Metrics
+
+The following metrics are proposed to be added to monitor the health of the
+interaction between a node and its data companion:
+
+- `data_companion_retain_height` - The current retain height as requested by the
+  data companion. This can give operators insight into whether the companion is
+  lagging significantly behind the current network height.
+
 ## Consequences
 
 ### Positive

@@ -259,7 +259,7 @@ func (txi *TxIndex) Search(ctx context.Context, q *query.Query) ([]*abci.TxResul
 	// specific event values we do not want to simply return all
 	// transactios in this height range. We remember the height range info
 	// and pass it on to match() to take into account when processing events.
-	ranges, rangeIndexes, heightRange := indexer.LookForRanges(conditions)
+	ranges, rangeIndexes, heightRange := indexer.LookForRangesWithHeight(conditions)
 	heightInfo.heightRange = heightRange
 
 	if len(ranges) > 0 {

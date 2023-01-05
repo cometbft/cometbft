@@ -76,10 +76,10 @@ func (qr QueryRange) UpperBoundValue() interface{} {
 	}
 }
 
-// LookForRanges returns a mapping of QueryRanges and the matching indexes in
+// LookForRangesWithHeight returns a mapping of QueryRanges and the matching indexes in
 // the provided query conditions. If we are matching attributes within events
 // we need to remember the height range from the condition
-func LookForRanges(conditions []query.Condition) (ranges QueryRanges, indexes []int, heightRange QueryRange) {
+func LookForRangesWithHeight(conditions []query.Condition) (ranges QueryRanges, indexes []int, heightRange QueryRange) {
 	ranges = make(QueryRanges)
 	for i, c := range conditions {
 		heightKey := false
@@ -129,6 +129,40 @@ func LookForRanges(conditions []query.Condition) (ranges QueryRanges, indexes []
 	}
 
 	return ranges, indexes, heightRange
+}
+
+// Deprecated: This function will be replaced with LookForRangeWithHeight
+func LookForRanges(conditions []query.Condition) (ranges QueryRanges, indexes []int) {
+	ranges = make(QueryRanges)
+	for i, c := range conditions {
+		if IsRangeOperation(c.Op) {
+			r, ok := ranges[c.CompositeKey]
+			if !ok {
+				r = QueryRange{Key: c.CompositeKey}
+			}
+
+			switch c.Op {
+			case query.OpGreater:
+				r.LowerBound = c.Operand
+
+			case query.OpGreaterEqual:
+				r.IncludeLowerBound = true
+				r.LowerBound = c.Operand
+
+			case query.OpLess:
+				r.UpperBound = c.Operand
+
+			case query.OpLessEqual:
+				r.IncludeUpperBound = true
+				r.UpperBound = c.Operand
+			}
+
+			ranges[c.CompositeKey] = r
+			indexes = append(indexes, i)
+		}
+	}
+
+	return ranges, indexes
 }
 
 // IsRangeOperation returns a boolean signifying if a query Operator is a range

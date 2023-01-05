@@ -135,7 +135,7 @@ func (idx *BlockerIndexer) Search(ctx context.Context, q *query.Query) ([]int64,
 	// specific event values we do not want to simply return all
 	// blocks in this height range. We remember the height range info
 	// and pass it on to match() to take into account when processing events.
-	ranges, rangeIndexes, heightRange := indexer.LookForRanges(conditions)
+	ranges, rangeIndexes, heightRange := indexer.LookForRangesWithHeight(conditions)
 	heightInfo.heightRange = heightRange
 
 	// If we have additional constraints and want to query per event

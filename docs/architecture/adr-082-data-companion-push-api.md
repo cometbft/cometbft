@@ -2,7 +2,7 @@
 
 ## Changelog
 
-- 2022-01-05: Sync requirements with those of [ADR 084][adr-084]
+- 2022-01-05: Sync requirements with those of [ADR 084][adr-084] (@thanethomson)
 - 2022-12-18: Renamed proposal to "Data Companion Push API" (@thanethomson)
 - 2022-11-26: Clarify user stories and alternatives, allow for selective
   publishing of data via the companion API, buffer on disk instead of in memory
@@ -90,7 +90,11 @@ Specifically, this mechanism would initially publish:
    solution outlined in this ADR, except that ADR-075 publishes data via JSON over
    HTTP while this solution proposes gRPC.
 
-2. We could pick a database that provides real-time notifications of inserts to
+2. Another alternative is proposed in [ADR 084][adr-084], which has the same
+   requirements as this proposed approach, except it implements a "pull" model
+   instead.
+
+3. We could pick a database that provides real-time notifications of inserts to
    consumers and just dump the requisite data into that database. Consumers
    would then need to connect to that database, listen for updates, and then
    transform/process the data as needed.

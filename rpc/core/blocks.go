@@ -193,19 +193,6 @@ func BlockResults(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlockR
 	}, nil
 }
 
-func BlockSearchMatchEvents(
-	ctx *rpctypes.Context,
-	query string,
-	pagePtr, perPagePtr *int,
-	orderBy string,
-	matchEvents bool,
-) (*ctypes.ResultBlockSearch, error) {
-	if matchEvents {
-		query = "match.events = 1 AND " + query
-	}
-	return BlockSearch(ctx, query, pagePtr, perPagePtr, orderBy)
-}
-
 // BlockSearch searches for a paginated set of blocks matching BeginBlock and
 // EndBlock event search criteria.
 func BlockSearch(

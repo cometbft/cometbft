@@ -198,9 +198,6 @@ You can query for a paginated set of transaction by their events by calling the
 ```bash
 curl "localhost:26657/tx_search?query=\"message.sender='cosmos1...'\"&prove=true"
 ```
-If the conditions are related to transaction events and the user wants to make sure the
-conditions are true within the same events, the `match.event` keyword should be used, 
-as described [below](#querying_block_events)
 
 Check out [API docs](https://docs.tendermint.com/v0.37/rpc/#/Info/tx_search)
 for more information on query syntax and other options.
@@ -233,30 +230,7 @@ You can query for a paginated set of blocks by their events by calling the
 curl "localhost:26657/block_search?query=\"block.height > 10 AND val_set.num_changed > 0\""
 ```
 
-## `match_events` keyword 
-
-The query results in the height number(s) (or transaction hashes when querying transactions) which contain events whose attributes match the query conditions. 
-However, there are two options to query the indexers. To demonstrate the two modes, we reuse the two events
-where Bob and Tom send money to Alice and query the block indexer. We issue the following query:
-
-```bash
-curl "localhost:26657/block_search?query=\"sender=Bob AND balance = 200\""
-```
-
-The result will return height 1 even though the attributes matching the conditions in the query 
-occurred in different events. 
-
-If we wish to retrieve only heights where the attributes occurred within the same event,
-the query syntax is as follows:
-
-```bash
-curl "localhost:26657/block_search?query=\"sender=Bob AND balance = 200\"&match_events=true"
-```
-Currently the default behaviour is if `match_events` is set  to false.
-
-Check out [API docs](https://docs.tendermint.com/v0.37/rpc/#/Info/block_search)
-for more information on query syntax and other options.
-
 **Backwards compatibility**
 
-Up until Tendermint 0.34.25, the event sequence was not stored in the kvstore and the `match_events` keyword in the RPC query is not ignored by older versions. Thus, in a network running mixed  Tendermint versions, nodes running older versions will still return blocks (or transactions) whose attributes match within different events on the same height.
+Up until Tendermint 0.34.25, the event sequence was not stored in the kvstore and events were stored only by height. Therefore, the result of a query on data
+indexed with older versions can include attributes who appeared in different events on the same height. 

@@ -87,7 +87,7 @@ func TestTxSearch(t *testing.T) {
 		// search by exact match (one key)
 		{"account.number = 1", 1},
 		// search by exact match (two keys)
-		{"account.number = 1 AND account.owner = 'Ivan'", 1},
+		{"account.number = 1 AND account.owner = 'Ivan'", 0},
 		// search by exact match (two keys)
 		{"account.number = 1 AND account.owner = 'Vlad'", 0},
 		{"account.owner = 'Vlad' AND account.number = 1", 0},
@@ -106,7 +106,7 @@ func TestTxSearch(t *testing.T) {
 		// search using not allowed key
 		{"not_allowed = 'boom'", 0},
 		// search for not existing tx result
-		{"account.number >= 2 AND account.number <= 5", 0},
+		{"account.number >= 2 AND account.number <= 5 AND tx.height > 0", 0},
 		// search using not existing key
 		{"account.date >= TIME 2013-05-03T14:45:00Z", 0},
 		// search using CONTAINS
@@ -157,39 +157,35 @@ func TestTxSearchEventMatch(t *testing.T) {
 		resultsLength int
 	}{
 		"Return all events from a height": {
-			q:             "match.events = 1 AND tx.height = 1",
+			q:             "tx.height = 1",
+			resultsLength: 1,
+		},
+		"Return all events from a height with range": {
+			q:             "tx.height > 0",
 			resultsLength: 1,
 		},
 		"Return all events from a height (deduplicate height)": {
-			q:             "match.events = 1 AND tx.height = 1 AND tx.height = 1",
+			q:             "tx.height = 1 AND tx.height = 1",
 			resultsLength: 1,
 		},
 		"Match attributes with height range and event": {
-			q:             "match.events = 1 AND tx.height < 2 AND tx.height > 0 AND account.number = 1 AND account.owner CONTAINS 'Ana'",
+			q:             "tx.height < 2 AND tx.height > 0 AND account.number > 0 AND account.number <= 1 AND account.owner CONTAINS 'Ana'",
 			resultsLength: 1,
 		},
 		"Match attributes with height range and event - no match": {
-			q:             "match.events = 1 AND tx.height < 2 AND tx.height > 0 AND account.number = 2 AND account.owner = 'Ana'",
-			resultsLength: 0,
-		},
-		"Deduplucation test - match events only at the beginning": {
-			q:             "tx.height < 2 AND tx.height > 0 AND account.number = 2 AND account.owner = 'Ana' AND match.events = 1",
-			resultsLength: 1,
-		},
-		"Deduplucation test - match events multiple": {
-			q:             "match.events = 1 AND tx.height < 2 AND tx.height > 0 AND account.number = 2 AND account.owner = 'Ana' AND match.events = 1",
+			q:             "tx.height < 2 AND tx.height > 0 AND account.number = 2 AND account.owner = 'Ana'",
 			resultsLength: 0,
 		},
 		"Match attributes with event": {
 			q:             "account.number = 2 AND account.owner = 'Ana' AND tx.height = 1",
-			resultsLength: 1,
+			resultsLength: 0,
 		},
 		"Match range w/o match events": {
 			q:             "account.number < 2 AND account.owner = 'Ivan'",
-			resultsLength: 1,
+			resultsLength: 0,
 		},
 		" Match range with match events": {
-			q:             "match.events = 1 AND account.number < 2 AND account.owner = 'Ivan'",
+			q:             "account.number < 2 AND account.owner = 'Ivan'",
 			resultsLength: 0,
 		},
 	}
@@ -322,6 +318,30 @@ func TestTxSearchOneTxWithMultipleSameTagsButDifferentValues(t *testing.T) {
 	ctx := context.Background()
 
 	results, err := indexer.Search(ctx, query.MustParse("account.number >= 1"))
+	assert.NoError(t, err)
+
+	assert.Len(t, results, 1)
+	for _, txr := range results {
+		assert.True(t, proto.Equal(txResult, txr))
+	}
+
+	results, err = indexer.Search(ctx, query.MustParse("account.number >= 1 AND tx.height = 3 AND tx.height > 0"))
+	assert.NoError(t, err)
+
+	assert.Len(t, results, 1)
+	for _, txr := range results {
+		assert.True(t, proto.Equal(txResult, txr))
+	}
+
+	results, err = indexer.Search(ctx, query.MustParse("account.number CONTAINS '1' AND tx.height < 2"))
+	assert.NoError(t, err)
+
+	assert.Len(t, results, 1)
+	for _, txr := range results {
+		assert.True(t, proto.Equal(txResult, txr))
+	}
+
+	results, err = indexer.Search(ctx, query.MustParse("account.number > 1 AND tx.height < 2"))
 	assert.NoError(t, err)
 
 	assert.Len(t, results, 1)

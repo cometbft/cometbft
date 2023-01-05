@@ -43,7 +43,6 @@ Friendly reminder, we have a [bug bounty program](https://hackerone.com/tendermi
 
 ### IMPROVEMENTS
 
-- [state/kvindexer] \#9759 Added `match.event` keyword to support condition evalution based on the event attributes belong to. (@jmalicevic)
 - [crypto] \#9250 Update to use btcec v2 and the latest btcutil. (@wcsiu)
 - [proto] \#9356 Migrate from `gogo/protobuf` to `cosmos/gogoproto` (@julienrbrt)
 - [rpc] \#9276 Added `header` and `header_by_hash` queries to the RPC client (@samricotta)
@@ -52,6 +51,7 @@ Friendly reminder, we have a [bug bounty program](https://hackerone.com/tendermi
 
 ### BUG FIXES
 
+- [state/kvindexer] \#77 Fixed the default behaviour of the kvindexer to index and query attributes by events in which they occur. In 0.34.25 this was mitigated by a separated RPC flag.  (@jmalicevic)
 - [consensus] \#9229 fix round number of `enterPropose` when handling `RoundStepNewRound` timeout. (@fatcat22)
 - [docker] \#9073 enable cross platform build using docker buildx
 - [docker] \#9462 ensure Docker image uses consistent version of Go

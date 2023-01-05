@@ -298,6 +298,8 @@ interaction between a node and its data companion:
   - Potentially reduces load on the node itself
   - Paves the way for eventually reducing the surface area of a node's exposed
     APIs
+- Allows the data companion more leeway in reading the data it needs than the
+  approach in [ADR 082][adr-082].
 
 ### Negative
 

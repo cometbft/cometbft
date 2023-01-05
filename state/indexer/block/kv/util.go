@@ -191,7 +191,6 @@ func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) bool {
 	return true
 }
 
-// Deprecated: This function is replaced with dedupHeight
 //nolint:unused,deadcode
 func lookForHeight(conditions []query.Condition) (int64, bool, int) {
 	for i, c := range conditions {

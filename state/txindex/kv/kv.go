@@ -641,8 +641,6 @@ func checkBounds(ranges indexer.QueryRange, v int64) bool {
 	return include
 }
 
-// Deprecated: The functionality of this function is entirely replaced with
-// dedupHeight.
 //nolint:unused,deadcode
 func lookForHeight(conditions []query.Condition) (height int64) {
 	for _, c := range conditions {

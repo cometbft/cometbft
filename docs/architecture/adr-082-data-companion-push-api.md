@@ -2,6 +2,7 @@
 
 ## Changelog
 
+- 2022-01-05: Sync requirements with those of [ADR 084][adr-084]
 - 2022-12-18: Renamed proposal to "Data Companion Push API" (@thanethomson)
 - 2022-11-26: Clarify user stories and alternatives, allow for selective
   publishing of data via the companion API, buffer on disk instead of in memory
@@ -125,31 +126,39 @@ Specifically, this mechanism would initially publish:
 
 ### Requirements
 
-1. All of the following data must be published to a single external consumer:
+1. A node _must_ support at most one data companion.
+
+2. All or part of the following data _must_ be obtainable by the companion, and
+   as close to real-time as possible:
    1. Committed block data
    2. `FinalizeBlockResponse` data, but only for committed blocks
 
-2. It must be opt-in. In other words, it is off by default and turned on by way
-   of a configuration parameter. When off, it must have negligible (ideally no)
-   impact on system performance.
+3. The companion _must_ be able to establish the earliest height for which the
+   node has all of the requisite data.
 
-3. It must not cause back-pressure into consensus.
+4. The API _must_ be (or be able to be) appropriately shielded from untrusted
+   consumers and abuse. Critical control facets of the API (e.g. those that
+   influence the node's pruning mechanisms) _must_ be implemented in such a way
+   as to eliminate the possibility of accidentally exposing those endpoints to
+   the public internet unprotected.
 
-4. It must not cause unbounded memory growth.
+5. The node _must_ know, by way of signals from the companion, which heights'
+   associated data are safe to automatically prune.
 
-5. It must not cause unbounded disk storage growth.
+6. The API _must_ be opt-in. When off or not in use, it _should_ have no impact
+   on system performance.
 
-6. Data must be published reliably. If data cannot be published, the node must
-   rather crash in such a way that bringing the node up again will cause it to
-   attempt to republish the unpublished data.
+7. It _must_ not cause back-pressure into consensus.
 
-7. The interface must support extension by allowing more kinds of data to be
-   exposed via this API (bearing in mind that every extension has the potential
-   to affect system stability in the case of an unreliable data companion
-   service).
+8. It _must_ not cause unbounded memory growth.
 
-8. Integrators must have some control over which broad types of data are
-   published.
+9. It _must_ provide one or more ways for operators to control storage growth.
+
+10. It _must_ provide insight to operators (e.g. by way of logs/metrics) to
+    assist in dealing with possible failure modes.
+
+11. The solution _should_ be able to be backported to older versions of
+    Tendermint (e.g. v0.34).
 
 ### Entity Relationships
 
@@ -424,3 +433,4 @@ PostgreSQL).
 [`/block_search`]: https://docs.tendermint.com/v0.34/rpc/#/Info/block_search
 [`/broadcast_tx_commit`]: https://docs.tendermint.com/v0.34/rpc/#/Tx/broadcast_tx_commit
 [`/block_results`]: https://docs.tendermint.com/v0.34/rpc/#/Info/block_results
+[adr-084]: https://github.com/CometBFT/tendermint/pull/82

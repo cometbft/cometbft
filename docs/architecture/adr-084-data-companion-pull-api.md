@@ -11,12 +11,13 @@ Accepted | Rejected | Deprecated | Superseded by
 ## Context
 
 Following from the discussion around the development of [ADR 082][adr-082], an
-alternative model is proposed here for offloading certain data from
-Tendermint-based nodes to a "data companion". This alternative model inverts the
-control of the data offloading process, when compared to ADR 082, from the
-Tendermint node to the data companion.
+alternative model is proposed here for offloading certain data from nodes to a
+"data companion". This alternative model inverts the control of the data
+offloading process, when compared to ADR 082, from the node to the data
+companion.
 
-This particular model would
+Overall, this approach provides slightly weaker guarantees than that of ADR 082,
+but represents a simpler model to implement.
 
 ## Alternative Approaches
 
@@ -33,44 +34,38 @@ Other considered alternatives to this ADR are also outlined in
 
 Similar requirements are proposed here as for [ADR-082][adr-082].
 
-1. Only a single trusted companion service _must_ be supported in order to
-   reduce the likelihood of overloading a node via the companion API. Use cases
-   that require multiple companions will have to implement an intermediate/proxy
-   companion that can scale independently of the node.
+1. A node _must_ support at most one data companion.
 
-2. All or part of the following data _must_ be obtainable by the companion:
+2. All or part of the following data _must_ be obtainable by the companion, and
+   as close to real-time as possible:
    1. Committed block data
    2. `FinalizeBlockResponse` data, but only for committed blocks
 
 3. The companion _must_ be able to establish the earliest height for which the
    node has all of the requisite data.
 
-4. The companion _must_ be able to establish, as close to real-time as possible,
-   the height and ID of the block that was just committed by the network, so
-   that it can request relevant heights' data from the node.
-
-5. The API _must_ be (or be able to be) appropriately shielded from untrusted
+4. The API _must_ be (or be able to be) appropriately shielded from untrusted
    consumers and abuse. Critical control facets of the API (e.g. those that
    influence the node's pruning mechanisms) _must_ be implemented in such a way
    as to eliminate the possibility of accidentally exposing those endpoints to
    the public internet unprotected.
 
-6. The node _must_ know, by way of signals from the companion, which heights'
+5. The node _must_ know, by way of signals from the companion, which heights'
    associated data are safe to automatically prune.
 
-7. The API _must_ be opt-in. When off or not in use, it _should_ have no impact
+6. The API _must_ be opt-in. When off or not in use, it _should_ have no impact
    on system performance.
 
-8. It _must_ not cause back-pressure into consensus.
+7. It _must_ not cause back-pressure into consensus.
 
 8. It _must_ not cause unbounded memory growth.
 
-10. It _must_ not cause unbounded disk storage growth.
+9. It _must_ provide one or more ways for operators to control storage growth.
 
-11. It _must_ provide insight to operators (e.g. by way of logs/metrics) to
+10. It _must_ provide insight to operators (e.g. by way of logs/metrics) to
     assist in dealing with possible failure modes.
 
-12. The solution _should_ be able to be backported to older versions of
+11. The solution _should_ be able to be backported to older versions of
     Tendermint (e.g. v0.34).
 
 ### Entity Relationships
@@ -90,7 +85,7 @@ application, and the companion connects to the Tendermint node.
 ### gRPC API
 
 At the time of this writing, it is proposed that Tendermint implement a full
-gRPC interface ([\#9751]). As such, we have several options when it comes to
+gRPC interface ([\#81]). As such, we have several options when it comes to
 implementing the data companion pull API:
 
 1. Extend the existing RPC API to simply provide the additional data
@@ -111,7 +106,17 @@ implement option 1, but have certain endpoints be
 With this in mind, the following gRPC API is proposed, where the Tendermint node
 will implement these services.
 
+#### Block Service
+
+When implementing gRPC support for a node, this service (or at least a slight
+variation of it) would be applicable anyways, regardless of whether this ADR is
+implemented.
+
 ```protobuf
+syntax = "proto3";
+
+package tendermint.block_service.v1;
+
 import "tendermint/abci/types.proto";
 import "tendermint/types/types.proto";
 import "tendermint/types/block.proto";
@@ -128,24 +133,6 @@ service BlockService {
     // GetBlockResults attempts to retrieve the results of block execution for a
     // particular height.
     rpc GetBlockResults(GetBlockResultsRequest) returns (GetBlockResultsResponse) {}
-}
-
-// DataCompanionService provides privileged access to specialized pruning
-// functionality on the Tendermint node to help optimize node storage.
-service DataCompanionService {
-    // SetRetainHeight notifies the node of the minimum height whose data must
-    // be retained by the node. This data includes block data and block
-    // execution results.
-    //
-    // The lower of this retain height and that set by the application in its
-    // Commit response will be used by the node to determine which heights' data
-    // can be pruned.
-    rpc SetRetainHeight(SetRetainHeightRequest) returns (SetRetainHeightResponse) {}
-
-    // GetRetainHeight returns the retain height set by the companion and that
-    // set by the application. This can give the companion an indication as to
-    // which heights' data are currently available.
-    rpc GetRetainHeight(GetRetainHeightRequest) returns (GetRetainHeightResponse) {}
 }
 
 message GetLatestBlockIDRequest {}
@@ -191,6 +178,35 @@ message GetBlockResultsResponse {
     // NB: This should be called finalize_block_events when ABCI 2.0 lands.
     repeated tendermint.abci.Event end_block_events = 5;
 }
+```
+
+#### Data Companion Service
+
+```protobuf
+syntax = "proto3";
+
+package tendermint.data_companion_service.v1;
+
+// DataCompanionService provides privileged access to specialized pruning
+// functionality on the Tendermint node to help optimize node storage.
+service DataCompanionService {
+    // SetRetainHeight notifies the node of the minimum height whose data must
+    // be retained by the node. This data includes block data and block
+    // execution results.
+    //
+    // Setting a retain height lower than a previous setting will result in an
+    // error.
+    //
+    // The lower of this retain height and that set by the application in its
+    // Commit response will be used by the node to determine which heights' data
+    // can be pruned.
+    rpc SetRetainHeight(SetRetainHeightRequest) returns (SetRetainHeightResponse) {}
+
+    // GetRetainHeight returns the retain height set by the companion and that
+    // set by the application. This can give the companion an indication as to
+    // which heights' data are currently available.
+    rpc GetRetainHeight(GetRetainHeightRequest) returns (GetRetainHeightResponse) {}
+}
 
 message SetRetainHeightRequest {
     int64 height = 1;
@@ -205,42 +221,93 @@ message GetRetainHeightResponse {
     int64 data_companion_retain_height = 1;
     // The retain height as set by the ABCI application.
     int64 app_retain_height = 2;
-    // The height whose data is currently retained, which is influenced by the
-    // data companion and ABCI application retain heights, but the node may not
-    // yet have executed its pruning operation.
-    int64 actual_retain_height = 3;
 }
 ```
+
+With this API design, it is technically possible for an integrator to attach
+multiple data companions to the node, but only one of their retain heights will
+be applied.
 
 ### Access Control
 
 As covered in the [gRPC API section](#grpc-api), it would be preferable to
 implement some form of access control for sensitive, data companion-specific
 APIs. At least **basic HTTP authentication** should be implemented for these
-endpoints, where credentials should be obtained (in order of precedence):
+endpoints, where credentials should be obtained from an `.htpasswd` file, using
+the same format as [Apache `.htpasswd` files][htpasswd], whose location is set
+in the Tendermint configuration file.
 
-1. From an `.htpasswd` file, using the same format as [Apache `.htpasswd`
-   files][htpasswd], whose location is set in the Tendermint configuration file.
-2. Randomly generated and written to the logs.
+`.htpasswd` files are relatively standard and are supported by many web servers.
+The format is relatively straightforward to parse and interpret.
+
+We should strongly consider only supporting the bcrypt encryption option for
+passwords stored in `.htpasswd` files.
 
 ### Configuration
 
 The following configuration file update is proposed to support the data
 companion API.
 
-## Consequences
+```toml
+# A data companion, if enabled, is intended to offload the storage of certain
+# types of data from the node. Specifically:
+# 1. Block data, including transactions.
+# 2. Block results, including events, transaction results, validator and
+#    consensus parameter updates.
+#
+# A data companion can influence the pruning height of the node, and therefore
+# the data companion gRPC service is considered to be a sensitive endpoint that
+# is password-protected by default.
+[data_companion]
 
-> This section describes the consequences, after applying the decision. All
-> consequences should be summarized here, not just the "positive" ones.
+# Is the data companion API enabled at all? Default: false
+enabled = false
+
+# Authentication configuration for the data companion.
+[data_companion.authentication]
+
+# The authentication method to use. At present, the only supported method is
+# "basic" (i.e. basic HTTP authentication).
+method = "basic"
+
+# Path to the file containing basic authentication credentials to access the
+# data companion service. If the data companion is enabled and this password
+# file is not supplied, or the file does not exist, or the file is of an invalid
+# format, the node will fail to start.
+#
+# See https://httpd.apache.org/docs/current/programs/htpasswd.html for details
+# on how to create/configure this file.
+password_file = "/path/to/.htpasswd"
+```
+
+## Consequences
 
 ### Positive
 
+- Facilitates offloading of data to an external service, which can be scaled
+  independently of the node
+  - Potentially reduces load on the node itself
+  - Paves the way for eventually reducing the surface area of a node's exposed
+    APIs
+
 ### Negative
+
+- Increases system complexity slightly in the short-term
+- If data companions are not correctly implemented and deployed (e.g. if a
+  companion is attached to the same storage as the node, and/or if its retain
+  height signaling is poorly handled), this could result in substantially
+  increased storage usage
 
 ### Neutral
 
+- Expands the overall API surface area of a node in the short-term
+
 ## References
 
-[adr-082]: https://github.com/tendermint/tendermint/pull/9437
-[\#9751]: https://github.com/tendermint/tendermint/issues/9751
+- [ADR 082 - Data Companion Push API][adr-082]
+- [\#81 - rpc: Add gRPC support][\#81]
+- [`.htpasswd`][htpasswd]
+
+[adr-082]: https://github.com/CometBFT/tendermint/pull/73
+[\#81]: https://github.com/CometBFT/tendermint/issues/81
 [htpasswd]: https://httpd.apache.org/docs/current/programs/htpasswd.html

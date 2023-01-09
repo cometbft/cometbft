@@ -52,8 +52,14 @@ Friendly reminder, we have a [bug bounty program](https://hackerone.com/tendermi
 
 ### BUG FIXES
 
-- [state/kvindexer] \#77 Fixed the default behaviour of the kvindexer to index and query attributes by events in which they occur. In 0.34.25 this was mitigated by a separated RPC flag.  (@jmalicevic)
 - [consensus] \#9229 fix round number of `enterPropose` when handling `RoundStepNewRound` timeout. (@fatcat22)
 - [docker] \#9073 enable cross platform build using docker buildx
 - [docker] \#9462 ensure Docker image uses consistent version of Go
 - [blocksync] \#9518 handle the case when the sending queue is full: retry block request after a timeout
+
+## v0.37.1
+
+### BUG FIXES
+- [state/kvindexer] \#77 Fixed the default behaviour of the kvindexer to index and query attributes by events in which they occur. In 0.34.25 this was mitigated by a separated RPC flag.  (@jmalicevic)
+
+

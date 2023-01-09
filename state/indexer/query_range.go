@@ -78,12 +78,12 @@ func (qr QueryRange) UpperBoundValue() interface{} {
 
 // LookForRangesWithHeight returns a mapping of QueryRanges and the matching indexes in
 // the provided query conditions.
-func LookForRangesWithHeight(conditions []query.Condition) (ranges QueryRanges, indexes []int, heightRange QueryRange) {
-	ranges = make(QueryRanges)
+func LookForRangesWithHeight(conditions []query.Condition) (queryRange QueryRanges, indexes []int, heightRange QueryRange) {
+	queryRange = make(QueryRanges)
 	for i, c := range conditions {
 		heightKey := false
 		if IsRangeOperation(c.Op) {
-			r, ok := ranges[c.CompositeKey]
+			r, ok := queryRange[c.CompositeKey]
 			if !ok {
 				r = QueryRange{Key: c.CompositeKey}
 				if c.CompositeKey == types.BlockHeightKey || c.CompositeKey == types.TxHeightKey {
@@ -122,12 +122,12 @@ func LookForRangesWithHeight(conditions []query.Condition) (ranges QueryRanges, 
 				}
 			}
 
-			ranges[c.CompositeKey] = r
+			queryRange[c.CompositeKey] = r
 			indexes = append(indexes, i)
 		}
 	}
 
-	return ranges, indexes, heightRange
+	return queryRange, indexes, heightRange
 }
 
 // Deprecated: This function is not used anymore and will be replaced with LookForRangesWithHeight

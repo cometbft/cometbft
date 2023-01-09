@@ -260,8 +260,14 @@ companion API.
 # is password-protected by default.
 [data_companion]
 
-# Is the data companion API enabled at all? Default: false
+# Is the data companion gRPC API enabled at all? Default: false
 enabled = false
+
+# The maximum number of blocks to allow the data companion's retain height to
+# lag behind the current height. The node will block all other operations until
+# the companion's retain height is less than `max_retain_lag` blocks behind the
+# current height. Default: 100
+max_retain_lag = 100
 
 # Authentication configuration for the data companion.
 [data_companion.authentication]

@@ -53,19 +53,27 @@ Similar requirements are proposed here as for [ADR-082][adr-082].
 5. The node _must_ know, by way of signals from the companion, which heights'
    associated data are safe to automatically prune.
 
-6. The API _must_ be opt-in. When off or not in use, it _should_ have no impact
+6. The companion _must_ be able to handle the possibility that a node might
+   start from a non-zero height (i.e. that the node may state sync from a
+   specific height beyond genesis).
+
+7. The companion _must_ be able to handle the possibility that a node may
+   disable and then later re-enable the companion interface, potentially causing
+   the companion to have missing data in between those two heights.
+
+8. The API _must_ be opt-in. When off or not in use, it _should_ have no impact
    on system performance.
 
-7. It _must_ not cause back-pressure into consensus.
+9. It _must_ not cause back-pressure into consensus.
 
-8. It _must_ not cause unbounded memory growth.
+10. It _must_ not cause unbounded memory growth.
 
-9. It _must_ provide one or more ways for operators to control storage growth.
+11. It _must_ provide one or more ways for operators to control storage growth.
 
-10. It _must_ provide insight to operators (e.g. by way of logs/metrics) to
+12. It _must_ provide insight to operators (e.g. by way of logs/metrics) to
     assist in dealing with possible failure modes.
 
-11. The solution _should_ be able to be backported to older versions of
+13. The solution _should_ be able to be backported to older versions of
     Tendermint (e.g. v0.34).
 
 ### Entity Relationships
@@ -81,6 +89,23 @@ socket-based ABCI application, and the proposed data companion service.
 
 In this diagram, it is evident that Tendermint connects out to the ABCI
 application, and the companion connects to the Tendermint node.
+
+### Pruning Behaviour
+
+There are two "modes" of pruning that need to be supported by the node:
+
+1. **Data companion disabled**: Here, the node prunes as per normal based on the
+   `retain_height` parameter supplied by the application via the
+   [`Commit`][abci-commit] ABCI response.
+2. **Data companion enabled**: Here, the node prunes _blocks_ based on the lower
+   of the retain heights specified by the application and the data companion,
+   and the node prunes _block results_ based on the retain height set by the
+   data companion.
+
+Enabling the `discard_abci_responses` flag under the `[storage]` section in the
+configuration is incompatible with enabling a data companion. If
+`storage.discard_abci_responses` and `data_companion.enabled` are both `true`,
+then the node _must_ fail to start.
 
 ### gRPC API
 
@@ -329,3 +354,4 @@ interaction between a node and its data companion:
 [adr-082]: https://github.com/CometBFT/tendermint/pull/73
 [\#81]: https://github.com/CometBFT/tendermint/issues/81
 [htpasswd]: https://httpd.apache.org/docs/current/programs/htpasswd.html
+[abci-commit]: ../../spec/abci/abci++_methods.md#commit

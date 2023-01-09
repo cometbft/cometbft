@@ -8,7 +8,7 @@ on:
       - "v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+"      # e.g. v0.37.0-rc1, v0.38.0-rc10
 
 jobs:
-  goreleaser:
+  prerelease:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,7 +21,7 @@ jobs:
           go-version: '1.18'
 
       - name: Build
-        uses: goreleaser/goreleaser-action@v3
+        uses: goreleaser/goreleaser-action@v4
         if: ${{ github.event_name == 'pull_request' }}
         with:
           version: latest
@@ -31,10 +31,35 @@ jobs:
       - run: echo https://github.com/tendermint/tendermint/blob/${GITHUB_REF#refs/tags/}/CHANGELOG_PENDING.md > ../release_notes.md
 
       - name: Release
-        uses: goreleaser/goreleaser-action@v3
+        uses: goreleaser/goreleaser-action@v4
         if: startsWith(github.ref, 'refs/tags/')
         with:
           version: latest
           args: release --rm-dist --release-notes=../release_notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  prerelease-success:
+    needs: prerelease
+    if: ${{ success() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack upon pre-release
+        uses: slackapi/slack-github-action@v1.23.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          RELEASE_URL: "${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":sparkles: New Tendermint pre-release: <${{ env.RELEASE_URL }}|${{ github.ref_name }}>"
+                  }
+                }
+              ]
+            }

@@ -42,13 +42,19 @@ Friendly reminder, we have a [bug bounty program](https://hackerone.com/tendermi
 
 ### IMPROVEMENTS
 
+- [crypto] \#9250 Update to use btcec v2 and the latest btcutil. (@wcsiu)
+- [cli] \#9171 add `--hard` flag to rollback command (and a boolean to the `RollbackState` method). This will rollback
+  state and remove the last block. This command can be triggered multiple times. The application must also rollback
+  state to the same height. (@tsutsu, @cmwaters)
 - [proto] \#9356 Migrate from `gogo/protobuf` to `cosmos/gogoproto` (@julienrbrt)
 - [rpc] \#9276 Added `header` and `header_by_hash` queries to the RPC client (@samricotta)
 - [abci] \#5706 Added `AbciVersion` to `RequestInfo` allowing applications to check ABCI version when connecting to Tendermint. (@marbar3778)
+- [consensus] \#9760 Save peer LastCommit correctly to achieve 50% reduction in gossiped precommits. (@williambanfield)
 
 ### BUG FIXES
 
 - [consensus] \#9229 fix round number of `enterPropose` when handling `RoundStepNewRound` timeout. (@fatcat22)
 - [docker] \#9073 enable cross platform build using docker buildx
 - [docker] \#9462 ensure Docker image uses consistent version of Go
+- [blocksync] \#9518 handle the case when the sending queue is full: retry block request after a timeout
 - [p2p] \#9500 prevent peers who have errored being added to the peer_set (@jmalicevic)

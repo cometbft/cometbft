@@ -279,5 +279,4 @@ func (app *Application) ProcessProposal(
 		}
 	}
 	return types.ResponseProcessProposal{Status: types.ResponseProcessProposal_ACCEPT}
-
 }

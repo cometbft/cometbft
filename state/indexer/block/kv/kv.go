@@ -106,7 +106,7 @@ func (idx *BlockerIndexer) Search(ctx context.Context, q *query.Query) ([]int64,
 	var ok bool
 
 	var heightInfo HeightInfo
-	// If we are not matching events and block.height = 3 occurs more than once, the later value will
+	// If we are not matching events and block.height occurs more than once, the later value will
 	// overwrite the first one.
 	conditions, heightInfo, ok = dedupHeight(conditions)
 

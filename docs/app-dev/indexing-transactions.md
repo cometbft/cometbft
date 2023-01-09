@@ -73,9 +73,14 @@ entirely in the future.
 **Implementation and data layout**
 
 The kv indexer stores each attribute of an event individually, by creating a composite key 
-of the *event type*, *attribute key*, *attribute value*, *height* and *event sequence*. 
-
-For example the following events:
+with
+- event type,
+- attribute key,
+- attribute value,
+- event generator (e.g. `EndBlock` and `BeginBlock`)
+- the height, and
+- event counter.
+ For example the following events:
  
 ```
 Type: "transfer",
@@ -98,11 +103,12 @@ Type: "transfer",
    },
 ```
 
-will be represented as follows in the store: 
+will be represented as follows in the store, assuming these events result from the EndBlock call for height 1: 
 
 ```
 Key                                 value
-transferSenderBobEndBlock1           1
+---- event1 ------
+transferSenderBobEndBlock11           1
 transferRecepientAliceEndBlock11     1
 transferBalance100EndBlock11         1
 transferNodeNothingEndblock11        1
@@ -113,9 +119,7 @@ transferBalance200EndBlock12         1
 transferNodeNothingEndblock12        1
  
 ```
-The key is thus formed of the event type, the attribute key and value, the event the attribute belongs to (`EndBlock` or `BeginBlock`),
-the height and the event number. The event number is a local variable kept by the indexer and incremented when a new event is processed. 
-
+The event number is a local variable kept by the indexer and incremented when a new event is processed. 
 It is an `int64` variable and has no other semantics besides being used to associate attributes belonging to the same events within a height. 
 This variable is not atomically incremented as event indexing is deterministic. **Should this ever change**, the event id generation
 will be broken. 

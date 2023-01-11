@@ -1,16 +1,10 @@
 module ConsensusReactor {
 
     type Proc = int
-    type Payload = str
-    type Steps =  
-        | {tag: "proposal"}
-        | {tag: "prevote"}
-        | {tag: "precommit"}
-
     const Procs: Set[Proc]                                      //All processes in the system
 
+    type Payload = str
 
-//====== CONS Internals
 
 //====== [CONS-GOSSIP-VOCABULARY] GOSSIP-I
     type CONSMessage =                                         //TODO: Define payloads?
@@ -22,14 +16,8 @@ module ConsensusReactor {
     var dMsgs : Proc -> Set[CONSMessage]                       //Messages delivered to CONS
 
 
-//===== GOSSIP Internals
-
-    var nes : Proc -> Set[Proc]                                 //Neighbor sets
-
-
-
 //====== [GOSSIP-P2P-VOCABULARY] P2P-I
-    const MaxConn: int
+    var maxConn: Proc -> int
 
     type GOSSIPMessage = 
         | {tag: "cons", consMsg: CONSMessage}
@@ -37,28 +25,8 @@ module ConsensusReactor {
 
     var uMsgs: Proc -> Set[{dst:Proc, msg: GOSSIPMessage}]
     var rMsgs: Proc -> Set[{src:Proc, msg: GOSSIPMessage}]
-
-
-/*
-    var height: Proc -> int
-    var round: Proc -> int
-    var step: Proc -> Steps
-    var decision: List[Payload]
-
-    var ne : Proc -> Set[Proc]                                 //Neighbor sets
-
-    var uMsgs : Proc -> Set[CONSMessage]                       //Messages unicast by State
-    var msgs : Proc -> Set[CONSMessage]                        //Messages to be sent/forwarded (subset BMsgs[] U UMsgs[] U DMsgs[])
-
-
-
-
-    action InitGossipI = all {
-        height' = Procs.mapBy(_ => 0),
-        round' = Procs.mapBy(_ => 0),
-        decision' = Procs.mapBy(_ => List())
-    }
-*/
+    var nes : Proc -> Set[Proc]                                 //Neighbor sets
+    var igs : Proc -> Set[Proc]                                 //Nodes to be ignored.
 
 
 
@@ -83,17 +51,32 @@ module ConsensusReactor {
         s.exists(m1 => m1.SSS(m))
     }
 
+    //[DEF-UNICAST]
+    //The P2P unicast API.
+    action unicast(p,q,m): (Proc, Proc, GOSSIPMessage) => bool = all {
+        q.in(nes.get(p)),
+        uMsgs' = uMsgs.set(p, uMsgs.get(p).union(Set({dst:q, msg:m})))
+    }
+
+
+
+//====== CONS Internals
+//===== GOSSIP Internals
+
 
 //================================= REQ-CONS-GOSSIP
 
     //[REQ-CONS-GOSSIP-BROADCAST.1]
-    //Satisfied by [DEF-BROADCAST]
+    //Satisfied by [DEF-BROADCAST] and use of bMsgs
+
+    //[REQ-CONS-GOSSIP-DELIVERY.1]
+    //Satisfied by usage of dMsgs
 
     //[REQ-CONS-GOSSIP-BROADCAST.2]
     //TODO
 
 
-    //[REQ-CONS-GOSSIP-KEEP_NON_SUPERSEDED]
+    //[REQ-CONS-GOSSIP-DELIVERY.2]
     //TODO: Am I missing an implication here?
 
     temporal RCGKeepNonSSD = {
@@ -124,7 +107,7 @@ module ConsensusReactor {
     pure def nonSSDMsgs(msgs): (Set[CONSMessage]) => Set[CONSMessage] = 
         msgs.filter(m => not(isSSDInSet(msgs, m)))
 
-    temporal RGCS() = {
+    temporal RGCS = {
         Int.exists(c => 
             Procs.forall(p =>
                 always (
@@ -186,10 +169,7 @@ module ConsensusReactor {
 //===== REQ-GOSSIP-P2P
 
     //[REQ-GOSSIP-P2P-UNICAST.1]
-    action unicast(p,q,m): (Proc, Proc, GOSSIPMessage) => bool = all {
-        q.in(nes.get(p)),
-        uMsgs' = uMsgs.set(p, uMsgs.get(p).union(Set({dst:q, msg:m})))
-    }
+    // Provided by the [DEF-UNICAST]
 
     //[REQ-GOSSIP-P2P-UNICAST.2]
     temporal RGRU2 = {
@@ -209,41 +189,55 @@ module ConsensusReactor {
         )
     }
 
-    //[REQ-GOSSIP-P2P-NEIGHBOR_ID]
-    //Provided by construction of rMsgs
-
     //[REQ-GOSSIP-P2P-CONCURRENT_CONN]
-    //Provided by construction of nes
+    //Provided by construction of nes, addPeer and removePeer
 
-    action addPeer(p,q) = all {
+    action addPeer(p,q): (Proc,Proc) => bool = all {
+        q.notin(nes.get(p)),
+        size(nes.get(p)) < maxConn.get(p),
         nes' = nes.set(p, (nes.get(p).union(Set(q))))
     }
 
-    action removePeer(p,q) = all {
-        nes' = nes.set(p, (nes.get(p).exclude(q)))
+    action removePeer(p,q): (Proc,Proc) => bool = all {
+        q.notin(nes.get(p)),
+        nes' = nes.set(p, nes.get(p).exclude(Set(q)))
     }
 
-}
-
+//GOSSIP internals
 /*
-    //GOSSIP internals
     type GossipMessage = 
         | {tag: "state-msg", msg: CONSMessage, sndr: Proc}
         | {tag: "other-msg", height: int, round: int, payload: str, sndr: Proc}
 
 */
 
+}
+
+
 
 
 
 
 
 /*
-    action InitGossipI = all {
-//        height' = Procs.mapBy(_ => 0),
-//        round' = Procs.mapBy(_ => 0),
-//        decision' = Procs.mapBy(_ => List())
-    }
+    var height: Proc -> int
+    var round: Proc -> int
+    var step: Proc -> Steps
+    var decision: List[Payload]
 
-}
+    type Steps =  
+        | {tag: "proposal"}
+        | {tag: "prevote"}
+        | {tag: "precommit"}
+
+    action InitGossipI = all {
+        height' = Procs.mapBy(_ => 0),
+        round' = Procs.mapBy(_ => 0),
+        decision' = Procs.mapBy(_ => List())
+    }
 */
+
+//===== Anything below this line actually belongs to the implementation.qnt and will be moved
+//===== there once I learn how to import one module into the other.
+
+

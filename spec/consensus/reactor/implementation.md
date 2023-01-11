@@ -1,12 +1,46 @@
 # Current Implementation
+GOSSIP-I is not clearly defined in the current implementation.
+Several methods inspect and manipulate both CONS and GOSSIP internal state.
+For example, the `enterPropose` function, explained further ahead, creates and broadcasts `ProposalMessage`s, which is a CONS behavior, but also ProposalPartMessage`, which is a GOSSIP behavior.
+We will note CONS and GOSSIP behavior, according to our understanding, in the discussions below.
 
-## `broadcast`
-
-Although, ideally, CONS should not be concerned about the implementation details of `broadcast`, it would be unreasonable to do so as it could impose unattainable behavior to the Communication layer.
-Specifically, because the network is potentially not complete, message forwarding may be required to implement `broadcast` and, as discussed previously, this would require potentially infinite message buffers on the "relayers".
 
 
-## [REQ-CONS-GOSSIP-KEEP_NON_SUPERSEDED]
+## [VOC-CONS-GOSSIP]
+`ProposalMessage` embeds a [`Proposal`](./files.go/#proposal), so we refer to both simply as `ProposalMessage`.
+
+
+
+## [REQ-CONS-GOSSIP-BROADCAST.1]
+
+### ProposalMessage
+`ProposalMessage` broadcast is triggered by `enterPropose` upon different conditions.
+
+- `enterPropose` calls `decidePropose=defaultDecideProposal` to
+    - create a `ProposalMessage`
+    - create a `ProposalPartMessage`s (GOSSIP)
+    - call `sendInternalMessage` to
+        - publish `ProposalMessage` to `internalQueue`
+        - publish `ProposalPartMessage` to `internalMsgQueue`
+- `enterPropose` calls `newStep` to
+    - publish `RoundStateEvent` on eventBus (general purpose)
+    - publish `EventNewRoundStep` on eventSwitch (internal communication between CONS and GOSSIP)
+
+`receiveRoutine` runs concurrently to proposals, poling messages from the `internalMsgQueue` and passing to `handleMessage`. `handleMessage` passes proposals to `setProposal=defaultSetProposal`to 
+    - store the message in `state.Proposal`
+    - create a set of block parts `state.ProposalBlockParts` corresponding to the proposal.
+
+`gossipDataRoutine` runs concurrently to proposals, processing messages receive. 
+
+
+
+## "delivery"
+Most Tendermint BFT actions are triggered when a set of messages received satisfy some criteria.
+
+GOSSIP must, therefore, accumulate the messages received that might still be used to satisfy some condition and let CONS reevaluate conditions whenever a new message is received or a timeout expires.
+
+
+## [REQ-CONS-GOSSIP-DELIVERY.2]
 GOSSIP reacts to CONS messages by adding them to sets of similar messages, within the GOSSIP internal state, and then evaluating if Tendermint conditions are met and triggering changes to CONS, or by itself reacting to implement the gossip communication.
 
 CONS messages are removed from the accumulating sets only when a new round/height is started, which effectively triggers the sending of new messages, which supersedes the ones from the previous round/height.

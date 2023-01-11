@@ -373,7 +373,7 @@ func TestCheckSwitchToConsensusLastHeightZero(t *testing.T) {
 	}
 
 	// -1 because of "-1" in IsCaughtUp
-	// -1 pool.height is points to the _next_ height
+	// -1 pool.height points to the _next_ height
 	// -1 because we measure height of block store
 	const maxDiff = 3
 	for _, r := range reactorPairs {

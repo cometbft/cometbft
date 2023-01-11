@@ -212,14 +212,15 @@ func startTestRound(cs *State, height int64, round int32) {
 
 // Create proposal block from cs1 but sign it with vs.
 func decideProposal(
+	ctx context.Context,
 	t *testing.T,
 	cs1 *State,
 	vs *validatorStub,
 	height int64,
 	round int32,
-) (proposal *types.Proposal, block *types.Block) {
+) (*types.Proposal, *types.Block) {
 	cs1.mtx.Lock()
-	block, err := cs1.createProposalBlock()
+	block, err := cs1.createProposalBlock(ctx)
 	require.NoError(t, err)
 	blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)
@@ -232,7 +233,7 @@ func decideProposal(
 
 	// Make proposal
 	polRound, propBlockID := validRound, types.BlockID{Hash: block.Hash(), PartSetHeader: blockParts.Header()}
-	proposal = types.NewProposal(height, round, polRound, propBlockID)
+	proposal := types.NewProposal(height, round, polRound, propBlockID)
 	p := proposal.ToProto()
 	if err := vs.SignProposal(chainID, p); err != nil {
 		panic(err)
@@ -240,7 +241,7 @@ func decideProposal(
 
 	proposal.Signature = p.Signature
 
-	return
+	return proposal, block
 }
 
 func addVotes(to *State, votes ...*types.Vote) {

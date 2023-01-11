@@ -111,37 +111,54 @@ In Tendermint BFT, this property is seen, for example, when nodes ignore proposa
 Therefore we formalize the requirements of Tendermint BFT in terms communication primitives that take supersession into account, providing a *best-effort* to deliver all messages but which may not deliver those that have been superseded, and are combined with GST outside of GOSSIP or P2P to ensure eventual progress.
 
 
-> **Superseded communication**    
-> If $m1$ and $m2$ are broadcast by any processes and $m2.\text{SSS}(m1)$, then the delivery of $m1$ is not required.
+> **Communication with Supersession**    
+> * If process $p$ broadcast message $m2$, then $p$ does not broadcast any message $m1$, $m2.\text{SSS}(m1)$.[^todo1]
+> * If $m1$ and $m2$ are broadcast by any processes and $m2.\text{SSS}(m1)$, then the delivery of $m1$ is not required.
 
-> **Note**    
-> A process should not broadcast an already superseded message, so $m1$ must have been broadcast before $m2$.
->> :clipboard: **TODO**: should this be a requirement of GOSSIP?
+[^todo1]: :clipboard: **TODO**: Is this really required? Should this be a requirement of GOSSIP?
 
 To be useful, however, some legitimate effort has to be made to deliver messages.
 
-> **Best-Effort Superseded communication**    
-> If $m1$ and $m2$ are broadcast by any correct processes, $m2.\text{SSS}(m1)$, no other message that supersedes $m2$ is broadcast, and there are no process failures or network partitions, then eventually every correct process delivers at least $m2$.
+> **Best-Effort Communication with Supersession**    
+> * (i) If a correct process $p$ broadcasts some message $m$ at time $t$, $m$ is not superseded, and no failures or network partitions happen after $t$, then eventually every correct process delivers $m$.    
+> * (ii) If a correct process $p$ receives some message $m$ at time $t$, $m$ is not superseded, and no failures or network partitions happen after $t$, then eventually every correct process delivers $m$.    
+
+> **TODO**: Not sure about $t$.
+
+<!-- > **Best-Effort Superseded communication**    
+> If $m1$ and $m2$ are broadcast by any correct processes, $m2.\text{SSS}(m1)$, $m2$ is not superseded, and there are no process failures or network partitions, then eventually every correct process delivers at least $m2$. -->
 
 In order to deliver messages even in the presence of failures, the network must be connected in such a way to allow routing messages around any malicious nodes and to provide redundant paths between correct ones.
 This may not be feasible at all times, but should happen at least during periods in which the system is "stable".
 
 In other words, if at some point in time messages are no longer superseded and GST is reached, then there should be a time interval $\Delta$ such that all messages from correct processes are delivered within $\Delta$ to all other correct processes.
 
-> **Eventual $\Delta$-Timely Superseded communication**: 
+> **Eventual $\Delta$-Timely Communication with Supersession**: 
 > * (i) If a correct process $p$ broadcasts some message $m$ at time $t$ and $m$ is not superseded, then all correct processes will receive $m$ before $\text{max} \{t,\text{GST}\} + \Delta$.    
 > * (ii) If a correct process $p$ receives some message $m$ at time $t$ and $m$ is not superseded, then all correct processes will receive $m$ before $\text{max}\{t,\text{GST}\} + \Delta$.
 
-GST cannot be enforced but simply assumed to show that algorithms can make progress under good conditions.
-In practice, observations of actual systems show that "long" stable periods are frequent and algorithms that depend on GST to progress can use these stable periods to make progress.
+$\Delta$ encapsulates the assumption that, after GST, timeouts eventually do not expire precociously, given that they all can be adjusted to reasonable values and the steps needed to deliver a message can be accomplished within $\Delta$.
+Without precocious timeouts, no superseding votes for Nil are not broadcast, and Best-Effort Communication with Supersession leads to Eventual $\Delta$-Timely Communication with Supersession leads to termination.
 
-It is also assumed that, after GST, eventually timeouts do not expire precociously and therefore superseding votes for Nil are not broadcast, and Best-Effort Superseded communication leads to Eventual $\Delta$-Timely Superseded communication leads to termination.
-
+While GST cannot be enforced but simply assumed to show that algorithms can make progress under good conditions, in practice, systems go through frequent "long" stable periods, which algorithms that depend on GST to progress can use to make progress.
 
 > **TODO**    
 > * Refine based on better definition of supersession.
 > * Include "message is not superseded before max(t,gst)+Delta"?
 > * Consider supersession due to original sender sending a new message or it happening en route?
+> * Show that "best-effort superseded communication" + GST implies "Eventual delta timely superseded communication".
+
+## Conventions
+
+* MUST, SHOULD, MAY...
+* [X-Y-Z-W.C]
+    * X: What
+        * VOC: Vocabulary
+        * DEF: Definition
+        * REQ: Requires
+        * PROV: Provides
+    * Y-Z: Who-to whom
+    * W.C: Identifier.Counter
 
 
 # Part 2: CONS/GOSSIP interaction
@@ -151,17 +168,18 @@ Actions are executed once certain pre-conditions apply, such as timeout expirati
 An action may require communicating with applications and other reactors, for example to gather data to compose a proposal or to deliver decisions, and with the P2P layer, to communicate with other nodes.
 
 ## Northbound Interaction - ABCI
-Although CONS communicates with the Mempool reactor to build tentative proposals, actual proposals are defined by the Applications (see PrepareProposal).
-Hence we ignore other reactors here and refer to the northbound interaction as being only to Applications, which is covered by the [ABCI](../../abci/) specification.
+Although CONS communicates with the Mempool reactor to build tentative proposals, actual proposals are defined by the Applications (see PrepareProposal), and therefore the communication with Mempool can be ignored.
+The same simplification is done with regards to communication with any other reactors.
+Hence, we ignore communication with the Mempool other reactors here and refer to the northbound interaction as being only to Applications, which is covered by the [ABCI](../../abci/) specification.
 
-For details on what CONS poses as requirements to applications, see [ABCI](../../abci/abci%2B%2B_app_requirements.md).
+For details on what CONS poses as requirements to Applications, see [ABCI](../../abci/abci%2B%2B_app_requirements.md).
 
 > **TODO**    
 > Confirm that the following requirements are made to applications:
 > * Timely creation and validation of proposals
 > * Timely processing of decisions
 
-For details on what CONS provides to applications, see [ABCI](../../abci/abci%2B%2B_tmint_expected_behavior.md)
+For details on what CONS provides to Applications, see [ABCI](../../abci/abci%2B%2B_tmint_expected_behavior.md)
 
 > **TODO**    
 > * Confirm that the following is properly captured:
@@ -174,69 +192,61 @@ For details on what CONS provides to applications, see [ABCI](../../abci/abci%2B
 > * How to ensure fairness when validator set changes?
 
 
-## Southbound Interaction
-CONS interacts southbound only with GOSSIP, to broadcast and receive messages of predefined types.
+## Southbound Interaction - GOSSIP-I
+CONS interacts southbound only with GOSSIP, to broadcast messages.
+CONS does not handle specific messages. Instead, it is given conditions to inspect the set of messages already received to check if matches the criteria needed to trigger actions.
+Hence CONS and GOSSIP share a vocabulary of messages sent by CONS and of messages received by GOSSIP.
 
-### GOSSIP-I Vocabulary
-CONS uses GOSSIP to broadcast messages but it is not informed of specific message reception events. 
-Instead, it is called back when the set of messages received, combined with CONS internal state, matches certain criteria.
-Hence CONS and GOSSIP share a vocabulary of messages sent by CONS, of CONS state observed by GOSSIP, and of predicates over sets of messages received by GOSSIP.
-
-
-[CONS-GOSSIP-VOCABULARY]
-
+[VOC-CONS-GOSSIP]    
 * Messages Types
-    * proposal
-    * prevote
-    * precommit
-* bMsgs: set of messages broadcast by CONS
+    * ProposalMessage
+    * Prevote
+    * Precommit
+
+> **TODO**: specify message contents as they are needed to specify SSS, below.
+
+* $\text{bMsgs}$: set of messages broadcast by CONS
+* $\text{dMsgs}$: set of messages delivered by CONS through gossiping.
+
+> **TODO**: should we not specify these shared variables and instead pass predicates to GOSSIP from consensus?
+> Variables make it harder to separate the CONS from GOSSIP, as the the variables are shared, but is highly efficient. Predicates are cleaner, but harder to implement efficiently. For example, when a vote arrives, multiple predicates may have to be tested independently, while with variables the tests may collaborate with each other.
+
+* $\text{SSS}(\_,\_)$: the supersession operator
 
 
-<!-- >
-* CONS state
-    * height[p]: Nat
-    * round[p]: Nat
-    * step[p]: {propose, prevote, precommit}
-    * decision[p]: List
-* GOSSIP state
-    * DMsgs[p]: set of messages delivered
 
-* Predicates
--->
-
-
-> **TODO**    
-> Complete vocabulary.
-
-
+> **TODO**: Is this too "low level"? Should we use english only here?
 
 ### Requires from GOSSIP
 
-[REQ-CONS-GOSSIP-BROADCAST.1]
-There is an API to include messages in $\text{bMsgs}$.
+CONS must be able to broadcast messages.
 
-As per the discussion in [Part I](#part-1-background), CONS requires a **best-effort** in broadcasting messages, allowing GOSSIP to drop messages no longer useful or, in other words, which have been **superseded**.
+**[REQ-CONS-GOSSIP-BROADCAST.1]**    
+$\text{bMsgs}$ is the set of messages broadcast by CONS.
 
-> **Warning**    
-> Since it would be impossible for all the nodes to know immediately when a message is superseded, we use non-superseded as a synonym for "not yet known by the node to have been superseded".
+Conversely, CONS must be able to inspect the set of messages delivered by GOSSIP.
+
+**[REQ-CONS-GOSSIP-DELIVERY.1]**    
+$\text{dMsgs}$ is the set of messages received through gossiping.
+
+As per the discussion in [Part I](#part-1-background), CONS requires a **best-effort** in delivering broadcasting messages.
 
 **[REQ-CONS-GOSSIP-BROADCAST.2]**    
-> **TODO**:  Best effort communication that, if combined with GST, leads to Eventual $\Delta$-Timely Superseded Communication, as defined in [Part I](#part-1-background).
+Best-Effort Superseded Communication is provided.
 
+Best effort implies that non superseded messages are delivered.
+For practical reasons, they cannot be kept in $\text{dMsgs}$ *ad eternum* and me be dropped after after delivery.
+However, CONS requires that non-superseded messages are kept for as long as needed.
 
-Most Tendermint BFT actions are triggered when a set of messages received satisfy some criteria.
-GOSSIP must, therefore, accumulate the messages received that might still be used to satisfy some condition and let CONS reevaluate conditions whenever a new message is received or a timeout expires.
-
-> **Warning**    
-> The paragraph above departs from what was stated in the vocabulary wrt to the application providing predicates for GOSSIP to evaluate and, instead, opens the state of GOSSIP for CONS to evaluate predicates itself. Which of these two approaches will be the used in the end is still to be defined.
-
-**[REQ-CONS-GOSSIP-KEEP_NON_SUPERSEDED]**    
-For any message $m1 \in \text{DMsgs}[p]$ at time $t1$, if there exists a time $t3, t1 \leq t3$, at which $m1 \notin \text{DMsgs}[p]$, then there exists a time $t2, t1 \leq t2 \leq t3$ at which there exists a message $m2 \in \text{DMsgs}[p], m2.\text{SSS}(m1)$
+**[REQ-CONS-GOSSIP-DELIVERY.2]**    
+For any message $m1 \in \text{dMsgs}[p]$ at time $t1$, if there exists a time $t3, t1 \leq t3$, at which $m1 \notin \text{dMsgs}[p]$, then there exists a time $t2, t1 \leq t2 \leq t3$ at which there exists a message $m2 \in \text{DMsgs}[p], m2.\text{SSS}(m1)$
 
 ### Provides to GOSSIP
 
+In order to identify when a message has been superseded, GOSSIP must be provided with a supersession operator.
+
 **[PROV-CONS-GOSSIP-SUPERSESSION.1]**    
-In order to identify when a message has been superseded, CONS must provide GOSSIP with a supersession operator `SSS(lhs,rhs)`, which returns true if and only if $\text{lhs}.\text{SSS}(\text{rhs})$
+`SSS(lhs,rhs)` returns true if and only if $\text{lhs}.\text{SSS}(\text{rhs})$
 
 > :clipboard: **TODO**   
 > * Define supersession for messages in the GOSSIP-I vocabulary.
@@ -244,24 +254,24 @@ In order to identify when a message has been superseded, CONS must provide GOSSI
 
 ## Problem Statement (TODO: better title)
 
-> **TODO**: a big, TODO.
+> **TODO**: a big, TODO. 
 
 Here we show that "Best-Effort Superseded communication" + GST implies "Eventual $\Delta$-Timely Superseded communication", needed by the consensus protocol to make progress. In other words we show that 
 
-[REQ-CONS-GOSSIP-BROADCAST.1] + [REQ-CONS-GOSSIP-BROADCAST.2] + [REQ-CONS-GOSSIP-KEEP_NON_SUPERSEDED] implies "Eventual $\Delta$-Timely Superseded communication"
+[REQ-CONS-GOSSIP-BROADCAST.1] + [REQ-CONS-GOSSIP-BROADCAST.2] + [REQ-CONS-GOSSIP-DELIVERY.1] + [REQ-CONS-GOSSIP-DELIVERY.2] + GST implies "Eventual $\Delta$-Timely Superseded communication"
 
 
 
 # Part III: GOSSIP requirements and provisions 
-GOSSIP, the Consensus Reactor Communication Layer, provides on its northbound interface the facilities for CONS to communicate with other nodes by sending messages and by receiving callbacks when conditions specified in the algorithm are met.
-On its southbound interface, GOSSIP relies on the P2P layer to transfer messages to other nodes.
+GOSSIP, the Consensus Reactor Communication Layer, provides on its northbound interface the facilities for CONS to communicate with other nodes by sending gossiping the messages broadcast by CONS and accumulating the gossiped messages while they have not been superseded.
+On its southbound interface, GOSSIP relies on the P2P layer to implement the gossiping.
 
-## Northbound Interaction
+## Northbound Interaction - GOSSIP-I
 Northbound interaction is performed through GOSSIP-I, whose vocabulary has been already [defined](#gossip-i-vocabulary).
 
 Next we enumerate what is required and provided from the point of view of GOSSIP as a means to detect mismatches between CONS and GOSSIP.
 
-### Requires from CONS - GOSSIP-I
+### Requires from CONS
 Because connections and disconnections may happen continuously and the total membership of the system is not knowable, reliably delivering messages in this scenario would require buffering messages indefinitely, in order to pass them on to any nodes that might be connected in the future.
 Since buffering must be limited, GOSSIP needs to know which messages have been superseded and can be dropped, and that the number of non-superseded messages at any point in time is bounded.
 
@@ -273,17 +283,14 @@ Since buffering must be limited, GOSSIP needs to know which messages have been s
 **[REQ-GOSSIP-CONS-SUPERSESSION.2]**    
 There exists a constant $c \in Int$ such that, at any point in time, for any process $p$, the subset of messages in bMsgs[p] that have not been superseded is smaller than $c$.
 
+> **TODO**:Add permalink to qnt.
+
 > **Note**    
 > Supersession allows dropping messages but does not require it.
 
 
-> **TODO**:Add permalink to qnt.
 
-> **TODO**: Add predicates to evaluate GOSSIP's state or let CONS do it directly?
-
-
-
-### Provides to CONS - GOSSIP-I
+### Provides to CONS
 
 **[PROV-GOSSIP-CONS-BROADCAST.1]**    
 To broadcast a message $m$, process $p$ adds it to the $\text{bMsgs}[p]$ set.
@@ -294,78 +301,57 @@ Observe that the requirements from CONS allows GOSSIP to provide broadcast guara
 > **TODO**: Should match **[REQ-CONS-GOSSIP-BROADCAST.2]**
 
 ## SouthBound Interaction
-Differently from the interaction between GOSSIP and CONS, in which GOSSIP understands CONS messages, P2P is oblivious to the contents of messages it transfers.
-Hence, the P2P-I interface is very simple.
+Differently from the interaction between GOSSIP and CONS, in which GOSSIP understands CONS messages, P2P is oblivious to the contents of messages it transfers, which simplifies the P2P-I interface in terms of message types.
 
 ### P2P-I Vocabulary
 
-[GOSSIP-P2P-VOCABULARY]
-* Peer Management
-    * AddPeer(Proc): Inform of peer connection
-    * RemovePeer(Proc): Inform of peer disconnection
-* Communication
-    * Message
-    * Send(Peer,Message): Send message to Peer
-    * Receive(Peer,Message): Receive message to Peer
-    * MaxConn: Nat - maximum number of connections.
-    * Disconnect(Peer): forces P2P to disconnect from peer
-    * Ignore(Peer): forces P2P to ignore any communication attempts from Peer.
+[VOC-GOSSIP-P2P]
+* nes[p]: sets of current connections of $p$
+* ign[p]: set of processes not to establish connections
+* uMsgs[p][q]: set of messages sent by $p$ to $q \in \text{nes}[p]$ not yet acknowledged as received by $q$.
+* rMsgs[p][q]: set of messages received by $q$ from $p$
+* maxConn[p]: maximum number of connections for $p$
 
 ### Requires from P2P - P2P-I
-P2P must expose functionality to allow 1-1 communication by GOSSIP, for example to implement request/response protocols.
+GOSSIP on a node needs to know to which other nodes it is connected.
+
+**[REQ-GOSSIP-P2P-CONNECTION]**    
+$\text{nes}[p]$ is the set of nodes to which $p$ is currently connected.
+
+> **TODO**: Add permalink
+
+
+P2P must expose functionality to allow 1-1 communication with connected nodes.
 
 **[REQ-GOSSIP-P2P-UNICAST.1]**   
-Ability to address messages to a connected peer.
+Adding message $m$ to $\text{uMsgs}[p][q]$, q \in \text{nes}[p]$, unicasts $m$ from $p$ to $q$.
 
 > **TODO**: Add permalink
 
+Message to nodes that remain connected are reliably delivered.
 
 **[REQ-GOSSIP-P2P-UNICAST.2]**   
-Unicast message is eventually received if the peers remain connected.
+A message added to $\text{uMsgs}[p][q]$ is only removed from $\text{uMsgs}[p][q]$ once it has been added to $\text{rMsgs}[q][p]$ or if q is removed $\text{nes}[p]$.
 
 > **TODO**: Add permalink
 
-**[REQ-GOSSIP-P2P-NEIGHBOR_ID]**    
-Ability to discern sources of messages received.
-
-Moreover, since GOSSIP must provide 1-to-many communication, P2P must provide:
-
 **[REQ-GOSSIP-P2P-CONCURRENT_CONN]**    
-Support for connecting to multiple nodes concurrently, but limited to some maximum value.
+The size of nes[p] should never exceed maxConn[p]
 
-> **TODO**    
-> Is this useful, to state that the set of neighbors could have more than 0 values?
-```scala
-assume _ MaxConn: Nat
-assume _ = Proc.forall(p => size(Ne[p]) >= 0 && size(Ne[p]) <= MaxConn)
-```
-
-**[REQ-GOSSIP-P2P-CHURN-DETECTION]**    
-Support for tracking connections and disconnections from neighbors.
-
-
-**[REQ-GOSSIP-P2P-NON_REFUTABILITY]**     
-Needed for authentication.
+> **TODO**: Add permalink
 
 ### Non-requirements
 - Non-duplication
     - GOSSIP itself can duplicate messages, so the State layer must be able to handle them, for example by ensuring idempotency.
-
-## Problem statement
-
-> **TODO**: a big, TODO.
-
-Here we show that whatever is required from the P2P layer is enough to implement whatever is required by CONS.
-
-
-
-
-
+- Non-refutation
+    - It is assumed that all communication is authenticated at the gossip level.
 
 
 
 
 # Part IV: Closing
+
+> :clipboard: **TODO** Anything else to add?
 
 ## References
 - [1]: https://arxiv.org/abs/1807.0493 "The latest gossip on BFT consensus"

@@ -131,7 +131,10 @@ func LookForRangesWithHeight(conditions []query.Condition) (ranges QueryRanges, 
 	return ranges, indexes, heightRange
 }
 
-// Deprecated: This function will be replaced with LookForRangeWithHeight
+// LookForRanges returns a mapping of QueryRanges and the matching indexes in
+// the provided query conditions.
+//
+// Deprecated: This function will be replaced with LookForRangesWithHeight
 func LookForRanges(conditions []query.Condition) (ranges QueryRanges, indexes []int) {
 	ranges = make(QueryRanges)
 	for i, c := range conditions {

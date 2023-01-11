@@ -199,7 +199,7 @@ You can query for a paginated set of transaction by their events by calling the
 curl "localhost:26657/tx_search?query=\"message.sender='cosmos1...'\"&prove=true"
 ```
 If the conditions are related to transaction events and the user wants to make sure the
-conditions are true within the same events, the `match_event` keyword should be used, 
+conditions are true within the same events, the `match_events` keyword should be used, 
 as described [below](#querying_block_events)
 
 Check out [API docs](https://docs.tendermint.com/v0.34/rpc/#/Info/tx_search)

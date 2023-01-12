@@ -79,7 +79,7 @@ module ConsensusReactor {
     //[REQ-CONS-GOSSIP-DELIVERY.2]
     //TODO: Am I missing an implication here?
 
-    temporal RCGKeepNonSSD = {
+    temporal RCGDelivery2 = {
         Procs.forall(p => 
             dMsgs.get(p).forall(m => 
                 always (
@@ -107,7 +107,7 @@ module ConsensusReactor {
     pure def nonSSDMsgs(msgs): (Set[CONSMessage]) => Set[CONSMessage] = 
         msgs.filter(m => not(isSSDInSet(msgs, m)))
 
-    temporal RGCS = {
+    temporal RGCSupersession2 = {
         Int.exists(c => 
             Procs.forall(p =>
                 always (
@@ -172,7 +172,7 @@ module ConsensusReactor {
     // Provided by the [DEF-UNICAST]
 
     //[REQ-GOSSIP-P2P-UNICAST.2]
-    temporal RGRU2 = {
+    temporal RGPUnicast2 = {
         Procs.forall(p => 
             nes.get(p).forall(q => 
                 uMsgs.get(p).forall(m =>
@@ -195,12 +195,22 @@ module ConsensusReactor {
     action addPeer(p,q): (Proc,Proc) => bool = all {
         q.notin(nes.get(p)),
         size(nes.get(p)) < maxConn.get(p),
-        nes' = nes.set(p, (nes.get(p).union(Set(q))))
+        nes' = nes.set(p, (nes.get(p).union(Set(q)))),
+        size(nes'.get(p)) < maxConn.get(p)
     }
 
     action removePeer(p,q): (Proc,Proc) => bool = all {
         q.notin(nes.get(p)),
         nes' = nes.set(p, nes.get(p).exclude(Set(q)))
+    }
+
+    //[REQ-GOSSIP-P2P-IGNORING]
+    temporal RGPIgnoring = always {
+        Procs.forall(p => 
+            igs.get(p).forall(q => 
+                q.notin(nes.get(p))
+            )
+        )
     }
 
 //GOSSIP internals
@@ -238,6 +248,6 @@ module ConsensusReactor {
 */
 
 //===== Anything below this line actually belongs to the implementation.qnt and will be moved
-//===== there once I learn how to import one module into the other.
+//===== there once I learn how modularize quint specs.
 
 

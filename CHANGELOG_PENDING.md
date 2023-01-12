@@ -57,3 +57,13 @@ Friendly reminder, we have a [bug bounty program](https://hackerone.com/tendermi
 - [docker] \#9073 enable cross platform build using docker buildx
 - [docker] \#9462 ensure Docker image uses consistent version of Go
 - [blocksync] \#9518 handle the case when the sending queue is full: retry block request after a timeout
+- [p2p] \#9500 prevent peers who have errored being added to the peer_set (@jmalicevic)
+
+
+## v0.37.1
+
+
+### BUG FIXES
+
+- [p2p] \#9500 prevent peers who have errored being added to the peer_set (@jmalicevic)
+

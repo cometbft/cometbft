@@ -8,10 +8,10 @@ import (
 
 	cstypes "github.com/tendermint/tendermint/consensus/types"
 	"github.com/tendermint/tendermint/libs/bits"
-	tmmath "github.com/tendermint/tendermint/libs/math"
+	cmtmath "github.com/tendermint/tendermint/libs/math"
 	"github.com/tendermint/tendermint/p2p"
 	tmcons "github.com/tendermint/tendermint/proto/tendermint/consensus"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/types"
 )
 
@@ -126,7 +126,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 
 	switch msg := p.(type) {
 	case *tmcons.NewRoundStep:
-		rs, err := tmmath.SafeConvertUint8(int64(msg.Step))
+		rs, err := cmtmath.SafeConvertUint8(int64(msg.Step))
 		// deny message based on possible overflow
 		if err != nil {
 			return nil, fmt.Errorf("denying message due to possible overflow: %w", err)
@@ -242,7 +242,7 @@ func WALToProto(msg WALMessage) (*tmcons.WALMessage, error) {
 	case types.EventDataRoundState:
 		pb = tmcons.WALMessage{
 			Sum: &tmcons.WALMessage_EventDataRoundState{
-				EventDataRoundState: &tmproto.EventDataRoundState{
+				EventDataRoundState: &cmtproto.EventDataRoundState{
 					Height: msg.Height,
 					Round:  msg.Round,
 					Step:   msg.Step,
@@ -321,7 +321,7 @@ func WALFromProto(msg *tmcons.WALMessage) (WALMessage, error) {
 		}
 
 	case *tmcons.WALMessage_TimeoutInfo:
-		tis, err := tmmath.SafeConvertUint8(int64(msg.TimeoutInfo.Step))
+		tis, err := cmtmath.SafeConvertUint8(int64(msg.TimeoutInfo.Step))
 		// deny message based on possible overflow
 		if err != nil {
 			return nil, fmt.Errorf("denying message due to possible overflow: %w", err)

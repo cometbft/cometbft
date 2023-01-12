@@ -3,7 +3,7 @@ package timer
 import (
 	"time"
 
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 )
 
 /*
@@ -18,7 +18,7 @@ type ThrottleTimer struct {
 	quit chan struct{}
 	dur  time.Duration
 
-	mtx   tmsync.Mutex
+	mtx   cmtsync.Mutex
 	timer *time.Timer
 	isSet bool
 }

@@ -12,21 +12,21 @@ import (
 
 	"github.com/tendermint/tendermint/crypto/merkle"
 	"github.com/tendermint/tendermint/libs/bits"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
 	"github.com/tendermint/tendermint/p2p"
 	tmcons "github.com/tendermint/tendermint/proto/tendermint/consensus"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/types"
 )
 
 func TestMsgToProto(t *testing.T) {
 	psh := types.PartSetHeader{
 		Total: 1,
-		Hash:  tmrand.Bytes(32),
+		Hash:  cmtrand.Bytes(32),
 	}
 	pbPsh := psh.ToProto()
 	bi := types.BlockID{
-		Hash:          tmrand.Bytes(32),
+		Hash:          cmtrand.Bytes(32),
 		PartSetHeader: psh,
 	}
 	pbBi := bi.ToProto()
@@ -39,7 +39,7 @@ func TestMsgToProto(t *testing.T) {
 		Proof: merkle.Proof{
 			Total:    1,
 			Index:    1,
-			LeafHash: tmrand.Bytes(32),
+			LeafHash: cmtrand.Bytes(32),
 			Aunts:    [][]byte{},
 		},
 	}
@@ -47,13 +47,13 @@ func TestMsgToProto(t *testing.T) {
 	require.NoError(t, err)
 
 	proposal := types.Proposal{
-		Type:      tmproto.ProposalType,
+		Type:      cmtproto.ProposalType,
 		Height:    1,
 		Round:     1,
 		POLRound:  1,
 		BlockID:   bi,
 		Timestamp: time.Now(),
-		Signature: tmrand.Bytes(20),
+		Signature: cmtrand.Bytes(20),
 	}
 	pbProposal := proposal.ToProto()
 
@@ -201,7 +201,7 @@ func TestWALMsgProto(t *testing.T) {
 		Proof: merkle.Proof{
 			Total:    1,
 			Index:    1,
-			LeafHash: tmrand.Bytes(32),
+			LeafHash: cmtrand.Bytes(32),
 			Aunts:    [][]byte{},
 		},
 	}
@@ -220,7 +220,7 @@ func TestWALMsgProto(t *testing.T) {
 			Step:   "ronies",
 		}, &tmcons.WALMessage{
 			Sum: &tmcons.WALMessage_EventDataRoundState{
-				EventDataRoundState: &tmproto.EventDataRoundState{
+				EventDataRoundState: &cmtproto.EventDataRoundState{
 					Height: 2,
 					Round:  1,
 					Step:   "ronies",
@@ -329,7 +329,7 @@ func TestConsMsgsVectors(t *testing.T) {
 	require.NoError(t, err)
 
 	proposal := types.Proposal{
-		Type:      tmproto.ProposalType,
+		Type:      cmtproto.ProposalType,
 		Height:    1,
 		Round:     1,
 		POLRound:  1,
@@ -345,7 +345,7 @@ func TestConsMsgsVectors(t *testing.T) {
 		Height:           1,
 		Round:            0,
 		Timestamp:        date,
-		Type:             tmproto.PrecommitType,
+		Type:             cmtproto.PrecommitType,
 		BlockID:          bi,
 	}
 	vpb := v.ToProto()
@@ -385,17 +385,17 @@ func TestConsMsgsVectors(t *testing.T) {
 			Vote: &tmcons.Vote{Vote: vpb}}},
 			"32700a6e0802100122480a206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d1224080112206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d2a0608c0b89fdc0532146164645f6d6f72655f6578636c616d6174696f6e3801"},
 		{"HasVote", &tmcons.Message{Sum: &tmcons.Message_HasVote{
-			HasVote: &tmcons.HasVote{Height: 1, Round: 1, Type: tmproto.PrevoteType, Index: 1}}},
+			HasVote: &tmcons.HasVote{Height: 1, Round: 1, Type: cmtproto.PrevoteType, Index: 1}}},
 			"3a080801100118012001"},
 		{"HasVote", &tmcons.Message{Sum: &tmcons.Message_HasVote{
 			HasVote: &tmcons.HasVote{Height: math.MaxInt64, Round: math.MaxInt32,
-				Type: tmproto.PrevoteType, Index: math.MaxInt32}}},
+				Type: cmtproto.PrevoteType, Index: math.MaxInt32}}},
 			"3a1808ffffffffffffffff7f10ffffffff07180120ffffffff07"},
 		{"VoteSetMaj23", &tmcons.Message{Sum: &tmcons.Message_VoteSetMaj23{
-			VoteSetMaj23: &tmcons.VoteSetMaj23{Height: 1, Round: 1, Type: tmproto.PrevoteType, BlockID: pbBi}}},
+			VoteSetMaj23: &tmcons.VoteSetMaj23{Height: 1, Round: 1, Type: cmtproto.PrevoteType, BlockID: pbBi}}},
 			"425008011001180122480a206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d1224080112206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d"},
 		{"VoteSetBits", &tmcons.Message{Sum: &tmcons.Message_VoteSetBits{
-			VoteSetBits: &tmcons.VoteSetBits{Height: 1, Round: 1, Type: tmproto.PrevoteType, BlockID: pbBi, Votes: *pbBits}}},
+			VoteSetBits: &tmcons.VoteSetBits{Height: 1, Round: 1, Type: cmtproto.PrevoteType, BlockID: pbBi, Votes: *pbBits}}},
 			"4a5708011001180122480a206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d1224080112206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d2a050801120100"},
 	}
 

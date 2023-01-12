@@ -8,11 +8,11 @@ import (
 
 	"github.com/tendermint/tendermint/crypto/merkle"
 	"github.com/tendermint/tendermint/libs/bits"
-	tmbytes "github.com/tendermint/tendermint/libs/bytes"
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtbytes "github.com/tendermint/tendermint/libs/bytes"
+	cmtjson "github.com/tendermint/tendermint/libs/json"
+	cmtmath "github.com/tendermint/tendermint/libs/math"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 var (
@@ -21,9 +21,9 @@ var (
 )
 
 type Part struct {
-	Index uint32           `json:"index"`
-	Bytes tmbytes.HexBytes `json:"bytes"`
-	Proof merkle.Proof     `json:"proof"`
+	Index uint32            `json:"index"`
+	Bytes cmtbytes.HexBytes `json:"bytes"`
+	Proof merkle.Proof      `json:"proof"`
 }
 
 // ValidateBasic performs basic validation.
@@ -53,16 +53,16 @@ func (part *Part) StringIndented(indent string) string {
 %s  Proof: %v
 %s}`,
 		part.Index,
-		indent, tmbytes.Fingerprint(part.Bytes),
+		indent, cmtbytes.Fingerprint(part.Bytes),
 		indent, part.Proof.StringIndented(indent+"  "),
 		indent)
 }
 
-func (part *Part) ToProto() (*tmproto.Part, error) {
+func (part *Part) ToProto() (*cmtproto.Part, error) {
 	if part == nil {
 		return nil, errors.New("nil part")
 	}
-	pb := new(tmproto.Part)
+	pb := new(cmtproto.Part)
 	proof := part.Proof.ToProto()
 
 	pb.Index = part.Index
@@ -72,7 +72,7 @@ func (part *Part) ToProto() (*tmproto.Part, error) {
 	return pb, nil
 }
 
-func PartFromProto(pb *tmproto.Part) (*Part, error) {
+func PartFromProto(pb *cmtproto.Part) (*Part, error) {
 	if pb == nil {
 		return nil, errors.New("nil part")
 	}
@@ -92,8 +92,8 @@ func PartFromProto(pb *tmproto.Part) (*Part, error) {
 //-------------------------------------
 
 type PartSetHeader struct {
-	Total uint32           `json:"total"`
-	Hash  tmbytes.HexBytes `json:"hash"`
+	Total uint32            `json:"total"`
+	Hash  cmtbytes.HexBytes `json:"hash"`
 }
 
 // String returns a string representation of PartSetHeader.
@@ -101,7 +101,7 @@ type PartSetHeader struct {
 // 1. total number of parts
 // 2. first 6 bytes of the hash
 func (psh PartSetHeader) String() string {
-	return fmt.Sprintf("%v:%X", psh.Total, tmbytes.Fingerprint(psh.Hash))
+	return fmt.Sprintf("%v:%X", psh.Total, cmtbytes.Fingerprint(psh.Hash))
 }
 
 func (psh PartSetHeader) IsZero() bool {
@@ -122,19 +122,19 @@ func (psh PartSetHeader) ValidateBasic() error {
 }
 
 // ToProto converts PartSetHeader to protobuf
-func (psh *PartSetHeader) ToProto() tmproto.PartSetHeader {
+func (psh *PartSetHeader) ToProto() cmtproto.PartSetHeader {
 	if psh == nil {
-		return tmproto.PartSetHeader{}
+		return cmtproto.PartSetHeader{}
 	}
 
-	return tmproto.PartSetHeader{
+	return cmtproto.PartSetHeader{
 		Total: psh.Total,
 		Hash:  psh.Hash,
 	}
 }
 
 // FromProto sets a protobuf PartSetHeader to the given pointer
-func PartSetHeaderFromProto(ppsh *tmproto.PartSetHeader) (*PartSetHeader, error) {
+func PartSetHeaderFromProto(ppsh *cmtproto.PartSetHeader) (*PartSetHeader, error) {
 	if ppsh == nil {
 		return nil, errors.New("nil PartSetHeader")
 	}
@@ -151,7 +151,7 @@ type PartSet struct {
 	total uint32
 	hash  []byte
 
-	mtx           tmsync.Mutex
+	mtx           cmtsync.Mutex
 	parts         []*Part
 	partsBitArray *bits.BitArray
 	count         uint32
@@ -172,7 +172,7 @@ func NewPartSetFromData(data []byte, partSize uint32) *PartSet {
 	for i := uint32(0); i < total; i++ {
 		part := &Part{
 			Index: i,
-			Bytes: data[i*partSize : tmmath.MinInt(len(data), int((i+1)*partSize))],
+			Bytes: data[i*partSize : cmtmath.MinInt(len(data), int((i+1)*partSize))],
 		}
 		parts[i] = part
 		partsBytes[i] = part.Bytes
@@ -365,7 +365,7 @@ func (ps *PartSet) MarshalJSON() ([]byte, error) {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 
-	return tmjson.Marshal(struct {
+	return cmtjson.Marshal(struct {
 		CountTotal    string         `json:"count/total"`
 		PartsBitArray *bits.BitArray `json:"parts_bit_array"`
 	}{

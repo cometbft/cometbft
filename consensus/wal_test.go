@@ -18,7 +18,7 @@ import (
 	"github.com/tendermint/tendermint/libs/autofile"
 	"github.com/tendermint/tendermint/libs/log"
 	tmtypes "github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	cmttime "github.com/tendermint/tendermint/types/time"
 )
 
 const (
@@ -81,7 +81,7 @@ func TestWALTruncate(t *testing.T) {
 }
 
 func TestWALEncoderDecoder(t *testing.T) {
-	now := tmtime.Now()
+	now := cmttime.Now()
 	msgs := []TimedWALMessage{
 		{Time: now, Msg: EndHeightMessage{0}},
 		{Time: now, Msg: timeoutInfo{Duration: time.Second, Height: 1, Round: 1, Step: types.RoundStepPropose}},

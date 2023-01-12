@@ -61,5 +61,5 @@ Friendly reminder, we have a [bug bounty program](https://hackerone.com/tendermi
 
 ### BUG FIXES
 - [state/kvindexer] \#77 Fixed the default behaviour of the kvindexer to index and query attributes by events in which they occur. In 0.34.25 this was mitigated by a separated RPC flag.  (@jmalicevic)
-
+- [p2p] \#9500 prevent peers who have errored being added to the peer_set (@jmalicevic)
 

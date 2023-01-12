@@ -5,32 +5,49 @@ For example, the `enterPropose` function, explained further ahead, creates and b
 We will note CONS and GOSSIP behavior, according to our understanding, in the discussions below.
 
 
-
 ## [VOC-CONS-GOSSIP]
-`ProposalMessage` embeds a [`Proposal`](./files.go/#proposal), so we refer to both simply as `ProposalMessage`.
+
+* `ProposalMessage` carries a CometBFT proposal. Type `ProposalMessage` simply embeds a [`Proposal`](./files.go/#proposal) so we refer to both as `ProposalMessage`.
 
 
+## Broadcast and delivery.
 
-## [REQ-CONS-GOSSIP-BROADCAST.1]
+Different messages are broadcast in different situations and need to be analyzed individually with respect to how this property is provided.
+
+Observe that both `receiveRoutine` and `gossipDataRoutine` run on their own go routines and, therefore, concurrently to each other and other parts of the code.
 
 ### ProposalMessage
 `ProposalMessage` broadcast is triggered by `enterPropose` upon different conditions.
+Either way, the following ensues:
 
-- `enterPropose` calls `decidePropose=defaultDecideProposal` to
-    - create a `ProposalMessage`
-    - create a `ProposalPartMessage`s (GOSSIP)
-    - call `sendInternalMessage` to
-        - publish `ProposalMessage` to `internalQueue`
-        - publish `ProposalPartMessage` to `internalMsgQueue`
-- `enterPropose` calls `newStep` to
-    - publish `RoundStateEvent` on eventBus (general purpose)
-    - publish `EventNewRoundStep` on eventSwitch (internal communication between CONS and GOSSIP)
+1. `enterPropose` calls `decidePropose (defaultDecideProposal)` to
+    1. create a `ProposalMessage` (CONS)
+    2. create `ProposalPartMessage`s (GOSSIP)
+    3. call `sendInternalMessage` to (GOSSIP-I)
+        1. publish `ProposalMessage` to `internalQueue`
+        2. publish `ProposalPartMessage` to `internalMsgQueue`
+2. `enterPropose` calls `newStep` to
+    1. publish `RoundStateEvent` on eventBus (general purpose)
+    2. publish `EventNewRoundStep` on eventSwitch (internal communication between CONS and GOSSIP)
 
-`receiveRoutine` runs concurrently to proposals, poling messages from the `internalMsgQueue` and passing to `handleMessage`. `handleMessage` passes proposals to `setProposal=defaultSetProposal`to 
-    - store the message in `state.Proposal`
-    - create a set of block parts `state.ProposalBlockParts` corresponding to the proposal.
+3. Concurrently, `receiveRoutine` pols messages from the `internalMsgQueue` and passes to `handleMessage` which
+    1. if message is of type `ProposalMessage`, passes it to `setProposal (defaultSetProposal)`to 
+        1. store the message in `state.Proposal`
+        2. create a set of block parts `state.ProposalBlockParts` corresponding to the proposal.
+    2. if message is of type `ProposalPartMessage`
+        1. calls `addProposalBlockPart` to accumulates block parts for corresponding proposal
+        2. if all parts for a message have been accumulated, call `handleCompleteProposal`, meaning that the `ProposalMessage` is delivered.
 
-`gossipDataRoutine` runs concurrently to proposals, processing messages receive. 
+4. Concurrently, `gossipDataRoutine` sends messages to connected peers.
+    1. If a `ProposalMessage`, 
+
+* [REQ-CONS-GOSSIP-BROADCAST.1.1]: 1.3.1 + 1.3.1 imply that the broadcast of a `ProposalMessage` is performed at least locally.
+* [REQ-CONS-GOSSIP-DELIVERY.1.1]: [REQ-CONS-GOSSIP-BROADCAST.1.1] + 3.1 + 3.2 imply that the broadcast of a `ProposalMessage` implies that it is delivered locally, if the process is correct.
+* [REQ-CONS-GOSSIP-BROADCAST.1.2]: [REQ-CONS-GOSSIP-DELIVERY.1.1] + 4 implies that the broadcast of a `ProposalMessage` will send the message to all neighbors, as long as the `ProposalMessage` is not superseded.
+
+
+* [REQ-CONS-GOSSIP-BROADCAST.1]: Implied by [REQ-CONS-GOSSIP-BROADCAST.1.1] + [REQ-CONS-GOSSIP-BROADCAST.1.2]
+* [REQ-CONS-GOSSIP-DELIVERY.1]: Implied by [REQ-CONS-GOSSIP-DELIVERY.1.1] + [REQ-CONS-GOSSIP-DELIVERY.1.2]
 
 
 

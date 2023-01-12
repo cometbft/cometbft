@@ -3,7 +3,6 @@ package state
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -321,8 +320,11 @@ func (blockExec *BlockExecutor) VerifyVoteExtension(ctx context.Context, vote *t
 		panic(fmt.Errorf("VerifyVoteExtension call failed: %w", err))
 	}
 
+	if resp.IsStatusUnknown() {
+		panic(fmt.Sprintf("VerifyVoteExtension responded with status %s", resp.Status.String()))
+	}
 	if !resp.IsAccepted() {
-		return errors.New("invalid vote extension")
+		return types.ErrInvalidVoteExtension
 	}
 
 	return nil

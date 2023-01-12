@@ -2043,6 +2043,8 @@ func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 			return added, err
 		} else if errors.Is(err, types.ErrVoteNonDeterministicSignature) {
 			cs.Logger.Debug("vote has non-deterministic signature", "err", err)
+		} else if errors.Is(err, types.ErrInvalidVoteExtension) {
+			cs.Logger.Debug("vote has invalid extension")
 		} else {
 			// Either
 			// 1) bad peer OR

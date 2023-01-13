@@ -76,7 +76,7 @@ Sometimes it's necessary to rename libraries to avoid naming collisions or ambig
 * Use [goimports](https://godoc.org/golang.org/x/tools/cmd/goimports)
 * Separate imports into blocks - one for the standard lib, one for external libs and one for application libs.
 * Here are some common library labels for consistency:
-    * dbm "github.com/tendermint/tm-db"
+    * dbm "github.com/cometbft/cometbft-db"
     * cmtcmd "github.com/tendermint/tendermint/cmd/tendermint/commands"
     * cmtcfg "github.com/tendermint/tendermint/config/tendermint"
     * cmttypes "github.com/tendermint/tendermint/types"

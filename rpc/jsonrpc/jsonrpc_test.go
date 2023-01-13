@@ -16,9 +16,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	tmbytes "github.com/tendermint/tendermint/libs/bytes"
+	cmtbytes "github.com/tendermint/tendermint/libs/bytes"
 	"github.com/tendermint/tendermint/libs/log"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
 
 	client "github.com/tendermint/tendermint/rpc/jsonrpc/client"
 	server "github.com/tendermint/tendermint/rpc/jsonrpc/server"
@@ -54,7 +54,7 @@ type ResultEchoBytes struct {
 }
 
 type ResultEchoDataBytes struct {
-	Value tmbytes.HexBytes `json:"value"`
+	Value cmtbytes.HexBytes `json:"value"`
 }
 
 // Define some routes
@@ -82,7 +82,7 @@ func EchoBytesResult(ctx *types.Context, v []byte) (*ResultEchoBytes, error) {
 	return &ResultEchoBytes{v}, nil
 }
 
-func EchoDataBytesResult(ctx *types.Context, v tmbytes.HexBytes) (*ResultEchoDataBytes, error) {
+func EchoDataBytesResult(ctx *types.Context, v cmtbytes.HexBytes) (*ResultEchoDataBytes, error) {
 	return &ResultEchoDataBytes{v}, nil
 }
 
@@ -188,7 +188,7 @@ func echoBytesViaHTTP(cl client.Caller, bytes []byte) ([]byte, error) {
 	return result.Value, nil
 }
 
-func echoDataBytesViaHTTP(cl client.Caller, bytes tmbytes.HexBytes) (tmbytes.HexBytes, error) {
+func echoDataBytesViaHTTP(cl client.Caller, bytes cmtbytes.HexBytes) (cmtbytes.HexBytes, error) {
 	params := map[string]interface{}{
 		"arg": bytes,
 	}
@@ -210,12 +210,12 @@ func testWithHTTPClient(t *testing.T, cl client.HTTPClient) {
 	require.Nil(t, err)
 	assert.Equal(t, got2, val2)
 
-	val3 := tmbytes.HexBytes(randBytes(t))
+	val3 := cmtbytes.HexBytes(randBytes(t))
 	got3, err := echoDataBytesViaHTTP(cl, val3)
 	require.Nil(t, err)
 	assert.Equal(t, got3, val3)
 
-	val4 := tmrand.Intn(10000)
+	val4 := cmtrand.Intn(10000)
 	got4, err := echoIntViaHTTP(cl, val4)
 	require.Nil(t, err)
 	assert.Equal(t, got4, val4)
@@ -400,7 +400,7 @@ func TestWSClientPingPong(t *testing.T) {
 }
 
 func randBytes(t *testing.T) []byte {
-	n := tmrand.Intn(10) + 2
+	n := cmtrand.Intn(10) + 2
 	buf := make([]byte, n)
 	_, err := crand.Read(buf)
 	require.Nil(t, err)

@@ -8,8 +8,8 @@ import (
 
 	"github.com/tendermint/tendermint/crypto/merkle"
 	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmbytes "github.com/tendermint/tendermint/libs/bytes"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtbytes "github.com/tendermint/tendermint/libs/bytes"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 // TxKeySize is the size of the transaction key index
@@ -126,7 +126,7 @@ func (txs Txs) ToSliceOfBytes() [][]byte {
 
 // TxProof represents a Merkle proof of the presence of a transaction in the Merkle tree.
 type TxProof struct {
-	RootHash tmbytes.HexBytes `json:"root_hash"`
+	RootHash cmtbytes.HexBytes `json:"root_hash"`
 	Data     Tx               `json:"data"`
 	Proof    merkle.Proof     `json:"proof"`
 }
@@ -155,11 +155,11 @@ func (tp TxProof) Validate(dataHash []byte) error {
 	return nil
 }
 
-func (tp TxProof) ToProto() tmproto.TxProof {
+func (tp TxProof) ToProto() cmtproto.TxProof {
 
 	pbProof := tp.Proof.ToProto()
 
-	pbtp := tmproto.TxProof{
+	pbtp := cmtproto.TxProof{
 		RootHash: tp.RootHash,
 		Data:     tp.Data,
 		Proof:    pbProof,
@@ -167,7 +167,7 @@ func (tp TxProof) ToProto() tmproto.TxProof {
 
 	return pbtp
 }
-func TxProofFromProto(pb tmproto.TxProof) (TxProof, error) {
+func TxProofFromProto(pb cmtproto.TxProof) (TxProof, error) {
 
 	pbProof, err := merkle.ProofFromProto(pb.Proof)
 	if err != nil {
@@ -183,7 +183,7 @@ func TxProofFromProto(pb tmproto.TxProof) (TxProof, error) {
 	return pbtp, nil
 }
 
-// ComputeProtoSizeForTxs wraps the transactions in tmproto.Data{} and calculates the size.
+// ComputeProtoSizeForTxs wraps the transactions in cmtproto.Data{} and calculates the size.
 // https://developers.google.com/protocol-buffers/docs/encoding
 func ComputeProtoSizeForTxs(txs []Tx) int64 {
 	data := Data{Txs: txs}

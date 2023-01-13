@@ -13,10 +13,10 @@ import (
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/tmhash"
 	"github.com/tendermint/tendermint/internal/test"
-	tmjson "github.com/tendermint/tendermint/libs/json"
+	cmtjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tendermint/privval"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtversion "github.com/tendermint/tendermint/proto/tendermint/version"
 	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
 	"github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tendermint/version"
@@ -166,7 +166,7 @@ func generateLightClientAttackEvidence(
 
 	// create a commit for the forged header
 	blockID := makeBlockID(header.Hash(), 1000, []byte("partshash"))
-	voteSet := types.NewVoteSet(chainID, forgedHeight, 0, tmproto.SignedMsgType(2), conflictingVals)
+	voteSet := types.NewVoteSet(chainID, forgedHeight, 0, cmtproto.SignedMsgType(2), conflictingVals)
 	commit, err := test.MakeCommitFromVoteSet(blockID, voteSet, pv, forgedTime)
 	if err != nil {
 		return nil, err
@@ -239,7 +239,7 @@ func readPrivKey(keyFilePath string) (crypto.PrivKey, error) {
 		return nil, err
 	}
 	pvKey := privval.FilePVKey{}
-	err = tmjson.Unmarshal(keyJSONBytes, &pvKey)
+	err = cmtjson.Unmarshal(keyJSONBytes, &pvKey)
 	if err != nil {
 		return nil, fmt.Errorf("error reading PrivValidator key from %v: %w", keyFilePath, err)
 	}
@@ -249,7 +249,7 @@ func readPrivKey(keyFilePath string) (crypto.PrivKey, error) {
 
 func makeHeaderRandom(chainID string, height int64) *types.Header {
 	return &types.Header{
-		Version:            tmversion.Consensus{Block: version.BlockProtocol, App: 1},
+		Version:            cmtversion.Consensus{Block: version.BlockProtocol, App: 1},
 		ChainID:            chainID,
 		Height:             height,
 		Time:               time.Now(),

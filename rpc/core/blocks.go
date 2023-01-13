@@ -6,8 +6,8 @@ import (
 	"sort"
 
 	"github.com/tendermint/tendermint/libs/bytes"
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	tmquery "github.com/tendermint/tendermint/libs/pubsub/query"
+	cmtmath "github.com/tendermint/tendermint/libs/math"
+	cmtquery "github.com/tendermint/tendermint/libs/pubsub/query"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	rpctypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
 	blockidxnull "github.com/tendermint/tendermint/state/indexer/block/null"
@@ -62,14 +62,14 @@ func filterMinMax(base, height, min, max, limit int64) (int64, int64, error) {
 	}
 
 	// limit max to the height
-	max = tmmath.MinInt64(height, max)
+	max = cmtmath.MinInt64(height, max)
 
 	// limit min to the base
-	min = tmmath.MaxInt64(base, min)
+	min = cmtmath.MaxInt64(base, min)
 
 	// limit min to within `limit` of max
 	// so the total number of blocks returned will be `limit`
-	min = tmmath.MaxInt64(min, max-limit+1)
+	min = cmtmath.MaxInt64(min, max-limit+1)
 
 	if min > max {
 		return min, max, fmt.Errorf("min height %d can't be greater than max height %d", min, max)
@@ -206,7 +206,7 @@ func BlockSearch(
 		return nil, errors.New("block indexing is disabled")
 	}
 
-	q, err := tmquery.New(query)
+	q, err := cmtquery.New(query)
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +238,7 @@ func BlockSearch(
 	}
 
 	skipCount := validateSkipCount(page, perPage)
-	pageSize := tmmath.MinInt(perPage, totalCount-skipCount)
+	pageSize := cmtmath.MinInt(perPage, totalCount-skipCount)
 
 	apiResults := make([]*ctypes.ResultBlock, 0, pageSize)
 	for i := skipCount; i < skipCount+pageSize; i++ {

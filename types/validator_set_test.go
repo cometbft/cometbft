@@ -15,9 +15,9 @@ import (
 
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtmath "github.com/tendermint/tendermint/libs/math"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 func TestValidatorSetBasic(t *testing.T) {
@@ -351,10 +351,10 @@ func TestProposerSelection3(t *testing.T) {
 
 		// times is usually 1
 		times := int32(1)
-		mod := (tmrand.Int() % 5) + 1
-		if tmrand.Int()%mod > 0 {
+		mod := (cmtrand.Int() % 5) + 1
+		if cmtrand.Int()%mod > 0 {
 			// sometimes its up to 5
-			times = (tmrand.Int31() % 4) + 1
+			times = (cmtrand.Int31() % 4) + 1
 		}
 		vset.IncrementProposerPriority(times)
 
@@ -368,15 +368,15 @@ func newValidator(address []byte, power int64) *Validator {
 
 func randPubKey() crypto.PubKey {
 	pubKey := make(ed25519.PubKey, ed25519.PubKeySize)
-	copy(pubKey, tmrand.Bytes(32))
-	return ed25519.PubKey(tmrand.Bytes(32))
+	copy(pubKey, cmtrand.Bytes(32))
+	return ed25519.PubKey(cmtrand.Bytes(32))
 }
 
 func randValidator(totalVotingPower int64) *Validator {
 	// this modulo limits the ProposerPriority/VotingPower to stay in the
 	// bounds of MaxTotalVotingPower minus the already existing voting power:
-	val := NewValidator(randPubKey(), int64(tmrand.Uint64()%uint64(MaxTotalVotingPower-totalVotingPower)))
-	val.ProposerPriority = tmrand.Int64() % (MaxTotalVotingPower - totalVotingPower)
+	val := NewValidator(randPubKey(), int64(cmtrand.Uint64()%uint64(MaxTotalVotingPower-totalVotingPower)))
+	val.ProposerPriority = cmtrand.Int64() % (MaxTotalVotingPower - totalVotingPower)
 	return val
 }
 
@@ -405,7 +405,7 @@ func (vals *ValidatorSet) toBytes() []byte {
 }
 
 func (vals *ValidatorSet) fromBytes(b []byte) *ValidatorSet {
-	pbvs := new(tmproto.ValidatorSet)
+	pbvs := new(cmtproto.ValidatorSet)
 	err := pbvs.Unmarshal(b)
 	if err != nil {
 		// DATA HAS BEEN CORRUPTED OR THE SPEC HAS CHANGED
@@ -750,7 +750,7 @@ func TestValidatorSet_VerifyCommit_CheckAllSignatures(t *testing.T) {
 		blockID = makeBlockIDRandom()
 	)
 
-	voteSet, valSet, vals := randVoteSet(h, 0, tmproto.PrecommitType, 4, 10)
+	voteSet, valSet, vals := randVoteSet(h, 0, cmtproto.PrecommitType, 4, 10)
 	commit, err := MakeCommit(blockID, h, 0, voteSet, vals, time.Now())
 	require.NoError(t, err)
 
@@ -775,7 +775,7 @@ func TestValidatorSet_VerifyCommitLight_ReturnsAsSoonAsMajorityOfVotingPowerSign
 		blockID = makeBlockIDRandom()
 	)
 
-	voteSet, valSet, vals := randVoteSet(h, 0, tmproto.PrecommitType, 4, 10)
+	voteSet, valSet, vals := randVoteSet(h, 0, cmtproto.PrecommitType, 4, 10)
 	commit, err := MakeCommit(blockID, h, 0, voteSet, vals, time.Now())
 	require.NoError(t, err)
 
@@ -798,7 +798,7 @@ func TestValidatorSet_VerifyCommitLightTrusting_ReturnsAsSoonAsTrustLevelOfVotin
 		blockID = makeBlockIDRandom()
 	)
 
-	voteSet, valSet, vals := randVoteSet(h, 0, tmproto.PrecommitType, 4, 10)
+	voteSet, valSet, vals := randVoteSet(h, 0, cmtproto.PrecommitType, 4, 10)
 	commit, err := MakeCommit(blockID, h, 0, voteSet, vals, time.Now())
 	require.NoError(t, err)
 
@@ -810,7 +810,7 @@ func TestValidatorSet_VerifyCommitLightTrusting_ReturnsAsSoonAsTrustLevelOfVotin
 	vote.Signature = v.Signature
 	commit.Signatures[2] = vote.CommitSig()
 
-	err = valSet.VerifyCommitLightTrusting(chainID, commit, tmmath.Fraction{Numerator: 1, Denominator: 3})
+	err = valSet.VerifyCommitLightTrusting(chainID, commit, cmtmath.Fraction{Numerator: 1, Denominator: 3})
 	assert.NoError(t, err)
 }
 
@@ -883,7 +883,7 @@ func permutation(valList []testVal) []testVal {
 		return nil
 	}
 	permList := make([]testVal, len(valList))
-	perm := tmrand.Perm(len(valList))
+	perm := cmtrand.Perm(len(valList))
 	for i, v := range perm {
 		permList[v] = valList[i]
 	}
@@ -1187,7 +1187,7 @@ func TestValSetUpdatesOrderIndependenceTestsExecute(t *testing.T) {
 
 		// perform at most 20 permutations on the updates and call UpdateWithChangeSet()
 		n := len(tt.updateVals)
-		maxNumPerms := tmmath.MinInt(20, n*n)
+		maxNumPerms := cmtmath.MinInt(20, n*n)
 		for j := 0; j < maxNumPerms; j++ {
 			// create a copy of original set and apply a random permutation of updates
 			valSetCopy := valSet.Copy()
@@ -1285,14 +1285,14 @@ func randTestVSetCfg(t *testing.T, nBase, nAddMax int) testVSetCfg {
 	const maxPower = 1000
 	var nOld, nDel, nChanged, nAdd int
 
-	nOld = int(tmrand.Uint()%uint(nBase)) + 1
+	nOld = int(cmtrand.Uint()%uint(nBase)) + 1
 	if nBase-nOld > 0 {
-		nDel = int(tmrand.Uint() % uint(nBase-nOld))
+		nDel = int(cmtrand.Uint() % uint(nBase-nOld))
 	}
 	nChanged = nBase - nOld - nDel
 
 	if nAddMax > 0 {
-		nAdd = tmrand.Int()%nAddMax + 1
+		nAdd = cmtrand.Int()%nAddMax + 1
 	}
 
 	cfg := testVSetCfg{}
@@ -1304,12 +1304,12 @@ func randTestVSetCfg(t *testing.T, nBase, nAddMax int) testVSetCfg {
 	cfg.expectedVals = make([]testVal, nBase-nDel+nAdd)
 
 	for i := 0; i < nBase; i++ {
-		cfg.startVals[i] = testVal{fmt.Sprintf("v%d", i), int64(tmrand.Uint()%maxPower + 1)}
+		cfg.startVals[i] = testVal{fmt.Sprintf("v%d", i), int64(cmtrand.Uint()%maxPower + 1)}
 		if i < nOld {
 			cfg.expectedVals[i] = cfg.startVals[i]
 		}
 		if i >= nOld && i < nOld+nChanged {
-			cfg.updatedVals[i-nOld] = testVal{fmt.Sprintf("v%d", i), int64(tmrand.Uint()%maxPower + 1)}
+			cfg.updatedVals[i-nOld] = testVal{fmt.Sprintf("v%d", i), int64(cmtrand.Uint()%maxPower + 1)}
 			cfg.expectedVals[i] = cfg.updatedVals[i-nOld]
 		}
 		if i >= nOld+nChanged {
@@ -1318,7 +1318,7 @@ func randTestVSetCfg(t *testing.T, nBase, nAddMax int) testVSetCfg {
 	}
 
 	for i := nBase; i < nBase+nAdd; i++ {
-		cfg.addedVals[i-nBase] = testVal{fmt.Sprintf("v%d", i), int64(tmrand.Uint()%maxPower + 1)}
+		cfg.addedVals[i-nBase] = testVal{fmt.Sprintf("v%d", i), int64(cmtrand.Uint()%maxPower + 1)}
 		cfg.expectedVals[i-nDel] = cfg.addedVals[i-nBase]
 	}
 
@@ -1399,7 +1399,7 @@ func TestValSetUpdatePriorityOrderTests(t *testing.T) {
 
 func verifyValSetUpdatePriorityOrder(t *testing.T, valSet *ValidatorSet, cfg testVSetCfg, nMaxElections int32) {
 	// Run election up to nMaxElections times, sort validators by priorities
-	valSet.IncrementProposerPriority(tmrand.Int31()%nMaxElections + 1)
+	valSet.IncrementProposerPriority(cmtrand.Int31()%nMaxElections + 1)
 
 	// apply the changes, get the updated validators, sort by priorities
 	applyChangesToValSet(t, nil, valSet, cfg.addedVals, cfg.updatedVals, cfg.deletedVals)
@@ -1520,7 +1520,7 @@ func TestValSetUpdateOverflowRelated(t *testing.T) {
 func TestValidatorSet_VerifyCommitLightTrusting(t *testing.T) {
 	var (
 		blockID                       = makeBlockIDRandom()
-		voteSet, originalValset, vals = randVoteSet(1, 1, tmproto.PrecommitType, 6, 1)
+		voteSet, originalValset, vals = randVoteSet(1, 1, cmtproto.PrecommitType, 6, 1)
 		commit, err                   = MakeCommit(blockID, 1, 1, voteSet, vals, time.Now())
 		newValSet, _                  = RandValidatorSet(2, 1)
 	)
@@ -1549,7 +1549,7 @@ func TestValidatorSet_VerifyCommitLightTrusting(t *testing.T) {
 
 	for _, tc := range testCases {
 		err = tc.valSet.VerifyCommitLightTrusting("test_chain_id", commit,
-			tmmath.Fraction{Numerator: 1, Denominator: 3})
+			cmtmath.Fraction{Numerator: 1, Denominator: 3})
 		if tc.err {
 			assert.Error(t, err)
 		} else {
@@ -1561,13 +1561,13 @@ func TestValidatorSet_VerifyCommitLightTrusting(t *testing.T) {
 func TestValidatorSet_VerifyCommitLightTrustingErrorsOnOverflow(t *testing.T) {
 	var (
 		blockID               = makeBlockIDRandom()
-		voteSet, valSet, vals = randVoteSet(1, 1, tmproto.PrecommitType, 1, MaxTotalVotingPower)
+		voteSet, valSet, vals = randVoteSet(1, 1, cmtproto.PrecommitType, 1, MaxTotalVotingPower)
 		commit, err           = MakeCommit(blockID, 1, 1, voteSet, vals, time.Now())
 	)
 	require.NoError(t, err)
 
 	err = valSet.VerifyCommitLightTrusting("test_chain_id", commit,
-		tmmath.Fraction{Numerator: 25, Denominator: 55})
+		cmtmath.Fraction{Numerator: 25, Denominator: 55})
 	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "int64 overflow")
 	}

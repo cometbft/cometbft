@@ -9,8 +9,8 @@ import (
 
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmstate "github.com/tendermint/tendermint/proto/tendermint/state"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
+	cmtstate "github.com/tendermint/tendermint/proto/tendermint/state"
+	cmtversion "github.com/tendermint/tendermint/proto/tendermint/version"
 	"github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/state/mocks"
 	"github.com/tendermint/tendermint/types"
@@ -125,8 +125,8 @@ func setupStateStore(t *testing.T, height int64) state.Store {
 	params.Version.App = 10
 
 	initialState := state.State{
-		Version: tmstate.Version{
-			Consensus: tmversion.Consensus{
+		Version: cmtstate.Version{
+			Consensus: cmtversion.Consensus{
 				Block: version.BlockProtocol,
 				App:   10,
 			},

@@ -19,7 +19,7 @@ import (
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/evidence"
 	"github.com/tendermint/tendermint/libs/log"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
 	mempl "github.com/tendermint/tendermint/mempool"
 	mempoolv0 "github.com/tendermint/tendermint/mempool/v0"
 	mempoolv1 "github.com/tendermint/tendermint/mempool/v1"
@@ -31,7 +31,7 @@ import (
 	sm "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/store"
 	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	cmttime "github.com/tendermint/tendermint/types/time"
 )
 
 func TestNodeStartStop(t *testing.T) {
@@ -99,7 +99,7 @@ func TestSplitAndTrimEmpty(t *testing.T) {
 func TestNodeDelayedStart(t *testing.T) {
 	config := cfg.ResetTestRoot("node_delayed_start_test")
 	defer os.RemoveAll(config.RootDir)
-	now := tmtime.Now()
+	now := cmttime.Now()
 
 	// create & start node
 	n, err := DefaultNewNode(config, log.TestingLogger())
@@ -110,7 +110,7 @@ func TestNodeDelayedStart(t *testing.T) {
 	require.NoError(t, err)
 	defer n.Stop() //nolint:errcheck // ignore for tests
 
-	startTime := tmtime.Now()
+	startTime := cmttime.Now()
 	assert.Equal(t, true, startTime.After(n.GenesisDoc().GenesisTime))
 }
 
@@ -180,7 +180,7 @@ func TestPrivValidatorListenAddrNoProtocol(t *testing.T) {
 }
 
 func TestNodeSetPrivValIPC(t *testing.T) {
-	tmpfile := "/tmp/kms." + tmrand.Str(6) + ".sock"
+	tmpfile := "/tmp/kms." + cmtrand.Str(6) + ".sock"
 	defer os.Remove(tmpfile) // clean up
 
 	config := cfg.ResetTestRoot("node_priv_val_tcp_test")
@@ -294,7 +294,7 @@ func TestCreateProposalBlock(t *testing.T) {
 	// than can fit in a block
 	txLength := 100
 	for i := 0; i <= maxBytes/txLength; i++ {
-		tx := tmrand.Bytes(txLength)
+		tx := cmtrand.Bytes(txLength)
 		err := mempool.CheckTx(tx, nil, mempl.TxInfo{})
 		assert.NoError(t, err)
 	}
@@ -377,7 +377,7 @@ func TestMaxProposalBlockSize(t *testing.T) {
 
 	// fill the mempool with one txs just below the maximum size
 	txLength := int(types.MaxDataBytesNoEvidence(maxBytes, 1))
-	tx := tmrand.Bytes(txLength - 4) // to account for the varint
+	tx := cmtrand.Bytes(txLength - 4) // to account for the varint
 	err = mempool.CheckTx(tx, nil, mempl.TxInfo{})
 	assert.NoError(t, err)
 

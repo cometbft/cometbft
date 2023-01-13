@@ -94,8 +94,8 @@ func createConfig() *cfg.Config {
 	c := cfg.ResetTestRoot(pathname)
 
 	// and we use random ports to run in parallel
-	tm, rpc, grpc := makeAddrs()
-	c.P2P.ListenAddress = tm
+	cmt, rpc, grpc := makeAddrs()
+	c.P2P.ListenAddress = cmt
 	c.RPC.ListenAddress = rpc
 	c.RPC.CORSAllowedOrigins = []string{"https://tendermint.com/"}
 	c.RPC.GRPCListenAddress = grpc

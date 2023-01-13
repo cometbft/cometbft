@@ -152,8 +152,8 @@ func getConfig(t *testing.T) *cfg.Config {
 	c := cfg.ResetTestRoot(t.Name())
 
 	// and we use random ports to run in parallel
-	tm, rpc, grpc := makeAddrs()
-	c.P2P.ListenAddress = tm
+	cmt, rpc, grpc := makeAddrs()
+	c.P2P.ListenAddress = cmt
 	c.RPC.ListenAddress = rpc
 	c.RPC.GRPCListenAddress = grpc
 	return c

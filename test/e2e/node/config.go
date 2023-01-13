@@ -11,10 +11,10 @@ import (
 
 // Config is the application configuration.
 type Config struct {
-	ChainID          string `toml:"chain_id"`
-	Listen           string
-	Protocol         string
-	Dir              string
+	ChainID          string                      `toml:"chain_id"`
+	Listen           string                      `toml:"listen"`
+	Protocol         string                      `toml:"protocol"`
+	Dir              string                      `toml:"dir"`
 	Mode             string                      `toml:"mode"`
 	PersistInterval  uint64                      `toml:"persist_interval"`
 	SnapshotInterval uint64                      `toml:"snapshot_interval"`
@@ -23,7 +23,6 @@ type Config struct {
 	PrivValServer    string                      `toml:"privval_server"`
 	PrivValKey       string                      `toml:"privval_key"`
 	PrivValState     string                      `toml:"privval_state"`
-	Misbehaviors     map[string]string           `toml:"misbehaviors"`
 	KeyType          string                      `toml:"key_type"`
 }
 
@@ -61,7 +60,7 @@ func (cfg Config) Validate() error {
 	switch {
 	case cfg.ChainID == "":
 		return errors.New("chain_id parameter is required")
-	case cfg.Listen == "" && cfg.Protocol != "builtin":
+	case cfg.Listen == "" && cfg.Protocol != "builtin" && cfg.Protocol != "builtin_unsync":
 		return errors.New("listen parameter is required")
 	default:
 		return nil

@@ -62,7 +62,7 @@ func run(configFile string) error {
 		if err = startSigner(cfg); err != nil {
 			return err
 		}
-		if cfg.Protocol == "builtin" {
+		if cfg.Protocol == "builtin" || cfg.Protocol == "builtin_unsync" {
 			time.Sleep(1 * time.Second)
 		}
 	}
@@ -71,7 +71,7 @@ func run(configFile string) error {
 	switch cfg.Protocol {
 	case "socket", "grpc":
 		err = startApp(cfg)
-	case "builtin":
+	case "builtin", "builtin_unsync":
 		if cfg.Mode == string(e2e.ModeLight) {
 			err = startLightClient(cfg)
 		} else {
@@ -123,12 +123,21 @@ func startNode(cfg *Config) error {
 		return fmt.Errorf("failed to setup config: %w", err)
 	}
 
+	var clientCreator proxy.ClientCreator
+	if cfg.Protocol == string(e2e.ProtocolBuiltinUnsync) {
+		clientCreator = proxy.NewUnsyncLocalClientCreator(app)
+		nodeLogger.Info("Using unsynchronized local client creator")
+	} else {
+		clientCreator = proxy.NewLocalClientCreator(app)
+		nodeLogger.Info("Using default (synchronized) local client creator")
+	}
+
 	n, err := node.NewNode(tmcfg,
 		privval.LoadOrGenFilePV(tmcfg.PrivValidatorKeyFile(), tmcfg.PrivValidatorStateFile()),
 		nodeKey,
-		proxy.NewLocalClientCreator(app),
+		clientCreator,
 		node.DefaultGenesisDocProviderFunc(tmcfg),
-		node.DefaultDBProvider,
+		config.DefaultDBProvider,
 		node.DefaultMetricsProvider(tmcfg.Instrumentation),
 		nodeLogger,
 	)
@@ -144,8 +153,8 @@ func startLightClient(cfg *Config) error {
 		return err
 	}
 
-	dbContext := &node.DBContext{ID: "light", Config: tmcfg}
-	lightDB, err := node.DefaultDBProvider(dbContext)
+	dbContext := &config.DBContext{ID: "light", Config: tmcfg}
+	lightDB, err := config.DefaultDBProvider(dbContext)
 	if err != nil {
 		return err
 	}

@@ -44,7 +44,7 @@ title: Methods
     | version             | string | The application software semantic version           | 2            |
     | app_version         | uint64 | The application protocol version                    | 3            |
     | last_block_height   | int64  | Latest height for which the app persisted its state | 4            |
-    | last_block_app_hash | bytes  | Latest AppHash returned by `FinalizeBlock`          | 5            |
+    | last_block_app_hash | bytes  | Latest AppHash returned by `Commit`                 | 5            |
 
 * **Usage**:
     * Return information about the application state.
@@ -52,7 +52,7 @@ title: Methods
       that happens on startup or on recovery.
     * The returned `app_version` will be included in the Header of every block.
     * Tendermint expects `last_block_app_hash` and `last_block_height` to
-      be updated during `FinalizeBlock` and persisted during `Commit`.
+      be updated and persisted during `Commit`.
 
 > Note: Semantic version is a reference to [semantic versioning](https://semver.org/). Semantic versions in info will be displayed as X.X.x.
 
@@ -201,14 +201,14 @@ title: Methods
 
 * **Usage**:
     * [**Required**] The core method of the application.
-    * `DeliverTx` is called once for each transaction in the block. 
-    * When `DeliverTx` is called, the application must execute the transaction deterministically 
-    in full before returning control to Tendermint. 
+    * `DeliverTx` is called once for each transaction in the block.
+    * When `DeliverTx` is called, the application must execute the transaction deterministically
+    in full before returning control to Tendermint.
     * Alternatively, the application can apply a candidate state corresponding
      to the same block previously executed via `PrepareProposal` or `ProcessProposal` any time between the calls to `BeginBlock`, the various
      calls to `DeliverTx` and `EndBlock`.
     * `ResponseDeliverTx.Code == 0` only if the transaction is fully valid.
-      
+
 
 ### EndBlock
 
@@ -238,7 +238,7 @@ title: Methods
     * `consensus_param_updates` returned for block `H` apply to the consensus
       params for block `H+1`. For more information on the consensus parameters,
       see the [application spec entry on consensus parameters](abci++_app_requirements.md#consensus-parameters).
-    * `validator_updates` and `consensus_param_updates` may be empty. In this case, Tendermint will keep the current values. 
+    * `validator_updates` and `consensus_param_updates` may be empty. In this case, Tendermint will keep the current values.
 
 
 
@@ -261,7 +261,7 @@ title: Methods
     * Signal the application to persist the application state.
     * Return an (optional) Merkle root hash of the application state
     * `ResponseCommit.Data` is included as the `Header.AppHash` in the next block
-        * It may be empty or hard-coded, but MUST be **deterministic** - it must not be a function of anything that did not come from the parameters of the execution calls (` BeginBlock/DeliverTx/EndBlock methods`) and the previous committed state. 
+        * It may be empty or hard-coded, but MUST be **deterministic** - it must not be a function of anything that did not come from the parameters of the execution calls (`BeginBlock/DeliverTx/EndBlock methods`) and the previous committed state.
     * Later calls to `Query` can return proofs about the application state anchored
     in this Merkle root hash
     * Use `RetainHeight` with caution! If all nodes in the network remove historical
@@ -431,8 +431,8 @@ title: Methods
               there are other transactions with higher priority, then it should not include it in
               `ResponsePrepareProposal.txs`. However, this will not remove `tx` from the mempool.
             * If the Application wants to add a new transaction to the proposed block, then the
-              Application includes it in `ResponsePrepareProposal.txs`. In this case, Tendermint
-              will also add the transaction to the mempool.
+              Application includes it in `ResponsePrepareProposal.txs`. Tendermint will not add
+              the transaction to the mempool.
         * The Application should be aware that removing and adding transactions may compromise
           _traceability_.
           > Consider the following example: the Application transforms a client-submitted
@@ -453,11 +453,11 @@ title: Methods
       returned in `ResponsePrepareProposal.txs` .
     * As a result of executing the prepared proposal, the Application may produce block events or transaction events.
       The Application must keep those events until a block is decided. It will then forward the events to the `BeginBlock-DeliverTx-EndBlock` functions depending on where each event should be placed, thereby returning the events to Tendermint.
-    * Tendermint does NOT provide any additional validity checks (such as checking for duplicate 
+    * Tendermint does NOT provide any additional validity checks (such as checking for duplicate
       transactions).
       <!--
       As a sanity check, Tendermint will check the returned parameters for validity if the Application modified them.
-      In particular, `ResponsePrepareProposal.txs` will be deemed invalid if there are duplicate transactions in the list. 
+      In particular, `ResponsePrepareProposal.txs` will be deemed invalid if there are duplicate transactions in the list.
        -->
     * If Tendermint fails to validate the `ResponsePrepareProposal`, Tendermint will assume the
       Application is faulty and crash.
@@ -541,16 +541,16 @@ proposal and will not call `RequestPrepareProposal`.
 
 #### When does Tendermint call `ProcessProposal`?
 
-When a validator _p_ enters Tendermint consensus round _r_, height _h_, in which _q_ is the proposer (possibly _p_ = _q_):
+When a node _p_ enters Tendermint consensus round _r_, height _h_, in which _q_ is the proposer (possibly _p_ = _q_):
 
 1. _p_ sets up timer `ProposeTimeout`.
 2. If _p_ is the proposer, _p_ executes steps 1-6 in [PrepareProposal](#prepareproposal).
 3. Upon reception of Proposal message (which contains the header) for round _r_, height _h_ from
    _q_, _p_'s Tendermint verifies the block header.
 4. Upon reception of Proposal message, along with all the block parts, for round _r_, height _h_
-   from _q_, _p_'s Tendermint follows its algorithm to check whether it should prevote for the
+   from _q_, _p_'s Tendermint follows the validators' algorithm to check whether it should prevote for the
    proposed block, or `nil`.
-5. If Tendermint should prevote for the proposed block:
+5. If the validators' algorithm indicates Tendermint should prevote for the proposed block:
     1. Tendermint calls `RequestProcessProposal` with the block. The call is synchronous.
     2. The Application checks/processes the proposed block, which is read-only, and returns
        `ACCEPT` or `REJECT` in the `ResponseProcessProposal.status` field.
@@ -559,7 +559,9 @@ When a validator _p_ enters Tendermint consensus round _r_, height _h_, in which
          * or after doing some basic checks, and process the block asynchronously. In this case the
            Application will not be able to reject the block, or force prevote/precommit `nil`
            afterwards.
-    3. If the returned value is
+         * or immediately, returning `ACCEPT`, if _p_ is not a validator
+           and the Application does not want non-validating nodes to handle `ProcessProposal`
+    3. If _p_ is a validator and the returned value is
          * `ACCEPT`: Tendermint prevotes on this proposal for round _r_, height _h_.
          * `REJECT`: Tendermint prevotes `nil`.
 <!--
@@ -895,7 +897,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
 * **Usage**:
     * Indicates whether a validator signed the last block, allowing for rewards based on validator availability.
     * This information is extracted from Tendermint's data structures in the local process.
-    * `vote_extension` is reserved for future use when vote extensions are added. Currently, this field is always set to `nil`. 
+    * `vote_extension` is reserved for future use when vote extensions are added. Currently, this field is always set to `nil`.
 
 
 ### CommitInfo

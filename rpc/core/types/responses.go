@@ -144,7 +144,7 @@ type ResultValidators struct {
 
 // ConsensusParams for given height
 type ResultConsensusParams struct {
-	BlockHeight     int64                   `json:"block_height"`
+	BlockHeight     int64                    `json:"block_height"`
 	ConsensusParams cmtproto.ConsensusParams `json:"consensus_params"`
 }
 

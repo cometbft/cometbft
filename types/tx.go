@@ -95,8 +95,8 @@ func (txs Txs) Proof(i int) TxProof {
 // TxProof represents a Merkle proof of the presence of a transaction in the Merkle tree.
 type TxProof struct {
 	RootHash cmtbytes.HexBytes `json:"root_hash"`
-	Data     Tx               `json:"data"`
-	Proof    merkle.Proof     `json:"proof"`
+	Data     Tx                `json:"data"`
+	Proof    merkle.Proof      `json:"proof"`
 }
 
 // Leaf returns the hash(tx), which is the leaf in the merkle tree which this proof refers to.

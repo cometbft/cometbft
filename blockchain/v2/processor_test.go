@@ -35,7 +35,7 @@ func makePcBlock(height int64) *types.Block {
 func makeState(p *params) *pcState {
 	var (
 		cmtState = cmtState.State{LastBlockHeight: p.height}
-		context = newMockProcessorContext(cmtState, p.verBL, p.appBL)
+		context  = newMockProcessorContext(cmtState, p.verBL, p.appBL)
 	)
 	state := newPcState(context)
 

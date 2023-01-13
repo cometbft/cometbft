@@ -453,7 +453,7 @@ var msgQueueSize = 1000
 // msgs from the reactor which may update the state
 type msgInfo struct {
 	Msg    cmtcon.Message `json:"msg"`
-	PeerID p2p.ID        `json:"peer_key"`
+	PeerID p2p.ID         `json:"peer_key"`
 }
 
 // internally generated messages which may update the state

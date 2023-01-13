@@ -37,7 +37,7 @@ func (e pcBlockProcessed) String() string {
 type pcFinished struct {
 	priorityNormal
 	blocksSynced int
-	cmtState      cmtState.State
+	cmtState     cmtState.State
 }
 
 func (p pcFinished) Error() string {

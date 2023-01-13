@@ -325,9 +325,9 @@ func MaxDataBytesNoEvidence(maxBytes int64, valsCount int) int64 {
 type Header struct {
 	// basic block info
 	Version cmtversion.Consensus `json:"version"`
-	ChainID string              `json:"chain_id"`
-	Height  int64               `json:"height"`
-	Time    time.Time           `json:"time"`
+	ChainID string               `json:"chain_id"`
+	Height  int64                `json:"height"`
+	Time    time.Time            `json:"time"`
 
 	// prev block info
 	LastBlockID BlockID `json:"last_block_id"`
@@ -347,7 +347,7 @@ type Header struct {
 
 	// consensus info
 	EvidenceHash    cmtbytes.HexBytes `json:"evidence_hash"`    // evidence included in the block
-	ProposerAddress Address          `json:"proposer_address"` // original proposer of the block
+	ProposerAddress Address           `json:"proposer_address"` // original proposer of the block
 }
 
 // Populate the Header with state-derived data.
@@ -1163,7 +1163,7 @@ func (data *EvidenceData) FromProto(eviData *cmtproto.EvidenceList) error {
 // BlockID
 type BlockID struct {
 	Hash          cmtbytes.HexBytes `json:"hash"`
-	PartSetHeader PartSetHeader    `json:"parts"`
+	PartSetHeader PartSetHeader     `json:"parts"`
 }
 
 // Equals returns true if the BlockID matches the given BlockID

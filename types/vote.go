@@ -49,13 +49,13 @@ type Address = crypto.Address
 // consensus.
 type Vote struct {
 	Type             cmtproto.SignedMsgType `json:"type"`
-	Height           int64                 `json:"height"`
-	Round            int32                 `json:"round"`    // assume there will not be greater than 2_147_483_647 rounds
-	BlockID          BlockID               `json:"block_id"` // zero if vote is nil.
-	Timestamp        time.Time             `json:"timestamp"`
-	ValidatorAddress Address               `json:"validator_address"`
-	ValidatorIndex   int32                 `json:"validator_index"`
-	Signature        []byte                `json:"signature"`
+	Height           int64                  `json:"height"`
+	Round            int32                  `json:"round"`    // assume there will not be greater than 2_147_483_647 rounds
+	BlockID          BlockID                `json:"block_id"` // zero if vote is nil.
+	Timestamp        time.Time              `json:"timestamp"`
+	ValidatorAddress Address                `json:"validator_address"`
+	ValidatorIndex   int32                  `json:"validator_index"`
+	Signature        []byte                 `json:"signature"`
 }
 
 // CommitSig converts the Vote to a CommitSig.

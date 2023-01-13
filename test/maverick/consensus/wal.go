@@ -397,7 +397,7 @@ var _ cmtcon.WAL = nilWAL{}
 
 func (nilWAL) Write(m cmtcon.WALMessage) error     { return nil }
 func (nilWAL) WriteSync(m cmtcon.WALMessage) error { return nil }
-func (nilWAL) FlushAndSync() error                { return nil }
+func (nilWAL) FlushAndSync() error                 { return nil }
 func (nilWAL) SearchForEndHeight(height int64,
 	options *cmtcon.WALSearchOptions) (rd io.ReadCloser, found bool, err error) {
 	return nil, false, nil

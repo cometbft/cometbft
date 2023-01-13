@@ -248,7 +248,7 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 			block:            newBlock(header1, commitAtH10),
 			parts:            validPartSet,
 			seenCommit:       seenCommit1,
-			wantPanic:        "unmarshal to tmproto.BlockMeta",
+			wantPanic:        "unmarshal to cmtproto.BlockMeta",
 			corruptBlockInDB: true, // Corrupt the DB's block entry
 		},
 
@@ -411,7 +411,7 @@ func TestLoadBlockPart(t *testing.T) {
 	require.NoError(t, err)
 	res, _, panicErr = doFn(loadPart)
 	require.NotNil(t, panicErr, "expecting a non-nil panic")
-	require.Contains(t, panicErr.Error(), "unmarshal to tmproto.Part failed")
+	require.Contains(t, panicErr.Error(), "unmarshal to cmtproto.Part failed")
 
 	// 3. A good block serialized and saved to the DB should be retrievable
 	pb1, err := part1.ToProto()
@@ -545,7 +545,7 @@ func TestLoadBlockMeta(t *testing.T) {
 	require.NoError(t, err)
 	res, _, panicErr = doFn(loadMeta)
 	require.NotNil(t, panicErr, "expecting a non-nil panic")
-	require.Contains(t, panicErr.Error(), "unmarshal to tmproto.BlockMeta")
+	require.Contains(t, panicErr.Error(), "unmarshal to cmtproto.BlockMeta")
 
 	// 3. A good blockMeta serialized and saved to the DB should be retrievable
 	meta := &types.BlockMeta{Header: types.Header{

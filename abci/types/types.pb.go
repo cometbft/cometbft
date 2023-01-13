@@ -194,7 +194,11 @@ type ResponseVerifyVoteExtension_VerifyStatus int32
 const (
 	ResponseVerifyVoteExtension_UNKNOWN ResponseVerifyVoteExtension_VerifyStatus = 0
 	ResponseVerifyVoteExtension_ACCEPT  ResponseVerifyVoteExtension_VerifyStatus = 1
-	ResponseVerifyVoteExtension_REJECT  ResponseVerifyVoteExtension_VerifyStatus = 2
+	// Rejecting the vote extension will reject the entire precommit by the sender.
+	// Incorrectly implementing this thus has liveness implications as it may affect
+	// tendermint's ability to receive 2/3+ valid votes to finalize the block.
+	// Honest nodes should never be rejected.
+	ResponseVerifyVoteExtension_REJECT ResponseVerifyVoteExtension_VerifyStatus = 2
 )
 
 var ResponseVerifyVoteExtension_VerifyStatus_name = map[int32]string{
@@ -1290,10 +1294,12 @@ func (m *RequestProcessProposal) GetProposerAddress() []byte {
 	return nil
 }
 
-// Extends a vote with application-side injection
+// Extends a vote with application-injected data
 type RequestExtendVote struct {
-	Hash   []byte `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
-	Height int64  `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
+	// the hash of the block  that this vote may be referring to
+	Hash []byte `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
+	// the height of the extended vote
+	Height int64 `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
 }
 
 func (m *RequestExtendVote) Reset()         { *m = RequestExtendVote{} }
@@ -1345,7 +1351,9 @@ func (m *RequestExtendVote) GetHeight() int64 {
 
 // Verify the vote extension
 type RequestVerifyVoteExtension struct {
-	Hash             []byte `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
+	// the hash of the block that this received vote corresponds to
+	Hash []byte `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
+	// the validator that signed the vote extension
 	ValidatorAddress []byte `protobuf:"bytes,2,opt,name=validator_address,json=validatorAddress,proto3" json:"validator_address,omitempty"`
 	Height           int64  `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`
 	VoteExtension    []byte `protobuf:"bytes,4,opt,name=vote_extension,json=voteExtension,proto3" json:"vote_extension,omitempty"`
@@ -2896,7 +2904,7 @@ func (m *ExtendedCommitInfo) GetVotes() []ExtendedVoteInfo {
 }
 
 // Event allows application developers to attach additional information to
-// ResponseBeginBlock, ResponseEndBlock, ResponseCheckTx and ResponseDeliverTx.
+// ResponseFinalizeBlock and ResponseCheckTx.
 // Later, transactions may be queried using these events.
 type Event struct {
 	Type       string           `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`

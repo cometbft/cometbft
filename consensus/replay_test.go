@@ -99,7 +99,7 @@ func startNewStateAndWaitForBlock(t *testing.T, consensusReplayConfig *cfg.Confi
 	require.NoError(t, err)
 	select {
 	case <-newBlockSub.Out():
-	case <-newBlockSub.Cancelled():
+	case <-newBlockSub.Canceled():
 		t.Fatal("newBlockSub was canceled")
 	case <-time.After(120 * time.Second):
 		t.Fatal("Timed out waiting for new block (see trace above)")
@@ -424,7 +424,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	require.NoError(t, err)
 	newValidatorTx2 := kvstore.MakeValSetChangeTx(newVal2ABCI, testMinPower)
 	err = assertMempool(css[0].txNotifier).CheckTx(newValidatorTx2, nil, mempool.TxInfo{})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	newValidatorPubKey3, err := css[nVals+2].privValidator.GetPubKey()
 	require.NoError(t, err)
 	newVal3ABCI, err := cryptoenc.PubKeyToProto(newValidatorPubKey3)
@@ -1196,6 +1196,7 @@ func (bs *mockBlockStore) PruneBlocks(height int64, state sm.State) (uint64, int
 }
 
 func (bs *mockBlockStore) DeleteLatestBlock() error { return nil }
+func (bs *mockBlockStore) Close() error             { return nil }
 
 //---------------------------------------
 // Test handshake/init chain

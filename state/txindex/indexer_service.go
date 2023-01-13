@@ -59,56 +59,60 @@ func (is *IndexerService) OnStart() error {
 
 	go func() {
 		for {
-			msg := <-blockSub.Out()
-			eventNewBlockEvents := msg.Data().(types.EventDataNewBlockEvents)
-			height := eventNewBlockEvents.Height
-			numTxs := eventNewBlockEvents.NumTxs
+			select {
+			case <-blockSub.Canceled():
+				return
+			case msg := <-blockSub.Out():
+				eventNewBlockEvents := msg.Data().(types.EventDataNewBlockEvents)
+				height := eventNewBlockEvents.Height
+				numTxs := eventNewBlockEvents.NumTxs
 
-			batch := NewBatch(numTxs)
+				batch := NewBatch(numTxs)
 
-			for i := int64(0); i < numTxs; i++ {
-				msg2 := <-txsSub.Out()
-				txResult := msg2.Data().(types.EventDataTx).TxResult
+				for i := int64(0); i < numTxs; i++ {
+					msg2 := <-txsSub.Out()
+					txResult := msg2.Data().(types.EventDataTx).TxResult
 
-				if err = batch.Add(&txResult); err != nil {
-					is.Logger.Error(
-						"failed to add tx to batch",
-						"height", height,
-						"index", txResult.Index,
-						"err", err,
-					)
+					if err = batch.Add(&txResult); err != nil {
+						is.Logger.Error(
+							"failed to add tx to batch",
+							"height", height,
+							"index", txResult.Index,
+							"err", err,
+						)
 
+						if is.terminateOnError {
+							if err := is.Stop(); err != nil {
+								is.Logger.Error("failed to stop", "err", err)
+							}
+							return
+						}
+					}
+				}
+
+				if err := is.blockIdxr.Index(eventNewBlockEvents); err != nil {
+					is.Logger.Error("failed to index block", "height", height, "err", err)
 					if is.terminateOnError {
 						if err := is.Stop(); err != nil {
 							is.Logger.Error("failed to stop", "err", err)
 						}
 						return
 					}
+				} else {
+					is.Logger.Info("indexed block exents", "height", height)
 				}
-			}
 
-			if err := is.blockIdxr.Index(eventNewBlockEvents); err != nil {
-				is.Logger.Error("failed to index block", "height", height, "err", err)
-				if is.terminateOnError {
-					if err := is.Stop(); err != nil {
-						is.Logger.Error("failed to stop", "err", err)
+				if err = is.txIdxr.AddBatch(batch); err != nil {
+					is.Logger.Error("failed to index block txs", "height", height, "err", err)
+					if is.terminateOnError {
+						if err := is.Stop(); err != nil {
+							is.Logger.Error("failed to stop", "err", err)
+						}
+						return
 					}
-					return
+				} else {
+					is.Logger.Debug("indexed transactions", "height", height, "num_txs", numTxs)
 				}
-			} else {
-				is.Logger.Info("indexed block exents", "height", height)
-			}
-
-			if err = is.txIdxr.AddBatch(batch); err != nil {
-				is.Logger.Error("failed to index block txs", "height", height, "err", err)
-				if is.terminateOnError {
-					if err := is.Stop(); err != nil {
-						is.Logger.Error("failed to stop", "err", err)
-					}
-					return
-				}
-			} else {
-				is.Logger.Debug("indexed block txs", "height", height, "num_txs", numTxs)
 			}
 		}
 	}()

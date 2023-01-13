@@ -16,7 +16,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	cmtos "github.com/tendermint/tendermint/libs/os"
 	"github.com/tendermint/tendermint/libs/service"
-	tmcons "github.com/tendermint/tendermint/proto/tendermint/consensus"
+	cmtcons "github.com/tendermint/tendermint/proto/tendermint/consensus"
 	cmttime "github.com/tendermint/tendermint/types/time"
 )
 
@@ -302,7 +302,7 @@ func (enc *WALEncoder) Encode(v *TimedWALMessage) error {
 	if err != nil {
 		return err
 	}
-	pv := tmcons.TimedWALMessage{
+	pv := cmtcons.TimedWALMessage{
 		Time: v.Time,
 		Msg:  pbMsg,
 	}
@@ -400,7 +400,7 @@ func (dec *WALDecoder) Decode() (*TimedWALMessage, error) {
 		return nil, DataCorruptionError{fmt.Errorf("checksums do not match: read: %v, actual: %v", crc, actualCRC)}
 	}
 
-	var res = new(tmcons.TimedWALMessage)
+	var res = new(cmtcons.TimedWALMessage)
 	err = proto.Unmarshal(data, res)
 	if err != nil {
 		return nil, DataCorruptionError{fmt.Errorf("failed to decode data: %v", err)}

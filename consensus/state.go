@@ -15,7 +15,7 @@ import (
 	cfg "github.com/tendermint/tendermint/config"
 	cstypes "github.com/tendermint/tendermint/consensus/types"
 	"github.com/tendermint/tendermint/crypto"
-	tmevents "github.com/tendermint/tendermint/libs/events"
+	cmtevents "github.com/tendermint/tendermint/libs/events"
 	"github.com/tendermint/tendermint/libs/fail"
 	cmtjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tendermint/libs/log"
@@ -136,7 +136,7 @@ type State struct {
 
 	// synchronous pubsub between consensus state and reactor.
 	// state only emits EventNewRoundStep and EventVote
-	evsw tmevents.EventSwitch
+	evsw cmtevents.EventSwitch
 
 	// for reporting metrics
 	metrics *Metrics
@@ -168,7 +168,7 @@ func NewState(
 		doWALCatchup:     true,
 		wal:              nilWAL{},
 		evpool:           evpool,
-		evsw:             tmevents.NewEventSwitch(),
+		evsw:             cmtevents.NewEventSwitch(),
 		metrics:          NopMetrics(),
 	}
 

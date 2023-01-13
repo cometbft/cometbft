@@ -7,7 +7,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	cmtrand "github.com/tendermint/tendermint/libs/rand"
 	"github.com/tendermint/tendermint/p2p"
-	tmcons "github.com/tendermint/tendermint/proto/tendermint/consensus"
+	cmtcons "github.com/tendermint/tendermint/proto/tendermint/consensus"
 	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/types"
 )
@@ -96,7 +96,7 @@ func invalidDoPrevoteFunc(t *testing.T, height int64, round int32, cs *State, sw
 		for _, peer := range peers {
 			cs.Logger.Info("Sending bad vote", "block", blockHash, "peer", peer)
 			peer.Send(p2p.Envelope{
-				Message:   &tmcons.Vote{Vote: precommit.ToProto()},
+				Message:   &cmtcons.Vote{Vote: precommit.ToProto()},
 				ChannelID: VoteChannel,
 			})
 		}

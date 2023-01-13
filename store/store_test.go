@@ -19,7 +19,7 @@ import (
 	"github.com/tendermint/tendermint/internal/test"
 	"github.com/tendermint/tendermint/libs/log"
 	cmtrand "github.com/tendermint/tendermint/libs/rand"
-	tmstore "github.com/tendermint/tendermint/proto/tendermint/store"
+	cmtstore "github.com/tendermint/tendermint/proto/tendermint/store"
 	cmtversion "github.com/tendermint/tendermint/proto/tendermint/version"
 	sm "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/types"
@@ -63,15 +63,15 @@ func TestLoadBlockStoreState(t *testing.T) {
 
 	type blockStoreTest struct {
 		testName string
-		bss      *tmstore.BlockStoreState
-		want     tmstore.BlockStoreState
+		bss      *cmtstore.BlockStoreState
+		want     cmtstore.BlockStoreState
 	}
 
 	testCases := []blockStoreTest{
-		{"success", &tmstore.BlockStoreState{Base: 100, Height: 1000},
-			tmstore.BlockStoreState{Base: 100, Height: 1000}},
-		{"empty", &tmstore.BlockStoreState{}, tmstore.BlockStoreState{}},
-		{"no base", &tmstore.BlockStoreState{Height: 1000}, tmstore.BlockStoreState{Base: 1, Height: 1000}},
+		{"success", &cmtstore.BlockStoreState{Base: 100, Height: 1000},
+			cmtstore.BlockStoreState{Base: 100, Height: 1000}},
+		{"empty", &cmtstore.BlockStoreState{}, cmtstore.BlockStoreState{}},
+		{"no base", &cmtstore.BlockStoreState{Height: 1000}, cmtstore.BlockStoreState{Base: 1, Height: 1000}},
 	}
 
 	for _, tc := range testCases {
@@ -84,7 +84,7 @@ func TestLoadBlockStoreState(t *testing.T) {
 
 func TestNewBlockStore(t *testing.T) {
 	db := dbm.NewMemDB()
-	bss := tmstore.BlockStoreState{Base: 100, Height: 10000}
+	bss := cmtstore.BlockStoreState{Base: 100, Height: 10000}
 	bz, _ := proto.Marshal(&bss)
 	err := db.Set(blockStoreKey, bz)
 	require.NoError(t, err)

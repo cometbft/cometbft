@@ -9,7 +9,7 @@ import (
 
 	cmtmath "github.com/tendermint/tendermint/libs/math"
 	cmtrand "github.com/tendermint/tendermint/libs/rand"
-	tmprotobits "github.com/tendermint/tendermint/proto/tendermint/libs/bits"
+	cmtprotobits "github.com/tendermint/tendermint/proto/tendermint/libs/bits"
 )
 
 // BitArray is a thread-safe implementation of a bit array.
@@ -419,19 +419,19 @@ func (bA *BitArray) UnmarshalJSON(bz []byte) error {
 }
 
 // ToProto converts BitArray to protobuf
-func (bA *BitArray) ToProto() *tmprotobits.BitArray {
+func (bA *BitArray) ToProto() *cmtprotobits.BitArray {
 	if bA == nil || len(bA.Elems) == 0 {
 		return nil
 	}
 
-	return &tmprotobits.BitArray{
+	return &cmtprotobits.BitArray{
 		Bits:  int64(bA.Bits),
 		Elems: bA.Elems,
 	}
 }
 
 // FromProto sets a protobuf BitArray to the given pointer.
-func (bA *BitArray) FromProto(protoBitArray *tmprotobits.BitArray) {
+func (bA *BitArray) FromProto(protoBitArray *cmtprotobits.BitArray) {
 	if protoBitArray == nil {
 		bA = nil
 		return

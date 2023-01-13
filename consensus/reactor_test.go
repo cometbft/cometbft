@@ -33,7 +33,7 @@ import (
 	mempoolv1 "github.com/tendermint/tendermint/mempool/v1"
 	"github.com/tendermint/tendermint/p2p"
 	p2pmock "github.com/tendermint/tendermint/p2p/mock"
-	tmcons "github.com/tendermint/tendermint/proto/tendermint/consensus"
+	cmtcons "github.com/tendermint/tendermint/proto/tendermint/consensus"
 	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	sm "github.com/tendermint/tendermint/state"
 	statemocks "github.com/tendermint/tendermint/state/mocks"
@@ -55,7 +55,7 @@ func startConsensusNet(t *testing.T, css []*State, n int) (
 	blocksSubs := make([]types.Subscription, 0)
 	eventBuses := make([]*types.EventBus, n)
 	for i := 0; i < n; i++ {
-		/*logger, err := tmflags.ParseLogLevel("consensus:info,*:error", logger, "info")
+		/*logger, err := cmtflags.ParseLogLevel("consensus:info,*:error", logger, "info")
 		if err != nil {	t.Fatal(err)}*/
 		reactors[i] = NewReactor(css[i], true) // so we dont start the consensus states
 		reactors[i].SetLogger(css[i].Logger)
@@ -275,7 +275,7 @@ func TestReactorReceiveDoesNotPanicIfAddPeerHasntBeenCalledYet(t *testing.T) {
 		reactor.Receive(p2p.Envelope{
 			ChannelID: StateChannel,
 			Src:       peer,
-			Message: &tmcons.HasVote{Height: 1,
+			Message: &cmtcons.HasVote{Height: 1,
 				Round: 1, Index: 1, Type: cmtproto.PrevoteType},
 		})
 		reactor.AddPeer(peer)
@@ -301,7 +301,7 @@ func TestReactorReceivePanicsIfInitPeerHasntBeenCalledYet(t *testing.T) {
 		reactor.Receive(p2p.Envelope{
 			ChannelID: StateChannel,
 			Src:       peer,
-			Message: &tmcons.HasVote{Height: 1,
+			Message: &cmtcons.HasVote{Height: 1,
 				Round: 1, Index: 1, Type: cmtproto.PrevoteType},
 		})
 	})

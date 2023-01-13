@@ -9,7 +9,7 @@ import (
 
 	"github.com/tendermint/tendermint/evidence"
 	cmtsync "github.com/tendermint/tendermint/libs/sync"
-	tmstore "github.com/tendermint/tendermint/proto/tendermint/store"
+	cmtstore "github.com/tendermint/tendermint/proto/tendermint/store"
 	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	sm "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/types"
@@ -445,7 +445,7 @@ func (bs *BlockStore) saveBlockPart(height int64, index int, part *types.Part) {
 
 func (bs *BlockStore) saveState() {
 	bs.mtx.RLock()
-	bss := tmstore.BlockStoreState{
+	bss := cmtstore.BlockStoreState{
 		Base:   bs.base,
 		Height: bs.height,
 	}
@@ -494,7 +494,7 @@ func calcBlockHashKey(hash []byte) []byte {
 var blockStoreKey = []byte("blockStore")
 
 // SaveBlockStoreState persists the blockStore state to the database.
-func SaveBlockStoreState(bsj *tmstore.BlockStoreState, db dbm.DB) {
+func SaveBlockStoreState(bsj *cmtstore.BlockStoreState, db dbm.DB) {
 	bytes, err := proto.Marshal(bsj)
 	if err != nil {
 		panic(fmt.Sprintf("Could not marshal state bytes: %v", err))
@@ -506,20 +506,20 @@ func SaveBlockStoreState(bsj *tmstore.BlockStoreState, db dbm.DB) {
 
 // LoadBlockStoreState returns the BlockStoreState as loaded from disk.
 // If no BlockStoreState was previously persisted, it returns the zero value.
-func LoadBlockStoreState(db dbm.DB) tmstore.BlockStoreState {
+func LoadBlockStoreState(db dbm.DB) cmtstore.BlockStoreState {
 	bytes, err := db.Get(blockStoreKey)
 	if err != nil {
 		panic(err)
 	}
 
 	if len(bytes) == 0 {
-		return tmstore.BlockStoreState{
+		return cmtstore.BlockStoreState{
 			Base:   0,
 			Height: 0,
 		}
 	}
 
-	var bsj tmstore.BlockStoreState
+	var bsj cmtstore.BlockStoreState
 	if err := proto.Unmarshal(bytes, &bsj); err != nil {
 		panic(fmt.Sprintf("Could not unmarshal bytes: %X", bytes))
 	}

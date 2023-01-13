@@ -17,7 +17,7 @@ import (
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	cmtflags "github.com/tendermint/tendermint/libs/cli/flags"
 	"github.com/tendermint/tendermint/libs/log"
-	tmnet "github.com/tendermint/tendermint/libs/net"
+	cmtnet "github.com/tendermint/tendermint/libs/net"
 	"github.com/tendermint/tendermint/light"
 	lproxy "github.com/tendermint/tendermint/light/proxy"
 	lrpc "github.com/tendermint/tendermint/light/rpc"
@@ -208,7 +208,7 @@ func startLightClient(cfg *Config) error {
 func startSigner(cfg *Config) error {
 	filePV := privval.LoadFilePV(cfg.PrivValKey, cfg.PrivValState)
 
-	protocol, address := tmnet.ProtocolAndAddress(cfg.PrivValServer)
+	protocol, address := cmtnet.ProtocolAndAddress(cfg.PrivValServer)
 	var dialFn privval.SocketDialer
 	switch protocol {
 	case "tcp":

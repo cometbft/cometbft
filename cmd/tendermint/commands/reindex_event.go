@@ -9,7 +9,7 @@ import (
 	dbm "github.com/tendermint/tm-db"
 
 	abcitypes "github.com/tendermint/tendermint/abci/types"
-	tmcfg "github.com/tendermint/tendermint/config"
+	cmtcfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/libs/progressbar"
 	"github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/state/indexer"
@@ -94,7 +94,7 @@ func init() {
 	ReIndexEventCmd.Flags().Int64Var(&endHeight, "end-height", 0, "the block height would like to finish for re-index")
 }
 
-func loadEventSinks(cfg *tmcfg.Config) (indexer.BlockIndexer, txindex.TxIndexer, error) {
+func loadEventSinks(cfg *cmtcfg.Config) (indexer.BlockIndexer, txindex.TxIndexer, error) {
 	switch strings.ToLower(cfg.TxIndex.Indexer) {
 	case "null":
 		return nil, nil, errors.New("found null event sink, please check the tx-index section in the config.toml")

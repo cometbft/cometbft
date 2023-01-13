@@ -13,7 +13,7 @@ import (
 	"os"
 
 	cs "github.com/tendermint/tendermint/consensus"
-	tmjson "github.com/tendermint/tendermint/libs/json"
+	cmtjson "github.com/tendermint/tendermint/libs/json"
 )
 
 func main() {
@@ -37,7 +37,7 @@ func main() {
 			panic(fmt.Errorf("failed to decode msg: %v", err))
 		}
 
-		json, err := tmjson.Marshal(msg)
+		json, err := cmtjson.Marshal(msg)
 		if err != nil {
 			panic(fmt.Errorf("failed to marshal msg: %v", err))
 		}

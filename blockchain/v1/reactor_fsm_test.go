@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/tendermint/tendermint/libs/log"
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	cmtmath "github.com/tendermint/tendermint/libs/math"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/types"
 )
@@ -737,7 +737,7 @@ func makeCorrectTransitionSequence(startingHeight int64, numBlocks int64, numPee
 			continue
 		}
 		if randomPeerHeights {
-			peerHeights[i] = int64(tmmath.MaxInt(tmrand.Intn(int(numBlocks)), int(startingHeight)+1))
+			peerHeights[i] = int64(cmtmath.MaxInt(cmtrand.Intn(int(numBlocks)), int(startingHeight)+1))
 		} else {
 			peerHeights[i] = numBlocks
 		}
@@ -827,19 +827,19 @@ const (
 
 func makeCorrectTransitionSequenceWithRandomParameters() testFields {
 	// Generate a starting height for fast sync.
-	startingHeight := int64(tmrand.Intn(maxStartingHeightTest) + 1)
+	startingHeight := int64(cmtrand.Intn(maxStartingHeightTest) + 1)
 
 	// Generate the number of requests per peer.
-	maxRequestsPerPeer := tmrand.Intn(maxRequestsPerPeerTest) + 1
+	maxRequestsPerPeer := cmtrand.Intn(maxRequestsPerPeerTest) + 1
 
 	// Generate the maximum number of total pending requests, >= maxRequestsPerPeer.
-	maxPendingRequests := tmrand.Intn(maxTotalPendingRequestsTest-maxRequestsPerPeer) + maxRequestsPerPeer
+	maxPendingRequests := cmtrand.Intn(maxTotalPendingRequestsTest-maxRequestsPerPeer) + maxRequestsPerPeer
 
 	// Generate the number of blocks to be synced.
-	numBlocks := int64(tmrand.Intn(maxNumBlocksInChainTest)) + startingHeight
+	numBlocks := int64(cmtrand.Intn(maxNumBlocksInChainTest)) + startingHeight
 
 	// Generate a number of peers.
-	numPeers := tmrand.Intn(maxNumPeersTest) + 1
+	numPeers := cmtrand.Intn(maxNumPeersTest) + 1
 
 	return makeCorrectTransitionSequence(startingHeight, numBlocks, numPeers, true, maxRequestsPerPeer, maxPendingRequests)
 }

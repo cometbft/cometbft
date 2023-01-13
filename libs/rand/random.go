@@ -5,7 +5,7 @@ import (
 	mrand "math/rand"
 	"time"
 
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 )
 
 const (
@@ -20,7 +20,7 @@ const (
 // All of the methods here are suitable for concurrent use.
 // This is achieved by using a mutex lock on all of the provided methods.
 type Rand struct {
-	tmsync.Mutex
+	cmtsync.Mutex
 	rand *mrand.Rand
 }
 
@@ -158,7 +158,7 @@ MAIN_LOOP:
 	for {
 		val := r.Int63()
 		for i := 0; i < 10; i++ {
-			v := int(val & 0x3f) // rightmost 6 bits
+			v := int(val & 0x3f) // righcmtost 6 bits
 			if v >= 62 {         // only 62 characters in strChars
 				val >>= 6
 				continue

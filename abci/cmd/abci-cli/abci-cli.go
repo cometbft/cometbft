@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/tendermint/tendermint/libs/log"
-	tmos "github.com/tendermint/tendermint/libs/os"
+	cmtos "github.com/tendermint/tendermint/libs/os"
 
 	abcicli "github.com/tendermint/tendermint/abci/client"
 	"github.com/tendermint/tendermint/abci/example/code"
@@ -640,7 +640,7 @@ func cmdCounter(cmd *cobra.Command, args []string) error {
 	}
 
 	// Stop upon receiving SIGTERM or CTRL-C.
-	tmos.TrapSignal(logger, func() {
+	cmtos.TrapSignal(logger, func() {
 		// Cleanup
 		if err := srv.Stop(); err != nil {
 			logger.Error("Error while stopping server", "err", err)
@@ -674,7 +674,7 @@ func cmdKVStore(cmd *cobra.Command, args []string) error {
 	}
 
 	// Stop upon receiving SIGTERM or CTRL-C.
-	tmos.TrapSignal(logger, func() {
+	cmtos.TrapSignal(logger, func() {
 		// Cleanup
 		if err := srv.Stop(); err != nil {
 			logger.Error("Error while stopping server", "err", err)

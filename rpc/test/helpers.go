@@ -12,7 +12,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 
 	cfg "github.com/tendermint/tendermint/config"
-	tmnet "github.com/tendermint/tendermint/libs/net"
+	cmtnet "github.com/tendermint/tendermint/libs/net"
 	nm "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/privval"
@@ -76,7 +76,7 @@ func makePathname() string {
 }
 
 func randPort() int {
-	port, err := tmnet.GetFreePort()
+	port, err := cmtnet.GetFreePort()
 	if err != nil {
 		panic(err)
 	}

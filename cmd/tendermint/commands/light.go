@@ -16,8 +16,8 @@ import (
 	dbm "github.com/tendermint/tm-db"
 
 	"github.com/tendermint/tendermint/libs/log"
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	tmos "github.com/tendermint/tendermint/libs/os"
+	cmtmath "github.com/tendermint/tendermint/libs/math"
+	cmtos "github.com/tendermint/tendermint/libs/os"
 	"github.com/tendermint/tendermint/light"
 	lproxy "github.com/tendermint/tendermint/light/proxy"
 	lrpc "github.com/tendermint/tendermint/light/rpc"
@@ -141,7 +141,7 @@ func runProxy(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	trustLevel, err := tmmath.ParseFraction(trustLevelStr)
+	trustLevel, err := cmtmath.ParseFraction(trustLevelStr)
 	if err != nil {
 		return fmt.Errorf("can't parse trust level: %w", err)
 	}
@@ -218,7 +218,7 @@ func runProxy(cmd *cobra.Command, args []string) error {
 	}
 
 	// Stop upon receiving SIGTERM or CTRL-C.
-	tmos.TrapSignal(logger, func() {
+	cmtos.TrapSignal(logger, func() {
 		p.Listener.Close()
 	})
 

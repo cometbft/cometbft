@@ -73,10 +73,10 @@ func (pvKey FilePVKey) Save() {
 
 // FilePVLastSignState stores the mutable part of PrivValidator.
 type FilePVLastSignState struct {
-	Height    int64            `json:"height"`
-	Round     int32            `json:"round"`
-	Step      int8             `json:"step"`
-	Signature []byte           `json:"signature,omitempty"`
+	Height    int64             `json:"height"`
+	Round     int32             `json:"round"`
+	Step      int8              `json:"step"`
+	Signature []byte            `json:"signature,omitempty"`
 	SignBytes cmtbytes.HexBytes `json:"signbytes,omitempty"`
 
 	filePath string

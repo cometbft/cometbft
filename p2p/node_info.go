@@ -86,8 +86,8 @@ type DefaultNodeInfo struct {
 
 	// Check compatibility.
 	// Channels are HexBytes so easier to read as JSON
-	Network  string           `json:"network"`  // network/chain ID
-	Version  string           `json:"version"`  // major.minor.revision
+	Network  string            `json:"network"`  // network/chain ID
+	Version  string            `json:"version"`  // major.minor.revision
 	Channels cmtbytes.HexBytes `json:"channels"` // channels this node knows about
 
 	// ASCIIText fields

@@ -41,7 +41,7 @@ type GenesisDoc struct {
 	InitialHeight   int64              `json:"initial_height"`
 	ConsensusParams *ConsensusParams   `json:"consensus_params,omitempty"`
 	Validators      []GenesisValidator `json:"validators,omitempty"`
-	AppHash         cmtbytes.HexBytes   `json:"app_hash"`
+	AppHash         cmtbytes.HexBytes  `json:"app_hash"`
 	AppState        json.RawMessage    `json:"app_state,omitempty"`
 }
 

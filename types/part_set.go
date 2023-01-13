@@ -21,9 +21,9 @@ var (
 )
 
 type Part struct {
-	Index uint32           `json:"index"`
+	Index uint32            `json:"index"`
 	Bytes cmtbytes.HexBytes `json:"bytes"`
-	Proof merkle.Proof     `json:"proof"`
+	Proof merkle.Proof      `json:"proof"`
 }
 
 // ValidateBasic performs basic validation.
@@ -92,7 +92,7 @@ func PartFromProto(pb *cmtproto.Part) (*Part, error) {
 //-------------------------------------
 
 type PartSetHeader struct {
-	Total uint32           `json:"total"`
+	Total uint32            `json:"total"`
 	Hash  cmtbytes.HexBytes `json:"hash"`
 }
 

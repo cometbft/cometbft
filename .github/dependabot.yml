@@ -7,8 +7,8 @@ updates:
     target-branch: "main"
     open-pull-requests-limit: 10
     labels:
-      - T:dependencies
-      - S:automerge
+      - dependencies
+      - automerge
 
   - package-ecosystem: github-actions
     directory: "/"
@@ -17,8 +17,8 @@ updates:
     target-branch: "v0.37.x"
     open-pull-requests-limit: 10
     labels:
-      - T:dependencies
-      - S:automerge
+      - dependencies
+      - automerge
 
   - package-ecosystem: github-actions
     directory: "/"
@@ -27,14 +27,8 @@ updates:
     target-branch: "v0.34.x"
     open-pull-requests-limit: 10
     labels:
-      - T:dependencies
-      - S:automerge
-
-  - package-ecosystem: npm
-    directory: "/docs"
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 10
+      - dependencies
+      - automerge
 
   ###################################
   ##
@@ -47,8 +41,8 @@ updates:
     target-branch: "main"
     open-pull-requests-limit: 10
     labels:
-      - T:dependencies
-      - S:automerge
+      - dependencies
+      - automerge
 
   - package-ecosystem: gomod
     directory: "/"
@@ -59,8 +53,8 @@ updates:
     # branches.
     open-pull-requests-limit: 0
     labels:
-      - T:dependencies
-      - S:automerge
+      - dependencies
+      - automerge
 
   - package-ecosystem: gomod
     directory: "/"
@@ -71,5 +65,5 @@ updates:
     # branches.
     open-pull-requests-limit: 0
     labels:
-      - T:dependencies
-      - S:automerge
+      - dependencies
+      - automerge

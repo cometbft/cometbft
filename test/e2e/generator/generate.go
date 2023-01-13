@@ -1,13 +1,19 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
+	"github.com/tendermint/tendermint/version"
 )
 
 var (
@@ -22,12 +28,14 @@ var (
 		},
 		"validators": {"genesis", "initchain"},
 	}
-
+	nodeVersions = weightedChoice{
+		"": 2,
+	}
 	// The following specify randomly chosen values for testnet nodes.
 	nodeDatabases = uniformChoice{"goleveldb", "cleveldb", "rocksdb", "boltdb", "badgerdb"}
 	ipv6          = uniformChoice{false, true}
 	// FIXME: grpc disabled due to https://github.com/tendermint/tendermint/issues/5439
-	nodeABCIProtocols     = uniformChoice{"unix", "tcp", "builtin"} // "grpc"
+	nodeABCIProtocols     = uniformChoice{"unix", "tcp", "builtin", "builtin_unsync"} // "grpc"
 	nodePrivvalProtocols  = uniformChoice{"file", "unix", "tcp"}
 	nodeBlockSyncs        = uniformChoice{"v0"} // "v2"
 	nodeStateSyncs        = uniformChoice{false, true}
@@ -51,11 +59,44 @@ var (
 	voteExtensionEnabled            = uniformChoice{true, false}
 )
 
+type generateConfig struct {
+	randSource   *rand.Rand
+	outputDir    string
+	multiVersion string
+}
+
 // Generate generates random testnets using the given RNG.
-func Generate(r *rand.Rand) ([]e2e.Manifest, error) {
+func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
+	if cfg.multiVersion != "" {
+		var err error
+		nodeVersions, err = parseWeightedVersions(cfg.multiVersion)
+		if err != nil {
+			return nil, err
+		}
+		if _, ok := nodeVersions["local"]; ok {
+			nodeVersions[""] = nodeVersions["local"]
+			delete(nodeVersions, "local")
+		}
+		if _, ok := nodeVersions["latest"]; ok {
+			latestVersion, err := gitRepoLatestReleaseVersion(cfg.outputDir)
+			if err != nil {
+				return nil, err
+			}
+			nodeVersions[latestVersion] = nodeVersions["latest"]
+			delete(nodeVersions, "latest")
+		}
+	}
+	fmt.Println("Generating testnet with weighted versions:")
+	for ver, wt := range nodeVersions {
+		if ver == "" {
+			fmt.Printf("- local: %d\n", wt)
+		} else {
+			fmt.Printf("- %s: %d\n", ver, wt)
+		}
+	}
 	manifests := []e2e.Manifest{}
 	for _, opt := range combinations(testnetCombinations) {
-		manifest, err := generateTestnet(r, opt)
+		manifest, err := generateTestnet(cfg.randSource, opt)
 		if err != nil {
 			return nil, err
 		}
@@ -111,7 +152,7 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}) (e2e.Manifest, er
 	// First we generate seed nodes, starting at the initial height.
 	for i := 1; i <= numSeeds; i++ {
 		manifest.Nodes[fmt.Sprintf("seed%02d", i)] = generateNode(
-			r, e2e.ModeSeed, false, 0, manifest.InitialHeight, false)
+			r, e2e.ModeSeed, 0, manifest.InitialHeight, false)
 	}
 
 	// Next, we generate validators. We make sure a BFT quorum of validators start
@@ -126,12 +167,8 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}) (e2e.Manifest, er
 			nextStartAt += 5
 		}
 		name := fmt.Sprintf("validator%02d", i)
-		syncApp := false
-		if manifest.ABCIProtocol == string(e2e.ProtocolBuiltin) {
-			syncApp = r.Intn(100) >= 50
-		}
 		manifest.Nodes[name] = generateNode(
-			r, e2e.ModeValidator, syncApp, startAt, manifest.InitialHeight, i <= 2)
+			r, e2e.ModeValidator, startAt, manifest.InitialHeight, i <= 2)
 
 		if startAt == 0 {
 			(*manifest.Validators)[name] = int64(30 + r.Intn(71))
@@ -159,12 +196,8 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}) (e2e.Manifest, er
 			startAt = nextStartAt
 			nextStartAt += 5
 		}
-		syncApp := false
-		if manifest.ABCIProtocol == string(e2e.ProtocolBuiltin) {
-			syncApp = r.Intn(100) >= 50
-		}
 		manifest.Nodes[fmt.Sprintf("full%02d", i)] = generateNode(
-			r, e2e.ModeFull, syncApp, startAt, manifest.InitialHeight, false)
+			r, e2e.ModeFull, startAt, manifest.InitialHeight, false)
 	}
 
 	// We now set up peer discovery for nodes. Seed nodes are fully meshed with
@@ -227,11 +260,11 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}) (e2e.Manifest, er
 // here, since we need to know the overall network topology and startup
 // sequencing.
 func generateNode(
-	r *rand.Rand, mode e2e.Mode, syncApp bool, startAt int64, initialHeight int64, forceArchive bool,
+	r *rand.Rand, mode e2e.Mode, startAt int64, initialHeight int64, forceArchive bool,
 ) *e2e.ManifestNode {
 	node := e2e.ManifestNode{
+		Version:          nodeVersions.Choose(r).(string),
 		Mode:             string(mode),
-		SyncApp:          syncApp,
 		StartAt:          startAt,
 		Database:         nodeDatabases.Choose(r).(string),
 		PrivvalProtocol:  nodePrivvalProtocols.Choose(r).(string),
@@ -278,6 +311,7 @@ func generateNode(
 func generateLightNode(r *rand.Rand, startAt int64, providers []string) *e2e.ManifestNode {
 	return &e2e.ManifestNode{
 		Mode:            string(e2e.ModeLight),
+		Version:         nodeVersions.Choose(r).(string),
 		StartAt:         startAt,
 		Database:        nodeDatabases.Choose(r).(string),
 		PersistInterval: ptrUint64(0),
@@ -287,4 +321,102 @@ func generateLightNode(r *rand.Rand, startAt int64, providers []string) *e2e.Man
 
 func ptrUint64(i uint64) *uint64 {
 	return &i
+}
+
+// Parses strings like "v0.34.21:1,v0.34.22:2" to represent two versions
+// ("v0.34.21" and "v0.34.22") with weights of 1 and 2 respectively.
+func parseWeightedVersions(s string) (weightedChoice, error) {
+	wc := make(weightedChoice)
+	wvs := strings.Split(strings.TrimSpace(s), ",")
+	for _, wv := range wvs {
+		parts := strings.Split(strings.TrimSpace(wv), ":")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("unexpected weight:version combination: %s", wv)
+		}
+		ver := strings.TrimSpace(parts[0])
+		wt, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+		if err != nil {
+			return nil, fmt.Errorf("unexpected weight \"%s\": %w", parts[1], err)
+		}
+		if wt < 1 {
+			return nil, errors.New("version weights must be >= 1")
+		}
+		wc[ver] = uint(wt)
+	}
+	return wc, nil
+}
+
+// Extracts the latest release version from the given Git repository. Uses the
+// current version of Tendermint Core to establish the "major" version
+// currently in use.
+func gitRepoLatestReleaseVersion(gitRepoDir string) (string, error) {
+	opts := &git.PlainOpenOptions{
+		DetectDotGit: true,
+	}
+	r, err := git.PlainOpenWithOptions(gitRepoDir, opts)
+	if err != nil {
+		return "", err
+	}
+	tags := make([]string, 0)
+	tagObjs, err := r.TagObjects()
+	if err != nil {
+		return "", err
+	}
+	err = tagObjs.ForEach(func(tagObj *object.Tag) error {
+		tags = append(tags, tagObj.Name)
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+	return findLatestReleaseTag(version.TMCoreSemVer, tags)
+}
+
+func findLatestReleaseTag(baseVer string, tags []string) (string, error) {
+	baseSemVer, err := semver.NewVersion(strings.Split(baseVer, "-")[0])
+	if err != nil {
+		return "", fmt.Errorf("failed to parse base version \"%s\": %w", baseVer, err)
+	}
+	compVer := fmt.Sprintf("%d.%d", baseSemVer.Major(), baseSemVer.Minor())
+	// Build our version comparison string
+	// See https://github.com/Masterminds/semver#caret-range-comparisons-major for details
+	compStr := "^ " + compVer
+	verCon, err := semver.NewConstraint(compStr)
+	if err != nil {
+		return "", err
+	}
+	var latestVer *semver.Version
+	for _, tag := range tags {
+		if !strings.HasPrefix(tag, "v") {
+			continue
+		}
+		curVer, err := semver.NewVersion(tag)
+		// Skip tags that are not valid semantic versions
+		if err != nil {
+			continue
+		}
+		// Skip pre-releases
+		if len(curVer.Prerelease()) != 0 {
+			continue
+		}
+		// Skip versions that don't match our constraints
+		if !verCon.Check(curVer) {
+			continue
+		}
+		if latestVer == nil || curVer.GreaterThan(latestVer) {
+			latestVer = curVer
+		}
+	}
+	// No relevant latest version (will cause the generator to only use the tip
+	// of the current branch)
+	if latestVer == nil {
+		return "", nil
+	}
+	// Ensure the version string has a "v" prefix, because all Tendermint E2E
+	// node Docker images' versions have a "v" prefix.
+	vs := latestVer.String()
+	if !strings.HasPrefix(vs, "v") {
+		return "v" + vs, nil
+	}
+	return vs, nil
 }

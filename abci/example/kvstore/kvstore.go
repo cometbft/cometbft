@@ -152,15 +152,18 @@ func isValidTx(tx []byte) bool {
 // KVStore has two accepted formats, `:` and `=`, we modify all instances of `:` with `=` to make it consistent. Note: this is
 // quite a trivial example of transaction modification.
 // NOTE: we assume that Tendermint will never provide more transactions than can fit in a block.
-func (app *Application) PrepareProposal(_ context.Context, req *types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error) {
-	return &types.ResponsePrepareProposal{Txs: formatTxs(req.Txs)}, nil
+func (app *Application) PrepareProposal(ctx context.Context, req *types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error) {
+	return &types.ResponsePrepareProposal{Txs: app.formatTxs(ctx, req.Txs)}, nil
 }
 
-// formatTxs substitutes all the transactions with x:y to x=y
-func formatTxs(blockData [][]byte) [][]byte {
-	txs := make([][]byte, len(blockData))
-	for idx, tx := range blockData {
-		txs[idx] = bytes.Replace(tx, []byte(":"), []byte("="), 1)
+// formatTxs validates and excludes invalid transactions
+// also substitutes all the transactions with x:y to x=y
+func (app *Application) formatTxs(ctx context.Context, blockData [][]byte) [][]byte {
+	txs := make([][]byte, 0, len(blockData))
+	for _, tx := range blockData {
+		if resp, err := app.CheckTx(ctx, &types.RequestCheckTx{Tx: tx}); err == nil && resp.Code == CodeTypeOK {
+			txs = append(txs, bytes.Replace(tx, []byte(":"), []byte("="), 1))
+		}
 	}
 	return txs
 }

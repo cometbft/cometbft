@@ -77,6 +77,25 @@ func testKVStore(ctx context.Context, t *testing.T, app types.Application, tx []
 	require.EqualValues(t, info.LastBlockHeight, resQuery.Height)
 }
 
+func TestPersistentKVStoreEmptyTX(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	kvstore := NewPersistentApplication(t.TempDir())
+	tx := []byte("")
+	reqCheck := types.RequestCheckTx{Tx: tx}
+	resCheck, err := kvstore.CheckTx(ctx, &reqCheck)
+	require.NoError(t, err)
+	require.Equal(t, resCheck.Code, CodeTypeInvalidTxFormat)
+
+	txs := make([][]byte, 0, 4)
+	txs = append(txs, []byte("key=value"), []byte("key:val"), []byte(""), []byte("kee=value"))
+	reqPrepare := types.RequestPrepareProposal{Txs: txs, MaxTxBytes: 10 * 1024}
+	resPrepare, err := kvstore.PrepareProposal(ctx, &reqPrepare)
+	require.NoError(t, err)
+	require.Equal(t, len(reqPrepare.Txs)-1, len(resPrepare.Txs), "Empty transaction not properly removed")
+}
+
 func TestPersistentKVStoreKV(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

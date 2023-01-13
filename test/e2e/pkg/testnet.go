@@ -39,11 +39,12 @@ const (
 	ModeLight     Mode = "light"
 	ModeSeed      Mode = "seed"
 
-	ProtocolBuiltin Protocol = "builtin"
-	ProtocolFile    Protocol = "file"
-	ProtocolGRPC    Protocol = "grpc"
-	ProtocolTCP     Protocol = "tcp"
-	ProtocolUNIX    Protocol = "unix"
+	ProtocolBuiltin       Protocol = "builtin"
+	ProtocolBuiltinUnsync Protocol = "builtin_unsync"
+	ProtocolFile          Protocol = "file"
+	ProtocolGRPC          Protocol = "grpc"
+	ProtocolTCP           Protocol = "tcp"
+	ProtocolUNIX          Protocol = "unix"
 
 	PerturbationDisconnect Perturbation = "disconnect"
 	PerturbationKill       Perturbation = "kill"
@@ -80,9 +81,9 @@ type Testnet struct {
 // Node represents a Tendermint node in a testnet.
 type Node struct {
 	Name             string
+	Version          string
 	Testnet          *Testnet
 	Mode             Mode
-	SyncApp          bool // Should we use a synchronized app with an unsynchronized local client?
 	PrivvalKey       crypto.PrivKey
 	NodeKey          crypto.PrivKey
 	IP               net.IP
@@ -180,15 +181,19 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		if !ok {
 			return nil, fmt.Errorf("information for node '%s' missing from infrastucture data", name)
 		}
+		v := nodeManifest.Version
+		if v == "" {
+			v = "local-version"
+		}
 		node := &Node{
 			Name:             name,
+			Version:          v,
 			Testnet:          testnet,
 			PrivvalKey:       keyGen.Generate(manifest.KeyType),
 			NodeKey:          keyGen.Generate("ed25519"),
 			IP:               ind.IPAddress,
 			ProxyPort:        proxyPortGen.Next(),
 			Mode:             ModeValidator,
-			SyncApp:          nodeManifest.SyncApp,
 			Database:         "goleveldb",
 			ABCIProtocol:     Protocol(testnet.ABCIProtocol),
 			PrivvalProtocol:  ProtocolFile,
@@ -352,11 +357,11 @@ func (n Node) Validate(testnet Testnet) error {
 		return fmt.Errorf("invalid database setting %q", n.Database)
 	}
 	switch n.ABCIProtocol {
-	case ProtocolBuiltin, ProtocolUNIX, ProtocolTCP, ProtocolGRPC:
+	case ProtocolBuiltin, ProtocolBuiltinUnsync, ProtocolUNIX, ProtocolTCP, ProtocolGRPC:
 	default:
 		return fmt.Errorf("invalid ABCI protocol setting %q", n.ABCIProtocol)
 	}
-	if n.Mode == ModeLight && n.ABCIProtocol != ProtocolBuiltin {
+	if n.Mode == ModeLight && n.ABCIProtocol != ProtocolBuiltin && n.ABCIProtocol != ProtocolBuiltinUnsync {
 		return errors.New("light client must use builtin protocol")
 	}
 	switch n.PrivvalProtocol {

@@ -11,8 +11,8 @@ import (
 )
 
 // ABCIQuery queries the application for some information.
-// More: https://docs.tendermint.com/main/rpc/#/ABCI/abci_query
-func ABCIQuery(
+// More: https://docs.tendermint.com/master/rpc/#/ABCI/abci_query
+func (env *Environment) ABCIQuery(
 	ctx *rpctypes.Context,
 	path string,
 	data bytes.HexBytes,
@@ -34,7 +34,7 @@ func ABCIQuery(
 
 // ABCIInfo gets some info about the application.
 // More: https://docs.tendermint.com/main/rpc/#/ABCI/abci_info
-func ABCIInfo(ctx *rpctypes.Context) (*ctypes.ResultABCIInfo, error) {
+func (env *Environment) ABCIInfo(ctx *rpctypes.Context) (*ctypes.ResultABCIInfo, error) {
 	resInfo, err := env.ProxyAppQuery.Info(context.TODO(), proxy.RequestInfo)
 	if err != nil {
 		return nil, err

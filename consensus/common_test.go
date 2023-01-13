@@ -134,7 +134,7 @@ func (vs *validatorStub) signVote(
 func signVote(vs *validatorStub, voteType tmproto.SignedMsgType, hash []byte, header types.PartSetHeader) *types.Vote {
 	var ext []byte
 	// Only non-nil precommits are allowed to carry vote extensions.
-	if voteType == tmproto.PrecommitType && len(hash) != 0 {
+	if voteType == tmproto.PrecommitType && !(len(hash) == 0 && header.IsZero()) {
 		ext = []byte("extension")
 	}
 	v, err := vs.signVote(voteType, hash, header, ext)

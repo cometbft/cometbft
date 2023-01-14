@@ -53,15 +53,28 @@ The specification is divided in multiple documents
 * [implementation.md](./implementation.md): a description of what is currently implemented in Tendermint Core, in English.
 * [implementation.qnt](./implementation.qnt): Quint model of current behavior, for model checking of provided properties.
 
+# Conventions
+
+* MUST, SHOULD, MAY...
+* [X-Y-Z-W.C]
+    * X: What
+        * VOC: Vocabulary
+        * DEF: Definition
+        * REQ: Requires
+        * PROV: Provides
+    * Y-Z: Who-to whom
+    * W.C: Identifier.Counter
+
+
 # Status
 
-> **Warning**
+> **Warning**    
 > This is a Work In Progress
 
-> **Warning**
-> Permalinks to excerpts of the Quint specification are provided for convenience throughout this document for convenience, but may outdated.
+> **Warning**    
+> Permalinks to excerpts of the Quint specification are provided throughout this document for convenience, but may outdated.
 
-The following table summarizes the relationship between requirements and provisions on the GOSSIP-I, if they are formally defined in :quint:, and if there is a discussion of how the current implementation of CometBFT :comet: matches the provisions.
+The following table summarizes the relationship between requirements and provisions on the GOSSIP-I, if they are formally defined in Quint, and if there is a discussion of how the current implementation of CometBFT :comet: matches the provisions.
 
 | Requirement |Quint | Provision | Quint | Match | Implemented |
 |----|----|----|----|----|----|
@@ -89,7 +102,6 @@ Smaller items are spread throughout the document.
     - Common vocabulary
     - CONS
     - GOSSIP
-
 
 # Outline
 
@@ -169,19 +181,6 @@ While GST cannot be enforced but simply assumed to show that algorithms can make
 > * Include "message is not superseded before max(t,gst)+Delta"?
 > * Consider supersession due to original sender sending a new message or it happening en route?
 > * Show that "best-effort superseded communication" + GST implies "Eventual delta timely superseded communication".
-
-## Conventions
-
-* MUST, SHOULD, MAY...
-* [X-Y-Z-W.C]
-    * X: What
-        * VOC: Vocabulary
-        * DEF: Definition
-        * REQ: Requires
-        * PROV: Provides
-    * Y-Z: Who-to whom
-    * W.C: Identifier.Counter
-
 
 # Part 2: CONS/GOSSIP interaction
 CONS, the Consensus Reactor State Layer, is where the actions of the Tendermint BFT are implemented.

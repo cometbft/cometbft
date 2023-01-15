@@ -84,7 +84,7 @@ The following table summarizes the relationship between requirements and provisi
 | [REQ-CONS-GOSSIP-DELIVERY.2]      | X | [PROV-GOSSIP-CONS-DELIVERY.2]         | X | X |  |
 | [REQ-GOSSIP-CONS-SUPERSESSION.1]  | X | [PROV-CONS-GOSSIP-SUPERSESSION.1]     | X | X |  |
 | [REQ-GOSSIP-CONS-SUPERSESSION.2]  | X | [PROV-CONS-GOSSIP-SUPERSESSION.2]     |   |   |  |
-|                                   |   | [PROV-CONS-GOSSIP-SUPERSESSION.3]     |   |   |  |
+|                                   |   | [PROV-CONS-GOSSIP-SUPERSESSION.3]     | X |   |  |
 | [REQ-GOSSIP-P2P-CONNECTION.1]     | X |                                       |   |   |  |
 | [REQ-GOSSIP-P2P-UNICAST.1]        | X |                                       |   |   |  |
 | [REQ-GOSSIP-P2P-UNICAST.2]        | X |                                       |   |   |  |
@@ -272,12 +272,13 @@ In order to identify when a message has been superseded, GOSSIP must be provided
 |----|
 |`SSS(lhs,rhs)` returns true if and only if $\text{lhs}.\text{SSS}(\text{rhs})$
 
-And does not broadcast messages superseded at creation (TODO: at all?)
 
 
 |[PROV-CONS-GOSSIP-SUPERSESSION.2]|
 |----|
-| TODO
+| The number of non-superseded messages broadcast by a process is limited by some constant.
+
+And does not broadcast messages superseded at creation (TODO: at all?)
 
 |[PROV-CONS-GOSSIP-SUPERSESSION.3]|
 |----|

@@ -38,13 +38,18 @@ Either way, the following ensues:
         1. calls `addProposalBlockPart` to accumulates block parts for corresponding proposal
         2. if all parts for a message have been accumulated, call `handleCompleteProposal`, meaning that the `ProposalMessage` is delivered.
 
-4. Concurrently, `gossipDataRoutine` sends messages to connected peers.
-    1. If a `ProposalMessage`, 
+4. Concurrently, `gossipDataRoutine` periodically interacts with all neighbors and
+    1. sends `ProposalPartMessage`s that the peer is missing, if not superseded
+        1. marks each block part as known to peer with `SetHasProposalBlockPart`
+    2. send the `ProposalMessage` that the peer is missing, if not superseded
+        1. marks the proposal as known to peer with `SetHasProposal`
+
 
 * [REQ-CONS-GOSSIP-BROADCAST.1.1]: 1.3.1 + 1.3.1 imply that the broadcast of a `ProposalMessage` is performed at least locally.
 * [REQ-CONS-GOSSIP-DELIVERY.1.1]: [REQ-CONS-GOSSIP-BROADCAST.1.1] + 3.1 + 3.2 imply that the broadcast of a `ProposalMessage` implies that it is delivered locally, if the process is correct.
-* [REQ-CONS-GOSSIP-BROADCAST.1.2]: [REQ-CONS-GOSSIP-DELIVERY.1.1] + 4 implies that the broadcast of a `ProposalMessage` will send the message to all neighbors, as long as the `ProposalMessage` is not superseded.
+* [REQ-CONS-GOSSIP-BROADCAST.1.2]: [REQ-CONS-GOSSIP-DELIVERY.1.1] + 4 implies that the broadcast of a `ProposalMessage` will send the message to all nodes that were neighbors when the message was broadcast,[^delay] as long as the `ProposalMessage` is not superseded. 
 
+[^delay]: Not exactly at the same time, but soon after, where soon depends on the sleep value used in `receiveRoutine`.
 
 * [REQ-CONS-GOSSIP-BROADCAST.1]: Implied by [REQ-CONS-GOSSIP-BROADCAST.1.1] + [REQ-CONS-GOSSIP-BROADCAST.1.2]
 * [REQ-CONS-GOSSIP-DELIVERY.1]: Implied by [REQ-CONS-GOSSIP-DELIVERY.1.1] + [REQ-CONS-GOSSIP-DELIVERY.1.2]

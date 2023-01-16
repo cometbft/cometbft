@@ -420,8 +420,8 @@ title: Methods
       `next_validators_hash`, and `proposer_address` are the same as in `RequestProcessProposal`.
     * `RequestPrepareProposal.local_last_commit` is a set of the precommit votes that allowed the
       decision of the previous block.
-    * The `height`, `time`, and `proposer_address` values match the values from the header of the
-      proposed block.
+    * Fields `height`, `time`, `proposer_address`, and `next_validators_hash` match the values from
+      the header of the proposed block.
     * `RequestPrepareProposal` contains a preliminary set of transactions `txs` that CometBFT
       retrieved from the mempool, called _raw proposal_. The Application can modify this
       set and return a modified set of transactions via `ResponsePrepareProposal.txs` .

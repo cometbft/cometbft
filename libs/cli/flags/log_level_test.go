@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	tmflags "github.com/tendermint/tendermint/libs/cli/flags"
+	cmtflags "github.com/tendermint/tendermint/libs/cli/flags"
 	"github.com/tendermint/tendermint/libs/log"
 )
 
@@ -44,7 +44,7 @@ func TestParseLogLevel(t *testing.T) {
 	}
 
 	for _, c := range correctLogLevels {
-		logger, err := tmflags.ParseLogLevel(c.lvl, jsonLogger, defaultLogLevelValue)
+		logger, err := cmtflags.ParseLogLevel(c.lvl, jsonLogger, defaultLogLevelValue)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -87,7 +87,7 @@ func TestParseLogLevel(t *testing.T) {
 
 	incorrectLogLevel := []string{"some", "mempool:some", "*:some,mempool:error"}
 	for _, lvl := range incorrectLogLevel {
-		if _, err := tmflags.ParseLogLevel(lvl, jsonLogger, defaultLogLevelValue); err == nil {
+		if _, err := cmtflags.ParseLogLevel(lvl, jsonLogger, defaultLogLevelValue); err == nil {
 			t.Fatalf("Expected %s to produce error", lvl)
 		}
 	}

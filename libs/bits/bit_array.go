@@ -7,9 +7,9 @@ import (
 	"strings"
 	"sync"
 
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	tmprotobits "github.com/tendermint/tendermint/proto/tendermint/libs/bits"
+	cmtmath "github.com/tendermint/tendermint/libs/math"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
+	cmtprotobits "github.com/tendermint/tendermint/proto/tendermint/libs/bits"
 )
 
 // BitArray is a thread-safe implementation of a bit array.
@@ -123,8 +123,8 @@ func (bA *BitArray) Or(o *BitArray) *BitArray {
 	}
 	bA.mtx.Lock()
 	o.mtx.Lock()
-	c := bA.copyBits(tmmath.MaxInt(bA.Bits, o.Bits))
-	smaller := tmmath.MinInt(len(bA.Elems), len(o.Elems))
+	c := bA.copyBits(cmtmath.MaxInt(bA.Bits, o.Bits))
+	smaller := cmtmath.MinInt(len(bA.Elems), len(o.Elems))
 	for i := 0; i < smaller; i++ {
 		c.Elems[i] |= o.Elems[i]
 	}
@@ -150,7 +150,7 @@ func (bA *BitArray) And(o *BitArray) *BitArray {
 }
 
 func (bA *BitArray) and(o *BitArray) *BitArray {
-	c := bA.copyBits(tmmath.MinInt(bA.Bits, o.Bits))
+	c := bA.copyBits(cmtmath.MinInt(bA.Bits, o.Bits))
 	for i := 0; i < len(c.Elems); i++ {
 		c.Elems[i] &= o.Elems[i]
 	}
@@ -192,7 +192,7 @@ func (bA *BitArray) Sub(o *BitArray) *BitArray {
 	// If o is longer, those bits are ignored.
 	// If bA is longer, then skipping those iterations is equivalent
 	// to right padding with 0's
-	smaller := tmmath.MinInt(len(bA.Elems), len(o.Elems))
+	smaller := cmtmath.MinInt(len(bA.Elems), len(o.Elems))
 	for i := 0; i < smaller; i++ {
 		// &^ is and not in golang
 		c.Elems[i] &^= o.Elems[i]
@@ -254,7 +254,7 @@ func (bA *BitArray) PickRandom() (int, bool) {
 		return 0, false
 	}
 
-	return trueIndices[tmrand.Intn(len(trueIndices))], true
+	return trueIndices[cmtrand.Intn(len(trueIndices))], true
 }
 
 func (bA *BitArray) getTrueIndices() []int {
@@ -419,19 +419,19 @@ func (bA *BitArray) UnmarshalJSON(bz []byte) error {
 }
 
 // ToProto converts BitArray to protobuf
-func (bA *BitArray) ToProto() *tmprotobits.BitArray {
+func (bA *BitArray) ToProto() *cmtprotobits.BitArray {
 	if bA == nil || len(bA.Elems) == 0 {
 		return nil
 	}
 
-	return &tmprotobits.BitArray{
+	return &cmtprotobits.BitArray{
 		Bits:  int64(bA.Bits),
 		Elems: bA.Elems,
 	}
 }
 
 // FromProto sets a protobuf BitArray to the given pointer.
-func (bA *BitArray) FromProto(protoBitArray *tmprotobits.BitArray) {
+func (bA *BitArray) FromProto(protoBitArray *cmtprotobits.BitArray) {
 	if protoBitArray == nil {
 		bA = nil
 		return

@@ -9,7 +9,7 @@ import (
 	"github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/inspect/rpc"
 	"github.com/tendermint/tendermint/libs/log"
-	tmstrings "github.com/tendermint/tendermint/libs/strings"
+	cmtstrings "github.com/tendermint/tendermint/libs/strings"
 	rpccore "github.com/tendermint/tendermint/rpc/core"
 	"github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/state/indexer"
@@ -98,7 +98,7 @@ func (ins *Inspector) Run(ctx context.Context) error {
 
 func startRPCServers(ctx context.Context, cfg *config.RPCConfig, logger log.Logger, routes rpccore.RoutesMap) error {
 	g, tctx := errgroup.WithContext(ctx)
-	listenAddrs := tmstrings.SplitAndTrimEmpty(cfg.ListenAddress, ",", " ")
+	listenAddrs := cmtstrings.SplitAndTrimEmpty(cfg.ListenAddress, ",", " ")
 	rh := rpc.Handler(cfg, routes, logger)
 	for _, listenerAddr := range listenAddrs {
 		server := rpc.Server{

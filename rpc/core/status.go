@@ -3,7 +3,7 @@ package core
 import (
 	"time"
 
-	tmbytes "github.com/tendermint/tendermint/libs/bytes"
+	cmtbytes "github.com/tendermint/tendermint/libs/bytes"
 	"github.com/tendermint/tendermint/p2p"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	rpctypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
@@ -16,8 +16,8 @@ import (
 func (env *Environment) Status(ctx *rpctypes.Context) (*ctypes.ResultStatus, error) {
 	var (
 		earliestBlockHeight   int64
-		earliestBlockHash     tmbytes.HexBytes
-		earliestAppHash       tmbytes.HexBytes
+		earliestBlockHash     cmtbytes.HexBytes
+		earliestAppHash       cmtbytes.HexBytes
 		earliestBlockTimeNano int64
 	)
 
@@ -29,8 +29,8 @@ func (env *Environment) Status(ctx *rpctypes.Context) (*ctypes.ResultStatus, err
 	}
 
 	var (
-		latestBlockHash     tmbytes.HexBytes
-		latestAppHash       tmbytes.HexBytes
+		latestBlockHash     cmtbytes.HexBytes
+		latestAppHash       cmtbytes.HexBytes
 		latestBlockTimeNano int64
 
 		latestHeight = env.BlockStore.Height()

@@ -170,8 +170,7 @@ Informal Systems also maintains [cometbft.com](https://cometbft.com).
 [bft]: https://en.wikipedia.org/wiki/Byzantine_fault_tolerance
 [smr]: https://en.wikipedia.org/wiki/State_machine_replication
 [Blockchain]: https://en.wikipedia.org/wiki/Blockchain
-[version-badge]: ToDo 
-<!-- (https://img.shields.io/github/v/release/tendermint/tendermint.svg) -->
+[version-badge]: https://img.shields.io/github/v/release/tendermint/tendermint.svg
 [version-url]: https://github.com/cometbft/cometbft/releases/latest
 [api-badge]: https://camo.githubusercontent.com/915b7be44ada53c290eb157634330494ebe3e30a/68747470733a2f2f676f646f632e6f72672f6769746875622e636f6d2f676f6c616e672f6764646f3f7374617475732e737667
 [api-url]: https://pkg.go.dev/github.com/cometbft/cometbft
@@ -179,8 +178,7 @@ Informal Systems also maintains [cometbft.com](https://cometbft.com).
 [go-url]: https://github.com/moovweb/gvm
 [discord-badge]: https://img.shields.io/discord/669268347736686612.svg
 [discord-url]: https://discord.gg/cosmosnetwork
-[license-badge]: ToDo
-<!-- https://img.shields.io/github/license/cometbft/cometbft.svg -->
+[license-badge]: https://img.shields.io/github/license/cometbft/cometbft.svg
 [license-url]: https://github.com/cometbft/cometbft/blob/main/LICENSE
 [sg-badge]: https://sourcegraph.com/github.com/cometbft/cometbft/-/badge.svg
 [sg-url]: https://sourcegraph.com/github.com/cometbft/cometbft?badge

@@ -38,7 +38,7 @@ require (
 )
 
 require (
-	github.com/bufbuild/buf v1.11.0
+	github.com/bufbuild/buf v1.12.0
 	github.com/creachadair/taskgroup v0.4.2
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )
@@ -83,7 +83,7 @@ require (
 	github.com/bombsimon/wsl/v3 v3.3.0 // indirect
 	github.com/breml/bidichk v0.2.3 // indirect
 	github.com/breml/errchkjson v0.3.0 // indirect
-	github.com/bufbuild/connect-go v1.4.0 // indirect
+	github.com/bufbuild/connect-go v1.4.1 // indirect
 	github.com/bufbuild/protocompile v0.1.0 // indirect
 	github.com/butuzov/ireturn v0.1.1 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect

@@ -1,6 +1,6 @@
 name: Docker
-# Build & Push rebuilds the Tendermint docker image on every push to main and creation of tags
-# and pushes the image to https://hub.docker.com/r/cometbft/tendermint
+# Build & Push rebuilds the CometBFT docker image on every push to main and creation of tags
+# and pushes the image to https://hub.docker.com/r/cometbft/cometbft
 on:
   push:
     branches:
@@ -19,7 +19,7 @@ jobs:
       - name: Prepare
         id: prep
         run: |
-          DOCKER_IMAGE=cometbft/tendermint
+          DOCKER_IMAGE=cometbft/cometbft
           VERSION=noop
           if [[ $GITHUB_REF == refs/tags/* ]]; then
             VERSION=${GITHUB_REF#refs/tags/}
@@ -51,7 +51,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Publish to Docker Hub
-        uses: docker/build-push-action@v3.2.0
+        uses: docker/build-push-action@v3.3.0
         with:
           context: .
           file: ./DOCKER/Dockerfile

@@ -31,7 +31,7 @@ ENV PYTHONPATH="/home/user/python/lib/python2.7/site-packages"
 RUN pip install pyparsing
 RUN python2.7 setup.py install --prefix="/home/user/python/"
 ENV PATH=$PATH:"/home/user/python/bin/"
-WORKDIR /home/user/tendermint-proof/
+WORKDIR /home/user/cometbft-proof/
 
-ENTRYPOINT ["/home/user/tendermint-proof/check_proofs.sh"]
+ENTRYPOINT ["/home/user/cometbft-proof/check_proofs.sh"]
 

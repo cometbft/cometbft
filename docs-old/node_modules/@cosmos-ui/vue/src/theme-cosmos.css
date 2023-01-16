@@ -1,0 +1,74 @@
+body {
+  --ds-font-family: "Metropolis", sans-serif;
+
+  --ds-d1-font-size: 5rem;
+  --ds-d1-font-weight: 600;
+  --ds-d1-line-height: 6rem;
+  --ds-d1-letter-spacing: -0.075em;
+
+  --ds-d2-font-size: 4rem;
+  --ds-d2-font-weight: 600;
+  --ds-d2-line-height: 5rem;
+  --ds-d2-letter-spacing: -0.075em;
+
+  --ds-d3-font-size: 3rem;
+  --ds-d3-font-weight: 600;
+  --ds-d3-line-height: 4rem;
+  --ds-d3-letter-spacing: -0.07em;
+
+  --ds-h1-font-size: 3rem;
+  --ds-h1-font-weight: 600;
+  --ds-h1-line-height: 3.25rem;
+  --ds-h1-letter-spacing: -0.065em;
+
+  --ds-h2-font-size: 2.5rem;
+  --ds-h2-font-weight: 600;
+  --ds-h2-line-height: 3.25rem;
+  --ds-h2-letter-spacing: -0.065em;
+
+  --ds-h3-font-size: 1.5rem;
+  --ds-h3-font-weight: 600;
+  --ds-h3-line-height: 2rem;
+  --ds-h3-letter-spacing: -0.05em;
+
+  --ds-h4-font-size: 1.25rem;
+  --ds-h4-font-weight: 600;
+  --ds-h4-line-height: 2rem;
+  --ds-h4-letter-spacing: -0.045em;
+
+  /* to be removed */
+  --ds-h5-font-size: 0.875rem;
+  --ds-h5-font-weight: rgba(0,0,0,.5);
+
+  /* to be removed */
+  --ds-h6-font-size: 0.75rem;
+  --ds-h6-text-transform: uppercase;
+  --ds-h6-letter-spacing: .2em;
+
+  --ds-body1-font-size: 1rem;
+  --ds-body1-line-height: 1.5rem;
+  --ds-body1-letter-spacing: -0.03em;
+
+  --ds-body2-font-size: 0.875rem;
+  --ds-body2-line-height: 1.25rem;
+  --ds-body2-letter-spacing: -0.02em;
+
+  --ds-p2-font-size: 0.875rem;
+
+  --ds-p3-font-size: 0.825rem;
+
+  --ds-caption-book-font-size: 0.8125rem;
+  --ds-caption-book-line-height: 1.125rem;
+  --ds-caption-book-letter-spacing: -0.02em;
+
+  --ds-overline-book-font-size: 0.8125rem;
+  --ds-overline-book-line-height: 1.125rem;
+  --ds-overline-book-letter-spacing: -0.02em;
+
+  --ds-elevation-1: 0px 2px 4px rgba(22, 25, 49, 0.05), 0px 0px 1px rgba(22, 25, 49, 0.2), 0px 0.5008px 0px rgba(22, 25, 49, 0.05);
+  --ds-elevation-2: 0px 10px 20px rgba(22, 25, 49, 0.05), 0px 2px 6px rgba(22, 25, 49, 0.05), 0px 1px 0px rgba(22, 25, 49, 0.05);
+  --ds-elevation-3: 0px 12px 24px rgba(22, 25, 49, 0.07), 0px 4px 8px rgba(22, 25, 49, 0.05), 0px 1px 0px rgba(22, 25, 49, 0.05);
+  --ds-elevation-4: 0px 16px 32px rgba(22, 25, 49, 0.08), 0px 8px 12px rgba(22, 25, 49, 0.06), 0px 1px 0px rgba(22, 25, 49, 0.05);
+  --ds-elevation-5: 0px 24px 40px rgba(22, 25, 49, 0.1), 0px 10px 16px rgba(22, 25, 49, 0.08), 0px 1px 0px rgba(22, 25, 49, 0.05);
+  --ds-elevation-6: 0px 28px 48px rgba(22, 25, 49, 0.11), 0px 16px 20px rgba(22, 25, 49, 0.1), 0px 1px 0px rgba(22, 25, 49, 0.05);
+}

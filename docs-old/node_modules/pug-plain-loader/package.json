@@ -1,0 +1,31 @@
+{
+  "name": "pug-plain-loader",
+  "version": "1.1.0",
+  "description": "Pug to plain html loader for webpack",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yyx990803/pug-plain-loader.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yyx990803/pug-plain-loader/issues"
+  },
+  "homepage": "https://github.com/yyx990803/pug-plain-loader",
+  "keywords": [
+    "pug",
+    "loader",
+    "webpack",
+    "plain"
+  ],
+  "author": "Evan You <yyx990803@gmail.com>",
+  "license": "MIT",
+  "peerDependencies": {
+    "pug": "^2.0.0 || ^3.0.0"
+  },
+  "dependencies": {
+    "loader-utils": "^1.1.0"
+  },
+  "devDependencies": {
+    "pug": "^2.0.3"
+  }
+}

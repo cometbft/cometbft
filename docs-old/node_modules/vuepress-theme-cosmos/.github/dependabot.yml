@@ -1,0 +1,28 @@
+version: 2
+updates:
+- package-ecosystem: npm
+  directory: "/"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  reviewers:
+  - lovincyrus
+  labels:
+  - dependencies
+  ignore:
+  - dependency-name: "@cosmos-ui/vue"
+    versions:
+    - ">= 0"
+  - dependency-name: core-js
+    versions:
+    - 3.10.1
+    - 3.10.2
+    - 3.11.0
+  - dependency-name: algoliasearch
+    versions:
+    - 4.8.6
+    - 4.9.0
+  commit-message:
+    prefix: fix
+    prefix-development: chore
+    include: scope

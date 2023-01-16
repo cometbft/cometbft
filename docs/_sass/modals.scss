@@ -1,0 +1,17 @@
+:root {
+  --borderRadius--normal: 0.5rem;
+  --shadow--normal: 0 5px 5px var(--color--shadow);
+}
+
+.ModalLayer {
+  background-color: white;
+  border: 2px solid var(--color--border);
+  border-radius: var(--borderRadius--normal);
+  box-shadow: var(--shadow--normal);
+  @include paddingX(normal);
+  @include paddingY(tight);
+}
+
+.ModalWindow {
+  @extend .ModalLayer;
+}

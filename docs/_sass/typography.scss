@@ -1,0 +1,53 @@
+:root {
+  --font--display: 'Glegoo', serif;
+  --font--body: 'Inter', sans-serif;
+
+  --fontSize--small: 0.8rem;
+  --fontSize--normal: 1rem;
+  --fontSize--large: 1.25rem;
+  --fontSize--xLarge: 2rem;
+
+  --lineHeight--small: 1rem;
+  --lineHeight--normal: 1.4rem;
+  --lineHeight--large: 2rem;
+  --lineHeight--xLarge: 2.5rem;
+
+  font-family: var(--font--body);
+  font-size: 14px;
+  line-height: var(--lineHeight--normal);
+}
+
+.text--link {
+  color: var(--color--primary);
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.text--heading {
+  color: var(--color--primary);
+  font-family: var(--font--display);
+  font-weight: 700;
+}
+
+.text--heading--1,
+.text--heading--2,
+.text--heading--3 {
+  @extend .text--heading;
+}
+
+.text--heading--1 {
+  @include fontSize(xLarge);
+}
+
+.text--heading--2,
+.text--heading--3 {
+  margin-top: 100px;
+  @include marginTop(loose);
+}
+
+.text--heading--2 {
+  @include fontSize(large);
+}

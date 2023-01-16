@@ -1,0 +1,38 @@
+/* Colors from Design System 1.0 */
+
+:root {
+  /* to be removed */
+  --black: black;
+
+  --grey-14: #161931;
+  --grey-23: #2e3148;
+  --grey-44: #686a79;
+  --grey-66: #a2a3ad;
+  --grey-88: #dadce6;
+  --grey-95: #eff0f5;
+  --grey-98: #f8f9fc;
+  --grey-trans-23: rgba(22, 25, 49, 0.9);
+  --grey-trans-44: rgba(22, 25, 49, 0.65);
+  --grey-trans-66: rgba(51, 54, 74, 0.4);
+  --grey-trans-88: rgba(140, 145, 177, 0.32);
+  --grey-trans-95: rgba(176, 180, 207, 0.2);
+  --grey-trans-98: rgba(176, 180, 207, 0.09);
+  --white-100: #ffffff;
+  --white-80: rgba(255, 255, 255, 0.8);
+  --white-51: rgba(255, 255, 255, 0.51);
+  --white-32: rgba(255, 255, 255, 0.32);
+  --white-20: rgba(255, 255, 255, 0.2);
+  --white-10: rgba(255, 255, 255, 0.1);
+  --primary: #5064fb;
+  --primary-dark: #46509f;
+  --primary-light: #66a1ff;
+  --secondary: #ba3fd9;
+  --secondary-dark: #9214b1;
+  --success: #5bc75b;
+  --success-alt: #ddeedd;
+  --warning: #e6900a;
+  --warning-alt: #fef5e7;
+  --danger: #dd285e;
+  --danger-alt: #fdecf1;
+  --gradient: linear-gradient(0deg, #3023ae 0%, #c86dd7 100%);
+}

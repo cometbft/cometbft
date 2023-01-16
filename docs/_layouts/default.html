@@ -1,0 +1,105 @@
+{%- assign rawActiveSectionTitle = page.path | split: '/' | slice: 1 | join: '' | split: "-" | slice: 1, 100 -%}
+{%- capture untrimmedActiveSectionTitle -%}
+  {%- for word in rawActiveSectionTitle -%}
+    {{- word | capitalize -}},
+  {%- endfor -%}
+{%- endcapture -%}
+{%- assign activeSectionTitle = untrimmedActiveSectionTitle | split: "," | join: " " -%}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/assets/css/styles.css" />
+    <title>{{- site.title -}} - {{- activeSectionTitle -}} - {{- page.title -}}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Glegoo:wght@400;700&family=Inter:wght@300;700&display=swap" rel="stylesheet" />
+    <script src="https://kit.fontawesome.com/401fb1e734.js" crossorigin="anonymous"></script>
+    <script src="/assets/js/navigation.js"></script>
+    <script src="/assets/js/search.js"></script>
+  </head>
+
+  <body>
+    {%- assign groupedPages = site.pages | where_exp: "page", "page.order" | group_by_exp: "page", "page.path | split: '/' | slice: 1 | join: ''" -%}
+
+    <div class="GridLayout">
+      <header class="SiteHeader">
+        <div class="SiteHeader-content">
+          <div class="SiteHeader-logo">
+            <h1 class="SiteHeader-logoText">CometBFT</h1>
+            <h2 class="SiteHeader-logoSubtext">Documentation</h2>
+          </div>
+
+          <div class="SiteSearch">
+            <div class="SiteSearch-inputWrapper">
+              <input
+                class="js-search-input"
+                placeholder="Search..."
+                type="search" />
+            </div>
+
+            <ul class="SiteSearch-results js-search-results"></ul>
+          </div>
+        </div>
+      </header>
+
+      <nav class="PrimaryNavigation">
+        <ul class="PrimaryNavigation-items">
+          {%- for group in groupedPages -%}
+            {%- assign rawSectionTitle = group.name | split: "-" | slice: 1, 100 -%}
+            {%- capture untrimmedSectionTitle -%}
+              {%- for word in rawSectionTitle -%}
+                {{- word | capitalize -}},
+              {%- endfor -%}
+            {%- endcapture -%}
+            {%- assign sectionTitle = untrimmedSectionTitle | split: "," | join: " " -%}
+            {%- assign sortedPages = group.items | sort: "order" -%}
+
+            <li class="PrimaryNavigation-item{% if sectionTitle == activeSectionTitle %} is-active{% endif %}">
+              <h2>
+                <a class="PrimaryNavigation-button" href="#">
+                  {{- sectionTitle -}}
+                </a>
+              </h2>
+
+              <ul class="PrimaryNavigation-subItems">
+                {%- for currentPage in sortedPages -%}
+                  <li class="PrimaryNavigation-subItem">
+                    <a class="PrimaryNavigation-subButton{% if page.url == currentPage.url %} is-active{% endif %}" href="{{- currentPage.url -}}">
+                      {{- currentPage.title -}}
+                    </a>
+                  </li>
+                {%- endfor -%}
+              </ul>
+            </li>
+          {%- endfor -%}
+        </ul>
+      </nav>
+
+      <aside class="TableOfContents">
+        <div class="TableOfContents-content">
+          <h2 class="TableOfContents-title">On This Page</h2>
+
+          {% include toc.html
+           html = content
+           class = "TableOfContents-items"
+           item_class = "TableOfContents-item"
+           anchor_class = "TableOfContents-button"
+           submenu_class = "TableOfContents-subItems"
+           h_min = 2 %}
+        </div>
+      </aside>
+
+      <main class="PageContent">
+        {{ content }}
+      </main>
+
+      <footer class="SiteFooter">
+        <div>
+          &copy; {{ "now" | date: "%Y" }} CometBFT
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

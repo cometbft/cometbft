@@ -1,0 +1,56 @@
+{
+  "name": "vuepress-theme-cosmos",
+  "version": "1.0.183",
+  "description": "Theme for VuePress static site generator used by Tendermint and Cosmos projects.",
+  "main": "index.js",
+  "scripts": {
+    "postversion": "git push && git push --tags"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cosmos/vuepress-theme-cosmos.git"
+  },
+  "keywords": [
+    "documentation",
+    "docs",
+    "cosmos",
+    "tendermint",
+    "vuepress",
+    "theme"
+  ],
+  "author": "",
+  "license": "Apache 2.0",
+  "dependencies": {
+    "@cosmos-ui/vue": "^0.35.0",
+    "@vuepress/plugin-google-analytics": "1.8.2",
+    "algoliasearch": "^4.2.0",
+    "axios": "^0.24.0",
+    "cheerio": "^1.0.0-rc.3",
+    "clipboard-copy": "^4.0.1",
+    "entities": "3.0.1",
+    "esm": "^3.2.25",
+    "gray-matter": "^4.0.2",
+    "hotkeys-js": "3.8.7",
+    "jsonp": "^0.2.1",
+    "markdown-it": "^12.0.0",
+    "markdown-it-attrs": "^4.0.0",
+    "prismjs": "^1.22.0",
+    "pug": "^3.0.1",
+    "pug-plain-loader": "^1.0.0",
+    "stylus": "^0.56.0",
+    "stylus-loader": "^3.0.2",
+    "tiny-cookie": "^2.3.2",
+    "v-runtime-template": "^1.10.0",
+    "vuepress": "^1.5.4",
+    "vuepress-plugin-google-tag-manager": "0.0.5",
+    "vuepress-plugin-sitemap": "^2.3.1"
+  },
+  "devDependencies": {
+    "core-js": "^3.6.5",
+    "is-svg": "^4.2.2",
+    "node-forge": "^1.2.1",
+    "set-value": "^4.0.0",
+    "ssri": "^8.0.1",
+    "watchpack": "^2.0.0"
+  }
+}

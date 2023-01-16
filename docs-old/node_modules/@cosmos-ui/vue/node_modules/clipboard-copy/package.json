@@ -1,0 +1,50 @@
+{
+  "name": "clipboard-copy",
+  "description": "Lightweight copy to clipboard for the web",
+  "version": "3.2.0",
+  "author": {
+    "name": "Feross Aboukhadijeh",
+    "email": "feross@feross.org",
+    "url": "https://feross.org"
+  },
+  "bugs": {
+    "url": "https://github.com/feross/clipboard-copy/issues"
+  },
+  "devDependencies": {
+    "standard": "*"
+  },
+  "homepage": "https://github.com/feross/clipboard-copy",
+  "keywords": [
+    "browser",
+    "clipboard",
+    "clipboard copy",
+    "clipboard.js",
+    "copy",
+    "copy to clipboard",
+    "modern browsers",
+    "simple"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/feross/clipboard-copy.git"
+  },
+  "scripts": {
+    "test": "standard"
+  },
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/feross"
+    },
+    {
+      "type": "patreon",
+      "url": "https://www.patreon.com/feross"
+    },
+    {
+      "type": "consulting",
+      "url": "https://feross.org/support"
+    }
+  ]
+}

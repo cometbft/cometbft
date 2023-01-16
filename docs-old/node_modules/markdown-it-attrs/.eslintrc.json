@@ -1,0 +1,34 @@
+{
+    "env": {
+        "node": true,
+        "es6": true
+    },
+    "globals": {
+      "char": false
+    },
+    "extends": "eslint:recommended",
+    "rules": {
+        "indent": [
+            "error",
+            2
+        ],
+        "linebreak-style": [
+            "error",
+            "unix"
+        ],
+        "quotes": [
+            "error",
+            "single"
+        ],
+        "semi": [
+            "error",
+            "always"
+        ],
+        "no-shadow-restricted-names": "error",
+        "no-shadow": [
+          "error",
+          { "builtinGlobals": true }
+        ],
+        "no-var": "error"
+    }
+}

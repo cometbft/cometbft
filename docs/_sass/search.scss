@@ -1,0 +1,121 @@
+$widthOfSearchResults: 35vw;
+
+.input--text {
+  border: 1px solid var(--color--border);
+  border-radius: 1000px;
+  @include paddingX(normal);
+  @include paddingY(xTight);
+}
+
+.SiteSearch {
+  position: relative;
+  z-index: 2;
+}
+
+.SiteSearch-inputWrapper {
+  @extend .input--text;
+
+  padding-left: calc(var(--whiteSpace--normal) * 2.5);
+  position: relative;
+
+  &::before {
+    content: '\f002';
+    font-family: 'Font Awesome 6 Pro';
+    position: absolute;
+    left: var(--whiteSpace--normal);
+    top: 55%;
+    transform: translateY(-50%);
+  }
+}
+
+.SiteSearch-results {
+  @extend .ModalWindow;
+
+  max-height: 0;
+  opacity: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  padding: 0;
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--whiteSpace--xTight));
+  transition-duration: 0.5s;
+  transition-property: max-height, opacity;
+  width: $widthOfSearchResults;
+
+  .SiteSearch:focus-within & {
+    opacity: 1;
+    max-height: 80vh;
+  }
+
+  &:empty {
+    display: none;
+  }
+}
+
+.SiteSearch-result {
+  & + & {
+    border-top: 1px solid var(--color--border);
+  }
+}
+
+.SiteSearch-result--empty {
+  @extend .SiteSearch-result;
+
+  color: var(--color--text--faded);
+  text-align: center;
+  font-style: italic;
+  @include fontSize(small);
+  @include paddingY(tight);
+}
+
+.SiteSearch-resultButton {
+  position: relative;
+  @include rowGap(xTight);
+  @include paddingLeft(normal);
+  @include paddingRight(loose);
+  @include paddingY(xTight);
+
+  &::after {
+    content: '\f0da';
+    font-family: 'Font Awesome 6 Pro';
+    font-weight: 900;
+    opacity: 0;
+    position: absolute;
+    right: var(--whiteSpace--tight);
+    top: var(--whiteSpace--xTight);
+    transition-duration: 0.25s;
+    transition-property: opacity;
+
+    :hover > & {
+      opacity: 1;
+    }
+  }
+}
+
+.SiteSearch-resultTitle {
+  @extend .text--link;
+
+  .SiteSearch-resultButton:hover &,
+  .SiteSearch-resultButton:focus & {
+    text-decoration: underline;
+  }
+}
+
+.SiteSearch-resultDescription {
+  color: var(--color--text--faded);
+  @include fontSize(small);
+}
+
+.SiteSearch-resultTally {
+  background-color: white;
+  border-bottom: 1px solid var(--color--border);
+  color: var(--color--text--faded);
+  font-weight: bold;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  @include fontSize(small);
+  @include paddingX(normal);
+  @include paddingY(xTight);
+}

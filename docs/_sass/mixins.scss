@@ -1,0 +1,116 @@
+@mixin fontSize($size) {
+  font-size: var(--fontSize--#{$size});
+  line-height: var(--lineHeight--#{$size});
+}
+
+@mixin alignItems($alignment, $setDefaults: true) {
+  @if $setDefaults {
+    display: flex;
+  }
+  align-items: $alignment;
+}
+
+@mixin justifyContent($justification, $setDefaults: true) {
+  @if $setDefaults {
+    display: flex;
+  }
+  justify-content: $justification;
+}
+
+@mixin margin($size) {
+  margin: var(--whiteSpace--#{$size});
+}
+
+@mixin marginTop($size) {
+  margin-top: var(--whiteSpace--#{$size});
+}
+
+@mixin marginRight($size) {
+  margin-right: var(--whiteSpace--#{$size});
+}
+
+@mixin marginBottom($size) {
+  margin-bottom: var(--whiteSpace--#{$size});
+}
+
+@mixin marginLeft($size) {
+  margin-left: var(--whiteSpace--#{$size});
+}
+
+@mixin marginX($size) {
+  margin-left: var(--whiteSpace--#{$size});
+  margin-right: var(--whiteSpace--#{$size});
+}
+
+@mixin marginY($size) {
+  margin-bottom: var(--whiteSpace--#{$size});
+  margin-top: var(--whiteSpace--#{$size});
+}
+
+@mixin padding($size) {
+  padding: var(--whiteSpace--#{$size});
+}
+
+@mixin paddingTop($size) {
+  padding-top: var(--whiteSpace--#{$size});
+}
+
+@mixin paddingRight($size) {
+  padding-right: var(--whiteSpace--#{$size});
+}
+
+@mixin paddingBottom($size) {
+  padding-bottom: var(--whiteSpace--#{$size});
+}
+
+@mixin paddingLeft($size) {
+  padding-left: var(--whiteSpace--#{$size});
+}
+
+@mixin paddingX($size) {
+  padding-left: var(--whiteSpace--#{$size});
+  padding-right: var(--whiteSpace--#{$size});
+}
+
+@mixin paddingY($size) {
+  padding-bottom: var(--whiteSpace--#{$size});
+  padding-top: var(--whiteSpace--#{$size});
+}
+
+@mixin gap($size, $setDefaults: true) {
+  @if $setDefaults {
+    display: flex;
+  }
+  gap: var(--whiteSpace--#{$size});
+}
+
+@mixin columnGap($size, $setDefaults: true) {
+  @if $setDefaults {
+    display: flex;
+    flex-direction: row;
+  }
+  column-gap: var(--whiteSpace--#{$size});
+}
+
+@mixin rowGap($size, $setDefaults: true) {
+  @if $setDefaults {
+    display: flex;
+    flex-direction: column;
+  }
+  row-gap: var(--whiteSpace--#{$size});
+}
+
+$breakpoints: (
+  'phones': 'max-width: 480px',
+  'tabletsOrLarger': 'min-width: 768px',
+  'desktopsOrLarger': 'min-width: 1024px',
+  'bigDesktopsOrLarger': 'min-width: 1200px',
+);
+
+@mixin for-breakpoint($breakpointName) {
+  @media screen and (#{map-get($breakpoints, $breakpointName)}) {
+    & {
+      @content;
+    }
+  }
+}

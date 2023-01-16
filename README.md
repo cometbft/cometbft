@@ -1,7 +1,7 @@
 # CometBFT
 
 <!--
-![banner](docs/tendermint-core-image.jpg) 
+![banner](docs/cometbft-image.jpg) 
 
 -->
 
@@ -32,9 +32,9 @@ consensus](https://arxiv.org/abs/1807.04938)".
 ## Documentation
 
 Complete documentation can be found on the
-[website](https://docs.cometbft.com/) (under construction at the moment).
+[website](https://docs.cometbft.com/).
 
-## Releases
+## Releases*
 
 Please do not depend on `main` as your production branch. Use
 [releases](https://github.com/cometbft/cometbft/releases) instead.
@@ -45,11 +45,9 @@ since we are making breaking changes to the protocol and the APIs. See below for
 more details about [versioning](#versioning).
 
 In any case, if you intend to run CometBFT in production, we're happy to help.
-<!-- 
-ToDo - do we change the email address
---> 
-You can contact us [over email](mailto:hello@interchain.io) or [join the
-chat](https://discord.gg/cosmosnetwork).
+
+To contact us, you can also 
+[join the chat](https://discord.com/channels/669268347736686612/669283915743232011).
 
 More on how releases are conducted can be found [here](./RELEASES.md).
 
@@ -58,10 +56,6 @@ More on how releases are conducted can be found [here](./RELEASES.md).
 To report a security vulnerability, see our [bug bounty
 program](https://hackerone.com/cosmos). For examples of the kinds of bugs we're
 looking for, see [our security policy](SECURITY.md).
-
-We also maintain a dedicated mailing list for security updates. We will only
-ever use this mailing list to notify you of vulnerabilities and fixes in
-CometBFT. You can subscribe [here](http://eepurl.com/gZ5hQD).
 
 ## Minimum requirements
 
@@ -135,7 +129,7 @@ Currently supported versions include:
 
 - [Cosmos SDK](http://github.com/cosmos/cosmos-sdk); A framework for building
   applications in Golang
-- [CometBFT in Rust](https://github.com/informalsystems/tendermint-rs)
+- [Tendermint in Rust](https://github.com/informalsystems/tendermint-rs)
 - [ABCI Tower](https://github.com/penumbra-zone/tower-abci)
 
 ### Applications
@@ -148,12 +142,12 @@ Currently supported versions include:
 
 ### Research
 
-CometBFT is a fork of the Tendermint Core protocol. Bellow are links to the original
+CometBFT is a fork of the Tendermint Core protocol. Below are links to the original
 Tendermint consensus algorithm and relevant whitepapers which CosmosBFT will continue
 to build on.
 - [The latest gossip on BFT consensus](https://arxiv.org/abs/1807.04938)
 - [Master's Thesis on Tendermint](https://atrium.lib.uoguelph.ca/xmlui/handle/10214/9769)
-- [Original Whitepaper: "Tendermint: Consensus Without Mining"](https://tendermint.com/static/docs/tendermint.pdf)
+- [Original Whitepaper: "Tendermint: Consensus Without Mining"](https://cometbft.com/static/docs/tendermint.pdf)
 - [Tendermint Core Blog](https://medium.com/tendermint/tagged/tendermint-core)
 - [Cosmos Blog](https://blog.cosmos.network/tendermint/home)
 

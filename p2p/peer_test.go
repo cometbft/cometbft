@@ -16,7 +16,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/tendermint/tendermint/config"
-	tmconn "github.com/tendermint/tendermint/p2p/conn"
+	cmtconn "github.com/tendermint/tendermint/p2p/conn"
 )
 
 func TestPeerBasic(t *testing.T) {
@@ -27,7 +27,7 @@ func TestPeerBasic(t *testing.T) {
 	rp.Start()
 	t.Cleanup(rp.Stop)
 
-	p, err := createOutboundPeerAndPerformHandshake(rp.Addr(), cfg, tmconn.DefaultMConnConfig())
+	p, err := createOutboundPeerAndPerformHandshake(rp.Addr(), cfg, cmtconn.DefaultMConnConfig())
 	require.Nil(err)
 
 	err = p.Start()
@@ -57,7 +57,7 @@ func TestPeerSend(t *testing.T) {
 	rp.Start()
 	t.Cleanup(rp.Stop)
 
-	p, err := createOutboundPeerAndPerformHandshake(rp.Addr(), config, tmconn.DefaultMConnConfig())
+	p, err := createOutboundPeerAndPerformHandshake(rp.Addr(), config, cmtconn.DefaultMConnConfig())
 	require.Nil(err)
 
 	err = p.Start()
@@ -76,9 +76,9 @@ func TestPeerSend(t *testing.T) {
 func createOutboundPeerAndPerformHandshake(
 	addr *NetAddress,
 	config *config.P2PConfig,
-	mConfig tmconn.MConnConfig,
+	mConfig cmtconn.MConnConfig,
 ) (*peer, error) {
-	chDescs := []*tmconn.ChannelDescriptor{
+	chDescs := []*cmtconn.ChannelDescriptor{
 		{ID: testCh, Priority: 1},
 	}
 	reactorsByCh := map[byte]Reactor{testCh: NewTestReactor(chDescs, true)}

@@ -12,11 +12,11 @@ import (
 
 	cfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/libs/bytes"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	cmttime "github.com/tendermint/tendermint/types/time"
 )
 
 var (
@@ -179,9 +179,9 @@ func testnetFiles(cmd *cobra.Command, args []string) error {
 
 	// Generate genesis doc from generated validators
 	genDoc := &types.GenesisDoc{
-		ChainID:         "chain-" + tmrand.Str(6),
+		ChainID:         "chain-" + cmtrand.Str(6),
 		ConsensusParams: types.DefaultConsensusParams(),
-		GenesisTime:     tmtime.Now(),
+		GenesisTime:     cmttime.Now(),
 		InitialHeight:   initialHeight,
 		Validators:      genVals,
 	}
@@ -274,5 +274,5 @@ func moniker(i int) string {
 }
 
 func randomMoniker() string {
-	return bytes.HexBytes(tmrand.Bytes(8)).String()
+	return bytes.HexBytes(cmtrand.Bytes(8)).String()
 }

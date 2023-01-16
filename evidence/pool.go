@@ -14,7 +14,7 @@ import (
 
 	clist "github.com/tendermint/tendermint/libs/clist"
 	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	sm "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/types"
 )
@@ -362,7 +362,7 @@ func (evpool *Pool) listEvidence(prefixKey byte, maxBytes int64) ([]types.Eviden
 		evSize    int64
 		totalSize int64
 		evidence  []types.Evidence
-		evList    tmproto.EvidenceList // used for calculating the bytes size
+		evList    cmtproto.EvidenceList // used for calculating the bytes size
 	)
 
 	iter, err := dbm.IteratePrefix(evpool.evidenceStore, []byte{prefixKey})
@@ -371,7 +371,7 @@ func (evpool *Pool) listEvidence(prefixKey byte, maxBytes int64) ([]types.Eviden
 	}
 	defer iter.Close()
 	for ; iter.Valid(); iter.Next() {
-		var evpb tmproto.Evidence
+		var evpb cmtproto.Evidence
 		err := evpb.Unmarshal(iter.Value())
 		if err != nil {
 			return evidence, totalSize, err
@@ -542,7 +542,7 @@ type duplicateVoteSet struct {
 }
 
 func bytesToEv(evBytes []byte) (types.Evidence, error) {
-	var evpb tmproto.Evidence
+	var evpb cmtproto.Evidence
 	err := evpb.Unmarshal(evBytes)
 	if err != nil {
 		return &types.DuplicateVoteEvidence{}, err

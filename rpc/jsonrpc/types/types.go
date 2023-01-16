@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"strings"
 
-	tmjson "github.com/tendermint/tendermint/libs/json"
+	cmtjson "github.com/tendermint/tendermint/libs/json"
 )
 
 // a wrapper to emulate a sum type: jsonrpcid = string | int
@@ -101,7 +101,7 @@ func (req RPCRequest) String() string {
 func MapToRequest(id jsonrpcid, method string, params map[string]interface{}) (RPCRequest, error) {
 	var paramsMap = make(map[string]json.RawMessage, len(params))
 	for name, value := range params {
-		valueJSON, err := tmjson.Marshal(value)
+		valueJSON, err := cmtjson.Marshal(value)
 		if err != nil {
 			return RPCRequest{}, err
 		}
@@ -119,7 +119,7 @@ func MapToRequest(id jsonrpcid, method string, params map[string]interface{}) (R
 func ArrayToRequest(id jsonrpcid, method string, params []interface{}) (RPCRequest, error) {
 	var paramsMap = make([]json.RawMessage, len(params))
 	for i, value := range params {
-		valueJSON, err := tmjson.Marshal(value)
+		valueJSON, err := cmtjson.Marshal(value)
 		if err != nil {
 			return RPCRequest{}, err
 		}
@@ -189,7 +189,7 @@ func NewRPCSuccessResponse(id jsonrpcid, res interface{}) RPCResponse {
 
 	if res != nil {
 		var js []byte
-		js, err := tmjson.Marshal(res)
+		js, err := cmtjson.Marshal(res)
 		if err != nil {
 			return RPCInternalError(id, fmt.Errorf("error marshaling response: %w", err))
 		}

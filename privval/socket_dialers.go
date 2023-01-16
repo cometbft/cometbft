@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/tendermint/tendermint/crypto"
-	tmnet "github.com/tendermint/tendermint/libs/net"
+	cmtnet "github.com/tendermint/tendermint/libs/net"
 	p2pconn "github.com/tendermint/tendermint/p2p/conn"
 )
 
@@ -22,7 +22,7 @@ type SocketDialer func() (net.Conn, error)
 // privKey for the authenticated encryption handshake.
 func DialTCPFn(addr string, timeoutReadWrite time.Duration, privKey crypto.PrivKey) SocketDialer {
 	return func() (net.Conn, error) {
-		conn, err := tmnet.Connect(addr)
+		conn, err := cmtnet.Connect(addr)
 		if err == nil {
 			deadline := time.Now().Add(timeoutReadWrite)
 			err = conn.SetDeadline(deadline)

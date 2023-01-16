@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	cfg "github.com/tendermint/tendermint/config"
-	tmos "github.com/tendermint/tendermint/libs/os"
+	cmtos "github.com/tendermint/tendermint/libs/os"
 	nm "github.com/tendermint/tendermint/node"
 )
 
@@ -118,7 +118,7 @@ func NewRunNodeCmd(nodeProvider nm.Provider) *cobra.Command {
 			logger.Info("Started node", "nodeInfo", n.Switch().NodeInfo())
 
 			// Stop upon receiving SIGTERM or CTRL-C.
-			tmos.TrapSignal(logger, func() {
+			cmtos.TrapSignal(logger, func() {
 				if n.IsRunning() {
 					if err := n.Stop(); err != nil {
 						logger.Error("unable to stop the node", "error", err)

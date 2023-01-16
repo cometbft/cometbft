@@ -8,8 +8,8 @@ import (
 
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	tmos "github.com/tendermint/tendermint/libs/os"
+	cmtjson "github.com/tendermint/tendermint/libs/json"
+	cmtos "github.com/tendermint/tendermint/libs/os"
 )
 
 // ID is a hex-encoded crypto.Address
@@ -48,7 +48,7 @@ func PubKeyToID(pubKey crypto.PubKey) ID {
 // LoadOrGenNodeKey attempts to load the NodeKey from the given filePath. If
 // the file does not exist, it generates and saves a new NodeKey.
 func LoadOrGenNodeKey(filePath string) (*NodeKey, error) {
-	if tmos.FileExists(filePath) {
+	if cmtos.FileExists(filePath) {
 		nodeKey, err := LoadNodeKey(filePath)
 		if err != nil {
 			return nil, err
@@ -75,7 +75,7 @@ func LoadNodeKey(filePath string) (*NodeKey, error) {
 		return nil, err
 	}
 	nodeKey := new(NodeKey)
-	err = tmjson.Unmarshal(jsonBytes, nodeKey)
+	err = cmtjson.Unmarshal(jsonBytes, nodeKey)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func LoadNodeKey(filePath string) (*NodeKey, error) {
 
 // SaveAs persists the NodeKey to filePath.
 func (nodeKey *NodeKey) SaveAs(filePath string) error {
-	jsonBytes, err := tmjson.Marshal(nodeKey)
+	jsonBytes, err := cmtjson.Marshal(nodeKey)
 	if err != nil {
 		return err
 	}

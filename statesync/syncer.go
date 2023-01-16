@@ -10,7 +10,7 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/libs/log"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 	"github.com/tendermint/tendermint/light"
 	"github.com/tendermint/tendermint/p2p"
 	ssproto "github.com/tendermint/tendermint/proto/tendermint/statesync"
@@ -60,7 +60,7 @@ type syncer struct {
 	chunkFetchers int32
 	retryTimeout  time.Duration
 
-	mtx    tmsync.RWMutex
+	mtx    cmtsync.RWMutex
 	chunks *chunkQueue
 }
 

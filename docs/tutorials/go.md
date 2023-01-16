@@ -510,7 +510,7 @@ import (
 	"syscall"
 
 	"github.com/dgraph-io/badger/v3"
-	tmlog "github.com/tendermint/tendermint/libs/log"
+	cmtlog "github.com/tendermint/tendermint/libs/log"
 )
 
 var homeDir string
@@ -540,7 +540,7 @@ func main() {
 
 	app := NewKVStoreApplication(db)
 
-	logger := tmlog.NewTMLogger(tmlog.NewSyncWriter(os.Stdout))
+	logger := cmtlog.NewTMLogger(cmtlog.NewSyncWriter(os.Stdout))
 
 	server := abciserver.NewSocketServer(socketAddr, app)
 	server.SetLogger(logger)

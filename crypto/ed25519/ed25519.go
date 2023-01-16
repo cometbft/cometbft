@@ -12,7 +12,7 @@ import (
 
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmjson "github.com/tendermint/tendermint/libs/json"
+	cmtjson "github.com/tendermint/tendermint/libs/json"
 )
 
 //-------------------------------------
@@ -57,8 +57,8 @@ const (
 )
 
 func init() {
-	tmjson.RegisterType(PubKey{}, PubKeyName)
-	tmjson.RegisterType(PrivKey{}, PrivKeyName)
+	cmtjson.RegisterType(PubKey{}, PubKeyName)
+	cmtjson.RegisterType(PrivKey{}, PrivKeyName)
 }
 
 // PrivKey implements crypto.PrivKey.

@@ -16,7 +16,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/tendermint/tendermint/libs/log"
-	tmnet "github.com/tendermint/tendermint/libs/net"
+	cmtnet "github.com/tendermint/tendermint/libs/net"
 
 	abcicli "github.com/tendermint/tendermint/abci/client"
 	"github.com/tendermint/tendermint/abci/example/code"
@@ -125,7 +125,7 @@ func testStream(t *testing.T, app types.Application) {
 // test grpc
 
 func dialerFunc(ctx context.Context, addr string) (net.Conn, error) {
-	return tmnet.Connect(addr)
+	return cmtnet.Connect(addr)
 }
 
 func testGRPCSync(t *testing.T, app types.ABCIApplicationServer) {

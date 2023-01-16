@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"time"
 
-	tmmath "github.com/tendermint/tendermint/libs/math"
+	cmtmath "github.com/tendermint/tendermint/libs/math"
 	"github.com/tendermint/tendermint/types"
 )
 
 var (
 	// DefaultTrustLevel - new header can be trusted if at least one correct
 	// validator signed it.
-	DefaultTrustLevel = tmmath.Fraction{Numerator: 1, Denominator: 3}
+	DefaultTrustLevel = cmtmath.Fraction{Numerator: 1, Denominator: 3}
 )
 
 // VerifyNonAdjacent verifies non-adjacent untrustedHeader against
@@ -37,7 +37,7 @@ func VerifyNonAdjacent(
 	trustingPeriod time.Duration,
 	now time.Time,
 	maxClockDrift time.Duration,
-	trustLevel tmmath.Fraction) error {
+	trustLevel cmtmath.Fraction) error {
 
 	if untrustedHeader.Height == trustedHeader.Height+1 {
 		return errors.New("headers must be non adjacent in height")
@@ -140,7 +140,7 @@ func Verify(
 	trustingPeriod time.Duration,
 	now time.Time,
 	maxClockDrift time.Duration,
-	trustLevel tmmath.Fraction) error {
+	trustLevel cmtmath.Fraction) error {
 
 	if untrustedHeader.Height != trustedHeader.Height+1 {
 		return VerifyNonAdjacent(trustedHeader, trustedVals, untrustedHeader, untrustedVals,
@@ -194,7 +194,7 @@ func verifyNewHeaderAndVals(
 // ValidateTrustLevel checks that trustLevel is within the allowed range [1/3,
 // 1]. If not, it returns an error. 1/3 is the minimum amount of trust needed
 // which does not break the security model.
-func ValidateTrustLevel(lvl tmmath.Fraction) error {
+func ValidateTrustLevel(lvl cmtmath.Fraction) error {
 	if lvl.Numerator*3 < lvl.Denominator || // < 1/3
 		lvl.Numerator > lvl.Denominator || // > 1
 		lvl.Denominator == 0 {

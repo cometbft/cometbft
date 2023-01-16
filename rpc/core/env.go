@@ -7,7 +7,7 @@ import (
 
 	cfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/crypto"
-	tmjson "github.com/tendermint/tendermint/libs/json"
+	cmtjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tendermint/libs/log"
 	mempl "github.com/tendermint/tendermint/mempool"
 	"github.com/tendermint/tendermint/p2p"
@@ -142,7 +142,7 @@ func (env *Environment) InitGenesisChunks() error {
 		return nil
 	}
 
-	data, err := tmjson.Marshal(env.GenDoc)
+	data, err := cmtjson.Marshal(env.GenDoc)
 	if err != nil {
 		return err
 	}

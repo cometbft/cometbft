@@ -15,9 +15,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	abci "github.com/tendermint/tendermint/abci/types"
-	tmjson "github.com/tendermint/tendermint/libs/json"
+	cmtjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tendermint/libs/log"
-	tmmath "github.com/tendermint/tendermint/libs/math"
+	cmtmath "github.com/tendermint/tendermint/libs/math"
 	mempl "github.com/tendermint/tendermint/mempool"
 	"github.com/tendermint/tendermint/rpc/client"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
@@ -208,7 +208,7 @@ func TestGenesisChunked(t *testing.T) {
 		doc := []byte(strings.Join(decoded, ""))
 
 		var out types.GenesisDoc
-		require.NoError(t, tmjson.Unmarshal(doc, &out),
+		require.NoError(t, cmtjson.Unmarshal(doc, &out),
 			"first: %+v, doc: %s", first, string(doc))
 	}
 }
@@ -665,7 +665,7 @@ func testBatchedJSONRPCCalls(t *testing.T, c *rpchttp.HTTP) {
 	bresult2, ok := bresults[1].(*ctypes.ResultBroadcastTxCommit)
 	require.True(t, ok)
 	require.Equal(t, *bresult2, *r2)
-	apph := tmmath.MaxInt64(bresult1.Height, bresult2.Height) + 1
+	apph := cmtmath.MaxInt64(bresult1.Height, bresult2.Height) + 1
 
 	err = client.WaitForHeight(c, apph, nil)
 	require.NoError(t, err)

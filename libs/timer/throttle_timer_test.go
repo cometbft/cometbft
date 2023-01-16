@@ -8,12 +8,12 @@ import (
 
 	asrt "github.com/stretchr/testify/assert"
 
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 )
 
 type thCounter struct {
 	input chan struct{}
-	mtx   tmsync.Mutex
+	mtx   cmtsync.Mutex
 	count int
 }
 

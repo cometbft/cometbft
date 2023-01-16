@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 // LightBlock is a SignedHeader and a ValidatorSet.
@@ -63,12 +63,12 @@ func (lb LightBlock) StringIndented(indent string) string {
 }
 
 // ToProto converts the LightBlock to protobuf
-func (lb *LightBlock) ToProto() (*tmproto.LightBlock, error) {
+func (lb *LightBlock) ToProto() (*cmtproto.LightBlock, error) {
 	if lb == nil {
 		return nil, nil
 	}
 
-	lbp := new(tmproto.LightBlock)
+	lbp := new(cmtproto.LightBlock)
 	var err error
 	if lb.SignedHeader != nil {
 		lbp.SignedHeader = lb.SignedHeader.ToProto()
@@ -85,7 +85,7 @@ func (lb *LightBlock) ToProto() (*tmproto.LightBlock, error) {
 
 // LightBlockFromProto converts from protobuf back into the Lightblock.
 // An error is returned if either the validator set or signed header are invalid
-func LightBlockFromProto(pb *tmproto.LightBlock) (*LightBlock, error) {
+func LightBlockFromProto(pb *cmtproto.LightBlock) (*LightBlock, error) {
 	if pb == nil {
 		return nil, errors.New("nil light block")
 	}
@@ -176,12 +176,12 @@ func (sh SignedHeader) StringIndented(indent string) string {
 }
 
 // ToProto converts SignedHeader to protobuf
-func (sh *SignedHeader) ToProto() *tmproto.SignedHeader {
+func (sh *SignedHeader) ToProto() *cmtproto.SignedHeader {
 	if sh == nil {
 		return nil
 	}
 
-	psh := new(tmproto.SignedHeader)
+	psh := new(cmtproto.SignedHeader)
 	if sh.Header != nil {
 		psh.Header = sh.Header.ToProto()
 	}
@@ -194,7 +194,7 @@ func (sh *SignedHeader) ToProto() *tmproto.SignedHeader {
 
 // FromProto sets a protobuf SignedHeader to the given pointer.
 // It returns an error if the header or the commit is invalid.
-func SignedHeaderFromProto(shp *tmproto.SignedHeader) (*SignedHeader, error) {
+func SignedHeaderFromProto(shp *cmtproto.SignedHeader) (*SignedHeader, error) {
 	if shp == nil {
 		return nil, errors.New("nil SignedHeader")
 	}

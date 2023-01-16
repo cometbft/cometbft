@@ -6,10 +6,10 @@ import (
 	"strings"
 	"sync"
 
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	tmmath "github.com/tendermint/tendermint/libs/math"
+	cmtjson "github.com/tendermint/tendermint/libs/json"
+	cmtmath "github.com/tendermint/tendermint/libs/math"
 	"github.com/tendermint/tendermint/p2p"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/types"
 )
 
@@ -86,7 +86,7 @@ func (hvs *HeightVoteSet) Round() int32 {
 func (hvs *HeightVoteSet) SetRound(round int32) {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
-	newRound := tmmath.SafeSubInt32(hvs.round, 1)
+	newRound := cmtmath.SafeSubInt32(hvs.round, 1)
 	if hvs.round != 0 && (round < newRound) {
 		panic("SetRound() must increment hvs.round")
 	}
@@ -104,8 +104,8 @@ func (hvs *HeightVoteSet) addRound(round int32) {
 		panic("addRound() for an existing round")
 	}
 	// log.Debug("addRound(round)", "round", round)
-	prevotes := types.NewVoteSet(hvs.chainID, hvs.height, round, tmproto.PrevoteType, hvs.valSet)
-	precommits := types.NewVoteSet(hvs.chainID, hvs.height, round, tmproto.PrecommitType, hvs.valSet)
+	prevotes := types.NewVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrevoteType, hvs.valSet)
+	precommits := types.NewVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrecommitType, hvs.valSet)
 	hvs.roundVoteSets[round] = RoundVoteSet{
 		Prevotes:   prevotes,
 		Precommits: precommits,
@@ -139,13 +139,13 @@ func (hvs *HeightVoteSet) AddVote(vote *types.Vote, peerID p2p.ID) (added bool, 
 func (hvs *HeightVoteSet) Prevotes(round int32) *types.VoteSet {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
-	return hvs.getVoteSet(round, tmproto.PrevoteType)
+	return hvs.getVoteSet(round, cmtproto.PrevoteType)
 }
 
 func (hvs *HeightVoteSet) Precommits(round int32) *types.VoteSet {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
-	return hvs.getVoteSet(round, tmproto.PrecommitType)
+	return hvs.getVoteSet(round, cmtproto.PrecommitType)
 }
 
 // Last round and blockID that has +2/3 prevotes for a particular block or nil.
@@ -154,7 +154,7 @@ func (hvs *HeightVoteSet) POLInfo() (polRound int32, polBlockID types.BlockID) {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
 	for r := hvs.round; r >= 0; r-- {
-		rvs := hvs.getVoteSet(r, tmproto.PrevoteType)
+		rvs := hvs.getVoteSet(r, cmtproto.PrevoteType)
 		polBlockID, ok := rvs.TwoThirdsMajority()
 		if ok {
 			return r, polBlockID
@@ -163,15 +163,15 @@ func (hvs *HeightVoteSet) POLInfo() (polRound int32, polBlockID types.BlockID) {
 	return -1, types.BlockID{}
 }
 
-func (hvs *HeightVoteSet) getVoteSet(round int32, voteType tmproto.SignedMsgType) *types.VoteSet {
+func (hvs *HeightVoteSet) getVoteSet(round int32, voteType cmtproto.SignedMsgType) *types.VoteSet {
 	rvs, ok := hvs.roundVoteSets[round]
 	if !ok {
 		return nil
 	}
 	switch voteType {
-	case tmproto.PrevoteType:
+	case cmtproto.PrevoteType:
 		return rvs.Prevotes
-	case tmproto.PrecommitType:
+	case cmtproto.PrecommitType:
 		return rvs.Precommits
 	default:
 		panic(fmt.Sprintf("Unexpected vote type %X", voteType))
@@ -184,7 +184,7 @@ func (hvs *HeightVoteSet) getVoteSet(round int32, voteType tmproto.SignedMsgType
 // TODO: implement ability to remove peers too
 func (hvs *HeightVoteSet) SetPeerMaj23(
 	round int32,
-	voteType tmproto.SignedMsgType,
+	voteType cmtproto.SignedMsgType,
 	peerID p2p.ID,
 	blockID types.BlockID) error {
 	hvs.mtx.Lock()
@@ -238,7 +238,7 @@ func (hvs *HeightVoteSet) StringIndented(indent string) string {
 func (hvs *HeightVoteSet) MarshalJSON() ([]byte, error) {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
-	return tmjson.Marshal(hvs.toAllRoundVotes())
+	return cmtjson.Marshal(hvs.toAllRoundVotes())
 }
 
 func (hvs *HeightVoteSet) toAllRoundVotes() []roundVotes {

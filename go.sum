@@ -136,10 +136,10 @@ github.com/btcsuite/snappy-go v0.0.0-20151229074030-0bdef8d06723/go.mod h1:8woku
 github.com/btcsuite/snappy-go v1.0.0/go.mod h1:8woku9dyThutzjeg+3xrA5iCpBRH8XEEg3lh6TiUghc=
 github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792/go.mod h1:ghJtEyQwv5/p4Mg4C0fgbePVuGr935/5ddU9Z3TmDRY=
 github.com/btcsuite/winsvc v1.0.0/go.mod h1:jsenWakMcC0zFBFurPLEAyrnc/teJEM1O46fmI40EZs=
-github.com/bufbuild/buf v1.11.0 h1:jq/ckkxg87GaEgyHMqGGvZkVh8FeZuYLBF9DyOQK1RU=
-github.com/bufbuild/buf v1.11.0/go.mod h1:IoaGkUhois4gv4EqTGT7H+4bbhZUvlYutECLgfoE2cA=
-github.com/bufbuild/connect-go v1.4.0 h1:N94D0tGxuM2cSI7hM/aL8mtxL6+8rtHuFcIj9oGRp5s=
-github.com/bufbuild/connect-go v1.4.0/go.mod h1:9iNvh/NOsfhNBUH5CtvXeVUskQO1xsrEviH7ZArwZ3I=
+github.com/bufbuild/buf v1.12.0 h1:F5yU2VNaJv3PzfQu+qnUWyzn9KerhbIfV/dM961jJ70=
+github.com/bufbuild/buf v1.12.0/go.mod h1:tgUhc+/7jgJPn6EbcS8oIFOiSRewkyO/9j+Acbby9SQ=
+github.com/bufbuild/connect-go v1.4.1 h1:6usL3JGjKhxQpvDlizP7u8VfjAr1JkckcAUbrdcbgNY=
+github.com/bufbuild/connect-go v1.4.1/go.mod h1:9iNvh/NOsfhNBUH5CtvXeVUskQO1xsrEviH7ZArwZ3I=
 github.com/bufbuild/protocompile v0.1.0 h1:HjgJBI85hY/qmW5tw/66sNDZ7z0UDdVSi/5r40WHw4s=
 github.com/bufbuild/protocompile v0.1.0/go.mod h1:ix/MMMdsT3fzxfw91dvbfzKW3fRRnuPCP47kpAm5m/4=
 github.com/butuzov/ireturn v0.1.1 h1:QvrO2QF2+/Cx1WA/vETCIYBKtRjc30vesdoPUNo1EbY=

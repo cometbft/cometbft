@@ -4,7 +4,7 @@
 
 ### Description
 
-In Tendermint consensus, the first version of how time is computed and stored in a block works as follows:
+In CometBFT, the first version of how time is computed and stored in a block works as follows:
 
 - validators send their current local time as part of `precommit` messages
 - upon collecting the `precommit` messages that the proposer uses to build a commit to be put in the next block, the proposer computes the `time` of the next block as the median (weighted over voting power) of the times in the `precommit` messages.

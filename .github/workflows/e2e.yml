@@ -16,6 +16,9 @@ jobs:
     # TODO(thane): Remove once we make the cometbft-db repository public.
     env:
       GOPRIVATE: github.com/cometbft/cometbft-db
+      # We have to supply this as an environment variable in order to pass it
+      # through to the "docker" Makefile target in ./test/e2e
+      GO_MODULES_TOKEN: ${{ secrets.GO_MODULES_TOKEN }}
     steps:
       - uses: actions/setup-go@v3
         with:

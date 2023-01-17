@@ -1,7 +1,7 @@
 version: '3'
 services:
-  cometbft-proof:
+  tendermint-proof:
     build: .
     volumes:
-      - ./:/home/user/cometbft-proof:ro
-      - ./output:/home/user/cometbft-proof/output:rw
+      - ./:/home/user/tendermint-proof:ro
+      - ./output:/home/user/tendermint-proof/output:rw

@@ -7,7 +7,7 @@ parent:
 
 # RPC spec
 
-This file defines the JSON-RPC spec of Tendermint. This is meant to be implemented by all clients.
+This file defines the JSON-RPC spec of CometBFT. This is meant to be implemented by all clients.
 
 ## Support
 
@@ -44,7 +44,7 @@ This file defines the JSON-RPC spec of Tendermint. This is meant to be implement
 
 ## Timestamps
 
-Timestamps in the RPC layer of Tendermint follows RFC3339Nano.  The RFC3339Nano format removes trailing zeros from the seconds field.
+Timestamps in the RPC layer of CometBFT follows RFC3339Nano.  The RFC3339Nano format removes trailing zeros from the seconds field.
 
 This means if a block has a timestamp like: `1985-04-12T23:20:50.5200000Z`, the value returned in the RPC will be `1985-04-12T23:20:50.52Z`.
 
@@ -86,7 +86,7 @@ curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\
 
 ### Status
 
-Get Tendermint status including node info, pubkey, latest block hash, app hash, block height and time.
+Get CometBFT status including node info, pubkey, latest block hash, app hash, block height and time.
 
 #### Parameters
 

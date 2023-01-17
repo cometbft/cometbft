@@ -6,9 +6,9 @@ parent:
   order: 7
 ---
 
-# Tendermint Spec
+# CometBFT Spec
 
-This is a markdown specification of the Tendermint blockchain.
+This is a markdown specification of the CometBFT blockchain.
 It defines the base data structures, how they are validated,
 and how they are communicated over the network.
 
@@ -44,7 +44,7 @@ please submit them to our [bug bounty](https://tendermint.com/security)!
 
 ### RPC
 
-- [RPC SPEC](./rpc/README.md): Specification of the Tendermint remote procedure call interface.
+- [RPC SPEC](./rpc/README.md): Specification of the CometBFT remote procedure call interface.
 
 ### Software
 

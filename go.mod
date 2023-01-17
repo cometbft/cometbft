@@ -289,3 +289,6 @@ require (
 )
 
 retract [v0.35.0, v0.35.9] // See https://github.com/tendermint/tendermint/discussions/9155
+
+replace github.com/tendermint/tm-db v0.6.6 => github.com/informalsystems/tm-db v0.6.6
+

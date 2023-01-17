@@ -1,10 +1,5 @@
 # CometBFT
 
-<!--
-![banner](docs/cometbft-image.jpg) 
-
--->
-
 [Byzantine-Fault Tolerant][bft] [State Machine Replication][smr]. Or
 [Blockchain], for short.
 
@@ -34,7 +29,7 @@ consensus](https://arxiv.org/abs/1807.04938)".
 Complete documentation can be found on the
 [website](https://docs.cometbft.com/).
 
-## Releases*
+## Releases
 
 Please do not depend on `main` as your production branch. Use
 [releases](https://github.com/cometbft/cometbft/releases) instead.
@@ -142,7 +137,7 @@ Currently supported versions include:
 
 ### Research
 
-CometBFT is a fork of the Tendermint Core protocol. Below are links to the original
+CometBFT is a fork of Tendermint Core. Below are links to the original
 Tendermint consensus algorithm and relevant whitepapers which CosmosBFT will continue
 to build on.
 - [The latest gossip on BFT consensus](https://arxiv.org/abs/1807.04938)

@@ -1,6 +1,6 @@
 # End-to-End Tests
 
-Spins up and tests Tendermint networks in Docker Compose based on a testnet manifest. To run the CI testnet:
+Spins up and tests CometBFT networks in Docker Compose based on a testnet manifest. To run the CI testnet:
 
 ```sh
 make
@@ -138,15 +138,15 @@ The E2E test harness is designed to run several nodes of varying configurations 
 
 ```bash
 make node
-tendermint init validator
-TMHOME=$HOME/.tendermint ./build/node ./node/built-in.toml
+cometbft init validator
+TMHOME=$HOME/.cometbft ./build/node ./node/built-in.toml
 ```
 
-To make things simpler the e2e application can also be run in the tendermint binary
+To make things simpler the e2e application can also be run in the `cometbft` binary
 by running
 
 ```bash
-tendermint start --proxy-app e2e
+cometbft start --proxy-app e2e
 ```
 
 However this won't offer the same level of configurability of the application.
@@ -155,8 +155,8 @@ However this won't offer the same level of configurability of the application.
 
 ```bash
 make node
-tendermint init validator
-tendermint start
+cometbft init validator
+cometbft start
 ./build/node ./node.socket.toml
 ```
 

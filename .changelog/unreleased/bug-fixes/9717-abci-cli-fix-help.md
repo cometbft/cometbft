@@ -1,2 +1,2 @@
-- [abci-cli] Fix broken abci-cli help command.
+- `[abci-cli]` Fix broken abci-cli help command.
   ([#9717](https://github.com/tendermint/tendermint/issues/9717))

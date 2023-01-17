@@ -1,2 +1,2 @@
-- [rpc] Remove global environment and replace with constructor
+- `[rpc]` Remove global environment and replace with constructor
   ([#9655](https://github.com/tendermint/tendermint/issues/9655))

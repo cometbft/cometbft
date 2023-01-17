@@ -1,2 +1,2 @@
-- [rpc] Enable caching of RPC responses
+- `[rpc]` Enable caching of RPC responses
   ([#9650](https://github.com/tendermint/tendermint/issues/9650))

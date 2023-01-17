@@ -1,4 +1,4 @@
-- [metrics] Move state-syncing and block-syncing metrics to
+- `[metrics]` Move state-syncing and block-syncing metrics to
   their respective packages. Move labels from block_syncing
   -> blocksync_syncing and state_syncing -> statesync_syncing
   ([#9682](https://github.com/tendermint/tendermint/issues/9682))

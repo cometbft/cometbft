@@ -59,9 +59,9 @@ type Manifest struct {
 	// ABCIProtocol specifies the protocol used to communicate with the ABCI
 	// application: "unix", "tcp", "grpc", "builtin" or "builtin_unsync".
 	//
-	// Defaults to "builtin". "builtin" will build a complete Tendermint node
+	// Defaults to "builtin". "builtin" will build a complete CometBFT node
 	// into the application and launch it instead of launching a separate
-	// Tendermint process.
+	// CometBFT process.
 	//
 	// "builtin_unsync" is basically the same as "builtin", except that it uses
 	// an "unsynchronized" local client creator, which attempts to replicate the
@@ -87,7 +87,7 @@ type ManifestNode struct {
 	// is generated), and seed nodes run in seed mode with the PEX reactor enabled.
 	Mode string `toml:"mode"`
 
-	// Version specifies which version of Tendermint this node is. Specifying different
+	// Version specifies which version of CometBFT this node is. Specifying different
 	// versions for different nodes allows for testing the interaction of different
 	// node's compatibility. Note that in order to use a node at a particular version,
 	// there must be a docker image of the test app tagged with this version present

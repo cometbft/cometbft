@@ -1,4 +1,4 @@
-# Tendermint p2p configuration
+# CometBFT p2p configuration
 
 This document contains configurable parameters a node operator can use to tune the p2p behaviour.
 

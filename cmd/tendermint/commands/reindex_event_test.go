@@ -12,7 +12,7 @@ import (
 	dbm "github.com/tendermint/tm-db"
 
 	abcitypes "github.com/tendermint/tendermint/abci/types"
-	tmcfg "github.com/tendermint/tendermint/config"
+	cmtcfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/internal/test"
 	prototmstate "github.com/tendermint/tendermint/proto/tendermint/state"
 	blockmocks "github.com/tendermint/tendermint/state/indexer/mocks"
@@ -96,7 +96,7 @@ func TestLoadEventSink(t *testing.T) {
 	}
 
 	for idx, tc := range testCases {
-		cfg := tmcfg.TestConfig()
+		cfg := cmtcfg.TestConfig()
 		cfg.TxIndex.Indexer = tc.sinks
 		cfg.TxIndex.PsqlConn = tc.connURL
 		_, _, err := loadEventSinks(cfg, test.DefaultTestChainID)
@@ -109,7 +109,7 @@ func TestLoadEventSink(t *testing.T) {
 }
 
 func TestLoadBlockStore(t *testing.T) {
-	cfg := tmcfg.TestConfig()
+	cfg := cmtcfg.TestConfig()
 	cfg.DBPath = t.TempDir()
 	_, _, err := loadStateAndBlockStore(cfg)
 	require.Error(t, err)

@@ -41,7 +41,7 @@ func TestAppConns_Start_Stop(t *testing.T) {
 	clientMock.AssertExpectations(t)
 }
 
-// Upon failure, we call tmos.Kill
+// Upon failure, we call cmtos.Kill
 func TestAppConns_Failure(t *testing.T) {
 	ok := make(chan struct{})
 	c := make(chan os.Signal, 1)

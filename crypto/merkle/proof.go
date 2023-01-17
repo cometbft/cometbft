@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmcrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+	cmtcrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 const (
@@ -116,11 +116,11 @@ func (sp *Proof) ValidateBasic() error {
 	return nil
 }
 
-func (sp *Proof) ToProto() *tmcrypto.Proof {
+func (sp *Proof) ToProto() *cmtcrypto.Proof {
 	if sp == nil {
 		return nil
 	}
-	pb := new(tmcrypto.Proof)
+	pb := new(cmtcrypto.Proof)
 
 	pb.Total = sp.Total
 	pb.Index = sp.Index
@@ -130,7 +130,7 @@ func (sp *Proof) ToProto() *tmcrypto.Proof {
 	return pb
 }
 
-func ProofFromProto(pb *tmcrypto.Proof) (*Proof, error) {
+func ProofFromProto(pb *cmtcrypto.Proof) (*Proof, error) {
 	if pb == nil {
 		return nil, errors.New("nil proof")
 	}

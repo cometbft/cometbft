@@ -1,3 +1,3 @@
-- [abci] Added `AbciVersion` to `RequestInfo` allowing
+- `[abci]` Added `AbciVersion` to `RequestInfo` allowing
   applications to check ABCI version when connecting to CometBFT.
   ([#5706](https://github.com/tendermint/tendermint/issues/5706))

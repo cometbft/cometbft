@@ -1,2 +1,2 @@
-- [docker] ensure Docker image uses consistent version of Go
+- `[docker]` ensure Docker image uses consistent version of Go
   ([#9462](https://github.com/tendermint/tendermint/issues/9462))

@@ -1,4 +1,4 @@
-- [types] Reduce the use of protobuf types in core logic. `ConsensusParams`,
+- `[types]` Reduce the use of protobuf types in core logic. `ConsensusParams`,
   `BlockParams`, `ValidatorParams`, `EvidenceParams`, `VersionParams` have
   become native types.  They still utilize protobuf when being sent over
   the wire or written to disk.  Moved `ValidateConsensusParams` inside

@@ -173,9 +173,9 @@ nodes, whose operation is described [here](#providing-addresses).
 This distinction exists because nodes dial a seed node with the main, if not
 exclusive goal of retrieving peer addresses.
 In other words, nodes do not dial a seed node because they intend to have it as
-a peer in the multiple Tendermint protocols, but because they believe that a
+a peer in the multiple CometBFT protocols, but because they believe that a
 seed node is a good source of addresses of nodes to which they can establish
-connections and interact in the multiple Tendermint protocols.
+connections and interact in the multiple CometBFT protocols.
 
 So, when a seed node receives a `PexRequest` message from an inbound peer,
 it sends a `PexAddrs` message, containing a selection of peer

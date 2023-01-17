@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tendermint/tendermint/config"
+	"github.com/cometbft/cometbft/config"
 )
 
 func TestDefaultConfig(t *testing.T) {

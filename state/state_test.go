@@ -13,14 +13,14 @@ import (
 
 	dbm "github.com/tendermint/tm-db"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	cryptoenc "github.com/tendermint/tendermint/crypto/encoding"
-	"github.com/tendermint/tendermint/internal/test"
-	cmtrand "github.com/tendermint/tendermint/libs/rand"
-	cmtstate "github.com/tendermint/tendermint/proto/tendermint/state"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/internal/test"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/types"
 )
 
 // setupTestCase does setup common to all test cases.

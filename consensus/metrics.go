@@ -6,9 +6,9 @@ import (
 
 	"github.com/go-kit/kit/metrics"
 
-	cstypes "github.com/tendermint/tendermint/consensus/types"
-	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/types"
+	cstypes "github.com/cometbft/cometbft/consensus/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (

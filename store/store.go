@@ -7,12 +7,12 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/tendermint/tendermint/evidence"
-	cmtsync "github.com/tendermint/tendermint/libs/sync"
-	cmtstore "github.com/tendermint/tendermint/proto/tendermint/store"
-	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/evidence"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	cmtstore "github.com/cometbft/cometbft/proto/tendermint/store"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/types"
 )
 
 /*

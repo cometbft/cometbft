@@ -8,12 +8,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	cfg "github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/inspect"
-	"github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/state/indexer/block"
-	"github.com/tendermint/tendermint/store"
-	"github.com/tendermint/tendermint/types"
+	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/inspect"
+	"github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/state/indexer/block"
+	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/types"
 )
 
 // InspectCmd is the command for starting an inspect server.

@@ -7,18 +7,18 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	dbm "github.com/tendermint/tm-db"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	cmtmath "github.com/tendermint/tendermint/libs/math"
-	cmtos "github.com/tendermint/tendermint/libs/os"
-	cmtstate "github.com/tendermint/tendermint/proto/tendermint/state"
-	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtos "github.com/cometbft/cometbft/libs/os"
+	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
 	// persist validators every valSetCheckpointInterval blocks to avoid
 	// LoadValidators taking too much time.
-	// https://github.com/tendermint/tendermint/pull/3438
+	// https://github.com/cometbft/cometbft/pull/3438
 	// 100000 results in ~ 100ms to get 100 validators (see BenchmarkLoadValidators)
 	valSetCheckpointInterval = 100000
 )

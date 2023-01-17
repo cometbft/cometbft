@@ -18,13 +18,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	cmtbytes "github.com/tendermint/tendermint/libs/bytes"
-	"github.com/tendermint/tendermint/libs/log"
-	cmtrand "github.com/tendermint/tendermint/libs/rand"
+	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
 
-	client "github.com/tendermint/tendermint/rpc/jsonrpc/client"
-	server "github.com/tendermint/tendermint/rpc/jsonrpc/server"
-	types "github.com/tendermint/tendermint/rpc/jsonrpc/types"
+	client "github.com/cometbft/cometbft/rpc/jsonrpc/client"
+	server "github.com/cometbft/cometbft/rpc/jsonrpc/server"
+	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 // Client and Server should work over tcp or unix sockets

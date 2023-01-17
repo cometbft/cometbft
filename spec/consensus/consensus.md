@@ -285,7 +285,7 @@ tells peers that this node has (or does not have) a +2/3 majority for B
 majority. Peers can react by responding with appropriate votes.
 
 We will implement such an algorithm for the next iteration of the
-Tendermint consensus protocol.
+consensus protocol.
 
 Other potential improvements include adding more data in votes such as
 the last known PoLC round that caused a lock change, and the last voted

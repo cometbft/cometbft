@@ -45,10 +45,10 @@ Note: This operation requires ABCI Responses. Do not set DiscardABCIResponses to
 want to use this command.
 	`,
 	Example: `
-	tendermint reindex-event
-	tendermint reindex-event --start-height 2
-	tendermint reindex-event --end-height 10
-	tendermint reindex-event --start-height 2 --end-height 10
+	cometbft reindex-event
+	cometbft reindex-event --start-height 2
+	cometbft reindex-event --end-height 10
+	cometbft reindex-event --start-height 2 --end-height 10
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		bs, ss, err := loadStateAndBlockStore(config)

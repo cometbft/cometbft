@@ -9,7 +9,7 @@ import (
 	"github.com/tendermint/tendermint/abci/example/kvstore"
 	"github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/libs/log"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 	mempool "github.com/tendermint/tendermint/mempool"
 	mempoolv1 "github.com/tendermint/tendermint/mempool/v1"
 )
@@ -17,7 +17,7 @@ import (
 func FuzzMempool(f *testing.F) {
 	app := kvstore.NewApplication()
 	logger := log.NewNopLogger()
-	mtx := new(tmsync.Mutex)
+	mtx := new(cmtsync.Mutex)
 	conn := abciclient.NewLocalClient(mtx, app)
 	err := conn.Start()
 	if err != nil {

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	tmstate "github.com/tendermint/tendermint/proto/tendermint/state"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
+	cmtstate "github.com/tendermint/tendermint/proto/tendermint/state"
+	cmtversion "github.com/tendermint/tendermint/proto/tendermint/version"
 	"github.com/tendermint/tendermint/version"
 )
 
@@ -79,8 +79,8 @@ func Rollback(bs BlockStore, ss Store, removeBlock bool) (int64, []byte, error) 
 
 	// build the new state from the old state and the prior block
 	rolledBackState := State{
-		Version: tmstate.Version{
-			Consensus: tmversion.Consensus{
+		Version: cmtstate.Version{
+			Consensus: cmtversion.Consensus{
 				Block: version.BlockProtocol,
 				App:   previousParams.Version.App,
 			},

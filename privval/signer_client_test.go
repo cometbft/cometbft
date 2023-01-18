@@ -10,10 +10,10 @@ import (
 
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
 	cryptoproto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 	privvalproto "github.com/tendermint/tendermint/proto/tendermint/privval"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/types"
 )
 
@@ -29,7 +29,7 @@ func getSignerTestCases(t *testing.T) []signerTestCase {
 
 	// Get test cases for each possible dialer (DialTCP / DialUnix / etc)
 	for _, dtc := range getDialerTestCases(t) {
-		chainID := tmrand.Str(12)
+		chainID := cmtrand.Str(12)
 		mockPV := types.NewMockPV()
 
 		// get a pair of signer listener, signer dialer endpoints
@@ -117,9 +117,9 @@ func TestSignerGetPubKey(t *testing.T) {
 func TestSignerProposal(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
 		ts := time.Now()
-		hash := tmrand.Bytes(tmhash.Size)
+		hash := cmtrand.Bytes(tmhash.Size)
 		have := &types.Proposal{
-			Type:      tmproto.ProposalType,
+			Type:      cmtproto.ProposalType,
 			Height:    1,
 			Round:     2,
 			POLRound:  2,
@@ -127,7 +127,7 @@ func TestSignerProposal(t *testing.T) {
 			Timestamp: ts,
 		}
 		want := &types.Proposal{
-			Type:      tmproto.ProposalType,
+			Type:      cmtproto.ProposalType,
 			Height:    1,
 			Round:     2,
 			POLRound:  2,
@@ -157,10 +157,10 @@ func TestSignerProposal(t *testing.T) {
 func TestSignerVote(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
 		ts := time.Now()
-		hash := tmrand.Bytes(tmhash.Size)
-		valAddr := tmrand.Bytes(crypto.AddressSize)
+		hash := cmtrand.Bytes(tmhash.Size)
+		valAddr := cmtrand.Bytes(crypto.AddressSize)
 		want := &types.Vote{
-			Type:             tmproto.PrecommitType,
+			Type:             cmtproto.PrecommitType,
 			Height:           1,
 			Round:            2,
 			BlockID:          types.BlockID{Hash: hash, PartSetHeader: types.PartSetHeader{Hash: hash, Total: 2}},
@@ -170,7 +170,7 @@ func TestSignerVote(t *testing.T) {
 		}
 
 		have := &types.Vote{
-			Type:             tmproto.PrecommitType,
+			Type:             cmtproto.PrecommitType,
 			Height:           1,
 			Round:            2,
 			BlockID:          types.BlockID{Hash: hash, PartSetHeader: types.PartSetHeader{Hash: hash, Total: 2}},
@@ -201,10 +201,10 @@ func TestSignerVote(t *testing.T) {
 func TestSignerVoteResetDeadline(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
 		ts := time.Now()
-		hash := tmrand.Bytes(tmhash.Size)
-		valAddr := tmrand.Bytes(crypto.AddressSize)
+		hash := cmtrand.Bytes(tmhash.Size)
+		valAddr := cmtrand.Bytes(crypto.AddressSize)
 		want := &types.Vote{
-			Type:             tmproto.PrecommitType,
+			Type:             cmtproto.PrecommitType,
 			Height:           1,
 			Round:            2,
 			BlockID:          types.BlockID{Hash: hash, PartSetHeader: types.PartSetHeader{Hash: hash, Total: 2}},
@@ -214,7 +214,7 @@ func TestSignerVoteResetDeadline(t *testing.T) {
 		}
 
 		have := &types.Vote{
-			Type:             tmproto.PrecommitType,
+			Type:             cmtproto.PrecommitType,
 			Height:           1,
 			Round:            2,
 			BlockID:          types.BlockID{Hash: hash, PartSetHeader: types.PartSetHeader{Hash: hash, Total: 2}},
@@ -255,10 +255,10 @@ func TestSignerVoteResetDeadline(t *testing.T) {
 func TestSignerVoteKeepAlive(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
 		ts := time.Now()
-		hash := tmrand.Bytes(tmhash.Size)
-		valAddr := tmrand.Bytes(crypto.AddressSize)
+		hash := cmtrand.Bytes(tmhash.Size)
+		valAddr := cmtrand.Bytes(crypto.AddressSize)
 		want := &types.Vote{
-			Type:             tmproto.PrecommitType,
+			Type:             cmtproto.PrecommitType,
 			Height:           1,
 			Round:            2,
 			BlockID:          types.BlockID{Hash: hash, PartSetHeader: types.PartSetHeader{Hash: hash, Total: 2}},
@@ -268,7 +268,7 @@ func TestSignerVoteKeepAlive(t *testing.T) {
 		}
 
 		have := &types.Vote{
-			Type:             tmproto.PrecommitType,
+			Type:             cmtproto.PrecommitType,
 			Height:           1,
 			Round:            2,
 			BlockID:          types.BlockID{Hash: hash, PartSetHeader: types.PartSetHeader{Hash: hash, Total: 2}},
@@ -324,9 +324,9 @@ func TestSignerSignProposalErrors(t *testing.T) {
 		})
 
 		ts := time.Now()
-		hash := tmrand.Bytes(tmhash.Size)
+		hash := cmtrand.Bytes(tmhash.Size)
 		proposal := &types.Proposal{
-			Type:      tmproto.ProposalType,
+			Type:      cmtproto.ProposalType,
 			Height:    1,
 			Round:     2,
 			POLRound:  2,
@@ -349,10 +349,10 @@ func TestSignerSignProposalErrors(t *testing.T) {
 func TestSignerSignVoteErrors(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
 		ts := time.Now()
-		hash := tmrand.Bytes(tmhash.Size)
-		valAddr := tmrand.Bytes(crypto.AddressSize)
+		hash := cmtrand.Bytes(tmhash.Size)
+		valAddr := cmtrand.Bytes(crypto.AddressSize)
 		vote := &types.Vote{
-			Type:             tmproto.PrecommitType,
+			Type:             cmtproto.PrecommitType,
 			Height:           1,
 			Round:            2,
 			BlockID:          types.BlockID{Hash: hash, PartSetHeader: types.PartSetHeader{Hash: hash, Total: 2}},
@@ -431,7 +431,7 @@ func TestSignerUnexpectedResponse(t *testing.T) {
 		})
 
 		ts := time.Now()
-		want := &types.Vote{Timestamp: ts, Type: tmproto.PrecommitType}
+		want := &types.Vote{Timestamp: ts, Type: cmtproto.PrecommitType}
 
 		e := tc.signerClient.SignVote(tc.chainID, want.ToProto())
 		assert.EqualError(t, e, "empty response")

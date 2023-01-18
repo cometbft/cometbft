@@ -106,13 +106,13 @@ Usage:
 	}
 }
 
-func runTestHarness(acceptRetries int, bindAddr, tmhome string) {
-	tmhome = internal.ExpandPath(tmhome)
+func runTestHarness(acceptRetries int, bindAddr, cmthome string) {
+	cmthome = internal.ExpandPath(cmthome)
 	cfg := internal.TestHarnessConfig{
 		BindAddr:         bindAddr,
-		KeyFile:          filepath.Join(tmhome, "config", "priv_validator_key.json"),
-		StateFile:        filepath.Join(tmhome, "data", "priv_validator_state.json"),
-		GenesisFile:      filepath.Join(tmhome, "config", "genesis.json"),
+		KeyFile:          filepath.Join(cmthome, "config", "priv_validator_key.json"),
+		StateFile:        filepath.Join(cmthome, "data", "priv_validator_state.json"),
+		GenesisFile:      filepath.Join(cmthome, "config", "genesis.json"),
 		AcceptDeadline:   time.Duration(defaultAcceptDeadline) * time.Second,
 		AcceptRetries:    acceptRetries,
 		ConnDeadline:     time.Duration(defaultConnDeadline) * time.Second,
@@ -130,9 +130,9 @@ func runTestHarness(acceptRetries int, bindAddr, tmhome string) {
 	harness.Run()
 }
 
-func extractKey(tmhome, outputPath string) {
-	keyFile := filepath.Join(internal.ExpandPath(tmhome), "config", "priv_validator_key.json")
-	stateFile := filepath.Join(internal.ExpandPath(tmhome), "data", "priv_validator_state.json")
+func extractKey(cmthome, outputPath string) {
+	keyFile := filepath.Join(internal.ExpandPath(cmthome), "config", "priv_validator_key.json")
+	stateFile := filepath.Join(internal.ExpandPath(cmthome), "data", "priv_validator_state.json")
 	fpv := privval.LoadFilePV(keyFile, stateFile)
 	pkb := []byte(fpv.Key.PrivKey.(ed25519.PrivKey))
 	if err := os.WriteFile(internal.ExpandPath(outputPath), pkb[:32], 0600); err != nil {

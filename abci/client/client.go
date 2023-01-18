@@ -6,7 +6,7 @@ import (
 
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/service"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 )
 
 const (
@@ -85,7 +85,7 @@ type ReqRes struct {
 	*sync.WaitGroup
 	*types.Response // Not set atomically, so be sure to use WaitGroup.
 
-	mtx tmsync.Mutex
+	mtx cmtsync.Mutex
 
 	// callbackInvoked as a variable to track if the callback was already
 	// invoked during the regular execution of the request. This variable

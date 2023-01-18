@@ -7,8 +7,8 @@ import (
 
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/libs/log"
-	tmnet "github.com/tendermint/tendermint/libs/net"
-	tmos "github.com/tendermint/tendermint/libs/os"
+	cmtnet "github.com/tendermint/tendermint/libs/net"
+	cmtos "github.com/tendermint/tendermint/libs/os"
 
 	"github.com/tendermint/tendermint/privval"
 )
@@ -37,7 +37,7 @@ func main() {
 	pv := privval.LoadFilePV(*privValKeyPath, *privValStatePath)
 
 	var dialer privval.SocketDialer
-	protocol, address := tmnet.ProtocolAndAddress(*addr)
+	protocol, address := cmtnet.ProtocolAndAddress(*addr)
 	switch protocol {
 	case "unix":
 		dialer = privval.DialUnixFn(address)
@@ -58,7 +58,7 @@ func main() {
 	}
 
 	// Stop upon receiving SIGTERM or CTRL-C.
-	tmos.TrapSignal(logger, func() {
+	cmtos.TrapSignal(logger, func() {
 		err := ss.Stop()
 		if err != nil {
 			panic(err)

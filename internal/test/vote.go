@@ -3,7 +3,7 @@ package test
 import (
 	"time"
 
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/types"
 )
 
@@ -27,7 +27,7 @@ func MakeVote(
 		ValidatorIndex:   valIndex,
 		Height:           height,
 		Round:            round,
-		Type:             tmproto.SignedMsgType(step),
+		Type:             cmtproto.SignedMsgType(step),
 		BlockID:          blockID,
 		Timestamp:        time,
 	}

@@ -1,9 +1,19 @@
+@use 'sass:color';
+
+$colors: (
+  'border': rgba(0, 0, 0, 0.2),
+  'shadow': rgba(0, 0, 0, 0.35),
+  'secondary': orange,
+  'primary': #03bb00,
+  'primary--10': scale-color(#d2e1dd, $lightness: 70%, $saturation: 30%),
+  'text': rgba(0, 0, 0, 0.9),
+  'text--faded': rgba(0, 0, 0, 0.6),
+);
+
 :root {
-  --color--border: rgba(0, 0, 0, 0.2);
-  --color--shadow: rgba(0, 0, 0, 0.35);
-  --color--primary: #03bb00;
-  --color--text: rgba(0, 0, 0, 0.9);
-  --color--text--faded: rgba(0, 0, 0, 0.6);
+  @each $colorName, $colorCode in $colors {
+    --color--#{$colorName}: #{$colorCode};
+  }
 
   color: var(--color--text);
 }

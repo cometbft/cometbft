@@ -13,18 +13,16 @@
     'PrimaryNavigation PageContent TableOfContents'
     'SiteFooter SiteFooter SiteFooter';
   grid-template-columns: 0.75fr minmax(300px, 2fr) 0.75fr;
+  margin: 0 auto;
 
-  @include gap(loose, false);
-
-  @include padding(tight);
-
-  @include for-breakpoint('tabletsOrLarger') {
-    @include padding(normal);
-  }
+  @include rowGap(loose, false);
 
   @include for-breakpoint('desktopsOrLarger') {
-    margin: 0 auto;
     max-width: 960px;
+  }
+
+  @include for-breakpoint('bigDesktopsOrLarger') {
+    max-width: 80vw;
   }
 }
 
@@ -32,21 +30,21 @@
   grid-area: SiteHeader;
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 2;
+  @include paddingX(loose);
   @include paddingY(normal);
 
   $shadowBlur: 5px;
   $shadowHeight: 20px;
-  $shadowOffset: calc(var(--whiteSpace--xLoose) * -1);
 
   &::before {
     background-color: white;
     border-bottom: 1px solid var(--color--border);
     bottom: 0;
     content: '';
-    left: $shadowOffset;
+    left: 0;
     position: absolute;
-    right: $shadowOffset;
+    right: 0;
     top: 0;
     z-index: -1;
   }
@@ -57,10 +55,10 @@
     content: '';
     filter: blur($shadowBlur);
     height: 0;
-    left: calc(#{$shadowOffset} + #{$shadowBlur});
+    left: $shadowBlur;
     opacity: 0;
     position: absolute;
-    right: calc(#{$shadowOffset} + #{$shadowBlur});
+    right: $shadowBlur;
     top: calc(100% - $shadowHeight / 2);
     transition-duration: 0.25s;
     transition-property: height, opacity;
@@ -77,6 +75,7 @@
 
 .SiteHeader-content {
   @include justifyContent(space-between);
+  overflow-y: auto;
 }
 
 .SiteHeader-logo {
@@ -97,59 +96,44 @@
 .SiteFooter {
   border-top: 1px solid var(--color--border);
   grid-area: SiteFooter;
+  @include fontSize(small);
   @include justifyContent(center);
-  @include paddingY(normal);
+  @include paddingY(tight);
+}
+
+.PrimaryNavigation-items,
+.TableOfContents-content {
+  max-height: calc(100vh - (var(--whiteSpace--normal) * 2 + var(--whiteSpace--loose) + var(--lineHeight--large) + 1px));
+  overflow-y: auto;
+  overflow-x: visible;
+  position: sticky;
+  top: calc(var(--whiteSpace--normal) * 2 + var(--whiteSpace--loose) + var(--lineHeight--large) + 1px);
+  @include paddingBottom(normal);
+}
+
+.PrimaryNavigation {
+  @include paddingLeft(normal);
+  @include paddingRight(loose);
+}
+
+.PrimaryNavigation-items {
+  @include paddingLeft(normal);
+}
+
+.TableOfContents {
+  @include paddingX(loose);
 }
 
 .PageContent {
   grid-area: PageContent;
 
   @include rowGap(normal);
+}
 
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    @extend .text--heading;
-  }
+.PrimaryNavigation {
+  grid-area: PrimaryNavigation;
+}
 
-  h1 {
-    @extend .text--heading--1;
-  }
-
-  h2 {
-    @extend .text--heading--2;
-  }
-
-  h3 {
-    @extend .text--heading--3;
-  }
-
-  ol,
-  ul {
-    @include marginLeft(loose);
-    @include rowGap(tight);
-  }
-
-  ol li {
-    list-style-type: decimal;
-
-    @include paddingLeft(xTight);
-  }
-
-  ul li {
-    list-style-type: none;
-    position: relative;
-  }
-
-  ul li::before {
-    content: '\f0da';
-    font-family: 'Font Awesome 6 Pro';
-    font-weight: 900;
-    position: absolute;
-    right: calc(100% + var(--whiteSpace--tight));
-    top: 0;
-  }
+.TableOfContents {
+  grid-area: TableOfContents;
 }

@@ -20,9 +20,11 @@
 .text--link {
   color: var(--color--primary);
   cursor: pointer;
+  text-decoration: underline;
 
   &:hover {
-    text-decoration: underline;
+    color: var(--color--secondary);
+    text-decoration: none;
   }
 }
 
@@ -50,4 +52,109 @@
 
 .text--heading--2 {
   @include fontSize(large);
+}
+
+.PageContent {
+  a {
+    @extend .text--link;
+
+    display: inline-block;
+  }
+
+  a[href^='http'] {
+    &::after {
+      content: '\f14c';
+      display: inline-block;
+      font-family: 'Font Awesome 6 Pro';
+      font-weight: 300;
+      transform-origin: left center;
+      transition-duration: 0.25s;
+      transition-property: transform;
+      @include marginLeft(xTight);
+    }
+
+    &:hover::after {
+      font-weight: 900;
+      transform: scale(1.2);
+    }
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @extend .text--heading;
+  }
+
+  h1 {
+    @extend .text--heading--1;
+  }
+
+  h2 {
+    @extend .text--heading--2;
+  }
+
+  h3 {
+    @extend .text--heading--3;
+  }
+
+  ol,
+  ul {
+    @include marginLeft(loose);
+    @include rowGap(tight);
+  }
+
+  ol li {
+    list-style-type: decimal;
+
+    @include paddingLeft(xTight);
+  }
+
+  ul li {
+    list-style-type: none;
+    position: relative;
+  }
+
+  ul li::before {
+    content: '\f0da';
+    font-family: 'Font Awesome 6 Pro';
+    font-weight: 900;
+    position: absolute;
+    right: calc(100% + var(--whiteSpace--tight));
+    top: 0;
+  }
+
+  code {
+    background-color: var(--color--primary--10);
+    display: inline-block;
+    font-family: monospace;
+    @include paddingX(xTight);
+  }
+
+  img {
+    width: 100%;
+  }
+
+  table {
+    border: 1px solid var(--color--border);
+    border-collapse: separate;
+    border-radius: var(--borderRadius--normal);
+    font-family: monospace;
+  }
+
+  td,
+  th {
+    @include paddingX(normal);
+    @include paddingY(tight);
+  }
+
+  th {
+    font-weight: bold;
+  }
+
+  td {
+    border-top: 1px solid var(--color--border);
+  }
 }

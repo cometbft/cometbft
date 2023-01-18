@@ -31,11 +31,11 @@ If you follow these guidelines when reporting an issue to us, we commit to:
 
 ## Disclosure Process
 
-CometBFT Core uses the following disclosure process:
+CometBFT uses the following disclosure process:
 
-1. Once a security report is received, the CometBFT Core team works to verify
+1. Once a security report is received, the CometBFT team works to verify
    the issue and confirm its severity level using CVSS.
-2. The CometBFT Core team collaborates with the Gaia team to determine the
+2. The CometBFT team collaborates with the Gaia team to determine the
    vulnerability’s potential impact on the Cosmos Hub.
 3. Patches are prepared for eligible releases of CometBFT in private
    repositories. See “Supported Releases” below for more information on which
@@ -46,25 +46,25 @@ CometBFT Core uses the following disclosure process:
    to prepare their systems for the update. Notifications can include forum
    posts, tweets, and emails to partners and validators, including emails sent
    to the [CometBFT Security Mailing List][tmsec-mailing]. -->
-5. 24 hours following this notification, the fixes are applied publicly and new
+1. 24 hours following this notification, the fixes are applied publicly and new
    releases are issued.
-6. Cosmos SDK and Gaia update their CometBFT Core dependencies to use these
+2. Cosmos SDK and Gaia update their CometBFT dependencies to use these
    releases, and then themselves issue new releases.
-7. Once releases are available for CometBFT Core, Cosmos SDK and Gaia, we
+3. Once releases are available for CometBFT, Cosmos SDK and Gaia, we
    notify the community, again, through the same channels as above. We also
    publish a Security Advisory on Github and publish the CVE, as long as neither
    the Security Advisory nor the CVE include any information on how to exploit
    these vulnerabilities beyond what information is already available in the
    patch itself.
-8. Once the community is notified, we will pay out any relevant bug bounties to
+4. Once the community is notified, we will pay out any relevant bug bounties to
    submitters.
-9. One week after the releases go out, we will publish a post with further
+5. One week after the releases go out, we will publish a post with further
     details on the vulnerability as well as our response to it.
 
 This process can take some time. Every effort will be made to handle the bug in
 as timely a manner as possible, however it's important that we follow the
 process described above to ensure that disclosures are handled consistently and
-to keep CometBFT Core and its downstream dependent projects--including but not
+to keep CometBFT and its downstream dependent projects--including but not
 limited to Gaia and the Cosmos Hub--as secure as possible.
 
 ### Example Timeline
@@ -116,11 +116,11 @@ multiple people can play each role and each person may play multiple roles.
 
 ## Supported Releases
 
-The CometBFT Core team commits to releasing security patch releases for both
+The CometBFT team commits to releasing security patch releases for both
 the latest minor release as well for the major/minor release that the Cosmos Hub
 is running.
 
-If you are running older versions of CometBFT Core, we encourage you to
+If you are running older versions of CometBFT, we encourage you to
 upgrade at your earliest opportunity so that you can receive security patches
 directly from the CometBFT repo. While you are welcome to backport security
 patches to older versions for your own use, we will not publish or promote these

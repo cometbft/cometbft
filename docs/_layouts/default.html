@@ -102,7 +102,7 @@
       </aside>
 
       <main class="PageContent">
-        {{ content }}
+        {{ content | replace: ' href="http', ' target="_blank" href="http' }}
       </main>
 
       <footer class="SiteFooter">

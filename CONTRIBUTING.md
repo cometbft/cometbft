@@ -1,23 +1,23 @@
 # Contributing
 
-Thank you for your interest in contributing to CosmosBFT! Before
+Thank you for your interest in contributing to CometBFT! Before
 contributing, it may be helpful to understand the goal of the project. The goal
-of CosmosBFT is to develop a BFT consensus engine robust enough to
+of CometBFT is to develop a BFT consensus engine robust enough to
 support permissionless value-carrying networks. While all contributions are
 welcome, contributors should bear this goal in mind in deciding if they should
-target the main CosmosBFT project or a potential fork. When targeting the
-main CosmosBFT project, the following process leads to the best chance of
+target the main CometBFT project or a potential fork. When targeting the
+main CometBFT project, the following process leads to the best chance of
 landing changes in `main`.
 
 All work on the code base should be motivated by a [Github
-Issue](https://github.com/cosmosbft/cosmosbft/issues).
-[Search](https://github.com/cosmosbft/cosmosbft/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22)
+Issue](https://github.com/cometbft/cometbft/issues).
+[Search](https://github.com/cometbft/cometbft/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22)
 is a good place to start when looking for places to contribute. If you
 would like to work on an issue which already exists, please indicate so
 by leaving a comment.
 
 All new contributions should start with a [Github
-Issue](https://github.com/cosmosbft/cosmosbft/issues/new/choose). The
+Issue](https://github.com/cometbft/cometbft/issues/new/choose). The
 issue helps capture the problem you're trying to solve and allows for
 early feedback. Once the issue is created the process can proceed in different
 directions depending on how well defined the problem and potential
@@ -26,8 +26,8 @@ will indicate their support with a heartfelt emoji.
 
 If the issue would benefit from thorough discussion, maintainers may
 request that you create a [Request For
-Comment](https://github.com/cosmosbft/cosmosbft/tree/main/docs/rfc)
-in the CosmosBFT spec repo. Discussion
+Comment](https://github.com/cometbft/cometbft/tree/main/docs/rfc)
+in the CometBFT spec repo. Discussion
 at the RFC stage will build collective understanding of the dimensions
 of the problems and help structure conversations around trade-offs.
 
@@ -60,20 +60,20 @@ Each stage of the process is aimed at creating feedback cycles which align contr
 ## Forking
 
 Please note that Go requires code to live under absolute paths, which complicates forking.
-While my fork lives at `https://github.com/ebuchman/cosmosbft`,
-the code should never exist at `$GOPATH/src/github.com/ebuchman/cosmosbft`.
+While my fork lives at `https://github.com/ebuchman/cometbft`,
+the code should never exist at `$GOPATH/src/github.com/ebuchman/cometbft`.
 Instead, we use `git remote` to add the fork as a new remote for the original repo,
-`$GOPATH/src/github.com/cosmosbft/cosmosbft`, and do all the work there.
+`$GOPATH/src/github.com/cometbft/cometbft`, and do all the work there.
 
 For instance, to create a fork and work on a branch of it, I would:
 
 - Create the fork on GitHub, using the fork button.
-- Go to the original repo checked out locally (i.e. `$GOPATH/src/github.com/cosmosbft/cosmosbft`)
+- Go to the original repo checked out locally (i.e. `$GOPATH/src/github.com/cometbft/cometbft`)
 - `git remote rename origin upstream`
 - `git remote add origin git@github.com:ebuchman/basecoin.git`
 
-Now `origin` refers to my fork and `upstream` refers to the CosmosBFT version.
-So I can `git push -u origin main` to update my fork, and make pull requests to CosmosBFT from there.
+Now `origin` refers to my fork and `upstream` refers to the CometBFT version.
+So I can `git push -u origin main` to update my fork, and make pull requests to CometBFT from there.
 Of course, replace `ebuchman` with your git handle.
 
 To pull in updates from the origin repo, run
@@ -85,7 +85,7 @@ To pull in updates from the origin repo, run
 
 We use [go modules](https://github.com/golang/go/wiki/Modules) to manage dependencies.
 
-That said, the `main` branch of every CosmosBFT repository should just build
+That said, the `main` branch of every CometBFT repository should just build
 with `go get`, which means they should be kept up-to-date with their
 dependencies so we can get away with telling people they can just `go get` our
 software.
@@ -101,27 +101,27 @@ up-to-date.
 When updating dependencies, please only update the particular dependencies you
 need. Instead of running `go get -u=patch`, which will update anything,
 specify exactly the dependency you want to update, eg.
-`GO111MODULE=on go get -u github.com/cosmosbft/go-amino@master`.
+`GO111MODULE=on go get -u github.com/cometbft/go-amino@master`.
 
 ## Protobuf
 
 We use [Protocol Buffers](https://developers.google.com/protocol-buffers) along
 with [`gogoproto`](https://github.com/cosmos/gogoproto) to generate code for use
-across CosmosBFT Core.
+across CometBFT Core.
 
 To generate proto stubs, lint, and check protos for breaking changes, you will
 need to install [buf](https://buf.build/) and `gogoproto`. Then, from the root
 of the repository, run:
 
 ```bash
-# Lint all of the .proto files in proto/cosmosbft
+# Lint all of the .proto files in proto/cometbft
 make proto-lint
 
 # Check if any of your local changes (prior to committing to the Git repository)
 # are breaking
 make proto-check-breaking
 
-# Generate Go code from the .proto files in proto/cosmosbft
+# Generate Go code from the .proto files in proto/cometbft
 make proto-gen
 ```
 
@@ -172,7 +172,7 @@ Some good examples of changelog entry descriptions:
 - [consensus] \#1111 Small transaction throughput improvement (approximately
   3-5\% from preliminary tests) through refactoring the way we use channels
 - [mempool] \#1112 Refactor Go API to be able to easily swap out the current
-  mempool implementation in CosmosBFT forks
+  mempool implementation in CometBFT forks
 - [p2p] \#1113 Automatically ban peers when their messages are unsolicited or
   are received too frequently
 ```

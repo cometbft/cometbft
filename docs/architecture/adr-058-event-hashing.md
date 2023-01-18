@@ -109,8 +109,8 @@ and how this ought to ultimately be done by Tendermint.**
 
 ## References
 
-- [ADR 021](./adr-021-abci-events.md)
-- [Indexing transactions](../app-dev/indexing-transactions.md)
+- [ADR 021](../adr-021-abci-events)
+- [Indexing transactions](../../04-apps/indexing-transactions)
 
 ## Appendix A. Alternative proposals
 

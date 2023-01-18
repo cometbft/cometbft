@@ -27,7 +27,7 @@ The script is also used to facilitate cluster deployment below.
 
 ### Manual Install
 
-For manual installation, see the [install instructions](install.md)
+For manual installation, see the [install instructions](../install)
 
 ## Initialization
 
@@ -142,6 +142,6 @@ tendermint node --home ./mytestnet/node3 --proxy_app=kvstore --p2p.persistent_pe
 
 Note that after the third node is started, blocks will start to stream in
 because >2/3 of validators (defined in the `genesis.json`) have come online.
-Persistent peers can also be specified in the `config.toml`. See [here](../tendermint-core/configuration.md) for more information about configuration options.
+Persistent peers can also be specified in the `config.toml`. See [here](../../05-tendermint-core/configuration) for more information about configuration options.
 
 Transactions can then be sent as covered in the single, local node example above.

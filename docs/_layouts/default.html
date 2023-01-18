@@ -79,15 +79,23 @@
 
       <aside class="TableOfContents">
         <div class="TableOfContents-content">
-          <h2 class="TableOfContents-title">On This Page</h2>
+          {% capture TableOfContents %}
+            {% include toc.html
+              html = content
+              class = "TableOfContents-items"
+              item_class = "TableOfContents-item"
+              anchor_class = "TableOfContents-button"
+              submenu_class = "TableOfContents-subItems"
+              h_min = 2 %}
+          {% endcapture %}
 
-          {% include toc.html
-           html = content
-           class = "TableOfContents-items"
-           item_class = "TableOfContents-item"
-           anchor_class = "TableOfContents-button"
-           submenu_class = "TableOfContents-subItems"
-           h_min = 2 %}
+          {% assign TrimmedTableOfContents = TableOfContents | strip %}
+
+          {% if TrimmedTableOfContents != "" %}
+            <h2 class="TableOfContents-title">On This Page</h2>
+            
+            {{ TableOfContents }}
+          {% endif %}
         </div>
       </aside>
 

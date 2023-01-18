@@ -42,13 +42,13 @@ The orchestrator allows for some deal of variablity in how a node is constructed
 
 The block executor is an important component that is currently used by both consensus and blocksync to execute transactions and update application state. Principally, I think it should be the only component that can write (and possibly even read) the block and state stores, and we should clean up other direct dependencies on the storage engine if we can. This would mean:
 
-- The reactors Consensus, BlockSync and StateSync should all import the executor for advancing state ie.  `ApplyBlock` and `BootstrapState`.
+- The reactors Consensus, BlockSync and StateSync should all import the executor for advancing state ie. `ApplyBlock` and `BootstrapState`.
 - Pruning should also be a concern of the block executor as well as `FinalizeBlock` and `Commit`. This can simplify consensus to focus just on the consensus part.
 
 ### The Interprocess communication systems: RPC, P2P, ABCI, and Events
 
 The schematic supplied above shows the relations between the different services, the node, the block executor, and the storage layer. Represented as colored dots are the components responsible for different roles of interprocess communication (IPC). These components permeate throughout the code base, seeping into most services. What can provide powerful functionality on one hand can also become a twisted vine, creating messy corner cases and convoluting the protocols themselves. A lot of the thinking around
-how we want our IPC systens to function has been summarised in this [RFC](./rfc-002-ipc-ecosystem.md). In this section, I'd like to focus the reader on the relation between the IPC and the node structure. An issue that has frequently risen is that the RPC has control of the components where it strikes me as being more logical for the component to dictate the information that is emitted/available and the knobs it wishes to expose. The RPC is also inextricably tied to the node instance and has situations where it is passed pointers directly to the storage engine and other components.
+how we want our IPC systens to function has been summarised in this [RFC](../rfc-002-ipc-ecosystem). In this section, I'd like to focus the reader on the relation between the IPC and the node structure. An issue that has frequently risen is that the RPC has control of the components where it strikes me as being more logical for the component to dictate the information that is emitted/available and the knobs it wishes to expose. The RPC is also inextricably tied to the node instance and has situations where it is passed pointers directly to the storage engine and other components.
 
 I am currently convinced of the approach that the p2p layer takes and would like to see other IPC components follow suit. This would mean that the RPC and events system would be constructed in the node yet would pass the adequate methods to register endpoints and topics to the sub components. For example,
 
@@ -74,10 +74,10 @@ Principally, I think we should look to change our language away from what the ac
 
 When a service such as blocksync is turned on, it automatically begins requesting blocks to verify and apply them as it also tries to serve them to other peers catching up. We should look to distinguish these two aspects: supplying of information and consuming of information in many of these components. More concretely, I'd suggest:
 
-- The blocksync and statesync service, i.e. supplying information for those trying to catch up should only start running once a node has caught up i.e. after running the blocksync and/or state sync *processes*
+- The blocksync and statesync service, i.e. supplying information for those trying to catch up should only start running once a node has caught up i.e. after running the blocksync and/or state sync _processes_
 - The blocksync and state sync processes have defined termination clauses that inform the orchestrator when they are done and where they finished.
-    - One way of achieving this would be that every process both passes and returns the `State` object
-    - In some cases, a node may specify that it wants to run blocksync indefinitely.
+  - One way of achieving this would be that every process both passes and returns the `State` object
+  - In some cases, a node may specify that it wants to run blocksync indefinitely.
 - The mempool should also indicate whether it wants to receive transactions or to send them only (one-directional mempool)
 - Similarly, the light client itself only requests information whereas the light client service (currently part of state sync) can do both.
 - This distinction needs to be communicated in the p2p layer handshake itself but should also be changeable over the lifespan of the connection.

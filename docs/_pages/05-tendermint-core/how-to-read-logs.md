@@ -115,7 +115,7 @@ I[10-04|13:54:30.410] Recheck txs                                  module=mempoo
 Here is the list of modules you may encounter in Tendermint's log and a
 little overview what they do.
 
-- `abci-client` As mentioned in [Application Development Guide](../app-dev/abci-cli.md), Tendermint acts as an ABCI
+- `abci-client` As mentioned in [Application Development Guide](../../04-apps/abci-cli), Tendermint acts as an ABCI
   client with respect to the application and maintains 3 connections:
   mempool, consensus and query. The code used by Tendermint Core can
   be found [here](https://github.com/tendermint/tendermint/blob/v0.34.x/abci/client).
@@ -130,13 +130,13 @@ little overview what they do.
   found
   [here](https://github.com/tendermint/tendermint/blob/v0.34.x/types/events.go).
   You can subscribe to them by calling `subscribe` RPC method. Refer
-  to [RPC docs](./rpc.md) for additional information.
+  to [RPC docs](../rpc) for additional information.
 - `mempool` Mempool module handles all incoming transactions, whenever
   they are coming from peers or the application.
 - `p2p` Provides an abstraction around peer-to-peer communication. For
   more details, please check out the
   [README](https://github.com/tendermint/tendermint/blob/v0.34.x/p2p/README.md).
-- `rpc` [Tendermint's RPC](./rpc.md).
+- `rpc` [Tendermint's RPC](../rpc).
 - `rpc-server` RPC server. For implementation details, please read the
   [doc.go](https://github.com/tendermint/tendermint/blob/v0.34.x/rpc/jsonrpc/doc.go).
 - `state` Represents the latest state and execution submodule, which

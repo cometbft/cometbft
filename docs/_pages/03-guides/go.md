@@ -33,7 +33,7 @@ On the one hand, to get maximum performance you can run your application in
 the same process as the Tendermint Core, as long as your application is written in Go.
 [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) is written
 this way.
-If that is the way you wish to proceed, use the [Creating a built-in application in Go](./go-built-in.md) guide instead of this one.
+If that is the way you wish to proceed, use the [Creating a built-in application in Go](../go-built-in) guide instead of this one.
 
 On the other hand, having a separate application might give you better security
 guarantees as two processes would be communicating via established binary protocol.
@@ -593,7 +593,7 @@ which connects to our server and send us transactions and other messages.
 
 Our application is almost ready to run, but first we'll need to populate the Tendermint Core configuration files.
 The following command will create a `tendermint-home` directory in your project and add a basic set of configuration files in `tendermint-home/config/`.
-For more information on what these files contain see [the configuration documentation](https://github.com/tendermint/tendermint/blob/v0.37.0/docs/nodes/configuration.md).
+For more information on what these files contain see [the configuration documentation](https://github.com/tendermint/tendermint/blob/v0.37.0/docs/nodes/configuration).
 
 From the root of your project, run:
 

@@ -12,13 +12,13 @@ Proposed.
 
 ## Context
 
-In an effort to support [Go-API-Stability](./adr-060-go-api-stability.md),
+In an effort to support [Go-API-Stability](../adr-060-go-api-stability),
 during the 0.35 development cycle, we have attempted to reduce the the API
 surface area by moving most of the interface of the `node` package into
 unexported functions, as well as moving the reactors to an `internal`
 package. Having this coincide with the 0.35 release made a lot of sense
 because these interfaces were _already_ changing as a result of the `p2p`
-[refactor](./adr-061-p2p-refactor-scope.md), so it made sense to think a bit
+[refactor](../adr-061-p2p-refactor-scope), so it made sense to think a bit
 more about how tendermint exposes this API.
 
 While the interfaces of the P2P layer and most of the node package are already
@@ -70,7 +70,7 @@ tendermint nodes of arbitrary user-supplied components.
 
 Although this level of customization would provide benefits, it would be a huge
 undertaking (particularly with regards to API design work) that we do not have
-scope for at the moment.  Eventually providing support for some kinds of
+scope for at the moment. Eventually providing support for some kinds of
 pluggability may be useful, so the current solution does not explicitly
 foreclose the possibility of this alternative.
 
@@ -88,9 +88,9 @@ so that the node could decide the initialization based on the
 dependencies declared by services rather than requiring the node to
 encode this logic directly.
 
-This level of configuration is probably more complicated than is needed.  Given
+This level of configuration is probably more complicated than is needed. Given
 that the authors of components in the current implementation of tendermint
-already *do* need to know about other components, a dependency-based system
+already _do_ need to know about other components, a dependency-based system
 would probably be overly-abstract at this stage.
 
 ## Decisions
@@ -106,14 +106,14 @@ would probably be overly-abstract at this stage.
   initializing tendermint nodes to make the initatilization process
   less hard-coded by the implementation of the node objects.
 
-  - Reactors should not need to expose their interfaces *within* the
-	implementation of the node type
+  - Reactors should not need to expose their interfaces _within_ the
+    implementation of the node type
 
   - This refactoring should be entirely opaque to users.
 
   - These node initialization changes should not require a
-	reevaluation of the `service.Service` or a generic initialization
-	orchestration framework.
+    reevaluation of the `service.Service` or a generic initialization
+    orchestration framework.
 
 - Do not proactively provide a system for injecting
   components/services within a tendtermint node, though make it
@@ -143,7 +143,7 @@ that implements `service.Service` and is composed of a sequence of
 underlying `service.Service` objects and handles their
 startup/shutdown in the specified sequential order.
 
-Consensus, blocksync (*née* fast sync), and statesync all depend on
+Consensus, blocksync (_née_ fast sync), and statesync all depend on
 each other, and have significant initialization dependencies that are
 presently encoded in the `node` package. As part of this change, a
 new package/component (likely named `blocks` located at
@@ -172,7 +172,7 @@ func NewWithServices(conf *config.Config,
 
 The `service.Service` objects will be initialized in the order supplied, after
 all pre-configured/default services have started (and shut down in reverse
-order).  The given services may implement additional interfaces, allowing them
+order). The given services may implement additional interfaces, allowing them
 to replace specific default services. `NewWithServices` will validate input
 service lists with the following rules:
 
@@ -182,7 +182,7 @@ service lists with the following rules:
 
 If callers violate any of these rules, `NewWithServices` will return
 an error. To retract support for this kind of operation in the future,
-the function can be modified to *always* return an error.
+the function can be modified to _always_ return an error.
 
 ## Consequences
 

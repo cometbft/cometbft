@@ -44,7 +44,7 @@ please submit them to our [bug bounty](https://tendermint.com/security)!
 
 ### RPC
 
-- [RPC SPEC](./rpc/README.md): Specification of the Tendermint remote procedure call interface.
+- [RPC SPEC](../rpc/README.md): Specification of the Tendermint remote procedure call interface.
 
 ### Software
 

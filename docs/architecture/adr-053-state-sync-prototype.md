@@ -2,45 +2,47 @@
 
 State sync is now [merged](https://github.com/tendermint/tendermint/pull/4705). Up-to-date ABCI documentation is [available](https://github.com/tendermint/spec/pull/90), refer to it rather than this ADR for details.
 
-This ADR outlines the plan for an initial state sync prototype, and is subject to change as we gain feedback and experience. It builds on discussions and findings in [ADR-042](./adr-042-state-sync.md), see that for background information.
+This ADR outlines the plan for an initial state sync prototype, and is subject to change as we gain feedback and experience. It builds on discussions and findings in [ADR-042](../adr-042-state-sync), see that for background information.
 
 ## Changelog
 
-* 2020-01-28: Initial draft (Erik Grinaker)
+- 2020-01-28: Initial draft (Erik Grinaker)
 
-* 2020-02-18: Updates after initial prototype (Erik Grinaker)
-    * ABCI: added missing `reason` fields.
-    * ABCI: used 32-bit 1-based chunk indexes (was 64-bit 0-based).
-    * ABCI: moved `RequestApplySnapshotChunk.chain_hash` to `RequestOfferSnapshot.app_hash`.
-    * Gaia: snapshots must include node versions as well, both for inner and leaf nodes.
-    * Added experimental prototype info.
-    * Added open questions and implementation plan.
+- 2020-02-18: Updates after initial prototype (Erik Grinaker)
 
-* 2020-03-29: Strengthened and simplified ABCI interface (Erik Grinaker)
-    * ABCI: replaced `chunks` with `chunk_hashes` in `Snapshot`.
-    * ABCI: removed `SnapshotChunk` message.
-    * ABCI: renamed `GetSnapshotChunk` to `LoadSnapshotChunk`.
-    * ABCI: chunks are now exchanged simply as `bytes`.
-    * ABCI: chunks are now 0-indexed, for parity with `chunk_hashes` array.
-    * Reduced maximum chunk size to 16 MB, and increased snapshot message size to 4 MB.
+  - ABCI: added missing `reason` fields.
+  - ABCI: used 32-bit 1-based chunk indexes (was 64-bit 0-based).
+  - ABCI: moved `RequestApplySnapshotChunk.chain_hash` to `RequestOfferSnapshot.app_hash`.
+  - Gaia: snapshots must include node versions as well, both for inner and leaf nodes.
+  - Added experimental prototype info.
+  - Added open questions and implementation plan.
 
-* 2020-04-29: Update with final released ABCI interface (Erik Grinaker)
+- 2020-03-29: Strengthened and simplified ABCI interface (Erik Grinaker)
+
+  - ABCI: replaced `chunks` with `chunk_hashes` in `Snapshot`.
+  - ABCI: removed `SnapshotChunk` message.
+  - ABCI: renamed `GetSnapshotChunk` to `LoadSnapshotChunk`.
+  - ABCI: chunks are now exchanged simply as `bytes`.
+  - ABCI: chunks are now 0-indexed, for parity with `chunk_hashes` array.
+  - Reduced maximum chunk size to 16 MB, and increased snapshot message size to 4 MB.
+
+- 2020-04-29: Update with final released ABCI interface (Erik Grinaker)
 
 ## Context
 
 State sync will allow a new node to receive a snapshot of the application state without downloading blocks or going through consensus. This bootstraps the node significantly faster than the current fast sync system, which replays all historical blocks.
 
-Background discussions and justifications are detailed in [ADR-042](./adr-042-state-sync.md). Its recommendations can be summarized as:
+Background discussions and justifications are detailed in [ADR-042](../adr-042-state-sync). Its recommendations can be summarized as:
 
-* The application periodically takes full state snapshots (i.e. eager snapshots).
+- The application periodically takes full state snapshots (i.e. eager snapshots).
 
-* The application splits snapshots into smaller chunks that can be individually verified against a chain app hash.
+- The application splits snapshots into smaller chunks that can be individually verified against a chain app hash.
 
-* Tendermint uses the light client to obtain a trusted chain app hash for verification.
+- Tendermint uses the light client to obtain a trusted chain app hash for verification.
 
-* Tendermint discovers and downloads snapshot chunks in parallel from multiple peers, and passes them to the application via ABCI to be applied and verified against the chain app hash.
+- Tendermint discovers and downloads snapshot chunks in parallel from multiple peers, and passes them to the application via ABCI to be applied and verified against the chain app hash.
 
-* Historical blocks are not backfilled, so state synced nodes will have a truncated block history.
+- Historical blocks are not backfilled, so state synced nodes will have a truncated block history.
 
 ## Tendermint Proposal
 
@@ -127,17 +129,17 @@ message ResponseApplySnapshotChunk {
 
 Tendermint is not aware of the snapshotting process at all, it is entirely an application concern. The following guarantees must be provided:
 
-* **Periodic:** snapshots must be taken periodically, not on-demand, for faster restores, lower load, and less DoS risk.
+- **Periodic:** snapshots must be taken periodically, not on-demand, for faster restores, lower load, and less DoS risk.
 
-* **Deterministic:** snapshots must be deterministic, and identical across all nodes - typically by taking a snapshot at given height intervals.
+- **Deterministic:** snapshots must be deterministic, and identical across all nodes - typically by taking a snapshot at given height intervals.
 
-* **Consistent:** snapshots must be consistent, i.e. not affected by concurrent writes - typically by using a data store that supports versioning and/or snapshot isolation.
+- **Consistent:** snapshots must be consistent, i.e. not affected by concurrent writes - typically by using a data store that supports versioning and/or snapshot isolation.
 
-* **Asynchronous:** snapshots must be asynchronous, i.e. not halt block processing and state transitions.
+- **Asynchronous:** snapshots must be asynchronous, i.e. not halt block processing and state transitions.
 
-* **Chunked:** snapshots must be split into chunks of reasonable size (on the order of megabytes), and each chunk must be verifiable against the chain app hash.
+- **Chunked:** snapshots must be split into chunks of reasonable size (on the order of megabytes), and each chunk must be verifiable against the chain app hash.
 
-* **Garbage collected:** snapshots must be garbage collected periodically.
+- **Garbage collected:** snapshots must be garbage collected periodically.
 
 ### Restoring Snapshots
 
@@ -155,11 +157,11 @@ When starting an empty node with state sync and fast sync enabled, snapshots are
 
 5. The node aggregates snapshots from multiple peers, ordered by height and format (in reverse). If there are mismatches between different snapshots, the one hosted by the largest amount of peers is chosen. The node iterates over all snapshots in reverse order by height and format until it finds one that satisfies all of the following conditions:
 
-    * The snapshot height's block is considered trustworthy by the light client (i.e. snapshot height is greater than trusted header and within unbonding period of the latest trustworthy block).
+   - The snapshot height's block is considered trustworthy by the light client (i.e. snapshot height is greater than trusted header and within unbonding period of the latest trustworthy block).
 
-    * The snapshot's height or format hasn't been explicitly rejected by an earlier `RequestOfferSnapshot`.
+   - The snapshot's height or format hasn't been explicitly rejected by an earlier `RequestOfferSnapshot`.
 
-    * The application accepts the `RequestOfferSnapshot` call.
+   - The application accepts the `RequestOfferSnapshot` call.
 
 6. The node downloads chunks in parallel from multiple peers, via `RequestLoadSnapshotChunk`. Chunk messages cannot exceed 16 MB.
 
@@ -205,45 +207,45 @@ Snapshots must also be garbage collected after some configurable time, e.g. by k
 
 ## Resolved Questions
 
-* Is it OK for state-synced nodes to not have historical blocks nor historical IAVL versions?
+- Is it OK for state-synced nodes to not have historical blocks nor historical IAVL versions?
 
-    > Yes, this is as intended. Maybe backfill blocks later.
+  > Yes, this is as intended. Maybe backfill blocks later.
 
-* Do we need incremental chunk verification for first version?
+- Do we need incremental chunk verification for first version?
 
-    > No, we'll start simple. Can add chunk verification via a new snapshot format without any breaking changes in Tendermint. For adversarial conditions, maybe consider support for whitelisting peers to download chunks from.
+  > No, we'll start simple. Can add chunk verification via a new snapshot format without any breaking changes in Tendermint. For adversarial conditions, maybe consider support for whitelisting peers to download chunks from.
 
-* Should the snapshot ABCI interface be a separate optional ABCI service, or mandatory?
+- Should the snapshot ABCI interface be a separate optional ABCI service, or mandatory?
 
-    > Mandatory, to keep things simple for now. It will therefore be a breaking change and push the release. For apps using the Cosmos SDK, we can provide a default implementation that does not serve snapshots and errors when trying to apply them.
+  > Mandatory, to keep things simple for now. It will therefore be a breaking change and push the release. For apps using the Cosmos SDK, we can provide a default implementation that does not serve snapshots and errors when trying to apply them.
 
-* How can we make sure `ListSnapshots` data is valid? An adversary can provide fake/invalid snapshots to DoS peers.
+- How can we make sure `ListSnapshots` data is valid? An adversary can provide fake/invalid snapshots to DoS peers.
 
-    > For now, just pick snapshots that are available on a large number of peers. Maybe support whitelisting. We may consider e.g. placing snapshot manifests on the blockchain later.
+  > For now, just pick snapshots that are available on a large number of peers. Maybe support whitelisting. We may consider e.g. placing snapshot manifests on the blockchain later.
 
-* Should we punish nodes that provide invalid snapshots? How?
+- Should we punish nodes that provide invalid snapshots? How?
 
-    > No, these are full nodes not validators, so we can't punish them. Just disconnect from them and ignore them.
+  > No, these are full nodes not validators, so we can't punish them. Just disconnect from them and ignore them.
 
-* Should we call these snapshots? The SDK already uses the term "snapshot" for `PruningOptions.SnapshotEvery`, and state sync will introduce additional SDK options for snapshot scheduling and pruning that are not related to IAVL snapshotting or pruning.
+- Should we call these snapshots? The SDK already uses the term "snapshot" for `PruningOptions.SnapshotEvery`, and state sync will introduce additional SDK options for snapshot scheduling and pruning that are not related to IAVL snapshotting or pruning.
 
-    > Yes. Hopefully these concepts are distinct enough that we can refer to state sync snapshots and IAVL snapshots without too much confusion.
+  > Yes. Hopefully these concepts are distinct enough that we can refer to state sync snapshots and IAVL snapshots without too much confusion.
 
-* Should we store snapshot and chunk metadata in a database? Can we use the database for chunks?
+- Should we store snapshot and chunk metadata in a database? Can we use the database for chunks?
 
-    > As a first approach, store metadata in a database and chunks in the filesystem.
+  > As a first approach, store metadata in a database and chunks in the filesystem.
 
-* Should a snapshot at height H be taken before or after the block at H is processed? E.g. RPC `/commit` returns app_hash after _previous_ height, i.e. _before_  current height.
+- Should a snapshot at height H be taken before or after the block at H is processed? E.g. RPC `/commit` returns app*hash after \_previous* height, i.e. _before_ current height.
 
-    > After commit.
+  > After commit.
 
-* Do we need to support all versions of blockchain reactor (i.e. fast sync)?
+- Do we need to support all versions of blockchain reactor (i.e. fast sync)?
 
-    > We should remove the v1 reactor completely once v2 has stabilized.
+  > We should remove the v1 reactor completely once v2 has stabilized.
 
-* Should `ListSnapshots` be a streaming API instead of a request/response API?
+- Should `ListSnapshots` be a streaming API instead of a request/response API?
 
-    > No, just use a max message size.
+  > No, just use a max message size.
 
 ## Status
 
@@ -251,4 +253,4 @@ Implemented
 
 ## References
 
-* [ADR-042](./adr-042-state-sync.md) and its references
+- [ADR-042](../adr-042-state-sync) and its references

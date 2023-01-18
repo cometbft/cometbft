@@ -8,7 +8,7 @@ With Docker Compose, you can spin up local testnets with a single command.
 
 ## Requirements
 
-1. [Install tendermint](../introduction/install.md)
+1. [Install tendermint](../../01-introduction/install)
 2. [Install docker](https://docs.docker.com/engine/installation/)
 3. [Install docker-compose](https://docs.docker.com/compose/install/)
 
@@ -72,19 +72,19 @@ non-validators. Along with generating new config files the docker-compose file n
 Adding 4 more nodes is required in order to fully utilize the config files that were generated.
 
 ```yml
-  node3: # bump by 1 for every node
-    container_name: node3 # bump by 1 for every node
-    image: "tendermint/localnode"
-    environment:
-      - ID=3
-      - LOG=${LOG:-tendermint.log}
-    ports:
-      - "26663-26664:26656-26657" # Bump 26663-26664 by one for every node
-    volumes:
-      - ./build:/tendermint:Z
-    networks:
-      localnet:
-        ipv4_address: 192.167.10.5 # bump the final digit by 1 for every node
+node3: # bump by 1 for every node
+  container_name: node3 # bump by 1 for every node
+  image: "tendermint/localnode"
+  environment:
+    - ID=3
+    - LOG=${LOG:-tendermint.log}
+  ports:
+    - "26663-26664:26656-26657" # Bump 26663-26664 by one for every node
+  volumes:
+    - ./build:/tendermint:Z
+  networks:
+    localnet:
+      ipv4_address: 192.167.10.5 # bump the final digit by 1 for every node
 ```
 
 Before running it, don't forget to cleanup the old files:
@@ -148,20 +148,20 @@ To use your own ABCI applications with 4-node setup edit the [docker-compose.yam
 Override the [command](https://github.com/tendermint/tendermint/blob/v0.34.x/networks/local/localnode/Dockerfile#L12) in each node to connect to it's ABCI.
 
 ```yml
-  node0:
-    container_name: node0
-    image: "tendermint/localnode"
-    ports:
-      - "26656-26657:26656-26657"
-    environment:
-      - ID=0
-      - LOG=$${LOG:-tendermint.log}
-    volumes:
-      - ./build:/tendermint:Z
-    command: node --proxy_app=tcp://abci0:26658
-    networks:
-      localnet:
-        ipv4_address: 192.167.10.2
+node0:
+  container_name: node0
+  image: "tendermint/localnode"
+  ports:
+    - "26656-26657:26656-26657"
+  environment:
+    - ID=0
+    - LOG=$${LOG:-tendermint.log}
+  volumes:
+    - ./build:/tendermint:Z
+  command: node --proxy_app=tcp://abci0:26658
+  networks:
+    localnet:
+      ipv4_address: 192.167.10.2
 ```
 
 Similarly do for node1, node2 and node3 then [run testnet](https://github.com/tendermint/tendermint/blob/v0.34.x/docs/networks/docker-compose.md#run-a-testnet)

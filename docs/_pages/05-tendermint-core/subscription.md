@@ -22,12 +22,12 @@ method via Websocket along with a valid query.
 
 ```json
 {
-    "jsonrpc": "2.0",
-    "method": "subscribe",
-    "id": 0,
-    "params": {
-        "query": "tm.event='NewBlock'"
-    }
+  "jsonrpc": "2.0",
+  "method": "subscribe",
+  "id": 0,
+  "params": {
+    "query": "tm.event='NewBlock'"
+  }
 }
 ```
 
@@ -36,7 +36,7 @@ more information on query syntax and other options.
 
 You can also use tags, given you had included them into DeliverTx
 response, to query transaction results. See [Indexing
-transactions](../app-dev/indexing-transactions.md) for details.
+transactions](../../04-apps/indexing-transactions) for details.
 
 ## ValidatorSetUpdates
 
@@ -50,26 +50,26 @@ Response:
 
 ```json
 {
-    "jsonrpc": "2.0",
-    "id": 0,
-    "result": {
-        "query": "tm.event='ValidatorSetUpdates'",
-        "data": {
-            "type": "tendermint/event/ValidatorSetUpdates",
-            "value": {
-              "validator_updates": [
-                {
-                  "address": "09EAD022FD25DE3A02E64B0FE9610B1417183EE4",
-                  "pub_key": {
-                    "type": "tendermint/PubKeyEd25519",
-                    "value": "ww0z4WaZ0Xg+YI10w43wTWbBmM3dpVza4mmSQYsd0ck="
-                  },
-                  "voting_power": "10",
-                  "proposer_priority": "0"
-                }
-              ]
-            }
-        }
+  "jsonrpc": "2.0",
+  "id": 0,
+  "result": {
+    "query": "tm.event='ValidatorSetUpdates'",
+    "data": {
+      "type": "tendermint/event/ValidatorSetUpdates",
+      "value": {
+        "validator_updates": [
+          {
+            "address": "09EAD022FD25DE3A02E64B0FE9610B1417183EE4",
+            "pub_key": {
+              "type": "tendermint/PubKeyEd25519",
+              "value": "ww0z4WaZ0Xg+YI10w43wTWbBmM3dpVza4mmSQYsd0ck="
+            },
+            "voting_power": "10",
+            "proposer_priority": "0"
+          }
+        ]
+      }
     }
+  }
 }
 ```

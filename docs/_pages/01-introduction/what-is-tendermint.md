@@ -224,7 +224,7 @@ design their message handlers to create a blockchain that does anything
 useful but this architecture provides a place to start. The diagram
 below illustrates the flow of messages via ABCI.
 
-![abci](../imgs/abci.png)
+![abci](/rfc/images/abci.png)
 
 ## A Note on Determinism
 
@@ -259,7 +259,7 @@ Tendermint is an easy-to-understand, mostly asynchronous, BFT consensus
 protocol. The protocol follows a simple state machine that looks like
 this:
 
-![consensus-logic](../imgs/consensus_logic.png)
+![consensus-logic](/assets/images/consensus_logic.png)
 
 Participants in the protocol are called **validators**; they take turns
 proposing blocks of transactions and voting on them. Blocks are
@@ -324,4 +324,4 @@ as ABCI applications.
 
 The following diagram is Tendermint in a (technical) nutshell.
 
-![tx-flow](../imgs/tm-transaction-flow.png)
+![tx-flow](/assets/images/tm-transaction-flow.png)

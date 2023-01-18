@@ -324,7 +324,7 @@ temp_dir = ""
 [blocksync]
 
 # Block Sync version to use:
-# 
+#
 # In v0.37, v1 and v2 of the block sync protocols were deprecated.
 # Please use v0 instead.
 #
@@ -444,7 +444,7 @@ Tendermint will only create blocks if there are transactions, or after waiting
 ## Consensus timeouts explained
 
 There's a variety of information about timeouts in [Running in
-production](./running-in-production.md)
+production](../running-in-production)
 
 You can also find more detailed technical explanation in the spec: [The latest
 gossip on BFT consensus](https://arxiv.org/abs/1807.04938).

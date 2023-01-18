@@ -34,7 +34,7 @@ The equation being proposed resembles a Proportional-Integral-Derivative (PID) c
 
 where _R_[*i*] denotes the raw trust value at time interval _i_ (where _i_ == 0 being current time) and _a_ is the weight applied to the contribution of the current reports. The next component of our equation uses a weighted sum over the last _maxH_ intervals to calculate the history value for time _i_:
 
-`H[i] =` ![formula1](img/formula1.png "Weighted Sum Formula")
+`H[i] =` ![formula1](../img/formula1.png "Weighted Sum Formula")
 
 The weights can be chosen either optimistically or pessimistically. An optimistic weight creates larger weights for newer history data values, while the the pessimistic weight creates larger weights for time intervals with lower scores. The default weights used during the calculation of the history value are optimistic and calculated as _Wk_ = 0.8^_k_, for time interval _k_. With the history value available, we can now finish calculating the integral value:
 
@@ -68,7 +68,7 @@ Where _j_ is one of _(0, 1, 2, … , m – 1)_ indices used to access history in
 R[0] = raw data for current time interval
 ```
 
-`R[j] =` ![formula2](img/formula2.png "Fading Memories Formula")
+`R[j] =` ![formula2](../img/formula2.png "Fading Memories Formula")
 
 ### Trust Metric Store
 

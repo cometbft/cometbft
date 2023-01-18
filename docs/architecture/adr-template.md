@@ -27,7 +27,7 @@
 > is superseded by one or more other ADRs, provide local a reference to those
 > ADRs, e.g.:
 >
->     Superseded by [ADR 123](./adr-123.md)
+>     Superseded by [ADR 123](../adr-123)
 
 Accepted | Rejected | Deprecated | Superseded by
 

@@ -11,7 +11,7 @@ application you want to run. So, to run a complete blockchain that does
 something useful, you must start two programs: one is Tendermint Core,
 the other is your application, which can be written in any programming
 language. Recall from [the intro to
-ABCI](../introduction/what-is-tendermint.md#abci-overview) that Tendermint Core
+ABCI](../../01-introduction/what-is-tendermint#abci-overview) that Tendermint Core
 handles all the p2p and consensus stuff, and just forwards transactions to the
 application when they need to be validated, or when they're ready to be
 executed and committed.
@@ -92,7 +92,7 @@ abci-cli kvstore
 
 In another terminal, we can start Tendermint. You should already have the
 Tendermint binary installed. If not, follow the steps from
-[here](../introduction/install.md). If you have never run Tendermint
+[here](../../01-introduction/install). If you have never run Tendermint
 before, use:
 
 ```sh
@@ -103,7 +103,7 @@ tendermint node
 If you have used Tendermint, you may want to reset the data for a new
 blockchain by running `tendermint unsafe-reset-all`. Then you can run
 `tendermint node` to start Tendermint, and connect to the app. For more
-details, see [the guide on using Tendermint](../tendermint-core/using-tendermint.md).
+details, see [the guide on using Tendermint](../../05-tendermint-core/using-tendermint).
 
 You should see Tendermint making blocks! We can get the status of our
 Tendermint node as follows:

@@ -26,7 +26,7 @@ Validators have a cryptographic key-pair and an associated amount of
 
 There are two ways to become validator.
 
-1. They can be pre-established in the [genesis state](./using-tendermint.md#genesis)
+1. They can be pre-established in the [genesis state](../using-tendermint#genesis)
 2. The ABCI app responds to the EndBlock message with changes to the
    existing validator set.
 
@@ -36,7 +36,7 @@ When setting up a validator there are countless ways to configure your setup. Th
 
 ### Network Layout
 
-![ALT Network Layout](./sentry_layout.png)
+![ALT Network Layout](../sentry_layout.png)
 
 The diagram is based on AWS, other cloud providers will have similar solutions to design a solution. Running nodes is not limited to cloud providers, you can run nodes on bare metal systems as well. The architecture will be the same no matter which setup you decide to go with.
 
@@ -50,7 +50,7 @@ A more persistent solution (not detailed on the diagram) is to have multiple dir
 
 ### Local Configuration
 
-![ALT Local Configuration](./local_config.png)
+![ALT Local Configuration](../local_config.png)
 
 The validator will only talk to the sentry that are provided, the sentry nodes will communicate to the validator via a secret connection and the rest of the network through a normal connection. The sentry nodes do have the option of communicating with each other as well.
 
@@ -61,7 +61,7 @@ When initializing nodes there are five parameters in the `config.toml` that may 
 - `unconditional_peer_ids:` comma separated list of nodeID's. These nodes will be connected to no matter the limits of inbound and outbound peers. This is useful for when sentry nodes have full address books.
 - `private_peer_ids:` comma separated list of nodeID's. These nodes will not be gossiped to the network. This is an important field as you do not want your validator IP gossiped to the network.
 - `addr_book_strict:` boolean. By default nodes with a routable address will be considered for connection. If this setting is turned off (false), non-routable IP addresses, like addresses in a private network can be added to the address book.
-- `double_sign_check_height` int64 height.  How many blocks to look back to check existence of the node's consensus votes before joining consensus When non-zero, the node will panic upon restart if the same consensus key was used to sign {double_sign_check_height} last blocks. So, validators should stop the state machine, wait for some blocks, and then restart the state machine to avoid panic.
+- `double_sign_check_height` int64 height. How many blocks to look back to check existence of the node's consensus votes before joining consensus When non-zero, the node will panic upon restart if the same consensus key was used to sign {double_sign_check_height} last blocks. So, validators should stop the state machine, wait for some blocks, and then restart the state machine to avoid panic.
 
 #### Validator Node Configuration
 

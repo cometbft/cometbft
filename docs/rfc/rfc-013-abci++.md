@@ -48,13 +48,13 @@ This adds an app-determined data field that every validator must include with th
 
 The prior phases gives the application more flexibility in their execution model for a block, and they obsolete the current methods for how the consensus engine relates the block data to the state machine. Thus we refactor the existing methods to better reflect what is happening in the new ABCI model.
 
-This rename doesn't on its own enable anything new, but instead improves naming to clarify the expectations from the application in this new communication model. The existing ABCI methods  `BeginBlock, [DeliverTx], EndBlock` are renamed to a single method called `FinalizeBlock`.
+This rename doesn't on its own enable anything new, but instead improves naming to clarify the expectations from the application in this new communication model. The existing ABCI methods `BeginBlock, [DeliverTx], EndBlock` are renamed to a single method called `FinalizeBlock`.
 
 #### Summary
 
 We include a more detailed list of features / scaling improvements that are blocked, and which new phases resolve them at the end of this document.
 
- <image src="images/abci.png" style="float: left; width: 40%;" /> <image src="images/abci++.png" style="float: right; width: 40%;" />
+<image src="/rfc/images/abci.png" style="float: left; width: 40%;" /> <image src="/rfc/images/abci++.png" style="float: right; width: 40%;" />
 On the top is the existing definition of ABCI, and on the bottom is the proposed ABCI++.
 
 ## Proposal
@@ -64,7 +64,7 @@ In this document, sometimes the final round of voting is referred to as precommi
 
 ### Prepare Proposal
 
-*Note, APIs in this section will change after Vote Extensions, we list the adjusted APIs further in the proposal.*
+_Note, APIs in this section will change after Vote Extensions, we list the adjusted APIs further in the proposal._
 
 The Prepare Proposal phase allows the block proposer to perform application-dependent work in a block, to lower the amount of work the rest of the network must do. This enables batch optimizations to a block, which has been empirically demonstrated to be a key component for scaling. This phase introduces the following ABCI method
 
@@ -222,10 +222,11 @@ Proposed
 ### Negative
 
 - This is a breaking change to all existing ABCI clients, however the application should be able to have a thin wrapper to replicate existing ABCI behavior.
-    - PrepareProposal - can be a no-op
-    - Process Proposal - has to cache the block, but can otherwise be a no-op
-    - Vote Extensions - can be a no-op
-    - Finalize Block - Can black-box call BeginBlock, DeliverTx, EndBlock given the cached block data
+
+  - PrepareProposal - can be a no-op
+  - Process Proposal - has to cache the block, but can otherwise be a no-op
+  - Vote Extensions - can be a no-op
+  - Finalize Block - Can black-box call BeginBlock, DeliverTx, EndBlock given the cached block data
 
 - Vote Extensions adds more complexity to core Tendermint Data Structures
 - Allowing alternate alternate execution models will lead to a proliferation of new ways for applications to violate expected guarantees.
@@ -240,14 +241,14 @@ Reference for IPC delay constants: <http://pages.cs.wisc.edu/~adityav/Evaluation
 
 ### Short list of blocked features / scaling improvements with required ABCI++ Phases
 
-| Feature | PrepareProposal | ProcessProposal | Vote Extensions |
-| :---         |     :---:      |     :---:     |     :---:     |
-| Tx based signature aggregation   | X |   |   |
-| SNARK proof of valid state transition     | X |   |   |
-| Validator provided authentication paths in stateless blockchains | X |   |   |
-| Immediate Execution     |   | X |   |
-| Simple soft forks     |   | X |   |
-| Validator guaranteed IBC connection attempts     |   |   | X |
-| Validator based price oracles     |   |   | X |
-| Immediate Execution with increased time for block execution     | X | X | X |
-| Threshold Encrypted txs     | X | X | X |
+| Feature                                                          | PrepareProposal | ProcessProposal | Vote Extensions |
+| :--------------------------------------------------------------- | :-------------: | :-------------: | :-------------: |
+| Tx based signature aggregation                                   |        X        |                 |                 |
+| SNARK proof of valid state transition                            |        X        |                 |                 |
+| Validator provided authentication paths in stateless blockchains |        X        |                 |                 |
+| Immediate Execution                                              |                 |        X        |                 |
+| Simple soft forks                                                |                 |        X        |                 |
+| Validator guaranteed IBC connection attempts                     |                 |                 |        X        |
+| Validator based price oracles                                    |                 |                 |        X        |
+| Immediate Execution with increased time for block execution      |        X        |        X        |        X        |
+| Threshold Encrypted txs                                          |        X        |        X        |        X        |

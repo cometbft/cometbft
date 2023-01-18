@@ -10,7 +10,7 @@ By default, Tendermint uses the `syndtr/goleveldb` package for its in-process
 key-value database. If you want maximal performance, it may be best to install
 the real C-implementation of LevelDB and compile Tendermint to use that using
 `make build TENDERMINT_BUILD_OPTIONS=cleveldb`. See the [install
-instructions](../introduction/install.md) for details.
+instructions](../../01-introduction/install) for details.
 
 Tendermint keeps multiple distinct databases in the `$TMROOT/data`:
 
@@ -24,13 +24,13 @@ Tendermint keeps multiple distinct databases in the `$TMROOT/data`:
 - `tx_index.db`: Indexes txs (and their results) by tx hash and by DeliverTx result events.
 
 By default, Tendermint will only index txs by their hash and height, not by their DeliverTx
-result events. See [indexing transactions](../app-dev/indexing-transactions.md) for
+result events. See [indexing transactions](../../04-apps/indexing-transactions) for
 details.
 
 Applications can expose block pruning strategies to the node operator. Please read the documentation of your application
 to find out more details.
 
-Applications can use [state sync](state-sync.md) to help nodes bootstrap quickly.
+Applications can use [state sync](../state-sync) to help nodes bootstrap quickly.
 
 ## Logging
 
@@ -38,7 +38,7 @@ Default logging level (`log_level = "main:info,state:info,statesync:info,*:error
 normal operation mode. Read [this
 post](https://blog.cosmos.network/one-of-the-exciting-new-features-in-0-10-0-release-is-smart-log-level-flag-e2506b4ab756)
 for details on how to configure `log_level` config variable. Some of the
-modules can be found [here](./how-to-read-logs.md#list-of-modules). If
+modules can be found [here](../how-to-read-logs#list-of-modules). If
 you're trying to debug Tendermint or asked to provide logs with debug
 logging level, you can do so by running Tendermint with
 `--log_level="*:debug"`.
@@ -77,7 +77,7 @@ For the above reasons, the `mempool.wal` is disabled by default. To enable, set
 ## DOS Exposure and Mitigation
 
 Validators are supposed to setup [Sentry Node
-Architecture](./validators.md)
+Architecture](../validators)
 to prevent Denial-of-service attacks.
 
 ### P2P
@@ -107,7 +107,7 @@ to achieve the same things.
 ## Debugging Tendermint
 
 If you ever have to debug Tendermint, the first thing you should probably do is
-check out the logs. See [How to read logs](./how-to-read-logs.md), where we
+check out the logs. See [How to read logs](../how-to-read-logs), where we
 explain what certain log statements mean.
 
 If, after skimming through the logs, things are not clear still, the next thing
@@ -132,7 +132,7 @@ just the votes seen at the current height.
 If, after consulting with the logs and above endpoints, you still have no idea
 what's happening, consider using `tendermint debug kill` sub-command. This
 command will scrap all the available info and kill the process. See
-[Debugging](../tools/debugging.md) for the exact format.
+[Debugging](../../07-tools/debugging) for the exact format.
 
 You can inspect the resulting archive yourself or create an issue on
 [Github](https://github.com/tendermint/tendermint). Before opening an issue
@@ -149,10 +149,10 @@ Other useful endpoints include mentioned earlier `/status`, `/net_info` and
 `/validators`.
 
 Tendermint also can report and serve Prometheus metrics. See
-[Metrics](./metrics.md).
+[Metrics](../metrics).
 
 `tendermint debug dump` sub-command can be used to periodically dump useful
-information into an archive. See [Debugging](../tools/debugging.md) for more
+information into an archive. See [Debugging](../../07-tools/debugging) for more
 information.
 
 ## What happens when my app dies
@@ -210,15 +210,15 @@ Recovering from data corruption can be hard and time-consuming. Here are two app
 
 1) Create a backup of the corrupted WAL file:
 
-    ```sh
-    cp "$TMHOME/data/cs.wal/wal" > /tmp/corrupted_wal_backup
-    ```
+   ```sh
+   cp "$TMHOME/data/cs.wal/wal" > /tmp/corrupted_wal_backup
+   ```
 
 2) Use `./scripts/wal2json` to create a human-readable version:
 
-    ```sh
-    ./scripts/wal2json/wal2json "$TMHOME/data/cs.wal/wal" > /tmp/corrupted_wal
-    ```
+   ```sh
+   ./scripts/wal2json/wal2json "$TMHOME/data/cs.wal/wal" > /tmp/corrupted_wal
+   ```
 
 3) Search for a "CORRUPTED MESSAGE" line.
 4) By looking at the previous message and the message after the corrupted one
@@ -228,15 +228,15 @@ Recovering from data corruption can be hard and time-consuming. Here are two app
    then remove all the lines starting from the corrupted one and restart
    Tendermint.
 
-    ```sh
-    $EDITOR /tmp/corrupted_wal
-    ```
+   ```sh
+   $EDITOR /tmp/corrupted_wal
+   ```
 
 5) After editing, convert this file back into binary form by running:
 
-    ```sh
-    ./scripts/json2wal/json2wal /tmp/corrupted_wal  $TMHOME/data/cs.wal/wal
-    ```
+   ```sh
+   ./scripts/json2wal/json2wal /tmp/corrupted_wal  $TMHOME/data/cs.wal/wal
+   ```
 
 ## Hardware
 
@@ -371,20 +371,22 @@ The process file limits must also be increased, e.g. via `ulimit -n 8192`.
 ...for N connections, such as 50k:
 
 ```md
-kern.maxfiles=10000+2*N         # BSD
-kern.maxfilesperproc=100+2*N    # BSD
-kern.ipc.maxsockets=10000+2*N   # BSD
-fs.file-max=10000+2*N           # Linux
-net.ipv4.tcp_max_orphans=N      # Linux
+kern.maxfiles=10000+2*N # BSD
+kern.maxfilesperproc=100+2*N # BSD
+kern.ipc.maxsockets=10000+2*N # BSD
+fs.file-max=10000+2*N # Linux
+net.ipv4.tcp_max_orphans=N # Linux
 
 # For load-generating clients.
-net.ipv4.ip_local_port_range="10000  65535"  # Linux.
-net.inet.ip.portrange.first=10000  # BSD/Mac.
-net.inet.ip.portrange.last=65535   # (Enough for N < 55535)
-net.ipv4.tcp_tw_reuse=1         # Linux
-net.inet.tcp.maxtcptw=2*N       # BSD
+
+net.ipv4.ip_local_port_range="10000 65535" # Linux.
+net.inet.ip.portrange.first=10000 # BSD/Mac.
+net.inet.ip.portrange.last=65535 # (Enough for N < 55535)
+net.ipv4.tcp_tw_reuse=1 # Linux
+net.inet.tcp.maxtcptw=2\*N # BSD
 
 # If using netfilter on Linux:
+
 net.netfilter.nf_conntrack_max=N
 echo $((N/8)) > /sys/module/nf_conntrack/parameters/hashsize
 ```

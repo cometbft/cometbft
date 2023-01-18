@@ -6,10 +6,10 @@ order: 1
 
 Tendermint has some tools that are associated with it for:
 
-- [Debugging](./debugging.md)
+- [Debugging](../debugging)
 - [Benchmarking](#benchmarking)
 - [Testnets](#testnets)
-- [Validation of remote signers](./remote-signer-validation.md)
+- [Validation of remote signers](../remote-signer-validation)
 
 ## Benchmarking
 

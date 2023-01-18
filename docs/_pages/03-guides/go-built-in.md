@@ -38,7 +38,7 @@ This is the approach followed in this tutorial.
 On the other hand, having a separate application might give you better security
 guarantees as two processes would be communicating via established binary protocol.
 Tendermint Core will not have access to application's state.
-If that is the way you wish to proceed, use the [Creating an application in Go](./go.md) guide instead of this one.
+If that is the way you wish to proceed, use the [Creating an application in Go](../go) guide instead of this one.
 
 ## 1.1 Installing Go
 
@@ -695,7 +695,7 @@ The additional logic at the end of the file allows the program to catch SIGTERM.
 
 Our application is almost ready to run, but first we'll need to populate the Tendermint Core configuration files.
 The following command will create a `tendermint-home` directory in your project and add a basic set of configuration files in `tendermint-home/config/`.
-For more information on what these files contain see [the configuration documentation](https://github.com/tendermint/tendermint/blob/v0.37.0/docs/nodes/configuration.md).
+For more information on what these files contain see [the configuration documentation](https://github.com/tendermint/tendermint/blob/v0.37.0/docs/nodes/configuration).
 
 From the root of your project, run:
 

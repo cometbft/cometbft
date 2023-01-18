@@ -12,7 +12,7 @@
 
 ## Context
 
-In [ADR 061](adr-061-p2p-refactor-scope.md) we decided to refactor the peer-to-peer (P2P) networking stack. The first phase is to redesign and refactor the internal P2P architecture, while retaining protocol compatibility as far as possible.
+In [ADR 061](../adr-061-p2p-refactor-scope) we decided to refactor the peer-to-peer (P2P) networking stack. The first phase is to redesign and refactor the internal P2P architecture, while retaining protocol compatibility as far as possible.
 
 ## Alternative Approaches
 
@@ -20,7 +20,7 @@ Several variations of the proposed design were considered, including e.g. callin
 
 [multiaddr](https://github.com/multiformats/multiaddr) was considered as a transport-agnostic peer address format over regular URLs, but it does not appear to have very widespread adoption, and advanced features like protocol encapsulation and tunneling do not appear to be immediately useful to us.
 
-There were also proposals to use LibP2P instead of maintaining our own P2P stack, which were rejected (for now) in [ADR 061](adr-061-p2p-refactor-scope.md).
+There were also proposals to use LibP2P instead of maintaining our own P2P stack, which were rejected (for now) in [ADR 061](../adr-061-p2p-refactor-scope).
 
 The initial version of this ADR had a byte-oriented multi-stream transport API, but this had to be abandoned/postponed to maintain backwards-compatibility with the existing MConnection protocol which is message-oriented. See the rejected RFC in [tendermint/spec#227](https://github.com/tendermint/spec/pull/227) for details.
 
@@ -34,20 +34,20 @@ This ADR is primarily concerned with the architecture and interfaces of the P2P 
 
 Primary design objectives have been:
 
-* Loose coupling between components, for a simpler, more robust, and test-friendly architecture.
-* Pluggable transports (not necessarily networked).
-* Better scheduling of messages, with improved prioritization, backpressure, and performance.
-* Centralized peer lifecycle and connection management.
-* Better peer address detection, advertisement, and exchange.
-* Wire-level backwards compatibility with current P2P network protocols, except where it proves too obstructive.
+- Loose coupling between components, for a simpler, more robust, and test-friendly architecture.
+- Pluggable transports (not necessarily networked).
+- Better scheduling of messages, with improved prioritization, backpressure, and performance.
+- Centralized peer lifecycle and connection management.
+- Better peer address detection, advertisement, and exchange.
+- Wire-level backwards compatibility with current P2P network protocols, except where it proves too obstructive.
 
 The main abstractions in the new stack are:
 
-* `Transport`: An arbitrary mechanism to exchange binary messages with a peer across a `Connection`.
-* `Channel`: A bidirectional channel to asynchronously exchange Protobuf messages with peers using node ID addressing.
-* `Router`: Maintains transport connections to relevant peers and routes channel messages.
-* `PeerManager`: Manages peer lifecycle information, e.g. deciding which peers to dial and when, using a `peerStore` for storage.
-* Reactor: A design pattern loosely defined as "something which listens on a channel and reacts to messages".
+- `Transport`: An arbitrary mechanism to exchange binary messages with a peer across a `Connection`.
+- `Channel`: A bidirectional channel to asynchronously exchange Protobuf messages with peers using node ID addressing.
+- `Router`: Maintains transport connections to relevant peers and routes channel messages.
+- `PeerManager`: Manages peer lifecycle information, e.g. deciding which peers to dial and when, using a `peerStore` for storage.
+- Reactor: A design pattern loosely defined as "something which listens on a channel and reacts to messages".
 
 These abstractions are illustrated in the following diagram (representing the internals of node A) and described in detail below.
 
@@ -59,11 +59,11 @@ Transports are arbitrary mechanisms for exchanging binary messages with a peer. 
 
 Transports must satisfy the following requirements:
 
-* Be connection-oriented, and support both listening for inbound connections and making outbound connections using endpoint addresses.
+- Be connection-oriented, and support both listening for inbound connections and making outbound connections using endpoint addresses.
 
-* Support sending binary messages with distinct channel IDs (although channels and channel IDs are a higher-level application protocol concept explained in the Router section, they are threaded through the transport layer as well for backwards compatibilty with the existing MConnection protocol).
+- Support sending binary messages with distinct channel IDs (although channels and channel IDs are a higher-level application protocol concept explained in the Router section, they are threaded through the transport layer as well for backwards compatibilty with the existing MConnection protocol).
 
-* Exchange the MConnection `NodeInfo` and public key via a node handshake, and possibly encrypt or sign the traffic as appropriate.
+- Exchange the MConnection `NodeInfo` and public key via a node handshake, and possibly encrypt or sign the traffic as appropriate.
 
 The initial transport is a port of the current MConnection protocol currently used by Tendermint, and should be backwards-compatible at the wire level. An in-memory transport for testing has also been implemented. There are plans to explore a QUIC transport that may replace the MConnection protocol.
 
@@ -176,8 +176,8 @@ Peers are other Tendermint nodes. Each peer is identified by a unique `NodeID` (
 
 Nodes have one or more `NodeAddress` addresses expressed as URLs that they can be reached at. Examples of node addresses might be e.g.:
 
-* `mconn://nodeid@host.domain.com:25567/path`
-* `memory:nodeid`
+- `mconn://nodeid@host.domain.com:25567/path`
+- `memory:nodeid`
 
 Addresses are resolved into one or more transport endpoints, e.g. by resolving DNS hostnames into IP addresses. Peers should always be expressed as address URLs rather than endpoints (which are a lower-level transport construct).
 
@@ -217,21 +217,23 @@ The `PeerManager` is a synchronous state machine, where all state transitions ar
 
 The `Router` uses the `PeerManager` to request which peers to dial and evict, and reports in with peer lifecycle events such as connections, disconnections, and failures as they occur. The manager can reject these events (e.g. reject an inbound connection) by returning errors. This happens as follows:
 
-* Outbound connections, via `Transport.Dial`:
-    * `DialNext()`: returns a peer address to dial, or blocks until one is available.
-    * `DialFailed()`: reports a peer dial failure.
-    * `Dialed()`: reports a peer dial success.
-    * `Ready()`: reports the peer as routed and ready.
-    * `Disconnected()`: reports a peer disconnection.
+- Outbound connections, via `Transport.Dial`:
 
-* Inbound connections, via `Transport.Accept`:
-    * `Accepted()`: reports an inbound peer connection.
-    * `Ready()`: reports the peer as routed and ready.
-    * `Disconnected()`: reports a peer disconnection.
+  - `DialNext()`: returns a peer address to dial, or blocks until one is available.
+  - `DialFailed()`: reports a peer dial failure.
+  - `Dialed()`: reports a peer dial success.
+  - `Ready()`: reports the peer as routed and ready.
+  - `Disconnected()`: reports a peer disconnection.
 
-* Evictions, via `Connection.Close`:
-    * `EvictNext()`: returns a peer to disconnect, or blocks until one is available.
-    * `Disconnected()`: reports a peer disconnection.
+- Inbound connections, via `Transport.Accept`:
+
+  - `Accepted()`: reports an inbound peer connection.
+  - `Ready()`: reports the peer as routed and ready.
+  - `Disconnected()`: reports a peer disconnection.
+
+- Evictions, via `Connection.Close`:
+  - `EvictNext()`: returns a peer to disconnect, or blocks until one is available.
+  - `Disconnected()`: reports a peer disconnection.
 
 These calls have the following interface:
 
@@ -585,33 +587,33 @@ Was partially implemented in v0.35 ([#5670](https://github.com/tendermint/tender
 
 ### Positive
 
-* Reduced coupling and simplified interfaces should lead to better understandability, increased reliability, and more testing.
+- Reduced coupling and simplified interfaces should lead to better understandability, increased reliability, and more testing.
 
-* Using message passing via Go channels gives better control of backpressure and quality-of-service scheduling.
+- Using message passing via Go channels gives better control of backpressure and quality-of-service scheduling.
 
-* Peer lifecycle and connection management is centralized in a single entity, making it easier to reason about.
+- Peer lifecycle and connection management is centralized in a single entity, making it easier to reason about.
 
-* Detection, advertisement, and exchange of node addresses will be improved.
+- Detection, advertisement, and exchange of node addresses will be improved.
 
-* Additional transports (e.g. QUIC) can be implemented and used in parallel with the existing MConn protocol.
+- Additional transports (e.g. QUIC) can be implemented and used in parallel with the existing MConn protocol.
 
-* The P2P protocol will not be broken in the initial version, if possible.
+- The P2P protocol will not be broken in the initial version, if possible.
 
 ### Negative
 
-* Fully implementing the new design as indended is likely to require breaking changes to the P2P protocol at some point, although the initial implementation shouldn't.
+- Fully implementing the new design as indended is likely to require breaking changes to the P2P protocol at some point, although the initial implementation shouldn't.
 
-* Gradually migrating the existing stack and maintaining backwards-compatibility will be more labor-intensive than simply replacing the entire stack.
+- Gradually migrating the existing stack and maintaining backwards-compatibility will be more labor-intensive than simply replacing the entire stack.
 
-* A complete overhaul of P2P internals is likely to cause temporary performance regressions and bugs as the implementation matures.
+- A complete overhaul of P2P internals is likely to cause temporary performance regressions and bugs as the implementation matures.
 
-* Hiding peer management information inside the `PeerManager` may prevent certain functionality or require additional deliberate interfaces for information exchange, as a tradeoff to simplify the design, reduce coupling, and avoid race conditions and lock contention.
+- Hiding peer management information inside the `PeerManager` may prevent certain functionality or require additional deliberate interfaces for information exchange, as a tradeoff to simplify the design, reduce coupling, and avoid race conditions and lock contention.
 
 ### Neutral
 
-* Implementation details around e.g. peer management, message scheduling, and peer and endpoint advertisement are not yet determined.
+- Implementation details around e.g. peer management, message scheduling, and peer and endpoint advertisement are not yet determined.
 
 ## References
 
-* [ADR 061: P2P Refactor Scope](adr-061-p2p-refactor-scope.md)
-* [#5670 p2p: internal refactor and architecture redesign](https://github.com/tendermint/tendermint/issues/5670)
+- [ADR 061: P2P Refactor Scope](../adr-061-p2p-refactor-scope)
+- [#5670 p2p: internal refactor and architecture redesign](https://github.com/tendermint/tendermint/issues/5670)

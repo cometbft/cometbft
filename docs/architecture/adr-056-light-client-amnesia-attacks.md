@@ -16,14 +16,13 @@ Whilst most created evidence of malicious behavior is self evident such that any
 
 The schematic below explains a scenario where an amnesia attack can occur such that two sets of honest nodes, C1 and C2, commit different blocks.
 
-![](../imgs/tm-amnesia-attack.png)
+![](/assets/images/tm-amnesia-attack.png)
 
 1. C1 and F send PREVOTE messages for block A.
 2. C1 sends PRECOMMIT for round 1 for block A.
 3. A new round is started, C2 and F send PREVOTE messages for a different block B.
 4. C2 and F then send PRECOMMIT messages for block B.
 5. F later on creates PRECOMMITS for block A and combines it with those from C1 to form a block
-
 
 This forged block can then be used to fool light clients trying to verify it. It must be stressed that there are a few more hurdles or dimensions to the attack to consider.For a more detailed walkthrough refer to Appendix A.
 
@@ -61,9 +60,10 @@ Light clients where all witnesses are faulty can be subject to an amnesia attack
 
 ### Neutral
 
-
 ## References
+
 <!-- markdown-link-check-disable-next-line -->
+
 - [Fork accountability algorithm](https://docs.google.com/document/d/11ZhMsCj3y7zIZz4udO9l25xqb0kl7gmWqNpGVRzOeyY/edit)
 - [Fork accountability spec](https://github.com/tendermint/tendermint/blob/main/spec/consensus/light-client/accountability.md)
 
@@ -118,7 +118,7 @@ type PotentialAmnesiaEvidence struct {
 }
 ```
 
-*NOTE: There had been an earlier notion towards batching evidence against the entire set of validators all together but this has given way to individual processing predominantly to maintain consistency with the other forms of evidence. A more extensive breakdown can be found [here](https://github.com/tendermint/tendermint/issues/4729)*
+_NOTE: There had been an earlier notion towards batching evidence against the entire set of validators all together but this has given way to individual processing predominantly to maintain consistency with the other forms of evidence. A more extensive breakdown can be found [here](https://github.com/tendermint/tendermint/issues/4729)_
 
 The evidence will contain the precommit votes for a validator that voted for both rounds. If the validator voted in more than two rounds, then they will have multiple `PotentialAmnesiaEvidence` against them hence it is possible that there is multiple evidence for a validator in a single height but not for a single round. The votes should be all valid and the height and time that the infringement was made should be within:
 
@@ -157,8 +157,8 @@ There can only be one `AmnesiaEvidence` and one `PotentialAmneisaEvidence` store
 
 When, `state.LastBlockHeight > PotentialAmnesiaEvidence.timestamp + ProofTrialPeriod`, nodes will upgrade the corresponding `PotentialAmnesiaEvidence` and attach an empty `ProofOfLockChange`. Then honest validators of the current validator set can begin proposing the block that contains the `AmnesiaEvidence`.
 
-*NOTE: Even before the evidence is proposed and committed, the off-chain process of gossiping valid evidence could be
- enough for honest nodes to recognize the fork and halt.*
+_NOTE: Even before the evidence is proposed and committed, the off-chain process of gossiping valid evidence could be
+enough for honest nodes to recognize the fork and halt._
 
 Other validators will vote `nil` if:
 

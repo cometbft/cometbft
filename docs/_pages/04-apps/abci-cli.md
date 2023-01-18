@@ -173,7 +173,7 @@ Try running these commands:
 -> data: hello
 -> data.hex: 0x68656C6C6F
 
-> info 
+> info
 -> code: OK
 -> data: {"size":0}
 -> data.hex: 0x7B2273697A65223A307D
@@ -186,19 +186,19 @@ Try running these commands:
 -> code: OK
 -> status: ACCEPT
 
-> commit 
+> commit
 -> code: OK
 -> data.hex: 0x0000000000000000
 
 > deliver_tx "abc"
 -> code: OK
 
-> info 
+> info
 -> code: OK
 -> data: {"size":1}
 -> data.hex: 0x7B2273697A65223A317D
 
-> commit 
+> commit
 -> code: OK
 -> data.hex: 0x0200000000000000
 
@@ -214,7 +214,7 @@ Try running these commands:
 > deliver_tx "def=xyz"
 -> code: OK
 
-> commit 
+> commit
 -> code: OK
 -> data.hex: 0x0400000000000000
 
@@ -239,13 +239,13 @@ Try running these commands:
 -> code: OK
 -> status: REJECT
 
-> prepare_proposal 
+> prepare_proposal
 
-> process_proposal 
+> process_proposal
 -> code: OK
 -> status: ACCEPT
 
-> commit 
+> commit
 -> code: OK
 -> data.hex: 0x0400000000000000
 ```
@@ -256,14 +256,13 @@ we do `deliver_tx "abc=efg"` it will store `(abc, efg)`.
 You could put the commands in a file and run
 `abci-cli --verbose batch < myfile`.
 
-
 Note that the `abci-cli` is designed strictly for testing and debugging. In a real
 deployment, the role of sending messages is taken by Tendermint, which
 connects to the app using three separate connections, each with its own
 pattern of messages.
 
 For examples of running an ABCI app with Tendermint, see the
-[getting started guide](./getting-started.md).
+[getting started guide](../getting-started).
 
 ## Bounties
 

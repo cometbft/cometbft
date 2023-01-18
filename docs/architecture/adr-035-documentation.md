@@ -4,7 +4,7 @@ Author: @zramsay (Zach Ramsay)
 
 ## Changelog
 
-###  November 2nd 2018
+### November 2nd 2018
 
 - initial write-up
 
@@ -16,14 +16,14 @@ The Tendermint documentation has undergone several changes until settling on the
 
 For two reasons, the decision was made to use VuePress:
 
-1) ability to get metrics (implemented on both Tendermint and SDK)
-2) host the documentation on the website as a `/docs` endpoint.
+1. ability to get metrics (implemented on both Tendermint and SDK)
+2. host the documentation on the website as a `/docs` endpoint.
 
 This is done while maintaining synchrony between the docs and code, i.e., the website is built whenever the docs are updated.
 
 ## Status
 
-The two points above have been implemented; the `config.js` has a Google Analytics identifier and the documentation workflow has been up and running largely without problems for several months. Details about the documentation build & workflow can be found [here](../DOCS_README.md)
+The two points above have been implemented; the `config.js` has a Google Analytics identifier and the documentation workflow has been up and running largely without problems for several months. Details about the documentation build & workflow can be found [here](../DOCS_README)
 
 ## Consequences
 

@@ -57,6 +57,7 @@ Each stage of the process is aimed at creating feedback cycles which align contr
 - Contributors don’t waste their time implementing/proposing features which won’t land in `main`.
 - Maintainers have the necessary context in order to support and review contributions.
 
+
 ## Forking
 
 Please note that Go requires code to live under absolute paths, which complicates forking.
@@ -100,7 +101,7 @@ up-to-date.
 
 When updating dependencies, please only update the particular dependencies you
 need. Instead of running `go get -u=patch`, which will update anything,
-specify exactly the dependency you want to update, eg.
+specify exactly the dependency you want to update, e.g.
 `GO111MODULE=on go get -u github.com/cometbft/go-amino@master`.
 
 ## Protobuf
@@ -149,15 +150,20 @@ If you are a VS Code user, you may want to add the following to your `.vscode/se
 
 ## Changelog
 
-Every fix, improvement, feature, or breaking change should be present as
- an update to the `CHANGELOG_PENDING.md` file.
+For changelog generation we are using `unclog`, a tool developed within
+Informal Systems. The code and instructions for use can be found 
+[here](https://github.com/informalsystems/unclog).
+
+Every fix, improvement, feature, or breaking change should be made in a
+pull-request that includes a file `.changelog/unreleased/<category>/<description>-<issue or PR number>.md`, where:
+- `category` is one of `improvements`, `breaking-changes`, `bug-fixes`, `features` and if multiple apply, create multiple files;
+- `description` is a short (4 to 6 word), hiphen separated description of the fix, starting the component changed; and, 
+- `issue or PR number' is the CometBFT issue number, if one exists, or the PR number, otherwise.
+
+For examples, see the [.changelog](.changelog) folder.
 
 A feature can also be worked on a feature branch, if its size and/or risk
 justifies it (see #branching-model-and-release) below.
-
-For changelog generation we are using `unclog`, a tool developer within
-Informal Systems. It's code and instructions for use can be found 
-[here](https://github.com/informalsystems/unclog).
 
 ### What does a good changelog entry look like?
 

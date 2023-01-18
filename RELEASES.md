@@ -36,8 +36,8 @@ v0.25.0, you get to have the honor of creating the backport branch!
 Note that, after creating the backport branch, you'll also need to update the
 tags on `main` so that `go mod` is able to order the branches correctly. You
 should tag `main` with a "dev" tag that is "greater than" the backport
-branches tags. See [#6072](https://github.com/cometbft/cometbft/pull/6072)
-for more context.
+branches tags. Otherwise, `go.mod` does not 'know' whether commits on `main`
+come before or after the release.
 
 In the following example, we'll assume that we're making a backport branch for
 the 0.38.x line.

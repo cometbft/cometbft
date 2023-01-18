@@ -11,7 +11,7 @@ landing changes in `main`.
 
 All work on the code base should be motivated by a [Github
 Issue](https://github.com/cometbft/cometbft/issues).
-[Search](https://github.com/cometbft/cometbft/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22)
+[Search](https://github.com/cometbft/cometbft/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)
 is a good place to start when looking for places to contribute. If you
 would like to work on an issue which already exists, please indicate so
 by leaving a comment.

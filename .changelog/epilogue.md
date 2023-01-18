@@ -1,3 +1,11 @@
-CometBFT is a fork of [Tendermint](https://github.com/tendermint/tendermint) as of v0.34.24.
+---
 
-For changes prior to the creation of this fork, please refer to the upstream [CHANGELOG.md](https://github.com/tendermint/tendermint/blob/014cdcf09844d48f6d30f3e520034b7edffd9670/CHANGELOG.md) for v0.34.24 and earlier.
+CometBFT is a fork of [Tendermint Core](https://github.com/tendermint/tendermint) as of late December 2022.
+
+## Bug bounty
+
+Friendly reminder, we have a [bug bounty program](https://hackerone.com/cosmos).
+
+## Previous changes
+
+For changes released before the creation of CometBFT, please refer to the Tendermint Core [CHANGELOG.md](https://github.com/tendermint/tendermint/blob/a9feb1c023e172b542c972605311af83b777855b/CHANGELOG.md).

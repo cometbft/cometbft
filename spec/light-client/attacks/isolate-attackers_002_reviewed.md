@@ -1,7 +1,7 @@
 <!-- markdown-link-check-disable -->
 # Lightclient Attackers Isolation
 
-Adversarial nodes may have the incentive to lie to a lightclient about the state of a Tendermint blockchain. An attempt to do so is called attack. Light client [verification][verification] checks incoming data by checking a so-called "commit", which is a forwarded set of signed messages that is (supposedly) produced during executing Tendermint consensus. Thus, an attack boils down to creating and signing Tendermint consensus messages in deviation from the Tendermint consensus algorithm rules.
+Adversarial nodes may have the incentive to lie to a lightclient about the state of a CometBFT blockchain. An attempt to do so is called attack. Light client [verification][verification] checks incoming data by checking a so-called "commit", which is a forwarded set of signed messages that is (supposedly) produced during executing Tendermint consensus. Thus, an attack boils down to creating and signing Tendermint consensus messages in deviation from the Tendermint consensus algorithm rules.
 
 As Tendermint consensus and light client verification is safe under the assumption of more than 2/3 of correct voting power per block [[TMBC-FM-2THIRDS]][TMBC-FM-2THIRDS-link], this implies that if there was an attack then [[TMBC-FM-2THIRDS]][TMBC-FM-2THIRDS-link] was violated, that is, there is a block such that
 
@@ -13,7 +13,7 @@ In the case of an [attack][node-based-attack-characterization], the lightclient 
 - to proof that there has been attack [[TMBC-LC-EVIDENCE-DATA.1]][TMBC-LC-EVIDENCE-DATA-link] and
 - as basis to find the actual nodes that deviated from the Tendermint protocol.
 
-This specification considers how a full node in a Tendermint blockchain can isolate a set of attackers that launched the attack. The set should satisfy
+This specification considers how a full node in a CometBFT blockchain can isolate a set of attackers that launched the attack. The set should satisfy
 
 - the set does not contain a correct validator
 - the set contains validators that represent more than 1/3 of the voting power of a block that is still within the unbonding period
@@ -24,7 +24,7 @@ After providing the [problem statement](#Part-I---Basics-and-Definition-of-the-P
 
 # Part I - Basics and Definition of the Problem
 
-For definitions of data structures used here, in particular LightBlocks [[LCV-DATA-LIGHTBLOCK.1]](https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/verification/verification_002_draft.md#lcv-data-lightblock1), we refer to the specification of [Light Client Verification][verification].
+For definitions of data structures used here, in particular LightBlocks [[LCV-DATA-LIGHTBLOCK.1]](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#lcv-data-lightblock1), we refer to the specification of [Light Client Verification][verification].
 
 The specification of the [detection mechanism][detection] describes
 
@@ -187,7 +187,7 @@ The main function `isolateMisbehavingProcesses` distinguishes three kinds of wro
 The question is whether this captures all attacks.
 First observe that the first check in `isolateMisbehavingProcesses` is `violatesTMValidity`. It takes care of lunatic attacks. If this check passes, that is, if `violatesTMValidity` returns `FALSE` this means that [[LCAI-NONVALID-OUTPUT.1]](#LCAI-FUNC-NONVALID1]) evaluates to false, which implies that `ref.ValidatorsHash = ev.ValidatorsHash`. Hence, after `violatesTMValidity`, all the involved validators are the ones from the blockchain. It is thus sufficient to analyze one instance of Tendermint consensus with a fixed group membership (set of validators). Also, as we have two different blocks for the same height, it is sufficient to consider two different valid consensus values, that is, binary consensus.
 
-For this fixed group membership, we have analyzed the attacks using the TLA+ specification of [Tendermint Consensus in TLA+][tendermint-accountability]. We checked that indeed the only possible scenarios that can lead to violation of agreement are **equivocation** and **amnesia**. An independent study by Galois of the protocol based on [Ivy proofs](https://github.com/tendermint/spec/tree/master/ivy-proofs) led to the same conclusion.
+For this fixed group membership, we have analyzed the attacks using the TLA+ specification of [Tendermint Consensus in TLA+][tendermint-accountability]. We checked that indeed the only possible scenarios that can lead to violation of agreement are **equivocation** and **amnesia**. An independent study by Galois of the protocol based on [Ivy proofs](https://github.com/cometbft/cometbft/tree/main/spec/ivy-proofs) led to the same conclusion.
 
 # References
 
@@ -199,25 +199,25 @@ For this fixed group membership, we have analyzed the attacks using the TLA+ spe
 
 
 [tendermint-accountability]:
-https://github.com/tendermint/spec/blob/master/rust-spec/tendermint-accountability/README.md
+https://github.com/cometbft/cometbft/tree/main/spec/light-client/accountability
 
 [supervisor]:
-https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/supervisor/supervisor_001_draft.md
+https://github.com/cometbft/cometbft/blob/main/spec/light-client/supervisor/supervisor_001_draft.md
 
-[verification]: https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/verification/verification_002_draft.md
+[verification]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md
 
 [detection]:
-https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/detection/detection_003_reviewed.md
+https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_003_reviewed.md
 
 [LC-DATA-EVIDENCE-link]:
-https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/detection/detection_003_reviewed.md#lc-data-evidence1
+https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_003_reviewed.md#lc-data-evidence1
 
 [TMBC-LC-EVIDENCE-DATA-link]:
-https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/detection/detection_003_reviewed.md#tmbc-lc-evidence-data1
+https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_003_reviewed.md#tmbc-lc-evidence-data1
 
 [node-based-attack-characterization]:
-https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/detection/detection_003_reviewed.md#node-based-characterization-of-attacks
+https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_003_reviewed.md#block-based-characterization-of-attacks
 
-[TMBC-FM-2THIRDS-link]: https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/verification/verification_002_draft.md#tmbc-fm-2thirds1
+[TMBC-FM-2THIRDS-link]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#tmbc-fm-2thirds1
 
-[LCV-FUNC-VALID.link]: https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/verification/verification_002_draft.md#lcv-func-valid2
+[LCV-FUNC-VALID.link]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#lcv-func-valid2

@@ -306,8 +306,8 @@ type LCInitData struct {
 ```
 
 where only one of the components must be provided. `GenesisDoc` is
-defined in the [Tendermint
-Types](https://github.com/tendermint/tendermint/blob/main/types/genesis.go).
+defined in the [CometBFT
+Types](https://github.com/cometbft/cometbft/blob/main/types/genesis.go).
 
 #### **[LC-DATA-GENESIS.1]**
 

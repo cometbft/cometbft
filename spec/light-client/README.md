@@ -10,7 +10,7 @@ parent:
 This directory contains work-in-progress English and TLA+ specifications for the Light Client
 protocol. Implementations of the light client can be found in
 [Rust](https://github.com/informalsystems/tendermint-rs/tree/master/light-client) and
-[Go](https://github.com/tendermint/tendermint/tree/main/light).
+[Go](https://github.com/cometbft/cometbft/tree/main/light).
 
 Light clients are assumed to be initialized once from a trusted source
 with a trusted header and validator set. The light client
@@ -31,8 +31,8 @@ In case a lightclient attack is detected, the lightclient submits evidence to a 
 
 The [English specification](verification/verification_001_published.md) describes the light client
 commit verification problem in terms of the temporal properties
-[LCV-DIST-SAFE.1](https://github.com/tendermint/tendermint/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1) and
-[LCV-DIST-LIVE.1](https://github.com/tendermint/tendermint/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-live1).
+[LCV-DIST-SAFE.1](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1) and
+[LCV-DIST-LIVE.1](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-live1).
 Commit verification is assumed to operate within the Tendermint Failure Model, where +2/3 of validators are correct for some time period and
 validator sets can change arbitrarily at each height.
 

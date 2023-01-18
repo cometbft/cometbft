@@ -93,3 +93,46 @@ of the application, which is part of this same procedure to commit a block.
 > procedures, such as via the block sync protocol.
 > The above operation should be part of these other procedures, and should be
 > performed whenever a node commits a new block to the blockchain.
+
+## Formalization Attempt
+
+Lets `committed(tx, h)` to return true iff the transaction `tx` is committed by
+height `h` of the blockchain.
+This means that `tx` was included in a block `B_k` of transactions with height `k <= h`.
+
+> Notice that `committed(tx, h) => committed(tx, h')` for all `h' > h`.
+
+Lets `valid(tx, h)` to return true iff the transaction `tx` is valid at height
+`h` of the blockchain.
+
+> The height of the blockchain reflects the state of the application.
+> Some transactions can be valid at a given state (height), but no longer valid
+> in another state (height).
+
+We need to assume for the `valid` predicate a property similar to the one we
+have for the `committed` predicate.
+That is, that from a given height the state of the transaction is not changed
+anymore.
+While this is trivial for the `committed` predicate, we need to assume that
+behavior for the `valid` predicate.
+
+So, we need to assume that there is a height `h*` from which a transaction `tx`
+becomes invalid, and this state does not change for higher heights.
+That is, we assume that there is a height `h*` so that for all `h >= h* =>
+valid(tx, h) == FALSE`.
+
+This property is realistic as applications are expected to implement some form
+of replay protection.
+This means that once a transaction `tx` is committed, the application should
+reject processing the same transaction `tx` again.
+This is achieved by rejecting `tx` as invalid from the moment that `tx` is
+committed and executed by the application.
+So, a replay protection procedure can be define as:
+`committed(tx, h) => h' > h \and !valid(tx, h')`
+
+Given these definitions, the main property of the mempool is the following:
+
+ - If a transaction `tx` is added to the local mempool of a correct node, then
+   eventually we have a height `h*` for which either:
+   - `committed(tx, h*)` is true
+   - or `!valid(tx, h*)` and `h > h* => !valid(tx, h)`

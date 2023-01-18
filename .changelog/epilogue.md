@@ -1,3 +1,7 @@
+---
+
+CometBFT is a fork of [Tendermint Core](https://github.com/tendermint/tendermint) as of late December 2022.
+
 ## Bug bounty
 
 Friendly reminder, we have a [bug bounty program](https://hackerone.com/cosmos).

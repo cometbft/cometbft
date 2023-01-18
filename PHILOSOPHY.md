@@ -1,6 +1,6 @@
 # Design goals
 
-The design goals for Tendermint (and the SDK and related libraries) are:
+The design goals for CosmosBFT (and the SDK and related libraries) are:
 
 * Simplicity and Legibility
 * Parallel performance, namely ability to utilize multicore architecture
@@ -49,17 +49,17 @@ assess the correctness of such a for-loop by visual inspection.
 It doesn't matter whether there are alternative implementations that are 2x or
 3x more performant, when the software doesn't work, deadlocks, or if bugs
 cannot be debugged.  By taking advantage of multicore concurrency, the
-Tendermint implementation will at least be an order of magnitude within the
-range of what is theoretically possible.  The design philosophy of Tendermint,
-and the choice of Go as implementation language, is designed to make Tendermint
+CosmosBFT implementation will at least be an order of magnitude within the
+range of what is theoretically possible.  The design philosophy of CosmosBFT,
+and the choice of Go as implementation language, is designed to make CosmosBFT
 implementation the standard specification for concurrent BFT software.
 
 By focusing on the message protocols (e.g. ABCI, p2p messages), and
 encapsulation e.g. IAVL module, (relatively) independent reactors, we are both
 implementing a standard implementation to be used as the specification for
 future implementations in more optimizable languages like Rust, Java, and C++;
-as well as creating sufficiently performant software. Tendermint Core will
-never be as fast as future implementations of the Tendermint Spec, because Go
+as well as creating sufficiently performant software. CosmosBFT will
+never be as fast as future implementations of the CosmosBFT Spec, because Go
 isn't designed to be as fast as possible.  The advantage of using Go is that we
 can develop the whole stack of modular components **faster** than in other
 languages.
@@ -68,7 +68,7 @@ Furthermore, the real bottleneck is in the application layer, and it isn't
 necessary to support more than a sufficiently decentralized set of validators
 (e.g. 100 ~ 300 validators is sufficient, with delegated bonded PoS).
 
-Instead of optimizing Tendermint performance down to the metal, lets focus on
+Instead of optimizing CosmosBFT performance down to the metal, lets focus on
 optimizing on other matters, namely ability to push feature complete software
 that works well enough, can be debugged and maintained, and can serve as a spec
 for future implementations.
@@ -81,7 +81,7 @@ to develop well-encapsulated objects that have well understood properties, and
 to re-use these easy-to-use-correctly components as building blocks for further
 encapsulated meta-objects.
 
-For example, mutexes are cheap enough for Tendermint's design goals when there
+For example, mutexes are cheap enough for CosmosBFT's design goals when there
 isn't goroutine contention, so it is encouraged to create concurrency safe
 structures with struct-level mutexes.  If they are used in the context of
 non-concurrent logic, then the performance is good enough.  If they are used in
@@ -122,11 +122,11 @@ the design of abstractions that should be revisited.
 
 ## On concurrency
 
-In order for Tendermint to remain relevant in the years to come, it is vital
-for Tendermint to take advantage of multicore architectures.  Due to the nature
+In order for CosmosBFT to remain relevant in the years to come, it is vital
+for CosmosBFT to take advantage of multicore architectures.  Due to the nature
 of the problem, namely consensus across a concurrent p2p gossip network, and to
 handle RPC requests for a large number of consuming subscribers, it is
-unavoidable for Tendermint development to require expertise in concurrency
+unavoidable for CosmosBFT development to require expertise in concurrency
 design, especially when it comes to the reactor design, and also for RPC
 request handling.
 
@@ -142,7 +142,7 @@ Here are some guidelines for designing for (sufficient) performance and concurre
 * The creation of O(N) one-off goroutines is generally technical debt that
    needs to get addressed sooner than later.  Avoid creating too many
 goroutines as a patch around incomplete concurrency design, or at least be
-aware of the debt and do not invest in the debt.  On the other hand, Tendermint
+aware of the debt and do not invest in the debt.  On the other hand, CosmosBFT
 is designed to have a limited number of peers (e.g. 10 or 20), so the creation
 of O(C) goroutines per O(P) peers is still O(C\*P=constant).
 * Use defer statements to unlock as much as possible.  If you want to unlock sooner,

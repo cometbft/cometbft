@@ -108,7 +108,7 @@ specify exactly the dependency you want to update, e.g.
 
 We use [Protocol Buffers](https://developers.google.com/protocol-buffers) along
 with [`gogoproto`](https://github.com/cosmos/gogoproto) to generate code for use
-across CometBFT Core.
+across CometBFT.
 
 To generate proto stubs, lint, and check protos for breaking changes, you will
 need to install [buf](https://buf.build/) and `gogoproto`. Then, from the root
@@ -258,7 +258,7 @@ Make changes, and before submitting a pull request, update the changelog to reco
 
 Update the `UPGRADING.md` if the change you've made is breaking and the
 instructions should be in place for a user on how he/she can upgrade its
-software (ABCI application, CometBFT-based blockchain, light client, wallet).
+software (ABCI application, CometBFT blockchain, light client, wallet).
 
 Once you have submitted a pull request label the pull request with either `R:minor`, if the change should be included in the next minor release, or `R:major`, if the change is meant for a major release.
 

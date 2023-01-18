@@ -18,7 +18,7 @@ We require that all researchers:
   disruption to production systems (including but not limited to the Cosmos
   Hub), and destruction of data
 * Keep any information about vulnerabilities that you’ve discovered confidential
-  between yourself and the CometBFT Core engineering team until the issue has
+  between yourself and the CometBFT engineering team until the issue has
   been resolved and disclosed
 * Avoid posting personally identifiable information, privately or publicly
 

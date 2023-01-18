@@ -126,7 +126,7 @@ Sometimes it's necessary to rename libraries to avoid naming collisions or ambig
 
 ## Version
 
-* Every repo should have a version/version.go file that mimics the CometBFT Core repo
+* Every repo should have a version/version.go file that mimics the CometBFT repo
 * We read the value of the constant version in our build scripts and hence it has to be a string
 
 ## Non-Go Code

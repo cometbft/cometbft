@@ -21,7 +21,7 @@ import (
 	"github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/libs/log"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 	"github.com/tendermint/tendermint/p2p/conn"
 )
 
@@ -44,7 +44,7 @@ type PeerMessage struct {
 type TestReactor struct {
 	BaseReactor
 
-	mtx          tmsync.Mutex
+	mtx          cmtsync.Mutex
 	channels     []*conn.ChannelDescriptor
 	logMessages  bool
 	msgsCounter  int

@@ -15,9 +15,9 @@ import (
 	"github.com/tendermint/tendermint/state"
 
 	"github.com/tendermint/tendermint/libs/log"
-	tmnet "github.com/tendermint/tendermint/libs/net"
-	tmos "github.com/tendermint/tendermint/libs/os"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtnet "github.com/tendermint/tendermint/libs/net"
+	cmtos "github.com/tendermint/tendermint/libs/os"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/types"
 )
 
@@ -36,7 +36,7 @@ const (
 	ErrTestSignVoteFailed                 // 10
 )
 
-var voteTypes = []tmproto.SignedMsgType{tmproto.PrevoteType, tmproto.PrecommitType}
+var voteTypes = []cmtproto.SignedMsgType{cmtproto.PrevoteType, cmtproto.PrecommitType}
 
 // TestHarnessError allows us to keep track of which exit code should be used
 // when exiting the main program.
@@ -216,7 +216,7 @@ func (th *TestHarness) TestSignProposal() error {
 	// sha256 hash of "hash"
 	hash := tmhash.Sum([]byte("hash"))
 	prop := &types.Proposal{
-		Type:     tmproto.ProposalType,
+		Type:     cmtproto.ProposalType,
 		Height:   100,
 		Round:    0,
 		POLRound: -1,
@@ -345,10 +345,10 @@ func (th *TestHarness) Shutdown(err error) {
 
 // newTestHarnessListener creates our client instance which we will use for testing.
 func newTestHarnessListener(logger log.Logger, cfg TestHarnessConfig) (*privval.SignerListenerEndpoint, error) {
-	proto, addr := tmnet.ProtocolAndAddress(cfg.BindAddr)
+	proto, addr := cmtnet.ProtocolAndAddress(cfg.BindAddr)
 	if proto == "unix" {
 		// make sure the socket doesn't exist - if so, try to delete it
-		if tmos.FileExists(addr) {
+		if cmtos.FileExists(addr) {
 			if err := os.Remove(addr); err != nil {
 				logger.Error("Failed to remove existing Unix domain socket", "addr", addr)
 				return nil, err

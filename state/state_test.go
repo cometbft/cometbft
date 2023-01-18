@@ -17,8 +17,8 @@ import (
 	cfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	cryptoenc "github.com/tendermint/tendermint/crypto/encoding"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	tmstate "github.com/tendermint/tendermint/proto/tendermint/state"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
+	cmtstate "github.com/tendermint/tendermint/proto/tendermint/state"
 	sm "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/types"
 )
@@ -108,7 +108,7 @@ func TestABCIResponsesSaveLoad1(t *testing.T) {
 	// Build mock responses.
 	block := makeBlock(state, 2, new(types.Commit))
 
-	abciResponses := new(tmstate.ABCIResponses)
+	abciResponses := new(cmtstate.ABCIResponses)
 	dtxs := make([]*abci.ResponseDeliverTx, 2)
 	abciResponses.DeliverTxs = dtxs
 
@@ -192,7 +192,7 @@ func TestABCIResponsesSaveLoad2(t *testing.T) {
 	// Add all cases.
 	for i, tc := range cases {
 		h := int64(i + 1) // last block height, one below what we save
-		responses := &tmstate.ABCIResponses{
+		responses := &cmtstate.ABCIResponses{
 			BeginBlock: &abci.ResponseBeginBlock{},
 			DeliverTxs: tc.added,
 			EndBlock:   &abci.ResponseEndBlock{},
@@ -207,7 +207,7 @@ func TestABCIResponsesSaveLoad2(t *testing.T) {
 		res, err := stateStore.LoadABCIResponses(h)
 		if assert.NoError(err, "%d", i) {
 			t.Log(res)
-			responses := &tmstate.ABCIResponses{
+			responses := &cmtstate.ABCIResponses{
 				BeginBlock: &abci.ResponseBeginBlock{},
 				DeliverTxs: tc.expected,
 				EndBlock:   &abci.ResponseEndBlock{},
@@ -367,18 +367,18 @@ func TestProposerFrequency(t *testing.T) {
 	maxPower := 1000
 	nTestCases := 5
 	for i := 0; i < nTestCases; i++ {
-		N := tmrand.Int()%maxVals + 1
+		N := cmtrand.Int()%maxVals + 1
 		vals := make([]*types.Validator, N)
 		totalVotePower := int64(0)
 		for j := 0; j < N; j++ {
 			// make sure votePower > 0
-			votePower := int64(tmrand.Int()%maxPower) + 1
+			votePower := int64(cmtrand.Int()%maxPower) + 1
 			totalVotePower += votePower
 			privVal := types.NewMockPV()
 			pubKey, err := privVal.GetPubKey()
 			require.NoError(t, err)
 			val := types.NewValidator(pubKey, votePower)
-			val.ProposerPriority = tmrand.Int64()
+			val.ProposerPriority = cmtrand.Int64()
 			vals[j] = val
 		}
 		valSet := types.NewValidatorSet(vals)
@@ -395,7 +395,7 @@ func genValSetWithPowers(powers []int64) *types.ValidatorSet {
 	for i := 0; i < size; i++ {
 		totalVotePower += powers[i]
 		val := types.NewValidator(ed25519.GenPrivKey().PubKey(), powers[i])
-		val.ProposerPriority = tmrand.Int64()
+		val.ProposerPriority = cmtrand.Int64()
 		vals[i] = val
 	}
 	valSet := types.NewValidatorSet(vals)
@@ -458,7 +458,7 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 	bps, err := block.MakePartSet(testPartSize)
 	require.NoError(t, err)
 	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
-	abciResponses := &tmstate.ABCIResponses{
+	abciResponses := &cmtstate.ABCIResponses{
 		BeginBlock: &abci.ResponseBeginBlock{},
 		EndBlock:   &abci.ResponseEndBlock{ValidatorUpdates: nil},
 	}
@@ -575,7 +575,7 @@ func TestProposerPriorityProposerAlternates(t *testing.T) {
 	require.NoError(t, err)
 	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 	// no updates:
-	abciResponses := &tmstate.ABCIResponses{
+	abciResponses := &cmtstate.ABCIResponses{
 		BeginBlock: &abci.ResponseBeginBlock{},
 		EndBlock:   &abci.ResponseEndBlock{ValidatorUpdates: nil},
 	}
@@ -678,7 +678,7 @@ func TestProposerPriorityProposerAlternates(t *testing.T) {
 	// no changes in voting power and both validators have same voting power
 	// -> proposers should alternate:
 	oldState := updatedState3
-	abciResponses = &tmstate.ABCIResponses{
+	abciResponses = &cmtstate.ABCIResponses{
 		BeginBlock: &abci.ResponseBeginBlock{},
 		EndBlock:   &abci.ResponseEndBlock{ValidatorUpdates: nil},
 	}
@@ -694,7 +694,7 @@ func TestProposerPriorityProposerAlternates(t *testing.T) {
 
 	for i := 0; i < 1000; i++ {
 		// no validator updates:
-		abciResponses := &tmstate.ABCIResponses{
+		abciResponses := &cmtstate.ABCIResponses{
 			BeginBlock: &abci.ResponseBeginBlock{},
 			EndBlock:   &abci.ResponseEndBlock{ValidatorUpdates: nil},
 		}
@@ -752,7 +752,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 	oldState := state
 	for i := 0; i < 10; i++ {
 		// no updates:
-		abciResponses := &tmstate.ABCIResponses{
+		abciResponses := &cmtstate.ABCIResponses{
 			BeginBlock: &abci.ResponseBeginBlock{},
 			EndBlock:   &abci.ResponseEndBlock{ValidatorUpdates: nil},
 		}
@@ -786,7 +786,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 	firstAddedVal := abci.ValidatorUpdate{PubKey: fvp, Power: firstAddedValVotingPower}
 	validatorUpdates, err := types.PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{firstAddedVal})
 	assert.NoError(t, err)
-	abciResponses := &tmstate.ABCIResponses{
+	abciResponses := &cmtstate.ABCIResponses{
 		BeginBlock: &abci.ResponseBeginBlock{},
 		EndBlock:   &abci.ResponseEndBlock{ValidatorUpdates: []abci.ValidatorUpdate{firstAddedVal}},
 	}
@@ -802,7 +802,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 	lastState := updatedState
 	for i := 0; i < 200; i++ {
 		// no updates:
-		abciResponses := &tmstate.ABCIResponses{
+		abciResponses := &cmtstate.ABCIResponses{
 			BeginBlock: &abci.ResponseBeginBlock{},
 			EndBlock:   &abci.ResponseEndBlock{ValidatorUpdates: nil},
 		}
@@ -842,7 +842,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 		validatorUpdates, err := types.PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{addedVal})
 		assert.NoError(t, err)
 
-		abciResponses := &tmstate.ABCIResponses{
+		abciResponses := &cmtstate.ABCIResponses{
 			BeginBlock: &abci.ResponseBeginBlock{},
 			EndBlock:   &abci.ResponseEndBlock{ValidatorUpdates: []abci.ValidatorUpdate{addedVal}},
 		}
@@ -860,7 +860,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 	gp, err := cryptoenc.PubKeyToProto(genesisPubKey)
 	require.NoError(t, err)
 	removeGenesisVal := abci.ValidatorUpdate{PubKey: gp, Power: 0}
-	abciResponses = &tmstate.ABCIResponses{
+	abciResponses = &cmtstate.ABCIResponses{
 		BeginBlock: &abci.ResponseBeginBlock{},
 		EndBlock:   &abci.ResponseEndBlock{ValidatorUpdates: []abci.ValidatorUpdate{removeGenesisVal}},
 	}
@@ -885,7 +885,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 	count := 0
 	isProposerUnchanged := true
 	for isProposerUnchanged {
-		abciResponses := &tmstate.ABCIResponses{
+		abciResponses := &cmtstate.ABCIResponses{
 			BeginBlock: &abci.ResponseBeginBlock{},
 			EndBlock:   &abci.ResponseEndBlock{ValidatorUpdates: nil},
 		}
@@ -913,7 +913,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 	proposers := make([]*types.Validator, numVals)
 	for i := 0; i < 100; i++ {
 		// no updates:
-		abciResponses := &tmstate.ABCIResponses{
+		abciResponses := &cmtstate.ABCIResponses{
 			BeginBlock: &abci.ResponseBeginBlock{},
 			EndBlock:   &abci.ResponseEndBlock{ValidatorUpdates: nil},
 		}

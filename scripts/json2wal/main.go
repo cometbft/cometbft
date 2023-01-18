@@ -15,7 +15,7 @@ import (
 	"strings"
 
 	cs "github.com/tendermint/tendermint/consensus"
-	tmjson "github.com/tendermint/tendermint/libs/json"
+	cmtjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tendermint/types"
 )
 
@@ -56,7 +56,7 @@ func main() {
 		}
 
 		var msg cs.TimedWALMessage
-		err = tmjson.Unmarshal(msgJSON, &msg)
+		err = cmtjson.Unmarshal(msgJSON, &msg)
 		if err != nil {
 			panic(fmt.Errorf("failed to unmarshal json: %v", err))
 		}

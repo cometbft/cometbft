@@ -6,10 +6,10 @@ import (
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtversion "github.com/tendermint/tendermint/proto/tendermint/version"
 	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	cmttime "github.com/tendermint/tendermint/types/time"
 	"github.com/tendermint/tendermint/version"
 )
 
@@ -103,8 +103,8 @@ func makeVote(header *types.Header, valset *types.ValidatorSet,
 		ValidatorIndex:   idx,
 		Height:           header.Height,
 		Round:            1,
-		Timestamp:        tmtime.Now(),
-		Type:             tmproto.PrecommitType,
+		Timestamp:        cmttime.Now(),
+		Type:             cmtproto.PrecommitType,
 		BlockID:          blockID,
 	}
 
@@ -125,7 +125,7 @@ func genHeader(chainID string, height int64, bTime time.Time, txs types.Txs,
 	valset, nextValset *types.ValidatorSet, appHash, consHash, resHash []byte) *types.Header {
 
 	return &types.Header{
-		Version: tmversion.Consensus{Block: version.BlockProtocol, App: 0},
+		Version: cmtversion.Consensus{Block: version.BlockProtocol, App: 0},
 		ChainID: chainID,
 		Height:  height,
 		Time:    bTime,

@@ -10,7 +10,7 @@ import (
 
 	cfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/libs/cli"
-	tmflags "github.com/tendermint/tendermint/libs/cli/flags"
+	cmtflags "github.com/tendermint/tendermint/libs/cli/flags"
 	"github.com/tendermint/tendermint/libs/log"
 )
 
@@ -79,7 +79,7 @@ var RootCmd = &cobra.Command{
 			logger = log.NewTMJSONLogger(log.NewSyncWriter(os.Stdout))
 		}
 
-		logger, err = tmflags.ParseLogLevel(config.LogLevel, logger, cfg.DefaultLogLevel)
+		logger, err = cmtflags.ParseLogLevel(config.LogLevel, logger, cfg.DefaultLogLevel)
 		if err != nil {
 			return err
 		}

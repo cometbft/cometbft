@@ -12,12 +12,12 @@ import (
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/internal/test"
-	tmstate "github.com/tendermint/tendermint/proto/tendermint/state"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtstate "github.com/tendermint/tendermint/proto/tendermint/state"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/proxy"
 	sm "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	cmttime "github.com/tendermint/tendermint/types/time"
 )
 
 type paramsChangeTestCase struct {
@@ -153,10 +153,10 @@ func makeHeaderPartsResponsesValPubKeyChange(
 	t *testing.T,
 	state sm.State,
 	pubkey crypto.PubKey,
-) (types.Header, types.BlockID, *tmstate.ABCIResponses) {
+) (types.Header, types.BlockID, *cmtstate.ABCIResponses) {
 
 	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
-	abciResponses := &tmstate.ABCIResponses{
+	abciResponses := &cmtstate.ABCIResponses{
 		BeginBlock: &abci.ResponseBeginBlock{},
 		EndBlock:   &abci.ResponseEndBlock{ValidatorUpdates: nil},
 	}
@@ -178,10 +178,10 @@ func makeHeaderPartsResponsesValPowerChange(
 	t *testing.T,
 	state sm.State,
 	power int64,
-) (types.Header, types.BlockID, *tmstate.ABCIResponses) {
+) (types.Header, types.BlockID, *cmtstate.ABCIResponses) {
 
 	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
-	abciResponses := &tmstate.ABCIResponses{
+	abciResponses := &cmtstate.ABCIResponses{
 		BeginBlock: &abci.ResponseBeginBlock{},
 		EndBlock:   &abci.ResponseEndBlock{ValidatorUpdates: nil},
 	}
@@ -202,11 +202,11 @@ func makeHeaderPartsResponsesValPowerChange(
 func makeHeaderPartsResponsesParams(
 	t *testing.T,
 	state sm.State,
-	params tmproto.ConsensusParams,
-) (types.Header, types.BlockID, *tmstate.ABCIResponses) {
+	params cmtproto.ConsensusParams,
+) (types.Header, types.BlockID, *cmtstate.ABCIResponses) {
 
 	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
-	abciResponses := &tmstate.ABCIResponses{
+	abciResponses := &cmtstate.ABCIResponses{
 		BeginBlock: &abci.ResponseBeginBlock{},
 		EndBlock:   &abci.ResponseEndBlock{ConsensusParamUpdates: &params},
 	}
@@ -216,7 +216,7 @@ func makeHeaderPartsResponsesParams(
 func randomGenesisDoc() *types.GenesisDoc {
 	pubkey := ed25519.GenPrivKey().PubKey()
 	return &types.GenesisDoc{
-		GenesisTime: tmtime.Now(),
+		GenesisTime: cmttime.Now(),
 		ChainID:     "abc",
 		Validators: []types.GenesisValidator{
 			{
@@ -255,8 +255,8 @@ func (app *testApp) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlo
 func (app *testApp) EndBlock(req abci.RequestEndBlock) abci.ResponseEndBlock {
 	return abci.ResponseEndBlock{
 		ValidatorUpdates: app.ValidatorUpdates,
-		ConsensusParamUpdates: &tmproto.ConsensusParams{
-			Version: &tmproto.VersionParams{
+		ConsensusParamUpdates: &cmtproto.ConsensusParams{
+			Version: &cmtproto.VersionParams{
 				App: 1}}}
 }
 

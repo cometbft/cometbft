@@ -123,7 +123,7 @@ A proposal is signed and published by the designated proposer at each
 round. The proposer is chosen by a deterministic and non-choking round
 robin selection algorithm that selects proposers in proportion to their
 voting power (see
-[implementation](https://github.com/tendermint/tendermint/blob/main/types/validator_set.go)).
+[implementation](https://github.com/cometbft/cometbft/blob/main/types/validator_set.go)).
 
 A proposal at `(H,R)` is composed of a block and an optional latest
 `PoLC-Round < R` which is included iff the proposer knows of one. This

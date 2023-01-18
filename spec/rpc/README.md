@@ -11,14 +11,14 @@ This file defines the JSON-RPC spec of CometBFT. This is meant to be implemented
 
 ## Support
 
-  |              | [Tendermint-Go](https://github.com/tendermint/tendermint/) | [endermint-Rs](https://github.com/informalsystems/tendermint-rs) |
+  |              | [CometBFT](https://github.com/cometbft/cometbft/) | [Tendermint-Rs](https://github.com/informalsystems/tendermint-rs) |
   |--------------|:----------------------------------------------------------:|:----------------------------------------------------------------:|
   | JSON-RPC 2.0 |                             ✅                              |                                ✅                                 |
   | HTTP         |                             ✅                              |                                ✅                                 |
   | HTTPS        |                             ✅                              |                                ❌                                 |
   | WS           |                             ✅                              |                                ✅                                 |
   
-  | Routes                                  | [Tendermint-Go](https://github.com/tendermint/tendermint/) | [Tendermint-Rs](https://github.com/informalsystems/tendermint-rs) |
+  | Routes                                  | [CometBFT](https://github.com/cometbft/cometbft/) | [Tendermint-Rs](https://github.com/informalsystems/tendermint-rs) |
   |-----------------------------------------|:----------------------------------------------------------:|:-----------------------------------------------------------------:|
   | [Health](#health)                       |                             ✅                              |                                 ✅                                 |
   | [Status](#status)                       |                             ✅                              |                                 ✅                                 |

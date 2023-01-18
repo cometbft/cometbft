@@ -1,7 +1,7 @@
 PACKAGES=$(shell go list ./...)
-OUTPUT?=build/tendermint
+OUTPUT?=build/cometbft
 
-BUILD_TAGS?=tendermint
+BUILD_TAGS?=cometbft
 
 # If building a release, please checkout the version tag to get the correct version setting
 ifneq ($(shell git symbolic-ref -q --short HEAD),)
@@ -10,42 +10,42 @@ else
 VERSION := $(shell git describe)
 endif
 
-LD_FLAGS = -X github.com/tendermint/tendermint/version.TMCoreSemVer=$(VERSION)
+LD_FLAGS = -X github.com/cometbft/cometbft/version.TMCoreSemVer=$(VERSION)
 BUILD_FLAGS = -mod=readonly -ldflags "$(LD_FLAGS)"
-HTTPS_GIT := https://github.com/tendermint/tendermint.git
+HTTPS_GIT := https://github.com/cometbft/cometbft.git
 CGO_ENABLED ?= 0
 
 # handle nostrip
-ifeq (,$(findstring nostrip,$(TENDERMINT_BUILD_OPTIONS)))
+ifeq (,$(findstring nostrip,$(COMETBFT_BUILD_OPTIONS)))
   BUILD_FLAGS += -trimpath
   LD_FLAGS += -s -w
 endif
 
 # handle race
-ifeq (race,$(findstring race,$(TENDERMINT_BUILD_OPTIONS)))
+ifeq (race,$(findstring race,$(COMETBFT_BUILD_OPTIONS)))
   CGO_ENABLED=1
   BUILD_FLAGS += -race
 endif
 
 # handle cleveldb
-ifeq (cleveldb,$(findstring cleveldb,$(TENDERMINT_BUILD_OPTIONS)))
+ifeq (cleveldb,$(findstring cleveldb,$(COMETBFT_BUILD_OPTIONS)))
   CGO_ENABLED=1
   BUILD_TAGS += cleveldb
 endif
 
 # handle badgerdb
-ifeq (badgerdb,$(findstring badgerdb,$(TENDERMINT_BUILD_OPTIONS)))
+ifeq (badgerdb,$(findstring badgerdb,$(COMETBFT_BUILD_OPTIONS)))
   BUILD_TAGS += badgerdb
 endif
 
 # handle rocksdb
-ifeq (rocksdb,$(findstring rocksdb,$(TENDERMINT_BUILD_OPTIONS)))
+ifeq (rocksdb,$(findstring rocksdb,$(COMETBFT_BUILD_OPTIONS)))
   CGO_ENABLED=1
   BUILD_TAGS += rocksdb
 endif
 
 # handle boltdb
-ifeq (boltdb,$(findstring boltdb,$(TENDERMINT_BUILD_OPTIONS)))
+ifeq (boltdb,$(findstring boltdb,$(COMETBFT_BUILD_OPTIONS)))
   BUILD_TAGS += boltdb
 endif
 
@@ -58,7 +58,7 @@ all: check build test install
 include tests.mk
 
 ###############################################################################
-###                                Build Tendermint                        ###
+###                                Build CometBFT                           ###
 ###############################################################################
 
 build:
@@ -159,7 +159,7 @@ go.sum: go.mod
 draw_deps:
 	@# requires brew install graphviz or apt-get install graphviz
 	go get github.com/RobotsAndPencils/goviz
-	@goviz -i github.com/tendermint/tendermint/cmd/tendermint -d 3 | dot -Tpng -o dependency-graph.png
+	@goviz -i github.com/cometbft/cometbft/cmd/tendermint -d 3 | dot -Tpng -o dependency-graph.png
 .PHONY: draw_deps
 
 get_deps_bin_size:
@@ -175,9 +175,9 @@ get_deps_bin_size:
 
 # generates certificates for TLS testing in remotedb and RPC server
 gen_certs: clean_certs
-	certstrap init --common-name "tendermint.com" --passphrase ""
+	certstrap init --common-name "cometbft.com" --passphrase ""
 	certstrap request-cert --common-name "server" -ip "127.0.0.1" --passphrase ""
-	certstrap sign "server" --CA "tendermint.com" --passphrase ""
+	certstrap sign "server" --CA "cometbft.com" --passphrase ""
 	mv out/server.crt rpc/jsonrpc/server/test.crt
 	mv out/server.key rpc/jsonrpc/server/test.key
 	rm -rf out
@@ -195,7 +195,7 @@ clean_certs:
 
 format:
 	find . -name '*.go' -type f -not -path "*.git*" -not -name '*.pb.go' -not -name '*pb_test.go' | xargs gofmt -w -s
-	find . -name '*.go' -type f -not -path "*.git*"  -not -name '*.pb.go' -not -name '*pb_test.go' | xargs goimports -w -local github.com/tendermint/tendermint
+	find . -name '*.go' -type f -not -path "*.git*"  -not -name '*.pb.go' -not -name '*pb_test.go' | xargs goimports -w -local github.com/cometbft/cometbft
 .PHONY: format
 
 lint:
@@ -236,9 +236,9 @@ sync-docs:
 ###############################################################################
 
 build-docker: build-linux
-	cp $(OUTPUT) DOCKER/tendermint
-	docker build --label=tendermint --tag="tendermint/tendermint" DOCKER
-	rm -rf DOCKER/tendermint
+	cp $(OUTPUT) DOCKER/cometbft
+	docker build --label=cometbft --tag="cometbft/cometbft" DOCKER
+	rm -rf DOCKER/cometbft
 .PHONY: build-docker
 
 ###############################################################################
@@ -254,17 +254,17 @@ build-docker-localnode:
 	@cd networks/local && make
 .PHONY: build-docker-localnode
 
-# Runs `make build TENDERMINT_BUILD_OPTIONS=cleveldb` from within an Amazon
+# Runs `make build COMETBFT_BUILD_OPTIONS=cleveldb` from within an Amazon
 # Linux (v2)-based Docker build container in order to build an Amazon
-# Linux-compatible binary. Produces a compatible binary at ./build/tendermint
+# Linux-compatible binary. Produces a compatible binary at ./build/cometbft
 build_c-amazonlinux:
 	$(MAKE) -C ./DOCKER build_amazonlinux_buildimage
-	docker run --rm -it -v `pwd`:/tendermint tendermint/tendermint:build_c-amazonlinux
+	docker run --rm -it -v `pwd`:/cometbft cometbft/cometbft:build_c-amazonlinux
 .PHONY: build_c-amazonlinux
 
 # Run a 4-node testnet locally
 localnet-start: localnet-stop build-docker-localnode
-	@if ! [ -f build/node0/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build:/tendermint:Z tendermint/localnode testnet --config /etc/tendermint/config-template.toml --o . --starting-ip-address 192.167.10.2; fi
+	@if ! [ -f build/node0/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build:/cometbft:Z cometbft/localnode testnet --config /etc/cometbft/config-template.toml --o . --starting-ip-address 192.167.10.2; fi
 	docker-compose up
 .PHONY: localnet-start
 

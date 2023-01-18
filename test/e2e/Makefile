@@ -4,7 +4,7 @@ docker:
 	docker build --tag cometbft/e2e-node --tag cometbft/e2e-node:local-version -f docker/Dockerfile ../..
 
 # We need to build support for database backends into the app in
-# order to build a binary with a Tendermint node in it (for built-in
+# order to build a binary with a CometBFT node in it (for built-in
 # ABCI testing).
 node:
 	go build -o build/node -tags badgerdb,boltdb,cleveldb,rocksdb ./node

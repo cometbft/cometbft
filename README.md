@@ -34,8 +34,7 @@ Complete documentation can be found on the
 Please do not depend on `main` as your production branch. Use
 [releases](https://github.com/cometbft/cometbft/releases) instead.
 
-CometBFT has been in the production of private and public environments, most
-notably the blockchains of the Cosmos Network. We haven't released v1.0 yet
+We haven't released v1.0 yet
 since we are making breaking changes to the protocol and the APIs. See below for
 more details about [versioning](#versioning).
 
@@ -115,7 +114,7 @@ CometBFT up-to-date. Upgrading instructions can be found in
 
 Currently supported versions include:
 
-- v0.34.x
+- v0.34.x. CometBFT v0.34.25 is binary compatible/equivalent with/to Tendermint v0.34.4.
 - v0.37.x (release candidate)
 
 ## Resources

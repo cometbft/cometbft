@@ -1,6 +1,6 @@
 .PHONY: build install docker-image
 
-TENDERMINT_VERSION?=latest
+COMETBFT_VERSION?=latest
 BUILD_TAGS?='tendermint'
 VERSION := $(shell git describe --always)
 BUILD_FLAGS = -ldflags "-X github.com/tendermint/tendermint/version.TMCoreSemVer=$(VERSION)
@@ -16,6 +16,6 @@ install:
 docker-image:
 	GOOS=linux GOARCH=amd64 go build $(BUILD_FLAGS) -tags $(BUILD_TAGS) -o tm-signer-harness main.go
 	docker build \
-		--build-arg TENDERMINT_VERSION=$(TENDERMINT_VERSION) \
-		-t tendermint/tm-signer-harness:$(TENDERMINT_VERSION) .
+		--build-arg COMETBFT_VERSION=$(COMETBFT_VERSION) \
+		-t tendermint/tm-signer-harness:$(COMETBFT_VERSION) .
 	rm -rf tm-signer-harness

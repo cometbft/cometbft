@@ -1,2 +1,2 @@
 - `[rpc]` Added `header` and `header_by_hash` queries to the RPC client
-  ([#9276](https://github.com/tendermint/tendermint/issues/9276))
+  ([\#9276](https://github.com/tendermint/tendermint/pull/9276))

@@ -9,19 +9,28 @@
 .GridLayout {
   display: grid;
   grid-template-areas:
-    'SiteHeader SiteHeader SiteHeader'
-    'PrimaryNavigation PageContent TableOfContents'
-    'SiteFooter SiteFooter SiteFooter';
-  grid-template-columns: 0.75fr minmax(300px, 2fr) 0.75fr;
+    'SiteHeader'
+    'PrimaryNavigation'
+    'TableOfContents'
+    'PageContent'
+    'SiteFooter';
   margin: 0 auto;
 
   @include rowGap(loose, false);
 
-  @include for-breakpoint('desktopsOrLarger') {
+  @include for-breakpoint(tabletsOrLarger) {
+    grid-template-areas:
+      'SiteHeader SiteHeader SiteHeader'
+      'PrimaryNavigation PageContent TableOfContents'
+      'SiteFooter SiteFooter SiteFooter';
+    grid-template-columns: 0.75fr minmax(300px, 2fr) 0.75fr;
+  }
+
+  @include for-breakpoint(desktopsOrLarger) {
     max-width: 960px;
   }
 
-  @include for-breakpoint('bigDesktopsOrLarger') {
+  @include for-breakpoint(bigDesktopsOrLarger) {
     max-width: 80vw;
   }
 }
@@ -74,14 +83,23 @@
 }
 
 .SiteHeader-content {
-  @include justifyContent(space-between);
+  align-items: flex-end;
   overflow-y: auto;
+  @include justifyContent(space-between);
+
+  @include for-breakpoint(tabletsOrLarger) {
+    align-items: center;
+  }
 }
 
 .SiteHeader-logo {
   align-items: baseline;
-  @include columnGap(normal);
+  @include rowGap(xTight);
   @include fontSize(large);
+
+  @include for-breakpoint(tabletsOrLarger) {
+    @include columnGap(normal);
+  }
 }
 
 .SiteHeader-logoText {
@@ -127,7 +145,13 @@
 .PageContent {
   grid-area: PageContent;
 
+  @include paddingX(loose);
   @include rowGap(normal);
+
+  @include for-breakpoint(tabletsOrLarger) {
+    padding-left: 0;
+    padding-right: 0;
+  }
 }
 
 .PrimaryNavigation {

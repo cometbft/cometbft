@@ -468,7 +468,7 @@ title: Methods
 
 
 When a validator _p_ enters Tendermint consensus round _r_, height _h_, in which _p_ is the proposer,
-and _p_'s _validValue_ is `nil`:
+and _p_'s _lockedValue_ is `nil`:
 
 1. Tendermint collects outstanding transactions from _p_'s mempool
     * the transactions will be collected in order of priority
@@ -550,7 +550,7 @@ When a node _p_ enters Tendermint consensus round _r_, height _h_, in which _q_ 
 4. Upon reception of Proposal message, along with all the block parts, for round _r_, height _h_
    from _q_, _p_'s Tendermint follows the validators' algorithm to check whether it should prevote for the
    proposed block, or `nil`.
-5. If the validators' algorithm indicates Tendermint should prevote for the proposed block:
+5. If the validators' algorithm indicates Tendermint should prevote for the proposed block and _p_'s _lockedValue_ is `nil`:
     1. Tendermint calls `RequestProcessProposal` with the block. The call is synchronous.
     2. The Application checks/processes the proposed block, which is read-only, and returns
        `ACCEPT` or `REJECT` in the `ResponseProcessProposal.status` field.

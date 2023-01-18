@@ -16,12 +16,12 @@ import (
 	"github.com/tendermint/tendermint/internal/test"
 	"github.com/tendermint/tendermint/libs/log"
 	mpmocks "github.com/tendermint/tendermint/mempool/mocks"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	sm "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/state/mocks"
 	"github.com/tendermint/tendermint/store"
 	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	cmttime "github.com/tendermint/tendermint/types/time"
 )
 
 const validationTestsStopHeight int64 = 10
@@ -228,8 +228,8 @@ func TestValidateBlockCommit(t *testing.T) {
 			ValidatorIndex:   0,
 			Height:           height,
 			Round:            0,
-			Timestamp:        tmtime.Now(),
-			Type:             tmproto.PrecommitType,
+			Timestamp:        cmttime.Now(),
+			Type:             cmtproto.PrecommitType,
 			BlockID:          blockID,
 		}
 

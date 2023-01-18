@@ -341,7 +341,7 @@ func parseWeightedVersions(s string) (weightedChoice, error) {
 }
 
 // Extracts the latest release version from the given Git repository. Uses the
-// current version of Tendermint Core to establish the "major" version
+// current version of CometBFT to establish the "major" version
 // currently in use.
 func gitRepoLatestReleaseVersion(gitRepoDir string) (string, error) {
 	opts := &git.PlainOpenOptions{
@@ -406,7 +406,7 @@ func findLatestReleaseTag(baseVer string, tags []string) (string, error) {
 	if latestVer == nil {
 		return "", nil
 	}
-	// Ensure the version string has a "v" prefix, because all Tendermint E2E
+	// Ensure the version string has a "v" prefix, because all CometBFT E2E
 	// node Docker images' versions have a "v" prefix.
 	vs := latestVer.String()
 	if !strings.HasPrefix(vs, "v") {

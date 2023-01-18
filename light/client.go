@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/tendermint/tendermint/libs/log"
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtmath "github.com/tendermint/tendermint/libs/math"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 	"github.com/tendermint/tendermint/light/provider"
 	"github.com/tendermint/tendermint/light/store"
 	"github.com/tendermint/tendermint/types"
@@ -62,7 +62,7 @@ func SequentialVerification() Option {
 // which must sign the new header in order for us to trust it. NOTE this only
 // applies to non-adjacent headers. For adjacent headers, sequential
 // verification is used.
-func SkippingVerification(trustLevel tmmath.Fraction) Option {
+func SkippingVerification(trustLevel cmtmath.Fraction) Option {
 	return func(c *Client) {
 		c.verificationMode = skipping
 		c.trustLevel = trustLevel
@@ -134,13 +134,13 @@ type Client struct {
 	chainID          string
 	trustingPeriod   time.Duration // see TrustOptions.Period
 	verificationMode mode
-	trustLevel       tmmath.Fraction
+	trustLevel       cmtmath.Fraction
 	maxRetryAttempts uint16 // see MaxRetryAttempts option
 	maxClockDrift    time.Duration
 	maxBlockLag      time.Duration
 
 	// Mutex for locking during changes of the light clients providers
-	providerMutex tmsync.Mutex
+	providerMutex cmtsync.Mutex
 	// Primary provider of new headers.
 	primary provider.Provider
 	// Providers used to "witness" new headers.

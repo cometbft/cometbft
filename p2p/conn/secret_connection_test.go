@@ -21,8 +21,8 @@ import (
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/sr25519"
 	"github.com/tendermint/tendermint/libs/async"
-	tmos "github.com/tendermint/tendermint/libs/os"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	cmtos "github.com/tendermint/tendermint/libs/os"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
 )
 
 // Run go test -update from within this module
@@ -65,7 +65,7 @@ func TestSecretConnectionHandshake(t *testing.T) {
 
 func TestConcurrentWrite(t *testing.T) {
 	fooSecConn, barSecConn := makeSecretConnPair(t)
-	fooWriteText := tmrand.Str(dataMaxSize)
+	fooWriteText := cmtrand.Str(dataMaxSize)
 
 	// write from two routines.
 	// should be safe from race according to net.Conn:
@@ -87,7 +87,7 @@ func TestConcurrentWrite(t *testing.T) {
 
 func TestConcurrentRead(t *testing.T) {
 	fooSecConn, barSecConn := makeSecretConnPair(t)
-	fooWriteText := tmrand.Str(dataMaxSize)
+	fooWriteText := cmtrand.Str(dataMaxSize)
 	n := 100
 
 	// read from two routines.
@@ -114,8 +114,8 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 
 	// Pre-generate the things to write (for foo & bar)
 	for i := 0; i < 100; i++ {
-		fooWrites = append(fooWrites, tmrand.Str((tmrand.Int()%(dataMaxSize*5))+1))
-		barWrites = append(barWrites, tmrand.Str((tmrand.Int()%(dataMaxSize*5))+1))
+		fooWrites = append(fooWrites, cmtrand.Str((cmtrand.Int()%(dataMaxSize*5))+1))
+		barWrites = append(barWrites, cmtrand.Str((cmtrand.Int()%(dataMaxSize*5))+1))
 	}
 
 	// A helper that will run with (fooConn, fooWrites, fooReads) and vice versa
@@ -229,7 +229,7 @@ func TestDeriveSecretsAndChallengeGolden(t *testing.T) {
 	if *update {
 		t.Logf("Updating golden test vector file %s", goldenFilepath)
 		data := createGoldenTestVectors(t)
-		err := tmos.WriteFile(goldenFilepath, []byte(data), 0644)
+		err := cmtos.WriteFile(goldenFilepath, []byte(data), 0644)
 		require.NoError(t, err)
 	}
 	f, err := os.Open(goldenFilepath)
@@ -312,11 +312,11 @@ func readLots(t *testing.T, wg *sync.WaitGroup, conn io.Reader, n int) {
 func createGoldenTestVectors(t *testing.T) string {
 	data := ""
 	for i := 0; i < 32; i++ {
-		randSecretVector := tmrand.Bytes(32)
+		randSecretVector := cmtrand.Bytes(32)
 		randSecret := new([32]byte)
 		copy((*randSecret)[:], randSecretVector)
 		data += hex.EncodeToString((*randSecret)[:]) + ","
-		locIsLeast := tmrand.Bool()
+		locIsLeast := cmtrand.Bool()
 		data += strconv.FormatBool(locIsLeast) + ","
 		recvSecret, sendSecret := deriveSecrets(randSecret, locIsLeast)
 		data += hex.EncodeToString((*recvSecret)[:]) + ","
@@ -398,7 +398,7 @@ func BenchmarkWriteSecretConnection(b *testing.B) {
 	}
 	fooWriteBytes := make([][]byte, 0, len(randomMsgSizes))
 	for _, size := range randomMsgSizes {
-		fooWriteBytes = append(fooWriteBytes, tmrand.Bytes(size))
+		fooWriteBytes = append(fooWriteBytes, cmtrand.Bytes(size))
 	}
 	// Consume reads from bar's reader
 	go func() {
@@ -416,7 +416,7 @@ func BenchmarkWriteSecretConnection(b *testing.B) {
 
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		idx := tmrand.Intn(len(fooWriteBytes))
+		idx := cmtrand.Intn(len(fooWriteBytes))
 		_, err := fooSecConn.Write(fooWriteBytes[idx])
 		if err != nil {
 			b.Errorf("failed to write to fooSecConn: %v", err)
@@ -446,11 +446,11 @@ func BenchmarkReadSecretConnection(b *testing.B) {
 	}
 	fooWriteBytes := make([][]byte, 0, len(randomMsgSizes))
 	for _, size := range randomMsgSizes {
-		fooWriteBytes = append(fooWriteBytes, tmrand.Bytes(size))
+		fooWriteBytes = append(fooWriteBytes, cmtrand.Bytes(size))
 	}
 	go func() {
 		for i := 0; i < b.N; i++ {
-			idx := tmrand.Intn(len(fooWriteBytes))
+			idx := cmtrand.Intn(len(fooWriteBytes))
 			_, err := fooSecConn.Write(fooWriteBytes[idx])
 			if err != nil {
 				b.Errorf("failed to write to fooSecConn: %v, %v,%v", err, i, b.N)

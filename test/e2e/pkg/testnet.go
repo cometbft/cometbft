@@ -77,7 +77,7 @@ type Testnet struct {
 	CheckTxDelay         time.Duration
 }
 
-// Node represents a Tendermint node in a testnet.
+// Node represents a CometBFT node in a testnet.
 type Node struct {
 	Name             string
 	Version          string

@@ -1,6 +1,6 @@
 -------------------- MODULE TendermintPBT_001_draft ---------------------------
 (*
- A TLA+ specification of a simplified Tendermint consensus, with added clocks 
+ A TLA+ specification of a simplified Tendermint consensus algorithm, with added clocks 
  and proposer-based timestamps. This TLA+ specification extends and modifies 
  the Tendermint TLA+ specification for fork accountability: 
     https://github.com/cometbft/cometbft/blob/main/spec/light-client/accountability/TendermintAcc_004_draft.tla

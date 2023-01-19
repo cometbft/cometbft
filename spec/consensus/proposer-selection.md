@@ -4,7 +4,7 @@ order: 3
 
 # Proposer Selection Procedure
 
-This document specifies the Proposer Selection Procedure that is used in Tendermint, the consensus protocol adopted by CometBFT, to choose a round proposer.
+This document specifies the Proposer Selection Procedure that is used in Tendermint, the consensus algorithm adopted in CometBFT, to choose a round proposer.
 As Tendermint is “leader-based consensus protocol”, the proposer selection is critical for its correct functioning.
 
 At a given block height, the proposer selection algorithm runs with the same validator set at each round .

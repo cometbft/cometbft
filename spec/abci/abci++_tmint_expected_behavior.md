@@ -9,7 +9,7 @@ title: CometBFT's expected behavior
 
 This section describes what the Application can expect from CometBFT.
 
-The Tendermint consensus algorithm, currently adopted by CometBFT, is designed to protect safety under any network conditions, as long as
+The Tendermint consensus algorithm, currently adopted in CometBFT, is designed to protect safety under any network conditions, as long as
 less than 1/3 of validators' voting power is byzantine. Most of the time, though, the network will behave
 synchronously, no process will fall behind, and there will be no byzantine process. The following describes
 what will happen during a block height _h_ in these frequent, benign conditions:

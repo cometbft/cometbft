@@ -1,6 +1,6 @@
 # Proposer-Based Timestamps
 
-This section describes a version of the Tendermint consensus protocol, adopted by CometBFT,
+This section describes a version of the Tendermint consensus algorithm, adopted in CometBFT,
 which uses proposer-based timestamps.
 
 ## Contents

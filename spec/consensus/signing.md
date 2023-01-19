@@ -212,7 +212,7 @@ sign another vote with the same type for the same height and round where
 
 ### Other Rules
 
-According to the rules of Tendermint consensus, adopted by CometBFT, once a validator precommits for
+According to the rules of Tendermint consensus algorithm, adopted in CometBFT, once a validator precommits for
 a block, they become "locked" on that block, which means they can't prevote for
 another block unless they see sufficient justification (ie. a polka from a
 higher round). For more details, see the [consensus

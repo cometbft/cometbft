@@ -13,7 +13,7 @@ As Tendermint consensus and light client verification is safe under the assumpti
 In the case of an [attack][node-based-attack-characterization], the lightclient [attack detection mechanism][detection] computes data, so called evidence [[LC-DATA-EVIDENCE.1]][LC-DATA-EVIDENCE-link], that can be used
 
 - to proof that there has been attack [[TMBC-LC-EVIDENCE-DATA.1]][TMBC-LC-EVIDENCE-DATA-link] and
-- as basis to find the actual nodes that deviated from the Tendermint protocol.
+- as basis to find the actual nodes that deviated from the Tendermint algorithm.
 
 This specification considers how a full node in a CometBFT blockchain can isolate a set of attackers that launched the attack. The set should satisfy
 
@@ -59,7 +59,7 @@ When an output is generated it satisfies the following properties:
     - Validators in `ev.ConflictingBlock.Commit` represent more than 1/3 of the voting power in `bc[ev.CommonHeight].NextValidators`
 - Then: A set of validators in `bc[CommonHeight].NextValidators` that
     - represent more than 1/3 of the voting power in `bc[ev.commonHeight].NextValidators`
-    - signed Tendermint consensus messages for height `ev.ConflictingBlock.Header.Height` by violating the Tendermint consensus protocol.
+    - signed Tendermint consensus messages for height `ev.ConflictingBlock.Header.Height` by violating the Tendermint consensus algorithm.
 - Else: the empty set.
 
 # Part IV - Protocol
@@ -133,7 +133,7 @@ func violatesTMValidity(ref Header, ev Header) boolean
 ```
 
 - Implementation remarks
-    - checks whether the evidence header `ev` violates the validity property of Tendermint Consensus, by checking agains a reference header
+    - checks whether the evidence header `ev` violates the validity property of Tendermint consensus algorithm, by checking agains a reference header
 - Expected precondition
     - `ref.Height == ev.Height`
 - Expected postcondition
@@ -189,7 +189,7 @@ The main function `isolateMisbehavingProcesses` distinguishes three kinds of wro
 The question is whether this captures all attacks.
 First observe that the first checking in `isolateMisbehavingProcesses` is `violatesTMValidity`. It takes care of lunatic attacks. If this check passes, that is, if `violatesTMValidity` returns `FALSE` this means that [FN-NONVALID-OUTPUT] evaluates to false, which implies that `ref.ValidatorsHash = ev.ValidatorsHash`. Hence after `violatesTMValidity`, all the involved validators are the ones from the blockchain. It is thus sufficient to analyze one instance of Tendermint consensus with a fixed group membership (set of validators). Also it is sufficient to consider two different valid consensus values, that is, binary consensus.
 
-**TODO** we have analyzed Tendermint consensus with TLA+ and have accompanied Galois in an independent study of the protocol based on [Ivy proofs](https://github.com/cometbft/cometbft/tree/main/spec/ivy-proofs).
+**TODO** we have analyzed Tendermint consensus algorithm with TLA+ and have accompanied Galois in an independent study of the protocol based on [Ivy proofs](https://github.com/cometbft/cometbft/tree/main/spec/ivy-proofs).
 
 # References
 

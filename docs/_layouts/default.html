@@ -101,8 +101,17 @@
         </div>
       </aside>
 
-      <main class="PageContent">
-        {{ content | replace: ' href="http', ' target="_blank" href="http' }}
+      <div class="PageContent">
+        {{
+          content
+            | replace: ' href="http', ' target="_blank" href="http'
+            | replace: ':rocket:', '<i class="fa fal fa-rocket"></i>'
+            | replace: ':skull:', '<i class="fa fal fa-skull"></i>'
+            | replace: ':sparkles:', '<i class="fa fal fa-sparkles"></i>'
+            | replace: ':warning:', '<i class="fa fal fa-warning"></i>'
+            | replace: '<table>', '<div class="Table-wrapper"><table>'
+            | replace: '</table>', '</table></div>'
+        }}
       </main>
 
       <footer class="SiteFooter">

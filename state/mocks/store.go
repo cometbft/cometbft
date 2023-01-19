@@ -3,8 +3,8 @@
 package mocks
 
 import (
-	mock "github.com/stretchr/testify/mock"
 	state "github.com/cometbft/cometbft/state"
+	mock "github.com/stretchr/testify/mock"
 
 	tendermintstate "github.com/cometbft/cometbft/proto/tendermint/state"
 

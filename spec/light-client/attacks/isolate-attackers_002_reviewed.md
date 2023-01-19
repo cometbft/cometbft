@@ -1,7 +1,9 @@
 <!-- markdown-link-check-disable -->
 # Lightclient Attackers Isolation
 
-Adversarial nodes may have the incentive to lie to a lightclient about the state of a CometBFT blockchain. An attempt to do so is called attack. Light client [verification][verification] checks incoming data by checking a so-called "commit", which is a forwarded set of signed messages that is (supposedly) produced during executing Tendermint consensus. Thus, an attack boils down to creating and signing Tendermint consensus messages in deviation from the Tendermint consensus algorithm rules.
+Adversarial nodes may have the incentive to lie to a lightclient about the
+state of a Cosmos blockchain, built using Tendermint consensus algorithm.
+An attempt to do so is called attack. Light client [verification][verification] checks incoming data by checking a so-called "commit", which is a forwarded set of signed messages that is (supposedly) produced during executing Tendermint consensus. Thus, an attack boils down to creating and signing Tendermint consensus messages in deviation from the Tendermint consensus algorithm rules.
 
 As Tendermint consensus and light client verification is safe under the assumption of more than 2/3 of correct voting power per block [[TMBC-FM-2THIRDS]][TMBC-FM-2THIRDS-link], this implies that if there was an attack then [[TMBC-FM-2THIRDS]][TMBC-FM-2THIRDS-link] was violated, that is, there is a block such that
 
@@ -13,7 +15,7 @@ In the case of an [attack][node-based-attack-characterization], the lightclient 
 - to proof that there has been attack [[TMBC-LC-EVIDENCE-DATA.1]][TMBC-LC-EVIDENCE-DATA-link] and
 - as basis to find the actual nodes that deviated from the Tendermint algorithm.
 
-This specification considers how a full node in a CometBFT blockchain can isolate a set of attackers that launched the attack. The set should satisfy
+This specification considers how a full node in a Cosmos blockchain can isolate a set of attackers that launched the attack. The set should satisfy
 
 - the set does not contain a correct validator
 - the set contains validators that represent more than 1/3 of the voting power of a block that is still within the unbonding period

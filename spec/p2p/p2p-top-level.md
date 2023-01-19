@@ -228,11 +228,21 @@ There are several crucial things that are outside of the control of the evidence
 3. when evidence is put into a block (similar to the mempool we may assume that correct proposers always put all the evidence they are aware of in a block, but CometBFT cannot enforce that)
 4. when evidence is submitted
 
-In face of this uncertainty, the only reasonable requirement we can postulate is that an evidence transaction reaches all validator nodes as "fast as possible".
+In face of this uncertainty, there are only few reasonable requirement we can postulate
 
-> With more control over the four points, in principle we might define a real-time property which formalizes "evidence is written into a block before it expires" and consequently 
+A. an evidence transaction reaches all validator nodes as "fast as possible".
+B. evidence is not written into a block after it has expired
 
-TODO: discuss validation of evidence in evidence reactor (in particular where unbonding period is visible)
+> With more control over the four points, in principle we might define a real-time property which formalizes "if evidence is submitted at least a day before it expires, then evidence is written into a block before it expires". 
+
+> To ensure B, the unbonding period (and number of blocks) are given to CometBFT as consensus parameters (in genesis; they can be changed by the application via consensus).
+
+<!---
+https://github.com/cometbft/cometbft/blob/af3bc47df982e271d4d340a3c5e0d773e440466d/evidence/pool.go#L265
+
+https://github.com/cometbft/cometbft/blob/af3bc47df982e271d4d340a3c5e0d773e440466d/evidence/reactor.go#L193
+--> 
+
 
  ## The rest
 

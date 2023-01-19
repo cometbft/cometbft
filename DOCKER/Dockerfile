@@ -2,7 +2,7 @@
 FROM golang:1.18-alpine as builder
 RUN apk update && \
     apk upgrade && \
-    apk --no-cache add make git
+    apk --no-cache add make git 
 COPY / /cometbft
 WORKDIR /cometbft
 RUN make build-linux
@@ -25,7 +25,7 @@ LABEL maintainer="hello@informal.systems"
 ENV TMHOME /cometbft
 
 # TODO(thane): Remove once we publish the cometbft-db repository.
-RUN git config --global url.https://${GO_MODULES_TOKEN}@github.com/.insteadOf https://github.com/
+RUN apk add git && git config --global url.https://${GO_MODULES_TOKEN}@github.com/.insteadOf https://github.com/
 
 # OS environment setup
 # Set user right away for determinism, create directory for persistence and give our user ownership

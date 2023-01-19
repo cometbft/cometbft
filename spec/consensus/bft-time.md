@@ -17,7 +17,7 @@ a faulty process cannot arbitrarily increase the Time value.
 
 In the context of CometBFT, time is of type int64 and denotes UNIX time in milliseconds, i.e.,
 corresponds to the number of milliseconds since January 1, 1970.
-Before defining rules that need to be enforced by Tendermint, the consensus protocol adopted by CometBFT,
+Before defining rules that need to be enforced by Tendermint, the consensus algorithm adopted in CometBFT,
 so the properties above holds, we introduce the following definition:
 
 - median of a Commit is equal to the median of `Vote.Time` fields of the `Vote` messages,

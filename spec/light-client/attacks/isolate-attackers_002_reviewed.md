@@ -11,7 +11,7 @@ As Tendermint consensus and light client verification is safe under the assumpti
 In the case of an [attack][node-based-attack-characterization], the lightclient [attack detection mechanism][detection] computes data, so called evidence [[LC-DATA-EVIDENCE.1]][LC-DATA-EVIDENCE-link], that can be used
 
 - to proof that there has been attack [[TMBC-LC-EVIDENCE-DATA.1]][TMBC-LC-EVIDENCE-DATA-link] and
-- as basis to find the actual nodes that deviated from the Tendermint protocol.
+- as basis to find the actual nodes that deviated from the Tendermint algorithm.
 
 This specification considers how a full node in a CometBFT blockchain can isolate a set of attackers that launched the attack. The set should satisfy
 
@@ -20,7 +20,7 @@ This specification considers how a full node in a CometBFT blockchain can isolat
 
 # Outline
 
-After providing the [problem statement](#Part-I---Basics-and-Definition-of-the-Problem), we specify the [isolator function](#Part-II---Protocol) and close with the discussion about its [correctness](#Part-III---Completeness) which is based on computer-aided analysis of Tendermint Consensus.
+After providing the [problem statement](#Part-I---Basics-and-Definition-of-the-Problem), we specify the [isolator function](#Part-II---Protocol) and close with the discussion about its [correctness](#Part-III---Completeness) which is based on computer-aided analysis of Tendermint consensus algorithm.
 
 # Part I - Basics and Definition of the Problem
 
@@ -55,7 +55,7 @@ When an output is generated it satisfies the following properties:
     - Validators in `ev.ConflictingBlock.Commit` represent more than 1/3 of the voting power in `bc[ev.CommonHeight].NextValidators`
 - Then: The output is a set of validators in `bc[CommonHeight].NextValidators` that
     - represent more than 1/3 of the voting power in `bc[ev.commonHeight].NextValidators`
-    - signed Tendermint consensus messages for height `ev.ConflictingBlock.Header.Height` by violating the Tendermint consensus protocol.
+    - signed Tendermint consensus messages for height `ev.ConflictingBlock.Header.Height` by violating the Tendermint consensus algorithm.
 - Else: the empty set.
 
 # Part II - Protocol
@@ -129,7 +129,7 @@ func violatesTMValidity(ref Header, ev Header) boolean
 ```
 
 - Implementation remarks
-    - checks whether the evidence header `ev` violates the validity property of Tendermint Consensus, by checking against a reference header
+    - checks whether the evidence header `ev` violates the validity property of Tendermint consensus algorithm, by checking against a reference header
 - Expected precondition
     - `ref.Height == ev.Height`
 - Expected postcondition

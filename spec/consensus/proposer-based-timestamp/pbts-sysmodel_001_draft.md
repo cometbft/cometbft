@@ -18,7 +18,8 @@ There exists a system parameter `PRECISION` such that for any two correct valida
 
 ### Message Delays
 
-We do not want to interfere with the Tendermint timing assumptions. We will postulate a timing restriction, which, if satisfied, ensures that liveness is preserved.
+We do not want to interfere with the timing assumptions of Tendermint, CometBFT's consensus algorithm.
+We will postulate a timing restriction, which, if satisfied, ensures that liveness is preserved.
 
 In general the local clock may drift from the global time. (It may progress faster, e.g., one second of clock time might take 1.005 seconds of real-time). As a result the local clock and the global clock may be measured in different time units. Usually, the message delay is measured in global clock time units. To estimate the correct local timeout precisely, we would need to estimate the clock time duration of a message delay taking into account the clock drift. For simplicity we ignore this, and directly postulate the message delay assumption in terms of local time.
 

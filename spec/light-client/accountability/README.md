@@ -9,7 +9,7 @@ parent:
 
 ## Problem Statement
 
-Tendermint consensus guarantees the following specifications for all heights:
+Tendermint consensus algorithm guarantees the following specifications for all heights:
 
 * agreement -- no two correct full nodes decide differently.
 * validity -- the decided block satisfies the predefined predicate *valid()*.

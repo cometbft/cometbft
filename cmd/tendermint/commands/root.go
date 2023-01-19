@@ -28,7 +28,7 @@ func registerFlagsRootCmd(cmd *cobra.Command) {
 }
 
 // ParseConfig retrieves the default environment configuration,
-// sets up the Tendermint root and ensures that the root exists
+// sets up the CometBFT root and ensures that the root exists
 func ParseConfig(cmd *cobra.Command) (*cfg.Config, error) {
 	conf := cfg.DefaultConfig()
 	err := viper.Unmarshal(conf)
@@ -56,9 +56,9 @@ func ParseConfig(cmd *cobra.Command) (*cfg.Config, error) {
 	return conf, nil
 }
 
-// RootCmd is the root command for Tendermint core.
+// RootCmd is the root command for CometBFT core.
 var RootCmd = &cobra.Command{
-	Use:   "tendermint",
+	Use:   "cometbft",
 	Short: "BFT state machine replication for applications in any programming languages",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
 		if cmd.Name() == VersionCmd.Name() {

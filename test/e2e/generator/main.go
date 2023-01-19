@@ -54,7 +54,7 @@ func NewCLI() *CLI {
 
 	cli.root.PersistentFlags().StringP("dir", "d", "", "Output directory for manifests")
 	_ = cli.root.MarkPersistentFlagRequired("dir")
-	cli.root.PersistentFlags().StringP("multi-version", "m", "", "Comma-separated list of versions of Tendermint to test in the generated testnets, "+
+	cli.root.PersistentFlags().StringP("multi-version", "m", "", "Comma-separated list of versions of CometBFT to test in the generated testnets, "+
 		"or empty to only use this branch's version")
 	cli.root.PersistentFlags().IntP("groups", "g", 0, "Number of groups")
 

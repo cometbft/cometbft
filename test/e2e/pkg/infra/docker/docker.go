@@ -72,7 +72,7 @@ services:
     labels:
       e2e: true
     container_name: {{ .Name }}
-    image: tendermint/e2e-node:{{ .Version }}
+    image: cometbft/e2e-node:{{ .Version }}
 {{- if eq .ABCIProtocol "builtin" }}
     entrypoint: /usr/bin/entrypoint-builtin
 {{- else if .Misbehaviors }}
@@ -85,7 +85,7 @@ services:
     - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657
     - 6060
     volumes:
-    - ./{{ .Name }}:/tendermint
+    - ./{{ .Name }}:/cometbft
     networks:
       {{ $.Name }}:
         ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .IP }}

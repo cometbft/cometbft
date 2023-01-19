@@ -18,7 +18,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]
 then
 		docker build \
  			--build-arg GO_MODULES_TOKEN=${GO_MODULES_TOKEN} \
- 			-t "tendermint/tendermint" \
- 			-t "tendermint/tendermint:$TAG" \
- 			-t "tendermint/tendermint:$TAG_NO_PATCH" .
+ 			-t "cometbft/cometbft" \
+ 			-t "cometbft/cometbft:$TAG" \
+ 			-t "cometbft/cometbft:$TAG_NO_PATCH" .
 fi

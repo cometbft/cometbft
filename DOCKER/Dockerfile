@@ -2,6 +2,10 @@
 # hopefully current, go version.
 ARG GOLANG_BASE_IMAGE=golang:1.18-alpine
 
+# TODO(thane): Remove once we publish the cometbft-db repository.
+ENV GOPRIVATE=github.com/cometbft/cometbft-db
+ARG GO_MODULES_TOKEN
+
 # stage 1 Generate CometBFT Binary
 FROM --platform=$BUILDPLATFORM $GOLANG_BASE_IMAGE as builder
 RUN apk update && \
@@ -9,6 +13,11 @@ RUN apk update && \
     apk --no-cache add make
 COPY / /cometbft
 WORKDIR /cometbft
+
+# TODO(thane): Remove once we publish the cometbft-db repository.
+RUN git config \
+	--global url.https://${GO_MODULES_TOKEN}@github.com/.insteadOf https://github.com/
+
 RUN TARGETPLATFORM=$TARGETPLATFORM make build-linux
 
 # stage 2

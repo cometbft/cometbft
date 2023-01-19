@@ -5,7 +5,8 @@ import (
 	"fmt"
 
 	"github.com/cosmos/gogoproto/proto"
-	dbm "github.com/tendermint/tm-db"
+
+	dbm "github.com/cometbft/cometbft-db"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	cmtmath "github.com/tendermint/tendermint/libs/math"
@@ -76,7 +77,7 @@ type Store interface {
 	Close() error
 }
 
-// dbStore wraps a db (github.com/tendermint/tm-db)
+// dbStore wraps a db (github.com/cometbft/cometbft-db)
 type dbStore struct {
 	db dbm.DB
 
@@ -388,7 +389,6 @@ func (store dbStore) LoadABCIResponses(height int64) (*cmtstate.ABCIResponses, e
 		return nil, err
 	}
 	if len(buf) == 0 {
-
 		return nil, ErrNoABCIResponsesForHeight{height}
 	}
 

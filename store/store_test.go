@@ -13,7 +13,8 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	dbm "github.com/tendermint/tm-db"
+
+	dbm "github.com/cometbft/cometbft-db"
 
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/internal/test"
@@ -60,7 +61,6 @@ func makeStateAndBlockStore(logger log.Logger) (sm.State, *BlockStore, cleanupFu
 }
 
 func TestLoadBlockStoreState(t *testing.T) {
-
 	type blockStoreTest struct {
 		testName string
 		bss      *cmtstore.BlockStoreState
@@ -68,8 +68,10 @@ func TestLoadBlockStoreState(t *testing.T) {
 	}
 
 	testCases := []blockStoreTest{
-		{"success", &cmtstore.BlockStoreState{Base: 100, Height: 1000},
-			cmtstore.BlockStoreState{Base: 100, Height: 1000}},
+		{
+			"success", &cmtstore.BlockStoreState{Base: 100, Height: 1000},
+			cmtstore.BlockStoreState{Base: 100, Height: 1000},
+		},
 		{"empty", &cmtstore.BlockStoreState{}, cmtstore.BlockStoreState{}},
 		{"no base", &cmtstore.BlockStoreState{Height: 1000}, cmtstore.BlockStoreState{Base: 1, Height: 1000}},
 	}
@@ -223,7 +225,8 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 					Height:          5,
 					ChainID:         "block_test",
 					Time:            cmttime.Now(),
-					ProposerAddress: cmtrand.Bytes(crypto.AddressSize)},
+					ProposerAddress: cmtrand.Bytes(crypto.AddressSize),
+				},
 				makeTestCommit(5, cmttime.Now()),
 			),
 			parts:      validPartSet,
@@ -325,8 +328,10 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 				require.NoError(t, err)
 			}
 			bCommit := bs.LoadBlockCommit(commitHeight)
-			return &quad{block: bBlock, seenCommit: bSeenCommit, commit: bCommit,
-				meta: bBlockMeta}, nil
+			return &quad{
+				block: bBlock, seenCommit: bSeenCommit, commit: bCommit,
+				meta: bBlockMeta,
+			}, nil
 		})
 
 		if subStr := tuple.wantPanic; subStr != "" {
@@ -550,7 +555,9 @@ func TestLoadBlockMeta(t *testing.T) {
 	// 3. A good blockMeta serialized and saved to the DB should be retrievable
 	meta := &types.BlockMeta{Header: types.Header{
 		Version: cmtversion.Consensus{
-			Block: version.BlockProtocol, App: 0}, Height: 1, ProposerAddress: cmtrand.Bytes(crypto.AddressSize)}}
+			Block: version.BlockProtocol, App: 0,
+		}, Height: 1, ProposerAddress: cmtrand.Bytes(crypto.AddressSize),
+	}}
 	pbm := meta.ToProto()
 	err = db.Set(calcBlockMetaKey(height), mustEncode(pbm))
 	require.NoError(t, err)

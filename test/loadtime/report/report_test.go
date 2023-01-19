@@ -4,10 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/cometbft/cometbft/test/loadtime/payload"
 	"github.com/cometbft/cometbft/test/loadtime/report"
 	"github.com/cometbft/cometbft/types"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

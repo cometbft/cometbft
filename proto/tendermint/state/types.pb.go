@@ -5,13 +5,13 @@ package state
 
 import (
 	fmt "fmt"
+	types "github.com/cometbft/cometbft/abci/types"
+	types1 "github.com/cometbft/cometbft/proto/tendermint/types"
+	version "github.com/cometbft/cometbft/proto/tendermint/version"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	_ "github.com/cosmos/gogoproto/types"
 	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
-	types "github.com/cometbft/cometbft/abci/types"
-	types1 "github.com/cometbft/cometbft/proto/tendermint/types"
-	version "github.com/cometbft/cometbft/proto/tendermint/version"
 	io "io"
 	math "math"
 	math_bits "math/bits"

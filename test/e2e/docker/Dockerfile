@@ -4,8 +4,8 @@
 FROM golang:1.18
 
 # TODO(thane): Remove once we publish the cometbft-db repository.
- ENV GOPRIVATE=github.com/cometbft/cometbft-db
- ARG GO_MODULES_TOKEN
+ENV GOPRIVATE=github.com/cometbft/cometbft-db
+ARG GO_MODULES_TOKEN
 
 RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
 RUN apt-get -qq install -y libleveldb-dev librocksdb-dev >/dev/null

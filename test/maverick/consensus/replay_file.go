@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
 	cfg "github.com/tendermint/tendermint/config"
 	tmcon "github.com/tendermint/tendermint/consensus"

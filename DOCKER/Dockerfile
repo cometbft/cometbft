@@ -9,6 +9,11 @@ RUN make build-linux
 
 # stage 2
 FROM golang:1.18-alpine
+
+# TODO(thane): Remove once we publish the cometbft-db repository.
+ENV GOPRIVATE=github.com/cometbft/cometbft-db
+ARG GO_MODULES_TOKEN
+
 LABEL maintainer="hello@tendermint.com"
 
 # Tendermint will be looking for the genesis file in /tendermint/config/genesis.json
@@ -17,6 +22,10 @@ LABEL maintainer="hello@tendermint.com"
 #
 # The /tendermint/data dir is used by tendermint to store state.
 ENV TMHOME /tendermint
+
+# TODO(thane): Remove once we publish the cometbft-db repository.
+RUN git config \
+	--global url.https://${GO_MODULES_TOKEN}@github.com/.insteadOf https://github.com/
 
 # OS environment setup
 # Set user right away for determinism, create directory for persistence and give our user ownership

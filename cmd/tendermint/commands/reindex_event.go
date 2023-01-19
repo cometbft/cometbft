@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	dbm "github.com/cometbft/cometbft-db"
 	"github.com/spf13/cobra"
-	dbm "github.com/tendermint/tm-db"
 
 	abcitypes "github.com/tendermint/tendermint/abci/types"
 	tmcfg "github.com/tendermint/tendermint/config"

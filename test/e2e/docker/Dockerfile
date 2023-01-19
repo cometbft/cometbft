@@ -15,8 +15,7 @@ ENV COMETBFT_BUILD_OPTIONS badgerdb,boltdb,cleveldb,rocksdb
 WORKDIR /src/cometbft
 
 # TODO(thane): Remove once we publish the cometbft-db repository.
-RUN git config \
- 	--global url.https://${GO_MODULES_TOKEN}@github.com/.insteadOf https://github.com/
+RUN git config --global url.https://${GO_MODULES_TOKEN}@github.com/.insteadOf https://github.com/
 
 # Fetch dependencies separately (for layer caching)
 COPY go.mod go.sum ./

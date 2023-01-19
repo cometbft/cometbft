@@ -24,7 +24,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/p2p"
 	p2pmocks "github.com/tendermint/tendermint/p2p/mocks"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	sm "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/types"
 )
@@ -355,7 +355,7 @@ func exampleVote(t byte) *types.Vote {
 	}
 
 	return &types.Vote{
-		Type:      tmproto.SignedMsgType(t),
+		Type:      cmtproto.SignedMsgType(t),
 		Height:    3,
 		Round:     2,
 		Timestamp: stamp,
@@ -389,7 +389,7 @@ func TestLegacyReactorReceiveBasic(t *testing.T) {
 
 	reactor.InitPeer(peer)
 	reactor.AddPeer(peer)
-	e := &tmproto.EvidenceList{}
+	e := &cmtproto.EvidenceList{}
 	msg, err := proto.Marshal(e)
 	assert.NoError(t, err)
 
@@ -426,14 +426,14 @@ func TestEvidenceVectors(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 
-		evi := make([]tmproto.Evidence, len(tc.evidenceList))
+		evi := make([]cmtproto.Evidence, len(tc.evidenceList))
 		for i := 0; i < len(tc.evidenceList); i++ {
 			ev, err := types.EvidenceToProto(tc.evidenceList[i])
 			require.NoError(t, err, tc.testName)
 			evi[i] = *ev
 		}
 
-		epl := tmproto.EvidenceList{
+		epl := cmtproto.EvidenceList{
 			Evidence: evi,
 		}
 

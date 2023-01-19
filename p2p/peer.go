@@ -12,7 +12,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/libs/service"
 
-	tmconn "github.com/tendermint/tendermint/p2p/conn"
+	cmtconn "github.com/tendermint/tendermint/p2p/conn"
 )
 
 //go:generate ../scripts/mockery_generate.sh Peer
@@ -34,7 +34,7 @@ type Peer interface {
 	CloseConn() error // close original connection
 
 	NodeInfo() NodeInfo // peer's info
-	Status() tmconn.ConnectionStatus
+	Status() cmtconn.ConnectionStatus
 	SocketAddr() *NetAddress // actual address of the socket
 
 	// Deprecated: entities looking to act as peers should implement SendEnvelope instead.
@@ -132,7 +132,7 @@ func newPeerConn(
 // ID only exists for SecretConnection.
 // NOTE: Will panic if conn is not *SecretConnection.
 func (pc peerConn) ID() ID {
-	return PubKeyToID(pc.conn.(*tmconn.SecretConnection).RemotePubKey())
+	return PubKeyToID(pc.conn.(*cmtconn.SecretConnection).RemotePubKey())
 }
 
 // Return the IP from the connection RemoteAddr
@@ -164,7 +164,7 @@ type peer struct {
 
 	// raw peerConn and the multiplex connection
 	peerConn
-	mconn *tmconn.MConnection
+	mconn *cmtconn.MConnection
 
 	// peer's node info and the channel it knows about
 	// channels = nodeInfo.Channels
@@ -187,11 +187,11 @@ type PeerOption func(*peer)
 
 func newPeer(
 	pc peerConn,
-	mConfig tmconn.MConnConfig,
+	mConfig cmtconn.MConnConfig,
 	nodeInfo NodeInfo,
 	reactorsByCh map[byte]Reactor,
 	msgTypeByChID map[byte]proto.Message,
-	chDescs []*tmconn.ChannelDescriptor,
+	chDescs []*cmtconn.ChannelDescriptor,
 	onPeerError func(Peer, interface{}),
 	mlc *metricsLabelCache,
 	options ...PeerOption,
@@ -305,7 +305,7 @@ func (p *peer) SocketAddr() *NetAddress {
 }
 
 // Status returns the peer's ConnectionStatus.
-func (p *peer) Status() tmconn.ConnectionStatus {
+func (p *peer) Status() cmtconn.ConnectionStatus {
 	return p.mconn.Status()
 }
 
@@ -504,10 +504,10 @@ func createMConnection(
 	p *peer,
 	reactorsByCh map[byte]Reactor,
 	msgTypeByChID map[byte]proto.Message,
-	chDescs []*tmconn.ChannelDescriptor,
+	chDescs []*cmtconn.ChannelDescriptor,
 	onPeerError func(Peer, interface{}),
-	config tmconn.MConnConfig,
-) *tmconn.MConnection {
+	config cmtconn.MConnConfig,
+) *cmtconn.MConnection {
 
 	onReceive := func(chID byte, msgBytes []byte) {
 		reactor := reactorsByCh[chID]
@@ -549,7 +549,7 @@ func createMConnection(
 		onPeerError(p, r)
 	}
 
-	return tmconn.NewMConnectionWithConfig(
+	return cmtconn.NewMConnectionWithConfig(
 		conn,
 		chDescs,
 		onReceive,

@@ -12,8 +12,8 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 
 	abcitypes "github.com/tendermint/tendermint/abci/types"
-	tmcfg "github.com/tendermint/tendermint/config"
-	prototmstate "github.com/tendermint/tendermint/proto/tendermint/state"
+	cmtcfg "github.com/tendermint/tendermint/config"
+	protocmtstate "github.com/tendermint/tendermint/proto/tendermint/state"
 	blockmocks "github.com/tendermint/tendermint/state/indexer/mocks"
 	"github.com/tendermint/tendermint/state/mocks"
 	txmocks "github.com/tendermint/tendermint/state/txindex/mocks"
@@ -95,7 +95,7 @@ func TestLoadEventSink(t *testing.T) {
 	}
 
 	for idx, tc := range testCases {
-		cfg := tmcfg.TestConfig()
+		cfg := cmtcfg.TestConfig()
 		cfg.TxIndex.Indexer = tc.sinks
 		cfg.TxIndex.PsqlConn = tc.connURL
 		_, _, err := loadEventSinks(cfg)
@@ -108,7 +108,7 @@ func TestLoadEventSink(t *testing.T) {
 }
 
 func TestLoadBlockStore(t *testing.T) {
-	cfg := tmcfg.TestConfig()
+	cfg := cmtcfg.TestConfig()
 	cfg.DBPath = t.TempDir()
 	_, _, err := loadStateAndBlockStore(cfg)
 	require.Error(t, err)
@@ -141,7 +141,7 @@ func TestReIndexEvent(t *testing.T) {
 		On("LoadBlock", height).Return(&types.Block{Data: types.Data{Txs: types.Txs{make(types.Tx, 1)}}})
 
 	dtx := abcitypes.ResponseDeliverTx{}
-	abciResp := &prototmstate.ABCIResponses{
+	abciResp := &protocmtstate.ABCIResponses{
 		DeliverTxs: []*abcitypes.ResponseDeliverTx{&dtx},
 		EndBlock:   &abcitypes.ResponseEndBlock{},
 		BeginBlock: &abcitypes.ResponseBeginBlock{},

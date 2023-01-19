@@ -12,21 +12,21 @@ import (
 
 	"github.com/tendermint/tendermint/crypto/merkle"
 	"github.com/tendermint/tendermint/libs/bits"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
 	"github.com/tendermint/tendermint/p2p"
-	tmcons "github.com/tendermint/tendermint/proto/tendermint/consensus"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtcons "github.com/tendermint/tendermint/proto/tendermint/consensus"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/types"
 )
 
 func TestMsgToProto(t *testing.T) {
 	psh := types.PartSetHeader{
 		Total: 1,
-		Hash:  tmrand.Bytes(32),
+		Hash:  cmtrand.Bytes(32),
 	}
 	pbPsh := psh.ToProto()
 	bi := types.BlockID{
-		Hash:          tmrand.Bytes(32),
+		Hash:          cmtrand.Bytes(32),
 		PartSetHeader: psh,
 	}
 	pbBi := bi.ToProto()
@@ -39,7 +39,7 @@ func TestMsgToProto(t *testing.T) {
 		Proof: merkle.Proof{
 			Total:    1,
 			Index:    1,
-			LeafHash: tmrand.Bytes(32),
+			LeafHash: cmtrand.Bytes(32),
 			Aunts:    [][]byte{},
 		},
 	}
@@ -47,13 +47,13 @@ func TestMsgToProto(t *testing.T) {
 	require.NoError(t, err)
 
 	proposal := types.Proposal{
-		Type:      tmproto.ProposalType,
+		Type:      cmtproto.ProposalType,
 		Height:    1,
 		Round:     1,
 		POLRound:  1,
 		BlockID:   bi,
 		Timestamp: time.Now(),
-		Signature: tmrand.Bytes(20),
+		Signature: cmtrand.Bytes(20),
 	}
 	pbProposal := proposal.ToProto()
 
@@ -71,7 +71,7 @@ func TestMsgToProto(t *testing.T) {
 	testsCases := []struct {
 		testName string
 		msg      Message
-		want     *tmcons.Message
+		want     *cmtcons.Message
 		wantErr  bool
 	}{
 		{"successful NewRoundStepMessage", &NewRoundStepMessage{
@@ -80,13 +80,13 @@ func TestMsgToProto(t *testing.T) {
 			Step:                  1,
 			SecondsSinceStartTime: 1,
 			LastCommitRound:       2,
-		}, (&tmcons.NewRoundStep{
+		}, (&cmtcons.NewRoundStep{
 			Height:                2,
 			Round:                 1,
 			Step:                  1,
 			SecondsSinceStartTime: 1,
 			LastCommitRound:       2,
-		}).Wrap().(*tmcons.Message),
+		}).Wrap().(*cmtcons.Message),
 
 			false},
 
@@ -96,48 +96,48 @@ func TestMsgToProto(t *testing.T) {
 			BlockPartSetHeader: psh,
 			BlockParts:         bits,
 			IsCommit:           false,
-		}, (&tmcons.NewValidBlock{
+		}, (&cmtcons.NewValidBlock{
 			Height:             1,
 			Round:              1,
 			BlockPartSetHeader: pbPsh,
 			BlockParts:         pbBits,
 			IsCommit:           false,
-		}).Wrap().(*tmcons.Message),
+		}).Wrap().(*cmtcons.Message),
 
 			false},
 		{"successful BlockPartMessage", &BlockPartMessage{
 			Height: 100,
 			Round:  1,
 			Part:   &parts,
-		}, (&tmcons.BlockPart{
+		}, (&cmtcons.BlockPart{
 			Height: 100,
 			Round:  1,
 			Part:   *pbParts,
-		}).Wrap().(*tmcons.Message),
+		}).Wrap().(*cmtcons.Message),
 
 			false},
 		{"successful ProposalPOLMessage", &ProposalPOLMessage{
 			Height:           1,
 			ProposalPOLRound: 1,
 			ProposalPOL:      bits,
-		}, (&tmcons.ProposalPOL{
+		}, (&cmtcons.ProposalPOL{
 			Height:           1,
 			ProposalPolRound: 1,
 			ProposalPol:      *pbBits,
-		}).Wrap().(*tmcons.Message),
+		}).Wrap().(*cmtcons.Message),
 			false},
 		{"successful ProposalMessage", &ProposalMessage{
 			Proposal: &proposal,
-		}, (&tmcons.Proposal{
+		}, (&cmtcons.Proposal{
 			Proposal: *pbProposal,
-		}).Wrap().(*tmcons.Message),
+		}).Wrap().(*cmtcons.Message),
 
 			false},
 		{"successful VoteMessage", &VoteMessage{
 			Vote: vote,
-		}, (&tmcons.Vote{
+		}, (&cmtcons.Vote{
 			Vote: pbVote,
-		}).Wrap().(*tmcons.Message),
+		}).Wrap().(*cmtcons.Message),
 
 			false},
 		{"successful VoteSetMaj23", &VoteSetMaj23Message{
@@ -145,12 +145,12 @@ func TestMsgToProto(t *testing.T) {
 			Round:   1,
 			Type:    1,
 			BlockID: bi,
-		}, (&tmcons.VoteSetMaj23{
+		}, (&cmtcons.VoteSetMaj23{
 			Height:  1,
 			Round:   1,
 			Type:    1,
 			BlockID: pbBi,
-		}).Wrap().(*tmcons.Message),
+		}).Wrap().(*cmtcons.Message),
 
 			false},
 		{"successful VoteSetBits", &VoteSetBitsMessage{
@@ -159,16 +159,16 @@ func TestMsgToProto(t *testing.T) {
 			Type:    1,
 			BlockID: bi,
 			Votes:   bits,
-		}, (&tmcons.VoteSetBits{
+		}, (&cmtcons.VoteSetBits{
 			Height:  1,
 			Round:   1,
 			Type:    1,
 			BlockID: pbBi,
 			Votes:   *pbBits,
-		}).Wrap().(*tmcons.Message),
+		}).Wrap().(*cmtcons.Message),
 
 			false},
-		{"failure", nil, &tmcons.Message{}, true},
+		{"failure", nil, &cmtcons.Message{}, true},
 	}
 	for _, tt := range testsCases {
 		tt := tt
@@ -201,7 +201,7 @@ func TestWALMsgProto(t *testing.T) {
 		Proof: merkle.Proof{
 			Total:    1,
 			Index:    1,
-			LeafHash: tmrand.Bytes(32),
+			LeafHash: cmtrand.Bytes(32),
 			Aunts:    [][]byte{},
 		},
 	}
@@ -211,16 +211,16 @@ func TestWALMsgProto(t *testing.T) {
 	testsCases := []struct {
 		testName string
 		msg      WALMessage
-		want     *tmcons.WALMessage
+		want     *cmtcons.WALMessage
 		wantErr  bool
 	}{
 		{"successful EventDataRoundState", types.EventDataRoundState{
 			Height: 2,
 			Round:  1,
 			Step:   "ronies",
-		}, &tmcons.WALMessage{
-			Sum: &tmcons.WALMessage_EventDataRoundState{
-				EventDataRoundState: &tmproto.EventDataRoundState{
+		}, &cmtcons.WALMessage{
+			Sum: &cmtcons.WALMessage_EventDataRoundState{
+				EventDataRoundState: &cmtproto.EventDataRoundState{
 					Height: 2,
 					Round:  1,
 					Step:   "ronies",
@@ -234,12 +234,12 @@ func TestWALMsgProto(t *testing.T) {
 				Part:   &parts,
 			},
 			PeerID: p2p.ID("string"),
-		}, &tmcons.WALMessage{
-			Sum: &tmcons.WALMessage_MsgInfo{
-				MsgInfo: &tmcons.MsgInfo{
-					Msg: tmcons.Message{
-						Sum: &tmcons.Message_BlockPart{
-							BlockPart: &tmcons.BlockPart{
+		}, &cmtcons.WALMessage{
+			Sum: &cmtcons.WALMessage_MsgInfo{
+				MsgInfo: &cmtcons.MsgInfo{
+					Msg: cmtcons.Message{
+						Sum: &cmtcons.Message_BlockPart{
+							BlockPart: &cmtcons.BlockPart{
 								Height: 100,
 								Round:  1,
 								Part:   *pbParts,
@@ -255,9 +255,9 @@ func TestWALMsgProto(t *testing.T) {
 			Height:   1,
 			Round:    1,
 			Step:     1,
-		}, &tmcons.WALMessage{
-			Sum: &tmcons.WALMessage_TimeoutInfo{
-				TimeoutInfo: &tmcons.TimeoutInfo{
+		}, &cmtcons.WALMessage{
+			Sum: &cmtcons.WALMessage_TimeoutInfo{
+				TimeoutInfo: &cmtcons.TimeoutInfo{
 					Duration: time.Duration(100),
 					Height:   1,
 					Round:    1,
@@ -267,14 +267,14 @@ func TestWALMsgProto(t *testing.T) {
 		}, false},
 		{"successful EndHeightMessage", EndHeightMessage{
 			Height: 1,
-		}, &tmcons.WALMessage{
-			Sum: &tmcons.WALMessage_EndHeight{
-				EndHeight: &tmcons.EndHeight{
+		}, &cmtcons.WALMessage{
+			Sum: &cmtcons.WALMessage_EndHeight{
+				EndHeight: &cmtcons.EndHeight{
 					Height: 1,
 				},
 			},
 		}, false},
-		{"failure", nil, &tmcons.WALMessage{}, true},
+		{"failure", nil, &cmtcons.WALMessage{}, true},
 	}
 	for _, tt := range testsCases {
 		tt := tt
@@ -329,7 +329,7 @@ func TestConsMsgsVectors(t *testing.T) {
 	require.NoError(t, err)
 
 	proposal := types.Proposal{
-		Type:      tmproto.ProposalType,
+		Type:      cmtproto.ProposalType,
 		Height:    1,
 		Round:     1,
 		POLRound:  1,
@@ -345,7 +345,7 @@ func TestConsMsgsVectors(t *testing.T) {
 		Height:           1,
 		Round:            0,
 		Timestamp:        date,
-		Type:             tmproto.PrecommitType,
+		Type:             cmtproto.PrecommitType,
 		BlockID:          bi,
 	}
 	vpb := v.ToProto()
@@ -355,47 +355,47 @@ func TestConsMsgsVectors(t *testing.T) {
 		cMsg     proto.Message
 		expBytes string
 	}{
-		{"NewRoundStep", &tmcons.Message{Sum: &tmcons.Message_NewRoundStep{NewRoundStep: &tmcons.NewRoundStep{
+		{"NewRoundStep", &cmtcons.Message{Sum: &cmtcons.Message_NewRoundStep{NewRoundStep: &cmtcons.NewRoundStep{
 			Height:                1,
 			Round:                 1,
 			Step:                  1,
 			SecondsSinceStartTime: 1,
 			LastCommitRound:       1,
 		}}}, "0a0a08011001180120012801"},
-		{"NewRoundStep Max", &tmcons.Message{Sum: &tmcons.Message_NewRoundStep{NewRoundStep: &tmcons.NewRoundStep{
+		{"NewRoundStep Max", &cmtcons.Message{Sum: &cmtcons.Message_NewRoundStep{NewRoundStep: &cmtcons.NewRoundStep{
 			Height:                math.MaxInt64,
 			Round:                 math.MaxInt32,
 			Step:                  math.MaxUint32,
 			SecondsSinceStartTime: math.MaxInt64,
 			LastCommitRound:       math.MaxInt32,
 		}}}, "0a2608ffffffffffffffff7f10ffffffff0718ffffffff0f20ffffffffffffffff7f28ffffffff07"},
-		{"NewValidBlock", &tmcons.Message{Sum: &tmcons.Message_NewValidBlock{
-			NewValidBlock: &tmcons.NewValidBlock{
+		{"NewValidBlock", &cmtcons.Message{Sum: &cmtcons.Message_NewValidBlock{
+			NewValidBlock: &cmtcons.NewValidBlock{
 				Height: 1, Round: 1, BlockPartSetHeader: pbPsh, BlockParts: pbBits, IsCommit: false}}},
 			"1231080110011a24080112206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d22050801120100"},
-		{"Proposal", &tmcons.Message{Sum: &tmcons.Message_Proposal{Proposal: &tmcons.Proposal{Proposal: *pbProposal}}},
+		{"Proposal", &cmtcons.Message{Sum: &cmtcons.Message_Proposal{Proposal: &cmtcons.Proposal{Proposal: *pbProposal}}},
 			"1a720a7008201001180120012a480a206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d1224080112206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d320608c0b89fdc053a146164645f6d6f72655f6578636c616d6174696f6e"},
-		{"ProposalPol", &tmcons.Message{Sum: &tmcons.Message_ProposalPol{
-			ProposalPol: &tmcons.ProposalPOL{Height: 1, ProposalPolRound: 1}}},
+		{"ProposalPol", &cmtcons.Message{Sum: &cmtcons.Message_ProposalPol{
+			ProposalPol: &cmtcons.ProposalPOL{Height: 1, ProposalPolRound: 1}}},
 			"2206080110011a00"},
-		{"BlockPart", &tmcons.Message{Sum: &tmcons.Message_BlockPart{
-			BlockPart: &tmcons.BlockPart{Height: 1, Round: 1, Part: *pbParts}}},
+		{"BlockPart", &cmtcons.Message{Sum: &cmtcons.Message_BlockPart{
+			BlockPart: &cmtcons.BlockPart{Height: 1, Round: 1, Part: *pbParts}}},
 			"2a36080110011a3008011204746573741a26080110011a206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d"},
-		{"Vote", &tmcons.Message{Sum: &tmcons.Message_Vote{
-			Vote: &tmcons.Vote{Vote: vpb}}},
+		{"Vote", &cmtcons.Message{Sum: &cmtcons.Message_Vote{
+			Vote: &cmtcons.Vote{Vote: vpb}}},
 			"32700a6e0802100122480a206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d1224080112206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d2a0608c0b89fdc0532146164645f6d6f72655f6578636c616d6174696f6e3801"},
-		{"HasVote", &tmcons.Message{Sum: &tmcons.Message_HasVote{
-			HasVote: &tmcons.HasVote{Height: 1, Round: 1, Type: tmproto.PrevoteType, Index: 1}}},
+		{"HasVote", &cmtcons.Message{Sum: &cmtcons.Message_HasVote{
+			HasVote: &cmtcons.HasVote{Height: 1, Round: 1, Type: cmtproto.PrevoteType, Index: 1}}},
 			"3a080801100118012001"},
-		{"HasVote", &tmcons.Message{Sum: &tmcons.Message_HasVote{
-			HasVote: &tmcons.HasVote{Height: math.MaxInt64, Round: math.MaxInt32,
-				Type: tmproto.PrevoteType, Index: math.MaxInt32}}},
+		{"HasVote", &cmtcons.Message{Sum: &cmtcons.Message_HasVote{
+			HasVote: &cmtcons.HasVote{Height: math.MaxInt64, Round: math.MaxInt32,
+				Type: cmtproto.PrevoteType, Index: math.MaxInt32}}},
 			"3a1808ffffffffffffffff7f10ffffffff07180120ffffffff07"},
-		{"VoteSetMaj23", &tmcons.Message{Sum: &tmcons.Message_VoteSetMaj23{
-			VoteSetMaj23: &tmcons.VoteSetMaj23{Height: 1, Round: 1, Type: tmproto.PrevoteType, BlockID: pbBi}}},
+		{"VoteSetMaj23", &cmtcons.Message{Sum: &cmtcons.Message_VoteSetMaj23{
+			VoteSetMaj23: &cmtcons.VoteSetMaj23{Height: 1, Round: 1, Type: cmtproto.PrevoteType, BlockID: pbBi}}},
 			"425008011001180122480a206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d1224080112206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d"},
-		{"VoteSetBits", &tmcons.Message{Sum: &tmcons.Message_VoteSetBits{
-			VoteSetBits: &tmcons.VoteSetBits{Height: 1, Round: 1, Type: tmproto.PrevoteType, BlockID: pbBi, Votes: *pbBits}}},
+		{"VoteSetBits", &cmtcons.Message{Sum: &cmtcons.Message_VoteSetBits{
+			VoteSetBits: &cmtcons.VoteSetBits{Height: 1, Round: 1, Type: cmtproto.PrevoteType, BlockID: pbBi, Votes: *pbBits}}},
 			"4a5708011001180122480a206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d1224080112206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d2a050801120100"},
 	}
 

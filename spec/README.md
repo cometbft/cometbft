@@ -14,7 +14,7 @@ and how they are communicated over the network.
 
 If you find discrepancies between the spec and the code that
 do not have an associated issue or pull request on github,
-please submit them to our [bug bounty](https://tendermint.com/security)!
+please submit them to our [bug bounty](https://cometbft.com/security)!
 
 ## Contents
 

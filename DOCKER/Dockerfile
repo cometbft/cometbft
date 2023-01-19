@@ -25,7 +25,7 @@ LABEL maintainer="hello@informal.systems"
 ENV TMHOME /cometbft
 
 # TODO(thane): Remove once we publish the cometbft-db repository.
-RUN ["sh", "-c", "git config --global url.https://${GO_MODULES_TOKEN}@github.com/.insteadOf https://github.com/"]
+RUN ["sh", "-c", "apk add git && git config --global url.https://${GO_MODULES_TOKEN}@github.com/.insteadOf https://github.com/"]
 
 # OS environment setup
 # Set user right away for determinism, create directory for persistence and give our user ownership

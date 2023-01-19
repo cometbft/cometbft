@@ -67,13 +67,13 @@ ABCI GRPC server.
 
 ### Socket
 
-The Tendermint Socket Protocol is an asynchronous, raw socket server protocol which provides ordered
+The CometBFT Socket Protocol is an asynchronous, raw socket server protocol which provides ordered
 message passing over Unix or TCP sockets. Messages are serialized using Protobuf3 and length-prefixed
 with an [unsigned varint](https://developers.google.com/protocol-buffers/docs/encoding?csw=1#varints)
 
 If gRPC is not available in your language, or you require higher performance, or
 otherwise enjoy programming, you may implement your own ABCI server using the
-Tendermint Socket Protocol. The first step is still to auto-generate the
+CometBFT Socket Protocol. The first step is still to auto-generate the
 relevant data types and codec in your language using `protoc`, and then you need to
 ensure you handle the unsigned `varint`-based message length encoding scheme
 when reading and writing messages to the socket.

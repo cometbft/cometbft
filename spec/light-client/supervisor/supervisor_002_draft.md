@@ -118,7 +118,7 @@ func CrossCheck(lb LightBlock, witnesses []Provider) error {
     - none
 - Expected precondition
     - *LCInitData* contains either a genesis file of a lightblock
-    - if genesis it passes `ValidateAndComplete()` see [Tendermint](https://informal.systems)
+    - if genesis it passes `ValidateAndComplete()` see [CometBFT](https://informal.systems)
 - Expected postcondition
     - *lightStore* initialized with trusted lightblock. It has either been
       cross-checked (from genesis) or it has initial trust from the

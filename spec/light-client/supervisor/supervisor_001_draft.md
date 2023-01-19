@@ -14,7 +14,7 @@ communicating with full nodes, a so-called primary and several
 so-called witnesses. As some full nodes may be faulty, this
 functionality must be implemented in a fault-tolerant way.
 
-In the Tendermint blockchain, the validator set may change with every
+In a Cosmos blockchain, the validator set may change with every
 new block.  The staking and unbonding mechanism induces a [security
 model](TMBC-FM-2THIRDS-link): starting at time *Time* of the
 [header](TMBC-HEADER-link),
@@ -28,7 +28,7 @@ to a correct primary.
 
 However, if the [security model](TMBC-FM-2THIRDS-link) is violated,
 faulty peers (that have been validators at some point in the past) may
-launch attacks on the Tendermint network, and on the light
+launch attacks on the Cosmos network, and on the light
 client. These attacks as well as an axiomatization of blocks in
 general are defined in [a document that contains the definitions that
 are currently in detection.md](https://informal.systems).
@@ -79,7 +79,7 @@ it assumes certain details of [verification](https://informal.systems) and
 versions yet. This inconsistencies will be addresses over several
 upcoming PRs.
 
-# Part I - Tendermint Blockchain
+# Part I - Cosmos Blockchain
 
 See [verification spec](addLinksWhenDone)
 
@@ -532,7 +532,7 @@ func InitLightClient (initData LCInitData) (LightStore, Error) {
     - none
 - Expected precondition
     - *LCInitData* contains either a genesis file of a lightblock
-    - if genesis it passes `ValidateAndComplete()` see [Tendermint](https://informal.systems)
+    - if genesis it passes `ValidateAndComplete()` see [CometBFT](https://informal.systems)
 - Expected postcondition
     - *lightStore* initialized with trusted lightblock. It has either been
       cross-checked (from genesis) or it has initial trust from the

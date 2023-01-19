@@ -12,11 +12,11 @@ import (
 
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtjson "github.com/tendermint/tendermint/libs/json"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	cmttime "github.com/tendermint/tendermint/types/time"
 )
 
 func TestGenLoadValidator(t *testing.T) {
@@ -53,8 +53,8 @@ func TestResetValidator(t *testing.T) {
 
 	// test vote
 	height, round := int64(10), int32(1)
-	voteType := tmproto.PrevoteType
-	randBytes := tmrand.Bytes(tmhash.Size)
+	voteType := cmtproto.PrevoteType
+	randBytes := cmtrand.Bytes(tmhash.Size)
 	blockID := types.BlockID{Hash: randBytes, PartSetHeader: types.PartSetHeader{}}
 	vote := newVote(privVal.Key.Address, 0, height, round, voteType, blockID)
 	err = privVal.SignVote("mychainid", vote.ToProto())
@@ -102,7 +102,7 @@ func TestUnmarshalValidatorState(t *testing.T) {
 	}`
 
 	val := FilePVLastSignState{}
-	err := tmjson.Unmarshal([]byte(serialized), &val)
+	err := cmtjson.Unmarshal([]byte(serialized), &val)
 	require.Nil(err, "%+v", err)
 
 	// make sure the values match
@@ -111,7 +111,7 @@ func TestUnmarshalValidatorState(t *testing.T) {
 	assert.EqualValues(val.Step, 1)
 
 	// export it and make sure it is the same
-	out, err := tmjson.Marshal(val)
+	out, err := cmtjson.Marshal(val)
 	require.Nil(err, "%+v", err)
 	assert.JSONEq(serialized, string(out))
 }
@@ -141,7 +141,7 @@ func TestUnmarshalValidatorKey(t *testing.T) {
 }`, addr, pubB64, privB64)
 
 	val := FilePVKey{}
-	err := tmjson.Unmarshal([]byte(serialized), &val)
+	err := cmtjson.Unmarshal([]byte(serialized), &val)
 	require.Nil(err, "%+v", err)
 
 	// make sure the values match
@@ -150,7 +150,7 @@ func TestUnmarshalValidatorKey(t *testing.T) {
 	assert.EqualValues(privKey, val.PrivKey)
 
 	// export it and make sure it is the same
-	out, err := tmjson.Marshal(val)
+	out, err := cmtjson.Marshal(val)
 	require.Nil(err, "%+v", err)
 	assert.JSONEq(serialized, string(out))
 }
@@ -165,8 +165,8 @@ func TestSignVote(t *testing.T) {
 
 	privVal := GenFilePV(tempKeyFile.Name(), tempStateFile.Name())
 
-	randbytes := tmrand.Bytes(tmhash.Size)
-	randbytes2 := tmrand.Bytes(tmhash.Size)
+	randbytes := cmtrand.Bytes(tmhash.Size)
+	randbytes2 := cmtrand.Bytes(tmhash.Size)
 
 	block1 := types.BlockID{
 		Hash:          randbytes,
@@ -178,7 +178,7 @@ func TestSignVote(t *testing.T) {
 	}
 
 	height, round := int64(10), int32(1)
-	voteType := tmproto.PrevoteType
+	voteType := cmtproto.PrevoteType
 
 	// sign a vote for first time
 	vote := newVote(privVal.Key.Address, 0, height, round, voteType, block1)
@@ -222,8 +222,8 @@ func TestSignProposal(t *testing.T) {
 
 	privVal := GenFilePV(tempKeyFile.Name(), tempStateFile.Name())
 
-	randbytes := tmrand.Bytes(tmhash.Size)
-	randbytes2 := tmrand.Bytes(tmhash.Size)
+	randbytes := cmtrand.Bytes(tmhash.Size)
+	randbytes2 := cmtrand.Bytes(tmhash.Size)
 
 	block1 := types.BlockID{
 		Hash:          randbytes,
@@ -273,7 +273,7 @@ func TestDifferByTimestamp(t *testing.T) {
 	require.Nil(t, err)
 
 	privVal := GenFilePV(tempKeyFile.Name(), tempStateFile.Name())
-	randbytes := tmrand.Bytes(tmhash.Size)
+	randbytes := cmtrand.Bytes(tmhash.Size)
 	block1 := types.BlockID{Hash: randbytes, PartSetHeader: types.PartSetHeader{Total: 5, Hash: randbytes}}
 	height, round := int64(10), int32(1)
 	chainID := "mychainid"
@@ -303,7 +303,7 @@ func TestDifferByTimestamp(t *testing.T) {
 
 	// test vote
 	{
-		voteType := tmproto.PrevoteType
+		voteType := cmtproto.PrevoteType
 		blockID := types.BlockID{Hash: randbytes, PartSetHeader: types.PartSetHeader{}}
 		vote := newVote(privVal.Key.Address, 0, height, round, voteType, blockID)
 		v := vote.ToProto()
@@ -328,7 +328,7 @@ func TestDifferByTimestamp(t *testing.T) {
 }
 
 func newVote(addr types.Address, idx int32, height int64, round int32,
-	typ tmproto.SignedMsgType, blockID types.BlockID,
+	typ cmtproto.SignedMsgType, blockID types.BlockID,
 ) *types.Vote {
 	return &types.Vote{
 		ValidatorAddress: addr,
@@ -336,7 +336,7 @@ func newVote(addr types.Address, idx int32, height int64, round int32,
 		Height:           height,
 		Round:            round,
 		Type:             typ,
-		Timestamp:        tmtime.Now(),
+		Timestamp:        cmttime.Now(),
 		BlockID:          blockID,
 	}
 }
@@ -346,6 +346,6 @@ func newProposal(height int64, round int32, blockID types.BlockID) *types.Propos
 		Height:    height,
 		Round:     round,
 		BlockID:   blockID,
-		Timestamp: tmtime.Now(),
+		Timestamp: cmttime.Now(),
 	}
 }

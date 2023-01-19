@@ -6,15 +6,15 @@ import (
 
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
-	tmpubsub "github.com/tendermint/tendermint/libs/pubsub"
+	cmtpubsub "github.com/tendermint/tendermint/libs/pubsub"
 	"github.com/tendermint/tendermint/libs/service"
 )
 
 const defaultCapacity = 0
 
 type EventBusSubscriber interface {
-	Subscribe(ctx context.Context, subscriber string, query tmpubsub.Query, outCapacity ...int) (Subscription, error)
-	Unsubscribe(ctx context.Context, subscriber string, query tmpubsub.Query) error
+	Subscribe(ctx context.Context, subscriber string, query cmtpubsub.Query, outCapacity ...int) (Subscription, error)
+	Unsubscribe(ctx context.Context, subscriber string, query cmtpubsub.Query) error
 	UnsubscribeAll(ctx context.Context, subscriber string) error
 
 	NumClients() int
@@ -22,7 +22,7 @@ type EventBusSubscriber interface {
 }
 
 type Subscription interface {
-	Out() <-chan tmpubsub.Message
+	Out() <-chan cmtpubsub.Message
 	Cancelled() <-chan struct{}
 	Err() error
 }
@@ -32,7 +32,7 @@ type Subscription interface {
 // EventBus to ensure correct data types.
 type EventBus struct {
 	service.BaseService
-	pubsub *tmpubsub.Server
+	pubsub *cmtpubsub.Server
 }
 
 // NewEventBus returns a new event bus.
@@ -43,7 +43,7 @@ func NewEventBus() *EventBus {
 // NewEventBusWithBufferCapacity returns a new event bus with the given buffer capacity.
 func NewEventBusWithBufferCapacity(cap int) *EventBus {
 	// capacity could be exposed later if needed
-	pubsub := tmpubsub.NewServer(tmpubsub.BufferCapacity(cap))
+	pubsub := cmtpubsub.NewServer(cmtpubsub.BufferCapacity(cap))
 	b := &EventBus{pubsub: pubsub}
 	b.BaseService = *service.NewBaseService(nil, "EventBus", b)
 	return b
@@ -75,7 +75,7 @@ func (b *EventBus) NumClientSubscriptions(clientID string) int {
 func (b *EventBus) Subscribe(
 	ctx context.Context,
 	subscriber string,
-	query tmpubsub.Query,
+	query cmtpubsub.Query,
 	outCapacity ...int,
 ) (Subscription, error) {
 	return b.pubsub.Subscribe(ctx, subscriber, query, outCapacity...)
@@ -86,12 +86,12 @@ func (b *EventBus) Subscribe(
 func (b *EventBus) SubscribeUnbuffered(
 	ctx context.Context,
 	subscriber string,
-	query tmpubsub.Query,
+	query cmtpubsub.Query,
 ) (Subscription, error) {
 	return b.pubsub.SubscribeUnbuffered(ctx, subscriber, query)
 }
 
-func (b *EventBus) Unsubscribe(ctx context.Context, subscriber string, query tmpubsub.Query) error {
+func (b *EventBus) Unsubscribe(ctx context.Context, subscriber string, query cmtpubsub.Query) error {
 	return b.pubsub.Unsubscribe(ctx, subscriber, query)
 }
 
@@ -233,13 +233,13 @@ type NopEventBus struct{}
 func (NopEventBus) Subscribe(
 	ctx context.Context,
 	subscriber string,
-	query tmpubsub.Query,
+	query cmtpubsub.Query,
 	out chan<- interface{},
 ) error {
 	return nil
 }
 
-func (NopEventBus) Unsubscribe(ctx context.Context, subscriber string, query tmpubsub.Query) error {
+func (NopEventBus) Unsubscribe(ctx context.Context, subscriber string, query cmtpubsub.Query) error {
 	return nil
 }
 

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	cmttime "github.com/tendermint/tendermint/types/time"
 )
 
 // ValidateTime does a basic time validation ensuring time does not drift too
@@ -18,7 +18,7 @@ import (
 // Can't use for validating blocks because we may be syncing years worth of history.
 func ValidateTime(t time.Time) error {
 	var (
-		now     = tmtime.Now()
+		now     = cmttime.Now()
 		oneYear = 8766 * time.Hour
 	)
 	if t.Before(now.Add(-oneYear)) || t.After(now.Add(oneYear)) {

@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/tendermint/tendermint/libs/log"
-	tmos "github.com/tendermint/tendermint/libs/os"
+	cmtos "github.com/tendermint/tendermint/libs/os"
 	"github.com/tendermint/tendermint/privval"
 )
 
@@ -94,7 +94,7 @@ func resetAll(dbDir, addrBookFile, privValKeyFile, privValStateFile string, logg
 		logger.Error("Error removing all blockchain history", "dir", dbDir, "err", err)
 	}
 
-	if err := tmos.EnsureDir(dbDir, 0700); err != nil {
+	if err := cmtos.EnsureDir(dbDir, 0700); err != nil {
 		logger.Error("unable to recreate dbDir", "err", err)
 	}
 
@@ -111,7 +111,7 @@ func resetState(dbDir string, logger log.Logger) error {
 	evidence := filepath.Join(dbDir, "evidence.db")
 	txIndex := filepath.Join(dbDir, "tx_index.db")
 
-	if tmos.FileExists(blockdb) {
+	if cmtos.FileExists(blockdb) {
 		if err := os.RemoveAll(blockdb); err == nil {
 			logger.Info("Removed all blockstore.db", "dir", blockdb)
 		} else {
@@ -119,7 +119,7 @@ func resetState(dbDir string, logger log.Logger) error {
 		}
 	}
 
-	if tmos.FileExists(state) {
+	if cmtos.FileExists(state) {
 		if err := os.RemoveAll(state); err == nil {
 			logger.Info("Removed all state.db", "dir", state)
 		} else {
@@ -127,7 +127,7 @@ func resetState(dbDir string, logger log.Logger) error {
 		}
 	}
 
-	if tmos.FileExists(wal) {
+	if cmtos.FileExists(wal) {
 		if err := os.RemoveAll(wal); err == nil {
 			logger.Info("Removed all cs.wal", "dir", wal)
 		} else {
@@ -135,7 +135,7 @@ func resetState(dbDir string, logger log.Logger) error {
 		}
 	}
 
-	if tmos.FileExists(evidence) {
+	if cmtos.FileExists(evidence) {
 		if err := os.RemoveAll(evidence); err == nil {
 			logger.Info("Removed all evidence.db", "dir", evidence)
 		} else {
@@ -143,7 +143,7 @@ func resetState(dbDir string, logger log.Logger) error {
 		}
 	}
 
-	if tmos.FileExists(txIndex) {
+	if cmtos.FileExists(txIndex) {
 		if err := os.RemoveAll(txIndex); err == nil {
 			logger.Info("Removed tx_index.db", "dir", txIndex)
 		} else {
@@ -151,7 +151,7 @@ func resetState(dbDir string, logger log.Logger) error {
 		}
 	}
 
-	if err := tmos.EnsureDir(dbDir, 0700); err != nil {
+	if err := cmtos.EnsureDir(dbDir, 0700); err != nil {
 		logger.Error("unable to recreate dbDir", "err", err)
 	}
 	return nil

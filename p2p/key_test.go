@@ -10,11 +10,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/tendermint/tendermint/crypto/ed25519"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
 )
 
 func TestLoadOrGenNodeKey(t *testing.T) {
-	filePath := filepath.Join(os.TempDir(), tmrand.Str(12)+"_peer_id.json")
+	filePath := filepath.Join(os.TempDir(), cmtrand.Str(12)+"_peer_id.json")
 
 	nodeKey, err := LoadOrGenNodeKey(filePath)
 	assert.Nil(t, err)
@@ -26,7 +26,7 @@ func TestLoadOrGenNodeKey(t *testing.T) {
 }
 
 func TestLoadNodeKey(t *testing.T) {
-	filePath := filepath.Join(os.TempDir(), tmrand.Str(12)+"_peer_id.json")
+	filePath := filepath.Join(os.TempDir(), cmtrand.Str(12)+"_peer_id.json")
 
 	_, err := LoadNodeKey(filePath)
 	assert.True(t, os.IsNotExist(err))
@@ -40,7 +40,7 @@ func TestLoadNodeKey(t *testing.T) {
 }
 
 func TestNodeKeySaveAs(t *testing.T) {
-	filePath := filepath.Join(os.TempDir(), tmrand.Str(12)+"_peer_id.json")
+	filePath := filepath.Join(os.TempDir(), cmtrand.Str(12)+"_peer_id.json")
 
 	assert.NoFileExists(t, filePath)
 

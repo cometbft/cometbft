@@ -3,7 +3,7 @@ package behaviour
 import (
 	"errors"
 
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 	"github.com/tendermint/tendermint/p2p"
 )
 
@@ -50,7 +50,7 @@ func (spbr *SwitchReporter) Report(behaviour PeerBehaviour) error {
 // interface used in reactor tests to ensure reactors report the correct
 // behaviour in manufactured scenarios.
 type MockReporter struct {
-	mtx tmsync.RWMutex
+	mtx cmtsync.RWMutex
 	pb  map[p2p.ID][]PeerBehaviour
 }
 

@@ -5,7 +5,7 @@ import (
 	mrand "math/rand"
 	"time"
 
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 )
 
 const (
@@ -20,7 +20,7 @@ const (
 // All of the methods here are suitable for concurrent use.
 // This is achieved by using a mutex lock on all of the provided methods.
 type Rand struct {
-	tmsync.Mutex
+	cmtsync.Mutex
 	rand *mrand.Rand
 }
 

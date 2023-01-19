@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/tendermint/tendermint/p2p"
-	tmState "github.com/tendermint/tendermint/state"
+	cmtState "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/types"
 )
 
@@ -37,7 +37,7 @@ func (e pcBlockProcessed) String() string {
 type pcFinished struct {
 	priorityNormal
 	blocksSynced int
-	tmState      tmState.State
+	cmtState     cmtState.State
 }
 
 func (p pcFinished) Error() string {
@@ -106,7 +106,7 @@ func (state *pcState) enqueue(peerID p2p.ID, block *types.Block, height int64) {
 }
 
 func (state *pcState) height() int64 {
-	return state.context.tmState().LastBlockHeight
+	return state.context.cmtState().LastBlockHeight
 }
 
 // purgePeer moves all unprocessed blocks from the queue
@@ -128,7 +128,7 @@ func (state *pcState) handle(event Event) (Event, error) {
 
 	case scFinishedEv:
 		if state.synced() {
-			return pcFinished{tmState: state.context.tmState(), blocksSynced: state.blocksSynced}, nil
+			return pcFinished{cmtState: state.context.cmtState(), blocksSynced: state.blocksSynced}, nil
 		}
 		state.draining = true
 		return noOp, nil
@@ -149,11 +149,11 @@ func (state *pcState) handle(event Event) (Event, error) {
 		return noOp, nil
 
 	case rProcessBlock:
-		tmState := state.context.tmState()
+		cmtState := state.context.cmtState()
 		firstItem, secondItem, err := state.nextTwo()
 		if err != nil {
 			if state.draining {
-				return pcFinished{tmState: tmState, blocksSynced: state.blocksSynced}, nil
+				return pcFinished{cmtState: cmtState, blocksSynced: state.blocksSynced}, nil
 			}
 			return noOp, nil
 		}
@@ -165,7 +165,7 @@ func (state *pcState) handle(event Event) (Event, error) {
 		)
 
 		// verify if +second+ last commit "confirms" +first+ block
-		err = state.context.verifyCommit(tmState.ChainID, firstID, first.Height, second.LastCommit)
+		err = state.context.verifyCommit(cmtState.ChainID, firstID, first.Height, second.LastCommit)
 		if err != nil {
 			state.purgePeer(firstItem.peerID)
 			if firstItem.peerID != secondItem.peerID {

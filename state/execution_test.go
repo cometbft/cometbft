@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
 	abciclientmocks "github.com/cometbft/cometbft/abci/client/mocks"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -739,7 +739,6 @@ func TestPrepareProposalReorderTxs(t *testing.T) {
 	}
 
 	mp.AssertExpectations(t)
-
 }
 
 // TestPrepareProposalErrorOnTooManyTxs tests that the block creation logic returns

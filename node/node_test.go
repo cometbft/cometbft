@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	cfg "github.com/cometbft/cometbft/config"
@@ -125,7 +125,7 @@ func TestNodeSetAppVersion(t *testing.T) {
 	require.NoError(t, err)
 
 	// default config uses the kvstore app
-	var appVersion = kvstore.ProtocolVersion
+	appVersion := kvstore.ProtocolVersion
 
 	// check version is set in state
 	state, err := n.stateStore.Load()

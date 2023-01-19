@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"net"
 	"strings"
-
-	_ "net/http/pprof" //nolint: gosec // securely exposed on separate, optional port
 	"time"
 
-	dbm "github.com/tendermint/tm-db"
+	_ "net/http/pprof" //nolint: gosec // securely exposed on separate, optional port
+
+	dbm "github.com/cometbft/cometbft-db"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/blocksync"

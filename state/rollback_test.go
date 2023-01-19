@@ -6,7 +6,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	dbm "github.com/tendermint/tm-db"
+
+	dbm "github.com/cometbft/cometbft-db"
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"

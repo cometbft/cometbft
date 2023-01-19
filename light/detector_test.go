@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
@@ -302,7 +302,6 @@ func TestLightClientAttackEvidence_ForwardLunatic(t *testing.T) {
 
 	_, err = c.Update(ctx, bTime.Add(time.Duration(forgedHeight)*time.Minute))
 	assert.NoError(t, err)
-
 }
 
 // 1. Different nodes therefore a divergent header is produced.

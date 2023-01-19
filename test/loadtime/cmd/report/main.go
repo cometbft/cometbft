@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/test/loadtime/report"
@@ -76,7 +76,6 @@ func main() {
 			"\tMaximum Latency: %s\n"+
 			"\tAverage Latency: %s\n"+
 			"\tStandard Deviation: %s\n\n", r.ID, r.Connections, r.Rate, r.Size, len(r.All), r.NegativeCount, r.Min, r.Max, r.Avg, r.StdDev)
-
 	}
 	fmt.Printf("Total Invalid Tx: %d\n", rs.ErrorCount())
 }

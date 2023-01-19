@@ -9,15 +9,15 @@ the correct files eventually.
 # Light Client Sequential Supervisor
 <!-- markdown-link-check-disable -->
 The light client implements a read operation of a
-[header](TMBC-HEADER-link) from the [blockchain](TMBC-SEQ-link), by
+[header](CMBC-HEADER-link) from the [blockchain](CMBC-SEQ-link), by
 communicating with full nodes, a so-called primary and several
 so-called witnesses. As some full nodes may be faulty, this
 functionality must be implemented in a fault-tolerant way.
 
 In a Cosmos blockchain, the validator set may change with every
 new block.  The staking and unbonding mechanism induces a [security
-model](TMBC-FM-2THIRDS-link): starting at time *Time* of the
-[header](TMBC-HEADER-link),
+model](CMBC-FM-2THIRDS-link): starting at time *Time* of the
+[header](CMBC-HEADER-link),
 more than two-thirds of the next validators of a new block are correct
 for the duration of *TrustedPeriod*.
 
@@ -26,7 +26,7 @@ operation designed for this security model. That is, it is safe if the
 model assumptions are satisfied and makes progress if it communicates
 to a correct primary.
 
-However, if the [security model](TMBC-FM-2THIRDS-link) is violated,
+However, if the [security model](CMBC-FM-2THIRDS-link) is violated,
 faulty peers (that have been validators at some point in the past) may
 launch attacks on the Cosmos network, and on the light
 client. These attacks as well as an axiomatization of blocks in

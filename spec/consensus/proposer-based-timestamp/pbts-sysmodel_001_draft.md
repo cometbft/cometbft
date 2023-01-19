@@ -70,7 +70,7 @@ However, as most consensus instances terminate within one round on the Cosmos hu
 
 
 
-Finally, observe that the agreement ([Agreement] and [Time-Agreement]) properties are based on the Tendermint security model [TMBC-FM-2THIRDS.0] of more than 2/3 correct validators, while [Time-Validity] is based on more than 1/3 correct validators.
+Finally, observe that the agreement ([Agreement] and [Time-Agreement]) properties are based on the Tendermint security model [CMBC-FM-2THIRDS.0] of more than 2/3 correct validators, while [Time-Validity] is based on more than 1/3 correct validators.
 
 ### SAFETY
 
@@ -111,7 +111,7 @@ then the time `b.time` in the block `b` that is signed by `c` satisfies
 
 If the proposer of round 1 is correct, and
 
-- [TMBC-FM-2THIRDS.0] holds for a block of height `k - 1`, and
+- [CMBC-FM-2THIRDS.0] holds for a block of height `k - 1`, and
 - [PBTS-MSG-FAIR.0], and
 - [PBTS-CLOCK-PRECISION.0], and
 - [PBTS-CLOCK-GROW.0] (**TODO:** is that enough?)
@@ -122,7 +122,7 @@ then eventually (within bounded time) every correct validator decides in round 1
 
 If the proposer of round 1 is correct, and
 
-- [TMBC-FM-2THIRDS.0] holds for a block of height `k - 1`, and
+- [CMBC-FM-2THIRDS.0] holds for a block of height `k - 1`, and
 - [PBTS-MSG-FAIR.0], and
 - [PBTS-CLOCK-PRECISION.0], and
 - [PBTS-CLOCK-GROW.0] (**TODO:** is that enough?)
@@ -136,7 +136,7 @@ then `beginConsensus_k <= b.time <= last-beginConsensus_k`.
 
 If
 
-- [TMBC-FM-2THIRDS.0] holds for a block of height `k - 1`, and
+- [CMBC-FM-2THIRDS.0] holds for a block of height `k - 1`, and
 - [PBTS-MSG-FAIR.0],
 - [PBTS-CLOCK.0], and
 - [PBTS-CLOCK-GROW.0] (**TODO:** is that enough?)

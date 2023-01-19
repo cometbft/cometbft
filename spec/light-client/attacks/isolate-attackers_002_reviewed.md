@@ -5,14 +5,14 @@ Adversarial nodes may have the incentive to lie to a lightclient about the
 state of a Cosmos blockchain, built using Tendermint consensus algorithm.
 An attempt to do so is called attack. Light client [verification][verification] checks incoming data by checking a so-called "commit", which is a forwarded set of signed messages that is (supposedly) produced during executing Tendermint consensus. Thus, an attack boils down to creating and signing Tendermint consensus messages in deviation from the Tendermint consensus algorithm rules.
 
-As Tendermint consensus and light client verification is safe under the assumption of more than 2/3 of correct voting power per block [[TMBC-FM-2THIRDS]][TMBC-FM-2THIRDS-link], this implies that if there was an attack then [[TMBC-FM-2THIRDS]][TMBC-FM-2THIRDS-link] was violated, that is, there is a block such that
+As Tendermint consensus and light client verification is safe under the assumption of more than 2/3 of correct voting power per block [[CMBC-FM-2THIRDS]][CMBC-FM-2THIRDS-link], this implies that if there was an attack then [[CMBC-FM-2THIRDS]][CMBC-FM-2THIRDS-link] was violated, that is, there is a block such that
 
 - validators deviated from the protocol, and
 - these validators represent more than 1/3 of the voting power in that block.
 
 In the case of an [attack][node-based-attack-characterization], the lightclient [attack detection mechanism][detection] computes data, so called evidence [[LC-DATA-EVIDENCE.1]][LC-DATA-EVIDENCE-link], that can be used
 
-- to proof that there has been attack [[TMBC-LC-EVIDENCE-DATA.1]][TMBC-LC-EVIDENCE-DATA-link] and
+- to proof that there has been attack [[CMBC-LC-EVIDENCE-DATA.1]][CMBC-LC-EVIDENCE-DATA-link] and
 - as basis to find the actual nodes that deviated from the Tendermint algorithm.
 
 This specification considers how a full node in a Cosmos blockchain can isolate a set of attackers that launched the attack. The set should satisfy
@@ -214,12 +214,12 @@ https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detec
 [LC-DATA-EVIDENCE-link]:
 https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_003_reviewed.md#lc-data-evidence1
 
-[TMBC-LC-EVIDENCE-DATA-link]:
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_003_reviewed.md#tmbc-lc-evidence-data1
+[CMBC-LC-EVIDENCE-DATA-link]:
+https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_003_reviewed.md#cmbc-lc-evidence-data1
 
 [node-based-attack-characterization]:
 https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_003_reviewed.md#block-based-characterization-of-attacks
 
-[TMBC-FM-2THIRDS-link]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#tmbc-fm-2thirds1
+[CMBC-FM-2THIRDS-link]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#cmbc-fm-2thirds1
 
 [LCV-FUNC-VALID.link]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#lcv-func-valid2

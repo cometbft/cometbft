@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
 	"github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/state/indexer"

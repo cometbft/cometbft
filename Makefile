@@ -237,7 +237,7 @@ sync-docs:
 
 build-docker: build-linux
 	cp $(OUTPUT) DOCKER/cometbft
-	docker build --label=cometbft --tag="cometbft/cometbft" DOCKER
+	docker build --label=cometbft --tag="cometbft/cometbft" --build-arg GO_MODULES_TOKEN=${GO_MODULES_TOKEN}  DOCKER
 	rm -rf DOCKER/cometbft
 .PHONY: build-docker
 

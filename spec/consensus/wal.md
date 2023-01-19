@@ -7,7 +7,7 @@ It also issues fsync syscall through
 node (to prevent double signing).
 
 Under the hood, it uses
-[autofile.Group](https://godoc.org/github.com/tendermint/tmlibs/autofile#Group),
+[autofile.Group](https://github.com/cometbft/cometbft/blob/af3bc47df982e271d4d340a3c5e0d773e440466d/libs/autofile/group.go#L54),
 which rotates files when those get too big (> 10MB).
 
 The total maximum size is 1GB. We only need the latest block and the block before it,

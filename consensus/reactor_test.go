@@ -277,7 +277,9 @@ func TestReactorReceiveDoesNotPanicIfAddPeerHasntBeenCalledYet(t *testing.T) {
 			Src:       peer,
 			Message: &cmtcons.HasVote{
 				Height: 1,
-				Round:  1, Index: 1, Type: cmtproto.PrevoteType,
+				Round:  1,
+				Index:  1,
+				Type:   cmtproto.PrevoteType,
 			},
 		})
 		reactor.AddPeer(peer)
@@ -305,7 +307,9 @@ func TestReactorReceivePanicsIfInitPeerHasntBeenCalledYet(t *testing.T) {
 			Src:       peer,
 			Message: &cmtcons.HasVote{
 				Height: 1,
-				Round:  1, Index: 1, Type: cmtproto.PrevoteType,
+				Round:  1,
+				Index:  1,
+				Type:   cmtproto.PrevoteType,
 			},
 		})
 	})

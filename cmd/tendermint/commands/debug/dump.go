@@ -17,8 +17,8 @@ import (
 
 var dumpCmd = &cobra.Command{
 	Use:   "dump [output-directory]",
-	Short: "Continuously poll a Tendermint process and dump debugging data into a single location",
-	Long: `Continuously poll a Tendermint process and dump debugging data into a single
+	Short: "Continuously poll a CometBFT process and dump debugging data into a single location",
+	Long: `Continuously poll a CometBFT process and dump debugging data into a single
 location at a specified frequency. At each frequency interval, an archived and compressed
 file will contain node debugging information including the goroutine and heap profiles
 if enabled.`,
@@ -31,7 +31,7 @@ func init() {
 		&frequency,
 		flagFrequency,
 		30,
-		"the frequency (seconds) in which to poll, aggregate and dump Tendermint debug data",
+		"the frequency (seconds) in which to poll, aggregate and dump CometBFT debug data",
 	)
 
 	dumpCmd.Flags().StringVar(
@@ -81,7 +81,7 @@ func dumpCmdHandler(_ *cobra.Command, args []string) error {
 func dumpDebugData(outDir string, conf *cfg.Config, rpc *rpchttp.HTTP) {
 	start := time.Now().UTC()
 
-	tmpDir, err := os.MkdirTemp(outDir, "tendermint_debug_tmp")
+	tmpDir, err := os.MkdirTemp(outDir, "cometbft_debug_tmp")
 	if err != nil {
 		logger.Error("failed to create temporary directory", "dir", tmpDir, "error", err)
 		return

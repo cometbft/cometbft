@@ -14,21 +14,21 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	cfg "github.com/tendermint/tendermint/config"
-	tmcon "github.com/tendermint/tendermint/consensus"
+	cmtcon "github.com/tendermint/tendermint/consensus"
 	cstypes "github.com/tendermint/tendermint/consensus/types"
 	"github.com/tendermint/tendermint/crypto"
-	tmevents "github.com/tendermint/tendermint/libs/events"
+	cmtevents "github.com/tendermint/tendermint/libs/events"
 	"github.com/tendermint/tendermint/libs/fail"
-	tmjson "github.com/tendermint/tendermint/libs/json"
+	cmtjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tendermint/libs/log"
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	tmos "github.com/tendermint/tendermint/libs/os"
+	cmtmath "github.com/tendermint/tendermint/libs/math"
+	cmtos "github.com/tendermint/tendermint/libs/os"
 	"github.com/tendermint/tendermint/libs/service"
 	"github.com/tendermint/tendermint/p2p"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	sm "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	cmttime "github.com/tendermint/tendermint/types/time"
 )
 
 // State handles execution of the consensus algorithm.
@@ -79,7 +79,7 @@ type State struct {
 
 	// a Write-Ahead Log ensures we can recover from any kind of crash
 	// and helps us avoid signing conflicting votes
-	wal          tmcon.WAL
+	wal          cmtcon.WAL
 	replayMode   bool // so we don't log signing errors during replay
 	doWALCatchup bool // determines if we even try to do the catchup
 
@@ -94,10 +94,10 @@ type State struct {
 
 	// synchronous pubsub between consensus state and reactor.
 	// state only emits EventNewRoundStep and EventVote
-	evsw tmevents.EventSwitch
+	evsw cmtevents.EventSwitch
 
 	// for reporting metrics
-	metrics *tmcon.Metrics
+	metrics *cmtcon.Metrics
 
 	// misbehaviors mapped for each height (can't have more than one misbehavior per height)
 	misbehaviors map[int64]Misbehavior
@@ -134,8 +134,8 @@ func NewState(
 		doWALCatchup:     true,
 		wal:              nilWAL{},
 		evpool:           evpool,
-		evsw:             tmevents.NewEventSwitch(),
-		metrics:          tmcon.NopMetrics(),
+		evsw:             cmtevents.NewEventSwitch(),
+		metrics:          cmtcon.NopMetrics(),
 		misbehaviors:     misbehaviors,
 	}
 	// set function defaults (may be overwritten before calling Start)
@@ -174,7 +174,7 @@ func (cs *State) handleMsg(mi msgInfo) {
 	)
 	msg, peerID := mi.Msg, mi.PeerID
 	switch msg := msg.(type) {
-	case *tmcon.ProposalMessage:
+	case *cmtcon.ProposalMessage:
 		// will not cause transition.
 		// once proposal is set, we can receive block parts
 		// err = cs.setProposal(msg.Proposal)
@@ -183,7 +183,7 @@ func (cs *State) handleMsg(mi msgInfo) {
 		} else {
 			err = defaultReceiveProposal(cs, msg.Proposal)
 		}
-	case *tmcon.BlockPartMessage:
+	case *cmtcon.BlockPartMessage:
 		// if the proposal is complete, we'll enterPrevote or tryFinalizeCommit
 		added, err = cs.addProposalBlockPart(msg, peerID)
 		if added {
@@ -201,7 +201,7 @@ func (cs *State) handleMsg(mi msgInfo) {
 				msg.Round)
 			err = nil
 		}
-	case *tmcon.VoteMessage:
+	case *cmtcon.VoteMessage:
 		// attempt to add the vote and dupeout the validator if its a duplicate signature
 		// if the vote gives us a 2/3-any or 2/3-one, we transition
 		added, err = cs.tryAddVote(msg.Vote, peerID)
@@ -370,7 +370,7 @@ func (cs *State) addVote(
 
 	// A precommit for the previous height?
 	// These come in while we wait timeoutCommit
-	if vote.Height+1 == cs.Height && vote.Type == tmproto.PrecommitType {
+	if vote.Height+1 == cs.Height && vote.Type == cmtproto.PrecommitType {
 		if cs.Step != cstypes.RoundStepNewHeight {
 			// Late precommit at prior height is ignored
 			cs.Logger.Debug("Precommit vote came in after commit timeout and has been ignored", "vote", vote)
@@ -414,14 +414,14 @@ func (cs *State) addVote(
 	cs.evsw.FireEvent(types.EventVote, vote)
 
 	switch vote.Type {
-	case tmproto.PrevoteType:
+	case cmtproto.PrevoteType:
 		if b, ok := cs.misbehaviors[cs.Height]; ok {
 			b.ReceivePrevote(cs, vote)
 		} else {
 			defaultReceivePrevote(cs, vote)
 		}
 
-	case tmproto.PrecommitType:
+	case cmtproto.PrecommitType:
 		if b, ok := cs.misbehaviors[cs.Height]; ok {
 			b.ReceivePrecommit(cs, vote)
 		}
@@ -452,8 +452,8 @@ var msgQueueSize = 1000
 
 // msgs from the reactor which may update the state
 type msgInfo struct {
-	Msg    tmcon.Message `json:"msg"`
-	PeerID p2p.ID        `json:"peer_key"`
+	Msg    cmtcon.Message `json:"msg"`
+	PeerID p2p.ID         `json:"peer_key"`
 }
 
 // internally generated messages which may update the state
@@ -495,7 +495,7 @@ func (cs *State) SetEventBus(b *types.EventBus) {
 }
 
 // StateMetrics sets the metrics.
-func StateMetrics(metrics *tmcon.Metrics) StateOption {
+func StateMetrics(metrics *cmtcon.Metrics) StateOption {
 	return func(cs *State) { cs.metrics = metrics }
 }
 
@@ -532,14 +532,14 @@ func (cs *State) GetRoundState() *cstypes.RoundState {
 func (cs *State) GetRoundStateJSON() ([]byte, error) {
 	cs.mtx.RLock()
 	defer cs.mtx.RUnlock()
-	return tmjson.Marshal(cs.RoundState)
+	return cmtjson.Marshal(cs.RoundState)
 }
 
 // GetRoundStateSimpleJSON returns a json of RoundStateSimple
 func (cs *State) GetRoundStateSimpleJSON() ([]byte, error) {
 	cs.mtx.RLock()
 	defer cs.mtx.RUnlock()
-	return tmjson.Marshal(cs.RoundState.RoundStateSimple())
+	return cmtjson.Marshal(cs.RoundState.RoundStateSimple())
 }
 
 // GetValidators returns a copy of the current validators.
@@ -617,7 +617,7 @@ func (cs *State) OnStart() error {
 
 			// 2) backup original WAL file
 			corruptedFile := fmt.Sprintf("%s.CORRUPTED", cs.config.WalFile())
-			if err := tmos.CopyFile(cs.config.WalFile(), corruptedFile); err != nil {
+			if err := cmtos.CopyFile(cs.config.WalFile(), corruptedFile); err != nil {
 				return err
 			}
 			cs.Logger.Info("Backed up WAL file", "src", cs.config.WalFile(), "dst", corruptedFile)
@@ -695,7 +695,7 @@ func (cs *State) Wait() {
 
 // OpenWAL opens a file to log all consensus messages and timeouts for
 // deterministic accountability.
-func (cs *State) OpenWAL(walFile string) (tmcon.WAL, error) {
+func (cs *State) OpenWAL(walFile string) (cmtcon.WAL, error) {
 	wal, err := NewWAL(walFile)
 	if err != nil {
 		cs.Logger.Error("Failed to open WAL", "file", walFile, "err", err)
@@ -719,9 +719,9 @@ func (cs *State) OpenWAL(walFile string) (tmcon.WAL, error) {
 // AddVote inputs a vote.
 func (cs *State) AddVote(vote *types.Vote, peerID p2p.ID) (added bool, err error) {
 	if peerID == "" {
-		cs.internalMsgQueue <- msgInfo{&tmcon.VoteMessage{Vote: vote}, ""}
+		cs.internalMsgQueue <- msgInfo{&cmtcon.VoteMessage{Vote: vote}, ""}
 	} else {
-		cs.peerMsgQueue <- msgInfo{&tmcon.VoteMessage{Vote: vote}, peerID}
+		cs.peerMsgQueue <- msgInfo{&cmtcon.VoteMessage{Vote: vote}, peerID}
 	}
 
 	// TODO: wait for event?!
@@ -731,9 +731,9 @@ func (cs *State) AddVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 // SetProposal inputs a proposal.
 func (cs *State) SetProposal(proposal *types.Proposal, peerID p2p.ID) error {
 	if peerID == "" {
-		cs.internalMsgQueue <- msgInfo{&tmcon.ProposalMessage{Proposal: proposal}, ""}
+		cs.internalMsgQueue <- msgInfo{&cmtcon.ProposalMessage{Proposal: proposal}, ""}
 	} else {
-		cs.peerMsgQueue <- msgInfo{&tmcon.ProposalMessage{Proposal: proposal}, peerID}
+		cs.peerMsgQueue <- msgInfo{&cmtcon.ProposalMessage{Proposal: proposal}, peerID}
 	}
 
 	// TODO: wait for event?!
@@ -743,9 +743,9 @@ func (cs *State) SetProposal(proposal *types.Proposal, peerID p2p.ID) error {
 // AddProposalBlockPart inputs a part of the proposal block.
 func (cs *State) AddProposalBlockPart(height int64, round int32, part *types.Part, peerID p2p.ID) error {
 	if peerID == "" {
-		cs.internalMsgQueue <- msgInfo{&tmcon.BlockPartMessage{Height: height, Round: round, Part: part}, ""}
+		cs.internalMsgQueue <- msgInfo{&cmtcon.BlockPartMessage{Height: height, Round: round, Part: part}, ""}
 	} else {
-		cs.peerMsgQueue <- msgInfo{&tmcon.BlockPartMessage{Height: height, Round: round, Part: part}, peerID}
+		cs.peerMsgQueue <- msgInfo{&cmtcon.BlockPartMessage{Height: height, Round: round, Part: part}, peerID}
 	}
 
 	// TODO: wait for event?!
@@ -786,8 +786,8 @@ func (cs *State) updateRoundStep(round int32, step cstypes.RoundStepType) {
 
 // enterNewRound(height, 0) at cs.StartTime.
 func (cs *State) scheduleRound0(rs *cstypes.RoundState) {
-	// cs.Logger.Info("scheduleRound0", "now", tmtime.Now(), "startTime", cs.StartTime)
-	sleepDuration := rs.StartTime.Sub(tmtime.Now())
+	// cs.Logger.Info("scheduleRound0", "now", cmttime.Now(), "startTime", cs.StartTime)
+	sleepDuration := rs.StartTime.Sub(cmttime.Now())
 	cs.scheduleTimeout(sleepDuration, rs.Height, 0, cstypes.RoundStepNewHeight)
 }
 
@@ -900,7 +900,7 @@ func (cs *State) updateToState(state sm.State) {
 		// to be gathered for the first block.
 		// And alternative solution that relies on clocks:
 		// cs.StartTime = state.LastBlockTime.Add(timeoutCommit)
-		cs.StartTime = cs.config.Commit(tmtime.Now())
+		cs.StartTime = cs.config.Commit(cmttime.Now())
 	} else {
 		cs.StartTime = cs.config.Commit(cs.CommitTime)
 	}
@@ -1006,7 +1006,7 @@ func (cs *State) receiveRoutine(maxSteps int) {
 				panic(fmt.Sprintf("Failed to write %v msg to consensus wal due to %v. Check your FS and restart the node", mi, err))
 			}
 
-			if _, ok := mi.Msg.(*tmcon.VoteMessage); ok {
+			if _, ok := mi.Msg.(*cmtcon.VoteMessage); ok {
 				// we actually want to simulate failing during
 				// the previous WriteSync, but this isn't easy to do.
 				// Equivalent would be to fail here and manually remove
@@ -1088,7 +1088,7 @@ func (cs *State) handleTxsAvailable() {
 		}
 
 		// +1ms to ensure RoundStepNewRound timeout always happens after RoundStepNewHeight
-		timeoutCommit := cs.StartTime.Sub(tmtime.Now()) + 1*time.Millisecond
+		timeoutCommit := cs.StartTime.Sub(cmttime.Now()) + 1*time.Millisecond
 		cs.scheduleTimeout(timeoutCommit, cs.Height, 0, cstypes.RoundStepNewRound)
 	case cstypes.RoundStepNewRound: // after timeoutCommit
 		cs.enterPropose(cs.Height, 0)
@@ -1121,7 +1121,7 @@ func (cs *State) enterNewRound(height int64, round int32) {
 		return
 	}
 
-	if now := tmtime.Now(); cs.StartTime.After(now) {
+	if now := cmttime.Now(); cs.StartTime.After(now) {
 		logger.Debug("need to set a buffer and log message here for sanity", "startTime", cs.StartTime, "now", now)
 	}
 
@@ -1133,7 +1133,7 @@ func (cs *State) enterNewRound(height int64, round int32) {
 	validators := cs.Validators
 	if cs.Round < round {
 		validators = validators.Copy()
-		validators.IncrementProposerPriority(tmmath.SafeSubInt32(round, cs.Round))
+		validators.IncrementProposerPriority(cmtmath.SafeSubInt32(round, cs.Round))
 	}
 
 	// Setup new round
@@ -1151,7 +1151,7 @@ func (cs *State) enterNewRound(height int64, round int32) {
 		cs.ProposalBlock = nil
 		cs.ProposalBlockParts = nil
 	}
-	cs.Votes.SetRound(tmmath.SafeAddInt32(round, 1)) // also track next round (round+1) to allow round-skipping
+	cs.Votes.SetRound(cmtmath.SafeAddInt32(round, 1)) // also track next round (round+1) to allow round-skipping
 	cs.TriggeredTimeoutPrecommit = false
 
 	if err := cs.eventBus.PublishEventNewRound(cs.NewRoundEvent()); err != nil {
@@ -1221,10 +1221,10 @@ func (cs *State) defaultDecideProposal(height int64, round int32) {
 		proposal.Signature = p.Signature
 
 		// send proposal and block parts on internal msg queue
-		cs.sendInternalMessage(msgInfo{&tmcon.ProposalMessage{Proposal: proposal}, ""})
+		cs.sendInternalMessage(msgInfo{&cmtcon.ProposalMessage{Proposal: proposal}, ""})
 		for i := 0; i < int(blockParts.Total()); i++ {
 			part := blockParts.GetPart(i)
-			cs.sendInternalMessage(msgInfo{&tmcon.BlockPartMessage{Height: cs.Height, Round: cs.Round, Part: part}, ""})
+			cs.sendInternalMessage(msgInfo{&cmtcon.BlockPartMessage{Height: cs.Height, Round: cs.Round, Part: part}, ""})
 		}
 		cs.Logger.Info("Signed proposal", "height", height, "round", round, "proposal", proposal)
 		cs.Logger.Debug("default decide proposal",
@@ -1375,7 +1375,7 @@ func (cs *State) enterCommit(height int64, commitRound int32) {
 		// keep cs.Round the same, commitRound points to the right Precommits set.
 		cs.updateRoundStep(cs.Round, cstypes.RoundStepCommit)
 		cs.CommitRound = commitRound
-		cs.CommitTime = tmtime.Now()
+		cs.CommitTime = cmttime.Now()
 		cs.newStep()
 
 		// Maybe finalize immediately.
@@ -1514,7 +1514,7 @@ func (cs *State) finalizeCommit(height int64) {
 	// Either way, the State should not be resumed until we
 	// successfully call ApplyBlock (ie. later here, or in Handshake after
 	// restart).
-	endMsg := tmcon.EndHeightMessage{Height: height}
+	endMsg := cmtcon.EndHeightMessage{Height: height}
 	if err := cs.wal.WriteSync(endMsg); err != nil { // NOTE: fsync
 		panic(fmt.Sprintf("Failed to write %v msg to consensus wal due to %v. Check your FS and restart the node",
 			endMsg, err))
@@ -1682,7 +1682,7 @@ func (cs *State) recordMetrics(height int64, block *types.Block) {
 // NOTE: block is not necessarily valid.
 // Asynchronously triggers either enterPrevote (before we timeout of propose) or tryFinalizeCommit,
 // once we have the full block.
-func (cs *State) addProposalBlockPart(msg *tmcon.BlockPartMessage, peerID p2p.ID) (added bool, err error) {
+func (cs *State) addProposalBlockPart(msg *cmtcon.BlockPartMessage, peerID p2p.ID) (added bool, err error) {
 	height, round, part := msg.Height, msg.Round, msg.Part
 
 	// Blocks might be reused, so round mismatch is OK
@@ -1715,7 +1715,7 @@ func (cs *State) addProposalBlockPart(msg *tmcon.BlockPartMessage, peerID p2p.ID
 			return added, err
 		}
 
-		pbb := new(tmproto.Block)
+		pbb := new(cmtproto.Block)
 		err = proto.Unmarshal(bz, pbb)
 		if err != nil {
 			return added, err
@@ -1811,7 +1811,7 @@ func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 
 // CONTRACT: cs.privValidator is not nil.
 func (cs *State) signVote(
-	msgType tmproto.SignedMsgType,
+	msgType cmtproto.SignedMsgType,
 	hash []byte,
 	header types.PartSetHeader,
 ) (*types.Vote, error) {
@@ -1844,7 +1844,7 @@ func (cs *State) signVote(
 }
 
 func (cs *State) voteTime() time.Time {
-	now := tmtime.Now()
+	now := cmttime.Now()
 	minVoteTime := now
 	// TODO: We should remove next line in case we don't vote for v in case cs.ProposalBlock == nil,
 	// even if cs.LockedBlock != nil. See https://github.com/tendermint/tendermint/tree/v0.34.x/spec/.
@@ -1864,7 +1864,7 @@ func (cs *State) voteTime() time.Time {
 }
 
 // sign the vote and publish on internalMsgQueue
-func (cs *State) signAddVote(msgType tmproto.SignedMsgType, hash []byte, header types.PartSetHeader) *types.Vote {
+func (cs *State) signAddVote(msgType cmtproto.SignedMsgType, hash []byte, header types.PartSetHeader) *types.Vote {
 	if cs.privValidator == nil { // the node does not have a key
 		return nil
 	}
@@ -1883,7 +1883,7 @@ func (cs *State) signAddVote(msgType tmproto.SignedMsgType, hash []byte, header 
 	// TODO: pass pubKey to signVote
 	vote, err := cs.signVote(msgType, hash, header)
 	if err == nil {
-		cs.sendInternalMessage(msgInfo{&tmcon.VoteMessage{Vote: vote}, ""})
+		cs.sendInternalMessage(msgInfo{&cmtcon.VoteMessage{Vote: vote}, ""})
 		cs.Logger.Info("Signed and pushed vote", "height", cs.Height, "round", cs.Round, "vote", vote)
 		return vote
 	}

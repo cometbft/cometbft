@@ -19,15 +19,15 @@ import (
 	"github.com/tendermint/tendermint/evidence"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/libs/service"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 	mempl "github.com/tendermint/tendermint/mempool"
 
 	cfg "github.com/tendermint/tendermint/config"
 	mempoolv0 "github.com/tendermint/tendermint/mempool/v0"
 	mempoolv1 "github.com/tendermint/tendermint/mempool/v1"
 	"github.com/tendermint/tendermint/p2p"
-	tmcons "github.com/tendermint/tendermint/proto/tendermint/consensus"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtcons "github.com/tendermint/tendermint/proto/tendermint/consensus"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	sm "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/store"
 	"github.com/tendermint/tendermint/types"
@@ -65,7 +65,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		blockDB := dbm.NewMemDB()
 		blockStore := store.NewBlockStore(blockDB)
 
-		mtx := new(tmsync.Mutex)
+		mtx := new(cmtsync.Mutex)
 		// one for mempool, one for consensus
 		proxyAppConnCon := abcicli.NewLocalClient(mtx, app)
 		proxyAppConnConMem := abcicli.NewLocalClient(mtx, app)
@@ -156,9 +156,9 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		// allow first height to happen normally so that byzantine validator is no longer proposer
 		if height == prevoteHeight {
 			bcs.Logger.Info("Sending two votes")
-			prevote1, err := bcs.signVote(tmproto.PrevoteType, bcs.ProposalBlock.Hash(), bcs.ProposalBlockParts.Header())
+			prevote1, err := bcs.signVote(cmtproto.PrevoteType, bcs.ProposalBlock.Hash(), bcs.ProposalBlockParts.Header())
 			require.NoError(t, err)
-			prevote2, err := bcs.signVote(tmproto.PrevoteType, nil, types.PartSetHeader{})
+			prevote2, err := bcs.signVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
 			require.NoError(t, err)
 			peerList := reactors[byzantineNode].Switch.Peers().List()
 			bcs.Logger.Info("Getting peer list", "peers", peerList)
@@ -167,13 +167,13 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 				if i < len(peerList)/2 {
 					bcs.Logger.Info("Signed and pushed vote", "vote", prevote1, "peer", peer)
 					p2p.SendEnvelopeShim(peer, p2p.Envelope{ //nolint: staticcheck
-						Message:   &tmcons.Vote{Vote: prevote1.ToProto()},
+						Message:   &cmtcons.Vote{Vote: prevote1.ToProto()},
 						ChannelID: VoteChannel,
 					}, bcs.Logger)
 				} else {
 					bcs.Logger.Info("Signed and pushed vote", "vote", prevote2, "peer", peer)
 					p2p.SendEnvelopeShim(peer, p2p.Envelope{ //nolint: staticcheck
-						Message:   &tmcons.Vote{Vote: prevote2.ToProto()},
+						Message:   &cmtcons.Vote{Vote: prevote2.ToProto()},
 						ChannelID: VoteChannel,
 					}, bcs.Logger)
 				}
@@ -521,7 +521,7 @@ func sendProposalAndParts(
 	// proposal
 	p2p.SendEnvelopeShim(peer, p2p.Envelope{ //nolint: staticcheck
 		ChannelID: DataChannel,
-		Message:   &tmcons.Proposal{Proposal: *proposal.ToProto()},
+		Message:   &cmtcons.Proposal{Proposal: *proposal.ToProto()},
 	}, cs.Logger)
 
 	// parts
@@ -533,7 +533,7 @@ func sendProposalAndParts(
 		}
 		p2p.SendEnvelopeShim(peer, p2p.Envelope{ //nolint: staticcheck
 			ChannelID: DataChannel,
-			Message: &tmcons.BlockPart{
+			Message: &cmtcons.BlockPart{
 				Height: height, // This tells peer that this part applies to us.
 				Round:  round,  // This tells peer that this part applies to us.
 				Part:   *pp,
@@ -543,16 +543,16 @@ func sendProposalAndParts(
 
 	// votes
 	cs.mtx.Lock()
-	prevote, _ := cs.signVote(tmproto.PrevoteType, blockHash, parts.Header())
-	precommit, _ := cs.signVote(tmproto.PrecommitType, blockHash, parts.Header())
+	prevote, _ := cs.signVote(cmtproto.PrevoteType, blockHash, parts.Header())
+	precommit, _ := cs.signVote(cmtproto.PrecommitType, blockHash, parts.Header())
 	cs.mtx.Unlock()
 	p2p.SendEnvelopeShim(peer, p2p.Envelope{ //nolint: staticcheck
 		ChannelID: VoteChannel,
-		Message:   &tmcons.Vote{Vote: prevote.ToProto()},
+		Message:   &cmtcons.Vote{Vote: prevote.ToProto()},
 	}, cs.Logger)
 	p2p.SendEnvelopeShim(peer, p2p.Envelope{ //nolint: staticcheck
 		ChannelID: VoteChannel,
-		Message:   &tmcons.Vote{Vote: precommit.ToProto()},
+		Message:   &cmtcons.Vote{Vote: precommit.ToProto()},
 	}, cs.Logger)
 }
 

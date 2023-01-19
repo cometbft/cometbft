@@ -10,7 +10,7 @@ import (
 	"github.com/tendermint/tendermint/behaviour"
 	bc "github.com/tendermint/tendermint/blockchain"
 	"github.com/tendermint/tendermint/libs/log"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 	"github.com/tendermint/tendermint/p2p"
 	bcproto "github.com/tendermint/tendermint/proto/tendermint/blockchain"
 	"github.com/tendermint/tendermint/state"
@@ -39,7 +39,7 @@ type BlockchainReactor struct {
 	processor   *Routine
 	logger      log.Logger
 
-	mtx           tmsync.RWMutex
+	mtx           cmtsync.RWMutex
 	maxPeerHeight int64
 	syncHeight    int64
 	events        chan Event // non-nil during a fast sync
@@ -58,7 +58,7 @@ type blockApplier interface {
 	ApplyBlock(state state.State, blockID types.BlockID, block *types.Block) (state.State, int64, error)
 }
 
-// XXX: unify naming in this package around tmState
+// XXX: unify naming in this package around cmtState
 func newReactor(state state.State, store blockStore, reporter behaviour.Reporter,
 	blockApplier blockApplier, fastSync bool) *BlockchainReactor {
 	initHeight := state.LastBlockHeight + 1
@@ -415,7 +415,7 @@ func (r *BlockchainReactor) demux(events <-chan Event) {
 				r.scheduler.send(event)
 			case pcFinished:
 				r.logger.Info("Fast sync complete, switching to consensus")
-				if !r.io.trySwitchToConsensus(event.tmState, event.blocksSynced > 0 || r.stateSynced) {
+				if !r.io.trySwitchToConsensus(event.cmtState, event.blocksSynced > 0 || r.stateSynced) {
 					r.logger.Error("Failed to switch to consensus reactor")
 				}
 				r.endSync()

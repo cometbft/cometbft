@@ -13,9 +13,9 @@ import (
 
 	"github.com/tendermint/tendermint/abci/example/kvstore"
 	cfg "github.com/tendermint/tendermint/config"
-	tmcon "github.com/tendermint/tendermint/consensus"
+	cmtcon "github.com/tendermint/tendermint/consensus"
 	"github.com/tendermint/tendermint/libs/log"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
 	sm "github.com/tendermint/tendermint/state"
@@ -101,7 +101,7 @@ func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int) (err error) {
 	numBlocksWritten := make(chan struct{})
 	wal := newByteBufferWAL(logger, NewWALEncoder(wr), int64(numBlocks), numBlocksWritten)
 	// see wal.go#103
-	if err := wal.Write(tmcon.EndHeightMessage{Height: 0}); err != nil {
+	if err := wal.Write(cmtcon.EndHeightMessage{Height: 0}); err != nil {
 		t.Error(err)
 	}
 
@@ -141,7 +141,7 @@ func WALWithNBlocks(t *testing.T, numBlocks int) (data []byte, err error) {
 func randPort() int {
 	// returns between base and base + spread
 	base, spread := 20000, 20000
-	return base + tmrand.Intn(spread)
+	return base + cmtrand.Intn(spread)
 }
 
 func makeAddrs() (string, string, string) {
@@ -190,13 +190,13 @@ func newByteBufferWAL(logger log.Logger, enc *WALEncoder, nBlocks int64, signalS
 // Save writes message to the internal buffer except when heightToStop is
 // reached, in which case it will signal the caller via signalWhenStopsTo and
 // skip writing.
-func (w *byteBufferWAL) Write(m tmcon.WALMessage) error {
+func (w *byteBufferWAL) Write(m cmtcon.WALMessage) error {
 	if w.stopped {
 		w.logger.Debug("WAL already stopped. Not writing message", "msg", m)
 		return nil
 	}
 
-	if endMsg, ok := m.(tmcon.EndHeightMessage); ok {
+	if endMsg, ok := m.(cmtcon.EndHeightMessage); ok {
 		w.logger.Debug("WAL write end height message", "height", endMsg.Height, "stopHeight", w.heightToStop)
 		if endMsg.Height == w.heightToStop {
 			w.logger.Debug("Stopping WAL at height", "height", endMsg.Height)
@@ -207,7 +207,7 @@ func (w *byteBufferWAL) Write(m tmcon.WALMessage) error {
 	}
 
 	w.logger.Debug("WAL Write Message", "msg", m)
-	err := w.enc.Encode(&tmcon.TimedWALMessage{Time: fixedTime, Msg: m})
+	err := w.enc.Encode(&cmtcon.TimedWALMessage{Time: fixedTime, Msg: m})
 	if err != nil {
 		panic(fmt.Sprintf("failed to encode the msg %v", m))
 	}
@@ -215,7 +215,7 @@ func (w *byteBufferWAL) Write(m tmcon.WALMessage) error {
 	return nil
 }
 
-func (w *byteBufferWAL) WriteSync(m tmcon.WALMessage) error {
+func (w *byteBufferWAL) WriteSync(m cmtcon.WALMessage) error {
 	return w.Write(m)
 }
 
@@ -223,7 +223,7 @@ func (w *byteBufferWAL) FlushAndSync() error { return nil }
 
 func (w *byteBufferWAL) SearchForEndHeight(
 	height int64,
-	options *tmcon.WALSearchOptions) (rd io.ReadCloser, found bool, err error) {
+	options *cmtcon.WALSearchOptions) (rd io.ReadCloser, found bool, err error) {
 	return nil, false, nil
 }
 

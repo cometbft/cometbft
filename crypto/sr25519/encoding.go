@@ -2,7 +2,7 @@ package sr25519
 
 import (
 	"github.com/tendermint/tendermint/crypto"
-	tmjson "github.com/tendermint/tendermint/libs/json"
+	cmtjson "github.com/tendermint/tendermint/libs/json"
 )
 
 var _ crypto.PrivKey = PrivKey{}
@@ -18,6 +18,6 @@ const (
 
 func init() {
 
-	tmjson.RegisterType(PubKey{}, PubKeyName)
-	tmjson.RegisterType(PrivKey{}, PrivKeyName)
+	cmtjson.RegisterType(PubKey{}, PubKeyName)
+	cmtjson.RegisterType(PrivKey{}, PrivKeyName)
 }

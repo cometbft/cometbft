@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	tmcrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+	cmtcrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 //----------------------------------------
@@ -21,7 +21,7 @@ import (
 type ProofOperator interface {
 	Run([][]byte) ([][]byte, error)
 	GetKey() []byte
-	ProofOp() tmcrypto.ProofOp
+	ProofOp() cmtcrypto.ProofOp
 }
 
 //----------------------------------------
@@ -71,7 +71,7 @@ func (poz ProofOperators) Verify(root []byte, keypath string, args [][]byte) (er
 //----------------------------------------
 // ProofRuntime - main entrypoint
 
-type OpDecoder func(tmcrypto.ProofOp) (ProofOperator, error)
+type OpDecoder func(cmtcrypto.ProofOp) (ProofOperator, error)
 
 type ProofRuntime struct {
 	decoders map[string]OpDecoder
@@ -91,7 +91,7 @@ func (prt *ProofRuntime) RegisterOpDecoder(typ string, dec OpDecoder) {
 	prt.decoders[typ] = dec
 }
 
-func (prt *ProofRuntime) Decode(pop tmcrypto.ProofOp) (ProofOperator, error) {
+func (prt *ProofRuntime) Decode(pop cmtcrypto.ProofOp) (ProofOperator, error) {
 	decoder := prt.decoders[pop.Type]
 	if decoder == nil {
 		return nil, fmt.Errorf("unrecognized proof type %v", pop.Type)
@@ -99,7 +99,7 @@ func (prt *ProofRuntime) Decode(pop tmcrypto.ProofOp) (ProofOperator, error) {
 	return decoder(pop)
 }
 
-func (prt *ProofRuntime) DecodeProof(proof *tmcrypto.ProofOps) (ProofOperators, error) {
+func (prt *ProofRuntime) DecodeProof(proof *cmtcrypto.ProofOps) (ProofOperators, error) {
 	poz := make(ProofOperators, 0, len(proof.Ops))
 	for _, pop := range proof.Ops {
 		operator, err := prt.Decode(pop)
@@ -111,17 +111,17 @@ func (prt *ProofRuntime) DecodeProof(proof *tmcrypto.ProofOps) (ProofOperators, 
 	return poz, nil
 }
 
-func (prt *ProofRuntime) VerifyValue(proof *tmcrypto.ProofOps, root []byte, keypath string, value []byte) (err error) {
+func (prt *ProofRuntime) VerifyValue(proof *cmtcrypto.ProofOps, root []byte, keypath string, value []byte) (err error) {
 	return prt.Verify(proof, root, keypath, [][]byte{value})
 }
 
 // TODO In the long run we'll need a method of classifcation of ops,
 // whether existence or absence or perhaps a third?
-func (prt *ProofRuntime) VerifyAbsence(proof *tmcrypto.ProofOps, root []byte, keypath string) (err error) {
+func (prt *ProofRuntime) VerifyAbsence(proof *cmtcrypto.ProofOps, root []byte, keypath string) (err error) {
 	return prt.Verify(proof, root, keypath, nil)
 }
 
-func (prt *ProofRuntime) Verify(proof *tmcrypto.ProofOps, root []byte, keypath string, args [][]byte) (err error) {
+func (prt *ProofRuntime) Verify(proof *cmtcrypto.ProofOps, root []byte, keypath string, args [][]byte) (err error) {
 	poz, err := prt.DecodeProof(proof)
 	if err != nil {
 		return fmt.Errorf("decoding proof: %w", err)

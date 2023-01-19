@@ -11,14 +11,14 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
-	// tmjson "github.com/tendermint/tendermint/libs/json"
-	tmcon "github.com/tendermint/tendermint/consensus"
+	// cmtjson "github.com/tendermint/tendermint/libs/json"
+	cmtcon "github.com/tendermint/tendermint/consensus"
 	auto "github.com/tendermint/tendermint/libs/autofile"
 	"github.com/tendermint/tendermint/libs/log"
-	tmos "github.com/tendermint/tendermint/libs/os"
+	cmtos "github.com/tendermint/tendermint/libs/os"
 	"github.com/tendermint/tendermint/libs/service"
-	tmcons "github.com/tendermint/tendermint/proto/tendermint/consensus"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	cmtcons "github.com/tendermint/tendermint/proto/tendermint/consensus"
+	cmttime "github.com/tendermint/tendermint/types/time"
 )
 
 const (
@@ -32,9 +32,9 @@ const (
 //--------------------------------------------------------
 // types and functions for savings consensus messages
 // func init() {
-// 	tmjson.RegisterType(msgInfo{}, "tendermint/wal/MsgInfo")
-// 	tmjson.RegisterType(timeoutInfo{}, "tendermint/wal/TimeoutInfo")
-// 	tmjson.RegisterType(tmcon.EndHeightMessage  {}, "tendermint/wal/EndHeightMessage  ")
+// 	cmtjson.RegisterType(msgInfo{}, "tendermint/wal/MsgInfo")
+// 	cmtjson.RegisterType(timeoutInfo{}, "tendermint/wal/TimeoutInfo")
+// 	cmtjson.RegisterType(cmtcon.EndHeightMessage  {}, "tendermint/wal/EndHeightMessage  ")
 // }
 
 // Write ahead logger writes msgs to disk before they are processed.
@@ -53,12 +53,12 @@ type BaseWAL struct {
 	flushInterval time.Duration
 }
 
-var _ tmcon.WAL = &BaseWAL{}
+var _ cmtcon.WAL = &BaseWAL{}
 
 // NewWAL returns a new write-ahead logger based on `baseWAL`, which implements
 // WAL. It's flushed and synced to disk every 2s and once when stopped.
 func NewWAL(walFile string, groupOptions ...func(*auto.Group)) (*BaseWAL, error) {
-	err := tmos.EnsureDir(filepath.Dir(walFile), 0700)
+	err := cmtos.EnsureDir(filepath.Dir(walFile), 0700)
 	if err != nil {
 		return nil, fmt.Errorf("failed to ensure WAL directory is in place: %w", err)
 	}
@@ -95,7 +95,7 @@ func (wal *BaseWAL) OnStart() error {
 	if err != nil {
 		return err
 	} else if size == 0 {
-		if err := wal.WriteSync(tmcon.EndHeightMessage{Height: 0}); err != nil {
+		if err := wal.WriteSync(cmtcon.EndHeightMessage{Height: 0}); err != nil {
 			return err
 		}
 	}
@@ -150,12 +150,12 @@ func (wal *BaseWAL) Wait() {
 // Write is called in newStep and for each receive on the
 // peerMsgQueue and the timeoutTicker.
 // NOTE: does not call fsync()
-func (wal *BaseWAL) Write(msg tmcon.WALMessage) error {
+func (wal *BaseWAL) Write(msg cmtcon.WALMessage) error {
 	if wal == nil {
 		return nil
 	}
 
-	if err := wal.enc.Encode(&tmcon.TimedWALMessage{Time: tmtime.Now(), Msg: msg}); err != nil {
+	if err := wal.enc.Encode(&cmtcon.TimedWALMessage{Time: cmttime.Now(), Msg: msg}); err != nil {
 		wal.Logger.Error("Error writing msg to consensus wal. WARNING: recover may not be possible for the current height",
 			"err", err, "msg", msg)
 		return err
@@ -167,7 +167,7 @@ func (wal *BaseWAL) Write(msg tmcon.WALMessage) error {
 // WriteSync is called when we receive a msg from ourselves
 // so that we write to disk before sending signed messages.
 // NOTE: calls fsync()
-func (wal *BaseWAL) WriteSync(msg tmcon.WALMessage) error {
+func (wal *BaseWAL) WriteSync(msg cmtcon.WALMessage) error {
 	if wal == nil {
 		return nil
 	}
@@ -199,9 +199,9 @@ type WALSearchOptions struct {
 // CONTRACT: caller must close group reader.
 func (wal *BaseWAL) SearchForEndHeight(
 	height int64,
-	options *tmcon.WALSearchOptions) (rd io.ReadCloser, found bool, err error) {
+	options *cmtcon.WALSearchOptions) (rd io.ReadCloser, found bool, err error) {
 	var (
-		msg *tmcon.TimedWALMessage
+		msg *cmtcon.TimedWALMessage
 		gr  *auto.GroupReader
 	)
 	lastHeightFound := int64(-1)
@@ -237,7 +237,7 @@ func (wal *BaseWAL) SearchForEndHeight(
 				return nil, false, err
 			}
 
-			if m, ok := msg.Msg.(tmcon.EndHeightMessage); ok {
+			if m, ok := msg.Msg.(cmtcon.EndHeightMessage); ok {
 				lastHeightFound = m.Height
 				if m.Height == height { // found
 					wal.Logger.Info("Found", "height", height, "index", index)
@@ -268,12 +268,12 @@ func NewWALEncoder(wr io.Writer) *WALEncoder {
 // Encode writes the custom encoding of v to the stream. It returns an error if
 // the encoded size of v is greater than 1MB. Any error encountered
 // during the write is also returned.
-func (enc *WALEncoder) Encode(v *tmcon.TimedWALMessage) error {
+func (enc *WALEncoder) Encode(v *cmtcon.TimedWALMessage) error {
 	pbMsg, err := WALToProto(v.Msg)
 	if err != nil {
 		return err
 	}
-	pv := tmcons.TimedWALMessage{
+	pv := cmtcons.TimedWALMessage{
 		Time: v.Time,
 		Msg:  pbMsg,
 	}
@@ -335,7 +335,7 @@ func NewWALDecoder(rd io.Reader) *WALDecoder {
 }
 
 // Decode reads the next custom-encoded value from its reader and returns it.
-func (dec *WALDecoder) Decode() (*tmcon.TimedWALMessage, error) {
+func (dec *WALDecoder) Decode() (*cmtcon.TimedWALMessage, error) {
 	b := make([]byte, 4)
 
 	_, err := dec.rd.Read(b)
@@ -373,7 +373,7 @@ func (dec *WALDecoder) Decode() (*tmcon.TimedWALMessage, error) {
 		return nil, DataCorruptionError{fmt.Errorf("checksums do not match: read: %v, actual: %v", crc, actualCRC)}
 	}
 
-	var res = new(tmcons.TimedWALMessage)
+	var res = new(cmtcons.TimedWALMessage)
 	err = proto.Unmarshal(data, res)
 	if err != nil {
 		return nil, DataCorruptionError{fmt.Errorf("failed to decode data: %v", err)}
@@ -383,7 +383,7 @@ func (dec *WALDecoder) Decode() (*tmcon.TimedWALMessage, error) {
 	if err != nil {
 		return nil, DataCorruptionError{fmt.Errorf("failed to convert from proto: %w", err)}
 	}
-	tMsgWal := &tmcon.TimedWALMessage{
+	tMsgWal := &cmtcon.TimedWALMessage{
 		Time: res.Time,
 		Msg:  walMsg,
 	}
@@ -393,13 +393,13 @@ func (dec *WALDecoder) Decode() (*tmcon.TimedWALMessage, error) {
 
 type nilWAL struct{}
 
-var _ tmcon.WAL = nilWAL{}
+var _ cmtcon.WAL = nilWAL{}
 
-func (nilWAL) Write(m tmcon.WALMessage) error     { return nil }
-func (nilWAL) WriteSync(m tmcon.WALMessage) error { return nil }
-func (nilWAL) FlushAndSync() error                { return nil }
+func (nilWAL) Write(m cmtcon.WALMessage) error     { return nil }
+func (nilWAL) WriteSync(m cmtcon.WALMessage) error { return nil }
+func (nilWAL) FlushAndSync() error                 { return nil }
 func (nilWAL) SearchForEndHeight(height int64,
-	options *tmcon.WALSearchOptions) (rd io.ReadCloser, found bool, err error) {
+	options *cmtcon.WALSearchOptions) (rd io.ReadCloser, found bool, err error) {
 	return nil, false, nil
 }
 func (nilWAL) Start() error { return nil }

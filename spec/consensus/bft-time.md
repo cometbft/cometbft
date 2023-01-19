@@ -16,8 +16,9 @@ Precommit messages (from the LastCommit field) sent by correct processes, i.e.,
 a faulty process cannot arbitrarily increase the Time value.  
 
 In the context of CometBFT, time is of type int64 and denotes UNIX time in milliseconds, i.e.,
-corresponds to the number of milliseconds since January 1, 1970. Before defining rules that need to be enforced by the
-CometBFT's consensus protocol (Tendermint), so the properties above holds, we introduce the following definition:
+corresponds to the number of milliseconds since January 1, 1970.
+Before defining rules that need to be enforced by Tendermint, the consensus protocol adopted by CometBFT,
+so the properties above holds, we introduce the following definition:
 
 - median of a Commit is equal to the median of `Vote.Time` fields of the `Vote` messages,
 where the value of `Vote.Time` is counted number of times proportional to the process voting power. As

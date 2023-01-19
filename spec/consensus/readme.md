@@ -13,7 +13,7 @@ Specification of the consensus protocol implemented on CometBFT.
 
 - [Consensus Paper](./consensus-paper) - Latex paper on
   [arxiv](https://arxiv.org/abs/1807.04938) describing the
-  Tendermint consensus protocol with proofs of safety and termination.
+  Tendermint consensus protocol, adopted by CometBFT, with proofs of safety and termination.
 - [BFT Time](./bft-time.md) - How the timestamp in a CometBFT
   block header is computed in a Byzantine Fault Tolerant manner
 - [Creating Proposal](./creating-proposal.md) - How a proposer

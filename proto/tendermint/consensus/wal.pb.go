@@ -5,12 +5,12 @@ package consensus
 
 import (
 	fmt "fmt"
+	types "github.com/cometbft/cometbft/proto/tendermint/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	_ "github.com/cosmos/gogoproto/types"
 	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
 	_ "github.com/golang/protobuf/ptypes/duration"
-	types "github.com/cometbft/cometbft/proto/tendermint/types"
 	io "io"
 	math "math"
 	math_bits "math/bits"

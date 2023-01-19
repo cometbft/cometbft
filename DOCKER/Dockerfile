@@ -3,7 +3,6 @@
 ARG GOLANG_BASE_IMAGE=golang:1.18-alpine
 
 # TODO(thane): Remove once we publish the cometbft-db repository.
-ENV GOPRIVATE=github.com/cometbft/cometbft-db
 ARG GO_MODULES_TOKEN
 
 # stage 1 Generate CometBFT Binary
@@ -15,6 +14,7 @@ COPY / /cometbft
 WORKDIR /cometbft
 
 # TODO(thane): Remove once we publish the cometbft-db repository.
+ENV GOPRIVATE=github.com/cometbft/cometbft-db
 RUN git config \
 	--global url.https://${GO_MODULES_TOKEN}@github.com/.insteadOf https://github.com/
 

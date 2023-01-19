@@ -186,8 +186,8 @@ eventually be present at the mempool of a validator/proposer.
 
 For the purpose of this document (specifying what the mempool needs from p2p), 
 we do not strive to precisely state the end-to-end requirements. Rather, we 
-will show that the arguably strongest requirement on the mempool do translate
-into requirements on the p2p layer that are not stronger than those of the
+will show that the arguably strongest requirement on the mempool do translate roughly
+into requirements on the p2p layer that are similar to those of the
 consensus reactor.
 
 - e-t-e requirement: "every transaction submitted should be eventually put into a block"
@@ -217,12 +217,26 @@ is still some possible overtaking due to faulty proposers); cf. no starvation.
 
 > Point 2. has potential to be weakened in practice, as it might be sufficient for a transaction to reach one correct validator as in practice CometBFT decides in one round. 
 
+## Evidence reactor
 
+All that we found for the mempool also applies for the evidence reactor. 
+Evidence are specific transactions that are used by the application (e.g., the staking module) to punish misbehavior. Typical applications (CosmosSDK chains) thus would benefit from timeliness: due to proof-of-stake and unbonding periods, a specific evidence transaction has an expiration date after which the application cannot act upon it.
+
+There are several crucial things that are outside of the control of the evidence reactor
+1. (application level) unbonding period
+2. BFT time (written into the blocks) is under control of consensus
+3. when evidence is put into a block (similar to the mempool we may assume that correct proposers always put all the evidence they are aware of in a block, but CometBFT cannot enforce that)
+4. when evidence is submitted
+
+In face of this uncertainty, the only reasonable requirement we can postulate is that an evidence transaction reaches all validator nodes as "fast as possible".
+
+> With more control over the four points, in principle we might define a real-time property which formalizes "evidence is written into a block before it expires" and consequently 
+
+TODO: discuss validation of evidence in evidence reactor (in particular where unbonding period is visible)
 
  ## The rest
 
-    - evidence: evidence reaches proposer before the evidence expires
-    >  talk about the 1-to-1 and the 1-to-many/all delivery guarantees needed by the protocols (do this for each protocol. discuss how these requirements translate into what p2p should guarantee)
+
     - blocksync and statesync: mainly request/response protocols
 - What does p2p expect from the reactors? (don't falsely report bad nodes; this puts requirements on the reactors and perhaps/likely also on the application running on top of ABCI)
 

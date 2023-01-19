@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-	"github.com/tendermint/tendermint/test/loadtime/payload"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/test/loadtime/payload"
+	"github.com/cometbft/cometbft/types"
 	"gonum.org/v1/gonum/stat"
 )
 

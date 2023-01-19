@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/tendermint/tendermint/test/loadtime/payload"
-	"github.com/tendermint/tendermint/test/loadtime/report"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/test/loadtime/payload"
+	"github.com/cometbft/cometbft/test/loadtime/report"
+	"github.com/cometbft/cometbft/types"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

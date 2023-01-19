@@ -4,9 +4,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/tendermint/tendermint/config"
-	cmtrand "github.com/tendermint/tendermint/libs/rand"
-	cmtsync "github.com/tendermint/tendermint/libs/sync"
+	"github.com/cometbft/cometbft/config"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 // FuzzedConnection wraps any net.Conn and depending on the mode either delays

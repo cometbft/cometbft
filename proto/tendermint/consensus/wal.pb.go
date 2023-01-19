@@ -10,7 +10,7 @@ import (
 	_ "github.com/cosmos/gogoproto/types"
 	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
 	_ "github.com/golang/protobuf/ptypes/duration"
-	types "github.com/tendermint/tendermint/proto/tendermint/types"
+	types "github.com/cometbft/cometbft/proto/tendermint/types"
 	io "io"
 	math "math"
 	math_bits "math/bits"

@@ -15,17 +15,17 @@ import (
 	"github.com/stretchr/testify/require"
 	dbm "github.com/tendermint/tm-db"
 
-	cfg "github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/internal/test"
-	"github.com/tendermint/tendermint/libs/log"
-	cmtrand "github.com/tendermint/tendermint/libs/rand"
-	cmtstore "github.com/tendermint/tendermint/proto/tendermint/store"
-	cmtversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/types"
-	cmttime "github.com/tendermint/tendermint/types/time"
-	"github.com/tendermint/tendermint/version"
+	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/internal/test"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	cmtstore "github.com/cometbft/cometbft/proto/tendermint/store"
+	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/cometbft/cometbft/version"
 )
 
 // A cleanupFunc cleans up any config / test files created for a particular

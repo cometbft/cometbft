@@ -3,9 +3,9 @@ package state
 import (
 	dbm "github.com/tendermint/tm-db"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	cmtstate "github.com/tendermint/tendermint/proto/tendermint/state"
-	"github.com/tendermint/tendermint/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
+	"github.com/cometbft/cometbft/types"
 )
 
 //

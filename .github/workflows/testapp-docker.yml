@@ -61,5 +61,5 @@ jobs:
           push: ${{ github.event_name != 'beep_boop' }}
           tags: ${{ steps.prep.outputs.tags }}
           # TODO(thane): Remove when we publish cometbft-db repository.
-          args: |
+          build-args: |
             "GO_MODULES_TOKEN=${{ secrets.GO_MODULES_TOKEN }}"

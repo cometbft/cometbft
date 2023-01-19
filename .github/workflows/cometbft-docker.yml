@@ -60,5 +60,5 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.prep.outputs.tags }}
-          args: |
+          build-args: |
             "GO_MODULES_TOKEN=${{ secrets.GO_MODULES_TOKEN }}"

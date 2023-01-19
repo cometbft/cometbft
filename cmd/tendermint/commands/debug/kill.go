@@ -27,7 +27,7 @@ go-routine state, and the node's WAL and config information. This aggregated dat
 is packaged into a compressed archive.
 
 Example:
-$ cometbft debug 34255 /path/to/tm-debug.zip`,
+$ cometbft debug 34255 /path/to/cmt-debug.zip`,
 	Args: cobra.ExactArgs(2),
 	RunE: killCmdHandler,
 }

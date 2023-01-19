@@ -124,7 +124,7 @@ protocol matches corresponding headers provided by the secondaries.
 If this is not the case, the protocol analyses the verification traces
 of the involved full nodes
 and generates
-[evidence](detection/detection_003_reviewed.md#tmbc-lc-evidence-data1)
+[evidence](detection/detection_003_reviewed.md#cmbc-lc-evidence-data1)
 of misbehavior that can be submitted to a full node so that
 the faulty validators can be punished.
 
@@ -186,7 +186,7 @@ The detailed experimental results are to be added soon.
 ## Accountability
 
 The [English specification](attacks/isolate-attackers_002_reviewed.md)
-defines the protocol that is executed on a full node upon receiving attack [evidence](detection/detection_003_reviewed.md#tmbc-lc-evidence-data1) from a lightclient. In particular, the protocol handles three types of attacks
+defines the protocol that is executed on a full node upon receiving attack [evidence](detection/detection_003_reviewed.md#cmbc-lc-evidence-data1) from a lightclient. In particular, the protocol handles three types of attacks
 
 - lunatic
 - equivocation

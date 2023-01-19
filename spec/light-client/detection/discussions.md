@@ -43,7 +43,7 @@
 
 - Observe that just two blocks for the same height are not
 sufficient proof of fork.
-One of the blocks may be bogus [TMBC-BOGUS.1] which does
+One of the blocks may be bogus [CMBC-BOGUS.1] which does
 not constitute slashable behavior.  
 Which leads to the question whether the light node should try to do
 fork detection on its initial block (from subjective

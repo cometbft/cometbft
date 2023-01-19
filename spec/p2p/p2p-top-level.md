@@ -160,12 +160,67 @@ Since the systems we are building are decentralized and distributed, the global 
 
 ## Mempool
 
+Considering the whole CometBFT system, intuitively, there should be end-to-end 
+requirements regarding transaction processing, e.g., "every transaction submitted
+should be eventually put into a block" or "every transaction should be put in
+at most one block". Note that these are just simple examples that are neither ensured
+by current implementation nor are actually required by the system (e.g., typically we 
+do not care about "all" transaction but rather "all valid"). 
+Which of such requirements are actually ensured by the 
+system depends on the guarantees by the concerned parts of the system.
+
+The mempool is a distributed pool of pending transactions.
+A pending transaction is a valid transaction that has been submitted by a
+client of the blockchain but has not yet been committed to the blockchain.
+The mempool is thus fed with client transactions,
+that a priori can be submitted to any node in the network.
+And it is consumed by the consensus protocol, more specifically by validator nodes,
+which retrieve from the mempool transactions to be included in proposed blocks.
+
+As 
+- full nodes add transactions to the mempool following client requests, and
+- validators read transactions from the mempool to compose proposed blocks,
+the mentioned end-to-end requirements on transactions translate into requirements 
+on the mempool, e.g., every transaction that is submitted to a fullnode should 
+eventually be present at the mempool of a validator/proposer. 
+
+For the purpose of this document (specifying what the mempool needs from p2p), 
+we do not strive to precisely state the end-to-end requirements. Rather, we 
+will show that the arguably strongest requirement on the mempool do translate
+into requirements on the p2p layer that are not stronger than those of the
+consensus reactor.
+
+- e-t-e requirement: "every transaction submitted should be eventually put into a block"
+- requirement for consensus: for every submitted transaction from some hight on, 
+the transaction is proposed by every correct validator in every height until it is written
+into a block (assuming infinitely often correct proposers get their proposal through)  
+- current solution to address this requirement: 
+    - the mempool of correct validators is organized at a list. 
+    > This list can be understood as a shared data structure with relaxed semantics, that is,
+    not all nodes need to agree on the order of the elements, but we have a property that 
+    approximately says "if at time *t* a transaction tx1 is in the list of all nodes, and a 
+    client submits transaction tx2 after time t, then it is never the case the tx2 is before
+    tx1 in a list of a correct validator.
+    - to prepare a proposal,  a validator requests from the mempool a list of
+pending transactions that respects certain limits, in terms of the number of
+transactions returned, their total size in bytes, and their required gas.
+The mempool then returns the longest **prefix** of its local list of pending
+transactions that respects the limits established by the consensus protocol. 
+> As a result of these two properties, once a transaction is known to all validators, it 
+cannot be overtaken by infinitely many transaction that arrived in the system later (there
+is still some possible overtaking due to faulty proposers); cf. no starvation.
+- requirement on the mempool: 
+   1. every transaction submitted to a correct full node must eventually be included in the mempool of a correct validator
+   2. if a transaction is included in the mempool of a correct validator eventually it is included in the mempool of all correct validators 
+
+> Point 1. appears slightly stronger that the requirement of the consensus reactor, as here all full nodes are sources of transaction, while in consensus only validators are source of consensus messages.
+
+> Point 2. has potential to be weakened in practice, as it might be sufficient for a transaction to reach one correct validator as in practice CometBFT decides in one round. 
 
 
-     
-    - mempool 
-        - might just need that a transaction can reach each validator within a reasonable amount of time (this might be achievable if at no point in time the current graph is connected, but, e.g., something along the lines that the union of the graphs over some period in time is connected.)
-        - sends ordered list of transactions to peers (ordering might also require stability)
+
+ ## The rest
+
     - evidence: evidence reaches proposer before the evidence expires
     >  talk about the 1-to-1 and the 1-to-many/all delivery guarantees needed by the protocols (do this for each protocol. discuss how these requirements translate into what p2p should guarantee)
     - blocksync and statesync: mainly request/response protocols

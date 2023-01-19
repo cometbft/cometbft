@@ -63,4 +63,3 @@ jobs:
           # TODO(thane): Remove when we publish cometbft-db repository.
           build-args:
             - GO_MODULES_TOKEN=${{ secrets.GO_MODULES_TOKEN }}
-

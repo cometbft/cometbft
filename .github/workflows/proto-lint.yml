@@ -19,3 +19,4 @@ jobs:
       - uses: bufbuild/buf-lint-action@v1
         with:
           input: 'proto'
+          buf_token: ${{ secrets.BUF_API_TOKEN }}

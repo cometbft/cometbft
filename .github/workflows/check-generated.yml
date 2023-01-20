@@ -74,5 +74,7 @@ jobs:
             echo ">> Ensure your tools are up-to-date, re-run 'make proto-gen' and update this PR."
             echo ">>"
             git diff
+            go version
+            buf --version
             exit 1
           fi

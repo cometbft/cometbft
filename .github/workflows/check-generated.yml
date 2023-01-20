@@ -74,5 +74,6 @@ jobs:
             echo ">> Ensure your tools are up-to-date, re-run 'make proto-gen' and update this PR."
             echo ">>"
             git diff
+            strings `which protoc-gen-gogofaster` | grep "mod.*gogoproto"
             exit 1
           fi

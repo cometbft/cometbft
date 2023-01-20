@@ -14,12 +14,21 @@ jobs:
         group: ['00', '01', '02', '03']
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # TODO(thane): Remove once we make the cometbft-db repository public.
+    env:
+      GOPRIVATE: github.com/cometbft/cometbft-db
+      # We have to supply this as an environment variable in order to pass it
+      # through to the "docker" Makefile target in ./test/e2e
+      GO_MODULES_TOKEN: ${{ secrets.GO_MODULES_TOKEN }}
     steps:
       - uses: actions/setup-go@v3
         with:
           go-version: '1.18'
 
       - uses: actions/checkout@v3
+
+      # TODO(thane): Remove once we make the cometbft-db repository public.
+      - run: git config --global url.https://${{ secrets.GO_MODULES_TOKEN }}@github.com/.insteadOf https://github.com/
 
       - name: Build
         working-directory: test/e2e

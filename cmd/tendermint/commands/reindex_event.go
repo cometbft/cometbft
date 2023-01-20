@@ -6,7 +6,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	dbm "github.com/tendermint/tm-db"
+
+	dbm "github.com/cometbft/cometbft-db"
 
 	abcitypes "github.com/tendermint/tendermint/abci/types"
 	cmtcfg "github.com/tendermint/tendermint/config"

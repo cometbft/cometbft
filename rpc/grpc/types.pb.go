@@ -7,7 +7,8 @@ import (
 	context "context"
 	fmt "fmt"
 	types "github.com/cometbft/cometbft/abci/types"
-	proto "github.com/gogo/protobuf/proto"
+	grpc1 "github.com/cosmos/gogoproto/grpc"
+	proto "github.com/cosmos/gogoproto/proto"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -246,10 +247,10 @@ type BroadcastAPIClient interface {
 }
 
 type broadcastAPIClient struct {
-	cc *grpc.ClientConn
+	cc grpc1.ClientConn
 }
 
-func NewBroadcastAPIClient(cc *grpc.ClientConn) BroadcastAPIClient {
+func NewBroadcastAPIClient(cc grpc1.ClientConn) BroadcastAPIClient {
 	return &broadcastAPIClient{cc}
 }
 
@@ -288,7 +289,7 @@ func (*UnimplementedBroadcastAPIServer) BroadcastTx(ctx context.Context, req *Re
 	return nil, status.Errorf(codes.Unimplemented, "method BroadcastTx not implemented")
 }
 
-func RegisterBroadcastAPIServer(s *grpc.Server, srv BroadcastAPIServer) {
+func RegisterBroadcastAPIServer(s grpc1.Server, srv BroadcastAPIServer) {
 	s.RegisterService(&_BroadcastAPI_serviceDesc, srv)
 }
 

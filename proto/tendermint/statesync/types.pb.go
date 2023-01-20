@@ -5,7 +5,7 @@ package statesync
 
 import (
 	fmt "fmt"
-	proto "github.com/gogo/protobuf/proto"
+	proto "github.com/cosmos/gogoproto/proto"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -24,6 +24,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type Message struct {
 	// Types that are valid to be assigned to Sum:
+	//
 	//	*Message_SnapshotsRequest
 	//	*Message_SnapshotsResponse
 	//	*Message_ChunkRequest

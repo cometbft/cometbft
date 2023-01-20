@@ -58,7 +58,7 @@ jobs:
           context: .
           file: ./test/e2e/docker/Dockerfile
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'beep_boop' }}
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.prep.outputs.tags }}
           # TODO(thane): Remove when we publish cometbft-db repository.
           build-args: |

@@ -65,7 +65,7 @@ jobs:
           export GOBIN="${tools}/bin"
 
           go install github.com/bufbuild/buf/cmd/buf@latest
-          go install github.com/cosmos/gogoproto/protoc-gen-gogofaster@v1.4.3
+          go install github.com/cosmos/gogoproto/protoc-gen-gogofaster@latest
 
           make proto-gen
 

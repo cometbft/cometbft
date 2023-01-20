@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
+	dbm "github.com/cometbft/cometbft-db"
 	"github.com/gogo/protobuf/proto"
-	dbm "github.com/tendermint/tm-db"
 
 	cmtsync "github.com/tendermint/tendermint/libs/sync"
 	cmtstore "github.com/tendermint/tendermint/proto/tendermint/store"

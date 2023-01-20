@@ -16,5 +16,9 @@ read -p "==> Build 3 docker images with the following tags (latest, $TAG, $TAG_N
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-		docker build -t "cometbft/cometbft" -t "cometbft/cometbft:$TAG" -t "cometbft/cometbft:$TAG_NO_PATCH" .
+		docker build \
+ 			--build-arg GO_MODULES_TOKEN=${GO_MODULES_TOKEN} \
+ 			-t "cometbft/cometbft" \
+ 			-t "cometbft/cometbft:$TAG" \
+ 			-t "cometbft/cometbft:$TAG_NO_PATCH" .
 fi

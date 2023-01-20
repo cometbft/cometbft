@@ -7,7 +7,7 @@ BUILD_TAGS?=cometbft
 ifneq ($(shell git symbolic-ref -q --short HEAD),)
 VERSION := unreleased-$(shell git symbolic-ref -q --short HEAD)-$(shell git rev-parse HEAD)
 else
-VERSION := $(shell git describe)
+VERSION := $(shell git describe --tags)
 endif
 
 LD_FLAGS = -X github.com/cometbft/cometbft/version.TMCoreSemVer=$(VERSION)
@@ -237,7 +237,7 @@ sync-docs:
 
 build-docker: build-linux
 	cp $(OUTPUT) DOCKER/cometbft
-	docker build --label=cometbft --tag="cometbft/cometbft" DOCKER
+	docker build --label=cometbft --tag="cometbft/cometbft" --build-arg GO_MODULES_TOKEN=${GO_MODULES_TOKEN} --progress=plain DOCKER --no-cache
 	rm -rf DOCKER/cometbft
 .PHONY: build-docker
 

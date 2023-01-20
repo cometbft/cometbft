@@ -2,13 +2,13 @@ name: Lint
 on:
   push:
     branches:
-      - master
+      - v0.34.x
     paths:
       - "**.md"
       - "**.yml"
       - "**.yaml"
   pull_request:
-    branches: [master]
+    branches: [v0.34.x]
     paths:
       - "**.md"
       - "**.yml"
@@ -25,7 +25,7 @@ jobs:
         env:
           LINTER_RULES_PATH: .
           VALIDATE_ALL_CODEBASE: true
-          DEFAULT_BRANCH: master
+          DEFAULT_BRANCH: v0.34.x
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALIDATE_MD: true
           VALIDATE_OPENAPI: true

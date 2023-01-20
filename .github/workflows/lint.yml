@@ -6,7 +6,7 @@ on:
   pull_request:
   push:
     branches:
-      - master
+      - v0.34.x
 jobs:
   golangci:
     name: golangci-lint

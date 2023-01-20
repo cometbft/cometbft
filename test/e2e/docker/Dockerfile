@@ -3,10 +3,6 @@
 # instead of spending time compiling them.
 FROM golang:1.18
 
-# TODO(thane): Remove once we publish the cometbft-db repository.
-ENV GOPRIVATE=github.com/cometbft/cometbft-db
-ARG GO_MODULES_TOKEN
-
 RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
 RUN apt-get -qq install -y libleveldb-dev librocksdb-dev >/dev/null
 
@@ -15,6 +11,8 @@ ENV COMETBFT_BUILD_OPTIONS badgerdb,boltdb,cleveldb,rocksdb
 WORKDIR /src/cometbft
 
 # TODO(thane): Remove once we publish the cometbft-db repository.
+ENV GOPRIVATE=github.com/cometbft/cometbft-db
+ARG GO_MODULES_TOKEN
 RUN git config \
 	--global url.https://${GO_MODULES_TOKEN}@github.com/.insteadOf https://github.com/
 

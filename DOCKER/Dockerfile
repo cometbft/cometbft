@@ -5,14 +5,16 @@ RUN apk update && \
     apk --no-cache add make git 
 COPY / /cometbft
 WORKDIR /cometbft
+# TODO(thane): Remove once we publish the cometbft-db repository.
+ENV GOPRIVATE=github.com/cometbft/cometbft-db
+ARG GO_MODULES_TOKEN
+RUN apk --no-cache add git && git config --global "url.https://${GO_MODULES_TOKEN}@github.com/".insteadOf "https://github.com/"
 RUN make build-linux
 
 # stage 2
 FROM golang:1.18-alpine
 
-# TODO(thane): Remove once we publish the cometbft-db repository.
-ENV GOPRIVATE=github.com/cometbft/cometbft-db
-ARG GO_MODULES_TOKEN
+
 
 LABEL maintainer="hello@informal.systems"
 
@@ -23,9 +25,6 @@ LABEL maintainer="hello@informal.systems"
 #
 # The /cometbft/data dir is used by CometBFT to store state.
 ENV TMHOME /cometbft
-
-# TODO(thane): Remove once we publish the cometbft-db repository.
-RUN apk add git && git config --global url.https://${GO_MODULES_TOKEN}@github.com/.insteadOf https://github.com/
 
 # OS environment setup
 # Set user right away for determinism, create directory for persistence and give our user ownership

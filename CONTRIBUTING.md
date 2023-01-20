@@ -101,8 +101,7 @@ up-to-date.
 
 When updating dependencies, please only update the particular dependencies you
 need. Instead of running `go get -u=patch`, which will update anything,
-specify exactly the dependency you want to update, e.g.
-`GO111MODULE=on go get -u github.com/cometbft/go-amino@master`.
+specify exactly the dependency you want to update.
 
 ## Protobuf
 

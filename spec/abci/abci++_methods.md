@@ -491,10 +491,10 @@ and _p_'s _validValue_ is `nil`:
         * reorder transactions - the Application reorders transactions in the list
 4. The Application includes the transaction list (whether modified or not) in the return parameters
    (see the rules in section _Usage_), and returns from the call.
-5. _p_'s uses the (possibly) modified block as _p_'s proposal in round _r_, height _h_.
+5. _p_ uses the (possibly) modified block as _p_'s proposal in round _r_, height _h_.
 
-Note that, if _p_ has a non-`nil` _validValue_ in round _r_, height _h_, consensus will use it as
-proposal and will not call `RequestPrepareProposal`.
+Note that, if _p_ has a non-`nil` _validValue_ in round _r_, height _h_,
+the consensus algorithm will use it as proposal and will not call `RequestPrepareProposal`.
 
 ### ProcessProposal
 
@@ -550,7 +550,7 @@ When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the prop
 4. Upon reception of Proposal message, along with all the block parts, for round _r_, height _h_
    from _q_, _p_ follows the validators' algorithm to check whether it should prevote for the
    proposed block, or `nil`.
-5. If the validators' algorithm indicates _p_ should prevote for the proposed block:
+5. If the validators' consensus algorithm indicates _p_ should prevote for the proposed block:
     1. CometBFT calls `RequestProcessProposal` with the block. The call is synchronous.
     2. The Application checks/processes the proposed block, which is read-only, and returns
        `ACCEPT` or `REJECT` in the `ResponseProcessProposal.status` field.
@@ -588,7 +588,7 @@ When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the prop
     * The Application may choose to use an empty vote extension (0 length).
     * `RequestExtendVote.hash` corresponds to the hash of a proposed block that was made available
       to the Application in a previous call to `ProcessProposal` for the current height.
-    * `ResponseExtendVote.vote_extension` will only be attached to a non-`nil` Precommit message. If CometBFT's consensus algorithm is to
+    * `ResponseExtendVote.vote_extension` will only be attached to a non-`nil` Precommit message. If the consensus algorithm is to
       precommit `nil`, it will not call `RequestExtendVote`.
     * The Application logic that creates the extension can be non-deterministic.
 
@@ -604,11 +604,11 @@ then _p_ locks _v_  and sends a Precommit message in the following way
 1. _p_ sets _lockedValue_ and _validValue_ to _v_, and sets _lockedRound_ and _validRound_ to _r_
 2. _p_'s CometBFT calls `RequestExtendVote` with _id(v)_ (`RequestExtendVote.hash`). The call is synchronous.
 3. The Application returns an array of bytes, `ResponseExtendVote.extension`, which is not interpreted by the consensus algorithm.
-4. _p_'s CometBFT includes `ResponseExtendVote.extension` in a field of type [CanonicalVoteExtension](#canonicalvoteextension),
+4. _p_ includes `ResponseExtendVote.extension` in a field of type [CanonicalVoteExtension](#canonicalvoteextension),
    it then populates the other fields in [CanonicalVoteExtension](#canonicalvoteextension), and signs the populated
    data structure.
-5. _p_'s CometBFT constructs and signs the [CanonicalVote](../core/data_structures.md#canonicalvote) structure.
-6. _p_'s CometBFT constructs the Precommit message (i.e. [Vote](../core/data_structures.md#vote) structure)
+5. _p_ constructs and signs the [CanonicalVote](../core/data_structures.md#canonicalvote) structure.
+6. _p_ constructs the Precommit message (i.e. [Vote](../core/data_structures.md#vote) structure)
    using [CanonicalVoteExtension](#canonicalvoteextension) and [CanonicalVote](../core/data_structures.md#canonicalvote).
 7. _p_ broadcasts the Precommit message.
 
@@ -643,7 +643,7 @@ a [CanonicalVoteExtension](#canonicalvoteextension) field in the `precommit nil`
     * `RequestVerifyVoteExtension` is not called for precommit votes sent by the local process.
     * `RequestVerifyVoteExtension.hash` refers to a proposed block. There is not guarantee that
       this proposed block has previously been exposed to the Application via `ProcessProposal`.
-    * If `ResponseVerifyVoteExtension.status` is `REJECT`, CometBFT will reject the whole received vote.
+    * If `ResponseVerifyVoteExtension.status` is `REJECT`, the consensus algorithm will reject the whole received vote.
       See the [Requirements](./abci++_app_requirements.md) section to understand the potential
       liveness implications of this.
     * The implementation of `VerifyVoteExtension` MUST be deterministic. Moreover, the value of
@@ -762,7 +762,7 @@ then _p_ decides block _v_ and finalizes consensus for height _h_ in the followi
 9. _p_'s CometBFT, optionally, re-checks all outstanding transactions in the mempool
    against the newly persisted Application state.
 10. _p_'s CometBFT unlocks the mempool &mdash; newly received transactions can now be checked.
-11. _p_'s starts consensus for height _h+1_, round 0
+11. _p_ starts consensus for height _h+1_, round 0
 -->
 ## Data Types existing in ABCI
 
@@ -950,8 +950,8 @@ enum ProposalStatus {
 * **Usage**:
     * Used within the [ProcessProposal](#processproposal) response.
         * If `Status` is `UNKNOWN`, a problem happened in the Application. CometBFT will assume the application is faulty and crash.
-        * If `Status` is `ACCEPT`, CometBFT's consensus accepts the proposal and will issue a Prevote message for it.
-        * If `Status` is `REJECT`, CometBFT's consensus rejects the proposal and will issue a Prevote for `nil` instead.
+        * If `Status` is `ACCEPT`, the consensus algorithm accepts the proposal and will issue a Prevote message for it.
+        * If `Status` is `REJECT`, the consensus algorithm rejects the proposal and will issue a Prevote for `nil` instead.
 
 <!-- 
 ### VerifyStatus
@@ -967,8 +967,8 @@ enum VerifyStatus {
 * **Usage**:
     * Used within the [VerifyVoteExtension](#verifyvoteextension) response.
         * If `Status` is `UNKNOWN`, a problem happened in the Application. CometBFT will assume the application is faulty and crash.
-        * If `Status` is `ACCEPT`, CometBFT's consensus will accept the vote as valid.
-        * If `Status` is `REJECT`, CometBFT's consensus will reject the vote as invalid.
+        * If `Status` is `ACCEPT`, the consensus algorithm will accept the vote as valid.
+        * If `Status` is `REJECT`, the consensus algorithm will reject the vote as invalid.
 
 
 ### CanonicalVoteExtension

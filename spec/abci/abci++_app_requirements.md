@@ -78,12 +78,13 @@ to hit the bug at the same point. There is currently no clear solution to help w
 the Application designers/implementors must proceed very carefully with the logic/implementation
 of `ProcessProposal`. As a general rule `ProcessProposal` SHOULD always accept the block.
 
-According to CometBFT's consensus algorithm, a correct process can broadcast at most one precommit
+According to the Tendermint consensus algorithm, currently adopted in CometBFT,
+a correct process can broadcast at most one precommit
 message in round *r*, height *h*.
 
 <!-- 
 Since, as stated in the [Methods](./abci++_methods.md#extendvote) section, `ResponseExtendVote`
-is only called when CometBFT
+is only called when the consensus algorithm
 is about to broadcast a non-`nil` precommit message, a correct process can only produce one vote extension
 in round *r*, height *h*.
 Let *e<sup>r</sup><sub>p</sub>* be the vote extension that the Application of a correct process *p* returns via
@@ -280,9 +281,9 @@ check if the decided block corresponds to one of its candidate states; if so, it
 its *ExecuteTxState* (see [Consensus Connection](#consensus-connection) below),
 which will be persisted during the upcoming `Commit` call.
 
-Under adverse conditions (e.g., network instability), CometBFT's consensus algorithm might take many rounds.
+Under adverse conditions (e.g., network instability), the consensus algorithm might take many rounds.
 In this case, potentially many proposed blocks will be disclosed to the Application for a given height.
-By the nature of CometBFT's consensus algorithm, the number of proposed blocks received by the Application
+By the nature of Tendermint consensus algorithm, currently adopted in CometBFT, the number of proposed blocks received by the Application
 for a particular height cannot be bound, so Application developers must act with care and use mechanisms
 to bound memory usage. As a general rule, the Application should be ready to discard candidate states
 before block execution, even if one of them might end up corresponding to the
@@ -346,7 +347,7 @@ replay protection mechanism with strong guarantees as part of the logic in `Chec
 #### Info/Query Connection
 
 The Info (or Query) Connection should maintain a `QueryState`. This connection has two
-purposes: 1) having the application answer the queries Tenderissued receives from users
+purposes: 1) having the application answer the queries CometBFT receives from users
 (see section [Query](#query)),
 and 2) synchronizing CometBFT and the Application at start up time (see
 [Crash Recovery](#crash-recovery))
@@ -449,7 +450,7 @@ The `BeginBlock-DeliverTx-EndBlock` sequence is the workhorse of the blockchain.
 A sequence of `DeliverTx` calls delivers the decided block,
 one transaction at a time, to the Application.
 The block delivered (and thus the transaction order) is the same at all correct nodes as guaranteed
-by the Agreement property of the consensus algorithm.
+by the Agreement property of consensus.
 
 The `Data` field contains an array of bytes with the transaction result.
 It must be deterministic (i.e., the same value must be returned at all nodes), but it can contain arbitrary
@@ -542,7 +543,7 @@ These are the current consensus parameters (as of v0.37.x):
 ##### BlockParams.MaxBytes
 
 The maximum size of a complete Protobuf encoded block.
-This is enforced by CometBFT's consensus protocol.
+This is enforced by the consensus algorithm.
 
 This implies a maximum transaction size that is this `MaxBytes`, less the expected size of
 the header, the validator set, and any included evidence in the block.
@@ -552,7 +553,7 @@ Must have `0 < MaxBytes < 100 MB`.
 ##### BlockParams.MaxGas
 
 The maximum of the sum of `GasWanted` that will be allowed in a proposed block.
-This is *not* enforced by CometBFT's consensus protocol.
+This is *not* enforced by the consensus algorithm.
 It is left to the Application to enforce (ie. if transactions are included past the
 limit, they should return non-zero codes). It is used by CometBFT to limit the
 transactions included in a proposed block.
@@ -563,7 +564,7 @@ If `MaxGas == -1`, no limit is enforced.
 ##### EvidenceParams.MaxAgeDuration
 
 This is the maximum age of evidence in time units.
-This is enforced by CometBFT's consensus protocol.
+This is enforced by the consensus algorithm.
 
 If a block includes evidence older than this (AND the evidence was created more
 than `MaxAgeNumBlocks` ago), the block will be rejected (validators won't vote
@@ -574,7 +575,7 @@ Must have `MaxAgeDuration > 0`.
 ##### EvidenceParams.MaxAgeNumBlocks
 
 This is the maximum age of evidence in blocks.
-This is enforced by CometBFT's consensus protocol.
+This is enforced by the consensus algorithm.
 
 If a block includes evidence older than this (AND the evidence was created more
 than `MaxAgeDuration` ago), the block will be rejected (validators won't vote
@@ -665,7 +666,7 @@ When a new height is started, the `Vote` timeout value is reset.
 
 ##### TimeoutParams.Commit
 
-This configures how long Tendermint will wait after receiving a quorum of
+This configures how long Tendermint consensus algorithm will wait after receiving a quorum of
 precommits before beginning consensus for the next height. This can be
 used to allow slow precommits to arrive for inclusion in the next height
 before progressing.

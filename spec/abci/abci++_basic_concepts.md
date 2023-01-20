@@ -92,8 +92,8 @@ call sequences of these methods.
   block execution, and allows the Application to reject invalid blocks.
   CometBFT calls it when it receives a proposal and the consensus algorithm has not locked on a
   value. The Application cannot modify the proposal at this point but can reject it if it is
-  invalid. If that is the case, CometBFT will prevote `nil` on the proposal, which has
-  strong liveness implications for the consensus algorithm. As a general rule, the Application
+  invalid. If that is the case, the consensus algorithm will prevote `nil` on the proposal, which has
+  strong liveness implications for CometBFT. As a general rule, the Application
   SHOULD accept a prepared proposal passed via `ProcessProposal`, even if a part of
   the proposal is invalid (e.g., an invalid transaction); the Application can
   ignore the invalid part of the prepared proposal at block execution time.
@@ -117,19 +117,19 @@ call sequences of these methods.
 
 - [**ExtendVote:**](./abci++_methods.md#extendvote) It allows applications to force their
   validators to do more than just validate within consensus. `ExtendVote` allows applications to
-  include non-deterministic data, opaque to CometBFT, to precommit messages (the final round of
+  include non-deterministic data, opaque to the consensus algorithm, to precommit messages (the final round of
   voting). The data, called *vote extension*, will be broadcast and received together with the
   vote it is extending, and will be made available to the Application in the next height,
   in the rounds where the local process is the proposer.
-  CometBFT calls `ExtendVote` when it is about to send a non-`nil` precommit message.
+  CometBFT calls `ExtendVote` when the consensus algorithm is about to send a non-`nil` precommit message.
   If the Application does not have vote extension information to provide at that time, it returns
   a 0-length byte array as its vote extension.
 
 - [**VerifyVoteExtension:**](./abci++_methods.md#verifyvoteextension) It allows
   validators to validate the vote extension data attached to a precommit message. If the validation
-  fails, the whole precommit message will be deemed invalid and ignored by CometBFT.
-  This has a negative impact on CometBFT's liveness, i.e., if vote extensions repeatedly cannot be
-  verified by correct validators, CometBFT may not be able to finalize a block even if sufficiently
+  fails, the whole precommit message will be deemed invalid and ignored by consensus algorithm.
+  This has a negative impact on liveness, i.e., if vote extensions repeatedly cannot be
+  verified by correct validators, the consensus algorithm may not be able to finalize a block even if sufficiently
   many (+2/3) validators send precommit votes for that block. Thus, `VerifyVoteExtension`
   should be used with special care.
   As a general rule, an Application that detects an invalid vote extension SHOULD
@@ -226,7 +226,7 @@ More details on managing state across connections can be found in the section on
 Immediate execution requires the Application to fully execute the prepared block
 before returning from `PrepareProposal`, this means that CometBFT cannot make progress
 during the block execution.
-This stands on CometBFT's critical path: if the Application takes a long time
+This stands on the consensus algorithm critical path: if the Application takes a long time
 executing the block, the default value of *TimeoutPropose* might not be sufficient
 to accommodate the long block execution time and non-proposer nodes might time
 out and prevote `nil`. The proposal, in this case, will probably be rejected and a new round will be necessary.
@@ -303,7 +303,7 @@ Methods `BeginBlock, DeliverTx` and `EndBlock` include an `events` field in thei
 Applications may respond to this ABCI++ method with an event list for each executed
 transaction, and a general event list for the block itself.
 Events allow applications to associate metadata with transactions and blocks.
-Events returned via these ABCI methods do not impact CometBFT consensus in any way
+Events returned via these ABCI methods do not impact the consensus algorithm in any way
 and instead exist to power subscriptions and queries of CometBFT state.
 
 An `Event` contains a `type` and a list of `EventAttributes`, which are key-value

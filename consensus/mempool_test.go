@@ -47,7 +47,7 @@ func TestMempoolProgressAfterCreateEmptyBlocksInterval(t *testing.T) {
 	config := ResetConfig("consensus_mempool_txs_available_test")
 	defer os.RemoveAll(config.RootDir)
 
-	config.Consensus.CreateEmptyBlocksInterval = ensureTimeout
+	config.Consensus.CreateEmptyBlocksInterval = ensureTimeout + time.Millisecond*50
 	state, privVals := randGenesisState(1, false, 10)
 	cs := newStateWithConfig(config, state, privVals[0], NewCounterApplication())
 

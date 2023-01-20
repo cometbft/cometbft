@@ -40,6 +40,7 @@ jobs:
             echo ">> Generated mocks require update (either Mockery or source files may have changed)."
             echo ">> Ensure your tools are up-to-date, re-run 'make mockery' and update this PR."
             echo ">>"
+            git diff
             exit 1
           fi
 
@@ -75,5 +76,6 @@ jobs:
             echo ">> Protobuf generated code requires update (either tools or .proto files may have changed)."
             echo ">> Ensure your tools are up-to-date, re-run 'make proto-gen' and update this PR."
             echo ">>"
+            git diff
             exit 1
           fi

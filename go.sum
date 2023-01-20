@@ -482,8 +482,6 @@ github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANyt
 github.com/inconshreveable/mousetrap v1.0.1/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
-github.com/informalsystems/tm-db v0.6.6 h1:2q7GUxCQed1UT5qX559WqwBb0xHpbydQYKQmuB8Vlu4=
-github.com/informalsystems/tm-db v0.6.6/go.mod h1:wP8d49A85B7/erz/r4YbKssKw6ylsO/hKtFk7E1aWZI=
 github.com/informalsystems/tm-load-test v1.2.1-0.20230119001926-b4d90b985ef9 h1:ZmJ5ciePupaQ3c6YVC1TvNjR5pSVz9ZUbqfUXwuKSbI=
 github.com/informalsystems/tm-load-test v1.2.1-0.20230119001926-b4d90b985ef9/go.mod h1:DYL/jQ5Hnaqx4IS7vkRVLNOl85JPLE8zyX1PX5EJdMU=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 h1:BQSFePA1RWJOlocH6Fxy8MmwDt+yVQYULKfN0RoTN8A=

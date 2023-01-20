@@ -66,6 +66,7 @@ jobs:
 
           go install github.com/bufbuild/buf/cmd/buf
           go install github.com/cosmos/gogoproto/protoc-gen-gogofaster@latest
+          protoc --version
 
           make proto-gen
 

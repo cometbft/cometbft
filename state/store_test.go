@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cfg "github.com/cometbft/cometbft/config"
@@ -302,5 +302,4 @@ func TestLastABCIResponses(t *testing.T) {
 		_, err = stateStore.LoadABCIResponses(height + 1)
 		assert.Equal(t, sm.ErrABCIResponsesNotPersisted, err)
 	})
-
 }

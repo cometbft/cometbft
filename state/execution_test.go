@@ -723,7 +723,6 @@ func TestPrepareProposalReorderTxs(t *testing.T) {
 	}
 
 	mp.AssertExpectations(t)
-
 }
 
 // TestPrepareProposalErrorOnTooManyTxs tests that the block creation logic returns

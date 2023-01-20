@@ -53,10 +53,10 @@ endif
 # allow users to pass additional flags via the conventional LDFLAGS variable
 LD_FLAGS += $(LDFLAGS)
 
-# Process Docker environment varible TARGETPLATFORM 
+# Process Docker environment varible TARGETPLATFORM
 # in order to build binary with correspondent ARCH
 # by default will always build for linux/amd64
-TARGETPLATFORM ?= 
+TARGETPLATFORM ?=
 GOOS ?= linux
 GOARCH ?= amd64
 GOARM ?=

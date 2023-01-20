@@ -65,8 +65,6 @@ jobs:
           export PATH="${PATH}:${tools}/bin"
           export GOBIN="${tools}/bin"
 
-          go install github.com/cosmos/gogoproto/protoc-gen-gogofaster@latest
-
           make proto-gen
 
           if ! git diff --stat --exit-code ; then

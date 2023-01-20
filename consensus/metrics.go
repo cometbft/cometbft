@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/discard"
-	cstypes "github.com/tendermint/tendermint/consensus/types"
+	cstypes "github.com/cometbft/cometbft/consensus/types"
 
 	prometheus "github.com/go-kit/kit/metrics/prometheus"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"

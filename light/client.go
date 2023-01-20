@@ -9,12 +9,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tendermint/tendermint/libs/log"
-	cmtmath "github.com/tendermint/tendermint/libs/math"
-	cmtsync "github.com/tendermint/tendermint/libs/sync"
-	"github.com/tendermint/tendermint/light/provider"
-	"github.com/tendermint/tendermint/light/store"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/light/provider"
+	"github.com/cometbft/cometbft/light/store"
+	"github.com/cometbft/cometbft/types"
 )
 
 type mode byte
@@ -506,7 +506,7 @@ func (c *Client) VerifyLightBlockAtHeight(ctx context.Context, height int64, now
 // headers are not adjacent, verifySkipping is performed and necessary (not all)
 // intermediate headers will be requested. See the specification for details.
 // Intermediate headers are not saved to database.
-// https://github.com/tendermint/tendermint/blob/v0.34.x/spec/consensus/light-client.md
+// https://github.com/cometbft/cometbft/blob/v0.34.x/spec/consensus/light-client.md
 //
 // If the header, which is older than the currently trusted header, is
 // requested and the light client does not have it, VerifyHeader will perform:

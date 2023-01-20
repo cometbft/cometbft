@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/tendermint/tendermint/p2p"
+	"github.com/cometbft/cometbft/p2p"
 )
 
 var _ p2p.Wrapper = &Txs{}

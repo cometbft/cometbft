@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/privval"
-	"github.com/tendermint/tendermint/tools/tm-signer-harness/internal"
-	"github.com/tendermint/tendermint/version"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/privval"
+	"github.com/cometbft/cometbft/tools/tm-signer-harness/internal"
+	"github.com/cometbft/cometbft/version"
 )
 
 const (

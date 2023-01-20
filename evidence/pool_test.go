@@ -11,16 +11,16 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 
-	"github.com/tendermint/tendermint/evidence"
-	"github.com/tendermint/tendermint/evidence/mocks"
-	"github.com/tendermint/tendermint/libs/log"
-	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	cmtversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	sm "github.com/tendermint/tendermint/state"
-	smmocks "github.com/tendermint/tendermint/state/mocks"
-	"github.com/tendermint/tendermint/store"
-	"github.com/tendermint/tendermint/types"
-	"github.com/tendermint/tendermint/version"
+	"github.com/cometbft/cometbft/evidence"
+	"github.com/cometbft/cometbft/evidence/mocks"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	sm "github.com/cometbft/cometbft/state"
+	smmocks "github.com/cometbft/cometbft/state/mocks"
+	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/version"
 )
 
 func TestMain(m *testing.M) {

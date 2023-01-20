@@ -2,8 +2,8 @@ package p2p
 
 import (
 	"github.com/gogo/protobuf/proto"
-	"github.com/tendermint/tendermint/p2p/conn"
-	tmp2p "github.com/tendermint/tendermint/proto/tendermint/p2p"
+	"github.com/cometbft/cometbft/p2p/conn"
+	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
 )
 
 type ChannelDescriptor = conn.ChannelDescriptor

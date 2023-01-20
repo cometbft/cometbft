@@ -8,18 +8,18 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 
-	"github.com/tendermint/tendermint/libs/log"
-	cmtsync "github.com/tendermint/tendermint/libs/sync"
-	"github.com/tendermint/tendermint/light"
-	lightprovider "github.com/tendermint/tendermint/light/provider"
-	lighthttp "github.com/tendermint/tendermint/light/provider/http"
-	lightrpc "github.com/tendermint/tendermint/light/rpc"
-	lightdb "github.com/tendermint/tendermint/light/store/db"
-	cmtstate "github.com/tendermint/tendermint/proto/tendermint/state"
-	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/types"
-	"github.com/tendermint/tendermint/version"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/light"
+	lightprovider "github.com/cometbft/cometbft/light/provider"
+	lighthttp "github.com/cometbft/cometbft/light/provider/http"
+	lightrpc "github.com/cometbft/cometbft/light/rpc"
+	lightdb "github.com/cometbft/cometbft/light/store/db"
+	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/version"
 )
 
 //go:generate ../scripts/mockery_generate.sh StateProvider

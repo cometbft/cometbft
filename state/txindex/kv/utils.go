@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/google/orderedcode"
-	"github.com/tendermint/tendermint/libs/pubsub/query"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/libs/pubsub/query"
+	"github.com/cometbft/cometbft/types"
 )
 
 // IntInSlice returns true if a is found in the list.

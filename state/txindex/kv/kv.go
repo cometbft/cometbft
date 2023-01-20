@@ -9,7 +9,8 @@ import (
 	"strings"
 
 	"github.com/cosmos/gogoproto/proto"
-	dbm "github.com/tendermint/tm-db"
+
+	dbm "github.com/cometbft/cometbft-db"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/pubsub/query"

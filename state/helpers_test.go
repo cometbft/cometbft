@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto"
@@ -38,7 +38,8 @@ func makeAndCommitGoodBlock(
 	proposerAddr []byte,
 	blockExec *sm.BlockExecutor,
 	privVals map[string]types.PrivValidator,
-	evidence []types.Evidence) (sm.State, types.BlockID, *types.Commit, error) {
+	evidence []types.Evidence,
+) (sm.State, types.BlockID, *types.Commit, error) {
 	// A good block passes
 	state, blockID, err := makeAndApplyGoodBlock(state, height, lastCommit, proposerAddr, blockExec, evidence)
 	if err != nil {
@@ -54,7 +55,8 @@ func makeAndCommitGoodBlock(
 }
 
 func makeAndApplyGoodBlock(state sm.State, height int64, lastCommit *types.Commit, proposerAddr []byte,
-	blockExec *sm.BlockExecutor, evidence []types.Evidence) (sm.State, types.BlockID, error) {
+	blockExec *sm.BlockExecutor, evidence []types.Evidence,
+) (sm.State, types.BlockID, error) {
 	block := state.MakeBlock(height, test.MakeNTxs(height, 10), lastCommit, evidence, proposerAddr)
 	partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
 	if err != nil {
@@ -154,7 +156,6 @@ func makeHeaderPartsResponsesValPubKeyChange(
 	state sm.State,
 	pubkey crypto.PubKey,
 ) (types.Header, types.BlockID, *cmtstate.ABCIResponses) {
-
 	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
 	abciResponses := &cmtstate.ABCIResponses{
 		BeginBlock: &abci.ResponseBeginBlock{},
@@ -179,7 +180,6 @@ func makeHeaderPartsResponsesValPowerChange(
 	state sm.State,
 	power int64,
 ) (types.Header, types.BlockID, *cmtstate.ABCIResponses) {
-
 	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
 	abciResponses := &cmtstate.ABCIResponses{
 		BeginBlock: &abci.ResponseBeginBlock{},
@@ -204,7 +204,6 @@ func makeHeaderPartsResponsesParams(
 	state sm.State,
 	params cmtproto.ConsensusParams,
 ) (types.Header, types.BlockID, *cmtstate.ABCIResponses) {
-
 	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
 	abciResponses := &cmtstate.ABCIResponses{
 		BeginBlock: &abci.ResponseBeginBlock{},
@@ -257,7 +256,10 @@ func (app *testApp) EndBlock(req abci.RequestEndBlock) abci.ResponseEndBlock {
 		ValidatorUpdates: app.ValidatorUpdates,
 		ConsensusParamUpdates: &cmtproto.ConsensusParams{
 			Version: &cmtproto.VersionParams{
-				App: 1}}}
+				App: 1,
+			},
+		},
+	}
 }
 
 func (app *testApp) DeliverTx(req abci.RequestDeliverTx) abci.ResponseDeliverTx {

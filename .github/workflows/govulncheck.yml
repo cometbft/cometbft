@@ -14,6 +14,9 @@ on:
 jobs:
   govulncheck:
     runs-on: ubuntu-latest
+    # TODO(thane): Remove once we make the cometbft-db repository public.
+    env:
+      GOPRIVATE: github.com/cometbft/cometbft-db
     steps:
       - uses: actions/setup-go@v3
         with:
@@ -26,6 +29,8 @@ jobs:
             go.mod
             go.sum
             Makefile
+      # TODO(thane): Remove once we make the cometbft-db repository public.
+      - run: git config --global url.https://${{ secrets.GO_MODULES_TOKEN }}@github.com/.insteadOf https://github.com/
       - name: govulncheck
         run: make vulncheck
         if: "env.GIT_DIFF != ''"

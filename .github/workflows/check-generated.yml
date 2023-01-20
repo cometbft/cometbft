@@ -64,7 +64,7 @@ jobs:
           export PATH="${PATH}:${tools}/bin"
           export GOBIN="${tools}/bin"
 
-          go install github.com/bufbuild/buf/cmd/buf
+          go install github.com/bufbuild/buf/cmd/buf@latest
           go install github.com/cosmos/gogoproto/protoc-gen-gogofaster@latest
 
           make proto-gen

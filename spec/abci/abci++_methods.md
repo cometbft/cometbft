@@ -750,7 +750,7 @@ When a node _p_ is in consensus height _h_, and _p_ receives
 
 then _p_ decides block _v_ and finalizes consensus for height _h_ in the following way
 
-1. _p_'s CometBFT persists _v_ as the decision for height _h_.
+1. _p_ persists _v_ as the decision for height _h_.
 2. _p_'s CometBFT calls `RequestFinalizeBlock` with _v_'s data. The call is synchronous.
 3. _p_'s Application executes block _v_.
 4. _p_'s Application calculates and returns the _AppHash_, along with a list containing

@@ -8,7 +8,7 @@ parent:
 
 # CometBFT Spec
 
-This is a markdown specification of the CometBFT blockchain.
+This is a markdown specification of CometBFT.
 It defines the base data structures, how they are validated,
 and how they are communicated over the network.
 

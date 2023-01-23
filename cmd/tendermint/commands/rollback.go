@@ -16,13 +16,13 @@ import (
 
 var RollbackStateCmd = &cobra.Command{
 	Use:   "rollback",
-	Short: "rollback tendermint state by one height",
+	Short: "rollback CometBFT state by one height",
 	Long: `
 A state rollback is performed to recover from an incorrect application state transition,
-when Tendermint has persisted an incorrect app hash and is thus unable to make
+when CometBFT has persisted an incorrect app hash and is thus unable to make
 progress. Rollback overwrites a state at height n with the state at height n - 1.
 The application should also roll back to height n - 1. No blocks are removed, so upon
-restarting Tendermint the transactions in block n will be re-executed against the
+restarting CometBFT the transactions in block n will be re-executed against the
 application.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -37,7 +37,7 @@ application.
 }
 
 // RollbackState takes the state at the current height n and overwrites it with the state
-// at height n - 1. Note state here refers to tendermint state not application state.
+// at height n - 1. Note state here refers to CometBFT state not application state.
 // Returns the latest state height and app hash alongside an error if there was one.
 func RollbackState(config *cfg.Config) (int64, []byte, error) {
 	// use the parsed config to load the block and state store

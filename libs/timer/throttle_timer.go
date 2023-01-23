@@ -3,7 +3,7 @@ package timer
 import (
 	"time"
 
-	cmtsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 /*

@@ -5,13 +5,13 @@ package tests
 import (
 	"testing"
 
-	abciclient "github.com/tendermint/tendermint/abci/client"
-	"github.com/tendermint/tendermint/abci/example/kvstore"
-	"github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/libs/log"
-	cmtsync "github.com/tendermint/tendermint/libs/sync"
-	mempool "github.com/tendermint/tendermint/mempool"
-	mempoolv1 "github.com/tendermint/tendermint/mempool/v1"
+	abciclient "github.com/cometbft/cometbft/abci/client"
+	"github.com/cometbft/cometbft/abci/example/kvstore"
+	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	mempool "github.com/cometbft/cometbft/mempool"
+	mempoolv1 "github.com/cometbft/cometbft/mempool/v1"
 )
 
 func FuzzMempool(f *testing.F) {

@@ -12,11 +12,11 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 
-	"github.com/tendermint/tendermint/abci/example/code"
-	abci "github.com/tendermint/tendermint/abci/types"
-	mempl "github.com/tendermint/tendermint/mempool"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/abci/example/code"
+	abci "github.com/cometbft/cometbft/abci/types"
+	mempl "github.com/cometbft/cometbft/mempool"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/types"
 )
 
 // for testing
@@ -47,7 +47,7 @@ func TestMempoolProgressAfterCreateEmptyBlocksInterval(t *testing.T) {
 	config := ResetConfig("consensus_mempool_txs_available_test")
 	defer os.RemoveAll(config.RootDir)
 
-	config.Consensus.CreateEmptyBlocksInterval = ensureTimeout
+	config.Consensus.CreateEmptyBlocksInterval = ensureTimeout + time.Millisecond*50
 	state, privVals := randGenesisState(1, false, 10)
 	cs := newStateWithConfig(config, state, privVals[0], NewCounterApplication())
 

@@ -7,7 +7,7 @@ name: Check generated code
 on:
   pull_request:
     branches:
-      - main
+      - v0.37.x
 
 permissions:
   contents: read
@@ -48,7 +48,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v3
         with:
-          go-version: "1.18"
+          go-version: "1.19"
 
       - uses: actions/checkout@v3
         with:
@@ -57,15 +57,6 @@ jobs:
       - name: "Check protobuf generated code"
         run: |
           set -euo pipefail
-
-          # Install buf and gogo tools, so that differences that arise from
-          # toolchain differences are also caught.
-          readonly tools="$(mktemp -d)"
-          export PATH="${PATH}:${tools}/bin"
-          export GOBIN="${tools}/bin"
-
-          go install github.com/bufbuild/buf/cmd/buf
-          go install github.com/cosmos/gogoproto/protoc-gen-gogofaster@latest
 
           make proto-gen
 

@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/tendermint/tendermint/version"
+	"github.com/cometbft/cometbft/version"
 )
 
 const (

@@ -5,7 +5,7 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	"github.com/tendermint/tendermint/p2p"
+	"github.com/cometbft/cometbft/p2p"
 )
 
 var _ p2p.Wrapper = &VoteSetBits{}

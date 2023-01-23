@@ -99,7 +99,7 @@ are discarded.
 
 ### ParamsRequest
 
-In order to build tendermint state, the state provider will request the params at the height of the snapshot and use the header to verify it.
+In order to build the state, the state provider will request the params at the height of the snapshot and use the header to verify it.
 
 | Name     | Type   | Description                | Field Number |
 |----------|--------|----------------------------|--------------|

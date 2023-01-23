@@ -200,7 +200,7 @@ func TestReactorBroadcastEvidenceMemoryLeak(t *testing.T) {
 	pool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 	require.NoError(t, err)
 
-	p := &p2pmocks.Peer{}
+	p := &p2pmocks.EnvelopedPeer{}
 
 	p.On("IsRunning").Once().Return(true)
 	p.On("IsRunning").Return(false)

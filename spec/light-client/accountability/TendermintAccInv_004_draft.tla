@@ -338,7 +338,7 @@ AllIfValidRoundThenProposal ==
 (* Under this condition, the faulty processes can decide alone *)
 FaultyQuorum == Cardinality(Faulty) >= THRESHOLD2
 
-(* The standard condition of the Tendermint security model *)
+(* The standard condition of the Cosmos security model *)
 LessThanThirdFaulty == N > 3 * T /\ Cardinality(Faulty) <= T
 
 (*

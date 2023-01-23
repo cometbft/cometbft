@@ -1,6 +1,6 @@
 -------------------- MODULE TendermintAcc_004_draft ---------------------------
 (*
- A TLA+ specification of a simplified Tendermint consensus, tuned for
+ A TLA+ specification of a simplified Tendermint consensus algorithm, tuned for
  fork accountability. The simplifications are as follows:
 
  - the protocol runs for one height, that is, it is one-shot consensus

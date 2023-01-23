@@ -16,7 +16,6 @@ import (
 )
 
 //go:generate ../scripts/mockery_generate.sh Peer
-//go:generate ../scripts/mockery_generate.sh EnvelopedPeer
 const metricsTickerDuration = 10 * time.Second
 
 // Peer is an interface representing a peer connected on a reactor.
@@ -55,11 +54,6 @@ type Peer interface {
 type EnvelopeSender interface {
 	SendEnvelope(Envelope) bool
 	TrySendEnvelope(Envelope) bool
-}
-
-type EnvelopedPeer interface {
-	EnvelopeSender
-	Peer
 }
 
 // EnvelopeSendShim implements a shim to allow the legacy peer type that

@@ -34,6 +34,6 @@ jobs:
           # must be specified without patch version: we always use the
           # latest patch version.
           version: v1.50.1
-          args: --timeout 10m
+          args: --timeout 10m --print-issued-lines --out-format colored-line-number
           github-token: ${{ secrets.github_token }}
         if: env.GIT_DIFF

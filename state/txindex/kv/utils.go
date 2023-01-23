@@ -3,9 +3,9 @@ package kv
 import (
 	"fmt"
 
-	"github.com/google/orderedcode"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 	"github.com/cometbft/cometbft/types"
+	"github.com/google/orderedcode"
 )
 
 // IntInSlice returns true if a is found in the list.

@@ -113,8 +113,8 @@ In the following, only the details of the data structures needed for this specif
 
 ### Functions
 
-For the purpose of this light client specification, we assume that the Tendermint Full Node
-exposes the following functions over Tendermint RPC:
+For the purpose of this light client specification, we assume that the Cosmos Full Node
+exposes the following functions over RPC:
 
 ```go
     // returns signed header: Header with Commit, for the given height
@@ -545,7 +545,7 @@ Light Client Completeness:
 - The check is successful if sufficiently many validators of `trustedState` are still validators in the height `untrustedHeader.Height` and signed `untrustedHeader`.
 - If `untrustedHeader.Height = trustedHeader.Height + 1`, and both headers were generated correctly, the test passes.
 
-*Verification Condition:* We may need a Tendermint invariant stating that if `untrustedSignedHeader.Header.Height = trustedHeader.Height + 1` then
+*Verification Condition:* We may need an invariant stating that if `untrustedSignedHeader.Header.Height = trustedHeader.Height + 1` then
 `signers(untrustedSignedHeader.Commit) \subseteq validators(trustedHeader.NextValidatorsHash)`.
 
 *Remark*: The variable `trustThreshold` can be used if the user believes that relying on one correct validator is not sufficient.

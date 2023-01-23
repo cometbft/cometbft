@@ -26,7 +26,7 @@ func checkMisbehaviorAndUpdateState(cs: ClientState, PoF: LightNodeProofOfFork)
     - both traces end with header of same height
     - headers are different
     - both traces are supported by PoF.TrustedBlock (`supports`
-   defined in [TMBC-FUNC]), that is, for `t = currentTimestamp()` (see
+   defined in [CMBC-FUNC]), that is, for `t = currentTimestamp()` (see
    ICS 024)
         - supports(PoF.TrustedBlock, PoF.PrimaryTrace[1], t)
         - supports(PoF.PrimaryTrace[i], PoF.PrimaryTrace[i+1], t) for

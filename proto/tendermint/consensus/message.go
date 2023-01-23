@@ -3,8 +3,8 @@ package consensus
 import (
 	"fmt"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/cometbft/cometbft/p2p"
+	"github.com/gogo/protobuf/proto"
 )
 
 var _ p2p.Wrapper = &VoteSetBits{}

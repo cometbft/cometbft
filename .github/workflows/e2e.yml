@@ -32,7 +32,7 @@ jobs:
 
       # TODO(thane): Remove once we make the cometbft-db repository public.
       - run: git config --global url.https://${{ secrets.GO_MODULES_TOKEN }}@github.com/.insteadOf https://github.com/
-      
+     
 
       - name: Build
         working-directory: test/e2e

@@ -65,4 +65,3 @@ networks:
       config:
       -
         subnet: 192.167.10.0/16
-

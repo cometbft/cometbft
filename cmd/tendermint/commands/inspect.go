@@ -19,14 +19,14 @@ import (
 // InspectCmd is the command for starting an inspect server.
 var InspectCmd = &cobra.Command{
 	Use:   "inspect",
-	Short: "Run an inspect server for investigating Tendermint state",
+	Short: "Run an inspect server for investigating CometBFT state",
 	Long: `
-	inspect runs a subset of Tendermint's RPC endpoints that are useful for debugging
-	issues with Tendermint.
+	inspect runs a subset of CometBFT's RPC endpoints that are useful for debugging
+	issues with CometBFT.
 
-	When the Tendermint consensus engine detects inconsistent state, it will crash the
-	Tendermint process. Tendermint will not start up while in this inconsistent state. 
-	The inspect command can be used to query the block and state store using Tendermint
+	When the CometBFT detects inconsistent state, it will crash the
+	CometBFT process. CometBFT will not start up while in this inconsistent state.
+	The inspect command can be used to query the block and state store using CometBFT
 	RPC calls to debug issues of inconsistent state.
 	`,
 

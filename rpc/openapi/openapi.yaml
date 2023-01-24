@@ -541,7 +541,7 @@ paths:
             items:
               type: string
               example:
-                ["f9baeaa15fedf5e1ef7448dd60f46c01f1a9e9c4@1.2.3.4:26656"]
+                '["f9baeaa15fedf5e1ef7448dd60f46c01f1a9e9c4@1.2.3.4:26656"]'
       responses:
         "200":
           description: Dialing seeds in progress. See /net_info for details
@@ -592,7 +592,7 @@ paths:
             items:
               type: string
               example:
-                ["f9baeaa15fedf5e1ef7448dd60f46c01f1a9e9c4@1.2.3.4:26656"]
+                '["f9baeaa15fedf5e1ef7448dd60f46c01f1a9e9c4@1.2.3.4:26656"]'
       responses:
         "200":
           description: Dialing seeds in progress. See /net_info for details
@@ -3044,3 +3044,30 @@ components:
               type: string
               example: "38D4B26B5B725C4F13571EFE022C030390E4C33C8CF6F88EDD142EA769642DBD"
           type: object
+
+    BlockSearchResponse:
+       type: object
+       required:
+         - "jsonrpc"
+         - "id"
+         - "result"
+       properties:
+         jsonrpc:
+           type: string
+           example: "2.0"
+         id:
+           type: integer
+           example: 0
+         result:
+           required:
+             - "blocks"
+             - "total_count"
+           properties:
+             blocks:
+               type: array
+               items:
+                 $ref: "#/components/schemas/BlockComplete"
+             total_count:
+               type: integer
+               example: 2
+           type: object

@@ -61,4 +61,3 @@ jobs:
           tags: ${{ steps.prep.outputs.tags }}
           build-args: |
             "GO_MODULES_TOKEN=${{ secrets.GO_MODULES_TOKEN }}"
-            

@@ -105,7 +105,7 @@ If the interval between successive requests is less than the minimum accepted
 one, the peer is disconnected and [marked as a bad peer](addressbook.md#bad-peers).
 An exception is made for the first two PEX requests received from a peer.
 
-> The probably reason is that, when a new peer is added, the two conditions for
+> The probable reason is that, when a new peer is added, the two conditions for
 > a node to request peer addresses can be triggered with an interval lower than
 > the minimum accepted interval.
 > Since this is a legit behavior, it should not be punished.
@@ -180,7 +180,7 @@ connections and interact in the multiple CometBFT protocols.
 So, when a seed node receives a `PexRequest` message from an inbound peer,
 it sends a `PexAddrs` message, containing a selection of peer
 addresses, back to the peer and *disconnects* from it.
-Seed nodes therefore treat inbound connections from peers as a short-term
+Seed nodes therefore treat inbound connections from peers as short-term
 connections, exclusively intended to retrieve peer addresses.
 Once the requested peer addresses are sent, the connection with the peer is closed.
 

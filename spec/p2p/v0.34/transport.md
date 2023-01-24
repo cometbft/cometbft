@@ -43,9 +43,9 @@ The `NetAddress` method exports the listen address configured for the transport.
 The maximum number of simultaneous incoming connections accepted by the listener
 is bound to `MaxNumInboundPeer` plus the configured number of unconditional peers,
 using the `MultiplexTransportMaxIncomingConnections` option,
-in the node [initialization](https://github.com/cometbft/cometbft/blob/29c5a062d23aaef653f11195db55c45cd9e02715/node/node.go#L563).
+in the node [initialization](https://github.com/cometbft/cometbft/blob/v0.34.x/node/node.go#L563).
 
-This method is called when a node is [started](https://github.com/cometbft/cometbft/blob/29c5a062d23aaef653f11195db55c45cd9e02715/node/node.go#L972).
+This method is called when a node is [started](https://github.com/cometbft/cometbft/blob/v0.34.x/node/node.go#L972).
 In case of errors, the `acceptPeers` routine is not started and the error is returned.
 
 ## Accept
@@ -216,7 +216,7 @@ For this reason, this method is not invoked with a started transport.
 > Note that the default list of supported channel IDs, including the default reactors,
 > is provided to the transport as its original `NodeInfo` record.
 
-[peer-sts]: https://github.com/cometbft/cometbft/blob/main/spec/p2p/peer.md#authenticated-encryption-handshake
-[peer-handshake]:https://github.com/cometbft/cometbft/blob/main/spec/p2p/peer.md#cometbft-version-handshake
+[peer-sts]: https://github.com/cometbft/cometbft/blob/v0.34.x/spec/p2p/peer.md#authenticated-encryption-handshake
+[peer-handshake]:https://github.com/cometbft/cometbft/blob/v0.34.x/spec/p2p/peer.md#cometbft-version-handshake
 [sts-paper]: https://link.springer.com/article/10.1007/BF00124891
 [sts-paper-pdf]: https://github.com/tendermint/tendermint/blob/0.1/docs/sts-final.pdf

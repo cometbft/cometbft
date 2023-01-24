@@ -31,8 +31,8 @@ In case a lightclient attack is detected, the lightclient submits evidence to a 
 
 The [English specification](verification/verification_001_published.md) describes the light client
 commit verification problem in terms of the temporal properties
-[LCV-DIST-SAFE.1](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1) and
-[LCV-DIST-LIVE.1](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-live1).
+[LCV-DIST-SAFE.1](https://github.com/cometbft/cometbft/blob/v0.34.x/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1) and
+[LCV-DIST-LIVE.1](https://github.com/cometbft/cometbft/blob/v0.34.x/spec/light-client/verification/verification_001_published.md#lcv-dist-live1).
 Commit verification is assumed to operate within the Cosmos Failure Model, where +2/3 of validators are correct for some time period and
 validator sets can change arbitrarily at each height.
 

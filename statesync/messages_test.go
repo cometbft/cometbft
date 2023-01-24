@@ -7,8 +7,8 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/require"
 
-	ssproto "github.com/tendermint/tendermint/proto/tendermint/statesync"
-	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	ssproto "github.com/cometbft/cometbft/proto/tendermint/statesync"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 func TestValidateMsg(t *testing.T) {

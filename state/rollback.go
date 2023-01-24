@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	cmtstate "github.com/tendermint/tendermint/proto/tendermint/state"
-	cmtversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	"github.com/tendermint/tendermint/version"
+	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
+	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	"github.com/cometbft/cometbft/version"
 )
 
 // Rollback overwrites the current Tendermint state (height n) with the most

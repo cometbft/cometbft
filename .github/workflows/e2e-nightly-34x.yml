@@ -42,7 +42,7 @@ jobs:
 
       # TODO(thane): Remove once we make the cometbft-db repository public
       - run: git config --global url.https://${{ secrets.GO_MODULES_TOKEN }}@github.com/.insteadOf https://github.com/
-    
+
       - name: Generate testnets
         working-directory: test/e2e
         # When changing -g, also change the matrix groups above

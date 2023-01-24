@@ -1,7 +1,7 @@
 ---
 
-#Requires BINARY and CONFIGDIR variables set.
-#N=4 hosts by default.
+# Requires BINARY and CONFIGDIR variables set.
+# N=4 hosts by default.
 
 - hosts: all
   user: root
@@ -15,4 +15,3 @@
     - config
     - unsafe_reset
     - start
-

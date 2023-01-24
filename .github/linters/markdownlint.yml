@@ -13,3 +13,4 @@ MD025: false
 MD033: {no-inline-html: false}
 no-hard-tabs: false
 whitespace: false
+FILTER_REGEX_EXCLUDE: "tools/mintnet-kubernetes"

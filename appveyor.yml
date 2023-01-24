@@ -10,4 +10,3 @@ before_build:
 build_script:
   - cmd: make test
 test: off
-

@@ -3046,28 +3046,28 @@ components:
           type: object
 
     BlockSearchResponse:
-       type: object
-       required:
-         - "jsonrpc"
-         - "id"
-         - "result"
-       properties:
-         jsonrpc:
-           type: string
-           example: "2.0"
-         id:
-           type: integer
-           example: 0
-         result:
-           required:
-             - "blocks"
-             - "total_count"
-           properties:
-             blocks:
-               type: array
-               items:
-                 $ref: "#/components/schemas/BlockComplete"
-             total_count:
-               type: integer
-               example: 2
-           type: object
+      type: object
+      required:
+        - "jsonrpc"
+        - "id"
+        - "result"
+      properties:
+       jsonrpc:
+        type: string
+        example: "2.0"
+       id:
+        type: integer
+        example: 0
+       result:
+        required:
+          - "blocks"
+          - "total_count"
+        properties:
+          blocks:
+            type: array
+            items:
+              $ref: "#/components/schemas/BlockComplete"
+          total_count:
+            type: integer
+            example: 2
+        type: object

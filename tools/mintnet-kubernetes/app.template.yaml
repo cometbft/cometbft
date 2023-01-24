@@ -9,10 +9,10 @@ metadata:
     app: YOUR_APP_NAME
 spec:
   ports:
-  - port: 26656
-    name: p2p
-  - port: 26657
-    name: rpc
+    - port: 26656
+      name: p2p
+    - port: 26657
+      name: rpc
   clusterIP: None
   selector:
     app: tm
@@ -80,44 +80,44 @@ spec:
         }]'
     spec:
       containers:
-      - name: tm
-        imagePullPolicy: IfNotPresent
-        image: tendermint/tendermint:0.10.0
-        resources:
-          requests:
-            cpu: 50m
-            memory: 128Mi
-          limits:
-            cpu: 100m
-            memory: 256Mi
-        ports:
-        - containerPort: 26656
-          name: p2p
-        - containerPort: 26657
-          name: rpc
-        env:
-        - name: SEEDS
-          valueFrom:
-            configMapKeyRef:
-              name: tm-config
-              key: seeds
-        - name: VALIDATOR_POWER
-          valueFrom:
-            configMapKeyRef:
-              name: tm-config
-              key: validator.power
-        - name: VALIDATORS
-          valueFrom:
-            configMapKeyRef:
-              name: tm-config
-              key: validators
-        - name: TMHOME
-          value: /tendermint
-        command:
-        - bash
-        - "-c"
-        - |
-          set -ex
+        - name: tm
+          imagePullPolicy: IfNotPresent
+          image: tendermint/tendermint:0.10.0
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 100m
+              memory: 256Mi
+          ports:
+            - containerPort: 26656
+            name: p2p
+            - containerPort: 26657
+            name: rpc
+          env:
+            - name: SEEDS
+            valueFrom:
+              configMapKeyRef:
+                name: tm-config
+                key: seeds
+          - name: VALIDATOR_POWER
+            valueFrom:
+              configMapKeyRef:
+                name: tm-config
+                key: validator.power
+          - name: VALIDATORS
+            valueFrom:
+              configMapKeyRef:
+                name: tm-config
+                key: validators
+          - name: TMHOME
+            value: /tendermint
+          command:
+            - bash
+            - "-c"
+            - |
+              set -ex
 
           # copy template
           cp /etc/tendermint/genesis.json /tendermint/genesis.json

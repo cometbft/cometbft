@@ -4,9 +4,9 @@ import (
 	"strings"
 	"time"
 
+	cstypes "github.com/cometbft/cometbft/consensus/types"
 	"github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/discard"
-	cstypes "github.com/tendermint/tendermint/consensus/types"
 
 	prometheus "github.com/go-kit/kit/metrics/prometheus"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"

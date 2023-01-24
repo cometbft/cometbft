@@ -30,4 +30,4 @@ jobs:
           VALIDATE_OPENAPI: true
           VALIDATE_YAML: true
           YAML_CONFIG_FILE: yaml-lint.yml
-          FILTER_REGEX_EXCLUDE: "/workspace/tools/mintnet-kubernetes/*.yaml | /workspace/tools/mintnet-kubernetes/examples/*.yaml | workspace/tools/mintnet-kubernetes/assets/*.yaml "
+          FILTER_REGEX_EXCLUDE: "/workspace/tools/mintnet-kubernetes/*.yaml | /workspace/tools/mintnet-kubernetes/examples/*.yaml | workspace/tools/mintnet-kubernetes/assets/*.yaml | /workspace/tools/mintnet-kubernetes/examples/*/*.yaml "

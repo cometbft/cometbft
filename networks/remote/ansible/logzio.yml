@@ -1,6 +1,6 @@
 ---
 
-#Note: You need to add LOGZIO_TOKEN variable with your API key. Like tihs: ansible-playbook -e LOGZIO_TOKEN=ABCXYZ123456
+# Note: You need to add LOGZIO_TOKEN variable with your API key. Like tihs: ansible-playbook -e LOGZIO_TOKEN=ABCXYZ123456
 
 - hosts: all
   user: root

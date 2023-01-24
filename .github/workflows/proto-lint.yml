@@ -17,8 +17,8 @@ jobs:
       - uses: actions/checkout@v3
       - uses: bufbuild/buf-setup-action@v1.12.0
         with:
-            github_token: ${{ secrets.BUF_GITHUB_API_TOKEN }}
-            buf_api_token: ${{ secrets.BUF_API_TOKEN }}
+          github_token: ${{ secrets.BUF_GITHUB_API_TOKEN }}
+          buf_api_token: ${{ secrets.BUF_API_TOKEN }}
       - uses: bufbuild/buf-lint-action@v1
         with:
           input: 'proto'

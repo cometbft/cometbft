@@ -30,3 +30,4 @@ jobs:
           VALIDATE_OPENAPI: true
           VALIDATE_YAML: true
           YAML_CONFIG_FILE: yaml-lint.yml
+          FILTER_REGEX_EXCLUDE: "*tools/mintnet-kubernetes*"

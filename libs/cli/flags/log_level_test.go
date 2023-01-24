@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	cmtflags "github.com/tendermint/tendermint/libs/cli/flags"
-	"github.com/tendermint/tendermint/libs/log"
+	cmtflags "github.com/cometbft/cometbft/libs/cli/flags"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 const (

@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	dbm "github.com/cometbft/cometbft-db"
-	"github.com/tendermint/tendermint/store"
-	"github.com/tendermint/tendermint/test/loadtime/report"
+	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/test/loadtime/report"
 )
 
 var (

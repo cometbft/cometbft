@@ -11,7 +11,7 @@ else
 VERSION := $(shell git describe)
 endif
 
-LD_FLAGS = -X github.com/tendermint/tendermint/version.TMCoreSemVer=$(VERSION)
+LD_FLAGS = -X github.com/cometbft/cometbft/version.TMCoreSemVer=$(VERSION)
 BUILD_FLAGS = -mod=readonly -ldflags "$(LD_FLAGS)"
 HTTPS_GIT := https://github.com/cometbft/cometbft.git
 CGO_ENABLED ?= 0

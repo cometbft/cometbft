@@ -3,7 +3,7 @@ package p2p
 import (
 	"net"
 
-	cmtsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 // ConnSet is a lookup table for connections and all their ips.

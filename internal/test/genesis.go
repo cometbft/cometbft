@@ -3,8 +3,8 @@ package test
 import (
 	"time"
 
-	cfg "github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/types"
+	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/types"
 )
 
 func GenesisDoc(

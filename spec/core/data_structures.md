@@ -5,38 +5,38 @@ Here we describe the data structures in the CometBFT blockchain and the rules fo
 The CometBFT blockchain consists of a short list of data types:
 
 - [Data Structures](#data-structures)
-  - [Block](#block)
-  - [Execution](#execution)
-  - [Header](#header)
-  - [Version](#version)
-  - [BlockID](#blockid)
-  - [PartSetHeader](#partsetheader)
-  - [Part](#part)
-  - [Time](#time)
-  - [Data](#data)
-  - [Commit](#commit)
-  - [CommitSig](#commitsig)
-  - [BlockIDFlag](#blockidflag)
-  - [Vote](#vote)
-  - [CanonicalVote](#canonicalvote)
-  - [Proposal](#proposal)
-  - [SignedMsgType](#signedmsgtype)
-  - [Signature](#signature)
-  - [EvidenceList](#evidencelist)
-  - [Evidence](#evidence)
-    - [DuplicateVoteEvidence](#duplicatevoteevidence)
-    - [LightClientAttackEvidence](#lightclientattackevidence)
-  - [LightBlock](#lightblock)
-  - [SignedHeader](#signedheader)
-  - [ValidatorSet](#validatorset)
-  - [Validator](#validator)
-  - [Address](#address)
-  - [ConsensusParams](#consensusparams)
-    - [BlockParams](#blockparams)
-    - [EvidenceParams](#evidenceparams)
-    - [ValidatorParams](#validatorparams)
-    - [VersionParams](#versionparams)
-  - [Proof](#proof)
+    - [Block](#block)
+    - [Execution](#execution)
+    - [Header](#header)
+    - [Version](#version)
+    - [BlockID](#blockid)
+    - [PartSetHeader](#partsetheader)
+    - [Part](#part)
+    - [Time](#time)
+    - [Data](#data)
+    - [Commit](#commit)
+    - [CommitSig](#commitsig)
+    - [BlockIDFlag](#blockidflag)
+    - [Vote](#vote)
+    - [CanonicalVote](#canonicalvote)
+    - [Proposal](#proposal)
+    - [SignedMsgType](#signedmsgtype)
+    - [Signature](#signature)
+    - [EvidenceList](#evidencelist)
+    - [Evidence](#evidence)
+        - [DuplicateVoteEvidence](#duplicatevoteevidence)
+        - [LightClientAttackEvidence](#lightclientattackevidence)
+    - [LightBlock](#lightblock)
+    - [SignedHeader](#signedheader)
+    - [ValidatorSet](#validatorset)
+    - [Validator](#validator)
+    - [Address](#address)
+    - [ConsensusParams](#consensusparams)
+        - [BlockParams](#blockparams)
+        - [EvidenceParams](#evidenceparams)
+        - [ValidatorParams](#validatorparams)
+        - [VersionParams](#versionparams)
+    - [Proof](#proof)
 
 
 ## Block
@@ -151,7 +151,7 @@ The `BlockID` contains two distinct Merkle roots of the block. The `BlockID` inc
 | Name          | Type                            | Description                                                                                                                                                      | Validation                                                             |
 |---------------|---------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------|
 | Hash          | slice of bytes (`[]byte`)       | MerkleRoot of all the fields in the header (ie. `MerkleRoot(header)`.                                                                                            | hash must be of length 32                                              |
-| PartSetHeader | [PartSetHeader](#PartSetHeader) | Used for secure gossiping of the block during consensus, is the MerkleRoot of the complete serialized block cut into parts (ie. `MerkleRoot(MakeParts(block))`). | Must adhere to the validation rules of [PartSetHeader](#PartSetHeader) |
+| PartSetHeader | [PartSetHeader](#partsetheader) | Used for secure gossiping of the block during consensus, is the MerkleRoot of the complete serialized block cut into parts (ie. `MerkleRoot(MakeParts(block))`). | Must adhere to the validation rules of [PartSetHeader](#partsetheader) |
 
 See [MerkleRoot](./encoding.md#MerkleRoot) for details.
 
@@ -202,12 +202,12 @@ Commit is a simple wrapper for a list of signatures, with one for each validator
 a particular `BlockID` or was absent. It's a part of the `Commit` and can be used
 to reconstruct the vote set given the validator set.
 
-| Name             | Type                        | Description                                                                                                                                                     | Validation                                                        |
-|------------------|-----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
-| BlockIDFlag      | [BlockIDFlag](#blockidflag) | Represents the validators participation in consensus: Either voted for the block that received the majority, voted for another block, voted nil or did not vote | Must be one of the fields in the [BlockIDFlag](#blockidflag) enum |
-| ValidatorAddress | [Address](#address)         | Address of the validator                                                                                                                                        | Must be of length 20                                              |
-| Timestamp        | [Time](#time)               | This field will vary from `CommitSig` to `CommitSig`. It represents the timestamp of the validator.                                                             | [Time](#time)                                                     |
-| Signature        | [Signature](#signature)     | Signature corresponding to the validators participation in consensus.                                                                                           | The length of the signature must be > 0 and < than  64            |
+| Name             | Type                        | Description                                                                                                                                                      | Validation                                                        |
+|------------------|-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
+| BlockIDFlag      | [BlockIDFlag](#blockidflag) | Represents the validators participation in consensus: its vote was not received, voted for the block that received the majority, or voted for nil | Must be one of the fields in the [BlockIDFlag](#blockidflag) enum |
+| ValidatorAddress | [Address](#address)         | Address of the validator                                                                                                                                         | Must be of length 20                                              |
+| Timestamp        | [Time](#time)               | This field will vary from `CommitSig` to `CommitSig`. It represents the timestamp of the validator.                                                              | [Time](#time)                                                     |
+| Signature        | [Signature](#signature)     | Signature corresponding to the validators participation in consensus.                                                                                            | The length of the signature must be > 0 and < than  64            |
 
 NOTE: `ValidatorAddress` and `Timestamp` fields may be removed in the future
 (see [ADR-25](https://github.com/cometbft/cometbft/blob/v0.37.x/docs/architecture/adr-025-commit.md)).
@@ -218,10 +218,10 @@ BlockIDFlag represents which BlockID the [signature](#commitsig) is for.
 
 ```go
 enum BlockIDFlag {
-  BLOCK_ID_FLAG_UNKNOWN = 0;
-  BLOCK_ID_FLAG_ABSENT  = 1; // signatures for other blocks are also considered absent
-  BLOCK_ID_FLAG_COMMIT  = 2;
-  BLOCK_ID_FLAG_NIL     = 3;
+  BLOCK_ID_FLAG_UNKNOWN = 0; // indicates an error condition
+  BLOCK_ID_FLAG_ABSENT  = 1; // the vote was not received
+  BLOCK_ID_FLAG_COMMIT  = 2; // voted for the block that received the majority
+  BLOCK_ID_FLAG_NIL     = 3; // voted for nil
 }
 ```
 
@@ -236,7 +236,7 @@ The vote includes information about the validator signing it. When stored in the
 | Height           | uint64                           | Height for which this vote was created for                                                  | Must be > 0                                                                                          |
 | Round            | int32                           | Round that the commit corresponds to.                                                       | Must be > 0                                                                                          |
 | BlockID          | [BlockID](#blockid)             | The blockID of the corresponding block.                                                     | [BlockID](#blockid)                                                                                  |
-| Timestamp        | [Time](#Time)                   | Timestamp represents the time at which a validator signed.                                  | [Time](#time)                                                                                        |
+| Timestamp        | [Time](#time)                   | Timestamp represents the time at which a validator signed.                                  | [Time](#time)                                                                                        |
 | ValidatorAddress | slice of bytes (`[]byte`)       | Address of the validator                                                                    | Length must be equal to 20                                                                           |
 | ValidatorIndex   | int32                           | Index at a specific block height that corresponds to the Index of the validator in the set. | must be > 0                                                                                          |
 | Signature        | slice of bytes (`[]byte`)       | Signature by the validator if they participated in consensus for the associated bock.       | Length of signature must be > 0 and < 64                                                             |
@@ -291,7 +291,7 @@ is locked in POLRound. The message is signed by the validator private key.
 | Round     | int32                           | Round that the commit corresponds to.                                                 | Must be > 0                                             |
 | POLRound  | int64                           | Proof of lock                                                                         | Must be > 0                                             |
 | BlockID   | [BlockID](#blockid)             | The blockID of the corresponding block.                                               | [BlockID](#blockid)                                     |
-| Timestamp | [Time](#Time)                   | Timestamp represents the time at which a validator signed.                            | [Time](#time)                                           |
+| Timestamp | [Time](#time)                   | Timestamp represents the time at which a validator signed.                            | [Time](#time)                                           |
 | Signature | slice of bytes (`[]byte`)       | Signature by the validator if they participated in consensus for the associated bock. | Length of signature must be > 0 and < 64                |
 
 ## SignedMsgType
@@ -342,7 +342,7 @@ in the same round of the same height. Votes are lexicographically sorted on `Blo
 | VoteB            | [Vote](#vote) | The second vote submitted by a validator when they equivocated     | VoteB must adhere to [Vote](#vote) validation rules |
 | TotalVotingPower | int64         | The total power of the validator set at the height of equivocation | Must be equal to nodes own copy of the data         |
 | ValidatorPower   | int64         | Power of the equivocating validator at the height                  | Must be equal to the nodes own copy of the data     |
-| Timestamp        | [Time](#Time) | Time of the block where the equivocation occurred                  | Must be equal to the nodes own copy of the data     |
+| Timestamp        | [Time](#time) | Time of the block where the equivocation occurred                  | Must be equal to the nodes own copy of the data     |
 
 ### LightClientAttackEvidence
 
@@ -353,11 +353,11 @@ and Amnesia. These attacks are exhaustive. You can find a more detailed overview
 
 | Name                 | Type                               | Description                                                          | Validation                                                       |
 |----------------------|------------------------------------|----------------------------------------------------------------------|------------------------------------------------------------------|
-| ConflictingBlock     | [LightBlock](#LightBlock)          | Read Below                                                           | Must adhere to the validation rules of [lightBlock](#lightblock) |
+| ConflictingBlock     | [LightBlock](#lightblock)          | Read Below                                                           | Must adhere to the validation rules of [lightBlock](#lightblock) |
 | CommonHeight         | int64                              | Read Below                                                           | must be > 0                                                      |
-| Byzantine Validators | Array of [Validators](#Validators) | validators that acted maliciously                                    | Read Below                                                       |
+| Byzantine Validators | Array of [Validators](#validator) | validators that acted maliciously                                    | Read Below                                                       |
 | TotalVotingPower     | int64                              | The total power of the validator set at the height of the infraction | Must be equal to the nodes own copy of the data                  |
-| Timestamp            | [Time](#Time)                      | Time of the block where the infraction occurred                      | Must be equal to the nodes own copy of the data                  |
+| Timestamp            | [Time](#time)                      | Time of the block where the infraction occurred                      | Must be equal to the nodes own copy of the data                  |
 
 ## LightBlock
 
@@ -376,7 +376,7 @@ The SignedhHeader is the [header](#header) accompanied by the commit to prove it
 
 | Name   | Type              | Description       | Validation                                                                        |
 |--------|-------------------|-------------------|-----------------------------------------------------------------------------------|
-| Header | [Header](#Header) | [Header](#header) | Header cannot be nil and must adhere to the [Header](#Header) validation criteria |
+| Header | [Header](#header) | [Header](#header) | Header cannot be nil and must adhere to the [Header](#header) validation criteria |
 | Commit | [Commit](#commit) | [Commit](#commit) | Commit cannot be nil and must adhere to the [Commit](#commit) criteria            |
 
 ## ValidatorSet

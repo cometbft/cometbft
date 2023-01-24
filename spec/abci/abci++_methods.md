@@ -208,7 +208,7 @@ title: Methods
      to the same block previously executed via `PrepareProposal` or `ProcessProposal` any time between the calls to `BeginBlock`, the various
      calls to `DeliverTx` and `EndBlock`.
     * `ResponseDeliverTx.Code == 0` only if the transaction is fully valid.
-      
+
 
 ### EndBlock
 
@@ -261,7 +261,7 @@ title: Methods
     * Signal the application to persist the application state.
     * Return an (optional) Merkle root hash of the application state
     * `ResponseCommit.Data` is included as the `Header.AppHash` in the next block
-        * It may be empty or hard-coded, but MUST be **deterministic** - it must not be a function of anything that did not come from the parameters of the execution calls (` BeginBlock/DeliverTx/EndBlock methods`) and the previous committed state. 
+        * It may be empty or hard-coded, but MUST be **deterministic** - it must not be a function of anything that did not come from the parameters of the execution calls (`BeginBlock/DeliverTx/EndBlock methods`) and the previous committed state.
     * Later calls to `Query` can return proofs about the application state anchored
     in this Merkle root hash
     * Use `RetainHeight` with caution! If all nodes in the network remove historical
@@ -898,6 +898,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
     * Indicates whether a validator signed the last block, allowing for rewards based on validator availability.
     * This information is extracted from CometBFT's data structures in the local process.
     * `vote_extension` is reserved for future use when vote extensions are added. Currently, this field is always set to `nil`.
+
 
 ### CommitInfo
 

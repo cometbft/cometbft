@@ -1,3 +1,4 @@
+<!-- markdown-link-check-disable -->
 # Light Client Attack Detector
 
 In this specification, we strengthen the light client to be resistant
@@ -806,7 +807,6 @@ Once a bogus block is recognized as such the secondary is removed.
 
 [supervisor]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/supervisor/supervisor_001_draft.md
 
-[block]: https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md
 
 [CMBC-FM-2THIRDS-link]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#cmbc-fm-2thirds1
 

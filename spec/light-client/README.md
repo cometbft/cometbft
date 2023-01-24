@@ -19,13 +19,13 @@ verifying a minimal set of data from a network of full nodes (at least one of wh
 
 The light client is decomposed into two main components:
 
-- [Commit Verification](#Commit-Verification) - verify signed headers and associated validator
+- [Commit Verification](#commit-verification) - verify signed headers and associated validator
   set changes from a single full node, called primary
-- [Attack Detection](#Attack-Detection) -  verify commits across multiple full nodes (called secondaries) and detect conflicts (ie. the existence of a lightclient attack)
+- [Attack Detection](#attack-detection) -  verify commits across multiple full nodes (called secondaries) and detect conflicts (ie. the existence of a lightclient attack)
 
 In case a lightclient attack is detected, the lightclient submits evidence to a full node which is responsible for "accountability", that is, punishing attackers:
 
-- [Accountability](#Accountability) - given evidence for an attack, compute a set of validators that are responsible for it.
+- [Accountability](#accountability) - given evidence for an attack, compute a set of validators that are responsible for it.
 
 ## Commit Verification
 
@@ -136,7 +136,7 @@ termination, which can be model checked with Apalache.
 The `LCD_MC*.tla` files contain concrete parameters for the
 [TLA+ specification](detection/LCDetector_003_draft.tla),
 in order to run the model checker.
-For instance, [LCD_MC4_4_faulty.tla](detection/MC4_4_faulty.tla)
+For instance, [LCD_MC4_4_faulty.tla](./verification/MC4_4_faulty.tla)
 contains the following parameters
 for the nodes, heights, the trusting period, the clock drifts,
 correctness of the nodes, and the ratio of the faulty processes:

@@ -1,3 +1,4 @@
+<!-- markdown-link-check-disable -->
 # ***This an unfinished draft. Comments are welcome!***
 
 **TODO:** We will need to do small adaptations to the verification
@@ -770,13 +771,9 @@ Once a bogus block is recognized as such the secondary is removed.
 
 [supervisor]: https://github.com/cometbft/cometbft/tree/main/spec/light-client/supervisor
 
-[block]: https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md
 
-[TMBC-FM-2THIRDS-link]: https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/verification/verification.md#tmbc-fm-2thirds1
 
-[TMBC-SOUND-DISTR-POSS-COMMIT-link]: https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/verification/verification.md#tmbc-sound-distr-poss-commit1
 
-[LCV-SEQ-SAFE-link]:https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/verification/verification.md#lcv-seq-safe1
 
 [CMBC-VAL-CONTAINS-CORR-link]:
 https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#cmbc-val-contains-corr1

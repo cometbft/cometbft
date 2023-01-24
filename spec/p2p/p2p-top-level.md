@@ -180,6 +180,7 @@ which retrieve from the mempool transactions to be included in proposed blocks.
 As 
 - full nodes add transactions to the mempool following client requests, and
 - validators read transactions from the mempool to compose proposed blocks,
+
 the mentioned end-to-end requirements on transactions translate into requirements 
 on the mempool, e.g., every transaction that is submitted to a fullnode should 
 eventually be present at the mempool of a validator/proposer. 

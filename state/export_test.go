@@ -3,10 +3,10 @@ package state
 import (
 	dbm "github.com/cometbft/cometbft-db"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	cmtstate "github.com/tendermint/tendermint/proto/tendermint/state"
-	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 //

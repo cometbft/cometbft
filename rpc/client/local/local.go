@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/tendermint/tendermint/libs/bytes"
-	"github.com/tendermint/tendermint/libs/log"
-	cmtpubsub "github.com/tendermint/tendermint/libs/pubsub"
-	cmtquery "github.com/tendermint/tendermint/libs/pubsub/query"
-	nm "github.com/tendermint/tendermint/node"
-	rpcclient "github.com/tendermint/tendermint/rpc/client"
-	"github.com/tendermint/tendermint/rpc/core"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	rpctypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
+	nm "github.com/cometbft/cometbft/node"
+	rpcclient "github.com/cometbft/cometbft/rpc/client"
+	"github.com/cometbft/cometbft/rpc/core"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 /*

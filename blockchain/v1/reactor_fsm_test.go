@@ -7,11 +7,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/tendermint/tendermint/libs/log"
-	cmtmath "github.com/tendermint/tendermint/libs/math"
-	cmtrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/types"
 )
 
 type lastBlockRequestT struct {

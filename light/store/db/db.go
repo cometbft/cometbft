@@ -8,10 +8,10 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 
-	cmtsync "github.com/tendermint/tendermint/libs/sync"
-	"github.com/tendermint/tendermint/light/store"
-	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/types"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/light/store"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 var (

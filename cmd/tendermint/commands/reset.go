@@ -6,9 +6,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/tendermint/tendermint/libs/log"
-	cmtos "github.com/tendermint/tendermint/libs/os"
-	"github.com/tendermint/tendermint/privval"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtos "github.com/cometbft/cometbft/libs/os"
+	"github.com/cometbft/cometbft/privval"
 )
 
 // ResetAllCmd removes the database of this CometBFT core

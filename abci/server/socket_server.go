@@ -8,11 +8,11 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/tendermint/tendermint/abci/types"
-	cmtlog "github.com/tendermint/tendermint/libs/log"
-	cmtnet "github.com/tendermint/tendermint/libs/net"
-	"github.com/tendermint/tendermint/libs/service"
-	cmtsync "github.com/tendermint/tendermint/libs/sync"
+	"github.com/cometbft/cometbft/abci/types"
+	cmtlog "github.com/cometbft/cometbft/libs/log"
+	cmtnet "github.com/cometbft/cometbft/libs/net"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 // var maxNumberConnections = 2

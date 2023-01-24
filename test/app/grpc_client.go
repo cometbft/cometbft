@@ -7,8 +7,8 @@ import (
 
 	"context"
 
-	cmtjson "github.com/tendermint/tendermint/libs/json"
-	coregrpc "github.com/tendermint/tendermint/rpc/grpc"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	coregrpc "github.com/cometbft/cometbft/rpc/grpc"
 )
 
 var grpcAddr = "tcp://localhost:36656"

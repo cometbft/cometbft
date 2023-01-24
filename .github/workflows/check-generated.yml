@@ -30,7 +30,7 @@ jobs:
       - name: "Check generated mocks"
         run: |
           set -euo pipefail
-  
+
           make mockery 2>/dev/null
 
           if ! git diff --stat --exit-code ; then

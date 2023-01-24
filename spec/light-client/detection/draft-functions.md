@@ -3,7 +3,7 @@
 This document collects drafts of function for generating and
 submitting proof of fork in the IBC context
 
-- [IBC](#on---chain-ibc-component)
+- [IBC](#on-chain-ibc-component)
 
 - [Relayer](#relayer)
 
@@ -14,7 +14,7 @@ submitting proof of fork in the IBC context
 #### [TAG-IBC-MISBEHAVIOR.1]
 
 ```go
-func checkMisbehaviourAndUpdateState(cs: ClientState, PoF: LightNodeProofOfFork)
+func checkMisbehaviorAndUpdateState(cs: ClientState, PoF: LightNodeProofOfFork)
 ```
 
 **TODO:** finish conditions
@@ -113,7 +113,7 @@ func SubmitIBCProofOfFork(
   ibc IBCComponent) (Error) {
     if ibc.queryChainConsensusState(PoF.TrustedBlock.Height) = PoF.TrustedBlock {
   // IBC component has root of PoF on store, we can just submit
-        ibc.submitMisbehaviourToClient(ibc.id,PoF)
+        ibc.submitMisbehaviorToClient(ibc.id,PoF)
   return Success
      // note sure about the id parameter
     }
@@ -127,7 +127,7 @@ func SubmitIBCProofOfFork(
 
      if result = Success {
    newPoF = extendPoF(ibcLightBlock, lblock, lightStore, PoF)
-      ibc.submitMisbehaviourToClient(ibc.id, newPoF)
+      ibc.submitMisbehaviorToClient(ibc.id, newPoF)
       return Success
      }
   else{

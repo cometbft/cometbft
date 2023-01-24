@@ -63,10 +63,10 @@ blockchain.
 - [Part II](#part-ii---sequential-definition-of-the-verification-problem): Introduction
 of the problem addressed by the Lightclient Verification protocol.
     - [Verification Informal Problem
-      statement](#Verification-Informal-Problem-statement): For the general
+      statement](#verification-informal-problem-statement): For the general
       audience, that is, engineers who want to get an overview over what
       the component is doing from a bird's eye view.
-    - [Sequential Problem statement](#Sequential-Problem-statement):
+    - [Sequential Problem statement](#sequential-problem-statement):
       Provides a mathematical definition of the problem statement in
       its sequential form, that is, ignoring the distributed aspect of
       the implementation of the blockchain.
@@ -78,17 +78,17 @@ of the problem addressed by the Lightclient Verification protocol.
     - [Incentives](#incentives): how faulty full nodes may benefit from
     misbehaving and how correct full nodes benefit from cooperating.
   
-    - [Computational Model](#Computational-Model):
+    - [Computational Model](#computational-model):
       timing and correctness assumptions.
 
-    - [Distributed Problem Statement](#Distributed-Problem-Statement):
+    - [Distributed Problem Statement](#distributed-problem-statement):
       temporal properties that formalize safety and liveness
       properties in the distributed setting.
 
 - [Part IV](#part-iv---light-client-verification-protocol):
   Specification of the protocols.
 
-    - [Definitions](#Definitions): Describes inputs, outputs,
+    - [Definitions](#definitions): Describes inputs, outputs,
        variables used by the protocol, auxiliary functions
 
     - [Core Verification](#core-verification): gives an outline of the solution,
@@ -823,7 +823,7 @@ func VerifyToTarget(primary PeerID, root LightBlock,
 - Error conditions
     - if the precondition is violated
     - if `ValidAndVerified` or `FetchLightBlock` report an error
-    - if [**[LCV-INV-TP.1]**](#LCV-INV-TP.1) is violated
+    - if [**[LCV-INV-TP.1]**](#lcv-inv-tp1) is violated
   
 ### Details of the Functions
 
@@ -927,14 +927,14 @@ For [IBC][ibc-rs] there are two additional challenges:
 
 1. it might be that some "older" header is needed, that is,
 *targetHeight < lightStore.LatestVerified()*.  The
-[supervisor](../supervisor/supervisor.md) checks whether it is in this
+[supervisor](../supervisor/supervisor_002_draft.md) checks whether it is in this
 case by calling `LatestPrevious` and `MinVerified` and if so it calls
 `Backwards`. All these functions are specified below.
 
 2. In order to submit proof of a light client attack, a relayer may
    need to submit a verification trace. This it is important to
    compute such a trace efficiently. That it can be done is based on
-   the invariant [[LCV-INV-LS-ROOT.2]](#LCV-INV-LS-ROOT2) that needs
+   the invariant [[LCV-INV-LS-ROOT.2]](#lcv-inv-ls-root2) that needs
    to be maintained by the light client. In particular
    `VerifyToTarget` and `Backwards` need to take care of setting
    `verification-root`.
@@ -1052,9 +1052,5 @@ func Backwards (primary PeerID, root LightBlock, targetHeight Height)
 
 [ibc-rs]:https://github.com/informalsystems/ibc-rs
 
-[blockchain-validator-set]: https://github.com/tendermint/tendermint/blob/v0.34.x/spec/blockchain/blockchain.md#data-structures
-[fullnode-data-structures]: https://github.com/tendermint/tendermint/blob/v0.34.x/spec/blockchain/fullnode.md#data-structures
-
-[FN-ManifestFaulty-link]: https://github.com/tendermint/tendermint/blob/v0.34.x/spec/blockchain/fullnode.md#fn-manifestfaulty
 
 [arXiv]: https://arxiv.org/abs/1807.04938

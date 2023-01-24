@@ -1,4 +1,4 @@
-
+<!-- markdown-link-check-disable -->
 # Lightclient Attackers Isolation
 
 > Warning: This is the beginning of an unfinished draft. Don't continue reading!

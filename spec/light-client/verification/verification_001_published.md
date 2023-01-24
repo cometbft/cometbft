@@ -8,7 +8,7 @@ functionality must be implemented in a fault-tolerant way.
 In a Cosmos blockchain, the validator set may change with every
 new block.  The staking and unbonding mechanism induces a [security
 model][CMBC-FM-2THIRDS-link]: starting at time *Time* of the
-[header][CMBC-HEADER-link],
+[header][#cmbc-header1],
 more than two-thirds of the next validators of a new block are correct
 for the duration of *TrustedPeriod*. The fault-tolerant read
 operation is designed for this security model.
@@ -19,7 +19,7 @@ greater than *h1*.  Checking all headers of heights from *h1* to *h2*
 might be too costly (e.g., in terms of energy for mobile devices).
 This specification tries to reduce the number of intermediate blocks
 that need to be checked, by exploiting the guarantees provided by the
-[security model][CMBC-FM-2THIRDS-link].
+[security model][cmbc-fm-2thirds1].
 
 # Status
 
@@ -46,10 +46,10 @@ blockchain.
 - [Part II](#part-ii---sequential-definition-of-the-verification-problem): Introduction
 of the problem addressed by the Lightclient Verification protocol.
     - [Verification Informal Problem
-      statement](#Verification-Informal-Problem-statement): For the general
+      statement](#verification-informal-problem-statement): For the general
       audience, that is, engineers who want to get an overview over what
       the component is doing from a bird's eye view.
-    - [Sequential Problem statement](#Sequential-Problem-statement):
+    - [Sequential Problem statement](#sequential-problem-statement):
       Provides a mathematical definition of the problem statement in
       its sequential form, that is, ignoring the distributed aspect of
       the implementation of the blockchain.
@@ -61,17 +61,17 @@ of the problem addressed by the Lightclient Verification protocol.
     - [Incentives](#incentives): how faulty full nodes may benefit from
     misbehaving and how correct full nodes benefit from cooperating.
   
-    - [Computational Model](#Computational-Model):
+    - [Computational Model](#computational-model):
       timing and correctness assumptions.
 
-    - [Distributed Problem Statement](#Distributed-Problem-Statement):
+    - [Distributed Problem Statement](#distributed-problem-statement):
       temporal properties that formalize safety and liveness
       properties in the distributed setting.
 
 - [Part IV](#part-iv---light-client-verification-protocol):
   Specification of the protocols.
 
-    - [Definitions](#Definitions): Describes inputs, outputs,
+    - [Definitions](#definitions): Describes inputs, outputs,
        variables used by the protocol, auxiliary functions
 
     - [Core Verification](#core-verification): gives an outline of the solution,
@@ -1166,11 +1166,5 @@ func Main (primary PeerID, lightStore LightStore, targetHeight Height)
 
 [ibc-rs]:https://github.com/informalsystems/ibc-rs
 
-[FN-LuckyCase-link]: https://github.com/tendermint/tendermint/blob/v0.34.x/spec/blockchain/fullnode.md#fn-luckycase
-
-[blockchain-validator-set]: https://github.com/tendermint/tendermint/blob/v0.34.x/spec/blockchain/blockchain.md#data-structures
-[fullnode-data-structures]: https://github.com/tendermint/tendermint/blob/v0.34.x/spec/blockchain/fullnode.md#data-structures
-
-[FN-ManifestFaulty-link]: https://github.com/tendermint/tendermint/blob/v0.34.x/spec/blockchain/fullnode.md#fn-manifestfaulty
 
 [arXiv]: https://arxiv.org/abs/1807.04938

@@ -1,3 +1,4 @@
+<!-- markdown-link-check-disable -->
 # Lightclient Attackers Isolation
 
 Adversarial nodes may have the incentive to lie to a lightclient about the
@@ -67,7 +68,7 @@ Here we discuss how to solve the problem of isolating misbehaving processes. We 
 
 ### Outline
 
-We first check whether the conflicting block can indeed be verified from the common height. We then first check whether it was a lunatic attack (violating validity). If this is not the case, we check for equivocation. If this also is not the case, we start the on-chain [accountability protocol](https://docs.google.com/document/d/11ZhMsCj3y7zIZz4udO9l25xqb0kl7gmWqNpGVRzOeyY/edit).
+We first check whether the conflicting block can indeed be verified from the common height. We then first check whether it was a lunatic attack (violating validity). If this is not the case, we check for equivocation. If this also is not the case, we start the on-chain <!-- markdown-link-check-disable-next-line -->[accountability protocol](https://docs.google.com/document/d/11ZhMsCj3y7zIZz4udO9l25xqb0kl7gmWqNpGVRzOeyY/edit).
 
 #### **[LCAI-FUNC-MAIN.1]**
 
@@ -146,7 +147,7 @@ func violatesTMValidity(ref Header, ev Header) boolean
 func IsolateAmnesiaAttacker(ev LightClientAttackEvidence, bc Blockchain) []ValidatorAddress
 ```
 
-- Implementation remarks
+- Implementation remarks <!-- markdown-link-check-disable-next-line -->
     - This triggers the [query/response protocol](https://docs.google.com/document/d/11ZhMsCj3y7zIZz4udO9l25xqb0kl7gmWqNpGVRzOeyY/edit).
 - Expected postcondition
     - returns attackers according to [LCAI-INV-Output.1].
@@ -198,7 +199,6 @@ For this fixed group membership, we have analyzed the attacks using the TLA+ spe
 
 [[detection]] The specification of the light client attack detection mechanism.
 
-[[tendermint-accountability]]: TLA+ specification to check the types of attacks
 
 [tendermint-accountability]:
 https://github.com/cometbft/cometbft/tree/main/spec/light-client/accountability

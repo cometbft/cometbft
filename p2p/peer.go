@@ -5,11 +5,11 @@ import (
 	"net"
 	"time"
 
-	"github.com/tendermint/tendermint/libs/cmap"
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/libs/service"
+	"github.com/cometbft/cometbft/libs/cmap"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/service"
 
-	cmtconn "github.com/tendermint/tendermint/p2p/conn"
+	cmtconn "github.com/cometbft/cometbft/p2p/conn"
 )
 
 //go:generate ../scripts/mockery_generate.sh Peer

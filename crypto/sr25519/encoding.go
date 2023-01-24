@@ -1,8 +1,8 @@
 package sr25519
 
 import (
-	"github.com/tendermint/tendermint/crypto"
-	cmtjson "github.com/tendermint/tendermint/libs/json"
+	"github.com/cometbft/cometbft/crypto"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
 )
 
 var _ crypto.PrivKey = PrivKey{}

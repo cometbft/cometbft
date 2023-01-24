@@ -9,16 +9,16 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 
-	abcitypes "github.com/tendermint/tendermint/abci/types"
-	cmtcfg "github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/libs/progressbar"
-	"github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/state/indexer"
-	blockidxkv "github.com/tendermint/tendermint/state/indexer/block/kv"
-	"github.com/tendermint/tendermint/state/indexer/sink/psql"
-	"github.com/tendermint/tendermint/state/txindex"
-	"github.com/tendermint/tendermint/state/txindex/kv"
-	"github.com/tendermint/tendermint/types"
+	abcitypes "github.com/cometbft/cometbft/abci/types"
+	cmtcfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/libs/progressbar"
+	"github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/state/indexer"
+	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
+	"github.com/cometbft/cometbft/state/indexer/sink/psql"
+	"github.com/cometbft/cometbft/state/txindex"
+	"github.com/cometbft/cometbft/state/txindex/kv"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -46,10 +46,10 @@ Note: This operation requires ABCI Responses. Do not set DiscardABCIResponses to
 want to use this command.
 	`,
 	Example: `
-	tendermint reindex-event
-	tendermint reindex-event --start-height 2
-	tendermint reindex-event --end-height 10
-	tendermint reindex-event --start-height 2 --end-height 10
+	cometbft reindex-event
+	cometbft reindex-event --start-height 2
+	cometbft reindex-event --end-height 10
+	cometbft reindex-event --start-height 2 --end-height 10
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		bs, ss, err := loadStateAndBlockStore(config)

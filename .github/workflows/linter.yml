@@ -9,7 +9,7 @@ on:
       - "**.yml"
       - "**.yaml"
   pull_request:
-    branches: [main]
+    branches: [v0.37.x]
     paths:
       - "**.md"
       - "**.yml"

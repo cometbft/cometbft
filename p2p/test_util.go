@@ -18,7 +18,12 @@ import (
 const testCh = 0x01
 
 //------------------------------------------------
+//go:generate ../scripts/mockery_generate.sh PeerEnvelopeSender
 
+type PeerEnvelopeSender interface {
+	EnvelopeSender
+	Peer
+}
 type mockNodeInfo struct {
 	addr *NetAddress
 }

@@ -3,7 +3,8 @@ on:
   pull_request:
   push:
     branches:
-      - master
+      - v0.34.x
+      - main
       - release/**
 
 jobs:
@@ -43,8 +44,8 @@ jobs:
     timeout-minutes: 5
     # ToDo (thane): Remove once we make cometbft-db public
     env:
-        GOPRIVATE: github.com/cometbft/cometbft-db
-        GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+      GOPRIVATE: github.com/cometbft/cometbft-db
+      GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
     steps:
       - uses: actions/setup-go@v3
         with:

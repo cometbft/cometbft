@@ -5,9 +5,8 @@ package mocks
 import (
 	context "context"
 
-	mock "github.com/stretchr/testify/mock"
-
 	state "github.com/cometbft/cometbft/state"
+	mock "github.com/stretchr/testify/mock"
 
 	types "github.com/cometbft/cometbft/types"
 )
@@ -84,13 +83,13 @@ func (_m *StateProvider) State(ctx context.Context, height uint64) (state.State,
 	return r0, r1
 }
 
-type NewStateProviderT interface {
+type mockConstructorTestingTNewStateProvider interface {
 	mock.TestingT
 	Cleanup(func())
 }
 
 // NewStateProvider creates a new instance of StateProvider. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewStateProvider(t NewStateProviderT) *StateProvider {
+func NewStateProvider(t mockConstructorTestingTNewStateProvider) *StateProvider {
 	mock := &StateProvider{}
 	mock.Mock.Test(t)
 

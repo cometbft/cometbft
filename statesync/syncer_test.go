@@ -96,7 +96,7 @@ func TestSyncer_SyncAny(t *testing.T) {
 	require.Error(t, err)
 
 	// Adding a couple of peers should trigger snapshot discovery messages
-	peerA := &p2pmocks.Peer{}
+	peerA := &p2pmocks.PeerEnvelopeSender{}
 	peerA.On("ID").Return(p2p.ID("a"))
 	peerA.On("SendEnvelope", mock.MatchedBy(func(i interface{}) bool {
 		e, ok := i.(p2p.Envelope)
@@ -109,7 +109,7 @@ func TestSyncer_SyncAny(t *testing.T) {
 	syncer.AddPeer(peerA)
 	peerA.AssertExpectations(t)
 
-	peerB := &p2pmocks.Peer{}
+	peerB := &p2pmocks.PeerEnvelopeSender{}
 	peerB.On("ID").Return(p2p.ID("b"))
 	peerB.On("SendEnvelope", mock.MatchedBy(func(i interface{}) bool {
 		e, ok := i.(p2p.Envelope)

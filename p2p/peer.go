@@ -16,7 +16,6 @@ import (
 )
 
 //go:generate ../scripts/mockery_generate.sh Peer
-
 const metricsTickerDuration = 10 * time.Second
 
 // Peer is an interface representing a peer connected on a reactor.

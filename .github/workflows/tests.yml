@@ -6,8 +6,9 @@ on:
   pull_request:
   push:
     branches:
-      - master
+      - main
       - release/**
+      - v0.34.x
 
 jobs:
   cleanup-runs:

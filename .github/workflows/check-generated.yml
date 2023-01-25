@@ -7,6 +7,7 @@ name: Check generated code
 on:
   pull_request:
     branches:
+      - main
       - v0.34.x
 
 permissions:
@@ -16,7 +17,7 @@ jobs:
   check-mocks:
     runs-on: ubuntu-latest
     # TODO (thane): Remove once we make the cometbft-db repository public
-    env: 
+    env:
       GOPRIVATE: github.com/cometbft/cometbft-db
     steps:
       - uses: actions/setup-go@v3
@@ -24,15 +25,13 @@ jobs:
           go-version: '1.18'
 
       - uses: actions/checkout@v3
-      
+
       # TODO (thane): Remove once we make the cometbft-db repository public
-      - run : git config --global url.https://${{ secrets.GO_MODULES_TOKEN }}@github.com/.insteadOf https://github.com/
+      - run: git config --global url.https://${{ secrets.GO_MODULES_TOKEN }}@github.com/.insteadOf https://github.com/
       - name: "Check generated mocks"
         run: |
           set -euo pipefail
 
-          readonly MOCKERY=2.12.3  # N.B. no leading "v"
-          curl -sL "https://github.com/vektra/mockery/releases/download/v${MOCKERY}/mockery_${MOCKERY}_Linux_x86_64.tar.gz" | tar -C /usr/local/bin -xzf -
           make mockery 2>/dev/null
 
           if ! git diff --stat --exit-code ; then

@@ -50,7 +50,7 @@ func TestReactor_Receive_ChunkRequest(t *testing.T) {
 			}).Return(&abci.ResponseLoadSnapshotChunk{Chunk: tc.chunk}, nil)
 
 			// Mock peer to store response, if found
-			peer := &p2pmocks.Peer{}
+			peer := &p2pmocks.PeerEnvelopeSender{}
 			peer.On("ID").Return(p2p.ID("id"))
 			var response *ssproto.ChunkResponse
 			if tc.expectResponse != nil {
@@ -141,7 +141,7 @@ func TestReactor_Receive_SnapshotsRequest(t *testing.T) {
 
 			// Mock peer to catch responses and store them in a slice
 			responses := []*ssproto.SnapshotsResponse{}
-			peer := &p2pmocks.Peer{}
+			peer := &p2pmocks.PeerEnvelopeSender{}
 			if len(tc.expectResponses) > 0 {
 				peer.On("ID").Return(p2p.ID("id"))
 				peer.On("SendEnvelope", mock.MatchedBy(func(i interface{}) bool {

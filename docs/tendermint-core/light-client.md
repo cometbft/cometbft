@@ -16,7 +16,7 @@ package](https://pkg.go.dev/github.com/tendermint/tendermint/light?tab=doc).
 The objective of the light client protocol is to get a commit for a recent
 block hash where the commit includes a majority of signatures from the last
 known validator set. From there, all the application state is verifiable with
-[merkle proofs](https://github.com/tendermint/spec/blob/953523c3cb99fdb8c8f7a2d21e3a99094279e9de/spec/blockchain/encoding.md#iavl-tree).
+[merkle proofs](https://github.com/cometbft/cometbft/blob/main/spec/core/encoding.md#iavl-tree).
 
 ## Properties
 

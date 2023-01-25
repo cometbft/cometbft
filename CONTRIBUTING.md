@@ -364,21 +364,6 @@ most probably (99.9%)*.
 `./test/fuzz` directory. See [README.md](./test/fuzz/README.md) for details.
 
 Run: `cd test/fuzz && make fuzz-{PACKAGE-COMPONENT}`
-
-### Jepsen tests (ADVANCED)
-
-*NOTE: if you're just submitting your first PR, you won't need to touch these
-most probably (99.9%)*.
-
-[Jepsen](http://jepsen.io/) tests are used to verify the
-[linearizability](https://jepsen.io/consistency/models/linearizable) property
-of the Tendermint consensus implemented in CometBFT. They are located in a separate repository
--> <https://github.com/tendermint/jepsen>. Please refer to its README for more
-information.
-<!-- ToDo 
-Do we clone this repo too or keep this reference?
--->
-
 ### RPC Testing
 
 **If you contribute to the RPC endpoints it's important to document your

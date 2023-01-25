@@ -1,5 +1,9 @@
 # Security
 
+**NOTE** The security process outlined in this document is outdated and is currently
+being defined (see https://github.com/cometbft/cometbft/issues/191).
+
+---------------------------
 ## Reporting a Bug
 
 As part of our [Coordinated Vulnerability Disclosure Policy](https://cometbft.com/security),

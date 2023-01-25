@@ -798,6 +798,8 @@ func DefaultMempoolConfig() *MempoolConfig {
 		MaxTxBytes:   1024 * 1024, // 1MB
 		TTLDuration:  0 * time.Second,
 		TTLNumBlocks: 0,
+		// Note this is true to avoid re-processing invalid order transactions more than once.
+		KeepInvalidTxsInCache: true,
 	}
 }
 

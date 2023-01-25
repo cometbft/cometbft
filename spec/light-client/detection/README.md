@@ -5,16 +5,16 @@ parent:
   order: 2
 ---
 
-# Tendermint fork detection and IBC fork detection
+# Cosmos fork detection and IBC fork detection
 
 ## Status
 
 This is a work in progress.
 This directory captures the ongoing work and discussion on fork
-detection both in the context of a Tendermint light node and in the
+detection both in the context of a Cosmos light node and in the
 context of IBC. It contains the following files
 
-### [detection.md](./detection.md)
+### [detection.md](./detection_003_reviewed.md)
 
 a draft of the light node fork detection including "proof of fork"
   definition, that is, the data structure to submit evidence to full
@@ -33,7 +33,7 @@ A collection of ideas and intuitions from recent discussions
 
 - a collection of requirements for fork detection in the IBC
   context. In particular it contains a section "Required Changes in
-  ICS 007" with necessary updates to ICS 007 to support Tendermint
+  ICS 007" with necessary updates to ICS 007 to support Cosmos
   fork detection
 
 ### [draft-functions.md](./draft-functions.md)

@@ -3,7 +3,7 @@
  * This is a specification of the light client detector module.
  * It follows the English specification:
  *
- * https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/detection/detection_003_reviewed.md
+ * https://github.com/cometbft/cometbft/blob/v0.34.x/spec/light-client/detection/detection_003_reviewed.md
  *
  * The assumptions made in this specification:
  *
@@ -38,7 +38,7 @@ CONSTANTS
        be larger than CLOCK_DRIFT (otherwise, there will be a bug) *)
   FAULTY_RATIO,
     (* a pair <<a, b>> that limits that ratio of faulty validator in the blockchain
-       from above (exclusive). Tendermint security model prescribes 1 / 3. *)
+       from above (exclusive). Cosmos security model prescribes 1 / 3. *)
   IS_PRIMARY_CORRECT,
   IS_SECONDARY_CORRECT
 

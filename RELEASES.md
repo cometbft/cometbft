@@ -99,7 +99,7 @@ After doing these steps, go back to `main` and do the following:
    [e2e-nightly-main.yml][e2e] for an example.)
 
 2. Add a new section to the Mergify config (`.github/mergify.yml`) to enable the
-   backport bot to work on this branch, and add a corresponding `S:backport-to-v0.38.x`
+   backport bot to work on this branch, and add a corresponding `backport-to-v0.38.x`
    [label](https://github.com/cometbft/cometbft/labels) so the bot can be triggered.
 
 3. Add a new section to the Dependabot config (`.github/dependabot.yml`) to
@@ -341,7 +341,7 @@ able to handle this reliably. In this test, a network with 10 validators and
 3 seed nodes is started. A rolling set of 25 full nodes are started and each
 connects to the network by dialing one of the seed nodes. Once the node is able
 to blocksync to the head of the chain and begins producing blocks using
-CometBFT consensus it is stopped. Once stopped, a new node is started and
+consensus it is stopped. Once stopped, a new node is started and
 takes its place. This network is run for several days.
 
 #### Network Partition Testnet

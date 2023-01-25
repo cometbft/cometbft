@@ -114,14 +114,14 @@ need to install [buf](https://buf.build/) and `gogoproto`. Then, from the root
 of the repository, run:
 
 ```bash
-# Lint all of the .proto files in proto/cometbft
+# Lint all of the .proto files
 make proto-lint
 
 # Check if any of your local changes (prior to committing to the Git repository)
 # are breaking
 make proto-check-breaking
 
-# Generate Go code from the .proto files in proto/cometbft
+# Generate Go code from the .proto files
 make proto-gen
 ```
 
@@ -149,12 +149,10 @@ If you are a VS Code user, you may want to add the following to your `.vscode/se
 
 ## Changelog
 
-For changelog generation we are using `unclog`, a tool developed within
-Informal Systems. The code and instructions for use can be found 
-[here](https://github.com/informalsystems/unclog).
+To manage and generate our changelog, we currently use [unclog](https://github.com/informalsystems/unclog).
 
 Every fix, improvement, feature, or breaking change should be made in a
-pull-request that includes a file `.changelog/unreleased/<category>/<description>-<issue or PR number>.md`, where:
+pull-request that includes a file `.changelog/unreleased/${category}/${issue-or-pr-number}-${description}.md`, where:
 - `category` is one of `improvements`, `breaking-changes`, `bug-fixes`, `features` and if multiple apply, create multiple files;
 - `description` is a short (4 to 6 word), hiphen separated description of the fix, starting the component changed; and, 
 - `issue or PR number' is the CometBFT issue number, if one exists, or the PR number, otherwise.

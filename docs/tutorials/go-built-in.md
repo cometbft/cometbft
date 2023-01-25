@@ -1,6 +1,6 @@
-<!---
+---
 order: 2
---->
+---
 
 # Creating a built-in application in Go
 

@@ -1,4 +1,4 @@
-name: Protobuf Lint 
+name: Protobuf Lint
 on:
   pull_request:
     paths:

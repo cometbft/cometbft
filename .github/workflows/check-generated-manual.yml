@@ -3,7 +3,7 @@
 # Note that we run these checks regardless whether the input files have
 # changed, because generated code can change in response to toolchain updates
 # even if no files in the repository are modified.
-name: Manual check generated code
+name: check-gen-manual
 on:
   workflow_dispatch:
 

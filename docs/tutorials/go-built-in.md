@@ -87,7 +87,7 @@ Tendermint.
 
 ```bash
 go mod init kvstore
-go get github.com/cometbft/cometbft@latest
+go get github.com/cometbft/cometbft@v0.37.0
 ```
 
 After running the above commands you will see two generated files, `go.mod` and `go.sum`.
@@ -116,7 +116,7 @@ go build
 Tendermint Core communicates with the application through the Application
 BlockChain Interface (ABCI). The messages exchanged through the interface are
 defined in the ABCI [protobuf
-file](https://github.com/cometbft/cometbft/blob/main/proto/tendermint/abci/types.proto).
+file](https://github.com/cometbft/cometbft/blob/v0.37.x/proto/tendermint/abci/types.proto).
 
 We begin by creating the basic scaffolding for an ABCI application by
 creating a new type, `KVStoreApplication`, which implements the
@@ -200,7 +200,7 @@ The types used here are defined in the Tendermint library and were added as a de
 to the project when you ran `go get`. If your IDE is not recognizing the types, go ahead and run the command again.
 
 ```bash
-go get github.com/cometbft/cometbft@latest
+go get github.com/cometbft/cometbft@v0.37.0
 ```
 
 Now go back to the `main.go` and modify the `main` function so it matches the following,
@@ -702,7 +702,7 @@ The additional logic at the end of the file allows the program to catch SIGTERM.
 
 Our application is almost ready to run, but first we'll need to populate the Tendermint Core configuration files.
 The following command will create a `tendermint-home` directory in your project and add a basic set of configuration files in `tendermint-home/config/`.
-For more information on what these files contain see [the configuration documentation](https://github.com/cometbft/cometbft/blob/v0.37.0/docs/nodes/configuration.md).
+For more information on what these files contain see [the configuration documentation](https://github.com/cometbft/cometbft/blob/v0.37.x/docs/tendermint-core/configuration.md).
 
 From the root of your project, run:
 

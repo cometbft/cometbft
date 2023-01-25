@@ -1,7 +1,7 @@
 package version
 
 const (
-	// TMVersionDefault is the used as the fallback version of Tendermint Core
+	// TMCoreSemVer is the used as the fallback version of Tendermint Core
 	// when not using git describe. It is formatted with semantic versioning.
 	TMCoreSemVer = "0.34.24"
 	// ABCISemVer is the semantic version of the ABCI library

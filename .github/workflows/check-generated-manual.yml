@@ -1,0 +1,69 @@
+# Verify that generated code is up-to-date.
+#
+# Note that we run these checks regardless whether the input files have
+# changed, because generated code can change in response to toolchain updates
+# even if no files in the repository are modified.
+name: Manual check generated code
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-mocks:
+    runs-on: ubuntu-latest
+    # TODO(thane): Remove once we make the cometbft-db repository public.
+    env:
+      GOPRIVATE: github.com/cometbft/cometbft-db
+    steps:
+      - uses: actions/setup-go@v3
+        with:
+          go-version: "1.18"
+
+      - uses: actions/checkout@v3
+
+      # TODO(thane): Remove once we make the cometbft-db repository public.
+      - run: git config --global url.https://${{ secrets.GO_MODULES_TOKEN }}@github.com/.insteadOf https://github.com/
+
+      - name: "Check generated mocks"
+        run: |
+          set -euo pipefail
+
+          make mockery 2>/dev/null
+
+          if ! git diff --stat --exit-code ; then
+            echo ">> ERROR:"
+            echo ">>"
+            echo ">> Generated mocks require update (either Mockery or source files may have changed)."
+            echo ">> Ensure your tools are up-to-date, re-run 'make mockery' and update this PR."
+            echo ">>"
+            exit 1
+          fi
+
+  check-proto:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v3
+        with:
+          go-version: "1.19"
+
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 1 # we need a .git directory to run git diff
+
+      - name: "Check protobuf generated code"
+        run: |
+          set -euo pipefail
+
+          make proto-gen
+
+          if ! git diff --stat --exit-code ; then
+            echo ">> ERROR:"
+            echo ">>"
+            echo ">> Protobuf generated code requires update (either tools or .proto files may have changed)."
+            echo ">> Ensure your tools are up-to-date, re-run 'make proto-gen' and update this PR."
+            echo ">>"
+            git diff
+            exit 1
+          fi

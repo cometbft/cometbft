@@ -85,7 +85,7 @@ Tendermint.
 
 ```bash
 go mod init kvstore
-go get github.com/tendermint/tendermint@latest
+go get github.com/cometbft/cometbft@latest
 ```
 
 After running the above commands you will see two generated files, `go.mod` and `go.sum`.
@@ -97,7 +97,7 @@ module github.com/me/example
 go 1.19
 
 require (
-	github.com/tendermint/tendermint v0.37.0
+	github.com/cometbft/cometbft v0.37.0
 )
 ```
 
@@ -115,7 +115,7 @@ go build
 Tendermint Core communicates with the application through the Application
 BlockChain Interface (ABCI). The messages exchanged through the interface are
 defined in the ABCI [protobuf
-file](https://github.com/tendermint/tendermint/blob/main/proto/tendermint/abci/types.proto).
+file](https://github.com/cometbft/cometbft/blob/main/proto/tendermint/abci/types.proto).
 
 We begin by creating the basic scaffolding for an ABCI application by
 creating a new type, `KVStoreApplication`, which implements the
@@ -127,7 +127,7 @@ Create a file called `app.go` with the following contents:
 package main
 
 import (
-	abcitypes "github.com/tendermint/tendermint/abci/types"
+	abcitypes "github.com/cometbft/cometbft/abci/types"
 )
 
 type KVStoreApplication struct{}
@@ -199,7 +199,7 @@ The types used here are defined in the Tendermint library and were added as a de
 to the project when you ran `go get`. If your IDE is not recognizing the types, go ahead and run the command again.
 
 ```bash
-go get github.com/tendermint/tendermint@latest
+go get github.com/cometbft/cometbft@latest
 ```
 
 Now go back to the `main.go` and modify the `main` function so it matches the following,
@@ -255,7 +255,7 @@ Next, update the `import` stanza at the top to include the Badger library:
 ```go
 import(
 	"github.com/dgraph-io/badger/v3"
-	abcitypes "github.com/tendermint/tendermint/abci/types"
+	abcitypes "github.com/cometbft/cometbft/abci/types"
 )
 ```
 
@@ -320,7 +320,7 @@ import(
 	"bytes"
 
 	"github.com/dgraph-io/badger/v3"
-	abcitypes "github.com/tendermint/tendermint/abci/types"
+	abcitypes "github.com/cometbft/cometbft/abci/types"
 )
 ```
 
@@ -412,7 +412,7 @@ import (
 	"log"
 
 	"github.com/dgraph-io/badger/v3"
-	abcitypes "github.com/tendermint/tendermint/abci/types"
+	abcitypes "github.com/cometbft/cometbft/abci/types"
 )
 ```
 
@@ -502,7 +502,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	abciserver "github.com/tendermint/tendermint/abci/server"
+	abciserver "github.com/cometbft/cometbft/abci/server"
 	"log"
 	"os"
 	"os/signal"
@@ -510,7 +510,7 @@ import (
 	"syscall"
 
 	"github.com/dgraph-io/badger/v3"
-	cmtlog "github.com/tendermint/tendermint/libs/log"
+	cmtlog "github.com/cometbft/cometbft/libs/log"
 )
 
 var homeDir string
@@ -599,12 +599,12 @@ which connects to our server and send us transactions and other messages.
 
 Our application is almost ready to run, but first we'll need to populate the Tendermint Core configuration files.
 The following command will create a `tendermint-home` directory in your project and add a basic set of configuration files in `tendermint-home/config/`.
-For more information on what these files contain see [the configuration documentation](https://github.com/tendermint/tendermint/blob/v0.37.0/docs/nodes/configuration.md).
+For more information on what these files contain see [the configuration documentation](https://github.com/cometbft/cometbft/blob/v0.37.0/docs/nodes/configuration.md).
 
 From the root of your project, run:
 
 ```bash
-go run github.com/tendermint/tendermint/cmd/tendermint@v0.37.0 init --home /tmp/tendermint-home
+go run github.com/cometbft/cometbft/cmd/cometbft@v0.37.0 init --home /tmp/tendermint-home
 ```
 
 You should see an output similar to the following:
@@ -642,7 +642,7 @@ Open a new terminal window and cd to the same folder where the app is running.
 Then execute the following command:
 
 ```bash
-go run github.com/tendermint/tendermint/cmd/tendermint@v0.37.0 node --home /tmp/tendermint-home --proxy_app=unix://example.sock
+go run github.com/cometbft/cometbft/cmd/cometbft@v0.37.0 node --home /tmp/tendermint-home --proxy_app=unix://example.sock
 ```
 
 This should start the full node and connect to our ABCI application, which will be
@@ -713,5 +713,5 @@ echo cm9ja3M=" | base64 -d
 
 I hope everything went smoothly and your first, but hopefully not the last,
 Tendermint Core application is up and running. If not, please [open an issue on
-Github](https://github.com/tendermint/tendermint/issues/new/choose). To dig
+Github](https://github.com/cometbft/cometbft/issues/new/choose). To dig
 deeper, read [the docs](https://docs.tendermint.com/main/).

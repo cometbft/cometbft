@@ -3,8 +3,8 @@ module.exports = {
   title: 'Tendermint Core',
   base: process.env.VUEPRESS_BASE,
   themeConfig: {
-    repo: 'tendermint/tendermint',
-    docsRepo: 'tendermint/tendermint',
+    repo: 'cometbft/cometbft',
+    docsRepo: 'cometbft/cometbft',
     docsDir: 'docs',
     editLinks: true,
     label: 'core',
@@ -47,7 +47,7 @@ module.exports = {
       forum: {
         title: 'Tendermint Discussions',
         text: 'Join the Tendermint discussions to learn more',
-        url: 'https://github.com/tendermint/tendermint/discussions',
+        url: 'https://github.com/cometbft/cometbft/discussions',
         bg: '#0B7E0B',
         logo: 'tendermint'
       },
@@ -58,7 +58,7 @@ module.exports = {
     },
     footer: {
       question: {
-        text: 'Chat with Tendermint developers in <a href=\'https://discord.gg/vcExX9T\' target=\'_blank\'>Discord</a> or reach out on <a href=\'https://github.com/tendermint/tendermint/discussions\' target=\'_blank\'>GitHub</a> to learn more.'
+        text: 'Chat with Tendermint developers in <a href=\'https://discord.gg/vcExX9T\' target=\'_blank\'>Discord</a> or reach out on <a href=\'https://github.com/cometbft/cometbft/discussions\' target=\'_blank\'>GitHub</a> to learn more.'
       },
       logo: '/logo-bw.svg',
       textLink: {
@@ -116,7 +116,7 @@ module.exports = {
             },
             {
               title: 'GitHub Discussions',
-              url: 'https://github.com/tendermint/tendermint/discussions'
+              url: 'https://github.com/cometbft/cometbft/discussions'
             }
           ]
         },
@@ -125,11 +125,11 @@ module.exports = {
           children: [
             {
               title: 'Contributing to the docs',
-              url: 'https://github.com/tendermint/tendermint'
+              url: 'https://github.com/cometbft/cometbft'
             },
             {
               title: 'Source code on GitHub',
-              url: 'https://github.com/tendermint/tendermint'
+              url: 'https://github.com/cometbft/cometbft'
             },
             {
               title: 'Careers at Tendermint',

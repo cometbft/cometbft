@@ -39,7 +39,7 @@ tendermint testnet --help
 
 The `genesis.json` file in `$TMHOME/config/` defines the initial
 TendermintCore state upon genesis of the blockchain ([see
-definition](https://github.com/tendermint/tendermint/blob/main/types/genesis.go)).
+definition](https://github.com/cometbft/cometbft/blob/main/types/genesis.go)).
 
 #### Fields
 
@@ -49,7 +49,7 @@ definition](https://github.com/tendermint/tendermint/blob/main/types/genesis.go)
   chain IDs, you will have a bad time. The ChainID must be less than 50 symbols.
 - `initial_height`: Height at which Tendermint should begin at. If a blockchain is conducting a network upgrade,
     starting from the stopped height brings uniqueness to previous heights.
-- `consensus_params` [spec](https://github.com/tendermint/tendermint/blob/main/spec/core/state.md#consensusparams)
+- `consensus_params` [spec](https://github.com/cometbft/cometbft/blob/main/spec/core/state.md#consensusparams)
     - `block`
         - `max_bytes`: Max block size, in bytes.
         - `max_gas`: Max gas per block.
@@ -568,7 +568,7 @@ library will deny making connections to peers with the same IP address.
 ### Upgrading
 
 See the
-[UPGRADING.md](https://github.com/tendermint/tendermint/blob/v0.34.x/UPGRADING.md)
+[UPGRADING.md](https://github.com/cometbft/cometbft/blob/v0.34.x/UPGRADING.md)
 guide. You may need to reset your chain between major breaking releases.
 Although, we expect Tendermint to have fewer breaking releases in the future
 (especially after 1.0 release).

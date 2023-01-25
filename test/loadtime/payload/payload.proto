@@ -1,7 +1,7 @@
 syntax = "proto3";
 package loadtime.payload;
 
-option go_package = "github.com/tendermint/tendermint/test/loadtime/payload";
+option go_package = "github.com/cometbft/cometbft/test/loadtime/payload";
 
 import "google/protobuf/timestamp.proto";
 

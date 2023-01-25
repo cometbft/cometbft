@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/tendermint/tendermint/config"
-	cmtos "github.com/tendermint/tendermint/libs/os"
+	"github.com/cometbft/cometbft/config"
+	cmtos "github.com/cometbft/cometbft/libs/os"
 )
 
 func ResetTestRoot(testName string) *config.Config {

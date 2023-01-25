@@ -5,14 +5,15 @@ import (
 	"fmt"
 
 	"github.com/cosmos/gogoproto/proto"
-	dbm "github.com/tendermint/tm-db"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	cmtmath "github.com/tendermint/tendermint/libs/math"
-	cmtos "github.com/tendermint/tendermint/libs/os"
-	cmtstate "github.com/tendermint/tendermint/proto/tendermint/state"
-	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/types"
+	dbm "github.com/cometbft/cometbft-db"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtos "github.com/cometbft/cometbft/libs/os"
+	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -76,7 +77,7 @@ type Store interface {
 	Close() error
 }
 
-// dbStore wraps a db (github.com/tendermint/tm-db)
+// dbStore wraps a db (github.com/cometbft/cometbft-db)
 type dbStore struct {
 	db dbm.DB
 
@@ -388,7 +389,6 @@ func (store dbStore) LoadABCIResponses(height int64) (*cmtstate.ABCIResponses, e
 		return nil, err
 	}
 	if len(buf) == 0 {
-
 		return nil, ErrNoABCIResponsesForHeight{height}
 	}
 

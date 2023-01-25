@@ -5,7 +5,7 @@ OUTPUT?=$(BUILDDIR)/cometbft
 BUILD_TAGS?=cometbft
 
 COMMIT_HASH := $(shell git rev-parse --short HEAD)
-LD_FLAGS = -X github.com/tendermint/tendermint/version.TMGitCommitHash=$(COMMIT_HASH)
+LD_FLAGS = -X github.com/cometbft/cometbft/version.TMGitCommitHash=$(COMMIT_HASH)
 BUILD_FLAGS = -mod=readonly -ldflags "$(LD_FLAGS)"
 HTTPS_GIT := https://github.com/cometbft/cometbft.git
 CGO_ENABLED ?= 0
@@ -47,10 +47,10 @@ endif
 # allow users to pass additional flags via the conventional LDFLAGS variable
 LD_FLAGS += $(LDFLAGS)
 
-# Process Docker environment varible TARGETPLATFORM 
+# Process Docker environment varible TARGETPLATFORM
 # in order to build binary with correspondent ARCH
 # by default will always build for linux/amd64
-TARGETPLATFORM ?= 
+TARGETPLATFORM ?=
 GOOS ?= linux
 GOARCH ?= amd64
 GOARM ?=
@@ -328,10 +328,13 @@ check-docs-toc:
 ###                            Docker image                                 ###
 ###############################################################################
 
-build-docker: build-linux
-	cp $(OUTPUT) DOCKER/cometbft
-	docker build --label=cometbft --tag="cometbft/cometbft" DOCKER
-	rm -rf DOCKER/cometbft
+# TODO(thane): Remove GO_MODULES_TOKEN build arg when we make the repo public.
+build-docker:
+	docker build \
+		--label=cometbft \
+		--tag="cometbft/cometbft" \
+		--build-arg GO_MODULES_TOKEN=${GO_MODULES_TOKEN} \
+		-f DOCKER/Dockerfile .
 .PHONY: build-docker
 
 ###############################################################################

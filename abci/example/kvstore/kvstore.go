@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	"github.com/tendermint/tendermint/abci/example/code"
-	"github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/version"
+	"github.com/cometbft/cometbft/abci/example/code"
+	"github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/version"
 )
 
 var (
@@ -193,7 +193,8 @@ func (app *Application) BeginBlock(req types.RequestBeginBlock) types.ResponseBe
 }
 
 func (app *Application) ProcessProposal(
-	req types.RequestProcessProposal) types.ResponseProcessProposal {
+	req types.RequestProcessProposal,
+) types.ResponseProcessProposal {
 	for _, tx := range req.Txs {
 		if len(tx) == 0 {
 			return types.ResponseProcessProposal{Status: types.ResponseProcessProposal_REJECT}

@@ -13,27 +13,27 @@ import (
 
 	"github.com/spf13/cobra"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	"github.com/tendermint/tendermint/libs/log"
-	cmtmath "github.com/tendermint/tendermint/libs/math"
-	cmtos "github.com/tendermint/tendermint/libs/os"
-	"github.com/tendermint/tendermint/light"
-	lproxy "github.com/tendermint/tendermint/light/proxy"
-	lrpc "github.com/tendermint/tendermint/light/rpc"
-	dbs "github.com/tendermint/tendermint/light/store/db"
-	rpcserver "github.com/tendermint/tendermint/rpc/jsonrpc/server"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtos "github.com/cometbft/cometbft/libs/os"
+	"github.com/cometbft/cometbft/light"
+	lproxy "github.com/cometbft/cometbft/light/proxy"
+	lrpc "github.com/cometbft/cometbft/light/rpc"
+	dbs "github.com/cometbft/cometbft/light/store/db"
+	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
 )
 
 // LightCmd represents the base command when called without any subcommands
 var LightCmd = &cobra.Command{
 	Use:   "light [chainID]",
-	Short: "Run a light client proxy server, verifying Tendermint rpc",
-	Long: `Run a light client proxy server, verifying Tendermint rpc.
+	Short: "Run a light client proxy server, verifying CometBFT rpc",
+	Long: `Run a light client proxy server, verifying CometBFT rpc.
 
 All calls that can be tracked back to a block header by a proof
 will be verified before passing them back to the caller. Other than
-that, it will present the same interface as a full Tendermint node.
+that, it will present the same interface as a full CometBFT node.
 
 Furthermore to the chainID, a fresh instance of a light client will
 need a primary RPC address, a trusted hash and height and witness RPC addresses
@@ -77,10 +77,10 @@ func init() {
 	LightCmd.Flags().StringVar(&listenAddr, "laddr", "tcp://localhost:8888",
 		"serve the proxy on the given address")
 	LightCmd.Flags().StringVarP(&primaryAddr, "primary", "p", "",
-		"connect to a Tendermint node at this address")
+		"connect to a CometBFT node at this address")
 	LightCmd.Flags().StringVarP(&witnessAddrsJoined, "witnesses", "w", "",
-		"tendermint nodes to cross-check the primary node, comma-separated")
-	LightCmd.Flags().StringVar(&home, "home-dir", os.ExpandEnv(filepath.Join("$HOME", ".tendermint-light")),
+		"CometBFT nodes to cross-check the primary node, comma-separated")
+	LightCmd.Flags().StringVar(&home, "home-dir", os.ExpandEnv(filepath.Join("$HOME", ".cometbft-light")),
 		"specify the home directory")
 	LightCmd.Flags().IntVar(
 		&maxOpenConnections,
@@ -132,7 +132,7 @@ func runProxy(cmd *cobra.Command, args []string) error {
 		}
 		if primaryAddr == "" {
 			return errors.New("no primary address was provided nor found. Please provide a primary (using -p)." +
-				" Run the command: tendermint light --help for more information")
+				" Run the command: cometbft light --help for more information")
 		}
 	} else {
 		err := saveProviders(db, primaryAddr, witnessAddrsJoined)

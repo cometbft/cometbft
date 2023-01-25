@@ -30,7 +30,7 @@ next block in the blockchain should be.
 
 Vote is sent to vote for some block (or to inform others that a process does not vote in the
 current round). Vote is defined in the
-[Blockchain](https://github.com/tendermint/tendermint/blob/main/spec/core/data_structures.md#blockidd)
+[Blockchain](https://github.com/cometbft/cometbft/blob/main/spec/core/data_structures.md#blockidd)
 section and contains validator's
 information (validator address and index), height and round for which the vote is sent, vote type,
 blockID if process vote for some block (`nil` otherwise) and a timestamp when the vote is sent. The
@@ -54,7 +54,7 @@ and the block part.
 ### NewRoundStep
 
 NewRoundStep is sent for every step transition during the core consensus algorithm execution.
-It is used in the gossip part of the Tendermint protocol to inform peers about a current
+It is used in the gossip part of the CometBFT consensus protocol to inform peers about a current
 height/round/step a process is in.
 
 | Name                     | Type   | Description                            | Field Number |

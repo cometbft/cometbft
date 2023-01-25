@@ -1,6 +1,6 @@
 package sr25519
 
-import cmtjson "github.com/tendermint/tendermint/libs/json"
+import cmtjson "github.com/cometbft/cometbft/libs/json"
 
 const (
 	PrivKeyName = "tendermint/PrivKeySr25519"

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"sync"
@@ -15,31 +16,29 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"path"
+	dbm "github.com/cometbft/cometbft-db"
 
-	dbm "github.com/tendermint/tm-db"
-
-	abcicli "github.com/tendermint/tendermint/abci/client"
-	"github.com/tendermint/tendermint/abci/example/kvstore"
-	abci "github.com/tendermint/tendermint/abci/types"
-	cfg "github.com/tendermint/tendermint/config"
-	cstypes "github.com/tendermint/tendermint/consensus/types"
-	"github.com/tendermint/tendermint/internal/test"
-	cmtbytes "github.com/tendermint/tendermint/libs/bytes"
-	"github.com/tendermint/tendermint/libs/log"
-	cmtos "github.com/tendermint/tendermint/libs/os"
-	cmtpubsub "github.com/tendermint/tendermint/libs/pubsub"
-	cmtsync "github.com/tendermint/tendermint/libs/sync"
-	mempl "github.com/tendermint/tendermint/mempool"
-	mempoolv0 "github.com/tendermint/tendermint/mempool/v0"
-	mempoolv1 "github.com/tendermint/tendermint/mempool/v1"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/privval"
-	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/store"
-	"github.com/tendermint/tendermint/types"
-	cmttime "github.com/tendermint/tendermint/types/time"
+	abcicli "github.com/cometbft/cometbft/abci/client"
+	"github.com/cometbft/cometbft/abci/example/kvstore"
+	abci "github.com/cometbft/cometbft/abci/types"
+	cfg "github.com/cometbft/cometbft/config"
+	cstypes "github.com/cometbft/cometbft/consensus/types"
+	"github.com/cometbft/cometbft/internal/test"
+	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtos "github.com/cometbft/cometbft/libs/os"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	mempl "github.com/cometbft/cometbft/mempool"
+	mempoolv0 "github.com/cometbft/cometbft/mempool/v0"
+	mempoolv1 "github.com/cometbft/cometbft/mempool/v1"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/privval"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 const (
@@ -92,8 +91,8 @@ func newValidatorStub(privValidator types.PrivValidator, valIndex int32) *valida
 func (vs *validatorStub) signVote(
 	voteType cmtproto.SignedMsgType,
 	hash []byte,
-	header types.PartSetHeader) (*types.Vote, error) {
-
+	header types.PartSetHeader,
+) (*types.Vote, error) {
 	pubKey, err := vs.PrivValidator.GetPubKey()
 	if err != nil {
 		return nil, fmt.Errorf("can't get pubkey: %w", err)
@@ -141,7 +140,8 @@ func signVotes(
 	voteType cmtproto.SignedMsgType,
 	hash []byte,
 	header types.PartSetHeader,
-	vss ...*validatorStub) []*types.Vote {
+	vss ...*validatorStub,
+) []*types.Vote {
 	votes := make([]*types.Vote, len(vss))
 	for i, vs := range vss {
 		votes[i] = signVote(vs, voteType, hash, header)
@@ -456,7 +456,7 @@ func newStateWithConfigAndBlockStore(
 
 func loadPrivValidator(config *cfg.Config) *privval.FilePV {
 	privValidatorKeyFile := config.PrivValidatorKeyFile()
-	ensureDir(filepath.Dir(privValidatorKeyFile), 0700)
+	ensureDir(filepath.Dir(privValidatorKeyFile), 0o700)
 	privValidatorStateFile := config.PrivValidatorStateFile()
 	privValidator := privval.LoadOrGenFilePV(privValidatorKeyFile, privValidatorStateFile)
 	privValidator.Reset()
@@ -487,7 +487,8 @@ func randStateWithApp(nValidators int, app abci.Application) (*State, []*validat
 //-------------------------------------------------------------------------------
 
 func ensureNoNewEvent(ch <-chan cmtpubsub.Message, timeout time.Duration,
-	errorMessage string) {
+	errorMessage string,
+) {
 	select {
 	case <-time.After(timeout):
 		break
@@ -665,7 +666,8 @@ func ensurePrevote(voteCh <-chan cmtpubsub.Message, height int64, round int32) {
 }
 
 func ensureVote(voteCh <-chan cmtpubsub.Message, height int64, round int32,
-	voteType cmtproto.SignedMsgType) {
+	voteType cmtproto.SignedMsgType,
+) {
 	select {
 	case <-time.After(ensureTimeout):
 		panic("Timeout expired while waiting for NewVote event")
@@ -748,7 +750,8 @@ func consensusLogger() log.Logger {
 }
 
 func randConsensusNet(nValidators int, testName string, tickerFunc func() TimeoutTicker,
-	appFunc func() abci.Application, configOpts ...func(*cfg.Config)) ([]*State, cleanupFunc) {
+	appFunc func() abci.Application, configOpts ...func(*cfg.Config),
+) ([]*State, cleanupFunc) {
 	genDoc, privVals := randGenesisDoc(nValidators, false, 30)
 	css := make([]*State, nValidators)
 	logger := consensusLogger()
@@ -764,7 +767,7 @@ func randConsensusNet(nValidators int, testName string, tickerFunc func() Timeou
 		for _, opt := range configOpts {
 			opt(thisConfig)
 		}
-		ensureDir(filepath.Dir(thisConfig.Consensus.WalFile()), 0700) // dir for wal
+		ensureDir(filepath.Dir(thisConfig.Consensus.WalFile()), 0o700) // dir for wal
 		app := appFunc()
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
 		app.InitChain(abci.RequestInitChain{Validators: vals})
@@ -801,7 +804,7 @@ func randConsensusNetWithPeers(
 		state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
 		thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
 		configRootDirs = append(configRootDirs, thisConfig.RootDir)
-		ensureDir(filepath.Dir(thisConfig.Consensus.WalFile()), 0700) // dir for wal
+		ensureDir(filepath.Dir(thisConfig.Consensus.WalFile()), 0o700) // dir for wal
 		if i == 0 {
 			peer0Config = thisConfig
 		}

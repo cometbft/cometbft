@@ -2,7 +2,7 @@ name: Markdown Linter
 on:
   push:
     branches:
-      - main
+      - v0.37.x
     paths:
       - "**.md"
       - "**.yml"

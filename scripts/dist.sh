@@ -20,7 +20,7 @@ rm -rf build/pkg
 mkdir -p build/pkg
 
 # Get the git commit
-VERSION := "$(shell git describe --always --tags)"
+VERSION := "$(shell git describe --always)"
 GIT_IMPORT="github.com/tendermint/tendermint/version"
 
 # Determine the arch/os combos we're building for

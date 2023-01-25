@@ -9,7 +9,7 @@ applications. Tendermint provides unique speed and security properties for
 light client applications.
 
 See our [light
-package](https://pkg.go.dev/github.com/tendermint/tendermint/light?tab=doc).
+package](https://pkg.go.dev/github.com/cometbft/cometbft/light?tab=doc).
 
 ## Overview
 
@@ -32,7 +32,7 @@ known validator set. From there, all the application state is verifiable with
 
 ## Where to obtain trusted height & hash
 
-[Trust Options](https://pkg.go.dev/github.com/tendermint/tendermint/light?tab=doc#TrustOptions)
+[Trust Options](https://pkg.go.dev/github.com/cometbft/cometbft/light?tab=doc#TrustOptions)
 
 One way to obtain semi-trusted hash & height is to query multiple full nodes
 and compare their hashes:

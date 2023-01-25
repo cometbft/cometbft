@@ -8,7 +8,7 @@ Tendermint emits different events, which you can subscribe to via
 [Websocket](https://en.wikipedia.org/wiki/WebSocket). This can be useful
 for third-party applications (for analysis) or for inspecting state.
 
-[List of events](https://godoc.org/github.com/tendermint/tendermint/types#pkg-constants)
+[List of events](https://godoc.org/github.com/cometbft/cometbft/types#pkg-constants)
 
 To connect to a node via websocket from the CLI, you can use a tool such as
 [wscat](https://github.com/websockets/wscat) and run:

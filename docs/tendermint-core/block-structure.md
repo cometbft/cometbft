@@ -13,4 +13,4 @@ exactly is stored in these blocks?
 
 The [specification](https://github.com/cometbft/cometbft/blob/main/spec/core/data_structures.md) contains a detailed description of each component - that's the best place to get started.
 
-To dig deeper, check out the [types package documentation](https://godoc.org/github.com/tendermint/tendermint/types).
+To dig deeper, check out the [types package documentation](https://godoc.org/github.com/cometbft/cometbft/types).

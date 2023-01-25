@@ -1,9 +1,9 @@
-# Runs randomly generated E2E testnets nightly on master
+# Runs randomly generated E2E testnets nightly on main
 
 # !! If you change something in this file, you probably want
 # to update the e2e-nightly-34x workflow as well!
 
-name: e2e-nightly-master
+name: e2e-nightly-main
 on:
   workflow_dispatch:  # allow running workflow manually
   schedule:

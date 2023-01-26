@@ -258,11 +258,11 @@ You could put the commands in a file and run
 
 
 Note that the `abci-cli` is designed strictly for testing and debugging. In a real
-deployment, the role of sending messages is taken by Tendermint, which
+deployment, the role of sending messages is taken by CometBFT, which
 connects to the app using three separate connections, each with its own
 pattern of messages.
 
-For examples of running an ABCI app with Tendermint, see the
+For examples of running an ABCI app with CometBFT, see the
 [getting started guide](./getting-started.md).
 
 ## Bounties

@@ -32,7 +32,7 @@ const (
 	MempoolV0 = "v0"
 	MempoolV1 = "v1"
 
-	DefaultTendermintDir = ".tendermint"
+	DefaultTendermintDir = ".cometbft"
 	DefaultConfigDir     = "config"
 	DefaultDataDir       = "data"
 

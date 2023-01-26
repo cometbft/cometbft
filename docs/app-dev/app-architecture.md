@@ -7,10 +7,6 @@ order: 3
 Here we provide a brief guide on the recommended architecture of a
 CometBFT blockchain application.
 
-The following diagram provides a superb example:
-
-![cosmos-tendermint-stack](../imgs/cosmos-tendermint-stack-4k.jpg)
-
 We distinguish here between two forms of "application". The first is the
 end-user application, like a desktop-based wallet app that a user downloads,
 which is where the user actually interacts with the system. The other is the
@@ -18,8 +14,7 @@ ABCI application, which is the logic that actually runs on the blockchain.
 Transactions sent by an end-user application are ultimately processed by the ABCI
 application after being committed by CometBFT.
 
-The end-user application in this diagram is the [Lunie](https://lunie.io/) app, located at the bottom
-left. Lunie communicates with a REST API exposed by the application.
+The end-user application communicates with a REST API exposed by the application.
 The application runs CometBFT nodes and verifies CometBFT light-client proofs
 through the CometBFT RPC. The CometBFT process communicates with
 a local ABCI application, where the user query or transaction is actually

@@ -6,7 +6,7 @@ title: Method
 # Method
 
 This document provides a detailed description of the QA process.
-It is intended to be used by engineers reproducing the experimental setup for future tests of Tendermint.
+It is intended to be used by engineers reproducing the experimental setup for future tests of CometBFT.
 
 The (first iteration of the) QA process as described [in the RELEASES.md document][releases]
 was applied to version v0.34.x in order to have a set of results acting as benchmarking baseline.
@@ -15,7 +15,7 @@ This baseline is then compared with results obtained in later versions.
 Out of the testnet-based test cases described in [the releases document][releases] we focused on two of them:
 _200 Node Test_, and _Rotating Nodes Test_.
 
-[releases]: https://github.com/cometbft/cometbft/blob/v0.37.x/RELEASES.md#large-scale-testnets
+[releases]: https://github.com/cometbft/cometbft/blob/main/RELEASES.md#large-scale-testnets
 
 ## Software Dependencies
 
@@ -64,7 +64,7 @@ This section explains how the tests were carried out for reproducibility purpose
     * It is running 90-seconds-long experiments in a loop with different loads
 7. Run `make retrieve-data` to gather all relevant data from the testnet into the orchestrating machine
 8. Verify that the data was collected without errors
-    * at least one blockstore DB for a Tendermint validator
+    * at least one blockstore DB for a CometBFT validator
     * the Prometheus database from the Prometheus node
     * for extra care, you can run `zip -T` on the `prometheus.zip` file and (one of) the `blockstore.db.zip` file(s)
 9. **Run `make terraform-destroy`**
@@ -197,7 +197,7 @@ This section explains how the tests were carried out for reproducibility purpose
     after height 3000 was reached, stop `make rotate`
 11. Run `make retrieve-data` to gather all relevant data from the testnet into the orchestrating machine
 12. Verify that the data was collected without errors
-    * at least one blockstore DB for a Tendermint validator
+    * at least one blockstore DB for a CometBFT validator
     * the Prometheus database from the Prometheus node
     * for extra care, you can run `zip -T` on the `prometheus.zip` file and (one of) the `blockstore.db.zip` file(s)
 13. **Run `make terraform-destroy`**

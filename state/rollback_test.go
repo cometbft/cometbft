@@ -98,7 +98,7 @@ func TestRollbackHard(t *testing.T) {
 
 	block := &types.Block{
 		Header: types.Header{
-			Version:            tmversion.Consensus{Block: version.BlockProtocol, App: 1},
+			Version:            cmtversion.Consensus{Block: version.BlockProtocol, App: 1},
 			ChainID:            "test-chain",
 			Time:               now,
 			Height:             height,
@@ -121,7 +121,7 @@ func TestRollbackHard(t *testing.T) {
 	blockStore.SaveBlock(block, partSet, &types.Commit{Height: block.Height})
 
 	currState := state.State{
-		Version: tmstate.Version{
+		Version: cmtstate.Version{
 			Consensus: block.Header.Version,
 			Software:  version.TMCoreSemVer,
 		},
@@ -140,7 +140,7 @@ func TestRollbackHard(t *testing.T) {
 
 	nextBlock := &types.Block{
 		Header: types.Header{
-			Version:            tmversion.Consensus{Block: version.BlockProtocol, App: 1},
+			Version:            cmtversion.Consensus{Block: version.BlockProtocol, App: 1},
 			ChainID:            block.ChainID,
 			Time:               block.Time,
 			Height:             currState.LastBlockHeight + 1,
@@ -178,7 +178,7 @@ func TestRollbackHard(t *testing.T) {
 	params.Version.App = 11
 
 	nextState := state.State{
-		Version: tmstate.Version{
+		Version: cmtstate.Version{
 			Consensus: block.Header.Version,
 			Software:  version.TMCoreSemVer,
 		},

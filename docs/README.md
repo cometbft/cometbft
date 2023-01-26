@@ -1,33 +1,32 @@
 ---
-title: Tendermint Core Documentation
-description: Tendermint Core is a blockchain application platform.
+title: CometBFT Documentation
+description: CometBFT is a blockchain application platform.
 footer:
   newsletter: false
 ---
 
-# Tendermint
+# CometBFT
 
-Welcome to the Tendermint Core documentation!
+Welcome to the CometBFT documentation!
 
-Tendermint Core is a blockchain application platform; it provides the equivalent
+CometBFT is a blockchain application platform; it provides the equivalent
 of a web-server, database, and supporting libraries for blockchain applications
 written in any programming language. Like a web-server serving web applications,
-Tendermint serves blockchain applications.
+CometBFT serves blockchain applications.
 
-More formally, Tendermint Core performs Byzantine Fault Tolerant (BFT)
+More formally, CometBFT performs Byzantine Fault Tolerant (BFT)
 State Machine Replication (SMR) for arbitrary deterministic, finite state machines.
-For more background, see [What is
-Tendermint?](introduction/what-is-tendermint.md).
+For more background, see [What is CometBFT?](introduction/what-is-cometbft.md).
 
 To get started quickly with an example application, see the [quick start guide](introduction/quick-start.md).
 
-To learn about application development on Tendermint, see the [Application Blockchain Interface](https://github.com/cometbft/cometbft/tree/main/spec/abci).
+To learn about application development on CometBFT, see the [Application Blockchain Interface](https://github.com/cometbft/cometbft/tree/main/spec/abci).
 
-For more details on using Tendermint, see the respective documentation for
-[Tendermint Core](core/), [benchmarking and monitoring](tools/), and [network deployments](networks/).
+For more details on using CometBFT, see the respective documentation for
+[CometBFT internals](core/), [benchmarking and monitoring](tools/), and [network deployments](networks/).
 
-To find out about the Tendermint ecosystem you can go [here](https://github.com/tendermint/awesome#ecosystem). If you are a project that is using Tendermint you are welcome to make a PR to add your project to the list.
+To find out about the CometBFT ecosystem you can go [here](https://github.com/tendermint/awesome#ecosystem). If you are a project that is using CometBFT you are welcome to make a PR to add your project to the list.
 
 ## Contribute
 
-To contribute to the documentation, see [this file](https://github.com/cometbft/cometbft/blob/main/docs/DOCS_README.md) for details of the build process and considerations when making changes.
+To contribute to the documentation, see [this file](./DOCS_README.md) for details of the build process and considerations when making changes.

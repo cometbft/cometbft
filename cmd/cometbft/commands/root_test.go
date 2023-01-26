@@ -110,7 +110,7 @@ func TestRootFlagsEnv(t *testing.T) {
 		{[]string{"--log_level", "debug"}, nil, "debug"},                  // right flag
 		{nil, map[string]string{"TM_LOW": "debug"}, defaultLogLvl},        // wrong env flag
 		{nil, map[string]string{"MT_LOG_LEVEL": "debug"}, defaultLogLvl},  // wrong env prefix
-		{nil, map[string]string{"TM_LOG_LEVEL": "debug"}, "debug"},        // right, but deprecated env
+		{nil, map[string]string{"TM_LOG_LEVEL": "debug"}, defaultLogLvl},  // right, but deprecated env
 		{nil, map[string]string{"CMT_LOW": "debug"}, defaultLogLvl},       // wrong env flag
 		{nil, map[string]string{"TMC_LOG_LEVEL": "debug"}, defaultLogLvl}, // wrong env prefix
 		{nil, map[string]string{"CMT_LOG_LEVEL": "debug"}, "debug"},       // right env
@@ -140,10 +140,10 @@ func TestRootConfig(t *testing.T) {
 
 		logLvl string
 	}{
-		{nil, nil, nonDefaultLogLvl},                                      // should load config
-		{[]string{"--log_level=abc:info"}, nil, "abc:info"},               // flag over rides
-		{nil, map[string]string{"TM_LOG_LEVEL": "abc:info"}, "abc:info"},  // env over rides //XXX: Deprecated
-		{nil, map[string]string{"CMT_LOG_LEVEL": "abc:info"}, "abc:info"}, // env over rides
+		{nil, nil, nonDefaultLogLvl},                                           // should load config
+		{[]string{"--log_level=abc:info"}, nil, "abc:info"},                    // flag over rides
+		{nil, map[string]string{"TM_LOG_LEVEL": "abc:info"}, nonDefaultLogLvl}, // env over rides //XXX: Deprecated
+		{nil, map[string]string{"CMT_LOG_LEVEL": "abc:info"}, "abc:info"},      // env over rides
 	}
 
 	for i, tc := range cases {

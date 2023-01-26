@@ -2,43 +2,43 @@
 order: 2
 ---
 
-# Using Tendermint
+# Using CometBFT
 
-This is a guide to using the `tendermint` program from the command line.
-It assumes only that you have the `tendermint` binary installed and have
-some rudimentary idea of what Tendermint and ABCI are.
+This is a guide to using the `cometbft` program from the command line.
+It assumes only that you have the `cometbft` binary installed and have
+some rudimentary idea of what CometBFT and ABCI are.
 
-You can see the help menu with `tendermint --help`, and the version
-number with `tendermint version`.
+You can see the help menu with `cometbft --help`, and the version
+number with `cometbft version`.
 
 ## Directory Root
 
-The default directory for blockchain data is `~/.tendermint`. Override
-this by setting the `TMHOME` environment variable.
+The default directory for blockchain data is `~/.cometbft`. Override
+this by setting the `CMTHOME` environment variable.
 
 ## Initialize
 
 Initialize the root directory by running:
 
 ```sh
-tendermint init
+cometbft init
 ```
 
 This will create a new private key (`priv_validator_key.json`), and a
 genesis file (`genesis.json`) containing the associated public key, in
-`$TMHOME/config`. This is all that's necessary to run a local testnet
+`$CMTHOME/config`. This is all that's necessary to run a local testnet
 with one validator.
 
 For more elaborate initialization, see the testnet command:
 
 ```sh
-tendermint testnet --help
+cometbft testnet --help
 ```
 
 ### Genesis
 
-The `genesis.json` file in `$TMHOME/config/` defines the initial
-TendermintCore state upon genesis of the blockchain ([see
+The `genesis.json` file in `$CMTHOME/config/` defines the initial
+CometBFT state upon genesis of the blockchain ([see
 definition](https://github.com/cometbft/cometbft/blob/main/types/genesis.go)).
 
 #### Fields
@@ -47,15 +47,12 @@ definition](https://github.com/cometbft/cometbft/blob/main/types/genesis.go)).
 - `chain_id`: ID of the blockchain. **This must be unique for
   every blockchain.** If your testnet blockchains do not have unique
   chain IDs, you will have a bad time. The ChainID must be less than 50 symbols.
-- `initial_height`: Height at which Tendermint should begin at. If a blockchain is conducting a network upgrade,
+- `initial_height`: Height at which CometBFT should begin at. If a blockchain is conducting a network upgrade,
     starting from the stopped height brings uniqueness to previous heights.
-- `consensus_params` [spec](https://github.com/cometbft/cometbft/blob/main/spec/core/state.md#consensusparams)
+- `consensus_params` ([see spec](https://github.com/cometbft/cometbft/blob/main/spec/core/data_structures.md#consensusparams))
     - `block`
         - `max_bytes`: Max block size, in bytes.
         - `max_gas`: Max gas per block.
-        - `time_iota_ms`: Minimum time increment between consecutive blocks (in
-      milliseconds). If the block header timestamp is ahead of the system clock,
-      decrease this value.
     - `evidence`
         - `max_age_num_blocks`: Max age of evidence, in blocks. The basic formula
       for calculating this is: MaxAgeDuration / {average block time}.
@@ -63,23 +60,24 @@ definition](https://github.com/cometbft/cometbft/blob/main/types/genesis.go)).
       with an app's "unbonding period" or other similar mechanism for handling
       [Nothing-At-Stake
       attacks](https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed).
-        - `max_num`: This sets the maximum number of evidence that can be committed
-      in a single block. and should fall comfortably under the max block
-      bytes when we consider the size of each evidence.
+        - `max_bytes`: This sets the maximum size in bytes of evidence that can be committed
+      in a single block and should fall comfortably under the max block bytes.
     - `validator`
         - `pub_key_types`: Public key types validators can use.
     - `version`
         - `app_version`: ABCI application version.
 - `validators`: List of initial validators. Note this may be overridden entirely by the
   application, and may be left empty to make explicit that the
-  application will initialize the validator set with ResponseInitChain.
-    - `pub_key`: The first element specifies the `pub_key` type. 1
-    == Ed25519. The second element are the pubkey bytes.
+  application will initialize the validator set upon `InitChain`.
+    - `pub_key`: The first element specifies the key type,
+    using the declared `PubKeyName` for the adopted
+    [key type](https://github.com/cometbft/cometbft/blob/main/crypto/ed25519/ed25519.go#L36).
+    The second element are the pubkey bytes.
     - `power`: The validator's voting power.
     - `name`: Name of the validator (optional).
 - `app_hash`: The expected application hash (as returned by the
   `ResponseInfo` ABCI message) upon genesis. If the app's hash does
-  not match, Tendermint will panic.
+  not match, CometBFT will panic.
 - `app_state`: The application state (e.g. initial distribution
   of tokens).
 
@@ -89,19 +87,18 @@ definition](https://github.com/cometbft/cometbft/blob/main/types/genesis.go)).
 
 ```json
 {
-  "genesis_time": "2020-04-21T11:17:42.341227868Z",
+  "genesis_time": "2023-01-21T11:17:42.341227868Z",
   "chain_id": "test-chain-ROp9KF",
   "initial_height": "0",
   "consensus_params": {
     "block": {
       "max_bytes": "22020096",
       "max_gas": "-1",
-      "time_iota_ms": "1000"
     },
     "evidence": {
       "max_age_num_blocks": "100000",
       "max_age_duration": "172800000000000",
-      "max_num": 50,
+      "max_bytes": 51200,
     },
     "validator": {
       "pub_key_types": [
@@ -126,40 +123,40 @@ definition](https://github.com/cometbft/cometbft/blob/main/types/genesis.go)).
 
 ## Run
 
-To run a Tendermint node, use:
+To run a CometBFT node, use:
 
 ```bash
-tendermint node
+cometbft node
 ```
 
-By default, Tendermint will try to connect to an ABCI application on
+By default, CometBFT will try to connect to an ABCI application on
 `127.0.0.1:26658`. If you have the `kvstore` ABCI app installed, run it in
-another window. If you don't, kill Tendermint and run an in-process version of
+another window. If you don't, kill CometBFT and run an in-process version of
 the `kvstore` app:
 
 ```bash
-tendermint node --proxy_app=kvstore
+cometbft node --proxy_app=kvstore
 ```
 
 After a few seconds, you should see blocks start streaming in. Note that blocks
 are produced regularly, even if there are no transactions. See _No Empty
 Blocks_, below, to modify this setting.
 
-Tendermint supports in-process versions of the `counter`, `kvstore`, and `noop`
+CometBFT supports in-process versions of the `counter`, `kvstore`, and `noop`
 apps that ship as examples with `abci-cli`. It's easy to compile your app
-in-process with Tendermint if it's written in Go. If your app is not written in
+in-process with CometBFT if it's written in Go. If your app is not written in
 Go, run it in another process, and use the `--proxy_app` flag to specify the
 address of the socket it is listening on, for instance:
 
 ```bash
-tendermint node --proxy_app=/var/run/abci.sock
+cometbft node --proxy_app=/var/run/abci.sock
 ```
 
-You can find out what flags are supported by running `tendermint node --help`.
+You can find out what flags are supported by running `cometbft node --help`.
 
 ## Transactions
 
-To send a transaction, use `curl` to make requests to the Tendermint RPC
+To send a transaction, use `curl` to make requests to the CometBFT RPC
 server, for example:
 
 ```sh
@@ -242,7 +239,7 @@ afford to lose all blockchain data!
 To reset a blockchain, stop the node and run:
 
 ```sh
-tendermint unsafe_reset_all
+cometbft unsafe_reset_all
 ```
 
 This command will remove the data directory and reset private validator and
@@ -250,11 +247,11 @@ address book files.
 
 ## Configuration
 
-Tendermint uses a `config.toml` for configuration. For details, see [the
+CometBFT uses a `config.toml` for configuration. For details, see [the
 config specification](./configuration.md).
 
 Notable options include the socket address of the application
-(`proxy_app`), the listening address of the Tendermint peer
+(`proxy_app`), the listening address of the CometBFT peer
 (`p2p.laddr`), and the listening address of the RPC server
 (`rpc.laddr`).
 
@@ -262,17 +259,17 @@ Some fields from the config file can be overwritten with flags.
 
 ## No Empty Blocks
 
-While the default behavior of `tendermint` is still to create blocks
+While the default behavior of `cometbft` is still to create blocks
 approximately once per second, it is possible to disable empty blocks or
 set a block creation interval. In the former case, blocks will be
 created when there are new transactions or when the AppHash changes.
 
-To configure Tendermint to not produce empty blocks unless there are
-transactions or the app hash changes, run Tendermint with this
+To configure CometBFT to not produce empty blocks unless there are
+transactions or the app hash changes, run CometBFT with this
 additional flag:
 
 ```sh
-tendermint node --consensus.create_empty_blocks=false
+cometbft node --consensus.create_empty_blocks=false
 ```
 
 or set the configuration via the `config.toml` file:
@@ -306,7 +303,7 @@ has been produced otherwise, regardless of the value of
 ## Broadcast API
 
 Earlier, we used the `broadcast_tx_commit` endpoint to send a
-transaction. When a transaction is sent to a Tendermint node, it will
+transaction. When a transaction is sent to a CometBFT node, it will
 run via `CheckTx` against the application. If it passes `CheckTx`, it
 will be included in the mempool, broadcasted to other peers, and
 eventually included in a block.
@@ -341,12 +338,12 @@ Note the mempool does not provide strong guarantees - just because a tx passed
 CheckTx (ie. was accepted into the mempool), doesn't mean it will be committed,
 as nodes with the tx in their mempool may crash before they get to propose.
 For more information, see the [mempool
-write-ahead-log](../tendermint-core/running-in-production.md#mempool-wal)
+write-ahead-log](./running-in-production.md#mempool-wal)
 
-## Tendermint Networks
+## CometBFT Networks
 
-When `tendermint init` is run, both a `genesis.json` and
-`priv_validator_key.json` are created in `~/.tendermint/config`. The
+When `cometbft init` is run, both a `genesis.json` and
+`priv_validator_key.json` are created in `~/.cometbft/config`. The
 `genesis.json` might look like:
 
 ```json
@@ -399,7 +396,7 @@ in the consensus, and their corresponding voting power. Greater than 2/3
 of the voting power must be active (i.e. the corresponding private keys
 must be producing signatures) for the consensus to make progress. In our
 case, the genesis file contains the public key of our
-`priv_validator_key.json`, so a Tendermint node started with the default
+`priv_validator_key.json`, so a CometBFT node started with the default
 root directory will be able to make progress. Voting power uses an int64
 but must be positive, thus the range is: 0 through 9223372036854775807.
 Because of how the current proposer selection algorithm works, we do not
@@ -432,14 +429,14 @@ another address from the address book. On restarts you will always try to
 connect to these peers regardless of the size of your address book.
 
 All peers relay peers they know of by default. This is called the peer exchange
-protocol (PeX). With PeX, peers will be gossiping about known peers and forming
+protocol (PEX). With PEX, peers will be gossiping about known peers and forming
 a network, storing peer addresses in the addrbook. Because of this, you don't
 have to use a seed node if you have a live persistent peer.
 
 #### Connecting to Peers
 
 To connect to peers on start-up, specify them in the
-`$TMHOME/config/config.toml` or on the command line. Use `seeds` to
+`$CMTHOME/config/config.toml` or on the command line. Use `seeds` to
 specify seed nodes, and
 `persistent_peers` to specify peers that your node will maintain
 persistent connections with.
@@ -447,7 +444,7 @@ persistent connections with.
 For example,
 
 ```sh
-tendermint node --p2p.seeds "f9baeaa15fedf5e1ef7448dd60f46c01f1a9e9c4@1.2.3.4:26656,0491d373a8e0fcf1023aaf18c51d6a1d0d4f31bd@5.6.7.8:26656"
+cometbft node --p2p.seeds "f9baeaa15fedf5e1ef7448dd60f46c01f1a9e9c4@1.2.3.4:26656,0491d373a8e0fcf1023aaf18c51d6a1d0d4f31bd@5.6.7.8:26656"
 ```
 
 Alternatively, you can use the `/dial_seeds` endpoint of the RPC to
@@ -457,17 +454,17 @@ specify seeds for a running node to connect to:
 curl 'localhost:26657/dial_seeds?seeds=\["f9baeaa15fedf5e1ef7448dd60f46c01f1a9e9c4@1.2.3.4:26656","0491d373a8e0fcf1023aaf18c51d6a1d0d4f31bd@5.6.7.8:26656"\]'
 ```
 
-Note, with PeX enabled, you
+Note, with PEX enabled, you
 should not need seeds after the first start.
 
-If you want Tendermint to connect to specific set of addresses and
+If you want CometBFT to connect to specific set of addresses and
 maintain a persistent connection with each, you can use the
 `--p2p.persistent_peers` flag or the corresponding setting in the
 `config.toml` or the `/dial_peers` RPC endpoint to do it without
-stopping Tendermint core instance.
+stopping CometBFT instance.
 
 ```sh
-tendermint node --p2p.persistent_peers "429fcf25974313b95673f58d77eacdd434402665@10.11.12.13:26656,96663a3dd0d7b9d17d4c8211b191af259621c693@10.11.12.14:26656"
+cometbft node --p2p.persistent_peers "429fcf25974313b95673f58d77eacdd434402665@10.11.12.13:26656,96663a3dd0d7b9d17d4c8211b191af259621c693@10.11.12.14:26656"
 
 curl 'localhost:26657/dial_peers?persistent=true&peers=\["429fcf25974313b95673f58d77eacdd434402665@10.11.12.13:26656","96663a3dd0d7b9d17d4c8211b191af259621c693@10.11.12.14:26656"\]'
 ```
@@ -475,7 +472,7 @@ curl 'localhost:26657/dial_peers?persistent=true&peers=\["429fcf25974313b95673f5
 ### Adding a Non-Validator
 
 Adding a non-validator is simple. Just copy the original `genesis.json`
-to `~/.tendermint/config` on the new machine and start the node,
+to `~/.cometbft/config` on the new machine and start the node,
 specifying seeds or persistent peers as necessary. If no seeds or
 persistent peers are specified, the node won't make any blocks, because
 it's not a validator, and it won't hear about any blocks, because it's
@@ -490,7 +487,7 @@ before starting the network. For instance, we could make a new
 We can generate a new `priv_validator_key.json` with the command:
 
 ```sh
-tendermint gen_validator
+cometbft gen_validator
 ```
 
 Now we can update our genesis file. For instance, if the new
@@ -529,7 +526,7 @@ then the new `genesis.json` will be:
     {
       "pub_key" : {
         "value" : "l9X9+fjkeBzDfPGbUM7AMIRE6uJN78zN5+lk5OYotek=",
-        "type" : "tendermint/PubKeyEd25519"
+        "type" : "cometbft/PubKeyEd25519"
       },
       "power" : 10,
       "name" : ""
@@ -541,16 +538,16 @@ then the new `genesis.json` will be:
 }
 ```
 
-Update the `genesis.json` in `~/.tendermint/config`. Copy the genesis
-file and the new `priv_validator_key.json` to the `~/.tendermint/config` on
+Update the `genesis.json` in `~/.cometbft/config`. Copy the genesis
+file and the new `priv_validator_key.json` to the `~/.cometbft/config` on
 a new machine.
 
-Now run `tendermint node` on both machines, and use either
+Now run `cometbft node` on both machines, and use either
 `--p2p.persistent_peers` or the `/dial_peers` to get them to peer up.
 They should start making blocks, and will only continue to do so as long
 as both of them are online.
 
-To make a Tendermint network that can tolerate one of the validators
+To make a CometBFT network that can tolerate one of the validators
 failing, you need at least four validator nodes (e.g., 2/3).
 
 Updating validators in a live network is supported but must be
@@ -562,7 +559,7 @@ developers guide](../app-dev/abci-cli.md) for more details.
 To run a network locally, say on a single machine, you must change the `_laddr`
 fields in the `config.toml` (or using the flags) so that the listening
 addresses of the various sockets don't conflict. Additionally, you must set
-`addr_book_strict=false` in the `config.toml`, otherwise Tendermint's p2p
+`addr_book_strict=false` in the `config.toml`, otherwise CometBFT's p2p
 library will deny making connections to peers with the same IP address.
 
 ### Upgrading
@@ -570,5 +567,5 @@ library will deny making connections to peers with the same IP address.
 See the
 [UPGRADING.md](https://github.com/cometbft/cometbft/blob/main/UPGRADING.md)
 guide. You may need to reset your chain between major breaking releases.
-Although, we expect Tendermint to have fewer breaking releases in the future
+Although, we expect CometBFT to have fewer breaking releases in the future
 (especially after 1.0 release).

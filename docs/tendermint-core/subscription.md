@@ -4,7 +4,7 @@ order: 7
 
 # Subscribing to events via Websocket
 
-Tendermint emits different events, which you can subscribe to via
+CometBFT emits different events, which you can subscribe to via
 [Websocket](https://en.wikipedia.org/wiki/WebSocket). This can be useful
 for third-party applications (for analysis) or for inspecting state.
 
@@ -42,7 +42,7 @@ transactions](../app-dev/indexing-transactions.md) for details.
 
 When validator set changes, ValidatorSetUpdates event is published. The
 event carries a list of pubkey/power pairs. The list is the same
-Tendermint receives from ABCI application (see [EndBlock
+CometBFT receives from ABCI application (see [EndBlock
 section](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_methods.md#endblock) in
 the ABCI spec).
 

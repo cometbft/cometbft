@@ -1,15 +1,15 @@
 ---
 order: 1
 parent:
-  title: Tendermint Core
+  title: Core
   order: 4
 ---
 
 # Overview
 
-This section dives into the internals of Tendermint the implementation.
+This section dives into the internals of the CometBFT's implementation.
 
-- [Using Tendermint](./using-tendermint.md)
+- [Using CometBFT](./using-tendermint.md)
 - [Configuration](./configuration.md)
 - [Running in Production](./running-in-production.md)
 - [Metrics](./metrics.md)

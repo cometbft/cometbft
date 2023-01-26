@@ -4,7 +4,7 @@ order: 5
 
 # Metrics
 
-Tendermint can report and serve the Prometheus metrics, which in their turn can
+CometBFT can report and serve the Prometheus metrics, which in their turn can
 be consumed by Prometheus collector(s).
 
 This functionality is disabled by default.

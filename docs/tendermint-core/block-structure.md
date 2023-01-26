@@ -4,7 +4,7 @@ order: 8
 
 # Block Structure
 
-The Tendermint consensus engine records all agreements by a
+The CometBFT consensus engine records all agreements by a
 supermajority of nodes into a blockchain, which is replicated among all
 nodes. This blockchain is accessible via various RPC endpoints, mainly
 `/block?height=` to get the full block, as well as

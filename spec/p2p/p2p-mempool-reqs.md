@@ -1,3 +1,5 @@
+** This document was used to collect a common understanding of the mempool. We will need to see how/whether this should be incorporated in the specification at this moment **
+
 # Mempool
 
 The mempool is a distributed pool of pending transactions.

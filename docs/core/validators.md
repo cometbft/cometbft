@@ -26,7 +26,7 @@ Validators have a cryptographic key-pair and an associated amount of
 
 There are two ways to become validator.
 
-1. They can be pre-established in the [genesis state](./using-tendermint.md#genesis)
+1. They can be pre-established in the [genesis state](./using-cometbft.md#genesis)
 2. The ABCI app responds to the EndBlock message with changes to the
    existing validator set.
 

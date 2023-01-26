@@ -700,7 +700,7 @@ The additional logic at the end of the file allows the program to catch SIGTERM.
 
 Our application is almost ready to run, but first we'll need to populate the CometBFT configuration files.
 The following command will create a `cometbft-home` directory in your project and add a basic set of configuration files in `cometbft-home/config/`.
-For more information on what these files contain see [the configuration documentation](https://github.com/cometbft/cometbft/blob/v0.37.x/docs/tendermint-core/configuration.md).
+For more information on what these files contain see [the configuration documentation](https://github.com/cometbft/cometbft/blob/v0.37.x/docs/core/configuration.md).
 
 From the root of your project, run:
 

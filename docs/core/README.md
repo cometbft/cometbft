@@ -9,7 +9,7 @@ parent:
 
 This section dives into the internals of the CometBFT's implementation.
 
-- [Using CometBFT](./using-tendermint.md)
+- [Using CometBFT](./using-cometbft.md)
 - [Configuration](./configuration.md)
 - [Running in Production](./running-in-production.md)
 - [Metrics](./metrics.md)

@@ -103,7 +103,7 @@ cometbft node
 If you have used CometBFT, you may want to reset the data for a new
 blockchain by running `cometbft unsafe-reset-all`. Then you can run
 `cometbft node` to start CometBFT, and connect to the app. For more
-details, see [the guide on using CometBFT](../tendermint-core/using-tendermint.md).
+details, see [the guide on using CometBFT](../core/using-cometbft.md).
 
 You should see CometBFT making blocks! We can get the status of our
 CometBFT node as follows:

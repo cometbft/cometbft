@@ -78,8 +78,7 @@ call sequences of these methods.
   proposer to perform application-dependent work in a block before proposing it.
   This enables, for instance, batch optimizations to a block, which has been empirically
   demonstrated to be a key component for improved performance. Method `PrepareProposal` is called
-  every time Tendermint is about to broadcast a Proposal message, but no previous proposal has
-  been locked at Tendermint level. Tendermint gathers outstanding transactions from the
+  every time Tendermint is about to broadcast a Proposal message and Tendermint's _validValue_ is `nil`. Tendermint gathers outstanding transactions from the
   mempool, generates a block header, and uses them to create a block to propose. Then, it calls
   `RequestPrepareProposal` with the newly created proposal, called *raw proposal*. The Application
   can make changes to the raw proposal, such as modifying the set of transactions or the order
@@ -90,8 +89,7 @@ call sequences of these methods.
 - [**ProcessProposal:**](./abci++_methods.md#processproposal) It allows a validator to
   perform application-dependent work in a proposed block. This enables features such as immediate
   block execution, and allows the Application to reject invalid blocks.
-  Tendermint calls it when it receives a proposal and the Tendermint algorithm has not locked on a
-  value. The Application cannot modify the proposal at this point but can reject it if it is
+  Tendermint calls it when it receives a proposal and Tendermint's _validValue_ is `nil`. The Application cannot modify the proposal at this point but can reject it if it is
   invalid. If that is the case, Tendermint will prevote `nil` on the proposal, which has
   strong liveness implications for Tendermint. As a general rule, the Application
   SHOULD accept a prepared proposal passed via `ProcessProposal`, even if a part of

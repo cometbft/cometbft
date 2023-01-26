@@ -21,7 +21,7 @@ Validator nodes are therefore the recipients of the transactions stored and
 transported by the mempool protocol.
 
 The goal of the mempool protocol is then to convey transactions
-from the nodes that act as entry points of Tendermint (or CometBFT?)
+from the nodes that act as entry points of the network
 to the nodes whose role is to order transactions.
 
 ## Interactions
@@ -51,7 +51,8 @@ the application can become invalid when the state of the application is updated.
 The state of the application is updated when a commited block of transactions
 is delivered to the application for being executed.
 Thus, whenever a new block is committed, the list of pending transactions
-stored in the mempool is sent to the application to be validated against the
+stored in the mempool is updated to exclude the executed transactions and
+ sent to the application to be validated against the
 new state of the application.
 Transactions that have become invalid with the new state of application are
 then removed from the mempool.
@@ -82,13 +83,14 @@ the blockchain.
 Once a block is committed to the blockchain, all transactions included in the
 block should be removed from the mempool, as they are no any longer pending.
 The consensus protocol thus, as part of the procedure to commit a block,
-informs to the mempool the list of transactions included in the committed block.
+informs the mempool the list of transactions included in the committed block.
 The mempool then removes from its local list of pending transactions the
 transactions that were included in the committed block, and therefore are no
 longer pending.
 This procedure precedes the re-validation of transactions against the new state
 of the application, which is part of this same procedure to commit a block.
 
+> **Note**    
 > Notice that a node can commit blocks to the blockchain through different
 > procedures, such as via the block sync protocol.
 > The above operation should be part of these other procedures, and should be
@@ -96,7 +98,7 @@ of the application, which is part of this same procedure to commit a block.
 
 ## Formalization Attempt
 
-Lets `committed(tx, h)` to return true iff the transaction `tx` is committed by
+Let `committed(tx, h)` return true iff the transaction `tx` is committed by
 height `h` of the blockchain.
 This means that `tx` was included in a block `B_k` of transactions with height `k <= h`.
 

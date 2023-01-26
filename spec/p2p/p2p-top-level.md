@@ -196,7 +196,7 @@ consensus reactor.
 the transaction is proposed by every correct validator in every height until it is written
 into a block (assuming infinitely often correct proposers get their proposal through)  
 - current solution to address this requirement: 
-    - the mempool of correct validators is organized at a list. 
+    - the mempool of correct validators is organized as a list. 
     > This list can be understood as a shared data structure with relaxed semantics, that is,
     not all nodes need to agree on the order of the elements, but we have a property that 
     approximately says "if at time *t* a transaction tx1 is in the list of all nodes, and a 

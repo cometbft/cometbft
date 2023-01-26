@@ -8,7 +8,7 @@ BUILD_TAGS?=cometbft
 ifneq ($(shell git symbolic-ref -q --short HEAD),)
 VERSION := unreleased-$(shell git symbolic-ref -q --short HEAD)-$(shell git rev-parse HEAD)
 else
-VERSION := $(shell git describe)
+VERSION := $(shell git describe --tags)
 endif
 
 LD_FLAGS = -X github.com/cometbft/cometbft/version.TMCoreSemVer=$(VERSION)

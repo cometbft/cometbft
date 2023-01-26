@@ -193,15 +193,21 @@ consensus reactor.
 
 - e-t-e requirement: "every transaction submitted should be eventually put into a block"
 - requirement for consensus: for every submitted transaction from some hight on, 
-the transaction is proposed by every correct validator in every height until it is written
+the transaction is proposed by every correct validator in every height until it is committed
 into a block (assuming infinitely often correct proposers get their proposal through)  
 - current solution to address this requirement: 
-    - the mempool of correct validators is organized as a list. 
+    - the mempool of correct full nodes is organized as a list. 
     > This list can be understood as a shared data structure with relaxed semantics, that is,
     not all nodes need to agree on the order of the elements, but we have a property that 
     approximately says "if at time *t* a transaction tx1 is in the list of all nodes, and a 
     client submits transaction tx2 after time t, then it is never the case the tx2 is before
     tx1 in a list of a correct validator.
+
+    > We talk about "correct full nodes" here as it describes "the current solution", the
+    way this solution contributed to solving the problem is that if we have a property on
+    every correct full node, this implies that we have this property on every (potential) 
+    validator.
+
     - to prepare a proposal,  a validator requests from the mempool a list of
 pending transactions that respects certain limits, in terms of the number of
 transactions returned, their total size in bytes, and their required gas.

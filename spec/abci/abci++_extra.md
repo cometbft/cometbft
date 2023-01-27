@@ -33,10 +33,10 @@ As the number of rounds Tendermint will run is unknown, the Application needs to
 # Possible scenarios
 The unknown number of rounds we can have in Tendermint yields a vast number of scenarios we can expect. Listing them all is impossible. However, here we give several of them and draw the main conclusions. Specifically, we will show that before `Decide` and `Commit` for block $X$ are called:
     
-1. `PrepareProposal` may be called multiple times and for different blocks ([**Scenario 1**](#scenario-1)). 
-1. `ProcessProposal` may be called multiple times and for different blocks ([**Scenario 2**](#scenario-2)).
-1. `PrepareProposal` and `ProcessProposal` for block $X$ may not be called ([**Scenario 3**](#scenario-3)).
-1. `PrepareProposal` and `ProcessProposal` may not be called at all ([**Scenario 4**](#scenario-4)).
+1. On a correct node, `PrepareProposal` may be called multiple times and for different blocks ([**Scenario 1**](#scenario-1)). 
+1. On a correct node, `ProcessProposal` may be called multiple times and for different blocks ([**Scenario 2**](#scenario-2)).
+1. On a correct node, `PrepareProposal` and `ProcessProposal` for block $X$ may not be called ([**Scenario 3**](#scenario-3)).
+1. On a correct node, `PrepareProposal` and `ProcessProposal` may not be called at all ([**Scenario 4**](#scenario-4)).
 
 
 ## Basic information

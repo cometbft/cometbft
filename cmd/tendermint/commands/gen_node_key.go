@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	tmos "github.com/tendermint/tendermint/libs/os"
-	"github.com/tendermint/tendermint/p2p"
+	cmtos "github.com/cometbft/cometbft/libs/os"
+	"github.com/cometbft/cometbft/p2p"
 )
 
 // GenNodeKeyCmd allows the generation of a node key. It prints node's ID to
@@ -21,7 +21,7 @@ var GenNodeKeyCmd = &cobra.Command{
 
 func genNodeKey(cmd *cobra.Command, args []string) error {
 	nodeKeyFile := config.NodeKeyFile()
-	if tmos.FileExists(nodeKeyFile) {
+	if cmtos.FileExists(nodeKeyFile) {
 		return fmt.Errorf("node key at %s already exists", nodeKeyFile)
 	}
 

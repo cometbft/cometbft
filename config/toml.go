@@ -6,7 +6,7 @@ import (
 	"strings"
 	"text/template"
 
-	tmos "github.com/tendermint/tendermint/libs/os"
+	cmtos "github.com/cometbft/cometbft/libs/os"
 )
 
 // DefaultDirPerm is the default permissions used when creating directories.
@@ -29,20 +29,20 @@ func init() {
 // EnsureRoot creates the root, config, and data directories if they don't exist,
 // and panics if it fails.
 func EnsureRoot(rootDir string) {
-	if err := tmos.EnsureDir(rootDir, DefaultDirPerm); err != nil {
+	if err := cmtos.EnsureDir(rootDir, DefaultDirPerm); err != nil {
 		panic(err.Error())
 	}
-	if err := tmos.EnsureDir(filepath.Join(rootDir, DefaultConfigDir), DefaultDirPerm); err != nil {
+	if err := cmtos.EnsureDir(filepath.Join(rootDir, DefaultConfigDir), DefaultDirPerm); err != nil {
 		panic(err.Error())
 	}
-	if err := tmos.EnsureDir(filepath.Join(rootDir, DefaultDataDir), DefaultDirPerm); err != nil {
+	if err := cmtos.EnsureDir(filepath.Join(rootDir, DefaultDataDir), DefaultDirPerm); err != nil {
 		panic(err.Error())
 	}
 
 	configFilePath := filepath.Join(rootDir, defaultConfigFilePath)
 
 	// Write default config file if missing.
-	if !tmos.FileExists(configFilePath) {
+	if !cmtos.FileExists(configFilePath) {
 		writeDefaultConfigFile(configFilePath)
 	}
 }
@@ -61,7 +61,7 @@ func WriteConfigFile(configFilePath string, config *Config) {
 		panic(err)
 	}
 
-	tmos.MustWriteFile(configFilePath, buffer.Bytes(), 0644)
+	cmtos.MustWriteFile(configFilePath, buffer.Bytes(), 0644)
 }
 
 // Note: any changes to the comments/variables/mapstructure

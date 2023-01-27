@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	"github.com/tendermint/tendermint/p2p/upnp"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	"github.com/cometbft/cometbft/p2p/upnp"
 )
 
 // ProbeUpnpCmd adds capabilities to test the UPnP functionality.
@@ -24,7 +24,7 @@ func probeUpnp(cmd *cobra.Command, args []string) error {
 		fmt.Println("Probe failed: ", err)
 	} else {
 		fmt.Println("Probe success!")
-		jsonBytes, err := tmjson.Marshal(capabilities)
+		jsonBytes, err := cmtjson.Marshal(capabilities)
 		if err != nil {
 			return err
 		}

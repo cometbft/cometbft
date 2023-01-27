@@ -7,16 +7,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tendermint/tendermint/libs/bytes"
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	"github.com/tendermint/tendermint/libs/log"
-	tmpubsub "github.com/tendermint/tendermint/libs/pubsub"
-	"github.com/tendermint/tendermint/libs/service"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
-	rpcclient "github.com/tendermint/tendermint/rpc/client"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	jsonrpcclient "github.com/tendermint/tendermint/rpc/jsonrpc/client"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/libs/bytes"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	rpcclient "github.com/cometbft/cometbft/rpc/client"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	jsonrpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
+	"github.com/cometbft/cometbft/types"
 )
 
 /*
@@ -604,7 +604,7 @@ type WSEvents struct {
 	endpoint string
 	ws       *jsonrpcclient.WSClient
 
-	mtx           tmsync.RWMutex
+	mtx           cmtsync.RWMutex
 	subscriptions map[string]chan ctypes.ResultEvent // query -> chan
 }
 
@@ -739,7 +739,7 @@ func (w *WSEvents) redoSubscriptionsAfter(d time.Duration) {
 }
 
 func isErrAlreadySubscribed(err error) bool {
-	return strings.Contains(err.Error(), tmpubsub.ErrAlreadySubscribed.Error())
+	return strings.Contains(err.Error(), cmtpubsub.ErrAlreadySubscribed.Error())
 }
 
 func (w *WSEvents) eventListener() {
@@ -765,7 +765,7 @@ func (w *WSEvents) eventListener() {
 			}
 
 			result := new(ctypes.ResultEvent)
-			err := tmjson.Unmarshal(resp.Result, result)
+			err := cmtjson.Unmarshal(resp.Result, result)
 			if err != nil {
 				w.Logger.Error("failed to unmarshal response", "err", err)
 				continue

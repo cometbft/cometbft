@@ -9,16 +9,16 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	abcitypes "github.com/tendermint/tendermint/abci/types"
-	tmcfg "github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/internal/test"
-	prototmstate "github.com/tendermint/tendermint/proto/tendermint/state"
-	blockmocks "github.com/tendermint/tendermint/state/indexer/mocks"
-	"github.com/tendermint/tendermint/state/mocks"
-	txmocks "github.com/tendermint/tendermint/state/txindex/mocks"
-	"github.com/tendermint/tendermint/types"
+	abcitypes "github.com/cometbft/cometbft/abci/types"
+	cmtcfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/internal/test"
+	prototmstate "github.com/cometbft/cometbft/proto/tendermint/state"
+	blockmocks "github.com/cometbft/cometbft/state/indexer/mocks"
+	"github.com/cometbft/cometbft/state/mocks"
+	txmocks "github.com/cometbft/cometbft/state/txindex/mocks"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -96,7 +96,7 @@ func TestLoadEventSink(t *testing.T) {
 	}
 
 	for idx, tc := range testCases {
-		cfg := tmcfg.TestConfig()
+		cfg := cmtcfg.TestConfig()
 		cfg.TxIndex.Indexer = tc.sinks
 		cfg.TxIndex.PsqlConn = tc.connURL
 		_, _, err := loadEventSinks(cfg, test.DefaultTestChainID)
@@ -109,7 +109,7 @@ func TestLoadEventSink(t *testing.T) {
 }
 
 func TestLoadBlockStore(t *testing.T) {
-	cfg := tmcfg.TestConfig()
+	cfg := cmtcfg.TestConfig()
 	cfg.DBPath = t.TempDir()
 	_, _, err := loadStateAndBlockStore(cfg)
 	require.Error(t, err)
@@ -125,7 +125,6 @@ func TestLoadBlockStore(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, bs)
 	require.NotNil(t, ss)
-
 }
 
 func TestReIndexEvent(t *testing.T) {

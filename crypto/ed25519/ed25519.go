@@ -10,9 +10,9 @@ import (
 	"github.com/oasisprotocol/curve25519-voi/primitives/ed25519"
 	"github.com/oasisprotocol/curve25519-voi/primitives/ed25519/extra/cache"
 
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmjson "github.com/tendermint/tendermint/libs/json"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
 )
 
 //-------------------------------------
@@ -57,8 +57,8 @@ const (
 )
 
 func init() {
-	tmjson.RegisterType(PubKey{}, PubKeyName)
-	tmjson.RegisterType(PrivKey{}, PrivKeyName)
+	cmtjson.RegisterType(PubKey{}, PubKeyName)
+	cmtjson.RegisterType(PrivKey{}, PrivKeyName)
 }
 
 // PrivKey implements crypto.PrivKey.

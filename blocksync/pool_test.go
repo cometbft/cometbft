@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tendermint/tendermint/libs/log"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/types"
 )
 
 func init() {
@@ -66,8 +66,8 @@ func (ps testPeers) stop() {
 func makePeers(numPeers int, minHeight, maxHeight int64) testPeers {
 	peers := make(testPeers, numPeers)
 	for i := 0; i < numPeers; i++ {
-		peerID := p2p.ID(tmrand.Str(12))
-		height := minHeight + tmrand.Int63n(maxHeight-minHeight)
+		peerID := p2p.ID(cmtrand.Str(12))
+		height := minHeight + cmtrand.Int63n(maxHeight-minHeight)
 		base := minHeight + int64(i)
 		if base > height {
 			base = height

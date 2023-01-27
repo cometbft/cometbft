@@ -51,10 +51,13 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Publish to Docker Hub
-        uses: docker/build-push-action@v3.2.0
+        uses: docker/build-push-action@v3.3.0
         with:
           context: .
           file: ./test/e2e/docker/Dockerfile
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'beep_boop' }}
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.prep.outputs.tags }}
+          # TODO(thane): Remove when we publish cometbft-db repository.
+          build-args: |
+            GO_MODULES_TOKEN=${{ secrets.GO_MODULES_TOKEN }}

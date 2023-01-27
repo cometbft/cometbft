@@ -1,6 +1,6 @@
 # Genesis
 
-The genesis file is the starting point of a chain. An application will populate the `app_state` field in the genesis with their required fields. Tendermint is not able to validate this section because it is unaware what application state consists of.
+The genesis file is the starting point of a chain. An application will populate the `app_state` field in the genesis with their required fields. CometBFT is not able to validate this section because it is unaware what application state consists of.
 
 ## Genesis Fields
 
@@ -11,7 +11,7 @@ The genesis file is the starting point of a chain. An application will populate 
     - `block`
         - `max_bytes`: The max amount of bytes a block can be.
         - `max_gas`: The maximum amount of gas that a block can have.
-        - `time_iota_ms`: This parameter has no value anymore in Tendermint-core.
+        - `time_iota_ms`: This parameter has no value anymore in CometBFT.
 
 - `evidence`
       - `max_age_num_blocks`: After this preset amount of blocks has passed a single piece of evidence is considered invalid
@@ -21,7 +21,7 @@ The genesis file is the starting point of a chain. An application will populate 
 > Note: For evidence to be considered invalid, evidence must be older than both `max_age_num_blocks` and `max_age_duration`
 
 - `validator`
-      - `pub_key_types`: Defines which curves are to be accepted as a valid validator consensus key. Tendermint supports ed25519, sr25519 and secp256k1.
+      - `pub_key_types`: Defines which curves are to be accepted as a valid validator consensus key. CometBFT supports ed25519, sr25519 and secp256k1.
 
 - `version`
       - `app_version`: The version of the application. This is set by the application and is used to identify which version of the app a user should be using in order to operate a node.
@@ -31,4 +31,4 @@ The genesis file is the starting point of a chain. An application will populate 
   
 - `app_hash`: The applications state root hash. This field does not need to be populated at the start of the chain, the application may provide the needed information via `Initchain`.
 
-- `app_state`: This section is filled in by the application and is unknown to Tendermint.
+- `app_state`: This section is filled in by the application and is unknown to CometBFT.

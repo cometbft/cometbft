@@ -10,13 +10,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	db "github.com/tendermint/tm-db"
+	db "github.com/cometbft/cometbft-db"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/pubsub/query"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/state/txindex"
-	"github.com/tendermint/tendermint/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/pubsub/query"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/state/txindex"
+	"github.com/cometbft/cometbft/types"
 )
 
 func TestTxIndex(t *testing.T) {
@@ -259,7 +259,7 @@ func TestTxSearchOneTxWithMultipleSameTagsButDifferentValues(t *testing.T) {
 }
 
 func TestTxIndexDuplicatePreviouslySuccessful(t *testing.T) {
-	var mockTx = types.Tx("MOCK_TX_HASH")
+	mockTx := types.Tx("MOCK_TX_HASH")
 
 	testCases := []struct {
 		name         string
@@ -436,7 +436,7 @@ func benchmarkTxIndex(txsCount int64, b *testing.B) {
 	batch := txindex.NewBatch(txsCount)
 	txIndex := uint32(0)
 	for i := int64(0); i < txsCount; i++ {
-		tx := tmrand.Bytes(250)
+		tx := cmtrand.Bytes(250)
 		txResult := &abci.TxResult{
 			Height: 1,
 			Index:  txIndex,

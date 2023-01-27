@@ -6,13 +6,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tendermint/tendermint/libs/cmap"
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/libs/service"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/p2p/conn"
-	tmp2p "github.com/tendermint/tendermint/proto/tendermint/p2p"
+	"github.com/cometbft/cometbft/libs/cmap"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/conn"
+	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
 )
 
 type Peer = p2p.Peer
@@ -417,7 +417,7 @@ func (r *Reactor) SetEnsurePeersPeriod(d time.Duration) {
 // Ensures that sufficient peers are connected. (continuous)
 func (r *Reactor) ensurePeersRoutine() {
 	var (
-		seed   = tmrand.NewRand()
+		seed   = cmtrand.NewRand()
 		jitter = seed.Int63n(r.ensurePeersPeriod.Nanoseconds())
 	)
 
@@ -470,7 +470,7 @@ func (r *Reactor) ensurePeers() {
 	// bias to prefer more vetted peers when we have fewer connections.
 	// not perfect, but somewhate ensures that we prioritize connecting to more-vetted
 	// NOTE: range here is [10, 90]. Too high ?
-	newBias := tmmath.MinInt(out, 8)*10 + 10
+	newBias := cmtmath.MinInt(out, 8)*10 + 10
 
 	toDial := make(map[p2p.ID]*p2p.NetAddress)
 	// Try maxAttempts times to pick numToDial addresses to dial
@@ -519,7 +519,7 @@ func (r *Reactor) ensurePeers() {
 		peers := r.Switch.Peers().List()
 		peersCount := len(peers)
 		if peersCount > 0 {
-			peer := peers[tmrand.Int()%peersCount]
+			peer := peers[cmtrand.Int()%peersCount]
 			r.Logger.Info("We need more addresses. Sending pexRequest to random peer", "peer", peer)
 			r.RequestAddrs(peer)
 		}
@@ -552,7 +552,7 @@ func (r *Reactor) dialPeer(addr *p2p.NetAddress) error {
 
 	// exponential backoff if it's not our first attempt to dial given address
 	if attempts > 0 {
-		jitter := time.Duration(tmrand.Float64() * float64(time.Second)) // 1s == (1e9 ns)
+		jitter := time.Duration(cmtrand.Float64() * float64(time.Second)) // 1s == (1e9 ns)
 		backoffDuration := jitter + ((1 << uint(attempts)) * time.Second)
 		backoffDuration = r.maxBackoffDurationForPeer(addr, backoffDuration)
 		sinceLastDialed := time.Since(lastDialed)
@@ -618,7 +618,7 @@ func (r *Reactor) checkSeeds() (numOnline int, netAddrs []*p2p.NetAddress, err e
 
 // randomly dial seeds until we connect to one or exhaust them
 func (r *Reactor) dialSeeds() {
-	perm := tmrand.Perm(len(r.seedAddrs))
+	perm := cmtrand.Perm(len(r.seedAddrs))
 	// perm := r.Switch.rng.Perm(lSeeds)
 	for _, i := range perm {
 		// dial a random seed

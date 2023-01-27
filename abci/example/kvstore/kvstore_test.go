@@ -8,14 +8,14 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/libs/service"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/service"
 
-	abcicli "github.com/tendermint/tendermint/abci/client"
-	"github.com/tendermint/tendermint/abci/example/code"
-	abciserver "github.com/tendermint/tendermint/abci/server"
-	"github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	abcicli "github.com/cometbft/cometbft/abci/client"
+	"github.com/cometbft/cometbft/abci/example/code"
+	abciserver "github.com/cometbft/cometbft/abci/server"
+	"github.com/cometbft/cometbft/abci/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 const (
@@ -121,7 +121,7 @@ func TestPersistentKVStoreInfo(t *testing.T) {
 	// make and apply block
 	height = int64(1)
 	hash := []byte("foo")
-	header := tmproto.Header{
+	header := cmtproto.Header{
 		Height: height,
 	}
 	kvstore.BeginBlock(types.RequestBeginBlock{Hash: hash, Header: header})
@@ -211,7 +211,7 @@ func makeApplyBlock(
 	// make and apply block
 	height := int64(heightInt)
 	hash := []byte("foo")
-	header := tmproto.Header{
+	header := cmtproto.Header{
 		Height: height,
 	}
 

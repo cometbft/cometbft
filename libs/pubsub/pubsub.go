@@ -38,8 +38,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/tendermint/tendermint/libs/service"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 type operation int
@@ -95,7 +95,7 @@ type Server struct {
 
 	// check if we have subscription before
 	// subscribing or unsubscribing
-	mtx           tmsync.RWMutex
+	mtx           cmtsync.RWMutex
 	subscriptions map[string]map[string]struct{} // subscriber -> query (string) -> empty struct
 }
 

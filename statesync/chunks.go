@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	tmsync "github.com/tendermint/tendermint/libs/sync"
-	"github.com/tendermint/tendermint/p2p"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/p2p"
 )
 
 // errDone is returned by chunkQueue.Next() when all chunks have been returned.
@@ -28,7 +28,7 @@ type chunk struct {
 // iterator over all chunks, but callers can request chunks to be retried, optionally after
 // refetching.
 type chunkQueue struct {
-	tmsync.Mutex
+	cmtsync.Mutex
 	snapshot       *snapshot                  // if this is nil, the queue has been closed
 	dir            string                     // temp dir for on-disk chunk storage
 	chunkFiles     map[uint32]string          // path to temporary chunk file

@@ -10,13 +10,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	"github.com/tendermint/tendermint/abci/example/code"
-	abci "github.com/tendermint/tendermint/abci/types"
-	mempl "github.com/tendermint/tendermint/mempool"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/abci/example/code"
+	abci "github.com/cometbft/cometbft/abci/types"
+	mempl "github.com/cometbft/cometbft/mempool"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/types"
 )
 
 // for testing
@@ -47,7 +47,7 @@ func TestMempoolProgressAfterCreateEmptyBlocksInterval(t *testing.T) {
 	config := ResetConfig("consensus_mempool_txs_available_test")
 	defer os.RemoveAll(config.RootDir)
 
-	config.Consensus.CreateEmptyBlocksInterval = ensureTimeout
+	config.Consensus.CreateEmptyBlocksInterval = ensureTimeout + time.Millisecond*50
 	state, privVals := randGenesisState(1, false, 10)
 	cs := newStateWithConfig(config, state, privVals[0], NewCounterApplication())
 
@@ -224,7 +224,8 @@ func (app *CounterApplication) DeliverTx(req abci.RequestDeliverTx) abci.Respons
 	if txValue != uint64(app.txCount) {
 		return abci.ResponseDeliverTx{
 			Code: code.CodeTypeBadNonce,
-			Log:  fmt.Sprintf("Invalid nonce. Expected %v, got %v", app.txCount, txValue)}
+			Log:  fmt.Sprintf("Invalid nonce. Expected %v, got %v", app.txCount, txValue),
+		}
 	}
 	app.txCount++
 	return abci.ResponseDeliverTx{Code: code.CodeTypeOK}
@@ -235,7 +236,8 @@ func (app *CounterApplication) CheckTx(req abci.RequestCheckTx) abci.ResponseChe
 	if txValue != uint64(app.mempoolTxCount) {
 		return abci.ResponseCheckTx{
 			Code: code.CodeTypeBadNonce,
-			Log:  fmt.Sprintf("Invalid nonce. Expected %v, got %v", app.mempoolTxCount, txValue)}
+			Log:  fmt.Sprintf("Invalid nonce. Expected %v, got %v", app.mempoolTxCount, txValue),
+		}
 	}
 	app.mempoolTxCount++
 	return abci.ResponseCheckTx{Code: code.CodeTypeOK}
@@ -258,7 +260,8 @@ func (app *CounterApplication) Commit() abci.ResponseCommit {
 }
 
 func (app *CounterApplication) PrepareProposal(
-	req abci.RequestPrepareProposal) abci.ResponsePrepareProposal {
+	req abci.RequestPrepareProposal,
+) abci.ResponsePrepareProposal {
 	txs := make([][]byte, 0, len(req.Txs))
 	var totalBytes int64
 	for _, tx := range req.Txs {
@@ -272,6 +275,7 @@ func (app *CounterApplication) PrepareProposal(
 }
 
 func (app *CounterApplication) ProcessProposal(
-	req abci.RequestProcessProposal) abci.ResponseProcessProposal {
+	req abci.RequestProcessProposal,
+) abci.ResponseProcessProposal {
 	return abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}
 }

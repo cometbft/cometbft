@@ -28,7 +28,7 @@ var (
 // Inspector manages an RPC service that exports methods to debug a failed node.
 // After a node shuts down due to a consensus failure, it will no longer start
 // up its state cannot easily be inspected. An Inspector value provides a similar interface
-// to the node, using the underlying Tendermint data stores, without bringing up
+// to the node, using the underlying CometBFT data stores, without bringing up
 // any other components. A caller can query the Inspector service to inspect the
 // persisted state and debug the failure.
 type Inspector struct {

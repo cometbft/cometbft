@@ -120,18 +120,8 @@ func TestWriteRPCResponseHTTP(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode)
 	assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
-<<<<<<< HEAD
-	assert.Equal(t, `{
-  "jsonrpc": "2.0",
-  "id": -1,
-  "result": {
-    "value": "hello"
-  }
-}`, string(body))
-=======
 	assert.Equal(t, "public, max-age=86400", resp.Header.Get("Cache-control"))
 	assert.Equal(t, `{"jsonrpc":"2.0","id":-1,"result":{"value":"hello"}}`, string(body))
->>>>>>> 20ffa4fd3 (Remove useless whitespace in Websocket output (#9720))
 
 	// multiple arguments
 	w = httptest.NewRecorder()

@@ -511,8 +511,8 @@ import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/spf13/viper"
 	cfg "github.com/tendermint/tendermint/config"
-	tmflags "github.com/tendermint/tendermint/libs/cli/flags"
-	tmlog "github.com/tendermint/tendermint/libs/log"
+	cmtflags "github.com/tendermint/tendermint/libs/cli/flags"
+	cmtlog "github.com/tendermint/tendermint/libs/log"
 	nm "github.com/tendermint/tendermint/node"
 )
 
@@ -565,8 +565,8 @@ func main() {
 		log.Fatalf("failed to load node's key: %v", err)
 	}
 
-	logger := tmlog.NewTMLogger(tmlog.NewSyncWriter(os.Stdout))
-	logger, err = tmflags.ParseLogLevel(config.LogLevel, logger, cfg.DefaultLogLevel)
+	logger := cmtlog.NewTMLogger(cmtlog.NewSyncWriter(os.Stdout))
+	logger, err = cmtflags.ParseLogLevel(config.LogLevel, logger, cfg.DefaultLogLevel)
 	if err != nil {
 		log.Fatalf("failed to parse log level: %v", err)
 	}

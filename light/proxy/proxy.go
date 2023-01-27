@@ -6,12 +6,12 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/tendermint/tendermint/libs/log"
-	tmpubsub "github.com/tendermint/tendermint/libs/pubsub"
-	"github.com/tendermint/tendermint/light"
-	lrpc "github.com/tendermint/tendermint/light/rpc"
-	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
-	rpcserver "github.com/tendermint/tendermint/rpc/jsonrpc/server"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	"github.com/cometbft/cometbft/light"
+	lrpc "github.com/cometbft/cometbft/light/rpc"
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
 )
 
 // A Proxy defines parameters for running an HTTP server proxy.
@@ -96,7 +96,7 @@ func (p *Proxy) listen() (net.Listener, *http.ServeMux, error) {
 	wm := rpcserver.NewWebsocketManager(r,
 		rpcserver.OnDisconnect(func(remoteAddr string) {
 			err := p.Client.UnsubscribeAll(context.Background(), remoteAddr)
-			if err != nil && err != tmpubsub.ErrSubscriptionNotFound {
+			if err != nil && err != cmtpubsub.ErrSubscriptionNotFound {
 				wmLogger.Error("Failed to unsubscribe addr from events", "addr", remoteAddr, "err", err)
 			}
 		}),

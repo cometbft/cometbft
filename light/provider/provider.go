@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 // Provider provides information for the light client to sync (verification

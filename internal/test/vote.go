@@ -3,8 +3,8 @@ package test
 import (
 	"time"
 
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 func MakeVote(
@@ -27,7 +27,7 @@ func MakeVote(
 		ValidatorIndex:   valIndex,
 		Height:           height,
 		Round:            round,
-		Type:             tmproto.SignedMsgType(step),
+		Type:             cmtproto.SignedMsgType(step),
 		BlockID:          blockID,
 		Timestamp:        time,
 	}

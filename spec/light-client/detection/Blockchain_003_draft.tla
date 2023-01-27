@@ -1,6 +1,6 @@
 ------------------------ MODULE Blockchain_003_draft -----------------------------
 (*
-  This is a high-level specification of Tendermint blockchain
+  This is a high-level specification of a Cosmos blockchain
   that is designed specifically for the light client.
   Validators have the voting power of one. If you like to model various
   voting powers, introduce multiple copies of the same validator

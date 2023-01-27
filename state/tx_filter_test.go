@@ -7,11 +7,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/types"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/types"
 )
 
 func TestTxFilter(t *testing.T) {
@@ -25,9 +25,9 @@ func TestTxFilter(t *testing.T) {
 		tx    types.Tx
 		isErr bool
 	}{
-		{types.Tx(tmrand.Bytes(2155)), false},
-		{types.Tx(tmrand.Bytes(2156)), true},
-		{types.Tx(tmrand.Bytes(3000)), true},
+		{types.Tx(cmtrand.Bytes(2155)), false},
+		{types.Tx(cmtrand.Bytes(2156)), true},
+		{types.Tx(cmtrand.Bytes(3000)), true},
 	}
 
 	for i, tc := range testCases {

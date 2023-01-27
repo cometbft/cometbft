@@ -8,11 +8,11 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/tendermint/tendermint/abci/types"
-	tmlog "github.com/tendermint/tendermint/libs/log"
-	tmnet "github.com/tendermint/tendermint/libs/net"
-	"github.com/tendermint/tendermint/libs/service"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	"github.com/cometbft/cometbft/abci/types"
+	cmtlog "github.com/cometbft/cometbft/libs/log"
+	cmtnet "github.com/cometbft/cometbft/libs/net"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 // var maxNumberConnections = 2
@@ -25,16 +25,16 @@ type SocketServer struct {
 	addr     string
 	listener net.Listener
 
-	connsMtx   tmsync.Mutex
+	connsMtx   cmtsync.Mutex
 	conns      map[int]net.Conn
 	nextConnID int
 
-	appMtx tmsync.Mutex
+	appMtx cmtsync.Mutex
 	app    types.Application
 }
 
 func NewSocketServer(protoAddr string, app types.Application) service.Service {
-	proto, addr := tmnet.ProtocolAndAddress(protoAddr)
+	proto, addr := cmtnet.ProtocolAndAddress(protoAddr)
 	s := &SocketServer{
 		proto:    proto,
 		addr:     addr,
@@ -46,7 +46,7 @@ func NewSocketServer(protoAddr string, app types.Application) service.Service {
 	return s
 }
 
-func (s *SocketServer) SetLogger(l tmlog.Logger) {
+func (s *SocketServer) SetLogger(l cmtlog.Logger) {
 	s.BaseService.SetLogger(l)
 	s.isLoggerSet = true
 }

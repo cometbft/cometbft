@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"text/template"
 
-	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
-	"github.com/tendermint/tendermint/test/e2e/pkg/infra"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 )
 
 var _ infra.Provider = &Provider{}
@@ -57,7 +57,7 @@ services:
     labels:
       e2e: true
     container_name: {{ .Name }}
-    image: tendermint/e2e-node:{{ .Version }}
+    image: cometbft/e2e-node:{{ .Version }}
 {{- if eq .ABCIProtocol "builtin" }}
     entrypoint: /usr/bin/entrypoint-builtin
 {{- end }}
@@ -67,7 +67,7 @@ services:
     - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657
     - 6060
     volumes:
-    - ./{{ .Name }}:/tendermint
+    - ./{{ .Name }}:/cometbft
     networks:
       {{ $.Name }}:
         ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .IP }}

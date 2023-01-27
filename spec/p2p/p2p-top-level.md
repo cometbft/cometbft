@@ -103,7 +103,7 @@ We survey the communication protocols within the reactors. These should inform t
 The consensus protocol is based on the "gossip" property: every message delivered by a correct process (after stabilization time) is received by every correct process within bounded time. In practice, this requirement is sufficient but not necessary. 
 
 
-#### [TM-REQ-CONS-GOSSIP.0]
+#### [CM-REQ-CONS-GOSSIP.0]
 If there is a messages *m* emitted by a correct process, such that
 
 - *m* has not been received by correct process *p*
@@ -115,43 +115,43 @@ then eventually it MUST BE that
 
 
 
-#### [TM-PROTOCOL-CR-COMM.0]
+#### [CM-PROTOCOL-CR-COMM.0]
 Gossiping is done by surveying the peers' states within the consensus protocol. The information of peer *p* tells us what consensus messages *p* is waiting for. We then send these messages to *p*.
 
 > In the current information this information is coarse. Peer *p* informs us about consensus height and round, and we send all votes for that height and round to *p*.
 
 TODO: proposal.
 
-The question is under which conditions [[TM-REQ-CR-COMM.0]] is sufficient to implement [[TM-REQ-CONS-GOSSIP.0]]. These conditions translate into requirements for the p2p layer
+The question is under which conditions [[CM-REQ-CR-COMM.0]] is sufficient to implement [[CM-REQ-CONS-GOSSIP.0]]. These conditions translate into requirements for the p2p layer
 
 ### Requirements on the p2p layer
 
 There are **local requirements** that express needs as connections to neighbors
 
-#### [TM-REQ-CR+P2P-STABLE.0]
+#### [CM-REQ-CR+P2P-STABLE.0]
 In order to make sure that we can help a peer to make progress, the p2p layer MUST ensure that we need to stay connected to that peer sufficiently long to get a good view of its state, and to act on it by sending messages.
 
-#### [TM-REQ-CR+P2P-ENCRYPTED.0]
+#### [CM-REQ-CR+P2P-ENCRYPTED.0]
 In order  to make sure that we can help a peer to make progress, we need to be sure that we can trust the messages from a correct peer (IOW no masquerading). This is done by end-to-end encrypted channels. 
 
 
-> The previous properties can be used to solve a local version of [[TM-REQ-CONS-GOSSIP.0]], that is, between neighbors. However, [[TM-REQ-CONS-GOSSIP.0]] is global, that is, whoever emits *m*, potentially we require that *m* is received by all correct processes in a potentially dynamic distributed system:
+> The previous properties can be used to solve a local version of [[CM-REQ-CONS-GOSSIP.0]], that is, between neighbors. However, [[CM-REQ-CONS-GOSSIP.0]] is global, that is, whoever emits *m*, potentially we require that *m* is received by all correct processes in a potentially dynamic distributed system:
 - nodes may join an leave physically (connection)
 - validators join and leave logically (the validator set)
 
 This translates into **global requirements** for the p2p layer.
 
-#### [TM-REQ-CR+P2P-CONNECT.0]
+#### [CM-REQ-CR+P2P-CONNECT.0]
 TODO:
 - all-to-all communication
 - eclypse attack
 - system can autonomously from failure (self-healing)
 - proposers are not disconnected?
 
-#### [TM-REQ-CR+P2P-STABILITY.0]
+#### [CM-REQ-CR+P2P-STABILITY.0]
 TODO: stay connected to good peers for some time
 
-#### [TM-REQ-CR+P2P-OPENNESS.0]
+#### [CM-REQ-CR+P2P-OPENNESS.0]
 TODO: New nodes can join / new validators can join
 
 
@@ -169,13 +169,15 @@ do not care about "all" transaction but rather "all valid").
 Which of such requirements are actually ensured by the 
 system depends on the guarantees by the concerned parts of the system.
 
-The mempool is a distributed pool of pending transactions.
-A pending transaction is a valid transaction that has been submitted by a
+The mempool is a distributed pool of "pending" transactions.
+A pending transaction is a "valid" transaction that has been submitted by a
 client of the blockchain but has not yet been committed to the blockchain.
 The mempool is thus fed with client transactions,
 that a priori can be submitted to any node in the network.
 And it is consumed by the consensus protocol, more specifically by validator nodes,
 which retrieve from the mempool transactions to be included in proposed blocks.
+
+> Note that in this document, we want to capture (an overapproximation of) the requirements the mempool puts on p2p. The notions of "pending" and "valid" seem mostly to be conditions that the mempool can use to drop transactions (and excempt them from beeing spread over the network). Thus for the purpose of this document we will largely ignore them (they should eventually be addressed [here](https://github.com/cometbft/cometbft/issues/223)). 
 
 As 
 - full nodes add transactions to the mempool following client requests, and
@@ -459,35 +461,3 @@ is established by the **peer-to-peer system (p2p)**, which is composed of the p2
 
 # References
 
-[[block]] Specification of the block data structure. 
-
-[[RPC]] RPC client for CometBFT
-
-[[fork-detector]] The specification of the light client fork detector.
-
-[[fullnode]] Specification of the full node API
-
-[[ibc-rs]] Rust implementation of IBC modules and relayer.
-
-[[lightclient]] The light client ADR [77d2651 on Dec 27, 2019].
-
-
-[block]: https://github.com/CometBFT/spec/blob/master/spec/blockchain/blockchain.md
-
-[TMBC-HEADER-link]: #tmbc-header.1
-[TMBC-SEQ-link]: #tmbc-seq.1
-[TMBC-CorrFull-link]: #tmbc-corr-full.1
-[TMBC-Auth-Byz-link]: #tmbc-auth-byz.1
-[TMBC-TIME_PARAMS-link]: tmbc-time-params.1
-[TMBC-FM-2THIRDS-link]: #tmbc-fm-2thirds.1
-[TMBC-VAL-CONTAINS-CORR-link]: tmbc-val-contains-corr.1
-[TMBC-VAL-COMMIT-link]: #tmbc-val-commit.1
-[TMBC-SOUND-DISTR-POSS-COMMIT-link]: #tmbc-sound-distr-poss-commit.1
-
-
-
-[ibc-rs]:https://github.com/informalsystems/ibc-rs
-
-[
-
-[arXiv]: https://arxiv.org/abs/1807.04938

@@ -12,9 +12,6 @@ module ConsensusReactor {
         | { tag: "prevote", height: int, round: int, payload: Payload, signer: Proc}
         | { tag: "precommit", height: int, round: int, payload: Payload, signer: Proc}
     
-    var bMsgs : Proc -> Set[CONSMessage]                       //Messages broadcast by CONS
-    var dMsgs : Proc -> Set[CONSMessage]                       //Messages delivered to CONS
-
 
 //====== [GOSSIP-P2P-VOCABULARY] P2P-I
     var maxConn: Proc -> int
@@ -30,6 +27,12 @@ module ConsensusReactor {
 
 
 
+//====== CONS Internals
+    var cbMsgs: Proc -> List[CONSMessage]
+
+//===== GOSSIP Internals
+    var bMsgs : Proc -> Set[CONSMessage]                        //Witness variable of messages broadcast by CONS
+    var dMsgs : Proc -> Set[CONSMessage]                        //Witness variable of messages delivered to CONS and not discarded
 
 
 //======== Shared definitions
@@ -39,10 +42,16 @@ module ConsensusReactor {
         bMsgs' = bMsgs.set(p, bMsgs.get(p).union(Set(m)))
     }
 
+    //[DEF-DELIVERY]
+    //Messages delivered but not yet superseded
+    def delivered(p) = dMsgs.get(p)
+
     //[DEF-SUPERSESSION]
     //The supersession operator  
     def SSS(lhs,rhs): (CONSMessage, CONSMessage) => bool = {
-        //TODO
+        //TODO: Most messages are deprecated by the another message of the same type 
+        //but from a new round on the same height. Votes must be kept until a new height
+        //is started.
         true
     }
 
@@ -59,22 +68,55 @@ module ConsensusReactor {
     }
 
 
-
-//====== CONS Internals
-//===== GOSSIP Internals
-
-
 //================================= REQ-CONS-GOSSIP
 
     //[REQ-CONS-GOSSIP-BROADCAST.1]
-    //Satisfied by [DEF-BROADCAST] and use of bMsgs
+    //Satisfied by [DEF-BROADCAST]
 
     //[REQ-CONS-GOSSIP-DELIVERY.1]
-    //Satisfied by usage of dMsgs
+    //Satisfied by [DEF-DELIVERY]
 
     //[REQ-CONS-GOSSIP-BROADCAST.2]
-    //TODO
+    temporal RCGBroadcast2a = {
+        Procs.forall(p =>
+            bMsgs.get(p).forall(m1 =>
+                not( 
+                    Procs.exists(q =>
+                        bMsgs.get(q).exists(m2 => 
+                            SSS(m2,m1)
+                        )
+                    )
+                ) implies eventually (
+                    Procs.forall(q => 
+                        m1.in(dMsgs.get(q))
+                    )
+                )
+            )
+        )
+    }
 
+    temporal RCGBroadcast2b = {
+        Procs.forall(p =>
+            dMsgs.get(p).exists(m1 =>
+                not( 
+                    Procs.exists(q =>
+                        bMsgs.get(q).exists(m2 => 
+                            SSS(m2,m1)
+                        )
+                    )
+                ) implies eventually (
+                    Procs.forall(q => 
+                        m1.in(dMsgs.get(q))
+                    )
+                )
+            )
+        )
+    }
+
+    temporal RCGBroadcast2 = all {
+        RCGBroadcast2a,
+        RCGBroadcast2b,
+    }
 
     //[REQ-CONS-GOSSIP-DELIVERY.2]
     //TODO: Am I missing an implication here?
@@ -97,6 +139,33 @@ module ConsensusReactor {
     //[PROV-CONS-GOSSIP-SUPERSESSION.1]
     //Provided by [DEF-SUPERSESSION]
 
+    //[PROV-CONS-GOSSIP-SUPERSESSION.2]
+    //TODO: []PCGSupersession2
+    def PCGSupersession2 = (
+        Procs.forall(p => 
+            range(1,len(cbMsgs.get(p))).forall(i =>
+                not (
+                    cbMsgs.get(p).slice(0,i).exists(m2 => 
+                        m2.SSS(cbMsgs.get(p)[i])
+                    )
+                )
+            )
+        )
+    )
+
+    //[PROV-CONS-GOSSIP-SUPERSESSION.3]
+    //TODO: []PCGSupersession3
+    def PCGSupersession3 = (
+        Procs.forall(p => 
+            range(1,len(cbMsgs.get(p))).forall(i =>
+                not (
+                    cbMsgs.get(p).slice(0,i).exists(m2 => 
+                        m2.SSS(cbMsgs.get(p)[i])
+                    )
+                )
+            )
+        )
+    )
 
 
 //================================= REQ-GOSSIP-CONS
@@ -205,49 +274,14 @@ module ConsensusReactor {
     }
 
     //[REQ-GOSSIP-P2P-IGNORING]
-    temporal RGPIgnoring = always {
+    //TODO: []RGPIgnoring
+    temporal RGPIgnoring = {
         Procs.forall(p => 
             igs.get(p).forall(q => 
                 q.notin(nes.get(p))
             )
         )
     }
-
-//GOSSIP internals
-/*
-    type GossipMessage = 
-        | {tag: "state-msg", msg: CONSMessage, sndr: Proc}
-        | {tag: "other-msg", height: int, round: int, payload: str, sndr: Proc}
-
-*/
-
 }
-
-
-
-
-
-
-
-/*
-    var height: Proc -> int
-    var round: Proc -> int
-    var step: Proc -> Steps
-    var decision: List[Payload]
-
-    type Steps =  
-        | {tag: "proposal"}
-        | {tag: "prevote"}
-        | {tag: "precommit"}
-
-    action InitGossipI = all {
-        height' = Procs.mapBy(_ => 0),
-        round' = Procs.mapBy(_ => 0),
-        decision' = Procs.mapBy(_ => List())
-    }
-*/
-
-//===== Anything below this line actually belongs to the implementation.qnt and will be moved
-//===== there once I learn how modularize quint specs.
 
 

@@ -1,8 +1,24 @@
 *.swp
 *.swo
 .bak
+<<<<<<< HEAD
 *.bak
 .DS_Store
+=======
+.idea/
+.revision
+.tendermint
+.tendermint-lite
+.cometbft
+.cometbft-lite
+.terraform
+.vagrant
+.vendor-new/
+.vscode/
+abci/abci-cli
+addrbook.json
+artifacts/*
+>>>>>>> 2f4a09a39 (main: rename TMHOME to CMTHOME (#212))
 build/*
 rpc/test/.tendermint
 .tendermint
@@ -24,7 +40,16 @@ abci-cli
 docs/node_modules/
 docs/.vuepress/public/rpc
 index.html.md
+<<<<<<< HEAD
 
+=======
+libs/pubsub/query/fuzz_test/output
+profile\.out
+remote_dump
+rpc/test/.tendermint
+rpc/test/.cometbft
+scripts/cutWALUntil/cutWALUntil
+>>>>>>> 2f4a09a39 (main: rename TMHOME to CMTHOME (#212))
 scripts/wal2json/wal2json
 scripts/cutWALUntil/cutWALUntil
 

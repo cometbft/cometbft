@@ -4,8 +4,8 @@ import (
 	"os"
 	"path/filepath"
 
-	cmd "github.com/cometbft/cometbft/cmd/tendermint/commands"
-	"github.com/cometbft/cometbft/cmd/tendermint/commands/debug"
+	cmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
+	"github.com/cometbft/cometbft/cmd/cometbft/commands/debug"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/cli"
 	nm "github.com/cometbft/cometbft/node"

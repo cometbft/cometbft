@@ -108,13 +108,13 @@ db_backend = "cleveldb"
 To install Tendermint, run:
 
 ```sh
-CGO_LDFLAGS="-lsnappy" make install TENDERMINT_BUILD_OPTIONS=cleveldb
+CGO_LDFLAGS="-lsnappy" make install COMETBFT_BUILD_OPTIONS=cleveldb
 ```
 
 or run:
 
 ```sh
-CGO_LDFLAGS="-lsnappy" make build TENDERMINT_BUILD_OPTIONS=cleveldb
+CGO_LDFLAGS="-lsnappy" make build COMETBFT_BUILD_OPTIONS=cleveldb
 ```
 
 which puts the binary in `./build`.

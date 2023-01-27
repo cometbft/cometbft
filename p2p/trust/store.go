@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"time"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	"github.com/tendermint/tendermint/libs/service"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 const defaultStorePeriodicSaveInterval = 1 * time.Minute
@@ -26,7 +26,7 @@ type MetricStore struct {
 	peerMetrics map[string]*Metric
 
 	// Mutex that protects the map and history data file
-	mtx tmsync.Mutex
+	mtx cmtsync.Mutex
 
 	// The db where peer trust metric history data will be stored
 	db dbm.DB

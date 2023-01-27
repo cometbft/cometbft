@@ -40,7 +40,7 @@ pip install -r requirements.txt
 # '-t' flag overrides the default title at the top of the plot.
 
 ./latency_throughput.py \
-    -t 'Tendermint v0.34.x Latency vs Throughput' \
+    -t 'CometBFT v0.34.x Latency vs Throughput' \
     ./tm034.png \
     /path/to/csv/files/raw.csv
 ```

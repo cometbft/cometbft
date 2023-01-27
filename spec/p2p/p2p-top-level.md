@@ -1,14 +1,14 @@
 *** This is the beginning of an unfinished draft. Don't continue reading! ***
 
-# << Tendermint P2P >>
+# << CometBFT P2P >>
 
 <!--- > Rough outline of what the component is doing and why. 2-3 paragraphs 
 --->
 
-> Perhaps this should go into a separate document on Tendermint architecture. 
+> Perhaps this should go into a separate document on the CometBFT architecture. 
 
-The Tendermint consists of multiple protocols, namely,
-- Consensus
+CometBFT consists of multiple protocols, namely,
+- Consensus (Tendermint consensus)
 - Mempool
 - Evidence
 - Blocksync
@@ -34,8 +34,8 @@ GOAL: what are the consequences of the choices in the config file
 
 > Table of content with rough outline for the parts
 
-- [Part I](#part-i---tendermint-blockchain): Introduction of
- relevant terms of the Tendermint
+- [Part I](#part-i---Cosmos-blockchain): Introduction of
+ relevant terms of the Cosmos
 blockchain.
 
 - [Part II](#part-ii---sequential-definition-problem): 
@@ -84,7 +84,7 @@ In this document we quite extensively use tags in order to be able to
 reference assumptions, invariants, etc. in future communication. In
 these tags we frequently use the following short forms:
 
-- TMBC: Tendermint blockchain
+- CMBC: Cosmos blockchain
 - SEQ: for sequential specifications
 - LIVE: liveness
 - SAFE: safety
@@ -94,7 +94,7 @@ these tags we frequently use the following short forms:
 
 --->
 
-# Part I - A Tendermint node 
+# Part I - A CometBFT node 
 
 We survey the communication protocols within the reactors. These should inform the requirements of the p2p layer
 
@@ -290,7 +290,7 @@ TODO:
 ##  Informal Problem statement
 
 
-The p2p layer, specified here, manages the connections of a Tendermint node with other Tendermint nodes. It continuously provides a list of peers ensuring
+The p2p layer, specified here, manages the connections of a CometBFT node with other CometBFT nodes. It continuously provides a list of peers ensuring
 1. Connectivity. The overlay network induced by the correct nodes in the local neighborhoods (defined by the lists of peers) is sufficiently connected to the remainder of the network so that the reactors can implement communication on top of it that is sufficient for their needs
     > There is the design decision that the same overlay is used by all reactors. It seems that consensus has the strongest requirements regarding connectivity and this defines the required properties
  
@@ -450,7 +450,7 @@ a section called "Analysis"
 
 # Old text
 
-Tendermint (as many classic BFT algorithms) have an all-to-all communication pattern (e.g., every validator sends a `precommit` to every other full node). Naive implementations, e.g., maintaining a channel between each of the *N* validators is not scaling to the system sizes of typical Cosmos blockchains (e.g., N = 200 validator nodes + seed nodes + sentry nodes + other full nodes). There is the fundamental necessity to restrict the communication. There is another explicit requirement which is called "deployment flexibility", which means that we do not want to impose a completely-connected network (also for safety concerns).
+ Tendermint Consensus (as many classic BFT algorithms) have an all-to-all communication pattern (e.g., every validator sends a `precommit` to every other full node). Naive implementations, e.g., maintaining a channel between each of the *N* validators is not scaling to the system sizes of typical Cosmos blockchains (e.g., N = 200 validator nodes + seed nodes + sentry nodes + other full nodes). There is the fundamental necessity to restrict the communication. There is another explicit requirement which is called "deployment flexibility", which means that we do not want to impose a completely-connected network (also for safety concerns).
 
 The design decision is to use an overlay network. Instead of having *N* connections, each node only maintains a relatively small number. In principle, this allows to implement more efficient communication (e.g., gossiping), provided that with this small number of connections per node, the system as a whole stays connected. This overlay network 
 is established by the **peer-to-peer system (p2p)**, which is composed of the p2p layers of the participating nodes that locally decide with which peers a node keeps connections.
@@ -461,7 +461,7 @@ is established by the **peer-to-peer system (p2p)**, which is composed of the p2
 
 [[block]] Specification of the block data structure. 
 
-[[RPC]] RPC client for Tendermint
+[[RPC]] RPC client for CometBFT
 
 [[fork-detector]] The specification of the light client fork detector.
 
@@ -471,9 +471,8 @@ is established by the **peer-to-peer system (p2p)**, which is composed of the p2
 
 [[lightclient]] The light client ADR [77d2651 on Dec 27, 2019].
 
-[RPC]: https://docs.tendermint.com/master/rpc/
 
-[block]: https://github.com/tendermint/spec/blob/master/spec/blockchain/blockchain.md
+[block]: https://github.com/CometBFT/spec/blob/master/spec/blockchain/blockchain.md
 
 [TMBC-HEADER-link]: #tmbc-header.1
 [TMBC-SEQ-link]: #tmbc-seq.1
@@ -485,17 +484,10 @@ is established by the **peer-to-peer system (p2p)**, which is composed of the p2
 [TMBC-VAL-COMMIT-link]: #tmbc-val-commit.1
 [TMBC-SOUND-DISTR-POSS-COMMIT-link]: #tmbc-sound-distr-poss-commit.1
 
-[lightclient]: https://github.com/interchainio/tendermint-rs/blob/e2cb9aca0b95430fca2eac154edddc9588038982/docs/architecture/adr-002-lite-client.md
-[fork-detector]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/detection.md
-[fullnode]: https://github.com/tendermint/spec/blob/master/spec/blockchain/fullnode.md
+
 
 [ibc-rs]:https://github.com/informalsystems/ibc-rs
 
-[FN-LuckyCase-link]: https://github.com/tendermint/spec/blob/master/spec/blockchain/fullnode.md#fn-luckycase
-
-[blockchain-validator-set]: https://github.com/tendermint/spec/blob/master/spec/blockchain/blockchain.md#data-structures
-[fullnode-data-structures]: https://github.com/tendermint/spec/blob/master/spec/blockchain/fullnode.md#data-structures
-
-[FN-ManifestFaulty-link]: https://github.com/tendermint/spec/blob/master/spec/blockchain/fullnode.md#fn-manifestfaulty
+[
 
 [arXiv]: https://arxiv.org/abs/1807.04938

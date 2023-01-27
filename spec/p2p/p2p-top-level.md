@@ -184,7 +184,7 @@ As
 - validators read transactions from the mempool to compose proposed blocks,
 
 the mentioned end-to-end requirements on transactions translate into requirements 
-on the mempool, e.g., every transaction that is submitted to a fullnode should 
+on the mempool, e.g., every transaction that is submitted to a full node should 
 eventually be present at the mempool of a validator/proposer. 
 
 For the purpose of this document (specifying what the mempool needs from p2p), 
@@ -194,7 +194,7 @@ into requirements on the p2p layer that are similar to those of the
 consensus reactor.
 
 - e-t-e requirement: "every transaction submitted should be eventually put into a block"
-- requirement for consensus: for every submitted transaction from some hight on, 
+- requirement for consensus: for every submitted transaction from some height on, 
 the transaction is proposed by every correct validator in every height until it is committed
 into a block (assuming infinitely often correct proposers get their proposal through)  
 - current solution to address this requirement: 
@@ -215,16 +215,39 @@ pending transactions that respects certain limits, in terms of the number of
 transactions returned, their total size in bytes, and their required gas.
 The mempool then returns the longest **prefix** of its local list of pending
 transactions that respects the limits established by the consensus protocol. 
-> As a result of these two properties, once a transaction is known to all validators, it 
+> As a result of these two properties, once a transaction is known to all validators (present and future), it 
 cannot be overtaken by infinitely many transaction that arrived in the system later (there
 is still some possible overtaking due to faulty proposers); cf. no starvation.
-- requirement on the mempool: 
+
+
+We arrive at the requirement on the mempool: 
+
+#### [CM-REQ-MEMP-GOSSIP.0]
+
    1. every transaction submitted to a correct full node must eventually be included in the mempool of a correct validator
    2. if a transaction is included in the mempool of a correct validator eventually it is included in the mempool of all correct validators 
 
-> Point 1. appears slightly stronger that the requirement of the consensus reactor, as here all full nodes are sources of transaction, while in consensus only validators are source of consensus messages.
+> Point 1. appears slightly stronger than the requirement of the consensus reactor, as here all full nodes are sources of transaction, while in consensus only validators are source of consensus messages.
+
+> TODO: discuss how important this is. It seems quite a big issue given that validators have more stable neighborhoods (behind sentry nodes), and are substantially fewer.
 
 > Point 2. has potential to be weakened in practice, as it might be sufficient for a transaction to reach one correct validator as in practice CometBFT decides in one round. 
+
+
+#### [CM-PROTOCOL-MR-COMM.0]
+
+Gossiping is done by remembering for each peer which was the last element in the local list of transaction that was sent to a peer (there are condition where the pointer to the last element is reset). We then send transactions after this last element to the peer. 
+
+> TODO: seems best effort send. We should clarify.
+
+### Requirements on the p2p layer
+
+Similar to the consensus reactor, the discussion above entails  **local requirements** that express needs as connections to neighbors.
+
+#### [CM-REQ-CR+P2P-STABLE.0]
+In order to make progress in sending the list of transactions to a peer, the p2p layer must ensure that we stay connected to a peer sufficiently long.
+
+Similar to the consensus reactor, [CM-REQ-MEMP-GOSSIP.0] translates into global connectivity requirements.
 
 ## Evidence reactor
 

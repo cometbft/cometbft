@@ -30,7 +30,7 @@ Either way, the following ensues:
     1. publish `RoundStateEvent` on eventBus (general purpose)
     2. publish `EventNewRoundStep` on eventSwitch (internal communication between CONS and GOSSIP)
 
-3. Concurrently, `receiveRoutine` pols messages from the `internalMsgQueue` and passes to `handleMessage` which
+3. Concurrently, `receiveRoutine` polls messages from the `internalMsgQueue` and passes to `handleMessage` which
     1. if message is of type `ProposalMessage`, passes it to `setProposal (defaultSetProposal)`to 
         1. store the message in `state.Proposal`
         2. create a set of block parts `state.ProposalBlockParts` corresponding to the proposal.

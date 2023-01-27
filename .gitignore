@@ -3,6 +3,19 @@
 .bak
 *.bak
 .DS_Store
+.idea/
+.revision
+.tendermint
+.tendermint-lite
+.cometbft
+.cometbft-lite
+.terraform
+.vagrant
+.vendor-new/
+.vscode/
+abci/abci-cli
+addrbook.json
+artifacts/*
 build/*
 rpc/test/.tendermint
 .tendermint
@@ -24,7 +37,12 @@ abci-cli
 docs/node_modules/
 docs/.vuepress/public/rpc
 index.html.md
-
+libs/pubsub/query/fuzz_test/output
+profile\.out
+remote_dump
+rpc/test/.tendermint
+rpc/test/.cometbft
+scripts/cutWALUntil/cutWALUntil
 scripts/wal2json/wal2json
 scripts/cutWALUntil/cutWALUntil
 

@@ -60,6 +60,13 @@ module ConsensusReactor {
         s.exists(m1 => m1.SSS(m))
     }
 
+    def setRange(i,j) = range(i,j).indices()
+
+    //m is SuperSedeD in the set s
+    def isSSDInList(l,m): (List[CONSMessage], CONSMessage) => bool = {
+        setRange(0,l.length()).exists(i => l.nth(i).SSS(m))
+    }
+
     //[DEF-UNICAST]
     //The P2P unicast API.
     action unicast(p,q,m): (Proc, Proc, GOSSIPMessage) => bool = all {
@@ -113,10 +120,12 @@ module ConsensusReactor {
         )
     }
 
+/*
     temporal RCGBroadcast2 = all {
         RCGBroadcast2a,
         RCGBroadcast2b,
     }
+*/
 
     //[REQ-CONS-GOSSIP-DELIVERY.2]
     //TODO: Am I missing an implication here?
@@ -141,15 +150,13 @@ module ConsensusReactor {
 
     //[PROV-CONS-GOSSIP-SUPERSESSION.2]
     //TODO: []PCGSupersession2
-    def PCGSupersession2 = (
+    def PCGSupersession2(c) = (
         Procs.forall(p => 
-            range(1,len(cbMsgs.get(p))).forall(i =>
+            setRange(0, length(cbMsgs.get(p)) - 1).filter(i => 
                 not (
-                    cbMsgs.get(p).slice(0,i).exists(m2 => 
-                        m2.SSS(cbMsgs.get(p)[i])
-                    )
+                    isSSDInList(cbMsgs.get(p).slice(i,length(cbMsgs.get(p))), cbMsgs.get(p).nth(i))
                 )
-            )
+            ).size() < c
         )
     )
 
@@ -157,12 +164,8 @@ module ConsensusReactor {
     //TODO: []PCGSupersession3
     def PCGSupersession3 = (
         Procs.forall(p => 
-            range(1,len(cbMsgs.get(p))).forall(i =>
-                not (
-                    cbMsgs.get(p).slice(0,i).exists(m2 => 
-                        m2.SSS(cbMsgs.get(p)[i])
-                    )
-                )
+            setRange(1,length(cbMsgs.get(p))).forall(i =>
+                not(isSSDInList(cbMsgs.get(p).slice(0,i), cbMsgs.get(p).nth(i)))
             )
         )
     )
@@ -265,7 +268,7 @@ module ConsensusReactor {
         q.notin(nes.get(p)),
         size(nes.get(p)) < maxConn.get(p),
         nes' = nes.set(p, (nes.get(p).union(Set(q)))),
-        size(nes'.get(p)) < maxConn.get(p)
+//        size(nes'.get(p)) < maxConn.get(p)
     }
 
     action removePeer(p,q): (Proc,Proc) => bool = all {

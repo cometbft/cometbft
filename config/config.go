@@ -32,7 +32,7 @@ const (
 	MempoolV0 = "v0"
 	MempoolV1 = "v1"
 
-	DefaultTendermintDir = ".tendermint"
+	DefaultTendermintDir = ".cometbft"
 	DefaultConfigDir     = "config"
 	DefaultDataDir       = "data"
 
@@ -715,7 +715,7 @@ type MempoolConfig struct {
 	//  2) "v1" - prioritized mempool.
 	Version string `mapstructure:"version"`
 	// RootDir is the root directory for all data. This should be configured via
-	// the $TMHOME env variable or --home cmd flag rather than overriding this
+	// the $CMTHOME env variable or --home cmd flag rather than overriding this
 	// struct field.
 	RootDir string `mapstructure:"home"`
 	// Recheck (default: true) defines whether Tendermint should recheck the

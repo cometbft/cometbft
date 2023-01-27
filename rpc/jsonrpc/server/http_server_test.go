@@ -112,7 +112,7 @@ func TestWriteRPCResponseHTTP(t *testing.T) {
 
 	// one argument
 	w := httptest.NewRecorder()
-	err := WriteRPCResponseHTTP(w, types.NewRPCSuccessResponse(id, &sampleResult{"hello"}))
+	err := WriteCacheableRPCResponseHTTP(w, types.NewRPCSuccessResponse(id, &sampleResult{"hello"}))
 	require.NoError(t, err)
 	resp := w.Result()
 	body, err := io.ReadAll(resp.Body)

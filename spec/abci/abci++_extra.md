@@ -59,7 +59,7 @@ Each scenario is presented from the perspective of a process $p$. More precisely
     
 ### Round 1: 
 
-1. **Propose:** Correct process is the proposer in this round. Its $validValue$ is $nil$, and it is free to generate and propose new block $Y$. Process $p$ receives this proposal in time, calls `ProcessProposal` for block $Y$, and broadcasts a $Prevote$ message for it. 
+1. **Propose:** A correct process is the proposer in this round. Its $validValue$ is $nil$, and it is free to generate and propose a new block $Y$. Process $p$ receives this proposal in time, calls `ProcessProposal` for block $Y$, and broadcasts a $Prevote$ message for it. 
 1. **Prevote:** Due to network asynchrony less than $2f+1$ processes send $Prevote$ for this block. Therefore, $p$ does not update $validValue$ in this round. 
 1. **Precommit:** Since less than $2f+1$ processes send $Prevote$, no correct process will lock on this block and send $Precommit$ message. As a consequence, $p$ does not decide on $Y$. 
 

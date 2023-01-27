@@ -249,7 +249,7 @@ func testWithHTTPClient(t *testing.T, cl client.HTTPClient) {
 	require.NoError(t, err)
 	assert.Equal(t, got5, -1)
 
-	val6 := tmrand.Intn(10000)
+	val6 := cmtrand.Intn(10000)
 	got6, err := echoWithDefaultViaHTTP(cl, &val6)
 	require.NoError(t, err)
 	assert.Equal(t, got6, val6)
@@ -447,7 +447,7 @@ func TestJSONRPCCaching(t *testing.T) {
 	assert.Equal(t, "", res1.Header.Get("Cache-control"))
 
 	// Supplying the arg should result in caching
-	params["arg"] = tmrand.Intn(10000)
+	params["arg"] = cmtrand.Intn(10000)
 	req, err = types.MapToRequest(types.JSONRPCIntID(1001), "echo_default", params)
 	require.NoError(t, err)
 
@@ -483,7 +483,7 @@ func TestURICaching(t *testing.T) {
 	assert.Equal(t, "", res1.Header.Get("Cache-control"))
 
 	// Supplying the arg should result in caching
-	args.Set("arg", fmt.Sprintf("%d", tmrand.Intn(10000)))
+	args.Set("arg", fmt.Sprintf("%d", cmtrand.Intn(10000)))
 	res2, err := rawURIRequest(t, cl, httpAddr+"/echo_default", args)
 	defer func() { _ = res2.Body.Close() }()
 	require.NoError(t, err)

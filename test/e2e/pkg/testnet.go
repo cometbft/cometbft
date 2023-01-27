@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
-	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/secp256k1"
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 )
 
 const (
@@ -76,7 +76,7 @@ type Testnet struct {
 	CheckTxDelay         time.Duration
 }
 
-// Node represents a Tendermint node in a testnet.
+// Node represents a CometBFT node in a testnet.
 type Node struct {
 	Name             string
 	Version          string

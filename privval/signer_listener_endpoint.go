@@ -5,10 +5,10 @@ import (
 	"net"
 	"time"
 
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/libs/service"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
-	privvalproto "github.com/tendermint/tendermint/proto/tendermint/privval"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	privvalproto "github.com/cometbft/cometbft/proto/tendermint/privval"
 )
 
 // SignerListenerEndpointOption sets an optional parameter on the SignerListenerEndpoint.
@@ -38,7 +38,7 @@ type SignerListenerEndpoint struct {
 	pingTimer     *time.Ticker
 	pingInterval  time.Duration
 
-	instanceMtx tmsync.Mutex // Ensures instance public methods access, i.e. SendRequest
+	instanceMtx cmtsync.Mutex // Ensures instance public methods access, i.e. SendRequest
 }
 
 // NewSignerListenerEndpoint returns an instance of SignerListenerEndpoint.

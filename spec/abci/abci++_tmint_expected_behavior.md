@@ -1,15 +1,15 @@
 ---
 order: 4
-title: Tendermint's expected behavior
+title: CometBFT's expected behavior
 ---
 
-# Tendermint's expected behavior
+# CometBFT's expected behavior
 
 ## Valid method call sequences
 
-This section describes what the Application can expect from Tendermint.
+This section describes what the Application can expect from CometBFT.
 
-The Tendermint consensus algorithm is designed to protect safety under any network conditions, as long as
+The Tendermint consensus algorithm, currently adopted in CometBFT, is designed to protect safety under any network conditions, as long as
 less than 1/3 of validators' voting power is byzantine. Most of the time, though, the network will behave
 synchronously, no process will fall behind, and there will be no byzantine process. The following describes
 what will happen during a block height _h_ in these frequent, benign conditions:
@@ -23,12 +23,12 @@ what will happen during a block height _h_ in these frequent, benign conditions:
 * `VerifyVoteExtension` will be called exactly _n-1_ times at each validator process, where _n_ is
   the number of validators, and will always return _accept_ in its `Response*`; 
   -->
-*  `BeginBlock` will be called exactly once at all processes, conveying the same prepared
+* `BeginBlock` will be called exactly once at all processes, conveying the same prepared
   block header that all calls to `PrepareProposal` and `ProcessProposal` had previously reported for
   height _h_; and
-* `DeliverTx` will be called exactly once for each transaction within the block. 
-* `EndBlock` will be called exactly once after `DeliverTx` has been executed for all transactions and marks 
-  the end of processing for the block. 
+* `DeliverTx` will be called exactly once for each transaction within the block.
+* `EndBlock` will be called exactly once after `DeliverTx` has been executed for all transactions and marks
+  the end of processing for the block.
 * `Commit` will finally be called exactly once at all processes at the end of height _h_.
 
 However, the Application logic must be ready to cope with any possible run of Tendermint for a given
@@ -37,8 +37,8 @@ In these cases, the sequence of calls to ABCI++ methods may not be so straighfor
 the Application should still be able to handle them, e.g., without crashing.
 The purpose of this section is to define what these sequences look like in a precise way.
 
-As mentioned in the [Basic Concepts](./abci%2B%2B_basic_concepts.md) section, Tendermint
-acts as a client of ABCI++ and the Application acts as a server. Thus, it is up to Tendermint to
+As mentioned in the [Basic Concepts](./abci%2B%2B_basic_concepts.md) section, CometBFT
+acts as a client of ABCI++ and the Application acts as a server. Thus, it is up to CometBFT to
 determine when and in which order the different ABCI++ methods will be called. A well-written
 Application design should consider _any_ of these possible sequences.
 
@@ -97,7 +97,7 @@ by the grammar above. Other reasons depend on the method in question:
 Finally, method `Info` is a special case. The method's purpose is three-fold, it can be used
 
 1. as part of handling an RPC call from an external client,
-2. as a handshake between Tendermint and the Application upon recovery to check whether any blocks need
+2. as a handshake between CometBFT and the Application upon recovery to check whether any blocks need
    to be replayed, and
 3. at the end of _state-sync_ to verify that the correct state has been reached.
 
@@ -113,7 +113,7 @@ Let us now examine the grammar line by line, providing further details.
 >start               = clean-start / recovery
 >```
 
-* If the process is starting from scratch, Tendermint first calls `InitChain`, then it may optionally
+* If the process is starting from scratch, CometBFT first calls `InitChain`, then it may optionally
   start a _state-sync_ mechanism to catch up with other processes. Finally, it enters normal
   consensus execution.
 
@@ -121,12 +121,12 @@ Let us now examine the grammar line by line, providing further details.
 >clean-start         = init-chain [state-sync] consensus-exec
 >```
 
-* In _state-sync_ mode, Tendermint makes one or more attempts at synchronizing the Application's state.
+* In _state-sync_ mode, CometBFT makes one or more attempts at synchronizing the Application's state.
   At the beginning of each attempt, it offers the Application a snapshot found at another process.
   If the Application accepts the snapshot, a sequence of calls to `ApplySnapshotChunk` method follow
   to provide the Application with all the snapshots needed, in order to reconstruct the state locally.
   A successful attempt must provide at least one chunk via `ApplySnapshotChunk`.
-  At the end of a successful attempt, Tendermint calls `Info` to make sure the recontructed state's
+  At the end of a successful attempt, CometBFT calls `Info` to make sure the recontructed state's
   _AppHash_ matches the one in the block header at the corresponding height.
 
 >```abnf
@@ -135,8 +135,8 @@ Let us now examine the grammar line by line, providing further details.
 >success-sync        = offer-snapshot 1*apply-chunk
 >```
 
-* In recovery mode, Tendermint first calls `Info` to know from which height it needs to replay decisions
-  to the Application. After this, Tendermint enters nomal consensus execution.
+* In recovery mode, CometBFT first calls `Info` to know from which height it needs to replay decisions
+  to the Application. After this, CometBFT enters nomal consensus execution.
 
 >```abnf
 >recovery            = info consensus-exec
@@ -161,22 +161,24 @@ Let us now examine the grammar line by line, providing further details.
 >consensus-round     = proposer / non-proposer
 >```
 
-* For every round, if the local process is the proposer of the current round, Tendermint starts by
-  calling `PrepareProposal`, followed by `ProcessProposal`. 
+* For every round, if the local process is the proposer of the current round, CometBFT starts by
+  calling `PrepareProposal`, followed by `ProcessProposal`.
   <!-- 
+
   Then, optionally, the Application is
   asked to extend its vote for that round. Calls to `VerifyVoteExtension` can come at any time: the
   local process may be slightly late in the current round, or votes may come from a future round
   of this height. 
-  --> 
+  -->
 
 >```abnf
 >proposer            = prepare-proposal process-proposal 
 >```
 
-* Also for every round, if the local process is _not_ the proposer of the current round, Tendermint
-  will call `ProcessProposal` at most once. 
+* Also for every round, if the local process is _not_ the proposer of the current round, CometBFT
+  will call `ProcessProposal` at most once.
   <!--
+
   At most one call to `ExtendVote` may occur only after
   `ProcessProposal` is called. A number of calls to `VerifyVoteExtension` can occur in any order
   with respect to `ProcessProposal` and `ExtendVote` throughout the round. The reasons are the same
@@ -212,7 +214,7 @@ to the existing implementation, but will keep the same guarantees already provid
 Here is how ABCI++ methods should be implemented.
 
 First of all, all the methods that did not change from ABCI to ABCI++, namely `Echo`, `Flush`, `Info`, `InitChain`,
-`BeginBlock`, `DerliverTx`, `EndBlock`, `Commit`, `Query`, `CheckTx`, `ListSnapshots`, `LoadSnapshotChunk`, `OfferSnapshot`, 
+`BeginBlock`, `DerliverTx`, `EndBlock`, `Commit`, `Query`, `CheckTx`, `ListSnapshots`, `LoadSnapshotChunk`, `OfferSnapshot`,
 and `ApplySnapshotChunk`, do not need to undergo any changes in their implementation.
 
 As for the new methods:

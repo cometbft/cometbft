@@ -9,9 +9,9 @@ import (
 	"reflect"
 	"sort"
 
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	"github.com/tendermint/tendermint/libs/log"
-	types "github.com/tendermint/tendermint/rpc/jsonrpc/types"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	"github.com/cometbft/cometbft/libs/log"
+	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 // HTTP + JSON handler
@@ -55,6 +55,11 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 			requests = []types.RPCRequest{request}
 		}
 
+		// Set the default response cache to true unless
+		// 1. Any RPC request error.
+		// 2. Any RPC request doesn't allow to be cached.
+		// 3. Any RPC request has the height argument and the value is 0 (the default).
+		cache := true
 		for _, request := range requests {
 			request := request
 
@@ -72,11 +77,13 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 					responses,
 					types.RPCInvalidRequestError(request.ID, fmt.Errorf("path %s is invalid", r.URL.Path)),
 				)
+				cache = false
 				continue
 			}
 			rpcFunc, ok := funcMap[request.Method]
-			if !ok || rpcFunc.ws {
+			if !ok || (rpcFunc.ws) {
 				responses = append(responses, types.RPCMethodNotFoundError(request.ID))
+				cache = false
 				continue
 			}
 			ctx := &types.Context{JSONReq: &request, HTTPReq: r}
@@ -88,9 +95,14 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 						responses,
 						types.RPCInvalidParamsError(request.ID, fmt.Errorf("error converting json params to arguments: %w", err)),
 					)
+					cache = false
 					continue
 				}
 				args = append(args, fnArgs...)
+			}
+
+			if cache && !rpcFunc.cacheableWithArgs(args) {
+				cache = false
 			}
 
 			returns := rpcFunc.f.Call(args)
@@ -103,7 +115,13 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 		}
 
 		if len(responses) > 0 {
-			if wErr := WriteRPCResponseHTTP(w, responses...); wErr != nil {
+			var wErr error
+			if cache {
+				wErr = WriteCacheableRPCResponseHTTP(w, responses...)
+			} else {
+				wErr = WriteRPCResponseHTTP(w, responses...)
+			}
+			if wErr != nil {
 				logger.Error("failed to write responses", "res", responses, "err", wErr)
 			}
 		}
@@ -128,14 +146,13 @@ func mapParamsToArgs(
 	params map[string]json.RawMessage,
 	argsOffset int,
 ) ([]reflect.Value, error) {
-
 	values := make([]reflect.Value, len(rpcFunc.argNames))
 	for i, argName := range rpcFunc.argNames {
 		argType := rpcFunc.args[i+argsOffset]
 
 		if p, ok := params[argName]; ok && p != nil && len(p) > 0 {
 			val := reflect.New(argType)
-			err := tmjson.Unmarshal(p, val.Interface())
+			err := cmtjson.Unmarshal(p, val.Interface())
 			if err != nil {
 				return nil, err
 			}
@@ -153,7 +170,6 @@ func arrayParamsToArgs(
 	params []json.RawMessage,
 	argsOffset int,
 ) ([]reflect.Value, error) {
-
 	if len(rpcFunc.argNames) != len(params) {
 		return nil, fmt.Errorf("expected %v parameters (%v), got %v (%v)",
 			len(rpcFunc.argNames), rpcFunc.argNames, len(params), params)
@@ -163,7 +179,7 @@ func arrayParamsToArgs(
 	for i, p := range params {
 		argType := rpcFunc.args[i+argsOffset]
 		val := reflect.New(argType)
-		err := tmjson.Unmarshal(p, val.Interface())
+		err := cmtjson.Unmarshal(p, val.Interface())
 		if err != nil {
 			return nil, err
 		}

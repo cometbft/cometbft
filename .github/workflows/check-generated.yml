@@ -15,12 +15,18 @@ permissions:
 jobs:
   check-mocks:
     runs-on: ubuntu-latest
+    # TODO(thane): Remove once we make the cometbft-db repository public.
+    env:
+      GOPRIVATE: github.com/cometbft/cometbft-db
     steps:
       - uses: actions/setup-go@v3
         with:
           go-version: "1.18"
 
       - uses: actions/checkout@v3
+
+      # TODO(thane): Remove once we make the cometbft-db repository public.
+      - run: git config --global url.https://${{ secrets.GO_MODULES_TOKEN }}@github.com/.insteadOf https://github.com/
 
       - name: "Check generated mocks"
         run: |
@@ -34,6 +40,7 @@ jobs:
             echo ">> Generated mocks require update (either Mockery or source files may have changed)."
             echo ">> Ensure your tools are up-to-date, re-run 'make mockery' and update this PR."
             echo ">>"
+            git diff
             exit 1
           fi
 
@@ -42,7 +49,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v3
         with:
-          go-version: "1.18"
+          go-version: "1.19"
 
       - uses: actions/checkout@v3
         with:
@@ -52,15 +59,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Install buf and gogo tools, so that differences that arise from
-          # toolchain differences are also caught.
-          readonly tools="$(mktemp -d)"
-          export PATH="${PATH}:${tools}/bin"
-          export GOBIN="${tools}/bin"
-
-          go install github.com/bufbuild/buf/cmd/buf
-          go install github.com/cosmos/gogoproto/protoc-gen-gogofaster@latest
-
           make proto-gen
 
           if ! git diff --stat --exit-code ; then
@@ -69,5 +67,6 @@ jobs:
             echo ">> Protobuf generated code requires update (either tools or .proto files may have changed)."
             echo ">> Ensure your tools are up-to-date, re-run 'make proto-gen' and update this PR."
             echo ">>"
+            git diff
             exit 1
           fi

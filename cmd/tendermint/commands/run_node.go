@@ -9,9 +9,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	cfg "github.com/tendermint/tendermint/config"
-	tmos "github.com/tendermint/tendermint/libs/os"
-	nm "github.com/tendermint/tendermint/node"
+	cfg "github.com/cometbft/cometbft/config"
+	cmtos "github.com/cometbft/cometbft/libs/os"
+	nm "github.com/cometbft/cometbft/node"
 )
 
 var (
@@ -19,7 +19,7 @@ var (
 )
 
 // AddNodeFlags exposes some common configuration options on the command-line
-// These are exposed for convenience of commands embedding a tendermint node
+// These are exposed for convenience of commands embedding a CometBFT node
 func AddNodeFlags(cmd *cobra.Command) {
 	// bind flags
 	cmd.Flags().String("moniker", config.Moniker, "node name")
@@ -101,7 +101,7 @@ func NewRunNodeCmd(nodeProvider nm.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "start",
 		Aliases: []string{"node", "run"},
-		Short:   "Run the tendermint node",
+		Short:   "Run the CometBFT node",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := checkGenesisHash(config); err != nil {
 				return err
@@ -119,7 +119,7 @@ func NewRunNodeCmd(nodeProvider nm.Provider) *cobra.Command {
 			logger.Info("Started node", "nodeInfo", n.Switch().NodeInfo())
 
 			// Stop upon receiving SIGTERM or CTRL-C.
-			tmos.TrapSignal(logger, func() {
+			cmtos.TrapSignal(logger, func() {
 				if n.IsRunning() {
 					if err := n.Stop(); err != nil {
 						logger.Error("unable to stop the node", "error", err)

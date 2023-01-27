@@ -9,9 +9,9 @@ import (
 	"log"
 	"testing"
 
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/async"
-	sc "github.com/tendermint/tendermint/p2p/conn"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/libs/async"
+	sc "github.com/cometbft/cometbft/p2p/conn"
 )
 
 func FuzzP2PSecretConnection(f *testing.F) {

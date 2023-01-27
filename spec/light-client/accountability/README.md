@@ -9,7 +9,7 @@ parent:
 
 ## Problem Statement
 
-Tendermint consensus guarantees the following specifications for all heights:
+Tendermint consensus algorithm guarantees the following specifications for all heights:
 
 * agreement -- no two correct full nodes decide differently.
 * validity -- the decided block satisfies the predefined predicate *valid()*.
@@ -24,7 +24,7 @@ However, faulty nodes may forge blocks and try to convince users (light clients)
 
 We say that a fork is a case in which there are two commits for different blocks at the same height of the blockchain. The problem is to ensure that in those cases we are able to detect faulty validators (and not mistakenly accuse correct validators), and incentivize therefore validators to behave according to the protocol specification.
 
-**Conceptual Limit.** In order to prove misbehavior of a node, we have to show that the behavior deviates from correct behavior with respect to a given algorithm. Thus, an algorithm that detects misbehavior of nodes executing some algorithm *A* must be defined with respect to algorithm *A*. In our case, *A* is Tendermint consensus (+ other protocols in the infrastructure; e.g.,full nodes and the Light Client). If the consensus algorithm is changed/updated/optimized in the future, we have to check whether changes to the accountability algorithm are also required. All the discussions in this document are thus inherently specific to Tendermint consensus and the Light Client specification.
+**Conceptual Limit.** In order to prove misbehavior of a node, we have to show that the behavior deviates from correct behavior with respect to a given algorithm. Thus, an algorithm that detects misbehavior of nodes executing some algorithm *A* must be defined with respect to algorithm *A*. In our case, *A* is Tendermint consensus (+ other protocols in the infrastructure; e.g., Cosmos full nodes and the Light Client). If the consensus algorithm is changed/updated/optimized in the future, we have to check whether changes to the accountability algorithm are also required. All the discussions in this document are thus inherently specific to Tendermint consensus and the Light Client specification.
 
 **Q:** Should we distinguish agreement for validators and full nodes for agreement? The case where all correct validators agree on a block, but a correct full node decides on a different block seems to be slightly less severe that the case where two correct validators decide on different blocks. Still, if a contaminated full node becomes validator that may be problematic later on. Also it is not clear how gossiping is impaired if a contaminated full node is on a different branch.
 
@@ -136,7 +136,7 @@ Validators:
 * CA and CB are disjoint
 * F - a set of faulty validators with 1/3 or more voting power
 
-Observe that this setting violates the Tendermint failure model.
+Observe that this setting violates the Cosmos failure model.
 
 Execution:
 
@@ -251,7 +251,7 @@ Validators:
 * C1 and C2 are disjoint
 * F - a set of faulty validators with less than 1/3 voting power
 * one additional faulty process *q*
-* F and *q* violate the Tendermint failure model.
+* F and *q* violate the Cosmos failure model.
 
 Execution:
 
@@ -267,7 +267,7 @@ Consequences:
 
 * Only a single faulty validator that previously precommited nil did equivocation, while the other 1/3 of faulty validators actually executed an attack that has exactly the same sequence of messages as part of amnesia attack. Detecting this kind of attack boil down to mechanisms for equivocation and amnesia.
 
-**Q:** should we keep this as a separate kind of attack? It seems that equivocation, amnesia and phantom validators are the only kind of attack we need to support and this gives us security also in other cases. This would not be surprising as equivocation and amnesia are attacks that followed from the protocol and phantom attack is not really an attack to Tendermint but more to the Proof of Stake module.
+**Q:** should we keep this as a separate kind of attack? It seems that equivocation, amnesia and phantom validators are the only kind of attack we need to support and this gives us security also in other cases. This would not be surprising as equivocation and amnesia are attacks that followed from the protocol and phantom attack is not really an attack to Tendermint but more to the Cosmos Proof of Stake module.
 
 ### Phantom validators
 

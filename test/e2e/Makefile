@@ -1,10 +1,16 @@
 all: docker generator runner
 
+# TODO(thane): Remove GO_MODULES_TOKEN reference once we publish cometbft-db.
 docker:
-	docker build --tag tendermint/e2e-node -f docker/Dockerfile ../..
+	@echo "Building E2E Docker image"
+	@docker build \
+		--tag cometbft/e2e-node \
+		--tag cometbft/e2e-node:local-version \
+		--build-arg GO_MODULES_TOKEN=$(GO_MODULES_TOKEN) \
+		-f docker/Dockerfile ../..
 
 # We need to build support for database backends into the app in
-# order to build a binary with a Tendermint node in it (for built-in
+# order to build a binary with a CometBFT node in it (for built-in
 # ABCI testing).
 node:
 	go build -o build/node -tags badgerdb,boltdb,cleveldb,rocksdb ./node

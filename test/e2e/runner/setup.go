@@ -10,20 +10,19 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/privval"
-	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/privval"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -39,7 +38,7 @@ const (
 )
 
 // Setup sets up the testnet configuration.
-func Setup(testnet *e2e.Testnet) error {
+func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
 	logger.Info("setup", "msg", log.NewLazySprintf("Generating testnet files in %q", testnet.Dir))
 
 	err := os.MkdirAll(testnet.Dir, os.ModePerm)
@@ -47,11 +46,7 @@ func Setup(testnet *e2e.Testnet) error {
 		return err
 	}
 
-	compose, err := MakeDockerCompose(testnet)
-	if err != nil {
-		return err
-	}
-	err = os.WriteFile(filepath.Join(testnet.Dir, "docker-compose.yml"), compose, 0o644) //nolint:gosec
+	err = infp.Setup()
 	if err != nil {
 		return err
 	}
@@ -115,7 +110,7 @@ func Setup(testnet *e2e.Testnet) error {
 			filepath.Join(nodeDir, PrivvalStateFile),
 		)).Save()
 
-		// Set up a dummy validator. Tendermint requires a file PV even when not used, so we
+		// Set up a dummy validator. CometBFT requires a file PV even when not used, so we
 		// give it a dummy such that it will fail if it actually tries to use it.
 		(privval.NewFilePV(ed25519.GenPrivKey(),
 			filepath.Join(nodeDir, PrivvalDummyKeyFile),
@@ -124,70 +119,6 @@ func Setup(testnet *e2e.Testnet) error {
 	}
 
 	return nil
-}
-
-// MakeDockerCompose generates a Docker Compose config for a testnet.
-func MakeDockerCompose(testnet *e2e.Testnet) ([]byte, error) {
-	// Must use version 2 Docker Compose format, to support IPv6.
-	tmpl, err := template.New("docker-compose").Funcs(template.FuncMap{
-		"misbehaviorsToString": func(misbehaviors map[int64]string) string {
-			str := ""
-			for height, misbehavior := range misbehaviors {
-				// after the first behavior set, a comma must be prepended
-				if str != "" {
-					str += ","
-				}
-				heightString := strconv.Itoa(int(height))
-				str += misbehavior + "," + heightString
-			}
-			return str
-		},
-	}).Parse(`version: '2.4'
-
-networks:
-  {{ .Name }}:
-    labels:
-      e2e: true
-    driver: bridge
-{{- if .IPv6 }}
-    enable_ipv6: true
-{{- end }}
-    ipam:
-      driver: default
-      config:
-      - subnet: {{ .IP }}
-
-services:
-{{- range .Nodes }}
-  {{ .Name }}:
-    labels:
-      e2e: true
-    container_name: {{ .Name }}
-    image: tendermint/e2e-node
-{{- if eq .ABCIProtocol "builtin" }}
-    entrypoint: /usr/bin/entrypoint-builtin
-{{- end }}
-    init: true
-    ports:
-    - 26656
-    - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657
-    - 6060
-    volumes:
-    - ./{{ .Name }}:/tendermint
-    networks:
-      {{ $.Name }}:
-        ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .IP }}
-
-{{end}}`)
-	if err != nil {
-		return nil, err
-	}
-	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, testnet)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
 }
 
 // MakeGenesis generates a genesis document.
@@ -208,7 +139,7 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 			Power:   power,
 		})
 	}
-	// The validator set will be sorted internally by Tendermint ranked by power,
+	// The validator set will be sorted internally by CometBFT ranked by power,
 	// but we sort it here as well so that all genesis files are identical.
 	sort.Slice(genesis.Validators, func(i, j int) bool {
 		return strings.Compare(genesis.Validators[i].Name, genesis.Validators[j].Name) == -1
@@ -223,7 +154,7 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	return genesis, genesis.ValidateAndComplete()
 }
 
-// MakeConfig generates a Tendermint config for a node.
+// MakeConfig generates a CometBFT config for a node.
 func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg := config.DefaultConfig()
 	cfg.Moniker = node.Name
@@ -250,7 +181,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		return nil, fmt.Errorf("unexpected ABCI protocol setting %q", node.ABCIProtocol)
 	}
 
-	// Tendermint errors if it does not have a privval key set up, regardless of whether
+	// CometBFT errors if it does not have a privval key set up, regardless of whether
 	// it's actually needed (e.g. for remote KMS or non-validators). We set up a dummy
 	// key here by default, and use the real key for actual validators that should use
 	// the file privval.

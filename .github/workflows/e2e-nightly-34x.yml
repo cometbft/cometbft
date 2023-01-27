@@ -18,6 +18,12 @@ jobs:
         group: ['00', '01']
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # TODO(thane): Remove once we make the cometbft-db repository public.
+    env:
+      GOPRIVATE: github.com/cometbft/cometbft-db
+      # We have to supply this as an environment variable in order to pass it
+      # through to the "docker" Makefile target in ./test/e2e
+      GO_MODULES_TOKEN: ${{ secrets.GO_MODULES_TOKEN }}
     steps:
       - uses: actions/setup-go@v3
         with:
@@ -32,6 +38,10 @@ jobs:
         run: |
           echo "::set-output name=branch::`git branch --show-current`"
           echo "::set-output name=commit::`git rev-parse HEAD`"
+
+      # TODO(thane): Remove once we make the cometbft-db repository public.
+      - run: git config --global url.https://${{ secrets.GO_MODULES_TOKEN }}@github.com/.insteadOf https://github.com/
+
 
       - name: Build
         working-directory: test/e2e
@@ -57,7 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack on failure
-        uses: slackapi/slack-github-action@v1.22.0
+        uses: slackapi/slack-github-action@v1.23.0
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
@@ -84,7 +94,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack on success
-        uses: slackapi/slack-github-action@v1.22.0
+        uses: slackapi/slack-github-action@v1.23.0
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

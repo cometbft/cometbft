@@ -5,6 +5,7 @@ on:
     push:
       branches:
         - main
+        - v0.37.x
 
 jobs:
   check:

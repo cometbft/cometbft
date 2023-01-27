@@ -10,13 +10,13 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	cfg "github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/libs/bytes"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/privval"
-	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/libs/bytes"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/privval"
+	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 var (
@@ -76,10 +76,10 @@ func init() {
 		"randomize the moniker for each generated node")
 }
 
-// TestnetFilesCmd allows initialisation of files for a Tendermint testnet.
+// TestnetFilesCmd allows initialisation of files for a CometBFT testnet.
 var TestnetFilesCmd = &cobra.Command{
 	Use:   "testnet",
-	Short: "Initialize files for a Tendermint testnet",
+	Short: "Initialize files for a CometBFT testnet",
 	Long: `testnet will create "v" + "n" number of directories and populate each with
 necessary files (private validator, genesis, config, etc.).
 
@@ -89,7 +89,7 @@ Optionally, it will fill in persistent_peers list in config file using either ho
 
 Example:
 
-	tendermint testnet --v 4 --o ./output --populate-persistent-peers --starting-ip-address 192.168.10.2
+	cometbft testnet --v 4 --o ./output --populate-persistent-peers --starting-ip-address 192.168.10.2
 	`,
 	RunE: testnetFiles,
 }
@@ -179,9 +179,9 @@ func testnetFiles(cmd *cobra.Command, args []string) error {
 
 	// Generate genesis doc from generated validators
 	genDoc := &types.GenesisDoc{
-		ChainID:         "chain-" + tmrand.Str(6),
+		ChainID:         "chain-" + cmtrand.Str(6),
 		ConsensusParams: types.DefaultConsensusParams(),
-		GenesisTime:     tmtime.Now(),
+		GenesisTime:     cmttime.Now(),
 		InitialHeight:   initialHeight,
 		Validators:      genVals,
 	}
@@ -274,5 +274,5 @@ func moniker(i int) string {
 }
 
 func randomMoniker() string {
-	return bytes.HexBytes(tmrand.Bytes(8)).String()
+	return bytes.HexBytes(cmtrand.Bytes(8)).String()
 }

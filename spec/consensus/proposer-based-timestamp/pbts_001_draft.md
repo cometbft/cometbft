@@ -4,7 +4,7 @@
 
 ### Description
 
-In Tendermint consensus, the first version of how time is computed and stored in a block works as follows:
+In CometBFT, the first version of how time is computed and stored in a block works as follows:
 
 - validators send their current local time as part of `precommit` messages
 - upon collecting the `precommit` messages that the proposer uses to build a commit to be put in the next block, the proposer computes the `time` of the next block as the median (weighted over voting power) of the times in the `precommit` messages.
@@ -255,16 +255,15 @@ This specification describes the changes needed to be done to the Tendermint con
 
 [arXiv]: https://arxiv.org/abs/1807.04938
 
-[tlatender]: https://github.com/tendermint/spec/blob/master/rust-spec/tendermint-accountability/README.md
+[tlatender]: ../../light-client/accountability/README.md
 
-[bfttime]: https://github.com/tendermint/spec/blob/439a5bcacb5ef6ef1118566d7b0cd68fff3553d4/spec/consensus/bft-time.md
+[bfttime]: ../bft-time.md
 
-[lcspec]: https://github.com/tendermint/spec/blob/439a5bcacb5ef6ef1118566d7b0cd68fff3553d4/rust-spec/lightclient/README.md
+[lcspec]: ../../light-client/README.md
 
 [algorithm]: ./pbts-algorithm_001_draft.md
 
 [sysmodel]: ./pbts-sysmodel_001_draft.md
 
-[main]: ./pbts_001_draft.md
 
 [proposertla]: ./tla/TendermintPBT_001_draft.tla

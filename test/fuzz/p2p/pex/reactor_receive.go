@@ -3,13 +3,13 @@ package pex
 import (
 	"net"
 
-	"github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/libs/service"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/p2p/pex"
-	"github.com/tendermint/tendermint/version"
+	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/pex"
+	"github.com/cometbft/cometbft/version"
 )
 
 var (
@@ -84,3 +84,5 @@ func (fp *fuzzPeer) Send(byte, []byte) bool            { return true }
 func (fp *fuzzPeer) TrySend(byte, []byte) bool         { return true }
 func (fp *fuzzPeer) Set(key string, value interface{}) { fp.m[key] = value }
 func (fp *fuzzPeer) Get(key string) interface{}        { return fp.m[key] }
+func (fp *fuzzPeer) SetRemovalFailed()                 {}
+func (fp *fuzzPeer) GetRemovalFailed() bool            { return false }

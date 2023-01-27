@@ -11,18 +11,18 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	cfg "github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/libs/log"
-	mpmocks "github.com/tendermint/tendermint/mempool/mocks"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/proxy"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/store"
-	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	abci "github.com/cometbft/cometbft/abci/types"
+	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/libs/log"
+	mpmocks "github.com/cometbft/cometbft/mempool/mocks"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/proxy"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 var config *cfg.Config
@@ -41,7 +41,7 @@ func randGenesisDoc(numValidators int, randPower bool, minPower int64) (*types.G
 	sort.Sort(types.PrivValidatorsByAddress(privValidators))
 
 	return &types.GenesisDoc{
-		GenesisTime: tmtime.Now(),
+		GenesisTime: cmttime.Now(),
 		ChainID:     config.ChainID(),
 		Validators:  validators,
 	}, privValidators
@@ -57,7 +57,8 @@ func newReactor(
 	logger log.Logger,
 	genDoc *types.GenesisDoc,
 	privVals []types.PrivValidator,
-	maxBlockHeight int64) ReactorPair {
+	maxBlockHeight int64,
+) ReactorPair {
 	if len(privVals) != 1 {
 		panic("only support one validator")
 	}
@@ -165,7 +166,6 @@ func TestNoBlockResponse(t *testing.T) {
 	p2p.MakeConnectedSwitches(config.P2P, 2, func(i int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("BLOCKCHAIN", reactorPairs[i].reactor)
 		return s
-
 	}, p2p.Connect2Switches)
 
 	defer func() {
@@ -240,7 +240,6 @@ func TestBadBlockStopsPeer(t *testing.T) {
 	switches := p2p.MakeConnectedSwitches(config.P2P, 4, func(i int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("BLOCKCHAIN", reactorPairs[i].reactor)
 		return s
-
 	}, p2p.Connect2Switches)
 
 	defer func() {
@@ -279,7 +278,6 @@ func TestBadBlockStopsPeer(t *testing.T) {
 	switches = append(switches, p2p.MakeConnectedSwitches(config.P2P, 1, func(i int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("BLOCKCHAIN", reactorPairs[len(reactorPairs)-1].reactor)
 		return s
-
 	}, p2p.Connect2Switches)...)
 
 	for i := 0; i < len(reactorPairs)-1; i++ {

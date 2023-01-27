@@ -18,11 +18,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/log"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
-	"github.com/tendermint/tendermint/p2p/conn"
+	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/p2p/conn"
 )
 
 var (
@@ -44,7 +44,7 @@ type PeerMessage struct {
 type TestReactor struct {
 	BaseReactor
 
-	mtx          tmsync.Mutex
+	mtx          cmtsync.Mutex
 	channels     []*conn.ChannelDescriptor
 	logMessages  bool
 	msgsCounter  int
@@ -835,4 +835,17 @@ func BenchmarkSwitchBroadcast(b *testing.B) {
 	}
 
 	b.Logf("success: %v, failure: %v", numSuccess, numFailure)
+}
+
+func TestSwitchRemovalErr(t *testing.T) {
+
+	sw1, sw2 := MakeSwitchPair(t, func(i int, sw *Switch) *Switch {
+		return initSwitchFunc(i, sw)
+	})
+	assert.Equal(t, len(sw1.Peers().List()), 1)
+	p := sw1.Peers().List()[0]
+
+	sw2.StopPeerForError(p, fmt.Errorf("peer should error"))
+
+	assert.Equal(t, sw2.peers.Add(p).Error(), ErrPeerRemoval{}.Error())
 }

@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/tendermint/tendermint/libs/log"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 var (
@@ -21,10 +21,10 @@ var (
 )
 
 // DebugCmd defines the root command containing subcommands that assist in
-// debugging running Tendermint processes.
+// debugging running CometBFT processes.
 var DebugCmd = &cobra.Command{
 	Use:   "debug",
-	Short: "A utility to kill or watch a Tendermint process while aggregating debugging data",
+	Short: "A utility to kill or watch a CometBFT process while aggregating debugging data",
 }
 
 func init() {
@@ -33,7 +33,7 @@ func init() {
 		&nodeRPCAddr,
 		flagNodeRPCAddr,
 		"tcp://localhost:26657",
-		"the Tendermint node's RPC address (<host>:<port>)",
+		"the CometBFT node's RPC address (<host>:<port>)",
 	)
 
 	DebugCmd.AddCommand(killCmd)

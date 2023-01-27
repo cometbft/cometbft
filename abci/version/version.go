@@ -1,9 +1,9 @@
 package version
 
 import (
-	"github.com/tendermint/tendermint/version"
+	"github.com/cometbft/cometbft/version"
 )
 
 // TODO: eliminate this after some version refactor
 
-const Version = version.ABCIVersion
+const Version = version.ABCISemVer

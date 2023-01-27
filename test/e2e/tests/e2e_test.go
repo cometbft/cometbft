@@ -9,10 +9,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
-	rpctypes "github.com/tendermint/tendermint/rpc/core/types"
-	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
-	"github.com/tendermint/tendermint/types"
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/types"
 )
 
 func init() {
@@ -66,23 +66,27 @@ func testNode(t *testing.T, testFunc func(*testing.T, e2e.Node)) {
 func loadTestnet(t *testing.T) e2e.Testnet {
 	t.Helper()
 
-	manifest := os.Getenv("E2E_MANIFEST")
-	if manifest == "" {
+	manifestFile := os.Getenv("E2E_MANIFEST")
+	if manifestFile == "" {
 		t.Skip("E2E_MANIFEST not set, not an end-to-end test run")
 	}
-	if !filepath.IsAbs(manifest) {
-		manifest = filepath.Join("..", manifest)
+	if !filepath.IsAbs(manifestFile) {
+		manifestFile = filepath.Join("..", manifestFile)
 	}
 
 	testnetCacheMtx.Lock()
 	defer testnetCacheMtx.Unlock()
-	if testnet, ok := testnetCache[manifest]; ok {
+	if testnet, ok := testnetCache[manifestFile]; ok {
 		return testnet
 	}
-
-	testnet, err := e2e.LoadTestnet(manifest)
+	m, err := e2e.LoadManifest(manifestFile)
 	require.NoError(t, err)
-	testnetCache[manifest] = *testnet
+	ifd, err := e2e.NewDockerInfrastructureData(m)
+	require.NoError(t, err)
+
+	testnet, err := e2e.LoadTestnet(m, manifestFile, ifd)
+	require.NoError(t, err)
+	testnetCache[manifestFile] = *testnet
 	return *testnet
 }
 

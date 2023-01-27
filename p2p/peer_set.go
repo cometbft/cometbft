@@ -3,7 +3,7 @@ package p2p
 import (
 	"net"
 
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 // IPeerSet has a (immutable) subset of the methods of PeerSet.
@@ -20,7 +20,7 @@ type IPeerSet interface {
 // PeerSet is a special structure for keeping a table of peers.
 // Iteration over the peers is super fast and thread-safe.
 type PeerSet struct {
-	mtx    tmsync.Mutex
+	mtx    cmtsync.Mutex
 	lookup map[ID]*peerSetItem
 	list   []Peer
 }
@@ -46,6 +46,9 @@ func (ps *PeerSet) Add(peer Peer) error {
 
 	if ps.lookup[peer.ID()] != nil {
 		return ErrSwitchDuplicatePeerID{peer.ID()}
+	}
+	if peer.GetRemovalFailed() {
+		return ErrPeerRemoval{}
 	}
 
 	index := len(ps.list)
@@ -107,6 +110,12 @@ func (ps *PeerSet) Remove(peer Peer) bool {
 
 	item := ps.lookup[peer.ID()]
 	if item == nil {
+		// Removing the peer has failed so we set a flag to mark that a removal was attempted.
+		// This can happen when the peer add routine from the switch is running in
+		// parallel to the receive routine of MConn.
+		// There is an error within MConn but the switch has not actually added the peer to the peer set yet.
+		// Setting this flag will prevent a peer from being added to a node's peer set afterwards.
+		peer.SetRemovalFailed()
 		return false
 	}
 

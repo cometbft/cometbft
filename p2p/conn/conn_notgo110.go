@@ -15,7 +15,7 @@ import (
 // https://github.com/tendermint/tendermint/issues/851
 // so for go versions < Go1.10 use our custom net.Conn creator
 // that doesn't return an `Unimplemented error` for net.Conn.
-// Before https://github.com/tendermint/tendermint/commit/49faa79bdce5663894b3febbf4955fb1d172df04
+// Before https://github.com/cometbft/cometbft/commit/49faa79bdce5663894b3febbf4955fb1d172df04
 // we hadn't cared about errors from SetDeadline so swallow them up anyways.
 type pipe struct {
 	net.Conn

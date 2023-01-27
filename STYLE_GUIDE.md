@@ -76,13 +76,13 @@ Sometimes it's necessary to rename libraries to avoid naming collisions or ambig
 * Use [goimports](https://godoc.org/golang.org/x/tools/cmd/goimports)
 * Separate imports into blocks - one for the standard lib, one for external libs and one for application libs.
 * Here are some common library labels for consistency:
-    * dbm "github.com/tendermint/tm-db"
-    * tmcmd "github.com/tendermint/tendermint/cmd/tendermint/commands"
-    * tmcfg "github.com/tendermint/tendermint/config/tendermint"
-    * tmtypes "github.com/tendermint/tendermint/types"
+    * dbm "github.com/cometbft/cometbft-db"
+    * cmtcmd "github.com/tendermint/tendermint/cmd/tendermint/commands"
+    * cmtcfg "github.com/tendermint/tendermint/config/tendermint"
+    * cmttypes "github.com/tendermint/tendermint/types"
 * Never use anonymous imports (the `.`), for example, `tmlibs/common` or anything else.
-* When importing a pkg from the `tendermint/libs` directory, prefix the pkg alias with tm.
-    * tmbits "github.com/tendermint/tendermint/libs/bits"
+* When importing a pkg from the `tendermint/libs` directory, prefix the pkg alias with cmt.
+    * cmtbits "github.com/tendermint/tendermint/libs/bits"
 * tip: Use the `_` library import to import a library for initialization effects (side effects)
 
 ## Dependencies
@@ -98,7 +98,7 @@ Sometimes it's necessary to rename libraries to avoid naming collisions or ambig
     * Make use of table driven testing where possible and not-cumbersome
         * [Inspiration](https://dave.cheney.net/2013/06/09/writing-table-driven-tests-in-go)
     * Make use of [assert](https://godoc.org/github.com/stretchr/testify/assert) and [require](https://godoc.org/github.com/stretchr/testify/require)
-* When using mocks, it is recommended to use Testify [mock] (<https://pkg.go.dev/github.com/stretchr/testify/mock>
+* When using mocks, it is recommended to use Testify [mock](<https://pkg.go.dev/github.com/stretchr/testify/mock>
  ) along with [Mockery](https://github.com/vektra/mockery) for autogeneration
 
 ## Errors

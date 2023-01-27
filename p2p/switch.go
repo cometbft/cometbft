@@ -6,12 +6,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/libs/cmap"
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/libs/service"
-	"github.com/tendermint/tendermint/p2p/conn"
+	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/libs/cmap"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/p2p/conn"
 )
 
 const (
@@ -370,6 +370,10 @@ func (sw *Switch) stopAndRemovePeer(peer Peer, reason interface{}) {
 	// https://github.com/tendermint/tendermint/issues/3338
 	if sw.peers.Remove(peer) {
 		sw.metrics.Peers.Add(float64(-1))
+	} else {
+		// Removal of the peer has failed. The function above sets a flag within the peer to mark this.
+		// We keep this message here as information to the developer.
+		sw.Logger.Debug("error on peer removal", ",", "peer", peer.ID())
 	}
 }
 
@@ -713,7 +717,7 @@ func (sw *Switch) addOutboundPeerWithConfig(
 	addr *NetAddress,
 	cfg *config.P2PConfig,
 ) error {
-	sw.Logger.Info("Dialing peer", "address", addr)
+	sw.Logger.Debug("Dialing peer", "address", addr)
 
 	// XXX(xla): Remove the leakage of test concerns in implementation.
 	if cfg.TestDialFail {
@@ -824,6 +828,12 @@ func (sw *Switch) addPeer(p Peer) error {
 	// so that if Receive errors, we will find the peer and remove it.
 	// Add should not err since we already checked peers.Has().
 	if err := sw.peers.Add(p); err != nil {
+		switch err.(type) {
+		case ErrPeerRemoval:
+			sw.Logger.Error("Error starting peer ",
+				" err ", "Peer has already errored and removal was attempted.",
+				"peer", p.ID())
+		}
 		return err
 	}
 	sw.metrics.Peers.Add(float64(1))
@@ -833,7 +843,7 @@ func (sw *Switch) addPeer(p Peer) error {
 		reactor.AddPeer(p)
 	}
 
-	sw.Logger.Info("Added peer", "peer", p)
+	sw.Logger.Debug("Added peer", "peer", p)
 
 	return nil
 }

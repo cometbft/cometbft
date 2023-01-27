@@ -5,11 +5,11 @@ import (
 	"net"
 	"time"
 
-	"github.com/tendermint/tendermint/libs/cmap"
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/libs/service"
+	"github.com/cometbft/cometbft/libs/cmap"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/service"
 
-	tmconn "github.com/tendermint/tendermint/p2p/conn"
+	cmtconn "github.com/cometbft/cometbft/p2p/conn"
 )
 
 //go:generate ../scripts/mockery_generate.sh Peer
@@ -31,7 +31,7 @@ type Peer interface {
 	CloseConn() error // close original connection
 
 	NodeInfo() NodeInfo // peer's info
-	Status() tmconn.ConnectionStatus
+	Status() cmtconn.ConnectionStatus
 	SocketAddr() *NetAddress // actual address of the socket
 
 	Send(byte, []byte) bool
@@ -39,6 +39,9 @@ type Peer interface {
 
 	Set(string, interface{})
 	Get(string) interface{}
+
+	SetRemovalFailed()
+	GetRemovalFailed() bool
 }
 
 //----------------------------------------------------------
@@ -72,7 +75,7 @@ func newPeerConn(
 // ID only exists for SecretConnection.
 // NOTE: Will panic if conn is not *SecretConnection.
 func (pc peerConn) ID() ID {
-	return PubKeyToID(pc.conn.(*tmconn.SecretConnection).RemotePubKey())
+	return PubKeyToID(pc.conn.(*cmtconn.SecretConnection).RemotePubKey())
 }
 
 // Return the IP from the connection RemoteAddr
@@ -104,7 +107,7 @@ type peer struct {
 
 	// raw peerConn and the multiplex connection
 	peerConn
-	mconn *tmconn.MConnection
+	mconn *cmtconn.MConnection
 
 	// peer's node info and the channel it knows about
 	// channels = nodeInfo.Channels
@@ -117,16 +120,19 @@ type peer struct {
 
 	metrics       *Metrics
 	metricsTicker *time.Ticker
+
+	// When removal of a peer fails, we set this flag
+	removalAttemptFailed bool
 }
 
 type PeerOption func(*peer)
 
 func newPeer(
 	pc peerConn,
-	mConfig tmconn.MConnConfig,
+	mConfig cmtconn.MConnConfig,
 	nodeInfo NodeInfo,
 	reactorsByCh map[byte]Reactor,
-	chDescs []*tmconn.ChannelDescriptor,
+	chDescs []*cmtconn.ChannelDescriptor,
 	onPeerError func(Peer, interface{}),
 	options ...PeerOption,
 ) *peer {
@@ -237,7 +243,7 @@ func (p *peer) SocketAddr() *NetAddress {
 }
 
 // Status returns the peer's ConnectionStatus.
-func (p *peer) Status() tmconn.ConnectionStatus {
+func (p *peer) Status() cmtconn.ConnectionStatus {
 	return p.mconn.Status()
 }
 
@@ -316,6 +322,14 @@ func (p *peer) CloseConn() error {
 	return p.peerConn.conn.Close()
 }
 
+func (p *peer) SetRemovalFailed() {
+	p.removalAttemptFailed = true
+}
+
+func (p *peer) GetRemovalFailed() bool {
+	return p.removalAttemptFailed
+}
+
 //---------------------------------------------------
 // methods only used for testing
 // TODO: can we remove these?
@@ -370,10 +384,10 @@ func createMConnection(
 	conn net.Conn,
 	p *peer,
 	reactorsByCh map[byte]Reactor,
-	chDescs []*tmconn.ChannelDescriptor,
+	chDescs []*cmtconn.ChannelDescriptor,
 	onPeerError func(Peer, interface{}),
-	config tmconn.MConnConfig,
-) *tmconn.MConnection {
+	config cmtconn.MConnConfig,
+) *cmtconn.MConnection {
 
 	onReceive := func(chID byte, msgBytes []byte) {
 		reactor := reactorsByCh[chID]
@@ -394,7 +408,7 @@ func createMConnection(
 		onPeerError(p, r)
 	}
 
-	return tmconn.NewMConnectionWithConfig(
+	return cmtconn.NewMConnectionWithConfig(
 		conn,
 		chDescs,
 		onReceive,

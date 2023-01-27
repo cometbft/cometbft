@@ -6,7 +6,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/tendermint/tendermint/test/e2e/app"
+	"github.com/cometbft/cometbft/test/e2e/app"
 )
 
 // Config is the application configuration.
@@ -23,7 +23,6 @@ type Config struct {
 	PrivValServer    string                      `toml:"privval_server"`
 	PrivValKey       string                      `toml:"privval_key"`
 	PrivValState     string                      `toml:"privval_state"`
-	Misbehaviors     map[string]string           `toml:"misbehaviors"`
 	KeyType          string                      `toml:"key_type"`
 }
 

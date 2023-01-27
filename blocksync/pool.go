@@ -7,12 +7,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	flow "github.com/tendermint/tendermint/libs/flowrate"
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/libs/service"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/types"
+	flow "github.com/cometbft/cometbft/libs/flowrate"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/types"
 )
 
 /*
@@ -32,6 +32,7 @@ const (
 	maxTotalRequesters        = 600
 	maxPendingRequests        = maxTotalRequesters
 	maxPendingRequestsPerPeer = 20
+	requestRetrySeconds       = 30
 
 	// Minimum recv rate to ensure we're receiving blocks from a peer fast
 	// enough. If a peer is not sending us data at at least that rate, we
@@ -63,7 +64,7 @@ type BlockPool struct {
 	service.BaseService
 	startTime time.Time
 
-	mtx tmsync.Mutex
+	mtx cmtsync.Mutex
 	// block requests
 	requesters map[int64]*bpRequester
 	height     int64 // the lowest key in requesters.
@@ -512,7 +513,7 @@ type bpRequester struct {
 	gotBlockCh chan struct{}
 	redoCh     chan p2p.ID // redo may send multitime, add peerId to identify repeat
 
-	mtx    tmsync.Mutex
+	mtx    cmtsync.Mutex
 	peerID p2p.ID
 	block  *types.Block
 }
@@ -602,7 +603,7 @@ OUTER_LOOP:
 			}
 			peer = bpr.pool.pickIncrAvailablePeer(bpr.height)
 			if peer == nil {
-				// log.Info("No peers available", "height", height)
+				bpr.Logger.Debug("No peers currently available; will retry shortly", "height", bpr.height)
 				time.Sleep(requestIntervalMS * time.Millisecond)
 				continue PICK_PEER_LOOP
 			}
@@ -612,6 +613,7 @@ OUTER_LOOP:
 		bpr.peerID = peer.id
 		bpr.mtx.Unlock()
 
+		to := time.NewTimer(requestRetrySeconds * time.Second)
 		// Send request and wait.
 		bpr.pool.sendRequest(bpr.height, peer.id)
 	WAIT_LOOP:
@@ -624,6 +626,11 @@ OUTER_LOOP:
 				return
 			case <-bpr.Quit():
 				return
+			case <-to.C:
+				bpr.Logger.Debug("Retrying block request after timeout", "height", bpr.height, "peer", bpr.peerID)
+				// Simulate a redo
+				bpr.reset()
+				continue OUTER_LOOP
 			case peerID := <-bpr.redoCh:
 				if peerID == bpr.peerID {
 					bpr.reset()

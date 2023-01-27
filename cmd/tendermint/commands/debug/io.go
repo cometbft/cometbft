@@ -37,7 +37,7 @@ func zipDir(src, dest string) error {
 			return err
 		}
 
-		// Each execution of this utility on a Tendermint process will result in a
+		// Each execution of this utility on a CometBFT process will result in a
 		// unique file.
 		header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, src))
 

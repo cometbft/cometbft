@@ -3,12 +3,13 @@ on:
   push:
     branches:
       - main
+      - v0.37.x
     paths:
       - "**.md"
       - "**.yml"
       - "**.yaml"
   pull_request:
-    branches: [main]
+    branches: [v0.37.x]
     paths:
       - "**.md"
       - "**.yml"

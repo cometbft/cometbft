@@ -112,6 +112,10 @@ func NewCLI() *CLI {
 				return err
 			}
 
+			if err := UpdateVersion(cli.testnet, cli.infp); err != nil {
+				return err
+			}
+
 			if lastMisbehavior := cli.testnet.LastMisbehaviorHeight(); lastMisbehavior > 0 {
 				// wait for misbehaviors before starting perturbations. We do a separate
 				// wait for another 5 blocks, since the last misbehavior height may be
@@ -181,7 +185,13 @@ func NewCLI() *CLI {
 			if err != nil {
 				return err
 			}
-			return Start(cli.testnet)
+			if err := Start(cli.testnet); err != nil {
+				return err
+			}
+			if err := UpdateVersion(cli.testnet, cli.infp); err != nil {
+				return err
+			}
+			return err
 		},
 	})
 

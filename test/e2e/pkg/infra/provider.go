@@ -7,6 +7,10 @@ type Provider interface {
 	// Setup generates any necessary configuration for the infrastructure
 	// provider during testnet setup.
 	Setup() error
+
+	// UpdateVersion updates the infrastructure provider's configuration
+	// for each node to the one specified
+	UpdateVersion() error
 }
 
 // NoopProvider implements the provider interface by performing noops for every
@@ -15,6 +19,7 @@ type Provider interface {
 type NoopProvider struct {
 }
 
-func (NoopProvider) Setup() error { return nil }
+func (NoopProvider) Setup() error         { return nil }
+func (NoopProvider) UpdateVersion() error { return nil }
 
 var _ Provider = NoopProvider{}

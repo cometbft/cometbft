@@ -3,10 +3,10 @@ package mock
 import (
 	"net"
 
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/service"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/p2p/conn"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/conn"
 )
 
 type Peer struct {
@@ -70,3 +70,5 @@ func (mp *Peer) RemoteIP() net.IP            { return mp.ip }
 func (mp *Peer) SocketAddr() *p2p.NetAddress { return mp.addr }
 func (mp *Peer) RemoteAddr() net.Addr        { return &net.TCPAddr{IP: mp.ip, Port: 8800} }
 func (mp *Peer) CloseConn() error            { return nil }
+func (mp *Peer) SetRemovalFailed()           {}
+func (mp *Peer) GetRemovalFailed() bool      { return false }

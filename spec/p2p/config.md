@@ -1,7 +1,7 @@
 # P2P Config
 
 Here we describe configuration options around the Peer Exchange.
-These can be set using flags or via the `$TMHOME/config/config.toml` file.
+These can be set using flags or via the `$CMTHOME/config/config.toml` file.
 
 ## Seed Mode
 

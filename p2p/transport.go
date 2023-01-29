@@ -8,11 +8,11 @@ import (
 
 	"golang.org/x/net/netutil"
 
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/libs/protoio"
+	"github.com/cometbft/cometbft/p2p/conn"
+	cmtp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
 	"github.com/cosmos/gogoproto/proto"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/libs/protoio"
-	"github.com/tendermint/tendermint/p2p/conn"
-	tmp2p "github.com/tendermint/tendermint/proto/tendermint/p2p"
 )
 
 const (
@@ -544,7 +544,7 @@ func handshake(
 	var (
 		errc = make(chan error, 2)
 
-		pbpeerNodeInfo tmp2p.DefaultNodeInfo
+		pbpeerNodeInfo cmtp2p.DefaultNodeInfo
 		peerNodeInfo   DefaultNodeInfo
 		ourNodeInfo    = nodeInfo.(DefaultNodeInfo)
 	)

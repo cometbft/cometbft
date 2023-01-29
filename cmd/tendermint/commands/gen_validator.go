@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	"github.com/tendermint/tendermint/privval"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	"github.com/cometbft/cometbft/privval"
 )
 
 // GenValidatorCmd allows the generation of a keypair for a
@@ -21,7 +21,7 @@ var GenValidatorCmd = &cobra.Command{
 
 func genValidator(cmd *cobra.Command, args []string) {
 	pv := privval.GenFilePV("", "")
-	jsbz, err := tmjson.Marshal(pv)
+	jsbz, err := cmtjson.Marshal(pv)
 	if err != nil {
 		panic(err)
 	}

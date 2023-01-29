@@ -10,10 +10,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/tendermint/tendermint/libs/log"
-	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
-	"github.com/tendermint/tendermint/test/e2e/pkg/infra"
-	"github.com/tendermint/tendermint/test/e2e/pkg/infra/docker"
+	"github.com/cometbft/cometbft/libs/log"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
 )
 
 const randomSeed = 2308084734268
@@ -105,7 +105,7 @@ func NewCLI() *CLI {
 			ctx, loadCancel := context.WithCancel(context.Background())
 			defer loadCancel()
 			go func() {
-				err := Load(ctx, cli.testnet, 1)
+				err := Load(ctx, cli.testnet)
 				if err != nil {
 					logger.Error(fmt.Sprintf("Transaction load failed: %v", err.Error()))
 				}
@@ -216,20 +216,10 @@ func NewCLI() *CLI {
 	})
 
 	cli.root.AddCommand(&cobra.Command{
-		Use:   "load [multiplier]",
-		Args:  cobra.MaximumNArgs(1),
+		Use:   "load",
 		Short: "Generates transaction load until the command is canceled",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			m := 1
-
-			if len(args) == 1 {
-				m, err = strconv.Atoi(args[0])
-				if err != nil {
-					return err
-				}
-			}
-
-			return Load(context.Background(), cli.testnet, m)
+			return Load(context.Background(), cli.testnet)
 		},
 	})
 
@@ -298,7 +288,7 @@ func NewCLI() *CLI {
 	Max Block Interval
 over a 100 block sampling period.
 		
-Does not run any perbutations.
+Does not run any perturbations.
 		`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := Cleanup(cli.testnet); err != nil {
@@ -312,9 +302,9 @@ Does not run any perbutations.
 			ctx, loadCancel := context.WithCancel(context.Background())
 			defer loadCancel()
 			go func() {
-				err := Load(ctx, cli.testnet, 1)
+				err := Load(ctx, cli.testnet)
 				if err != nil {
-					logger.Error(fmt.Sprintf("Transaction load failed: %v", err.Error()))
+					logger.Error(fmt.Sprintf("Transaction load errored: %v", err.Error()))
 				}
 				chLoadResult <- err
 			}()

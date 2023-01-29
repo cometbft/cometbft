@@ -5,9 +5,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	tmos "github.com/tendermint/tendermint/libs/os"
-	"github.com/tendermint/tendermint/privval"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	cmtos "github.com/cometbft/cometbft/libs/os"
+	"github.com/cometbft/cometbft/privval"
 )
 
 // ShowValidatorCmd adds capabilities for showing the validator info.
@@ -21,7 +21,7 @@ var ShowValidatorCmd = &cobra.Command{
 
 func showValidator(cmd *cobra.Command, args []string) error {
 	keyFilePath := config.PrivValidatorKeyFile()
-	if !tmos.FileExists(keyFilePath) {
+	if !cmtos.FileExists(keyFilePath) {
 		return fmt.Errorf("private validator file %s does not exist", keyFilePath)
 	}
 
@@ -32,7 +32,7 @@ func showValidator(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("can't get pubkey: %w", err)
 	}
 
-	bz, err := tmjson.Marshal(pubKey)
+	bz, err := cmtjson.Marshal(pubKey)
 	if err != nil {
 		return fmt.Errorf("failed to marshal private validator pubkey: %w", err)
 	}

@@ -40,7 +40,7 @@ func TestSubscribe(t *testing.T) {
 
 	err = s.Publish(ctx, "Ka-Zar")
 	require.NoError(t, err)
-	assertReceive(t, "Ka-Zar", subscription.Out())
+	assertReceiveEnvelope(t, "Ka-Zar", subscription.Out())
 
 	published := make(chan struct{})
 	go func() {
@@ -58,7 +58,7 @@ func TestSubscribe(t *testing.T) {
 
 	select {
 	case <-published:
-		assertReceive(t, "Quicksilver", subscription.Out())
+		assertReceiveEnvelope(t, "Quicksilver", subscription.Out())
 		assertCancelled(t, subscription, pubsub.ErrOutOfCapacity)
 	case <-time.After(3 * time.Second):
 		t.Fatal("Expected Publish(Asylum) not to block")
@@ -89,7 +89,7 @@ func TestSubscribeWithCapacity(t *testing.T) {
 	require.NoError(t, err)
 	err = s.Publish(ctx, "Aggamon")
 	require.NoError(t, err)
-	assertReceive(t, "Aggamon", subscription.Out())
+	assertReceiveEnvelope(t, "Aggamon", subscription.Out())
 }
 
 func TestSubscribeUnbuffered(t *testing.T) {
@@ -122,8 +122,8 @@ func TestSubscribeUnbuffered(t *testing.T) {
 	case <-published:
 		t.Fatal("Expected Publish(Darkhawk) to block")
 	case <-time.After(3 * time.Second):
-		assertReceive(t, "Ultron", subscription.Out())
-		assertReceive(t, "Darkhawk", subscription.Out())
+		assertReceiveEnvelope(t, "Ultron", subscription.Out())
+		assertReceiveEnvelope(t, "Darkhawk", subscription.Out())
 	}
 }
 
@@ -165,7 +165,7 @@ func TestDifferentClients(t *testing.T) {
 	require.NoError(t, err)
 	err = s.PublishWithEvents(ctx, "Iceman", map[string][]string{"tm.events.type": {"NewBlock"}})
 	require.NoError(t, err)
-	assertReceive(t, "Iceman", subscription1.Out())
+	assertReceiveEnvelope(t, "Iceman", subscription1.Out())
 
 	subscription2, err := s.Subscribe(
 		ctx,
@@ -179,8 +179,8 @@ func TestDifferentClients(t *testing.T) {
 		map[string][]string{"tm.events.type": {"NewBlock"}, "abci.account.name": {"Igor"}},
 	)
 	require.NoError(t, err)
-	assertReceive(t, "Ultimo", subscription1.Out())
-	assertReceive(t, "Ultimo", subscription2.Out())
+	assertReceiveEnvelope(t, "Ultimo", subscription1.Out())
+	assertReceiveEnvelope(t, "Ultimo", subscription2.Out())
 
 	subscription3, err := s.Subscribe(
 		ctx,
@@ -241,7 +241,7 @@ func TestSubscribeDuplicateKeys(t *testing.T) {
 		require.NoError(t, err)
 
 		if tc.expected != nil {
-			assertReceive(t, tc.expected, sub.Out())
+			assertReceiveEnvelope(t, tc.expected, sub.Out())
 		} else {
 			require.Zero(t, len(sub.Out()))
 		}
@@ -266,7 +266,7 @@ func TestClientSubscribesTwice(t *testing.T) {
 	require.NoError(t, err)
 	err = s.PublishWithEvents(ctx, "Goblin Queen", map[string][]string{"tm.events.type": {"NewBlock"}})
 	require.NoError(t, err)
-	assertReceive(t, "Goblin Queen", subscription1.Out())
+	assertReceiveEnvelope(t, "Goblin Queen", subscription1.Out())
 
 	subscription2, err := s.Subscribe(ctx, clientID, q)
 	require.Error(t, err)
@@ -274,7 +274,7 @@ func TestClientSubscribesTwice(t *testing.T) {
 
 	err = s.PublishWithEvents(ctx, "Spider-Man", map[string][]string{"tm.events.type": {"NewBlock"}})
 	require.NoError(t, err)
-	assertReceive(t, "Spider-Man", subscription1.Out())
+	assertReceiveEnvelope(t, "Spider-Man", subscription1.Out())
 }
 
 func TestUnsubscribe(t *testing.T) {
@@ -345,7 +345,7 @@ func TestResubscribe(t *testing.T) {
 
 	err = s.Publish(ctx, "Cable")
 	require.NoError(t, err)
-	assertReceive(t, "Cable", subscription.Out())
+	assertReceiveEnvelope(t, "Cable", subscription.Out())
 }
 
 func TestUnsubscribeAll(t *testing.T) {
@@ -490,7 +490,7 @@ func benchmarkNClientsOneQuery(n int, b *testing.B) {
 
 // HELPERS
 
-func assertReceive(t *testing.T, expected interface{}, ch <-chan pubsub.Message, msgAndArgs ...interface{}) {
+func assertReceiveEnvelope(t *testing.T, expected interface{}, ch <-chan pubsub.Message, msgAndArgs ...interface{}) {
 	select {
 	case actual := <-ch:
 		assert.Equal(t, expected, actual.Data(), msgAndArgs...)

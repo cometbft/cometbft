@@ -28,5 +28,5 @@ func TestExample(t *testing.T) {
 	require.NoError(t, err)
 	err = s.PublishWithEvents(ctx, "Tombstone", map[string][]string{"abci.account.name": {"John"}})
 	require.NoError(t, err)
-	assertReceive(t, "Tombstone", subscription.Out())
+	assertReceiveEnvelope(t, "Tombstone", subscription.Out())
 }

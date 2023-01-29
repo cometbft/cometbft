@@ -44,7 +44,7 @@ func Fuzz(data []byte) int {
 	if err != nil {
 		return 0
 	}
-	pexR.Receive(p2p.Envelope{
+	pexR.ReceiveEnvelope(p2p.Envelope{
 		ChannelID: pex.PexChannel,
 		Src:       peer,
 		Message:   msg,

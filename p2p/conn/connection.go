@@ -554,7 +554,7 @@ func (c *MConnection) sendPacketMsg() bool {
 }
 
 // recvRoutine reads PacketMsgs and reconstructs the message using the channels' "recving" buffer.
-// After a whole message has been assembled, it's pushed to onReceive().
+// After a whole message has been assembled, it's pushed to onReceiveEnvelope().
 // Blocks depending on how the connection is throttled.
 // Otherwise, it never blocks.
 func (c *MConnection) recvRoutine() {

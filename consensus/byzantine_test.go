@@ -599,8 +599,8 @@ func (br *ByzantineReactor) AddPeer(peer p2p.Peer) {
 func (br *ByzantineReactor) RemovePeer(peer p2p.Peer, reason interface{}) {
 	br.reactor.RemovePeer(peer, reason)
 }
-func (br *ByzantineReactor) Receive(e p2p.Envelope) {
-	br.reactor.Receive(e)
+func (br *ByzantineReactor) ReceiveEnvelope(e p2p.Envelope) {
+	br.reactor.ReceiveEnvelope(e)
 }
 
 func (br *ByzantineReactor) InitPeer(peer p2p.Peer) p2p.Peer { return peer }

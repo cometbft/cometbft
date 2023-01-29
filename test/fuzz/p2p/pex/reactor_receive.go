@@ -10,6 +10,7 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/version"
+	"github.com/cosmos/gogoproto/proto"
 )
 
 var (
@@ -38,7 +39,17 @@ func Fuzz(data []byte) int {
 	})
 	pexR.SetSwitch(sw)
 
-	pexR.Receive(pex.PexChannel, peer, data)
+	var msg proto.Message
+	err := proto.Unmarshal(data, msg)
+	if err != nil {
+		return 0
+	}
+	pexR.Receive(p2p.Envelope{
+		ChannelID: pex.PexChannel,
+		Src:       peer,
+		Message:   msg,
+	})
+
 	return 1
 }
 
@@ -86,3 +97,5 @@ func (fp *fuzzPeer) Send(_ byte, _ []byte) bool          { return true }
 func (fp *fuzzPeer) TrySend(_ byte, _ []byte) bool       { return true }
 func (fp *fuzzPeer) Set(key string, value interface{})   { fp.m[key] = value }
 func (fp *fuzzPeer) Get(key string) interface{}          { return fp.m[key] }
+func (fp *fuzzPeer) GetRemovalFailed() bool              { return false }
+func (fp *fuzzPeer) SetRemovalFailed()                   {}

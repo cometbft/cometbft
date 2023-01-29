@@ -128,14 +128,14 @@ func TestMsgToProto(t *testing.T) {
 			false},
 		{"successful ProposalMessage", &ProposalMessage{
 			Proposal: &proposal,
-		}, &tmcons.Proposal{
+		}, &cmtcons.Proposal{
 			Proposal: *pbProposal,
 		},
 
 			false},
 		{"successful VoteMessage", &VoteMessage{
 			Vote: vote,
-		}, &tmcons.Vote{
+		}, &cmtcons.Vote{
 			Vote: pbVote,
 		},
 
@@ -168,7 +168,7 @@ func TestMsgToProto(t *testing.T) {
 		},
 
 			false},
-		{"failure", nil, &tmcons.Message{}, true},
+		{"failure", nil, &cmtcons.Message{}, true},
 	}
 	for _, tt := range testsCases {
 		tt := tt

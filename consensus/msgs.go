@@ -125,7 +125,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 
 	switch msg := p.(type) {
 	case *cmtcons.NewRoundStep:
-		rs, err := tmmath.SafeConvertUint8(int64(msg.Step))
+		rs, err := cmtmath.SafeConvertUint8(int64(msg.Step))
 		// deny message based on possible overflow
 		if err != nil {
 			return nil, fmt.Errorf("denying message due to possible overflow: %w", err)

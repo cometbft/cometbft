@@ -71,7 +71,7 @@ func (tr *TestReactor) AddPeer(peer Peer) {}
 
 func (tr *TestReactor) RemovePeer(peer Peer, reason interface{}) {}
 
-func (tr *TestReactor) ReceiveEnvelope(e Envelope) {
+func (tr *TestReactor) Receive(e Envelope) {
 	if tr.logMessages {
 		tr.mtx.Lock()
 		defer tr.mtx.Unlock()

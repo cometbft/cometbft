@@ -7,8 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cosmos/gogoproto/proto"
-
 	cstypes "github.com/cometbft/cometbft/consensus/types"
 	"github.com/cometbft/cometbft/libs/bits"
 	cmtevents "github.com/cometbft/cometbft/libs/events"
@@ -148,7 +146,7 @@ func (conR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 			Priority:            6,
 			SendQueueCapacity:   100,
 			RecvMessageCapacity: maxMsgSize,
-			MessageType:         &tmcons.Message{},
+			MessageType:         &cmtcons.Message{},
 		},
 		{
 			ID: DataChannel, // maybe split between gossiping current block and catchup stuff
@@ -157,7 +155,7 @@ func (conR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 			SendQueueCapacity:   100,
 			RecvBufferCapacity:  50 * 4096,
 			RecvMessageCapacity: maxMsgSize,
-			MessageType:         &tmcons.Message{},
+			MessageType:         &cmtcons.Message{},
 		},
 		{
 			ID:                  VoteChannel,
@@ -165,7 +163,7 @@ func (conR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 			SendQueueCapacity:   100,
 			RecvBufferCapacity:  100 * 100,
 			RecvMessageCapacity: maxMsgSize,
-			MessageType:         &tmcons.Message{},
+			MessageType:         &cmtcons.Message{},
 		},
 		{
 			ID:                  VoteSetBitsChannel,
@@ -173,7 +171,7 @@ func (conR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 			SendQueueCapacity:   2,
 			RecvBufferCapacity:  1024,
 			RecvMessageCapacity: maxMsgSize,
-			MessageType:         &tmcons.Message{},
+			MessageType:         &cmtcons.Message{},
 		},
 	}
 }
@@ -227,7 +225,7 @@ func (conR *Reactor) RemovePeer(peer p2p.Peer, reason interface{}) {
 // Peer state updates can happen in parallel, but processing of
 // proposals, block parts, and votes are ordered by the receiveRoutine
 // NOTE: blocks on consensus state for proposals, block parts, and votes
-func (conR *Reactor) ReceiveEnvelope(e p2p.Envelope) {
+func (conR *Reactor) Receive(e p2p.Envelope) {
 	if !conR.IsRunning() {
 		conR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID)
 		return
@@ -295,7 +293,7 @@ func (conR *Reactor) ReceiveEnvelope(e p2p.Envelope) {
 			default:
 				panic("Bad VoteSetBitsMessage field Type. Forgot to add a check in ValidateBasic?")
 			}
-			eMsg := &tmcons.VoteSetBits{
+			eMsg := &cmtcons.VoteSetBits{
 				Height:  msg.Height,
 				Round:   msg.Round,
 				Type:    msg.Type,
@@ -447,7 +445,7 @@ func (conR *Reactor) broadcastNewRoundStepMessage(rs *cstypes.RoundState) {
 
 func (conR *Reactor) broadcastNewValidBlockMessage(rs *cstypes.RoundState) {
 	psh := rs.ProposalBlockParts.Header()
-	csMsg := &tmcons.NewValidBlock{
+	csMsg := &cmtcons.NewValidBlock{
 		Height:             rs.Height,
 		Round:              rs.Round,
 		BlockPartSetHeader: psh.ToProto(),
@@ -462,7 +460,7 @@ func (conR *Reactor) broadcastNewValidBlockMessage(rs *cstypes.RoundState) {
 
 // Broadcasts HasVoteMessage to peers that care.
 func (conR *Reactor) broadcastHasVoteMessage(vote *types.Vote) {
-	msg := &tmcons.HasVote{
+	msg := &cmtcons.HasVote{
 		Height: vote.Height,
 		Round:  vote.Round,
 		Type:   vote.Type,
@@ -496,8 +494,8 @@ func (conR *Reactor) broadcastHasVoteMessage(vote *types.Vote) {
 	*/
 }
 
-func makeRoundStepMessage(rs *cstypes.RoundState) (nrsMsg *tmcons.NewRoundStep) {
-	nrsMsg = &tmcons.NewRoundStep{
+func makeRoundStepMessage(rs *cstypes.RoundState) (nrsMsg *cmtcons.NewRoundStep) {
+	nrsMsg = &cmtcons.NewRoundStep{
 		Height:                rs.Height,
 		Round:                 rs.Round,
 		Step:                  uint32(rs.Step),
@@ -559,7 +557,7 @@ OUTER_LOOP:
 				logger.Debug("Sending block part", "height", prs.Height, "round", prs.Round)
 				if peer.SendEnvelope(p2p.Envelope{
 					ChannelID: DataChannel,
-					Message: &tmcons.BlockPart{
+					Message: &cmtcons.BlockPart{
 						Height: rs.Height, // This tells peer that this part applies to us.
 						Round:  rs.Round,  // This tells peer that this part applies to us.
 						Part:   *parts,
@@ -613,7 +611,7 @@ OUTER_LOOP:
 				logger.Debug("Sending proposal", "height", prs.Height, "round", prs.Round)
 				if peer.SendEnvelope(p2p.Envelope{
 					ChannelID: DataChannel,
-					Message:   &tmcons.Proposal{Proposal: *rs.Proposal.ToProto()},
+					Message:   &cmtcons.Proposal{Proposal: *rs.Proposal.ToProto()},
 				}) {
 					// NOTE[ZM]: A peer might have received different proposal msg so this Proposal msg will be rejected!
 					ps.SetHasProposal(rs.Proposal)
@@ -627,7 +625,7 @@ OUTER_LOOP:
 				logger.Debug("Sending POL", "height", prs.Height, "round", prs.Round)
 				peer.SendEnvelope(p2p.Envelope{
 					ChannelID: DataChannel,
-					Message: &tmcons.ProposalPOL{
+					Message: &cmtcons.ProposalPOL{
 						Height:           rs.Height,
 						ProposalPolRound: rs.Proposal.POLRound,
 						ProposalPol:      *rs.Votes.Prevotes(rs.Proposal.POLRound).BitArray().ToProto(),
@@ -677,7 +675,7 @@ func (conR *Reactor) gossipDataForCatchup(logger log.Logger, rs *cstypes.RoundSt
 		}
 		if peer.SendEnvelope(p2p.Envelope{
 			ChannelID: DataChannel,
-			Message: &tmcons.BlockPart{
+			Message: &cmtcons.BlockPart{
 				Height: prs.Height, // Not our height, so it doesn't matter.
 				Round:  prs.Round,  // Not our height, so it doesn't matter.
 				Part:   *pp,
@@ -885,7 +883,7 @@ OUTER_LOOP:
 
 					peer.TrySendEnvelope(p2p.Envelope{
 						ChannelID: StateChannel,
-						Message: &tmcons.VoteSetMaj23{
+						Message: &cmtcons.VoteSetMaj23{
 							Height:  prs.Height,
 							Round:   prs.ProposalPOLRound,
 							Type:    cmtproto.PrevoteType,
@@ -1131,7 +1129,7 @@ func (ps *PeerState) PickSendVote(votes types.VoteSetReader) bool {
 		ps.logger.Debug("Sending vote message", "ps", ps, "vote", vote)
 		if ps.peer.SendEnvelope(p2p.Envelope{
 			ChannelID: VoteChannel,
-			Message: &tmcons.Vote{
+			Message: &cmtcons.Vote{
 				Vote: vote.ToProto(),
 			},
 		}) {

@@ -86,6 +86,7 @@ services:
     - 6060
     volumes:
     - ./{{ .Name }}:/cometbft
+    - ./{{ .Name }}:/tendermint
     networks:
       {{ $.Name }}:
         ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .IP }}

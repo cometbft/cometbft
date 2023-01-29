@@ -20,7 +20,15 @@ type Provider struct {
 // Setup generates the docker-compose file and write it to disk, erroring if
 // any of these operations fail.
 func (p *Provider) Setup() error {
-	compose, err := dockerComposeBytes(p.Testnet)
+	return p.dockerCompose(false)
+}
+
+func (p *Provider) UpdateVersion() error {
+	return p.dockerCompose(true)
+}
+
+func (p *Provider) dockerCompose(update bool) error {
+	compose, err := dockerComposeBytes(p.Testnet, update)
 	if err != nil {
 		return err
 	}
@@ -35,9 +43,16 @@ func (p *Provider) Setup() error {
 
 // dockerComposeBytes generates a Docker Compose config file for a testnet and returns the
 // file as bytes to be written out to disk.
-func dockerComposeBytes(testnet *e2e.Testnet) ([]byte, error) {
+func dockerComposeBytes(testnet *e2e.Testnet, update bool) ([]byte, error) {
 	// Must use version 2 Docker Compose format, to support IPv6.
-	tmpl, err := template.New("docker-compose").Parse(`version: '2.4'
+	tmpl, err := template.New("docker-compose").Funcs(template.FuncMap{
+		"pickVersion": func(v1, v2 string) string {
+			if update {
+				return v2
+			}
+			return v1
+		},
+	}).Parse(`version: '2.4'
 networks:
   {{ .Name }}:
     labels:
@@ -57,7 +72,7 @@ services:
     labels:
       e2e: true
     container_name: {{ .Name }}
-    image: cometbft/e2e-node:{{ .Version }}
+    image: cometbft/e2e-node:{{ pickVersion .Version $.UpgradeVersion }}
 {{- if eq .ABCIProtocol "builtin" }}
     entrypoint: /usr/bin/entrypoint-builtin
 {{- else }}{{ if eq .ABCIProtocol "builtin_unsync" }}

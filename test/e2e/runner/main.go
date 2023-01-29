@@ -116,6 +116,9 @@ func NewCLI() *CLI {
 				return err
 			}
 
+			if err := UpdateVersion(cli.testnet, cli.infp); err != nil {
+				return err
+			}
 			if err := Wait(cli.testnet, 5); err != nil { // allow some txs to go through
 				return err
 			}
@@ -186,7 +189,13 @@ func NewCLI() *CLI {
 			if err != nil {
 				return err
 			}
-			return Start(cli.testnet)
+			if err := Start(cli.testnet); err != nil {
+				return err
+			}
+			if err := UpdateVersion(cli.testnet, cli.infp); err != nil {
+				return err
+			}
+			return err
 		},
 	})
 

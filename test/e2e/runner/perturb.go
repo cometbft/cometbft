@@ -63,6 +63,27 @@ func PerturbNode(node *e2e.Node, perturbation e2e.Perturbation) (*rpctypes.Resul
 			return nil, err
 		}
 
+	case e2e.PerturbationUpgrade:
+		oldV := node.Version
+		newV := node.Testnet.UpgradeVersion
+		if oldV == newV {
+			logger.Info("perturb node", "msg",
+				log.NewLazySprintf("Skipping upgrade of node %v to version '%v'; versions are equal.",
+					node.Name, newV))
+			break
+		}
+		logger.Info("perturb node", "msg",
+			log.NewLazySprintf("Upgrading node %v from version '%v' to version '%v'...",
+				node.Name, oldV, newV))
+
+		if err := execCompose(testnet.Dir, "stop", node.Name); err != nil {
+			return nil, err
+		}
+		time.Sleep(10 * time.Second)
+		if err := execCompose(testnet.Dir, "up", "-d", node.Name+"_u"); err != nil {
+			return nil, err
+		}
+
 	default:
 		return nil, fmt.Errorf("unexpected perturbation %q", perturbation)
 	}

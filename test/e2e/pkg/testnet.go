@@ -51,6 +51,7 @@ const (
 	PerturbationKill       Perturbation = "kill"
 	PerturbationPause      Perturbation = "pause"
 	PerturbationRestart    Perturbation = "restart"
+	PerturbationUpgrade    Perturbation = "upgrade"
 )
 
 // Testnet represents a single testnet.
@@ -382,8 +383,14 @@ func (n Node) Validate(testnet Testnet) error {
 		return errors.New("snapshot_interval must be less than er equal to retain_blocks")
 	}
 
+	var upgradeFound bool
 	for _, perturbation := range n.Perturbations {
 		switch perturbation {
+		case PerturbationUpgrade:
+			if upgradeFound {
+				return fmt.Errorf("'upgrade' perturbation can appear at most once per node")
+			}
+			upgradeFound = true
 		case PerturbationDisconnect, PerturbationKill, PerturbationPause, PerturbationRestart:
 		default:
 			return fmt.Errorf("invalid perturbation %q", perturbation)

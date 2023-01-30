@@ -27,4 +27,17 @@ For more details on using CometBFT, see the respective documentation for
 
 ## Contribute
 
-To contribute to the documentation, see [this file](./DOCS_README.md) for details of the build process and considerations when making changes.
+To recommend a change to the documentation, please submit a PR. Each major
+release's documentation is housed on the corresponding release branch, e.g. for
+the v0.34 release series, the documentation is housed on the `v0.34.x` branch.
+
+When submitting changes that affect all releases, please start by submitting a
+PR to the docs on `main` - this will be backported to the relevant release
+branches. If a change is exclusively relevant to a specific release, please
+target that release branch with your PR.
+
+Changes to the documentation will be reviewed by the team and, if accepted and
+merged, published to <https://docs.cometbft.com> for the respective version(s).
+
+The build process for the documentation is housed in the [CometBFT documentation
+repository](https://github.com/cometbft/cometbft-docs).

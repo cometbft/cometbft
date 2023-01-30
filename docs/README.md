@@ -25,8 +25,6 @@ To learn about application development on CometBFT, see the [Application Blockch
 For more details on using CometBFT, see the respective documentation for
 [CometBFT internals](core/), [benchmarking and monitoring](tools/), and [network deployments](networks/).
 
-To find out about the CometBFT ecosystem you can go [here](https://github.com/tendermint/awesome#ecosystem). If you are a project that is using CometBFT you are welcome to make a PR to add your project to the list.
-
 ## Contribute
 
 To contribute to the documentation, see [this file](./DOCS_README.md) for details of the build process and considerations when making changes.

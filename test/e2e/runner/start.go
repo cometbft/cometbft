@@ -7,7 +7,6 @@ import (
 
 	"github.com/cometbft/cometbft/libs/log"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
-	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 )
 
 func Start(testnet *e2e.Testnet) error {
@@ -107,15 +106,6 @@ func Start(testnet *e2e.Testnet) error {
 		}
 		logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://127.0.0.1:%v at height %v",
 			node.Name, node.ProxyPort, status.SyncInfo.LatestBlockHeight))
-	}
-
-	return nil
-}
-
-func UpdateVersion(testnet *e2e.Testnet, infp infra.Provider) error {
-	// Update the setup provider for uncoordinated upgrades
-	if err := infp.UpdateVersion(); err != nil {
-		return err
 	}
 
 	return nil

@@ -82,7 +82,7 @@ CometBFT is in essence similar software, but with two key differences:
 emerged in the tradition of cryptocurrencies like Bitcoin,
 Ethereum, etc. with the goal of providing a more efficient and secure
 consensus algorithm than Bitcoin's Proof of Work. In the early days,
-Tendermint-based blockchains had a simple currency built in, and to participate in
+Tendermint consensus-based blockchains had a simple currency built in, and to participate in
 consensus, users had to "bond" units of the currency into a security
 deposit which could be revoked if they misbehaved -this is what made
 Tendermint consensus a Proof-of-Stake algorithm.

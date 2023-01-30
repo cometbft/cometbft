@@ -276,15 +276,40 @@ https://github.com/cometbft/cometbft/blob/af3bc47df982e271d4d340a3c5e0d773e44046
 --> 
 
 
- ## The rest
+## Syncing reactors
+
+Blocksync and Statesync are mainly request/response protocols. The peers act as servers and the node under consideration sends requests to the peers.
+
+### Blocksync
+
+- queries peers for their min-height and max-height
+- requests blocks of a given height
+- 
+
+### Statesync
+
+- uses RPC to download lightblocks from full nodes (not p2p)
+- uses p2p to download the data to reconstruct application state (passes data over ABCI to the application)
+
+### Requirements on P2P
+
+- In princple both need a stable connection to at least one correct full node.
+  - the full node should be synchronized with the blockchain
+  - the full node needs to have sufficient historical data (old blocks, old headers), to be able to respond to requests
+- As a result, the peer our node talks to needs to be well-connected. 
+- (We could define something like blocksyncing to the neighborhood, and then depending on how well the neighborhood is synced, blocksync will sync to the top of the chain. The the sync reactors just need one good connection.) 
 
 
-    - blocksync and statesync: mainly request/response protocols
-- What does p2p expect from the reactors? (don't falsely report bad nodes; this puts requirements on the reactors and perhaps/likely also on the application running on top of ABCI)
+## PEX
+
+It is our understanding that from a functional viewpoint the PEX reactor should be considered part of the p2p system. Right now, PEX (peer exchange) is implemented as yet another reactor on top of P2P.
+
+## What does p2p expect from the reactors?
+
+- don't falsely report bad nodes; this puts requirements on the reactors and perhaps/likely also on the application running on top of ABCI)
 
 Unclassified expectations (need to figure out where they come from)
 - establish connections
-- end-to-end encrypted
 - prioritization of messages
 - non blocking
 - don't trust peers (DDOS-resistant)

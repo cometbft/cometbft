@@ -211,13 +211,13 @@ Recovering from data corruption can be hard and time-consuming. Here are two app
 1) Create a backup of the corrupted WAL file:
 
     ```sh
-    cp "$TMHOME/data/cs.wal/wal" > /tmp/corrupted_wal_backup
+    cp "$CMTHOME/data/cs.wal/wal" > /tmp/corrupted_wal_backup
     ```
 
 2) Use `./scripts/wal2json` to create a human-readable version:
 
     ```sh
-    ./scripts/wal2json/wal2json "$TMHOME/data/cs.wal/wal" > /tmp/corrupted_wal
+    ./scripts/wal2json/wal2json "$CMTHOME/data/cs.wal/wal" > /tmp/corrupted_wal
     ```
 
 3) Search for a "CORRUPTED MESSAGE" line.
@@ -235,7 +235,7 @@ Recovering from data corruption can be hard and time-consuming. Here are two app
 5) After editing, convert this file back into binary form by running:
 
     ```sh
-    ./scripts/json2wal/json2wal /tmp/corrupted_wal  $TMHOME/data/cs.wal/wal
+    ./scripts/json2wal/json2wal /tmp/corrupted_wal  $CMTHOME/data/cs.wal/wal
     ```
 
 ## Hardware

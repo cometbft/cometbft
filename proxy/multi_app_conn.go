@@ -16,7 +16,7 @@ const (
 	connSnapshot  = "snapshot"
 )
 
-// AppConns is the Tendermint's interface to the application that consists of
+// AppConns is the CometBFT's interface to the application that consists of
 // multiple connections.
 type AppConns interface {
 	service.Service

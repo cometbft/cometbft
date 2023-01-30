@@ -13,7 +13,7 @@ import (
 )
 
 // BlockStore defines the set of methods needed by the report generator from
-// Tendermint's store.Blockstore type. Using an interface allows for tests to
+// CometBFT's store.Blockstore type. Using an interface allows for tests to
 // more easily simulate the required behavior without having to use the more
 // complex real API.
 type BlockStore interface {

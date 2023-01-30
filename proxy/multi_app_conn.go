@@ -116,7 +116,7 @@ func (app *multiAppConn) OnStart() error {
 	app.consensusConnClient = c
 	app.consensusConn = NewAppConnConsensus(c, app.metrics)
 
-	// Kill Tendermint if the ABCI application crashes.
+	// Kill CometBFT if the ABCI application crashes.
 	go app.killTMOnClientError()
 
 	return nil

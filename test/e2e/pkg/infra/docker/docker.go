@@ -58,11 +58,8 @@ services:
       e2e: true
     container_name: {{ .Name }}
     image: cometbft/e2e-node:{{ .Version }}
-{{- if eq .ABCIProtocol "builtin" }}
+{{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_unsync") }}
     entrypoint: /usr/bin/entrypoint-builtin
-{{- else }}{{ if eq .ABCIProtocol "builtin_unsync" }}
-    entrypoint: /usr/bin/entrypoint-builtin
-{{- end }}
 {{- end }}
     init: true
     ports:
@@ -82,11 +79,8 @@ services:
       e2e: true
     container_name: {{ .Name }}_u
     image: cometbft/e2e-node:{{ $.UpgradeVersion }}
-{{- if eq .ABCIProtocol "builtin" }}
+{{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_unsync") }}
     entrypoint: /usr/bin/entrypoint-builtin
-{{- else }}{{ if eq .ABCIProtocol "builtin_unsync" }}
-    entrypoint: /usr/bin/entrypoint-builtin
-{{- end }}
 {{- end }}
     init: true
     ports:

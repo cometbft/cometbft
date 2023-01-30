@@ -3,7 +3,7 @@ configuration: Release
 platform:
   - x64
   - x86
-clone_folder: c:\go\path\src\github.com\tendermint\tendermint
+clone_folder: c:\go\path\src\github.com\cometbft\cometbft
 before_build:
   - cmd: set GOPATH=%GOROOT%\path
   - cmd: set PATH=%GOPATH%\bin;%PATH%

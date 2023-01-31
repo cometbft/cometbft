@@ -5,12 +5,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/log"
-	tmnet "github.com/tendermint/tendermint/libs/net"
-	tmos "github.com/tendermint/tendermint/libs/os"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtnet "github.com/cometbft/cometbft/libs/net"
+	cmtos "github.com/cometbft/cometbft/libs/os"
 
-	"github.com/tendermint/tendermint/privval"
+	"github.com/cometbft/cometbft/privval"
 )
 
 func main() {
@@ -37,7 +37,7 @@ func main() {
 	pv := privval.LoadFilePV(*privValKeyPath, *privValStatePath)
 
 	var dialer privval.SocketDialer
-	protocol, address := tmnet.ProtocolAndAddress(*addr)
+	protocol, address := cmtnet.ProtocolAndAddress(*addr)
 	switch protocol {
 	case "unix":
 		dialer = privval.DialUnixFn(address)
@@ -58,7 +58,7 @@ func main() {
 	}
 
 	// Stop upon receiving SIGTERM or CTRL-C.
-	tmos.TrapSignal(logger, func() {
+	cmtos.TrapSignal(logger, func() {
 		err := ss.Stop()
 		if err != nil {
 			panic(err)

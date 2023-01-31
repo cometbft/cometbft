@@ -3,7 +3,8 @@ on:
   pull_request:
   push:
     branches:
-      - master
+      - v0.34.x
+      - main
       - release/**
 
 jobs:
@@ -41,6 +42,10 @@ jobs:
       matrix:
         goarch: ["arm", "amd64"]
     timeout-minutes: 5
+    # ToDo (thane): Remove once we make cometbft-db public
+    env:
+      GOPRIVATE: github.com/cometbft/cometbft-db
+      GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
     steps:
       - uses: actions/setup-go@v3
         with:
@@ -52,6 +57,8 @@ jobs:
             **/**.go
             go.mod
             go.sum
+      # ToDo (thane): Remove once we make cometbft-db public
+      - run: git config --global url.https://${{ secrets.GO_MODULES_TOKEN }}@github.com/.insteadOf https://github.com/
       - name: install
         run: GOOS=linux GOARCH=${{ matrix.goarch }} make build
         if: "env.GIT_DIFF != ''"
@@ -74,6 +81,8 @@ jobs:
             **/**.go
             go.mod
             go.sum
+      # ToDo (thane): Remove once we make cometbft-db public
+      - run: git config --global url.https://${{ secrets.GO_MODULES_TOKEN }}@github.com/.insteadOf https://github.com/
       - uses: actions/download-artifact@v3
         with:
           name: "${{ github.sha }}-${{ matrix.part }}"

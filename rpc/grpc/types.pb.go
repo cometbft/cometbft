@@ -6,8 +6,8 @@ package coregrpc
 import (
 	context "context"
 	fmt "fmt"
+	types "github.com/cometbft/cometbft/abci/types"
 	proto "github.com/gogo/protobuf/proto"
-	types "github.com/tendermint/tendermint/abci/types"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"

@@ -5,12 +5,12 @@ import (
 	"os"
 	"testing"
 
-	cfg "github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 var config *cfg.Config // NOTE: must be reset for each _test.go file
@@ -62,15 +62,15 @@ func makeVoteHR(t *testing.T, height int64, valIndex, round int32, privVals []ty
 		panic(err)
 	}
 
-	randBytes := tmrand.Bytes(tmhash.Size)
+	randBytes := cmtrand.Bytes(tmhash.Size)
 
 	vote := &types.Vote{
 		ValidatorAddress: pubKey.Address(),
 		ValidatorIndex:   valIndex,
 		Height:           height,
 		Round:            round,
-		Timestamp:        tmtime.Now(),
-		Type:             tmproto.PrecommitType,
+		Timestamp:        cmttime.Now(),
+		Type:             cmtproto.PrecommitType,
 		BlockID:          types.BlockID{Hash: randBytes, PartSetHeader: types.PartSetHeader{}},
 	}
 	chainID := config.ChainID()

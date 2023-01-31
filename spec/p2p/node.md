@@ -1,7 +1,7 @@
 # Peer Discovery
 
-A Tendermint P2P network has different kinds of nodes with different requirements for connectivity to one another.
-This document describes what kind of nodes Tendermint should enable and how they should work.
+A CometBFT P2P network has different kinds of nodes with different requirements for connectivity to one another.
+This document describes what kind of nodes CometBFT should enable and how they should work.
 
 ## Seeds
 
@@ -12,27 +12,25 @@ Seeds should operate full nodes with the PEX reactor in a "crawler" mode
 that continuously explores to validate the availability of peers.
 
 Seeds should only respond with some top percentile of the best peers it knows about.
-See [the peer-exchange docs](https://github.com/tendermint/tendermint/blob/v0.34.x/spec/reactors/pex/pex.md) for
- details on peer quality.
 
 ## New Full Node
 
 A new node needs a few things to connect to the network:
 
-- a list of seeds, which can be provided to Tendermint via config file or flags,
+- a list of seeds, which can be provided to CometBFT via config file or flags,
   or hardcoded into the software by in-process apps
 - a `ChainID`, also called `Network` at the p2p layer
 - a recent block height, H, and hash, HASH for the blockchain.
 
-The values `H` and `HASH` must be received and corroborated by means external to Tendermint, and specific to the user - ie. via the user's trusted social consensus.
+The values `H` and `HASH` must be received and corroborated by means external to CometBFT, and specific to the user - ie. via the user's trusted social consensus.
 This requirement to validate `H` and `HASH` out-of-band and via social consensus
 is the essential difference in security models between Proof-of-Work and Proof-of-Stake blockchains.
 
 With the above, the node then queries some seeds for peers for its chain,
-dials those peers, and runs the Tendermint protocols with those it successfully connects to.
+dials those peers, and runs the CometBFT protocols with those it successfully connects to.
 
 When the peer catches up to height H, it ensures the block hash matches HASH.
-If not, Tendermint will exit, and the user must try again - either they are connected
+If not, CometBFT will exit, and the user must try again - either they are connected
 to bad peers or their social consensus is invalid.
 
 ## Restarted Full Node

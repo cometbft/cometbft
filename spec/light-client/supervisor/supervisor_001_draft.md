@@ -7,17 +7,17 @@ verification specification. So some hyperlinks have to be placed to
 the correct files eventually.
 
 # Light Client Sequential Supervisor
-
+<!-- markdown-link-check-disable -->
 The light client implements a read operation of a
-[header](TMBC-HEADER-link) from the [blockchain](TMBC-SEQ-link), by
+[header](CMBC-HEADER-link) from the [blockchain](CMBC-SEQ-link), by
 communicating with full nodes, a so-called primary and several
 so-called witnesses. As some full nodes may be faulty, this
 functionality must be implemented in a fault-tolerant way.
 
-In the Tendermint blockchain, the validator set may change with every
+In a Cosmos blockchain, the validator set may change with every
 new block.  The staking and unbonding mechanism induces a [security
-model](TMBC-FM-2THIRDS-link): starting at time *Time* of the
-[header](TMBC-HEADER-link),
+model](CMBC-FM-2THIRDS-link): starting at time *Time* of the
+[header](CMBC-HEADER-link),
 more than two-thirds of the next validators of a new block are correct
 for the duration of *TrustedPeriod*.
 
@@ -26,9 +26,9 @@ operation designed for this security model. That is, it is safe if the
 model assumptions are satisfied and makes progress if it communicates
 to a correct primary.
 
-However, if the [security model](TMBC-FM-2THIRDS-link) is violated,
+However, if the [security model](CMBC-FM-2THIRDS-link) is violated,
 faulty peers (that have been validators at some point in the past) may
-launch attacks on the Tendermint network, and on the light
+launch attacks on the Cosmos network, and on the light
 client. These attacks as well as an axiomatization of blocks in
 general are defined in [a document that contains the definitions that
 are currently in detection.md](https://informal.systems).
@@ -79,7 +79,7 @@ it assumes certain details of [verification](https://informal.systems) and
 versions yet. This inconsistencies will be addresses over several
 upcoming PRs.
 
-# Part I - Tendermint Blockchain
+# Part I - Cosmos Blockchain
 
 See [verification spec](addLinksWhenDone)
 
@@ -306,8 +306,8 @@ type LCInitData struct {
 ```
 
 where only one of the components must be provided. `GenesisDoc` is
-defined in the [Tendermint
-Types](https://github.com/tendermint/tendermint/blob/v0.34.x/types/genesis.go).
+defined in the [CometBFT
+Types](https://github.com/cometbft/cometbft/blob/v0.34.x/types/genesis.go).
 
 #### **[LC-DATA-GENESIS.1]**
 
@@ -532,7 +532,7 @@ func InitLightClient (initData LCInitData) (LightStore, Error) {
     - none
 - Expected precondition
     - *LCInitData* contains either a genesis file of a lightblock
-    - if genesis it passes `ValidateAndComplete()` see [Tendermint](https://informal.systems)
+    - if genesis it passes `ValidateAndComplete()` see [CometBFT](https://informal.systems)
 - Expected postcondition
     - *lightStore* initialized with trusted lightblock. It has either been
       cross-checked (from genesis) or it has initial trust from the

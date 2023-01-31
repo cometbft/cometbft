@@ -8,12 +8,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/tendermint/tendermint/crypto"
-	tmbytes "github.com/tendermint/tendermint/libs/bytes"
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	tmos "github.com/tendermint/tendermint/libs/os"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	"github.com/cometbft/cometbft/crypto"
+	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	cmtos "github.com/cometbft/cometbft/libs/os"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 const (
@@ -37,22 +37,22 @@ type GenesisValidator struct {
 
 // GenesisDoc defines the initial conditions for a tendermint blockchain, in particular its validator set.
 type GenesisDoc struct {
-	GenesisTime     time.Time                `json:"genesis_time"`
-	ChainID         string                   `json:"chain_id"`
-	InitialHeight   int64                    `json:"initial_height"`
-	ConsensusParams *tmproto.ConsensusParams `json:"consensus_params,omitempty"`
-	Validators      []GenesisValidator       `json:"validators,omitempty"`
-	AppHash         tmbytes.HexBytes         `json:"app_hash"`
-	AppState        json.RawMessage          `json:"app_state,omitempty"`
+	GenesisTime     time.Time                 `json:"genesis_time"`
+	ChainID         string                    `json:"chain_id"`
+	InitialHeight   int64                     `json:"initial_height"`
+	ConsensusParams *cmtproto.ConsensusParams `json:"consensus_params,omitempty"`
+	Validators      []GenesisValidator        `json:"validators,omitempty"`
+	AppHash         cmtbytes.HexBytes         `json:"app_hash"`
+	AppState        json.RawMessage           `json:"app_state,omitempty"`
 }
 
 // SaveAs is a utility method for saving GenensisDoc as a JSON file.
 func (genDoc *GenesisDoc) SaveAs(file string) error {
-	genDocBytes, err := tmjson.MarshalIndent(genDoc, "", "  ")
+	genDocBytes, err := cmtjson.MarshalIndent(genDoc, "", "  ")
 	if err != nil {
 		return err
 	}
-	return tmos.WriteFile(file, genDocBytes, 0o644)
+	return cmtos.WriteFile(file, genDocBytes, 0o644)
 }
 
 // ValidatorHash returns the hash of the validator set contained in the GenesisDoc
@@ -100,7 +100,7 @@ func (genDoc *GenesisDoc) ValidateAndComplete() error {
 	}
 
 	if genDoc.GenesisTime.IsZero() {
-		genDoc.GenesisTime = tmtime.Now()
+		genDoc.GenesisTime = cmttime.Now()
 	}
 
 	return nil
@@ -112,7 +112,7 @@ func (genDoc *GenesisDoc) ValidateAndComplete() error {
 // GenesisDocFromJSON unmarshalls JSON data into a GenesisDoc.
 func GenesisDocFromJSON(jsonBlob []byte) (*GenesisDoc, error) {
 	genDoc := GenesisDoc{}
-	err := tmjson.Unmarshal(jsonBlob, &genDoc)
+	err := cmtjson.Unmarshal(jsonBlob, &genDoc)
 	if err != nil {
 		return nil, err
 	}

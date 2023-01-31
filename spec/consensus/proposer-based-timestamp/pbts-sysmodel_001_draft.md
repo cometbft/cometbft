@@ -18,7 +18,8 @@ There exists a system parameter `PRECISION` such that for any two correct valida
 
 ### Message Delays
 
-We do not want to interfere with the Tendermint timing assumptions. We will postulate a timing restriction, which, if satisfied, ensures that liveness is preserved.
+We do not want to interfere with the timing assumptions of Tendermint consensus algorithm.
+We will postulate a timing restriction, which, if satisfied, ensures that liveness is preserved.
 
 In general the local clock may drift from the global time. (It may progress faster, e.g., one second of clock time might take 1.005 seconds of real-time). As a result the local clock and the global clock may be measured in different time units. Usually, the message delay is measured in global clock time units. To estimate the correct local timeout precisely, we would need to estimate the clock time duration of a message delay taking into account the clock drift. For simplicity we ignore this, and directly postulate the message delay assumption in terms of local time.
 
@@ -36,7 +37,7 @@ The message end-to-end delay between a correct proposer and a correct validator 
 
 ## Problem Statement
 
-In this section we define the properties of Tendermint consensus (cf. the [arXiv paper][arXiv]) in this new system model.
+In this section we define the properties of Tendermint consensus algorithm (cf. the [arXiv paper][arXiv]) in this new system model.
 
 #### **[PBTS-PROPOSE.0]**
 
@@ -52,7 +53,7 @@ A proposer proposes a pair `(v,t)` of consensus value `v` and time `t`.
 
 [Time-Validity] If a correct validator decides on `t` then `t` is "OK" (we will formalize this below), even if up to `2f` validators are faulty.
 
-However, the properties of Tendermint consensus are of more interest with respect to the blocks, that is, what is written into a block and when. We therefore, in the following, will give the safety and liveness properties from this block-centric viewpoint.  
+However, the properties of Tendermint consensus algorithm are of more interest with respect to the blocks, that is, what is written into a block and when. We therefore, in the following, will give the safety and liveness properties from this block-centric viewpoint.  
 For this, observe that the time `t` decided at consensus height `k` will be written in the block of height `k+1`, and will be supported by `2f + 1` `PRECOMMIT` messages of the same consensus round `r`. The time written in the block, we will denote by `b.time` (to distinguish it from the term `bfttime` used for median-based time). For this, it is important to have the following consensus algorithm property:
 
 #### **[PBTS-INV-TIME-AGR.0]**
@@ -69,11 +70,11 @@ However, as most consensus instances terminate within one round on the Cosmos hu
 
 
 
-Finally, observe that the agreement ([Agreement] and [Time-Agreement]) properties are based on the Tendermint security model [TMBC-FM-2THIRDS.0] of more than 2/3 correct validators, while [Time-Validity] is based on more than 1/3 correct validators.
+Finally, observe that the agreement ([Agreement] and [Time-Agreement]) properties are based on the Cosmos security model [CMBC-FM-2THIRDS.0][CMBC-FM-2THIRDS-link] of more than 2/3 correct validators, while [Time-Validity] is based on more than 1/3 correct validators.
 
 ### SAFETY
 
-Here we will provide specifications that relate local time to block time. However, since we do not assume (by now) that local time is linked to real-time, these specifications also do not provide a relation between block time and real-time. Such properties are given [later](#REAL-TIME-SAFETY).
+Here we will provide specifications that relate local time to block time. However, since we do not assume (by now) that local time is linked to real-time, these specifications also do not provide a relation between block time and real-time. Such properties are given [later](#real-time-safety).
 
 For a correct validator `V`, let `beginConsensus(V,k)` be the local time when it sets its height to `k`, and let `endConsensus(V,k)` be the time when it sets its height to `k + 1`.
 
@@ -110,7 +111,7 @@ then the time `b.time` in the block `b` that is signed by `c` satisfies
 
 If the proposer of round 1 is correct, and
 
-- [TMBC-FM-2THIRDS.0] holds for a block of height `k - 1`, and
+- [CMBC-FM-2THIRDS.0] holds for a block of height `k - 1`, and
 - [PBTS-MSG-FAIR.0], and
 - [PBTS-CLOCK-PRECISION.0], and
 - [PBTS-CLOCK-GROW.0] (**TODO:** is that enough?)
@@ -121,7 +122,7 @@ then eventually (within bounded time) every correct validator decides in round 1
 
 If the proposer of round 1 is correct, and
 
-- [TMBC-FM-2THIRDS.0] holds for a block of height `k - 1`, and
+- [CMBC-FM-2THIRDS.0] holds for a block of height `k - 1`, and
 - [PBTS-MSG-FAIR.0], and
 - [PBTS-CLOCK-PRECISION.0], and
 - [PBTS-CLOCK-GROW.0] (**TODO:** is that enough?)
@@ -135,7 +136,7 @@ then `beginConsensus_k <= b.time <= last-beginConsensus_k`.
 
 If
 
-- [TMBC-FM-2THIRDS.0] holds for a block of height `k - 1`, and
+- [CMBC-FM-2THIRDS.0] holds for a block of height `k - 1`, and
 - [PBTS-MSG-FAIR.0],
 - [PBTS-CLOCK.0], and
 - [PBTS-CLOCK-GROW.0] (**TODO:** is that enough?)
@@ -187,12 +188,4 @@ Back to [main document][main].
 
 [arXiv]: https://arxiv.org/abs/1807.04938
 
-[tlatender]: https://github.com/tendermint/spec/blob/master/rust-spec/tendermint-accountability/README.md
-
-[bfttime]: https://github.com/tendermint/spec/blob/439a5bcacb5ef6ef1118566d7b0cd68fff3553d4/spec/consensus/bft-time.md
-
-[lcspec]: https://github.com/tendermint/spec/blob/439a5bcacb5ef6ef1118566d7b0cd68fff3553d4/rust-spec/lightclient/README.md
-
-[algorithm]: ./pbts-algorithm_001_draft.md
-
-[sysmodel]: ./pbts-sysmodel_001_draft.md
+[CMBC-FM-2THIRDS-link]: https://github.com/cometbft/cometbft/blob/v0.34.x/spec/light-client/verification/verification_002_draft.md#cmbc-fm-2thirds1

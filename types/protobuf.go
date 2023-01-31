@@ -1,12 +1,12 @@
 package types
 
 import (
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	cryptoenc "github.com/tendermint/tendermint/crypto/encoding"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/crypto/secp256k1"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 //-------------------------------------------------------
@@ -32,8 +32,8 @@ var TM2PB = tm2pb{}
 
 type tm2pb struct{}
 
-func (tm2pb) Header(header *Header) tmproto.Header {
-	return tmproto.Header{
+func (tm2pb) Header(header *Header) cmtproto.Header {
+	return cmtproto.Header{
 		Version: header.Version,
 		ChainID: header.ChainID,
 		Height:  header.Height,
@@ -62,15 +62,15 @@ func (tm2pb) Validator(val *Validator) abci.Validator {
 	}
 }
 
-func (tm2pb) BlockID(blockID BlockID) tmproto.BlockID {
-	return tmproto.BlockID{
+func (tm2pb) BlockID(blockID BlockID) cmtproto.BlockID {
+	return cmtproto.BlockID{
 		Hash:          blockID.Hash,
 		PartSetHeader: TM2PB.PartSetHeader(blockID.PartSetHeader),
 	}
 }
 
-func (tm2pb) PartSetHeader(header PartSetHeader) tmproto.PartSetHeader {
-	return tmproto.PartSetHeader{
+func (tm2pb) PartSetHeader(header PartSetHeader) cmtproto.PartSetHeader {
+	return cmtproto.PartSetHeader{
 		Total: header.Total,
 		Hash:  header.Hash,
 	}
@@ -97,7 +97,7 @@ func (tm2pb) ValidatorUpdates(vals *ValidatorSet) []abci.ValidatorUpdate {
 	return validators
 }
 
-func (tm2pb) ConsensusParams(params *tmproto.ConsensusParams) *abci.ConsensusParams {
+func (tm2pb) ConsensusParams(params *cmtproto.ConsensusParams) *abci.ConsensusParams {
 	return &abci.ConsensusParams{
 		Block: &abci.BlockParams{
 			MaxBytes: params.Block.MaxBytes,

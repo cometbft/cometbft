@@ -6,7 +6,7 @@
 
 name: e2e-nightly-34x
 on:
-  workflow_dispatch: # allow running workflow manually, in theory
+  workflow_dispatch:  # allow running workflow manually, in theory
   schedule:
     - cron: '0 2 * * *'
 
@@ -20,6 +20,12 @@ jobs:
         group: ['00', '01', '02', '03']
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # TODO (thane): Remove once we make the cometbft-db repository public.
+    env:
+      GOPRIVATE: github.com/cometbft/cometbft-db
+      # We have to supply this as an environment variable in order to pass it
+      # through to the "docker" Makefile target in ./test/e2e
+      GO_MODULES_TOKEN: ${{ secrets.GO_MODULES_TOKEN }}
     steps:
       - uses: actions/setup-go@v3
         with:
@@ -33,6 +39,9 @@ jobs:
         working-directory: test/e2e
         # Run make jobs in parallel, since we can't run steps in parallel.
         run: make -j2 docker generator runner
+
+      # TODO(thane): Remove once we make the cometbft-db repository public
+      - run: git config --global url.https://${{ secrets.GO_MODULES_TOKEN }}@github.com/.insteadOf https://github.com/
 
       - name: Generate testnets
         working-directory: test/e2e
@@ -59,7 +68,7 @@ jobs:
           SLACK_MESSAGE: Nightly E2E tests failed on v0.34.x
           SLACK_FOOTER: ''
 
-  e2e-nightly-success: # may turn this off once they seem to pass consistently
+  e2e-nightly-success:   # may turn this off once they seem to pass consistently
     needs: e2e-nightly-test
     if: ${{ success() }}
     runs-on: ubuntu-latest

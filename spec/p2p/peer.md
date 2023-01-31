@@ -1,12 +1,10 @@
 # Peers
 
-This document explains how Tendermint Peers are identified and how they connect to one another.
-
-For details on peer discovery, see the [peer exchange (PEX) reactor doc](https://github.com/tendermint/tendermint/blob/v0.34.x/spec/reactors/pex/pex.md).
+This document explains how CometBFT Peers are identified and how they connect to one another.
 
 ## Peer Identity
 
-Tendermint peers are expected to maintain long-term persistent identities in the form of a public key.
+CometBFT peers are expected to maintain long-term persistent identities in the form of a public key.
 Each peer has an ID defined as `peer.ID == peer.PubKey.Address()`, where `Address` uses the scheme defined in `crypto` package.
 
 A single peer ID can have multiple IP addresses associated with it, but a node
@@ -21,12 +19,12 @@ corresponding to `<ID>`. This prevents man-in-the-middle attacks on the peer lay
 
 All p2p connections use TCP.
 Upon establishing a successful TCP connection with a peer,
-two handshakes are performed: one for authenticated encryption, and one for Tendermint versioning.
+two handshakes are performed: one for authenticated encryption, and one for CometBFT versioning.
 Both handshakes have configurable timeouts (they should complete quickly).
 
 ### Authenticated Encryption Handshake
 
-Tendermint implements the Station-to-Station protocol
+CometBFT implements the Station-to-Station protocol
 using X25519 keys for Diffie-Helman key-exchange and chacha20poly1305 for encryption.
 
 Previous versions of this protocol (0.32 and below) suffered from malleability attacks whereas an active man
@@ -80,9 +78,9 @@ an optional whitelist which can be managed through the ABCI app -
 if the whitelist is enabled and the peer does not qualify, the connection is
 terminated.
 
-### Tendermint Version Handshake
+### CometBFT Version Handshake
 
-The Tendermint Version Handshake allows the peers to exchange their NodeInfo:
+The CometBFT Version Handshake allows the peers to exchange their NodeInfo:
 
 ```golang
 type NodeInfo struct {

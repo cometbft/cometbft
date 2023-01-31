@@ -8,19 +8,19 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	cmd "github.com/tendermint/tendermint/cmd/tendermint/commands"
-	"github.com/tendermint/tendermint/cmd/tendermint/commands/debug"
-	cfg "github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/libs/cli"
-	tmflags "github.com/tendermint/tendermint/libs/cli/flags"
-	"github.com/tendermint/tendermint/libs/log"
-	tmos "github.com/tendermint/tendermint/libs/os"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/p2p"
-	cs "github.com/tendermint/tendermint/test/maverick/consensus"
-	nd "github.com/tendermint/tendermint/test/maverick/node"
-	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	cmd "github.com/cometbft/cometbft/cmd/tendermint/commands"
+	"github.com/cometbft/cometbft/cmd/tendermint/commands/debug"
+	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/libs/cli"
+	cmtflags "github.com/cometbft/cometbft/libs/cli/flags"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtos "github.com/cometbft/cometbft/libs/os"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/p2p"
+	cs "github.com/cometbft/cometbft/test/maverick/consensus"
+	nd "github.com/cometbft/cometbft/test/maverick/node"
+	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 var (
@@ -70,7 +70,7 @@ var RootCmd = &cobra.Command{
 			logger = log.NewTMJSONLogger(log.NewSyncWriter(os.Stdout))
 		}
 
-		logger, err = tmflags.ParseLogLevel(config.LogLevel, logger, cfg.DefaultLogLevel)
+		logger, err = cmtflags.ParseLogLevel(config.LogLevel, logger, cfg.DefaultLogLevel)
 		if err != nil {
 			return err
 		}
@@ -149,7 +149,7 @@ func startNode(config *cfg.Config, logger log.Logger, misbehaviorFlag string) er
 	logger.Info("Started node", "nodeInfo", node.Switch().NodeInfo())
 
 	// Stop upon receiving SIGTERM or CTRL-C.
-	tmos.TrapSignal(logger, func() {
+	cmtos.TrapSignal(logger, func() {
 		if node.IsRunning() {
 			if err := node.Stop(); err != nil {
 				logger.Error("unable to stop the node", "error", err)
@@ -176,7 +176,7 @@ func initFilesWithConfig(config *cfg.Config) error {
 	privValKeyFile := config.PrivValidatorKeyFile()
 	privValStateFile := config.PrivValidatorStateFile()
 	var pv *nd.FilePV
-	if tmos.FileExists(privValKeyFile) {
+	if cmtos.FileExists(privValKeyFile) {
 		pv = nd.LoadFilePV(privValKeyFile, privValStateFile)
 		logger.Info("Found private validator", "keyFile", privValKeyFile,
 			"stateFile", privValStateFile)
@@ -188,7 +188,7 @@ func initFilesWithConfig(config *cfg.Config) error {
 	}
 
 	nodeKeyFile := config.NodeKeyFile()
-	if tmos.FileExists(nodeKeyFile) {
+	if cmtos.FileExists(nodeKeyFile) {
 		logger.Info("Found node key", "path", nodeKeyFile)
 	} else {
 		if _, err := p2p.LoadOrGenNodeKey(nodeKeyFile); err != nil {
@@ -199,12 +199,12 @@ func initFilesWithConfig(config *cfg.Config) error {
 
 	// genesis file
 	genFile := config.GenesisFile()
-	if tmos.FileExists(genFile) {
+	if cmtos.FileExists(genFile) {
 		logger.Info("Found genesis file", "path", genFile)
 	} else {
 		genDoc := types.GenesisDoc{
-			ChainID:         fmt.Sprintf("test-chain-%v", tmrand.Str(6)),
-			GenesisTime:     tmtime.Now(),
+			ChainID:         fmt.Sprintf("test-chain-%v", cmtrand.Str(6)),
+			GenesisTime:     cmttime.Now(),
 			ConsensusParams: types.DefaultConsensusParams(),
 		}
 		pubKey, err := pv.GetPubKey()

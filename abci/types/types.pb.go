@@ -191,7 +191,6 @@ func (ResponseProcessProposal_ProposalStatus) EnumDescriptor() ([]byte, []int) {
 
 type Request struct {
 	// Types that are valid to be assigned to Value:
-	//
 	//	*Request_Echo
 	//	*Request_Flush
 	//	*Request_Info
@@ -1421,6 +1420,7 @@ func (m *RequestProcessProposal) GetProposerAddress() []byte {
 
 type Response struct {
 	// Types that are valid to be assigned to Value:
+	//
 	//	*Response_Exception
 	//	*Response_Echo
 	//	*Response_Flush

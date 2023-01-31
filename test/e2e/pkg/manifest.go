@@ -75,6 +75,10 @@ type Manifest struct {
 	CheckTxDelay         time.Duration `toml:"check_tx_delay"`
 	// TODO: add vote extension and finalize block delay (@cmwaters)
 
+	// UpgradeVersion specifies to which version nodes need to upgrade to.
+	// Currently only uncoordinated upgrade is supported
+	UpgradeVersion string `toml:"upgrade_version"`
+
 	LoadTxSizeBytes   int `toml:"load_tx_size_bytes"`
 	LoadTxBatchSize   int `toml:"load_tx_batch_size"`
 	LoadTxConnections int `toml:"load_tx_connections"`

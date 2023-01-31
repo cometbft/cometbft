@@ -32,7 +32,7 @@ RUN cd test/e2e && make node && cp build/node /usr/bin/app
 # e.g. leveldb and rocksdb which are already installed in the build image.
 WORKDIR /cometbft
 VOLUME /cometbft
-ENV TMHOME=/cometbft
+ENV CMTHOME=/cometbft
 
 EXPOSE 26656 26657 26660 6060
 ENTRYPOINT ["/usr/bin/entrypoint"]

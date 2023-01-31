@@ -175,7 +175,7 @@ The E2E test harness is designed to run several nodes of varying configurations 
 ```bash
 make node
 cometbft init validator
-TMHOME=$HOME/.cometbft ./build/node ./node/built-in.toml
+CMTHOME=$HOME/.cometbft ./build/node ./node/built-in.toml
 ```
 
 To make things simpler the e2e application can also be run in the `cometbft` binary

@@ -57,6 +57,10 @@ type Manifest struct {
 	// launch it instead of launching a separate CometBFT process.
 	ABCIProtocol string `toml:"abci_protocol"`
 
+	// UpgradeVersion specifies to which version nodes need to upgrade to.
+	// Currently only uncoordinated upgrade is supported
+	UpgradeVersion string `toml:"upgrade_version"`
+
 	LoadTxSizeBytes   int `toml:"load_tx_size_bytes"`
 	LoadTxBatchSize   int `toml:"load_tx_batch_size"`
 	LoadTxConnections int `toml:"load_tx_connections"`

@@ -706,6 +706,8 @@ func (conR *Reactor) gossipDataForCatchup(logger log.Logger, rs *cstypes.RoundSt
 			ps.SetHasProposalBlockPart(prs.Height, prs.Round, index)
 		} else {
 			logger.Debug("Sending block part for catchup failed")
+			// sleep to avoid retrying too fast
+			time.Sleep(conR.conS.config.PeerGossipSleepDuration)
 		}
 		return
 	}

@@ -120,7 +120,7 @@ Gossiping is done by surveying the peers' states within the consensus protocol. 
 
 > In the current information this information is coarse. Peer *p* informs us about consensus height and round, and we send all votes for that height and round to *p*.
 
-TODO: proposal.
+TODO: proposal. block parts.
 
 The question is under which conditions [[CM-REQ-CR-COMM.0]] is sufficient to implement [[CM-REQ-CONS-GOSSIP.0]]. These conditions translate into requirements for the p2p layer
 
@@ -149,11 +149,18 @@ TODO:
 - proposers are not disconnected?
 
 #### [CM-REQ-CR+P2P-STABILITY.0]
-TODO: stay connected to good peers for some time
+We say a period is good if
+1. message delays are bounded
+1. the period is sufficiently long (TODO: might need to clarify; sufficiently long to achieve consensus depending on the message delays)
+1. the p2p system provides a network in which for every two correct validators, there exists a path consisting of correct full nodes that connects the validators.
+
+> The previous requirement is not minimal for solving consensus, but it seems implemented by the current p2p system
 
 #### [CM-REQ-CR+P2P-OPENNESS.0]
-TODO: New nodes can join / new validators can join
+The p2p system ensures that at any time, new nodes can join the network. (In other words, at all times, there must be nodes that accept new connections)
 
+> This doesn't mean that all nodes must accept new onnections. It also doesn't mean that a node must accept new connections at all times. 
+> The above property derives from the requirement that new validators can join consensus. In order to do so, they must first be connected.
 
 Since the systems we are building are decentralized and distributed, the global requirements can only be ensured by local actions of the distributed nodes. For instance, openness has been ensured by distinguishing inbound and outbound connections, and making sure that there are always nodes with open inbound connections.
 
@@ -193,7 +200,7 @@ will show that the arguably strongest requirement on the mempool do translate ro
 into requirements on the p2p layer that are similar to those of the
 consensus reactor.
 
-- e-t-e requirement: "every transaction submitted should be eventually put into a block"
+- end-to-end requirement: "every transaction submitted should be eventually put into a block"
 - requirement for consensus: for every submitted transaction from some height on, 
 the transaction is proposed by every correct validator in every height until it is committed
 into a block (assuming infinitely often correct proposers get their proposal through)  
@@ -229,7 +236,11 @@ We arrive at the requirement on the mempool:
 
 > Point 1. appears slightly stronger than the requirement of the consensus reactor, as here all full nodes are sources of transaction, while in consensus only validators are source of consensus messages.
 
-> TODO: discuss how important this is. It seems quite a big issue given that validators have more stable neighborhoods (behind sentry nodes), and are substantially fewer.
+> This seems quite important, as it might be harder to guarantee. Validators
+> - have more stable neighborhoods (behind sentry nodes), and 
+> - are substantially fewer
+>
+> In the resulting network, reliable communication for consensus messages seems easier to achieve than reliable communication for transactions.
 
 > Point 2. has potential to be weakened in practice, as it might be sufficient for a transaction to reach one correct validator as in practice CometBFT decides in one round. 
 
@@ -238,7 +249,7 @@ We arrive at the requirement on the mempool:
 
 Gossiping is done by remembering for each peer which was the last element in the local list of transaction that was sent to a peer (there are condition where the pointer to the last element is reset). We then send transactions after this last element to the peer. 
 
-> TODO: seems best effort send. We should clarify.
+> TODO: seems best effort send, i.e., no ACKs, no reliable communication (e.g., full messages queues). We should clarify.
 
 ### Requirements on the p2p layer
 
@@ -247,7 +258,9 @@ Similar to the consensus reactor, the discussion above entails  **local requirem
 #### [CM-REQ-CR+P2P-STABLE.0]
 In order to make progress in sending the list of transactions to a peer, the p2p layer must ensure that we stay connected to a peer sufficiently long.
 
-Similar to the consensus reactor, [CM-REQ-MEMP-GOSSIP.0] translates into global connectivity requirements.
+Similar to the consensus reactor, [CM-REQ-MEMP-GOSSIP.0] translates into global connectivity requirements. However, [CM-REQ-CR+P2P-STABILITY.0] postulates a stable connect overlay for a continuous interval of time. A priori, for the transactions, we just require that over time all transactions reach the validators, which does not imply connectivity within such an interval.
+
+> However, expectations from the users might be different. With MEV etc., we will have time expectations regarding transactions processing. This will impose stronger constraints again.
 
 ## Evidence reactor
 

@@ -1209,7 +1209,7 @@ func DefaultInstrumentationConfig() *InstrumentationConfig {
 		Prometheus:           false,
 		PrometheusListenAddr: ":26660",
 		MaxOpenConnections:   3,
-		Namespace:            "tendermint",
+		Namespace:            "cometbft",
 	}
 }
 

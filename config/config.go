@@ -28,19 +28,6 @@ const (
 	// Default is v0.
 	MempoolV0 = "v0"
 	MempoolV1 = "v1"
-
-	DefaultTendermintDir = ".cometbft"
-	DefaultConfigDir     = "config"
-	DefaultDataDir       = "data"
-
-	DefaultConfigFileName  = "config.toml"
-	DefaultGenesisJSONName = "genesis.json"
-
-	DefaultPrivValKeyName   = "priv_validator_key.json"
-	DefaultPrivValStateName = "priv_validator_state.json"
-
-	DefaultNodeKeyName  = "node_key.json"
-	DefaultAddrBookName = "addrbook.json"
 )
 
 // NOTE: Most of the structs & relevant comments + the
@@ -50,8 +37,9 @@ const (
 // config/toml.go
 // NOTE: libs/cli must know to look in the config dir!
 var (
-	defaultConfigDir = "config"
-	defaultDataDir   = "data"
+	DefaultTendermintDir = ".cometbft"
+	defaultConfigDir     = "config"
+	defaultDataDir       = "data"
 
 	defaultConfigFileName  = "config.toml"
 	defaultGenesisJSONName = "genesis.json"

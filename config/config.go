@@ -28,22 +28,6 @@ const (
 	// Default is v0.
 	MempoolV0 = "v0"
 	MempoolV1 = "v1"
-<<<<<<< HEAD
-=======
-
-	DefaultTendermintDir = ".cometbft"
-	DefaultConfigDir     = "config"
-	DefaultDataDir       = "data"
-
-	DefaultConfigFileName  = "config.toml"
-	DefaultGenesisJSONName = "genesis.json"
-
-	DefaultPrivValKeyName   = "priv_validator_key.json"
-	DefaultPrivValStateName = "priv_validator_state.json"
-
-	DefaultNodeKeyName  = "node_key.json"
-	DefaultAddrBookName = "addrbook.json"
->>>>>>> 2f4a09a39 (main: rename TMHOME to CMTHOME (#212))
 )
 
 // NOTE: Most of the structs & relevant comments + the
@@ -53,7 +37,7 @@ const (
 // config/toml.go
 // NOTE: libs/cli must know to look in the config dir!
 var (
-	DefaultTendermintDir = ".tendermint"
+	DefaultTendermintDir = ".cometbft"
 	defaultConfigDir     = "config"
 	defaultDataDir       = "data"
 
@@ -721,16 +705,6 @@ type MempoolConfig struct {
 	// Mempool version to use:
 	//  1) "v0" - (default) FIFO mempool.
 	//  2) "v1" - prioritized mempool.
-<<<<<<< HEAD
-	// WARNING: There's a known memory leak with the prioritized mempool
-	// that the team are working on. Read more here:
-	// https://github.com/tendermint/tendermint/issues/8775
-	Version   string `mapstructure:"version"`
-	RootDir   string `mapstructure:"home"`
-	Recheck   bool   `mapstructure:"recheck"`
-	Broadcast bool   `mapstructure:"broadcast"`
-	WalPath   string `mapstructure:"wal_dir"`
-=======
 	Version string `mapstructure:"version"`
 	// RootDir is the root directory for all data. This should be configured via
 	// the $CMTHOME env variable or --home cmd flag rather than overriding this
@@ -753,7 +727,6 @@ type MempoolConfig struct {
 	// WalPath to where you want the WAL to be written (e.g.
 	// "data/mempool.wal").
 	WalPath string `mapstructure:"wal_dir"`
->>>>>>> 2f4a09a39 (main: rename TMHOME to CMTHOME (#212))
 	// Maximum number of transactions in the mempool
 	Size int `mapstructure:"size"`
 	// Limit the total size of all txs in the mempool.

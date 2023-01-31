@@ -1,3 +1,37 @@
+# dYdX Fork of CometBFT
+
+This is a lightweight fork of CometBFT. The current version of the forked code resides on the [default branch](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-branches#about-the-default-branch).
+
+## Making Changes to the Fork
+
+1. Open a PR against the current default branch (i.e. `dydx-fork-v0.37.0`).
+2. Get approval, and merge.
+3. After merging, update the `v4` repository's `go.mod`, and `go.sum` files with your merged `$COMMIT_HASH`.
+4. (In `dydxprotocol/v4`) `go mod edit -replace github.com/cometbft/cometbft=github.com/dydxprotocol/cometbft@$COMMIT_HASH`
+5. (In `dydxprotocol/v4`) `go mod tidy`
+6. (In `dydxprotocol/v4`) update package references in `mocks/Makefile`. See [here](https://github.com/dydxprotocol/v4/pull/848) for an example.
+7. Open a PR in `dydxprotocol/v4` to bump the version of the fork.
+
+## Fork maintenance
+
+We'd like to keep the `main` branch up to date with `cometbft/cometbft`. You can utilize GitHub's [sync fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork) button to accomplish this. ⚠️ Please only use this on the `main` branch, not on the fork branches as it will discard our commits.⚠️
+
+Note that this doesn't pull in upstream tags, so in order to do this follow these steps:
+1. `git fetch upstream`
+2. `git push --tags`
+
+## Updating CometBFT to new versions
+
+When a new version of CometBFT is published, we may want to adopt the changes in our fork. This process can be somewhat tedious, but below are the recommended steps to accomplish this.
+
+1. Ensure the `main` branch and all tags are up to date by following the steps above in "Fork maintenance".
+2. Create a new branch off the desired CometBFT commit using tags. `git checkout -b dydx-fork-$VERSION <CometBFT repo's tag name>`. The new branch should be named something like `dydx-fork-$VERSION` where `$VERSION` is the version of CometBFT being forked (should match the CometBFT repo's tag name). i.e. `dydx-fork-v0.37.0`.
+3. Push the new branch.
+4. Open a PR which cherry-picks each commit in the current default branch, in order, on to the new `dydx-fork-$VERSION` branch (note: you may want to consider creating multiple PRs for this process if there are difficulties or merge conflicts). For example, `git cherry-pick <commit hash>`.
+5. Get approval, and merge.
+6. Update `dydxprotocol/v4` by following the steps in "Making Changes to the fork" above.
+7. Set `dydx-fork-$VERSION` as the [default branch](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-branches-in-your-repository/changing-the-default-branch) in this repository.
+
 # CometBFT
 
 [Byzantine-Fault Tolerant][bft] [State Machine Replication][smr]. Or
@@ -45,7 +79,7 @@ more details about [versioning](#versioning).
 
 In any case, if you intend to run CometBFT in production, we're happy to help.
 
-To contact us, you can also 
+To contact us, you can also
 [join the chat](https://discord.com/channels/669268347736686612/669283915743232011).
 
 More on how releases are conducted can be found [here](./RELEASES.md).

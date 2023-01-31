@@ -54,6 +54,10 @@ var (
 		"pause":      0.1,
 		"kill":       0.1,
 		"restart":    0.1,
+		"upgrade":    0.3,
+	}
+	lightNodePerturbations = probSetChoice{
+		"upgrade": 0.3,
 	}
 )
 
@@ -310,6 +314,7 @@ func generateLightNode(r *rand.Rand, startAt int64, providers []string) *e2e.Man
 		Database:        nodeDatabases.Choose(r).(string),
 		PersistInterval: ptrUint64(0),
 		PersistentPeers: providers,
+		Perturb:         lightNodePerturbations.Choose(r),
 	}
 }
 

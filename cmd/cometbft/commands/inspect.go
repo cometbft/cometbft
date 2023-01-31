@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/cometbft/cometbft/cmd/cometbft/commands/inspect"
 	cfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/inspect"
 	"github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/state/indexer/block"
 	"github.com/cometbft/cometbft/store"

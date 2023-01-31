@@ -3,12 +3,13 @@
 .bak
 *.bak
 .DS_Store
+build/*
 .cometbft
 .cometbft-lite
-
-artifacts/*
-build/*
+rpc/test/.cometbft
+rpc/test/.tendermint
 .tendermint
+remote_dump
 .revision
 vendor
 .vagrant
@@ -21,14 +22,10 @@ abci-cli
 docs/node_modules/
 docs/.vuepress/public/rpc
 index.html.md
-libs/pubsub/query/fuzz_test/output
-profile\.out
-remote_dump
-rpc/test/.tendermint
-rpc/test/.cometbft
-scripts/cutWALUntil/cutWALUntil
+
 scripts/wal2json/wal2json
 scripts/cutWALUntil/cutWALUntil
+
 .idea/
 *.iml
 

@@ -32,7 +32,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          make mockery 2>/dev/null
+          make mockery
 
           if ! git diff --stat --exit-code ; then
             echo ">> ERROR:"

@@ -1,14 +1,14 @@
 # Light Client Verification
 
 The light client implements a read operation of a
-[header][TMBC-HEADER-link] from the [blockchain][TMBC-SEQ-link], by
+[header][CMBC-HEADER-link] from the [blockchain][CMBC-SEQ-link], by
 communicating with full nodes.  As some full nodes may be faulty, this
 functionality must be implemented in a fault-tolerant way.
 
-In the Tendermint blockchain, the validator set may change with every
+In a Cosmos blockchain, the validator set may change with every
 new block.  The staking and unbonding mechanism induces a [security
-model][TMBC-FM-2THIRDS-link]: starting at time *Time* of the
-[header][TMBC-HEADER-link],
+model][CMBC-FM-2THIRDS-link]: starting at time *Time* of the
+[header][CMBC-HEADER-link],
 more than two-thirds of the next validators of a new block are correct
 for the duration of *TrustedPeriod*. The fault-tolerant read
 operation is designed for this security model.
@@ -19,7 +19,7 @@ greater than *h1*.  Checking all headers of heights from *h1* to *h2*
 might be too costly (e.g., in terms of energy for mobile devices).
 This specification tries to reduce the number of intermediate blocks
 that need to be checked, by exploiting the guarantees provided by the
-[security model][TMBC-FM-2THIRDS-link].
+[security model][CMBC-FM-2THIRDS-link].
 
 # Status
 
@@ -56,17 +56,17 @@ needed to be made. In contrast to [version
   
 # Outline
 
-- [Part I](#part-i---tendermint-blockchain): Introduction of
- relevant terms of the Tendermint
+- [Part I](#part-i---cosmos-blockchain): Introduction of
+ relevant terms of the Cosmos
 blockchain.
 
 - [Part II](#part-ii---sequential-definition-of-the-verification-problem): Introduction
 of the problem addressed by the Lightclient Verification protocol.
     - [Verification Informal Problem
-      statement](#Verification-Informal-Problem-statement): For the general
+      statement](#verification-informal-problem-statement): For the general
       audience, that is, engineers who want to get an overview over what
       the component is doing from a bird's eye view.
-    - [Sequential Problem statement](#Sequential-Problem-statement):
+    - [Sequential Problem statement](#sequential-problem-statement):
       Provides a mathematical definition of the problem statement in
       its sequential form, that is, ignoring the distributed aspect of
       the implementation of the blockchain.
@@ -78,17 +78,17 @@ of the problem addressed by the Lightclient Verification protocol.
     - [Incentives](#incentives): how faulty full nodes may benefit from
     misbehaving and how correct full nodes benefit from cooperating.
   
-    - [Computational Model](#Computational-Model):
+    - [Computational Model](#computational-model):
       timing and correctness assumptions.
 
-    - [Distributed Problem Statement](#Distributed-Problem-Statement):
+    - [Distributed Problem Statement](#distributed-problem-statement):
       temporal properties that formalize safety and liveness
       properties in the distributed setting.
 
 - [Part IV](#part-iv---light-client-verification-protocol):
   Specification of the protocols.
 
-    - [Definitions](#Definitions): Describes inputs, outputs,
+    - [Definitions](#definitions): Describes inputs, outputs,
        variables used by the protocol, auxiliary functions
 
     - [Core Verification](#core-verification): gives an outline of the solution,
@@ -115,7 +115,7 @@ In this document we quite extensively use tags in order to be able to
 reference assumptions, invariants, etc. in future communication. In
 these tags we frequently use the following short forms:
 
-- TMBC: Tendermint blockchain
+- CMBC: Cosmos blockchain
 - SEQ: for sequential specifications
 - LCV: Lightclient Verification
 - LIVE: liveness
@@ -124,11 +124,11 @@ these tags we frequently use the following short forms:
 - INV: invariant
 - A: assumption
 
-# Part I - Tendermint Blockchain
+# Part I - Cosmos Blockchain
 
 ## Header Fields necessary for the Light Client
 
-#### **[TMBC-HEADER.1]**
+#### **[CMBC-HEADER.1]**
 
 A set of blockchain transactions is stored in a data structure called
 *block*, which contains a field called *header*. (The data structure
@@ -137,13 +137,13 @@ the relevant fields of the block, for the purpose of this
 specification, we will assume that the blockchain is a list of
 headers, rather than a list of blocks.
 
-#### **[TMBC-HASH-UNIQUENESS.1]**
+#### **[CMBC-HASH-UNIQUENESS.1]**
 
 We assume that every hash in the header identifies the data it hashes.
 Therefore, in this specification, we do not distinguish between hashes and the
 data they represent.
 
-#### **[TMBC-HEADER-FIELDS.2]**
+#### **[CMBC-HEADER-FIELDS.2]**
 
 A header contains the following fields:
 
@@ -157,11 +157,11 @@ A header contains the following fields:
 - `AppState`: DomainApp
 - `LastResults`: DomainRes
 
-#### **[TMBC-SEQ.1]**
+#### **[CMBC-SEQ.1]**
 
-The Tendermint blockchain is a list *chain* of headers.
+The Cosmos blockchain is a list *chain* of headers.
 
-#### **[TMBC-VALIDATOR-PAIR.1]**
+#### **[CMBC-VALIDATOR-PAIR.1]**
 
 Given a full node, a
 *validator pair* is a pair *(peerID, voting_power)*, where
@@ -173,13 +173,13 @@ Given a full node, a
 > In the Golang implementation the data type for *validator
 pair* is called `Validator`
 
-#### **[TMBC-VALIDATOR-SET.1]**
+#### **[CMBC-VALIDATOR-SET.1]**
 
 A *validator set* is a set of validator pairs. For a validator set
 *vs*, we write *TotalVotingPower(vs)* for the sum of the voting powers
 of its validator pairs.
 
-#### **[TMBC-VOTE.1]**
+#### **[CMBC-VOTE.1]**
 
 A *vote* contains a `prevote` or `precommit` message sent and signed by
 a validator node during the execution of [consensus][arXiv]. Each
@@ -190,13 +190,13 @@ message contains the following fields
 - `Round` a positive integer
 - `BlockID` a Hashvalue of a block (not necessarily a block of the chain)
 
-#### **[TMBC-COMMIT.1]**
+#### **[CMBC-COMMIT.1]**
 
 A commit is a set of `precommit` message.
 
-## Tendermint Failure Model
+## Cosmos Failure Model
 
-#### **[TMBC-AUTH-BYZ.1]**
+#### **[CMBC-AUTH-BYZ.1]**
 
 We assume the authenticated Byzantine fault model in which no node (faulty or
 correct) may break digital signatures, but otherwise, no additional
@@ -204,46 +204,46 @@ assumption is made about the internal behavior of faulty
 nodes. That is, faulty nodes are only limited in that they cannot forge
 messages.
 
-#### **[TMBC-TIME-PARAMS.1]**
+#### **[CMBC-TIME-PARAMS.1]**
 
-A Tendermint blockchain has the following configuration parameters:
+A Cosmos blockchain has the following configuration parameters:
 
 - *unbondingPeriod*: a time duration.
 - *trustingPeriod*: a time duration smaller than *unbondingPeriod*.
 
-#### **[TMBC-CORRECT.1]**
+#### **[CMBC-CORRECT.1]**
 
 We define a predicate *correctUntil(n, t)*, where *n* is a node and *t* is a
 time point.
 The predicate *correctUntil(n, t)* is true if and only if the node *n*
 follows all the protocols (at least) until time *t*.
 
-#### **[TMBC-FM-2THIRDS.1]**
+#### **[CMBC-FM-2THIRDS.1]**
 
 If a block *h* is in the chain,
 then there exists a subset *CorrV*
 of *h.NextValidators*, such that:
 
 - *TotalVotingPower(CorrV) > 2/3
-    TotalVotingPower(h.NextValidators)*; cf. [TMBC-VALIDATOR-SET.1]
+    TotalVotingPower(h.NextValidators)*; cf. [CMBC-VALIDATOR-SET.1]
 - For every validator pair *(n,p)* in *CorrV*, it holds *correctUntil(n,
-    h.Time + trustingPeriod)*; cf. [TMBC-CORRECT.1]
+    h.Time + trustingPeriod)*; cf. [CMBC-CORRECT.1]
 
 > The definition of correct
-> [**[TMBC-CORRECT.1]**][TMBC-CORRECT-link] refers to realtime, while it
+> [**[CMBC-CORRECT.1]**][CMBC-CORRECT-link] refers to realtime, while it
 > is used here with *Time* and *trustingPeriod*, which are "hardware
 > times".  We do not make a distinction here.
 
-#### **[TMBC-CORR-FULL.1]**
+#### **[CMBC-CORR-FULL.1]**
 
 Every correct full node locally stores a prefix of the
-current list of headers from [**[TMBC-SEQ.1]**][TMBC-SEQ-link].
+current list of headers from [**[CMBC-SEQ.1]**][CMBC-SEQ-link].
 
 ## What the Light Client Checks
 
-> From [TMBC-FM-2THIRDS.1] we directly derive the following observation:
+> From [CMBC-FM-2THIRDS.1] we directly derive the following observation:
 
-#### **[TMBC-VAL-CONTAINS-CORR.1]**
+#### **[CMBC-VAL-CONTAINS-CORR.1]**
 
 Given a (trusted) block *tb* of the blockchain, a given set of full nodes
 *N* contains a correct node at a real-time *t*, if
@@ -255,11 +255,11 @@ Given a (trusted) block *tb* of the blockchain, a given set of full nodes
 > The following describes how a commit for a given block *b* must look
 > like.
 
-#### **[TMBC-SOUND-DISTR-POSS-COMMIT.1]**
+#### **[CMBC-SOUND-DISTR-POSS-COMMIT.1]**
 
 For a block *b*, each element *pc* of *PossibleCommit(b)* satisfies:
 
-- *pc* contains only votes (cf. [TMBC-VOTE.1])
+- *pc* contains only votes (cf. [CMBC-VOTE.1])
   by validators from *b.Validators*
 - the sum of the voting powers in *pc* is greater than 2/3
   *TotalVotingPower(b.Validators)*
@@ -274,7 +274,7 @@ For a block *b*, each element *pc* of *PossibleCommit(b)* satisfies:
 > `BlockID` of the new (to-be-decided) block is equal to the hash of
 > the last block.
 
-#### **[TMBC-VAL-COMMIT.1]**
+#### **[CMBC-VAL-COMMIT.1]**
 
 If for a block *b*,  a commit *c*
 
@@ -294,8 +294,8 @@ header it receives coincides with the one generated by Tendermint
 consensus.
 
 The two
- properties [[TMBC-VAL-CONTAINS-CORR.1]][TMBC-VAL-CONTAINS-CORR-link] and
-[[TMBC-VAL-COMMIT]][TMBC-VAL-COMMIT-link]  formalize the checks done
+ properties [[CMBC-VAL-CONTAINS-CORR.1]][CMBC-VAL-CONTAINS-CORR-link] and
+[[CMBC-VAL-COMMIT]][CMBC-VAL-COMMIT-link]  formalize the checks done
  by this specification:
 Given a trusted block *tb* and an untrusted block *ub* with a commit *cub*,
 one has to check that *cub* is in *PossibleCommit(ub)*, and that *cub*
@@ -307,7 +307,7 @@ contains a correct node using *tb*.
 
 Given a height *targetHeight* as an input, the *Verifier* eventually
 stores a header *h* of height *targetHeight* locally.  This header *h*
-is generated by the Tendermint [blockchain][block]. In
+is generated by the Cosmos [blockchain][block]. In
 particular, a header that was not generated by the blockchain should
 never be stored.
 
@@ -357,12 +357,12 @@ before the timeout expires.
 
 #### **[LCV-A-TFM.1]**
 
-The Tendermint blockchain satisfies the Tendermint failure model [**[TMBC-FM-2THIRDS.1]**][TMBC-FM-2THIRDS-link].
+The Cosmos blockchain satisfies the Cosmos failure model [**[CMBC-FM-2THIRDS.1]**][CMBC-FM-2THIRDS-link].
 
 #### **[LCV-A-VAL.1]**
 
-The system satisfies [**[TMBC-AUTH-BYZ.1]**][TMBC-Auth-Byz-link] and
-[**[TMBC-FM-2THIRDS.1]**][TMBC-FM-2THIRDS-link]. Thus, there is a
+The system satisfies [**[CMBC-AUTH-BYZ.1]**][CMBC-Auth-Byz-link] and
+[**[CMBC-FM-2THIRDS.1]**][CMBC-FM-2THIRDS-link]. Thus, there is a
 blockchain that satisfies the soundness requirements (that is, the
 validation rules in [[block]]).
 
@@ -420,9 +420,9 @@ must eventually terminate.
 
 > These definitions imply that if the primary is faulty, a header may or
 > may not be added to *LightStore*. In any case,
-> [**[LCV-DIST-SAFE.2]**](#lcv-dist-safe2) must hold.
-> The invariant [**[LCV-DIST-SAFE.2]**](#lcv-dist-safe2) and the liveness
-> requirement [**[LCV-DIST-LIVE.2]**](#lcv-dist-life)
+> [**[LCV-DIST-SAFE.2]**](https://github.com/cometbft/cometbft/blob/v0.34.x/spec/light-client/verification/verification_001_published.md#lcv-dist-safe2) must hold.
+> The invariant [**[LCV-DIST-SAFE.2]**](https://github.com/cometbft/cometbft/blob/v0.34.x/spec/light-client/verification/verification_001_published.md#lcv-dist-safe2) and the liveness
+> requirement [**[LCV-DIST-LIVE.2]**](https://github.com/cometbft/cometbft/blob/v0.34.x/spec/light-client/verification/verification_001_published.md#lcv-dist-life)
 > allow that verified headers are added to *LightStore* whose
 > height was not passed
 > to the verifier (e.g., intermediate headers used in bisection; see below).
@@ -439,16 +439,16 @@ must eventually terminate.
 This specification provides a partial solution to the sequential specification.
 The *Verifier* solves the invariant of the sequential part
 
-[**[LCV-DIST-SAFE.2]**](#lcv-dist-safe2) => [**[LCV-SEQ-SAFE.1]**](#lcv-seq-safe1)
+[**[LCV-DIST-SAFE.2]**](https://github.com/cometbft/cometbft/blob/v0.34.x/spec/light-client/verification/verification_001_published.md#lcv-dist-safe2) => [**[LCV-SEQ-SAFE.1]**](https://github.com/cometbft/cometbft/blob/v0.34.x/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1)
 
 In the case the primary is correct, and *root*  is a recent header in *LightStore*, the verifier satisfies the liveness requirements.
 
 ⋀ *primary is correct*  
 ⋀ *root.header.Time* > *now* - *trustingPeriod*  
-⋀ [**[LCV-A-Comm.1]**](#lcv-a-comm) ⋀ (
-       ( [**[TMBC-CorrFull.1]**][TMBC-CorrFull-link] ⋀
-         [**[LCV-DIST-LIVE.2]**](#lcv-dist-live2) )
-       ⟹ [**[LCV-SEQ-LIVE.1]**](#lcv-seq-live1)
+⋀ [**[LCV-A-Comm.1]**](https://github.com/cometbft/cometbft/blob/v0.34.x/spec/light-client/verification/verification_001_published.md#lcv-a-comm) ⋀ (
+       ( [**[CMBC-CorrFull.1]**][CMBC-CorrFull-link] ⋀
+         [**[LCV-DIST-LIVE.2]**](https://github.com/cometbft/cometbft/blob/v0.34.x/spec/light-client/verification/verification_001_published.md#lcv-dist-live2) )
+       ⟹ [**[LCV-SEQ-LIVE.1]**](https://github.com/cometbft/cometbft/blob/v0.34.x/spec/light-client/verification/verification_001_published.md#lcv-dist-live1)
 )
 
 # Part IV - Light Client Verification Protocol
@@ -612,7 +612,7 @@ func (ls LightStore) TraceTo(lightBlock LightBlock) (LightBlock, LightStore)
     - returns a **trusted** lightblock `root` from the lightstore with a height
       less than `lightBlock`
     - returns a lightstore that contains lightblocks that constitute a
-      [verification trace](TODOlinkToDetectorSpecOnceThere) from
+      [verification trace](https://github.com/cometbft/cometbft/tree/v0.34.x/spec/light-client/detection) from
       `root` to `lightBlock` (including `lightBlock`)
 
 ### Inputs
@@ -624,7 +624,7 @@ func (ls LightStore) TraceTo(lightBlock LightBlock) (LightBlock, LightStore)
 ### Configuration Parameters
 
 - *trustThreshold*: a float. Can be used if correctness should not be based on more voting power and 1/3.
-- *trustingPeriod*: a time duration [**[TMBC-TIME_PARAMS.1]**][TMBC-TIME_PARAMS-link].
+- *trustingPeriod*: a time duration [**[CMBC-TIME_PARAMS.1]**][CMBC-TIME_PARAMS-link].
 - *clockDrift*: a time duration. Correction parameter dealing with only approximately synchronized clocks.
 
 ### Variables
@@ -655,7 +655,7 @@ It is always the case that *LightStore.LatestTrusted.Header.Time > now - trustin
 ### Used Remote Functions
 
 We use the functions `commit` and `validators` that are provided
-by the [RPC client for Tendermint][RPC].
+by the [RPC client][RPC].
 
 ```go
 func Commit(height int64) (SignedHeader, error)
@@ -743,7 +743,7 @@ func FetchLightBlock(peer PeerID, height Height) LightBlock
         - *lb.Validators* is the validator set of the blockchain at height *nextHeight*
         - *lb.NextValidators* is the validator set of the blockchain at height *nextHeight + 1*
     - if *node* is faulty: Returns a LightBlock with arbitrary content
-    [**[TMBC-AUTH-BYZ.1]**][TMBC-Auth-Byz-link]
+    [**[CMBC-AUTH-BYZ.1]**][CMBC-Auth-Byz-link]
 - Error condition
     - if *n* is correct: precondition violated
     - if *n* is faulty: arbitrary error
@@ -823,7 +823,7 @@ func VerifyToTarget(primary PeerID, root LightBlock,
 - Error conditions
     - if the precondition is violated
     - if `ValidAndVerified` or `FetchLightBlock` report an error
-    - if [**[LCV-INV-TP.1]**](#LCV-INV-TP.1) is violated
+    - if [**[LCV-INV-TP.1]**](#lcv-inv-tp1) is violated
   
 ### Details of the Functions
 
@@ -859,14 +859,14 @@ func ValidAndVerified(trusted LightBlock, untrusted LightBlock) Result
              *max(1/3,trustThreshold)* of voting power in
              *trusted.Nextvalidators* is contained in
              *untrusted.Commit* (that is, header passes the tests
-             [**[TMBC-VAL-CONTAINS-CORR.1]**][TMBC-VAL-CONTAINS-CORR-link]
-             and [**[TMBC-VAL-COMMIT.1]**][TMBC-VAL-COMMIT-link])
+             [**[CMBC-VAL-CONTAINS-CORR.1]**][CMBC-VAL-CONTAINS-CORR-link]
+             and [**[CMBC-VAL-COMMIT.1]**][CMBC-VAL-COMMIT-link])
     - Returns `NOT_ENOUGH_TRUST` if:
         - *untrusted* is *not* the immediate successor of
            *trusted*
      and the  *max(1/3,trustThreshold)* threshold is not reached
            (that is, if
-      [**[TMBC-VAL-CONTAINS-CORR.1]**][TMBC-VAL-CONTAINS-CORR-link]
+      [**[CMBC-VAL-CONTAINS-CORR.1]**][CMBC-VAL-CONTAINS-CORR-link]
       fails and header is does not violate the soundness
          checks [[block]]).
 - Error condition:
@@ -913,8 +913,8 @@ Analogous to [[001_published]](./verification_001_published.md#liveness-scenario
 # Part V - Supporting the IBC Relayer
 
 The above specification focuses on the most common case, which also
-constitutes the most challenging task: using the Tendermint [security
-model][TMBC-FM-2THIRDS-link] to verify light blocks without
+constitutes the most challenging task: using the Cosmos [security
+model][CMBC-FM-2THIRDS-link] to verify light blocks without
 downloading all intermediate blocks. To focus on this challenge, above
 we have restricted ourselves to the case where  *targetHeight* is
 greater than the height of any trusted header. This simplified
@@ -927,14 +927,14 @@ For [IBC][ibc-rs] there are two additional challenges:
 
 1. it might be that some "older" header is needed, that is,
 *targetHeight < lightStore.LatestVerified()*.  The
-[supervisor](../supervisor/supervisor.md) checks whether it is in this
+[supervisor](../supervisor/supervisor_002_draft.md) checks whether it is in this
 case by calling `LatestPrevious` and `MinVerified` and if so it calls
 `Backwards`. All these functions are specified below.
 
 2. In order to submit proof of a light client attack, a relayer may
    need to submit a verification trace. This it is important to
    compute such a trace efficiently. That it can be done is based on
-   the invariant [[LCV-INV-LS-ROOT.2]](#LCV-INV-LS-ROOT2) that needs
+   the invariant [[LCV-INV-LS-ROOT.2]](#lcv-inv-ls-root2) that needs
    to be maintained by the light client. In particular
    `VerifyToTarget` and `Backwards` need to take care of setting
    `verification-root`.
@@ -1023,7 +1023,7 @@ func Backwards (primary PeerID, root LightBlock, targetHeight Height)
 
 [[block]] Specification of the block data structure.
 
-[[RPC]] RPC client for Tendermint
+[[RPC]] RPC client
 
 [[attack-detector]] The specification of the light client attack detector.
 
@@ -1033,29 +1033,24 @@ func Backwards (primary PeerID, root LightBlock, targetHeight Height)
 
 [[lightclient]] The light client ADR [77d2651 on Dec 27, 2019].
 
-[RPC]: https://docs.tendermint.com/v0.34/rpc/
+[RPC]: https://docs.cometbft.com/v0.34/rpc/
 
-[block]: https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md
+[block]: https://github.com/cometbft/cometbft/blob/v0.34.x/spec/core/data_structures.md
 
-[TMBC-HEADER-link]: #tmbc-header1
-[TMBC-SEQ-link]: #tmbc-seq1
-[TMBC-CorrFull-link]: #tmbc-corr-full1
-[TMBC-Auth-Byz-link]: #tmbc-auth-byz1
-[TMBC-TIME_PARAMS-link]: #tmbc-time-params1
-[TMBC-FM-2THIRDS-link]: #tmbc-fm-2thirds1
-[TMBC-VAL-CONTAINS-CORR-link]: #tmbc-val-contains-corr1
-[TMBC-VAL-COMMIT-link]: #tmbc-val-commit1
-[TMBC-SOUND-DISTR-POSS-COMMIT-link]: #tmbc-sound-distr-poss-commit1
+[CMBC-HEADER-link]: #cmbc-header1
+[CMBC-SEQ-link]: #cmbc-seq1
+[CMBC-CorrFull-link]: #cmbc-corr-full1
+[CMBC-Auth-Byz-link]: #cmbc-auth-byz1
+[CMBC-TIME_PARAMS-link]: #cmbc-time-params1
+[CMBC-FM-2THIRDS-link]: #cmbc-fm-2thirds1
+[CMBC-VAL-CONTAINS-CORR-link]: #cmbc-val-contains-corr1
+[CMBC-VAL-COMMIT-link]: #cmbc-val-commit1
 
 [lightclient]: https://github.com/interchainio/tendermint-rs/blob/e2cb9aca0b95430fca2eac154edddc9588038982/docs/architecture/adr-002-lite-client.md
-[attack-detector]: https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/detection/detection_001_reviewed.md
-[fullnode]: https://github.com/tendermint/tendermint/blob/v0.34.x/spec/blockchain/fullnode.md
+[attack-detector]: https://github.com/cometbft/cometbft/blob/v0.34.x/spec/light-client/detection/detection_001_reviewed.md
+[fullnode]: https://github.com/cometbft/cometbft/tree/v0.34.x/spec/core
 
 [ibc-rs]:https://github.com/informalsystems/ibc-rs
 
-[blockchain-validator-set]: https://github.com/tendermint/tendermint/blob/v0.34.x/spec/blockchain/blockchain.md#data-structures
-[fullnode-data-structures]: https://github.com/tendermint/tendermint/blob/v0.34.x/spec/blockchain/fullnode.md#data-structures
-
-[FN-ManifestFaulty-link]: https://github.com/tendermint/tendermint/blob/v0.34.x/spec/blockchain/fullnode.md#fn-manifestfaulty
 
 [arXiv]: https://arxiv.org/abs/1807.04938

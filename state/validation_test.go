@@ -8,16 +8,16 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	"github.com/tendermint/tendermint/libs/log"
-	memmock "github.com/tendermint/tendermint/mempool/mock"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/state/mocks"
-	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	"github.com/cometbft/cometbft/libs/log"
+	memmock "github.com/cometbft/cometbft/mempool/mock"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/state/mocks"
+	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 const validationTestsStopHeight int64 = 10
@@ -191,8 +191,8 @@ func TestValidateBlockCommit(t *testing.T) {
 			ValidatorIndex:   0,
 			Height:           height,
 			Round:            0,
-			Timestamp:        tmtime.Now(),
-			Type:             tmproto.PrecommitType,
+			Timestamp:        cmttime.Now(),
+			Type:             cmtproto.PrecommitType,
 			BlockID:          blockID,
 		}
 

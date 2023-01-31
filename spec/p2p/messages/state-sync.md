@@ -91,16 +91,15 @@ if necessary. The light block at the height of the snapshot will be used to veri
 |---------------|---------------------------------------------------------|--------------------------------------|--------------|
 | light_block   | [LightBlock](../../core/data_structures.md#lightblock)  | Light block at the height requested  | 1            |
 
-State sync will use [light client verification](../../light-client/verification.README.md) to verify
+State sync will use [light client verification](../../../spec/light-client/verification/README.md) to verify
 the light blocks.
-
 
 If no state sync is in progress (i.e. during normal operation), any unsolicited response messages
 are discarded.
 
 ### ParamsRequest
 
-In order to build tendermint state, the state provider will request the params at the height of the snapshot and use the header to verify it.
+In order to build the state, the state provider will request the params at the height of the snapshot and use the header to verify it.
 
 | Name     | Type   | Description                | Field Number |
 |----------|--------|----------------------------|--------------|

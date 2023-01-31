@@ -7,13 +7,13 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
-	bc "github.com/tendermint/tendermint/blockchain"
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/p2p"
-	bcproto "github.com/tendermint/tendermint/proto/tendermint/blockchain"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/store"
-	"github.com/tendermint/tendermint/types"
+	bc "github.com/cometbft/cometbft/blockchain"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/p2p"
+	bcproto "github.com/cometbft/cometbft/proto/tendermint/blockchain"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (

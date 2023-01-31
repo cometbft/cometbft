@@ -3,10 +3,10 @@ package proxy
 import (
 	"fmt"
 
-	abcicli "github.com/tendermint/tendermint/abci/client"
-	tmlog "github.com/tendermint/tendermint/libs/log"
-	tmos "github.com/tendermint/tendermint/libs/os"
-	"github.com/tendermint/tendermint/libs/service"
+	abcicli "github.com/cometbft/cometbft/abci/client"
+	cmtlog "github.com/cometbft/cometbft/libs/log"
+	cmtos "github.com/cometbft/cometbft/libs/os"
+	"github.com/cometbft/cometbft/libs/service"
 )
 
 const (
@@ -125,11 +125,11 @@ func (app *multiAppConn) OnStop() {
 }
 
 func (app *multiAppConn) killTMOnClientError() {
-	killFn := func(conn string, err error, logger tmlog.Logger) {
+	killFn := func(conn string, err error, logger cmtlog.Logger) {
 		logger.Error(
 			fmt.Sprintf("%s connection terminated. Did the application crash? Please restart tendermint", conn),
 			"err", err)
-		killErr := tmos.Kill()
+		killErr := cmtos.Kill()
 		if killErr != nil {
 			logger.Error("Failed to kill this process - please do so manually", "err", killErr)
 		}

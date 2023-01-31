@@ -7,14 +7,14 @@
  *
  * It follows the English specification:
  *
- * https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/attacks/isolate-attackers_001_draft.md
+ * https://github.com/cometbft/cometbft/blob/v0.34.x/spec/light-client/attacks/isolate-attackers_001_draft.md
  *
  * The assumptions made in this specification:
  *
  *  - the voting power of every validator is 1
  *     (add more validators, if you need more validators)
  *
- *  - Tendermint security model is violated
+ *  - Cosmos security model is violated
  *    (there are Byzantine validators who signed a conflicting block)
  *
  * Igor Konnov, Zarko Milosevic, Josef Widder, Informal Systems, 2020
@@ -35,7 +35,7 @@ CONSTANTS
     (* the period within which the validators are trusted *)
   FAULTY_RATIO
     (* a pair <<a, b>> that limits that ratio of faulty validator in the blockchain
-       from above (exclusive). Tendermint security model prescribes 1 / 3. *)
+       from above (exclusive). Cosmos security model prescribes 1 / 3. *)
 
 VARIABLES  
   blockchain,           (* the chain at the full node *)

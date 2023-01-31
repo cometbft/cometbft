@@ -3,8 +3,8 @@ package mempool
 import (
 	"container/list"
 
-	tmsync "github.com/tendermint/tendermint/libs/sync"
-	"github.com/tendermint/tendermint/types"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/types"
 )
 
 // TxCache defines an interface for raw transaction caching in a mempool.
@@ -33,7 +33,7 @@ var _ TxCache = (*LRUTxCache)(nil)
 // LRUTxCache maintains a thread-safe LRU cache of raw transactions. The cache
 // only stores the hash of the raw transaction.
 type LRUTxCache struct {
-	mtx      tmsync.Mutex
+	mtx      cmtsync.Mutex
 	size     int
 	cacheMap map[types.TxKey]*list.Element
 	list     *list.List

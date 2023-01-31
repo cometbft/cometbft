@@ -359,7 +359,7 @@ import (
 
  abci "github.com/tendermint/tendermint/abci/types"
  cfg "github.com/tendermint/tendermint/config"
- tmflags "github.com/tendermint/tendermint/libs/cli/flags"
+ cmtflags "github.com/tendermint/tendermint/libs/cli/flags"
  "github.com/tendermint/tendermint/libs/log"
  nm "github.com/tendermint/tendermint/node"
  "github.com/tendermint/tendermint/p2p"
@@ -420,7 +420,7 @@ func newTendermint(app abci.Application, configFile string) (*nm.Node, error) {
  // create logger
  logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
  var err error
- logger, err = tmflags.ParseLogLevel(config.LogLevel, logger, cfg.DefaultLogLevel)
+ logger, err = cmtflags.ParseLogLevel(config.LogLevel, logger, cfg.DefaultLogLevel)
  if err != nil {
   return nil, fmt.Errorf("failed to parse log level: %w", err)
  }

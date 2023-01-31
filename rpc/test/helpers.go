@@ -8,18 +8,18 @@ import (
 	"strings"
 	"time"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/log"
 
-	cfg "github.com/tendermint/tendermint/config"
-	tmnet "github.com/tendermint/tendermint/libs/net"
-	nm "github.com/tendermint/tendermint/node"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/privval"
-	"github.com/tendermint/tendermint/proxy"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	core_grpc "github.com/tendermint/tendermint/rpc/grpc"
-	rpcclient "github.com/tendermint/tendermint/rpc/jsonrpc/client"
+	cfg "github.com/cometbft/cometbft/config"
+	cmtnet "github.com/cometbft/cometbft/libs/net"
+	nm "github.com/cometbft/cometbft/node"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/privval"
+	"github.com/cometbft/cometbft/proxy"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	core_grpc "github.com/cometbft/cometbft/rpc/grpc"
+	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 )
 
 // Options helps with specifying some parameters for our RPC testing for greater
@@ -76,7 +76,7 @@ func makePathname() string {
 }
 
 func randPort() int {
-	port, err := tmnet.GetFreePort()
+	port, err := cmtnet.GetFreePort()
 	if err != nil {
 		panic(err)
 	}
@@ -94,8 +94,8 @@ func createConfig() *cfg.Config {
 	c := cfg.ResetTestRoot(pathname)
 
 	// and we use random ports to run in parallel
-	tm, rpc, grpc := makeAddrs()
-	c.P2P.ListenAddress = tm
+	cmt, rpc, grpc := makeAddrs()
+	c.P2P.ListenAddress = cmt
 	c.RPC.ListenAddress = rpc
 	c.RPC.CORSAllowedOrigins = []string{"https://tendermint.com/"}
 	c.RPC.GRPCListenAddress = grpc

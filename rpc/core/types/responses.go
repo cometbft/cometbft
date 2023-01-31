@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"time"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/libs/bytes"
-	"github.com/tendermint/tendermint/p2p"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/p2p"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 // List of blocks
@@ -144,8 +144,8 @@ type ResultValidators struct {
 
 // ConsensusParams for given height
 type ResultConsensusParams struct {
-	BlockHeight     int64                   `json:"block_height"`
-	ConsensusParams tmproto.ConsensusParams `json:"consensus_params"`
+	BlockHeight     int64                    `json:"block_height"`
+	ConsensusParams cmtproto.ConsensusParams `json:"consensus_params"`
 }
 
 // Info about the consensus state.

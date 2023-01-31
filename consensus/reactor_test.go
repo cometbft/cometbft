@@ -16,30 +16,30 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	abcicli "github.com/tendermint/tendermint/abci/client"
-	"github.com/tendermint/tendermint/abci/example/kvstore"
-	abci "github.com/tendermint/tendermint/abci/types"
-	cfg "github.com/tendermint/tendermint/config"
-	cstypes "github.com/tendermint/tendermint/consensus/types"
-	cryptoenc "github.com/tendermint/tendermint/crypto/encoding"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	"github.com/tendermint/tendermint/libs/bits"
-	"github.com/tendermint/tendermint/libs/bytes"
-	"github.com/tendermint/tendermint/libs/log"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
-	mempl "github.com/tendermint/tendermint/mempool"
-	mempoolv0 "github.com/tendermint/tendermint/mempool/v0"
-	mempoolv1 "github.com/tendermint/tendermint/mempool/v1"
-	"github.com/tendermint/tendermint/p2p"
-	p2pmock "github.com/tendermint/tendermint/p2p/mock"
-	tmcons "github.com/tendermint/tendermint/proto/tendermint/consensus"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	sm "github.com/tendermint/tendermint/state"
-	statemocks "github.com/tendermint/tendermint/state/mocks"
-	"github.com/tendermint/tendermint/store"
-	"github.com/tendermint/tendermint/types"
+	abcicli "github.com/cometbft/cometbft/abci/client"
+	"github.com/cometbft/cometbft/abci/example/kvstore"
+	abci "github.com/cometbft/cometbft/abci/types"
+	cfg "github.com/cometbft/cometbft/config"
+	cstypes "github.com/cometbft/cometbft/consensus/types"
+	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	"github.com/cometbft/cometbft/libs/bits"
+	"github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	mempl "github.com/cometbft/cometbft/mempool"
+	mempoolv0 "github.com/cometbft/cometbft/mempool/v0"
+	mempoolv1 "github.com/cometbft/cometbft/mempool/v1"
+	"github.com/cometbft/cometbft/p2p"
+	p2pmock "github.com/cometbft/cometbft/p2p/mock"
+	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	sm "github.com/cometbft/cometbft/state"
+	statemocks "github.com/cometbft/cometbft/state/mocks"
+	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/types"
 )
 
 //----------------------------------------------
@@ -56,7 +56,7 @@ func startConsensusNet(t *testing.T, css []*State, n int) (
 	blocksSubs := make([]types.Subscription, 0)
 	eventBuses := make([]*types.EventBus, n)
 	for i := 0; i < n; i++ {
-		/*logger, err := tmflags.ParseLogLevel("consensus:info,*:error", logger, "info")
+		/*logger, err := cmtflags.ParseLogLevel("consensus:info,*:error", logger, "info")
 		if err != nil {	t.Fatal(err)}*/
 		reactors[i] = NewReactor(css[i], true) // so we dont start the consensus states
 		reactors[i].SetLogger(css[i].Logger)
@@ -158,7 +158,7 @@ func TestReactorWithEvidence(t *testing.T) {
 		blockDB := dbm.NewMemDB()
 		blockStore := store.NewBlockStore(blockDB)
 
-		mtx := new(tmsync.Mutex)
+		mtx := new(cmtsync.Mutex)
 		memplMetrics := mempl.NopMetrics()
 		// one for mempool, one for consensus
 		proxyAppConnCon := abcicli.NewLocalClient(mtx, app)
@@ -275,8 +275,8 @@ func TestLegacyReactorReceiveBasicIfAddPeerHasntBeenCalledYet(t *testing.T) {
 		reactor.ReceiveEnvelope(p2p.Envelope{
 			ChannelID: StateChannel,
 			Src:       peer,
-			Message: &tmcons.HasVote{Height: 1,
-				Round: 1, Index: 1, Type: tmproto.PrevoteType},
+			Message: &cmtcons.HasVote{Height: 1,
+				Round: 1, Index: 1, Type: cmtproto.PrevoteType},
 		})
 		reactor.AddPeer(peer)
 	})
@@ -295,11 +295,11 @@ func TestLegacyReactorReceiveBasic(t *testing.T) {
 	)
 
 	reactor.InitPeer(peer)
-	v := &tmcons.HasVote{
+	v := &cmtcons.HasVote{
 		Height: 1,
 		Round:  1,
 		Index:  1,
-		Type:   tmproto.PrevoteType,
+		Type:   cmtproto.PrevoteType,
 	}
 	w := v.Wrap()
 	msg, err := proto.Marshal(w)
@@ -330,8 +330,8 @@ func TestReactorReceivePanicsIfInitPeerHasntBeenCalledYet(t *testing.T) {
 		reactor.ReceiveEnvelope(p2p.Envelope{
 			ChannelID: StateChannel,
 			Src:       peer,
-			Message: &tmcons.HasVote{Height: 1,
-				Round: 1, Index: 1, Type: tmproto.PrevoteType},
+			Message: &cmtcons.HasVote{Height: 1,
+				Round: 1, Index: 1, Type: cmtproto.PrevoteType},
 		})
 	})
 }
@@ -913,8 +913,8 @@ func TestBlockPartMessageValidateBasic(t *testing.T) {
 
 func TestHasVoteMessageValidateBasic(t *testing.T) {
 	const (
-		validSignedMsgType   tmproto.SignedMsgType = 0x01
-		invalidSignedMsgType tmproto.SignedMsgType = 0x03
+		validSignedMsgType   cmtproto.SignedMsgType = 0x01
+		invalidSignedMsgType cmtproto.SignedMsgType = 0x03
 	)
 
 	testCases := []struct { //nolint: maligned
@@ -923,7 +923,7 @@ func TestHasVoteMessageValidateBasic(t *testing.T) {
 		messageIndex  int32
 		messageHeight int64
 		testName      string
-		messageType   tmproto.SignedMsgType
+		messageType   cmtproto.SignedMsgType
 	}{
 		{false, 0, 0, 0, "Valid Message", validSignedMsgType},
 		{true, -1, 0, 0, "Invalid Message", validSignedMsgType},
@@ -949,8 +949,8 @@ func TestHasVoteMessageValidateBasic(t *testing.T) {
 
 func TestVoteSetMaj23MessageValidateBasic(t *testing.T) {
 	const (
-		validSignedMsgType   tmproto.SignedMsgType = 0x01
-		invalidSignedMsgType tmproto.SignedMsgType = 0x03
+		validSignedMsgType   cmtproto.SignedMsgType = 0x01
+		invalidSignedMsgType cmtproto.SignedMsgType = 0x03
 	)
 
 	validBlockID := types.BlockID{}
@@ -967,7 +967,7 @@ func TestVoteSetMaj23MessageValidateBasic(t *testing.T) {
 		messageRound   int32
 		messageHeight  int64
 		testName       string
-		messageType    tmproto.SignedMsgType
+		messageType    cmtproto.SignedMsgType
 		messageBlockID types.BlockID
 	}{
 		{false, 0, 0, "Valid Message", validSignedMsgType, validBlockID},

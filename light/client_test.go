@@ -10,14 +10,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/light"
-	"github.com/tendermint/tendermint/light/provider"
-	mockp "github.com/tendermint/tendermint/light/provider/mock"
-	dbs "github.com/tendermint/tendermint/light/store/db"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/light"
+	"github.com/cometbft/cometbft/light/provider"
+	mockp "github.com/cometbft/cometbft/light/provider/mock"
+	dbs "github.com/cometbft/cometbft/light/store/db"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (

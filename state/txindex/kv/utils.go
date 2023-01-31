@@ -3,10 +3,10 @@ package kv
 import (
 	"fmt"
 
+	"github.com/cometbft/cometbft/libs/pubsub/query"
+	"github.com/cometbft/cometbft/state/indexer"
+	"github.com/cometbft/cometbft/types"
 	"github.com/google/orderedcode"
-	"github.com/tendermint/tendermint/libs/pubsub/query"
-	"github.com/tendermint/tendermint/state/indexer"
-	"github.com/tendermint/tendermint/types"
 )
 
 type HeightInfo struct {

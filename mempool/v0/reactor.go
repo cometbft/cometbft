@@ -7,14 +7,14 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
-	cfg "github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/libs/clist"
-	"github.com/tendermint/tendermint/libs/log"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
-	"github.com/tendermint/tendermint/mempool"
-	"github.com/tendermint/tendermint/p2p"
-	protomem "github.com/tendermint/tendermint/proto/tendermint/mempool"
-	"github.com/tendermint/tendermint/types"
+	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/libs/clist"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/mempool"
+	"github.com/cometbft/cometbft/p2p"
+	protomem "github.com/cometbft/cometbft/proto/tendermint/mempool"
+	"github.com/cometbft/cometbft/types"
 )
 
 // Reactor handles mempool tx broadcasting amongst peers.
@@ -28,7 +28,7 @@ type Reactor struct {
 }
 
 type mempoolIDs struct {
-	mtx       tmsync.RWMutex
+	mtx       cmtsync.RWMutex
 	peerMap   map[p2p.ID]uint16
 	nextID    uint16              // assumes that a node will never have over 65536 active peers
 	activeIDs map[uint16]struct{} // used to check if a given peerID key is used, the value doesn't matter

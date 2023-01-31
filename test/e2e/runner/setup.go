@@ -16,14 +16,14 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/privval"
-	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
-	"github.com/tendermint/tendermint/test/e2e/pkg/infra"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/privval"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -112,7 +112,7 @@ func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
 			filepath.Join(nodeDir, PrivvalStateFile),
 		)).Save()
 
-		// Set up a dummy validator. Tendermint requires a file PV even when not used, so we
+		// Set up a dummy validator. CometBFT requires a file PV even when not used, so we
 		// give it a dummy such that it will fail if it actually tries to use it.
 		(privval.NewFilePV(ed25519.GenPrivKey(),
 			filepath.Join(nodeDir, PrivvalDummyKeyFile),
@@ -141,7 +141,7 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 			Power:   power,
 		})
 	}
-	// The validator set will be sorted internally by Tendermint ranked by power,
+	// The validator set will be sorted internally by CometBFT ranked by power,
 	// but we sort it here as well so that all genesis files are identical.
 	sort.Slice(genesis.Validators, func(i, j int) bool {
 		return strings.Compare(genesis.Validators[i].Name, genesis.Validators[j].Name) == -1
@@ -156,7 +156,7 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	return genesis, genesis.ValidateAndComplete()
 }
 
-// MakeConfig generates a Tendermint config for a node.
+// MakeConfig generates a CometBFT config for a node.
 func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg := config.DefaultConfig()
 	cfg.Moniker = node.Name
@@ -183,7 +183,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		return nil, fmt.Errorf("unexpected ABCI protocol setting %q", node.ABCIProtocol)
 	}
 
-	// Tendermint errors if it does not have a privval key set up, regardless of whether
+	// CometBFT errors if it does not have a privval key set up, regardless of whether
 	// it's actually needed (e.g. for remote KMS or non-validators). We set up a dummy
 	// key here by default, and use the real key for actual validators that should use
 	// the file privval.

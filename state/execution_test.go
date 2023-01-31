@@ -9,21 +9,21 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	cryptoenc "github.com/tendermint/tendermint/crypto/encoding"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	"github.com/tendermint/tendermint/libs/log"
-	mmock "github.com/tendermint/tendermint/mempool/mock"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	"github.com/tendermint/tendermint/proxy"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/state/mocks"
-	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
-	"github.com/tendermint/tendermint/version"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	"github.com/cometbft/cometbft/libs/log"
+	mmock "github.com/cometbft/cometbft/mempool/mock"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	"github.com/cometbft/cometbft/proxy"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/state/mocks"
+	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/cometbft/cometbft/version"
 )
 
 var (
@@ -78,7 +78,7 @@ func TestBeginBlockValidators(t *testing.T) {
 	prevBlockID := types.BlockID{Hash: prevHash, PartSetHeader: prevParts}
 
 	var (
-		now        = tmtime.Now()
+		now        = cmttime.Now()
 		commitSig0 = types.NewCommitSigForBlock(
 			[]byte("Signature1"),
 			state.Validators.Validators[0].Address,
@@ -142,7 +142,7 @@ func TestBeginBlockByzantineValidators(t *testing.T) {
 	privVal := privVals[state.Validators.Validators[0].Address.String()]
 	blockID := makeBlockID([]byte("headerhash"), 1000, []byte("partshash"))
 	header := &types.Header{
-		Version:            tmversion.Consensus{Block: version.BlockProtocol, App: 1},
+		Version:            cmtversion.Consensus{Block: version.BlockProtocol, App: 1},
 		ChainID:            state.ChainID,
 		Height:             10,
 		Time:               defaultEvidenceTime,
@@ -228,13 +228,13 @@ func TestValidateValidatorUpdates(t *testing.T) {
 	pk2, err := cryptoenc.PubKeyToProto(pubkey2)
 	assert.NoError(t, err)
 
-	defaultValidatorParams := tmproto.ValidatorParams{PubKeyTypes: []string{types.ABCIPubKeyTypeEd25519}}
+	defaultValidatorParams := cmtproto.ValidatorParams{PubKeyTypes: []string{types.ABCIPubKeyTypeEd25519}}
 
 	testCases := []struct {
 		name string
 
 		abciUpdates     []abci.ValidatorUpdate
-		validatorParams tmproto.ValidatorParams
+		validatorParams cmtproto.ValidatorParams
 
 		shouldErr bool
 	}{

@@ -1,12 +1,12 @@
 package consensus
 
 import (
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/clist"
-	mempl "github.com/tendermint/tendermint/mempool"
-	tmstate "github.com/tendermint/tendermint/proto/tendermint/state"
-	"github.com/tendermint/tendermint/proxy"
-	"github.com/tendermint/tendermint/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/clist"
+	mempl "github.com/cometbft/cometbft/mempool"
+	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
+	"github.com/cometbft/cometbft/proxy"
+	"github.com/cometbft/cometbft/types"
 )
 
 //-----------------------------------------------------------------------------
@@ -56,7 +56,7 @@ func (emptyMempool) CloseWAL()      {}
 // Useful because we don't want to call Commit() twice for the same block on
 // the real app.
 
-func newMockProxyApp(appHash []byte, abciResponses *tmstate.ABCIResponses) proxy.AppConnConsensus {
+func newMockProxyApp(appHash []byte, abciResponses *cmtstate.ABCIResponses) proxy.AppConnConsensus {
 	clientCreator := proxy.NewLocalClientCreator(&mockProxyApp{
 		appHash:       appHash,
 		abciResponses: abciResponses,
@@ -74,7 +74,7 @@ type mockProxyApp struct {
 
 	appHash       []byte
 	txCount       int
-	abciResponses *tmstate.ABCIResponses
+	abciResponses *cmtstate.ABCIResponses
 }
 
 func (mock *mockProxyApp) DeliverTx(req abci.RequestDeliverTx) abci.ResponseDeliverTx {

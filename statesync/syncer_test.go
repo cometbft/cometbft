@@ -9,21 +9,21 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/libs/log"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
-	"github.com/tendermint/tendermint/p2p"
-	p2pmocks "github.com/tendermint/tendermint/p2p/mocks"
-	tmstate "github.com/tendermint/tendermint/proto/tendermint/state"
-	ssproto "github.com/tendermint/tendermint/proto/tendermint/statesync"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	"github.com/tendermint/tendermint/proxy"
-	proxymocks "github.com/tendermint/tendermint/proxy/mocks"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/statesync/mocks"
-	"github.com/tendermint/tendermint/types"
-	"github.com/tendermint/tendermint/version"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/p2p"
+	p2pmocks "github.com/cometbft/cometbft/p2p/mocks"
+	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
+	ssproto "github.com/cometbft/cometbft/proto/tendermint/statesync"
+	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	"github.com/cometbft/cometbft/proxy"
+	proxymocks "github.com/cometbft/cometbft/proxy/mocks"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/statesync/mocks"
+	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/version"
 )
 
 const testAppVersion = 9
@@ -50,8 +50,8 @@ func simplePeer(id string) *p2pmocks.Peer {
 func TestSyncer_SyncAny(t *testing.T) {
 	state := sm.State{
 		ChainID: "chain",
-		Version: tmstate.Version{
-			Consensus: tmversion.Consensus{
+		Version: cmtstate.Version{
+			Consensus: cmtversion.Consensus{
 				Block: version.BlockProtocol,
 				App:   testAppVersion,
 			},
@@ -96,7 +96,7 @@ func TestSyncer_SyncAny(t *testing.T) {
 	require.Error(t, err)
 
 	// Adding a couple of peers should trigger snapshot discovery messages
-	peerA := &p2pmocks.Peer{}
+	peerA := &p2pmocks.PeerEnvelopeSender{}
 	peerA.On("ID").Return(p2p.ID("a"))
 	peerA.On("SendEnvelope", mock.MatchedBy(func(i interface{}) bool {
 		e, ok := i.(p2p.Envelope)
@@ -109,7 +109,7 @@ func TestSyncer_SyncAny(t *testing.T) {
 	syncer.AddPeer(peerA)
 	peerA.AssertExpectations(t)
 
-	peerB := &p2pmocks.Peer{}
+	peerB := &p2pmocks.PeerEnvelopeSender{}
 	peerB.On("ID").Return(p2p.ID("b"))
 	peerB.On("SendEnvelope", mock.MatchedBy(func(i interface{}) bool {
 		e, ok := i.(p2p.Envelope)
@@ -159,7 +159,7 @@ func TestSyncer_SyncAny(t *testing.T) {
 	}).Times(2).Return(&abci.ResponseOfferSnapshot{Result: abci.ResponseOfferSnapshot_ACCEPT}, nil)
 
 	chunkRequests := make(map[uint32]int)
-	chunkRequestsMtx := tmsync.Mutex{}
+	chunkRequestsMtx := cmtsync.Mutex{}
 	onChunkRequest := func(args mock.Arguments) {
 		e, ok := args[0].(p2p.Envelope)
 		require.True(t, ok)

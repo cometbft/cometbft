@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	"github.com/tendermint/tendermint/abci/example/code"
-	"github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/version"
+	"github.com/cometbft/cometbft/abci/example/code"
+	"github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/version"
 )
 
 var (
@@ -85,7 +85,7 @@ func (app *Application) SetGenBlockEvents() {
 func (app *Application) Info(req types.RequestInfo) (resInfo types.ResponseInfo) {
 	return types.ResponseInfo{
 		Data:             fmt.Sprintf("{\"size\":%v}", app.state.Size),
-		Version:          version.ABCIVersion,
+		Version:          version.ABCISemVer,
 		AppVersion:       ProtocolVersion,
 		LastBlockHeight:  app.state.Height,
 		LastBlockAppHash: app.state.AppHash,

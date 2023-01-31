@@ -94,7 +94,7 @@ func (trs *TaskResultSet) Wait() *TaskResultSet {
 	return trs
 }
 
-// Returns the firstmost (by task index) error as
+// Returns the firscmtost (by task index) error as
 // discovered by all previous Reap() calls.
 func (trs *TaskResultSet) FirstValue() interface{} {
 	for _, result := range trs.results {
@@ -105,7 +105,7 @@ func (trs *TaskResultSet) FirstValue() interface{} {
 	return nil
 }
 
-// Returns the firstmost (by task index) error as
+// Returns the firscmtost (by task index) error as
 // discovered by all previous Reap() calls.
 func (trs *TaskResultSet) FirstError() error {
 	for _, result := range trs.results {

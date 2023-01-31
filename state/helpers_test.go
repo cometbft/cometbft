@@ -5,23 +5,23 @@ import (
 	"fmt"
 	"time"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	tmstate "github.com/tendermint/tendermint/proto/tendermint/state"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/proxy"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/proxy"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 type paramsChangeTestCase struct {
 	height int64
-	params tmproto.ConsensusParams
+	params cmtproto.ConsensusParams
 }
 
 func newTestApp() proxy.AppConns {
@@ -59,7 +59,7 @@ func makeAndApplyGoodBlock(state sm.State, height int64, lastCommit *types.Commi
 		return state, types.BlockID{}, err
 	}
 	blockID := types.BlockID{Hash: block.Hash(),
-		PartSetHeader: types.PartSetHeader{Total: 3, Hash: tmrand.Bytes(32)}}
+		PartSetHeader: types.PartSetHeader{Total: 3, Hash: cmtrand.Bytes(32)}}
 	state, _, err := blockExec.ApplyBlock(state, blockID, block)
 	if err != nil {
 		return state, types.BlockID{}, err
@@ -155,10 +155,10 @@ func genValSet(size int) *types.ValidatorSet {
 func makeHeaderPartsResponsesValPubKeyChange(
 	state sm.State,
 	pubkey crypto.PubKey,
-) (types.Header, types.BlockID, *tmstate.ABCIResponses) {
+) (types.Header, types.BlockID, *cmtstate.ABCIResponses) {
 
 	block := makeBlock(state, state.LastBlockHeight+1)
-	abciResponses := &tmstate.ABCIResponses{
+	abciResponses := &cmtstate.ABCIResponses{
 		BeginBlock: &abci.ResponseBeginBlock{},
 		EndBlock:   &abci.ResponseEndBlock{ValidatorUpdates: nil},
 	}
@@ -179,10 +179,10 @@ func makeHeaderPartsResponsesValPubKeyChange(
 func makeHeaderPartsResponsesValPowerChange(
 	state sm.State,
 	power int64,
-) (types.Header, types.BlockID, *tmstate.ABCIResponses) {
+) (types.Header, types.BlockID, *cmtstate.ABCIResponses) {
 
 	block := makeBlock(state, state.LastBlockHeight+1)
-	abciResponses := &tmstate.ABCIResponses{
+	abciResponses := &cmtstate.ABCIResponses{
 		BeginBlock: &abci.ResponseBeginBlock{},
 		EndBlock:   &abci.ResponseEndBlock{ValidatorUpdates: nil},
 	}
@@ -202,11 +202,11 @@ func makeHeaderPartsResponsesValPowerChange(
 
 func makeHeaderPartsResponsesParams(
 	state sm.State,
-	params tmproto.ConsensusParams,
-) (types.Header, types.BlockID, *tmstate.ABCIResponses) {
+	params cmtproto.ConsensusParams,
+) (types.Header, types.BlockID, *cmtstate.ABCIResponses) {
 
 	block := makeBlock(state, state.LastBlockHeight+1)
-	abciResponses := &tmstate.ABCIResponses{
+	abciResponses := &cmtstate.ABCIResponses{
 		BeginBlock: &abci.ResponseBeginBlock{},
 		EndBlock:   &abci.ResponseEndBlock{ConsensusParamUpdates: types.TM2PB.ConsensusParams(&params)},
 	}
@@ -216,7 +216,7 @@ func makeHeaderPartsResponsesParams(
 func randomGenesisDoc() *types.GenesisDoc {
 	pubkey := ed25519.GenPrivKey().PubKey()
 	return &types.GenesisDoc{
-		GenesisTime: tmtime.Now(),
+		GenesisTime: cmttime.Now(),
 		ChainID:     "abc",
 		Validators: []types.GenesisValidator{
 			{
@@ -256,7 +256,7 @@ func (app *testApp) EndBlock(req abci.RequestEndBlock) abci.ResponseEndBlock {
 	return abci.ResponseEndBlock{
 		ValidatorUpdates: app.ValidatorUpdates,
 		ConsensusParamUpdates: &abci.ConsensusParams{
-			Version: &tmproto.VersionParams{
+			Version: &cmtproto.VersionParams{
 				AppVersion: 1}}}
 }
 

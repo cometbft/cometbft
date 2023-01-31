@@ -4,8 +4,8 @@ order: 3
 
 # Proposer Selection Procedure
 
-This document specifies the Proposer Selection Procedure that is used in Tendermint to choose a round proposer.
-As Tendermint is “leader-based protocol”, the proposer selection is critical for its correct functioning.
+This document specifies the Proposer Selection Procedure that is used in Tendermint, the consensus algorithm adopted in CometBFT, to choose a round proposer.
+As Tendermint is “leader-based consensus protocol”, the proposer selection is critical for its correct functioning.
 
 At a given block height, the proposer selection algorithm runs with the same validator set at each round .
 Between heights, an updated validator set may be specified by the application as part of the ABCIResponses' EndBlock.
@@ -200,7 +200,7 @@ In the next run, p3 will still be ahead in the queue, elected as proposer and mo
 | Priority   Run | -13 | -9 | -5 | -2 | -1 | 0 | 1 | 2  | 5  | 6  | 7  | Alg step              |
 |----------------|-----|----|----|----|----|---|---|----|----|----|----|-----------------------|
 | last run       |     |    |    | p2 |    |   |   | p1 |    |    |    | __add p3__            |
-|                | p3  |    |    | p2 |    |   |   | p1 |    |    |    | A(p3) = -4            |
+|                | p3  |    |    | p2 |    |   |   | p1 |    |    |    | A(p3) = -13           |
 | next run       |     | p3 |    |    |    |   |   | p2 |    | p1 |    | A(i) -= avg, avg = -4 |
 |                |     |    |    |    | p3 |   |   |    | p2 |    | p1 | A(i)+=VP(i)           |
 |                |     |    | p1 |    | p3 |   |   |    | p2 |    |    | A(p1)-=P              |
@@ -215,7 +215,7 @@ Validator | p1   | p2   | Comment
 ----------|------|------|------------------
 VP        | 80k  | 10   |
 A         | 0    | -90k | __added p2__
-A         | -45k | 45k  | __run selection__
+A         | 45k  | -45k | __run selection__
 
 Then execute the following steps:
 

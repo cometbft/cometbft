@@ -3,8 +3,8 @@ package blockchain
 import (
 	"fmt"
 
+	"github.com/cometbft/cometbft/p2p"
 	"github.com/gogo/protobuf/proto"
-	"github.com/tendermint/tendermint/p2p"
 )
 
 var _ p2p.Wrapper = &StatusRequest{}

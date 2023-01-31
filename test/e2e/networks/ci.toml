@@ -60,7 +60,7 @@ perturb = ["kill"]
 
 [node.validator04]
 persistent_peers = ["validator01"]
-database = "rocksdb"
+database = "goleveldb"
 perturb = ["pause"]
 
 [node.validator05]

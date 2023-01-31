@@ -6,8 +6,10 @@
 name: Check generated code
 on:
   pull_request:
+  push:
     branches:
       - v0.38.x
+      - dydx-fork-**
 
 permissions:
   contents: read

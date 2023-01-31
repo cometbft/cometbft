@@ -135,7 +135,7 @@ endif
 #? proto-gen: Generate protobuf files
 proto-gen: check-proto-deps
 	@echo "Generating Protobuf files"
-	@go run github.com/bufbuild/buf/cmd/buf generate
+	@go run github.com/bufbuild/buf/cmd/buf@latest generate --path proto/tendermint
 	@mv ./proto/tendermint/abci/types.pb.go ./abci/types/
 	@cp ./proto/tendermint/rpc/grpc/types.pb.go ./rpc/grpc
 .PHONY: proto-gen

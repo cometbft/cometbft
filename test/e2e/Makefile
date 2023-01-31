@@ -1,4 +1,4 @@
-COMETBFT_BUILD_OPTIONS += badgerdb,boltdb,cleveldb,rocksdb
+COMETBFT_BUILD_OPTIONS += badgerdb,boltdb,cleveldb
 
 include ../../common.mk
 

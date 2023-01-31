@@ -7,7 +7,7 @@ RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
 RUN apt-get -qq install -y libleveldb-dev librocksdb-dev >/dev/null
 
 # Set up build directory /src/cometbft
-ENV COMETBFT_BUILD_OPTIONS badgerdb,boltdb,cleveldb,rocksdb
+ENV COMETBFT_BUILD_OPTIONS badgerdb,boltdb,cleveldb
 WORKDIR /src/cometbft
 
 # Fetch dependencies separately (for layer caching)

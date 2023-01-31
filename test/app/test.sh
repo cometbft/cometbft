@@ -9,31 +9,31 @@ set -ex
 # TODO: install everything
 
 export PATH="$GOBIN:$PATH"
-export CMTHOME=$HOME/.cometbft_app
+export TMHOME=$HOME/.tendermint_app
 
 function kvstore_over_socket(){
-    rm -rf $CMTHOME
-    cometbft init
+    rm -rf $TMHOME
+    tendermint init
     echo "Starting kvstore_over_socket"
     abci-cli kvstore > /dev/null &
     pid_kvstore=$!
-    cometbft node > cometbft.log &
-    pid_cometbft=$!
+    tendermint node > tendermint.log &
+    pid_tendermint=$!
     sleep 5
 
     echo "running test"
     bash test/app/kvstore_test.sh "KVStore over Socket"
 
-    kill -9 $pid_kvstore $pid_cometbft
+    kill -9 $pid_kvstore $pid_tendermint
 }
 
-# start cometbft first
+# start tendermint first
 function kvstore_over_socket_reorder(){
-    rm -rf $CMTHOME
-    cometbft init
-    echo "Starting kvstore_over_socket_reorder (ie. start cometbft first)"
-    cometbft node > cometbft.log &
-    pid_cometbft=$!
+    rm -rf $TMHOME
+    tendermint init
+    echo "Starting kvstore_over_socket_reorder (ie. start tendermint first)"
+    tendermint node > tendermint.log &
+    pid_tendermint=$!
     sleep 2
     abci-cli kvstore > /dev/null &
     pid_kvstore=$!
@@ -42,7 +42,7 @@ function kvstore_over_socket_reorder(){
     echo "running test"
     bash test/app/kvstore_test.sh "KVStore over Socket"
 
-    kill -9 $pid_kvstore $pid_cometbft
+    kill -9 $pid_kvstore $pid_tendermint
 }
 
 

@@ -1,3 +1,3 @@
-killall cometbft
+killall tendermint
 killall abci-cli
-rm -rf ~/.cometbft_app
+rm -rf ~/.tendermint_app

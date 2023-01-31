@@ -21,18 +21,10 @@ var defaultRoot = os.ExpandEnv("$HOME/.some/test/dir")
 
 // clearConfig clears env vars, the given root dir, and resets viper.
 func clearConfig(dir string) {
-	if err := os.Unsetenv("CMTHOME"); err != nil {
-		panic(err)
-	}
-	if err := os.Unsetenv("CMT_HOME"); err != nil {
-		panic(err)
-	}
 	if err := os.Unsetenv("TMHOME"); err != nil {
-		//XXX: Deprecated.
 		panic(err)
 	}
 	if err := os.Unsetenv("TM_HOME"); err != nil {
-		//XXX: Deprecated.
 		panic(err)
 	}
 
@@ -60,7 +52,7 @@ func testSetup(rootDir string, args []string, env map[string]string) error {
 	clearConfig(defaultRoot)
 
 	rootCmd := testRootCmd()
-	cmd := cli.PrepareBaseCmd(rootCmd, "CMT", defaultRoot)
+	cmd := cli.PrepareBaseCmd(rootCmd, "TM", defaultRoot)
 
 	// run with the args and env
 	args = append([]string{rootCmd.Use}, args...)
@@ -76,8 +68,7 @@ func TestRootHome(t *testing.T) {
 	}{
 		{nil, nil, defaultRoot},
 		{[]string{"--home", newRoot}, nil, newRoot},
-		{nil, map[string]string{"TMHOME": newRoot}, newRoot}, //XXX: Deprecated.
-		{nil, map[string]string{"CMTHOME": newRoot}, newRoot},
+		{nil, map[string]string{"TMHOME": newRoot}, newRoot},
 	}
 
 	for i, tc := range cases {
@@ -103,14 +94,11 @@ func TestRootFlagsEnv(t *testing.T) {
 		env      map[string]string
 		logLevel string
 	}{
-		{[]string{"--log", "debug"}, nil, defaultLogLvl},                  // wrong flag
-		{[]string{"--log_level", "debug"}, nil, "debug"},                  // right flag
-		{nil, map[string]string{"TM_LOW": "debug"}, defaultLogLvl},        // wrong env flag
-		{nil, map[string]string{"MT_LOG_LEVEL": "debug"}, defaultLogLvl},  // wrong env prefix
-		{nil, map[string]string{"TM_LOG_LEVEL": "debug"}, defaultLogLvl},  // right, but deprecated env
-		{nil, map[string]string{"CMT_LOW": "debug"}, defaultLogLvl},       // wrong env flag
-		{nil, map[string]string{"TMC_LOG_LEVEL": "debug"}, defaultLogLvl}, // wrong env prefix
-		{nil, map[string]string{"CMT_LOG_LEVEL": "debug"}, "debug"},       // right env
+		{[]string{"--log", "debug"}, nil, defaultLogLvl},                 // wrong flag
+		{[]string{"--log_level", "debug"}, nil, "debug"},                 // right flag
+		{nil, map[string]string{"TM_LOW": "debug"}, defaultLogLvl},       // wrong env flag
+		{nil, map[string]string{"MT_LOG_LEVEL": "debug"}, defaultLogLvl}, // wrong env prefix
+		{nil, map[string]string{"TM_LOG_LEVEL": "debug"}, "debug"},       // right env
 	}
 
 	for i, tc := range cases {
@@ -136,10 +124,9 @@ func TestRootConfig(t *testing.T) {
 
 		logLvl string
 	}{
-		{nil, nil, nonDefaultLogLvl},                                           // should load config
-		{[]string{"--log_level=abc:info"}, nil, "abc:info"},                    // flag over rides
-		{nil, map[string]string{"TM_LOG_LEVEL": "abc:info"}, nonDefaultLogLvl}, // env over rides //XXX: Deprecated
-		{nil, map[string]string{"CMT_LOG_LEVEL": "abc:info"}, "abc:info"},      // env over rides
+		{nil, nil, nonDefaultLogLvl},                                     // should load config
+		{[]string{"--log_level=abc:info"}, nil, "abc:info"},              // flag over rides
+		{nil, map[string]string{"TM_LOG_LEVEL": "abc:info"}, "abc:info"}, // env over rides
 	}
 
 	for i, tc := range cases {
@@ -157,7 +144,7 @@ func TestRootConfig(t *testing.T) {
 		require.Nil(t, err)
 
 		rootCmd := testRootCmd()
-		cmd := cli.PrepareBaseCmd(rootCmd, "CMT", defaultRoot)
+		cmd := cli.PrepareBaseCmd(rootCmd, "TM", defaultRoot)
 
 		// run with the args and env
 		tc.args = append([]string{rootCmd.Use}, tc.args...)

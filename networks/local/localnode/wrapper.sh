@@ -24,10 +24,10 @@ fi
 ##
 ## Run binary with all parameters
 ##
-export CMTHOME="/cometbft/node${ID}"
+export TMHOME="/cometbft/node${ID}"
 
-if [ -d "`dirname ${CMTHOME}/${LOG}`" ]; then
-  "$BINARY" "$@" | tee "${CMTHOME}/${LOG}"
+if [ -d "`dirname ${TMHOME}/${LOG}`" ]; then
+  "$BINARY" "$@" | tee "${TMHOME}/${LOG}"
 else
   "$BINARY" "$@"
 fi

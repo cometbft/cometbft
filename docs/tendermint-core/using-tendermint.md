@@ -14,7 +14,7 @@ number with `tendermint version`.
 ## Directory Root
 
 The default directory for blockchain data is `~/.tendermint`. Override
-this by setting the `CMTHOME` environment variable.
+this by setting the `TMHOME` environment variable.
 
 ## Initialize
 
@@ -26,7 +26,7 @@ tendermint init
 
 This will create a new private key (`priv_validator_key.json`), and a
 genesis file (`genesis.json`) containing the associated public key, in
-`$CMTHOME/config`. This is all that's necessary to run a local testnet
+`$TMHOME/config`. This is all that's necessary to run a local testnet
 with one validator.
 
 For more elaborate initialization, see the testnet command:
@@ -37,7 +37,7 @@ tendermint testnet --help
 
 ### Genesis
 
-The `genesis.json` file in `$CMTHOME/config/` defines the initial
+The `genesis.json` file in `$TMHOME/config/` defines the initial
 TendermintCore state upon genesis of the blockchain ([see
 definition](https://github.com/tendermint/tendermint/blob/v0.34.x/types/genesis.go)).
 
@@ -439,7 +439,7 @@ have to use a seed node if you have a live persistent peer.
 #### Connecting to Peers
 
 To connect to peers on start-up, specify them in the
-`$CMTHOME/config/config.toml` or on the command line. Use `seeds` to
+`$TMHOME/config/config.toml` or on the command line. Use `seeds` to
 specify seed nodes, and
 `persistent_peers` to specify peers that your node will maintain
 persistent connections with.

@@ -71,7 +71,7 @@ func TestMsgToProto(t *testing.T) {
 	testsCases := []struct {
 		testName string
 		msg      Message
-		want     *cmtcons.Message
+		want     proto.Message
 		wantErr  bool
 	}{
 		{"successful NewRoundStepMessage", &NewRoundStepMessage{
@@ -80,17 +80,15 @@ func TestMsgToProto(t *testing.T) {
 			Step:                  1,
 			SecondsSinceStartTime: 1,
 			LastCommitRound:       2,
-		}, &cmtcons.Message{
-			Sum: &cmtcons.Message_NewRoundStep{
-				NewRoundStep: &cmtcons.NewRoundStep{
-					Height:                2,
-					Round:                 1,
-					Step:                  1,
-					SecondsSinceStartTime: 1,
-					LastCommitRound:       2,
-				},
-			},
-		}, false},
+		}, &cmtcons.NewRoundStep{
+			Height:                2,
+			Round:                 1,
+			Step:                  1,
+			SecondsSinceStartTime: 1,
+			LastCommitRound:       2,
+		},
+
+			false},
 
 		{"successful NewValidBlockMessage", &NewValidBlockMessage{
 			Height:             1,
@@ -98,92 +96,78 @@ func TestMsgToProto(t *testing.T) {
 			BlockPartSetHeader: psh,
 			BlockParts:         bits,
 			IsCommit:           false,
-		}, &cmtcons.Message{
-			Sum: &cmtcons.Message_NewValidBlock{
-				NewValidBlock: &cmtcons.NewValidBlock{
-					Height:             1,
-					Round:              1,
-					BlockPartSetHeader: pbPsh,
-					BlockParts:         pbBits,
-					IsCommit:           false,
-				},
-			},
-		}, false},
+		}, &cmtcons.NewValidBlock{
+			Height:             1,
+			Round:              1,
+			BlockPartSetHeader: pbPsh,
+			BlockParts:         pbBits,
+			IsCommit:           false,
+		},
+
+			false},
 		{"successful BlockPartMessage", &BlockPartMessage{
 			Height: 100,
 			Round:  1,
 			Part:   &parts,
-		}, &cmtcons.Message{
-			Sum: &cmtcons.Message_BlockPart{
-				BlockPart: &cmtcons.BlockPart{
-					Height: 100,
-					Round:  1,
-					Part:   *pbParts,
-				},
-			},
-		}, false},
+		}, &cmtcons.BlockPart{
+			Height: 100,
+			Round:  1,
+			Part:   *pbParts,
+		},
+
+			false},
 		{"successful ProposalPOLMessage", &ProposalPOLMessage{
 			Height:           1,
 			ProposalPOLRound: 1,
 			ProposalPOL:      bits,
-		}, &cmtcons.Message{
-			Sum: &cmtcons.Message_ProposalPol{
-				ProposalPol: &cmtcons.ProposalPOL{
-					Height:           1,
-					ProposalPolRound: 1,
-					ProposalPol:      *pbBits,
-				},
-			}}, false},
+		}, &cmtcons.ProposalPOL{
+			Height:           1,
+			ProposalPolRound: 1,
+			ProposalPol:      *pbBits,
+		},
+			false},
 		{"successful ProposalMessage", &ProposalMessage{
 			Proposal: &proposal,
-		}, &cmtcons.Message{
-			Sum: &cmtcons.Message_Proposal{
-				Proposal: &cmtcons.Proposal{
-					Proposal: *pbProposal,
-				},
-			},
-		}, false},
+		}, &cmtcons.Proposal{
+			Proposal: *pbProposal,
+		},
+
+			false},
 		{"successful VoteMessage", &VoteMessage{
 			Vote: vote,
-		}, &cmtcons.Message{
-			Sum: &cmtcons.Message_Vote{
-				Vote: &cmtcons.Vote{
-					Vote: pbVote,
-				},
-			},
-		}, false},
+		}, &cmtcons.Vote{
+			Vote: pbVote,
+		},
+
+			false},
 		{"successful VoteSetMaj23", &VoteSetMaj23Message{
 			Height:  1,
 			Round:   1,
 			Type:    1,
 			BlockID: bi,
-		}, &cmtcons.Message{
-			Sum: &cmtcons.Message_VoteSetMaj23{
-				VoteSetMaj23: &cmtcons.VoteSetMaj23{
-					Height:  1,
-					Round:   1,
-					Type:    1,
-					BlockID: pbBi,
-				},
-			},
-		}, false},
+		}, &cmtcons.VoteSetMaj23{
+			Height:  1,
+			Round:   1,
+			Type:    1,
+			BlockID: pbBi,
+		},
+
+			false},
 		{"successful VoteSetBits", &VoteSetBitsMessage{
 			Height:  1,
 			Round:   1,
 			Type:    1,
 			BlockID: bi,
 			Votes:   bits,
-		}, &cmtcons.Message{
-			Sum: &cmtcons.Message_VoteSetBits{
-				VoteSetBits: &cmtcons.VoteSetBits{
-					Height:  1,
-					Round:   1,
-					Type:    1,
-					BlockID: pbBi,
-					Votes:   *pbBits,
-				},
-			},
-		}, false},
+		}, &cmtcons.VoteSetBits{
+			Height:  1,
+			Round:   1,
+			Type:    1,
+			BlockID: pbBi,
+			Votes:   *pbBits,
+		},
+
+			false},
 		{"failure", nil, &cmtcons.Message{}, true},
 	}
 	for _, tt := range testsCases {

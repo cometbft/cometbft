@@ -7,6 +7,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/p2p"
+	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 )
@@ -94,7 +95,10 @@ func invalidDoPrevoteFunc(t *testing.T, height int64, round int32, cs *State, sw
 		peers := sw.Peers().List()
 		for _, peer := range peers {
 			cs.Logger.Info("Sending bad vote", "block", blockHash, "peer", peer)
-			peer.Send(VoteChannel, MustEncode(&VoteMessage{precommit}))
+			peer.SendEnvelope(p2p.Envelope{
+				Message:   &cmtcons.Vote{Vote: precommit.ToProto()},
+				ChannelID: VoteChannel,
+			})
 		}
 	}()
 }

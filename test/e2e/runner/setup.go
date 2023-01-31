@@ -42,13 +42,11 @@ const (
 func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
 	logger.Info("setup", "msg", log.NewLazySprintf("Generating testnet files in %q", testnet.Dir))
 
-	err := os.MkdirAll(testnet.Dir, os.ModePerm)
-	if err != nil {
+	if err := os.MkdirAll(testnet.Dir, os.ModePerm); err != nil {
 		return err
 	}
 
-	err = infp.Setup()
-	if err != nil {
+	if err := infp.Setup(); err != nil {
 		return err
 	}
 

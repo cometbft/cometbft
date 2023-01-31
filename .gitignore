@@ -5,7 +5,7 @@
 .DS_Store
 .cometbft
 .cometbft-lite
-abci/abci-cli
+
 artifacts/*
 build/*
 .tendermint

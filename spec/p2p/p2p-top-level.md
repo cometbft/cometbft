@@ -5,7 +5,7 @@
 <!--- > Rough outline of what the component is doing and why. 2-3 paragraphs 
 --->
 
-> Perhaps this should go into a separate document on the CometBFT architecture. 
+
 
 CometBFT consists of multiple protocols, namely,
 - Consensus (Tendermint consensus)
@@ -105,19 +105,17 @@ will be used.
 
 This [survey](./reactor-survey.md) discusses the communication protocols within the reactors, which informs the requirements of the p2p layer.
 
+The reactors can collect protocol/gossip-specific information about peers, e.g., whether they submit bad data, are slow, etc. Removing bad peers from the neighborhood typically can improve the overal network quality. As 
+- reactor have this information
+- p2p manages the connections
 
-### What does p2p expect from the reactors?
+the reactors may inform p2p about bad nodes.
 
-- don't falsely report bad nodes; this puts requirements on the reactors and perhaps/likely also on the application running on top of ABCI)
+> TODO: capture requirement that reactors don't falsely report bad nodes; this puts requirements on the reactors and perhaps/likely also on the application running on top of ABCI)
+> TODO: specify what p2p should do to a bad peer
 
-### Unclassified expectations
-> need to figure out where they come from
-> need to figure out where to put them
-- establish connections
-- prioritization of messages
-- non blocking
-- don't trust peers (DDOS-resistant)
-- manual configuration possible
+
+
 
 ### Network
 
@@ -129,7 +127,9 @@ TODO:
        - (potentially) adversarial nodes whose behavior deviates to harm the system
        - (correct) nodes that don't follow the protocol to shield themselves but behave in a "nice way"
 
-
+- non blocking communication
+- don't trust peers (DDOS-resistant)
+- manual configuration possible
 
 # Part II - Sequential Definition of the  Problem
 

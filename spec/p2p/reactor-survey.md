@@ -66,6 +66,8 @@ The p2p system ensures that at any time, new nodes can join the network. (In oth
 > This doesn't mean that all nodes must accept new onnections. It also doesn't mean that a node must accept new connections at all times. 
 > The above property derives from the requirement that new validators can join consensus. In order to do so, they must first be connected.
 
+> TODO: what do we need to say about new nodes joining and existing nodes resyncing. -> requirement to establish new connections needa to be captured.
+
 Since the systems we are building are decentralized and distributed, the global requirements can only be ensured by local actions of the distributed nodes. For instance, openness has been ensured by distinguishing inbound and outbound connections, and making sure that there are always nodes with open inbound connections.
 
 
@@ -220,3 +222,7 @@ Blocksync and Statesync are mainly request/response protocols. The peers act as 
 ## PEX
 
 It is our understanding that from a functional viewpoint the PEX reactor should be considered part of the p2p system. Right now, PEX (peer exchange) is implemented as yet another reactor on top of P2P.
+
+## Prioritization of messages
+
+> TODO: are there priorities between / within the reactors?

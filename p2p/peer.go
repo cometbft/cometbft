@@ -3,11 +3,13 @@ package p2p
 import (
 	"fmt"
 	"net"
+	"reflect"
 	"time"
 
 	"github.com/cometbft/cometbft/libs/cmap"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cosmos/gogoproto/proto"
 
 	cmtconn "github.com/cometbft/cometbft/p2p/conn"
 )
@@ -34,8 +36,8 @@ type Peer interface {
 	Status() cmtconn.ConnectionStatus
 	SocketAddr() *NetAddress // actual address of the socket
 
-	Send(byte, []byte) bool
-	TrySend(byte, []byte) bool
+	SendEnvelope(Envelope) bool
+	TrySendEnvelope(Envelope) bool
 
 	Set(string, interface{})
 	Get(string) interface{}
@@ -120,6 +122,7 @@ type peer struct {
 
 	metrics       *Metrics
 	metricsTicker *time.Ticker
+	mlc           *metricsLabelCache
 
 	// When removal of a peer fails, we set this flag
 	removalAttemptFailed bool
@@ -132,8 +135,10 @@ func newPeer(
 	mConfig cmtconn.MConnConfig,
 	nodeInfo NodeInfo,
 	reactorsByCh map[byte]Reactor,
+	msgTypeByChID map[byte]proto.Message,
 	chDescs []*cmtconn.ChannelDescriptor,
 	onPeerError func(Peer, interface{}),
+	mlc *metricsLabelCache,
 	options ...PeerOption,
 ) *peer {
 	p := &peer{
@@ -143,12 +148,14 @@ func newPeer(
 		Data:          cmap.NewCMap(),
 		metricsTicker: time.NewTicker(metricsTickerDuration),
 		metrics:       NopMetrics(),
+		mlc:           mlc,
 	}
 
 	p.mconn = createMConnection(
 		pc.conn,
 		p,
 		reactorsByCh,
+		msgTypeByChID,
 		chDescs,
 		onPeerError,
 		mConfig,
@@ -194,7 +201,7 @@ func (p *peer) OnStart() error {
 }
 
 // FlushStop mimics OnStop but additionally ensures that all successful
-// .Send() calls will get flushed before closing the connection.
+// SendEnvelope() calls will get flushed before closing the connection.
 // NOTE: it is not safe to call this method more than once.
 func (p *peer) FlushStop() {
 	p.metricsTicker.Stop()
@@ -247,42 +254,42 @@ func (p *peer) Status() cmtconn.ConnectionStatus {
 	return p.mconn.Status()
 }
 
-// Send msg bytes to the channel identified by chID byte. Returns false if the
-// send queue is full after timeout, specified by MConnection.
-func (p *peer) Send(chID byte, msgBytes []byte) bool {
-	if !p.IsRunning() {
-		// see Switch#Broadcast, where we fetch the list of peers and loop over
-		// them - while we're looping, one peer may be removed and stopped.
-		return false
-	} else if !p.hasChannel(chID) {
-		return false
-	}
-	res := p.mconn.Send(chID, msgBytes)
-	if res {
-		labels := []string{
-			"peer_id", string(p.ID()),
-			"chID", fmt.Sprintf("%#x", chID),
-		}
-		p.metrics.PeerSendBytesTotal.With(labels...).Add(float64(len(msgBytes)))
-	}
-	return res
+// SendEnvelope sends the message in the envelope on the channel specified by the
+// envelope. Returns false if the connection times out trying to place the message
+// onto its internal queue.
+func (p *peer) SendEnvelope(e Envelope) bool {
+	return p.send(e.ChannelID, e.Message, p.mconn.Send)
 }
 
-// TrySend msg bytes to the channel identified by chID byte. Immediately returns
-// false if the send queue is full.
-func (p *peer) TrySend(chID byte, msgBytes []byte) bool {
+// TrySendEnvelope attempts to sends the message in the envelope on the channel specified by the
+// envelope. Returns false immediately if the connection's internal queue is full
+func (p *peer) TrySendEnvelope(e Envelope) bool {
+	return p.send(e.ChannelID, e.Message, p.mconn.TrySend)
+}
+
+func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bool) bool {
 	if !p.IsRunning() {
 		return false
 	} else if !p.hasChannel(chID) {
 		return false
 	}
-	res := p.mconn.TrySend(chID, msgBytes)
+	metricLabelValue := p.mlc.ValueToMetricLabel(msg)
+	if w, ok := msg.(Wrapper); ok {
+		msg = w.Wrap()
+	}
+	msgBytes, err := proto.Marshal(msg)
+	if err != nil {
+		p.Logger.Error("marshaling message to send", "error", err)
+		return false
+	}
+	res := sendFunc(chID, msgBytes)
 	if res {
 		labels := []string{
 			"peer_id", string(p.ID()),
 			"chID", fmt.Sprintf("%#x", chID),
 		}
 		p.metrics.PeerSendBytesTotal.With(labels...).Add(float64(len(msgBytes)))
+		p.metrics.MessageSendBytesTotal.With("message_type", metricLabelValue).Add(float64(len(msgBytes)))
 	}
 	return res
 }
@@ -384,6 +391,7 @@ func createMConnection(
 	conn net.Conn,
 	p *peer,
 	reactorsByCh map[byte]Reactor,
+	msgTypeByChID map[byte]proto.Message,
 	chDescs []*cmtconn.ChannelDescriptor,
 	onPeerError func(Peer, interface{}),
 	config cmtconn.MConnConfig,
@@ -396,12 +404,29 @@ func createMConnection(
 			// which does onPeerError.
 			panic(fmt.Sprintf("Unknown channel %X", chID))
 		}
+		mt := msgTypeByChID[chID]
+		msg := proto.Clone(mt)
+		err := proto.Unmarshal(msgBytes, msg)
+		if err != nil {
+			panic(fmt.Errorf("unmarshaling message: %s into type: %s", err, reflect.TypeOf(mt)))
+		}
 		labels := []string{
 			"peer_id", string(p.ID()),
 			"chID", fmt.Sprintf("%#x", chID),
 		}
+		if w, ok := msg.(Unwrapper); ok {
+			msg, err = w.Unwrap()
+			if err != nil {
+				panic(fmt.Errorf("unwrapping message: %s", err))
+			}
+		}
 		p.metrics.PeerReceiveBytesTotal.With(labels...).Add(float64(len(msgBytes)))
-		reactor.Receive(chID, p, msgBytes)
+		p.metrics.MessageReceiveBytesTotal.With("message_type", p.mlc.ValueToMetricLabel(msg)).Add(float64(len(msgBytes)))
+		reactor.ReceiveEnvelope(Envelope{
+			ChannelID: chID,
+			Src:       p,
+			Message:   msg,
+		})
 	}
 
 	onError := func(r interface{}) {

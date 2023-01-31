@@ -33,6 +33,7 @@ import (
 	mempoolv1 "github.com/cometbft/cometbft/mempool/v1"
 	"github.com/cometbft/cometbft/p2p"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
+	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sm "github.com/cometbft/cometbft/state"
 	statemocks "github.com/cometbft/cometbft/state/mocks"
@@ -265,15 +266,18 @@ func TestReactorReceiveDoesNotPanicIfAddPeerHasntBeenCalledYet(t *testing.T) {
 	var (
 		reactor = reactors[0]
 		peer    = p2pmock.NewPeer(nil)
-		msg     = MustEncode(&HasVoteMessage{Height: 1,
-			Round: 1, Index: 1, Type: cmtproto.PrevoteType})
 	)
 
 	reactor.InitPeer(peer)
 
 	// simulate switch calling Receive before AddPeer
 	assert.NotPanics(t, func() {
-		reactor.Receive(StateChannel, peer, msg)
+		reactor.ReceiveEnvelope(p2p.Envelope{
+			ChannelID: StateChannel,
+			Src:       peer,
+			Message: &cmtcons.HasVote{Height: 1,
+				Round: 1, Index: 1, Type: cmtproto.PrevoteType},
+		})
 		reactor.AddPeer(peer)
 	})
 }
@@ -288,15 +292,18 @@ func TestReactorReceivePanicsIfInitPeerHasntBeenCalledYet(t *testing.T) {
 	var (
 		reactor = reactors[0]
 		peer    = p2pmock.NewPeer(nil)
-		msg     = MustEncode(&HasVoteMessage{Height: 1,
-			Round: 1, Index: 1, Type: cmtproto.PrevoteType})
 	)
 
 	// we should call InitPeer here
 
 	// simulate switch calling Receive before AddPeer
 	assert.Panics(t, func() {
-		reactor.Receive(StateChannel, peer, msg)
+		reactor.ReceiveEnvelope(p2p.Envelope{
+			ChannelID: StateChannel,
+			Src:       peer,
+			Message: &cmtcons.HasVote{Height: 1,
+				Round: 1, Index: 1, Type: cmtproto.PrevoteType},
+		})
 	})
 }
 

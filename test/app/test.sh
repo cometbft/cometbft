@@ -47,7 +47,7 @@ function kvstore_over_socket_reorder(){
 
 
 function counter_over_socket() {
-    rm -rf $TMHOME
+    rm -rf $CMTHOME
     cometbft init
     echo "Starting counter_over_socket"
     abci-cli counter --serial > /dev/null &
@@ -63,7 +63,7 @@ function counter_over_socket() {
 }
 
 function counter_over_grpc() {
-    rm -rf $TMHOME
+    rm -rf $CMTHOME
     cometbft init
     echo "Starting counter_over_grpc"
     abci-cli counter --serial --abci grpc > /dev/null &
@@ -79,7 +79,7 @@ function counter_over_grpc() {
 }
 
 function counter_over_grpc_grpc() {
-    rm -rf $TMHOME
+    rm -rf $CMTHOME
     cometbft init
     echo "Starting counter_over_grpc_grpc (ie. with grpc broadcast_tx)"
     abci-cli counter --serial --abci grpc > /dev/null &

@@ -270,7 +270,7 @@ func (h *Handshaker) Handshake(proxyApp proxy.AppConns) error {
 		return fmt.Errorf("error on replay: %v", err)
 	}
 
-	h.logger.Info("Completed ABCI Handshake - Tendermint and App are synced",
+	h.logger.Info("Completed ABCI Handshake - CometBFT and App are synced",
 		"appHeight", blockHeight, "appHash", log.NewLazySprintf("%X", appHash))
 
 	// TODO: (on restart) replay mempool
@@ -527,7 +527,7 @@ func assertAppHashEqualsOneFromState(appHash []byte, state sm.State) {
 
 State: %v
 
-Did you reset Tendermint without resetting your application's data?`,
+Did you reset CometBFT without resetting your application's data?`,
 			appHash, state.AppHash, state))
 	}
 }

@@ -98,7 +98,7 @@ func createConfig() *cfg.Config {
 	tm, rpc, grpc := makeAddrs()
 	c.P2P.ListenAddress = tm
 	c.RPC.ListenAddress = rpc
-	c.RPC.CORSAllowedOrigins = []string{"https://tendermint.com/"}
+	c.RPC.CORSAllowedOrigins = []string{"https://cometbft.com/"}
 	c.RPC.GRPCListenAddress = grpc
 	return c
 }
@@ -133,7 +133,7 @@ func StartTendermint(app abci.Application, opts ...func(*Options)) *nm.Node {
 	waitForGRPC()
 
 	if !nodeOpts.suppressStdout {
-		fmt.Println("Tendermint running!")
+		fmt.Println("CometBFT running!")
 	}
 
 	return node

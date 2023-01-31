@@ -80,7 +80,7 @@ func (env *Environment) Subscribe(ctx *rpctypes.Context, query string) (*ctypes.
 				if sub.Err() != cmtpubsub.ErrUnsubscribed {
 					var reason string
 					if sub.Err() == nil {
-						reason = "Tendermint exited"
+						reason = "CometBFT exited"
 					} else {
 						reason = sub.Err().Error()
 					}

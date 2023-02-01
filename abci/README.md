@@ -8,7 +8,6 @@ can manage an application state running in another.
 
 Previously, the ABCI was referred to as TMSP.
 
-The community has provided a number of additional implementations, see the [Ecosystem](https://github.com/tendermint/awesome#ecosystem)
 
 
 ## Installation & Usage

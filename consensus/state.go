@@ -636,7 +636,7 @@ func (cs *State) updateToState(state sm.State) {
 		cs.LastCommit = cs.Votes.Precommits(cs.CommitRound)
 
 	case cs.LastCommit == nil:
-		// NOTE: when Tendermint starts, it has no votes. reconstructLastCommit
+		// NOTE: when consensus starts, it has no votes. reconstructLastCommit
 		// must be called to reconstruct LastCommit from SeenCommit.
 		panic(fmt.Sprintf(
 			"last commit cannot be empty after initial block (H:%d)",
@@ -1271,11 +1271,46 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		return
 	}
 
+<<<<<<< HEAD
 	// Validate proposal block
 	err := cs.blockExec.ValidateBlock(cs.state, cs.ProposalBlock)
 	if err != nil {
 		// ProposalBlock is invalid, prevote nil.
 		logger.Error("prevote step: ProposalBlock is invalid", "err", err)
+=======
+	// Validate proposal block, from consensus' perspective
+	err := cs.blockExec.ValidateBlock(cs.state, cs.ProposalBlock)
+	if err != nil {
+		// ProposalBlock is invalid, prevote nil.
+		logger.Error("prevote step: consensus deems this block invalid; prevoting nil",
+			"err", err)
+		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
+		return
+	}
+
+	/*
+		Before prevoting on the block received from the proposer for the current round and height,
+		we request the Application, via `ProcessProposal` ABCI call, to confirm that the block is
+		valid. If the Application does not accept the block, consensus prevotes `nil`.
+
+		WARNING: misuse of block rejection by the Application can seriously compromise
+		the liveness properties of consensus.
+		Please see `PrepareProosal`-`ProcessProposal` coherence and determinism properties
+		in the ABCI++ specification.
+	*/
+	isAppValid, err := cs.blockExec.ProcessProposal(cs.ProposalBlock, cs.state)
+	if err != nil {
+		panic(fmt.Sprintf(
+			"state machine returned an error (%v) when calling ProcessProposal", err,
+		))
+	}
+	cs.metrics.MarkProposalProcessed(isAppValid)
+
+	// Vote nil if the Application rejected the block
+	if !isAppValid {
+		logger.Error("prevote step: state machine rejected a proposed block; this should not happen:"+
+			"the proposer may be misbehaving; prevoting nil", "err", err)
+>>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
 		return
 	}

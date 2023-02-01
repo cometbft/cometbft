@@ -708,8 +708,13 @@ func testHandshakeReplay(t *testing.T, config *cfg.Config, nBlocks int, mode uin
 	store.commits = commits
 
 	state := genesisState.Copy()
+<<<<<<< HEAD
 	// run the chain through state.ApplyBlock to build up the tendermint state
 	state = buildTMStateFromChain(config, stateStore, state, chain, nBlocks, mode)
+=======
+	// run the chain through state.ApplyBlock to build up the CometBFT state
+	state = buildTMStateFromChain(t, config, stateStore, state, chain, nBlocks, mode, store)
+>>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 	latestAppHash := state.AppHash
 
 	// make a new client creator
@@ -719,8 +724,13 @@ func testHandshakeReplay(t *testing.T, config *cfg.Config, nBlocks int, mode uin
 	clientCreator2 := proxy.NewLocalClientCreator(kvstoreApp)
 	if nBlocks > 0 {
 		// run nBlocks against a new client to build up the app state.
+<<<<<<< HEAD
 		// use a throwaway tendermint state
 		proxyApp := proxy.NewAppConns(clientCreator2)
+=======
+		// use a throwaway CometBFT state
+		proxyApp := proxy.NewAppConns(clientCreator2, proxy.NopMetrics())
+>>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 		stateDB1 := dbm.NewMemDB()
 		stateStore := sm.NewStore(stateDB1, sm.StoreOptions{
 			DiscardABCIResponses: false,
@@ -848,7 +858,7 @@ func buildTMStateFromChain(
 	nBlocks int,
 	mode uint,
 ) sm.State {
-	// run the whole chain against this client to build up the tendermint state
+	// run the whole chain against this client to build up the CometBFT state
 	clientCreator := proxy.NewLocalClientCreator(
 		kvstore.NewPersistentKVStoreApplication(
 			filepath.Join(config.DBDir(), fmt.Sprintf("replay_test_%d_%d_t", nBlocks, mode))))
@@ -893,7 +903,7 @@ func buildTMStateFromChain(
 }
 
 func TestHandshakePanicsIfAppReturnsWrongAppHash(t *testing.T) {
-	// 1. Initialize tendermint and commit 3 blocks with the following app hashes:
+	// 1. Initialize CometBFT and commit 3 blocks with the following app hashes:
 	//		- 0x01
 	//		- 0x02
 	//		- 0x03
@@ -913,7 +923,7 @@ func TestHandshakePanicsIfAppReturnsWrongAppHash(t *testing.T) {
 	blocks := makeBlocks(3, &state, privVal)
 	store.chain = blocks
 
-	// 2. Tendermint must panic if app returns wrong hash for the first block
+	// 2. CometBFT must panic if app returns wrong hash for the first block
 	//		- RANDOM HASH
 	//		- 0x02
 	//		- 0x03
@@ -937,7 +947,7 @@ func TestHandshakePanicsIfAppReturnsWrongAppHash(t *testing.T) {
 		})
 	}
 
-	// 3. Tendermint must panic if app returns wrong hash for the last block
+	// 3. CometBFT must panic if app returns wrong hash for the last block
 	//		- 0x01
 	//		- 0x02
 	//		- RANDOM HASH

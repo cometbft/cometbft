@@ -19,8 +19,13 @@ const (
 )
 
 // Subscribe for events via WebSocket.
+<<<<<<< HEAD
 // More: https://docs.tendermint.com/v0.34/rpc/#/Websocket/subscribe
 func Subscribe(ctx *rpctypes.Context, query string) (*ctypes.ResultSubscribe, error) {
+=======
+// More: https://docs.cometbft.com/main/rpc/#/Websocket/subscribe
+func (env *Environment) Subscribe(ctx *rpctypes.Context, query string) (*ctypes.ResultSubscribe, error) {
+>>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 	addr := ctx.RemoteAddr()
 
 	if env.EventBus.NumClients() >= env.Config.MaxSubscriptionClients {
@@ -80,7 +85,7 @@ func Subscribe(ctx *rpctypes.Context, query string) (*ctypes.ResultSubscribe, er
 				if sub.Err() != cmtpubsub.ErrUnsubscribed {
 					var reason string
 					if sub.Err() == nil {
-						reason = "Tendermint exited"
+						reason = "CometBFT exited"
 					} else {
 						reason = sub.Err().Error()
 					}
@@ -102,8 +107,13 @@ func Subscribe(ctx *rpctypes.Context, query string) (*ctypes.ResultSubscribe, er
 }
 
 // Unsubscribe from events via WebSocket.
+<<<<<<< HEAD
 // More: https://docs.tendermint.com/v0.34/rpc/#/Websocket/unsubscribe
 func Unsubscribe(ctx *rpctypes.Context, query string) (*ctypes.ResultUnsubscribe, error) {
+=======
+// More: https://docs.cometbft.com/main/rpc/#/Websocket/unsubscribe
+func (env *Environment) Unsubscribe(ctx *rpctypes.Context, query string) (*ctypes.ResultUnsubscribe, error) {
+>>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 	addr := ctx.RemoteAddr()
 	env.Logger.Info("Unsubscribe from query", "remote", addr, "query", query)
 	q, err := cmtquery.New(query)
@@ -118,8 +128,13 @@ func Unsubscribe(ctx *rpctypes.Context, query string) (*ctypes.ResultUnsubscribe
 }
 
 // UnsubscribeAll from all events via WebSocket.
+<<<<<<< HEAD
 // More: https://docs.tendermint.com/v0.34/rpc/#/Websocket/unsubscribe_all
 func UnsubscribeAll(ctx *rpctypes.Context) (*ctypes.ResultUnsubscribe, error) {
+=======
+// More: https://docs.cometbft.com/main/rpc/#/Websocket/unsubscribe_all
+func (env *Environment) UnsubscribeAll(ctx *rpctypes.Context) (*ctypes.ResultUnsubscribe, error) {
+>>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 	addr := ctx.RemoteAddr()
 	env.Logger.Info("Unsubscribe from all", "remote", addr)
 	err := env.EventBus.UnsubscribeAll(context.Background(), addr)

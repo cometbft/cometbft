@@ -10,8 +10,16 @@ import (
 )
 
 // BroadcastEvidence broadcasts evidence of the misbehavior.
+<<<<<<< HEAD
 // More: https://docs.tendermint.com/v0.34/rpc/#/Info/broadcast_evidence
 func BroadcastEvidence(ctx *rpctypes.Context, ev types.Evidence) (*ctypes.ResultBroadcastEvidence, error) {
+=======
+// More: https://docs.cometbft.com/main/rpc/#/Evidence/broadcast_evidence
+func (env *Environment) BroadcastEvidence(
+	ctx *rpctypes.Context,
+	ev types.Evidence) (*ctypes.ResultBroadcastEvidence, error) {
+
+>>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 	if ev == nil {
 		return nil, errors.New("no evidence was provided")
 	}

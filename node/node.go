@@ -58,7 +58,14 @@ import (
 	_ "github.com/lib/pq" // provide the psql db driver
 )
 
+<<<<<<< HEAD
 //------------------------------------------------------------------------------
+=======
+// Node is the highest level interface to a full CometBFT node.
+// It includes all configuration information and running services.
+type Node struct {
+	service.BaseService
+>>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 
 // DBContext specifies config information for loading a new DB.
 type DBContext struct {
@@ -191,6 +198,7 @@ func StateProvider(stateProvider statesync.StateProvider) Option {
 
 //------------------------------------------------------------------------------
 
+<<<<<<< HEAD
 // Node is the highest level interface to a full Tendermint node.
 // It includes all configuration information and running services.
 type Node struct {
@@ -705,6 +713,9 @@ func startStateSync(ssR *statesync.Reactor, bcR fastSyncReactor, conR *cs.Reacto
 }
 
 // NewNode returns a new, ready to go, Tendermint Node.
+=======
+// NewNode returns a new, ready to go, CometBFT Node.
+>>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 func NewNode(config *cfg.Config,
 	privValidator types.PrivValidator,
 	nodeKey *p2p.NodeKey,
@@ -773,7 +784,7 @@ func NewNode(config *cfg.Config,
 	}
 
 	// Create the handshaker, which calls RequestInfo, sets the AppVersion on the state,
-	// and replays any blocks as necessary to sync tendermint with the app.
+	// and replays any blocks as necessary to sync CometBFT with the app.
 	consensusLogger := logger.With("module", "consensus")
 	if !stateSync {
 		if err := doHandshake(stateStore, state, blockStore, genDoc, eventBus, proxyApp, consensusLogger); err != nil {

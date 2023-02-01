@@ -33,7 +33,7 @@ func dedupMatchEvents(conditions []query.Condition) ([]query.Condition, bool) {
 	for i, c := range conditions {
 		if c.CompositeKey == types.MatchEventKey {
 			// Match events should be added only via RPC as the very first query condition
-			if i == 0 {
+			if i == 0 && c.Op == query.OpEqual && c.Operand.(int64) == 1 {
 				dedupConditions = append(dedupConditions, c)
 				matchEvents = true
 			}

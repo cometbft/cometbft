@@ -225,13 +225,17 @@ To create a patch release:
 2. Run integration tests (`make test_integrations`) and the nightlies.
 3. Check out a new branch and prepare the release:
    * Copy `CHANGELOG_PENDING.md` to top of `CHANGELOG.md`
-   * Run `python ./scripts/linkify_changelog.py CHANGELOG.md` to add links for all issues
-   * Run `bash ./scripts/authors.sh` to get a list of authors since the latest release, and add the GitHub aliases of external contributors to the top of the CHANGELOG. To lookup an alias from an email, try `bash ./scripts/authors.sh <email>`
+   * Run `python ./scripts/linkify_changelog.py CHANGELOG.md` to add links for
+     all issues
+   * Run `bash ./scripts/authors.sh` to get a list of authors since the latest
+     release, and add the GitHub aliases of external contributors to the top of
+     the CHANGELOG. To lookup an alias from an email, try `bash
+     ./scripts/authors.sh <email>`
    * Reset the `CHANGELOG_PENDING.md`
    * Bump the TMDefaultVersion in `version.go`
-   * Bump the ABCI version number, if necessary.
-     (Note that ABCI follows semver, and that ABCI versions are the only versions
-     which can change during patch releases, and only field additions are valid patch changes.)
+   * Bump the ABCI version number, if necessary. (Note that ABCI follows semver,
+     and that ABCI versions are the only versions which can change during patch
+     releases, and only field additions are valid patch changes.)
 4. Open a PR with these changes that will land them back on `v0.38.x`
 5. Once this change has landed on the backport branch, make sure to pull it locally, then push a tag.
    * `git tag -a v0.38.1 -m 'Release v0.38.1'`

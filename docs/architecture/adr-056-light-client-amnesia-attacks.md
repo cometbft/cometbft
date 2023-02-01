@@ -16,7 +16,7 @@ Whilst most created evidence of malicious behavior is self evident such that any
 
 The schematic below explains a scenario where an amnesia attack can occur such that two sets of honest nodes, C1 and C2, commit different blocks.
 
-![](../imgs/tm-amnesia-attack.png)
+![](./img/tm-amnesia-attack.png)
 
 1. C1 and F send PREVOTE messages for block A.
 2. C1 sends PRECOMMIT for round 1 for block A.

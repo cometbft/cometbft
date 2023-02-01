@@ -26,7 +26,7 @@ heartfelt emoji.
 If the issue would benefit from thorough discussion, maintainers may request
 that you create a [Request For
 Comment](https://github.com/cometbft/cometbft/tree/main/docs/rfc) in the
-CometBFT spec repo. Discussion at the RFC stage will build collective
+CometBFT repo. Discussion at the RFC stage will build collective
 understanding of the dimensions of the problems and help structure conversations
 around trade-offs.
 

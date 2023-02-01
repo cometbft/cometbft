@@ -328,6 +328,8 @@ check-docs-toc:
 ###                            Docker image                                 ###
 ###############################################################################
 
+# On Linux, you may need to run `DOCKER_BUILDKIT=1 make build-docker` for this
+# to work.
 build-docker:
 	docker build \
 		--label=cometbft \

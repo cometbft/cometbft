@@ -1,15 +1,16 @@
-<!---
+---
 order: 1
---->
+---
 
 # Creating an application in Go
 
 ## Guide Assumptions
 
-This guide is designed for beginners who want to get started with a Tendermint
-Core application from scratch. It does not assume that you have any prior
-experience with Tendermint Core.
+This guide is designed for beginners who want to get started with a CometBFT
+application from scratch. It does not assume that you have any prior
+experience with CometBFT.
 
+<<<<<<< HEAD
 Tendermint Core is Byzantine Fault Tolerant (BFT) middleware that takes a state
 transition machine - written in any programming language - and securely
 replicates it on many machines.
@@ -22,9 +23,28 @@ yourself with the syntax.
 
 By following along with this guide, you'll create a Tendermint Core project
 called kvstore, a (very) simple distributed BFT key-value store.
+=======
+CometBFT is a service that provides a Byzantine Fault Tolerant consensus engine
+for state-machine replication. The replicated state-machine, or "application", can be written
+in any language that can send and receive protocol buffer messages in a client-server model.
+Applications written in Go can also use CometBFT as a library and run the service in the same
+process as the application.
+
+By following along this tutorial you will create a CometBFT application called kvstore,
+a (very) simple distributed BFT key-value store.
+The application will be written in Go and  
+some understanding of the Go programming language is expected.
+If you have never written Go, you may want to go through [Learn X in Y minutes
+Where X=Go](https://learnxinyminutes.com/docs/go/) first, to familiarize
+yourself with the syntax.
+
+Note: Please use the latest released version of this guide and of CometBFT.
+We strongly advise against using unreleased commits for your development.
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 
 ## Built-in app vs external app
 
+<<<<<<< HEAD
 To get maximum performance it is better to run your application alongside
 Tendermint Core. [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) is written
 this way. Please refer to [Writing a built-in Tendermint Core application in
@@ -33,6 +53,18 @@ Go](./go-built-in.md) guide for details.
 Having a separate application might give you better security guarantees as two
 processes would be communicating via established binary protocol. Tendermint
 Core will not have access to application's state.
+=======
+On the one hand, to get maximum performance you can run your application in
+the same process as the CometBFT, as long as your application is written in Go.
+[Cosmos SDK](https://github.com/cosmos/cosmos-sdk) is written
+this way.
+If that is the way you wish to proceed, use the [Creating a built-in application in Go](./go-built-in.md) guide instead of this one.
+
+On the other hand, having a separate application might give you better security
+guarantees as two processes would be communicating via established binary protocol.
+CometBFT will not have access to application's state.
+This is the approach followed in this tutorial.
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 
 ## 1.1 Installing Go
 
@@ -72,13 +104,18 @@ import (
 )
 
 func main() {
+<<<<<<< HEAD
 	fmt.Println("Hello, Tendermint Core")
+=======
+    fmt.Println("Hello, CometBFT")
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 }
 ```
 
-When run, this should print "Hello, Tendermint Core" to the standard output.
+When run, this should print "Hello, CometBFT" to the standard output.
 
 ```bash
+<<<<<<< HEAD
 go run main.go
 Hello, Tendermint Core
 ```
@@ -90,6 +127,50 @@ BlockChain Interface (ABCI). All message types are defined in the [protobuf
 file](https://github.com/tendermint/tendermint/blob/v0.34.x/proto/tendermint/abci/types.proto).
 This allows Tendermint Core to run applications written in any programming
 language.
+=======
+cd kvstore
+$ go run main.go
+Hello, CometBFT
+```
+
+We are going to use [Go modules](https://github.com/golang/go/wiki/Modules) for
+dependency management, so let's start by including a dependency on the latest version of
+CometBFT, `v0.37.0` in this example.
+
+```bash
+go mod init kvstore
+go get github.com/cometbft/cometbft@v0.37.0
+```
+
+After running the above commands you will see two generated files, `go.mod` and `go.sum`.
+The go.mod file should look similar to:
+
+```go
+module github.com/me/example
+
+go 1.19
+
+require (
+	github.com/cometbft/cometbft v0.37.0
+)
+```
+
+As you write the kvstore application, you can rebuild the binary by
+pulling any new dependencies and recompiling it.
+
+```sh
+go get
+go build
+```
+
+
+## 1.3 Writing a CometBFT application
+
+CometBFT communicates with the application through the Application
+BlockChain Interface (ABCI). The messages exchanged through the interface are
+defined in the ABCI [protobuf
+file](https://github.com/cometbft/cometbft/blob/v0.37.x/proto/tendermint/abci/types.proto).
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 
 Create a file called `app.go` with the following content:
 
@@ -97,7 +178,7 @@ Create a file called `app.go` with the following content:
 package main
 
 import (
-	abcitypes "github.com/tendermint/tendermint/abci/types"
+	abcitypes "github.com/cometbft/cometbft/abci/types"
 )
 
 type KVStoreApplication struct {}
@@ -161,6 +242,7 @@ func (KVStoreApplication) ApplySnapshotChunk(abcitypes.RequestApplySnapshotChunk
 }
 ```
 
+<<<<<<< HEAD
 Now I will go through each method explaining when it's called and adding
 required business logic.
 
@@ -173,6 +255,90 @@ application to check it (validate the format, signatures, etc.).
 import "bytes"
 
 func (app *KVStoreApplication) isValid(tx []byte) (code uint32) {
+=======
+The types used here are defined in the CometBFT library and were added as a dependency
+to the project when you ran `go get`. If your IDE is not recognizing the types, go ahead and run the command again.
+
+```bash
+go get github.com/cometbft/cometbft@v0.37.0
+```
+
+Now go back to the `main.go` and modify the `main` function so it matches the following,
+where an instance of the `KVStoreApplication` type is created.
+
+```go
+func main() {
+    fmt.Println("Hello, CometBFT")
+
+    _ = NewKVStoreApplication()
+}
+```
+
+You can recompile and run the application now by running `go get` and `go build`, but it does
+not do anything.
+So let's revisit the code adding the logic needed to implement our minimal key/value store
+and to start it along with the CometBFT Service.
+
+
+### 1.3.1 Add a persistent data store
+
+Our application will need to write its state out to persistent storage so that it
+can stop and start without losing all of its data.
+
+For this tutorial, we will use [BadgerDB](https://github.com/dgraph-io/badger), a
+a fast embedded key-value store.
+
+First, add Badger as a dependency of your go module using the `go get` command:
+
+`go get github.com/dgraph-io/badger/v3`
+
+Next, let's update the application and its constructor to receive a handle to the database, as follows:
+
+```go
+type KVStoreApplication struct {
+	db           *badger.DB
+	onGoingBlock *badger.Txn
+}
+
+var _ abcitypes.Application = (*KVStoreApplication)(nil)
+
+func NewKVStoreApplication(db *badger.DB) *KVStoreApplication {
+	return &KVStoreApplication{db: db}
+}
+```
+
+The `onGoingBlock` keeps track of the Badger transaction that will update the application's state when a block
+is completed. Don't worry about it for now, we'll get to that later.
+
+Next, update the `import` stanza at the top to include the Badger library:
+
+```go
+import(
+	"github.com/dgraph-io/badger/v3"
+	abcitypes "github.com/cometbft/cometbft/abci/types"
+)
+```
+
+Finally, update the `main.go` file to invoke the updated constructor:
+
+```go
+	_ = NewKVStoreApplication(nil)
+```
+
+### 1.3.2 CheckTx
+
+When CometBFT receives a new transaction from a client, or from another full node,
+CometBFT asks the application if the transaction is acceptable, using the `CheckTx` method.
+Invalid transactions will not be shared with other nodes and will not become part of any blocks and, therefore, will not be executed by the application.
+
+In our application, a transaction is a string with the form `key=value`, indicating a key and value to write to the store.
+
+The most basic validation check we can perform is to check if the transaction conforms to the `key=value` pattern.
+For that, let's add the following helper method to app.go:
+
+```go
+func (app *KVStoreApplication) isValid(tx []byte) uint32 {
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 	// check format
 	parts := bytes.Split(tx, []byte("="))
 	if len(parts) != 2 {
@@ -212,9 +378,18 @@ func (app *KVStoreApplication) CheckTx(req abcitypes.RequestCheckTx) abcitypes.R
 
 Don't worry if this does not compile yet.
 
+<<<<<<< HEAD
 If the transaction does not have a form of `{bytes}={bytes}`, we return `1`
 code. When the same key=value already exist (same key and value), we return `2`
 code. For others, we return a zero code indicating that they are valid.
+=======
+Depending on the checks and on the conditions violated, the function may return
+different values, but any response with a non-zero code will be considered invalid
+by CometBFT. Our `CheckTx` logic returns 0 to CometBFT when a transaction passes
+its validation checks. The specific value of the code is meaningless to CometBFT.
+Non-zero codes are logged by CometBFT so applications can provide more specific
+information on why the transaction was rejected.
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 
 Note that anything with non-zero code will be considered invalid (`-1`, `100`,
 etc.) by Tendermint Core.
@@ -230,6 +405,7 @@ persistent and fast key-value (KV) database.
 ```go
 import "github.com/dgraph-io/badger"
 
+<<<<<<< HEAD
 type KVStoreApplication struct {
 	db           *badger.DB
 	currentBatch *badger.Txn
@@ -240,14 +416,41 @@ func NewKVStoreApplication(db *badger.DB) *KVStoreApplication {
 		db: db,
 	}
 }
+=======
+	"github.com/dgraph-io/badger/v3"
+	abcitypes "github.com/cometbft/cometbft/abci/types"
+)
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 ```
 
 ### 1.3.2 BeginBlock -> DeliverTx -> EndBlock -> Commit
 
+<<<<<<< HEAD
 When Tendermint Core has decided on the block, it's transferred to the
 application in 3 parts: `BeginBlock`, one `DeliverTx` per transaction and
 `EndBlock` in the end. DeliverTx are being transferred asynchronously, but the
 responses are expected to come in order.
+=======
+### 1.3.3 BeginBlock -> DeliverTx -> EndBlock -> Commit
+
+When the CometBFT consensus engine has decided on the block, the block is transferred to the
+application over three ABCI method calls: `BeginBlock`, `DeliverTx`, and `EndBlock`.
+
+- `BeginBlock` is called once to indicate to the application that it is about to
+receive a block.
+- `DeliverTx` is called repeatedly, once for each application transaction that was included in the block.
+- `EndBlock` is called once to indicate to the application that no more transactions
+will be delivered to the application in within this block.
+
+Note that, to implement these calls in our application we're going to make use of Badger's
+transaction mechanism. We will always refer to these as Badger transactions, not to
+confuse them with the transactions included in the blocks delivered by CometBFT,
+the _application transactions_.
+
+First, let's create a new Badger transaction during `BeginBlock`. All application transactions in the
+current block will be executed within this Badger transaction.
+Then, return informing CometBFT that the application is ready to receive application transactions:
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 
 ```go
 func (app *KVStoreApplication) BeginBlock(req abcitypes.RequestBeginBlock) abcitypes.ResponseBeginBlock {
@@ -314,12 +517,46 @@ otherwise separate Tendermint Core API for additional proofs.
 Note we don't include a proof here.
 
 ```go
+<<<<<<< HEAD
 func (app *KVStoreApplication) Query(reqQuery abcitypes.RequestQuery) (resQuery abcitypes.ResponseQuery) {
 	resQuery.Key = reqQuery.Data
 	err := app.db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get(reqQuery.Data)
 		if err != nil && err != badger.ErrKeyNotFound {
 			return err
+=======
+import (
+	"bytes"
+	"log"
+
+	"github.com/dgraph-io/badger/v3"
+	abcitypes "github.com/cometbft/cometbft/abci/types"
+)
+```
+
+You may have noticed that the application we are writing will crash if it receives
+an unexpected error from the Badger database during the `DeliverTx` or `Commit` methods.
+This is not an accident. If the application received an error from the database, there
+is no deterministic way for it to make progress so the only safe option is to terminate.
+
+### 1.3.4 Query
+
+When a client tries to read some information from the `kvstore`, the request will be
+handled in the `Query` method. To do this, let's rewrite the `Query` method in `app.go`:
+
+```go
+func (app *KVStoreApplication) Query(req abcitypes.RequestQuery) abcitypes.ResponseQuery {
+	resp := abcitypes.ResponseQuery{Key: req.Data}
+
+	dbErr := app.db.View(func(txn *badger.Txn) error {
+		item, err := txn.Get(req.Data)
+		if err != nil {
+			if err != badger.ErrKeyNotFound {
+				return err
+			}
+			resp.Log = "key does not exist"
+			return nil
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 		}
 		if err == badger.ErrKeyNotFound {
 			resQuery.Log = "does not exist"
@@ -344,7 +581,47 @@ The complete specification can be found
 
 ## 1.4 Starting an application and a Tendermint Core instances
 
+<<<<<<< HEAD
 Put the following code into the "main.go" file:
+=======
+`PrepareProposal` and `ProcessProposal` are methods introduced in CometBFT v0.37.0
+to give the application more control over the construction and processing of transaction blocks.
+
+When CometBFT sees that valid transactions (validated through `CheckTx`) are available to be
+included in blocks, it groups some of these transactions and then gives the application a chance
+to modify the group by invoking `PrepareProposal`.
+
+The application is free to modify the group before returning from the call, as long as the resulting set
+does not use more bytes than `RequestPrepareProposal.max_tx_bytes'
+For example, the application may reorder, add, or even remove transactions from the group to improve the
+execution of the block once accepted.
+In the following code, the application simply returns the unmodified group of transactions:
+
+```go
+func (app *KVStoreApplication) PrepareProposal(proposal abcitypes.RequestPrepareProposal) abcitypes.ResponsePrepareProposal {
+	return abcitypes.ResponsePrepareProposal{Txs: proposal.Txs}
+}
+```
+
+Once a proposed block is received by a node, the proposal is passed to the application to give
+its blessing before voting to accept the proposal.
+
+This mechanism may be used for different reasons, for example to deal with blocks manipulated
+by malicious nodes, in which case the block should not be considered valid.
+The following code simply accepts all proposals:
+
+```go
+func (app *KVStoreApplication) ProcessProposal(proposal abcitypes.RequestProcessProposal) abcitypes.ResponseProcessProposal {
+	return abcitypes.ResponseProcessProposal{Status: abcitypes.ResponseProcessProposal_ACCEPT}
+}
+```
+
+## 1.4 Starting an application and a CometBFT instance
+
+Now that we have the basic functionality of our application in place, let's put it all together inside of our `main.go` file.
+
+Change the contents of your `main.go` file to the following.
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 
 ```go
 package main
@@ -352,14 +629,24 @@ package main
 import (
 	"flag"
 	"fmt"
+<<<<<<< HEAD
+=======
+	abciserver "github.com/cometbft/cometbft/abci/server"
+	"log"
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 	"os"
 	"os/signal"
 	"syscall"
 
+<<<<<<< HEAD
 	"github.com/dgraph-io/badger"
 
 	abciserver "github.com/tendermint/tendermint/abci/server"
 	"github.com/tendermint/tendermint/libs/log"
+=======
+	"github.com/dgraph-io/badger/v3"
+	cmtlog "github.com/cometbft/cometbft/libs/log"
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 )
 
 var socketAddr string
@@ -418,7 +705,7 @@ db, err := badger.Open(badger.DefaultOptions("/tmp/badger").WithTruncate(true))
 ```
 
 Then we start the ABCI server and add some signal handling to gracefully stop
-it upon receiving SIGTERM or Ctrl-C. Tendermint Core will act as a client,
+it upon receiving SIGTERM or Ctrl-C. CometBFT will act as a client,
 which connects to our server and send us transactions and other messages.
 
 ```go
@@ -438,16 +725,28 @@ os.Exit(0)
 
 ## 1.5 Getting Up and Running
 
+<<<<<<< HEAD
 We are going to use [Go modules](https://github.com/golang/go/wiki/Modules) for
 dependency management.
 
 ```bash
 go mod init github.com/me/example
 go get github.com/tendermint/tendermint/@v0.34.0
+=======
+Our application is almost ready to run, but first we'll need to populate the CometBFT configuration files.
+The following command will create a `cometbft-home` directory in your project and add a basic set of configuration files in `cometbft-home/config/`.
+For more information on what these files contain see [the configuration documentation](https://github.com/cometbft/cometbft/blob/v0.37.x/docs/core/configuration.md).
+
+From the root of your project, run:
+
+```bash
+go run github.com/cometbft/cometbft/cmd/cometbft@v0.37.0 init --home /tmp/cometbft-home
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 ```
 
 After running the above commands you will see two generated files, go.mod and go.sum. The go.mod file should look similar to:
 
+<<<<<<< HEAD
 ```go
 module github.com/me/example
 
@@ -460,16 +759,60 @@ require (
 ```
 
 Finally, we will build our binary:
+=======
+```bash
+I[2022-11-09|09:06:34.444] Generated private validator                  module=main keyFile=/tmp/cometbft-home/config/priv_validator_key.json stateFile=/tmp/cometbft-home/data/priv_validator_state.json
+I[2022-11-09|09:06:34.444] Generated node key                           module=main path=/tmp/cometbft-home/config/node_key.json
+I[2022-11-09|09:06:34.444] Generated genesis file                       module=main path=/tmp/cometbft-home/config/genesis.json
+```
+
+Now rebuild the app:
+
+```bash
+go build -mod=mod # use -mod=mod to automatically refresh the dependencies
+```
+
+Everything is now in place to run your application. Run:
+
+```bash
+./kvstore -kv-home /tmp/badger-home
+```
+
+The application will start and you should see an output similar to the following:
+
+```bash
+badger 2022/11/09 17:01:28 INFO: All 0 tables opened in 0s
+badger 2022/11/09 17:01:28 INFO: Discard stats nextEmptySlot: 0
+badger 2022/11/09 17:01:28 INFO: Set nextTxnTs to 0
+I[2022-11-09|17:01:28.726] service start                                msg="Starting ABCIServer service" impl=ABCIServer
+I[2022-11-09|17:01:28.726] Waiting for new connection...
+```
+
+Then we need to start CometBFT service and point it to our application.
+Open a new terminal window and cd to the same folder where the app is running.
+Then execute the following command:
+
+```bash
+go run github.com/cometbft/cometbft/cmd/cometbft@v0.37.0 node --home /tmp/cometbft-home --proxy_app=unix://example.sock
+```
+
+This should start the full node and connect to our ABCI application, which will be
+reflected in the application output.
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 
 ```sh
 go build
 ```
 
+<<<<<<< HEAD
 To create a default configuration, nodeKey and private validator files, let's
 execute `tendermint init`. But before we do that, we will need to install
 Tendermint Core. Please refer to [the official
 guide](https://docs.tendermint.com/v0.34/introduction/install.html). If you're
 installing from source, don't forget to checkout the latest release (`git checkout vX.Y.Z`).
+=======
+Also, the application using CometBFT Core is producing blocks  🎉🎉 and you can see this reflected in the log output of the service in lines like this:
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 
 ```bash
 rm -rf /tmp/example
@@ -487,6 +830,7 @@ Feel free to explore the generated files, which can be found at
 We are ready to start our application:
 
 ```bash
+<<<<<<< HEAD
 rm example.sock
 ./example
 
@@ -494,12 +838,16 @@ badger 2019/07/16 18:25:11 INFO: All 0 tables opened in 0s
 badger 2019/07/16 18:25:11 INFO: Replaying file id: 0 at offset: 0
 badger 2019/07/16 18:25:11 INFO: Replay took: 300.4s
 I[2019-07-16|18:25:11.523] Starting ABCIServer                          impl=ABCIServ
+=======
+curl -s 'localhost:26657/broadcast_tx_commit?tx="cometbft=rocks"'
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 ```
 
 Then we need to start Tendermint Core and point it to our application. Staying
 within the application directory execute:
 
 ```bash
+<<<<<<< HEAD
 TMHOME="/tmp/example" tendermint node --proxy_app=unix://example.sock
 
 I[2019-07-16|18:26:20.362] Version info                                 module=main software=0.32.1 block=10 p2p=7
@@ -508,6 +856,9 @@ E[2019-07-16|18:26:20.392] Couldn't connect to any seeds                module=p
 I[2019-07-16|18:26:20.394] Started node                                 module=main nodeInfo="{ProtocolVersion:{P2P:7 Block:10 App:0} ID_:8dab80770ae8e295d4ce905d86af78c4ff634b79 ListenAddr:tcp://0.0.0.0:26656 Network:test-chain-nIO96P Version:0.32.1 Channels:4020212223303800 Moniker:app48.fun-box.ru Other:{TxIndex:on RPCAddress:tcp://127.0.0.1:26657}}"
 I[2019-07-16|18:26:21.440] Executed block                               module=state height=1 validTxs=0 invalidTxs=0
 I[2019-07-16|18:26:21.446] Committed state                              module=state height=1 txs=0 appHash=
+=======
+curl -s 'localhost:26657/abci_query?data="cometbft"'
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 ```
 
 This should start the full node and connect to our ABCI application.
@@ -538,7 +889,12 @@ curl -s 'localhost:26657/broadcast_tx_commit?tx="tendermint=rocks"'
 }
 ```
 
+<<<<<<< HEAD
 Response should contain the height where this transaction was committed.
+=======
+Those values don't look like the `key` and `value` we sent to CometBFT.
+What's going on here?
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 
 Now let's check if the given key now exists and its value:
 
@@ -563,6 +919,12 @@ curl -s 'localhost:26657/abci_query?data="tendermint"'
 ## Outro
 
 I hope everything went smoothly and your first, but hopefully not the last,
+<<<<<<< HEAD
 Tendermint Core application is up and running. If not, please [open an issue on
 Github](https://github.com/tendermint/tendermint/issues/new/choose). To dig
 deeper, read [the docs](https://docs.tendermint.com/v0.34/).
+=======
+CometBFT application is up and running. If not, please [open an issue on
+Github](https://github.com/cometbft/cometbft/issues/new/choose). To dig
+deeper, read [the docs](https://docs.cometbft.com/main/).
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))

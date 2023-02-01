@@ -15,8 +15,8 @@ Make sure you [have Go installed](https://golang.org/doc/install).
 Next, install the `abci-cli` tool and example applications:
 
 ```sh
-git clone https://github.com/tendermint/tendermint.git
-cd tendermint
+git clone https://github.com/cometbft/cometbft.git
+cd cometbft
 make install_abci
 ```
 
@@ -60,11 +60,17 @@ purposes.
 
 We'll start a kvstore application, which was installed at the same time
 as `abci-cli` above. The kvstore just stores transactions in a merkle
+<<<<<<< HEAD
 tree.
 
 Its code can be found
 [here](https://github.com/tendermint/tendermint/blob/v0.34.x/abci/cmd/abci-cli/abci-cli.go)
 and looks like:
+=======
+tree. Its code can be found
+[here](https://github.com/cometbft/cometbft/blob/main/abci/cmd/abci-cli/abci-cli.go)
+and looks like the following:
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 
 ```go
 func cmdKVStore(cmd *cobra.Command, args []string) error {
@@ -138,7 +144,11 @@ response.
 
 The server may be generic for a particular language, and we provide a
 [reference implementation in
+<<<<<<< HEAD
 Golang](https://github.com/tendermint/tendermint/tree/v0.34.x/abci/server). See the
+=======
+Golang](https://github.com/cometbft/cometbft/tree/main/abci/server). See the
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 [list of other ABCI implementations](https://github.com/tendermint/awesome#ecosystem) for servers in
 other languages.
 
@@ -216,6 +226,7 @@ Similarly, you could put the commands in a file and run
 
 ## Counter - Another Example
 
+<<<<<<< HEAD
 Now that we've got the hang of it, let's try another application, the
 "counter" app.
 
@@ -361,3 +372,19 @@ For more information, see the [application developers
 guide](./app-development.md). For examples of running an ABCI app with
 Tendermint, see the [getting started guide](./getting-started.md).
 Next is the ABCI specification.
+=======
+Note that the `abci-cli` is designed strictly for testing and debugging. In a real
+deployment, the role of sending messages is taken by CometBFT, which
+connects to the app using three separate connections, each with its own
+pattern of messages.
+
+For examples of running an ABCI app with CometBFT, see the
+[getting started guide](./getting-started.md).
+
+## Bounties
+
+Want to write an app in your favorite language?! We'd be happy
+to add you to our [ecosystem](https://github.com/tendermint/awesome#ecosystem)!
+See [funding](https://github.com/interchainio/funding) opportunities from the
+[Interchain Foundation](https://interchain.io) for implementations in new languages and more.
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))

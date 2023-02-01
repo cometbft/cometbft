@@ -19,9 +19,6 @@ jobs:
         goarch: ["arm", "amd64"]
         goos: ["linux"]
     timeout-minutes: 5
-    # TODO(thane): Remove once we make the cometbft-db repository public.
-    env:
-      GOPRIVATE: github.com/cometbft/cometbft-db
     steps:
       - uses: actions/setup-go@v3
         with:
@@ -36,9 +33,6 @@ jobs:
             go.sum
             Makefile
 
-      # TODO(thane): Remove once we make the cometbft-db repository public.
-      - run: git config --global url.https://${{ secrets.GO_MODULES_TOKEN }}@github.com/.insteadOf https://github.com/
-
       - name: install
         run: GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} make build
         if: "env.GIT_DIFF != ''"
@@ -47,9 +41,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     timeout-minutes: 5
-    # TODO(thane): Remove once we make the cometbft-db repository public.
-    env:
-      GOPRIVATE: github.com/cometbft/cometbft-db
     steps:
       - uses: actions/setup-go@v3
         with:
@@ -61,8 +52,6 @@ jobs:
             **/*.go
             go.mod
             go.sum
-      # TODO(thane): Remove once we make the cometbft-db repository public.
-      - run: git config --global url.https://${{ secrets.GO_MODULES_TOKEN }}@github.com/.insteadOf https://github.com/
       - name: install
         run: make install_abci
         if: "env.GIT_DIFF != ''"
@@ -74,9 +63,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     timeout-minutes: 5
-    # TODO(thane): Remove once we make the cometbft-db repository public.
-    env:
-      GOPRIVATE: github.com/cometbft/cometbft-db
     steps:
       - uses: actions/setup-go@v3
         with:
@@ -88,8 +74,6 @@ jobs:
             **/*.go
             go.mod
             go.sum
-      # TODO(thane): Remove once we make the cometbft-db repository public.
-      - run: git config --global url.https://${{ secrets.GO_MODULES_TOKEN }}@github.com/.insteadOf https://github.com/
       - name: install
         run: make install install_abci
         if: "env.GIT_DIFF != ''"

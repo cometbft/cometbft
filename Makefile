@@ -328,12 +328,10 @@ check-docs-toc:
 ###                            Docker image                                 ###
 ###############################################################################
 
-# TODO(thane): Remove GO_MODULES_TOKEN build arg when we make the repo public.
 build-docker:
 	docker build \
 		--label=cometbft \
 		--tag="cometbft/cometbft" \
-		--build-arg GO_MODULES_TOKEN=${GO_MODULES_TOKEN} \
 		-f DOCKER/Dockerfile .
 .PHONY: build-docker
 

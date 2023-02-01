@@ -100,7 +100,7 @@ of a different hash then trigger the detection process between the primary and t
 This begins with verification of the witness's header via skipping verification which is run in tande
 with locating the Light Bifurcation Point
 
-![](../imgs/light-client-detector.png)
+![](./img/light-client-detector.png)
 
 This is done with:
 
@@ -137,7 +137,7 @@ divergent header of the primary as it is likely, as seen in the example to the r
 headers where required in order to verify the divergent one. This trace will
 be used later (as is also described later in this document).
 
-![](../imgs/bifurcation-point.png)
+![](./img/bifurcation-point.png)
 
 Now, that an attack has been detected, the light client must form evidence to prove it. There are
 three types of attacks that either the primary or witness could have done to try fool the light client

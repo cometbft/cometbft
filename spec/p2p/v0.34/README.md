@@ -59,11 +59,11 @@ Existing documentation referring to the p2p layer:
 - <https://github.com/cometbft/cometbft/tree/main/spec/p2p/messages>: message
   types and channel IDs of Block Sync, Mempool, Evidence, State Sync, PEX, and
   Consensus reactors.
-- <https://docs.cometbft.com/v0.34/tendermint-core>: the p2p layer
+- <https://docs.cometbft.com/v0.34/core>: the p2p layer
   configuration and operation is documented in several pages.
   This content is not necessarily up-to-date, some settings and concepts may
   refer to the release `v0.35`, that was [discontinued][v35postmorten].
-- <https://github.com/cometbft/cometbft/tree/master/docs/tendermint-core/pex>:
+- <https://github.com/cometbft/cometbft/tree/main/docs/core/pex>:
   peer types, peer discovery, peer management overview, address book and peer
   ranking. This documentation refers to the release `v0.35`, that was [discontinued][v35postmorten].
 

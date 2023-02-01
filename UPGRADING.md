@@ -22,7 +22,7 @@ Tendermint Core.
   values, which was inconsistent with the `uint64` varint length delimiters used
   in the P2P layer. Both now consistently use `uint64` varint length delimiters.
 * Added `AbciVersion` to `RequestInfo`.
-  Applications should check that Tendermint's ABCI version matches the one they expect
+  Applications should check that CometBFT's ABCI version matches the one they expect
   in order to ensure compatibility.
 * The `SetOption` method has been removed from the ABCI `Client` interface.
   The corresponding Protobuf types have been deprecated.

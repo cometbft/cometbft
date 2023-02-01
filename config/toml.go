@@ -76,12 +76,19 @@ const defaultConfigTemplate = `# This is a TOML config file.
 # "$HOME/.tendermint" by default, but could be changed via $TMHOME env variable
 # or --home cmd flag.
 
+<<<<<<< HEAD
+=======
+# The version of the CometBFT binary that created or
+# last modified the config file. Do not modify this.
+version = "{{ .BaseConfig.Version }}"
+
+>>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 #######################################################################
 ###                   Main Base Config Options                      ###
 #######################################################################
 
 # TCP or UNIX socket address of the ABCI application,
-# or the name of an ABCI application compiled in with the Tendermint binary
+# or the name of an ABCI application compiled in with the CometBFT binary
 proxy_app = "{{ .BaseConfig.ProxyApp }}"
 
 # A custom human readable name for this node
@@ -133,7 +140,7 @@ priv_validator_key_file = "{{ js .BaseConfig.PrivValidatorKey }}"
 # Path to the JSON file containing the last sign state of a validator
 priv_validator_state_file = "{{ js .BaseConfig.PrivValidatorState }}"
 
-# TCP or UNIX socket address for Tendermint to listen on for
+# TCP or UNIX socket address for CometBFT to listen on for
 # connections from an external PrivValidator process
 priv_validator_laddr = "{{ .BaseConfig.PrivValidatorListenAddr }}"
 
@@ -246,17 +253,17 @@ max_body_bytes = {{ .RPC.MaxBodyBytes }}
 max_header_bytes = {{ .RPC.MaxHeaderBytes }}
 
 # The path to a file containing certificate that is used to create the HTTPS server.
-# Might be either absolute path or path related to Tendermint's config directory.
+# Might be either absolute path or path related to CometBFT's config directory.
 # If the certificate is signed by a certificate authority,
 # the certFile should be the concatenation of the server's certificate, any intermediates,
 # and the CA's certificate.
-# NOTE: both tls_cert_file and tls_key_file must be present for Tendermint to create HTTPS server.
+# NOTE: both tls_cert_file and tls_key_file must be present for CometBFT to create HTTPS server.
 # Otherwise, HTTP server is run.
 tls_cert_file = "{{ .RPC.TLSCertFile }}"
 
 # The path to a file containing matching private key that is used to create the HTTPS server.
-# Might be either absolute path or path related to Tendermint's config directory.
-# NOTE: both tls-cert-file and tls-key-file must be present for Tendermint to create HTTPS server.
+# Might be either absolute path or path related to CometBFT's config directory.
+# NOTE: both tls-cert-file and tls-key-file must be present for CometBFT to create HTTPS server.
 # Otherwise, HTTP server is run.
 tls_key_file = "{{ .RPC.TLSKeyFile }}"
 
@@ -347,6 +354,14 @@ dial_timeout = "{{ .P2P.DialTimeout }}"
 #   2) "v1" - prioritized mempool.
 version = "{{ .Mempool.Version }}"
 
+<<<<<<< HEAD
+=======
+# Recheck (default: true) defines whether CometBFT should recheck the
+# validity for all remaining transaction in the mempool after a block.
+# Since a block affects the application state, some transactions in the
+# mempool may become invalid. If this does not apply to your application,
+# you can disable rechecking.
+>>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 recheck = {{ .Mempool.Recheck }}
 broadcast = {{ .Mempool.Broadcast }}
 wal_dir = "{{ js .Mempool.WalPath }}"

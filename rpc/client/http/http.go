@@ -20,16 +20,16 @@ import (
 )
 
 /*
-HTTP is a Client implementation that communicates with a Tendermint node over
+HTTP is a Client implementation that communicates with a CometBFT node over
 JSON RPC and WebSockets.
 
 This is the main implementation you probably want to use in production code.
-There are other implementations when calling the Tendermint node in-process
+There are other implementations when calling the CometBFT node in-process
 (Local), or when you want to mock out the server for test code (mock).
 
-You can subscribe for any event published by Tendermint using Subscribe method.
+You can subscribe for any event published by CometBFT using Subscribe method.
 Note delivery is best-effort. If you don't read events fast enough or network is
-slow, Tendermint might cancel the subscription. The client will attempt to
+slow, CometBFT might cancel the subscription. The client will attempt to
 resubscribe (you don't need to do anything). It will keep trying every second
 indefinitely until successful.
 
@@ -672,7 +672,7 @@ func (w *WSEvents) Subscribe(ctx context.Context, subscriber, query string,
 
 	outc := make(chan ctypes.ResultEvent, outCap)
 	w.mtx.Lock()
-	// subscriber param is ignored because Tendermint will override it with
+	// subscriber param is ignored because CometBFT will override it with
 	// remote IP anyway.
 	w.subscriptions[query] = outc
 	w.mtx.Unlock()
@@ -753,11 +753,11 @@ func (w *WSEvents) eventListener() {
 			if resp.Error != nil {
 				w.Logger.Error("WS error", "err", resp.Error.Error())
 				// Error can be ErrAlreadySubscribed or max client (subscriptions per
-				// client) reached or Tendermint exited.
+				// client) reached or CometBFT exited.
 				// We can ignore ErrAlreadySubscribed, but need to retry in other
 				// cases.
 				if !isErrAlreadySubscribed(resp.Error) {
-					// Resubscribe after 1 second to give Tendermint time to restart (if
+					// Resubscribe after 1 second to give CometBFT time to restart (if
 					// crashed).
 					w.redoSubscriptionsAfter(1 * time.Second)
 				}

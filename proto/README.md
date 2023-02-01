@@ -18,6 +18,6 @@ The `.proto` files within this section are core to the protocol and updates must
 
 ### Versioning
 
-The spec repo aims to be versioned. Once it has been versioned, updates to the protobuf files will live on master. After a certain amount of time, decided on by CometBFT and Tendermint-rs team leads, a release will be made on the spec repo. The spec may contain minor releases as well, depending on the implementation these changes may lead to a breaking change. If so, the implementation team should open an issue within the spec repo requiring a major release of the spec.
+The spec repo aims to be versioned. Once it has been versioned, updates to the protobuf files will live on master. After a certain amount of time, decided on by CometBFT and tendermint-rs team leads, a release will be made on the spec repo. The spec may contain minor releases as well, depending on the implementation these changes may lead to a breaking change. If so, the implementation team should open an issue within the spec repo requiring a major release of the spec.
 
 If the steps above were followed each implementation should have issues tagged with a spec change label. Once all issues have been completed the team should signify their readiness for release.

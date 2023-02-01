@@ -116,8 +116,7 @@ CometBFT up-to-date. Upgrading instructions can be found in
 
 Currently supported versions include:
 
-- v0.34.x: CometBFT v0.34.25 is binary compatible/equivalent with/to Tendermint
-  v0.34.24.
+- v0.34.x: CometBFT v0.34.25 is compatible with Tendermint Core v0.34.24
 - v0.37.x: (release candidate)
 
 ## Resources

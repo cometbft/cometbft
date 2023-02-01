@@ -718,7 +718,7 @@ func testHandshakeReplay(t *testing.T, config *cfg.Config, nBlocks int, mode uin
 	store.commits = commits
 
 	state := genesisState.Copy()
-	// run the chain through state.ApplyBlock to build up the cometbft state
+	// run the chain through state.ApplyBlock to build up the CometBFT state
 	state = buildTMStateFromChain(t, config, stateStore, state, chain, nBlocks, mode, store)
 	latestAppHash := state.AppHash
 

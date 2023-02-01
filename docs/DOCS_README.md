@@ -2,11 +2,7 @@
 
 The documentation for CometBFT is hosted at:
 
-<<<<<<< HEAD
-- <https://docs.tendermint.com/>
-=======
 - <https://docs.cometbft.com>
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 
 built from the files in this (`/docs`) directory.
 

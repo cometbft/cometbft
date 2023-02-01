@@ -15,11 +15,7 @@ the block itself is never stored.
 Each event contains a type and a list of attributes, which are key-value pairs
 denoting something about what happened during the method's execution. For more
 details on `Events`, see the
-<<<<<<< HEAD
-[ABCI](https://github.com/tendermint/tendermint/blob/v0.34.x/spec/abci/abci.md#events)
-=======
-[ABCI](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_basic_concepts.md#events)
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
+[ABCI](https://github.com/cometbft/cometbft/blob/v0.34.x/spec/abci/abci++_basic_concepts.md#events)
 documentation.
 
 An `Event` has a composite key associated with it. A `compositeKey` is
@@ -37,9 +33,6 @@ would be equal to the composite key of `jack.account.number`.
 
 By default, CometBFT will index all transactions by their respective hashes
 and height and blocks by their height.
-
-Tendermint allows for different events within the same height to have 
-equal attributes.
 
 ## Configuration
 
@@ -141,7 +134,7 @@ the `psql` indexer type.
 Example:
 
 ```shell
-$ psql ... -f state/indexer/sink/psql/schema.sql
+psql ... -f state/indexer/sink/psql/schema.sql
 ```
 
 ## Default Indexes
@@ -206,11 +199,7 @@ If the conditions are related to transaction events and the user wants to make s
 conditions are true within the same events, the `match.event` keyword should be used, 
 as described [below](#querying_block_events)
 
-<<<<<<< HEAD
-Check out [API docs](https://docs.tendermint.com/v0.34/rpc/#/Info/tx_search)
-=======
-Check out [API docs](https://docs.cometbft.com/main/rpc/#/Info/tx_search)
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
+Check out [API docs](https://docs.cometbft.com/v0.34.x/rpc/#/Info/tx_search)
 for more information on query syntax and other options.
 
 ## Subscribing to Transactions
@@ -229,11 +218,7 @@ a query to `/subscribe` RPC endpoint.
 }
 ```
 
-<<<<<<< HEAD
-Check out [API docs](https://docs.tendermint.com/v0.34/rpc/#subscribe) for more information
-=======
-Check out [API docs](https://docs.cometbft.com/main/rpc/#subscribe) for more information
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
+Check out [API docs](https://docs.cometbft.com/v0.34.x/rpc/#subscribe) for more information
 on query syntax and other options.
 
 ## Querying Block Events
@@ -245,7 +230,6 @@ You can query for a paginated set of blocks by their events by calling the
 curl "localhost:26657/block_search?query=\"block.height > 10 AND val_set.num_changed > 0\""
 ```
 
-<<<<<<< HEAD
 ## `match_events` keyword 
 
 The query results in the height number(s) (or transaction hashes when querying transactions) which contain events whose attributes match the query conditions. 
@@ -267,10 +251,7 @@ curl "localhost:26657/block_search?query=\"sender=Bob AND balance = 200\"&match_
 ```
 Currently the default behaviour is if `match_events` is set  to false.
 
-Check out [API docs](https://docs.tendermint.com/v0.34/rpc/#/Info/block_search)
-=======
-Check out [API docs](https://docs.cometbft.com/main/rpc/#/Info/block_search)
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
+Check out [API docs](https://docs.cometbft.com/v0.34.x/rpc/#/Info/block_search)
 for more information on query syntax and other options.
 
 **Backwards compatibility**

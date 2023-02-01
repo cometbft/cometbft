@@ -4,15 +4,9 @@ order: 4
 
 # What is CometBFT
 
-<<<<<<< HEAD:docs/introduction/what-is-tendermint.md
-Tendermint is software for securely and consistently replicating an
-application on many machines. By securely, we mean that Tendermint works
-even if up to 1/3 of machines fail in arbitrary ways. By consistently,
-=======
 CometBFT is software for securely and consistently replicating an
 application on many machines. By securely, we mean that CometBFT works
 as long as less than 1/3 of machines fail in arbitrary ways. By consistently,
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197)):docs/introduction/what-is-cometbft.md
 we mean that every non-faulty machine sees the same transaction log and
 computes the same state. Secure and consistent replication is a
 fundamental problem in distributed systems; it plays a critical role in
@@ -74,16 +68,10 @@ configuration, service discovery, locking, leader-election, and so on.
 
 CometBFT is in essence similar software, but with two key differences:
 
-<<<<<<< HEAD:docs/introduction/what-is-tendermint.md
-- It is Byzantine Fault Tolerant, meaning it can only tolerate up to a
-  1/3 of failures, but those failures can include arbitrary behaviour -
-  including hacking and malicious attacks. - It does not specify a
-=======
 - It is Byzantine Fault Tolerant, meaning it can only tolerate less than 1/3
   of machines failing, but those failures can include arbitrary behavior -
   including hacking and malicious attacks.
 - It does not specify a
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197)):docs/introduction/what-is-cometbft.md
   particular application, like a fancy key-value store. Instead, it
   focuses on arbitrary state machine replication, so developers can build
   the application logic that's right for them, from key-value store to
@@ -116,26 +104,15 @@ Another example of a cryptocurrency application built on CometBFT is
 ### Other Blockchain Projects
 
 [Fabric](https://github.com/hyperledger/fabric) takes a similar approach
-<<<<<<< HEAD:docs/introduction/what-is-tendermint.md
-to Tendermint, but is more opinionated about how the state is managed,
-and requires that all application behaviour runs in potentially many
-=======
 to CometBFT, but is more opinionated about how the state is managed,
 and requires that all application behavior runs in potentially many
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197)):docs/introduction/what-is-cometbft.md
 docker containers, modules it calls "chaincode". It uses an
 implementation of [PBFT](http://pmg.csail.mit.edu/papers/osdi99.pdf).
 from a team at IBM that is [augmented to handle potentially
 non-deterministic
-<<<<<<< HEAD:docs/introduction/what-is-tendermint.md
-chaincode](https://www.zurich.ibm.com/~cca/papers/sieve.pdf) It is
-possible to implement this docker-based behaviour as a ABCI app in
-Tendermint, though extending Tendermint to handle non-determinism
-=======
 chaincode](https://drops.dagstuhl.de/opus/volltexte/2017/7093/pdf/LIPIcs-OPODIS-2016-24.pdf).
 It is possible to implement this docker-based behavior as an ABCI app in
 CometBFT, though extending CometBFT to handle non-determinism
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197)):docs/introduction/what-is-cometbft.md
 remains for future work.
 
 [Burrow](https://github.com/hyperledger/burrow) is an implementation of
@@ -147,11 +124,7 @@ consensus engine, and provides a particular application state.
 ## ABCI Overview
 
 The [Application BlockChain Interface
-<<<<<<< HEAD:docs/introduction/what-is-tendermint.md
-(ABCI)](https://github.com/tendermint/tendermint/tree/v0.34.x/abci)
-=======
-(ABCI)](https://github.com/cometbft/cometbft/tree/main/abci)
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197)):docs/introduction/what-is-cometbft.md
+(ABCI)](https://github.com/cometbft/cometbft/tree/v0.34.x/abci)
 allows for Byzantine Fault Tolerant replication of applications
 written in any programming language.
 
@@ -189,15 +162,9 @@ Teaspoon).
 
 ### Intro to ABCI
 
-<<<<<<< HEAD:docs/introduction/what-is-tendermint.md
-[Tendermint Core](https://github.com/tendermint/tendermint) (the
-"consensus engine") communicates with the application via a socket
-protocol that satisfies the ABCI.
-=======
 [CometBFT](https://github.com/cometbft/cometbft), the
 "consensus engine", communicates with the application via a socket
 protocol that satisfies the ABCI, the CometBFT Socket Protocol.
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197)):docs/introduction/what-is-cometbft.md
 
 To draw an analogy, lets talk about a well-known cryptocurrency,
 Bitcoin. Bitcoin is a cryptocurrency blockchain where each node
@@ -224,13 +191,8 @@ The ABCI consists of 3 primary message types that get delivered from the
 core to the application. The application replies with corresponding
 response messages.
 
-<<<<<<< HEAD:docs/introduction/what-is-tendermint.md
-The messages are specified in the [ABCI
-specification](https://github.com/tendermint/tendermint/blob/v0.34.x/spec/abci/abci.md).
-=======
 The messages are specified here: [ABCI Message
-Types](https://github.com/cometbft/cometbft/blob/main/proto/tendermint/abci/types.proto).
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197)):docs/introduction/what-is-cometbft.md
+Types](https://github.com/cometbft/cometbft/blob/v0.34.x/proto/tendermint/abci/types.proto).
 
 The **DeliverTx** message is the work horse of the application. Each
 transaction in the blockchain is delivered with this message. The

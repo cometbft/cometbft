@@ -6,6 +6,6 @@ order: 9
 
 The RPC documentation is hosted here:
 
-- [https://docs.cometbft.com/main/rpc/](https://docs.cometbft.com/main/rpc/)
+- [https://docs.cometbft.com/v0.34.x/rpc/](https://docs.cometbft.com/v0.34.x/rpc/)
 
-To update the documentation, edit the relevant `godoc` comments in the [rpc/core directory](https://github.com/cometbft/cometbft/blob/main/rpc/core).
+To update the documentation, edit the relevant `godoc` comments in the [rpc/core directory](https://github.com/cometbft/cometbft/blob/v0.34.x/rpc/core).

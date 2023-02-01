@@ -16,11 +16,7 @@ consensus gossip protocol.
 
 ## Using Fast Sync
 
-<<<<<<<< HEAD:docs/core/fast-sync.md
-To support faster syncing, Tendermint offers a `fast-sync` mode, which
-========
-To support faster syncing, CometBFT offers a `block-sync` mode, which
->>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197)):docs/core/block-sync.md
+To support faster syncing, CometBFT offers a `fast-sync` mode, which
 is enabled by default, and can be toggled in the `config.toml` or via
 `--fast_sync=false`.
 
@@ -30,7 +26,7 @@ daemon will switch out of fast sync and into the normal consensus mode.
 After running for some time, the node is considered `caught up` if it
 has at least one peer and it's height is at least as high as the max
 reported peer height.
-See [the IsCaughtUp method](https://github.com/cometbft/cometbft/blob/main/blocksync/pool.go#L168).
+See [the IsCaughtUp method](https://github.com/cometbft/cometbft/blob/v0.34.x/blockchain/v0/pool.go#L168).
 
 Note: There are three versions of fast sync. We recommend using v0 as v1 and v2 are still in beta. 
   If you would like to use a different version you can do so by changing the version in the `config.toml`:

@@ -94,11 +94,7 @@ mechanisms.
 ### RPC
 
 Endpoints returning multiple entries are limited by default to return 30
-<<<<<<< HEAD:docs/tendermint-core/running-in-production.md
-elements (100 max). See the [RPC Documentation](https://docs.tendermint.com/v0.34/rpc/)
-=======
-elements (100 max). See the [RPC Documentation](https://docs.cometbft.com/main/rpc/)
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197)):docs/core/running-in-production.md
+elements (100 max). See the [RPC Documentation](https://docs.cometbft.com/v0.34.x/rpc/)
 for more information.
 
 Rate-limiting and authentication are another key aspects to help protect
@@ -351,7 +347,7 @@ proposing the next block).
 
 By default, CometBFT checks whenever a peer's address is routable before
 saving it to the address book. The address is considered as routable if the IP
-is [valid and within allowed ranges](https://github.com/cometbft/cometbft/blob/main/p2p/netaddress.go#L258).
+is [valid and within allowed ranges](https://github.com/cometbft/cometbft/blob/v0.34.x/p2p/netaddress.go#L258).
 
 This may not be the case for private or local networks, where your IP range is usually
 strictly limited and private. If that case, you need to set `addr_book_strict`

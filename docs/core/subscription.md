@@ -31,11 +31,7 @@ method via Websocket along with a valid query.
 }
 ```
 
-<<<<<<< HEAD:docs/tendermint-core/subscription.md
-Check out [API docs](https://docs.tendermint.com/v0.34/rpc/) for
-=======
-Check out [API docs](https://docs.cometbft.com/main/rpc/) for
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197)):docs/core/subscription.md
+Check out [API docs](https://docs.cometbft.com/v0.34.x/rpc/) for
 more information on query syntax and other options.
 
 You can also use tags, given you had included them into DeliverTx
@@ -46,13 +42,8 @@ transactions](./indexing-transactions.md) for details.
 
 When validator set changes, ValidatorSetUpdates event is published. The
 event carries a list of pubkey/power pairs. The list is the same
-<<<<<<< HEAD:docs/tendermint-core/subscription.md
-Tendermint receives from ABCI application (see [EndBlock
-section](https://github.com/tendermint/tendermint/blob/v0.34.x/spec/abci/abci.md#endblock) in
-=======
 CometBFT receives from ABCI application (see [EndBlock
-section](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_methods.md#endblock) in
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197)):docs/core/subscription.md
+section](https://github.com/cometbft/cometbft/blob/v0.34.x/spec/abci/abci++_methods.md#endblock) in
 the ABCI spec).
 
 Response:

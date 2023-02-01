@@ -8,7 +8,7 @@ If this PR is non-trivial/large/complex, please ensure that you have either
 created an issue that the team's had a chance to respond to, or had some
 discussion with the team prior to submitting substantial pull requests. The team
 can be reached via GitHub Discussions or the Cosmos Network Discord server in
-the #CometBFT channel. GitHub Discussions is preferred over Discord as it
+the #cometbft channel. GitHub Discussions is preferred over Discord as it
 allows us to keep track of conversations topically.
 https://github.com/cometbft/cometbft/discussions
 

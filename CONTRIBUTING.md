@@ -247,7 +247,7 @@ the feature is complete, the feature branch is merged back (merge commit) into
 `main`. The moment of the final merge can be carefully chosen so as to land
 different features in different releases.
 
-Note all pull requests should be squash merged except for merging to a release
+Note, all pull requests should be squash merged except for merging to a release
 branch (named `vX.Y`). This keeps the commit history clean and makes it easy to
 reference the pull request where a change was introduced.
 

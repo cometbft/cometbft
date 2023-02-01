@@ -149,6 +149,8 @@ func TxSearchMatchEvents(
 
 	if matchEvents {
 		query = "match.events = 1 AND " + query
+	} else {
+		query = "match.events = 0 AND " + query
 	}
 	return TxSearch(ctx, query, prove, pagePtr, perPagePtr, orderBy)
 

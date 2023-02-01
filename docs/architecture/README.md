@@ -88,7 +88,7 @@ therefore they have links to it and refer to CometBFT as "Tendermint" or "Tender
 
 ### Deprecated
 
-- [ADR-035: Documentation](tendermint-core/adr-035-documentation.md)
+- [ADR-035: Documentation](./adr-035-documentation.md)
 
 ### Rejected
 

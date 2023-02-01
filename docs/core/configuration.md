@@ -4,17 +4,22 @@ order: 3
 
 # Configuration
 
+<<<<<<< HEAD:docs/tendermint-core/configuration.md
 Tendermint Core can be configured via a TOML file in
 `$TMHOME/config/config.toml`. Some of these parameters can be overridden by
+=======
+CometBFT can be configured via a TOML file in
+`$CMTHOME/config/config.toml`. Some of these parameters can be overridden by
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197)):docs/core/configuration.md
 command-line flags. For most users, the options in the `##### main base configuration options #####` are intended to be modified while config options
 further below are intended for advance power users.
 
 ## Options
 
-The default configuration file create by `tendermint init` has all
+The default configuration file create by `cometbft init` has all
 the parameters set with their default values. It will look something
 like the file below, however, double check by inspecting the
-`config.toml` created with your version of `tendermint` installed:
+`config.toml` created with your version of `cometbft` installed:
 
 ```toml
 # This is a TOML config file.
@@ -30,7 +35,7 @@ like the file below, however, double check by inspecting the
 #######################################################################
 
 # TCP or UNIX socket address of the ABCI application,
-# or the name of an ABCI application compiled in with the Tendermint binary
+# or the name of an ABCI application compiled in with the CometBFT binary
 proxy_app = "tcp://127.0.0.1:26658"
 
 # A custom human readable name for this node
@@ -82,7 +87,7 @@ priv_validator_key_file = "config/priv_validator_key.json"
 # Path to the JSON file containing the last sign state of a validator
 priv_validator_state_file = "data/priv_validator_state.json"
 
-# TCP or UNIX socket address for Tendermint to listen on for
+# TCP or UNIX socket address for CometBFT to listen on for
 # connections from an external PrivValidator process
 priv_validator_laddr = ""
 
@@ -168,17 +173,17 @@ max_body_bytes = 1000000
 max_header_bytes = 1048576
 
 # The path to a file containing certificate that is used to create the HTTPS server.
-# Migth be either absolute path or path related to tendermint's config directory.
+# Might be either absolute path or path related to CometBFT's config directory.
 # If the certificate is signed by a certificate authority,
 # the certFile should be the concatenation of the server's certificate, any intermediates,
 # and the CA's certificate.
-# NOTE: both tls_cert_file and tls_key_file must be present for Tendermint to create HTTPS server.
+# NOTE: both tls_cert_file and tls_key_file must be present for CometBFT to create HTTPS server.
 # Otherwise, HTTP server is run.
 tls_cert_file = ""
 
 # The path to a file containing matching private key that is used to create the HTTPS server.
-# Migth be either absolute path or path related to tendermint's config directory.
-# NOTE: both tls_cert_file and tls_key_file must be present for Tendermint to create HTTPS server.
+# Might be either absolute path or path related to CometBFT's config directory.
+# NOTE: both tls_cert_file and tls_key_file must be present for CometBFT to create HTTPS server.
 # Otherwise, HTTP server is run.
 tls_key_file = ""
 
@@ -408,7 +413,7 @@ prometheus_listen_addr = ":26660"
 max_open_connections = 3
 
 # Instrumentation namespace
-namespace = "tendermint"
+namespace = "cometbft"
 
 ```
 
@@ -424,7 +429,7 @@ the delay between blocks by changing the `timeout_commit`. E.g. `timeout_commit 
 
 In this setting, blocks are created when transactions received.
 
-Note after the block H, Tendermint creates something we call a "proof block"
+Note after the block H, CometBFT creates something we call a "proof block"
 (only if the application hash changed) H+1. The reason for this is to support
 proofs. If you have a transaction in block H that changes the state to X, the
 new application hash will only be included in block H+1. If after your
@@ -435,18 +440,19 @@ block has the new application hash for the state X. That's why we make a new
 make a proof for the new state.
 
 Plus, if you set `create_empty_blocks_interval` to something other than the
-default (`0`), Tendermint will be creating empty blocks even in the absence of
+default (`0`), CometBFT will be creating empty blocks even in the absence of
 transactions every `create_empty_blocks_interval`. For instance, with
 `create_empty_blocks = false` and `create_empty_blocks_interval = "30s"`,
-Tendermint will only create blocks if there are transactions, or after waiting
+CometBFT will only create blocks if there are transactions, or after waiting
 30 seconds without receiving any transactions.
 
 ## Consensus timeouts explained
 
 There's a variety of information about timeouts in [Running in
-production](./running-in-production.md)
+production](./running-in-production.md#configuration-parameters).
 
-You can also find more detailed technical explanation in the spec: [The latest
+You can also find more detailed explanation in the paper describing
+the Tendermint consensus algorithm, adopted by CometBFT: [The latest
 gossip on BFT consensus](https://arxiv.org/abs/1807.04938).
 
 ```toml
@@ -467,17 +473,14 @@ matter what is `timeout_commit`.
 
 Here's a brief summary of the timeouts:
 
-- `timeout_propose` = how long we wait for a proposal block before prevoting
-  nil
-- `timeout_propose_delta` = how much timeout_propose increases with each round
+- `timeout_propose` = how long we wait for a proposal block before prevoting nil
+- `timeout_propose_delta` = how much  `timeout_propose` increases with each round
 - `timeout_prevote` = how long we wait after receiving +2/3 prevotes for
   anything (ie. not a single block or nil)
-- `timeout_prevote_delta` = how much the timeout_prevote increases with each
-  round
+- `timeout_prevote_delta` = how much the `timeout_prevote` increases with each round
 - `timeout_precommit` = how long we wait after receiving +2/3 precommits for
   anything (ie. not a single block or nil)
-- `timeout_precommit_delta` = how much the timeout_precommit increases with
-  each round
+- `timeout_precommit_delta` = how much the `timeout_precommit` increases with each round
 - `timeout_commit` = how long we wait after committing a block, before starting
   on the new height (this gives us a chance to receive some more precommits,
   even though we already have +2/3)

@@ -28,5 +28,9 @@ WAL. Then it will go to precommit, and that time it will work because the
 private validator contains the `LastSignBytes` and then we’ll replay the
 precommit from the WAL.
 
+<<<<<<< HEAD
 Make sure to read about [WAL corruption](https://github.com/cometbft/cometbft/blob/v0.37.x/docs/tendermint-core/running-in-production.md#wal-corruption)
+=======
+Make sure to read about [WAL corruption](https://github.com/cometbft/cometbft/blob/main/docs/core/running-in-production.md#wal-corruption)
+>>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 and recovery strategies.

@@ -25,6 +25,8 @@ const (
 	defaultBatchSize   = 2
 	defaultConnections = 1
 	defaultTxSizeBytes = 1024
+
+	localVersion = "local-version"
 )
 
 type (
@@ -49,6 +51,7 @@ const (
 	PerturbationKill       Perturbation = "kill"
 	PerturbationPause      Perturbation = "pause"
 	PerturbationRestart    Perturbation = "restart"
+	PerturbationUpgrade    Perturbation = "upgrade"
 )
 
 // Testnet represents a single testnet.
@@ -68,6 +71,7 @@ type Testnet struct {
 	LoadTxBatchSize   int
 	LoadTxConnections int
 	ABCIProtocol      string
+	UpgradeVersion    string
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -127,6 +131,7 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 		LoadTxBatchSize:   manifest.LoadTxBatchSize,
 		LoadTxConnections: manifest.LoadTxConnections,
 		ABCIProtocol:      manifest.ABCIProtocol,
+		UpgradeVersion:    manifest.UpgradeVersion,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
@@ -136,6 +141,9 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 	}
 	if testnet.ABCIProtocol == "" {
 		testnet.ABCIProtocol = string(ProtocolBuiltin)
+	}
+	if testnet.UpgradeVersion == "" {
+		testnet.UpgradeVersion = localVersion
 	}
 	if testnet.LoadTxConnections == 0 {
 		testnet.LoadTxConnections = defaultConnections
@@ -158,11 +166,11 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 		nodeManifest := manifest.Nodes[name]
 		ind, ok := ifd.Instances[name]
 		if !ok {
-			return nil, fmt.Errorf("information for node '%s' missing from infrastucture data", name)
+			return nil, fmt.Errorf("information for node '%s' missing from infrastructure data", name)
 		}
 		v := nodeManifest.Version
 		if v == "" {
-			v = "local-version"
+			v = localVersion
 		}
 		node := &Node{
 			Name:             name,
@@ -375,8 +383,14 @@ func (n Node) Validate(testnet Testnet) error {
 		return errors.New("snapshot_interval must be less than er equal to retain_blocks")
 	}
 
+	var upgradeFound bool
 	for _, perturbation := range n.Perturbations {
 		switch perturbation {
+		case PerturbationUpgrade:
+			if upgradeFound {
+				return fmt.Errorf("'upgrade' perturbation can appear at most once per node")
+			}
+			upgradeFound = true
 		case PerturbationDisconnect, PerturbationKill, PerturbationPause, PerturbationRestart:
 		default:
 			return fmt.Errorf("invalid perturbation %q", perturbation)

@@ -1,6 +1,6 @@
 # fuzz
 
-Fuzzing for various packages in Tendermint using the fuzzing infrastructure included in
+Fuzzing for various packages in CometBFT using the fuzzing infrastructure included in
 Go 1.18.
 
 Inputs:

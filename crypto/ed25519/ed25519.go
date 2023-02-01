@@ -22,7 +22,7 @@ var (
 	_ crypto.BatchVerifier = &BatchVerifier{}
 
 	// curve25519-voi's Ed25519 implementation supports configurable
-	// verification behavior, and tendermint uses the ZIP-215 verification
+	// verification behavior, and CometBFT uses the ZIP-215 verification
 	// semantics.
 	verifyOptions = &ed25519.Options{
 		Verify: ed25519.VerifyOptionsZIP_215,
@@ -120,7 +120,7 @@ func (privKey PrivKey) Type() string {
 
 // GenPrivKey generates a new ed25519 private key.
 // It uses OS randomness in conjunction with the current global random seed
-// in tendermint/libs/common to generate the private key.
+// in cometbft/libs/rand to generate the private key.
 func GenPrivKey() PrivKey {
 	return genPrivKey(crypto.CReader())
 }

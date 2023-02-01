@@ -21,12 +21,12 @@ var VersionCmd = &cobra.Command{
 
 		if verbose {
 			values, _ := json.MarshalIndent(struct {
-				Tendermint    string `json:"tendermint"`
+				CometBFT      string `json:"cometbft"`
 				ABCI          string `json:"abci"`
 				BlockProtocol uint64 `json:"block_protocol"`
 				P2PProtocol   uint64 `json:"p2p_protocol"`
 			}{
-				Tendermint:    cmtVersion,
+				CometBFT:      cmtVersion,
 				ABCI:          version.ABCISemVer,
 				BlockProtocol: version.BlockProtocol,
 				P2PProtocol:   version.P2PProtocol,

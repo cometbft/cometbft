@@ -204,10 +204,12 @@ vulncheck:
 
 DESTINATION = ./index.html.md
 
+
 ###############################################################################
 ###                           Documentation                                 ###
 ###############################################################################
 
+<<<<<<< HEAD
 build-docs:
 	@cd docs && \
 	while read -r branch path_prefix; do \
@@ -225,6 +227,12 @@ sync-docs:
 	aws s3 sync . s3://${WEBSITE_BUCKET} --profile terraform --delete ; \
 	aws cloudfront create-invalidation --distribution-id ${CF_DISTRIBUTION_ID} --profile terraform --path "/*" ;
 .PHONY: sync-docs
+=======
+# Verify that important design docs have ToC entries.
+check-docs-toc:
+	@./docs/presubmit.sh
+.PHONY: check-docs-toc
+>>>>>>> d159562d0 (Removing all the vuepress related build files and references  (#253))
 
 ###############################################################################
 ###                            Docker image                                 ###

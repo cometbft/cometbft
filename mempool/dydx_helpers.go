@@ -19,7 +19,8 @@ func IsClobOrderTransaction(
 		return false
 	}
 
-	if len(cosmosTx.Body.Messages) == 1 &&
+	if cosmosTx.Body != nil &&
+		len(cosmosTx.Body.Messages) == 1 &&
 		(cosmosTx.Body.Messages[0].TypeUrl == "/dydxprotocol.clob.MsgPlaceOrder" ||
 			cosmosTx.Body.Messages[0].TypeUrl == "/dydxprotocol.clob.MsgCancelOrder") {
 		return true

@@ -792,14 +792,13 @@ func DefaultMempoolConfig() *MempoolConfig {
 		WalPath:   "",
 		// Each signature verification takes .5ms, Size reduced until we implement
 		// ABCI Recheck
-		Size:         5000,
-		MaxTxsBytes:  1024 * 1024 * 1024, // 1GB
-		CacheSize:    10000,
-		MaxTxBytes:   1024 * 1024, // 1MB
-		TTLDuration:  0 * time.Second,
-		TTLNumBlocks: 0,
-		// Note this is true to avoid re-processing invalid order transactions more than once.
-		KeepInvalidTxsInCache: true,
+		Size:                  5000,
+		MaxTxsBytes:           1024 * 1024 * 1024, // 1GB
+		CacheSize:             10000,
+		MaxTxBytes:            1024 * 1024, // 1MB
+		TTLDuration:           0 * time.Second,
+		TTLNumBlocks:          0,
+		KeepInvalidTxsInCache: false,
 	}
 }
 

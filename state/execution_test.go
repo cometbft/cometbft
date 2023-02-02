@@ -562,11 +562,13 @@ func TestEndBlockValidatorUpdatesResultingInEmptySet(t *testing.T) {
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
+	mempoolMock := new(mpmocks.Mempool)
+
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		log.TestingLogger(),
 		proxyApp.Consensus(),
-		new(mpmocks.Mempool),
+		mempoolMock,
 		sm.EmptyEvidencePool{},
 	)
 
@@ -581,6 +583,11 @@ func TestEndBlockValidatorUpdatesResultingInEmptySet(t *testing.T) {
 	app.ValidatorUpdates = []abci.ValidatorUpdate{
 		{PubKey: vp, Power: 0},
 	}
+
+	// dYdX fork: Apply block should lock/unlock the mempool.
+	mempoolMock.On("Lock").Return()
+	mempoolMock.On("Unlock").Return()
+	mempoolMock.On("FlushAppConn").Return(nil)
 
 	assert.NotPanics(t, func() { state, _, err = blockExec.ApplyBlock(state, blockID, block) })
 	assert.NotNil(t, err)

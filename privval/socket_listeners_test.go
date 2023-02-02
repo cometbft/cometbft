@@ -28,7 +28,7 @@ type listenerTestCase struct {
 // testUnixAddr will attempt to obtain a platform-independent temporary file
 // name for a Unix socket
 func testUnixAddr() (string, error) {
-	f, err := os.CreateTemp("", "tendermint-privval-test-*")
+	f, err := os.CreateTemp("", "cometbft-privval-test-*")
 	if err != nil {
 		return "", err
 	}

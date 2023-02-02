@@ -1,5 +1,5 @@
 // Package query implements the custom query format used to filter event
-// subscriptions in Tendermint.
+// subscriptions in CometBFT.
 //
 //	abci.invoice.number=22 AND abci.invoice.owner=Ivan
 //

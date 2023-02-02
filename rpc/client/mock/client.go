@@ -10,7 +10,7 @@ the server response you want to mock (eg. error handling),
 or if you just want to record the calls to verify in your tests.
 
 For real clients, you probably want the "http" package.  If you
-want to directly call a tendermint node in process, you can use the
+want to directly call a CometBFT node in process, you can use the
 "local" package.
 */
 

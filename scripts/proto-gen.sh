@@ -1,7 +1,7 @@
 #!/bin/sh
 #
-# Update the generated code for protocol buffers in the Tendermint repository.
-# This must be run from inside a Tendermint working directory.
+# Update the generated code for protocol buffers in the CometBFT repository.
+# This must be run from inside a CometBFT working directory.
 #
 set -euo pipefail
 

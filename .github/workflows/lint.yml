@@ -1,5 +1,5 @@
 name: Golang Linter
-# Lint runs golangci-lint over the entire Tendermint repository.
+# Lint runs golangci-lint over the entire CometBFT repository.
 #
 # This workflow is run on every pull request and push to main.
 #
@@ -18,9 +18,6 @@ jobs:
     name: golangci-lint
     runs-on: ubuntu-latest
     timeout-minutes: 8
-    # TODO(thane): Remove once we make the cometbft-db repository public.
-    env:
-      GOPRIVATE: github.com/cometbft/cometbft-db
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
@@ -32,8 +29,6 @@ jobs:
             **/**.go
             go.mod
             go.sum
-      # TODO(thane): Remove once we make the cometbft-db repository public.
-      - run: git config --global url.https://${{ secrets.GO_MODULES_TOKEN }}@github.com/.insteadOf https://github.com/
       - uses: golangci/golangci-lint-action@v3
         with:
           version: v1.50.1

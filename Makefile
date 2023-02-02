@@ -114,7 +114,7 @@ all: check build test install
 include tests.mk
 
 ###############################################################################
-###                                Build Tendermint                        ###
+###                                Build CometBFT                           ###
 ###############################################################################
 
 build:
@@ -294,12 +294,12 @@ check-docs-toc:
 ###                            Docker image                                 ###
 ###############################################################################
 
-# TODO(thane): Remove GO_MODULES_TOKEN build arg when we make the repo public.
+# On Linux, you may need to run `DOCKER_BUILDKIT=1 make build-docker` for this
+# to work.
 build-docker:
 	docker build \
 		--label=cometbft \
 		--tag="cometbft/cometbft" \
-		--build-arg GO_MODULES_TOKEN=${GO_MODULES_TOKEN} \
 		-f DOCKER/Dockerfile .
 .PHONY: build-docker
 

@@ -2,7 +2,7 @@
 
 # events
 
-`import "github.com/tendermint/tendermint/libs/events"`
+`import "github.com/cometbft/cometbft/libs/events"`
 
 ## Overview
 
@@ -100,7 +100,7 @@ type EventData interface {
 }
 ```
 
-Generic event data can be typed and registered with tendermint/go-amino
+Generic event data can be typed and registered with [tendermint/go-amino](https://github.com/tendermint/go-amino)
 via concrete implementation of this interface
 
 

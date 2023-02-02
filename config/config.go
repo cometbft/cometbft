@@ -24,7 +24,7 @@ const (
 	// DefaultLogLevel defines a default log level as INFO.
 	DefaultLogLevel = "info"
 
-	// Mempool versions. V1 is prioritized mempool, v0 is regular mempool.
+	// Mempool versions. V1 is prioritized mempool (deprecated), v0 is regular mempool.
 	// Default is v0.
 	MempoolV0 = "v0"
 	MempoolV1 = "v1"
@@ -156,6 +156,9 @@ func (cfg *Config) ValidateBasic() error {
 
 func (cfg *Config) CheckDeprecated() []string {
 	var warnings []string
+	if cfg.Mempool.Version == MempoolV1 {
+		warnings = append(warnings, "prioritized mempool detected. This version of the mempool will be removed in the next major release.")
+	}
 	if cfg.DeprecatedFastSyncConfig != nil {
 		warnings = append(warnings, "[fastsync] table detected. This section has been renamed to [blocksync]. The values in this deprecated section will be disregarded.")
 	}
@@ -704,7 +707,7 @@ func DefaultFuzzConnConfig() *FuzzConnConfig {
 type MempoolConfig struct {
 	// Mempool version to use:
 	//  1) "v0" - (default) FIFO mempool.
-	//  2) "v1" - prioritized mempool.
+	//  2) "v1" - prioritized mempool (deprecated; will be removed in the next release).
 	// WARNING: There's a known memory leak with the prioritized mempool
 	// that the team are working on. Read more here:
 	// https://github.com/tendermint/tendermint/issues/8775

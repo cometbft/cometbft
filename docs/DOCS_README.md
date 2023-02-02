@@ -4,15 +4,13 @@ The documentation for Tendermint Core is hosted at:
 
 - <https://docs.tendermint.com>
 
-built from the files in this (`/docs`) directory.
+built from the files in these (`/docs` and `/spec`) directories.
 
-## How It Works
+Content modified and merged to these folders will be deployed to the `https://docs.cometbft.com` website using workflow logic from the [cometbft-docs](https://github.com/cometbft/cometbft-docs) repository
 
-There is a [GitHub Action](../.github/workflows/docs-deployment.yml) that is
-triggered by changes in the `/docs` directory on `main` as well as the branch of
-each major supported version (e.g. `v0.34.x`). Any updates to files in this
-directory on those branches will automatically trigger a website deployment.
+### Building locally
 
+<<<<<<< HEAD
 ## README
 
 The [README.md](./README.md) is also the landing page for the documentation on
@@ -100,3 +98,6 @@ Because the build processes are identical (as is the information contained
 herein), this file should be kept in sync as much as possible with its
 [counterpart in the Cosmos SDK
 repo](https://github.com/cosmos/cosmos-sdk/blob/main/docs/README.md).
+=======
+For information on how to build the documentation and view it locally, please visit the [cometbft-docs](https://github.com/cometbft/cometbft-docs) Github repository.
+>>>>>>> d159562d0 (Removing all the vuepress related build files and references  (#253))

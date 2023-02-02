@@ -205,6 +205,7 @@ Before performing these steps, be sure the
    - `git tag -a v0.38.0 -m 'Release v0.38.0'`
    - `git push origin v0.38.0`
 6. Make sure that `main` is updated with the latest `CHANGELOG.md`, `CHANGELOG_PENDING.md`, and `UPGRADING.md`.
+<<<<<<< HEAD
 7. Add the release to the documentation site generator config (see
    [DOCS\_README.md](./docs/DOCS_README.md) for more details). In summary:
    - Start on branch `main`.
@@ -215,6 +216,8 @@ Before performing these steps, be sure the
 	 release in the dropdown versions menu.
    - Commit these changes to `main` and backport them into the backport
      branch for this release.
+=======
+>>>>>>> d159562d0 (Removing all the vuepress related build files and references  (#253))
 
 ## Patch release
 

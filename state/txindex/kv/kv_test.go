@@ -84,10 +84,13 @@ func TestTxSearch(t *testing.T) {
 	}{
 		// search by hash
 		{fmt.Sprintf("tx.hash = '%X'", hash), 1},
+		// search by hash (lower)
+		{fmt.Sprintf("tx.hash = '%x'", hash), 1},
 		// search by exact match (one key)
 		{"account.number = 1", 1},
 		// search by exact match (two keys)
 		{"account.number = 1 AND account.owner = 'Ivan'", 1},
+		{"account.owner = 'Ivan' AND account.number = 1", 1},
 		// search by exact match (two keys)
 		{"account.number = 1 AND account.owner = 'Vlad'", 0},
 		{"account.owner = 'Vlad' AND account.number = 1", 0},
@@ -95,16 +98,21 @@ func TestTxSearch(t *testing.T) {
 		{"account.owner = 'Vlad' AND account.number >= 1", 0},
 		{"account.number <= 0", 0},
 		{"account.number <= 0 AND account.owner = 'Ivan'", 0},
+		{"account.number < 10000 AND account.owner = 'Ivan'", 1},
 		// search using a prefix of the stored value
 		{"account.owner = 'Iv'", 0},
 		// search by range
 		{"account.number >= 1 AND account.number <= 5", 1},
+		// search by range and another key
+		{"account.number >= 1 AND account.owner = 'Ivan' AND account.number <= 5", 1},
 		// search by range (lower bound)
 		{"account.number >= 1", 1},
 		// search by range (upper bound)
 		{"account.number <= 5", 1},
+		{"account.number <= 1", 1},
 		// search using not allowed key
 		{"not_allowed = 'boom'", 0},
+		{"not_allowed = 'Vlad'", 0},
 		// search for not existing tx result
 		{"account.number >= 2 AND account.number <= 5", 0},
 		// search using not existing key
@@ -113,12 +121,18 @@ func TestTxSearch(t *testing.T) {
 		{"account.owner CONTAINS 'an'", 1},
 		// search for non existing value using CONTAINS
 		{"account.owner CONTAINS 'Vlad'", 0},
+		{"account.owner CONTAINS 'Ivann'", 0},
+		{"account.owner CONTAINS 'IIvan'", 0},
+		{"account.owner CONTAINS 'Iva n'", 0},
+		{"account.owner CONTAINS ' Ivan'", 0},
+		{"account.owner CONTAINS 'Ivan '", 0},
 		// search using the wrong key (of numeric type) using CONTAINS
 		{"account.number CONTAINS 'Iv'", 0},
 		// search using EXISTS
 		{"account.number EXISTS", 1},
 		// search using EXISTS for non existing key
 		{"account.date EXISTS", 0},
+		{"not_allowed EXISTS", 0},
 	}
 
 	ctx := context.Background()
@@ -146,6 +160,7 @@ func TestTxSearchEventMatch(t *testing.T) {
 	txResult := txResultWithEvents([]abci.Event{
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: []byte("number"), Value: []byte("1"), Index: true}, {Key: []byte("owner"), Value: []byte("Ana"), Index: true}}},
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: []byte("number"), Value: []byte("2"), Index: true}, {Key: []byte("owner"), Value: []byte("Ivan"), Index: true}}},
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: []byte("number"), Value: []byte("3"), Index: false}, {Key: []byte("owner"), Value: []byte("Mickey"), Index: false}}},
 		{Type: "", Attributes: []abci.EventAttribute{{Key: []byte("not_allowed"), Value: []byte("Vlad"), Index: true}}},
 	})
 
@@ -156,8 +171,16 @@ func TestTxSearchEventMatch(t *testing.T) {
 		q             string
 		resultsLength int
 	}{
+		"Don't match non-indexed events": {
+			q:             "match.events = 1 AND account.number = 3 AND account.owner = 'Mickey'",
+			resultsLength: 0,
+		},
 		"Return all events from a height with range": {
 			q:             "match.events = 1 AND tx.height > 0",
+			resultsLength: 1,
+		},
+		"Return all events from a height with range 2": {
+			q:             "match.events = 1 AND tx.height <= 1",
 			resultsLength: 1,
 		},
 		"Return all events from a height": {
@@ -169,7 +192,7 @@ func TestTxSearchEventMatch(t *testing.T) {
 			resultsLength: 1,
 		},
 		"Match attributes with height range and event": {
-			q:             "match.events = 1 AND tx.height < 2 AND tx.height > 0 AND account.number = 1 AND account.owner CONTAINS 'Ana'",
+			q:             "match.events = 1 AND tx.height < 2 AND tx.height > 0 AND account.number = 1 AND account.owner CONTAINS 'Ana' AND account.owner CONTAINS 'An'",
 			resultsLength: 1,
 		},
 		"Match attributes with height range and event - no match": {
@@ -192,9 +215,17 @@ func TestTxSearchEventMatch(t *testing.T) {
 			q:             "account.number < 2 AND account.owner = 'Ivan'",
 			resultsLength: 1,
 		},
+		" Match range with match events set to 0": {
+			q:             "match.events = 0 AND account.number < 2 AND account.owner = 'Ivan' AND tx.height > 0",
+			resultsLength: 1,
+		},
 		" Match range with match events": {
 			q:             "match.events = 1 AND account.number < 2 AND account.owner = 'Ivan' AND tx.height > 0",
 			resultsLength: 0,
+		},
+		" Match range with match events 2": {
+			q:             "match.events = 1 AND account.number <= 2 AND account.owner = 'Ivan' AND tx.height > 0",
+			resultsLength: 1,
 		},
 	}
 
@@ -318,35 +349,80 @@ func TestTxSearchOneTxWithMultipleSameTagsButDifferentValues(t *testing.T) {
 	txResult := txResultWithEvents([]abci.Event{
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: []byte("number"), Value: []byte("1"), Index: true}}},
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: []byte("number"), Value: []byte("2"), Index: true}}},
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: []byte("number"), Value: []byte("3"), Index: false}}},
 	})
 
 	err := indexer.Index(txResult)
 	require.NoError(t, err)
 
+	testCases := []struct {
+		q     string
+		found bool
+	}{
+		{
+			q:     "match.events = 1 AND account.number >= 1",
+			found: true,
+		},
+		{
+			q:     "match.events = 1 AND account.number > 2",
+			found: false,
+		},
+		{
+			q:     "match.events = 1 AND account.number >= 1 AND tx.height = 3 AND tx.height > 0",
+			found: true,
+		},
+		{
+			q:     "match.events = 1 AND account.number >= 1 AND tx.height > 0 AND tx.height = 3",
+			found: true,
+		},
+		/*
+			{
+				q:     "match.events = 1 AND account.number >= 1 AND tx.height = 1  AND tx.height = 2 AND tx.height = 3",
+				found: true,
+			},
+		*/
+		{
+			q:     "match.events = 1 AND account.number >= 1 AND tx.height = 3  AND tx.height = 2 AND tx.height = 1",
+			found: false,
+		},
+		{
+			q:     "match.events = 1 AND account.number >= 1 AND tx.height = 3",
+			found: false,
+		},
+		{
+			q:     "match.events = 1 AND account.number > 1 AND tx.height < 2",
+			found: true,
+		},
+		{
+			q:     "match.events = 1 AND account.number >= 2",
+			found: true,
+		},
+		{
+			q:     "match.events = 1 AND account.number <= 1",
+			found: true,
+		},
+		{
+			q:     "match.events = 1 AND account.number = 'something'",
+			found: false,
+		},
+		{
+			q:     "match.events = 1 AND account.number CONTAINS 'bla'",
+			found: false,
+		},
+	}
+
 	ctx := context.Background()
 
-	results, err := indexer.Search(ctx, query.MustParse("match.events = 1 AND account.number >= 1"))
-	assert.NoError(t, err)
+	for _, tc := range testCases {
+		results, err := indexer.Search(ctx, query.MustParse(tc.q))
+		assert.NoError(t, err)
 
-	assert.Len(t, results, 1)
-	for _, txr := range results {
-		assert.True(t, proto.Equal(txResult, txr))
-	}
-
-	results, err = indexer.Search(ctx, query.MustParse("match.events = 1 AND account.number >= 1 AND tx.height = 3 AND tx.height > 0"))
-	assert.NoError(t, err)
-
-	assert.Len(t, results, 1)
-	for _, txr := range results {
-		assert.True(t, proto.Equal(txResult, txr))
-	}
-
-	results, err = indexer.Search(ctx, query.MustParse("match.events = 1 AND account.number > 1 AND tx.height < 2"))
-	assert.NoError(t, err)
-
-	assert.Len(t, results, 1)
-	for _, txr := range results {
-		assert.True(t, proto.Equal(txResult, txr))
+		len := 0
+		if tc.found {
+			len = 1
+		}
+		assert.Len(t, results, len)
+		assert.True(t, !tc.found || proto.Equal(txResult, results[0]))
 	}
 }
 

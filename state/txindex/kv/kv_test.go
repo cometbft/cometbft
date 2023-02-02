@@ -203,6 +203,14 @@ func TestTxSearchEventMatch(t *testing.T) {
 			q:             "tx.height < 2 AND tx.height > 0 AND account.number = 2 AND account.owner = 'Ana' AND match.events = 1",
 			resultsLength: 1,
 		},
+		"Deduplucation test - should return nothing if attribute repeats multiple times": {
+			q:             "match.events = 0 AND tx.height < 2 AND account.number = 3 AND account.number = 2 AND account.number = 5",
+			resultsLength: 0,
+		},
+		"Deduplucation test - should return nothing if attribute repeats multiple times with match events": {
+			q:             "match.events = 1 AND tx.height < 2 AND account.number = 3 AND account.number = 2 AND account.number = 5",
+			resultsLength: 0,
+		},
 		"Deduplucation test - match events multiple": {
 			q:             "match.events = 1 AND tx.height < 2 AND tx.height > 0 AND account.number = 2 AND account.owner = 'Ana' AND match.events = 1",
 			resultsLength: 0,
@@ -375,15 +383,15 @@ func TestTxSearchOneTxWithMultipleSameTagsButDifferentValues(t *testing.T) {
 			q:     "match.events = 1 AND account.number >= 1 AND tx.height > 0 AND tx.height = 3",
 			found: true,
 		},
-		/*
-			{
-				q:     "match.events = 1 AND account.number >= 1 AND tx.height = 1  AND tx.height = 2 AND tx.height = 3",
-				found: true,
-			},
-		*/
+
+		// {
+		// 	q:     "match.events = 1 AND account.number >= 1 AND tx.height = 3  AND tx.height = 2 AND tx.height = 1",
+		// 	found: true,
+		// },
+
 		{
-			q:     "match.events = 1 AND account.number >= 1 AND tx.height = 3  AND tx.height = 2 AND tx.height = 1",
-			found: false,
+			q:     "match.events = 1 AND account.number >= 1 AND tx.height = 1 AND tx.height = 2 AND tx.height = 1",
+			found: true,
 		},
 		{
 			q:     "match.events = 1 AND account.number >= 1 AND tx.height = 3",

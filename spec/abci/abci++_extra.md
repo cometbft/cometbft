@@ -104,7 +104,7 @@ expires and it sends $Prevote$ for $nil$. Consequently, process $p$ does not cal
 `ProcessProposal` for block $X$. However, the same proposal arrives at other processes
 before their $timeoutPropose$ expires, and they send $Prevote$ for this proposal.
 1. **Prevote:** Process $p$ receives $2f+1$ $Prevote$ messages for proposal $X$, updates correspondingly its $validValue$ and $lockedValue$ and sends $Precommit$ message. All correct processes do the same. 
-1. **Precommit:** Finally, process $p$ receives $2f+1$ $Precommit$ messages, and decides on block $X$. As a result, it calls `Decide` and `Commit` for block $X$.
+1. **Precommit:** Finally, process $p$ receives $2f+1$ $Precommit$ messages, and decides on block $X$. As a result, it calls `decide` and `commit` for block $X$.
 
 
 

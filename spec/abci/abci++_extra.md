@@ -67,7 +67,7 @@ $p$ calls `ProcessProposal` many times with different values.
 
 ### Round 2: 
 
-1. **Propose:** Same as in [**Round 1**](#round-1), just another correct process is the proposer, and it proposes another value $Z$. Process $p$ receives the proposal in time, calls `ProcessProposal` for new block $Z$, and broadcasts a $Prevote$ message for it. 
+1. **Propose:** Same as in [**Round 1**](#round-1), just another correct process is the proposer, and it proposes another value $Z$. Process $p$ receives the proposal on time, calls `ProcessProposal` for new block $Z$, and broadcasts a $Prevote$ message for it. 
 1. **Prevote:** Same as in [**Round 1**](#round-1).
 1. **Precommit:** Same as in [**Round 1**](#round-1).
 

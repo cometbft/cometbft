@@ -51,6 +51,8 @@ Each scenario is presented from the perspective of a process $p$. More precisely
 
 ## Scenario 1
 
+$p$ calls `ProcessProposal` many times with different values.
+
 ### Round 0:
     
 1. **Propose:** Proposer of this round is a Byzantine process, and it chooses not to send the proposal message. Therefore, $p$'s $timeoutPropose$ expires, it sends $Prevote$ for $nil$, and it does not call `ProcessProposal`. All correct processes do the same. 

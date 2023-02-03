@@ -41,7 +41,7 @@ The unknown number of rounds we can have when following the Tendermint algorithm
 
 ## Basic information
 
-Each scenario is presented from the perspective of a process $p$. More precisely, we show what happens in each round's $step$ of the [Tendermint algorithm](https://arxiv.org/pdf/1807.04938.pdf). The legend is below: 
+Each scenario is presented from the perspective of a process $p$. More precisely, we show what happens in each round's $step$ of the [Tendermint algorithm](https://arxiv.org/pdf/1807.04938.pdf). While in practice the consensus algorithm works with respect to voting power of the validators, in this document refer to number of processes (e.g., $n$, $f+1$, $2f+1$) for simplicity. The legend is below: 
 
 ### Round X:
 

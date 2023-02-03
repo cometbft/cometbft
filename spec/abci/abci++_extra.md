@@ -112,13 +112,3 @@ before their $timeoutPropose$ expires, and they send $Prevote$ for this proposal
 
 [Scenario 3](#scenario-3) can be translated into a scenario where $p$ does not call `PrepareProposal` and `ProcessProposal` at all. For this, it is necessary that process $p$ is not the proposer in any of the rounds $0 <= r' <= r$ and that due to network asynchrony or Byzantine proposer, it does not receive the proposal before $timeoutPropose$ expires. As a result, it will enter round $r$ without calling `PrepareProposal` and `ProcessProposal` before it, and as shown in [Round $r$ of Scenario 3](#scenario-3) it will decide in this round. Again without calling any of these two calls.  
 
-
-
-
-
-
- 
-
-
-
-

@@ -2,8 +2,6 @@
 # hopefully current, go version.
 ARG GOLANG_BASE_IMAGE=golang:1.18-alpine
 
-
-
 # stage 1 Generate CometBFT Binary
 FROM --platform=$BUILDPLATFORM $GOLANG_BASE_IMAGE as builder
 RUN apk update && \
@@ -11,12 +9,6 @@ RUN apk update && \
     apk --no-cache add make git
 COPY / /cometbft
 WORKDIR /cometbft
-
-# TODO(thane): Remove once we publish the cometbft-db repository.
-ENV GOPRIVATE=github.com/cometbft/cometbft-db
-ARG GO_MODULES_TOKEN
-RUN git config \
-	--global url.https://${GO_MODULES_TOKEN}@github.com/.insteadOf https://github.com/
 
 RUN TARGETPLATFORM=$TARGETPLATFORM make build-linux
 
@@ -29,7 +21,7 @@ LABEL maintainer="hello@informal.systems"
 # private validator file into /cometbft/config.
 #
 # The /cometbft/data dir is used by CometBFT to store state.
-ENV TMHOME /cometbft
+ENV CMTHOME /cometbft
 
 # OS environment setup
 # Set user right away for determinism, create directory for persistence and give our user ownership
@@ -40,12 +32,12 @@ RUN apk update && \
     apk upgrade && \
     apk --no-cache add curl jq bash && \
     addgroup tmuser && \
-    adduser -S -G tmuser tmuser -h "$TMHOME"
+    adduser -S -G tmuser tmuser -h "$CMTHOME"
 
 # Run the container with tmuser by default. (UID=100, GID=1000)
 USER tmuser
 
-WORKDIR $TMHOME
+WORKDIR $CMTHOME
 
 # p2p, rpc and prometheus port
 EXPOSE 26656 26657 26660
@@ -65,5 +57,5 @@ ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node"]
 
 # Expose the data directory as a volume since there's mutable state in there
-VOLUME [ "$TMHOME" ]
+VOLUME [ "$CMTHOME" ]
 

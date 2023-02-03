@@ -37,8 +37,12 @@ func ParseConfig(cmd *cobra.Command) (*cfg.Config, error) {
 	}
 
 	var home string
-	if os.Getenv("TMHOME") != "" {
+	if os.Getenv("CMTHOME") != "" {
+		home = os.Getenv("CMTHOME")
+	} else if os.Getenv("TMHOME") != "" {
+		//XXX: Deprecated.
 		home = os.Getenv("TMHOME")
+		logger.Error("Deprecated environment variable TMHOME identified. CMTHOME should be used instead.")
 	} else {
 		home, err = cmd.Flags().GetString(cli.HomeFlag)
 		if err != nil {

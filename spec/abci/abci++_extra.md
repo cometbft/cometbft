@@ -81,7 +81,7 @@ $p$ calls `PrepareProposal` many times with different values.
 ### Round 0: 
 
 1. **Propose:** Process $p$ is the proposer in this round. Its $validValue$ is $nil$, and it is free to generate and propose new block $Y$. Before proposing, it calls `PrepareProposal` for $Y$. After that, it broadcasts the proposal, delivers it to itself, calls `ProcessProposal` and broadcasts $Prevote$ for it. 
-1. **Prevote:** Due to network asynchrony less than $2f+1$ processes receives the proposal in time and send $Prevote$ for it. Therefore, $p$ does not update $validValue$ in this round. 
+1. **Prevote:** Due to network asynchrony less than $2f+1$ processes receive the proposal on time and send $Prevote$ for it. Therefore, $p$ does not update $validValue$ in this round. 
 1. **Precommit:** Since less than $2f+1$ processes send $Prevote$, no correct process will lock on this block and send non-`nil` $Precommit$ message. As a consequence, $p$ does not decide on $Y$. 
 
 After this round, we can have multiple rounds like those in [Scenario 1](#scenario-1). The important thing is that process $p$ should not update its $validValue$. Consequently, when process $p$ reaches the round when it is again the proposer, it will ask the mempool for the new block again, and the mempool may return a different block $Z$, and we can have the same round as [Round 0](#round-0-1) just for a different block. As a result, process $p$ calls `PrepareProposal` again but for a different value. When it reaches round $r$ 

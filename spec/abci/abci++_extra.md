@@ -72,7 +72,7 @@ $p$ calls `ProcessProposal` many times with different values.
 1. **Precommit:** Same as in [**Round 1**](#round-1).
 
 
-Rounds like these can continue until we have a round in which process $p$ updates its $validValue$ or until we reach round $r$ where process $p$ decides on a block. After that, it will not call `ProcessProposal` any more for this height. 
+Rounds like these can continue until we have a round in which process $p$ updates its $validValue$ or until we reach round $r$ where process $p$ decides on a block. After that, it will not call `ProcessProposal` anymore for this height. 
 
 ## Scenario 2 
 

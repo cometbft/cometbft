@@ -27,10 +27,8 @@ const (
 	// DefaultLogLevel defines a default log level as INFO.
 	DefaultLogLevel = "info"
 
-	// Mempool versions. V1 is prioritized mempool, v0 is regular mempool.
-	// Default is v0.
+	// Mempool versions. v0 is the regular and default mempool.
 	MempoolV0 = "v0"
-	MempoolV1 = "v1"
 
 	DefaultTendermintDir = ".cometbft"
 	DefaultConfigDir     = "config"

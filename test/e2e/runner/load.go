@@ -7,12 +7,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cometbft/cometbft/libs/log"
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/test/loadtime/payload"
+	"github.com/cometbft/cometbft/types"
 	"github.com/google/uuid"
-	"github.com/tendermint/tendermint/libs/log"
-	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
-	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
-	"github.com/tendermint/tendermint/test/loadtime/payload"
-	"github.com/tendermint/tendermint/types"
 )
 
 const workerPoolSize = 16
@@ -79,7 +79,7 @@ func loadGenerate(ctx context.Context, txCh chan<- types.Tx, testnet *e2e.Testne
 
 		// A context with a timeout is created here to time the createTxBatch
 		// function out. If createTxBatch has not completed its work by the time
-		// the next batch is set to be sent out, then the context is cancled so that
+		// the next batch is set to be sent out, then the context is canceled so that
 		// the current batch is halted, allowing the next batch to begin.
 		tctx, cf := context.WithTimeout(ctx, time.Second)
 		createTxBatch(tctx, txCh, testnet, id)

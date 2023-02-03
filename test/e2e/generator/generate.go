@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/version"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
-	"github.com/tendermint/tendermint/version"
 )
 
 var (
@@ -54,6 +54,10 @@ var (
 		"pause":      0.1,
 		"kill":       0.1,
 		"restart":    0.1,
+		"upgrade":    0.3,
+	}
+	lightNodePerturbations = probSetChoice{
+		"upgrade": 0.3,
 	}
 )
 
@@ -310,6 +314,7 @@ func generateLightNode(r *rand.Rand, startAt int64, providers []string) *e2e.Man
 		Database:        nodeDatabases.Choose(r).(string),
 		PersistInterval: ptrUint64(0),
 		PersistentPeers: providers,
+		Perturb:         lightNodePerturbations.Choose(r),
 	}
 }
 
@@ -341,7 +346,7 @@ func parseWeightedVersions(s string) (weightedChoice, error) {
 }
 
 // Extracts the latest release version from the given Git repository. Uses the
-// current version of Tendermint Core to establish the "major" version
+// current version of CometBFT to establish the "major" version
 // currently in use.
 func gitRepoLatestReleaseVersion(gitRepoDir string) (string, error) {
 	opts := &git.PlainOpenOptions{
@@ -406,7 +411,7 @@ func findLatestReleaseTag(baseVer string, tags []string) (string, error) {
 	if latestVer == nil {
 		return "", nil
 	}
-	// Ensure the version string has a "v" prefix, because all Tendermint E2E
+	// Ensure the version string has a "v" prefix, because all CometBFT E2E
 	// node Docker images' versions have a "v" prefix.
 	vs := latestVer.String()
 	if !strings.HasPrefix(vs, "v") {

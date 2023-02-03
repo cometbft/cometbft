@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"text/template"
 
-	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
-	"github.com/tendermint/tendermint/test/e2e/pkg/infra"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 )
 
 var _ infra.Provider = &Provider{}
@@ -58,11 +58,8 @@ services:
       e2e: true
     container_name: {{ .Name }}
     image: cometbft/e2e-node:{{ .Version }}
-{{- if eq .ABCIProtocol "builtin" }}
+{{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_unsync") }}
     entrypoint: /usr/bin/entrypoint-builtin
-{{- else }}{{ if eq .ABCIProtocol "builtin_unsync" }}
-    entrypoint: /usr/bin/entrypoint-builtin
-{{- end }}
 {{- end }}
     init: true
     ports:
@@ -71,9 +68,32 @@ services:
     - 6060
     volumes:
     - ./{{ .Name }}:/cometbft
+    - ./{{ .Name }}:/tendermint
     networks:
       {{ $.Name }}:
         ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .IP }}
+{{- if ne .Version  $.UpgradeVersion}}
+
+  {{ .Name }}_u:
+    labels:
+      e2e: true
+    container_name: {{ .Name }}_u
+    image: cometbft/e2e-node:{{ $.UpgradeVersion }}
+{{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_unsync") }}
+    entrypoint: /usr/bin/entrypoint-builtin
+{{- end }}
+    init: true
+    ports:
+    - 26656
+    - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657
+    - 6060
+    volumes:
+    - ./{{ .Name }}:/cometbft
+    - ./{{ .Name }}:/tendermint
+    networks:
+      {{ $.Name }}:
+        ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .IP }}
+{{- end }}
 
 {{end}}`)
 	if err != nil {

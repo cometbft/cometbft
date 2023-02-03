@@ -5,52 +5,52 @@ OUTPUT?=$(BUILDDIR)/cometbft
 BUILD_TAGS?=cometbft
 
 COMMIT_HASH := $(shell git rev-parse --short HEAD)
-LD_FLAGS = -X github.com/tendermint/tendermint/version.TMGitCommitHash=$(COMMIT_HASH)
+LD_FLAGS = -X github.com/cometbft/cometbft/version.TMGitCommitHash=$(COMMIT_HASH)
 BUILD_FLAGS = -mod=readonly -ldflags "$(LD_FLAGS)"
 HTTPS_GIT := https://github.com/cometbft/cometbft.git
 CGO_ENABLED ?= 0
 
 # handle nostrip
-ifeq (,$(findstring nostrip,$(TENDERMINT_BUILD_OPTIONS)))
+ifeq (,$(findstring nostrip,$(COMETBFT_BUILD_OPTIONS)))
   BUILD_FLAGS += -trimpath
   LD_FLAGS += -s -w
 endif
 
 # handle race
-ifeq (race,$(findstring race,$(TENDERMINT_BUILD_OPTIONS)))
+ifeq (race,$(findstring race,$(COMETBFT_BUILD_OPTIONS)))
   CGO_ENABLED=1
   BUILD_FLAGS += -race
 endif
 
 # handle cleveldb
-ifeq (cleveldb,$(findstring cleveldb,$(TENDERMINT_BUILD_OPTIONS)))
+ifeq (cleveldb,$(findstring cleveldb,$(COMETBFT_BUILD_OPTIONS)))
   CGO_ENABLED=1
   BUILD_TAGS += cleveldb
 endif
 
 # handle badgerdb
-ifeq (badgerdb,$(findstring badgerdb,$(TENDERMINT_BUILD_OPTIONS)))
+ifeq (badgerdb,$(findstring badgerdb,$(COMETBFT_BUILD_OPTIONS)))
   BUILD_TAGS += badgerdb
 endif
 
 # handle rocksdb
-ifeq (rocksdb,$(findstring rocksdb,$(TENDERMINT_BUILD_OPTIONS)))
+ifeq (rocksdb,$(findstring rocksdb,$(COMETBFT_BUILD_OPTIONS)))
   CGO_ENABLED=1
   BUILD_TAGS += rocksdb
 endif
 
 # handle boltdb
-ifeq (boltdb,$(findstring boltdb,$(TENDERMINT_BUILD_OPTIONS)))
+ifeq (boltdb,$(findstring boltdb,$(COMETBFT_BUILD_OPTIONS)))
   BUILD_TAGS += boltdb
 endif
 
 # allow users to pass additional flags via the conventional LDFLAGS variable
 LD_FLAGS += $(LDFLAGS)
 
-# Process Docker environment varible TARGETPLATFORM 
+# Process Docker environment varible TARGETPLATFORM
 # in order to build binary with correspondent ARCH
 # by default will always build for linux/amd64
-TARGETPLATFORM ?= 
+TARGETPLATFORM ?=
 GOOS ?= linux
 GOARCH ?= amd64
 GOARM ?=
@@ -114,15 +114,15 @@ all: check build test install
 include tests.mk
 
 ###############################################################################
-###                                Build Tendermint                        ###
+###                                Build CometBFT                           ###
 ###############################################################################
 
 build:
-	CGO_ENABLED=$(CGO_ENABLED) go build $(BUILD_FLAGS) -tags '$(BUILD_TAGS)' -o $(OUTPUT) ./cmd/tendermint/
+	CGO_ENABLED=$(CGO_ENABLED) go build $(BUILD_FLAGS) -tags '$(BUILD_TAGS)' -o $(OUTPUT) ./cmd/cometbft/
 .PHONY: build
 
 install:
-	CGO_ENABLED=$(CGO_ENABLED) go install $(BUILD_FLAGS) -tags $(BUILD_TAGS) ./cmd/tendermint
+	CGO_ENABLED=$(CGO_ENABLED) go install $(BUILD_FLAGS) -tags $(BUILD_TAGS) ./cmd/cometbft
 .PHONY: install
 
 ###############################################################################
@@ -230,12 +230,12 @@ go.sum: go.mod
 draw_deps:
 	@# requires brew install graphviz or apt-get install graphviz
 	go get github.com/RobotsAndPencils/goviz
-	@goviz -i github.com/cometbft/cometbft/cmd/tendermint -d 3 | dot -Tpng -o dependency-graph.png
+	@goviz -i github.com/cometbft/cometbft/cmd/cometbft -d 3 | dot -Tpng -o dependency-graph.png
 .PHONY: draw_deps
 
 get_deps_bin_size:
 	@# Copy of build recipe with additional flags to perform binary size analysis
-	$(eval $(shell go build -work -a $(BUILD_FLAGS) -tags $(BUILD_TAGS) -o $(OUTPUT) ./cmd/tendermint/ 2>&1))
+	$(eval $(shell go build -work -a $(BUILD_FLAGS) -tags $(BUILD_TAGS) -o $(OUTPUT) ./cmd/cometbft/ 2>&1))
 	@find $(WORK) -type f -name "*.a" | xargs -I{} du -hxs "{}" | sort -rh | sed -e s:${WORK}/::g > deps_bin_size.log
 	@echo "Results can be found here: $(CURDIR)/deps_bin_size.log"
 .PHONY: get_deps_bin_size
@@ -280,44 +280,10 @@ vulncheck:
 
 DESTINATION = ./index.html.md
 
+
 ###############################################################################
 ###                           Documentation                                 ###
 ###############################################################################
-
-DOCS_OUTPUT?=/tmp/cometbft-core-docs
-
-# This builds a docs site for each branch/tag in `./docs/versions` and copies
-# each site to a version prefixed path. The last entry inside the `versions`
-# file will be the default root index.html. Only redirects that are built into
-# the "redirects" folder of each of the branches will be copied out to the root
-# of the build at the end.
-build-docs:
-	@cd docs && \
-	while read -r branch path_prefix; do \
-		(git checkout $${branch} && npm ci && VUEPRESS_BASE="/$${path_prefix}/" npm run build) ; \
-		mkdir -p $(DOCS_OUTPUT)/$${path_prefix} ; \
-		cp -r .vuepress/dist/* $(DOCS_OUTPUT)/$${path_prefix}/ ; \
-		cp $(DOCS_OUTPUT)/$${path_prefix}/index.html $(DOCS_OUTPUT) ; \
-		cp $(DOCS_OUTPUT)/$${path_prefix}/404.html $(DOCS_OUTPUT) ; \
-		cp -r $(DOCS_OUTPUT)/$${path_prefix}/redirects/* $(DOCS_OUTPUT) || true ; \
-	done < versions ;
-.PHONY: build-docs
-
-# Build and serve the local version of the docs on the current branch from
-# http://0.0.0.0:8080
-serve-docs:
-	@cd docs && \
-		npm ci && \
-		npm run serve
-.PHONY: serve-docs
-
-sync-docs:
-	cd ~/output && \
-	echo "role_arn = ${DEPLOYMENT_ROLE_ARN}" >> /root/.aws/config ; \
-	echo "CI job = ${CIRCLE_BUILD_URL}" >> version.html ; \
-	aws s3 sync . s3://${WEBSITE_BUCKET} --profile terraform --delete ; \
-	aws cloudfront create-invalidation --distribution-id ${CF_DISTRIBUTION_ID} --profile terraform --path "/*" ;
-.PHONY: sync-docs
 
 # Verify that important design docs have ToC entries.
 check-docs-toc:
@@ -328,10 +294,13 @@ check-docs-toc:
 ###                            Docker image                                 ###
 ###############################################################################
 
-build-docker: build-linux
-	cp $(OUTPUT) DOCKER/cometbft
-	docker build --label=cometbft --tag="cometbft/cometbft" DOCKER
-	rm -rf DOCKER/cometbft
+# On Linux, you may need to run `DOCKER_BUILDKIT=1 make build-docker` for this
+# to work.
+build-docker:
+	docker build \
+		--label=cometbft \
+		--tag="cometbft/cometbft" \
+		-f DOCKER/Dockerfile .
 .PHONY: build-docker
 
 ###############################################################################
@@ -347,7 +316,7 @@ build-docker-localnode:
 	@cd networks/local && make
 .PHONY: build-docker-localnode
 
-# Runs `make build TENDERMINT_BUILD_OPTIONS=cleveldb` from within an Amazon
+# Runs `make build COMETBFT_BUILD_OPTIONS=cleveldb` from within an Amazon
 # Linux (v2)-based Docker build container in order to build an Amazon
 # Linux-compatible binary. Produces a compatible binary at ./build/cometbft
 build_c-amazonlinux:

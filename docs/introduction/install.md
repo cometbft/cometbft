@@ -2,11 +2,11 @@
 order: 3
 ---
 
-# Install Tendermint
+# Install CometBFT
 
 ## From Binary
 
-To download pre-built binaries, see the [releases page](https://github.com/tendermint/tendermint/releases).
+To download pre-built binaries, see the [releases page](https://github.com/cometbft/cometbft/releases).
 
 ## From Source
 
@@ -21,8 +21,8 @@ echo export PATH=\"\$PATH:\$GOPATH/bin\" >> ~/.bash_profile
 ### Get Source Code
 
 ```sh
-git clone https://github.com/tendermint/tendermint.git
-cd tendermint
+git clone https://github.com/cometbft/cometbft.git
+cd cometbft
 ```
 
 ### Compile
@@ -39,16 +39,16 @@ make build
 
 to put the binary in `./build`.
 
-_DISCLAIMER_ The binary of Tendermint is build/installed without the DWARF
-symbol table. If you would like to build/install Tendermint with the DWARF
+_DISCLAIMER_ The binary of CometBFT is build/installed without the DWARF
+symbol table. If you would like to build/install CometBFT with the DWARF
 symbol and debug information, remove `-s -w` from `BUILD_FLAGS` in the make
 file.
 
-The latest Tendermint is now installed. You can verify the installation by
+The latest CometBFT is now installed. You can verify the installation by
 running:
 
 ```sh
-tendermint version
+cometbft version
 ```
 
 ## Run
@@ -56,13 +56,13 @@ tendermint version
 To start a one-node blockchain with a simple in-process application:
 
 ```sh
-tendermint init
-tendermint node --proxy_app=kvstore
+cometbft init
+cometbft node --proxy_app=kvstore
 ```
 
 ## Reinstall
 
-If you already have Tendermint installed, and you make updates, simply
+If you already have CometBFT installed, and you make updates, simply
 
 ```sh
 make install
@@ -71,7 +71,7 @@ make install
 To upgrade, run
 
 ```sh
-git pull origin master
+git pull origin main
 make install
 ```
 
@@ -105,16 +105,16 @@ Set a database backend to `cleveldb`:
 db_backend = "cleveldb"
 ```
 
-To install Tendermint, run:
+To install CometBFT, run:
 
 ```sh
-CGO_LDFLAGS="-lsnappy" make install TENDERMINT_BUILD_OPTIONS=cleveldb
+CGO_LDFLAGS="-lsnappy" make install COMETBFT_BUILD_OPTIONS=cleveldb
 ```
 
 or run:
 
 ```sh
-CGO_LDFLAGS="-lsnappy" make build TENDERMINT_BUILD_OPTIONS=cleveldb
+CGO_LDFLAGS="-lsnappy" make build COMETBFT_BUILD_OPTIONS=cleveldb
 ```
 
 which puts the binary in `./build`.

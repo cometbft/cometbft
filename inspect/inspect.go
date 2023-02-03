@@ -6,17 +6,17 @@ import (
 	"net"
 	"os"
 
-	"github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/inspect/rpc"
-	"github.com/tendermint/tendermint/libs/log"
-	tmstrings "github.com/tendermint/tendermint/libs/strings"
-	rpccore "github.com/tendermint/tendermint/rpc/core"
-	"github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/state/indexer"
-	"github.com/tendermint/tendermint/state/indexer/block"
-	"github.com/tendermint/tendermint/state/txindex"
-	"github.com/tendermint/tendermint/store"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/inspect/rpc"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtstrings "github.com/cometbft/cometbft/libs/strings"
+	rpccore "github.com/cometbft/cometbft/rpc/core"
+	"github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/state/indexer"
+	"github.com/cometbft/cometbft/state/indexer/block"
+	"github.com/cometbft/cometbft/state/txindex"
+	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/types"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -28,7 +28,7 @@ var (
 // Inspector manages an RPC service that exports methods to debug a failed node.
 // After a node shuts down due to a consensus failure, it will no longer start
 // up its state cannot easily be inspected. An Inspector value provides a similar interface
-// to the node, using the underlying Tendermint data stores, without bringing up
+// to the node, using the underlying CometBFT data stores, without bringing up
 // any other components. A caller can query the Inspector service to inspect the
 // persisted state and debug the failure.
 type Inspector struct {
@@ -98,7 +98,7 @@ func (ins *Inspector) Run(ctx context.Context) error {
 
 func startRPCServers(ctx context.Context, cfg *config.RPCConfig, logger log.Logger, routes rpccore.RoutesMap) error {
 	g, tctx := errgroup.WithContext(ctx)
-	listenAddrs := tmstrings.SplitAndTrimEmpty(cfg.ListenAddress, ",", " ")
+	listenAddrs := cmtstrings.SplitAndTrimEmpty(cfg.ListenAddress, ",", " ")
 	rh := rpc.Handler(cfg, routes, logger)
 	for _, listenerAddr := range listenAddrs {
 		server := rpc.Server{

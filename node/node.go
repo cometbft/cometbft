@@ -11,35 +11,35 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
 
-	bc "github.com/tendermint/tendermint/blocksync"
-	cfg "github.com/tendermint/tendermint/config"
-	cs "github.com/tendermint/tendermint/consensus"
-	"github.com/tendermint/tendermint/evidence"
+	bc "github.com/cometbft/cometbft/blocksync"
+	cfg "github.com/cometbft/cometbft/config"
+	cs "github.com/cometbft/cometbft/consensus"
+	"github.com/cometbft/cometbft/evidence"
 
-	"github.com/tendermint/tendermint/libs/log"
-	tmpubsub "github.com/tendermint/tendermint/libs/pubsub"
-	"github.com/tendermint/tendermint/libs/service"
-	mempl "github.com/tendermint/tendermint/mempool"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/p2p/pex"
-	"github.com/tendermint/tendermint/proxy"
-	rpccore "github.com/tendermint/tendermint/rpc/core"
-	grpccore "github.com/tendermint/tendermint/rpc/grpc"
-	rpcserver "github.com/tendermint/tendermint/rpc/jsonrpc/server"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/state/indexer"
-	"github.com/tendermint/tendermint/state/txindex"
-	"github.com/tendermint/tendermint/state/txindex/null"
-	"github.com/tendermint/tendermint/statesync"
-	"github.com/tendermint/tendermint/store"
-	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
-	"github.com/tendermint/tendermint/version"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	"github.com/cometbft/cometbft/libs/service"
+	mempl "github.com/cometbft/cometbft/mempool"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/pex"
+	"github.com/cometbft/cometbft/proxy"
+	rpccore "github.com/cometbft/cometbft/rpc/core"
+	grpccore "github.com/cometbft/cometbft/rpc/grpc"
+	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/state/indexer"
+	"github.com/cometbft/cometbft/state/txindex"
+	"github.com/cometbft/cometbft/state/txindex/null"
+	"github.com/cometbft/cometbft/statesync"
+	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/cometbft/cometbft/version"
 
 	_ "net/http/pprof" //nolint: gosec
 )
 
-// Node is the highest level interface to a full Tendermint node.
+// Node is the highest level interface to a full CometBFT node.
 // It includes all configuration information and running services.
 type Node struct {
 	service.BaseService
@@ -135,7 +135,7 @@ func StateProvider(stateProvider statesync.StateProvider) Option {
 
 //------------------------------------------------------------------------------
 
-// NewNode returns a new, ready to go, Tendermint Node.
+// NewNode returns a new, ready to go, CometBFT Node.
 func NewNode(config *cfg.Config,
 	privValidator types.PrivValidator,
 	nodeKey *p2p.NodeKey,
@@ -206,7 +206,7 @@ func NewNode(config *cfg.Config,
 	}
 
 	// Create the handshaker, which calls RequestInfo, sets the AppVersion on the state,
-	// and replays any blocks as necessary to sync tendermint with the app.
+	// and replays any blocks as necessary to sync CometBFT with the app.
 	consensusLogger := logger.With("module", "consensus")
 	if !stateSync {
 		if err := doHandshake(stateStore, state, blockStore, genDoc, eventBus, proxyApp, consensusLogger); err != nil {
@@ -374,7 +374,7 @@ func NewNode(config *cfg.Config,
 
 // OnStart starts the Node. It implements service.Service.
 func (n *Node) OnStart() error {
-	now := tmtime.Now()
+	now := cmttime.Now()
 	genTime := n.genesisDoc.GenesisTime
 	if genTime.After(now) {
 		n.Logger.Info("Genesis time is in the future. Sleeping until then...", "genTime", genTime)
@@ -570,7 +570,7 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 		wm := rpcserver.NewWebsocketManager(routes,
 			rpcserver.OnDisconnect(func(remoteAddr string) {
 				err := n.eventBus.UnsubscribeAll(context.Background(), remoteAddr)
-				if err != nil && err != tmpubsub.ErrSubscriptionNotFound {
+				if err != nil && err != cmtpubsub.ErrSubscriptionNotFound {
 					wmLogger.Error("Failed to unsubscribe addr from events", "addr", remoteAddr, "err", err)
 				}
 			}),

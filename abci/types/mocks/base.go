@@ -1,7 +1,7 @@
 package mocks
 
 import (
-	types "github.com/tendermint/tendermint/abci/types"
+	types "github.com/cometbft/cometbft/abci/types"
 )
 
 // BaseMock provides a wrapper around the generated Application mock and a BaseApplication.
@@ -61,7 +61,7 @@ func (m BaseMock) CheckTx(input types.RequestCheckTx) types.ResponseCheckTx {
 }
 
 // Consensus Connection
-// Initialize blockchain w validators/other info from TendermintCore
+// Initialize blockchain w validators/other info from CometBFT
 func (m BaseMock) InitChain(input types.RequestInitChain) types.ResponseInitChain {
 	var ret types.ResponseInitChain
 	defer func() {

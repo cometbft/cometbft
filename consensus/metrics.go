@@ -6,9 +6,9 @@ import (
 
 	"github.com/go-kit/kit/metrics"
 
-	cstypes "github.com/tendermint/tendermint/consensus/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/types"
+	cstypes "github.com/cometbft/cometbft/consensus/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -128,7 +128,7 @@ func (m *Metrics) MarkProposalProcessed(accepted bool) {
 	m.ProposalReceiveCount.With("status", status).Add(1)
 }
 
-func (m *Metrics) MarkVoteReceived(vt tmproto.SignedMsgType, power, totalPower int64) {
+func (m *Metrics) MarkVoteReceived(vt cmtproto.SignedMsgType, power, totalPower int64) {
 	p := float64(power) / float64(totalPower)
 	n := strings.ToLower(strings.TrimPrefix(vt.String(), "SIGNED_MSG_TYPE_"))
 	m.RoundVotingPowerPercent.With("vote_type", n).Add(p)
@@ -140,7 +140,7 @@ func (m *Metrics) MarkRound(r int32, st time.Time) {
 	m.RoundDurationSeconds.Observe(roundTime)
 }
 
-func (m *Metrics) MarkLateVote(vt tmproto.SignedMsgType) {
+func (m *Metrics) MarkLateVote(vt cmtproto.SignedMsgType) {
 	n := strings.ToLower(strings.TrimPrefix(vt.String(), "SIGNED_MSG_TYPE_"))
 	m.LateVotes.With("vote_type", n).Add(1)
 }

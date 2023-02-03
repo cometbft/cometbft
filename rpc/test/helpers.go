@@ -8,19 +8,19 @@ import (
 	"strings"
 	"time"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/internal/test"
-	"github.com/tendermint/tendermint/libs/log"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/internal/test"
+	"github.com/cometbft/cometbft/libs/log"
 
-	cfg "github.com/tendermint/tendermint/config"
-	tmnet "github.com/tendermint/tendermint/libs/net"
-	nm "github.com/tendermint/tendermint/node"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/privval"
-	"github.com/tendermint/tendermint/proxy"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	core_grpc "github.com/tendermint/tendermint/rpc/grpc"
-	rpcclient "github.com/tendermint/tendermint/rpc/jsonrpc/client"
+	cfg "github.com/cometbft/cometbft/config"
+	cmtnet "github.com/cometbft/cometbft/libs/net"
+	nm "github.com/cometbft/cometbft/node"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/privval"
+	"github.com/cometbft/cometbft/proxy"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	core_grpc "github.com/cometbft/cometbft/rpc/grpc"
+	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 )
 
 // Options helps with specifying some parameters for our RPC testing for greater
@@ -77,7 +77,7 @@ func makePathname() string {
 }
 
 func randPort() int {
-	port, err := tmnet.GetFreePort()
+	port, err := cmtnet.GetFreePort()
 	if err != nil {
 		panic(err)
 	}
@@ -98,7 +98,7 @@ func createConfig() *cfg.Config {
 	tm, rpc, grpc := makeAddrs()
 	c.P2P.ListenAddress = tm
 	c.RPC.ListenAddress = rpc
-	c.RPC.CORSAllowedOrigins = []string{"https://tendermint.com/"}
+	c.RPC.CORSAllowedOrigins = []string{"https://cometbft.com/"}
 	c.RPC.GRPCListenAddress = grpc
 	return c
 }
@@ -116,7 +116,7 @@ func GetGRPCClient() core_grpc.BroadcastAPIClient {
 	return core_grpc.StartGRPCClient(grpcAddr)
 }
 
-// StartTendermint starts a test tendermint server in a go routine and returns when it is initialized
+// StartTendermint starts a test CometBFT server in a go routine and returns when it is initialized
 func StartTendermint(app abci.Application, opts ...func(*Options)) *nm.Node {
 	nodeOpts := defaultOptions
 	for _, opt := range opts {
@@ -133,13 +133,13 @@ func StartTendermint(app abci.Application, opts ...func(*Options)) *nm.Node {
 	waitForGRPC()
 
 	if !nodeOpts.suppressStdout {
-		fmt.Println("Tendermint running!")
+		fmt.Println("CometBFT running!")
 	}
 
 	return node
 }
 
-// StopTendermint stops a test tendermint server, waits until it's stopped and
+// StopTendermint stops a test CometBFT server, waits until it's stopped and
 // cleans up test/config files.
 func StopTendermint(node *nm.Node) {
 	if err := node.Stop(); err != nil {
@@ -149,7 +149,7 @@ func StopTendermint(node *nm.Node) {
 	os.RemoveAll(node.Config().RootDir)
 }
 
-// NewTendermint creates a new tendermint server and sleeps forever
+// NewTendermint creates a new CometBFT server and sleeps forever
 func NewTendermint(app abci.Application, opts *Options) *nm.Node {
 	// Create & start node
 	config := GetConfig(opts.recreateConfig)
@@ -179,7 +179,7 @@ func NewTendermint(app abci.Application, opts *Options) *nm.Node {
 	return node
 }
 
-// SuppressStdout is an option that tries to make sure the RPC test Tendermint
+// SuppressStdout is an option that tries to make sure the RPC test CometBFT
 // node doesn't log anything to stdout.
 func SuppressStdout(o *Options) {
 	o.suppressStdout = true

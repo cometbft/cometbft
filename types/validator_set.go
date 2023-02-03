@@ -9,9 +9,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/tendermint/tendermint/crypto/merkle"
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	"github.com/cometbft/cometbft/crypto/merkle"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 const (
@@ -674,7 +674,7 @@ func (vals *ValidatorSet) VerifyCommitLight(chainID string, blockID BlockID,
 
 // VerifyCommitLightTrusting verifies that trustLevel of the validator set signed
 // this commit.
-func (vals *ValidatorSet) VerifyCommitLightTrusting(chainID string, commit *Commit, trustLevel tmmath.Fraction) error {
+func (vals *ValidatorSet) VerifyCommitLightTrusting(chainID string, commit *Commit, trustLevel cmtmath.Fraction) error {
 	return VerifyCommitLightTrusting(chainID, vals, commit, trustLevel)
 }
 
@@ -782,13 +782,13 @@ func (valz ValidatorsByAddress) Swap(i, j int) {
 }
 
 // ToProto converts ValidatorSet to protobuf
-func (vals *ValidatorSet) ToProto() (*tmproto.ValidatorSet, error) {
+func (vals *ValidatorSet) ToProto() (*cmtproto.ValidatorSet, error) {
 	if vals.IsNilOrEmpty() {
-		return &tmproto.ValidatorSet{}, nil // validator set should never be nil
+		return &cmtproto.ValidatorSet{}, nil // validator set should never be nil
 	}
 
-	vp := new(tmproto.ValidatorSet)
-	valsProto := make([]*tmproto.Validator, len(vals.Validators))
+	vp := new(cmtproto.ValidatorSet)
+	valsProto := make([]*cmtproto.Validator, len(vals.Validators))
 	for i := 0; i < len(vals.Validators); i++ {
 		valp, err := vals.Validators[i].ToProto()
 		if err != nil {
@@ -814,7 +814,7 @@ func (vals *ValidatorSet) ToProto() (*tmproto.ValidatorSet, error) {
 // ValidatorSetFromProto sets a protobuf ValidatorSet to the given pointer.
 // It returns an error if any of the validators from the set or the proposer
 // is invalid
-func ValidatorSetFromProto(vp *tmproto.ValidatorSet) (*ValidatorSet, error) {
+func ValidatorSetFromProto(vp *cmtproto.ValidatorSet) (*ValidatorSet, error) {
 	if vp == nil {
 		return nil, errors.New("nil validator set") // validator set should never be nil, bigger issues are at play if empty
 	}

@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/informalsystems/tm-load-test/pkg/loadtest"
 
-	"github.com/tendermint/tendermint/test/loadtime/payload"
+	"github.com/cometbft/cometbft/test/loadtime/payload"
 )
 
 // Ensure all of the interfaces are correctly satisfied.
@@ -38,7 +38,7 @@ func main() {
 	loadtest.Run(&loadtest.CLIConfig{
 		AppName:              "loadtime",
 		AppShortDesc:         "Generate timestamped transaction load.",
-		AppLongDesc:          "loadtime generates transaction load for the purpose of measuring the end-to-end latency of a transaction from submission to execution in a Tendermint network.",
+		AppLongDesc:          "loadtime generates transaction load for the purpose of measuring the end-to-end latency of a transaction from submission to execution in a CometBFT network.",
 		DefaultClientFactory: "loadtime-client",
 	})
 }

@@ -16,9 +16,6 @@ permissions:
 jobs:
   check-mocks:
     runs-on: ubuntu-latest
-    # TODO (thane): Remove once we make the cometbft-db repository public
-    env:
-      GOPRIVATE: github.com/cometbft/cometbft-db
     steps:
       - uses: actions/setup-go@v3
         with:
@@ -26,8 +23,6 @@ jobs:
 
       - uses: actions/checkout@v3
 
-      # TODO (thane): Remove once we make the cometbft-db repository public
-      - run: git config --global url.https://${{ secrets.GO_MODULES_TOKEN }}@github.com/.insteadOf https://github.com/
       - name: "Check generated mocks"
         run: |
           set -euo pipefail

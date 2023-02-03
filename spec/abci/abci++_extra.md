@@ -98,7 +98,7 @@ In this scenario, in all rounds before $r$ we can have any round presented in [S
 
 ### Round $r$: 
 
-1. **Propose:** Correct process is the proposer in this round, and it proposes block $X$. 
+1. **Propose:** A correct process is the proposer in this round, and it proposes block $X$. 
 Due to asynchrony, the proposal message arrives to process $p$ after its $timeoutPropose$
 expires and it sends $Prevote$ for $nil$. Consequently, process $p$ does not call
 `ProcessProposal` for block $X$. However, the same proposal arrives at other processes

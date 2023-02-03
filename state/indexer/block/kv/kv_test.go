@@ -323,16 +323,6 @@ func TestBlockIndexerMulti(t *testing.T) {
 			q:       query.MustParse("end_event.bar > 100 AND end_event.bar <= 500"),
 			results: []int64{1, 2},
 		},
-		/*
-			"trailing space (panics!)": {
-				q:       query.MustParse("end_event.bar = 1000 "),
-				results: []int64{},
-			},
-			"leading space (panics!)": {
-				q:       query.MustParse(" end_event.bar = 1000"),
-				results: []int64{},
-			},
-		*/
 		"query matches fields from all events whose attribute is within range": {
 			q:       query.MustParse("match.events = 1 AND block.height  = 2 AND end_event.foo < 300"),
 			results: []int64{2},

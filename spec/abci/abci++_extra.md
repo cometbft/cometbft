@@ -18,7 +18,7 @@ non-proposer        = [process-proposal]
 
 We can see from the grammar that we can have several rounds before deciding and committing a block. The reasons why one round may not be enough are:
 * network asynchrony, and
-* Byzantine process being the proposer. 
+* a Byzantine process being the proposer. 
 
 If we assume that the Tendermint algorithm calls `Decide` and `Commit` for block $X$ in round $r$, in the rounds $r' <= r$, it can exhibit any of the following behaviours:
 

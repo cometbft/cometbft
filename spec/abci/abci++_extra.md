@@ -55,7 +55,7 @@ $p$ calls `ProcessProposal` many times with different values.
 
 ### Round 0:
     
-1. **Propose:** Proposer of this round is a Byzantine process, and it chooses not to send the proposal message. Therefore, $p$'s $timeoutPropose$ expires, it sends $Prevote$ for $nil$, and it does not call `ProcessProposal`. All correct processes do the same. 
+1. **Propose:** The proposer of this round is a Byzantine process, and it chooses not to send the proposal message. Therefore, $p$'s $timeoutPropose$ expires, it sends $Prevote$ for $nil$, and it does not call `ProcessProposal`. All correct processes do the same. 
 1. **Prevote:** $p$ eventually receives $2f+1$ $Prevote$ messages for $nil$ and starts $timeoutPrevote$. When $timeoutPrevote$ expires it sends $Precommit$ for $nil$. 
 1. **Precommit:** $p$ eventually receives $2f+1$ $Precommit$ messages for $nil$ and starts $timeoutPrecommit$. When it expires, it moves to the next round. 
     

@@ -20,7 +20,7 @@ We can see from the grammar that we can have several rounds before deciding and 
 * network asynchrony, and
 * a Byzantine process being the proposer. 
 
-If we assume that the Tendermint algorithm calls `Decide` and `Commit` for block $X$ in round $r$, in the rounds $r' <= r$, it can exhibit any of the following behaviours:
+If we assume that the Tendermint algorithm calls `decide` and `commit` for block $X$ in round $r$, in the rounds $r' <= r$, it can exhibit any of the following behaviours:
 
 1. Call `PrepareProposal` and/or `ProcessProposal` for block $X$. 
 1. Call `PrepareProposal` and/or `ProcessProposal` for block $Y \neq X$.

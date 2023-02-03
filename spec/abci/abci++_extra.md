@@ -90,6 +90,8 @@ some process will propose block $X$ and if $p$ receives $2f+1$ $Precommit$ messa
 
 ## Scenario 3 
 
+$p$ calls `PrepareProposal` and `ProcessProposal` for many values, but decides on a value for which it did not call `PrepareProposal` or `ProcessProposal`.
+
 In this scenario, in all rounds before $r$ we can have any round presented in [Scenario 1](#scenario-1) or [Scenario 2](#scenario-2). What is important is that:
 - no proposer proposed block $X$ or if it did, process $p$, due to asynchrony, did not receive it in time, so it did not call `ProcessProposal`, and
 - if $p$ was the proposer it proposed some other value $\neq X$. 

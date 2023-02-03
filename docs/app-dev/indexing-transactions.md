@@ -103,12 +103,12 @@ will be represented as follows in the store:
 ```
 Key                                 value
 transferSenderBobEndBlock1           1
-transferRecepientAliceEndBlock11     1
+transferRecipientAliceEndBlock11     1
 transferBalance100EndBlock11         1
 transferNodeNothingEndblock11        1
 ---- event2 ------
 transferSenderTomEndBlock12          1
-transferRecepientAliceEndBlock12     1
+transferRecipientAliceEndBlock12     1
 transferBalance200EndBlock12         1
 transferNodeNothingEndblock12        1
  
@@ -252,7 +252,7 @@ the query syntax is as follows:
 ```bash
 curl "localhost:26657/block_search?query=\"sender=Bob AND balance = 200\"&match_events=true"
 ```
-Currently the default behaviour is if `match_events` is set  to false.
+Currently the default behavior is if `match_events` is set  to false.
 
 Check out [API docs](https://docs.cometbft.com/v0.34/rpc/#/Info/block_search)
 for more information on query syntax and other options.
@@ -264,6 +264,6 @@ all nodes running CometBFT will include the event sequence. However, mixed netwo
 and Tendermint Core versions before v0.34.25 are possible. On nodes running Tendermint Core, the `match_events` keyword
 is ignored and the data is retrieved as if `match_events=false`.
 
-Additionally, is a node that was running Tendermint Core 
+Additionally, if a node that was running Tendermint Core 
 when the data was first indexed, and switched to CometBFT, is queried, it will retrieve this previously indexed
 data as if `match_events=false` (attributes can match the query conditions across different events on the same height). 

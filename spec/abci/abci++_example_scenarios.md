@@ -4,7 +4,7 @@ title: ABCI++ extra
 ---
 # Introduction
 
-In the section [Tendermint's expected behaviour](./abci++_tmint_expected_behavior.md#valid-method-call-sequences), we presented the most common behaviour, usually referred to as the good case. However, the grammar specified in the same section is more general and covers more scenarios that an Application designer needs to account for. 
+In the section [CometBFT's expected behaviour](./abci++_tmint_expected_behavior.md#valid-method-call-sequences), we presented the most common behaviour, usually referred to as the good case. However, the grammar specified in the same section is more general and covers more scenarios that an Application designer needs to account for. 
 
 In this section, we give more information about these possible scenarios. We focus on methods introduced by ABCI++: `PrepareProposal` and `ProcessProposal`. Specifically, we concentrate on the part of the grammar presented below.  
 
@@ -16,22 +16,22 @@ proposer            = [prepare-proposal process-proposal]
 non-proposer        = [process-proposal]
 ```
 
-We can see from the grammar that we can have several rounds before deciding and committing a block. The reasons why one round may not be enough are:
+We can see from the grammar that we can have several rounds before deciding a block. The reasons why one round may not be enough are:
 * network asynchrony, and
 * a Byzantine process being the proposer. 
 
-If we assume that the Tendermint algorithm calls `decide` and `commit` for block $X$ in round $r$, in the rounds $r' <= r$, it can exhibit any of the following behaviours:
+If we assume that the consensus algorithm decides on block $X$ in round $r$, in the rounds $r' <= r$, CometBFT can exhibit any of the following behaviours:
 
 1. Call `PrepareProposal` and/or `ProcessProposal` for block $X$. 
 1. Call `PrepareProposal` and/or `ProcessProposal` for block $Y \neq X$.
 1. Does not call `PrepareProposal` and/or `ProcessProposal`.
 
-In the rounds when it is the proposer, Tendermint's `PrepareProposal` call is always followed by the `ProcessProposal` call. The reason is that the process always delivers the proposal to itself, which triggers the `ProcessProposal` call. 
+In the rounds when it is the proposer, CometBFT's `PrepareProposal` call is always followed by the `ProcessProposal` call. The reason is that the process always delivers the proposal to itself, which triggers the `ProcessProposal` call. 
 
-As the number of rounds the Tendermint consensus algorithm needs to decide in a given run is a priori unknown, the application needs to account for any number of rounds, where each round can exhibit any of these three behaviours. Recall that the application is unaware of the internals of consensus and thus of the rounds. 
+As the number of rounds the consensus algorithm needs to decide in a given run is a priori unknown, the application needs to account for any number of rounds, where each round can exhibit any of these three behaviours. Recall that the application is unaware of the internals of consensus and thus of the rounds. 
 
 # Possible scenarios
-The unknown number of rounds we can have when following the Tendermint algorithm yields a vast number of scenarios we can expect. Listing them all is impossible. However, here we give several of them and draw the main conclusions. Specifically, we will show that before `decide` and `commit` for block $X$ are called:
+The unknown number of rounds we can have when following the consensus algorithm yields a vast number of scenarios we can expect. Listing them all is impossible. However, here we give several of them and draw the main conclusions. Specifically, we will show that before block $X$ is decided:
     
 1. On a correct node, `PrepareProposal` may be called multiple times and for different blocks ([**Scenario 1**](#scenario-1)). 
 1. On a correct node, `ProcessProposal` may be called multiple times and for different blocks ([**Scenario 2**](#scenario-2)).
@@ -41,7 +41,7 @@ The unknown number of rounds we can have when following the Tendermint algorithm
 
 ## Basic information
 
-Each scenario is presented from the perspective of a process $p$. More precisely, we show what happens in each round's $step$ of the [Tendermint algorithm](https://arxiv.org/pdf/1807.04938.pdf). While in practice the consensus algorithm works with respect to voting power of the validators, in this document refer to number of processes (e.g., $n$, $f+1$, $2f+1$) for simplicity. The legend is below: 
+Each scenario is presented from the perspective of a process $p$. More precisely, we show what happens in each round's $step$ of the [Tendermint consensus algorithm](https://arxiv.org/pdf/1807.04938.pdf). While in practice the consensus algorithm works with respect to voting power of the validators, in this document refer to number of processes (e.g., $n$, $f+1$, $2f+1$) for simplicity. The legend is below: 
 
 ### Round X:
 
@@ -104,7 +104,7 @@ expires and it sends $Prevote$ for $nil$. Consequently, process $p$ does not cal
 `ProcessProposal` for block $X$. However, the same proposal arrives at other processes
 before their $timeoutPropose$ expires, and they send $Prevote$ for this proposal.
 1. **Prevote:** Process $p$ receives $2f+1$ $Prevote$ messages for proposal $X$, updates correspondingly its $validValue$ and $lockedValue$ and sends $Precommit$ message. All correct processes do the same. 
-1. **Precommit:** Finally, process $p$ receives $2f+1$ $Precommit$ messages, and decides on block $X$. As a result, it calls `decide` and `commit` for block $X$.
+1. **Precommit:** Finally, process $p$ receives $2f+1$ $Precommit$ messages, and decides on block $X$. 
 
 
 

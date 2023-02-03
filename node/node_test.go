@@ -271,17 +271,12 @@ func TestCreateProposalBlock(t *testing.T) {
 
 	// Make Mempool
 	memplMetrics := mempl.NopMetrics()
-	var mempool mempl.Mempool
-
-	switch config.Mempool.Version {
-	case cfg.MempoolV0:
-		mempool = mempoolv0.NewCListMempool(config.Mempool,
-			proxyApp.Mempool(),
-			state.LastBlockHeight,
-			mempoolv0.WithMetrics(memplMetrics),
-			mempoolv0.WithPreCheck(sm.TxPreCheck(state)),
-			mempoolv0.WithPostCheck(sm.TxPostCheck(state)))
-	}
+	mempool := mempoolv0.NewCListMempool(config.Mempool,
+		proxyApp.Mempool(),
+		state.LastBlockHeight,
+		mempoolv0.WithMetrics(memplMetrics),
+		mempoolv0.WithPreCheck(sm.TxPreCheck(state)),
+		mempoolv0.WithPostCheck(sm.TxPostCheck(state)))
 
 	// Make EvidencePool
 	evidenceDB := dbm.NewMemDB()
@@ -372,16 +367,12 @@ func TestMaxProposalBlockSize(t *testing.T) {
 
 	// Make Mempool
 	memplMetrics := mempl.NopMetrics()
-	var mempool mempl.Mempool
-	switch config.Mempool.Version {
-	case cfg.MempoolV0:
-		mempool = mempoolv0.NewCListMempool(config.Mempool,
-			proxyApp.Mempool(),
-			state.LastBlockHeight,
-			mempoolv0.WithMetrics(memplMetrics),
-			mempoolv0.WithPreCheck(sm.TxPreCheck(state)),
-			mempoolv0.WithPostCheck(sm.TxPostCheck(state)))
-	}
+	mempool := mempoolv0.NewCListMempool(config.Mempool,
+		proxyApp.Mempool(),
+		state.LastBlockHeight,
+		mempoolv0.WithMetrics(memplMetrics),
+		mempoolv0.WithPreCheck(sm.TxPreCheck(state)),
+		mempoolv0.WithPostCheck(sm.TxPostCheck(state)))
 
 	blockStore := store.NewBlockStore(dbm.NewMemDB())
 

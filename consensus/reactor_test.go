@@ -162,17 +162,13 @@ func TestReactorWithEvidence(t *testing.T) {
 		proxyAppConnConMem := abcicli.NewLocalClient(mtx, app)
 
 		// Make Mempool
-		var mempool mempl.Mempool
+		mempool := mempoolv0.NewCListMempool(config.Mempool,
+			proxyAppConnConMem,
+			state.LastBlockHeight,
+			mempoolv0.WithMetrics(memplMetrics),
+			mempoolv0.WithPreCheck(sm.TxPreCheck(state)),
+			mempoolv0.WithPostCheck(sm.TxPostCheck(state)))
 
-		switch config.Mempool.Version {
-		case cfg.MempoolV0:
-			mempool = mempoolv0.NewCListMempool(config.Mempool,
-				proxyAppConnConMem,
-				state.LastBlockHeight,
-				mempoolv0.WithMetrics(memplMetrics),
-				mempoolv0.WithPreCheck(sm.TxPreCheck(state)),
-				mempoolv0.WithPostCheck(sm.TxPostCheck(state)))
-		}
 		if thisConfig.Consensus.WaitForTxs() {
 			mempool.EnableTxsAvailable()
 		}

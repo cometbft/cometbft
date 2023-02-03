@@ -226,33 +226,27 @@ func createMempoolAndMempoolReactor(
 	logger log.Logger,
 ) (mempl.Mempool, p2p.Reactor) {
 	logger = logger.With("module", "mempool")
-	switch config.Mempool.Version {
-	case cfg.MempoolV0:
-		mp := mempoolv0.NewCListMempool(
-			config.Mempool,
-			proxyApp.Mempool(),
-			state.LastBlockHeight,
-			mempoolv0.WithMetrics(memplMetrics),
-			mempoolv0.WithPreCheck(sm.TxPreCheck(state)),
-			mempoolv0.WithPostCheck(sm.TxPostCheck(state)),
-		)
+	mp := mempoolv0.NewCListMempool(
+		config.Mempool,
+		proxyApp.Mempool(),
+		state.LastBlockHeight,
+		mempoolv0.WithMetrics(memplMetrics),
+		mempoolv0.WithPreCheck(sm.TxPreCheck(state)),
+		mempoolv0.WithPostCheck(sm.TxPostCheck(state)),
+	)
 
-		mp.SetLogger(logger)
+	mp.SetLogger(logger)
 
-		reactor := mempoolv0.NewReactor(
-			config.Mempool,
-			mp,
-		)
-		if config.Consensus.WaitForTxs() {
-			mp.EnableTxsAvailable()
-		}
-		reactor.SetLogger(logger)
-
-		return mp, reactor
-
-	default:
-		return nil, nil
+	reactor := mempoolv0.NewReactor(
+		config.Mempool,
+		mp,
+	)
+	if config.Consensus.WaitForTxs() {
+		mp.EnableTxsAvailable()
 	}
+	reactor.SetLogger(logger)
+
+	return mp, reactor
 }
 
 func createEvidenceReactor(config *cfg.Config, dbProvider cfg.DBProvider,

@@ -20,9 +20,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	mempl "github.com/cometbft/cometbft/mempool"
 
-	cfg "github.com/cometbft/cometbft/config"
 	mempoolv0 "github.com/cometbft/cometbft/mempool/v0"
 	"github.com/cometbft/cometbft/p2p"
 	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"
@@ -70,16 +68,11 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		proxyAppConnConMem := abcicli.NewLocalClient(mtx, app)
 
 		// Make Mempool
-		var mempool mempl.Mempool
-
-		switch thisConfig.Mempool.Version {
-		case cfg.MempoolV0:
-			mempool = mempoolv0.NewCListMempool(config.Mempool,
-				proxyAppConnConMem,
-				state.LastBlockHeight,
-				mempoolv0.WithPreCheck(sm.TxPreCheck(state)),
-				mempoolv0.WithPostCheck(sm.TxPostCheck(state)))
-		}
+		mempool := mempoolv0.NewCListMempool(config.Mempool,
+			proxyAppConnConMem,
+			state.LastBlockHeight,
+			mempoolv0.WithPreCheck(sm.TxPreCheck(state)),
+			mempoolv0.WithPostCheck(sm.TxPostCheck(state)))
 
 		if thisConfig.Consensus.WaitForTxs() {
 			mempool.EnableTxsAvailable()

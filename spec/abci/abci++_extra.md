@@ -76,6 +76,8 @@ Rounds like these can continue until we have a round in which process $p$ update
 
 ## Scenario 2 
 
+$p$ calls `PrepareProposal` many times with different values.
+
 ### Round 0: 
 
 1. **Propose:** Process $p$ is the proposer in this round. Its $validValue$ is $nil$, and it is free to generate and propose new block $Y$. Before proposing, it calls `PrepareProposal` for $Y$. After that, it broadcasts the proposal, delivers it to itself, calls `ProcessProposal` and broadcasts $Prevote$ for it. 

@@ -259,4 +259,4 @@ for more information on query syntax and other options.
 
 **Backwards compatibility**
 
-Up until Tendermint 0.34.25, the event sequence was not stored in the kvstore and the `match_events` keyword in the RPC query is not ignored by older versions. Thus, in a network running mixed  Tendermint versions, nodes running older versions will still return blocks (or transactions) whose attributes match within different events on the same height.
+Up until CometBFT 0.34.25, the event sequence was not stored in the kvstore and the `match_events` keyword in the RPC query is not ignored by older versions. Thus, in a network running mixed CometBFT versions, nodes running older versions will still return blocks (or transactions) whose attributes match within different events on the same height.

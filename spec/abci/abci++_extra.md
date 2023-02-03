@@ -4,7 +4,7 @@ title: ABCI++ extra
 ---
 # Introduction
 
-In the section [Tendermint's expected behaviour](./abci++_tmint_expected_behavior.md), we presented the most common behaviour, usually referred to as the good case. However, the grammar specified in the same section is more general and covers more scenarios that an Application designer needs to account for. 
+In the section [Tendermint's expected behaviour](./abci++_tmint_expected_behavior.md#valid-method-call-sequences), we presented the most common behaviour, usually referred to as the good case. However, the grammar specified in the same section is more general and covers more scenarios that an Application designer needs to account for. 
 
 In this section, we give more information about these possible scenarios. We focus on methods introduced by ABCI++: `PrepareProposal` and `ProcessProposal`. Specifically, we concentrate on the part of the grammar presented below.  
 

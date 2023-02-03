@@ -31,7 +31,7 @@ In the rounds when it is the proposer, Tendermint's `PrepareProposal` call is al
 As the number of rounds the Tendermint consensus algorithm needs to decide in a given run is a priori unknown, the application needs to account for any number of rounds, where each round can exhibit any of these three behaviours. Recall that the application is unaware of the internals of consensus and thus of the rounds. 
 
 # Possible scenarios
-The unknown number of rounds we can have in Tendermint yields a vast number of scenarios we can expect. Listing them all is impossible. However, here we give several of them and draw the main conclusions. Specifically, we will show that before `Decide` and `Commit` for block $X$ are called:
+The unknown number of rounds we can have when following the Tendermint algorithm yields a vast number of scenarios we can expect. Listing them all is impossible. However, here we give several of them and draw the main conclusions. Specifically, we will show that before `decide` and `commit` for block $X$ are called:
     
 1. On a correct node, `PrepareProposal` may be called multiple times and for different blocks ([**Scenario 1**](#scenario-1)). 
 1. On a correct node, `ProcessProposal` may be called multiple times and for different blocks ([**Scenario 2**](#scenario-2)).

@@ -28,7 +28,7 @@ If we assume that the Tendermint algorithm calls `decide` and `commit` for block
 
 In the rounds when it is the proposer, Tendermint's `PrepareProposal` call is always followed by the `ProcessProposal` call. The reason is that the process always delivers the proposal to itself, which triggers the `ProcessProposal` call. 
 
-As the number of rounds the Tendermint consensus algorithm need to decide in a given run is a priori unknown, the application needs to account for any number of rounds, where each round can exhibit any of these three behaviours. Recall that the application is unaware of the internals of consensus and thus of the rounds. 
+As the number of rounds the Tendermint consensus algorithm needs to decide in a given run is a priori unknown, the application needs to account for any number of rounds, where each round can exhibit any of these three behaviours. Recall that the application is unaware of the internals of consensus and thus of the rounds. 
 
 # Possible scenarios
 The unknown number of rounds we can have in Tendermint yields a vast number of scenarios we can expect. Listing them all is impossible. However, here we give several of them and draw the main conclusions. Specifically, we will show that before `Decide` and `Commit` for block $X$ are called:

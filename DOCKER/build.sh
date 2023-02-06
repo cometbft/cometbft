@@ -17,7 +17,6 @@ echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
 		docker build \
- 			--build-arg GO_MODULES_TOKEN=${GO_MODULES_TOKEN} \
  			-t "cometbft/cometbft" \
  			-t "cometbft/cometbft:$TAG" \
  			-t "cometbft/cometbft:$TAG_NO_PATCH" .

@@ -5,13 +5,8 @@ env:
   - GO111MODULE=on
 
 builds:
-<<<<<<< HEAD
-  - id: "Tendermint"
-    main: ./cmd/tendermint/main.go
-=======
   - id: "cometbft"
     main: ./cmd/cometbft/main.go
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
     ldflags:
       - -s -w -X github.com/cometbft/cometbft/version.TMCoreSemVer={{ .Version }}
     env:

@@ -1,14 +1,8 @@
 *.swp
 *.swo
 .bak
-<<<<<<< HEAD
-*.bak
-.DS_Store
-build/*
-=======
 .idea/
 .revision
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 .cometbft
 .cometbft-lite
 rpc/test/.cometbft
@@ -27,15 +21,12 @@ abci-cli
 docs/node_modules/
 docs/.vuepress/public/rpc
 index.html.md
-<<<<<<< HEAD
 
-=======
 libs/pubsub/query/fuzz_test/output
 profile\.out
 remote_dump
 rpc/test/.cometbft
 scripts/cutWALUntil/cutWALUntil
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 scripts/wal2json/wal2json
 scripts/cutWALUntil/cutWALUntil
 

@@ -94,11 +94,7 @@ Check out other examples in example_test.go
 ## 2. Pure functions to verify a new header (see verifier.go)
 
 Verify function verifies a new header against some trusted header. See
-<<<<<<< HEAD
-https://github.com/cometbft/cometbft/blob/v0.34.x/spec/consensus/light-client/verification.md
-=======
-https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/README.md
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
+https://github.com/cometbft/cometbft/blob/v0.34.x/spec/light-client/verification/README.md
 for details.
 
 There are two methods of verification: sequential and bisection
@@ -122,14 +118,10 @@ as a wrapper, which verifies all the headers, using a light client connected to
 some other node.
 
 See
-<<<<<<< HEAD
-https://docs.tendermint.com/v0.34/tendermint-core/light-client-protocol.html
-=======
-https://docs.cometbft.com/main/core/light-client.html
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
+https://docs.cometbft.com/v0.34/core/light-client.html
 for usage example.
 Or see
-https://github.com/cometbft/cometbft/tree/v0.34.x/spec/consensus/light-client
+https://github.com/cometbft/cometbft/blob/v0.34.x/spec/light-client/README.md
 for the full spec
 */
 package light

@@ -708,13 +708,8 @@ func testHandshakeReplay(t *testing.T, config *cfg.Config, nBlocks int, mode uin
 	store.commits = commits
 
 	state := genesisState.Copy()
-<<<<<<< HEAD
 	// run the chain through state.ApplyBlock to build up the tendermint state
 	state = buildTMStateFromChain(config, stateStore, state, chain, nBlocks, mode)
-=======
-	// run the chain through state.ApplyBlock to build up the CometBFT state
-	state = buildTMStateFromChain(t, config, stateStore, state, chain, nBlocks, mode, store)
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 	latestAppHash := state.AppHash
 
 	// make a new client creator
@@ -724,13 +719,8 @@ func testHandshakeReplay(t *testing.T, config *cfg.Config, nBlocks int, mode uin
 	clientCreator2 := proxy.NewLocalClientCreator(kvstoreApp)
 	if nBlocks > 0 {
 		// run nBlocks against a new client to build up the app state.
-<<<<<<< HEAD
-		// use a throwaway tendermint state
-		proxyApp := proxy.NewAppConns(clientCreator2)
-=======
 		// use a throwaway CometBFT state
-		proxyApp := proxy.NewAppConns(clientCreator2, proxy.NopMetrics())
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
+		proxyApp := proxy.NewAppConns(clientCreator2)
 		stateDB1 := dbm.NewMemDB()
 		stateStore := sm.NewStore(stateDB1, sm.StoreOptions{
 			DiscardABCIResponses: false,

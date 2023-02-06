@@ -26,11 +26,7 @@ var VersionCmd = &cobra.Command{
 				BlockProtocol uint64 `json:"block_protocol"`
 				P2PProtocol   uint64 `json:"p2p_protocol"`
 			}{
-<<<<<<< HEAD
-				Tendermint:    tmVersion,
-=======
 				CometBFT:      cmtVersion,
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 				ABCI:          version.ABCISemVer,
 				BlockProtocol: version.BlockProtocol,
 				P2PProtocol:   version.P2PProtocol,

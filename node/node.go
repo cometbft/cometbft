@@ -58,14 +58,7 @@ import (
 	_ "github.com/lib/pq" // provide the psql db driver
 )
 
-<<<<<<< HEAD
 //------------------------------------------------------------------------------
-=======
-// Node is the highest level interface to a full CometBFT node.
-// It includes all configuration information and running services.
-type Node struct {
-	service.BaseService
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 
 // DBContext specifies config information for loading a new DB.
 type DBContext struct {
@@ -198,7 +191,6 @@ func StateProvider(stateProvider statesync.StateProvider) Option {
 
 //------------------------------------------------------------------------------
 
-<<<<<<< HEAD
 // Node is the highest level interface to a full Tendermint node.
 // It includes all configuration information and running services.
 type Node struct {
@@ -712,10 +704,7 @@ func startStateSync(ssR *statesync.Reactor, bcR fastSyncReactor, conR *cs.Reacto
 	return nil
 }
 
-// NewNode returns a new, ready to go, Tendermint Node.
-=======
 // NewNode returns a new, ready to go, CometBFT Node.
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 func NewNode(config *cfg.Config,
 	privValidator types.PrivValidator,
 	nodeKey *p2p.NodeKey,

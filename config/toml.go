@@ -76,13 +76,6 @@ const defaultConfigTemplate = `# This is a TOML config file.
 # "$HOME/.cometbft" by default, but could be changed via $CMTHOME env variable
 # or --home cmd flag.
 
-<<<<<<< HEAD
-=======
-# The version of the CometBFT binary that created or
-# last modified the config file. Do not modify this.
-version = "{{ .BaseConfig.Version }}"
-
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 #######################################################################
 ###                   Main Base Config Options                      ###
 #######################################################################
@@ -354,14 +347,11 @@ dial_timeout = "{{ .P2P.DialTimeout }}"
 #   2) "v1" - prioritized mempool.
 version = "{{ .Mempool.Version }}"
 
-<<<<<<< HEAD
-=======
 # Recheck (default: true) defines whether CometBFT should recheck the
 # validity for all remaining transaction in the mempool after a block.
 # Since a block affects the application state, some transactions in the
 # mempool may become invalid. If this does not apply to your application,
 # you can disable rechecking.
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 recheck = {{ .Mempool.Recheck }}
 broadcast = {{ .Mempool.Broadcast }}
 wal_dir = "{{ js .Mempool.WalPath }}"

@@ -6,17 +6,12 @@ about: Create a report to help us squash bugs!
 <!--
 Please fill in as much of the template below as you can.
 
-<<<<<<< HEAD
-Be ready for followup questions, and please respond in a timely
-manner. We might ask you to provide additional logs and data (tendermint & app).
-=======
 If you have general questions, please create a new discussion:
 https://github.com/cometbft/cometbft/discussions
 
 Be ready for followup questions, and please respond in a timely manner. We might
 ask you to provide additional logs and data (CometBFT & App).
 
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 -->
 
 **CometBFT version** (use `cometbft version` or `git rev-parse --verify HEAD` if installed from source):

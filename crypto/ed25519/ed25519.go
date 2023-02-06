@@ -15,23 +15,7 @@ import (
 
 //-------------------------------------
 
-<<<<<<< HEAD
 var _ crypto.PrivKey = PrivKey{}
-=======
-var (
-	_ crypto.PrivKey       = PrivKey{}
-	_ crypto.BatchVerifier = &BatchVerifier{}
-
-	// curve25519-voi's Ed25519 implementation supports configurable
-	// verification behavior, and CometBFT uses the ZIP-215 verification
-	// semantics.
-	verifyOptions = &ed25519.Options{
-		Verify: ed25519.VerifyOptionsZIP_215,
-	}
-
-	cachingVerifier = cache.NewVerifier(cache.NewLRUCache(cacheSize))
-)
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 
 const (
 	PrivKeyName = "tendermint/PrivKeyEd25519"

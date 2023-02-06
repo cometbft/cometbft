@@ -899,13 +899,8 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 //-----------------------------------------------------------------------------
 // FastSyncConfig
 
-<<<<<<< HEAD
-// FastSyncConfig defines the configuration for the Tendermint fast sync service
+// FastSyncConfig defines the configuration for the CometBFT fast sync service
 type FastSyncConfig struct {
-=======
-// BlockSyncConfig (formerly known as FastSync) defines the configuration for the CometBFT block sync service
-type BlockSyncConfig struct {
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 	Version string `mapstructure:"version"`
 }
 

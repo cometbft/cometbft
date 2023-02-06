@@ -137,7 +137,7 @@ the `psql` indexer type.
 Example:
 
 ```shell
-psql ... -f state/indexer/sink/psql/schema.sql
+$ psql ... -f state/indexer/sink/psql/schema.sql
 ```
 
 ## Default Indexes
@@ -220,7 +220,6 @@ a query to `/subscribe` RPC endpoint.
   }
 }
 ```
-
 
 Check out [API docs](https://docs.cometbft.com/v0.34/rpc/#subscribe) for more information
 on query syntax and other options.

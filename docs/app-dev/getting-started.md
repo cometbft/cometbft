@@ -56,8 +56,6 @@ Available Commands:
   help             Help about any command
   info             get some info about the application
   kvstore          ABCI demo example
-  prepare_proposal prepare proposal
-  process_proposal process proposal
   query            query the application state
   test             run integration tests
   version          print ABCI console version

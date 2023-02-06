@@ -526,7 +526,7 @@ then the new `genesis.json` will be:
     {
       "pub_key" : {
         "value" : "l9X9+fjkeBzDfPGbUM7AMIRE6uJN78zN5+lk5OYotek=",
-        "type" : "cometbft/PubKeyEd25519"
+        "type" : "tendermint/PubKeyEd25519"
       },
       "power" : 10,
       "name" : ""

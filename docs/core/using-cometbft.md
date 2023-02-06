@@ -53,6 +53,9 @@ definition](https://github.com/cometbft/cometbft/blob/v0.34.x/types/genesis.go))
     - `block`
         - `max_bytes`: Max block size, in bytes.
         - `max_gas`: Max gas per block.
+        - `time_iota_ms`: Minimum time increment between consecutive blocks (in
+      milliseconds). If the block header timestamp is ahead of the system clock,
+      decrease this value.
     - `evidence`
         - `max_age_num_blocks`: Max age of evidence, in blocks. The basic formula
       for calculating this is: MaxAgeDuration / {average block time}.

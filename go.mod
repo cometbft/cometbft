@@ -38,7 +38,7 @@ require (
 
 require (
 	github.com/bufbuild/buf v1.13.1
-	github.com/creachadair/taskgroup v0.4.2
+	github.com/creachadair/taskgroup v0.5.0
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )
 

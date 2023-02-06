@@ -137,7 +137,7 @@ func TxSearch(
 // TxSearchMatchEvents allows you to query for multiple transactions results and match the
 // query attributes to a common event. It returns a
 // list of transactions (maximum ?per_page entries) and the total count.
-// More: https://docs.tendermint.com/v0.34/rpc/#/Info/tx_search
+// More: https://docs.cometbft.com/v0.34/rpc/#/Info/tx_search
 func TxSearchMatchEvents(
 	ctx *rpctypes.Context,
 	query string,

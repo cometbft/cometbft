@@ -251,7 +251,7 @@ func DefaultBaseConfig() BaseConfig {
 // TestBaseConfig returns a base configuration for testing a CometBFT node
 func TestBaseConfig() BaseConfig {
 	cfg := DefaultBaseConfig()
-	cfg.chainID = "tendermint_test"
+	cfg.chainID = "cometbft_test"
 	cfg.ProxyApp = "kvstore"
 	cfg.FastSyncMode = false
 	cfg.DBBackend = "memdb"

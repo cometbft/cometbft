@@ -245,7 +245,7 @@ func (c *Client) handleConflictingHeaders(
 	if primaryBlock.Commit.Round != witnessTrace[len(witnessTrace)-1].Commit.Round {
 		c.logger.Info("The light client has detected, and prevented, an attempted amnesia attack." +
 			" We think this attack is pretty unlikely, so if you see it, that's interesting to us." +
-			" Can you let us know by opening an issue through https://github.com/tendermint/tendermint/issues/new?")
+			" Can you let us know by opening an issue through https://github.com/cometbft/cometbft/issues/new?")
 	}
 
 	// This may not be valid because the witness itself is at fault. So now we reverse it, examining the

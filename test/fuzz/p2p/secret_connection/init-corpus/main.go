@@ -31,7 +31,7 @@ func initCorpus(baseDir string) {
 		`{"a": 12, "tsp": 999, k: "blue"}`,
 		`9999.999`,
 		`""`,
-		`Tendermint fuzzing`,
+		`CometBFT fuzzing`,
 	}
 
 	for i, datum := range data {

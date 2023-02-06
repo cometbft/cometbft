@@ -7,8 +7,6 @@ build/*
 .cometbft
 .cometbft-lite
 rpc/test/.cometbft
-rpc/test/.tendermint
-.tendermint
 remote_dump
 .revision
 vendor
@@ -38,7 +36,6 @@ scripts/cutWALUntil/cutWALUntil
 libs/pubsub/query/fuzz_test/output
 shunit2
 
-.tendermint-lite
 addrbook.json
 
 */vendor

@@ -4,7 +4,6 @@ docker:
 	@docker build \
 		--tag cometbft/e2e-node \
 		--tag cometbft/e2e-node:local-version \
-		--build-arg GO_MODULES_TOKEN=$(GO_MODULES_TOKEN) \
 		-f docker/Dockerfile ../..
 
 # We need to build support for database backends into the app in

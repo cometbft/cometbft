@@ -16,8 +16,6 @@ jobs:
     steps:
       - uses: rokroskar/workflow-run-cleanup-action@master
         env:
-          # ToDo (thane): Remove once we make cometbft-db public
-          GOPRIVATE: github.com/cometbft/cometbft-db
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
     if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master'"
 
@@ -36,8 +34,6 @@ jobs:
             **/**.go
             go.mod
             go.sum
-      # Todo (thane): Remove once we make cometbft-db public
-      - run: git config --global url.https://${{ secrets.GO_MODULES_TOKEN }}@github.com/.insteadOf https://github.com/
       - name: install
         run: make install install_abci
         if: "env.GIT_DIFF != ''"
@@ -70,8 +66,6 @@ jobs:
             **/**.go
             go.mod
             go.sum
-      # Todo (thane): Remove once we make cometbft-db public
-      - run: git config --global url.https://${{ secrets.GO_MODULES_TOKEN }}@github.com/.insteadOf https://github.com/
       - uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
@@ -104,8 +98,6 @@ jobs:
             **/**.go
             go.mod
             go.sum
-      # Todo (thane): Remove once we make cometbft-db public
-      - run: git config --global url.https://${{ secrets.GO_MODULES_TOKEN }}@github.com/.insteadOf https://github.com/
       - uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
@@ -137,8 +129,6 @@ jobs:
             **/**.go
             go.mod
             go.sum
-      # Todo (thane): Remove once we make cometbft-db public
-      - run: git config --global url.https://${{ secrets.GO_MODULES_TOKEN }}@github.com/.insteadOf https://github.com/
       - uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod

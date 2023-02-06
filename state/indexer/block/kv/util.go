@@ -8,8 +8,17 @@ import (
 	"github.com/google/orderedcode"
 
 	"github.com/cometbft/cometbft/libs/pubsub/query"
+	"github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/types"
 )
+
+type HeightInfo struct {
+	heightRange     indexer.QueryRange
+	height          int64
+	heightEqIdx     int
+	onlyHeightRange bool
+	onlyHeightEq    bool
+}
 
 func intInSlice(a int, list []int) bool {
 	for _, b := range list {
@@ -133,23 +142,52 @@ func lookForHeight(conditions []query.Condition) (int64, bool, int) {
 	return 0, false, -1
 }
 
-func dedupHeight(conditions []query.Condition) (dedupConditions []query.Condition, height int64, found bool, idx int) {
-	idx = -1
-	for i, c := range conditions {
-		if c.CompositeKey == types.BlockHeightKey && c.Op == query.OpEqual {
-			if found {
-				continue
+// Remove all occurrences of height equality queries except one. While we are traversing the conditions, check whether the only condition in
+// addition to match events is the height equality or height range query. At the same time, if we do have a height range condition
+// ignore the height equality condition. If a height equality exists, place the condition index in the query and the desired height
+// into the heightInfo struct
+func dedupHeight(conditions []query.Condition) (dedupConditions []query.Condition, heightInfo HeightInfo, found bool) {
+	heightInfo.heightEqIdx = -1
+	heightRangeExists := false
+	var heightCondition []query.Condition
+	heightInfo.onlyHeightEq = true
+	heightInfo.onlyHeightRange = true
+	for _, c := range conditions {
+		if c.CompositeKey == types.BlockHeightKey {
+			if c.Op == query.OpEqual {
+				if found || heightRangeExists {
+					continue
+				} else {
+					heightCondition = append(heightCondition, c)
+					heightInfo.height = c.Operand.(int64)
+					found = true
+				}
 			} else {
+				heightInfo.onlyHeightEq = false
+				heightRangeExists = true
 				dedupConditions = append(dedupConditions, c)
-				height = c.Operand.(int64)
-				found = true
-				idx = i
 			}
 		} else {
+			if c.CompositeKey != types.MatchEventKey {
+				heightInfo.onlyHeightRange = false
+				heightInfo.onlyHeightEq = false
+			}
 			dedupConditions = append(dedupConditions, c)
 		}
 	}
-	return
+	if !heightRangeExists && len(heightCondition) != 0 {
+		heightInfo.heightEqIdx = len(dedupConditions)
+		heightInfo.onlyHeightRange = false
+		dedupConditions = append(dedupConditions, heightCondition...)
+	} else {
+		// If we found a range make sure we set the hegiht idx to -1 as the height equality
+		// will be removed
+		heightInfo.heightEqIdx = -1
+		heightInfo.height = 0
+		found = false
+		heightInfo.onlyHeightEq = false
+	}
+	return dedupConditions, heightInfo, found
 }
 
 func dedupMatchEvents(conditions []query.Condition) ([]query.Condition, bool) {
@@ -158,7 +196,7 @@ func dedupMatchEvents(conditions []query.Condition) ([]query.Condition, bool) {
 	for i, c := range conditions {
 		if c.CompositeKey == types.MatchEventKey {
 			// Match events should be added only via RPC as the very first query condition
-			if i == 0 {
+			if i == 0 && c.Op == query.OpEqual && c.Operand.(int64) == 1 {
 				dedupConditions = append(dedupConditions, c)
 				matchEvents = true
 			}
@@ -168,4 +206,17 @@ func dedupMatchEvents(conditions []query.Condition) ([]query.Condition, bool) {
 
 	}
 	return dedupConditions, matchEvents
+}
+
+func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) bool {
+	if heightInfo.heightRange.Key != "" {
+		if !checkBounds(heightInfo.heightRange, keyHeight) {
+			return false
+		}
+	} else {
+		if heightInfo.height != 0 && keyHeight != heightInfo.height {
+			return false
+		}
+	}
+	return true
 }

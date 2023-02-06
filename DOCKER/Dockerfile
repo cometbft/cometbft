@@ -5,10 +5,6 @@ RUN apk update && \
     apk --no-cache add make git 
 COPY / /cometbft
 WORKDIR /cometbft
-# TODO(thane): Remove once we publish the cometbft-db repository.
-ENV GOPRIVATE=github.com/cometbft/cometbft-db
-ARG GO_MODULES_TOKEN
-RUN apk --no-cache add git && git config --global "url.https://${GO_MODULES_TOKEN}@github.com/".insteadOf "https://github.com/"
 RUN make build-linux
 
 # stage 2

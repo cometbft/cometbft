@@ -78,7 +78,7 @@ func dedupHeight(conditions []query.Condition) (dedupConditions []query.Conditio
 		heightInfo.onlyHeightRange = false
 		dedupConditions = append(dedupConditions, heightCondition...)
 	} else {
-		// If we found a range make sure we set the hegiht idx to -1 as the height equality
+		// If we found a range make sure we set the height idx to -1 as the height equality
 		// will be removed
 		heightInfo.heightEqIdx = -1
 		heightInfo.height = 0

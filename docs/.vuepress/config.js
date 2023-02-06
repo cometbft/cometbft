@@ -92,7 +92,7 @@ module.exports = {
         }
       ],
       smallprint:
-        'The development of CometBFT is led primarily by [Informal Systems](https://informal.systems/). Funding for this development comes primarily from the Interchain Foundation, a Swiss non-profit. The CometBFT trademark is owned by Interchain Foundation.',
+        'The development of CometBFT is led primarily by [Informal Systems](https://informal.systems/). Funding for this development comes primarily from the Interchain Foundation, a Swiss non-profit. The CometBFT trademark is owned by The Interchain Foundation.',
       links: [
         {
           title: 'Documentation',

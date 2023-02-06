@@ -20,8 +20,8 @@ through the CometBFT RPC. The CometBFT process communicates with
 a local ABCI application, where the user query or transaction is actually
 processed.
 
-The ABCI application must be a deterministic result of the CometBFT
-consensus - any external influence on the application state that didn't
+The ABCI application must be a deterministic result of the consensus
+engine of CometBFT - any external influence on the application state that didn't
 come through CometBFT could cause a consensus failure. Thus _nothing_
 should communicate with the ABCI application except CometBFT via ABCI.
 

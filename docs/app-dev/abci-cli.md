@@ -225,6 +225,5 @@ For examples of running an ABCI app with CometBFT, see the
 ## Bounties
 
 Want to write an app in your favorite language?! We'd be happy
-to add you to our [ecosystem](https://github.com/tendermint/awesome#ecosystem)!
-See [funding](https://github.com/interchainio/funding) opportunities from the
+to help you out. See [funding](https://github.com/interchainio/funding) opportunities from the
 [Interchain Foundation](https://interchain.io) for implementations in new languages and more.

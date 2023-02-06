@@ -176,6 +176,8 @@ func BlockSearchMatchEvents(
 ) (*ctypes.ResultBlockSearch, error) {
 	if matchEvents {
 		query = "match.events = 1 AND " + query
+	} else {
+		query = "match.events = 0 AND " + query
 	}
 	return BlockSearch(ctx, query, pagePtr, perPagePtr, orderBy)
 }

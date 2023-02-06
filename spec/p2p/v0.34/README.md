@@ -52,19 +52,14 @@ which implements the following abstractions:
 
 Existing documentation referring to the p2p layer:
 
-- <https://github.com/cometbft/cometbft/tree/main/spec/p2p>: p2p-related
+- <https://github.com/cometbft/cometbft/tree/v0.34.x/spec/p2p>: p2p-related
   configuration flags; overview of connections, peer instances, and reactors;
   overview of peer discovery and node types; peer identity, secure connections
   and peer authentication handshake.
-- <https://github.com/cometbft/cometbft/tree/main/spec/p2p/messages>: message
+- <https://github.com/cometbft/cometbft/tree/v0.34.x/spec/p2p/messages>: message
   types and channel IDs of Block Sync, Mempool, Evidence, State Sync, PEX, and
   Consensus reactors.
 - <https://docs.cometbft.com/v0.34/core>: the p2p layer
   configuration and operation is documented in several pages.
   This content is not necessarily up-to-date, some settings and concepts may
   refer to the release `v0.35`, that was [discontinued][v35postmorten].
-- <https://github.com/cometbft/cometbft/tree/main/docs/core/pex>:
-  peer types, peer discovery, peer management overview, address book and peer
-  ranking. This documentation refers to the release `v0.35`, that was [discontinued][v35postmorten].
-
-[v35postmorten]: https://interchain-io.medium.com/discontinuing-tendermint-v0-35-a-postmortem-on-the-new-networking-layer-3696c811dabc

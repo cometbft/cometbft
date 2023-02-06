@@ -59,6 +59,13 @@ generator. For example:
 node (the `cometbft/e2e-node` image) must be available on the local machine,
 or via [Docker Hub](https://hub.docker.com/r/cometbft/e2e-node).
 
+Multiversion testnets can also perform uncoordinated upgrades. Nodes containing a
+perturbation of type `upgrade` will upgrade to the target version specified in
+testnet's attribute `upgrade_version` of the testnet manifest.
+The generator generates this type of perturbation both on full nodes and on light nodes.
+Perturbations of type `upgrade` are a noop if the node's version matches the
+one in `upgrade_version`.
+
 ## Test Stages
 
 The test runner has the following stages, which can also be executed explicitly by running `./build/runner -f <manifest> <stage>`:
@@ -168,7 +175,7 @@ The E2E test harness is designed to run several nodes of varying configurations 
 ```bash
 make node
 cometbft init validator
-TMHOME=$HOME/.cometbft ./build/node ./node/built-in.toml
+CMTHOME=$HOME/.cometbft ./build/node ./node/built-in.toml
 ```
 
 To make things simpler the e2e application can also be run in the `cometbft` binary

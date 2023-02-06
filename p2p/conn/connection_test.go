@@ -112,7 +112,7 @@ func TestMConnectionSend(t *testing.T) {
 	assert.False(t, mconn.Send(0x05, []byte("Absorbing Man")), "Send should return false because channel is unknown")
 }
 
-func TestMConnectionReceive(t *testing.T) {
+func TestMConnectionReceiveEnvelope(t *testing.T) {
 	server, client := NetPipe()
 	defer server.Close()
 	defer client.Close()

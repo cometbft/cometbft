@@ -9,13 +9,8 @@ import (
 )
 
 // ABCIQuery queries the application for some information.
-<<<<<<< HEAD
-// More: https://docs.tendermint.com/v0.34/rpc/#/ABCI/abci_query
+// More: https://docs.cometbft.com/v0.34/rpc/#/ABCI/abci_query
 func ABCIQuery(
-=======
-// More: https://docs.cometbft.com/main/rpc/#/ABCI/abci_query
-func (env *Environment) ABCIQuery(
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 	ctx *rpctypes.Context,
 	path string,
 	data bytes.HexBytes,
@@ -36,13 +31,8 @@ func (env *Environment) ABCIQuery(
 }
 
 // ABCIInfo gets some info about the application.
-<<<<<<< HEAD
-// More: https://docs.tendermint.com/v0.34/rpc/#/ABCI/abci_info
+// More: https://docs.cometbft.com/v0.34/rpc/#/ABCI/abci_info
 func ABCIInfo(ctx *rpctypes.Context) (*ctypes.ResultABCIInfo, error) {
-=======
-// More: https://docs.cometbft.com/main/rpc/#/ABCI/abci_info
-func (env *Environment) ABCIInfo(ctx *rpctypes.Context) (*ctypes.ResultABCIInfo, error) {
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 	resInfo, err := env.ProxyAppQuery.InfoSync(proxy.RequestInfo)
 	if err != nil {
 		return nil, err

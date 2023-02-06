@@ -156,15 +156,8 @@ func (cfg *Config) ValidateBasic() error {
 
 // BaseConfig defines the base configuration for a CometBFT node
 type BaseConfig struct { //nolint: maligned
-<<<<<<< HEAD
 	// chainID is unexposed and immutable but here for convenience
 	chainID string
-=======
-
-	// The version of the CometBFT binary that created
-	// or last modified the config file
-	Version string `mapstructure:"version"`
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 
 	// The root directory for all data.
 	// This should be set in viper so it can unmarshal into this struct

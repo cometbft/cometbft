@@ -1,11 +1,7 @@
 package version
 
 const (
-<<<<<<< HEAD
-	// TMCoreSemVer is the used as the fallback version of Tendermint Core
-=======
-	// TMVersionDefault is the used as the fallback version of CometBFT
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
+	// TMCoreSemVer is the used as the fallback version of CometBFT Core
 	// when not using git describe. It is formatted with semantic versioning.
 	TMCoreSemVer = "0.34.24"
 	// ABCISemVer is the semantic version of the ABCI library

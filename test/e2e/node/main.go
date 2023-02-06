@@ -203,7 +203,7 @@ func startLightClient(cfg *Config) error {
 }
 
 // FIXME: Temporarily disconnected maverick until it is redesigned
-// startMaverick starts a Maverick node that runs the application directly. It assumes the Tendermint
+// startMaverick starts a Maverick node that runs the application directly. It assumes the CometBFT
 // configuration is in $CMTHOME/config/cometbft.toml.
 func startMaverick(cfg *Config) error {
 	app, err := app.NewApplication(cfg.App())

@@ -573,7 +573,7 @@ func ResetTestRootWithChainID(testName string, chainID string) *Config {
 	}
 	if !cmtos.FileExists(genesisFilePath) {
 		if chainID == "" {
-			chainID = "tendermint_test"
+			chainID = "cometbft_test"
 		}
 		testGenesis := fmt.Sprintf(testGenesisFmt, chainID)
 		cmtos.MustWriteFile(genesisFilePath, []byte(testGenesis), 0o644)

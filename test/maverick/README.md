@@ -2,7 +2,7 @@
 
 ![](https://assets.rollingstone.com/assets/2015/article/tom-cruise-to-fight-drones-in-top-gun-sequel-20150629/201166/large_rect/1435581755/1401x788-Top-Gun-3.jpg)
 
-A byzantine node used to test Tendermint consensus against a plethora of different faulty misbehaviors. Designed to easily create new faulty misbehaviors to examine how a Tendermint network reacts to the misbehavior. Can also be used for fuzzy testing with different network arrangements.
+A byzantine node used to test CometBFT consensus against a plethora of different faulty misbehaviors. Designed to easily create new faulty misbehaviors to examine how a CometBFT network reacts to the misbehavior. Can also be used for fuzzy testing with different network arrangements.
 
 ## Misbehaviors
 
@@ -36,7 +36,7 @@ var MisbehaviorList = map[string]Misbehavior{
 
 ## Setup
 
-The maverick node takes most of the functionality from the existing Tendermint CLI. To install this, in the directory of this readme, run:
+The maverick node takes most of the functionality from the existing CometBFT CLI. To install this, in the directory of this readme, run:
 
 ```bash
 go build

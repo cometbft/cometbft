@@ -41,7 +41,7 @@ See examples, in various stages of maintenance, in
 [Go](https://github.com/cometbft/cometbft/tree/v0.34.x/abci/server),
 [JavaScript](https://github.com/tendermint/js-abci),
 [C++](https://github.com/mdyring/cpp-tmsp), and
-[Java](https://github.com/jCometBFT/jabci).
+[Java](https://github.com/jTendermint/jabci).
 
 ### In Process
 

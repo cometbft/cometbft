@@ -344,7 +344,7 @@ dial_timeout = "{{ .P2P.DialTimeout }}"
 
 # Mempool version to use:
 #   1) "v0" - (default) FIFO mempool.
-#   2) "v1" - prioritized mempool.
+#   2) "v1" - prioritized mempool (deprecated; will be removed in the next release).
 version = "{{ .Mempool.Version }}"
 
 recheck = {{ .Mempool.Recheck }}

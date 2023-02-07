@@ -1,14 +1,14 @@
 ---
 order: 1
 parent:
-  title: Tendermint Quality Assurance
+  title: CometBFT Quality Assurance
   description: This is a report on the process followed and results obtained when running v0.34.x on testnets
   order: 2
 ---
 
-# Tendermint Quality Assurance
+# CometBFT Quality Assurance
 
-This directory keeps track of the process followed by the Tendermint Core team
+This directory keeps track of the process followed by the CometBFT team
 for Quality Assurance before cutting a release.
 This directory is to live in multiple branches. On each release branch,
 the contents of this directory reflect the status of the process

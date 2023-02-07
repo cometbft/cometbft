@@ -266,4 +266,4 @@ is ignored and the data is retrieved as if `match_events=false`.
 
 Additionally, if a node that was running Tendermint Core 
 when the data was first indexed, and switched to CometBFT, is queried, it will retrieve this previously indexed
-data as if `match_events=false` (attributes can match the query conditions across different events on the same height). 
+data as if `match_events=false` (attributes can match the query conditions across different events on the same height).

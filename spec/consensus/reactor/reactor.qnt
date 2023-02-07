@@ -1,23 +1,24 @@
 module ConsensusReactor {
 
     type Proc = int
-    const Procs: Set[Proc]                                      //All processes in the system
+    //const Procs: Set[Proc]                                    //All processes in the system //TODO: Use once fully supported.
+    pure val Procs = Set(1,2,3,4,5)
 
     type Payload = str
 
 
 //====== [CONS-GOSSIP-VOCABULARY] GOSSIP-I
-    type CONSMessage =                                         //TODO: Define payloads?
+    type CONSMessage =                                          //TODO: Define payloads?
         | { tag: "proposal", height: int, round: int, payload: Payload, signer: Proc}
         | { tag: "prevote", height: int, round: int, payload: Payload, signer: Proc}
         | { tag: "precommit", height: int, round: int, payload: Payload, signer: Proc}
     
 
 //====== [GOSSIP-P2P-VOCABULARY] P2P-I
-    var maxConn: Proc -> int
+    var maxConn: Proc -> int                                    //Maximum number of connections
 
     type GOSSIPMessage = 
-        | {tag: "cons", consMsg: CONSMessage}
+        | {tag: "cons", consMsg: CONSMessage}                   //Wrapper for CONSMessage
         | {tag: "placeholder", payload: Payload}
 
     var uMsgs: Proc -> Set[{dst:Proc, msg: GOSSIPMessage}]
@@ -33,6 +34,10 @@ module ConsensusReactor {
 //===== GOSSIP Internals
     var bMsgs : Proc -> Set[CONSMessage]                        //Witness variable of messages broadcast by CONS
     var dMsgs : Proc -> Set[CONSMessage]                        //Witness variable of messages delivered to CONS and not discarded
+
+//===== P2P Internals
+//These are used to mock the P2P expected behavior
+
 
 
 //======== Shared definitions
@@ -285,6 +290,57 @@ module ConsensusReactor {
             )
         )
     }
+
+
+
+
+
+
+
+
+
+
+//===== Init
+    temporal consInit: bool = all {
+        cbMsgs' = Procs.mapBy(_ => List()),
+    }
+
+    temporal gossipInit: bool = all {
+        bMsgs' = Procs.mapBy(_ => Set()),
+        dMsgs' = Procs.mapBy(_ => Set())
+    }
+
+    temporal p2pInit: bool = all {
+        true
+    }
+
+    temporal init: bool = all {
+        consInit,
+        gossipInit,
+        p2pInit,
+    }
+
+
+//===== Invariants
+
+
+//===== Runs
+    temporal simpleRun: bool = {
+        broadcast(1, {tag: "proposal", height:1, round:0, payload: "TX1", signer: 1})
+        //TODO: then deliver
+    }
+
+    temporal randomSimpleRun: bool = {
+        val sender = oneOf(Procs)
+        val relayer = oneOf(Procs.setMinus({sender}))
+        all {
+            broadcast(sender, {tag: "proposal", height:1, round:0, payload: "TX1", signer: sender})
+            //Then relayer receives
+            //Then sender fails
+            //Then deliver
+        }
+    }
+
 }
 
 

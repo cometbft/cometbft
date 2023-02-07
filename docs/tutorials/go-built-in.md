@@ -86,7 +86,7 @@ CometBFT.
 
 ```bash
 go mod init kvstore
-go get github.com/cometbft/cometbft@v0.34.24
+go get github.com/cometbft/cometbft@v0.34.27
 ```
 
 After running the above commands you will see two generated files, `go.mod` and `go.sum`.
@@ -98,7 +98,7 @@ module github.com/me/example
 go 1.19
 
 require (
-	github.com/cometbft/cometbft v0.34.24
+	github.com/cometbft/cometbft v0.34.27
 )
 ```
 
@@ -192,7 +192,7 @@ The types used here are defined in the CometBFT library and were added as a depe
 to the project when you ran `go get`. If your IDE is not recognizing the types, go ahead and run the command again.
 
 ```bash
-go get github.com/cometbft/cometbft@v0.34.24
+go get github.com/cometbft/cometbft@v0.34.27
 ```
 
 Now go back to the `main.go` and modify the `main` function so it matches the following,
@@ -665,7 +665,7 @@ For more information on what these files contain see [the configuration document
 From the root of your project, run:
 
 ```bash
-go run github.com/cometbft/cometbft/cmd/cometbft@v0.34.24 init --home /tmp/cometbft-home
+go run github.com/cometbft/cometbft/cmd/cometbft@v0.34.27 init --home /tmp/cometbft-home
 ```
 
 You should see an output similar to the following:

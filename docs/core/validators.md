@@ -12,10 +12,10 @@ validator's private key.
 Some Proof-of-Stake consensus algorithms aim to create a "completely"
 decentralized system where all stakeholders (even those who are not
 always available online) participate in the committing of blocks.
-Tendermint has a different approach to block creation. Validators are
+CometBFT has a different approach to block creation. Validators are
 expected to be online, and the set of validators is permissioned/curated
 by some external process. Proof-of-stake is not required, but can be
-implemented on top of Tendermint consensus. That is, validators may be
+implemented on top of CometBFT consensus. That is, validators may be
 required to post collateral on-chain, off-chain, or may not be required
 to post any collateral at all.
 
@@ -26,17 +26,17 @@ Validators have a cryptographic key-pair and an associated amount of
 
 There are two ways to become validator.
 
-1. They can be pre-established in the [genesis state](./using-tendermint.md#genesis)
+1. They can be pre-established in the [genesis state](./using-cometbft.md#genesis)
 2. The ABCI app responds to the EndBlock message with changes to the
    existing validator set.
 
 ## Setting up a Validator
 
-When setting up a validator there are countless ways to configure your setup. This guide is aimed at showing one of them, the sentry node design. This design is mainly for DDOS prevention.
+When setting up a validator there are countless ways to configure your setup. This guide is aimed at showing one of them, the sentry node design. This design is mainly for DDoS prevention.
 
 ### Network Layout
 
-![ALT Network Layout](./sentry_layout.png)
+![ALT Network Layout](../imgs/sentry_layout.png)
 
 The diagram is based on AWS, other cloud providers will have similar solutions to design a solution. Running nodes is not limited to cloud providers, you can run nodes on bare metal systems as well. The architecture will be the same no matter which setup you decide to go with.
 
@@ -50,7 +50,7 @@ A more persistent solution (not detailed on the diagram) is to have multiple dir
 
 ### Local Configuration
 
-![ALT Local Configuration](./local_config.png)
+![ALT Local Configuration](../imgs/sentry_local_config.png)
 
 The validator will only talk to the sentry that are provided, the sentry nodes will communicate to the validator via a secret connection and the rest of the network through a normal connection. The sentry nodes do have the option of communicating with each other as well.
 
@@ -61,7 +61,7 @@ When initializing nodes there are five parameters in the `config.toml` that may 
 - `unconditional_peer_ids:` comma separated list of nodeID's. These nodes will be connected to no matter the limits of inbound and outbound peers. This is useful for when sentry nodes have full address books.
 - `private_peer_ids:` comma separated list of nodeID's. These nodes will not be gossiped to the network. This is an important field as you do not want your validator IP gossiped to the network.
 - `addr_book_strict:` boolean. By default nodes with a routable address will be considered for connection. If this setting is turned off (false), non-routable IP addresses, like addresses in a private network can be added to the address book.
-- `double_sign_check_height` int64 height.  How many blocks to look back to check existence of the node's consensus votes before joining consensus When non-zero, the node will panic upon restart if the same consensus key was used to sign {double_sign_check_height} last blocks. So, validators should stop the state machine, wait for some blocks, and then restart the state machine to avoid panic.
+- `double_sign_check_height` int64 height.  How many blocks to look back to check existence of the node's consensus votes before joining consensus When non-zero, the node will panic upon restart if the same consensus key was used to sign `double_sign_check_height` last blocks. So, validators should stop the state machine, wait for some blocks, and then restart the state machine to avoid panic.
 
 #### Validator Node Configuration
 
@@ -99,16 +99,17 @@ More Information can be found at these links:
 
 Protecting a validator's consensus key is the most important factor to take in when designing your setup. The key that a validator is given upon creation of the node is called a consensus key, it has to be online at all times in order to vote on blocks. It is **not recommended** to merely hold your private key in the default json file (`priv_validator_key.json`). Fortunately, the [Interchain Foundation](https://interchain.io/) has worked with a team to build a key management server for validators. You can find documentation on how to use it [here](https://github.com/iqlusioninc/tmkms), it is used extensively in production. You are not limited to using this tool, there are also [HSMs](https://safenet.gemalto.com/data-encryption/hardware-security-modules-hsms/), there is not a recommended HSM.
 
-Currently Tendermint uses [Ed25519](https://ed25519.cr.yp.to/) keys which are widely supported across the security sector and HSMs.
+Currently CometBFT uses [Ed25519](https://ed25519.cr.yp.to/) keys which are widely supported across the security sector and HSMs.
 
 ## Committing a Block
 
 > **+2/3 is short for "more than 2/3"**
 
-A block is committed when +2/3 of the validator set sign [precommit
-votes](https://github.com/tendermint/spec/blob/953523c3cb99fdb8c8f7a2d21e3a99094279e9de/spec/blockchain/blockchain.md#vote) for that block at the same `round`.
+A block is committed when +2/3 of the validator set sign
+[precommit votes](https://github.com/cometbft/cometbft/blob/v0.34.x/spec/core/data_structures.md#vote)
+for that block at the same `round`.
 The +2/3 set of precommit votes is called a
-[_commit_](https://github.com/tendermint/spec/blob/953523c3cb99fdb8c8f7a2d21e3a99094279e9de/spec/blockchain/blockchain.md#commit). While any +2/3 set of
-precommits for the same block at the same height&round can serve as
+[commit](https://github.com/cometbft/cometbft/blob/v0.34.x/spec/core/data_structures.md#commit).
+While any +2/3 set of precommits for the same block at the same height&round can serve as
 validation, the canonical commit is included in the next block (see
-[LastCommit](https://github.com/tendermint/spec/blob/953523c3cb99fdb8c8f7a2d21e3a99094279e9de/spec/blockchain/blockchain.md#lastcommit)).
+[LastCommit](https://github.com/cometbft/cometbft/blob/v0.34.x/spec/core/data_structures.md#block)).

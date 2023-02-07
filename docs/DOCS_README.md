@@ -1,8 +1,8 @@
 # Docs Build Workflow
 
-The documentation for Tendermint Core is hosted at:
+The documentation for CometBFT is hosted at:
 
-- <https://docs.tendermint.com/>
+- <https://docs.cometbft.com>
 
 built from the files in this (`/docs`) directory.
 
@@ -90,9 +90,7 @@ the website in `.vuepress/dist` directory.
 ## Search
 
 We are using [Algolia](https://www.algolia.com) to power full-text search. This
-uses a public API search-only key in the `config.js` as well as a
-[tendermint.json](https://github.com/algolia/docsearch-configs/blob/master/configs/tendermint.json)
-configuration file that we can update with PRs.
+uses a public API search-only key in the `config.js`.
 
 ## Consistency
 

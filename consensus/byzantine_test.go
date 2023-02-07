@@ -26,6 +26,7 @@ import (
 	mempoolv0 "github.com/cometbft/cometbft/mempool/v0"
 	mempoolv1 "github.com/cometbft/cometbft/mempool/v1"
 	"github.com/cometbft/cometbft/p2p"
+	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/store"
@@ -165,10 +166,16 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 			for i, peer := range peerList {
 				if i < len(peerList)/2 {
 					bcs.Logger.Info("Signed and pushed vote", "vote", prevote1, "peer", peer)
-					peer.Send(VoteChannel, MustEncode(&VoteMessage{prevote1}))
+					peer.SendEnvelope(p2p.Envelope{
+						Message:   &cmtcons.Vote{Vote: prevote1.ToProto()},
+						ChannelID: VoteChannel,
+					})
 				} else {
 					bcs.Logger.Info("Signed and pushed vote", "vote", prevote2, "peer", peer)
-					peer.Send(VoteChannel, MustEncode(&VoteMessage{prevote2}))
+					peer.SendEnvelope(p2p.Envelope{
+						Message:   &cmtcons.Vote{Vote: prevote2.ToProto()},
+						ChannelID: VoteChannel,
+					})
 				}
 			}
 		} else {
@@ -520,18 +527,26 @@ func sendProposalAndParts(
 	parts *types.PartSet,
 ) {
 	// proposal
-	msg := &ProposalMessage{Proposal: proposal}
-	peer.Send(DataChannel, MustEncode(msg))
+	peer.SendEnvelope(p2p.Envelope{
+		ChannelID: DataChannel,
+		Message:   &cmtcons.Proposal{Proposal: *proposal.ToProto()},
+	})
 
 	// parts
 	for i := 0; i < int(parts.Total()); i++ {
 		part := parts.GetPart(i)
-		msg := &BlockPartMessage{
-			Height: height, // This tells peer that this part applies to us.
-			Round:  round,  // This tells peer that this part applies to us.
-			Part:   part,
+		pp, err := part.ToProto()
+		if err != nil {
+			panic(err) // TODO: wbanfield better error handling
 		}
-		peer.Send(DataChannel, MustEncode(msg))
+		peer.SendEnvelope(p2p.Envelope{
+			ChannelID: DataChannel,
+			Message: &cmtcons.BlockPart{
+				Height: height, // This tells peer that this part applies to us.
+				Round:  round,  // This tells peer that this part applies to us.
+				Part:   *pp,
+			},
+		})
 	}
 
 	// votes
@@ -539,9 +554,14 @@ func sendProposalAndParts(
 	prevote, _ := cs.signVote(cmtproto.PrevoteType, blockHash, parts.Header())
 	precommit, _ := cs.signVote(cmtproto.PrecommitType, blockHash, parts.Header())
 	cs.mtx.Unlock()
-
-	peer.Send(VoteChannel, MustEncode(&VoteMessage{prevote}))
-	peer.Send(VoteChannel, MustEncode(&VoteMessage{precommit}))
+	peer.SendEnvelope(p2p.Envelope{
+		ChannelID: VoteChannel,
+		Message:   &cmtcons.Vote{Vote: prevote.ToProto()},
+	})
+	peer.SendEnvelope(p2p.Envelope{
+		ChannelID: VoteChannel,
+		Message:   &cmtcons.Vote{Vote: precommit.ToProto()},
+	})
 }
 
 //----------------------------------------
@@ -579,9 +599,8 @@ func (br *ByzantineReactor) AddPeer(peer p2p.Peer) {
 func (br *ByzantineReactor) RemovePeer(peer p2p.Peer, reason interface{}) {
 	br.reactor.RemovePeer(peer, reason)
 }
-
-func (br *ByzantineReactor) Receive(chID byte, peer p2p.Peer, msgBytes []byte) {
-	br.reactor.Receive(chID, peer, msgBytes)
+func (br *ByzantineReactor) ReceiveEnvelope(e p2p.Envelope) {
+	br.reactor.ReceiveEnvelope(e)
 }
 
 func (br *ByzantineReactor) InitPeer(peer p2p.Peer) p2p.Peer { return peer }

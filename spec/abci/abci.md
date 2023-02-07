@@ -7,12 +7,12 @@ title: Method and Types
 
 ## Connections
 
-ABCI applications can run either within the _same_ process as the Tendermint
+ABCI applications can run either within the _same_ process as the CometBFT
 state-machine replication engine, or as a _separate_ process from the state-machine
-replication engine. When run within the same process, Tendermint will call the ABCI
+replication engine. When run within the same process, CometBFT will call the ABCI
 application methods directly as Go method calls.
 
-When Tendermint and the ABCI application are run as separate processes, Tendermint
+When CometBFT and the ABCI application are run as separate processes, CometBFT
 opens four connections to the application for ABCI methods. The connections each
 handle a subset of the ABCI method calls. These subsets are defined as follows:
 
@@ -48,38 +48,38 @@ More details on managing state across connections can be found in the section on
 The `Query`, `CheckTx` and `DeliverTx` methods include a `Code` field in their `Response*`.
 This field is meant to contain an application-specific response code.
 A response code of `0` indicates no error.  Any other response code
-indicates to Tendermint that an error occurred.
+indicates to CometBFT that an error occurred.
 
-These methods also return a `Codespace` string to Tendermint. This field is
+These methods also return a `Codespace` string to CometBFT. This field is
 used to disambiguate `Code` values returned by different domains of the
 application. The `Codespace` is a namespace for the `Code`.
 
 The `Echo`, `Info`, `InitChain`, `BeginBlock`, `EndBlock`, `Commit` methods
 do not return errors. An error in any of these methods represents a critical
-issue that Tendermint has no reasonable way to handle. If there is an error in one
+issue that CometBFT has no reasonable way to handle. If there is an error in one
 of these methods, the application must crash to ensure that the error is safely
 handled by an operator.
 
-The handling of non-zero response codes by Tendermint is described below
+The handling of non-zero response codes by CometBFT is described below
 
 ### CheckTx
 
 The `CheckTx` ABCI method controls what transactions are considered for inclusion in a block.
-When Tendermint receives a `ResponseCheckTx` with a non-zero `Code`, the associated
-transaction will be not be added to Tendermint's mempool or it will be removed if
+When CometBFT receives a `ResponseCheckTx` with a non-zero `Code`, the associated
+transaction will be not be added to CometBFT's mempool or it will be removed if
 it is already included.
 
 ### DeliverTx
 
-The `DeliverTx` ABCI method delivers transactions from Tendermint to the application.
-When Tendermint recieves a `ResponseDeliverTx` with a non-zero `Code`, the response code is logged.
+The `DeliverTx` ABCI method delivers transactions from CometBFT to the application.
+When CometBFT recieves a `ResponseDeliverTx` with a non-zero `Code`, the response code is logged.
 The transaction was already included in a block, so the `Code` does not influence
-Tendermint consensus.
+CometBFT consensus.
 
 ### Query
 
 The `Query` ABCI method query queries the application for information about application state.
-When Tendermint receives a `ResponseQuery` with a non-zero `Code`, this code is 
+When CometBFT receives a `ResponseQuery` with a non-zero `Code`, this code is 
 returned directly to the client that initiated the query.
 
 ## Events
@@ -88,8 +88,8 @@ The `CheckTx`, `BeginBlock`, `DeliverTx`, `EndBlock` methods include an `Events`
 field in their `Response*`. Applications may respond to these ABCI methods with a set of events.
 Events allow applications to associate metadata about ABCI method execution with the
 transactions and blocks this metadata relates to.
-Events returned via these ABCI methods do not impact Tendermint consensus in any way
-and instead exist to power subscriptions and queries of Tendermint state.
+Events returned via these ABCI methods do not impact CometBFT consensus in any way
+and instead exist to power subscriptions and queries of CometBFT state.
 
 An `Event` contains a `type` and a list of `EventAttributes`, which are key-value 
 string pairs denoting metadata about what happened during the method's execution.
@@ -112,7 +112,7 @@ message Event {
 ```
 
 The attributes of an `Event` consist of a `key`, a `value`, and an `index` flag. The
-index flag notifies the Tendermint indexer to index the attribute. The value of
+index flag notifies the CometBFT indexer to index the attribute. The value of
 the `index` flag is non-deterministic and may vary across different nodes in the network.
 
 ```protobuf
@@ -160,9 +160,9 @@ Example:
 
 ## EvidenceType
 
-Tendermint's security model relies on the use of "evidence". Evidence is proof of
-malicious behaviour by a network participant. It is the responsibility of Tendermint
-to detect such malicious behaviour. When malicious behavior is detected, Tendermint
+CometBFT's security model relies on the use of "evidence". Evidence is proof of
+malicious behaviour by a network participant. It is the responsibility of CometBFT
+to detect such malicious behaviour. When malicious behavior is detected, CometBFT
 will gossip evidence of the behavior to other nodes and commit the evidence to 
 the chain once it is verified by all validators. This evidence will then be 
 passed it on to the application through the ABCI. It is the responsibility of the
@@ -179,13 +179,13 @@ enum EvidenceType {
 ```
 
 There are two forms of evidence: Duplicate Vote and Light Client Attack. More
-information can be found in either [data structures](https://github.com/tendermint/tendermint/blob/v0.34.x/spec/core/data_structures.md)
-or [accountability](https://github.com/tendermint/tendermint/blob/v0.34.x/spec/light-client/accountability/)
+information can be found in either [data structures](https://github.com/cometbft/cometbft/blob/v0.34.x/spec/core/data_structures.md)
+or [accountability](https://github.com/cometbft/cometbft/blob/v0.34.x/spec/light-client/accountability/)
 
 ## Determinism
 
 ABCI applications must implement deterministic finite-state machines to be
-securely replicated by the Tendermint consensus engine. This means block execution
+securely replicated by the CometBFT consensus engine. This means block execution
 over the Consensus Connection must be strictly deterministic: given the same
 ordered set of requests, all nodes will compute identical responses, for all
 BeginBlock, DeliverTx, EndBlock, and Commit. This is critical, because the
@@ -194,7 +194,7 @@ or directly, so all nodes must agree on exactly what they are.
 
 For this reason, it is recommended that applications not be exposed to any
 external user or process except via the ABCI connections to a consensus engine
-like Tendermint Core. The application must only change its state based on input
+like CometBFT. The application must only change its state based on input
 from block execution (BeginBlock, DeliverTx, EndBlock, Commit), and not through
 any other kind of request. This is the only way to ensure all nodes see the same
 transactions and compute the same results.
@@ -231,7 +231,7 @@ on them. All other fields in the `Response*` must be strictly deterministic.
 
 ## Block Execution
 
-The first time a new blockchain is started, Tendermint calls
+The first time a new blockchain is started, CometBFT calls
 `InitChain`. From then on, the following sequence of methods is executed for each
 block:
 
@@ -249,14 +249,14 @@ state machine snapshots instead of replaying historical blocks. For more details
 [state sync section](../spec/p2p/messages/state-sync.md).
 
 New nodes will discover and request snapshots from other nodes in the P2P network.
-A Tendermint node that receives a request for snapshots from a peer will call
+A CometBFT node that receives a request for snapshots from a peer will call
 `ListSnapshots` on its application to retrieve any local state snapshots. After receiving
  snapshots from peers, the new node will offer each snapshot received from a peer
 to its local application via the `OfferSnapshot` method.
 
 Snapshots may be quite large and are thus broken into smaller "chunks" that can be
 assembled into the whole snapshot. Once the application accepts a snapshot and
-begins restoring it, Tendermint will fetch snapshot "chunks" from existing nodes.
+begins restoring it, CometBFT will fetch snapshot "chunks" from existing nodes.
 The node providing "chunks" will fetch them from its local application using
 the `LoadSnapshotChunk` method.
 
@@ -291,10 +291,10 @@ the blockchain's `AppHash` which is verified via [light client verification](../
 
     | Name          | Type   | Description                              | Field Number |
     |---------------|--------|------------------------------------------|--------------|
-    | version       | string | The Tendermint software semantic version | 1            |
-    | block_version | uint64 | The Tendermint Block Protocol version    | 2            |
-    | p2p_version   | uint64 | The Tendermint P2P Protocol version      | 3            |
-    | abci_version  | string | The Tendermint ABCI semantic version     | 4            |
+    | version       | string | The CometBFT software semantic version | 1            |
+    | block_version | uint64 | The CometBFT Block Protocol version    | 2            |
+    | p2p_version   | uint64 | The CometBFT P2P Protocol version      | 3            |
+    | abci_version  | string | The CometBFT ABCI semantic version     | 4            |
 
 * **Response**:
   
@@ -308,10 +308,10 @@ the blockchain's `AppHash` which is verified via [light client verification](../
 
 * **Usage**:
     * Return information about the application state.
-    * Used to sync Tendermint with the application during a handshake
+    * Used to sync CometBFT with the application during a handshake
     that happens on startup.
     * The returned `app_version` will be included in the Header of every block.
-    * Tendermint expects `last_block_app_hash` and `last_block_height` to
+    * CometBFT expects `last_block_app_hash` and `last_block_height` to
     be updated during `Commit`, ensuring that `Commit` is never
     called twice for the same block height.
 
@@ -344,7 +344,7 @@ the blockchain's `AppHash` which is verified via [light client verification](../
     * If ResponseInitChain.Validators is not empty, it will be the initial
     validator set (regardless of what is in RequestInitChain.Validators).
     * This allows the app to decide if it wants to accept the initial validator
-    set proposed by tendermint (ie. in the genesis file), or if it wants to use
+    set proposed by CometBFT (ie. in the genesis file), or if it wants to use
     a different one (perhaps computed based on some application specific
     information in the genesis file).
 
@@ -400,7 +400,7 @@ the blockchain's `AppHash` which is verified via [light client verification](../
     * Signals the beginning of a new block.
     * Called prior to any `DeliverTx` method calls.
     * The header contains the height, timestamp, and more - it exactly matches the
-    Tendermint block header. We may seek to generalize this in the future.
+    CometBFT block header. We may seek to generalize this in the future.
     * The `LastCommitInfo` and `ByzantineValidators` can be used to determine
     rewards and punishments for the validators.
 
@@ -440,7 +440,7 @@ the blockchain's `AppHash` which is verified via [light client verification](../
     not running code in a virtual machine.
     * Transactions where `ResponseCheckTx.Code != 0` will be rejected - they will not be broadcast to
     other nodes or included in a proposal block.
-    * Tendermint attributes no other value to the response code
+    * CometBFT attributes no other value to the response code
 
 ### DeliverTx
 
@@ -465,7 +465,7 @@ the blockchain's `AppHash` which is verified via [light client verification](../
 
 * **Usage**:
     * [**Required**] The core method of the application.
-    * When `DeliverTx` is called, the application must execute the transaction in full before returning control to Tendermint.
+    * When `DeliverTx` is called, the application must execute the transaction in full before returning control to CometBFT.
     * `ResponseDeliverTx.Code == 0` only if the transaction is fully valid.
 
 ### EndBlock
@@ -597,7 +597,7 @@ the blockchain's `AppHash` which is verified via [light client verification](../
 
 * **Usage**:
     * `OfferSnapshot` is called when bootstrapping a node using state sync. The application may
-    accept or reject snapshots as appropriate. Upon accepting, Tendermint will retrieve and
+    accept or reject snapshots as appropriate. Upon accepting, CometBFT will retrieve and
     apply snapshot chunks via `ApplySnapshotChunk`. The application may also choose to reject a
     snapshot in the chunk response, in which case it should be prepared to accept further
     `OfferSnapshot` calls.
@@ -613,7 +613,7 @@ the blockchain's `AppHash` which is verified via [light client verification](../
 
     | Name   | Type   | Description                                                                 | Field Number |
     |--------|--------|-----------------------------------------------------------------------------|--------------|
-    | index  | uint32 | The chunk index, starting from `0`. Tendermint applies chunks sequentially. | 1            |
+    | index  | uint32 | The chunk index, starting from `0`. CometBFT applies chunks sequentially. | 1            |
     | chunk  | bytes  | The binary chunk contents, as returned by `LoadSnapshotChunk`.              | 2            |
     | sender | string | The P2P ID of the node who sent this chunk.                                 | 3            |
 
@@ -637,15 +637,15 @@ the blockchain's `AppHash` which is verified via [light client verification](../
 ```
 
 * **Usage**:
-    * The application can choose to refetch chunks and/or ban P2P peers as appropriate. Tendermint
+    * The application can choose to refetch chunks and/or ban P2P peers as appropriate. CometBFT
     will not do this unless instructed by the application.
     * The application may want to verify each chunk, e.g. by attaching chunk hashes in
     `Snapshot.Metadata` and/or incrementally verifying contents against `AppHash`.
-    * When all chunks have been accepted, Tendermint will make an ABCI `Info` call to verify that
+    * When all chunks have been accepted, CometBFT will make an ABCI `Info` call to verify that
     `LastBlockAppHash` and `LastBlockHeight` matches the expected values, and record the
     `AppVersion` in the node state. It then switches to fast sync or consensus and joins the
     network.
-    * If Tendermint is unable to retrieve the next chunk after some time (e.g. because no suitable
+    * If CometBFT is unable to retrieve the next chunk after some time (e.g. because no suitable
     peers are available), it will reject the snapshot and try a different one via `OfferSnapshot`.
     The application should be prepared to reset and accept it or abort as appropriate.
 
@@ -679,7 +679,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
 * **Usage**:
     * Validator identified by PubKey
-    * Used to tell Tendermint to update the validator set
+    * Used to tell CometBFT to update the validator set
 
 ### VoteInfo
 
@@ -763,9 +763,9 @@ Most of the data structures used in ABCI are shared [common data structures](../
     | Name     | Type   | Description                                                                                                                                                                       | Field Number |
     |----------|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
     | height   | uint64 | The height at which the snapshot was taken (after commit).                                                                                                                        | 1            |
-    | format   | uint32 | An application-specific snapshot format, allowing applications to version their snapshot data format and make backwards-incompatible changes. Tendermint does not interpret this. | 2            |
+    | format   | uint32 | An application-specific snapshot format, allowing applications to version their snapshot data format and make backwards-incompatible changes. CometBFT does not interpret this. | 2            |
     | chunks   | uint32 | The number of chunks in the snapshot. Must be at least 1 (even if empty).                                                                                                         | 3            |
-    | hash     | bytes  | TAn arbitrary snapshot hash. Must be equal only for identical snapshots across nodes. Tendermint does not interpret the hash, it only compares them.                              | 3            |
+    | hash     | bytes  | TAn arbitrary snapshot hash. Must be equal only for identical snapshots across nodes. CometBFT does not interpret the hash, it only compares them.                              | 3            |
     | metadata | bytes  | Arbitrary application metadata, for example chunk hashes or other verification data.                                                                                              | 3            |
 
 * **Usage**:

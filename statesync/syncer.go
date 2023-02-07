@@ -284,7 +284,7 @@ func (s *syncer) Sync(snapshot *snapshot, chunks *chunkQueue) (sm.State, *types.
 	// Optimistically build new state, so we don't discover any light client failures at the end.
 	state, err := s.stateProvider.State(pctx, snapshot.Height)
 	if err != nil {
-		s.logger.Info("failed to fetch and verify tendermint state", "err", err)
+		s.logger.Info("failed to fetch and verify CometBFT state", "err", err)
 		if err == light.ErrNoWitnesses {
 			return sm.State{}, nil, err
 		}

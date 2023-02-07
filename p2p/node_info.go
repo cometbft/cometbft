@@ -75,7 +75,7 @@ func NewProtocolVersion(p2p, block, app uint64) ProtocolVersion {
 var _ NodeInfo = DefaultNodeInfo{}
 
 // DefaultNodeInfo is the basic node information exchanged
-// between two peers during the Tendermint P2P handshake.
+// between two peers during the CometBFT P2P handshake.
 type DefaultNodeInfo struct {
 	ProtocolVersion ProtocolVersion `json:"protocol_version"`
 

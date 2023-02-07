@@ -1,7 +1,13 @@
-name: Lint
-# Lint runs golangci-lint over the entire Tendermint repository
-# This workflow is run on every pull request and push to master
-# The `golangci` job will pass without running if no *.{go, mod, sum} files have been modified.
+name: Golang Linter
+# Lint runs golangci-lint over the entire CometBFT repository.
+#
+# This workflow is run on every pull request and push to main.
+#
+# The `golangci` job will pass without running if no *.{go, mod, sum}
+# files have been modified.
+#
+# To run this locally, simply run `make lint` from the root of the repo.
+
 on:
   pull_request:
   push:

@@ -1,12 +1,12 @@
-project_name: tendermint
+project_name: cometbft
 
 env:
   # Require use of Go modules.
   - GO111MODULE=on
 
 builds:
-  - id: "Tendermint"
-    main: ./cmd/tendermint/main.go
+  - id: "cometbft"
+    main: ./cmd/cometbft/main.go
     ldflags:
       - -s -w -X github.com/cometbft/cometbft/version.TMCoreSemVer={{ .Version }}
     env:

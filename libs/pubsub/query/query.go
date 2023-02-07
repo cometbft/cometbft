@@ -1,4 +1,5 @@
-// Package query provides a parser for a custom query format:
+// Package query implements the custom query format used to filter event
+// subscriptions in CometBFT.
 //
 //	abci.invoice.number=22 AND abci.invoice.owner=Ivan
 //

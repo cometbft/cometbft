@@ -20,7 +20,7 @@ v    Word of caution: Under-specified proposals may be rejected summarily
 
 <!-- Why do we need this change? 
 What problems may be addressed by introducing this change?
-What benefits does Tendermint stand to gain by including this change?
+What benefits does CometBFT stand to gain by including this change?
 Are there any disadvantages of including this change? -->
 
 ## Proposal

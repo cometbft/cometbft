@@ -73,8 +73,7 @@ This section explains how the tests were carried out for reproducibility purpose
       below saturation:
         * set makefile variables `ROTATE_CONNECTIONS`, `ROTATE_TX_RATE`, to values that will produce the desired transaction load.
         * set `ROTATE_TOTAL_TIME` to 90 (seconds).
-        * run "make runload" and wait for it to complete. You may want to run this several times.
-          so the data of different runs can be compared.
+        * run "make runload" and wait for it to complete. You may want to run this several times so the data from different runs can be compared.
 7. Run `make retrieve-data` to gather all relevant data from the testnet into the orchestrating machine
     * Alternatively, you may want to run `make retrieve-prometheus-data` and `make retrieve-blockstore` separately.
       The end result will be the same.

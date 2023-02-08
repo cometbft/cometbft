@@ -6,7 +6,7 @@ parent:
 
 # Architecture Decision Records (ADR)
 
-This is a location to record all high-level architecture decisions in the tendermint project.
+This is a location to record all high-level architecture decisions in the CometBFT project.
 
 You can read more about the ADR concept in this [blog post](https://product.reverb.com/documenting-architecture-decisions-the-reverb-way-a3563bb24bd0#.78xhdix6t).
 
@@ -28,6 +28,10 @@ If recorded decisions turned out to be lacking, convene a discussion, record the
 Note the context/background should be written in the present tense.
 
 ## Table of Contents
+
+The ADRs listed below are prior to the fork from
+[Tendermint Core repository][https://github.com/tendermint/tendermint/],
+therefore they have links to it and refer to CometBFT as "Tendermint" or "Tendermint Core".
 
 ### Implemented
 

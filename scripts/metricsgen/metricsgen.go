@@ -1,4 +1,4 @@
-// metricsgen is a code generation tool for creating constructors for Tendermint
+// metricsgen is a code generation tool for creating constructors for CometBFT
 // metrics types.
 package main
 

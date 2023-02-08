@@ -1,5 +1,5 @@
 name: Golang Linter
-# Lint runs golangci-lint over the entire Tendermint repository.
+# Lint runs golangci-lint over the entire CometBFT repository.
 #
 # This workflow is run on every pull request and push to main.
 #

@@ -39,7 +39,7 @@ const (
 	MaxOverheadForBlock int64 = 11
 )
 
-// Block defines the atomic unit of a Tendermint blockchain.
+// Block defines the atomic unit of a CometBFT blockchain.
 type Block struct {
 	mtx cmtsync.Mutex
 
@@ -317,7 +317,7 @@ func MaxDataBytesNoEvidence(maxBytes int64, valsCount int) int64 {
 
 //-----------------------------------------------------------------------------
 
-// Header defines the structure of a Tendermint block header.
+// Header defines the structure of a CometBFT block header.
 // NOTE: changes to the Header should be duplicated in:
 // - header.Hash()
 // - abci.Header

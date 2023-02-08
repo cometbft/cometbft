@@ -93,7 +93,7 @@ This section explains how the tests were carried out for reproducibility purpose
 ### Result Extraction
 
 The method for extracting the results described here is highly manual (and exploratory) at this stage.
-The Core team should improve it at every iteration to increase the amount of automation.
+The CometBFT team should improve it at every iteration to increase the amount of automation.
 
 #### Steps
 

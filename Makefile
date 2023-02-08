@@ -213,7 +213,6 @@ DESTINATION = ./index.html.md
 check-docs-toc:
 	@./docs/presubmit.sh
 .PHONY: check-docs-toc
->>>>>>> d159562d0 (Removing all the vuepress related build files and references  (#253))
 
 ###############################################################################
 ###                            Docker image                                 ###

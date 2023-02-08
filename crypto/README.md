@@ -16,7 +16,7 @@ For Binary encoding, please refer to the [CometBFT encoding specification](https
 
 ## JSON Encoding
 
-JSON encoding is done using CometBFT's internal json encoder. For more information on JSON encoding, please refer to [CometBFT JSON encoding](https://github.com/cometbft/cometbft/blob/main/libs/json/doc.go)
+JSON encoding is done using CometBFT's internal json encoder. For more information on JSON encoding, please refer to [CometBFT JSON encoding](https://github.com/cometbft/cometbft/blob/v0.37.x/libs/json/doc.go)
 
 ```go
 Example JSON encodings:

@@ -1,9 +1,4 @@
-<<<<<<< HEAD
 // Package query provides a parser for a custom query format:
-=======
-// Package query implements the custom query format used to filter event
-// subscriptions in CometBFT.
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 //
 //	abci.invoice.number=22 AND abci.invoice.owner=Ivan
 //

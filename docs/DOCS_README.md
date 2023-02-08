@@ -1,8 +1,8 @@
 # Docs Build Workflow
 
-The documentation for Tendermint Core is hosted at:
+The documentation for CometBFT is hosted at:
 
-- <https://docs.tendermint.com>
+- <https://docs.cometbft.com>
 
 built from the files in these (`/docs` and `/spec`) directories.
 

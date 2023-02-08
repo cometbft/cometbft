@@ -271,7 +271,7 @@ The ABCI evidence is then sent via the `BlockExecutor` to the application.
 
 To summarize, we can see the lifecycle of evidence as such:
 
-![evidence_lifecycle](../imgs/evidence_lifecycle.png)
+![evidence_lifecycle](./img/evidence_lifecycle.png)
 
 Evidence is first detected and created in the light client and consensus reactor. It is verified and stored as `EvidenceInfo` and gossiped to the evidence pools in other nodes. The consensus reactor later communicates with the evidence pool to either retrieve evidence to be put into a block, or verify the evidence the consensus reactor has retrieved in a block. Lastly when a block is added to the chain, the block executor sends the committed evidence back to the evidence pool so a pointer to the evidence can be stored in the evidence pool and it can update it's height and time. Finally, it turns the committed evidence into ABCI evidence and through the block executor passes the evidence to the application so the application can handle it.
 

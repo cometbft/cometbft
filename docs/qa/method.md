@@ -102,13 +102,17 @@ The CometBFT team should improve it at every iteration to increase the amount of
     * `go run github.com/cometbft/cometbft/test/loadtime/cmd/report@f1aaa436d --database-type goleveldb --data-dir ./ > results/report.txt`
     * `go run github.com/cometbft/cometbft/test/loadtime/cmd/report@f1aaa436d --database-type goleveldb --data-dir ./ --csv results/raw.csv`
 3. File `report.txt` contains an unordered list of experiments with varying concurrent connections and transaction rate
-    * Create files `report01.txt`, `report02.txt`, `report04.txt` and, for each experiment in file `report.txt`,
-      copy its related lines to the filename that matches the number of connections.
-    * Sort the experiments in `report01.txt` in ascending tx rate order. Likewise for `report02.txt` and `report04.txt`.
+    * If you are looking for the saturation point
+        * Create files `report01.txt`, `report02.txt`, `report04.txt` and, for each experiment in file `report.txt`,
+          copy its related lines to the filename that matches the number of connections.
+        * Sort the experiments in `report01.txt` in ascending tx rate order. Likewise for `report02.txt` and `report04.txt`.
+    * Otherwise just keep `report.txt`, and skip step 4.
 4. Generate file `report_tabbed.txt` by showing the contents `report01.txt`, `report02.txt`, `report04.txt` side by side
-   * This effectively creates a table where rows are a particular tx rate and columns are a particular number of websocket connections.
+    * This effectively creates a table where rows are a particular tx rate and columns are a particular number of websocket connections.
 5. Extract the raw latencies from file `raw.csv` using the following bash loop. This creates a `.csv` file and a `.dat` file per experiment.
-   The format of the `.dat` files is amenable to loading them as matrices in Octave
+   The format of the `.dat` files is amenable to loading them as matrices in Octave.
+     * Adapt the values of the for loop variables according to the experiments that you ran (check `report.txt`).
+     * Adapt `report*.txt` to the files you produced in step 3.
 
     ```bash
     uuids=($(cat report01.txt report02.txt report04.txt | grep '^Experiment ID: ' | awk '{ print $3 }'))

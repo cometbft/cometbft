@@ -12,11 +12,7 @@ For any specific algorithm, use its specific module e.g.
 
 ## Binary encoding
 
-<<<<<<< HEAD
-For Binary encoding, please refer to the [Tendermint encoding specification](https://github.com/tendermint/tendermint/blob/v0.37.x/spec/core/encoding.md).
-=======
-For Binary encoding, please refer to the [CometBFT encoding specification](https://github.com/cometbft/cometbft/blob/main/spec/core/encoding.md).
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
+For Binary encoding, please refer to the [CometBFT encoding specification](https://github.com/cometbft/cometbft/blob/v0.37.x/spec/core/encoding.md).
 
 ## JSON Encoding
 

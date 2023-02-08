@@ -270,13 +270,8 @@ func (h *Handshaker) Handshake(proxyApp proxy.AppConns) error {
 		return fmt.Errorf("error on replay: %v", err)
 	}
 
-<<<<<<< HEAD
-	h.logger.Info("Completed ABCI Handshake - Tendermint and App are synced",
-		"appHeight", blockHeight, "appHash", appHash)
-=======
 	h.logger.Info("Completed ABCI Handshake - CometBFT and App are synced",
-		"appHeight", blockHeight, "appHash", log.NewLazySprintf("%X", appHash))
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
+		"appHeight", blockHeight, "appHash", appHash)
 
 	// TODO: (on restart) replay mempool
 

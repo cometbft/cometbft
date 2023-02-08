@@ -16,13 +16,8 @@ import (
 // Tx allows you to query the transaction results. `nil` could mean the
 // transaction is in the mempool, invalidated, or was not sent in the first
 // place.
-<<<<<<< HEAD
-// More: https://docs.tendermint.com/v0.37/rpc/#/Info/tx
+// More: https://docs.cometbft.com/v0.37/rpc/#/Info/tx
 func Tx(ctx *rpctypes.Context, hash []byte, prove bool) (*ctypes.ResultTx, error) {
-=======
-// More: https://docs.cometbft.com/main/rpc/#/Info/tx
-func (env *Environment) Tx(ctx *rpctypes.Context, hash []byte, prove bool) (*ctypes.ResultTx, error) {
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 	// if index is disabled, return error
 	if _, ok := env.TxIndexer.(*null.TxIndex); ok {
 		return nil, fmt.Errorf("transaction indexing is disabled")
@@ -55,13 +50,8 @@ func (env *Environment) Tx(ctx *rpctypes.Context, hash []byte, prove bool) (*cty
 
 // TxSearch allows you to query for multiple transactions results. It returns a
 // list of transactions (maximum ?per_page entries) and the total count.
-<<<<<<< HEAD
-// More: https://docs.tendermint.com/v0.37/rpc/#/Info/tx_search
+// More: https://docs.cometbft.com/v0.37/rpc/#/Info/tx_search
 func TxSearch(
-=======
-// More: https://docs.cometbft.com/main/rpc/#/Info/tx_search
-func (env *Environment) TxSearch(
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 	ctx *rpctypes.Context,
 	query string,
 	prove bool,

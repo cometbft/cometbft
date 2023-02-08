@@ -29,7 +29,7 @@ import (
 	"github.com/cometbft/cometbft/light"
 	mempl "github.com/cometbft/cometbft/mempool"
 	mempoolv0 "github.com/cometbft/cometbft/mempool/v0"
-	mempoolv1 "github.com/cometbft/cometbft/mempool/v1"
+	mempoolv1 "github.com/cometbft/cometbft/mempool/v1" //nolint:staticcheck // SA1019 Priority mempool deprecated but still supported in this release.
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/privval"
@@ -56,14 +56,7 @@ import (
 	_ "github.com/lib/pq" // provide the psql db driver
 )
 
-<<<<<<< HEAD
 //------------------------------------------------------------------------------
-=======
-// Node is the highest level interface to a full CometBFT node.
-// It includes all configuration information and running services.
-type Node struct {
-	service.BaseService
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 
 // DBContext specifies config information for loading a new DB.
 type DBContext struct {
@@ -197,8 +190,7 @@ func StateProvider(stateProvider statesync.StateProvider) Option {
 
 //------------------------------------------------------------------------------
 
-<<<<<<< HEAD
-// Node is the highest level interface to a full Tendermint node.
+// Node is the highest level interface to a full CometBFT node.
 // It includes all configuration information and running services.
 type Node struct {
 	service.BaseService
@@ -709,10 +701,7 @@ func startStateSync(ssR *statesync.Reactor, bcR blockSyncReactor, conR *cs.React
 	return nil
 }
 
-// NewNode returns a new, ready to go, Tendermint Node.
-=======
 // NewNode returns a new, ready to go, CometBFT Node.
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 func NewNode(config *cfg.Config,
 	privValidator types.PrivValidator,
 	nodeKey *p2p.NodeKey,

@@ -9,13 +9,8 @@
 .bak
 .idea/
 .revision
-<<<<<<< HEAD
-.tendermint
-.tendermint-lite
-=======
 .cometbft
 .cometbft-lite
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 .terraform
 .vagrant
 .vendor-new/
@@ -35,11 +30,7 @@ index.html.md
 libs/pubsub/query/fuzz_test/output
 profile\.out
 remote_dump
-<<<<<<< HEAD
-rpc/test/.tendermint
-=======
 rpc/test/.cometbft
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 scripts/cutWALUntil/cutWALUntil
 scripts/wal2json/wal2json
 shunit2

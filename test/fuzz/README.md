@@ -1,11 +1,6 @@
 # fuzz
 
-<<<<<<< HEAD
-Fuzzing for various packages in Tendermint using [go-fuzz](https://github.com/dvyukov/go-fuzz) library.
-=======
-Fuzzing for various packages in CometBFT using the fuzzing infrastructure included in
-Go 1.18.
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
+Fuzzing for various packages in CometBFT using [go-fuzz](https://github.com/dvyukov/go-fuzz) library.
 
 Inputs:
 

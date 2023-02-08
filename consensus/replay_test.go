@@ -718,11 +718,10 @@ func testHandshakeReplay(t *testing.T, config *cfg.Config, nBlocks int, mode uin
 	store.commits = commits
 
 	state := genesisState.Copy()
+	// run the chain through state.ApplyBlock to build up the CometBFT state
 <<<<<<< HEAD
-	// run the chain through state.ApplyBlock to build up the tendermint state
 	state = buildTMStateFromChain(t, config, stateStore, state, chain, nBlocks, mode)
 =======
-	// run the chain through state.ApplyBlock to build up the CometBFT state
 	state = buildTMStateFromChain(t, config, stateStore, state, chain, nBlocks, mode, store)
 >>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 	latestAppHash := state.AppHash
@@ -863,13 +862,12 @@ func buildTMStateFromChain(
 	nBlocks int,
 <<<<<<< HEAD
 	mode uint) sm.State {
-	// run the whole chain against this client to build up the tendermint state
 =======
 	mode uint,
 	blockStore *mockBlockStore,
 ) sm.State {
-	// run the whole chain against this client to build up the CometBFT state
 >>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
+	// run the whole chain against this client to build up the CometBFT state
 	clientCreator := proxy.NewLocalClientCreator(
 		kvstore.NewPersistentKVStoreApplication(
 			filepath.Join(config.DBDir(), fmt.Sprintf("replay_test_%d_%d_t", nBlocks, mode))))

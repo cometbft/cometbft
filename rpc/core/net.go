@@ -11,13 +11,8 @@ import (
 )
 
 // NetInfo returns network info.
-<<<<<<< HEAD
-// More: https://docs.tendermint.com/v0.37/rpc/#/Info/net_info
+// More: https://docs.cometbft.com/v0.37/rpc/#/Info/net_info
 func NetInfo(ctx *rpctypes.Context) (*ctypes.ResultNetInfo, error) {
-=======
-// More: https://docs.cometbft.com/main/rpc/#/Info/net_info
-func (env *Environment) NetInfo(ctx *rpctypes.Context) (*ctypes.ResultNetInfo, error) {
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 	peersList := env.P2PPeers.Peers().List()
 	peers := make([]ctypes.Peer, 0, len(peersList))
 	for _, peer := range peersList {
@@ -98,13 +93,8 @@ func UnsafeDialPeers(ctx *rpctypes.Context, peers []string, persistent, uncondit
 }
 
 // Genesis returns genesis file.
-<<<<<<< HEAD
-// More: https://docs.tendermint.com/v0.37/rpc/#/Info/genesis
+// More: https://docs.cometbft.com/v0.37/rpc/#/Info/genesis
 func Genesis(ctx *rpctypes.Context) (*ctypes.ResultGenesis, error) {
-=======
-// More: https://docs.cometbft.com/main/rpc/#/Info/genesis
-func (env *Environment) Genesis(ctx *rpctypes.Context) (*ctypes.ResultGenesis, error) {
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 	if len(env.genChunks) > 1 {
 		return nil, errors.New("genesis response is large, please use the genesis_chunked API instead")
 	}

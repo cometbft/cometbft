@@ -80,9 +80,5 @@
 //
 // # Examples
 //
-<<<<<<< HEAD
-// - [Tendermint](https://github.com/cometbft/cometbft/blob/v0.37.x/rpc/core/routes.go)
-=======
-// - [CometBFT](https://github.com/cometbft/cometbft/blob/main/rpc/core/routes.go)
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
+// - [CometBFT](https://github.com/cometbft/cometbft/blob/v0.37.x/rpc/core/routes.go)
 package jsonrpc

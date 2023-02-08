@@ -29,7 +29,7 @@ _200 Node Test_, and _Rotating Nodes Test_.
     * [Terraform CLI][Terraform]
     * [Ansible CLI][Ansible]
 
-[testnet-repo]: https://github.com/interchainio/tendermint-testnet
+[testnet-repo]: https://github.com/interchainio/tendermint-testnet   FIX
 [Ansible]: https://docs.ansible.com/ansible/latest/index.html
 [Terraform]: https://www.terraform.io/docs
 [doctl]: https://docs.digitalocean.com/reference/doctl/how-to/install/
@@ -53,15 +53,28 @@ This section explains how the tests were carried out for reproducibility purpose
    Follow steps 1-4 of the `README.md` at the top of the testnet repository to configure Terraform, and `doctl`.
 2. Copy file `testnets/testnet200.toml` onto `testnet.toml` (do NOT commit this change)
 3. Set the variable `VERSION_TAG` in the `Makefile` to the git hash that is to be tested.
+   * If you are running the base test, which implies an homogeneous network (all nodes are running the same version),
+     then make sure makefile variable `VERSION2_WEIGHT` is set to 0
+   * If you are running a mixed network, set the variable `VERSION_TAG2` to the other version you want deployed
+     in the network. The, adjust the weight variables `VERSION_WEIGHT` and `VERSION2_WEIGHT` to configure the
+     desired proportion of nodes running each of the two configured versions.
 4. Follow steps 5-10 of the `README.md` to configure and start the 200 node testnet
     * WARNING: Do NOT forget to run `make terraform-destroy` as soon as you are done with the tests (see step 9)
-5. As a sanity check, connect to the Prometheus node's web interface and check the graph for the `tendermint_consensus_height` metric.
+5. As a sanity check, connect to the Prometheus node's web interface and check the graph for the `COMETBFT_CONSENSUS_HEIGHT` metric.
    All nodes should be increasing their heights.
-6. `ssh` into the `testnet-load-runner`, then copy script `script/200-node-loadscript.sh` and run it from the load runner node.
-    * Before running it, you need to edit the script to provide the IP address of a full node.
-      This node will receive all transactions from the load runner node.
-    * This script will take about 40 mins to run
-    * It is running 90-seconds-long experiments in a loop with different loads
+6. You now need to start the load runner that will produce transaction load
+    * If you don't know the saturation load of the version you are testing, you need to discover it.
+      * `ssh` into the `testnet-load-runner`, then copy script `script/200-node-loadscript.sh` and run it from the load runner node.
+      * Before running it, you need to edit the script to provide the IP address of a full node.
+        This node will receive all transactions from the load runner node.
+      * This script will take about 40 mins to run.
+      * It is running 90-seconds-long experiments in a loop with different loads.
+    * If you already know the saturation load, you can simply run the test (several times) for 90 seconds with a load somewhat
+      below saturation:
+      * set makefile variables `ROTATE_CONNECTIONS`, `ROTATE_TX_RATE`, to values that will produce the desired transaction load.
+      * set `ROTATE_TOTAL_TIME` to 90 (seconds).
+      * run "make runload" and wait for it to complete. You may want to run this several times.
+        so the data of different runs can be compared.
 7. Run `make retrieve-data` to gather all relevant data from the testnet into the orchestrating machine
 8. Verify that the data was collected without errors
     * at least one blockstore DB for a CometBFT validator

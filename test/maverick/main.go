@@ -51,11 +51,11 @@ func ParseConfig() (*cfg.Config, error) {
 	return conf, err
 }
 
-// RootCmd is the root command for Tendermint core.
+// RootCmd is the root command for CometBFT.
 var RootCmd = &cobra.Command{
 	Use:   "maverick",
-	Short: "Tendermint Maverick Node",
-	Long: "Tendermint Maverick Node for testing with faulty consensus misbehaviors in a testnet. Contains " +
+	Short: "CometBFT Maverick Node",
+	Long: "CometBFT Maverick Node for testing with faulty consensus misbehaviors in a testnet. Contains " +
 		"all the functionality of a normal node but custom misbehaviors can be injected when running the node " +
 		"through a flag. See maverick node --help for how the misbehavior flag is constructured",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
@@ -163,7 +163,7 @@ func startNode(config *cfg.Config, logger log.Logger, misbehaviorFlag string) er
 
 var InitFilesCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Initialize Tendermint",
+	Short: "Initialize CometBFT",
 	RunE:  initFiles,
 }
 

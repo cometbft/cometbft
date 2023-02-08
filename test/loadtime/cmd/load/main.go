@@ -38,7 +38,7 @@ func main() {
 	loadtest.Run(&loadtest.CLIConfig{
 		AppName:              "loadtime",
 		AppShortDesc:         "Generate timestamped transaction load.",
-		AppLongDesc:          "loadtime generates transaction load for the purpose of measuring the end-to-end latency of a transaction from submission to execution in a Tendermint network.", //nolint:lll
+		AppLongDesc:          "loadtime generates transaction load for the purpose of measuring the end-to-end latency of a transaction from submission to execution in a CometBFT network.", //nolint:lll
 		DefaultClientFactory: "loadtime-client",
 	})
 }

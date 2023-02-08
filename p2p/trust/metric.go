@@ -1,6 +1,3 @@
-// Copyright 2017 Tendermint. All rights reserved.
-// Use of this source code is governed by Apache 2 LICENSE that can be found in the LICENSE file.
-
 package trust
 
 import (
@@ -31,7 +28,7 @@ type MetricHistoryJSON struct {
 }
 
 // Metric - keeps track of peer reliability
-// See tendermint/docs/architecture/adr-006-trust-metric.md for details
+// See cometbft/docs/architecture/adr-006-trust-metric.md for details
 type Metric struct {
 	service.BaseService
 

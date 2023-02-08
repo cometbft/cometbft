@@ -16,7 +16,7 @@ import (
 // Tx allows you to query the transaction results. `nil` could mean the
 // transaction is in the mempool, invalidated, or was not sent in the first
 // place.
-// More: https://docs.tendermint.com/v0.34/rpc/#/Info/tx
+// More: https://docs.cometbft.com/v0.34/rpc/#/Info/tx
 func Tx(ctx *rpctypes.Context, hash []byte, prove bool) (*ctypes.ResultTx, error) {
 	// if index is disabled, return error
 	if _, ok := env.TxIndexer.(*null.TxIndex); ok {
@@ -53,7 +53,7 @@ func Tx(ctx *rpctypes.Context, hash []byte, prove bool) (*ctypes.ResultTx, error
 
 // TxSearch allows you to query for multiple transactions results. It returns a
 // list of transactions (maximum ?per_page entries) and the total count.
-// More: https://docs.tendermint.com/v0.34/rpc/#/Info/tx_search
+// More: https://docs.cometbft.com/v0.34/rpc/#/Info/tx_search
 func TxSearch(
 	ctx *rpctypes.Context,
 	query string,
@@ -137,7 +137,7 @@ func TxSearch(
 // TxSearchMatchEvents allows you to query for multiple transactions results and match the
 // query attributes to a common event. It returns a
 // list of transactions (maximum ?per_page entries) and the total count.
-// More: https://docs.tendermint.com/v0.34/rpc/#/Info/tx_search
+// More: https://docs.cometbft.com/v0.34/rpc/#/Info/tx_search
 func TxSearchMatchEvents(
 	ctx *rpctypes.Context,
 	query string,
@@ -149,6 +149,8 @@ func TxSearchMatchEvents(
 
 	if matchEvents {
 		query = "match.events = 1 AND " + query
+	} else {
+		query = "match.events = 0 AND " + query
 	}
 	return TxSearch(ctx, query, prove, pagePtr, perPagePtr, orderBy)
 

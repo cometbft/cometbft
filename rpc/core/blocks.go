@@ -14,8 +14,15 @@ import (
 )
 
 // BlockchainInfo gets block headers for minHeight <= height <= maxHeight.
-// Block headers are returned in descending order (highest first).
-// More: https://docs.tendermint.com/v0.34/rpc/#/Info/blockchain
+//
+// If maxHeight does not yet exist, blocks up to the current height will be
+// returned. If minHeight does not exist (due to pruning), earliest existing
+// height will be used.
+//
+// At most 20 items will be returned. Block headers are returned in descending
+// order (highest first).
+//
+// More: https://docs.cometbft.com/v0.34/rpc/#/Info/blockchain
 func BlockchainInfo(ctx *rpctypes.Context, minHeight, maxHeight int64) (*ctypes.ResultBlockchainInfo, error) {
 	// maximum 20 block metas
 	const limit int64 = 20
@@ -77,7 +84,7 @@ func filterMinMax(base, height, min, max, limit int64) (int64, int64, error) {
 
 // Block gets block at a given height.
 // If no height is provided, it will fetch the latest block.
-// More: https://docs.tendermint.com/v0.34/rpc/#/Info/block
+// More: https://docs.cometbft.com/v0.34/rpc/#/Info/block
 func Block(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlock, error) {
 	height, err := getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
@@ -93,7 +100,7 @@ func Block(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlock, error)
 }
 
 // BlockByHash gets block by hash.
-// More: https://docs.tendermint.com/v0.34/rpc/#/Info/block_by_hash
+// More: https://docs.cometbft.com/v0.34/rpc/#/Info/block_by_hash
 func BlockByHash(ctx *rpctypes.Context, hash []byte) (*ctypes.ResultBlock, error) {
 	block := env.BlockStore.LoadBlockByHash(hash)
 	if block == nil {
@@ -106,7 +113,7 @@ func BlockByHash(ctx *rpctypes.Context, hash []byte) (*ctypes.ResultBlock, error
 
 // Commit gets block commit at a given height.
 // If no height is provided, it will fetch the commit for the latest block.
-// More: https://docs.tendermint.com/v0.34/rpc/#/Info/commit
+// More: https://docs.cometbft.com/v0.34/rpc/#/Info/commit
 func Commit(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultCommit, error) {
 	height, err := getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
@@ -138,7 +145,7 @@ func Commit(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultCommit, erro
 // Results are for the height of the block containing the txs.
 // Thus response.results.deliver_tx[5] is the results of executing
 // getBlock(h).Txs[5]
-// More: https://docs.tendermint.com/v0.34/rpc/#/Info/block_results
+// More: https://docs.cometbft.com/v0.34/rpc/#/Info/block_results
 func BlockResults(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlockResults, error) {
 	height, err := getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
@@ -169,6 +176,8 @@ func BlockSearchMatchEvents(
 ) (*ctypes.ResultBlockSearch, error) {
 	if matchEvents {
 		query = "match.events = 1 AND " + query
+	} else {
+		query = "match.events = 0 AND " + query
 	}
 	return BlockSearch(ctx, query, pagePtr, perPagePtr, orderBy)
 }

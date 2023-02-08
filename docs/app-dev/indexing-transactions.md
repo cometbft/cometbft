@@ -4,7 +4,7 @@ order: 6
 
 # Indexing Transactions
 
-Tendermint allows you to index transactions and blocks and later query or
+CometBFT allows you to index transactions and blocks and later query or
 subscribe to their results. Transactions are indexed by `TxResult.Events` and
 blocks are indexed by `Response(Begin|End)Block.Events`. However, transactions
 are also indexed by a primary key which includes the transaction hash and maps
@@ -15,7 +15,7 @@ the block itself is never stored.
 Each event contains a type and a list of attributes, which are key-value pairs
 denoting something about what happened during the method's execution. For more
 details on `Events`, see the
-[ABCI](https://github.com/tendermint/tendermint/blob/v0.34.x/spec/abci/abci.md#events)
+[ABCI](https://github.com/cometbft/cometbft/blob/v0.34.x/spec/abci/abci.md#events)
 documentation.
 
 An `Event` has a composite key associated with it. A `compositeKey` is
@@ -31,10 +31,10 @@ For example:
 
 would be equal to the composite key of `jack.account.number`.
 
-By default, Tendermint will index all transactions by their respective hashes
+By default, CometBFT will index all transactions by their respective hashes
 and height and blocks by their height.
 
-Tendermint allows for different events within the same height to have 
+CometBFT allows for different events within the same height to have 
 equal attributes.
 
 ## Configuration
@@ -65,8 +65,8 @@ be turned off regardless of other values provided.
 #### KV
 
 The `kv` indexer type is an embedded key-value store supported by the main
-underlying Tendermint database. Using the `kv` indexer type allows you to query
-for block and transaction events directly against Tendermint's RPC. However, the
+underlying CometBFT database. Using the `kv` indexer type allows you to query
+for block and transaction events directly against CometBFT's RPC. However, the
 query syntax is limited and so this indexer type might be deprecated or removed
 entirely in the future.
 
@@ -103,12 +103,12 @@ will be represented as follows in the store:
 ```
 Key                                 value
 transferSenderBobEndBlock1           1
-transferRecepientAliceEndBlock11     1
+transferRecipientAliceEndBlock11     1
 transferBalance100EndBlock11         1
 transferNodeNothingEndblock11        1
 ---- event2 ------
 transferSenderTomEndBlock12          1
-transferRecepientAliceEndBlock12     1
+transferRecipientAliceEndBlock12     1
 transferBalance200EndBlock12         1
 transferNodeNothingEndblock12        1
  
@@ -127,11 +127,11 @@ indexing by proxying it to an external PostgreSQL instance allowing for the even
 to be stored in relational models. Since the events are stored in a RDBMS, operators
 can leverage SQL to perform a series of rich and complex queries that are not
 supported by the `kv` indexer type. Since operators can leverage SQL directly,
-searching is not enabled for the `psql` indexer type via Tendermint's RPC -- any
+searching is not enabled for the `psql` indexer type via CometBFT's RPC -- any
 such query will fail.
 
 Note, the SQL schema is stored in `state/indexer/sink/psql/schema.sql` and operators
-must explicitly create the relations prior to starting Tendermint and enabling
+must explicitly create the relations prior to starting CometBFT and enabling
 the `psql` indexer type.
 
 Example:
@@ -142,7 +142,7 @@ $ psql ... -f state/indexer/sink/psql/schema.sql
 
 ## Default Indexes
 
-The Tendermint tx and block event indexer indexes a few select reserved events
+The CometBFT tx and block event indexer indexes a few select reserved events
 by default.
 
 ### Transactions
@@ -160,7 +160,7 @@ The following indexes are indexed by default:
 
 ## Adding Events
 
-Applications are free to define which events to index. Tendermint does not
+Applications are free to define which events to index. CometBFT does not
 expose functionality to define which events to index and which to ignore. In
 your application's `DeliverTx` method, add the `Events` field with pairs of
 UTF-8 encoded strings (e.g. "transfer.sender": "Bob", "transfer.recipient":
@@ -199,10 +199,10 @@ You can query for a paginated set of transaction by their events by calling the
 curl "localhost:26657/tx_search?query=\"message.sender='cosmos1...'\"&prove=true"
 ```
 If the conditions are related to transaction events and the user wants to make sure the
-conditions are true within the same events, the `match.event` keyword should be used, 
+conditions are true within the same events, the `match_events` keyword should be used, 
 as described [below](#querying_block_events)
 
-Check out [API docs](https://docs.tendermint.com/v0.34/rpc/#/Info/tx_search)
+Check out [API docs](https://docs.cometbft.com/v0.34/rpc/#/Info/tx_search)
 for more information on query syntax and other options.
 
 ## Subscribing to Transactions
@@ -221,7 +221,7 @@ a query to `/subscribe` RPC endpoint.
 }
 ```
 
-Check out [API docs](https://docs.tendermint.com/v0.34/rpc/#subscribe) for more information
+Check out [API docs](https://docs.cometbft.com/v0.34/rpc/#subscribe) for more information
 on query syntax and other options.
 
 ## Querying Block Events
@@ -252,11 +252,18 @@ the query syntax is as follows:
 ```bash
 curl "localhost:26657/block_search?query=\"sender=Bob AND balance = 200\"&match_events=true"
 ```
-Currently the default behaviour is if `match_events` is set  to false.
+Currently the default behavior is if `match_events` is set  to false.
 
-Check out [API docs](https://docs.tendermint.com/v0.34/rpc/#/Info/block_search)
+Check out [API docs](https://docs.cometbft.com/v0.34/rpc/#/Info/block_search)
 for more information on query syntax and other options.
 
 **Backwards compatibility**
 
-Up until Tendermint 0.34.25, the event sequence was not stored in the kvstore and the `match_events` keyword in the RPC query is not ignored by older versions. Thus, in a network running mixed  Tendermint versions, nodes running older versions will still return blocks (or transactions) whose attributes match within different events on the same height.
+Storing the event sequence was introduced in CometBFT 0.34.25. As there are no previous releases of CometBFT,
+all nodes running CometBFT will include the event sequence. However, mixed networks running CometBFT v0.34.25 and greater
+and Tendermint Core versions before v0.34.25 are possible. On nodes running Tendermint Core, the `match_events` keyword
+is ignored and the data is retrieved as if `match_events=false`.
+
+Additionally, if a node that was running Tendermint Core 
+when the data was first indexed, and switched to CometBFT, is queried, it will retrieve this previously indexed
+data as if `match_events=false` (attributes can match the query conditions across different events on the same height).

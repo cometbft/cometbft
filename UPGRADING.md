@@ -1,7 +1,6 @@
-# Upgrading Tendermint Core
+# Upgrading CometBFT
 
-This guide provides instructions for upgrading to specific versions of
-Tendermint Core.
+This guide provides instructions for upgrading to specific versions of CometBFT.
 
 ## v0.34.24
 

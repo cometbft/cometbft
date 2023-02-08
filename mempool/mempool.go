@@ -159,7 +159,7 @@ func (e ErrTxTooLarge) Error() string {
 	return fmt.Sprintf("Tx too large. Max size is %d, but got %d", e.Max, e.Actual)
 }
 
-// ErrMempoolIsFull defines an error where Tendermint and the application cannot
+// ErrMempoolIsFull defines an error where CometBFT and the application cannot
 // handle that much load.
 type ErrMempoolIsFull struct {
 	NumTxs      int

@@ -117,12 +117,13 @@ The CometBFT team should improve it at every iteration to increase the amount of
     ```bash
     uuids=($(cat report01.txt report02.txt report04.txt | grep '^Experiment ID: ' | awk '{ print $3 }'))
     c=1
+    rm -f *.dat
     for i in 01 02 04; do
       for j in 0025 0050 0100 0200; do
         echo $i $j $c "${uuids[$c]}"
         filename=c${i}_r${j}
         grep ${uuids[$c]} raw.csv > ${filename}.csv
-        cat ${filename}.csv | tr , ' ' | awk '{ print $2, $3 }' > ${filename}.dat
+        cat ${filename}.csv | tr , ' ' | awk '{ print $2, $3 }' >> ${filename}.dat
         c=$(expr $c + 1)
       done
     done

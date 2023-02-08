@@ -184,6 +184,7 @@ The CometBFT team should improve it at every iteration to increase the amount of
 
 13. To generate a latency vs throughput plot, using the raw CSV file generated
     in step 2, follow the instructions for the [`latency_throughput.py`] script.
+    This plot is useful to visualize the saturation point.
 
 [`latency_throughput.py`]: ../../scripts/qa/reporting/README.md
 

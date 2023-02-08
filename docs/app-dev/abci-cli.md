@@ -95,7 +95,7 @@ func cmdKVStore(cmd *cobra.Command, args []string) error {
 	}
 
 	// Stop upon receiving SIGTERM or CTRL-C.
-	tmos.TrapSignal(logger, func() {
+	cmtos.TrapSignal(logger, func() {
 		// Cleanup
 		if err := srv.Stop(); err != nil {
 			logger.Error("Error while stopping server", "err", err)

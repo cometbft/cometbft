@@ -46,7 +46,7 @@ The implementations in CometBFT's repository can be tested using `abci-cli` by s
 the `--abci` flag appropriately.
 
 See examples, in various stages of maintenance, in
-[Go](https://github.com/cometbft/cometbft/tree/main/abci/server),
+[Go](https://github.com/cometbft/cometbft/tree/v0.37.x/abci/server),
 [JavaScript](https://github.com/tendermint/js-abci),
 [C++](https://github.com/mdyring/cpp-tmsp), and
 [Java](https://github.com/jTendermint/jabci).

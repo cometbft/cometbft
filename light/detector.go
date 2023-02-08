@@ -13,7 +13,7 @@ import (
 
 // The detector component of the light client detects and handles attacks on the light client.
 // More info here:
-// tendermint/docs/architecture/adr-047-handling-evidence-from-light-client.md
+// cometbft/docs/architecture/adr-047-handling-evidence-from-light-client.md
 
 // detectDivergence is a second wall of defense for the light client.
 //

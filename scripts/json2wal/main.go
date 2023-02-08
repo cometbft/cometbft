@@ -37,7 +37,7 @@ func main() {
 	}
 	defer walFile.Close()
 
-	// the length of tendermint/wal/MsgInfo in the wal.json may exceed the defaultBufSize(4096) of bufio
+	// the length of wal/MsgInfo in the wal.json may exceed the defaultBufSize(4096) of bufio
 	// because of the byte array in BlockPart
 	// leading to unmarshal error: unexpected end of JSON input
 	br := bufio.NewReaderSize(f, int(2*types.BlockPartSizeBytes))

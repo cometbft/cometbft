@@ -61,7 +61,7 @@ func (m BaseMock) CheckTx(input types.RequestCheckTx) types.ResponseCheckTx {
 }
 
 // Consensus Connection
-// Initialize blockchain w validators/other info from TendermintCore
+// Initialize blockchain w validators/other info from CometBFT
 func (m BaseMock) InitChain(input types.RequestInitChain) types.ResponseInitChain {
 	var ret types.ResponseInitChain
 	defer func() {

@@ -636,7 +636,7 @@ func (cs *State) updateToState(state sm.State) {
 		cs.LastCommit = cs.Votes.Precommits(cs.CommitRound)
 
 	case cs.LastCommit == nil:
-		// NOTE: when Tendermint starts, it has no votes. reconstructLastCommit
+		// NOTE: when consensus starts, it has no votes. reconstructLastCommit
 		// must be called to reconstruct LastCommit from SeenCommit.
 		panic(fmt.Sprintf(
 			"last commit cannot be empty after initial block (H:%d)",
@@ -1283,7 +1283,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		return
 	}
 
-	// Validate proposal block, from Tendermint's perspective
+	// Validate proposal block, from consensus' perspective
 	err := cs.blockExec.ValidateBlock(cs.state, cs.ProposalBlock)
 	if err != nil {
 		// ProposalBlock is invalid, prevote nil.
@@ -1296,11 +1296,12 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 	/*
 		Before prevoting on the block received from the proposer for the current round and height,
 		we request the Application, via `ProcessProposal` ABCI call, to confirm that the block is
-		valid. If the Application does not accept the block, Tendermint prevotes `nil`.
+		valid. If the Application does not accept the block, consensus prevotes `nil`.
 
-		WARNING: misuse of block rejection by the Application can seriously compromise Tendermint's
-		liveness properties. Please see `PrepareProosal`-`ProcessProposal` coherence and determinism
-		properties in the ABCI++ specification.
+		WARNING: misuse of block rejection by the Application can seriously compromise
+		the liveness properties of consensus.
+		Please see `PrepareProosal`-`ProcessProposal` coherence and determinism properties
+		in the ABCI++ specification.
 	*/
 	isAppValid, err := cs.blockExec.ProcessProposal(cs.ProposalBlock, cs.state)
 	if err != nil {

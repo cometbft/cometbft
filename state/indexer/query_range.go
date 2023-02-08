@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
+	"github.com/cometbft/cometbft/types"
 )
 
 // QueryRanges defines a mapping between a composite event key and a QueryRange.
@@ -75,8 +76,61 @@ func (qr QueryRange) UpperBoundValue() interface{} {
 	}
 }
 
-// LookForRanges returns a mapping of QueryRanges and the matching indexes in
+// LookForRangesWithHeight returns a mapping of QueryRanges and the matching indexes in
 // the provided query conditions.
+func LookForRangesWithHeight(conditions []syntax.Condition) (queryRange QueryRanges, indexes []int, heightRange QueryRange) {
+	queryRange = make(QueryRanges)
+	for i, c := range conditions {
+		heightKey := false
+		if IsRangeOperation(c.Op) {
+			r, ok := queryRange[c.CompositeKey]
+			if !ok {
+				r = QueryRange{Key: c.CompositeKey}
+				if c.CompositeKey == types.BlockHeightKey || c.CompositeKey == types.TxHeightKey {
+					heightRange = QueryRange{Key: c.CompositeKey}
+					heightKey = true
+				}
+			}
+
+			switch c.Op {
+			case query.OpGreater:
+				if heightKey {
+					heightRange.LowerBound = c.Operand
+				}
+				r.LowerBound = c.Operand
+
+			case query.OpGreaterEqual:
+				r.IncludeLowerBound = true
+				r.LowerBound = c.Operand
+				if heightKey {
+					heightRange.IncludeLowerBound = true
+					heightRange.LowerBound = c.Operand
+				}
+
+			case query.OpLess:
+				r.UpperBound = c.Operand
+				if heightKey {
+					heightRange.UpperBound = c.Operand
+				}
+
+			case query.OpLessEqual:
+				r.IncludeUpperBound = true
+				r.UpperBound = c.Operand
+				if heightKey {
+					heightRange.IncludeUpperBound = true
+					heightRange.UpperBound = c.Operand
+				}
+			}
+
+			queryRange[c.CompositeKey] = r
+			indexes = append(indexes, i)
+		}
+	}
+
+	return queryRange, indexes, heightRange
+}
+
+// Deprecated: This function is not used anymore and will be replaced with LookForRangesWithHeight
 func LookForRanges(conditions []syntax.Condition) (ranges QueryRanges, indexes []int) {
 	ranges = make(QueryRanges)
 	for i, c := range conditions {

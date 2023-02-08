@@ -71,7 +71,7 @@ make install
 To upgrade, run
 
 ```sh
-git pull origin main
+git pull origin v0.37.x
 make install
 ```
 

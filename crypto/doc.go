@@ -1,5 +1,5 @@
 // crypto is a customized/convenience cryptography package for supporting
-// Tendermint.
+// CometBFT.
 
 // It wraps select functionality of equivalent functions in the
 // Go standard library, for easy usage with our libraries.
@@ -34,7 +34,7 @@
 // We also provide hashing wrappers around algorithms:
 
 // Sha256
-//     sum := crypto.Sha256([]byte("This is Tendermint"))
+//     sum := crypto.Sha256([]byte("This is CometBFT"))
 //     fmt.Printf("%x\n", sum)
 
 package crypto

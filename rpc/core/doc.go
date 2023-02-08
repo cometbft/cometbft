@@ -1,7 +1,7 @@
 /*
-Package core defines the Tendermint RPC endpoints.
+Package core defines the CometBFT RPC endpoints.
 
-Tendermint ships with its own JSONRPC library -
+CometBFT ships with its own JSONRPC library -
 https://github.com/cometbft/cometbft/tree/v0.37.x/rpc/jsonrpc.
 
 ## Get the list

@@ -16,7 +16,7 @@ const (
 	connSnapshot  = "snapshot"
 )
 
-// AppConns is the Tendermint's interface to the application that consists of
+// AppConns is the CometBFT's interface to the application that consists of
 // multiple connections.
 type AppConns interface {
 	service.Service
@@ -116,7 +116,7 @@ func (app *multiAppConn) OnStart() error {
 	app.consensusConnClient = c
 	app.consensusConn = NewAppConnConsensus(c, app.metrics)
 
-	// Kill Tendermint if the ABCI application crashes.
+	// Kill CometBFT if the ABCI application crashes.
 	go app.killTMOnClientError()
 
 	return nil
@@ -129,7 +129,7 @@ func (app *multiAppConn) OnStop() {
 func (app *multiAppConn) killTMOnClientError() {
 	killFn := func(conn string, err error, logger cmtlog.Logger) {
 		logger.Error(
-			fmt.Sprintf("%s connection terminated. Did the application crash? Please restart tendermint", conn),
+			fmt.Sprintf("%s connection terminated. Did the application crash? Please restart CometBFT", conn),
 			"err", err)
 		killErr := cmtos.Kill()
 		if killErr != nil {

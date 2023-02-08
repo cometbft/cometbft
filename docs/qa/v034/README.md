@@ -1,7 +1,7 @@
 ---
 order: 1
 parent:
-  title: Tendermint Quality Assurance Results for v0.34.x
+  title: CometBFT Quality Assurance Results for v0.34.x
   description: This is a report on the results obtained when running v0.34.x on testnets
   order: 2
 ---
@@ -31,7 +31,7 @@ The Y axis of this table is `r`, the rate or number of transactions issued per s
 | r=200  | 17800 | 35600 | 38660 |
 
 The table shows the number of 1024-byte-long transactions that were produced by the load runner,
-and processed by Tendermint, during the 90 seconds of the experiment's duration.
+and processed by CometBFT, during the 90 seconds of the experiment's duration.
 Each cell in the table refers to an experiment with a particular number of websocket connections (`c`)
 to a chosen validator, and the number of transactions per second that the load runner
 tries to produce (`r`). Note that the overall load that the tool attempts to generate is $c \cdot r$.
@@ -69,13 +69,13 @@ for all experiments.
 
 As we can see, even the experiments beyond the saturation diagonal managed to keep
 transaction latency stable (i.e. not constantly increasing).
-Our interpretation for this is that contention within Tendermint was propagated,
+Our interpretation for this is that contention within CometBFT was propagated,
 via the websockets, to the load runner,
 hence the load runner could not produce the target load, but a fraction of it.
 
 Further examination of the Prometheus data (see below), showed that the mempool contained many transactions
 at steady state, but did not grow much without quickly returning to this steady state. This demonstrates
-that the transactions were able to be processed by the Tendermint network at least as quickly as they
+that the transactions were able to be processed by the CometBFT network at least as quickly as they
 were submitted to the mempool. Finally, the test script made sure that, at the end of an experiment, the
 mempool was empty so that all transactions submitted to the chain were processed.
 
@@ -184,7 +184,7 @@ Version: 3ec6e424d6ae4c96867c2dcf8310572156068bb6
 For this testnet, we will use a load that can safely be considered below the saturation
 point for the size of this testnet (between 13 and 38 full nodes): `c=4,r=800`.
 
-N.B.: The version of Tendermint used for these tests is affected by #9539.
+N.B.: The version of CometBFT used for these tests is affected by #9539.
 However, the reduced load that reaches the mempools is orthogonal to functionality
 we are focusing on here.
 

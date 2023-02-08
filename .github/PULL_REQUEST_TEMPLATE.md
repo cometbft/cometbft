@@ -8,16 +8,16 @@ If this PR is non-trivial/large/complex, please ensure that you have either
 created an issue that the team's had a chance to respond to, or had some
 discussion with the team prior to submitting substantial pull requests. The team
 can be reached via GitHub Discussions or the Cosmos Network Discord server in
-the #tendermint-core channel. GitHub Discussions is preferred over Discord as it
+the #cometbft channel. GitHub Discussions is preferred over Discord as it
 allows us to keep track of conversations topically.
-https://github.com/tendermint/tendermint/discussions
+https://github.com/cometbft/cometbft/discussions
 
 If the work in this PR is not aligned with the team's current priorities, please
 be advised that it may take some time before it is merged - especially if it has
 not yet been discussed with the team.
 
 See the project board for the team's current priorities:
-https://github.com/orgs/tendermint/projects/15/views/5
+https://github.com/orgs/cometbft/projects/1
 
 -->
 

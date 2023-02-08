@@ -1,7 +1,7 @@
 ---
 order: 1
 parent:
-  title: Tendermint Quality Assurance Results for v0.37.x
+  title: CometBFT Quality Assurance Results for v0.37.x
   description: This is a report on the results obtained when running v0.37.x on testnets
   order: 2
 ---
@@ -18,7 +18,7 @@ During this iteration of the QA process, the following issues were found:
   [\#9534].
 * (critical, fixed) [\#9539] - `loadtime` is very likely to include more than
   one "=" character in transactions, with is rejected by the e2e application.
-* (critical, fixed) [\#9581] - Absent prometheus label makes Tendermint crash
+* (critical, fixed) [\#9581] - Absent prometheus label makes CometBFT crash
   when enabling Prometheus metric collection
 * (non-critical, not fixed) [\#9548] - Full nodes can go over 50 connected
   peers, which is not intended by the default configuration.
@@ -210,7 +210,7 @@ Version: 1cf9d8e276afe8595cba960b51cd056514965fd1
 
 We use the same load as in the baseline: `c=4,r=800`.
 
-Just as in the baseline tests, the version of Tendermint used for these tests is affected by #9539.
+Just as in the baseline tests, the version of CometBFT used for these tests is affected by #9539.
 See this paragraph in the [baseline report](../v034/README.md#rotating-node-testnet) for further details.
 Finally, note that this setup allows for a fairer comparison between this version and the baseline.
 

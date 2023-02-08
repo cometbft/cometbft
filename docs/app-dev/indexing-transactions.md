@@ -15,7 +15,9 @@ the block itself is never stored.
 Each event contains a type and a list of attributes, which are key-value pairs
 denoting something about what happened during the method's execution. For more
 details on `Events`, see the
-[ABCI](https://github.com/cometbft/cometbft/blob/v0.37.x/spec/abci/abci.md#events)
+
+[ABCI](https://github.com/cometbft/cometbft/blob/v0.37.x/spec/abci/abci++_basic_concepts.md#events)
+
 documentation.
 
 An `Event` has a composite key associated with it. A `compositeKey` is
@@ -141,7 +143,7 @@ the `psql` indexer type.
 Example:
 
 ```shell
-$ psql ... -f state/indexer/sink/psql/schema.sql
+psql ... -f state/indexer/sink/psql/schema.sql
 ```
 
 ## Default Indexes
@@ -234,7 +236,6 @@ You can query for a paginated set of blocks by their events by calling the
 curl "localhost:26657/block_search?query=\"block.height > 10 AND val_set.num_changed > 0\""
 ```
 
-**Backwards compatibility**
 
 Storing the event sequence was introduced in CometBFT 0.34.26. Before that, up until Tendermint Core 0.34.26, 
 the event sequence was not stored in the kvstore and events were stored only by height. That means that queries 
@@ -243,3 +244,4 @@ events on that height.
 This behavior was fixed with CometBFT 0.34.26+. However, if the data was indexed with earlier versions of
 Tendermint Core and not re-indexed, that data will be queried as if all the attributes within a height
 occurred within the same event.
+

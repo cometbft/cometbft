@@ -10,9 +10,9 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-// Status returns Tendermint status including node info, pubkey, latest block
+// Status returns CometBFT status including node info, pubkey, latest block
 // hash, app hash, block height and time.
-// More: https://docs.tendermint.com/v0.37/rpc/#/Info/status
+// More: https://docs.cometbft.com/v0.37/rpc/#/Info/status
 func Status(ctx *rpctypes.Context) (*ctypes.ResultStatus, error) {
 	var (
 		earliestBlockHeight   int64

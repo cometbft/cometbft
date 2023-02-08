@@ -15,8 +15,8 @@ Make sure you [have Go installed](https://golang.org/doc/install).
 Next, install the `abci-cli` tool and example applications:
 
 ```sh
-git clone https://github.com/tendermint/tendermint.git
-cd tendermint
+git clone https://github.com/cometbft/cometbft.git
+cd cometbft
 make install_abci
 ```
 
@@ -65,7 +65,7 @@ purposes.
 We'll start a kvstore application, which was installed at the same time
 as `abci-cli` above. The kvstore just stores transactions in a merkle
 tree. Its code can be found
-[here](https://github.com/tendermint/tendermint/blob/main/abci/cmd/abci-cli/abci-cli.go)
+[here](https://github.com/cometbft/cometbft/blob/v0.37.x/abci/cmd/abci-cli/abci-cli.go)
 and looks like the following:
 
 ```go
@@ -95,7 +95,7 @@ func cmdKVStore(cmd *cobra.Command, args []string) error {
 	}
 
 	// Stop upon receiving SIGTERM or CTRL-C.
-	tmos.TrapSignal(logger, func() {
+	cmtos.TrapSignal(logger, func() {
 		// Cleanup
 		if err := srv.Stop(); err != nil {
 			logger.Error("Error while stopping server", "err", err)
@@ -146,7 +146,7 @@ response.
 
 The server may be generic for a particular language, and we provide a
 [reference implementation in
-Golang](https://github.com/tendermint/tendermint/tree/v0.37.x/abci/server). See the
+Golang](https://github.com/cometbft/cometbft/tree/v0.37.x/abci/server). See the
 [list of other ABCI implementations](https://github.com/tendermint/awesome#ecosystem) for servers in
 other languages.
 
@@ -258,11 +258,11 @@ You could put the commands in a file and run
 
 
 Note that the `abci-cli` is designed strictly for testing and debugging. In a real
-deployment, the role of sending messages is taken by Tendermint, which
+deployment, the role of sending messages is taken by CometBFT, which
 connects to the app using three separate connections, each with its own
 pattern of messages.
 
-For examples of running an ABCI app with Tendermint, see the 
+For examples of running an ABCI app with CometBFT, see the
 [getting started guide](./getting-started.md).
 
 ## Bounties
@@ -270,4 +270,4 @@ For examples of running an ABCI app with Tendermint, see the
 Want to write an app in your favorite language?! We'd be happy
 to add you to our [ecosystem](https://github.com/tendermint/awesome#ecosystem)!
 See [funding](https://github.com/interchainio/funding) opportunities from the
-[Interchain Foundation](https://interchain.io/) for implementations in new languages and more.
+[Interchain Foundation](https://interchain.io) for implementations in new languages and more.

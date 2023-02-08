@@ -29,7 +29,7 @@ _200 Node Test_, and _Rotating Nodes Test_.
     * [Terraform CLI][Terraform]
     * [Ansible CLI][Ansible]
 
-[testnet-repo]: https://github.com/interchainio/tendermint-testnet   FIX
+[testnet-repo]: https://github.com/cometbft/qa-infra
 [Ansible]: https://docs.ansible.com/ansible/latest/index.html
 [Terraform]: https://www.terraform.io/docs
 [doctl]: https://docs.digitalocean.com/reference/doctl/how-to/install/
@@ -64,18 +64,25 @@ This section explains how the tests were carried out for reproducibility purpose
    All nodes should be increasing their heights.
 6. You now need to start the load runner that will produce transaction load
     * If you don't know the saturation load of the version you are testing, you need to discover it.
-      * `ssh` into the `testnet-load-runner`, then copy script `script/200-node-loadscript.sh` and run it from the load runner node.
-      * Before running it, you need to edit the script to provide the IP address of a full node.
-        This node will receive all transactions from the load runner node.
-      * This script will take about 40 mins to run.
-      * It is running 90-seconds-long experiments in a loop with different loads.
+        * `ssh` into the `testnet-load-runner`, then copy script `script/200-node-loadscript.sh` and run it from the load runner node.
+        * Before running it, you need to edit the script to provide the IP address of a full node.
+          This node will receive all transactions from the load runner node.
+        * This script will take about 40 mins to run.
+        * It is running 90-seconds-long experiments in a loop with different loads.
     * If you already know the saturation load, you can simply run the test (several times) for 90 seconds with a load somewhat
       below saturation:
-      * set makefile variables `ROTATE_CONNECTIONS`, `ROTATE_TX_RATE`, to values that will produce the desired transaction load.
-      * set `ROTATE_TOTAL_TIME` to 90 (seconds).
-      * run "make runload" and wait for it to complete. You may want to run this several times.
-        so the data of different runs can be compared.
+        * set makefile variables `ROTATE_CONNECTIONS`, `ROTATE_TX_RATE`, to values that will produce the desired transaction load.
+        * set `ROTATE_TOTAL_TIME` to 90 (seconds).
+        * run "make runload" and wait for it to complete. You may want to run this several times.
+          so the data of different runs can be compared.
 7. Run `make retrieve-data` to gather all relevant data from the testnet into the orchestrating machine
+    * Alternatively, you may want to run `make retrieve-prometheus-data` and `make retrieve-blockstore` separately.
+      The end result will be the same.
+    * `make retrieve-blockstore` accepts the following values in makefile variable `RETRIEVE_TARGET_HOST`
+        * `any`: (which is the default) picks up a full node and retrieves the blockstore from that node only.
+        * `all`: retrieves the blockstore from all full nodes; this is extremely slow, and consumes plenty of bandwidth,
+           so use it with care.
+        * the name of a particular full node (e.g., `validator01`): retrieves the blockstore from that node only.
 8. Verify that the data was collected without errors
     * at least one blockstore DB for a CometBFT validator
     * the Prometheus database from the Prometheus node

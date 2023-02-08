@@ -14,9 +14,9 @@ var VersionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Show version info",
 	Run: func(cmd *cobra.Command, args []string) {
-		tmVersion := version.TMCoreSemVer
+		cmtVersion := version.TMCoreSemVer
 		if version.TMGitCommitHash != "" {
-			tmVersion += "+" + version.TMGitCommitHash
+			cmtVersion += "+" + version.TMGitCommitHash
 		}
 
 		if verbose {
@@ -26,18 +26,14 @@ var VersionCmd = &cobra.Command{
 				BlockProtocol uint64 `json:"block_protocol"`
 				P2PProtocol   uint64 `json:"p2p_protocol"`
 			}{
-<<<<<<< HEAD:cmd/tendermint/commands/version.go
-				Tendermint:    tmVersion,
-=======
 				CometBFT:      cmtVersion,
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224)):cmd/cometbft/commands/version.go
 				ABCI:          version.ABCISemVer,
 				BlockProtocol: version.BlockProtocol,
 				P2PProtocol:   version.P2PProtocol,
 			}, "", "  ")
 			fmt.Println(string(values))
 		} else {
-			fmt.Println(tmVersion)
+			fmt.Println(cmtVersion)
 		}
 	},
 }

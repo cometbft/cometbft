@@ -13,13 +13,8 @@ number with `cometbft version`.
 
 ## Directory Root
 
-<<<<<<< HEAD:docs/tendermint-core/using-tendermint.md
-The default directory for blockchain data is `~/.tendermint`. Override
-this by setting the `TMHOME` environment variable.
-=======
 The default directory for blockchain data is `~/.cometbft`. Override
 this by setting the `CMTHOME` environment variable.
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197)):docs/core/using-cometbft.md
 
 ## Initialize
 
@@ -31,7 +26,7 @@ cometbft init
 
 This will create a new private key (`priv_validator_key.json`), and a
 genesis file (`genesis.json`) containing the associated public key, in
-`$TMHOME/config`. This is all that's necessary to run a local testnet
+`$CMTHOME/config`. This is all that's necessary to run a local testnet
 with one validator.
 
 For more elaborate initialization, see the testnet command:
@@ -42,15 +37,9 @@ cometbft testnet --help
 
 ### Genesis
 
-<<<<<<< HEAD:docs/tendermint-core/using-tendermint.md
-The `genesis.json` file in `$TMHOME/config/` defines the initial
-TendermintCore state upon genesis of the blockchain ([see
-definition](https://github.com/tendermint/tendermint/blob/v0.37.x/types/genesis.go)).
-=======
 The `genesis.json` file in `$CMTHOME/config/` defines the initial
 CometBFT state upon genesis of the blockchain ([see
-definition](https://github.com/cometbft/cometbft/blob/main/types/genesis.go)).
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197)):docs/core/using-cometbft.md
+definition](https://github.com/cometbft/cometbft/blob/v0.37.x/types/genesis.go)).
 
 #### Fields
 
@@ -58,15 +47,9 @@ definition](https://github.com/cometbft/cometbft/blob/main/types/genesis.go)).
 - `chain_id`: ID of the blockchain. **This must be unique for
   every blockchain.** If your testnet blockchains do not have unique
   chain IDs, you will have a bad time. The ChainID must be less than 50 symbols.
-<<<<<<< HEAD:docs/tendermint-core/using-tendermint.md
-- `initial_height`: Height at which Tendermint should begin at. If a blockchain is conducting a network upgrade, 
-    starting from the stopped height brings uniqueness to previous heights. 
-- `consensus_params` [spec](https://github.com/tendermint/tendermint/blob/v0.37.x/spec/core/state.md#consensusparams)
-=======
 - `initial_height`: Height at which CometBFT should begin at. If a blockchain is conducting a network upgrade,
     starting from the stopped height brings uniqueness to previous heights.
-- `consensus_params` ([see spec](https://github.com/cometbft/cometbft/blob/main/spec/core/data_structures.md#consensusparams))
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197)):docs/core/using-cometbft.md
+- `consensus_params` ([see spec](https://github.com/cometbft/cometbft/blob/v0.37.x/spec/core/data_structures.md#consensusparams))
     - `block`
         - `max_bytes`: Max block size, in bytes.
         - `max_gas`: Max gas per block.
@@ -88,7 +71,7 @@ definition](https://github.com/cometbft/cometbft/blob/main/types/genesis.go)).
   application will initialize the validator set upon `InitChain`.
     - `pub_key`: The first element specifies the key type,
     using the declared `PubKeyName` for the adopted
-    [key type](https://github.com/cometbft/cometbft/blob/main/crypto/ed25519/ed25519.go#L36).
+    [key type](https://github.com/cometbft/cometbft/blob/v0.37.x/crypto/ed25519/ed25519.go#L36).
     The second element are the pubkey bytes.
     - `power`: The validator's voting power.
     - `name`: Name of the validator (optional).
@@ -197,11 +180,7 @@ endpoints. Some take no arguments (like `/status`), while others specify
 the argument name and use `_` as a placeholder.
 
 
-<<<<<<< HEAD:docs/tendermint-core/using-tendermint.md
-> TIP: Find the RPC Documentation [here](https://docs.tendermint.com/v0.37/rpc/)
-=======
-> TIP: Find the RPC Documentation [here](https://docs.cometbft.com/main/rpc/)
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197)):docs/core/using-cometbft.md
+> TIP: Find the RPC Documentation [here](https://docs.cometbft.com/v0.37/rpc/)
 
 ### Formatting
 
@@ -457,7 +436,7 @@ have to use a seed node if you have a live persistent peer.
 #### Connecting to Peers
 
 To connect to peers on start-up, specify them in the
-`$TMHOME/config/config.toml` or on the command line. Use `seeds` to
+`$CMTHOME/config/config.toml` or on the command line. Use `seeds` to
 specify seed nodes, and
 `persistent_peers` to specify peers that your node will maintain
 persistent connections with.
@@ -547,7 +526,7 @@ then the new `genesis.json` will be:
     {
       "pub_key" : {
         "value" : "l9X9+fjkeBzDfPGbUM7AMIRE6uJN78zN5+lk5OYotek=",
-        "type" : "cometbft/PubKeyEd25519"
+        "type" : "tendermint/PubKeyEd25519"
       },
       "power" : 10,
       "name" : ""
@@ -573,7 +552,7 @@ failing, you need at least four validator nodes (e.g., 2/3).
 
 Updating validators in a live network is supported but must be
 explicitly programmed by the application developer. See the [application
-developers guide](../app-dev/app-development.md) for more details.
+developers guide](../app-dev/abci-cli.md) for more details.
 
 ### Local Network
 
@@ -586,7 +565,7 @@ library will deny making connections to peers with the same IP address.
 ### Upgrading
 
 See the
-[UPGRADING.md](https://github.com/cometbft/cometbft/blob/main/UPGRADING.md)
+[UPGRADING.md](https://github.com/cometbft/cometbft/blob/v0.37.x/UPGRADING.md)
 guide. You may need to reset your chain between major breaking releases.
 Although, we expect CometBFT to have fewer breaking releases in the future
 (especially after 1.0 release).

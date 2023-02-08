@@ -94,11 +94,7 @@ mechanisms.
 ### RPC
 
 Endpoints returning multiple entries are limited by default to return 30
-<<<<<<< HEAD:docs/tendermint-core/running-in-production.md
 elements (100 max). See the [RPC Documentation](https://docs.tendermint.com/v0.37/rpc/)
-=======
-elements (100 max). See the [RPC Documentation](https://docs.cometbft.com/main/rpc/)
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197)):docs/core/running-in-production.md
 for more information.
 
 Rate-limiting and authentication are another key aspects to help protect
@@ -213,17 +209,17 @@ Recovering from data corruption can be hard and time-consuming. Here are two app
 1) Create a backup of the corrupted WAL file:
 
     ```sh
-    cp "$TMHOME/data/cs.wal/wal" > /tmp/corrupted_wal_backup
+    cp "$CMTHOME/data/cs.wal/wal" > /tmp/corrupted_wal_backup
     ```
 
 2) Use `./scripts/wal2json` to create a human-readable version:
 
     ```sh
-    ./scripts/wal2json/wal2json "$TMHOME/data/cs.wal/wal" > /tmp/corrupted_wal
+    ./scripts/wal2json/wal2json "$CMTHOME/data/cs.wal/wal" > /tmp/corrupted_wal
     ```
 
-3)  Search for a "CORRUPTED MESSAGE" line.
-4)  By looking at the previous message and the message after the corrupted one
+3) Search for a "CORRUPTED MESSAGE" line.
+4) By looking at the previous message and the message after the corrupted one
    and looking at the logs, try to rebuild the message. If the consequent
    messages are marked as corrupted too (this may happen if length header
    got corrupted or some writes did not make it to the WAL ~ truncation),
@@ -234,10 +230,10 @@ Recovering from data corruption can be hard and time-consuming. Here are two app
     $EDITOR /tmp/corrupted_wal
     ```
 
-5)  After editing, convert this file back into binary form by running:
+5) After editing, convert this file back into binary form by running:
 
     ```sh
-    ./scripts/json2wal/json2wal /tmp/corrupted_wal  $TMHOME/data/cs.wal/wal
+    ./scripts/json2wal/json2wal /tmp/corrupted_wal  $CMTHOME/data/cs.wal/wal
     ```
 
 ## Hardware
@@ -351,7 +347,7 @@ proposing the next block).
 
 By default, CometBFT checks whenever a peer's address is routable before
 saving it to the address book. The address is considered as routable if the IP
-is [valid and within allowed ranges](https://github.com/cometbft/cometbft/blob/main/p2p/netaddress.go#L258).
+is [valid and within allowed ranges](https://github.com/cometbft/cometbft/blob/v0.37.x/p2p/netaddress.go#L258).
 
 This may not be the case for private or local networks, where your IP range is usually
 strictly limited and private. If that case, you need to set `addr_book_strict`

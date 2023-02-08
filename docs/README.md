@@ -20,20 +20,13 @@ For more background, see [What is CometBFT?](introduction/what-is-cometbft.md).
 
 To get started quickly with an example application, see the [quick start guide](introduction/quick-start.md).
 
-<<<<<<< HEAD
-To learn about application development on Tendermint, see the [Application Blockchain Interface](https://github.com/tendermint/tendermint/tree/v0.37.x/spec/abci).
-=======
-To learn about application development on CometBFT, see the [Application Blockchain Interface](https://github.com/cometbft/cometbft/tree/main/spec/abci).
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
+To learn about application development on CometBFT, see the [Application Blockchain Interface](https://github.com/cometbft/cometbft/tree/v0.37.x/spec/abci).
 
 For more details on using CometBFT, see the respective documentation for
 [CometBFT internals](core/), [benchmarking and monitoring](tools/), and [network deployments](networks/).
 
 ## Contribute
 
-<<<<<<< HEAD
-To contribute to the documentation, see [this file](https://github.com/tendermint/tendermint/blob/v0.37.x/docs/DOCS_README.md) for details of the build process and considerations when making changes.
-=======
 To recommend a change to the documentation, please submit a PR. Each major
 release's documentation is housed on the corresponding release branch, e.g. for
 the v0.34 release series, the documentation is housed on the `v0.34.x` branch.
@@ -48,4 +41,3 @@ merged, published to <https://docs.cometbft.com> for the respective version(s).
 
 The build process for the documentation is housed in the [CometBFT documentation
 repository](https://github.com/cometbft/cometbft-docs).
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))

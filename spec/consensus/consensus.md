@@ -293,11 +293,7 @@ may make JSet verification/gossip logic easier to implement.
 ### Censorship Attacks
 
 Due to the definition of a block
-<<<<<<< HEAD
-[commit](https://github.com/cometbft/cometbft/blob/v0.37.x/docs/tendermint-core/validators.md), any 1/3+ coalition of
-=======
-[commit](https://github.com/cometbft/cometbft/blob/main/docs/core/validators.md), any 1/3+ coalition of
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
+[commit](https://github.com/cometbft/cometbft/blob/v0.37.x/docs/core/validators.md), any 1/3+ coalition of
 validators can halt the blockchain by not broadcasting their votes. Such
 a coalition can also censor particular transactions by rejecting blocks
 that include these transactions, though this would result in a

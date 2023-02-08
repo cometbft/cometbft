@@ -123,11 +123,7 @@ consensus engine, and provides a particular application state.
 ## ABCI Overview
 
 The [Application BlockChain Interface
-<<<<<<< HEAD:docs/introduction/what-is-tendermint.md
-(ABCI)](https://github.com/tendermint/tendermint/tree/v0.37.x/abci)
-=======
-(ABCI)](https://github.com/cometbft/cometbft/tree/main/abci)
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197)):docs/introduction/what-is-cometbft.md
+(ABCI)](https://github.com/cometbft/cometbft/tree/v0.37.x/abci)
 allows for Byzantine Fault Tolerant replication of applications
 written in any programming language.
 
@@ -164,12 +160,7 @@ protocol.
 
 [CometBFT](https://github.com/cometbft/cometbft), the
 "consensus engine", communicates with the application via a socket
-<<<<<<< HEAD:docs/introduction/what-is-tendermint.md
-protocol that satisfies the ABCI, the Tendermint Socket Protocol 
-(TSP, or Teaspoon).
-=======
 protocol that satisfies the ABCI, the CometBFT Socket Protocol.
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197)):docs/introduction/what-is-cometbft.md
 
 To draw an analogy, lets talk about a well-known cryptocurrency,
 Bitcoin. Bitcoin is a cryptocurrency blockchain where each node
@@ -197,11 +188,7 @@ core to the application. The application replies with corresponding
 response messages.
 
 The messages are specified here: [ABCI Message
-<<<<<<< HEAD:docs/introduction/what-is-tendermint.md
-Types](https://github.com/tendermint/tendermint/blob/v0.37.x/abci/README.md#message-types).
-=======
-Types](https://github.com/cometbft/cometbft/blob/main/proto/tendermint/abci/types.proto).
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197)):docs/introduction/what-is-cometbft.md
+Types](https://github.com/cometbft/cometbft/blob/v0.37.x/proto/tendermint/abci/types.proto).
 
 The **DeliverTx** message is the work horse of the application. Each
 transaction in the blockchain is delivered with this message. The

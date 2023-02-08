@@ -65,7 +65,7 @@ purposes.
 We'll start a kvstore application, which was installed at the same time
 as `abci-cli` above. The kvstore just stores transactions in a merkle
 tree. Its code can be found
-[here](https://github.com/cometbft/cometbft/blob/main/abci/cmd/abci-cli/abci-cli.go)
+[here](https://github.com/cometbft/cometbft/blob/v0.37.x/abci/cmd/abci-cli/abci-cli.go)
 and looks like the following:
 
 ```go
@@ -146,11 +146,7 @@ response.
 
 The server may be generic for a particular language, and we provide a
 [reference implementation in
-<<<<<<< HEAD
 Golang](https://github.com/tendermint/tendermint/tree/v0.37.x/abci/server). See the
-=======
-Golang](https://github.com/cometbft/cometbft/tree/main/abci/server). See the
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 [list of other ABCI implementations](https://github.com/tendermint/awesome#ecosystem) for servers in
 other languages.
 
@@ -266,11 +262,7 @@ deployment, the role of sending messages is taken by CometBFT, which
 connects to the app using three separate connections, each with its own
 pattern of messages.
 
-<<<<<<< HEAD
-For examples of running an ABCI app with Tendermint, see the 
-=======
 For examples of running an ABCI app with CometBFT, see the
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
 [getting started guide](./getting-started.md).
 
 ## Bounties
@@ -278,4 +270,4 @@ For examples of running an ABCI app with CometBFT, see the
 Want to write an app in your favorite language?! We'd be happy
 to add you to our [ecosystem](https://github.com/tendermint/awesome#ecosystem)!
 See [funding](https://github.com/interchainio/funding) opportunities from the
-[Interchain Foundation](https://interchain.io/) for implementations in new languages and more.
+[Interchain Foundation](https://interchain.io) for implementations in new languages and more.

@@ -49,14 +49,7 @@ CometBFT.
 
 See the following for more extensive documentation:
 
-<<<<<<< HEAD
-- [Interchain Standard for the Light-Client REST API](https://github.com/cosmos/cosmos-sdk/pull/1028)
-- [Tendermint RPC Docs](https://docs.tendermint.com/v0.37/rpc/)
-- [Tendermint in Production](../tendermint-core/running-in-production.md)
-- [ABCI spec](https://github.com/tendermint/spec/tree/95cf253b6df623066ff7cd4074a94e7a3f147c7a/spec/abci)
-=======
 - [Interchain Standard for the Light-Client REST API](https://github.com/cosmos/cosmos-sdk/pull/1617) (legacy/deprecated)
-- [CometBFT RPC Docs](https://docs.cometbft.com/main/rpc/)
+- [CometBFT RPC Docs](https://docs.cometbft.com/v0.37/rpc/)
 - [CometBFT in Production](../core/running-in-production.md)
-- [ABCI spec](https://github.com/cometbft/cometbft/tree/main/spec/abci)
->>>>>>> 98838143f (Rename Tendermint to CometBFT in /docs (#197))
+- [ABCI spec](https://github.com/cometbft/cometbft/tree/v0.37.x/spec/abci)

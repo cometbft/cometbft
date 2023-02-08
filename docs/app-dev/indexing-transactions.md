@@ -15,7 +15,9 @@ the block itself is never stored.
 Each event contains a type and a list of attributes, which are key-value pairs
 denoting something about what happened during the method's execution. For more
 details on `Events`, see the
+
 [ABCI](https://github.com/cometbft/cometbft/blob/v0.37.x/spec/abci/abci++_basic_concepts.md#events)
+
 documentation.
 
 An `Event` has a composite key associated with it. A `compositeKey` is
@@ -33,6 +35,9 @@ would be equal to the composite key of `jack.account.number`.
 
 By default, CometBFT will index all transactions by their respective hashes
 and height and blocks by their height.
+
+CometBFT allows for different events within the same height to have 
+equal attributes.
 
 ## Configuration
 
@@ -66,6 +71,60 @@ underlying CometBFT database. Using the `kv` indexer type allows you to query
 for block and transaction events directly against CometBFT's RPC. However, the
 query syntax is limited and so this indexer type might be deprecated or removed
 entirely in the future.
+
+**Implementation and data layout**
+
+The kv indexer stores each attribute of an event individually, by creating a composite key 
+with
+- event type,
+- attribute key,
+- attribute value,
+- event generator (e.g. `EndBlock` and `BeginBlock`)
+- the height, and
+- event counter.
+ For example the following events:
+ 
+```
+Type: "transfer",
+  Attributes: []abci.EventAttribute{
+   {Key: "sender", Value: "Bob", Index: true},
+   {Key: "recipient", Value: "Alice", Index: true},
+   {Key: "balance", Value: "100", Index: true},
+   {Key: "note", Value: "nothing", Index: true},
+   },
+ 
+```
+ 
+```
+Type: "transfer",
+  Attributes: []abci.EventAttribute{
+   {Key: "sender", Value: "Tom", Index: true},
+   {Key: "recipient", Value: "Alice", Index: true},
+   {Key: "balance", Value: "200", Index: true},
+   {Key: "note", Value: "nothing", Index: true},
+   },
+```
+
+will be represented as follows in the store, assuming these events result from the EndBlock call for height 1: 
+
+```
+Key                                 value
+---- event1 ------
+transferSenderBobEndBlock11           1
+transferRecipientAliceEndBlock11     1
+transferBalance100EndBlock11         1
+transferNodeNothingEndblock11        1
+---- event2 ------
+transferSenderTomEndBlock12          1
+transferRecepientAliceEndBlock12     1
+transferBalance200EndBlock12         1
+transferNodeNothingEndblock12        1
+ 
+```
+The event number is a local variable kept by the indexer and incremented when a new event is processed. 
+It is an `int64` variable and has no other semantics besides being used to associate attributes belonging to the same events within a height. 
+This variable is not atomically incremented as event indexing is deterministic. **Should this ever change**, the event id generation
+will be broken. 
 
 #### PostgreSQL
 
@@ -122,10 +181,10 @@ func (app *KVStoreApplication) DeliverTx(req types.RequestDeliverTx) types.Resul
         {
             Type: "transfer",
             Attributes: []abci.EventAttribute{
-                {Key: []byte("sender"), Value: []byte("Bob"), Index: true},
-                {Key: []byte("recipient"), Value: []byte("Alice"), Index: true},
-                {Key: []byte("balance"), Value: []byte("100"), Index: true},
-                {Key: []byte("note"), Value: []byte("nothing"), Index: true},
+                {Key: "sender ", Value: "Bob ", Index: true},
+                {Key: "recipient ", Value: "Alice ", Index: true},
+                {Key: "balance ", Value: "100 ", Index: true},
+                {Key: "note ", Value: "nothing ", Index: true},
             },
         },
     }
@@ -168,7 +227,7 @@ a query to `/subscribe` RPC endpoint.
 Check out [API docs](https://docs.cometbft.com/v0.37/rpc/#subscribe) for more information
 on query syntax and other options.
 
-## Querying Blocks Events
+## Querying Block Events
 
 You can query for a paginated set of blocks by their events by calling the
 `/block_search` RPC endpoint:
@@ -177,5 +236,12 @@ You can query for a paginated set of blocks by their events by calling the
 curl "localhost:26657/block_search?query=\"block.height > 10 AND val_set.num_changed > 0\""
 ```
 
-Check out [API docs](https://docs.cometbft.com/v0.37/rpc/#/Info/block_search)
-for more information on query syntax and other options.
+
+Storing the event sequence was introduced in CometBFT 0.34.26. Before that, up until Tendermint Core 0.34.26, 
+the event sequence was not stored in the kvstore and events were stored only by height. That means that queries 
+returned blocks and transactions whose event attributes match within the height but can match across different 
+events on that height. 
+This behavior was fixed with CometBFT 0.34.26+. However, if the data was indexed with earlier versions of
+Tendermint Core and not re-indexed, that data will be queried as if all the attributes within a height
+occurred within the same event.
+

@@ -24,7 +24,7 @@ const (
 	// DefaultLogLevel defines a default log level as INFO.
 	DefaultLogLevel = "info"
 
-	// Mempool versions. V1 is prioritized mempool, v0 is regular mempool.
+	// Mempool versions. V1 is prioritized mempool (deprecated), v0 is regular mempool.
 	// Default is v0.
 	MempoolV0 = "v0"
 	MempoolV1 = "v1"
@@ -37,7 +37,7 @@ const (
 // config/toml.go
 // NOTE: libs/cli must know to look in the config dir!
 var (
-	DefaultTendermintDir = ".tendermint"
+	DefaultTendermintDir = ".cometbft"
 	defaultConfigDir     = "config"
 	defaultDataDir       = "data"
 
@@ -156,6 +156,9 @@ func (cfg *Config) ValidateBasic() error {
 
 func (cfg *Config) CheckDeprecated() []string {
 	var warnings []string
+	if cfg.Mempool.Version == MempoolV1 {
+		warnings = append(warnings, "prioritized mempool detected. This version of the mempool will be removed in the next major release.")
+	}
 	if cfg.DeprecatedFastSyncConfig != nil {
 		warnings = append(warnings, "[fastsync] table detected. This section has been renamed to [blocksync]. The values in this deprecated section will be disregarded.")
 	}
@@ -170,15 +173,8 @@ func (cfg *Config) CheckDeprecated() []string {
 
 // BaseConfig defines the base configuration for a CometBFT node
 type BaseConfig struct { //nolint: maligned
-<<<<<<< HEAD
 	// chainID is unexposed and immutable but here for convenience
 	chainID string
-=======
-
-	// The version of the CometBFT binary that created
-	// or last modified the config file
-	Version string `mapstructure:"version"`
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 
 	// The root directory for all data.
 	// This should be set in viper so it can unmarshal into this struct
@@ -711,17 +707,7 @@ func DefaultFuzzConnConfig() *FuzzConnConfig {
 type MempoolConfig struct {
 	// Mempool version to use:
 	//  1) "v0" - (default) FIFO mempool.
-	//  2) "v1" - prioritized mempool.
-<<<<<<< HEAD
-	// WARNING: There's a known memory leak with the prioritized mempool
-	// that the team are working on. Read more here:
-	// https://github.com/tendermint/tendermint/issues/8775
-	Version   string `mapstructure:"version"`
-	RootDir   string `mapstructure:"home"`
-	Recheck   bool   `mapstructure:"recheck"`
-	Broadcast bool   `mapstructure:"broadcast"`
-	WalPath   string `mapstructure:"wal_dir"`
-=======
+	//  2) "v1" - prioritized mempool (deprecated; will be removed in the next release).
 	Version string `mapstructure:"version"`
 	// RootDir is the root directory for all data. This should be configured via
 	// the $CMTHOME env variable or --home cmd flag rather than overriding this
@@ -744,7 +730,6 @@ type MempoolConfig struct {
 	// WalPath to where you want the WAL to be written (e.g.
 	// "data/mempool.wal").
 	WalPath string `mapstructure:"wal_dir"`
->>>>>>> 1cb55d49b (Rename Tendermint to CometBFT: further actions (#224))
 	// Maximum number of transactions in the mempool
 	Size int `mapstructure:"size"`
 	// Limit the total size of all txs in the mempool.

@@ -49,7 +49,7 @@ func EnsureRoot(rootDir string) {
 	}
 }
 
-// XXX: this func should probably be called by cmd/tendermint/commands/init.go
+// XXX: this func should probably be called by cmd/cometbft/commands/init.go
 // alongside the writing of the genesis.json and priv_validator.json
 func writeDefaultConfigFile(configFilePath string) {
 	WriteConfigFile(configFilePath, DefaultConfig())
@@ -73,7 +73,7 @@ const defaultConfigTemplate = `# This is a TOML config file.
 
 # NOTE: Any path below can be absolute (e.g. "/var/myawesomeapp/data") or
 # relative to the home directory (e.g. "data"). The home directory is
-# "$HOME/.tendermint" by default, but could be changed via $TMHOME env variable
+# "$HOME/.cometbft" by default, but could be changed via $CMTHOME env variable
 # or --home cmd flag.
 
 <<<<<<< HEAD
@@ -351,7 +351,7 @@ dial_timeout = "{{ .P2P.DialTimeout }}"
 
 # Mempool version to use:
 #   1) "v0" - (default) FIFO mempool.
-#   2) "v1" - prioritized mempool.
+#   2) "v1" - prioritized mempool (deprecated; will be removed in the next release).
 version = "{{ .Mempool.Version }}"
 
 <<<<<<< HEAD

@@ -10,12 +10,6 @@ RUN apt-get -qq install -y libleveldb-dev librocksdb-dev >/dev/null
 ENV COMETBFT_BUILD_OPTIONS badgerdb,boltdb,cleveldb,rocksdb
 WORKDIR /src/cometbft
 
-# TODO(thane): Remove once we publish the cometbft-db repository.
-ENV GOPRIVATE=github.com/cometbft/cometbft-db
-ARG GO_MODULES_TOKEN
-RUN git config \
-	--global url.https://${GO_MODULES_TOKEN}@github.com/.insteadOf https://github.com/
-
 # Fetch dependencies separately (for layer caching)
 COPY go.mod go.sum ./
 RUN go mod download
@@ -30,7 +24,7 @@ RUN cd test/e2e && make node && cp build/node /usr/bin/app
 # e.g. leveldb and rocksdb which are already installed in the build image.
 WORKDIR /cometbft
 VOLUME /cometbft
-ENV TMHOME=/cometbft
+ENV CMTHOME=/cometbft
 
 EXPOSE 26656 26657 26660 6060
 ENTRYPOINT ["/usr/bin/entrypoint"]

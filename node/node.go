@@ -62,7 +62,6 @@ type Node struct {
 	stateStore        sm.Store
 	blockStore        *store.BlockStore // store the blockchain to disk
 	bcReactor         p2p.Reactor       // for block-syncing
-	mempoolReactor    p2p.Reactor       // for gossipping transactions
 	mempool           mempl.Mempool
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
@@ -348,7 +347,6 @@ func NewNode(config *cfg.Config,
 		stateStore:       stateStore,
 		blockStore:       blockStore,
 		bcReactor:        bcReactor,
-		mempoolReactor:   mempoolReactor,
 		mempool:          mempool,
 		consensusState:   consensusState,
 		consensusReactor: consensusReactor,
@@ -699,26 +697,6 @@ func (n *Node) Switch() *p2p.Switch {
 	return n.sw
 }
 
-// BlockStore returns the Node's BlockStore.
-func (n *Node) BlockStore() *store.BlockStore {
-	return n.blockStore
-}
-
-// ConsensusState returns the Node's ConsensusState.
-func (n *Node) ConsensusState() *cs.State {
-	return n.consensusState
-}
-
-// ConsensusReactor returns the Node's ConsensusReactor.
-func (n *Node) ConsensusReactor() *cs.Reactor {
-	return n.consensusReactor
-}
-
-// MempoolReactor returns the Node's mempool reactor.
-func (n *Node) MempoolReactor() p2p.Reactor {
-	return n.mempoolReactor
-}
-
 // Mempool returns the Node's mempool.
 func (n *Node) Mempool() mempl.Mempool {
 	return n.mempool
@@ -727,11 +705,6 @@ func (n *Node) Mempool() mempl.Mempool {
 // PEXReactor returns the Node's PEXReactor. It returns nil if PEX is disabled.
 func (n *Node) PEXReactor() *pex.Reactor {
 	return n.pexReactor
-}
-
-// EvidencePool returns the Node's EvidencePool.
-func (n *Node) EvidencePool() *evidence.Pool {
-	return n.evidencePool
 }
 
 // EventBus returns the Node's EventBus.
@@ -748,11 +721,6 @@ func (n *Node) PrivValidator() types.PrivValidator {
 // GenesisDoc returns the Node's GenesisDoc.
 func (n *Node) GenesisDoc() *types.GenesisDoc {
 	return n.genesisDoc
-}
-
-// ProxyApp returns the Node's AppConns, representing its connections to the ABCI application.
-func (n *Node) ProxyApp() proxy.AppConns {
-	return n.proxyApp
 }
 
 // Config returns the Node's config.

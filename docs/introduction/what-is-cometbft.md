@@ -2,10 +2,10 @@
 order: 4
 ---
 
-# What is Tendermint
+# What is CometBFT
 
-Tendermint is software for securely and consistently replicating an
-application on many machines. By securely, we mean that Tendermint works
+CometBFT is software for securely and consistently replicating an
+application on many machines. By securely, we mean that CometBFT works
 as long as less than 1/3 of machines fail in arbitrary ways. By consistently,
 we mean that every non-faulty machine sees the same transaction log and
 computes the same state. Secure and consistent replication is a
@@ -24,24 +24,26 @@ derives from the way transactions are batched in blocks, where each
 block contains a cryptographic hash of the previous one, forming a
 chain. 
 
-Tendermint consists of two chief technical components: a blockchain
-consensus engine and a generic application interface. The consensus
-engine, called Tendermint Core, ensures that the same transactions are
+CometBFT consists of two chief technical components: a blockchain
+consensus engine and a generic application interface.
+The consensus engine,
+which is based on [Tendermint consensus algorithm][tendermint-paper],
+ensures that the same transactions are
 recorded on every machine in the same order. The application interface,
 called the Application BlockChain Interface (ABCI), delivers the transactions
 to applications for processing. Unlike other
 blockchain and consensus solutions, which come pre-packaged with built
 in state machines (like a fancy key-value store, or a quirky scripting
-language), developers can use Tendermint for BFT state machine
+language), developers can use CometBFT for BFT state machine
 replication of applications written in whatever programming language and
 development environment is right for them.
 
-Tendermint is designed to be easy-to-use, simple-to-understand, highly
+CometBFT is designed to be easy-to-use, simple-to-understand, highly
 performant, and useful for a wide variety of distributed applications.
 
-## Tendermint vs. X
+## CometBFT vs. X
 
-Tendermint is broadly similar to two classes of software. The first
+CometBFT is broadly similar to two classes of software. The first
 class consists of distributed key-value stores, like Zookeeper, etcd,
 and consul, which use non-BFT consensus. The second class is known as
 "blockchain technology", and consists of both cryptocurrencies like
@@ -63,11 +65,12 @@ featureful key-value store, but all are generally focused around
 providing basic services to distributed systems, such as dynamic
 configuration, service discovery, locking, leader-election, and so on.
 
-Tendermint is in essence similar software, but with two key differences:
+CometBFT is in essence similar software, but with two key differences:
 
 - It is Byzantine Fault Tolerant, meaning it can only tolerate less than 1/3
   of machines failing, but those failures can include arbitrary behavior -
-  including hacking and malicious attacks. - It does not specify a
+  including hacking and malicious attacks.
+- It does not specify a
   particular application, like a fancy key-value store. Instead, it
   focuses on arbitrary state machine replication, so developers can build
   the application logic that's right for them, from key-value store to
@@ -75,31 +78,32 @@ Tendermint is in essence similar software, but with two key differences:
 
 ### Bitcoin, Ethereum, etc
 
-Tendermint emerged in the tradition of cryptocurrencies like Bitcoin,
+[Tendermint consensus algorithm][tendermint-paper], adopted by CometBFT,
+emerged in the tradition of cryptocurrencies like Bitcoin,
 Ethereum, etc. with the goal of providing a more efficient and secure
 consensus algorithm than Bitcoin's Proof of Work. In the early days,
-Tendermint had a simple currency built in, and to participate in
+Tendermint consensus-based blockchains had a simple currency built in, and to participate in
 consensus, users had to "bond" units of the currency into a security
 deposit which could be revoked if they misbehaved -this is what made
-Tendermint a Proof-of-Stake algorithm.
+Tendermint consensus a Proof-of-Stake algorithm.
 
-Since then, Tendermint has evolved to be a general purpose blockchain
+Since then, CometBFT has evolved to be a general purpose blockchain
 consensus engine that can host arbitrary application states. That means
 it can be used as a plug-and-play replacement for the consensus engines
 of other blockchain software. So one can take the current Ethereum code
 base, whether in Rust, or Go, or Haskell, and run it as a ABCI
-application using Tendermint consensus. Indeed, [we did that with
+application using CometBFT. Indeed, [we did that with
 Ethereum](https://github.com/cosmos/ethermint). And we plan to do
 the same for Bitcoin, ZCash, and various other deterministic
 applications as well.
 
-Another example of a cryptocurrency application built on Tendermint is
+Another example of a cryptocurrency application built on CometBFT is
 [the Cosmos network](http://cosmos.network).
 
 ### Other Blockchain Projects
 
 [Fabric](https://github.com/hyperledger/fabric) takes a similar approach
-to Tendermint, but is more opinionated about how the state is managed,
+to CometBFT, but is more opinionated about how the state is managed,
 and requires that all application behavior runs in potentially many
 docker containers, modules it calls "chaincode". It uses an
 implementation of [PBFT](http://pmg.csail.mit.edu/papers/osdi99.pdf).
@@ -107,19 +111,19 @@ from a team at IBM that is [augmented to handle potentially
 non-deterministic
 chaincode](https://drops.dagstuhl.de/opus/volltexte/2017/7093/pdf/LIPIcs-OPODIS-2016-24.pdf).
 It is possible to implement this docker-based behavior as an ABCI app in
-Tendermint, though extending Tendermint to handle non-determinism
+CometBFT, though extending CometBFT to handle non-determinism
 remains for future work.
 
 [Burrow](https://github.com/hyperledger/burrow) is an implementation of
 the Ethereum Virtual Machine and Ethereum transaction mechanics, with
 additional features for a name-registry, permissions, and native
-contracts, and an alternative blockchain API. It uses Tendermint as its
+contracts, and an alternative blockchain API. It uses CometBFT as its
 consensus engine, and provides a particular application state.
 
 ## ABCI Overview
 
 The [Application BlockChain Interface
-(ABCI)](https://github.com/tendermint/tendermint/tree/v0.37.x/abci)
+(ABCI)](https://github.com/cometbft/cometbft/tree/v0.37.x/abci)
 allows for Byzantine Fault Tolerant replication of applications
 written in any programming language.
 
@@ -154,16 +158,15 @@ protocol.
 
 ### Intro to ABCI
 
-[Tendermint Core](https://github.com/tendermint/tendermint), the
+[CometBFT](https://github.com/cometbft/cometbft), the
 "consensus engine", communicates with the application via a socket
-protocol that satisfies the ABCI, the Tendermint Socket Protocol 
-(TSP, or Teaspoon).
+protocol that satisfies the ABCI, the CometBFT Socket Protocol.
 
 To draw an analogy, lets talk about a well-known cryptocurrency,
 Bitcoin. Bitcoin is a cryptocurrency blockchain where each node
 maintains a fully audited Unspent Transaction Output (UTXO) database. If
-one wanted to create a Bitcoin-like system on top of ABCI, Tendermint
-Core would be responsible for
+one wanted to create a Bitcoin-like system on top of ABCI, CometBFT
+would be responsible for
 
 - Sharing blocks and transactions between nodes
 - Establishing a canonical/immutable order of transactions
@@ -176,7 +179,7 @@ The application will be responsible for
 - Preventing transactions from spending non-existent transactions
 - Allowing clients to query the UTXO database.
 
-Tendermint is able to decompose the blockchain design by offering a very
+CometBFT is able to decompose the blockchain design by offering a very
 simple API (i.e. the ABCI) between the application process and consensus
 process.
 
@@ -185,7 +188,7 @@ core to the application. The application replies with corresponding
 response messages.
 
 The messages are specified here: [ABCI Message
-Types](https://github.com/tendermint/tendermint/blob/v0.37.x/abci/README.md#message-types).
+Types](https://github.com/cometbft/cometbft/blob/v0.37.x/proto/tendermint/abci/types.proto).
 
 The **DeliverTx** message is the work horse of the application. Each
 transaction in the blockchain is delivered with this message. The
@@ -197,7 +200,7 @@ value into a key values store, or by updating the UTXO database, for
 instance.
 
 The **CheckTx** message is similar to **DeliverTx**, but it's only for
-validating transactions. Tendermint Core's mempool first checks the
+validating transactions. CometBFT's mempool first checks the
 validity of a transaction with **CheckTx**, and only relays valid
 transactions to its peers. For instance, an application may check an
 incrementing sequence number in the transaction and return an error upon
@@ -214,7 +217,7 @@ lightweight clients, as Merkle-hash proofs can be verified by checking
 against the block hash, and that the block hash is signed by a quorum.
 
 There can be multiple ABCI socket connections to an application.
-Tendermint Core creates three ABCI connections to the application; one
+CometBFT creates three ABCI connections to the application; one
 for the validation of transactions when broadcasting in the mempool, one
 for the consensus engine to run block proposals, and one more for
 querying the application state.
@@ -230,7 +233,7 @@ below illustrates the flow of messages via ABCI.
 
 The logic for blockchain transaction processing must be deterministic.
 If the application logic weren't deterministic, consensus would not be
-reached among the Tendermint Core replica nodes.
+reached among the CometBFT replica nodes.
 
 Solidity on Ethereum is a great language of choice for blockchain
 applications because, among other reasons, it is a completely
@@ -255,16 +258,16 @@ create such tools.
 
 ## Consensus Overview
 
-Tendermint is an easy-to-understand, mostly asynchronous, BFT consensus
-protocol. The protocol follows a simple state machine that looks like
-this:
+CometBFT adopts [Tendermint consensus][tendermint-paper],
+an easy-to-understand, mostly asynchronous, BFT consensus algorithm.
+The algorithm follows a simple state machine that looks like this:
 
 ![consensus-logic](../imgs/consensus_logic.png)
 
-Participants in the protocol are called **validators**; they take turns
+Participants in the algorithm are called **validators**; they take turns
 proposing blocks of transactions and voting on them. Blocks are
 committed in a chain, with one block at each **height**. A block may
-fail to be committed, in which case the protocol moves to the next
+fail to be committed, in which case the algorithm moves to the next
 **round**, and a new validator gets to propose a block for that height.
 Two stages of voting are required to successfully commit a block; we
 call them **pre-vote** and **pre-commit**. 
@@ -278,18 +281,18 @@ more than 2/3 of validators pre-commit for the same block in the same
 round.
 
 Validators may fail to commit a block for a number of reasons; the
-current proposer may be offline, or the network may be slow. Tendermint
+current proposer may be offline, or the network may be slow. Tendermint consensus
 allows them to establish that a validator should be skipped. Validators
 wait a small amount of time to receive a complete proposal block from
 the proposer before voting to move to the next round. This reliance on a
-timeout is what makes Tendermint a weakly synchronous protocol, rather
-than an asynchronous one. However, the rest of the protocol is
+timeout is what makes Tendermint consensus a weakly synchronous algorithm, rather
+than an asynchronous one. However, the rest of the algorithm is
 asynchronous, and validators only make progress after hearing from more
 than two-thirds of the validator set. A simplifying element of
-Tendermint is that it uses the same mechanism to commit a block as it
+Tendermint consensus is that it uses the same mechanism to commit a block as it
 does to skip to the next round.
 
-Assuming less than one-third of the validators are Byzantine, Tendermint
+Assuming less than one-third of the validators are Byzantine, Tendermint consensus algorithm
 guarantees that safety will never be violated - that is, validators will
 never commit conflicting blocks at the same height. To do this it
 introduces a few **locking** rules which modulate which paths can be
@@ -308,7 +311,7 @@ two-thirds of the validators, but in those proportions of the total
 voting power, which may not be uniformly distributed across individual
 validators.
 
-Since Tendermint can replicate arbitrary applications, it is possible to
+Since CometBFT can replicate arbitrary applications, it is possible to
 define a currency, and denominate the voting power in that currency.
 When voting power is denominated in a native currency, the system is
 often referred to as Proof-of-Stake. Validators can be forced, by logic
@@ -322,6 +325,4 @@ The [Cosmos Network](https://cosmos.network) is designed to use this
 Proof-of-Stake mechanism across an array of cryptocurrencies implemented
 as ABCI applications.
 
-The following diagram is Tendermint in a (technical) nutshell.
-
-![tx-flow](../imgs/tm-transaction-flow.png)
+[tendermint-paper]: https://arxiv.org/abs/1807.04938

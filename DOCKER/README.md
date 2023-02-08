@@ -6,7 +6,7 @@ DockerHub tags for official releases are [here](https://hub.docker.com/r/cometbf
 
 Official releases can be found [here](https://github.com/cometbft/cometbft/releases).
 
-The Dockerfile for CometBFT is not expected to change in the near future. The main file used for all builds can be found [here](https://raw.githubusercontent.com/cometbft/cometbft/main/DOCKER/Dockerfile).
+The Dockerfile for CometBFT is not expected to change in the near future. The main file used for all builds can be found [here](https://raw.githubusercontent.com/cometbft/cometbft/v0.37.x/DOCKER/Dockerfile).
 
 Respective versioned files can be found <https://raw.githubusercontent.com/cometbft/cometbft/vX.XX.XX/DOCKER/Dockerfile> (replace the Xs with the version number).
 
@@ -49,7 +49,7 @@ Note that this will build and use a different image than the ones provided here.
 
 ## License
 
-- CometBFT's license is [Apache 2.0](https://github.com/cometbft/cometbft/blob/main/LICENSE).
+- CometBFT's license is [Apache 2.0](https://github.com/cometbft/cometbft/blob/v0.37.x/LICENSE).
 
 ## Contributing
 

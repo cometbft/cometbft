@@ -69,7 +69,6 @@ type Node struct {
 	stateSyncGenesis  sm.State                // provides the genesis state for state sync
 	consensusState    *cs.State               // latest consensus state
 	consensusReactor  *cs.Reactor             // for participating in the consensus
-	pexReactor        *pex.Reactor            // for exchanging peer addresses
 	evidencePool      *evidence.Pool          // tracking evidence
 	proxyApp          proxy.AppConns          // connection to the application
 	rpcListeners      []net.Listener          // rpc servers
@@ -325,9 +324,8 @@ func NewNode(config *cfg.Config,
 	//
 	// If PEX is on, it should handle dialing the seeds. Otherwise the switch does it.
 	// Note we currently use the addrBook regardless at least for AddOurAddress
-	var pexReactor *pex.Reactor
 	if config.P2P.PexReactor {
-		pexReactor = createPEXReactorAndAddToSwitch(addrBook, config, sw, logger)
+		createPEXReactorAndAddToSwitch(addrBook, config, sw, logger)
 	}
 
 	// Add private IDs to addrbook to block those peers being added
@@ -353,7 +351,6 @@ func NewNode(config *cfg.Config,
 		stateSyncReactor: stateSyncReactor,
 		stateSync:        stateSync,
 		stateSyncGenesis: state, // Shouldn't be necessary, but need a way to pass the genesis state
-		pexReactor:       pexReactor,
 		evidencePool:     evidencePool,
 		proxyApp:         proxyApp,
 		txIndexer:        txIndexer,
@@ -700,11 +697,6 @@ func (n *Node) Switch() *p2p.Switch {
 // Mempool returns the Node's mempool.
 func (n *Node) Mempool() mempl.Mempool {
 	return n.mempool
-}
-
-// PEXReactor returns the Node's PEXReactor. It returns nil if PEX is disabled.
-func (n *Node) PEXReactor() *pex.Reactor {
-	return n.pexReactor
 }
 
 // EventBus returns the Node's EventBus.

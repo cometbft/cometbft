@@ -109,7 +109,7 @@ func startApp(cfg *Config) error {
 }
 
 // startNode starts a CometBFT node running the application directly. It assumes the CometBFT
-// configuration is in $TMHOME/config/cometbft.toml.
+// configuration is in $CMTHOME/config/cometbft.toml.
 //
 // FIXME There is no way to simply load the configuration from a file, so we need to pull in Viper.
 func startNode(cfg *Config) error {
@@ -224,9 +224,9 @@ func startSigner(cfg *Config) error {
 func setupNode() (*config.Config, log.Logger, *p2p.NodeKey, error) {
 	var cmtcfg *config.Config
 
-	home := os.Getenv("TMHOME")
+	home := os.Getenv("CMTHOME")
 	if home == "" {
-		return nil, nil, nil, errors.New("TMHOME not set")
+		return nil, nil, nil, errors.New("CMTHOME not set")
 	}
 
 	viper.AddConfigPath(filepath.Join(home, "config"))

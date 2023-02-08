@@ -7,7 +7,7 @@ import (
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/proxy"
 
-	mempoolv1 "github.com/cometbft/cometbft/mempool/v1"
+	mempoolv1 "github.com/cometbft/cometbft/mempool/v1" //nolint:staticcheck // SA1019 Priority mempool deprecated but still supported in this release.
 )
 
 var mempool mempl.Mempool

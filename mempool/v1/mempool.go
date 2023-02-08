@@ -1,3 +1,4 @@
+// Deprecated: Priority mempool will be removed in the next major release.
 package v1
 
 import (

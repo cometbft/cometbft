@@ -106,10 +106,10 @@ Currently CometBFT uses [Ed25519](https://ed25519.cr.yp.to/) keys which are wide
 > **+2/3 is short for "more than 2/3"**
 
 A block is committed when +2/3 of the validator set sign
-[precommit votes](https://github.com/cometbft/cometbft/blob/main/spec/core/data_structures.md#vote)
+[precommit votes](https://github.com/cometbft/cometbft/blob/v0.37.x/spec/core/data_structures.md#vote)
 for that block at the same `round`.
 The +2/3 set of precommit votes is called a
-[commit](https://github.com/cometbft/cometbft/blob/main/spec/core/data_structures.md#commit).
+[commit](https://github.com/cometbft/cometbft/blob/v0.37.x/spec/core/data_structures.md#commit).
 While any +2/3 set of precommits for the same block at the same height&round can serve as
 validation, the canonical commit is included in the next block (see
-[LastCommit](https://github.com/cometbft/cometbft/blob/main/spec/core/data_structures.md#block)).
+[LastCommit](https://github.com/cometbft/cometbft/blob/v0.37.x/spec/core/data_structures.md#block)).

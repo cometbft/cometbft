@@ -15,7 +15,7 @@ This baseline is then compared with results obtained in later versions.
 Out of the testnet-based test cases described in [the releases document][releases] we focused on two of them:
 _200 Node Test_, and _Rotating Nodes Test_.
 
-[releases]: https://github.com/cometbft/cometbft/blob/main/RELEASES.md#large-scale-testnets
+[releases]: https://github.com/cometbft/cometbft/blob/v0.37.x/RELEASES.md#large-scale-testnets
 
 ## Software Dependencies
 

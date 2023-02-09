@@ -352,6 +352,8 @@ As with the baseline, the spikes correspond to the moments when certain
 nodes required more than one round to reach consensus.
 ![mempool_run1_tm2_cmt1](./img/v034_200node_tm2cmt1/mempool_size.png)
 
+![mempool-avg-tm2_cmt1](./img/v034_200node_tm2cmt1/mempool_avg.png)
+
 ##### Peers
 
 The plot below corresponds to the baseline results, for reference.
@@ -436,8 +438,11 @@ TODO
 
 ![blocks_min_run1_tm2_cmt1](./img/v034_200node_tm2cmt1/height.png)
 
+In two minutes the height goes from 32 to 90 which gives an average of 29 blocks per minutes.
+
 ![tx_min_run1_tm2_cmt1](./img/v034_200node_tm2cmt1/num_tx.png)
 
+In 1min and 30 the system processes 35600 transactions which amounts to 23000 transactions per minute.
 ##### Memory Resident Set Size
 
 Reference plot for Resident Set Size (RSS) of all monitored processes.
@@ -465,7 +470,9 @@ TODO
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
-![mem_size_run1_tm2_cmt1](./img/v034_200node_tm2cmt1/resident_memory_bytes.png)
+![rss_run1_tm2_cmt1](./img/v034_200node_tm2cmt1/resident_memory_bytes.png)
+
+![rss_avg_run1_tm2_cmt1](./img/v034_200node_tm2cmt1/resident_memory_bytes_avg.png)
 
 ##### CPU utilization
 

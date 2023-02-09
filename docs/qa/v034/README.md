@@ -356,7 +356,7 @@ TODO: Explain
 
 #### 1/3 Tendermint Core - 2/3 CometBFT
 
-TODO
+![latencies](./img/v034_200node_tm1_cmt2_latencies.png)
 
 #### 2/3 Tendermint Core - 1/3 CometBFT
 
@@ -400,7 +400,14 @@ These are the corresponding plots for the homogeneous network test.
 
 ###### 1/3 Tendermint Core - 2/3 CometBFT
 
-TODO
+<!-- cometbft_mempool_size -->
+
+![mempool-cumulative-2/3 CometBFT](./img/v034_200node_tm1_cmt2_mempool_size.png)
+
+<!-- avg(cometbft_mempool_size) -->
+
+![mempool-avg-size-2/3 CometBFT](./img/v034_200node_tm1_cmt2_mempool_size_avg.png)
+
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
@@ -428,7 +435,9 @@ which are mainly rebranding.
 
 ###### 1/3 Tendermint Core - 2/3 CometBFT
 
-TODO
+<!-- cometbft_p2p_peers -->
+
+![peers-2/3 CometBFT](./img/v034_200node_tm1_cmt2_peers.png)
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
@@ -452,7 +461,9 @@ on the corresponding plot, shown above.
 
 ###### 1/3 Tendermint Core - 2/3 CometBFT
 
-TODO
+<!-- cometbft_p2p_peers -->
+
+![rounds-2/3 CometBFT](./img/v034_200node_tm1_cmt2_rounds.png)
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
@@ -485,7 +496,23 @@ This is similar to the baseline.
 
 ###### 1/3 Tendermint Core - 2/3 CometBFT
 
-TODO
+Heights
+<!-- cometbft-consensus-height-->
+![heights](./img/v034_200node_tm1_cmt2_heights.png)
+
+Height rate
+<!-- rate(cometbft-consensus-height[1m])*60-->
+![heights](./img/v034_200node_tm1_cmt2_heights_rate.png)
+
+
+
+Transactions total
+<!-- cometbft-consensus-height-->
+![total-txs](./img/v034_200node_tm1_cmt2_total-txs.png)
+
+Transactions rate
+<!-- rate(cometbft-consensus-height[1m])*60 -->
+![total-txs-rate](./img/v034_200node_tm1_cmt2_total-txs_rate.png)
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
@@ -514,7 +541,14 @@ And this is the average plot. It oscillates around 560 MiB, which is noticeably 
 
 ###### 1/3 Tendermint Core - 2/3 CometBFT
 
-TODO
+Total
+<!-- process_resident_memory_bytes -->
+![total-txs](./img/v034_200node_tm1_cmt2_rss.png)
+
+Average
+<!-- avg(process_resident_memory_bytes) -->
+![total-txs-rate](./img/v034_200node_tm1_cmt2_rss_avg.png)
+
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
@@ -534,7 +568,13 @@ Similarly to the baseline, it is contained in most cases below 5.
 
 ###### 1/3 Tendermint Core - 2/3 CometBFT
 
-TODO
+Total
+<!-- process_cpu_seconds_total -->
+![total-txs](./img/v034_200node_tm1_cmt2_cpu.png)
+
+Average
+<!-- avg(process_cpu_seconds_total) -->
+![total-txs-rate](./img/v034_200node_tm1_cmt2_cpu-avg.png)
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 

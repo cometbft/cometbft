@@ -106,7 +106,11 @@ The CometBFT team should improve it at every iteration to increase the amount of
 3. File `report.txt` contains an unordered list of experiments with varying concurrent connections and transaction rate
     * If you are looking for the saturation point
         * Create files `report01.txt`, `report02.txt`, `report04.txt` and, for each experiment in file `report.txt`,
-          copy its related lines to the filename that matches the number of connections.
+          copy its related lines to the filename that matches the number of connections, for example    
+          ```bash
+          for cnum in 1 2 3 4; do echo "$cnum"; grep "Connections: $cnum" results/report.txt -B 2 -A 10 > results/report$cnum.txt;  done
+          ```
+          
         * Sort the experiments in `report01.txt` in ascending tx rate order. Likewise for `report02.txt` and `report04.txt`.
     * Otherwise just keep `report.txt`, and skip step 4.
 4. Generate file `report_tabbed.txt` by showing the contents `report01.txt`, `report02.txt`, `report04.txt` side by side

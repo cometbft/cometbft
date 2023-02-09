@@ -308,7 +308,13 @@ TODO
 
 #### 2/3 Tendermint Core - 1/3 CometBFT
 
-TODO
+Latencies across all 4 runs:
+
+![latencies_all_tm3_cmt1](./img/v034_200node_tm2cmt1/latency_all.png)
+
+Latencies for run 1:
+
+![latencies_run1_tm3_cmt1](./img/v034_200node_tm2cmt1/latency_run1.png)
 
 #### Prometheus Metrics
 
@@ -326,7 +332,9 @@ TODO
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
-TODO
+As with the baseline, the spikes correspond to the moments when certain
+nodes required more than one round to reach consensus.
+![mempool_run1_tm2_cmt1](./img/v034_200node_tm2cmt1/mempool_size.png)
 
 ##### Peers
 
@@ -339,7 +347,7 @@ TODO
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
-TODO
+![peers_run1_tm2_cmt1](./img/v034_200node_tm2cmt1/peers.png)
 
 ##### Consensus Rounds per Height
 
@@ -354,7 +362,7 @@ TODO
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
-TODO
+![rounds_run1_tm2_cmt1](./img/v034_200node_tm2cmt1/consensus_rounds.png)
 
 ##### Blocks Produced per Minute, Transactions Processed per Minute
 
@@ -368,7 +376,9 @@ TODO
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
-TODO
+![blocks_min_run1_tm2_cmt1](./img/v034_200node_tm2cmt1/height.png)
+
+![tx_min_run1_tm2_cmt1](./img/v034_200node_tm2cmt1/num_tx.png)
 
 ##### Memory Resident Set Size
 
@@ -382,7 +392,7 @@ TODO
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
-TODO
+![mem_size_run1_tm2_cmt1](./img/v034_200node_tm2cmt1/resident_memory_bytes.png)
 
 ##### CPU utilization
 
@@ -396,7 +406,7 @@ TODO
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
-TODO
+![cpuload_run1_tm2_cmt1](./img/v034_200node_tm2cmt1/resident_memory_bytes.png)
 
 ### Test Results
 

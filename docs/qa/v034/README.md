@@ -423,14 +423,10 @@ This results in an average of 21.3 blocks produced per minute.
 
 ![total-txs-homogeneous](./img/v034_homog_total-txs.png)
 
-TODO update
-
-Over a period of 2 minutes, the total goes from 64525 to 100125 transactions,
-resulting in 17800 transactions per minute. However, we can see in the plot that
-all transactions in the load are processed long before the two minutes.
-If we adjust the time window when transactions are processed (approx. 105 seconds),
-we obtain 20343 transactions per minute.
-
+Over a period of 1 minute and 45 seconds (adjusted time window),
+the total goes from 70201 to 104537 transactions,
+resulting in 19620 transactions per minute.
+This is similar to the baseline.
 
 ###### 1/3 Tendermint Core - 2/3 CometBFT
 
@@ -444,9 +440,24 @@ TODO
 
 ##### Memory Resident Set Size
 
+Reference plot for Resident Set Size (RSS) of all monitored processes.
+
+![rss](./img/v034_r200c2_rss.png)
+
+And the baseline average plot is below.
+
+![rss-avg](./img/v034_r200c2_rss_avg.png)
+
 ###### CometBFT Homogeneous network
 
-TODO
+This is the plot for the homogeneous network, which slightly more stable than the baseline over
+the time of the experiment.
+
+![rss-homogeneous](./img/v034_homog_rss.png)
+
+And the average plot is below. It oscillates around 560 MiB, which is noticeably lower than the baseline.
+
+![rss-avg-homogeneous](./img/v034_homog_rss_avg.png)
 
 ###### 1/3 Tendermint Core - 2/3 CometBFT
 
@@ -458,9 +469,16 @@ TODO
 
 ##### CPU utilization
 
+
+This is the baseline `load1` plot, for reference.
+
+![load1](./img/v034_r200c2_load1.png)
+
 ###### CometBFT Homogeneous network
 
-TODO
+![load1-homogeneous](./img/v034_homog_load1.png)
+
+Similarly to the baseline, it is contained in most cases below 5.
 
 ###### 1/3 Tendermint Core - 2/3 CometBFT
 
@@ -474,11 +492,11 @@ TODO
 
 #### CometBFT Homogeneous network
 
-**Result: ????**
+**Result: PASS**
 
 Date: 2023-02-08
 
-Version: xxxxxxxxxxxxxxxxx
+Version: 3b783434f26b0e87994e6a77c5411927aad9ce3f
 
 #### 1/3 Tendermint Core - 2/3 CometBFT
 

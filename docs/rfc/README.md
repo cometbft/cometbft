@@ -38,7 +38,7 @@ sections.
 ## Table of Contents
 
 The RFCs listed below are prior to the fork from
-[Tendermint Core repository][https://github.com/tendermint/tendermint/],
+[Tendermint Core repository](https://github.com/tendermint/tendermint/),
 therefore they have links to it and refer to CometBFT as "Tendermint" or "Tendermint Core".
 
 - [RFC-000: P2P Roadmap](./rfc-000-p2p-roadmap.rst)

@@ -30,7 +30,7 @@ Note the context/background should be written in the present tense.
 ## Table of Contents
 
 The ADRs listed below are prior to the fork from
-[Tendermint Core repository][https://github.com/tendermint/tendermint/],
+[Tendermint Core repository](https://github.com/tendermint/tendermint/),
 therefore they have links to it and refer to CometBFT as "Tendermint" or "Tendermint Core".
 
 ### Implemented

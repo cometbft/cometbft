@@ -98,8 +98,11 @@ The CometBFT team should improve it at every iteration to increase the amount of
 
 1. Unzip the blockstore into a directory
 2. Extract the latency report and the raw latencies for all the experiments. Run these commands from the directory containing the blockstore
-    * `go run github.com/cometbft/cometbft/test/loadtime/cmd/report@f1aaa436d --database-type goleveldb --data-dir ./ > results/report.txt`
-    * `go run github.com/cometbft/cometbft/test/loadtime/cmd/report@f1aaa436d --database-type goleveldb --data-dir ./ --csv results/raw.csv`
+    * ```bash
+       mkdir results
+       go run github.com/cometbft/cometbft/test/loadtime/cmd/report@f1aaa436d --database-type goleveldb --data-dir ./ > results/report.txt`
+       go run github.com/cometbft/cometbft/test/loadtime/cmd/report@f1aaa436d --database-type goleveldb --data-dir ./ --csv results/raw.csv`
+       ```
 3. File `report.txt` contains an unordered list of experiments with varying concurrent connections and transaction rate
     * If you are looking for the saturation point
         * Create files `report01.txt`, `report02.txt`, `report04.txt` and, for each experiment in file `report.txt`,

@@ -362,7 +362,7 @@ TODO
 
 ![latencies_all_tm2_3_cmt1_3](img/v034_200node_tm2cmt1/latency_all.png)
 
-![latencies_run1_tm2_3_cmt1_3](img/v034_200node_tm2cmt1/latency_run1.png)
+![latencies_run1_tm2_3_cmt1_3](img/v034_200node_tm2cmt1/latency_run1.png){width=250}
 
 #### Prometheus Metrics
 

@@ -406,7 +406,7 @@ TODO
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
-![cpuload_run1_tm2_cmt1](./img/v034_200node_tm2cmt1/resident_memory_bytes.png)
+![cpuload_run1_tm2_cmt1](./img/v034_200node_tm2cmt1/cpu_load.png)
 
 ### Test Results
 

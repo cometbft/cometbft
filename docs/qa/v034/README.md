@@ -276,3 +276,150 @@ transactions, via RPC, from the load runner process.
 Date: 2022-10-10
 
 Version: a28c987f5a604ff66b515dd415270063e6fb069d
+
+# v0.34.x - From Tendermint Core to CometBFT
+
+## 200 Node Testnet
+
+TODO: Explain: test focus on 200 node, not rotating node, explain why
+
+TODO: Explain the three networks tested: homogeneous, 1/3-2/3, 2/3-1/3. Mention the goal of testing heterogeneous network
+
+### Finding the Saturation Point
+
+TODO: Explain: No need. System is the same as was QA'd in October. Reusing results from there: load is `r=200,c=2`
+
+### Examining latencies
+
+TODO: In the next sections we give results for the three networks tested
+
+TODO: Mention that experiment was repeated 4-5 times and data consistent. Show it in the plot
+
+#### CometBFT Homogeneous network
+
+![latencies](./img/v034_200node_homog_latencies.png)
+
+TODO: Explain
+
+
+#### 1/3 Tendermint Core - 2/3 CometBFT
+
+TODO
+
+#### 2/3 Tendermint Core - 1/3 CometBFT
+
+TODO
+
+#### Prometheus Metrics
+
+TODO Say which experiment is chosen from those appearing in the latencies plot
+
+##### Mempool Size
+
+###### CometBFT Homogeneous network
+
+TODO
+
+###### 1/3 Tendermint Core - 2/3 CometBFT
+
+TODO
+
+###### 2/3 Tendermint Core - 1/3 CometBFT
+
+TODO
+
+##### Peers
+
+###### CometBFT Homogeneous network
+
+TODO
+###### 1/3 Tendermint Core - 2/3 CometBFT
+
+TODO
+
+###### 2/3 Tendermint Core - 1/3 CometBFT
+
+TODO
+
+##### Consensus Rounds per Height
+
+TODO
+
+###### CometBFT Homogeneous network
+
+TODO
+###### 1/3 Tendermint Core - 2/3 CometBFT
+
+TODO
+
+###### 2/3 Tendermint Core - 1/3 CometBFT
+
+TODO
+
+##### Blocks Produced per Minute, Transactions Processed per Minute
+
+###### CometBFT Homogeneous network
+
+TODO
+
+###### 1/3 Tendermint Core - 2/3 CometBFT
+
+TODO
+
+###### 2/3 Tendermint Core - 1/3 CometBFT
+
+TODO
+
+##### Memory Resident Set Size
+
+###### CometBFT Homogeneous network
+
+TODO
+
+###### 1/3 Tendermint Core - 2/3 CometBFT
+
+TODO
+
+###### 2/3 Tendermint Core - 1/3 CometBFT
+
+TODO
+
+##### CPU utilization
+
+###### CometBFT Homogeneous network
+
+TODO
+
+###### 1/3 Tendermint Core - 2/3 CometBFT
+
+TODO
+
+###### 2/3 Tendermint Core - 1/3 CometBFT
+
+TODO
+
+### Test Results
+
+#### CometBFT Homogeneous network
+
+**Result: ????**
+
+Date: 2023-02-08
+
+Version: xxxxxxxxxxxxxxxxx
+
+#### 1/3 Tendermint Core - 2/3 CometBFT
+
+**Result: ????**
+
+Date: 2023-02-08
+
+Version: xxxxxxxxxxxxxxxxx
+
+#### 2/3 Tendermint Core - 1/3 CometBFT
+
+**Result: ????**
+
+Date: 2023-02-08
+
+Version: xxxxxxxxxxxxxxxxx

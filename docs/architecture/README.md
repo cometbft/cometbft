@@ -78,7 +78,6 @@ therefore they have links to it and refer to CometBFT as "Tendermint" or "Tender
 
 - [ADR-006: Trust-Metric](./adr-006-trust-metric.md)
 - [ADR-024: Sign-Bytes](./adr-024-sign-bytes.md)
-- [ADR-035: Documentation](./adr-035-documentation.md)
 - [ADR-039: Peer-Behaviour](./adr-039-peer-behaviour.md)
 - [ADR-063: Privval-gRPC](./adr-063-privval-grpc.md)
 - [ADR-067: Mempool Refactor](./adr-067-mempool-refactor.md)
@@ -89,7 +88,7 @@ therefore they have links to it and refer to CometBFT as "Tendermint" or "Tender
 
 ### Deprecated
 
-None
+- [ADR-035: Documentation](./adr-035-documentation.md)
 
 ### Rejected
 

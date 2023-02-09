@@ -199,16 +199,6 @@ Before performing these steps, be sure the
    * `git tag -a v0.38.0 -m 'Release v0.38.0'`
    * `git push origin v0.38.0`
 6. Make sure that `main` is updated with the latest `CHANGELOG.md`, `CHANGELOG_PENDING.md`, and `UPGRADING.md`.
-7. Add the release to the documentation site generator config (see
-   [DOCS\_README.md](./docs/DOCS_README.md) for more details). In summary:
-   * Start on branch `main`.
-   * Add a new line at the bottom of [`docs/versions`](./docs/versions) to
-     ensure the newest release is the default for the landing page.
-   * Add a new entry to `themeConfig.versions` in
-     [`docs/.vuepress/config.js`](./docs/.vuepress/config.js) to include the
-	 release in the dropdown versions menu.
-   * Commit these changes to `main` and backport them into the backport
-     branch for this release.
 
 ## Patch release
 

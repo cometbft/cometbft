@@ -288,20 +288,22 @@ are minimal, and focus on rebranding Tendermint Core to CometBFT at places
 where there is no substantial risk of breaking compatibility
 with earlier Tendermint Core versions of `v0.34.x`.
 
-Indeed, CometBFT versions of `v0.34.x` should fulfill the following compatibility-related requirements.
+Indeed, CometBFT versions of `v0.34.x` (`v0.34.27` and subsequent) should fulfill
+the following compatibility-related requirements.
 
-* Operators can easily upgrade a `v0.34.x` version of Tendermint Core to CometBFT
-* Upgrades from Tendermint Core to CometBFT can be uncoordinated for versions of the `v0.34.x` branch
+* Operators can easily upgrade a `v0.34.x` version of Tendermint Core to CometBFT.
+* Upgrades from Tendermint Core to CometBFT can be uncoordinated for versions of the `v0.34.x` branch.
 * Nodes running CometBFT must be interoperable with those running Tendermint Core in the same chain,
   as long as all are running a `v0.34.x` version.
 
 These QA tests focus on the third bullet, whereas the first two bullets are tested using our _e2e tests_.
 
-It would be prohibitively time consuming to test mixed networks of all combinations of `v0.34.x` versions.
-Therefore our testing focuses on the last Tendermint Cote version (`v0.34.26`) and the CometBFT release
+It would be prohibitively time consuming to test mixed networks of all combinations of existing `v0.34.x`
+versions, combined with the CometBFT release candidate under test.
+Therefore our testing focuses on the last Tendermint Core version (`v0.34.26`) and the CometBFT release
 candidate under test.
 
-We only run the _200-node test_, and not the _rotating node test_.
+We only run the _200 node test_, and not the _rotating node test_.
 Since the changes to the system's logic are minimal, we are interested in these performance requirements:
 
 * The CometBFT release candidate under test performs similarly to Tendermint Core
@@ -334,16 +336,16 @@ Therefore, we will simply use a load of `r=200,c=2`
 
 ### Examining latencies
 
-In the section and the remaining, we provide the results of the _200 mode test_.
+In this section and the remaining, we provide the results of the _200 node test_.
 Each section is divided into three parts,
 reporting on the homogeneous network (all CometBFT nodes),
 mixed network with 1/3 of Tendermint Core nodes,
 and mixed network with 2/3 of Tendermint Core nodes.
 
-On each of the three networks, the experiment consisted of 4 or 5 runs, with the goal
+On each of the three networks, the experiment consists of 4 or 5 runs, with the goal
 to make sure the data obtained is consistent.
-On each of the networks, we picked only one representative run,
-for which the results are presented.
+On each of the networks, we pick only one representative run,
+and present the results for that run.
 
 #### CometBFT Homogeneous network
 
@@ -362,12 +364,22 @@ TODO
 
 #### Prometheus Metrics
 
-TODO Say which experiment is chosen from those appearing in the latencies plots
+This section reports on the key prometheus metrics extracted from the experiments.
+
+* For the CometBFT homogeneous network, we choose to present the third run
+  (see the latencies section above), as its latency date is representative, and
+  it contains the maximum latency of all runs (worst case scenario).
+* For the mixed network with 1/3 of nodes running Tendermint Core `v0.34.26`
+  and 2/3 running CometBFT.
+  TODO
+* For the mixed network with 2/3 of nodes running Tendermint Core `v0.34.26`
+  and 213 running CometBFT.
+  TODO
 
 ##### Mempool Size
 
 For reference, the plots below correspond to the baseline results.
-The first one shows the evolution over time of the cumulative number of transactions
+The first shows the evolution over time of the cumulative number of transactions
 inside all full nodes' mempools at a given time.
 
 ![mempool-cumulative](./img/v034_r200c2_mempool_size.png)
@@ -379,7 +391,7 @@ outstanding transactions.
 
 ###### CometBFT Homogeneous network
 
-The mempool size was as stable and homogeneous at all full nodes as in the baseline.
+The mempool size was as stable at all full nodes as in the baseline.
 These are the corresponding plots for the homogeneous network test.
 
 ![mempool-cumulative-homogeneous](./img/v034_homog_mempool_size.png)
@@ -399,7 +411,8 @@ TODO
 The plot below corresponds to the baseline results, for reference.
 It shows the stability of peers throughout the experiment.
 Seed nodes typically have a higher number of peers.
-The fact that non-seed nodes reach more than 50 peers is due to #9548.
+The fact that non-seed nodes reach more than 50 peers is due to
+[#9548](https://github.com/tendermint/tendermint/issues/9548).
 
 ![peers](./img/v034_r200c2_peers.png)
 
@@ -409,7 +422,7 @@ The plot below shows the result for the homogeneous network.
 It is very similar to the baseline. The only difference being that
 the seed nodes seem to loose peers in the middle of the experiment.
 However this cannot be attributed to the differences in the code,
-which are mainly renaming.
+which are mainly rebranding.
 
 ![peers-homogeneous](./img/v034_homog_peers.png)
 
@@ -431,9 +444,9 @@ For reference, this is the baseline plot.
 ###### CometBFT Homogeneous network
 
 Most heights took just one round, some nodes needed to advance to round 1 at various moments,
-and a few nodes needed to advance to the third round at one point.
-This coincides the time at which we observed the biggest peak in mempool size
-on the corresponding plot.
+and a few nodes even needed to advance to the third round at one point.
+This coincides with the time at which we observed the biggest peak in mempool size
+on the corresponding plot, shown above.
 
 ![rounds-homogeneous](./img/v034_homog_rounds.png)
 
@@ -484,7 +497,7 @@ Reference plot for Resident Set Size (RSS) of all monitored processes.
 
 ![rss](./img/v034_r200c2_rss.png)
 
-And the baseline average plot is below.
+And this is the baseline average plot.
 
 ![rss-avg](./img/v034_r200c2_rss_avg.png)
 
@@ -495,7 +508,7 @@ the time of the experiment.
 
 ![rss-homogeneous](./img/v034_homog_rss.png)
 
-And the average plot is below. It oscillates around 560 MiB, which is noticeably lower than the baseline.
+And this is the average plot. It oscillates around 560 MiB, which is noticeably lower than the baseline.
 
 ![rss-avg-homogeneous](./img/v034_homog_rss_avg.png)
 
@@ -508,7 +521,6 @@ TODO
 TODO
 
 ##### CPU utilization
-
 
 This is the baseline `load1` plot, for reference.
 

@@ -1,5 +1,5 @@
 name: Docker
-# Build & Push rebuilds the CometBFT docker image on every push to main and creation of tags
+# Rebuilds the CometBFT docker image on every push to main and creation of tags
 # and pushes the image to https://hub.docker.com/r/cometbft/cometbft
 on:
   push:

@@ -51,7 +51,7 @@ info:
 
         ws ws://localhost:26657/websocket
         > { "jsonrpc": "2.0", "method": "subscribe", "params": ["tm.event='NewBlock'"], "id": 1 }
-  version: "main"
+  version: "v0.37"
   license:
     name: Apache 2.0
     url: https://github.com/cometbft/cometbft/blob/v0.37.x/LICENSE

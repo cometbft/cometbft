@@ -1,4 +1,4 @@
-package v0
+package mempool
 
 import (
 	"encoding/hex"
@@ -18,7 +18,6 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
-	"github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/mock"
 	memproto "github.com/cometbft/cometbft/proto/tendermint/mempool"
@@ -62,7 +61,7 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 		}
 	}
 
-	txs := checkTxs(t, reactors[0].mempool, numTxs, mempool.UnknownPeerID)
+	txs := checkTxs(t, reactors[0].mempool, numTxs, UnknownPeerID)
 	waitForTxsOnReactors(t, txs, reactors)
 }
 
@@ -92,7 +91,7 @@ func TestReactorConcurrency(t *testing.T) {
 
 		// 1. submit a bunch of txs
 		// 2. update the whole mempool
-		txs := checkTxs(t, reactors[0].mempool, numTxs, mempool.UnknownPeerID)
+		txs := checkTxs(t, reactors[0].mempool, numTxs, UnknownPeerID)
 		go func() {
 			defer wg.Done()
 
@@ -109,7 +108,7 @@ func TestReactorConcurrency(t *testing.T) {
 
 		// 1. submit a bunch of txs
 		// 2. update none
-		_ = checkTxs(t, reactors[1].mempool, numTxs, mempool.UnknownPeerID)
+		_ = checkTxs(t, reactors[1].mempool, numTxs, UnknownPeerID)
 		go func() {
 			defer wg.Done()
 
@@ -171,7 +170,7 @@ func TestReactor_MaxTxBytes(t *testing.T) {
 	// Broadcast a tx, which has the max size
 	// => ensure it's received by the second reactor.
 	tx1 := cmtrand.Bytes(config.Mempool.MaxTxBytes)
-	err := reactors[0].mempool.CheckTx(tx1, nil, mempool.TxInfo{SenderID: mempool.UnknownPeerID})
+	err := reactors[0].mempool.CheckTx(tx1, nil, TxInfo{SenderID: UnknownPeerID})
 	require.NoError(t, err)
 	waitForTxsOnReactors(t, []types.Tx{tx1}, reactors)
 
@@ -181,7 +180,7 @@ func TestReactor_MaxTxBytes(t *testing.T) {
 	// Broadcast a tx, which is beyond the max size
 	// => ensure it's not sent
 	tx2 := cmtrand.Bytes(config.Mempool.MaxTxBytes + 1)
-	err = reactors[0].mempool.CheckTx(tx2, nil, mempool.TxInfo{SenderID: mempool.UnknownPeerID})
+	err = reactors[0].mempool.CheckTx(tx2, nil, TxInfo{SenderID: UnknownPeerID})
 	require.Error(t, err)
 }
 
@@ -253,7 +252,7 @@ func TestMempoolIDsPanicsIfNodeRequestsOvermaxActiveIDs(t *testing.T) {
 	// 0 is already reserved for UnknownPeerID
 	ids := newMempoolIDs()
 
-	for i := 0; i < mempool.MaxActiveIDs-1; i++ {
+	for i := 0; i < MaxActiveIDs-1; i++ {
 		peer := mock.NewPeer(net.IP{127, 0, 0, 1})
 		ids.ReserveForPeer(peer)
 	}
@@ -281,10 +280,10 @@ func TestDontExhaustMaxActiveIDs(t *testing.T) {
 	}()
 	reactor := reactors[0]
 
-	for i := 0; i < mempool.MaxActiveIDs+1; i++ {
+	for i := 0; i < MaxActiveIDs+1; i++ {
 		peer := mock.NewPeer(nil)
 		reactor.Receive(p2p.Envelope{
-			ChannelID: mempool.MempoolChannel,
+			ChannelID: MempoolChannel,
 			Src:       peer,
 			Message:   &memproto.Message{}, // This uses the wrong message type on purpose to stop the peer as in an error state in the reactor.
 		},

@@ -23,7 +23,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	mempl "github.com/cometbft/cometbft/mempool"
-	mempoolv0 "github.com/cometbft/cometbft/mempool/v0"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/conn"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
@@ -271,12 +270,12 @@ func TestCreateProposalBlock(t *testing.T) {
 
 	// Make Mempool
 	memplMetrics := mempl.NopMetrics()
-	mempool := mempoolv0.NewCListMempool(config.Mempool,
+	mempool := mempl.NewCListMempool(config.Mempool,
 		proxyApp.Mempool(),
 		state.LastBlockHeight,
-		mempoolv0.WithMetrics(memplMetrics),
-		mempoolv0.WithPreCheck(sm.TxPreCheck(state)),
-		mempoolv0.WithPostCheck(sm.TxPostCheck(state)))
+		mempl.WithMetrics(memplMetrics),
+		mempl.WithPreCheck(sm.TxPreCheck(state)),
+		mempl.WithPostCheck(sm.TxPostCheck(state)))
 
 	// Make EvidencePool
 	evidenceDB := dbm.NewMemDB()
@@ -367,12 +366,12 @@ func TestMaxProposalBlockSize(t *testing.T) {
 
 	// Make Mempool
 	memplMetrics := mempl.NopMetrics()
-	mempool := mempoolv0.NewCListMempool(config.Mempool,
+	mempool := mempl.NewCListMempool(config.Mempool,
 		proxyApp.Mempool(),
 		state.LastBlockHeight,
-		mempoolv0.WithMetrics(memplMetrics),
-		mempoolv0.WithPreCheck(sm.TxPreCheck(state)),
-		mempoolv0.WithPostCheck(sm.TxPostCheck(state)))
+		mempl.WithMetrics(memplMetrics),
+		mempl.WithPreCheck(sm.TxPreCheck(state)),
+		mempl.WithPostCheck(sm.TxPostCheck(state)))
 
 	blockStore := store.NewBlockStore(dbm.NewMemDB())
 

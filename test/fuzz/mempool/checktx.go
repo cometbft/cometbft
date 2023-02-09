@@ -1,10 +1,9 @@
-package v0
+package reactor
 
 import (
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	"github.com/cometbft/cometbft/config"
 	mempl "github.com/cometbft/cometbft/mempool"
-	mempoolv0 "github.com/cometbft/cometbft/mempool/v0"
 	"github.com/cometbft/cometbft/proxy"
 )
 
@@ -21,7 +20,7 @@ func init() {
 
 	cfg := config.DefaultMempoolConfig()
 	cfg.Broadcast = false
-	mempool = mempoolv0.NewCListMempool(cfg, appConnMem, 0)
+	mempool = mempl.NewCListMempool(cfg, appConnMem, 0)
 }
 
 func Fuzz(data []byte) int {

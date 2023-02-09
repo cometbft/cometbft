@@ -10,7 +10,6 @@ import (
 	"github.com/cometbft/cometbft/config"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	mempool "github.com/cometbft/cometbft/mempool"
-	mempoolv0 "github.com/cometbft/cometbft/mempool/v0"
 )
 
 func FuzzMempool(f *testing.F) {
@@ -25,7 +24,7 @@ func FuzzMempool(f *testing.F) {
 	cfg := config.DefaultMempoolConfig()
 	cfg.Broadcast = false
 
-	mp := mempoolv0.NewCListMempool(cfg, conn, 0)
+	mp := mempool.NewCListMempool(cfg, conn, 0)
 
 	f.Fuzz(func(t *testing.T, data []byte) {
 		_ = mp.CheckTx(data, nil, mempool.TxInfo{})

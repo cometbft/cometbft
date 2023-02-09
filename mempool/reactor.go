@@ -1,4 +1,4 @@
-package v0
+package mempool
 
 import (
 	"errors"
@@ -9,7 +9,6 @@ import (
 	"github.com/cometbft/cometbft/libs/clist"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	"github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	protomem "github.com/cometbft/cometbft/proto/tendermint/mempool"
 	"github.com/cometbft/cometbft/types"
@@ -46,8 +45,8 @@ func (ids *mempoolIDs) ReserveForPeer(peer p2p.Peer) {
 // nextPeerID returns the next unused peer ID to use.
 // This assumes that ids's mutex is already locked.
 func (ids *mempoolIDs) nextPeerID() uint16 {
-	if len(ids.activeIDs) == mempool.MaxActiveIDs {
-		panic(fmt.Sprintf("node has maximum %d active IDs and wanted to get one more", mempool.MaxActiveIDs))
+	if len(ids.activeIDs) == MaxActiveIDs {
+		panic(fmt.Sprintf("node has maximum %d active IDs and wanted to get one more", MaxActiveIDs))
 	}
 
 	_, idExists := ids.activeIDs[ids.nextID]
@@ -131,7 +130,7 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 
 	return []*p2p.ChannelDescriptor{
 		{
-			ID:                  mempool.MempoolChannel,
+			ID:                  MempoolChannel,
 			Priority:            5,
 			RecvMessageCapacity: batchMsg.Size(),
 			MessageType:         &protomem.Message{},
@@ -164,7 +163,7 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 			memR.Logger.Error("received empty txs from peer", "src", e.Src)
 			return
 		}
-		txInfo := mempool.TxInfo{SenderID: memR.ids.GetForPeer(e.Src)}
+		txInfo := TxInfo{SenderID: memR.ids.GetForPeer(e.Src)}
 		if e.Src != nil {
 			txInfo.SenderP2PID = e.Src.ID()
 		}
@@ -173,7 +172,7 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 		for _, tx := range protoTxs {
 			ntx := types.Tx(tx)
 			err = memR.mempool.CheckTx(ntx, nil, txInfo)
-			if errors.Is(err, mempool.ErrTxInCache) {
+			if errors.Is(err, ErrTxInCache) {
 				memR.Logger.Debug("Tx already exists in cache", "tx", ntx.String())
 			} else if err != nil {
 				memR.Logger.Info("Could not check tx", "tx", ntx.String(), "err", err)
@@ -227,14 +226,14 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			// different every time due to us using a map. Sometimes other reactors
 			// will be initialized before the consensus reactor. We should wait a few
 			// milliseconds and retry.
-			time.Sleep(mempool.PeerCatchupSleepIntervalMS * time.Millisecond)
+			time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
 			continue
 		}
 
 		// Allow for a lag of 1 block.
 		memTx := next.Value.(*mempoolTx)
 		if peerState.GetHeight() < memTx.Height()-1 {
-			time.Sleep(mempool.PeerCatchupSleepIntervalMS * time.Millisecond)
+			time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
 			continue
 		}
 
@@ -243,11 +242,11 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 
 		if _, ok := memTx.senders.Load(peerID); !ok {
 			success := peer.Send(p2p.Envelope{
-				ChannelID: mempool.MempoolChannel,
+				ChannelID: MempoolChannel,
 				Message:   &protomem.Txs{Txs: [][]byte{memTx.tx}},
 			})
 			if !success {
-				time.Sleep(mempool.PeerCatchupSleepIntervalMS * time.Millisecond)
+				time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
 				continue
 			}
 		}

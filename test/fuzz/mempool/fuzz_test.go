@@ -1,4 +1,4 @@
-package v0_test
+package reactor_test
 
 import (
 	"io"
@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	mempoolv0 "github.com/cometbft/cometbft/test/fuzz/mempool/v0"
+	mempl "github.com/cometbft/cometbft/test/fuzz/mempool"
 )
 
 const testdataCasesDir = "testdata/cases"
@@ -28,7 +28,7 @@ func TestMempoolTestdataCases(t *testing.T) {
 			require.NoError(t, err)
 			input, err := io.ReadAll(f)
 			require.NoError(t, err)
-			mempoolv0.Fuzz(input)
+			mempl.Fuzz(input)
 		})
 	}
 }

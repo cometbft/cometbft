@@ -25,7 +25,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
 	mempl "github.com/cometbft/cometbft/mempool"
-	mempoolv0 "github.com/cometbft/cometbft/mempool/v0"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/privval"
@@ -226,18 +225,18 @@ func createMempoolAndMempoolReactor(
 	logger log.Logger,
 ) (mempl.Mempool, p2p.Reactor) {
 	logger = logger.With("module", "mempool")
-	mp := mempoolv0.NewCListMempool(
+	mp := mempl.NewCListMempool(
 		config.Mempool,
 		proxyApp.Mempool(),
 		state.LastBlockHeight,
-		mempoolv0.WithMetrics(memplMetrics),
-		mempoolv0.WithPreCheck(sm.TxPreCheck(state)),
-		mempoolv0.WithPostCheck(sm.TxPostCheck(state)),
+		mempl.WithMetrics(memplMetrics),
+		mempl.WithPreCheck(sm.TxPreCheck(state)),
+		mempl.WithPostCheck(sm.TxPostCheck(state)),
 	)
 
 	mp.SetLogger(logger)
 
-	reactor := mempoolv0.NewReactor(
+	reactor := mempl.NewReactor(
 		config.Mempool,
 		mp,
 	)

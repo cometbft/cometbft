@@ -1,4 +1,4 @@
-package v0
+package mempool
 
 import (
 	"bytes"
@@ -12,7 +12,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	"github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
@@ -37,8 +36,8 @@ type CListMempool struct {
 	// Exclusive mutex for Update method to prevent concurrent execution of
 	// CheckTx or ReapMaxBytesMaxGas(ReapMaxTxs) methods.
 	updateMtx cmtsync.RWMutex
-	preCheck  mempool.PreCheckFunc
-	postCheck mempool.PostCheckFunc
+	preCheck  PreCheckFunc
+	postCheck PostCheckFunc
 
 	txs          *clist.CList // concurrent linked-list of good txs
 	proxyAppConn proxy.AppConnMempool
@@ -55,13 +54,13 @@ type CListMempool struct {
 
 	// Keep a cache of already-seen txs.
 	// This reduces the pressure on the proxyApp.
-	cache mempool.TxCache
+	cache TxCache
 
 	logger  log.Logger
-	metrics *mempool.Metrics
+	metrics *Metrics
 }
 
-var _ mempool.Mempool = &CListMempool{}
+var _ Mempool = &CListMempool{}
 
 // CListMempoolOption sets an optional parameter on the mempool.
 type CListMempoolOption func(*CListMempool)
@@ -83,13 +82,13 @@ func NewCListMempool(
 		recheckCursor: nil,
 		recheckEnd:    nil,
 		logger:        log.NewNopLogger(),
-		metrics:       mempool.NopMetrics(),
+		metrics:       NopMetrics(),
 	}
 
 	if cfg.CacheSize > 0 {
-		mp.cache = mempool.NewLRUTxCache(cfg.CacheSize)
+		mp.cache = NewLRUTxCache(cfg.CacheSize)
 	} else {
-		mp.cache = mempool.NopTxCache{}
+		mp.cache = NopTxCache{}
 	}
 
 	proxyAppConn.SetResponseCallback(mp.globalCb)
@@ -114,19 +113,19 @@ func (mem *CListMempool) SetLogger(l log.Logger) {
 // WithPreCheck sets a filter for the mempool to reject a tx if f(tx) returns
 // false. This is ran before CheckTx. Only applies to the first created block.
 // After that, Update overwrites the existing value.
-func WithPreCheck(f mempool.PreCheckFunc) CListMempoolOption {
+func WithPreCheck(f PreCheckFunc) CListMempoolOption {
 	return func(mem *CListMempool) { mem.preCheck = f }
 }
 
 // WithPostCheck sets a filter for the mempool to reject a tx if f(tx) returns
 // false. This is ran after CheckTx. Only applies to the first created block.
 // After that, Update overwrites the existing value.
-func WithPostCheck(f mempool.PostCheckFunc) CListMempoolOption {
+func WithPostCheck(f PostCheckFunc) CListMempoolOption {
 	return func(mem *CListMempool) { mem.postCheck = f }
 }
 
 // WithMetrics sets the metrics.
-func WithMetrics(metrics *mempool.Metrics) CListMempoolOption {
+func WithMetrics(metrics *Metrics) CListMempoolOption {
 	return func(mem *CListMempool) { mem.metrics = metrics }
 }
 
@@ -203,7 +202,7 @@ func (mem *CListMempool) TxsWaitChan() <-chan struct{} {
 func (mem *CListMempool) CheckTx(
 	tx types.Tx,
 	cb func(*abci.Response),
-	txInfo mempool.TxInfo,
+	txInfo TxInfo,
 ) error {
 
 	mem.updateMtx.RLock()
@@ -217,7 +216,7 @@ func (mem *CListMempool) CheckTx(
 	}
 
 	if txSize > mem.config.MaxTxBytes {
-		return mempool.ErrTxTooLarge{
+		return ErrTxTooLarge{
 			Max:    mem.config.MaxTxBytes,
 			Actual: txSize,
 		}
@@ -225,7 +224,7 @@ func (mem *CListMempool) CheckTx(
 
 	if mem.preCheck != nil {
 		if err := mem.preCheck(tx); err != nil {
-			return mempool.ErrPreCheck{
+			return ErrPreCheck{
 				Reason: err,
 			}
 		}
@@ -248,7 +247,7 @@ func (mem *CListMempool) CheckTx(
 			// its non-trivial since invalid txs can become valid,
 			// but they can spam the same tx with little cost to them atm.
 		}
-		return mempool.ErrTxInCache
+		return ErrTxInCache
 	}
 
 	reqRes := mem.proxyAppConn.CheckTxAsync(abci.RequestCheckTx{Tx: tx})
@@ -354,7 +353,7 @@ func (mem *CListMempool) isFull(txSize int) error {
 	)
 
 	if memSize >= mem.config.Size || int64(txSize)+txsBytes > mem.config.MaxTxsBytes {
-		return mempool.ErrMempoolIsFull{
+		return ErrMempoolIsFull{
 			NumTxs:      memSize,
 			MaxTxs:      mem.config.Size,
 			TxsBytes:    txsBytes,
@@ -580,8 +579,8 @@ func (mem *CListMempool) Update(
 	height int64,
 	txs types.Txs,
 	deliverTxResponses []*abci.ResponseDeliverTx,
-	preCheck mempool.PreCheckFunc,
-	postCheck mempool.PostCheckFunc,
+	preCheck PreCheckFunc,
+	postCheck PostCheckFunc,
 ) error {
 	// Set height
 	mem.height = height

@@ -312,13 +312,29 @@ TODO
 
 #### Prometheus Metrics
 
-TODO Say which experiment is chosen from those appearing in the latencies plot
+TODO Say which experiment is chosen from those appearing in the latencies plots
 
 ##### Mempool Size
 
+For reference, the plots below correspond to the baseline results.
+The first one shows the evolution over time of the cumulative number of transactions
+inside all full nodes' mempools at a given time.
+
+![mempool-cumulative](./img/v034_r200c2_mempool_size.png)
+
+The second one shows evolution of the average over all full nodes, which oscillates between 1500 and 2000
+outstanding transactions.
+
+![mempool-avg](./img/v034_r200c2_mempool_size_avg.png)
+
 ###### CometBFT Homogeneous network
 
-TODO
+The mempool size was as stable and homogeneous at all full nodes as in the baseline.
+These are the corresponding plots for the homogeneous network test.
+
+![mempool-cumulative-homogeneous](./img/v034_homog_mempool_size.png)
+
+![mempool-avg-homogeneous](./img/v034_homog_mempool_size_avg.png)
 
 ###### 1/3 Tendermint Core - 2/3 CometBFT
 
@@ -330,9 +346,23 @@ TODO
 
 ##### Peers
 
+The plot below corresponds to the baseline results, for reference.
+It shows the stability of peers throughout the experiment.
+Seed nodes typically have a higher number of peers.
+The fact that non-seed nodes reach more than 50 peers is due to #9548.
+
+![peers](./img/v034_r200c2_peers.png)
+
 ###### CometBFT Homogeneous network
 
-TODO
+The plot below shows the result for the homogeneous network.
+It is very similar to the baseline. The only difference being that
+the seed nodes seem to loose peers in the middle of the experiment.
+However this cannot be attributed to the differences in the code,
+which are mainly renaming.
+
+![peers-homogeneous](./img/v034_homog_peers.png)
+
 ###### 1/3 Tendermint Core - 2/3 CometBFT
 
 TODO
@@ -343,11 +373,20 @@ TODO
 
 ##### Consensus Rounds per Height
 
-TODO
+For reference, this is the baseline plot.
+
+![rounds](./img/v034_r200c2_rounds.png)
+
 
 ###### CometBFT Homogeneous network
 
-TODO
+Most heights took just one round, some nodes needed to advance to round 1 at various moments,
+and a few nodes needed to advance to the third round at one point.
+This coincides the time at which we observed the biggest peak in mempool size
+on the corresponding plot.
+
+![rounds-homogeneous](./img/v034_homog_rounds.png)
+
 ###### 1/3 Tendermint Core - 2/3 CometBFT
 
 TODO
@@ -358,9 +397,32 @@ TODO
 
 ##### Blocks Produced per Minute, Transactions Processed per Minute
 
+The blocks produced per minute are the slope of this plot, which corresponds to the baseline results.
+
+![heights](./img/v034_r200c2_heights.png)
+
+The transactions processed per minute are the slope of this plot,
+which, again, corresponds to the baseline results.
+
+![total-txs](./img/v034_r200c2_total-txs.png)
+
 ###### CometBFT Homogeneous network
 
-TODO
+![heights-homogeneous](./img/v034_homog_heights.png)
+
+Over a period of 2 minutes and 4 seconds, the height goes from 251 to 295.
+This results in an average of 21.3 blocks produced per minute.
+
+![total-txs-homogeneous](./img/v034_homog_total-txs.png)
+
+TODO update
+
+Over a period of 2 minutes, the total goes from 64525 to 100125 transactions,
+resulting in 17800 transactions per minute. However, we can see in the plot that
+all transactions in the load are processed long before the two minutes.
+If we adjust the time window when transactions are processed (approx. 105 seconds),
+we obtain 20343 transactions per minute.
+
 
 ###### 1/3 Tendermint Core - 2/3 CometBFT
 

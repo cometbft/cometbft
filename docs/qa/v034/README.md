@@ -383,6 +383,8 @@ TODO
 
 ##### Consensus Rounds per Height
 
+TODO Move this section below the mempool. 
+
 For reference, this is the baseline plot.
 
 ![rounds](./img/v034_r200c2_rounds.png)
@@ -442,7 +444,7 @@ In two minutes the height goes from 32 to 90 which gives an average of 29 blocks
 
 ![tx_min_run1_tm2_cmt1](./img/v034_200node_tm2cmt1/num_tx.png)
 
-In 1min and 30 the system processes 35600 transactions which amounts to 23000 transactions per minute.
+In 1 minutes and 30 seconds the system processes 35600 transactions which amounts to 23000 transactions per minute.
 ##### Memory Resident Set Size
 
 Reference plot for Resident Set Size (RSS) of all monitored processes.

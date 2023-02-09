@@ -279,21 +279,71 @@ Version: a28c987f5a604ff66b515dd415270063e6fb069d
 
 # v0.34.x - From Tendermint Core to CometBFT
 
+This section reports on the QA process we followed before releasing the first `v0.34.x` version
+from our CometBFT repository.
+
+The changes with respect to the last version of `v0.34.x`
+(namely `v0.34.26`, released from the Informal Systems' Tendermint Core fork)
+are minimal, and focus on rebranding Tendermint Core to CometBFT at places
+where there is no substantial risk of breaking compatibility
+with earlier Tendermint Core versions of `v0.34.x`.
+
+Indeed, CometBFT versions of `v0.34.x` should fulfill the following compatibility-related requirements.
+
+* Operators can easily upgrade a `v0.34.x` version of Tendermint Core to CometBFT
+* Upgrades from Tendermint Core to CometBFT can be uncoordinated for versions of the `v0.34.x` branch
+* Nodes running CometBFT must be interoperable with those running Tendermint Core in the same chain,
+  as long as all are running a `v0.34.x` version.
+
+These QA tests focus on the third bullet, whereas the first two bullets are tested using our _e2e tests_.
+
+It would be prohibitively time consuming to test mixed networks of all combinations of `v0.34.x` versions.
+Therefore our testing focuses on the last Tendermint Cote version (`v0.34.26`) and the CometBFT release
+candidate under test.
+
+We only run the _200-node test_, and not the _rotating node test_.
+Since the changes to the system's logic are minimal, we are interested in these performance requirements:
+
+* The CometBFT release candidate under test performs similarly to Tendermint Core
+    * when used at scale (i.e., in a large network of CometBFT nodes)
+    * when used at scale in a mixed network (i.e., some nodes are running CometBFT
+      and others are running an older Tendermint Core version)
+
+Therefore we carry out a complete run of the _200-node test_ on the following networks:
+
+* A homogeneous 200-node testnet, where all nodes are running the CometBFT release candidate under test.
+* A mixed network where 1/3 of the nodes are running the CometBFT release candidate under test,
+  and the rest are running Tendermint Core `v0.34.26`.
+* A mixed network where 2/3 of the nodes are running the CometBFT release candidate under test,
+  and the rest are running Tendermint Core `v0.34.26`.
+
 ## 200 Node Testnet
 
-TODO: Explain: test focus on 200 node, not rotating node, explain why
+TODO: Get rid of this level of subsection (as there is no rotating node test).
+      Not doing it now to save merge conflicts to Lásaro and Jasmina
 
-TODO: Explain the three networks tested: homogeneous, 1/3-2/3, 2/3-1/3. Mention the goal of testing heterogeneous network
+### Saturation Point
 
-### Finding the Saturation Point
+As the CometBFT release candidate under test has minimal changes
+with respect to Tendermint Core `v0.34.26`, other than the rebranding changes,
+we can confidently reuse the results from the `v0.34.x` baseline test regarding
+the [saturation point](#finding-the-saturation-point).
 
-TODO: Explain: No need. System is the same as was QA'd in October. Reusing results from there: load is `r=200,c=2`
+Therefore, we will simply use a load of `r=200,c=2`
+(see the explanation [here](#finding-the-saturation-point)).
 
 ### Examining latencies
 
-TODO: In the next sections we give results for the three networks tested
+In the section and the remaining, we provide the results of the _200 mode test_.
+Each section is divided into three parts,
+reporting on the homogeneous network (all CometBFT nodes),
+mixed network with 1/3 of Tendermint Core nodes,
+and mixed network with 2/3 of Tendermint Core nodes.
 
-TODO: Mention that experiment was repeated 4-5 times and data consistent. Show it in the plot
+On each of the three networks, the experiment consisted of 4 or 5 runs, with the goal
+to make sure the data obtained is consistent.
+On each of the networks, we picked only one representative run,
+for which the results are presented.
 
 #### CometBFT Homogeneous network
 

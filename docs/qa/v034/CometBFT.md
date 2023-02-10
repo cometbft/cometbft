@@ -55,10 +55,10 @@ Therefore we carry out a complete run of the _200-node test_ on the following ne
 As the CometBFT release candidate under test has minimal changes
 with respect to Tendermint Core `v0.34.26`, other than the rebranding changes,
 we can confidently reuse the results from the `v0.34.x` baseline test regarding
-the [saturation point](#finding-the-saturation-point).
+the [saturation point](./TMCore.md#finding-the-saturation-point).
 
 Therefore, we will simply use a load of `r=200,c=2`
-(see the explanation [here](#finding-the-saturation-point)).
+(see the explanation [here](./TMCore.md#finding-the-saturation-point)).
 
 ## Examining latencies
 
@@ -93,8 +93,10 @@ We have picked the experiment whose identifier starts with 47595c66.
 
 ## Prometheus Metrics
 
-This section reports on the key prometheus metrics extracted from the experiments.
+This section reports on the key Prometheus metrics extracted from the experiments.
 
+* For the baseline results for `v0.34.x`, obtained in October 202
+  and reported [here](./TMCore.md).
 * For the CometBFT homogeneous network, we choose to present the
   experiment with UUID starting with `be8c` (see the latencies section above),
   as its latency data is representative,
@@ -140,6 +142,29 @@ These are the corresponding plots for the homogeneous network test.
 
 ![mempool-avg_tm2_3_cmt_1_3](./img/v034_200node_tm2cmt1/avg_mempool_size.png)
 
+### Consensus Rounds per Height
+
+For reference, this is the baseline plot. We can see that round 1 is reached with a certain frequency.
+
+![rounds](./img/baseline/rounds.png)
+
+#### CometBFT Homogeneous network
+
+Most heights finished in round 0, some nodes needed to advance to round 1 at various moments,
+and a few nodes even needed to advance to round 2 at one point.
+This coincides with the time at which we observed the biggest peak in mempool size
+on the corresponding plot, shown above.
+
+![rounds-homogeneous](./img/homogeneous/rounds.png)
+
+#### 1/3 Tendermint Core - 2/3 CometBFT
+
+![peers](./img/cmt2tm1/rounds.png)
+
+#### 2/3 Tendermint Core - 1/3 CometBFT
+
+![rounds-tm2_3_cmt1_3](./img/v034_200node_tm2cmt1/rounds.png)
+
 ### Peers
 
 The plot below corresponds to the baseline results, for reference.
@@ -147,6 +172,8 @@ It shows the stability of peers throughout the experiment.
 Seed nodes typically have a higher number of peers.
 The fact that non-seed nodes reach more than 50 peers is due to
 [#9548](https://github.com/tendermint/tendermint/issues/9548).
+
+The thick red dashed line represents the moving average over a sliding window of 20 seconds.
 
 ![peers](./img/baseline/peers.png)
 
@@ -168,34 +195,9 @@ which are mainly rebranding.
 
 ![peers-tm2_3_cmt1_3](./img/v034_200node_tm2cmt1/peers.png)
 
-### Consensus Rounds per Height
-
-TODO Move this under mempool as we refer to it
-
-For reference, this is the baseline plot.
-
-![rounds](./img/baseline/rounds.png)
-
-#### CometBFT Homogeneous network
-
-Most heights took just one round, some nodes needed to advance to round 1 at various moments,
-and a few nodes even needed to advance to the third round at one point.
-This coincides with the time at which we observed the biggest peak in mempool size
-on the corresponding plot, shown above.
-
-![rounds-homogeneous](./img/homogeneous/rounds.png)
-
-#### 1/3 Tendermint Core - 2/3 CometBFT
-
-![peers](./img/cmt2tm1/rounds.png)
-
-#### 2/3 Tendermint Core - 1/3 CometBFT
-
-![rounds-tm2_3_cmt1_3](./img/v034_200node_tm2cmt1/rounds.png)
-
 ### Blocks Produced per Minute, Transactions Processed per Minute
 
-The following plot shows the rate of block creation, with a sliding window of 20 seconds,
+The following plot shows the rate of block production, with a sliding window of 20 seconds,
 throughout the experiment.
 
 ![heights](./img/baseline/block_rate_regular.png)
@@ -206,16 +208,19 @@ throughout the experiment.
 ![total-txs](./img/baseline/total_txs_rate_regular.png)
 
 Both plots correspond to the baseline results.
+The thick red dashed line represents the moving average over a sliding window of 20 seconds.
 
 #### CometBFT Homogeneous network
 
-The plot for the homogeneous network shows the rate oscillates around 20 blocks/minute.
+The plot showing the block production rate shows that the rate oscillates around 20 blocks/minute.
 
 ![heights-homogeneous-rate](./img/homogeneous/block_rate_regular.png)
 
 The plot showing the transaction rate shows the rate stays around 20000 transactions per minute.
 
 ![txs-homogeneous-rate](./img/homogeneous/total_txs_rate_regular.png)
+
+The thick red dashed line represents the moving average over a sliding window of 20 seconds.
 
 #### 1/3 Tendermint Core - 2/3 CometBFT
 
@@ -239,7 +244,7 @@ In 1 minutes and 30 seconds the system processes 35600 transactions which amount
 
 ### Memory Resident Set Size
 
-Reference plot for Resident Set Size (RSS) of all monitored processes.
+Baseline plot for Resident Set Size (RSS) of all monitored processes, for reference.
 
 ![rss](./img/baseline/memory.png)
 
@@ -249,7 +254,7 @@ And this is the baseline average plot.
 
 #### CometBFT Homogeneous network
 
-This is the plot for the homogeneous network, which slightly more stable than the baseline over
+This is the plot for the homogeneous network, which is slightly more stable than the baseline over
 the time of the experiment.
 
 ![rss-homogeneous](./img/homogeneous/memory.png)
@@ -275,7 +280,7 @@ Here
 
 ### CPU utilization
 
-This is the baseline `load1` plot, for reference.
+For reference, this is the baseline `load1` plot (as typically shown in the first line of the Unix `top` command).
 
 ![load1](./img/baseline/cpu.png)
 

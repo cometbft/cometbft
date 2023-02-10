@@ -29,7 +29,8 @@ jobs:
 
       # Link to CHANGELOG.md as release notes (ensure that changelog is built
       # with unreleased entries prior to cutting a pre-release)
-      - run: echo ":book: [CHANGELOG](https://github.com/cometbft/cometbft/blob/${GITHUB_REF#refs/tags/}/CHANGELOG.md)" > ../release_notes.md
+      - run: |
+          echo ":book: [CHANGELOG](https://github.com/cometbft/cometbft/blob/${GITHUB_REF#refs/tags/}/CHANGELOG.md)" > ../release_notes.md
 
       - name: Release
         uses: goreleaser/goreleaser-action@v4

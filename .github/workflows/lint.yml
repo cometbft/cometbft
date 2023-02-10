@@ -12,8 +12,8 @@ on:
   pull_request:
   push:
     branches:
-      - main
       - v0.37.x
+
 jobs:
   golangci:
     name: golangci-lint

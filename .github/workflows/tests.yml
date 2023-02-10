@@ -5,8 +5,6 @@ on:
     paths:
       - "**.go"
     branches:
-      - main
-      - release/**
       - v0.37.x
 
 jobs:

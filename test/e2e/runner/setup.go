@@ -246,6 +246,15 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		}
 		cfg.P2P.PersistentPeers += peer.AddressP2P(true)
 	}
+
+	if node.Prometheus {
+		cfg.Instrumentation.Prometheus = true
+		if node.PrometheusListenAddr != "" {
+			cfg.Instrumentation.PrometheusListenAddr = node.PrometheusListenAddr
+
+		}
+	}
+
 	return cfg, nil
 }
 

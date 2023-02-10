@@ -83,30 +83,30 @@ type Testnet struct {
 
 // Node represents a CometBFT node in a testnet.
 type Node struct {
-	Name             string
-	Version          string
-	Testnet          *Testnet
-	Mode             Mode
-	PrivvalKey       crypto.PrivKey
-	NodeKey          crypto.PrivKey
-	IP               net.IP
-	ProxyPort        uint32
-	StartAt          int64
-	BlockSync        string
-	StateSync        bool
-	Mempool          string
-	Database         string
-	ABCIProtocol     Protocol
-	PrivvalProtocol  Protocol
-	PersistInterval  uint64
-	SnapshotInterval uint64
-	RetainBlocks     uint64
-	Seeds            []*Node
-	PersistentPeers  []*Node
-	Perturbations    []Perturbation
-
-	// SendNoLoad determines if the e2e test should send load to this node.
-	SendNoLoad bool
+	Name                 string
+	Version              string
+	Testnet              *Testnet
+	Mode                 Mode
+	PrivvalKey           crypto.PrivKey
+	NodeKey              crypto.PrivKey
+	IP                   net.IP
+	ProxyPort            uint32
+	StartAt              int64
+	BlockSync            string
+	StateSync            bool
+	Mempool              string
+	Database             string
+	ABCIProtocol         Protocol
+	PrivvalProtocol      Protocol
+	PersistInterval      uint64
+	SnapshotInterval     uint64
+	RetainBlocks         uint64
+	Seeds                []*Node
+	PersistentPeers      []*Node
+	Perturbations        []Perturbation
+	SendNoLoad           bool
+	Prometheus           bool
+	PrometheusListenAddr string
 }
 
 // LoadTestnet loads a testnet from a manifest file, using the filename to
@@ -183,26 +183,28 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 			v = localVersion
 		}
 		node := &Node{
-			Name:             name,
-			Version:          v,
-			Testnet:          testnet,
-			PrivvalKey:       keyGen.Generate(manifest.KeyType),
-			NodeKey:          keyGen.Generate("ed25519"),
-			IP:               ind.IPAddress,
-			ProxyPort:        proxyPortGen.Next(),
-			Mode:             ModeValidator,
-			Database:         "goleveldb",
-			ABCIProtocol:     Protocol(testnet.ABCIProtocol),
-			PrivvalProtocol:  ProtocolFile,
-			StartAt:          nodeManifest.StartAt,
-			BlockSync:        nodeManifest.BlockSync,
-			Mempool:          nodeManifest.Mempool,
-			StateSync:        nodeManifest.StateSync,
-			PersistInterval:  1,
-			SnapshotInterval: nodeManifest.SnapshotInterval,
-			RetainBlocks:     nodeManifest.RetainBlocks,
-			Perturbations:    []Perturbation{},
-			SendNoLoad:       nodeManifest.SendNoLoad,
+			Name:                 name,
+			Version:              v,
+			Testnet:              testnet,
+			PrivvalKey:           keyGen.Generate(manifest.KeyType),
+			NodeKey:              keyGen.Generate("ed25519"),
+			IP:                   ind.IPAddress,
+			ProxyPort:            proxyPortGen.Next(),
+			Mode:                 ModeValidator,
+			Database:             "goleveldb",
+			ABCIProtocol:         Protocol(testnet.ABCIProtocol),
+			PrivvalProtocol:      ProtocolFile,
+			StartAt:              nodeManifest.StartAt,
+			BlockSync:            nodeManifest.BlockSync,
+			Mempool:              nodeManifest.Mempool,
+			StateSync:            nodeManifest.StateSync,
+			PersistInterval:      1,
+			SnapshotInterval:     nodeManifest.SnapshotInterval,
+			RetainBlocks:         nodeManifest.RetainBlocks,
+			Perturbations:        []Perturbation{},
+			SendNoLoad:           nodeManifest.SendNoLoad,
+			Prometheus:           nodeManifest.Prometheus,
+			PrometheusListenAddr: nodeManifest.PrometheusListenAddr,
 		}
 		if node.StartAt == testnet.InitialHeight {
 			node.StartAt = 0 // normalize to 0 for initial nodes, since code expects this

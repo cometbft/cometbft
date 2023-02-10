@@ -162,6 +162,13 @@ type ManifestNode struct {
 	// It defaults to false so unless the configured, the node will
 	// receive load.
 	SendNoLoad bool `toml:"send_no_load"`
+
+	// When true, Prometheus metrics are served under /metrics on
+	// PrometheusListenAddr. Defaults to false.
+	Prometheus bool `toml:"prometheus"`
+
+	// Address to listen for Prometheus collector(s) connections.
+	PrometheusListenAddr string `toml:"prometheus_listen_addr"`
 }
 
 // Save saves the testnet manifest to a file.

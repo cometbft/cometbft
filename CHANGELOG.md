@@ -44,6 +44,9 @@
   ([\#136](https://github.com/cometbft/cometbft/issues/136))
 - Append the commit hash to the version of CometBFT being built
   ([\#204](https://github.com/cometbft/cometbft/pull/204))
+- `[mempool/v1]` Suppress "rejected bad transaction" in priority mempool logs by
+  reducing log level from info to debug
+  ([\#314](https://github.com/cometbft/cometbft/pull/314): @JayT106)
 - `[consensus]` Add `consensus_block_gossip_parts_received` and
   `consensus_step_duration_seconds` metrics in order to aid in investigating the
   impact of database compaction on consensus performance

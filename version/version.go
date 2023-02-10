@@ -3,7 +3,7 @@ package version
 const (
 	// TMCoreSemVer is the used as the fallback version of CometBFT Core
 	// when not using git describe. It is formatted with semantic versioning.
-	TMCoreSemVer = "0.34.27"
+	TMCoreSemVer = "0.34.27-alpha.1"
 	// ABCISemVer is the semantic version of the ABCI library
 	ABCISemVer = "0.17.0"
 
@@ -20,8 +20,6 @@ var (
 	BlockProtocol uint64 = 11
 )
 
-var (
-	// TMGitCommitHash uses git rev-parse HEAD to find commit hash which is helpful
-	// for the engineering team when working with the cometbft binary. See Makefile
-	TMGitCommitHash = ""
-)
+// TMGitCommitHash uses git rev-parse HEAD to find commit hash which is helpful
+// for the engineering team when working with the cometbft binary. See Makefile
+var TMGitCommitHash = ""

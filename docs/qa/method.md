@@ -200,7 +200,11 @@ The CometBFT team should improve it at every iteration to increase the amount of
 2. Unzip the prometheus database retrieved from the testnet, and move it to replace the
    local prometheus database.
 3. Start the prometheus server and make sure no error logs appear at start up.
-4. Introduce the metrics you want to gather or plot.
+4. Identify the time window you want to plot in your graphs.
+5. Configure the queries in the `script/prometheus_plotter.py` with the time window.
+6. Create a `img/config` folder for the particular configuration you want to plot. 
+7. Run the script as `python3 prometheus_plotter.py`
+8. Your plots are in the `img/config` folder.
 
 ## Rotating Node Testnet
 

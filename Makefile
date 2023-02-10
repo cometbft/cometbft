@@ -1,10 +1,10 @@
 PACKAGES=$(shell go list ./...)
-OUTPUT?=build/cometbft
+BUILDDIR?=$(CURDIR)/build
+OUTPUT?=$(BUILDDIR)/cometbft
 
 BUILD_TAGS?=cometbft
 
 COMMIT_HASH := $(shell git rev-parse --short HEAD)
-
 LD_FLAGS = -X github.com/cometbft/cometbft/version.TMGitCommitHash=$(COMMIT_HASH)
 BUILD_FLAGS = -mod=readonly -ldflags "$(LD_FLAGS)"
 HTTPS_GIT := https://github.com/cometbft/cometbft.git
@@ -46,6 +46,67 @@ endif
 
 # allow users to pass additional flags via the conventional LDFLAGS variable
 LD_FLAGS += $(LDFLAGS)
+
+# Process Docker environment varible TARGETPLATFORM
+# in order to build binary with correspondent ARCH
+# by default will always build for linux/amd64
+TARGETPLATFORM ?=
+GOOS ?= linux
+GOARCH ?= amd64
+GOARM ?=
+
+ifeq (linux/arm,$(findstring linux/arm,$(TARGETPLATFORM)))
+	GOOS=linux
+	GOARCH=arm
+	GOARM=7
+endif
+
+ifeq (linux/arm/v6,$(findstring linux/arm/v6,$(TARGETPLATFORM)))
+	GOOS=linux
+	GOARCH=arm
+	GOARM=6
+endif
+
+ifeq (linux/arm64,$(findstring linux/arm64,$(TARGETPLATFORM)))
+	GOOS=linux
+	GOARCH=arm64
+	GOARM=7
+endif
+
+ifeq (linux/386,$(findstring linux/386,$(TARGETPLATFORM)))
+	GOOS=linux
+	GOARCH=386
+endif
+
+ifeq (linux/amd64,$(findstring linux/amd64,$(TARGETPLATFORM)))
+	GOOS=linux
+	GOARCH=amd64
+endif
+
+ifeq (linux/mips,$(findstring linux/mips,$(TARGETPLATFORM)))
+	GOOS=linux
+	GOARCH=mips
+endif
+
+ifeq (linux/mipsle,$(findstring linux/mipsle,$(TARGETPLATFORM)))
+	GOOS=linux
+	GOARCH=mipsle
+endif
+
+ifeq (linux/mips64,$(findstring linux/mips64,$(TARGETPLATFORM)))
+	GOOS=linux
+	GOARCH=mips64
+endif
+
+ifeq (linux/mips64le,$(findstring linux/mips64le,$(TARGETPLATFORM)))
+	GOOS=linux
+	GOARCH=mips64le
+endif
+
+ifeq (linux/riscv64,$(findstring linux/riscv64,$(TARGETPLATFORM)))
+	GOOS=linux
+	GOARCH=riscv64
+endif
 
 all: check build test install
 .PHONY: all
@@ -218,10 +279,13 @@ check-docs-toc:
 ###                            Docker image                                 ###
 ###############################################################################
 
-build-docker: build-linux
-	cp $(OUTPUT) DOCKER/cometbft
-	docker build --label=cometbft --tag="cometbft/cometbft" --progress=plain DOCKER --no-cache
-	rm -rf DOCKER/cometbft
+# On Linux, you may need to run `DOCKER_BUILDKIT=1 make build-docker` for this
+# to work.
+build-docker:
+	docker build \
+		--label=cometbft \
+		--tag="cometbft/cometbft" \
+		-f DOCKER/Dockerfile .
 .PHONY: build-docker
 
 ###############################################################################

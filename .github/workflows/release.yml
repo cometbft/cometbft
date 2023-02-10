@@ -18,7 +18,8 @@ jobs:
         with:
           go-version: '1.18'
 
-      - run: |
+      - name: Generate release notes
+        run: |
           VERSION="${GITHUB_REF#refs/tags/}"
           VERSION_REF="${VERSION//[\.]/}"
           CHANGELOG_URL="https://github.com/cometbft/cometbft/blob/${VERSION}/CHANGELOG.md#${VERSION_REF}"

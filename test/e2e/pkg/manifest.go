@@ -84,6 +84,7 @@ type Manifest struct {
 	LoadTxConnections int `toml:"load_tx_connections"`
 
 	// When true, enables Prometheus metrics for all nodes.
+	// When false, just apply the Prometheus flag of each individual node, if present.
 	// If needed, PrometheusListenAddr should be set in each individual node.
 	// Defaults to false.
 	Prometheus bool `toml:"prometheus"`

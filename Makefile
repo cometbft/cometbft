@@ -294,10 +294,13 @@ check-docs-toc:
 ###                            Docker image                                 ###
 ###############################################################################
 
-build-docker: build-linux
-	cp $(OUTPUT) DOCKER/cometbft
-	docker build --label=cometbft --tag="cometbft/cometbft" DOCKER
-	rm -rf DOCKER/cometbft
+# On Linux, you may need to run `DOCKER_BUILDKIT=1 make build-docker` for this
+# to work.
+build-docker:
+	docker build \
+		--label=cometbft \
+		--tag="cometbft/cometbft" \
+		-f DOCKER/Dockerfile .
 .PHONY: build-docker
 
 ###############################################################################

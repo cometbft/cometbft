@@ -6,8 +6,6 @@ on:
   pull_request:
   push:
     branches:
-      - main
-      - release/**
       - v0.34.x
 
 jobs:

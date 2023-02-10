@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - v0.34.x
-      - main
-      - release/**
 
 jobs:
   split-test-files:

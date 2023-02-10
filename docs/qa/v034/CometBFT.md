@@ -112,12 +112,12 @@ For reference, the plots below correspond to the baseline results.
 The first shows the evolution over time of the cumulative number of transactions
 inside all full nodes' mempools at a given time.
 
-![mempool-cumulative](./img/v034_r200c2_mempool_size.png)
+![mempool-cumulative](./img/baseline/mempool_size.png)
 
 The second one shows evolution of the average over all full nodes, which oscillates between 1500 and 2000
 outstanding transactions.
 
-![mempool-avg](./img/v034_r200c2_mempool_size_avg.png)
+![mempool-avg](./img/baseline/avg_mempool_size.png)
 
 #### CometBFT Homogeneous network
 
@@ -148,7 +148,7 @@ Seed nodes typically have a higher number of peers.
 The fact that non-seed nodes reach more than 50 peers is due to
 [#9548](https://github.com/tendermint/tendermint/issues/9548).
 
-![peers](./img/v034_r200c2_peers.png)
+![peers](./img/baseline/peers.png)
 
 #### CometBFT Homogeneous network
 
@@ -172,11 +172,9 @@ which are mainly rebranding.
 
 TODO Move this under mempool as we refer to it
 
-
 For reference, this is the baseline plot.
 
-![rounds](./img/v034_r200c2_rounds.png)
-
+![rounds](./img/baseline/rounds.png)
 
 #### CometBFT Homogeneous network
 
@@ -200,12 +198,12 @@ on the corresponding plot, shown above.
 The following plot shows the rate of block creation, with a sliding window of 20 seconds,
 throughout the experiment.
 
-![heights](./img/v034_r200c2_heights_rate.png)
+![heights](./img/baseline/block_rate_regular.png)
 
 The next plot is the rate of transactions delivered, with a sliding window of 20 seconds,
 throughout the experiment.
 
-![total-txs](./img/v034_r200c2_total-txs_rate.png)
+![total-txs](./img/baseline/total_txs_rate_regular.png)
 
 Both plots correspond to the baseline results.
 
@@ -243,11 +241,11 @@ In 1 minutes and 30 seconds the system processes 35600 transactions which amount
 
 Reference plot for Resident Set Size (RSS) of all monitored processes.
 
-![rss](./img/v034_r200c2_rss.png)
+![rss](./img/baseline/memory.png)
 
 And this is the baseline average plot.
 
-![rss-avg](./img/v034_r200c2_rss_avg.png)
+![rss-avg](./img/baseline/avg_memory.png)
 
 #### CometBFT Homogeneous network
 
@@ -279,7 +277,11 @@ Here
 
 This is the baseline `load1` plot, for reference.
 
-![load1](./img/v034_r200c2_load1.png)
+![load1](./img/baseline/cpu.png)
+
+This is the baseline average plot.
+
+![load1-avg](./img/baseline/avg_cpu.png)
 
 #### CometBFT Homogeneous network
 
@@ -294,9 +296,11 @@ This is the average plot.
 #### 1/3 Tendermint Core - 2/3 CometBFT
 
 Total
+
 ![cpu](./img/cmt2tm1/cpu.png)
 
 Average
+
 ![average cpu](./img/cmt2tm1/avg_cpu.png)
 
 #### 2/3 Tendermint Core - 1/3 CometBFT
@@ -304,6 +308,7 @@ Average
 ![cpu](./img/v034_200node_tm2cmt1/cpu.png)
 
 Average
+
 ![average cpu](./img/v034_200node_tm2cmt1/avg_cpu.png)
 
 ## Test Results

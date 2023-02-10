@@ -19,11 +19,11 @@ path = os.path.join('imgs')
 prometheus = query.Prometheus('http://localhost:9090')
 
 # Time window
-window_size = dict(seconds=120)
-ext_window_size = dict(seconds=150)
+window_size = dict(seconds=150)
+ext_window_size = dict(seconds=180)
 
 #right_end = '2023-02-08T13:14:20Z' #cmt2 tm1
-right_end = '2023-02-08T10:33:20Z' #cmt1 tm2
+right_end = '2023-02-08T10:33:50Z' #cmt1 tm2
 left_end = pd.to_datetime(right_end) - pd.Timedelta(**window_size)
 time_window = (left_end.strftime('%Y-%m-%dT%H:%M:%SZ'), right_end)
 

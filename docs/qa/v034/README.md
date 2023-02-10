@@ -288,7 +288,7 @@ from our CometBFT repository.
 
 The changes with respect to the last version of `v0.34.x`
 (namely `v0.34.26`, released from the Informal Systems' Tendermint Core fork)
-are minimal, and focus on rebranding Tendermint Core to CometBFT at places
+are minimal, and focus on rebranding our fork of Tendermint Core to CometBFT at places
 where there is no substantial risk of breaking compatibility
 with earlier Tendermint Core versions of `v0.34.x`.
 
@@ -323,12 +323,7 @@ Therefore we carry out a complete run of the _200-node test_ on the following ne
 * A mixed network where 2/3 of the nodes are running the CometBFT release candidate under test,
   and the rest are running Tendermint Core `v0.34.26`.
 
-## 200 Node Testnet
-
-TODO: Get rid of this level of subsection (as there is no rotating node test).
-      Not doing it now to save merge conflicts to Lásaro and Jasmina
-
-### Saturation Point
+## Saturation Point
 
 As the CometBFT release candidate under test has minimal changes
 with respect to Tendermint Core `v0.34.26`, other than the rebranding changes,
@@ -338,7 +333,7 @@ the [saturation point](#finding-the-saturation-point).
 Therefore, we will simply use a load of `r=200,c=2`
 (see the explanation [here](#finding-the-saturation-point)).
 
-### Examining latencies
+## Examining latencies
 
 In this section and the remaining, we provide the results of the _200 node test_.
 Each section is divided into three parts,
@@ -346,29 +341,28 @@ reporting on the homogeneous network (all CometBFT nodes),
 mixed network with 1/3 of Tendermint Core nodes,
 and mixed network with 2/3 of Tendermint Core nodes.
 
-On each of the three networks, the experiment consists of 4 or 5 runs, with the goal
-to make sure the data obtained is consistent.
-On each of the networks, we pick only one representative run,
-and present the results for that run.
+On each of the three networks, the test consists of 4 or 5 runs/experiments, with the goal
+ensuring the data obtained is consistent.
+On each of the networks, we pick only one representative run to present and discuss the results.
 
-#### CometBFT Homogeneous network
+### CometBFT Homogeneous network
 
 ![latencies](./img/v034_200node_homog_latencies.png)
 
 TODO: Explain
 
 
-#### 1/3 Tendermint Core - 2/3 CometBFT
+### 1/3 Tendermint Core - 2/3 CometBFT
 
 ![latencies](./img/cmt2tm1/latencies.png)
 
-#### 2/3 Tendermint Core - 1/3 CometBFT
+### 2/3 Tendermint Core - 1/3 CometBFT
 
 ![latencies_all_tm2_3_cmt1_3](img/v034_200node_tm2cmt1/latency_all.png)
 
 ![latencies_run1_tm2_3_cmt1_3](img/v034_200node_tm2cmt1/latency_run1.png){width=250}
 
-#### Prometheus Metrics
+## Prometheus Metrics
 
 This section reports on the key prometheus metrics extracted from the experiments.
 
@@ -379,10 +373,10 @@ This section reports on the key prometheus metrics extracted from the experiment
   and 2/3 running CometBFT.
   TODO
 * For the mixed network with 2/3 of nodes running Tendermint Core `v0.34.26`
-  and 213 running CometBFT.
+  and 1/3 running CometBFT.
   TODO
 
-##### Mempool Size
+### Mempool Size
 
 For reference, the plots below correspond to the baseline results.
 The first shows the evolution over time of the cumulative number of transactions
@@ -414,7 +408,7 @@ These are the corresponding plots for the homogeneous network test.
 
 ![mempool_tm2_3_cmt_1_3](./img/v034_200node_tm2cmt1/mempool_size.png)
 
-![mempool-avg_tm2_3_cmt_1_3](./img/v034_200node_tm2cmt1/mempool_avg.png)
+![mempool-avg_tm2_3_cmt_1_3](./img/v034_200node_tm2cmt1/avg_mempool_size.png)
 
 ##### Peers
 
@@ -469,7 +463,7 @@ on the corresponding plot, shown above.
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
-![rounds-tm2_3_cmt1_3](./img/v034_200node_tm2cmt1/consensus_rounds.png)
+![rounds-tm2_3_cmt1_3](./img/v034_200node_tm2cmt1/rounds.png)
 
 ##### Blocks Produced per Minute, Transactions Processed per Minute
 
@@ -498,15 +492,9 @@ This is similar to the baseline.
 
 ###### 1/3 Tendermint Core - 2/3 CometBFT
 
-Heights
-![heights](./img/cmt2tm1/blocks.png)
-
 Height rate
 ![heights](./img/cmt2tm1/block_rate.png)
 
-
-Transactions
-![transaction](./img/cmt2tm1/total_txs.png)
 
 Transaction rate
 ![transaction rate](./img/cmt2tm1/total_txs_rate.png)
@@ -514,11 +502,11 @@ Transaction rate
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
-![blocks_min_run1_tm2_3_cmt1_4](./img/v034_200node_tm2cmt1/height.png)
+![blocks_min_run1_tm2_3_cmt1_4](./img/v034_200node_tm2cmt1/block_rate.png)
 
 In two minutes the height goes from 32 to 90 which gives an average of 29 blocks per minutes.
 
-![tx_min_run1_tm2_3_cmt1_3](./img/v034_200node_tm2cmt1/num_tx.png)
+![tx_min_run1_tm2_3_cmt1_3](./img/v034_200node_tm2cmt1/total_txs_rate.png)
 
 In 1 minutes and 30 seconds the system processes 35600 transactions which amounts to 23000 transactions per minute.
 
@@ -544,17 +532,17 @@ And this is the average plot. It oscillates around 560 MiB, which is noticeably 
 ![rss-avg-homogeneous](./img/v034_homog_rss_avg.png)
 
 ###### 1/3 Tendermint Core - 2/3 CometBFT
-
 ![memory](./img/cmt2tm1/memory.png)
 
+Here
 ![average memory](./img/cmt2tm1/avg_memory.png)
 
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
-![rss_run1_tm2_3_cmt1_3](./img/v034_200node_tm2cmt1/resident_memory_bytes.png)
+![rss_run1_tm2_3_cmt1_3](./img/v034_200node_tm2cmt1/memory.png)
 
-![rss_avg_run1_tm2_3_cmt1_3](./img/v034_200node_tm2cmt1/resident_memory_bytes_avg.png)
+![rss_avg_run1_tm2_3_cmt1_3](./img/v034_200node_tm2cmt1/avg_memory.png)
 
 ##### CPU utilization
 
@@ -578,7 +566,10 @@ Average
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
-![cpuload_run1_tm2_3_cmt1_3](./img/v034_200node_tm2cmt1/cpu_load.png)
+![cpu](./img/v034_200node_tm2cmt1/cpu.png)
+
+Average
+![average cpu](./img/v034_200node_tm2cmt1/avg_cpu.png)
 
 ### Test Results
 

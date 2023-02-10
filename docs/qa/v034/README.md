@@ -473,28 +473,27 @@ on the corresponding plot, shown above.
 
 ##### Blocks Produced per Minute, Transactions Processed per Minute
 
-The blocks produced per minute are the slope of this plot, which corresponds to the baseline results.
+The following plot shows the rate of block creation, with a sliding window of 20 seconds,
+throughout the experiment.
 
-![heights](./img/v034_r200c2_heights.png)
+![heights](./img/v034_r200c2_heights_rate.png)
 
-The transactions processed per minute are the slope of this plot,
-which, again, corresponds to the baseline results.
+The next plot is the rate of transactions delivered, with a sliding window of 20 seconds,
+throughout the experiment.
 
-![total-txs](./img/v034_r200c2_total-txs.png)
+![total-txs](./img/v034_r200c2_total-txs_rate.png)
+
+Both plots correspond to the baseline results.
 
 ###### CometBFT Homogeneous network
 
-![heights-homogeneous](./img/v034_homog_heights.png)
+The plot for the homogeneous network shows the rate oscillates around 20 blocks/minute.
 
-Over a period of 2 minutes and 4 seconds, the height goes from 251 to 295.
-This results in an average of 21.3 blocks produced per minute.
+![heights-homogeneous-rate](./img/v034_homog_heights_rate.png)
 
-![total-txs-homogeneous](./img/v034_homog_total-txs.png)
+The plot showing the transaction rate shows the rate stays around 20000 transactions per minute.
 
-Over a period of 1 minute and 45 seconds (adjusted time window),
-the total goes from 70201 to 104537 transactions,
-resulting in 19620 transactions per minute.
-This is similar to the baseline.
+![txs-homogeneous-rate](./img/v034_homog_total-txs_rate.png)
 
 ###### 1/3 Tendermint Core - 2/3 CometBFT
 
@@ -604,7 +603,7 @@ Version: xxxxxxxxxxxxxxxxx
 
 Date: 2023-02-08
 
-Versions: 
+Versions:
 
-CometBFT 3b783434f26b0e87994e6a77c5411927aad9ce3f 
-Tendermint Core 66c2cb63416e66bff08e11f9088e21a0ed142790 
+CometBFT 3b783434f26b0e87994e6a77c5411927aad9ce3f
+Tendermint Core 66c2cb63416e66bff08e11f9088e21a0ed142790

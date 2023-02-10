@@ -77,7 +77,7 @@ On each of the networks, we pick only one representative run to present and disc
 The figure below plots the four experiments carried out with this network.
 We can see that the latencies follow a comparable pattern across experiments.
 
-![latencies](./img/v034_200node_homog_latencies.png)
+![latencies](./img/homogeneous/latencies.png)
 
 ### 1/3 Tendermint Core - 2/3 CometBFT
 

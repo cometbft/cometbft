@@ -253,10 +253,6 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 
 	if node.Prometheus {
 		cfg.Instrumentation.Prometheus = true
-		if node.PrometheusListenAddr != "" {
-			cfg.Instrumentation.PrometheusListenAddr = node.PrometheusListenAddr
-
-		}
 	}
 
 	return cfg, nil

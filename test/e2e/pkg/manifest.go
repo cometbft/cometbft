@@ -85,7 +85,6 @@ type Manifest struct {
 
 	// When true, enables Prometheus metrics for all nodes.
 	// When false, just apply the Prometheus flag of each individual node, if present.
-	// If needed, PrometheusListenAddr should be set in each individual node.
 	// Defaults to false.
 	Prometheus bool `toml:"prometheus"`
 }
@@ -170,11 +169,8 @@ type ManifestNode struct {
 	SendNoLoad bool `toml:"send_no_load"`
 
 	// When true, Prometheus metrics are served under /metrics on
-	// PrometheusListenAddr. Defaults to false.
+	// PrometheusProxyPort. Defaults to false.
 	Prometheus bool `toml:"prometheus"`
-
-	// Address to listen for Prometheus collector(s) connections.
-	PrometheusListenAddr string `toml:"prometheus_listen_addr"`
 }
 
 // Save saves the testnet manifest to a file.

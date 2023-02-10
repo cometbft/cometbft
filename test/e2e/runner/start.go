@@ -50,6 +50,9 @@ func Start(testnet *e2e.Testnet) error {
 			return err
 		}
 		logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://127.0.0.1:%v", node.Name, node.ProxyPort))
+		if node.PrometheusProxyPort > 0 {
+			logger.Info("start", "msg", log.NewLazySprintf("Node %v: Prometheus up on http://127.0.0.1:%v", node.Name, node.PrometheusProxyPort))
+		}
 	}
 
 	networkHeight := testnet.InitialHeight

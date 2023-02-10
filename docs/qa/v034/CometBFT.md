@@ -83,11 +83,13 @@ We can see that the latencies follow a comparable pattern across experiments.
 
 ![latencies](./img/cmt2tm1/latencies.png)
 
+We have picked the experiment whose identifier starts with fc5edd13.
+
 ### 2/3 Tendermint Core - 1/3 CometBFT
 
 ![latencies_all_tm2_3_cmt1_3](img/v034_200node_tm2cmt1/latency_all.png)
 
-![latencies_run1_tm2_3_cmt1_3](img/v034_200node_tm2cmt1/latency_run1.png){width=250}
+We have picked the experiment whose identifier starts with 47595c66.
 
 ## Prometheus Metrics
 

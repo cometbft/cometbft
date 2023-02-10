@@ -579,4 +579,7 @@ Version: xxxxxxxxxxxxxxxxx
 
 Date: 2023-02-08
 
-Version: xxxxxxxxxxxxxxxxx
+Versions: 
+
+CometBFT 3b783434f26b0e87994e6a77c5411927aad9ce3f 
+Tendermint Core 66c2cb63416e66bff08e11f9088e21a0ed142790 

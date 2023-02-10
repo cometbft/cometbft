@@ -127,7 +127,7 @@ The fact that non-seed nodes reach more than 50 peers is due to #9548.
 
 #### Consensus Rounds per Height
 
-Most heights took just one round, but some nodes needed to advance to round 1 at some point.
+Most nodes used only round 0 for most heights, but some nodes needed to advance to round 1 for some heights.
 
 ![rounds](./img/v034_r200c2_rounds.png)
 
@@ -275,6 +275,11 @@ transactions, via RPC, from the load runner process.
 Date: 2022-10-10
 
 Version: a28c987f5a604ff66b515dd415270063e6fb069d
+
+
+
+# THIS GOES TO A DIFFERENT FILE
+____
 
 # v0.34.x - From Tendermint Core to CometBFT
 

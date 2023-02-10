@@ -303,10 +303,12 @@ versions, combined with the CometBFT release candidate under test.
 Therefore our testing focuses on the last Tendermint Core version (`v0.34.26`) and the CometBFT release
 candidate under test.
 
-We only run the _200 node test_, and not the _rotating node test_.
+We only run the _200 node test_, and not the _rotating node test_. The effort of running the latter
+is not justified given the amount and nature of the changes we are testing with respect to the
+full QA cycle run previously on `v0.34.x`.
 Since the changes to the system's logic are minimal, we are interested in these performance requirements:
 
-* The CometBFT release candidate under test performs similarly to Tendermint Core
+* The CometBFT release candidate under test performs similarly to Tendermint Core (i.e., the baseline)
     * when used at scale (i.e., in a large network of CometBFT nodes)
     * when used at scale in a mixed network (i.e., some nodes are running CometBFT
       and others are running an older Tendermint Core version)
@@ -342,17 +344,18 @@ reporting on the homogeneous network (all CometBFT nodes),
 mixed network with 1/3 of Tendermint Core nodes,
 and mixed network with 2/3 of Tendermint Core nodes.
 
-On each of the three networks, the experiment consists of 4 or 5 runs, with the goal
-to make sure the data obtained is consistent.
+On each of the three networks, the experiment consists of 4 experiments,
+with the goal of making sure the data obtained is consistent
+across experiments.
 On each of the networks, we pick only one representative run,
 and present the results for that run.
 
 #### CometBFT Homogeneous network
 
+The figure below plots the four experiments carried out with this network.
+We can see that the latencies follow a comparable pattern across experiments.
+
 ![latencies](./img/v034_200node_homog_latencies.png)
-
-TODO: Explain
-
 
 #### 1/3 Tendermint Core - 2/3 CometBFT
 
@@ -368,9 +371,10 @@ TODO: Explain
 
 This section reports on the key prometheus metrics extracted from the experiments.
 
-* For the CometBFT homogeneous network, we choose to present the third run
-  (see the latencies section above), as its latency date is representative, and
-  it contains the maximum latency of all runs (worst case scenario).
+* For the CometBFT homogeneous network, we choose to present the
+  experiment with UUID starting with `be8c` (see the latencies section above),
+  as its latency data is representative,
+  and   it contains the maximum latency of all runs (worst case scenario).
 * For the mixed network with 1/3 of nodes running Tendermint Core `v0.34.26`
   and 2/3 running CometBFT.
   TODO

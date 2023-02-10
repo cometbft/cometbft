@@ -23,7 +23,7 @@ jobs:
       - run: |
           VERSION="${GITHUB_REF#refs/tags/}"
           CHANGELOG_URL="https://github.com/cometbft/cometbft/blob/${VERSION}/CHANGELOG.md"
-          echo "See the [CHANGELOG](${CHANGELOG_URL}) for unreleased changes in this pre-release." > ../release_notes.md
+          echo "See the [CHANGELOG](${CHANGELOG_URL}) for changes available in this pre-release, but not yet officially released." > ../release_notes.md
 
       - name: Release
         uses: goreleaser/goreleaser-action@v4

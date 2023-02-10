@@ -35,7 +35,7 @@ groups = csv.groupby(['experiment_id'])
 
 #number of rows and columns in the graph
 ncols = 2 if groups.ngroups > 1 else 1
-nrows = int( np.ceil(groups.ngroups / ncols))
+nrows = int( np.ceil(groups.ngroups / ncols)) if groups.ngroups > 1 else 1
 fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(6*ncols, 4*nrows), sharey=True)
 fig.tight_layout(pad=5.0)
 
@@ -53,7 +53,10 @@ for (key,ax) in zip(groups.groups.keys(), [axes] if ncols == 1 else axes.flatten
         subGroup = paramGroups.get_group(subKey)
         startTime = subGroup['block_time'].min()
         subGroupMod = subGroup['block_time'].apply(lambda x: x - startTime)
-        ax.scatter(subGroupMod, subGroup.duration_ns, label=subKey)
+
+        (con,rate) = subKey
+        label = 'c='+str(con) + ' r='+ str(rate)
+        ax.scatter(subGroupMod, subGroup.duration_ns, label=label)
     ax.legend()
 
     #Save individual axes
@@ -73,7 +76,7 @@ groups = csv.groupby(['connections','rate'])
 
 #number of rows and columns in the graph
 ncols = 2 if groups.ngroups > 1 else 1
-nrows = int( np.ceil(groups.ngroups / ncols))
+nrows = int( np.ceil(groups.ngroups / ncols)) if groups.ngroups > 1 else 1
 fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(6*ncols, 4*nrows), sharey=True)
 fig.tight_layout(pad=5.0)
 

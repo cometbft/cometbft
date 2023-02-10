@@ -82,6 +82,11 @@ type Manifest struct {
 	LoadTxSizeBytes   int `toml:"load_tx_size_bytes"`
 	LoadTxBatchSize   int `toml:"load_tx_batch_size"`
 	LoadTxConnections int `toml:"load_tx_connections"`
+
+	// When true, enables Prometheus metrics for all nodes.
+	// If needed, PrometheusListenAddr should be set in each individual node.
+	// Defaults to false.
+	Prometheus bool `toml:"prometheus"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

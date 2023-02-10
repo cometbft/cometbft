@@ -73,6 +73,10 @@ func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
 			}
 		}
 
+		if testnet.Prometheus {
+			node.Prometheus = true
+		}
+
 		cfg, err := MakeConfig(node)
 		if err != nil {
 			return err

@@ -79,6 +79,7 @@ type Testnet struct {
 	ProcessProposalDelay time.Duration
 	CheckTxDelay         time.Duration
 	UpgradeVersion       string
+	Prometheus           bool
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -142,6 +143,7 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 		ProcessProposalDelay: manifest.ProcessProposalDelay,
 		CheckTxDelay:         manifest.CheckTxDelay,
 		UpgradeVersion:       manifest.UpgradeVersion,
+		Prometheus:           manifest.Prometheus,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType

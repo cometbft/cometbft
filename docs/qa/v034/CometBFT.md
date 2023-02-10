@@ -124,9 +124,9 @@ outstanding transactions.
 The mempool size was as stable at all full nodes as in the baseline.
 These are the corresponding plots for the homogeneous network test.
 
-![mempool-cumulative-homogeneous](./img/v034_homog_mempool_size.png)
+![mempool-cumulative-homogeneous](./img/homogeneous/mempool_size.png)
 
-![mempool-avg-homogeneous](./img/v034_homog_mempool_size_avg.png)
+![mempool-avg-homogeneous](./img/homogeneous/avg_mempool_size.png)
 
 #### 1/3 Tendermint Core - 2/3 CometBFT
 
@@ -158,7 +158,7 @@ the seed nodes seem to loose peers in the middle of the experiment.
 However this cannot be attributed to the differences in the code,
 which are mainly rebranding.
 
-![peers-homogeneous](./img/v034_homog_peers.png)
+![peers-homogeneous](./img/homogeneous/peers.png)
 
 #### 1/3 Tendermint Core - 2/3 CometBFT
 
@@ -185,7 +185,7 @@ and a few nodes even needed to advance to the third round at one point.
 This coincides with the time at which we observed the biggest peak in mempool size
 on the corresponding plot, shown above.
 
-![rounds-homogeneous](./img/v034_homog_rounds.png)
+![rounds-homogeneous](./img/homogeneous/rounds.png)
 
 #### 1/3 Tendermint Core - 2/3 CometBFT
 
@@ -213,21 +213,21 @@ Both plots correspond to the baseline results.
 
 The plot for the homogeneous network shows the rate oscillates around 20 blocks/minute.
 
-![heights-homogeneous-rate](./img/v034_homog_heights_rate.png)
+![heights-homogeneous-rate](./img/homogeneous/block_rate_regular.png)
 
 The plot showing the transaction rate shows the rate stays around 20000 transactions per minute.
 
-![txs-homogeneous-rate](./img/v034_homog_total-txs_rate.png)
+![txs-homogeneous-rate](./img/homogeneous/total_txs_rate_regular.png)
 
 #### 1/3 Tendermint Core - 2/3 CometBFT
 
 Height rate
+
 ![heights](./img/cmt2tm1/block_rate.png)
 
-
 Transaction rate
-![transaction rate](./img/cmt2tm1/total_txs_rate.png)
 
+![transaction rate](./img/cmt2tm1/total_txs_rate.png)
 
 #### 2/3 Tendermint Core - 1/3 CometBFT
 
@@ -254,16 +254,18 @@ And this is the baseline average plot.
 This is the plot for the homogeneous network, which slightly more stable than the baseline over
 the time of the experiment.
 
-![rss-homogeneous](./img/v034_homog_rss.png)
+![rss-homogeneous](./img/homogeneous/memory.png)
 
 And this is the average plot. It oscillates around 560 MiB, which is noticeably lower than the baseline.
 
-![rss-avg-homogeneous](./img/v034_homog_rss_avg.png)
+![rss-avg-homogeneous](./img/homogeneous/avg_memory.png)
 
 #### 1/3 Tendermint Core - 2/3 CometBFT
+
 ![memory](./img/cmt2tm1/memory.png)
 
 Here
+
 ![average memory](./img/cmt2tm1/avg_memory.png)
 
 
@@ -281,9 +283,13 @@ This is the baseline `load1` plot, for reference.
 
 #### CometBFT Homogeneous network
 
-![load1-homogeneous](./img/v034_homog_load1.png)
+![load1-homogeneous](./img/homogeneous/cpu.png)
 
 Similarly to the baseline, it is contained in most cases below 5.
+
+This is the average plot.
+
+![load1-homogeneous-avg](./img/homogeneous/avg_cpu.png)
 
 #### 1/3 Tendermint Core - 2/3 CometBFT
 

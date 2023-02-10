@@ -26,7 +26,7 @@ checksum:
 
 release:
   prerelease: auto
-  name_template: "{{.Version}}"
+  name_template: "v{{.Version}}"
 
 archives:
   - files:

@@ -360,7 +360,9 @@ TODO: Explain
 
 #### 2/3 Tendermint Core - 1/3 CometBFT
 
-TODO
+![latencies_all_tm2_3_cmt1_3](img/v034_200node_tm2cmt1/latency_all.png)
+
+![latencies_run1_tm2_3_cmt1_3](img/v034_200node_tm2cmt1/latency_run1.png){width=250}
 
 #### Prometheus Metrics
 
@@ -406,7 +408,9 @@ These are the corresponding plots for the homogeneous network test.
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
-TODO
+![mempool_tm2_3_cmt_1_3](./img/v034_200node_tm2cmt1/mempool_size.png)
+
+![mempool-avg_tm2_3_cmt_1_3](./img/v034_200node_tm2cmt1/mempool_avg.png)
 
 ##### Peers
 
@@ -434,9 +438,12 @@ which are mainly rebranding.
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
-TODO
+![peers-tm2_3_cmt1_3](./img/v034_200node_tm2cmt1/peers.png)
 
 ##### Consensus Rounds per Height
+
+TODO Move this under mempool as we refer to it
+
 
 For reference, this is the baseline plot.
 
@@ -458,7 +465,7 @@ on the corresponding plot, shown above.
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
-TODO
+![rounds-tm2_3_cmt1_3](./img/v034_200node_tm2cmt1/consensus_rounds.png)
 
 ##### Blocks Produced per Minute, Transactions Processed per Minute
 
@@ -503,7 +510,13 @@ Transaction rate
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
-TODO
+![blocks_min_run1_tm2_3_cmt1_4](./img/v034_200node_tm2cmt1/height.png)
+
+In two minutes the height goes from 32 to 90 which gives an average of 29 blocks per minutes.
+
+![tx_min_run1_tm2_3_cmt1_3](./img/v034_200node_tm2cmt1/num_tx.png)
+
+In 1 minutes and 30 seconds the system processes 35600 transactions which amounts to 23000 transactions per minute.
 
 ##### Memory Resident Set Size
 
@@ -535,7 +548,9 @@ And this is the average plot. It oscillates around 560 MiB, which is noticeably 
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
-TODO
+![rss_run1_tm2_3_cmt1_3](./img/v034_200node_tm2cmt1/resident_memory_bytes.png)
+
+![rss_avg_run1_tm2_3_cmt1_3](./img/v034_200node_tm2cmt1/resident_memory_bytes_avg.png)
 
 ##### CPU utilization
 
@@ -559,7 +574,7 @@ Average
 
 ###### 2/3 Tendermint Core - 1/3 CometBFT
 
-TODO
+![cpuload_run1_tm2_3_cmt1_3](./img/v034_200node_tm2cmt1/cpu_load.png)
 
 ### Test Results
 
@@ -581,8 +596,11 @@ Version: xxxxxxxxxxxxxxxxx
 
 #### 2/3 Tendermint Core - 1/3 CometBFT
 
-**Result: ????**
+**Result: PASS**
 
 Date: 2023-02-08
 
-Version: xxxxxxxxxxxxxxxxx
+Versions: 
+
+CometBFT 3b783434f26b0e87994e6a77c5411927aad9ce3f 
+Tendermint Core 66c2cb63416e66bff08e11f9088e21a0ed142790 

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-release = 'v0.34.27'
+release = 'v0.34.27-homogeneous'
 
 if len(sys.argv) != 2:
     print('Pls provide the raw.csv file')

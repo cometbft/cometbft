@@ -19,6 +19,6 @@ used to decide if a release is passing the Quality Assurance process.
 The results obtained in each release are stored in their own directory.
 The following releases have undergone the Quality Assurance process:
 
-* [TM v0.34.x](./tm_v034/), which was tested just before releasing Tendermint Core v0.34.22
-* [v0.34.x](./v034/), which was tested just before releasing v0.34.27
+* [TM v0.34.x](./v034/TMCore.md), which was tested just before releasing Tendermint Core v0.34.22
+* [v0.34.x](./v034/CometBFT.md), which was tested just before releasing v0.34.27
 * [v0.37.x](./v037/), with TM v.34.x acting as a baseline

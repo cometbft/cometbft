@@ -225,7 +225,7 @@ Our application will need to write its state out to persistent storage so that i
 can stop and start without losing all of its data.
 
 For this tutorial, we will use [BadgerDB](https://github.com/dgraph-io/badger), a
-a fast embedded key-value store.
+fast embedded key-value store.
 
 First, add Badger as a dependency of your go module using the `go get` command:
 
@@ -309,7 +309,7 @@ its validation checks. The specific value of the code is meaningless to CometBFT
 Non-zero codes are logged by CometBFT so applications can provide more specific
 information on why the transaction was rejected.
 
-Note that `CheckTx` does not execute the transaction, it only verifies that that the transaction could be executed. We do not know yet if the rest of the network has agreed to accept this transaction into a block.
+Note that `CheckTx` does not execute the transaction, it only verifies that the transaction could be executed. We do not know yet if the rest of the network has agreed to accept this transaction into a block.
 
 
 Finally, make sure to add the bytes package to the `import` stanza at the top of `app.go`:
@@ -333,7 +333,7 @@ application over three ABCI method calls: `BeginBlock`, `DeliverTx`, and `EndBlo
 receive a block.
 - `DeliverTx` is called repeatedly, once for each application transaction that was included in the block.
 - `EndBlock` is called once to indicate to the application that no more transactions
-will be delivered to the application in within this block.
+will be delivered to the application within this block.
 
 Note that, to implement these calls in our application we're going to make use of Badger's
 transaction mechanism. We will always refer to these as Badger transactions, not to

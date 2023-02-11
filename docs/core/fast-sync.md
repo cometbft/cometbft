@@ -24,7 +24,7 @@ In this mode, the CometBFT daemon will sync hundreds of times faster
 than if it used the real-time consensus process. Once caught up, the
 daemon will switch out of fast sync and into the normal consensus mode.
 After running for some time, the node is considered `caught up` if it
-has at least one peer and it's height is at least as high as the max
+has at least one peer and its height is at least as high as the max
 reported peer height.
 See [the IsCaughtUp method](https://github.com/cometbft/cometbft/blob/v0.34.x/blockchain/v0/pool.go#L168).
 

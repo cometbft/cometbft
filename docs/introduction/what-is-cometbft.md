@@ -92,7 +92,7 @@ Since then, CometBFT has evolved to be a general purpose blockchain
 consensus engine that can host arbitrary application states. That means
 it can be used as a plug-and-play replacement for the consensus engines
 of other blockchain software. So one can take the current Ethereum code
-base, whether in Rust, or Go, or Haskell, and run it as a ABCI
+base, whether in Rust, or Go, or Haskell, and run it as an ABCI
 application using CometBFT. Indeed, [we did that with
 Ethereum](https://github.com/cosmos/ethermint). And we plan to do
 the same for Bitcoin, ZCash, and various other deterministic
@@ -166,7 +166,7 @@ Teaspoon).
 "consensus engine", communicates with the application via a socket
 protocol that satisfies the ABCI, the CometBFT Socket Protocol.
 
-To draw an analogy, lets talk about a well-known cryptocurrency,
+To draw an analogy, let's talk about a well-known cryptocurrency,
 Bitcoin. Bitcoin is a cryptocurrency blockchain where each node
 maintains a fully audited Unspent Transaction Output (UTXO) database. If
 one wanted to create a Bitcoin-like system on top of ABCI, CometBFT

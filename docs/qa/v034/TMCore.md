@@ -47,14 +47,14 @@ All experiments below the saturation diagonal (`r=200,c=4`) have in common that 
 number of transactions processed is noticeably less than the product $c \cdot r \cdot 89$  (89 seconds, since the last batch never gets sent),
 which is the expected number of transactions when the system is able to deal well with the
 load.
-With `r=200,c=4`, we obtained 38660 whereas the theoretical number of transactions should
+With (`r=200,c=4`), we obtained 38660 whereas the theoretical number of transactions should
 have been $200 \cdot 4 \cdot 89 = 71200$.
 
 At this point, we chose an experiment at the limit of the saturation diagonal,
 in order to further study the performance of this release.
-**The chosen experiment is `r=200,c=2`**.
+**The chosen experiment is (`r=200,c=2`)**.
 
-This is a plot of the CPU load (average over 1 minute, as output by `top`) of the load runner for `r=200,c=2`,
+This is a plot of the CPU load (average over 1 minute, as output by `top`) of the load runner for (`r=200,c=2`),
 where we can see that the load stays close to 0 most of the time.
 
 ![load-load-runner](./img/v034_r200c2_load-runner.png)

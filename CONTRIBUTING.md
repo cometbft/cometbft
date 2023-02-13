@@ -360,27 +360,6 @@ cd test/e2e && \
   ./build/runner -f networks/ci.toml
 ```
 
-### Model-based tests (ADVANCED)
-
-*NOTE: if you're just submitting your first PR, you won't need to touch these
-most probably (99.9%)*.
-
-For components, that have been [formally
-verified](https://en.wikipedia.org/wiki/Formal_verification) using
-[TLA+](https://en.wikipedia.org/wiki/TLA%2B), it may be possible to generate
-tests using a combination of the [Apalache Model
-Checker](https://apalache.informal.systems/) and [tendermint-rs testgen
-util](https://github.com/informalsystems/tendermint-rs/tree/master/testgen).
-
-Now, I know there's a lot to take in. If you want to learn more, check out [
-this video](https://www.youtube.com/watch?v=aveoIMphzW8) by Andrey Kupriyanov
-& Igor Konnov.
-
-At the moment, we have model-based tests for the light client, located in the
-`./light/mbt` directory.
-
-Run: `cd light/mbt && go test`
-
 ### Fuzz tests (ADVANCED)
 
 *NOTE: if you're just submitting your first PR, you won't need to touch these

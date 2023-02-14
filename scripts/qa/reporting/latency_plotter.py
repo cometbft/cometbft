@@ -52,7 +52,7 @@ for (key,ax) in zip(groups.groups.keys(), [axes] if ncols == 1 else axes.flatten
     for (subKey) in paramGroups.groups.keys():
         subGroup = paramGroups.get_group(subKey)
         startTime = subGroup['block_time'].min()
-        print('exp ' + key + ' starts at ' + str(datetime.fromtimestamp(startTime)))
+        print('exp ' + key + ' starts at ' + str(datetime.fromtimestamp(startTime)) + 'UTC')
         subGroupMod = subGroup['block_time'].apply(lambda x: x - startTime)
 
         (con,rate) = subKey

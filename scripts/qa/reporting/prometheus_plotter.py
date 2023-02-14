@@ -16,26 +16,27 @@ from prometheus_pandas import query
 
 release = 'v0.34.x-baseline'
 path = os.path.join('imgs')
-prometheus = query.Prometheus('http://localhost:9091')
+prometheus = query.Prometheus('http://localhost:9090')
 
 # Time window
-#window_size = dict(seconds=150)
+window_size = dict(seconds=150)
 #window_size = dict(seconds=130) #homogeneous
-window_size = dict(seconds=127) #baseline
+#window_size = dict(seconds=1270) #baseline
 ext_window_size = dict(seconds=180)
 
 #right_end = '2023-02-08T13:14:50Z' #cmt2 tm1
 #right_end = '2023-02-08T10:33:50Z' #cmt1 tm2
+right_end = '2023-02-14T15:20:30.000Z' #cmt1 tm1
 #right_end = '2023-02-07T18:09:10Z' #homogeneous
-right_end = '2022-10-13T19:43:30Z' #baseline
+#right_end = '2022-10-13T19:43:30Z' #baseline
 left_end = pd.to_datetime(right_end) - pd.Timedelta(**window_size)
 time_window = (left_end.strftime('%Y-%m-%dT%H:%M:%SZ'), right_end)
 
 ext_left_end = pd.to_datetime(right_end) - pd.Timedelta(**ext_window_size)
 ext_time_window = (ext_left_end.strftime('%Y-%m-%dT%H:%M:%SZ'), right_end)
 
-#fork='cometbft'
-fork='tendermint'
+fork='cometbft'
+#fork='tendermint'
 
 # Do prometheus queries
 queries = [ 
@@ -65,7 +66,8 @@ for (query, file_name, pandas_params, plot_average)  in queries:
 
     data_frame = prometheus.query_range(*query)
     #Tweak the x ticks
-    data_frame = data_frame.set_index(pd.to_timedelta(data_frame.index.strftime('%H:%M:%S')))
+    delta_index = pd.to_timedelta(data_frame.index.strftime('%H:%M:%S'))
+    data_frame = data_frame.set_index(delta_index)
 
     data_frame.plot(**pandas_params)
     if plot_average:

@@ -19,10 +19,9 @@ else:
        print('Pls provide a valid the raw.csv file')
        exit()
         
-    (parent,_) = os.path.split(csvpath)
     print(csvpath)
-    print(parent)
 
+path = os.path.join('imgs')
 
 #Load the CSV
 csv = pd.read_csv(csvpath)
@@ -63,13 +62,12 @@ for (key,ax) in zip(groups.groups.keys(), [axes] if ncols == 1 else axes.flatten
 
     #Save individual axes
     extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-    fig.savefig(os.path.join(parent,'e_'+key + '.png'), bbox_inches=extent)
+    fig.savefig(os.path.join(path,'e_'+key + '.png'), bbox_inches=extent)
 
 fig.suptitle('200-node testnet experiments - ' + release)
 
-plt.show()
 # Save the figure with subplots
-fig.savefig(os.path.join(parent,'all_experiments.png'))
+fig.savefig(os.path.join(path,'all_experiments.png'))
 
 
 
@@ -103,13 +101,12 @@ for (key,ax) in zip(groups.groups.keys(), [axes] if ncols == 1 else axes.flatten
     
     #Save individual axes
     extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-    fig.savefig(os.path.join(parent,'c'+str(con) + 'r'+ str(rate) + '.png'), bbox_inches=extent)
+    fig.savefig(os.path.join(path,'c'+str(con) + 'r'+ str(rate) + '.png'), bbox_inches=extent)
 
 fig.suptitle('200-node testnet configurations - ' + release)
 
 # Save the figure with subplots
-fig.savefig(os.path.join(parent,'all_configs.png'))
-plt.show()
+fig.savefig(os.path.join(path,'all_configs.png'))
 
 
 fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(6*ncols, 4*nrows), sharey=True)
@@ -136,6 +133,6 @@ for (key,ax) in zip(groups.groups.keys(), [axes] if ncols == 1 else axes.flatten
     #Save individual axes
     extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
     (con,rate) = key
-    fig.savefig(os.path.join(parent,'c'+str(con) + 'r'+ str(rate) + '_merged.png'), bbox_inches=extent)
+    fig.savefig(os.path.join(path,'c'+str(con) + 'r'+ str(rate) + '_merged.png'), bbox_inches=extent)
 
 plt.show()

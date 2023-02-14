@@ -72,7 +72,7 @@ services:
     labels:
       e2e: true
     container_name: {{ .Name }}
-    image: cometbft/e2e-node:{{ .Version }}
+    image: {{ .Version }}
 {{- if eq .ABCIProtocol "builtin" }}
     entrypoint: /usr/bin/entrypoint-builtin
 {{- else if .Misbehaviors }}

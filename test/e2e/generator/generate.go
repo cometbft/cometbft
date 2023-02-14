@@ -51,7 +51,7 @@ var (
 		"upgrade":    0.3,
 	}
 	nodeMisbehaviors = weightedChoice{
-		// FIXME: evidence disabled due to node panicing when not
+		// FIXME: evidence disabled due to node panicking when not
 		// having sufficient block history to process evidence.
 		// https://github.com/tendermint/tendermint/issues/5617
 		// misbehaviorOption{"double-prevote"}: 1,
@@ -337,19 +337,28 @@ func (m misbehaviorOption) atHeight(height int64) map[string]string {
 
 // Parses strings like "v0.34.21:1,v0.34.22:2" to represent two versions
 // ("v0.34.21" and "v0.34.22") with weights of 1 and 2 respectively.
+// Versions may be specified as cometbft/e2e-node:v0.34.27-alpha.1:1 or
+// ghcr.io/informalsystems/tendermint:v0.34.26:1.
+// If only the tag and weight are specified, cometbft/e2e-node is assumed.
 func parseWeightedVersions(s string) (weightedChoice, error) {
 	wc := make(weightedChoice)
 	wvs := strings.Split(strings.TrimSpace(s), ",")
 	for _, wv := range wvs {
 		parts := strings.Split(strings.TrimSpace(wv), ":")
-		if len(parts) != 2 {
+		var ver string
+		if len(parts) == 2 {
+			ver = strings.TrimSpace(strings.Join([]string{"cometbft/e2e-node", parts[0]}, ":"))
+		} else if len(parts) == 3 {
+			ver = strings.TrimSpace(strings.Join([]string{parts[0], parts[1]}, ":"))
+		} else {
 			return nil, fmt.Errorf("unexpected weight:version combination: %s", wv)
 		}
-		ver := strings.TrimSpace(parts[0])
-		wt, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+
+		wt, err := strconv.Atoi(strings.TrimSpace(parts[len(parts)-1]))
 		if err != nil {
 			return nil, fmt.Errorf("unexpected weight \"%s\": %w", parts[1], err)
 		}
+
 		if wt < 1 {
 			return nil, errors.New("version weights must be >= 1")
 		}

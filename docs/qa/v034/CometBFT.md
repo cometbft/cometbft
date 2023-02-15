@@ -32,7 +32,7 @@ versions, combined with the CometBFT release candidate under test.
 Therefore our testing focuses on the last Tendermint Core version (`v0.34.26`) and the CometBFT release
 candidate under test.
 
-We only run the _200 node test_, and not the _rotating node test_. The effort of running the latter
+We run the _200 node test_, but not the _rotating node test_. The effort of running the latter
 is not justified given the amount and nature of the changes we are testing with respect to the
 full QA cycle run previously on `v0.34.x`.
 Since the changes to the system's logic are minimal, we are interested in these performance requirements:
@@ -53,9 +53,9 @@ Therefore we carry out a complete run of the _200-node test_ on the following ne
   and the rest (67 out of 200) are running Tendermint Core `v0.34.26`.
 
 ## Configuration and Results
-In the following sections we provide the results of the _200 node test_;
-section reports the baseline results (for reference), the homogeneous network scenario (all CometBFT nodes), and the
-mixed networks with 1/2, 1/3 and 2/3 of Tendermint Core nodes.
+In the following sections we provide the results of the _200 node test_.
+Each section reports the baseline results (for reference), the homogeneous network scenario (all CometBFT nodes), 
+and the mixed networks with 1/2, 1/3 and 2/3 of Tendermint Core nodes.
 
 ### Saturation Point
 
@@ -71,7 +71,7 @@ We also include the baseline results for quick reference and comparison.
 
 ### Experiments
 
-On each of the three networks, the test consists of 4 experiments, with the goal
+On each of the three networks, the test consists of 4 experiments, with the goal of
 ensuring the data obtained is consistent across experiments.
 
 On each of the networks, we pick only one representative run to present and discuss the
@@ -83,7 +83,7 @@ For each network the figures plot the four experiments carried out with the netw
 We can see that the latencies follow comparable patterns across all experiments.
 
 Unique identifiers, UUID, for each execution are presented on top of each graph.
-We refer to these identifiers to indicate to the representative runs.
+We refer to these UUID to indicate to the representative runs.
 
 ### CometBFT Homogeneous network
 
@@ -131,12 +131,11 @@ The second one shows the evolution of the average over all full nodes.
 
 #### CometBFT Homogeneous network
 
+The results for the homogeneous network and the baseline are similar in terms of outstanding transactions.
+
 ![mempool-cumulative-homogeneous](./img/homogeneous/mempool_size.png)
 
 ![mempool-avg-homogeneous](./img/homogeneous/avg_mempool_size.png)
-
-> **Note**:    
-> The results for the homogeneous network and the baseline are similar in terms of outstanding transactions.
 
 #### 1/2 Tendermint Core - 1/2 CometBFT
 

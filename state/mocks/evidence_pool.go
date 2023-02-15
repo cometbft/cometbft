@@ -47,6 +47,10 @@ func (_m *EvidencePool) PendingEvidence(maxBytes int64) ([]types.Evidence, int64
 	ret := _m.Called(maxBytes)
 
 	var r0 []types.Evidence
+	var r1 int64
+	if rf, ok := ret.Get(0).(func(int64) ([]types.Evidence, int64)); ok {
+		return rf(maxBytes)
+	}
 	if rf, ok := ret.Get(0).(func(int64) []types.Evidence); ok {
 		r0 = rf(maxBytes)
 	} else {
@@ -55,7 +59,6 @@ func (_m *EvidencePool) PendingEvidence(maxBytes int64) ([]types.Evidence, int64
 		}
 	}
 
-	var r1 int64
 	if rf, ok := ret.Get(1).(func(int64) int64); ok {
 		r1 = rf(maxBytes)
 	} else {

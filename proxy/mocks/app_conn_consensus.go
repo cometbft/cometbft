@@ -19,6 +19,10 @@ func (_m *AppConnConsensus) BeginBlockSync(_a0 types.RequestBeginBlock) (*types.
 	ret := _m.Called(_a0)
 
 	var r0 *types.ResponseBeginBlock
+	var r1 error
+	if rf, ok := ret.Get(0).(func(types.RequestBeginBlock) (*types.ResponseBeginBlock, error)); ok {
+		return rf(_a0)
+	}
 	if rf, ok := ret.Get(0).(func(types.RequestBeginBlock) *types.ResponseBeginBlock); ok {
 		r0 = rf(_a0)
 	} else {
@@ -27,7 +31,6 @@ func (_m *AppConnConsensus) BeginBlockSync(_a0 types.RequestBeginBlock) (*types.
 		}
 	}
 
-	var r1 error
 	if rf, ok := ret.Get(1).(func(types.RequestBeginBlock) error); ok {
 		r1 = rf(_a0)
 	} else {
@@ -42,6 +45,10 @@ func (_m *AppConnConsensus) CommitSync() (*types.ResponseCommit, error) {
 	ret := _m.Called()
 
 	var r0 *types.ResponseCommit
+	var r1 error
+	if rf, ok := ret.Get(0).(func() (*types.ResponseCommit, error)); ok {
+		return rf()
+	}
 	if rf, ok := ret.Get(0).(func() *types.ResponseCommit); ok {
 		r0 = rf()
 	} else {
@@ -50,7 +57,6 @@ func (_m *AppConnConsensus) CommitSync() (*types.ResponseCommit, error) {
 		}
 	}
 
-	var r1 error
 	if rf, ok := ret.Get(1).(func() error); ok {
 		r1 = rf()
 	} else {
@@ -81,6 +87,10 @@ func (_m *AppConnConsensus) EndBlockSync(_a0 types.RequestEndBlock) (*types.Resp
 	ret := _m.Called(_a0)
 
 	var r0 *types.ResponseEndBlock
+	var r1 error
+	if rf, ok := ret.Get(0).(func(types.RequestEndBlock) (*types.ResponseEndBlock, error)); ok {
+		return rf(_a0)
+	}
 	if rf, ok := ret.Get(0).(func(types.RequestEndBlock) *types.ResponseEndBlock); ok {
 		r0 = rf(_a0)
 	} else {
@@ -89,7 +99,6 @@ func (_m *AppConnConsensus) EndBlockSync(_a0 types.RequestEndBlock) (*types.Resp
 		}
 	}
 
-	var r1 error
 	if rf, ok := ret.Get(1).(func(types.RequestEndBlock) error); ok {
 		r1 = rf(_a0)
 	} else {
@@ -118,6 +127,10 @@ func (_m *AppConnConsensus) InitChainSync(_a0 types.RequestInitChain) (*types.Re
 	ret := _m.Called(_a0)
 
 	var r0 *types.ResponseInitChain
+	var r1 error
+	if rf, ok := ret.Get(0).(func(types.RequestInitChain) (*types.ResponseInitChain, error)); ok {
+		return rf(_a0)
+	}
 	if rf, ok := ret.Get(0).(func(types.RequestInitChain) *types.ResponseInitChain); ok {
 		r0 = rf(_a0)
 	} else {
@@ -126,7 +139,6 @@ func (_m *AppConnConsensus) InitChainSync(_a0 types.RequestInitChain) (*types.Re
 		}
 	}
 
-	var r1 error
 	if rf, ok := ret.Get(1).(func(types.RequestInitChain) error); ok {
 		r1 = rf(_a0)
 	} else {
@@ -141,6 +153,10 @@ func (_m *AppConnConsensus) PrepareProposalSync(_a0 types.RequestPrepareProposal
 	ret := _m.Called(_a0)
 
 	var r0 *types.ResponsePrepareProposal
+	var r1 error
+	if rf, ok := ret.Get(0).(func(types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error)); ok {
+		return rf(_a0)
+	}
 	if rf, ok := ret.Get(0).(func(types.RequestPrepareProposal) *types.ResponsePrepareProposal); ok {
 		r0 = rf(_a0)
 	} else {
@@ -149,7 +165,6 @@ func (_m *AppConnConsensus) PrepareProposalSync(_a0 types.RequestPrepareProposal
 		}
 	}
 
-	var r1 error
 	if rf, ok := ret.Get(1).(func(types.RequestPrepareProposal) error); ok {
 		r1 = rf(_a0)
 	} else {
@@ -164,6 +179,10 @@ func (_m *AppConnConsensus) ProcessProposalSync(_a0 types.RequestProcessProposal
 	ret := _m.Called(_a0)
 
 	var r0 *types.ResponseProcessProposal
+	var r1 error
+	if rf, ok := ret.Get(0).(func(types.RequestProcessProposal) (*types.ResponseProcessProposal, error)); ok {
+		return rf(_a0)
+	}
 	if rf, ok := ret.Get(0).(func(types.RequestProcessProposal) *types.ResponseProcessProposal); ok {
 		r0 = rf(_a0)
 	} else {
@@ -172,7 +191,6 @@ func (_m *AppConnConsensus) ProcessProposalSync(_a0 types.RequestProcessProposal
 		}
 	}
 
-	var r1 error
 	if rf, ok := ret.Get(1).(func(types.RequestProcessProposal) error); ok {
 		r1 = rf(_a0)
 	} else {

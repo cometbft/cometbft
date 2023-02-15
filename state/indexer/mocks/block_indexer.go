@@ -22,13 +22,16 @@ func (_m *BlockIndexer) Has(height int64) (bool, error) {
 	ret := _m.Called(height)
 
 	var r0 bool
+	var r1 error
+	if rf, ok := ret.Get(0).(func(int64) (bool, error)); ok {
+		return rf(height)
+	}
 	if rf, ok := ret.Get(0).(func(int64) bool); ok {
 		r0 = rf(height)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
-	var r1 error
 	if rf, ok := ret.Get(1).(func(int64) error); ok {
 		r1 = rf(height)
 	} else {
@@ -57,6 +60,10 @@ func (_m *BlockIndexer) Search(ctx context.Context, q *query.Query) ([]int64, er
 	ret := _m.Called(ctx, q)
 
 	var r0 []int64
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *query.Query) ([]int64, error)); ok {
+		return rf(ctx, q)
+	}
 	if rf, ok := ret.Get(0).(func(context.Context, *query.Query) []int64); ok {
 		r0 = rf(ctx, q)
 	} else {
@@ -65,7 +72,6 @@ func (_m *BlockIndexer) Search(ctx context.Context, q *query.Query) ([]int64, er
 		}
 	}
 
-	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, *query.Query) error); ok {
 		r1 = rf(ctx, q)
 	} else {

@@ -61,8 +61,14 @@ Example:
 # Do the following while ensuring that the virtual environment is activated (see
 # the Setup steps).
 #
-# This will generate a series of plots in the same folder as the `raw.csv` file.
+# This will generate a series of plots in the `imgs` folder.
 # Plots include combined experiment plots and experiments as subplots.
+# - all_experiments - plots of all experiments as individual subplots.
+# - all_configs - plots of all experiments, grouped by configuration (r,c).
+# cXrY.png - Independent plot of experiments of configuration (c=X,r=Y) as different curves.
+# cXrY_merged.png - Independent plot of experiments of configuration (c=X,r=Y) combined as single curve.
+# e_ID.png - independent plot with just experiment with id ID as a single curve.
+
 
 python3 latency_plotter.py /path/to/csv/files/raw.csv
 ```

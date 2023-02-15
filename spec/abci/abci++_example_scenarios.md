@@ -82,7 +82,7 @@ $p$ calls `PrepareProposal` many times with different values.
 
 1. **Propose:** Process $p$ is the proposer in this round. Its $validValue$ is $nil$, and it is free to generate and propose new block $Y$. Before proposing, it calls `PrepareProposal` for $Y$. After that, it broadcasts the proposal, delivers it to itself, calls `ProcessProposal` and broadcasts $Prevote$ for it. 
 1. **Prevote:** Due to network asynchrony less than $2f+1$ processes receive the proposal on time and send $Prevote$ for it. Therefore, $p$ does not update $validValue$ in this round. 
-1. **Precommit:** Since less than $2f+1$ processes send $Prevote$, no correct process will lock on this block and send non-`nil` $Precommit$ message. As a consequence, $p$ does not decide on $Y$. 
+1. **Precommit:** Since less than $2f+1$ processes send $Prevote$, no correct process will lock on this block and send non-$nil$ $Precommit$ message. As a consequence, $p$ does not decide on $Y$. 
 
 After this round, we can have multiple rounds like those in [Scenario 1](#scenario-1). The important thing is that process $p$ should not update its $validValue$. Consequently, when process $p$ reaches the round when it is again the proposer, it will ask the mempool for the new block again, and the mempool may return a different block $Z$, and we can have the same round as [Round 0](#round-0-1) just for a different block. As a result, process $p$ calls `PrepareProposal` again but for a different value. When it reaches round $r$ 
 some process will propose block $X$ and if $p$ receives $2f+1$ $Precommit$ messages, it will decide on this value. 
@@ -110,5 +110,5 @@ before their $timeoutPropose$ expires, and they send $Prevote$ for this proposal
 
 ## Scenario 4
 
-[Scenario 3](#scenario-3) can be translated into a scenario where $p$ does not call `PrepareProposal` and `ProcessProposal` at all. For this, it is necessary that process $p$ is not the proposer in any of the rounds $0 <= r' <= r$ and that due to network asynchrony or Byzantine proposer, it does not receive the proposal before $timeoutPropose$ expires. As a result, it will enter round $r$ without calling `PrepareProposal` and `ProcessProposal` before it, and as shown in [Round $r$ of Scenario 3](#scenario-3) it will decide in this round. Again without calling any of these two calls.  
+[Scenario 3](#scenario-3) can be translated into a scenario where $p$ does not call `PrepareProposal` and `ProcessProposal` at all. For this, it is necessary that process $p$ is not the proposer in any of the rounds $0 <= r' <= r$ and that due to network asynchrony or Byzantine proposer, it does not receive the proposal before $timeoutPropose$ expires. As a result, it will enter round $r$ without calling `PrepareProposal` and `ProcessProposal` before it, and as shown in Round $r$ of [Scenario 3](#scenario-3) it will decide in this round. Again without calling any of these two calls.  
 

@@ -78,7 +78,7 @@ call sequences of these methods.
   proposer to perform application-dependent work in a block before proposing it.
   This enables, for instance, batch optimizations to a block, which has been empirically
   demonstrated to be a key component for improved performance. Method `PrepareProposal` is called
-  every time CometBFT is about to broadcast a Proposal message and CometBFT's _validValue_ is `nil`. 
+  every time CometBFT is about to broadcast a Proposal message and _validValue_ is `nil`. 
   CometBFT gathers outstanding transactions from the
   mempool, generates a block header, and uses them to create a block to propose. Then, it calls
   `RequestPrepareProposal` with the newly created proposal, called *raw proposal*. The Application
@@ -91,7 +91,7 @@ call sequences of these methods.
   perform application-dependent work in a proposed block. This enables features such as immediate
   block execution, and allows the Application to reject invalid blocks.
 
-  CometBFT calls it when it receives a proposal and CometBFT's _validValue_ is `nil`. 
+  CometBFT calls it when it receives a proposal and _validValue_ is `nil`. 
   The Application cannot modify the proposal at this point but can reject it if it is
   invalid. If that is the case, the consensus algorithm will prevote `nil` on the proposal, which has
   strong liveness implications for CometBFT. As a general rule, the Application

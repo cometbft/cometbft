@@ -10,9 +10,11 @@
 [![License][license-badge]][license-url]
 [![Sourcegraph][sg-badge]][sg-url]
 
-| Branch | Tests                              | Linting                         |
-|--------|------------------------------------|---------------------------------|
-| main   | [![Tests][tests-badge]][tests-url] | [![Lint][lint-badge]][lint-url] |
+| Branch  | Tests                                    | Linting                               |
+|---------|------------------------------------------|---------------------------------------|
+| main    | [![Tests][tests-badge]][tests-url]       | [![Lint][lint-badge]][lint-url]       |
+| v0.37.x | [![Tests][tests-badge-v037x]][tests-url] | [![Lint][lint-badge-v037x]][lint-url] |
+| v0.34.x | [![Tests][tests-badge-v034x]][tests-url] | [![Lint][lint-badge-v034x]][lint-url] |
 
 CometBFT is a Byzantine Fault Tolerant (BFT) middleware that takes a
 state transition machine - written in any programming language - and securely
@@ -172,6 +174,10 @@ maintains [cometbft.com](https://cometbft.com).
 [sg-url]: https://sourcegraph.com/github.com/cometbft/cometbft?badge
 [tests-url]: https://github.com/cometbft/cometbft/actions/workflows/tests.yml
 [tests-badge]: https://github.com/cometbft/cometbft/actions/workflows/tests.yml/badge.svg?branch=main
-[lint-badge]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml/badge.svg
+[tests-badge-v037x]: https://github.com/cometbft/cometbft/actions/workflows/tests.yml/badge.svg?branch=v0.37.x
+[tests-badge-v034x]: https://github.com/cometbft/cometbft/actions/workflows/tests.yml/badge.svg?branch=v0.34.x
+[lint-badge]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml/badge.svg?branch=main
+[lint-badge-v034x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml/badge.svg?branch=v0.34.x
+[lint-badge-v037x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml/badge.svg?branch=v0.37.x
 [lint-url]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml
 [tm-core]: https://github.com/tendermint/tendermint

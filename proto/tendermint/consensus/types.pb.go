@@ -5,10 +5,10 @@ package consensus
 
 import (
 	fmt "fmt"
-	bits "github.com/cometbft/cometbft/proto/tendermint/libs/bits"
-	types "github.com/cometbft/cometbft/proto/tendermint/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	bits "github.com/tendermint/tendermint/proto/tendermint/libs/bits"
+	types "github.com/tendermint/tendermint/proto/tendermint/types"
 	io "io"
 	math "math"
 	math_bits "math/bits"

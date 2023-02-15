@@ -14,9 +14,9 @@ import (
 	"os"
 	"strings"
 
-	cs "github.com/cometbft/cometbft/consensus"
-	cmtjson "github.com/cometbft/cometbft/libs/json"
-	"github.com/cometbft/cometbft/types"
+	cs "github.com/tendermint/tendermint/consensus"
+	cmtjson "github.com/tendermint/tendermint/libs/json"
+	"github.com/tendermint/tendermint/types"
 )
 
 func main() {

@@ -1,4 +1,4 @@
-module github.com/cometbft/cometbft
+module github.com/tendermint/tendermint
 
 go 1.18
 
@@ -296,3 +296,5 @@ require (
 	mvdan.cc/lint v0.0.0-20170908181259-adc824a0674b // indirect
 	mvdan.cc/unparam v0.0.0-20220706161116-678bad134442 // indirect
 )
+
+replace github.com/informalsystems/tendermint v0.34.26 => ./

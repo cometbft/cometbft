@@ -71,7 +71,6 @@ type Testnet struct {
 	LoadTxBatchSize   int
 	LoadTxConnections int
 	ABCIProtocol      string
-	UpgradeVersion    string
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -97,6 +96,7 @@ type Node struct {
 	Seeds            []*Node
 	PersistentPeers  []*Node
 	Perturbations    []Perturbation
+	UpgradeVersion   string
 	Misbehaviors     map[int64]string
 
 	// SendNoLoad determines if the e2e test should send load to this node.
@@ -131,7 +131,6 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 		LoadTxBatchSize:   manifest.LoadTxBatchSize,
 		LoadTxConnections: manifest.LoadTxConnections,
 		ABCIProtocol:      manifest.ABCIProtocol,
-		UpgradeVersion:    manifest.UpgradeVersion,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
@@ -141,9 +140,6 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 	}
 	if testnet.ABCIProtocol == "" {
 		testnet.ABCIProtocol = string(ProtocolBuiltin)
-	}
-	if testnet.UpgradeVersion == "" {
-		testnet.UpgradeVersion = localVersion
 	}
 	if testnet.LoadTxConnections == 0 {
 		testnet.LoadTxConnections = defaultConnections
@@ -172,9 +168,15 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 		if v == "" {
 			v = localVersion
 		}
+		uv := nodeManifest.UpgradeVersion
+		if uv == "" {
+			uv = localVersion
+		}
+
 		node := &Node{
 			Name:             name,
 			Version:          v,
+			UpgradeVersion:   uv,
 			Testnet:          testnet,
 			PrivvalKey:       keyGen.Generate(manifest.KeyType),
 			NodeKey:          keyGen.Generate("ed25519"),

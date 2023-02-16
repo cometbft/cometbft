@@ -57,10 +57,6 @@ type Manifest struct {
 	// launch it instead of launching a separate CometBFT process.
 	ABCIProtocol string `toml:"abci_protocol"`
 
-	// UpgradeVersion specifies to which version nodes need to upgrade to.
-	// Currently only uncoordinated upgrade is supported
-	UpgradeVersion string `toml:"upgrade_version"`
-
 	LoadTxSizeBytes   int `toml:"load_tx_size_bytes"`
 	LoadTxBatchSize   int `toml:"load_tx_batch_size"`
 	LoadTxConnections int `toml:"load_tx_connections"`
@@ -79,6 +75,10 @@ type ManifestNode struct {
 	// there must be a docker image of the test app tagged with this version present
 	// on the machine where the test is being run.
 	Version string `toml:"version"`
+
+	// UpgradeVersion specifies to which version this nodes need to upgrade.
+	// Currently only uncoordinated upgrade is supported
+	UpgradeVersion string `toml:"upgrade_version"`
 
 	// Seeds is the list of node names to use as P2P seed nodes. Defaults to none.
 	Seeds []string `toml:"seeds"`

@@ -90,13 +90,13 @@ services:
     networks:
       {{ $.Name }}:
         ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .IP }}
-{{- if ne .Version  $.UpgradeVersion}}
+{{- if ne .Version  .UpgradeVersion}}
 
   {{ .Name }}_u:
     labels:
       e2e: true
     container_name: {{ .Name }}_u
-    image: cometbft/e2e-node:{{ $.UpgradeVersion }}
+    image: {{ .UpgradeVersion }}
 {{- if eq .ABCIProtocol "builtin" }}
     entrypoint: /usr/bin/entrypoint-builtin
 {{- else if .Misbehaviors }}

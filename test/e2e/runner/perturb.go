@@ -79,7 +79,7 @@ func PerturbNode(node *e2e.Node, perturbation e2e.Perturbation) (*rpctypes.Resul
 
 	case e2e.PerturbationUpgrade:
 		oldV := node.Version
-		newV := node.Testnet.UpgradeVersion
+		newV := node.UpgradeVersion
 		if upgraded {
 			return nil, fmt.Errorf("node %v can't be upgraded twice from version '%v' to version '%v'",
 				node.Name, oldV, newV)

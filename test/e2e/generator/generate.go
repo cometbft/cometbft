@@ -30,6 +30,8 @@ var (
 	nodeVersions = weightedChoice{
 		"": 2,
 	}
+	orderedVersions = []string{""}
+
 	// The following specify randomly chosen values for testnet nodes.
 	nodeDatabases = uniformChoice{"goleveldb", "cleveldb", "rocksdb", "boltdb", "badgerdb"}
 	ipv6          = uniformChoice{false, true}
@@ -72,13 +74,18 @@ type generateConfig struct {
 func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 	if cfg.multiVersion != "" {
 		var err error
-		nodeVersions, err = parseWeightedVersions(cfg.multiVersion)
+		nodeVersions, orderedVersions, err = parseWeightedVersions(cfg.multiVersion)
 		if err != nil {
 			return nil, err
 		}
 		if _, ok := nodeVersions["local"]; ok {
 			nodeVersions[""] = nodeVersions["local"]
 			delete(nodeVersions, "local")
+			for i, n := range orderedVersions {
+				if "local" == n {
+					orderedVersions[i] = ""
+				}
+			}
 		}
 		if _, ok := nodeVersions["latest"]; ok {
 			latestVersion, err := gitRepoLatestReleaseVersion(cfg.outputDir)
@@ -87,6 +94,11 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 			}
 			nodeVersions[latestVersion] = nodeVersions["latest"]
 			delete(nodeVersions, "latest")
+			for i, n := range orderedVersions {
+				if "latest" == n {
+					orderedVersions[i] = latestVersion
+				}
+			}
 		}
 	}
 	fmt.Println("Generating testnet with weighted versions:")
@@ -264,6 +276,17 @@ func generateNode(
 		Perturb:          nodePerturbations.Choose(r),
 	}
 
+	// Set UpgradeVersion.
+	// If not using multiversion, then upgrades happen to the "local" version.
+	// If using multiversion, then, for now, we assume that at most two versions were provided.
+	// If 2 versions were provided, then upgrades happen only from the first to the second.
+	// In the future, we may want to upgrade from any version to one at the right in the multiversion.
+	if len(nodeVersions) == 1 {
+		node.UpgradeVersion = ""
+	} else if len(nodeVersions) == 2 && node.Version == orderedVersions[0] {
+		node.UpgradeVersion = orderedVersions[1]
+	}
+
 	// If this node is forced to be an archive node, retain all blocks and
 	// enable state sync snapshotting.
 	if forceArchive {
@@ -340,8 +363,10 @@ func (m misbehaviorOption) atHeight(height int64) map[string]string {
 // Versions may be specified as cometbft/e2e-node:v0.34.27-alpha.1:1 or
 // ghcr.io/informalsystems/tendermint:v0.34.26:1.
 // If only the tag and weight are specified, cometbft/e2e-node is assumed.
-func parseWeightedVersions(s string) (weightedChoice, error) {
+// Also returns the parsed versions in the order they were in input.
+func parseWeightedVersions(s string) (weightedChoice, []string, error) {
 	wc := make(weightedChoice)
+	ov := make([]string, 0)
 	wvs := strings.Split(strings.TrimSpace(s), ",")
 	for _, wv := range wvs {
 		parts := strings.Split(strings.TrimSpace(wv), ":")
@@ -351,20 +376,21 @@ func parseWeightedVersions(s string) (weightedChoice, error) {
 		} else if len(parts) == 3 {
 			ver = strings.TrimSpace(strings.Join([]string{parts[0], parts[1]}, ":"))
 		} else {
-			return nil, fmt.Errorf("unexpected weight:version combination: %s", wv)
+			return nil, nil, fmt.Errorf("unexpected weight:version combination: %s", wv)
 		}
 
 		wt, err := strconv.Atoi(strings.TrimSpace(parts[len(parts)-1]))
 		if err != nil {
-			return nil, fmt.Errorf("unexpected weight \"%s\": %w", parts[1], err)
+			return nil, nil, fmt.Errorf("unexpected weight \"%s\": %w", parts[1], err)
 		}
 
 		if wt < 1 {
-			return nil, errors.New("version weights must be >= 1")
+			return nil, nil, errors.New("version weights must be >= 1")
 		}
 		wc[ver] = uint(wt)
+		ov = append(ov, ver)
 	}
-	return wc, nil
+	return wc, ov, nil
 }
 
 // Extracts the latest release version from the given Git repository. Uses the

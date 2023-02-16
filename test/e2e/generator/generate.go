@@ -82,7 +82,7 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 			nodeVersions[""] = nodeVersions["local"]
 			delete(nodeVersions, "local")
 			for i, n := range orderedVersions {
-				if "local" == n {
+				if n == "local" {
 					orderedVersions[i] = ""
 				}
 			}
@@ -95,7 +95,7 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 			nodeVersions[latestVersion] = nodeVersions["latest"]
 			delete(nodeVersions, "latest")
 			for i, n := range orderedVersions {
-				if "latest" == n {
+				if n == "latest" {
 					orderedVersions[i] = latestVersion
 				}
 			}

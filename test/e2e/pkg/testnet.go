@@ -26,7 +26,7 @@ const (
 	defaultConnections = 1
 	defaultTxSizeBytes = 1024
 
-	localVersion = "local-version"
+	localVersion = "cometbft/e2e-node:local-version"
 )
 
 type (

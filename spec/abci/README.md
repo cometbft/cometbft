@@ -32,8 +32,10 @@ This specification is split as follows:
 - [Requirements for the Application](./abci++_app_requirements.md) - formal requirements
   on the Application's logic to ensure CometBFT properties such as liveness. These requirements define what
   CometBFT expects from the Application; second part on managing ABCI application state and related topics.
-- [CometBFT's expected behavior](./abci++_tmint_expected_behavior.md) - specification of
+- [CometBFT's expected behavior](./abci++_comet_expected_behavior.md) - specification of
   how the different ABCI++ methods may be called by CometBFT. This explains what the Application
   is to expect from CometBFT.
+- [Example scenarios](./abci++_example_scenarios.md) - specific scenarios showing why the Application needs to account 
+for any CometBFT's behaviour prescribed by the specification.
 - [Client and Server](abci++_client_server.md) - for those looking to implement their
-  own ABCI application servers
+  own ABCI application servers.

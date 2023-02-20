@@ -550,7 +550,7 @@ When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the prop
 4. Upon reception of Proposal message, along with all the block parts, for round _r_, height _h_
    from _q_, _p_ follows the validators' algorithm to check whether it should prevote for the
    proposed block, or `nil`.
-5. If the validators' consensus algorithm indicates _p_ should prevote for the proposed block:
+5. If the validators' consensus algorithm indicates _p_ should prevote non-nil:
     1. CometBFT calls `RequestProcessProposal` with the block. The call is synchronous.
     2. The Application checks/processes the proposed block, which is read-only, and returns
        `ACCEPT` or `REJECT` in the `ResponseProcessProposal.status` field.

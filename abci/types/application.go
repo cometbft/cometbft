@@ -19,7 +19,7 @@ type Application interface {
 	CheckTx(RequestCheckTx) ResponseCheckTx // Validate a tx for the mempool
 
 	// Consensus Connection
-	InitChain(RequestInitChain) ResponseInitChain // Initialize blockchain w validators/other info from TendermintCore
+	InitChain(RequestInitChain) ResponseInitChain // Initialize blockchain w validators/other info from CometBFT
 	PrepareProposal(RequestPrepareProposal) ResponsePrepareProposal
 	ProcessProposal(RequestProcessProposal) ResponseProcessProposal
 	BeginBlock(RequestBeginBlock) ResponseBeginBlock // Signals the beginning of a block

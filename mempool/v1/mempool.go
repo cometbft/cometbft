@@ -1,3 +1,4 @@
+// Deprecated: Priority mempool will be removed in the next major release.
 package v1
 
 import (
@@ -454,7 +455,7 @@ func (txmp *TxMempool) addNewTransaction(wtx *WrappedTx, checkTxRes *abci.Respon
 	}
 
 	if err != nil || checkTxRes.Code != abci.CodeTypeOK {
-		txmp.logger.Info(
+		txmp.logger.Debug(
 			"rejected bad transaction",
 			"priority", wtx.Priority(),
 			"tx", fmt.Sprintf("%X", wtx.tx.Hash()),

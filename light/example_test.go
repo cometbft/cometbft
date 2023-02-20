@@ -21,7 +21,7 @@ import (
 
 // Automatically getting new headers and verifying them.
 func ExampleClient_Update() {
-	// give Tendermint time to generate some blocks
+	// give CometBFT time to generate some blocks
 	time.Sleep(5 * time.Second)
 
 	dbDir, err := os.MkdirTemp("", "light-client-example")
@@ -89,7 +89,7 @@ func ExampleClient_Update() {
 
 // Manually getting light blocks and verifying them.
 func ExampleClient_VerifyLightBlockAtHeight() {
-	// give Tendermint time to generate some blocks
+	// give CometBFT time to generate some blocks
 	time.Sleep(5 * time.Second)
 
 	dbDir, err := os.MkdirTemp("", "light-client-example")
@@ -155,7 +155,7 @@ func ExampleClient_VerifyLightBlockAtHeight() {
 }
 
 func TestMain(m *testing.M) {
-	// start a tendermint node (and kvstore) in the background to test against
+	// start a CometBFT node (and kvstore) in the background to test against
 	app := kvstore.NewApplication()
 	node := rpctest.StartTendermint(app, rpctest.SuppressStdout)
 

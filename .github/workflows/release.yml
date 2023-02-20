@@ -25,7 +25,7 @@ jobs:
           version: latest
           args: build --skip-validate   # skip validate skips initial sanity checks in order to be able to fully run
 
-      - run: echo https://github.com/tendermint/tendermint/blob/${GITHUB_REF#refs/tags/}/CHANGELOG.md#${GITHUB_REF#refs/tags/} > ../release_notes.md
+      - run: echo https://github.com/cometbft/cometbft/blob/${GITHUB_REF#refs/tags/}/CHANGELOG.md#${GITHUB_REF#refs/tags/} > ../release_notes.md
 
       - name: Release
         uses: goreleaser/goreleaser-action@v4
@@ -55,7 +55,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":rocket: New Tendermint release: <${{ env.RELEASE_URL }}|${{ github.ref_name }}>"
+                    "text": ":rocket: New CometBFT release: <${{ env.RELEASE_URL }}|${{ github.ref_name }}>"
                   }
                 }
               ]

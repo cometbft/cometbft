@@ -89,7 +89,7 @@ func (reactor MyReactor) GetChannels() []*ChannelDescriptor {
     return []*ChannelDescriptor{ChannelDescriptor{ID:MyChannelID, Priority: 1}}
 }
 
-func (reactor MyReactor) Receive(chID byte, peer *Peer, msgBytes []byte) {
+func (reactor MyReactor) ReceiveEnvelope(chID byte, peer *Peer, msgBytes []byte) {
     r, n, err := bytes.NewBuffer(msgBytes), new(int64), new(error)
     msgString := ReadString(r, n, err)
     fmt.Println(msgString)

@@ -63,7 +63,14 @@ func makeHTTPHandler(rpcFunc *RPCFunc, logger log.Logger) func(http.ResponseWrit
 			}
 			return
 		}
-		if err := WriteRPCResponseHTTP(w, types.NewRPCSuccessResponse(dummyID, result)); err != nil {
+
+		resp := types.NewRPCSuccessResponse(dummyID, result)
+		if rpcFunc.cacheableWithArgs(args) {
+			err = WriteCacheableRPCResponseHTTP(w, resp)
+		} else {
+			err = WriteRPCResponseHTTP(w, resp)
+		}
+		if err != nil {
 			logger.Error("failed to write response", "res", result, "err", err)
 			return
 		}
@@ -71,7 +78,7 @@ func makeHTTPHandler(rpcFunc *RPCFunc, logger log.Logger) func(http.ResponseWrit
 }
 
 // Covert an http query to a list of properly typed values.
-// To be properly decoded the arg must be a concrete type from tendermint (if its an interface).
+// To be properly decoded the arg must be a concrete type from CometBFT (if its an interface).
 func httpParamsToArgs(rpcFunc *RPCFunc, r *http.Request) ([]reflect.Value, error) {
 	// skip types.Context
 	const argsOffset = 1

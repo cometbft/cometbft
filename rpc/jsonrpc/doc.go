@@ -80,5 +80,5 @@
 //
 // # Examples
 //
-// - [CometBFT](https://github.com/tendermint/tendermint/blob/v0.34.x/rpc/core/routes.go)
+// - [CometBFT](https://github.com/comet/comet/blob/v0.34.x/rpc/core/routes.go)
 package jsonrpc

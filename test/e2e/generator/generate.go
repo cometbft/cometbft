@@ -30,7 +30,6 @@ var (
 	nodeVersions = weightedChoice{
 		"": 2,
 	}
-	orderedVersions = []string{""}
 
 	// The following specify randomly chosen values for testnet nodes.
 	nodeDatabases = uniformChoice{"goleveldb", "cleveldb", "rocksdb", "boltdb", "badgerdb"}
@@ -72,19 +71,19 @@ type generateConfig struct {
 
 // Generate generates random testnets using the given RNG.
 func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
+	upgradeVersion := ""
+
 	if cfg.multiVersion != "" {
 		var err error
-		nodeVersions, orderedVersions, err = parseWeightedVersions(cfg.multiVersion)
+		nodeVersions, upgradeVersion, err = parseWeightedVersions(cfg.multiVersion)
 		if err != nil {
 			return nil, err
 		}
 		if _, ok := nodeVersions["local"]; ok {
 			nodeVersions[""] = nodeVersions["local"]
 			delete(nodeVersions, "local")
-			for i, n := range orderedVersions {
-				if n == "local" {
-					orderedVersions[i] = ""
-				}
+			if upgradeVersion == "local" {
+				upgradeVersion = ""
 			}
 		}
 		if _, ok := nodeVersions["latest"]; ok {
@@ -94,10 +93,8 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 			}
 			nodeVersions[latestVersion] = nodeVersions["latest"]
 			delete(nodeVersions, "latest")
-			for i, n := range orderedVersions {
-				if n == "latest" {
-					orderedVersions[i] = latestVersion
-				}
+			if upgradeVersion == "latest" {
+				upgradeVersion = latestVersion
 			}
 		}
 	}
@@ -111,7 +108,7 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 	}
 	manifests := []e2e.Manifest{}
 	for _, opt := range combinations(testnetCombinations) {
-		manifest, err := generateTestnet(cfg.randSource, opt)
+		manifest, err := generateTestnet(cfg.randSource, opt, upgradeVersion)
 		if err != nil {
 			return nil, err
 		}
@@ -121,7 +118,7 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 }
 
 // generateTestnet generates a single testnet with the given options.
-func generateTestnet(r *rand.Rand, opt map[string]interface{}) (e2e.Manifest, error) {
+func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion string) (e2e.Manifest, error) {
 	manifest := e2e.Manifest{
 		IPv6:             ipv6.Choose(r).(bool),
 		ABCIProtocol:     nodeABCIProtocols.Choose(r).(string),
@@ -130,6 +127,7 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}) (e2e.Manifest, er
 		Validators:       &map[string]int64{},
 		ValidatorUpdates: map[string]map[string]int64{},
 		Nodes:            map[string]*e2e.ManifestNode{},
+		UpgradeVersion:   upgradeVersion,
 	}
 
 	var numSeeds, numValidators, numFulls, numLightClients int
@@ -276,17 +274,6 @@ func generateNode(
 		Perturb:          nodePerturbations.Choose(r),
 	}
 
-	// Set UpgradeVersion.
-	// If not using multiversion, then upgrades happen to the "local" version.
-	// If using multiversion, then, for now, we assume that at most two versions were provided.
-	// If 2 versions were provided, then upgrades happen only from the first to the second.
-	// In the future, we may want to upgrade from any version to one at the right in the multiversion.
-	if len(nodeVersions) == 1 {
-		node.UpgradeVersion = ""
-	} else if len(nodeVersions) == 2 && node.Version == orderedVersions[0] {
-		node.UpgradeVersion = orderedVersions[1]
-	}
-
 	// If this node is forced to be an archive node, retain all blocks and
 	// enable state sync snapshotting.
 	if forceArchive {
@@ -363,10 +350,10 @@ func (m misbehaviorOption) atHeight(height int64) map[string]string {
 // Versions may be specified as cometbft/e2e-node:v0.34.27-alpha.1:1 or
 // ghcr.io/informalsystems/tendermint:v0.34.26:1.
 // If only the tag and weight are specified, cometbft/e2e-node is assumed.
-// Also returns the parsed versions in the order they were in input.
-func parseWeightedVersions(s string) (weightedChoice, []string, error) {
+// Also returns the last version in the list, which will be used for updates.
+func parseWeightedVersions(s string) (weightedChoice, string, error) {
 	wc := make(weightedChoice)
-	ov := make([]string, 0)
+	lv := ""
 	wvs := strings.Split(strings.TrimSpace(s), ",")
 	for _, wv := range wvs {
 		parts := strings.Split(strings.TrimSpace(wv), ":")
@@ -376,21 +363,21 @@ func parseWeightedVersions(s string) (weightedChoice, []string, error) {
 		} else if len(parts) == 3 {
 			ver = strings.TrimSpace(strings.Join([]string{parts[0], parts[1]}, ":"))
 		} else {
-			return nil, nil, fmt.Errorf("unexpected weight:version combination: %s", wv)
+			return nil, "", fmt.Errorf("unexpected weight:version combination: %s", wv)
 		}
 
 		wt, err := strconv.Atoi(strings.TrimSpace(parts[len(parts)-1]))
 		if err != nil {
-			return nil, nil, fmt.Errorf("unexpected weight \"%s\": %w", parts[1], err)
+			return nil, "", fmt.Errorf("unexpected weight \"%s\": %w", parts[1], err)
 		}
 
 		if wt < 1 {
-			return nil, nil, errors.New("version weights must be >= 1")
+			return nil, "", errors.New("version weights must be >= 1")
 		}
 		wc[ver] = uint(wt)
-		ov = append(ov, ver)
+		lv = ver
 	}
-	return wc, ov, nil
+	return wc, lv, nil
 }
 
 // Extracts the latest release version from the given Git repository. Uses the

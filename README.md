@@ -61,7 +61,7 @@ Tendermint Core. You can subscribe [here](http://eepurl.com/gZ5hQD).
 
 | Requirement | Notes             |
 |-------------|-------------------|
-| Go version  | Go 1.18 or higher |
+| Go version  | Go 1.19 or higher |
 
 ### Install
 
@@ -161,7 +161,7 @@ for-profit entity that also maintains [tendermint.com](https://tendermint.com).
 [version-url]: https://github.com/tendermint/tendermint/releases/latest
 [api-badge]: https://camo.githubusercontent.com/915b7be44ada53c290eb157634330494ebe3e30a/68747470733a2f2f676f646f632e6f72672f6769746875622e636f6d2f676f6c616e672f6764646f3f7374617475732e737667
 [api-url]: https://pkg.go.dev/github.com/tendermint/tendermint
-[go-badge]: https://img.shields.io/badge/go-1.18-blue.svg
+[go-badge]: https://img.shields.io/badge/go-1.19-blue.svg
 [go-url]: https://github.com/moovweb/gvm
 [discord-badge]: https://img.shields.io/discord/669268347736686612.svg
 [discord-url]: https://discord.gg/cosmosnetwork

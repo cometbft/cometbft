@@ -1,10 +1,6 @@
 # Use a build arg to ensure that both stages use the same,
 # hopefully current, go version.
-<<<<<<< HEAD
-ARG GOLANG_BASE_IMAGE=golang:1.18-alpine
-=======
 ARG GOLANG_BASE_IMAGE=golang:1.19-alpine
->>>>>>> c13e91c767 (Upgrade to Go 1.19 on v0.37.x)
 
 # stage 1 Generate CometBFT Binary
 FROM --platform=$BUILDPLATFORM $GOLANG_BASE_IMAGE as builder

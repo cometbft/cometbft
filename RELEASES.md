@@ -150,11 +150,13 @@ backport branch (see above). Otherwise:
    (which can be triggered from the GitHub UI;
    e.g., <https://github.com/cometbft/cometbft/actions/workflows/e2e-nightly-37x.yml>).
 3. Prepare the pre-release documentation:
-   * Ensure that all relevant changes are in the `CHANGELOG_PENDING.md` file.
-     This file's contents must only be included in the `CHANGELOG.md` when we
-     cut final releases.
-   * Ensure that `UPGRADING.md` is up-to-date and includes notes on any breaking changes
-      or other upgrading flows.
+   * Build the changelog with [unclog] _without_ doing an unclog release, and
+     commit the built changelog. This ensures that all changelog entries appear
+     under an "Unreleased" heading in the pre-release's changelog. The changes
+     are only considered officially "released" once we cut a regular (final)
+     release.
+   * Ensure that `UPGRADING.md` is up-to-date and includes notes on any breaking
+     changes or other upgrading flows.
 4. Prepare the versioning:
    * Bump TMVersionDefault version in  `version.go`
    * Bump P2P and block protocol versions in  `version.go`, if necessary.
@@ -181,13 +183,10 @@ Before performing these steps, be sure the
 1. Start on the backport branch (e.g. `v0.38.x`)
 2. Run integration tests (`make test_integrations`) and the e2e nightlies.
 3. Prepare the release:
-   * "Squash" changes from the changelog entries for the pre-releases into a
-     single entry, and add all changes included in `CHANGELOG_PENDING.md`.
-     (Squashing includes both combining all entries, as well as removing or
-     simplifying any intra-pre-release changes. It may also help to alphabetize
-     the entries by package name.)
-   * Run `python ./scripts/linkify_changelog.py CHANGELOG.md` to add links for
-     all PRs
+   * Do a [release][unclog-release] with [unclog] for the desired version,
+     ensuring that you write up a good summary of the major highlights of the
+     release that users would be interested in.
+   * Build the changelog using unclog, and commit the built changelog.
    * Ensure that `UPGRADING.md` is up-to-date and includes notes on any breaking changes
       or other upgrading flows.
    * Bump TMVersionDefault version in  `version.go`
@@ -199,16 +198,6 @@ Before performing these steps, be sure the
    * `git tag -a v0.38.0 -m 'Release v0.38.0'`
    * `git push origin v0.38.0`
 6. Make sure that `main` is updated with the latest `CHANGELOG.md`, `CHANGELOG_PENDING.md`, and `UPGRADING.md`.
-7. Add the release to the documentation site generator config (see
-   [DOCS\_README.md](./docs/DOCS_README.md) for more details). In summary:
-   * Start on branch `main`.
-   * Add a new line at the bottom of [`docs/versions`](./docs/versions) to
-     ensure the newest release is the default for the landing page.
-   * Add a new entry to `themeConfig.versions` in
-     [`docs/.vuepress/config.js`](./docs/.vuepress/config.js) to include the
-	 release in the dropdown versions menu.
-   * Commit these changes to `main` and backport them into the backport
-     branch for this release.
 
 ## Patch release
 
@@ -224,14 +213,14 @@ To create a patch release:
 1. Checkout the long-lived backport branch: `git checkout v0.38.x`
 2. Run integration tests (`make test_integrations`) and the nightlies.
 3. Check out a new branch and prepare the release:
-   * Copy `CHANGELOG_PENDING.md` to top of `CHANGELOG.md`
-   * Run `python ./scripts/linkify_changelog.py CHANGELOG.md` to add links for all issues
-   * Run `bash ./scripts/authors.sh` to get a list of authors since the latest release, and add the GitHub aliases of external contributors to the top of the CHANGELOG. To lookup an alias from an email, try `bash ./scripts/authors.sh <email>`
-   * Reset the `CHANGELOG_PENDING.md`
+   * Do a [release][unclog-release] with [unclog] for the desired version,
+     ensuring that you write up a good summary of the major highlights of the
+     release that users would be interested in.
+   * Build the changelog using unclog, and commit the built changelog.
    * Bump the TMDefaultVersion in `version.go`
-   * Bump the ABCI version number, if necessary.
-     (Note that ABCI follows semver, and that ABCI versions are the only versions
-     which can change during patch releases, and only field additions are valid patch changes.)
+   * Bump the ABCI version number, if necessary. (Note that ABCI follows semver,
+     and that ABCI versions are the only versions which can change during patch
+     releases, and only field additions are valid patch changes.)
 4. Open a PR with these changes that will land them back on `v0.38.x`
 5. Once this change has landed on the backport branch, make sure to pull it locally, then push a tag.
    * `git tag -a v0.38.1 -m 'Release v0.38.1'`
@@ -368,3 +357,6 @@ of 150 validators is configured to only possess a cumulative stake of 67% of
 the total stake. The remaining 33% of the stake is configured to belong to
 a validator that is never actually run in the test network. The network is run
 for multiple days, ensuring that it is able to produce blocks without issue.
+
+[unclog]: https://github.com/informalsystems/unclog
+[unclog-release]: https://github.com/informalsystems/unclog#releasing-a-new-versions-change-set

@@ -13,7 +13,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	// start a tendermint node in the background to test against
+	// start a CometBFT node in the background to test against
 	app := kvstore.NewApplication()
 	node := rpctest.StartTendermint(app)
 

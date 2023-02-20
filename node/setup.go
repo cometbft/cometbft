@@ -60,7 +60,7 @@ func DefaultGenesisDocProviderFunc(config *cfg.Config) GenesisDocProvider {
 // Provider takes a config and a logger and returns a ready to go Node.
 type Provider func(*cfg.Config, log.Logger) (*Node, error)
 
-// DefaultNewNode returns a Tendermint node with default settings for the
+// DefaultNewNode returns a CometBFT node with default settings for the
 // PrivValidator, ClientCreator, GenesisDoc, and DBProvider.
 // It implements NodeProvider.
 func DefaultNewNode(config *cfg.Config, logger log.Logger) (*Node, error) {

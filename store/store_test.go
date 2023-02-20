@@ -412,7 +412,7 @@ func TestLoadBlockPart(t *testing.T) {
 	require.Nil(t, res, "a non-existent block part should return nil")
 
 	// 2. Next save a corrupted block then try to load it
-	err := db.Set(calcBlockPartKey(height, index), []byte("Tendermint"))
+	err := db.Set(calcBlockPartKey(height, index), []byte("CometBFT"))
 	require.NoError(t, err)
 	res, _, panicErr = doFn(loadPart)
 	require.NotNil(t, panicErr, "expecting a non-nil panic")
@@ -546,7 +546,7 @@ func TestLoadBlockMeta(t *testing.T) {
 	require.Nil(t, res, "a non-existent blockMeta should return nil")
 
 	// 2. Next save a corrupted blockMeta then try to load it
-	err := db.Set(calcBlockMetaKey(height), []byte("Tendermint-Meta"))
+	err := db.Set(calcBlockMetaKey(height), []byte("CometBFT-Meta"))
 	require.NoError(t, err)
 	res, _, panicErr = doFn(loadMeta)
 	require.NotNil(t, panicErr, "expecting a non-nil panic")

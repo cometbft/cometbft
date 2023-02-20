@@ -1,29 +1,26 @@
 # Security
 
-**NOTE** The security process outlined in this document is outdated and is currently
-being defined (see https://github.com/cometbft/cometbft/issues/191).
-
----------------------------
 ## Reporting a Bug
 
-As part of our [Coordinated Vulnerability Disclosure Policy](https://cometbft.com/security),
-we operate a [bug bounty][hackerone]. See the policy for more
-details on submissions and rewards, and see "Example Vulnerabilities" (below)
-for examples of the kinds of bugs we're most interested in.
+As part of our Coordinated Vulnerability Disclosure Policy (link will be added
+once this policy is finalized for CometBFT), we operate a [bug
+bounty][hackerone]. See the policy for more details on submissions and rewards,
+and see "Example Vulnerabilities" (below) for examples of the kinds of bugs
+we're most interested in.
 
 ### Guidelines
 
 We require that all researchers:
 
 * Use the bug bounty to disclose all vulnerabilities, and avoid posting
-  vulnerability information in public places, including Github Issues, Discord
+  vulnerability information in public places, including GitHub Issues, Discord
   channels, and Telegram groups
 * Make every effort to avoid privacy violations, degradation of user experience,
   disruption to production systems (including but not limited to the Cosmos
   Hub), and destruction of data
 * Keep any information about vulnerabilities that you’ve discovered confidential
-  between yourself and the CometBFT engineering team until the issue has
-  been resolved and disclosed
+  between yourself and the CometBFT engineering team until the issue has been
+  resolved and disclosed
 * Avoid posting personally identifiable information, privately or publicly
 
 If you follow these guidelines when reporting an issue to us, we commit to:
@@ -37,8 +34,8 @@ If you follow these guidelines when reporting an issue to us, we commit to:
 
 CometBFT uses the following disclosure process:
 
-1. Once a security report is received, the CometBFT team works to verify
-   the issue and confirm its severity level using CVSS.
+1. Once a security report is received, the CometBFT team works to verify the
+   issue and confirm its severity level using CVSS.
 2. The CometBFT team collaborates with the Gaia team to determine the
    vulnerability’s potential impact on the Cosmos Hub.
 3. Patches are prepared for eligible releases of CometBFT in private
@@ -46,23 +43,22 @@ CometBFT uses the following disclosure process:
    releases are considered eligible.
 4. If it is determined that a CVE-ID is required, we request a CVE through a CVE
    Numbering Authority.
-<!-- 5. We notify the community that a security release is coming, to give users time
+5. We notify the community that a security release is coming, to give users time
    to prepare their systems for the update. Notifications can include forum
-   posts, tweets, and emails to partners and validators, including emails sent
-   to the [CometBFT Security Mailing List][tmsec-mailing]. -->
-1. 24 hours following this notification, the fixes are applied publicly and new
+   posts, tweets, and emails to partners and validators.
+6. 24 hours following this notification, the fixes are applied publicly and new
    releases are issued.
-2. Cosmos SDK and Gaia update their CometBFT dependencies to use these
-   releases, and then themselves issue new releases.
-3. Once releases are available for CometBFT, Cosmos SDK and Gaia, we
-   notify the community, again, through the same channels as above. We also
-   publish a Security Advisory on Github and publish the CVE, as long as neither
-   the Security Advisory nor the CVE include any information on how to exploit
-   these vulnerabilities beyond what information is already available in the
-   patch itself.
-4. Once the community is notified, we will pay out any relevant bug bounties to
+7. Cosmos SDK and Gaia update their CometBFT dependencies to use these releases,
+   and then themselves issue new releases.
+8. Once releases are available for CometBFT, Cosmos SDK and Gaia, we notify the
+   community, again, through the same channels as above. We also publish a
+   Security Advisory on GitHub and publish the CVE, as long as neither the
+   Security Advisory nor the CVE include any information on how to exploit these
+   vulnerabilities beyond what information is already available in the patch
+   itself.
+9. Once the community is notified, we will pay out any relevant bug bounties to
    submitters.
-5. One week after the releases go out, we will publish a post with further
+10. One week after the releases go out, we will publish a post with further
     details on the vulnerability as well as our response to it.
 
 This process can take some time. Every effort will be made to handle the bug in
@@ -210,4 +206,3 @@ Attacks may come through the P2P network or the RPC layer:
 * Bisection/sequential algorithms
 
 [hackerone]: https://hackerone.com/cosmos
-<!-- [tmsec-mailing]: https://berlin.us4.list-manage.com/subscribe?u=431b35421ff7edcc77df5df10&id=3fe93307bc -->

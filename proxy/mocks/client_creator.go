@@ -17,6 +17,10 @@ func (_m *ClientCreator) NewABCIClient() (abcicli.Client, error) {
 	ret := _m.Called()
 
 	var r0 abcicli.Client
+	var r1 error
+	if rf, ok := ret.Get(0).(func() (abcicli.Client, error)); ok {
+		return rf()
+	}
 	if rf, ok := ret.Get(0).(func() abcicli.Client); ok {
 		r0 = rf()
 	} else {
@@ -25,7 +29,6 @@ func (_m *ClientCreator) NewABCIClient() (abcicli.Client, error) {
 		}
 	}
 
-	var r1 error
 	if rf, ok := ret.Get(1).(func() error); ok {
 		r1 = rf()
 	} else {

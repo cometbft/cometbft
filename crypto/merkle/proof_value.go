@@ -13,7 +13,7 @@ const ProofOpValue = "simple:v"
 // ValueOp takes a key and a single value as argument and
 // produces the root hash.  The corresponding tree structure is
 // the SimpleMap tree.  SimpleMap takes a Hasher, and currently
-// Tendermint uses tmhash.  SimpleValueOp should support
+// CometBFT uses tmhash.  SimpleValueOp should support
 // the hash function as used in tmhash.  TODO support
 // additional hash functions here as options/args to this
 // operator.

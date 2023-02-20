@@ -10,13 +10,18 @@
 [![License][license-badge]][license-url]
 [![Sourcegraph][sg-badge]][sg-url]
 
-| Branch | Tests                              | Linting                         |
-|--------|------------------------------------|---------------------------------|
-| main   | [![Tests][tests-badge]][tests-url] | [![Lint][lint-badge]][lint-url] |
+| Branch  | Tests                                    | Linting                               |
+|---------|------------------------------------------|---------------------------------------|
+| main    | [![Tests][tests-badge]][tests-url]       | [![Lint][lint-badge]][lint-url]       |
+| v0.37.x | [![Tests][tests-badge-v037x]][tests-url] | [![Lint][lint-badge-v037x]][lint-url] |
+| v0.34.x | [![Tests][tests-badge-v034x]][tests-url] | [![Lint][lint-badge-v034x]][lint-url] |
 
 CometBFT is a Byzantine Fault Tolerant (BFT) middleware that takes a
 state transition machine - written in any programming language - and securely
 replicates it on many machines.
+
+It is a fork of [Tendermint Core][tm-core] and implements the Tendermint
+consensus algorithm.
 
 For protocol details, refer to the [CometBFT Specification](./spec/README.md).
 
@@ -67,7 +72,6 @@ See the [install instructions](./docs/introduction/install.md).
 
 - [Single node](./docs/introduction/quick-start.md)
 - [Local cluster using docker-compose](./docs/networks/docker-compose.md)
-- [Remote cluster using Terraform and Ansible](./docs/networks/terraform-and-ansible.md)
 
 ## Contributing
 
@@ -77,8 +81,8 @@ Before contributing to the project, please take a look at the [contributing
 guidelines](CONTRIBUTING.md) and the [style guide](STYLE_GUIDE.md). You may also
 find it helpful to read the [specifications](./spec/README.md), and familiarize
 yourself with our [Architectural Decision Records
-(ADRs)](./docs/architecture/README.md) and
-[Request For Comments (RFCs)](./docs/rfc/README.md).
+(ADRs)](./docs/architecture/README.md) and [Request For Comments
+(RFCs)](./docs/rfc/README.md).
 
 ## Versioning
 
@@ -99,7 +103,7 @@ Breaking changes to these public APIs will be documented in the CHANGELOG.
 ### Upgrades
 
 In an effort to avoid accumulating technical debt prior to 1.0.0, we do not
-guarantee that breaking changes (ie. bumps in the MINOR version) will work with
+guarantee that breaking changes (i.e. bumps in the MINOR version) will work with
 existing CometBFT blockchains. In these cases you will have to start a new
 blockchain, or write something custom to get the old data into the new chain.
 However, any bump in the PATCH version should be compatible with existing
@@ -116,8 +120,8 @@ CometBFT up-to-date. Upgrading instructions can be found in
 
 Currently supported versions include:
 
-- v0.34.x. CometBFT v0.34.25 is binary compatible/equivalent with/to Tendermint v0.34.4.
-- v0.37.x (release candidate)
+- v0.34.x: CometBFT v0.34.25 is compatible with Tendermint Core v0.34.24
+- v0.37.x: (release candidate)
 
 ## Resources
 
@@ -138,29 +142,27 @@ Currently supported versions include:
 
 ### Research
 
-CometBFT is a fork of Tendermint Core. Below are links to the original
-Tendermint consensus algorithm and relevant whitepapers which CosmosBFT will continue
-to build on.
+Below are links to the original Tendermint consensus algorithm and relevant
+whitepapers which CosmosBFT will continue to build on.
+
 - [The latest gossip on BFT consensus](https://arxiv.org/abs/1807.04938)
 - [Master's Thesis on Tendermint](https://atrium.lib.uoguelph.ca/xmlui/handle/10214/9769)
-- [Original Whitepaper: "Tendermint: Consensus Without Mining"](https://cometbft.com/static/docs/tendermint.pdf)
-- [Tendermint Core Blog](https://medium.com/tendermint/tagged/tendermint-core)
-- [Cosmos Blog](https://blog.cosmos.network/tendermint/home)
+- [Original Whitepaper: "Tendermint: Consensus Without Mining"](https://tendermint.com/static/docs/tendermint.pdf)
 
 ## Join us
 
-CometBFT is maintained by [Informal Systems](https://informal.systems).
-If you'd like to work full-time on CometBFT,
+CometBFT is currently maintained by [Informal
+Systems](https://informal.systems). If you'd like to work full-time on CometBFT,
 [we're hiring](https://informal.systems/careers)!
 
-Funding for CometBFT development comes primarily from the
-[Interchain Foundation](https://interchain.io), a Swiss non-profit.
-Informal Systems also maintains [cometbft.com](https://cometbft.com).
+Funding for CometBFT development comes primarily from the [Interchain
+Foundation](https://interchain.io), a Swiss non-profit. Informal Systems also
+maintains [cometbft.com](https://cometbft.com).
 
 [bft]: https://en.wikipedia.org/wiki/Byzantine_fault_tolerance
 [smr]: https://en.wikipedia.org/wiki/State_machine_replication
 [Blockchain]: https://en.wikipedia.org/wiki/Blockchain
-[version-badge]: https://img.shields.io/github/v/release/tendermint/tendermint.svg
+[version-badge]: https://img.shields.io/github/v/release/cometbft/cometbft.svg
 [version-url]: https://github.com/cometbft/cometbft/releases/latest
 [api-badge]: https://camo.githubusercontent.com/915b7be44ada53c290eb157634330494ebe3e30a/68747470733a2f2f676f646f632e6f72672f6769746875622e636f6d2f676f6c616e672f6764646f3f7374617475732e737667
 [api-url]: https://pkg.go.dev/github.com/cometbft/cometbft
@@ -174,5 +176,10 @@ Informal Systems also maintains [cometbft.com](https://cometbft.com).
 [sg-url]: https://sourcegraph.com/github.com/cometbft/cometbft?badge
 [tests-url]: https://github.com/cometbft/cometbft/actions/workflows/tests.yml
 [tests-badge]: https://github.com/cometbft/cometbft/actions/workflows/tests.yml/badge.svg?branch=main
-[lint-badge]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml/badge.svg
+[tests-badge-v037x]: https://github.com/cometbft/cometbft/actions/workflows/tests.yml/badge.svg?branch=v0.37.x
+[tests-badge-v034x]: https://github.com/cometbft/cometbft/actions/workflows/tests.yml/badge.svg?branch=v0.34.x
+[lint-badge]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml/badge.svg?branch=main
+[lint-badge-v034x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml/badge.svg?branch=v0.34.x
+[lint-badge-v037x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml/badge.svg?branch=v0.37.x
 [lint-url]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml
+[tm-core]: https://github.com/tendermint/tendermint

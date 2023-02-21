@@ -4,6 +4,12 @@
 
 ### BREAKING CHANGES
 
+- The `TMHOME` environment variable was renamed to `CMTHOME`, and all environment variables starting with `TM_` are instead prefixed with `CMT_`
+  ([\#211](https://github.com/cometbft/cometbft/issues/211))
+- `[p2p]` Reactor `Send`, `TrySend` and `Receive` renamed to `EnvelopeSend` to
+  allow a metric to be appended to the message and measure bytes sent/received
+  by message type.
+  ([\#230](https://github.com/cometbft/cometbft/pull/230))
 - `[abci]` Make length delimiter encoding consistent
   (`uint64`) between ABCI and P2P wire-level protocols
   ([\#5783](https://github.com/tendermint/tendermint/pull/5783))
@@ -46,6 +52,9 @@
 
 ### BUG FIXES
 
+- `[consensus]` Fixed a busy loop that happened when sending of a block part failed by sleeping in case of error.
+  ([\#4](https://github.com/informalsystems/tendermint/pull/4))
+- `[state/kvindexer]` \#77 Fixed the default behaviour of the kvindexer to index and query attributes by events in which they occur. In 0.34.25 this was mitigated by a separated RPC flag.  (@jmalicevic)
 - `[docker]` enable cross platform build using docker buildx
   ([\#9073](https://github.com/tendermint/tendermint/pull/9073))
 - `[consensus]` fix round number of `enterPropose`
@@ -53,6 +62,8 @@
   ([\#9229](https://github.com/tendermint/tendermint/pull/9229))
 - `[docker]` ensure Docker image uses consistent version of Go
   ([\#9462](https://github.com/tendermint/tendermint/pull/9462))
+- `[p2p]` prevent peers who have errored being added to the peer_set
+  ([\#9500](https://github.com/tendermint/tendermint/pull/9500))
 - `[blocksync]` handle the case when the sending
   queue is full: retry block request after a timeout
   ([\#9518](https://github.com/tendermint/tendermint/pull/9518))
@@ -65,15 +76,31 @@
 
 ### IMPROVEMENTS
 
+- `[e2e]` Add functionality for uncoordinated (minor) upgrades
+  ([\#56](https://github.com/tendermint/tendermint/pull/56))
+- `[tools/tm-signer-harness]` Remove the folder as it is unused
+  ([\#136](https://github.com/cometbft/cometbft/issues/136))
+- `[p2p]` Reactor `Send`, `TrySend` and `Receive` renamed to `EnvelopeSend` to
+  allow a metric to be appended to the message and measure bytes sent/received
+  by message type.
+  ([\#230](https://github.com/cometbft/cometbft/pull/230))
 - `[abci]` Added `AbciVersion` to `RequestInfo` allowing
   applications to check ABCI version when connecting to CometBFT.
   ([\#5706](https://github.com/tendermint/tendermint/pull/5706))
+- `[cli]` add `--hard` flag to rollback command (and a boolean to the `RollbackState` method). This will rollback
+   state and remove the last block. This command can be triggered multiple times. The application must also rollback
+   state to the same height.
+  ([\#9171](https://github.com/tendermint/tendermint/pull/9171))
 - `[crypto]` Update to use btcec v2 and the latest btcutil.
   ([\#9250](https://github.com/tendermint/tendermint/pull/9250))
 - `[rpc]` Added `header` and `header_by_hash` queries to the RPC client
   ([\#9276](https://github.com/tendermint/tendermint/pull/9276))
 - `[proto]` Migrate from `gogo/protobuf` to `cosmos/gogoproto`
   ([\#9356](https://github.com/tendermint/tendermint/pull/9356))
+- `[rpc]` Enable caching of RPC responses
+  ([\#9650](https://github.com/tendermint/tendermint/pull/9650))
+- `[consensus]` Save peer LastCommit correctly to achieve 50% reduction in gossiped precommits.
+  ([\#9760](https://github.com/tendermint/tendermint/pull/9760))
 
 ---
 

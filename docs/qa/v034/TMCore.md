@@ -1,7 +1,7 @@
 ---
 order: 1
 parent:
-  title: CometBFT Quality Assurance Results for v0.34.x
+  title: Tendermint Core Quality Assurance Results for v0.34.x
   description: This is a report on the results obtained when running v0.34.x on testnets
   order: 2
 ---

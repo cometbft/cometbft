@@ -6,9 +6,9 @@
 
 - The `TMHOME` environment variable was renamed to `CMTHOME`, and all environment variables starting with `TM_` are instead prefixed with `CMT_`
   ([\#211](https://github.com/cometbft/cometbft/issues/211))
-- `[p2p]` Reactor `Send`, `TrySend` and `Receive` renamed to `EnvelopeSend` to
-  allow a metric to be appended to the message and measure bytes sent/received
-  by message type.
+- - `[p2p]` Reactor `Send`, `TrySend` and `Receive` renamed to `SendEnvelope`,
+  `TrySendEnvelope` and `ReceiveEnvelope` to allow metrics to be appended to
+  messages and measure bytes sent/received.
   ([\#230](https://github.com/cometbft/cometbft/pull/230))
 - `[abci]` Make length delimiter encoding consistent
   (`uint64`) between ABCI and P2P wire-level protocols
@@ -62,7 +62,7 @@
   ([\#9229](https://github.com/tendermint/tendermint/pull/9229))
 - `[docker]` ensure Docker image uses consistent version of Go
   ([\#9462](https://github.com/tendermint/tendermint/pull/9462))
-- `[p2p]` prevent peers who have errored being added to the peer_set
+- `[p2p]` prevent peers who have errored from being added to `peer_set`
   ([\#9500](https://github.com/tendermint/tendermint/pull/9500))
 - `[blocksync]` handle the case when the sending
   queue is full: retry block request after a timeout
@@ -80,9 +80,9 @@
   ([\#56](https://github.com/tendermint/tendermint/pull/56))
 - `[tools/tm-signer-harness]` Remove the folder as it is unused
   ([\#136](https://github.com/cometbft/cometbft/issues/136))
-- `[p2p]` Reactor `Send`, `TrySend` and `Receive` renamed to `EnvelopeSend` to
-  allow a metric to be appended to the message and measure bytes sent/received
-  by message type.
+- `[p2p]` Reactor `Send`, `TrySend` and `Receive` renamed to `SendEnvelope`,
+  `TrySendEnvelope` and `ReceiveEnvelope` to allow metrics to be appended to
+  messages and measure bytes sent/received.
   ([\#230](https://github.com/cometbft/cometbft/pull/230))
 - `[abci]` Added `AbciVersion` to `RequestInfo` allowing
   applications to check ABCI version when connecting to CometBFT.

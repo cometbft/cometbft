@@ -237,7 +237,7 @@ title: Methods
         * `H+3`: `last_commit_info (BeginBlock)` is changed to include the altered validator set and `*_last_commit` fields in `PrepareProposal`, `ProcessProposal` now include the altered validator set.
     * `consensus_param_updates` returned for block `H` apply to the consensus
       params for block `H+1`. For more information on the consensus parameters,
-      see the [application spec entry on consensus parameters](abci++_app_requirements.md#consensus-parameters).
+      see the [application spec entry on consensus parameters](./abci++_app_requirements.md#consensus-parameters).
     * `validator_updates` and `consensus_param_updates` may be empty. In this case, CometBFT will keep the current values.
 
 
@@ -464,7 +464,7 @@ title: Methods
     * The implementation of `PrepareProposal` can be non-deterministic.
 
 
-#### When does CometBFT call `PrepareProposal`?
+#### When does CometBFT call "PrepareProposal" ?
 
 
 When a validator _p_ enters consensus round _r_, height _h_, in which _p_ is the proposer,
@@ -539,7 +539,7 @@ the consensus algorithm will use it as proposal and will not call `RequestPrepar
     * Moreover, application implementors SHOULD always set `ResponseProcessProposal.status` to `ACCEPT`,
       unless they _really_ know what the potential liveness implications of returning `REJECT` are.
 
-#### When does CometBFT call `ProcessProposal`?
+#### When does CometBFT call "ProcessProposal" ?
 
 When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the proposer (possibly _p_ = _q_):
 
@@ -564,7 +564,9 @@ When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the prop
     3. If _p_ is a validator and the returned value is
          * `ACCEPT`: _p_ prevotes on this proposal for round _r_, height _h_.
          * `REJECT`: _p_ prevotes `nil`.
+         *
 <!--
+
 ### ExtendVote
 
 #### Parameters and Types
@@ -669,9 +671,6 @@ message for round _r_, height _h_ from validator _q_ (_q_ &ne; _p_):
      structure in calls to `RequestPrepareProposal`, in rounds of height _h + 1_ where _p_ is the proposer.
    * `REJECT`, _p_ will deem the Precommit message invalid and discard it.
 
--->
-
-<!--
 ### FinalizeBlock
 
 #### Parameters and Types
@@ -763,7 +762,9 @@ then _p_ decides block _v_ and finalizes consensus for height _h_ in the followi
    against the newly persisted Application state.
 10. _p_'s CometBFT unlocks the mempool &mdash; newly received transactions can now be checked.
 11. _p_ starts consensus for height _h+1_, round 0
+
 -->
+
 ## Data Types existing in ABCI
 
 Most of the data structures used in ABCI are shared [common data structures](../core/data_structures.md). In certain cases, ABCI uses different data structures which are documented here:
@@ -919,7 +920,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
     | round | int32                                          | Commit round. Reflects the round at which the block proposer decided in the previous height.                      | 1            |
     | votes | repeated [ExtendedVoteInfo](#extendedvoteinfo) | List of validators' addresses in the last validator set with their voting information, including vote extensions. | 2            |
 
-<!-- 
+<!--
 ### ExecTxResult
 
 * **Fields**:
@@ -941,7 +942,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
 ```proto
 enum ProposalStatus {
-  UNKNOWN = 0; // Unknown status. Returning this from the application is always an error. 
+  UNKNOWN = 0; // Unknown status. Returning this from the application is always an error.
   ACCEPT  = 1; // Status that signals that the application finds the proposal valid.
   REJECT  = 2; // Status that signals that the application finds the proposal invalid.
 }
@@ -953,7 +954,7 @@ enum ProposalStatus {
         * If `Status` is `ACCEPT`, the consensus algorithm accepts the proposal and will issue a Prevote message for it.
         * If `Status` is `REJECT`, the consensus algorithm rejects the proposal and will issue a Prevote for `nil` instead.
 
-<!-- 
+<!--
 ### VerifyStatus
 
 ```proto

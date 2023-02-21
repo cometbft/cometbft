@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cometbft/cometbft/crypto/tmhash"
+	"github.com/tendermint/tendermint/crypto/tmhash"
 )
 
 // TrustOptions are the trust parameters needed when a new light client

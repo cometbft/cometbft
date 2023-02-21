@@ -1,4 +1,4 @@
-module github.com/cometbft/cometbft
+module github.com/tendermint/tendermint
 
 go 1.19
 

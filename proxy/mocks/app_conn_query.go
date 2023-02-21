@@ -18,6 +18,10 @@ func (_m *AppConnQuery) EchoSync(_a0 string) (*types.ResponseEcho, error) {
 	ret := _m.Called(_a0)
 
 	var r0 *types.ResponseEcho
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) (*types.ResponseEcho, error)); ok {
+		return rf(_a0)
+	}
 	if rf, ok := ret.Get(0).(func(string) *types.ResponseEcho); ok {
 		r0 = rf(_a0)
 	} else {
@@ -26,7 +30,6 @@ func (_m *AppConnQuery) EchoSync(_a0 string) (*types.ResponseEcho, error) {
 		}
 	}
 
-	var r1 error
 	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(_a0)
 	} else {
@@ -55,6 +58,10 @@ func (_m *AppConnQuery) InfoSync(_a0 types.RequestInfo) (*types.ResponseInfo, er
 	ret := _m.Called(_a0)
 
 	var r0 *types.ResponseInfo
+	var r1 error
+	if rf, ok := ret.Get(0).(func(types.RequestInfo) (*types.ResponseInfo, error)); ok {
+		return rf(_a0)
+	}
 	if rf, ok := ret.Get(0).(func(types.RequestInfo) *types.ResponseInfo); ok {
 		r0 = rf(_a0)
 	} else {
@@ -63,7 +70,6 @@ func (_m *AppConnQuery) InfoSync(_a0 types.RequestInfo) (*types.ResponseInfo, er
 		}
 	}
 
-	var r1 error
 	if rf, ok := ret.Get(1).(func(types.RequestInfo) error); ok {
 		r1 = rf(_a0)
 	} else {
@@ -78,6 +84,10 @@ func (_m *AppConnQuery) QuerySync(_a0 types.RequestQuery) (*types.ResponseQuery,
 	ret := _m.Called(_a0)
 
 	var r0 *types.ResponseQuery
+	var r1 error
+	if rf, ok := ret.Get(0).(func(types.RequestQuery) (*types.ResponseQuery, error)); ok {
+		return rf(_a0)
+	}
 	if rf, ok := ret.Get(0).(func(types.RequestQuery) *types.ResponseQuery); ok {
 		r0 = rf(_a0)
 	} else {
@@ -86,7 +96,6 @@ func (_m *AppConnQuery) QuerySync(_a0 types.RequestQuery) (*types.ResponseQuery,
 		}
 	}
 
-	var r1 error
 	if rf, ok := ret.Get(1).(func(types.RequestQuery) error); ok {
 		r1 = rf(_a0)
 	} else {

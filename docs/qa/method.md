@@ -192,7 +192,13 @@ The CometBFT team should improve it at every iteration to increase the amount of
     in step 2, follow the instructions for the [`latency_throughput.py`] script.
     This plot is useful to visualize the saturation point.
 
-[`latency_throughput.py`]: ../../scripts/qa/reporting/README.md
+[`latency_throughput.py`]: ../../scripts/qa/reporting/README.md#Latency-vs-Throughput-Plotting
+
+14. Alternatively,  follow the instructions for the [`latency_plotter.py`] script.
+    This script generates a series of plots per experiment and configuration that my
+    help with visualizing Latency vs Throughput variation.
+
+[`latency_plotter.py`]: ../../scripts/qa/reporting/README.md#Latency-vs-Throughput-Plotting-version-2
 
 #### Extracting Prometheus Metrics
 
@@ -200,7 +206,10 @@ The CometBFT team should improve it at every iteration to increase the amount of
 2. Unzip the prometheus database retrieved from the testnet, and move it to replace the
    local prometheus database.
 3. Start the prometheus server and make sure no error logs appear at start up.
-4. Introduce the metrics you want to gather or plot.
+4. Identify the time window you want to plot in your graphs.
+5. Execute the [`prometheus_plotter.py`] script for the time window.
+
+[`prometheus_plotter.py`]: ../../scripts/qa/reporting/README.md#prometheus-metrics
 
 ## Rotating Node Testnet
 

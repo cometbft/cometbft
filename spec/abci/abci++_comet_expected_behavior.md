@@ -61,7 +61,7 @@ consensus-exec      = (inf)consensus-height
 consensus-height    = *consensus-round decide commit
 consensus-round     = proposer / non-proposer
 
-proposer            =  prepare-proposal process-proposal
+proposer            = [prepare-proposal process-proposal]
 non-proposer        = [process-proposal]
 decide              = begin-block  *deliver-txs end-block
 
@@ -161,8 +161,10 @@ Let us now examine the grammar line by line, providing further details.
 >consensus-round     = proposer / non-proposer
 >```
 
-* For every round, if the local process is the proposer of the current round, CometBFT starts by
-  calling `PrepareProposal`, followed by `ProcessProposal`.
+* For every round, if the local process is the proposer of the current round, CometBFT calls `PrepareProposal`, followed by `ProcessProposal`. 
+These two always come together because they reflect the same proposal that the process
+also delivers to itself. 
+
   <!-- 
 
   Then, optionally, the Application is
@@ -172,7 +174,7 @@ Let us now examine the grammar line by line, providing further details.
   -->
 
 >```abnf
->proposer            = prepare-proposal process-proposal 
+>proposer            = [prepare-proposal process-proposal] 
 >```
 
 * Also for every round, if the local process is _not_ the proposer of the current round, CometBFT

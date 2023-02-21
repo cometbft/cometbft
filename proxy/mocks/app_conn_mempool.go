@@ -35,6 +35,10 @@ func (_m *AppConnMempool) CheckTxSync(_a0 types.RequestCheckTx) (*types.Response
 	ret := _m.Called(_a0)
 
 	var r0 *types.ResponseCheckTx
+	var r1 error
+	if rf, ok := ret.Get(0).(func(types.RequestCheckTx) (*types.ResponseCheckTx, error)); ok {
+		return rf(_a0)
+	}
 	if rf, ok := ret.Get(0).(func(types.RequestCheckTx) *types.ResponseCheckTx); ok {
 		r0 = rf(_a0)
 	} else {
@@ -43,7 +47,6 @@ func (_m *AppConnMempool) CheckTxSync(_a0 types.RequestCheckTx) (*types.Response
 		}
 	}
 
-	var r1 error
 	if rf, ok := ret.Get(1).(func(types.RequestCheckTx) error); ok {
 		r1 = rf(_a0)
 	} else {

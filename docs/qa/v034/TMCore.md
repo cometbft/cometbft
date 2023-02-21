@@ -6,7 +6,7 @@ parent:
   order: 2
 ---
 
-# v0.34.x
+# Tendermint Core v0.34.x
 
 ## 200 Node Testnet
 
@@ -31,7 +31,7 @@ The Y axis of this table is `r`, the rate or number of transactions issued per s
 | r=200  | 17800 | 35600 | 38660 |
 
 The table shows the number of 1024-byte-long transactions that were produced by the load runner,
-and processed by CometBFT, during the 90 seconds of the experiment's duration.
+and processed by Tendermint Core, during the 90 seconds of the experiment's duration.
 Each cell in the table refers to an experiment with a particular number of websocket connections (`c`)
 to a chosen validator, and the number of transactions per second that the load runner
 tries to produce (`r`). Note that the overall load that the tool attempts to generate is $c \cdot r$.
@@ -41,21 +41,20 @@ We can see that the saturation point is beyond the diagonal that spans cells
 * `r=200,c=2`
 * `r=100,c=4`
 
-given that the total transactions should be close to the product of the rate, the number of connections,
-and the experiment time (89 seconds, since the last batch never gets sent).
+given that the total number of transactions should be close to the product rate X the number of connections x experiment time.
 
 All experiments below the saturation diagonal (`r=200,c=4`) have in common that the total
-number of transactions processed is noticeably less than the product $c \cdot r \cdot 89$,
+number of transactions processed is noticeably less than the product $c \cdot r \cdot 89$  (89 seconds, since the last batch never gets sent),
 which is the expected number of transactions when the system is able to deal well with the
 load.
-With `r=200,c=4`, we obtained 38660 whereas the theoretical number of transactions should
+With (`r=200,c=4`), we obtained 38660 whereas the theoretical number of transactions should
 have been $200 \cdot 4 \cdot 89 = 71200$.
 
 At this point, we chose an experiment at the limit of the saturation diagonal,
 in order to further study the performance of this release.
-**The chosen experiment is `r=200,c=2`**.
+**The chosen experiment is (`r=200,c=2`)**.
 
-This is a plot of the CPU load (average over 1 minute, as output by `top`) of the load runner for `r=200,c=2`,
+This is a plot of the CPU load (average over 1 minute, as output by `top`) of the load runner for (`r=200,c=2`),
 where we can see that the load stays close to 0 most of the time.
 
 ![load-load-runner](./img/v034_r200c2_load-runner.png)
@@ -69,13 +68,13 @@ for all experiments.
 
 As we can see, even the experiments beyond the saturation diagonal managed to keep
 transaction latency stable (i.e. not constantly increasing).
-Our interpretation for this is that contention within CometBFT was propagated,
+Our interpretation for this is that contention within Tendermint Core was propagated,
 via the websockets, to the load runner,
 hence the load runner could not produce the target load, but a fraction of it.
 
 Further examination of the Prometheus data (see below), showed that the mempool contained many transactions
 at steady state, but did not grow much without quickly returning to this steady state. This demonstrates
-that the transactions were able to be processed by the CometBFT network at least as quickly as they
+that Tendermint Core network was able to process transactions at least as quickly as they
 were submitted to the mempool. Finally, the test script made sure that, at the end of an experiment, the
 mempool was empty so that all transactions submitted to the chain were processed.
 
@@ -89,7 +88,7 @@ tiny axis intervals. The cluster shown below looks like a single point in the pl
 
 The plot of latencies can we used as a baseline to compare with other releases.
 
-The following plot summarizes average latencies versus overall throughputs
+The following plot summarizes average latencies versus overall throughput
 across different numbers of WebSocket connections to the node into which
 transactions are being loaded.
 
@@ -128,7 +127,7 @@ The fact that non-seed nodes reach more than 50 peers is due to #9548.
 
 #### Consensus Rounds per Height
 
-Most heights took just one round, but some nodes needed to advance to round 1 at some point.
+Most nodes used only round 0 for most heights, but some nodes needed to advance to round 1 for some heights.
 
 ![rounds](./img/v034_r200c2_rounds.png)
 

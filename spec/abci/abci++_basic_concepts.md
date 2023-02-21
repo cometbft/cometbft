@@ -78,8 +78,8 @@ call sequences of these methods.
   proposer to perform application-dependent work in a block before proposing it.
   This enables, for instance, batch optimizations to a block, which has been empirically
   demonstrated to be a key component for improved performance. Method `PrepareProposal` is called
-  every time CometBFT is about to broadcast a Proposal message, but no previous proposal has
-  been locked at consensus level. CometBFT gathers outstanding transactions from the
+  every time CometBFT is about to broadcast a Proposal message and _validValue_ is `nil`. 
+  CometBFT gathers outstanding transactions from the
   mempool, generates a block header, and uses them to create a block to propose. Then, it calls
   `RequestPrepareProposal` with the newly created proposal, called *raw proposal*. The Application
   can make changes to the raw proposal, such as modifying the set of transactions or the order
@@ -90,8 +90,9 @@ call sequences of these methods.
 - [**ProcessProposal:**](./abci++_methods.md#processproposal) It allows a validator to
   perform application-dependent work in a proposed block. This enables features such as immediate
   block execution, and allows the Application to reject invalid blocks.
-  CometBFT calls it when it receives a proposal and the consensus algorithm has not locked on a
-  value. The Application cannot modify the proposal at this point but can reject it if it is
+
+  CometBFT calls it when it receives a proposal and _validValue_ is `nil`. 
+  The Application cannot modify the proposal at this point but can reject it if it is
   invalid. If that is the case, the consensus algorithm will prevote `nil` on the proposal, which has
   strong liveness implications for CometBFT. As a general rule, the Application
   SHOULD accept a prepared proposal passed via `ProcessProposal`, even if a part of

@@ -1,11 +1,11 @@
 package v0
 
 import (
-	"github.com/cometbft/cometbft/abci/example/kvstore"
-	"github.com/cometbft/cometbft/config"
-	mempl "github.com/cometbft/cometbft/mempool"
-	mempoolv0 "github.com/cometbft/cometbft/mempool/v0"
-	"github.com/cometbft/cometbft/proxy"
+	"github.com/tendermint/tendermint/abci/example/kvstore"
+	"github.com/tendermint/tendermint/config"
+	mempl "github.com/tendermint/tendermint/mempool"
+	mempoolv0 "github.com/tendermint/tendermint/mempool/v0"
+	"github.com/tendermint/tendermint/proxy"
 )
 
 var mempool mempl.Mempool

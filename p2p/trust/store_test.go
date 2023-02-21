@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/libs/log"
+	"github.com/tendermint/tendermint/libs/log"
 )
 
 func TestTrustMetricStoreSaveLoad(t *testing.T) {

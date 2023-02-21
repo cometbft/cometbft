@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"math"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/types"
+	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/types"
 )
 
 const (

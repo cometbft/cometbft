@@ -1,6 +1,3 @@
----
----
-
 # ADR 1: Logging
 
 ## Context

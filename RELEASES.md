@@ -164,7 +164,7 @@ backport branch (see above). Otherwise:
    * Ensure that `UPGRADING.md` is up-to-date and includes notes on any breaking
      changes or other upgrading flows.
 4. Prepare the versioning:
-   * Bump TMVersionDefault version in  `version.go`
+   * Bump TMCoreSemVer version in `version.go`
    * Bump P2P and block protocol versions in  `version.go`, if necessary.
      Check the changelog for breaking changes in these components.
    * Bump ABCI protocol version in `version.go`, if necessary
@@ -195,8 +195,8 @@ Before performing these steps, be sure the
    * Build the changelog using unclog, and commit the built changelog.
    * Ensure that `UPGRADING.md` is up-to-date and includes notes on any breaking changes
       or other upgrading flows.
-   * Bump TMVersionDefault version in  `version.go`
-   * Bump P2P and block protocol versions in  `version.go`, if necessary
+   * Bump TMCoreSemVer version in `version.go`
+   * Bump P2P and block protocol versions in `version.go`, if necessary
    * Bump ABCI protocol version in `version.go`, if necessary
 4. Open a PR with these changes against the backport branch.
 5. Once these changes are on the backport branch, push a tag with prepared release details.

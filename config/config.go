@@ -757,7 +757,8 @@ type MempoolConfig struct {
 	// has existed in the mempool at least TTLNumBlocks number of blocks or if it's
 	// insertion time into the mempool is beyond TTLDuration.
 	//
-	// Deprecated: Only used by priority mempool, which will be removed in the next major release.
+	// Deprecated: Only used by priority mempool, which will be removed in the
+	// next major release.
 	TTLDuration time.Duration `mapstructure:"ttl-duration"`
 
 	// TTLNumBlocks, if non-zero, defines the maximum number of blocks a transaction
@@ -767,7 +768,8 @@ type MempoolConfig struct {
 	// has existed in the mempool at least TTLNumBlocks number of blocks or if
 	// it's insertion time into the mempool is beyond TTLDuration.
 	//
-	// Deprecated: Only used by priority mempool, which will be removed in the next major release.
+	// Deprecated: Only used by priority mempool, which will be removed in the
+	// next major release.
 	TTLNumBlocks int64 `mapstructure:"ttl-num-blocks"`
 }
 

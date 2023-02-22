@@ -12,12 +12,12 @@ You are expected to have read all previous sections of ABCI++ specification, nam
 [Basic Concepts](./abci%2B%2B_basic_concepts.md),
 [Methods](./abci%2B%2B_methods.md),
 [Application Requirements](./abci%2B%2B_app_requirements.md), and
-[Expected Behavior](./abci%2B%2B_tmint_expected_behavior.md).
+[Expected Behavior](./abci%2B%2B_comet_expected_behavior.md).
 
 ## Message Protocol and Synchrony
 
 The message protocol consists of pairs of requests and responses defined in the
-[protobuf file](../../proto/tendermint/abci/types.proto).
+[protobuf file](https://github.com/cometbft/cometbft/blob/main/proto/tendermint/abci/types.proto).
 
 Some messages have no fields, while others may include byte-arrays, strings, integers,
 or custom protobuf types.

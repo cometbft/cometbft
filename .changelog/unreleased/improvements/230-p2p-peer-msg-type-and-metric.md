@@ -1,4 +1,4 @@
-- `[p2p]` Reactor `Send`, `TrySend` and `Receive` renamed to `EnvelopeSend` to
-  allow a metric to be appended to the message and measure bytes sent/received
-  by message type.
+- `[p2p]` Reactor `Send`, `TrySend` and `Receive` renamed to `SendEnvelope`,
+  `TrySendEnvelope` and `ReceiveEnvelope` to allow metrics to be appended to
+  messages and measure bytes sent/received.
   ([\#230](https://github.com/cometbft/cometbft/pull/230))

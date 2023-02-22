@@ -1,3 +1,7 @@
+---
+order: 3
+---
+
 # Genesis
 
 The genesis file is the starting point of a chain. An application will populate the `app_state` field in the genesis with their required fields. CometBFT is not able to validate this section because it is unaware what application state consists of.
@@ -28,7 +32,7 @@ The genesis file is the starting point of a chain. An application will populate 
 
 - `validators`
     - This is an array of validators. This validator set is used as the starting validator set of the chain. This field can be empty, if the application sets the validator set in `InitChain`.
-  
+
 - `app_hash`: The applications state root hash. This field does not need to be populated at the start of the chain, the application may provide the needed information via `Initchain`.
 
 - `app_state`: This section is filled in by the application and is unknown to CometBFT.

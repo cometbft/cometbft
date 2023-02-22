@@ -1,3 +1,7 @@
+---
+order: 1
+---
+
 # Data Structures
 
 Here we describe the data structures in the CometBFT blockchain and the rules for validating them.

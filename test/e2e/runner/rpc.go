@@ -71,17 +71,21 @@ func waitForNode(node *e2e.Node, height int64, timeout time.Duration) (*rpctypes
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
+
+	var curHeight int64
+	lastChanged := time.Now()
 	for {
-		status, err := client.Status(ctx)
+		status, err := client.Status(context.Background())
 		switch {
-		case errors.Is(err, context.DeadlineExceeded):
-			return nil, fmt.Errorf("timed out waiting for %v to reach height %v", node.Name, height)
-		case errors.Is(err, context.Canceled):
-			return nil, err
-		case err == nil && status.SyncInfo.LatestBlockHeight >= height:
+		case err != nil:
+			continue
+		case status.SyncInfo.LatestBlockHeight >= height:
 			return status, nil
+		case curHeight < status.SyncInfo.LatestBlockHeight:
+			curHeight = status.SyncInfo.LatestBlockHeight
+			lastChanged = time.Now()
+		case time.Since(lastChanged) > timeout:
+			return nil, fmt.Errorf("timed out waiting for %v to reach height %v", node.Name, height)
 		}
 
 		time.Sleep(300 * time.Millisecond)

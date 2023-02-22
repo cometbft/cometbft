@@ -11,11 +11,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/ed25519"
-	"github.com/cometbft/cometbft/crypto/secp256k1"
-	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
-	mcs "github.com/cometbft/cometbft/test/maverick/consensus"
+	"github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/crypto/ed25519"
+	"github.com/tendermint/tendermint/crypto/secp256k1"
+	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
+	mcs "github.com/tendermint/tendermint/test/maverick/consensus"
 )
 
 const (
@@ -26,7 +26,7 @@ const (
 	defaultConnections = 1
 	defaultTxSizeBytes = 1024
 
-	localVersion = "local-version"
+	localVersion = "cometbft/e2e-node:local-version"
 )
 
 type (
@@ -172,6 +172,7 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 		if v == "" {
 			v = localVersion
 		}
+
 		node := &Node{
 			Name:             name,
 			Version:          v,

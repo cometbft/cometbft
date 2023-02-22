@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/cometbft/cometbft/libs/log"
+	"github.com/tendermint/tendermint/libs/log"
 )
 
 const (
@@ -31,7 +31,7 @@ type CLI struct {
 func NewCLI() *CLI {
 	cli := &CLI{}
 	cli.root = &cobra.Command{
-		Use:           "generator",
+		Use:           "generator -d dir [-g int] [-m version_weight_csv]",
 		Short:         "End-to-end testnet generator",
 		SilenceUsage:  true,
 		SilenceErrors: true, // we'll output them ourselves in Run()

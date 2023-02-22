@@ -1,3 +1,6 @@
+---
+---
+
 # Validator Signing
 
 Here we specify the rules for validating a proposal and vote before signing.

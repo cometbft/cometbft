@@ -18,7 +18,7 @@ process as the application.
 
 By following along this tutorial you will create a CometBFT application called kvstore,
 a (very) simple distributed BFT key-value store.
-The application will be written in Go and  
+The application will be written in Go and
 some understanding of the Go programming language is expected.
 If you have never written Go, you may want to go through [Learn X in Y minutes
 Where X=Go](https://learnxinyminutes.com/docs/go/) first, to familiarize
@@ -680,5 +680,9 @@ echo cm9ja3M=" | base64 -d
 
 I hope everything went smoothly and your first, but hopefully not the last,
 CometBFT application is up and running. If not, please [open an issue on
+<<<<<<< HEAD
 Github](https://github.com/cometbft/cometbft/issues/new/choose). To dig
 deeper, read [the docs](https://docs.cometbft.com/v0.34/).
+=======
+Github](https://github.com/cometbft/cometbft/issues/new/choose).
+>>>>>>> 28baba3ed (Docs fixes (#368))

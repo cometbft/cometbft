@@ -23,6 +23,6 @@ The following releases have undergone the Quality Assurance process, and the cor
 * [v0.34.x](./v034/), which was tested just before releasing v0.34.22
 =======
 * [TM v0.34.x](./v034/TMCore.md) - Tested prior to releasing Tendermint Core v0.34.22.
-* [v0.34.x](./v034/CometBFT.md) - Tested prior to releasing v0.34.27, using TM v0.34.x results as baseline.
+* [v0.34.x](./v034/README.md) - Tested prior to releasing v0.34.27, using TM v0.34.x results as baseline.
 * [v0.37.x](./v037/) - with TM v.34.x acting as a baseline
 >>>>>>> 2ccf6842b (QA: v0.34 - 1/3 TM 2/3 CMT (#297))

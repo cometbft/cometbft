@@ -159,6 +159,12 @@ func (cfg *Config) CheckDeprecated() []string {
 	if cfg.Mempool.Version == MempoolV1 {
 		warnings = append(warnings, "prioritized mempool detected. This version of the mempool will be removed in the next major release.")
 	}
+	if cfg.Mempool.TTLNumBlocks != 0 {
+		warnings = append(warnings, "prioritized mempool key detected. This key, together with this version of the mempool, will be removed in the next major release.")
+	}
+	if cfg.Mempool.TTLDuration != 0 {
+		warnings = append(warnings, "prioritized mempool key detected. This key, together with this version of the mempool, will be removed in the next major release.")
+	}
 	if cfg.DeprecatedFastSyncConfig != nil {
 		warnings = append(warnings, "[fastsync] table detected. This section has been renamed to [blocksync]. The values in this deprecated section will be disregarded.")
 	}

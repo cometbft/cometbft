@@ -26,7 +26,7 @@ title: Overview and basic concepts
 
 ## ABCI++ vs. ABCI
 
-[&uparrow; Back to Outline](#outline)
+[&#8593; Back to Outline](#outline)
 
 The Application's main role is to execute blocks decided (a.k.a. finalized) by consensus. The
 decided blocks are the consensus's main ouput to the (replicated) Application. With ABCI, the
@@ -56,7 +56,7 @@ and `VerifyVoteExtension` methods.
 ## Method overview
 
 
-[&uparrow; Back to Outline](#outline)
+[&#8593; Back to Outline](#outline)
 
 Methods can be classified into four categories: *consensus*, *mempool*, *info*, and *state-sync*.
 
@@ -68,7 +68,7 @@ state. One `DeliverTx` is called for each transaction in the block. The result i
 Cryptographic commitments to the results of `DeliverTx`, and an application-provided hash in `Commit` are included in the header of the next block. During the execution of an instance of consensus, which decides the block for a given
 height, and before method `BeginBlock` is called, methods `PrepareProposal` and `ProcessProposal`,
  may be called several times. See
-[CometBFT's expected behavior](abci++_tmint_expected_behavior.md) for details on the possible
+[CometBFT's expected behavior](./abci++_comet_expected_behavior.md) for details on the possible
 call sequences of these methods.
 
 - [**InitChain:**](./abci++_methods.md#initchain) This method initializes the blockchain.
@@ -78,7 +78,7 @@ call sequences of these methods.
   proposer to perform application-dependent work in a block before proposing it.
   This enables, for instance, batch optimizations to a block, which has been empirically
   demonstrated to be a key component for improved performance. Method `PrepareProposal` is called
-  every time CometBFT is about to broadcast a Proposal message and _validValue_ is `nil`. 
+  every time CometBFT is about to broadcast a Proposal message and _validValue_ is `nil`.
   CometBFT gathers outstanding transactions from the
   mempool, generates a block header, and uses them to create a block to propose. Then, it calls
   `RequestPrepareProposal` with the newly created proposal, called *raw proposal*. The Application
@@ -91,7 +91,7 @@ call sequences of these methods.
   perform application-dependent work in a proposed block. This enables features such as immediate
   block execution, and allows the Application to reject invalid blocks.
 
-  CometBFT calls it when it receives a proposal and _validValue_ is `nil`. 
+  CometBFT calls it when it receives a proposal and _validValue_ is `nil`.
   The Application cannot modify the proposal at this point but can reject it if it is
   invalid. If that is the case, the consensus algorithm will prevote `nil` on the proposal, which has
   strong liveness implications for CometBFT. As a general rule, the Application
@@ -114,7 +114,7 @@ call sequences of these methods.
  `DeliverTx` to inform the application that no other transactions will be delivered as part of the current
  block and to ask for changes of the validator set and consensus parameters to be used in the following block.
  As with `DeliverTx`, cryptographic commitments of the responses returned are included in the header of the next block.
-<!-- 
+<!--
 
 - [**ExtendVote:**](./abci++_methods.md#extendvote) It allows applications to force their
   validators to do more than just validate within consensus. `ExtendVote` allows applications to
@@ -138,7 +138,7 @@ call sequences of these methods.
   a process receives a precommit message with a (possibly empty) vote extension.
 -->
 
-<!--- 
+<!---
 - [**FinalizeBlock:**](./abci++_methods.md#finalizeblock) It delivers a decided block to the
   Application. The Application must execute the transactions in the block deterministically and
   update its state accordingly. Cryptographic commitments to the block and transaction results,
@@ -238,7 +238,7 @@ in order to suit the needs of the particular application being deployed.
 
 ## Deterministic State-Machine Replication
 
-[&uparrow; Back to Outline](#outline)
+[&#8593; Back to Outline](#outline)
 
 ABCI++ applications must implement deterministic finite-state machines to be
 securely replicated by the CometBFT consensus engine. This means block execution
@@ -297,7 +297,7 @@ on them. All other fields in the `Response*` must be strictly deterministic.
 
 ## Events
 
-[&uparrow; Back to Outline](#outline)
+[&#8593; Back to Outline](#outline)
 
 Methods `BeginBlock, DeliverTx` and `EndBlock` include an `events` field in their
 `Response*`.
@@ -374,7 +374,7 @@ Example:
 
 ## Evidence
 
-[&uparrow; Back to Outline](#outline)
+[&#8593; Back to Outline](#outline)
 
 CometBFT's security model relies on the use of evidences of misbehavior. An evidence is an
 irrefutable proof of malicious behavior by a network participant. It is the responsibility of
@@ -400,7 +400,7 @@ enum EvidenceType {
 
 ## Errors
 
-[&uparrow; Back to Outline](#outline)
+[&#8593; Back to Outline](#outline)
 
 The `Query`, `CheckTx` and `DeliverTx` methods include a `Code` field in their `Response*`.
 Field `Code` is meant to contain an application-specific response code.
@@ -423,7 +423,7 @@ Method `FinalizeBlock` is a special case. It contains a number of
 these codes reports errors related to the transaction it is attached to.
 However, `FinalizeBlock` does not return errors at the top level, so the
 same considerations on critical issues made for `Echo`, `Info`, and
-`InitChain` also apply here. 
+`InitChain` also apply here.
 -->
 
 The handling of non-zero response codes by CometBFT is described below.
@@ -440,11 +440,11 @@ The `DeliverTx` ABCI method delivers transactions from CometBFT to the applicati
 When CometBFT receives a `ResponseDeliverTx` with a non-zero `Code`, the response code is logged.
 The transaction was already included in a block, so the `Code` does not influence consensus.
 
-<!-- 
+<!--
 The `ExecTxResult` type delivers transaction results from the Application to CometBFT. When
 CometBFT receives a `ResponseFinalizeBlock` containing an `ExecTxResult` with a non-zero `Code`,
 the response code is logged. Past `Code` values can be queried by clients. As the transaction was
-part of a decided block, the `Code` does not influence consensus. 
+part of a decided block, the `Code` does not influence consensus.
 -->
 
 ### `Query`

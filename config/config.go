@@ -159,6 +159,12 @@ func (cfg *Config) CheckDeprecated() []string {
 	if cfg.Mempool.Version == MempoolV1 {
 		warnings = append(warnings, "prioritized mempool detected. This version of the mempool will be removed in the next major release.")
 	}
+	if cfg.Mempool.TTLNumBlocks != 0 {
+		warnings = append(warnings, "prioritized mempool key detected. This key, together with this version of the mempool, will be removed in the next major release.")
+	}
+	if cfg.Mempool.TTLDuration != 0 {
+		warnings = append(warnings, "prioritized mempool key detected. This key, together with this version of the mempool, will be removed in the next major release.")
+	}
 	if cfg.DeprecatedFastSyncConfig != nil {
 		warnings = append(warnings, "[fastsync] table detected. This section has been renamed to [blocksync]. The values in this deprecated section will be disregarded.")
 	}
@@ -756,6 +762,9 @@ type MempoolConfig struct {
 	// Note, if TTLNumBlocks is also defined, a transaction will be removed if it
 	// has existed in the mempool at least TTLNumBlocks number of blocks or if it's
 	// insertion time into the mempool is beyond TTLDuration.
+	//
+	// Deprecated: Only used by priority mempool, which will be removed in the
+	// next major release.
 	TTLDuration time.Duration `mapstructure:"ttl-duration"`
 
 	// TTLNumBlocks, if non-zero, defines the maximum number of blocks a transaction
@@ -764,6 +773,9 @@ type MempoolConfig struct {
 	// Note, if TTLDuration is also defined, a transaction will be removed if it
 	// has existed in the mempool at least TTLNumBlocks number of blocks or if
 	// it's insertion time into the mempool is beyond TTLDuration.
+	//
+	// Deprecated: Only used by priority mempool, which will be removed in the
+	// next major release.
 	TTLNumBlocks int64 `mapstructure:"ttl-num-blocks"`
 }
 

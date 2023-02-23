@@ -728,7 +728,7 @@ func (txmp *TxMempool) canAddTx(wtx *WrappedTx) error {
 //
 // The caller must hold txmp.mtx exclusively.
 func (txmp *TxMempool) purgeExpiredTxs(blockHeight int64) {
-	if txmp.config.TTLNumBlocks == 0 && txmp.config.TTLDuration == 0 {
+	if txmp.config.TTLNumBlocks == 0 && txmp.config.TTLDuration == 0 { //nolint:staticcheck // SA1019 Priority mempool deprecated but still supported in this release.
 		return // nothing to do
 	}
 
@@ -740,11 +740,11 @@ func (txmp *TxMempool) purgeExpiredTxs(blockHeight int64) {
 		next := cur.Next()
 
 		w := cur.Value.(*WrappedTx)
-		if txmp.config.TTLNumBlocks > 0 && (blockHeight-w.height) > txmp.config.TTLNumBlocks {
+		if txmp.config.TTLNumBlocks > 0 && (blockHeight-w.height) > txmp.config.TTLNumBlocks { //nolint:staticcheck // SA1019 Priority mempool deprecated but still supported in this release.
 			txmp.removeTxByElement(cur)
 			txmp.cache.Remove(w.tx)
 			txmp.metrics.EvictedTxs.Add(1)
-		} else if txmp.config.TTLDuration > 0 && now.Sub(w.timestamp) > txmp.config.TTLDuration {
+		} else if txmp.config.TTLDuration > 0 && now.Sub(w.timestamp) > txmp.config.TTLDuration { //nolint:staticcheck // SA1019 Priority mempool deprecated but still supported in this release.
 			txmp.removeTxByElement(cur)
 			txmp.cache.Remove(w.tx)
 			txmp.metrics.EvictedTxs.Add(1)

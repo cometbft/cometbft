@@ -20,5 +20,4 @@ The results obtained in each release are stored in their own directory.
 The following releases have undergone the Quality Assurance process, and the corresponding reports include detailed information on tests and comparison with the baseline.
 
 * [TM v0.34.x](./v034/TMCore.md) - Tested prior to releasing Tendermint Core v0.34.22.
-* [v0.34.x](./v034/CometBFT.md) - Tested prior to releasing v0.34.27, using TM v0.34.x results as baseline.
-
+* [v0.34.x](./v034/README.md) - Tested prior to releasing v0.34.27, using TM v0.34.x results as baseline.

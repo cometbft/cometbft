@@ -26,7 +26,7 @@ const (
 	defaultConnections = 1
 	defaultTxSizeBytes = 1024
 
-	localVersion = "local-version"
+	localVersion = "cometbft/e2e-node:local-version"
 )
 
 type (
@@ -181,6 +181,7 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 		if v == "" {
 			v = localVersion
 		}
+
 		node := &Node{
 			Name:             name,
 			Version:          v,

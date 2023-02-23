@@ -29,7 +29,9 @@ The environment variable prefixes have now changed from `TM` to `CMT`. For
 example, `TMHOME` or `TM_HOME` become `CMTHOME` or `CMT_HOME`.
 
 We have implemented a fallback check in case `TMHOME` is still set and `CMTHOME`
-is not, but you will start to see a warning message in the logs if this is set.
+is not, but you will start to see a warning message in the logs if the old
+`TMHOME` variable is set. This fallback check will be removed entirely in a
+subsequent major release of CometBFT.
 
 ### Troubleshooting
 

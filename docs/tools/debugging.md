@@ -59,8 +59,6 @@ given destination directory. Each archive will contain:
 
 Note: goroutine.out and heap.out will only be written if a profile address is
 provided and is operational. This command is blocking and will log any error.
-<<<<<<< HEAD
-=======
 
 ## CometBFT Inspect
 

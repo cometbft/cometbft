@@ -27,11 +27,6 @@ const (
 	// DefaultLogLevel defines a default log level as INFO.
 	DefaultLogLevel = "info"
 
-	// Mempool versions. V1 is prioritized mempool, v0 is regular mempool.
-	// Default is v0.
-	MempoolV0 = "v0"
-	MempoolV1 = "v1"
-
 	DefaultTendermintDir = ".cometbft"
 	DefaultConfigDir     = "config"
 	DefaultDataDir       = "data"
@@ -709,11 +704,12 @@ func DefaultFuzzConnConfig() *FuzzConnConfig {
 // MempoolConfig
 
 // MempoolConfig defines the configuration options for the CometBFT mempool
+//
+// Note: Until v0.37 there was a `Version` field to select which implementation
+// of the mempool to use. Two versions used to exist: the current, default
+// implementation (previously called v0), and a prioritized mempool (v1), which
+// was removed (see https://github.com/cometbft/cometbft/issues/260).
 type MempoolConfig struct {
-	// Mempool version to use:
-	//  1) "v0" - (default) FIFO mempool.
-	//  2) "v1" - prioritized mempool.
-	Version string `mapstructure:"version"`
 	// RootDir is the root directory for all data. This should be configured via
 	// the $CMTHOME env variable or --home cmd flag rather than overriding this
 	// struct field.
@@ -754,39 +750,20 @@ type MempoolConfig struct {
 	// Including space needed by encoding (one varint per transaction).
 	// XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
 	MaxBatchBytes int `mapstructure:"max_batch_bytes"`
-
-	// TTLDuration, if non-zero, defines the maximum amount of time a transaction
-	// can exist for in the mempool.
-	//
-	// Note, if TTLNumBlocks is also defined, a transaction will be removed if it
-	// has existed in the mempool at least TTLNumBlocks number of blocks or if it's
-	// insertion time into the mempool is beyond TTLDuration.
-	TTLDuration time.Duration `mapstructure:"ttl-duration"`
-
-	// TTLNumBlocks, if non-zero, defines the maximum number of blocks a transaction
-	// can exist for in the mempool.
-	//
-	// Note, if TTLDuration is also defined, a transaction will be removed if it
-	// has existed in the mempool at least TTLNumBlocks number of blocks or if
-	// it's insertion time into the mempool is beyond TTLDuration.
-	TTLNumBlocks int64 `mapstructure:"ttl-num-blocks"`
 }
 
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool
 func DefaultMempoolConfig() *MempoolConfig {
 	return &MempoolConfig{
-		Version:   MempoolV0,
 		Recheck:   true,
 		Broadcast: true,
 		WalPath:   "",
 		// Each signature verification takes .5ms, Size reduced until we implement
 		// ABCI Recheck
-		Size:         5000,
-		MaxTxsBytes:  1024 * 1024 * 1024, // 1GB
-		CacheSize:    10000,
-		MaxTxBytes:   1024 * 1024, // 1MB
-		TTLDuration:  0 * time.Second,
-		TTLNumBlocks: 0,
+		Size:        5000,
+		MaxTxsBytes: 1024 * 1024 * 1024, // 1GB
+		CacheSize:   10000,
+		MaxTxBytes:  1024 * 1024, // 1MB
 	}
 }
 

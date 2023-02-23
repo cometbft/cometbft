@@ -904,6 +904,32 @@ func buildTMStateFromChain(
 	return state
 }
 
+func makeBlocks(n int, state sm.State, privVals []types.PrivValidator) ([]*types.Block, error) {
+	blockID := test.MakeBlockID()
+	blocks := make([]*types.Block, n)
+
+	for i := 0; i < n; i++ {
+		height := state.LastBlockHeight + 1 + int64(i)
+		lastCommit, err := test.MakeCommit(blockID, height-1, 0, state.LastValidators, privVals, state.ChainID, state.LastBlockTime)
+		if err != nil {
+			return nil, err
+		}
+		block := state.MakeBlock(height, test.MakeNTxs(height, 10), lastCommit, nil, state.LastValidators.Proposer.Address)
+		blocks[i] = block
+		state.LastBlockID = blockID
+		state.LastBlockHeight = height
+		state.LastBlockTime = state.LastBlockTime.Add(1 * time.Second)
+		state.LastValidators = state.Validators.Copy()
+		state.Validators = state.NextValidators.Copy()
+		state.NextValidators = state.NextValidators.CopyIncrementProposerPriority(1)
+		state.AppHash = test.RandomHash()
+
+		blockID = test.MakeBlockIDWithHash(block.Hash())
+	}
+
+	return blocks, nil
+}
+
 func TestHandshakePanicsIfAppReturnsWrongAppHash(t *testing.T) {
 	// 1. Initialize CometBFT and commit 3 blocks with the following app hashes:
 	//		- 0x01
@@ -922,7 +948,7 @@ func TestHandshakePanicsIfAppReturnsWrongAppHash(t *testing.T) {
 	genDoc, _ := sm.MakeGenesisDocFromFile(config.GenesisFile())
 	state.LastValidators = state.Validators.Copy()
 	// mode = 0 for committing all the blocks
-	blocks, err := test.MakeBlocks(3, state, []types.PrivValidator{privVal})
+	blocks, err := makeBlocks(3, state, []types.PrivValidator{privVal})
 	require.NoError(t, err)
 
 	store.chain = blocks

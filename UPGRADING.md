@@ -14,7 +14,7 @@ This guide provides instructions for upgrading to specific versions of CometBFT.
   mempool (what was called version `v1`) has been removed (see below), thus
   there is only one implementation of the mempool available (what was called
   `v0`).
-* Fields `TTLDuration` and `TTLNumBlocks`, which were only used by the priority
+* Config fields `TTLDuration` and `TTLNumBlocks`, which were only used by the priority
   mempool, have been removed.
 
 ### ABCI Changes
@@ -43,11 +43,12 @@ This guide provides instructions for upgrading to specific versions of CometBFT.
   guidelines](https://developers.google.com/protocol-buffers/docs/proto3#updating),
   this should have no effect on the wire-level encoding for UTF8-encoded
   strings.
-* In `ResponseCheckTx`, removed fields `sender`, `priority`, and
-  `mempool_error`, which were only used by the priority mempool.
 
-### Mempool
+### Mempool Changes
 
 * The priority mempool (what was referred in the code as version `v1`) has been
   removed. There is now only one mempool (what was called version `v0`), that
   is, the default implementation as a queue of transactions. 
+* In the protobuf message `ResponseCheckTx`, fields `sender`, `priority`, and
+  `mempool_error`, which were only used by the priority mempool, were removed
+  but still kept in the message as "reserved".

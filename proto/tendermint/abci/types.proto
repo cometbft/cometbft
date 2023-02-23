@@ -230,6 +230,11 @@ message ResponseCheckTx {
   repeated Event events     = 7
       [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
   string codespace = 8;
+
+  // These reserved fields were used until v0.37 by the priority mempool (now
+  // removed).
+  reserved 9 to 11;
+  reserved "sender", "priority", "mempool_error";
 }
 
 message ResponseDeliverTx {

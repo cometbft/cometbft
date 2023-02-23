@@ -59,8 +59,6 @@ given destination directory. Each archive will contain:
 
 Note: goroutine.out and heap.out will only be written if a profile address is
 provided and is operational. This command is blocking and will log any error.
-<<<<<<< HEAD
-=======
 
 ## CometBFT Inspect
 
@@ -105,4 +103,3 @@ For an `inspect` process running on `127.0.0.1:26657`, navigate your browser to
 `http://127.0.0.1:26657/` to retrieve the list of enabled RPC endpoints.
 
 Additional information on the CometBFT RPC endpoints can be found in the [rpc documentation](https://docs.cometbft.com/master/rpc).
->>>>>>> 28baba3ed (Docs fixes (#368))

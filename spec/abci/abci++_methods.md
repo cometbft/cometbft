@@ -464,7 +464,7 @@ title: Methods
     * The implementation of `PrepareProposal` can be non-deterministic.
 
 
-#### When does CometBFT call "PrepareProposal" ?
+#### When does CometBFT call `PrepareProposal` ?
 
 
 When a validator _p_ enters consensus round _r_, height _h_, in which _p_ is the proposer,
@@ -539,7 +539,7 @@ the consensus algorithm will use it as proposal and will not call `RequestPrepar
     * Moreover, application implementors SHOULD always set `ResponseProcessProposal.status` to `ACCEPT`,
       unless they _really_ know what the potential liveness implications of returning `REJECT` are.
 
-#### When does CometBFT call "ProcessProposal" ?
+#### When does CometBFT call `ProcessProposal` ?
 
 When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the proposer (possibly _p_ = _q_):
 
@@ -564,7 +564,7 @@ When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the prop
     3. If _p_ is a validator and the returned value is
          * `ACCEPT`: _p_ prevotes on this proposal for round _r_, height _h_.
          * `REJECT`: _p_ prevotes `nil`.
-         *
+
 <!--
 
 ### ExtendVote

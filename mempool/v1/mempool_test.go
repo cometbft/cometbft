@@ -521,7 +521,7 @@ func TestTxMempool_ConcurrentTxs(t *testing.T) {
 
 func TestTxMempool_ExpiredTxs_Timestamp(t *testing.T) {
 	txmp := setup(t, 5000)
-	txmp.config.TTLDuration = 5 * time.Millisecond
+	txmp.config.TTLDuration = 5 * time.Millisecond //nolint:staticcheck // SA1019 Priority mempool deprecated but still supported in this release.
 
 	added1 := checkTxs(t, txmp, 10, 0)
 	require.Equal(t, len(added1), txmp.Size())
@@ -570,7 +570,7 @@ func TestTxMempool_ExpiredTxs_Timestamp(t *testing.T) {
 func TestTxMempool_ExpiredTxs_NumBlocks(t *testing.T) {
 	txmp := setup(t, 500)
 	txmp.height = 100
-	txmp.config.TTLNumBlocks = 10
+	txmp.config.TTLNumBlocks = 10 //nolint:staticcheck // SA1019 Priority mempool deprecated but still supported in this release.
 
 	tTxs := checkTxs(t, txmp, 100, 0)
 	require.Equal(t, len(tTxs), txmp.Size())

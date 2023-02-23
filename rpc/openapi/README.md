@@ -9,4 +9,4 @@ order: 5
 
 The RPC documentation is hosted here:
 
-- [RPC Documentation](./rpc.html)
+- [RPC Documentation](https://docs.cometbft.com/v0.34/rpc)

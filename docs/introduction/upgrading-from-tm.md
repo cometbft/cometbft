@@ -9,12 +9,17 @@ subsequently updated in Informal Systems' public fork of Tendermint Core for
 [v0.34.25][v03425] and [v0.34.26][v03426].
 
 If you already make use of Tendermint Core (either the original Tendermint Core
-or Informal Systems' public fork), you can upgrade to CometBFT v0.34.27 by
-replacing your dependency in your `go.mod` file:
+v0.34.24, or Informal Systems' public fork), you can upgrade to CometBFT
+v0.34.27 by replacing your dependency in your `go.mod` file:
 
 ```bash
 go mod edit -replace github.com/tendermint/tendermint=github.com/cometbft/cometbft@v0.34.27
 ```
+
+We make use of the original module URL in order to minimize the impact of
+switching to CometBFT. This is only possible in our v0.34 release series, and we
+will be switching our module URL to `github.com/cometbft/cometbft` in the next
+major release.
 
 ## Home directory
 

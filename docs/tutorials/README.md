@@ -6,5 +6,5 @@ parent:
 
 # Guides
 
-- [Creating a built-in application in Go][./go-built-in.md]
-- [Creating an external application in Go][./go.md]
+- [Creating a built-in application in Go](./go-built-in.md)
+- [Creating an external application in Go](./go.md)

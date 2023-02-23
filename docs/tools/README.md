@@ -11,7 +11,6 @@ CometBFT has some tools that are associated with it for:
 
 - [Debugging](./debugging.md)
 - [Benchmarking](#benchmarking)
-- [Testnets](#testnets)
 
 ## Benchmarking
 

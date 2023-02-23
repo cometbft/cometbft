@@ -1,3 +1,7 @@
+---
+order: 2
+---
+
 # Encoding
 
 ## Protocol Buffers
@@ -281,7 +285,7 @@ We call this encoding the SignBytes. For instance, SignBytes for a vote is the p
 
 ```protobuf
 message CanonicalVote {
-  SignedMsgType             type      = 1;  
+  SignedMsgType             type      = 1;
   sfixed64                  height    = 2;  // canonicalization requires fixed size encoding here
   sfixed64                  round     = 3;  // canonicalization requires fixed size encoding here
   CanonicalBlockID          block_id  = 4;

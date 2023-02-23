@@ -18,13 +18,18 @@ More formally, CometBFT performs Byzantine Fault Tolerant (BFT)
 State Machine Replication (SMR) for arbitrary deterministic, finite state machines.
 For more background, see [What is CometBFT?](introduction/what-is-cometbft.md).
 
-To get started quickly with an example application, see the [quick start
-guide](introduction/quick-start.md).
+To get started quickly with an example application, see the
+[quick start guide](introduction/quick-start.md).
 
-To learn about application development on CometBFT, see the [Application Blockchain Interface](https://github.com/cometbft/cometbft/tree/v0.34.x/spec/abci).
+To upgrade from Tendermint Core v0.34.x to CometBFT v0.34.x, please see our
+[upgrading instructions](./introduction/upgrading-from-tm.md).
+
+To learn about application development on CometBFT, see the
+[Application Blockchain Interface](https://github.com/cometbft/cometbft/tree/v0.34.x/spec/abci).
 
 For more details on using CometBFT, see the respective documentation for
-[CometBFT internals](core/), [benchmarking and monitoring](tools/), and [network deployments](networks/).
+[CometBFT internals](core/), [benchmarking and monitoring](tools/), and
+[network deployments](networks/).
 
 ## Contribute
 
@@ -40,5 +45,5 @@ target that release branch with your PR.
 Changes to the documentation will be reviewed by the team and, if accepted and
 merged, published to <https://docs.cometbft.com> for the respective version(s).
 
-The build process for the documentation is housed in the [CometBFT documentation
-repository](https://github.com/cometbft/cometbft-docs).
+The build process for the documentation is housed in the
+[CometBFT documentation repository](https://github.com/cometbft/cometbft-docs).

@@ -585,9 +585,9 @@ REMOVE_LOOP:
 // Keys
 
 func isTagKey(key []byte) bool {
-	// This should be always 4 if data is indexed together with event sequences
-	// The check for 3 was added to allow data indexed before (w/o the event number)
-	// to be retrieved.
+	// This should be always at least 4 if data is indexed together with event sequences
+	// But we need to support versions with 3 tags as well in case the data was indexed with an old
+	// version of CometBFT.
 	numTags := strings.Count(string(key), tagKeySeparator)
 	return numTags >= 3
 }

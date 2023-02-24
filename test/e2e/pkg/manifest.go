@@ -75,7 +75,7 @@ type Manifest struct {
 	CheckTxDelay         time.Duration `toml:"check_tx_delay"`
 	// TODO: add vote extension and finalize block delay (@cmwaters)
 
-	// UpgradeVersion specifies to which version nodes need to upgrade to.
+	// UpgradeVersion specifies to which version nodes need to upgrade.
 	// Currently only uncoordinated upgrade is supported
 	UpgradeVersion string `toml:"upgrade_version"`
 
@@ -128,10 +128,6 @@ type ManifestNode struct {
 	// BlockSync specifies the block sync mode: "" (disable), "v0" or "v2".
 	// Defaults to disabled.
 	BlockSync string `toml:"block_sync"`
-
-	// Mempool specifies which version of mempool to use. Either "v0" or "v1"
-	// This defaults to v0.
-	Mempool string `toml:"mempool_version"`
 
 	// StateSync enables state sync. The runner automatically configures trusted
 	// block hashes and RPC servers. At least one node in the network must have

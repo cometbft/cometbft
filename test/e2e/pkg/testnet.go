@@ -27,7 +27,7 @@ const (
 	defaultConnections = 1
 	defaultTxSizeBytes = 1024
 
-	localVersion = "local-version"
+	localVersion = "cometbft/e2e-node:local-version"
 )
 
 type (
@@ -96,7 +96,6 @@ type Node struct {
 	StartAt             int64
 	BlockSync           string
 	StateSync           bool
-	Mempool             string
 	Database            string
 	ABCIProtocol        Protocol
 	PrivvalProtocol     Protocol
@@ -186,6 +185,7 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 		if v == "" {
 			v = localVersion
 		}
+
 		node := &Node{
 			Name:             name,
 			Version:          v,
@@ -200,7 +200,6 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 			PrivvalProtocol:  ProtocolFile,
 			StartAt:          nodeManifest.StartAt,
 			BlockSync:        nodeManifest.BlockSync,
-			Mempool:          nodeManifest.Mempool,
 			StateSync:        nodeManifest.StateSync,
 			PersistInterval:  1,
 			SnapshotInterval: nodeManifest.SnapshotInterval,
@@ -359,11 +358,6 @@ func (n Node) Validate(testnet Testnet) error {
 	case "", "v0":
 	default:
 		return fmt.Errorf("invalid block sync setting %q", n.BlockSync)
-	}
-	switch n.Mempool {
-	case "", "v0", "v1":
-	default:
-		return fmt.Errorf("invalid mempool version %q", n.Mempool)
 	}
 	switch n.Database {
 	case "goleveldb", "cleveldb", "boltdb", "rocksdb", "badgerdb":

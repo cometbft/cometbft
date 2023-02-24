@@ -1,3 +1,7 @@
+---
+order: 1
+---
+
 # Debugging
 
 ## CometBFT debug kill
@@ -62,17 +66,17 @@ CometBFT includes an `inspect` command for querying CometBFT's state store and b
 store over CometBFT RPC.
 
 When the CometBFT consensus engine detects inconsistent state, it will crash the
-entire CometBFT process. 
-While in this inconsistent state, a node running CometBFT will not start up. 
+entire CometBFT process.
+While in this inconsistent state, a node running CometBFT will not start up.
 The `inspect` command runs only a subset of CometBFT's RPC endpoints for querying the block store
-and state store. 
+and state store.
 `inspect` allows operators to query a read-only view of the stage.
 `inspect` does not run the consensus engine at all and can therefore be used to debug
-processes that have crashed due to inconsistent state. 
+processes that have crashed due to inconsistent state.
 
 ### Running inspect
 
-Start up the `inspect` tool on the machine where CometBFT crashed using: 
+Start up the `inspect` tool on the machine where CometBFT crashed using:
 ```bash
 cometbft inspect --home=</path/to/app.d>
 ```
@@ -84,7 +88,7 @@ cometbft inspect --home=</path/to/app.d>
 
 With the `inspect` server running, you can access RPC endpoints that are critically important
 for debugging.
-Calling the `/status`, `/consensus_state` and `/dump_consensus_state` RPC endpoint 
+Calling the `/status`, `/consensus_state` and `/dump_consensus_state` RPC endpoint
 will return useful information about the CometBFT consensus state.
 
 To start the `inspect` process, run
@@ -95,7 +99,7 @@ cometbft inspect
 ### RPC endpoints
 
 The list of available RPC endpoints can be found by making a request to the RPC port.
-For an `inspect` process running on `127.0.0.1:26657`, navigate your browser to 
+For an `inspect` process running on `127.0.0.1:26657`, navigate your browser to
 `http://127.0.0.1:26657/` to retrieve the list of enabled RPC endpoints.
 
 Additional information on the CometBFT RPC endpoints can be found in the [rpc documentation](https://docs.cometbft.com/master/rpc).

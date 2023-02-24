@@ -619,9 +619,10 @@ LOOP:
 // Keys
 
 func isTagKey(key []byte) bool {
-	// This should be always 4 if data is indexed together with event sequences
-	// The check for 3 was added to allow data indexed before (w/o the event number)
-	// to be retrieved.
+	// Normally, if the event was indexed with an event sequence, the number of
+	// tags should 4. Alternatively it should be 3 if the event was not indexed
+	// with the corresponding event sequence. However, some attribute values in
+	// production can contain the tag separator. Therefore, the condition is >= 3.
 	numTags := strings.Count(string(key), tagKeySeparator)
 	return numTags >= 3
 }

@@ -187,28 +187,27 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 			v = localVersion
 		}
 		node := &Node{
-			Name:                name,
-			Version:             v,
-			Testnet:             testnet,
-			PrivvalKey:          keyGen.Generate(manifest.KeyType),
-			NodeKey:             keyGen.Generate("ed25519"),
-			IP:                  ind.IPAddress,
-			ProxyPort:           proxyPortGen.Next(),
-			Mode:                ModeValidator,
-			Database:            "goleveldb",
-			ABCIProtocol:        Protocol(testnet.ABCIProtocol),
-			PrivvalProtocol:     ProtocolFile,
-			StartAt:             nodeManifest.StartAt,
-			BlockSync:           nodeManifest.BlockSync,
-			Mempool:             nodeManifest.Mempool,
-			StateSync:           nodeManifest.StateSync,
-			PersistInterval:     1,
-			SnapshotInterval:    nodeManifest.SnapshotInterval,
-			RetainBlocks:        nodeManifest.RetainBlocks,
-			Perturbations:       []Perturbation{},
-			SendNoLoad:          nodeManifest.SendNoLoad,
-			Prometheus:          testnet.Prometheus,
-			PrometheusProxyPort: prometheusProxyPortGen.Next(),
+			Name:             name,
+			Version:          v,
+			Testnet:          testnet,
+			PrivvalKey:       keyGen.Generate(manifest.KeyType),
+			NodeKey:          keyGen.Generate("ed25519"),
+			IP:               ind.IPAddress,
+			ProxyPort:        proxyPortGen.Next(),
+			Mode:             ModeValidator,
+			Database:         "goleveldb",
+			ABCIProtocol:     Protocol(testnet.ABCIProtocol),
+			PrivvalProtocol:  ProtocolFile,
+			StartAt:          nodeManifest.StartAt,
+			BlockSync:        nodeManifest.BlockSync,
+			Mempool:          nodeManifest.Mempool,
+			StateSync:        nodeManifest.StateSync,
+			PersistInterval:  1,
+			SnapshotInterval: nodeManifest.SnapshotInterval,
+			RetainBlocks:     nodeManifest.RetainBlocks,
+			Perturbations:    []Perturbation{},
+			SendNoLoad:       nodeManifest.SendNoLoad,
+			Prometheus:       testnet.Prometheus,
 		}
 		if node.StartAt == testnet.InitialHeight {
 			node.StartAt = 0 // normalize to 0 for initial nodes, since code expects this
@@ -227,6 +226,9 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 		}
 		if nodeManifest.PersistInterval != nil {
 			node.PersistInterval = *nodeManifest.PersistInterval
+		}
+		if node.Prometheus {
+			node.PrometheusProxyPort = prometheusProxyPortGen.Next()
 		}
 		for _, p := range nodeManifest.Perturb {
 			node.Perturbations = append(node.Perturbations, Perturbation(p))
@@ -343,11 +345,11 @@ func (n Node) Validate(testnet Testnet) error {
 	if n.PrometheusProxyPort > 0 && n.PrometheusProxyPort <= 1024 {
 		return fmt.Errorf("local port %v must be >1024", n.PrometheusProxyPort)
 	}
-	if n.ProxyPort > 0 || n.PrometheusProxyPort > 0 {
-		for _, peer := range testnet.Nodes {
-			if peer.Name != n.Name && peer.ProxyPort == n.ProxyPort {
-				return fmt.Errorf("peer %q also has local port %v", peer.Name, n.ProxyPort)
-			}
+	for _, peer := range testnet.Nodes {
+		if peer.Name != n.Name && peer.ProxyPort == n.ProxyPort {
+			return fmt.Errorf("peer %q also has local port %v", peer.Name, n.ProxyPort)
+		}
+		if n.PrometheusProxyPort > 0 {
 			if peer.Name != n.Name && peer.PrometheusProxyPort == n.PrometheusProxyPort {
 				return fmt.Errorf("peer %q also has local port %v", peer.Name, n.PrometheusProxyPort)
 			}

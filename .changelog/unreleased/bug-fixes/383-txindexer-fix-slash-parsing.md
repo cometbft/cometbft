@@ -1,0 +1,1 @@
+- `[state/kvindexer]` \#382 Resolved crashes when event values containted slashes, introduced after adding event sequences.  (@jmalicevic)

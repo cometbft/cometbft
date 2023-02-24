@@ -1,3 +1,6 @@
+---
+---
+
 # Evidence
 
 Evidence is an important component of CometBFT's security model. Whilst the core
@@ -188,8 +191,8 @@ type LightClientAttackEvidence struct {
 
   // abci specific information
   ByzantineValidators []*Validator
-  TotalVotingPower    int64       
-  Timestamp           time.Time 
+  TotalVotingPower    int64
+  Timestamp           time.Time
 }
 ```
 

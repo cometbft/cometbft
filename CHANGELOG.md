@@ -17,7 +17,8 @@ Discussions](https://github.com/cometbft/cometbft/discussions),
 [Discord](https://discord.gg/cosmosnetwork) (in the `#cometbft` channel) or
 [Telegram](https://t.me/CometBFT).
 
-Special thanks to @ze97286 and @JayT106 for their contributions to this release!
+Special thanks to @wcsiu, @ze97286, @faddat and @JayT106 for their contributions
+to this release!
 
 ### BREAKING CHANGES
 

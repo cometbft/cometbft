@@ -620,9 +620,8 @@ func extractEventSeqFromKey(key []byte) string {
 
 	if strings.Contains(lastEl, eventSeqSeparator) {
 		return strings.SplitN(lastEl, eventSeqSeparator, 2)[1]
-	} else {
-		return "0"
 	}
+	return "0"
 }
 func keyForEvent(key string, value string, result *abci.TxResult, eventSeq int64) []byte {
 	return []byte(fmt.Sprintf("%s/%s/%d/%d%s",

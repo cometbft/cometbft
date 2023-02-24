@@ -79,7 +79,7 @@ func waitForNode(node *e2e.Node, height int64, timeout time.Duration) (*rpctypes
 		switch {
 		case err != nil:
 			continue
-		case status.SyncInfo.LatestBlockHeight >= height:
+		case status.SyncInfo.LatestBlockHeight >= height && (height == 0 || !status.SyncInfo.CatchingUp):
 			return status, nil
 		case curHeight < status.SyncInfo.LatestBlockHeight:
 			curHeight = status.SyncInfo.LatestBlockHeight

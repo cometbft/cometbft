@@ -71,6 +71,7 @@ func TestTxSearch(t *testing.T) {
 	txResult := txResultWithEvents([]abci.Event{
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: []byte("number"), Value: []byte("1"), Index: true}}},
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: []byte("owner"), Value: []byte("Ivan"), Index: true}}},
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: []byte("owner"), Value: []byte("/Ivan/"), Index: true}, {Key: []byte("number"), Value: []byte("10"), Index: true}}},
 		{Type: "", Attributes: []abci.EventAttribute{{Key: []byte("not_allowed"), Value: []byte("Vlad"), Index: true}}},
 	})
 	hash := types.Tx(txResult.Tx).Hash()
@@ -82,7 +83,7 @@ func TestTxSearch(t *testing.T) {
 		q             string
 		resultsLength int
 	}{
-		// search by hash
+		//	search by hash
 		{fmt.Sprintf("tx.hash = '%X'", hash), 1},
 		// search by hash (lower)
 		{fmt.Sprintf("tx.hash = '%x'", hash), 1},
@@ -101,6 +102,16 @@ func TestTxSearch(t *testing.T) {
 		{"account.number < 10000 AND account.owner = 'Ivan'", 1},
 		// search using a prefix of the stored value
 		{"account.owner = 'Iv'", 0},
+		// search for owner with dash in name
+		{"account.owner = '/Ivan/'", 1},
+		// search for owner with dash in name and match events
+		{"match.events = 1 AND account.owner = '/Ivan/' AND account.number = 10", 1},
+		// search for owner with dash in name and match events with no match
+		{"match.events = 1 AND account.owner = '/Ivan/' AND account.number = 1", 0},
+		// search for owner with dash in name with CONTAINS
+		{"account.owner CONTAINS 'an'", 1},
+		// search for owner with dash in name with CONTAINS and match events
+		{"match.events = 1 AND account.owner CONTAINS 'an'", 1},
 		// search by range
 		{"account.number >= 1 AND account.number <= 5", 1},
 		// search by range and another key

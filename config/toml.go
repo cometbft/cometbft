@@ -349,11 +349,6 @@ dial_timeout = "{{ .P2P.DialTimeout }}"
 #######################################################
 [mempool]
 
-# Mempool version to use:
-#   1) "v0" - (default) FIFO mempool.
-#   2) "v1" - prioritized mempool.
-version = "{{ .Mempool.Version }}"
-
 # Recheck (default: true) defines whether CometBFT should recheck the
 # validity for all remaining transaction in the mempool after a block.
 # Since a block affects the application state, some transactions in the
@@ -398,22 +393,6 @@ max_tx_bytes = {{ .Mempool.MaxTxBytes }}
 # Including space needed by encoding (one varint per transaction).
 # XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
 max_batch_bytes = {{ .Mempool.MaxBatchBytes }}
-
-# ttl-duration, if non-zero, defines the maximum amount of time a transaction
-# can exist for in the mempool.
-#
-# Note, if ttl-num-blocks is also defined, a transaction will be removed if it
-# has existed in the mempool at least ttl-num-blocks number of blocks or if it's
-# insertion time into the mempool is beyond ttl-duration.
-ttl-duration = "{{ .Mempool.TTLDuration }}"
-
-# ttl-num-blocks, if non-zero, defines the maximum number of blocks a transaction
-# can exist for in the mempool.
-#
-# Note, if ttl-duration is also defined, a transaction will be removed if it
-# has existed in the mempool at least ttl-num-blocks number of blocks or if
-# it's insertion time into the mempool is beyond ttl-duration.
-ttl-num-blocks = {{ .Mempool.TTLNumBlocks }}
 
 #######################################################
 ###         State Sync Configuration Options        ###

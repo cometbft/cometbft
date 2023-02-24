@@ -119,6 +119,6 @@ cometbft node --home ./mytestnet/node3 --proxy_app=kvstore --p2p.persistent_peer
 
 Note that after the third node is started, blocks will start to stream in
 because >2/3 of validators (defined in the `genesis.json`) have come online.
-Persistent peers can also be specified in the `config.toml`. See [here](../cometbft-core/configuration.md) for more information about configuration options.
+Persistent peers can also be specified in the `config.toml`. See [here](../core/configuration.md) for more information about configuration options.
 
 Transactions can then be sent as covered in the single, local node example above.

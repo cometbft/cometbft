@@ -65,7 +65,6 @@ block_sync = "v0"
 start_at = 1005 # Becomes part of the validator set at 1010
 persistent_peers = ["validator01", "full01"]
 database = "cleveldb"
-mempool_version = "v1"
 privval_protocol = "tcp"
 perturb = ["kill", "pause", "disconnect", "restart"]
 

@@ -1,4 +1,4 @@
-package v1
+package mempool
 
 import (
 	"errors"
@@ -9,7 +9,6 @@ import (
 	"github.com/cometbft/cometbft/libs/clist"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	"github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	protomem "github.com/cometbft/cometbft/proto/tendermint/mempool"
 	"github.com/cometbft/cometbft/types"
@@ -21,7 +20,7 @@ import (
 type Reactor struct {
 	p2p.BaseReactor
 	config  *cfg.MempoolConfig
-	mempool *TxMempool
+	mempool *CListMempool
 	ids     *mempoolIDs
 }
 
@@ -46,8 +45,8 @@ func (ids *mempoolIDs) ReserveForPeer(peer p2p.Peer) {
 // nextPeerID returns the next unused peer ID to use.
 // This assumes that ids's mutex is already locked.
 func (ids *mempoolIDs) nextPeerID() uint16 {
-	if len(ids.activeIDs) == mempool.MaxActiveIDs {
-		panic(fmt.Sprintf("node has maximum %d active IDs and wanted to get one more", mempool.MaxActiveIDs))
+	if len(ids.activeIDs) == MaxActiveIDs {
+		panic(fmt.Sprintf("node has maximum %d active IDs and wanted to get one more", MaxActiveIDs))
 	}
 
 	_, idExists := ids.activeIDs[ids.nextID]
@@ -89,7 +88,7 @@ func newMempoolIDs() *mempoolIDs {
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
-func NewReactor(config *cfg.MempoolConfig, mempool *TxMempool) *Reactor {
+func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool) *Reactor {
 	memR := &Reactor{
 		config:  config,
 		mempool: mempool,
@@ -108,6 +107,7 @@ func (memR *Reactor) InitPeer(peer p2p.Peer) p2p.Peer {
 // SetLogger sets the Logger on the reactor and the underlying mempool.
 func (memR *Reactor) SetLogger(l log.Logger) {
 	memR.Logger = l
+	memR.mempool.SetLogger(l)
 }
 
 // OnStart implements p2p.BaseReactor.
@@ -130,7 +130,7 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 
 	return []*p2p.ChannelDescriptor{
 		{
-			ID:                  mempool.MempoolChannel,
+			ID:                  MempoolChannel,
 			Priority:            5,
 			RecvMessageCapacity: batchMsg.Size(),
 			MessageType:         &protomem.Message{},
@@ -160,10 +160,10 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 	case *protomem.Txs:
 		protoTxs := msg.GetTxs()
 		if len(protoTxs) == 0 {
-			memR.Logger.Error("received tmpty txs from peer", "src", e.Src)
+			memR.Logger.Error("received empty txs from peer", "src", e.Src)
 			return
 		}
-		txInfo := mempool.TxInfo{SenderID: memR.ids.GetForPeer(e.Src)}
+		txInfo := TxInfo{SenderID: memR.ids.GetForPeer(e.Src)}
 		if e.Src != nil {
 			txInfo.SenderP2PID = e.Src.ID()
 		}
@@ -172,7 +172,7 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 		for _, tx := range protoTxs {
 			ntx := types.Tx(tx)
 			err = memR.mempool.CheckTx(ntx, nil, txInfo)
-			if errors.Is(err, mempool.ErrTxInCache) {
+			if errors.Is(err, ErrTxInCache) {
 				memR.Logger.Debug("Tx already exists in cache", "tx", ntx.String())
 			} else if err != nil {
 				memR.Logger.Info("Could not check tx", "tx", ntx.String(), "err", err)
@@ -202,7 +202,6 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		if !memR.IsRunning() || !peer.IsRunning() {
 			return
 		}
-
 		// This happens because the CElement we were looking at got garbage
 		// collected (removed). That is, .NextWait() returned nil. Go ahead and
 		// start from the beginning.
@@ -212,10 +211,8 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 				if next = memR.mempool.TxsFront(); next == nil {
 					continue
 				}
-
 			case <-peer.Quit():
 				return
-
 			case <-memR.Quit():
 				return
 			}
@@ -229,26 +226,27 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			// different every time due to us using a map. Sometimes other reactors
 			// will be initialized before the consensus reactor. We should wait a few
 			// milliseconds and retry.
-			time.Sleep(mempool.PeerCatchupSleepIntervalMS * time.Millisecond)
+			time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
 			continue
 		}
 
 		// Allow for a lag of 1 block.
-		memTx := next.Value.(*WrappedTx)
-		if peerState.GetHeight() < memTx.height-1 {
-			time.Sleep(mempool.PeerCatchupSleepIntervalMS * time.Millisecond)
+		memTx := next.Value.(*mempoolTx)
+		if peerState.GetHeight() < memTx.Height()-1 {
+			time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
 			continue
 		}
 
 		// NOTE: Transaction batching was disabled due to
 		// https://github.com/tendermint/tendermint/issues/5796
-		if !memTx.HasPeer(peerID) {
+
+		if _, ok := memTx.senders.Load(peerID); !ok {
 			success := peer.Send(p2p.Envelope{
-				ChannelID: mempool.MempoolChannel,
+				ChannelID: MempoolChannel,
 				Message:   &protomem.Txs{Txs: [][]byte{memTx.tx}},
 			})
 			if !success {
-				time.Sleep(mempool.PeerCatchupSleepIntervalMS * time.Millisecond)
+				time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
 				continue
 			}
 		}
@@ -257,18 +255,13 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		case <-next.NextWaitChan():
 			// see the start of the for loop for nil check
 			next = next.Next()
-
 		case <-peer.Quit():
 			return
-
 		case <-memR.Quit():
 			return
 		}
 	}
 }
-
-//-----------------------------------------------------------------------------
-// Messages
 
 // TxsMessage is a Message containing transactions.
 type TxsMessage struct {

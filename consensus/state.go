@@ -1050,7 +1050,9 @@ func (cs *State) needProofBlock(height int64) bool {
 
 	lastBlockMeta := cs.blockStore.LoadBlockMeta(height - 1)
 	if lastBlockMeta == nil {
-		panic(fmt.Sprintf("needProofBlock: last block meta for height %d not found", height-1))
+		// See https://github.com/cometbft/cometbft/issues/370
+		cs.Logger.Info("short-circuited needProofBlock", "height", height, "InitialHeight", cs.state.InitialHeight)
+		return true
 	}
 
 	return !bytes.Equal(cs.state.AppHash, lastBlockMeta.Header.AppHash)

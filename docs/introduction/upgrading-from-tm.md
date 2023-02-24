@@ -36,6 +36,13 @@ is not, but you will start to see a warning message in the logs if the old
 `TMHOME` variable is set. This fallback check will be removed entirely in a
 subsequent major release of CometBFT.
 
+## Building CometBFT
+
+If you are building CometBFT from scratch, pls observe that it must be compiled 
+using Go 1.19 or higher. The use of Go 1.18 is not supported, since this version 
+has reached end-of-life with the release of Go 1.20.
+
+
 [v03424]: https://github.com/tendermint/tendermint/releases/tag/v0.34.24
 [v03425]: https://github.com/informalsystems/tendermint/releases/tag/v0.34.25
 [v03426]: https://github.com/informalsystems/tendermint/releases/tag/v0.34.26

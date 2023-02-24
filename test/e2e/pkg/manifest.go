@@ -83,9 +83,8 @@ type Manifest struct {
 	LoadTxBatchSize   int `toml:"load_tx_batch_size"`
 	LoadTxConnections int `toml:"load_tx_connections"`
 
-	// When true, enables Prometheus metrics for all nodes.
-	// When false, just apply the Prometheus flag of each individual node, if present.
-	// Defaults to false.
+	// Enable or disable Prometheus metrics on all nodes.
+	// Defaults to false (disabled).
 	Prometheus bool `toml:"prometheus"`
 }
 
@@ -167,10 +166,6 @@ type ManifestNode struct {
 	// It defaults to false so unless the configured, the node will
 	// receive load.
 	SendNoLoad bool `toml:"send_no_load"`
-
-	// When true, Prometheus metrics are served under /metrics on
-	// PrometheusProxyPort. Defaults to false.
-	Prometheus bool `toml:"prometheus"`
 }
 
 // Save saves the testnet manifest to a file.

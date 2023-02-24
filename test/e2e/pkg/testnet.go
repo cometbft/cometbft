@@ -207,7 +207,7 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 			RetainBlocks:        nodeManifest.RetainBlocks,
 			Perturbations:       []Perturbation{},
 			SendNoLoad:          nodeManifest.SendNoLoad,
-			Prometheus:          nodeManifest.Prometheus,
+			Prometheus:          testnet.Prometheus,
 			PrometheusProxyPort: prometheusProxyPortGen.Next(),
 		}
 		if node.StartAt == testnet.InitialHeight {

@@ -2,7 +2,7 @@ ipv6 = true
 initial_height = 2
 key_type = ""
 abci_protocol = "tcp"
-upgrade_version = "cometbft/e2e-node:latest"
+upgrade_version = "cometbft/e2e-node:local"
 load_tx_size_bytes = 0
 load_tx_batch_size = 100
 load_tx_connections = 0
@@ -35,7 +35,7 @@ load_tx_connections = 0
 [node]
   [node.full01]
     mode = "full"
-    version = "ghcr.io/informalsystems/tendermint-e2e-node:v0.34.x"
+    version = "cometbft/e2e-node:latest"
     seeds = ["seed01"]
     database = "badgerdb"
     privval_protocol = "file"
@@ -65,7 +65,7 @@ load_tx_connections = 0
     send_no_load = false
   [node.full03]
     mode = "full"
-    version = "ghcr.io/informalsystems/tendermint-e2e-node:v0.34.x"
+    version = "cometbft/e2e-node:latest"
     seeds = ["seed01"]
     database = "badgerdb"
     privval_protocol = "unix"
@@ -80,7 +80,7 @@ load_tx_connections = 0
     send_no_load = false
   [node.seed01]
     mode = "seed"
-    version = "ghcr.io/informalsystems/tendermint-e2e-node:v0.34.x"
+    version = "cometbft/e2e-node:latest"
     database = "badgerdb"
     privval_protocol = "unix"
     start_at = 0
@@ -94,7 +94,7 @@ load_tx_connections = 0
     send_no_load = false
   [node.validator01]
     mode = "validator"
-    version = "ghcr.io/informalsystems/tendermint-e2e-node:v0.34.x"
+    version = "cometbft/e2e-node:latest"
     persistent_peers = ["full03"]
     database = "rocksdb"
     privval_protocol = "tcp"
@@ -110,7 +110,7 @@ load_tx_connections = 0
     [node.validator01.misbehaviors]
   [node.validator02]
     mode = "validator"
-    version = "ghcr.io/informalsystems/tendermint-e2e-node:v0.34.x"
+    version = "cometbft/e2e-node:latest"
     persistent_peers = ["validator01"]
     database = "goleveldb"
     privval_protocol = "file"
@@ -126,7 +126,7 @@ load_tx_connections = 0
     [node.validator02.misbehaviors]
   [node.validator03]
     mode = "validator"
-    version = "ghcr.io/informalsystems/tendermint-e2e-node:v0.34.x"
+    version = "cometbft/e2e-node:latest"
     seeds = ["seed01"]
     database = "boltdb"
     privval_protocol = "file"
@@ -142,7 +142,7 @@ load_tx_connections = 0
     [node.validator03.misbehaviors]
   [node.validator04]
     mode = "validator"
-    version = "ghcr.io/informalsystems/tendermint-e2e-node:v0.34.x"
+    version = "cometbft/e2e-node:latest"
     seeds = ["seed01"]
     database = "cleveldb"
     privval_protocol = "tcp"
@@ -158,7 +158,7 @@ load_tx_connections = 0
     [node.validator04.misbehaviors]
   [node.validator05]
     mode = "validator"
-    version = "ghcr.io/informalsystems/tendermint-e2e-node:v0.34.x"
+    version = "cometbft/e2e-node:latest"
     persistent_peers = ["validator03"]
     database = "cleveldb"
     privval_protocol = "unix"
@@ -190,7 +190,7 @@ load_tx_connections = 0
     [node.validator06.misbehaviors]
   [node.validator07]
     mode = "validator"
-    version = "ghcr.io/informalsystems/tendermint-e2e-node:v0.34.x"
+    version = "cometbft/e2e-node:latest"
     seeds = ["seed01"]
     database = "cleveldb"
     privval_protocol = "file"
@@ -206,7 +206,7 @@ load_tx_connections = 0
     [node.validator07.misbehaviors]
   [node.validator08]
     mode = "validator"
-    version = "ghcr.io/informalsystems/tendermint-e2e-node:v0.34.x"
+    version = "cometbft/e2e-node:latest"
     seeds = ["seed01"]
     database = "cleveldb"
     privval_protocol = "file"
@@ -222,7 +222,7 @@ load_tx_connections = 0
     [node.validator08.misbehaviors]
   [node.validator09]
     mode = "validator"
-    version = "ghcr.io/informalsystems/tendermint-e2e-node:v0.34.x"
+    version = "cometbft/e2e-node:latest"
     seeds = ["seed01"]
     database = "cleveldb"
     privval_protocol = "file"
@@ -238,7 +238,7 @@ load_tx_connections = 0
     [node.validator09.misbehaviors]
   [node.validator10]
     mode = "validator"
-    version = "ghcr.io/informalsystems/tendermint-e2e-node:v0.34.x"
+    version = "cometbft/e2e-node:latest"
     seeds = ["seed01"]
     database = "cleveldb"
     privval_protocol = "file"

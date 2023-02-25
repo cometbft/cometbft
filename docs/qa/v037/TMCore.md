@@ -2,7 +2,7 @@
 order: 1
 parent:
   title: CometBFT Quality Assurance Results for v0.37.x
-  description: This is a report on the results obtained when running v0.37.x on testnets
+  description: This is a report on the results obtained when running TM v0.37.x on testnets
   order: 2
 ---
 
@@ -36,7 +36,7 @@ For further details, see [this paragraph](../v034/README.md#finding-the-saturati
 in the baseline version.
 
 The following table summarizes the results for v0.37.x, for the different experiments
-(extracted from file [`v037_report_tabbed.txt`](./img/v037_report_tabbed.txt)).
+(extracted from file [`v037_report_tabbed.txt`](./img/200nodes_tm037/v037_report_tabbed.txt)).
 
 The X axis of this table is `c`, the number of connections created by the load runner process to the target node.
 The Y axis of this table is `r`, the rate or number of transactions issued per second.
@@ -75,7 +75,7 @@ The load runner's CPU load was negligible (near 0) when running `r=200,c=2`.
 The method described [here](../method.md) allows us to plot the latencies of transactions
 for all experiments.
 
-![all-latencies](./img/v037_200node_latencies.png)
+![all-latencies](./img/200nodes_tm037/v037_200node_latencies.png)
 
 The data seen in the plot is similar to that of the baseline.
 
@@ -88,7 +88,7 @@ The following plot summarizes average latencies versus overall throughputs
 across different numbers of WebSocket connections to the node into which
 transactions are being loaded.
 
-![latency-vs-throughput](./img/v037_latency_throughput.png)
+![latency-vs-throughput](./img/200nodes_tm037/v037_latency_throughput.png)
 
 This is similar to that of the baseline plot:
 
@@ -106,11 +106,11 @@ at all full nodes. It did not exhibit any unconstrained growth.
 The plot below shows the evolution over time of the cumulative number of transactions inside all full nodes' mempools
 at a given time.
 
-![mempool-cumulative](./img/v037_r200c2_mempool_size.png)
+![mempool-cumulative](./img/200nodes_tm037/v037_r200c2_mempool_size.png)
 
 The plot below shows evolution of the average over all full nodes, which oscillate between 1500 and 2000 outstanding transactions.
 
-![mempool-avg](./img/v037_r200c2_mempool_size_avg.png)
+![mempool-avg](./img/200nodes_tm037/v037_r200c2_mempool_size_avg.png)
 
 The peaks observed coincide with the moments when some nodes reached round 1 of consensus (see below).
 
@@ -125,7 +125,7 @@ The peaks observed coincide with the moments when some nodes reached round 1 of 
 The number of peers was stable at all nodes.
 It was higher for the seed nodes (around 140) than for the rest (between 16 and 78).
 
-![peers](./img/v037_r200c2_peers.png)
+![peers](./img/200nodes_tm037/v037_r200c2_peers.png)
 
 Just as in the baseline, the fact that non-seed nodes reach more than 50 peers is due to #9548.
 
@@ -137,7 +137,7 @@ Just as in the baseline, the fact that non-seed nodes reach more than 50 peers i
 
 Most heights took just one round, but some nodes needed to advance to round 1 at some point.
 
-![rounds](./img/v037_r200c2_rounds.png)
+![rounds](./img/200nodes_tm037/v037_r200c2_rounds.png)
 
 **This plot yields slightly better results than the baseline**:
 
@@ -147,14 +147,14 @@ Most heights took just one round, but some nodes needed to advance to round 1 at
 
 The blocks produced per minute are the gradient of this plot.
 
-![heights](./img/v037_r200c2_heights.png)
+![heights](./img/200nodes_tm037/v037_r200c2_heights.png)
 
 Over a period of 2 minutes, the height goes from 477 to 524.
 This results in an average of 23.5 blocks produced per minute.
 
 The transactions processed per minute are the gradient of this plot.
 
-![total-txs](./img/v037_r200c2_total-txs.png)
+![total-txs](./img/200nodes_tm037/v037_r200c2_total-txs.png)
 
 Over a period of 2 minutes, the total goes from 64525 to 100125 transactions,
 resulting in 17800 transactions per minute. However, we can see in the plot that
@@ -172,11 +172,11 @@ we obtain 23733 transactions per minute.
 
 Resident Set Size of all monitored processes is plotted below.
 
-![rss](./img/v037_r200c2_rss.png)
+![rss](./img/200nodes_tm037/v037_r200c2_rss.png)
 
 The average over all processes oscillates around 380 MiB and does not demonstrate unconstrained growth.
 
-![rss-avg](./img/v037_r200c2_rss_avg.png)
+![rss-avg](./img/200nodes_tm037/v037_r200c2_rss_avg.png)
 
 **These plots yield similar results to the baseline**:
 
@@ -190,7 +190,7 @@ The best metric from Prometheus to gauge CPU utilization in a Unix machine is `l
 as it usually appears in the
 [output of `top`](https://www.digitalocean.com/community/tutorials/load-average-in-linux).
 
-![load1](./img/v037_r200c2_load1.png)
+![load1](./img/200nodes_tm037/v037_r200c2_load1.png)
 
 It is contained below 5 on most nodes.
 
@@ -218,7 +218,7 @@ Finally, note that this setup allows for a fairer comparison between this versio
 
 The plot of all latencies can be seen here.
 
-![rotating-all-latencies](./img/v037_rotating_latencies.png)
+![rotating-all-latencies](./img/200nodes_tm037/v037_rotating_latencies.png)
 
 Which is similar to the baseline.
 
@@ -238,7 +238,7 @@ We also show the baseline results for comparison.
 
 The blocks produced per minute are the gradient of this plot.
 
-![rotating-heights](./img/v037_rotating_heights.png)
+![rotating-heights](./img/200nodes_tm037/v037_rotating_heights.png)
 
 Over a period of 4446 seconds, the height goes from 5 to 3323.
 This results in an average of 45 blocks produced per minute,
@@ -249,7 +249,7 @@ which is similar to the baseline, shown below.
 The following two plots show only the heights reported by ephemeral nodes.
 The second plot is the baseline plot for comparison.
 
-![rotating-heights-ephe](./img/v037_rotating_heights_ephe.png)
+![rotating-heights-ephe](./img/200nodes_tm037/v037_rotating_heights_ephe.png)
 
 ![rotating-heights-ephe-bl](../v034/img/v034_rotating_heights_ephe.png)
 
@@ -258,7 +258,7 @@ catch up slightly faster.
 
 The transactions processed per minute are the gradient of this plot.
 
-![rotating-total-txs](./img/v037_rotating_total-txs.png)
+![rotating-total-txs](./img/200nodes_tm037/v037_rotating_total-txs.png)
 
 Over a period of 3852 seconds, the total goes from 597 to 267298 transactions in one of the validators,
 resulting in 4154 transactions per minute, which is slightly lower than the baseline,
@@ -272,7 +272,7 @@ For comparison, this is the baseline plot.
 
 The plot below shows the evolution of the number of peers throughout the experiment.
 
-![rotating-peers](./img/v037_rotating_peers.png)
+![rotating-peers](./img/200nodes_tm037/v037_rotating_peers.png)
 
 This is the baseline plot, for comparison.
 
@@ -287,7 +287,7 @@ For further details on these plots, see the baseline report.
 The average Resident Set Size (RSS) over all processes looks slightly more stable
 on `v0.37` (first plot) than on the baseline (second plot).
 
-![rotating-rss-avg](./img/v037_rotating_rss_avg.png)
+![rotating-rss-avg](./img/200nodes_tm037/v037_rotating_rss_avg.png)
 
 ![rotating-rss-avg-bl](../v034/img/v034_rotating_rss_avg.png)
 
@@ -298,7 +298,7 @@ just as observed in the baseline.
 
 The plot shows metric `load1` for all nodes.
 
-![rotating-load1](./img/v037_rotating_load1.png)
+![rotating-load1](./img/200nodes_tm037/200nodes_tm037/v037_rotating_load1.png)
 
 This is the baseline plot.
 

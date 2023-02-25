@@ -35,6 +35,9 @@ to this release!
 - `[consensus]` Fixed a busy loop that happened when sending of a block part
   failed by sleeping in case of error.
   ([\#4](https://github.com/informalsystems/tendermint/pull/4))
+- `[state/kvindexer]` Resolved crashes when event values contained slashes,
+  introduced after adding event sequences.
+  (\#[383](https://github.com/cometbft/cometbft/pull/383): @jmalicevic)
 - `[consensus]` Short-term fix for the case when `needProofBlock` cannot find
   previous block meta by defaulting to the creation of a new proof block.
   ([\#386](https://github.com/cometbft/cometbft/pull/386): @adizere)

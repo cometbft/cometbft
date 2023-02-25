@@ -18,7 +18,7 @@ As in other iterations of our QA process, we have used a 200-node network as tes
 
 ### Saturation point
 
-As previous iterations, in our QA experiments, the system is subjected to a load slightly under a saturation point.
+As in previous iterations, in our QA experiments, the system is subjected to a load slightly under a saturation point.
 The method to identify the saturation point is explained [here](../v034/README.md#finding-the-saturation-point) and its application to the baseline is described [here](./TMCore.md#finding-the-saturation-point).
 We use the same saturation point, that is, `c`, the number of connections created by the load runner process to the target node, is 2 and `r`, the rate or number of transactions issued per second, is 200.
 
@@ -53,7 +53,7 @@ The plot below shows the evolution over time of the cumulative number of transac
 
 ![mempoool-cumulative](./img/200nodes_cmt037/mempool_size.png)
 
-The following picture shows the evolution of the average mempool size over all full nodes, which mostly oscilate between 1500 and 2000 outstanding transactions.
+The following picture shows the evolution of the average mempool size over all full nodes, which mostly oscilates between 1500 and 2000 outstanding transactions.
 
 ![mempool-avg](./img/200nodes_cmt037/avg_mempool_size.png)
 
@@ -75,7 +75,7 @@ The red dashed line denotes the average value.
 
 ![peers](./img/200nodes_cmt037/peers.png)
 
-Just as in the baseline, shown next, the fact that non-seed nodes reach more than 50 peers is due to #9548.
+Just as in the baseline, shown next, the fact that non-seed nodes reach more than 50 peers is due to [\#9548].
 
 ![peers](./img/200nodes_tm037/v037_r200c2_peers.png)
 
@@ -160,13 +160,4 @@ A conclusion of these tests is shown in the following table, along with the comm
 |CometBFT | 2023-02-14 | v0.37.0-alpha3 (bef9a830e7ea7da30fa48f2cc236b1f465cc5833) | Pass
 
 
-
-
-
-
-[\#9533]: https://github.com/tendermint/tendermint/pull/9533
-[\#9534]: https://github.com/tendermint/tendermint/pull/9534
-[\#9539]: https://github.com/tendermint/tendermint/issues/9539
 [\#9548]: https://github.com/tendermint/tendermint/issues/9548
-[\#9537]: https://github.com/tendermint/tendermint/issues/9537
-[\#9581]: https://github.com/tendermint/tendermint/issues/9581

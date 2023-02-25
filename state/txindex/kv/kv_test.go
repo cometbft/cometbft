@@ -102,15 +102,15 @@ func TestTxSearch(t *testing.T) {
 		{"account.number < 10000 AND account.owner = 'Ivan'", 1},
 		// search using a prefix of the stored value
 		{"account.owner = 'Iv'", 0},
-		// search for owner with dash in name
+		// search for owner with slash in name
 		{"account.owner = '/Ivan/'", 1},
-		// search for owner with dash in name and match events
+		// search for owner with slash in name and match events
 		{"match.events = 1 AND account.owner = '/Ivan/' AND account.number = 10", 1},
-		// search for owner with dash in name and match events with no match
+		// search for owner with slash in name and match events with no match
 		{"match.events = 1 AND account.owner = '/Ivan/' AND account.number = 1", 0},
-		// search for owner with dash in name with CONTAINS
+		// search for owner with slash in name with CONTAINS
 		{"account.owner CONTAINS 'an'", 1},
-		// search for owner with dash in name with CONTAINS and match events
+		// search for owner with slash in name with CONTAINS and match events
 		{"match.events = 1 AND account.owner CONTAINS 'an'", 1},
 		// search by range
 		{"account.number >= 1 AND account.number <= 5", 1},

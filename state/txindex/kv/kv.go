@@ -21,7 +21,8 @@ import (
 )
 
 const (
-	tagKeySeparator = "/"
+	tagKeySeparator   = "/"
+	eventSeqSeparator = "$es$"
 )
 
 var _ txindex.TxIndexer = (*TxIndex)(nil)
@@ -582,49 +583,64 @@ REMOVE_LOOP:
 // Keys
 
 func isTagKey(key []byte) bool {
-	// This should be always 4 if data is indexed together with event sequences
-	// The check for 3 was added to allow data indexed before (w/o the event number)
-	// to be retrieved.
+	// Normally, if the event was indexed with an event sequence, the number of
+	// tags should 4. Alternatively it should be 3 if the event was not indexed
+	// with the corresponding event sequence. However, some attribute values in
+	// production can contain the tag separator. Therefore, the condition is >= 3.
 	numTags := strings.Count(string(key), tagKeySeparator)
-	return numTags == 4 || numTags == 3
+	return numTags >= 3
 }
 
 func extractHeightFromKey(key []byte) (int64, error) {
 	parts := strings.SplitN(string(key), tagKeySeparator, -1)
-	return strconv.ParseInt(parts[2], 10, 64)
+
+	return strconv.ParseInt(parts[len(parts)-2], 10, 64)
 }
 func extractValueFromKey(key []byte) string {
-	parts := strings.SplitN(string(key), tagKeySeparator, -1)
-	return parts[1]
+	keyString := string(key)
+	parts := strings.SplitN(keyString, tagKeySeparator, -1)
+	partsLen := len(parts)
+	value := strings.TrimPrefix(keyString, parts[0]+tagKeySeparator)
+
+	suffix := ""
+	suffixLen := 2
+
+	for i := 1; i <= suffixLen; i++ {
+		suffix = tagKeySeparator + parts[partsLen-i] + suffix
+	}
+	return strings.TrimSuffix(value, suffix)
+
 }
 
 func extractEventSeqFromKey(key []byte) string {
 	parts := strings.SplitN(string(key), tagKeySeparator, -1)
 
-	if len(parts) == 5 {
-		return parts[4]
+	lastEl := parts[len(parts)-1]
+
+	if strings.Contains(lastEl, eventSeqSeparator) {
+		return strings.SplitN(lastEl, eventSeqSeparator, 2)[1]
 	}
 	return "0"
 }
 func keyForEvent(key string, value string, result *abci.TxResult, eventSeq int64) []byte {
-	return []byte(fmt.Sprintf("%s/%s/%d/%d/%d",
+	return []byte(fmt.Sprintf("%s/%s/%d/%d%s",
 		key,
 		value,
 		result.Height,
 		result.Index,
-		eventSeq,
+		eventSeqSeparator+strconv.FormatInt(eventSeq, 10),
 	))
 }
 
 func keyForHeight(result *abci.TxResult) []byte {
-	return []byte(fmt.Sprintf("%s/%d/%d/%d/%d",
+	return []byte(fmt.Sprintf("%s/%d/%d/%d%s",
 		types.TxHeightKey,
 		result.Height,
 		result.Height,
 		result.Index,
 		// Added to facilitate having the eventSeq in event keys
 		// Otherwise queries break expecting 5 entries
-		0,
+		eventSeqSeparator+"0",
 	))
 }
 

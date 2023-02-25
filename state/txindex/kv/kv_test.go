@@ -70,7 +70,7 @@ func TestTxSearch(t *testing.T) {
 
 	txResult := txResultWithEvents([]abci.Event{
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: "1", Index: true}}},
-		{Type: "account", Attributes: []abci.EventAttribute{{Key: "owner", Value: "Ivan", Index: true}}},
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "owner", Value: "/Ivan/", Index: true}}},
 		{Type: "", Attributes: []abci.EventAttribute{{Key: "not_allowed", Value: "Vlad", Index: true}}},
 	})
 	hash := types.Tx(txResult.Tx).Hash()
@@ -82,7 +82,7 @@ func TestTxSearch(t *testing.T) {
 		q             string
 		resultsLength int
 	}{
-		// search by hash
+		//	search by hash
 		{fmt.Sprintf("tx.hash = '%X'", hash), 1},
 		// search by hash (lower)
 		{fmt.Sprintf("tx.hash = '%x'", hash), 1},
@@ -91,6 +91,7 @@ func TestTxSearch(t *testing.T) {
 		// search by exact match (two keys)
 		{"account.number = 1 AND account.owner = 'Ivan'", 0},
 		{"account.owner = 'Ivan' AND account.number = 1", 0},
+		{"account.owner = '/Ivan/'", 1},
 		// search by exact match (two keys)
 		{"account.number = 1 AND account.owner = 'Vlad'", 0},
 		{"account.owner = 'Vlad' AND account.number = 1", 0},
@@ -119,7 +120,7 @@ func TestTxSearch(t *testing.T) {
 		{"account.date >= TIME 2013-05-03T14:45:00Z", 0},
 		// search using CONTAINS
 		{"account.owner CONTAINS 'an'", 1},
-		// search for non existing value using CONTAINS
+		//	search for non existing value using CONTAINS
 		{"account.owner CONTAINS 'Vlad'", 0},
 		{"account.owner CONTAINS 'Ivann'", 0},
 		{"account.owner CONTAINS 'IIvan'", 0},
@@ -159,7 +160,7 @@ func TestTxSearchEventMatch(t *testing.T) {
 
 	txResult := txResultWithEvents([]abci.Event{
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: "1", Index: true}, {Key: "owner", Value: "Ana", Index: true}}},
-		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: "2", Index: true}, {Key: "owner", Value: "Ivan", Index: true}}},
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: "2", Index: true}, {Key: "owner", Value: "/Ivan/.test", Index: true}}},
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: "3", Index: false}, {Key: "owner", Value: "Mickey", Index: false}}},
 		{Type: "", Attributes: []abci.EventAttribute{{Key: "not_allowed", Value: "Vlad", Index: true}}},
 	})
@@ -216,11 +217,19 @@ func TestTxSearchEventMatch(t *testing.T) {
 			resultsLength: 0,
 		},
 		" Match range with match events": {
-			q:             "account.number < 2 AND account.owner = 'Ivan'",
+			q:             "account.number < 2 AND account.owner = '/Ivan/.test'",
 			resultsLength: 0,
 		},
 		" Match range with match events 2": {
-			q:             "account.number <= 2 AND account.owner = 'Ivan' AND tx.height > 0",
+			q:             "account.number <= 2 AND account.owner = '/Ivan/.test' AND tx.height > 0",
+			resultsLength: 1,
+		},
+		" Match range with match events contains with multiple items": {
+			q:             "account.number <= 2 AND account.owner CONTAINS '/Iv' AND account.owner CONTAINS 'an' AND tx.height = 1",
+			resultsLength: 1,
+		},
+		" Match range with match events contains": {
+			q:             "account.number <= 2 AND account.owner CONTAINS 'an' AND tx.height > 0",
 			resultsLength: 1,
 		},
 	}

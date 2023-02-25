@@ -65,6 +65,9 @@ services:
     ports:
     - 26656
     - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657
+{{- if .PrometheusProxyPort }}
+    - {{ .PrometheusProxyPort }}:26660
+{{- end }}
     - 6060
     volumes:
     - ./{{ .Name }}:/cometbft
@@ -86,6 +89,9 @@ services:
     ports:
     - 26656
     - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657
+{{- if .PrometheusProxyPort }}
+    - {{ .PrometheusProxyPort }}:26660
+{{- end }}
     - 6060
     volumes:
     - ./{{ .Name }}:/cometbft

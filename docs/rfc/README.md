@@ -66,6 +66,7 @@ therefore they have links to it and refer to CometBFT as "Tendermint" or "Tender
 - [RFC-023: Semi-permanent Testnet](./rfc-023-semi-permanent-testnet.md)
 - [RFC-024: Block Structure Consolidation](./rfc-024-block-structure-consolidation.md)
 - [RFC-025: Application Defined Transaction Storage](./rfc-025-support-app-side-mempool.md)
+- [RFC-026: Banning peers based on ResponseCheckTx](./rfc-026-p2p-bad-peers-checktx.md)
 - [RFC-027: P2P Message Bandwidth Report](./rfc-027-p2p-message-bandwidth-report.md)
 
 <!-- - [RFC-NNN: Title](./rfc-NNN-title.md) -->

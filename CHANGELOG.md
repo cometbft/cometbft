@@ -1,18 +1,49 @@
 # CHANGELOG
 
-## Unreleased
+## v0.34.27
+
+*Feb 27, 2023*
+
+This is the first official release of CometBFT - a fork of [Tendermint
+Core](https://github.com/tendermint/tendermint). This particular release is
+intended to be compatible with the Tendermint Core v0.34 release series.
+
+For details as to how to upgrade to CometBFT from Tendermint Core, please see
+our [upgrading guidelines](./UPGRADING.md).
+
+If you have any questions, comments, concerns or feedback on this release, we
+would love to hear from you! Please contact us via [GitHub
+Discussions](https://github.com/cometbft/cometbft/discussions),
+[Discord](https://discord.gg/cosmosnetwork) (in the `#cometbft` channel) or
+[Telegram](https://t.me/CometBFT).
+
+Special thanks to @wcsiu, @ze97286, @faddat and @JayT106 for their contributions
+to this release!
 
 ### BREAKING CHANGES
 
 - Rename binary to `cometbft` and Docker image to `cometbft/cometbft`
   ([\#152](https://github.com/cometbft/cometbft/pull/152))
-- The `TMHOME` environment variable was renamed to `CMTHOME`, and all environment variables starting with `TM_` are instead prefixed with `CMT_`
+- The `TMHOME` environment variable was renamed to `CMTHOME`, and all
+  environment variables starting with `TM_` are instead prefixed with `CMT_`
   ([\#211](https://github.com/cometbft/cometbft/issues/211))
+- Use Go 1.19 to build CometBFT, since Go 1.18 has reached end-of-life.
+  ([\#360](https://github.com/cometbft/cometbft/issues/360))
 
 ### BUG FIXES
 
-- `[consensus]` Fixed a busy loop that happened when sending of a block part failed by sleeping in case of error.
+- `[consensus]` Fixed a busy loop that happened when sending of a block part
+  failed by sleeping in case of error.
   ([\#4](https://github.com/informalsystems/tendermint/pull/4))
+- `[state/kvindexer]` Resolved crashes when event values contained slashes,
+  introduced after adding event sequences.
+  (\#[383](https://github.com/cometbft/cometbft/pull/383): @jmalicevic)
+- `[consensus]` Short-term fix for the case when `needProofBlock` cannot find
+  previous block meta by defaulting to the creation of a new proof block.
+  ([\#386](https://github.com/cometbft/cometbft/pull/386): @adizere)
+  - Special thanks to the [Vega.xyz](https://vega.xyz/) team, and in particular
+    to Zohar (@ze97286), for reporting the problem and working with us to get to
+    a fix.
 - `[p2p]` Correctly use non-blocking `TrySendEnvelope` method when attempting to
   send messages, as opposed to the blocking `SendEnvelope` method. It is unclear
   whether this has a meaningful impact on P2P performance, but this patch does

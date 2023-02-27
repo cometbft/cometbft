@@ -19,8 +19,9 @@ import (
 )
 
 const (
-	randomSeed     int64  = 2308084734268
-	proxyPortFirst uint32 = 5701
+	randomSeed               int64  = 2308084734268
+	proxyPortFirst           uint32 = 5701
+	prometheusProxyPortFirst uint32 = 6701
 
 	defaultBatchSize   = 2
 	defaultConnections = 1
@@ -78,34 +79,35 @@ type Testnet struct {
 	ProcessProposalDelay time.Duration
 	CheckTxDelay         time.Duration
 	UpgradeVersion       string
+	Prometheus           bool
 }
 
 // Node represents a CometBFT node in a testnet.
 type Node struct {
-	Name             string
-	Version          string
-	Testnet          *Testnet
-	Mode             Mode
-	PrivvalKey       crypto.PrivKey
-	NodeKey          crypto.PrivKey
-	IP               net.IP
-	ProxyPort        uint32
-	StartAt          int64
-	BlockSync        string
-	StateSync        bool
-	Mempool          string
-	Database         string
-	ABCIProtocol     Protocol
-	PrivvalProtocol  Protocol
-	PersistInterval  uint64
-	SnapshotInterval uint64
-	RetainBlocks     uint64
-	Seeds            []*Node
-	PersistentPeers  []*Node
-	Perturbations    []Perturbation
-
-	// SendNoLoad determines if the e2e test should send load to this node.
-	SendNoLoad bool
+	Name                string
+	Version             string
+	Testnet             *Testnet
+	Mode                Mode
+	PrivvalKey          crypto.PrivKey
+	NodeKey             crypto.PrivKey
+	IP                  net.IP
+	ProxyPort           uint32
+	StartAt             int64
+	BlockSync           string
+	StateSync           bool
+	Mempool             string
+	Database            string
+	ABCIProtocol        Protocol
+	PrivvalProtocol     Protocol
+	PersistInterval     uint64
+	SnapshotInterval    uint64
+	RetainBlocks        uint64
+	Seeds               []*Node
+	PersistentPeers     []*Node
+	Perturbations       []Perturbation
+	SendNoLoad          bool
+	Prometheus          bool
+	PrometheusProxyPort uint32
 }
 
 // LoadTestnet loads a testnet from a manifest file, using the filename to
@@ -117,6 +119,7 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 	dir := strings.TrimSuffix(fname, filepath.Ext(fname))
 	keyGen := newKeyGenerator(randomSeed)
 	proxyPortGen := newPortGenerator(proxyPortFirst)
+	prometheusProxyPortGen := newPortGenerator(prometheusProxyPortFirst)
 	_, ipNet, err := net.ParseCIDR(ifd.Network)
 	if err != nil {
 		return nil, fmt.Errorf("invalid IP network address %q: %w", ifd.Network, err)
@@ -141,6 +144,7 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 		ProcessProposalDelay: manifest.ProcessProposalDelay,
 		CheckTxDelay:         manifest.CheckTxDelay,
 		UpgradeVersion:       manifest.UpgradeVersion,
+		Prometheus:           manifest.Prometheus,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
@@ -203,6 +207,7 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 			RetainBlocks:     nodeManifest.RetainBlocks,
 			Perturbations:    []Perturbation{},
 			SendNoLoad:       nodeManifest.SendNoLoad,
+			Prometheus:       testnet.Prometheus,
 		}
 		if node.StartAt == testnet.InitialHeight {
 			node.StartAt = 0 // normalize to 0 for initial nodes, since code expects this
@@ -221,6 +226,9 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 		}
 		if nodeManifest.PersistInterval != nil {
 			node.PersistInterval = *nodeManifest.PersistInterval
+		}
+		if node.Prometheus {
+			node.PrometheusProxyPort = prometheusProxyPortGen.Next()
 		}
 		for _, p := range nodeManifest.Perturb {
 			node.Perturbations = append(node.Perturbations, Perturbation(p))
@@ -328,13 +336,22 @@ func (n Node) Validate(testnet Testnet) error {
 	if !testnet.IP.Contains(n.IP) {
 		return fmt.Errorf("node IP %v is not in testnet network %v", n.IP, testnet.IP)
 	}
-	if n.ProxyPort > 0 {
-		if n.ProxyPort <= 1024 {
-			return fmt.Errorf("local port %v must be >1024", n.ProxyPort)
+	if n.ProxyPort == n.PrometheusProxyPort {
+		return fmt.Errorf("node local port %v used also for Prometheus local port", n.ProxyPort)
+	}
+	if n.ProxyPort > 0 && n.ProxyPort <= 1024 {
+		return fmt.Errorf("local port %v must be >1024", n.ProxyPort)
+	}
+	if n.PrometheusProxyPort > 0 && n.PrometheusProxyPort <= 1024 {
+		return fmt.Errorf("local port %v must be >1024", n.PrometheusProxyPort)
+	}
+	for _, peer := range testnet.Nodes {
+		if peer.Name != n.Name && peer.ProxyPort == n.ProxyPort {
+			return fmt.Errorf("peer %q also has local port %v", peer.Name, n.ProxyPort)
 		}
-		for _, peer := range testnet.Nodes {
-			if peer.Name != n.Name && peer.ProxyPort == n.ProxyPort {
-				return fmt.Errorf("peer %q also has local port %v", peer.Name, n.ProxyPort)
+		if n.PrometheusProxyPort > 0 {
+			if peer.Name != n.Name && peer.PrometheusProxyPort == n.PrometheusProxyPort {
+				return fmt.Errorf("peer %q also has local port %v", peer.Name, n.PrometheusProxyPort)
 			}
 		}
 	}

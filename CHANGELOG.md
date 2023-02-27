@@ -55,6 +55,7 @@
 - `[consensus]` Fixed a busy loop that happened when sending of a block part failed by sleeping in case of error.
   ([\#4](https://github.com/informalsystems/tendermint/pull/4))
 - `[state/kvindexer]` \#77 Fixed the default behaviour of the kvindexer to index and query attributes by events in which they occur. In 0.34.25 this was mitigated by a separated RPC flag.  (@jmalicevic)
+- `[state/kvindexer]` \#382 Resolved crashes when event values contained slashes, introduced after adding event sequences in \#77.  (@jmalicevic)
 - `[docker]` enable cross platform build using docker buildx
   ([\#9073](https://github.com/tendermint/tendermint/pull/9073))
 - `[consensus]` fix round number of `enterPropose`

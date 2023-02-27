@@ -8,16 +8,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/internal/test"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	tmstate "github.com/tendermint/tendermint/proto/tendermint/state"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/internal/test"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/types"
 )
 
 func TestStoreLoadValidators(t *testing.T) {
@@ -102,10 +102,18 @@ func TestPruneStates(t *testing.T) {
 		"error when from == to":        {100, 3, 3, 3, true, nil, nil, nil},
 		"error when to does not exist": {100, 1, 101, 101, true, nil, nil, nil},
 		"prune all":                    {100, 1, 100, 100, false, []int64{93, 100}, []int64{95, 100}, []int64{100}},
-		"prune some": {10, 2, 8, 8, false, []int64{1, 3, 8, 9, 10},
-			[]int64{1, 5, 8, 9, 10}, []int64{1, 8, 9, 10}},
-		"prune across checkpoint": {100001, 1, 100001, 100001, false, []int64{99993, 100000, 100001},
-			[]int64{99995, 100001}, []int64{100001}},
+		"prune some": {
+			10, 2, 8, 8, false,
+			[]int64{1, 3, 8, 9, 10},
+			[]int64{1, 5, 8, 9, 10},
+			[]int64{1, 8, 9, 10},
+		},
+		"prune across checkpoint": {
+			100001, 1, 100001, 100001, false,
+			[]int64{99993, 100000, 100001},
+			[]int64{99995, 100001},
+			[]int64{100001},
+		},
 		"prune when evidence height < height": {20, 1, 18, 17, false, []int64{13, 17, 18, 19, 20}, []int64{15, 18, 19, 20}, []int64{18, 19, 20}},
 	}
 	for name, tc := range testcases {
@@ -119,7 +127,7 @@ func TestPruneStates(t *testing.T) {
 
 			// Generate a bunch of state data. Validators change for heights ending with 3, and
 			// parameters when ending with 5.
-			validator := &types.Validator{Address: tmrand.Bytes(crypto.AddressSize), VotingPower: 100, PubKey: pk}
+			validator := &types.Validator{Address: cmtrand.Bytes(crypto.AddressSize), VotingPower: 100, PubKey: pk}
 			validatorSet := &types.ValidatorSet{
 				Validators: []*types.Validator{validator},
 				Proposer:   validator,
@@ -296,7 +304,6 @@ func TestLastFinalizeBlockResponses(t *testing.T) {
 		_, err = stateStore.LoadFinalizeBlockResponse(height + 1)
 		assert.Equal(t, sm.ErrFinalizeBlockResponsesNotPersisted, err)
 	})
-
 }
 
 func TestFinalizeBlockRecoveryUsingLegacyABCIResponses(t *testing.T) {
@@ -305,9 +312,9 @@ func TestFinalizeBlockRecoveryUsingLegacyABCIResponses(t *testing.T) {
 		lastABCIResponseKey       = []byte("lastABCIResponseKey")
 		memDB                     = dbm.NewMemDB()
 		cp                        = types.DefaultConsensusParams().ToProto()
-		legacyResp                = tmstate.ABCIResponsesInfo{
-			LegacyAbciResponses: &tmstate.LegacyABCIResponses{
-				BeginBlock: &tmstate.ResponseBeginBlock{
+		legacyResp                = cmtstate.ABCIResponsesInfo{
+			LegacyAbciResponses: &cmtstate.LegacyABCIResponses{
+				BeginBlock: &cmtstate.ResponseBeginBlock{
 					Events: []abci.Event{{
 						Type: "begin_block",
 						Attributes: []abci.EventAttribute{{
@@ -325,7 +332,7 @@ func TestFinalizeBlockRecoveryUsingLegacyABCIResponses(t *testing.T) {
 						}},
 					}},
 				}},
-				EndBlock: &tmstate.ResponseEndBlock{
+				EndBlock: &cmtstate.ResponseEndBlock{
 					ConsensusParamUpdates: &cp,
 				},
 			},

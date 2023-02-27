@@ -12,11 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	abcicli "github.com/tendermint/tendermint/abci/client"
-	"github.com/tendermint/tendermint/abci/server"
-	"github.com/tendermint/tendermint/abci/types"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/libs/service"
+	abcicli "github.com/cometbft/cometbft/abci/client"
+	"github.com/cometbft/cometbft/abci/server"
+	"github.com/cometbft/cometbft/abci/types"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/libs/service"
 )
 
 func TestCalls(t *testing.T) {
@@ -126,7 +126,7 @@ func setupClientServer(t *testing.T, app types.Application) (
 	t.Helper()
 
 	// some port between 20k and 30k
-	port := 20000 + tmrand.Int32()%10000
+	port := 20000 + cmtrand.Int32()%10000
 	addr := fmt.Sprintf("localhost:%d", port)
 
 	s := server.NewSocketServer(addr, app)

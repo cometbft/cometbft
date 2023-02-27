@@ -7,17 +7,17 @@ import (
 	"testing"
 	"time"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/internal/test"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/proxy"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/internal/test"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/proxy"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 type paramsChangeTestCase struct {
@@ -38,7 +38,8 @@ func makeAndCommitGoodBlock(
 	proposerAddr []byte,
 	blockExec *sm.BlockExecutor,
 	privVals map[string]types.PrivValidator,
-	evidence []types.Evidence) (sm.State, types.BlockID, *types.ExtendedCommit, error) {
+	evidence []types.Evidence,
+) (sm.State, types.BlockID, *types.ExtendedCommit, error) {
 	// A good block passes
 	state, blockID, err := makeAndApplyGoodBlock(state, height, lastCommit, proposerAddr, blockExec, evidence)
 	if err != nil {
@@ -54,7 +55,8 @@ func makeAndCommitGoodBlock(
 }
 
 func makeAndApplyGoodBlock(state sm.State, height int64, lastCommit *types.Commit, proposerAddr []byte,
-	blockExec *sm.BlockExecutor, evidence []types.Evidence) (sm.State, types.BlockID, error) {
+	blockExec *sm.BlockExecutor, evidence []types.Evidence,
+) (sm.State, types.BlockID, error) {
 	block := state.MakeBlock(height, test.MakeNTxs(height, 10), lastCommit, evidence, proposerAddr)
 	partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
 	if err != nil {
@@ -64,8 +66,10 @@ func makeAndApplyGoodBlock(state sm.State, height int64, lastCommit *types.Commi
 	if err := blockExec.ValidateBlock(state, block); err != nil {
 		return state, types.BlockID{}, err
 	}
-	blockID := types.BlockID{Hash: block.Hash(),
-		PartSetHeader: partSet.Header()}
+	blockID := types.BlockID{
+		Hash:          block.Hash(),
+		PartSetHeader: partSet.Header(),
+	}
 	state, err = blockExec.ApplyBlock(state, blockID, block)
 	if err != nil {
 		return state, types.BlockID{}, err
@@ -99,7 +103,7 @@ func makeValidCommit(
 			int32(i),
 			height,
 			0,
-			tmproto.PrecommitType,
+			cmtproto.PrecommitType,
 			blockID,
 			time.Now(),
 		)
@@ -169,7 +173,6 @@ func makeHeaderPartsResponsesValPubKeyChange(
 	state sm.State,
 	pubkey crypto.PubKey,
 ) (types.Header, types.BlockID, *abci.ResponseFinalizeBlock) {
-
 	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
 	abciResponses := &abci.ResponseFinalizeBlock{}
 	// If the pubkey is new, remove the old and add the new.
@@ -189,7 +192,6 @@ func makeHeaderPartsResponsesValPowerChange(
 	state sm.State,
 	power int64,
 ) (types.Header, types.BlockID, *abci.ResponseFinalizeBlock) {
-
 	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
 	abciResponses := &abci.ResponseFinalizeBlock{}
 
@@ -207,9 +209,8 @@ func makeHeaderPartsResponsesValPowerChange(
 func makeHeaderPartsResponsesParams(
 	t *testing.T,
 	state sm.State,
-	params tmproto.ConsensusParams,
+	params cmtproto.ConsensusParams,
 ) (types.Header, types.BlockID, *abci.ResponseFinalizeBlock) {
-
 	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
 	abciResponses := &abci.ResponseFinalizeBlock{
 		ConsensusParamUpdates: &params,
@@ -220,7 +221,7 @@ func makeHeaderPartsResponsesParams(
 func randomGenesisDoc() *types.GenesisDoc {
 	pubkey := ed25519.GenPrivKey().PubKey()
 	return &types.GenesisDoc{
-		GenesisTime: tmtime.Now(),
+		GenesisTime: cmttime.Now(),
 		ChainID:     "abc",
 		Validators: []types.GenesisValidator{
 			{
@@ -259,9 +260,11 @@ func (app *testApp) FinalizeBlock(_ context.Context, req *abci.RequestFinalizeBl
 
 	return &abci.ResponseFinalizeBlock{
 		ValidatorUpdates: app.ValidatorUpdates,
-		ConsensusParamUpdates: &tmproto.ConsensusParams{
-			Version: &tmproto.VersionParams{
-				App: 1}},
+		ConsensusParamUpdates: &cmtproto.ConsensusParams{
+			Version: &cmtproto.VersionParams{
+				App: 1,
+			},
+		},
 		TxResults:     txResults,
 		AgreedAppData: app.AgreedAppData,
 	}, nil

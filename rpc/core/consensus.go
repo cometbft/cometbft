@@ -1,11 +1,11 @@
 package core
 
 import (
-	cm "github.com/tendermint/tendermint/consensus"
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	rpctypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
-	"github.com/tendermint/tendermint/types"
+	cm "github.com/cometbft/cometbft/consensus"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 // Validators gets the validator set at the given block height.
@@ -14,7 +14,7 @@ import (
 // validators are sorted by their voting power - this is the canonical order
 // for the validators in the set as used in computing their Merkle root.
 //
-// More: https://docs.tendermint.com/master/rpc/#/Info/validators
+// More: https://docs.cometbft.com/main/rpc/#/Info/validators
 func (env *Environment) Validators(
 	ctx *rpctypes.Context,
 	heightPtr *int64,
@@ -40,7 +40,7 @@ func (env *Environment) Validators(
 
 	skipCount := validateSkipCount(page, perPage)
 
-	v := validators.Validators[skipCount : skipCount+tmmath.MinInt(perPage, totalCount-skipCount)]
+	v := validators.Validators[skipCount : skipCount+cmtmath.MinInt(perPage, totalCount-skipCount)]
 
 	return &ctypes.ResultValidators{
 		BlockHeight: height,
@@ -51,7 +51,7 @@ func (env *Environment) Validators(
 
 // DumpConsensusState dumps consensus state.
 // UNSTABLE
-// More: https://docs.tendermint.com/master/rpc/#/Info/dump_consensus_state
+// More: https://docs.cometbft.com/main/rpc/#/Info/dump_consensus_state
 func (env *Environment) DumpConsensusState(ctx *rpctypes.Context) (*ctypes.ResultDumpConsensusState, error) {
 	// Get Peer consensus states.
 	peers := env.P2PPeers.Peers().List()
@@ -84,7 +84,7 @@ func (env *Environment) DumpConsensusState(ctx *rpctypes.Context) (*ctypes.Resul
 
 // ConsensusState returns a concise summary of the consensus state.
 // UNSTABLE
-// More: https://docs.tendermint.com/master/rpc/#/Info/consensus_state
+// More: https://docs.cometbft.com/main/rpc/#/Info/consensus_state
 func (env *Environment) GetConsensusState(ctx *rpctypes.Context) (*ctypes.ResultConsensusState, error) {
 	// Get self round state.
 	bz, err := env.ConsensusState.GetRoundStateSimpleJSON()
@@ -93,7 +93,7 @@ func (env *Environment) GetConsensusState(ctx *rpctypes.Context) (*ctypes.Result
 
 // ConsensusParams gets the consensus parameters at the given block height.
 // If no height is provided, it will fetch the latest consensus params.
-// More: https://docs.tendermint.com/master/rpc/#/Info/consensus_params
+// More: https://docs.cometbft.com/main/rpc/#/Info/consensus_params
 func (env *Environment) ConsensusParams(
 	ctx *rpctypes.Context,
 	heightPtr *int64) (*ctypes.ResultConsensusParams, error) {

@@ -10,9 +10,9 @@ import (
 	"github.com/oasisprotocol/curve25519-voi/primitives/ed25519"
 	"github.com/oasisprotocol/curve25519-voi/primitives/ed25519/extra/cache"
 
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmjson "github.com/tendermint/tendermint/libs/json"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
 )
 
 //-------------------------------------
@@ -22,7 +22,7 @@ var (
 	_ crypto.BatchVerifier = &BatchVerifier{}
 
 	// curve25519-voi's Ed25519 implementation supports configurable
-	// verification behavior, and tendermint uses the ZIP-215 verification
+	// verification behavior, and CometBFT uses the ZIP-215 verification
 	// semantics.
 	verifyOptions = &ed25519.Options{
 		Verify: ed25519.VerifyOptionsZIP_215,
@@ -57,8 +57,8 @@ const (
 )
 
 func init() {
-	tmjson.RegisterType(PubKey{}, PubKeyName)
-	tmjson.RegisterType(PrivKey{}, PrivKeyName)
+	cmtjson.RegisterType(PubKey{}, PubKeyName)
+	cmtjson.RegisterType(PrivKey{}, PrivKeyName)
 }
 
 // PrivKey implements crypto.PrivKey.
@@ -120,7 +120,7 @@ func (privKey PrivKey) Type() string {
 
 // GenPrivKey generates a new ed25519 private key.
 // It uses OS randomness in conjunction with the current global random seed
-// in tendermint/libs/common to generate the private key.
+// in cometbft/libs/rand to generate the private key.
 func GenPrivKey() PrivKey {
 	return genPrivKey(crypto.CReader())
 }

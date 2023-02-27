@@ -5,14 +5,15 @@ import (
 	"fmt"
 
 	"github.com/cosmos/gogoproto/proto"
-	dbm "github.com/tendermint/tm-db"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	tmos "github.com/tendermint/tendermint/libs/os"
-	tmstate "github.com/tendermint/tendermint/proto/tendermint/state"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/types"
+	dbm "github.com/cometbft/cometbft-db"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtos "github.com/cometbft/cometbft/libs/os"
+	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -76,7 +77,7 @@ type Store interface {
 	Close() error
 }
 
-// dbStore wraps a db (github.com/tendermint/tm-db)
+// dbStore wraps a db (github.com/cometbft/cometbft-db)
 type dbStore struct {
 	db dbm.DB
 
@@ -149,12 +150,12 @@ func (store dbStore) loadState(key []byte) (state State, err error) {
 		return state, nil
 	}
 
-	sp := new(tmstate.State)
+	sp := new(cmtstate.State)
 
 	err = proto.Unmarshal(buf, sp)
 	if err != nil {
 		// DATA HAS BEEN CORRUPTED OR THE SPEC HAS CHANGED
-		tmos.Exit(fmt.Sprintf(`LoadState: Data has been corrupted or its spec has changed:
+		cmtos.Exit(fmt.Sprintf(`LoadState: Data has been corrupted or its spec has changed:
 		%v\n`, err))
 	}
 
@@ -176,7 +177,7 @@ func (store dbStore) save(state State, key []byte) error {
 	// If first block, save validators for the block.
 	if nextHeight == 1 {
 		nextHeight = state.InitialHeight
-		// This extra logic due to Tendermint validator set changes being delayed 1 block.
+		// This extra logic due to validator set changes being delayed 1 block.
 		// It may get overwritten due to InitChain validator updates.
 		if err := store.saveValidatorsInfo(nextHeight, nextHeight, state.Validators); err != nil {
 			return err
@@ -260,7 +261,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 		keepVals[lastStoredHeightFor(to, valInfo.LastHeightChanged)] = true // keep last checkpoint too
 	}
 	keepParams := make(map[int64]bool)
-	if paramsInfo.ConsensusParams.Equal(&tmproto.ConsensusParams{}) {
+	if paramsInfo.ConsensusParams.Equal(&cmtproto.ConsensusParams{}) {
 		keepParams[paramsInfo.LastHeightChanged] = true
 	}
 
@@ -314,7 +315,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 				return err
 			}
 
-			if p.ConsensusParams.Equal(&tmproto.ConsensusParams{}) {
+			if p.ConsensusParams.Equal(&cmtproto.ConsensusParams{}) {
 				params, err := store.LoadConsensusParams(h)
 				if err != nil {
 					return err
@@ -396,11 +397,11 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.ResponseFina
 	if err != nil {
 		// The data might be of the legacy ABCI response type, so
 		// we try to unmarshal that
-		legacyResp := new(tmstate.LegacyABCIResponses)
+		legacyResp := new(cmtstate.LegacyABCIResponses)
 		rerr := legacyResp.Unmarshal(buf)
 		if rerr != nil {
 			// DATA HAS BEEN CORRUPTED OR THE SPEC HAS CHANGED
-			tmos.Exit(fmt.Sprintf(`LoadFinalizeBlockResponse: Data has been corrupted or its spec has
+			cmtos.Exit(fmt.Sprintf(`LoadFinalizeBlockResponse: Data has been corrupted or its spec has
 					changed: %v\n`, err))
 		}
 		// The state store contains the old format. Migrate to
@@ -430,10 +431,10 @@ func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.Response
 		return nil, errors.New("no last ABCI response has been persisted")
 	}
 
-	info := new(tmstate.ABCIResponsesInfo)
+	info := new(cmtstate.ABCIResponsesInfo)
 	err = info.Unmarshal(bz)
 	if err != nil {
-		tmos.Exit(fmt.Sprintf(`LoadLastFinalizeBlockResponse: Data has been corrupted or its spec has
+		cmtos.Exit(fmt.Sprintf(`LoadLastFinalizeBlockResponse: Data has been corrupted or its spec has
 			changed: %v\n`, err))
 	}
 
@@ -486,7 +487,7 @@ func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.Response
 
 	// We always save the last ABCI response for crash recovery.
 	// This overwrites the previous saved ABCI Response.
-	response := &tmstate.ABCIResponsesInfo{
+	response := &cmtstate.ABCIResponsesInfo{
 		ResponseFinalizeBlock: resp,
 		Height:                height,
 	}
@@ -524,7 +525,7 @@ func (store dbStore) LoadValidators(height int64) (*types.ValidatorSet, error) {
 			return nil, err
 		}
 
-		vs.IncrementProposerPriority(tmmath.SafeConvertInt32(height - lastStoredHeight)) // mutate
+		vs.IncrementProposerPriority(cmtmath.SafeConvertInt32(height - lastStoredHeight)) // mutate
 		vi2, err := vs.ToProto()
 		if err != nil {
 			return nil, err
@@ -544,11 +545,11 @@ func (store dbStore) LoadValidators(height int64) (*types.ValidatorSet, error) {
 
 func lastStoredHeightFor(height, lastHeightChanged int64) int64 {
 	checkpointHeight := height - height%valSetCheckpointInterval
-	return tmmath.MaxInt64(checkpointHeight, lastHeightChanged)
+	return cmtmath.MaxInt64(checkpointHeight, lastHeightChanged)
 }
 
 // CONTRACT: Returned ValidatorsInfo can be mutated.
-func loadValidatorsInfo(db dbm.DB, height int64) (*tmstate.ValidatorsInfo, error) {
+func loadValidatorsInfo(db dbm.DB, height int64) (*cmtstate.ValidatorsInfo, error) {
 	buf, err := db.Get(calcValidatorsKey(height))
 	if err != nil {
 		return nil, err
@@ -558,11 +559,11 @@ func loadValidatorsInfo(db dbm.DB, height int64) (*tmstate.ValidatorsInfo, error
 		return nil, errors.New("value retrieved from db is empty")
 	}
 
-	v := new(tmstate.ValidatorsInfo)
+	v := new(cmtstate.ValidatorsInfo)
 	err = v.Unmarshal(buf)
 	if err != nil {
 		// DATA HAS BEEN CORRUPTED OR THE SPEC HAS CHANGED
-		tmos.Exit(fmt.Sprintf(`LoadValidators: Data has been corrupted or its spec has changed:
+		cmtos.Exit(fmt.Sprintf(`LoadValidators: Data has been corrupted or its spec has changed:
         %v\n`, err))
 	}
 	// TODO: ensure that buf is completely read.
@@ -579,7 +580,7 @@ func (store dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet 
 	if lastHeightChanged > height {
 		return errors.New("lastHeightChanged cannot be greater than ValidatorsInfo height")
 	}
-	valInfo := &tmstate.ValidatorsInfo{
+	valInfo := &cmtstate.ValidatorsInfo{
 		LastHeightChanged: lastHeightChanged,
 	}
 	// Only persist validator set if it was updated or checkpoint height (see
@@ -613,7 +614,7 @@ func (store dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet 
 func (store dbStore) LoadConsensusParams(height int64) (types.ConsensusParams, error) {
 	var (
 		empty   = types.ConsensusParams{}
-		emptypb = tmproto.ConsensusParams{}
+		emptypb = cmtproto.ConsensusParams{}
 	)
 	paramsInfo, err := store.loadConsensusParamsInfo(height)
 	if err != nil {
@@ -637,7 +638,7 @@ func (store dbStore) LoadConsensusParams(height int64) (types.ConsensusParams, e
 	return types.ConsensusParamsFromProto(paramsInfo.ConsensusParams), nil
 }
 
-func (store dbStore) loadConsensusParamsInfo(height int64) (*tmstate.ConsensusParamsInfo, error) {
+func (store dbStore) loadConsensusParamsInfo(height int64) (*cmtstate.ConsensusParamsInfo, error) {
 	buf, err := store.db.Get(calcConsensusParamsKey(height))
 	if err != nil {
 		return nil, err
@@ -646,10 +647,10 @@ func (store dbStore) loadConsensusParamsInfo(height int64) (*tmstate.ConsensusPa
 		return nil, errors.New("value retrieved from db is empty")
 	}
 
-	paramsInfo := new(tmstate.ConsensusParamsInfo)
+	paramsInfo := new(cmtstate.ConsensusParamsInfo)
 	if err = paramsInfo.Unmarshal(buf); err != nil {
 		// DATA HAS BEEN CORRUPTED OR THE SPEC HAS CHANGED
-		tmos.Exit(fmt.Sprintf(`LoadConsensusParams: Data has been corrupted or its spec has changed:
+		cmtos.Exit(fmt.Sprintf(`LoadConsensusParams: Data has been corrupted or its spec has changed:
                 %v\n`, err))
 	}
 	// TODO: ensure that buf is completely read.
@@ -662,7 +663,7 @@ func (store dbStore) loadConsensusParamsInfo(height int64) (*tmstate.ConsensusPa
 // If the consensus params did not change after processing the latest block,
 // only the last height for which they changed is persisted.
 func (store dbStore) saveConsensusParamsInfo(nextHeight, changeHeight int64, params types.ConsensusParams) error {
-	paramsInfo := &tmstate.ConsensusParamsInfo{
+	paramsInfo := &cmtstate.ConsensusParamsInfo{
 		LastHeightChanged: changeHeight,
 	}
 
@@ -695,7 +696,7 @@ func min(a int64, b int64) int64 {
 
 // responseFinalizeBlockFromLegacy is a convenience function that takes the old abci responses and morphs
 // it to the finalize block response. Note that the agreed app data is missing
-func responseFinalizeBlockFromLegacy(legacyResp *tmstate.LegacyABCIResponses) *abci.ResponseFinalizeBlock {
+func responseFinalizeBlockFromLegacy(legacyResp *cmtstate.LegacyABCIResponses) *abci.ResponseFinalizeBlock {
 	return &abci.ResponseFinalizeBlock{
 		TxResults:             legacyResp.DeliverTxs,
 		ValidatorUpdates:      legacyResp.EndBlock.ValidatorUpdates,

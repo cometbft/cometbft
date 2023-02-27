@@ -10,13 +10,13 @@ import (
 	"strconv"
 	"strings"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	"github.com/tendermint/tendermint/abci/types"
-	cryptoencoding "github.com/tendermint/tendermint/crypto/encoding"
-	"github.com/tendermint/tendermint/libs/log"
-	cryptoproto "github.com/tendermint/tendermint/proto/tendermint/crypto"
-	"github.com/tendermint/tendermint/version"
+	"github.com/cometbft/cometbft/abci/types"
+	cryptoencoding "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/libs/log"
+	cryptoproto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	"github.com/cometbft/cometbft/version"
 )
 
 var (

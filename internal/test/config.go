@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/tendermint/tendermint/config"
-	tmos "github.com/tendermint/tendermint/libs/os"
+	"github.com/cometbft/cometbft/config"
+	cmtos "github.com/cometbft/cometbft/libs/os"
 )
 
 func ResetTestRoot(testName string) *config.Config {
@@ -27,16 +27,16 @@ func ResetTestRootWithChainID(testName string, chainID string) *config.Config {
 	privKeyFilePath := filepath.Join(rootDir, baseConfig.PrivValidatorKey)
 	privStateFilePath := filepath.Join(rootDir, baseConfig.PrivValidatorState)
 
-	if !tmos.FileExists(genesisFilePath) {
+	if !cmtos.FileExists(genesisFilePath) {
 		if chainID == "" {
 			chainID = DefaultTestChainID
 		}
 		testGenesis := fmt.Sprintf(testGenesisFmt, chainID)
-		tmos.MustWriteFile(genesisFilePath, []byte(testGenesis), 0644)
+		cmtos.MustWriteFile(genesisFilePath, []byte(testGenesis), 0644)
 	}
 	// we always overwrite the priv val
-	tmos.MustWriteFile(privKeyFilePath, []byte(testPrivValidatorKey), 0644)
-	tmos.MustWriteFile(privStateFilePath, []byte(testPrivValidatorState), 0644)
+	cmtos.MustWriteFile(privKeyFilePath, []byte(testPrivValidatorKey), 0644)
+	cmtos.MustWriteFile(privStateFilePath, []byte(testPrivValidatorState), 0644)
 
 	config := config.TestConfig().SetRoot(rootDir)
 	return config

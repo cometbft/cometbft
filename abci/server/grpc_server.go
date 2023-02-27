@@ -6,9 +6,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/tendermint/tendermint/abci/types"
-	tmnet "github.com/tendermint/tendermint/libs/net"
-	"github.com/tendermint/tendermint/libs/service"
+	"github.com/cometbft/cometbft/abci/types"
+	cmtnet "github.com/cometbft/cometbft/libs/net"
+	"github.com/cometbft/cometbft/libs/service"
 )
 
 type GRPCServer struct {
@@ -24,7 +24,7 @@ type GRPCServer struct {
 
 // NewGRPCServer returns a new gRPC ABCI server
 func NewGRPCServer(protoAddr string, app types.Application) service.Service {
-	proto, addr := tmnet.ProtocolAndAddress(protoAddr)
+	proto, addr := cmtnet.ProtocolAndAddress(protoAddr)
 	s := &GRPCServer{
 		proto:    proto,
 		addr:     addr,

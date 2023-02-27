@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 func MakeExtendedCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet, validators []types.PrivValidator, now time.Time) (*types.ExtendedCommit, error) {
@@ -21,7 +20,7 @@ func MakeExtendedCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet
 			ValidatorIndex:   int32(i),
 			Height:           voteSet.GetHeight(),
 			Round:            voteSet.GetRound(),
-			Type:             tmproto.PrecommitType,
+			Type:             cmtproto.PrecommitType,
 			BlockID:          blockID,
 			Timestamp:        now,
 		}
@@ -39,10 +38,6 @@ func MakeExtendedCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet
 	}
 
 	return voteSet.MakeExtendedCommit(), nil
-}
-
-func MakeVoteSet(lastState sm.State, round int32) *types.VoteSet {
-	return types.NewVoteSet(lastState.ChainID, lastState.LastBlockHeight+1, round, tmproto.PrecommitType, lastState.NextValidators)
 }
 
 func MakeCommit(blockID types.BlockID, height int64, round int32, valSet *types.ValidatorSet, privVals []types.PrivValidator, chainID string, now time.Time) (*types.Commit, error) {
@@ -68,7 +63,7 @@ func MakeCommit(blockID types.BlockID, height int64, round int32, valSet *types.
 			ValidatorIndex:   idx,
 			Height:           height,
 			Round:            round,
-			Type:             tmproto.PrecommitType,
+			Type:             cmtproto.PrecommitType,
 			BlockID:          blockID,
 			Timestamp:        now,
 		}

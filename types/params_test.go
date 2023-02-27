@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 var (
@@ -105,29 +105,29 @@ func TestConsensusParamsHash(t *testing.T) {
 func TestConsensusParamsUpdate(t *testing.T) {
 	testCases := []struct {
 		params        ConsensusParams
-		updates       *tmproto.ConsensusParams
+		updates       *cmtproto.ConsensusParams
 		updatedParams ConsensusParams
 	}{
 		// empty updates
 		{
 			makeParams(1, 2, 3, 0, valEd25519, 0),
-			&tmproto.ConsensusParams{},
+			&cmtproto.ConsensusParams{},
 			makeParams(1, 2, 3, 0, valEd25519, 0),
 		},
 		// fine updates
 		{
 			makeParams(1, 2, 3, 0, valEd25519, 0),
-			&tmproto.ConsensusParams{
-				Block: &tmproto.BlockParams{
+			&cmtproto.ConsensusParams{
+				Block: &cmtproto.BlockParams{
 					MaxBytes: 100,
 					MaxGas:   200,
 				},
-				Evidence: &tmproto.EvidenceParams{
+				Evidence: &cmtproto.EvidenceParams{
 					MaxAgeNumBlocks: 300,
 					MaxAgeDuration:  time.Duration(300),
 					MaxBytes:        50,
 				},
-				Validator: &tmproto.ValidatorParams{
+				Validator: &cmtproto.ValidatorParams{
 					PubKeyTypes: valSecp256k1,
 				},
 			},
@@ -146,7 +146,7 @@ func TestConsensusParamsUpdate_AppVersion(t *testing.T) {
 	assert.EqualValues(t, 0, params.Version.App)
 
 	updated := params.Update(
-		&tmproto.ConsensusParams{Version: &tmproto.VersionParams{App: 1}})
+		&cmtproto.ConsensusParams{Version: &cmtproto.VersionParams{App: 1}})
 
 	assert.EqualValues(t, 1, updated.Version.App)
 }
@@ -154,8 +154,8 @@ func TestConsensusParamsUpdate_AppVersion(t *testing.T) {
 func TestConsensusParamsUpdate_VoteExtensionsEnableHeight(t *testing.T) {
 	t.Run("set to height but initial height already run", func(*testing.T) {
 		initialParams := makeParams(1, 0, 2, 0, valEd25519, 1)
-		update := &tmproto.ConsensusParams{
-			Abci: &tmproto.ABCIParams{
+		update := &cmtproto.ConsensusParams{
+			Abci: &cmtproto.ABCIParams{
 				VoteExtensionsEnableHeight: 10,
 			},
 		}
@@ -164,8 +164,8 @@ func TestConsensusParamsUpdate_VoteExtensionsEnableHeight(t *testing.T) {
 	})
 	t.Run("reset to 0", func(t *testing.T) {
 		initialParams := makeParams(1, 0, 2, 0, valEd25519, 1)
-		update := &tmproto.ConsensusParams{
-			Abci: &tmproto.ABCIParams{
+		update := &cmtproto.ConsensusParams{
+			Abci: &cmtproto.ABCIParams{
 				VoteExtensionsEnableHeight: 0,
 			},
 		}
@@ -173,8 +173,8 @@ func TestConsensusParamsUpdate_VoteExtensionsEnableHeight(t *testing.T) {
 	})
 	t.Run("set to height before current height run", func(*testing.T) {
 		initialParams := makeParams(1, 0, 2, 0, valEd25519, 100)
-		update := &tmproto.ConsensusParams{
-			Abci: &tmproto.ABCIParams{
+		update := &cmtproto.ConsensusParams{
+			Abci: &cmtproto.ABCIParams{
 				VoteExtensionsEnableHeight: 10,
 			},
 		}
@@ -183,8 +183,8 @@ func TestConsensusParamsUpdate_VoteExtensionsEnableHeight(t *testing.T) {
 	})
 	t.Run("set to height after current height run", func(*testing.T) {
 		initialParams := makeParams(1, 0, 2, 0, valEd25519, 300)
-		update := &tmproto.ConsensusParams{
-			Abci: &tmproto.ABCIParams{
+		update := &cmtproto.ConsensusParams{
+			Abci: &cmtproto.ABCIParams{
 				VoteExtensionsEnableHeight: 99,
 			},
 		}
@@ -193,8 +193,8 @@ func TestConsensusParamsUpdate_VoteExtensionsEnableHeight(t *testing.T) {
 	})
 	t.Run("no error when unchanged", func(*testing.T) {
 		initialParams := makeParams(1, 0, 2, 0, valEd25519, 100)
-		update := &tmproto.ConsensusParams{
-			Abci: &tmproto.ABCIParams{
+		update := &cmtproto.ConsensusParams{
+			Abci: &cmtproto.ABCIParams{
 				VoteExtensionsEnableHeight: 100,
 			},
 		}
@@ -202,8 +202,8 @@ func TestConsensusParamsUpdate_VoteExtensionsEnableHeight(t *testing.T) {
 	})
 	t.Run("updated from 0 to 0", func(t *testing.T) {
 		initialParams := makeParams(1, 0, 2, 0, valEd25519, 0)
-		update := &tmproto.ConsensusParams{
-			Abci: &tmproto.ABCIParams{
+		update := &cmtproto.ConsensusParams{
+			Abci: &cmtproto.ABCIParams{
 				VoteExtensionsEnableHeight: 0,
 			},
 		}

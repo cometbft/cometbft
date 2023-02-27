@@ -6,17 +6,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/tendermint/tendermint/abci/types"
-	cryptoencoding "github.com/tendermint/tendermint/crypto/encoding"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/proto/tendermint/crypto"
+	"github.com/cometbft/cometbft/abci/types"
+	cryptoencoding "github.com/cometbft/cometbft/crypto/encoding"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 )
 
 // RandVal creates one random validator, with a key derived
 // from the input value
 func RandVal(i int) types.ValidatorUpdate {
-	pubkey := tmrand.Bytes(32)
-	power := tmrand.Uint16() + 1
+	pubkey := cmtrand.Bytes(32)
+	power := cmtrand.Uint16() + 1
 	v := types.UpdateValidator(pubkey, int64(power), "")
 	return v
 }
@@ -52,7 +52,7 @@ func NewRandomTx(size int) []byte {
 	if size < 4 {
 		panic("random tx size must be greater than 3")
 	}
-	return NewTx(tmrand.Str(2), tmrand.Str(size-3))
+	return NewTx(cmtrand.Str(2), cmtrand.Str(size-3))
 }
 
 func NewRandomTxs(n int) [][]byte {

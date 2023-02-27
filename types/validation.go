@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/tendermint/tendermint/crypto/batch"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmmath "github.com/tendermint/tendermint/libs/math"
+	"github.com/cometbft/cometbft/crypto/batch"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
 )
 
 const batchVerifyThreshold = 2
@@ -91,7 +91,7 @@ func VerifyCommitLight(chainID string, vals *ValidatorSet, blockID BlockID,
 //
 // This method is primarily used by the light client and does not check all the
 // signatures.
-func VerifyCommitLightTrusting(chainID string, vals *ValidatorSet, commit *Commit, trustLevel tmmath.Fraction) error {
+func VerifyCommitLightTrusting(chainID string, vals *ValidatorSet, commit *Commit, trustLevel cmtmath.Fraction) error {
 	// sanity checks
 	if vals == nil {
 		return errors.New("nil validator set")

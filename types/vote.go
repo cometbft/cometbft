@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/tendermint/tendermint/crypto"
-	tmbytes "github.com/tendermint/tendermint/libs/bytes"
-	"github.com/tendermint/tendermint/libs/protoio"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	"github.com/cometbft/cometbft/crypto"
+	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/libs/protoio"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 const (
@@ -53,23 +53,23 @@ type Address = crypto.Address
 // Vote represents a prevote, precommit, or commit vote from validators for
 // consensus.
 type Vote struct {
-	Type               tmproto.SignedMsgType `json:"type"`
-	Height             int64                 `json:"height"`
-	Round              int32                 `json:"round"`    // assume there will not be greater than 2_147_483_647 rounds
-	BlockID            BlockID               `json:"block_id"` // zero if vote is nil.
-	Timestamp          time.Time             `json:"timestamp"`
-	ValidatorAddress   Address               `json:"validator_address"`
-	ValidatorIndex     int32                 `json:"validator_index"`
-	Signature          []byte                `json:"signature"`
-	Extension          []byte                `json:"extension"`
-	ExtensionSignature []byte                `json:"extension_signature"`
+	Type               cmtproto.SignedMsgType `json:"type"`
+	Height             int64                  `json:"height"`
+	Round              int32                  `json:"round"`    // assume there will not be greater than 2_147_483_647 rounds
+	BlockID            BlockID                `json:"block_id"` // zero if vote is nil.
+	Timestamp          time.Time              `json:"timestamp"`
+	ValidatorAddress   Address                `json:"validator_address"`
+	ValidatorIndex     int32                  `json:"validator_index"`
+	Signature          []byte                 `json:"signature"`
+	Extension          []byte                 `json:"extension"`
+	ExtensionSignature []byte                 `json:"extension_signature"`
 }
 
 // VoteFromProto attempts to convert the given serialization (Protobuf) type to
 // our Vote domain type. No validation is performed on the resulting vote -
 // this is left up to the caller to decide whether to call ValidateBasic or
 // ValidateWithExtension.
-func VoteFromProto(pv *tmproto.Vote) (*Vote, error) {
+func VoteFromProto(pv *cmtproto.Vote) (*Vote, error) {
 	blockID, err := BlockIDFromProto(&pv.BlockID)
 	if err != nil {
 		return nil, err
@@ -146,7 +146,7 @@ func (vote *Vote) ExtendedCommitSig() ExtendedCommitSig {
 // devices that rely on this encoding.
 //
 // See CanonicalizeVote
-func VoteSignBytes(chainID string, vote *tmproto.Vote) []byte {
+func VoteSignBytes(chainID string, vote *cmtproto.Vote) []byte {
 	pb := CanonicalizeVote(chainID, vote)
 	bz, err := protoio.MarshalDelimited(&pb)
 	if err != nil {
@@ -161,7 +161,7 @@ func VoteSignBytes(chainID string, vote *tmproto.Vote) []byte {
 //
 // Similar to VoteSignBytes, the encoded Protobuf message is varint
 // length-prefixed for backwards-compatibility with the Amino encoding.
-func VoteExtensionSignBytes(chainID string, vote *tmproto.Vote) []byte {
+func VoteExtensionSignBytes(chainID string, vote *cmtproto.Vote) []byte {
 	pb := CanonicalizeVoteExtension(chainID, vote)
 	bz, err := protoio.MarshalDelimited(&pb)
 	if err != nil {
@@ -195,9 +195,9 @@ func (vote *Vote) String() string {
 
 	var typeString string
 	switch vote.Type {
-	case tmproto.PrevoteType:
+	case cmtproto.PrevoteType:
 		typeString = "Prevote"
-	case tmproto.PrecommitType:
+	case cmtproto.PrecommitType:
 		typeString = "Precommit"
 	default:
 		panic("Unknown vote type")
@@ -205,19 +205,19 @@ func (vote *Vote) String() string {
 
 	return fmt.Sprintf("Vote{%v:%X %v/%02d/%v(%v) %X %X %X @ %s}",
 		vote.ValidatorIndex,
-		tmbytes.Fingerprint(vote.ValidatorAddress),
+		cmtbytes.Fingerprint(vote.ValidatorAddress),
 		vote.Height,
 		vote.Round,
 		vote.Type,
 		typeString,
-		tmbytes.Fingerprint(vote.BlockID.Hash),
-		tmbytes.Fingerprint(vote.Signature),
-		tmbytes.Fingerprint(vote.Extension),
+		cmtbytes.Fingerprint(vote.BlockID.Hash),
+		cmtbytes.Fingerprint(vote.Signature),
+		cmtbytes.Fingerprint(vote.Extension),
 		CanonicalTime(vote.Timestamp),
 	)
 }
 
-func (vote *Vote) verifyAndReturnProto(chainID string, pubKey crypto.PubKey) (*tmproto.Vote, error) {
+func (vote *Vote) verifyAndReturnProto(chainID string, pubKey crypto.PubKey) (*cmtproto.Vote, error) {
 	if !bytes.Equal(pubKey.Address(), vote.ValidatorAddress) {
 		return nil, ErrVoteInvalidValidatorAddress
 	}
@@ -246,7 +246,7 @@ func (vote *Vote) VerifyVoteAndExtension(chainID string, pubKey crypto.PubKey) e
 		return err
 	}
 	// We only verify vote extension signatures for non-nil precommits.
-	if vote.Type == tmproto.PrecommitType && !ProtoBlockIDIsNil(&v.BlockID) {
+	if vote.Type == cmtproto.PrecommitType && !ProtoBlockIDIsNil(&v.BlockID) {
 		if len(vote.ExtensionSignature) == 0 {
 			return errors.New("expected vote extension signature")
 		}
@@ -262,7 +262,7 @@ func (vote *Vote) VerifyVoteAndExtension(chainID string, pubKey crypto.PubKey) e
 // VerifyExtension checks whether the vote extension signature corresponds to the
 // given chain ID and public key.
 func (vote *Vote) VerifyExtension(chainID string, pubKey crypto.PubKey) error {
-	if vote.Type != tmproto.PrecommitType || vote.BlockID.IsZero() {
+	if vote.Type != cmtproto.PrecommitType || vote.BlockID.IsZero() {
 		return nil
 	}
 	v := vote.ToProto()
@@ -321,7 +321,7 @@ func (vote *Vote) ValidateBasic() error {
 	// We should only ever see vote extensions in non-nil precommits, otherwise
 	// this is a violation of the specification.
 	// https://github.com/tendermint/tendermint/issues/8487
-	if vote.Type != tmproto.PrecommitType || vote.BlockID.IsZero() {
+	if vote.Type != cmtproto.PrecommitType || vote.BlockID.IsZero() {
 		if len(vote.Extension) > 0 {
 			return fmt.Errorf(
 				"unexpected vote extension; vote type %d, isNil %t",
@@ -333,7 +333,7 @@ func (vote *Vote) ValidateBasic() error {
 		}
 	}
 
-	if vote.Type == tmproto.PrecommitType && !vote.BlockID.IsZero() {
+	if vote.Type == cmtproto.PrecommitType && !vote.BlockID.IsZero() {
 		// It's possible that this vote has vote extensions but
 		// they could also be disabled and thus not present thus
 		// we can't do all checks
@@ -357,7 +357,7 @@ func (vote *Vote) ValidateBasic() error {
 // on precommit vote types.
 func (vote *Vote) EnsureExtension() error {
 	// We should always see vote extension signatures in non-nil precommits
-	if vote.Type != tmproto.PrecommitType {
+	if vote.Type != cmtproto.PrecommitType {
 		return nil
 	}
 	if vote.BlockID.IsZero() {
@@ -371,12 +371,12 @@ func (vote *Vote) EnsureExtension() error {
 
 // ToProto converts the handwritten type to proto generated type
 // return type, nil if everything converts safely, otherwise nil, error
-func (vote *Vote) ToProto() *tmproto.Vote {
+func (vote *Vote) ToProto() *cmtproto.Vote {
 	if vote == nil {
 		return nil
 	}
 
-	return &tmproto.Vote{
+	return &cmtproto.Vote{
 		Type:               vote.Type,
 		Height:             vote.Height,
 		Round:              vote.Round,
@@ -390,12 +390,12 @@ func (vote *Vote) ToProto() *tmproto.Vote {
 	}
 }
 
-func VotesToProto(votes []*Vote) []*tmproto.Vote {
+func VotesToProto(votes []*Vote) []*cmtproto.Vote {
 	if votes == nil {
 		return nil
 	}
 
-	res := make([]*tmproto.Vote, 0, len(votes))
+	res := make([]*cmtproto.Vote, 0, len(votes))
 	for _, vote := range votes {
 		v := vote.ToProto()
 		// protobuf crashes when serializing "repeated" fields with nil elements
@@ -419,7 +419,7 @@ func SignAndCheckVote(
 	}
 	vote.Signature = v.Signature
 
-	isPrecommit := vote.Type == tmproto.PrecommitType
+	isPrecommit := vote.Type == cmtproto.PrecommitType
 	if !isPrecommit && extensionsEnabled {
 		// Non-recoverable because the caller passed parameters that don't make sense
 		return false, fmt.Errorf("only Precommit votes may have extensions enabled; vote type: %d", vote.Type)

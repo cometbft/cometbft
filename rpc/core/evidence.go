@@ -4,13 +4,13 @@ import (
 	"errors"
 	"fmt"
 
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	rpctypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
-	"github.com/tendermint/tendermint/types"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 // BroadcastEvidence broadcasts evidence of the misbehavior.
-// More: https://docs.tendermint.com/master/rpc/#/Evidence/broadcast_evidence
+// More: https://docs.cometbft.com/main/rpc/#/Evidence/broadcast_evidence
 func (env *Environment) BroadcastEvidence(
 	ctx *rpctypes.Context,
 	ev types.Evidence) (*ctypes.ResultBroadcastEvidence, error) {

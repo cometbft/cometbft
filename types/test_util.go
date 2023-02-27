@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	"github.com/cometbft/cometbft/version"
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	"github.com/tendermint/tendermint/version"
 )
 
 func MakeExtCommit(blockID BlockID, height int64, round int32,
@@ -25,7 +25,7 @@ func MakeExtCommit(blockID BlockID, height int64, round int32,
 			ValidatorIndex:   int32(i),
 			Height:           height,
 			Round:            round,
-			Type:             tmproto.PrecommitType,
+			Type:             cmtproto.PrecommitType,
 			BlockID:          blockID,
 			Timestamp:        now,
 		}
@@ -55,7 +55,7 @@ func MakeVote(
 	valIndex int32,
 	height int64,
 	round int32,
-	step tmproto.SignedMsgType,
+	step cmtproto.SignedMsgType,
 	blockID BlockID,
 	time time.Time,
 ) (*Vote, error) {
@@ -74,7 +74,7 @@ func MakeVote(
 		Timestamp:        time,
 	}
 
-	extensionsEnabled := step == tmproto.PrecommitType
+	extensionsEnabled := step == cmtproto.PrecommitType
 	if _, err := SignAndCheckVote(vote, val, chainID, extensionsEnabled); err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func MakeVoteNoError(
 	valIndex int32,
 	height int64,
 	round int32,
-	step tmproto.SignedMsgType,
+	step cmtproto.SignedMsgType,
 	blockID BlockID,
 	time time.Time,
 ) *Vote {
@@ -104,7 +104,7 @@ func MakeVoteNoError(
 func MakeBlock(height int64, txs []Tx, lastCommit *Commit, evidence []Evidence) *Block {
 	block := &Block{
 		Header: Header{
-			Version: tmversion.Consensus{Block: version.BlockProtocol, App: 0},
+			Version: cmtversion.Consensus{Block: version.BlockProtocol, App: 0},
 			Height:  height,
 		},
 		Data: Data{

@@ -1,3 +1,3 @@
 # Consensus
 
-See the [consensus spec](https://github.com/tendermint/tendermint/tree/main/spec/consensus) for more information.
+See the [consensus spec](https://github.com/cometbft/cometbft/tree/main/spec/consensus) for more information.

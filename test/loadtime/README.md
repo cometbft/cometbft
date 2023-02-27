@@ -1,7 +1,7 @@
 # loadtime
 
 This directory contains the `loadtime` tools, a set of tools for generating
-transaction load against Tendermint and measuring their resulting latency.
+transaction load against CometBFT and measuring their resulting latency.
 `loadtime` generates transactions that contain the timestamp of when they were
 generated as well as additional metadata to track the variables used when
 generating the load.
@@ -20,13 +20,13 @@ make build
 ## `load`
 
 The `load` binary is built when `make build` is invoked. The `load` tool generates
-transactions and broadcasts them to Tendermint.
+transactions and broadcasts them to CometBFT.
 
 `load` leverages the [tm-load-test](https://github.com/informalsystems/tm-load-test)
 framework. As a result, all flags and options specified on the `tm-load-test` apply to
 `load`.
 
-Below is a basic invocation for generating load against a Tendermint websocket running
+Below is a basic invocation for generating load against a CometBFT websocket running
 on `localhost:25567`
 
 ```bash
@@ -46,12 +46,12 @@ the timestamp of the block the transaction was executed in to determine transact
 `report` outputs a set of metrics calculated on the list of latencies, including
 minimum, maximum, and average latency as well as the standard deviation.
 
-Below is a basic invocation of the report tool with a data directory under `/home/test/.tendermint/data/`
+Below is a basic invocation of the report tool with a data directory under `/home/test/.cometbft/data/`
 where the data was saved in a `goleveldb` database.
 
 
 ```bash
-./build/report --database-type goleveldb --data-dir ~/.tendermint/data
+./build/report --database-type goleveldb --data-dir ~/.cometbft/data
 ```
 
 The `report` tool also supports outputting the raw data as `csv`. This can be
@@ -61,7 +61,7 @@ Below is an invocation of the report tool that outputs the data to a `csv` file
 in `out.csv`
 
 ```bash
-./build/report --database-type goleveldb --data-dir ~/.tendermint/data --csv out.csv
+./build/report --database-type goleveldb --data-dir ~/.cometbft/data --csv out.csv
 ```
 
 The `report` tool outputs the data for each experiment separately, identified

@@ -9,11 +9,11 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	tmstate "github.com/tendermint/tendermint/proto/tendermint/state"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
-	"github.com/tendermint/tendermint/version"
+	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
+	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/cometbft/cometbft/version"
 )
 
 // database keys
@@ -27,8 +27,8 @@ var (
 // but leaves the Consensus.App version blank.
 // The Consensus.App version will be set during the Handshake, once
 // we hear from the app what protocol version it is running.
-var InitStateVersion = tmstate.Version{
-	Consensus: tmversion.Consensus{
+var InitStateVersion = cmtstate.Version{
+	Consensus: cmtversion.Consensus{
 		Block: version.BlockProtocol,
 		App:   0,
 	},
@@ -37,7 +37,7 @@ var InitStateVersion = tmstate.Version{
 
 //-----------------------------------------------------------------------------
 
-// State is a short description of the latest committed block of the Tendermint consensus.
+// State is a short description of the latest committed block of the consensus protocol.
 // It keeps all information necessary to validate new blocks,
 // including the last validator set and the consensus params.
 // All fields are exposed so the struct can be easily serialized,
@@ -45,7 +45,7 @@ var InitStateVersion = tmstate.Version{
 // Instead, use state.Copy() or state.NextState(...).
 // NOTE: not goroutine-safe.
 type State struct {
-	Version tmstate.Version
+	Version cmtstate.Version
 
 	// immutable
 	ChainID       string
@@ -131,12 +131,12 @@ func (state State) IsEmpty() bool {
 }
 
 // ToProto takes the local state type and returns the equivalent proto type
-func (state *State) ToProto() (*tmstate.State, error) {
+func (state *State) ToProto() (*cmtstate.State, error) {
 	if state == nil {
 		return nil, errors.New("state is nil")
 	}
 
-	sm := new(tmstate.State)
+	sm := new(cmtstate.State)
 
 	sm.Version = state.Version
 	sm.ChainID = state.ChainID
@@ -175,7 +175,7 @@ func (state *State) ToProto() (*tmstate.State, error) {
 }
 
 // FromProto takes a state proto message & returns the local state type
-func FromProto(pb *tmstate.State) (*State, error) { //nolint:golint
+func FromProto(pb *cmtstate.State) (*State, error) { //nolint:golint
 	if pb == nil {
 		return nil, errors.New("nil State")
 	}
@@ -267,7 +267,7 @@ func (state State) MakeBlock(
 // the votes sent by honest processes, i.e., a faulty processes can not arbitrarily increase or decrease the
 // computed value.
 func MedianTime(commit *types.Commit, validators *types.ValidatorSet) time.Time {
-	weightedTimes := make([]*tmtime.WeightedTime, len(commit.Signatures))
+	weightedTimes := make([]*cmttime.WeightedTime, len(commit.Signatures))
 	totalVotingPower := int64(0)
 
 	for i, commitSig := range commit.Signatures {
@@ -278,11 +278,11 @@ func MedianTime(commit *types.Commit, validators *types.ValidatorSet) time.Time 
 		// If there's no condition, TestValidateBlockCommit panics; not needed normally.
 		if validator != nil {
 			totalVotingPower += validator.VotingPower
-			weightedTimes[i] = tmtime.NewWeightedTime(commitSig.Timestamp, validator.VotingPower)
+			weightedTimes[i] = cmttime.NewWeightedTime(commitSig.Timestamp, validator.VotingPower)
 		}
 	}
 
-	return tmtime.WeightedMedian(weightedTimes, totalVotingPower)
+	return cmttime.WeightedMedian(weightedTimes, totalVotingPower)
 }
 
 //------------------------------------------------------------------------

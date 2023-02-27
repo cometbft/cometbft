@@ -12,16 +12,16 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tendermint/tendermint/libs/log"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
-	types "github.com/tendermint/tendermint/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 var wsCallTimeout = 5 * time.Second
 
 type myHandler struct {
 	closeConnAfterRead bool
-	mtx                tmsync.RWMutex
+	mtx                cmtsync.RWMutex
 }
 
 var upgrader = websocket.Upgrader{

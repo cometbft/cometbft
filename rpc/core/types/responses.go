@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"time"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/libs/bytes"
-	"github.com/tendermint/tendermint/p2p"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/p2p"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 // List of blocks
@@ -52,12 +52,12 @@ type ResultCommit struct {
 
 // ABCI results from a block
 type ResultBlockResults struct {
-	Height                int64                    `json:"height"`
-	TxsResults            []*abci.ExecTxResult     `json:"txs_results"`
-	FinalizeBlockEvents   []abci.Event             `json:"finalize_block_events"`
-	ValidatorUpdates      []abci.ValidatorUpdate   `json:"validator_updates"`
-	ConsensusParamUpdates *tmproto.ConsensusParams `json:"consensus_param_updates"`
-	AgreedAppData         []byte                   `json:"agreed_app_data"`
+	Height                int64                     `json:"height"`
+	TxsResults            []*abci.ExecTxResult      `json:"txs_results"`
+	FinalizeBlockEvents   []abci.Event              `json:"finalize_block_events"`
+	ValidatorUpdates      []abci.ValidatorUpdate    `json:"validator_updates"`
+	ConsensusParamUpdates *cmtproto.ConsensusParams `json:"consensus_param_updates"`
+	AgreedAppData         []byte                    `json:"agreed_app_data"`
 }
 
 // NewResultCommit is a helper to initialize the ResultCommit with

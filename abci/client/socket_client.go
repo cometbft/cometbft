@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tendermint/tendermint/abci/types"
-	tmnet "github.com/tendermint/tendermint/libs/net"
-	"github.com/tendermint/tendermint/libs/service"
-	"github.com/tendermint/tendermint/libs/timer"
+	"github.com/cometbft/cometbft/abci/types"
+	cmtnet "github.com/cometbft/cometbft/libs/net"
+	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/libs/timer"
 )
 
 const (
@@ -72,7 +72,7 @@ func (cli *socketClient) OnStart() error {
 	)
 
 	for {
-		conn, err = tmnet.Connect(cli.addr)
+		conn, err = cmtnet.Connect(cli.addr)
 		if err != nil {
 			if cli.mustConnect {
 				return err

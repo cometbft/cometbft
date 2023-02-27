@@ -14,18 +14,18 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	"github.com/tendermint/tendermint/libs/log"
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	mempl "github.com/tendermint/tendermint/mempool"
-	"github.com/tendermint/tendermint/rpc/client"
-	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
-	rpclocal "github.com/tendermint/tendermint/rpc/client/local"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	rpcclient "github.com/tendermint/tendermint/rpc/jsonrpc/client"
-	rpctest "github.com/tendermint/tendermint/rpc/test"
-	"github.com/tendermint/tendermint/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
+	mempl "github.com/cometbft/cometbft/mempool"
+	"github.com/cometbft/cometbft/rpc/client"
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	rpclocal "github.com/cometbft/cometbft/rpc/client/local"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
+	rpctest "github.com/cometbft/cometbft/rpc/test"
+	"github.com/cometbft/cometbft/types"
 )
 
 var (
@@ -208,7 +208,7 @@ func TestGenesisChunked(t *testing.T) {
 		doc := []byte(strings.Join(decoded, ""))
 
 		var out types.GenesisDoc
-		require.NoError(t, tmjson.Unmarshal(doc, &out),
+		require.NoError(t, cmtjson.Unmarshal(doc, &out),
 			"first: %+v, doc: %s", first, string(doc))
 	}
 }
@@ -665,7 +665,7 @@ func testBatchedJSONRPCCalls(t *testing.T, c *rpchttp.HTTP) {
 	bresult2, ok := bresults[1].(*ctypes.ResultBroadcastTxCommit)
 	require.True(t, ok)
 	require.Equal(t, *bresult2, *r2)
-	apph := tmmath.MaxInt64(bresult1.Height, bresult2.Height) + 1
+	apph := cmtmath.MaxInt64(bresult1.Height, bresult2.Height) + 1
 
 	err = client.WaitForHeight(c, apph, nil)
 	require.NoError(t, err)

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 const (
@@ -197,7 +197,7 @@ func (params ConsensusParams) ValidateBasic() error {
 	return nil
 }
 
-func (params ConsensusParams) ValidateUpdate(updated *tmproto.ConsensusParams, h int64) error {
+func (params ConsensusParams) ValidateUpdate(updated *cmtproto.ConsensusParams, h int64) error {
 	if updated.Abci == nil {
 		return nil
 	}
@@ -228,7 +228,7 @@ func (params ConsensusParams) ValidateUpdate(updated *tmproto.ConsensusParams, h
 func (params ConsensusParams) Hash() []byte {
 	hasher := tmhash.New()
 
-	hp := tmproto.HashedParams{
+	hp := cmtproto.HashedParams{
 		BlockMaxBytes: params.Block.MaxBytes,
 		BlockMaxGas:   params.Block.MaxGas,
 	}
@@ -247,7 +247,7 @@ func (params ConsensusParams) Hash() []byte {
 
 // Update returns a copy of the params with updates from the non-zero fields of p2.
 // NOTE: note: must not modify the original
-func (params ConsensusParams) Update(params2 *tmproto.ConsensusParams) ConsensusParams {
+func (params ConsensusParams) Update(params2 *cmtproto.ConsensusParams) ConsensusParams {
 	res := params // explicit copy
 
 	if params2 == nil {
@@ -278,30 +278,30 @@ func (params ConsensusParams) Update(params2 *tmproto.ConsensusParams) Consensus
 	return res
 }
 
-func (params *ConsensusParams) ToProto() tmproto.ConsensusParams {
-	return tmproto.ConsensusParams{
-		Block: &tmproto.BlockParams{
+func (params *ConsensusParams) ToProto() cmtproto.ConsensusParams {
+	return cmtproto.ConsensusParams{
+		Block: &cmtproto.BlockParams{
 			MaxBytes: params.Block.MaxBytes,
 			MaxGas:   params.Block.MaxGas,
 		},
-		Evidence: &tmproto.EvidenceParams{
+		Evidence: &cmtproto.EvidenceParams{
 			MaxAgeNumBlocks: params.Evidence.MaxAgeNumBlocks,
 			MaxAgeDuration:  params.Evidence.MaxAgeDuration,
 			MaxBytes:        params.Evidence.MaxBytes,
 		},
-		Validator: &tmproto.ValidatorParams{
+		Validator: &cmtproto.ValidatorParams{
 			PubKeyTypes: params.Validator.PubKeyTypes,
 		},
-		Version: &tmproto.VersionParams{
+		Version: &cmtproto.VersionParams{
 			App: params.Version.App,
 		},
-		Abci: &tmproto.ABCIParams{
+		Abci: &cmtproto.ABCIParams{
 			VoteExtensionsEnableHeight: params.ABCI.VoteExtensionsEnableHeight,
 		},
 	}
 }
 
-func ConsensusParamsFromProto(pbParams tmproto.ConsensusParams) ConsensusParams {
+func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams {
 	c := ConsensusParams{
 		Block: BlockParams{
 			MaxBytes: pbParams.Block.MaxBytes,

@@ -4,7 +4,7 @@ order: 6
 
 # Indexing Transactions
 
-Tendermint allows you to index transactions and blocks and later query or
+CometBFT allows you to index transactions and blocks and later query or
 subscribe to their results. Transactions are indexed by `TxResult.Events` and
 blocks are indexed by `Response(Begin|End)Block.Events`. However, transactions
 are also indexed by a primary key which includes the transaction hash and maps
@@ -15,7 +15,7 @@ the block itself is never stored.
 Each event contains a type and a list of attributes, which are key-value pairs
 denoting something about what happened during the method's execution. For more
 details on `Events`, see the
-[ABCI](https://github.com/tendermint/tendermint/blob/main/spec/abci/abci++_basic_concepts.md#events)
+[ABCI](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_basic_concepts.md#events)
 documentation.
 
 An `Event` has a composite key associated with it. A `compositeKey` is
@@ -31,7 +31,7 @@ For example:
 
 would be equal to the composite key of `jack.account.number`.
 
-By default, Tendermint will index all transactions by their respective hashes
+By default, CometBFT will index all transactions by their respective hashes
 and height and blocks by their height.
 
 ## Configuration
@@ -62,8 +62,8 @@ be turned off regardless of other values provided.
 #### KV
 
 The `kv` indexer type is an embedded key-value store supported by the main
-underlying Tendermint database. Using the `kv` indexer type allows you to query
-for block and transaction events directly against Tendermint's RPC. However, the
+underlying CometBFT database. Using the `kv` indexer type allows you to query
+for block and transaction events directly against CometBFT's RPC. However, the
 query syntax is limited and so this indexer type might be deprecated or removed
 entirely in the future.
 
@@ -74,11 +74,11 @@ indexing by proxying it to an external PostgreSQL instance allowing for the even
 to be stored in relational models. Since the events are stored in a RDBMS, operators
 can leverage SQL to perform a series of rich and complex queries that are not
 supported by the `kv` indexer type. Since operators can leverage SQL directly,
-searching is not enabled for the `psql` indexer type via Tendermint's RPC -- any
+searching is not enabled for the `psql` indexer type via CometBFT's RPC -- any
 such query will fail.
 
 Note, the SQL schema is stored in `state/indexer/sink/psql/schema.sql` and operators
-must explicitly create the relations prior to starting Tendermint and enabling
+must explicitly create the relations prior to starting CometBFT and enabling
 the `psql` indexer type.
 
 Example:
@@ -89,7 +89,7 @@ psql ... -f state/indexer/sink/psql/schema.sql
 
 ## Default Indexes
 
-The Tendermint tx and block event indexer indexes a few select reserved events
+The CometBFT tx and block event indexer indexes a few select reserved events
 by default.
 
 ### Transactions
@@ -107,7 +107,7 @@ The following indexes are indexed by default:
 
 ## Adding Events
 
-Applications are free to define which events to index. Tendermint does not
+Applications are free to define which events to index. CometBFT does not
 expose functionality to define which events to index and which to ignore. In
 your application's `DeliverTx` method, add the `Events` field with pairs of
 UTF-8 encoded strings (e.g. "transfer.sender": "Bob", "transfer.recipient":
@@ -146,7 +146,7 @@ You can query for a paginated set of transaction by their events by calling the
 curl "localhost:26657/tx_search?query=\"message.sender='cosmos1...'\"&prove=true"
 ```
 
-Check out [API docs](https://docs.tendermint.com/main/rpc/#/Info/tx_search)
+Check out [API docs](https://docs.cometbft.com/main/rpc/#/Info/tx_search)
 for more information on query syntax and other options.
 
 ## Subscribing to Transactions
@@ -165,7 +165,7 @@ a query to `/subscribe` RPC endpoint.
 }
 ```
 
-Check out [API docs](https://docs.tendermint.com/main/rpc/#subscribe) for more information
+Check out [API docs](https://docs.cometbft.com/main/rpc/#subscribe) for more information
 on query syntax and other options.
 
 ## Querying Blocks Events
@@ -177,5 +177,5 @@ You can query for a paginated set of blocks by their events by calling the
 curl "localhost:26657/block_search?query=\"block.height > 10 AND val_set.num_changed > 0\""
 ```
 
-Check out [API docs](https://docs.tendermint.com/main/rpc/#/Info/block_search)
+Check out [API docs](https://docs.cometbft.com/main/rpc/#/Info/block_search)
 for more information on query syntax and other options.

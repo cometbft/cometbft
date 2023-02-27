@@ -1,8 +1,12 @@
+---
+order: 1
+---
+
 # Data Structures
 
-Here we describe the data structures in the Tendermint blockchain and the rules for validating them.
+Here we describe the data structures in the CometBFT blockchain and the rules for validating them.
 
-The Tendermint blockchains consists of a short list of data types:
+The CometBFT blockchain consists of a short list of data types:
 
 - [Data Structures](#data-structures)
     - [Block](#block)
@@ -47,7 +51,7 @@ and a list of evidence of malfeasance (ie. signing conflicting votes).
 | Name   | Type              | Description                                                                                                                                                                          | Validation                                               |
 |--------|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------|
 | Header | [Header](#header) | Header corresponding to the block. This field contains information used throughout consensus and other areas of the protocol. To find out what it contains, visit [header](#header) | Must adhere to the validation rules of [header](#header) |
-| Data       | [Data](#data)                  | Data contains a list of transactions. The contents of the transaction is unknown to Tendermint.                                                                                      | This field can be empty or populated, but no validation is performed. Applications can perform validation on individual transactions prior to block creation using [checkTx](https://github.com/tendermint/tendermint/blob/main/spec/abci/abci++_methods.md#checktx).
+| Data       | [Data](#data)                  | Data contains a list of transactions. The contents of the transaction is unknown to CometBFT.                                                                                      | This field can be empty or populated, but no validation is performed. Applications can perform validation on individual transactions prior to block creation using [checkTx](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_methods.md#checktx).
 | Evidence   | [EvidenceList](#evidencelist) | Evidence contains a list of infractions committed by validators.                                                                                                                     | Can be empty, but when populated the validations rules from [evidenceList](#evidencelist) apply |
 | LastCommit | [Commit](#commit)              | `LastCommit` includes one vote for every validator.  All votes must either be for the previous block, nil or absent. If a vote is for the previous block it must have a valid signature from the corresponding validator. The sum of the voting power of the validators that voted must be greater than 2/3 of the total voting power of the complete validator set. The number of votes in a commit is limited to 10000 (see `types.MaxVotesCount`).                                                                                             | Must be empty for the initial height and must adhere to the validation rules of [commit](#commit).  |
 
@@ -128,7 +132,7 @@ the data in the current block, the previous block, and the results returned by t
 | ValidatorHash     | slice of bytes (`[]byte`) | MerkleRoot of the current validator set. The validators are first sorted by voting power (descending), then by address (ascending) prior to computing the MerkleRoot.                                                                                                                                                                                                                 | Must  be of length 32                                                                                                                                                                            |
 | NextValidatorHash | slice of bytes (`[]byte`) | MerkleRoot of the next validator set. The validators are first sorted by voting power (descending), then by address (ascending) prior to computing the MerkleRoot.                                                                                                                                                                                                                    | Must  be of length 32                                                                                                                                                                            |
 | ConsensusHash     | slice of bytes (`[]byte`) | Hash of the protobuf encoded consensus parameters.                                                                                                                                                                                                                                                                                                                                    | Must  be of length 32                                                                                                                                                                            |
-| AppHash           | slice of bytes (`[]byte`) | Arbitrary byte array returned by the application after executing and commiting the previous block. It serves as the basis for validating any merkle proofs that comes from the ABCI application and represents the state of the actual application rather than the state of the blockchain itself. The first block's `block.Header.AppHash` is given by `ResponseInitChain.app_hash`. | This hash is determined by the application, Tendermint can not perform validation on it.                                                                                                         |
+| AppHash           | slice of bytes (`[]byte`) | Arbitrary byte array returned by the application after executing and commiting the previous block. It serves as the basis for validating any merkle proofs that comes from the ABCI application and represents the state of the actual application rather than the state of the blockchain itself. The first block's `block.Header.AppHash` is given by `ResponseInitChain.app_hash`. | This hash is determined by the application, CometBFT can not perform validation on it.                                                                                                         |
 | LastResultHash    | slice of bytes (`[]byte`) | `LastResultsHash` is the root hash of a Merkle tree built from `ResponseDeliverTx` responses (`Log`,`Info`, `Codespace` and `Events` fields are ignored).                                                                                                                                                                                                                             | Must  be of length 32. The first block has `block.Header.ResultsHash == MerkleRoot(nil)`, i.e. the hash of an empty input, for RFC-6962 conformance.                                             |
 | EvidenceHash      | slice of bytes (`[]byte`) | MerkleRoot of the evidence of Byzantine behavior included in this block.                                                                                                                                                                                                                                                                                                             | Must  be of length 32                                                                                                                                                                            |
 | ProposerAddress   | slice of bytes (`[]byte`) | Address of the original proposer of the block. Validator must be in the current validatorSet.                                                                                                                                                                                                                                                                                         | Must  be of length 20                                                                                                                                                                            |
@@ -142,7 +146,7 @@ versioning that this can refer to)
 | Name  | type   | Description                                                                                                     | Validation                                                                                                         |
 |-------|--------|-----------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
 | Block | uint64 | This number represents the version of the block protocol and must be the same throughout an operational network | Must be equal to protocol version being used in a network (`block.Version.Block == state.Version.Consensus.Block`) |
-| App   | uint64 | App version is decided on by the application. Read [here](https://github.com/tendermint/tendermint/blob/main/spec/abci/abci++_app_requirements.md)                                 | `block.Version.App == state.Version.Consensus.App`                                                                 |
+| App   | uint64 | App version is decided on by the application. Read [here](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_app_requirements.md)                                 | `block.Version.App == state.Version.Consensus.App`                                                                 |
 
 ## BlockID
 
@@ -164,7 +168,7 @@ See [MerkleRoot](./encoding.md#MerkleRoot) for details.
 
 ## Part
 
-Part defines a part of a block. In Tendermint blocks are broken into `parts` for gossip.
+Part defines a part of a block. In CometBFT blocks are broken into `parts` for gossip.
 
 | Name  | Type            | Description                       | Validation           |
 |-------|-----------------|-----------------------------------|----------------------|
@@ -174,7 +178,7 @@ Part defines a part of a block. In Tendermint blocks are broken into `parts` for
 
 ## Time
 
-Tendermint uses the [Google.Protobuf.Timestamp](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp)
+CometBFT uses the [Google.Protobuf.Timestamp](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp)
 format, which uses two integers, one 64 bit integer for Seconds and a 32 bit integer for Nanoseconds.
 
 ## Data
@@ -183,7 +187,7 @@ Data is just a wrapper for a list of transactions, where transactions are arbitr
 
 | Name | Type                       | Description            | Validation                                                                  |
 |------|----------------------------|------------------------|-----------------------------------------------------------------------------|
-| Txs  | Matrix of bytes ([][]byte) | Slice of transactions. | Validation does not occur on this field, this data is unknown to Tendermint |
+| Txs  | Matrix of bytes ([][]byte) | Slice of transactions. | Validation does not occur on this field, this data is unknown to CometBFT |
 
 ## Commit
 
@@ -210,7 +214,7 @@ to reconstruct the vote set given the validator set.
 | Signature        | [Signature](#signature)     | Signature corresponding to the validators participation in consensus.                                                                                            | The length of the signature must be > 0 and < than  64            |
 
 NOTE: `ValidatorAddress` and `Timestamp` fields may be removed in the future
-(see [ADR-25](https://github.com/tendermint/tendermint/blob/main/docs/architecture/adr-025-commit.md)).
+(see [ADR-25](https://github.com/cometbft/cometbft/blob/main/docs/architecture/adr-025-commit.md)).
 
 ## BlockIDFlag
 
@@ -313,7 +317,7 @@ enum SignedMsgType {
 
 ## Signature
 
-Signatures in Tendermint are raw bytes representing the underlying signature.
+Signatures in CometBFT are raw bytes representing the underlying signature.
 
 See the [signature spec](./encoding.md#key-types) for more.
 
@@ -327,9 +331,9 @@ EvidenceList is a simple wrapper for a list of evidence:
 
 ## Evidence
 
-Evidence in Tendermint is used to indicate breaches in the consensus by a validator.
+Evidence in CometBFT is used to indicate breaches in the consensus by a validator.
 
-More information on how evidence works in Tendermint can be found [here](../consensus/evidence.md)
+More information on how evidence works in CometBFT can be found [here](../consensus/evidence.md)
 
 ### DuplicateVoteEvidence
 

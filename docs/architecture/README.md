@@ -6,7 +6,7 @@ parent:
 
 # Architecture Decision Records (ADR)
 
-This is a location to record all high-level architecture decisions in the tendermint project.
+This is a location to record all high-level architecture decisions in the CometBFT project.
 
 You can read more about the ADR concept in this [blog post](https://product.reverb.com/documenting-architecture-decisions-the-reverb-way-a3563bb24bd0#.78xhdix6t).
 
@@ -28,6 +28,10 @@ If recorded decisions turned out to be lacking, convene a discussion, record the
 Note the context/background should be written in the present tense.
 
 ## Table of Contents
+
+The ADRs listed below are prior to the fork from
+[Tendermint Core repository](https://github.com/tendermint/tendermint/),
+therefore they have links to it and refer to CometBFT as "Tendermint" or "Tendermint Core".
 
 ### Implemented
 
@@ -74,7 +78,6 @@ Note the context/background should be written in the present tense.
 
 - [ADR-006: Trust-Metric](./adr-006-trust-metric.md)
 - [ADR-024: Sign-Bytes](./adr-024-sign-bytes.md)
-- [ADR-035: Documentation](./adr-035-documentation.md)
 - [ADR-039: Peer-Behaviour](./adr-039-peer-behaviour.md)
 - [ADR-063: Privval-gRPC](./adr-063-privval-grpc.md)
 - [ADR-067: Mempool Refactor](./adr-067-mempool-refactor.md)
@@ -85,7 +88,7 @@ Note the context/background should be written in the present tense.
 
 ### Deprecated
 
-None
+- [ADR-035: Documentation](./adr-035-documentation.md)
 
 ### Rejected
 

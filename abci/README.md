@@ -8,7 +8,6 @@ can manage an application state running in another.
 
 Previously, the ABCI was referred to as TMSP.
 
-The community has provided a number of additional implementations, see the [Tendermint Ecosystem](https://github.com/tendermint/awesome#ecosystem)
 
 
 ## Installation & Usage
@@ -19,7 +18,7 @@ To get up and running quickly, see the [getting started guide](../docs/app-dev/g
 
 A detailed description of the ABCI methods and message types is contained in:
 
-- [The main spec](https://github.com/tendermint/tendermint/blob/main/spec/abci/README.md)
+- [The main spec](https://github.com/cometbft/cometbft/blob/main/spec/abci/README.md)
 - [A protobuf file](../proto/tendermint/types/types.proto)
 - [A Go interface](./types/application.go)
 

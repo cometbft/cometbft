@@ -5,13 +5,13 @@ implement the p2p layer, and summarizes the main types they implement.
 Types play the role of classes in Go.
 
 The reference version for this documentation is the branch
-[`v0.34.x`](https://github.com/tendermint/tendermint/tree/v0.34.x/p2p).
+[`v0.34.x`](https://github.com/cometbft/cometbft/tree/v0.34.x/p2p).
 
 State of August 2022.
 
 ## Package `p2p`
 
-Implementation of the p2p layer of Tendermint.
+Implementation of the p2p layer of CometBFT.
 
 ### `base_reactor.go`
 
@@ -143,7 +143,7 @@ Aliases for p2p's `conn` package types.
 
 ## Package `p2p.conn`
 
-Implements the connection between Tendermint nodes,
+Implements the connection between CometBFT nodes,
 which is encrypted, authenticated, and multiplexed.
 
 ### `connection.go`
@@ -228,12 +228,12 @@ The PEX reactor also manages an [address book](#addrbookgo) instance.
 Go documentation of `Metric` type:
 
 > // Metric - keeps track of peer reliability
-> // See tendermint/docs/architecture/adr-006-trust-metric.md for details
+> // See cometbft/docs/architecture/adr-006-trust-metric.md for details
 
-Not imported by any other Tendermint source file.
+Not imported by any other CometBFT source file.
 
 ## Package `p2p.upnp`
 
 This package implementation was taken from "taipei-torrent".
 
-It is used by the `probe-upnp` command of the Tendermint binary.
+It is used by the `probe-upnp` command of the CometBFT binary.

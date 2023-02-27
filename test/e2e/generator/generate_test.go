@@ -9,13 +9,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
 // TestGenerator tests that only valid manifests are generated
 func TestGenerator(t *testing.T) {
 	cfg := &generateConfig{
-		randSource: rand.New(rand.NewSource(randomSeed)), //nolint:gosec
+		randSource: rand.New(rand.NewSource(randomSeed)),
 	}
 	manifests, err := Generate(cfg)
 	require.NoError(t, err)

@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/tendermint/tendermint/libs/bytes"
-	"github.com/tendermint/tendermint/libs/log"
-	tmpubsub "github.com/tendermint/tendermint/libs/pubsub"
-	tmquery "github.com/tendermint/tendermint/libs/pubsub/query"
-	nm "github.com/tendermint/tendermint/node"
-	rpcclient "github.com/tendermint/tendermint/rpc/client"
-	"github.com/tendermint/tendermint/rpc/core"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	rpctypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
+	nm "github.com/cometbft/cometbft/node"
+	rpcclient "github.com/cometbft/cometbft/rpc/client"
+	"github.com/cometbft/cometbft/rpc/core"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 /*
@@ -25,14 +25,14 @@ This implementation is useful for:
 
 * Running tests against a node in-process without the overhead
 of going through an http server
-* Communication between an ABCI app and Tendermint core when they
+* Communication between an ABCI app and CometBFT when they
 are compiled in process.
 
 For real clients, you probably want to use client.HTTP.  For more
 powerful control during testing, you probably want the "client/mock" package.
 
-You can subscribe for any event published by Tendermint using Subscribe method.
-Note delivery is best-effort. If you don't read events fast enough, Tendermint
+You can subscribe for any event published by CometBFT using Subscribe method.
+Note delivery is best-effort. If you don't read events fast enough, CometBFT
 might cancel the subscription. The client will attempt to resubscribe (you
 don't need to do anything). It will keep trying indefinitely with exponential
 backoff (10ms -> 20ms -> 40ms) until successful.
@@ -216,7 +216,7 @@ func (c *Local) Subscribe(
 	subscriber,
 	query string,
 	outCapacity ...int) (out <-chan ctypes.ResultEvent, err error) {
-	q, err := tmquery.New(query)
+	q, err := cmtquery.New(query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse query: %w", err)
 	}
@@ -245,7 +245,7 @@ func (c *Local) Subscribe(
 func (c *Local) eventsRoutine(
 	sub types.Subscription,
 	subscriber string,
-	q tmpubsub.Query,
+	q cmtpubsub.Query,
 	outc chan<- ctypes.ResultEvent) {
 	for {
 		select {
@@ -261,7 +261,7 @@ func (c *Local) eventsRoutine(
 				}
 			}
 		case <-sub.Canceled():
-			if sub.Err() == tmpubsub.ErrUnsubscribed {
+			if sub.Err() == cmtpubsub.ErrUnsubscribed {
 				return
 			}
 
@@ -277,7 +277,7 @@ func (c *Local) eventsRoutine(
 }
 
 // Try to resubscribe with exponential backoff.
-func (c *Local) resubscribe(subscriber string, q tmpubsub.Query) types.Subscription {
+func (c *Local) resubscribe(subscriber string, q cmtpubsub.Query) types.Subscription {
 	attempts := 0
 	for {
 		if !c.IsRunning() {
@@ -295,7 +295,7 @@ func (c *Local) resubscribe(subscriber string, q tmpubsub.Query) types.Subscript
 }
 
 func (c *Local) Unsubscribe(ctx context.Context, subscriber, query string) error {
-	q, err := tmquery.New(query)
+	q, err := cmtquery.New(query)
 	if err != nil {
 		return fmt.Errorf("failed to parse query: %w", err)
 	}

@@ -1,13 +1,13 @@
-# The Tendermint Code of Conduct
+# The CometBFT Code of Conduct
 
-This code of conduct applies to all projects run by the Tendermint/COSMOS team
-and hence to Tendermint.
+This code of conduct applies to all projects run by the CometBFT/Cosmos team and
+hence to CometBFT.
 
 ----
 
 # Conduct
 
-## Contact: conduct@tendermint.com
+## Contact: conduct@interchain.io
 
 * We are committed to providing a friendly, safe and welcoming environment for
   all, regardless of level of experience, gender, gender identity and
@@ -50,7 +50,7 @@ These are the policies for upholding our community’s standards of conduct. If
 you feel that a thread needs moderation, please contact the above mentioned
 person.
 
-1. Remarks that violate the Tendermint/COSMOS standards of conduct, including
+1. Remarks that violate the CometBFT/Cosmos standards of conduct, including
    hateful, hurtful, oppressive, or exclusionary remarks, are not allowed.
    (Cursing is allowed, but never targeting another user, and never in a hateful
    manner.)
@@ -77,7 +77,7 @@ person.
    moderator creates an inappropriate situation, they should expect less leeway
    than others.
 
-In the Tendermint/COSMOS community we strive to go the extra step to look out
+In the CometBFT/Cosmos community we strive to go the extra step to look out
 for each other. Don’t just aim to be technically unimpeachable, try to be your
 best self. In particular, avoid flirting with offensive or sensitive issues,
 particularly if they’re off-topic; this all too often leads to unnecessary
@@ -93,8 +93,8 @@ get along and we are all here first and foremost because we want to talk
 about cool technology. You will find that people will be eager to assume
 good intent and forgive as long as you earn their trust.
 
-The enforcement policies listed above apply to all official Tendermint/COSMOS
-venues. For other projects adopting the Tendermint/COSMOS Code of Conduct,
+The enforcement policies listed above apply to all official CometBFT/Cosmos
+venues. For other projects adopting the CometBFT/Cosmos Code of Conduct,
 please contact the maintainers of those projects for enforcement. If you wish to
 use this code of conduct for your own project, consider explicitly mentioning
 your moderation policy or making a copy with your own moderation policy so as to

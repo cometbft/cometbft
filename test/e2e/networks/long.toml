@@ -27,9 +27,9 @@ load_tx_connections = 0
     validator07 = 39
   [validator_update.1005]
     validator08 = 50
-  [validator_update.2005]
+  [validator_update.1255]
     validator09 = 50
-  [validator_update.3005]
+  [validator_update.1505]
     validator10 = 50
 
 [node]
@@ -136,7 +136,7 @@ load_tx_connections = 0
     state_sync = false
     persist_interval = 1
     snapshot_interval = 0
-    retain_blocks = 7
+    retain_blocks = 12
     perturb = []
     send_no_load = false
     [node.validator03.misbehaviors]
@@ -226,7 +226,7 @@ load_tx_connections = 0
     seeds = ["seed01"]
     database = "cleveldb"
     privval_protocol = "file"
-    start_at = 2000
+    start_at = 1250
     fast_sync = "v0"
     mempool_version = "v0"
     state_sync = true
@@ -242,7 +242,7 @@ load_tx_connections = 0
     seeds = ["seed01"]
     database = "cleveldb"
     privval_protocol = "file"
-    start_at = 3000
+    start_at = 1500
     fast_sync = "v0"
     mempool_version = "v0"
     state_sync = false 

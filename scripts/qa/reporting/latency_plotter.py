@@ -1,6 +1,7 @@
 import sys
 import os
 from datetime import datetime
+import pytz
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -8,7 +9,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-release = 'v0.34.27'
+release = 'v0.37.x-alpha3'
+
+#FIXME: figure out in which timezone prometheus was running to adjust to UTC.
+tz = pytz.timezone('America/Sao_Paulo')
 
 if len(sys.argv) != 2:
     print('Pls provide the raw.csv file')
@@ -36,8 +40,9 @@ groups = csv.groupby(['experiment_id'])
 #number of rows and columns in the graph
 ncols = 2 if groups.ngroups > 1 else 1
 nrows = int( np.ceil(groups.ngroups / ncols)) if groups.ngroups > 1 else 1
-fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(6*ncols, 4*nrows), sharey=True)
+fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(6*ncols, 4*nrows), sharey=False)
 fig.tight_layout(pad=5.0)
+
 
 #Plot experiments as subplots 
 for (key,ax) in zip(groups.groups.keys(), [axes] if ncols == 1 else axes.flatten()):
@@ -52,7 +57,8 @@ for (key,ax) in zip(groups.groups.keys(), [axes] if ncols == 1 else axes.flatten
     for (subKey) in paramGroups.groups.keys():
         subGroup = paramGroups.get_group(subKey)
         startTime = subGroup['block_time'].min()
-        print('exp ' + key + ' starts at ' + str(datetime.fromtimestamp(startTime)) + 'UTC')
+        dt = tz.localize(datetime.fromtimestamp(startTime)).astimezone(pytz.utc)
+        print('exp ' + key + ' starts at ' + dt.strftime("%Y-%m-%dT%H:%M:%SZ"))
         subGroupMod = subGroup['block_time'].apply(lambda x: x - startTime)
 
         (con,rate) = subKey
@@ -62,7 +68,7 @@ for (key,ax) in zip(groups.groups.keys(), [axes] if ncols == 1 else axes.flatten
 
     #Save individual axes
     extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-    fig.savefig(os.path.join(path,'e_'+key + '.png'), bbox_inches=extent)
+    fig.savefig(os.path.join(path,'e_'+key + '.png'), bbox_inches=extent.expanded(1.2, 1.2))
 
 fig.suptitle('200-node testnet experiments - ' + release)
 
@@ -101,7 +107,7 @@ for (key,ax) in zip(groups.groups.keys(), [axes] if ncols == 1 else axes.flatten
     
     #Save individual axes
     extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-    fig.savefig(os.path.join(path,'c'+str(con) + 'r'+ str(rate) + '.png'), bbox_inches=extent)
+    fig.savefig(os.path.join(path,'c'+str(con) + 'r'+ str(rate) + '.png'), bbox_inches=extent.expanded(1.2, 1.2))
 
 fig.suptitle('200-node testnet configurations - ' + release)
 

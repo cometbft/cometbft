@@ -19,7 +19,8 @@ path = os.path.join('imgs')
 prometheus = query.Prometheus('http://localhost:9090')
 
 # Time window
-window_size = dict(seconds=150)
+#window_size = dict(seconds=150) #CMT 0.37.x-alpha3
+window_size = dict(seconds=126) #TM v0.37 (200 nodes) baseline
 #window_size = dict(seconds=130) #homogeneous
 #window_size = dict(seconds=127) #baseline
 ext_window_size = dict(seconds=180)
@@ -30,7 +31,8 @@ ext_window_size = dict(seconds=180)
 #left_end = '2023-02-14T15:18:00Z' #cmt1 tm1
 #left_end = '2023-02-07T18:07:00Z' #homogeneous
 #left_end = '2022-10-13T19:41:23Z' #baseline
-left_end = '2023-02-22T18:56:29Z' #CMT 0.37.x-alpha3
+#left_end = '2023-02-22T18:56:29Z' #CMT 0.37.x-alpha3
+left_end = '2022-10-13T15:57:50Z' #TM v0.37 (200 nodes) baseline
 
 right_end = pd.to_datetime(left_end) + pd.Timedelta(**window_size)
 time_window = (left_end, right_end.strftime('%Y-%m-%dT%H:%M:%SZ'))
@@ -40,8 +42,8 @@ ext_time_window = (left_end, ext_right_end.strftime('%Y-%m-%dT%H:%M:%SZ'))
 
 
 
-fork='cometbft'
-#fork='tendermint'
+#fork='cometbft'
+fork='tendermint'
 
 # Do prometheus queries
 queries = [ 

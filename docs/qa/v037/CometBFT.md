@@ -62,9 +62,9 @@ The peaks observed coincide with the moments when some nodes reached round 1 of 
 
 The behavior is similar to the observed in the baseline, presented next.
 
-![mempool-cumulative-baseline](./img/200nodes_tm037/v037_r200c2_mempool_size.png)
+![mempool-cumulative-baseline](./img/200nodes_tm037/mempool_size.png)
 
-![mempool-avg-baseline](./img/200nodes_tm037/v037_r200c2_mempool_size_avg.png)
+![mempool-avg-baseline](./img/200nodes_tm037/avg_mempool_size.png)
 
 
 ### Peers
@@ -77,7 +77,7 @@ The red dashed line denotes the average value.
 
 Just as in the baseline, shown next, the fact that non-seed nodes reach more than 50 peers is due to [\#9548].
 
-![peers](./img/200nodes_tm037/v037_r200c2_peers.png)
+![peers](./img/200nodes_tm037/peers.png)
 
 
 ### Consensus Rounds per Height
@@ -88,7 +88,7 @@ Most heights took just one round, that is, round 0, but some nodes needed to adv
 
 The following specific run of the baseline presented better results, only requiring up to round 1, but reaching higher rounds is not uncommon in the corresponding software version.
 
-![rounds](./img/200nodes_tm037/v037_r200c2_rounds.png)
+![rounds](./img/200nodes_tm037/rounds.png)
 
 ### Blocks Produced per Minute, Transactions Processed per Minute
 
@@ -101,25 +101,19 @@ For most of the time when load was being applied to the system, most of the node
 
 The spike to more than 175 blocks/minute is due to a slow node catching up.
 
-The collective spike on the right of the graph marks the end of the load injection, when blocks become smaller (empty) and impose less on the network.
+The collective spike on the right of the graph marks the end of the load injection, when blocks become smaller (empty) and impose less strain on the network.
 This behavior is reflected in the following graph, which shows the number of transactions processed per minute.
 
 ![total-txs](./img/200nodes_cmt037/total_txs_rate.png)
 
-The baseline experienced a similar behavior, shown in the following graphs, where the gradient of the curves show the rate of block and transactions per minute.
+The baseline experienced a similar behavior, shown in the following two graphs.
+The first depicts the block rate.
 
-Over a period of 2 minutes, the height goes from 477 to 524.
-This results in an average of 23.5 blocks produced per minute, a rate similar to this experiment.
+![heights-baseline](./img/200nodes_tm037/block_rate_regular.png)
 
-![heights-baseline](./img/200nodes_tm037/v037_r200c2_heights.png)
+The second plots the transaction rate.
 
-Over a period of 2 minutes, the total goes from 64525 to 100125 transactions,
-resulting in 17800 transactions per minute. However, we can see in the plot that
-all transactions in the load are process long before the two minutes.
-If we adjust the time window when transactions are processed (approx. 90 seconds),
-we obtain 23733 transactions per minute, again similar to this experiment.
-
-![total-txs-baseline](./img/200nodes_tm037/v037_r200c2_total-txs.png)
+![total-txs-baseline](./img/200nodes_tm037/total_txs_rate_regular.png)
 
 ### Memory Resident Set Size
 
@@ -129,7 +123,7 @@ The Resident Set Size of all monitored processes is plotted below, with maximum 
 
 A similar behavior was shown in the baseline, presented next.
 
-![rss](./img/200nodes_tm037/v037_r200c2_rss.png)
+![rss](./img/200nodes_tm037/memory.png)
 
 The memory of all processes went down as the load as removed, showing no signs of unconstrained growth.
 
@@ -144,9 +138,9 @@ It is contained below 5 on most nodes, as seen in the following graph.
 
 ![load1](./img/200nodes_cmt037/cpu.png)
 
-A similar behavior was seen in the baseline. 
+A similar behavior was seen in the baseline.
 
-![load1-baseline](./img/200nodes_tm037/v037_r200c2_load1.png)
+![load1-baseline](./img/200nodes_tm037/cpu.png)
 
 
 ## Test Results

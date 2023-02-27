@@ -84,32 +84,6 @@ type Testnet struct {
 
 // Node represents a CometBFT node in a testnet.
 type Node struct {
-<<<<<<< HEAD
-	Name             string
-	Version          string
-	Testnet          *Testnet
-	Mode             Mode
-	PrivvalKey       crypto.PrivKey
-	NodeKey          crypto.PrivKey
-	IP               net.IP
-	ProxyPort        uint32
-	StartAt          int64
-	BlockSync        string
-	StateSync        bool
-	Mempool          string
-	Database         string
-	ABCIProtocol     Protocol
-	PrivvalProtocol  Protocol
-	PersistInterval  uint64
-	SnapshotInterval uint64
-	RetainBlocks     uint64
-	Seeds            []*Node
-	PersistentPeers  []*Node
-	Perturbations    []Perturbation
-
-	// SendNoLoad determines if the e2e test should send load to this node.
-	SendNoLoad bool
-=======
 	Name                string
 	Version             string
 	Testnet             *Testnet
@@ -121,6 +95,7 @@ type Node struct {
 	StartAt             int64
 	BlockSync           string
 	StateSync           bool
+	Mempool             string
 	Database            string
 	ABCIProtocol        Protocol
 	PrivvalProtocol     Protocol
@@ -133,7 +108,6 @@ type Node struct {
 	SendNoLoad          bool
 	Prometheus          bool
 	PrometheusProxyPort uint32
->>>>>>> a95a1dfec (e2e: add manifest fields to enable Prometheus on nodes (#313))
 }
 
 // LoadTestnet loads a testnet from a manifest file, using the filename to

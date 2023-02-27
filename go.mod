@@ -30,7 +30,7 @@ require (
 	github.com/snikch/goodman v0.0.0-20171125024755-10e37e294daa
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.15.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	golang.org/x/crypto v0.6.0
 	golang.org/x/net v0.7.0
 	google.golang.org/grpc v1.53.0
@@ -38,7 +38,6 @@ require (
 
 require (
 	github.com/bufbuild/buf v1.14.0
-	github.com/creachadair/taskgroup v0.5.0
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )
 

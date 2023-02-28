@@ -1,7 +1,8 @@
-# ADR 084: Data Companion Pull API
+# ADR 101: Data Companion Pull API
 
 ## Changelog
 
+- 2023-02-28: Renumber from 084 to 101 (@thanethomson)
 - 2022-12-18: First draft (@thanethomson)
 
 ## Status
@@ -10,7 +11,7 @@ Accepted | Rejected | Deprecated | Superseded by
 
 ## Context
 
-Following from the discussion around the development of [ADR 082][adr-082], an
+Following from the discussion around the development of [ADR 100][adr-100], an
 alternative model is proposed here for offloading certain data from nodes to a
 "data companion". This alternative model inverts the control of the data
 offloading process, when compared to ADR 082, from the node to the data
@@ -22,7 +23,7 @@ but represents a simpler model to implement.
 ## Alternative Approaches
 
 Other considered alternatives to this ADR are also outlined in
-[ADR-082][adr-082].
+[ADR-100][adr-100].
 
 ## Decision
 
@@ -32,7 +33,7 @@ Other considered alternatives to this ADR are also outlined in
 
 ### Requirements
 
-Similar requirements are proposed here as for [ADR-082][adr-082].
+Similar requirements are proposed here as for [ADR-100][adr-100].
 
 1. A node _must_ support at most one data companion.
 
@@ -330,8 +331,8 @@ interaction between a node and its data companion:
   - Paves the way for eventually reducing the surface area of a node's exposed
     APIs
 - Allows the data companion more leeway in reading the data it needs than the
-  approach in [ADR 082][adr-082]
-- Simpler implementation than [ADR 082][adr-082]
+  approach in [ADR 100][adr-100]
+- Simpler implementation than [ADR 100][adr-100]
 
 ### Negative
 
@@ -347,11 +348,11 @@ interaction between a node and its data companion:
 
 ## References
 
-- [ADR 082 - Data Companion Push API][adr-082]
+- [ADR 100 - Data Companion Push API][adr-100]
 - [\#81 - rpc: Add gRPC support][\#81]
 - [`.htpasswd`][htpasswd]
 
-[adr-082]: https://github.com/CometBFT/tendermint/pull/73
-[\#81]: https://github.com/CometBFT/tendermint/issues/81
+[adr-100]: https://github.com/cometbft/cometbft/pull/73
+[\#81]: https://github.com/cometbft/cometbft/issues/81
 [htpasswd]: https://httpd.apache.org/docs/current/programs/htpasswd.html
 [abci-commit]: ../../spec/abci/abci++_methods.md#commit

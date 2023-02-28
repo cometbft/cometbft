@@ -42,7 +42,7 @@ numbering our ADRs from 100 onwards.
 
 ### Proposed
 
-- [ADR-082: Data companion push API](./adr-082-data-companion-push-api.md)
+- [ADR-100: Data companion push API](./adr-100-data-companion-push-api.md)
 
 ### Accepted
 

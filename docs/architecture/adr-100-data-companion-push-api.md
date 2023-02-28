@@ -1,8 +1,9 @@
-# ADR 082: Data Companion Push API
+# ADR 100: Data Companion Push API
 
 ## Changelog
 
-- 2022-01-05: Sync requirements with those of [ADR 084][adr-084] (@thanethomson)
+- 2023-02-28: Renumber from 082 to 100 (@thanethomson)
+- 2022-01-05: Sync requirements with those of [ADR 101][adr-101] (@thanethomson)
 - 2022-12-18: Renamed proposal to "Data Companion Push API" (@thanethomson)
 - 2022-11-26: Clarify user stories and alternatives, allow for selective
   publishing of data via the companion API, buffer on disk instead of in memory
@@ -90,7 +91,7 @@ Specifically, this mechanism would initially publish:
    solution outlined in this ADR, except that ADR-075 publishes data via JSON over
    HTTP while this solution proposes gRPC.
 
-2. Another alternative is proposed in [ADR 084][adr-084], which has the same
+2. Another alternative is proposed in [ADR 101][adr-101], which has the same
    requirements as this proposed approach, except it implements a "pull" model
    instead.
 
@@ -429,12 +430,12 @@ PostgreSQL).
 [\#7156]: https://github.com/tendermint/tendermint/issues/7156
 [PostgreSQL indexer]: https://github.com/tendermint/tendermint/blob/0f45086c5fd79ba47ab0270944258a27ccfc6cc3/state/indexer/sink/psql/psql.go
 [\#7471]: https://github.com/tendermint/tendermint/issues/7471
-[rfc-003]: ../rfc/rfc-003-performance-questions.md
-[rfc-006]: ../rfc/rfc-006-event-subscription.md
-[adr-075]: ./adr-075-rpc-subscription.md
-[websocket-api]: https://docs.tendermint.com/v0.34/rpc/#/Websocket
-[`/tx_search`]: https://docs.tendermint.com/v0.34/rpc/#/Info/tx_search
-[`/block_search`]: https://docs.tendermint.com/v0.34/rpc/#/Info/block_search
-[`/broadcast_tx_commit`]: https://docs.tendermint.com/v0.34/rpc/#/Tx/broadcast_tx_commit
-[`/block_results`]: https://docs.tendermint.com/v0.34/rpc/#/Info/block_results
-[adr-084]: https://github.com/CometBFT/tendermint/pull/82
+[rfc-003]: ../rfc/tendermint-core/rfc-003-performance-questions.md
+[rfc-006]: ../rfc/tendermint-core/rfc-006-event-subscription.md
+[adr-075]: ./tendermint-core/adr-075-rpc-subscription.md
+[websocket-api]: https://docs.cometbft.com/v0.34/rpc/#/Websocket
+[`/tx_search`]: https://docs.cometbft.com/v0.34/rpc/#/Info/tx_search
+[`/block_search`]: https://docs.cometbft.com/v0.34/rpc/#/Info/block_search
+[`/broadcast_tx_commit`]: https://docs.cometbft.com/v0.34/rpc/#/Tx/broadcast_tx_commit
+[`/block_results`]: https://docs.cometbft.com/v0.34/rpc/#/Info/block_results
+[adr-101]: https://github.com/cometbft/tendermint/pull/82

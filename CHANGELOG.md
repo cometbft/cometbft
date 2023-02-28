@@ -10,6 +10,8 @@
   `TrySendEnvelope` and `ReceiveEnvelope` to allow metrics to be appended to
   messages and measure bytes sent/received.
   ([\#230](https://github.com/cometbft/cometbft/pull/230))
+- Bump minimum Go version to 1.20
+  ([\#385](https://github.com/cometbft/cometbft/issues/385))
 - `[abci]` Make length delimiter encoding consistent
   (`uint64`) between ABCI and P2P wire-level protocols
   ([\#5783](https://github.com/tendermint/tendermint/pull/5783))

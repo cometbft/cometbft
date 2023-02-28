@@ -94,7 +94,7 @@ type Node struct {
 	IP                  net.IP
 	ProxyPort           uint32
 	StartAt             int64
-	BlockSync           string
+	BlockSyncVersion    string
 	StateSync           bool
 	Database            string
 	ABCIProtocol        Protocol
@@ -199,7 +199,7 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 			ABCIProtocol:     Protocol(testnet.ABCIProtocol),
 			PrivvalProtocol:  ProtocolFile,
 			StartAt:          nodeManifest.StartAt,
-			BlockSync:        nodeManifest.BlockSync,
+			BlockSyncVersion: nodeManifest.BlockSyncVersion,
 			StateSync:        nodeManifest.StateSync,
 			PersistInterval:  1,
 			SnapshotInterval: nodeManifest.SnapshotInterval,
@@ -210,6 +210,9 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 		}
 		if node.StartAt == testnet.InitialHeight {
 			node.StartAt = 0 // normalize to 0 for initial nodes, since code expects this
+		}
+		if node.BlockSyncVersion == "" {
+			node.BlockSyncVersion = "v0"
 		}
 		if nodeManifest.Mode != "" {
 			node.Mode = Mode(nodeManifest.Mode)
@@ -354,10 +357,10 @@ func (n Node) Validate(testnet Testnet) error {
 			}
 		}
 	}
-	switch n.BlockSync {
-	case "", "v0":
+	switch n.BlockSyncVersion {
+	case "v0":
 	default:
-		return fmt.Errorf("invalid block sync setting %q", n.BlockSync)
+		return fmt.Errorf("invalid block sync setting %q", n.BlockSyncVersion)
 	}
 	switch n.Database {
 	case "goleveldb", "cleveldb", "boltdb", "rocksdb", "badgerdb":

@@ -143,7 +143,7 @@ Let us now examine the grammar line by line, providing further details.
 >```
 
 * A consensus height consists of zero or more rounds before deciding and executing via a call to
-  `BeginBlock-DeliverTx-EndBlock`, followed by a call to `Commit`. In each round, the sequence of method calls
+  `FinalizeBlock`, followed by a call to `Commit`. In each round, the sequence of method calls
   depends on whether the local process is the proposer or not. Note that, if a height contains zero
   rounds, this means the process is replaying an already decided value (catch-up mode).
 

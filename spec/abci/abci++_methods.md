@@ -819,7 +819,6 @@ Most of the data structures used in ABCI are shared [common data structures](../
     | round | int32                          | Commit round. Reflects the round at which the block proposer decided in the previous height. | 1            |
     | votes | repeated [VoteInfo](#voteinfo) | List of validators' addresses in the last validator set with their voting information.       | 2            |
 
-
 ### ExtendedCommitInfo
 
 * **Fields**:
@@ -829,7 +828,6 @@ Most of the data structures used in ABCI are shared [common data structures](../
     | round | int32                                          | Commit round. Reflects the round at which the block proposer decided in the previous height.                      | 1            |
     | votes | repeated [ExtendedVoteInfo](#extendedvoteinfo) | List of validators' addresses in the last validator set with their voting information, including vote extensions. | 2            |
 
-<!--
 ### ExecTxResult
 
 * **Fields**:
@@ -844,8 +842,6 @@ Most of the data structures used in ABCI are shared [common data structures](../
     | gas_used   | int64                                                       | Amount of gas consumed by transaction.                                | 6            |
     | events     | repeated [Event](abci++_basic_concepts.md#events)           | Type & Key-Value events for indexing transactions (e.g. by account).  | 7            |
     | codespace  | string                                                      | Namespace for the `code`.                                             | 8            |
-
--->
 
 ### ProposalStatus
 

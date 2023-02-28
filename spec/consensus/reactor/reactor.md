@@ -1,12 +1,13 @@
 # Part 1: Background
 
-We assume that you understand the Tendermint algorithm and therefore will not review it here. If this is not the case, please refer to [here](../).
+> **Warning**    
+> We assume that you understand the Tendermint algorithm and therefore will not review it here. If this is not the case, please refer to [here](../).
 
-The Tendermint algorithm assumes that a **Global Stabilization Time (GST)** exists, after which communication is reliable and timely:
+The Tendermint algorithm assumes that a **Global Stabilization Time (GST)** exists, after which communication is reliable and timely. That is, it satisfies **Eventual $\Delta$-Timely Communication**:
 
 | Eventual $\Delta$-Timely Communication|
 |-----|
-|There is a bound $\Delta$ and an instant GST (Global Stabilization Time) such that if a correct process $p$ sends message $m$ at time $t \geq \text{GST}$ to a correct process $q$, then $q$ will receive $m$ before $t + \Delta$.
+|There is a bound $\Delta$ and an instant GST (Global Stabilization Time) such that if a correct process $p$ sends a message $m$ at a time $t \geq \text{GST}$ to a correct process $q$, then $q$ will receive $m$ before $t + \Delta$.
 
 The Tendermint algorithm also assumes that this property is used to provide **Gossip Communication**:
 
@@ -15,62 +16,101 @@ The Tendermint algorithm also assumes that this property is used to provide **Go
 | (i) If a correct process $p$ sends some message $m$ at time $t$, all correct processes will receive $m$ before $\text{max} \{t,\text{GST}\} + \Delta$.
 | (ii) If a correct process $p$ receives some message $m$ at time $t$, all correct processes will receive $m$ before $\text{max}\{t,\text{GST}\} + \Delta$.
 
-Because Gossip Communication requires even messages sent before GST to be reliably delivered between correct processes ($t$ may happen before GST in (i)) and because the GST could take arbitrarily long to arrive, in practice, implementing this property would require an unbounded message buffer.
+Implementing this property, however, is hard for two main reasons. 
+First, it relies on a GST, which may never arrive.
+Second, even if the GST will definitely arrive, it could still take arbitrarily long to do so and, in practice, implementing this property would require unbounded memory since even messages sent before the GST need to be buffered to be reliably delivered between correct processes.
 
-However, while Gossip Communication is a sufficient condition for the Tendermint algorithm to terminate, it is not strictly necessary that all messages from correct processes reach all other correct processes.
-What is required is for either the message to be delivered or that, eventually, some newer message, with information that **supersedes** that in the first message, to be timely delivered.
+Fortunately, while Gossip Communication is a sufficient condition for the Tendermint algorithm to terminate, it is not strictly necessary.
+First, Tendermint will keep progressing if periods in which communication is timely for long enough for rounds to complete continue to happen. Even though "long enough" periods, or **Local Stabilization Periods**, is still hard to define, it is certainly less strict than GST.
+
+| Local Stabilization Period |
+|----|
+| TODO |
+| $\delta$  time to talk to neighbor |
+| $\pi$ time to process a message and forward it |
+| $d$ network diameter
+| $\Delta = (\delta + \pi) * d$ |
+| Local Stabilization Period - long enough for a good proposer to be selected and enough communication rounds of at most $\Delta$ length to elapse. |
+
+Second, it is not necessary that all messages from correct processes reach all other correct processes; as long as some newer message, with information that **supersedes** the original message, is timely delivered, the algorithm progresses.
 In the Tendermint algorithm this property is seen, for example, when nodes ignore proposal messages from prior rounds.
 
+
+Begin Supersession definition
+______
+
+Alternative 1 
 |Supersession|
 |----|
 | Given messages $m1$ and $m2$, we say that **$m2$ supersedes $m1$** if after receiving $m2$ a process would make at least as much progress as it would by receiving $m1$ and we note it as $m2.\text{SSS}(m1)$.   
-| Supersession is transitive, i.e., if $m3.\text{SSS}(m2)$ and $m2.\text{SSS}(m1)$, then $m3.\text{SSS}(m1)$
+| If $m3.\text{SSS}(m2)$ and $m2.\text{SSS}(m1)$, then $m3.\text{SSS}(m1)$ (transitivity).
+
 
 > :clipboard: **TODO**: Better way of saying "would make at least as much progress"?
 
-Therefore we formalize the requirements of the Tendermint algorithm in terms communication primitives that take supersession into account, providing a *best-effort* to deliver all messages but which may not deliver those that have been superseded, and are combined with GST outside of GOSSIP or P2P to ensure eventual progress.
 
+____
 
-|Communication with Supersession|
+Alternative 2
+
+| Process Run |
 |-----|
-| If process $p$ broadcast message $m2$, then $p$ does not broadcast any message $m1$, $m2.\text{SSS}(m1)$.[^todo1]
-| If $m1$ and $m2$ are broadcast by any processes and $m2.\text{SSS}(m1)$, then the delivery of $m1$ is not required.
+| A **process run** is defined as a sequence of states and messages causing state transitions of a process. |
 
-[^todo1]: :clipboard: **TODO**: Is this really required? Should this be a requirement of GOSSIP?
+For example, $R = \lang s_0, m_0, s_1, m_1, ..., s_n \rang$ is a run whose initial state is $s_0$ and which transitioned to state $s_1$ after processing message $m_0$. |
 
-To be useful, however, some legitimate effort has to be made to deliver messages.
+| Prefixes and Suffixes |
+|----|
+| A process run **prefix** is a subsequence of a process run starting at its first state and ending on some state. |
+| A process run **suffix** is a subsequence of a process run starting at some state and ending on some later state. |
+
+For example, given a run $R = \lang s_0, m_0, s_1, m_1, s_2, m_2, s_3, m_3, \ldots, s_n \rang$, $P = \lang s_0, m_0, s_1, m_1, s_2\rang$ is a prefix of $R$ and $S = \lang s_1, m_1, s_2, m_2, s_3, m_3, \ldots, s_n \rang$ is a suffix of $R$.
+In this example, the prefix and suffix are overlapping, but they do not have to be.
+
+|Supersession|
+|----|
+| Given a run $R = \lang P, m_n, s_{n+1}, m_{n+1},\ldots, S \rang$, we say that $m_n$ is superseded by messages $\lang m'_1, \ldots, m'_x \rang$ if there exists a run $R' = \lang P, m'_1, \ldots, m'_x, S1\rang$. |
+| If a message $m$ is superseded by a sequence of messages $s$ and all messages in $s$ are superseded by a sequence $s'$, then $m$ is superseded by $s'$ (transitivity). |
+
+> **Note**    
+> Algorithms may be constructed such that processing certain sequences of messages result in broadcasting some new special message that supersedes all messages in the sequence.
+> For example, in the Tendermint algorithm, the proposal message of a (height,round) is superseded by a sequence of valid votes amounting to a quorum for the same (height,round), but this sequence leads to a proposal for (height+1,0) being broadcast, which by itself supersedes the proposal for (height,round).
+> This property may be used to allow detecting supersession between single messages, not a message and a sequence.
+
+
+End of supersession definition
+____
+
+
+
+Therefore we formalize the requirements of the Tendermint algorithm in terms communication primitives that take supersession into account, providing a *best-effort* to deliver all messages but which may not deliver those that have been superseded.
+During LSP, in which messages are timely delivered, the algorithm will not broadcast superseding messages needlessly (for example, due to timeouts), ensuring eventual progress.
 
 |Best-Effort Communication with Supersession|
 |-----|
-| (i) If a correct process $p$ broadcasts some message $m$ at time $t$, $m$ is not superseded, and no failures or network partitions happen after $t$, then eventually every correct process delivers $m$.    
-| (ii) If a correct process $p$ receives some message $m$ at time $t$, $m$ is not superseded, and no failures or network partitions happen after $t$, then eventually every correct process delivers $m$.    
+| If a correct process $p$ broadcasts/delivers some message $m$, then, eventually, either $m$ is superseded or every correct process delivers $m$.|
 
-> **TODO**: Not sure about the usage of $t$ in the previous definition.
-
-<!-- |Best-Effort Superseded communication|
-|-----|
-| If $m1$ and $m2$ are broadcast by any correct processes, $m2.\text{SSS}(m1)$, $m2$ is not superseded, and there are no process failures or network partitions, then eventually every correct process delivers at least $m2$. -->
+> **Note**
+> 1. Processes should not broadcast messages superseded from the start, but this behavior should not be assumed.
+> 2. The delivery of superseded messages is not required, but this behavior should not be assumed.
 
 In order to deliver messages even in the presence of failures, the network must be connected in such a way to allow routing messages around any malicious nodes and to provide redundant paths between correct ones.
 This may not be feasible at all times, but should happen at least during periods in which the system is "stable".
 
-In other words, if at some point in time a message is not superseded and "no failures or network partitions happen" holds for long enough, then all messages from correct processes are delivered to all other correct processes is delivered within some time interval $\Delta$.
-Clearly, if GST is reached, then there must be such $\Delta$.
+In other words, during periods without network partition, in which messages are timely delivered, and that are long enough for the multiple communication rounds to succeed, non-superseded messages from correct processes will be delivered to all other correct processes.
+We call "long enough" $\Delta$.
 
 | Eventual $\Delta$-Timely Communication with Supersession |
 |---|
-| (i) If a correct process $p$ broadcasts some message $m$ at time $t$ and $m$ is not superseded, then all correct processes will receive $m$ before $\text{max} \{t,\text{GST}\} + \Delta$.    
-| (ii) If a correct process $p$ receives some message $m$ at time $t$ and $m$ is not superseded, then all correct processes will receive $m$ before $\text{max}\{t,\text{GST}\} + \Delta$.
+| If a correct process $p$ broadcasts/delivers some message $m$ at time $t$, then, before $\text{max} \{t,\text{GST}\} + \Delta$, either $m$ is superseded or every correct process delivers $m$.
 
-$\Delta$ encapsulates the assumption that, after GST, timeouts eventually do not expire precociously, given that they all can be adjusted to reasonable values and the steps needed to deliver a message can be accomplished within $\Delta$.
-Without precocious timeouts, no superseding votes for Nil are broadcast, and Best-Effort Communication with Supersession leads to Eventual $\Delta$-Timely Communication with Supersession leads to termination.
+$\Delta$ encapsulates the assumption that, during stable periods, timeouts eventually do not expire precociously, given that they all can be adjusted to reasonable values, and the steps needed to deliver a message can be accomplished within $\Delta$.
+Without precocious timeouts, no needless supersession of messages should happen and all messages exchanged should help algorithms progress.
+In the Tendermint algorithm, for example, no votes for Nil are broadcast, and Best-Effort Communication with Supersession leads to Eventual $\Delta$-Timely Communication with Supersession, which leads to termination.
 
-While GST cannot be enforced but simply assumed to show that algorithms can make progress under good conditions, in practice, systems do go through frequent "long" stable periods which algorithms that depend on GST use to make progress.
+Clearly, if GST is reached, then there must be such $\Delta$ and while GST cannot be enforced but simply assumed to show that algorithms can make progress under good conditions, in practice, systems do go through frequent LSP which allow algorithms that depend on GST use to make progress.
 
 > :clipboard: **TODO**
-> * Refine based on better definition of supersession.
-> * Include "message is not superseded before max(t,gst)+Delta"?
-> * Consider supersession due to original sender sending a new message or it happening en route?
 > * Show that "best-effort superseded communication" + GST implies "Eventual delta timely superseded communication".
 
 ## Conventions
@@ -87,6 +127,7 @@ While GST cannot be enforced but simply assumed to show that algorithms can make
 
 
 # Part 2: CONS/GOSSIP interaction
+
 CONS, the Consensus Reactor State Layer, is where the actions of the Tendermint BFT are implemented.
 Actions are executed once certain pre-conditions apply, such as timeout expirations or reception of information from particular subsets of the nodes in the system, neighbors or not.
 

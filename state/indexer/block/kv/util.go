@@ -136,20 +136,21 @@ func parseEventSeqFromEventKey(key []byte) (int64, error) {
 // addition to match events is the height equality or height range query. At the same time, if we do have a height range condition
 // ignore the height equality condition. If a height equality exists, place the condition index in the query and the desired height
 // into the heightInfo struct
-func dedupHeight(conditions []query.Condition) (dedupConditions []query.Condition, heightInfo HeightInfo, found bool) {
+func dedupHeight(conditions []syntax.Condition) (dedupConditions []syntax.Condition, heightInfo HeightInfo, found bool) {
 	heightInfo.heightEqIdx = -1
 	heightRangeExists := false
-	var heightCondition []query.Condition
+	var heightCondition []syntax.Condition
 	heightInfo.onlyHeightEq = true
 	heightInfo.onlyHeightRange = true
 	for _, c := range conditions {
-		if c.CompositeKey == types.BlockHeightKey {
-			if c.Op == query.OpEqual {
+		if c.Tag == types.BlockHeightKey {
+			if c.Op == syntax.TEq {
 				if found || heightRangeExists {
 					continue
 				} else {
 					heightCondition = append(heightCondition, c)
-					heightInfo.height = c.Operand.(int64)
+					heightInfo.height = int64(c.Arg.Number())
+
 					found = true
 				}
 			} else {
@@ -199,5 +200,5 @@ func lookForHeight(conditions []syntax.Condition) (int64, bool) {
 		}
 	}
 
-	return 0, false, -1
+	return 0, false
 }

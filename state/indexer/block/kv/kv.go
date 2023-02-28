@@ -100,9 +100,7 @@ func (idx *BlockerIndexer) Search(ctx context.Context, q *query.Query) ([]int64,
 
 	conditions := q.Syntax()
 	//conditions, err := q.Conditions()
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse query conditions: %w", err)
-	}
+
 	// conditions to skip because they're handled before "everything else"
 	skipIndexes := make([]int, 0)
 

@@ -3,7 +3,7 @@ package kv
 import (
 	"fmt"
 
-	"github.com/cometbft/cometbft/libs/pubsub/query"
+	cmtsyntax "github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/types"
 	"github.com/google/orderedcode"
@@ -45,22 +45,22 @@ func ParseEventSeqFromEventKey(key []byte) (int64, error) {
 
 	return eventSeq, nil
 }
-func dedupHeight(conditions []query.Condition) (dedupConditions []query.Condition, heightInfo HeightInfo) {
+func dedupHeight(conditions []cmtsyntax.Condition) (dedupConditions []cmtsyntax.Condition, heightInfo HeightInfo) {
 	heightInfo.heightEqIdx = -1
 	heightRangeExists := false
 	found := false
-	var heightCondition []query.Condition
+	var heightCondition []cmtsyntax.Condition
 	heightInfo.onlyHeightEq = true
 	heightInfo.onlyHeightRange = true
 	for _, c := range conditions {
-		if c.CompositeKey == types.TxHeightKey {
-			if c.Op == query.OpEqual {
+		if c.Tag == types.TxHeightKey {
+			if c.Op == cmtsyntax.TEq {
 				if heightRangeExists || found {
 					continue
 				} else {
 					found = true
 					heightCondition = append(heightCondition, c)
-					heightInfo.height = c.Operand.(int64)
+					heightInfo.height = int64(c.Arg.Number())
 				}
 			} else {
 				heightInfo.onlyHeightEq = false

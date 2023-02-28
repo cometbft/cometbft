@@ -83,46 +83,46 @@ func LookForRangesWithHeight(conditions []syntax.Condition) (queryRange QueryRan
 	for i, c := range conditions {
 		heightKey := false
 		if IsRangeOperation(c.Op) {
-			r, ok := queryRange[c.CompositeKey]
+			r, ok := queryRange[c.Tag]
 			if !ok {
-				r = QueryRange{Key: c.CompositeKey}
-				if c.CompositeKey == types.BlockHeightKey || c.CompositeKey == types.TxHeightKey {
-					heightRange = QueryRange{Key: c.CompositeKey}
+				r = QueryRange{Key: c.Tag}
+				if c.Tag == types.BlockHeightKey || c.Tag == types.TxHeightKey {
+					heightRange = QueryRange{Key: c.Tag}
 					heightKey = true
 				}
 			}
 
 			switch c.Op {
-			case query.OpGreater:
+			case syntax.TGt:
 				if heightKey {
-					heightRange.LowerBound = c.Operand
+					heightRange.LowerBound = conditionArg(c)
 				}
-				r.LowerBound = c.Operand
+				r.LowerBound = conditionArg(c)
 
-			case query.OpGreaterEqual:
+			case syntax.TGeq:
 				r.IncludeLowerBound = true
-				r.LowerBound = c.Operand
+				r.LowerBound = conditionArg(c)
 				if heightKey {
 					heightRange.IncludeLowerBound = true
-					heightRange.LowerBound = c.Operand
+					heightRange.LowerBound = conditionArg(c)
 				}
 
-			case query.OpLess:
-				r.UpperBound = c.Operand
+			case syntax.TLt:
+				r.UpperBound = conditionArg(c)
 				if heightKey {
-					heightRange.UpperBound = c.Operand
+					heightRange.UpperBound = conditionArg(c)
 				}
 
-			case query.OpLessEqual:
+			case syntax.TLeq:
 				r.IncludeUpperBound = true
-				r.UpperBound = c.Operand
+				r.UpperBound = conditionArg(c)
 				if heightKey {
 					heightRange.IncludeUpperBound = true
-					heightRange.UpperBound = c.Operand
+					heightRange.UpperBound = conditionArg(c)
 				}
 			}
 
-			queryRange[c.CompositeKey] = r
+			queryRange[c.Tag] = r
 			indexes = append(indexes, i)
 		}
 	}

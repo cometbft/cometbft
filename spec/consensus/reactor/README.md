@@ -6,7 +6,7 @@ South of CometBFT is the OS' network stack.
 
 CometBFT is implemented in a modular way, separating protocol implementations into **reactors**.
 Reactors communicate with their counterparts on other nodes using the P2P layer, through what we will call the **P2P-I**.
-
+This set of documents focuses on the interactions between the P2P layer and the Consensus Reactor.
 
 ```
                                                       SDK Apps
@@ -21,12 +21,11 @@ Reactors communicate with their counterparts on other nodes using the P2P layer,
 ```
 
 
-This set of documents focuses on the interactions between the P2P layer and the Consensus Reactor, which is further divided into two layers.
-The first layer, **CONS**, keeps the state and transition functions described in the [Tendermint BFT paper][1].
-Instances of CONS use gossiping to communicate with other nodes.
-The second layer, **GOSSIP**, keeps state and transition functions needed to implement gossiping on top of the 1-to-1 communication facilities provided by the P2P layer.
-Exchanges between CONS and GOSSIP use multiple forms, but we will call them all **GOSSIP-I** here.
+The Consensus Reactor, which is further divided into two layers:
+- **CONS**, keeps the state and transition functions described in the [Tendermint BFT paper][1] and uses gossiping to communicate with other nodes.
+- **GOSSIP**, keeps state and transition functions needed to implement gossiping on top of the 1-to-1 communication facilities provided by the P2P layer.
 
+Exchanges between CONS and GOSSIP happens through the **GOSSIP-I**.
 
 ```
 ...
@@ -43,21 +42,18 @@ Exchanges between CONS and GOSSIP use multiple forms, but we will call them all 
 ```
 
 The overall goal here is to specify the following:
-1. Provide english specification of
+1. Provide an english specification of
     * what CONS requires from and provides to GOSSIP (GOSSIP-I);
     * what GOSSIP requires from and provides to CONS (GOSSIP-I); and,
     * what GOSSIP requires from and provides to P2P (P2P-I) in order to satisfy CONS' needs.
 2. Provide equivalent Quint specifications, used to mechanically check the properties
-3. Provide an english description of how the current implementation matches (or not) the specified behavior (a very loose refinement mapping)
+3. Provide an english description of how the current implementation matches (or not) the specified behavior, that is, a very loose refinement mapping.
 
 
 # Outline
 
-> **TODO**: Provide an outline. Can we use Jekyll?
-
-
 The specification is divided in multiple documents
-* [reactor.md] (./reactor.md): specification in English
+* [reactor.md](./reactor.md): specification in English
 * [reactor.qnt](./reactor.qnt): corresponding specifications in [Quint](https://github.com/informalsystems/quint)
 * [implementation.md](./implementation.md): a description of what is currently implemented in Tendermint Core, in English.
 * [implementation.qnt](./implementation.qnt): Quint model of current behavior, for model checking of provided properties.
@@ -78,10 +74,10 @@ The specification is divided in multiple documents
 
 # Status
 
-> **Warning**
+> **Warning**    
 > This is a Work In Progress
 
-> **Warning**
+> **Warning**    
 > Permalinks to excerpts of the Quint specification are provided throughout this document for convenience, but may be outdated.
 
 The following table summarizes the relationship between requirements and provisions on the GOSSIP-I, if they are formally defined in Quint, and if there is a discussion of how the current implementation of CometBFT matches the provisions.
@@ -113,4 +109,5 @@ Smaller items are spread throughout the document.
     - Common vocabulary
     - CONS
     - GOSSIP
+    - Are modules adequate for this?
 

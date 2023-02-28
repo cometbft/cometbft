@@ -19,7 +19,7 @@ title: Overview and basic concepts
     - [Evidence](#evidence)
     - [Errors](#errors)
         - [`CheckTx`](#checktx)
-        - [`DeliverTx`](#delivertx)
+        - [`ExecTxResult`](#exectxresult)
         - [`Query`](#query)
 
 # Overview and basic concepts
@@ -50,12 +50,6 @@ do more than just validate blocks through the `ExtendVote` and `VerifyVoteExtens
 
 Furthermore, ABCI++ coalesces {`BeginBlock`, [`DeliverTx`], `EndBlock`} into `FinalizeBlock`, as a
 simplified, efficient way to deliver a decided block to the Application.
-
-<!-- 
-We plan to extend this to allow applications to intervene at the moment a (precommit) vote is sent/received.
-The applications could then require their validators to do more than just validating blocks through the `ExtendVote`
-and `VerifyVoteExtension` methods.
--->
 
 ## Method overview
 

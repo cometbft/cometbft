@@ -461,7 +461,7 @@ events took place during their execution.
 
 The application may set the validator set during
 [`InitChain`](./abci%2B%2B_methods.md#initchain), and may update it during
-[`EndBlock`](./abci%2B%2B_methods.md#endblock). In both cases, a structure of type
+[`FinalizeBlock`](./abci%2B%2B_methods.md#finalizeblock). In both cases, a structure of type
 [`ValidatorUpdate`](./abci%2B%2B_methods.md#validatorupdate) is returned.
 
 The `InitChain` method, used to initialize the Application, can return a list of validators.

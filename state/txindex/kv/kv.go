@@ -679,6 +679,7 @@ func lookForHeight(conditions []syntax.Condition) (height int64) {
 	for _, c := range conditions {
 		if c.Tag == types.TxHeightKey && c.Op == syntax.TEq {
 			height = int64(c.Arg.Number())
+			return
 		}
 	}
 	return 0

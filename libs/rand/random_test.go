@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	mrand "math/rand"
 	"sync"
 	"testing"
 	"time"
@@ -37,10 +36,6 @@ func TestRandIntn(t *testing.T) {
 func TestDeterminism(t *testing.T) {
 	var firstOutput string
 
-	// Set math/rand's seed for the sake of debugging this test.
-	// (It isn't strictly necessary).
-	mrand.Seed(1)
-
 	for i := 0; i < 100; i++ {
 		output := testThemAll()
 		if i == 0 {
@@ -53,7 +48,6 @@ func TestDeterminism(t *testing.T) {
 }
 
 func testThemAll() string {
-
 	// Such determinism.
 	grand.reset(1)
 
@@ -92,18 +86,23 @@ func TestRngConcurrencySafety(t *testing.T) {
 func BenchmarkRandBytes10B(b *testing.B) {
 	benchmarkRandBytes(b, 10)
 }
+
 func BenchmarkRandBytes100B(b *testing.B) {
 	benchmarkRandBytes(b, 100)
 }
+
 func BenchmarkRandBytes1KiB(b *testing.B) {
 	benchmarkRandBytes(b, 1024)
 }
+
 func BenchmarkRandBytes10KiB(b *testing.B) {
 	benchmarkRandBytes(b, 10*1024)
 }
+
 func BenchmarkRandBytes100KiB(b *testing.B) {
 	benchmarkRandBytes(b, 100*1024)
 }
+
 func BenchmarkRandBytes1MiB(b *testing.B) {
 	benchmarkRandBytes(b, 1024*1024)
 }

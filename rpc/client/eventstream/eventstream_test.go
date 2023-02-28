@@ -10,12 +10,12 @@ import (
 	"github.com/fortytw2/leaktest"
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/tendermint/tendermint/internal/eventlog"
-	"github.com/tendermint/tendermint/internal/eventlog/cursor"
-	"github.com/tendermint/tendermint/rpc/client/eventstream"
-	rpccore "github.com/tendermint/tendermint/rpc/core"
-	coretypes "github.com/tendermint/tendermint/rpc/core/types"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/internal/eventlog"
+	"github.com/cometbft/cometbft/internal/eventlog/cursor"
+	"github.com/cometbft/cometbft/rpc/client/eventstream"
+	rpccore "github.com/cometbft/cometbft/rpc/core"
+	coretypes "github.com/cometbft/cometbft/rpc/core/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 func TestStream_filterOrder(t *testing.T) {

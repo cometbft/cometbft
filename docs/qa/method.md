@@ -6,7 +6,7 @@ title: Method
 # Method
 
 This document provides a detailed description of the QA process.
-It is intended to be used by engineers reproducing the experimental setup for future tests of Tendermint.
+It is intended to be used by engineers reproducing the experimental setup for future tests of CometBFT.
 
 The (first iteration of the) QA process as described [in the RELEASES.md document][releases]
 was applied to version v0.34.x in order to have a set of results acting as benchmarking baseline.
@@ -15,7 +15,7 @@ This baseline is then compared with results obtained in later versions.
 Out of the testnet-based test cases described in [the releases document][releases] we focused on two of them:
 _200 Node Test_, and _Rotating Nodes Test_.
 
-[releases]: https://github.com/tendermint/tendermint/blob/v0.37.x/RELEASES.md#large-scale-testnets
+[releases]: https://github.com/cometbft/cometbft/blob/main/RELEASES.md#large-scale-testnets
 
 ## Software Dependencies
 
@@ -29,7 +29,7 @@ _200 Node Test_, and _Rotating Nodes Test_.
     * [Terraform CLI][Terraform]
     * [Ansible CLI][Ansible]
 
-[testnet-repo]: https://github.com/interchainio/tendermint-testnet
+[testnet-repo]: https://github.com/cometbft/qa-infra
 [Ansible]: https://docs.ansible.com/ansible/latest/index.html
 [Terraform]: https://www.terraform.io/docs
 [doctl]: https://docs.digitalocean.com/reference/doctl/how-to/install/
@@ -53,18 +53,37 @@ This section explains how the tests were carried out for reproducibility purpose
    Follow steps 1-4 of the `README.md` at the top of the testnet repository to configure Terraform, and `doctl`.
 2. Copy file `testnets/testnet200.toml` onto `testnet.toml` (do NOT commit this change)
 3. Set the variable `VERSION_TAG` in the `Makefile` to the git hash that is to be tested.
+   * If you are running the base test, which implies an homogeneous network (all nodes are running the same version),
+     then make sure makefile variable `VERSION2_WEIGHT` is set to 0
+   * If you are running a mixed network, set the variable `VERSION_TAG2` to the other version you want deployed
+     in the network. The, adjust the weight variables `VERSION_WEIGHT` and `VERSION2_WEIGHT` to configure the
+     desired proportion of nodes running each of the two configured versions.
 4. Follow steps 5-10 of the `README.md` to configure and start the 200 node testnet
     * WARNING: Do NOT forget to run `make terraform-destroy` as soon as you are done with the tests (see step 9)
-5. As a sanity check, connect to the Prometheus node's web interface and check the graph for the `tendermint_consensus_height` metric.
+5. As a sanity check, connect to the Prometheus node's web interface and check the graph for the `COMETBFT_CONSENSUS_HEIGHT` metric.
    All nodes should be increasing their heights.
-6. `ssh` into the `testnet-load-runner`, then copy script `script/200-node-loadscript.sh` and run it from the load runner node.
-    * Before running it, you need to edit the script to provide the IP address of a full node.
-      This node will receive all transactions from the load runner node.
-    * This script will take about 40 mins to run
-    * It is running 90-seconds-long experiments in a loop with different loads
+6. You now need to start the load runner that will produce transaction load
+    * If you don't know the saturation load of the version you are testing, you need to discover it.
+        * `ssh` into the `testnet-load-runner`, then copy script `script/200-node-loadscript.sh` and run it from the load runner node.
+        * Before running it, you need to edit the script to provide the IP address of a full node.
+          This node will receive all transactions from the load runner node.
+        * This script will take about 40 mins to run.
+        * It is running 90-seconds-long experiments in a loop with different loads.
+    * If you already know the saturation load, you can simply run the test (several times) for 90 seconds with a load somewhat
+      below saturation:
+        * set makefile variables `ROTATE_CONNECTIONS`, `ROTATE_TX_RATE`, to values that will produce the desired transaction load.
+        * set `ROTATE_TOTAL_TIME` to 90 (seconds).
+        * run "make runload" and wait for it to complete. You may want to run this several times so the data from different runs can be compared.
 7. Run `make retrieve-data` to gather all relevant data from the testnet into the orchestrating machine
+    * Alternatively, you may want to run `make retrieve-prometheus-data` and `make retrieve-blockstore` separately.
+      The end result will be the same.
+    * `make retrieve-blockstore` accepts the following values in makefile variable `RETRIEVE_TARGET_HOST`
+        * `any`: (which is the default) picks up a full node and retrieves the blockstore from that node only.
+        * `all`: retrieves the blockstore from all full nodes; this is extremely slow, and consumes plenty of bandwidth,
+           so use it with care.
+        * the name of a particular full node (e.g., `validator01`): retrieves the blockstore from that node only.
 8. Verify that the data was collected without errors
-    * at least one blockstore DB for a Tendermint validator
+    * at least one blockstore DB for a CometBFT validator
     * the Prometheus database from the Prometheus node
     * for extra care, you can run `zip -T` on the `prometheus.zip` file and (one of) the `blockstore.db.zip` file(s)
 9. **Run `make terraform-destroy`**
@@ -73,32 +92,44 @@ This section explains how the tests were carried out for reproducibility purpose
 ### Result Extraction
 
 The method for extracting the results described here is highly manual (and exploratory) at this stage.
-The Core team should improve it at every iteration to increase the amount of automation.
+The CometBFT team should improve it at every iteration to increase the amount of automation.
 
 #### Steps
 
 1. Unzip the blockstore into a directory
 2. Extract the latency report and the raw latencies for all the experiments. Run these commands from the directory containing the blockstore
-    * `go run github.com/tendermint/tendermint/test/loadtime/cmd/report@3ec6e424d --database-type goleveldb --data-dir ./ > results/report.txt`
-    * `go run github.com/tendermint/tendermint/test/loadtime/cmd/report@3ec6e424d --database-type goleveldb --data-dir ./ --csv results/raw.csv`
+    * ```bash
+       mkdir results
+       go run github.com/cometbft/cometbft/test/loadtime/cmd/report@f1aaa436d --database-type goleveldb --data-dir ./ > results/report.txt`
+       go run github.com/cometbft/cometbft/test/loadtime/cmd/report@f1aaa436d --database-type goleveldb --data-dir ./ --csv results/raw.csv`
+       ```
 3. File `report.txt` contains an unordered list of experiments with varying concurrent connections and transaction rate
-    * Create files `report01.txt`, `report02.txt`, `report04.txt` and, for each experiment in file `report.txt`,
-      copy its related lines to the filename that matches the number of connections.
-    * Sort the experiments in `report01.txt` in ascending tx rate order. Likewise for `report02.txt` and `report04.txt`.
+    * If you are looking for the saturation point
+        * Create files `report01.txt`, `report02.txt`, `report04.txt` and, for each experiment in file `report.txt`,
+          copy its related lines to the filename that matches the number of connections, for example    
+          ```bash
+          for cnum in 1 2 3 4; do echo "$cnum"; grep "Connections: $cnum" results/report.txt -B 2 -A 10 > results/report$cnum.txt;  done
+          ```
+          
+        * Sort the experiments in `report01.txt` in ascending tx rate order. Likewise for `report02.txt` and `report04.txt`.
+    * Otherwise just keep `report.txt`, and skip step 4.
 4. Generate file `report_tabbed.txt` by showing the contents `report01.txt`, `report02.txt`, `report04.txt` side by side
-   * This effectively creates a table where rows are a particular tx rate and columns are a particular number of websocket connections.
+    * This effectively creates a table where rows are a particular tx rate and columns are a particular number of websocket connections.
 5. Extract the raw latencies from file `raw.csv` using the following bash loop. This creates a `.csv` file and a `.dat` file per experiment.
-   The format of the `.dat` files is amenable to loading them as matrices in Octave
+   The format of the `.dat` files is amenable to loading them as matrices in Octave.
+     * Adapt the values of the for loop variables according to the experiments that you ran (check `report.txt`).
+     * Adapt `report*.txt` to the files you produced in step 3.
 
     ```bash
     uuids=($(cat report01.txt report02.txt report04.txt | grep '^Experiment ID: ' | awk '{ print $3 }'))
     c=1
+    rm -f *.dat
     for i in 01 02 04; do
       for j in 0025 0050 0100 0200; do
         echo $i $j $c "${uuids[$c]}"
         filename=c${i}_r${j}
         grep ${uuids[$c]} raw.csv > ${filename}.csv
-        cat ${filename}.csv | tr , ' ' | awk '{ print $2, $3 }' > ${filename}.dat
+        cat ${filename}.csv | tr , ' ' | awk '{ print $2, $3 }' >> ${filename}.dat
         c=$(expr $c + 1)
       done
     done
@@ -159,8 +190,15 @@ The Core team should improve it at every iteration to increase the amount of aut
 
 13. To generate a latency vs throughput plot, using the raw CSV file generated
     in step 2, follow the instructions for the [`latency_throughput.py`] script.
+    This plot is useful to visualize the saturation point.
 
-[`latency_throughput.py`]: ../../scripts/qa/reporting/README.md
+[`latency_throughput.py`]: ../../scripts/qa/reporting/README.md#Latency-vs-Throughput-Plotting
+
+14. Alternatively,  follow the instructions for the [`latency_plotter.py`] script.
+    This script generates a series of plots per experiment and configuration that my
+    help with visualizing Latency vs Throughput variation.
+
+[`latency_plotter.py`]: ../../scripts/qa/reporting/README.md#Latency-vs-Throughput-Plotting-version-2
 
 #### Extracting Prometheus Metrics
 
@@ -168,7 +206,10 @@ The Core team should improve it at every iteration to increase the amount of aut
 2. Unzip the prometheus database retrieved from the testnet, and move it to replace the
    local prometheus database.
 3. Start the prometheus server and make sure no error logs appear at start up.
-4. Introduce the metrics you want to gather or plot.
+4. Identify the time window you want to plot in your graphs.
+5. Execute the [`prometheus_plotter.py`] script for the time window.
+
+[`prometheus_plotter.py`]: ../../scripts/qa/reporting/README.md#prometheus-metrics
 
 ## Rotating Node Testnet
 
@@ -197,7 +238,7 @@ This section explains how the tests were carried out for reproducibility purpose
     after height 3000 was reached, stop `make rotate`
 11. Run `make retrieve-data` to gather all relevant data from the testnet into the orchestrating machine
 12. Verify that the data was collected without errors
-    * at least one blockstore DB for a Tendermint validator
+    * at least one blockstore DB for a CometBFT validator
     * the Prometheus database from the Prometheus node
     * for extra care, you can run `zip -T` on the `prometheus.zip` file and (one of) the `blockstore.db.zip` file(s)
 13. **Run `make terraform-destroy`**

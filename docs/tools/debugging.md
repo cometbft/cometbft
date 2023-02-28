@@ -1,16 +1,20 @@
+---
+order: 1
+---
+
 # Debugging
 
-## tendermint debug kill
+## CometBFT debug kill
 
-Tendermint comes with a `debug` sub-command that allows you to kill a live
-Tendermint process while collecting useful information in a compressed archive.
+CometBFT comes with a `debug` sub-command that allows you to kill a live
+CometBFT process while collecting useful information in a compressed archive.
 The information includes the configuration used, consensus state, network
 state, the node' status, the WAL, and even the stack trace of the process
 before exit. These files can be useful to examine when debugging a faulty
-Tendermint process.
+CometBFT process.
 
 ```bash
-tendermint debug kill <pid> </path/to/out.zip> --home=</path/to/app.d>
+cometbft debug kill <pid> </path/to/out.zip> --home=</path/to/app.d>
 ```
 
 will write debug info into a compressed archive. The archive will contain the
@@ -29,7 +33,7 @@ Under the hood, `debug kill` fetches info from `/status`, `/net_info`, and
 `/dump_consensus_state` HTTP endpoints, and kills the process with `-6`, which
 catches the go-routine dump.
 
-## Tendermint debug dump
+## CometBFT debug dump
 
 Also, the `debug dump` sub-command allows you to dump debugging data into
 compressed archives at a regular interval. These archives contain the goroutine
@@ -37,7 +41,7 @@ and heap profiles in addition to the consensus state, network info, node
 status, and even the WAL.
 
 ```bash
-tendermint debug dump </path/to/out> --home=</path/to/app.d>
+cometbft debug dump </path/to/out> --home=</path/to/app.d>
 ```
 
 will perform similarly to `kill` except it only polls the node and
@@ -56,46 +60,46 @@ given destination directory. Each archive will contain:
 Note: goroutine.out and heap.out will only be written if a profile address is
 provided and is operational. This command is blocking and will log any error.
 
-## Tendermint Inspect
+## CometBFT Inspect
 
-Tendermint includes an `inspect` command for querying Tendermint's state store and block
-store over Tendermint RPC.
+CometBFT includes an `inspect` command for querying CometBFT's state store and block
+store over CometBFT RPC.
 
-When the Tendermint consensus engine detects inconsistent state, it will crash the
-entire Tendermint process. 
-While in this inconsistent state, a node running Tendermint's consensus engine will not start up. 
-The `inspect` command runs only a subset of Tendermint's RPC endpoints for querying the block store
-and state store. 
+When the CometBFT consensus engine detects inconsistent state, it will crash the
+entire CometBFT process.
+While in this inconsistent state, a node running CometBFT will not start up.
+The `inspect` command runs only a subset of CometBFT's RPC endpoints for querying the block store
+and state store.
 `inspect` allows operators to query a read-only view of the stage.
 `inspect` does not run the consensus engine at all and can therefore be used to debug
-processes that have crashed due to inconsistent state. 
+processes that have crashed due to inconsistent state.
 
 ### Running inspect
 
-Start up the `inspect` tool on the machine where Tendermint crashed using: 
+Start up the `inspect` tool on the machine where CometBFT crashed using:
 ```bash
-tendermint inspect --home=</path/to/app.d>
+cometbft inspect --home=</path/to/app.d>
 ```
 
-`inspect` will use the data directory specified in your Tendermint configuration file.
-`inspect` will also run the RPC server at the address specified in your Tendermint configuration file.
+`inspect` will use the data directory specified in your CometBFT configuration file.
+`inspect` will also run the RPC server at the address specified in your CometBFT configuration file.
 
 ### Using inspect
 
 With the `inspect` server running, you can access RPC endpoints that are critically important
 for debugging.
-Calling the `/status`, `/consensus_state` and `/dump_consensus_state` RPC endpoint 
-will return useful information about the Tendermint consensus state.
+Calling the `/status`, `/consensus_state` and `/dump_consensus_state` RPC endpoint
+will return useful information about the CometBFT consensus state.
 
 To start the `inspect` process, run
 ```bash
-tendermint inspect
+cometbft inspect
 ```
 
 ### RPC endpoints
 
 The list of available RPC endpoints can be found by making a request to the RPC port.
-For an `inspect` process running on `127.0.0.1:26657`, navigate your browser to 
+For an `inspect` process running on `127.0.0.1:26657`, navigate your browser to
 `http://127.0.0.1:26657/` to retrieve the list of enabled RPC endpoints.
 
-Additional information on the Tendermint RPC endpoints can be found in the [rpc documentation](https://docs.tendermint.com/master/rpc).
+Additional information on the CometBFT RPC endpoints can be found in the [rpc documentation](https://docs.cometbft.com/master/rpc).

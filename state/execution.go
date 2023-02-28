@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	cryptoenc "github.com/tendermint/tendermint/crypto/encoding"
-	"github.com/tendermint/tendermint/libs/fail"
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/mempool"
-	tmstate "github.com/tendermint/tendermint/proto/tendermint/state"
-	"github.com/tendermint/tendermint/proxy"
-	"github.com/tendermint/tendermint/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/libs/fail"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/mempool"
+	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
+	"github.com/cometbft/cometbft/proxy"
+	"github.com/cometbft/cometbft/types"
 )
 
 //-----------------------------------------------------------------------------
@@ -218,7 +218,7 @@ func (blockExec *BlockExecutor) ApplyBlock(
 
 	fail.Fail() // XXX
 
-	// validate the validator updates and convert to tendermint types
+	// validate the validator updates and convert to CometBFT types
 	abciValUpdates := abciResponses.EndBlock.ValidatorUpdates
 	err = validateValidatorUpdates(abciValUpdates, state.ConsensusParams.Validator)
 	if err != nil {
@@ -339,11 +339,11 @@ func execBlockOnProxyApp(
 	block *types.Block,
 	store Store,
 	initialHeight int64,
-) (*tmstate.ABCIResponses, error) {
+) (*cmtstate.ABCIResponses, error) {
 	var validTxs, invalidTxs = 0, 0
 
 	txIndex := 0
-	abciResponses := new(tmstate.ABCIResponses)
+	abciResponses := new(cmtstate.ABCIResponses)
 	dtxs := make([]*abci.ResponseDeliverTx, len(block.Txs))
 	abciResponses.DeliverTxs = dtxs
 
@@ -495,7 +495,7 @@ func updateState(
 	state State,
 	blockID types.BlockID,
 	header *types.Header,
-	abciResponses *tmstate.ABCIResponses,
+	abciResponses *cmtstate.ABCIResponses,
 	validatorUpdates []*types.Validator,
 ) (State, error) {
 
@@ -558,12 +558,12 @@ func updateState(
 
 // Fire NewBlock, NewBlockHeader.
 // Fire TxEvent for every tx.
-// NOTE: if Tendermint crashes before commit, some or all of these events may be published again.
+// NOTE: if CometBFT crashes before commit, some or all of these events may be published again.
 func fireEvents(
 	logger log.Logger,
 	eventBus types.BlockEventPublisher,
 	block *types.Block,
-	abciResponses *tmstate.ABCIResponses,
+	abciResponses *cmtstate.ABCIResponses,
 	validatorUpdates []*types.Validator,
 ) {
 	if err := eventBus.PublishEventNewBlock(types.EventDataNewBlock{

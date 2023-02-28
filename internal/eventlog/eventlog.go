@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tendermint/tendermint/internal/eventlog/cursor"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/internal/eventlog/cursor"
+	"github.com/cometbft/cometbft/types"
 )
 
 // A Log is a reverse time-ordered log of events in a sliding window of time

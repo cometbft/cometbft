@@ -12,9 +12,9 @@ import (
 	"os/signal"
 	"path/filepath"
 
-	"github.com/tendermint/tendermint/rpc/client/eventstream"
-	rpcclient "github.com/tendermint/tendermint/rpc/client/http"
-	coretypes "github.com/tendermint/tendermint/rpc/core/types"
+	"github.com/cometbft/cometbft/rpc/client/eventstream"
+	rpcclient "github.com/cometbft/cometbft/rpc/client/http"
+	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 )
 
 var (

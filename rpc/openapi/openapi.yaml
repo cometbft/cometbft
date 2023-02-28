@@ -1,11 +1,11 @@
 openapi: 3.0.0
 info:
-  title: Tendermint RPC
+  title: CometBFT RPC
   contact:
-    name: Tendermint RPC
-    url: https://github.com/tendermint/tendermint/issues/new/choose
+    name: CometBFT RPC
+    url: https://github.com/cometbft/cometbft/issues/new/choose
   description: |
-    Tendermint supports the following RPC protocols:
+    CometBFT supports the following RPC protocols:
 
     * URI over HTTP
     * JSONRPC over HTTP
@@ -14,7 +14,7 @@ info:
     ## Configuration
 
     RPC can be configured by tuning parameters under `[rpc]` table in the
-    `$TMHOME/config/config.toml` file or by using the `--rpc.X` command-line
+    `$CMTHOME/config/config.toml` file or by using the `--rpc.X` command-line
     flags.
 
     Default rpc listen address is `tcp://0.0.0.0:26657`.
@@ -54,12 +54,12 @@ info:
   version: "main"
   license:
     name: Apache 2.0
-    url: https://github.com/tendermint/tendermint/blob/main/LICENSE
+    url: https://github.com/cometbft/cometbft/blob/main/LICENSE
 servers:
   - url: https://rpc.cosmos.network
-    description: Cosmos mainnet node to interact with the Tendermint RPC
+    description: Cosmos mainnet node to interact with the CometBFT RPC
   - url: http://localhost:26657
-    description: Interact with the Tendermint RPC locally on your device
+    description: Interact with the CometBFT RPC locally on your device
 tags:
   - name: Websocket
     description: Subscribe/unsubscribe are reserved for websocket events.
@@ -83,7 +83,7 @@ paths:
       description: |
         If you want to be sure that the transaction is included in a block, you can
         subscribe for the result using JSONRPC via a websocket. See
-        https://docs.tendermint.com/main/app-dev/subscribing-to-events-via-websocket.html
+        https://docs.cometbft.com/main/core/subscription.html
         If you haven't received anything after a couple of blocks, resend it. If the
         same happens again, send it to some other node. A few reasons why it could
         happen:
@@ -95,7 +95,7 @@ paths:
 
 
         Please refer to
-        https://docs.tendermint.com/main/tendermint-core/using-tendermint.html#formatting
+        https://docs.cometbft.com/main/core/using-cometbft.html#formatting
         for formatting/encoding rules.
       parameters:
         - in: query
@@ -127,7 +127,7 @@ paths:
       description: |
         If you want to be sure that the transaction is included in a block, you can
         subscribe for the result using JSONRPC via a websocket. See
-        https://docs.tendermint.com/main/app-dev/subscribing-to-events-via-websocket.html
+        https://docs.cometbft.com/main/core/subscription.html
         If you haven't received anything after a couple of blocks, resend it. If the
         same happens again, send it to some other node. A few reasons why it could
         happen:
@@ -139,7 +139,7 @@ paths:
         3. node can be offline
 
         Please refer to
-        https://docs.tendermint.com/main/tendermint-core/using-tendermint.html#formatting
+        https://docs.cometbft.com/main/core/using-cometbft.html#formatting
         for formatting/encoding rules.
       parameters:
         - in: query
@@ -172,7 +172,7 @@ paths:
         IMPORTANT: use only for testing and development. In production, use
         BroadcastTxSync or BroadcastTxAsync. You can subscribe for the transaction
         result using JSONRPC via a websocket. See
-        https://docs.tendermint.com/main/app-dev/subscribing-to-events-via-websocket.html
+        https://docs.cometbft.com/main/core/subscription.html
 
         CONTRACT: only returns error if mempool.CheckTx() errs or if we timeout
         waiting for tx to commit.
@@ -181,7 +181,7 @@ paths:
         will contain a non-OK ABCI code.
 
         Please refer to
-        https://docs.tendermint.com/main/tendermint-core/using-tendermint.html#formatting
+        https://docs.cometbft.com/main/core/using-cometbft.html#formatting
         for formatting/encoding rules.
       parameters:
         - in: query
@@ -214,7 +214,7 @@ paths:
         The transaction won't be added to the mempool.
 
         Please refer to
-        https://docs.tendermint.com/main/tendermint-core/using-tendermint.html#formatting
+        https://docs.cometbft.com/main/core/using-cometbft.html#formatting
         for formatting/encoding rules.
 
         Upon success, the `Cache-Control` header will be set with the default
@@ -261,13 +261,13 @@ paths:
               tm.event = 'Tx' AND tx.height = 5   # all txs of the fifth block
               tx.height = 5                       # all txs of the fifth block
 
-        Tendermint provides a few predefined keys: tm.event, tx.hash and tx.height.
+        CometBFT provides a few predefined keys: tm.event, tx.hash and tx.height.
         Note for transactions, you can define additional keys by providing events with
         DeliverTx response.
 
         import (
-            abci "github.com/tendermint/tendermint/abci/types"
-            "github.com/tendermint/tendermint/libs/pubsub/query"
+            abci "github.com/cometbft/cometbft/abci/types"
+            "github.com/cometbft/cometbft/libs/pubsub/query"
         )
 
         abci.ResponseDeliverTx{
@@ -334,14 +334,14 @@ paths:
         query.MustParse("tm.event = 'Tx' AND rewards.withdraw.source = 'W'")
 
         See list of all possible events here
-        https://godoc.org/github.com/tendermint/tendermint/types#pkg-constants
+        https://godoc.org/github.com/cometbft/cometbft/types#pkg-constants
 
         For complete query syntax, check out
-        https://godoc.org/github.com/tendermint/tendermint/libs/pubsub/query.
+        https://godoc.org/github.com/cometbft/cometbft/libs/pubsub/query.
 
         ```go
-        import rpchttp "github.com/tendermint/rpc/client/http"
-        import "github.com/tendermint/tendermint/types"
+        import rpchttp "github.com/cometbft/rpc/client/http"
+        import "github.com/cometbft/cometbft/types"
 
         client := rpchttp.New("tcp:0.0.0.0:26657", "/websocket")
         err := client.Start()
@@ -364,7 +364,7 @@ paths:
         }()
         ```
 
-        NOTE: if you're not reading events fast enough, Tendermint might
+        NOTE: if you're not reading events fast enough, CometBFT might
         terminate the subscription.
       parameters:
         - in: query
@@ -487,7 +487,7 @@ paths:
       tags:
         - Info
       description: |
-        Get Tendermint status including node info, pubkey, latest block hash, app hash, block height and time.
+        Get CometBFT status including node info, pubkey, latest block hash, app hash, block height and time.
       responses:
         "200":
           description: Status of the node
@@ -961,7 +961,7 @@ paths:
           description: |
             Complete consensus state.
 
-            See https://pkg.go.dev/github.com/tendermint/tendermint/types?tab=doc#Vote.String for Vote string description.
+            See https://pkg.go.dev/github.com/cometbft/cometbft/types?tab=doc#Vote.String for Vote string description.
           content:
             application/json:
               schema:
@@ -3013,7 +3013,7 @@ components:
               example:
                 - "ed25519"
 
-    # Events in tendermint
+    # Events in CometBFT
     Event:
       type: object
       properties:

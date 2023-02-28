@@ -4,6 +4,7 @@ parent:
   title: Light Client
   order: false
 ---
-# Tendermint Light Client Protocol
+
+# Light Client Protocol
 
 Deprecated, please see [light-client](../../light-client/README.md).

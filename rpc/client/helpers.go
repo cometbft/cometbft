@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	coretypes "github.com/tendermint/tendermint/rpc/core/types"
-	"github.com/tendermint/tendermint/types"
+	coretypes "github.com/cometbft/cometbft/rpc/core/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 // Waiter is informed of current height, decided whether to quit early

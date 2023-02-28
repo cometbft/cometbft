@@ -10,21 +10,21 @@ import (
 	"testing"
 	"time"
 
+	abcitypes "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/inspect"
+	"github.com/cometbft/cometbft/internal/test"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/pubsub/query"
+	"github.com/cometbft/cometbft/proto/tendermint/state"
+	httpclient "github.com/cometbft/cometbft/rpc/client/http"
+	indexermocks "github.com/cometbft/cometbft/state/indexer/mocks"
+	statemocks "github.com/cometbft/cometbft/state/mocks"
+	txindexmocks "github.com/cometbft/cometbft/state/txindex/mocks"
+	"github.com/cometbft/cometbft/types"
 	"github.com/fortytw2/leaktest"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	abcitypes "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/inspect"
-	"github.com/tendermint/tendermint/internal/test"
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/libs/pubsub/query"
-	"github.com/tendermint/tendermint/proto/tendermint/state"
-	httpclient "github.com/tendermint/tendermint/rpc/client/http"
-	indexermocks "github.com/tendermint/tendermint/state/indexer/mocks"
-	statemocks "github.com/tendermint/tendermint/state/mocks"
-	txindexmocks "github.com/tendermint/tendermint/state/txindex/mocks"
-	"github.com/tendermint/tendermint/types"
 )
 
 func TestInspectConstructor(t *testing.T) {
@@ -263,7 +263,7 @@ func TestBlockResults(t *testing.T) {
 	testGasUsed := int64(100)
 	stateStoreMock := &statemocks.Store{}
 	stateStoreMock.On("Close").Return(nil)
-	//	tmstate "github.com/tendermint/tendermint/proto/tendermint/state"
+	//	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
 	stateStoreMock.On("LoadABCIResponses", testHeight).Return(&state.ABCIResponses{
 		DeliverTxs: []*abcitypes.ResponseDeliverTx{
 			{

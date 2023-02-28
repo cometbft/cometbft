@@ -31,10 +31,10 @@ title: Methods
 
     | Name          | Type   | Description                              | Field Number |
     |---------------|--------|------------------------------------------|--------------|
-    | version       | string | The Tendermint software semantic version | 1            |
-    | block_version | uint64 | The Tendermint Block Protocol version    | 2            |
-    | p2p_version   | uint64 | The Tendermint P2P Protocol version      | 3            |
-    | abci_version  | string | The Tendermint ABCI semantic version     | 4            |
+    | version       | string | The CometBFT software semantic version | 1            |
+    | block_version | uint64 | The CometBFT Block Protocol version    | 2            |
+    | p2p_version   | uint64 | The CometBFT P2P Protocol version      | 3            |
+    | abci_version  | string | The CometBFT ABCI semantic version     | 4            |
 
 * **Response**:
 
@@ -48,10 +48,10 @@ title: Methods
 
 * **Usage**:
     * Return information about the application state.
-    * Used to sync Tendermint with the application during a handshake
+    * Used to sync CometBFT with the application during a handshake
       that happens on startup or on recovery.
     * The returned `app_version` will be included in the Header of every block.
-    * Tendermint expects `last_block_app_hash` and `last_block_height` to
+    * CometBFT expects `last_block_app_hash` and `last_block_height` to
       be updated and persisted during `Commit`.
 
 > Note: Semantic version is a reference to [semantic versioning](https://semver.org/). Semantic versions in info will be displayed as X.X.x.
@@ -83,7 +83,7 @@ title: Methods
     * If `ResponseInitChain.Validators` is not empty, it will be the initial
       validator set (regardless of what is in `RequestInitChain.Validators`).
     * This allows the app to decide if it wants to accept the initial validator
-      set proposed by Tendermint (ie. in the genesis file), or if it wants to use
+      set proposed by CometBFT (ie. in the genesis file), or if it wants to use
       a different one (perhaps computed based on some application specific
       information in the genesis file).
     * Both `RequestInitChain.Validators` and `ResponseInitChain.Validators` are [ValidatorUpdate](#validatorupdate) structs.
@@ -151,7 +151,7 @@ title: Methods
       of the state changes described in the transaction.
     * Transactions where `ResponseCheckTx.Code != 0` will be rejected - they will not be broadcast
       to other nodes or included in a proposal block.
-      Tendermint attributes no other value to the response code.
+      CometBFT attributes no other value to the response code.
 
 ### BeginBlock
 
@@ -174,7 +174,7 @@ title: Methods
     * Signals the beginning of a new block.
     * Called prior to any `DeliverTx` method calls.
     * The header contains the height, timestamp, and more - it exactly matches the
-    Tendermint block header. We may seek to generalize this in the future.
+    CometBFT block header. We may seek to generalize this in the future.
     * The `CommitInfo` and `ByzantineValidators` can be used to determine
     rewards and punishments for the validators.
 
@@ -203,7 +203,7 @@ title: Methods
     * [**Required**] The core method of the application.
     * `DeliverTx` is called once for each transaction in the block.
     * When `DeliverTx` is called, the application must execute the transaction deterministically
-    in full before returning control to Tendermint.
+    in full before returning control to CometBFT.
     * Alternatively, the application can apply a candidate state corresponding
      to the same block previously executed via `PrepareProposal` or `ProcessProposal` any time between the calls to `BeginBlock`, the various
      calls to `DeliverTx` and `EndBlock`.
@@ -237,8 +237,8 @@ title: Methods
         * `H+3`: `last_commit_info (BeginBlock)` is changed to include the altered validator set and `*_last_commit` fields in `PrepareProposal`, `ProcessProposal` now include the altered validator set.
     * `consensus_param_updates` returned for block `H` apply to the consensus
       params for block `H+1`. For more information on the consensus parameters,
-      see the [application spec entry on consensus parameters](abci++_app_requirements.md#consensus-parameters).
-    * `validator_updates` and `consensus_param_updates` may be empty. In this case, Tendermint will keep the current values.
+      see the [application spec entry on consensus parameters](./abci++_app_requirements.md#consensus-parameters).
+    * `validator_updates` and `consensus_param_updates` may be empty. In this case, CometBFT will keep the current values.
 
 
 
@@ -338,7 +338,7 @@ title: Methods
 
 * **Usage**:
     * `OfferSnapshot` is called when bootstrapping a node using state sync. The application may
-    accept or reject snapshots as appropriate. Upon accepting, Tendermint will retrieve and
+    accept or reject snapshots as appropriate. Upon accepting, CometBFT will retrieve and
     apply snapshot chunks via `ApplySnapshotChunk`. The application may also choose to reject a
     snapshot in the chunk response, in which case it should be prepared to accept further
     `OfferSnapshot` calls.
@@ -354,7 +354,7 @@ title: Methods
 
     | Name   | Type   | Description                                                                 | Field Number |
     |--------|--------|-----------------------------------------------------------------------------|--------------|
-    | index  | uint32 | The chunk index, starting from `0`. Tendermint applies chunks sequentially. | 1            |
+    | index  | uint32 | The chunk index, starting from `0`. CometBFT applies chunks sequentially. | 1            |
     | chunk  | bytes  | The binary chunk contents, as returned by `LoadSnapshotChunk`.              | 2            |
     | sender | string | The P2P ID of the node who sent this chunk.                                 | 3            |
 
@@ -378,15 +378,15 @@ title: Methods
 ```
 
 * **Usage**:
-    * The application can choose to refetch chunks and/or ban P2P peers as appropriate. Tendermint
+    * The application can choose to refetch chunks and/or ban P2P peers as appropriate. CometBFT
     will not do this unless instructed by the application.
     * The application may want to verify each chunk, e.g. by attaching chunk hashes in
     `Snapshot.Metadata` and/or incrementally verifying contents against `AppHash`.
-    * When all chunks have been accepted, Tendermint will make an ABCI `Info` call to verify that
+    * When all chunks have been accepted, CometBFT will make an ABCI `Info` call to verify that
     `LastBlockAppHash` and `LastBlockHeight` matches the expected values, and record the
     `AppVersion` in the node state. It then switches to block sync or consensus and joins the
     network.
-    * If Tendermint is unable to retrieve the next chunk after some time (e.g. because no suitable
+    * If CometBFT is unable to retrieve the next chunk after some time (e.g. because no suitable
     peers are available), it will reject the snapshot and try a different one via `OfferSnapshot`.
     The application should be prepared to reset and accept it or abort as appropriate.
 
@@ -402,7 +402,7 @@ title: Methods
     |----------------------|-------------------------------------------------|-----------------------------------------------------------------------------------------------|--------------|
     | max_tx_bytes         | int64                                           | Currently configured maximum size in bytes taken by the modified transactions.                | 1            |
     | txs                  | repeated bytes                                  | Preliminary list of transactions that have been picked as part of the block to propose.       | 2            |
-    | local_last_commit    | [ExtendedCommitInfo](#extendedcommitinfo)       | Info about the last commit, obtained locally from Tendermint's data structures.               | 3            |
+    | local_last_commit    | [ExtendedCommitInfo](#extendedcommitinfo)       | Info about the last commit, obtained locally from CometBFT's data structures.               | 3            |
     | misbehavior          | repeated [Misbehavior](#misbehavior)            | List of information about validators that misbehaved.                                         | 4            |
     | height               | int64                                           | The height of the block that will be proposed.                                                | 5            |
     | time                 | [google.protobuf.Timestamp][protobuf-timestamp] | Timestamp of the block that that will be proposed.                                            | 6            |
@@ -422,7 +422,7 @@ title: Methods
       decision of the previous block.
     * The `height`, `time`, and `proposer_address` values match the values from the header of the
       proposed block.
-    * `RequestPrepareProposal` contains a preliminary set of transactions `txs` that Tendermint
+    * `RequestPrepareProposal` contains a preliminary set of transactions `txs` that CometBFT
       retrieved from the mempool, called _raw proposal_. The Application can modify this
       set and return a modified set of transactions via `ResponsePrepareProposal.txs` .
         * The Application _can_ modify the raw proposal: it can reorder, remove or add transactions.
@@ -431,12 +431,12 @@ title: Methods
               there are other transactions with higher priority, then it should not include it in
               `ResponsePrepareProposal.txs`. However, this will not remove `tx` from the mempool.
             * If the Application wants to add a new transaction to the proposed block, then the
-              Application includes it in `ResponsePrepareProposal.txs`. Tendermint will not add
+              Application includes it in `ResponsePrepareProposal.txs`. CometBFT will not add
               the transaction to the mempool.
         * The Application should be aware that removing and adding transactions may compromise
           _traceability_.
           > Consider the following example: the Application transforms a client-submitted
-            transaction `t1` into a second transaction `t2`, i.e., the Application asks Tendermint
+            transaction `t1` into a second transaction `t2`, i.e., the Application asks CometBFT
             to remove `t1` from the block and add `t2` to the block. If a client wants to eventually check what
             happened to `t1`, it will discover that `t1` is not in a
             committed block (assuming a _re-CheckTx_ evited it from the mempool), getting the wrong idea that `t1` did not make it into a block. Note
@@ -445,37 +445,37 @@ title: Methods
             traceability, it is its responsability to support it. For instance, the Application
             could attach to a transformed transaction a list with the hashes of the transactions it
             derives from.
-    * Tendermint MAY include a list of transactions in `RequestPrepareProposal.txs` whose total
+    * CometBFT MAY include a list of transactions in `RequestPrepareProposal.txs` whose total
       size in bytes exceeds `RequestPrepareProposal.max_tx_bytes`.
       Therefore, if the size of `RequestPrepareProposal.txs` is greater than
       `RequestPrepareProposal.max_tx_bytes`, the Application MUST remove transactions to ensure
       that the `RequestPrepareProposal.max_tx_bytes` limit is respected by those transactions
       returned in `ResponsePrepareProposal.txs` .
     * As a result of executing the prepared proposal, the Application may produce block events or transaction events.
-      The Application must keep those events until a block is decided. It will then forward the events to the `BeginBlock-DeliverTx-EndBlock` functions depending on where each event should be placed, thereby returning the events to Tendermint.
-    * Tendermint does NOT provide any additional validity checks (such as checking for duplicate
+      The Application must keep those events until a block is decided. It will then forward the events to the `BeginBlock-DeliverTx-EndBlock` functions depending on where each event should be placed, thereby returning the events to CometBFT.
+    * CometBFT does NOT provide any additional validity checks (such as checking for duplicate
       transactions).
       <!--
-      As a sanity check, Tendermint will check the returned parameters for validity if the Application modified them.
+      As a sanity check, CometBFT will check the returned parameters for validity if the Application modified them.
       In particular, `ResponsePrepareProposal.txs` will be deemed invalid if there are duplicate transactions in the list.
        -->
-    * If Tendermint fails to validate the `ResponsePrepareProposal`, Tendermint will assume the
+    * If CometBFT fails to validate the `ResponsePrepareProposal`, CometBFT will assume the
       Application is faulty and crash.
     * The implementation of `PrepareProposal` can be non-deterministic.
 
 
-#### When does Tendermint call `PrepareProposal`?
+#### When does CometBFT call "PrepareProposal" ?
 
 
-When a validator _p_ enters Tendermint consensus round _r_, height _h_, in which _p_ is the proposer,
+When a validator _p_ enters consensus round _r_, height _h_, in which _p_ is the proposer,
 and _p_'s _validValue_ is `nil`:
 
-1. Tendermint collects outstanding transactions from _p_'s mempool
+1. CometBFT collects outstanding transactions from _p_'s mempool
     * the transactions will be collected in order of priority
-    * _p_'s Tendermint creates a block header.
-2. _p_'s Tendermint calls `RequestPrepareProposal` with the newly generated block, the local
+    * _p_'s CometBFT creates a block header.
+2. _p_'s CometBFT calls `RequestPrepareProposal` with the newly generated block, the local
    commit of the previous height (with vote extensions), and any outstanding evidence of
-   misbehavior. The call is synchronous: Tendermint's execution will block until the Application
+   misbehavior. The call is synchronous: CometBFT's execution will block until the Application
    returns from the call.
 3. The Application uses the information received (transactions, commit info, misbehavior, time) to
     (potentially) modify the proposal.
@@ -491,10 +491,10 @@ and _p_'s _validValue_ is `nil`:
         * reorder transactions - the Application reorders transactions in the list
 4. The Application includes the transaction list (whether modified or not) in the return parameters
    (see the rules in section _Usage_), and returns from the call.
-5. _p_'s Tendermint uses the (possibly) modified block as _p_'s proposal in round _r_, height _h_.
+5. _p_ uses the (possibly) modified block as _p_'s proposal in round _r_, height _h_.
 
-Note that, if _p_ has a non-`nil` _validValue_ in round _r_, height _h_, Tendermint will use it as
-proposal and will not call `RequestPrepareProposal`.
+Note that, if _p_ has a non-`nil` _validValue_ in round _r_, height _h_,
+the consensus algorithm will use it as proposal and will not call `RequestPrepareProposal`.
 
 ### ProcessProposal
 
@@ -529,7 +529,7 @@ proposal and will not call `RequestPrepareProposal`.
       time. In this case, the call to `RequestProcessProposal` occurs right after the call to
       `RequestPrepareProposal`.
     * The height and time values match the values from the header of the proposed block.
-    * If `ResponseProcessProposal.status` is `REJECT`, Tendermint assumes the proposal received
+    * If `ResponseProcessProposal.status` is `REJECT`, consensus assumes the proposal received
       is not valid.
     * The Application MAY fully execute the block &mdash; immediate execution
     * The implementation of `ProcessProposal` MUST be deterministic. Moreover, the value of
@@ -539,19 +539,19 @@ proposal and will not call `RequestPrepareProposal`.
     * Moreover, application implementors SHOULD always set `ResponseProcessProposal.status` to `ACCEPT`,
       unless they _really_ know what the potential liveness implications of returning `REJECT` are.
 
-#### When does Tendermint call `ProcessProposal`?
+#### When does CometBFT call "ProcessProposal" ?
 
-When a node _p_ enters Tendermint consensus round _r_, height _h_, in which _q_ is the proposer (possibly _p_ = _q_):
+When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the proposer (possibly _p_ = _q_):
 
 1. _p_ sets up timer `ProposeTimeout`.
 2. If _p_ is the proposer, _p_ executes steps 1-6 in [PrepareProposal](#prepareproposal).
 3. Upon reception of Proposal message (which contains the header) for round _r_, height _h_ from
-   _q_, _p_'s Tendermint verifies the block header.
+   _q_, _p_ verifies the block header.
 4. Upon reception of Proposal message, along with all the block parts, for round _r_, height _h_
-   from _q_, _p_'s Tendermint follows the validators' algorithm to check whether it should prevote for the
+   from _q_, _p_ follows the validators' algorithm to check whether it should prevote for the
    proposed block, or `nil`.
-5. If the validators' algorithm indicates Tendermint should prevote for the proposed block:
-    1. Tendermint calls `RequestProcessProposal` with the block. The call is synchronous.
+5. If the validators' consensus algorithm indicates _p_ should prevote non-nil:
+    1. CometBFT calls `RequestProcessProposal` with the block. The call is synchronous.
     2. The Application checks/processes the proposed block, which is read-only, and returns
        `ACCEPT` or `REJECT` in the `ResponseProcessProposal.status` field.
        * The Application, depending on its needs, may call `ResponseProcessProposal`
@@ -562,9 +562,11 @@ When a node _p_ enters Tendermint consensus round _r_, height _h_, in which _q_ 
          * or immediately, returning `ACCEPT`, if _p_ is not a validator
            and the Application does not want non-validating nodes to handle `ProcessProposal`
     3. If _p_ is a validator and the returned value is
-         * `ACCEPT`: Tendermint prevotes on this proposal for round _r_, height _h_.
-         * `REJECT`: Tendermint prevotes `nil`.
+         * `ACCEPT`: _p_ prevotes on this proposal for round _r_, height _h_.
+         * `REJECT`: _p_ prevotes `nil`.
+         *
 <!--
+
 ### ExtendVote
 
 #### Parameters and Types
@@ -580,40 +582,40 @@ When a node _p_ enters Tendermint consensus round _r_, height _h_, in which _q_ 
 
     | Name              | Type  | Description                                             | Field Number |
     |-------------------|-------|---------------------------------------------------------|--------------|
-    | vote_extension    | bytes | Information signed by by Tendermint. Can have 0 length. | 1            |
+    | vote_extension    | bytes | Information signed by by CometBFT. Can have 0 length. | 1            |
 
 * **Usage**:
     * `ResponseExtendVote.vote_extension` is application-generated information that will be signed
-      by Tendermint and attached to the Precommit message.
+      by CometBFT and attached to the Precommit message.
     * The Application may choose to use an empty vote extension (0 length).
     * `RequestExtendVote.hash` corresponds to the hash of a proposed block that was made available
       to the Application in a previous call to `ProcessProposal` for the current height.
-    * `ResponseExtendVote.vote_extension` will only be attached to a non-`nil` Precommit message. If Tendermint is to
+    * `ResponseExtendVote.vote_extension` will only be attached to a non-`nil` Precommit message. If the consensus algorithm is to
       precommit `nil`, it will not call `RequestExtendVote`.
     * The Application logic that creates the extension can be non-deterministic.
 
-#### When does Tendermint call `ExtendVote`?
+#### When does CometBFT call `ExtendVote`?
 
-When a validator _p_ is in Tendermint consensus state _prevote_ of round _r_, height _h_, in which _q_ is the proposer; and _p_ has received
+When a validator _p_ is in consensus state _prevote_ of round _r_, height _h_, in which _q_ is the proposer; and _p_ has received
 
 * the Proposal message _v_ for round _r_, height _h_, along with all the block parts, from _q_,
 * `Prevote` messages from _2f + 1_ validators' voting power for round _r_, height _h_, prevoting for the same block _id(v)_,
 
-then _p_'s Tendermint locks _v_  and sends a Precommit message in the following way
+then _p_ locks _v_  and sends a Precommit message in the following way
 
-1. _p_'s Tendermint sets _lockedValue_ and _validValue_ to _v_, and sets _lockedRound_ and _validRound_ to _r_
-2. _p_'s Tendermint calls `RequestExtendVote` with _id(v)_ (`RequestExtendVote.hash`). The call is synchronous.
-3. The Application returns an array of bytes, `ResponseExtendVote.extension`, which is not interpreted by Tendermint.
-4. _p_'s Tendermint includes `ResponseExtendVote.extension` in a field of type [CanonicalVoteExtension](#canonicalvoteextension),
+1. _p_ sets _lockedValue_ and _validValue_ to _v_, and sets _lockedRound_ and _validRound_ to _r_
+2. _p_'s CometBFT calls `RequestExtendVote` with _id(v)_ (`RequestExtendVote.hash`). The call is synchronous.
+3. The Application returns an array of bytes, `ResponseExtendVote.extension`, which is not interpreted by the consensus algorithm.
+4. _p_ includes `ResponseExtendVote.extension` in a field of type [CanonicalVoteExtension](#canonicalvoteextension),
    it then populates the other fields in [CanonicalVoteExtension](#canonicalvoteextension), and signs the populated
    data structure.
-5. _p_'s Tendermint constructs and signs the [CanonicalVote](../core/data_structures.md#canonicalvote) structure.
-6. _p_'s Tendermint constructs the Precommit message (i.e. [Vote](../core/data_structures.md#vote) structure)
+5. _p_ constructs and signs the [CanonicalVote](../core/data_structures.md#canonicalvote) structure.
+6. _p_ constructs the Precommit message (i.e. [Vote](../core/data_structures.md#vote) structure)
    using [CanonicalVoteExtension](#canonicalvoteextension) and [CanonicalVote](../core/data_structures.md#canonicalvote).
-7. _p_'s Tendermint broadcasts the Precommit message.
+7. _p_ broadcasts the Precommit message.
 
-In the cases when _p_'s Tendermint is to broadcast `precommit nil` messages (either _2f+1_ `prevote nil` messages received,
-or _timeoutPrevote_ triggered), _p_'s Tendermint does **not** call `RequestExtendVote` and will not include
+In the cases when _p_ is to broadcast `precommit nil` messages (either _2f+1_ `prevote nil` messages received,
+or _timeoutPrevote_ triggered), _p_'s CometBFT does **not** call `RequestExtendVote` and will not include
 a [CanonicalVoteExtension](#canonicalvoteextension) field in the `precommit nil` message.
 
 ### VerifyVoteExtension
@@ -627,7 +629,7 @@ a [CanonicalVoteExtension](#canonicalvoteextension) field in the `precommit nil`
     | hash              | bytes | The hash of the proposed block that the vote extension refers to.                         | 1            |
     | validator_address | bytes | [Address](../core/data_structures.md#address) of the validator that signed the extension. | 2            |
     | height            | int64 | Height of the block (for sanity check).                                                   | 3            |
-    | vote_extension    | bytes | Application-specific information signed by Tendermint. Can have 0 length.                 | 4            |
+    | vote_extension    | bytes | Application-specific information signed by CometBFT. Can have 0 length.                 | 4            |
 
 * **Response**:
 
@@ -639,11 +641,11 @@ a [CanonicalVoteExtension](#canonicalvoteextension) field in the `precommit nil`
     * `RequestVerifyVoteExtension.vote_extension` can be an empty byte array. The Application's
       interpretation of it should be
       that the Application running at the process that sent the vote chose not to extend it.
-      Tendermint will always call `RequestVerifyVoteExtension`, even for 0 length vote extensions.
+      CometBFT will always call `RequestVerifyVoteExtension`, even for 0 length vote extensions.
     * `RequestVerifyVoteExtension` is not called for precommit votes sent by the local process.
     * `RequestVerifyVoteExtension.hash` refers to a proposed block. There is not guarantee that
       this proposed block has previously been exposed to the Application via `ProcessProposal`.
-    * If `ResponseVerifyVoteExtension.status` is `REJECT`, Tendermint will reject the whole received vote.
+    * If `ResponseVerifyVoteExtension.status` is `REJECT`, the consensus algorithm will reject the whole received vote.
       See the [Requirements](./abci++_app_requirements.md) section to understand the potential
       liveness implications of this.
     * The implementation of `VerifyVoteExtension` MUST be deterministic. Moreover, the value of
@@ -653,25 +655,22 @@ a [CanonicalVoteExtension](#canonicalvoteextension) field in the `precommit nil`
     * Moreover, application implementers SHOULD always set `ResponseVerifyVoteExtension.status` to `ACCEPT`,
       unless they _really_ know what the potential liveness implications of returning `REJECT` are.
 
-#### When does Tendermint call `VerifyVoteExtension`?
+#### When does CometBFT call `VerifyVoteExtension`?
 
-When a node _p_ is in Tendermint consensus round _r_, height _h_, and _p_ receives a Precommit
+When a node _p_ is in consensus round _r_, height _h_, and _p_ receives a Precommit
 message for round _r_, height _h_ from validator _q_ (_q_ &ne; _p_):
 
-1. If the Precommit message does not contain a vote extension with a valid signature, Tendermint
+1. If the Precommit message does not contain a vote extension with a valid signature, _p_
    discards the Precommit message as invalid.
    * a 0-length vote extension is valid as long as its accompanying signature is also valid.
-2. Else, _p_'s Tendermint calls `RequestVerifyVoteExtension`.
+2. Else, _p_'s CometBFT calls `RequestVerifyVoteExtension`.
 3. The Application returns `ACCEPT` or `REJECT` via `ResponseVerifyVoteExtension.status`.
 4. If the Application returns
-   * `ACCEPT`, _p_'s Tendermint will keep the received vote, together with its corresponding
+   * `ACCEPT`, _p_ will keep the received vote, together with its corresponding
      vote extension in its internal data structures. It will be used to populate the [ExtendedCommitInfo](#extendedcommitinfo)
      structure in calls to `RequestPrepareProposal`, in rounds of height _h + 1_ where _p_ is the proposer.
-   * `REJECT`, _p_'s Tendermint will deem the Precommit message invalid and discard it.
+   * `REJECT`, _p_ will deem the Precommit message invalid and discard it.
 
--->
-
-<!--
 ### FinalizeBlock
 
 #### Parameters and Types
@@ -707,7 +706,7 @@ message for round _r_, height _h_ from validator _q_ (_q_ &ne; _p_):
     * The Application can use `RequestFinalizeBlock.decided_last_commit` and `RequestFinalizeBlock.misbehavior`
       to determine rewards and punishments for the validators.
     * The Application executes the transactions in `RequestFinalizeBlock.txs` deterministically,
-      according to the rules set up by the Application, before returning control to Tendermint.
+      according to the rules set up by the Application, before returning control to CometBFT.
       Alternatively, it can apply the candidate state corresponding to the same block previously
       executed via `PrepareProposal` or `ProcessProposal`.
     * `ResponseFinalizeBlock.tx_results[i].Code == 0` only if the _i_-th transaction is fully valid.
@@ -715,7 +714,7 @@ message for round _r_, height _h_ from validator _q_ (_q_ &ne; _p_):
       `ResponseFinalizeBlock.tx_results`, `ResponseFinalizeBlock.validator_updates`, and
       `ResponseFinalizeBlock.consensus_param_updates` as a result of executing the block.
         * The values for `ResponseFinalizeBlock.validator_updates`, or
-          `ResponseFinalizeBlock.consensus_param_updates` may be empty. In this case, Tendermint will keep
+          `ResponseFinalizeBlock.consensus_param_updates` may be empty. In this case, CometBFT will keep
           the current values.
         * `ResponseFinalizeBlock.validator_updates`, triggered by block `H`, affect validation
           for blocks `H+1`, `H+2`, and `H+3`. Heights following a validator update are affected in the following way:
@@ -736,34 +735,36 @@ message for round _r_, height _h_ from validator _q_ (_q_ &ne; _p_):
       in this Merkle root hash.
     * The implementation of `FinalizeBlock` MUST be deterministic, since it is
       making the Application's state evolve in the context of state machine replication.
-    * Currently, Tendermint will fill up all fields in `RequestFinalizeBlock`, even if they were
+    * Currently, CometBFT will fill up all fields in `RequestFinalizeBlock`, even if they were
       already passed on to the Application via `RequestPrepareProposal` or `RequestProcessProposal`.
 
-#### When does Tendermint call `FinalizeBlock`?
+#### When does CometBFT call `FinalizeBlock`?
 
-When a node _p_ is in Tendermint consensus height _h_, and _p_ receives
+When a node _p_ is in consensus height _h_, and _p_ receives
 
 * the Proposal message with block _v_ for a round _r_, along with all its block parts, from _q_,
   which is the proposer of round _r_, height _h_,
 * `Precommit` messages from _2f + 1_ validators' voting power for round _r_, height _h_,
   precommitting the same block _id(v)_,
 
-then _p_'s Tendermint decides block _v_ and finalizes consensus for height _h_ in the following way
+then _p_ decides block _v_ and finalizes consensus for height _h_ in the following way
 
-1. _p_'s Tendermint persists _v_ as the decision for height _h_.
-2. _p_'s Tendermint calls `RequestFinalizeBlock` with _v_'s data. The call is synchronous.
+1. _p_ persists _v_ as the decision for height _h_.
+2. _p_'s CometBFT calls `RequestFinalizeBlock` with _v_'s data. The call is synchronous.
 3. _p_'s Application executes block _v_.
 4. _p_'s Application calculates and returns the _AppHash_, along with a list containing
    the outputs of each of the transactions executed.
-5. _p_'s Tendermint hashes all the transaction outputs and stores it in _ResultHash_.
-6. _p_'s Tendermint persists the transaction outputs, _AppHash_, and _ResultsHash_.
-7. _p_'s Tendermint locks the mempool &mdash; no calls to `CheckTx` on new transactions.
-8. _p_'s Tendermint calls `RequestCommit` to instruct the Application to persist its state.
-9. _p_'s Tendermint, optionally, re-checks all outstanding transactions in the mempool
+5. _p_'s CometBFT hashes all the transaction outputs and stores it in _ResultHash_.
+6. _p_'s CometBFT persists the transaction outputs, _AppHash_, and _ResultsHash_.
+7. _p_'s CometBFT locks the mempool &mdash; no calls to `CheckTx` on new transactions.
+8. _p_'s CometBFT calls `RequestCommit` to instruct the Application to persist its state.
+9. _p_'s CometBFT, optionally, re-checks all outstanding transactions in the mempool
    against the newly persisted Application state.
-10. _p_'s Tendermint unlocks the mempool &mdash; newly received transactions can now be checked.
-11. _p_'s starts consensus for height _h+1_, round 0
+10. _p_'s CometBFT unlocks the mempool &mdash; newly received transactions can now be checked.
+11. _p_ starts consensus for height _h+1_, round 0
+
 -->
+
 ## Data Types existing in ABCI
 
 Most of the data structures used in ABCI are shared [common data structures](../core/data_structures.md). In certain cases, ABCI uses different data structures which are documented here:
@@ -794,7 +795,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
 * **Usage**:
     * Validator identified by PubKey
-    * Used to tell Tendermint to update the validator set
+    * Used to tell CometBFT to update the validator set
 
 ### Misbehavior
 
@@ -856,9 +857,9 @@ Most of the data structures used in ABCI are shared [common data structures](../
     | Name     | Type   | Description                                                                                                                                                                       | Field Number |
     |----------|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
     | height   | uint64 | The height at which the snapshot was taken (after commit).                                                                                                                        | 1            |
-    | format   | uint32 | An application-specific snapshot format, allowing applications to version their snapshot data format and make backwards-incompatible changes. Tendermint does not interpret this. | 2            |
+    | format   | uint32 | An application-specific snapshot format, allowing applications to version their snapshot data format and make backwards-incompatible changes. CometBFT does not interpret this. | 2            |
     | chunks   | uint32 | The number of chunks in the snapshot. Must be at least 1 (even if empty).                                                                                                         | 3            |
-    | hash     | bytes  | An arbitrary snapshot hash. Must be equal only for identical snapshots across nodes. Tendermint does not interpret the hash, it only compares them.                               | 4            |
+    | hash     | bytes  | An arbitrary snapshot hash. Must be equal only for identical snapshots across nodes. CometBFT does not interpret the hash, it only compares them.                               | 4            |
     | metadata | bytes  | Arbitrary application metadata, for example chunk hashes or other verification data.                                                                                              | 5            |
 
 * **Usage**:
@@ -896,7 +897,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
 * **Usage**:
     * Indicates whether a validator signed the last block, allowing for rewards based on validator availability.
-    * This information is extracted from Tendermint's data structures in the local process.
+    * This information is extracted from CometBFT's data structures in the local process.
     * `vote_extension` is reserved for future use when vote extensions are added. Currently, this field is always set to `nil`.
 
 
@@ -919,7 +920,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
     | round | int32                                          | Commit round. Reflects the round at which the block proposer decided in the previous height.                      | 1            |
     | votes | repeated [ExtendedVoteInfo](#extendedvoteinfo) | List of validators' addresses in the last validator set with their voting information, including vote extensions. | 2            |
 
-<!-- 
+<!--
 ### ExecTxResult
 
 * **Fields**:
@@ -941,7 +942,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
 ```proto
 enum ProposalStatus {
-  UNKNOWN = 0; // Unknown status. Returning this from the application is always an error. 
+  UNKNOWN = 0; // Unknown status. Returning this from the application is always an error.
   ACCEPT  = 1; // Status that signals that the application finds the proposal valid.
   REJECT  = 2; // Status that signals that the application finds the proposal invalid.
 }
@@ -949,11 +950,11 @@ enum ProposalStatus {
 
 * **Usage**:
     * Used within the [ProcessProposal](#processproposal) response.
-        * If `Status` is `UNKNOWN`, a problem happened in the Application. Tendermint will assume the application is faulty and crash.
-        * If `Status` is `ACCEPT`, Tendermint accepts the proposal and will issue a Prevote message for it.
-        * If `Status` is `REJECT`, Tendermint rejects the proposal and will issue a Prevote for `nil` instead.
+        * If `Status` is `UNKNOWN`, a problem happened in the Application. CometBFT will assume the application is faulty and crash.
+        * If `Status` is `ACCEPT`, the consensus algorithm accepts the proposal and will issue a Prevote message for it.
+        * If `Status` is `REJECT`, the consensus algorithm rejects the proposal and will issue a Prevote for `nil` instead.
 
-<!-- 
+<!--
 ### VerifyStatus
 
 ```proto
@@ -966,9 +967,9 @@ enum VerifyStatus {
 
 * **Usage**:
     * Used within the [VerifyVoteExtension](#verifyvoteextension) response.
-        * If `Status` is `UNKNOWN`, a problem happened in the Application. Tendermint will assume the application is faulty and crash.
-        * If `Status` is `ACCEPT`, Tendermint will accept the vote as valid.
-        * If `Status` is `REJECT`, Tendermint will reject the vote as invalid.
+        * If `Status` is `UNKNOWN`, a problem happened in the Application. CometBFT will assume the application is faulty and crash.
+        * If `Status` is `ACCEPT`, the consensus algorithm will accept the vote as valid.
+        * If `Status` is `REJECT`, the consensus algorithm will reject the vote as invalid.
 
 
 ### CanonicalVoteExtension
@@ -987,8 +988,8 @@ enum VerifyStatus {
     | address   | bytes  | [Address](../core/data_structures.md#address) of the validator that provided the extension | 5            |
 
 * **Usage**:
-    * Tendermint is to sign the whole data structure and attach it to a Precommit message
-    * Upon reception, Tendermint validates the sender's signature and sanity-checks the values of `height`, `round`, and `chain_id`.
+    * CometBFT is to sign the whole data structure and attach it to a Precommit message
+    * Upon reception, CometBFT validates the sender's signature and sanity-checks the values of `height`, `round`, and `chain_id`.
       Then it sends `extension` to the Application via `RequestVerifyVoteExtension` for verification.
 
 

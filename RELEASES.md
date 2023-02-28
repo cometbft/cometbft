@@ -1,7 +1,7 @@
 # Releases
 
-Tendermint uses modified [semantic versioning](https://semver.org/) with each
-release following a `vX.Y.Z` format. Tendermint is currently on major version 0
+CometBFT uses modified [semantic versioning](https://semver.org/) with each
+release following a `vX.Y.Z` format. CometBFT is currently on major version 0
 and uses the minor version to signal breaking changes. The `main` branch is
 used for active development and thus it is not advisable to build against it.
 
@@ -10,7 +10,7 @@ specified using tags and are built from long-lived "backport" branches that are
 cut from `main` when the release process begins. Each release "line" (e.g.
 0.34 or 0.33) has its own long-lived backport branch, and the backport branches
 have names like `v0.34.x` or `v0.33.x` (literally, `x`; it is not a placeholder
-in this case). Tendermint only maintains the last two releases at a time (the
+in this case). CometBFT only maintains the last two releases at a time (the
 oldest release is predominantly just security patches).
 
 ## Backporting
@@ -36,8 +36,8 @@ v0.25.0, you get to have the honor of creating the backport branch!
 Note that, after creating the backport branch, you'll also need to update the
 tags on `main` so that `go mod` is able to order the branches correctly. You
 should tag `main` with a "dev" tag that is "greater than" the backport
-branches tags. See [#6072](https://github.com/tendermint/tendermint/pull/6072)
-for more context.
+branches tags. Otherwise, `go mod` does not 'know' whether commits on `main`
+come before or after the release.
 
 In the following example, we'll assume that we're making a backport branch for
 the 0.38.x line.
@@ -70,16 +70,16 @@ the 0.38.x line.
    The following links are to always point to `main`, regardless of where they
    occur in the codebase:
 
-   * `https://github.com/tendermint/tendermint/blob/main/LICENSE`
+   * `https://github.com/cometbft/cometbft/blob/main/LICENSE`
 
    Be sure to search for all of the following links and replace `main` with your
    corresponding branch label or version (e.g. `v0.38.x` or `v0.38`):
 
-   * `github.com/tendermint/tendermint/blob/main` ->
-     `github.com/tendermint/tendermint/blob/v0.38.x`
-   * `github.com/tendermint/tendermint/tree/main` ->
-     `github.com/tendermint/tendermint/tree/v0.38.x`
-   * `docs.tendermint.com/main` -> `docs.tendermint.com/v0.38`
+   * `github.com/cometbft/cometbft/blob/main` ->
+     `github.com/cometbft/cometbft/blob/v0.38.x`
+   * `github.com/cometbft/cometbft/tree/main` ->
+     `github.com/cometbft/cometbft/tree/v0.38.x`
+   * `docs.cometbft.com/main` -> `docs.cometbft.com/v0.38`
 
    Once you have updated all of the relevant documentation:
 
@@ -99,14 +99,14 @@ After doing these steps, go back to `main` and do the following:
    [e2e-nightly-main.yml][e2e] for an example.)
 
 2. Add a new section to the Mergify config (`.github/mergify.yml`) to enable the
-   backport bot to work on this branch, and add a corresponding `S:backport-to-v0.38.x`
-   [label](https://github.com/tendermint/tendermint/labels) so the bot can be triggered.
+   backport bot to work on this branch, and add a corresponding `backport-to-v0.38.x`
+   [label](https://github.com/cometbft/cometbft/labels) so the bot can be triggered.
 
 3. Add a new section to the Dependabot config (`.github/dependabot.yml`) to
    enable automatic update of Go dependencies on this branch. Copy and edit one
    of the existing branch configurations to set the correct `target-branch`.
 
-[e2e]: https://github.com/tendermint/tendermint/blob/main/.github/workflows/e2e-nightly-main.yml
+[e2e]: https://github.com/cometbft/cometbft/blob/main/.github/workflows/e2e-nightly-main.yml
 
 ## Pre-releases
 
@@ -148,13 +148,15 @@ backport branch (see above). Otherwise:
 1. Start from the backport branch (e.g. `v0.38.x`).
 2. Run the integration tests and the E2E nightlies
    (which can be triggered from the GitHub UI;
-   e.g., <https://github.com/tendermint/tendermint/actions/workflows/e2e-nightly-37x.yml>).
+   e.g., <https://github.com/cometbft/cometbft/actions/workflows/e2e-nightly-37x.yml>).
 3. Prepare the pre-release documentation:
-   * Ensure that all relevant changes are in the `CHANGELOG_PENDING.md` file.
-     This file's contents must only be included in the `CHANGELOG.md` when we
-     cut final releases.
-   * Ensure that `UPGRADING.md` is up-to-date and includes notes on any breaking changes
-      or other upgrading flows.
+   * Build the changelog with [unclog] _without_ doing an unclog release, and
+     commit the built changelog. This ensures that all changelog entries appear
+     under an "Unreleased" heading in the pre-release's changelog. The changes
+     are only considered officially "released" once we cut a regular (final)
+     release.
+   * Ensure that `UPGRADING.md` is up-to-date and includes notes on any breaking
+     changes or other upgrading flows.
 4. Prepare the versioning:
    * Bump TMVersionDefault version in  `version.go`
    * Bump P2P and block protocol versions in  `version.go`, if necessary.
@@ -181,13 +183,10 @@ Before performing these steps, be sure the
 1. Start on the backport branch (e.g. `v0.38.x`)
 2. Run integration tests (`make test_integrations`) and the e2e nightlies.
 3. Prepare the release:
-   * "Squash" changes from the changelog entries for the pre-releases into a
-     single entry, and add all changes included in `CHANGELOG_PENDING.md`.
-     (Squashing includes both combining all entries, as well as removing or
-     simplifying any intra-pre-release changes. It may also help to alphabetize
-     the entries by package name.)
-   * Run `python ./scripts/linkify_changelog.py CHANGELOG.md` to add links for
-     all PRs
+   * Do a [release][unclog-release] with [unclog] for the desired version,
+     ensuring that you write up a good summary of the major highlights of the
+     release that users would be interested in.
+   * Build the changelog using unclog, and commit the built changelog.
    * Ensure that `UPGRADING.md` is up-to-date and includes notes on any breaking changes
       or other upgrading flows.
    * Bump TMVersionDefault version in  `version.go`
@@ -199,16 +198,6 @@ Before performing these steps, be sure the
    * `git tag -a v0.38.0 -m 'Release v0.38.0'`
    * `git push origin v0.38.0`
 6. Make sure that `main` is updated with the latest `CHANGELOG.md`, `CHANGELOG_PENDING.md`, and `UPGRADING.md`.
-7. Add the release to the documentation site generator config (see
-   [DOCS\_README.md](./docs/DOCS_README.md) for more details). In summary:
-   * Start on branch `main`.
-   * Add a new line at the bottom of [`docs/versions`](./docs/versions) to
-     ensure the newest release is the default for the landing page.
-   * Add a new entry to `themeConfig.versions` in
-     [`docs/.vuepress/config.js`](./docs/.vuepress/config.js) to include the
-	 release in the dropdown versions menu.
-   * Commit these changes to `main` and backport them into the backport
-     branch for this release.
 
 ## Patch release
 
@@ -224,14 +213,14 @@ To create a patch release:
 1. Checkout the long-lived backport branch: `git checkout v0.38.x`
 2. Run integration tests (`make test_integrations`) and the nightlies.
 3. Check out a new branch and prepare the release:
-   * Copy `CHANGELOG_PENDING.md` to top of `CHANGELOG.md`
-   * Run `python ./scripts/linkify_changelog.py CHANGELOG.md` to add links for all issues
-   * Run `bash ./scripts/authors.sh` to get a list of authors since the latest release, and add the GitHub aliases of external contributors to the top of the CHANGELOG. To lookup an alias from an email, try `bash ./scripts/authors.sh <email>`
-   * Reset the `CHANGELOG_PENDING.md`
+   * Do a [release][unclog-release] with [unclog] for the desired version,
+     ensuring that you write up a good summary of the major highlights of the
+     release that users would be interested in.
+   * Build the changelog using unclog, and commit the built changelog.
    * Bump the TMDefaultVersion in `version.go`
-   * Bump the ABCI version number, if necessary.
-     (Note that ABCI follows semver, and that ABCI versions are the only versions
-     which can change during patch releases, and only field additions are valid patch changes.)
+   * Bump the ABCI version number, if necessary. (Note that ABCI follows semver,
+     and that ABCI versions are the only versions which can change during patch
+     releases, and only field additions are valid patch changes.)
 4. Open a PR with these changes that will land them back on `v0.38.x`
 5. Once this change has landed on the backport branch, make sure to pull it locally, then push a tag.
    * `git tag -a v0.38.1 -m 'Release v0.38.1'`
@@ -243,13 +232,13 @@ To create a patch release:
 ## Minor Release Checklist
 
 The following set of steps are performed on all releases that increment the
-_minor_ version, e.g. v0.25 to v0.26. These steps ensure that Tendermint is well
+_minor_ version, e.g. v0.25 to v0.26. These steps ensure that CometBFT is well
 tested, stable, and suitable for adoption by the various diverse projects that
-rely on Tendermint.
+rely on CometBFT.
 
 ### Feature Freeze
 
-Ahead of any minor version release of Tendermint, the software enters 'Feature
+Ahead of any minor version release of CometBFT, the software enters 'Feature
 Freeze' for at least two weeks. A feature freeze means that _no_ new features
 are added to the code being prepared for release. No code changes should be made
 to the code being released that do not directly improve pressing issues of code
@@ -263,42 +252,39 @@ quality. The following must not be merged during a feature freeze:
   code.
 
 This period directly follows the creation of the [backport
-branch](#creating-a-backport-branch). The Tendermint team instead directs all
+branch](#creating-a-backport-branch). The CometBFT team instead directs all
 attention to ensuring that the existing code is stable and reliable. Broken
 tests are fixed, flakey-tests are remedied, end-to-end test failures are
 thoroughly diagnosed and all efforts of the team are aimed at improving the
 quality of the code. During this period, the upgrade harness tests are run
-repeatedly and a variety of in-house testnets are run to ensure Tendermint
+repeatedly and a variety of in-house testnets are run to ensure CometBFT
 functions at the scale it will be used by application developers and node
 operators.
 
 ### Nightly End-To-End Tests
 
-The Tendermint team maintains [a set of end-to-end
-tests](https://github.com/tendermint/tendermint/blob/main/test/e2e/README.md#L1)
+The CometBFT team maintains [a set of end-to-end
+tests](https://github.com/cometbft/cometbft/blob/main/test/e2e/README.md#L1)
 that run each night on the latest commit of the project and on the code in the
 tip of each supported backport branch. These tests start a network of
-containerized Tendermint processes and run automated checks that the network
+containerized CometBFT processes and run automated checks that the network
 functions as expected in both stable and unstable conditions. During the feature
 freeze, these tests are run nightly and must pass consistently for a release of
-Tendermint to be considered stable.
+CometBFT to be considered stable.
 
 ### Upgrade Harness
 
-> TODO(williambanfield): Change to past tense and clarify this section once
-> upgrade harness is complete.
-
-The Tendermint team is creating an upgrade test harness to exercise the workflow
-of stopping an instance of Tendermint running one version of the software and
+The CometBFT team is creating an upgrade test harness to exercise the workflow
+of stopping an instance of CometBFT running one version of the software and
 starting up the same application running the next version. To support upgrade
-testing, we will add the ability to terminate the Tendermint process at specific
+testing, we will add the ability to terminate the CometBFT process at specific
 pre-defined points in its execution so that we can verify upgrades work in a
 representative sample of stop conditions.
 
 ### Large Scale Testnets
 
-The Tendermint end-to-end tests run a small network (~10s of nodes) to exercise
-basic consensus interactions. Real world deployments of Tendermint often have
+The CometBFT end-to-end tests run a small network (~10s of nodes) to exercise
+basic consensus interactions. Real world deployments of CometBFT often have
 over a hundred nodes just in the validator set, with many others acting as full
 nodes and sentry nodes. To gain more assurance before a release, we will also
 run larger-scale test networks to shake out emergent behaviors at scale.
@@ -325,11 +311,11 @@ node:
 
 For these tests we intentionally target low-powered host machines (with low core
 counts and limited memory) to ensure we observe similar kinds of resource contention
-and limitation that real-world  deployments of Tendermint experience in production.
+and limitation that real-world  deployments of CometBFT experience in production.
 
 #### 200 Node Testnet
 
-To test the stability and performance of Tendermint in a real world scenario,
+To test the stability and performance of CometBFT in a real world scenario,
 a 200 node test network is run. The network comprises 5 seed nodes, 100
 validators and 95 non-validating full nodes. All nodes begin by dialing
 a subset of the seed nodes to discover peers. The network is run for several
@@ -338,22 +324,22 @@ critical systems, testnets of larger sizes should be considered.
 
 #### Rotating Node Testnet
 
-Real-world deployments of Tendermint frequently see new nodes arrive and old
-nodes exit the network. The rotating node testnet ensures that Tendermint is
+Real-world deployments of CometBFT frequently see new nodes arrive and old
+nodes exit the network. The rotating node testnet ensures that CometBFT is
 able to handle this reliably. In this test, a network with 10 validators and
 3 seed nodes is started. A rolling set of 25 full nodes are started and each
 connects to the network by dialing one of the seed nodes. Once the node is able
 to blocksync to the head of the chain and begins producing blocks using
-Tendermint consensus it is stopped. Once stopped, a new node is started and
+consensus it is stopped. Once stopped, a new node is started and
 takes its place. This network is run for several days.
 
 #### Network Partition Testnet
 
-Tendermint is expected to recover from network partitions. A partition where no
+CometBFT is expected to recover from network partitions. A partition where no
 subset of the nodes is left with the super-majority of the stake is expected to
 stop making blocks. Upon alleviation of the partition, the network is expected
 to once again become fully connected and capable of producing blocks. The
-network partition testnet ensures that Tendermint is able to handle this
+network partition testnet ensures that CometBFT is able to handle this
 reliably at scale. In this test, a network with 100 validators and 95 full
 nodes is started. All validators have equal stake. Once the network is
 producing blocks, a set of firewall rules is deployed to create a partitioned
@@ -364,10 +350,13 @@ producing blocks.
 
 #### Absent Stake Testnet
 
-Tendermint networks often run with _some_ portion of the voting power offline.
+CometBFT networks often run with _some_ portion of the voting power offline.
 The absent stake testnet ensures that large networks are able to handle this
 reliably. A set of 150 validator nodes and three seed nodes is started. The set
 of 150 validators is configured to only possess a cumulative stake of 67% of
 the total stake. The remaining 33% of the stake is configured to belong to
 a validator that is never actually run in the test network. The network is run
 for multiple days, ensuring that it is able to produce blocks without issue.
+
+[unclog]: https://github.com/informalsystems/unclog
+[unclog-release]: https://github.com/informalsystems/unclog#releasing-a-new-versions-change-set

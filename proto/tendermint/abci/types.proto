@@ -1,7 +1,7 @@
 syntax = "proto3";
 package tendermint.abci;
 
-option go_package = "github.com/tendermint/tendermint/abci/types";
+option go_package = "github.com/cometbft/cometbft/abci/types";
 
 // For more information on gogo.proto, see:
 // https://github.com/cosmos/gogoproto/blob/master/extensions.md
@@ -230,12 +230,11 @@ message ResponseCheckTx {
   repeated Event events     = 7
       [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
   string codespace = 8;
-  string sender    = 9;
-  int64  priority  = 10;
 
-  // mempool_error is set by Tendermint.
-  // ABCI applictions creating a ResponseCheckTX should not set mempool_error.
-  string mempool_error = 11;
+  // These reserved fields were used until v0.37 by the priority mempool (now
+  // removed).
+  reserved 9 to 11;
+  reserved "sender", "priority", "mempool_error";
 }
 
 message ResponseDeliverTx {

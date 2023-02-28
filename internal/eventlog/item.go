@@ -3,9 +3,9 @@ package eventlog
 import (
 	"strings"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/internal/eventlog/cursor"
-	"github.com/tendermint/tendermint/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/internal/eventlog/cursor"
+	"github.com/cometbft/cometbft/types"
 )
 
 // Cached constants for the pieces of reserved event names.

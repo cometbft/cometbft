@@ -1,9 +1,9 @@
 package abcicli
 
 import (
-	types "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/service"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	types "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 // NOTE: use defer to unlock mutex because Application might panic (e.g., in
@@ -13,7 +13,7 @@ import (
 type localClient struct {
 	service.BaseService
 
-	mtx *tmsync.Mutex
+	mtx *cmtsync.Mutex
 	types.Application
 	Callback
 }
@@ -22,9 +22,9 @@ var _ Client = (*localClient)(nil)
 
 // NewLocalClient creates a local client, which will be directly calling the
 // methods of the given app.
-func NewLocalClient(mtx *tmsync.Mutex, app types.Application) Client {
+func NewLocalClient(mtx *cmtsync.Mutex, app types.Application) Client {
 	if mtx == nil {
-		mtx = new(tmsync.Mutex)
+		mtx = new(cmtsync.Mutex)
 	}
 	cli := &localClient{
 		mtx:         mtx,

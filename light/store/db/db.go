@@ -6,30 +6,27 @@ import (
 	"regexp"
 	"strconv"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	tmsync "github.com/tendermint/tendermint/libs/sync"
-	"github.com/tendermint/tendermint/light/store"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/types"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/light/store"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
-var (
-	sizeKey = []byte("size")
-)
+var sizeKey = []byte("size")
 
 type dbs struct {
 	db     dbm.DB
 	prefix string
 
-	mtx  tmsync.RWMutex
+	mtx  cmtsync.RWMutex
 	size uint16
 }
 
 // New returns a Store that wraps any DB (with an optional prefix in case you
 // want to use one DB with many light clients).
 func New(db dbm.DB, prefix string) store.Store {
-
 	size := uint16(0)
 	bz, err := db.Get(sizeKey)
 	if err == nil && len(bz) > 0 {
@@ -120,7 +117,7 @@ func (s *dbs) LightBlock(height int64) (*types.LightBlock, error) {
 		return nil, store.ErrLightBlockNotFound
 	}
 
-	var lbpb tmproto.LightBlock
+	var lbpb cmtproto.LightBlock
 	err = lbpb.Unmarshal(bz)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshal error: %w", err)

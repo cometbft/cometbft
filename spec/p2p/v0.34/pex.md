@@ -1,6 +1,6 @@
 # PEX Reactor
 
-The PEX reactor is one of the reactors running in a Tendermint node.
+The PEX reactor is one of the reactors running in a CometBFT node.
 
 Its implementation is located in the `p2p/pex` package, and it is considered
 part of the implementation of the p2p layer.

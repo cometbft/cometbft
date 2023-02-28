@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"time"
 
-	coretypes "github.com/tendermint/tendermint/rpc/core/types"
+	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 )
 
 // Client is the subset of the RPC client interface consumed by Stream.

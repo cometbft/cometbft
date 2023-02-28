@@ -7,13 +7,13 @@ import (
 
 	"github.com/rs/cors"
 
-	"github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/rpc/core"
-	"github.com/tendermint/tendermint/rpc/jsonrpc/server"
-	"github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/state/indexer"
-	"github.com/tendermint/tendermint/state/txindex"
+	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/rpc/core"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/server"
+	"github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/state/indexer"
+	"github.com/cometbft/cometbft/state/txindex"
 )
 
 // Server defines parameters for running an Inspector rpc server.

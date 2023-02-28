@@ -13,9 +13,9 @@ import (
 	"github.com/fortytw2/leaktest"
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/tendermint/tendermint/internal/eventlog"
-	"github.com/tendermint/tendermint/internal/eventlog/cursor"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/internal/eventlog"
+	"github.com/cometbft/cometbft/internal/eventlog/cursor"
+	"github.com/cometbft/cometbft/types"
 )
 
 // fakeTime is a fake clock to use to control cursor assignment.

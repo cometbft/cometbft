@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/version"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
-	"github.com/tendermint/tendermint/version"
 )
 
 var (
@@ -31,6 +31,7 @@ var (
 	nodeVersions = weightedChoice{
 		"": 2,
 	}
+
 	// The following specify randomly chosen values for testnet nodes.
 	nodeDatabases = uniformChoice{"goleveldb", "cleveldb", "rocksdb", "boltdb", "badgerdb"}
 	ipv6          = uniformChoice{false, true}
@@ -39,7 +40,6 @@ var (
 	nodePrivvalProtocols  = uniformChoice{"file", "unix", "tcp"}
 	nodeBlockSyncs        = uniformChoice{"v0"} // "v2"
 	nodeStateSyncs        = uniformChoice{false, true}
-	nodeMempools          = uniformChoice{"v0", "v1"}
 	nodePersistIntervals  = uniformChoice{0, 1, 5}
 	nodeSnapshotIntervals = uniformChoice{0, 3}
 	nodeRetainBlocks      = uniformChoice{
@@ -54,6 +54,10 @@ var (
 		"pause":      0.1,
 		"kill":       0.1,
 		"restart":    0.1,
+		"upgrade":    0.3,
+	}
+	lightNodePerturbations = probSetChoice{
+		"upgrade": 0.3,
 	}
 )
 
@@ -65,15 +69,20 @@ type generateConfig struct {
 
 // Generate generates random testnets using the given RNG.
 func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
+	upgradeVersion := ""
+
 	if cfg.multiVersion != "" {
 		var err error
-		nodeVersions, err = parseWeightedVersions(cfg.multiVersion)
+		nodeVersions, upgradeVersion, err = parseWeightedVersions(cfg.multiVersion)
 		if err != nil {
 			return nil, err
 		}
 		if _, ok := nodeVersions["local"]; ok {
 			nodeVersions[""] = nodeVersions["local"]
 			delete(nodeVersions, "local")
+			if upgradeVersion == "local" {
+				upgradeVersion = ""
+			}
 		}
 		if _, ok := nodeVersions["latest"]; ok {
 			latestVersion, err := gitRepoLatestReleaseVersion(cfg.outputDir)
@@ -82,6 +91,9 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 			}
 			nodeVersions[latestVersion] = nodeVersions["latest"]
 			delete(nodeVersions, "latest")
+			if upgradeVersion == "latest" {
+				upgradeVersion = latestVersion
+			}
 		}
 	}
 	fmt.Println("Generating testnet with weighted versions:")
@@ -94,7 +106,7 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 	}
 	manifests := []e2e.Manifest{}
 	for _, opt := range combinations(testnetCombinations) {
-		manifest, err := generateTestnet(cfg.randSource, opt)
+		manifest, err := generateTestnet(cfg.randSource, opt, upgradeVersion)
 		if err != nil {
 			return nil, err
 		}
@@ -104,7 +116,7 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 }
 
 // generateTestnet generates a single testnet with the given options.
-func generateTestnet(r *rand.Rand, opt map[string]interface{}) (e2e.Manifest, error) {
+func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion string) (e2e.Manifest, error) {
 	manifest := e2e.Manifest{
 		IPv6:             ipv6.Choose(r).(bool),
 		ABCIProtocol:     nodeABCIProtocols.Choose(r).(string),
@@ -114,6 +126,7 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}) (e2e.Manifest, er
 		ValidatorUpdates: map[string]map[string]int64{},
 		Evidence:         evidence.Choose(r).(int),
 		Nodes:            map[string]*e2e.ManifestNode{},
+		UpgradeVersion:   upgradeVersion,
 	}
 
 	switch abciDelays.Choose(r).(string) {
@@ -263,7 +276,6 @@ func generateNode(
 		Database:         nodeDatabases.Choose(r).(string),
 		PrivvalProtocol:  nodePrivvalProtocols.Choose(r).(string),
 		BlockSync:        nodeBlockSyncs.Choose(r).(string),
-		Mempool:          nodeMempools.Choose(r).(string),
 		StateSync:        nodeStateSyncs.Choose(r).(bool) && startAt > 0,
 		PersistInterval:  ptrUint64(uint64(nodePersistIntervals.Choose(r).(int))),
 		SnapshotInterval: uint64(nodeSnapshotIntervals.Choose(r).(int)),
@@ -310,6 +322,7 @@ func generateLightNode(r *rand.Rand, startAt int64, providers []string) *e2e.Man
 		Database:        nodeDatabases.Choose(r).(string),
 		PersistInterval: ptrUint64(0),
 		PersistentPeers: providers,
+		Perturb:         lightNodePerturbations.Choose(r),
 	}
 }
 
@@ -319,29 +332,41 @@ func ptrUint64(i uint64) *uint64 {
 
 // Parses strings like "v0.34.21:1,v0.34.22:2" to represent two versions
 // ("v0.34.21" and "v0.34.22") with weights of 1 and 2 respectively.
-func parseWeightedVersions(s string) (weightedChoice, error) {
+// Versions may be specified as cometbft/e2e-node:v0.34.27-alpha.1:1 or
+// ghcr.io/informalsystems/tendermint:v0.34.26:1.
+// If only the tag and weight are specified, cometbft/e2e-node is assumed.
+// Also returns the last version in the list, which will be used for updates.
+func parseWeightedVersions(s string) (weightedChoice, string, error) {
 	wc := make(weightedChoice)
+	lv := ""
 	wvs := strings.Split(strings.TrimSpace(s), ",")
 	for _, wv := range wvs {
 		parts := strings.Split(strings.TrimSpace(wv), ":")
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("unexpected weight:version combination: %s", wv)
+		var ver string
+		if len(parts) == 2 {
+			ver = strings.TrimSpace(strings.Join([]string{"cometbft/e2e-node", parts[0]}, ":"))
+		} else if len(parts) == 3 {
+			ver = strings.TrimSpace(strings.Join([]string{parts[0], parts[1]}, ":"))
+		} else {
+			return nil, "", fmt.Errorf("unexpected weight:version combination: %s", wv)
 		}
-		ver := strings.TrimSpace(parts[0])
-		wt, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+
+		wt, err := strconv.Atoi(strings.TrimSpace(parts[len(parts)-1]))
 		if err != nil {
-			return nil, fmt.Errorf("unexpected weight \"%s\": %w", parts[1], err)
+			return nil, "", fmt.Errorf("unexpected weight \"%s\": %w", parts[1], err)
 		}
+
 		if wt < 1 {
-			return nil, errors.New("version weights must be >= 1")
+			return nil, "", errors.New("version weights must be >= 1")
 		}
 		wc[ver] = uint(wt)
+		lv = ver
 	}
-	return wc, nil
+	return wc, lv, nil
 }
 
 // Extracts the latest release version from the given Git repository. Uses the
-// current version of Tendermint Core to establish the "major" version
+// current version of CometBFT to establish the "major" version
 // currently in use.
 func gitRepoLatestReleaseVersion(gitRepoDir string) (string, error) {
 	opts := &git.PlainOpenOptions{
@@ -406,7 +431,7 @@ func findLatestReleaseTag(baseVer string, tags []string) (string, error) {
 	if latestVer == nil {
 		return "", nil
 	}
-	// Ensure the version string has a "v" prefix, because all Tendermint E2E
+	// Ensure the version string has a "v" prefix, because all CometBFT E2E
 	// node Docker images' versions have a "v" prefix.
 	vs := latestVer.String()
 	if !strings.HasPrefix(vs, "v") {

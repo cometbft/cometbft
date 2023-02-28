@@ -1,9 +1,9 @@
 #!/bin/bash
 set -e
 
-if [ ! -d "$TMHOME/config" ]; then
-	echo "Running tendermint init to create (default) configuration for docker run."
-	tendermint init
+if [ ! -d "$CMTHOME/config" ]; then
+	echo "Running cometbft init to create (default) configuration for docker run."
+	cometbft init
 
 	sed -i \
 		-e "s/^proxy_app\s*=.*/proxy_app = \"$PROXY_APP\"/" \
@@ -13,11 +13,11 @@ if [ ! -d "$TMHOME/config" ]; then
 		-e 's/^index_all_tags\s*=.*/index_all_tags = true/' \
 		-e 's,^laddr = "tcp://127.0.0.1:26657",laddr = "tcp://0.0.0.0:26657",' \
 		-e 's/^prometheus\s*=.*/prometheus = true/' \
-		"$TMHOME/config/config.toml"
+		"$CMTHOME/config/config.toml"
 
 	jq ".chain_id = \"$CHAIN_ID\" | .consensus_params.block.time_iota_ms = \"500\"" \
-		"$TMHOME/config/genesis.json" > "$TMHOME/config/genesis.json.new"
-	mv "$TMHOME/config/genesis.json.new" "$TMHOME/config/genesis.json"
+		"$CMTHOME/config/genesis.json" > "$CMTHOME/config/genesis.json.new"
+	mv "$CMTHOME/config/genesis.json.new" "$CMTHOME/config/genesis.json"
 fi
 
-exec tendermint "$@"
+exec cometbft "$@"

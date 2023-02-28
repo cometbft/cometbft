@@ -5,14 +5,14 @@ import (
 	"sort"
 	"time"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/config"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
-	"github.com/tendermint/tendermint/p2p"
-	ssproto "github.com/tendermint/tendermint/proto/tendermint/statesync"
-	"github.com/tendermint/tendermint/proxy"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/config"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/p2p"
+	ssproto "github.com/cometbft/cometbft/proto/tendermint/statesync"
+	"github.com/cometbft/cometbft/proxy"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -37,7 +37,7 @@ type Reactor struct {
 
 	// This will only be set when a state sync is in progress. It is used to feed received
 	// snapshots and chunks into the sync.
-	mtx    tmsync.RWMutex
+	mtx    cmtsync.RWMutex
 	syncer *syncer
 }
 

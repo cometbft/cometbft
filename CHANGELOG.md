@@ -6,10 +6,12 @@
 
 - The `TMHOME` environment variable was renamed to `CMTHOME`, and all environment variables starting with `TM_` are instead prefixed with `CMT_`
   ([\#211](https://github.com/cometbft/cometbft/issues/211))
-- - `[p2p]` Reactor `Send`, `TrySend` and `Receive` renamed to `SendEnvelope`,
+- `[p2p]` Reactor `Send`, `TrySend` and `Receive` renamed to `SendEnvelope`,
   `TrySendEnvelope` and `ReceiveEnvelope` to allow metrics to be appended to
   messages and measure bytes sent/received.
   ([\#230](https://github.com/cometbft/cometbft/pull/230))
+- Bump minimum Go version to 1.20
+  ([\#385](https://github.com/cometbft/cometbft/issues/385))
 - `[abci]` Make length delimiter encoding consistent
   (`uint64`) between ABCI and P2P wire-level protocols
   ([\#5783](https://github.com/tendermint/tendermint/pull/5783))
@@ -55,6 +57,9 @@
 - `[consensus]` Fixed a busy loop that happened when sending of a block part failed by sleeping in case of error.
   ([\#4](https://github.com/informalsystems/tendermint/pull/4))
 - `[state/kvindexer]` \#77 Fixed the default behaviour of the kvindexer to index and query attributes by events in which they occur. In 0.34.25 this was mitigated by a separated RPC flag.  (@jmalicevic)
+- `[state/kvindexer]` \#382 Resolved crashes when event values contained slashes, introduced after adding event sequences in \#77.  (@jmalicevic)
+- `[consensus]` ([\#386](https://github.com/cometbft/cometbft/pull/386)) Short-term fix for the case when `needProofBlock` cannot find previous block meta by defaulting to the creation of a new proof block. (@adizere)
+  - Special thanks to the [Vega.xyz](https://vega.xyz/) team, and in particular to Zohar (@ze97286), for reporting the problem and working with us to get to a fix.
 - `[docker]` enable cross platform build using docker buildx
   ([\#9073](https://github.com/tendermint/tendermint/pull/9073))
 - `[consensus]` fix round number of `enterPropose`

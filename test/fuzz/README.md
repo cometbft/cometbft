@@ -1,6 +1,11 @@
 # fuzz
 
+<<<<<<< HEAD
 Fuzzing for various packages in CometBFT using [go-fuzz](https://github.com/dvyukov/go-fuzz) library.
+=======
+Fuzzing for various packages in Tendermint using the fuzzing infrastructure
+included in Go 1.20.
+>>>>>>> 200784acb (Update to use Go 1.20 (#405))
 
 Inputs:
 

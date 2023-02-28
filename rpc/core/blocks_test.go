@@ -7,14 +7,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmstate "github.com/tendermint/tendermint/proto/tendermint/state"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	rpctypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/state/mocks"
+	abci "github.com/cometbft/cometbft/abci/types"
+	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/state/mocks"
 )
 
 func TestBlockchainInfo(t *testing.T) {
@@ -25,7 +25,6 @@ func TestBlockchainInfo(t *testing.T) {
 		resultLength int64
 		wantErr      bool
 	}{
-
 		// min > max
 		{0, 0, 0, 0, 10, 0, true},  // min set to 1
 		{0, 1, 0, 0, 10, 0, true},  // max set to height (0)
@@ -70,7 +69,7 @@ func TestBlockchainInfo(t *testing.T) {
 }
 
 func TestBlockResults(t *testing.T) {
-	results := &tmstate.ABCIResponses{
+	results := &cmtstate.ABCIResponses{
 		DeliverTxs: []*abci.ResponseDeliverTx{
 			{Code: 0, Data: []byte{0x01}, Log: "ok"},
 			{Code: 0, Data: []byte{0x02}, Log: "ok"},
@@ -80,7 +79,7 @@ func TestBlockResults(t *testing.T) {
 		BeginBlock: &abci.ResponseBeginBlock{},
 	}
 
-	env = &Environment{}
+	env := &Environment{}
 	env.StateStore = sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -110,7 +109,7 @@ func TestBlockResults(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		res, err := BlockResults(&rpctypes.Context{}, &tc.height)
+		res, err := env.BlockResults(&rpctypes.Context{}, &tc.height)
 		if tc.wantErr {
 			assert.Error(t, err)
 		} else {

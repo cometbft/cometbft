@@ -3,9 +3,9 @@ package txindex
 import (
 	"context"
 
-	"github.com/tendermint/tendermint/libs/service"
-	"github.com/tendermint/tendermint/state/indexer"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/state/indexer"
+	"github.com/cometbft/cometbft/types"
 )
 
 // XXX/TODO: These types should be moved to the indexer package.
@@ -59,54 +59,59 @@ func (is *IndexerService) OnStart() error {
 
 	go func() {
 		for {
-			msg := <-blockHeadersSub.Out()
-			eventDataHeader := msg.Data().(types.EventDataNewBlockHeader)
-			height := eventDataHeader.Header.Height
-			batch := NewBatch(eventDataHeader.NumTxs)
+			select {
+			case <-blockHeadersSub.Canceled():
+				return
+			case msg := <-blockHeadersSub.Out():
 
-			for i := int64(0); i < eventDataHeader.NumTxs; i++ {
-				msg2 := <-txsSub.Out()
-				txResult := msg2.Data().(types.EventDataTx).TxResult
+				eventDataHeader := msg.Data().(types.EventDataNewBlockHeader)
+				height := eventDataHeader.Header.Height
+				batch := NewBatch(eventDataHeader.NumTxs)
 
-				if err = batch.Add(&txResult); err != nil {
-					is.Logger.Error(
-						"failed to add tx to batch",
-						"height", height,
-						"index", txResult.Index,
-						"err", err,
-					)
+				for i := int64(0); i < eventDataHeader.NumTxs; i++ {
+					msg2 := <-txsSub.Out()
+					txResult := msg2.Data().(types.EventDataTx).TxResult
 
+					if err = batch.Add(&txResult); err != nil {
+						is.Logger.Error(
+							"failed to add tx to batch",
+							"height", height,
+							"index", txResult.Index,
+							"err", err,
+						)
+
+						if is.terminateOnError {
+							if err := is.Stop(); err != nil {
+								is.Logger.Error("failed to stop", "err", err)
+							}
+							return
+						}
+					}
+				}
+
+				if err := is.blockIdxr.Index(eventDataHeader); err != nil {
+					is.Logger.Error("failed to index block", "height", height, "err", err)
 					if is.terminateOnError {
 						if err := is.Stop(); err != nil {
 							is.Logger.Error("failed to stop", "err", err)
 						}
 						return
 					}
+				} else {
+					is.Logger.Info("indexed block exents", "height", height)
 				}
-			}
 
-			if err := is.blockIdxr.Index(eventDataHeader); err != nil {
-				is.Logger.Error("failed to index block", "height", height, "err", err)
-				if is.terminateOnError {
-					if err := is.Stop(); err != nil {
-						is.Logger.Error("failed to stop", "err", err)
+				if err = is.txIdxr.AddBatch(batch); err != nil {
+					is.Logger.Error("failed to index block txs", "height", height, "err", err)
+					if is.terminateOnError {
+						if err := is.Stop(); err != nil {
+							is.Logger.Error("failed to stop", "err", err)
+						}
+						return
 					}
-					return
+				} else {
+					is.Logger.Debug("indexed transactions", "height", height, "num_txs", eventDataHeader.NumTxs)
 				}
-			} else {
-				is.Logger.Info("indexed block exents", "height", height)
-			}
-
-			if err = is.txIdxr.AddBatch(batch); err != nil {
-				is.Logger.Error("failed to index block txs", "height", height, "err", err)
-				if is.terminateOnError {
-					if err := is.Stop(); err != nil {
-						is.Logger.Error("failed to stop", "err", err)
-					}
-					return
-				}
-			} else {
-				is.Logger.Debug("indexed transactions", "height", height, "num_txs", eventDataHeader.NumTxs)
 			}
 		}
 	}()

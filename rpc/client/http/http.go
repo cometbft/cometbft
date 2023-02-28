@@ -7,29 +7,29 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tendermint/tendermint/libs/bytes"
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	"github.com/tendermint/tendermint/libs/log"
-	tmpubsub "github.com/tendermint/tendermint/libs/pubsub"
-	"github.com/tendermint/tendermint/libs/service"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
-	rpcclient "github.com/tendermint/tendermint/rpc/client"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	jsonrpcclient "github.com/tendermint/tendermint/rpc/jsonrpc/client"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/libs/bytes"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	rpcclient "github.com/cometbft/cometbft/rpc/client"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	jsonrpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
+	"github.com/cometbft/cometbft/types"
 )
 
 /*
-HTTP is a Client implementation that communicates with a Tendermint node over
+HTTP is a Client implementation that communicates with a CometBFT node over
 JSON RPC and WebSockets.
 
 This is the main implementation you probably want to use in production code.
-There are other implementations when calling the Tendermint node in-process
+There are other implementations when calling the CometBFT node in-process
 (Local), or when you want to mock out the server for test code (mock).
 
-You can subscribe for any event published by Tendermint using Subscribe method.
+You can subscribe for any event published by CometBFT using Subscribe method.
 Note delivery is best-effort. If you don't read events fast enough or network is
-slow, Tendermint might cancel the subscription. The client will attempt to
+slow, CometBFT might cancel the subscription. The client will attempt to
 resubscribe (you don't need to do anything). It will keep trying every second
 indefinitely until successful.
 
@@ -604,7 +604,7 @@ type WSEvents struct {
 	endpoint string
 	ws       *jsonrpcclient.WSClient
 
-	mtx           tmsync.RWMutex
+	mtx           cmtsync.RWMutex
 	subscriptions map[string]chan ctypes.ResultEvent // query -> chan
 }
 
@@ -672,7 +672,7 @@ func (w *WSEvents) Subscribe(ctx context.Context, subscriber, query string,
 
 	outc := make(chan ctypes.ResultEvent, outCap)
 	w.mtx.Lock()
-	// subscriber param is ignored because Tendermint will override it with
+	// subscriber param is ignored because CometBFT will override it with
 	// remote IP anyway.
 	w.subscriptions[query] = outc
 	w.mtx.Unlock()
@@ -739,7 +739,7 @@ func (w *WSEvents) redoSubscriptionsAfter(d time.Duration) {
 }
 
 func isErrAlreadySubscribed(err error) bool {
-	return strings.Contains(err.Error(), tmpubsub.ErrAlreadySubscribed.Error())
+	return strings.Contains(err.Error(), cmtpubsub.ErrAlreadySubscribed.Error())
 }
 
 func (w *WSEvents) eventListener() {
@@ -753,11 +753,11 @@ func (w *WSEvents) eventListener() {
 			if resp.Error != nil {
 				w.Logger.Error("WS error", "err", resp.Error.Error())
 				// Error can be ErrAlreadySubscribed or max client (subscriptions per
-				// client) reached or Tendermint exited.
+				// client) reached or CometBFT exited.
 				// We can ignore ErrAlreadySubscribed, but need to retry in other
 				// cases.
 				if !isErrAlreadySubscribed(resp.Error) {
-					// Resubscribe after 1 second to give Tendermint time to restart (if
+					// Resubscribe after 1 second to give CometBFT time to restart (if
 					// crashed).
 					w.redoSubscriptionsAfter(1 * time.Second)
 				}
@@ -765,7 +765,7 @@ func (w *WSEvents) eventListener() {
 			}
 
 			result := new(ctypes.ResultEvent)
-			err := tmjson.Unmarshal(resp.Result, result)
+			err := cmtjson.Unmarshal(resp.Result, result)
 			if err != nil {
 				w.Logger.Error("failed to unmarshal response", "err", err)
 				continue

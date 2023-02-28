@@ -8,20 +8,20 @@ import (
 	"testing"
 	"time"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	"github.com/tendermint/tendermint/abci/example/kvstore"
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/light"
-	"github.com/tendermint/tendermint/light/provider"
-	httpp "github.com/tendermint/tendermint/light/provider/http"
-	dbs "github.com/tendermint/tendermint/light/store/db"
-	rpctest "github.com/tendermint/tendermint/rpc/test"
+	"github.com/cometbft/cometbft/abci/example/kvstore"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/light"
+	"github.com/cometbft/cometbft/light/provider"
+	httpp "github.com/cometbft/cometbft/light/provider/http"
+	dbs "github.com/cometbft/cometbft/light/store/db"
+	rpctest "github.com/cometbft/cometbft/rpc/test"
 )
 
 // Automatically getting new headers and verifying them.
 func ExampleClient_Update() {
-	// give Tendermint time to generate some blocks
+	// give CometBFT time to generate some blocks
 	time.Sleep(5 * time.Second)
 
 	dbDir, err := os.MkdirTemp("", "light-client-example")
@@ -30,7 +30,7 @@ func ExampleClient_Update() {
 	}
 	defer os.RemoveAll(dbDir)
 
-	var config = rpctest.GetConfig()
+	config := rpctest.GetConfig()
 
 	primary, err := httpp.New(chainID, config.RPC.ListenAddress)
 	if err != nil {
@@ -86,7 +86,7 @@ func ExampleClient_Update() {
 
 // Manually getting light blocks and verifying them.
 func ExampleClient_VerifyLightBlockAtHeight() {
-	// give Tendermint time to generate some blocks
+	// give CometBFT time to generate some blocks
 	time.Sleep(5 * time.Second)
 
 	dbDir, err := os.MkdirTemp("", "light-client-example")
@@ -95,7 +95,7 @@ func ExampleClient_VerifyLightBlockAtHeight() {
 	}
 	defer os.RemoveAll(dbDir)
 
-	var config = rpctest.GetConfig()
+	config := rpctest.GetConfig()
 
 	primary, err := httpp.New(chainID, config.RPC.ListenAddress)
 	if err != nil {
@@ -149,7 +149,7 @@ func ExampleClient_VerifyLightBlockAtHeight() {
 }
 
 func TestMain(m *testing.M) {
-	// start a tendermint node (and kvstore) in the background to test against
+	// start a CometBFT node (and kvstore) in the background to test against
 	app := kvstore.NewApplication()
 	node := rpctest.StartTendermint(app, rpctest.SuppressStdout)
 

@@ -7,7 +7,7 @@ import (
 
 	"github.com/oasisprotocol/curve25519-voi/primitives/sr25519"
 
-	"github.com/tendermint/tendermint/crypto"
+	"github.com/cometbft/cometbft/crypto"
 )
 
 var (
@@ -125,7 +125,7 @@ func (privKey *PrivKey) UnmarshalJSON(data []byte) error {
 
 // GenPrivKey generates a new sr25519 private key.
 // It uses OS randomness in conjunction with the current global random seed
-// in tendermint/libs/common to generate the private key.
+// in cometbft/libs/rand to generate the private key.
 func GenPrivKey() PrivKey {
 	return genPrivKey(crypto.CReader())
 }

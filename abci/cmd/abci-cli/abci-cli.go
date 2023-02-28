@@ -11,17 +11,17 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/tendermint/tendermint/libs/log"
-	tmos "github.com/tendermint/tendermint/libs/os"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtos "github.com/cometbft/cometbft/libs/os"
 
-	abcicli "github.com/tendermint/tendermint/abci/client"
-	"github.com/tendermint/tendermint/abci/example/code"
-	"github.com/tendermint/tendermint/abci/example/kvstore"
-	"github.com/tendermint/tendermint/abci/server"
-	servertest "github.com/tendermint/tendermint/abci/tests/server"
-	"github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/abci/version"
-	"github.com/tendermint/tendermint/proto/tendermint/crypto"
+	abcicli "github.com/cometbft/cometbft/abci/client"
+	"github.com/cometbft/cometbft/abci/example/code"
+	"github.com/cometbft/cometbft/abci/example/kvstore"
+	"github.com/cometbft/cometbft/abci/server"
+	servertest "github.com/cometbft/cometbft/abci/tests/server"
+	"github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/abci/version"
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 )
 
 // client is a global variable so it can be reused by the console
@@ -460,11 +460,14 @@ func cmdUnimplemented(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("Available commands:")
 	fmt.Printf("%s: %s\n", echoCmd.Use, echoCmd.Short)
-	fmt.Printf("%s: %s\n", infoCmd.Use, infoCmd.Short)
 	fmt.Printf("%s: %s\n", checkTxCmd.Use, checkTxCmd.Short)
-	fmt.Printf("%s: %s\n", deliverTxCmd.Use, deliverTxCmd.Short)
-	fmt.Printf("%s: %s\n", queryCmd.Use, queryCmd.Short)
 	fmt.Printf("%s: %s\n", commitCmd.Use, commitCmd.Short)
+	fmt.Printf("%s: %s\n", deliverTxCmd.Use, deliverTxCmd.Short)
+	fmt.Printf("%s: %s\n", infoCmd.Use, infoCmd.Short)
+	fmt.Printf("%s: %s\n", queryCmd.Use, queryCmd.Short)
+	fmt.Printf("%s: %s\n", prepareProposalCmd.Use, prepareProposalCmd.Short)
+	fmt.Printf("%s: %s\n", processProposalCmd.Use, processProposalCmd.Short)
+
 	fmt.Println("Use \"[command] --help\" for more information about a command.")
 
 	return nil
@@ -687,7 +690,7 @@ func cmdKVStore(cmd *cobra.Command, args []string) error {
 	}
 
 	// Stop upon receiving SIGTERM or CTRL-C.
-	tmos.TrapSignal(logger, func() {
+	cmtos.TrapSignal(logger, func() {
 		// Cleanup
 		if err := srv.Stop(); err != nil {
 			logger.Error("Error while stopping server", "err", err)

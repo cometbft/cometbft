@@ -10,10 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tendermint/tendermint/libs/log"
+	"github.com/cometbft/cometbft/libs/log"
 
-	"github.com/tendermint/tendermint/libs/pubsub"
-	"github.com/tendermint/tendermint/libs/pubsub/query"
+	"github.com/cometbft/cometbft/libs/pubsub"
+	"github.com/cometbft/cometbft/libs/pubsub/query"
 )
 
 const (
@@ -431,7 +431,7 @@ func benchmarkNClients(n int, b *testing.B) {
 				select {
 				case <-subscription.Out():
 					continue
-				case <-subscription.Cancelled():
+				case <-subscription.Canceled():
 					return
 				}
 			}
@@ -472,7 +472,7 @@ func benchmarkNClientsOneQuery(n int, b *testing.B) {
 				select {
 				case <-subscription.Out():
 					continue
-				case <-subscription.Cancelled():
+				case <-subscription.Canceled():
 					return
 				}
 			}
@@ -501,7 +501,7 @@ func assertReceive(t *testing.T, expected interface{}, ch <-chan pubsub.Message,
 }
 
 func assertCancelled(t *testing.T, subscription *pubsub.Subscription, err error) {
-	_, ok := <-subscription.Cancelled()
+	_, ok := <-subscription.Canceled()
 	assert.False(t, ok)
 	assert.Equal(t, err, subscription.Err())
 }

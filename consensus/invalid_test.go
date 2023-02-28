@@ -3,13 +3,13 @@ package consensus
 import (
 	"testing"
 
-	"github.com/tendermint/tendermint/libs/bytes"
-	"github.com/tendermint/tendermint/libs/log"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/p2p"
-	tmcons "github.com/tendermint/tendermint/proto/tendermint/consensus"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/p2p"
+	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 //----------------------------------------------
@@ -71,17 +71,17 @@ func invalidDoPrevoteFunc(t *testing.T, height int64, round int32, cs *State, sw
 		valIndex, _ := cs.Validators.GetByAddress(addr)
 
 		// precommit a random block
-		blockHash := bytes.HexBytes(tmrand.Bytes(32))
+		blockHash := bytes.HexBytes(cmtrand.Bytes(32))
 		precommit := &types.Vote{
 			ValidatorAddress: addr,
 			ValidatorIndex:   valIndex,
 			Height:           cs.Height,
 			Round:            cs.Round,
 			Timestamp:        cs.voteTime(),
-			Type:             tmproto.PrecommitType,
+			Type:             cmtproto.PrecommitType,
 			BlockID: types.BlockID{
 				Hash:          blockHash,
-				PartSetHeader: types.PartSetHeader{Total: 1, Hash: tmrand.Bytes(32)}},
+				PartSetHeader: types.PartSetHeader{Total: 1, Hash: cmtrand.Bytes(32)}},
 		}
 		p := precommit.ToProto()
 		err = cs.privValidator.SignVote(cs.state.ChainID, p)
@@ -96,7 +96,7 @@ func invalidDoPrevoteFunc(t *testing.T, height int64, round int32, cs *State, sw
 		for _, peer := range peers {
 			cs.Logger.Info("Sending bad vote", "block", blockHash, "peer", peer)
 			peer.Send(p2p.Envelope{
-				Message:   &tmcons.Vote{Vote: precommit.ToProto()},
+				Message:   &cmtcons.Vote{Vote: precommit.ToProto()},
 				ChannelID: VoteChannel,
 			})
 		}

@@ -16,8 +16,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tendermint/tendermint/libs/log"
-	types "github.com/tendermint/tendermint/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/libs/log"
+	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 type sampleResult struct {
@@ -39,8 +39,7 @@ func TestMaxOpenConnections(t *testing.T) {
 		fmt.Fprint(w, "some body")
 	})
 	config := DefaultConfig()
-	config.MaxOpenConnections = max
-	l, err := Listen("tcp://127.0.0.1:0", config)
+	l, err := Listen("tcp://127.0.0.1:0", max)
 	require.NoError(t, err)
 	defer l.Close()
 	go Serve(l, mux, log.TestingLogger(), config) //nolint:errcheck // ignore for tests

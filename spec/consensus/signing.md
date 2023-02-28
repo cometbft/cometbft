@@ -1,3 +1,6 @@
+---
+---
+
 # Validator Signing
 
 Here we specify the rules for validating a proposal and vote before signing.
@@ -147,8 +150,8 @@ these basic validation rules.
 ## Double Signing
 
 Signers must be careful not to sign conflicting messages, also known as "double signing" or "equivocating".
-Tendermint has mechanisms to publish evidence of validators that signed conflicting votes, so they can be punished
-by the application. Note Tendermint does not currently handle evidence of conflciting proposals, though it may in the future.
+CometBFT has mechanisms to publish evidence of validators that signed conflicting votes, so they can be punished
+by the application. Note CometBFT does not currently handle evidence of conflciting proposals, though it may in the future.
 
 ### State
 
@@ -212,7 +215,7 @@ sign another vote with the same type for the same height and round where
 
 ### Other Rules
 
-According to the rules of Tendermint consensus, once a validator precommits for
+According to the rules of Tendermint consensus algorithm, adopted in CometBFT, once a validator precommits for
 a block, they become "locked" on that block, which means they can't prevote for
 another block unless they see sufficient justification (ie. a polka from a
 higher round). For more details, see the [consensus

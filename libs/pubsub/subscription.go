@@ -3,7 +3,7 @@ package pubsub
 import (
 	"errors"
 
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 var (
@@ -24,7 +24,7 @@ type Subscription struct {
 	out chan Message
 
 	canceled chan struct{}
-	mtx      tmsync.RWMutex
+	mtx      cmtsync.RWMutex
 	err      error
 }
 
@@ -43,11 +43,9 @@ func (s *Subscription) Out() <-chan Message {
 	return s.out
 }
 
-// Cancelled returns a channel that's closed when the subscription is
+// Canceled returns a channel that's closed when the subscription is
 // terminated and supposed to be used in a select statement.
-//
-//nolint:misspell
-func (s *Subscription) Cancelled() <-chan struct{} {
+func (s *Subscription) Canceled() <-chan struct{} {
 	return s.canceled
 }
 

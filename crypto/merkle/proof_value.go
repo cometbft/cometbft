@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmcrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtcrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 )
 
 const ProofOpValue = "simple:v"
@@ -13,7 +13,7 @@ const ProofOpValue = "simple:v"
 // ValueOp takes a key and a single value as argument and
 // produces the root hash.  The corresponding tree structure is
 // the SimpleMap tree.  SimpleMap takes a Hasher, and currently
-// Tendermint uses tmhash.  SimpleValueOp should support
+// CometBFT uses tmhash.  SimpleValueOp should support
 // the hash function as used in tmhash.  TODO support
 // additional hash functions here as options/args to this
 // operator.
@@ -37,11 +37,11 @@ func NewValueOp(key []byte, proof *Proof) ValueOp {
 	}
 }
 
-func ValueOpDecoder(pop tmcrypto.ProofOp) (ProofOperator, error) {
+func ValueOpDecoder(pop cmtcrypto.ProofOp) (ProofOperator, error) {
 	if pop.Type != ProofOpValue {
 		return nil, fmt.Errorf("unexpected ProofOp.Type; got %v, want %v", pop.Type, ProofOpValue)
 	}
-	var pbop tmcrypto.ValueOp // a bit strange as we'll discard this, but it works.
+	var pbop cmtcrypto.ValueOp // a bit strange as we'll discard this, but it works.
 	err := pbop.Unmarshal(pop.Data)
 	if err != nil {
 		return nil, fmt.Errorf("decoding ProofOp.Data into ValueOp: %w", err)
@@ -54,8 +54,8 @@ func ValueOpDecoder(pop tmcrypto.ProofOp) (ProofOperator, error) {
 	return NewValueOp(pop.Key, sp), nil
 }
 
-func (op ValueOp) ProofOp() tmcrypto.ProofOp {
-	pbval := tmcrypto.ValueOp{
+func (op ValueOp) ProofOp() cmtcrypto.ProofOp {
+	pbval := cmtcrypto.ValueOp{
 		Key:   op.key,
 		Proof: op.Proof.ToProto(),
 	}
@@ -63,7 +63,7 @@ func (op ValueOp) ProofOp() tmcrypto.ProofOp {
 	if err != nil {
 		panic(err)
 	}
-	return tmcrypto.ProofOp{
+	return cmtcrypto.ProofOp{
 		Type: ProofOpValue,
 		Key:  op.key,
 		Data: bz,

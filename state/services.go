@@ -1,7 +1,7 @@
 package state
 
 import (
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 //------------------------------------------------------
@@ -36,6 +36,8 @@ type BlockStore interface {
 	LoadSeenCommit(height int64) *types.Commit
 
 	DeleteLatestBlock() error
+
+	Close() error
 }
 
 //-----------------------------------------------------------------------------

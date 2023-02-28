@@ -5,19 +5,19 @@ import (
 	"fmt"
 	"sort"
 
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	tmquery "github.com/tendermint/tendermint/libs/pubsub/query"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	rpctypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
-	"github.com/tendermint/tendermint/state/txindex/null"
-	"github.com/tendermint/tendermint/types"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/state/txindex/null"
+	"github.com/cometbft/cometbft/types"
 )
 
 // Tx allows you to query the transaction results. `nil` could mean the
 // transaction is in the mempool, invalidated, or was not sent in the first
 // place.
-// More: https://docs.tendermint.com/main/rpc/#/Info/tx
-func Tx(ctx *rpctypes.Context, hash []byte, prove bool) (*ctypes.ResultTx, error) {
+// More: https://docs.cometbft.com/main/rpc/#/Info/tx
+func (env *Environment) Tx(ctx *rpctypes.Context, hash []byte, prove bool) (*ctypes.ResultTx, error) {
 	// if index is disabled, return error
 	if _, ok := env.TxIndexer.(*null.TxIndex); ok {
 		return nil, fmt.Errorf("transaction indexing is disabled")
@@ -50,8 +50,8 @@ func Tx(ctx *rpctypes.Context, hash []byte, prove bool) (*ctypes.ResultTx, error
 
 // TxSearch allows you to query for multiple transactions results. It returns a
 // list of transactions (maximum ?per_page entries) and the total count.
-// More: https://docs.tendermint.com/main/rpc/#/Info/tx_search
-func TxSearch(
+// More: https://docs.cometbft.com/main/rpc/#/Info/tx_search
+func (env *Environment) TxSearch(
 	ctx *rpctypes.Context,
 	query string,
 	prove bool,
@@ -66,7 +66,7 @@ func TxSearch(
 		return nil, errors.New("maximum query length exceeded")
 	}
 
-	q, err := tmquery.New(query)
+	q, err := cmtquery.New(query)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func TxSearch(
 
 	// paginate results
 	totalCount := len(results)
-	perPage := validatePerPage(perPagePtr)
+	perPage := env.validatePerPage(perPagePtr)
 
 	page, err := validatePage(pagePtr, perPage, totalCount)
 	if err != nil {
@@ -106,7 +106,7 @@ func TxSearch(
 	}
 
 	skipCount := validateSkipCount(page, perPage)
-	pageSize := tmmath.MinInt(perPage, totalCount-skipCount)
+	pageSize := cmtmath.MinInt(perPage, totalCount-skipCount)
 
 	apiResults := make([]*ctypes.ResultTx, 0, pageSize)
 	for i := skipCount; i < skipCount+pageSize; i++ {

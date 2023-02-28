@@ -6,10 +6,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	cryptoenc "github.com/tendermint/tendermint/crypto/encoding"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 )
 
 func TestABCIPubKey(t *testing.T) {
@@ -31,25 +31,25 @@ func TestABCIValidators(t *testing.T) {
 	pkEd := ed25519.GenPrivKey().PubKey()
 
 	// correct validator
-	tmValExpected := NewValidator(pkEd, 10)
+	cmtValExpected := NewValidator(pkEd, 10)
 
-	tmVal := NewValidator(pkEd, 10)
+	cmtVal := NewValidator(pkEd, 10)
 
-	abciVal := TM2PB.ValidatorUpdate(tmVal)
-	tmVals, err := PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{abciVal})
+	abciVal := TM2PB.ValidatorUpdate(cmtVal)
+	cmtVals, err := PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{abciVal})
 	assert.Nil(t, err)
-	assert.Equal(t, tmValExpected, tmVals[0])
+	assert.Equal(t, cmtValExpected, cmtVals[0])
 
-	abciVals := TM2PB.ValidatorUpdates(NewValidatorSet(tmVals))
+	abciVals := TM2PB.ValidatorUpdates(NewValidatorSet(cmtVals))
 	assert.Equal(t, []abci.ValidatorUpdate{abciVal}, abciVals)
 
 	// val with address
-	tmVal.Address = pkEd.Address()
+	cmtVal.Address = pkEd.Address()
 
-	abciVal = TM2PB.ValidatorUpdate(tmVal)
-	tmVals, err = PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{abciVal})
+	abciVal = TM2PB.ValidatorUpdate(cmtVal)
+	cmtVals, err = PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{abciVal})
 	assert.Nil(t, err)
-	assert.Equal(t, tmValExpected, tmVals[0])
+	assert.Equal(t, cmtValExpected, cmtVals[0])
 }
 
 type pubKeyEddie struct{}
@@ -77,10 +77,10 @@ func TestABCIValidatorWithoutPubKey(t *testing.T) {
 	abciVal := TM2PB.Validator(NewValidator(pkEd, 10))
 
 	// pubkey must be nil
-	tmValExpected := abci.Validator{
+	cmtValExpected := abci.Validator{
 		Address: pkEd.Address(),
 		Power:   10,
 	}
 
-	assert.Equal(t, tmValExpected, abciVal)
+	assert.Equal(t, cmtValExpected, abciVal)
 }

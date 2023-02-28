@@ -5,18 +5,17 @@ import (
 	"fmt"
 	"time"
 
-	cfg "github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/consensus"
-	"github.com/tendermint/tendermint/crypto"
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	"github.com/tendermint/tendermint/libs/log"
-	mempl "github.com/tendermint/tendermint/mempool"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/proxy"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/state/indexer"
-	"github.com/tendermint/tendermint/state/txindex"
-	"github.com/tendermint/tendermint/types"
+	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/crypto"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	"github.com/cometbft/cometbft/libs/log"
+	mempl "github.com/cometbft/cometbft/mempool"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/proxy"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/state/indexer"
+	"github.com/cometbft/cometbft/state/txindex"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -32,17 +31,6 @@ const (
 	// chunk in the genesis structure for the chunked API
 	genesisChunkSize = 16 * 1024 * 1024 // 16
 )
-
-var (
-	// set by Node
-	env *Environment
-)
-
-// SetEnvironment sets up the given Environment.
-// It will race if multiple Node call SetEnvironment.
-func SetEnvironment(e *Environment) {
-	env = e
-}
 
 //----------------------------------------------
 // These interfaces are used by RPC and must be thread safe
@@ -69,6 +57,10 @@ type peers interface {
 	Peers() p2p.IPeerSet
 }
 
+type consensusReactor interface {
+	WaitSync() bool
+}
+
 // ----------------------------------------------
 // Environment contains objects and interfaces used by the RPC. It is expected
 // to be setup once during startup.
@@ -78,21 +70,21 @@ type Environment struct {
 	ProxyAppMempool proxy.AppConnMempool
 
 	// interfaces defined in types and above
-	StateStore     sm.Store
-	BlockStore     sm.BlockStore
-	EvidencePool   sm.EvidencePool
-	ConsensusState Consensus
-	P2PPeers       peers
-	P2PTransport   transport
+	StateStore       sm.Store
+	BlockStore       sm.BlockStore
+	EvidencePool     sm.EvidencePool
+	ConsensusState   Consensus
+	ConsensusReactor consensusReactor
+	P2PPeers         peers
+	P2PTransport     transport
 
 	// objects
-	PubKey           crypto.PubKey
-	GenDoc           *types.GenesisDoc // cache the genesis structure
-	TxIndexer        txindex.TxIndexer
-	BlockIndexer     indexer.BlockIndexer
-	ConsensusReactor *consensus.Reactor
-	EventBus         *types.EventBus // thread safe
-	Mempool          mempl.Mempool
+	PubKey       crypto.PubKey
+	GenDoc       *types.GenesisDoc // cache the genesis structure
+	TxIndexer    txindex.TxIndexer
+	BlockIndexer indexer.BlockIndexer
+	EventBus     *types.EventBus // thread safe
+	Mempool      mempl.Mempool
 
 	Logger log.Logger
 
@@ -125,7 +117,7 @@ func validatePage(pagePtr *int, perPage, totalCount int) (int, error) {
 	return page, nil
 }
 
-func validatePerPage(perPagePtr *int) int {
+func (env *Environment) validatePerPage(perPagePtr *int) int {
 	if perPagePtr == nil { // no per_page parameter
 		return defaultPerPage
 	}
@@ -141,7 +133,7 @@ func validatePerPage(perPagePtr *int) int {
 
 // InitGenesisChunks configures the environment and should be called on service
 // startup.
-func InitGenesisChunks() error {
+func (env *Environment) InitGenesisChunks() error {
 	if env.genChunks != nil {
 		return nil
 	}
@@ -150,7 +142,7 @@ func InitGenesisChunks() error {
 		return nil
 	}
 
-	data, err := tmjson.Marshal(env.GenDoc)
+	data, err := cmtjson.Marshal(env.GenDoc)
 	if err != nil {
 		return err
 	}
@@ -178,7 +170,7 @@ func validateSkipCount(page, perPage int) int {
 }
 
 // latestHeight can be either latest committed or uncommitted (+1) height.
-func getHeight(latestHeight int64, heightPtr *int64) (int64, error) {
+func (env *Environment) getHeight(latestHeight int64, heightPtr *int64) (int64, error) {
 	if heightPtr != nil {
 		height := *heightPtr
 		if height <= 0 {
@@ -198,7 +190,7 @@ func getHeight(latestHeight int64, heightPtr *int64) (int64, error) {
 	return latestHeight, nil
 }
 
-func latestUncommittedHeight() int64 {
+func (env *Environment) latestUncommittedHeight() int64 {
 	nodeIsSyncing := env.ConsensusReactor.WaitSync()
 	if nodeIsSyncing {
 		return env.BlockStore.Height()

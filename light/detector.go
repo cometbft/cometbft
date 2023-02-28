@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/tendermint/tendermint/light/provider"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/light/provider"
+	"github.com/cometbft/cometbft/types"
 )
 
 // The detector component of the light client detects and handles attacks on the light client.
 // More info here:
-// tendermint/docs/architecture/adr-047-handling-evidence-from-light-client.md
+// cometbft/docs/architecture/adr-047-handling-evidence-from-light-client.md
 
 // detectDivergence is a second wall of defense for the light client.
 //
@@ -23,7 +23,7 @@ import (
 // trace that was produced from the primary. If successful, it produces two sets of evidence
 // and sends them to the opposite provider before halting.
 //
-// If there are no conflictinge headers, the light client deems the verified target header
+// If there are no conflicting headers, the light client deems the verified target header
 // trusted and saves it to the trusted store.
 func (c *Client) detectDivergence(ctx context.Context, primaryTrace []*types.LightBlock, now time.Time) error {
 	if primaryTrace == nil || len(primaryTrace) < 2 {
@@ -74,7 +74,7 @@ func (c *Client) detectDivergence(ctx context.Context, primaryTrace []*types.Lig
 			witnessesToRemove = append(witnessesToRemove, e.WitnessIndex)
 
 		case errBadWitness:
-			// these are all melevolent errors and should result in removing the
+			// these are all malevolent errors and should result in removing the
 			// witness
 			c.logger.Info("witness returned an error during header comparison, removing...",
 				"witness", c.witnesses[e.WitnessIndex], "err", err)
@@ -217,7 +217,7 @@ func (c *Client) sendEvidence(ctx context.Context, ev *types.LightClientAttackEv
 func (c *Client) handleConflictingHeaders(
 	ctx context.Context,
 	primaryTrace []*types.LightBlock,
-	challendingBlock *types.LightBlock,
+	challengingBlock *types.LightBlock,
 	witnessIndex int,
 	now time.Time,
 ) error {
@@ -225,7 +225,7 @@ func (c *Client) handleConflictingHeaders(
 	witnessTrace, primaryBlock, err := c.examineConflictingHeaderAgainstTrace(
 		ctx,
 		primaryTrace,
-		challendingBlock,
+		challengingBlock,
 		supportingWitness,
 		now,
 	)
@@ -374,7 +374,7 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 }
 
 // getTargetBlockOrLatest gets the latest height, if it is greater than the target height then it queries
-// the target heght else it returns the latest. returns true if it successfully managed to acquire the target
+// the target height else it returns the latest. returns true if it successfully managed to acquire the target
 // height.
 func (c *Client) getTargetBlockOrLatest(
 	ctx context.Context,
@@ -394,7 +394,7 @@ func (c *Client) getTargetBlockOrLatest(
 
 	if lightBlock.Height > height {
 		// the witness has caught up. We recursively call the function again. However in order
-		// to avoud a wild goose chase where the witness sends us one header below and one header
+		// to avoid a wild goose chase where the witness sends us one header below and one header
 		// above the height we set a timeout to the context
 		lightBlock, err := witness.LightBlock(ctx, height)
 		return true, lightBlock, err

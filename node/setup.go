@@ -9,58 +9,38 @@ import (
 	"strings"
 	"time"
 
-	dbm "github.com/tendermint/tm-db"
+	_ "net/http/pprof" //nolint: gosec // securely exposed on separate, optional port
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/blocksync"
-	cfg "github.com/tendermint/tendermint/config"
-	cs "github.com/tendermint/tendermint/consensus"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/evidence"
+	dbm "github.com/cometbft/cometbft-db"
 
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/light"
-	mempl "github.com/tendermint/tendermint/mempool"
-	mempoolv0 "github.com/tendermint/tendermint/mempool/v0"
-	mempoolv1 "github.com/tendermint/tendermint/mempool/v1"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/p2p/pex"
-	"github.com/tendermint/tendermint/privval"
-	"github.com/tendermint/tendermint/proxy"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/state/indexer"
-	blockidxkv "github.com/tendermint/tendermint/state/indexer/block/kv"
-	blockidxnull "github.com/tendermint/tendermint/state/indexer/block/null"
-	"github.com/tendermint/tendermint/state/indexer/sink/psql"
-	"github.com/tendermint/tendermint/state/txindex"
-	"github.com/tendermint/tendermint/state/txindex/kv"
-	"github.com/tendermint/tendermint/state/txindex/null"
-	"github.com/tendermint/tendermint/statesync"
-	"github.com/tendermint/tendermint/store"
-	"github.com/tendermint/tendermint/types"
-	"github.com/tendermint/tendermint/version"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/blocksync"
+	cfg "github.com/cometbft/cometbft/config"
+	cs "github.com/cometbft/cometbft/consensus"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/evidence"
+	"github.com/cometbft/cometbft/statesync"
+
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/light"
+	mempl "github.com/cometbft/cometbft/mempool"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/pex"
+	"github.com/cometbft/cometbft/privval"
+	"github.com/cometbft/cometbft/proxy"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/state/indexer"
+	"github.com/cometbft/cometbft/state/indexer/block"
+	"github.com/cometbft/cometbft/state/txindex"
+	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/version"
 
 	_ "github.com/lib/pq" // provide the psql db driver
 )
 
-// DBContext specifies config information for loading a new DB.
-type DBContext struct {
-	ID     string
-	Config *cfg.Config
-}
-
-// DBProvider takes a DBContext and returns an instantiated DB.
-type DBProvider func(*DBContext) (dbm.DB, error)
-
 const readHeaderTimeout = 10 * time.Second
-
-// DefaultDBProvider returns a database using the DBBackend and DBDir
-// specified in the ctx.Config.
-func DefaultDBProvider(ctx *DBContext) (dbm.DB, error) {
-	dbType := dbm.BackendType(ctx.Config.DBBackend)
-	return dbm.NewDB(ctx.ID, dbType, ctx.Config.DBDir())
-}
 
 // GenesisDocProvider returns a GenesisDoc.
 // It allows the GenesisDoc to be pulled from sources other than the
@@ -78,7 +58,7 @@ func DefaultGenesisDocProviderFunc(config *cfg.Config) GenesisDocProvider {
 // Provider takes a config and a logger and returns a ready to go Node.
 type Provider func(*cfg.Config, log.Logger) (*Node, error)
 
-// DefaultNewNode returns a Tendermint node with default settings for the
+// DefaultNewNode returns a CometBFT node with default settings for the
 // PrivValidator, ClientCreator, GenesisDoc, and DBProvider.
 // It implements NodeProvider.
 func DefaultNewNode(config *cfg.Config, logger log.Logger) (*Node, error) {
@@ -92,7 +72,7 @@ func DefaultNewNode(config *cfg.Config, logger log.Logger) (*Node, error) {
 		nodeKey,
 		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
 		DefaultGenesisDocProviderFunc(config),
-		DefaultDBProvider,
+		cfg.DefaultDBProvider,
 		DefaultMetricsProvider(config.Instrumentation),
 		logger,
 	)
@@ -124,15 +104,15 @@ type blockSyncReactor interface {
 
 //------------------------------------------------------------------------------
 
-func initDBs(config *cfg.Config, dbProvider DBProvider) (blockStore *store.BlockStore, stateDB dbm.DB, err error) {
+func initDBs(config *cfg.Config, dbProvider cfg.DBProvider) (blockStore *store.BlockStore, stateDB dbm.DB, err error) {
 	var blockStoreDB dbm.DB
-	blockStoreDB, err = dbProvider(&DBContext{"blockstore", config})
+	blockStoreDB, err = dbProvider(&cfg.DBContext{ID: "blockstore", Config: config})
 	if err != nil {
 		return
 	}
 	blockStore = store.NewBlockStore(blockStoreDB)
 
-	stateDB, err = dbProvider(&DBContext{"state", config})
+	stateDB, err = dbProvider(&cfg.DBContext{ID: "state", Config: config})
 	if err != nil {
 		return
 	}
@@ -161,7 +141,7 @@ func createAndStartEventBus(logger log.Logger) (*types.EventBus, error) {
 func createAndStartIndexerService(
 	config *cfg.Config,
 	chainID string,
-	dbProvider DBProvider,
+	dbProvider cfg.DBProvider,
 	eventBus *types.EventBus,
 	logger log.Logger,
 ) (*txindex.IndexerService, txindex.TxIndexer, indexer.BlockIndexer, error) {
@@ -169,31 +149,9 @@ func createAndStartIndexerService(
 		txIndexer    txindex.TxIndexer
 		blockIndexer indexer.BlockIndexer
 	)
-
-	switch config.TxIndex.Indexer {
-	case "kv":
-		store, err := dbProvider(&DBContext{"tx_index", config})
-		if err != nil {
-			return nil, nil, nil, err
-		}
-
-		txIndexer = kv.NewTxIndex(store)
-		blockIndexer = blockidxkv.New(dbm.NewPrefixDB(store, []byte("block_events")))
-
-	case "psql":
-		if config.TxIndex.PsqlConn == "" {
-			return nil, nil, nil, errors.New(`no psql-conn is set for the "psql" indexer`)
-		}
-		es, err := psql.NewEventSink(config.TxIndex.PsqlConn, chainID)
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("creating psql indexer: %w", err)
-		}
-		txIndexer = es.TxIndexer()
-		blockIndexer = es.BlockIndexer()
-
-	default:
-		txIndexer = &null.TxIndex{}
-		blockIndexer = &blockidxnull.BlockerIndexer{}
+	txIndexer, blockIndexer, err := block.IndexerFromConfig(config, dbProvider, chainID)
+	if err != nil {
+		return nil, nil, nil, err
 	}
 
 	indexerService := txindex.NewIndexerService(txIndexer, blockIndexer, eventBus, false)
@@ -266,59 +224,34 @@ func createMempoolAndMempoolReactor(
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
 ) (mempl.Mempool, p2p.Reactor) {
-	switch config.Mempool.Version {
-	case cfg.MempoolV1:
-		mp := mempoolv1.NewTxMempool(
-			logger,
-			config.Mempool,
-			proxyApp.Mempool(),
-			state.LastBlockHeight,
-			mempoolv1.WithMetrics(memplMetrics),
-			mempoolv1.WithPreCheck(sm.TxPreCheck(state)),
-			mempoolv1.WithPostCheck(sm.TxPostCheck(state)),
-		)
+	logger = logger.With("module", "mempool")
+	mp := mempl.NewCListMempool(
+		config.Mempool,
+		proxyApp.Mempool(),
+		state.LastBlockHeight,
+		mempl.WithMetrics(memplMetrics),
+		mempl.WithPreCheck(sm.TxPreCheck(state)),
+		mempl.WithPostCheck(sm.TxPostCheck(state)),
+	)
 
-		reactor := mempoolv1.NewReactor(
-			config.Mempool,
-			mp,
-		)
-		if config.Consensus.WaitForTxs() {
-			mp.EnableTxsAvailable()
-		}
+	mp.SetLogger(logger)
 
-		return mp, reactor
-
-	case cfg.MempoolV0:
-		mp := mempoolv0.NewCListMempool(
-			config.Mempool,
-			proxyApp.Mempool(),
-			state.LastBlockHeight,
-			mempoolv0.WithMetrics(memplMetrics),
-			mempoolv0.WithPreCheck(sm.TxPreCheck(state)),
-			mempoolv0.WithPostCheck(sm.TxPostCheck(state)),
-		)
-
-		mp.SetLogger(logger)
-
-		reactor := mempoolv0.NewReactor(
-			config.Mempool,
-			mp,
-		)
-		if config.Consensus.WaitForTxs() {
-			mp.EnableTxsAvailable()
-		}
-
-		return mp, reactor
-
-	default:
-		return nil, nil
+	reactor := mempl.NewReactor(
+		config.Mempool,
+		mp,
+	)
+	if config.Consensus.WaitForTxs() {
+		mp.EnableTxsAvailable()
 	}
+	reactor.SetLogger(logger)
+
+	return mp, reactor
 }
 
-func createEvidenceReactor(config *cfg.Config, dbProvider DBProvider,
+func createEvidenceReactor(config *cfg.Config, dbProvider cfg.DBProvider,
 	stateStore sm.Store, blockStore *store.BlockStore, logger log.Logger,
 ) (*evidence.Reactor, *evidence.Pool, error) {
-	evidenceDB, err := dbProvider(&DBContext{"evidence", config})
+	evidenceDB, err := dbProvider(&cfg.DBContext{ID: "evidence", Config: config})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -517,7 +450,7 @@ func createAddrBookAndSetOnSwitch(config *cfg.Config, sw *p2p.Switch,
 
 func createPEXReactorAndAddToSwitch(addrBook pex.AddrBook, config *cfg.Config,
 	sw *p2p.Switch, logger log.Logger,
-) *pex.Reactor {
+) {
 	// TODO persistent peers ? so we can have their DNS addrs saved
 	pexReactor := pex.NewReactor(addrBook,
 		&pex.ReactorConfig{
@@ -533,7 +466,6 @@ func createPEXReactorAndAddToSwitch(addrBook pex.AddrBook, config *cfg.Config,
 		})
 	pexReactor.SetLogger(logger.With("module", "pex"))
 	sw.AddReactor("PEX", pexReactor)
-	return pexReactor
 }
 
 // startStateSync starts an asynchronous state sync process, then switches to block sync mode.
@@ -639,7 +571,7 @@ func loadGenesisDoc(db dbm.DB) (*types.GenesisDoc, error) {
 		return nil, errors.New("genesis doc not found")
 	}
 	var genDoc *types.GenesisDoc
-	err = tmjson.Unmarshal(b, &genDoc)
+	err = cmtjson.Unmarshal(b, &genDoc)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to load genesis doc due to unmarshaling error: %v (bytes: %X)", err, b))
 	}
@@ -648,7 +580,7 @@ func loadGenesisDoc(db dbm.DB) (*types.GenesisDoc, error) {
 
 // panics if failed to marshal the given genesis document
 func saveGenesisDoc(db dbm.DB, genDoc *types.GenesisDoc) error {
-	b, err := tmjson.Marshal(genDoc)
+	b, err := cmtjson.Marshal(genDoc)
 	if err != nil {
 		return fmt.Errorf("failed to save genesis doc due to marshaling error: %w", err)
 	}

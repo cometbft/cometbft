@@ -8,14 +8,14 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/libs/service"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/service"
 
-	abcicli "github.com/tendermint/tendermint/abci/client"
-	"github.com/tendermint/tendermint/abci/example/code"
-	abciserver "github.com/tendermint/tendermint/abci/server"
-	"github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	abcicli "github.com/cometbft/cometbft/abci/client"
+	"github.com/cometbft/cometbft/abci/example/code"
+	abciserver "github.com/cometbft/cometbft/abci/server"
+	"github.com/cometbft/cometbft/abci/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 const (
@@ -70,6 +70,24 @@ func TestKVStoreKV(t *testing.T) {
 	testKVStore(t, kvstore, tx, key, value)
 }
 
+func TestPersistentKVStoreEmptyTX(t *testing.T) {
+	dir, err := os.MkdirTemp("/tmp", "abci-kvstore-test") // TODO
+	if err != nil {
+		t.Fatal(err)
+	}
+	kvstore := NewPersistentKVStoreApplication(dir)
+	tx := []byte("")
+	reqCheck := types.RequestCheckTx{Tx: tx}
+	resCheck := kvstore.CheckTx(reqCheck)
+	require.Equal(t, resCheck.Code, code.CodeTypeRejected)
+
+	txs := make([][]byte, 0, 4)
+	txs = append(txs, []byte("key=value"), []byte("key"), []byte(""), []byte("kee=value"))
+	reqPrepare := types.RequestPrepareProposal{Txs: txs, MaxTxBytes: 10 * 1024}
+	resPrepare := kvstore.PrepareProposal(reqPrepare)
+	require.Equal(t, len(reqPrepare.Txs), len(resPrepare.Txs)+1, "Empty transaction not properly removed")
+}
+
 func TestPersistentKVStoreKV(t *testing.T) {
 	dir, err := os.MkdirTemp("/tmp", "abci-kvstore-test") // TODO
 	if err != nil {
@@ -103,7 +121,7 @@ func TestPersistentKVStoreInfo(t *testing.T) {
 	// make and apply block
 	height = int64(1)
 	hash := []byte("foo")
-	header := tmproto.Header{
+	header := cmtproto.Header{
 		Height: height,
 	}
 	kvstore.BeginBlock(types.RequestBeginBlock{Hash: hash, Header: header})
@@ -193,7 +211,7 @@ func makeApplyBlock(
 	// make and apply block
 	height := int64(heightInt)
 	hash := []byte("foo")
-	header := tmproto.Header{
+	header := cmtproto.Header{
 		Height: height,
 	}
 

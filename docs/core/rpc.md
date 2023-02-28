@@ -6,6 +6,10 @@ order: 9
 
 The RPC documentation is hosted here:
 
-- [RPC Documentation](https://docs.cometbft.com/main/rpc)
+- [OpenAPI reference](../rpc)
 
-To update the documentation, edit the relevant `godoc` comments in the [rpc/core directory](https://github.com/cometbft/cometbft/blob/main/rpc/core).
+<!--
+NOTE: The OpenAPI reference (../rpc) is injected into the documentation during
+the CometBFT docs build process. See https://github.com/cometbft/cometbft-docs/
+for details.
+-->

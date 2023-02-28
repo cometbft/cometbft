@@ -61,11 +61,8 @@ looking for, see [our security policy](SECURITY.md).
 | CometBFT version | Requirement | Notes             |
 |------------------|-------------|-------------------|
 | v0.34.x          | Go version  | Go 1.19 or higher |
-| v0.37.x          | Go version  | Go 1.19 or higher |
-<<<<<<< HEAD
-=======
+| v0.37.x          | Go version  | Go 1.20 or higher |
 | main             | Go version  | Go 1.20 or higher |
->>>>>>> 200784acb (Update to use Go 1.20 (#405))
 
 ### Install
 

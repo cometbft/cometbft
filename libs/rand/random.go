@@ -48,12 +48,7 @@ func (r *Rand) init() {
 }
 
 func (r *Rand) reset(seed int64) {
-<<<<<<< HEAD
 	//nolint:gosec,nolintlint
-=======
-	// G404: Use of weak random number generator (math/rand instead of crypto/rand)
-	//nolint:gosec
->>>>>>> 200784acb (Update to use Go 1.20 (#405))
 	r.rand = mrand.New(mrand.NewSource(seed))
 }
 

@@ -1,10 +1,4 @@
-<<<<<<< HEAD:test/fuzz/p2p/secret_connection/read_write.go
 package secretconnection
-=======
-//go:build gofuzz || go1.20
-
-package tests
->>>>>>> 200784acb (Update to use Go 1.20 (#405)):test/fuzz/tests/p2p_secretconnection_test.go
 
 import (
 	"bytes"
@@ -69,7 +63,7 @@ func makeSecretConnPair() (fooSecConn, barSecConn *sc.SecretConnection) {
 	)
 
 	// Make connections from both sides in parallel.
-	var trs, ok = async.Parallel(
+	trs, ok := async.Parallel(
 		func(_ int) (val interface{}, abort bool, err error) {
 			fooSecConn, err = sc.MakeSecretConnection(fooConn, fooPrvKey)
 			if err != nil {

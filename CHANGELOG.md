@@ -6,7 +6,7 @@
 
 - The `TMHOME` environment variable was renamed to `CMTHOME`, and all environment variables starting with `TM_` are instead prefixed with `CMT_`
   ([\#211](https://github.com/cometbft/cometbft/issues/211))
-- - `[p2p]` Reactor `Send`, `TrySend` and `Receive` renamed to `SendEnvelope`,
+- `[p2p]` Reactor `Send`, `TrySend` and `Receive` renamed to `SendEnvelope`,
   `TrySendEnvelope` and `ReceiveEnvelope` to allow metrics to be appended to
   messages and measure bytes sent/received.
   ([\#230](https://github.com/cometbft/cometbft/pull/230))

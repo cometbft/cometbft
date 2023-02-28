@@ -56,6 +56,8 @@
   ([\#4](https://github.com/informalsystems/tendermint/pull/4))
 - `[state/kvindexer]` \#77 Fixed the default behaviour of the kvindexer to index and query attributes by events in which they occur. In 0.34.25 this was mitigated by a separated RPC flag.  (@jmalicevic)
 - `[state/kvindexer]` \#382 Resolved crashes when event values contained slashes, introduced after adding event sequences in \#77.  (@jmalicevic)
+- `[consensus]` ([\#386](https://github.com/cometbft/cometbft/pull/386)) Short-term fix for the case when `needProofBlock` cannot find previous block meta by defaulting to the creation of a new proof block. (@adizere)
+  - Special thanks to the [Vega.xyz](https://vega.xyz/) team, and in particular to Zohar (@ze97286), for reporting the problem and working with us to get to a fix.
 - `[docker]` enable cross platform build using docker buildx
   ([\#9073](https://github.com/tendermint/tendermint/pull/9073))
 - `[consensus]` fix round number of `enterPropose`

@@ -6,4 +6,4 @@ order: 9
 
 The RPC documentation is hosted here:
 
-- [OpenAPI reference](https://docs.cometbft.com/v0.34/rpc)
+- [OpenAPI reference](../rpc)

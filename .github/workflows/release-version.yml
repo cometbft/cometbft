@@ -1,9 +1,11 @@
 # Checks that, if we're working on a release branch and are about to cut a
 # release, we have set the version correctly.
+name: Check release version
+
 on:
   pull_request:
     branches:
-      - 'release/**'
+      - 'release/*'
 
 jobs:
   check-version:

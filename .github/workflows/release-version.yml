@@ -24,6 +24,7 @@ jobs:
           # Get the version of the code, which has no "v" prefix.
           CODE_VERSION=`go run ./cmd/cometbft/ version`
           if [ "$BRANCH_VERSION" != "$CODE_VERSION" ]; then
+            echo ""
             echo "Branch version ${BRANCH_VERSION} does not match code version ${CODE_VERSION}"
             echo ""
             echo "Please either fix the release branch naming (which must have a 'release/v' prefix)"

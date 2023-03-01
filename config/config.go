@@ -166,7 +166,7 @@ func (cfg *Config) CheckDeprecated() []string {
 		warnings = append(warnings, "prioritized mempool key detected. This key, together with this version of the mempool, will be removed in the next major release.")
 	}
 	if !cfg.BaseConfig.BlockSyncMode {
-		warnings = append(warnings, "disabled block sync detected. BlockSync will be enabled by default in the next major release.")
+		warnings = append(warnings, "disabled block_sync key detected. BlockSync will be enabled by default in the next major release.")
 	}
 	if cfg.DeprecatedFastSyncConfig != nil {
 		warnings = append(warnings, "[fastsync] table detected. This section has been renamed to [blocksync]. The values in this deprecated section will be disregarded.")

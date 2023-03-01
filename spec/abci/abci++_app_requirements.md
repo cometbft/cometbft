@@ -90,7 +90,7 @@ in round *r*, height *h*.
 Let *e<sup>r</sup><sub>p</sub>* be the vote extension that the Application of a correct process *p* returns via
 `ResponseExtendVote` in round *r*, height *h*.
 Let *w<sup>r</sup><sub>p</sub>* be the proposed block that *p*'s CometBFT passes to the Application via `RequestExtendVote`
-inround *r*, height *h*. 
+in round *r*, height *h*.
 
 
 * Requirement 6 [`ExtendVote`, `VerifyVoteExtension`, coherence]: For any two different correct
@@ -438,7 +438,7 @@ proposal.
 
 #### Specifics of `ExecTxResult`
 
-`FinalizeBlock` is the workhorse of the blockchain.CometBFT delivers the decided block, 
+`FinalizeBlock` is the workhorse of the blockchain. CometBFT delivers the decided block,
 including the list of all its transactions synchronously to the Application.
 The block delivered (and thus the transaction order) is the same at all correct nodes as guaranteed
 by the Agreement property of consensus.

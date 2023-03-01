@@ -23,15 +23,18 @@ returns via `ResponsePrepareProposal` to CometBFT, also known as the prepared pr
 
 Process *p*'s prepared proposal can differ in two different rounds where *p* is the proposer.
 
-* Requirement 1 [`PrepareProposal`, timeliness]: If *p*'s Application fully executes prepared blocks in
-  `PrepareProposal` and the network is in a synchronous period while processes *p* and *q* are in *r<sub>p</sub>*,
+* Requirement 1 [`PrepareProposal`, timeliness]: If the network is in a synchronous period while processes 
+  *p* and *q* are in *r<sub>p</sub>*,
   then the value of *TimeoutPropose* at *q* must be such that *q*'s propose timer does not time out
   (which would result in *q* prevoting `nil` in *r<sub>p</sub>*).
 
-Full execution of blocks at `PrepareProposal` time stands on CometBFT's critical path. Thus,
+`PrepareProposal` stands on CometBFT's critical path. Thus,
 Requirement 1 ensures the Application or operator will set a value for `TimeoutPropose` such that the time it takes
-to fully execute blocks in `PrepareProposal` does not interfere with CometBFT's propose timer.
-Note that violation of Requirement 1 may just lead to further rounds, but will not compromise liveness.
+to fully execute `PrepareProposal` does not interfere with CometBFT's propose timer.
+Note that violation of Requirement 1 may just lead to further rounds, but will not compromise correctness.
+
+Requirement 1 is particularly important if *p*'s Application fully executes prepared blocks in `PrepareProposal`
+as a form of optimistic execution.
 
 * Requirement 2 [`PrepareProposal`, tx-size]: When *p*'s Application calls `ResponsePrepareProposal`, the
   total size in bytes of the transactions returned does not exceed `RequestPrepareProposal.max_tx_bytes`.
@@ -113,7 +116,7 @@ extensions will be discarded.
 
 * Requirement 8 [`VerifyVoteExtension`, determinism-2]: For any two correct processes *p* and *q*,
   and any arbitrary vote extension *e*, and any arbitrary block *w*,
-  if *p*'s (resp. *q*'s) CometBFT calls `RequestVerifyVoteExtension` on *e* and *w* at height *h*,
+  if both *p* and *q*'s CometBFT calls `RequestVerifyVoteExtension` on *e* and *w* at height *h*,
   then *p*'s Application accepts *e* if and only if *q*'s Application accepts *e*.
   Note that this requirement follows from Requirement 7 and the Agreement property of consensus.
 
@@ -135,7 +138,7 @@ As a general rule, `VerifyVoteExtension` SHOULD always accept the vote extension
 and any vote extension *e* that *p* received at height *h*, the computation of
 *s<sub>p,h</sub>* does not depend on *e*.
 
-The call to correct process *p*'s `RequestFinalizeBlock` at height *h*, with block *v<sub>p,h</sub>*
+The call of correct process *p* to `RequestFinalizeBlock` at height *h*, with block *v<sub>p,h</sub>*
 passed as parameter, creates state *s<sub>p,h</sub>*.
 Additionally, *p*'s `FinalizeBlock` creates a set of transaction results *T<sub>p,h</sub>*.
 
@@ -207,35 +210,39 @@ still received in sequence.
 #### FinalizeBlock
 
 When the consensus algorithm decides on a block, CometBFT uses `FinalizeBlock` to send the
-decided block's data to the Application, which uses it to transition its state.
+decided block's data to the Application, which uses it to transition its state, but not persist it;
+persisting will be done during `Commit`.
 
 <!-- 
 The sequence of `DeliverTx` calls is asynchronous but all those calls are enclosed by calls to `BeginBlock` and `EndBlock` which are synchronous.
 --> 
+
+
+#### Commit
+
+After the Application returns from `FinalizeBlock` and before invoking `Commit`, 
+CometBFT locks the mempool and flushes the mempool connection. This ensures that
+no new messages
+will be received on the mempool connection during `Commit`, providing an opportunity to safely
+update all four
+connection states to the latest committed state at the same time.
+When `Commit` returns, CometBFT unlocks the mempool.
+
+The Application should persist its state during `Commit`, before returning from it.
 
 The Application must remember the latest height from which it
 has run a successful `Commit` so that it can tell CometBFT where to
 pick up from when it recovers from a crash. See information on the Handshake
 [here](#crash-recovery).
 
-#### Commit
 
-The Application should persist its state during `Commit`, before returning from it.
-
-Before invoking `Commit`, CometBFT locks the mempool and flushes the mempool connection. This ensures that
-no new messages
-will be received on the mempool connection during this processing step, providing an opportunity to safely
-update all four
-connection states to the latest committed state at the same time.
-
-When `Commit` returns, CometBFT unlocks the mempool.
-
-WARNING: if the ABCI app logic processing the `Commit` message sends a
-`/broadcast_tx_sync` or `/broadcast_tx` and waits for the response
-before proceeding, it will deadlock. Executing `broadcast_tx` calls
-involves acquiring the mempool lock that CometBFT holds during the `Commit` call.
-Synchronous mempool-related calls must be avoided as part of the sequential logic of the
-`Commit` function.
+> **Warning**    
+> if the ABCI app logic processing the `Commit` message sends a
+   `/broadcast_tx_sync` or `/broadcast_tx` and waits for the response
+   before proceeding, it will deadlock. Executing `broadcast_tx` calls
+   involves acquiring the mempool lock that CometBFT holds during the `Commit` call.
+   Synchronous mempool-related calls must be avoided as part of the sequential logic of the
+   `Commit` function.
 
 #### Candidate States
 

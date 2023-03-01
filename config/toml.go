@@ -89,11 +89,6 @@ proxy_app = "{{ .BaseConfig.ProxyApp }}"
 # A custom human readable name for this node
 moniker = "{{ .BaseConfig.Moniker }}"
 
-# If this node is many blocks behind the tip of the chain, BlockSync
-# allows them to catchup quickly by downloading blocks in parallel
-# and verifying their commits
-block_sync = {{ .BaseConfig.BlockSyncMode }}
-
 # Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb
 # * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
 #   - pure go

@@ -96,12 +96,14 @@ func waitForNode(node *e2e.Node, height int64, timeout time.Duration) (*rpctypes
 func waitForAllNodes(testnet *e2e.Testnet, height int64, timeout time.Duration) (int64, error) {
 	var lastHeight int64
 
+	deadline := time.Now().Add(timeout)
+
 	for _, node := range testnet.Nodes {
 		if node.Mode == e2e.ModeSeed {
 			continue
 		}
 
-		status, err := waitForNode(node, height, timeout)
+		status, err := waitForNode(node, height, time.Until(deadline))
 		if err != nil {
 			return 0, err
 		}

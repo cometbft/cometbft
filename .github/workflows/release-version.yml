@@ -3,9 +3,9 @@
 name: Check release version
 
 on:
-  pull_request:
+  push:
     branches:
-      - 'release/*'
+      - 'release/**'
 
 jobs:
   check-version:

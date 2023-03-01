@@ -8,7 +8,7 @@ name: e2e-long-main
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 3 * * 4'
+    - cron: '0 3 * * 3'
 
 jobs:
   e2e-long-test:
@@ -20,6 +20,8 @@ jobs:
           go-version: '1.20'
 
       - uses: actions/checkout@v3
+        with:
+          ref: 'v0.37.x'
 
       - name: Build
         working-directory: test/e2e

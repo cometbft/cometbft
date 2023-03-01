@@ -31,7 +31,7 @@ func initCorpus(rootDir string) {
 	sizes := []int{0, 1, 2, 17, 5, 31}
 
 	// Make the PRNG predictable
-	rand.Seed(10)
+	rnd := rand.New(rand.NewSource(10))
 
 	for _, n := range sizes {
 		var addrs []*p2p.NetAddress
@@ -42,10 +42,10 @@ func initCorpus(rootDir string) {
 			addr := fmt.Sprintf(
 				"%s@%v.%v.%v.%v:26656",
 				p2p.PubKeyToID(privKey.PubKey()),
-				rand.Int()%256,
-				rand.Int()%256,
-				rand.Int()%256,
-				rand.Int()%256,
+				rnd.Int()%256,
+				rnd.Int()%256,
+				rnd.Int()%256,
+				rnd.Int()%256,
 			)
 			netAddr, _ := p2p.NewNetAddressString(addr)
 			addrs = append(addrs, netAddr)

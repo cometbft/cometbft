@@ -1,0 +1,5 @@
+- [config] The boolean key `fastsync` is deprecated and replaced by
+    `block_sync`. ([\#9259](https://github.com/tendermint/tendermint/pull/9259))
+    At the same, `block_sync` is also deprecated, as BlocSync will be enabled by
+    default in the next release.
+    ([\#409](https://github.com/cometbft/cometbft/issues/409))

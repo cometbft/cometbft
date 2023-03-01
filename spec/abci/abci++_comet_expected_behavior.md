@@ -14,7 +14,7 @@ less than 1/3 of validators' voting power is byzantine. Most of the time, though
 synchronously, no process will fall behind, and there will be no byzantine process. The following describes
 what will happen during a block height _h_ in these frequent, benign conditions:
 
-* Tendermint will decide in round 0, for height _h_;
+* Consensus will decide in round 0, for height _h_;
 * `PrepareProposal` will be called exactly once at the proposer process of round 0, height _h_;
 * `ProcessProposal` will be called exactly once at all processes, and
   will return _accept_ in its `Response*`;
@@ -26,7 +26,7 @@ what will happen during a block height _h_ in these frequent, benign conditions:
   height _h_; and
 * `Commit` will finally be called exactly once at all processes at the end of height _h_.
 
-However, the Application logic must be ready to cope with any possible run of Tendermint for a given
+However, the Application logic must be ready to cope with any possible run of the consensus algorithm for a given
 height, including bad periods (byzantine proposers, network being asynchronous).
 In these cases, the sequence of calls to ABCI++ methods may not be so straighforward, but
 the Application should still be able to handle them, e.g., without crashing.

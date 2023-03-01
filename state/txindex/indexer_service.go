@@ -82,11 +82,6 @@ func (is *IndexerService) OnStart() error {
 						}
 						return
 					}
-<<<<<<< HEAD
-=======
-				} else {
-					is.Logger.Info("indexed block events", "height", height)
->>>>>>> 167a8456d (Improve wait for node in e2e runner for long catch-up times (#375))
 				}
 			}
 

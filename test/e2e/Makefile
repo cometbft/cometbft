@@ -3,6 +3,7 @@ all: docker generator runner
 docker:
 	@echo "Building E2E Docker image"
 	@docker build \
+		--tag cometbft/e2e-node \
 		--tag cometbft/e2e-node:local-version \
 		-f docker/Dockerfile ../..
 

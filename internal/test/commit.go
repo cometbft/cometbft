@@ -5,11 +5,10 @@ import (
 	"time"
 
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 )
 
-func MakeCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet, validators []types.PrivValidator, now time.Time) (*types.Commit, error) {
+func MakeExtendedCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet, validators []types.PrivValidator, now time.Time) (*types.ExtendedCommit, error) {
 	// all sign
 	for i := 0; i < len(validators); i++ {
 		pubKey, err := validators[i].GetPubKey()
@@ -32,16 +31,13 @@ func MakeCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet, valida
 			return nil, err
 		}
 		vote.Signature = v.Signature
+		vote.ExtensionSignature = v.ExtensionSignature
 		if _, err := voteSet.AddVote(vote); err != nil {
 			return nil, err
 		}
 	}
 
-	return voteSet.MakeCommit(), nil
-}
-
-func MakeVoteSet(lastState sm.State, round int32) *types.VoteSet {
-	return types.NewVoteSet(lastState.ChainID, lastState.LastBlockHeight+1, round, cmtproto.PrecommitType, lastState.NextValidators)
+	return voteSet.MakeExtendedCommit(), nil
 }
 
 func MakeCommit(blockID types.BlockID, height int64, round int32, valSet *types.ValidatorSet, privVals []types.PrivValidator, chainID string, now time.Time) (*types.Commit, error) {
@@ -86,5 +82,5 @@ func MakeCommit(blockID types.BlockID, height int64, round int32, valSet *types.
 		}
 	}
 
-	return types.NewCommit(height, round, blockID, sigs), nil
+	return &types.Commit{Height: height, Round: round, BlockID: blockID, Signatures: sigs}, nil
 }

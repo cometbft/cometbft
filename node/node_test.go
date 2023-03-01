@@ -23,8 +23,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	mempl "github.com/cometbft/cometbft/mempool"
-	mempoolv0 "github.com/cometbft/cometbft/mempool/v0"
-	mempoolv1 "github.com/cometbft/cometbft/mempool/v1"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/conn"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
@@ -125,7 +123,7 @@ func TestNodeSetAppVersion(t *testing.T) {
 	require.NoError(t, err)
 
 	// default config uses the kvstore app
-	appVersion := kvstore.ProtocolVersion
+	appVersion := kvstore.AppVersion
 
 	// check version is set in state
 	state, err := n.stateStore.Load()
@@ -248,9 +246,12 @@ func testFreeAddr(t *testing.T) string {
 // create a proposal block using real and full
 // mempool and evidence pool and validate it.
 func TestCreateProposalBlock(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	config := test.ResetTestRoot("node_create_proposal")
 	defer os.RemoveAll(config.RootDir)
-	cc := proxy.NewLocalClientCreator(kvstore.NewApplication())
+	cc := proxy.NewLocalClientCreator(kvstore.NewInMemoryApplication())
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
 	require.Nil(t, err)
@@ -272,26 +273,12 @@ func TestCreateProposalBlock(t *testing.T) {
 
 	// Make Mempool
 	memplMetrics := mempl.NopMetrics()
-	var mempool mempl.Mempool
-
-	switch config.Mempool.Version {
-	case cfg.MempoolV0:
-		mempool = mempoolv0.NewCListMempool(config.Mempool,
-			proxyApp.Mempool(),
-			state.LastBlockHeight,
-			mempoolv0.WithMetrics(memplMetrics),
-			mempoolv0.WithPreCheck(sm.TxPreCheck(state)),
-			mempoolv0.WithPostCheck(sm.TxPostCheck(state)))
-	case cfg.MempoolV1:
-		mempool = mempoolv1.NewTxMempool(logger,
-			config.Mempool,
-			proxyApp.Mempool(),
-			state.LastBlockHeight,
-			mempoolv1.WithMetrics(memplMetrics),
-			mempoolv1.WithPreCheck(sm.TxPreCheck(state)),
-			mempoolv1.WithPostCheck(sm.TxPostCheck(state)),
-		)
-	}
+	mempool := mempl.NewCListMempool(config.Mempool,
+		proxyApp.Mempool(),
+		state.LastBlockHeight,
+		mempl.WithMetrics(memplMetrics),
+		mempl.WithPreCheck(sm.TxPreCheck(state)),
+		mempl.WithPostCheck(sm.TxPostCheck(state)))
 
 	// Make EvidencePool
 	evidenceDB := dbm.NewMemDB()
@@ -333,12 +320,13 @@ func TestCreateProposalBlock(t *testing.T) {
 		blockStore,
 	)
 
-	commit := types.NewCommit(height-1, 0, types.BlockID{}, nil)
+	extCommit := &types.ExtendedCommit{Height: height - 1}
 	block, err := blockExec.CreateProposalBlock(
+		ctx,
 		height,
-		state, commit,
+		state,
+		extCommit,
 		proposerAddr,
-		nil,
 	)
 	require.NoError(t, err)
 
@@ -360,9 +348,12 @@ func TestCreateProposalBlock(t *testing.T) {
 }
 
 func TestMaxProposalBlockSize(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	config := test.ResetTestRoot("node_create_proposal")
 	defer os.RemoveAll(config.RootDir)
-	cc := proxy.NewLocalClientCreator(kvstore.NewApplication())
+	cc := proxy.NewLocalClientCreator(kvstore.NewInMemoryApplication())
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
 	require.Nil(t, err)
@@ -382,25 +373,12 @@ func TestMaxProposalBlockSize(t *testing.T) {
 
 	// Make Mempool
 	memplMetrics := mempl.NopMetrics()
-	var mempool mempl.Mempool
-	switch config.Mempool.Version {
-	case cfg.MempoolV0:
-		mempool = mempoolv0.NewCListMempool(config.Mempool,
-			proxyApp.Mempool(),
-			state.LastBlockHeight,
-			mempoolv0.WithMetrics(memplMetrics),
-			mempoolv0.WithPreCheck(sm.TxPreCheck(state)),
-			mempoolv0.WithPostCheck(sm.TxPostCheck(state)))
-	case cfg.MempoolV1:
-		mempool = mempoolv1.NewTxMempool(logger,
-			config.Mempool,
-			proxyApp.Mempool(),
-			state.LastBlockHeight,
-			mempoolv1.WithMetrics(memplMetrics),
-			mempoolv1.WithPreCheck(sm.TxPreCheck(state)),
-			mempoolv1.WithPostCheck(sm.TxPostCheck(state)),
-		)
-	}
+	mempool := mempl.NewCListMempool(config.Mempool,
+		proxyApp.Mempool(),
+		state.LastBlockHeight,
+		mempl.WithMetrics(memplMetrics),
+		mempl.WithPreCheck(sm.TxPreCheck(state)),
+		mempl.WithPostCheck(sm.TxPostCheck(state)))
 
 	blockStore := store.NewBlockStore(dbm.NewMemDB())
 
@@ -419,12 +397,13 @@ func TestMaxProposalBlockSize(t *testing.T) {
 		blockStore,
 	)
 
-	commit := types.NewCommit(height-1, 0, types.BlockID{}, nil)
+	extCommit := &types.ExtendedCommit{Height: height - 1}
 	block, err := blockExec.CreateProposalBlock(
+		ctx,
 		height,
-		state, commit,
+		state,
+		extCommit,
 		proposerAddr,
-		nil,
 	)
 	require.NoError(t, err)
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"time"
@@ -9,7 +10,7 @@ import (
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
-func Start(testnet *e2e.Testnet) error {
+func Start(ctx context.Context, testnet *e2e.Testnet) error {
 	if len(testnet.Nodes) == 0 {
 		return fmt.Errorf("no nodes in testnet")
 	}
@@ -46,10 +47,14 @@ func Start(testnet *e2e.Testnet) error {
 		if err := execCompose(testnet.Dir, "up", "-d", node.Name); err != nil {
 			return err
 		}
-		if _, err := waitForNode(node, 0, 15*time.Second); err != nil {
+		if _, err := waitForNode(ctx, node, 0, 15*time.Second); err != nil {
 			return err
 		}
-		logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://127.0.0.1:%v", node.Name, node.ProxyPort))
+		if node.PrometheusProxyPort > 0 {
+			logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://127.0.0.1:%v; with Prometheus on http://127.0.0.1:%v/metrics", node.Name, node.ProxyPort, node.PrometheusProxyPort))
+		} else {
+			logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://127.0.0.1:%v", node.Name, node.ProxyPort))
+		}
 	}
 
 	networkHeight := testnet.InitialHeight
@@ -60,7 +65,7 @@ func Start(testnet *e2e.Testnet) error {
 		"nodes", len(testnet.Nodes)-len(nodeQueue),
 		"pending", len(nodeQueue))
 
-	block, blockID, err := waitForHeight(testnet, networkHeight)
+	block, blockID, err := waitForHeight(ctx, testnet, networkHeight)
 	if err != nil {
 		return err
 	}
@@ -90,7 +95,7 @@ func Start(testnet *e2e.Testnet) error {
 				"node", node.Name,
 				"height", networkHeight)
 
-			if _, _, err := waitForHeight(testnet, networkHeight); err != nil {
+			if _, _, err := waitForHeight(ctx, testnet, networkHeight); err != nil {
 				return err
 			}
 		}
@@ -100,7 +105,7 @@ func Start(testnet *e2e.Testnet) error {
 		if err := execCompose(testnet.Dir, "up", "-d", node.Name); err != nil {
 			return err
 		}
-		status, err := waitForNode(node, node.StartAt, 3*time.Minute)
+		status, err := waitForNode(ctx, node, node.StartAt, 3*time.Minute)
 		if err != nil {
 			return err
 		}

@@ -1,7 +1,6 @@
 package types
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -26,7 +25,7 @@ func TestMain(m *testing.M) {
 func TestPeerCatchupRounds(t *testing.T) {
 	valSet, privVals := types.RandValidatorSet(10, 1)
 
-	hvs := NewHeightVoteSet(test.DefaultTestChainID, 1, valSet)
+	hvs := NewExtendedHeightVoteSet(test.DefaultTestChainID, 1, valSet)
 
 	vote999_0 := makeVoteHR(t, 1, 0, 999, privVals)
 	added, err := hvs.AddVote(vote999_0, "peer1")
@@ -56,32 +55,29 @@ func TestPeerCatchupRounds(t *testing.T) {
 
 }
 
-func makeVoteHR(t *testing.T, height int64, valIndex, round int32, privVals []types.PrivValidator) *types.Vote {
+func makeVoteHR(
+	t *testing.T,
+	height int64,
+	valIndex,
+	round int32,
+	privVals []types.PrivValidator,
+) *types.Vote {
 	privVal := privVals[valIndex]
-	pubKey, err := privVal.GetPubKey()
+	randBytes := cmtrand.Bytes(tmhash.Size)
+
+	vote, err := types.MakeVote(
+		privVal,
+		test.DefaultTestChainID,
+		valIndex,
+		height,
+		round,
+		cmtproto.PrecommitType,
+		types.BlockID{Hash: randBytes, PartSetHeader: types.PartSetHeader{}},
+		cmttime.Now(),
+	)
 	if err != nil {
 		panic(err)
 	}
-
-	randBytes := cmtrand.Bytes(tmhash.Size)
-
-	vote := &types.Vote{
-		ValidatorAddress: pubKey.Address(),
-		ValidatorIndex:   valIndex,
-		Height:           height,
-		Round:            round,
-		Timestamp:        cmttime.Now(),
-		Type:             cmtproto.PrecommitType,
-		BlockID:          types.BlockID{Hash: randBytes, PartSetHeader: types.PartSetHeader{}},
-	}
-
-	v := vote.ToProto()
-	err = privVal.SignVote(test.DefaultTestChainID, v)
-	if err != nil {
-		panic(fmt.Sprintf("Error signing vote: %v", err))
-	}
-
-	vote.Signature = v.Signature
 
 	return vote
 }

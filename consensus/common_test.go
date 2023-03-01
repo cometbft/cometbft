@@ -30,11 +30,10 @@ import (
 	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	mempl "github.com/cometbft/cometbft/mempool"
-	mempoolv0 "github.com/cometbft/cometbft/mempool/v0"
-	mempoolv1 "github.com/cometbft/cometbft/mempool/v1"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/proxy"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
@@ -92,6 +91,7 @@ func (vs *validatorStub) signVote(
 	voteType cmtproto.SignedMsgType,
 	hash []byte,
 	header types.PartSetHeader,
+	voteExtension []byte,
 ) (*types.Vote, error) {
 	pubKey, err := vs.PrivValidator.GetPubKey()
 	if err != nil {
@@ -99,34 +99,43 @@ func (vs *validatorStub) signVote(
 	}
 
 	vote := &types.Vote{
-		ValidatorIndex:   vs.Index,
-		ValidatorAddress: pubKey.Address(),
+		Type:             voteType,
 		Height:           vs.Height,
 		Round:            vs.Round,
-		Timestamp:        cmttime.Now(),
-		Type:             voteType,
 		BlockID:          types.BlockID{Hash: hash, PartSetHeader: header},
+		Timestamp:        cmttime.Now(),
+		ValidatorAddress: pubKey.Address(),
+		ValidatorIndex:   vs.Index,
+		Extension:        voteExtension,
 	}
 	v := vote.ToProto()
-	if err := vs.PrivValidator.SignVote(test.DefaultTestChainID, v); err != nil {
+	if err = vs.PrivValidator.SignVote(test.DefaultTestChainID, v); err != nil {
 		return nil, fmt.Errorf("sign vote failed: %w", err)
 	}
 
-	// ref: signVote in FilePV, the vote should use the privious vote info when the sign data is the same.
+	// ref: signVote in FilePV, the vote should use the previous vote info when the sign data is the same.
 	if signDataIsEqual(vs.lastVote, v) {
 		v.Signature = vs.lastVote.Signature
 		v.Timestamp = vs.lastVote.Timestamp
+		v.ExtensionSignature = vs.lastVote.ExtensionSignature
 	}
 
 	vote.Signature = v.Signature
 	vote.Timestamp = v.Timestamp
+	vote.ExtensionSignature = v.ExtensionSignature
 
 	return vote, err
 }
 
 // Sign vote for type/hash/header
 func signVote(vs *validatorStub, voteType cmtproto.SignedMsgType, hash []byte, header types.PartSetHeader) *types.Vote {
-	v, err := vs.signVote(voteType, hash, header)
+	var ext []byte
+	// Only non-nil precommits are allowed to carry vote extensions.
+	if voteType == cmtproto.PrecommitType && !(len(hash) == 0 && header.IsZero()) {
+		ext = []byte("extension")
+	}
+	v, err := vs.signVote(voteType, hash, header, ext)
+
 	if err != nil {
 		panic(fmt.Errorf("failed to sign vote: %v", err))
 	}
@@ -201,14 +210,15 @@ func startTestRound(cs *State, height int64, round int32) {
 
 // Create proposal block from cs1 but sign it with vs.
 func decideProposal(
+	ctx context.Context,
 	t *testing.T,
 	cs1 *State,
 	vs *validatorStub,
 	height int64,
 	round int32,
-) (proposal *types.Proposal, block *types.Block) {
+) (*types.Proposal, *types.Block) {
 	cs1.mtx.Lock()
-	block, err := cs1.createProposalBlock()
+	block, err := cs1.createProposalBlock(ctx)
 	require.NoError(t, err)
 	blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)
@@ -221,7 +231,7 @@ func decideProposal(
 
 	// Make proposal
 	polRound, propBlockID := validRound, types.BlockID{Hash: block.Hash(), PartSetHeader: blockParts.Header()}
-	proposal = types.NewProposal(height, round, polRound, propBlockID)
+	proposal := types.NewProposal(height, round, polRound, propBlockID)
 	p := proposal.ToProto()
 	if err := vs.SignProposal(chainID, p); err != nil {
 		panic(err)
@@ -229,7 +239,7 @@ func decideProposal(
 
 	proposal.Signature = p.Signature
 
-	return
+	return proposal, block
 }
 
 func addVotes(to *State, votes ...*types.Vote) {
@@ -311,41 +321,25 @@ func validatePrecommit(
 		}
 	}
 
+	rs := cs.GetRoundState()
 	if lockedBlockHash == nil {
-		if cs.LockedRound != lockRound || cs.LockedBlock != nil {
+		if rs.LockedRound != lockRound || rs.LockedBlock != nil {
 			panic(fmt.Sprintf(
 				"Expected to be locked on nil at round %d. Got locked at round %d with block %v",
 				lockRound,
-				cs.LockedRound,
-				cs.LockedBlock))
+				rs.LockedRound,
+				rs.LockedBlock))
 		}
 	} else {
-		if cs.LockedRound != lockRound || !bytes.Equal(cs.LockedBlock.Hash(), lockedBlockHash) {
+		if rs.LockedRound != lockRound || !bytes.Equal(rs.LockedBlock.Hash(), lockedBlockHash) {
 			panic(fmt.Sprintf(
 				"Expected block to be locked on round %d, got %d. Got locked block %X, expected %X",
 				lockRound,
-				cs.LockedRound,
-				cs.LockedBlock.Hash(),
+				rs.LockedRound,
+				rs.LockedBlock.Hash(),
 				lockedBlockHash))
 		}
 	}
-}
-
-func validatePrevoteAndPrecommit(
-	t *testing.T,
-	cs *State,
-	thisRound,
-	lockRound int32,
-	privVal *validatorStub,
-	votedBlockHash,
-	lockedBlockHash []byte,
-) {
-	// verify the prevote
-	validatePrevote(t, cs, thisRound, privVal, votedBlockHash)
-	// verify precommit
-	cs.mtx.Lock()
-	validatePrecommit(t, cs, thisRound, lockRound, privVal, votedBlockHash, lockedBlockHash)
-	cs.mtx.Unlock()
 }
 
 func subscribeToVoter(cs *State, addr []byte) <-chan cmtpubsub.Message {
@@ -397,33 +391,19 @@ func newStateWithConfigAndBlockStore(
 	// one for mempool, one for consensus
 	mtx := new(cmtsync.Mutex)
 
-	proxyAppConnCon := abcicli.NewLocalClient(mtx, app)
-	proxyAppConnConMem := abcicli.NewLocalClient(mtx, app)
+	proxyAppConnCon := proxy.NewAppConnConsensus(abcicli.NewLocalClient(mtx, app), proxy.NopMetrics())
+	proxyAppConnMem := proxy.NewAppConnMempool(abcicli.NewLocalClient(mtx, app), proxy.NopMetrics())
 	// Make Mempool
 	memplMetrics := mempl.NopMetrics()
 
 	// Make Mempool
-	var mempool mempl.Mempool
+	mempool := mempl.NewCListMempool(config.Mempool,
+		proxyAppConnMem,
+		state.LastBlockHeight,
+		mempl.WithMetrics(memplMetrics),
+		mempl.WithPreCheck(sm.TxPreCheck(state)),
+		mempl.WithPostCheck(sm.TxPostCheck(state)))
 
-	switch config.Mempool.Version {
-	case cfg.MempoolV0:
-		mempool = mempoolv0.NewCListMempool(config.Mempool,
-			proxyAppConnConMem,
-			state.LastBlockHeight,
-			mempoolv0.WithMetrics(memplMetrics),
-			mempoolv0.WithPreCheck(sm.TxPreCheck(state)),
-			mempoolv0.WithPostCheck(sm.TxPostCheck(state)))
-	case cfg.MempoolV1:
-		logger := consensusLogger()
-		mempool = mempoolv1.NewTxMempool(logger,
-			config.Mempool,
-			proxyAppConnConMem,
-			state.LastBlockHeight,
-			mempoolv1.WithMetrics(memplMetrics),
-			mempoolv1.WithPreCheck(sm.TxPreCheck(state)),
-			mempoolv1.WithPostCheck(sm.TxPostCheck(state)),
-		)
-	}
 	if thisConfig.Consensus.WaitForTxs() {
 		mempool.EnableTxsAvailable()
 	}
@@ -435,6 +415,7 @@ func newStateWithConfigAndBlockStore(
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
+
 	if err := stateStore.Save(state); err != nil { // for save height 1's validators info
 		panic(err)
 	}
@@ -464,12 +445,30 @@ func loadPrivValidator(config *cfg.Config) *privval.FilePV {
 }
 
 func randState(nValidators int) (*State, []*validatorStub) {
-	return randStateWithApp(nValidators, kvstore.NewApplication())
+	return randStateWithApp(nValidators, kvstore.NewInMemoryApplication())
 }
 
+func randStateWithAppWithHeight(
+	nValidators int,
+	app abci.Application,
+	height int64,
+) (*State, []*validatorStub) {
+	c := test.ConsensusParams()
+	c.ABCI.VoteExtensionsEnableHeight = height
+	return randStateWithAppImpl(nValidators, app, c)
+}
 func randStateWithApp(nValidators int, app abci.Application) (*State, []*validatorStub) {
+	c := test.ConsensusParams()
+	return randStateWithAppImpl(nValidators, app, c)
+}
+
+func randStateWithAppImpl(
+	nValidators int,
+	app abci.Application,
+	consensusParams *types.ConsensusParams,
+) (*State, []*validatorStub) {
 	// Get State
-	state, privVals := randGenesisState(nValidators, false, 10)
+	state, privVals := randGenesisState(nValidators, false, 10, consensusParams)
 
 	vss := make([]*validatorStub, nValidators)
 
@@ -500,7 +499,7 @@ func ensureNoNewEvent(ch <-chan cmtpubsub.Message, timeout time.Duration,
 func ensureNoNewEventOnChannel(ch <-chan cmtpubsub.Message) {
 	ensureNoNewEvent(
 		ch,
-		ensureTimeout,
+		ensureTimeout*8/10, // 20% leniency for goroutine scheduling uncertainty
 		"We should be stuck waiting, not receiving new event on the channel")
 }
 
@@ -695,6 +694,11 @@ func ensurePrevoteMatch(t *testing.T, voteCh <-chan cmtpubsub.Message, height in
 	ensureVoteMatch(t, voteCh, height, round, hash, cmtproto.PrevoteType)
 }
 
+func ensurePrecommitMatch(t *testing.T, voteCh <-chan cmtpubsub.Message, height int64, round int32, hash []byte) {
+	t.Helper()
+	ensureVoteMatch(t, voteCh, height, round, hash, cmtproto.PrecommitType)
+}
+
 func ensureVoteMatch(t *testing.T, voteCh <-chan cmtpubsub.Message, height int64, round int32, hash []byte, voteType cmtproto.SignedMsgType) {
 	t.Helper()
 	select {
@@ -727,7 +731,7 @@ func ensurePrecommitTimeout(ch <-chan cmtpubsub.Message) {
 
 func ensureNewEventOnChannel(ch <-chan cmtpubsub.Message) {
 	select {
-	case <-time.After(ensureTimeout):
+	case <-time.After(ensureTimeout * 12 / 10): // 20% leniency for goroutine scheduling uncertainty
 		panic("Timeout expired while waiting for new activity on the channel")
 	case <-ch:
 	}
@@ -749,10 +753,10 @@ func consensusLogger() log.Logger {
 	}).With("module", "consensus")
 }
 
-func randConsensusNet(nValidators int, testName string, tickerFunc func() TimeoutTicker,
-	appFunc func() abci.Application, configOpts ...func(*cfg.Config),
-) ([]*State, cleanupFunc) {
-	genDoc, privVals := randGenesisDoc(nValidators, false, 30)
+func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc func() TimeoutTicker,
+	appFunc func() abci.Application, configOpts ...func(*cfg.Config)) ([]*State, cleanupFunc) {
+	t.Helper()
+	genDoc, privVals := randGenesisDoc(nValidators, false, 30, nil)
 	css := make([]*State, nValidators)
 	logger := consensusLogger()
 	configRootDirs := make([]string, 0, nValidators)
@@ -770,7 +774,8 @@ func randConsensusNet(nValidators int, testName string, tickerFunc func() Timeou
 		ensureDir(filepath.Dir(thisConfig.Consensus.WalFile()), 0o700) // dir for wal
 		app := appFunc()
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
-		app.InitChain(abci.RequestInitChain{Validators: vals})
+		_, err := app.InitChain(context.Background(), &abci.RequestInitChain{Validators: vals})
+		require.NoError(t, err)
 
 		css[i] = newStateWithConfigAndBlockStore(thisConfig, state, privVals[i], app, stateDB)
 		css[i].SetTimeoutTicker(tickerFunc())
@@ -785,13 +790,15 @@ func randConsensusNet(nValidators int, testName string, tickerFunc func() Timeou
 
 // nPeers = nValidators + nNotValidator
 func randConsensusNetWithPeers(
+	t *testing.T,
 	nValidators,
 	nPeers int,
 	testName string,
 	tickerFunc func() TimeoutTicker,
 	appFunc func(string) abci.Application,
 ) ([]*State, *types.GenesisDoc, *cfg.Config, cleanupFunc) {
-	genDoc, privVals := randGenesisDoc(nValidators, false, testMinPower)
+	c := test.ConsensusParams()
+	genDoc, privVals := randGenesisDoc(nValidators, false, testMinPower, c)
 	css := make([]*State, nPeers)
 	logger := consensusLogger()
 	var peer0Config *cfg.Config
@@ -801,6 +808,7 @@ func randConsensusNetWithPeers(
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,
 		})
+		t.Cleanup(func() { _ = stateStore.Close() })
 		state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
 		thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
 		configRootDirs = append(configRootDirs, thisConfig.RootDir)
@@ -826,12 +834,12 @@ func randConsensusNetWithPeers(
 
 		app := appFunc(path.Join(config.DBDir(), fmt.Sprintf("%s_%d", testName, i)))
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
-		if _, ok := app.(*kvstore.PersistentKVStoreApplication); ok {
+		if _, ok := app.(*kvstore.Application); ok {
 			// simulate handshake, receive app version. If don't do this, replay test will fail
-			state.Version.Consensus.App = kvstore.ProtocolVersion
+			state.Version.Consensus.App = kvstore.AppVersion
 		}
-		app.InitChain(abci.RequestInitChain{Validators: vals})
-		// sm.SaveState(stateDB,state)	//height 1's validatorsInfo already saved in LoadStateFromDBOrGenesisDoc above
+		_, err := app.InitChain(context.Background(), &abci.RequestInitChain{Validators: vals})
+		require.NoError(t, err)
 
 		css[i] = newStateWithConfig(thisConfig, state, privVal, app)
 		css[i].SetTimeoutTicker(tickerFunc())
@@ -856,7 +864,11 @@ func getSwitchIndex(switches []*p2p.Switch, peer p2p.Peer) int {
 //-------------------------------------------------------------------------------
 // genesis
 
-func randGenesisDoc(numValidators int, randPower bool, minPower int64) (*types.GenesisDoc, []types.PrivValidator) {
+func randGenesisDoc(numValidators int,
+	randPower bool,
+	minPower int64,
+	consensusParams *types.ConsensusParams,
+) (*types.GenesisDoc, []types.PrivValidator) {
 	validators := make([]types.GenesisValidator, numValidators)
 	privValidators := make([]types.PrivValidator, numValidators)
 	for i := 0; i < numValidators; i++ {
@@ -870,15 +882,21 @@ func randGenesisDoc(numValidators int, randPower bool, minPower int64) (*types.G
 	sort.Sort(types.PrivValidatorsByAddress(privValidators))
 
 	return &types.GenesisDoc{
-		GenesisTime:   cmttime.Now(),
-		InitialHeight: 1,
-		ChainID:       test.DefaultTestChainID,
-		Validators:    validators,
+		GenesisTime:     cmttime.Now(),
+		InitialHeight:   1,
+		ChainID:         test.DefaultTestChainID,
+		Validators:      validators,
+		ConsensusParams: consensusParams,
 	}, privValidators
 }
 
-func randGenesisState(numValidators int, randPower bool, minPower int64) (sm.State, []types.PrivValidator) {
-	genDoc, privValidators := randGenesisDoc(numValidators, randPower, minPower)
+func randGenesisState(
+	numValidators int,
+	randPower bool,
+	minPower int64,
+	consensusParams *types.ConsensusParams,
+) (sm.State, []types.PrivValidator) {
+	genDoc, privValidators := randGenesisDoc(numValidators, randPower, minPower, consensusParams)
 	s0, _ := sm.MakeGenesisState(genDoc)
 	return s0, privValidators
 }
@@ -936,15 +954,15 @@ func newPersistentKVStore() abci.Application {
 	if err != nil {
 		panic(err)
 	}
-	return kvstore.NewPersistentKVStoreApplication(dir)
+	return kvstore.NewPersistentApplication(dir)
 }
 
 func newKVStore() abci.Application {
-	return kvstore.NewApplication()
+	return kvstore.NewInMemoryApplication()
 }
 
 func newPersistentKVStoreWithPath(dbDir string) abci.Application {
-	return kvstore.NewPersistentKVStoreApplication(dbDir)
+	return kvstore.NewPersistentApplication(dbDir)
 }
 
 func signDataIsEqual(v1 *types.Vote, v2 *cmtproto.Vote) bool {
@@ -957,5 +975,6 @@ func signDataIsEqual(v1 *types.Vote, v2 *cmtproto.Vote) bool {
 		v1.Height == v2.GetHeight() &&
 		v1.Round == v2.Round &&
 		bytes.Equal(v1.ValidatorAddress.Bytes(), v2.GetValidatorAddress()) &&
-		v1.ValidatorIndex == v2.GetValidatorIndex()
+		v1.ValidatorIndex == v2.GetValidatorIndex() &&
+		bytes.Equal(v1.Extension, v2.Extension)
 }

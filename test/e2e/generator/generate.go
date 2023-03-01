@@ -40,7 +40,6 @@ var (
 	nodePrivvalProtocols  = uniformChoice{"file", "unix", "tcp"}
 	nodeBlockSyncs        = uniformChoice{"v0"} // "v2"
 	nodeStateSyncs        = uniformChoice{false, true}
-	nodeMempools          = uniformChoice{"v0", "v1"}
 	nodePersistIntervals  = uniformChoice{0, 1, 5}
 	nodeSnapshotIntervals = uniformChoice{0, 3}
 	nodeRetainBlocks      = uniformChoice{
@@ -60,6 +59,8 @@ var (
 	lightNodePerturbations = probSetChoice{
 		"upgrade": 0.3,
 	}
+	voteExtensionEnableHeightOffset = uniformChoice{int64(0), int64(10), int64(100)}
+	voteExtensionEnabled            = uniformChoice{true, false}
 )
 
 type generateConfig struct {
@@ -139,6 +140,10 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 		manifest.PrepareProposalDelay = 200 * time.Millisecond
 		manifest.ProcessProposalDelay = 200 * time.Millisecond
 		manifest.CheckTxDelay = 20 * time.Millisecond
+	}
+
+	if voteExtensionEnabled.Choose(r).(bool) {
+		manifest.VoteExtensionsEnableHeight = manifest.InitialHeight + voteExtensionEnableHeightOffset.Choose(r).(int64)
 	}
 
 	var numSeeds, numValidators, numFulls, numLightClients int
@@ -277,7 +282,6 @@ func generateNode(
 		Database:         nodeDatabases.Choose(r).(string),
 		PrivvalProtocol:  nodePrivvalProtocols.Choose(r).(string),
 		BlockSync:        nodeBlockSyncs.Choose(r).(string),
-		Mempool:          nodeMempools.Choose(r).(string),
 		StateSync:        nodeStateSyncs.Choose(r).(bool) && startAt > 0,
 		PersistInterval:  ptrUint64(uint64(nodePersistIntervals.Choose(r).(int))),
 		SnapshotInterval: uint64(nodeSnapshotIntervals.Choose(r).(int)),

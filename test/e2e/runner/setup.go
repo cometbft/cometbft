@@ -129,6 +129,9 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	}
 	// set the app version to 1
 	genesis.ConsensusParams.Version.App = 1
+	genesis.ConsensusParams.Evidence.MaxAgeNumBlocks = e2e.EvidenceAgeHeight
+	genesis.ConsensusParams.Evidence.MaxAgeDuration = e2e.EvidenceAgeTime
+	genesis.ConsensusParams.ABCI.VoteExtensionsEnableHeight = testnet.VoteExtensionsEnableHeight
 	for validator, power := range testnet.Validators {
 		genesis.Validators = append(genesis.Validators, types.GenesisValidator{
 			Name:    validator.Name,
@@ -208,9 +211,6 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	default:
 		return nil, fmt.Errorf("unexpected mode %q", node.Mode)
 	}
-	if node.Mempool != "" {
-		cfg.Mempool.Version = node.Mempool
-	}
 
 	if node.BlockSync == "" {
 		cfg.BlockSyncMode = false
@@ -246,6 +246,11 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		}
 		cfg.P2P.PersistentPeers += peer.AddressP2P(true)
 	}
+
+	if node.Prometheus {
+		cfg.Instrumentation.Prometheus = true
+	}
+
 	return cfg, nil
 }
 

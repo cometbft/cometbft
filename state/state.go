@@ -68,7 +68,7 @@ type State struct {
 	LastHeightValidatorsChanged int64
 
 	// Consensus parameters used for validating blocks.
-	// Changes returned by EndBlock and updated after Commit.
+	// Changes returned by FinalizeBlock and updated after Commit.
 	ConsensusParams                  types.ConsensusParams
 	LastHeightConsensusParamsChanged int64
 
@@ -271,7 +271,7 @@ func MedianTime(commit *types.Commit, validators *types.ValidatorSet) time.Time 
 	totalVotingPower := int64(0)
 
 	for i, commitSig := range commit.Signatures {
-		if commitSig.Absent() {
+		if commitSig.BlockIDFlag == types.BlockIDFlagAbsent {
 			continue
 		}
 		_, validator := validators.GetByAddress(commitSig.ValidatorAddress)

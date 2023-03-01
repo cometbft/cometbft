@@ -56,6 +56,11 @@ type Manifest struct {
 	// testnet via the RPC endpoint of a random node. Default is 0
 	Evidence int `toml:"evidence"`
 
+	// VoteExtensionsEnableHeight configures the first height during which
+	// the chain will use and require vote extension data to be present
+	// in precommit messages.
+	VoteExtensionsEnableHeight int64 `toml:"vote_extensions_enable_height"`
+
 	// ABCIProtocol specifies the protocol used to communicate with the ABCI
 	// application: "unix", "tcp", "grpc", "builtin" or "builtin_unsync".
 	//
@@ -82,6 +87,10 @@ type Manifest struct {
 	LoadTxSizeBytes   int `toml:"load_tx_size_bytes"`
 	LoadTxBatchSize   int `toml:"load_tx_batch_size"`
 	LoadTxConnections int `toml:"load_tx_connections"`
+
+	// Enable or disable Prometheus metrics on all nodes.
+	// Defaults to false (disabled).
+	Prometheus bool `toml:"prometheus"`
 }
 
 // ManifestNode represents a node in a testnet manifest.
@@ -125,10 +134,6 @@ type ManifestNode struct {
 	// Defaults to disabled.
 	BlockSync string `toml:"block_sync"`
 
-	// Mempool specifies which version of mempool to use. Either "v0" or "v1"
-	// This defaults to v0.
-	Mempool string `toml:"mempool_version"`
-
 	// StateSync enables state sync. The runner automatically configures trusted
 	// block hashes and RPC servers. At least one node in the network must have
 	// SnapshotInterval set to non-zero, and the state syncing node must have
@@ -145,8 +150,8 @@ type ManifestNode struct {
 	SnapshotInterval uint64 `toml:"snapshot_interval"`
 
 	// RetainBlocks specifies the number of recent blocks to retain. Defaults to
-	// 0, which retains all blocks. Must be greater that PersistInterval and
-	// SnapshotInterval.
+	// 0, which retains all blocks. Must be greater that PersistInterval,
+	// SnapshotInterval and EvidenceAgeHeight.
 	RetainBlocks uint64 `toml:"retain_blocks"`
 
 	// Perturb lists perturbations to apply to the node after it has been

@@ -39,6 +39,11 @@ module ConsensusReactor {
 //These are used to mock the P2P expected behavior
 
 
+//===== Helper functions
+
+pure def excludeElem(s, e): (Set[a],a) => Set[a] = s.exclude(Set(e))
+
+
 
 //======== Shared definitions
     //[DEF-BROADCAST]
@@ -332,7 +337,7 @@ module ConsensusReactor {
 
     temporal randomSimpleRun: bool = {
         val sender = oneOf(Procs)
-        val relayer = oneOf(Procs.setMinus({sender}))
+        val relayer = oneOf(Procs.excludeElem(sender))
         all {
             broadcast(sender, {tag: "proposal", height:1, round:0, payload: "TX1", signer: sender})
             //Then relayer receives

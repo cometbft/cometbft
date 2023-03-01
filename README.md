@@ -60,9 +60,9 @@ looking for, see [our security policy](SECURITY.md).
 
 | CometBFT version | Requirement | Notes             |
 |------------------|-------------|-------------------|
-| v0.34.x          | Go version  | Go 1.18 or higher |
-| v0.37.x          | Go version  | Go 1.19 or higher |
-| main             | Go version  | Go 1.19 or higher |
+| v0.34.x          | Go version  | Go 1.19 or higher |
+| v0.37.x          | Go version  | Go 1.20 or higher |
+| main             | Go version  | Go 1.20 or higher |
 
 ### Install
 
@@ -120,7 +120,8 @@ CometBFT up-to-date. Upgrading instructions can be found in
 
 Currently supported versions include:
 
-- v0.34.x: CometBFT v0.34.25 is compatible with Tendermint Core v0.34.24
+- v0.34.x: The CometBFT v0.34 series is compatible with the Tendermint Core
+  v0.34 series
 - v0.37.x: (release candidate)
 
 ## Resources
@@ -166,7 +167,7 @@ maintains [cometbft.com](https://cometbft.com).
 [version-url]: https://github.com/cometbft/cometbft/releases/latest
 [api-badge]: https://camo.githubusercontent.com/915b7be44ada53c290eb157634330494ebe3e30a/68747470733a2f2f676f646f632e6f72672f6769746875622e636f6d2f676f6c616e672f6764646f3f7374617475732e737667
 [api-url]: https://pkg.go.dev/github.com/cometbft/cometbft
-[go-badge]: https://img.shields.io/badge/go-1.19-blue.svg
+[go-badge]: https://img.shields.io/badge/go-1.20-blue.svg
 [go-url]: https://github.com/moovweb/gvm
 [discord-badge]: https://img.shields.io/discord/669268347736686612.svg
 [discord-url]: https://discord.gg/cosmosnetwork

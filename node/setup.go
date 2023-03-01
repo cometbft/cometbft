@@ -279,7 +279,7 @@ func createBlocksyncReactor(config *cfg.Config,
 	case "v1", "v2":
 		return nil, fmt.Errorf("block sync version %s has been deprecated. Please use v0", config.BlockSync.Version)
 	default:
-		return nil, fmt.Errorf("unknown fastsync version %s", config.BlockSync.Version)
+		return nil, fmt.Errorf("unknown block sync version %s", config.BlockSync.Version)
 	}
 
 	bcReactor.SetLogger(logger.With("module", "blocksync"))

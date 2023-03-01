@@ -128,30 +128,21 @@ Clearly, if GST is reached, then there must be such $\Delta$ and while GST canno
 
 # Part 2: CONS/GOSSIP interaction
 
-CONS, the Consensus Reactor State Layer, is where the actions of the Tendermint BFT are implemented.
+CONS, the Consensus Reactor State Layer, is where the actions of the Tendermint algorithm are implemented.
 Actions are executed once certain pre-conditions apply, such as timeout expirations or reception of information from particular subsets of the nodes in the system, neighbors or not.
 
 An action may require communicating with applications and other reactors, for example to gather data to compose a proposal or to deliver decisions, and with the P2P layer, to communicate with other nodes.
 
 ## Northbound Interaction - ABCI
 Here we assume that all communication with the Application and other reactors are performed through the Application Blockchain Interface, or [ABCI](../../abci/).
-We make such assumption based on the example creating proposals; although CONS interacts with with the Mempool reactor to build tentative proposals, actual proposals are defined by the Applications (see PrepareProposal), and therefore the communication with Mempool can be ignored.
+We make such assumption based on the example of how proposals are created; although CONS interacts with with the Mempool reactor to build tentative proposals, actual proposals are defined by the Applications (see PrepareProposal), and therefore the communication with Mempool could be ignored.
 
-For details on what CONS poses as requirements to Applications, see [ABCI](../../abci/abci%2B%2B_app_requirements.md), and on what CONS provides to Applications, see [ABCI](../../abci/abci%2B%2B_tmint_expected_behavior.md).
+ABCI specifies both what CONS [requires from the applications](../../abci/abci%2B%2B_app_requirements.md) and on what CONS [provides to Applications](../../abci/abci%2B%2B_tmint_expected_behavior.md).
 
-> **TODO**    
-> * Confirm that the following requirements are made to applications:
->     * Timely creation and validation of proposals
->     * Timely processing of decisions
-> 
-> * Confirm that the following is properly captured:
->   * Fair proposal selection
->     * Let $V$ be the set of validators
->     * Let $v^p$ be the voting power of a validator $v$
->     * Let $m = \text{mcd}(\{v^p: v \in V\})$
->     * In the absence of validator set changes, in any sequence of heights of length equal to $\sum_{v\in V} v^p/m$, $v$ appears in the sequence $v^p/m$ times.
-> * There is a comment by Anca that the same proposer is elected for round 0 and 1, always. Does this break fairness?
-> * How to ensure fairness when validator set changes?
+
+
+
+
 
 ## Southbound Interaction - GOSSIP-I
 CONS interacts southbound only with GOSSIP, to broadcast messages.

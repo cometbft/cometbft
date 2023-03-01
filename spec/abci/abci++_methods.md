@@ -692,7 +692,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
 * **Usage**:
     * Validator identified by address
-    * Used in RequestBeginBlock as part of VoteInfo
+    * Used as part of VoteInfo within CommitInfo <!-- TODO Check where exactly is commitinfo used, seems to be only Prepare/Process proposal -->
     * Does not include PubKey to avoid sending potentially large quantum pubkeys
     over the ABCI
 

@@ -39,7 +39,9 @@ moniker = "anonymous"
 # If this node is many blocks behind the tip of the chain, BlockSync
 # allows them to catchup quickly by downloading blocks in parallel
 # and verifying their commits
-# Deprecated: BlockSync will be enabled unconditionally in the next major release.
+#
+# Deprecated: this key will be removed and BlockSync will be enabled 
+# unconditionally in the next major release.
 block_sync = true
 
 # Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb

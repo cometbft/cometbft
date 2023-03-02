@@ -397,7 +397,7 @@ func (n Node) Validate(testnet Testnet) error {
 		return errors.New("state synced nodes cannot start at the initial height")
 	}
 	if n.RetainBlocks != 0 && n.RetainBlocks < uint64(EvidenceAgeHeight) {
-		return fmt.Errorf("retain_blocks must be greater or equal to max evidence age (%d)",
+		return fmt.Errorf("retain_blocks must be 0 or be greater or equal to max evidence age (%d)",
 			EvidenceAgeHeight)
 	}
 	if n.PersistInterval == 0 && n.RetainBlocks > 0 {

@@ -1,45 +1,47 @@
-# RFC 017: ABCI++ Vote Extension Propagation
+# RFC 100: ABCI Vote Extension Propagation
 
 ## Changelog
 
 - 11-Apr-2022: Initial draft (@sergio-mena).
 - 15-Apr-2022: Addressed initial comments. First complete version (@sergio-mena).
-- 09-May-2022: Addressed all outstanding comments.
+- 09-May-2022: Addressed all outstanding comments (@sergio-mena).
+- 02-Mar-2023: Migrated to CometBFT RFCs. New number: RFC 100 (@sergio-mena).
 
 ## Abstract
 
 According to the
-[ABCI++ specification](https://github.com/tendermint/tendermint/blob/4743a7ad0/spec/abci%2B%2B/README.md)
-(as of 11-Apr-2022), a validator MUST provide a signed vote extension for each non-`nil` precommit vote
+[ABCI 2.0 specification][abci-2-0],
+a validator MUST provide a signed vote extension for each non-`nil` precommit vote
 of height *h* that it uses to propose a block in height *h+1*. When a validator is up to
 date, this is easy to do, but when a validator needs to catch up this is far from trivial as this data
 cannot be retrieved from the blockchain.
 
 This RFC presents and compares the different options to address this problem, which have been proposed
-in several discussions by the Tendermint Core team.
+in several discussions by the CometBFT team.
 
 ## Document Structure
 
 The RFC is structured as follows. In the [Background](#background) section,
 subsections [Problem Description](#problem-description) and [Cases to Address](#cases-to-address)
 explain the problem at hand from a high level perspective, i.e., abstracting away from the current
-Tendermint implementation. In contrast, subsection
+CometBFT implementation. In contrast, subsection
 [Current Catch-up Mechanisms](#current-catch-up-mechanisms) delves into the details of the current
-Tendermint code.
+CometBFT code.
 
 In the [Discussion](#discussion) section, subsection [Solutions Proposed](#solutions-proposed) is also
 worded abstracting away from implementation details, whilst subsections
 [Feasibility of the Proposed Solutions](#feasibility-of-the-proposed-solutions) and
 [Current Limitations and Possible Implementations](#current-limitations-and-possible-implementations)
-analize the viability of one of the proposed solutions in the context of Tendermint's architecture
+analyze the viability of one of the proposed solutions in the context of CometBFT's architecture
 based on reactors. Finally, [Formalization Work](#formalization-work) briefly discusses the work
 still needed demonstrate the correctness of the chosen solution.
 
 The high level subsections are aimed at readers who are familiar with consensus algorithms, in
-particular with the one described in the Tendermint (white paper), but who are not necessarily
-acquainted with the details of the Tendermint codebase. The other subsections, which go into
+particular with the Tendermint algorithm described [here](https://arxiv.org/abs/1807.04938),
+but who are not necessarily
+acquainted with the details of the CometBFT codebase. The other subsections, which go into
 implementation details, are best understood by engineers with deep knowledge of the implementation of
-Tendermint's blocksync and consensus reactors.
+CometBFT's blocksync and consensus reactors.
 
 ## Background
 
@@ -48,12 +50,12 @@ Tendermint's blocksync and consensus reactors.
 This document assumes that all validators have equal voting power for the sake of simplicity. This is done
 without loss of generality.
 
-There are two types of votes in Tendermint: *prevotes* and *precommits*. Votes can be `nil` or refer to
-a proposed block. This RFC focuses on precommits,
+There are two types of votes in the Tendermint algorithm: *prevotes* and *precommits*.
+Votes can be `nil` or refer to a proposed block. This RFC focuses on precommits,
 also known as *precommit votes*. In this document we sometimes call them simply *votes*.
 
 Validators send precommit votes to their peer nodes in *precommit messages*. According to the
-[ABCI++ specification](https://github.com/tendermint/tendermint/blob/4743a7ad0/spec/abci%2B%2B/README.md),
+[ABCI 2.0 specification][abci-2-0],
 a precommit message MUST also contain a *vote extension*.
 This mandatory vote extension can be empty, but MUST be signed with the same key as the precommit
 vote (i.e., the sending validator's).
@@ -70,12 +72,12 @@ attached.
 
 ### Problem Description
 
-In the version of [ABCI](https://github.com/tendermint/spec/blob/4fb99af/spec/abci/README.md) present up to
-Tendermint v0.35, for any height *h*, a validator *v* MUST have the decided block *b* and a commit for
+In [ABCI 1.0][abci-1-0] and previous versions (e.g. [ABCI 0.17.0][abci-0-17-0]),
+for any height *h*, a validator *v* MUST have the decided block *b* and a commit for
 height *h* in order to decide at height *h*. Then, *v* just needs a commit for height *h* to propose at
 height *h+1*, in the rounds of *h+1* where *v* is a proposer.
 
-In [ABCI++](https://github.com/tendermint/tendermint/blob/4743a7ad0/spec/abci%2B%2B/README.md),
+In [ABCI 2.0][abci-2-0],
 the information that a validator *v* MUST have to be able to decide in *h* does not change with
 respect to pre-existing ABCI: the decided block *b* and a commit for *h*.
 In contrast, for proposing in *h+1*, a commit for *h* is not enough: *v* MUST now have an extended
@@ -86,16 +88,16 @@ in its consensus state, to decide on *h* and propose in *h+1*. Things are not so
 *v* cannot take part in consensus because it is late (e.g., it falls behind, it crashes
 and recovers, or it just starts after the others). If *v* does not take part, it cannot actively
 gather precommit messages (which include vote extensions) in order to decide.
-Before ABCI++, this was not a problem: full nodes are supposed to persist past blocks in the block store,
+Before ABCI 2.0, this was not a problem: full nodes are supposed to persist past blocks in the block store,
 so other nodes would realise that *v* is late and send it the missing decided block at height *h* and
 the corresponding commit (kept in block *h+1*) so that *v* can catch up.
-However, we cannot apply this catch-up technique for ABCI++, as the vote extensions, which are part
+However, we cannot apply this catch-up technique for ABCI 2.0, as the vote extensions, which are part
 of the needed *extended commit* are not part of the blockchain.
 
 ### Cases to Address
 
 Before we tackle the description of the possible cases we need to address, let us describe the following
-incremental improvement to the ABCI++ logic. Upon decision, a full node persists (e.g., in the block
+incremental improvement to the ABCI 2.0 logic. Upon decision, a full node persists (e.g., in the block
 store) the extended commit that allowed the node to decide. For the moment, let us assume the node only
 needs to keep its *most recent* extended commit, and MAY remove any older extended commits from persistent
 storage.
@@ -130,7 +132,7 @@ discussions and need to be addressed. They are (roughly) ordered from easiest to
     persisted, either in the WAL (in the form of received precommit messages), or in the latest
     extended commit, the only way that vote extensions needed to start the next height could be lost
     forever would be if all validators crashed and never recovered (e.g. disk corruption).
-    Since a *correct* node MUST eventually recover, this violates Tendermint's assumption of more than
+    Since a *correct* node MUST eventually recover, this violates the assumption of more than
     *2n<sub>h</sub>/3* correct validators for every height *h*.
 
     No problem to solve here.
@@ -214,7 +216,7 @@ discussions and need to be addressed. They are (roughly) ordered from easiest to
     | *valset<sub>h</sub>* &cap; *L<sub>h<sub>p</sub></sub>*  | *< n<sub>h</sub>/3*
 
     If this property does not hold for a particular height *h*, where
-    *h<sub>s</sub> ≤ h < h<sub>p</sub>*, Tendermint could not have progressed beyond *h* and
+    *h<sub>s</sub> ≤ h < h<sub>p</sub>*, CometBFT could not have progressed beyond *h* and
     therefore no full node could have reached *h<sub>p</sub>* (a contradiction).
 
     These lagging nodes in *L<sub>h<sub>p</sub></sub>* need to catch up. They have to obtain the
@@ -238,12 +240,12 @@ them converge into case (h).
 
 ### Current Catch-up Mechanisms
 
-We now briefly describe the current catch-up mechanisms in the reactors concerned in Tendermint.
+We now briefly describe the current catch-up mechanisms in the reactors concerned in CometBFT.
 
 #### Statesync
 
 Full nodes optionally run statesync just after starting, when they start from scratch.
-If statesync succeeds, an Application snapshot is installed, and Tendermint jumps from height 0 directly
+If statesync succeeds, an Application snapshot is installed, and CometBFT jumps from height 0 directly
 to the height the Application snapshop represents, without applying the block of any previous height.
 Some light blocks are received and stored in the block store for running light-client verification of
 all the skipped blocks. Light blocks are incomplete blocks, typically containing the header and the
@@ -271,7 +273,7 @@ itself as caught up and switches to the consensus reactor.
 #### Consensus Reactor
 
 The consensus reactor runs the full Tendermint algorithm. For a validator this means it has to
-propose blocks, and send/receive prevote/precommit messages, as mandated by Tendermint, before it can
+propose blocks, and send/receive prevote/precommit messages, as mandated by CometBFT, before it can
 decide and move on to the next height.
 
 If a full node that is running the consensus reactor falls behind at height *h*, when a peer node
@@ -287,7 +289,7 @@ These are the solutions proposed in discussions leading up to this RFC.
 - **Solution 0.** *Vote extensions are made **best effort** in the specification*.
 
     This is the simplest solution, considered as a way to provide vote extensions in a simple enough
-    way so that it can be part of v0.36.
+    way so that it can be part of ABCI 2.0.
     It consists in changing the specification so as to not *require* that precommit votes used upon
     `PrepareProposal` contain their corresponding vote extensions. In other words, we render vote
     extensions optional.
@@ -297,7 +299,7 @@ These are the solutions proposed in discussions leading up to this RFC.
       can now remove (i.e., censor) vote extensions from precommit messages at will.
     - Further, there is no point anymore in the spec requiring the Application to accept a vote extension
       passed via `VerifyVoteExtension` to consider a precommit message valid in its entirety. Remember
-      this behavior of `VerifyVoteExtension` is adding a constraint to Tendermint's conditions for
+      this behavior of `VerifyVoteExtension` is adding a constraint to CometBFT's conditions for
       liveness.
       In this situation, it is better and simpler to just drop the vote extension rejected by the
       Application via `VerifyVoteExtension`, but still consider the precommit vote itself valid as long
@@ -369,7 +371,7 @@ These are the solutions proposed in discussions leading up to this RFC.
 
     At this point, *all* full nodes, including all validators in *valset<sub>h+1</sub>*, have advanced
     to height *h+1* believing they are late, and so, expecting the *hypothetical* leading majority of
-    validators in *valset<sub>h+1</sub>* to propose for *h+1*. As a result, the blockhain
+    validators in *valset<sub>h+1</sub>* to propose for *h+1*. As a result, the blockchain
     grinds to a halt.
     A (rather complex) ad-hoc mechanism would need to be carried out by node operators to roll
     back all validators to the precommit step of height *h*, round *r*, so that they can regenerate
@@ -378,10 +380,10 @@ These are the solutions proposed in discussions leading up to this RFC.
 - **Solution 3.** *Require extended commits to be available at switching time*.
 
     This one is more involved than all previous solutions, and builds on an idea present in Solution 2:
-    vote extensions are actually not needed for Tendermint to make progress as long as the
+    vote extensions are actually not needed for CometBFT to make progress as long as the
     validator is *certain* it is late.
 
-    We define two modes. The first is denoted *catch-up mode*, and Tendermint only calls
+    We define two modes. The first is denoted *catch-up mode*, and CometBFT only calls
     `FinalizeBlock` for each height when in this mode. The second is denoted *consensus mode*, in
     which the validator considers itself up to date and fully participates in consensus and calls
     `PrepareProposal`/`ProcessProposal`, `ExtendVote`, and `VerifyVoteExtension`, before calling
@@ -426,36 +428,36 @@ extensions will *always* be available when calling `PrepareProposal` at height *
 This level of guarantees is probably not strong enough for vote extensions to be useful for some
 important use cases that motivated them in the first place, e.g., encrypted mempool transactions.
 
-Solution 1, while being simple in that the changes needed in the current Tendermint codebase would
+Solution 1, while being simple in that the changes needed in the current CometBFT codebase would
 be rather small, is changing the block format, and would therefore require all blockchains using
-Tendermint v0.35 or earlier to hard-fork when upgrading to v0.36.
+ABCI 1.0 or earlier to hard-fork when upgrading to ABCI 2.0.
 
 Since Solution 2 can be attacked, one might prefer Solution 3, even if it is more involved
 to implement. Further, we must elaborate on how we can turn Solution 3, described in abstract
 terms in the previous section, into a concrete implementation compatible with the current
-Tendermint codebase.
+CometBFT codebase.
 
 ### Current Limitations and Possible Implementations
 
-The main limitations affecting the current version of Tendermint are the following.
+The main limitations affecting the current version of CometBFT are the following.
 
 - The current version of the blocksync reactor does not use the full
-  [light client verification](https://github.com/tendermint/tendermint/blob/4743a7ad0/spec/light-client/README.md)
+  [light client verification][light-client-spec]
   algorithm to validate blocks coming from other peers.
 - The code being structured into the blocksync and consensus reactors, only switching from the
   blocksync reactor to the consensus reactor is supported; switching in the opposite direction is
   not supported. Alternatively, the consensus reactor could have a mechanism allowing a late node
   to catch up by skipping calls to `PrepareProposal`/`ProcessProposal`, and
   `ExtendVote`/`VerifyVoteExtension` and only calling `FinalizeBlock` for each height.
-  Such a mechanism does not exist at the time of writing this RFC.
+  Such a mechanism does not exist at the time of writing this RFC (2023-03-02).
 
-The blocksync reactor featuring light client verification is being actively worked on (tentatively
-for v0.37). So it is best if this RFC does not try to delve into that problem, but just makes sure
+The blocksync reactor featuring light client verification is among the CometBFT team' current priorities.
+So it is best if this RFC does not try to delve into that problem, but just makes sure
 its outcomes are compatible with that effort.
 
 In subsection [Cases to Address](#cases-to-address), we concluded that we can focus on
 solving case (h) in theoretical terms.
-However, as the current Tendermint version does not yet support switching back to blocksync once a
+However, as the current CometBFT version does not yet support switching back to blocksync once a
 node has switched to consensus, we need to split case (h) into two cases. When a full node needs to
 catch up...
 
@@ -472,7 +474,7 @@ rather than just keeping the few most recent extended commits, nodes will need t
 and gossip a backlog of extended commits so that the consensus reactor can still propose and decide
 in out-of-date heights (even if those proposals will be useless).
 
-The base implementation － for which an experimental patch exists － consists in the conservative
+The base implementation － which will be part of the first release of ABCI 2.0 － consists in the conservative
 approach of persisting in the block store *all* extended commits for which we have also stored
 the full block. Currently, when statesync is run at startup, it saves light blocks.
 This base implementation does not seek
@@ -509,7 +511,7 @@ This solution requires a few changes to the consensus reactor:
 - upon saving the block for a given height in the block store at decision time, save the
   corresponding extended commit as well
 - in the catch-up mechanism, when a node realizes that another peer is more than 2 heights
-  behind, it uses the extended commit (rather than the canoncial commit as done previously) to
+  behind, it uses the extended commit (rather than the canonical commit as done previously) to
   reconstruct the precommit votes with their corresponding extensions
 
 The changes to the blocksync reactor are more substantial:
@@ -525,12 +527,12 @@ The changes to the blocksync reactor are more substantial:
 The two main drawbacks of this base implementation are:
 
 - the increased size taken by the block store, in particular with big extensions
-- the increased bandwith taken by the new format of `BlockResponse`
+- the increased bandwidth taken by the new format of `BlockResponse`
 
 #### Possible Optimization: Pruning the Extended Commit History
 
 If we cannot switch from the consensus reactor back to the blocksync reactor we cannot prune the extended commit backlog in the block store without sacrificing the implementation's correctness. The asynchronous
-nature of our distributed system model allows a process to fall behing an arbitrary number of
+nature of our distributed system model allows a process to fall behind an arbitrary number of
 heights, and thus all extended commits need to be kept *just in case* a node that late had
 previously switched to the consensus reactor.
 
@@ -538,7 +540,7 @@ However, there is a possibility to optimize the base implementation. Every time 
 we could prune from the block store all extended commits that are more than *d* heights in the past.
 Then, we need to handle two new situations, roughly equivalent to cases (h.1) and (h.2) described above.
 
-- (h.1) A node starts from scratch or recovers after a crash. In thisy case, we need to modify the
+- (h.1) A node starts from scratch or recovers after a crash. In this case, we need to modify the
     blocksync reactor's base implementation.
     - when receiving a `BlockResponse` message, it MUST accept that the extended commit set to `nil`,
     - when sending a `BlockResponse` message, if the block store contains the extended commit for that
@@ -558,14 +560,20 @@ Then, we need to handle two new situations, roughly equivalent to cases (h.1) an
 A formalization work to show or prove the correctness of the different use cases and solutions
 presented here (and any other that may be found) needs to be carried out.
 A question that needs a precise answer is how many extended commits (one?, two?) a node needs
-to keep in persistent memory when implementing Solution 3 described above without Tendermint's
+to keep in persistent memory when implementing Solution 3 described above without CometBFT's
 current limitations.
 Another important invariant we need to prove formally is that the set of vote extensions
 required to make progress will always be held somewhere in the network.
 
 ## References
 
-- [ABCI++ specification](https://github.com/tendermint/tendermint/blob/4743a7ad0/spec/abci%2B%2B/README.md)
-- [ABCI as of v0.35](https://github.com/tendermint/spec/blob/4fb99af/spec/abci/README.md)
+- [ABCI 0.17.0 specification][abci-0-17-0]
+- [ABCI 1.0 specification][abci-1-0]
+- [ABCI 2.0 specification][abci-2-0]
+- [Light client verification][light-client-spec]
 - [Vote extensions issue](https://github.com/tendermint/tendermint/issues/8174)
-- [Light client verification](https://github.com/tendermint/tendermint/blob/4743a7ad0/spec/light-client/README.md)
+
+[abci-0-17-0]: https://github.com/cometbft/cometbft/blob/v0.34.x/spec/abci/README.md
+[abci-1-0]: https://github.com/cometbft/cometbft/blob/v0.37.x/spec/abci/README.md
+[abci-2-0]: https://github.com/cometbft/cometbft/blob/main/spec/abci/README.md
+[light-client-spec]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/README.md

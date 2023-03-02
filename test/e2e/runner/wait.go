@@ -21,7 +21,7 @@ func Wait(ctx context.Context, testnet *e2e.Testnet, blocks int64) error {
 // WaitUntil waits until a given height has been reached.
 func WaitUntil(ctx context.Context, testnet *e2e.Testnet, height int64) error {
 	logger.Info("wait until", "msg", log.NewLazySprintf("Waiting for all nodes to reach height %v...", height))
-	_, err := waitForAllNodes(ctx, testnet, height, waitingTime(len(testnet.Nodes)))
+	_, err := waitForAllNodes(ctx, testnet, height, waitingTime(len(testnet.Nodes), height))
 	if err != nil {
 		return err
 	}
@@ -30,6 +30,6 @@ func WaitUntil(ctx context.Context, testnet *e2e.Testnet, height int64) error {
 
 // waitingTime estimates how long it should take for a node to reach the height.
 // More nodes in a network implies we may expect a slower network and may have to wait longer.
-func waitingTime(nodes int) time.Duration {
-	return time.Duration(20+(nodes*2)) * time.Second
+func waitingTime(nodes int, height int64) time.Duration {
+	return time.Duration(20+(int64(nodes)*height)) * time.Second
 }

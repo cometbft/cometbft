@@ -47,7 +47,7 @@ Verify that you have the latest version of Go installed (refer to the [official 
 
 ```bash
 $ go version
-go version go1.19.2 darwin/amd64
+go version go1.20.1 darwin/amd64
 ```
 
 ## 1.2 Creating a new Go project
@@ -86,7 +86,8 @@ CometBFT, `v0.37.0` in this example.
 
 ```bash
 go mod init kvstore
-go get github.com/cometbft/cometbft@v0.37.0
+go get github.com/tendermint/tendermint
+go mod edit -replace github.com/tendermint/tendermint=github.com/cometbft/cometbft@v0.34.27
 ```
 
 After running the above commands you will see two generated files, `go.mod` and `go.sum`.
@@ -95,7 +96,7 @@ The go.mod file should look similar to:
 ```go
 module github.com/me/example
 
-go 1.19
+go 1.20
 
 require (
 	github.com/cometbft/cometbft v0.37.0

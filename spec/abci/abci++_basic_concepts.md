@@ -6,21 +6,21 @@ title: Overview and basic concepts
 ## Outline
 
 - [Overview and basic concepts](#overview-and-basic-concepts)
-    - [ABCI++ vs. ABCI](#abci-vs-abci)
-    - [Method overview](#method-overview)
-        - [Consensus/block execution methods](#consensusblock-execution-methods)
-        - [Mempool methods](#mempool-methods)
-        - [Info methods](#info-methods)
-        - [State-sync methods](#state-sync-methods)
-        - [Other methods](#other-methods)
-    - [Proposal timeout](#proposal-timeout)
-    - [Deterministic State-Machine Replication](#deterministic-state-machine-replication)
-    - [Events](#events)
-    - [Evidence](#evidence)
-    - [Errors](#errors)
-        - [`CheckTx`](#checktx)
-        - [`ExecTxResult`](#exectxresult)
-        - [`Query`](#query)
+  - [ABCI++ vs. ABCI](#abci-vs-abci)
+  - [Method overview](#method-overview)
+    - [Consensus/block execution methods](#consensusblock-execution-methods)
+    - [Mempool methods](#mempool-methods)
+    - [Info methods](#info-methods)
+    - [State-sync methods](#state-sync-methods)
+    - [Other methods](#other-methods)
+  - [Proposal timeout](#proposal-timeout)
+  - [Deterministic State-Machine Replication](#deterministic-state-machine-replication)
+  - [Events](#events)
+  - [Evidence](#evidence)
+  - [Errors](#errors)
+    - [`CheckTx`](#checktx)
+    - [`ExecTxResult` (as part of `FinalizeBlock`)](#exectxresult-as-part-of-finalizeblock)
+    - [`Query`](#query)
 
 # Overview and basic concepts
 
@@ -65,7 +65,7 @@ The first time a new blockchain is started, CometBFT calls `InitChain`. From the
 state. During the execution of an instance of consensus, which decides the block for a given
 height, and before method `FinalizeBlock` is called, methods `PrepareProposal`, `ProcessProposal`,
 `ExtendVote`, and `VerifyVoteExtension` may be called several times. See
-[Tendermint's expected behavior](abci++_comet_expected_behavior.md) for details on the possible
+[CometBFT's expected behavior](abci++_comet_expected_behavior.md) for details on the possible
 call sequences of these methods.
 
 - [**InitChain:**](./abci++_methods.md#initchain) This method initializes the blockchain.
@@ -126,7 +126,7 @@ call sequences of these methods.
 - [**Commit:**](./abci++_methods.md#commit) Instructs the Application to persist its
   state. It is a fundamental part of CometBFT's crash-recovery mechanism that ensures the
   synchronization between CometBFT and the Applicatin upon recovery. CometBFT calls it just after
-  having persisted the data returned by calls to `ResponseFinalizeBlock` . The Application can now discard
+  having persisted the data returned by calls to `ResponseFinalizeBlock`. The Application can now discard
   any state or data except the one resulting from executing the transactions in the decided block.
 
 ### Mempool methods
@@ -266,7 +266,7 @@ Sources of non-determinism in applications may include:
 
 See [#56](https://github.com/tendermint/abci/issues/56) for the original discussion.
 
-Note that some methods (`Query, FinalizeBlock`) return non-deterministic data in the form
+Note that some methods (`Query`, `FinalizeBlock`) return non-deterministic data in the form
 of `Info` and `Log` fields. The `Log` is intended for the literal output from the Application's
 logger, while the `Info` is any additional info that should be returned. These are the only fields
 that are not included in block header computations, so we don't need agreement
@@ -379,7 +379,7 @@ enum EvidenceType {
 
 [&#8593; Back to Outline](#outline)
 
-The `Query`, and `CheckTx` methods include a `Code` field in their `Response*`.
+The `Query` and `CheckTx` methods include a `Code` field in their `Response*`.
 Field `Code` is meant to contain an application-specific response code.
 A response code of `0` indicates no error.  Any other response code
 indicates to CometBFT that an error occurred.
@@ -388,8 +388,8 @@ These methods also return a `Codespace` string to CometBFT. This field is
 used to disambiguate `Code` values returned by different domains of the
 Application. The `Codespace` is a namespace for the `Code`.
 
-Methods `Echo`, `Info`, and `InitChain` do not return errors.
-An error in any of these methods represents a critical issue that Tendermint
+Methods `Echo`, `Info`, `Commit` and `InitChain` do not return errors.
+An error in any of these methods represents a critical issue that CometBFT
 has no reasonable way to handle. If there is an error in one
 of these methods, the Application must crash to ensure that the error is safely
 handled by an operator.
@@ -411,8 +411,8 @@ it is already included.
 
 ### `ExecTxResult` (as part of `FinalizeBlock`)
 
-The `ExecTxResult` type delivers transaction results from the Application to Tendermint. When
-Tendermint receives a `ResponseFinalizeBlock` containing an `ExecTxResult` with a non-zero `Code`,
+The `ExecTxResult` type delivers transaction results from the Application to CometBFT. When
+CometBFT receives a `ResponseFinalizeBlock` containing an `ExecTxResult` with a non-zero `Code`,
 the response code is logged. Past `Code` values can be queried by clients. As the transaction was
 part of a decided block, the `Code` does not influence consensus.
 

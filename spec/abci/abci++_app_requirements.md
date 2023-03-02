@@ -84,8 +84,6 @@ of `ProcessProposal`. As a general rule `ProcessProposal` SHOULD always accept t
 According to the Tendermint consensus algorithm, currently adopted in CometBFT,
 a correct process can broadcast at most one precommit
 message in round *r*, height *h*.
-
- 
 Since, as stated in the [Methods](./abci++_methods.md#extendvote) section, `ResponseExtendVote`
 is only called when the consensus algorithm
 is about to broadcast a non-`nil` precommit message, a correct process can only produce one vote extension
@@ -93,8 +91,7 @@ in round *r*, height *h*.
 Let *e<sup>r</sup><sub>p</sub>* be the vote extension that the Application of a correct process *p* returns via
 `ResponseExtendVote` in round *r*, height *h*.
 Let *w<sup>r</sup><sub>p</sub>* be the proposed block that *p*'s CometBFT passes to the Application via `RequestExtendVote`
-inround *r*, height *h*. 
-
+in round *r*, height *h*.
 
 * Requirement 6 [`ExtendVote`, `VerifyVoteExtension`, coherence]: For any two different correct
   processes *p* and *q*, if *q* receives *e<sup>r</sup><sub>p</sub>* from *p* in height *h*, *q*'s
@@ -212,11 +209,6 @@ still received in sequence.
 When the consensus algorithm decides on a block, CometBFT uses `FinalizeBlock` to send the
 decided block's data to the Application, which uses it to transition its state, but not persist it;
 persisting will be done during `Commit`.
-
-<!-- 
-The sequence of `DeliverTx` calls is asynchronous but all those calls are enclosed by calls to `BeginBlock` and `EndBlock` which are synchronous.
---> 
-
 
 #### Commit
 
@@ -445,7 +437,7 @@ proposal.
 
 #### Specifics of `ExecTxResult`
 
-`FinalizeBlock` is the workhorse of the blockchain.CometBFT delivers the decided block, 
+`FinalizeBlock` is the workhorse of the blockchain. CometBFT delivers the decided block,
 including the list of all its transactions synchronously to the Application.
 The block delivered (and thus the transaction order) is the same at all correct nodes as guaranteed
 by the Agreement property of consensus.

@@ -362,7 +362,7 @@ title: Methods
       that the `RequestPrepareProposal.max_tx_bytes` limit is respected by those transactions
       returned in `ResponsePrepareProposal.txs` .
     * As a result of executing the prepared proposal, the Application may produce block events or transaction events.
-      The Application must keep those events until a block is decided and then pass them on to Tendermint via
+      The Application must keep those events until a block is decided and then pass them on to CometBFT via
       `ResponseFinalizeBlock`.
 <!--
  TODO CHECK THIS 
@@ -692,7 +692,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
 * **Usage**:
     * Validator identified by address
-    * Used in RequestBeginBlock as part of VoteInfo
+    * Used as part of VoteInfo within CommitInfo <!-- TODO Check where exactly is commitinfo used, seems to be only Prepare/Process proposal -->
     * Does not include PubKey to avoid sending potentially large quantum pubkeys
     over the ABCI
 
@@ -807,7 +807,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
 * **Usage**:
     * Indicates whether a validator signed the last block, allowing for rewards based on validator availability.
-    * This information is extracted from Tendermint's data structures in the local process.
+    * This information is extracted from CometBFT's data structures in the local process.
     * `vote_extension` contains the sending validator's vote extension, which is signed by CometBFT. It can be empty
 
 ### CommitInfo

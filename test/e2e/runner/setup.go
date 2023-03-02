@@ -163,6 +163,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg.P2P.AddrBookStrict = false
 	cfg.DBBackend = node.Database
 	cfg.StateSync.DiscoveryTime = 5 * time.Second
+	cfg.BlockSync.Version = node.BlockSyncVersion
 
 	switch node.ABCIProtocol {
 	case e2e.ProtocolUNIX:
@@ -207,10 +208,6 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		// Don't need to do anything, since we're using a dummy privval key by default.
 	default:
 		return nil, fmt.Errorf("unexpected mode %q", node.Mode)
-	}
-
-	if node.BlockSyncVersion != "" {
-		cfg.BlockSync.Version = node.BlockSyncVersion
 	}
 
 	if node.StateSync {

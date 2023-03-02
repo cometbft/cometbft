@@ -126,7 +126,7 @@ call sequences of these methods.
 - [**Commit:**](./abci++_methods.md#commit) Instructs the Application to persist its
   state. It is a fundamental part of CometBFT's crash-recovery mechanism that ensures the
   synchronization between CometBFT and the Applicatin upon recovery. CometBFT calls it just after
-  having persisted the data returned by calls to `ResponseFinalizeBlock` . The Application can now discard
+  having persisted the data returned by calls to `ResponseFinalizeBlock`. The Application can now discard
   any state or data except the one resulting from executing the transactions in the decided block.
 
 ### Mempool methods
@@ -266,7 +266,7 @@ Sources of non-determinism in applications may include:
 
 See [#56](https://github.com/tendermint/abci/issues/56) for the original discussion.
 
-Note that some methods (`Query, FinalizeBlock`) return non-deterministic data in the form
+Note that some methods (`Query`, `FinalizeBlock`) return non-deterministic data in the form
 of `Info` and `Log` fields. The `Log` is intended for the literal output from the Application's
 logger, while the `Info` is any additional info that should be returned. These are the only fields
 that are not included in block header computations, so we don't need agreement
@@ -379,7 +379,7 @@ enum EvidenceType {
 
 [&#8593; Back to Outline](#outline)
 
-The `Query`, and `CheckTx` methods include a `Code` field in their `Response*`.
+The `Query` and `CheckTx` methods include a `Code` field in their `Response*`.
 Field `Code` is meant to contain an application-specific response code.
 A response code of `0` indicates no error.  Any other response code
 indicates to CometBFT that an error occurred.
@@ -388,7 +388,7 @@ These methods also return a `Codespace` string to CometBFT. This field is
 used to disambiguate `Code` values returned by different domains of the
 Application. The `Codespace` is a namespace for the `Code`.
 
-Methods `Echo`, `Info`, and `InitChain` do not return errors.
+Methods `Echo`, `Info`, `Commit` and `InitChain` do not return errors.
 An error in any of these methods represents a critical issue that CometBFT
 has no reasonable way to handle. If there is an error in one
 of these methods, the Application must crash to ensure that the error is safely

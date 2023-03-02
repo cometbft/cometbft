@@ -18,7 +18,8 @@ consensus gossip protocol.
 
 ## Using Block Sync
 
-Nodes start in Block Sync mode by default. In this mode, the CometBFT daemon
+When starting from scratch, nodes will use the Block Sync mode.
+In this mode, the CometBFT daemon
 will sync hundreds of times faster than if it used the real-time consensus
 process. Once caught up, the daemon will switch out of Block Sync and into the
 normal consensus mode. After running for some time, the node is considered

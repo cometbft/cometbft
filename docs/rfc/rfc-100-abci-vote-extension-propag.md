@@ -644,7 +644,7 @@ Additional discussion and implementation of this upgrade strategy can be found
 in GitHub [issue 8453][toggle-vote-extensions].
 
 We now explain the changes we need to introduce in key solutions/implementation proposed in previous sections
-so that the still work in the presence of an upgrade to ABCI 2.0.
+so that they still work in the presence of an upgrade to ABCI 2.0.
 For simplicity, in any conditions comparing a height to *h<sub>e</sub>*,
 if *h<sub>e</sub>* is 0 (not set yet) then the condition assumes *h<sub>e</sub> = ∞*.
 

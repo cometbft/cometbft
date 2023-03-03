@@ -732,7 +732,7 @@ required to make progress will always be held somewhere in the network.
 - [ABCI 2.0 specification][abci-2-0]
 - [Light client verification][light-client-spec]
 - [Empty vote extensions issue](https://github.com/tendermint/tendermint/issues/8174)
-- [Toggle vote extensions issue](https://github.com/tendermint/tendermint/issues/8453)
+- [Toggle vote extensions issue][toggle-vote-extensions]
 
 [abci-0-17-0]: https://github.com/cometbft/cometbft/blob/v0.34.x/spec/abci/README.md
 [abci-1-0]: https://github.com/cometbft/cometbft/blob/v0.37.x/spec/abci/README.md

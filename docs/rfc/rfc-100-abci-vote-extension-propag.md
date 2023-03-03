@@ -36,10 +36,10 @@ worded abstracting away from implementation details, whilst subsections
 [Current Limitations and Possible Implementations](#current-limitations-and-possible-implementations)
 analyze the viability of one of the proposed solutions in the context of CometBFT's architecture
 based on reactors.
-Subsection [Upgrade Path](#upgrade-path) discusses how CometBFT node can upgrade
+Subsection [Upgrade Path](#upgrade-path) discusses how a CometBFT node can upgrade
 from a version predating vote extensions, to one featuring it.
 Finally, [Formalization Work](#formalization-work) briefly discusses the work
-still needed demonstrate the correctness of the chosen solution.
+still needed to demonstrate the correctness of the chosen solution.
 
 The high level subsections are aimed at readers who are familiar with consensus algorithms, in
 particular with the Tendermint algorithm described [here](https://arxiv.org/abs/1807.04938),
@@ -221,7 +221,7 @@ discussions and need to be addressed. They are (roughly) ordered from easiest to
     | *valset<sub>h</sub>* &cap; *L<sub>h<sub>p</sub></sub>*  | *< n<sub>h</sub>/3*
 
     So, full nodes that are validators at some height h between *h<sub>s</sub>* and *h<sub>p</sub>-1*
-    can be in *L<sub>h<sub>p</sub></sub>*, but not more than 1/3 of those acting as validator in
+    can be in *L<sub>h<sub>p</sub></sub>*, but not more than 1/3 of those acting as validators in
     the same height.
     If this property does not hold for a particular height *h*, where
     *h<sub>s</sub> ≤ h < h<sub>p</sub>*, CometBFT could not have progressed beyond *h* and
@@ -518,7 +518,7 @@ A chain might be started at a height *h<sub>i</sub> > 0*, all other heights
 block *h<sub>i</sub>* is applied, so the first condition above allows the node to switch to consensus even
 if blocksync has not processed any block (which is always the case if all nodes are starting from scratch).
 
-The third condition is need to ensure liveness in the case where all validators crash at the same height.
+The third condition is needed to ensure liveness in the case where all validators crash at the same height.
 Without the third condition, they all would wait to blocksync at least one block upon recovery.
 However, as all validators crashed no further block can be produced and thus blocksync would block forever.
 
@@ -697,7 +697,7 @@ Changes to the consensus reactor:
   which is more than 2 heights behind,
     - if *h<sub>p</sub> ≥ h<sub>e</sub>*, *f* uses the extended commit to
       reconstruct the precommit votes with their corresponding extensions
-    - if *h<sub>p</sub> < h<sub>e</sub>*, *f* uses the canonical to commit reconstruct the precommit votes,
+    - if *h<sub>p</sub> < h<sub>e</sub>*, *f* uses the canonical commit to reconstruct the precommit votes,
       as done for ABCI 1.0 and earlier
 
 Changes to the blocksync reactor:

@@ -7,6 +7,7 @@
 - 09-May-2022: Addressed all outstanding comments (@sergio-mena).
 - 09-May-2022: Add section on upgrade path (@wbanfield)
 - 02-Mar-2023: Migrated to CometBFT RFCs. New number: RFC 100 (@sergio-mena).
+- 03-Mar-2023: Added "changes needed" to solutions in upgrade path section (@sergio-mena)
 
 ## Abstract
 

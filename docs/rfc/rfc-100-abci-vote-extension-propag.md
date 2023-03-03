@@ -641,7 +641,7 @@ vote extensions to be no longer required will fundamentally change the behavior
 of the application and is therefore not valuable to these applications.
 
 Additional discussion and implementation of this upgrade strategy can be found
-in GitHub [issue 8453](https://github.com/tendermint/tendermint/issues/8453).
+in GitHub [issue 8453][toggle-vote-extensions].
 
 We now explain the changes needed to key solutions/implementation proposed in previous sections.
 For simplicity, in any conditions comparing a height to *h<sub>e</sub>*, 
@@ -731,9 +731,11 @@ required to make progress will always be held somewhere in the network.
 - [ABCI 1.0 specification][abci-1-0]
 - [ABCI 2.0 specification][abci-2-0]
 - [Light client verification][light-client-spec]
-- [Vote extensions issue](https://github.com/tendermint/tendermint/issues/8174)
+- [Empty vote extensions issue](https://github.com/tendermint/tendermint/issues/8174)
+- [Toggle vote extensions issue](https://github.com/tendermint/tendermint/issues/8453)
 
 [abci-0-17-0]: https://github.com/cometbft/cometbft/blob/v0.34.x/spec/abci/README.md
 [abci-1-0]: https://github.com/cometbft/cometbft/blob/v0.37.x/spec/abci/README.md
 [abci-2-0]: https://github.com/cometbft/cometbft/blob/main/spec/abci/README.md
 [light-client-spec]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/README.md
+[toggle-vote-extensions]: https://github.com/tendermint/tendermint/issues/8453

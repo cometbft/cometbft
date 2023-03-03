@@ -34,7 +34,10 @@ worded abstracting away from implementation details, whilst subsections
 [Feasibility of the Proposed Solutions](#feasibility-of-the-proposed-solutions) and
 [Current Limitations and Possible Implementations](#current-limitations-and-possible-implementations)
 analyze the viability of one of the proposed solutions in the context of CometBFT's architecture
-based on reactors. Finally, [Formalization Work](#formalization-work) briefly discusses the work
+based on reactors.
+Subsection [Upgrade Path](#upgrade-path) discusses how CometBFT node can upgrade
+from a version predating vote extensions, to one featuring it.
+Finally, [Formalization Work](#formalization-work) briefly discusses the work
 still needed demonstrate the correctness of the chosen solution.
 
 The high level subsections are aimed at readers who are familiar with consensus algorithms, in
@@ -216,6 +219,9 @@ discussions and need to be addressed. They are (roughly) ordered from easiest to
     - &forall; *h*, where *h<sub>s</sub> ≤ h < h<sub>p</sub>*,
     | *valset<sub>h</sub>* &cap; *L<sub>h<sub>p</sub></sub>*  | *< n<sub>h</sub>/3*
 
+    So, full nodes that are validators at some height h between *h<sub>s</sub>* and *h<sub>p</sub>-1*
+    can be in *L<sub>h<sub>p</sub></sub>*, but not more than 1/3 of those acting as validator in
+    the same height.
     If this property does not hold for a particular height *h*, where
     *h<sub>s</sub> ≤ h < h<sub>p</sub>*, CometBFT could not have progressed beyond *h* and
     therefore no full node could have reached *h<sub>p</sub>* (a contradiction).
@@ -257,7 +263,8 @@ nevertheless mention it when needed; in particular, to understand some corner ca
 
 #### Blocksync
 
-The blocksync reactor kicks in after start up or recovery (and, optionally, after statesync is done)
+The blocksync reactor kicks in after start up or recovery.
+At startup, if statesync is enabled, blocksync starts just after statesync
 and sends the following messages to its peers:
 
 - `StatusRequest` to query the height its peers are currently at, and
@@ -265,7 +272,7 @@ and sends the following messages to its peers:
 
 Using `BlockResponse` messages received from peers, the blocksync reactor validates each received
 block using the block of the following height, saves the block in the block store, and sends the
-block to the Application for execution.
+block to the Application for execution (it effectively simulates the node *deciding* on that height).
 
 If blocksync has validated and applied the block for the height *previous* to the highest seen in
 a `StatusResponse` message, or if no progress has been made after a timeout, the node considers
@@ -274,8 +281,8 @@ itself as caught up and switches to the consensus reactor.
 #### Consensus Reactor
 
 The consensus reactor runs the full Tendermint algorithm. For a validator this means it has to
-propose blocks, and send/receive prevote/precommit messages, as mandated by CometBFT, before it can
-decide and move on to the next height.
+propose blocks, and send/receive prevote/precommit messages, as mandated by the algorithm,
+before it can decide and move on to the next height.
 
 If a full node that is running the consensus reactor falls behind at height *h*, when a peer node
 realises this it will retrieve the canonical commit of *h+1* from the block store, and *convert*
@@ -290,7 +297,7 @@ These are the solutions proposed in discussions leading up to this RFC.
 - **Solution 0.** *Vote extensions are made **best effort** in the specification*.
 
     This is the simplest solution, considered as a way to provide vote extensions in a simple enough
-    way so that it can be part of ABCI 2.0.
+    way so that it can be a first available version in ABCI 2.0.
     It consists in changing the specification so as to not *require* that precommit votes used upon
     `PrepareProposal` contain their corresponding vote extensions. In other words, we render vote
     extensions optional.
@@ -343,7 +350,7 @@ These are the solutions proposed in discussions leading up to this RFC.
 
     The appeal of this solution is its simplicity. A possible implementation does not need to extend
     the data structures, or change the current catch-up mechanisms implemented in the blocksync or
-    in the consensus reactor. When we lack the needed information (vote extensions), we simply rely
+    in the consensus reactors. When we lack the needed information (vote extensions), we simply rely
     on another correct validator to propose a valid block in other rounds of the current height.
 
     However, this solution can be attacked by a byzantine node in the network in the following way.
@@ -370,13 +377,13 @@ These are the solutions proposed in discussions leading up to this RFC.
     - all full nodes conclude they are late from *m*'s behavior, and use block *b* and the commit for
       height *h*, round 0, to decide on height *h*, and proceed to height *h+1*.
 
-    At this point, *all* full nodes, including all validators in *valset<sub>h+1</sub>*, have advanced
+    At this point, *all* correct full nodes, including all correct validators in *valset<sub>h+1</sub>*, have advanced
     to height *h+1* believing they are late, and so, expecting the *hypothetical* leading majority of
     validators in *valset<sub>h+1</sub>* to propose for *h+1*. As a result, the blockchain
     grinds to a halt.
     A (rather complex) ad-hoc mechanism would need to be carried out by node operators to roll
     back all validators to the precommit step of height *h*, round *r*, so that they can regenerate
-    vote extensions (remember vote extensions are non-deterministic) and continue execution.
+    vote extensions (remember the contents of vote extensions are non-deterministic) and continue execution.
 
 - **Solution 3.** *Require extended commits to be available at switching time*.
 
@@ -409,7 +416,7 @@ These are the solutions proposed in discussions leading up to this RFC.
               key as the precommit vote it extends
 
     If the condition above holds for *h<sub>p</sub>*, namely receiving a valid sequence of blocks in
-    the *f*'s future, and an extended commit corresponding to the last block in the sequence, then
+    *f*'s future, and an extended commit corresponding to the last block in the sequence, then
     node *f*:
 
     - switches to catch-up mode,
@@ -421,12 +428,12 @@ These are the solutions proposed in discussions leading up to this RFC.
     being fed a block without extensions to make it believe it is late, in a similar way as explained
     for Solution 2.
 
-    This solution can be implemented in normal operation of Tendermint, but notably cannot be
-    used when upgrading from a previous version of Tendermint that did not implement vote
-    extensions. The previous version of Tendermint did not have any vote extension data,
-    so nodes transitioning to use vote extensions must agree on the initial height
-    during which vote extension data will be required. Additional discussion of this
-    is included in the [upgrade path](#upgrade-path) section.
+    This solution works as long as the blockchain has vote extensions from genesis,
+    i.e. it uses ABCI 2.0 from the start.
+    In contrast, it cannot be used without modifications by a blockchain upgrading
+    from a previous version of CometBFT that did not implement vote extensions.
+    In that case, the safety property required to switch to catch-up mode may never hold.
+    See section [Upgrade Path](#upgrade-path) for further details.
 
 ### Feasibility of the Proposed Solutions
 
@@ -459,7 +466,7 @@ The main limitations affecting the current version of CometBFT are the following
   `ExtendVote`/`VerifyVoteExtension` and only calling `FinalizeBlock` for each height.
   Such a mechanism does not exist at the time of writing this RFC (2023-03-02).
 
-The blocksync reactor featuring light client verification is among the CometBFT team' current priorities.
+The blocksync reactor featuring light client verification is among the CometBFT team's current priorities.
 So it is best if this RFC does not try to delve into that problem, but just makes sure
 its outcomes are compatible with that effort.
 
@@ -495,26 +502,32 @@ up to date (at least starting from the latest snapshot applied by statesync befo
 Thus, blocksync has all the data it requires to switch to the consensus reactor, as long as one of
 the following exit conditions are met:
 
-- The node is still at height 0 (where no commit or extended commit is needed)
-- The node has processed at least 1 block in blocksync
+- The node is still at height 0 (where no commit or extended commit is needed).
+- The node has processed at least 1 block in blocksync.
+- The node recovered and, after handshaking with the Application, it realizes it had persisted
+  an extended commit in its block store for the height previous to the one it is to start.
 
 The second condition is needed in case the node has installed an Application snapshot during statesync.
 If that is the case, at the time blocksync starts, the block store only has the data statesync has saved:
 light blocks, and no extended commits.
 Hence we need to blocksync at least one block from another node, which will be sent with its corresponding extended commit, before we can switch to consensus.
 
-As a side note, a chain might be started at a height *h<sub>i</sub> > 0*, all other heights
+A chain might be started at a height *h<sub>i</sub> > 0*, all other heights
 *h < h<sub>i</sub>* being non-existent. In this case, the chain is still considered to be at height 0 before
 block *h<sub>i</sub>* is applied, so the first condition above allows the node to switch to consensus even
 if blocksync has not processed any block (which is always the case if all nodes are starting from scratch).
+
+The third condition is need to ensure liveness in the case where all validators crash at the same height.
+Without the third condition, they all would wait to blocksync at least one block upon recovery.
+However, as all validators crashed no further block can be produced and thus blocksync would block forever.
 
 When a validator falls behind while having already switched to the consensus reactor, a peer node can
 simply retrieve the extended commit for the required height from the block store and reconstruct a set of
 precommit votes together with their extensions and send them in the form of precommit messages to the
 validator falling behind, regardless of whether the peer node holds the extended commit because it
-actually participated in that consensus and thus received the precommit messages, or it received the extended commit via a `BlockResponse` message while running blocksync.
+actually participated in that consensus and thus received the precommit messages, or it received the extended commit via a `BlockResponse` message while running blocksync itself.
 
-This solution requires a few changes to the consensus reactor:
+This base implementation requires a few changes to the consensus reactor:
 
 - upon saving the block for a given height in the block store at decision time, save the
   corresponding extended commit as well
@@ -529,8 +542,8 @@ The changes to the blocksync reactor are more substantial:
 - structure `bpRequester` is likewise extended to hold the received extended commits coming in
   `BlockResponse` messages
 - method `PeekTwoBlocks` is modified to also return the extended commit corresponding to the first block
-- when successfully verifying a received block, the reactor saves its corresponding extended commit in
-  the block store
+- when successfully verifying a received block, the reactor saves the block along with
+  its corresponding extended commit in the block store
 
 The two main drawbacks of this base implementation are:
 
@@ -563,52 +576,143 @@ Then, we need to handle two new situations, roughly equivalent to cases (h.1) an
   However we can manually have the node crash and recover as a workaround. This effectively converts
   this case into (h.1).
 
+Finally, note that it makes sense to pair this optimization with the `retain_height` ABCI parameter.
+Whenever we prune blocks from the block store due to `retain_height`,
+we also prune the corresponding extended commit.
+This is problematic both in (h.1) and (h.2), as a node that falls behind the lowest value
+of `retain_height` in the rest of the network will never be able to catch up.
+Nevertheless, this problem predates ABCI 2.0, and vote extensions do not make it worse.
+
 ### Upgrade Path
 
-v0.36 of Tendermint will be the first version to implement the vote extension system.
-The v0.36 release aims to be backwards compatible with the previous release, v0.35,
-via a coordinated upgrade. Chains that were previously running v0.35 must be able
-to upgrade to v0.36 without creating a new chain. v0.35 had no implementation
-of vote extensions and no mechanisms in place to facilitate their later addition.
+ABCI 2.0 will be the first version to implement vote extensions.
+Upgrading a blockchain to ABCI 2.0 from a previous version MUST be feasible via a coordinated upgrade:
+a blockchain upgrading to ABCI 2.0 should not be forced to hard fork (i.e. create a new chain).
 
-Vote extensions pose an issue for Tendermint upgrades. Chains that upgrade from
-v0.35 to v0.36 will attempt to produce the first height running v0.36 without vote
-extension data from the previous height. We intend to allow chains to _require_
-vote extensions data. Chains that require vote extension data will not make progress
-without it. The corresponding application will expect vote extension
-data to be present for each [PrepareProposal](https://github.com/tendermint/tendermint/blob/cec0a9798/proto/tendermint/abci/types.proto#L129) call it receives.
+Vote extensions pose an issue for CometBFT upgrades.
+Blockchains that perform a coordinated upgrade from ABCI 1.0 to ABCI 2.0 will attempt
+to produce the first height running ABCI 2.0 without vote extension data from the previous height.
+As explained in previous sections, blockchains running ABCI 2.0 *require* vote extension data in each
+[PrepareProposal](https://github.com/cometbft/cometbft/blob/feature/abci++vef/proto/tendermint/abci/types.proto#L134)
+call.
 
-To facilitate the upgrade and provide applications a mechanism to require
-vote extensions, we will provide application developers with a [ConsensusParam](https://github.com/tendermint/tendermint/blob/cec0a9798/proto/tendermint/types/params.proto#L13)
+#### New `ConsensusParam`
+
+To facilitate the upgrade and provide applications a mechanism to require vote extensions,
+we introduce a new
+[`ConsensusParam`](https://github.com/cometbft/cometbft/blob/38a4cae/proto/tendermint/types/params.proto#L13)
 to transition the chain from maintaining no history of vote extensions to requiring vote extensions.
-This parameter will be an `int64` representing the first height where vote extensions
+This parameter is an `int64` representing the first height where vote extensions
 will be required for votes to be considered valid.
 
-Concretely, this value must be set to some height, `H`, that is higher than the
-current height of the chain. During all heights >= `H`, the consensus algorithm will
-reject any votes that do not have vote extension data as invalid. Height `H+1`
-will be the first height for which `PrepareProposal` is guaranteed to have vote
-extension data.
+The initial value of this `ConsensusParam` is 0,
+which is also its implicit value in versions prior to ABCI 2.0,
+denoting that an extension-enabling height has not been decided yet.
+Once the upgrade to ABCI 2.0 has taken place,
+the value MAY be set to some height, *h<sub>e</sub>*,
+which MUST be higher than the current height of the chain.
+From the moment when the `ConsensusParam` > 0,
+for all heights *h ≥ h<sub>e</sub>*, the consensus algorithm will
+reject any votes that do not have vote extension data as invalid.
+Likewise, for all heights *h < h<sub>e</sub>*, any votes that *do* have vote extensions
+will be considered an error condition.
+Height *h<sub>e</sub>* is somewhat special, as calls to `PrepareProposal` MUST NOT
+have vote extension data, but all precommit votes in that height MUST carry a vote extension.
+Height *h<sub>e</sub> + 1* is the first height for which `PrepareProposal` MUST have vote
+extension data and all precommit votes in that height MUST have a vote extension.
 
-The mechanism for transitioning a chain to requiring vote extensions
-_must_ save the height at which the parameter changed. Tendermint must be able
-to distinguish between the first height that vote extensions are required during
-consensus voting and the first height during which `PrepareProposal` must
-receive the extensions. A simple on/off boolean cannot encode this information.
+#### Upgrading and Transitioning to Vote Extensions
 
-Once the configured height occurs, the parameter will be disallowed from changing.
-Vote extensions cannot flip from being required to being optional. This will be
-enforced by the `ConsensusParam` validation logic. Forcing vote extensions to
+Just after upgrading (via coordinated upgrade) to ABCI 2.0, vote extensions stay disabled,
+as the Application needs to decide on a future height to be set for transitioning to vote extensions.
+The earliest this can happen is *h<sub>u</sub> + 1*, where *h<sub>u</sub>* denotes the upgrade height,
+i.e., the height at which all nodes will start when they restart with the upgraded binary.
+
+Once a node reaches the configured height *h<sub>e</sub>*, the parameter is disallowed from changing.
+Vote extensions cannot flip from being required to being optional.
+This is enforced by the `ConsensusParam` validation logic. Forcing vote extensions to
 be required beyond the configured height simplifies the logic for transitioning
 from optional to required since all checks will only need to understand if the
-chain _ever_ enabled vote extensions in the past. Additionally, the major known
+chain *ever* enabled vote extensions in the past. Additionally, the major known
 uses cases of vote extensions such as threshold decryption and oracle data will
-be _central_ components of the applications that use vote extensions. Flipping
+be *central* components of the applications that use vote extensions. Flipping
 vote extensions to be no longer required will fundamentally change the behavior
 of the application and is therefore not valuable to these applications.
 
 Additional discussion and implementation of this upgrade strategy can be found
-in github [issue 8453](https://github.com/tendermint/tendermint/issues/8453).
+in GitHub [issue 8453](https://github.com/tendermint/tendermint/issues/8453).
+
+We now explain the changes needed to key solutions/implementation proposed in previous sections.
+For simplicity, in any conditions comparing a height to *h<sub>e</sub>*, 
+if *h<sub>e</sub>* is 0 (not set yet) then the condition assumes *h<sub>e</sub> = ∞*.
+
+#### Changes Required in Solution 3
+
+These are the changes needed in Solution 3, as defined in section [Solutions Proposed](#solutions-proposed)
+so that it works properly with upgrades.
+
+First, we need to extend the safety property, which is key to that solution,
+to take the agreed extension-enabling height into account.
+
+The key change is in the switching height *h'*:
+
+- for every height *h<sub>p</sub>*, a full node *f* in *h<sub>p</sub>* refuses to switch to catch-up
+  mode **until** there exists a height *h'* such that:
+    - *p* has received and (light-client) verified the blocks of
+      all heights *h*, where *h<sub>p</sub> ≤ h ≤ h'*
+    - if *h' > h<sub>e</sub>*
+        - it has received an extended commit for *h'* and has verified:
+            - the precommit vote signatures in the extended commit
+            - the vote extension signatures in the extended commit: each is signed with the same
+              key as the precommit vote it extends
+
+Note that, since the (light-client) verification is the only requirement for all *h' ≤ h*,
+the property falls back to the pre-ABCI 2.0 requirements for block sync in those heights.
+
+#### Changes Required in the Base Implementation
+
+The base implementation as defined in section
+[Base Implementation](#base-implementation-persist-and-propagate-extended-commit-history)
+cannot work as such when a blockchain upgrades, and thus it needs the following modifications.
+
+Firstly, the conditions for switching to consensus listed in section
+[Base Implementation](#base-implementation-persist-and-propagate-extended-commit-history)
+remain valid, but we need to add a new condition.
+
+- The node is still at a height *h < h<sub>e</sub>*.
+
+We have taken the changes required by the base implementation,
+initially decribed in section
+[Base Implementation](#base-implementation-persist-and-propagate-extended-commit-history),
+and adapted them so that
+they support upgrading to ABCI 2.0 in the terms described earlier in this section:
+
+Changes to the consensus reactor:
+
+- upon saving the block for a given height *h* in the block store at decision time
+    - if *h ≥ h<sub>e</sub>*, save the corresponding extended commit as well
+    - if *h < h<sub>e</sub>*, follow the logic implemented prior to ABCI 2.0
+- in the catch-up mechanism, when a node *f* realizes that another peer is at height *h<sub>p</sub>*,
+  which is more than 2 heights behind,
+    - if *h<sub>p</sub> ≥ h<sub>e</sub>*, *f* uses the extended commit to
+      reconstruct the precommit votes with their corresponding extensions
+    - if *h<sub>p</sub> < h<sub>e</sub>*, *f* uses the canonical to commit reconstruct the precommit votes,
+      as done for ABCI 1.0 and earlier
+
+Changes to the blocksync reactor:
+
+- the `BlockResponse` message is extended to *optionally* include the extended commit of the same height as
+  the block included in the response (just as they are stored in the block store)
+- structure `bpRequester` is likewise extended to *optionally* hold received extended commits coming in
+  `BlockResponse` messages
+- method `PeekTwoBlocks` is modified in the following way
+    - if the first block's height *h ≥ h<sub>e</sub>*, it returns the block together with the extended commit corresponding to the first block
+    - if the first block's height *h < h<sub>e</sub>*, it returns the block and `nil` as extended commit
+- when successfully verifying a received block,
+    - if the block's height *h ≥ h<sub>e</sub>*, the reactor saves the block,
+      along with its corresponding extended commit in the block store
+    - if the block's height *h < h<sub>e</sub>*, the reactor saves the block in the block store,
+      and `nil` as extended commit
 
 ### Formalization Work
 

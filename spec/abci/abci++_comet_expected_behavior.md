@@ -28,7 +28,7 @@ what will happen during a block height _h_ in these frequent, benign conditions:
 
 However, the Application logic must be ready to cope with any possible run of the consensus algorithm for a given
 height, including bad periods (byzantine proposers, network being asynchronous).
-In these cases, the sequence of calls to ABCI++ methods may not be so straighforward, but
+In these cases, the sequence of calls to ABCI++ methods may not be so straightforward, but
 the Application should still be able to handle them, e.g., without crashing.
 The purpose of this section is to define what these sequences look like in a precise way.
 
@@ -117,7 +117,7 @@ Let us now examine the grammar line by line, providing further details.
   If the Application accepts the snapshot, a sequence of calls to `ApplySnapshotChunk` method follow
   to provide the Application with all the snapshots needed, in order to reconstruct the state locally.
   A successful attempt must provide at least one chunk via `ApplySnapshotChunk`.
-  At the end of a successful attempt, CometBFT calls `Info` to make sure the recontructed state's
+  At the end of a successful attempt, CometBFT calls `Info` to make sure the reconstructed state's
   _AppHash_ matches the one in the block header at the corresponding height.
 
 >```abnf
@@ -127,7 +127,7 @@ Let us now examine the grammar line by line, providing further details.
 >```
 
 * In recovery mode, CometBFT first calls `Info` to know from which height it needs to replay decisions
-  to the Application. After this, CometBFT enters nomal consensus execution.
+  to the Application. After this, CometBFT enters normal consensus execution .
 
 >```abnf
 >recovery            = info consensus-exec
@@ -196,7 +196,7 @@ also delivers to itself.
 ## Adapting existing Applications that use ABCI
 
 In some cases, an existing Application using the legacy ABCI may need to be adapted to work with ABCI++
-with as minimal changes as possible. In this case, of course, ABCI++ will not provide any advange with respect
+with as minimal changes as possible. In this case, of course, ABCI++ will not provide any advantage with respect
 to the existing implementation, but will keep the same guarantees already provided by ABCI.
 Here is how ABCI++ methods should be implemented.
 

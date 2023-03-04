@@ -95,17 +95,24 @@ mechanisms.
 
 #### DoS Exposure and Mitigation
 
-**It is generally not recommended to expose one's RPC publicly**, as the
-CometBFT RPC does not currently cater for advanced security features. Exposing
-one's RPC publicly without appropriate protection can make the associated node
-vulnerable to a variety of DoS attacks.
+**It is generally not recommended to expose one's RPC publicly, and especially
+so if the node in question is a validator**, as the CometBFT RPC does not
+currently cater for advanced security features. Exposing one's RPC publicly
+without appropriate protection can make the associated node vulnerable to a
+variety of DoS attacks.
 
 It is entirely up to operators to ensure that, if they do have to expose their
 RPC endpoint, that they have taken appropriate measures to mitigate such
-attacks. Some measures include, but are not limited to, rate-limiting and
-authentication (as provided by reverse proxies like [nginx](https://nginx.org/)
-and/or DDoS protection services like [Cloudflare](https://www.cloudflare.com)),
-and only exposing the specific endpoints necessary for their use cases.
+attacks. Some measures include, but are not limited to:
+
+- Never publicly exposing the RPC endpoints of your validator(s) (i.e. if you
+  absolutely have to expose your RPC endpoint, ensure you do so only on full
+  nodes and with appropriate protection)
+- Rate-limiting and authentication (as provided by reverse proxies like
+  [nginx](https://nginx.org/) and/or DDoS protection services like
+  [Cloudflare](https://www.cloudflare.com))
+- Only exposing the specific endpoints necessary for their use cases
+  (configurable via nginx/Cloudflare/etc.)
 
 If you are unsure as to how to properly secure your node against attacks, or do
 not have access to expertise to assist you in doing so, rather do not expose

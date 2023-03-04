@@ -101,9 +101,9 @@ currently cater for advanced security features. Exposing one's RPC publicly
 without appropriate protection can make the associated node vulnerable to a
 variety of attacks.
 
-It is entirely up to operators to ensure that, if they do have to expose their
-RPC endpoint, that they have taken appropriate measures to mitigate against
-attacks. Some measures include, but are not limited to:
+It is entirely up to operators to ensure, if they do have to expose their RPC
+endpoint, that they have taken appropriate measures to mitigate against attacks.
+Some measures include, but are not limited to:
 
 - Never publicly exposing the RPC endpoints of your validator(s) (i.e. if you
   absolutely have to expose your RPC endpoint, ensure you do so only on full

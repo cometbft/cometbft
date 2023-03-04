@@ -95,28 +95,27 @@ mechanisms.
 
 #### Attack Exposure and Mitigation
 
-**It is generally not recommended to expose one's RPC publicly, and especially
-so if the node in question is a validator**, as the CometBFT RPC does not
-currently cater for advanced security features. Exposing one's RPC publicly
-without appropriate protection can make the associated node vulnerable to a
-variety of attacks.
+**It is generally not recommended for RPC endpoints to be exposed publicly, and
+especially so if the node in question is a validator**, as the CometBFT RPC does
+not currently provide advanced security features. Public exposure of RPC
+endpoints without appropriate protection can make the associated node vulnerable
+to a variety of attacks.
 
-It is entirely up to operators to ensure, if they do have to expose their RPC
-endpoint, that they have taken appropriate measures to mitigate against attacks.
-Some measures include, but are not limited to:
+It is entirely up to operators to ensure, if nodes' RPC endpoints have to be
+exposed publicly, that appropriate measures have been taken to mitigate against
+attacks. Some examples of mitigation measures include, but are not limited to:
 
-- Never publicly exposing the RPC endpoints of your validator(s) (i.e. if you
-  absolutely have to expose your RPC endpoint, ensure you do so only on full
-  nodes and with appropriate protection)
-- Rate-limiting and authentication (as provided by reverse proxies like
-  [nginx](https://nginx.org/) and/or DDoS protection services like
-  [Cloudflare](https://www.cloudflare.com))
-- Only exposing the specific endpoints necessary for their use cases
-  (configurable via nginx/Cloudflare/etc.)
+- Never publicly exposing the RPC endpoints of a validators (i.e. if the RPC
+  endpoints absolutely have to be exposed, ensure you do so only on full nodes
+  and with appropriate protection)
+- Correct usage of rate-limiting, authentication and caching (e.g. as provided
+  by reverse proxies like [nginx](https://nginx.org/) and/or DDoS protection
+  services like [Cloudflare](https://www.cloudflare.com))
+- Only exposing the specific endpoints absolutely necessary for the relevant use
+  cases (configurable via nginx/Cloudflare/etc.)
 
-If you are unsure as to how to properly secure your node against attacks, or do
-not have access to expertise to assist you in doing so, rather do not expose
-your RPC endpoint at all.
+If no expertise is available to the operator to assist with securing nodes' RPC
+endpoints, it is strongly recommended to never expose those endpoints publicly.
 
 **Under no condition should any of the [unsafe RPC endpoints](../rpc/#/Unsafe)
 ever be exposed publicly.**

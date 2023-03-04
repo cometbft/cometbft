@@ -93,16 +93,16 @@ mechanisms.
 
 ### RPC
 
-#### DoS Exposure and Mitigation
+#### Attack Exposure and Mitigation
 
 **It is generally not recommended to expose one's RPC publicly, and especially
 so if the node in question is a validator**, as the CometBFT RPC does not
 currently cater for advanced security features. Exposing one's RPC publicly
 without appropriate protection can make the associated node vulnerable to a
-variety of DoS attacks.
+variety of attacks.
 
 It is entirely up to operators to ensure that, if they do have to expose their
-RPC endpoint, that they have taken appropriate measures to mitigate such
+RPC endpoint, that they have taken appropriate measures to mitigate against
 attacks. Some measures include, but are not limited to:
 
 - Never publicly exposing the RPC endpoints of your validator(s) (i.e. if you
@@ -126,7 +126,6 @@ ever be exposed publicly.**
 Endpoints returning multiple entries are limited by default to return 30
 elements (100 max). See the [RPC Documentation](https://docs.cometbft.com/main/rpc/)
 for more information.
-
 
 ## Debugging CometBFT
 

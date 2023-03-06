@@ -176,7 +176,7 @@ title: Methods
       Application is expected to persist its state at the end of this call, before calling `ResponseCommit`.
     * Use `ResponseCommit.retain_height` with caution! If all nodes in the network remove historical
       blocks then this data is permanently lost, and no new nodes will be able to join the network and
-      bootstrap. Historical blocks may also be required for other purposes, e.g. auditing, replay of
+      bootstrap, unless state sync is enabled on the chain. Historical blocks may also be required for other purposes, e.g. auditing, replay of
       non-persisted heights, light client verification, and so on.
 
 ### ListSnapshots
@@ -210,9 +210,9 @@ title: Methods
 
 * **Response**:
 
-    | Name  | Type  | Description                                                                                                                                            | Field Number |
-    |-------|-------|--------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
-    | chunk | bytes | The binary chunk contents, in an arbitrary format. Chunk messages cannot be larger than 16 MB _including metadata_, so 10 MB is a good starting point. | 1            |
+    | Name  | Type  | Description                                                                                                                                           | Field Number |
+    |-------|-------|-------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
+    | chunk | bytes | The binary chunk contents, in an arbitray format. Chunk messages cannot be larger than 16 MB _including metadata_, so 10 MB is a good starting point. | 1            |
 
 * **Usage**:
     * Used during state sync to retrieve snapshot chunks from peers.
@@ -364,9 +364,6 @@ title: Methods
     * As a result of executing the prepared proposal, the Application may produce block events or transaction events.
       The Application must keep those events until a block is decided and then pass them on to CometBFT via
       `ResponseFinalizeBlock`.
-<!--
- TODO CHECK THIS 
--->
     * CometBFT does NOT provide any additional validity checks (such as checking for duplicate
       transactions).
       <!--
@@ -692,7 +689,8 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
 * **Usage**:
     * Validator identified by address
-    * Used as part of VoteInfo within CommitInfo <!-- TODO Check where exactly is commitinfo used, seems to be only Prepare/Process proposal -->
+    * Used as part of VoteInfo within `CommitInfo` (used in `ProcessProposal` and `FinalizeBlock`), 
+      and `ExtendedCommitInfo` (used in `PrepareProposal`).
     * Does not include PubKey to avoid sending potentially large quantum pubkeys
     over the ABCI
 

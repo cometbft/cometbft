@@ -121,6 +121,9 @@ type ManifestNode struct {
 
 	// BlockSync specifies the block sync mode: "" (disable), "v0" or "v2".
 	// Defaults to disabled.
+	//
+	// Note that BlockSync will always be enabled in the next major release and the
+	// `block_sync` key will be removed from the config file.
 	BlockSync string `toml:"block_sync"`
 
 	// Mempool specifies which version of mempool to use. Either "v0" or "v1"

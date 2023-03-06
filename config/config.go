@@ -165,6 +165,9 @@ func (cfg *Config) CheckDeprecated() []string {
 	if cfg.Mempool.TTLDuration != 0 {
 		warnings = append(warnings, "prioritized mempool key detected. This key, together with this version of the mempool, will be removed in the next major release.")
 	}
+	if !cfg.BaseConfig.BlockSyncMode {
+		warnings = append(warnings, "disabled block_sync key detected. BlockSync will be enabled unconditionally in the next major release and this key will be removed.")
+	}
 	if cfg.DeprecatedFastSyncConfig != nil {
 		warnings = append(warnings, "[fastsync] table detected. This section has been renamed to [blocksync]. The values in this deprecated section will be disregarded.")
 	}
@@ -196,6 +199,7 @@ type BaseConfig struct { //nolint: maligned
 	// If this node is many blocks behind the tip of the chain, Blocksync
 	// allows them to catchup quickly by downloading blocks in parallel
 	// and verifying their commits
+	// Deprecated: BlockSync will be enabled unconditionally in the next major release.
 	BlockSyncMode bool `mapstructure:"block_sync"`
 
 	//TODO(williambanfield): remove this field once v0.37 is released.

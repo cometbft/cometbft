@@ -6,7 +6,9 @@
 
 This is the first CometBFT release with ABCI 1.0, which introduces the
 `PrepareProposal` and `ProcessProposal` methods, with the aim of expanding the
-range of use cases that application developers can address. See the
+range of use cases that application developers can address. This is the first
+change to ABCI towards ABCI++, and the full range of ABCI++ functionality will
+only become available in the next major release with ABCI 2.0. See the
 [specification](./spec/abci/) for more details.
 
 In the v0.34.27 release, the CometBFT Go module is still

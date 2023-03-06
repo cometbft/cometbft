@@ -23,15 +23,18 @@ returns via `ResponsePrepareProposal` to CometBFT, also known as the prepared pr
 
 Process *p*'s prepared proposal can differ in two different rounds where *p* is the proposer.
 
-* Requirement 1 [`PrepareProposal`, timeliness]: If *p*'s Application fully executes prepared blocks in
-  `PrepareProposal` and the network is in a synchronous period while processes *p* and *q* are in *r<sub>p</sub>*,
+* Requirement 1 [`PrepareProposal`, timeliness]: If the network is in a synchronous period while processes 
+  *p* and *q* are in *r<sub>p</sub>*,
   then the value of *TimeoutPropose* at *q* must be such that *q*'s propose timer does not time out
   (which would result in *q* prevoting `nil` in *r<sub>p</sub>*).
 
-Full execution of blocks at `PrepareProposal` time stands on CometBFT's critical path. Thus,
+`PrepareProposal` stands on CometBFT's critical path. Thus,
 Requirement 1 ensures the Application or operator will set a value for `TimeoutPropose` such that the time it takes
-to fully execute blocks in `PrepareProposal` does not interfere with CometBFT's propose timer.
-Note that violation of Requirement 1 may just lead to further rounds, but will not compromise liveness.
+to fully execute `PrepareProposal` does not interfere with CometBFT's propose timer.
+Note that violation of Requirement 1 may just lead to further rounds, but will not compromise correctness.
+
+Requirement 1 is particularly important if *p*'s Application fully executes prepared blocks in `PrepareProposal`
+as a form of optimistic execution.
 
 * Requirement 2 [`PrepareProposal`, tx-size]: When *p*'s Application calls `ResponsePrepareProposal`, the
   total size in bytes of the transactions returned does not exceed `RequestPrepareProposal.max_tx_bytes`.
@@ -81,8 +84,6 @@ of `ProcessProposal`. As a general rule `ProcessProposal` SHOULD always accept t
 According to the Tendermint consensus algorithm, currently adopted in CometBFT,
 a correct process can broadcast at most one precommit
 message in round *r*, height *h*.
-
-<!-- 
 Since, as stated in the [Methods](./abci++_methods.md#extendvote) section, `ResponseExtendVote`
 is only called when the consensus algorithm
 is about to broadcast a non-`nil` precommit message, a correct process can only produce one vote extension
@@ -90,10 +91,8 @@ in round *r*, height *h*.
 Let *e<sup>r</sup><sub>p</sub>* be the vote extension that the Application of a correct process *p* returns via
 `ResponseExtendVote` in round *r*, height *h*.
 Let *w<sup>r</sup><sub>p</sub>* be the proposed block that *p*'s CometBFT passes to the Application via `RequestExtendVote`
-in round *r*, height *h*. 
--->
+in round *r*, height *h*.
 
-<!--
 * Requirement 6 [`ExtendVote`, `VerifyVoteExtension`, coherence]: For any two different correct
   processes *p* and *q*, if *q* receives *e<sup>r</sup><sub>p</sub>* from *p* in height *h*, *q*'s
   Application returns Accept in `ResponseVerifyVoteExtension`.
@@ -114,7 +113,7 @@ extensions will be discarded.
 
 * Requirement 8 [`VerifyVoteExtension`, determinism-2]: For any two correct processes *p* and *q*,
   and any arbitrary vote extension *e*, and any arbitrary block *w*,
-  if *p*'s (resp. *q*'s) CometBFT calls `RequestVerifyVoteExtension` on *e* and *w* at height *h*,
+  if both *p* and *q*'s CometBFT calls `RequestVerifyVoteExtension` on *e* and *w* at height *h*,
   then *p*'s Application accepts *e* if and only if *q*'s Application accepts *e*.
   Note that this requirement follows from Requirement 7 and the Agreement property of consensus.
 
@@ -127,49 +126,42 @@ Requirements 7 and 8 can be violated by a bug inducing non-determinism in
 Extra care should be put in the implementation of `ExtendVote` and `VerifyVoteExtension`.
 As a general rule, `VerifyVoteExtension` SHOULD always accept the vote extension.
 
--->
 * Requirement 9 [*all*, no-side-effects]: *p*'s calls to `RequestPrepareProposal`,
-  `RequestProcessProposal`,
-  <!--
-
-  `RequestExtendVote`, and `RequestVerifyVoteExtension` 
-  -->
-  at height *h* do
+  `RequestProcessProposal`, `RequestExtendVote`, and `RequestVerifyVoteExtension` at height *h* do
   not modify *s<sub>p,h-1</sub>*.
 
-<!-- 
+
 * Requirement 10 [`ExtendVote`, `FinalizeBlock`, non-dependency]: for any correct process *p*,
 and any vote extension *e* that *p* received at height *h*, the computation of
 *s<sub>p,h</sub>* does not depend on *e*.
--->
-The call to correct process *p*'s `BeginBlock - DeliverTx - EndBlock` sequence at height *h*, with block *v<sub>p,h</sub>*
-passed as parameter, creates state *s<sub>p,h</sub>*.
-Additionally, *p*'s `DeliverTx` on transactions creates a set of transaction results *T<sub>p,h</sub>*.
 
-* Requirement 11 [`BeginBlock - DeliverTx - EndBlock`, determinism-1]: For any correct process *p*,
+The call of correct process *p* to `RequestFinalizeBlock` at height *h*, with block *v<sub>p,h</sub>*
+passed as parameter, creates state *s<sub>p,h</sub>*.
+Additionally, *p*'s `FinalizeBlock` creates a set of transaction results *T<sub>p,h</sub>*.
+
+* Requirement 11 [`FinalizeBlock`, determinism-1]: For any correct process *p*,
   *s<sub>p,h</sub>* exclusively depends on *s<sub>p,h-1</sub>* and *v<sub>p,h</sub>*.
 
-* Requirement 12 [`BeginBlock - DeliverTx - EndBlock`, determinism-2]: For any correct process *p*,
+* Requirement 12 [`FinalizeBlock`, determinism-2]: For any correct process *p*,
   the contents of *T<sub>p,h</sub>* exclusively depend on *s<sub>p,h-1</sub>* and *v<sub>p,h</sub>*.
 
 Note that Requirements 11 and 12, combined with the Agreement property of consensus ensure
 state machine replication, i.e., the Application state evolves consistently at all correct processes.
 
-Finally, notice that `PrepareProposal` <!-- nor `ExtendVote` --> has determinism-related
+Finally, notice that neither `PrepareProposal` nor `ExtendVote` have determinism-related
 requirements associated.
 Indeed, `PrepareProposal` is not required to be deterministic:
 
 * *u<sub>p</sub>* may depend on *v<sub>p</sub>* and *s<sub>p,h-1</sub>*, but may also depend on other values or operations.
 * *v<sub>p</sub> = v<sub>q</sub> &#8655; u<sub>p</sub> = u<sub>q</sub>*.
 
-<!--
 Likewise, `ExtendVote` can also be non-deterministic:
 
 * *e<sup>r</sup><sub>p</sub>* may depend on *w<sup>r</sup><sub>p</sub>* and *s<sub>p,h-1</sub>*,
   but may also depend on other values or operations.
 * *w<sup>r</sup><sub>p</sub> = w<sup>r</sup><sub>q</sub> &#8655;
   e<sup>r</sup><sub>p</sub> = e<sup>r</sup><sub>q</sub>*
--->
+
 ## Managing the Application state and related topics
 
 ### Connection State
@@ -212,37 +204,37 @@ Nevertheless, as all ABCI calls are now synchronous, ABCI messages using the sam
 still received in sequence.
  -->
 
-#### BeginBlock - DeliverTx - EndBlock
+#### FinalizeBlock
 
-When the consensus algorithm decides on a block, CometBFT uses the sequence of calls to
-`BeginBlock`, `DeliverTx` and `EndBlock` to send the
-decided block's data to the Application, which uses it to transition its state.
+When the consensus algorithm decides on a block, CometBFT uses `FinalizeBlock` to send the
+decided block's data to the Application, which uses it to transition its state, but not persist it;
+persisting will be done during `Commit`.
 
-The sequence of `DeliverTx` calls is asynchronous but all those calls are enclosed by calls to `BeginBlock` and `EndBlock` which are synchronous.
+#### Commit
+
+After the Application returns from `FinalizeBlock` and before invoking `Commit`, 
+CometBFT locks the mempool and flushes the mempool connection. This ensures that
+no new messages
+will be received on the mempool connection during `Commit`, providing an opportunity to safely
+update all four
+connection states to the latest committed state at the same time.
+When `Commit` returns, CometBFT unlocks the mempool.
+
+The Application should persist its state during `Commit`, before returning from it.
 
 The Application must remember the latest height from which it
 has run a successful `Commit` so that it can tell CometBFT where to
 pick up from when it recovers from a crash. See information on the Handshake
 [here](#crash-recovery).
 
-#### Commit
 
-The Application should persist its state during `Commit`, before returning from it.
-
-Before invoking `Commit`, CometBFT locks the mempool and flushes the mempool connection. This ensures that
-no new messages
-will be received on the mempool connection during this processing step, providing an opportunity to safely
-update all four
-connection states to the latest committed state at the same time.
-
-When `Commit` returns, CometBFT unlocks the mempool.
-
-WARNING: if the ABCI app logic processing the `Commit` message sends a
-`/broadcast_tx_sync` or `/broadcast_tx` and waits for the response
-before proceeding, it will deadlock. Executing `broadcast_tx` calls
-involves acquiring the mempool lock that CometBFT holds during the `Commit` call.
-Synchronous mempool-related calls must be avoided as part of the sequential logic of the
-`Commit` function.
+> **Warning**    
+> if the ABCI app logic processing the `Commit` message sends a
+   `/broadcast_tx_sync` or `/broadcast_tx` and waits for the response
+   before proceeding, it will deadlock. Executing `broadcast_tx` calls
+   involves acquiring the mempool lock that CometBFT holds during the `Commit` call.
+   Synchronous mempool-related calls must be avoided as part of the sequential logic of the
+   `Commit` function.
 
 #### Candidate States
 
@@ -266,17 +258,17 @@ or `ProcessProposal`). There are two main reasons why the Application may want t
   In order to be sure that the block does not contain *any* invalid transaction, there may be
   no way other than fully executing the transactions in the block as though it was the *decided*
   block.
-* *Quick `BeginBlock-DeliverTx-EndBlock` execution*.
-  Upon reception of the decided block via `BeginBlock`, if that same block was executed
+* *Quick `FinalizeBlock` execution*.
+  Upon reception of the decided block via `FinalizeBlock`, if that same block was executed
   upon `PrepareProposal` or `ProcessProposal` and the resulting state was kept in memory, the
   Application can simply apply that state (faster) to the main state, rather than reexecuting
   the decided block (slower).
 
 `PrepareProposal`/`ProcessProposal` can be called many times for a given height. Moreover,
 it is not possible to accurately predict which of the blocks proposed in a height will be decided,
-being delivered to the Application in that height's block execution calls.
+being delivered to the Application in that height's `FinalizeBlock`.
 Therefore, the state resulting from executing a proposed block, denoted a *candidate state*, should
-be kept in memory as a possible final state for that height. When the block execution functions are called, the Application should
+be kept in memory as a possible final state for that height. When `FinalizeBlock` is called, the Application should
 check if the decided block corresponds to one of its candidate states; if so, it will apply it as
 its *ExecuteTxState* (see [Consensus Connection](#consensus-connection) below),
 which will be persisted during the upcoming `Commit` call.
@@ -286,18 +278,18 @@ In this case, potentially many proposed blocks will be disclosed to the Applicat
 By the nature of Tendermint consensus algorithm, currently adopted in CometBFT, the number of proposed blocks received by the Application
 for a particular height cannot be bound, so Application developers must act with care and use mechanisms
 to bound memory usage. As a general rule, the Application should be ready to discard candidate states
-before block execution, even if one of them might end up corresponding to the
-decided block and thus have to be reexecuted upon `BeginBlock-DeliverTx-EndBlock`.
+before `FinalizeBlock`, even if one of them might end up corresponding to the
+decided block and thus have to be reexecuted upon `FinalizeBlock`.
 
 ### States and ABCI++ Connections
 
 #### Consensus Connection
 
 The Consensus Connection should maintain an *ExecuteTxState* &mdash; the working state
-for block execution. It should be updated by the calls to the block execution functions
+for block execution. It should be updated by the call to `FinalizeBlock`
 during block execution and committed to disk as the "latest
 committed state" during `Commit`. Execution of a proposed block (via `PrepareProposal`/`ProcessProposal`)
-**must not** update the *ExecuteTxState*, but rather be kept as a separate candidate state until `BeginBlock-DeliverTx-EndBlock`
+**must not** update the *ExecuteTxState*, but rather be kept as a separate candidate state until `FinalizeBlock`
 confirms which of the candidate states (if any) can be used to update *ExecuteTxState*.
 
 #### Mempool Connection
@@ -367,13 +359,12 @@ For more information, see Section [State Sync](#state-sync).
 
 ### Transaction Results
 
-For each transaction within a block, the Application is expected to return a result within
-[`ResponseDeliverTx`](./abci%2B%2B_methods.md#delivertx).
-<!--
-The list of transactions executed must respect the same order as the list of transactions delivered via
-subsequent calls to [`RequestDeliverTx`](./abci%2B%2B_methods.md#delivertx). 
--->
-This section discusses the fields inside `ResponseDeliverTx` along with the fields in
+The Application is expected to return a list of
+[`ExecTxResult`](./abci%2B%2B_methods.md#exectxresult) in
+[`ResponseFinalizeBlock`](./abci%2B%2B_methods.md#finalizeblock). The list of transaction
+results must respect the same order as the list of transactions delivered via
+[`RequestFinalizeBlock`](./abci%2B%2B_methods.md#finalizeblock).
+This section discusses the fields inside this structure, along with the fields in
 [`ResponseCheckTx`](./abci%2B%2B_methods.md#checktx),
 whose semantics are similar.
 
@@ -444,15 +435,14 @@ From v0.34.x on, there is a `Priority` field in `ResponseCheckTx` that can be
 used to explicitly prioritize transactions in the mempool for inclusion in a block
 proposal.
 
-#### Specifics of `ResponseDeliverTx`
+#### Specifics of `ExecTxResult`
 
-The `BeginBlock-DeliverTx-EndBlock` sequence is the workhorse of the blockchain.
-A sequence of `DeliverTx` calls delivers the decided block,
-one transaction at a time, to the Application.
+`FinalizeBlock` is the workhorse of the blockchain. CometBFT delivers the decided block,
+including the list of all its transactions synchronously to the Application.
 The block delivered (and thus the transaction order) is the same at all correct nodes as guaranteed
 by the Agreement property of consensus.
 
-The `Data` field contains an array of bytes with the transaction result.
+The `Data` field in `ExecTxResult` contains an array of bytes with the transaction result.
 It must be deterministic (i.e., the same value must be returned at all nodes), but it can contain arbitrary
 data. Likewise, the value of `Code` must be deterministic.
 If `Code != 0`, the transaction will be marked invalid,
@@ -470,7 +460,7 @@ events took place during their execution.
 
 The application may set the validator set during
 [`InitChain`](./abci%2B%2B_methods.md#initchain), and may update it during
-[`EndBlock`](./abci%2B%2B_methods.md#endblock). In both cases, a structure of type
+[`FinalizeBlock`](./abci%2B%2B_methods.md#finalizeblock). In both cases, a structure of type
 [`ValidatorUpdate`](./abci%2B%2B_methods.md#validatorupdate) is returned.
 
 The `InitChain` method, used to initialize the Application, can return a list of validators.
@@ -514,7 +504,7 @@ They enforce certain limits in the blockchain, like the maximum size
 of blocks, amount of gas used in a block, and the maximum acceptable age of
 evidence. They can be set in
 [`InitChain`](./abci%2B%2B_methods.md#initchain), and updated in
-[`EndBlock`](./abci%2B%2B_methods.md#endblock).
+[`FinalizeBlock`](./abci%2B%2B_methods.md#finalizeblock).
 These parameters are deterministically set and/or updated by the Application, so
 all full nodes have the same value at a given height.
 
@@ -623,7 +613,7 @@ This parameter is part of the
 
 ##### TimeoutParams.Propose
 
-Timeout in ms of the propose step of Tendermint consensus algorithm.
+Timeout in ms of the propose step of the consensus algorithm.
 This value is the initial timeout at every height (round 0).
 
 The value in subsequent rounds is modified by parameter `ProposeDelta`.
@@ -636,14 +626,14 @@ current height and round before this timeout, the node will issue a
 
 ##### TimeoutParams.ProposeDelta
 
-Increment in ms to be added to the `Propose` timeout every time Tendermint
+Increment in ms to be added to the `Propose` timeout every time the
 consensus algorithm advances one round in a given height.
 
 When a new height is started, the `Propose` timeout value is reset.
 
 ##### TimeoutParams.Vote
 
-Timeout in ms of the prevote and precommit steps of Tendermint consensus
+Timeout in ms of the prevote and precommit steps of the consensus
 algorithm.
 This value is the initial timeout at every height (round 0).
 
@@ -659,14 +649,14 @@ to the next step immediately.
 
 ##### TimeoutParams.VoteDelta
 
-Increment in ms to be added to the `Vote` timeout every time Tendermint
+Increment in ms to be added to the `Vote` timeout every time the
 consensus algorithm advances one round in a given height.
 
 When a new height is started, the `Vote` timeout value is reset.
 
 ##### TimeoutParams.Commit
 
-This configures how long Tendermint consensus algorithm will wait after receiving a quorum of
+This configures how long the consensus algorithm will wait after receiving a quorum of
 precommits before beginning consensus for the next height. This can be
 used to allow slow precommits to arrive for inclusion in the next height
 before progressing.
@@ -678,7 +668,7 @@ node has received all precommits for a block, forgoing the remaining commit time
 Setting this parameter to `false` (the default) causes Tendermint to wait
 for the full commit timeout configured in `TimeoutParams.Commit`.
 -->
-<!--
+
 ##### ABCIParams.VoteExtensionsEnableHeight
 
 This parameter is either 0 or a positive height at which vote extensions
@@ -697,13 +687,13 @@ include the vote extensions from height `H`. For all heights after `H`
 
 Must always be set to a future height. Once set to a value different from
 0, its value must not be changed.
--->
+
 #### Updating Consensus Parameters
 
 The application may set the `ConsensusParams` during
 [`InitChain`](./abci%2B%2B_methods.md#initchain),
 and update them during
-[`EndBlock`](./abci%2B%2B_methods.md#endblock).
+[`FinalizeBlock`](./abci%2B%2B_methods.md#finalizeblock).
 If the `ConsensusParams` is empty, it will be ignored. Each field
 that is not empty will be applied in full. For instance, if updating the
 `Block.MaxBytes`, applications must also set the other `Block` fields (like
@@ -718,9 +708,9 @@ file. If `ConsensusParams` is not `nil`, CometBFT will use it.
 This way the application can determine the initial consensus parameters for the
 blockchain.
 
-##### `EndBlock`, `PrepareProposal`/`ProcessProposal`
+##### `FinalizeBlock`, `PrepareProposal`/`ProcessProposal`
 
-`ResponseEndBlock` accepts a `ConsensusParams` parameter.
+`ResponseFinalizeBlock` accepts a `ConsensusParams` parameter.
 If `ConsensusParams` is `nil`, CometBFT will do nothing.
 If `ConsensusParams` is not `nil`, CometBFT will use it.
 This way the application can update the consensus parameters over time.
@@ -764,7 +754,7 @@ ABCI applications can take advantage of more efficient light-client proofs for
 their state as follows:
 
 * return the Merkle root of the deterministic application state in
-  `Commit.Data`. This Merkle root will be included as the `AppHash` in the next block.
+  `ResponseFinalizeBlock.Data`. This Merkle root will be included as the `AppHash` in the next block.
 * return efficient Merkle proofs about that application state in `ResponseQuery.Proof`
   that can be verified using the `AppHash` of the corresponding block.
 

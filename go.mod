@@ -23,7 +23,7 @@ require (
 	github.com/pointlander/peg v1.0.1
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/client_model v0.3.0
-	github.com/prometheus/common v0.40.0
+	github.com/prometheus/common v0.41.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rs/cors v1.8.3
 	github.com/sasha-s/go-deadlock v0.3.1
@@ -51,7 +51,7 @@ require (
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
-	github.com/vektra/mockery/v2 v2.20.2
+	github.com/vektra/mockery/v2 v2.21.1
 	golang.org/x/sync v0.1.0
 	gonum.org/v1/gonum v0.12.0
 	google.golang.org/protobuf v1.28.2-0.20230222093303-bc1253ad3743
@@ -169,9 +169,9 @@ require (
 	github.com/jdxcode/netrc v0.0.0-20221124155335-4616370d1a84 // indirect
 	github.com/jgautheron/goconst v1.5.1 // indirect
 	github.com/jingyugao/rowserrcheck v1.1.1 // indirect
+	github.com/jinzhu/copier v0.3.5 // indirect
 	github.com/jirfag/go-printf-func-name v0.0.0-20200119135958-7558a9eaa5af // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
-	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/julz/importas v0.1.0 // indirect
 	github.com/junk1tm/musttag v0.4.5 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
@@ -200,8 +200,6 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/moby/term v0.0.0-20221205130635-1aeaba878587 // indirect
-	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/moricho/tparallel v0.2.1 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/nakabonne/nestif v0.3.1 // indirect
@@ -227,7 +225,7 @@ require (
 	github.com/quasilyte/gogrep v0.5.0 // indirect
 	github.com/quasilyte/regex/syntax v0.0.0-20200407221936-30656e2c4a95 // indirect
 	github.com/quasilyte/stdinfo v0.0.0-20220114132959-f7386bf02567 // indirect
-	github.com/rs/zerolog v1.27.0 // indirect
+	github.com/rs/zerolog v1.29.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/ryancurrah/gomodguard v1.3.0 // indirect
 	github.com/ryanrolds/sqlclosecheck v0.4.0 // indirect

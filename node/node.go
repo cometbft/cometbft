@@ -222,7 +222,7 @@ func NewNode(config *cfg.Config,
 
 	// Determine whether we should do block sync. This must happen after the handshake, since the
 	// app may modify the validator set, specifying ourself as the only validator.
-	blockSync := config.BlockSyncMode && !onlyValidatorIsUs(state, pubKey)
+	blockSync := !onlyValidatorIsUs(state, pubKey)
 
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
 
@@ -426,7 +426,7 @@ func (n *Node) OnStart() error {
 			return fmt.Errorf("this blocksync reactor does not support switching from state sync")
 		}
 		err := startStateSync(n.stateSyncReactor, bcR, n.consensusReactor, n.stateSyncProvider,
-			n.config.StateSync, n.config.BlockSyncMode, n.stateStore, n.blockStore, n.stateSyncGenesis)
+			n.config.StateSync, n.stateStore, n.blockStore, n.stateSyncGenesis)
 		if err != nil {
 			return fmt.Errorf("failed to start state sync: %w", err)
 		}

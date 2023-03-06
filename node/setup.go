@@ -279,7 +279,7 @@ func createBlocksyncReactor(config *cfg.Config,
 	case "v1", "v2":
 		return nil, fmt.Errorf("block sync version %s has been deprecated. Please use v0", config.BlockSync.Version)
 	default:
-		return nil, fmt.Errorf("unknown fastsync version %s", config.BlockSync.Version)
+		return nil, fmt.Errorf("unknown block sync version %s", config.BlockSync.Version)
 	}
 
 	bcReactor.SetLogger(logger.With("module", "blocksync"))
@@ -470,7 +470,7 @@ func createPEXReactorAndAddToSwitch(addrBook pex.AddrBook, config *cfg.Config,
 
 // startStateSync starts an asynchronous state sync process, then switches to block sync mode.
 func startStateSync(ssR *statesync.Reactor, bcR blockSyncReactor, conR *cs.Reactor,
-	stateProvider statesync.StateProvider, config *cfg.StateSyncConfig, blockSync bool,
+	stateProvider statesync.StateProvider, config *cfg.StateSyncConfig,
 	stateStore sm.Store, blockStore *store.BlockStore, state sm.State,
 ) error {
 	ssR.Logger.Info("Starting state sync")
@@ -509,14 +509,10 @@ func startStateSync(ssR *statesync.Reactor, bcR blockSyncReactor, conR *cs.React
 			return
 		}
 
-		if blockSync {
-			err = bcR.SwitchToBlockSync(state)
-			if err != nil {
-				ssR.Logger.Error("Failed to switch to block sync", "err", err)
-				return
-			}
-		} else {
-			conR.SwitchToConsensus(state, true)
+		err = bcR.SwitchToBlockSync(state)
+		if err != nil {
+			ssR.Logger.Error("Failed to switch to block sync", "err", err)
+			return
 		}
 	}()
 	return nil

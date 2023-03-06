@@ -29,7 +29,7 @@ title: Overview and basic concepts
 [&#8593; Back to Outline](#outline)
 
 The Application's main role is to execute blocks decided (a.k.a. finalized) by consensus. The
-decided blocks are the consensus's main ouput to the (replicated) Application. With ABCI, the
+decided blocks are the consensus's main output to the (replicated) Application. With ABCI, the
 application only interacts with consensus at *decision* time. This restricted mode of interaction
 prevents numerous features for the Application, including many scalability improvements that are
 now better understood than when ABCI was first written. For example, many ideas proposed to improve
@@ -41,14 +41,14 @@ finalized blocks. This includes features such as threshold cryptography, and gua
 connection attempts.
 
 ABCI++ addresses these limitations by allowing the application to intervene at three key places of
-consensus execution: (a) at the moment a new proposal is to be created and (b) at the moment a
+consensus execution: (a) at the moment a new proposal is to be created, (b) at the moment a
 proposal is to be validated, and (c) at the moment a (precommit) vote is sent/received. 
 The new interface allows block proposers to perform application-dependent
 work in a block through the `PrepareProposal` method (a); and validators to perform application-dependent work
 and checks in a proposed block through the `ProcessProposal` method (b); and applications to require their validators 
-do more than just validate blocks through the `ExtendVote` and `VerifyVoteExtensions` methods (c). 
+to do more than just validate blocks through the `ExtendVote` and `VerifyVoteExtensions` methods (c). 
 
-Furthermore, ABCI++ coalesces {`BeginBlock`, [`DeliverTx`], `EndBlock`} into `FinalizeBlock`, as a
+Furthermore, ABCI 2.0 coalesces {`BeginBlock`, [`DeliverTx`], `EndBlock`} into `FinalizeBlock`, as a
 simplified, efficient way to deliver a decided block to the Application.
 
 ## Method overview

@@ -23,18 +23,18 @@ returns via `ResponsePrepareProposal` to CometBFT, also known as the prepared pr
 
 Process *p*'s prepared proposal can differ in two different rounds where *p* is the proposer.
 
-* Requirement 1 [`PrepareProposal`, timeliness]: If the network is in a synchronous period while processes 
-  *p* and *q* are in *r<sub>p</sub>*,
+* Requirement 1 [`PrepareProposal`, timeliness]: If *p*'s Application fully executes prepared blocks in
+  `PrepareProposal` and the network is in a synchronous period while processes *p* and *q* are in *r<sub>p</sub>*,
   then the value of *TimeoutPropose* at *q* must be such that *q*'s propose timer does not time out
   (which would result in *q* prevoting `nil` in *r<sub>p</sub>*).
 
-`PrepareProposal` stands on CometBFT's critical path. Thus,
+Full execution of blocks at `PrepareProposal` time stands on CometBFT's critical path. Thus,
 Requirement 1 ensures the Application or operator will set a value for `TimeoutPropose` such that the time it takes
-to fully execute `PrepareProposal` does not interfere with CometBFT's propose timer.
-Note that violation of Requirement 1 may just lead to further rounds, but will not compromise correctness.
-
-Requirement 1 is particularly important if *p*'s Application fully executes prepared blocks in `PrepareProposal`
-as a form of optimistic execution.
+to fully execute blocks in `PrepareProposal` does not interfere with CometBFT's propose timer.
+Note that the violation of Requirement 1 may lead to further rounds, but will not 
+compromise liveness because even though `TimeoutPropose` is used as the initial
+value for proposal timeouts, CometBFT will be dynamically adjust these timeouts
+such that they will eventually be enough for completing `PrepareProposal`.
 
 * Requirement 2 [`PrepareProposal`, tx-size]: When *p*'s Application calls `ResponsePrepareProposal`, the
   total size in bytes of the transactions returned does not exceed `RequestPrepareProposal.max_tx_bytes`.
@@ -113,7 +113,7 @@ extensions will be discarded.
 
 * Requirement 8 [`VerifyVoteExtension`, determinism-2]: For any two correct processes *p* and *q*,
   and any arbitrary vote extension *e*, and any arbitrary block *w*,
-  if both *p* and *q*'s CometBFT calls `RequestVerifyVoteExtension` on *e* and *w* at height *h*,
+  if *p*'s (resp. *q*'s) CometBFT calls `RequestVerifyVoteExtension` on *e* and *w* at height *h*,
   then *p*'s Application accepts *e* if and only if *q*'s Application accepts *e*.
   Note that this requirement follows from Requirement 7 and the Agreement property of consensus.
 
@@ -135,7 +135,7 @@ As a general rule, `VerifyVoteExtension` SHOULD always accept the vote extension
 and any vote extension *e* that *p* received at height *h*, the computation of
 *s<sub>p,h</sub>* does not depend on *e*.
 
-The call of correct process *p* to `RequestFinalizeBlock` at height *h*, with block *v<sub>p,h</sub>*
+The call to correct process *p*'s `RequestFinalizeBlock` at height *h*, with block *v<sub>p,h</sub>*
 passed as parameter, creates state *s<sub>p,h</sub>*.
 Additionally, *p*'s `FinalizeBlock` creates a set of transaction results *T<sub>p,h</sub>*.
 
@@ -207,34 +207,32 @@ still received in sequence.
 #### FinalizeBlock
 
 When the consensus algorithm decides on a block, CometBFT uses `FinalizeBlock` to send the
-decided block's data to the Application, which uses it to transition its state, but not persist it;
-persisting will be done during `Commit`.
-
-#### Commit
-
-After the Application returns from `FinalizeBlock` and before invoking `Commit`, 
-CometBFT locks the mempool and flushes the mempool connection. This ensures that
-no new messages
-will be received on the mempool connection during `Commit`, providing an opportunity to safely
-update all four
-connection states to the latest committed state at the same time.
-When `Commit` returns, CometBFT unlocks the mempool.
-
-The Application should persist its state during `Commit`, before returning from it.
+decided block's data to the Application, which uses it to transition its state, but MUST NOT persist it;
+persisting MUST be done during `Commit`.
 
 The Application must remember the latest height from which it
 has run a successful `Commit` so that it can tell CometBFT where to
 pick up from when it recovers from a crash. See information on the Handshake
 [here](#crash-recovery).
 
+#### Commit
 
-> **Warning**    
-> if the ABCI app logic processing the `Commit` message sends a
-   `/broadcast_tx_sync` or `/broadcast_tx` and waits for the response
-   before proceeding, it will deadlock. Executing `broadcast_tx` calls
-   involves acquiring the mempool lock that CometBFT holds during the `Commit` call.
-   Synchronous mempool-related calls must be avoided as part of the sequential logic of the
-   `Commit` function.
+The Application should persist its state during `Commit`, before returning from it.
+
+Before invoking `Commit`, CometBFT locks the mempool and flushes the mempool connection. This ensures that
+no new messages
+will be received on the mempool connection during this processing step, providing an opportunity to safely
+update all four
+connection states to the latest committed state at the same time.
+
+When `Commit` returns, CometBFT unlocks the mempool.
+
+WARNING: if the ABCI app logic processing the `Commit` message sends a
+`/broadcast_tx_sync` or `/broadcast_tx` and waits for the response
+before proceeding, it will deadlock. Executing `broadcast_tx` calls
+involves acquiring the mempool lock that CometBFT holds during the `Commit` call.
+Synchronous mempool-related calls must be avoided as part of the sequential logic of the
+`Commit` function.
 
 #### Candidate States
 
@@ -317,7 +315,7 @@ Finally, after re-checking transactions in the mempool, CometBFT will unlock
 the mempool connection. New transactions are once again able to be processed through `CheckTx`.
 
 Note that `CheckTx` is just a weak filter to keep invalid transactions out of the mempool and,
-utimately, ouf of the blockchain.
+ultimately, ouf of the blockchain.
 Since the transaction cannot be guaranteed to be checked against the exact same state as it
 will be executed as part of a (potential) decided block, `CheckTx` shouldn't check *everything*
 that affects the transaction's validity, in particular those checks whose validity may depend on
@@ -353,7 +351,7 @@ after the full block has been processed and the state committed to disk.
 
 The Snapshot Connection is used to serve state sync snapshots for other nodes
 and/or restore state sync snapshots to a local node being bootstrapped.
-Snapshop management is optional: an Application may choose not to implement it.
+Snapshot management is optional: an Application may choose not to implement it.
 
 For more information, see Section [State Sync](#state-sync).
 
@@ -362,7 +360,7 @@ For more information, see Section [State Sync](#state-sync).
 The Application is expected to return a list of
 [`ExecTxResult`](./abci%2B%2B_methods.md#exectxresult) in
 [`ResponseFinalizeBlock`](./abci%2B%2B_methods.md#finalizeblock). The list of transaction
-results must respect the same order as the list of transactions delivered via
+results MUST respect the same order as the list of transactions delivered via
 [`RequestFinalizeBlock`](./abci%2B%2B_methods.md#finalizeblock).
 This section discusses the fields inside this structure, along with the fields in
 [`ResponseCheckTx`](./abci%2B%2B_methods.md#checktx),
@@ -643,7 +641,7 @@ parameter.
 
 The `Vote` timeout does not begin until a quorum of votes has been received.
 Once a quorum of votes has been seen and this timeout elapses, Tendermint will
-procced to the next step of the consensus algorithm. If Tendermint receives
+proceed to the next step of the consensus algorithm. If Tendermint receives
 all of the remaining votes before the end of the timeout, it will proceed
 to the next step immediately.
 
@@ -682,7 +680,7 @@ include the vote extensions from height `H`. For all heights after `H`
 
 * vote extensions cannot be disabled,
 * they are mandatory: all precommit messages sent MUST have an extension
-  attached. Nevetheless, the application MAY provide 0-length
+  attached. Nevertheless, the application MAY provide 0-length
   extensions.
 
 Must always be set to a future height. Once set to a value different from
@@ -812,7 +810,7 @@ implementation of
 
 On startup, CometBFT calls the `Info` method on the Info Connection to get the latest
 committed state of the app. The app MUST return information consistent with the
-last block it succesfully completed `Commit` for. 
+last block it successfully completed `Commit` for. 
 
 The application is expected to persist it's state during the `Commit` method.
 CometBFT and the application are expected to crash together and there should not 
@@ -823,7 +821,7 @@ the application
 should not have persisted and relied on any state between the `Commit` for H - 1 and 
 H. 
 
-If the app succesfully committed block H, then `last_block_height = H` and `last_block_app_hash = <hash returned by Commit for block H>`. If the app
+If the app successfully committed block H, then `last_block_height = H` and `last_block_app_hash = <hash returned by Commit for block H>`. If the app
 failed during the Commit of block H, then `last_block_height = H-1` and
 `last_block_app_hash = <hash returned by Commit for block H-1, which is the hash in the header of block H>`.
 
@@ -834,7 +832,7 @@ the app.
 storeBlockHeight = height of the last block CometBFT saw a commit for
 stateBlockHeight = height of the last block for which CometBFT completed all
     block processing and saved all ABCI results to disk
-appBlockHeight = height of the last block for which ABCI app succesfully
+appBlockHeight = height of the last block for which ABCI app successfully
     completed Commit
 
 ```
@@ -884,7 +882,7 @@ If `appBlockHeight == stateBlockHeight`,
 This happens if we crashed before the app finished Commit
 
 If `appBlockHeight == storeBlockHeight`
-    update the state using the saved ABCI responses but dont run the block against the real app.
+    update the state using the saved ABCI responses but don't run the block against the real app.
 This happens if we crashed after the app finished Commit but before CometBFT saved the state.
 
 ### State Sync

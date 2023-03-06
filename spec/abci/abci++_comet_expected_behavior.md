@@ -56,7 +56,7 @@ consensus-exec      = (inf)consensus-height
 consensus-height    = *consensus-round decide commit
 consensus-round     = proposer / non-proposer
 
-proposer            = *got-vote prepare-proposal *got-vote process-proposal [extend]
+proposer            = *got-vote [prepare-proposal process-proposal] [extend]
 extend              = *got-vote extend-vote *got-vote
 non-proposer        = *got-vote [process-proposal] [extend]
 
@@ -127,7 +127,7 @@ Let us now examine the grammar line by line, providing further details.
 >```
 
 * In recovery mode, CometBFT first calls `Info` to know from which height it needs to replay decisions
-  to the Application. After this, CometBFT enters normal consensus execution .
+  to the Application. After this, CometBFT enters normal consensus execution.
 
 >```abnf
 >recovery            = info consensus-exec
@@ -162,7 +162,7 @@ also delivers to itself.
   of this height.
 
 >```abnf
->proposer            = *got-vote prepare-proposal *got-vote process-proposal [extend]
+>proposer            = *got-vote [prepare-proposal process-proposal] [extend]
 >extend              = *got-vote extend-vote *got-vote
 >```
 
@@ -200,7 +200,7 @@ with as minimal changes as possible. In this case, of course, ABCI++ will not pr
 to the existing implementation, but will keep the same guarantees already provided by ABCI.
 Here is how ABCI++ methods should be implemented.
 
-First of all, all the methods that did not change from ABCI to ABCI++, namely `Echo`, `Flush`, `Info`, `InitChain`,
+First of all, all the methods that did not change from ABCI 0.17.0 to ABCI 2.0, namely `Echo`, `Flush`, `Info`, `InitChain`,
 `Query`, `CheckTx`, `ListSnapshots`, `LoadSnapshotChunk`, `OfferSnapshot`, and `ApplySnapshotChunk`, do not need
 to undergo any changes in their implementation.
 

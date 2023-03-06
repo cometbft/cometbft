@@ -176,7 +176,7 @@ title: Methods
       Application is expected to persist its state at the end of this call, before calling `ResponseCommit`.
     * Use `ResponseCommit.retain_height` with caution! If all nodes in the network remove historical
       blocks then this data is permanently lost, and no new nodes will be able to join the network and
-      bootstrap. Historical blocks may also be required for other purposes, e.g. auditing, replay of
+      bootstrap, unless state sync is enabled on the chain. Historical blocks may also be required for other purposes, e.g. auditing, replay of
       non-persisted heights, light client verification, and so on.
 
 ### ListSnapshots
@@ -210,9 +210,9 @@ title: Methods
 
 * **Response**:
 
-    | Name  | Type  | Description                                                                                                                                            | Field Number |
-    |-------|-------|--------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
-    | chunk | bytes | The binary chunk contents, in an arbitrary format. Chunk messages cannot be larger than 16 MB _including metadata_, so 10 MB is a good starting point. | 1            |
+    | Name  | Type  | Description                                                                                                                                           | Field Number |
+    |-------|-------|-------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
+    | chunk | bytes | The binary chunk contents, in an arbitray format. Chunk messages cannot be larger than 16 MB _including metadata_, so 10 MB is a good starting point. | 1            |
 
 * **Usage**:
     * Used during state sync to retrieve snapshot chunks from peers.
@@ -349,10 +349,10 @@ title: Methods
             transaction `t1` into a second transaction `t2`, i.e., the Application asks CometBFT
             to remove `t1` from the block and add `t2` to the block. If a client wants to eventually check what
             happened to `t1`, it will discover that `t1` is not in a
-            committed block (assuming a _re-CheckTx_ evited it from the mempool), getting the wrong idea that `t1` did not make it into a block. Note
+            committed block (assuming a _re-CheckTx_ evicted it from the mempool), getting the wrong idea that `t1` did not make it into a block. Note
             that `t2` _will be_ in a committed block, but unless the Application tracks this
             information, no component will be aware of it. Thus, if the Application wants
-            traceability, it is its responsability to support it. For instance, the Application
+            traceability, it is its responsibility's to support it. For instance, the Application
             could attach to a transformed transaction a list with the hashes of the transactions it
             derives from.
     * CometBFT MAY include a list of transactions in `RequestPrepareProposal.txs` whose total
@@ -364,9 +364,6 @@ title: Methods
     * As a result of executing the prepared proposal, the Application may produce block events or transaction events.
       The Application must keep those events until a block is decided and then pass them on to CometBFT via
       `ResponseFinalizeBlock`.
-<!--
- TODO CHECK THIS 
--->
     * CometBFT does NOT provide any additional validity checks (such as checking for duplicate
       transactions).
       <!--
@@ -692,7 +689,8 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
 * **Usage**:
     * Validator identified by address
-    * Used as part of VoteInfo within CommitInfo <!-- TODO Check where exactly is commitinfo used, seems to be only Prepare/Process proposal -->
+    * Used as part of VoteInfo within `CommitInfo` (used in `ProcessProposal` and `FinalizeBlock`), 
+      and `ExtendedCommitInfo` (used in `PrepareProposal`).
     * Does not include PubKey to avoid sending potentially large quantum pubkeys
     over the ABCI
 

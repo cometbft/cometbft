@@ -848,6 +848,12 @@ First, some simple start conditions:
 
 If `appBlockHeight == 0`, then call InitChain.
 
+Note that, in case there is a failure to commit the first block and
+a crash occurs,
+upon restart, `InitChain` will be called again. As explained,
+the application should not see this as an issue,  
+as it is expected to crash together with Comet. 
+
 If `storeBlockHeight == 0`, we're done.
 
 Now, some sanity checks:

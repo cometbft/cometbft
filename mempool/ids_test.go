@@ -1,23 +1,42 @@
 package mempool
 
-// import (
-// 	"testing"
+import (
+	"net"
+	"testing"
 
-// 	"github.com/stretchr/testify/require"
-// 	"github.com/cometbft/cometbft/types"
-// )
+	"github.com/cometbft/cometbft/p2p/mock"
+	"github.com/stretchr/testify/assert"
+)
 
-// func TestMempoolIDsBasic(t *testing.T) {
-// 	ids := NewMempoolIDs()
+func TestMempoolIDsBasic(t *testing.T) {
+	ids := newMempoolIDs()
 
-// 	peerID, err := types.NewNodeID("0011223344556677889900112233445566778899")
-// 	require.NoError(t, err)
+	peer := mock.NewPeer(net.IP{127, 0, 0, 1})
 
-// 	ids.ReserveForPeer(peerID)
-// 	require.EqualValues(t, 1, ids.GetForPeer(peerID))
-// 	ids.Reclaim(peerID)
+	ids.ReserveForPeer(peer)
+	assert.EqualValues(t, 1, ids.GetForPeer(peer))
+	ids.Reclaim(peer)
 
-// 	ids.ReserveForPeer(peerID)
-// 	require.EqualValues(t, 2, ids.GetForPeer(peerID))
-// 	ids.Reclaim(peerID)
-// }
+	ids.ReserveForPeer(peer)
+	assert.EqualValues(t, 2, ids.GetForPeer(peer))
+	ids.Reclaim(peer)
+}
+
+func TestMempoolIDsPanicsIfNodeRequestsOvermaxActiveIDs(t *testing.T) {
+	if testing.Short() {
+		return
+	}
+
+	// 0 is already reserved for UnknownPeerID
+	ids := newMempoolIDs()
+
+	for i := 0; i < MaxActiveIDs-1; i++ {
+		peer := mock.NewPeer(net.IP{127, 0, 0, 1})
+		ids.ReserveForPeer(peer)
+	}
+
+	assert.Panics(t, func() {
+		peer := mock.NewPeer(net.IP{127, 0, 0, 1})
+		ids.ReserveForPeer(peer)
+	})
+}

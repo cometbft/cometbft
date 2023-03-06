@@ -1,6 +1,32 @@
 # CHANGELOG
 
-## Unreleased
+## v0.37.0
+
+*March 6, 2023*
+
+This is the first CometBFT release with ABCI 1.0, which introduces the
+`PrepareProposal` and `ProcessProposal` methods, with the aim of expanding the
+range of use cases that application developers can address. This is the first
+change to ABCI towards ABCI++, and the full range of ABCI++ functionality will
+only become available in the next major release with ABCI 2.0. See the
+[specification](./spec/abci/) for more details.
+
+In the v0.34.27 release, the CometBFT Go module is still
+`github.com/tendermint/tendermint` to facilitate ease of upgrading for users,
+but in this release we have changed this to `github.com/cometbft/cometbft`.
+
+Please also see our [upgrading guidelines](./UPGRADING.md) for more details on
+upgrading from the v0.34 release series.
+
+Also see our [QA results](https://docs.cometbft.com/v0.37/qa/v037/cometbft) for
+the v0.37 release.
+
+We'd love your feedback on this release! Please reach out to us via one of our
+communication channels, such as [GitHub
+Discussions](https://github.com/cometbft/cometbft/discussions), with any of your
+questions, comments and/or concerns.
+
+See below for more details.
 
 ### BREAKING CHANGES
 
@@ -16,7 +42,7 @@
   (`uint64`) between ABCI and P2P wire-level protocols
   ([\#5783](https://github.com/tendermint/tendermint/pull/5783))
 - `[abci]` Change the `key` and `value` fields from
-  ``[]`byte` to `string` in the `EventAttribute` type.
+  `[]byte` to `string` in the `EventAttribute` type.
   ([\#6403](https://github.com/tendermint/tendermint/pull/6403))
 - `[abci/counter]` Delete counter example app
   ([\#6684](https://github.com/tendermint/tendermint/pull/6684))
@@ -56,8 +82,14 @@
 
 - `[consensus]` Fixed a busy loop that happened when sending of a block part failed by sleeping in case of error.
   ([\#4](https://github.com/informalsystems/tendermint/pull/4))
-- `[state/kvindexer]` \#77 Fixed the default behaviour of the kvindexer to index and query attributes by events in which they occur. In 0.34.25 this was mitigated by a separated RPC flag.  (@jmalicevic)
-- `[state/kvindexer]` \#382 Resolved crashes when event values contained slashes, introduced after adding event sequences in \#77.  (@jmalicevic)
+- `[state/kvindexer]` Fixed the default behaviour of the kvindexer to index and
+  query attributes by events in which they occur. In 0.34.25 this was mitigated
+  by a separated RPC flag. @jmalicevic
+  ([\#77](https://github.com/cometbft/cometbft/pull/77))
+- `[state/kvindexer]` Resolved crashes when event values contained slashes,
+  introduced after adding event sequences in
+  [\#77](https://github.com/cometbft/cometbft/pull/77). @jmalicevic
+  ([\#382](https://github.com/cometbft/cometbft/pull/382))
 - `[consensus]` ([\#386](https://github.com/cometbft/cometbft/pull/386)) Short-term fix for the case when `needProofBlock` cannot find previous block meta by defaulting to the creation of a new proof block. (@adizere)
   - Special thanks to the [Vega.xyz](https://vega.xyz/) team, and in particular to Zohar (@ze97286), for reporting the problem and working with us to get to a fix.
 - `[docker]` enable cross platform build using docker buildx

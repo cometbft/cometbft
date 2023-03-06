@@ -1,0 +1,32 @@
+syntax = "proto3";
+package cometbft.rpc.grpc;
+option  go_package = "github.com/cometbft/cometbft/rpc/grpc;coregrpc";
+
+import "cometbft/abci/types.proto";
+
+//----------------------------------------
+// Request types
+
+message RequestPing {}
+
+message RequestBroadcastTx {
+  bytes tx = 1;
+}
+
+//----------------------------------------
+// Response types
+
+message ResponsePing {}
+
+message ResponseBroadcastTx {
+  cometbft.abci.ResponseCheckTx check_tx  = 1;
+  cometbft.abci.ExecTxResult    tx_result = 2;
+}
+
+//----------------------------------------
+// Service Definition
+
+service BroadcastAPI {
+  rpc Ping(RequestPing) returns (ResponsePing);
+  rpc BroadcastTx(RequestBroadcastTx) returns (ResponseBroadcastTx);
+}

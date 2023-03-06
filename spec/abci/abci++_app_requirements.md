@@ -820,7 +820,7 @@ exist a scenario where the application has persisted state that CometBFT has not
 
 In other words, if `Commit` for a block H has not been executed and CometBFT crashed,
 the application
-should not persist and rely on any state stored between the `Commit` for H - 1 and 
+should not have persisted and relied on any state between the `Commit` for H - 1 and 
 H. 
 
 If the app succesfully committed block H, then `last_block_height = H` and `last_block_app_hash = <hash returned by Commit for block H>`. If the app

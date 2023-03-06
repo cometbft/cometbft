@@ -6,7 +6,8 @@
 
 This is the first CometBFT release with ABCI 1.0, which introduces the
 `PrepareProposal` and `ProcessProposal` methods, with the aim of expanding the
-range of use cases that application developers can address.
+range of use cases that application developers can address. See the
+[specification](./spec/abci/) for more details.
 
 In the v0.34.27 release, the CometBFT Go module is still
 `github.com/tendermint/tendermint` to facilitate ease of upgrading for users,

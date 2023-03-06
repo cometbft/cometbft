@@ -71,17 +71,21 @@ func waitForNode(node *e2e.Node, height int64, timeout time.Duration) (*rpctypes
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
+
+	var curHeight int64
+	lastChanged := time.Now()
 	for {
-		status, err := client.Status(ctx)
+		status, err := client.Status(context.Background())
 		switch {
-		case errors.Is(err, context.DeadlineExceeded):
-			return nil, fmt.Errorf("timed out waiting for %v to reach height %v", node.Name, height)
-		case errors.Is(err, context.Canceled):
-			return nil, err
-		case err == nil && status.SyncInfo.LatestBlockHeight >= height:
+		case err != nil:
+			continue
+		case status.SyncInfo.LatestBlockHeight >= height && (height == 0 || !status.SyncInfo.CatchingUp):
 			return status, nil
+		case curHeight < status.SyncInfo.LatestBlockHeight:
+			curHeight = status.SyncInfo.LatestBlockHeight
+			lastChanged = time.Now()
+		case time.Since(lastChanged) > timeout:
+			return nil, fmt.Errorf("timed out waiting for %v to reach height %v", node.Name, height)
 		}
 
 		time.Sleep(300 * time.Millisecond)
@@ -92,12 +96,14 @@ func waitForNode(node *e2e.Node, height int64, timeout time.Duration) (*rpctypes
 func waitForAllNodes(testnet *e2e.Testnet, height int64, timeout time.Duration) (int64, error) {
 	var lastHeight int64
 
+	deadline := time.Now().Add(timeout)
+
 	for _, node := range testnet.Nodes {
 		if node.Mode == e2e.ModeSeed {
 			continue
 		}
 
-		status, err := waitForNode(node, height, timeout)
+		status, err := waitForNode(node, height, time.Until(deadline))
 		if err != nil {
 			return 0, err
 		}

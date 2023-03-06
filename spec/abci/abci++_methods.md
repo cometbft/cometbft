@@ -349,10 +349,10 @@ title: Methods
             transaction `t1` into a second transaction `t2`, i.e., the Application asks CometBFT
             to remove `t1` from the block and add `t2` to the block. If a client wants to eventually check what
             happened to `t1`, it will discover that `t1` is not in a
-            committed block (assuming a _re-CheckTx_ evited it from the mempool), getting the wrong idea that `t1` did not make it into a block. Note
+            committed block (assuming a _re-CheckTx_ evicted it from the mempool), getting the wrong idea that `t1` did not make it into a block. Note
             that `t2` _will be_ in a committed block, but unless the Application tracks this
             information, no component will be aware of it. Thus, if the Application wants
-            traceability, it is its responsability to support it. For instance, the Application
+            traceability, it is its responsibility's to support it. For instance, the Application
             could attach to a transformed transaction a list with the hashes of the transactions it
             derives from.
     * CometBFT MAY include a list of transactions in `RequestPrepareProposal.txs` whose total

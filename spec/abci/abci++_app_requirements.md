@@ -315,7 +315,7 @@ Finally, after re-checking transactions in the mempool, CometBFT will unlock
 the mempool connection. New transactions are once again able to be processed through `CheckTx`.
 
 Note that `CheckTx` is just a weak filter to keep invalid transactions out of the mempool and,
-utimately, ouf of the blockchain.
+ultimately, ouf of the blockchain.
 Since the transaction cannot be guaranteed to be checked against the exact same state as it
 will be executed as part of a (potential) decided block, `CheckTx` shouldn't check *everything*
 that affects the transaction's validity, in particular those checks whose validity may depend on
@@ -351,7 +351,7 @@ after the full block has been processed and the state committed to disk.
 
 The Snapshot Connection is used to serve state sync snapshots for other nodes
 and/or restore state sync snapshots to a local node being bootstrapped.
-Snapshop management is optional: an Application may choose not to implement it.
+Snapshot management is optional: an Application may choose not to implement it.
 
 For more information, see Section [State Sync](#state-sync).
 
@@ -641,7 +641,7 @@ parameter.
 
 The `Vote` timeout does not begin until a quorum of votes has been received.
 Once a quorum of votes has been seen and this timeout elapses, Tendermint will
-procced to the next step of the consensus algorithm. If Tendermint receives
+proceed to the next step of the consensus algorithm. If Tendermint receives
 all of the remaining votes before the end of the timeout, it will proceed
 to the next step immediately.
 
@@ -680,7 +680,7 @@ include the vote extensions from height `H`. For all heights after `H`
 
 * vote extensions cannot be disabled,
 * they are mandatory: all precommit messages sent MUST have an extension
-  attached. Nevetheless, the application MAY provide 0-length
+  attached. Nevertheless, the application MAY provide 0-length
   extensions.
 
 Must always be set to a future height. Once set to a value different from
@@ -810,9 +810,9 @@ implementation of
 
 On startup, CometBFT calls the `Info` method on the Info Connection to get the latest
 committed state of the app. The app MUST return information consistent with the
-last block it succesfully completed Commit for.
+last block it successfully completed Commit for.
 
-If the app succesfully committed block H, then `last_block_height = H` and `last_block_app_hash = <hash returned by Commit for block H>`. If the app
+If the app successfully committed block H, then `last_block_height = H` and `last_block_app_hash = <hash returned by Commit for block H>`. If the app
 failed during the Commit of block H, then `last_block_height = H-1` and
 `last_block_app_hash = <hash returned by Commit for block H-1, which is the hash in the header of block H>`.
 
@@ -823,7 +823,7 @@ the app.
 storeBlockHeight = height of the last block CometBFT saw a commit for
 stateBlockHeight = height of the last block for which CometBFT completed all
     block processing and saved all ABCI results to disk
-appBlockHeight = height of the last block for which ABCI app succesfully
+appBlockHeight = height of the last block for which ABCI app successfully
     completed Commit
 
 ```
@@ -867,7 +867,7 @@ If `appBlockHeight == stateBlockHeight`,
 This happens if we crashed before the app finished Commit
 
 If `appBlockHeight == storeBlockHeight`
-    update the state using the saved ABCI responses but dont run the block against the real app.
+    update the state using the saved ABCI responses but don't run the block against the real app.
 This happens if we crashed after the app finished Commit but before CometBFT saved the state.
 
 ### State Sync

@@ -29,7 +29,7 @@ title: Overview and basic concepts
 [&#8593; Back to Outline](#outline)
 
 The Application's main role is to execute blocks decided (a.k.a. finalized) by consensus. The
-decided blocks are the consensus's main ouput to the (replicated) Application. With ABCI, the
+decided blocks are the consensus's main output to the (replicated) Application. With ABCI, the
 application only interacts with consensus at *decision* time. This restricted mode of interaction
 prevents numerous features for the Application, including many scalability improvements that are
 now better understood than when ABCI was first written. For example, many ideas proposed to improve
@@ -125,7 +125,7 @@ call sequences of these methods.
 
 - [**Commit:**](./abci++_methods.md#commit) Instructs the Application to persist its
   state. It is a fundamental part of CometBFT's crash-recovery mechanism that ensures the
-  synchronization between CometBFT and the Applicatin upon recovery. CometBFT calls it just after
+  synchronization between CometBFT and the Application upon recovery. CometBFT calls it just after
   having persisted the data returned by calls to `ResponseFinalizeBlock`. The Application can now discard
   any state or data except the one resulting from executing the transactions in the decided block.
 

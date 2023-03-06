@@ -125,7 +125,7 @@ call sequences of these methods.
 
 - [**Commit:**](./abci++_methods.md#commit) Instructs the Application to persist its
   state. It is a fundamental part of CometBFT's crash-recovery mechanism that ensures the
-  synchronization between CometBFT and the Applicatin upon recovery. CometBFT calls it just after
+  synchronization between CometBFT and the Application upon recovery. CometBFT calls it just after
   having persisted the data returned by calls to `ResponseFinalizeBlock`. The Application can now discard
   any state or data except the one resulting from executing the transactions in the decided block.
 

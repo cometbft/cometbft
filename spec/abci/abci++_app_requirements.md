@@ -812,7 +812,16 @@ implementation of
 
 On startup, CometBFT calls the `Info` method on the Info Connection to get the latest
 committed state of the app. The app MUST return information consistent with the
-last block it succesfully completed Commit for.
+last block it succesfully completed `Commit` for. 
+
+The application is expected to persist it's state during the `Commit` method.
+CometBFT and the application are expected to crash together and there should not 
+exist a scenario where the application has persisted state that CometBFT has not.
+
+In other words, if `Commit` for a block H has not been executed and CometBFT crashed,
+the application
+should not persist and rely on any state stored between the `Commit` for H - 1 and 
+H. 
 
 If the app succesfully committed block H, then `last_block_height = H` and `last_block_app_hash = <hash returned by Commit for block H>`. If the app
 failed during the Commit of block H, then `last_block_height = H-1` and

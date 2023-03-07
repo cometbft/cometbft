@@ -611,7 +611,7 @@ func (mem *CListMempool) Update(
 		// Mempool after:
 		//   100
 		// https://github.com/tendermint/tendermint/issues/3322.
-		mem.RemoveTxByKey(tx.Key())
+		mem.RemoveTxByKey(tx.Key()) //nolint: errcheck // does not error
 	}
 
 	// Either recheck non-committed txs to see if they became invalid

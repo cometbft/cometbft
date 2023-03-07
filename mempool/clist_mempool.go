@@ -337,9 +337,9 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 			mem.removeTx(memTx.tx, e.(*clist.CElement))
 			return nil
 		}
-		return errors.New("transaction not found")
+		return errors.New("found empty transaction")
 	}
-	return errors.New("invalid transaction found")
+	return errors.New("transaction not found")
 }
 
 func (mem *CListMempool) isFull(txSize int) error {

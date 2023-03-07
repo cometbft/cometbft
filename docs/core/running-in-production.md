@@ -105,7 +105,7 @@ It is entirely up to operators to ensure, if nodes' RPC endpoints have to be
 exposed publicly, that appropriate measures have been taken to mitigate against
 attacks. Some examples of mitigation measures include, but are not limited to:
 
-- Never publicly exposing the RPC endpoints of a validators (i.e. if the RPC
+- Never publicly exposing the RPC endpoints of validators (i.e. if the RPC
   endpoints absolutely have to be exposed, ensure you do so only on full nodes
   and with appropriate protection)
 - Correct usage of rate-limiting, authentication and caching (e.g. as provided

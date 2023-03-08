@@ -236,7 +236,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.RequestFinal
 
 	app.state.Height = req.Height
 
-	return &types.ResponseFinalizeBlock{TxResults: respTxs, ValidatorUpdates: app.valUpdates, AgreedAppData: app.state.Hash()}, nil
+	return &types.ResponseFinalizeBlock{TxResults: respTxs, ValidatorUpdates: app.valUpdates, AppHash: app.state.Hash()}, nil
 }
 
 // Commit is called after FinalizeBlock and after Tendermint state which includes the updates to
@@ -459,7 +459,7 @@ func saveState(state State) {
 // as the size or number of transactions processed within the state. Note that this isn't
 // a strong guarantee of state machine replication because states could
 // have different kv values but still have the same size.
-// This function is used as the "AgreedAppData"
+// This function is used as the "AppHash"
 func (s State) Hash() []byte {
 	appHash := make([]byte, 8)
 	binary.PutVarint(appHash, s.Size)

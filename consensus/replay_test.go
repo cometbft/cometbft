@@ -1000,11 +1000,11 @@ func (app *badApp) FinalizeBlock(_ context.Context, req *abci.RequestFinalizeBlo
 	app.height++
 	if app.onlyLastHashIsWrong {
 		if app.height == app.numBlocks {
-			return &abci.ResponseFinalizeBlock{AgreedAppData: cmtrand.Bytes(8)}, nil
+			return &abci.ResponseFinalizeBlock{AppHash: cmtrand.Bytes(8)}, nil
 		}
-		return &abci.ResponseFinalizeBlock{AgreedAppData: []byte{app.height}}, nil
+		return &abci.ResponseFinalizeBlock{AppHash: []byte{app.height}}, nil
 	} else if app.allHashesAreWrong {
-		return &abci.ResponseFinalizeBlock{AgreedAppData: cmtrand.Bytes(8)}, nil
+		return &abci.ResponseFinalizeBlock{AppHash: cmtrand.Bytes(8)}, nil
 	}
 
 	panic("either allHashesAreWrong or onlyLastHashIsWrong must be set")

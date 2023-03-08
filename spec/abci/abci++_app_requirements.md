@@ -1015,6 +1015,8 @@ from the genesis file and light client RPC servers. It also calls `Info` to veri
   current height's block header
 
 Once the state machine has been restored and CometBFT has gathered this additional
-information, it transitions to block sync (if enabled) to fetch any remaining blocks up the chain
-head, and then transitions to regular consensus operation. At this point the node operates like
+information, it transitions to block sync. As of ABCI 2.0, if vote extensions are enabled, 
+block sync is required to sync
+at least one block before switching to consensus. This way, the node is guaranteed to have obtained
+the vote extensions (stored within the extended commit in the block store), which are needed to participate in consensus. The node can then transition to regular consensus operation. At this point the node operates like
 any other node, apart from having a truncated block history at the height of the restored snapshot.

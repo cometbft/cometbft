@@ -1,5 +1,8 @@
 ---
-order: 4
+order: false
+parent:
+  title: Introduction
+  order: 1
 ---
 
 # What is CometBFT

@@ -25,6 +25,6 @@ message Packet {
 }
 
 message AuthSigMessage {
-  cometbft.crypto.PublicKey pub_key = 1 [(gogoproto.nullable) = false];
+  cometbft.crypto.PublicKey   pub_key = 1 [(gogoproto.nullable) = false];
   bytes                       sig     = 2;
 }

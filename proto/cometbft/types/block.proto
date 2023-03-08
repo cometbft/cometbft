@@ -10,6 +10,6 @@ import "cometbft/types/evidence.proto";
 message Block {
   Header                        header      = 1 [(gogoproto.nullable) = false];
   Data                          data        = 2 [(gogoproto.nullable) = false];
-  cometbft.types.EvidenceList evidence    = 3 [(gogoproto.nullable) = false];
+  cometbft.types.EvidenceList   evidence    = 3 [(gogoproto.nullable) = false];
   Commit                        last_commit = 4;
 }

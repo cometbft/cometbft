@@ -14,12 +14,12 @@ message ValidatorSet {
 
 message Validator {
   bytes                       address           = 1;
-  cometbft.crypto.PublicKey pub_key           = 2 [(gogoproto.nullable) = false];
+  cometbft.crypto.PublicKey   pub_key           = 2 [(gogoproto.nullable) = false];
   int64                       voting_power      = 3;
   int64                       proposer_priority = 4;
 }
 
 message SimpleValidator {
-  cometbft.crypto.PublicKey pub_key      = 1;
+  cometbft.crypto.PublicKey   pub_key      = 1;
   int64                       voting_power = 2;
 }

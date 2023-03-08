@@ -334,7 +334,7 @@ message ResponseVerifyVoteExtension {
     ACCEPT  = 1;
     // Rejecting the vote extension will reject the entire precommit by the sender.
     // Incorrectly implementing this thus has liveness implications as it may affect
-    // tendermint's ability to receive 2/3+ valid votes to finalize the block.
+    // CometBFT's ability to receive 2/3+ valid votes to finalize the block.
     // Honest nodes should never be rejected.
     REJECT  = 2;
   }
@@ -365,7 +365,7 @@ message CommitInfo {
 }
 
 // ExtendedCommitInfo is similar to CommitInfo except that it is only used in
-// the PrepareProposal request such that Tendermint can provide vote extensions
+// the PrepareProposal request such that CometBFT can provide vote extensions
 // to the application.
 message ExtendedCommitInfo {
   // The round at which the block proposer decided in the previous height.

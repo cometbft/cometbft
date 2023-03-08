@@ -1,0 +1,14 @@
+syntax = "proto3";
+package cometbft.mempool;
+
+option go_package = "github.com/cometbft/cometbft/proto/cometbft/mempool";
+
+message Txs {
+  repeated bytes txs = 1;
+}
+
+message Message {
+  oneof sum {
+    Txs txs = 1;
+  }
+}

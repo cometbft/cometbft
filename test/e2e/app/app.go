@@ -308,6 +308,12 @@ func (app *Application) PrepareProposal(
 		if !vote.SignedLastBlock || len(vote.VoteExtension) == 0 {
 			continue
 		}
+		// We unconditionally provide vote extension signatures. It's up to the app to use them
+		if len(vote.ExtensionSignature) == 0 {
+			panic("ABCI passed a vote extension with empty signature to the application")
+		}
+		//TODO Extend this function to verify the signature
+
 		extValue, err := parseVoteExtension(vote.VoteExtension)
 		// This should have been verified in VerifyVoteExtension
 		if err != nil {

@@ -1608,7 +1608,7 @@ func TestVerifyVoteExtensionNotCalledOnAbsentPrecommit(t *testing.T) {
 // TestPrepareProposalReceivesVoteExtensions tests that the PrepareProposal method
 // is called with the vote extensions from the previous height. The test functions
 // by completing a consensus height with a mock application as the proposer. The
-// test then proceeds to fail sever rounds of consensus until the mock application
+// test then proceeds to fail several rounds of consensus until the mock application
 // is the proposer again and ensures that the mock application receives the set of
 // vote extensions from the previous consensus instance.
 func TestPrepareProposalReceivesVoteExtensions(t *testing.T) {
@@ -1687,6 +1687,8 @@ func TestPrepareProposalReceivesVoteExtensions(t *testing.T) {
 	require.Len(t, rpp.LocalLastCommit.Votes, len(vss))
 	for i := range vss {
 		require.Equal(t, rpp.LocalLastCommit.Votes[i].VoteExtension, voteExtensions[i])
+		require.NotZero(t, len(rpp.LocalLastCommit.Votes[i].ExtensionSignature))
+		//TODO Extend this test case to verify the signatures are correct
 	}
 }
 

@@ -123,18 +123,8 @@ ever be exposed publicly.**
 #### Endpoints Returning Multiple Entries
 
 Endpoints returning multiple entries are limited by default to return 30
-elements (100 max). See the [RPC Documentation](https://docs.cometbft.com/v0.34/rpc/)
-for more information.
+elements (100 max). See the [RPC Documentation](../rpc/) for more information.
 
-<<<<<<< HEAD
-Rate-limiting and authentication are another key aspects to help protect
-against DOS attacks. Validators are supposed to use external tools like
-[NGINX](https://www.nginx.com/blog/rate-limiting-nginx/) or
-[traefik](https://docs.traefik.io/middlewares/ratelimit/)
-to achieve the same things.
-
-=======
->>>>>>> 93c0eddaa (docs: Emphasize docs on attack exposure for RPC in production (#454))
 ## Debugging CometBFT
 
 If you ever have to debug CometBFT, the first thing you should probably do is

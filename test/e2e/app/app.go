@@ -17,7 +17,10 @@ import (
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto"
+	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/protoio"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/version"
 )
 
@@ -32,12 +35,14 @@ const (
 // to disk as JSON, taking state sync snapshots if requested.
 type Application struct {
 	abci.BaseApplication
-	logger          log.Logger
-	state           *State
-	snapshots       *SnapshotStore
-	cfg             *Config
-	restoreSnapshot *abci.Snapshot
-	restoreChunks   [][]byte
+	logger            log.Logger
+	state             *State
+	snapshots         *SnapshotStore
+	cfg               *Config
+	restoreSnapshot   *abci.Snapshot
+	restoreChunks     [][]byte
+	chanID            string
+	currentValidators map[string]crypto.PubKey
 }
 
 // Config allows for the setting of high level parameters for running the e2e Application
@@ -108,10 +113,11 @@ func NewApplication(cfg *Config) (*Application, error) {
 		return nil, err
 	}
 	return &Application{
-		logger:    log.NewTMLogger(log.NewSyncWriter(os.Stdout)),
-		state:     state,
-		snapshots: snapshots,
-		cfg:       cfg,
+		logger:            log.NewTMLogger(log.NewSyncWriter(os.Stdout)),
+		state:             state,
+		snapshots:         snapshots,
+		cfg:               cfg,
+		currentValidators: make(map[string]crypto.PubKey),
 	}, nil
 }
 
@@ -135,6 +141,7 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 			panic(err)
 		}
 	}
+	app.chanID = req.ChainId
 	resp := &abci.ResponseInitChain{
 		AppHash: app.state.Hash,
 	}
@@ -308,18 +315,39 @@ func (app *Application) PrepareProposal(
 		if !vote.SignedLastBlock || len(vote.VoteExtension) == 0 {
 			continue
 		}
-		// We unconditionally provide vote extension signatures. It's up to the app to use them
+		// We unconditionally provide vote extension signatures. It's up to the app to use them or not
 		if len(vote.ExtensionSignature) == 0 {
-			panic("ABCI passed a vote extension with empty signature to the application")
+			panic("ABCI passed the application a vote extension with empty signature")
 		}
-		//TODO Extend this function to verify the signature
+
+		// Reconstruct vote extension's signed bytes...
+		cve := cmtproto.CanonicalVoteExtension{
+			Extension: vote.VoteExtension,
+			Height:    req.Height,
+			Round:     int64(req.LocalLastCommit.Round),
+			ChainId:   app.chanID,
+		}
+		extSignBytes, err := protoio.MarshalDelimited(&cve)
+		if err != nil {
+			panic(err)
+		}
+
+		//... and verify
+		valAddr := crypto.Address(vote.Validator.Address)
+		pub, ok := app.currentValidators[valAddr.String()]
+		if !ok {
+			panic("PrepareProposal: received vote from unknown validator")
+		}
+
+		if !pub.VerifySignature(extSignBytes, vote.ExtensionSignature) {
+			panic("PrepareProposal: received vote with invalid signature")
+		}
 
 		extValue, err := parseVoteExtension(vote.VoteExtension)
 		// This should have been verified in VerifyVoteExtension
 		if err != nil {
 			panic(fmt.Errorf("failed to parse vote extension in PrepareProposal: %w", err))
 		}
-		valAddr := crypto.Address(vote.Validator.Address)
 		app.logger.Info("got vote extension value in PrepareProposal", "valAddr", valAddr, "value", extValue)
 		sum += extValue
 		extCount++
@@ -476,7 +504,20 @@ func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, 
 		if err != nil {
 			return nil, fmt.Errorf("invalid base64 pubkey value %q: %w", keyString, err)
 		}
-		valUpdates = append(valUpdates, abci.UpdateValidator(keyBytes, int64(power), app.cfg.KeyType))
+		valUpdate := abci.UpdateValidator(keyBytes, int64(power), app.cfg.KeyType)
+		valUpdates = append(valUpdates, valUpdate)
+
+		// Keep validator data to verify extensions
+		pub, err := cryptoenc.PubKeyFromProto(valUpdate.PubKey)
+		if err != nil {
+			return nil, err
+		}
+		addr := pub.Address().String()
+		if power > 0 {
+			app.currentValidators[addr] = pub
+		} else {
+			delete(app.currentValidators, addr)
+		}
 	}
 	return valUpdates, nil
 }

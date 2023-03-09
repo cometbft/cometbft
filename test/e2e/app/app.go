@@ -41,7 +41,7 @@ type Application struct {
 	cfg               *Config
 	restoreSnapshot   *abci.Snapshot
 	restoreChunks     [][]byte
-	chanID            string
+	chainID           string
 	currentValidators map[string]crypto.PubKey
 }
 
@@ -141,7 +141,7 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 			panic(err)
 		}
 	}
-	app.chanID = req.ChainId
+	app.chainID = req.ChainId
 	resp := &abci.ResponseInitChain{
 		AppHash: app.state.Hash,
 	}
@@ -325,7 +325,7 @@ func (app *Application) PrepareProposal(
 			Extension: vote.VoteExtension,
 			Height:    req.Height,
 			Round:     int64(req.LocalLastCommit.Round),
-			ChainId:   app.chanID,
+			ChainId:   app.chainID,
 		}
 		extSignBytes, err := protoio.MarshalDelimited(&cve)
 		if err != nil {

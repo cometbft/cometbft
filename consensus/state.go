@@ -1695,6 +1695,7 @@ func (cs *State) finalizeCommit(height int64) {
 	// Create a copy of the state for staging and an event cache for txs.
 	stateCopy := cs.state.Copy()
 
+	isProofBlock := cs.config.WaitForTxs() && len(block.Txs) == 0 && cs.needProofBlock(height)
 	// Execute and commit the block, update and save the state, and update the mempool.
 	// NOTE The block.AppHash wont reflect these txs until the next block.
 	stateCopy, err := cs.blockExec.ApplyBlock(
@@ -1704,6 +1705,8 @@ func (cs *State) finalizeCommit(height int64) {
 			PartSetHeader: blockParts.Header(),
 		},
 		block,
+		// marks this block as a proof-only block, modules should avoid write ops
+		isProofBlock,
 	)
 	if err != nil {
 		logger.Error("failed to apply block", "err", err)

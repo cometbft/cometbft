@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -360,8 +361,13 @@ func (app *Application) PrepareProposal(
 	// We only generate our special transaction if we have vote extensions
 	if extCount > 0 {
 		var totalBytes int64
+		extTxBytes, err := req.LocalLastCommit.Marshal()
+		if err != nil {
+			panic("PrepareProposal: unable to marshall extended commit")
+		}
+		extTxString := hex.EncodeToString(extTxBytes)
 		extTxPrefix := fmt.Sprintf("%s=", voteExtensionKey)
-		extTx := []byte(fmt.Sprintf("%s%d", extTxPrefix, sum))
+		extTx := []byte(fmt.Sprintf("%s%d|%s", extTxPrefix, sum, extTxString))
 		app.logger.Info("preparing proposal with custom transaction from vote extensions", "tx", extTx)
 		// Our generated transaction takes precedence over any supplied
 		// transaction that attempts to modify the "extensionSum" value.
@@ -411,9 +417,8 @@ func (app *Application) ProcessProposal(_ context.Context, req *abci.RequestProc
 		}
 		// Additional check for vote extension-related txs
 		if k == voteExtensionKey {
-			_, err := strconv.Atoi(v)
-			if err != nil {
-				app.logger.Error("malformed vote extension transaction", k, v, "err", err)
+			if err := app.verifyExtensionTx(req.Height, v); err != nil {
+				app.logger.Error("vote extension transaction failed verification", k, v, "err", err)
 				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}
 		}
@@ -532,6 +537,86 @@ func parseTx(tx []byte) (string, string, error) {
 		return "", "", errors.New("key cannot be empty")
 	}
 	return string(parts[0]), string(parts[1]), nil
+}
+
+// verifyExtensionTx parses and verifies the payload of a vote extension-generated tx
+func (app *Application) verifyExtensionTx(height int64, payload string) error {
+	parts := strings.Split(payload, "|")
+	if len(parts) != 2 {
+		return fmt.Errorf("invalid payload format: %q", payload)
+	}
+	sumStr := parts[0]
+	if len(sumStr) == 0 {
+		return fmt.Errorf("sum cannot be empty in vote extension payload: %q", payload)
+	}
+
+	expSum, err := strconv.Atoi(sumStr)
+	if err != nil {
+		return fmt.Errorf("malformed sum %q in vote extension payload: %q", payload)
+	}
+
+	localCommitStr := parts[1]
+	if len(localCommitStr) == 0 {
+		return fmt.Errorf("commit data cannot be empty in vote extension payload: %q", payload)
+	}
+
+	extTxString, err := hex.DecodeString(localCommitStr)
+	if err != nil {
+		return fmt.Errorf("could not hex-decode vote extension payload: %q", payload)
+	}
+
+	var lastCommit abci.ExtendedCommitInfo
+	if lastCommit.Unmarshal(extTxString) != nil {
+		return fmt.Errorf("unable to marshall extended commit: %q", payload)
+
+	}
+
+	var sum int64
+	for _, vote := range lastCommit.Votes {
+		if !vote.SignedLastBlock || len(vote.VoteExtension) == 0 {
+			continue
+		}
+		// We unconditionally provide vote extension signatures. It's up to the app to use them or not
+		if len(vote.ExtensionSignature) == 0 {
+			return errors.New("non-empty vote extension with empty signature")
+		}
+
+		// Reconstruct vote extension's signed bytes...
+		cve := cmtproto.CanonicalVoteExtension{
+			Extension: vote.VoteExtension,
+			Height:    height,
+			Round:     int64(lastCommit.Round),
+			ChainId:   app.chainID,
+		}
+		extSignBytes, err := protoio.MarshalDelimited(&cve)
+		if err != nil {
+			return fmt.Errorf("error when marshalling sigend bytes: %w", err)
+		}
+
+		//... and verify
+		valAddr := crypto.Address(vote.Validator.Address).String()
+		pub, ok := app.currentValidators[valAddr]
+		if !ok {
+			return fmt.Errorf("received vote from unknown validator with address %q", valAddr)
+		}
+
+		if !pub.VerifySignature(extSignBytes, vote.ExtensionSignature) {
+			return errors.New("received vote with invalid signature")
+		}
+
+		extValue, err := parseVoteExtension(vote.VoteExtension)
+		// This should have been verified in VerifyVoteExtension
+		if err != nil {
+			return fmt.Errorf("failed to parse vote extension: %w", err)
+		}
+		sum += extValue
+	}
+
+	//Final check that the proposer behaved correctly
+	if int64(expSum) != sum {
+		return fmt.Errorf("sum does not match vote extension payload: %d!=%d", expSum, sum)
+	}
+	return nil
 }
 
 // parseVoteExtension attempts to parse the given extension data into a positive

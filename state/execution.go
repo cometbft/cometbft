@@ -327,14 +327,13 @@ func (blockExec *BlockExecutor) VerifyVoteExtension(ctx context.Context, vote *t
 	if err != nil {
 		panic(fmt.Errorf("VerifyVoteExtension call failed: %w", err))
 	}
-
 	if resp.IsStatusUnknown() {
 		panic(fmt.Sprintf("VerifyVoteExtension responded with status %s", resp.Status.String()))
 	}
+
 	if !resp.IsAccepted() {
 		return types.ErrInvalidVoteExtension
 	}
-
 	return nil
 }
 

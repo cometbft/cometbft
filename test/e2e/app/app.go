@@ -328,12 +328,12 @@ func (app *Application) PrepareProposal(
 	extTxPrefix := fmt.Sprintf("%s=", voteExtensionKey)
 	if extCount > 0 {
 		var totalBytes int64
-		extTxBytes, err := req.LocalLastCommit.Marshal()
+		extCommitBytes, err := req.LocalLastCommit.Marshal()
 		if err != nil {
 			panic("unable to marshall extended commit")
 		}
-		extTxStr := hex.EncodeToString(extTxBytes)
-		extTx := []byte(fmt.Sprintf("%s%d|%s", extTxPrefix, sum, extTxStr))
+		extCommitHex := hex.EncodeToString(extCommitBytes)
+		extTx := []byte(fmt.Sprintf("%s%d|%s", extTxPrefix, sum, extCommitHex))
 		app.logger.Info("preparing proposal with custom transaction from vote extensions", "txLen", len(extTx))
 		txs := make([][]byte, 0, len(req.Txs)+1)
 		for _, tx := range req.Txs {
@@ -346,14 +346,13 @@ func (app *Application) PrepareProposal(
 				app.logger.Error("detected tx that should not come from the mempool", "tx", tx)
 				continue
 			}
-			totalBytes += int64(len(tx))
-			if totalBytes > req.MaxTxBytes {
-				totalBytes -= int64(len(tx))
+			if totalBytes+int64(len(tx)) > req.MaxTxBytes {
 				break
 			}
+			totalBytes += int64(len(tx))
 			txs = append(txs, tx)
 		}
-		if totalBytes+int64(len(extTx)) < req.MaxTxBytes {
+		if totalBytes+int64(len(extTx)) <= req.MaxTxBytes {
 			txs = append(txs, extTx)
 		} else {
 			app.logger.Info(
@@ -365,7 +364,7 @@ func (app *Application) PrepareProposal(
 		}
 		return &abci.ResponsePrepareProposal{Txs: txs}, nil
 	}
-	// None of the transactions are modified by this application. We block "reserved" keys.
+	// None of the transactions are modified by this application. We filter out "reserved" keys.
 	txs := make([][]byte, 0, len(req.Txs))
 	var totalBytes int64
 	for _, tx := range req.Txs {
@@ -502,7 +501,7 @@ func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, 
 		if power > 0 {
 			pubKeyBytes, err := valUpdate.PubKey.Marshal()
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 			app.state.Set(reservedKey+addr, hex.EncodeToString(pubKeyBytes))
 		}
@@ -529,7 +528,7 @@ func (app *Application) verifyAndSum(currentHeight int64, extCommit *abci.Extend
 		if !vote.SignedLastBlock || len(vote.VoteExtension) == 0 {
 			continue
 		}
-		// Vote extension signatures are always provides. Apps can use them to verify the integrity of extensions
+		// Vote extension signatures are always provided. Apps can use them to verify the integrity of extensions
 		if len(vote.ExtensionSignature) == 0 {
 			return 0, 0, errors.New("non-empty vote extension with empty signature")
 		}
@@ -547,29 +546,29 @@ func (app *Application) verifyAndSum(currentHeight int64, extCommit *abci.Extend
 		}
 		extSignBytes, err := protoio.MarshalDelimited(&cve)
 		if err != nil {
-			return 0, 0, fmt.Errorf("error when marshalling signed bytes: %w", err)
+			return 0, 0, fmt.Errorf("error when marshaling signed bytes: %w", err)
 		}
 
 		//... and verify
 		valAddr := crypto.Address(vote.Validator.Address).String()
-		pubStr := app.state.Get(reservedKey + valAddr)
-		if len(pubStr) == 0 {
+		pubKeyHex := app.state.Get(reservedKey + valAddr)
+		if len(pubKeyHex) == 0 {
 			return 0, 0, fmt.Errorf("received vote from unknown validator with address %q", valAddr)
 		}
-		pubBytes, err := hex.DecodeString(pubStr)
+		pubKeyBytes, err := hex.DecodeString(pubKeyHex)
 		if err != nil {
 			return 0, 0, fmt.Errorf("could not hex-decode public key for validator address %s, err %w", valAddr, err)
 		}
-		var pubProto cryptoproto.PublicKey
-		err = pubProto.Unmarshal(pubBytes)
+		var pubKeyProto cryptoproto.PublicKey
+		err = pubKeyProto.Unmarshal(pubKeyBytes)
 		if err != nil {
 			return 0, 0, fmt.Errorf("unable to unmarshal public key for validator address %s, err %w", valAddr, err)
 		}
-		pub, err := cryptoenc.PubKeyFromProto(pubProto)
+		pubKey, err := cryptoenc.PubKeyFromProto(pubKeyProto)
 		if err != nil {
 			return 0, 0, fmt.Errorf("could not obtain a public key from its proto for validator address %s, err %w", valAddr, err)
 		}
-		if !pub.VerifySignature(extSignBytes, vote.ExtensionSignature) {
+		if !pubKey.VerifySignature(extSignBytes, vote.ExtensionSignature) {
 			return 0, 0, errors.New("received vote with invalid signature")
 		}
 

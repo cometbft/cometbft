@@ -1,87 +1,150 @@
 # Part 1: Background
 
 > **Warning**    
-> We assume that you understand the Tendermint algorithm and therefore will not review it here. If this is not the case, please refer to [here](../).
+> We assume that you understand the Tendermint algorithm and therefore we will not review it here. 
+If this is not the case, please refer to [here](../).
 
-The Tendermint algorithm assumes that a **Global Stabilization Time (GST)** exists, after which communication is reliable and timely. That is, it satisfies **Eventual $\Delta$-Timely Communication**:
+The Tendermint algorithm assumes that a **Global Stabilization Time (GST)** exists, after which communication is reliable and timely, i.e., it satisfies the following property:
 
 | Eventual $\Delta$-Timely Communication|
 |-----|
 |There is a bound $\Delta$ and an instant GST (Global Stabilization Time) such that if a correct process $p$ sends a message $m$ at a time $t \geq \text{GST}$ to a correct process $q$, then $q$ will receive $m$ before $t + \Delta$.
 
-The Tendermint algorithm also assumes that this property is used to provide **Gossip Communication**:
+**Eventual $\Delta$-Timely Communication** is the basis for a stronger assumption, **Gossip Communication**, which is used to ensure progress.
 
 |Gossip communication|
 |-----|
 | (i) If a correct process $p$ sends some message $m$ at time $t$, all correct processes will receive $m$ before $\text{max} \{t,\text{GST}\} + \Delta$.
 | (ii) If a correct process $p$ receives some message $m$ at time $t$, all correct processes will receive $m$ before $\text{max}\{t,\text{GST}\} + \Delta$.
 
-Implementing this property, however, is hard for two main reasons. 
+In the Tendermint algorithm, three kinds of messages are exchanged: `PROPOSAL`, `PRE-VOTE`, and `PRE-COMMIT`.
+The algorithm progresses when certain conditions are satisfied over the set of messages received.
+For example, in order do decide on a value `v`, the set must include a `PROPOSAL` for `v` and more than two thirds of the number processes in `PRE-COMMIT` for the same `v`, during the same round.
+Roughly speaking, if Gossip Communication is guaranteed and only correct processes existed, then when GST is eventually reached, previously sent `PROPOSAL` and `PRE-COMMIT` messages will be delivered and a decision made.
+
+However, since processes are subject to failures, it is not guaranteed that needed messages are ever sent and correct processes cannot wait indefinitely.
+Hence, processes executes in rounds in which they wait for conditions to be met for sometime but, if they timeout, they send negative message that will lead to new rounds.
+Again, Gossip Communication guarantees that eventually the conditions for deciding are met, even if only after GST is reached.
+
+Implementing Gossip Communication, however, is hard for two main reasons. 
 First, it relies on a GST, which may never arrive.
 Second, even if the GST will definitely arrive, it could still take arbitrarily long to do so and, in practice, implementing this property would require unbounded memory since even messages sent before the GST need to be buffered to be reliably delivered between correct processes.
 
-Fortunately, while Gossip Communication is a sufficient condition for the Tendermint algorithm to terminate, it is not strictly necessary.
-First, Tendermint will keep progressing if periods in which communication is timely for long enough for rounds to complete continue to happen. Even though "long enough" periods, or **Local Stabilization Periods**, is still hard to define, it is certainly less strict than GST.
-
-| Local Stabilization Period |
-|----|
-| TODO |
-| $\delta$  time to talk to neighbor |
-| $\pi$ time to process a message and forward it |
-| $d$ network diameter
-| $\Delta = (\delta + \pi) * d$ |
-| Local Stabilization Period - long enough for a good proposer to be selected and enough communication rounds of at most $\Delta$ length to elapse. |
-
-Second, it is not necessary that all messages from correct processes reach all other correct processes; as long as some newer message, with information that **supersedes** the original message, is timely delivered, the algorithm progresses.
-In the Tendermint algorithm this property is seen, for example, when nodes ignore proposal messages from prior rounds.
+Fortunately, while Gossip Communication is a sufficient condition for the Tendermint algorithm to terminate, it is not strictly necessary, because the conditions to progress and terminate are evaluated over the messages of subsets of rounds executed, not all of them.
+The remaining messages may be ignored and forgotten, in order to bound memory usage.
 
 
-Begin Supersession definition
-______
-
-Alternative 1 
-|Supersession|
-|----|
-| Given messages $m1$ and $m2$, we say that **$m2$ supersedes $m1$** if after receiving $m2$ a process would make at least as much progress as it would by receiving $m1$ and we note it as $m2.\text{SSS}(m1)$.   
-| If $m3.\text{SSS}(m2)$ and $m2.\text{SSS}(m1)$, then $m3.\text{SSS}(m1)$ (transitivity).
-
-
-> :clipboard: **TODO**: Better way of saying "would make at least as much progress"?
-
-
-____
-
-Alternative 2
-
-| Process Run |
-|-----|
-| A **process run** is defined as a sequence of states and messages causing state transitions of a process. |
-
-For example, $R = \lang s_0, m_0, s_1, m_1, ..., s_n \rang$ is a run whose initial state is $s_0$ and which transitioned to state $s_1$ after processing message $m_0$. |
-
-| Prefixes and Suffixes |
-|----|
-| A process run **prefix** is a subsequence of a process run starting at its first state and ending on some state. |
-| A process run **suffix** is a subsequence of a process run starting at some state and ending on some later state. |
-
-For example, given a run $R = \lang s_0, m_0, s_1, m_1, s_2, m_2, s_3, m_3, \ldots, s_n \rang$, $P = \lang s_0, m_0, s_1, m_1, s_2\rang$ is a prefix of $R$ and $S = \lang s_1, m_1, s_2, m_2, s_3, m_3, \ldots, s_n \rang$ is a suffix of $R$.
-In this example, the prefix and suffix are overlapping, but they do not have to be.
-
-|Supersession|
-|----|
-| Given a run $R = \lang P, m_n, s_{n+1}, m_{n+1},\ldots, S \rang$, we say that $m_n$ is superseded by messages $\lang m'_1, \ldots, m'_x \rang$ if there exists a run $R' = \lang P, m'_1, \ldots, m'_x, S1\rang$. |
-| If a message $m$ is superseded by a sequence of messages $s$ and all messages in $s$ are superseded by a sequence $s'$, then $m$ is superseded by $s'$ (transitivity). |
-
-> **Note**    
-> Algorithms may be constructed such that processing certain sequences of messages result in broadcasting some new special message that supersedes all messages in the sequence.
-> For example, in the Tendermint algorithm, the proposal message of a (height,round) is superseded by a sequence of valid votes amounting to a quorum for the same (height,round), but this sequence leads to a proposal for (height+1,0) being broadcast, which by itself supersedes the proposal for (height,round).
-> This property may be used to allow detecting supersession between single messages, not a message and a sequence.
+> **TODO**    
+> Expand the text to justify why we are taking a CRDT approach.
+> 
+> We care about the information about what has been proposed and what each process has voted for.
+> We represent this as an incremental replicated data-structure that processes try to converge (eventual consistency), a CRDT.
+>
+> - Gossip communication is a way to implement this as an operations based CRDT.
+> - Actual gossiping is a way to implement this as a state based CRDT.
+> - Pruning is provided by a merge operation that drops superseded information
+>    - Rounds smaller than the latest proof-of-lock-round may be pruned. 
+>    - Heights smaller than the current height may be pruned.
 
 
-End of supersession definition
-____
+## The Condition State
+
+The condition state consists in a forrest of trees keeping information regarding heights.
+Each tree contains the information regarding a single height, 1-to-1.
+The root of the tree contains the corresponding height number; we used may use tree and height interchangeably.
+
+Each height is linked to the all the Rounds for the corresponding height.
+Each Round is further linked to steps validators go through in protocol's rounds.
+And each step is linked to Validators in the validator set for the corresponding round and height.
+
+Each validator is associated with states equal to the value it has proposed, pre-voted or pre-committed, during the corresponding steps of the protocol.
+Given that each validator can set this state at most once per round, the values associated with the validator are either $\bot$, if the state has not been set, or an actual value.
+In the specific case of the Proposal step, only the Proposer for a round should ever have a value different from $\bot$.
+
+```mermaid
+graph LR
+   subgraph Height
+   H
+   H'
+   H''
+   end
+
+   subgraph Round
+   R
+   R'
+   R''
+   end
+
+   subgraph Step
+   Proposal
+   PreVote
+   PreCommit
+   end
+
+   subgraph Validator
+   pv0
+   pv1
+   pv2
+   vv0
+   vv1
+   vv2
+   cv0
+   cv1
+   cv2
+   end
+
+   subgraph Value
+   nil1
+   val1
+   ev1
+   ev2
+   nil2
+   val2
+   ev3
+   nil3
+   val3
+   ev4
+   end
+
+   H --> R --> Proposal --> pv0(Proposer) --> nil1(nil) & val1(val)
+               Proposal --> pv1(v) --> ev1(evidence)
+               Proposal --> pv2(v') --> ev2(evidence)
+         R --> PreVote  --> vv0(v) --> nil2(nil) & val2(val) & ev3(evidence) 
+               PreVote  --> vv1(v')
+               PreVote  --> vv2(v'')
+         R --> PreCommit --> cv0(v) --> nil3(nil) & val3(val) & ev4(evidence) 
+               PreCommit --> cv1(v')
+               PreCommit --> cv2(v'')
+   H --> R'
+   H --> R''
+   H'
+   H''
+
+```
+
+The Condition State is potentially infinite, given that the number of heights and rounds is infinite.
+Each process $p$ keeps a local view $L_p$ of the Condition State forest $C$, which approximates the full state in the following ways:
+- not all trees in $C$ have a corresponding tree in $L_p$;
+    - if $p$ has never heard of a tree, then it cannot be included in $L_p$.
+    - the tree was pruned.
+    - trees in $L_p$ may be removed if its information is guaranteed not be be required in the future.
+    - $p$ knows how to differentiate a dropped subtrees from subtrees that have never been known;
+    > **TODO** Phrase this as a CRDT merge.
+- any tree in $L_p$, excluding value leaves, must be prefixes of trees in $C$.
+- any path in any tree $t_p \in L_p$ can only differ from the corresponding path in the tree $t \in C$ in the value at the end
+    - if the value in $C$ is $\bot$, then the value in $t_p$ must be $\bot$
+    - if the value in $C$ is $v \neq \bot$ then the value in $_p$ must be $\bot$ or $v$
+    > **TODO**: include evidence of misbehavior
+
+    
 
 
+
+
+, or some evidence showing that more than one message was sent.
+
+
+If implemented as an operation-based CRDT, then the messages exchanged 
 
 Therefore we formalize the requirements of the Tendermint algorithm in terms communication primitives that take supersession into account, providing a *best-effort* to deliver all messages but which may not deliver those that have been superseded.
 During LSP, in which messages are timely delivered, the algorithm will not broadcast superseding messages needlessly (for example, due to timeouts), ensuring eventual progress.

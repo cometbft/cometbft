@@ -127,21 +127,24 @@ Each process $p$ keeps a local view $L_p$ of the Condition State forest $C$, whi
 - not all trees in $C$ have a corresponding tree in $L_p$;
     - if $p$ has never heard of a tree, then it cannot be included in $L_p$.
     - the tree was pruned.
-    - trees in $L_p$ may be removed if its information is guaranteed not be be required in the future.
+    - trees in $L_p$ may be removed if their information is guaranteed not be be required in the future.
     - $p$ knows how to differentiate a dropped subtrees from subtrees that have never been known;
-    > **TODO** Phrase this as a CRDT merge.
 - any tree in $L_p$, excluding value leaves, must be prefixes of trees in $C$.
-- any path in any tree $t_p \in L_p$ can only differ from the corresponding path in the tree $t \in C$ in the value at the end
-    - if the value in $C$ is $\bot$, then the value in $t_p$ must be $\bot$
-    - if the value in $C$ is $v \neq \bot$ then the value in $_p$ must be $\bot$ or $v$
-    > **TODO**: include evidence of misbehavior
+- the value leaf $v_p$ in $L_p$ and the corresponding value leaf $v_C/$ in $C$ are related in the following way:
+    - if $v_C = \bot$, then $v_p = \bot$
+    - if $v_C \neq \bot$, then $v_p = \bot \lor v_p = v_p$
+    > **TODO**: evidence of misbehavior: $v_C \neq \bot \neq v_p \neq v_C$ implies misbehavior.
 
-    
-
-
-
-
-, or some evidence showing that more than one message was sent.
+> **TODO**    
+> The local views of processes are a CRDT:
+> - Prune is performed as a result of updates that with newer information, be it because of a new message or because of a merge.
+> - The gossip state clearly mirrors the Tendermint algorithm messages (each value leaf corresponds to a received message), so it is clear that it can be implemented as an operation based CRDT.
+>   - Operation based CRDT require reliable messaging, masked as Gossip Communication in the whitepaper.
+>   - Pruning a tree drops the requirement for reliably delivering messages corresponding to the pruned parts.
+> - The state may also be implemented as state based CRDT.
+>   - Relevant parts of the tree are shared through gossiping.
+>   - Pruned parts should not be relevant (or they wouldn't have been pruned).
+>   - CometBFT implements this approach, although unknowingly.
 
 
 If implemented as an operation-based CRDT, then the messages exchanged 
@@ -175,18 +178,6 @@ Clearly, if GST is reached, then there must be such $\Delta$ and while GST canno
 
 > :clipboard: **TODO**
 > * Show that "best-effort superseded communication" + GST implies "Eventual delta timely superseded communication".
-
-## Conventions
-
-* MUST, SHOULD, MAY...
-* [X-Y-Z-W.C]
-    * X: What
-        * VOC: Vocabulary
-        * DEF: Definition
-        * REQ: Requires
-        * PROV: Provides
-    * Y-Z: Who-to whom
-    * W.C: Identifier.Counter
 
 
 # Part 2: CONS/GOSSIP interaction

@@ -41,7 +41,7 @@ Exchanges between CONS and GOSSIP happens through the **GOSSIP-I**.
     Network Stack
 ```
 
-The overall goal here is to specify the following:
+The overall goal here are the following:
 1. Provide an english specification of
     * what CONS requires from and provides to GOSSIP (GOSSIP-I);
     * what GOSSIP requires from and provides to CONS (GOSSIP-I); and,
@@ -55,13 +55,13 @@ The overall goal here is to specify the following:
 The specification is divided in multiple documents
 * [reactor.md](./reactor.md): specification in English
 * [reactor.qnt](./reactor.qnt): corresponding specifications in [Quint](https://github.com/informalsystems/quint)
-* [implementation.md](./implementation.md): a description of what is currently implemented in Tendermint Core, in English.
+* [implementation.md](./implementation.md): a description of what is currently implemented in CometBFT, in English.
 * [implementation.qnt](./implementation.qnt): Quint model of current behavior, for model checking of provided properties.
 
 
 # Conventions
 
-* MUST, SHOULD, MAY...
+* MUST, SHOULD, MAY... are used according to RFC2119.
 * [X-Y-Z-W.C]
     * X: What
         * VOC: Vocabulary

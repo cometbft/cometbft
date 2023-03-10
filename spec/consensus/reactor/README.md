@@ -1,6 +1,6 @@
 # Consensus Reactor
 
-CometBFT is a state machine replication framework and part of the stack used in the Cosmos ecosystem to build distributed applications, such as the Cosmos SDK.
+CometBFT is a state machine replication framework and part of the stack used in the Cosmos ecosystem to build distributed applications, directly or through the Cosmos SDK.
 CometBFT uses its northbound API, ABCI, to communicate with applications.
 South of CometBFT is the OS' network stack.
 
@@ -14,7 +14,7 @@ This set of documents focuses on the interactions between the P2P layer and the 
  Applications                                        Cosmos SDK    
 ======================================ABCI============================ ┐
  [Mempool Reactor] [Evidence Reactor] [Consensus Reactor] [PEX] [...]  |
-- - - - - - - - - - - - - - - - P2P-I - - - - - - - - - - - -- - - - - | Tendermint
+- - - - - - - - - - - - - - - - P2P-I - - - - - - - - - - - -- - - - - | CometBFT
                                   P2P                                  | Core
 ====================================================================== ┘
                             Network Stack

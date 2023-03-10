@@ -812,16 +812,19 @@ On startup, CometBFT calls the `Info` method on the Info Connection to get the l
 committed state of the app. The app MUST return information consistent with the
 last block it successfully completed `Commit` for. 
 
-The application is expected to persist it's state during the `Commit` method.
+The application is expected to persist its state during the `Commit` method.
 CometBFT and the application are expected to crash together and there should not 
 exist a scenario where the application has persisted state that CometBFT has not.
 
 In other words, if `Commit` for a block H has not been executed and CometBFT crashed,
 the application
-should not have persisted and relied on any state between the `Commit` for H - 1 and 
+should not have persisted any state between the `Commit` for H - 1 and 
 H. 
 
-If the app successfully committed block H, then `last_block_height = H` and `last_block_app_hash = <hash returned by Commit for block H>`. If the app
+CometBFT checks the following two fields returned by `Info` to verify whether the 
+app committed a block H: `last_block_height` and `last_block_app_hash`. 
+If the app successfully committed block H, then `last_block_height = H` and 
+`last_block_app_hash = <hash returned by Commit for block H>`. If the app
 failed during the Commit of block H, then `last_block_height = H-1` and
 `last_block_app_hash = <hash returned by Commit for block H-1, which is the hash in the header of block H>`.
 
@@ -838,19 +841,18 @@ appBlockHeight = height of the last block for which ABCI app successfully
 ```
 
 Note we always have `storeBlockHeight >= stateBlockHeight` and `storeBlockHeight >= appBlockHeight`
-Note also CometBFT never calls Commit on an ABCI app twice for the same height.
+Note also CometBFT never successfully calls Commit on an ABCI app twice for the same height.
 
 The procedure is as follows.
 
 First, some simple start conditions:
 
-If `appBlockHeight == 0`, then call InitChain.
+If `appBlockHeight == 0`, then call `InitChain`.
 
 Note that, in case there is a failure to commit the first block and
-a crash occurs,
-upon restart, `InitChain` will be called again. As explained,
+a crash occurs, upon restart, `InitChain` will be called again. As explained,
 the application should not see this as an issue,  
-as it is expected to crash together with Comet. 
+as it is expected to crash together with CometBFT. 
 
 If `storeBlockHeight == 0`, we're done.
 

@@ -117,7 +117,9 @@ func TestApp_VoteExtensions(t *testing.T) {
 		resp, err := client.ABCIQuery(ctx, "", []byte("extensionSum"))
 		require.NoError(t, err)
 
-		extSum, err := strconv.Atoi(string(resp.Response.Value))
+		parts := bytes.Split(resp.Response.Value, []byte("|"))
+		require.Len(t, parts, 2)
+		extSum, err := strconv.Atoi(string(parts[0]))
 		// if extensions are not enabled on the network, we should not expect
 		// the app to have any extension value set.
 		if node.Testnet.VoteExtensionsEnableHeight == 0 ||

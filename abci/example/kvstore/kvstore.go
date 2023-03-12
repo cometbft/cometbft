@@ -173,7 +173,7 @@ func (app *Application) formatTxs(ctx context.Context, blockData [][]byte) [][]b
 func (app *Application) ProcessProposal(ctx context.Context, req *types.RequestProcessProposal) (*types.ResponseProcessProposal, error) {
 	for _, tx := range req.Txs {
 		// As CheckTx is a full validity check we can simply reuse this
-		if resp, err := app.CheckTx(ctx, &types.RequestCheckTx{Tx: tx}); resp.Code != CodeTypeOK || err != nil {
+		if resp, err := app.CheckTx(ctx, &types.RequestCheckTx{Tx: tx}); err != nil || resp.Code != CodeTypeOK {
 			return &types.ResponseProcessProposal{Status: types.ResponseProcessProposal_REJECT}, nil
 		}
 	}

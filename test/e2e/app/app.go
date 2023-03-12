@@ -468,7 +468,7 @@ func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.Request
 		time.Sleep(app.cfg.VoteExtensionDelay)
 	}
 
-	app.logger.Info("verified vote extension value", "vote_extension", req.VoteExtension, "num", num)
+	app.logger.Info("verified vote extension value", "height", req.Height, "vote_extension", req.VoteExtension, "num", num)
 	return &abci.ResponseVerifyVoteExtension{
 		Status: abci.ResponseVerifyVoteExtension_ACCEPT,
 	}, nil
@@ -632,7 +632,13 @@ func (app *Application) verifyAndSum(areExtensionsEnabled bool, currentHeight in
 		if err != nil {
 			return 0, fmt.Errorf("failed to parse vote extension: %w", err)
 		}
-		app.logger.Info("received and verified vote extension value", "valAddr", valAddr, "value", extValue, "callsite", callsite)
+		app.logger.Info(
+			"received and verified vote extension value",
+			"height", currentHeight,
+			"valAddr", valAddr,
+			"value", extValue,
+			"callsite", callsite,
+		)
 		sum += extValue
 		extCount++
 	}

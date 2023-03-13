@@ -1721,7 +1721,7 @@ func TestFinalizeBlockCalled(t *testing.T) {
 					Status: abci.ResponseVerifyVoteExtension_ACCEPT,
 				}, nil)
 			}
-			r := &abci.ResponseFinalizeBlock{AgreedAppData: []byte("the_hash")}
+			r := &abci.ResponseFinalizeBlock{AppHash: []byte("the_hash")}
 			m.On("FinalizeBlock", mock.Anything, mock.Anything).Return(r, nil).Maybe()
 			m.On("Commit", mock.Anything, mock.Anything).Return(&abci.ResponseCommit{}, nil).Maybe()
 

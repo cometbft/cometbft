@@ -43,7 +43,7 @@ func Commit(ctx context.Context, client abcicli.Client) error {
 
 func FinalizeBlock(ctx context.Context, client abcicli.Client, txBytes [][]byte, codeExp []uint32, dataExp []byte, hashExp []byte) error {
 	res, _ := client.FinalizeBlock(ctx, &types.RequestFinalizeBlock{Txs: txBytes})
-	appHash := res.AgreedAppData
+	appHash := res.AppHash
 	for i, tx := range res.TxResults {
 		code, data, log := tx.Code, tx.Data, tx.Log
 		if code != codeExp[i] {

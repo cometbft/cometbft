@@ -23,7 +23,7 @@ require (
 	github.com/pointlander/peg v1.0.1
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/client_model v0.3.0
-	github.com/prometheus/common v0.41.0
+	github.com/prometheus/common v0.42.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rs/cors v1.8.3
 	github.com/sasha-s/go-deadlock v0.3.1

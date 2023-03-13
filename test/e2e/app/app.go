@@ -336,6 +336,7 @@ func (app *Application) PrepareProposal(
 			if strings.HasPrefix(string(tx), extTxPrefix) {
 				continue
 			}
+			// Coherence: No need to call parseTx, as the check is stateless and has been performed by CheckTx
 			txs[i] = tx
 			totalBytes += int64(len(tx))
 		}
@@ -360,6 +361,7 @@ func (app *Application) PrepareProposal(
 		if totalBytes > req.MaxTxBytes {
 			break
 		}
+		// Coherence: No need to call parseTx, as the check is stateless and has been performed by CheckTx
 		txs = append(txs, tx)
 	}
 

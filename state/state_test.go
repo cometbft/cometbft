@@ -192,8 +192,8 @@ func TestFinalizeBlockResponsesSaveLoad2(t *testing.T) {
 	for i, tc := range cases {
 		h := int64(i + 1) // last block height, one below what we save
 		responses := &abci.ResponseFinalizeBlock{
-			TxResults:     tc.added,
-			AgreedAppData: []byte(fmt.Sprintf("%d", h)),
+			TxResults: tc.added,
+			AppHash:   []byte(fmt.Sprintf("%d", h)),
 		}
 		err := stateStore.SaveFinalizeBlockResponse(h, responses)
 		require.NoError(t, err)
@@ -206,8 +206,8 @@ func TestFinalizeBlockResponsesSaveLoad2(t *testing.T) {
 		if assert.NoError(err, "%d", i) {
 			t.Log(res)
 			responses := &abci.ResponseFinalizeBlock{
-				TxResults:     tc.expected,
-				AgreedAppData: []byte(fmt.Sprintf("%d", h)),
+				TxResults: tc.expected,
+				AppHash:   []byte(fmt.Sprintf("%d", h)),
 			}
 			assert.Equal(sm.TxResultsHash(responses.TxResults), sm.TxResultsHash(res.TxResults), "%d", i)
 		}

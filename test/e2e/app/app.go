@@ -195,7 +195,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.RequestFinali
 	return &abci.ResponseFinalizeBlock{
 		TxResults:        txs,
 		ValidatorUpdates: valUpdates,
-		AgreedAppData:    app.state.Finalize(),
+		AppHash:          app.state.Finalize(),
 		Events: []abci.Event{
 			{
 				Type: "val_updates",

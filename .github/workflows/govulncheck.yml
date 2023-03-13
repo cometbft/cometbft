@@ -16,7 +16,11 @@ jobs:
     steps:
       - uses: actions/setup-go@v3
         with:
+<<<<<<< HEAD
           go-version: "1.19"
+=======
+          go-version: "1.20.2"
+>>>>>>> 2ab859860 (ABCI calls should crash/exit in all cases when the call itself reports and error (#496))
       - uses: actions/checkout@v3
       - uses: technote-space/get-diff-action@v6
         with:

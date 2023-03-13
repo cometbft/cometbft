@@ -42,6 +42,8 @@ numbering our ADRs from 100 onwards.
 
 ### Proposed
 
+- [ADR-101: Data companion pull API](./adr-101-data-companion-pull-api.md)
+
 ### Accepted
 
 ### Implemented
@@ -49,4 +51,3 @@ numbering our ADRs from 100 onwards.
 ### Deprecated
 
 ### Rejected
-

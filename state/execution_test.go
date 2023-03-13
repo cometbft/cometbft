@@ -71,7 +71,7 @@ func TestApplyBlock(t *testing.T) {
 	require.NoError(t, err)
 	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 
-	state, err = blockExec.ApplyBlock(state, blockID, block)
+	state, err = blockExec.ApplyBlock(state, blockID, block, false)
 	require.Nil(t, err)
 
 	// TODO check state and mempool
@@ -125,7 +125,7 @@ func TestBeginBlockValidators(t *testing.T) {
 		// block for height 2
 		block := makeBlock(state, 2, lastCommit)
 
-		_, err = sm.ExecCommitBlock(proxyApp.Consensus(), block, log.TestingLogger(), stateStore, 1)
+		_, err = sm.ExecCommitBlock(proxyApp.Consensus(), block, log.TestingLogger(), stateStore, 1, false)
 		require.Nil(t, err, tc.desc)
 
 		// -> app receives a list of validators with a bool indicating if they signed
@@ -248,7 +248,7 @@ func TestBeginBlockByzantineValidators(t *testing.T) {
 
 	blockID = types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 
-	state, err = blockExec.ApplyBlock(state, blockID, block)
+	state, err = blockExec.ApplyBlock(state, blockID, block, false)
 	require.Nil(t, err)
 
 	// TODO check state and mempool
@@ -530,7 +530,7 @@ func TestEndBlockValidatorUpdates(t *testing.T) {
 		{PubKey: pk, Power: 10},
 	}
 
-	state, err = blockExec.ApplyBlock(state, blockID, block)
+	state, err = blockExec.ApplyBlock(state, blockID, block, false)
 	require.Nil(t, err)
 	// test new validator was added to NextValidators
 	if assert.Equal(t, state.Validators.Size()+1, state.NextValidators.Size()) {
@@ -592,7 +592,7 @@ func TestEndBlockValidatorUpdatesResultingInEmptySet(t *testing.T) {
 		{PubKey: vp, Power: 0},
 	}
 
-	assert.NotPanics(t, func() { state, err = blockExec.ApplyBlock(state, blockID, block) })
+	assert.NotPanics(t, func() { state, err = blockExec.ApplyBlock(state, blockID, block, false) })
 	assert.NotNil(t, err)
 	assert.NotEmpty(t, state.NextValidators.Validators)
 }

@@ -192,7 +192,7 @@ func (blockExec *BlockExecutor) ValidateBlock(state State, block *types.Block) e
 // from outside this package to process and commit an entire block.
 // It takes a blockID to avoid recomputing the parts hash.
 func (blockExec *BlockExecutor) ApplyBlock(
-	state State, blockID types.BlockID, block *types.Block,
+	state State, blockID types.BlockID, block *types.Block, isProofBlock bool,
 ) (State, error) {
 
 	if err := validateBlock(state, block); err != nil {
@@ -201,7 +201,7 @@ func (blockExec *BlockExecutor) ApplyBlock(
 
 	startTime := time.Now().UnixNano()
 	abciResponses, err := execBlockOnProxyApp(
-		blockExec.logger, blockExec.proxyApp, block, blockExec.store, state.InitialHeight,
+		blockExec.logger, blockExec.proxyApp, block, blockExec.store, state.InitialHeight, isProofBlock,
 	)
 	endTime := time.Now().UnixNano()
 	blockExec.metrics.BlockProcessingTime.Observe(float64(endTime-startTime) / 1000000)
@@ -339,6 +339,7 @@ func execBlockOnProxyApp(
 	block *types.Block,
 	store Store,
 	initialHeight int64,
+	isProofBlock bool,
 ) (*cmtstate.ABCIResponses, error) {
 	var validTxs, invalidTxs = 0, 0
 
@@ -381,6 +382,7 @@ func execBlockOnProxyApp(
 		Header:              *pbh,
 		LastCommitInfo:      commitInfo,
 		ByzantineValidators: block.Evidence.Evidence.ToABCI(),
+		IsProofBlock:        isProofBlock,
 	})
 	if err != nil {
 		logger.Error("error in proxyAppConn.BeginBlock", "err", err)
@@ -624,8 +626,9 @@ func ExecCommitBlock(
 	logger log.Logger,
 	store Store,
 	initialHeight int64,
+	isProofBlock bool,
 ) ([]byte, error) {
-	_, err := execBlockOnProxyApp(logger, appConnConsensus, block, store, initialHeight)
+	_, err := execBlockOnProxyApp(logger, appConnConsensus, block, store, initialHeight, false)
 	if err != nil {
 		logger.Error("failed executing block on proxy app", "height", block.Height, "err", err)
 		return nil, err

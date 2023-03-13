@@ -136,10 +136,14 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 	case "small":
 		manifest.PrepareProposalDelay = 100 * time.Millisecond
 		manifest.ProcessProposalDelay = 100 * time.Millisecond
+		manifest.VoteExtensionDelay = 20 * time.Millisecond
+		manifest.FinalizeBlockDelay = 200 * time.Millisecond
 	case "large":
 		manifest.PrepareProposalDelay = 200 * time.Millisecond
 		manifest.ProcessProposalDelay = 200 * time.Millisecond
 		manifest.CheckTxDelay = 20 * time.Millisecond
+		manifest.VoteExtensionDelay = 100 * time.Millisecond
+		manifest.FinalizeBlockDelay = 500 * time.Millisecond
 	}
 
 	if voteExtensionEnabled.Choose(r).(bool) {

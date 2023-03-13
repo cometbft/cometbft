@@ -327,14 +327,13 @@ func (blockExec *BlockExecutor) VerifyVoteExtension(ctx context.Context, vote *t
 	if err != nil {
 		panic(fmt.Errorf("VerifyVoteExtension call failed: %w", err))
 	}
-
 	if resp.IsStatusUnknown() {
 		panic(fmt.Sprintf("VerifyVoteExtension responded with status %s", resp.Status.String()))
 	}
+
 	if !resp.IsAccepted() {
 		return types.ErrInvalidVoteExtension
 	}
-
 	return nil
 }
 
@@ -476,7 +475,7 @@ func buildExtendedCommitInfo(ec *types.ExtendedCommit, store Store, initialHeigh
 			))
 		}
 
-		var ext []byte
+		var ext, extSig []byte
 		// Check if vote extensions were enabled during the commit's height: ec.Height.
 		// ec is the commit from the previous height, so if extensions were enabled
 		// during that height, we ensure they are present and deliver the data to
@@ -487,12 +486,14 @@ func buildExtendedCommitInfo(ec *types.ExtendedCommit, store Store, initialHeigh
 				panic(fmt.Errorf("commit at height %d received with missing vote extensions data", ec.Height))
 			}
 			ext = ecs.Extension
+			extSig = ecs.ExtensionSignature
 		}
 
 		votes[i] = abci.ExtendedVoteInfo{
-			Validator:       types.TM2PB.Validator(val),
-			SignedLastBlock: ecs.BlockIDFlag != types.BlockIDFlagAbsent,
-			VoteExtension:   ext,
+			Validator:          types.TM2PB.Validator(val),
+			SignedLastBlock:    ecs.BlockIDFlag != types.BlockIDFlagAbsent,
+			VoteExtension:      ext,
+			ExtensionSignature: extSig,
 		}
 	}
 

@@ -243,7 +243,7 @@ type testApp struct {
 	CommitVotes      []abci.VoteInfo
 	Misbehavior      []abci.Misbehavior
 	ValidatorUpdates []abci.ValidatorUpdate
-	AgreedAppData    []byte
+	AppHash          []byte
 }
 
 var _ abci.Application = (*testApp)(nil)
@@ -265,8 +265,8 @@ func (app *testApp) FinalizeBlock(_ context.Context, req *abci.RequestFinalizeBl
 				App: 1,
 			},
 		},
-		TxResults:     txResults,
-		AgreedAppData: app.AgreedAppData,
+		TxResults: txResults,
+		AppHash:   app.AppHash,
 	}, nil
 }
 

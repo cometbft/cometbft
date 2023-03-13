@@ -427,8 +427,8 @@ func (h *Handshaker) ReplayBlocks(
 			// v0.37 with endblock to v0.38 with finalize block and thus
 			// does not have the app hash saved from the previous height
 			// here we take the appHash provided from the Info handshake
-			if len(finalizeBlockResponse.AgreedAppData) == 0 {
-				finalizeBlockResponse.AgreedAppData = appHash
+			if len(finalizeBlockResponse.AppHash) == 0 {
+				finalizeBlockResponse.AppHash = appHash
 			}
 			mockApp := newMockProxyApp(finalizeBlockResponse)
 			h.logger.Info("Replay last block using mock app")

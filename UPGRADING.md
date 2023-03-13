@@ -29,7 +29,7 @@ This guide provides instructions for upgrading to specific versions of CometBFT.
 * The Application's hash (or any data representing the Application's current state)
   is known by the time `FinalizeBlock` finishes its execution.
   Accordingly, the `app_hash` parameter has been moved from `ResponseCommit`
-  to `ResponseFinalizeBlock`, and renamed `agreed_app_data`.
+  to `ResponseFinalizeBlock`.
 * For details, please see the updated [specification](spec/abci/README.md)
 
 

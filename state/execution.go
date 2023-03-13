@@ -107,65 +107,7 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 
 	txs := blockExec.mempool.ReapMaxBytesMaxGas(maxDataBytes, maxGas)
 
-<<<<<<< HEAD
 	return state.MakeBlock(height, txs, commit, evidence, proposerAddr)
-=======
-	localLastCommit := buildLastCommitInfo(block, blockExec.store, state.InitialHeight)
-	rpp, err := blockExec.proxyApp.PrepareProposalSync(
-		abci.RequestPrepareProposal{
-			MaxTxBytes:         maxDataBytes,
-			Txs:                block.Txs.ToSliceOfBytes(),
-			LocalLastCommit:    extendedCommitInfo(localLastCommit, votes),
-			Misbehavior:        block.Evidence.Evidence.ToABCI(),
-			Height:             block.Height,
-			Time:               block.Time,
-			NextValidatorsHash: block.NextValidatorsHash,
-			ProposerAddress:    block.ProposerAddress,
-		},
-	)
-	if err != nil {
-		// The App MUST ensure that only valid (and hence 'processable') transactions
-		// enter the mempool. Hence, at this point, we can't have any non-processable
-		// transaction causing an error.
-		//
-		// Also, the App can simply skip any transaction that could cause any kind of trouble.
-		// Either way, we cannot recover in a meaningful way, unless we skip proposing
-		// this block, repair what caused the error and try again. Hence, we return an
-		// error for now (the production code calling this function is expected to panic).
-		return nil, err
-	}
-
-	txl := types.ToTxs(rpp.Txs)
-	if err := txl.Validate(maxDataBytes); err != nil {
-		return nil, err
-	}
-
-	return state.MakeBlock(height, txl, commit, evidence, proposerAddr), nil
-}
-
-func (blockExec *BlockExecutor) ProcessProposal(
-	block *types.Block,
-	state State,
-) (bool, error) {
-	resp, err := blockExec.proxyApp.ProcessProposalSync(abci.RequestProcessProposal{
-		Hash:               block.Header.Hash(),
-		Height:             block.Header.Height,
-		Time:               block.Header.Time,
-		Txs:                block.Data.Txs.ToSliceOfBytes(),
-		ProposedLastCommit: buildLastCommitInfo(block, blockExec.store, state.InitialHeight),
-		Misbehavior:        block.Evidence.Evidence.ToABCI(),
-		ProposerAddress:    block.ProposerAddress,
-		NextValidatorsHash: block.NextValidatorsHash,
-	})
-	if err != nil {
-		return false, err
-	}
-	if resp.IsStatusUnknown() {
-		panic(fmt.Sprintf("ProcessProposal responded with status %s", resp.Status.String()))
-	}
-
-	return resp.IsAccepted(), nil
->>>>>>> 2ab859860 (ABCI calls should crash/exit in all cases when the call itself reports and error (#496))
 }
 
 // ValidateBlock validates the given block against the given state.

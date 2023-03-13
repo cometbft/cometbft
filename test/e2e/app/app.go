@@ -30,10 +30,10 @@ const (
 	appVersion                 = 1
 	voteExtensionKey    string = "extensionSum"
 	voteExtensionMaxVal int64  = 128
-	reservedKey         string = "reservedTxKey"
-	suffixChainID       string = "_ChainID"
-	suffixVoteExtHeight string = "_VoteExtensionsHeight"
-	suffixInitialHeight string = "_InitialHeight"
+	prefixReservedKey   string = "reservedTxKey_"
+	suffixChainID       string = "ChainID"
+	suffixVoteExtHeight string = "VoteExtensionsHeight"
+	suffixInitialHeight string = "InitialHeight"
 )
 
 // Application is an ABCI application for use by end-to-end tests. It is a
@@ -144,9 +144,9 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 			panic(err)
 		}
 	}
-	app.state.Set(reservedKey+suffixChainID, req.ChainId)
-	app.state.Set(reservedKey+suffixVoteExtHeight, strconv.FormatInt(req.ConsensusParams.Abci.VoteExtensionsEnableHeight, 10))
-	app.state.Set(reservedKey+suffixInitialHeight, strconv.FormatInt(req.InitialHeight, 10))
+	app.state.Set(prefixReservedKey+suffixChainID, req.ChainId)
+	app.state.Set(prefixReservedKey+suffixVoteExtHeight, strconv.FormatInt(req.ConsensusParams.Abci.VoteExtensionsEnableHeight, 10))
+	app.state.Set(prefixReservedKey+suffixInitialHeight, strconv.FormatInt(req.InitialHeight, 10))
 	resp := &abci.ResponseInitChain{
 		AppHash: app.state.Hash,
 	}
@@ -159,7 +159,7 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 // CheckTx implements ABCI.
 func (app *Application) CheckTx(_ context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
 	key, _, err := parseTx(req.Tx)
-	if err != nil || key == reservedKey {
+	if err != nil || key == prefixReservedKey {
 		return &abci.ResponseCheckTx{
 			Code: kvstore.CodeTypeEncodingError,
 			Log:  err.Error(),
@@ -182,8 +182,8 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.RequestFinali
 		if err != nil {
 			panic(err) // shouldn't happen since we verified it in CheckTx and ProcessProposal
 		}
-		if key == reservedKey {
-			panic(fmt.Errorf("detected a transaction with key %q; this key is reserved and should have been filtered out", reservedKey))
+		if key == prefixReservedKey {
+			panic(fmt.Errorf("detected a transaction with key %q; this key is reserved and should have been filtered out", prefixReservedKey))
 		}
 		app.state.Set(key, value)
 
@@ -359,7 +359,7 @@ func (app *Application) PrepareProposal(
 			// over any supplied transaction that attempts to modify the "extensionSum" value.
 			continue
 		}
-		if strings.HasPrefix(string(tx), reservedKey) {
+		if strings.HasPrefix(string(tx), prefixReservedKey) {
 			app.logger.Error("detected tx that should not come from the mempool", "tx", tx)
 			continue
 		}
@@ -397,7 +397,7 @@ func (app *Application) ProcessProposal(_ context.Context, req *abci.RequestProc
 				app.logger.Error("vote extension transaction failed verification, rejecting proposal", k, v, "err", err)
 				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}
-		case strings.HasPrefix(k, reservedKey):
+		case strings.HasPrefix(k, prefixReservedKey):
 			app.logger.Error("key prefix %q is reserved and cannot be used in transactions, rejecting proposal", k)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
@@ -479,7 +479,7 @@ func (app *Application) Rollback() error {
 }
 
 func (app *Application) getAppHeight() int64 {
-	initialHeightStr := app.state.Get(reservedKey + suffixInitialHeight)
+	initialHeightStr := app.state.Get(prefixReservedKey + suffixInitialHeight)
 	if len(initialHeightStr) == 0 {
 		panic("initial height not set in database")
 	}
@@ -504,7 +504,7 @@ func (app *Application) checkHeightAndExtensions(isPrepareProcessProposal bool, 
 		))
 	}
 
-	voteExtHeightStr := app.state.Get(reservedKey + suffixVoteExtHeight)
+	voteExtHeightStr := app.state.Get(prefixReservedKey + suffixVoteExtHeight)
 	if len(voteExtHeightStr) == 0 {
 		panic("vote extension height not set in database")
 	}
@@ -548,7 +548,7 @@ func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, 
 			if err != nil {
 				return nil, err
 			}
-			app.state.Set(reservedKey+addr, hex.EncodeToString(pubKeyBytes))
+			app.state.Set(prefixReservedKey+addr, hex.EncodeToString(pubKeyBytes))
 		}
 	}
 	return valUpdates, nil
@@ -593,7 +593,7 @@ func (app *Application) verifyAndSum(areExtensionsEnabled bool, currentHeight in
 		}
 
 		// Reconstruct vote extension's signed bytes...
-		chainID := app.state.Get(reservedKey + suffixChainID)
+		chainID := app.state.Get(prefixReservedKey + suffixChainID)
 		if len(chainID) == 0 {
 			panic("chainID not set in database")
 		}
@@ -610,7 +610,7 @@ func (app *Application) verifyAndSum(areExtensionsEnabled bool, currentHeight in
 
 		//... and verify
 		valAddr := crypto.Address(vote.Validator.Address).String()
-		pubKeyHex := app.state.Get(reservedKey + valAddr)
+		pubKeyHex := app.state.Get(prefixReservedKey + valAddr)
 		if len(pubKeyHex) == 0 {
 			return 0, fmt.Errorf("received vote from unknown validator with address %q", valAddr)
 		}

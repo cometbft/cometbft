@@ -16,9 +16,9 @@ CometBFT serves blockchain applications.
 
 More formally, CometBFT performs Byzantine Fault Tolerant (BFT)
 State Machine Replication (SMR) for arbitrary deterministic, finite state machines.
-For more background, see [What is CometBFT?](introduction/what-is-cometbft.md).
+For more background, see [What is CometBFT?](introduction/README.md#what-is-cometbft.md).
 
-To get started quickly with an example application, see the [quick start guide](introduction/quick-start.md).
+To get started quickly with an example application, see the [quick start guide](guides/quick-start.md).
 
 To learn about application development on CometBFT, see the [Application Blockchain Interface](https://github.com/cometbft/cometbft/tree/v0.37.x/spec/abci).
 

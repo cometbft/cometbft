@@ -580,8 +580,12 @@ func (app *Application) verifyAndSum(areExtensionsEnabled bool, currentHeight in
 			continue
 		}
 		if len(vote.VoteExtension) == 0 {
-			app.logger.Error("VE data:", "ext", vote.VoteExtension, "extSig", vote.ExtensionSignature, "validator", vote.Validator, "signed", vote.SignedLastBlock)
-			return 0, fmt.Errorf("empty vote extensions not allowed at height %d, which has extensions enabled", currentHeight)
+			app.logger.Info("received empty vote extension form %X at height %d (extensions enabled), must represent nil-precommit",
+				vote.Validator, currentHeight)
+			if len(vote.ExtensionSignature) != 0 {
+				return 0, errors.New("non-empty vote extension signature with empty vote extension")
+			}
+			continue
 		}
 		// Vote extension signatures are always provided. Apps can use them to verify the integrity of extensions
 		if len(vote.ExtensionSignature) == 0 {

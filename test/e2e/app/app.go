@@ -384,6 +384,8 @@ func (app *Application) PrepareProposal(
 
 // ProcessProposal implements part of the Application interface.
 // It accepts any proposal that does not contain a malformed transaction.
+// NOTE It is up to real Applications to effect punitive behavior in the cases ProcessProposal
+// returns ResponseProcessProposal_REJECT, as it is evidence of misbehavior.
 func (app *Application) ProcessProposal(_ context.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
 	for _, tx := range req.Txs {
 		k, v, err := parseTx(tx)

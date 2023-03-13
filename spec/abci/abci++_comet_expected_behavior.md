@@ -126,6 +126,24 @@ Let us now examine the grammar line by line, providing further details.
 >success-sync        = offer-snapshot 1*apply-chunk
 >```
 
+* If vote extensions are enabled, after statesync a node is required to sync at least one block
+* via block sync.
+
+<!-- TODO >
+Check whether recovery should go after sync-blocks
+-->
+>```abnf
+>block-sync          = 1*sync-blocks recovery
+>sync-blocks         = request-block apply-block update-state
+>```
+
+Thus the entire sequence of startup via syncing protocols before switching to consensus would look as follows:
+
+>```abnf
+>startup          = state-sync block-sync recovery
+>```
+
+
 * In recovery mode, CometBFT first calls `Info` to know from which height it needs to replay decisions
   to the Application. After this, CometBFT enters normal consensus execution.
 

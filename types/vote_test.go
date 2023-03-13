@@ -359,6 +359,7 @@ func TestInvalidVotes(t *testing.T) {
 	}{
 		{"negative height", func(v *Vote) { v.Height = -1 }},
 		{"negative round", func(v *Vote) { v.Round = -1 }},
+		{"zero Height", func(v *Vote) { v.Height = 0 }},
 		{"invalid block ID", func(v *Vote) { v.BlockID = BlockID{[]byte{1, 2, 3}, PartSetHeader{111, []byte("blockparts")}} }},
 		{"invalid address", func(v *Vote) { v.ValidatorAddress = make([]byte, 1) }},
 		{"invalid validator index", func(v *Vote) { v.ValidatorIndex = -1 }},

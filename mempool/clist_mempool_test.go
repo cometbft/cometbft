@@ -452,8 +452,8 @@ func TestSerialReap(t *testing.T) {
 					txResult.Code, txResult.Data, txResult.Log)
 			}
 		}
-		if len(res.AgreedAppData) != 8 {
-			t.Errorf("error committing. Hash:%X", res.AgreedAppData)
+		if len(res.AppHash) != 8 {
+			t.Errorf("error committing. Hash:%X", res.AppHash)
 		}
 
 		_, err = appConnCon.Commit(context.Background(), &abci.RequestCommit{})
@@ -613,7 +613,7 @@ func TestMempoolTxsBytes(t *testing.T) {
 	res, err := appConnCon.FinalizeBlock(context.Background(), &abci.RequestFinalizeBlock{Txs: [][]byte{txBytes}})
 	require.NoError(t, err)
 	require.EqualValues(t, 0, res.TxResults[0].Code)
-	require.NotEmpty(t, res.AgreedAppData)
+	require.NotEmpty(t, res.AppHash)
 
 	_, err = appConnCon.Commit(context.Background(), &abci.RequestCommit{})
 	require.NoError(t, err)

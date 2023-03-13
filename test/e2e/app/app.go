@@ -93,7 +93,7 @@ type Config struct {
 	ProcessProposalDelay time.Duration `toml:"process_proposal_delay"`
 	CheckTxDelay         time.Duration `toml:"check_tx_delay"`
 	FinalizeBlockDelay   time.Duration `toml:"finalize_block_delay"`
-	// TODO: add vote extension delays once completed (@cmwaters)
+	VoteExtensionDelay   time.Duration `toml:"vote_extension_delay"`
 }
 
 func DefaultConfig(dir string) *Config {
@@ -437,6 +437,11 @@ func (app *Application) ExtendVote(_ context.Context, req *abci.RequestExtendVot
 	//nolint:gosec // G404: Use of weak random number generator
 	num := rand.Int63n(voteExtensionMaxVal)
 	extLen := binary.PutVarint(ext, num)
+
+	if app.cfg.VoteExtensionDelay != 0 {
+		time.Sleep(app.cfg.VoteExtensionDelay)
+	}
+
 	app.logger.Info("generated vote extension", "num", num, "ext", fmt.Sprintf("%x", ext[:extLen]), "state.Height", app.state.Height)
 	return &abci.ResponseExtendVote{
 		VoteExtension: ext[:extLen],
@@ -467,6 +472,11 @@ func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.Request
 			Status: abci.ResponseVerifyVoteExtension_REJECT,
 		}, nil
 	}
+
+	if app.cfg.VoteExtensionDelay != 0 {
+		time.Sleep(app.cfg.VoteExtensionDelay)
+	}
+
 	app.logger.Info("verified vote extension value", "vote_extension", req.VoteExtension, "num", num)
 	return &abci.ResponseVerifyVoteExtension{
 		Status: abci.ResponseVerifyVoteExtension_ACCEPT,

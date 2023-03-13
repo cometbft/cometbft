@@ -33,6 +33,15 @@ module p2p {
     def require(pred:bool):bool = pred
     // TODO: pure def putset (m,s)
 
+    /*
+    We will distinguish three kinds of actions according to their origin
+    - low level by "the network". This includes incoming requests, connections being lost, but also
+      the result of low-level protocol executions (e.g., setting a connection to connected after it was 
+      succesful established)
+    - reactors: reactors can ask p2p to remove peers if they fail w.r.t. reactor protocol logic
+    - PEX reactor: This is a specific reactor that makes sure "enough" connections are established.
+    */
+
     // triggered by "the network"
     action loseConnection(a:Address):bool = all{
         require(connectionState.get(a) != "closed"),
@@ -45,14 +54,17 @@ module p2p {
         }
     }
 
+    // incoming request
     action transportAccept(a: Address):bool = all {
-        or {
+        or { // under the negation of this condition the connection is rejected
+             // TODO: Does rejection unfluence the local state?
             peersInbound < MaxNumInboundPeers,
             IsUnconditional.contains(a)
         },
         require(peerState.get(a) != "outbound"), // TODO: check whether is is the right condition
         peerState' = peerState.put(a, "inbound"), 
         connectionState' = connectionState.put(a, "open"),
+        // TODO: inform reactors. Do we model this?
         AddressBook' = AddressBook.union(Set(a)) ,
         all { //unchanged
             Environment' = Environment,
@@ -71,8 +83,18 @@ module p2p {
             Environment' = Environment,
             IsUnconditional' = IsUnconditional,
         }
-   }
+    }
 
+    action dialingFailed(a:Address):bool = all{ 
+        require(connectionState.get(a) != "dialing"),
+        connectionState' = Peers.exclude(Set(a)).mapBy(x => connectionState.get(x)),
+        peerState' = Peers.exclude(Set(a)).mapBy(x => peerState.get(x)),
+        all { //unchanged
+            AddressBook' = AddressBook,
+            Environment' = Environment,
+            IsUnconditional' = IsUnconditional,
+        }
+   }
 
     // triggered by a reactor
     action stopPeerForError(a:Address):bool = all {
@@ -86,50 +108,66 @@ module p2p {
         // TODO: inform all reactors then. (How) should we model that?
     }
 
-    action debugEnsurePeers(a:Address):bool =
+    // triggered by PEX
+    action debugEnsurePeers(a:Address):bool = all {
+    // this is for debugging the spec. In the protocol EnsurePeers does a random pick of an address
+    // here we already entered with a specific address.
+        require(peersOutbound + peersDialing < MaxNumOutboundPeers),
+        require(not(Peers.contains(a))), // TODO: English spec restricted to connected or dialing
         all {
-                require(peersOutbound + peersDialing < MaxNumOutboundPeers),
-                require(not(Peers.contains(a))),
-                all {
-                    //dialPeer(addr)
-                    peerState' = peerState.put(a, "dialing"), 
-                    connectionState' = connectionState.put(a, "init"),
-                    all { //unchanged
-                        AddressBook' = AddressBook,
-                        Environment' = Environment,
-                        IsUnconditional' = IsUnconditional,
-                    }
+            //dialPeer(addr)
+            peerState' = peerState.put(a, "dialing"), 
+            connectionState' = connectionState.put(a, "init"),
+                all { //unchanged
+                    AddressBook' = AddressBook,
+                    Environment' = Environment,
+                    IsUnconditional' = IsUnconditional,
                 }
-            }
-
-        
-    action ensurePeers = all {
-            require(AddressBook.exclude(Peers) != Set()),
-            nondet a = oneOf(AddressBook.exclude(Peers)) // addrbook.PickAddress(bias)
-            debugEnsurePeers(a),
         }
+    }
 
 
-    action dialPeers(S:Set[Address]):bool = // check what the code actually is doing. Now we don't override existing peers in this spec
-        all {
-            peerState' = Peers.union(S).mapBy(a => if (Peers.contains(a)) peerState.get(a) else "dialing"), 
-            connectionState' = Peers.union(S).mapBy(a => if (Peers.contains(a)) connectionState.get(a) else "init"),
-            AddressBook' = AddressBook.union(S),
-            all { //unchanged
-                        
-                        Environment' = Environment,
-                        IsUnconditional' = IsUnconditional,
-                    }
+    action ensurePeers = all { 
+        /* 
+        TODO:
+        - shall we pick a subset of Addressbook and dial them
+        - shall we model dialattempts, etc?
+        */
+        require(AddressBook.exclude(Peers) != Set()),
+        nondet a = oneOf(AddressBook.exclude(Peers)) // addrbook.PickAddress(bias)
+        debugEnsurePeers(a),
+    }
+
+    // this can be called by the operator
+    action dialPeers(S:Set[Address]):bool = all {
+        // TODO: check what the code actually is doing. Now we don't override existing peers in this spec
+        peerState' = Peers.union(S).mapBy(a => if (Peers.contains(a)) peerState.get(a) else "dialing"), 
+        connectionState' = Peers.union(S).mapBy(a => if (Peers.contains(a)) connectionState.get(a) else "init"),
+        AddressBook' = AddressBook.union(S),
+        all { //unchanged
+                Environment' = Environment,
+                IsUnconditional' = IsUnconditional,
         }
+    }
 
-    action init =
-        all {
-            peerState' = Map(),
-            connectionState' = Map(),
-            AddressBook' = Set({ID: "igor", networkAddress: "127.0.0.1:10"}, {ID: "josef", networkAddress: "127.0.0.2:10"}),
-            Environment' = Set({ID: "lasaro", networkAddress: "127.0.0.7:10"}, {ID: "daniel", networkAddress: "127.0.0.6:10"}),
-            IsUnconditional' = Set({ID: "zarko", networkAddress: "127.0.0.42"}),
-        }
+    // this is a response to receiving a set of addresses from a seed node
+    action PexAddrs(S:Set[Address]):bool = all {
+        dialPeers(S)
+        // TODO: does not check max outbound peers
+    }
+
+
+    /*
+    Here we start to describe initial states and runs and tests
+    */
+    
+    action init = all {
+        peerState' = Map(),
+        connectionState' = Map(),
+        AddressBook' = Set({ID: "igor", networkAddress: "127.0.0.1:10"}, {ID: "josef", networkAddress: "127.0.0.2:10"}),
+        Environment' = Set({ID: "lasaro", networkAddress: "127.0.0.7:10"}, {ID: "daniel", networkAddress: "127.0.0.6:10"}),
+        IsUnconditional' = Set({ID: "zarko", networkAddress: "127.0.0.42"}),
+    }
 
     action initWithSameSets =
         val initSet = Set({ID: "igor", networkAddress: "127.0.0.1:10"}, {ID: "josef", networkAddress: "127.0.0.2:10"})
@@ -154,10 +192,19 @@ module p2p {
             loseConnection(a),
         },
         all {
+            require(Peers != Set()),
+            nondet a = oneOf(Peers) 
+            dialingFailed(a),
+        }, 
+        all {
+            require(Peers != Set()),
+            nondet a = oneOf(Peers) 
+            establishConnection(a),
+        },    
+        all {
             nondet a = oneOf(Environment) 
             transportAccept(a),
         }
-
     }
 
     val invPeers = peerState.keys() == connectionState.keys()

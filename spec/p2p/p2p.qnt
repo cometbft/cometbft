@@ -1,8 +1,7 @@
 module p2p {
 
     // TODO: "pure val" is a work around as constants are not working in the REPL, yet
-    pure val peerStates = Set("dialing", "inbound", "reconnecting", "outbound")
-    // TODO: Do we actually care about connection states at this level of abstraction?
+    pure val peerStates = Set("dialing", "reconnecting", "inbound", "outbound")
     pure val connectionStates = Set("init", "open", "closed")
     // TODO: We might experiment around the max peer numbers. Should we model them as variables?
     pure val MaxNumOutboundPeers = 5
@@ -23,7 +22,18 @@ module p2p {
     // Environment. These are the nodes that may dial us
     var Environment: Set[Address]
  
+    // What we call Peers is defined the domain of the peerState and connectionState maps. 
+    // They should be the same, so we can check the invariant invPeers
     def Peers = peerState.keys()
+    // auxiliary definition. These are the peers that seem alive and connected
+    def activePeers = Peers.filter(x => connectionState.get(x) == "open")
+
+    val invPeers = peerState.keys() == connectionState.keys()
+    val invConnectionsNotOpen = Peers.forall(x => 
+        (peerState.get(x) == "dialing" or peerState.get(x) == "reconnecting") implies connectionState.get(x) != "open")
+    val invConnectionsNotInit = Peers.forall(x => 
+        (peerState.get(x) == "inbound" or peerState.get(x) == "outbound") implies connectionState.get(x) != "init")
+    val invConnectionsOpen = activePeers.forall(x => peerState.get(x) == "outbound" or peerState.get(x) == "inbound")
 
     // counting peers in different states
     def peersOutbound = size(Peers.filter(a => peerState.get(a) == "outbound"))
@@ -35,7 +45,7 @@ module p2p {
 
     // helps for better readability. Future syntactic sugar 
     def require(pred:bool):bool = pred
-    // TODO: pure def putset (m,s)
+    
 
     /*
     We will distinguish three kinds of actions according to their origin
@@ -47,7 +57,7 @@ module p2p {
     */
 
     // triggered by "the network"
-    action loseConnection(a:Address):bool = all{
+    action loseConnection(a:Address):bool = all {
         require(connectionState.get(a) != "closed"),
         connectionState' = connectionState.set(a, "closed"),
         all { //unchanged
@@ -87,7 +97,9 @@ module p2p {
             peersInbound < MaxNumInboundPeers,
             IsUnconditional.contains(a)
         },
-        require(peerState.get(a) != "outbound"), // TODO: check whether is is the right condition
+        
+        require(if (Peers.contains(a)) peerState.get(a) != "outbound" 
+                else true), // TODO: check whether is is the right condition
         peerState' = peerState.put(a, "inbound"), 
         connectionState' = connectionState.put(a, "open"),
         // TODO: inform reactors. Do we model this?
@@ -101,12 +113,16 @@ module p2p {
 
     // lower level connection initialization complete. Gloss over details
     // TODO: what happens if the other side doesn't accept the connection of some problem occurs?
-    action establishConnection(a:Address):bool = all{ // TODO: upgradeConnection?
-        require(connectionState.get(a) != "dialing"),
-        connectionState' = connectionState.set(a, "outbound"),
+    action establishConnection(a:Address):bool = all { // TODO: upgradeConnection?
+        require(or {
+            peerState.get(a) == "dialing",
+            peerState.get(a) == "reconnecting",
+            }
+        ),
+        peerState' = peerState.set(a, "outbound"),
+        connectionState' = connectionState.set(a, "open"),
         all { //unchanged
             AddressBook' = AddressBook,
-            peerState' = peerState,
             Environment' = Environment,
             IsUnconditional' = IsUnconditional,
             PersistentPeers' = PersistentPeers,
@@ -114,7 +130,7 @@ module p2p {
     }
 
     action dialingFailed(a:Address):bool = all{ 
-        require(connectionState.get(a) != "dialing"),
+        require(connectionState.get(a) == "dialing"),
         connectionState' = Peers.exclude(Set(a)).mapBy(x => connectionState.get(x)),
         peerState' = Peers.exclude(Set(a)).mapBy(x => peerState.get(x)),
         all { //unchanged
@@ -148,12 +164,12 @@ module p2p {
             //dialPeer(addr)
             peerState' = peerState.put(a, "dialing"), 
             connectionState' = connectionState.put(a, "init"),
-                all { //unchanged
-                    AddressBook' = AddressBook,
-                    Environment' = Environment,
-                    IsUnconditional' = IsUnconditional,
-                    PersistentPeers' = PersistentPeers,
-                }
+            all { //unchanged
+                AddressBook' = AddressBook,
+                Environment' = Environment,
+                IsUnconditional' = IsUnconditional,
+                PersistentPeers' = PersistentPeers,
+            }
         }
     }
 
@@ -237,12 +253,13 @@ module p2p {
             establishConnection(a),
         },    
         all {
+            require(Environment != Set()),
             nondet a = oneOf(Environment) 
             transportAccept(a),
         }
     }
 
-    val invPeers = peerState.keys() == connectionState.keys()
+    
 
 
 }

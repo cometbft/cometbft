@@ -1,0 +1,68 @@
+syntax = "proto3";
+package cometbft.state.v3;
+
+option go_package = "github.com/cometbft/cometbft/proto/cometbft/state/v3";
+
+import "cometbft/state/v1/types.proto";
+import "cometbft/state/v2/types.proto";
+
+import "cometbft/abci/v3/types.proto";
+import "cometbft/types/v1/types.proto";
+import "cometbft/types/v1/validator.proto";
+import "cometbft/types/v3/params.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
+// ConsensusParamsInfo represents the latest consensus params, or the last height it changed
+message ConsensusParamsInfo {
+  cometbft.types.v3.ConsensusParams consensus_params = 1 [(gogoproto.nullable) = false];
+  int64 last_height_changed = 2;
+}
+
+message ABCIResponsesInfo {
+  // Retains the responses of the legacy ABCI calls during block processing.
+  v2.ABCIResponses  legacy_abci_responses = 1;
+  int64             height                = 2;
+  cometbft.abci.v3.ResponseFinalizeBlock response_finalize_block = 3;
+}
+
+message State {
+  v1.Version version = 1 [(gogoproto.nullable) = false];
+
+  // immutable
+  string chain_id = 2 [(gogoproto.customname) = "ChainID"];
+  int64 initial_height = 14;
+
+  // LastBlockHeight=0 at genesis (ie. block(H=0) does not exist)
+  int64 last_block_height = 3;
+  cometbft.types.v1.BlockID last_block_id = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customname) = "LastBlockID"
+  ];
+  google.protobuf.Timestamp last_block_time = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.stdtime) = true
+  ];
+
+  // LastValidators is used to validate block.LastCommit.
+  // Validators are persisted to the database separately every time they change,
+  // so we can query for historical validator sets.
+  // Note that if s.LastBlockHeight causes a valset change,
+  // we set s.LastHeightValidatorsChanged = s.LastBlockHeight + 1 + 1
+  // Extra +1 due to nextValSet delay.
+  cometbft.types.v1.ValidatorSet next_validators = 6;
+  cometbft.types.v1.ValidatorSet validators = 7;
+  cometbft.types.v1.ValidatorSet last_validators = 8;
+  int64 last_height_validators_changed = 9;
+
+  // Consensus parameters used for validating blocks.
+  // Changes returned by EndBlock and updated after Commit.
+  cometbft.types.v3.ConsensusParams consensus_params = 10 [(gogoproto.nullable) = false];
+  int64 last_height_consensus_params_changed = 11;
+
+  // Merkle root of the results from executing prev block
+  bytes last_results_hash = 12;
+
+  // the latest AppHash we've received from calling abci.Commit()
+  bytes app_hash = 13;
+}

@@ -1,0 +1,30 @@
+syntax = "proto3";
+package cometbft.types.v3;
+
+option go_package = "github.com/cometbft/cometbft/proto/cometbft/types/v3";
+
+import "cometbft/types/v1/evidence.proto";
+
+import "cometbft/types/v3/types.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
+message Evidence {
+  oneof sum {
+    DuplicateVoteEvidence         duplicate_vote_evidence      = 1;
+    v1.LightClientAttackEvidence  light_client_attack_evidence = 2;
+  }
+}
+
+// DuplicateVoteEvidence contains evidence of a validator signed two conflicting votes.
+message DuplicateVoteEvidence {
+  cometbft.types.v3.Vote    vote_a             = 1;
+  cometbft.types.v3.Vote    vote_b             = 2;
+  int64                     total_voting_power = 3;
+  int64                     validator_power    = 4;
+  google.protobuf.Timestamp timestamp          = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+}
+
+message EvidenceList {
+  repeated Evidence evidence = 1 [(gogoproto.nullable) = false];
+}

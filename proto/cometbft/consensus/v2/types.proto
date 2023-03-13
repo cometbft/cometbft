@@ -1,0 +1,27 @@
+syntax = "proto3";
+package cometbft.consensus.v2;
+
+option go_package = "github.com/cometbft/cometbft/proto/cometbft/consensus/v2";
+
+import "cometbft/consensus/v1/types.proto";
+
+import "cometbft/types/v3/types.proto";
+
+// Vote is sent when voting for a proposal (or lack thereof).
+message Vote {
+  cometbft.types.v3.Vote vote = 1;
+}
+
+message Message {
+  oneof sum {
+    v1.NewRoundStep   new_round_step  = 1;
+    v1.NewValidBlock  new_valid_block = 2;
+    v1.Proposal       proposal        = 3;
+    v1.ProposalPOL    proposal_pol    = 4;
+    v1.BlockPart      block_part      = 5;
+    Vote              vote            = 6;
+    v1.HasVote        has_vote        = 7;
+    v1.VoteSetMaj23   vote_set_maj23  = 8;
+    v1.VoteSetBits    vote_set_bits   = 9;
+  }
+}

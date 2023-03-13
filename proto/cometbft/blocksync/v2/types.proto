@@ -1,0 +1,25 @@
+syntax = "proto3";
+package cometbft.blocksync.v2;
+
+option go_package = "github.com/cometbft/cometbft/proto/cometbft/blocksync/v2";
+
+import "cometbft/blocksync/v1/types.proto";
+
+import "cometbft/types/v3/block.proto";
+import "cometbft/types/v3/types.proto";
+
+// BlockResponse returns block to the requested
+message BlockResponse {
+  cometbft.types.v3.Block          block      = 1;
+  cometbft.types.v3.ExtendedCommit ext_commit = 2;
+}
+
+message Message {
+  oneof sum {
+    v1.BlockRequest     block_request     = 1;
+    v1.NoBlockResponse  no_block_response = 2;
+    BlockResponse       block_response    = 3;
+    v1.StatusRequest    status_request    = 4;
+    v1.StatusResponse   status_response   = 5;
+  }
+}

@@ -1,0 +1,40 @@
+syntax = "proto3";
+package cometbft.types.v2;
+
+option go_package = "github.com/cometbft/cometbft/proto/cometbft/types/v2";
+
+import "gogoproto/gogo.proto";
+import "cometbft/types/v1/params.proto";
+import "google/protobuf/duration.proto";
+
+option (gogoproto.equal_all) = true;
+
+// ConsensusParams contains consensus critical parameters that determine the
+// validity of blocks.
+message ConsensusParams {
+  BlockParams         block     = 1;
+  v1.EvidenceParams   evidence  = 2;
+  v1.ValidatorParams  validator = 3;
+  VersionParams       version   = 4;
+}
+
+// BlockParams contains limits on the block size.
+message BlockParams {
+  // Max block size, in bytes.
+  // Note: must be greater than 0
+  int64 max_bytes = 1;
+  // Max gas per block.
+  // Note: must be greater or equal to -1
+  int64 max_gas = 2;
+
+  reserved 3;  // was TimeIotaMs see https://github.com/tendermint/tendermint/pull/5792
+}
+
+// VersionParams contains the ABCI application version.
+message VersionParams {
+  option (gogoproto.populate) = true;
+  option (gogoproto.equal)    = true;
+
+  // Was named app_version in v1
+  uint64 app = 1;
+}

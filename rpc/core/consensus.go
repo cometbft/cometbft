@@ -61,7 +61,7 @@ func (env *Environment) DumpConsensusState(ctx *rpctypes.Context) (*ctypes.Resul
 		if !ok { // peer does not have a state yet
 			continue
 		}
-		peerStateJSON, err := peerState.ToJSON()
+		peerStateJSON, err := peerState.MarshalJSON()
 		if err != nil {
 			return nil, err
 		}

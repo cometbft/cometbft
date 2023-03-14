@@ -4,180 +4,128 @@
 > We assume that you understand the Tendermint algorithm and therefore we will not review it here. 
 If this is not the case, please refer to [here](../).
 
-The Tendermint algorithm assumes that a **Global Stabilization Time (GST)** exists, after which communication is reliable and timely, i.e., it satisfies the following property:
+Three kinds of messages are exchanged in the Tendermint algorithm: `PROPOSAL`, `PRE-VOTE`, and `PRE-COMMIT`.
+The algorithm progresses when certain conditions are satisfied over the set of messages received.
+For example, in order do decide on a value `v`, the set must include a `PROPOSAL` for `v` and more than two thirds of the number processes in `PRE-COMMIT` for the same `v`, during the same round.
+
+To ensure progress and termination, the algorithm assumes a **Global Stabilization Time (GST)**, after which communication is reliable and timely (Eventual $\Delta$-Timely Communication), which is used to provide **Gossip Communication**.
 
 | Eventual $\Delta$-Timely Communication|
 |-----|
 |There is a bound $\Delta$ and an instant GST (Global Stabilization Time) such that if a correct process $p$ sends a message $m$ at a time $t \geq \text{GST}$ to a correct process $q$, then $q$ will receive $m$ before $t + \Delta$.
-
-**Eventual $\Delta$-Timely Communication** is the basis for a stronger assumption, **Gossip Communication**, which is used to ensure progress.
 
 |Gossip communication|
 |-----|
 | (i) If a correct process $p$ sends some message $m$ at time $t$, all correct processes will receive $m$ before $\text{max} \{t,\text{GST}\} + \Delta$.
 | (ii) If a correct process $p$ receives some message $m$ at time $t$, all correct processes will receive $m$ before $\text{max}\{t,\text{GST}\} + \Delta$.
 
-In the Tendermint algorithm, three kinds of messages are exchanged: `PROPOSAL`, `PRE-VOTE`, and `PRE-COMMIT`.
-The algorithm progresses when certain conditions are satisfied over the set of messages received.
-For example, in order do decide on a value `v`, the set must include a `PROPOSAL` for `v` and more than two thirds of the number processes in `PRE-COMMIT` for the same `v`, during the same round.
-Roughly speaking, if Gossip Communication is guaranteed and only correct processes existed, then when GST is eventually reached, previously sent `PROPOSAL` and `PRE-COMMIT` messages will be delivered and a decision made.
+Roughly speaking, if Gossip Communication is guaranteed, then all messages sent by correct processes will be eventually delivered to all correct processes and allow all correct processes to realize that the same conditions are.
 
-However, since processes are subject to failures, it is not guaranteed that needed messages are ever sent and correct processes cannot wait indefinitely.
-Hence, processes executes in rounds in which they wait for conditions to be met for sometime but, if they timeout, they send negative message that will lead to new rounds.
+However, since processes are subject to failures, it is not guaranteed that proposals are ever sent and correct processes cannot wait indefinitely.
+Hence, processes execute in rounds in which they wait for conditions to be met for sometime and, if they timeout, send negative messages that will lead to new rounds.
 Again, Gossip Communication guarantees that eventually the conditions for deciding are met, even if only after GST is reached.
 
-Implementing Gossip Communication, however, is hard for two main reasons. 
-First, it relies on a GST, which may never arrive.
-Second, even if the GST will definitely arrive, it could still take arbitrarily long to do so and, in practice, implementing this property would require unbounded memory since even messages sent before the GST need to be buffered to be reliably delivered between correct processes.
+Implementing Gossip Communication, however, is hard because even messages sent before the GST need to be buffered to be reliably delivered between correct processes, but since GST may take indefinitely long to arrive, in practice implementing this property would require unbounded memory.
 
-Fortunately, while Gossip Communication is a sufficient condition for the Tendermint algorithm to terminate, it is not strictly necessary, because the conditions to progress and terminate are evaluated over the messages of subsets of rounds executed, not all of them.
-The remaining messages may be ignored and forgotten, in order to bound memory usage.
+Fortunately, while Gossip Communication is a sufficient condition for the Tendermint algorithm to terminate, it is not strictly necessary, because the conditions to progress and terminate are evaluated over the messages of subsets of rounds executed, not all of them, and as new rounds are executed, messages in old rounds may be become obsolete and be ignored and forgotten, saving memory.
+In other words, the algorithm does not require all messages to be delivered, only messages that advance the state of the processes.
 
+## Node's state as a CRDT
 
-> **TODO**    
-> Expand the text to justify why we are taking a CRDT approach.
-> 
-> We care about the information about what has been proposed and what each process has voted for.
-> We represent this as an incremental replicated data-structure that processes try to converge (eventual consistency), a CRDT.
->
-> - Gossip communication is a way to implement this as an operations based CRDT.
-> - Actual gossiping is a way to implement this as a state based CRDT.
-> - Pruning is provided by a merge operation that drops superseded information
->    - Rounds smaller than the latest proof-of-lock-round may be pruned. 
->    - Heights smaller than the current height may be pruned.
+One way of looking at the information used by CometBFT nodes is as a distributed tuple space to which all nodes contribute;
+to share a proposal, the proposer adds it to the tuple space and to vote for a proposal, the node adds the vote.
+Each update is non-conflicting with any other updates, that is, no two nodes try to make the same update, by virtue of signing each update.
 
+Since we are talking about an asynchronous distributed system, individual nodes can only maintain approximations of the tuple space.
+Nodes may broadcast the update operations operations to all nodes, including themselves, and, if the communication is reliable, as guaranteed by Gossip Communication, the tuple space will eventually converge.
+
+Otherwise, nodes may periodically compare their approximations with each other to identify and correct differences by adding missing entries, using some gossip/anti-entropy protocol.
+In this approach, tuples with superseded information may be removed from the tuple space.
+
+The two approaches just described correspond to an operation-based and a state-based **2 Phase-Set** CRDT, or 2P-Set.
+This distributed data-structure is easily described as a combination of two sets, one in which elements are added to include them in the 2P-Set, $A$, and one in which elements are added to remove them from the 2P-Set, $R$; the actual membership of the 2P-Set is given by $A \setminus B$.
+
+Updates are commutative from the point of view of the tuple space, even if they are not commutative from the Tendermint algorithm's point of view; however, nodes observing different approximations of the tuple space may decide at different point in time but cannot violate any correctness guarantees.
+And the eventual convergence of the 2P-Set implies the eventual termination of the algorithm.
+
+> Warning/TODO: a word about tombstones, that is, the $B$ set.    
+> Tombstones are not gossiped; each node must be given information to realize by itself that an entry is no longer needed.
+> Tombstones, if at all materialized, must be garbage collected.
 
 ## The Condition State
 
-The condition state consists in a forrest of trees keeping information regarding heights.
-Each tree contains the information regarding a single height, 1-to-1.
-The root of the tree contains the corresponding height number; we used may use tree and height interchangeably.
+The condition state consists in a tuple space with information regarding steps taken by validators during possibly many rounds of possibly many heights. Each entry has form $\lang Height, Round, Step, Validator, Value \rang$ and corresponds to the message Validator sent in Step of Round of Height; Value is a tuple of the message contents.
 
-Each height is linked to the all the Rounds for the corresponding height.
-Each Round is further linked to steps validators go through in protocol's rounds.
-And each step is linked to Validators in the validator set for the corresponding round and height.
+A query to the tuple space has the same form of the entries, with parts replaced by values or by `*`, meaning any value is allowed.
+For example, suppose the tuple space has the following values, here organized as a table for easier visualization:
 
-Each validator is associated with states equal to the value it has proposed, pre-voted or pre-committed, during the corresponding steps of the protocol.
-Given that each validator can set this state at most once per round, the values associated with the validator are either $\bot$, if the state has not been set, or an actual value.
-In the specific case of the Proposal step, only the Proposer for a round should ever have a value different from $\bot$.
+| Height | Round | Step     | Validator | Value |
+|--------|-------|----------|-----------|-------|
+| H      | R     | Proposal | v         | pval  |
+| H      | R     | PreVote  | v         | vval  |
+| H      | R'    | PreCommit| v'        | cval  | 
+| H'     | R     | Proposal | v         | pval' |
+| H'     | R''   | PreVote  | v'        | vval' |
+| H'     | R'''  | PreCommit| v'        | cval' | 
 
-```mermaid
-graph LR
-   subgraph Height
-   H
-   H'
-   H''
-   end
+Query $\lang H, R, Proposal, v, * \rang$ returns $\{ \lang H, R, Proposal, v, pval \rang \}$ and query
+ $\lang H, R, *, v, * \rang$ returns $\{ \lang H, R, Proposal, v, pval \rang,  \lang H, R, PreVote, v, vval \rang \}$.
 
-   subgraph Round
-   R
-   R'
-   R''
-   end
+### State Validity
+ 
+Given that each validator can set this state at most once per round, a query that specifies height, round, step and validator must return empty, if the state has not been set, or a single tuple. 
 
-   subgraph Step
-   Proposal
-   PreVote
-   PreCommit
-   end
+- $\forall h \in \N, r \in \N, s \in \text{Proposal, PreVote, PreCommit}, v \in \text{ValSet}_{h,r}$,  $\lang h, r, s, v, * \rang$ returns at most one value.
 
-   subgraph Validator
-   pv0
-   pv1
-   pv2
-   vv0
-   vv1
-   vv2
-   cv0
-   cv1
-   cv2
-   end
+In the specific case of the Proposal step, only the proposer of the round can have a matching entry. 
 
-   subgraph Value
-   nil1
-   val1
-   ev1
-   ev2
-   nil2
-   val2
-   ev3
-   nil3
-   val3
-   ev4
-   end
+- $\lang H, R, Proposal, *, * \rang$ returns at most one value.
 
-   H --> R --> Proposal --> pv0(Proposer) --> nil1(nil) & val1(val)
-               Proposal --> pv1(v) --> ev1(evidence)
-               Proposal --> pv2(v') --> ev2(evidence)
-         R --> PreVote  --> vv0(v) --> nil2(nil) & val2(val) & ev3(evidence) 
-               PreVote  --> vv1(v')
-               PreVote  --> vv2(v'')
-         R --> PreCommit --> cv0(v) --> nil3(nil) & val3(val) & ev4(evidence) 
-               PreCommit --> cv1(v')
-               PreCommit --> cv2(v'')
-   H --> R'
-   H --> R''
-   H'
-   H''
+A violation of these rules is a proof of misbehavior.
 
-```
+
+### Local views
 
 The Condition State is potentially infinite, given that the number of heights and rounds is infinite.
-Each process $p$ keeps a local view $L_p$ of the Condition State forest $C$, which approximates the full state in the following ways:
-- not all trees in $C$ have a corresponding tree in $L_p$;
-    - if $p$ has never heard of a tree, then it cannot be included in $L_p$.
-    - the tree was pruned.
-    - trees in $L_p$ may be removed if their information is guaranteed not be be required in the future.
-    - $p$ knows how to differentiate a dropped subtrees from subtrees that have never been known;
-- any tree in $L_p$, excluding value leaves, must be prefixes of trees in $C$.
-- the value leaf $v_p$ in $L_p$ and the corresponding value leaf $v_C/$ in $C$ are related in the following way:
-    - if $v_C = \bot$, then $v_p = \bot$
-    - if $v_C \neq \bot$, then $v_p = \bot \lor v_p = v_p$
-    > **TODO**: evidence of misbehavior: $v_C \neq \bot \neq v_p \neq v_C$ implies misbehavior.
+Hence each process $p$ keeps a local, limited view $L_p$ of the Condition State $C$.
+Nodes only query their local views and queries subscripted with the node to indicate which local view is being consulted.
+The local view approximates the the full state in the following ways:
 
-> **TODO**    
-> The local views of processes are a CRDT:
-> - Prune is performed as a result of updates that with newer information, be it because of a new message or because of a merge.
-> - The gossip state clearly mirrors the Tendermint algorithm messages (each value leaf corresponds to a received message), so it is clear that it can be implemented as an operation based CRDT.
->   - Operation based CRDT require reliable messaging, masked as Gossip Communication in the whitepaper.
->   - Pruning a tree drops the requirement for reliably delivering messages corresponding to the pruned parts.
-> - The state may also be implemented as state based CRDT.
->   - Relevant parts of the tree are shared through gossiping.
->   - Pruned parts should not be relevant (or they wouldn't have been pruned).
->   - CometBFT implements this approach, although unknowingly.
+- if $\exists p$ such that $\exists e \in L_p$, then $e \in C$
+    - adding an entry to a local view adds it to $C$
+    - removing an entry from a local view removes it from $C$, if the local view was the last one to contain the entry.
+
+- If an entry is added to $C$ and then removed, it should not be added again. If an entry is added to a local view, then it may be added again, depending on the garbage collection used.
+    - Algorithms should enforce that entries are only removed if they will not be needed again and therefore adding them back will not harm agreement.
+    - They should strive not to add state again so it eventually gets removed from $C$.
+    - $p$ knows how to differentiate a dropped entries from entries that have never been known;
 
 
-If implemented as an operation-based CRDT, then the messages exchanged 
+## Communication Requirements
 
-Therefore we formalize the requirements of the Tendermint algorithm in terms communication primitives that take supersession into account, providing a *best-effort* to deliver all messages but which may not deliver those that have been superseded.
-During LSP, in which messages are timely delivered, the algorithm will not broadcast superseding messages needlessly (for example, due to timeouts), ensuring eventual progress.
+We now formalize the requirements of the Tendermint algorithm in terms of an eventually consistent Condition State, which may be implemented using reliable communication (Gossip Communication), some best *best-effort* communication primitive that only delivers messages that are still useful, or some Gossip/Epidemic/Anti-Entropy approach for state convergence.
+All of these can be made to progress after GST but should also progress during smaller stability periods.
 
-|Best-Effort Communication with Supersession|
+|Eventual Consistency|
 |-----|
-| If a correct process $p$ broadcasts/delivers some message $m$, then, eventually, either $m$ is superseded or every correct process delivers $m$.|
+| If there exists a correct process $p$ such that $e \in L_p$, then, eventually, for every correct process $q$, $e \in L_q$ or there exists a correct process $r$ that removes $e$ from $L_r$.|
 
 > **Note**
-> 1. Processes should not broadcast messages superseded from the start, but this behavior should not be assumed.
-> 2. The delivery of superseded messages is not required, but this behavior should not be assumed.
+> 1. Nodes may learn of an entry deletion before learning of its addition.
 
-In order to deliver messages even in the presence of failures, the network must be connected in such a way to allow routing messages around any malicious nodes and to provide redundant paths between correct ones.
-This may not be feasible at all times, but should happen at least during periods in which the system is "stable".
+In order to ensure convergence even in the presence of failures, the network must be connected in such a way to allow communication around any malicious nodes and to provide redundant paths between correct ones.
+This may not be feasible at all times, but should happen at least during periods in which the system is stable.
 
-In other words, during periods without network partition, in which messages are timely delivered, and that are long enough for the multiple communication rounds to succeed, non-superseded messages from correct processes will be delivered to all other correct processes.
+In other words, during periods without network partition, in which messages are timely delivered, and that are long enough for the multiple communication rounds to succeed, processes will identify and solve differences in their states.
 We call "long enough" $\Delta$.
 
-| Eventual $\Delta$-Timely Communication with Supersession |
+| Eventual $\Delta$-Timely Convergence |
 |---|
-| If a correct process $p$ broadcasts/delivers some message $m$ at time $t$, then, before $\text{max} \{t,\text{GST}\} + \Delta$, either $m$ is superseded or every correct process delivers $m$.
+| If $e\in L_p$, for some correct process $p$, at instant $t$, then by $\text{max} \{t,\text{GST}\} + \Delta$, either $e \notin L_p$ or $e \in L_q$, for every correct process $q$.
 
-$\Delta$ encapsulates the assumption that, during stable periods, timeouts eventually do not expire precociously, given that they all can be adjusted to reasonable values, and the steps needed to deliver a message can be accomplished within $\Delta$.
-Without precocious timeouts, no needless supersession of messages should happen and all messages exchanged should help algorithms progress.
-In the Tendermint algorithm, for example, no votes for Nil are broadcast, and Best-Effort Communication with Supersession leads to Eventual $\Delta$-Timely Communication with Supersession, which leads to termination.
-
-Clearly, if GST is reached, then there must be such $\Delta$ and while GST cannot be enforced but simply assumed to show that algorithms can make progress under good conditions, in practice, systems do go through frequent LSP which allow algorithms that depend on GST use to make progress.
-
-> :clipboard: **TODO**
-> * Show that "best-effort superseded communication" + GST implies "Eventual delta timely superseded communication".
+$\Delta$ encapsulates the assumption that, during stable periods, timeouts eventually do not expire precociously, given that they all can be adjusted to reasonable values, and the steps needed to converge on entries can be accomplished within $\Delta$.
+Without precocious timeouts, all new entries in the state should help algorithms progress.
+In the Tendermint algorithm, for example, no votes for Nil are added and the round should end if a proposal was made.
 
 
 # Part 2: CONS/GOSSIP interaction

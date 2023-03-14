@@ -1258,7 +1258,7 @@ func (cs *State) createProposalBlock(ctx context.Context) (*types.Block, error) 
 
 	case cs.LastCommit.HasTwoThirdsMajority():
 		// Make the commit from LastCommit
-		lastExtCommit = cs.LastCommit.MakeExtendedCommit()
+		lastExtCommit = cs.LastCommit.MakeExtendedCommit(cs.state.ConsensusParams.ABCI)
 
 	default: // This shouldn't happen.
 		return nil, errors.New("propose step; cannot propose anything without commit for the previous block")
@@ -1695,7 +1695,7 @@ func (cs *State) finalizeCommit(height int64) {
 	if cs.blockStore.Height() < block.Height {
 		// NOTE: the seenCommit is local justification to commit this block,
 		// but may differ from the LastCommit included in the next block
-		seenExtendedCommit := cs.Votes.Precommits(cs.CommitRound).MakeExtendedCommit()
+		seenExtendedCommit := cs.Votes.Precommits(cs.CommitRound).MakeExtendedCommit(cs.state.ConsensusParams.ABCI)
 		if cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(block.Height) {
 			cs.blockStore.SaveBlockWithExtendedCommit(block, blockParts, seenExtendedCommit)
 		} else {

@@ -485,13 +485,11 @@ func buildExtendedCommitInfo(ec *types.ExtendedCommit, store Store, initialHeigh
 		// during that height, we ensure they are present and deliver the data to
 		// the proposer. If they were not enabled during this previous height, we
 		// will not deliver extension data.
-		if ap.VoteExtensionsEnabled(ec.Height) && ecs.BlockIDFlag == types.BlockIDFlagCommit {
-			if ecs.EnsureExtension() != nil {
-				panic(fmt.Errorf("commit at height %d received with missing vote extensions data", ec.Height))
-			}
-			ext = ecs.Extension
-			extSig = ecs.ExtensionSignature
+		if err := ecs.EnsureExtension(ap.VoteExtensionsEnabled(ec.Height)); err != nil {
+			panic(fmt.Errorf("commit at height %d received with missing vote extension data; err %w", ec.Height, err))
 		}
+		ext = ecs.Extension
+		extSig = ecs.ExtensionSignature
 
 		votes[i] = abci.ExtendedVoteInfo{
 			Validator:          types.TM2PB.Validator(val),

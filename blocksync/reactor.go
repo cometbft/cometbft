@@ -453,11 +453,10 @@ FOR_LOOP:
 				// validate the block before we persist it
 				err = bcR.blockExec.ValidateBlock(state, first)
 			}
-			if err == nil && state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
+			if err == nil {
 				// if vote extensions were required at this height, ensure they exist.
-				err = extCommit.EnsureExtensions()
+				err = extCommit.EnsureExtensions(state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height))
 			}
-
 			if err != nil {
 				bcR.Logger.Error("Error in validation", "err", err)
 				peerID := bcR.pool.RedoRequest(first.Height)

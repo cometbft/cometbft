@@ -631,7 +631,7 @@ func (voteSet *VoteSet) sumTotalFrac() (int64, int64, float64) {
 //
 // Panics if the vote type is not PrecommitType or if there's no +2/3 votes for
 // a single block.
-func (voteSet *VoteSet) MakeExtendedCommit() *ExtendedCommit {
+func (voteSet *VoteSet) MakeExtendedCommit(ap ABCIParams) *ExtendedCommit {
 	if voteSet.signedMsgType != cmtproto.PrecommitType {
 		panic("Cannot MakeExtendCommit() unless VoteSet.Type is PrecommitType")
 	}
@@ -655,12 +655,16 @@ func (voteSet *VoteSet) MakeExtendedCommit() *ExtendedCommit {
 		sigs[i] = sig
 	}
 
-	return &ExtendedCommit{
+	ec := &ExtendedCommit{
 		Height:             voteSet.GetHeight(),
 		Round:              voteSet.GetRound(),
 		BlockID:            *voteSet.maj23,
 		ExtendedSignatures: sigs,
 	}
+	if err := ec.EnsureExtensions(ap.VoteExtensionsEnabled(ec.Height)); err != nil {
+		panic(fmt.Errorf("problem with vote extension data in extended commit at height %d; %w", ec.Height, err))
+	}
+	return ec
 }
 
 //--------------------------------------------------------------------------------

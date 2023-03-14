@@ -410,7 +410,7 @@ func (bs *BlockStore) SaveBlockWithExtendedCommit(block *types.Block, blockParts
 	if block == nil {
 		panic("BlockStore can only save a non-nil block")
 	}
-	if err := seenExtendedCommit.EnsureExtensions(); err != nil {
+	if err := seenExtendedCommit.EnsureExtensions(true); err != nil {
 		panic(fmt.Errorf("saving block with extensions: %w", err))
 	}
 	if err := bs.saveBlockToBatch(block, blockParts, seenExtendedCommit.ToCommit()); err != nil {

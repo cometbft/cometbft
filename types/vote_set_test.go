@@ -476,7 +476,7 @@ func TestVoteSet_MakeCommit(t *testing.T) {
 }
 
 // TestVoteSet_VoteExtensionsEnabled tests that the vote set correctly validates
-// vote extensions data when either required or not required.
+// vote extension data when either required or not required.
 func TestVoteSet_VoteExtensionsEnabled(t *testing.T) {
 	for _, tc := range []struct {
 		name              string

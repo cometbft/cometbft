@@ -406,7 +406,7 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.ResponseFina
 		}
 		// The state store contains the old format. Migrate to
 		// the new ResponseFinalizeBlock format. Note that the
-		// new struct expects the AgreedAppData which we don't have.
+		// new struct expects the AppHash which we don't have.
 		return responseFinalizeBlockFromLegacy(legacyResp), nil
 	}
 
@@ -695,14 +695,14 @@ func min(a int64, b int64) int64 {
 }
 
 // responseFinalizeBlockFromLegacy is a convenience function that takes the old abci responses and morphs
-// it to the finalize block response. Note that the agreed app data is missing
+// it to the finalize block response. Note that the app hash is missing
 func responseFinalizeBlockFromLegacy(legacyResp *cmtstate.LegacyABCIResponses) *abci.ResponseFinalizeBlock {
 	return &abci.ResponseFinalizeBlock{
 		TxResults:             legacyResp.DeliverTxs,
 		ValidatorUpdates:      legacyResp.EndBlock.ValidatorUpdates,
 		ConsensusParamUpdates: legacyResp.EndBlock.ConsensusParamUpdates,
 		Events:                append(legacyResp.BeginBlock.Events, legacyResp.EndBlock.Events...),
-		// NOTE: AgreedAppData is missing in the response but will
+		// NOTE: AppHash is missing in the response but will
 		// be caught and filled in consensus/replay.go
 	}
 }

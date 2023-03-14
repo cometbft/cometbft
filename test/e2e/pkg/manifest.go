@@ -78,7 +78,8 @@ type Manifest struct {
 	PrepareProposalDelay time.Duration `toml:"prepare_proposal_delay"`
 	ProcessProposalDelay time.Duration `toml:"process_proposal_delay"`
 	CheckTxDelay         time.Duration `toml:"check_tx_delay"`
-	// TODO: add vote extension and finalize block delay (@cmwaters)
+	VoteExtensionDelay   time.Duration `toml:"vote_extension_delay"`
+	FinalizeBlockDelay   time.Duration `toml:"finalize_block_delay"`
 
 	// UpgradeVersion specifies to which version nodes need to upgrade.
 	// Currently only uncoordinated upgrade is supported

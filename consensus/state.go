@@ -2137,7 +2137,9 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 				return false, err
 			}
 
-			if err = cs.blockExec.VerifyVoteExtension(context.TODO(), vote); err != nil {
+			err := cs.blockExec.VerifyVoteExtension(context.TODO(), vote)
+			cs.metrics.MarkVoteExtensionReceived(err == nil)
+			if err != nil {
 				return false, err
 			}
 		}

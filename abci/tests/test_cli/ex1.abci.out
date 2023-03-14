@@ -12,6 +12,10 @@
 -> code: OK
 -> log: Succeeded. Tx: abc=123
 
+> process_proposal "abc==456"
+-> code: OK
+-> status: REJECT
+
 > process_proposal "abc=123"
 -> code: OK
 -> status: ACCEPT

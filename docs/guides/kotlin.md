@@ -1,6 +1,6 @@
-<!---
-order: 4
---->
+---
+order: 7
+---
 
 # Creating an application in Kotlin
 

@@ -804,7 +804,7 @@ The expectation is for there to be some number of high level paths
 differentiating concerns, like `/p2p`, `/store`, and `/app`. Currently,
 CometBFT only uses `/p2p`, for filtering peers. For more advanced use, see the
 implementation of
-[Query in the Cosmos-SDK](https://github.com/cosmos/cosmos-sdk/blob/v0.23.1/baseapp/baseapp.go#L333).
+[Query in the Cosmos-SDK](https://github.com/cosmos/cosmos-sdk/blob/e2037f7696fed4fdd4bc076f9e7053fe8178a881/baseapp/abci.go#L557-L565).
 
 ### Crash Recovery
 
@@ -817,31 +817,31 @@ is the call to the application's `Commit` method, where the application is expec
 persist/commit its state.
 On startup, CometBFT calls the `Info` method on the Info Connection to get the latest
 committed state of the app. The app MUST return information consistent with the
-last block it successfully completed `Commit` for. 
+last block for which it successfully completed `Commit`. 
 
 The three steps performed before the state of a height is considered persisted are: 
 - The block is stored by CometBFT in the blockstore
-- CometBFT has stored the state (results returned from the application)
-- The application has committed it's state within `Commit`. 
+- CometBFT has stored the state returned by the application through `FinalizeBlockResult`
+- The application has committed its state within `Commit`. 
   
 The following diagram depicts the order in which these events happen, and the corresponding
 ABCI functions that are called and executed by CometBFT and the application:
 
 
 ``` 
-APP:                                              Execute block                         Persist state
+APP:                                              Execute block                         Persist application state
                                                  /     return ResultFinalizeBlock            /
                                                 /                                           /  
-Event: ------------- block_stored -------------/ -------------state_stored ----------------/---app_persisted_state
-                          |                   /                   |                       /     |
-CometBFT: Decides - Persistes block ---Call `FinalizeBlock`  Persist results------------Commit---- 
+Event: ------------- block_stored ------------ / ------------ state_stored --------------- / ----- app_persisted_state
+                          |                   /                   |                       /        |
+CometBFT: Decide --- Persist block -- Call FinalizeBlock - Persist results ---------- Call Commit -- 
             on        in the                                (txResults, validator
-          Block      block store                                updated,..)
+           Block      block store                              updates...)
 
 ```
 
 As these three steps are not atomic, we observe different cases based on which steps have been executed
-before the crash occured
+before the crash occurred
 (we assume that at least `block_stored` has been executed, otherwise, there is no state persisted, 
 and the operations for this height are repeated entirely):
 
@@ -855,7 +855,7 @@ Based on the sequence of these events, CometBFT will panic if any of the steps i
 that is if: 
 - The application has persisted a block at a height higher than the blocked saved during `state_stored`.
 - The `block_stored` step persisted a block at a height smaller than the `state_stored`
-- And the difference between the heights of the blocks persited by `state_stored` and `block_stored` is more 
+- And the difference between the heights of the blocks persisted by `state_stored` and `block_stored` is more 
 than 1 (this corresponds to a scenario where we stored two blocks in the block store but never persisted the state of the first
 block, which should never happen).
 

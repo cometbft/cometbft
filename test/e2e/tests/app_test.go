@@ -2,7 +2,6 @@ package e2e_test
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -117,14 +116,14 @@ func TestApp_VoteExtensions(t *testing.T) {
 		resp, err := client.ABCIQuery(ctx, "", []byte("extensionSum"))
 		require.NoError(t, err)
 
-		extSum, err := strconv.Atoi(string(resp.Response.Value))
-		// if extensions are not enabled on the network, we should not expect
-		// the app to have any extension value set.
-		if node.Testnet.VoteExtensionsEnableHeight == 0 ||
-			info.Response.LastBlockHeight < node.Testnet.VoteExtensionsEnableHeight+1 {
-			target := &strconv.NumError{}
-			require.True(t, errors.As(err, &target))
-		} else {
+		// if extensions are not enabled on the network, we should expect
+		// the app to have any extension value set (via a normal tx).
+		if node.Testnet.VoteExtensionsEnableHeight != 0 &&
+			info.Response.LastBlockHeight > node.Testnet.VoteExtensionsEnableHeight {
+
+			parts := bytes.Split(resp.Response.Value, []byte("|"))
+			require.Len(t, parts, 2)
+			extSum, err := strconv.Atoi(string(parts[0]))
 			require.NoError(t, err)
 			require.GreaterOrEqual(t, extSum, 0)
 		}

@@ -66,7 +66,7 @@ looking for, see [our security policy](SECURITY.md).
 
 ### Install
 
-See the [install guides](./docs/guides/install.md).
+See the [install guide](./docs/guides/install.md).
 
 ### Quick Start
 

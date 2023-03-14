@@ -808,84 +808,61 @@ implementation of
 
 ### Crash Recovery
 
+CometBFT and the application are expected to crash together and there should not 
+exist a scenario where the application has persisted state of a height greater than the
+latest height persisted by CometBFT.
+
+In practice, persisting the state of a height consists of three steps, the last of which 
+is the call to the application's `Commit` method, where the application is expected to
+persist/commit its state.
 On startup, CometBFT calls the `Info` method on the Info Connection to get the latest
 committed state of the app. The app MUST return information consistent with the
 last block it successfully completed `Commit` for. 
 
-The application is expected to persist its state during the `Commit` method.
-CometBFT and the application are expected to crash together and there should not 
-exist a scenario where the application has persisted state that CometBFT has not.
+The three steps performed before the state of a height is considered persisted are: 
+- The block is stored by CometBFT in the blockstore
+- CometBFT has stored the state (results returned from the application)
+- The application has committed it's state within `Commit`. 
+  
+The following diagram depicts the order in which these events happen, and the corresponding
+ABCI functions that are called and executed by CometBFT and the application:
 
-In other words, if `Commit` for a block H has not been executed and CometBFT crashed,
-the application
-should not have persisted any state between the `Commit` for H - 1 and 
-H. 
 
-CometBFT checks the following two fields returned by `Info` to verify whether the 
-app committed a block H: `last_block_height` and `last_block_app_hash`. 
-If the app successfully committed block H, then `last_block_height = H` and 
-`last_block_app_hash = <hash returned by Commit for block H>`. If the app
-failed during the Commit of block H, then `last_block_height = H-1` and
-`last_block_app_hash = <hash returned by Commit for block H-1, which is the hash in the header of block H>`.
-
-We now distinguish three heights, and describe how CometBFT syncs itself with
-the app.
-
-```md
-storeBlockHeight = height of the last block CometBFT saw a commit for
-stateBlockHeight = height of the last block for which CometBFT completed all
-    block processing and saved all ABCI results to disk
-appBlockHeight = height of the last block for which ABCI app successfully
-    completed Commit
+``` 
+APP:                                              Execute block                         Persist state
+                                                 /     return ResultFinalizeBlock            /
+                                                /                                           /  
+Event: ------------- block_stored -------------/ -------------state_stored ----------------/---app_persisted_state
+                          |                   /                   |                       /     |
+CometBFT: Decides - Persistes block ---Call `FinalizeBlock`  Persist results------------Commit---- 
+            on        in the                                (txResults, validator
+          Block      block store                                updated,..)
 
 ```
 
-Note we always have `storeBlockHeight >= stateBlockHeight` and `storeBlockHeight >= appBlockHeight`
-Note also CometBFT never successfully calls Commit on an ABCI app twice for the same height.
+As these three steps are not atomic, we observe different cases based on which steps have been executed
+before the crash occured
+(we assume that at least `block_stored` has been executed, otherwise, there is no state persisted, 
+and the operations for this height are repeated entirely):
 
-The procedure is as follows.
+- `block_stored`: we replay `FinalizeBlock` and the steps afterwards.
+- `block_stored` and `state_stored`: As the app did not persist its state within `Commit`, we need to re-execute
+  `FinalizeBlock` to retrieve the results and compare them to the state stored by CometBFT within `state_stored`. 
+  The expected case is that the states will match, otherwise CometBFT panics.
+- `block_stored`, `state_stored`, `app_persisted_state`: we move on to the next height. 
 
-First, some simple start conditions:
+Based on the sequence of these events, CometBFT will panic if any of the steps in the sequence happen out of order,
+that is if: 
+- The application has persisted a block at a height higher than the blocked saved during `state_stored`.
+- The `block_stored` step persisted a block at a height smaller than the `state_stored`
+- And the difference between the heights of the blocks persited by `state_stored` and `block_stored` is more 
+than 1 (this corresponds to a scenario where we stored two blocks in the block store but never persisted the state of the first
+block, which should never happen).
 
-If `appBlockHeight == 0`, then call `InitChain`.
+A special case is when a crash happens before the first block is committed - that is, after calling 
+`InitChain`. In that case, the application's state should still be at height 0 and thus `InitChain`
+will be called again. 
 
-Note that, in case there is a failure to commit the first block and
-a crash occurs, upon restart, `InitChain` will be called again. As explained,
-the application should not see this as an issue,  
-as it is expected to crash together with CometBFT. 
-
-If `storeBlockHeight == 0`, we're done.
-
-Now, some sanity checks:
-
-If `storeBlockHeight < appBlockHeight`, error
-If `storeBlockHeight < stateBlockHeight`, panic
-If `storeBlockHeight > stateBlockHeight+1`, panic
-
-Now, the meat:
-
-If `storeBlockHeight == stateBlockHeight && appBlockHeight < storeBlockHeight`,
-replay all blocks in full from `appBlockHeight` to `storeBlockHeight`.
-This happens if we completed processing the block, but the app forgot its height.
-
-If `storeBlockHeight == stateBlockHeight && appBlockHeight == storeBlockHeight`, we're done.
-This happens if we crashed at an opportune spot.
-
-If `storeBlockHeight == stateBlockHeight+1`
-This happens if we started processing the block but didn't finish.
-
-If `appBlockHeight < stateBlockHeight`
-    replay all blocks in full from `appBlockHeight` to `storeBlockHeight-1`,
-    and replay the block at `storeBlockHeight` using the WAL.
-This happens if the app forgot the last block it committed.
-
-If `appBlockHeight == stateBlockHeight`,
-    replay the last block (storeBlockHeight) in full.
-This happens if we crashed before the app finished Commit
-
-If `appBlockHeight == storeBlockHeight`
-    update the state using the saved ABCI responses but don't run the block against the real app.
-This happens if we crashed after the app finished Commit but before CometBFT saved the state.
 
 ### State Sync
 

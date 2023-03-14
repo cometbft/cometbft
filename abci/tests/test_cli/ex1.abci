@@ -1,6 +1,7 @@
 echo hello
 info
 prepare_proposal "abc=123"
+process_proposal "abc==456"
 process_proposal "abc=123"
 finalize_block "abc=123"
 commit

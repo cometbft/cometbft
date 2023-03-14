@@ -334,7 +334,7 @@ message ResponseVerifyVoteExtension {
     ACCEPT  = 1;
     // Rejecting the vote extension will reject the entire precommit by the sender.
     // Incorrectly implementing this thus has liveness implications as it may affect
-    // tendermint's ability to receive 2/3+ valid votes to finalize the block.
+    // CometBFT's ability to receive 2/3+ valid votes to finalize the block.
     // Honest nodes should never be rejected.
     REJECT  = 2;
   }
@@ -352,8 +352,8 @@ message ResponseFinalizeBlock {
   repeated ValidatorUpdate validator_updates = 3 [(gogoproto.nullable) = false];
   // updates to the consensus params, if any.
   tendermint.types.ConsensusParams consensus_param_updates = 4;
-  // agreed_app_data is the bytes that all nodes reach consensus upon in the following height. It is often the hash of the applications' state which can be used to confirm that execution of the transactions was deterministic.
-  bytes agreed_app_data = 5;
+  // app_hash is the hash of the applications' state which is used to confirm that execution of the transactions was deterministic. It is up to the application to decide which algorithm to use.
+  bytes app_hash = 5;
 }
 
 //----------------------------------------
@@ -365,7 +365,7 @@ message CommitInfo {
 }
 
 // ExtendedCommitInfo is similar to CommitInfo except that it is only used in
-// the PrepareProposal request such that Tendermint can provide vote extensions
+// the PrepareProposal request such that CometBFT can provide vote extensions
 // to the application.
 message ExtendedCommitInfo {
   // The round at which the block proposer decided in the previous height.
@@ -444,6 +444,8 @@ message ExtendedVoteInfo {
   bool signed_last_block = 2;
   // Non-deterministic extension provided by the sending validator's application.
   bytes vote_extension = 3;
+  // Vote extension signature created by CometBFT
+  bytes extension_signature = 4;
 }
 
 enum MisbehaviorType {

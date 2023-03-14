@@ -270,6 +270,8 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		"prepare_proposal_delay": node.Testnet.PrepareProposalDelay,
 		"process_proposal_delay": node.Testnet.ProcessProposalDelay,
 		"check_tx_delay":         node.Testnet.CheckTxDelay,
+		"vote_extension_delay":   node.Testnet.VoteExtensionDelay,
+		"finalize_block_delay":   node.Testnet.FinalizeBlockDelay,
 	}
 	switch node.ABCIProtocol {
 	case e2e.ProtocolUNIX:

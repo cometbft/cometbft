@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -17,7 +18,11 @@ import (
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto"
+	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/protoio"
+	cryptoproto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/version"
 )
 
@@ -25,6 +30,8 @@ const (
 	appVersion                 = 1
 	voteExtensionKey    string = "extensionSum"
 	voteExtensionMaxVal int64  = 128
+	reservedKey         string = "reservedTxKey"
+	suffixChainID       string = "ChainID"
 )
 
 // Application is an ABCI application for use by end-to-end tests. It is a
@@ -86,7 +93,7 @@ type Config struct {
 	ProcessProposalDelay time.Duration `toml:"process_proposal_delay"`
 	CheckTxDelay         time.Duration `toml:"check_tx_delay"`
 	FinalizeBlockDelay   time.Duration `toml:"finalize_block_delay"`
-	// TODO: add vote extension delays once completed (@cmwaters)
+	VoteExtensionDelay   time.Duration `toml:"vote_extension_delay"`
 }
 
 func DefaultConfig(dir string) *Config {
@@ -135,6 +142,7 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 			panic(err)
 		}
 	}
+	app.state.Set(reservedKey+suffixChainID, req.ChainId)
 	resp := &abci.ResponseInitChain{
 		AppHash: app.state.Hash,
 	}
@@ -187,7 +195,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.RequestFinali
 	return &abci.ResponseFinalizeBlock{
 		TxResults:        txs,
 		ValidatorUpdates: valUpdates,
-		AgreedAppData:    app.state.Finalize(),
+		AppHash:          app.state.Finalize(),
 		Events: []abci.Event{
 			{
 				Type: "val_updates",
@@ -296,27 +304,20 @@ func (app *Application) ApplySnapshotChunk(_ context.Context, req *abci.RequestA
 // construct a special transaction whose value is the sum of all of the vote
 // extensions from the previous round.
 //
-// NB: Assumes that the supplied transactions do not exceed `req.MaxTxBytes`.
+// Additionally, we verify the vote extension signatures passed from CometBFT and
+// include all data necessary for such verification in the special transaction's
+// payload so that ProcessProposal at other nodes can also verify the proposer
+// constructed the special transaction correctly
+//
 // If adding a special vote extension-generated transaction would cause the
 // total number of transaction bytes to exceed `req.MaxTxBytes`, we will not
 // append our special vote extension transaction.
 func (app *Application) PrepareProposal(
 	_ context.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
-	var sum int64
-	var extCount int
-	for _, vote := range req.LocalLastCommit.Votes {
-		if !vote.SignedLastBlock || len(vote.VoteExtension) == 0 {
-			continue
-		}
-		extValue, err := parseVoteExtension(vote.VoteExtension)
-		// This should have been verified in VerifyVoteExtension
-		if err != nil {
-			panic(fmt.Errorf("failed to parse vote extension in PrepareProposal: %w", err))
-		}
-		valAddr := crypto.Address(vote.Validator.Address)
-		app.logger.Info("got vote extension value in PrepareProposal", "valAddr", valAddr, "value", extValue)
-		sum += extValue
-		extCount++
+
+	extCount, sum, err := app.verifyAndSum(req.Height, &req.LocalLastCommit, "prepareproposal")
+	if err != nil {
+		panic(fmt.Errorf("failed to sum and verify in PrepareProposal; err %w", err))
 	}
 
 	if app.cfg.PrepareProposalDelay != 0 {
@@ -324,38 +325,53 @@ func (app *Application) PrepareProposal(
 	}
 
 	// We only generate our special transaction if we have vote extensions
+	extTxPrefix := fmt.Sprintf("%s=", voteExtensionKey)
 	if extCount > 0 {
 		var totalBytes int64
-		extTxPrefix := fmt.Sprintf("%s=", voteExtensionKey)
-		extTx := []byte(fmt.Sprintf("%s%d", extTxPrefix, sum))
-		app.logger.Info("preparing proposal with custom transaction from vote extensions", "tx", extTx)
-		// Our generated transaction takes precedence over any supplied
-		// transaction that attempts to modify the "extensionSum" value.
-		txs := make([][]byte, len(req.Txs)+1)
-		for i, tx := range req.Txs {
+		extCommitBytes, err := req.LocalLastCommit.Marshal()
+		if err != nil {
+			panic("unable to marshall extended commit")
+		}
+		extCommitHex := hex.EncodeToString(extCommitBytes)
+		extTx := []byte(fmt.Sprintf("%s%d|%s", extTxPrefix, sum, extCommitHex))
+		app.logger.Info("preparing proposal with custom transaction from vote extensions", "txLen", len(extTx))
+		txs := make([][]byte, 0, len(req.Txs)+1)
+		for _, tx := range req.Txs {
 			if strings.HasPrefix(string(tx), extTxPrefix) {
+				// Our generated transaction takes precedence over any supplied
+				// transaction that attempts to modify the "extensionSum" value.
 				continue
 			}
-			txs[i] = tx
+			if strings.HasPrefix(string(tx), reservedKey) {
+				app.logger.Error("detected tx that should not come from the mempool", "tx", tx)
+				continue
+			}
+			if totalBytes+int64(len(tx)) > req.MaxTxBytes {
+				break
+			}
 			totalBytes += int64(len(tx))
+			txs = append(txs, tx)
 		}
-		if totalBytes+int64(len(extTx)) < req.MaxTxBytes {
-			txs[len(req.Txs)] = extTx
+		if totalBytes+int64(len(extTx)) <= req.MaxTxBytes {
+			txs = append(txs, extTx)
 		} else {
 			app.logger.Info(
 				"too many txs to include special vote extension-generated tx",
 				"totalBytes", totalBytes,
 				"MaxTxBytes", req.MaxTxBytes,
-				"extTx", extTx,
 				"extTxLen", len(extTx),
 			)
 		}
 		return &abci.ResponsePrepareProposal{Txs: txs}, nil
 	}
-	// None of the transactions are modified by this application.
+	// None of the transactions are modified by this application. We filter out "reserved" keys.
 	txs := make([][]byte, 0, len(req.Txs))
 	var totalBytes int64
 	for _, tx := range req.Txs {
+		if strings.HasPrefix(string(tx), reservedKey) {
+			app.logger.Info("detected tx with reserved prefix, skipping", "tx", tx, "prefix", reservedKey)
+			continue
+		}
 		totalBytes += int64(len(tx))
 		if totalBytes > req.MaxTxBytes {
 			break
@@ -368,6 +384,8 @@ func (app *Application) PrepareProposal(
 
 // ProcessProposal implements part of the Application interface.
 // It accepts any proposal that does not contain a malformed transaction.
+// NOTE It is up to real Applications to effect punitive behavior in the cases ProcessProposal
+// returns ResponseProcessProposal_REJECT, as it is evidence of misbehavior.
 func (app *Application) ProcessProposal(_ context.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
 	for _, tx := range req.Txs {
 		k, v, err := parseTx(tx)
@@ -376,12 +394,15 @@ func (app *Application) ProcessProposal(_ context.Context, req *abci.RequestProc
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 		// Additional check for vote extension-related txs
-		if k == voteExtensionKey {
-			_, err := strconv.Atoi(v)
-			if err != nil {
-				app.logger.Error("malformed vote extension transaction", k, v, "err", err)
+		switch {
+		case k == voteExtensionKey:
+			if err := app.verifyExtensionTx(req.Height, v); err != nil {
+				app.logger.Error("vote extension transaction failed verification, rejecting proposal", k, v, "err", err)
 				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}
+		case strings.HasPrefix(k, reservedKey):
+			app.logger.Error("key prefix %q is reserved and cannot be used in transactions, rejecting proposal", k)
+			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 	}
 
@@ -416,6 +437,11 @@ func (app *Application) ExtendVote(_ context.Context, req *abci.RequestExtendVot
 	//nolint:gosec // G404: Use of weak random number generator
 	num := rand.Int63n(voteExtensionMaxVal)
 	extLen := binary.PutVarint(ext, num)
+
+	if app.cfg.VoteExtensionDelay != 0 {
+		time.Sleep(app.cfg.VoteExtensionDelay)
+	}
+
 	app.logger.Info("generated vote extension", "num", num, "ext", fmt.Sprintf("%x", ext[:extLen]), "state.Height", app.state.Height)
 	return &abci.ResponseExtendVote{
 		VoteExtension: ext[:extLen],
@@ -446,7 +472,12 @@ func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.Request
 			Status: abci.ResponseVerifyVoteExtension_REJECT,
 		}, nil
 	}
-	app.logger.Info("verified vote extension value", "req", req, "num", num)
+
+	if app.cfg.VoteExtensionDelay != 0 {
+		time.Sleep(app.cfg.VoteExtensionDelay)
+	}
+
+	app.logger.Info("verified vote extension value", "vote_extension", req.VoteExtension, "num", num)
 	return &abci.ResponseVerifyVoteExtension{
 		Status: abci.ResponseVerifyVoteExtension_ACCEPT,
 	}, nil
@@ -470,7 +501,22 @@ func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, 
 		if err != nil {
 			return nil, fmt.Errorf("invalid base64 pubkey value %q: %w", keyString, err)
 		}
-		valUpdates = append(valUpdates, abci.UpdateValidator(keyBytes, int64(power), app.cfg.KeyType))
+		valUpdate := abci.UpdateValidator(keyBytes, int64(power), app.cfg.KeyType)
+		valUpdates = append(valUpdates, valUpdate)
+
+		// Store validator data to verify extensions
+		pubKey, err := cryptoenc.PubKeyFromProto(valUpdate.PubKey)
+		if err != nil {
+			return nil, err
+		}
+		addr := pubKey.Address().String()
+		if power > 0 {
+			pubKeyBytes, err := valUpdate.PubKey.Marshal()
+			if err != nil {
+				return nil, err
+			}
+			app.state.Set(reservedKey+addr, hex.EncodeToString(pubKeyBytes))
+		}
 	}
 	return valUpdates, nil
 }
@@ -485,6 +531,112 @@ func parseTx(tx []byte) (string, string, error) {
 		return "", "", errors.New("key cannot be empty")
 	}
 	return string(parts[0]), string(parts[1]), nil
+}
+
+func (app *Application) verifyAndSum(currentHeight int64, extCommit *abci.ExtendedCommitInfo, callsite string) (int, int64, error) {
+	var sum int64
+	var extCount int
+	for _, vote := range extCommit.Votes {
+		if !vote.SignedLastBlock || len(vote.VoteExtension) == 0 {
+			continue
+		}
+		// Vote extension signatures are always provided. Apps can use them to verify the integrity of extensions
+		if len(vote.ExtensionSignature) == 0 {
+			return 0, 0, errors.New("non-empty vote extension with empty signature")
+		}
+
+		// Reconstruct vote extension's signed bytes...
+		chainID := app.state.Get(reservedKey + suffixChainID)
+		if len(chainID) == 0 {
+			return 0, 0, errors.New("chainID not set in database")
+		}
+		cve := cmtproto.CanonicalVoteExtension{
+			Extension: vote.VoteExtension,
+			Height:    currentHeight - 1, //the vote extension was signed in the previous height
+			Round:     int64(extCommit.Round),
+			ChainId:   chainID,
+		}
+		extSignBytes, err := protoio.MarshalDelimited(&cve)
+		if err != nil {
+			return 0, 0, fmt.Errorf("error when marshaling signed bytes: %w", err)
+		}
+
+		//... and verify
+		valAddr := crypto.Address(vote.Validator.Address).String()
+		pubKeyHex := app.state.Get(reservedKey + valAddr)
+		if len(pubKeyHex) == 0 {
+			return 0, 0, fmt.Errorf("received vote from unknown validator with address %q", valAddr)
+		}
+		pubKeyBytes, err := hex.DecodeString(pubKeyHex)
+		if err != nil {
+			return 0, 0, fmt.Errorf("could not hex-decode public key for validator address %s, err %w", valAddr, err)
+		}
+		var pubKeyProto cryptoproto.PublicKey
+		err = pubKeyProto.Unmarshal(pubKeyBytes)
+		if err != nil {
+			return 0, 0, fmt.Errorf("unable to unmarshal public key for validator address %s, err %w", valAddr, err)
+		}
+		pubKey, err := cryptoenc.PubKeyFromProto(pubKeyProto)
+		if err != nil {
+			return 0, 0, fmt.Errorf("could not obtain a public key from its proto for validator address %s, err %w", valAddr, err)
+		}
+		if !pubKey.VerifySignature(extSignBytes, vote.ExtensionSignature) {
+			return 0, 0, errors.New("received vote with invalid signature")
+		}
+
+		extValue, err := parseVoteExtension(vote.VoteExtension)
+		// The extension's format should have been verified in VerifyVoteExtension
+		if err != nil {
+			return 0, 0, fmt.Errorf("failed to parse vote extension: %w", err)
+		}
+		app.logger.Info("received and verified vote extension value", "valAddr", valAddr, "value", extValue, "callsite", callsite)
+		sum += extValue
+		extCount++
+	}
+	return extCount, sum, nil
+}
+
+// verifyExtensionTx parses and verifies the payload of a vote extension-generated tx
+func (app *Application) verifyExtensionTx(height int64, payload string) error {
+	parts := strings.Split(payload, "|")
+	if len(parts) != 2 {
+		return fmt.Errorf("invalid payload format")
+	}
+	expSumStr := parts[0]
+	if len(expSumStr) == 0 {
+		return fmt.Errorf("sum cannot be empty in vote extension payload")
+	}
+
+	expSum, err := strconv.Atoi(expSumStr)
+	if err != nil {
+		return fmt.Errorf("malformed sum %q in vote extension payload", expSumStr)
+	}
+
+	extCommitHex := parts[1]
+	if len(extCommitHex) == 0 {
+		return fmt.Errorf("extended commit data cannot be empty in vote extension payload")
+	}
+
+	extCommitBytes, err := hex.DecodeString(extCommitHex)
+	if err != nil {
+		return fmt.Errorf("could not hex-decode vote extension payload")
+	}
+
+	var extCommit abci.ExtendedCommitInfo
+	if extCommit.Unmarshal(extCommitBytes) != nil {
+		return fmt.Errorf("unable to unmarshal extended commit")
+	}
+
+	_, sum, err := app.verifyAndSum(height, &extCommit, "processproposal")
+	if err != nil {
+		return fmt.Errorf("failed to sum and verify in process proposal: %w", err)
+	}
+
+	//Final check that the proposer behaved correctly
+	if int64(expSum) != sum {
+		return fmt.Errorf("sum is not consistent with vote extension payload: %d!=%d", expSum, sum)
+	}
+	return nil
 }
 
 // parseVoteExtension attempts to parse the given extension data into a positive

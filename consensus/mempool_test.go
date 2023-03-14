@@ -133,6 +133,7 @@ func TestMempoolTxConcurrentWithCommit(t *testing.T) {
 		case msg := <-newBlockEventsCh:
 			event := msg.Data().(types.EventDataNewBlockEvents)
 			n += event.NumTxs
+			t.Log("new transactions", "nTxs", event.NumTxs, "total", n)
 		case <-time.After(30 * time.Second):
 			t.Fatal("Timed out waiting 30s to commit blocks with transactions")
 		}
@@ -153,7 +154,7 @@ func TestMempoolRmBadTx(t *testing.T) {
 	res, err := app.FinalizeBlock(context.Background(), &abci.RequestFinalizeBlock{Txs: [][]byte{txBytes}})
 	require.NoError(t, err)
 	assert.False(t, res.TxResults[0].IsErr())
-	assert.True(t, len(res.AgreedAppData) > 0)
+	assert.True(t, len(res.AppHash) > 0)
 
 	_, err = app.Commit(context.Background(), &abci.RequestCommit{})
 	require.NoError(t, err)

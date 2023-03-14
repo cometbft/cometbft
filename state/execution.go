@@ -218,12 +218,20 @@ func (blockExec *BlockExecutor) ApplyBlock(
 		return state, err
 	}
 
+	blockExec.logger.Info(
+		"finalized block",
+		"height", block.Height,
+		"num_txs_res", len(abciResponse.TxResults),
+		"num_val_updates", len(abciResponse.ValidatorUpdates),
+		"block_app_hash", fmt.Sprintf("%X", abciResponse.AppHash),
+	)
+
 	// Assert that the application correctly returned tx results for each of the transactions provided in the block
 	if len(block.Data.Txs) != len(abciResponse.TxResults) {
 		return state, fmt.Errorf("expected tx results length to match size of transactions in block. Expected %d, got %d", len(block.Data.Txs), len(abciResponse.TxResults))
 	}
 
-	blockExec.logger.Info("executed block", "height", block.Height, "agreed_app_data", abciResponse.AgreedAppData)
+	blockExec.logger.Info("executed block", "height", block.Height, "app_hash", abciResponse.AppHash)
 
 	fail.Fail() // XXX
 
@@ -270,7 +278,7 @@ func (blockExec *BlockExecutor) ApplyBlock(
 	fail.Fail() // XXX
 
 	// Update the app hash and save the state.
-	state.AppHash = abciResponse.AgreedAppData
+	state.AppHash = abciResponse.AppHash
 	if err := blockExec.store.Save(state); err != nil {
 		return state, err
 	}
@@ -319,14 +327,13 @@ func (blockExec *BlockExecutor) VerifyVoteExtension(ctx context.Context, vote *t
 	if err != nil {
 		panic(fmt.Errorf("VerifyVoteExtension call failed: %w", err))
 	}
-
 	if resp.IsStatusUnknown() {
 		panic(fmt.Sprintf("VerifyVoteExtension responded with status %s", resp.Status.String()))
 	}
+
 	if !resp.IsAccepted() {
 		return types.ErrInvalidVoteExtension
 	}
-
 	return nil
 }
 
@@ -363,6 +370,7 @@ func (blockExec *BlockExecutor) Commit(
 	blockExec.logger.Info(
 		"committed state",
 		"height", block.Height,
+		"block_app_hash", fmt.Sprintf("%X", block.AppHash),
 	)
 
 	// Update mempool.
@@ -467,7 +475,7 @@ func buildExtendedCommitInfo(ec *types.ExtendedCommit, store Store, initialHeigh
 			))
 		}
 
-		var ext []byte
+		var ext, extSig []byte
 		// Check if vote extensions were enabled during the commit's height: ec.Height.
 		// ec is the commit from the previous height, so if extensions were enabled
 		// during that height, we ensure they are present and deliver the data to
@@ -478,12 +486,14 @@ func buildExtendedCommitInfo(ec *types.ExtendedCommit, store Store, initialHeigh
 				panic(fmt.Errorf("commit at height %d received with missing vote extensions data", ec.Height))
 			}
 			ext = ecs.Extension
+			extSig = ecs.ExtensionSignature
 		}
 
 		votes[i] = abci.ExtendedVoteInfo{
-			Validator:       types.TM2PB.Validator(val),
-			SignedLastBlock: ecs.BlockIDFlag != types.BlockIDFlagAbsent,
-			VoteExtension:   ext,
+			Validator:          types.TM2PB.Validator(val),
+			SignedLastBlock:    ecs.BlockIDFlag != types.BlockIDFlagAbsent,
+			VoteExtension:      ext,
+			ExtensionSignature: extSig,
 		}
 	}
 
@@ -685,16 +695,17 @@ func ExecCommitBlock(
 		return nil, fmt.Errorf("expected tx results length to match size of transactions in block. Expected %d, got %d", len(block.Data.Txs), len(resp.TxResults))
 	}
 
-	logger.Info("executed block", "height", block.Height, "agreed_app_data", resp.AgreedAppData)
+	logger.Info("executed block", "height", block.Height, "app_hash", resp.AppHash)
 
-	// Commit block, get hash back
+	// Commit block
 	_, err = appConnConsensus.Commit(context.TODO())
 	if err != nil {
-		logger.Error("client error during proxyAppConn.CommitSync", "err", err)
+		logger.Error("client error during proxyAppConn.Commit", "err", err)
 		return nil, err
 	}
 
-	return resp.AgreedAppData, nil
+	// ResponseCommit has no error or log
+	return resp.AppHash, nil
 }
 
 func (blockExec *BlockExecutor) pruneBlocks(retainHeight int64, state State) (uint64, error) {

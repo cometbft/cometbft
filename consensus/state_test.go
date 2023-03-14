@@ -16,8 +16,10 @@ import (
 	abcimocks "github.com/cometbft/cometbft/abci/types/mocks"
 	cstypes "github.com/cometbft/cometbft/consensus/types"
 	"github.com/cometbft/cometbft/crypto/tmhash"
+	"github.com/cometbft/cometbft/internal/test"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/protoio"
 	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
@@ -1608,7 +1610,7 @@ func TestVerifyVoteExtensionNotCalledOnAbsentPrecommit(t *testing.T) {
 // TestPrepareProposalReceivesVoteExtensions tests that the PrepareProposal method
 // is called with the vote extensions from the previous height. The test functions
 // by completing a consensus height with a mock application as the proposer. The
-// test then proceeds to fail sever rounds of consensus until the mock application
+// test then proceeds to fail several rounds of consensus until the mock application
 // is the proposer again and ensures that the mock application receives the set of
 // vote extensions from the previous consensus instance.
 func TestPrepareProposalReceivesVoteExtensions(t *testing.T) {
@@ -1686,7 +1688,21 @@ func TestPrepareProposalReceivesVoteExtensions(t *testing.T) {
 	// previous height.
 	require.Len(t, rpp.LocalLastCommit.Votes, len(vss))
 	for i := range vss {
-		require.Equal(t, rpp.LocalLastCommit.Votes[i].VoteExtension, voteExtensions[i])
+		vote := &rpp.LocalLastCommit.Votes[i]
+		require.Equal(t, vote.VoteExtension, voteExtensions[i])
+
+		require.NotZero(t, len(vote.ExtensionSignature))
+		cve := cmtproto.CanonicalVoteExtension{
+			Extension: vote.VoteExtension,
+			Height:    height - 1, //the vote extension was signed in the previous height
+			Round:     int64(rpp.LocalLastCommit.Round),
+			ChainId:   test.DefaultTestChainID,
+		}
+		extSignBytes, err := protoio.MarshalDelimited(&cve)
+		require.NoError(t, err)
+		pubKey, err := vss[i].PrivValidator.GetPubKey()
+		require.NoError(t, err)
+		require.True(t, pubKey.VerifySignature(extSignBytes, vote.ExtensionSignature))
 	}
 }
 
@@ -1721,7 +1737,7 @@ func TestFinalizeBlockCalled(t *testing.T) {
 					Status: abci.ResponseVerifyVoteExtension_ACCEPT,
 				}, nil)
 			}
-			r := &abci.ResponseFinalizeBlock{AgreedAppData: []byte("the_hash")}
+			r := &abci.ResponseFinalizeBlock{AppHash: []byte("the_hash")}
 			m.On("FinalizeBlock", mock.Anything, mock.Anything).Return(r, nil).Maybe()
 			m.On("Commit", mock.Anything, mock.Anything).Return(&abci.ResponseCommit{}, nil).Maybe()
 

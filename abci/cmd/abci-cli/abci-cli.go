@@ -560,7 +560,7 @@ func cmdFinalizeBlock(cmd *cobra.Command, args []string) error {
 		})
 	}
 	resps = append(resps, response{
-		Data: res.AgreedAppData,
+		Data: res.AppHash,
 	})
 	printResponse(cmd, args, resps...)
 	return nil

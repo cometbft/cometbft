@@ -79,6 +79,8 @@ type Testnet struct {
 	PrepareProposalDelay       time.Duration
 	ProcessProposalDelay       time.Duration
 	CheckTxDelay               time.Duration
+	VoteExtensionDelay         time.Duration
+	FinalizeBlockDelay         time.Duration
 	UpgradeVersion             string
 	Prometheus                 bool
 	VoteExtensionsEnableHeight int64
@@ -137,25 +139,28 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	testnet := &Testnet{
-		Name:                 filepath.Base(dir),
-		File:                 file,
-		Dir:                  dir,
-		IP:                   ipNet,
-		InitialHeight:        1,
-		InitialState:         manifest.InitialState,
-		Validators:           map[*Node]int64{},
-		ValidatorUpdates:     map[int64]map[*Node]int64{},
-		Nodes:                []*Node{},
-		Evidence:             manifest.Evidence,
-		LoadTxSizeBytes:      manifest.LoadTxSizeBytes,
-		LoadTxBatchSize:      manifest.LoadTxBatchSize,
-		LoadTxConnections:    manifest.LoadTxConnections,
-		ABCIProtocol:         manifest.ABCIProtocol,
-		PrepareProposalDelay: manifest.PrepareProposalDelay,
-		ProcessProposalDelay: manifest.ProcessProposalDelay,
-		CheckTxDelay:         manifest.CheckTxDelay,
-		UpgradeVersion:       manifest.UpgradeVersion,
-		Prometheus:           manifest.Prometheus,
+		Name:                       filepath.Base(dir),
+		File:                       file,
+		Dir:                        dir,
+		IP:                         ipNet,
+		InitialHeight:              1,
+		InitialState:               manifest.InitialState,
+		Validators:                 map[*Node]int64{},
+		ValidatorUpdates:           map[int64]map[*Node]int64{},
+		Nodes:                      []*Node{},
+		Evidence:                   manifest.Evidence,
+		LoadTxSizeBytes:            manifest.LoadTxSizeBytes,
+		LoadTxBatchSize:            manifest.LoadTxBatchSize,
+		LoadTxConnections:          manifest.LoadTxConnections,
+		ABCIProtocol:               manifest.ABCIProtocol,
+		PrepareProposalDelay:       manifest.PrepareProposalDelay,
+		ProcessProposalDelay:       manifest.ProcessProposalDelay,
+		CheckTxDelay:               manifest.CheckTxDelay,
+		VoteExtensionDelay:         manifest.VoteExtensionDelay,
+		FinalizeBlockDelay:         manifest.FinalizeBlockDelay,
+		UpgradeVersion:             manifest.UpgradeVersion,
+		Prometheus:                 manifest.Prometheus,
+		VoteExtensionsEnableHeight: manifest.VoteExtensionsEnableHeight,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType

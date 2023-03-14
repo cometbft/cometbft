@@ -16,10 +16,6 @@ fundamental problem in distributed systems; it plays a critical role in
 the fault tolerance of a broad range of applications, from currencies,
 to elections, to infrastructure orchestration, and beyond.
 
-<<<<<<< HEAD
-Get CometBFT up and running quickly with the
-[quick-start guide](./quick-start.md)!
-=======
 The ability to tolerate machines failing in arbitrary ways, including
 becoming malicious, is known as Byzantine fault tolerance (BFT). The
 theory of BFT is decades old, but software implementations have only
@@ -30,7 +26,6 @@ peer-to-peer networking and cryptographic authentication. The name
 derives from the way transactions are batched in blocks, where each
 block contains a cryptographic hash of the previous one, forming a
 chain.
->>>>>>> fa98b5ece (Reorganize existing guides (#492))
 
 CometBFT consists of two chief technical components: a blockchain
 consensus engine and a generic application interface.
@@ -49,16 +44,7 @@ development environment is right for them.
 CometBFT is designed to be easy-to-use, simple-to-understand, highly
 performant, and useful for a wide variety of distributed applications.
 
-<<<<<<< HEAD
-## Upgrading from Tendermint Core
-
-See our [upgrading guidelines](./upgrading-from-tm.md) if you are interested in
-switching to CometBFT from Tendermint Core.
-
-## What is CometBFT
-=======
 ## CometBFT vs. X
->>>>>>> fa98b5ece (Reorganize existing guides (#492))
 
 CometBFT is broadly similar to two classes of software. The first
 class consists of distributed key-value stores, like Zookeeper, etcd,

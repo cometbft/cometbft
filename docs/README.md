@@ -18,12 +18,7 @@ More formally, CometBFT performs Byzantine Fault Tolerant (BFT)
 State Machine Replication (SMR) for arbitrary deterministic, finite state machines.
 For more background, see [What is CometBFT?](introduction/README.md#what-is-cometbft.md).
 
-<<<<<<< HEAD
-To get started quickly with an example application, see the
-[quick start guide](introduction/quick-start.md).
-=======
 To get started quickly with an example application, see the [quick start guide](guides/quick-start.md).
->>>>>>> fa98b5ece (Reorganize existing guides (#492))
 
 To upgrade from Tendermint Core v0.34.x to CometBFT v0.34.x, please see our
 [upgrading instructions](./introduction/upgrading-from-tm.md).

@@ -52,12 +52,13 @@ And the eventual convergence of the 2P-Set implies the eventual termination of t
 > Tombstones are not gossiped; each node must be given information to realize by itself that an entry is no longer needed.
 > Tombstones, if at all materialized, must be garbage collected.
 
-## The Condition State
+## Querying the Tuple Space
 
-The condition state consists in a tuple space with information regarding steps taken by validators during possibly many rounds of possibly many heights. Each entry has form $\lang Height, Round, Step, Validator, Value \rang$ and corresponds to the message Validator sent in Step of Round of Height; Value is a tuple of the message contents.
+The tuple space contains information regarding steps taken by validators during possibly many rounds of possibly many heights. 
+Each entry has form $\lang Height, Round, Step, Validator, Value \rang$ and corresponds to the message Validator sent in Step of Round of Height; Value is a tuple of the message contents.
 
-A query to the tuple space has the same form of the entries, with parts replaced by values or by `*`, meaning any value is allowed.
-For example, suppose the tuple space has the following values, here organized as a table for easier visualization:
+A query to the tuple space has the same form as the entries, with parts replaced by values, that must match the values in the entries, or by `*`, which matches any value.
+For example, suppose the tuple space has the following entries, here organized as a table for easier visualization:
 
 | Height | Round | Step     | Validator | Value |
 |--------|-------|----------|-----------|-------|
@@ -68,12 +69,12 @@ For example, suppose the tuple space has the following values, here organized as
 | H'     | R''   | PreVote  | v'        | vval' |
 | H'     | R'''  | PreCommit| v'        | cval' | 
 
-Query $\lang H, R, Proposal, v, * \rang$ returns $\{ \lang H, R, Proposal, v, pval \rang \}$ and query
- $\lang H, R, *, v, * \rang$ returns $\{ \lang H, R, Proposal, v, pval \rang,  \lang H, R, PreVote, v, vval \rang \}$.
+- Query $\lang H, R, Proposal, v, * \rang$ returns $\{ \lang H, R, Proposal, v, pval \rang \}$
+- Query $\lang H, R, *, v, * \rang$ returns $\{ \lang H, R, Proposal, v, pval \rang,  \lang H, R, PreVote, v, vval \rang \}$.
 
 ### State Validity
  
-Given that each validator can set this state at most once per round, a query that specifies height, round, step and validator must return empty, if the state has not been set, or a single tuple. 
+Given that each validator can execute each step only once per round, a query that specifies height, round, step and validator must either return empty or a single tuple. 
 
 - $\forall h \in \N, r \in \N, s \in \text{Proposal, PreVote, PreCommit}, v \in \text{ValSet}_{h,r}$,  $\lang h, r, s, v, * \rang$ returns at most one value.
 
@@ -84,48 +85,62 @@ In the specific case of the Proposal step, only the proposer of the round can ha
 A violation of these rules is a proof of misbehavior.
 
 
+### Deletion of entries
+The tuple space could grow indefinitely, given that the number of heights and rounds is infinite.
+Hence entries must be removed once they are no longer useful.
+For example, if a new height is started, information from smaller heights may be discarded.
+
+Entries that are removed should not be added again and we note that an entry has been removed by saying that its barred version is in the space. 
+That is, if $e$ was in the space and then is removed, then $\bar{e}$ is in the space.
+
+Implementations should enforce that entries are only removed if they will not be needed again by CometBFT.
+
+Implementations may want to remove any memory of an entry, that is, to exclude $\bar{e}$, as a form of garbage collection.
+- Depending on the implementation, removed entries could be added again.
+- Re-adding entries does not compromise CometBFT correctness properties.
+
+> **TODO**: Expand on when to remove, based on the algorithm.
+
 ### Local views
 
-The Condition State is potentially infinite, given that the number of heights and rounds is infinite.
-Hence each process $p$ keeps a local, limited view $L_p$ of the Condition State $C$.
-Nodes only query their local views and queries subscripted with the node to indicate which local view is being consulted.
-The local view approximates the the full state in the following ways:
+The tuple space information is distributed among nodes that keep local views of the whole space.
+Because of the asynchronous nature of the system, $t_p$ may not include entries in the space or may still include entries no longer in the space.
+Formally, let $T$ be the tuple space and $t_p$ be node $p$'s view of $T$; $T = \cup_p t_p$.
 
-- if $\exists p$ such that $\exists e \in L_p$, then $e \in C$
-    - adding an entry to a local view adds it to $C$
-    - removing an entry from a local view removes it from $C$, if the local view was the last one to contain the entry.
+- $e \in T \Leftrightarrow \exists p, e \in t_p \land \not\exists q, \bar{e}\in t_q$
 
-- If an entry is added to $C$ and then removed, it should not be added again. If an entry is added to a local view, then it may be added again, depending on the garbage collection used.
-    - Algorithms should enforce that entries are only removed if they will not be needed again and therefore adding them back will not harm agreement.
-    - They should strive not to add state again so it eventually gets removed from $C$.
-    - $p$ knows how to differentiate a dropped entries from entries that have never been known;
+Nodes can only query local views, not $T$.
+Queries are subscripted with the node being queried.
 
 
 ## Communication Requirements
 
-We now formalize the requirements of the Tendermint algorithm in terms of an eventually consistent Condition State, which may be implemented using reliable communication (Gossip Communication), some best *best-effort* communication primitive that only delivers messages that are still useful, or some Gossip/Epidemic/Anti-Entropy approach for state convergence.
+We now formalize the requirements of the Tendermint algorithm in terms of an eventually consistent Tuple Space, which may be implemented using reliable communication (Gossip Communication), some best *best-effort* communication primitive that only delivers messages that are still useful, or some Gossip/Epidemic/Anti-Entropy approach for state convergence.
 All of these can be made to progress after GST but should also progress during smaller stability periods.
 
 |Eventual Consistency|
 |-----|
-| If there exists a correct process $p$ such that $e \in L_p$, then, eventually, for every correct process $q$, $e \in L_q$ or there exists a correct process $r$ that removes $e$ from $L_r$.|
+| If there exists a correct process $p$ such that $e \in t_p$, then, eventually, for every correct process $q$, $e \in t_q$ or there exists a correct process $r$ such that $\bar{e} \in t_r$.|
 
 > **Note**
-> 1. Nodes may learn of an entry deletion before learning of its addition.
+> Nodes may learn of an entry deletion before learning of its addition.
 
 In order to ensure convergence even in the presence of failures, the network must be connected in such a way to allow communication around any malicious nodes and to provide redundant paths between correct ones.
 This may not be feasible at all times, but should happen at least during periods in which the system is stable.
 
-In other words, during periods without network partition, in which messages are timely delivered, and that are long enough for the multiple communication rounds to succeed, processes will identify and solve differences in their states.
+In other words, during periods in which messages are timely delivered between correct processes long enough for multiple communication rounds to succeed, processes will identify and solve differences in their states.
 We call "long enough" $\Delta$.
 
 | Eventual $\Delta$-Timely Convergence |
 |---|
-| If $e\in L_p$, for some correct process $p$, at instant $t$, then by $\text{max} \{t,\text{GST}\} + \Delta$, either $e \notin L_p$ or $e \in L_q$, for every correct process $q$.
+| If $e\in t_p$, for some correct process $p$, at instant $t$, then by $\text{max} \{t,\text{GST}\} + \Delta$, either $e \in t_q$, for every correct process $q$ or $\bar{e} \in t_p$.
 
 $\Delta$ encapsulates the assumption that, during stable periods, timeouts eventually do not expire precociously, given that they all can be adjusted to reasonable values, and the steps needed to converge on entries can be accomplished within $\Delta$.
-Without precocious timeouts, all new entries in the state should help algorithms progress.
+Without precocious timeouts, all new entries should help algorithms progress.
 In the Tendermint algorithm, for example, no votes for Nil are added and the round should end if a proposal was made.
+
+
+
 
 
 # Part 2: CONS/GOSSIP interaction

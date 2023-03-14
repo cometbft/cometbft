@@ -60,11 +60,11 @@ hash-linked batches of transactions. Such transaction batches are called "blocks
 Hence, CometBFT defines a "blockchain".
 
 Each block in CometBFT has a unique index - its Height.
-Height's in the blockchain are monotonic.
+Heights in the blockchain are monotonic.
 Each block is committed by a known set of weighted Validators.
 Membership and weighting within this validator set may change over time.
 CometBFT guarantees the safety and liveness of the blockchain
-so long as less than 1/3 of the total weight of the Validator set
+as long as less than 1/3 of the total weight of the Validator set
 is malicious or faulty.
 
 A commit in CometBFT is a set of signed messages from more than 2/3 of

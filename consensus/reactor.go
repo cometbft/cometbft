@@ -1057,8 +1057,8 @@ func (ps *PeerState) GetRoundState() *cstypes.PeerRoundState {
 	return &prs
 }
 
-// ToJSON returns a json of PeerState.
-func (ps *PeerState) ToJSON() ([]byte, error) {
+// MarshalJSON implements the json.Marshaler interface.
+func (ps *PeerState) MarshalJSON() ([]byte, error) {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 

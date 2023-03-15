@@ -133,10 +133,8 @@ func (hvs *HeightVoteSet) addRound(round int32) {
 func (hvs *HeightVoteSet) AddVote(vote *types.Vote, peerID p2p.ID, extEnabled bool) (added bool, err error) {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
-
-	//TODO: Remove?
 	if hvs.extensionsEnabled != extEnabled {
-		panic(fmt.Errorf("Extensions enabled param does not match in HeightVoteSet %t!=%t", hvs.extensionsEnabled, extEnabled))
+		panic(fmt.Errorf("extensions enabled general param does not match the one in HeightVoteSet %t!=%t", hvs.extensionsEnabled, extEnabled))
 	}
 	if !types.IsVoteTypeValid(vote.Type) {
 		return

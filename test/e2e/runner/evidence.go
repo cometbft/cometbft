@@ -99,8 +99,10 @@ func InjectEvidence(ctx context.Context, r *rand.Rand, testnet *e2e.Testnet, amo
 				ctx, privVals, evidenceHeight, valSet, testnet.Name, blockRes.Block.Time,
 			)
 			if dve.VoteA.Height < testnet.VoteExtensionsEnableHeight {
-				dve.VoteA.StripExtension()
-				dve.VoteB.StripExtension()
+				dve.VoteA.Extension = nil
+				dve.VoteA.ExtensionSignature = nil
+				dve.VoteB.Extension = nil
+				dve.VoteB.ExtensionSignature = nil
 			}
 			ev = dve
 		}

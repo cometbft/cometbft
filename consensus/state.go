@@ -589,9 +589,9 @@ func (cs *State) votesFromExtendedCommit(state sm.State) (*types.VoteSet, error)
 	if ec == nil {
 		return nil, fmt.Errorf("extended commit for height %v not found", state.LastBlockHeight)
 	}
-	//XXXXX Remove this?
 	if ec.Height != state.LastBlockHeight {
-		return nil, fmt.Errorf("heights don't match in ec %v!=%v", ec.Height, state.LastBlockHeight)
+		return nil, fmt.Errorf("heights don't match in votesFromExtendedCommit %v!=%v",
+			ec.Height, state.LastBlockHeight)
 	}
 	vs := ec.ToExtendedVoteSet(state.ChainID, state.LastValidators)
 	if !vs.HasTwoThirdsMajority() {
@@ -608,9 +608,9 @@ func (cs *State) votesFromSeenCommit(state sm.State) (*types.VoteSet, error) {
 	if commit == nil {
 		return nil, fmt.Errorf("commit for height %v not found", state.LastBlockHeight)
 	}
-	//XXXXX Remove this?
 	if commit.Height != state.LastBlockHeight {
-		return nil, fmt.Errorf("heights don't match in seen commit %v!=%v", commit.Height, state.LastBlockHeight)
+		return nil, fmt.Errorf("heights don't match in votesFromSeenCommit %v!=%v",
+			commit.Height, state.LastBlockHeight)
 	}
 	vs := commit.ToVoteSet(state.ChainID, state.LastValidators)
 	if !vs.HasTwoThirdsMajority() {
@@ -2121,7 +2121,8 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 	}
 
 	// Check to see if the chain is configured to extend votes.
-	if cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(vote.Height) {
+	extEnabled := cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(vote.Height)
+	if extEnabled {
 		// The chain is configured to extend votes, check that the vote is
 		// not for a nil block and verify the extensions signature against the
 		// corresponding public key.
@@ -2157,15 +2158,13 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 		// TODO punish a peer if it sent a vote with an extension when the feature
 		// is disabled on the network.
 		// https://github.com/tendermint/tendermint/issues/8565
-		if stripped := vote.StripExtension(); stripped {
-			//TODO XXXX remove the panic (for testing) and restore the return
-			panic(fmt.Errorf("received vote with vote extension for height %v (extensions disabled) from peer ID %s", vote.Height, peerID))
-			//return false, fmt.Errorf("received vote with vote extension for height %v (extensions disabled) from peer ID %s", vote.Height, peerID)
+		if len(vote.Extension) > 0 || len(vote.ExtensionSignature) > 0 {
+			return false, fmt.Errorf("received vote with vote extension for height %v (extensions disabled) from peer ID %s", vote.Height, peerID)
 		}
 	}
 
 	height := cs.Height
-	added, err = cs.Votes.AddVote(vote, peerID, cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(vote.Height))
+	added, err = cs.Votes.AddVote(vote, peerID, extEnabled)
 	if !added {
 		// Either duplicate, or error upon cs.Votes.AddByIndex()
 		return
@@ -2325,7 +2324,7 @@ func (cs *State) signVote(
 		BlockID:          types.BlockID{Hash: hash, PartSetHeader: header},
 	}
 
-	extEnabled := cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(cs.Height)
+	extEnabled := cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(vote.Height)
 	if msgType == cmtproto.PrecommitType && !vote.BlockID.IsZero() {
 		// if the signedMessage type is for a non-nil precommit, add
 		// VoteExtension
@@ -2397,9 +2396,7 @@ func (cs *State) signAddVote(
 	hasExt := len(vote.ExtensionSignature) > 0
 	extEnabled := cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(vote.Height)
 	if vote.Type == cmtproto.PrecommitType && !vote.BlockID.IsZero() && hasExt != extEnabled {
-		// The signer will sign the extension, make sure to remove the data on the way out
-		//vote.StripExtension()
-		panic(fmt.Errorf("Vote extension does not match extensions enabled %t!=%t, height %d, type %v",
+		panic(fmt.Errorf("vote extension absence/presence does not match extensions enabled %t!=%t, height %d, type %v",
 			hasExt, extEnabled, vote.Height, vote.Type))
 	}
 	cs.sendInternalMessage(msgInfo{&VoteMessage{vote}, ""})

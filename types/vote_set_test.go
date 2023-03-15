@@ -565,9 +565,13 @@ func randVoteSet(
 	signedMsgType cmtproto.SignedMsgType,
 	numValidators int,
 	votingPower int64,
+	extEnabled bool,
 ) (*VoteSet, *ValidatorSet, []PrivValidator) {
 	valSet, privValidators := RandValidatorSet(numValidators, votingPower)
-	if signedMsgType == cmtproto.PrecommitType {
+	if extEnabled {
+		if signedMsgType != cmtproto.PrecommitType {
+			return nil, nil, nil
+		}
 		return NewExtendedVoteSet("test_chain_id", height, round, signedMsgType, valSet), valSet, privValidators
 	}
 	return NewVoteSet("test_chain_id", height, round, signedMsgType, valSet), valSet, privValidators

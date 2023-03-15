@@ -95,11 +95,11 @@ func TestLightClientAttackEvidenceBasic(t *testing.T) {
 	height := int64(5)
 	commonHeight := height - 1
 	nValidators := 10
-	voteSet, valSet, privVals := randVoteSet(height, 1, cmtproto.PrecommitType, nValidators, 1)
+	voteSet, valSet, privVals := randVoteSet(height, 1, cmtproto.PrecommitType, nValidators, 1, false)
 	header := makeHeaderRandom()
 	header.Height = height
 	blockID := makeBlockID(tmhash.Sum([]byte("blockhash")), math.MaxInt32, tmhash.Sum([]byte("partshash")))
-	extCommit, err := MakeExtCommit(blockID, height, 1, voteSet, privVals, defaultVoteTime)
+	extCommit, err := MakeExtCommit(blockID, height, 1, voteSet, privVals, defaultVoteTime, false)
 	require.NoError(t, err)
 	commit := extCommit.ToCommit()
 
@@ -156,12 +156,12 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 	height := int64(5)
 	commonHeight := height - 1
 	nValidators := 10
-	voteSet, valSet, privVals := randVoteSet(height, 1, cmtproto.PrecommitType, nValidators, 1)
+	voteSet, valSet, privVals := randVoteSet(height, 1, cmtproto.PrecommitType, nValidators, 1, false)
 	header := makeHeaderRandom()
 	header.Height = height
 	header.ValidatorsHash = valSet.Hash()
 	blockID := makeBlockID(header.Hash(), math.MaxInt32, tmhash.Sum([]byte("partshash")))
-	extCommit, err := MakeExtCommit(blockID, height, 1, voteSet, privVals, time.Now())
+	extCommit, err := MakeExtCommit(blockID, height, 1, voteSet, privVals, time.Now(), false)
 	require.NoError(t, err)
 	commit := extCommit.ToCommit()
 

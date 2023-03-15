@@ -1107,14 +1107,6 @@ func (commit *Commit) ToVoteSet(chainID string, vals *ValidatorSet) *VoteSet {
 // EnsureExtensions validates that a vote extensions signature is present for
 // every ExtendedCommitSig in the ExtendedCommit.
 func (ec *ExtendedCommit) EnsureExtensions(extEnabled bool) error {
-	/*
-		if ec.ExtendedSignatures == nil {
-			if extEnabled {
-				return fmt.Errorf("extension signature array is missing; but extensions are enabled; height %d", ec.Height)
-			}
-			return nil
-		}
-	*/
 	for _, ecs := range ec.ExtendedSignatures {
 		if err := ecs.EnsureExtension(extEnabled); err != nil {
 			return err

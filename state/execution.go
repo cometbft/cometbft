@@ -485,7 +485,7 @@ func buildExtendedCommitInfo(ec *types.ExtendedCommit, store Store, initialHeigh
 		// the proposer. If they were not enabled during this previous height, we
 		// will not deliver extension data.
 		if err := ecs.EnsureExtension(ap.VoteExtensionsEnabled(ec.Height)); err != nil {
-			panic(fmt.Errorf("commit at height %d received with missing vote extension data; err %w", ec.Height, err))
+			panic(fmt.Errorf("commit at height %d has problems with vote extension data; err %w", ec.Height, err))
 		}
 
 		votes[i] = abci.ExtendedVoteInfo{

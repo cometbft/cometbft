@@ -214,7 +214,6 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 
 	cfg.BlockSyncMode = true
 	cfg.BlockSync.Version = "v0"
-	//cfg.BaseConfig.LogLevel = "consensus:debug,*:info"
 
 	if node.StateSync {
 		cfg.StateSync.Enable = true

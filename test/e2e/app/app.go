@@ -141,17 +141,28 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 	if len(req.AppStateBytes) > 0 {
 		err = app.state.Import(0, req.AppStateBytes)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 	}
+	app.logger.Info("setting ChainID in app_state", "chainId", req.ChainId)
 	app.state.Set(prefixReservedKey+suffixChainID, req.ChainId)
+	app.logger.Info("setting VoteExtensionsHeight in app_state", "height", req.ConsensusParams.Abci.VoteExtensionsEnableHeight)
 	app.state.Set(prefixReservedKey+suffixVoteExtHeight, strconv.FormatInt(req.ConsensusParams.Abci.VoteExtensionsEnableHeight, 10))
+	app.logger.Info("setting initial height in app_state", "initial_height", req.InitialHeight)
 	app.state.Set(prefixReservedKey+suffixInitialHeight, strconv.FormatInt(req.InitialHeight, 10))
+	//Get validators from genesis
+	if req.Validators != nil {
+		for _, val := range req.Validators {
+			if err := app.storeValidator(&val); err != nil {
+				return nil, err
+			}
+		}
+	}
 	resp := &abci.ResponseInitChain{
 		AppHash: app.state.Hash,
 	}
 	if resp.Validators, err = app.validatorUpdates(0); err != nil {
-		panic(err)
+		return nil, err
 	}
 	return resp, nil
 }
@@ -522,6 +533,24 @@ func (app *Application) checkHeightAndExtensions(isPrepareProcessProposal bool, 
 	return appHeight, voteExtHeight != 0 && currentHeight >= voteExtHeight
 }
 
+func (app *Application) storeValidator(valUpdate *abci.ValidatorUpdate) error {
+	// Store validator data to verify extensions
+	pubKey, err := cryptoenc.PubKeyFromProto(valUpdate.PubKey)
+	if err != nil {
+		return err
+	}
+	addr := pubKey.Address().String()
+	if valUpdate.Power > 0 {
+		pubKeyBytes, err := valUpdate.PubKey.Marshal()
+		if err != nil {
+			return err
+		}
+		app.logger.Info("setting validator in app_state", "addr", addr)
+		app.state.Set(prefixReservedKey+addr, hex.EncodeToString(pubKeyBytes))
+	}
+	return nil
+}
+
 // validatorUpdates generates a validator set update.
 func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, error) {
 	updates := app.cfg.ValidatorUpdates[fmt.Sprintf("%v", height)]
@@ -538,19 +567,8 @@ func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, 
 		}
 		valUpdate := abci.UpdateValidator(keyBytes, int64(power), app.cfg.KeyType)
 		valUpdates = append(valUpdates, valUpdate)
-
-		// Store validator data to verify extensions
-		pubKey, err := cryptoenc.PubKeyFromProto(valUpdate.PubKey)
-		if err != nil {
+		if err := app.storeValidator(&valUpdate); err != nil {
 			return nil, err
-		}
-		addr := pubKey.Address().String()
-		if power > 0 {
-			pubKeyBytes, err := valUpdate.PubKey.Marshal()
-			if err != nil {
-				return nil, err
-			}
-			app.state.Set(prefixReservedKey+addr, hex.EncodeToString(pubKeyBytes))
 		}
 	}
 	return valUpdates, nil

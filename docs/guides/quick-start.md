@@ -11,7 +11,7 @@ works and want to get started right away, continue.
 
 ## Install
 
-See the [install instructions](./install.md).
+See the [install guide](./install.md).
 
 ## Initialization
 

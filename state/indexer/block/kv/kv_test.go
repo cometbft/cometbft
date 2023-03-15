@@ -94,10 +94,10 @@ func TestBlockIndexer(t *testing.T) {
 		q       *query.Query
 		results []int64
 	}{
-		// "block.height = 100": {
-		// 	q:       query.MustCompile(`block.height = 100`),
-		// 	results: []int64{},
-		// },
+		"block.height = 100": {
+			q:       query.MustCompile(`block.height = 100`),
+			results: []int64{},
+		},
 		"block.height = 5": {
 			q:       query.MustCompile(`block.height = 5`),
 			results: []int64{5},

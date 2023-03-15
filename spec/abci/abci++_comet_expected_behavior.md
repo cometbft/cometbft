@@ -228,38 +228,34 @@ Finally, `Commit`, which is kept in ABCI++, no longer returns the `AppHash`. It 
 `FinalizeBlock` to do so. Thus, a slight refactoring of the old `Commit` implementation will be
 needed to move the return of `AppHash` to `FinalizeBlock`.
 
-## Operational concerns
+## Accomodating for vote extensions
 
-Introducing vote extensions requires changes to the configuration of the application. Additionally, 
-operators and application developers need to be aware of the impact vote extensions have on
-expected runtime behaviour.
+In a manner transparent to the application, CometBFT ensures the node is provided with all
+the data it needs to participate in consensus. 
 
-First of all, switching to a version of CometBFT with vote extensions, requires a coordinated upgrade. 
-For a detailed description on the upgrade path, please refer to the corresponding 
-[section](./../../docs/rfc/rfc-100-abci-vote-extension-propag.md#upgrade-path) in RFC-100.
+In the case of recovering from a crash, or joining the network via state sync, CometBFT will make
+sure the node acquires the neccessary vote extensions before switching to conensusus. 
 
-Once upgraded, the configuration file is updated with a [**new consensus parameter**](./abci%2B%2B_app_requirements.md#abciparamsvoteextensionsenableheight): `VoteExtensionsEnableHeight`. 
-This parameter represents the height after which vote extensions are 
-required for consensus to proceed, with 0 being the default value (no vote extensions).
-Once the (coordinated) upgrade to ABCI 2.0 has taken place, at height  *h<sub>u</sub>*,
-the value of `VoteExtensionsEnableHeight` MAY be set to some height, *h<sub>e</sub>*,
-which MUST be higher than the current height of the chain. Thus the earliest value for 
- *h<sub>e</sub>* is  *h<sub>u</sub>* + 1. 
-Once a node reaches the configured height,
-for all heights *h ≥ h<sub>e</sub>*, the consensus algorithm will
-reject any votes that do not have vote extension data as invalid.
-Likewise, for all heights *h < h<sub>e</sub>*, any votes that *do* have vote extensions
-will be considered an error condition.
-Height *h<sub>e</sub>* is somewhat special, as calls to `PrepareProposal` MUST NOT
-have vote extension data, but all precommit votes in that height MUST carry a vote extension.
-Height *h<sub>e</sub> + 1* is the first height for which `PrepareProposal` MUST have vote
-extension data and all precommit votes in that height MUST have a vote extension.
+If a node is already in consensus but falls behind, during catch-up, CometBFT if providing the node with 
+vote extensions from past heights by storing the extensions within `ExtendedCommit` for old heights.
 
+We realize this is sub-optimal due to the increase in storage needed to store the extensions, we are 
+working on an optimization of this implementation which should eliviate this concern. The decision to store 
+historical commits and potential optimizations, are discussed in detail in [RFC-100](./../../docs/rfc/rfc-100-abci-vote-extension-propag.md#current-limitations-and-possible-implementations)
 
-### Changes to data stored by CometBFT
+## Handling upgrades to ABCI 2.0 
 
-Upon saving the block for a given height *h* in the block store at decision time
-    - if *h ≥ h<sub>e</sub>*, the corresponding extended commit is saved as  well
-    - if *h < h<sub>e</sub>*, there are no changes to the data saved
+If applications upgrade to ABCI 2.0, CometBFT internally ensures that the [application setup](./abci%2B%2B_app_requirements.md#application-configuration-required-to-switch-to-abci-20) is reflected in its opertaion. 
+
+Namely, upon saving the block for a given height *h* in the block store at decision time
+- if *h ≥ h<sub>e</sub>*, the corresponding extended commit is saved as  well
+- if *h < h<sub>e</sub>*, there are no changes to the data saved
+
+In the catch-up mechanism, when a node f realizes that another peer is at height hp, which is more than 2 heights behind,
+- if *h<sub>p</sub> ≥ h<sub>e</sub>*, *f* uses the extended commit to
+      reconstruct the precommit votes with their corresponding extensions
+- if *h<sub>p</sub> < h<sub>e</sub>*, *f* uses the canonical commit to reconstruct the precommit votes,
+      as done for ABCI 1.0 and earlier.
+      
 
 

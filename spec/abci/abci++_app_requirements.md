@@ -1015,8 +1015,39 @@ from the genesis file and light client RPC servers. It also calls `Info` to veri
   current height's block header
 
 Once the state machine has been restored and CometBFT has gathered this additional
-information, it transitions to block sync. As of ABCI 2.0, if vote extensions are enabled, 
-block sync is required to sync
-at least one block before switching to consensus. This way, the node is guaranteed to have obtained
-the vote extensions (stored within the extended commit in the block store), which are needed to participate in consensus. The node can then transition to regular consensus operation. At this point the node operates like
-any other node, apart from having a truncated block history at the height of the restored snapshot.
+information, it transitions to consensus. As of ABCI 2.0, CometBFT ensures the neccessary conditions
+to switch are met [RFC-100](./../../docs/rfc/rfc-100-abci-vote-extension-propag.md#base-implementation-persist-and-propagate-extended-commit-history).
+From the application's point of view, these operations are transparent, unless the application has just upgraded to ABCI 2.0. 
+In that case, the application needs to be properly configured and aware of certain constraints in terms of when
+to provide vote extensions. More details can be found in the section below. 
+
+Once a node switches to consensus,it operates like any other node, apart from having a truncated block history at the height of the restored snapshot.
+
+## Application configuration required to switch to ABCI 2.0
+
+Introducing vote extensions requires changes to the configuration of the application.
+
+First of all, switching to a version of CometBFT with vote extensions, requires a coordinated upgrade. 
+For a detailed description on the upgrade path, please refer to the corresponding 
+[section](./../../docs/rfc/rfc-100-abci-vote-extension-propag.md#upgrade-path) in RFC-100.
+
+The configuration file now contains a [**new consensus parameter**](./abci%2B%2B_app_requirements.md#abciparamsvoteextensionsenableheight): `VoteExtensionsEnableHeight`. 
+This parameter represents the height after which vote extensions are 
+required for consensus to proceed, with 0 being the default value (no vote extensions).
+Once the (coordinated) upgrade to ABCI 2.0 has taken place, at height  *h<sub>u</sub>*,
+the value of `VoteExtensionsEnableHeight` MAY be set to some height, *h<sub>e</sub>*,
+which MUST be higher than the current height of the chain. Thus the earliest value for 
+ *h<sub>e</sub>* is  *h<sub>u</sub>* + 1. 
+Once a node reaches the configured height,
+for all heights *h ≥ h<sub>e</sub>*, the consensus algorithm will
+reject any votes that do not have vote extension data as invalid.
+Likewise, for all heights *h < h<sub>e</sub>*, any votes that *do* have vote extensions
+will be considered an error condition.
+Height *h<sub>e</sub>* is somewhat special, as calls to `PrepareProposal` MUST NOT
+have vote extension data, but all precommit votes in that height MUST carry a vote extension,
+even if the extension is `nil`. 
+Height *h<sub>e</sub> + 1* is the first height for which `PrepareProposal` MUST have vote
+extension data and all precommit votes in that height MUST have a vote extension.
+
+Corollary, [CometBFT will decide](./abci%2B%2B_comet_expected_behavior.md#handling-upgrades-to-abci-20) which data to store, and require for successful operations, based on the current height
+of the chain.

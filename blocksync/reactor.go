@@ -396,6 +396,7 @@ FOR_LOOP:
 				// TODO This is bad, are we zombie?
 				panic(fmt.Sprintf("Failed to process committed block (%d:%X): %v", first.Height, first.Hash(), err))
 			}
+			bcR.recordMetrics(first)
 			blocksSynced++
 
 			if blocksSynced%100 == 0 {
@@ -419,4 +420,11 @@ func (bcR *Reactor) BroadcastStatusRequest() {
 		ChannelID: BlocksyncChannel,
 		Message:   &bcproto.StatusRequest{},
 	})
+}
+
+func (bcR *Reactor) recordMetrics(block *types.Block) {
+	bcR.metrics.NumTxs.Set(float64(len(block.Data.Txs)))
+	bcR.metrics.TotalTxs.Add(float64(len(block.Data.Txs)))
+	bcR.metrics.BlockSizeBytes.Set(float64(block.Size()))
+	bcR.metrics.LatestBlockHeight.Set(float64(block.Height))
 }

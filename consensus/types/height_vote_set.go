@@ -130,9 +130,14 @@ func (hvs *HeightVoteSet) addRound(round int32) {
 
 // Duplicate votes return added=false, err=nil.
 // By convention, peerID is "" if origin is self.
-func (hvs *HeightVoteSet) AddVote(vote *types.Vote, peerID p2p.ID) (added bool, err error) {
+func (hvs *HeightVoteSet) AddVote(vote *types.Vote, peerID p2p.ID, extEnabled bool) (added bool, err error) {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
+
+	//TODO: Remove?
+	if hvs.extensionsEnabled != extEnabled {
+		panic(fmt.Errorf("Extensions enabled param does not match in HeightVoteSet %t!=%t", hvs.extensionsEnabled, extEnabled))
+	}
 	if !types.IsVoteTypeValid(vote.Type) {
 		return
 	}

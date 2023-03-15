@@ -117,7 +117,7 @@ func (vote *Vote) CommitSig() CommitSig {
 // chain has not enabled vote extensions.
 // Returns true if extension data was present before stripping and false otherwise.
 func (vote *Vote) StripExtension() bool {
-	stripped := len(vote.Extension) > 0 || len(vote.ExtensionSignature) > 0
+	stripped := len(vote.ExtensionSignature) > 0
 	vote.Extension = nil
 	vote.ExtensionSignature = nil
 	return stripped

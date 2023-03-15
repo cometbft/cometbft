@@ -589,6 +589,10 @@ func (cs *State) votesFromExtendedCommit(state sm.State) (*types.VoteSet, error)
 	if ec == nil {
 		return nil, fmt.Errorf("extended commit for height %v not found", state.LastBlockHeight)
 	}
+	//XXXXX Remove this?
+	if ec.Height != state.LastBlockHeight {
+		return nil, fmt.Errorf("heights don't match in ec %v!=%v", ec.Height, state.LastBlockHeight)
+	}
 	vs := ec.ToExtendedVoteSet(state.ChainID, state.LastValidators)
 	if !vs.HasTwoThirdsMajority() {
 		return nil, errors.New("extended commit does not have +2/3 majority")
@@ -604,7 +608,10 @@ func (cs *State) votesFromSeenCommit(state sm.State) (*types.VoteSet, error) {
 	if commit == nil {
 		return nil, fmt.Errorf("commit for height %v not found", state.LastBlockHeight)
 	}
-
+	//XXXXX Remove this?
+	if commit.Height != state.LastBlockHeight {
+		return nil, fmt.Errorf("heights don't match in seen commit %v!=%v", commit.Height, state.LastBlockHeight)
+	}
 	vs := commit.ToVoteSet(state.ChainID, state.LastValidators)
 	if !vs.HasTwoThirdsMajority() {
 		return nil, errors.New("commit does not have +2/3 majority")
@@ -2114,7 +2121,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 	}
 
 	// Check to see if the chain is configured to extend votes.
-	if cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(cs.Height) {
+	if cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(vote.Height) {
 		// The chain is configured to extend votes, check that the vote is
 		// not for a nil block and verify the extensions signature against the
 		// corresponding public key.
@@ -2145,18 +2152,20 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 		}
 	} else {
 		// Vote extensions are not enabled on the network.
-		// strip the extension data from the vote in case any is present.
+		// Reject the vote, as it is malformed
 		//
 		// TODO punish a peer if it sent a vote with an extension when the feature
 		// is disabled on the network.
 		// https://github.com/tendermint/tendermint/issues/8565
 		if stripped := vote.StripExtension(); stripped {
-			cs.Logger.Error("vote included extension data but vote extensions are not enabled", "peer", peerID)
+			//TODO XXXX remove the panic (for testing) and restore the return
+			panic(fmt.Errorf("received vote with vote extension for height %v (extensions disabled) from peer ID %s", vote.Height, peerID))
+			//return false, fmt.Errorf("received vote with vote extension for height %v (extensions disabled) from peer ID %s", vote.Height, peerID)
 		}
 	}
 
 	height := cs.Height
-	added, err = cs.Votes.AddVote(vote, peerID)
+	added, err = cs.Votes.AddVote(vote, peerID, cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(vote.Height))
 	if !added {
 		// Either duplicate, or error upon cs.Votes.AddByIndex()
 		return
@@ -2363,35 +2372,39 @@ func (cs *State) signAddVote(
 	msgType cmtproto.SignedMsgType,
 	hash []byte,
 	header types.PartSetHeader,
-) *types.Vote {
+) {
 	if cs.privValidator == nil { // the node does not have a key
-		return nil
+		return
 	}
 
 	if cs.privValidatorPubKey == nil {
 		// Vote won't be signed, but it's not critical.
 		cs.Logger.Error(fmt.Sprintf("signAddVote: %v", errPubKeyIsNotSet))
-		return nil
+		return
 	}
 
 	// If the node not in the validator set, do nothing.
 	if !cs.Validators.HasAddress(cs.privValidatorPubKey.Address()) {
-		return nil
+		return
 	}
 
 	// TODO: pass pubKey to signVote
 	vote, err := cs.signVote(msgType, hash, header)
 	if err != nil {
 		cs.Logger.Error("failed signing vote", "height", cs.Height, "round", cs.Round, "vote", vote, "err", err)
-		return nil
+		return
 	}
-	if !cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(vote.Height) {
+	hasExt := len(vote.ExtensionSignature) > 0
+	extEnabled := cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(vote.Height)
+	if vote.Type == cmtproto.PrecommitType && !vote.BlockID.IsZero() && hasExt != extEnabled {
 		// The signer will sign the extension, make sure to remove the data on the way out
-		vote.StripExtension()
+		//vote.StripExtension()
+		panic(fmt.Errorf("Vote extension does not match extensions enabled %t!=%t, height %d, type %v",
+			hasExt, extEnabled, vote.Height, vote.Type))
 	}
 	cs.sendInternalMessage(msgInfo{&VoteMessage{vote}, ""})
 	cs.Logger.Debug("signed and pushed vote", "height", cs.Height, "round", cs.Round, "vote", vote)
-	return vote
+	return
 }
 
 // updatePrivValidatorPubKey get's the private validator public key and

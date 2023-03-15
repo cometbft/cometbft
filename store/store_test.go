@@ -352,6 +352,21 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 	}
 }
 
+// StripExtensions removes all VoteExtension data from an ExtendedCommit. This
+// is useful when dealing with an ExendedCommit but vote extension data is
+// expected to be absent.
+func stripExtensions(ec *types.ExtendedCommit) bool {
+	stripped := false
+	for idx := range ec.ExtendedSignatures {
+		if len(ec.ExtendedSignatures[idx].Extension) > 0 || len(ec.ExtendedSignatures[idx].ExtensionSignature) > 0 {
+			stripped = true
+		}
+		ec.ExtendedSignatures[idx].Extension = nil
+		ec.ExtendedSignatures[idx].ExtensionSignature = nil
+	}
+	return stripped
+}
+
 // TestSaveBlockWithExtendedCommitPanicOnAbsentExtension tests that saving a
 // block with an extended commit panics when the extension data is absent.
 func TestSaveBlockWithExtendedCommitPanicOnAbsentExtension(t *testing.T) {
@@ -368,7 +383,7 @@ func TestSaveBlockWithExtendedCommitPanicOnAbsentExtension(t *testing.T) {
 		{
 			name: "save commit with no extensions",
 			malleateCommit: func(c *types.ExtendedCommit) {
-				c.StripExtensions()
+				stripExtensions(c)
 			},
 			shouldPanic: true,
 		},

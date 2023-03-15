@@ -319,8 +319,10 @@ func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams
 			App: pbParams.Version.App,
 		},
 	}
+	fmt.Printf("XXXXXX pbParams.Abci %v getenableheight %v\n", pbParams.Abci, pbParams.Abci.GetVoteExtensionsEnableHeight())
 	if pbParams.Abci != nil {
 		c.ABCI.VoteExtensionsEnableHeight = pbParams.Abci.GetVoteExtensionsEnableHeight()
 	}
+	fmt.Printf("XXXXXX read value %v\n", c.ABCI.VoteExtensionsEnableHeight)
 	return c
 }

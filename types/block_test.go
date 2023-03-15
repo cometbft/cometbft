@@ -584,6 +584,15 @@ func TestVoteSetToExtendedCommit(t *testing.T) {
 	}
 }
 
+// ToVoteSet constructs a VoteSet from the Commit and validator set.
+// Panics if signatures from the ExtendedCommit can't be added to the voteset.
+// Inverse of VoteSet.MakeExtendedCommit().
+func toVoteSet(ec *ExtendedCommit, chainID string, vals *ValidatorSet) *VoteSet {
+	voteSet := NewVoteSet(chainID, ec.Height, ec.Round, cmtproto.PrecommitType, vals)
+	ec.addSigsToVoteSet(voteSet)
+	return voteSet
+}
+
 // TestExtendedCommitToVoteSet tests that the vote set produced from an extended commit
 // contains the same vote information as the extended commit. The test ensures
 // that the ToVoteSet method behaves as expected, whether vote extensions
@@ -625,7 +634,7 @@ func TestExtendedCommitToVoteSet(t *testing.T) {
 			if testCase.includeExtension {
 				voteSet2 = extCommit.ToExtendedVoteSet(chainID, valSet)
 			} else {
-				voteSet2 = extCommit.ToVoteSet(chainID, valSet)
+				voteSet2 = toVoteSet(extCommit, chainID, valSet)
 			}
 
 			for i := int32(0); int(i) < len(vals); i++ {

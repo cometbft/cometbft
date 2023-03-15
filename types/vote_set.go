@@ -2,7 +2,6 @@ package types
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -224,7 +223,14 @@ func (voteSet *VoteSet) addVote(vote *Vote) (added bool, err error) {
 			return false, fmt.Errorf("failed to verify vote with ChainID %s and PubKey %s: %w", voteSet.chainID, val.PubKey, err)
 		}
 		if len(vote.ExtensionSignature) > 0 || len(vote.Extension) > 0 {
-			return false, errors.New("unexpected vote extension data present in vote")
+			panic(fmt.Errorf("unexpected vote extension data present in vote; ext_len %d, sig_len %d",
+				len(vote.Extension),
+				len(vote.ExtensionSignature),
+			))
+			//return false, fmt.Errorf("unexpected vote extension data present in vote; ext_len %d, sig_len %d",
+			//	len(vote.Extension),
+			//	len(vote.ExtensionSignature),
+			//)
 		}
 	}
 
@@ -632,11 +638,12 @@ func (voteSet *VoteSet) sumTotalFrac() (int64, int64, float64) {
 // Panics if the vote type is not PrecommitType or if there's no +2/3 votes for
 // a single block.
 func (voteSet *VoteSet) MakeExtendedCommit(ap ABCIParams) *ExtendedCommit {
+	voteSet.mtx.Lock()
+	defer voteSet.mtx.Unlock()
+
 	if voteSet.signedMsgType != cmtproto.PrecommitType {
 		panic("Cannot MakeExtendCommit() unless VoteSet.Type is PrecommitType")
 	}
-	voteSet.mtx.Lock()
-	defer voteSet.mtx.Unlock()
 
 	// Make sure we have a 2/3 majority
 	if voteSet.maj23 == nil {
@@ -662,7 +669,8 @@ func (voteSet *VoteSet) MakeExtendedCommit(ap ABCIParams) *ExtendedCommit {
 		ExtendedSignatures: sigs,
 	}
 	if err := ec.EnsureExtensions(ap.VoteExtensionsEnabled(ec.Height)); err != nil {
-		panic(fmt.Errorf("problem with vote extension data in extended commit at height %d; %w", ec.Height, err))
+		panic(fmt.Errorf("problem with vote extension data when making extended commit of height %d; %w",
+			ec.Height, err))
 	}
 	return ec
 }

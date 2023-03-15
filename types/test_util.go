@@ -36,7 +36,8 @@ func MakeExtCommit(blockID BlockID, height int64, round int32,
 		}
 	}
 
-	return voteSet.MakeExtendedCommit(), nil
+	return nil, nil
+	//return voteSet.MakeExtendedCommit(true), nil
 }
 
 func signAddVote(privVal PrivValidator, vote *Vote, voteSet *VoteSet) (bool, error) {

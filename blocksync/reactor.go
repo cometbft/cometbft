@@ -455,7 +455,17 @@ FOR_LOOP:
 			}
 			if err == nil {
 				// if vote extensions were required at this height, ensure they exist.
-				err = extCommit.EnsureExtensions(state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height))
+				if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
+					err = extCommit.EnsureExtensions(true)
+				} else {
+					if extCommit != nil {
+						err = fmt.Errorf("received non-nil extCommit for height %d (extensions disabled)", first.Height)
+					}
+				}
+				//TODO Remove
+				if err != nil {
+					panic(fmt.Errorf("this shouldn't happen: %w", err))
+				}
 			}
 			if err != nil {
 				bcR.Logger.Error("Error in validation", "err", err)

@@ -274,7 +274,29 @@ func (app *testApp) Commit(_ context.Context, _ *abci.RequestCommit) (*abci.Resp
 	return &abci.ResponseCommit{RetainHeight: 1}, nil
 }
 
-func (app *testApp) ProcessProposal(_ context.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
+func (app *testApp) PrepareProposal(
+	_ context.Context,
+	req *abci.RequestPrepareProposal,
+) (*abci.ResponsePrepareProposal, error) {
+	txs := make([][]byte, 0, len(req.Txs))
+	var totalBytes int64
+	for _, tx := range req.Txs {
+		if len(tx) == 0 {
+			continue
+		}
+		totalBytes += int64(len(tx))
+		if totalBytes > req.MaxTxBytes {
+			break
+		}
+		txs = append(txs, tx)
+	}
+	return &abci.ResponsePrepareProposal{Txs: txs}, nil
+}
+
+func (app *testApp) ProcessProposal(
+	_ context.Context,
+	req *abci.RequestProcessProposal,
+) (*abci.ResponseProcessProposal, error) {
 	for _, tx := range req.Txs {
 		if len(tx) == 0 {
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil

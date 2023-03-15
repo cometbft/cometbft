@@ -18,7 +18,7 @@ from entering the mempool.
 Note that there are valid scenarios in which a transaction will not
 pass this check (including nodes getting different transactions at different times, meaning some
 of them might be obsolete at the time of the check; state changes upon block execution etc.). 
-However, CometBFT users observed that
+However, Tendermint users observed that
 there are transactions that can never have been or will never be valid. They thus propose
 to introduce a special response code for `CheckTx` to indicate this behaviour, and ban the peers
 who gossip such transactions. Additionally, users expressed a need for banning peers who
@@ -62,7 +62,7 @@ Transactions received from a peer are handled within the [`Receive`](https://git
 
 Currently, the mempool triggers a disconnect from a peer in the case of the following errors:
 
-  - [Unknown message type](https://github.com/cometbft/cometbft/blob/main/mempool/reactor.go#L119)
+  - [Unknown message type](https://github.com/tendermint/tendermint/blob/ff0f98892f24aac11e46aeff2b6d2c0ad816701a/mempool/v0/reactor.go#L184)
 
 However, disconnecting from a peer is not the same as banning the peer. The p2p layer will close the connecton but 
 the peer can reconnect without any penalty, and if it as a persistent peer, a reconnect will be initiated
@@ -101,7 +101,7 @@ Any further mentions of `banning` will be agnostic to the actual way banning is 
 
 ### 1. What does banning a peer mean 
 
-CometBFT recognizes that peers can accept transactions into their mempool as valid but then when the state changes, they can become invalid. 
+Tendermint recognizes that peers can accept transactions into their mempool as valid but then when the state changes, they can become invalid. 
 There are also transactions that are received that could never have been valid (for examle due to misconfiguration on one node). 
 We thus differentiate two scenarios - a) where `CheckTx` fails due to reasons already 
 known and b) where `CheckTx` deems a transaction could never have been valid.
@@ -131,7 +131,7 @@ is considered to never be valid.
 
 If a node sends transactions that fail `CheckTx` but could be valid at some point, a peer should not be banned the first time this happens.
 Only if this happens frequently enough should this be considered as spam. To define this behaviour we keep track how many times (`numFailures`) a peer 
-sent us invalid transactions within a time interval (`lastFailure`). This time interval should be reset every `failureResetInterval`. 
+sent us invalid transactions within a time interval (`lastFailure`). This time interval should be reset every `failureResetInterval`ms.  
 
 For each peer, we should have a separate `numFailures` and `lastFailure` variable. There is no need to  have one per transaction.
  Whenever a transaction fails, if the `now - lastFailure <= failureResetInterval`, we increment the `numFailures` for this particular peer and set the `lastFailure` to `now`. 
@@ -143,7 +143,7 @@ The reason for this logic is as follows: We deem it acceptable if every now and 
   
  **Discussion**
 
- The problem with supporting this scenario is the definition of the above mentioned parameters. It is very hard to estimate, at the CometBFT level, what these parameters should be. A possible solution is 
+ The problem with supporting this scenario is the definition of the above mentioned parameters. It is very hard to estimate, at the Tendermint level, what these parameters should be. A possible solution is 
  to allow the application to set these parameters. What is unclear, how will the application know that these parameters are not well set if, due to a bug or network problems, transactions start to fail? 
 The network could end up with all nodes banning everyone. How would an application developer know to debug this, what to look for?
 
@@ -155,7 +155,7 @@ is currently not supported by the p2p layer.
 Currently, a peer can send the same valid (or invalid) transaction [multiple times](https://github.com/tendermint/tendermint/blob/ff0f98892f24aac11e46aeff2b6d2c0ad816701a/mempool/v0/clist_mempool.go#L247). Peers do not 
 gossip transactions to peers that have sent them that same transaction. But there is no check on whether 
 a node has already sent the same transaction to this peer before. There is also no check whether the transaction
-that is being gossiped is currently valid or not (assuming that invalid transactions could become valid).
+that is being gossiped is currently valid or not (assumint that invalid transactions could become valid).
 The transaction broadcast logic simply loops through the mempool and tries to send the transactions currently in the pool. 
 
 If we want to ban peers based on duplicate transactions, we should either add additional checks for the cases above, or 
@@ -183,7 +183,7 @@ a node saves the peer ID of the peer(s) that have sent it. As each peer had to h
 run `CheckTx` on this transaction before adding it to its own mempool, we can assume this peer
 can be held accountable for the validity of transactions it gossips. Invalid transactions are kept only in the mempool
 cache and thus not gossiped. 
-As nodes have to complete a cryptographic handshake at the p2p layer, CometBFT guarantees that a malicious peer
+As nodes have to complete a cryptographic handshake at the p2p layer, Tendermint guarantees that a malicious peer
 cannot lie about who the sender of the transaction is. 
 
 *Transactions received from users*
@@ -199,7 +199,7 @@ While an attack by simply banning peers on failing `CheckTx` is hard to imagine,
 
 Should we keep transactions that could never have been valid in the cache? Assuming that receiving such transactions is rare, and the peer that sent them is banned, do we need to occupy space in the mempool cache with these transactions?
 
-- What if nodes run different versions of CometBFT and banning is not supported in one of the versions? 
+- What if nodes run different versions of Tendermint and banning is not supported in one of the versions? 
 
 - Reserving response codes can be problematic for existing applications that may have reserved these codes for internal purposes withtou being aware that this causes a ban now. 
  

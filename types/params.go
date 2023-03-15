@@ -77,7 +77,8 @@ func (a ABCIParams) VoteExtensionsEnabled(h int64) bool {
 		panic(fmt.Errorf("cannot check if vote extensions enabled for height %d (< 1)", h))
 	}
 	if a.VoteExtensionsEnableHeight == 0 {
-		return false
+		panic(fmt.Errorf("Ahaha! height is %d", h))
+		//return false
 	}
 	return a.VoteExtensionsEnableHeight <= h
 }

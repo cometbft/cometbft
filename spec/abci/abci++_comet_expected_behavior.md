@@ -118,31 +118,16 @@ Let us now examine the grammar line by line, providing further details.
   to provide the Application with all the snapshots needed, in order to reconstruct the state locally.
   A successful attempt must provide at least one chunk via `ApplySnapshotChunk`.
   At the end of a successful attempt, CometBFT calls `Info` to make sure the reconstructed state's
-  _AppHash_ matches the one in the block header at the corresponding height.
+  _AppHash_ matches the one in the block header at the corresponding height. Note that the state 
+  of  the application does not contain vote extensions itself. The application can rely on 
+  [CometBFT to ensure](./../../docs/rfc/rfc-100-abci-vote-extension-propag.md#base-implementation-persist-and-propagate-extended-commit-history)
+  the node has all the relevant data by the time it switches to consensus. 
 
 >```abnf
 >state-sync          = *state-sync-attempt success-sync info
 >state-sync-attempt  = offer-snapshot *apply-chunk
 >success-sync        = offer-snapshot 1*apply-chunk
 >```
-
-* If vote extensions are enabled, after statesync a node is required to sync at least one block
-* via block sync.
-
-<!-- TODO >
-Check whether recovery should go after sync-blocks
--->
->```abnf
->block-sync          = 1*sync-blocks recovery
->sync-blocks         = request-block apply-block update-state
->```
-
-Thus the entire sequence of startup via syncing protocols before switching to consensus would look as follows:
-
->```abnf
->startup          = state-sync block-sync recovery
->```
-
 
 * In recovery mode, CometBFT first calls `Info` to know from which height it needs to replay decisions
   to the Application. After this, CometBFT enters normal consensus execution.
@@ -242,3 +227,39 @@ As for the new methods:
 Finally, `Commit`, which is kept in ABCI++, no longer returns the `AppHash`. It is now up to
 `FinalizeBlock` to do so. Thus, a slight refactoring of the old `Commit` implementation will be
 needed to move the return of `AppHash` to `FinalizeBlock`.
+
+## Operational concerns
+
+Introducing vote extensions requires changes to the configuration of the application. Additionally, 
+operators and application developers need to be aware of the impact vote extensions have on
+expected runtime behaviour.
+
+First of all, switching to a version of CometBFT with vote extensions, requires a coordinated upgrade. 
+For a detailed description on the upgrade path, please refer to the corresponding 
+[section](./../../docs/rfc/rfc-100-abci-vote-extension-propag.md#upgrade-path) in RFC-100.
+
+Once upgraded, the configuration file is updated with a [**new consensus parameter**](./abci%2B%2B_app_requirements.md#abciparamsvoteextensionsenableheight): `VoteExtensionsEnableHeight`. 
+This parameter represents the height after which vote extensions are 
+required for consensus to proceed, with 0 being the default value (no vote extensions).
+Once the (coordinated) upgrade to ABCI 2.0 has taken place, at height  *h<sub>u</sub>*,
+the value of `VoteExtensionsEnableHeight` MAY be set to some height, *h<sub>e</sub>*,
+which MUST be higher than the current height of the chain. Thus the earliest value for 
+ *h<sub>e</sub>* is  *h<sub>u</sub>* + 1. 
+Once a node reaches the configured height,
+for all heights *h ≥ h<sub>e</sub>*, the consensus algorithm will
+reject any votes that do not have vote extension data as invalid.
+Likewise, for all heights *h < h<sub>e</sub>*, any votes that *do* have vote extensions
+will be considered an error condition.
+Height *h<sub>e</sub>* is somewhat special, as calls to `PrepareProposal` MUST NOT
+have vote extension data, but all precommit votes in that height MUST carry a vote extension.
+Height *h<sub>e</sub> + 1* is the first height for which `PrepareProposal` MUST have vote
+extension data and all precommit votes in that height MUST have a vote extension.
+
+
+### Changes to data stored by CometBFT
+
+Upon saving the block for a given height *h* in the block store at decision time
+    - if *h ≥ h<sub>e</sub>*, the corresponding extended commit is saved as  well
+    - if *h < h<sub>e</sub>*, there are no changes to the data saved
+
+

@@ -17,10 +17,10 @@ import (
 	"context"
 	"errors"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/pubsub/query"
-	"github.com/tendermint/tendermint/state/txindex"
-	"github.com/tendermint/tendermint/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/pubsub/query"
+	"github.com/cometbft/cometbft/state/txindex"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -28,7 +28,7 @@ const (
 	eventTypeEndBlock   = "end_block"
 )
 
-// TxIndexer returns a bridge from es to the Tendermint v0.34 transaction indexer.
+// TxIndexer returns a bridge from es to the CometBFT v0.34 transaction indexer.
 func (es *EventSink) TxIndexer() BackportTxIndexer {
 	return BackportTxIndexer{psql: es}
 }
@@ -59,7 +59,7 @@ func (BackportTxIndexer) Search(context.Context, *query.Query) ([]*abci.TxResult
 	return nil, errors.New("the TxIndexer.Search method is not supported")
 }
 
-// BlockIndexer returns a bridge that implements the Tendermint v0.34 block
+// BlockIndexer returns a bridge that implements the CometBFT v0.34 block
 // indexer interface, using the Postgres event sink as a backing store.
 func (es *EventSink) BlockIndexer() BackportBlockIndexer {
 	return BackportBlockIndexer{psql: es}

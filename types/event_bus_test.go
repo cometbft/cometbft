@@ -10,10 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmpubsub "github.com/tendermint/tendermint/libs/pubsub"
-	tmquery "github.com/tendermint/tendermint/libs/pubsub/query"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	abci "github.com/cometbft/cometbft/abci/types"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
 )
 
 func TestEventBusPublishEventTx(t *testing.T) {
@@ -36,7 +35,7 @@ func TestEventBusPublishEventTx(t *testing.T) {
 
 	// PublishEventTx adds 3 composite keys, so the query below should work
 	query := fmt.Sprintf("tm.event='Tx' AND tx.height=1 AND tx.hash='%X' AND testType.baz=1", tx.Hash())
-	txsSub, err := eventBus.Subscribe(context.Background(), "test", tmquery.MustCompile(query))
+	txsSub, err := eventBus.Subscribe(context.Background(), "test", cmtquery.MustCompile(query))
 	require.NoError(t, err)
 
 	done := make(chan struct{})
@@ -89,7 +88,7 @@ func TestEventBusPublishEventNewBlock(t *testing.T) {
 
 	// PublishEventNewBlock adds the tm.event compositeKey, so the query below should work
 	query := "tm.event='NewBlock' AND testType.baz=1 AND testType.foz=2"
-	blocksSub, err := eventBus.Subscribe(context.Background(), "test", tmquery.MustCompile(query))
+	blocksSub, err := eventBus.Subscribe(context.Background(), "test", cmtquery.MustCompile(query))
 	require.NoError(t, err)
 
 	done := make(chan struct{})
@@ -184,7 +183,7 @@ func TestEventBusPublishEventTxDuplicateKeys(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		sub, err := eventBus.Subscribe(context.Background(), fmt.Sprintf("client-%d", i), tmquery.MustCompile(tc.query))
+		sub, err := eventBus.Subscribe(context.Background(), fmt.Sprintf("client-%d", i), cmtquery.MustCompile(tc.query))
 		require.NoError(t, err)
 
 		done := make(chan struct{})
@@ -248,7 +247,7 @@ func TestEventBusPublishEventNewBlockHeader(t *testing.T) {
 
 	// PublishEventNewBlockHeader adds the tm.event compositeKey, so the query below should work
 	query := "tm.event='NewBlockHeader' AND testType.baz=1 AND testType.foz=2"
-	headersSub, err := eventBus.Subscribe(context.Background(), "test", tmquery.MustCompile(query))
+	headersSub, err := eventBus.Subscribe(context.Background(), "test", cmtquery.MustCompile(query))
 	require.NoError(t, err)
 
 	done := make(chan struct{})
@@ -289,7 +288,7 @@ func TestEventBusPublishEventNewEvidence(t *testing.T) {
 	require.NoError(t, err)
 
 	query := "tm.event='NewEvidence'"
-	evSub, err := eventBus.Subscribe(context.Background(), "test", tmquery.MustCompile(query))
+	evSub, err := eventBus.Subscribe(context.Background(), "test", cmtquery.MustCompile(query))
 	require.NoError(t, err)
 
 	done := make(chan struct{})
@@ -326,7 +325,7 @@ func TestEventBusPublish(t *testing.T) {
 
 	const numEventsExpected = 14
 
-	sub, err := eventBus.Subscribe(context.Background(), "test", tmquery.All, numEventsExpected)
+	sub, err := eventBus.Subscribe(context.Background(), "test", cmtquery.All, numEventsExpected)
 	require.NoError(t, err)
 
 	done := make(chan struct{})
@@ -411,7 +410,7 @@ func BenchmarkEventBus(b *testing.B) {
 
 func benchmarkEventBus(numClients int, randQueries bool, randEvents bool, b *testing.B) {
 	// for random* functions
-	rand.Seed(time.Now().Unix())
+	rnd := rand.New(rand.NewSource(time.Now().Unix()))
 
 	eventBus := NewEventBusWithBufferCapacity(0) // set buffer capacity to 0 so we are not testing cache
 	err := eventBus.Start()
@@ -429,7 +428,7 @@ func benchmarkEventBus(numClients int, randQueries bool, randEvents bool, b *tes
 
 	for i := 0; i < numClients; i++ {
 		if randQueries {
-			q = randQuery()
+			q = randQuery(rnd)
 		}
 		sub, err := eventBus.Subscribe(ctx, fmt.Sprintf("client-%d", i), q)
 		if err != nil {
@@ -452,7 +451,7 @@ func benchmarkEventBus(numClients int, randQueries bool, randEvents bool, b *tes
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		if randEvents {
-			eventType = randEvent()
+			eventType = randEvent(rnd)
 		}
 
 		err := eventBus.Publish(eventType, EventDataString("Gamora"))
@@ -474,13 +473,14 @@ var events = []string{
 	EventLock,
 	EventRelock,
 	EventTimeoutWait,
-	EventVote}
-
-func randEvent() string {
-	return events[tmrand.Intn(len(events))]
+	EventVote,
 }
 
-var queries = []tmpubsub.Query{
+func randEvent(r *rand.Rand) string {
+	return events[r.Intn(len(events))]
+}
+
+var queries = []cmtpubsub.Query{
 	EventQueryNewBlock,
 	EventQueryNewBlockHeader,
 	EventQueryNewRound,
@@ -492,8 +492,9 @@ var queries = []tmpubsub.Query{
 	EventQueryLock,
 	EventQueryRelock,
 	EventQueryTimeoutWait,
-	EventQueryVote}
+	EventQueryVote,
+}
 
-func randQuery() tmpubsub.Query {
-	return queries[tmrand.Intn(len(queries))]
+func randQuery(r *rand.Rand) cmtpubsub.Query {
+	return queries[r.Intn(len(queries))]
 }

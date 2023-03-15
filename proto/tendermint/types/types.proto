@@ -1,7 +1,7 @@
 syntax = "proto3";
 package tendermint.types;
 
-option go_package = "github.com/tendermint/tendermint/proto/tendermint/types";
+option go_package = "github.com/cometbft/cometbft/proto/tendermint/types";
 
 import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
@@ -54,7 +54,7 @@ message BlockID {
 
 // --------------------------------
 
-// Header defines the structure of a Tendermint block header.
+// Header defines the structure of a block header.
 message Header {
   // basic block info
   tendermint.version.Consensus version  = 1 [(gogoproto.nullable) = false];

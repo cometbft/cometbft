@@ -5,8 +5,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/tendermint/tendermint/libs/log"
-	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
+	"github.com/cometbft/cometbft/libs/log"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
 func Start(testnet *e2e.Testnet) error {
@@ -49,7 +49,11 @@ func Start(testnet *e2e.Testnet) error {
 		if _, err := waitForNode(node, 0, 15*time.Second); err != nil {
 			return err
 		}
-		logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://127.0.0.1:%v", node.Name, node.ProxyPort))
+		if node.PrometheusProxyPort > 0 {
+			logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://127.0.0.1:%v; with Prometheus on http://127.0.0.1:%v/metrics", node.Name, node.ProxyPort, node.PrometheusProxyPort))
+		} else {
+			logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://127.0.0.1:%v", node.Name, node.ProxyPort))
+		}
 	}
 
 	networkHeight := testnet.InitialHeight

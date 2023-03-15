@@ -1,7 +1,7 @@
 # fuzz
 
-Fuzzing for various packages in Tendermint using the fuzzing infrastructure included in
-Go 1.18.
+Fuzzing for various packages in Tendermint using the fuzzing infrastructure
+included in Go 1.20.
 
 Inputs:
 
@@ -11,8 +11,7 @@ Inputs:
 
 ## Running
 
-The fuzz tests are in native Go fuzzing format. Use the `go`
-tool to run them:
+The fuzz tests are in native Go fuzzing format. Use the `go` tool to run them:
 
 ```sh
 go test -fuzz Mempool ./tests

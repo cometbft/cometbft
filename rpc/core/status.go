@@ -3,21 +3,21 @@ package core
 import (
 	"time"
 
-	tmbytes "github.com/tendermint/tendermint/libs/bytes"
-	"github.com/tendermint/tendermint/p2p"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	rpctypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
-	"github.com/tendermint/tendermint/types"
+	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/p2p"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/types"
 )
 
-// Status returns Tendermint status including node info, pubkey, latest block
+// Status returns CometBFT status including node info, pubkey, latest block
 // hash, app hash, block height and time.
-// More: https://docs.tendermint.com/master/rpc/#/Info/status
+// More: https://docs.cometbft.com/main/rpc/#/Info/status
 func (env *Environment) Status(ctx *rpctypes.Context) (*ctypes.ResultStatus, error) {
 	var (
 		earliestBlockHeight   int64
-		earliestBlockHash     tmbytes.HexBytes
-		earliestAppHash       tmbytes.HexBytes
+		earliestBlockHash     cmtbytes.HexBytes
+		earliestAppHash       cmtbytes.HexBytes
 		earliestBlockTimeNano int64
 	)
 
@@ -29,8 +29,8 @@ func (env *Environment) Status(ctx *rpctypes.Context) (*ctypes.ResultStatus, err
 	}
 
 	var (
-		latestBlockHash     tmbytes.HexBytes
-		latestAppHash       tmbytes.HexBytes
+		latestBlockHash     cmtbytes.HexBytes
+		latestAppHash       cmtbytes.HexBytes
 		latestBlockTimeNano int64
 
 		latestHeight = env.BlockStore.Height()

@@ -1,8 +1,12 @@
+---
+order: 2
+---
+
 # Encoding
 
 ## Protocol Buffers
 
-Tendermint uses [Protocol Buffers](https://developers.google.com/protocol-buffers), specifically proto3, for all data structures.
+CometBFT uses [Protocol Buffers](https://developers.google.com/protocol-buffers), specifically proto3, for all data structures.
 
 Please see the [Proto3 language guide](https://developers.google.com/protocol-buffers/docs/proto3) for more details.
 
@@ -20,15 +24,15 @@ be encoded as `0xAC020A0B...` where `0xAC02` is the UVarint encoding of 300.
 
 ## Hashing
 
-Tendermint uses `SHA256` as its hash function.
+CometBFT uses `SHA256` as its hash function.
 Objects are always serialized before being hashed.
 So `SHA256(obj)` is short for `SHA256(ProtoEncoding(obj))`.
 
 ## Public Key Cryptography
 
-Tendermint uses Protobuf [Oneof](https://developers.google.com/protocol-buffers/docs/proto3#oneof)
+CometBFT uses Protobuf [Oneof](https://developers.google.com/protocol-buffers/docs/proto3#oneof)
 to distinguish between different types public keys, and signatures.
-Additionally, for each public key, Tendermint
+Additionally, for each public key, CometBFT
 defines an Address function that can be used as a more compact identifier in
 place of the public key. Here we list the concrete types, their names,
 and prefix bytes for public keys and signatures, as well as the address schemes
@@ -49,9 +53,9 @@ address = SHA256(pubkey)[:20]
 
 The signature is the raw 64-byte ED25519 signature.
 
-Tendermint adopted [zip215](https://zips.z.cash/zip-0215) for verification of ed25519 signatures.
+CometBFT adopts [zip215](https://zips.z.cash/zip-0215) for verification of ed25519 signatures.
 
-> Note: This change will be released in the next major release of Tendermint-Go (0.35).
+> Note: This change will be released in the next major release of CometBFT.
 
 #### Secp256k1
 
@@ -99,7 +103,7 @@ See details of SimpleProof, below.
 ### MakeParts
 
 Encode an object using Protobuf and slice it into parts.
-Tendermint uses a part size of 65536 bytes, and allows a maximum of 1601 parts
+CometBFT uses a part size of 65536 bytes, and allows a maximum of 1601 parts
 (see `types.MaxBlockPartsCount`). This corresponds to the hard-coded block size
 limit of 100MB.
 
@@ -113,7 +117,7 @@ For an overview of Merkle trees, see
 [wikipedia](https://en.wikipedia.org/wiki/Merkle_tree)
 
 We use the RFC 6962 specification of a merkle tree, with sha256 as the hash function.
-Merkle trees are used throughout Tendermint to compute a cryptographic digest of a data structure.
+Merkle trees are used throughout CometBFT to compute a cryptographic digest of a data structure.
 The differences between RFC 6962 and the simplest form a merkle tree are that:
 
 1. leaf nodes and inner nodes have different hashes.
@@ -243,11 +247,11 @@ conceivable purpose.
 
 ### IAVL+ Tree
 
-Because Tendermint only uses a Simple Merkle Tree, application developers are expect to use their own Merkle tree in their applications. For example, the IAVL+ Tree - an immutable self-balancing binary tree for persisting application state is used by the [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/blob/ae77f0080a724b159233bd9b289b2e91c0de21b5/docs/interfaces/lite/specification.md)
+Because CometBFT only uses a Simple Merkle Tree, application developers are expect to use their own Merkle tree in their applications. For example, the IAVL+ Tree - an immutable self-balancing binary tree for persisting application state is used by the [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/blob/ae77f0080a724b159233bd9b289b2e91c0de21b5/docs/interfaces/lite/specification.md)
 
 ## JSON
 
-Tendermint has its own JSON encoding in order to keep backwards compatibility with the previous RPC layer.
+CometBFT has its own JSON encoding in order to keep backwards compatibility with the previous RPC layer.
 
 Registered types are encoded as:
 
@@ -281,7 +285,7 @@ We call this encoding the SignBytes. For instance, SignBytes for a vote is the p
 
 ```protobuf
 message CanonicalVote {
-  SignedMsgType             type      = 1;  
+  SignedMsgType             type      = 1;
   sfixed64                  height    = 2;  // canonicalization requires fixed size encoding here
   sfixed64                  round     = 3;  // canonicalization requires fixed size encoding here
   CanonicalBlockID          block_id  = 4;

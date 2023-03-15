@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/internal/test"
+	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/internal/test"
 )
 
 func ensureFiles(t *testing.T, rootDir string, files ...string) {
@@ -66,7 +66,6 @@ func assertValidConfig(t *testing.T, configFile string) {
 		"moniker",
 		"seeds",
 		"proxy_app",
-		"block_sync",
 		"create_empty_blocks",
 		"peer",
 		"timeout",

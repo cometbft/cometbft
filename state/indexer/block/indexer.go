@@ -4,16 +4,16 @@ import (
 	"errors"
 	"fmt"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	"github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/state/indexer"
-	blockidxkv "github.com/tendermint/tendermint/state/indexer/block/kv"
-	blockidxnull "github.com/tendermint/tendermint/state/indexer/block/null"
-	"github.com/tendermint/tendermint/state/indexer/sink/psql"
-	"github.com/tendermint/tendermint/state/txindex"
-	"github.com/tendermint/tendermint/state/txindex/kv"
-	"github.com/tendermint/tendermint/state/txindex/null"
+	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/state/indexer"
+	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
+	blockidxnull "github.com/cometbft/cometbft/state/indexer/block/null"
+	"github.com/cometbft/cometbft/state/indexer/sink/psql"
+	"github.com/cometbft/cometbft/state/txindex"
+	"github.com/cometbft/cometbft/state/txindex/kv"
+	"github.com/cometbft/cometbft/state/txindex/null"
 )
 
 // EventSinksFromConfig constructs a slice of indexer.EventSink using the provided

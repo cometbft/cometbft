@@ -3,9 +3,9 @@ package txindex
 import (
 	"context"
 
-	"github.com/tendermint/tendermint/libs/service"
-	"github.com/tendermint/tendermint/state/indexer"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/state/indexer"
+	"github.com/cometbft/cometbft/types"
 )
 
 // XXX/TODO: These types should be moved to the indexer package.
@@ -98,7 +98,7 @@ func (is *IndexerService) OnStart() error {
 						return
 					}
 				} else {
-					is.Logger.Info("indexed block exents", "height", height)
+					is.Logger.Info("indexed block events", "height", height)
 				}
 
 				if err = is.txIdxr.AddBatch(batch); err != nil {

@@ -1,5 +1,5 @@
 name: Golang Linter
-# Lint runs golangci-lint over the entire Tendermint repository.
+# Lint runs golangci-lint over the entire CometBFT repository.
 #
 # This workflow is run on every pull request and push to main.
 #
@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
         with:
-          go-version: '1.18'
+          go-version: '1.20'
       - uses: technote-space/get-diff-action@v6
         with:
           PATTERNS: |
@@ -31,7 +31,7 @@ jobs:
             go.sum
       - uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.50.1
+          version: v1.51
           args: --timeout 10m
           github-token: ${{ secrets.github_token }}
         if: env.GIT_DIFF

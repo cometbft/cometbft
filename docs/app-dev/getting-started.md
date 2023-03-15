@@ -4,20 +4,20 @@ order: 1
 
 # Getting Started
 
-## First Tendermint App
+## First CometBFT App
 
-As a general purpose blockchain engine, Tendermint is agnostic to the
+As a general purpose blockchain engine, CometBFT is agnostic to the
 application you want to run. So, to run a complete blockchain that does
-something useful, you must start two programs: one is Tendermint Core,
+something useful, you must start two programs: one is CometBFT,
 the other is your application, which can be written in any programming
 language. Recall from [the intro to
-ABCI](../introduction/what-is-tendermint.md#abci-overview) that Tendermint Core
+ABCI](../introduction/what-is-cometbft.md#abci-overview) that CometBFT
 handles all the p2p and consensus stuff, and just forwards transactions to the
 application when they need to be validated, or when they're ready to be
 executed and committed.
 
 In this guide, we show you some examples of how to run an application
-using Tendermint.
+using CometBFT.
 
 ### Install
 
@@ -34,8 +34,8 @@ echo export PATH=\"\$PATH:\$GOPATH/bin\" >> ~/.bash_profile
 Then run
 
 ```bash
-go get github.com/tendermint/tendermint
-cd $GOPATH/src/github.com/tendermint/tendermint
+go get github.com/cometbft/cometbft
+cd $GOPATH/src/github.com/cometbft/cometbft
 make install_abci
 ```
 
@@ -90,23 +90,23 @@ Let's start a kvstore application.
 abci-cli kvstore
 ```
 
-In another terminal, we can start Tendermint. You should already have the
-Tendermint binary installed. If not, follow the steps from
-[here](../introduction/install.md). If you have never run Tendermint
+In another terminal, we can start CometBFT. You should already have the
+CometBFT binary installed. If not, follow the steps from
+[here](../introduction/install.md). If you have never run CometBFT
 before, use:
 
 ```sh
-tendermint init
-tendermint node
+cometbft init
+cometbft node
 ```
 
-If you have used Tendermint, you may want to reset the data for a new
-blockchain by running `tendermint unsafe-reset-all`. Then you can run
-`tendermint node` to start Tendermint, and connect to the app. For more
-details, see [the guide on using Tendermint](../tendermint-core/using-tendermint.md).
+If you have used CometBFT, you may want to reset the data for a new
+blockchain by running `cometbft unsafe-reset-all`. Then you can run
+`cometbft node` to start CometBFT, and connect to the app. For more
+details, see [the guide on using CometBFT](../core/using-cometbft.md).
 
-You should see Tendermint making blocks! We can get the status of our
-Tendermint node as follows:
+You should see CometBFT making blocks! We can get the status of our
+CometBFT node as follows:
 
 ```sh
 curl -s localhost:26657/status

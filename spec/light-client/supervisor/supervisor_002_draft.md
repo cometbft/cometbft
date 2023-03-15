@@ -16,8 +16,8 @@ type LCInitData struct {
 ```
 
 where only one of the components must be provided. `GenesisDoc` is
-defined in the [Tendermint
-Types](https://github.com/tendermint/tendermint/blob/main/types/genesis.go).
+defined in the [CometBFT
+Types](https://github.com/cometbft/cometbft/blob/main/types/genesis.go).
 
 
 ### Initialization
@@ -45,8 +45,8 @@ able to verify anything.
 Cross-checking this trusted block with providers upon initialization is helpful
 for ensuring that the node is responsive and correctly configured but does not
 increase trust since proving a conflicting block is a
-[light client attack](https://github.com/tendermint/tendermint/blob/main/spec/light-client/detection/detection_003_reviewed.md#tmbc-lc-attack1)
-and not just a [bogus](https://github.com/tendermint/tendermint/blob/main/spec/light-client/detection/detection_003_reviewed.md#tmbc-bogus1) block could result in
+[light client attack](https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_003_reviewed.md#cmbc-lc-attack1)
+and not just a [bogus](https://github.com/cometbft/cometbft/blob/main/spec/light-client/detection/detection_003_reviewed.md#cmbc-bogus1) block could result in
 performing backwards verification beyond the trusted period, thus a fruitless
 endeavour.
 
@@ -118,7 +118,7 @@ func CrossCheck(lb LightBlock, witnesses []Provider) error {
     - none
 - Expected precondition
     - *LCInitData* contains either a genesis file of a lightblock
-    - if genesis it passes `ValidateAndComplete()` see [Tendermint](https://informal.systems)
+    - if genesis it passes `ValidateAndComplete()` see [CometBFT](https://informal.systems)
 - Expected postcondition
     - *lightStore* initialized with trusted lightblock. It has either been
       cross-checked (from genesis) or it has initial trust from the

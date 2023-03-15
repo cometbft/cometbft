@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
 A simple script to parse the CSV output from the loadtime reporting tool (see
-https://github.com/tendermint/tendermint/tree/main/test/loadtime/cmd/report).
+https://github.com/cometbft/cometbft/tree/main/test/loadtime/cmd/report).
 
 Produces a plot of average transaction latency vs total transaction throughput
 according to the number of load testing tool WebSocket connections to the
-Tendermint node.
+CometBFT node.
 """
 
 import argparse
@@ -15,7 +15,7 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 
-DEFAULT_TITLE = "Tendermint latency vs throughput"
+DEFAULT_TITLE = "CometBFT latency vs throughput"
 
 
 def main():

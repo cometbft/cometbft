@@ -4,15 +4,15 @@ import (
 	"os"
 	"testing"
 
-	"github.com/tendermint/tendermint/abci/example/kvstore"
-	nm "github.com/tendermint/tendermint/node"
-	rpctest "github.com/tendermint/tendermint/rpc/test"
+	"github.com/cometbft/cometbft/abci/example/kvstore"
+	nm "github.com/cometbft/cometbft/node"
+	rpctest "github.com/cometbft/cometbft/rpc/test"
 )
 
 var node *nm.Node
 
 func TestMain(m *testing.M) {
-	// start a tendermint node (and kvstore) in the background to test against
+	// start a CometBFT node (and kvstore) in the background to test against
 	dir, err := os.MkdirTemp("/tmp", "rpc-client-test")
 	if err != nil {
 		panic(err)

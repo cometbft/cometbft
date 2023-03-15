@@ -8,9 +8,9 @@ import (
 	"regexp"
 	"strings"
 
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	"github.com/tendermint/tendermint/libs/log"
-	types "github.com/tendermint/tendermint/rpc/jsonrpc/types"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	"github.com/cometbft/cometbft/libs/log"
+	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 // HTTP + URI handler
@@ -78,7 +78,7 @@ func makeHTTPHandler(rpcFunc *RPCFunc, logger log.Logger) func(http.ResponseWrit
 }
 
 // Covert an http query to a list of properly typed values.
-// To be properly decoded the arg must be a concrete type from tendermint (if its an interface).
+// To be properly decoded the arg must be a concrete type from CometBFT (if its an interface).
 func httpParamsToArgs(rpcFunc *RPCFunc, r *http.Request) ([]reflect.Value, error) {
 	// skip types.Context
 	const argsOffset = 1
@@ -117,7 +117,7 @@ func httpParamsToArgs(rpcFunc *RPCFunc, r *http.Request) ([]reflect.Value, error
 
 func jsonStringToArg(rt reflect.Type, arg string) (reflect.Value, error) {
 	rv := reflect.New(rt)
-	err := tmjson.Unmarshal([]byte(arg), rv.Interface())
+	err := cmtjson.Unmarshal([]byte(arg), rv.Interface())
 	if err != nil {
 		return rv, err
 	}
@@ -198,7 +198,7 @@ func _nonJSONStringToArg(rt reflect.Type, arg string) (reflect.Value, bool, erro
 
 	if isQuotedString && expectingByteSlice {
 		v := reflect.New(reflect.TypeOf(""))
-		err := tmjson.Unmarshal([]byte(arg), v.Interface())
+		err := cmtjson.Unmarshal([]byte(arg), v.Interface())
 		if err != nil {
 			return reflect.ValueOf(nil), false, err
 		}

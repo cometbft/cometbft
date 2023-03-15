@@ -10,27 +10,27 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	abciclientmocks "github.com/tendermint/tendermint/abci/client/mocks"
-	abci "github.com/tendermint/tendermint/abci/types"
-	abcimocks "github.com/tendermint/tendermint/abci/types/mocks"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	cryptoenc "github.com/tendermint/tendermint/crypto/encoding"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	"github.com/tendermint/tendermint/internal/test"
-	"github.com/tendermint/tendermint/libs/log"
-	mpmocks "github.com/tendermint/tendermint/mempool/mocks"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	"github.com/tendermint/tendermint/proxy"
-	pmocks "github.com/tendermint/tendermint/proxy/mocks"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/state/mocks"
-	"github.com/tendermint/tendermint/store"
-	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
-	"github.com/tendermint/tendermint/version"
+	abciclientmocks "github.com/cometbft/cometbft/abci/client/mocks"
+	abci "github.com/cometbft/cometbft/abci/types"
+	abcimocks "github.com/cometbft/cometbft/abci/types/mocks"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	"github.com/cometbft/cometbft/internal/test"
+	"github.com/cometbft/cometbft/libs/log"
+	mpmocks "github.com/cometbft/cometbft/mempool/mocks"
+	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	"github.com/cometbft/cometbft/proxy"
+	pmocks "github.com/cometbft/cometbft/proxy/mocks"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/state/mocks"
+	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/cometbft/cometbft/version"
 )
 
 var (
@@ -97,7 +97,7 @@ func TestBeginBlockValidators(t *testing.T) {
 	prevBlockID := types.BlockID{Hash: prevHash, PartSetHeader: prevParts}
 
 	var (
-		now        = tmtime.Now()
+		now        = cmttime.Now()
 		commitSig0 = types.NewCommitSigForBlock(
 			[]byte("Signature1"),
 			state.Validators.Validators[0].Address,
@@ -161,7 +161,7 @@ func TestBeginBlockByzantineValidators(t *testing.T) {
 	privVal := privVals[state.Validators.Validators[0].Address.String()]
 	blockID := makeBlockID([]byte("headerhash"), 1000, []byte("partshash"))
 	header := &types.Header{
-		Version:            tmversion.Consensus{Block: version.BlockProtocol, App: 1},
+		Version:            cmtversion.Consensus{Block: version.BlockProtocol, App: 1},
 		ChainID:            state.ChainID,
 		Height:             10,
 		Time:               defaultEvidenceTime,
@@ -739,7 +739,6 @@ func TestPrepareProposalReorderTxs(t *testing.T) {
 	}
 
 	mp.AssertExpectations(t)
-
 }
 
 // TestPrepareProposalErrorOnTooManyTxs tests that the block creation logic returns

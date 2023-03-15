@@ -15,30 +15,28 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	abcicli "github.com/tendermint/tendermint/abci/client"
-	"github.com/tendermint/tendermint/abci/example/kvstore"
-	abci "github.com/tendermint/tendermint/abci/types"
-	cfg "github.com/tendermint/tendermint/config"
-	cstypes "github.com/tendermint/tendermint/consensus/types"
-	cryptoenc "github.com/tendermint/tendermint/crypto/encoding"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	"github.com/tendermint/tendermint/libs/bits"
-	"github.com/tendermint/tendermint/libs/bytes"
-	"github.com/tendermint/tendermint/libs/log"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
-	mempl "github.com/tendermint/tendermint/mempool"
-	mempoolv0 "github.com/tendermint/tendermint/mempool/v0"
-	mempoolv1 "github.com/tendermint/tendermint/mempool/v1"
-	"github.com/tendermint/tendermint/p2p"
-	p2pmock "github.com/tendermint/tendermint/p2p/mock"
-	tmcons "github.com/tendermint/tendermint/proto/tendermint/consensus"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	sm "github.com/tendermint/tendermint/state"
-	statemocks "github.com/tendermint/tendermint/state/mocks"
-	"github.com/tendermint/tendermint/store"
-	"github.com/tendermint/tendermint/types"
+	abcicli "github.com/cometbft/cometbft/abci/client"
+	"github.com/cometbft/cometbft/abci/example/kvstore"
+	abci "github.com/cometbft/cometbft/abci/types"
+	cfg "github.com/cometbft/cometbft/config"
+	cstypes "github.com/cometbft/cometbft/consensus/types"
+	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	"github.com/cometbft/cometbft/libs/bits"
+	"github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	mempl "github.com/cometbft/cometbft/mempool"
+	"github.com/cometbft/cometbft/p2p"
+	p2pmock "github.com/cometbft/cometbft/p2p/mock"
+	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	sm "github.com/cometbft/cometbft/state"
+	statemocks "github.com/cometbft/cometbft/state/mocks"
+	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/types"
 )
 
 //----------------------------------------------
@@ -55,7 +53,7 @@ func startConsensusNet(t *testing.T, css []*State, n int) (
 	blocksSubs := make([]types.Subscription, 0)
 	eventBuses := make([]*types.EventBus, n)
 	for i := 0; i < n; i++ {
-		/*logger, err := tmflags.ParseLogLevel("consensus:info,*:error", logger, "info")
+		/*logger, err := cmtflags.ParseLogLevel("consensus:info,*:error", logger, "info")
 		if err != nil {	t.Fatal(err)}*/
 		reactors[i] = NewReactor(css[i], true) // so we dont start the consensus states
 		reactors[i].SetLogger(css[i].Logger)
@@ -72,7 +70,6 @@ func startConsensusNet(t *testing.T, css []*State, n int) (
 			if err := css[i].blockExec.Store().Save(css[i].state); err != nil {
 				t.Error(err)
 			}
-
 		}
 	}
 	// make connected switches and start all reactors
@@ -145,7 +142,7 @@ func TestReactorWithEvidence(t *testing.T) {
 		state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
 		thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
 		defer os.RemoveAll(thisConfig.RootDir)
-		ensureDir(path.Dir(thisConfig.Consensus.WalFile()), 0700) // dir for wal
+		ensureDir(path.Dir(thisConfig.Consensus.WalFile()), 0o700) // dir for wal
 		app := appFunc()
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
 		app.InitChain(abci.RequestInitChain{Validators: vals})
@@ -157,33 +154,20 @@ func TestReactorWithEvidence(t *testing.T) {
 		blockDB := dbm.NewMemDB()
 		blockStore := store.NewBlockStore(blockDB)
 
-		mtx := new(tmsync.Mutex)
+		mtx := new(cmtsync.Mutex)
 		memplMetrics := mempl.NopMetrics()
 		// one for mempool, one for consensus
 		proxyAppConnCon := abcicli.NewLocalClient(mtx, app)
 		proxyAppConnConMem := abcicli.NewLocalClient(mtx, app)
 
 		// Make Mempool
-		var mempool mempl.Mempool
+		mempool := mempl.NewCListMempool(config.Mempool,
+			proxyAppConnConMem,
+			state.LastBlockHeight,
+			mempl.WithMetrics(memplMetrics),
+			mempl.WithPreCheck(sm.TxPreCheck(state)),
+			mempl.WithPostCheck(sm.TxPostCheck(state)))
 
-		switch config.Mempool.Version {
-		case cfg.MempoolV0:
-			mempool = mempoolv0.NewCListMempool(config.Mempool,
-				proxyAppConnConMem,
-				state.LastBlockHeight,
-				mempoolv0.WithMetrics(memplMetrics),
-				mempoolv0.WithPreCheck(sm.TxPreCheck(state)),
-				mempoolv0.WithPostCheck(sm.TxPostCheck(state)))
-		case cfg.MempoolV1:
-			mempool = mempoolv1.NewTxMempool(logger,
-				config.Mempool,
-				proxyAppConnConMem,
-				state.LastBlockHeight,
-				mempoolv1.WithMetrics(memplMetrics),
-				mempoolv1.WithPreCheck(sm.TxPreCheck(state)),
-				mempoolv1.WithPostCheck(sm.TxPostCheck(state)),
-			)
-		}
 		if thisConfig.Consensus.WaitForTxs() {
 			mempool.EnableTxsAvailable()
 		}
@@ -196,7 +180,8 @@ func TestReactorWithEvidence(t *testing.T) {
 		evpool := &statemocks.EvidencePool{}
 		evpool.On("CheckEvidence", mock.AnythingOfType("types.EvidenceList")).Return(nil)
 		evpool.On("PendingEvidence", mock.AnythingOfType("int64")).Return([]types.Evidence{
-			ev}, int64(len(ev.Bytes())))
+			ev,
+		}, int64(len(ev.Bytes())))
 		evpool.On("Update", mock.AnythingOfType("state.State"), mock.AnythingOfType("types.EvidenceList")).Return()
 
 		evpool2 := sm.EmptyEvidencePool{}
@@ -275,8 +260,12 @@ func TestReactorReceiveDoesNotPanicIfAddPeerHasntBeenCalledYet(t *testing.T) {
 		reactor.Receive(p2p.Envelope{
 			ChannelID: StateChannel,
 			Src:       peer,
-			Message: &tmcons.HasVote{Height: 1,
-				Round: 1, Index: 1, Type: tmproto.PrevoteType},
+			Message: &cmtcons.HasVote{
+				Height: 1,
+				Round:  1,
+				Index:  1,
+				Type:   cmtproto.PrevoteType,
+			},
 		})
 		reactor.AddPeer(peer)
 	})
@@ -301,8 +290,12 @@ func TestReactorReceivePanicsIfInitPeerHasntBeenCalledYet(t *testing.T) {
 		reactor.Receive(p2p.Envelope{
 			ChannelID: StateChannel,
 			Src:       peer,
-			Message: &tmcons.HasVote{Height: 1,
-				Round: 1, Index: 1, Type: tmproto.PrevoteType},
+			Message: &cmtcons.HasVote{
+				Height: 1,
+				Round:  1,
+				Index:  1,
+				Type:   cmtproto.PrevoteType,
+			},
 		})
 	})
 }
@@ -600,7 +593,6 @@ func waitForAndValidateBlockWithTx(
 				break BLOCK_TX_LOOP
 			}
 		}
-
 	}, css)
 }
 
@@ -612,7 +604,6 @@ func waitForBlockWithUpdatedValsAndValidateIt(
 	css []*State,
 ) {
 	timeoutWaitGroup(t, n, func(j int) {
-
 		var newBlock *types.Block
 	LOOP:
 		for {
@@ -826,8 +817,10 @@ func TestProposalPOLMessageValidateBasic(t *testing.T) {
 		{func(msg *ProposalPOLMessage) { msg.Height = -1 }, "negative Height"},
 		{func(msg *ProposalPOLMessage) { msg.ProposalPOLRound = -1 }, "negative ProposalPOLRound"},
 		{func(msg *ProposalPOLMessage) { msg.ProposalPOL = bits.NewBitArray(0) }, "empty ProposalPOL bit array"},
-		{func(msg *ProposalPOLMessage) { msg.ProposalPOL = bits.NewBitArray(types.MaxVotesCount + 1) },
-			"proposalPOL bit array is too big: 10001, max: 10000"},
+		{
+			func(msg *ProposalPOLMessage) { msg.ProposalPOL = bits.NewBitArray(types.MaxVotesCount + 1) },
+			"proposalPOL bit array is too big: 10001, max: 10000",
+		},
 	}
 
 	for i, tc := range testCases {
@@ -884,8 +877,8 @@ func TestBlockPartMessageValidateBasic(t *testing.T) {
 
 func TestHasVoteMessageValidateBasic(t *testing.T) {
 	const (
-		validSignedMsgType   tmproto.SignedMsgType = 0x01
-		invalidSignedMsgType tmproto.SignedMsgType = 0x03
+		validSignedMsgType   cmtproto.SignedMsgType = 0x01
+		invalidSignedMsgType cmtproto.SignedMsgType = 0x03
 	)
 
 	testCases := []struct { //nolint: maligned
@@ -894,7 +887,7 @@ func TestHasVoteMessageValidateBasic(t *testing.T) {
 		messageIndex  int32
 		messageHeight int64
 		testName      string
-		messageType   tmproto.SignedMsgType
+		messageType   cmtproto.SignedMsgType
 	}{
 		{false, 0, 0, 0, "Valid Message", validSignedMsgType},
 		{true, -1, 0, 0, "Invalid Message", validSignedMsgType},
@@ -920,8 +913,8 @@ func TestHasVoteMessageValidateBasic(t *testing.T) {
 
 func TestVoteSetMaj23MessageValidateBasic(t *testing.T) {
 	const (
-		validSignedMsgType   tmproto.SignedMsgType = 0x01
-		invalidSignedMsgType tmproto.SignedMsgType = 0x03
+		validSignedMsgType   cmtproto.SignedMsgType = 0x01
+		invalidSignedMsgType cmtproto.SignedMsgType = 0x03
 	)
 
 	validBlockID := types.BlockID{}
@@ -938,7 +931,7 @@ func TestVoteSetMaj23MessageValidateBasic(t *testing.T) {
 		messageRound   int32
 		messageHeight  int64
 		testName       string
-		messageType    tmproto.SignedMsgType
+		messageType    cmtproto.SignedMsgType
 		messageBlockID types.BlockID
 	}{
 		{false, 0, 0, "Valid Message", validSignedMsgType, validBlockID},
@@ -980,8 +973,10 @@ func TestVoteSetBitsMessageValidateBasic(t *testing.T) {
 				},
 			}
 		}, "wrong BlockID: wrong PartSetHeader: wrong Hash:"},
-		{func(msg *VoteSetBitsMessage) { msg.Votes = bits.NewBitArray(types.MaxVotesCount + 1) },
-			"votes bit array is too big: 10001, max: 10000"},
+		{
+			func(msg *VoteSetBitsMessage) { msg.Votes = bits.NewBitArray(types.MaxVotesCount + 1) },
+			"votes bit array is too big: 10001, max: 10000",
+		},
 	}
 
 	for i, tc := range testCases {

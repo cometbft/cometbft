@@ -15,18 +15,20 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/tendermint/tendermint/libs/log"
-	tmnet "github.com/tendermint/tendermint/libs/net"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtnet "github.com/cometbft/cometbft/libs/net"
 
-	abcicli "github.com/tendermint/tendermint/abci/client"
-	"github.com/tendermint/tendermint/abci/example/code"
-	"github.com/tendermint/tendermint/abci/example/kvstore"
-	abciserver "github.com/tendermint/tendermint/abci/server"
-	"github.com/tendermint/tendermint/abci/types"
+	abcicli "github.com/cometbft/cometbft/abci/client"
+	"github.com/cometbft/cometbft/abci/example/code"
+	"github.com/cometbft/cometbft/abci/example/kvstore"
+	abciserver "github.com/cometbft/cometbft/abci/server"
+	"github.com/cometbft/cometbft/abci/types"
 )
 
+var grand *rand.Rand
+
 func init() {
-	rand.Seed(time.Now().UnixNano())
+	grand = rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 
 func TestKVStore(t *testing.T) {
@@ -46,7 +48,7 @@ func TestGRPC(t *testing.T) {
 
 func testStream(t *testing.T, app types.Application) {
 	numDeliverTxs := 20000
-	socketFile := fmt.Sprintf("test-%08x.sock", rand.Int31n(1<<30))
+	socketFile := fmt.Sprintf("test-%08x.sock", grand.Int31n(1<<30))
 	defer os.Remove(socketFile)
 	socket := fmt.Sprintf("unix://%v", socketFile)
 
@@ -125,12 +127,12 @@ func testStream(t *testing.T, app types.Application) {
 // test grpc
 
 func dialerFunc(ctx context.Context, addr string) (net.Conn, error) {
-	return tmnet.Connect(addr)
+	return cmtnet.Connect(addr)
 }
 
 func testGRPCSync(t *testing.T, app types.ABCIApplicationServer) {
 	numDeliverTxs := 2000
-	socketFile := fmt.Sprintf("/tmp/test-%08x.sock", rand.Int31n(1<<30))
+	socketFile := fmt.Sprintf("/tmp/test-%08x.sock", grand.Int31n(1<<30))
 	defer os.Remove(socketFile)
 	socket := fmt.Sprintf("unix://%v", socketFile)
 

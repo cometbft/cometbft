@@ -9,18 +9,18 @@ import (
 	"testing"
 	"time"
 
-	db "github.com/tendermint/tm-db"
+	db "github.com/cometbft/cometbft-db"
 
-	"github.com/tendermint/tendermint/abci/example/kvstore"
-	cfg "github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/internal/test"
-	"github.com/tendermint/tendermint/libs/log"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/privval"
-	"github.com/tendermint/tendermint/proxy"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/store"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/abci/example/kvstore"
+	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/internal/test"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/privval"
+	"github.com/cometbft/cometbft/proxy"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/types"
 )
 
 // WALGenerateNBlocks generates a consensus WAL. It does this by spinning up a
@@ -118,7 +118,7 @@ func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int) (err error) {
 		if err := consensusState.Stop(); err != nil {
 			t.Error(err)
 		}
-		return fmt.Errorf("waited too long for tendermint to produce %d blocks (grep logs for `wal_generator`)", numBlocks)
+		return fmt.Errorf("waited too long for CometBFT to produce %d blocks (grep logs for `wal_generator`)", numBlocks)
 	}
 }
 
@@ -138,7 +138,7 @@ func WALWithNBlocks(t *testing.T, numBlocks int) (data []byte, err error) {
 func randPort() int {
 	// returns between base and base + spread
 	base, spread := 20000, 20000
-	return base + tmrand.Intn(spread)
+	return base + cmtrand.Intn(spread)
 }
 
 func makeAddrs() (string, string, string) {
@@ -153,8 +153,8 @@ func getConfig(t *testing.T) *cfg.Config {
 	c := test.ResetTestRoot(t.Name())
 
 	// and we use random ports to run in parallel
-	tm, rpc, grpc := makeAddrs()
-	c.P2P.ListenAddress = tm
+	cmt, rpc, grpc := makeAddrs()
+	c.P2P.ListenAddress = cmt
 	c.RPC.ListenAddress = rpc
 	c.RPC.GRPCListenAddress = grpc
 	return c
@@ -220,7 +220,8 @@ func (w *byteBufferWAL) FlushAndSync() error { return nil }
 
 func (w *byteBufferWAL) SearchForEndHeight(
 	height int64,
-	options *WALSearchOptions) (rd io.ReadCloser, found bool, err error) {
+	options *WALSearchOptions,
+) (rd io.ReadCloser, found bool, err error) {
 	return nil, false, nil
 }
 

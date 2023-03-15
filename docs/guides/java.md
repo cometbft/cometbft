@@ -1,6 +1,6 @@
----
+<!---
 order: 6
----
+--->
 
 # Creating an application in Java
 

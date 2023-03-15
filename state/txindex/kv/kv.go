@@ -675,11 +675,10 @@ func checkBounds(ranges indexer.QueryRange, v int64) bool {
 }
 
 //nolint:unused,deadcode
-func lookForHeight(conditions []syntax.Condition) (height int64) {
+func lookForHeight(conditions []syntax.Condition) int64 {
 	for _, c := range conditions {
 		if c.Tag == types.TxHeightKey && c.Op == syntax.TEq {
-			height = int64(c.Arg.Number())
-			return
+			return int64(c.Arg.Number())
 		}
 	}
 	return 0

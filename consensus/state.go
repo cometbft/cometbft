@@ -2161,7 +2161,9 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 		// is disabled on the network.
 		// https://github.com/tendermint/tendermint/issues/8565
 		if len(vote.Extension) > 0 || len(vote.ExtensionSignature) > 0 {
-			return false, fmt.Errorf("received vote with vote extension for height %v (extensions disabled) from peer ID %s", vote.Height, peerID)
+			//TODO DIAGNOSE Remove
+			panic(fmt.Errorf("received vote with vote extension for height %v (extensions disabled) from peer ID %s", vote.Height, peerID))
+			//return false, fmt.Errorf("received vote with vote extension for height %v (extensions disabled) from peer ID %s", vote.Height, peerID)
 		}
 	}
 

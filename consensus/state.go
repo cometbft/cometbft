@@ -567,7 +567,7 @@ func (cs *State) sendInternalMessage(mi msgInfo) {
 // the method will panic on an absent ExtendedCommit or an ExtendedCommit without
 // extension data.
 func (cs *State) reconstructLastCommit(state sm.State) {
-	extensionsEnabled := cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(state.LastBlockHeight)
+	extensionsEnabled := state.ConsensusParams.ABCI.VoteExtensionsEnabled(state.LastBlockHeight)
 	if !extensionsEnabled {
 		votes, err := cs.votesFromSeenCommit(state)
 		if err != nil {

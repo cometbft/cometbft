@@ -351,6 +351,7 @@ func (app *Application) PrepareProposal(
 				extTxLen, req.MaxTxBytes))
 		}
 		txs = append(txs, extTx)
+		// Coherence: No need to call parseTx, as the check is stateless and has been performed by CheckTx
 		totalBytes = extTxLen
 	}
 	for _, tx := range req.Txs {
@@ -367,6 +368,7 @@ func (app *Application) PrepareProposal(
 			break
 		}
 		totalBytes += int64(len(tx))
+		// Coherence: No need to call parseTx, as the check is stateless and has been performed by CheckTx
 		txs = append(txs, tx)
 	}
 

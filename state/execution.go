@@ -339,7 +339,10 @@ func (blockExec *BlockExecutor) VerifyVoteExtension(ctx context.Context, vote *t
 
 // Commit locks the mempool, runs the ABCI Commit message, and updates the
 // mempool.
-// It returns the result of calling abci.Commit (the AppHash) and the height to retain (if any).
+// It returns the result of calling abci.Commit which is the height to retain (if any)).
+// The application is expected to have persisted its state (if any) before returning
+// from the ABCI Commit call. This is the only place where the application should
+// persist its state.
 // The Mempool must be locked during commit and update because state is
 // typically reset on Commit and old txs must be replayed against committed
 // state before new txs are run in the mempool, lest they be invalid.

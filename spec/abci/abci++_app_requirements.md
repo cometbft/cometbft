@@ -1021,7 +1021,7 @@ From the application's point of view, these operations are transparent, unless t
 In that case, the application needs to be properly configured and aware of certain constraints in terms of when
 to provide vote extensions. More details can be found in the section below. 
 
-Once a node switches to consensus,it operates like any other node, apart from having a truncated block history at the height of the restored snapshot.
+Once a node switches to consensus, it operates like any other node, apart from having a truncated block history at the height of the restored snapshot.
 
 ## Application configuration required to switch to ABCI 2.0
 

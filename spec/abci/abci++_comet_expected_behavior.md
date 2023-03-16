@@ -251,7 +251,7 @@ Namely, upon saving the block for a given height *h* in the block store at decis
 - if *h ≥ h<sub>e</sub>*, the corresponding extended commit is saved as  well
 - if *h < h<sub>e</sub>*, there are no changes to the data saved
 
-In the catch-up mechanism, when a node f realizes that another peer is at height hp, which is more than 2 heights behind,
+In the catch-up mechanism, when a node *f* realizes that another peer is at height *h<sub>p</sub>*, which is more than 2 heights behind,
 - if *h<sub>p</sub> ≥ h<sub>e</sub>*, *f* uses the extended commit to
       reconstruct the precommit votes with their corresponding extensions
 - if *h<sub>p</sub> < h<sub>e</sub>*, *f* uses the canonical commit to reconstruct the precommit votes,

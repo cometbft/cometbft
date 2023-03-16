@@ -60,17 +60,17 @@ looking for, see [our security policy](SECURITY.md).
 
 | CometBFT version | Requirement | Notes             |
 |------------------|-------------|-------------------|
-| v0.34.x          | Go version  | Go 1.19 or higher |
-| v0.37.x          | Go version  | Go 1.20 or higher |
 | main             | Go version  | Go 1.20 or higher |
+| v0.37.x          | Go version  | Go 1.20 or higher |
+| v0.34.x          | Go version  | Go 1.19 or higher |
 
 ### Install
 
-See the [install instructions](./docs/introduction/install.md).
+See the [install guide](./docs/guides/install.md).
 
 ### Quick Start
 
-- [Single node](./docs/introduction/quick-start.md)
+- [Single node](./docs/guides/quick-start.md)
 - [Local cluster using docker-compose](./docs/networks/docker-compose.md)
 
 ## Contributing
@@ -120,9 +120,10 @@ CometBFT up-to-date. Upgrading instructions can be found in
 
 Currently supported versions include:
 
+- v0.37.x: CometBFT v0.37 introduces ABCI 1.0, which is the first major step
+  towards the full ABCI++ implementation in ABCI 2.0
 - v0.34.x: The CometBFT v0.34 series is compatible with the Tendermint Core
   v0.34 series
-- v0.37.x: (release candidate)
 
 ## Resources
 

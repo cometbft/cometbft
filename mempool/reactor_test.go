@@ -3,7 +3,6 @@ package mempool
 import (
 	"encoding/hex"
 	"errors"
-	"net"
 	"sync"
 	"testing"
 	"time"
@@ -228,39 +227,6 @@ func TestBroadcastTxForPeerStopsWhenReactorStops(t *testing.T) {
 	// check that we are not leaking any go-routines
 	// i.e. broadcastTxRoutine finishes when reactor is stopped
 	leaktest.CheckTimeout(t, 10*time.Second)()
-}
-
-func TestMempoolIDsBasic(t *testing.T) {
-	ids := newMempoolIDs()
-
-	peer := mock.NewPeer(net.IP{127, 0, 0, 1})
-
-	ids.ReserveForPeer(peer)
-	assert.EqualValues(t, 1, ids.GetForPeer(peer))
-	ids.Reclaim(peer)
-
-	ids.ReserveForPeer(peer)
-	assert.EqualValues(t, 2, ids.GetForPeer(peer))
-	ids.Reclaim(peer)
-}
-
-func TestMempoolIDsPanicsIfNodeRequestsOvermaxActiveIDs(t *testing.T) {
-	if testing.Short() {
-		return
-	}
-
-	// 0 is already reserved for UnknownPeerID
-	ids := newMempoolIDs()
-
-	for i := 0; i < MaxActiveIDs-1; i++ {
-		peer := mock.NewPeer(net.IP{127, 0, 0, 1})
-		ids.ReserveForPeer(peer)
-	}
-
-	assert.Panics(t, func() {
-		peer := mock.NewPeer(net.IP{127, 0, 0, 1})
-		ids.ReserveForPeer(peer)
-	})
 }
 
 // TODO: This test tests that we don't panic and are able to generate new

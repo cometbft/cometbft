@@ -8,14 +8,15 @@
 
 ## Abstract
 
-In Tendermint, nodes receive transactions either from external clients via RPC,
+In CometBFT, nodes receive transactions either from external clients via RPC,
 or from their peers via p2p. Upon receiving a transaction, a node runs `CheckTx` on it. This is 
 an application specific check whose return code with a zero value indicates the transaction
 has passed this check, and can be added into the mempool. Any non-zero code indicates the transaction
 is not valid. Thus, the main role of `CheckTx` is to, as early as possible, prevent invalid transactions
 from entering the mempool. 
 
-Note that there are valid scenarios in which a transaction will not
+`CheckTx` will never place a transaction failing the check into the mempool. But there are scenarios where a,
+once valid, transaction can become invalid. And there are valid, non-malicious, scenarios in which a transaction will not
 pass this check (including nodes getting different transactions at different times, meaning some
 of them might be obsolete at the time of the check; state changes upon block execution etc.). 
 However, CometBFT users observed that
@@ -50,7 +51,10 @@ this behaviour and explaining their needs.
 - Celestia: [blacklisting peers that repeatedly send bad tx](https://github.com/celestiaorg/celestia-core/issues/867)
   and investigating how [Tendermint treats large Txs](https://github.com/celestiaorg/celestia-core/issues/243)
 - BigChainDb: [Handling proposers who propose bad blocks](https://github.com/bigchaindb/BEPs/issues/84)
-- IBC relayers: Nodes allow transactions with a wrong `minGas` transaction and gossip them, and other nodes keep rejecting them. (Problem seen with relayers)
+- IBC relayers: Nodes allow transactions with a wrong `minGas` and gossip them, and other nodes keep rejecting them. Problem seen
+with relayers where some nodes would have the `minGas` [parameter](https://github.com/cosmos/gaia/blob/5db8fcc9a229730f5115bed82d0f85b6db7184b4/contrib/testnets/test_platform/templates/app.toml#L8-L11) misconfigured.
+- Gaia reported and [issue](https://github.com/cosmos/gaia/issues/2073) where misconfigured non-validator nodes were spamming the validatos with 
+transactions that were too big. The debugging was long and it was not easy to realize what was going on.
 
 **Acceptable duplicate transactions**
 
@@ -58,27 +62,30 @@ Banning peers was also mentioned within [IBC-go](https://github.com/cosmos/ibc-g
 
 ### Current state of mempool/p2p interaction
 
-Transactions received from a peer are handled within the [`Receive`](https://github.com/tendermint/tendermint/blob/ff0f98892f24aac11e46aeff2b6d2c0ad816701a/mempool/v0/reactor.go#L158) routine. 
+Transactions received from a peer are handled within the [`Receive`](https://github.com/cometbft/cometbft/blob/ff0f98892f24aac11e46aeff2b6d2c0ad816701a/mempool/v0/reactor.go#L158) routine. 
 
 Currently, the mempool triggers a disconnect from a peer in the case of the following errors:
 
   - [Unknown message type](https://github.com/cometbft/cometbft/blob/main/mempool/reactor.go#L119)
 
 However, disconnecting from a peer is not the same as banning the peer. The p2p layer will close the connecton but 
-the peer can reconnect without any penalty, and if it as a persistent peer, a reconnect will be initiated
+the peer can reconnect without any penalty, and if the peer it is connecting to is configured to be its persistent peer, 
+a reconnect will be initiated
 from the node. 
 
 ### Current support for peer banning
 
 The p2p layer implements banning peers by marking them
-as bad and removing them from the list of peers to connect to for *at least* a predefined amount of time. This is done by calling the `MarkBad` routine implemented by the `Switch`. If the node does not set the amount of time to be banned, a default value is used. 
+as bad and removing them from the list of peers to connect to for *at least* a predefined amount of time. This is done by calling the 
+[`MarkBad`](https://github.com/cometbft/cometbft/blob/main/spec/p2p/v0.34/addressbook.md#bad-peers) routine implemented by the `Switch`.
+If the node does not set the amount of time to be banned, a default value is used. 
 Note that the timing parameter sets the lower bound for when a peer will be unbanned. 
 But the p2p layer will only try to connect to banned peers if the node is not sufficiently connected. Thus the node has no
 explicit control on when a reconnect attempt will be triggered.
 
 The application can blacklist peers via ABCI if the 
 [`filterPeers`](../../spec/abci/abci%2B%2B_app_requirements.md#peer-filtering) 
-config flag is set, by providing a set of peers to ban to Tendermint. 
+config flag is set, by providing a set of peers to ban to CometBFT. 
 
 If the discussion in this RFC deems a different banning mechanism is needed,
 the actual implementation and design of this mechanism will be discussed in a separate RFC.
@@ -152,7 +159,7 @@ is currently not supported by the p2p layer.
 
 *Banning a peer in case of duplicate transactions*
 
-Currently, a peer can send the same valid (or invalid) transaction [multiple times](https://github.com/tendermint/tendermint/blob/ff0f98892f24aac11e46aeff2b6d2c0ad816701a/mempool/v0/clist_mempool.go#L247). Peers do not 
+Currently, a peer can send the same valid (or invalid) transaction [multiple times](https://github.com/cometbft/cometbft/blob/ff0f98892f24aac11e46aeff2b6d2c0ad816701a/mempool/v0/clist_mempool.go#L247). Peers do not 
 gossip transactions to peers that have sent them that same transaction. But there is no check on whether 
 a node has already sent the same transaction to this peer before. There is also no check whether the transaction
 that is being gossiped is currently valid or not (assuming that invalid transactions could become valid).
@@ -190,8 +197,12 @@ cannot lie about who the sender of the transaction is.
 
 For transactions submitted via `broadcastTxCommit`, the `SenderID` field is empty. 
 
-**Note**  Do we have mechanisms in place to handle cases when `broadcastTxCommit` submits
+**Question**  Do we have mechanisms in place to handle cases when `broadcastTxCommit` submits
 failing transactions (can this be a form of attack)?
+
+**From PR discussion**
+At the moment there is no particular defense mechanism beyond rate limiting as for any RPC endpoint (which is not done internally by CometBFT). 
+An alternative would be to indeed internally make sure we do not get spammed with bad transaction using this endpoint. 
 
 ### 3. Attack scenarios
 
@@ -213,6 +224,12 @@ Due to concerns of this being a breaking change for applications that have alrea
 purposes, there is an alternative implementation: expanding `ResponseCheckTx` with an additional field. 
 This field `neverValidTx` would be `false` by default. If a transaction could never have been valid,
 in addition to indicating this with a non-zero response code from `CheckTx`, the application would set this field value. 
+
+Another proposal is to expand this, by allowing the application to explicitly instruct CometBFT on whether to ban a peer or not. 
+This requires adding yet another field to `CheckTx`: `banPeer`. The field can have the following values:
+- `0`(default): do not ban peer
+- `1`: decrement peer reputation (if such a mechanism exists in the p2p layer)
+- `2`: ban the peer and disconnect
 
 **Adding support for peer banning**
 
@@ -243,7 +260,9 @@ We propose two ways to implement peer banning based on the result of `CheckTx`:
 
 **Peer banning when transactions are received**
 
-If a transaction fails `CheckTx` the [first time it is seen](https://github.com/tendermint/tendermint/blob/ff0f98892f24aac11e46aeff2b6d2c0ad816701a/mempool/v0/clist_mempool.go#L409),  the peer can be banned right there:
+If a transaction fails `CheckTx` the 
+[first time it is seen](https://github.com/cometbft/cometbft/blob/ff0f98892f24aac11e46aeff2b6d2c0ad816701a/mempool/v0/clist_mempool.go#L409),
+ the peer can be banned right there:
 
 >>mempool/v0/clist_mempool.go#L409
 ```golang
@@ -292,7 +311,8 @@ The question is which one is more costly, doing `CheckTx` more then once, or kee
 
 
 
-As said, this code will [never be executed](https://github.com/tendermint/tendermint/blob/ff0f98892f24aac11e46aeff2b6d2c0ad816701a/mempool/v0/clist_mempool.go#L239) for transactions whose signature is found
+As said, this code will [never be executed](https://github.com/cometbft/cometbft/blob/ff0f98892f24aac11e46aeff2b6d2c0ad816701a/mempool/v0/clist_mempool.go#L239) 
+for transactions whose hash is found
 in the cache. 
 Instead of remembering the cached transactions, we could have had a valid/invalid bit per transaction within the cache. As transactions themselves do not
 store such information and we expect this scenario to be unlikely, instead of increasing the footprint of all transactions in the cache,
@@ -421,6 +441,62 @@ The previous code snippets do not incroporate these in peer banning. If we adopt
 
 - Introduction of new response codes for CheckTx. As previously noted, this might break existing applications if they reserved codes for internal purposes. 
 - Altering the specification to reflect this change
+
+### Github discussion summary
+
+The main concern that arose from the dicussion on github is whether banning peers based on the return code of `CheckTx` 
+can lead to unwanted side effects, such as partitioning the network or influencing the behaviour of other nodes.  
+
+#### *Potential failure scenarios*
+
+* Assume we have a network is configured in such a way that there exists an overlay network, and a node can only influence its direct connections. 
+The node can force a peer to disconnect from it forever if, say, it wanted to lower the number of ways it has of getting messages to the rest of the network.
+However, that could have already done that by just disconnecting or by dropping its messages.
+
+* A bug in `CheckTx`causes the rejection of all transactions and all nodes disconnect, how do we ensure the operator knows what has happened?
+
+* An attacker discovers a particular transaction that they know would be accepted, and therefore propagated, by >1/3 of the voting power on the network,
+ but rejected by the rest. This would result in halting the network for the period for which we blacklist "misconfigured" peers, 
+ because >1/3 of the voting power would be blacklisted by the remaining peers. This means that if >1/3 of the voting power on a network has, 
+ for example, a minimum transaction fee requirement much lower than the remaining nodes, and application developers return a `neverValidTx=true` 
+ value from `CheckTx` here, they could halt their network.
+
+
+#### *Decisions*
+
+The uncertainties are higher in the case of banning based on the *freqeuncy* of the failures. This option has therefore been **dismissed**. 
+
+As for the banning based on the return code from the application, due to the lack of strong use cases and potential unwanted side-effects,
+it will not be implemented at the moment of writing the final version of this RFC (March 2023). 
+
+
+
+An alternative is being proposed at the moment due to feedback we recieved when debugging the Gaia issue mentioned above. Namely,
+they found that having these peers banned or even a log message about this failure would have significantly shortened the debugging
+time. 
+It was therfore proposed to output a log message and even send this message to the sender of the transaction, warning the node
+that it sent a transaction that failed `CheckTx`. But this should not be sent on every `CheckTx` failure as it would create a lot of noise
+(we mentioned the valid reasons for `CheckTx` to faile). A cleaner solution would indeed require adding a special code and/or the `neverValidTx` flag
+to `ResponseCheckTx`, and logging this warning only if the application sets these parameters.
+
+This would facilitate debugging and pinpointing the problem for operators of the nodes recieving these warnings.
+
+#### *Discussion on minor implementation details*
+
+For completeness, and to make sure the information is not lost, there were a few discussions on minor implementation details. 
+
+*Keeping transactions failing `CheckTx` with a special code in the cache*
+
+Without any change to the  current logic, these transactions are kept in the cache, as long as they are not evicted. 
+Users argued for these transactions to be rare enough, that they can safely be discared in the case a peer is actually banned after sending them. 
+
+*Banning based on IP or nodeID*
+
+Banning based on IP should be sufficient as the secret connection handshake prevents spoofing.
+
+*Backwards compatibility*
+
+Otehr than avoiding relying solely on the response code values, there are no immediate concerns in terms of backwards compatiblity.
 
 ### References
 

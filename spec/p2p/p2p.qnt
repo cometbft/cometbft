@@ -22,6 +22,9 @@ module p2p {
     // Environment. These are the nodes that may dial us
     var Environment: Set[Address]
  
+    // Operator. The operator can manually provide a list of addresses to dial via dialPeers
+    var OperatorAddressBook: Set[Address]
+
     // What we call Peers is defined the domain of the peerState and connectionState maps. 
     // They should be the same, so we can check the invariant invPeers
     def Peers = peerState.keys()
@@ -40,7 +43,8 @@ module p2p {
     def peersInbound = size(Peers.filter(a => peerState.get(a) == "inbound"))
     def peersDialing = size(Peers.filter(a => peerState.get(a) == "dialing"))
 
-    // auxiliary definition for PEX, If we don't have peers in the addressbook to try, we dial Seeds to ask for new ones.
+    // auxiliary definition for PEX, 
+    // If we don't have peers in the addressbook to try, we dial Seeds to ask for new ones.
     def dialSeeds = AddressBook.exclude(Peers) == Set()
 
     // helps for better readability. Future syntactic sugar 
@@ -66,6 +70,7 @@ module p2p {
             Environment' = Environment,
             IsUnconditional' = IsUnconditional,
             PersistentPeers' = PersistentPeers,
+            OperatorAddressBook' = OperatorAddressBook,
         }
     }
 
@@ -78,6 +83,9 @@ module p2p {
             connectionState' = connectionState.set(a, "dialing"),
         }
         else all {
+            // if peer is not persistent, we just delete it
+            // it may still be in some addressbook. Thus upon request (e.g. from PEX or the operator)
+            // or if the peer tries to connect to us, it may be reintroduced in the future
             peerState' = Peers.exclude(Set(a)).mapBy(x => peerState.get(x)),
             connectionState' = Peers.exclude(Set(a)).mapBy(x => connectionState.get(x)),
         },
@@ -86,6 +94,7 @@ module p2p {
             Environment' = Environment,
             IsUnconditional' = IsUnconditional,
             PersistentPeers' = PersistentPeers,
+            OperatorAddressBook' = OperatorAddressBook,
         }
     }
 
@@ -97,7 +106,9 @@ module p2p {
             peersInbound < MaxNumInboundPeers,
             IsUnconditional.contains(a)
         },
-        
+
+        // If we are connected to the peer as outbound, we do nothing. Otherwise we accept the 
+        // connection at this point
         require(if (Peers.contains(a)) peerState.get(a) != "outbound" 
                 else true), // TODO: check whether is is the right condition
         peerState' = peerState.put(a, "inbound"), 
@@ -108,6 +119,7 @@ module p2p {
             Environment' = Environment,
             IsUnconditional' = IsUnconditional,
             PersistentPeers' = PersistentPeers,
+            OperatorAddressBook' = OperatorAddressBook,
         }
     }
 
@@ -126,8 +138,11 @@ module p2p {
             Environment' = Environment,
             IsUnconditional' = IsUnconditional,
             PersistentPeers' = PersistentPeers,
+            OperatorAddressBook' = OperatorAddressBook,
         }
     }
+
+    // TODO: what to do if reconnection failed?
 
     action dialingFailed(a:Address):bool = all{ 
         require(connectionState.get(a) == "dialing"),
@@ -138,11 +153,14 @@ module p2p {
             Environment' = Environment,
             IsUnconditional' = IsUnconditional,
             PersistentPeers' = PersistentPeers,
+            OperatorAddressBook' = OperatorAddressBook,
         }
    }
 
     // triggered by a reactor
     action stopPeerForError(a:Address):bool = all {
+        // TODO: do we care if a is not a peer anymore, e.g. if some other reactor already invkoked
+        //       this function? 
         peerState' = Peers.exclude(Set(a)).mapBy(x => peerState.get(x)),
         connectionState' = Peers.exclude(Set(a)).mapBy(x => connectionState.get(x)),
         all { //unchanged
@@ -150,14 +168,12 @@ module p2p {
             Environment' = Environment,
             IsUnconditional' = IsUnconditional,
             PersistentPeers' = PersistentPeers,
+            OperatorAddressBook' = OperatorAddressBook,
         }
         // TODO: inform all reactors then. (How) should we model that?
     }
 
-    // triggered by PEX
-    action debugEnsurePeers(a:Address):bool = all {
-    // this is for debugging the spec. In the protocol EnsurePeers does a random pick of an address
-    // here we already entered with a specific address.
+    action dialPeer(a:Address):bool = all {
         require(peersOutbound + peersDialing < MaxNumOutboundPeers),
         require(not(Peers.contains(a))), // TODO: English spec restricted to connected or dialing
         all {
@@ -169,6 +185,7 @@ module p2p {
                 Environment' = Environment,
                 IsUnconditional' = IsUnconditional,
                 PersistentPeers' = PersistentPeers,
+                OperatorAddressBook' = OperatorAddressBook,
             }
         }
     }
@@ -178,16 +195,19 @@ module p2p {
         /* 
         TODO:
         - shall we pick a subset of Addressbook and dial them
+          TODO: ask Igor: can I pick a subset here and use dialPeer? would fold work?
         - shall we model dialattempts, etc?
         */
         require(dialSeeds == false),
         nondet a = oneOf(AddressBook.exclude(Peers)) // addrbook.PickAddress(bias)
-        debugEnsurePeers(a),
+        dialPeer(a),
     }
 
     // this can be called by the operator
     action dialPeers(S:Set[Address]):bool = all {
         // TODO: check what the code actually is doing. Now we don't override existing peers in this spec
+        // TODO: check the following: the intention here is NOT to call "dialPeer" for each address in S
+        //       in order to not check against MaxNumOutboundPeers
         peerState' = Peers.union(S).mapBy(a => if (Peers.contains(a)) peerState.get(a) else "dialing"), 
         connectionState' = Peers.union(S).mapBy(a => if (Peers.contains(a)) connectionState.get(a) else "init"),
         AddressBook' = AddressBook.union(S),
@@ -195,11 +215,14 @@ module p2p {
                 Environment' = Environment,
                 IsUnconditional' = IsUnconditional,
                 PersistentPeers' = PersistentPeers,
+                OperatorAddressBook' = OperatorAddressBook,
         }
     }
 
     // this is a response to receiving a set of addresses from a seed node
     action PexAddrs(S:Set[Address]):bool = all {
+        // we check the dialSeeds it set to true. This means PEX asked seed nodes for addresses.
+        // only then we acceppt responses
         require(dialSeeds),
         dialPeers(S)
         // TODO: currently does not check max outbound peers. There is an issue on that
@@ -217,6 +240,7 @@ module p2p {
         Environment' = Set({ID: "lasaro", networkAddress: "127.0.0.7:10"}, {ID: "daniel", networkAddress: "127.0.0.6:10"}),
         IsUnconditional' = Set({ID: "zarko", networkAddress: "127.0.0.42:10"}),
         PersistentPeers' = Set({ID: "bucky", networkAddress: "127.0.0.9:10"}),
+        OperatorAddressBook' = Set({ID: "alice", networkAddress: "127.0.0.111:10"}, {ID: "bob", networkAddress: "127.0.0.112:10"}),
     }
 
     action initWithSameSets =
@@ -228,30 +252,45 @@ module p2p {
             Environment' = initSet,
             IsUnconditional' = Set({ID: "zarko", networkAddress: "127.0.0.42:10"}),
             PersistentPeers' = Set({ID: "bucky", networkAddress: "127.0.0.9:10"}),
+            OperatorAddressBook' = Set({ID: "alice", networkAddress: "127.0.0.111:10"}, {ID: "bob", networkAddress: "127.0.0.112:10"}),
         }
 
     action step = any {
+        // This is called periodically by PEX
         ensurePeers,
-        all {
+
+        all { 
             require(Peers != Set()),
             nondet a = oneOf(Peers) 
-            stopPeerForError(a),
-        },
-        all {
-            require(Peers != Set()),
-            nondet a = oneOf(Peers) 
-            loseConnection(a),
-        },
-        all {
-            require(Peers != Set()),
-            nondet a = oneOf(Peers) 
-            dialingFailed(a),
-        }, 
-        all {
-            require(Peers != Set()),
-            nondet a = oneOf(Peers) 
-            establishConnection(a),
+            any {            
+                // dialPeer and dialPeers start the process of connecting to a peer. 
+                // dialPeer(a) is no top level action but it is called via via ensurePeers in PEX
+                // Depending on the environment this can be succesful (establishconnection) 
+                // or not (dialingFailed)
+                establishConnection(a),
+                dialingFailed(a),
+
+                // at any point of the lifecycle of a peers we may lose the connection due to
+                // reasons external to a node (the peer crashes, timeout, disconnection etc.)
+                // once we sense that the connection is lost we perform onLostConnection
+                loseConnection(a),
+                onLostConnection(a),
+
+                // If a reactor is not happy with a peer anymore (e.g., it sent faulty information)
+                // the reactor can invoke stopPeerForError and the peer gets removed. 
+                stopPeerForError(a),
+            }
         },    
+        
+        // the operator calls dialPeers with her private address book
+        nondet S = oneOf(OperatorAddressBook.powerset())
+        dialPeers(S),
+
+        // some seed nodes sent us a set S upon request
+        nondet S = oneOf(Environment.powerset())
+        PexAddrs(S),
+
+        // This is a reaction to incoming requests from the environment
         all {
             require(Environment != Set()),
             nondet a = oneOf(Environment) 
@@ -259,7 +298,6 @@ module p2p {
         }
     }
 
-    
 
 
 }

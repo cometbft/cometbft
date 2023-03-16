@@ -15,7 +15,7 @@ import (
 
 func TestVoteSet_AddVote_Good(t *testing.T) {
 	height, round := int64(1), int32(0)
-	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 10, 1)
+	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 10, 1, false)
 	val0 := privValidators[0]
 
 	val0p, err := val0.GetPubKey()
@@ -47,7 +47,7 @@ func TestVoteSet_AddVote_Good(t *testing.T) {
 
 func TestVoteSet_AddVote_Bad(t *testing.T) {
 	height, round := int64(1), int32(0)
-	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 10, 1)
+	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 10, 1, false)
 
 	voteProto := &Vote{
 		ValidatorAddress: nil,
@@ -123,7 +123,7 @@ func TestVoteSet_AddVote_Bad(t *testing.T) {
 
 func TestVoteSet_2_3Majority(t *testing.T) {
 	height, round := int64(1), int32(0)
-	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 10, 1)
+	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 10, 1, false)
 
 	voteProto := &Vote{
 		ValidatorAddress: nil, // NOTE: must fill in
@@ -173,7 +173,7 @@ func TestVoteSet_2_3Majority(t *testing.T) {
 
 func TestVoteSet_2_3MajorityRedux(t *testing.T) {
 	height, round := int64(1), int32(0)
-	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 100, 1)
+	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 100, 1, false)
 
 	blockHash := crypto.CRandBytes(32)
 	blockPartsTotal := uint32(123)
@@ -272,7 +272,7 @@ func TestVoteSet_2_3MajorityRedux(t *testing.T) {
 
 func TestVoteSet_Conflicts(t *testing.T) {
 	height, round := int64(1), int32(0)
-	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 4, 1)
+	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 4, 1, false)
 	blockHash1 := cmtrand.Bytes(32)
 	blockHash2 := cmtrand.Bytes(32)
 
@@ -401,7 +401,7 @@ func TestVoteSet_Conflicts(t *testing.T) {
 
 func TestVoteSet_MakeCommit(t *testing.T) {
 	height, round := int64(1), int32(0)
-	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrecommitType, 10, 1)
+	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrecommitType, 10, 1, true)
 	blockHash, blockPartSetHeader := crypto.CRandBytes(32), PartSetHeader{123, crypto.CRandBytes(32)}
 
 	voteProto := &Vote{
@@ -427,7 +427,8 @@ func TestVoteSet_MakeCommit(t *testing.T) {
 	}
 
 	// MakeCommit should fail.
-	assert.Panics(t, func() { voteSet.MakeExtendedCommit() }, "Doesn't have +2/3 majority")
+	veHeightParam := ABCIParams{VoteExtensionsEnableHeight: height}
+	assert.Panics(t, func() { voteSet.MakeExtendedCommit(veHeightParam) }, "Doesn't have +2/3 majority")
 
 	// 7th voted for some other block.
 	{
@@ -464,7 +465,7 @@ func TestVoteSet_MakeCommit(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	extCommit := voteSet.MakeExtendedCommit()
+	extCommit := voteSet.MakeExtendedCommit(veHeightParam)
 
 	// Commit should have 10 elements
 	assert.Equal(t, 10, len(extCommit.ExtendedSignatures))

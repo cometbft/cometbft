@@ -92,12 +92,12 @@ func (vs *validatorStub) signVote(
 	hash []byte,
 	header types.PartSetHeader,
 	voteExtension []byte,
+	extEnabled bool,
 ) (*types.Vote, error) {
 	pubKey, err := vs.PrivValidator.GetPubKey()
 	if err != nil {
 		return nil, fmt.Errorf("can't get pubkey: %w", err)
 	}
-
 	vote := &types.Vote{
 		Type:             voteType,
 		Height:           vs.Height,
@@ -124,17 +124,26 @@ func (vs *validatorStub) signVote(
 	vote.Timestamp = v.Timestamp
 	vote.ExtensionSignature = v.ExtensionSignature
 
+	if !extEnabled {
+		vote.ExtensionSignature = nil
+	}
+
 	return vote, err
 }
 
 // Sign vote for type/hash/header
-func signVote(vs *validatorStub, voteType cmtproto.SignedMsgType, hash []byte, header types.PartSetHeader) *types.Vote {
+func signVote(vs *validatorStub, voteType cmtproto.SignedMsgType, hash []byte, header types.PartSetHeader, extEnabled bool) *types.Vote {
 	var ext []byte
 	// Only non-nil precommits are allowed to carry vote extensions.
-	if voteType == cmtproto.PrecommitType && !(len(hash) == 0 && header.IsZero()) {
-		ext = []byte("extension")
+	if extEnabled {
+		if voteType != cmtproto.PrecommitType {
+			panic(fmt.Errorf("vote type is not precommit but extensions enabled"))
+		}
+		if voteType == cmtproto.PrecommitType && !(len(hash) == 0 && header.IsZero()) {
+			ext = []byte("extension")
+		}
 	}
-	v, err := vs.signVote(voteType, hash, header, ext)
+	v, err := vs.signVote(voteType, hash, header, ext, extEnabled)
 
 	if err != nil {
 		panic(fmt.Errorf("failed to sign vote: %v", err))
@@ -149,11 +158,12 @@ func signVotes(
 	voteType cmtproto.SignedMsgType,
 	hash []byte,
 	header types.PartSetHeader,
+	extEnabled bool,
 	vss ...*validatorStub,
 ) []*types.Vote {
 	votes := make([]*types.Vote, len(vss))
 	for i, vs := range vss {
-		votes[i] = signVote(vs, voteType, hash, header)
+		votes[i] = signVote(vs, voteType, hash, header, extEnabled)
 	}
 	return votes
 }
@@ -253,9 +263,10 @@ func signAddVotes(
 	voteType cmtproto.SignedMsgType,
 	hash []byte,
 	header types.PartSetHeader,
+	extEnabled bool,
 	vss ...*validatorStub,
 ) {
-	votes := signVotes(voteType, hash, header, vss...)
+	votes := signVotes(voteType, hash, header, extEnabled, vss...)
 	addVotes(to, votes...)
 }
 

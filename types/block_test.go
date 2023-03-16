@@ -568,7 +568,11 @@ func TestVoteSetToExtendedCommit(t *testing.T) {
 				require.NoError(t, err)
 				require.True(t, added)
 			}
-			ec := voteSet.MakeExtendedCommit()
+			var veHeight int64
+			if testCase.includeExtension {
+				veHeight = 1
+			}
+			ec := voteSet.MakeExtendedCommit(ABCIParams{VoteExtensionsEnableHeight: veHeight})
 
 			for i := int32(0); int(i) < len(vals); i++ {
 				vote1 := voteSet.GetByIndex(i)
@@ -675,7 +679,7 @@ func TestCommitToVoteSetWithVotesForNilBlock(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		voteSet, valSet, vals := randVoteSet(height-1, round, cmtproto.PrecommitType, tc.numValidators, 1)
+		voteSet, valSet, vals := randVoteSet(height-1, round, cmtproto.PrecommitType, tc.numValidators, 1, false)
 
 		vi := int32(0)
 		for n := range tc.blockIDs {
@@ -700,13 +704,14 @@ func TestCommitToVoteSetWithVotesForNilBlock(t *testing.T) {
 			}
 		}
 
+		veHeightParam := ABCIParams{VoteExtensionsEnableHeight: 0}
 		if tc.valid {
-			extCommit := voteSet.MakeExtendedCommit() // panics without > 2/3 valid votes
+			extCommit := voteSet.MakeExtendedCommit(veHeightParam) // panics without > 2/3 valid votes
 			assert.NotNil(t, extCommit)
 			err := valSet.VerifyCommit(voteSet.ChainID(), blockID, height-1, extCommit.ToCommit())
 			assert.Nil(t, err)
 		} else {
-			assert.Panics(t, func() { voteSet.MakeExtendedCommit() })
+			assert.Panics(t, func() { voteSet.MakeExtendedCommit(veHeightParam) })
 		}
 	}
 }

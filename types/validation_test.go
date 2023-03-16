@@ -59,7 +59,7 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
-			_, valSet, vals := randVoteSet(tc.height, round, cmtproto.PrecommitType, tc.valSize, 10)
+			_, valSet, vals := randVoteSet(tc.height, round, cmtproto.PrecommitType, tc.valSize, 10, false)
 			totalVotes := tc.blockVotes + tc.absentVotes + tc.nilVotes
 			sigs := make([]CommitSig, totalVotes)
 			vi := 0

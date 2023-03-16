@@ -1,3 +1,18 @@
+/*
+  This encodes the execution flows of the p2p system of CometBFT for maintaining connections to other
+  nodes in the network. It is based on the descriptions in 
+  https://github.com/cometbft/cometbft/blob/91f8dc3ea0490fd824d1d3d346fb0da61de2f848/spec/p2p/architecture/peers-connect.md?plain=1#L1
+
+  The funcitionality described here is reactive. It is triggered by
+  - The PEX reactor (actually a part of the p2p system)
+  - CometBFT reactors
+  - connection requests from other nodes in the network
+  - node operators
+  - lower level code (TCP connection management)
+
+  Josef Widder, Informal Systems, 2023
+*/
+
 module p2p {
 
     // TODO: "pure val" is a work around as constants are not working in the REPL, yet

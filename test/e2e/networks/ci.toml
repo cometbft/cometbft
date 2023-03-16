@@ -3,7 +3,7 @@
 
 ipv6 = true
 initial_height = 1000
-vote_extensions_enable_height = 1001
+vote_extensions_enable_height = 1007
 evidence = 5
 initial_state = { initial01 = "a", initial02 = "b", initial03 = "c" }
 prepare_proposal_delay = "100ms"
@@ -13,10 +13,13 @@ check_tx_delay = "0ms"
 abci_protocol = "builtin"
 
 [validators]
+validator01 = 100
+
+[validator_update.0]
 validator01 = 10
-validator02 = 10
-validator03 = 10
-validator04 = 10
+validator02 = 20
+validator03 = 30
+validator04 = 40
 
 [validator_update.1010]
 validator05 = 50

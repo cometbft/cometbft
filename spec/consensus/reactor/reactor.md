@@ -1,7 +1,7 @@
 # Part 1: Background
 
-> **Warning**    
-> We assume that you understand the Tendermint algorithm and therefore we will not review it here. 
+> **Warning**
+> We assume that you understand the Tendermint algorithm and therefore we will not review it here.
 If this is not the case, please refer to [here](../).
 
 Three kinds of messages are exchanged in the Tendermint algorithm: `PROPOSAL`, `PRE-VOTE`, and `PRE-COMMIT`.
@@ -48,13 +48,13 @@ This distributed data-structure is easily described as a combination of two sets
 Updates are commutative from the point of view of the tuple space, even if they are not commutative from the Tendermint algorithm's point of view; however, nodes observing different approximations of the tuple space may decide at different point in time but cannot violate any correctness guarantees.
 And the eventual convergence of the 2P-Set implies the eventual termination of the algorithm.
 
-> Warning/TODO: a word about tombstones, that is, the $B$ set.    
+> Warning/TODO: a word about tombstones, that is, the $B$ set.
 > Tombstones are not gossiped; each node must be given information to realize by itself that an entry is no longer needed.
 > Tombstones, if at all materialized, must be garbage collected.
 
 ## Querying the Tuple Space
 
-The tuple space contains information regarding steps taken by validators during possibly many rounds of possibly many heights. 
+The tuple space contains information regarding steps taken by validators during possibly many rounds of possibly many heights.
 Each entry has form $\lang Height, Round, Step, Validator, Value \rang$ and corresponds to the message Validator sent in Step of Round of Height; Value is a tuple of the message contents.
 
 A query to the tuple space has the same form as the entries, with parts replaced by values, that must match the values in the entries, or by `*`, which matches any value.
@@ -64,21 +64,21 @@ For example, suppose the tuple space has the following entries, here organized a
 |--------|-------|----------|-----------|-------|
 | H      | R     | Proposal | v         | pval  |
 | H      | R     | PreVote  | v         | vval  |
-| H      | R'    | PreCommit| v'        | cval  | 
+| H      | R'    | PreCommit| v'        | cval  |
 | H'     | R     | Proposal | v         | pval' |
 | H'     | R''   | PreVote  | v'        | vval' |
-| H'     | R'''  | PreCommit| v'        | cval' | 
+| H'     | R'''  | PreCommit| v'        | cval' |
 
 - Query $\lang H, R, Proposal, v, * \rang$ returns $\{ \lang H, R, Proposal, v, pval \rang \}$
 - Query $\lang H, R, *, v, * \rang$ returns $\{ \lang H, R, Proposal, v, pval \rang,  \lang H, R, PreVote, v, vval \rang \}$.
 
 ### State Validity
- 
-Given that each validator can execute each step only once per round, a query that specifies height, round, step and validator must either return empty or a single tuple. 
+
+Given that each validator can execute each step only once per round, a query that specifies height, round, step and validator must either return empty or a single tuple.
 
 - $\forall h \in \N, r \in \N, s \in \text{Proposal, PreVote, PreCommit}, v \in \text{ValSet}_{h,r}$,  $\lang h, r, s, v, * \rang$ returns at most one value.
 
-In the specific case of the Proposal step, only the proposer of the round can have a matching entry. 
+In the specific case of the Proposal step, only the proposer of the round can have a matching entry.
 
 - $\lang H, R, Proposal, *, * \rang$ returns at most one value.
 
@@ -90,7 +90,7 @@ The tuple space could grow indefinitely, given that the number of heights and ro
 Hence entries must be removed once they are no longer useful.
 For example, if a new height is started, information from smaller heights may be discarded.
 
-Entries that are removed should not be added again and we note that an entry has been removed by saying that its barred version is in the space. 
+Entries that are removed should not be added again and we note that an entry has been removed by saying that its barred version is in the space.
 That is, if $e$ was in the space and then is removed, then $\bar{e}$ is in the space.
 
 Implementations should enforce that entries are only removed if they will not be needed again by CometBFT.
@@ -118,7 +118,7 @@ Queries are subscripted with the node being queried.
 We now formalize the requirements of the Tendermint algorithm in terms of an eventually consistent Tuple Space, which may be implemented using reliable communication (Gossip Communication), some best *best-effort* communication primitive that only delivers messages that are still useful, or some Gossip/Epidemic/Anti-Entropy approach for state convergence.
 All of these can be made to progress after GST but should also progress during smaller stability periods.
 
-|Eventual Consistency|
+|Eventual Convergence|
 |-----|
 | If there exists a correct process $p$ such that $e \in t_p$, then, eventually, for every correct process $q$, $e \in t_q$ or there exists a correct process $r$ such that $\bar{e} \in t_r$.|
 
@@ -146,113 +146,88 @@ In the Tendermint algorithm, for example, no votes for Nil are added and the rou
 # Part 2: CONS/GOSSIP interaction
 
 CONS, the Consensus Reactor State Layer, is where the actions of the Tendermint algorithm are implemented.
-Actions are executed once certain pre-conditions apply, such as timeout expirations or reception of information from particular subsets of the nodes in the system, neighbors or not.
+Actions are executed once certain pre-conditions apply, such as timeout expirations or reception of information from validators in the system, neighbors or not.
 
 An action may require communicating with applications and other reactors, for example to gather data to compose a proposal or to deliver decisions, and with the P2P layer, to communicate with other nodes.
 
 ## Northbound Interaction - ABCI
-Here we assume that all communication with the Application and other reactors are performed through the Application Blockchain Interface, or [ABCI](../../abci/).
-We make such assumption based on the example of how proposals are created; although CONS interacts with with the Mempool reactor to build tentative proposals, actual proposals are defined by the Applications (see PrepareProposal), and therefore the communication with Mempool could be ignored.
 
+This specification focuses on the southbound interactions of CONS, with the GOSSIP and through GOSSIP with P2P.
+
+For those interested in the interactions of CONS with applications and other reactors, we redirect the readers to the [Application Blockchain Interface (ABCI)](../../abci/) specification, which covers most of such communication.
 ABCI specifies both what CONS [requires from the applications](../../abci/abci%2B%2B_app_requirements.md) and on what CONS [provides to Applications](../../abci/abci%2B%2B_tmint_expected_behavior.md).
 
-
-
+Interactions with other reactors, such as with the Mempool reactor to build tentative proposals, will be covered elsewhere.
 
 
 
 ## Southbound Interaction - GOSSIP-I
-CONS interacts southbound only with GOSSIP, to broadcast messages.
+CONS interacts southbound only with GOSSIP, to update the gossip state and to evaluate the current state to check for conditions that enable actions.
 
-CONS does not handle individual message delivery but, instead, is given conditions check if the set of already received and non-superseded messages match criteria needed to trigger actions.
-These conditions may be expressed in different ways:
-* the set of messages may be queried by CONS or is directly exposed to CONS by GOSSIP
-* CONS provides GOSSIP with predicates to be evaluated over the set of delivered messages and with "callbacks" to be invoked when the predicates evaluate to true.
+To update the state, CONS passes a tuple GOSSIP a tuple with the exact content to be added to the tuple space through a functional call.
+Implementation as free to do this through message calls, IPC or any other means.
 
-Both approaches should be equivalent and not impact the specification much, even if the corresponding implementations would be much different.
-For now, we follow the first approach by having CONS read the sets directly.[^setsorpred]
+To check for conditions, we assume that CONS constantly evaluates all conditions by directly accessing the GOSSIP state, as this keeps the specification simpler.
+The exact mechanism of how conditions are evaluated is implementation specific, but some high level examples would be:
+- check on conditions on a loop, starting from the hightest known round of the hightest known height and down the round numbers, sleeping on each iteration for some predefined amount of time;
+- set callbacks to inspect conditions on a (height,round) whenever a new message for such height and round is received;
+- provide GOSSIP with evaluation predicates that GOSSIP will execute according to its convenience and with callbacks to be invoked when the predicates evaluate to true.
+
+All approaches should be equivalent and not impact the specification much, even if the corresponding implementations would be much different.[^setsorpred]
 
 [^setsorpred]: **TODO**: should we not specify these shared variables and instead pass predicates to GOSSIP from consensus? Variables make it harder to separate the CONS from GOSSIP, as the the variables are shared, but is highly efficient. Predicates are cleaner, but harder to implement efficiently. For example, when a vote arrives, multiple predicates may have to be tested independently, while with variables the tests may collaborate with each other.
 
-CONS and GOSSIP also share a vocabulary of CONS messages and an operator to test for message supersession.
+The state accessed by CONS is assumed to be valid.
+However this is achieved is a concern of the GOSSIP and P2P layers. [^todo-validity]
 
-[VOC-CONS-GOSSIP]    
-* Message Types[^messagetypes]
-    * ProposalMessage
-    * Prevote
-    * Precommit
-* Actions and predicates
-    * broadcast(p, m): p broadcasts message m.
-    * delivered(p): messages delivered $p$.
-* Supersession
-    * $\text{SSS}(\_,\_)$: the supersession operator
+[^todo-validity]: **TODO**: ensure that this requirement is mentioned in Gossip/P2P
 
-[^messagetypes]: **TODO**: specify message contents as they are needed to specify SSS, below.
- 
+### Shared Vocabulary
+
+CONS and GOSSIP share the type of tuples added/consulted to/from the tuple space.
+
+```qnt reactor.gen.qnt
+<<VOC-CONS-GOSSIP-TYPES>>
+```
 
 ### Requires from GOSSIP
 
-A process needs to be able to broadcast and receive messages broadcast by itself and others.
+CONS is provided with functions to add and remove tuples from the space.[^removal]
 
-| [REQ-CONS-GOSSIP-BROADCAST.1]|
-|----|
-| A process $p$ can broadcast a message $m$ to all of its neighbors.
+[^removal]: removal of tuples has no equivalent in the Tendermint algorithm. **TODO** This is something to be added here.
 
-|[REQ-CONS-GOSSIP-DELIVERY.1] |
-|----|
-| A process $p$ delivers messages broadcast by itself and other processes.
+```qnt reactor.gen.qnt
+<<VOC-CONS-GOSSIP-ACTIONS>>
+```
+
+CONS is provided access to the local view.
 
 
-As per the discussion in [Part I](#part-1-background), CONS requires a **Best-Effort Communication with Supersession** from the pair broadcast/delivered.
-Best effort implies that, under good conditions, broadcast and non superseded messages are delivered.
+```qnt reactor.gen.qnt
+<<DEF-READ-TUPLE>>
+```
 
-| [REQ-CONS-GOSSIP-BROADCAST.2] |
-|----|
-| (a) For all processes $p,q$ and message $m1$, if broadcast(p,m1), no failures or network partitions happen afterwards, and there is no message $m2$ broadcast such that m2.SSS(m1), then eventually, for every process $q$, $m1 \in delivered(q)$.|
-| (b) If, for some correct process $p$, $m1 \in delivered(q)$, no failures or network partitions happen afterwards, and there is no message $m2$ broadcast such that m2.SSS(m1), 
-then eventually, for every process $q$, $m \in delivered(q)$.
+> **Note**
+> If you read previous versions of this draft, you will recall GOSSIP was aware of supersession. In this version, I am hiding supersession in REQ-CONS-GOSSIP-REMOVE and initially attributing the task of identifying superseded entries to CONS, which then removes what has been superseded. A a later refined version of this spec will clearly specify how supersession is handled and translated into removals.
 
-Messages delivered must remain available at least while they are not superseded.
 
-|[REQ-CONS-GOSSIP-DELIVERY.2]|
-|----|
-|For any message $m1 \in superDelivered(p)$ at time $t1$, if there exists a time $t3, t1 \leq t3$, at which $m1 \notin superDelivered(p)$, then there exists a time $t2, t1 \leq t2 \leq t3$ at which there exists a message $m2 \in superDelivered(p), m2.\text{SSS}(m1)$
+As per the discussion in [Part I](#part-1-background), CONS requires a **Eventual $\Delta$-Timely Convergence** from GOSSIP
 
-> :clipboard: **TODO**: time can be replaced by leads to.
+```qnt reactor.gen.qnt
+<<REQ-CONS-GOSSIP-CONVERGENCE>>
+```
+
 
 ### Provides to GOSSIP
 
-In order to identify when a message has been superseded, GOSSIP must be provided with a supersession operator.
-
-|[PROV-CONS-GOSSIP-SUPERSESSION.1]|
-|----|
-|`SSS(lhs,rhs)` returns true if and only if $\text{lhs}.\text{SSS}(\text{rhs})$
-
-> :clipboard: **TODO**: Define supersession for messages in the GOSSIP-I vocabulary.
-
-
-|[PROV-CONS-GOSSIP-SUPERSESSION.2]|
-|----|
-| The number of non-superseded messages broadcast by a process is limited by some constant.
-
-And does not broadcast messages superseded at creation (TODO: at all?)
-
-|[PROV-CONS-GOSSIP-SUPERSESSION.3]|
-|----|
-| If $p$ broadcast $m2$ at time $t1$, then $p$ does not broadcast any $m1$, $m2.\text{SSS}(m1)$ at any point in time $t2 > t1$.
-
-## Problem Statement (TODO: better title)
-
-> **TODO**: a big, TODO. 
-
-Here we show that "Best-Effort Superseded communication" + GST implies "Eventual $\Delta$-Timely Superseded communication", needed by the consensus protocol to make progress. In other words we show that 
-
-[REQ-CONS-GOSSIP-BROADCAST.1] + [REQ-CONS-GOSSIP-BROADCAST.2] + [REQ-CONS-GOSSIP-DELIVERY.1] + [REQ-CONS-GOSSIP-DELIVERY.2] + GST implies "Eventual $\Delta$-Timely Superseded communication"
+> **TODO**
 
 
 
-# Part III: GOSSIP requirements and provisions 
-GOSSIP, the Consensus Reactor Communication Layer, provides on its northbound interface the facilities for CONS to communicate with other nodes by sending gossiping the messages broadcast by CONS and accumulating the gossiped messages while they have not been superseded.
+
+
+# Part III: GOSSIP requirements and provisions
+GOSSIP, the Consensus Reactor Communication Layer, provides on its northbound interface the facilities for CONS to communicate with other nodes by adding and removing tuples and exposing the eventually converging tuple space.
 On its southbound interface, GOSSIP relies on the P2P layer to implement the gossiping.
 
 ## Northbound Interaction - GOSSIP-I
@@ -261,87 +236,50 @@ Northbound interaction is performed through GOSSIP-I, whose vocabulary has been 
 Next we enumerate what is required and provided from the point of view of GOSSIP as a means to detect mismatches between CONS and GOSSIP.
 
 ### Requires from CONS
-Because connections and disconnections may happen continuously and the total membership of the system is not knowable, reliably delivering messages in this scenario would require buffering messages indefinitely, in order to pass them on to any nodes that might be connected in the future.
-Since buffering must be limited, GOSSIP needs to know which messages have been superseded and can be dropped, and that the number of non-superseded messages at any point in time is bounded.[^drop]
-
-[^drop]: Supersession allows dropping messages but does not require it.
-
-
-|[REQ-GOSSIP-CONS-SUPERSESSION.1]|
-|----|
-|`SSS(lhs,rhs)` is provided.
-
-
-|[REQ-GOSSIP-CONS-SUPERSESSION.2]|
-|----|
-| There exists a constant $c \in Int$ such that, at any point in time, for any process $p$, the subset of messages broadcast by $m$ that have not been superseded, by the $p$'s knowledge, is smaller than $c$.
-
-
-
-
 
 ### Provides to CONS
 
-| [PROV-GOSSIP-CONS-BROADCAST.1]|
-|----|
-| To broadcast a message $m$ to its neighbors, process $p$ executes $\text{broadcast}(p,m)$.
-
-| [PROV-GOSSIP-CONS-DELIVERY.1]|
-|----|
-| $\text{delivered}(p)$ is a set of messages received by $p$.
-
-
-|[PROV-GOSSIP-CONS-BROADCAST.2]|
-|-----|
-| TODO
-| [PROV-CONS-GOSSIP-SUPERSESSION.3] + ?? implies [REQ-CONS-GOSSIP-BROADCAST.2] is satisfied.
-
-Observe that the requirements from CONS allows GOSSIP to provide broadcast guarantees as a best effort and while bounding the memory used. That is, 
-
-|[PROV-GOSSIP-CONS-DELIVERY.2]|
-|----|
-| If some some message $m1$ is ever contained in delivered(p), then $m$ will be in any successive calls to delivered(p) at least until some $m2$, $m2.SSS(m1)$, is in delivered(p).
 
 ## SouthBound Interaction
-Differently from the interaction between GOSSIP and CONS, in which GOSSIP understands CONS messages, P2P is oblivious to the contents of messages it transfers, which simplifies the P2P-I interface in terms of message types.
 
 ### P2P-I Vocabulary
 
-[VOC-GOSSIP-P2P]
-* nes[p]: sets of current connections of $p$
-* igs[p]: set of processes not to establish connections
-* uMsgs[p][q]: set of messages sent by $p$ to $q \in \text{nes}[p]$ not yet acknowledged as received by $q$.
-* rMsgs[p][q]: set of messages received by $q$ from $p$
-* maxConn[p]: maximum number of connections for $p$
+Differently from the interaction between GOSSIP and CONS, in which GOSSIP understands CONS messages, P2P is oblivious to the contents of messages it transfers, which makes the P2P-I interface simple in terms of message types.
 
-### Requires from P2P - P2P-I
-GOSSIP on a node needs to know to which other nodes it is connected.
+```qnt reactor.gen.qnt
+<<VOC-GOSSIP-P2P-TYPES>>
+```
 
-| [REQ-GOSSIP-P2P-CONNECTION.1]|
-|----|
-| $\text{nes}[p]$ is the set of nodes to which $p$ is currently connected.
 
-> **TODO**: Add permalink
+P2P is free to establish connections to other nodes as long as it respect GOSSIP's restrictions, on the maximum number of connections to establish and on which nodes to not connect.
 
+```qnt reactor.gen.qnt
+<<VOC-CONS-GOSSIP-ACTIONS>>
+```
+
+GOSSIP needs to know to which other nodes it is connected.
+
+```qnt reactor.gen.qnt
+<<VOC-CONS-GOSSIP-ACTIONS>>
+```
 
 P2P must expose functionality to allow 1-1 communication with connected nodes.
 
-| [REQ-GOSSIP-P2P-UNICAST.1]|
-|----|
-| Adding message $m$ to $\text{uMsgs}[p][q], q \in \text{nes}[p]$, unicasts $m$ from $p$ to $q$.
+```qnt reactor.gen.qnt
+<<DEF-UNICAST>>
+```
 
-
+### Requires from P2P - P2P-I
 Message to nodes that remain connected are reliably delivered.
 
-| [REQ-GOSSIP-P2P-UNICAST.2] |
-|----|
-| A message added to $\text{uMsgs}[p][q]$ is only removed from $\text{uMsgs}[p][q]$ once it has been added to $\text{rMsgs}[q][p]$ or if q is removed $\text{nes}[p]$.
+```qnt reactor.gen.qnt
+<<REQ-GOSSIP-P2P-UNICAST>>
+```
 
-> **TODO**: Add permalink
+The neighbor set of $p$ is never larger than `maxCon(p)`.
+> TODO: can maxConn change in runtime?
 
-|[REQ-GOSSIP-P2P-CONCURRENT_CONN] |
-|----|
-| The size of nes[p] should never exceed maxConn[p]
+
 
 |[REQ-GOSSIP-P2P-IGNORING] |
 |----|

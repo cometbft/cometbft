@@ -125,9 +125,9 @@ type ManifestNode struct {
 	// runner will wait for the network to reach at least this block height.
 	StartAt int64 `toml:"start_at"`
 
-	// BlockSync specifies the block sync mode: "" (disable), "v0" or "v2".
-	// Defaults to disabled.
-	BlockSync string `toml:"block_sync"`
+	// BlockSyncVersion specifies which version of Block Sync to use (currently
+	// only "v0", the default value).
+	BlockSyncVersion string `toml:"block_sync_version"`
 
 	// StateSync enables state sync. The runner automatically configures trusted
 	// block hashes and RPC servers. At least one node in the network must have

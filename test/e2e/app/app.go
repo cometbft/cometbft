@@ -13,6 +13,7 @@ import (
 	"github.com/cometbft/cometbft/abci/example/code"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
+	abci_call "github.com/cometbft/cometbft/test/e2e/abci"
 	"github.com/cometbft/cometbft/version"
 )
 
@@ -107,6 +108,10 @@ func NewApplication(cfg *Config) (*Application, error) {
 
 // Info implements ABCI.
 func (app *Application) Info(req abci.RequestInfo) abci.ResponseInfo {
+
+	//abciCall := e2e.NewInfoABCICall()
+	//app.logger.Debug(abciCall.ToString())
+
 	return abci.ResponseInfo{
 		Version:          version.ABCIVersion,
 		AppVersion:       appVersion,
@@ -117,6 +122,10 @@ func (app *Application) Info(req abci.RequestInfo) abci.ResponseInfo {
 
 // Info implements ABCI.
 func (app *Application) InitChain(req abci.RequestInitChain) abci.ResponseInitChain {
+
+	abciCall := abci_call.NewInitChainABCICall()
+	app.logger.Debug(abciCall.ToString())
+
 	var err error
 	app.state.initialHeight = uint64(req.InitialHeight)
 	if len(req.AppStateBytes) > 0 {
@@ -136,6 +145,10 @@ func (app *Application) InitChain(req abci.RequestInitChain) abci.ResponseInitCh
 
 // CheckTx implements ABCI.
 func (app *Application) CheckTx(req abci.RequestCheckTx) abci.ResponseCheckTx {
+
+	//abciCall := e2e.NewCheckTxABCICall()
+	//app.logger.Debug(abciCall.ToString())
+
 	_, _, err := parseTx(req.Tx)
 	if err != nil {
 		return abci.ResponseCheckTx{
@@ -151,8 +164,21 @@ func (app *Application) CheckTx(req abci.RequestCheckTx) abci.ResponseCheckTx {
 	return abci.ResponseCheckTx{Code: code.CodeTypeOK, GasWanted: 1}
 }
 
+// CheckTx implements ABCI.
+func (app *Application) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
+
+	abciCall := abci_call.NewBeginBlockABCICall()
+	app.logger.Debug(abciCall.ToString())
+
+	return abci.ResponseBeginBlock{}
+}
+
 // DeliverTx implements ABCI.
 func (app *Application) DeliverTx(req abci.RequestDeliverTx) abci.ResponseDeliverTx {
+
+	abciCall := abci_call.NewDeliverTxABCICall()
+	app.logger.Debug(abciCall.ToString())
+
 	key, value, err := parseTx(req.Tx)
 	if err != nil {
 		panic(err) // shouldn't happen since we verified it in CheckTx
@@ -163,6 +189,10 @@ func (app *Application) DeliverTx(req abci.RequestDeliverTx) abci.ResponseDelive
 
 // EndBlock implements ABCI.
 func (app *Application) EndBlock(req abci.RequestEndBlock) abci.ResponseEndBlock {
+
+	abciCall := abci_call.NewEndBlockABCICall()
+	app.logger.Debug(abciCall.ToString())
+
 	valUpdates, err := app.validatorUpdates(uint64(req.Height))
 	if err != nil {
 		panic(err)
@@ -190,6 +220,10 @@ func (app *Application) EndBlock(req abci.RequestEndBlock) abci.ResponseEndBlock
 
 // Commit implements ABCI.
 func (app *Application) Commit() abci.ResponseCommit {
+
+	abciCall := abci_call.NewCommitABCICall()
+	app.logger.Debug(abciCall.ToString())
+
 	height, hash, err := app.state.Commit()
 	if err != nil {
 		panic(err)
@@ -213,6 +247,10 @@ func (app *Application) Commit() abci.ResponseCommit {
 
 // Query implements ABCI.
 func (app *Application) Query(req abci.RequestQuery) abci.ResponseQuery {
+
+	//abciCall := e2e.NewQueryABCICall()
+	//app.logger.Debug(abciCall.ToString())
+
 	return abci.ResponseQuery{
 		Height: int64(app.state.Height),
 		Key:    req.Data,
@@ -222,6 +260,10 @@ func (app *Application) Query(req abci.RequestQuery) abci.ResponseQuery {
 
 // ListSnapshots implements ABCI.
 func (app *Application) ListSnapshots(req abci.RequestListSnapshots) abci.ResponseListSnapshots {
+
+	//abciCall := e2e.NewListSnapshotsABCICall()
+	//app.logger.Debug(abciCall.ToString())
+
 	snapshots, err := app.snapshots.List()
 	if err != nil {
 		panic(err)
@@ -231,6 +273,10 @@ func (app *Application) ListSnapshots(req abci.RequestListSnapshots) abci.Respon
 
 // LoadSnapshotChunk implements ABCI.
 func (app *Application) LoadSnapshotChunk(req abci.RequestLoadSnapshotChunk) abci.ResponseLoadSnapshotChunk {
+
+	//abciCall := e2e.NewLoadSnapshotChunkABCICall()
+	//app.logger.Debug(abciCall.ToString())
+
 	chunk, err := app.snapshots.LoadChunk(req.Height, req.Format, req.Chunk)
 	if err != nil {
 		panic(err)
@@ -240,6 +286,10 @@ func (app *Application) LoadSnapshotChunk(req abci.RequestLoadSnapshotChunk) abc
 
 // OfferSnapshot implements ABCI.
 func (app *Application) OfferSnapshot(req abci.RequestOfferSnapshot) abci.ResponseOfferSnapshot {
+
+	abciCall := abci_call.NewOfferSnapshotABCICall()
+	app.logger.Debug(abciCall.ToString())
+
 	if app.restoreSnapshot != nil {
 		panic("A snapshot is already being restored")
 	}
@@ -250,6 +300,10 @@ func (app *Application) OfferSnapshot(req abci.RequestOfferSnapshot) abci.Respon
 
 // ApplySnapshotChunk implements ABCI.
 func (app *Application) ApplySnapshotChunk(req abci.RequestApplySnapshotChunk) abci.ResponseApplySnapshotChunk {
+
+	abciCall := abci_call.NewApplySnapshotChunkABCICall()
+	app.logger.Debug(abciCall.ToString())
+
 	if app.restoreSnapshot == nil {
 		panic("No restore in progress")
 	}
@@ -272,6 +326,10 @@ func (app *Application) ApplySnapshotChunk(req abci.RequestApplySnapshotChunk) a
 func (app *Application) PrepareProposal(
 	req abci.RequestPrepareProposal,
 ) abci.ResponsePrepareProposal {
+
+	abciCall := abci_call.NewPrepareProposalABCICall()
+	app.logger.Debug(abciCall.ToString())
+
 	txs := make([][]byte, 0, len(req.Txs))
 	var totalBytes int64
 	for _, tx := range req.Txs {
@@ -292,6 +350,10 @@ func (app *Application) PrepareProposal(
 // ProcessProposal implements part of the Application interface.
 // It accepts any proposal that does not contain a malformed transaction.
 func (app *Application) ProcessProposal(req abci.RequestProcessProposal) abci.ResponseProcessProposal {
+
+	abciCall := abci_call.NewProcessProposalABCICall()
+	app.logger.Debug(abciCall.ToString())
+
 	for _, tx := range req.Txs {
 		_, _, err := parseTx(tx)
 		if err != nil {
@@ -307,6 +369,10 @@ func (app *Application) ProcessProposal(req abci.RequestProcessProposal) abci.Re
 }
 
 func (app *Application) Rollback() error {
+
+	//abciCall := e2e.NewRollbackABCICall()
+	//app.logger.Debug(abciCall.ToString())
+
 	return app.state.Rollback()
 }
 

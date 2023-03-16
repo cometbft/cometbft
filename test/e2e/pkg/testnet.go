@@ -16,6 +16,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	abci_call "github.com/cometbft/cometbft/test/e2e/abci"
 )
 
 const (
@@ -106,6 +107,9 @@ type Node struct {
 
 	// SendNoLoad determines if the e2e test should send load to this node.
 	SendNoLoad bool
+
+	// Set of ABCI calls
+	ABCICalls []*abci_call.ABCICall
 }
 
 // LoadTestnet loads a testnet from a manifest file, using the filename to
@@ -181,6 +185,7 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 		if v == "" {
 			v = localVersion
 		}
+		//abciCalls := loadAbciCalls(testnet.Dir)
 
 		node := &Node{
 			Name:             name,
@@ -202,6 +207,7 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 			RetainBlocks:     nodeManifest.RetainBlocks,
 			Perturbations:    []Perturbation{},
 			SendNoLoad:       nodeManifest.SendNoLoad,
+			//ABCICalls:        abciCalls[name],
 		}
 		if node.StartAt == testnet.InitialHeight {
 			node.StartAt = 0 // normalize to 0 for initial nodes, since code expects this

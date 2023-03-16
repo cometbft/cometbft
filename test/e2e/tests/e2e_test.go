@@ -3,7 +3,9 @@ package e2e_test
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 
@@ -11,6 +13,7 @@ import (
 
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
+	abci_call "github.com/cometbft/cometbft/test/e2e/abci"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/types"
 )
@@ -140,4 +143,26 @@ func fetchBlockChain(t *testing.T) []*types.Block {
 	blocksCache[testnet.Name] = blocks
 
 	return blocks
+}
+
+// loadAbciCalls go through the logs and collect all ABCI calls
+func loadAbciCalls(dir string) map[string][]*abci_call.ABCICall {
+	m := make(map[string][]*abci_call.ABCICall)
+	// The command you want to run along with the argument
+	out, err := exec.Command("docker-compose", "-f", filepath.Join(dir, "docker-compose.yml"), "logs").Output()
+	if err != nil {
+		return nil
+	}
+	lines := strings.Split(string(out), "\n")
+	for _, line := range lines {
+		if strings.Contains(line, "ABCI-Call") {
+			parts := strings.Fields(line)
+			nodeName := parts[0][5:]
+			var a abci_call.ABCICall
+			a.FromString(parts[3])
+			m[nodeName] = append(m[nodeName], &a)
+		}
+	}
+
+	return m
 }

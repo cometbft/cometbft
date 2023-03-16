@@ -350,6 +350,7 @@ func (app *Application) PrepareProposal(
 				break
 			}
 			totalBytes += int64(len(tx))
+			// Coherence: No need to call parseTx, as the check is stateless and has been performed by CheckTx
 			txs = append(txs, tx)
 		}
 		if totalBytes+int64(len(extTx)) <= req.MaxTxBytes {
@@ -376,6 +377,7 @@ func (app *Application) PrepareProposal(
 		if totalBytes > req.MaxTxBytes {
 			break
 		}
+		// Coherence: No need to call parseTx, as the check is stateless and has been performed by CheckTx
 		txs = append(txs, tx)
 	}
 

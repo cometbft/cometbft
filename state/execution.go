@@ -433,7 +433,7 @@ func buildLastCommitInfo(block *types.Block, store Store, initialHeight int64) a
 }
 
 // buildExtendedCommitInfo populates an ABCI extended commit from the
-// corresponding Tendermint extended commit ec, using the stored validator set
+// corresponding CometBFT extended commit ec, using the stored validator set
 // from ec.  It requires ec to include the original precommit votes along with
 // the vote extensions from the last commit.
 //
@@ -485,7 +485,7 @@ func buildExtendedCommitInfo(ec *types.ExtendedCommit, store Store, initialHeigh
 		// the proposer. If they were not enabled during this previous height, we
 		// will not deliver extension data.
 		if ap.VoteExtensionsEnabled(ec.Height) && ecs.BlockIDFlag == types.BlockIDFlagCommit {
-			if err := ecs.EnsureExtension(); err != nil {
+			if ecs.EnsureExtension() != nil {
 				panic(fmt.Errorf("commit at height %d received with missing vote extensions data", ec.Height))
 			}
 			ext = ecs.Extension

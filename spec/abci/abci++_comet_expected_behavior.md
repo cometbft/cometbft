@@ -236,7 +236,7 @@ the data it needs to participate in consensus.
 In the case of recovering from a crash, or joining the network via state sync, CometBFT will make
 sure the node acquires the neccessary vote extensions before switching to conensusus. 
 
-If a node is already in consensus but falls behind, during catch-up, CometBFT if providing the node with 
+If a node is already in consensus but falls behind, during catch-up, CometBFT will provide the node with 
 vote extensions from past heights by storing the extensions within `ExtendedCommit` for old heights.
 
 We realize this is sub-optimal due to the increase in storage needed to store the extensions, we are 

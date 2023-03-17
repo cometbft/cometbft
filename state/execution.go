@@ -339,7 +339,10 @@ func (blockExec *BlockExecutor) VerifyVoteExtension(ctx context.Context, vote *t
 
 // Commit locks the mempool, runs the ABCI Commit message, and updates the
 // mempool.
-// It returns the result of calling abci.Commit (the AppHash) and the height to retain (if any).
+// It returns the result of calling abci.Commit which is the height to retain (if any)).
+// The application is expected to have persisted its state (if any) before returning
+// from the ABCI Commit call. This is the only place where the application should
+// persist its state.
 // The Mempool must be locked during commit and update because state is
 // typically reset on Commit and old txs must be replayed against committed
 // state before new txs are run in the mempool, lest they be invalid.
@@ -430,7 +433,7 @@ func buildLastCommitInfo(block *types.Block, store Store, initialHeight int64) a
 }
 
 // buildExtendedCommitInfo populates an ABCI extended commit from the
-// corresponding Tendermint extended commit ec, using the stored validator set
+// corresponding CometBFT extended commit ec, using the stored validator set
 // from ec.  It requires ec to include the original precommit votes along with
 // the vote extensions from the last commit.
 //
@@ -482,7 +485,7 @@ func buildExtendedCommitInfo(ec *types.ExtendedCommit, store Store, initialHeigh
 		// the proposer. If they were not enabled during this previous height, we
 		// will not deliver extension data.
 		if ap.VoteExtensionsEnabled(ec.Height) && ecs.BlockIDFlag == types.BlockIDFlagCommit {
-			if err := ecs.EnsureExtension(); err != nil {
+			if ecs.EnsureExtension() != nil {
 				panic(fmt.Errorf("commit at height %d received with missing vote extensions data", ec.Height))
 			}
 			ext = ecs.Extension

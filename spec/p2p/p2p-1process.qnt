@@ -26,15 +26,16 @@ module p2p {
     type Address = {ID:str, networkAddress:str}
 
     // p2p variables 
+// TODO   var peerState: Address -> Address -> str
 
-//var peerState: Address -> Address -> str
- //   var connectionState: Address -> Address -> str
- //   var IsUnconditional: Address -> Set[Address]
+    var peerState: Address -> str
+    var connectionState: Address -> str
+    var IsUnconditional: Set[Address]
 
     // PEX variable
-    //var AddressBook: Address -> Set[Address]
+    var AddressBook: Set[Address]
     // TODO: should be constant (set via instances). Doesn't work, yet.
-    //var PersistentPeers: Address -> Set[Address] // typically outbound.
+    var PersistentPeers: Set[Address] // typically outbound.
 
     // Environment. These are the nodes that may dial us
     // TODO: should be constant (set via instances). Doesn't work, yet.
@@ -44,63 +45,27 @@ module p2p {
     // TODO: should be constant (set via instances). Doesn't work, yet.
     var OperatorAddressBook: Set[Address]
 
-    //    EnvironmentX: Set[Address],
-    //    OperatorAddressBook: Set[Address],
-
-    type LocalState = {
-        peerState: Address -> str,
-        connectionState: Address -> str,
-        IsUnconditional: Set[Address],
-        AddressBook: Set[Address],
-        PersistentPeers: Set[Address],
-    }
-
-    def Peers(v: LocalState): Set[Address] = v.peerState.keys()
-
-    var configuration: Address -> LocalState
-
-    // TODO: write functions as definitions.
-    // Then write actions that use the definitions, and map "local" defintions as they act on the global statte
-    // Write actions that describe the environment
-
-    def dialPeer(s: LocalState, a: Address): LocalState = {
-        if (s.peersOutbound() + s.peersDialing() < MaxNumOutboundPeers and not(s.Peers())) {
-            s.with("peerState", s.peerState.set(a, "dialing"))
-                .with("connectionState", s.connectionState.set(a, "init"))
-        } else 
-            s
-    }
-
-    action actionDialPeer (node: Address):bool {
-        peerViews' = peerViews.set(node, dialPeer(peerViews.get(node)))
-
-    }
-
     // What we call Peers is defined the domain of the peerState and connectionState maps. 
     // They should be the same, so we can check the invariant invPeers
-
-    def explicitNodes = peerState.keys()
+    val Peers = peerState.keys()
     // auxiliary definition. These are the peers that seem alive and connected
-    def activePeers(p) = Peers(p).filter(x => connectionState.get(p).get(x) == "open")
+    val activePeers = Peers.filter(x => connectionState.get(x) == "open")
 
-    val invPeers = explicitNodes.forall(x => peerState.get(x).keys() == connectionState.get(x).keys())
-
-    val invConnectionsNotOpen = explicitNodes.forall(y => Peers(y).forall(x => 
-        (peerState.get(y).get(x) == "dialing" or peerState.get(y).get(x) == "reconnecting") implies connectionState.get(y).get(x) != "open"))
-
-    val invConnectionsNotInit = explicitNodes.forall(y => Peers(y).forall(x => 
-        (peerState.get(y).get(x) == "inbound" or peerState.get(y).get(x) == "outbound") implies connectionState.get(y).get(x) != "init"))
-
-    val invConnectionsOpen = explicitNodes.forall(y => activePeers(y).forall(x => peerState.get(y).get(x) == "outbound" or peerState.get(y).get(x) == "inbound"))
+    val invPeers = peerState.keys() == connectionState.keys()
+    val invConnectionsNotOpen = Peers.forall(x => 
+        (peerState.get(x) == "dialing" or peerState.get(x) == "reconnecting") implies connectionState.get(x) != "open")
+    val invConnectionsNotInit = Peers.forall(x => 
+        (peerState.get(x) == "inbound" or peerState.get(x) == "outbound") implies connectionState.get(x) != "init")
+    val invConnectionsOpen = activePeers.forall(x => peerState.get(x) == "outbound" or peerState.get(x) == "inbound")
 
     // counting peers in different states
-    def peersOutbound(p) = size(Peers(p).filter(a => peerState.get(p).get(a) == "outbound"))
-    def peersInbound(p) = size(Peers(p).filter(a => peerState.get(p).get(a) == "inbound"))
-    def peersDialing(p) = size(Peers(p).filter(a => peerState.get(p).get(a) == "dialing"))
+    val peersOutbound = size(Peers.filter(a => peerState.get(a) == "outbound"))
+    val peersInbound = size(Peers.filter(a => peerState.get(a) == "inbound"))
+    val peersDialing = size(Peers.filter(a => peerState.get(a) == "dialing"))
 
     // auxiliary definition for PEX, 
     // If we don't have peers in the addressbook to try, we dial Seeds to ask for new ones.
-    def allAddressesArePeers(p) = AddressBook.get(p).exclude(Peers(p)) == Set()
+    val allAddressesArePeers = AddressBook.exclude(Peers) == Set()
 
     // helps for better readability. Future syntactic sugar 
     def require(pred:bool):bool = pred
@@ -126,25 +91,10 @@ module p2p {
     - PEX reactor: This is a specific reactor that makes sure "enough" connections are established.
     */
 
-
-    def setConnectionState(node, a, newval) = 
-        connectionState.setBy(node, (old => old.set(a, newval)))
-
-    def setPeerState(node, a, newval) = 
-        peerState.setBy(node, (old => old.set(a, newval)))
- 
-    def putConnectionState(node, a, newval) = 
-        connectionState.setBy(node, (old => old.put(a, newval)))
-
-    def putPeerState(node, a, newval) = 
-        peerState.setBy(node, (old => old.put(a, newval)))
-    
-
     // triggered by "the network"
-    action loseConnection(node: Address, a:Address):bool = all {
-        require(connectionState.get(node).get(a) != "closed"),
-        // The following line is obscure magic and we discovered a bug in the cheat sheet
-        connectionState' = setConnectionState(node, a, "closed"),
+    action loseConnection(a:Address):bool = all {
+        require(connectionState.get(a) != "closed"),
+        connectionState' = connectionState.set(a, "closed"),
         all { //unchanged
             AddressBook' = AddressBook,
             peerState' = peerState,
@@ -157,20 +107,18 @@ module p2p {
 
     // TODO: not sure what triggers that in the code.
     // We try to reconnect to an existing peer, otherwise we just clean up
-    action onLostConnection(node: Address, a:Address):bool = all {
-        require(connectionState.get(node).get(a) == "closed"),
-        if (PersistentPeers.get(node).contains(a)) all {
-            peerState' = setPeerState(node, a, "reconnecting"),
-            connectionState' = setConnectionState(node, a, "dialing"),
+    action onLostConnection(a:Address):bool = all {
+        require(connectionState.get(a) == "closed"),
+        if (PersistentPeers.contains(a)) all {
+            peerState' = peerState.set(a, "reconnecting"),
+            connectionState' = connectionState.set(a, "dialing"),
         }
         else all {
             // if peer is not persistent, we just delete it
             // it may still be in some addressbook. Thus upon request (e.g. from PEX or the operator)
             // or if the peer tries to connect to us, it may be reintroduced in the future
-            val newPeerStateForNode = Peers(node).exclude(Set(a)).mapBy(x => peerState.get(node).get(x))
-            peerState' = peerState.set(node, newPeerStateForNode),
-            val newConnectionStateForNode = Peers(node).exclude(Set(a)).mapBy(x => connectionState.get(node).get(x))
-            connectionState' = connectionState.set(node, newConnectionStateForNode),
+            peerState' = Peers.exclude(Set(a)).mapBy(x => peerState.get(x)),
+            connectionState' = Peers.exclude(Set(a)).mapBy(x => connectionState.get(x)),
         },
         all { //unchanged
             AddressBook' = AddressBook,
@@ -181,21 +129,21 @@ module p2p {
         }
     }
 
-    // TODO: this should be a function
+
     // incoming request
-    action transportAccept(node:Address, a: Address):bool = all {
+    action transportAccept(a: Address):bool = all {
         // If we are connected to the peer as outbound, we do nothing. Otherwise we accept the 
         // connection at this point
         // TODO: Igor thinks about the if below and whether it should/can be an implication
-        if ((peersInbound(node) < MaxNumInboundPeers or IsUnconditional.get(node).contains(a)) 
+        if ((peersInbound < MaxNumInboundPeers or IsUnconditional.contains(a)) 
             // under the negation of this condition the connection is rejected
             // TODO: Does rejection unfluence the local state?
             and
-            Peers(node).contains(a) and peerState.get(node).get(a) != "outbound") all {
-            peerState' = putPeerState(node, a, "inbound"), 
-            connectionState' = putConnectionState(node, a, "open"),
+            Peers.contains(a) and peerState.get(a) != "outbound") all {
+            peerState' = peerState.put(a, "inbound"), 
+            connectionState' = connectionState.put(a, "open"),
             // TODO: inform reactors. Do we model this?
-            AddressBook' = AddressBook.setBy(node, (old => old.union(Set(a)))),
+            AddressBook' = AddressBook.union(Set(a)),
             all { //unchanged
                 Environment' = Environment,
                 IsUnconditional' = IsUnconditional,
@@ -208,14 +156,14 @@ module p2p {
 
     // lower level connection initialization complete. Gloss over details
     // TODO: what happens if the other side doesn't accept the connection of some problem occurs?
-    action establishConnection(node:Address, a:Address):bool = all { // TODO: upgradeConnection?
+    action establishConnection(a:Address):bool = all { // TODO: upgradeConnection?
         require(or {
-            peerState.get(node).get(a) == "dialing",
-            peerState.get(node).get(a) == "reconnecting",
+            peerState.get(a) == "dialing",
+            peerState.get(a) == "reconnecting",
             }
         ),
-        peerState' = setPeerState(node, a, "outbound"),
-        connectionState' = setConnectionState(node, a, "open"),
+        peerState' = peerState.set(a, "outbound"),
+        connectionState' = connectionState.set(a, "open"),
         all { //unchanged
             AddressBook' = AddressBook,
             Environment' = Environment,
@@ -227,12 +175,10 @@ module p2p {
 
     // TODO: what to do if reconnection failed?
 
-    action dialingFailed(node:Address, a:Address):bool = all{ 
-        require(connectionState.get(node).get(a) == "dialing"),
-        val newConnectionStateForNode = Peers(node).exclude(Set(a)).mapBy(x => connectionState.get(node).get(x))
-        connectionState' = connectionState.set(node, newConnectionStateForNode),
-        val newPeerStateForNode = Peers(node).exclude(Set(a)).mapBy(x => peerState.get(node).get(x))
-        peerState' = peerState.set(node, newPeerStateForNode),
+    action dialingFailed(a:Address):bool = all{ 
+        require(connectionState.get(a) == "dialing"),
+        connectionState' = Peers.exclude(Set(a)).mapBy(x => connectionState.get(x)),
+        peerState' = Peers.exclude(Set(a)).mapBy(x => peerState.get(x)),
         all { //unchanged
             AddressBook' = AddressBook,
             Environment' = Environment,
@@ -242,15 +188,12 @@ module p2p {
         }
    }
 
-    // TODO: this should be a function
     // triggered by a reactor
-    action stopPeerForError(node:Address, a:Address):bool = all {
+    action stopPeerForError(a:Address):bool = all {
         // TODO: do we care if a is not a peer anymore, e.g. if some other reactor already invkoked
         //       this function? 
-        val newPeerStateForNode = Peers(node).exclude(Set(a)).mapBy(x => peerState.get(node).get(x))
-        peerState' = peerState.set(node, newPeerStateForNode),
-        val newConnectionStateForNode = Peers(node).exclude(Set(a)).mapBy(x => connectionState.get(node).get(x))
-        connectionState' = connectionState.set(node, newConnectionStateForNode),
+        peerState' = Peers.exclude(Set(a)).mapBy(x => peerState.get(x)),
+        connectionState' = Peers.exclude(Set(a)).mapBy(x => connectionState.get(x)),
         all { //unchanged
             AddressBook' = AddressBook,
             Environment' = Environment,
@@ -261,15 +204,14 @@ module p2p {
         // TODO: inform all reactors then. (How) should we model that?
     }
 
-       // TODO: this should be a function
-    action dialPeer(node:Address, a:Address):bool = all {
+    action dialPeer(a:Address):bool = all {
         // TOOO: needs to become an if with stuttering if precondition is violated
-        require(peersOutbound(node) + peersDialing(node) < MaxNumOutboundPeers),
-        require(not(Peers(node).contains(a))), // TODO: English spec restricted to connected or dialing
+        require(peersOutbound + peersDialing < MaxNumOutboundPeers),
+        require(not(Peers.contains(a))), // TODO: English spec restricted to connected or dialing
         all {
             //dialPeer(addr)
-            peerState' = putPeerState(node, a, "dialing"), 
-            connectionState' = putConnectionState(node, a, "init"),
+            peerState' = peerState.put(a, "dialing"), 
+            connectionState' = connectionState.put(a, "init"),
             all { //unchanged
                 AddressBook' = AddressBook,
                 Environment' = Environment,
@@ -280,8 +222,8 @@ module p2p {
         }
     }
 
-   // TODO: this should be a function
-    action ensurePeers(node:Address):bool = all { 
+
+    action ensurePeers = all { 
         /* 
         TODO:
         - shall we pick a subset of Addressbook and dial them
@@ -289,26 +231,19 @@ module p2p {
         - shall we model dialattempts, etc?
         */
         // TODO: If. In case precondition is violated we set dialSeeds flag
-        require(allAddressesArePeers(node) == false),
-        nondet a = oneOf(AddressBook.get(node).exclude(Peers(node))) // addrbook.PickAddress(bias)
-        dialPeer(node, a),
+        require(allAddressesArePeers == false),
+        nondet a = oneOf(AddressBook.exclude(Peers)) // addrbook.PickAddress(bias)
+        dialPeer(a),
     }
 
-    def setPeerState(node: Address, old: (Address -> str) => ): Address -> Address -> str = {
-        peerState.setBy(node, ())
-    }
-
-   // TODO: this should be a function
     // this can be called by the operator
-    action dialPeers(node:Address, S:Set[Address]):bool = all {
+    action dialPeers(S:Set[Address]):bool = all {
         // TODO: check what the code actually is doing. Now we don't override existing peers in this spec
         // TODO: check the following: the intention here is NOT to call "dialPeer" for each address in S
         //       in order to not check against MaxNumOutboundPeers
-
         peerState' = Peers.union(S).mapBy(a => if (Peers.contains(a)) peerState.get(a) else "dialing"), 
         connectionState' = Peers.union(S).mapBy(a => if (Peers.contains(a)) connectionState.get(a) else "init"),
-
-        AddressBook' = AddressBook.setBy(node, (old => old.union(S))),
+        AddressBook' = AddressBook.union(S),
         all { //unchanged
                 Environment' = Environment,
                 IsUnconditional' = IsUnconditional,
@@ -317,7 +252,6 @@ module p2p {
         }
     }
 
-    // TODO: this should be a function
     // this is a response to receiving a set of addresses from a seed node
     action PexAddrs(S:Set[Address]):bool = all {
         // we check the allAddressesArePeers it set to true. This means PEX asked seed nodes for addresses.

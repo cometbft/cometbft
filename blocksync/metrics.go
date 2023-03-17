@@ -39,9 +39,9 @@ func (m *Metrics) recordBlockMetrics(block *types.Block) {
 	m.LatestBlockHeight.Set(float64(block.Height))
 }
 
-// UnregisterGauge removes a gauge metric from the Prometheus registry. No new
+// unregisterGauge removes a gauge metric from the Prometheus registry. No new
 // data will be generated in the http /metrics endpoint for this metric.
-func UnregisterGauge(g metrics.Gauge) bool {
+func unregisterGauge(g metrics.Gauge) bool {
 	metric, ok := g.(*prometheus.Gauge)
 	if !ok {
 		return false

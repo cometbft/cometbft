@@ -243,11 +243,11 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 	defer func() {
 		// All BlockSync metrics are no longer relevant when syncing finishes,
 		// so we unregister them to not produce stale data.
-		UnregisterGauge(bcR.metrics.Syncing)
-		UnregisterGauge(bcR.metrics.NumTxs)
-		UnregisterGauge(bcR.metrics.TotalTxs)
-		UnregisterGauge(bcR.metrics.BlockSizeBytes)
-		UnregisterGauge(bcR.metrics.LatestBlockHeight)
+		unregisterGauge(bcR.metrics.Syncing)
+		unregisterGauge(bcR.metrics.NumTxs)
+		unregisterGauge(bcR.metrics.TotalTxs)
+		unregisterGauge(bcR.metrics.BlockSizeBytes)
+		unregisterGauge(bcR.metrics.LatestBlockHeight)
 	}()
 
 	trySyncTicker := time.NewTicker(trySyncIntervalMS * time.Millisecond)

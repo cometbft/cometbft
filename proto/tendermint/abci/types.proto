@@ -447,7 +447,7 @@ message ExtendedVoteInfo {
   bytes vote_extension = 3;
   // Vote extension signature created by CometBFT
   bytes extension_signature = 4;
-  // block_id_flag indicates which BlockID the signature is for
+  // block_id_flag indicates whether the validator voted for a block, nil, or did not vote at all
   tendermint.types.BlockIDFlag block_id_flag = 5;
 
   reserved 2; // signed_last_block

@@ -1025,16 +1025,19 @@ First of all, switching to a version of CometBFT with vote extensions, requires 
 For a detailed description on the upgrade path, please refer to the corresponding 
 [section](./../../docs/rfc/rfc-100-abci-vote-extension-propag.md#upgrade-path) in RFC-100.
 
-There is a newly introduced [**new consensus parameter**](./abci%2B%2B_app_requirements.md#abciparamsvoteextensionsenableheight): `VoteExtensionsEnableHeight`. 
+There is a newly introduced [**consensus parameter**](./abci%2B%2B_app_requirements.md#abciparamsvoteextensionsenableheight): `VoteExtensionsEnableHeight`. 
 This parameter represents the height at which vote extensions are 
 required for consensus to proceed, with 0 being the default value (no vote extensions).
-
+A chain can enable vote extensions either:
+* at genesis by setting `VoteExtensionsEnableHeight` to be equal to the `InitialHeight`
+* or via the application logic by changing the `ConsensusParam` to configure the
+`VoteExtensionsEnableHeight`.
 
 Once the (coordinated) upgrade to ABCI 2.0 has taken place, at height  *h<sub>u</sub>*,
 the value of `VoteExtensionsEnableHeight` MAY be set to some height, *h<sub>e</sub>*,
 which MUST be higher than the current height of the chain. Thus the earliest value for 
- *h<sub>e</sub>* is  *h<sub>u</sub>* + 1. For chains that want vote extensions enabled as soon
- as they start, this parameter has to be set to the value of the `InitialHeight` parameter.
+ *h<sub>e</sub>* is  *h<sub>u</sub>* + 1.
+
 Once a node reaches the configured height,
 for all heights *h ≥ h<sub>e</sub>*, the consensus algorithm will
 reject as invalid any precommit messages that do not have signed vote extension data.

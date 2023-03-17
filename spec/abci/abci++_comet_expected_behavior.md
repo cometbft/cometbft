@@ -254,7 +254,7 @@ CometBFT retrieves from the application configuration the value of *h<sub>e</sub
 that is catching up.
 
 Namely, upon saving the block for a given height *h* in the block store at decision time
-- if *h ≥ h<sub>e</sub>*, the corresponding extended commit is saved as  well
+- if *h ≥ h<sub>e</sub>*, the corresponding extended commit that was used to decide locally is saved as well
 - if *h < h<sub>e</sub>*, there are no changes to the data saved
 
 In the catch-up mechanism, when a node *f* realizes that another peer is at height *h<sub>p</sub>*, which is more than 2 heights behind,

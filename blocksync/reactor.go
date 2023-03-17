@@ -404,7 +404,7 @@ FOR_LOOP:
 				// TODO This is bad, are we zombie?
 				panic(fmt.Sprintf("Failed to process committed block (%d:%X): %v", first.Height, first.Hash(), err))
 			}
-			bcR.recordMetrics(first)
+			bcR.recordBlockMetrics(first)
 			blocksSynced++
 
 			if blocksSynced%100 == 0 {
@@ -430,7 +430,7 @@ func (bcR *Reactor) BroadcastStatusRequest() {
 	})
 }
 
-func (bcR *Reactor) recordMetrics(block *types.Block) {
+func (bcR *Reactor) recordBlockMetrics(block *types.Block) {
 	bcR.metrics.NumTxs.Set(float64(len(block.Data.Txs)))
 	bcR.metrics.TotalTxs.Add(float64(len(block.Data.Txs)))
 	bcR.metrics.BlockSizeBytes.Set(float64(block.Size()))

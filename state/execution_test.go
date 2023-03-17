@@ -22,6 +22,7 @@ import (
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	mpmocks "github.com/cometbft/cometbft/mempool/mocks"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/cometbft/cometbft/proxy"
 	pmocks "github.com/cometbft/cometbft/proxy/mocks"
@@ -149,7 +150,7 @@ func TestFinalizeBlockDecidedLastCommit(t *testing.T) {
 			// -> app receives a list of validators with a bool indicating if they signed
 			for i, v := range app.CommitVotes {
 				_, absent := tc.absentCommitSigs[i]
-				assert.Equal(t, !absent, v.SignedLastBlock)
+				assert.Equal(t, !absent, v.BlockIdFlag != cmtproto.BlockIDFlagAbsent)
 			}
 		})
 	}
@@ -228,10 +229,10 @@ func TestFinalizeBlockValidators(t *testing.T) {
 			if ctr < len(tc.expectedAbsentValidators) &&
 				tc.expectedAbsentValidators[ctr] == i {
 
-				assert.False(t, v.SignedLastBlock)
+				assert.Equal(t, v.BlockIdFlag, cmtproto.BlockIDFlagAbsent)
 				ctr++
 			} else {
-				assert.True(t, v.SignedLastBlock)
+				assert.NotEqual(t, v.BlockIdFlag, cmtproto.BlockIDFlagAbsent)
 			}
 		}
 	}
@@ -398,7 +399,7 @@ func TestProcessProposal(t *testing.T) {
 		addr := pk.Address()
 		voteInfos = append(voteInfos,
 			abci.VoteInfo{
-				SignedLastBlock: true,
+				BlockIdFlag: cmtproto.BlockIDFlagCommit,
 				Validator: abci.Validator{
 					Address: addr,
 					Power:   1000,

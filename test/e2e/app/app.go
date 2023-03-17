@@ -587,30 +587,48 @@ func parseTx(tx []byte) (string, string, error) {
 	return string(parts[0]), string(parts[1]), nil
 }
 
-func (app *Application) verifyAndSum(areExtensionsEnabled bool, currentHeight int64, extCommit *abci.ExtendedCommitInfo, callsite string) (int64, error) {
+func (app *Application) verifyAndSum(
+	areExtensionsEnabled bool,
+	currentHeight int64,
+	extCommit *abci.ExtendedCommitInfo,
+	callsite string,
+) (int64, error) {
 	var sum int64
 	var extCount int
 	for _, vote := range extCommit.Votes {
-		if !vote.SignedLastBlock {
+		if vote.BlockIdFlag == cmtproto.BlockIDFlagUnknown || vote.BlockIdFlag > cmtproto.BlockIDFlagNil {
+			return 0, fmt.Errorf("vote with bad blockID flag value at height %d; blockID flag %d", currentHeight, vote.BlockIdFlag)
+		}
+		if vote.BlockIdFlag == cmtproto.BlockIDFlagAbsent || vote.BlockIdFlag == cmtproto.BlockIDFlagNil {
+			if len(vote.VoteExtension) != 0 {
+				return 0, fmt.Errorf("non-empty vote extension at height %d, for a vote with blockID  flag %d",
+					currentHeight, vote.BlockIdFlag)
+			}
+			if len(vote.ExtensionSignature) != 0 {
+				return 0, fmt.Errorf("non-empty vote extension signature at height %d, for a vote with blockID flag %d",
+					currentHeight, vote.BlockIdFlag)
+			}
+			// Only interested in votes that can have extensions
 			continue
 		}
 		if !areExtensionsEnabled {
 			if len(vote.VoteExtension) != 0 {
-				return 0, fmt.Errorf("non-empty vote extension at height %d, which has extensions disabled", currentHeight)
+				return 0, fmt.Errorf("non-empty vote extension at height %d, which has extensions disabled",
+					currentHeight)
+			}
+			if len(vote.ExtensionSignature) != 0 {
+				return 0, fmt.Errorf("non-empty vote extension signature at height %d, which has extensions disabled",
+					currentHeight)
 			}
 			continue
 		}
 		if len(vote.VoteExtension) == 0 {
-			app.logger.Info("received empty vote extension form %X at height %d (extensions enabled), must represent nil-precommit",
-				vote.Validator, currentHeight)
-			if len(vote.ExtensionSignature) != 0 {
-				return 0, errors.New("non-empty vote extension signature with empty vote extension")
-			}
-			continue
+			return 0, fmt.Errorf("received empty vote extension from %X at height %d (extensions enabled); "+
+				"e2e app's logic does not allow it", vote.Validator, currentHeight)
 		}
 		// Vote extension signatures are always provided. Apps can use them to verify the integrity of extensions
 		if len(vote.ExtensionSignature) == 0 {
-			return 0, errors.New("non-empty vote extension with empty signature")
+			return 0, fmt.Errorf("empty vote extension signature at height %d (extensions enabled)", currentHeight)
 		}
 
 		// Reconstruct vote extension's signed bytes...

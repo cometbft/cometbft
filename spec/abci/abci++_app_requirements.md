@@ -813,15 +813,15 @@ exist a scenario where the application has persisted state of a height greater t
 latest height persisted by CometBFT.
 
 In practice, persisting the state of a height consists of three steps, the last of which 
-is the call to the application's `Commit` method, where the application is expected to
+is the call to the application's `Commit` method, the only place where the application is expected to
 persist/commit its state.
-On startup, CometBFT calls the `Info` method on the Info Connection to get the latest
+On startup (upon recovery), CometBFT calls the `Info` method on the Info Connection to get the latest
 committed state of the app. The app MUST return information consistent with the
 last block for which it successfully completed `Commit`. 
 
 The three steps performed before the state of a height is considered persisted are: 
 - The block is stored by CometBFT in the blockstore
-- CometBFT has stored the state returned by the application through `FinalizeBlockResult`
+- CometBFT has stored the state returned by the application through `FinalizeBlockResponse`
 - The application has committed its state within `Commit`. 
   
 The following diagram depicts the order in which these events happen, and the corresponding

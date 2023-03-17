@@ -874,25 +874,4 @@ enum VerifyStatus {
         * If `Status` is `ACCEPT`, the consensus algorithm will accept the vote as valid.
         * If `Status` is `REJECT`, the consensus algorithm will reject the vote as invalid.
 
-
-### CanonicalVoteExtension
-
->**TODO**: This protobuf message definition is not part of the ABCI++ interface, but rather belongs to the
-> Precommit message which is broadcast via P2P. So it is to be moved to the relevant section of the spec.
-
-* **Fields**:
-
-    | Name      | Type   | Description                                                                                | Field Number |
-    |-----------|--------|--------------------------------------------------------------------------------------------|--------------|
-    | extension | bytes  | Vote extension provided by the Application.                                                | 1            |
-    | height    | int64  | Height in which the extension was provided.                                                | 2            |
-    | round     | int32  | Round in which the extension was provided.                                                 | 3            |
-    | chain_id  | string | ID of the blockchain running consensus.                                                    | 4            |
-    | address   | bytes  | [Address](../core/data_structures.md#address) of the validator that provided the extension | 5            |
-
-* **Usage**:
-    * CometBFT is to sign the whole data structure and attach it to a Precommit message
-    * Upon reception, CometBFT validates the sender's signature and sanity-checks the values of `height`, `round`, and `chain_id`.
-      Then it sends `extension` to the Application via `RequestVerifyVoteExtension` for verification.
-
 [protobuf-timestamp]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp

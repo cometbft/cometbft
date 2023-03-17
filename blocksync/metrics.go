@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"unsafe"
 
+	"github.com/cometbft/cometbft/types"
 	"github.com/go-kit/kit/metrics"
 	prometheus "github.com/go-kit/kit/metrics/prometheus"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
@@ -29,6 +30,13 @@ type Metrics struct {
 	BlockSizeBytes metrics.Gauge
 	// The height of the latest block.
 	LatestBlockHeight metrics.Gauge
+}
+
+func (m *Metrics) recordBlockMetrics(block *types.Block) {
+	m.NumTxs.Set(float64(len(block.Data.Txs)))
+	m.TotalTxs.Add(float64(len(block.Data.Txs)))
+	m.BlockSizeBytes.Set(float64(block.Size()))
+	m.LatestBlockHeight.Set(float64(block.Height))
 }
 
 // UnregisterGauge removes a gauge metric from the Prometheus registry. No new

@@ -121,7 +121,7 @@ Let us now examine the grammar line by line, providing further details.
   _AppHash_ matches the one in the block header at the corresponding height. Note that the state 
   of  the application does not contain vote extensions itself. The application can rely on 
   [CometBFT to ensure](./../../docs/rfc/rfc-100-abci-vote-extension-propag.md#base-implementation-persist-and-propagate-extended-commit-history)
-  the node has all the relevant data by the time it switches to consensus. 
+  the node has all the relevant data to proceed with the execution beyond this point. 
 
 >```abnf
 >state-sync          = *state-sync-attempt success-sync info
@@ -237,15 +237,19 @@ In the case of recovering from a crash, or joining the network via state sync, C
 sure the node acquires the neccessary vote extensions before switching to conensusus. 
 
 If a node is already in consensus but falls behind, during catch-up, CometBFT will provide the node with 
-vote extensions from past heights by storing the extensions within `ExtendedCommit` for old heights.
+vote extensions from past heights by retrieving the extensions within `ExtendedCommit` for old heights that it had previously stored.
 
 We realize this is sub-optimal due to the increase in storage needed to store the extensions, we are 
-working on an optimization of this implementation which should eliviate this concern. The decision to store 
+working on an optimization of this implementation which should alleviate this concern.
+However, the application can use the existing `retain_height` parameter to decide how much
+history it wants to keep, just as is done with the block history. The network-wide implications
+of the usage of `retain_height` stay the same.
+The decision to store 
 historical commits and potential optimizations, are discussed in detail in [RFC-100](./../../docs/rfc/rfc-100-abci-vote-extension-propag.md#current-limitations-and-possible-implementations)
 
 ## Handling upgrades to ABCI 2.0 
 
-If applications upgrade to ABCI 2.0, CometBFT internally ensures that the [application setup](./abci%2B%2B_app_requirements.md#application-configuration-required-to-switch-to-abci-20) is reflected in its opertaion. 
+If applications upgrade to ABCI 2.0, CometBFT internally ensures that the [application setup](./abci%2B%2B_app_requirements.md#application-configuration-required-to-switch-to-abci-20) is reflected in its operation. 
 
 Namely, upon saving the block for a given height *h* in the block store at decision time
 - if *h ≥ h<sub>e</sub>*, the corresponding extended commit is saved as  well

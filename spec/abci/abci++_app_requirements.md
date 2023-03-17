@@ -1031,7 +1031,7 @@ First of all, switching to a version of CometBFT with vote extensions, requires 
 For a detailed description on the upgrade path, please refer to the corresponding 
 [section](./../../docs/rfc/rfc-100-abci-vote-extension-propag.md#upgrade-path) in RFC-100.
 
-The configuration file now contains a [**new consensus parameter**](./abci%2B%2B_app_requirements.md#abciparamsvoteextensionsenableheight): `VoteExtensionsEnableHeight`. 
+There is a newly introduced [**new consensus parameter**](./abci%2B%2B_app_requirements.md#abciparamsvoteextensionsenableheight): `VoteExtensionsEnableHeight`. 
 This parameter represents the height after which vote extensions are 
 required for consensus to proceed, with 0 being the default value (no vote extensions).
 Once the (coordinated) upgrade to ABCI 2.0 has taken place, at height  *h<sub>u</sub>*,
@@ -1040,9 +1040,11 @@ which MUST be higher than the current height of the chain. Thus the earliest val
  *h<sub>e</sub>* is  *h<sub>u</sub>* + 1. 
 Once a node reaches the configured height,
 for all heights *h ≥ h<sub>e</sub>*, the consensus algorithm will
-reject any votes that do not have vote extension data as invalid.
-Likewise, for all heights *h < h<sub>e</sub>*, any votes that *do* have vote extensions
-will be considered an error condition.
+reject as invalid any precommit messages that do not have signed vote extension data.
+If the application requires it, a 0-length vote extension is allowed, but it MUST be signed
+and present in the precommit message.
+Likewise, for all heights *h < h<sub>e</sub>*, any precommit messages that *do* have vote extensions
+will also be rejected as malformed.
 Height *h<sub>e</sub>* is somewhat special, as calls to `PrepareProposal` MUST NOT
 have vote extension data, but all precommit votes in that height MUST carry a vote extension,
 even if the extension is `nil`. 

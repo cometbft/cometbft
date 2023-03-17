@@ -462,10 +462,6 @@ FOR_LOOP:
 						err = fmt.Errorf("received non-nil extCommit for height %d (extensions disabled)", first.Height)
 					}
 				}
-				//TODO DIAGNOSE Remove
-				if err != nil {
-					panic(fmt.Errorf("this shouldn't happen with correct nodes: %w", err))
-				}
 			}
 			if err != nil {
 				bcR.Logger.Error("Error in validation", "err", err)

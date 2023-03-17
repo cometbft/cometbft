@@ -2403,7 +2403,6 @@ func (cs *State) signAddVote(
 	}
 	cs.sendInternalMessage(msgInfo{&VoteMessage{vote}, ""})
 	cs.Logger.Debug("signed and pushed vote", "height", cs.Height, "round", cs.Round, "vote", vote)
-	return
 }
 
 // updatePrivValidatorPubKey get's the private validator public key and

@@ -1026,12 +1026,15 @@ For a detailed description on the upgrade path, please refer to the correspondin
 [section](./../../docs/rfc/rfc-100-abci-vote-extension-propag.md#upgrade-path) in RFC-100.
 
 There is a newly introduced [**new consensus parameter**](./abci%2B%2B_app_requirements.md#abciparamsvoteextensionsenableheight): `VoteExtensionsEnableHeight`. 
-This parameter represents the height after which vote extensions are 
+This parameter represents the height at which vote extensions are 
 required for consensus to proceed, with 0 being the default value (no vote extensions).
+
+
 Once the (coordinated) upgrade to ABCI 2.0 has taken place, at height  *h<sub>u</sub>*,
 the value of `VoteExtensionsEnableHeight` MAY be set to some height, *h<sub>e</sub>*,
 which MUST be higher than the current height of the chain. Thus the earliest value for 
- *h<sub>e</sub>* is  *h<sub>u</sub>* + 1. 
+ *h<sub>e</sub>* is  *h<sub>u</sub>* + 1. For chains that want vote extensions enabled as soon
+ as they start, this parameter has to be set to the value of the `InitialHeight` parameter.
 Once a node reaches the configured height,
 for all heights *h ≥ h<sub>e</sub>*, the consensus algorithm will
 reject as invalid any precommit messages that do not have signed vote extension data.

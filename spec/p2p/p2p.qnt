@@ -1,3 +1,7 @@
+//
+// S T O P   R E A D I N G ! ! ! This does not work, does not compile. I am in the process of refactoring for the multi process setting:
+//
+
 /*
   This encodes the execution flows of the p2p system of CometBFT for maintaining connections to other
   nodes in the network. It is based on the descriptions in 

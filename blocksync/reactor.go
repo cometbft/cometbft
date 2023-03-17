@@ -240,7 +240,15 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 // NOTE: Don't sleep in the FOR_LOOP or otherwise slow it down!
 func (bcR *Reactor) poolRoutine(stateSynced bool) {
 	bcR.metrics.Syncing.Set(1)
-	defer bcR.metrics.Syncing.Set(0)
+	defer func() {
+		// All BlockSync metrics are no longer relevant when syncing finishes,
+		// so we unregister them to not produce stale data.
+		UnregisterGauge(bcR.metrics.Syncing)
+		UnregisterGauge(bcR.metrics.NumTxs)
+		UnregisterGauge(bcR.metrics.TotalTxs)
+		UnregisterGauge(bcR.metrics.BlockSizeBytes)
+		UnregisterGauge(bcR.metrics.LatestBlockHeight)
+	}()
 
 	trySyncTicker := time.NewTicker(trySyncIntervalMS * time.Millisecond)
 	defer trySyncTicker.Stop()

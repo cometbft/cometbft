@@ -30,35 +30,40 @@ Implementing Gossip Communication, however, is hard because even messages sent b
 Fortunately, while Gossip Communication is a sufficient condition for the Tendermint algorithm to terminate, it is not strictly necessary, because the conditions to progress and terminate are evaluated over the messages of subsets of rounds executed, not all of them, and as new rounds are executed, messages in old rounds may be become obsolete and be ignored and forgotten, saving memory.
 In other words, the algorithm does not require all messages to be delivered, only messages that advance the state of the processes.
 
-## Node's state as a CRDT
+## Node's state as a Tuple Space
 
-One way of looking at the information used by CometBFT nodes is as a distributed tuple space to which all nodes contribute;
+One way of looking at the information used by CometBFT nodes is as a distributed tuple space to which all nodes contribute with signed entries;
 to share a proposal, the proposer adds it to the tuple space and to vote for a proposal, the node adds the vote.
-Each update is non-conflicting with any other updates, that is, no two nodes try to make the same update, by virtue of signing each update.
+Each update includes the author name and therefore they are all non-conflicting with each other and update forgery is prevented with signing each update.
 
 Since we are talking about an asynchronous distributed system, individual nodes can only maintain approximations of the tuple space.
-Nodes may broadcast the update operations operations to all nodes, including themselves, and, if the communication is reliable, as guaranteed by Gossip Communication, the tuple space will eventually converge.
+Nodes may broadcast the update operations to all nodes, including themselves, and, if the communication is reliable, as guaranteed by Gossip Communication, the tuple space will eventually converge.
 
 Otherwise, nodes may periodically compare their approximations with each other to identify and correct differences by adding missing entries, using some gossip/anti-entropy protocol.
-In this approach, tuples with superseded information may be removed from the tuple space.
-
-The two approaches just described correspond to an operation-based and a state-based **2 Phase-Set** CRDT, or 2P-Set.
-This distributed data-structure is easily described as a combination of two sets, one in which elements are added to include them in the 2P-Set, $A$, and one in which elements are added to remove them from the 2P-Set, $R$; the actual membership of the 2P-Set is given by $A \setminus B$.
 
 Updates are commutative from the point of view of the tuple space, even if they are not commutative from the Tendermint algorithm's point of view; however, nodes observing different approximations of the tuple space may decide at different point in time but cannot violate any correctness guarantees.
-And the eventual convergence of the 2P-Set implies the eventual termination of the algorithm.
+And the eventual convergence of tuple space implies the eventual termination of the algorithm.
 
-> Warning/TODO: a word about tombstones, that is, the $B$ set.
-> Tombstones are not gossiped; each node must be given information to realize by itself that an entry is no longer needed.
-> Tombstones, if at all materialized, must be garbage collected.
+The tuple space could grow indefinitely, given that the number of heights and rounds is infinite.
+Hence entries should be removed once they are no longer useful.[^deletion]
+For example, if a new height is started, information from smaller heights may be discarded.
 
-## Querying the Tuple Space
+[^deletion]: Implementations should enforce that entries are only removed if they will not be needed again by CometBFT.
+
+Even though, depending on the implementation, removed entries might get added again, this does not compromise CometBFT correctness properties.
+Even so, for efficiency, entries that are removed should not be added again, which may be prevented by keeping "tombstones" for the entries removed, which must be smaller than the entries themselves.
+We note the tombstone for an entry $e$ as $\bar{e}$.
+
+With time, even small tombstones may accrue and need to be garbage collected, which may cause the entry being added again, which continues to be safe.
+
+
+### Querying the Tuple Space
 
 The tuple space contains information regarding steps taken by validators during possibly many rounds of possibly many heights.
 Each entry has form $\lang Height, Round, Step, Validator, Value \rang$ and corresponds to the message Validator sent in Step of Round of Height; Value is a tuple of the message contents.
 
 A query to the tuple space has the same form as the entries, with parts replaced by values, that must match the values in the entries, or by `*`, which matches any value.
-For example, suppose the tuple space has the following entries, here organized as a table for easier visualization:
+For example, suppose the tuple space has the following entries, here organized as rows of a table for easier visualization:
 
 | Height | Round | Step     | Validator | Value |
 |--------|-------|----------|-----------|-------|
@@ -71,6 +76,24 @@ For example, suppose the tuple space has the following entries, here organized a
 
 - Query $\lang H, R, Proposal, v, * \rang$ returns $\{ \lang H, R, Proposal, v, pval \rang \}$
 - Query $\lang H, R, *, v, * \rang$ returns $\{ \lang H, R, Proposal, v, pval \rang,  \lang H, R, PreVote, v, vval \rang \}$.
+
+
+### When to remove
+
+> **TODO**: Expand on when to remove, based on the algorithm.
+
+
+### Local views
+
+The tuple space information is distributed among nodes that keep local views of the whole space.
+Because of the asynchronous nature of the system, $t_p$ may not include entries in the space or may still include entries no longer in the space.
+Formally, let $T$ be the tuple space and $t_p$ be node $p$'s view of $T$; $T = \cup_p t_p$.
+
+- $e \in T \Leftrightarrow \exists p, e \in t_p \land \not\exists q, \bar{e}\in t_q$
+
+Nodes can only query local views, not $T$.
+Queries are subscripted with the node being queried.
+
 
 ### State Validity
 
@@ -85,35 +108,7 @@ In the specific case of the Proposal step, only the proposer of the round can ha
 A violation of these rules is a proof of misbehavior.
 
 
-### Deletion of entries
-The tuple space could grow indefinitely, given that the number of heights and rounds is infinite.
-Hence entries must be removed once they are no longer useful.
-For example, if a new height is started, information from smaller heights may be discarded.
-
-Entries that are removed should not be added again and we note that an entry has been removed by saying that its barred version is in the space.
-That is, if $e$ was in the space and then is removed, then $\bar{e}$ is in the space.
-
-Implementations should enforce that entries are only removed if they will not be needed again by CometBFT.
-
-Implementations may want to remove any memory of an entry, that is, to exclude $\bar{e}$, as a form of garbage collection.
-- Depending on the implementation, removed entries could be added again.
-- Re-adding entries does not compromise CometBFT correctness properties.
-
-> **TODO**: Expand on when to remove, based on the algorithm.
-
-### Local views
-
-The tuple space information is distributed among nodes that keep local views of the whole space.
-Because of the asynchronous nature of the system, $t_p$ may not include entries in the space or may still include entries no longer in the space.
-Formally, let $T$ be the tuple space and $t_p$ be node $p$'s view of $T$; $T = \cup_p t_p$.
-
-- $e \in T \Leftrightarrow \exists p, e \in t_p \land \not\exists q, \bar{e}\in t_q$
-
-Nodes can only query local views, not $T$.
-Queries are subscripted with the node being queried.
-
-
-## Communication Requirements
+### Convergence Requirements
 
 We now formalize the requirements of the Tendermint algorithm in terms of an eventually consistent Tuple Space, which may be implemented using reliable communication (Gossip Communication), some best *best-effort* communication primitive that only delivers messages that are still useful, or some Gossip/Epidemic/Anti-Entropy approach for state convergence.
 All of these can be made to progress after GST but should also progress during smaller stability periods.
@@ -138,6 +133,26 @@ We call "long enough" $\Delta$.
 $\Delta$ encapsulates the assumption that, during stable periods, timeouts eventually do not expire precociously, given that they all can be adjusted to reasonable values, and the steps needed to converge on entries can be accomplished within $\Delta$.
 Without precocious timeouts, all new entries should help algorithms progress.
 In the Tendermint algorithm, for example, no votes for Nil are added and the round should end if a proposal was made.
+
+
+
+## The tuple space as a CRDT
+
+The two approaches described in the [previous section](#nodes-state-as-a-tuple-space), without the deletion of entries, correspond to operation-based and state-based [Grow-only SET](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type#G-Set_(Grow-only_Set)) CRDT (G-Set).
+This distributed data-structure is easily described as a set per process in which elements are added to include them G-Set; the sets kept by processes are approximations of the G-Set.
+
+The [2 Phase-Set](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type#2P-Set_(Two-Phase_Set)) (2P-Set) is a variation that allows removals.
+It combines two sets, one in which elements are added to include them in the 2P-Set, $A$, and one in which elements are added to remove them from the 2P-Set, $D$; the actual membership of the 2P-Set is given by $A \setminus D$.
+
+
+
+
+> Warning/TODO: A word about tombstones, that is $D$
+> - Only state that is not required should be deleted/tombstone'd.
+> - Instead of tombstones, add new entries that trigger removal of other entries (for example, state about a new height); each node must be given information to realize by itself that an entry is no longer needed.
+> - Tombstones are an optimization, kept to prevent data recreation and redeletion.
+> - Tombstones should be garbage collected at some point; imprecision shouldn't affect correctness/termination, since this is an optimization (as long as deleted state is never required again).
+> - Tombstones are not to be gossiped; if they were, they would need to carry proof for the reason they were created, defeating their point.
 
 
 
@@ -211,7 +226,13 @@ CONS is provided access to the local view.
 > If you read previous versions of this draft, you will recall GOSSIP was aware of supersession. In this version, I am hiding supersession in REQ-CONS-GOSSIP-REMOVE and initially attributing the task of identifying superseded entries to CONS, which then removes what has been superseded. A a later refined version of this spec will clearly specify how supersession is handled and translated into removals.
 
 
-As per the discussion in [Part I](#part-1-background), CONS requires a **Eventual $\Delta$-Timely Convergence** from GOSSIP
+As per the discussion in [Part I](#part-1-background), CONS requires GOSSIP to be a valid tuple space
+
+```qnt reactor.gen.qnt
+<<TS-VALIDTY>>
+```
+
+and to ensure Eventual $\Delta$-Timely Convergence** from GOSSIP
 
 ```qnt reactor.gen.qnt
 <<REQ-CONS-GOSSIP-CONVERGENCE>>
@@ -235,9 +256,12 @@ Northbound interaction is performed through GOSSIP-I, whose vocabulary has been 
 
 Next we enumerate what is required and provided from the point of view of GOSSIP as a means to detect mismatches between CONS and GOSSIP.
 
+
 ### Requires from CONS
+> **TODO**
 
 ### Provides to CONS
+> **TODO**
 
 
 ## SouthBound Interaction
@@ -280,18 +304,15 @@ The neighbor set of $p$ is never larger than `maxCon(p)`.
 > TODO: can maxConn change in runtime?
 
 
+```qnt reactor.gen.qnt
+<<REQ-GOSSIP-P2P-CONCURRENT_CONN>>
+```
 
-|[REQ-GOSSIP-P2P-IGNORING] |
-|----|
-| Processes in igs[p] should never belong to nes[p].
+Ignored processes should never belong to the neighbor set.
 
-> **TODO**: Add permalink
-
-### Non-requirements
-- Non-duplication
-    - GOSSIP itself can duplicate messages, so the State layer must be able to handle them, for example by ensuring idempotency.
-- Non-refutation
-    - It is assumed that all communication is authenticated at the gossip level.
+```qnt reactor.gen.qnt
+<<REQ-GOSSIP-P2P-IGNORING>>
+```
 
 
 
@@ -300,6 +321,7 @@ The neighbor set of $p$ is never larger than `maxCon(p)`.
 
 > :clipboard: **TODO** Anything else to add?
 
-## References
+
+
 - [1]: https://arxiv.org/abs/1807.0493 "The latest gossip on BFT consensus"
 - [2]: https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-052-tendermint-mode.md "ADR 052: Tendermint Mode"

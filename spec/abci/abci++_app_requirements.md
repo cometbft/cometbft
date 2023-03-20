@@ -5,6 +5,32 @@ title: Requirements for the Application
 
 # Requirements for the Application
 
+- [Formal Requirements](#formal-requirements)
+- [Managing the Application state and related topics](#managing-the-application-state-and-related-topics)
+  - [Connection State](#connection-state)
+    - [Concurrency](#concurrency)
+    - [Finalize Block](#finalizeblock)
+    - [Commit](#commit)
+    - [Candidate States](#candidate-states)
+  - [States and ABCI++ Connections](#states-and-abci%2B%2B-connections) 
+    - [Consensus Connection](#consensus-connection)
+    - [Mempool Connection](#mempool-connection)
+    - [Info/Query Connection](#infoquery-connection)
+    - [Snapshot Connection](#snapshot-connection)
+  - [Transaction Results](#transaction-results)
+  - [Updating the Validator Set](#updating-the-validator-set)
+  - [Consensus Parameters](#consensus-parameters)
+    - [List of Parameters](#list-of-parameters)
+    - [Updating Consensus Parameters](#updating-consensus-parameters)
+  - [Query](#query)
+    - [Query Proofs](#query-proofs)
+    - [Peer Filtering](#peer-filtering)
+    - [Paths](#paths)
+  - [Crash Recovery](#crash-recovery)
+  - [State Sync](#state-sync)
+- [Application configuration required to switch to ABCI2.0](#application-configuration-required-to-switch-to-abci-20)
+
+
 ## Formal Requirements
 
 This section specifies what CometBFT expects from the Application. It is structured as a set

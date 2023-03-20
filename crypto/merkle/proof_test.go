@@ -1,14 +1,14 @@
 package merkle
 
 import (
-        "bytes"
+	"bytes"
 	"errors"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-        goamino "github.com/tendermint/go-amino"
+	goamino "github.com/tendermint/go-amino"
 
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtcrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"

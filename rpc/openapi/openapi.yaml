@@ -2,8 +2,8 @@ openapi: 3.0.0
 info:
   title: CometBFT RPC
   contact:
-    name: CometBFT RPC
-    url: https://docs.cometbft.com/main/rpc
+    name: CometBFT
+    url: https://cometbft.com/
   description: |
     CometBFT supports the following RPC protocols:
 

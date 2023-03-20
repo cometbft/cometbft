@@ -17,7 +17,7 @@ info:
     `$CMTHOME/config/config.toml` file or by using the `--rpc.X` command-line
     flags.
 
-    Default rpc listen address is `tcp://127.0.0.1:26657`.
+    The default RPC listen address is `tcp://127.0.0.1:26657`.
     To set another address, set the `laddr` config parameter to desired value.
     CORS (Cross-Origin Resource Sharing) can be enabled by setting
     `cors_allowed_origins`, `cors_allowed_methods`, `cors_allowed_headers`

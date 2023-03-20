@@ -50,6 +50,9 @@ func ProofsFromByteSlices(items [][]byte) (rootHash []byte, proofs []*Proof) {
 // Verify that the Proof proves the root hash.
 // Check sp.Index/sp.Total manually if needed
 func (sp *Proof) Verify(rootHash []byte, leaf []byte) error {
+	if rootHash == nil {
+		return fmt.Errorf("invalid root hash: cannot be nil")
+	}
 	if sp.Total < 0 {
 		return errors.New("proof total must be positive")
 	}

@@ -1,7 +1,7 @@
 ---
 order: 1
 parent:
-  title: QA Process
+  title: Method
   order: 1
 ---
 

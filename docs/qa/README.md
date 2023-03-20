@@ -19,7 +19,7 @@ used to decide if a release is passing the Quality Assurance process.
 The results obtained in each release are stored in their own directory.
 The following releases have undergone the Quality Assurance process, and the corresponding reports include detailed information on tests and comparison with the baseline.
 
-* [TM v0.34.x](./v034/TMCore.md) - Tested prior to releasing Tendermint Core v0.34.22.
-* [v0.34.x](./v034/CometBFT.md) - Tested prior to releasing v0.34.27, using TM v0.34.x results as baseline.
-* [TM v0.37.x](./v037/TMCore.md) - Tested prior to releasing TM v0.37.x, using TM v0.34.x results as baseline.
-* [v0.37.x](./v037/CometBFT.md) - Tested on CometBFT v0.37.0-alpha3, using TM v0.37.x results as baseline.
+* [TM v0.34.x](TMCore-QA-34.md) - Tested prior to releasing Tendermint Core v0.34.22.
+* [v0.34.x](CometBFT-QA-34.md) - Tested prior to releasing v0.34.27, using TM v0.34.x results as baseline.
+* [TM v0.37.x](TMCore-QA-37.md) - Tested prior to releasing TM v0.37.x, using TM v0.34.x results as baseline.
+* [v0.37.x](CometBFT-QA-37.md) - Tested on CometBFT v0.37.0-alpha3, using TM v0.37.x results as baseline.

@@ -24,7 +24,7 @@ info:
     config parameters.
 
     If testing using a local RPC node, under the `[rpc]`
-    section change the 'cors_allowed_origins' property, please add the URL of
+    section change the `cors_allowed_origins` property, please add the URL of
     the site where this OpenAPI document is running, for example:
 
       `cors_allowed_origins = ["http://localhost:8088"]`

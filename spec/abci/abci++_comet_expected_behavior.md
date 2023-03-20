@@ -234,7 +234,7 @@ In a manner transparent to the application, CometBFT ensures the node is provide
 the data it needs to participate in consensus. 
 
 In the case of recovering from a crash, or joining the network via state sync, CometBFT will make
-sure the node acquires the neccessary vote extensions before switching to conensusus. 
+sure the node acquires the necessary vote extensions before switching to consensus. 
 
 If a node is already in consensus but falls behind, during catch-up, CometBFT will provide the node with 
 vote extensions from past heights by retrieving the extensions within `ExtendedCommit` for old heights that it had previously stored.

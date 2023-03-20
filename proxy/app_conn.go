@@ -74,38 +74,38 @@ func (app *appConnConsensus) Error() error {
 }
 
 func (app *appConnConsensus) InitChain(ctx context.Context, req *types.RequestInitChain) (*types.ResponseInitChain, error) {
-	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "init_chain"))()
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "init_chain", "type", "sync"))()
 	return app.appConn.InitChain(ctx, req)
 }
 
 func (app *appConnConsensus) PrepareProposal(ctx context.Context,
 	req *types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error) {
-	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "prepare_proposal"))()
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "prepare_proposal", "type", "sync"))()
 	return app.appConn.PrepareProposal(ctx, req)
 }
 
 func (app *appConnConsensus) ProcessProposal(ctx context.Context, req *types.RequestProcessProposal) (*types.ResponseProcessProposal, error) {
-	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "process_proposal"))()
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "process_proposal", "type", "sync"))()
 	return app.appConn.ProcessProposal(ctx, req)
 }
 
 func (app *appConnConsensus) ExtendVote(ctx context.Context, req *types.RequestExtendVote) (*types.ResponseExtendVote, error) {
-	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "extend_vote"))()
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "extend_vote", "type", "sync"))()
 	return app.appConn.ExtendVote(ctx, req)
 }
 
 func (app *appConnConsensus) VerifyVoteExtension(ctx context.Context, req *types.RequestVerifyVoteExtension) (*types.ResponseVerifyVoteExtension, error) {
-	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "verify_vote_extension"))()
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "verify_vote_extension", "type", "sync"))()
 	return app.appConn.VerifyVoteExtension(ctx, req)
 }
 
 func (app *appConnConsensus) FinalizeBlock(ctx context.Context, req *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
-	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "finalize_block"))()
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "finalize_block", "type", "sync"))()
 	return app.appConn.FinalizeBlock(ctx, req)
 }
 
 func (app *appConnConsensus) Commit(ctx context.Context) (*types.ResponseCommit, error) {
-	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "commit"))()
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "commit", "type", "sync"))()
 	return app.appConn.Commit(ctx, &types.RequestCommit{})
 }
 
@@ -133,7 +133,7 @@ func (app *appConnMempool) Error() error {
 }
 
 func (app *appConnMempool) Flush(ctx context.Context) error {
-	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "flush"))()
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "flush", "type", "sync"))()
 	return app.appConn.Flush(ctx)
 }
 
@@ -167,17 +167,17 @@ func (app *appConnQuery) Error() error {
 }
 
 func (app *appConnQuery) Echo(ctx context.Context, msg string) (*types.ResponseEcho, error) {
-	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "echo"))()
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "echo", "type", "sync"))()
 	return app.appConn.Echo(ctx, msg)
 }
 
 func (app *appConnQuery) Info(ctx context.Context, req *types.RequestInfo) (*types.ResponseInfo, error) {
-	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "info"))()
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "info", "type", "sync"))()
 	return app.appConn.Info(ctx, req)
 }
 
 func (app *appConnQuery) Query(ctx context.Context, req *types.RequestQuery) (*types.ResponseQuery, error) {
-	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "query"))()
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "query", "type", "sync"))()
 	return app.appConn.Query(ctx, req)
 }
 
@@ -201,22 +201,22 @@ func (app *appConnSnapshot) Error() error {
 }
 
 func (app *appConnSnapshot) ListSnapshots(ctx context.Context, req *types.RequestListSnapshots) (*types.ResponseListSnapshots, error) {
-	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "list_snapshots"))()
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "list_snapshots", "type", "sync"))()
 	return app.appConn.ListSnapshots(ctx, req)
 }
 
 func (app *appConnSnapshot) OfferSnapshot(ctx context.Context, req *types.RequestOfferSnapshot) (*types.ResponseOfferSnapshot, error) {
-	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "offer_snapshot"))()
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "offer_snapshot", "type", "sync"))()
 	return app.appConn.OfferSnapshot(ctx, req)
 }
 
 func (app *appConnSnapshot) LoadSnapshotChunk(ctx context.Context, req *types.RequestLoadSnapshotChunk) (*types.ResponseLoadSnapshotChunk, error) {
-	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "load_snapshot_chunk"))()
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "load_snapshot_chunk", "type", "sync"))()
 	return app.appConn.LoadSnapshotChunk(ctx, req)
 }
 
 func (app *appConnSnapshot) ApplySnapshotChunk(ctx context.Context, req *types.RequestApplySnapshotChunk) (*types.ResponseApplySnapshotChunk, error) {
-	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "apply_snapshot_chunk"))()
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "apply_snapshot_chunk", "type", "sync"))()
 	return app.appConn.ApplySnapshotChunk(ctx, req)
 }
 

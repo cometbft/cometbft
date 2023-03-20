@@ -8,6 +8,7 @@ option go_package = "github.com/cometbft/cometbft/abci/types";
 import "tendermint/crypto/proof.proto";
 import "tendermint/crypto/keys.proto";
 import "tendermint/types/params.proto";
+import "tendermint/types/validator.proto";
 import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";
 
@@ -434,18 +435,22 @@ message ValidatorUpdate {
 
 message VoteInfo {
   Validator validator         = 1 [(gogoproto.nullable) = false];
-  bool      signed_last_block = 2;
+  tendermint.types.BlockIDFlag block_id_flag = 3;
+
+  reserved 2; // signed_last_block
 }
 
 message ExtendedVoteInfo {
   // The validator that sent the vote.
   Validator validator = 1 [(gogoproto.nullable) = false];
-  // Indicates whether the validator signed the last block, allowing for rewards based on validator availability.
-  bool signed_last_block = 2;
   // Non-deterministic extension provided by the sending validator's application.
   bytes vote_extension = 3;
   // Vote extension signature created by CometBFT
   bytes extension_signature = 4;
+  // block_id_flag indicates whether the validator voted for a block, nil, or did not vote at all
+  tendermint.types.BlockIDFlag block_id_flag = 5;
+
+  reserved 2; // signed_last_block
 }
 
 enum MisbehaviorType {

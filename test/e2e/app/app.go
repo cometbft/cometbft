@@ -141,17 +141,29 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 	if len(req.AppStateBytes) > 0 {
 		err = app.state.Import(0, req.AppStateBytes)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 	}
+	app.logger.Info("setting ChainID in app_state", "chainId", req.ChainId)
 	app.state.Set(prefixReservedKey+suffixChainID, req.ChainId)
+	app.logger.Info("setting VoteExtensionsHeight in app_state", "height", req.ConsensusParams.Abci.VoteExtensionsEnableHeight)
 	app.state.Set(prefixReservedKey+suffixVoteExtHeight, strconv.FormatInt(req.ConsensusParams.Abci.VoteExtensionsEnableHeight, 10))
+	app.logger.Info("setting initial height in app_state", "initial_height", req.InitialHeight)
 	app.state.Set(prefixReservedKey+suffixInitialHeight, strconv.FormatInt(req.InitialHeight, 10))
+	//Get validators from genesis
+	if req.Validators != nil {
+		for _, val := range req.Validators {
+			val := val
+			if err := app.storeValidator(&val); err != nil {
+				return nil, err
+			}
+		}
+	}
 	resp := &abci.ResponseInitChain{
 		AppHash: app.state.Hash,
 	}
 	if resp.Validators, err = app.validatorUpdates(0); err != nil {
-		panic(err)
+		return nil, err
 	}
 	return resp, nil
 }
@@ -522,6 +534,24 @@ func (app *Application) checkHeightAndExtensions(isPrepareProcessProposal bool, 
 	return appHeight, voteExtHeight != 0 && currentHeight >= voteExtHeight
 }
 
+func (app *Application) storeValidator(valUpdate *abci.ValidatorUpdate) error {
+	// Store validator data to verify extensions
+	pubKey, err := cryptoenc.PubKeyFromProto(valUpdate.PubKey)
+	if err != nil {
+		return err
+	}
+	addr := pubKey.Address().String()
+	if valUpdate.Power > 0 {
+		pubKeyBytes, err := valUpdate.PubKey.Marshal()
+		if err != nil {
+			return err
+		}
+		app.logger.Info("setting validator in app_state", "addr", addr)
+		app.state.Set(prefixReservedKey+addr, hex.EncodeToString(pubKeyBytes))
+	}
+	return nil
+}
+
 // validatorUpdates generates a validator set update.
 func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, error) {
 	updates := app.cfg.ValidatorUpdates[fmt.Sprintf("%v", height)]
@@ -538,19 +568,8 @@ func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, 
 		}
 		valUpdate := abci.UpdateValidator(keyBytes, int64(power), app.cfg.KeyType)
 		valUpdates = append(valUpdates, valUpdate)
-
-		// Store validator data to verify extensions
-		pubKey, err := cryptoenc.PubKeyFromProto(valUpdate.PubKey)
-		if err != nil {
+		if err := app.storeValidator(&valUpdate); err != nil {
 			return nil, err
-		}
-		addr := pubKey.Address().String()
-		if power > 0 {
-			pubKeyBytes, err := valUpdate.PubKey.Marshal()
-			if err != nil {
-				return nil, err
-			}
-			app.state.Set(prefixReservedKey+addr, hex.EncodeToString(pubKeyBytes))
 		}
 	}
 	return valUpdates, nil
@@ -568,30 +587,48 @@ func parseTx(tx []byte) (string, string, error) {
 	return string(parts[0]), string(parts[1]), nil
 }
 
-func (app *Application) verifyAndSum(areExtensionsEnabled bool, currentHeight int64, extCommit *abci.ExtendedCommitInfo, callsite string) (int64, error) {
+func (app *Application) verifyAndSum(
+	areExtensionsEnabled bool,
+	currentHeight int64,
+	extCommit *abci.ExtendedCommitInfo,
+	callsite string,
+) (int64, error) {
 	var sum int64
 	var extCount int
 	for _, vote := range extCommit.Votes {
-		if !vote.SignedLastBlock {
+		if vote.BlockIdFlag == cmtproto.BlockIDFlagUnknown || vote.BlockIdFlag > cmtproto.BlockIDFlagNil {
+			return 0, fmt.Errorf("vote with bad blockID flag value at height %d; blockID flag %d", currentHeight, vote.BlockIdFlag)
+		}
+		if vote.BlockIdFlag == cmtproto.BlockIDFlagAbsent || vote.BlockIdFlag == cmtproto.BlockIDFlagNil {
+			if len(vote.VoteExtension) != 0 {
+				return 0, fmt.Errorf("non-empty vote extension at height %d, for a vote with blockID  flag %d",
+					currentHeight, vote.BlockIdFlag)
+			}
+			if len(vote.ExtensionSignature) != 0 {
+				return 0, fmt.Errorf("non-empty vote extension signature at height %d, for a vote with blockID flag %d",
+					currentHeight, vote.BlockIdFlag)
+			}
+			// Only interested in votes that can have extensions
 			continue
 		}
 		if !areExtensionsEnabled {
 			if len(vote.VoteExtension) != 0 {
-				return 0, fmt.Errorf("non-empty vote extension at height %d, which has extensions disabled", currentHeight)
+				return 0, fmt.Errorf("non-empty vote extension at height %d, which has extensions disabled",
+					currentHeight)
+			}
+			if len(vote.ExtensionSignature) != 0 {
+				return 0, fmt.Errorf("non-empty vote extension signature at height %d, which has extensions disabled",
+					currentHeight)
 			}
 			continue
 		}
 		if len(vote.VoteExtension) == 0 {
-			app.logger.Info("received empty vote extension form %X at height %d (extensions enabled), must represent nil-precommit",
-				vote.Validator, currentHeight)
-			if len(vote.ExtensionSignature) != 0 {
-				return 0, errors.New("non-empty vote extension signature with empty vote extension")
-			}
-			continue
+			return 0, fmt.Errorf("received empty vote extension from %X at height %d (extensions enabled); "+
+				"e2e app's logic does not allow it", vote.Validator, currentHeight)
 		}
 		// Vote extension signatures are always provided. Apps can use them to verify the integrity of extensions
 		if len(vote.ExtensionSignature) == 0 {
-			return 0, errors.New("non-empty vote extension with empty signature")
+			return 0, fmt.Errorf("empty vote extension signature at height %d (extensions enabled)", currentHeight)
 		}
 
 		// Reconstruct vote extension's signed bytes...

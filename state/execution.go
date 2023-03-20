@@ -11,6 +11,7 @@ import (
 	"github.com/cometbft/cometbft/libs/fail"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/mempool"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 )
@@ -421,8 +422,8 @@ func buildLastCommitInfo(block *types.Block, store Store, initialHeight int64) a
 	for i, val := range lastValSet.Validators {
 		commitSig := block.LastCommit.Signatures[i]
 		votes[i] = abci.VoteInfo{
-			Validator:       types.TM2PB.Validator(val),
-			SignedLastBlock: commitSig.BlockIDFlag != types.BlockIDFlagAbsent,
+			Validator:   types.TM2PB.Validator(val),
+			BlockIdFlag: cmtproto.BlockIDFlag(commitSig.BlockIDFlag),
 		}
 	}
 
@@ -494,7 +495,7 @@ func buildExtendedCommitInfo(ec *types.ExtendedCommit, store Store, initialHeigh
 
 		votes[i] = abci.ExtendedVoteInfo{
 			Validator:          types.TM2PB.Validator(val),
-			SignedLastBlock:    ecs.BlockIDFlag != types.BlockIDFlagAbsent,
+			BlockIdFlag:        cmtproto.BlockIDFlag(ecs.BlockIDFlag),
 			VoteExtension:      ext,
 			ExtensionSignature: extSig,
 		}

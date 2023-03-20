@@ -250,7 +250,8 @@ historical commits and potential optimizations, are discussed in detail in [RFC-
 ## Handling upgrades to ABCI 2.0 
 
 If applications upgrade to ABCI 2.0, CometBFT internally ensures that the [application setup](./abci%2B%2B_app_requirements.md#application-configuration-required-to-switch-to-abci-20) is reflected in its operation. 
-CometBFT retrieves from the application configuration the value of *h<sub>e</sub>*, the height at which vote extensions are required for consensus to proceed, and uses it to determine the data it stores and data it sends to a peer 
+CometBFT retrieves from the application configuration the value of `VoteExtensionsEnableHeight`( *h<sub>e</sub>*,), 
+the height at which vote extensions are required for consensus to proceed, and uses it to determine the data it stores and data it sends to a peer 
 that is catching up.
 
 Namely, upon saving the block for a given height *h* in the block store at decision time

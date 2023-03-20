@@ -51,6 +51,7 @@ require (
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
+	github.com/tendermint/go-amino v0.16.0
 	github.com/vektra/mockery/v2 v2.22.1
 	golang.org/x/sync v0.1.0
 	gonum.org/v1/gonum v0.12.0

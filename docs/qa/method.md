@@ -1,6 +1,8 @@
 ---
 order: 1
-title: Method
+parent:
+  title: Method
+  order: 1
 ---
 
 # Method
@@ -106,11 +108,11 @@ The CometBFT team should improve it at every iteration to increase the amount of
 3. File `report.txt` contains an unordered list of experiments with varying concurrent connections and transaction rate
     * If you are looking for the saturation point
         * Create files `report01.txt`, `report02.txt`, `report04.txt` and, for each experiment in file `report.txt`,
-          copy its related lines to the filename that matches the number of connections, for example    
+          copy its related lines to the filename that matches the number of connections, for example
           ```bash
           for cnum in 1 2 3 4; do echo "$cnum"; grep "Connections: $cnum" results/report.txt -B 2 -A 10 > results/report$cnum.txt;  done
           ```
-          
+
         * Sort the experiments in `report01.txt` in ascending tx rate order. Likewise for `report02.txt` and `report04.txt`.
     * Otherwise just keep `report.txt`, and skip step 4.
 4. Generate file `report_tabbed.txt` by showing the contents `report01.txt`, `report02.txt`, `report04.txt` side by side
@@ -229,7 +231,7 @@ This section explains how the tests were carried out for reproducibility purpose
 7. On a different shell,
     * run `make runload ROTATE_CONNECTIONS=X ROTATE_TX_RATE=Y`
     * `X` and `Y` should reflect a load below the saturation point (see, e.g.,
-      [this paragraph](./v034/README.md#finding-the-saturation-point) for further info)
+      [this paragraph](CometBFT-QA-34.md#finding-the-saturation-point) for further info)
 8. Run `make rotate` to start the script that creates the ephemeral nodes, and kills them when they are caught up.
     * WARNING: If you run this command from your laptop, the laptop needs to be up and connected for full length
       of the experiment.

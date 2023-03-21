@@ -94,7 +94,7 @@ type Metrics struct {
 	// VoteExtensionReceiveCount is the number of vote extensions received by this
 	// node. The metric is annotated by the status of the vote extension from the
 	// application, either 'accepted' or 'rejected'.
-	VoteExtensionReceiveCount metrics.Counter
+	VoteExtensionReceiveCount metrics.Counter `metrics_labels:"status"`
 
 	// ProposalReceiveCount is the total number of proposals received by this node
 	// since process start.

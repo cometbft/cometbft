@@ -212,11 +212,8 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		return nil, fmt.Errorf("unexpected mode %q", node.Mode)
 	}
 
-	if node.BlockSync == "" {
-		cfg.BlockSyncMode = false
-	} else {
-		cfg.BlockSync.Version = node.BlockSync
-	}
+	cfg.BlockSyncMode = true
+	cfg.BlockSync.Version = "v0"
 
 	if node.StateSync {
 		cfg.StateSync.Enable = true

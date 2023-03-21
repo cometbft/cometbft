@@ -517,9 +517,9 @@ then _p_ locks _v_  and sends a Precommit message in the following way
 1. _p_ sets _lockedValue_ and _validValue_ to _v_, and sets _lockedRound_ and _validRound_ to _r_
 2. _p_'s CometBFT calls `RequestExtendVote` with _id(v)_ (`RequestExtendVote.hash`). The call is synchronous.
 3. The Application returns an array of bytes, `ResponseExtendVote.extension`, which is not interpreted by the consensus algorithm.
-4. _p_ includes `ResponseExtendVote.extension` in a field of type
+4. _p_ sets `ResponseExtendVote.extension` as the value of the `extension` field of type
    [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension),
-   it then populates the other fields in [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension),
+   populates the other fields in [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension),
    and signs the populated data structure.
 5. _p_ constructs and signs the [CanonicalVote](../core/data_structures.md#canonicalvote) structure.
 6. _p_ constructs the Precommit message (i.e. [Vote](../core/data_structures.md#vote) structure)

@@ -99,8 +99,10 @@ func InjectEvidence(ctx context.Context, r *rand.Rand, testnet *e2e.Testnet, amo
 				ctx, privVals, evidenceHeight, valSet, testnet.Name, blockRes.Block.Time,
 			)
 			if dve.VoteA.Height < testnet.VoteExtensionsEnableHeight {
-				dve.VoteA.StripExtension()
-				dve.VoteB.StripExtension()
+				dve.VoteA.Extension = nil
+				dve.VoteA.ExtensionSignature = nil
+				dve.VoteB.Extension = nil
+				dve.VoteB.ExtensionSignature = nil
 			}
 			ev = dve
 		}
@@ -172,8 +174,8 @@ func generateLightClientAttackEvidence(
 
 	// create a commit for the forged header
 	blockID := makeBlockID(header.Hash(), 1000, []byte("partshash"))
-	voteSet := types.NewExtendedVoteSet(chainID, forgedHeight, 0, cmtproto.SignedMsgType(2), conflictingVals)
-	ec, err := test.MakeExtendedCommitFromVoteSet(blockID, voteSet, pv, forgedTime)
+	voteSet := types.NewVoteSet(chainID, forgedHeight, 0, cmtproto.SignedMsgType(2), conflictingVals)
+	commit, err := test.MakeCommitFromVoteSet(blockID, voteSet, pv, forgedTime)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +184,7 @@ func generateLightClientAttackEvidence(
 		ConflictingBlock: &types.LightBlock{
 			SignedHeader: &types.SignedHeader{
 				Header: header,
-				Commit: ec.ToCommit(),
+				Commit: commit,
 			},
 			ValidatorSet: conflictingVals,
 		},

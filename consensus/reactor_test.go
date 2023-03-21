@@ -375,21 +375,26 @@ func TestSwitchToConsensusVoteExtensions(t *testing.T) {
 			} else {
 				voteSet = types.NewVoteSet(cs.state.ChainID, testCase.storedHeight, 0, cmtproto.PrecommitType, cs.state.Validators)
 			}
-			signedVote := signVote(validator, cmtproto.PrecommitType, propBlock.Hash(), blockParts.Header())
+			signedVote := signVote(validator, cmtproto.PrecommitType, propBlock.Hash(), blockParts.Header(), testCase.includeExtensions)
 
-			if !testCase.includeExtensions {
-				signedVote.Extension = nil
-				signedVote.ExtensionSignature = nil
+			var veHeight int64
+			if testCase.includeExtensions {
+				require.NotNil(t, signedVote.ExtensionSignature)
+				veHeight = testCase.storedHeight
+			} else {
+				require.Nil(t, signedVote.Extension)
+				require.Nil(t, signedVote.ExtensionSignature)
 			}
 
 			added, err := voteSet.AddVote(signedVote)
 			require.NoError(t, err)
 			require.True(t, added)
 
+			veHeightParam := types.ABCIParams{VoteExtensionsEnableHeight: veHeight}
 			if testCase.includeExtensions {
-				cs.blockStore.SaveBlockWithExtendedCommit(propBlock, blockParts, voteSet.MakeExtendedCommit())
+				cs.blockStore.SaveBlockWithExtendedCommit(propBlock, blockParts, voteSet.MakeExtendedCommit(veHeightParam))
 			} else {
-				cs.blockStore.SaveBlock(propBlock, blockParts, voteSet.MakeExtendedCommit().ToCommit())
+				cs.blockStore.SaveBlock(propBlock, blockParts, voteSet.MakeExtendedCommit(veHeightParam).ToCommit())
 			}
 			reactor := NewReactor(
 				cs,

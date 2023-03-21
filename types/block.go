@@ -763,9 +763,39 @@ func (ecs ExtendedCommitSig) ValidateBasic() error {
 
 // EnsureExtensions validates that a vote extensions signature is present for
 // this ExtendedCommitSig.
-func (ecs ExtendedCommitSig) EnsureExtension() error {
-	if ecs.BlockIDFlag == BlockIDFlagCommit && len(ecs.ExtensionSignature) == 0 {
-		return errors.New("vote extension data is missing")
+func (ecs ExtendedCommitSig) EnsureExtension(extEnabled bool) error {
+	if extEnabled {
+		if ecs.BlockIDFlag == BlockIDFlagCommit && len(ecs.ExtensionSignature) == 0 {
+			return fmt.Errorf("vote extension signature is missing; validator addr %s, timestamp %v",
+				ecs.ValidatorAddress.String(),
+				ecs.Timestamp,
+			)
+		}
+		if ecs.BlockIDFlag != BlockIDFlagCommit && len(ecs.Extension) != 0 {
+			return fmt.Errorf("non-commit vote extension present; validator addr %s, timestamp %v",
+				ecs.ValidatorAddress.String(),
+				ecs.Timestamp,
+			)
+		}
+		if ecs.BlockIDFlag != BlockIDFlagCommit && len(ecs.ExtensionSignature) != 0 {
+			return fmt.Errorf("non-commit vote extension signature present; validator addr %s, timestamp %v",
+				ecs.ValidatorAddress.String(),
+				ecs.Timestamp,
+			)
+		}
+	} else {
+		if len(ecs.Extension) != 0 {
+			return fmt.Errorf("vote extension present but extensions disabled; validator addr %s, timestamp %v",
+				ecs.ValidatorAddress.String(),
+				ecs.Timestamp,
+			)
+		}
+		if len(ecs.ExtensionSignature) != 0 {
+			return fmt.Errorf("vote extension signature present but extensions disabled; validator addr %s, timestamp %v",
+				ecs.ValidatorAddress.String(),
+				ecs.Timestamp,
+			)
+		}
 	}
 	return nil
 }
@@ -1036,15 +1066,6 @@ func (ec *ExtendedCommit) ToExtendedVoteSet(chainID string, vals *ValidatorSet) 
 	return voteSet
 }
 
-// ToVoteSet constructs a VoteSet from the Commit and validator set.
-// Panics if signatures from the ExtendedCommit can't be added to the voteset.
-// Inverse of VoteSet.MakeExtendedCommit().
-func (ec *ExtendedCommit) ToVoteSet(chainID string, vals *ValidatorSet) *VoteSet {
-	voteSet := NewVoteSet(chainID, ec.Height, ec.Round, cmtproto.PrecommitType, vals)
-	ec.addSigsToVoteSet(voteSet)
-	return voteSet
-}
-
 // addSigsToVoteSet adds all of the signature to voteSet.
 func (ec *ExtendedCommit) addSigsToVoteSet(voteSet *VoteSet) {
 	for idx, ecs := range ec.ExtendedSignatures {
@@ -1085,28 +1106,13 @@ func (commit *Commit) ToVoteSet(chainID string, vals *ValidatorSet) *VoteSet {
 
 // EnsureExtensions validates that a vote extensions signature is present for
 // every ExtendedCommitSig in the ExtendedCommit.
-func (ec *ExtendedCommit) EnsureExtensions() error {
+func (ec *ExtendedCommit) EnsureExtensions(extEnabled bool) error {
 	for _, ecs := range ec.ExtendedSignatures {
-		if err := ecs.EnsureExtension(); err != nil {
+		if err := ecs.EnsureExtension(extEnabled); err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-// StripExtensions removes all VoteExtension data from an ExtendedCommit. This
-// is useful when dealing with an ExendedCommit but vote extension data is
-// expected to be absent.
-func (ec *ExtendedCommit) StripExtensions() bool {
-	stripped := false
-	for idx := range ec.ExtendedSignatures {
-		if len(ec.ExtendedSignatures[idx].Extension) > 0 || len(ec.ExtendedSignatures[idx].ExtensionSignature) > 0 {
-			stripped = true
-		}
-		ec.ExtendedSignatures[idx].Extension = nil
-		ec.ExtendedSignatures[idx].ExtensionSignature = nil
-	}
-	return stripped
 }
 
 // ToCommit converts an ExtendedCommit to a Commit by removing all vote

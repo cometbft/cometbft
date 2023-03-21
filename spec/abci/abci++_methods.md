@@ -517,17 +517,19 @@ then _p_ locks _v_  and sends a Precommit message in the following way
 1. _p_ sets _lockedValue_ and _validValue_ to _v_, and sets _lockedRound_ and _validRound_ to _r_
 2. _p_'s CometBFT calls `RequestExtendVote` with _id(v)_ (`RequestExtendVote.hash`). The call is synchronous.
 3. The Application returns an array of bytes, `ResponseExtendVote.extension`, which is not interpreted by the consensus algorithm.
-4. _p_ includes `ResponseExtendVote.extension` in a field of type [CanonicalVoteExtension](#canonicalvoteextension),
-   it then populates the other fields in [CanonicalVoteExtension](#canonicalvoteextension), and signs the populated
-   data structure.
+4. _p_ includes `ResponseExtendVote.extension` in a field of type
+   [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension),
+   it then populates the other fields in [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension),
+   and signs the populated data structure.
 5. _p_ constructs and signs the [CanonicalVote](../core/data_structures.md#canonicalvote) structure.
 6. _p_ constructs the Precommit message (i.e. [Vote](../core/data_structures.md#vote) structure)
-   using [CanonicalVoteExtension](#canonicalvoteextension) and [CanonicalVote](../core/data_structures.md#canonicalvote).
+   using [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension)
+   and [CanonicalVote](../core/data_structures.md#canonicalvote).
 7. _p_ broadcasts the Precommit message.
 
 In the cases when _p_ is to broadcast `precommit nil` messages (either _2f+1_ `prevote nil` messages received,
 or _timeoutPrevote_ triggered), _p_'s CometBFT does **not** call `RequestExtendVote` and will not include
-a [CanonicalVoteExtension](#canonicalvoteextension) field in the `precommit nil` message.
+a [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension) field in the `precommit nil` message.
 
 ### VerifyVoteExtension
 

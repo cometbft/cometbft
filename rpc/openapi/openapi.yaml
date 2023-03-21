@@ -62,13 +62,7 @@ info:
 
         echo '{ "jsonrpc": "2.0","method": "subscribe","id": 0,"params": {"query": "tm.event='"'NewBlock'"'"} }' | websocat -n -t ws://127.0.0.1:26657/websocket
 
-<<<<<<< HEAD
-        ws ws://localhost:26657/websocket
-        > { "jsonrpc": "2.0", "method": "subscribe", "params": ["tm.event='NewBlock'"], "id": 1 }
   version: "v0.37"
-=======
-  version: "main"
->>>>>>> 3cd103780 (Fixes for OpenAPI (RPC) documents and QA docs restructuring (#472))
   license:
     name: Apache 2.0
     url: https://github.com/cometbft/cometbft/blob/v0.37.x/LICENSE
@@ -109,15 +103,10 @@ paths:
         (https://github.com/tendermint/tendermint/issues/3322)
 
 
-<<<<<<< HEAD
         Please refer to
         https://docs.cometbft.com/v0.37/core/using-cometbft.html#formatting
         for formatting/encoding rules.
-=======
-        Please refer to [formatting/encoding rules](https://docs.cometbft.com/main/core/using-cometbft.html#formatting)
-        for additional details
 
->>>>>>> 3cd103780 (Fixes for OpenAPI (RPC) documents and QA docs restructuring (#472))
       parameters:
         - in: query
           name: tx
@@ -159,15 +148,10 @@ paths:
         (https://github.com/tendermint/tendermint/issues/3322)
         3. node can be offline
 
-<<<<<<< HEAD
         Please refer to
         https://docs.cometbft.com/v0.37/core/using-cometbft.html#formatting
         for formatting/encoding rules.
-=======
-        Please refer to [formatting/encoding rules](https://docs.cometbft.com/main/core/using-cometbft.html#formatting)
-        for additional details
 
->>>>>>> 3cd103780 (Fixes for OpenAPI (RPC) documents and QA docs restructuring (#472))
       parameters:
         - in: query
           name: tx
@@ -207,15 +191,10 @@ paths:
         If CheckTx or DeliverTx fail, no error will be returned, but the returned result
         will contain a non-OK ABCI code.
 
-<<<<<<< HEAD
         Please refer to
         https://docs.cometbft.com/v0.37/core/using-cometbft.html#formatting
         for formatting/encoding rules.
-=======
-        Please refer to [formatting/encoding rules](https://docs.cometbft.com/main/core/using-cometbft.html#formatting)
-        for additional details
 
->>>>>>> 3cd103780 (Fixes for OpenAPI (RPC) documents and QA docs restructuring (#472))
       parameters:
         - in: query
           name: tx
@@ -246,14 +225,9 @@ paths:
       description: |
         The transaction won't be added to the mempool.
 
-<<<<<<< HEAD
         Please refer to
         https://docs.cometbft.com/v0.37/core/using-cometbft.html#formatting
         for formatting/encoding rules.
-=======
-        Please refer to [formatting/encoding rules](https://docs.cometbft.com/main/core/using-cometbft.html#formatting)
-        for additional details
->>>>>>> 3cd103780 (Fixes for OpenAPI (RPC) documents and QA docs restructuring (#472))
 
         Upon success, the `Cache-Control` header will be set with the default
         maximum age.

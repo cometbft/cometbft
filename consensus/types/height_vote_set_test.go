@@ -11,6 +11,7 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/stretchr/testify/require"
 )
 
 var config *cfg.Config // NOTE: must be reset for each _test.go file
@@ -52,6 +53,22 @@ func TestPeerCatchupRounds(t *testing.T) {
 	if !added || err != nil {
 		t.Error("Expected to successfully add vote from another peer")
 	}
+}
+func TestInconsistentExtensionData(t *testing.T) {
+	valSet, privVals := types.RandValidatorSet(10, 1)
+
+	hvsE := NewExtendedHeightVoteSet(test.DefaultTestChainID, 1, valSet)
+	voteNoExt := makeVoteHR(t, 1, 0, 20, privVals)
+	voteNoExt.Extension, voteNoExt.ExtensionSignature = nil, nil
+	require.Panics(t, func() {
+		hvsE.AddVote(voteNoExt, "peer1", false)
+	})
+
+	hvsNoE := NewHeightVoteSet(test.DefaultTestChainID, 1, valSet)
+	voteExt := makeVoteHR(t, 1, 0, 20, privVals)
+	require.Panics(t, func() {
+		hvsNoE.AddVote(voteExt, "peer1", true)
+	})
 
 }
 

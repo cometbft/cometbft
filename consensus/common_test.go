@@ -139,7 +139,7 @@ func signVote(vs *validatorStub, voteType cmtproto.SignedMsgType, hash []byte, h
 		if voteType != cmtproto.PrecommitType {
 			panic(fmt.Errorf("vote type is not precommit but extensions enabled"))
 		}
-		if voteType == cmtproto.PrecommitType && !(len(hash) == 0 && header.IsZero()) {
+		if len(hash) != 0 || !header.IsZero() {
 			ext = []byte("extension")
 		}
 	}

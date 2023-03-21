@@ -191,14 +191,3 @@ func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) bool {
 	}
 	return true
 }
-
-//nolint:unused,deadcode
-func lookForHeight(conditions []syntax.Condition) (int64, bool) {
-	for _, c := range conditions {
-		if c.Tag == types.BlockHeightKey && c.Op == syntax.TEq {
-			return int64(c.Arg.Number()), true
-		}
-	}
-
-	return 0, false
-}

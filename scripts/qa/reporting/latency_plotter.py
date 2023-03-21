@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-release = 'v0.37.x-alpha3'
+release = 'abci++vef_Smoke'
 
 #FIXME: figure out in which timezone prometheus was running to adjust to UTC.
 tz = pytz.timezone('America/Sao_Paulo')

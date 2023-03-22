@@ -118,7 +118,10 @@ Let us now examine the grammar line by line, providing further details.
   to provide the Application with all the snapshots needed, in order to reconstruct the state locally.
   A successful attempt must provide at least one chunk via `ApplySnapshotChunk`.
   At the end of a successful attempt, CometBFT calls `Info` to make sure the reconstructed state's
-  _AppHash_ matches the one in the block header at the corresponding height.
+  _AppHash_ matches the one in the block header at the corresponding height. Note that the state 
+  of  the application does not contain vote extensions itself. The application can rely on 
+  [CometBFT to ensure](./../../docs/rfc/rfc-100-abci-vote-extension-propag.md#base-implementation-persist-and-propagate-extended-commit-history)
+  the node has all the relevant data to proceed with the execution beyond this point. 
 
 >```abnf
 >state-sync          = *state-sync-attempt success-sync info
@@ -224,3 +227,42 @@ As for the new methods:
 Finally, `Commit`, which is kept in ABCI++, no longer returns the `AppHash`. It is now up to
 `FinalizeBlock` to do so. Thus, a slight refactoring of the old `Commit` implementation will be
 needed to move the return of `AppHash` to `FinalizeBlock`.
+
+## Accomodating for vote extensions
+
+In a manner transparent to the application, CometBFT ensures the node is provided with all
+the data it needs to participate in consensus. 
+
+In the case of recovering from a crash, or joining the network via state sync, CometBFT will make
+sure the node acquires the necessary vote extensions before switching to consensus. 
+
+If a node is already in consensus but falls behind, during catch-up, CometBFT will provide the node with 
+vote extensions from past heights by retrieving the extensions within `ExtendedCommit` for old heights that it had previously stored.
+
+We realize this is sub-optimal due to the increase in storage needed to store the extensions, we are 
+working on an optimization of this implementation which should alleviate this concern.
+However, the application can use the existing `retain_height` parameter to decide how much
+history it wants to keep, just as is done with the block history. The network-wide implications
+of the usage of `retain_height` stay the same.
+The decision to store 
+historical commits and potential optimizations, are discussed in detail in [RFC-100](./../../docs/rfc/rfc-100-abci-vote-extension-propag.md#current-limitations-and-possible-implementations)
+
+## Handling upgrades to ABCI 2.0 
+
+If applications upgrade to ABCI 2.0, CometBFT internally ensures that the [application setup](./abci%2B%2B_app_requirements.md#application-configuration-required-to-switch-to-abci-20) is reflected in its operation. 
+CometBFT retrieves from the application configuration the value of `VoteExtensionsEnableHeight`( *h<sub>e</sub>*,), 
+the height at which vote extensions are required for consensus to proceed, and uses it to determine the data it stores and data it sends to a peer 
+that is catching up.
+
+Namely, upon saving the block for a given height *h* in the block store at decision time
+- if *h ≥ h<sub>e</sub>*, the corresponding extended commit that was used to decide locally is saved as well
+- if *h < h<sub>e</sub>*, there are no changes to the data saved
+
+In the catch-up mechanism, when a node *f* realizes that another peer is at height *h<sub>p</sub>*, which is more than 2 heights behind,
+- if *h<sub>p</sub> ≥ h<sub>e</sub>*, *f* uses the extended commit to
+      reconstruct the precommit votes with their corresponding extensions
+- if *h<sub>p</sub> < h<sub>e</sub>*, *f* uses the canonical commit to reconstruct the precommit votes,
+      as done for ABCI 1.0 and earlier.
+      
+
+

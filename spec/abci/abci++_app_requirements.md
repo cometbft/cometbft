@@ -5,6 +5,32 @@ title: Requirements for the Application
 
 # Requirements for the Application
 
+- [Formal Requirements](#formal-requirements)
+- [Managing the Application state and related topics](#managing-the-application-state-and-related-topics)
+  - [Connection State](#connection-state)
+    - [Concurrency](#concurrency)
+    - [Finalize Block](#finalizeblock)
+    - [Commit](#commit)
+    - [Candidate States](#candidate-states)
+  - [States and ABCI++ Connections](#states-and-abci%2B%2B-connections) 
+    - [Consensus Connection](#consensus-connection)
+    - [Mempool Connection](#mempool-connection)
+    - [Info/Query Connection](#infoquery-connection)
+    - [Snapshot Connection](#snapshot-connection)
+  - [Transaction Results](#transaction-results)
+  - [Updating the Validator Set](#updating-the-validator-set)
+  - [Consensus Parameters](#consensus-parameters)
+    - [List of Parameters](#list-of-parameters)
+    - [Updating Consensus Parameters](#updating-consensus-parameters)
+  - [Query](#query)
+    - [Query Proofs](#query-proofs)
+    - [Peer Filtering](#peer-filtering)
+    - [Paths](#paths)
+  - [Crash Recovery](#crash-recovery)
+  - [State Sync](#state-sync)
+- [Application configuration required to switch to ABCI2.0](#application-configuration-required-to-switch-to-abci-20)
+
+
 ## Formal Requirements
 
 This section specifies what CometBFT expects from the Application. It is structured as a set
@@ -1009,6 +1035,47 @@ from the genesis file and light client RPC servers. It also calls `Info` to veri
   current height's block header
 
 Once the state machine has been restored and CometBFT has gathered this additional
-information, it transitions to block sync (if enabled) to fetch any remaining blocks up the chain
-head, and then transitions to regular consensus operation. At this point the node operates like
-any other node, apart from having a truncated block history at the height of the restored snapshot.
+information, it transitions to consensus. As of ABCI 2.0, CometBFT ensures the neccessary conditions
+to switch are met [RFC-100](./../../docs/rfc/rfc-100-abci-vote-extension-propag.md#base-implementation-persist-and-propagate-extended-commit-history).
+From the application's point of view, these operations are transparent, unless the application has just upgraded to ABCI 2.0. 
+In that case, the application needs to be properly configured and aware of certain constraints in terms of when
+to provide vote extensions. More details can be found in the section below. 
+
+Once a node switches to consensus, it operates like any other node, apart from having a truncated block history at the height of the restored snapshot.
+
+## Application configuration required to switch to ABCI 2.0
+
+Introducing vote extensions requires changes to the configuration of the application.
+
+First of all, switching to a version of CometBFT with vote extensions, requires a coordinated upgrade. 
+For a detailed description on the upgrade path, please refer to the corresponding 
+[section](./../../docs/rfc/rfc-100-abci-vote-extension-propag.md#upgrade-path) in RFC-100.
+
+There is a newly introduced [**consensus parameter**](./abci%2B%2B_app_requirements.md#abciparamsvoteextensionsenableheight): `VoteExtensionsEnableHeight`. 
+This parameter represents the height at which vote extensions are 
+required for consensus to proceed, with 0 being the default value (no vote extensions).
+A chain can enable vote extensions either:
+* at genesis by setting `VoteExtensionsEnableHeight` to be equal, e.g., to the `InitialHeight`
+* or via the application logic by changing the `ConsensusParam` to configure the
+`VoteExtensionsEnableHeight`.
+
+Once the (coordinated) upgrade to ABCI 2.0 has taken place, at height  *h<sub>u</sub>*,
+the value of `VoteExtensionsEnableHeight` MAY be set to some height, *h<sub>e</sub>*,
+which MUST be higher than the current height of the chain. Thus the earliest value for 
+ *h<sub>e</sub>* is  *h<sub>u</sub>* + 1.
+
+Once a node reaches the configured height,
+for all heights *h ≥ h<sub>e</sub>*, the consensus algorithm will
+reject as invalid any precommit messages that do not have signed vote extension data.
+If the application requires it, a 0-length vote extension is allowed, but it MUST be signed
+and present in the precommit message.
+Likewise, for all heights *h < h<sub>e</sub>*, any precommit messages that *do* have vote extensions
+will also be rejected as malformed.
+Height *h<sub>e</sub>* is somewhat special, as calls to `PrepareProposal` MUST NOT
+have vote extension data, but all precommit votes in that height MUST carry a vote extension,
+even if the extension is `nil`. 
+Height *h<sub>e</sub> + 1* is the first height for which `PrepareProposal` MUST have vote
+extension data and all precommit votes in that height MUST have a vote extension.
+
+Corollary, [CometBFT will decide](./abci%2B%2B_comet_expected_behavior.md#handling-upgrades-to-abci-20) which data to store, and require for successful operations, based on the current height
+of the chain.

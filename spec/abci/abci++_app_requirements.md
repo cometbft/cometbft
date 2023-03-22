@@ -1055,7 +1055,7 @@ There is a newly introduced [**consensus parameter**](./abci%2B%2B_app_requireme
 This parameter represents the height at which vote extensions are 
 required for consensus to proceed, with 0 being the default value (no vote extensions).
 A chain can enable vote extensions either:
-* at genesis by setting `VoteExtensionsEnableHeight` to be equal to the `InitialHeight`
+* at genesis by setting `VoteExtensionsEnableHeight` to be equal, e.g., to the `InitialHeight`
 * or via the application logic by changing the `ConsensusParam` to configure the
 `VoteExtensionsEnableHeight`.
 

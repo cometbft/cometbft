@@ -12,7 +12,7 @@ import (
 )
 
 func MakeExtCommit(blockID BlockID, height int64, round int32,
-	voteSet *VoteSet, validators []PrivValidator, now time.Time) (*ExtendedCommit, error) {
+	voteSet *VoteSet, validators []PrivValidator, now time.Time, extEnabled bool) (*ExtendedCommit, error) {
 
 	// all sign
 	for i := 0; i < len(validators); i++ {
@@ -36,7 +36,12 @@ func MakeExtCommit(blockID BlockID, height int64, round int32,
 		}
 	}
 
-	return voteSet.MakeExtendedCommit(), nil
+	var enableHeight int64
+	if extEnabled {
+		enableHeight = height
+	}
+
+	return voteSet.MakeExtendedCommit(ABCIParams{VoteExtensionsEnableHeight: enableHeight}), nil
 }
 
 func signAddVote(privVal PrivValidator, vote *Vote, voteSet *VoteSet) (bool, error) {

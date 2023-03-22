@@ -8,7 +8,7 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-func MakeExtendedCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet, validators []types.PrivValidator, now time.Time) (*types.ExtendedCommit, error) {
+func MakeCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet, validators []types.PrivValidator, now time.Time) (*types.Commit, error) {
 	// all sign
 	for i := 0; i < len(validators); i++ {
 		pubKey, err := validators[i].GetPubKey()
@@ -31,13 +31,12 @@ func MakeExtendedCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet
 			return nil, err
 		}
 		vote.Signature = v.Signature
-		vote.ExtensionSignature = v.ExtensionSignature
 		if _, err := voteSet.AddVote(vote); err != nil {
 			return nil, err
 		}
 	}
 
-	return voteSet.MakeExtendedCommit(), nil
+	return voteSet.MakeExtendedCommit(types.ABCIParams{VoteExtensionsEnableHeight: 0}).ToCommit(), nil
 }
 
 func MakeCommit(blockID types.BlockID, height int64, round int32, valSet *types.ValidatorSet, privVals []types.PrivValidator, chainID string, now time.Time) (*types.Commit, error) {

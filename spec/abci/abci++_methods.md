@@ -517,17 +517,19 @@ then _p_ locks _v_  and sends a Precommit message in the following way
 1. _p_ sets _lockedValue_ and _validValue_ to _v_, and sets _lockedRound_ and _validRound_ to _r_
 2. _p_'s CometBFT calls `RequestExtendVote` with _id(v)_ (`RequestExtendVote.hash`). The call is synchronous.
 3. The Application returns an array of bytes, `ResponseExtendVote.extension`, which is not interpreted by the consensus algorithm.
-4. _p_ includes `ResponseExtendVote.extension` in a field of type [CanonicalVoteExtension](#canonicalvoteextension),
-   it then populates the other fields in [CanonicalVoteExtension](#canonicalvoteextension), and signs the populated
-   data structure.
+4. _p_ sets `ResponseExtendVote.extension` as the value of the `extension` field of type
+   [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension),
+   populates the other fields in [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension),
+   and signs the populated data structure.
 5. _p_ constructs and signs the [CanonicalVote](../core/data_structures.md#canonicalvote) structure.
 6. _p_ constructs the Precommit message (i.e. [Vote](../core/data_structures.md#vote) structure)
-   using [CanonicalVoteExtension](#canonicalvoteextension) and [CanonicalVote](../core/data_structures.md#canonicalvote).
+   using [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension)
+   and [CanonicalVote](../core/data_structures.md#canonicalvote).
 7. _p_ broadcasts the Precommit message.
 
 In the cases when _p_ is to broadcast `precommit nil` messages (either _2f+1_ `prevote nil` messages received,
 or _timeoutPrevote_ triggered), _p_'s CometBFT does **not** call `RequestExtendVote` and will not include
-a [CanonicalVoteExtension](#canonicalvoteextension) field in the `precommit nil` message.
+a [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension) field in the `precommit nil` message.
 
 ### VerifyVoteExtension
 
@@ -873,26 +875,5 @@ enum VerifyStatus {
         * If `Status` is `UNKNOWN`, a problem happened in the Application. CometBFT will assume the application is faulty and crash.
         * If `Status` is `ACCEPT`, the consensus algorithm will accept the vote as valid.
         * If `Status` is `REJECT`, the consensus algorithm will reject the vote as invalid.
-
-
-### CanonicalVoteExtension
-
->**TODO**: This protobuf message definition is not part of the ABCI++ interface, but rather belongs to the
-> Precommit message which is broadcast via P2P. So it is to be moved to the relevant section of the spec.
-
-* **Fields**:
-
-    | Name      | Type   | Description                                                                                | Field Number |
-    |-----------|--------|--------------------------------------------------------------------------------------------|--------------|
-    | extension | bytes  | Vote extension provided by the Application.                                                | 1            |
-    | height    | int64  | Height in which the extension was provided.                                                | 2            |
-    | round     | int32  | Round in which the extension was provided.                                                 | 3            |
-    | chain_id  | string | ID of the blockchain running consensus.                                                    | 4            |
-    | address   | bytes  | [Address](../core/data_structures.md#address) of the validator that provided the extension | 5            |
-
-* **Usage**:
-    * CometBFT is to sign the whole data structure and attach it to a Precommit message
-    * Upon reception, CometBFT validates the sender's signature and sanity-checks the values of `height`, `round`, and `chain_id`.
-      Then it sends `extension` to the Application via `RequestVerifyVoteExtension` for verification.
 
 [protobuf-timestamp]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp

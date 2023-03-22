@@ -155,7 +155,7 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Subsystem: MetricsSubsystem,
 			Name:      "vote_extension_receive_count",
 			Help:      "VoteExtensionReceiveCount is the number of vote extensions received by this node. The metric is annotated by the status of the vote extension from the application, either 'accepted' or 'rejected'.",
-		}, labels).With(labelsAndValues...),
+		}, append(labels, "status")).With(labelsAndValues...),
 		ProposalReceiveCount: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,

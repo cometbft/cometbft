@@ -1,13 +1,8 @@
 package blocksync
 
 import (
-	"reflect"
-	"unsafe"
-
 	"github.com/cometbft/cometbft/types"
 	"github.com/go-kit/kit/metrics"
-	prometheus "github.com/go-kit/kit/metrics/prometheus"
-	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 
 const (
@@ -37,29 +32,4 @@ func (m *Metrics) recordBlockMetrics(block *types.Block) {
 	m.TotalTxs.Add(float64(len(block.Data.Txs)))
 	m.BlockSizeBytes.Set(float64(block.Size()))
 	m.LatestBlockHeight.Set(float64(block.Height))
-}
-
-// unregisterGauge removes a gauge metric from the Prometheus registry. No new
-// data will be generated in the http /metrics endpoint for this metric.
-func unregisterGauge(g metrics.Gauge) bool {
-	metric, ok := g.(*prometheus.Gauge)
-	if !ok {
-		return false
-	}
-
-	// stdprometheus.Unregister takes an stdprometheus.Collector. Here we access
-	// prometheus.Gauge's unexported field "gv", which implements the interface
-	// stdprometheus.Collector.
-	gv := reflect.ValueOf(metric).Elem().FieldByName("gv")
-	gaugeVec, ok := getUnexportedField(gv).(*stdprometheus.GaugeVec)
-	if !ok {
-		return false
-	}
-
-	return stdprometheus.Unregister(gaugeVec)
-}
-
-// See https://stackoverflow.com/questions/42664837/how-to-access-unexported-struct-fields
-func getUnexportedField(field reflect.Value) interface{} {
-	return reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem().Interface()
 }

@@ -28,11 +28,7 @@ jobs:
       - name: Generate testnets
         working-directory: test/e2e
         # When changing -g, also change the matrix groups above
-<<<<<<< HEAD
-        run: ./build/generator -g 4 -d networks/nightly
-=======
-        run: ./build/generator -g 5 -d networks/nightly/ -p
->>>>>>> 01c0188de (e2e: add prometheus flag to Generator CLI (#563))
+        run: ./build/generator -g 5 -d networks/nightly -p
 
       - name: Run ${{ matrix.p2p }} p2p testnets
         working-directory: test/e2e

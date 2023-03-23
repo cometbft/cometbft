@@ -57,7 +57,6 @@ const (
 
 // Testnet represents a single testnet.
 type Testnet struct {
-<<<<<<< HEAD
 	Name              string
 	File              string
 	Dir               string
@@ -74,59 +73,11 @@ type Testnet struct {
 	LoadTxConnections int
 	ABCIProtocol      string
 	UpgradeVersion    string
-=======
-	Name                 string
-	File                 string
-	Dir                  string
-	IP                   *net.IPNet
-	InitialHeight        int64
-	InitialState         map[string]string
-	Validators           map[*Node]int64
-	ValidatorUpdates     map[int64]map[*Node]int64
-	Nodes                []*Node
-	KeyType              string
-	Evidence             int
-	LoadTxSizeBytes      int
-	LoadTxBatchSize      int
-	LoadTxConnections    int
-	ABCIProtocol         string
-	PrepareProposalDelay time.Duration
-	ProcessProposalDelay time.Duration
-	CheckTxDelay         time.Duration
-	UpgradeVersion       string
-	Prometheus           bool
->>>>>>> a95a1dfec (e2e: add manifest fields to enable Prometheus on nodes (#313))
+	Prometheus        bool
 }
 
 // Node represents a CometBFT node in a testnet.
 type Node struct {
-<<<<<<< HEAD
-	Name             string
-	Version          string
-	Testnet          *Testnet
-	Mode             Mode
-	PrivvalKey       crypto.PrivKey
-	NodeKey          crypto.PrivKey
-	IP               net.IP
-	ProxyPort        uint32
-	StartAt          int64
-	FastSync         string
-	StateSync        bool
-	Mempool          string
-	Database         string
-	ABCIProtocol     Protocol
-	PrivvalProtocol  Protocol
-	PersistInterval  uint64
-	SnapshotInterval uint64
-	RetainBlocks     uint64
-	Seeds            []*Node
-	PersistentPeers  []*Node
-	Perturbations    []Perturbation
-	Misbehaviors     map[int64]string
-
-	// SendNoLoad determines if the e2e test should send load to this node.
-	SendNoLoad bool
-=======
 	Name                string
 	Version             string
 	Testnet             *Testnet
@@ -136,8 +87,9 @@ type Node struct {
 	IP                  net.IP
 	ProxyPort           uint32
 	StartAt             int64
-	BlockSync           string
+	FastSync            string
 	StateSync           bool
+	Mempool             string
 	Database            string
 	ABCIProtocol        Protocol
 	PrivvalProtocol     Protocol
@@ -147,10 +99,10 @@ type Node struct {
 	Seeds               []*Node
 	PersistentPeers     []*Node
 	Perturbations       []Perturbation
+	Misbehaviors        map[int64]string
 	SendNoLoad          bool
 	Prometheus          bool
 	PrometheusProxyPort uint32
->>>>>>> a95a1dfec (e2e: add manifest fields to enable Prometheus on nodes (#313))
 }
 
 // LoadTestnet loads a testnet from a manifest file, using the filename to
@@ -169,7 +121,6 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 	}
 
 	testnet := &Testnet{
-<<<<<<< HEAD
 		Name:              filepath.Base(dir),
 		File:              fname,
 		Dir:               dir,
@@ -184,27 +135,7 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 		LoadTxConnections: manifest.LoadTxConnections,
 		ABCIProtocol:      manifest.ABCIProtocol,
 		UpgradeVersion:    manifest.UpgradeVersion,
-=======
-		Name:                 filepath.Base(dir),
-		File:                 fname,
-		Dir:                  dir,
-		IP:                   ipNet,
-		InitialHeight:        1,
-		InitialState:         manifest.InitialState,
-		Validators:           map[*Node]int64{},
-		ValidatorUpdates:     map[int64]map[*Node]int64{},
-		Nodes:                []*Node{},
-		Evidence:             manifest.Evidence,
-		LoadTxSizeBytes:      manifest.LoadTxSizeBytes,
-		LoadTxBatchSize:      manifest.LoadTxBatchSize,
-		LoadTxConnections:    manifest.LoadTxConnections,
-		ABCIProtocol:         manifest.ABCIProtocol,
-		PrepareProposalDelay: manifest.PrepareProposalDelay,
-		ProcessProposalDelay: manifest.ProcessProposalDelay,
-		CheckTxDelay:         manifest.CheckTxDelay,
-		UpgradeVersion:       manifest.UpgradeVersion,
-		Prometheus:           manifest.Prometheus,
->>>>>>> a95a1dfec (e2e: add manifest fields to enable Prometheus on nodes (#313))
+		Prometheus:        manifest.Prometheus,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType

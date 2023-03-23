@@ -90,6 +90,11 @@ type Metrics struct {
 	//metrics:Interval in seconds between the proposal timestamp and the timestamp of the latest prevote in a round where all validators voted.
 	FullPrevoteDelay metrics.Gauge `metrics_labels:"proposer_address"`
 
+	// VoteExtensionReceiveCount is the number of vote extensions received by this
+	// node. The metric is annotated by the status of the vote extension from the
+	// application, either 'accepted' or 'rejected'.
+	VoteExtensionReceiveCount metrics.Counter `metrics_labels:"status"`
+
 	// ProposalReceiveCount is the total number of proposals received by this node
 	// since process start.
 	// The metric is annotated by the status of the proposal from the application,
@@ -98,6 +103,8 @@ type Metrics struct {
 
 	// ProposalCreationCount is the total number of proposals created by this node
 	// since process start.
+	// The metric is annotated by the status of the proposal from the application,
+	// either 'accepted' or 'rejected'.
 	ProposalCreateCount metrics.Counter
 
 	// RoundVotingPowerPercent is the percentage of the total voting power received
@@ -119,6 +126,14 @@ func (m *Metrics) MarkProposalProcessed(accepted bool) {
 	m.ProposalReceiveCount.With("status", status).Add(1)
 }
 
+func (m *Metrics) MarkVoteExtensionReceived(accepted bool) {
+	status := "accepted"
+	if !accepted {
+		status = "rejected"
+	}
+	m.VoteExtensionReceiveCount.With("status", status).Add(1)
+}
+
 func (m *Metrics) MarkVoteReceived(vt cmtproto.SignedMsgType, power, totalPower int64) {
 	p := float64(power) / float64(totalPower)
 	n := strings.ToLower(strings.TrimPrefix(vt.String(), "SIGNED_MSG_TYPE_"))
@@ -129,6 +144,14 @@ func (m *Metrics) MarkRound(r int32, st time.Time) {
 	m.Rounds.Set(float64(r))
 	roundTime := time.Since(st).Seconds()
 	m.RoundDurationSeconds.Observe(roundTime)
+
+	pvt := cmtproto.PrevoteType
+	pvn := strings.ToLower(strings.TrimPrefix(pvt.String(), "SIGNED_MSG_TYPE_"))
+	m.RoundVotingPowerPercent.With("vote_type", pvn).Set(0)
+
+	pct := cmtproto.PrecommitType
+	pcn := strings.ToLower(strings.TrimPrefix(pct.String(), "SIGNED_MSG_TYPE_"))
+	m.RoundVotingPowerPercent.With("vote_type", pcn).Set(0)
 }
 
 func (m *Metrics) MarkLateVote(vt cmtproto.SignedMsgType) {

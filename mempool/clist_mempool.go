@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"sync"
 	"sync/atomic"
@@ -151,7 +152,7 @@ func (mem *CListMempool) SizeBytes() int64 {
 
 // Lock() must be help by the caller during execution.
 func (mem *CListMempool) FlushAppConn() error {
-	return mem.proxyAppConn.FlushSync()
+	return mem.proxyAppConn.Flush(context.TODO())
 }
 
 // XXX: Unsafe! Calling Flush may leave mempool in inconsistent state.
@@ -201,7 +202,7 @@ func (mem *CListMempool) TxsWaitChan() <-chan struct{} {
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) CheckTx(
 	tx types.Tx,
-	cb func(*abci.Response),
+	cb func(*abci.ResponseCheckTx),
 	txInfo TxInfo,
 ) error {
 
@@ -250,7 +251,10 @@ func (mem *CListMempool) CheckTx(
 		return ErrTxInCache
 	}
 
-	reqRes := mem.proxyAppConn.CheckTxAsync(abci.RequestCheckTx{Tx: tx})
+	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{Tx: tx})
+	if err != nil {
+		return err
+	}
 	reqRes.SetCallback(mem.reqResCb(tx, txInfo.SenderID, txInfo.SenderP2PID, cb))
 
 	return nil
@@ -290,7 +294,7 @@ func (mem *CListMempool) reqResCb(
 	tx []byte,
 	peerID uint16,
 	peerP2PID p2p.ID,
-	externalCb func(*abci.Response),
+	externalCb func(*abci.ResponseCheckTx),
 ) func(res *abci.Response) {
 	return func(res *abci.Response) {
 		if mem.recheckCursor != nil {
@@ -305,7 +309,7 @@ func (mem *CListMempool) reqResCb(
 
 		// passed in by the caller of CheckTx, eg. the RPC
 		if externalCb != nil {
-			externalCb(res)
+			externalCb(res.GetCheckTx())
 		}
 	}
 }
@@ -577,7 +581,7 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 func (mem *CListMempool) Update(
 	height int64,
 	txs types.Txs,
-	deliverTxResponses []*abci.ResponseDeliverTx,
+	txResults []*abci.ExecTxResult,
 	preCheck PreCheckFunc,
 	postCheck PostCheckFunc,
 ) error {
@@ -593,7 +597,7 @@ func (mem *CListMempool) Update(
 	}
 
 	for i, tx := range txs {
-		if deliverTxResponses[i].Code == abci.CodeTypeOK {
+		if txResults[i].Code == abci.CodeTypeOK {
 			// Add valid committed tx to the cache (if missing).
 			_ = mem.cache.Push(tx)
 		} else if !mem.config.KeepInvalidTxsInCache {
@@ -648,13 +652,19 @@ func (mem *CListMempool) recheckTxs() {
 	// NOTE: globalCb may be called concurrently.
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
 		memTx := e.Value.(*mempoolTx)
-		mem.proxyAppConn.CheckTxAsync(abci.RequestCheckTx{
+		_, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{
 			Tx:   memTx.tx,
 			Type: abci.CheckTxType_Recheck,
 		})
+		if err != nil {
+			mem.logger.Error("recheckTx", err, "err")
+			return
+		}
 	}
 
-	mem.proxyAppConn.FlushAsync()
+	// In <v0.37 we would call FlushAsync at the end of recheckTx forcing the buffer to flush
+	// all pending messages to the app. There doesn't seem to be any need here as the buffer
+	// will get flushed regularly or when filled.
 }
 
 //--------------------------------------------------------------------------------

@@ -10,7 +10,7 @@ import (
 var mempool mempl.Mempool
 
 func init() {
-	app := kvstore.NewApplication()
+	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
 	appConnMem, _ := cc.NewABCIClient()
 	err := appConnMem.Start()

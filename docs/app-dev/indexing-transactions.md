@@ -5,10 +5,10 @@ order: 6
 # Indexing Transactions
 
 CometBFT allows you to index transactions and blocks and later query or
-subscribe to their results. Transactions are indexed by `TxResult.Events` and
-blocks are indexed by `Response(Begin|End)Block.Events`. However, transactions
+subscribe to their results. Transactions are indexed by `ResponseFinalizeBlock.tx_results.events` and
+blocks are indexed by `ResponseFinalizeBlock.events`. However, transactions
 are also indexed by a primary key which includes the transaction hash and maps
-to and stores the corresponding `TxResult`. Blocks are indexed by a primary key
+to and stores the corresponding transaction results. Blocks are indexed by a primary key
 which includes the block height and maps to and stores the block height, i.e.
 the block itself is never stored.
 
@@ -79,7 +79,7 @@ with
 - event type,
 - attribute key,
 - attribute value,
-- event generator (e.g. `EndBlock` and `BeginBlock`)
+- event generator (e.g. `FinalizeBlock`)
 - the height, and
 - event counter.
  For example the following events:
@@ -105,20 +105,20 @@ Type: "transfer",
    },
 ```
 
-will be represented as follows in the store, assuming these events result from the EndBlock call for height 1: 
+will be represented as follows in the store, assuming these events result from the `FinalizeBlock` call for height 1: 
 
 ```
 Key                                 value
 ---- event1 ------
-transferSenderBobEndBlock11           1
-transferRecipientAliceEndBlock11     1
-transferBalance100EndBlock11         1
-transferNodeNothingEndblock11        1
+transferSenderBobFinalizeBlock11           1
+transferRecipientAliceFinalizeBlock11      1
+transferBalance100FinalizeBlock11          1
+transferNodeNothingFinalizeBlock11         1
 ---- event2 ------
-transferSenderTomEndBlock12          1
-transferRecepientAliceEndBlock12     1
-transferBalance200EndBlock12         1
-transferNodeNothingEndblock12        1
+transferSenderTomFinalizeBlock12           1
+transferRecepientAliceFinalizeBlock12      1
+transferBalance200FinalizeBlock12          1
+transferNodeNothingFinalizeBlock12         1
  
 ```
 The event number is a local variable kept by the indexer and incremented when a new event is processed. 
@@ -168,27 +168,58 @@ The following indexes are indexed by default:
 
 Applications are free to define which events to index. CometBFT does not
 expose functionality to define which events to index and which to ignore. In
-your application's `DeliverTx` method, add the `Events` field with pairs of
+your application's `FinalizeBlock` method, add the `Events` field with pairs of
 UTF-8 encoded strings (e.g. "transfer.sender": "Bob", "transfer.recipient":
 "Alice", "transfer.balance": "100").
 
 Example:
 
 ```go
-func (app *KVStoreApplication) DeliverTx(req types.RequestDeliverTx) types.Result {
+func (app *Application) FinalizeBlock(_ context.Context, req *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
+
     //...
-    events := []abci.Event{
-        {
-            Type: "transfer",
-            Attributes: []abci.EventAttribute{
-                {Key: "sender ", Value: "Bob ", Index: true},
-                {Key: "recipient ", Value: "Alice ", Index: true},
-                {Key: "balance ", Value: "100 ", Index: true},
-                {Key: "note ", Value: "nothing ", Index: true},
-            },
-        },
-    }
-    return types.ResponseDeliverTx{Code: code.CodeTypeOK, Events: events}
+  tx_results[0] := &types.ExecTxResult{
+			Code: CodeTypeOK,
+			// With every transaction we can emit a series of events. To make it simple, we just emit the same events.
+			Events: []types.Event{
+				{
+					Type: "app",
+					Attributes: []types.EventAttribute{
+						{Key: "creator", Value: "Cosmoshi Netowoko", Index: true},
+						{Key: "key", Value: key, Index: true},
+						{Key: "index_key", Value: "index is working", Index: true},
+						{Key: "noindex_key", Value: "index is working", Index: false},
+					},
+				},
+				{
+					Type: "app",
+					Attributes: []types.EventAttribute{
+						{Key: "creator", Value: "Cosmoshi", Index: true},
+						{Key: "key", Value: value, Index: true},
+						{Key: "index_key", Value: "index is working", Index: true},
+						{Key: "noindex_key", Value: "index is working", Index: false},
+					},
+				},
+			},
+		}
+
+    block_events = []types.Event{
+			{
+				Type: "loan",
+				Attributes: []types.EventAttribute{
+					{	Key:   "account_no", Value: "1", Index: true},
+					{ Key:   "amount", Value: "200", Index: true },
+				},
+			},
+			{
+				Type: "loan",
+				Attributes: []types.EventAttribute{
+					{ Key:   "account_no", Value: "2",	Index: true },
+					{ Key:   "amount", Value: "300", Index: true},
+				},
+			},
+		}
+    return &types.ResponseFinalizeBlock{TxResults: tx_results, Events: block_events}
 }
 ```
 

@@ -186,23 +186,22 @@ func (env *Environment) BlockResults(ctx *rpctypes.Context, heightPtr *int64) (*
 		return nil, err
 	}
 
-	results, err := env.StateStore.LoadABCIResponses(height)
+	results, err := env.StateStore.LoadFinalizeBlockResponse(height)
 	if err != nil {
 		return nil, err
 	}
 
 	return &ctypes.ResultBlockResults{
 		Height:                height,
-		TxsResults:            results.DeliverTxs,
-		BeginBlockEvents:      results.BeginBlock.Events,
-		EndBlockEvents:        results.EndBlock.Events,
-		ValidatorUpdates:      results.EndBlock.ValidatorUpdates,
-		ConsensusParamUpdates: results.EndBlock.ConsensusParamUpdates,
+		TxsResults:            results.TxResults,
+		FinalizeBlockEvents:   results.Events,
+		ValidatorUpdates:      results.ValidatorUpdates,
+		ConsensusParamUpdates: results.ConsensusParamUpdates,
 	}, nil
 }
 
-// BlockSearch searches for a paginated set of blocks matching BeginBlock and
-// EndBlock event search criteria.
+// BlockSearch searches for a paginated set of blocks matching
+// FinalizeBlock event search criteria.
 func (env *Environment) BlockSearch(
 	ctx *rpctypes.Context,
 	query string,

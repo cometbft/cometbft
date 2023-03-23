@@ -59,7 +59,7 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.description, func(t *testing.T) {
-			_, valSet, vals := randVoteSet(tc.height, round, cmtproto.PrecommitType, tc.valSize, 10)
+			_, valSet, vals := randVoteSet(tc.height, round, cmtproto.PrecommitType, tc.valSize, 10, false)
 			totalVotes := tc.blockVotes + tc.absentVotes + tc.nilVotes
 			sigs := make([]CommitSig, totalVotes)
 			vi := 0
@@ -94,7 +94,12 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 
 				vi++
 			}
-			commit := NewCommit(tc.height, round, tc.blockID, sigs)
+			commit := &Commit{
+				Height:     tc.height,
+				Round:      round,
+				BlockID:    tc.blockID,
+				Signatures: sigs,
+			}
 
 			err := valSet.VerifyCommit(chainID, blockID, height, commit)
 			if tc.expErr {
@@ -137,9 +142,10 @@ func TestValidatorSet_VerifyCommit_CheckAllSignatures(t *testing.T) {
 		blockID = makeBlockIDRandom()
 	)
 
-	voteSet, valSet, vals := randVoteSet(h, 0, cmtproto.PrecommitType, 4, 10)
-	commit, err := MakeCommit(blockID, h, 0, voteSet, vals, time.Now())
+	voteSet, valSet, vals := randVoteSet(h, 0, cmtproto.PrecommitType, 4, 10, false)
+	extCommit, err := MakeExtCommit(blockID, h, 0, voteSet, vals, time.Now(), false)
 	require.NoError(t, err)
+	commit := extCommit.ToCommit()
 	require.NoError(t, valSet.VerifyCommit(chainID, blockID, h, commit))
 
 	// malleate 4th signature
@@ -148,6 +154,7 @@ func TestValidatorSet_VerifyCommit_CheckAllSignatures(t *testing.T) {
 	err = vals[3].SignVote("CentaurusA", v)
 	require.NoError(t, err)
 	vote.Signature = v.Signature
+	vote.ExtensionSignature = v.ExtensionSignature
 	commit.Signatures[3] = vote.CommitSig()
 
 	err = valSet.VerifyCommit(chainID, blockID, h, commit)
@@ -163,9 +170,10 @@ func TestValidatorSet_VerifyCommitLight_ReturnsAsSoonAsMajorityOfVotingPowerSign
 		blockID = makeBlockIDRandom()
 	)
 
-	voteSet, valSet, vals := randVoteSet(h, 0, cmtproto.PrecommitType, 4, 10)
-	commit, err := MakeCommit(blockID, h, 0, voteSet, vals, time.Now())
+	voteSet, valSet, vals := randVoteSet(h, 0, cmtproto.PrecommitType, 4, 10, false)
+	extCommit, err := MakeExtCommit(blockID, h, 0, voteSet, vals, time.Now(), false)
 	require.NoError(t, err)
+	commit := extCommit.ToCommit()
 	require.NoError(t, valSet.VerifyCommit(chainID, blockID, h, commit))
 
 	// malleate 4th signature (3 signatures are enough for 2/3+)
@@ -174,6 +182,7 @@ func TestValidatorSet_VerifyCommitLight_ReturnsAsSoonAsMajorityOfVotingPowerSign
 	err = vals[3].SignVote("CentaurusA", v)
 	require.NoError(t, err)
 	vote.Signature = v.Signature
+	vote.ExtensionSignature = v.ExtensionSignature
 	commit.Signatures[3] = vote.CommitSig()
 
 	err = valSet.VerifyCommitLight(chainID, blockID, h, commit)
@@ -187,9 +196,10 @@ func TestValidatorSet_VerifyCommitLightTrusting_ReturnsAsSoonAsTrustLevelOfVotin
 		blockID = makeBlockIDRandom()
 	)
 
-	voteSet, valSet, vals := randVoteSet(h, 0, cmtproto.PrecommitType, 4, 10)
-	commit, err := MakeCommit(blockID, h, 0, voteSet, vals, time.Now())
+	voteSet, valSet, vals := randVoteSet(h, 0, cmtproto.PrecommitType, 4, 10, false)
+	extCommit, err := MakeExtCommit(blockID, h, 0, voteSet, vals, time.Now(), false)
 	require.NoError(t, err)
+	commit := extCommit.ToCommit()
 	require.NoError(t, valSet.VerifyCommit(chainID, blockID, h, commit))
 
 	// malleate 3rd signature (2 signatures are enough for 1/3+ trust level)
@@ -198,6 +208,7 @@ func TestValidatorSet_VerifyCommitLightTrusting_ReturnsAsSoonAsTrustLevelOfVotin
 	err = vals[2].SignVote("CentaurusA", v)
 	require.NoError(t, err)
 	vote.Signature = v.Signature
+	vote.ExtensionSignature = v.ExtensionSignature
 	commit.Signatures[2] = vote.CommitSig()
 
 	err = valSet.VerifyCommitLightTrusting(chainID, commit, cmtmath.Fraction{Numerator: 1, Denominator: 3})
@@ -207,11 +218,12 @@ func TestValidatorSet_VerifyCommitLightTrusting_ReturnsAsSoonAsTrustLevelOfVotin
 func TestValidatorSet_VerifyCommitLightTrusting(t *testing.T) {
 	var (
 		blockID                       = makeBlockIDRandom()
-		voteSet, originalValset, vals = randVoteSet(1, 1, cmtproto.PrecommitType, 6, 1)
-		commit, err                   = MakeCommit(blockID, 1, 1, voteSet, vals, time.Now())
+		voteSet, originalValset, vals = randVoteSet(1, 1, cmtproto.PrecommitType, 6, 1, false)
+		extCommit, err                = MakeExtCommit(blockID, 1, 1, voteSet, vals, time.Now(), false)
 		newValSet, _                  = RandValidatorSet(2, 1)
 	)
 	require.NoError(t, err)
+	commit := extCommit.ToCommit()
 
 	testCases := []struct {
 		valSet *ValidatorSet
@@ -248,12 +260,12 @@ func TestValidatorSet_VerifyCommitLightTrusting(t *testing.T) {
 func TestValidatorSet_VerifyCommitLightTrustingErrorsOnOverflow(t *testing.T) {
 	var (
 		blockID               = makeBlockIDRandom()
-		voteSet, valSet, vals = randVoteSet(1, 1, cmtproto.PrecommitType, 1, MaxTotalVotingPower)
-		commit, err           = MakeCommit(blockID, 1, 1, voteSet, vals, time.Now())
+		voteSet, valSet, vals = randVoteSet(1, 1, cmtproto.PrecommitType, 1, MaxTotalVotingPower, false)
+		extCommit, err        = MakeExtCommit(blockID, 1, 1, voteSet, vals, time.Now(), false)
 	)
 	require.NoError(t, err)
 
-	err = valSet.VerifyCommitLightTrusting("test_chain_id", commit,
+	err = valSet.VerifyCommitLightTrusting("test_chain_id", extCommit.ToCommit(),
 		cmtmath.Fraction{Numerator: 25, Denominator: 55})
 	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "int64 overflow")

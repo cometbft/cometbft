@@ -165,7 +165,7 @@ func (blockExec *BlockExecutor) ProcessProposal(
 		NextValidatorsHash: block.NextValidatorsHash,
 	})
 	if err != nil {
-		return false, ErrInvalidBlock(err)
+		return false, err
 	}
 	if resp.IsStatusUnknown() {
 		panic(fmt.Sprintf("ProcessProposal responded with status %s", resp.Status.String()))

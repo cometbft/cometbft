@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	eventTypeFinalizeBlock = "finaliz_block"
+	eventTypeFinalizeBlock = "finalize_block"
 )
 
 // TxIndexer returns a bridge from es to the CometBFT v0.34 transaction indexer.

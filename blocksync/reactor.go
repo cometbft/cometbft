@@ -502,6 +502,7 @@ FOR_LOOP:
 				// TODO This is bad, are we zombie?
 				panic(fmt.Sprintf("Failed to process committed block (%d:%X): %v", first.Height, first.Hash(), err))
 			}
+			bcR.metrics.recordBlockMetrics(first)
 			blocksSynced++
 
 			if blocksSynced%100 == 0 {

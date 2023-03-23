@@ -8,7 +8,6 @@ import (
 
 	cstypes "github.com/cometbft/cometbft/consensus/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -117,14 +116,6 @@ type Metrics struct {
 	// correspond to earlier heights and rounds than this node is currently
 	// in.
 	LateVotes metrics.Counter `metrics_labels:"vote_type"`
-}
-
-// RecordConsMetrics uses for recording the block related metrics during fast-sync.
-func (m *Metrics) RecordConsMetrics(block *types.Block) {
-	m.NumTxs.Set(float64(len(block.Data.Txs)))
-	m.TotalTxs.Add(float64(len(block.Data.Txs)))
-	m.BlockSizeBytes.Set(float64(block.Size()))
-	m.CommittedHeight.Set(float64(block.Height))
 }
 
 func (m *Metrics) MarkProposalProcessed(accepted bool) {

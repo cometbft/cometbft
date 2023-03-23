@@ -166,6 +166,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg.P2P.AddrBookStrict = false
 	cfg.DBBackend = node.Database
 	cfg.StateSync.DiscoveryTime = 5 * time.Second
+	cfg.BlockSync.Version = node.BlockSyncVersion
 
 	switch node.ABCIProtocol {
 	case e2e.ProtocolUNIX:
@@ -211,9 +212,6 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	default:
 		return nil, fmt.Errorf("unexpected mode %q", node.Mode)
 	}
-
-	cfg.BlockSyncMode = true
-	cfg.BlockSync.Version = "v0"
 
 	if node.StateSync {
 		cfg.StateSync.Enable = true

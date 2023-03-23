@@ -45,6 +45,10 @@ type Application struct {
 	// validator set
 	valUpdates         []types.ValidatorUpdate
 	valAddrToPubKeyMap map[string]cryptoproto.PublicKey
+
+	// If true, the app will generate block events in BeginBlock. Used to test the event indexer
+	// Should be false by default to avoid generating too much data.
+	genBlockEvents bool
 }
 
 // NewApplication creates an instance of the kvstore from the provided database
@@ -70,6 +74,10 @@ func NewPersistentApplication(dbDir string) *Application {
 // Nothing will be persisted.
 func NewInMemoryApplication() *Application {
 	return NewApplication(dbm.NewMemDB())
+}
+
+func (app *Application) SetGenBlockEvents() {
+	app.genBlockEvents = true
 }
 
 // Info returns information about the state of the application. This is generally used everytime a Tendermint instance
@@ -217,6 +225,14 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.RequestFinal
 		} else {
 			app.stagedTxs = append(app.stagedTxs, tx)
 		}
+
+		var key, value string
+		parts := bytes.Split(tx, []byte("="))
+		if len(parts) == 2 {
+			key, value = string(parts[0]), string(parts[1])
+		} else {
+			key, value = string(tx), string(tx)
+		}
 		respTxs[i] = &types.ExecTxResult{
 			Code: CodeTypeOK,
 			// With every transaction we can emit a series of events. To make it simple, we just emit the same events.
@@ -225,6 +241,16 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.RequestFinal
 					Type: "app",
 					Attributes: []types.EventAttribute{
 						{Key: "creator", Value: "Cosmoshi Netowoko", Index: true},
+						{Key: "key", Value: key, Index: true},
+						{Key: "index_key", Value: "index is working", Index: true},
+						{Key: "noindex_key", Value: "index is working", Index: false},
+					},
+				},
+				{
+					Type: "app",
+					Attributes: []types.EventAttribute{
+						{Key: "creator", Value: "Cosmoshi", Index: true},
+						{Key: "key", Value: value, Index: true},
 						{Key: "index_key", Value: "index is working", Index: true},
 						{Key: "noindex_key", Value: "index is working", Index: false},
 					},
@@ -236,7 +262,63 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.RequestFinal
 
 	app.state.Height = req.Height
 
-	return &types.ResponseFinalizeBlock{TxResults: respTxs, ValidatorUpdates: app.valUpdates, AppHash: app.state.Hash()}, nil
+	response := &types.ResponseFinalizeBlock{TxResults: respTxs, ValidatorUpdates: app.valUpdates, AppHash: app.state.Hash()}
+	if !app.genBlockEvents {
+		return response, nil
+	}
+	if app.state.Height%2 == 0 {
+		response.Events = []types.Event{
+			{
+				Type: "begin_event",
+				Attributes: []types.EventAttribute{
+					{
+						Key:   "foo",
+						Value: "100",
+						Index: true,
+					},
+					{
+						Key:   "bar",
+						Value: "200",
+						Index: true,
+					},
+				},
+			},
+			{
+				Type: "begin_event",
+				Attributes: []types.EventAttribute{
+					{
+						Key:   "foo",
+						Value: "200",
+						Index: true,
+					},
+					{
+						Key:   "bar",
+						Value: "300",
+						Index: true,
+					},
+				},
+			},
+		}
+	} else {
+		response.Events = []types.Event{
+			{
+				Type: "begin_event",
+				Attributes: []types.EventAttribute{
+					{
+						Key:   "foo",
+						Value: "400",
+						Index: true,
+					},
+					{
+						Key:   "bar",
+						Value: "300",
+						Index: true,
+					},
+				},
+			},
+		}
+	}
+	return response, nil
 }
 
 // Commit is called after FinalizeBlock and after Tendermint state which includes the updates to

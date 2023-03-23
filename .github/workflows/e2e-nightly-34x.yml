@@ -37,7 +37,7 @@ jobs:
       - name: Generate testnets
         working-directory: test/e2e
         # When changing -g, also change the matrix groups above
-        run: ./build/generator -g 4 -d networks/nightly
+        run: ./build/generator -g 4 -d networks/nightly -p
 
       - name: Run testnets in group ${{ matrix.group }}
         working-directory: test/e2e

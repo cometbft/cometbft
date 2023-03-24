@@ -26,6 +26,17 @@ This guide provides instructions for upgrading to specific versions of CometBFT.
   `mempool_error`, which were only used by the priority mempool, were removed
   but still kept in the message as "reserved".
 
+
+### KvIndexer changes
+
+When indexing block events, the indexer would include the function that returned those events
+(`BeginBlock` or `EndBlock`). In ABCI 2.0 `FinalizeBlock` combines these functions, and all
+events are returned within `ResultFinalizeBlock`. Therefore, the function fields will
+have no meaning anymore and will be removed in CometBFT v0.38.x. 
+
+If you included the function information in your queries, this information will be discarded
+and you should not rely on it anymore. 
+
 ## v0.37.0
 
 This release introduces state machine-breaking changes, and therefore requires a

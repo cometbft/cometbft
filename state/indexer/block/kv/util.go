@@ -49,13 +49,13 @@ func heightKey(height int64) ([]byte, error) {
 	)
 }
 
-func eventKey(compositeKey, typ, eventValue string, height int64, eventSeq int64) ([]byte, error) {
+func eventKey(compositeKey, eventValue string, height int64, eventSeq int64) ([]byte, error) {
 	return orderedcode.Append(
 		nil,
 		compositeKey,
 		eventValue,
 		height,
-		typ,
+		"begin_block",
 		eventSeq,
 	)
 }
@@ -80,11 +80,11 @@ func parseValueFromPrimaryKey(key []byte) (string, error) {
 
 func parseValueFromEventKey(key []byte) (string, error) {
 	var (
-		compositeKey, typ, eventValue string
-		height                        int64
+		compositeKey, eventValue string
+		height                   int64
 	)
 
-	_, err := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height, &typ)
+	_, err := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse event key: %w", err)
 	}
@@ -94,11 +94,11 @@ func parseValueFromEventKey(key []byte) (string, error) {
 
 func parseHeightFromEventKey(key []byte) (int64, error) {
 	var (
-		compositeKey, typ, eventValue string
-		height                        int64
+		compositeKey, eventValue string
+		height                   int64
 	)
 
-	_, err := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height, &typ)
+	_, err := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height)
 	if err != nil {
 		return -1, fmt.Errorf("failed to parse event key: %w", err)
 	}
@@ -108,28 +108,38 @@ func parseHeightFromEventKey(key []byte) (int64, error) {
 
 func parseEventSeqFromEventKey(key []byte) (int64, error) {
 	var (
-		compositeKey, typ, eventValue string
-		height                        int64
-		eventSeq                      int64
+		compositeKey, eventValue string
+		height                   int64
+		eventSeq                 int64
 	)
 
-	remaining, err := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height, &typ)
+	remaining, err := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height)
 	if err != nil {
 		return 0, fmt.Errorf("failed to parse event key: %w", err)
 	}
 
 	// This is done to support previous versions that did not have event sequence in their key
 	if len(remaining) != 0 {
-		remaining, err = orderedcode.Parse(remaining, &eventSeq)
-		if err != nil {
-			return 0, fmt.Errorf("failed to parse event key: %w", err)
-		}
-		if len(remaining) != 0 {
-			return 0, fmt.Errorf("unexpected remainder in key: %s", remaining)
+		var typ string
+		remaining2, err := orderedcode.Parse(remaining, &typ) // Check if legacy event from Begin/EndBlock
+		if err != nil {                                       // We could be dealing with new event that has not typ
+			remaining, err2 := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height, &eventSeq)
+			if err2 != nil || len(remaining) != 0 { // We should not have anything else after the eventSeq
+				return 0, fmt.Errorf("failed to parse event key: %w", err)
+			} else {
+				return eventSeq, nil
+			}
+		} else {
+			remaining, err2 := orderedcode.Parse(remaining2, &eventSeq)
+			if err2 != nil || len(remaining) != 0 { // We should not have anything else after the eventSeq
+				return 0, fmt.Errorf("failed to parse event key: %w", err)
+			} else {
+				return eventSeq, nil
+			}
 		}
 	}
 
-	return eventSeq, nil
+	return 0, nil
 }
 
 // Remove all occurrences of height equality queries except one. While we are traversing the conditions, check whether the only condition in

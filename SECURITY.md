@@ -29,7 +29,8 @@ with the CVSS system for assessing vulnerabilities, just use the Low/High/Critic
 for a critical vulnerability is still better than no report at all.
 
 Vulnerabilities associated with the **Go, Rust or Protobuf code** of the repository may be eligible for a [bug bounty](https://hackerone.com/cosmos).
-Please see the bug bounty page for more details on submissions and rewards.
+Please see the bug bounty page for more details on submissions and rewards. If you think the vulnerability is eligible for a payout,
+**report on HackerOne first**.
 
 Vulnerabilities in services and their source codes (JavaScript, web page, Google Workspace) are not in scope for the bug
 bounty program, but they are welcome to be reported in GitHub.

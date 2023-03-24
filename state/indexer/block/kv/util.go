@@ -55,7 +55,6 @@ func eventKey(compositeKey, eventValue string, height int64, eventSeq int64) ([]
 		compositeKey,
 		eventValue,
 		height,
-		"begin_block",
 		eventSeq,
 	)
 }

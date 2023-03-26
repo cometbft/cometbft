@@ -323,5 +323,11 @@ Ignored processes should never belong to the neighbor set.
 
 
 
-- [1]: https://arxiv.org/abs/1807.0493 "The latest gossip on BFT consensus"
-- [2]: https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-052-tendermint-mode.md "ADR 052: Tendermint Mode"
+
+
+
+
+
+
+[1]: https://arxiv.org/abs/1807.0493 "The latest gossip on BFT consensus"
+[2]: https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-052-tendermint-mode.md "ADR 052: Tendermint Mode"

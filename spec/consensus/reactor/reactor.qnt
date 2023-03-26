@@ -1,5 +1,8 @@
-module ConsensusReactor {
+module reactor {
+    //TODO Reorganize once order does not matter.
 
+
+//===== Global parameters
     type Proc = int
 
     //const Procs: Set[Proc]                                    //All processes in the system //TODO: Use once fully supported.
@@ -7,18 +10,18 @@ module ConsensusReactor {
 
     type Payload = str
 
-//===== Helper functions
-    pure def excludeElem(s, e): (Set[a],a) => Set[a] = s.exclude(Set(e))
-    pure def excludeElem2(m, p, e): (i -> Set[a], i, a) => i -> Set[a] = m.set(p, m.get(p).exclude(Set(e)))
 
-    pure def excludeElems(s, es): (Set[a], Set[a]) => Set[a] = s.exclude(es)
-    pure def excludeElems2(m, p, es): (i -> Set[a], i, Set[a]) => i -> Set[a] = m.set(p, m.get(p).exclude(es))
+//===== Pure Helper functions
+    pure def minusE(s, e): (Set[a],a) => Set[a] = s.exclude(Set(e))
+    pure def minusE2(m, p, e): (i -> Set[a], i, a) => i -> Set[a] = m.set(p, m.get(p).exclude(Set(e)))
+    pure def minusEs2(m, p, es): (i -> Set[a], i, Set[a]) => i -> Set[a] = m.set(p, m.get(p).exclude(es))
 
-    pure def includeElem(s, e): (Set[a],a) => Set[a] = s.union(Set(e))
-    pure def includeElem2(m, p, e): (i -> Set[a], i, a) => i -> Set[a] = m.set(p, m.get(p).union(Set(e)))
+    pure def plusE(s, e): (Set[a],a) => Set[a] = s.union(Set(e))
+    pure def plusE2(m, p, e): (i -> Set[a], i, a) => i -> Set[a] = m.set(p, m.get(p).union(Set(e)))
+    pure def plusEs2(m, p, es): (i -> Set[a], i, Set[a]) => i -> Set[a] = m.set(p, m.get(p).union(es))
 
-    pure def includeElems(s, es): (Set[a],Set[a]) => Set[a] = s.union(es)
-    pure def includeElems2(m, p, es): (i -> Set[a], i, Set[a]) => i -> Set[a] = m.set(p, m.get(p).union(es))
+
+
 
 //====== [VOC-CONS-GOSSIP-TYPES] GOSSIP-I
     type CONSTuple =                                          //TODO: Define payloads?
@@ -26,11 +29,14 @@ module ConsensusReactor {
         | { tag: "prevote",   height: int, round: int, payload: Payload, signer: Proc}
         | { tag: "precommit", height: int, round: int, payload: Payload, signer: Proc}
 
-//====== [VOC-GOSSIP-P2P-TYPES] P2P-I
+ //====== [VOC-GOSSIP-P2P-TYPES] P2P-I
     type GOSSIPMessage =
         | {tag: "query" }
         | {tag: "query_response" }
         | {tag: "update", updates: Set[CONSTuple] }
+
+
+
 
 //===== GOSSIP Internals
     var localViewAdds : Proc -> Set[CONSTuple]                        //Witness variable of messages broadcast by CONS
@@ -61,7 +67,7 @@ module ConsensusReactor {
 
 // This is a "cheating" version of gossip
 // It describes the wanted behavior, which is to simply merged local views.
-    action gossip(p,q) = {
+    action gossipCheat(p,q) = {
         val lvPA = localViewAdds.get(p)
         val lvPD = localViewDels.get(p)
         val lvQA = localViewAdds.get(q)
@@ -79,7 +85,7 @@ module ConsensusReactor {
     }
 
 // This is a version of gossip that uses messages from the P2P layer.
-    action gossipReal(p,q) = all {
+    action gossip(p,q) = all {
         //send query message
         //send query response
         //receive query response
@@ -92,36 +98,28 @@ module ConsensusReactor {
         unchangedGossip,
     }
 
-// Removes superseded entries from the tuple space
-    action forgetUseless(p) = all {
-        unchangedGossipMsgs,
-        //TODO: temporary unchanged
-        unchangedGossipView
-        //TODO: clean the state of this process
-    }
-
 //===== P2P Internals
-    var maxConn : Proc -> int                                    //Maximum number of connections
+    var maxCon : Proc -> int                                    //Maximum number of connections
     var igProcs : Proc -> Set[Proc]                                 //Nodes to be ignored.
     var cnProcs  : Proc -> Set[Proc]                                 //Neighbor sets
 
     //Helper
-    val consInternals = {maxCon: maxConn, ignore: igProcs, connections: cnProcs}
+    val p2pInternals = {maxCon: maxCon, ignore: igProcs, connections: cnProcs}
 
     action addPeer(p,q): (Proc,Proc) => bool = all {
         not(cnProcs.get(p).contains(q)),
         not(cnProcs.get(q).contains(p)),
-        size(cnProcs.get(p)) < maxConn.get(p),
-        size(cnProcs.get(q)) < maxConn.get(q),
-        cnProcs' = includeElem2(includeElem2(cnProcs, p, q), q, p)
+        size(cnProcs.get(p)) < maxCon.get(p),
+        size(cnProcs.get(q)) < maxCon.get(q),
+        cnProcs' = plusE2(plusE2(cnProcs, p, q), q, p)
     }
 
     action removePeer(p,q): (Proc,Proc) => bool = all {
-        cnProcs' = excludeElem2(cnProcs, p, q)
+        cnProcs' = minusE2(cnProcs, p, q)
     }
 
     action unchangedP2P = all {
-        maxConn' = maxConn,
+        maxCon' = maxCon,
         igProcs' = igProcs,
         cnProcs' = cnProcs
     }
@@ -133,35 +131,37 @@ module ConsensusReactor {
     //Adds a tuple to the local view.
     action addTuple(p,t): (Proc, CONSTuple) => bool = all {
         not(localViewDels.get(p).contains(t)),
-        localViewAdds' = includeElem2(localViewAdds, p, t),
+        localViewAdds' = plusE2(localViewAdds, p, t),
     }
 
     //[DEF-REMOVE-TUPLE]
     //REMOVES a set of tuples from the local view.
     action removeTuples(p, es): (Proc, Set[CONSTuple]) => bool = all {
-        localViewDels' = includeElems2(localViewDels, p, es),
-        localViewAdds' = excludeElems2(localViewAdds, p, es)
+        localViewDels' = plusEs2(localViewDels, p, es),
+        localViewAdds' = minusEs2(localViewAdds, p, es)
     }
 
     //[DEF-READ-TUPLE]
     //The local view
     def localView(p) = localViewAdds.get(p).exclude(localViewDels.get(p))
 
+
+
 //====== [VOC-GOSSIP-P2P-ACTIONS] P2P-I
     action setMaxCon(p, m): (int,int) => bool = {
-        maxConn' = maxConn.set(p, m)
+        maxCon' = maxCon.set(p, m)
     }
 
-    def maxCon(p) = {
-        maxConn.get(p)
+    def maxConNum(p) = {
+        maxCon.get(p)
     }
 
     action ignoreNode(p, q): (Proc, Proc) => bool = {
-        igProcs' = includeElem2(igProcs, p, q)
+        igProcs' = plusE2(igProcs, p, q)
     }
 
     action doNotIgnoreNode(p, q): (Proc, Proc) => bool = {
-        igProcs' = excludeElem2(igProcs, p, q)
+        igProcs' = minusE2(igProcs, p, q)
     }
 
     def neighbors(p) = cnProcs.get(p)
@@ -170,18 +170,42 @@ module ConsensusReactor {
     //The P2P unicast API.
     action send(p,q,m): (Proc, Proc, GOSSIPMessage) => bool = all {
         q.in(cnProcs.get(p)),
-        sMsgs' = includeElem2(sMsgs, p, {dst:q, msg:m})
+        sMsgs' = plusE2(sMsgs, p, {dst:q, msg:m})
     }
 
     def received(p) = rMsgs.get(p)
 
-//======== Shared definitions
+//======== other definitions
     def globalView: Set[CONSTuple] = {
         val allAdds = localViewAdds.keys().fold(Set(), (acc, k) => acc.union(localViewAdds.get(k)))
         val allDels = localViewDels.keys().fold(Set(), (acc, k) => acc.union(localViewDels.get(k)))
 
         allAdds.exclude(allDels)
     }
+
+
+    def supersededByNewHeight(p): Proc => Set[CONSTuple] = {
+        //chose the highest height
+        val highestHeight = localView(p).fold(0, (a, e) => if (e.height > a) e.height else a)
+        //chose the entries with height smaller and return
+        localView(p).filter(e => e.height < highestHeight)
+    }
+
+
+    // Removes superseded entries from the tuple space
+    action forgetSuperseded(p): Proc => bool = {
+        val ssdByHeight = supersededByNewHeight(p)
+        val ssdByNewRound = Set() //TODO: superSededByNewRound(p)
+        val ssdByNewProof = Set() //TODO: superSededByNewProof(p)
+
+        all {
+            removeTuples(p, ssdByHeight.union(ssdByNewRound).union(ssdByNewProof)),
+
+            unchangedGossipMsgs,
+        }
+    }
+
+
 
 //===== Invariants
 //================================= TS-VALIDITY
@@ -262,7 +286,7 @@ module ConsensusReactor {
     //[REQ-GOSSIP-P2P-CONCURRENT_CONN]
     val RGPConcurrent = {
         Procs.forall(p =>
-                cnProcs.get(p).size() < maxConn.get(p)
+                cnProcs.get(p).size() < maxCon.get(p)
         )
     }
 
@@ -283,134 +307,291 @@ module ConsensusReactor {
         always (RGPIgnoring)
 
 
-
-
-
-
-//===== Init
-    action consInit: bool = all {
+//===== Init (anything ending with Init sets the whole state and can serve as the spec `init` clause)
+    action initCons: bool = all {
         localViewAdds' = Procs.mapBy(_ => Set()),
         localViewDels' = Procs.mapBy(_ => Set())
     }
 
-    action gossipInit: bool = all {
+    action initGossip: bool = all {
         sMsgs' = Procs.mapBy(_ => Set()),
         rMsgs' = Procs.mapBy(_ => Set())
     }
 
-    action p2pInit: bool = all {
-        maxConn' = Procs.mapBy(_ => 3),
+    action initP2P: bool = all {
+        maxCon' = Procs.mapBy(_ => 3),
         igProcs' = Procs.mapBy(_ => Set()),
         cnProcs' = Procs.mapBy(_ => Set())
     }
 
+
+    action randomEntryInit: bool = all {
+        val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL"}
+        localViewAdds' = Procs.mapBy(p => if (p == 1) Set(entry) else Set()),
+        localViewDels' = Procs.mapBy(_ => Set()),
+
+        initGossip,
+        initP2P,
+    }
+
     action init: bool = all {
-        consInit,
-        gossipInit,
-        p2pInit,
+        initCons,
+        initGossip,
+        initP2P,
     }
 
-//===== Steps
-    action step: bool = any {
-        all {
-            //chose partners
-            nondet p = oneOf(Procs)
-            nondet q = oneOf(excludeElem(Procs,p))
-            gossip(p,q),
-            unchangedP2P,
-        },
-        all {
-            nondet p = oneOf(Procs)
-            forgetUseless(p),
-            unchangedP2P,
-        }
-    }
-
-    action stepReal: bool = any {
-        all {
-            //chose partners
-            nondet p = oneOf(Procs)
-            nondet q = oneOf(excludeElem(Procs,p))
-            gossipReal(p,q),
-            unchangedP2P
-        },
-        all {
-            nondet p = oneOf(Procs)
-            forgetUseless(p),
-            unchangedP2P
-        }
-    }
-
-
-
-//===== Runs
-
-    action addRandomEntry() = all {
-            nondet p = oneOf(Procs)
-            nondet tag = oneOf(Set("proposal","prevote","precommit"))
-            nondet height = 1.to(10).oneOf()
-            nondet round = 1.to(10).oneOf()
-            val payload = "TX" //TODO+ height + " " + round
-
-            all {
-                addTuple(p, {tag: tag, height:height, round:round, payload: payload, signer: p}),
-
-                //unchanged
-                unchangedGossipMsgs,
-                localViewDels' = localViewDels,
-                unchangedP2P
-            }
-    }
-
-    action addRandomConnection() = all {
+//===== Steps (anything ending in Step sets the whole state and may be used in `run`)
+    action garbageCollect = all {
         nondet p = oneOf(Procs)
-        nondet q = oneOf(excludeElem(Procs,p))
+        forgetSuperseded(p),
+        unchangedP2P,
+    }
 
+
+    //Gossip without using P2P
+    action gossipStepCheat(p,q) = all {
+        gossipCheat(p,q),
+        unchangedP2P,
+    }
+
+    //Gossip using P2P
+    action gossipStep(p,q) = all {
+        gossip(p,q),
+        unchangedP2P
+    }
+
+    //Gossip using P2P
+    action forgetSupersededStep = all {
+        nondet p = Procs.oneOf()
+
+        forgetSuperseded(p),
+        unchangedP2P
+    }
+
+    //Update the connections
+    action randomDropConnectionStep() = all {
+        Procs.filter(ap => cnProcs.get(ap).size() > 0).size() > 0,
+        nondet p = Procs.filter(ap => cnProcs.get(ap).size() > 0).oneOf()
+        nondet q = cnProcs.get(p).oneOf()
+
+        removePeer(p,q),
+        maxCon' = maxCon,
+        igProcs' = igProcs,
+        unchangedGossip,
+    }
+
+    action randomConnectionStep() = all {
+        //Are there two processes that can still connect to each other.
+        val nonFull = Procs.filter(p => cnProcs.get(p).size() < maxCon.get(p))
+        val nonCon = nonFull.filter(p => nonFull.exists(q => and(q != p , not (cnProcs.get(p).contains(q)))))
         all {
-            addPeer(p,q),
-            maxConn' = maxConn,
+            nonCon.size() > 0,
+            all {
+                nondet p = nonCon.oneOf()
+                nondet q = nonFull.minusE(p).filter(aq => not (cnProcs.get(p).contains(aq))).oneOf()
+
+                addPeer(p,q),
+                maxCon' = maxCon,
+                igProcs' = igProcs,
+                unchangedGossip,
+            }
+        }
+    }
+
+    action addEntryStep(p, e) = all {
+            addTuple(p, e),
+
+            //unchanged
+            unchangedGossipMsgs,
+            localViewDels' = localViewDels,
+            unchangedP2P
+    }
+
+
+    action randomAddEntryStep() = all {
+        nondet p = oneOf(Procs)
+        nondet tag = oneOf(Set("proposal","prevote","precommit"))
+        nondet height = 1.to(10).oneOf()
+        nondet round = 1.to(10).oneOf()
+        val entry = {tag:tag, height:height, round:round, payload:"Payload"}
+
+        addEntryStep(p,entry),
+    }
+
+    action step: bool = any {
+        all { //gossip
+            //chose partners
+            nondet p = oneOf(Procs)
+            nondet q = oneOf(minusE(Procs,p))
+
+            gossipStepCheat(p,q)
+            //gossipStep(p,q)
+        },
+        randomConnectionStep,
+        //randomDropConnectionStep,
+        //randomAddEntryStep,
+        //forgetSupersededStep,
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+//================ Test and Debug
+
+//==== Actions
+
+    action fullConnectStep() = {
+        all {
+            cnProcs' = Procs.mapBy(p => Procs),
+            maxCon' = maxCon,
             igProcs' = igProcs,
             unchangedGossip,
         }
     }
 
-    run sendReceiveRun: bool = {
+    action ringConnectStep() = {
+        all {
+            cnProcs' = Procs.mapBy(p => if (p < size(Procs)) Set(p+1) else Set(1)),
+            maxCon' = maxCon,
+            igProcs' = igProcs,
+            unchangedGossip,
+        }
+    }
+
+    action starConnectStep() = {
+        all {
+            cnProcs' = Procs.mapBy(p => if (p ==1 ) Procs.minusE(1) else Set(1)),
+            maxCon' = maxCon,
+            igProcs' = igProcs,
+            unchangedGossip,
+        }
+    }
+
+    action randomConnectStep() = {
+        //TODO: Describe a random connected graph, without iteration, efficiently
+        //nondet f = Procs.setOfMaps(powerset(Procs)).oneOf()
+        all {
+            cnProcs' = Procs.mapBy(p => if (p < size(Procs)-1) Set(p+1, p+2) else if (p == size(Procs)-1) Set(p+1,1) else Set(1,2)),
+            maxCon' = maxCon,
+            igProcs' = igProcs,
+            unchangedGossip,
+        }
+    }
+
+
+
+    action stutter = all {
+        unchangedGossip,
+        unchangedP2P
+    }
+
+
+
+//===== Runs
+    run sendReceiveInARingTest: bool = {
         init
             //connect some nodes
-            .then(addRandomConnection)
-            .then(addRandomConnection)
-            .then(addRandomConnection)
+            .then(ringConnectStep)
             //send and receive messages
+            //TODO
     }
 
-    run gossipRun: bool = {
-        init
-            .then(addRandomConnection)
-            .then(addRandomConnection)
-            .then(addRandomConnection)
-            //add some entries
-            .then(addRandomEntry)
-            .then(addRandomEntry)
-            .then(addRandomEntry)
-            //gossip
-            .then(step)
-            .then(step)
-            .then(step)
-    }
-
-    run gossipRealRun: bool = {
+    run sendReceiveInFullyConnectedTest: bool = {
         init
             //connect some nodes
-            .then(addRandomConnection)
-            .then(addRandomConnection)
-            .then(addRandomConnection)
-            //add some entries
-            .then(addRandomEntry)
-            .then(addRandomEntry)
-            .then(addRandomEntry)
-            //gossip
-            .then(stepReal)
-            .then(stepReal)
-            .then(stepReal)
+            .then(fullConnectStep)
+            //send and receive messages
+            //TODO
     }
+
+    run gossipInARingTest: bool = {
+        val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL"}
+        init
+            //connect some nodes
+            .then(ringConnectStep)
+            //add one entry
+            .then(addEntryStep(1, entry))
+            //gossip
+            .then(gossipStepCheat(1,2))
+            .then(gossipStepCheat(2,3))
+            .then(gossipStepCheat(3,4))
+            .then(gossipStepCheat(4,5))
+            .then(gossipStepCheat(1,2))
+            .then(all {
+                //All see the entry
+                Procs.forall(p => localView(p).contains(entry)),
+                stutter
+            })
+    }
+
+   run gossipInFullTest: bool = {
+        val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL"}
+        init
+            //connect some nodes
+            .then(fullConnectStep)
+            //add one entry
+            .then(addEntryStep(1, entry))
+            //gossip
+            .then(gossipStepCheat(1,2))
+            .then(gossipStepCheat(1,3))
+            .then(gossipStepCheat(3,4))
+            .then(gossipStepCheat(3,5))
+            .then(all {
+                //All see the entry
+                Procs.forall(p => localView(p).contains(entry)),
+                stutter
+            })
+    }
+
+    run gossipStarTest: bool = {
+        val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL"}
+
+        init
+            //connect some nodes
+            .then(starConnectStep)
+            //add one entries
+            .then(addEntryStep(1, entry))
+            //gossip
+            .then(step)
+            .repeated(5)
+            .then(all {
+                //Some see the entry
+                Procs.minusE(1).exists(p => localView(p).contains(entry)),
+                stutter
+            })
+    }
+
+    run gossipRandomTest: bool = {
+        val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL"}
+
+        init
+            //connect some nodes
+            .then(randomConnectStep)
+            //add one entries
+            .then(addEntryStep(1, entry))
+            //gossip
+            .then(step)
+            .repeated(5)
+            .then(all {
+                //Some see the entry
+                Procs.minusE(1).exists(p => localView(p).contains(entry)),
+                stutter
+            })
+    }
+
 }
+
+/*
+To test this spec
+
+- quint test reactor.qnt //Runs all tests
+- quint run --max-samples 10000 --max-steps 10 --invariant RGPIgnoring reactor.qnt
+*/

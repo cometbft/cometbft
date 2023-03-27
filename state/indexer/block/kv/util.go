@@ -121,7 +121,7 @@ func parseEventSeqFromEventKey(key []byte) (int64, error) {
 	if len(remaining) != 0 {
 		var typ string
 		remaining2, err := orderedcode.Parse(remaining, &typ) // Check if legacy event from Begin/EndBlock
-		if err != nil {                                       // We could be dealing with new event that has not typ
+		if err != nil {                                       // We could be dealing with new event that has no typ
 			remaining, err2 := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height, &eventSeq)
 			if err2 != nil || len(remaining) != 0 { // We should not have anything else after the eventSeq
 				return 0, fmt.Errorf("failed to parse event key: %w", err)

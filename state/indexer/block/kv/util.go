@@ -116,32 +116,25 @@ func parseEventSeqFromEventKey(key []byte) (int64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("failed to parse event key: %w", err)
 	}
-	if len(remaining) == 0 {
-		return 0, fmt.Errorf("too short event key: %w", err)
-	}
 
-	var typ string
-	// We expect the event sequence to come next
-	remaining, err = orderedcode.Parse(remaining, &eventSeq)
-	if err != nil {
-		// If event sequence is not coming after height, lets try parsing event info (being_block/end_block) in
-		// case the data was indexed with old versions. This is the only valid scenario where this can happen
-		remaining, err := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height, &typ)
-		if err != nil {
-			return 0, fmt.Errorf("failed to parse event key: %w", err)
-		}
-		if len(remaining) != 0 {
-			// We indexed data with versions using event sequence (0.34.26+ and 0.37.x)
-			remaining, err = orderedcode.Parse(remaining, &eventSeq)
-			if err != nil || len(remaining) != 0 { // We should never have any other data after the event sequence
+	// This is done to support previous versions that did not have event sequence in their key
+	if len(remaining) != 0 {
+		var typ string
+		remaining2, err := orderedcode.Parse(remaining, &typ) // Check if legacy event from Begin/EndBlock
+		if err != nil {                                       // We could be dealing with new event that has not typ
+			remaining, err2 := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height, &eventSeq)
+			if err2 != nil || len(remaining) != 0 { // We should not have anything else after the eventSeq
+				return 0, fmt.Errorf("failed to parse event key: %w", err)
+			}
+
+		} else {
+			remaining, err2 := orderedcode.Parse(remaining2, &eventSeq)
+			if err2 != nil || len(remaining) != 0 { // We should not have anything else after the eventSeq
 				return 0, fmt.Errorf("failed to parse event key: %w", err)
 			}
 		}
-	} else {
-		if len(remaining) != 0 { // We should never have any other data after the event sequence
-			return 0, fmt.Errorf("failed to parse event key: %w", err)
-		}
 	}
+
 	return eventSeq, nil
 }
 

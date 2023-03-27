@@ -225,7 +225,7 @@ for the validation of transactions when broadcasting in the mempool, one
 for the consensus engine to run block proposals, and one more for
 querying the application state.
 
-It's probably evident that applications designers need to very carefully
+It's probably evident that application designers need to very carefully
 design their message handlers to create a blockchain that does anything
 useful but this architecture provides a place to start. The diagram
 below illustrates the flow of messages via ABCI.

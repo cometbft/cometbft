@@ -125,20 +125,17 @@ func parseEventSeqFromEventKey(key []byte) (int64, error) {
 			remaining, err2 := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height, &eventSeq)
 			if err2 != nil || len(remaining) != 0 { // We should not have anything else after the eventSeq
 				return 0, fmt.Errorf("failed to parse event key: %w", err)
-			} else {
-				return eventSeq, nil
 			}
+
 		} else {
 			remaining, err2 := orderedcode.Parse(remaining2, &eventSeq)
 			if err2 != nil || len(remaining) != 0 { // We should not have anything else after the eventSeq
 				return 0, fmt.Errorf("failed to parse event key: %w", err)
-			} else {
-				return eventSeq, nil
 			}
 		}
 	}
 
-	return 0, nil
+	return eventSeq, nil
 }
 
 // Remove all occurrences of height equality queries except one. While we are traversing the conditions, check whether the only condition in

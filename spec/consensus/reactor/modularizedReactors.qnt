@@ -17,6 +17,7 @@ module Globals {
 }
 
 
+//Define the Gossip Interface
 module GossipI {
     import Globals.*
 
@@ -43,10 +44,12 @@ module GossipI {
 }
 
 
-
+//Defines the P2P Interface
 module P2PI {
     import Globals.*
-    import GossipI.*   //Shouldn't be needed.
+    import GossipI.*   //Shouldn't be needed. TODO: How to represent the payload in the GossipMessage?
+
+
 
  //====== [VOC-GOSSIP-P2P-TYPES] P2P-I
     type GOSSIPMessage =
@@ -57,22 +60,18 @@ module P2PI {
 //==== Exported methods P2P-I
     //action send(p,q,m): (Proc, Proc, GOSSIPMessage) => bool
     //def received(p): Set[GOSSIPMessage]
+
 }
 
 
-
-//This module implements P2P without using the network
-// - everything sent is immediately delivered
-// - there are no duplications
-// - there are no losses
+//Provides staandard behavior for P2PI implementations
 module P2PAbstract {
     import Helpers.*
     import Globals.*
     import P2PI.*
 
-    const Param: bool //Hack to get quint to instantiate
-
-    //===== P2P Internals
+//==== Common to implementationtions, but probably not actually part of the P2P-I.
+    //===== P2P Internals                                       //TODO: Move some of these to P2PI
     var maxCon : Proc -> int                                    //Maximum number of outbound connections
     var igProcs : Proc -> Set[Proc]                                 //Nodes to be ignored.
     var cnProcs  : Proc -> Set[Proc]                                 //Neighbor sets
@@ -120,20 +119,6 @@ module P2PAbstract {
 
     def neighbors(p) = cnProcs.get(p)
 
-//====== [VOC-GOSSIP-P2P-ACTIONS] P2P-I
-    //[DEF-UNICAST]
-    //The P2P unicast API.
-    action send(p,q,m): (Proc, Proc, GOSSIPMessage) => bool = all {
-        q.in(cnProcs.get(p)),
-        not({src:p, msg:m}.in(rMsgs.get(q))),
-        sMsgs' = plusE2(sMsgs, p, {dst:q, msg:m}),
-        rMsgs' = plusE2(rMsgs, q, {src:q, msg:m})
-    }
-
-    def received(p): Proc => Set[{src:Proc, msg: GOSSIPMessage}] =
-        rMsgs.get(p)
-
-
 //==== Init
     action init: bool = all {
         maxCon' = Procs.mapBy(_ => 3),
@@ -143,8 +128,7 @@ module P2PAbstract {
         rMsgs' = Procs.mapBy(_ => Set())
     }
 
-
-//===== Step
+//==== Steps
     //Update the connections
     action randomDropConnectionStep() = all {
         Procs.filter(ap => cnProcs.get(ap).size() > 0).size() > 0,
@@ -173,13 +157,52 @@ module P2PAbstract {
         }
     }
 
-    action step = any {
+    action randomstep = any {
         randomConnectionStep,
         randomDropConnectionStep,
-
     }
+
+    action step = unchangedP2P
+
 }
 
+
+
+//This module implements P2P without using the network
+// - everything sent is immediately delivered
+// - there are no duplications
+// - there are no losses
+module P2PCheat {
+    import Helpers.*
+    import Globals.*
+    import P2PI.*
+
+    import P2PAbstract as PA
+
+//====== [VOC-GOSSIP-P2P-ACTIONS] P2P-I
+    //[DEF-UNICAST]
+    //The P2P unicast API.
+    action send(p,q,m): (Proc, Proc, GOSSIPMessage) => bool = all {
+        q.in(PA::cnProcs.get(p)),
+        not({src:p, msg:m}.in(PA::rMsgs.get(q))),
+        PA::sMsgs' = plusE2(PA::sMsgs, p, {dst:q, msg:m}),
+        PA::rMsgs' = plusE2(PA::rMsgs, q, {src:q, msg:m})
+    }
+
+    def received(p): Proc => Set[{src:Proc, msg: GOSSIPMessage}] =
+        PA::rMsgs.get(p)
+
+    action unchanged = PA::unchangedP2P
+
+//==== Init
+    action init: bool = PA::init
+
+
+//===== Steps
+    action deliverMessageStep = PA::unchangedP2P
+
+    action step: bool = PA::step
+}
 
 
 //This module implements P2P "using" the network
@@ -192,160 +215,80 @@ module P2PNetwork {
     import Globals.*
     import P2PI.*
 
-    const Param: bool //Hack to get quint to instantiate
-
-    //===== P2P Internals
-    var maxCon : Proc -> int                                    //Maximum number of connections
-    var igProcs : Proc -> Set[Proc]                                 //Nodes to be ignored.
-    var cnProcs  : Proc -> Set[Proc]                                 //Neighbor sets
+    import P2PAbstract as PA
 
     type OutGoingMsg = {dst:Proc, msg: GOSSIPMessage}
     type IncomingMsg = {src:Proc, msg: GOSSIPMessage}
 
-    var sMsgs: Proc -> Set[OutGoingMsg]            //Unicast sent messages
-    var rMsgs: Proc -> Set[IncomingMsg]            //Unicast received messages
-
-    //Helper
-    val p2pInternals = {maxCon: maxCon, ignore: igProcs, connections: cnProcs, sent:sMsgs, received:rMsgs}
-
-    def outToInc(s, m): (Proc,OutGoingMsg) => IncomingMsg =
+    //Helpers
+    def outToInc(s, m): (Proc, OutGoingMsg) => IncomingMsg =
         {src:s, msg:m.msg}
 
     def incToOut(d, m): (Proc,IncomingMsg) => OutGoingMsg =
         {dst:d, msg:m.msg}
 
-    action unchangedP2P = all {
-        maxCon' = maxCon,
-        igProcs' = igProcs,
-        cnProcs' = cnProcs,
-        rMsgs' = rMsgs,
-        sMsgs' = sMsgs
+    def nonDelMsgs(p): Proc => Set[{dst: Proc, msg:GOSSIPMessage}] = {
+        PA::sMsgs.get(p).filter(m => not(outToInc(p,m).in(PA::rMsgs.get(m.dst))))
     }
-
-    action addPeer(p,q): (Proc,Proc) => bool = all {
-        not(cnProcs.get(p).contains(q)),
-        size(cnProcs.get(p)) < maxCon.get(p),
-        cnProcs' = plusE2(cnProcs, p, q),
-    }
-
-    action removePeer(p,q): (Proc,Proc) => bool = all {
-        cnProcs' = minusE2(cnProcs, p, q)
-    }
-
-
-    action setMaxCon(p, m): (int,int) => bool = {
-        maxCon' = maxCon.set(p, m)
-    }
-
-    def maxConNum(p) = {
-        maxCon.get(p)
-    }
-
-    action ignoreNode(p, q): (Proc, Proc) => bool = {
-        igProcs' = plusE2(igProcs, p, q)
-    }
-
-    action doNotIgnoreNode(p, q): (Proc, Proc) => bool = {
-        igProcs' = minusE2(igProcs, p, q)
-    }
-
-    def neighbors(p) = cnProcs.get(p)
 
 //====== [VOC-GOSSIP-P2P-ACTIONS] P2P-I
     //[DEF-UNICAST]
     //The P2P unicast API.
     action send(p,q,m): (Proc, Proc, GOSSIPMessage) => bool = all {
-        q.in(cnProcs.get(p)),
-        sMsgs' = plusE2(sMsgs, p, {dst:q, msg:m})
+        q.in(PA::cnProcs.get(p)),
+        PA::sMsgs' = plusE2(PA::sMsgs, p, {dst:q, msg:m}),
+        PA::rMsgs' = PA::rMsgs
     }
 
-    def received(p) = rMsgs.get(p)
+    def received(p) = PA::rMsgs.get(p)
 
-    def nonDelMsgs(p): Proc => Set[{dst: Proc, msg:GOSSIPMessage}] = {
-        sMsgs.get(p).filter(m => not(outToInc(p,m).in(rMsgs.get(m.dst))))
-    }
+    action unchanged = PA::unchangedP2P
 
 //======Init
-    action init: bool = all {
-        maxCon' = Procs.mapBy(_ => 3),
-        igProcs' = Procs.mapBy(_ => Set()),
-        cnProcs' = Procs.mapBy(_ => Set()),
-        sMsgs' = Procs.mapBy(_ => Set()),
-        rMsgs' = Procs.mapBy(_ => Set())
-    }
-
-
+    action init: bool = PA::init
 
 //===== Step
     action deliverMessageStep = {
-        val p = sMsgs.keys().filter(ap => nonDelMsgs(ap).size() > 0).oneOf()
+        val p = PA::sMsgs.keys().filter(ap => nonDelMsgs(ap).size() > 0).oneOf()
         val m = nonDelMsgs(p).oneOf()
         all {
-            rMsgs' = plusE2(rMsgs, m.dst, outToInc(p,m)),
-            sMsgs' = minusE2(sMsgs, p, m),
+            PA::rMsgs' = plusE2(PA::rMsgs, m.dst, outToInc(p,m)),
+            PA::sMsgs' = minusE2(PA::sMsgs, p, m),
 
-            maxCon' = maxCon,
-            igProcs' = igProcs,
-            cnProcs' = cnProcs
-        }
-    }
-
-    //Update the connections
-    action randomDropConnectionStep() = all {
-        Procs.filter(ap => cnProcs.get(ap).size() > 0).size() > 0,
-        nondet p = Procs.filter(ap => cnProcs.get(ap).size() > 0).oneOf()
-        nondet q = cnProcs.get(p).oneOf()
-        removePeer(p,q),
-
-        maxCon' = maxCon,
-        igProcs' = igProcs,
-        rMsgs' = rMsgs,
-        sMsgs' = sMsgs
-    }
-
-    action randomConnectionStep() = all {
-        //Are there two processes that can still connect to each other.
-        val nonFull = Procs.filter(p => cnProcs.get(p).size() < maxCon.get(p))
-        val nonCon = nonFull.filter(p => nonFull.exists(q => and(q != p , not (cnProcs.get(p).contains(q)))))
-        all {
-            nonCon.size() > 0,
-            nondet p = nonCon.oneOf()
-            nondet q = nonFull.filter(aq => and (aq != p, not (cnProcs.get(p).contains(aq)))).oneOf()
-            addPeer(p,q),
-
-            maxCon' = maxCon,
-            igProcs' = igProcs,
-            rMsgs' = rMsgs,
-            sMsgs' = sMsgs
+            PA::maxCon' = PA::maxCon,
+            PA::igProcs' = PA::igProcs,
+            PA::cnProcs' = PA::cnProcs
         }
     }
 
     action step = any {
-        randomConnectionStep,
-        randomDropConnectionStep,
+        PA::step,
         deliverMessageStep,
     }
 }
 
 
 
+
 module P2PInvariants {
     import Globals.*
 
-    import P2PAbstract(Param = true) as P
-    //import P2PNetwork(Param = true) as P
+    import P2PAbstract as PA
+
+    import P2PCheat as P
+    //import P2PNetwork as P
 
 //================================= REQ-GOSSIP-P2P
     //[REQ-GOSSIP-P2P-UNICAST]
     temporal RGPUnicastProp = {
         Procs.forall(p =>
-            P::cnProcs.get(p).forall(q =>
-                P::sMsgs.get(p).forall(m =>
+            PA::cnProcs.get(p).forall(q =>
+                PA::sMsgs.get(p).forall(m =>
                     always (
                         eventually (
                             or {
-                                P::rMsgs.get(q).contains({src:p, msg:m.msg}),
-                                not (P::cnProcs.get(p).contains(q))
+                                PA::rMsgs.get(q).contains({src:p, msg:m.msg}),
+                                not (PA::cnProcs.get(p).contains(q))
                             }
                         )
                     )
@@ -358,7 +301,7 @@ module P2PInvariants {
     //[REQ-GOSSIP-P2P-CONCURRENT_CONN]
     val RGPConcurrent = {
         Procs.forall(p =>
-                P::cnProcs.get(p).size() < P::maxCon.get(p)
+                PA::cnProcs.get(p).size() < PA::maxCon.get(p)
         )
     }
 
@@ -368,8 +311,8 @@ module P2PInvariants {
     //[REQ-GOSSIP-P2P-IGNORING]
     val RGPIgnoring: bool = {
         Procs.forall(p =>
-            val cnP = P::cnProcs.get(p)
-            val igP = P::igProcs.get(p)
+            val cnP = PA::cnProcs.get(p)
+            val igP = PA::igProcs.get(p)
             val igCn = cnP.intersect(igP)
                 size(igCn) == 0
         )
@@ -379,19 +322,13 @@ module P2PInvariants {
         always (RGPIgnoring)
 
 
-    action step = all {
-        P::step
-    }
+    action step = P::step
 
-    action init = all {
-        P::init
-    }
-
+    action init = P::init
 }
 
 
-
-
+/*
 // This module implements GOSSIP-I without really gossiping. All tuples are immediately available to all.
 module GossipGlobal {
     import Helpers.*
@@ -460,12 +397,9 @@ module GossipGlobal {
             globalViewDels' = globalViewDels,
     }
 
-    action step: bool =
-        unchangedGossip
+    //Step does not need to do anything, since everything is imediatelly gossiped.
+    action step: bool = true
 
-    action stutter = all {
-        unchangedGossip,
-    }
 }
 
 // This module implements GOSSIP-I without using P2P. Nodes compare their local views and converge 2-by-2.
@@ -780,29 +714,246 @@ module SupersessionOracle {
 }
 
 
+*/
 
 
+
+
+//========= P2P Tests
+module P2PTestHelper {
+    import Helpers.*
+    import Globals.*
+    import P2PI.*
+
+    import P2PAbstract as PA
+
+    import P2PCheat as P
+    //import P2PNetwork as P
+
+    action connectRingStep() = {
+        all {
+            PA::cnProcs' = Procs.mapBy(p => if (p < size(Procs)) Set(p+1) else Set(0)),
+            PA::maxCon' = PA::maxCon,
+            PA::igProcs' = PA::igProcs,
+
+            PA::sMsgs' = PA::sMsgs,
+            PA::rMsgs' = PA::rMsgs
+        }
+    }
+
+    action connectFullStep() = {
+        all {
+            PA::cnProcs' = PA::Procs.mapBy(p => PA::Procs),
+            PA::maxCon' = PA::maxCon,
+            PA::igProcs' = PA::igProcs,
+
+            PA::sMsgs' = PA::sMsgs,
+            PA::rMsgs' = PA::rMsgs
+        }
+    }
+
+    action connectStarStep() = {
+        all {
+            PA::cnProcs' = PA::Procs.mapBy(p => if (p ==1 ) Procs.minusE(1) else Set(1)),
+            PA::maxCon' = PA::maxCon,
+            PA::igProcs' = PA::igProcs,
+
+            PA::sMsgs' = PA::sMsgs,
+            PA::rMsgs' = PA::rMsgs
+        }
+    }
+
+    action connectRandomStep() = {
+        //TODO: Describe a random connected graph, without iteration, efficiently
+        //nondet f = Procs.setOfMaps(powerset(Procs)).oneOf()
+        //The graph below is actually a double link ring.
+        all {
+            PA::cnProcs' = PA::Procs.mapBy(p => if (p < size(Procs)-1) Set(p+1, p+2) else if (p == size(Procs)-1) Set(p+1,1) else Set(1,2)),
+            PA::maxCon' = PA::maxCon,
+            PA::igProcs' = PA::igProcs,
+
+            PA::sMsgs' = PA::sMsgs,
+            PA::rMsgs' = PA::rMsgs
+        }
+    }
+}
+
+
+module P2PTests {
+    import Helpers.*
+    import Globals(Procs = Set(1,2,3,4,5)) as G
+    import P2PI.*
+
+    import P2PAbstract as PA
+
+    import P2PTestHelper.*
+
+    import P2PCheat as P
+    //import P2PNetwork as P
+
+
+//===== Runs/Debug
+    run NOOPTest: bool = {
+        P::init
+    }
+
+    run sendReceiveInARingTest: bool = {
+        P::init
+            //connect some nodes
+            .then(connectRingStep)
+            //send and receive messages
+            .then(
+                all {
+                    P::send(1,2,{gat: "query"}),
+
+                    PA::cnProcs' = PA::cnProcs,
+                    PA::maxCon' = PA::maxCon,
+                    PA::igProcs' = PA::igProcs,
+                }
+            )
+            .then(
+                all {
+                    P::send(2,3,{gat: "query"}),
+
+                    PA::cnProcs' = PA::cnProcs,
+                    PA::maxCon' = PA::maxCon,
+                    PA::igProcs' = PA::igProcs,
+                }
+            )
+            .then(P::deliverMessageStep).repeated(2)
+            .then(all {
+                size(PA::Procs.filter(p => size(P::received(p)) > 0)) == 2,
+
+                P::unchanged
+            })
+    }
+
+    run sendReceiveInFullyConnectedTest: bool = {
+        P::init
+            //connect some nodes
+            .then(connectFullStep)
+            //send and receive messages
+            .then(
+                all {
+                    P::send(1,2,{gat: "query"}),
+
+                    PA::cnProcs' = PA::cnProcs,
+                    PA::maxCon' = PA::maxCon,
+                    PA::igProcs' = PA::igProcs,
+                }
+            )
+            .then(
+                all {
+                    P::send(2,3,{gat: "query"}),
+
+                    PA::cnProcs' = PA::cnProcs,
+                    PA::maxCon' = PA::maxCon,
+                    PA::igProcs' = PA::igProcs,
+                }
+            )
+            .then(P::deliverMessageStep).repeated(2)
+            .then(all {
+                size(PA::Procs.filter(p => size(P::received(p)) > 0)) == 2,
+
+                P::unchanged
+            })
+    }
+
+    run sendReceiveInStarConnectedTest: bool = {
+        P::init
+            //connect some nodes
+            .then(connectStarStep)
+            //send and receive messages
+            .then(
+                all {
+                    P::send(1,2,{gat: "query"}),
+
+                    PA::cnProcs' = PA::cnProcs,
+                    PA::maxCon' = PA::maxCon,
+                    PA::igProcs' = PA::igProcs,
+                }
+            )
+            .then(
+                all {
+                    P::send(2,3,{gat: "query"}),
+
+                    PA::cnProcs' = PA::cnProcs,
+                    PA::maxCon' = PA::maxCon,
+                    PA::igProcs' = PA::igProcs,
+                }
+            )
+            .then(P::deliverMessageStep).repeated(2)
+            .then(all {
+                size(PA::Procs.filter(p => size(P::received(p)) > 0)) == 2,
+
+                P::unchanged
+            })
+    }
+
+    run sendReceiveInRandomConnectedTest: bool = {
+        P::init
+            //connect some nodes
+            .then(connectRandomStep)
+            //send and receive messages
+            .then(
+                all {
+                    P::send(1,2,{gat: "query"}),
+
+                    PA::cnProcs' = PA::cnProcs,
+                    PA::maxCon' = PA::maxCon,
+                    PA::igProcs' = PA::igProcs,
+                }
+            )
+            .then(
+                all {
+                    P::send(2,3,{gat: "query"}),
+
+                    PA::cnProcs' = PA::cnProcs,
+                    PA::maxCon' = PA::maxCon,
+                    PA::igProcs' = PA::igProcs,
+                }
+            )
+            .then(P::deliverMessageStep).repeated(2)
+            .then(all {
+                size(PA::Procs.filter(p => size(P::received(p)) > 0)) == 2,
+
+                P::unchanged
+            })
+    }
+/*
+*/
+
+}
 
 
 
 /*
-//========= Tests
 
+//==== Gossip Tests
 
 module GossipRingTests {
-    import GossipAbstract(Procs = Set(1,2,3,4,5)) as G
+    import Globals.*
+    import P2PI.*
+
+    import P2PAbstract as P
+    //import P2PNetwork as P
+
+    import GossipGlobal(Param = true) as G
+//    import GossipAbstract(Param(Param = true) as G
+//    import GossipP2P(Param = true) as G
 
     action connectStep() = {
         all {
-            G::cnProcs' = G::Procs.mapBy(p => if (p < size(G::Procs)) Set(p+1) else Set(0)),
-            G::maxCon' = G::maxCon,
-            G::igProcs' = G::igProcs,
+            P::cnProcs' = Procs.mapBy(p => if (p < size(Procs)) Set(p+1) else Set(0)),
+            P::maxCon' = P::maxCon,
+            P::igProcs' = P::igProcs,
             G::unchangedGossip,
         }
     }
 
 //===== Runs/Debug
     action stutter = all {
+        P::stutter,
         G::stutter,
     }
 
@@ -834,7 +985,6 @@ module GossipRingTests {
             })
     }
 }
-
 
 
 module GossipFullTests {

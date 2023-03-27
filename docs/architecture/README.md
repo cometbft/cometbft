@@ -42,6 +42,8 @@ numbering our ADRs from 100 onwards.
 
 ### Proposed
 
+- [ADR-102: Standalone RPC](./adr-102-standalone-rpc.md)
+
 ### Accepted
 
 ### Implemented

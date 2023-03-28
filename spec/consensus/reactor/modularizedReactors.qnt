@@ -791,6 +791,10 @@ module P2PTests {
     import P2PCheat as P
     //import P2PNetwork as P
 
+//init and step, used for random walks a fully configured "stack"
+    action init = P::init
+
+    action step = P::step
 
 //===== Runs/Debug
     run NOOPTest: bool = {
@@ -920,13 +924,12 @@ module P2PTests {
                 P::unchanged
             })
     }
-/*
-*/
-
 }
 
 
 
+/*
+*/
 /*
 
 //==== Gossip Tests

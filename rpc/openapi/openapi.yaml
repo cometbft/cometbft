@@ -62,7 +62,7 @@ info:
 
         echo '{ "jsonrpc": "2.0","method": "subscribe","id": 0,"params": {"query": "tm.event='"'NewBlock'"'"} }' | websocat -n -t ws://127.0.0.1:26657/websocket
 
-  version: "main"
+  version: "v0.38.x"
   license:
     name: Apache 2.0
     url: https://github.com/cometbft/cometbft/blob/v0.38.x/LICENSE

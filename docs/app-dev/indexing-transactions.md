@@ -16,7 +16,7 @@ Each event contains a type and a list of attributes, which are key-value pairs
 denoting something about what happened during the method's execution. For more
 details on `Events`, see the
 
-[ABCI](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_basic_concepts.md#events)
+[ABCI](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/abci/abci++_basic_concepts.md#events)
 
 documentation.
 

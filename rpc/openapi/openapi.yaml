@@ -65,7 +65,7 @@ info:
   version: "main"
   license:
     name: Apache 2.0
-    url: https://github.com/cometbft/cometbft/blob/main/LICENSE
+    url: https://github.com/cometbft/cometbft/blob/v0.38.x/LICENSE
 servers:
   - url: https://rpc.cosmos.directory/cosmoshub
     description: Interact with the CometBFT RPC from a public node in the Cosmos registry

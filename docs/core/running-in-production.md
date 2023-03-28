@@ -370,7 +370,7 @@ proposing the next block).
 
 By default, CometBFT checks whenever a peer's address is routable before
 saving it to the address book. The address is considered as routable if the IP
-is [valid and within allowed ranges](https://github.com/cometbft/cometbft/blob/main/p2p/netaddress.go#L258).
+is [valid and within allowed ranges](https://github.com/cometbft/cometbft/blob/v0.38.x/p2p/netaddress.go#L258).
 
 This may not be the case for private or local networks, where your IP range is usually
 strictly limited and private. If that case, you need to set `addr_book_strict`

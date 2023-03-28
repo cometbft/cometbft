@@ -216,7 +216,7 @@ For this reason, this method is not invoked with a started transport.
 > Note that the default list of supported channel IDs, including the default reactors,
 > is provided to the transport as its original `NodeInfo` record.
 
-[peer-sts]: https://github.com/cometbft/cometbft/blob/main/spec/p2p/peer.md#authenticated-encryption-handshake
-[peer-handshake]:https://github.com/cometbft/cometbft/blob/main/spec/p2p/peer.md#cometbft-version-handshake
+[peer-sts]: https://github.com/cometbft/cometbft/blob/v0.38.x/spec/p2p/peer.md#authenticated-encryption-handshake
+[peer-handshake]:https://github.com/cometbft/cometbft/blob/v0.38.x/spec/p2p/peer.md#cometbft-version-handshake
 [sts-paper]: https://link.springer.com/article/10.1007/BF00124891
 [sts-paper-pdf]: https://github.com/tendermint/tendermint/blob/0.1/docs/sts-final.pdf

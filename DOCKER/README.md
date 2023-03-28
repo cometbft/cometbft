@@ -37,7 +37,7 @@ docker run -it --rm -v "/tmp:/cometbft" cometbft/cometbft node --proxy_app=kvsto
 
 ## Local cluster
 
-To run a 4-node network, see the `Makefile` in the root of [the repo](https://github.com/cometbft/cometbft/blob/main/Makefile) and run:
+To run a 4-node network, see the `Makefile` in the root of [the repo](https://github.com/cometbft/cometbft/blob/v0.38.x/Makefile) and run:
 
 ```sh
 make build-linux
@@ -49,8 +49,8 @@ Note that this will build and use a different image than the ones provided here.
 
 ## License
 
-- CometBFT's license is [Apache 2.0](https://github.com/cometbft/cometbft/blob/main/LICENSE).
+- CometBFT's license is [Apache 2.0](https://github.com/cometbft/cometbft/blob/v0.38.x/LICENSE).
 
 ## Contributing
 
-Contributions are most welcome! See the [contributing file](https://github.com/cometbft/cometbft/blob/main/CONTRIBUTING.md) for more information.
+Contributions are most welcome! See the [contributing file](https://github.com/cometbft/cometbft/blob/v0.38.x/CONTRIBUTING.md) for more information.

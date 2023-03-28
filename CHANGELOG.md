@@ -6,12 +6,12 @@
 
 - The `TMHOME` environment variable was renamed to `CMTHOME`, and all environment variables starting with `TM_` are instead prefixed with `CMT_`
   ([\#211](https://github.com/cometbft/cometbft/issues/211))
-- [mempool] Remove priority mempool. 
-  ([\#260](https://github.com/cometbft/cometbft/issues/260))
-- [config] Remove `Version` field from `MempoolConfig`. 
-  ([\#260](https://github.com/cometbft/cometbft/issues/260))
-- [protobuf] Remove fields `sender`, `priority`, and `mempool_error` from
+- `[protobuf]` Remove fields `sender`, `priority`, and `mempool_error` from
   `ResponseCheckTx`. ([\#260](https://github.com/cometbft/cometbft/issues/260))
+- `[mempool]` Remove priority mempool.
+  ([\#260](https://github.com/cometbft/cometbft/issues/260))
+- `[config]` Remove `Version` field from `MempoolConfig`.
+  ([\#260](https://github.com/cometbft/cometbft/issues/260))
 - Bump minimum Go version to 1.20
   ([\#385](https://github.com/cometbft/cometbft/issues/385))
 - `[tools/tm-signer-harness]` Set OS home dir to instead of the hardcoded PATH.

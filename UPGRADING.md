@@ -31,11 +31,15 @@ This guide provides instructions for upgrading to specific versions of CometBFT.
 
 When indexing block events, the indexer would include the function that returned those events
 (`BeginBlock` or `EndBlock`). In ABCI 2.0 `FinalizeBlock` combines these functions, and all
-events are returned within `ResultFinalizeBlock`. Therefore, the function fields will
-have no meaning anymore and will be removed in CometBFT v0.38.x. 
+events are returned within `ResultFinalizeBlock`. Therefore, the function field will
+have no meaning anymore, and to reduce storage space taken by the indexer,
+it will be removed in CometBFT v0.38.x.
 
-If you included the function information in your queries, this information will be discarded
-and you should not rely on it anymore. 
+Events indexed with previous CometBFT or Tendermint versions, will still be processed, 
+but the function field is ignored. There is no need to re-index the events.
+
+However, queries checking for this field, will return nothing. 
+
 
 ## v0.37.0
 

@@ -149,7 +149,7 @@ Currently supported versions include:
 ### Research
 
 Below are links to the original Tendermint consensus algorithm and relevant
-whitepapers which CosmosBFT will continue to build on.
+whitepapers which CometBFT will continue to build on.
 
 - [The latest gossip on BFT consensus](https://arxiv.org/abs/1807.04938)
 - [Master's Thesis on Tendermint](https://atrium.lib.uoguelph.ca/xmlui/handle/10214/9769)

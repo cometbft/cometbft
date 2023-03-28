@@ -23,11 +23,11 @@ import (
 // At most 20 items will be returned. Block headers are returned in descending
 // order (highest first).
 //
-// More: https://docs.cometbft.com/main/rpc/#/Info/blockchain
+// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/blockchain
 func (env *Environment) BlockchainInfo(
 	ctx *rpctypes.Context,
-	minHeight, maxHeight int64) (*ctypes.ResultBlockchainInfo, error) {
-
+	minHeight, maxHeight int64,
+) (*ctypes.ResultBlockchainInfo, error) {
 	const limit int64 = 20
 	var err error
 	minHeight, maxHeight, err = filterMinMax(
@@ -49,7 +49,8 @@ func (env *Environment) BlockchainInfo(
 
 	return &ctypes.ResultBlockchainInfo{
 		LastHeight: env.BlockStore.Height(),
-		BlockMetas: blockMetas}, nil
+		BlockMetas: blockMetas,
+	}, nil
 }
 
 // error if either min or max are negative or min > max
@@ -87,7 +88,7 @@ func filterMinMax(base, height, min, max, limit int64) (int64, int64, error) {
 
 // Header gets block header at a given height.
 // If no height is provided, it will fetch the latest header.
-// More: https://docs.cometbft.com/main/rpc/#/Info/header
+// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/header
 func (env *Environment) Header(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultHeader, error) {
 	height, err := env.getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
@@ -103,7 +104,7 @@ func (env *Environment) Header(ctx *rpctypes.Context, heightPtr *int64) (*ctypes
 }
 
 // HeaderByHash gets header by hash.
-// More: https://docs.cometbft.com/main/rpc/#/Info/header_by_hash
+// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/header_by_hash
 func (env *Environment) HeaderByHash(ctx *rpctypes.Context, hash bytes.HexBytes) (*ctypes.ResultHeader, error) {
 	// N.B. The hash parameter is HexBytes so that the reflective parameter
 	// decoding logic in the HTTP service will correctly translate from JSON.
@@ -119,7 +120,7 @@ func (env *Environment) HeaderByHash(ctx *rpctypes.Context, hash bytes.HexBytes)
 
 // Block gets block at a given height.
 // If no height is provided, it will fetch the latest block.
-// More: https://docs.cometbft.com/main/rpc/#/Info/block
+// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/block
 func (env *Environment) Block(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlock, error) {
 	height, err := env.getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
@@ -135,7 +136,7 @@ func (env *Environment) Block(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.
 }
 
 // BlockByHash gets block by hash.
-// More: https://docs.cometbft.com/main/rpc/#/Info/block_by_hash
+// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/block_by_hash
 func (env *Environment) BlockByHash(ctx *rpctypes.Context, hash []byte) (*ctypes.ResultBlock, error) {
 	block := env.BlockStore.LoadBlockByHash(hash)
 	if block == nil {
@@ -148,7 +149,7 @@ func (env *Environment) BlockByHash(ctx *rpctypes.Context, hash []byte) (*ctypes
 
 // Commit gets block commit at a given height.
 // If no height is provided, it will fetch the commit for the latest block.
-// More: https://docs.cometbft.com/main/rpc/#/Info/commit
+// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/commit
 func (env *Environment) Commit(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultCommit, error) {
 	height, err := env.getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
@@ -179,7 +180,7 @@ func (env *Environment) Commit(ctx *rpctypes.Context, heightPtr *int64) (*ctypes
 // Results are for the height of the block containing the txs.
 // Thus response.results.deliver_tx[5] is the results of executing
 // getBlock(h).Txs[5]
-// More: https://docs.cometbft.com/main/rpc/#/Info/block_results
+// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/block_results
 func (env *Environment) BlockResults(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlockResults, error) {
 	height, err := env.getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
@@ -208,7 +209,6 @@ func (env *Environment) BlockSearch(
 	pagePtr, perPagePtr *int,
 	orderBy string,
 ) (*ctypes.ResultBlockSearch, error) {
-
 	// skip if block indexing is disabled
 	if _, ok := env.BlockIndexer.(*blockidxnull.BlockerIndexer); ok {
 		return nil, errors.New("block indexing is disabled")

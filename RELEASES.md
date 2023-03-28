@@ -93,6 +93,15 @@ the 0.38.x line.
    Be sure to merge this PR before making other changes on the newly-created
    backport branch.
 
+5. Ensure that the RPC docs' `version` field in `rpc/openapi/openapi.yaml` has
+   been updated from `main` to the backport branch version.
+
+6. Prepare the [CometBFT documentation
+   repository](https://github.com/cometbft/cometbft-docs) to build the release
+   branch's version by updating the
+   [VERSIONS](https://github.com/cometbft/cometbft-docs/blob/main/VERSIONS)
+   file.
+
 After doing these steps, go back to `main` and do the following:
 
 1. Create a new workflow to run e2e nightlies for the new backport branch. (See

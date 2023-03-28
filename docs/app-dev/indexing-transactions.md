@@ -236,7 +236,7 @@ You can query for a paginated set of transaction by their events by calling the
 curl "localhost:26657/tx_search?query=\"message.sender='cosmos1...'\"&prove=true"
 ```
 
-Check out [API docs](https://docs.cometbft.com/main/rpc/#/Info/tx_search)
+Check out [API docs](https://docs.cometbft.com/v0.38.x/rpc/#/Info/tx_search)
 for more information on query syntax and other options.
 
 ## Subscribing to Transactions
@@ -255,7 +255,7 @@ a query to `/subscribe` RPC endpoint.
 }
 ```
 
-Check out [API docs](https://docs.cometbft.com/main/rpc/#subscribe) for more information
+Check out [API docs](https://docs.cometbft.com/v0.38.x/rpc/#subscribe) for more information
 on query syntax and other options.
 
 ## Querying Block Events

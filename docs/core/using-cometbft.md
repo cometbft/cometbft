@@ -180,7 +180,7 @@ endpoints. Some take no arguments (like `/status`), while others specify
 the argument name and use `_` as a placeholder.
 
 
-> TIP: Find the RPC Documentation [here](https://docs.cometbft.com/main/rpc/)
+> TIP: Find the RPC Documentation [here](https://docs.cometbft.com/v0.38.x/rpc/)
 
 ### Formatting
 

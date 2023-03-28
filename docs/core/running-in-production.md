@@ -123,7 +123,7 @@ ever be exposed publicly.**
 #### Endpoints Returning Multiple Entries
 
 Endpoints returning multiple entries are limited by default to return 30
-elements (100 max). See the [RPC Documentation](https://docs.cometbft.com/main/rpc/)
+elements (100 max). See the [RPC Documentation](https://docs.cometbft.com/v0.38.x/rpc/)
 for more information.
 
 ## Debugging CometBFT

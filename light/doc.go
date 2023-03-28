@@ -118,7 +118,7 @@ as a wrapper, which verifies all the headers, using a light client connected to
 some other node.
 
 See
-https://docs.cometbft.com/main/core/light-client.html
+https://docs.cometbft.com/v0.38.x/core/light-client.html
 for usage example.
 Or see
 https://github.com/cometbft/cometbft/tree/v0.38.x/spec/consensus/light-client

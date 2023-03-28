@@ -31,7 +31,7 @@ method via Websocket along with a valid query.
 }
 ```
 
-Check out [API docs](https://docs.cometbft.com/main/rpc/) for
+Check out [API docs](https://docs.cometbft.com/v0.38.x/rpc/) for
 more information on query syntax and other options.
 
 You can also use tags, given you had included them into DeliverTx

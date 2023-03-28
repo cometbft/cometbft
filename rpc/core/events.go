@@ -19,7 +19,7 @@ const (
 )
 
 // Subscribe for events via WebSocket.
-// More: https://docs.cometbft.com/main/rpc/#/Websocket/subscribe
+// More: https://docs.cometbft.com/v0.38.x/rpc/#/Websocket/subscribe
 func (env *Environment) Subscribe(ctx *rpctypes.Context, query string) (*ctypes.ResultSubscribe, error) {
 	addr := ctx.RemoteAddr()
 
@@ -102,7 +102,7 @@ func (env *Environment) Subscribe(ctx *rpctypes.Context, query string) (*ctypes.
 }
 
 // Unsubscribe from events via WebSocket.
-// More: https://docs.cometbft.com/main/rpc/#/Websocket/unsubscribe
+// More: https://docs.cometbft.com/v0.38.x/rpc/#/Websocket/unsubscribe
 func (env *Environment) Unsubscribe(ctx *rpctypes.Context, query string) (*ctypes.ResultUnsubscribe, error) {
 	addr := ctx.RemoteAddr()
 	env.Logger.Info("Unsubscribe from query", "remote", addr, "query", query)
@@ -118,7 +118,7 @@ func (env *Environment) Unsubscribe(ctx *rpctypes.Context, query string) (*ctype
 }
 
 // UnsubscribeAll from all events via WebSocket.
-// More: https://docs.cometbft.com/main/rpc/#/Websocket/unsubscribe_all
+// More: https://docs.cometbft.com/v0.38.x/rpc/#/Websocket/unsubscribe_all
 func (env *Environment) UnsubscribeAll(ctx *rpctypes.Context) (*ctypes.ResultUnsubscribe, error) {
 	addr := ctx.RemoteAddr()
 	env.Logger.Info("Unsubscribe from all", "remote", addr)

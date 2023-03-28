@@ -6,22 +6,22 @@ This guide provides instructions for upgrading to specific versions of CometBFT.
 
 ### Config Changes
 
-* A new config field, `BootstrapPeers` has been introduced as a means of
-  adding a list of addresses to the addressbook upon initializing a node. This is an
+* A new config field, `BootstrapPeers` has been introduced as a means of adding
+  a list of addresses to the addressbook upon initializing a node. This is an
   alternative to `PersistentPeers`. `PersistentPeers` shold be only used for
   nodes that you want to keep a constant connection with i.e. sentry nodes
 * The field `Version` in the mempool section has been removed. The priority
   mempool (what was called version `v1`) has been removed (see below), thus
   there is only one implementation of the mempool available (what was called
   `v0`).
-* Config fields `TTLDuration` and `TTLNumBlocks`, which were only used by the priority
-  mempool, have been removed.
+* Config fields `TTLDuration` and `TTLNumBlocks`, which were only used by the
+  priority mempool, have been removed.
 
 ### Mempool Changes
 
 * The priority mempool (what was referred in the code as version `v1`) has been
   removed. There is now only one mempool (what was called version `v0`), that
-  is, the default implementation as a queue of transactions. 
+  is, the default implementation as a queue of transactions.
 * In the protobuf message `ResponseCheckTx`, fields `sender`, `priority`, and
   `mempool_error`, which were only used by the priority mempool, were removed
   but still kept in the message as "reserved".

@@ -2,13 +2,14 @@ name: Markdown Linter
 on:
   push:
     branches:
-      - main
+      - v0.38.x
     paths:
       - "**.md"
       - "**.yml"
       - "**.yaml"
   pull_request:
-    branches: [main]
+    branches:
+      - v0.38.x
     paths:
       - "**.md"
       - "**.yml"
@@ -24,7 +25,7 @@ jobs:
         uses: docker://github/super-linter:v4
         env:
           VALIDATE_ALL_CODEBASE: true
-          DEFAULT_BRANCH: main
+          DEFAULT_BRANCH: v0.38.x
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALIDATE_MD: true
           VALIDATE_OPENAPI: true

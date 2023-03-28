@@ -1,13 +1,12 @@
 name: Build
 # Tests runs different tests (test_abci_apps, test_abci_cli, test_apps)
-# This workflow runs on every push to main or release branch and  every pull requests
+# This workflow runs on every push to v0.38.x and every pull request
 # All jobs will pass without running if no *{.go, .mod, .sum} files have been modified
 on:
   pull_request:
   push:
     branches:
-      - main
-      - release/**
+      - v0.38.x
 
 jobs:
   build:

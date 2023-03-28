@@ -5,7 +5,8 @@ on:
   schedule:
     - cron: '0 3 * * *'
   pull_request:
-    branches: [main]
+    branches:
+      - v0.38.x
     paths:
       - "test/fuzz/**/*.go"
 

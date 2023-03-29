@@ -15,7 +15,7 @@
 **************************************************************************** */
 
 
-module p2p {
+module p2pFunctionalLayer {
 
 
 /* ****************************************************************************
@@ -156,6 +156,10 @@ module p2p {
         s.dialPeers(addresses)
     }
 
+    // This function is not pure. It does a random choice. 
+    // nondet actuallu is not allowed here. It is a bug in the current quint
+    // TODO: is this in p2p or in PEX? If it is in PEX, we can remove it out 
+    // of the functional part
     pure def ensurePeers(s: LocalState): LocalState = {
         if (s.peersOutbound() + s.peersDialing() < MaxNumOutboundPeers) {
             //val addr = s.AddressBook.chooseSome() // addressbook.pickAddress(Bias)
@@ -166,7 +170,11 @@ module p2p {
             s
         }
     }
+}
 
+module p2p {
+
+import p2pFunctionalLayer.*
 
 /* ****************************************************************************
  * Transition system.
@@ -195,11 +203,11 @@ module p2p {
     // This is used to model actions by PEX, which we don't capture here explicitely
     var requestingNodes: Set[Address]
 
+
+
 /* ****************************************************************************
  * Invariants
  * ************************************************************************* */
-
-// BIG TODO
 
     // for each peer there exists a connection    
     val invPeers = modeledNodes.forall(n => 
@@ -212,8 +220,14 @@ module p2p {
                     config.get(n).connections.forall(c =>
                     config.get(n).Peers().exists(p => c.address == p)))
 
-    // // auxiliary definition. These are the peers that seem alive and connected
-    // def activePeers (s: LocalState): Set[Address] = s.Peers().filter(x => s.connectionState.get(x) == "open")
+    //  if and address appears in connections and peers they should agree on the direction
+    // TODO: might be broken
+    val invDirectionsOut = modeledNodes.forall(n =>
+        config.get(n).Peers().forall(p => 
+        config.get(n).connections.forall(c => (c.address == p and c.state == "outgoing") 
+                                        implies config.get(n).peerState.get(p) == "outbound")))
+
+
 
     // // for all modeled nodes y and all its peers x, some peerStates imply some connection state
     // val invConnectionsNotOpen = modeledNodes.forall(y => config.get(y).Peers().forall(x => 
@@ -432,6 +446,25 @@ module p2p {
         )
     }
 
+    action initEnvEquAddrBook = all {
+        val add = Set({ID: "lasaro", networkAddress: "127.0.0.7:10"}, {ID: "daniel", networkAddress: "127.0.0.6:10"})
+        all {
+        OperatorAddressBook' = Set({ID: "alice", networkAddress: "127.0.0.111:10"}, {ID: "bob", networkAddress: "127.0.0.112:10"}),
+        Environment' = add,
+        requestingNodes' = Set(),
+        config' = Map (
+            {ID: "scully", networkAddress: "127.0.0.1177:10"} -> {
+                peerState: Map(),
+                connections: Set(),
+                AddressBook: add,
+                IsUnconditional: Set({ID: "zarko", networkAddress: "127.0.0.42:10"}),
+                PersistentPeers: Set({ID: "bucky", networkAddress: "127.0.0.9:10"}),
+            }
+        )
+        }
+    }
+
+
     run happyPathTest = {
         val a = {ID: "alice", networkAddress: "127.0.0.111:10"}
         val node = {ID: "scully", networkAddress: "127.0.0.1177:10"}
@@ -449,6 +482,19 @@ module p2p {
         })
     }
 
+    //should fail
+    run mixedDirectionsTest = {
+        val a = {ID: "alice", networkAddress: "127.0.0.111:10"}
+        val node = {ID: "scully", networkAddress: "127.0.0.1177:10"}
+        init
+        .then(actionDialPeer(node,a))
+        .then(actionTransportAccept(node,a))
+        .then(lowerLevelTransportAcceptSuccess(node,a))
+        .then(all{
+            assert(invDirectionsOut),
+            allUnchanged,
+        })
+    }
 
     action step = any {
         nondet a = oneOf(modeledNodes) 
@@ -465,7 +511,7 @@ module p2p {
 
                 actionTransportAccept(a, incoming),
                 lowerLevelTransportAcceptFailed(a, incoming),
-                lowerLevelDialPeerSuccess(a, incoming),
+                lowerLevelTransportAcceptSuccess(a, incoming),
 
                 // TODO: conn empty
                 lowerLevelLoseConnection(a, conn),

@@ -13,7 +13,15 @@
   Josef Widder, Informal Systems, 2023
 */
 
+
 module p2p {
+
+
+/* ****************************************************************************
+ *
+ * Data Types
+ *
+ * ************************************************************************* */
 
     // TODO: "pure val" is a work around as constants are not working in the REPL, yet
     pure val peerStates = Set("reconnecting", "inbound", "outbound")
@@ -24,17 +32,6 @@ module p2p {
 
     // (public_key, ipAddress:port)
     type Address = {ID:str, networkAddress:str}
-
-    // Environment. These are the nodes that may dial us
-    // TODO: should be constant (set via instances). Doesn't work, yet.
-    var Environment: Set[Address]
- 
-    // Operator. The operator can manually provide a list of addresses to dial via dialPeers
-    // TODO: should be constant (set via instances). Doesn't work, yet.
-    var OperatorAddressBook: Set[Address]
-
-    // Those who ran out of unused addresses, and asked for more
-    var requestingNodes: Set[Address]
 
     type Connection = {
         address : Address,
@@ -51,19 +48,18 @@ module p2p {
         PersistentPeers: Set[Address],
     }
 
-    var config: Address -> LocalState
-
-    pure def Peers(s: LocalState): Set[Address] = s.peerState.keys()
-
-    def modeledNodes = config.keys()
-  
-
-    // helps for better readability. Future syntactic sugar 
-    def require(pred:bool):bool = pred
+/* ****************************************************************************
+ *
+ * The functions that need to be implemented. 
+ * (This is what typically shows up in pseudocode specifications)
+ *
+ * ************************************************************************* */
 
 /*
- * p2p peer management" auxiliary functions
+ * p2p peer management: auxiliary functions
  */
+
+    pure def Peers(s: LocalState): Set[Address] = s.peerState.keys()
 
     pure def isDialing(s: LocalState, a:Address) : bool = and {
         s.connections.contains({address: a, state: "outgoing"}),
@@ -83,8 +79,6 @@ module p2p {
     pure def peersDialing(s: LocalState): int = size(s.connections.filter(c => s.isDialing(c.address)))
 
 
-
-
 /*
  * p2p peer management functions
  */
@@ -94,6 +88,7 @@ module p2p {
     // lowerLevelDialPeerSuccess or lowerLevelDialPeerFailed. See below.
     pure def dialPeer(s: LocalState, a: Address): LocalState = {
         if (s.peersOutbound() + s.peersDialing() < MaxNumOutboundPeers and not(s.Peers().contains(a))) {
+            // TODO: shall we check "not(s.isDialing(a))"?
             val newConn : Set[Connection] = s.connections.union(Set({address: a, state: "outgoing"}))
             s.with("connections", newConn)
         }
@@ -115,7 +110,7 @@ module p2p {
         }
     }    
 
-// TODO: reconnecting logic
+
 
     // a connection was lost. We need to figure out whether to reconnect.
     pure def onLostConnection(s: LocalState, c: Connection): LocalState = {
@@ -135,7 +130,7 @@ module p2p {
         }
     }
 
-    // TODO: check whether it is peerID
+    // TODO: check whether the parameter actually is peerID
     // TODO: check functionality. Here I can give an arbitrary peerID. It will not change the state
     //       if this peerID doesn't exist
     pure def stopPeerForError(s: LocalState, peerID: str): LocalState = {
@@ -149,7 +144,6 @@ module p2p {
         // TODO: check what the code actually is doing. Now we don't override existing peers in this spec
         // TODO: check the following: the intention here is NOT to call "dialPeer" for each address in S
         //       in order to not check against MaxNumOutboundPeers
-
         val newAdr = addresses.filter(a => not(s.connections.exists(c => c.address == a)))
         // TODO: perhaps we should check for IDs rather than addresses above        
         val newConn = s.connections.union(newAdr.map(a => {address: a, state: "outgoing"}))
@@ -172,13 +166,78 @@ module p2p {
     }
 
 
+/* ****************************************************************************
+ * Transition system.
+ * This defines how the above functions can be executed
+ * ************************************************************************* */
 
+
+/* ****************************************************************************
+ * Global state
+ * ************************************************************************* */
+
+    // These models the nodes that do perform steps in this specification.
+    var config: Address -> LocalState
+    def modeledNodes = config.keys()
+  
+    // Environment. These are the addresses of nodes that may dial us (these nodes only appear as data 
+    // in this spec. They don't perform actions)
+    // TODO: should be constant (set via instances). Doesn't work, yet.
+    var Environment: Set[Address]
+ 
+    // Operator's address book. The operator can manually provide a list of addresses to dial via dialPeers
+    // TODO: should be constant (set via instances). Doesn't work, yet.
+    var OperatorAddressBook: Set[Address]
+
+    // Those modeled nodes that ran out of unused addresses, and asked for more addresses from seed nodes
+    // This is used to model actions by PEX, which we don't capture here explicitely
+    var requestingNodes: Set[Address]
+
+/* ****************************************************************************
+ * Invariants
+ * ************************************************************************* */
+
+// BIG TODO
+
+    // for each peer there exists a connection    
+    val invPeers = modeledNodes.forall(n => 
+                   config.get(n).Peers().forall(p => 
+                   config.get(n).connections.exists(c => c.address == p)))
+
+
+    // // auxiliary definition. These are the peers that seem alive and connected
+    // def activePeers (s: LocalState): Set[Address] = s.Peers().filter(x => s.connectionState.get(x) == "open")
+
+    // // for all modeled nodes y and all its peers x, some peerStates imply some connection state
+    // val invConnectionsNotOpen = modeledNodes.forall(y => config.get(y).Peers().forall(x => 
+    //     (config.get(y).peerState.get(x) == "dialing" or config.get(y).peerState.get(x) == "reconnecting") implies 
+    //         config.get(y).connectionState.get(x) != "open"))
+
+    // val invConnectionsNotInit = modeledNodes.forall(y => config.get(y).Peers().forall(x => 
+    //     (config.get(y).peerState.get(x) == "inbound" or config.get(y).peerState.get(x) == "outbound") implies 
+    //         config.get(y).connectionState.get(x) != "init"))
+
+    // val invConnectionsOpen = modeledNodes.forall(y => config.get(y).activePeers().forall(x => 
+    //     config.get(y).peerState.get(x) == "outbound" or config.get(y).peerState.get(x) == "inbound"))
+
+
+
+/* ****************************************************************************
+ * Actions
+ * How the above functions can be invoked (e.g. by which node)
+ * ************************************************************************* */
+
+  
+/* 
+ * Future syntactic sugar.
+ */
+    // helps for better readability. 
+    def require(pred:bool):bool = pred
 
 /*
- * auxiliary actions. Perhaps local
- */
+ * Useful actions to simplify spec
+ */ 
 
-    // This is painful
     action allUnchanged = all {
         config' = config,
         Environment' = Environment,
@@ -192,6 +251,12 @@ module p2p {
         OperatorAddressBook' = OperatorAddressBook,
         requestingNodes' = requestingNodes,
     }    
+
+    
+
+/*
+ * Local actions
+ */
 
    // node dials a. This starts lower lever computations. 
     action actionDialPeer (node: Address, a:Address):bool = all {
@@ -208,8 +273,10 @@ module p2p {
         config' = config.set(node, config.get(node).onLostConnection(c)),
         environmentUnchanged,
     }
+
 /* 
- * Environment actions
+ * Environment actions: From the lower level (modeling the outcome of TCP connection
+ * initialization, establishment, etc.)
  */
 
     // auxiliary functions
@@ -232,6 +299,8 @@ module p2p {
 
  // return DialPeerSuccess -> if connection.address.id not in Peers -> peerState(address) = "outbound" 
  //                           otherwise -> delete connection from map 
+ // in the spec right now: the peer might not exists, be already outbound (stutter), be reconnecting
+ // TODO: check the cases
     action lowerLevelDialPeerSuccess(node: Address, a: Address): bool = all {
         require(config.get(node).connections.contains({address: a, state: "outgoing"})), 
         if (config.get(node).Peers().filter(x => x.ID == a.ID) == Set()) all {
@@ -282,6 +351,10 @@ module p2p {
         environmentUnchanged,
     }
 
+/* 
+ * Upper level actions: callbacks from a reactor or from the operator
+ */
+
     action reactorStopPeerForError(node: Address, peerID: str):bool = all {
         config' = config.set(node, config.get(node).stopPeerForError(peerID)),
         environmentUnchanged,
@@ -291,6 +364,10 @@ module p2p {
         config' = config.set(node, config.get(node).dialPeers(addresses)),
         environmentUnchanged,
     }
+
+/* 
+ * PEX flow
+ */
 
     // pexRequest and lowerLevelPexAddresses abstract a flow where PEX realizes we need fresh Addresses
     // calls a seed node, and the seed node returns a set of addresses
@@ -317,39 +394,15 @@ module p2p {
         environmentUnchanged,
     }
 
-/*
- * THE REST
- */
-
-
-    // val invPeers = modeledNodes.forall(y => config.get(y).peerState.keys() == config.get(y).connectionState.keys())
-
-    // // auxiliary definition. These are the peers that seem alive and connected
-    // def activePeers (s: LocalState): Set[Address] = s.Peers().filter(x => s.connectionState.get(x) == "open")
-
-    // // for all modeled nodes y and all its peers x, some peerStates imply some connection state
-    // val invConnectionsNotOpen = modeledNodes.forall(y => config.get(y).Peers().forall(x => 
-    //     (config.get(y).peerState.get(x) == "dialing" or config.get(y).peerState.get(x) == "reconnecting") implies 
-    //         config.get(y).connectionState.get(x) != "open"))
-
-    // val invConnectionsNotInit = modeledNodes.forall(y => config.get(y).Peers().forall(x => 
-    //     (config.get(y).peerState.get(x) == "inbound" or config.get(y).peerState.get(x) == "outbound") implies 
-    //         config.get(y).connectionState.get(x) != "init"))
-
-    // val invConnectionsOpen = modeledNodes.forall(y => config.get(y).activePeers().forall(x => 
-    //     config.get(y).peerState.get(x) == "outbound" or config.get(y).peerState.get(x) == "inbound"))
-
-
-
-//     // auxiliary definition for PEX, 
-//     // If we don't have peers in the addressbook to try, we dial Seeds to ask for new ones.
-//     def allAddressesArePeers(p) = AddressBook.get(p).exclude(Peers(p)) == Set()
-
-
 
 
     
-
+/* ****************************************************************************
+ * Initial states (potentially many for different scenarios)
+ * Steps (potentially many modelling different environments, e.g. including
+          faulty peers)
+ * Tests (specific runs with assertions)
+ * ************************************************************************* */
 
 
 
@@ -404,56 +457,28 @@ module p2p {
                 lowerLevelPexAddresses(a, seedResponse)
             },
     }
-
-    // action initWithSameSets =
-    //     val initSet = Set({ID: "igor", networkAddress: "127.0.0.1:10"}, {ID: "josef", networkAddress: "127.0.0.2:10"})
-    //     all {
-    //         peerState' = Map(),
-    //         connectionState' = Map(),
-    //         AddressBook' = initSet,
-    //         Environment' = initSet,
-    //         IsUnconditional' = Set({ID: "zarko", networkAddress: "127.0.0.42:10"}),
-    //         PersistentPeers' = Set({ID: "bucky", networkAddress: "127.0.0.9:10"}),
-    //         OperatorAddressBook' = Set({ID: "alice", networkAddress: "127.0.0.111:10"}, {ID: "bob", networkAddress: "127.0.0.112:10"}),
-    //     }
- 
    
 
     
 
-    // run happyPathTest = {
-    //     val a = {ID: "alice", networkAddress: "127.0.0.111:10"}
-    //     init
-    //     .then(dialPeers(Set(a)))
-    //     .then(establishConnection(a))
-    //     .then(all{
-    //         assert(connectionState.get(a) == "open" and peerState.get(a) == "outbound"),
-    //         allUnchanged,
-    //     })
-    // }
+    run happyPathTest = {
+        val a = {ID: "alice", networkAddress: "127.0.0.111:10"}
+        val node = {ID: "scully", networkAddress: "127.0.0.1177:10"}
+        init
+        .then(operatorDialPeers(node , Set(a)))
+        .then(lowerLevelDialPeerSuccess(node, a))
+        .then(all{
+            assert(
+                and {
+                    config.get(node).connections.contains({address: a, state: "outgoing"}),
+                    config.get(node).peerState.get(a) == "outbound",
+                }
+            ),
+            allUnchanged,
+        })
+    }
 
-    // run ensureHappyTest = {
-    //     init
-    //     .then(ensurePeers)
-    //     .then(all{
-    //         assert(Peers != Set()),
-    //         allUnchanged
-    //     })
-    // }
 
-    // run dontAcceptIncomingIfOutboundTest = {
-    //     run pickAAndRun = {
-    //         // nondet a = oneOf(Environment)
-    //         val a = {ID: "igor", networkAddress: "127.0.0.1:10"}
-    //         dialPeer(a)
-    //         .then(establishConnection(a))
-    //         .then(transportAccept(a))
-    //         .then(all{
-    //             assert (peerState.get(a) == "outbound"),
-    //             allUnchanged})}
 
-    //     initWithSameSets
-    //     .then(pickAAndRun)
-    // }
 
 }

@@ -15,8 +15,15 @@
 **************************************************************************** */
 
 
-module p2pFunctionalLayer {
 
+/* ****************************************************************************
+ *
+ * Code spec. This is what is supposed to replace the pseudo code in English
+ * specifications.
+ *
+ * ************************************************************************* */
+
+module p2p {
 
 /* ****************************************************************************
  *
@@ -51,8 +58,7 @@ module p2pFunctionalLayer {
 
 /* ****************************************************************************
  *
- * The functions that need to be implemented. 
- * (This is what typically shows up in pseudocode specifications)
+ * The functions that constitute the peer management. 
  *
  * ************************************************************************* */
 
@@ -61,6 +67,18 @@ module p2pFunctionalLayer {
      */
 
     pure def Peers(s: LocalState): Set[Address] = s.peerState.keys()
+
+    pure def activePeers(s: LocalState): Set[Address] = 
+        s.Peers().filter(p =>
+            and {
+                s.peerState.get(p) != "reconnecting",
+                or {
+                    s.connections.contains({address: p, state: "outgoing"}),
+                s.connections.contains({address: p, state: "incoming"})
+                }
+            }
+           
+        )
 
     pure def isDialing(s: LocalState, a:Address) : bool = and {
         s.connections.contains({address: a, state: "outgoing"}),
@@ -170,16 +188,16 @@ module p2pFunctionalLayer {
             s
         }
     }
-}
 
-module p2p {
 
-import p2pFunctionalLayer.*
 
-/* ****************************************************************************
- * Transition system.
- * This defines how the above functions can be executed
- * ************************************************************************* */
+// /* ****************************************************************************
+//  * Transition system.
+//  * This defines how the above functions can be executed
+//  * ************************************************************************* */
+
+
+
 
 
 /* ****************************************************************************

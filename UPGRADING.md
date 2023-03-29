@@ -4,6 +4,10 @@ This guide provides instructions for upgrading to specific versions of CometBFT.
 
 ## Unreleased
 
+This release introduces state machine-breaking changes, as well as substantial changes
+on the ABCI interface and indexing. It therefore requires a
+coordinated upgrade.
+
 ### Config Changes
 
 * A new config field, `BootstrapPeers` has been introduced as a means of adding
@@ -33,13 +37,17 @@ This guide provides instructions for upgrading to specific versions of CometBFT.
   Applications upgrading to v0.38.0 must implement these methods as described
   [here](./spec/abci/abci%2B%2B_comet_expected_behavior.md#adapting-existing-applications-that-use-abci)
 * Removed methods `BeginBlock`, `DeliverTx`, `EndBlock`, and replaced them by
-  method `FinalizeBlock`. Applications upgrading to v0.38.0 must refactor
+  method `FinalizeBlock`. Applications upgrading to `v0.38.0` must refactor
   the logic handling the methods removed to handle `FinalizeBlock`.
 * The Application's hash (or any data representing the Application's current state)
   is known by the time `FinalizeBlock` finishes its execution.
   Accordingly, the `app_hash` parameter has been moved from `ResponseCommit`
   to `ResponseFinalizeBlock`.
-* For details, please see the updated [specification](spec/abci/README.md)
+* Field `signed_last_block` in structure `VoteInfo` has been replaced by the
+  more expressive `block_id_flag`. Applications willing to keep the semantics
+  of `signed_last_block` can now use the following predicate
+    * `voteInfo.block_id_flag != BlockIDFlagAbsent`
+* For further details, please see the updated [specification](spec/abci/README.md)
 
 ## v0.37.0
 

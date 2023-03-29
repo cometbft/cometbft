@@ -26,16 +26,6 @@ This guide provides instructions for upgrading to specific versions of CometBFT.
   `mempool_error`, which were only used by the priority mempool, were removed
   but still kept in the message as "reserved".
 
-## v0.37.0
-
-This release introduces state machine-breaking changes, and therefore requires a
-coordinated upgrade.
-
-### Go API
-
-When upgrading from the v0.34 release series, please note that the Go module has
-now changed to `github.com/cometbft/cometbft`.
-
 ### ABCI Changes
 
 * The `ABCIVersion` is now `2.0.0`.
@@ -51,6 +41,41 @@ now changed to `github.com/cometbft/cometbft`.
   to `ResponseFinalizeBlock`.
 * For details, please see the updated [specification](spec/abci/README.md)
 
+## v0.37.0
+
+This release introduces state machine-breaking changes, and therefore requires a
+coordinated upgrade.
+
+### Go API
+
+When upgrading from the v0.34 release series, please note that the Go module has
+now changed to `github.com/cometbft/cometbft`.
+
+### ABCI Changes
+
+* The `ABCIVersion` is now `1.0.0`.
+* Added new ABCI methods `PrepareProposal` and `ProcessProposal`. For details,
+  please see the [spec](spec/abci/README.md). Applications upgrading to
+  v0.37.0 must implement these methods, at the very minimum, as described
+  [here](./spec/abci/abci++_app_requirements.md)
+* Deduplicated `ConsensusParams` and `BlockParams`.
+  In the v0.34 branch they are defined both in `abci/types.proto` and `types/params.proto`.
+  The definitions in `abci/types.proto` have been removed.
+  In-process applications should make sure they are not using the deleted
+  version of those structures.
+* In v0.34, messages on the wire used to be length-delimited with `int64` varint
+  values, which was inconsistent with the `uint64` varint length delimiters used
+  in the P2P layer. Both now consistently use `uint64` varint length delimiters.
+* Added `AbciVersion` to `RequestInfo`.
+  Applications should check that CometBFT's ABCI version matches the one they expect
+  in order to ensure compatibility.
+* The `SetOption` method has been removed from the ABCI `Client` interface.
+  The corresponding Protobuf types have been deprecated.
+* The `key` and `value` fields in the `EventAttribute` type have been changed
+  from type `bytes` to `string`. As per the [Protocol Buffers updating
+  guidelines](https://developers.google.com/protocol-buffers/docs/proto3#updating),
+  this should have no effect on the wire-level encoding for UTF8-encoded
+  strings.
 
 ### RPC
 

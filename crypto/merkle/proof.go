@@ -63,7 +63,7 @@ func (sp *Proof) Verify(rootHash []byte, leaf []byte) error {
 	if !bytes.Equal(sp.LeafHash, leafHash) {
 		return fmt.Errorf("invalid leaf hash: wanted %X got %X", leafHash, sp.LeafHash)
 	}
-	computedHash, err := sp.ComputeRootHash()
+	computedHash, err := sp.computeRootHash()
 	if err != nil {
 		return fmt.Errorf("compute root hash: %w", err)
 	}
@@ -74,7 +74,7 @@ func (sp *Proof) Verify(rootHash []byte, leaf []byte) error {
 }
 
 // Compute the root hash given a leaf hash.  Does not verify the result.
-func (sp *Proof) ComputeRootHash() ([]byte, error) {
+func (sp *Proof) computeRootHash() ([]byte, error) {
 	return computeHashFromAunts(
 		sp.Index,
 		sp.Total,

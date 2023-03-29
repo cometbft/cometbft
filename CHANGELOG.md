@@ -1,5 +1,89 @@
 # CHANGELOG
 
+## Unreleased
+
+### BREAKING CHANGES
+
+- The `TMHOME` environment variable was renamed to `CMTHOME`, and all environment variables starting with `TM_` are instead prefixed with `CMT_`
+  ([\#211](https://github.com/cometbft/cometbft/issues/211))
+- `[protobuf]` Remove fields `sender`, `priority`, and `mempool_error` from
+  `ResponseCheckTx`. ([\#260](https://github.com/cometbft/cometbft/issues/260))
+- `[mempool]` Remove priority mempool.
+  ([\#260](https://github.com/cometbft/cometbft/issues/260))
+- `[config]` Remove `Version` field from `MempoolConfig`.
+  ([\#260](https://github.com/cometbft/cometbft/issues/260))
+- Bump minimum Go version to 1.20
+  ([\#385](https://github.com/cometbft/cometbft/issues/385))
+- `[state]` Move pruneBlocks from node/state to state/execution.
+  ([\#6541](https://github.com/tendermint/tendermint/pull/6541))
+- `[abci]` Move `app_hash` parameter from `Commit` to `FinalizeBlock`
+  ([\#8664](https://github.com/tendermint/tendermint/pull/8664))
+- `[abci]` Introduce `FinalizeBlock` which condenses `BeginBlock`, `DeliverTx`
+  and `EndBlock` into a single method call
+  ([\#9468](https://github.com/tendermint/tendermint/pull/9468))
+- `[p2p]` Remove unused p2p/trust package
+  ([\#9625](https://github.com/tendermint/tendermint/pull/9625))
+- `[rpc]` Remove global environment and replace with constructor
+  ([\#9655](https://github.com/tendermint/tendermint/pull/9655))
+- `[inspect]` Add a new `inspect` command for introspecting
+  the state and block store of a crashed tendermint node.
+  ([\#9655](https://github.com/tendermint/tendermint/pull/9655))
+- `[node]` Move DBContext and DBProvider from the node package to the config
+  package. ([\#9655](https://github.com/tendermint/tendermint/pull/9655))
+- `[metrics]` Move state-syncing and block-syncing metrics to
+  their respective packages. Move labels from block_syncing
+  -> blocksync_syncing and state_syncing -> statesync_syncing
+  ([\#9682](https://github.com/tendermint/tendermint/pull/9682))
+
+### BUG FIXES
+
+- `[consensus]` Fixed a busy loop that happened when sending of a block part failed by sleeping in case of error.
+  ([\#4](https://github.com/informalsystems/tendermint/pull/4))
+- `[consensus]` Short-term fix for the case when `needProofBlock` cannot find
+  previous block meta by defaulting to the creation of a new proof block.
+  Special thanks to the [Vega.xyz](https://vega.xyz/) team, and in particular to
+  Zohar (@ze97286), for reporting the problem and working with us to get to a
+  fix. ([\#386](https://github.com/cometbft/cometbft/pull/386))
+- `[kvindexer]` Forward porting the fixes done to the kvindexer in 0.37 in PR \#77
+  ([\#423](https://github.com/cometbft/cometbft/pull/423))
+- `[consensus]` Unexpected error conditions in `ApplyBlock` are non-recoverable, so ignoring the error and carrying on is a bug. We replaced a `return` that disregarded the error by a `panic`.
+  ([\#496](https://github.com/cometbft/cometbft/pull/496))
+- `[consensus]` Rename `(*PeerState).ToJSON` to `MarshalJSON` to fix a logging data race
+  ([\#524](https://github.com/cometbft/cometbft/pull/524))
+- `[docker]` Ensure Docker image uses consistent version of Go.
+  ([\#9462](https://github.com/tendermint/tendermint/pull/9462))
+- `[abci-cli]` Fix broken abci-cli help command.
+  ([\#9717](https://github.com/tendermint/tendermint/pull/9717))
+
+### FEATURES
+
+- `[config]` Introduce `BootstrapPeers` to the config to allow
+  nodes to list peers to be added to the addressbook upon start up.
+  ([\#9680](https://github.com/tendermint/tendermint/pull/9680))
+- `[proxy]` Introduce `NewUnsyncLocalClientCreator`, which allows local ABCI
+  clients to have the same concurrency model as remote clients (i.e. one
+  mutex per client "connection", for each of the four ABCI "connections").
+  ([\#9830](https://github.com/tendermint/tendermint/pull/9830))
+
+### IMPROVEMENTS
+
+- `[e2e]` Add functionality for uncoordinated (minor) upgrades
+  ([\#56](https://github.com/tendermint/tendermint/pull/56))
+- `[tools/tm-signer-harness]` Remove the folder as it is unused
+  ([\#136](https://github.com/cometbft/cometbft/issues/136))
+- `[blocksync]` Generate new metrics during BlockSync
+  ([\#543](https://github.com/cometbft/cometbft/pull/543))
+- `[crypto/merkle]` Improve HashAlternatives performance
+  ([\#6443](https://github.com/tendermint/tendermint/pull/6443))
+- `[p2p/pex]` Improve addrBook.hash performance
+  ([\#6509](https://github.com/tendermint/tendermint/pull/6509))
+- `[crypto/merkle]` Improve HashAlternatives performance
+  ([\#6513](https://github.com/tendermint/tendermint/pull/6513))
+- `[pubsub]` Performance improvements for the event query API
+  ([\#7319](https://github.com/tendermint/tendermint/pull/7319))
+- `[rpc]` Enable caching of RPC responses
+  ([\#9650](https://github.com/tendermint/tendermint/pull/9650))
+
 ## v0.37.0
 
 *March 6, 2023*

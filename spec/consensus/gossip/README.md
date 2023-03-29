@@ -6,12 +6,11 @@ South of CometBFT is the OS' network stack.
 
 CometBFT is implemented in a modular way, separating protocol implementations into **reactors**.
 Reactors communicate with their counterparts on other nodes using the P2P layer, through what we will call the **P2P-I**.
-This set of documents focuses on the interactions between the P2P layer and the Consensus Reactor.
 
 ```
                                                       SDK Apps
                                                    ==================
- Applications                                        Cosmos SDK    
+ Applications                                        Cosmos SDK
 ======================================ABCI============================ ┐
  [Mempool Reactor] [Evidence Reactor] [Consensus Reactor] [PEX] [...]  |
 - - - - - - - - - - - - - - - - P2P-I - - - - - - - - - - - -- - - - - | CometBFT
@@ -21,11 +20,11 @@ This set of documents focuses on the interactions between the P2P layer and the 
 ```
 
 
-The Consensus Reactor, which is further divided into two layers:
+The Consensus Reactor is further divided into two layers:
 - **CONS**, keeps the state and transition functions described in the [Tendermint BFT paper][1] and uses gossiping to communicate with other nodes.
 - **GOSSIP**, keeps state and transition functions needed to implement gossiping on top of the 1-to-1 communication facilities provided by the P2P layer.
 
-Exchanges between CONS and GOSSIP happens through the **GOSSIP-I**.
+Exchanges between CONS and GOSSIP happen through the **GOSSIP-I**.
 
 ```
 ...
@@ -41,7 +40,7 @@ Exchanges between CONS and GOSSIP happens through the **GOSSIP-I**.
     Network Stack
 ```
 
-The overall goal here are the following:
+The set of documents in this directory aims at specifying the desired behavior and documenting the current implementation of GOSSIP-I, GOSSIP, and P2P-I. More specifically
 1. Provide an english specification of
     * what CONS requires from and provides to GOSSIP (GOSSIP-I);
     * what GOSSIP requires from and provides to CONS (GOSSIP-I); and,
@@ -49,14 +48,17 @@ The overall goal here are the following:
 2. Provide equivalent Quint specifications, used to mechanically check the properties
 3. Provide an english description of how the current implementation matches (or not) the specified behavior, that is, a very loose refinement mapping.
 
-
 # Outline
 
-The specification is divided in multiple documents
-* [reactor.md](./reactor.md): specification in English
-* [reactor.qnt](./reactor.qnt): corresponding specifications in [Quint](https://github.com/informalsystems/quint)
-* [implementation.md](./implementation.md): a description of what is currently implemented in CometBFT, in English.
-* [implementation.qnt](./implementation.qnt): Quint model of current behavior, for model checking of provided properties.
+The specification is divided into multiple documents:
+* [gossip.md](./gossip.md)
+    - english specification of GOSSIP, GOSSIP-I, and how GOSSIP may use P2P.
+    - The text is filled with `<<TAGS>>` that will eventually be used to implement "literate" specification (automatically paste the corresponding snippets from the Quint spec). For now, refer to the `gossip.qnt` directly.
+* [gossip.qnt](./gossip.qnt):
+    - corresponding specifications in [Quint](https://github.com/informalsystems/quint)
+* [gossipold.qnt](./gossipold.qnt): previous version of the Quint spec, before modularizing. Will be eventually removed.
+* [implementation.md](./implementation.md): a description of what is currently implemented in CometBFT, in English. Not updated.
+* [implementation.qnt](./implementation.qnt): Quint model of current behavior, for model checking of provided properties. To be written.
 
 
 # Conventions
@@ -74,13 +76,14 @@ The specification is divided in multiple documents
 
 # Status
 
-> **Warning**    
-> This is a Work In Progress
+> **Warning**
+> This is a Work In Progress.
 
-> **Warning**    
-> Permalinks to excerpts of the Quint specification are provided throughout this document for convenience, but may be outdated.
 
-The following table summarizes the relationship between requirements and provisions on the GOSSIP-I, if they are formally defined in Quint, and if there is a discussion of how the current implementation of CometBFT matches the provisions.
+> **Warning**
+> This table is outdated.
+
+The following table summarized the relationship between requirements and provisions on the GOSSIP-I, if they are formally defined in Quint, and if there is a discussion of how the current implementation of CometBFT matches the provisions.
 
 | Requirement |Quint | Provision | Quint | Match | Implemented |
 |----|----|----|----|----|----|
@@ -94,20 +97,5 @@ The following table summarizes the relationship between requirements and provisi
 | [REQ-GOSSIP-P2P-CONNECTION.1]     | X |                                       |   |   |  |
 | [REQ-GOSSIP-P2P-UNICAST.1]        | X |                                       |   |   |  |
 | [REQ-GOSSIP-P2P-UNICAST.2]        | X |                                       |   |   |  |
-| [REQ-GOSSIP-P2P-CONCURRENT_CONN]  | X |                                       |   |   |  | 
-| [REQ-GOSSIP-P2P-IGNORING]         | X |                                       |   |   |  | 
-
-
-## TODO
-
-This is a high level TODO list.
-Smaller items are spread throughout the document.
-
-- Complete the QNT specs
-- Update permalink references to QNT
-- Consider splitting the QNT spec?
-    - Common vocabulary
-    - CONS
-    - GOSSIP
-    - Are modules adequate for this?
-
+| [REQ-GOSSIP-P2P-CONCURRENT_CONN]  | X |                                       |   |   |  |
+| [REQ-GOSSIP-P2P-IGNORING]         | X |                                       |   |   |  |

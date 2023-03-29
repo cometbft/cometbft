@@ -82,7 +82,7 @@ func InjectEvidence(ctx context.Context, r *rand.Rand, testnet *e2e.Testnet, amo
 
 	// wait for the node to reach the height above the forged height so that
 	// it is able to validate the evidence
-	_, err = waitForNode(targetNode, waitHeight, time.Minute)
+	_, err = waitForNode(ctx, targetNode, waitHeight, time.Minute)
 	if err != nil {
 		return err
 	}
@@ -94,9 +94,17 @@ func InjectEvidence(ctx context.Context, r *rand.Rand, testnet *e2e.Testnet, amo
 				ctx, privVals, evidenceHeight, valSet, testnet.Name, blockRes.Block.Time,
 			)
 		} else {
-			ev, err = generateDuplicateVoteEvidence(
+			var dve *types.DuplicateVoteEvidence
+			dve, err = generateDuplicateVoteEvidence(
 				ctx, privVals, evidenceHeight, valSet, testnet.Name, blockRes.Block.Time,
 			)
+			if dve.VoteA.Height < testnet.VoteExtensionsEnableHeight {
+				dve.VoteA.Extension = nil
+				dve.VoteA.ExtensionSignature = nil
+				dve.VoteB.Extension = nil
+				dve.VoteB.ExtensionSignature = nil
+			}
+			ev = dve
 		}
 		if err != nil {
 			return err
@@ -110,7 +118,7 @@ func InjectEvidence(ctx context.Context, r *rand.Rand, testnet *e2e.Testnet, amo
 
 	// wait for the node to reach the height above the forged height so that
 	// it is able to validate the evidence
-	_, err = waitForNode(targetNode, blockRes.Block.Height+2, 30*time.Second)
+	_, err = waitForNode(ctx, targetNode, blockRes.Block.Height+2, 30*time.Second)
 	if err != nil {
 		return err
 	}
@@ -204,11 +212,11 @@ func generateDuplicateVoteEvidence(
 	if err != nil {
 		return nil, err
 	}
-	voteA, err := test.MakeVote(privVal, chainID, valIdx, height, 0, 2, makeRandomBlockID(), time)
+	voteA, err := types.MakeVote(privVal, chainID, valIdx, height, 0, 2, makeRandomBlockID(), time)
 	if err != nil {
 		return nil, err
 	}
-	voteB, err := test.MakeVote(privVal, chainID, valIdx, height, 0, 2, makeRandomBlockID(), time)
+	voteB, err := types.MakeVote(privVal, chainID, valIdx, height, 0, 2, makeRandomBlockID(), time)
 	if err != nil {
 		return nil, err
 	}

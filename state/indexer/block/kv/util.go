@@ -8,8 +8,17 @@ import (
 	"github.com/google/orderedcode"
 
 	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
+	"github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/types"
 )
+
+type HeightInfo struct {
+	heightRange     indexer.QueryRange
+	height          int64
+	heightEqIdx     int
+	onlyHeightRange bool
+	onlyHeightEq    bool
+}
 
 func intInSlice(a int, list []int) bool {
 	for _, b := range list {
@@ -40,13 +49,14 @@ func heightKey(height int64) ([]byte, error) {
 	)
 }
 
-func eventKey(compositeKey, typ, eventValue string, height int64) ([]byte, error) {
+func eventKey(compositeKey, typ, eventValue string, height int64, eventSeq int64) ([]byte, error) {
 	return orderedcode.Append(
 		nil,
 		compositeKey,
 		eventValue,
 		height,
 		typ,
+		eventSeq,
 	)
 }
 
@@ -74,24 +84,110 @@ func parseValueFromEventKey(key []byte) (string, error) {
 		height                        int64
 	)
 
-	remaining, err := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height, &typ)
+	_, err := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height, &typ)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse event key: %w", err)
-	}
-
-	if len(remaining) != 0 {
-		return "", fmt.Errorf("unexpected remainder in key: %s", remaining)
 	}
 
 	return eventValue, nil
 }
 
-func lookForHeight(conditions []syntax.Condition) (int64, bool) {
-	for _, c := range conditions {
-		if c.Tag == types.BlockHeightKey && c.Op == syntax.TEq {
-			return int64(c.Arg.Number()), true
+func parseHeightFromEventKey(key []byte) (int64, error) {
+	var (
+		compositeKey, typ, eventValue string
+		height                        int64
+	)
+
+	_, err := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height, &typ)
+	if err != nil {
+		return -1, fmt.Errorf("failed to parse event key: %w", err)
+	}
+
+	return height, nil
+}
+
+func parseEventSeqFromEventKey(key []byte) (int64, error) {
+	var (
+		compositeKey, typ, eventValue string
+		height                        int64
+		eventSeq                      int64
+	)
+
+	remaining, err := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height, &typ)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse event key: %w", err)
+	}
+
+	// This is done to support previous versions that did not have event sequence in their key
+	if len(remaining) != 0 {
+		remaining, err = orderedcode.Parse(remaining, &eventSeq)
+		if err != nil {
+			return 0, fmt.Errorf("failed to parse event key: %w", err)
+		}
+		if len(remaining) != 0 {
+			return 0, fmt.Errorf("unexpected remainder in key: %s", remaining)
 		}
 	}
 
-	return 0, false
+	return eventSeq, nil
+}
+
+// Remove all occurrences of height equality queries except one. While we are traversing the conditions, check whether the only condition in
+// addition to match events is the height equality or height range query. At the same time, if we do have a height range condition
+// ignore the height equality condition. If a height equality exists, place the condition index in the query and the desired height
+// into the heightInfo struct
+func dedupHeight(conditions []syntax.Condition) (dedupConditions []syntax.Condition, heightInfo HeightInfo, found bool) {
+	heightInfo.heightEqIdx = -1
+	heightRangeExists := false
+	var heightCondition []syntax.Condition
+	heightInfo.onlyHeightEq = true
+	heightInfo.onlyHeightRange = true
+	for _, c := range conditions {
+		if c.Tag == types.BlockHeightKey {
+			if c.Op == syntax.TEq {
+				if found || heightRangeExists {
+					continue
+				} else {
+					heightCondition = append(heightCondition, c)
+					heightInfo.height = int64(c.Arg.Number())
+
+					found = true
+				}
+			} else {
+				heightInfo.onlyHeightEq = false
+				heightRangeExists = true
+				dedupConditions = append(dedupConditions, c)
+			}
+		} else {
+			heightInfo.onlyHeightRange = false
+			heightInfo.onlyHeightEq = false
+			dedupConditions = append(dedupConditions, c)
+		}
+	}
+	if !heightRangeExists && len(heightCondition) != 0 {
+		heightInfo.heightEqIdx = len(dedupConditions)
+		heightInfo.onlyHeightRange = false
+		dedupConditions = append(dedupConditions, heightCondition...)
+	} else {
+		// If we found a range make sure we set the hegiht idx to -1 as the height equality
+		// will be removed
+		heightInfo.heightEqIdx = -1
+		heightInfo.height = 0
+		heightInfo.onlyHeightEq = false
+		found = false
+	}
+	return dedupConditions, heightInfo, found
+}
+
+func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) bool {
+	if heightInfo.heightRange.Key != "" {
+		if !checkBounds(heightInfo.heightRange, keyHeight) {
+			return false
+		}
+	} else {
+		if heightInfo.height != 0 && keyHeight != heightInfo.height {
+			return false
+		}
+	}
+	return true
 }

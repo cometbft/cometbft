@@ -56,6 +56,11 @@ type Manifest struct {
 	// testnet via the RPC endpoint of a random node. Default is 0
 	Evidence int `toml:"evidence"`
 
+	// VoteExtensionsEnableHeight configures the first height during which
+	// the chain will use and require vote extension data to be present
+	// in precommit messages.
+	VoteExtensionsEnableHeight int64 `toml:"vote_extensions_enable_height"`
+
 	// ABCIProtocol specifies the protocol used to communicate with the ABCI
 	// application: "unix", "tcp", "grpc", "builtin" or "builtin_unsync".
 	//
@@ -73,7 +78,8 @@ type Manifest struct {
 	PrepareProposalDelay time.Duration `toml:"prepare_proposal_delay"`
 	ProcessProposalDelay time.Duration `toml:"process_proposal_delay"`
 	CheckTxDelay         time.Duration `toml:"check_tx_delay"`
-	// TODO: add vote extension and finalize block delay (@cmwaters)
+	VoteExtensionDelay   time.Duration `toml:"vote_extension_delay"`
+	FinalizeBlockDelay   time.Duration `toml:"finalize_block_delay"`
 
 	// UpgradeVersion specifies to which version nodes need to upgrade.
 	// Currently only uncoordinated upgrade is supported
@@ -145,8 +151,8 @@ type ManifestNode struct {
 	SnapshotInterval uint64 `toml:"snapshot_interval"`
 
 	// RetainBlocks specifies the number of recent blocks to retain. Defaults to
-	// 0, which retains all blocks. Must be greater that PersistInterval and
-	// SnapshotInterval.
+	// 0, which retains all blocks. Must be greater that PersistInterval,
+	// SnapshotInterval and EvidenceAgeHeight.
 	RetainBlocks uint64 `toml:"retain_blocks"`
 
 	// Perturb lists perturbations to apply to the node after it has been

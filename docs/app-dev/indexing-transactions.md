@@ -5,17 +5,19 @@ order: 6
 # Indexing Transactions
 
 CometBFT allows you to index transactions and blocks and later query or
-subscribe to their results. Transactions are indexed by `TxResult.Events` and
-blocks are indexed by `Response(Begin|End)Block.Events`. However, transactions
+subscribe to their results. Transactions are indexed by `ResponseFinalizeBlock.tx_results.events` and
+blocks are indexed by `ResponseFinalizeBlock.events`. However, transactions
 are also indexed by a primary key which includes the transaction hash and maps
-to and stores the corresponding `TxResult`. Blocks are indexed by a primary key
+to and stores the corresponding transaction results. Blocks are indexed by a primary key
 which includes the block height and maps to and stores the block height, i.e.
 the block itself is never stored.
 
 Each event contains a type and a list of attributes, which are key-value pairs
 denoting something about what happened during the method's execution. For more
 details on `Events`, see the
+
 [ABCI](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_basic_concepts.md#events)
+
 documentation.
 
 An `Event` has a composite key associated with it. A `compositeKey` is
@@ -33,6 +35,9 @@ would be equal to the composite key of `jack.account.number`.
 
 By default, CometBFT will index all transactions by their respective hashes
 and height and blocks by their height.
+
+CometBFT allows for different events within the same height to have 
+equal attributes.
 
 ## Configuration
 
@@ -66,6 +71,60 @@ underlying CometBFT database. Using the `kv` indexer type allows you to query
 for block and transaction events directly against CometBFT's RPC. However, the
 query syntax is limited and so this indexer type might be deprecated or removed
 entirely in the future.
+
+**Implementation and data layout**
+
+The kv indexer stores each attribute of an event individually, by creating a composite key 
+with
+- event type,
+- attribute key,
+- attribute value,
+- event generator (e.g. `FinalizeBlock`)
+- the height, and
+- event counter.
+ For example the following events:
+ 
+```
+Type: "transfer",
+  Attributes: []abci.EventAttribute{
+   {Key: "sender", Value: "Bob", Index: true},
+   {Key: "recipient", Value: "Alice", Index: true},
+   {Key: "balance", Value: "100", Index: true},
+   {Key: "note", Value: "nothing", Index: true},
+   },
+ 
+```
+ 
+```
+Type: "transfer",
+  Attributes: []abci.EventAttribute{
+   {Key: "sender", Value: "Tom", Index: true},
+   {Key: "recipient", Value: "Alice", Index: true},
+   {Key: "balance", Value: "200", Index: true},
+   {Key: "note", Value: "nothing", Index: true},
+   },
+```
+
+will be represented as follows in the store, assuming these events result from the `FinalizeBlock` call for height 1: 
+
+```
+Key                                 value
+---- event1 ------
+transferSenderBobFinalizeBlock11           1
+transferRecipientAliceFinalizeBlock11      1
+transferBalance100FinalizeBlock11          1
+transferNodeNothingFinalizeBlock11         1
+---- event2 ------
+transferSenderTomFinalizeBlock12           1
+transferRecepientAliceFinalizeBlock12      1
+transferBalance200FinalizeBlock12          1
+transferNodeNothingFinalizeBlock12         1
+ 
+```
+The event number is a local variable kept by the indexer and incremented when a new event is processed. 
+It is an `int64` variable and has no other semantics besides being used to associate attributes belonging to the same events within a height. 
+This variable is not atomically incremented as event indexing is deterministic. **Should this ever change**, the event id generation
+will be broken. 
 
 #### PostgreSQL
 
@@ -109,27 +168,58 @@ The following indexes are indexed by default:
 
 Applications are free to define which events to index. CometBFT does not
 expose functionality to define which events to index and which to ignore. In
-your application's `DeliverTx` method, add the `Events` field with pairs of
+your application's `FinalizeBlock` method, add the `Events` field with pairs of
 UTF-8 encoded strings (e.g. "transfer.sender": "Bob", "transfer.recipient":
 "Alice", "transfer.balance": "100").
 
 Example:
 
 ```go
-func (app *KVStoreApplication) DeliverTx(req types.RequestDeliverTx) types.Result {
+func (app *Application) FinalizeBlock(_ context.Context, req *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
+
     //...
-    events := []abci.Event{
-        {
-            Type: "transfer",
-            Attributes: []abci.EventAttribute{
-                {Key: []byte("sender"), Value: []byte("Bob"), Index: true},
-                {Key: []byte("recipient"), Value: []byte("Alice"), Index: true},
-                {Key: []byte("balance"), Value: []byte("100"), Index: true},
-                {Key: []byte("note"), Value: []byte("nothing"), Index: true},
-            },
-        },
-    }
-    return types.ResponseDeliverTx{Code: code.CodeTypeOK, Events: events}
+  tx_results[0] := &types.ExecTxResult{
+			Code: CodeTypeOK,
+			// With every transaction we can emit a series of events. To make it simple, we just emit the same events.
+			Events: []types.Event{
+				{
+					Type: "app",
+					Attributes: []types.EventAttribute{
+						{Key: "creator", Value: "Cosmoshi Netowoko", Index: true},
+						{Key: "key", Value: key, Index: true},
+						{Key: "index_key", Value: "index is working", Index: true},
+						{Key: "noindex_key", Value: "index is working", Index: false},
+					},
+				},
+				{
+					Type: "app",
+					Attributes: []types.EventAttribute{
+						{Key: "creator", Value: "Cosmoshi", Index: true},
+						{Key: "key", Value: value, Index: true},
+						{Key: "index_key", Value: "index is working", Index: true},
+						{Key: "noindex_key", Value: "index is working", Index: false},
+					},
+				},
+			},
+		}
+
+    block_events = []types.Event{
+			{
+				Type: "loan",
+				Attributes: []types.EventAttribute{
+					{	Key:   "account_no", Value: "1", Index: true},
+					{ Key:   "amount", Value: "200", Index: true },
+				},
+			},
+			{
+				Type: "loan",
+				Attributes: []types.EventAttribute{
+					{ Key:   "account_no", Value: "2",	Index: true },
+					{ Key:   "amount", Value: "300", Index: true},
+				},
+			},
+		}
+    return &types.ResponseFinalizeBlock{TxResults: tx_results, Events: block_events}
 }
 ```
 
@@ -168,7 +258,7 @@ a query to `/subscribe` RPC endpoint.
 Check out [API docs](https://docs.cometbft.com/main/rpc/#subscribe) for more information
 on query syntax and other options.
 
-## Querying Blocks Events
+## Querying Block Events
 
 You can query for a paginated set of blocks by their events by calling the
 `/block_search` RPC endpoint:
@@ -177,5 +267,12 @@ You can query for a paginated set of blocks by their events by calling the
 curl "localhost:26657/block_search?query=\"block.height > 10 AND val_set.num_changed > 0\""
 ```
 
-Check out [API docs](https://docs.cometbft.com/main/rpc/#/Info/block_search)
-for more information on query syntax and other options.
+
+Storing the event sequence was introduced in CometBFT 0.34.26. Before that, up until Tendermint Core 0.34.26, 
+the event sequence was not stored in the kvstore and events were stored only by height. That means that queries 
+returned blocks and transactions whose event attributes match within the height but can match across different 
+events on that height. 
+This behavior was fixed with CometBFT 0.34.26+. However, if the data was indexed with earlier versions of
+Tendermint Core and not re-indexed, that data will be queried as if all the attributes within a height
+occurred within the same event.
+

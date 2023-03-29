@@ -5,6 +5,7 @@
 - Nov 8,  2022: Updated draft (jmalicevic)
 - Nov 11, 2022: Updated based on PR comments (jmalicevic)
 - Nov 14, 2022: Updated current peer banning mechanisms (jmalicevic)
+- Mar 30, 2023: Final conclusions and further steps (jmalicevic)
 
 ## Abstract
 
@@ -449,9 +450,9 @@ can lead to unwanted side effects, such as partitioning the network or influenci
 
 #### *Potential failure scenarios*
 
-* Assume we have a network is configured in such a way that there exists an overlay network, and a node can only influence its direct connections. 
+* Assume we have a network that is configured in such a way that there exists an overlay network, and a node can only influence its direct connections. 
 The node can force a peer to disconnect from it forever if, say, it wanted to lower the number of ways it has of getting messages to the rest of the network.
-However, that could have already done that by just disconnecting or by dropping its messages.
+However, that could have already be done by just disconnecting or by dropping its messages.
 
 * A bug in `CheckTx`causes the rejection of all transactions and all nodes disconnect, how do we ensure the operator knows what has happened?
 
@@ -469,17 +470,19 @@ The uncertainties are higher in the case of banning based on the *freqeuncy* of 
 As for the banning based on the return code from the application, due to the lack of strong use cases and potential unwanted side-effects,
 it will not be implemented at the moment of writing the final version of this RFC (March 2023). 
 
-
-
 An alternative is being proposed at the moment due to feedback we recieved when debugging the Gaia issue mentioned above. Namely,
 they found that having these peers banned or even a log message about this failure would have significantly shortened the debugging
 time. 
-It was therfore proposed to output a log message and even send this message to the sender of the transaction, warning the node
+
+Additionally, as input from Osmosis, we got a potential security-related use case for the implementation of banning. 
+It was therefore proposed to first implement a log message that the transaction could never have been valid, and even send this message to the sender of the transaction, warning the node
 that it sent a transaction that failed `CheckTx`. But this should not be sent on every `CheckTx` failure as it would create a lot of noise
-(we mentioned the valid reasons for `CheckTx` to faile). A cleaner solution would indeed require adding a special code and/or the `neverValidTx` flag
+(we mentioned the valid reasons for `CheckTx` to failures). We would indeed require adding a special code and/or the `neverValidTx` flag
 to `ResponseCheckTx`, and logging this warning only if the application sets these parameters.
 
 This would facilitate debugging and pinpointing the problem for operators of the nodes recieving these warnings.
+
+Then, once we progress with the p2p specification and understand all possible implications of banning, actual peer banning can be implemented. 
 
 #### *Discussion on minor implementation details*
 
@@ -501,12 +504,10 @@ Otehr than avoiding relying solely on the response code values, there are no imm
 ### References
 
 
-> Links to external materials needed to follow the discussion may be added here.
->
-> In addition, if the discussion in a request for comments leads to any design
-> decisions, it may be helpful to add links to the ADR documents here after the
-> discussion has settled.
+- Most of the relevant links are in the [existing issues and concerns section](#existing-issues-and-concerns)
 
+- [`CheckTx` function description](./../../spec/abci/abci%2B%2B_methods.md#checktx)
 
-
-- 
+- Github discussions on this RFC:
+  - [CometBFT repo - PR \#78](https://github.com/cometbft/cometbft/pull/78)
+  - [Tendermint repo - PR \#9675](https://github.com/tendermint/tendermint/pull/9675)

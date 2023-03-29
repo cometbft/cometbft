@@ -14,13 +14,12 @@
   ([\#260](https://github.com/cometbft/cometbft/issues/260))
 - Bump minimum Go version to 1.20
   ([\#385](https://github.com/cometbft/cometbft/issues/385))
-- `[tools/tm-signer-harness]` Set OS home dir to instead of the hardcoded PATH.
-  ([\#6498](https://github.com/tendermint/tendermint/pull/6498))
 - `[state]` Move pruneBlocks from node/state to state/execution.
   ([\#6541](https://github.com/tendermint/tendermint/pull/6541))
-- `[abci]` Move `app_hash` parameter from `Commit` to `FinalizeBlock` (@sergio-mena)
+- `[abci]` Move `app_hash` parameter from `Commit` to `FinalizeBlock`
   ([\#8664](https://github.com/tendermint/tendermint/pull/8664))
-- `[abci]` Introduce `FinalizeBlock` which condenses `BeginBlock`, `DeliverTx` and `EndBlock` into a single method call (@cmwaters)
+- `[abci]` Introduce `FinalizeBlock` which condenses `BeginBlock`, `DeliverTx`
+  and `EndBlock` into a single method call
   ([\#9468](https://github.com/tendermint/tendermint/pull/9468))
 - `[p2p]` Remove unused p2p/trust package
   ([\#9625](https://github.com/tendermint/tendermint/pull/9625))
@@ -40,8 +39,11 @@
 
 - `[consensus]` Fixed a busy loop that happened when sending of a block part failed by sleeping in case of error.
   ([\#4](https://github.com/informalsystems/tendermint/pull/4))
-- `[consensus]` ([\#386](https://github.com/cometbft/cometbft/pull/386)) Short-term fix for the case when `needProofBlock` cannot find previous block meta by defaulting to the creation of a new proof block. (@adizere)
-  - Special thanks to the [Vega.xyz](https://vega.xyz/) team, and in particular to Zohar (@ze97286), for reporting the problem and working with us to get to a fix.
+- `[consensus]` Short-term fix for the case when `needProofBlock` cannot find
+  previous block meta by defaulting to the creation of a new proof block.
+  Special thanks to the [Vega.xyz](https://vega.xyz/) team, and in particular to
+  Zohar (@ze97286), for reporting the problem and working with us to get to a
+  fix. ([\#386](https://github.com/cometbft/cometbft/pull/386))
 - `[kvindexer]` Forward porting the fixes done to the kvindexer in 0.37 in PR \#77
   ([\#423](https://github.com/cometbft/cometbft/pull/423))
 - `[consensus]` Unexpected error conditions in `ApplyBlock` are non-recoverable, so ignoring the error and carrying on is a bug. We replaced a `return` that disregarded the error by a `panic`.

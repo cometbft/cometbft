@@ -1,5 +1,6 @@
-/*
-  This encodes the execution flows of the p2p system of CometBFT for maintaining connections to other
+/* ****************************************************************************
+  This encodes the execution flows of the p2p system of CometBFT for 
+  maintaining connections to other
   nodes in the network. It is based on the descriptions in 
   https://github.com/cometbft/cometbft/blob/91f8dc3ea0490fd824d1d3d346fb0da61de2f848/spec/p2p/architecture/peers-connect.md?plain=1#L1
 
@@ -11,7 +12,7 @@
   - lower level code (TCP connection management)
 
   Josef Widder, Informal Systems, 2023
-*/
+**************************************************************************** */
 
 
 module p2p {
@@ -55,9 +56,9 @@ module p2p {
  *
  * ************************************************************************* */
 
-/*
- * p2p peer management: auxiliary functions
- */
+    /*
+     * p2p peer management: auxiliary functions
+     */
 
     pure def Peers(s: LocalState): Set[Address] = s.peerState.keys()
 
@@ -79,9 +80,9 @@ module p2p {
     pure def peersDialing(s: LocalState): int = size(s.connections.filter(c => s.isDialing(c.address)))
 
 
-/*
- * p2p peer management functions
- */
+    /*
+    * p2p peer management functions
+    */
 
     // This calls a potential peer. This means some lower level network code is started, and communication
     // with the potential peer is started. Eventually this will result in one of the actions
@@ -97,7 +98,7 @@ module p2p {
         }
     }    
 
- // transportAccept(Address) ->  makes an incoming connection. Dual to "dialPeer" but incoming
+    // transportAccept(Address) ->  makes an incoming connection. Dual to "dialPeer" but incoming
     pure def transportAccept(s: LocalState, a: Address): LocalState = {
         if (s.peersInbound() < MaxNumInboundPeers or s.IsUnconditional.contains(a)) {
             val newConn : Set[Connection] = s.connections.union(Set({address: a, state: "incoming"}))
@@ -157,7 +158,8 @@ module p2p {
 
     pure def ensurePeers(s: LocalState): LocalState = {
         if (s.peersOutbound() + s.peersDialing() < MaxNumOutboundPeers) {
-            val addr = s.AddressBook.chooseSome() // addressbook.pickAddress(Bias)
+            //val addr = s.AddressBook.chooseSome() // addressbook.pickAddress(Bias)
+            nondet addr = oneOf(s.AddressBook)
             s.dialPeer(addr)
         }
         else {
@@ -204,6 +206,11 @@ module p2p {
                    config.get(n).Peers().forall(p => 
                    config.get(n).connections.exists(c => c.address == p)))
 
+    // for each connection there is a peer. Only eventually we will add a peer or remove the connection, 
+    // so this is expected to break 
+    val wrongConn = modeledNodes.forall(n => 
+                    config.get(n).connections.forall(c =>
+                    config.get(n).Peers().exists(p => c.address == p)))
 
     // // auxiliary definition. These are the peers that seem alive and connected
     // def activePeers (s: LocalState): Set[Address] = s.Peers().filter(x => s.connectionState.get(x) == "open")
@@ -425,6 +432,24 @@ module p2p {
         )
     }
 
+    run happyPathTest = {
+        val a = {ID: "alice", networkAddress: "127.0.0.111:10"}
+        val node = {ID: "scully", networkAddress: "127.0.0.1177:10"}
+        init
+        .then(operatorDialPeers(node , Set(a)))
+        .then(lowerLevelDialPeerSuccess(node, a))
+        .then(all{
+            assert(
+                and {
+                    config.get(node).connections.contains({address: a, state: "outgoing"}),
+                    config.get(node).peerState.get(a) == "outbound",
+                }
+            ),
+            allUnchanged,
+        })
+    }
+
+
     action step = any {
         nondet a = oneOf(modeledNodes) 
         nondet outgoing = oneOf(config.get(a).AddressBook)
@@ -461,22 +486,6 @@ module p2p {
 
     
 
-    run happyPathTest = {
-        val a = {ID: "alice", networkAddress: "127.0.0.111:10"}
-        val node = {ID: "scully", networkAddress: "127.0.0.1177:10"}
-        init
-        .then(operatorDialPeers(node , Set(a)))
-        .then(lowerLevelDialPeerSuccess(node, a))
-        .then(all{
-            assert(
-                and {
-                    config.get(node).connections.contains({address: a, state: "outgoing"}),
-                    config.get(node).peerState.get(a) == "outbound",
-                }
-            ),
-            allUnchanged,
-        })
-    }
 
 
 

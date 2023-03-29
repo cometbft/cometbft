@@ -532,13 +532,13 @@ func TestBlockSearch(t *testing.T) {
 	result, err := c.BlockSearch(context.Background(), "begin_event.foo = 100", nil, nil, "asc")
 	require.NoError(t, err)
 	blockCount := len(result.Blocks)
-	// if we generate block events within the test (by uncommenting)
-	// the code in line main_test.go:L23 then we expect len(result.Blocks)
+	// if we generate block events within the test (by uncommenting
+	// the code in line main_test.go:L23) then we expect len(result.Blocks)
 	// to be at least 5
 	// require.GreaterOrEqual(t, blockCount, 5)
 
 	// otherwise it is 0
-	require.GreaterOrEqual(t, blockCount, 0)
+	require.Equal(t, blockCount, 0)
 
 }
 func TestTxSearch(t *testing.T) {

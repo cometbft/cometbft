@@ -3,6 +3,7 @@
 
 ipv6 = true
 initial_height = 1000
+upgrade_version = "cometbft/e2e-node:local-version"
 vote_extensions_enable_height = 1007
 evidence = 5
 initial_state = { initial01 = "a", initial02 = "b", initial03 = "c" }
@@ -35,12 +36,14 @@ validator05 = 50
 
 [node.seed01]
 mode = "seed"
-perturb = ["restart"]
+version = "cometbft/e2e-node:v0.38.x"
+perturb = ["upgrade"]
 
 [node.validator01]
 seeds = ["seed01"]
+version = "cometbft/e2e-node:v0.38.x"
 snapshot_interval = 5
-perturb = ["disconnect"]
+perturb = ["upgrade"]
 
 [node.validator02]
 seeds = ["seed01"]

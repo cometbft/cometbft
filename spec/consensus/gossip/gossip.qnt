@@ -82,7 +82,7 @@ module P2PAbstract {
     //Helper
     val p2pInternals = {maxCon: maxCon, ignore: igProcs, connections: cnProcs, sent:sMsgs, received:rMsgs}
 
-    action unchangedP2P = all {
+    action unchangedAll = all {
         maxCon' = maxCon,
         igProcs' = igProcs,
         cnProcs' = cnProcs,
@@ -162,7 +162,7 @@ module P2PAbstract {
         randomDropConnectionStep,
     }
 
-    action step = unchangedP2P
+    action step = unchangedAll
 
 }
 
@@ -192,14 +192,14 @@ module P2PCheat {
     def received(p): Proc => Set[{src:Proc, msg: GOSSIPMessage}] =
         PA::rMsgs.get(p)
 
-    action unchanged = PA::unchangedP2P
+    action unchangedAll = PA::unchangedAll
 
 //==== Init
     action init: bool = PA::init
 
 
 //===== Steps
-    action deliverMessageStep = PA::unchangedP2P
+    action deliverMessageStep = PA::unchangedAll
 
     action step: bool = PA::step
 }
@@ -242,7 +242,7 @@ module P2PNetwork {
 
     def received(p) = PA::rMsgs.get(p)
 
-    action unchanged = PA::unchangedP2P
+    action unchangedAll = PA::unchangedAll
 
 //======Init
     action init: bool = PA::init
@@ -828,7 +828,7 @@ module P2PTests {
             .then(all {
                 size(PA::Procs.filter(p => size(P::received(p)) > 0)) == 2,
 
-                P::unchanged
+                P::unchangedAll
             })
     }
 
@@ -859,7 +859,7 @@ module P2PTests {
             .then(all {
                 size(PA::Procs.filter(p => size(P::received(p)) > 0)) == 2,
 
-                P::unchanged
+                P::unchangedAll
             })
     }
 
@@ -890,7 +890,7 @@ module P2PTests {
             .then(all {
                 size(PA::Procs.filter(p => size(P::received(p)) > 0)) == 2,
 
-                P::unchanged
+                P::unchangedAll
             })
     }
 
@@ -921,7 +921,7 @@ module P2PTests {
             .then(all {
                 size(PA::Procs.filter(p => size(P::received(p)) > 0)) == 2,
 
-                P::unchanged
+                P::unchangedAll
             })
     }
 }

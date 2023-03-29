@@ -10,7 +10,6 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	sm "github.com/cometbft/cometbft/state"
@@ -69,21 +68,19 @@ func TestBlockchainInfo(t *testing.T) {
 }
 
 func TestBlockResults(t *testing.T) {
-	results := &cmtstate.ABCIResponses{
-		DeliverTxs: []*abci.ResponseDeliverTx{
+	results := &abci.ResponseFinalizeBlock{
+		TxResults: []*abci.ExecTxResult{
 			{Code: 0, Data: []byte{0x01}, Log: "ok"},
 			{Code: 0, Data: []byte{0x02}, Log: "ok"},
 			{Code: 1, Log: "not ok"},
 		},
-		EndBlock:   &abci.ResponseEndBlock{},
-		BeginBlock: &abci.ResponseBeginBlock{},
 	}
 
 	env := &Environment{}
 	env.StateStore = sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
-	err := env.StateStore.SaveABCIResponses(100, results)
+	err := env.StateStore.SaveFinalizeBlockResponse(100, results)
 	require.NoError(t, err)
 	mockstore := &mocks.BlockStore{}
 	mockstore.On("Height").Return(int64(100))
@@ -100,11 +97,10 @@ func TestBlockResults(t *testing.T) {
 		{101, true, nil},
 		{100, false, &ctypes.ResultBlockResults{
 			Height:                100,
-			TxsResults:            results.DeliverTxs,
-			BeginBlockEvents:      results.BeginBlock.Events,
-			EndBlockEvents:        results.EndBlock.Events,
-			ValidatorUpdates:      results.EndBlock.ValidatorUpdates,
-			ConsensusParamUpdates: results.EndBlock.ConsensusParamUpdates,
+			TxsResults:            results.TxResults,
+			FinalizeBlockEvents:   results.Events,
+			ValidatorUpdates:      results.ValidatorUpdates,
+			ConsensusParamUpdates: results.ConsensusParamUpdates,
 		}},
 	}
 

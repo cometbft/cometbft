@@ -36,7 +36,7 @@ func MakeCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet, valida
 		}
 	}
 
-	return voteSet.MakeCommit(), nil
+	return voteSet.MakeExtendedCommit(types.ABCIParams{VoteExtensionsEnableHeight: 0}).ToCommit(), nil
 }
 
 func MakeCommit(blockID types.BlockID, height int64, round int32, valSet *types.ValidatorSet, privVals []types.PrivValidator, chainID string, now time.Time) (*types.Commit, error) {
@@ -81,5 +81,5 @@ func MakeCommit(blockID types.BlockID, height int64, round int32, valSet *types.
 		}
 	}
 
-	return types.NewCommit(height, round, blockID, sigs), nil
+	return &types.Commit{Height: height, Round: round, BlockID: blockID, Signatures: sigs}, nil
 }

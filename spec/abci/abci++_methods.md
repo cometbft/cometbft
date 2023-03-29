@@ -153,96 +153,9 @@ title: Methods
       to other nodes or included in a proposal block.
       CometBFT attributes no other value to the response code.
 
-### BeginBlock
-
-* **Request**:
-
-    | Name                 | Type                                        | Description                                                                                                       | Field Number |
-    |----------------------|---------------------------------------------|-------------------------------------------------------------------------------------------------------------------|--------------|
-    | hash                 | bytes                                       | The block's hash. This can be derived from the block header.                                                      | 1            |
-    | header               | [Header](../core/data_structures.md#header) | The block header.                                                                                                 | 2            |
-    | last_commit_info     | [CommitInfo](#commitinfo)           | Info about the last commit, including the round, and the list of validators and which ones signed the last block. | 3            |
-    | byzantine_validators | repeated [Evidence](abci++_basic_concepts.md#evidence)              | List of evidence of validators that acted maliciously.                                                            | 4            |
-
-* **Response**:
-
-    | Name   | Type                      | Description                         | Field Number |
-    |--------|---------------------------|-------------------------------------|--------------|
-    | events | repeated [Event](abci++_basic_concepts.md#events) | type & Key-Value events for indexing | 1           |
-
-* **Usage**:
-    * Signals the beginning of a new block.
-    * Called prior to any `DeliverTx` method calls.
-    * The header contains the height, timestamp, and more - it exactly matches the
-    CometBFT block header. We may seek to generalize this in the future.
-    * The `CommitInfo` and `ByzantineValidators` can be used to determine
-    rewards and punishments for the validators.
-
-### DeliverTx
-
-* **Request**:
-
-    | Name | Type  | Description                    | Field Number |
-    |------|-------|--------------------------------|--------------|
-    | tx   | bytes | The request transaction bytes. | 1            |
-
-* **Response**:
-
-    | Name       | Type                      | Description                                                           | Field Number |
-    |------------|---------------------------|-----------------------------------------------------------------------|--------------|
-    | code       | uint32                    | Response code.                                                        | 1            |
-    | data       | bytes                     | Result bytes, if any.                                                 | 2            |
-    | log        | string                    | The output of the application's logger. **May be non-deterministic.** | 3            |
-    | info       | string                    | Additional information. **May be non-deterministic.**                 | 4            |
-    | gas_wanted | int64                     | Amount of gas requested for transaction.                              | 5            |
-    | gas_used   | int64                     | Amount of gas consumed by transaction.                                | 6            |
-    | events     | repeated [Event](abci++_basic_concepts.md#events) | Type & Key-Value events for indexing transactions (eg. by account).   | 7            |
-    | codespace  | string                    | Namespace for the `code`.                                             | 8            |
-
-* **Usage**:
-    * [**Required**] The core method of the application.
-    * `DeliverTx` is called once for each transaction in the block.
-    * When `DeliverTx` is called, the application must execute the transaction deterministically
-    in full before returning control to CometBFT.
-    * Alternatively, the application can apply a candidate state corresponding
-     to the same block previously executed via `PrepareProposal` or `ProcessProposal` any time between the calls to `BeginBlock`, the various
-     calls to `DeliverTx` and `EndBlock`.
-    * `ResponseDeliverTx.Code == 0` only if the transaction is fully valid.
-
-
-### EndBlock
-
-* **Request**:
-
-    | Name   | Type  | Description                        | Field Number |
-    |--------|-------|------------------------------------|--------------|
-    | height | int64 | Height of the block just executed. | 1            |
-
-* **Response**:
-
-    | Name                    | Type                                         | Description                                                     | Field Number |
-    |-------------------------|----------------------------------------------|-----------------------------------------------------------------|--------------|
-    | validator_updates       | repeated [ValidatorUpdate](#validatorupdate) | Changes to validator set (set voting power to 0 to remove).     | 1            |
-    | consensus_param_updates | [ConsensusParams](#consensusparams)          | Changes to consensus-critical time, size, and other parameters. | 2            |
-    | events                  | repeated [Event](abci++_basic_concepts.md#events)                    | Type & Key-Value events for indexing                            | 3            |
-
-* **Usage**:
-    * Signals the end of a block.
-    * Called after all the transactions for the current block have been delivered, prior to the block's `Commit` message.
-    * Optional `validator_updates` triggered by block `H`. These updates affect validation
-      for blocks `H+1`, `H+2`, and `H+3`.
-    * Heights following a validator update are affected in the following way:
-        * `H+1`: `NextValidatorsHash` includes the new `validator_updates` value.
-        * `H+2`: The validator set change takes effect and `ValidatorsHash` is updated.
-        * `H+3`: `last_commit_info (BeginBlock)` is changed to include the altered validator set and `*_last_commit` fields in `PrepareProposal`, `ProcessProposal` now include the altered validator set.
-    * `consensus_param_updates` returned for block `H` apply to the consensus
-      params for block `H+1`. For more information on the consensus parameters,
-      see the [application spec entry on consensus parameters](./abci++_app_requirements.md#consensus-parameters).
-    * `validator_updates` and `consensus_param_updates` may be empty. In this case, CometBFT will keep the current values.
-
-
-
 ### Commit
+
+#### Parameters and Types
 
 * **Request**:
 
@@ -250,25 +163,21 @@ title: Methods
     |--------|-------|------------------------------------|--------------|
 
     Commit signals the application to persist application state. It takes no parameters.
+
 * **Response**:
 
     | Name          | Type  | Description                                                            | Field Number |
     |---------------|-------|------------------------------------------------------------------------|--------------|
-    | data          | bytes | The Merkle root hash of the application state.                         | 2            |
     | retain_height | int64 | Blocks below this height may be removed. Defaults to `0` (retain all). | 3            |
 
 * **Usage**:
-    * Signal the application to persist the application state.
-    * Return an (optional) Merkle root hash of the application state
-    * `ResponseCommit.Data` is included as the `Header.AppHash` in the next block
-        * It may be empty or hard-coded, but MUST be **deterministic** - it must not be a function of anything that did not come from the parameters of the execution calls (`BeginBlock/DeliverTx/EndBlock methods`) and the previous committed state.
-    * Later calls to `Query` can return proofs about the application state anchored
-    in this Merkle root hash
-    * Use `RetainHeight` with caution! If all nodes in the network remove historical
-    blocks then this data is permanently lost, and no new nodes will be able to
-    join the network and bootstrap. Historical blocks may also be required for
-    other purposes, e.g. auditing, replay of non-persisted heights, light client
-    verification, and so on.
+
+    * Signal the Application to persist the application state.
+      Application is expected to persist its state at the end of this call, before calling `ResponseCommit`.
+    * Use `ResponseCommit.retain_height` with caution! If all nodes in the network remove historical
+      blocks then this data is permanently lost, and no new nodes will be able to join the network and
+      bootstrap, unless state sync is enabled on the chain. Historical blocks may also be required for other purposes, e.g. auditing, replay of
+      non-persisted heights, light client verification, and so on.
 
 ### ListSnapshots
 
@@ -301,9 +210,9 @@ title: Methods
 
 * **Response**:
 
-    | Name  | Type  | Description                                                                                                                                           | Field Number |
-    |-------|-------|-------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
-    | chunk | bytes | The binary chunk contents, in an arbitray format. Chunk messages cannot be larger than 16 MB _including metadata_, so 10 MB is a good starting point. | 1            |
+    | Name  | Type  | Description                                                                                                                                            | Field Number |
+    |-------|-------|--------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
+    | chunk | bytes | The binary chunk contents, in an arbitrary format. Chunk messages cannot be larger than 16 MB _including metadata_, so 10 MB is a good starting point. | 1            |
 
 * **Usage**:
     * Used during state sync to retrieve snapshot chunks from peers.
@@ -417,9 +326,10 @@ title: Methods
 
 * **Usage**:
     * `RequestPrepareProposal`'s parameters `txs`, `misbehavior`, `height`, `time`,
-      `next_validators_hash`, and `proposer_address` are the same as in `RequestProcessProposal`.
+      `next_validators_hash`, and `proposer_address` are the same as in `RequestProcessProposal`
+      and `RequestFinalizeBlock`.
     * `RequestPrepareProposal.local_last_commit` is a set of the precommit votes that allowed the
-      decision of the previous block.
+      decision of the previous block, together with their corresponding vote extensions.
     * The `height`, `time`, and `proposer_address` values match the values from the header of the
       proposed block.
     * `RequestPrepareProposal` contains a preliminary set of transactions `txs` that CometBFT
@@ -439,10 +349,10 @@ title: Methods
             transaction `t1` into a second transaction `t2`, i.e., the Application asks CometBFT
             to remove `t1` from the block and add `t2` to the block. If a client wants to eventually check what
             happened to `t1`, it will discover that `t1` is not in a
-            committed block (assuming a _re-CheckTx_ evited it from the mempool), getting the wrong idea that `t1` did not make it into a block. Note
+            committed block (assuming a _re-CheckTx_ evicted it from the mempool), getting the wrong idea that `t1` did not make it into a block. Note
             that `t2` _will be_ in a committed block, but unless the Application tracks this
             information, no component will be aware of it. Thus, if the Application wants
-            traceability, it is its responsability to support it. For instance, the Application
+            traceability, it is its responsibility's to support it. For instance, the Application
             could attach to a transformed transaction a list with the hashes of the transactions it
             derives from.
     * CometBFT MAY include a list of transactions in `RequestPrepareProposal.txs` whose total
@@ -452,7 +362,8 @@ title: Methods
       that the `RequestPrepareProposal.max_tx_bytes` limit is respected by those transactions
       returned in `ResponsePrepareProposal.txs` .
     * As a result of executing the prepared proposal, the Application may produce block events or transaction events.
-      The Application must keep those events until a block is decided. It will then forward the events to the `BeginBlock-DeliverTx-EndBlock` functions depending on where each event should be placed, thereby returning the events to CometBFT.
+      The Application must keep those events until a block is decided and then pass them on to CometBFT via
+      `ResponseFinalizeBlock`.
     * CometBFT does NOT provide any additional validity checks (such as checking for duplicate
       transactions).
       <!--
@@ -521,7 +432,8 @@ the consensus algorithm will use it as proposal and will not call `RequestPrepar
 
 * **Usage**:
     * Contains all information on the proposed block needed to fully execute it.
-        * The Application may fully execute the block as though it was handling the calls to `BeginBlock-DeliverTx-EndBlock`.
+        * The Application may fully execute the block as though it was handling
+         `RequestFinalizeBlock`.
         * However, any resulting state changes must be kept as _candidate state_,
           and the Application should be ready to discard it in case another block is decided.
     * `RequestProcessProposal` is also called at the proposer of a round. The reason for this is to
@@ -565,7 +477,6 @@ When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the prop
          * `ACCEPT`: _p_ prevotes on this proposal for round _r_, height _h_.
          * `REJECT`: _p_ prevotes `nil`.
          *
-<!--
 
 ### ExtendVote
 
@@ -606,17 +517,19 @@ then _p_ locks _v_  and sends a Precommit message in the following way
 1. _p_ sets _lockedValue_ and _validValue_ to _v_, and sets _lockedRound_ and _validRound_ to _r_
 2. _p_'s CometBFT calls `RequestExtendVote` with _id(v)_ (`RequestExtendVote.hash`). The call is synchronous.
 3. The Application returns an array of bytes, `ResponseExtendVote.extension`, which is not interpreted by the consensus algorithm.
-4. _p_ includes `ResponseExtendVote.extension` in a field of type [CanonicalVoteExtension](#canonicalvoteextension),
-   it then populates the other fields in [CanonicalVoteExtension](#canonicalvoteextension), and signs the populated
-   data structure.
+4. _p_ sets `ResponseExtendVote.extension` as the value of the `extension` field of type
+   [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension),
+   populates the other fields in [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension),
+   and signs the populated data structure.
 5. _p_ constructs and signs the [CanonicalVote](../core/data_structures.md#canonicalvote) structure.
 6. _p_ constructs the Precommit message (i.e. [Vote](../core/data_structures.md#vote) structure)
-   using [CanonicalVoteExtension](#canonicalvoteextension) and [CanonicalVote](../core/data_structures.md#canonicalvote).
+   using [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension)
+   and [CanonicalVote](../core/data_structures.md#canonicalvote).
 7. _p_ broadcasts the Precommit message.
 
 In the cases when _p_ is to broadcast `precommit nil` messages (either _2f+1_ `prevote nil` messages received,
 or _timeoutPrevote_ triggered), _p_'s CometBFT does **not** call `RequestExtendVote` and will not include
-a [CanonicalVoteExtension](#canonicalvoteextension) field in the `precommit nil` message.
+a [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension) field in the `precommit nil` message.
 
 ### VerifyVoteExtension
 
@@ -763,8 +676,6 @@ then _p_ decides block _v_ and finalizes consensus for height _h_ in the followi
 10. _p_'s CometBFT unlocks the mempool &mdash; newly received transactions can now be checked.
 11. _p_ starts consensus for height _h+1_, round 0
 
--->
-
 ## Data Types existing in ABCI
 
 Most of the data structures used in ABCI are shared [common data structures](../core/data_structures.md). In certain cases, ABCI uses different data structures which are documented here:
@@ -780,7 +691,8 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
 * **Usage**:
     * Validator identified by address
-    * Used in RequestBeginBlock as part of VoteInfo
+    * Used as part of VoteInfo within `CommitInfo` (used in `ProcessProposal` and `FinalizeBlock`), 
+      and `ExtendedCommitInfo` (used in `PrepareProposal`).
     * Does not include PubKey to avoid sending potentially large quantum pubkeys
     over the ABCI
 
@@ -883,8 +795,6 @@ Most of the data structures used in ABCI are shared [common data structures](../
     * Indicates whether a validator signed the last block, allowing for rewards based on validator availability.
     * This information is typically extracted from a proposed or decided block.
 
-
-
 ### ExtendedVoteInfo
 
 * **Fields**:
@@ -893,13 +803,12 @@ Most of the data structures used in ABCI are shared [common data structures](../
     |-------------------|-------------------------|------------------------------------------------------------------------------|--------------|
     | validator         | [Validator](#validator) | The validator that sent the vote.                                            | 1            |
     | signed_last_block | bool                    | Indicates whether or not the validator signed the last block.                | 2            |
-    | vote_extension    | bytes                   | Reserved for future use. | 3            |
+    | vote_extension    | bytes                   | Non-deterministic extension provided by the sending validator's Application. | 3            |
 
 * **Usage**:
     * Indicates whether a validator signed the last block, allowing for rewards based on validator availability.
     * This information is extracted from CometBFT's data structures in the local process.
-    * `vote_extension` is reserved for future use when vote extensions are added. Currently, this field is always set to `nil`.
-
+    * `vote_extension` contains the sending validator's vote extension, which is signed by CometBFT. It can be empty
 
 ### CommitInfo
 
@@ -910,7 +819,6 @@ Most of the data structures used in ABCI are shared [common data structures](../
     | round | int32                          | Commit round. Reflects the round at which the block proposer decided in the previous height. | 1            |
     | votes | repeated [VoteInfo](#voteinfo) | List of validators' addresses in the last validator set with their voting information.       | 2            |
 
-
 ### ExtendedCommitInfo
 
 * **Fields**:
@@ -920,7 +828,6 @@ Most of the data structures used in ABCI are shared [common data structures](../
     | round | int32                                          | Commit round. Reflects the round at which the block proposer decided in the previous height.                      | 1            |
     | votes | repeated [ExtendedVoteInfo](#extendedvoteinfo) | List of validators' addresses in the last validator set with their voting information, including vote extensions. | 2            |
 
-<!--
 ### ExecTxResult
 
 * **Fields**:
@@ -935,8 +842,6 @@ Most of the data structures used in ABCI are shared [common data structures](../
     | gas_used   | int64                                                       | Amount of gas consumed by transaction.                                | 6            |
     | events     | repeated [Event](abci++_basic_concepts.md#events)           | Type & Key-Value events for indexing transactions (e.g. by account).  | 7            |
     | codespace  | string                                                      | Namespace for the `code`.                                             | 8            |
-
--->
 
 ### ProposalStatus
 
@@ -954,7 +859,7 @@ enum ProposalStatus {
         * If `Status` is `ACCEPT`, the consensus algorithm accepts the proposal and will issue a Prevote message for it.
         * If `Status` is `REJECT`, the consensus algorithm rejects the proposal and will issue a Prevote for `nil` instead.
 
-<!--
+
 ### VerifyStatus
 
 ```proto
@@ -970,29 +875,5 @@ enum VerifyStatus {
         * If `Status` is `UNKNOWN`, a problem happened in the Application. CometBFT will assume the application is faulty and crash.
         * If `Status` is `ACCEPT`, the consensus algorithm will accept the vote as valid.
         * If `Status` is `REJECT`, the consensus algorithm will reject the vote as invalid.
-
-
-### CanonicalVoteExtension
-
->**TODO**: This protobuf message definition is not part of the ABCI++ interface, but rather belongs to the
-> Precommit message which is broadcast via P2P. So it is to be moved to the relevant section of the spec.
-
-* **Fields**:
-
-    | Name      | Type   | Description                                                                                | Field Number |
-    |-----------|--------|--------------------------------------------------------------------------------------------|--------------|
-    | extension | bytes  | Vote extension provided by the Application.                                                | 1            |
-    | height    | int64  | Height in which the extension was provided.                                                | 2            |
-    | round     | int32  | Round in which the extension was provided.                                                 | 3            |
-    | chain_id  | string | ID of the blockchain running consensus.                                                    | 4            |
-    | address   | bytes  | [Address](../core/data_structures.md#address) of the validator that provided the extension | 5            |
-
-* **Usage**:
-    * CometBFT is to sign the whole data structure and attach it to a Precommit message
-    * Upon reception, CometBFT validates the sender's signature and sanity-checks the values of `height`, `round`, and `chain_id`.
-      Then it sends `extension` to the Application via `RequestVerifyVoteExtension` for verification.
-
-
--->
 
 [protobuf-timestamp]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp

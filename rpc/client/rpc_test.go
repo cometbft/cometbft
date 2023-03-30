@@ -529,11 +529,15 @@ func TestBlockSearch(t *testing.T) {
 		require.NoError(t, err)
 	}
 	require.NoError(t, client.WaitForHeight(c, 5, nil))
-	// This cannot test match_events as it calls the client BlockSearch function directly
-	// It is the RPC request handler that processes the match_event
-	result, err := c.BlockSearch(context.Background(), "begin_event.foo = 100 AND begin_event.bar = 300", nil, nil, "asc")
+	result, err := c.BlockSearch(context.Background(), "begin_event.foo = 100", nil, nil, "asc")
 	require.NoError(t, err)
 	blockCount := len(result.Blocks)
+	// if we generate block events within the test (by uncommenting
+	// the code in line main_test.go:L23) then we expect len(result.Blocks)
+	// to be at least 5
+	// require.GreaterOrEqual(t, blockCount, 5)
+
+	// otherwise it is 0
 	require.Equal(t, blockCount, 0)
 
 }

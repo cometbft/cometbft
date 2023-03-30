@@ -16,6 +16,8 @@
 
 
 
+module p2p {
+
 /* ****************************************************************************
  *
  * Code spec. This is what is supposed to replace the pseudo code in English
@@ -23,7 +25,6 @@
  *
  * ************************************************************************* */
 
-module p2p {
 
 /* ****************************************************************************
  *
@@ -135,6 +136,7 @@ module p2p {
     pure def onLostConnection(s: LocalState, c: Connection): LocalState = {
         if (s.PersistentPeers.contains(c.address) and c.state == "lost") {
             val newPS = s.peerState.set(c.address, "reconnecting")
+            // set connection state of c to outgoing (connections is a set)
             val newConn = s.connections.exclude(Set(c)).union(Set({address: c.address, state: "outgoing"}))
             s.with("peerState", newPS)
              .with("connections", newConn)

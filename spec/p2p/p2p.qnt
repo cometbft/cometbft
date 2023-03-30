@@ -74,7 +74,7 @@ module p2p {
                 s.peerState.get(p) != "reconnecting",
                 or {
                     s.connections.contains({address: p, state: "outgoing"}),
-                s.connections.contains({address: p, state: "incoming"})
+                    s.connections.contains({address: p, state: "incoming"})
                 }
             }
            

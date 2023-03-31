@@ -81,7 +81,7 @@ It is *NOT* in the scope of the **Standalone RPC**:
 
 #### High-level architecture
 
-![High-level architecture](/home/andy/go/src/github.com/cometbft/cometbft/docs/architecture/images/adr-102-architecture.png)
+![High-level architecture](images/adr-102-architecture.png)
 
 This diagram shows all the required components for a full Standalone RPC solution. The solution implementation contains
 many parts and each one is described below:

@@ -88,7 +88,7 @@ many parts and each one is described below:
 
 #### Full Node
 
-A **full node** for a blockchain that runs a CometBFT process. The full node needs to expose the CometBFT RPC and accessible to the
+A **full node** for a blockchain that runs a CometBFT process. The full node needs to expose the CometBFT RPC and is accessible to the
 ingestion service, so it can pull the data from the **full node**.
 
 #### Ingest Service

@@ -83,37 +83,85 @@ It is *NOT* in the scope of the **Standalone RPC**:
 
 ![High-level architecture](/home/andy/go/src/github.com/cometbft/cometbft/docs/architecture/images/adr-102-architecture.png)
 
+This diagram shows all the required components for a full Standalone RPC solution. The solution implementation contains
+many parts and each one is described below:
+
 #### Full Node
 
-A full node for a blockchain based on CometBFT
+A **full node** for a blockchain that runs a CometBFT process. The full node needs to expose the CometBFT RPC and accessible to the
+ingestion service, so it can pull the data from the **full node**.
 
 #### Ingest Service
 
-Pulls data from the full node and stores in the database
+The **ingest service** pulls the data from the full node via its RPC endpoints and store the information retrieved in
+the database. In the future, if a gRPC interface is implemented in the full node this might be used to pull the data
+from the server.
+
+The **ingest service** can control the pruning on the full node via a mechanism to track a `retain height`. Once the ingest service
+pulls the data from the full node and is able to process it and it gets an acknowledgement from the database that the data was inserted,
+the **ingest service** can communicate with the full node notifying it that a specific height has been processed and set the processed
+height as the `retain height` on the full node signaling this way to the node that this height can be pruned.
+
+If the **ingest service** becomes unavailable (e.g. stops), then it should resume synchronization with the full node when it is back online.
+The **ingest service** should query the full node for the last `retain height` and the **ingest service** should request
+and process all the heights missing on the database until it catches up with the full node latest height.
+
+In case the **ingest service** becomes unavailable for a long time and there are a lot of height be caught up, it is
+important for the **ingest service** to do it in a throttled way in order not to stress the full node and cause issues in its consensus processing.
 
 #### Database
 
-Stores the data fetched from the full node and provide data for the RPC server instance
+The database stores the data retrieved from the full node and provide this data for the RPC server instance. Since the frequency
+that blocks are generated on the chain are in the range from 5 seconds to 7 seconds on average, the _write_ back pressure is not
+very high from a modern database perspective. While the frequency and number of requests for reading the data from the database will
+be much larger due to the fact that the RPC service instance can be scaled. Therefore, a database that provides a high read
+throughput should be favored.
+
+For this is initial solution implementation it is proposed that a modern relational database should be used in order to support
+the RPC scalability and this will also provide more flexibility when implementing the RPC v2 endpoints that can return data
+in different schemas.
+
+The data needs to be available both for the ingest service (writes) and the RPC server instance (reads) so an embedded key-value
+store is not recommended in this case since accessing the data remotely might not be optimal for an embedded key-value database and
+since the RPC might have many server instances running that will need to retrieve data concurrently it is recommended to use
+a well-known robust database engine that can support such load such as Postgres.
+
+Also, a database that can support ACID transactions is important to provide more guarantees that
+the data was successfully inserted in the database and this acknowledgement can be used by the ingest service to notify the
+full node to prune this inserted data.
 
 #### RPC server instance
 
-Serves the RPC requests and provide responses with data retrieved from its own local storage
+The **RPC server instance** is a node that runs the RPC API process for the data companion. This server instance provide an RPC API (v1) with
+the same endpoints as the full node. The Standalone RPC service will expose the same endpoints and will accept the same request types and
+return wire compatible responses (should match the same response as the equivalent full node RPC endpoint).
 
-- Planned Standalone RPC v1
+The **RPC server instance**, when serving a particular request, retrieves the required data from the database in order to
+fulfill the request. The data should be serialized in a way that makes it wire compatible with the CometBFT RPC endpoint.
+
+Identical requests should return idempotent responses, no side effects should cause the RPC service to return different responses.
+
+These are the endpoints to be implemented for the Standalone RPC (v1)
+
   - /block
   - /block_results
-  - ...
+  - ... (TBD)
 
-
-- Future Standalone RPC v2 - new endpoints
+These are some of the future new endpoints that could be implemented for the Standalone RPC (v2)
   - (TBD)
 
-- Transactions that modify the state
-  - /broadcast_tx_*
+> NOTE: The Standalone RPC server instances should not implement endpoints that can modify state in the blockchain such as
+  the `/broadcast_tx_*` endpoints. Since there might be many load balanced RPC server instances, this might cause issues with
+transactions, for example sequential transactions might be relayed in the wrong order causing the full node to reject some of
+the transactions with sequence mismatch errors. It is expected that RPC clients have logic to forward these requests directly
+to the full node.
 
 #### Load balancer
 
-An external load-balancer service such as Cloudflare or AWS ELB, or a server running its own load balancer mechanism (e.g. nginx).
+The RPC service endpoints should be exposeds through an external load-balancer service such as Cloudflare or AWS ELB, or
+a server running its own load balancer mechanism (e.g. nginx).
+
+The RPC clients should make requests to the Standalone RPC server instances through this load balancer.
 
 ## Consequences
 

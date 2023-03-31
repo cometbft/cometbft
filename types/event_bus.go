@@ -232,82 +232,82 @@ func (b *EventBus) PublishEventValidatorSetUpdates(data EventDataValidatorSetUpd
 type NopEventBus struct{}
 
 func (NopEventBus) Subscribe(
-	ctx context.Context,
-	subscriber string,
-	query cmtpubsub.Query,
-	out chan<- interface{},
+	context.Context,
+	string,
+	cmtpubsub.Query,
+	chan<- interface{},
 ) error {
 	return nil
 }
 
-func (NopEventBus) Unsubscribe(ctx context.Context, subscriber string, query cmtpubsub.Query) error {
+func (NopEventBus) Unsubscribe(context.Context, string, cmtpubsub.Query) error {
 	return nil
 }
 
-func (NopEventBus) UnsubscribeAll(ctx context.Context, subscriber string) error {
+func (NopEventBus) UnsubscribeAll(context.Context, string) error {
 	return nil
 }
 
-func (NopEventBus) PublishEventNewBlock(data EventDataNewBlock) error {
+func (NopEventBus) PublishEventNewBlock(EventDataNewBlock) error {
 	return nil
 }
 
-func (NopEventBus) PublishEventNewBlockHeader(data EventDataNewBlockHeader) error {
+func (NopEventBus) PublishEventNewBlockHeader(EventDataNewBlockHeader) error {
 	return nil
 }
 
-func (NopEventBus) PublishEventNewBlockEvents(data EventDataNewBlockEvents) error {
+func (NopEventBus) PublishEventNewBlockEvents(EventDataNewBlockEvents) error {
 	return nil
 }
 
-func (NopEventBus) PublishEventNewEvidence(evidence EventDataNewEvidence) error {
+func (NopEventBus) PublishEventNewEvidence(EventDataNewEvidence) error {
 	return nil
 }
 
-func (NopEventBus) PublishEventVote(data EventDataVote) error {
+func (NopEventBus) PublishEventVote(EventDataVote) error {
 	return nil
 }
 
-func (NopEventBus) PublishEventTx(data EventDataTx) error {
+func (NopEventBus) PublishEventTx(EventDataTx) error {
 	return nil
 }
 
-func (NopEventBus) PublishEventNewRoundStep(data EventDataRoundState) error {
+func (NopEventBus) PublishEventNewRoundStep(EventDataRoundState) error {
 	return nil
 }
 
-func (NopEventBus) PublishEventTimeoutPropose(data EventDataRoundState) error {
+func (NopEventBus) PublishEventTimeoutPropose(EventDataRoundState) error {
 	return nil
 }
 
-func (NopEventBus) PublishEventTimeoutWait(data EventDataRoundState) error {
+func (NopEventBus) PublishEventTimeoutWait(EventDataRoundState) error {
 	return nil
 }
 
-func (NopEventBus) PublishEventNewRound(data EventDataRoundState) error {
+func (NopEventBus) PublishEventNewRound(EventDataRoundState) error {
 	return nil
 }
 
-func (NopEventBus) PublishEventCompleteProposal(data EventDataRoundState) error {
+func (NopEventBus) PublishEventCompleteProposal(EventDataRoundState) error {
 	return nil
 }
 
-func (NopEventBus) PublishEventPolka(data EventDataRoundState) error {
+func (NopEventBus) PublishEventPolka(EventDataRoundState) error {
 	return nil
 }
 
-func (NopEventBus) PublishEventUnlock(data EventDataRoundState) error {
+func (NopEventBus) PublishEventUnlock(EventDataRoundState) error {
 	return nil
 }
 
-func (NopEventBus) PublishEventRelock(data EventDataRoundState) error {
+func (NopEventBus) PublishEventRelock(EventDataRoundState) error {
 	return nil
 }
 
-func (NopEventBus) PublishEventLock(data EventDataRoundState) error {
+func (NopEventBus) PublishEventLock(EventDataRoundState) error {
 	return nil
 }
 
-func (NopEventBus) PublishEventValidatorSetUpdates(data EventDataValidatorSetUpdates) error {
+func (NopEventBus) PublishEventValidatorSetUpdates(EventDataValidatorSetUpdates) error {
 	return nil
 }

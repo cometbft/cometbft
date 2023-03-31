@@ -32,12 +32,10 @@ module p2p {
  *
  * ************************************************************************* */
 
-    // TODO: "pure val" is a work around as constants are not working in the REPL, yet
+    // TODO: "pure val" is a work around as we don't have enums yet
     pure val peerStates = Set("reconnecting", "inbound", "outbound")
     pure val connectionStates = Set("incoming", "outgoing", "lost")
-    // TODO: We might experiment around the max peer numbers. Should we model them as variables?
-    pure val MaxNumOutboundPeers = 5
-    pure val MaxNumInboundPeers = 10
+
 
     // (public_key, ipAddress:port)
     type Address = {ID:str, networkAddress:str}
@@ -48,10 +46,16 @@ module p2p {
     }
 
     type LocalState = {
+        // p2p configuration
+        // TODO: is it config?
+        MaxNumOutboundPeers: int,
+        MaxNumInboundPeers: int,
+
         // p2p variables 
         peerState: Address -> str,
         connections: Set[Connection],
         IsUnconditional: Set[Address],
+
         // PEX variable
         AddressBook: Set[Address],
         PersistentPeers: Set[Address],
@@ -107,7 +111,7 @@ module p2p {
     // with the potential peer is started. Eventually this will result in one of the actions
     // lowerLevelDialPeerSuccess or lowerLevelDialPeerFailed. See below.
     pure def dialPeer(s: LocalState, a: Address): LocalState = {
-        if (s.peersOutbound() + s.peersDialing() < MaxNumOutboundPeers and not(s.Peers().contains(a))) {
+        if (s.peersOutbound() + s.peersDialing() < s.MaxNumOutboundPeers and not(s.Peers().contains(a))) {
             // TODO: shall we check "not(s.isDialing(a))"?
             val newConn : Set[Connection] = s.connections.union(Set({address: a, state: "outgoing"}))
             s.with("connections", newConn)
@@ -119,7 +123,7 @@ module p2p {
 
     // transportAccept(Address) ->  makes an incoming connection. Dual to "dialPeer" but incoming
     pure def transportAccept(s: LocalState, a: Address): LocalState = {
-        if (s.peersInbound() < MaxNumInboundPeers or s.IsUnconditional.contains(a)) {
+        if (s.peersInbound() < s.MaxNumInboundPeers or s.IsUnconditional.contains(a)) {
             val newConn : Set[Connection] = s.connections.union(Set({address: a, state: "incoming"}))
             val newAB : Set[Address] = s.AddressBook.union(Set(a))
             s.with("connections", newConn)
@@ -181,7 +185,7 @@ module p2p {
     // TODO: is this in p2p or in PEX? If it is in PEX, we can remove it out 
     // of the functional part
     pure def ensurePeers(s: LocalState): LocalState = {
-        if (s.peersOutbound() + s.peersDialing() < MaxNumOutboundPeers) {
+        if (s.peersOutbound() + s.peersDialing() < s.MaxNumOutboundPeers) {
             //val addr = s.AddressBook.chooseSome() // addressbook.pickAddress(Bias)
             nondet addr = oneOf(s.AddressBook)
             s.dialPeer(addr)
@@ -247,7 +251,12 @@ module p2p {
         config.get(n).connections.forall(c => (c.address == p and c.state == "outgoing") 
                                         implies config.get(n).peerState.get(p) == "outbound")))
 
-
+    // For nostalgic reasons and TLA+ lovers...
+    val invTypeOK = modeledNodes.forall(n =>
+        config.get(n).Peers().forall(p => 
+        config.get(n).connections.forall(c =>
+            connectionStates.contains(c.state) and
+            peerStates.contains(config.get(n).peerState.get(p)))))
 
     // // for all modeled nodes y and all its peers x, some peerStates imply some connection state
     // val invConnectionsNotOpen = modeledNodes.forall(y => config.get(y).Peers().forall(x => 
@@ -462,6 +471,8 @@ module p2p {
                 AddressBook: Set({ID: "igor", networkAddress: "127.0.0.1:10"}, {ID: "josef", networkAddress: "127.0.0.2:10"}),
                 IsUnconditional: Set({ID: "zarko", networkAddress: "127.0.0.42:10"}),
                 PersistentPeers: Set({ID: "bucky", networkAddress: "127.0.0.9:10"}),
+                MaxNumOutboundPeers: 5,
+                MaxNumInboundPeers: 10,
             }
         )
     }
@@ -479,6 +490,8 @@ module p2p {
                 AddressBook: add,
                 IsUnconditional: Set({ID: "zarko", networkAddress: "127.0.0.42:10"}),
                 PersistentPeers: Set({ID: "bucky", networkAddress: "127.0.0.9:10"}),
+                MaxNumOutboundPeers: 5,
+                MaxNumInboundPeers: 10,
             }
         )
         }

@@ -32,7 +32,7 @@ $ cometbft debug 34255 /path/to/cmt-debug.zip`,
 	RunE: killCmdHandler,
 }
 
-func killCmdHandler(cmd *cobra.Command, args []string) error {
+func killCmdHandler(_ *cobra.Command, args []string) error {
 	pid, err := strconv.ParseUint(args[0], 10, 64)
 	if err != nil {
 		return err

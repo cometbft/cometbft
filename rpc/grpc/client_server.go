@@ -35,6 +35,6 @@ func StartGRPCClient(protoAddr string) BroadcastAPIClient {
 	return NewBroadcastAPIClient(conn)
 }
 
-func dialerFunc(ctx context.Context, addr string) (net.Conn, error) {
+func dialerFunc(_ context.Context, addr string) (net.Conn, error) {
 	return cmtnet.Connect(addr)
 }

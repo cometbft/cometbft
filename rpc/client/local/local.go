@@ -65,11 +65,11 @@ func (c *Local) SetLogger(l log.Logger) {
 	c.Logger = l
 }
 
-func (c *Local) Status(ctx context.Context) (*ctypes.ResultStatus, error) {
+func (c *Local) Status(context.Context) (*ctypes.ResultStatus, error) {
 	return c.env.Status(c.ctx)
 }
 
-func (c *Local) ABCIInfo(ctx context.Context) (*ctypes.ResultABCIInfo, error) {
+func (c *Local) ABCIInfo(context.Context) (*ctypes.ResultABCIInfo, error) {
 	return c.env.ABCIInfo(c.ctx)
 }
 
@@ -78,63 +78,64 @@ func (c *Local) ABCIQuery(ctx context.Context, path string, data bytes.HexBytes)
 }
 
 func (c *Local) ABCIQueryWithOptions(
-	ctx context.Context,
+	_ context.Context,
 	path string,
 	data bytes.HexBytes,
-	opts rpcclient.ABCIQueryOptions) (*ctypes.ResultABCIQuery, error) {
+	opts rpcclient.ABCIQueryOptions,
+) (*ctypes.ResultABCIQuery, error) {
 	return c.env.ABCIQuery(c.ctx, path, data, opts.Height, opts.Prove)
 }
 
-func (c *Local) BroadcastTxCommit(ctx context.Context, tx types.Tx) (*ctypes.ResultBroadcastTxCommit, error) {
+func (c *Local) BroadcastTxCommit(_ context.Context, tx types.Tx) (*ctypes.ResultBroadcastTxCommit, error) {
 	return c.env.BroadcastTxCommit(c.ctx, tx)
 }
 
-func (c *Local) BroadcastTxAsync(ctx context.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
+func (c *Local) BroadcastTxAsync(_ context.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
 	return c.env.BroadcastTxAsync(c.ctx, tx)
 }
 
-func (c *Local) BroadcastTxSync(ctx context.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
+func (c *Local) BroadcastTxSync(_ context.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
 	return c.env.BroadcastTxSync(c.ctx, tx)
 }
 
-func (c *Local) UnconfirmedTxs(ctx context.Context, limit *int) (*ctypes.ResultUnconfirmedTxs, error) {
+func (c *Local) UnconfirmedTxs(_ context.Context, limit *int) (*ctypes.ResultUnconfirmedTxs, error) {
 	return c.env.UnconfirmedTxs(c.ctx, limit)
 }
 
-func (c *Local) NumUnconfirmedTxs(ctx context.Context) (*ctypes.ResultUnconfirmedTxs, error) {
+func (c *Local) NumUnconfirmedTxs(context.Context) (*ctypes.ResultUnconfirmedTxs, error) {
 	return c.env.NumUnconfirmedTxs(c.ctx)
 }
 
-func (c *Local) CheckTx(ctx context.Context, tx types.Tx) (*ctypes.ResultCheckTx, error) {
+func (c *Local) CheckTx(_ context.Context, tx types.Tx) (*ctypes.ResultCheckTx, error) {
 	return c.env.CheckTx(c.ctx, tx)
 }
 
-func (c *Local) NetInfo(ctx context.Context) (*ctypes.ResultNetInfo, error) {
+func (c *Local) NetInfo(context.Context) (*ctypes.ResultNetInfo, error) {
 	return c.env.NetInfo(c.ctx)
 }
 
-func (c *Local) DumpConsensusState(ctx context.Context) (*ctypes.ResultDumpConsensusState, error) {
+func (c *Local) DumpConsensusState(context.Context) (*ctypes.ResultDumpConsensusState, error) {
 	return c.env.DumpConsensusState(c.ctx)
 }
 
-func (c *Local) ConsensusState(ctx context.Context) (*ctypes.ResultConsensusState, error) {
+func (c *Local) ConsensusState(context.Context) (*ctypes.ResultConsensusState, error) {
 	return c.env.GetConsensusState(c.ctx)
 }
 
-func (c *Local) ConsensusParams(ctx context.Context, height *int64) (*ctypes.ResultConsensusParams, error) {
+func (c *Local) ConsensusParams(_ context.Context, height *int64) (*ctypes.ResultConsensusParams, error) {
 	return c.env.ConsensusParams(c.ctx, height)
 }
 
-func (c *Local) Health(ctx context.Context) (*ctypes.ResultHealth, error) {
+func (c *Local) Health(context.Context) (*ctypes.ResultHealth, error) {
 	return c.env.Health(c.ctx)
 }
 
-func (c *Local) DialSeeds(ctx context.Context, seeds []string) (*ctypes.ResultDialSeeds, error) {
+func (c *Local) DialSeeds(_ context.Context, seeds []string) (*ctypes.ResultDialSeeds, error) {
 	return c.env.UnsafeDialSeeds(c.ctx, seeds)
 }
 
 func (c *Local) DialPeers(
-	ctx context.Context,
+	_ context.Context,
 	peers []string,
 	persistent,
 	unconditional,
@@ -143,47 +144,47 @@ func (c *Local) DialPeers(
 	return c.env.UnsafeDialPeers(c.ctx, peers, persistent, unconditional, private)
 }
 
-func (c *Local) BlockchainInfo(ctx context.Context, minHeight, maxHeight int64) (*ctypes.ResultBlockchainInfo, error) {
+func (c *Local) BlockchainInfo(_ context.Context, minHeight, maxHeight int64) (*ctypes.ResultBlockchainInfo, error) {
 	return c.env.BlockchainInfo(c.ctx, minHeight, maxHeight)
 }
 
-func (c *Local) Genesis(ctx context.Context) (*ctypes.ResultGenesis, error) {
+func (c *Local) Genesis(context.Context) (*ctypes.ResultGenesis, error) {
 	return c.env.Genesis(c.ctx)
 }
 
-func (c *Local) GenesisChunked(ctx context.Context, id uint) (*ctypes.ResultGenesisChunk, error) {
+func (c *Local) GenesisChunked(_ context.Context, id uint) (*ctypes.ResultGenesisChunk, error) {
 	return c.env.GenesisChunked(c.ctx, id)
 }
 
-func (c *Local) Block(ctx context.Context, height *int64) (*ctypes.ResultBlock, error) {
+func (c *Local) Block(_ context.Context, height *int64) (*ctypes.ResultBlock, error) {
 	return c.env.Block(c.ctx, height)
 }
 
-func (c *Local) BlockByHash(ctx context.Context, hash []byte) (*ctypes.ResultBlock, error) {
+func (c *Local) BlockByHash(_ context.Context, hash []byte) (*ctypes.ResultBlock, error) {
 	return c.env.BlockByHash(c.ctx, hash)
 }
 
-func (c *Local) BlockResults(ctx context.Context, height *int64) (*ctypes.ResultBlockResults, error) {
+func (c *Local) BlockResults(_ context.Context, height *int64) (*ctypes.ResultBlockResults, error) {
 	return c.env.BlockResults(c.ctx, height)
 }
 
-func (c *Local) Header(ctx context.Context, height *int64) (*ctypes.ResultHeader, error) {
+func (c *Local) Header(_ context.Context, height *int64) (*ctypes.ResultHeader, error) {
 	return c.env.Header(c.ctx, height)
 }
 
-func (c *Local) HeaderByHash(ctx context.Context, hash bytes.HexBytes) (*ctypes.ResultHeader, error) {
+func (c *Local) HeaderByHash(_ context.Context, hash bytes.HexBytes) (*ctypes.ResultHeader, error) {
 	return c.env.HeaderByHash(c.ctx, hash)
 }
 
-func (c *Local) Commit(ctx context.Context, height *int64) (*ctypes.ResultCommit, error) {
+func (c *Local) Commit(_ context.Context, height *int64) (*ctypes.ResultCommit, error) {
 	return c.env.Commit(c.ctx, height)
 }
 
-func (c *Local) Validators(ctx context.Context, height *int64, page, perPage *int) (*ctypes.ResultValidators, error) {
+func (c *Local) Validators(_ context.Context, height *int64, page, perPage *int) (*ctypes.ResultValidators, error) {
 	return c.env.Validators(c.ctx, height, page, perPage)
 }
 
-func (c *Local) Tx(ctx context.Context, hash []byte, prove bool) (*ctypes.ResultTx, error) {
+func (c *Local) Tx(_ context.Context, hash []byte, prove bool) (*ctypes.ResultTx, error) {
 	return c.env.Tx(c.ctx, hash, prove)
 }
 
@@ -207,7 +208,7 @@ func (c *Local) BlockSearch(
 	return c.env.BlockSearch(c.ctx, query, page, perPage, orderBy)
 }
 
-func (c *Local) BroadcastEvidence(ctx context.Context, ev types.Evidence) (*ctypes.ResultBroadcastEvidence, error) {
+func (c *Local) BroadcastEvidence(_ context.Context, ev types.Evidence) (*ctypes.ResultBroadcastEvidence, error) {
 	return c.env.BroadcastEvidence(c.ctx, ev)
 }
 
@@ -215,7 +216,8 @@ func (c *Local) Subscribe(
 	ctx context.Context,
 	subscriber,
 	query string,
-	outCapacity ...int) (out <-chan ctypes.ResultEvent, err error) {
+	outCapacity ...int,
+) (out <-chan ctypes.ResultEvent, err error) {
 	q, err := cmtquery.New(query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse query: %w", err)
@@ -246,7 +248,8 @@ func (c *Local) eventsRoutine(
 	sub types.Subscription,
 	subscriber string,
 	q cmtpubsub.Query,
-	outc chan<- ctypes.ResultEvent) {
+	outc chan<- ctypes.ResultEvent,
+) {
 	for {
 		select {
 		case msg := <-sub.Out():

@@ -9,19 +9,12 @@ import (
 	"golang.org/x/net/netutil"
 
 	"github.com/cosmos/gogoproto/proto"
-<<<<<<< HEAD
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/p2p/conn"
 	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
-=======
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/libs/protoio"
-	"github.com/tendermint/tendermint/p2p/conn"
-	tmp2p "github.com/tendermint/tendermint/proto/tendermint/p2p"
 	kcp "github.com/xtaci/kcp-go/v5"
->>>>>>> notional/main-kcp
 )
 
 const (

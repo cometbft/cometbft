@@ -14,13 +14,8 @@ import (
 	"strings"
 	"time"
 
-<<<<<<< HEAD
 	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
-=======
 	kcp "github.com/xtaci/kcp-go/v5"
-
-	tmp2p "github.com/tendermint/tendermint/proto/tendermint/p2p"
->>>>>>> notional/main-kcp
 )
 
 // EmptyNetAddress defines the string representation of an empty NetAddress

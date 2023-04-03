@@ -210,6 +210,8 @@ func (mem *CListMempool) CheckTx(
 	// use defer to unlock mutex because application (*local client*) might panic
 	defer mem.updateMtx.RUnlock()
 
+	mem.metrics.countOneTimeTxWasReceived(tx.Key())
+
 	txSize := len(tx)
 
 	if err := mem.isFull(txSize); err != nil {
@@ -331,6 +333,7 @@ func (mem *CListMempool) removeTx(tx types.Tx, elem *clist.CElement) {
 	elem.DetachPrev()
 	mem.txsMap.Delete(tx.Key())
 	atomic.AddInt64(&mem.txsBytes, int64(-len(tx)))
+	mem.metrics.resetTimesTxWasReceived(tx.Key())
 }
 
 // RemoveTxByKey removes a transaction from the mempool by its TxKey index.
@@ -636,6 +639,7 @@ func (mem *CListMempool) Update(
 
 	// Update metrics
 	mem.metrics.Size.Set(float64(mem.Size()))
+	mem.metrics.observeTimesTxsWereReceived()
 
 	return nil
 }

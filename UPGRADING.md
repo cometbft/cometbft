@@ -41,11 +41,11 @@ user. However, if you own a fork with a modified version of the indexer, you sho
 
 * Indexer key for events will not contain information about the function that returned the event. 
 The events were indexed by their attributes, event type, the function that returned them, the height and 
-event sequence. The function returning events in old versions of CometBFT were `BeginBlock` or `EndBlock`. 
+event sequence. The function returning events in old (pre `v0.38`) versions of CometBFT were `BeginBlock` or `EndBlock`. 
 As events are returned now only via `FinalizeBlock`, the value of this field has no use, and will be removed. 
 The main motivation is the reduction of the storage footprint.  
 
-Events indexed with previous CometBFT or Tendermint versions, will still be transparently processed.
+Events indexed with previous CometBFT or Tendermint Core versions, will still be transparently processed.
 There is no need to re-index the events. This function field is not exposed to queries, and was not
 visible to users. However, if you changed the indexer code directly to accomodate for this,
 this will impact your code.

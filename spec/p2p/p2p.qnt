@@ -36,7 +36,6 @@ module p2p {
     pure val peerStates = Set("reconnecting", "inbound", "outbound")
     pure val connectionStates = Set("incoming", "outgoing", "lost")
 
-
     // (public_key, ipAddress:port)
     type Address = {ID:str, networkAddress:str}
 
@@ -178,21 +177,6 @@ module p2p {
 
     pure def PexAddrs(s: LocalState, addresses: Set[Address]): LocalState = {
         s.dialPeers(addresses)
-    }
-
-    // This function is not pure. It does a random choice. 
-    // nondet actuallu is not allowed here. It is a bug in the current quint
-    // TODO: is this in p2p or in PEX? If it is in PEX, we can remove it out 
-    // of the functional part
-    pure def ensurePeers(s: LocalState): LocalState = {
-        if (s.peersOutbound() + s.peersDialing() < s.MaxNumOutboundPeers) {
-            //val addr = s.AddressBook.chooseSome() // addressbook.pickAddress(Bias)
-            nondet addr = oneOf(s.AddressBook)
-            s.dialPeer(addr)
-        }
-        else {
-            s
-        }
     }
 
 
@@ -439,8 +423,20 @@ module p2p {
         OperatorAddressBook' = OperatorAddressBook,
     }
 
+
+    pure def ensurePeers(s: LocalState, addr: Address): LocalState = {
+        if (s.peersOutbound() + s.peersDialing() < s.MaxNumOutboundPeers) {
+            s.dialPeer(addr)
+        }
+        else {
+            s
+        }
+    }
+
     action pexEnsurePeers(node: Address): bool = all {
-        config' = config.set(node, config.get(node).ensurePeers()),
+        //val addr = s.AddressBook.chooseSome() // addressbook.pickAddress(Bias)
+        nondet addr = oneOf(config.get(node).AddressBook)
+        config' = config.set(node, config.get(node).ensurePeers(addr)),
         environmentUnchanged,
     }
 

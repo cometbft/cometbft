@@ -27,19 +27,28 @@ This guide provides instructions for upgrading to specific versions of CometBFT.
   but still kept in the message as "reserved".
 
 
-### KvIndexer changes
+### `block_results` RPC query result display
 
-When indexing block events, the indexer would include the function that returned those events
-(`BeginBlock` or `EndBlock`). In ABCI 2.0 `FinalizeBlock` combines these functions, and all
-events are returned within `ResultFinalizeBlock`. Therefore, the function field will
-have no meaning anymore, and to reduce storage space taken by the indexer,
-it will be removed in CometBFT v0.38.x.
+* When returning a block, all block events are grouped in the `finalize_block_events` field. 
+ For blocks generated with older versions of CometBFT,  that means that block results that appeared
+ as `begin_block_events` and `end_block_events` are merged into `finalize_block_events`. 
 
-Events indexed with previous CometBFT or Tendermint versions, will still be processed, 
-but the function field is ignored. There is no need to re-index the events.
 
-However, queries checking for this field, will return nothing. 
+### kvindexer indexing changes
 
+The changes desribed here are internal to the implementation of the kvindexer, and they are transparent to the 
+user. However, if you own a fork with a modified version of the indexer, you should be aware of these changes. 
+
+* Indexer key for events will not contain information about the function that returned the event. 
+The events were indexed by their attributes, event type, the function that returned them, the height and 
+event sequence. The function returning events in old versions of CometBFT were `BeginBlock` or `EndBlock`. 
+As events are returned now only via `FinalizeBlock`, the value of this field has no use, and will be removed. 
+The main motivation is the reduction of the storage footprint.  
+
+Events indexed with previous CometBFT or Tendermint versions, will still be transparently processed.
+There is no need to re-index the events. This function field is not exposed to queries, and was not
+visible to users. However, if you changed the indexer code directly to accomodate for this,
+this will impact your code.
 
 ## v0.37.0
 

@@ -17,43 +17,82 @@ Accepted | Rejected | Deprecated | Superseded by
 
 ## Context
 
-This ADR proposes to effectively offload some data storage responsibilities and
-functionality to a **single trusted external companion service** such that:
+At present, CometBFT handles a mixture of application- and consensus-related
+concerns, which results in code bloat and scope creep into territory that should
+technically be taken care of by the application. Some major examples of this
+right now are **event and block execution result data**, with CometBFT being
+responsible for:
 
-1. Integrators can expose CometBFT data in whatever format/protocol they want
-   (e.g. JSON-RPC or gRPC).
-2. Integrators can index data in whatever way suits them best.
-3. All users eventually benefit from faster changes to CometBFT because the
-   core team has less, and less complex, code to maintain (implementing this ADR
-   would add more code in the short-term, but would pave the way for significant
-   reductions in complexity in future).
+1. Storing event/execution result data.
+   1. For some applications, this results in dramatic storage growth, leading to
+      high operational costs for operators, as application-specific pruning is
+      not feasible to implement within the consensus engine.
+   2. Storing application-specific data also means that multiple underlying
+      databases need to be supported (via [cometbft-db]) in order to cater to
+      different applications' needs, which substantially increases the project's
+      maintenance costs and complexity.
+2. Facilitating complex querying of this data, including providing real-time
+   notifications of complex updates.
+   1. This has resulted in needing to provide query mechanisms such as
+      `/block_search` and `/tx_search`, which are not really optimal to provide
+      via some of the databases supported by cometbft-db, and therefore result
+      in problems like [\#517].
+   2. This has also resulted in having to maintain multiple indexers and our own
+      custom, database-independent indexing scheme, and having to turn down
+      users' requests for even more indexers that would work better for their
+      use cases, since this imposes a substantial maintenance burden on the core
+      team.
+   3. The current (somewhat unreliable) event subscription implementation can
+      cause back-pressure into consensus and affect IBC relayer stability (see
+      [\#6729] and [\#7156])
 
-The way the system is currently built is such that a CometBFT node is mostly
-self-contained. While this philosophy initially allowed a certain degree of ease
-of node operation (i.e. simple UX), it has also lent itself to feature sprawl,
-with CometBFT being asked to take care of increasingly more than just
-consensus. Under the spotlight in this ADR are:
+Ultimately the core team, whose focus is providing a high quality consensus
+engine, has finite resources. Having to take care of both consensus- and
+application-related concerns means that neither will be taken care of
+effectively.
 
-1. **Event indexing**, which is required in order to facilitate arbitrary block
-   and transaction querying, as well as subscription for arbitrary events. We
-   have already seen, for instance, how the current (somewhat unreliable) event
-   subscription implementation can cause back-pressure into consensus and affect
-   IBC relayer stability (see [\#6729] and [\#7156]).
-2. **Block execution result storage**, which is required to facilitate a number
-   of RPC APIs, but also results in storage of large quantities of data that is
-   not critical to consensus. This data is, however, critical for certain use
-   cases outside of consensus.
+It then starts to become clearer then that, in order to address these problems
+in the long run, event and execution results data need to be handled in
+application territory. But what does the trajectory look like to facilitate this
+evolution over time?
 
-Another intersecting issue is that there may be a variety of use cases that
-require different data models. A good example of this is the mere existence of
-the [PostgreSQL indexer] as compared to the default key/value indexer.
+This ADR proposes the following path to eventually separating these concerns:
+
+1. Provide an API explicitly dedicated to facilitating offloading of this data
+   to a **data companion** ("sidecar") service. The primary function of such a
+   companion is effectively to act as an _ingest_ of sorts, translating block
+   and block result data (including events) into application-specific data that
+   can be indexed in a database separate to the consensus engine's database,
+   which should be more suited to the application's use case(s).
+2. Provide a reference implementation of a data companion which facilitates
+   offering most of the current RPC endpoints from a service _external_ to the
+   node. Beyond serving as an example for the community as to how to implement a
+   data companion, this will:
+   1. Allow horizontal scalability of the RPC independently of the associated
+      full node, reducing operational costs for operators who want to provide
+      RPC services for their user base (who, in some cases, have to run multiple
+      full nodes in order to facilitate a highly available RPC service).
+   2. Address some of the problems outlined in [ADR-075][adr-075] relating to
+      the RPC service - especially the problems relating to WebSocket
+      subscriptions.
+3. Once the community has mostly migrated to using this data companion API, we
+   can mark many of the node-based RPC endpoints as deprecated, and eventually
+   remove them from the node.
+4. In parallel, start an effort to design a future where event and execution
+   result data are handled exclusively in the application domain. Once these
+   changes are ready to be rolled out, the ingest components of data companions
+   are the only parts of the ecosystem that will need to be migrated to interact
+   directly with the application instead of the node.
+5. Once the ingests are migrated to rely on the application, it will be safe to
+   entirely remove any notion of event data storage and retrieval, as well as
+   indexing from the consensus engine.
 
 Continuing from and expanding on the ideas outlined in [RFC 006][rfc-006], the
 suggested approach in this ADR is to provide a mechanism to publish certain data
-from CometBFT, in real-time and with certain reliability guarantees, to a
-single companion service outside of the node that can use this data in whatever
-way it chooses (filter and republish it, store it, manipulate or enrich it,
-etc.).
+from CometBFT, ideally in real-time and with certain reliability guarantees, to
+a single companion service outside of the node that can use this data in
+whatever way it chooses (filter and republish it, store it, manipulate or enrich
+it, etc.).
 
 Specifically, this mechanism would initially publish:
 
@@ -391,12 +430,13 @@ PostgreSQL).
 
 ### Positive
 
-- Paves the way toward greater architectural simplification of CometBFT so it
-  can focus on its core duty, consensus, while still facilitating existing use
-  cases.
-- Allows us to eventually separate out non-operator-focused RPC functionality
-  from CometBFT entirely, allowing the RPC to scale independently of the
-  consensus engine.
+- Integrators can expose CometBFT data in whatever format/protocol they want
+  (e.g. JSON-RPC or gRPC).
+- Integrators can index data in whatever way suits them best.
+- All users eventually benefit from faster changes to CometBFT because the core
+  team has less, and less complex, code to maintain (implementing this ADR would
+  add more code in the short-term, but would pave the way for significant
+  reductions in complexity in future).
 - Can be rolled out as experimental and opt-in in a non-breaking way.
 - The broad nature of what the API publishes lends itself to reasonable
   long-term stability.
@@ -428,6 +468,8 @@ PostgreSQL).
 - [\#7471] Deterministic Events
 - [ADR 075: RPC Event Subscription Interface][adr-075]
 
+[cometbft-db]: https://github.com/cometbft/cometbft-db
+[\#517]: https://github.com/cometbft/cometbft/issues/517
 [\#6729]: https://github.com/tendermint/tendermint/issues/6729
 [\#7156]: https://github.com/tendermint/tendermint/issues/7156
 [PostgreSQL indexer]: https://github.com/tendermint/tendermint/blob/0f45086c5fd79ba47ab0270944258a27ccfc6cc3/state/indexer/sink/psql/psql.go

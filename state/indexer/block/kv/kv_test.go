@@ -265,7 +265,7 @@ func TestBlockIndexerMulti(t *testing.T) {
 			q:       query.MustCompile("block.height  = 2 AND end_event.foo < 300"),
 			results: []int64{2},
 		},
-		"match attributes accross events with height constraint": {
+		"match attributes across events with height constraint": {
 			q:       query.MustCompile("end_event.foo = 100 AND end_event.bar = 400 AND block.height = 2"),
 			results: []int64{},
 		},

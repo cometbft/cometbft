@@ -115,6 +115,9 @@ After doing these steps, go back to `main` and do the following:
    enable automatic update of Go dependencies on this branch. Copy and edit one
    of the existing branch configurations to set the correct `target-branch`.
 
+4. Remove all changelog entries from `.changelog/unreleased` that are destined
+   for release from the backport branch.
+
 [e2e]: https://github.com/cometbft/cometbft/blob/main/.github/workflows/e2e-nightly-main.yml
 
 ## Pre-releases

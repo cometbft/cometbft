@@ -51,10 +51,10 @@ engine, has finite resources. Having to take care of both consensus- and
 application-related concerns means that neither will be taken care of
 effectively.
 
-It then starts to become clearer then that, in order to address these problems
-in the long run, event and execution results data need to be handled in
-application territory. But what does the trajectory look like to facilitate this
-evolution over time?
+It then starts to become clearer that, in order to address these problems in the
+long run, event and execution results data need to be handled in application
+territory. But what does the trajectory look like to facilitate this evolution
+over time?
 
 ### Roadmap
 

@@ -519,9 +519,10 @@ module p2p {
         .then(actionTransportAccept(node,a))
         .then(lowerLevelTransportAcceptSuccess(node,a))
         .then(all{
-            assert(invDirectionsOut),
+            invDirectionsOut,
             allUnchanged,
         })
+        .fail()
     }
 
     action step = any {

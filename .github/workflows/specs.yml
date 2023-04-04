@@ -15,6 +15,8 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 17
-          cache: "npm"
-      # --verbosity=3 shows traces explaining test failures
-      - run: for quint_spec in **/*.qnt; do quint test --verbosity=3 $quint_spec; done
+      - name: Install quint
+        run: npm install @informalsystems/quint -g
+      - name: Test specs
+        # --verbosity=3 shows traces explaining test failures
+        run: for quint_spec in **/*.qnt; do quint test --verbosity=3 $quint_spec; done

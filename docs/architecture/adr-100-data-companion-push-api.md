@@ -148,6 +148,16 @@ This ADR proposes the following path to eventually separating these concerns:
 
 ## Detailed Design
 
+The model proposed in this ADR is one where the node is a client, and the data
+companion is a server. This model is inverted in ADR-101 (the "pull" companion).
+The model in this ADR provides strong guarantees as to reliable delivery, but
+also potentially facilitates halting of consensus if the interaction with the
+companion is unreliable.
+
+The model proposed in ADR-101 offers much weaker delivery guarantees, allowing
+the companion to lag significantly behind consensus, but offers the greatest
+potential uptime for the consensus engine.
+
 ### Use Cases
 
 1. Integrators could provide standalone RPC services that would be able to scale

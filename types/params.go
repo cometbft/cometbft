@@ -37,6 +37,7 @@ type ConsensusParams struct {
 	Evidence  EvidenceParams  `json:"evidence"`
 	Validator ValidatorParams `json:"validator"`
 	Version   VersionParams   `json:"version"`
+	ABCI      ABCIParams      `json:"abci"`
 }
 
 // BlockParams define limits on the block size and gas plus minimum time
@@ -63,6 +64,24 @@ type VersionParams struct {
 	App uint64 `json:"app"`
 }
 
+// ABCIParams configure ABCI functionality specific to the Application Blockchain
+// Interface.
+type ABCIParams struct {
+	VoteExtensionsEnableHeight int64 `json:"vote_extensions_enable_height"`
+}
+
+// VoteExtensionsEnabled returns true if vote extensions are enabled at height h
+// and false otherwise.
+func (a ABCIParams) VoteExtensionsEnabled(h int64) bool {
+	if h < 1 {
+		panic(fmt.Errorf("cannot check if vote extensions enabled for height %d (< 1)", h))
+	}
+	if a.VoteExtensionsEnableHeight == 0 {
+		return false
+	}
+	return a.VoteExtensionsEnableHeight <= h
+}
+
 // DefaultConsensusParams returns a default ConsensusParams.
 func DefaultConsensusParams() *ConsensusParams {
 	return &ConsensusParams{
@@ -70,6 +89,7 @@ func DefaultConsensusParams() *ConsensusParams {
 		Evidence:  DefaultEvidenceParams(),
 		Validator: DefaultValidatorParams(),
 		Version:   DefaultVersionParams(),
+		ABCI:      DefaultABCIParams(),
 	}
 }
 
@@ -101,6 +121,13 @@ func DefaultValidatorParams() ValidatorParams {
 func DefaultVersionParams() VersionParams {
 	return VersionParams{
 		App: 0,
+	}
+}
+
+func DefaultABCIParams() ABCIParams {
+	return ABCIParams{
+		// When set to 0, vote extensions are not required.
+		VoteExtensionsEnableHeight: 0,
 	}
 }
 
@@ -150,6 +177,10 @@ func (params ConsensusParams) ValidateBasic() error {
 			params.Evidence.MaxBytes)
 	}
 
+	if params.ABCI.VoteExtensionsEnableHeight < 0 {
+		return fmt.Errorf("ABCI.VoteExtensionsEnableHeight cannot be negative. Got: %d", params.ABCI.VoteExtensionsEnableHeight)
+	}
+
 	if len(params.Validator.PubKeyTypes) == 0 {
 		return errors.New("len(Validator.PubKeyTypes) must be greater than 0")
 	}
@@ -163,6 +194,30 @@ func (params ConsensusParams) ValidateBasic() error {
 		}
 	}
 
+	return nil
+}
+
+func (params ConsensusParams) ValidateUpdate(updated *cmtproto.ConsensusParams, h int64) error {
+	if updated.Abci == nil {
+		return nil
+	}
+	if params.ABCI.VoteExtensionsEnableHeight == updated.Abci.VoteExtensionsEnableHeight {
+		return nil
+	}
+	if params.ABCI.VoteExtensionsEnableHeight != 0 && updated.Abci.VoteExtensionsEnableHeight == 0 {
+		return errors.New("vote extensions cannot be disabled once enabled")
+	}
+	if updated.Abci.VoteExtensionsEnableHeight <= h {
+		return fmt.Errorf("VoteExtensionsEnableHeight cannot be updated to a past height, "+
+			"initial height: %d, current height %d",
+			params.ABCI.VoteExtensionsEnableHeight, h)
+	}
+	if params.ABCI.VoteExtensionsEnableHeight <= h {
+		return fmt.Errorf("VoteExtensionsEnableHeight cannot be modified once"+
+			"the initial height has occurred, "+
+			"initial height: %d, current height %d",
+			params.ABCI.VoteExtensionsEnableHeight, h)
+	}
 	return nil
 }
 
@@ -217,6 +272,9 @@ func (params ConsensusParams) Update(params2 *cmtproto.ConsensusParams) Consensu
 	if params2.Version != nil {
 		res.Version.App = params2.Version.App
 	}
+	if params2.Abci != nil {
+		res.ABCI.VoteExtensionsEnableHeight = params2.Abci.GetVoteExtensionsEnableHeight()
+	}
 	return res
 }
 
@@ -237,11 +295,14 @@ func (params *ConsensusParams) ToProto() cmtproto.ConsensusParams {
 		Version: &cmtproto.VersionParams{
 			App: params.Version.App,
 		},
+		Abci: &cmtproto.ABCIParams{
+			VoteExtensionsEnableHeight: params.ABCI.VoteExtensionsEnableHeight,
+		},
 	}
 }
 
 func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams {
-	return ConsensusParams{
+	c := ConsensusParams{
 		Block: BlockParams{
 			MaxBytes: pbParams.Block.MaxBytes,
 			MaxGas:   pbParams.Block.MaxGas,
@@ -258,4 +319,8 @@ func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams
 			App: pbParams.Version.App,
 		},
 	}
+	if pbParams.Abci != nil {
+		c.ABCI.VoteExtensionsEnableHeight = pbParams.Abci.GetVoteExtensionsEnableHeight()
+	}
+	return c
 }

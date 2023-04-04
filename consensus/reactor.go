@@ -737,13 +737,20 @@ OUTER_LOOP:
 		// If peer is lagging by more than 1, send Commit.
 		blockStoreBase := conR.conS.blockStore.Base()
 		if blockStoreBase > 0 && prs.Height != 0 && rs.Height >= prs.Height+2 && prs.Height >= blockStoreBase {
-			// Load the block commit for prs.Height,
+			// Load the block's extended commit for prs.Height,
 			// which contains precommit signatures for prs.Height.
-			if commit := conR.conS.blockStore.LoadBlockCommit(prs.Height); commit != nil {
-				if ps.PickSendVote(commit) {
-					logger.Debug("Picked Catchup commit to send", "height", prs.Height)
-					continue OUTER_LOOP
-				}
+			var ec *types.ExtendedCommit
+			if conR.conS.state.ConsensusParams.ABCI.VoteExtensionsEnabled(prs.Height) {
+				ec = conR.conS.blockStore.LoadBlockExtendedCommit(prs.Height)
+			} else {
+				ec = conR.conS.blockStore.LoadBlockCommit(prs.Height).WrappedExtendedCommit()
+			}
+			if ec == nil {
+				continue
+			}
+			if ps.PickSendVote(ec) {
+				logger.Debug("Picked Catchup commit to send", "height", prs.Height)
+				continue OUTER_LOOP
 			}
 		}
 
@@ -1055,8 +1062,8 @@ func (ps *PeerState) GetRoundState() *cstypes.PeerRoundState {
 	return &prs
 }
 
-// ToJSON returns a json of PeerState.
-func (ps *PeerState) ToJSON() ([]byte, error) {
+// MarshalJSON implements the json.Marshaler interface.
+func (ps *PeerState) MarshalJSON() ([]byte, error) {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 
@@ -1685,7 +1692,7 @@ type VoteMessage struct {
 	Vote *types.Vote
 }
 
-// ValidateBasic performs basic validation.
+// ValidateBasic checks whether the vote within the message is well-formed.
 func (m *VoteMessage) ValidateBasic() error {
 	return m.Vote.ValidateBasic()
 }

@@ -61,26 +61,29 @@ const (
 
 // Testnet represents a single testnet.
 type Testnet struct {
-	Name                 string
-	File                 string
-	Dir                  string
-	IP                   *net.IPNet
-	InitialHeight        int64
-	InitialState         map[string]string
-	Validators           map[*Node]int64
-	ValidatorUpdates     map[int64]map[*Node]int64
-	Nodes                []*Node
-	KeyType              string
-	Evidence             int
-	LoadTxSizeBytes      int
-	LoadTxBatchSize      int
-	LoadTxConnections    int
-	ABCIProtocol         string
-	PrepareProposalDelay time.Duration
-	ProcessProposalDelay time.Duration
-	CheckTxDelay         time.Duration
-	UpgradeVersion       string
-	Prometheus           bool
+	Name                       string
+	File                       string
+	Dir                        string
+	IP                         *net.IPNet
+	InitialHeight              int64
+	InitialState               map[string]string
+	Validators                 map[*Node]int64
+	ValidatorUpdates           map[int64]map[*Node]int64
+	Nodes                      []*Node
+	KeyType                    string
+	Evidence                   int
+	LoadTxSizeBytes            int
+	LoadTxBatchSize            int
+	LoadTxConnections          int
+	ABCIProtocol               string
+	PrepareProposalDelay       time.Duration
+	ProcessProposalDelay       time.Duration
+	CheckTxDelay               time.Duration
+	VoteExtensionDelay         time.Duration
+	FinalizeBlockDelay         time.Duration
+	UpgradeVersion             string
+	Prometheus                 bool
+	VoteExtensionsEnableHeight int64
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -94,7 +97,7 @@ type Node struct {
 	IP                  net.IP
 	ProxyPort           uint32
 	StartAt             int64
-	BlockSync           string
+	BlockSyncVersion    string
 	StateSync           bool
 	Database            string
 	ABCIProtocol        Protocol
@@ -115,8 +118,18 @@ type Node struct {
 // The testnet generation must be deterministic, since it is generated
 // separately by the runner and the test cases. For this reason, testnets use a
 // random seed to generate e.g. keys.
-func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Testnet, error) {
-	dir := strings.TrimSuffix(fname, filepath.Ext(fname))
+func LoadTestnet(file string, ifd InfrastructureData) (*Testnet, error) {
+	manifest, err := LoadManifest(file)
+	if err != nil {
+		return nil, err
+	}
+	return NewTestnetFromManifest(manifest, file, ifd)
+}
+
+// NewTestnetFromManifest creates and validates a testnet from a manifest
+func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureData) (*Testnet, error) {
+	dir := strings.TrimSuffix(file, filepath.Ext(file))
+
 	keyGen := newKeyGenerator(randomSeed)
 	proxyPortGen := newPortGenerator(proxyPortFirst)
 	prometheusProxyPortGen := newPortGenerator(prometheusProxyPortFirst)
@@ -126,25 +139,28 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 	}
 
 	testnet := &Testnet{
-		Name:                 filepath.Base(dir),
-		File:                 fname,
-		Dir:                  dir,
-		IP:                   ipNet,
-		InitialHeight:        1,
-		InitialState:         manifest.InitialState,
-		Validators:           map[*Node]int64{},
-		ValidatorUpdates:     map[int64]map[*Node]int64{},
-		Nodes:                []*Node{},
-		Evidence:             manifest.Evidence,
-		LoadTxSizeBytes:      manifest.LoadTxSizeBytes,
-		LoadTxBatchSize:      manifest.LoadTxBatchSize,
-		LoadTxConnections:    manifest.LoadTxConnections,
-		ABCIProtocol:         manifest.ABCIProtocol,
-		PrepareProposalDelay: manifest.PrepareProposalDelay,
-		ProcessProposalDelay: manifest.ProcessProposalDelay,
-		CheckTxDelay:         manifest.CheckTxDelay,
-		UpgradeVersion:       manifest.UpgradeVersion,
-		Prometheus:           manifest.Prometheus,
+		Name:                       filepath.Base(dir),
+		File:                       file,
+		Dir:                        dir,
+		IP:                         ipNet,
+		InitialHeight:              1,
+		InitialState:               manifest.InitialState,
+		Validators:                 map[*Node]int64{},
+		ValidatorUpdates:           map[int64]map[*Node]int64{},
+		Nodes:                      []*Node{},
+		Evidence:                   manifest.Evidence,
+		LoadTxSizeBytes:            manifest.LoadTxSizeBytes,
+		LoadTxBatchSize:            manifest.LoadTxBatchSize,
+		LoadTxConnections:          manifest.LoadTxConnections,
+		ABCIProtocol:               manifest.ABCIProtocol,
+		PrepareProposalDelay:       manifest.PrepareProposalDelay,
+		ProcessProposalDelay:       manifest.ProcessProposalDelay,
+		CheckTxDelay:               manifest.CheckTxDelay,
+		VoteExtensionDelay:         manifest.VoteExtensionDelay,
+		FinalizeBlockDelay:         manifest.FinalizeBlockDelay,
+		UpgradeVersion:             manifest.UpgradeVersion,
+		Prometheus:                 manifest.Prometheus,
+		VoteExtensionsEnableHeight: manifest.VoteExtensionsEnableHeight,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
@@ -199,7 +215,7 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 			ABCIProtocol:     Protocol(testnet.ABCIProtocol),
 			PrivvalProtocol:  ProtocolFile,
 			StartAt:          nodeManifest.StartAt,
-			BlockSync:        nodeManifest.BlockSync,
+			BlockSyncVersion: nodeManifest.BlockSyncVersion,
 			StateSync:        nodeManifest.StateSync,
 			PersistInterval:  1,
 			SnapshotInterval: nodeManifest.SnapshotInterval,
@@ -210,6 +226,9 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 		}
 		if node.StartAt == testnet.InitialHeight {
 			node.StartAt = 0 // normalize to 0 for initial nodes, since code expects this
+		}
+		if node.BlockSyncVersion == "" {
+			node.BlockSyncVersion = "v0"
 		}
 		if nodeManifest.Mode != "" {
 			node.Mode = Mode(nodeManifest.Mode)
@@ -354,10 +373,10 @@ func (n Node) Validate(testnet Testnet) error {
 			}
 		}
 	}
-	switch n.BlockSync {
-	case "", "v0":
+	switch n.BlockSyncVersion {
+	case "v0":
 	default:
-		return fmt.Errorf("invalid block sync setting %q", n.BlockSync)
+		return fmt.Errorf("invalid block sync setting %q", n.BlockSyncVersion)
 	}
 	switch n.Database {
 	case "goleveldb", "cleveldb", "boltdb", "rocksdb", "badgerdb":
@@ -386,7 +405,7 @@ func (n Node) Validate(testnet Testnet) error {
 		return errors.New("state synced nodes cannot start at the initial height")
 	}
 	if n.RetainBlocks != 0 && n.RetainBlocks < uint64(EvidenceAgeHeight) {
-		return fmt.Errorf("retain_blocks must be greater or equal to max evidence age (%d)",
+		return fmt.Errorf("retain_blocks must be 0 or be greater or equal to max evidence age (%d)",
 			EvidenceAgeHeight)
 	}
 	if n.PersistInterval == 0 && n.RetainBlocks > 0 {

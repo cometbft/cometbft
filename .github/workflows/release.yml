@@ -14,9 +14,26 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: '1.20'
+
+      # Similar check to ./release-version.yml, but enforces this when pushing
+      # tags. The ./release-version.yml check can be bypassed and is mainly
+      # present for informational purposes.
+      - name: Check release version
+        run: |
+          # We strip the refs/tags/v prefix of the tag name.
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          # Get the version of the code, which has no "v" prefix.
+          CODE_VERSION=`go run ./cmd/cometbft/ version`
+          if [ "$TAG_VERSION" != "$CODE_VERSION" ]; then
+            echo ""
+            echo "Tag version ${TAG_VERSION} does not match code version ${CODE_VERSION}"
+            echo ""
+            echo "Please either fix the release tag or the version of the software in version/version.go."
+            exit 1
+          fi
 
       - name: Generate release notes
         run: |

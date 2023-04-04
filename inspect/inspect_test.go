@@ -16,7 +16,6 @@ import (
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
-	"github.com/cometbft/cometbft/proto/tendermint/state"
 	httpclient "github.com/cometbft/cometbft/rpc/client/http"
 	indexermocks "github.com/cometbft/cometbft/state/indexer/mocks"
 	statemocks "github.com/cometbft/cometbft/state/mocks"
@@ -264,14 +263,12 @@ func TestBlockResults(t *testing.T) {
 	stateStoreMock := &statemocks.Store{}
 	stateStoreMock.On("Close").Return(nil)
 	//	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
-	stateStoreMock.On("LoadABCIResponses", testHeight).Return(&state.ABCIResponses{
-		DeliverTxs: []*abcitypes.ResponseDeliverTx{
+	stateStoreMock.On("LoadFinalizeBlockResponse", testHeight).Return(&abcitypes.ResponseFinalizeBlock{
+		TxResults: []*abcitypes.ExecTxResult{
 			{
 				GasUsed: testGasUsed,
 			},
 		},
-		EndBlock:   &abcitypes.ResponseEndBlock{},
-		BeginBlock: &abcitypes.ResponseBeginBlock{},
 	}, nil)
 	blockStoreMock := &statemocks.BlockStore{}
 	blockStoreMock.On("Close").Return(nil)

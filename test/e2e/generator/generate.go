@@ -59,12 +59,15 @@ var (
 	lightNodePerturbations = probSetChoice{
 		"upgrade": 0.3,
 	}
+	voteExtensionEnableHeightOffset = uniformChoice{int64(0), int64(10), int64(100)}
+	voteExtensionEnabled            = uniformChoice{true, false}
 )
 
 type generateConfig struct {
 	randSource   *rand.Rand
 	outputDir    string
 	multiVersion string
+	prometheus   bool
 }
 
 // Generate generates random testnets using the given RNG.
@@ -106,7 +109,7 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 	}
 	manifests := []e2e.Manifest{}
 	for _, opt := range combinations(testnetCombinations) {
-		manifest, err := generateTestnet(cfg.randSource, opt, upgradeVersion)
+		manifest, err := generateTestnet(cfg.randSource, opt, upgradeVersion, cfg.prometheus)
 		if err != nil {
 			return nil, err
 		}
@@ -116,7 +119,7 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 }
 
 // generateTestnet generates a single testnet with the given options.
-func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion string) (e2e.Manifest, error) {
+func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion string, prometheus bool) (e2e.Manifest, error) {
 	manifest := e2e.Manifest{
 		IPv6:             ipv6.Choose(r).(bool),
 		ABCIProtocol:     nodeABCIProtocols.Choose(r).(string),
@@ -127,6 +130,7 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 		Evidence:         evidence.Choose(r).(int),
 		Nodes:            map[string]*e2e.ManifestNode{},
 		UpgradeVersion:   upgradeVersion,
+		Prometheus:       prometheus,
 	}
 
 	switch abciDelays.Choose(r).(string) {
@@ -134,10 +138,18 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 	case "small":
 		manifest.PrepareProposalDelay = 100 * time.Millisecond
 		manifest.ProcessProposalDelay = 100 * time.Millisecond
+		manifest.VoteExtensionDelay = 20 * time.Millisecond
+		manifest.FinalizeBlockDelay = 200 * time.Millisecond
 	case "large":
 		manifest.PrepareProposalDelay = 200 * time.Millisecond
 		manifest.ProcessProposalDelay = 200 * time.Millisecond
 		manifest.CheckTxDelay = 20 * time.Millisecond
+		manifest.VoteExtensionDelay = 100 * time.Millisecond
+		manifest.FinalizeBlockDelay = 500 * time.Millisecond
+	}
+
+	if voteExtensionEnabled.Choose(r).(bool) {
+		manifest.VoteExtensionsEnableHeight = manifest.InitialHeight + voteExtensionEnableHeightOffset.Choose(r).(int64)
 	}
 
 	var numSeeds, numValidators, numFulls, numLightClients int
@@ -275,7 +287,7 @@ func generateNode(
 		StartAt:          startAt,
 		Database:         nodeDatabases.Choose(r).(string),
 		PrivvalProtocol:  nodePrivvalProtocols.Choose(r).(string),
-		BlockSync:        nodeBlockSyncs.Choose(r).(string),
+		BlockSyncVersion: nodeBlockSyncs.Choose(r).(string),
 		StateSync:        nodeStateSyncs.Choose(r).(bool) && startAt > 0,
 		PersistInterval:  ptrUint64(uint64(nodePersistIntervals.Choose(r).(int))),
 		SnapshotInterval: uint64(nodeSnapshotIntervals.Choose(r).(int)),

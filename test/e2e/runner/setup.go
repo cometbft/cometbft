@@ -129,6 +129,9 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	}
 	// set the app version to 1
 	genesis.ConsensusParams.Version.App = 1
+	genesis.ConsensusParams.Evidence.MaxAgeNumBlocks = e2e.EvidenceAgeHeight
+	genesis.ConsensusParams.Evidence.MaxAgeDuration = e2e.EvidenceAgeTime
+	genesis.ConsensusParams.ABCI.VoteExtensionsEnableHeight = testnet.VoteExtensionsEnableHeight
 	for validator, power := range testnet.Validators {
 		genesis.Validators = append(genesis.Validators, types.GenesisValidator{
 			Name:    validator.Name,
@@ -163,6 +166,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg.P2P.AddrBookStrict = false
 	cfg.DBBackend = node.Database
 	cfg.StateSync.DiscoveryTime = 5 * time.Second
+	cfg.BlockSync.Version = node.BlockSyncVersion
 
 	switch node.ABCIProtocol {
 	case e2e.ProtocolUNIX:
@@ -207,12 +211,6 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		// Don't need to do anything, since we're using a dummy privval key by default.
 	default:
 		return nil, fmt.Errorf("unexpected mode %q", node.Mode)
-	}
-
-	if node.BlockSync == "" {
-		cfg.BlockSyncMode = false
-	} else {
-		cfg.BlockSync.Version = node.BlockSync
 	}
 
 	if node.StateSync {
@@ -267,6 +265,8 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		"prepare_proposal_delay": node.Testnet.PrepareProposalDelay,
 		"process_proposal_delay": node.Testnet.ProcessProposalDelay,
 		"check_tx_delay":         node.Testnet.CheckTxDelay,
+		"vote_extension_delay":   node.Testnet.VoteExtensionDelay,
+		"finalize_block_delay":   node.Testnet.FinalizeBlockDelay,
 	}
 	switch node.ABCIProtocol {
 	case e2e.ProtocolUNIX:

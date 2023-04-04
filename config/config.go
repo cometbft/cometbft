@@ -179,11 +179,6 @@ type BaseConfig struct { //nolint: maligned
 	// A custom human readable name for this node
 	Moniker string `mapstructure:"moniker"`
 
-	// If this node is many blocks behind the tip of the chain, Blocksync
-	// allows them to catchup quickly by downloading blocks in parallel
-	// and verifying their commits
-	BlockSyncMode bool `mapstructure:"block_sync"`
-
 	// Database backend: goleveldb | cleveldb | boltdb | rocksdb
 	// * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
 	//   - pure go
@@ -251,7 +246,6 @@ func DefaultBaseConfig() BaseConfig {
 		ABCI:               "socket",
 		LogLevel:           DefaultLogLevel,
 		LogFormat:          LogFormatPlain,
-		BlockSyncMode:      true,
 		FilterPeers:        false,
 		DBBackend:          "goleveldb",
 		DBPath:             DefaultDataDir,
@@ -262,7 +256,6 @@ func DefaultBaseConfig() BaseConfig {
 func TestBaseConfig() BaseConfig {
 	cfg := DefaultBaseConfig()
 	cfg.ProxyApp = "kvstore"
-	cfg.BlockSyncMode = false
 	cfg.DBBackend = "memdb"
 	return cfg
 }

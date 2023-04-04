@@ -36,11 +36,6 @@ proxy_app = "tcp://127.0.0.1:26658"
 # A custom human readable name for this node
 moniker = "anonymous"
 
-# If this node is many blocks behind the tip of the chain, BlockSync
-# allows them to catchup quickly by downloading blocks in parallel
-# and verifying their commits
-block_sync = true
-
 # Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb
 # * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
 #   - pure go

@@ -12,9 +12,12 @@ module Helpers {
 module Globals {
     type Proc = int
 
+    //XXX: Ideally this should be a const, but because it would have to be
+    //instantiated on every import, there would be duplication.
     //All processes in the system
-    //const Procs: Set[Proc]
     val Procs = Set(1,2,3,4,5)
+    //Maximum number of outbound connections per node.
+    val MaxConNum = 4
 }
 
 
@@ -35,28 +38,22 @@ module P2PI {
 //Provides staandard behavior for P2PI implementations
 module P2PAbstract {
     import Helpers.*
-    import Globals as G
-    //TODO: remove once Quint supports it.
-    type Proc = G::Proc
-    val Procs = G::Procs
-
+    import Globals.*
     import P2PI.*
 
 
 //==== Common to implementationtions, but probably not actually part of the P2P-I.
     //===== P2P Internals                                       //TODO: Move some of these to P2PI
-    var maxCon : Proc -> int                                    //Maximum number of outbound connections
     var igProcs : Proc -> Set[Proc]                                 //Nodes to be ignored.
     var cnProcs  : Proc -> Set[Proc]                                 //Neighbor sets
 
-    var sMsgs: Proc -> Set[{dst:Proc, msg: GOSSIPMessage}]            //Unicast sent messages.
-    var rMsgs: Proc -> Set[{src:Proc, msg: GOSSIPMessage}]            //Unicast received messages
+    var sMsgs: Set[{src:Proc, dst:Proc, msg: GOSSIPMessage}]            //Unicast sent messages.
+    var rMsgs: Set[{src:Proc, dst:Proc, msg: GOSSIPMessage}]          //Unicast received messages
 
     //Helper
-    val p2pInternals = {maxCon: maxCon, ignore: igProcs, connections: cnProcs, sent:sMsgs, received:rMsgs}
+    val p2pInternals = {ignore: igProcs, connections: cnProcs, sent:sMsgs, received:rMsgs}
 
-    action unchangedAll = all {
-        maxCon' = maxCon,
+    action PAunchangedAll = all {
         igProcs' = igProcs,
         cnProcs' = cnProcs,
         rMsgs' = rMsgs,
@@ -64,23 +61,21 @@ module P2PAbstract {
 
     }
 
+
+
+    //Adds bidirectional connection if both nodes are below limit.
     action addPeer(p,q): (Proc,Proc) => bool = all {
         not(cnProcs.get(p).contains(q)),
-        size(cnProcs.get(p)) < maxCon.get(p),
-        cnProcs' = plusE2(cnProcs, p, q)
+        size(cnProcs.get(p)) < MaxConNum,
+        not(cnProcs.get(q).contains(p)),
+        size(cnProcs.get(q)) < MaxConNum,
+        cnProcs' = plusE2(plusE2(cnProcs, p, q), q, p)
     }
 
     action removePeer(p,q): (Proc,Proc) => bool = all {
-        cnProcs' = minusE2(cnProcs, p, q)
+        cnProcs' = minusE2(minusE2(cnProcs, p, q), q, p)
     }
 
-    action setMaxCon(p, m): (int,int) => bool = {
-        maxCon' = maxCon.set(p, m)
-    }
-
-    def maxConNum(p) = {
-        maxCon.get(p)
-    }
 
     action ignoreNode(p, q): (Proc, Proc) => bool = {
         igProcs' = plusE2(igProcs, p, q)
@@ -90,211 +85,38 @@ module P2PAbstract {
         igProcs' = minusE2(igProcs, p, q)
     }
 
-    def neighbors(p) = cnProcs.get(p)
-
 //==== Init
-    action init: bool = all {
-        maxCon' = Procs.mapBy(_ => 3),
+    action PAinit: bool = all {
         igProcs' = Procs.mapBy(_ => Set()),
         cnProcs' = Procs.mapBy(_ => Set()),
-        sMsgs' = Procs.mapBy(_ => Set()),
-        rMsgs' = Procs.mapBy(_ => Set())
+        sMsgs' = Set(),
+        rMsgs' = Set()
     }
 
 //==== Steps
-    //Update the connections
-    action randomDropConnectionStep() = all {
-        Procs.filter(ap => cnProcs.get(ap).size() > 0).size() > 0,
-        nondet p = Procs.filter(ap => cnProcs.get(ap).size() > 0).oneOf()
-        nondet q = cnProcs.get(p).oneOf()
-
-        removePeer(p,q),
-        maxCon' = maxCon,
-        igProcs' = igProcs,
+    //Defined for interface compatibility, but must never succeed since it would be a stutter only.
+    action PAstep = all {
+        PAunchangedAll,
+        false
     }
 
-    action randomConnectionStep() = all {
-        //Are there two processes that can still connect to each other.
-        val nonFull = Procs.filter(p => cnProcs.get(p).size() < maxCon.get(p))
-        val nonCon = nonFull.filter(p => nonFull.exists(q => and(q != p , not (cnProcs.get(p).contains(q)))))
-        all {
-            nonCon.size() > 0,
-            all {
-                nondet p = nonCon.oneOf()
-                nondet q = nonFull.minusE(p).filter(aq => not (cnProcs.get(p).contains(aq))).oneOf()
 
-                addPeer(p,q),
-                maxCon' = maxCon,
-                igProcs' = igProcs,
-            }
-        }
-    }
-
-    action randomstep = any {
-        randomConnectionStep,
-        randomDropConnectionStep,
-    }
-
-    action step = unchangedAll
-
-}
-
-
-
-//This module implements P2P without using the network
-// - everything sent is immediately delivered
-// - there are no duplications
-// - there are no losses
-module P2PCheat {
-    import Helpers.*
-    //import Globals as G
-    import P2PI.*
-
-    import P2PAbstract as PA
-    //TODO: remove once Quint supports it.
-    type Proc = PA::Proc
-    val Procs = PA::Procs
-    val maxCon = PA::maxCon                                     //Maximum number of outbound connections
-    val igProcs = PA::igProcs                                   //Nodes to be ignored.
-    val cnProcs = PA::cnProcs                                   //Neighbor sets
-    val sMsgs = PA::sMsgs                                       //Unicast sent messages.
-    val rMsgs = PA::rMsgs                                       //Unicast received messages
-
-
-//====== [VOC-GOSSIP-P2P-ACTIONS] P2P-I
-    //[DEF-UNICAST]
-    //The P2P unicast API.
-    action send(p,q,m): (Proc, Proc, GOSSIPMessage) => bool = all {
-        q.in(PA::cnProcs.get(p)),
-        not({src:p, msg:m}.in(PA::rMsgs.get(q))),
-        PA::sMsgs' = plusE2(PA::sMsgs, p, {dst:q, msg:m}),
-        PA::rMsgs' = plusE2(PA::rMsgs, q, {src:q, msg:m})
-    }
-
-    def received(p): Proc => Set[{src:Proc, msg: GOSSIPMessage}] =
-        PA::rMsgs.get(p)
-
-    action unchangedAll = PA::unchangedAll
-
-//==== Init
-    action init: bool = PA::init
-
-
-//===== Steps
-    action deliverMessageStep = PA::unchangedAll
-
-    action step: bool = PA::step
-}
-
-
-//This module implements P2P "using" the network
-// - everything sent is put in a pending set
-// - elements from the pending set are delivered randomly
-// - there are no duplications
-// - there are no losses
-module P2PNetwork {
-    import Helpers.*
-    //import Globals.*
-    import P2PI.*
-
-    import P2PAbstract as PA
-    //TODO: remove once Quint supports it.
-    type Proc = PA::Proc
-    val Procs = PA::Procs
-    val maxCon = PA::maxCon                                     //Maximum number of outbound connections
-    val igProcs = PA::igProcs                                   //Nodes to be ignored.
-    val cnProcs = PA::cnProcs                                   //Neighbor sets
-    val sMsgs = PA::sMsgs                                       //Unicast sent messages.
-    val rMsgs = PA::rMsgs                                       //Unicast received messages
-
-
-    type OutGoingMsg = {dst:Proc, msg: GOSSIPMessage}
-    type IncomingMsg = {src:Proc, msg: GOSSIPMessage}
-
-    //Helpers
-    def outToInc(s, m): (Proc, OutGoingMsg) => IncomingMsg =
-        {src:s, msg:m.msg}
-
-    def incToOut(d, m): (Proc,IncomingMsg) => OutGoingMsg =
-        {dst:d, msg:m.msg}
-
-    def nonDelMsgs(p): Proc => Set[{dst: Proc, msg:GOSSIPMessage}] = {
-        PA::sMsgs.get(p).filter(m => not(outToInc(p,m).in(PA::rMsgs.get(m.dst))))
-    }
-
-//====== [VOC-GOSSIP-P2P-ACTIONS] P2P-I
-    //[DEF-UNICAST]
-    //The P2P unicast API.
-    action send(p,q,m): (Proc, Proc, GOSSIPMessage) => bool = all {
-        q.in(PA::cnProcs.get(p)),
-        PA::sMsgs' = plusE2(PA::sMsgs, p, {dst:q, msg:m}),
-        PA::rMsgs' = PA::rMsgs
-    }
-
-    def received(p) = PA::rMsgs.get(p)
-
-    action unchangedAll = PA::unchangedAll
-
-//======Init
-    action init: bool = PA::init
-
-//===== Step
-    action deliverMessageStep = {
-        val p = PA::sMsgs.keys().filter(ap => nonDelMsgs(ap).size() > 0).oneOf()
-        val m = nonDelMsgs(p).oneOf()
-        all {
-            PA::rMsgs' = plusE2(PA::rMsgs, m.dst, outToInc(p,m)),
-            PA::sMsgs' = minusE2(PA::sMsgs, p, m),
-
-            PA::maxCon' = PA::maxCon,
-            PA::igProcs' = PA::igProcs,
-            PA::cnProcs' = PA::cnProcs
-        }
-    }
-
-    action step = any {
-        PA::step,
-        deliverMessageStep,
-    }
-}
-
-
-
-
-module P2PInvariants {
-    //import Globals.*
-    //import P2PAbstract as PA
-
-    import P2PCheat as P
-    //import P2PNetwork as P
-    //TODO: remove once Quint supports it.
-    type Proc = P::Proc
-    val Procs = P::Procs
-
+//===== Invariants
 //================================= REQ-GOSSIP-P2P
     //[REQ-GOSSIP-P2P-UNICAST]
-    temporal RGPUnicastProp = {
-        Procs.forall(p =>
-            P::cnProcs.get(p).forall(q =>
-                P::sMsgs.get(p).forall(m =>
-                    always (
-                        eventually (
-                            or {
-                                P::rMsgs.get(q).contains({src:p, msg:m.msg}),
-                                not (P::cnProcs.get(p).contains(q))
-                            }
-                        )
-                    )
-                )
-            )
-        )
+    val RGPUnicast = {
+        sMsgs.forall(m => or {
+            rMsgs.contains(m),
+            not (cnProcs.get(m.src).contains(m.dst))
+        })
     }
 
+    temporal RGPUnicastProp = always (eventually (RGPUnicast))
 
     //[REQ-GOSSIP-P2P-CONCURRENT_CONN]
     val RGPConcurrent = {
         Procs.forall(p =>
-                P::cnProcs.get(p).size() < P::maxCon.get(p)
+                cnProcs.get(p).size() < MaxConNum
         )
     }
 
@@ -304,8 +126,8 @@ module P2PInvariants {
     //[REQ-GOSSIP-P2P-IGNORING]
     val RGPIgnoring: bool = {
         Procs.forall(p =>
-            val cnP = P::cnProcs.get(p)
-            val igP = P::igProcs.get(p)
+            val cnP = cnProcs.get(p)
+            val igP = igProcs.get(p)
             val igCn = cnP.intersect(igP)
                 size(igCn) == 0
         )
@@ -313,12 +135,369 @@ module P2PInvariants {
 
     temporal RGPIgnoringProp =
         always (RGPIgnoring)
-
-
-    action step = P::step
-
-    action init = P::init
 }
+
+//This module implements P2P without using the network
+// - everything sent is immediately delivered
+// - there are no duplications
+// - there are no losses
+// as long as the nodes are connected.
+module P2PInstCheat {
+    import Helpers.*
+    import Globals.*
+    import P2PI.*
+
+    import P2PAbstract.* //as PA
+
+    action unchangedAll = PAunchangedAll
+
+//====== [VOC-GOSSIP-P2P-ACTIONS] P2P-I
+    //[DEF-UNICAST]
+    //The P2P unicast API.
+    action send(p,q,m): (Proc, Proc, GOSSIPMessage) => bool = all {
+        q.in(cnProcs.get(p)),
+        val msg = {src:p, dst:q, msg:m}
+        all {
+            not(msg.in(rMsgs)),
+            sMsgs' = plusE(sMsgs, msg),
+            rMsgs' = plusE(rMsgs, msg)
+        }
+    }
+
+    def received(p): Proc => Set[{src:Proc, dst:Proc, msg: GOSSIPMessage}] =
+        rMsgs.filter(m => m.dst == p)
+
+
+//==== Init
+    action PInstInit: bool = PAinit
+
+
+//===== Steps
+    action deliverMessageStep = all {PAunchangedAll, true}
+
+    action PInstStep = all {PAunchangedAll, false}
+}
+
+
+
+//This module implements P2P "using" the network
+// - everything sent is put in a pending set
+// - elements from the pending set are delivered randomly
+// - there are no duplications
+// - there are no losses
+module P2PInstNetwork {
+    import Helpers.*
+    import Globals.*
+    import P2PI.*
+
+    import P2PAbstract.* // as PA
+
+
+    type OutGoingMsg = {dst:Proc, msg: GOSSIPMessage}
+    type IncomingMsg = {src:Proc, msg: GOSSIPMessage}
+
+    action unchangedAll = PAunchangedAll
+
+    def nonDelMsgs(p): Proc => Set[{src: Proc, dst: Proc, msg:GOSSIPMessage}] = {
+        sMsgs.filter(m => m.src == p and not(m.in(rMsgs)))
+    }
+
+//====== [VOC-GOSSIP-P2P-ACTIONS] P2P-I
+    //[DEF-UNICAST]
+    //The P2P unicast API.
+    action send(p,q,m): (Proc, Proc, GOSSIPMessage) => bool = all {
+        q.in(cnProcs.get(p)),
+        sMsgs' = plusE(sMsgs, {src:p, dst:q, msg:m}),
+        rMsgs' = rMsgs
+    }
+
+    def received(p) = rMsgs.filter(m => m.dst == p)
+
+
+//======Init
+    action PInstInit: bool = PAinit
+
+//===== Step
+    action deliverMessageStep = {
+        val nonDelMsgsAll = sMsgs.filter(m => not(m.in(rMsgs)) and m.dst.in(cnProcs.get(m.src)))
+        all {
+            size(nonDelMsgsAll) > 0,
+            val m = nonDelMsgsAll.oneOf()
+            all {
+                rMsgs' = plusE(rMsgs, m),
+                sMsgs' = sMsgs,
+
+                igProcs' = igProcs,
+                cnProcs' = cnProcs
+            }
+        }
+    }
+
+    action PInstStep = any {
+        deliverMessageStep,
+    }
+}
+
+
+module P2PTests {
+    import Helpers.*
+    import Globals.*
+    import P2PAbstract.*
+
+    //import P2PInstCheat.* //as PInst
+    import P2PInstNetwork.* //as PInst
+
+//======== Tests
+
+    //Connects 2 nodes node towards forming a ring.
+    action connectRingStep() = {
+        //Find a node not in the ring.
+        val nonConnected = Procs.filter(p => if (p < size(Procs)) not(cnProcs.get(p).contains(p+1)) else not(cnProcs.get(p).contains(1)))
+        all {
+            cnProcs' = Procs.mapBy(p => if (p < size(Procs)) Set(p+1) else Set(1)),
+            igProcs' = igProcs,
+
+            sMsgs' = sMsgs,
+            rMsgs' = rMsgs
+        }
+    }
+
+    action connectFullStep() = {
+        all {
+            cnProcs' = Procs.mapBy(p => Procs),
+            igProcs' = igProcs,
+
+            sMsgs' = sMsgs,
+            rMsgs' = rMsgs
+        }
+    }
+
+    action connectStarStep() = {
+        all {
+            cnProcs' = Procs.mapBy(p => if (p ==1 ) Procs.minusE(1) else Set(1)),
+            igProcs' = igProcs,
+
+            sMsgs' = sMsgs,
+            rMsgs' = rMsgs
+        }
+    }
+
+    action connectRandomStep() = {
+        //TODO: Describe a random connected graph, without iteration, efficiently
+        //nondet f = Procs.setOfMaps(powerset(Procs)).oneOf()
+        //The graph below is actually a double link ring.
+        all {
+            cnProcs' = Procs.mapBy(p => if (p < size(Procs)-1) Set(p+1, p+2) else if (p == size(Procs)-1) Set(p+1,1) else Set(1,2)),
+            igProcs' = igProcs,
+
+            sMsgs' = sMsgs,
+            rMsgs' = rMsgs
+        }
+    }
+
+//init and step, used for random walks a fully configured "stack"
+    action init = PInstInit
+
+    action step = PInstStep
+
+//===== Runs/Debug
+    run NOOPTest: bool = {
+        init
+    }
+
+    run sendReceiveInARingTest: bool = {
+        PInstInit
+            //connect some nodes
+            .then(connectRingStep)
+            //send and receive messages
+            .then(
+                all {
+                    send(1,2,{gat: "query"}),
+
+                    cnProcs' = cnProcs,
+                    igProcs' = igProcs,
+                }
+            )
+            .then(
+                all {
+                    send(2,3,{gat: "query"}),
+
+                    cnProcs' = cnProcs,
+                    igProcs' = igProcs,
+                }
+            )
+            .then(deliverMessageStep.repeated(2))
+            .then(all {RGPUnicast, unchangedAll})
+            .then(
+                all {
+                    send(1,3,{gat: "query"}),
+
+                    cnProcs' = cnProcs,
+                    igProcs' = igProcs,
+                }.fail())
+    }
+
+
+    run sendReceiveInFullyConnectedTest: bool = {
+        PInstInit
+            //connect some nodes
+            .then(connectFullStep)
+            //send and receive messages
+            .then(
+                all {
+                    send(1,2,{gat: "query"}),
+
+                    cnProcs' = cnProcs,
+                    igProcs' = igProcs,
+                }
+            )
+            .then(
+                all {
+                    send(1,3,{gat: "query"}),
+
+                    cnProcs' = cnProcs,
+                    igProcs' = igProcs,
+                }
+            )
+            .then(
+                all {
+                    send(2,3,{gat: "query"}),
+
+                    cnProcs' = cnProcs,
+                    igProcs' = igProcs,
+                }
+            )
+            .then(deliverMessageStep.repeated(3))
+            .then(all {RGPUnicast, unchangedAll})
+    }
+
+    run sendReceiveInStarConnectedTest: bool = {
+        PInstInit
+            //connect some nodes
+            .then(connectStarStep)
+            //send and receive messages
+            .then(
+                all {
+                    send(1,2,{gat: "query"}),
+
+                    cnProcs' = cnProcs,
+                    igProcs' = igProcs,
+                }
+            )
+            .then(
+                all {
+                    send(1,3,{gat: "query"}),
+
+                    cnProcs' = cnProcs,
+                    igProcs' = igProcs,
+                }
+            )
+            .then(deliverMessageStep.repeated(2))
+            .then(all {RGPUnicast, unchangedAll})
+            .then(
+                all {
+                    send(2,3,{gat: "query"}),
+
+                    cnProcs' = cnProcs,
+                    igProcs' = igProcs,
+                }.fail()
+            )
+    }
+
+    run sendReceiveInRandomConnectedTest: bool = {
+        PInstInit
+            //connect some nodes
+            .then(connectRandomStep)
+            //send and receive messages
+            .then(
+                val p = cnProcs.keys().filter(pa => cnProcs.get(pa).size() > 0 ).oneOf()
+                val q = cnProcs.get(p).oneOf()
+                all {
+                    send(p,q,{gat: "query"}),
+
+                    cnProcs' = cnProcs,
+                    igProcs' = igProcs,
+                }
+            )
+            .then(
+                val p = cnProcs.keys().filter(pa => cnProcs.get(pa).size() > 0 ).oneOf()
+                val q = cnProcs.get(p).oneOf()
+                all {
+                    send(p,q,{gat: "query"}),
+
+                    cnProcs' = cnProcs,
+                    igProcs' = igProcs,
+                }
+            )
+            .then(deliverMessageStep.repeated(2))
+            .then(all {RGPUnicast, unchangedAll})
+            .then(
+                val p = cnProcs.keys().filter(pa => cnProcs.get(pa) != Procs ).oneOf()
+                val q = Procs.exclude(cnProcs.get(p)).oneOf()
+                all {
+                    send(p,q,{gat: "query"}),
+
+                    cnProcs' = cnProcs,
+                    igProcs' = igProcs,
+                }.fail()
+            )
+
+    }
+
+//===== Tests
+    //Update the connections
+    action randomDropConnectionStep() = all {
+        Procs.filter(ap => cnProcs.get(ap).size() > 0).size() > 0,
+        nondet p = Procs.filter(ap => cnProcs.get(ap).size() > 0).oneOf()
+        nondet q = cnProcs.get(p).oneOf()
+
+        removePeer(p,q),
+        igProcs' = igProcs,
+        sMsgs' = sMsgs,
+        rMsgs' = rMsgs
+    }
+
+    action randomConnectionStep() = all {
+        //Are there two processes that can still connect to each other.
+        val nonFull = Procs.filter(p => cnProcs.get(p).size() < MaxConNum)
+        val nonCon = nonFull.filter(p => nonFull.exists(q => and(q != p , not (cnProcs.get(p).contains(q)))))
+        all {
+            nonCon.size() > 0,
+            all {
+                nondet p = nonCon.oneOf()
+                nondet q = nonFull.minusE(p).filter(aq => not (cnProcs.get(p).contains(aq))).oneOf()
+
+                addPeer(p,q),
+                sMsgs' = sMsgs,
+                rMsgs' = rMsgs,
+                igProcs' = igProcs,
+            }
+        }
+    }
+
+    action randomMessageStep = {
+        val p = Procs.oneOf()
+        val q = Procs.oneOf()
+        all {
+            send(p,q,{gat: "query"}),
+
+            cnProcs' = cnProcs,
+            igProcs' = igProcs,
+        }
+    }
+
+    action randomStep = any {
+        randomConnectionStep,
+        randomDropConnectionStep,
+        randomMessageStep
+    }
+
+    //quint test gossip.qnt --main P2PTests --verbosity=3
+    //quint run gossip.qnt --main P2PTests --step randomStep --verbosity=3
+    //quint run gossip.qnt --main P2PTests --verbosity=3
+}
+
+
 
 //Define the Gossip Interface
 module GossipI {
@@ -346,29 +525,19 @@ module GossipI {
 
 module GossipAbstract {
     import Helpers.*
-    import Globals as G
-    //TODO: remove once Quint supports it.
-    type Proc = G::Proc
-    val Procs = G::Procs
+    import Globals.*
 
-    import GossipI as GI
-    //TODO: remove once Quint supports it.
-    type CONSTuple = GI::CONSTuple
-
-
+    import GossipI.*
 }
 
-// This module implements GOSSIP-I without really gossiping. All tuples are immediately available to all.
-module GossipCheat {
-    import Helpers.*
-    //import Globals as G
 
-//    import GossipI.*
-    import GossipAbstract as GA
-    //TODO: remove once Quint supports it.
-    type Proc = GA::Proc
-    val Procs = GA::Procs
-    type CONSTuple = GA::CONSTuple
+// This module implements GOSSIP-I without really gossiping. All tuples are immediately available to all.
+module GossipInstCheat {
+    import Helpers.*
+    import Globals.*
+
+    import GossipI.*        //GI
+    import GossipAbstract.* //GA
 
 //===== GOSSIP Internals
     var globalViewAdds : Set[CONSTuple]
@@ -411,16 +580,11 @@ module GossipCheat {
 
 
 //===== Init (anything ending with Init sets the whole state and can serve as the spec `init` clause)
-    action init: bool = all {
+    action GInstInit: bool = all {
         globalViewAdds' = Set(),
         globalViewDels' = Set()
     }
 
-    action randomEntryInit: bool = all {
-        val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL"}
-        globalViewAdds' = Set(entry),
-        globalViewDels' = Set(),
-    }
 
 //===== Steps (anything ending in Step sets the whole state and may be used in `run`)
     action addEntryStep(p, e) = all {
@@ -430,20 +594,16 @@ module GossipCheat {
     }
 
     //Step does not need to do anything, since everything is imediatelly gossiped.
-    action step: bool = true
+    action GInstStep: bool = true
 }
 
 // This module implements GOSSIP-I without using P2P. Nodes compare their local views and converge 2-by-2.
-module GossipNoP2P {
+module GossipInstNoP2P {
     import Helpers.*
-    //import Globals as G
+    import Globals.*
+    import GossipI.*
+    import GossipAbstract.*
 
-//    import GossipI.*
-    import GossipAbstract as GA
-    //TODO: remove once Quint supports it.
-    type Proc = GA::Proc
-    val Procs = GA::Procs
-    type CONSTuple = GA::CONSTuple
 
 //===== GOSSIP Internals
     var localViewAdds : Proc -> Set[CONSTuple]
@@ -506,16 +666,11 @@ module GossipNoP2P {
 
 
 //===== Init (anything ending with Init sets the whole state and can serve as the spec `init` clause)
-    action init: bool = all {
+    action GInstInit: bool = all {
         localViewAdds' = Procs.mapBy(_ => Set()),
         localViewDels' = Procs.mapBy(_ => Set())
     }
 
-    action randomEntryInit: bool = all {
-        val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL"}
-        localViewAdds' = Procs.mapBy(p => if (p == 1) Set(entry) else Set()),
-        localViewDels' = Procs.mapBy(_ => Set()),
-    }
 
 //===== Steps (anything ending in Step sets the whole state and may be used in `run`)
     //Gossip using P2P
@@ -523,7 +678,7 @@ module GossipNoP2P {
         gossip(p,q),
     }
 
-    action addEntryStep(p, e) = all {
+    action addTupleStep(p, e) = all {
             addTuple(p, e),
             //unchanged
             localViewDels' = localViewDels,
@@ -537,11 +692,10 @@ module GossipNoP2P {
         gossipStep(p,q)
     }
 
-    action stutter = all {
-        unchangedGossip,
-    }
+
 }
 
+/*
 
 //This module implements GOSSIP-I using P2P-I. Nodes converge by exchanging messages.
 module GossipP2P {
@@ -758,65 +912,6 @@ module SupersessionOracle {
 
 
 
-//========= P2P Tests
-module P2PTestHelper {
-    import Helpers.*
-    //import Globals.*
-    //import P2PI.*
-    //import P2PAbstract as PA
-
-    import P2PCheat as P
-    //import P2PNetwork as P
-
-    action connectRingStep() = {
-        all {
-            P::cnProcs' = P::Procs.mapBy(p => if (p < size(P::Procs)) Set(p+1) else Set(0)),
-            P::maxCon' = P::maxCon,
-            P::igProcs' = P::igProcs,
-
-            P::sMsgs' = P::sMsgs,
-            P::rMsgs' = P::rMsgs
-        }
-    }
-
-    action connectFullStep() = {
-        all {
-            P::cnProcs' = P::Procs.mapBy(p => P::Procs),
-            P::maxCon' = P::maxCon,
-            P::igProcs' = P::igProcs,
-
-            P::sMsgs' = P::sMsgs,
-            P::rMsgs' = P::rMsgs
-        }
-    }
-
-    action connectStarStep() = {
-        all {
-            P::cnProcs' = P::Procs.mapBy(p => if (p ==1 ) P::Procs.minusE(1) else Set(1)),
-            P::maxCon' = P::maxCon,
-            P::igProcs' = P::igProcs,
-
-            P::sMsgs' = P::sMsgs,
-            P::rMsgs' = P::rMsgs
-        }
-    }
-
-    action connectRandomStep() = {
-        //TODO: Describe a random connected graph, without iteration, efficiently
-        //nondet f = Procs.setOfMaps(powerset(Procs)).oneOf()
-        //The graph below is actually a double link ring.
-        all {
-            P::cnProcs' = P::Procs.mapBy(p => if (p < size(P::Procs)-1) Set(p+1, p+2) else if (p == size(P::Procs)-1) Set(p+1,1) else Set(1,2)),
-            P::maxCon' = P::maxCon,
-            P::igProcs' = P::igProcs,
-
-            P::sMsgs' = P::sMsgs,
-            P::rMsgs' = P::rMsgs
-        }
-    }
-}
-
-
 module P2PTests {
     import Helpers.*
     //import Globals(Procs = Set(1,2,3,4,5)) as G
@@ -829,146 +924,9 @@ module P2PTests {
     import P2PCheat as P
     //import P2PNetwork as P
 
-//init and step, used for random walks a fully configured "stack"
-    action init = P::init
 
-    action step = P::step
 
-//===== Runs/Debug
-    run NOOPTest: bool = {
-        P::init
-    }
-
-    run sendReceiveInARingTest: bool = {
-        P::init
-            //connect some nodes
-            .then(connectRingStep)
-            //send and receive messages
-            .then(
-                all {
-                    P::send(1,2,{gat: "query"}),
-
-                    P::cnProcs' = P::cnProcs,
-                    P::maxCon' = P::maxCon,
-                    P::igProcs' = P::igProcs,
-                }
-            )
-            .then(
-                all {
-                    P::send(2,3,{gat: "query"}),
-
-                    P::cnProcs' = P::cnProcs,
-                    P::maxCon' = P::maxCon,
-                    P::igProcs' = P::igProcs,
-                }
-            )
-            .then(P::deliverMessageStep).repeated(2)
-            .then(all {
-                size(P::Procs.filter(p => size(P::received(p)) > 0)) == 2,
-
-                P::unchangedAll
-            })
-    }
-
-    run sendReceiveInFullyConnectedTest: bool = {
-        P::init
-            //connect some nodes
-            .then(connectFullStep)
-            //send and receive messages
-            .then(
-                all {
-                    P::send(1,2,{gat: "query"}),
-
-                    P::cnProcs' = P::cnProcs,
-                    P::maxCon' = P::maxCon,
-                    P::igProcs' = P::igProcs,
-                }
-            )
-            .then(
-                all {
-                    P::send(2,3,{gat: "query"}),
-
-                    P::cnProcs' = P::cnProcs,
-                    P::maxCon' = P::maxCon,
-                    P::igProcs' = P::igProcs,
-                }
-            )
-            .then(P::deliverMessageStep).repeated(2)
-            .then(all {
-                size(P::Procs.filter(p => size(P::received(p)) > 0)) == 2,
-
-                P::unchangedAll
-            })
-    }
-
-    run sendReceiveInStarConnectedTest: bool = {
-        P::init
-            //connect some nodes
-            .then(connectStarStep)
-            //send and receive messages
-            .then(
-                all {
-                    P::send(1,2,{gat: "query"}),
-
-                    P::cnProcs' = P::cnProcs,
-                    P::maxCon' = P::maxCon,
-                    P::igProcs' = P::igProcs,
-                }
-            )
-            .then(
-                all {
-                    P::send(2,3,{gat: "query"}),
-
-                    P::cnProcs' = P::cnProcs,
-                    P::maxCon' = P::maxCon,
-                    P::igProcs' = P::igProcs,
-                }
-            )
-            .then(P::deliverMessageStep).repeated(2)
-            .then(all {
-                size(P::Procs.filter(p => size(P::received(p)) > 0)) == 2,
-
-                P::unchangedAll
-            })
-    }
-
-    run sendReceiveInRandomConnectedTest: bool = {
-        P::init
-            //connect some nodes
-            .then(connectRandomStep)
-            //send and receive messages
-            .then(
-                all {
-                    P::send(1,2,{gat: "query"}),
-
-                    P::cnProcs' = P::cnProcs,
-                    P::maxCon' = P::maxCon,
-                    P::igProcs' = P::igProcs,
-                }
-            )
-            .then(
-                all {
-                    P::send(2,3,{gat: "query"}),
-
-                    P::cnProcs' = P::cnProcs,
-                    P::maxCon' = P::maxCon,
-                    P::igProcs' = P::igProcs,
-                }
-            )
-            .then(P::deliverMessageStep).repeated(2)
-            .then(all {
-                size(P::Procs.filter(p => size(P::received(p)) > 0)) == 2,
-
-                P::unchangedAll
-            })
-    }
 }
-
-
-
-/*
-*/
-/*
 
 //==== Gossip Tests
 
@@ -1191,9 +1149,26 @@ module ConsensusMock {
 
 }
 
+        action randomEntryInit: bool = all {
+            val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL"}
+            globalViewAdds' = Set(entry),
+            globalViewDels' = Set(),
+        }
+
+    action randomEntryInit: bool = all {
+        val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL"}
+        localViewAdds' = Procs.mapBy(p => if (p == 1) Set(entry) else Set()),
+        localViewDels' = Procs.mapBy(_ => Set()),
+    }
+
+*/
+
+
 /*
 To test this spec
 
 - quint test reactor.qnt //Runs all tests
 - quint run --max-samples 10000 --max-steps 10 --invariant RGPIgnoring reactor.qnt
 */
+
+

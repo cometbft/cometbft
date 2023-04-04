@@ -13,49 +13,18 @@ module Globals {
     type Proc = int
 
     //All processes in the system
-    const Procs: Set[Proc]
-}
-
-
-//Define the Gossip Interface
-module GossipI {
-    import Globals.*
-
-    type Payload = str
-
-//====== [VOC-CONS-GOSSIP-TYPES] GOSSIP-I
-    type CONSTuple =                                          //TODO: Define payloads?
-        | { tag: "proposal",  height: int, round: int, payload: Payload, signer: Proc}
-        | { tag: "prevote",   height: int, round: int, payload: Payload, signer: Proc}
-        | { tag: "precommit", height: int, round: int, payload: Payload, signer: Proc}
-
-//==== Exported methods GOSSIP-I
-    //[DEF-ADD-TUPLE]
-    //Adds a tuple to the local view.
-    //action addTuple(p,t): (Proc, CONSTuple) => bool
-
-    //[DEF-REMOVE-TUPLE]
-    //REMOVES a set of tuples from the local view.
-    //action removeTuples(p, es): (Proc, Set[CONSTuple]) => bool
-
-    //[DEF-READ-TUPLE]
-    //The local view
-    //def localView(p): Proc => Set[CONSTuple]
+    //const Procs: Set[Proc]
+    val Procs = Set(1,2,3,4,5)
 }
 
 
 //Defines the P2P Interface
 module P2PI {
-    import Globals.*
-    import GossipI.*   //Shouldn't be needed. TODO: How to represent the payload in the GossipMessage?
-
-
-
  //====== [VOC-GOSSIP-P2P-TYPES] P2P-I
     type GOSSIPMessage =
         | {tag: "query" }
         | {tag: "query_response" }
-        | {tag: "update", updates: Set[CONSTuple] }
+        | {tag: "update", tuple: Set[(str, int, int, str, int)]}
 
 //==== Exported methods P2P-I
     //action send(p,q,m): (Proc, Proc, GOSSIPMessage) => bool
@@ -63,12 +32,16 @@ module P2PI {
 
 }
 
-
 //Provides staandard behavior for P2PI implementations
 module P2PAbstract {
     import Helpers.*
-    import Globals.*
+    import Globals as G
+    //TODO: remove once Quint supports it.
+    type Proc = G::Proc
+    val Procs = G::Procs
+
     import P2PI.*
+
 
 //==== Common to implementationtions, but probably not actually part of the P2P-I.
     //===== P2P Internals                                       //TODO: Move some of these to P2PI
@@ -174,10 +147,19 @@ module P2PAbstract {
 // - there are no losses
 module P2PCheat {
     import Helpers.*
-    import Globals.*
+    //import Globals as G
     import P2PI.*
 
     import P2PAbstract as PA
+    //TODO: remove once Quint supports it.
+    type Proc = PA::Proc
+    val Procs = PA::Procs
+    val maxCon = PA::maxCon                                     //Maximum number of outbound connections
+    val igProcs = PA::igProcs                                   //Nodes to be ignored.
+    val cnProcs = PA::cnProcs                                   //Neighbor sets
+    val sMsgs = PA::sMsgs                                       //Unicast sent messages.
+    val rMsgs = PA::rMsgs                                       //Unicast received messages
+
 
 //====== [VOC-GOSSIP-P2P-ACTIONS] P2P-I
     //[DEF-UNICAST]
@@ -212,10 +194,19 @@ module P2PCheat {
 // - there are no losses
 module P2PNetwork {
     import Helpers.*
-    import Globals.*
+    //import Globals.*
     import P2PI.*
 
     import P2PAbstract as PA
+    //TODO: remove once Quint supports it.
+    type Proc = PA::Proc
+    val Procs = PA::Procs
+    val maxCon = PA::maxCon                                     //Maximum number of outbound connections
+    val igProcs = PA::igProcs                                   //Nodes to be ignored.
+    val cnProcs = PA::cnProcs                                   //Neighbor sets
+    val sMsgs = PA::sMsgs                                       //Unicast sent messages.
+    val rMsgs = PA::rMsgs                                       //Unicast received messages
+
 
     type OutGoingMsg = {dst:Proc, msg: GOSSIPMessage}
     type IncomingMsg = {src:Proc, msg: GOSSIPMessage}
@@ -271,24 +262,26 @@ module P2PNetwork {
 
 
 module P2PInvariants {
-    import Globals.*
-
-    import P2PAbstract as PA
+    //import Globals.*
+    //import P2PAbstract as PA
 
     import P2PCheat as P
     //import P2PNetwork as P
+    //TODO: remove once Quint supports it.
+    type Proc = P::Proc
+    val Procs = P::Procs
 
 //================================= REQ-GOSSIP-P2P
     //[REQ-GOSSIP-P2P-UNICAST]
     temporal RGPUnicastProp = {
         Procs.forall(p =>
-            PA::cnProcs.get(p).forall(q =>
-                PA::sMsgs.get(p).forall(m =>
+            P::cnProcs.get(p).forall(q =>
+                P::sMsgs.get(p).forall(m =>
                     always (
                         eventually (
                             or {
-                                PA::rMsgs.get(q).contains({src:p, msg:m.msg}),
-                                not (PA::cnProcs.get(p).contains(q))
+                                P::rMsgs.get(q).contains({src:p, msg:m.msg}),
+                                not (P::cnProcs.get(p).contains(q))
                             }
                         )
                     )
@@ -301,7 +294,7 @@ module P2PInvariants {
     //[REQ-GOSSIP-P2P-CONCURRENT_CONN]
     val RGPConcurrent = {
         Procs.forall(p =>
-                PA::cnProcs.get(p).size() < PA::maxCon.get(p)
+                P::cnProcs.get(p).size() < P::maxCon.get(p)
         )
     }
 
@@ -311,8 +304,8 @@ module P2PInvariants {
     //[REQ-GOSSIP-P2P-IGNORING]
     val RGPIgnoring: bool = {
         Procs.forall(p =>
-            val cnP = PA::cnProcs.get(p)
-            val igP = PA::igProcs.get(p)
+            val cnP = P::cnProcs.get(p)
+            val igP = P::igProcs.get(p)
             val igCn = cnP.intersect(igP)
                 size(igCn) == 0
         )
@@ -327,16 +320,55 @@ module P2PInvariants {
     action init = P::init
 }
 
-
-/*
-// This module implements GOSSIP-I without really gossiping. All tuples are immediately available to all.
-module GossipGlobal {
-    import Helpers.*
+//Define the Gossip Interface
+module GossipI {
     import Globals.*
-    import GossipI.*
-    import P2PI.*
 
-    const Param: bool //Hack to get quint to instantiate
+//====== [VOC-CONS-GOSSIP-TYPES] GOSSIP-I
+    type CONSTuple =
+        | { tag: "proposal",  height: int, round: int, payload: str, signer: Proc}
+        | { tag: "prevote",   height: int, round: int, payload: str, signer: Proc}
+        | { tag: "precommit", height: int, round: int, payload: str, signer: Proc}
+
+//==== Exported methods GOSSIP-I
+    //[DEF-ADD-TUPLE]
+    //Adds a tuple to the local view.
+    //action addTuple(p,t): (Proc, CONSTuple) => bool
+
+    //[DEF-REMOVE-TUPLE]
+    //REMOVES a set of tuples from the local view.
+    //action removeTuples(p, es): (Proc, Set[CONSTuple]) => bool
+
+    //[DEF-READ-TUPLE]
+    //The local view
+    //def localView(p): Proc => Set[CONSTuple]
+}
+
+module GossipAbstract {
+    import Helpers.*
+    import Globals as G
+    //TODO: remove once Quint supports it.
+    type Proc = G::Proc
+    val Procs = G::Procs
+
+    import GossipI as GI
+    //TODO: remove once Quint supports it.
+    type CONSTuple = GI::CONSTuple
+
+
+}
+
+// This module implements GOSSIP-I without really gossiping. All tuples are immediately available to all.
+module GossipCheat {
+    import Helpers.*
+    //import Globals as G
+
+//    import GossipI.*
+    import GossipAbstract as GA
+    //TODO: remove once Quint supports it.
+    type Proc = GA::Proc
+    val Procs = GA::Procs
+    type CONSTuple = GA::CONSTuple
 
 //===== GOSSIP Internals
     var globalViewAdds : Set[CONSTuple]
@@ -361,14 +393,14 @@ module GossipGlobal {
 //====== [VOC-CONS-GOSSIP-ACTIONS] GOSSIP-I
     //[DEF-ADD-TUPLE]
     //Adds a tuple to the local view.
-    action addTuple(p,t): (Proc, CONSTuple) => bool = all {
+    action addTuple(p: Proc, t: CONSTuple): bool = all {
         not(globalViewDels.contains(t)),
         globalViewAdds' = plusE(globalViewAdds, t),
     }
 
     //[DEF-REMOVE-TUPLE]
     //REMOVES a set of tuples from the local view.
-    action removeTuples(p, es): (Proc, Set[CONSTuple]) => bool = all {
+    action removeTuples(p: Proc, es: Set[CONSTuple]): bool = all {
         globalViewDels' = globalViewDels.union(es),
         globalViewAdds' = globalViewAdds.exclude(es)
     }
@@ -399,17 +431,19 @@ module GossipGlobal {
 
     //Step does not need to do anything, since everything is imediatelly gossiped.
     action step: bool = true
-
 }
 
 // This module implements GOSSIP-I without using P2P. Nodes compare their local views and converge 2-by-2.
-module GossipAbstract {
+module GossipNoP2P {
     import Helpers.*
-    import Globals.*
-    import GossipI.*
-    import P2PI.*
+    //import Globals as G
 
-    const Param: bool //Hack to get quint to instantiate
+//    import GossipI.*
+    import GossipAbstract as GA
+    //TODO: remove once Quint supports it.
+    type Proc = GA::Proc
+    val Procs = GA::Procs
+    type CONSTuple = GA::CONSTuple
 
 //===== GOSSIP Internals
     var localViewAdds : Proc -> Set[CONSTuple]
@@ -508,14 +542,21 @@ module GossipAbstract {
     }
 }
 
+
 //This module implements GOSSIP-I using P2P-I. Nodes converge by exchanging messages.
 module GossipP2P {
-    import Helpers.*
-    import Globals.*
-    import GossipI.*
-    import P2PI.*
 
-    const Param: bool //Hack to get quint to instantiate
+    import Helpers.*
+    //import Globals as G
+
+//    import GossipI.*
+    import GossipAbstract as GA
+    //TODO: remove once Quint supports it.
+    type Proc = GA::Proc
+    val Procs = GA::Procs
+    type CONSTuple = GA::CONSTuple
+
+    import P2PI.*
 
     var localViewAdds : Proc -> Set[CONSTuple]
     var localViewDels : Proc -> Set[CONSTuple]
@@ -571,7 +612,6 @@ module GossipP2P {
     //The local view
     def localView(p) = localViewAdds.get(p).exclude(localViewDels.get(p))
 
-
 //===== Init (anything ending with Init sets the whole state and can serve as the spec `init` clause)
     action init: bool = all {
         localViewAdds' = Procs.mapBy(_ => Set()),
@@ -589,7 +629,6 @@ module GossipP2P {
     action gossipStep(p,q) = all {
         gossip(p,q),
     }
-
     action addEntryStep(p, e) = all {
             addTuple(p, e),
             //unchanged
@@ -611,17 +650,17 @@ module GossipP2P {
 
 //This module checks for GOSSIP-I invariants on some implementation.
 module GossipInv {
-    import Globals.*
+    //import Globals.*
 
-    import GossipGlobal(Param = true) as G
-//    import GossipAbstract(Param(Param = true) as G
-//    import GossipP2P(Param = true) as G
+    import GossipCheat as G
+//    import GossipNoP2P as G
+//    import GossipP2P as G
 
 //===== Invariants
 //================================= TS-VALIDITY
     val NoDoubleMessage: bool = {
-        Procs.forall(p =>
-            Procs.forall(q =>
+        G::Procs.forall(p =>
+            G::Procs.forall(q =>
                 val lvP = G::localView(p)
                 lvP.forall(mp =>
                     val lvQ = G::localView(q)
@@ -639,8 +678,8 @@ module GossipInv {
     }
 
     val NoSpuriousProposals: bool = {
-        Procs.forall(p =>
-            Procs.forall(q =>
+        G::Procs.forall(p =>
+            G::Procs.forall(q =>
                 val lvP = G::localView(p).filter(m => m.tag == "proposal")
                 lvP.forall(mp =>
                     val lvQ = G::localView(q).filter(m => m.tag == "proposal")
@@ -665,7 +704,7 @@ module GossipInv {
             G::globalView.forall(t =>
                 eventually (
                     any {
-                        Procs.forall(p => G::localView(p).contains(t)),
+                        G::Procs.forall(p => G::localView(p).contains(t)),
                         not (G::globalView.contains(t))
                     }
                 )
@@ -675,14 +714,18 @@ module GossipInv {
 
 }
 
+
 //This method implements the supersession of state, wherever it actually sits.
 module SupersessionOracle {
-    import Globals.*
-    import GossipI.*
+//   import Globals.*
+//    import GossipI.*
 
-    import GossipGlobal(Param = true) as G
-//    import GossipAbstract(Param(Param = true) as G
-//    import GossipP2P(Param = true) as G
+//    import GossipI.*
+    import GossipCheat as G
+    //TODO: remove once Quint supports it.
+    type Proc = G::Proc
+    val Procs = G::Procs
+    type CONSTuple = G::CONSTuple
 
 
 
@@ -706,60 +749,55 @@ module SupersessionOracle {
 
 //===== Steps (anything ending in Step sets the whole state and may be used in `run`)
     action step: bool = any {
-        nondet p = oneOf(Procs)
-        forgetSuperseded(p),
+        nondet p = oneOf(G::Procs)
+        //forgetSuperseded(p),
 
         G::step
     }
 }
 
 
-*/
-
-
-
 
 //========= P2P Tests
 module P2PTestHelper {
     import Helpers.*
-    import Globals.*
-    import P2PI.*
-
-    import P2PAbstract as PA
+    //import Globals.*
+    //import P2PI.*
+    //import P2PAbstract as PA
 
     import P2PCheat as P
     //import P2PNetwork as P
 
     action connectRingStep() = {
         all {
-            PA::cnProcs' = Procs.mapBy(p => if (p < size(Procs)) Set(p+1) else Set(0)),
-            PA::maxCon' = PA::maxCon,
-            PA::igProcs' = PA::igProcs,
+            P::cnProcs' = P::Procs.mapBy(p => if (p < size(P::Procs)) Set(p+1) else Set(0)),
+            P::maxCon' = P::maxCon,
+            P::igProcs' = P::igProcs,
 
-            PA::sMsgs' = PA::sMsgs,
-            PA::rMsgs' = PA::rMsgs
+            P::sMsgs' = P::sMsgs,
+            P::rMsgs' = P::rMsgs
         }
     }
 
     action connectFullStep() = {
         all {
-            PA::cnProcs' = PA::Procs.mapBy(p => PA::Procs),
-            PA::maxCon' = PA::maxCon,
-            PA::igProcs' = PA::igProcs,
+            P::cnProcs' = P::Procs.mapBy(p => P::Procs),
+            P::maxCon' = P::maxCon,
+            P::igProcs' = P::igProcs,
 
-            PA::sMsgs' = PA::sMsgs,
-            PA::rMsgs' = PA::rMsgs
+            P::sMsgs' = P::sMsgs,
+            P::rMsgs' = P::rMsgs
         }
     }
 
     action connectStarStep() = {
         all {
-            PA::cnProcs' = PA::Procs.mapBy(p => if (p ==1 ) Procs.minusE(1) else Set(1)),
-            PA::maxCon' = PA::maxCon,
-            PA::igProcs' = PA::igProcs,
+            P::cnProcs' = P::Procs.mapBy(p => if (p ==1 ) P::Procs.minusE(1) else Set(1)),
+            P::maxCon' = P::maxCon,
+            P::igProcs' = P::igProcs,
 
-            PA::sMsgs' = PA::sMsgs,
-            PA::rMsgs' = PA::rMsgs
+            P::sMsgs' = P::sMsgs,
+            P::rMsgs' = P::rMsgs
         }
     }
 
@@ -768,12 +806,12 @@ module P2PTestHelper {
         //nondet f = Procs.setOfMaps(powerset(Procs)).oneOf()
         //The graph below is actually a double link ring.
         all {
-            PA::cnProcs' = PA::Procs.mapBy(p => if (p < size(Procs)-1) Set(p+1, p+2) else if (p == size(Procs)-1) Set(p+1,1) else Set(1,2)),
-            PA::maxCon' = PA::maxCon,
-            PA::igProcs' = PA::igProcs,
+            P::cnProcs' = P::Procs.mapBy(p => if (p < size(P::Procs)-1) Set(p+1, p+2) else if (p == size(P::Procs)-1) Set(p+1,1) else Set(1,2)),
+            P::maxCon' = P::maxCon,
+            P::igProcs' = P::igProcs,
 
-            PA::sMsgs' = PA::sMsgs,
-            PA::rMsgs' = PA::rMsgs
+            P::sMsgs' = P::sMsgs,
+            P::rMsgs' = P::rMsgs
         }
     }
 }
@@ -781,10 +819,10 @@ module P2PTestHelper {
 
 module P2PTests {
     import Helpers.*
-    import Globals(Procs = Set(1,2,3,4,5)) as G
-    import P2PI.*
+    //import Globals(Procs = Set(1,2,3,4,5)) as G
+    //import P2PI.*
 
-    import P2PAbstract as PA
+    //import P2PAbstract as PA
 
     import P2PTestHelper.*
 
@@ -810,23 +848,23 @@ module P2PTests {
                 all {
                     P::send(1,2,{gat: "query"}),
 
-                    PA::cnProcs' = PA::cnProcs,
-                    PA::maxCon' = PA::maxCon,
-                    PA::igProcs' = PA::igProcs,
+                    P::cnProcs' = P::cnProcs,
+                    P::maxCon' = P::maxCon,
+                    P::igProcs' = P::igProcs,
                 }
             )
             .then(
                 all {
                     P::send(2,3,{gat: "query"}),
 
-                    PA::cnProcs' = PA::cnProcs,
-                    PA::maxCon' = PA::maxCon,
-                    PA::igProcs' = PA::igProcs,
+                    P::cnProcs' = P::cnProcs,
+                    P::maxCon' = P::maxCon,
+                    P::igProcs' = P::igProcs,
                 }
             )
             .then(P::deliverMessageStep).repeated(2)
             .then(all {
-                size(PA::Procs.filter(p => size(P::received(p)) > 0)) == 2,
+                size(P::Procs.filter(p => size(P::received(p)) > 0)) == 2,
 
                 P::unchangedAll
             })
@@ -841,23 +879,23 @@ module P2PTests {
                 all {
                     P::send(1,2,{gat: "query"}),
 
-                    PA::cnProcs' = PA::cnProcs,
-                    PA::maxCon' = PA::maxCon,
-                    PA::igProcs' = PA::igProcs,
+                    P::cnProcs' = P::cnProcs,
+                    P::maxCon' = P::maxCon,
+                    P::igProcs' = P::igProcs,
                 }
             )
             .then(
                 all {
                     P::send(2,3,{gat: "query"}),
 
-                    PA::cnProcs' = PA::cnProcs,
-                    PA::maxCon' = PA::maxCon,
-                    PA::igProcs' = PA::igProcs,
+                    P::cnProcs' = P::cnProcs,
+                    P::maxCon' = P::maxCon,
+                    P::igProcs' = P::igProcs,
                 }
             )
             .then(P::deliverMessageStep).repeated(2)
             .then(all {
-                size(PA::Procs.filter(p => size(P::received(p)) > 0)) == 2,
+                size(P::Procs.filter(p => size(P::received(p)) > 0)) == 2,
 
                 P::unchangedAll
             })
@@ -872,23 +910,23 @@ module P2PTests {
                 all {
                     P::send(1,2,{gat: "query"}),
 
-                    PA::cnProcs' = PA::cnProcs,
-                    PA::maxCon' = PA::maxCon,
-                    PA::igProcs' = PA::igProcs,
+                    P::cnProcs' = P::cnProcs,
+                    P::maxCon' = P::maxCon,
+                    P::igProcs' = P::igProcs,
                 }
             )
             .then(
                 all {
                     P::send(2,3,{gat: "query"}),
 
-                    PA::cnProcs' = PA::cnProcs,
-                    PA::maxCon' = PA::maxCon,
-                    PA::igProcs' = PA::igProcs,
+                    P::cnProcs' = P::cnProcs,
+                    P::maxCon' = P::maxCon,
+                    P::igProcs' = P::igProcs,
                 }
             )
             .then(P::deliverMessageStep).repeated(2)
             .then(all {
-                size(PA::Procs.filter(p => size(P::received(p)) > 0)) == 2,
+                size(P::Procs.filter(p => size(P::received(p)) > 0)) == 2,
 
                 P::unchangedAll
             })
@@ -903,23 +941,23 @@ module P2PTests {
                 all {
                     P::send(1,2,{gat: "query"}),
 
-                    PA::cnProcs' = PA::cnProcs,
-                    PA::maxCon' = PA::maxCon,
-                    PA::igProcs' = PA::igProcs,
+                    P::cnProcs' = P::cnProcs,
+                    P::maxCon' = P::maxCon,
+                    P::igProcs' = P::igProcs,
                 }
             )
             .then(
                 all {
                     P::send(2,3,{gat: "query"}),
 
-                    PA::cnProcs' = PA::cnProcs,
-                    PA::maxCon' = PA::maxCon,
-                    PA::igProcs' = PA::igProcs,
+                    P::cnProcs' = P::cnProcs,
+                    P::maxCon' = P::maxCon,
+                    P::igProcs' = P::igProcs,
                 }
             )
             .then(P::deliverMessageStep).repeated(2)
             .then(all {
-                size(PA::Procs.filter(p => size(P::received(p)) > 0)) == 2,
+                size(P::Procs.filter(p => size(P::received(p)) > 0)) == 2,
 
                 P::unchangedAll
             })

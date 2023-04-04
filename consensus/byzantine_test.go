@@ -21,6 +21,7 @@ import (
 	"github.com/cometbft/cometbft/libs/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	mempl "github.com/cometbft/cometbft/mempool"
+	"github.com/cometbft/cometbft/proxy"
 
 	"github.com/cometbft/cometbft/p2p"
 	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"
@@ -35,6 +36,9 @@ import (
 
 // Byzantine node sends two different prevotes (nil and blockID) to the same validator
 func TestByzantinePrevoteEquivocation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	const nValidators = 4
 	const byzantineNode = 0
 	const prevoteHeight = int64(2)
@@ -42,7 +46,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 	tickerFunc := newMockTickerFunc(true)
 	appFunc := newKVStore
 
-	genDoc, privVals := randGenesisDoc(nValidators, false, 30)
+	genDoc, privVals := randGenesisDoc(nValidators, false, 30, nil)
 	css := make([]*State, nValidators)
 
 	for i := 0; i < nValidators; i++ {
@@ -57,19 +61,20 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		ensureDir(path.Dir(thisConfig.Consensus.WalFile()), 0o700) // dir for wal
 		app := appFunc()
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
-		app.InitChain(abci.RequestInitChain{Validators: vals})
+		_, err := app.InitChain(context.Background(), &abci.RequestInitChain{Validators: vals})
+		require.NoError(t, err)
 
 		blockDB := dbm.NewMemDB()
 		blockStore := store.NewBlockStore(blockDB)
 
 		mtx := new(cmtsync.Mutex)
 		// one for mempool, one for consensus
-		proxyAppConnCon := abcicli.NewLocalClient(mtx, app)
-		proxyAppConnConMem := abcicli.NewLocalClient(mtx, app)
+		proxyAppConnCon := proxy.NewAppConnConsensus(abcicli.NewLocalClient(mtx, app), proxy.NopMetrics())
+		proxyAppConnMem := proxy.NewAppConnMempool(abcicli.NewLocalClient(mtx, app), proxy.NopMetrics())
 
 		// Make Mempool
 		mempool := mempl.NewCListMempool(config.Mempool,
-			proxyAppConnConMem,
+			proxyAppConnMem,
 			state.LastBlockHeight,
 			mempl.WithPreCheck(sm.TxPreCheck(state)),
 			mempl.WithPostCheck(sm.TxPostCheck(state)))
@@ -179,22 +184,23 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 			panic("entered createProposalBlock with privValidator being nil")
 		}
 
-		var commit *types.Commit
+		var extCommit *types.ExtendedCommit
 		switch {
 		case lazyProposer.Height == lazyProposer.state.InitialHeight:
 			// We're creating a proposal for the first block.
 			// The commit is empty, but not nil.
-			commit = types.NewCommit(0, 0, types.BlockID{}, nil)
+			extCommit = &types.ExtendedCommit{}
 		case lazyProposer.LastCommit.HasTwoThirdsMajority():
 			// Make the commit from LastCommit
-			commit = lazyProposer.LastCommit.MakeCommit()
+			veHeightParam := types.ABCIParams{VoteExtensionsEnableHeight: height}
+			extCommit = lazyProposer.LastCommit.MakeExtendedCommit(veHeightParam)
 		default: // This shouldn't happen.
 			lazyProposer.Logger.Error("enterPropose: Cannot propose anything: No commit for the previous block")
 			return
 		}
 
 		// omit the last signature in the commit
-		commit.Signatures[len(commit.Signatures)-1] = types.NewCommitSigAbsent()
+		extCommit.ExtendedSignatures[len(extCommit.ExtendedSignatures)-1] = types.NewExtendedCommitSigAbsent()
 
 		if lazyProposer.privValidatorPubKey == nil {
 			// If this node is a validator & proposer in the current round, it will
@@ -205,7 +211,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		proposerAddr := lazyProposer.privValidatorPubKey.Address()
 
 		block, err := lazyProposer.blockExec.CreateProposalBlock(
-			lazyProposer.Height, lazyProposer.state, commit, proposerAddr, nil)
+			ctx, lazyProposer.Height, lazyProposer.state, extCommit, proposerAddr)
 		require.NoError(t, err)
 		blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
 		require.NoError(t, err)
@@ -282,9 +288,6 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 			}
 		}
 	case <-time.After(20 * time.Second):
-		for i, reactor := range reactors {
-			t.Logf("Consensus Reactor %d\n%v", i, reactor)
-		}
 		t.Fatalf("Timed out waiting for validators to commit evidence")
 	}
 }
@@ -297,8 +300,12 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 	N := 4
 	logger := consensusLogger().With("test", "byzantine")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	app := newKVStore
-	css, cleanup := randConsensusNet(N, "consensus_byzantine_test", newMockTickerFunc(false), app)
+	css, cleanup := randConsensusNet(t, N, "consensus_byzantine_test", newMockTickerFunc(false), app)
 	defer cleanup()
 
 	// give the byzantine validator a normal ticker
@@ -332,7 +339,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 			css[i].privValidator.(types.MockPV).DisableChecks()
 			css[i].decideProposal = func(j int32) func(int64, int32) {
 				return func(height int64, round int32) {
-					byzantineDecideProposalFunc(t, height, round, css[j], switches[j])
+					byzantineDecideProposalFunc(ctx, t, height, round, css[j], switches[j])
 				}
 			}(int32(i))
 			// We are setting the prevote function to do nothing because the prevoting
@@ -451,12 +458,12 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 //-------------------------------
 // byzantine consensus functions
 
-func byzantineDecideProposalFunc(t *testing.T, height int64, round int32, cs *State, sw *p2p.Switch) {
+func byzantineDecideProposalFunc(ctx context.Context, t *testing.T, height int64, round int32, cs *State, sw *p2p.Switch) {
 	// byzantine user should create two proposals and try to split the vote.
 	// Avoid sending on internalMsgQueue and running consensus state.
 
 	// Create a new proposal block from state/txs from the mempool.
-	block1, err := cs.createProposalBlock()
+	block1, err := cs.createProposalBlock(ctx)
 	require.NoError(t, err)
 	blockParts1, err := block1.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)
@@ -470,10 +477,10 @@ func byzantineDecideProposalFunc(t *testing.T, height int64, round int32, cs *St
 	proposal1.Signature = p1.Signature
 
 	// some new transactions come in (this ensures that the proposals are different)
-	deliverTxsRange(cs, 0, 1)
+	deliverTxsRange(t, cs, 0, 1)
 
 	// Create a new proposal block from state/txs from the mempool.
-	block2, err := cs.createProposalBlock()
+	block2, err := cs.createProposalBlock(ctx)
 	require.NoError(t, err)
 	blockParts2, err := block2.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)

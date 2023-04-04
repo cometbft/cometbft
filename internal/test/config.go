@@ -62,6 +62,9 @@ var testGenesisFmt = `{
 				"ed25519"
 			]
 		},
+		"abci": {
+			"vote_extensions_enable_height": "0"
+		},
 		"version": {}
 	},
   "validators": [

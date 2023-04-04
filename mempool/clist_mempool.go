@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"sync"
 	"sync/atomic"
@@ -151,7 +152,7 @@ func (mem *CListMempool) SizeBytes() int64 {
 
 // Lock() must be help by the caller during execution.
 func (mem *CListMempool) FlushAppConn() error {
-	return mem.proxyAppConn.FlushSync()
+	return mem.proxyAppConn.Flush(context.TODO())
 }
 
 // XXX: Unsafe! Calling Flush may leave mempool in inconsistent state.
@@ -201,7 +202,7 @@ func (mem *CListMempool) TxsWaitChan() <-chan struct{} {
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) CheckTx(
 	tx types.Tx,
-	cb func(*abci.Response),
+	cb func(*abci.ResponseCheckTx),
 	txInfo TxInfo,
 ) error {
 
@@ -250,7 +251,10 @@ func (mem *CListMempool) CheckTx(
 		return ErrTxInCache
 	}
 
-	reqRes := mem.proxyAppConn.CheckTxAsync(abci.RequestCheckTx{Tx: tx})
+	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{Tx: tx})
+	if err != nil {
+		return err
+	}
 	reqRes.SetCallback(mem.reqResCb(tx, txInfo.SenderID, txInfo.SenderP2PID, cb))
 
 	return nil
@@ -290,7 +294,7 @@ func (mem *CListMempool) reqResCb(
 	tx []byte,
 	peerID uint16,
 	peerP2PID p2p.ID,
-	externalCb func(*abci.Response),
+	externalCb func(*abci.ResponseCheckTx),
 ) func(res *abci.Response) {
 	return func(res *abci.Response) {
 		if mem.recheckCursor != nil {
@@ -305,7 +309,7 @@ func (mem *CListMempool) reqResCb(
 
 		// passed in by the caller of CheckTx, eg. the RPC
 		if externalCb != nil {
-			externalCb(res)
+			externalCb(res.GetCheckTx())
 		}
 	}
 }
@@ -322,15 +326,11 @@ func (mem *CListMempool) addTx(memTx *mempoolTx) {
 // Called from:
 //   - Update (lock held) if tx was committed
 //   - resCbRecheck (lock not held) if tx was invalidated
-func (mem *CListMempool) removeTx(tx types.Tx, elem *clist.CElement, removeFromCache bool) {
+func (mem *CListMempool) removeTx(tx types.Tx, elem *clist.CElement) {
 	mem.txs.Remove(elem)
 	elem.DetachPrev()
 	mem.txsMap.Delete(tx.Key())
 	atomic.AddInt64(&mem.txsBytes, int64(-len(tx)))
-
-	if removeFromCache {
-		mem.cache.Remove(tx)
-	}
 }
 
 // RemoveTxByKey removes a transaction from the mempool by its TxKey index.
@@ -338,12 +338,12 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 	if e, ok := mem.txsMap.Load(txKey); ok {
 		memTx := e.(*clist.CElement).Value.(*mempoolTx)
 		if memTx != nil {
-			mem.removeTx(memTx.tx, e.(*clist.CElement), false)
+			mem.removeTx(memTx.tx, e.(*clist.CElement))
 			return nil
 		}
-		return errors.New("transaction not found")
+		return errors.New("found empty transaction")
 	}
-	return errors.New("invalid transaction found")
+	return errors.New("transaction not found")
 }
 
 func (mem *CListMempool) isFull(txSize int) error {
@@ -475,8 +475,11 @@ func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 		} else {
 			// Tx became invalidated due to newly committed block.
 			mem.logger.Debug("tx is no longer valid", "tx", types.Tx(tx).Hash(), "res", r, "err", postCheckErr)
-			// NOTE: we remove tx from the cache because it might be good later
-			mem.removeTx(tx, mem.recheckCursor, !mem.config.KeepInvalidTxsInCache)
+			mem.removeTx(tx, mem.recheckCursor)
+			// We remove the invalid tx from the cache because it might be good later
+			if !mem.config.KeepInvalidTxsInCache {
+				mem.cache.Remove(tx)
+			}
 		}
 		if mem.recheckCursor == mem.recheckEnd {
 			mem.recheckCursor = nil
@@ -578,7 +581,7 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 func (mem *CListMempool) Update(
 	height int64,
 	txs types.Txs,
-	deliverTxResponses []*abci.ResponseDeliverTx,
+	txResults []*abci.ExecTxResult,
 	preCheck PreCheckFunc,
 	postCheck PostCheckFunc,
 ) error {
@@ -594,7 +597,7 @@ func (mem *CListMempool) Update(
 	}
 
 	for i, tx := range txs {
-		if deliverTxResponses[i].Code == abci.CodeTypeOK {
+		if txResults[i].Code == abci.CodeTypeOK {
 			// Add valid committed tx to the cache (if missing).
 			_ = mem.cache.Push(tx)
 		} else if !mem.config.KeepInvalidTxsInCache {
@@ -612,8 +615,8 @@ func (mem *CListMempool) Update(
 		// Mempool after:
 		//   100
 		// https://github.com/tendermint/tendermint/issues/3322.
-		if e, ok := mem.txsMap.Load(tx.Key()); ok {
-			mem.removeTx(tx, e.(*clist.CElement), false)
+		if err := mem.RemoveTxByKey(tx.Key()); err != nil {
+			mem.logger.Error("Committed transaction could not be removed from mempool", "key", tx.Key(), err.Error())
 		}
 	}
 
@@ -649,13 +652,19 @@ func (mem *CListMempool) recheckTxs() {
 	// NOTE: globalCb may be called concurrently.
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
 		memTx := e.Value.(*mempoolTx)
-		mem.proxyAppConn.CheckTxAsync(abci.RequestCheckTx{
+		_, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{
 			Tx:   memTx.tx,
 			Type: abci.CheckTxType_Recheck,
 		})
+		if err != nil {
+			mem.logger.Error("recheckTx", err, "err")
+			return
+		}
 	}
 
-	mem.proxyAppConn.FlushAsync()
+	// In <v0.37 we would call FlushAsync at the end of recheckTx forcing the buffer to flush
+	// all pending messages to the app. There doesn't seem to be any need here as the buffer
+	// will get flushed regularly or when filled.
 }
 
 //--------------------------------------------------------------------------------

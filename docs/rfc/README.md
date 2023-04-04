@@ -42,3 +42,5 @@ relating to Tendermint Core prior to forking, please see
 [this list](./tendermint-core/).
 
 <!-- - [RFC-NNN: Title](./rfc-NNN-title.md) -->
+- [RFC-100: ABCI Vote Extension Propagation](./rfc-100-abci-vote-extension-propag.md)
+- [RFC-101: Banning peers based on ResponseCheckTx](./rfc-101-p2p-bad-peers-checktx.md)

@@ -3,6 +3,7 @@ package mempool
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"fmt"
 	"testing"
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
@@ -40,7 +41,7 @@ func TestCacheRemove(t *testing.T) {
 }
 
 func TestCacheAfterUpdate(t *testing.T) {
-	app := kvstore.NewApplication()
+	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
 	mp, cleanup := newMempoolWithApp(cc)
 	defer cleanup()
@@ -61,22 +62,26 @@ func TestCacheAfterUpdate(t *testing.T) {
 	}
 	for tcIndex, tc := range tests {
 		for i := 0; i < tc.numTxsToCreate; i++ {
-			tx := types.Tx{byte(i)}
-			err := mp.CheckTx(tx, nil, TxInfo{})
+			tx := kvstore.NewTx(fmt.Sprintf("%d", i), "value")
+			err := mp.CheckTx(tx, func(resp *abci.ResponseCheckTx) {
+				require.False(t, resp.IsErr())
+			}, TxInfo{})
 			require.NoError(t, err)
 		}
 
 		updateTxs := []types.Tx{}
 		for _, v := range tc.updateIndices {
-			tx := types.Tx{byte(v)}
+			tx := kvstore.NewTx(fmt.Sprintf("%d", v), "value")
 			updateTxs = append(updateTxs, tx)
 		}
 		err := mp.Update(int64(tcIndex), updateTxs, abciResponses(len(updateTxs), abci.CodeTypeOK), nil, nil)
 		require.NoError(t, err)
 
 		for _, v := range tc.reAddIndices {
-			tx := types.Tx{byte(v)}
-			_ = mp.CheckTx(tx, nil, TxInfo{})
+			tx := kvstore.NewTx(fmt.Sprintf("%d", v), "value")
+			_ = mp.CheckTx(tx, func(resp *abci.ResponseCheckTx) {
+				require.False(t, resp.IsErr())
+			}, TxInfo{})
 		}
 
 		cache := mp.cache.(*LRUTxCache)
@@ -87,7 +92,8 @@ func TestCacheAfterUpdate(t *testing.T) {
 				"cache larger than expected on testcase %d", tcIndex)
 
 			nodeVal := node.Value.(types.TxKey)
-			expectedBz := sha256.Sum256([]byte{byte(tc.txsInCache[len(tc.txsInCache)-counter-1])})
+			expTx := kvstore.NewTx(fmt.Sprintf("%d", tc.txsInCache[len(tc.txsInCache)-counter-1]), "value")
+			expectedBz := sha256.Sum256(expTx)
 			// Reference for reading the errors:
 			// >>> sha256('\x00').hexdigest()
 			// '6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d'

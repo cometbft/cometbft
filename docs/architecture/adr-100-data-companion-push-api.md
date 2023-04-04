@@ -61,11 +61,12 @@ evolution over time?
 This ADR proposes the following path to eventually separating these concerns:
 
 1. Provide an API explicitly dedicated to facilitating offloading of this data
-   to a **data companion** ("sidecar") service. The primary function of such a
-   companion is effectively to act as an _ingest_ of sorts, translating block
-   and block result data (including events) into application-specific data that
-   can be indexed in a database separate to the consensus engine's database,
-   which should be more suited to the application's use case(s).
+   to a **single data companion** ("sidecar") service - this is the focus of
+   this ADR. The primary function of such a companion is effectively to act as
+   an _ingest_ of sorts, translating block and block result data (including
+   events) into application-specific data. **Single** is emphasized here, as we
+   anticipate that attaching more than one companion service to a node may slow
+   it down and affect its operations.
 2. Provide a reference implementation of a data companion which facilitates
    offering most of the current RPC endpoints from a service _external_ to the
    node. Beyond serving as an example for the community as to how to implement a
@@ -86,10 +87,12 @@ This ADR proposes the following path to eventually separating these concerns:
    result data are handled exclusively in the application domain. Once these
    changes are ready to be rolled out, the ingest components of data companions
    are the only parts of the ecosystem that will need to be migrated to interact
-   directly with the application instead of the node.
+   directly with the application instead of the node (e.g. by way of RPC
+   endpoints exposed by the application, instead of the consensus engine).
 5. Once the ingests are migrated to rely on the application, it will be safe to
    entirely remove any notion of event data storage and retrieval, as well as
-   indexing from the consensus engine.
+   indexing from the consensus engine, dramatically simplifying the consensus
+   engine.
 
 ## Alternative Approaches
 

@@ -14,10 +14,10 @@ Accepted | Rejected | Deprecated | Superseded by
 Following from the discussion around the development of [ADR 100][adr-100], an
 alternative model is proposed here for offloading certain data from nodes to a
 "data companion". This alternative model inverts the control of the data
-offloading process, when compared to ADR 082, from the node to the data
+offloading process, when compared to ADR 100, from the node to the data
 companion.
 
-Overall, this approach provides slightly weaker guarantees than that of ADR 082,
+Overall, this approach provides slightly weaker guarantees than that of ADR 100,
 but represents a simpler model to implement.
 
 ## Alternative Approaches
@@ -43,7 +43,7 @@ Similar requirements are proposed here as for [ADR-100][adr-100].
    2. `FinalizeBlockResponse` data, but only for committed blocks
 
 3. The companion _must_ be able to establish the earliest height for which the
-   node has all of the requisite data.
+   node has all of the associated data.
 
 4. The API _must_ be (or be able to be) appropriately shielded from untrusted
    consumers and abuse. Critical control facets of the API (e.g. those that
@@ -52,7 +52,7 @@ Similar requirements are proposed here as for [ADR-100][adr-100].
    the public internet unprotected.
 
 5. The node _must_ know, by way of signals from the companion, which heights'
-   associated data are safe to automatically prune.
+   associated data are safe to prune.
 
 6. The companion _must_ be able to handle the possibility that a node might
    start from a non-zero height (i.e. that the node may state sync from a
@@ -65,7 +65,7 @@ Similar requirements are proposed here as for [ADR-100][adr-100].
 8. The API _must_ be opt-in. When off or not in use, it _should_ have no impact
    on system performance.
 
-9. It _must_ not cause back-pressure into consensus.
+9. The API _must_ not cause back-pressure into consensus.
 
 10. It _must_ not cause unbounded memory growth.
 
@@ -79,7 +79,7 @@ Similar requirements are proposed here as for [ADR-100][adr-100].
 
 ### Entity Relationships
 
-The following model shows the proposed relationships between Tendermint, a
+The following model shows the proposed relationships between CometBFT, a
 socket-based ABCI application, and the proposed data companion service.
 
 ```
@@ -98,8 +98,8 @@ There are two "modes" of pruning that need to be supported by the node:
 1. **Data companion disabled**: Here, the node prunes as per normal based on the
    `retain_height` parameter supplied by the application via the
    [`Commit`][abci-commit] ABCI response.
-2. **Data companion enabled**: Here, the node prunes _blocks_ based on the lower
-   of the retain heights specified by the application and the data companion,
+2. **Data companion enabled**: Here, the node prunes _blocks_ based on the minimum
+   among the retain heights specified by the application and the data companion,
    and the node prunes _block results_ based on the retain height set by the
    data companion.
 
@@ -110,7 +110,7 @@ then the node _must_ fail to start.
 
 ### gRPC API
 
-At the time of this writing, it is proposed that Tendermint implement a full
+At the time of this writing, it is proposed that CometBFT implement a full
 gRPC interface ([\#81]). As such, we have several options when it comes to
 implementing the data companion pull API:
 
@@ -129,7 +129,7 @@ Due to the poorer operator experience in option 2, it would be preferable to
 implement option 1, but have certain endpoints be
 [access-controlled](#access-control) by default.
 
-With this in mind, the following gRPC API is proposed, where the Tendermint node
+With this in mind, the following gRPC API is proposed, where the CometBFT node
 will implement these services.
 
 #### Block Service

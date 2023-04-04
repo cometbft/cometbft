@@ -12,19 +12,12 @@ Accepted | Rejected | Deprecated | Superseded by
 
 ## Context
 
-Following from the discussion around the development of [ADR 100][adr-100], an
-alternative model is proposed here for offloading certain data from nodes to a
-"data companion". This alternative model inverts the control of the data
-offloading process, when compared to ADR 100, from the node to the data
-companion.
-
-Overall, this approach provides slightly weaker guarantees than that of ADR 100,
-but represents a simpler model to implement.
+See the [context for ADR-100][adr-100-context].
 
 ## Alternative Approaches
 
-Other considered alternatives to this ADR are also outlined in
-[ADR-100][adr-100].
+[ADR-100][adr-100], as well as the [alternatives][adr-100-alt] outlined in
+ADR-100, are all alternative approaches.
 
 ## Decision
 
@@ -32,65 +25,37 @@ Other considered alternatives to this ADR are also outlined in
 
 ## Detailed Design
 
+The model proposed in this ADR inverts that proposed in ADR-100, with the node
+being the server and the data companion being the client. Here, the companion
+"pulls" data from the node.
+
+This provides much weaker data delivery guarantees than the "push" model of
+ADR-100. In this "pull" model, the companion can lag behind consensus, but the
+node does not crash if the companion is unavailable.
+
 ### Requirements
 
-Similar requirements are proposed here as for [ADR-100][adr-100].
-
-1. A node _must_ support at most one data companion.
-
-2. All or part of the following data _must_ be obtainable by the companion, and
-   as close to real-time as possible:
-   1. Committed block data
-   2. `FinalizeBlockResponse` data, but only for committed blocks
-
-3. The companion _must_ be able to establish the earliest height for which the
-   node has all of the associated data.
-
-4. The API _must_ be (or be able to be) appropriately shielded from untrusted
-   consumers and abuse. Critical control facets of the API (e.g. those that
-   influence the node's pruning mechanisms) _must_ be implemented in such a way
-   as to eliminate the possibility of accidentally exposing those endpoints to
-   the public internet unprotected.
-
-5. The node _must_ know, by way of signals from the companion, which heights'
-   associated data are safe to prune.
-
-6. The companion _must_ be able to handle the possibility that a node might
-   start from a non-zero height (i.e. that the node may state sync from a
-   specific height beyond genesis).
-
-7. The companion _must_ be able to handle the possibility that a node may
-   disable and then later re-enable the companion interface, potentially causing
-   the companion to have missing data in between those two heights.
-
-8. The API _must_ be opt-in. When off or not in use, it _should_ have no impact
-   on system performance.
-
-9. The API _must_ not cause back-pressure into consensus.
-
-10. It _must_ not cause unbounded memory growth.
-
-11. It _must_ provide one or more ways for operators to control storage growth.
-
-12. It _must_ provide insight to operators (e.g. by way of logs/metrics) to
-    assist in dealing with possible failure modes.
-
-13. The solution _should_ be able to be backported to older versions of
-    CometBFT (e.g. v0.34).
+The requirements for ADR-101 are the same as the [requirements for
+ADR-100][adr-100-req].
 
 ### Entity Relationships
 
 The following model shows the proposed relationships between CometBFT, a
 socket-based ABCI application, and the proposed data companion service.
 
-```
-     +----------+      +------------+      +----------------+
-     | ABCI App | <--- |  CometBFT  | <--- | Data Companion |
-     +----------+      +------------+      +----------------+
+```mermaid
+flowchart RL
+    comet[CometBFT]
+    companion[Data Companion]
+    app[ABCI App]
+
+    comet --> app
+    companion --> comet
 ```
 
-In this diagram, it is evident that CometBFT connects out to the ABCI
-application, and the companion connects to the CometBFT node.
+In this diagram, it is evident that CometBFT (as a client) connects out to the
+ABCI application (a server), and the companion (a client) connects to the
+CometBFT node (a server).
 
 ### Pruning Behaviour
 
@@ -353,7 +318,13 @@ interaction between a node and its data companion:
 - [\#81 - rpc: Add gRPC support][\#81]
 - [`.htpasswd`][htpasswd]
 
-[adr-100]: https://github.com/cometbft/cometbft/pull/73
+<!--
+TODO(thane): Replace GitHub links with relative Markdown file links once ADR-100 is merged.
+-->
+[adr-100-context]: https://github.com/cometbft/cometbft/blob/thane/adr-082-data-companion-api/docs/architecture/adr-100-data-companion-push-api.md#context
+[adr-100]: https://github.com/cometbft/cometbft/blob/thane/adr-082-data-companion-api/docs/architecture/adr-100-data-companion-push-api.md
+[adr-100-req]: https://github.com/cometbft/cometbft/blob/thane/adr-082-data-companion-api/docs/architecture/adr-100-data-companion-push-api.md#requirements
+[adr-100-alt]: https://github.com/cometbft/cometbft/blob/thane/adr-082-data-companion-api/docs/architecture/adr-100-data-companion-push-api.md#alternative-approaches
 [\#81]: https://github.com/cometbft/cometbft/issues/81
 [htpasswd]: https://httpd.apache.org/docs/current/programs/htpasswd.html
 [abci-commit]: ../../spec/abci/abci++_methods.md#commit

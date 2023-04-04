@@ -256,13 +256,3 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		}
 	}
 }
-
-// TxsMessage is a Message containing transactions.
-type TxsMessage struct {
-	Txs []types.Tx
-}
-
-// String returns a string representation of the TxsMessage.
-func (m *TxsMessage) String() string {
-	return fmt.Sprintf("[TxsMessage %v]", m.Txs)
-}

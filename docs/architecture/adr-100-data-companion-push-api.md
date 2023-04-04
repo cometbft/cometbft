@@ -19,18 +19,18 @@ Accepted | Rejected | Deprecated | Superseded by
 This ADR proposes to effectively offload some data storage responsibilities and
 functionality to a **single trusted external companion service** such that:
 
-1. Integrators can expose Tendermint data in whatever format/protocol they want
+1. Integrators can expose CometBFT data in whatever format/protocol they want
    (e.g. JSON-RPC or gRPC).
 2. Integrators can index data in whatever way suits them best.
-3. All users eventually benefit from faster changes to Tendermint because the
+3. All users eventually benefit from faster changes to CometBFT because the
    core team has less, and less complex, code to maintain (implementing this ADR
    would add more code in the short-term, but would pave the way for significant
    reductions in complexity in future).
 
-The way the system is currently built is such that a Tendermint node is mostly
+The way the system is currently built is such that a CometBFT node is mostly
 self-contained. While this philosophy initially allowed a certain degree of ease
 of node operation (i.e. simple UX), it has also lent itself to feature sprawl,
-with Tendermint being asked to take care of increasingly more than just
+with CometBFT being asked to take care of increasingly more than just
 consensus. Under the spotlight in this ADR are:
 
 1. **Event indexing**, which is required in order to facilitate arbitrary block
@@ -49,7 +49,7 @@ the [PostgreSQL indexer] as compared to the default key/value indexer.
 
 Continuing from and expanding on the ideas outlined in [RFC 006][rfc-006], the
 suggested approach in this ADR is to provide a mechanism to publish certain data
-from Tendermint, in real-time and with certain reliability guarantees, to a
+from CometBFT, in real-time and with certain reliability guarantees, to a
 single companion service outside of the node that can use this data in whatever
 way it chooses (filter and republish it, store it, manipulate or enrich it,
 etc.).
@@ -60,15 +60,15 @@ Specifically, this mechanism would initially publish:
    consensus engine).
 2. The results of block execution (e.g. data from `FinalizeBlockResponse`). This
    data is not accessible from the P2P layer, and currently provides valuable
-   information for Tendermint integrators (whether events should be handled at
-   all by Tendermint is a different problem).
+   information for CometBFT integrators (whether events should be handled at
+   all by CometBFT is a different problem).
 
 ## Alternative Approaches
 
 1. One clear alternative to this would be the approach outlined in [ADR
    075][adr-075]. This approach:
 
-   1. Still leaves Tendermint responsible for maintaining a query interface and
+   1. Still leaves CometBFT responsible for maintaining a query interface and
       event indexing functionality, increasing the long-term maintenance burden of,
       and the possibility of feature sprawl in, that subsystem. To overcome this,
       we could remove the query interface altogether and just always publish all
@@ -173,7 +173,7 @@ service.
 
 ```
      +----------+      +------------+      +----------------+
-     | ABCI App | <--- | Tendermint | ---> | Data Companion |
+     | ABCI App | <--- |  CometBFT  | ---> | Data Companion |
      +----------+      +------------+      +----------------+
 
 ```

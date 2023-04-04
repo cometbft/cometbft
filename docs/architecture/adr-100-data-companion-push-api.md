@@ -331,6 +331,39 @@ of requests we will buffer before crashing the CometBFT node. In case there is
 manual intervention needed to restore the companion service, CometBFT should
 attempt to flush this buffer upon startup before continuing normal operations.
 
+### Crash Recovery
+
+In order to ensure that the companion has the latest data, if CometBFT does not
+have confirmation that the companion has received the data for a particular
+height, it should resend all data from the last height for which it has
+confirmation.
+
+An example where the companion saves all data up to and including height 10, but
+crashes before confirming receipt of data for height 11:
+
+```mermaid
+sequenceDiagram
+    participant N as Node
+    participant C as Companion
+
+    N->>+C: BlockCommittedRequest (height = 10)
+    C->>-N: BlockCommittedResponse (error = nil)
+    N->>N: Save prune height as 10
+
+    N->>C: BlockCommittedRequest (height = 11)
+    break Node or companion crashes
+        N-->C: Node and companion recover
+    end
+
+    N->>+C: BlockCommittedRequest (height = 11)
+    C->>-N: BlockCommittedResponse (error = nil)
+    N->>N: Save prune height as 11
+```
+
+In such a case, it is possible for the companion to receive the same height's
+data multiple times (at-least-once delivery). It is up to the companion to
+handle this correctly.
+
 ### Configuration
 
 The following configuration file update is proposed to support the data

@@ -272,9 +272,8 @@ message BlockCommittedRequest {
 // BlockCommittedResponse is either empty upon succes, or returns one or more
 // errors. Note that returning any errors here will cause CometBFT to crash.
 message BlockCommittedResponse {
-    // Zero or more errors occurred during the companion's processing of the
-    // request.
-    repeated Error errors = 1;
+    // If an error occurred during the companion's processing of the request.
+    optional Error error = 1;
 }
 
 // Error can be one of several different types of errors.
@@ -350,10 +349,6 @@ enabled = false
 # interfering in node operation.
 addr = "http://localhost:26659"
 
-# Use the experimental gzip compression call option when submitting data to the
-# server. See https://pkg.go.dev/google.golang.org/grpc#UseCompressor
-experimental_use_gzip = false
-
 # Controls the BlockCommitted gRPC call.
 [data_companion.block_committed]
 # Enable the BlockCommitted gRPC call. Only relevant if the data companion is
@@ -365,9 +360,6 @@ enabled = true
 #                              to the block in the BlockCommittedRequest.
 additionally_publish = ["finalize_block_response"]
 ```
-
-It is unclear at present whether compressing the data being sent to the
-companion service will result in meaningful benefits.
 
 ### Monitoring
 

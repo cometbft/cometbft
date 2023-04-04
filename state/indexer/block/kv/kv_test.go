@@ -229,23 +229,11 @@ func TestBlockIndexerMulti(t *testing.T) {
 			q:       query.MustCompile("block.height = 1"),
 			results: []int64{1},
 		},
-		"query return all events from a height - exact - no match.events": {
-			q:       query.MustCompile("block.height = 1"),
-			results: []int64{1},
-		},
 		"query return all events from a height - exact (deduplicate height)": {
 			q:       query.MustCompile("block.height = 1 AND block.height = 2"),
 			results: []int64{1},
 		},
-		"query return all events from a height - exact (deduplicate height) - no match.events": {
-			q:       query.MustCompile("block.height = 1 AND block.height = 2"),
-			results: []int64{1},
-		},
 		"query return all events from a height - range": {
-			q:       query.MustCompile("block.height < 2 AND block.height > 0 AND block.height > 0"),
-			results: []int64{1},
-		},
-		"query return all events from a height - range - no match.events": {
 			q:       query.MustCompile("block.height < 2 AND block.height > 0 AND block.height > 0"),
 			results: []int64{1},
 		},
@@ -258,10 +246,6 @@ func TestBlockIndexerMulti(t *testing.T) {
 			results: []int64{},
 		},
 		"query matches fields from same event": {
-			q:       query.MustCompile("end_event.bar < 300 AND end_event.foo = 100 AND block.height > 0 AND block.height <= 2"),
-			results: []int64{1, 2},
-		},
-		"query matches fields from same event - no match.events": {
 			q:       query.MustCompile("end_event.bar < 300 AND end_event.foo = 100 AND block.height > 0 AND block.height <= 2"),
 			results: []int64{1, 2},
 		},
@@ -281,7 +265,7 @@ func TestBlockIndexerMulti(t *testing.T) {
 			q:       query.MustCompile("block.height  = 2 AND end_event.foo < 300"),
 			results: []int64{2},
 		},
-		"deduplication test - match.events multiple 2": {
+		"match attributes accross events with height constraint": {
 			q:       query.MustCompile("end_event.foo = 100 AND end_event.bar = 400 AND block.height = 2"),
 			results: []int64{},
 		},
@@ -290,10 +274,6 @@ func TestBlockIndexerMulti(t *testing.T) {
 			results: []int64{2},
 		},
 		"query matches all fields from multiple events": {
-			q:       query.MustCompile("end_event.bar > 100 AND end_event.bar <= 500"),
-			results: []int64{1, 2},
-		},
-		"query matches all fields from multiple events - no match.events": {
 			q:       query.MustCompile("end_event.bar > 100 AND end_event.bar <= 500"),
 			results: []int64{1, 2},
 		},

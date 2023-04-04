@@ -117,19 +117,24 @@ func parseEventSeqFromEventKey(key []byte) (int64, error) {
 		return 0, fmt.Errorf("failed to parse event key: %w", err)
 	}
 
-	// This is done to support previous versions that did not have event sequence in their key
+	// We either have an event sequence or a function type (potentially) followed by an event sequence.
+	// Potential scenarios:
+	// 1. Events indexed with v0.38 and later, will only have an event sequence
+	// 2. Events indexed up to v0.34.27 and v0.37.x will have a function type and an event sequence
+	// 3. Events indexed before v0.34.27 will only have a function type
+	// function_type = 'being_block_event' | 'end_block_event'
 	if len(remaining) != 0 {
 		var typ string
-		remaining2, err := orderedcode.Parse(remaining, &typ) // Check if legacy event from Begin/EndBlock
-		if err != nil {                                       // We could be dealing with new event that has no typ
+		remaining2, err := orderedcode.Parse(remaining, &typ) // Check if 2 or 3
+		if err != nil {                                       // If it cannot parse the event function type, it could be 1
 			remaining, err2 := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height, &eventSeq)
 			if err2 != nil || len(remaining) != 0 { // We should not have anything else after the eventSeq
 				return 0, fmt.Errorf("failed to parse event key: %w", err)
 			}
 
 		} else {
-			remaining, err2 := orderedcode.Parse(remaining2, &eventSeq)
-			if err2 != nil || len(remaining) != 0 { // We should not have anything else after the eventSeq
+			remaining, err2 := orderedcode.Parse(remaining2, &eventSeq) // If 2, , retrieve the eventSeq, otherwise ignore
+			if err2 != nil || len(remaining) != 0 {                     // We should not have anything else after the eventSeq
 				return 0, fmt.Errorf("failed to parse event key: %w", err)
 			}
 		}

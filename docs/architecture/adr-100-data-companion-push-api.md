@@ -187,7 +187,8 @@ potential uptime for the consensus engine.
    node has all of the requisite data.
 
 4. The API _must_ be (or be able to be) appropriately shielded from untrusted
-   consumers and abuse. Critical control facets of the API (e.g. those that
+   consumers and abuse. Note that the companion is considered a **trusted**
+   consumer of this API. Critical control facets of the API (e.g. those that
    influence the node's pruning mechanisms) _must_ be implemented in such a way
    as to eliminate the possibility of accidentally exposing those endpoints to
    the public internet unprotected.

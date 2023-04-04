@@ -511,8 +511,7 @@ module p2p {
         })
     }
 
-    //should fail
-    run mixedDirectionsTest = {
+    run mixedDirectionsFailsTest = {
         val a = {ID: "alice", networkAddress: "127.0.0.111:10"}
         val node = {ID: "scully", networkAddress: "127.0.0.1177:10"}
         init

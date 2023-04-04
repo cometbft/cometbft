@@ -56,6 +56,8 @@ in the long run, event and execution results data need to be handled in
 application territory. But what does the trajectory look like to facilitate this
 evolution over time?
 
+### Roadmap
+
 This ADR proposes the following path to eventually separating these concerns:
 
 1. Provide an API explicitly dedicated to facilitating offloading of this data
@@ -67,14 +69,16 @@ This ADR proposes the following path to eventually separating these concerns:
 2. Provide a reference implementation of a data companion which facilitates
    offering most of the current RPC endpoints from a service _external_ to the
    node. Beyond serving as an example for the community as to how to implement a
-   data companion, this will:
-   1. Allow horizontal scalability of the RPC independently of the associated
-      full node, reducing operational costs for operators who want to provide
-      RPC services for their user base (who, in some cases, have to run multiple
-      full nodes in order to facilitate a highly available RPC service).
-   2. Address some of the problems outlined in [ADR-075][adr-075] relating to
-      the RPC service - especially the problems relating to WebSocket
-      subscriptions.
+   data companion, this will potentially:
+   1. Allow for horizontal scalability of the RPC independently of the
+      associated full node, reducing operational costs for operators who want to
+      provide RPC services for their user base (who, in some cases, have to run
+      multiple full nodes in order to facilitate a highly available RPC
+      service).
+   2. Address some of the problems outlined in [RFC-006][rfc-006] relating to
+      event subscription.
+   3. Address more general problems in the RPC, such as its inherent
+      susceptibility to DDoS attacks.
 3. Once the community has mostly migrated to using this data companion API, we
    can mark many of the node-based RPC endpoints as deprecated, and eventually
    remove them from the node.
@@ -86,22 +90,6 @@ This ADR proposes the following path to eventually separating these concerns:
 5. Once the ingests are migrated to rely on the application, it will be safe to
    entirely remove any notion of event data storage and retrieval, as well as
    indexing from the consensus engine.
-
-Continuing from and expanding on the ideas outlined in [RFC 006][rfc-006], the
-suggested approach in this ADR is to provide a mechanism to publish certain data
-from CometBFT, ideally in real-time and with certain reliability guarantees, to
-a single companion service outside of the node that can use this data in
-whatever way it chooses (filter and republish it, store it, manipulate or enrich
-it, etc.).
-
-Specifically, this mechanism would initially publish:
-
-1. Block data (i.e. `Block` data structures that have been committed by the
-   consensus engine).
-2. The results of block execution (e.g. data from `FinalizeBlockResponse`). This
-   data is not accessible from the P2P layer, and currently provides valuable
-   information for CometBFT integrators (whether events should be handled at
-   all by CometBFT is a different problem).
 
 ## Alternative Approaches
 
@@ -173,10 +161,10 @@ Specifically, this mechanism would initially publish:
 
 1. A node _must_ support at most one data companion.
 
-2. All or part of the following data _must_ be obtainable by the companion, and
-   as close to real-time as possible:
+2. All or part of the following data _must_ be obtainable by the companion:
    1. Committed block data
-   2. `FinalizeBlockResponse` data, but only for committed blocks
+   2. Block execution results (including event data) for blocks that have been
+      committed
 
 3. The companion _must_ be able to establish the earliest height for which the
    node has all of the requisite data.
@@ -193,7 +181,7 @@ Specifically, this mechanism would initially publish:
 6. The API _must_ be opt-in. When off or not in use, it _should_ have no impact
    on system performance.
 
-7. It _must_ not cause back-pressure into consensus.
+7. It _must_ not slow down consensus operations without halting the node.
 
 8. It _must_ not cause unbounded memory growth.
 
@@ -201,9 +189,6 @@ Specifically, this mechanism would initially publish:
 
 10. It _must_ provide insight to operators (e.g. by way of logs/metrics) to
     assist in dealing with possible failure modes.
-
-11. The solution _should_ be able to be backported to older versions of
-    CometBFT (e.g. v0.34).
 
 ### Entity Relationships
 

@@ -1,3 +1,6 @@
+on:
+  pull_request:
+
 name: Specs
 # Runs static analysis and tests (if defined) on quint specs
 

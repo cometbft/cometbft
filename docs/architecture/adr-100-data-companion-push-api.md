@@ -97,7 +97,7 @@ This ADR proposes the following path to eventually separating these concerns:
 ## Alternative Approaches
 
 1. One clear alternative to this would be the approach outlined in [ADR
-   075][adr-075]. This approach:
+   075][adr-075] (specifically, implementing it in isolation). This approach:
 
    1. Still leaves CometBFT responsible for maintaining a query interface and
       event indexing functionality, increasing the long-term maintenance burden of,
@@ -121,6 +121,10 @@ This ADR proposes the following path to eventually separating these concerns:
    Making the requisite modifications to ADR-075 basically converges on the
    solution outlined in this ADR, except that ADR-075 publishes data via JSON over
    HTTP while this solution proposes gRPC.
+
+   Technically, however, ADR-075 is orthogonal to the solution proposed in this
+   ADR, and could be implemented as part of an "RPC companion" to provide better
+   delivery guarantees to subscribers.
 
 2. Another alternative is proposed in [ADR 101][adr-101], which has the same
    requirements as this proposed approach, except it implements a "pull" model

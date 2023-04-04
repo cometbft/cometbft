@@ -2,6 +2,7 @@
 
 ## Changelog
 
+- 2023-04-04: Update based on review feedback (@thanethomson)
 - 2023-02-28: Renumber from 084 to 101 (@thanethomson)
 - 2022-12-18: First draft (@thanethomson)
 
@@ -75,7 +76,7 @@ Similar requirements are proposed here as for [ADR-100][adr-100].
     assist in dealing with possible failure modes.
 
 13. The solution _should_ be able to be backported to older versions of
-    Tendermint (e.g. v0.34).
+    CometBFT (e.g. v0.34).
 
 ### Entity Relationships
 
@@ -84,12 +85,12 @@ socket-based ABCI application, and the proposed data companion service.
 
 ```
      +----------+      +------------+      +----------------+
-     | ABCI App | <--- | Tendermint | <--- | Data Companion |
+     | ABCI App | <--- |  CometBFT  | <--- | Data Companion |
      +----------+      +------------+      +----------------+
 ```
 
-In this diagram, it is evident that Tendermint connects out to the ABCI
-application, and the companion connects to the Tendermint node.
+In this diagram, it is evident that CometBFT connects out to the ABCI
+application, and the companion connects to the CometBFT node.
 
 ### Pruning Behaviour
 
@@ -214,7 +215,7 @@ syntax = "proto3";
 package tendermint.data_companion_service.v1;
 
 // DataCompanionService provides privileged access to specialized pruning
-// functionality on the Tendermint node to help optimize node storage.
+// functionality on the CometBFT node to help optimize node storage.
 service DataCompanionService {
     // SetRetainHeight notifies the node of the minimum height whose data must
     // be retained by the node. This data includes block data and block
@@ -261,7 +262,7 @@ implement some form of access control for sensitive, data companion-specific
 APIs. At least **basic HTTP authentication** should be implemented for these
 endpoints, where credentials should be obtained from an `.htpasswd` file, using
 the same format as [Apache `.htpasswd` files][htpasswd], whose location is set
-in the Tendermint configuration file.
+in the CometBFT configuration file.
 
 `.htpasswd` files are relatively standard and are supported by many web servers.
 The format is relatively straightforward to parse and interpret.

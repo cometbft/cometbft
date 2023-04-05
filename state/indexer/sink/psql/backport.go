@@ -70,7 +70,7 @@ type BackportBlockIndexer struct{ psql *EventSink }
 
 // Has is implemented to satisfy the BlockIndexer interface, but it is not
 // supported by the psql event sink and reports an error for all inputs.
-func (BackportBlockIndexer) Has(height int64) (bool, error) {
+func (BackportBlockIndexer) Has(_ int64) (bool, error) {
 	return false, errors.New("the BlockIndexer.Has method is not supported")
 }
 

@@ -53,7 +53,7 @@ var ResetPrivValidatorCmd = &cobra.Command{
 
 // XXX: this is totally unsafe.
 // it's only suitable for testnets.
-func resetAllCmd(cmd *cobra.Command, args []string) (err error) {
+func resetAllCmd(cmd *cobra.Command, _ []string) (err error) {
 	config, err = ParseConfig(cmd)
 	if err != nil {
 		return err
@@ -70,7 +70,7 @@ func resetAllCmd(cmd *cobra.Command, args []string) (err error) {
 
 // XXX: this is totally unsafe.
 // it's only suitable for testnets.
-func resetPrivValidator(cmd *cobra.Command, args []string) (err error) {
+func resetPrivValidator(cmd *cobra.Command, _ []string) (err error) {
 	config, err = ParseConfig(cmd)
 	if err != nil {
 		return err
@@ -94,7 +94,7 @@ func resetAll(dbDir, addrBookFile, privValKeyFile, privValStateFile string, logg
 		logger.Error("Error removing all blockchain history", "dir", dbDir, "err", err)
 	}
 
-	if err := cmtos.EnsureDir(dbDir, 0700); err != nil {
+	if err := cmtos.EnsureDir(dbDir, 0o700); err != nil {
 		logger.Error("unable to recreate dbDir", "err", err)
 	}
 
@@ -151,7 +151,7 @@ func resetState(dbDir string, logger log.Logger) error {
 		}
 	}
 
-	if err := cmtos.EnsureDir(dbDir, 0700); err != nil {
+	if err := cmtos.EnsureDir(dbDir, 0o700); err != nil {
 		logger.Error("unable to recreate dbDir", "err", err)
 	}
 	return nil

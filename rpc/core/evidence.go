@@ -12,7 +12,11 @@ import (
 // BroadcastEvidence broadcasts evidence of the misbehavior.
 // More: https://docs.cometbft.com/v0.38.x/rpc/#/Evidence/broadcast_evidence
 func (env *Environment) BroadcastEvidence(
+<<<<<<< HEAD
 	ctx *rpctypes.Context,
+=======
+	_ *rpctypes.Context,
+>>>>>>> 111d252d7 (Fix lints (#625))
 	ev types.Evidence,
 ) (*ctypes.ResultBroadcastEvidence, error) {
 	if ev == nil {

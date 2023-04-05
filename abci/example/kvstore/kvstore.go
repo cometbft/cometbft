@@ -84,7 +84,7 @@ func (app *Application) SetGenBlockEvents() {
 // begins and let's the application know what Tendermint versions it's interacting with. Based from this information,
 // Tendermint will ensure it is in sync with the application by potentially replaying the blocks it has. If the
 // Application returns a 0 appBlockHeight, Tendermint will call InitChain to initialize the application with consensus related data
-func (app *Application) Info(_ context.Context, req *types.RequestInfo) (*types.ResponseInfo, error) {
+func (app *Application) Info(context.Context, *types.RequestInfo) (*types.ResponseInfo, error) {
 	// Tendermint expects the application to persist validators, on start-up we need to reload them to memory if they exist
 	if len(app.valAddrToPubKeyMap) == 0 && app.state.Height > 0 {
 		validators := app.getValidators()
@@ -324,8 +324,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.RequestFinal
 // Commit is called after FinalizeBlock and after Tendermint state which includes the updates to
 // AppHash, ConsensusParams and ValidatorSet has occurred.
 // The KVStore persists the validator updates and the new key values
-func (app *Application) Commit(_ context.Context, _ *types.RequestCommit) (*types.ResponseCommit, error) {
-
+func (app *Application) Commit(context.Context, *types.RequestCommit) (*types.ResponseCommit, error) {
 	// apply the validator updates to state (note this is really the validator set at h + 2)
 	for _, valUpdate := range app.valUpdates {
 		app.updateValidator(valUpdate)

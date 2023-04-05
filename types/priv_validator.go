@@ -142,12 +142,12 @@ type ErroringMockPV struct {
 var ErroringMockPVErr = errors.New("erroringMockPV always returns an error")
 
 // Implements PrivValidator.
-func (pv *ErroringMockPV) SignVote(chainID string, vote *cmtproto.Vote) error {
+func (pv *ErroringMockPV) SignVote(string, *cmtproto.Vote) error {
 	return ErroringMockPVErr
 }
 
 // Implements PrivValidator.
-func (pv *ErroringMockPV) SignProposal(chainID string, proposal *cmtproto.Proposal) error {
+func (pv *ErroringMockPV) SignProposal(string, *cmtproto.Proposal) error {
 	return ErroringMockPVErr
 }
 

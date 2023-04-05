@@ -13,7 +13,7 @@ import (
 // ABCIQuery queries the application for some information.
 // More: https://docs.cometbft.com/v0.38.x/rpc/#/ABCI/abci_query
 func (env *Environment) ABCIQuery(
-	ctx *rpctypes.Context,
+	_ *rpctypes.Context,
 	path string,
 	data bytes.HexBytes,
 	height int64,
@@ -33,8 +33,13 @@ func (env *Environment) ABCIQuery(
 }
 
 // ABCIInfo gets some info about the application.
+<<<<<<< HEAD
 // More: https://docs.cometbft.com/v0.38.x/rpc/#/ABCI/abci_info
 func (env *Environment) ABCIInfo(ctx *rpctypes.Context) (*ctypes.ResultABCIInfo, error) {
+=======
+// More: https://docs.cometbft.com/main/rpc/#/ABCI/abci_info
+func (env *Environment) ABCIInfo(_ *rpctypes.Context) (*ctypes.ResultABCIInfo, error) {
+>>>>>>> 111d252d7 (Fix lints (#625))
 	resInfo, err := env.ProxyAppQuery.Info(context.TODO(), proxy.RequestInfo)
 	if err != nil {
 		return nil, err

@@ -18,8 +18,13 @@ import (
 
 // BroadcastTxAsync returns right away, with no response. Does not wait for
 // CheckTx nor transaction results.
+<<<<<<< HEAD
 // More: https://docs.cometbft.com/v0.38.x/rpc/#/Tx/broadcast_tx_async
 func (env *Environment) BroadcastTxAsync(ctx *rpctypes.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
+=======
+// More: https://docs.cometbft.com/main/rpc/#/Tx/broadcast_tx_async
+func (env *Environment) BroadcastTxAsync(_ *rpctypes.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
+>>>>>>> 111d252d7 (Fix lints (#625))
 	err := env.Mempool.CheckTx(tx, nil, mempl.TxInfo{})
 	if err != nil {
 		return nil, err
@@ -145,8 +150,13 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 
 // UnconfirmedTxs gets unconfirmed transactions (maximum ?limit entries)
 // including their number.
+<<<<<<< HEAD
 // More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/unconfirmed_txs
 func (env *Environment) UnconfirmedTxs(ctx *rpctypes.Context, limitPtr *int) (*ctypes.ResultUnconfirmedTxs, error) {
+=======
+// More: https://docs.cometbft.com/main/rpc/#/Info/unconfirmed_txs
+func (env *Environment) UnconfirmedTxs(_ *rpctypes.Context, limitPtr *int) (*ctypes.ResultUnconfirmedTxs, error) {
+>>>>>>> 111d252d7 (Fix lints (#625))
 	// reuse per_page validator
 	limit := env.validatePerPage(limitPtr)
 
@@ -160,8 +170,13 @@ func (env *Environment) UnconfirmedTxs(ctx *rpctypes.Context, limitPtr *int) (*c
 }
 
 // NumUnconfirmedTxs gets number of unconfirmed transactions.
+<<<<<<< HEAD
 // More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/num_unconfirmed_txs
 func (env *Environment) NumUnconfirmedTxs(ctx *rpctypes.Context) (*ctypes.ResultUnconfirmedTxs, error) {
+=======
+// More: https://docs.cometbft.com/main/rpc/#/Info/num_unconfirmed_txs
+func (env *Environment) NumUnconfirmedTxs(*rpctypes.Context) (*ctypes.ResultUnconfirmedTxs, error) {
+>>>>>>> 111d252d7 (Fix lints (#625))
 	return &ctypes.ResultUnconfirmedTxs{
 		Count:      env.Mempool.Size(),
 		Total:      env.Mempool.Size(),
@@ -171,8 +186,13 @@ func (env *Environment) NumUnconfirmedTxs(ctx *rpctypes.Context) (*ctypes.Result
 
 // CheckTx checks the transaction without executing it. The transaction won't
 // be added to the mempool either.
+<<<<<<< HEAD
 // More: https://docs.cometbft.com/v0.38.x/rpc/#/Tx/check_tx
 func (env *Environment) CheckTx(ctx *rpctypes.Context, tx types.Tx) (*ctypes.ResultCheckTx, error) {
+=======
+// More: https://docs.cometbft.com/main/rpc/#/Tx/check_tx
+func (env *Environment) CheckTx(_ *rpctypes.Context, tx types.Tx) (*ctypes.ResultCheckTx, error) {
+>>>>>>> 111d252d7 (Fix lints (#625))
 	res, err := env.ProxyAppMempool.CheckTx(context.TODO(), &abci.RequestCheckTx{Tx: tx})
 	if err != nil {
 		return nil, err

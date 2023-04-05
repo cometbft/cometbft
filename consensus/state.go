@@ -494,10 +494,14 @@ func (cs *State) AddProposalBlockPart(height int64, round int32, part *types.Par
 // SetProposalAndBlock inputs the proposal and all block parts.
 func (cs *State) SetProposalAndBlock(
 	proposal *types.Proposal,
-	block *types.Block,
+	block *types.Block, //nolint:revive
 	parts *types.PartSet,
 	peerID p2p.ID,
 ) error {
+<<<<<<< HEAD
+=======
+	// TODO: Since the block parameter is not used, we should instead expose just a SetProposal method.
+>>>>>>> 111d252d7 (Fix lints (#625))
 	if err := cs.SetProposal(proposal, peerID); err != nil {
 		return err
 	}
@@ -1052,11 +1056,9 @@ func (cs *State) enterNewRound(height int64, round int32) {
 	// but we fire an event, so update the round step first
 	cs.updateRoundStep(round, cstypes.RoundStepNewRound)
 	cs.Validators = validators
-	if round == 0 {
-		// We've already reset these upon new height,
-		// and meanwhile we might have received a proposal
-		// for round 0.
-	} else {
+	// If round == 0, we've already reset these upon new height, and meanwhile
+	// we might have received a proposal for round 0.
+	if round != 0 {
 		logger.Debug("resetting proposal info")
 		cs.Proposal = nil
 		cs.ProposalBlock = nil

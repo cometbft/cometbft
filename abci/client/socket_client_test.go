@@ -122,7 +122,8 @@ func TestBulk(t *testing.T) {
 }
 
 func setupClientServer(t *testing.T, app types.Application) (
-	service.Service, abcicli.Client) {
+	service.Service, abcicli.Client,
+) {
 	t.Helper()
 
 	// some port between 20k and 30k
@@ -156,7 +157,7 @@ type slowApp struct {
 	types.BaseApplication
 }
 
-func (slowApp) CheckTx(_ context.Context, req *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
+func (slowApp) CheckTx(context.Context, *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
 	time.Sleep(time.Second)
 	return &types.ResponseCheckTx{}, nil
 }

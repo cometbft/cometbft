@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"testing"
 	"time"
 
 	dbm "github.com/cometbft/cometbft-db"
@@ -169,7 +168,6 @@ func genValSet(size int) *types.ValidatorSet {
 }
 
 func makeHeaderPartsResponsesValPubKeyChange(
-	t *testing.T,
 	state sm.State,
 	pubkey crypto.PubKey,
 ) (types.Header, types.BlockID, *abci.ResponseFinalizeBlock) {
@@ -188,7 +186,6 @@ func makeHeaderPartsResponsesValPubKeyChange(
 }
 
 func makeHeaderPartsResponsesValPowerChange(
-	t *testing.T,
 	state sm.State,
 	power int64,
 ) (types.Header, types.BlockID, *abci.ResponseFinalizeBlock) {
@@ -207,7 +204,6 @@ func makeHeaderPartsResponsesValPowerChange(
 }
 
 func makeHeaderPartsResponsesParams(
-	t *testing.T,
 	state sm.State,
 	params cmtproto.ConsensusParams,
 ) (types.Header, types.BlockID, *abci.ResponseFinalizeBlock) {

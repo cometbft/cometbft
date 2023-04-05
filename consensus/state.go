@@ -498,10 +498,7 @@ func (cs *State) SetProposalAndBlock(
 	parts *types.PartSet,
 	peerID p2p.ID,
 ) error {
-<<<<<<< HEAD
-=======
 	// TODO: Since the block parameter is not used, we should instead expose just a SetProposal method.
->>>>>>> 111d252d7 (Fix lints (#625))
 	if err := cs.SetProposal(proposal, peerID); err != nil {
 		return err
 	}

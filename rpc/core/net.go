@@ -11,13 +11,8 @@ import (
 )
 
 // NetInfo returns network info.
-<<<<<<< HEAD
 // More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/net_info
-func (env *Environment) NetInfo(ctx *rpctypes.Context) (*ctypes.ResultNetInfo, error) {
-=======
-// More: https://docs.cometbft.com/main/rpc/#/Info/net_info
 func (env *Environment) NetInfo(*rpctypes.Context) (*ctypes.ResultNetInfo, error) {
->>>>>>> 111d252d7 (Fix lints (#625))
 	peersList := env.P2PPeers.Peers().List()
 	peers := make([]ctypes.Peer, 0, len(peersList))
 	for _, peer := range peersList {
@@ -100,13 +95,8 @@ func (env *Environment) UnsafeDialPeers(
 }
 
 // Genesis returns genesis file.
-<<<<<<< HEAD
 // More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/genesis
-func (env *Environment) Genesis(ctx *rpctypes.Context) (*ctypes.ResultGenesis, error) {
-=======
-// More: https://docs.cometbft.com/main/rpc/#/Info/genesis
 func (env *Environment) Genesis(*rpctypes.Context) (*ctypes.ResultGenesis, error) {
->>>>>>> 111d252d7 (Fix lints (#625))
 	if len(env.genChunks) > 1 {
 		return nil, errors.New("genesis response is large, please use the genesis_chunked API instead")
 	}

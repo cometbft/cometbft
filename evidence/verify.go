@@ -95,7 +95,6 @@ func (evpool *Pool) verify(evidence types.Evidence) error {
 	default:
 		return fmt.Errorf("unrecognized evidence type: %T", evidence)
 	}
-
 }
 
 // VerifyLightClientAttack verifies LightClientAttackEvidence against the state of the full node. This involves
@@ -108,8 +107,16 @@ func (evpool *Pool) verify(evidence types.Evidence) error {
 // CONTRACT: must run ValidateBasic() on the evidence before verifying
 //
 //	must check that the evidence has not expired (i.e. is outside the maximum age threshold)
-func VerifyLightClientAttack(e *types.LightClientAttackEvidence, commonHeader, trustedHeader *types.SignedHeader,
-	commonVals *types.ValidatorSet, now time.Time, trustPeriod time.Duration) error {
+func VerifyLightClientAttack(
+	e *types.LightClientAttackEvidence,
+	commonHeader, trustedHeader *types.SignedHeader,
+	commonVals *types.ValidatorSet,
+	now time.Time, //nolint:revive
+	trustPeriod time.Duration, //nolint:revive
+) error {
+	// TODO: Should the current time and trust period be used in this method?
+	// If not, why were the parameters present?
+
 	// In the case of lunatic attack there will be a different commonHeader height. Therefore the node perform a single
 	// verification jump between the common header and the conflicting one
 	if commonHeader.Height != e.ConflictingBlock.Height {

@@ -147,12 +147,11 @@ func dedupHeight(conditions []syntax.Condition) (dedupConditions []syntax.Condit
 			if c.Op == syntax.TEq {
 				if found || heightRangeExists {
 					continue
-				} else {
-					heightCondition = append(heightCondition, c)
-					heightInfo.height = int64(c.Arg.Number())
-
-					found = true
 				}
+				heightCondition = append(heightCondition, c)
+				heightInfo.height = int64(c.Arg.Number())
+
+				found = true
 			} else {
 				heightInfo.onlyHeightEq = false
 				heightRangeExists = true

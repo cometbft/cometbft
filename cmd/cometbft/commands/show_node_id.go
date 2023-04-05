@@ -17,7 +17,7 @@ var ShowNodeIDCmd = &cobra.Command{
 	PreRun:  deprecateSnakeCase,
 }
 
-func showNodeID(cmd *cobra.Command, args []string) error {
+func showNodeID(*cobra.Command, []string) error {
 	nodeKey, err := p2p.LoadNodeKey(config.NodeKeyFile())
 	if err != nil {
 		return err

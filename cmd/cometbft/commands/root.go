@@ -40,7 +40,7 @@ func ParseConfig(cmd *cobra.Command) (*cfg.Config, error) {
 	if os.Getenv("CMTHOME") != "" {
 		home = os.Getenv("CMTHOME")
 	} else if os.Getenv("TMHOME") != "" {
-		//XXX: Deprecated.
+		// XXX: Deprecated.
 		home = os.Getenv("TMHOME")
 		logger.Error("Deprecated environment variable TMHOME identified. CMTHOME should be used instead.")
 	} else {
@@ -98,7 +98,8 @@ var RootCmd = &cobra.Command{
 }
 
 // deprecateSnakeCase is a util function for 0.34.1. Should be removed in 0.35
-func deprecateSnakeCase(cmd *cobra.Command, args []string) {
+// TODO(thane): Remove this across all releases
+func deprecateSnakeCase(cmd *cobra.Command, _ []string) {
 	if strings.Contains(cmd.CalledAs(), "_") {
 		fmt.Println("Deprecated: snake_case commands will be replaced by hyphen-case commands in the next major release")
 	}

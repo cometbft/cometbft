@@ -45,39 +45,39 @@ func NewBaseApplication() *BaseApplication {
 	return &BaseApplication{}
 }
 
-func (BaseApplication) Info(_ context.Context, req *RequestInfo) (*ResponseInfo, error) {
+func (BaseApplication) Info(context.Context, *RequestInfo) (*ResponseInfo, error) {
 	return &ResponseInfo{}, nil
 }
 
-func (BaseApplication) CheckTx(_ context.Context, req *RequestCheckTx) (*ResponseCheckTx, error) {
+func (BaseApplication) CheckTx(context.Context, *RequestCheckTx) (*ResponseCheckTx, error) {
 	return &ResponseCheckTx{Code: CodeTypeOK}, nil
 }
 
-func (BaseApplication) Commit(_ context.Context, req *RequestCommit) (*ResponseCommit, error) {
+func (BaseApplication) Commit(context.Context, *RequestCommit) (*ResponseCommit, error) {
 	return &ResponseCommit{}, nil
 }
 
-func (BaseApplication) Query(_ context.Context, req *RequestQuery) (*ResponseQuery, error) {
+func (BaseApplication) Query(context.Context, *RequestQuery) (*ResponseQuery, error) {
 	return &ResponseQuery{Code: CodeTypeOK}, nil
 }
 
-func (BaseApplication) InitChain(_ context.Context, req *RequestInitChain) (*ResponseInitChain, error) {
+func (BaseApplication) InitChain(context.Context, *RequestInitChain) (*ResponseInitChain, error) {
 	return &ResponseInitChain{}, nil
 }
 
-func (BaseApplication) ListSnapshots(_ context.Context, req *RequestListSnapshots) (*ResponseListSnapshots, error) {
+func (BaseApplication) ListSnapshots(context.Context, *RequestListSnapshots) (*ResponseListSnapshots, error) {
 	return &ResponseListSnapshots{}, nil
 }
 
-func (BaseApplication) OfferSnapshot(_ context.Context, req *RequestOfferSnapshot) (*ResponseOfferSnapshot, error) {
+func (BaseApplication) OfferSnapshot(context.Context, *RequestOfferSnapshot) (*ResponseOfferSnapshot, error) {
 	return &ResponseOfferSnapshot{}, nil
 }
 
-func (BaseApplication) LoadSnapshotChunk(_ context.Context, _ *RequestLoadSnapshotChunk) (*ResponseLoadSnapshotChunk, error) {
+func (BaseApplication) LoadSnapshotChunk(context.Context, *RequestLoadSnapshotChunk) (*ResponseLoadSnapshotChunk, error) {
 	return &ResponseLoadSnapshotChunk{}, nil
 }
 
-func (BaseApplication) ApplySnapshotChunk(_ context.Context, req *RequestApplySnapshotChunk) (*ResponseApplySnapshotChunk, error) {
+func (BaseApplication) ApplySnapshotChunk(context.Context, *RequestApplySnapshotChunk) (*ResponseApplySnapshotChunk, error) {
 	return &ResponseApplySnapshotChunk{}, nil
 }
 
@@ -94,15 +94,15 @@ func (BaseApplication) PrepareProposal(_ context.Context, req *RequestPreparePro
 	return &ResponsePrepareProposal{Txs: txs}, nil
 }
 
-func (BaseApplication) ProcessProposal(_ context.Context, req *RequestProcessProposal) (*ResponseProcessProposal, error) {
+func (BaseApplication) ProcessProposal(context.Context, *RequestProcessProposal) (*ResponseProcessProposal, error) {
 	return &ResponseProcessProposal{Status: ResponseProcessProposal_ACCEPT}, nil
 }
 
-func (BaseApplication) ExtendVote(_ context.Context, req *RequestExtendVote) (*ResponseExtendVote, error) {
+func (BaseApplication) ExtendVote(context.Context, *RequestExtendVote) (*ResponseExtendVote, error) {
 	return &ResponseExtendVote{}, nil
 }
 
-func (BaseApplication) VerifyVoteExtension(_ context.Context, req *RequestVerifyVoteExtension) (*ResponseVerifyVoteExtension, error) {
+func (BaseApplication) VerifyVoteExtension(context.Context, *RequestVerifyVoteExtension) (*ResponseVerifyVoteExtension, error) {
 	return &ResponseVerifyVoteExtension{
 		Status: ResponseVerifyVoteExtension_ACCEPT,
 	}, nil

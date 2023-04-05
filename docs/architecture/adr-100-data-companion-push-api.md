@@ -214,11 +214,14 @@ The following simple diagram shows the proposed relationships between
 CometBFT, a socket-based ABCI application, and the proposed data companion
 service.
 
-```
-     +----------+      +------------+      +----------------+
-     | ABCI App | <--- |  CometBFT  | ---> | Data Companion |
-     +----------+      +------------+      +----------------+
+```mermaid
+flowchart RL
+    comet[CometBFT]
+    companion[Data Companion]
+    app[ABCI App]
 
+    comet --> app
+    comet --> companion
 ```
 
 As can be seen in this diagram, CometBFT connects out to both the ABCI

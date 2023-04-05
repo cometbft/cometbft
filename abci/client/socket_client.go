@@ -153,7 +153,15 @@ func (cli *socketClient) sendRequestsRoutine(conn io.Writer) {
 func (cli *socketClient) recvResponseRoutine(conn io.Reader) {
 	r := bufio.NewReader(conn)
 	for {
+<<<<<<< HEAD
 		var res = &types.Response{}
+=======
+		if !cli.IsRunning() {
+			return
+		}
+
+		res := &types.Response{}
+>>>>>>> 111d252d7 (Fix lints (#625))
 		err := types.ReadMessage(r, res)
 		if err != nil {
 			cli.stopForError(fmt.Errorf("read message: %w", err))
@@ -330,9 +338,15 @@ func (cli *socketClient) CheckTxSync(req types.RequestCheckTx) (*types.ResponseC
 	return reqres.Response.GetCheckTx(), cli.Error()
 }
 
+<<<<<<< HEAD
 func (cli *socketClient) QuerySync(req types.RequestQuery) (*types.ResponseQuery, error) {
 	reqres := cli.queueRequest(types.ToRequestQuery(req))
 	if err := cli.FlushSync(); err != nil {
+=======
+func (cli *socketClient) Commit(ctx context.Context, _ *types.RequestCommit) (*types.ResponseCommit, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestCommit())
+	if err != nil {
+>>>>>>> 111d252d7 (Fix lints (#625))
 		return nil, err
 	}
 

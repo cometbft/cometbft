@@ -105,9 +105,9 @@ func (vals *ValidatorSet) IsNilOrEmpty() bool {
 // CopyIncrementProposerPriority increments ProposerPriority and updates the
 // proposer on a copy, and returns it.
 func (vals *ValidatorSet) CopyIncrementProposerPriority(times int32) *ValidatorSet {
-	copy := vals.Copy()
-	copy.IncrementProposerPriority(times)
-	return copy
+	cp := vals.Copy()
+	cp.IncrementProposerPriority(times)
+	return cp
 }
 
 // IncrementProposerPriority increments ProposerPriority of each validator and
@@ -429,7 +429,6 @@ func verifyUpdates(
 	vals *ValidatorSet,
 	removedPower int64,
 ) (tvpAfterUpdatesBeforeRemovals int64, err error) {
-
 	delta := func(update *Validator, vals *ValidatorSet) int64 {
 		_, val := vals.GetByAddress(update.Address)
 		if val != nil {
@@ -493,7 +492,6 @@ func computeNewPriorities(updates []*Validator, vals *ValidatorSet, updatedTotal
 			valUpdate.ProposerPriority = val.ProposerPriority
 		}
 	}
-
 }
 
 // Merges the vals' validator list with the updates list.
@@ -665,6 +663,7 @@ func (vals *ValidatorSet) UpdateWithChangeSet(changes []*Validator) error {
 // includes which validators signed. For instance, Gaia incentivizes proposers
 // with a bonus for including more than +2/3 of the signatures.
 func (vals *ValidatorSet) VerifyCommit(chainID string, blockID BlockID,
+<<<<<<< HEAD
 	height int64, commit *Commit) error {
 
 	if vals.Size() != len(commit.Signatures) {
@@ -711,6 +710,11 @@ func (vals *ValidatorSet) VerifyCommit(chainID string, blockID BlockID,
 	}
 
 	return nil
+=======
+	height int64, commit *Commit,
+) error {
+	return VerifyCommit(chainID, vals, blockID, height, commit)
+>>>>>>> 111d252d7 (Fix lints (#625))
 }
 
 // LIGHT CLIENT VERIFICATION METHODS
@@ -720,6 +724,7 @@ func (vals *ValidatorSet) VerifyCommit(chainID string, blockID BlockID,
 // This method is primarily used by the light client and does not check all the
 // signatures.
 func (vals *ValidatorSet) VerifyCommitLight(chainID string, blockID BlockID,
+<<<<<<< HEAD
 	height int64, commit *Commit) error {
 
 	if vals.Size() != len(commit.Signatures) {
@@ -762,6 +767,11 @@ func (vals *ValidatorSet) VerifyCommitLight(chainID string, blockID BlockID,
 	}
 
 	return ErrNotEnoughVotingPowerSigned{Got: talliedVotingPower, Needed: votingPowerNeeded}
+=======
+	height int64, commit *Commit,
+) error {
+	return VerifyCommitLight(chainID, vals, blockID, height, commit)
+>>>>>>> 111d252d7 (Fix lints (#625))
 }
 
 // VerifyCommitLightTrusting verifies that trustLevel of the validator set signed
@@ -892,7 +902,6 @@ func (vals *ValidatorSet) StringIndented(indent string) string {
 		indent,
 		indent, strings.Join(valStrings, "\n"+indent+"    "),
 		indent)
-
 }
 
 //-------------------------------------

@@ -46,6 +46,7 @@ func NewBaseApplication() *BaseApplication {
 	return &BaseApplication{}
 }
 
+<<<<<<< HEAD
 func (BaseApplication) Info(req RequestInfo) ResponseInfo {
 	return ResponseInfo{}
 }
@@ -80,6 +81,42 @@ func (BaseApplication) EndBlock(req RequestEndBlock) ResponseEndBlock {
 
 func (BaseApplication) ListSnapshots(req RequestListSnapshots) ResponseListSnapshots {
 	return ResponseListSnapshots{}
+=======
+func (BaseApplication) Info(context.Context, *RequestInfo) (*ResponseInfo, error) {
+	return &ResponseInfo{}, nil
+}
+
+func (BaseApplication) CheckTx(context.Context, *RequestCheckTx) (*ResponseCheckTx, error) {
+	return &ResponseCheckTx{Code: CodeTypeOK}, nil
+}
+
+func (BaseApplication) Commit(context.Context, *RequestCommit) (*ResponseCommit, error) {
+	return &ResponseCommit{}, nil
+}
+
+func (BaseApplication) Query(context.Context, *RequestQuery) (*ResponseQuery, error) {
+	return &ResponseQuery{Code: CodeTypeOK}, nil
+}
+
+func (BaseApplication) InitChain(context.Context, *RequestInitChain) (*ResponseInitChain, error) {
+	return &ResponseInitChain{}, nil
+}
+
+func (BaseApplication) ListSnapshots(context.Context, *RequestListSnapshots) (*ResponseListSnapshots, error) {
+	return &ResponseListSnapshots{}, nil
+}
+
+func (BaseApplication) OfferSnapshot(context.Context, *RequestOfferSnapshot) (*ResponseOfferSnapshot, error) {
+	return &ResponseOfferSnapshot{}, nil
+}
+
+func (BaseApplication) LoadSnapshotChunk(context.Context, *RequestLoadSnapshotChunk) (*ResponseLoadSnapshotChunk, error) {
+	return &ResponseLoadSnapshotChunk{}, nil
+}
+
+func (BaseApplication) ApplySnapshotChunk(context.Context, *RequestApplySnapshotChunk) (*ResponseApplySnapshotChunk, error) {
+	return &ResponseApplySnapshotChunk{}, nil
+>>>>>>> 111d252d7 (Fix lints (#625))
 }
 
 func (BaseApplication) OfferSnapshot(req RequestOfferSnapshot) ResponseOfferSnapshot {
@@ -107,6 +144,7 @@ func (BaseApplication) PrepareProposal(req RequestPrepareProposal) ResponsePrepa
 	return ResponsePrepareProposal{Txs: txs}
 }
 
+<<<<<<< HEAD
 func (BaseApplication) ProcessProposal(req RequestProcessProposal) ResponseProcessProposal {
 	return ResponseProcessProposal{
 		Status: ResponseProcessProposal_ACCEPT}
@@ -121,6 +159,20 @@ type GRPCApplication struct {
 
 func NewGRPCApplication(app Application) *GRPCApplication {
 	return &GRPCApplication{app}
+=======
+func (BaseApplication) ProcessProposal(context.Context, *RequestProcessProposal) (*ResponseProcessProposal, error) {
+	return &ResponseProcessProposal{Status: ResponseProcessProposal_ACCEPT}, nil
+}
+
+func (BaseApplication) ExtendVote(context.Context, *RequestExtendVote) (*ResponseExtendVote, error) {
+	return &ResponseExtendVote{}, nil
+}
+
+func (BaseApplication) VerifyVoteExtension(context.Context, *RequestVerifyVoteExtension) (*ResponseVerifyVoteExtension, error) {
+	return &ResponseVerifyVoteExtension{
+		Status: ResponseVerifyVoteExtension_ACCEPT,
+	}, nil
+>>>>>>> 111d252d7 (Fix lints (#625))
 }
 
 func (app *GRPCApplication) Echo(ctx context.Context, req *RequestEcho) (*ResponseEcho, error) {

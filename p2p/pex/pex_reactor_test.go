@@ -19,9 +19,7 @@ import (
 	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
 )
 
-var (
-	cfg *config.P2PConfig
-)
+var cfg *config.P2PConfig
 
 func init() {
 	cfg = config.DefaultP2PConfig()
@@ -81,7 +79,7 @@ func TestPEXReactorRunning(t *testing.T) {
 
 	// create switches
 	for i := 0; i < N; i++ {
-		switches[i] = p2p.MakeSwitch(cfg, i, "testing", "123.123.123", func(i int, sw *p2p.Switch) *p2p.Switch {
+		switches[i] = p2p.MakeSwitch(cfg, i, func(i int, sw *p2p.Switch) *p2p.Switch {
 			books[i] = NewAddrBook(filepath.Join(dir, fmt.Sprintf("addrbook%d.json", i)), false)
 			books[i].SetLogger(logger.With("pex", i))
 			sw.SetAddrBook(books[i])
@@ -224,8 +222,10 @@ func TestCheckSeeds(t *testing.T) {
 
 	// 4. test create peer with all seeds having unresolvable DNS fails
 	badPeerConfig := &ReactorConfig{
-		Seeds: []string{"ed3dfd27bfc4af18f67a49862f04cc100696e84d@bad.network.addr:26657",
-			"d824b13cb5d40fa1d8a614e089357c7eff31b670@anotherbad.network.addr:26657"},
+		Seeds: []string{
+			"ed3dfd27bfc4af18f67a49862f04cc100696e84d@bad.network.addr:26657",
+			"d824b13cb5d40fa1d8a614e089357c7eff31b670@anotherbad.network.addr:26657",
+		},
 	}
 	peerSwitch = testCreatePeerWithConfig(dir, 2, badPeerConfig)
 	require.Error(t, peerSwitch.Start())
@@ -233,9 +233,11 @@ func TestCheckSeeds(t *testing.T) {
 
 	// 5. test create peer with one good seed address succeeds
 	badPeerConfig = &ReactorConfig{
-		Seeds: []string{"ed3dfd27bfc4af18f67a49862f04cc100696e84d@bad.network.addr:26657",
+		Seeds: []string{
+			"ed3dfd27bfc4af18f67a49862f04cc100696e84d@bad.network.addr:26657",
 			"d824b13cb5d40fa1d8a614e089357c7eff31b670@anotherbad.network.addr:26657",
-			seed.NetAddress().String()},
+			seed.NetAddress().String(),
+		},
 	}
 	peerSwitch = testCreatePeerWithConfig(dir, 2, badPeerConfig)
 	require.Nil(t, peerSwitch.Start())
@@ -415,7 +417,7 @@ func TestPEXReactorSeedModeFlushStop(t *testing.T) {
 
 	// create switches
 	for i := 0; i < N; i++ {
-		switches[i] = p2p.MakeSwitch(cfg, i, "testing", "123.123.123", func(i int, sw *p2p.Switch) *p2p.Switch {
+		switches[i] = p2p.MakeSwitch(cfg, i, func(i int, sw *p2p.Switch) *p2p.Switch {
 			books[i] = NewAddrBook(filepath.Join(dir, fmt.Sprintf("addrbook%d.json", i)), false)
 			books[i].SetLogger(logger.With("pex", i))
 			sw.SetAddrBook(books[i])
@@ -582,8 +584,6 @@ func testCreatePeerWithConfig(dir string, id int, config *ReactorConfig) *p2p.Sw
 	peer := p2p.MakeSwitch(
 		cfg,
 		id,
-		"127.0.0.1",
-		"123.123.123",
 		func(i int, sw *p2p.Switch) *p2p.Switch {
 			book := NewAddrBook(filepath.Join(dir, fmt.Sprintf("addrbook%d.json", id)), false)
 			book.SetLogger(log.TestingLogger())
@@ -614,8 +614,6 @@ func testCreateSeed(dir string, id int, knownAddrs, srcAddrs []*p2p.NetAddress) 
 	seed := p2p.MakeSwitch(
 		cfg,
 		id,
-		"127.0.0.1",
-		"123.123.123",
 		func(i int, sw *p2p.Switch) *p2p.Switch {
 			book := NewAddrBook(filepath.Join(dir, "addrbookSeed.json"), false)
 			book.SetLogger(log.TestingLogger())
@@ -668,7 +666,7 @@ func teardownReactor(book AddrBook) {
 }
 
 func createSwitchAndAddReactors(reactors ...p2p.Reactor) *p2p.Switch {
-	sw := p2p.MakeSwitch(cfg, 0, "127.0.0.1", "123.123.123", func(i int, sw *p2p.Switch) *p2p.Switch { return sw })
+	sw := p2p.MakeSwitch(cfg, 0, func(i int, sw *p2p.Switch) *p2p.Switch { return sw })
 	sw.SetLogger(log.TestingLogger())
 	for _, r := range reactors {
 		sw.AddReactor(r.String(), r)
@@ -678,7 +676,6 @@ func createSwitchAndAddReactors(reactors ...p2p.Reactor) *p2p.Switch {
 }
 
 func TestPexVectors(t *testing.T) {
-
 	addr := tmp2p.NetAddress{
 		ID:   "1",
 		IP:   "127.0.0.1",

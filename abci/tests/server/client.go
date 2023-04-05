@@ -65,8 +65,13 @@ func DeliverTx(client abcicli.Client, txBytes []byte, codeExp uint32, dataExp []
 	return nil
 }
 
+<<<<<<< HEAD
 func PrepareProposal(client abcicli.Client, txBytes [][]byte, txExpected [][]byte, dataExp []byte) error {
 	res, _ := client.PrepareProposalSync(types.RequestPrepareProposal{Txs: txBytes})
+=======
+func PrepareProposal(ctx context.Context, client abcicli.Client, txBytes [][]byte, txExpected [][]byte, _ []byte) error {
+	res, _ := client.PrepareProposal(ctx, &types.RequestPrepareProposal{Txs: txBytes})
+>>>>>>> 111d252d7 (Fix lints (#625))
 	for i, tx := range res.Txs {
 		if !bytes.Equal(tx, txExpected[i]) {
 			fmt.Println("Failed test: PrepareProposal")

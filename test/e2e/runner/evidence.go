@@ -94,8 +94,14 @@ func InjectEvidence(ctx context.Context, r *rand.Rand, testnet *e2e.Testnet, amo
 				ctx, privVals, evidenceHeight, valSet, testnet.Name, blockRes.Block.Time,
 			)
 		} else {
+<<<<<<< HEAD
 			ev, err = generateDuplicateVoteEvidence(
 				ctx, privVals, evidenceHeight, valSet, testnet.Name, blockRes.Block.Time,
+=======
+			var dve *types.DuplicateVoteEvidence
+			dve, err = generateDuplicateVoteEvidence(
+				privVals, evidenceHeight, valSet, testnet.Name, blockRes.Block.Time,
+>>>>>>> 111d252d7 (Fix lints (#625))
 			)
 		}
 		if err != nil {
@@ -193,7 +199,6 @@ func generateLightClientAttackEvidence(
 // generateDuplicateVoteEvidence picks a random validator from the val set and
 // returns duplicate vote evidence against the validator
 func generateDuplicateVoteEvidence(
-	ctx context.Context,
 	privVals []types.MockPV,
 	height int64,
 	vals *types.ValidatorSet,

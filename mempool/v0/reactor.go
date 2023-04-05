@@ -148,7 +148,7 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 }
 
 // RemovePeer implements Reactor.
-func (memR *Reactor) RemovePeer(peer p2p.Peer, reason interface{}) {
+func (memR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
 	memR.ids.Reclaim(peer)
 	// broadcast routine checks if peer is gone and returns
 }

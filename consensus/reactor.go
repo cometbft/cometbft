@@ -207,7 +207,7 @@ func (conR *Reactor) AddPeer(peer p2p.Peer) {
 }
 
 // RemovePeer is a noop.
-func (conR *Reactor) RemovePeer(peer p2p.Peer, reason interface{}) {
+func (conR *Reactor) RemovePeer(p2p.Peer, interface{}) {
 	if !conR.IsRunning() {
 		return
 	}
@@ -427,7 +427,6 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 		}); err != nil {
 		conR.Logger.Error("Error adding listener for events", "err", err)
 	}
-
 }
 
 func (conR *Reactor) unsubscribeFromBroadcastEvents() {
@@ -642,8 +641,8 @@ OUTER_LOOP:
 }
 
 func (conR *Reactor) gossipDataForCatchup(logger log.Logger, rs *cstypes.RoundState,
-	prs *cstypes.PeerRoundState, ps *PeerState, peer p2p.Peer) {
-
+	prs *cstypes.PeerRoundState, ps *PeerState, peer p2p.Peer,
+) {
 	if index, ok := prs.ProposalBlockParts.Not().PickRandom(); ok {
 		// Ensure that the peer's PartSetHeader is correct
 		blockMeta := conR.conS.blockStore.LoadBlockMeta(prs.Height)
@@ -697,7 +696,7 @@ func (conR *Reactor) gossipVotesRoutine(peer p2p.Peer, ps *PeerState) {
 	logger := conR.Logger.With("peer", peer)
 
 	// Simple hack to throttle logs upon sleep.
-	var sleeping = 0
+	sleeping := 0
 
 OUTER_LOOP:
 	for {
@@ -771,7 +770,6 @@ func (conR *Reactor) gossipVotesForHeight(
 	prs *cstypes.PeerRoundState,
 	ps *PeerState,
 ) bool {
-
 	// If there are lastCommits to send...
 	if prs.Step == cstypes.RoundStepNewHeight {
 		if ps.PickSendVote(rs.LastCommit) {
@@ -827,7 +825,6 @@ func (conR *Reactor) gossipVotesForHeight(
 // NOTE: `queryMaj23Routine` has a simple crude design since it only comes
 // into play for liveness when there's a signature DDoS attack happening.
 func (conR *Reactor) queryMaj23Routine(peer p2p.Peer, ps *PeerState) {
-
 OUTER_LOOP:
 	for {
 		// Manage disconnects from self or peer.
@@ -1154,8 +1151,7 @@ func (ps *PeerState) PickVoteToSend(votes types.VoteSetReader) (vote *types.Vote
 		return nil, false
 	}
 
-	height, round, votesType, size :=
-		votes.GetHeight(), votes.GetRound(), cmtproto.SignedMsgType(votes.Type()), votes.Size()
+	height, round, votesType, size := votes.GetHeight(), votes.GetRound(), cmtproto.SignedMsgType(votes.Type()), votes.Size()
 
 	// Lazily set data using 'votes'.
 	if votes.IsCommit() {

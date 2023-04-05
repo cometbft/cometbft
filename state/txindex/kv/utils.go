@@ -45,7 +45,12 @@ func ParseEventSeqFromEventKey(key []byte) (int64, error) {
 
 	return eventSeq, nil
 }
+<<<<<<< HEAD
 func dedupHeight(conditions []query.Condition) (dedupConditions []query.Condition, heightInfo HeightInfo) {
+=======
+
+func dedupHeight(conditions []cmtsyntax.Condition) (dedupConditions []cmtsyntax.Condition, heightInfo HeightInfo) {
+>>>>>>> 111d252d7 (Fix lints (#625))
 	heightInfo.heightEqIdx = -1
 	heightRangeExists := false
 	found := false
@@ -57,11 +62,17 @@ func dedupHeight(conditions []query.Condition) (dedupConditions []query.Conditio
 			if c.Op == query.OpEqual {
 				if heightRangeExists || found {
 					continue
+<<<<<<< HEAD
 				} else {
 					found = true
 					heightCondition = append(heightCondition, c)
 					heightInfo.height = c.Operand.(int64)
+=======
+>>>>>>> 111d252d7 (Fix lints (#625))
 				}
+				found = true
+				heightCondition = append(heightCondition, c)
+				heightInfo.height = int64(c.Arg.Number())
 			} else {
 				heightInfo.onlyHeightEq = false
 				heightRangeExists = true

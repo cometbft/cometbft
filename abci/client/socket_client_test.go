@@ -94,7 +94,14 @@ func TestHangingSyncCalls(t *testing.T) {
 }
 
 func setupClientServer(t *testing.T, app types.Application) (
+<<<<<<< HEAD
 	service.Service, abcicli.Client) {
+=======
+	service.Service, abcicli.Client,
+) {
+	t.Helper()
+
+>>>>>>> 111d252d7 (Fix lints (#625))
 	// some port between 20k and 30k
 	port := 20000 + cmtrand.Int32()%10000
 	addr := fmt.Sprintf("localhost:%d", port)
@@ -115,9 +122,15 @@ type slowApp struct {
 	types.BaseApplication
 }
 
+<<<<<<< HEAD
 func (slowApp) BeginBlock(req types.RequestBeginBlock) types.ResponseBeginBlock {
 	time.Sleep(200 * time.Millisecond)
 	return types.ResponseBeginBlock{}
+=======
+func (slowApp) CheckTx(context.Context, *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
+	time.Sleep(time.Second)
+	return &types.ResponseCheckTx{}, nil
+>>>>>>> 111d252d7 (Fix lints (#625))
 }
 
 // TestCallbackInvokedWhenSetLaet ensures that the callback is invoked when

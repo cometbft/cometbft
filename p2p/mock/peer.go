@@ -42,11 +42,17 @@ func NewPeer(ip net.IP) *Peer {
 	return mp
 }
 
+<<<<<<< HEAD
 func (mp *Peer) FlushStop()                          { mp.Stop() } //nolint:errcheck //ignore error
 func (mp *Peer) TrySendEnvelope(e p2p.Envelope) bool { return true }
 func (mp *Peer) SendEnvelope(e p2p.Envelope) bool    { return true }
 func (mp *Peer) TrySend(_ byte, _ []byte) bool       { return true }
 func (mp *Peer) Send(_ byte, _ []byte) bool          { return true }
+=======
+func (mp *Peer) FlushStop()                  { mp.Stop() } //nolint:errcheck //ignore error
+func (mp *Peer) TrySend(_ p2p.Envelope) bool { return true }
+func (mp *Peer) Send(_ p2p.Envelope) bool    { return true }
+>>>>>>> 111d252d7 (Fix lints (#625))
 func (mp *Peer) NodeInfo() p2p.NodeInfo {
 	return p2p.DefaultNodeInfo{
 		DefaultNodeID: mp.addr.ID,
@@ -63,6 +69,7 @@ func (mp *Peer) Get(key string) interface{} {
 	}
 	return nil
 }
+
 func (mp *Peer) Set(key string, value interface{}) {
 	mp.kv[key] = value
 }

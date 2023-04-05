@@ -3,7 +3,6 @@ package state_test
 import (
 	"bytes"
 	"fmt"
-	"testing"
 	"time"
 
 	dbm "github.com/cometbft/cometbft-db"
@@ -152,7 +151,6 @@ func genValSet(size int) *types.ValidatorSet {
 }
 
 func makeHeaderPartsResponsesValPubKeyChange(
-	t *testing.T,
 	state sm.State,
 	pubkey crypto.PubKey,
 ) (types.Header, types.BlockID, *cmtstate.ABCIResponses) {
@@ -176,7 +174,6 @@ func makeHeaderPartsResponsesValPubKeyChange(
 }
 
 func makeHeaderPartsResponsesValPowerChange(
-	t *testing.T,
 	state sm.State,
 	power int64,
 ) (types.Header, types.BlockID, *cmtstate.ABCIResponses) {
@@ -200,7 +197,6 @@ func makeHeaderPartsResponsesValPowerChange(
 }
 
 func makeHeaderPartsResponsesParams(
-	t *testing.T,
 	state sm.State,
 	params cmtproto.ConsensusParams,
 ) (types.Header, types.BlockID, *cmtstate.ABCIResponses) {

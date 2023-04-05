@@ -52,8 +52,7 @@ const (
 	defaultBanTime = 24 * time.Hour
 )
 
-type errMaxAttemptsToDial struct {
-}
+type errMaxAttemptsToDial struct{}
 
 func (e errMaxAttemptsToDial) Error() string {
 	return fmt.Sprintf("reached max attempts %d to dial", maxAttemptsToDial)
@@ -216,7 +215,7 @@ func (r *Reactor) AddPeer(p Peer) {
 }
 
 // RemovePeer implements Reactor by resetting peer's requests info.
-func (r *Reactor) RemovePeer(p Peer, reason interface{}) {
+func (r *Reactor) RemovePeer(p Peer, _ interface{}) {
 	id := string(p.ID())
 	r.requestsSent.Delete(id)
 	r.lastReceivedRequests.Delete(id)

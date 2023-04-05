@@ -128,11 +128,20 @@ func TestPersistentKVStoreInfo(t *testing.T) {
 	kvstore.EndBlock(types.RequestEndBlock{Height: header.Height})
 	kvstore.Commit()
 
+<<<<<<< HEAD
 	resInfo = kvstore.Info(types.RequestInfo{})
 	if resInfo.LastBlockHeight != height {
 		t.Fatalf("expected height of %d, got %d", height, resInfo.LastBlockHeight)
 	}
 
+=======
+	_, err = kvstore.Commit(ctx, &types.RequestCommit{})
+	require.NoError(t, err)
+
+	resInfo, err = kvstore.Info(ctx, &types.RequestInfo{})
+	require.NoError(t, err)
+	require.Equal(t, height, resInfo.LastBlockHeight)
+>>>>>>> 111d252d7 (Fix lints (#625))
 }
 
 // add a validator, remove a validator, update a validator
@@ -199,15 +208,64 @@ func TestValUpdates(t *testing.T) {
 	vals1 = append([]types.ValidatorUpdate{v1}, vals1[1:]...)
 	vals2 = kvstore.Validators()
 	valsEqual(t, vals1, vals2)
-
 }
 
+<<<<<<< HEAD
+=======
+func TestCheckTx(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	kvstore := NewInMemoryApplication()
+
+	val := RandVal()
+
+	testCases := []struct {
+		expCode uint32
+		tx      []byte
+	}{
+		{CodeTypeOK, NewTx("hello", "world")},
+		{CodeTypeInvalidTxFormat, []byte("hello")},
+		{CodeTypeOK, []byte("space:jam")},
+		{CodeTypeInvalidTxFormat, []byte("=hello")},
+		{CodeTypeInvalidTxFormat, []byte("hello=")},
+		{CodeTypeOK, []byte("a=b")},
+		{CodeTypeInvalidTxFormat, []byte("val=hello")},
+		{CodeTypeInvalidTxFormat, []byte("val=hi!5")},
+		{CodeTypeOK, MakeValSetChangeTx(val.PubKey, 10)},
+	}
+
+	for idx, tc := range testCases {
+		resp, err := kvstore.CheckTx(ctx, &types.RequestCheckTx{Tx: tc.tx})
+		require.NoError(t, err, idx)
+		fmt.Println(string(tc.tx))
+		require.Equal(t, tc.expCode, resp.Code, idx)
+	}
+}
+
+func TestClientServer(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	// set up socket app
+	kvstore := NewInMemoryApplication()
+	client, _, err := makeClientServer(t, kvstore, "kvstore-socket", "socket")
+	require.NoError(t, err)
+	runClientTests(ctx, t, client)
+
+	// set up grpc app
+	kvstore = NewInMemoryApplication()
+	gclient, _, err := makeClientServer(t, kvstore, t.TempDir(), "grpc")
+	require.NoError(t, err)
+	runClientTests(ctx, t, gclient)
+}
+
+>>>>>>> 111d252d7 (Fix lints (#625))
 func makeApplyBlock(
 	t *testing.T,
 	kvstore types.Application,
 	heightInt int,
 	diff []types.ValidatorUpdate,
-	txs ...[]byte) {
+	txs ...[]byte,
+) {
 	// make and apply block
 	height := int64(heightInt)
 	hash := []byte("foo")
@@ -224,8 +282,12 @@ func makeApplyBlock(
 	resEndBlock := kvstore.EndBlock(types.RequestEndBlock{Height: header.Height})
 	kvstore.Commit()
 
+<<<<<<< HEAD
 	valsEqual(t, diff, resEndBlock.ValidatorUpdates)
 
+=======
+	valsEqual(t, diff, resFinalizeBlock.ValidatorUpdates)
+>>>>>>> 111d252d7 (Fix lints (#625))
 }
 
 // order doesn't matter

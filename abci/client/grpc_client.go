@@ -49,7 +49,7 @@ func NewGRPCClient(addr string, mustConnect bool) Client {
 	return cli
 }
 
-func dialerFunc(ctx context.Context, addr string) (net.Conn, error) {
+func dialerFunc(_ context.Context, addr string) (net.Conn, error) {
 	return cmtnet.Connect(addr)
 }
 
@@ -376,9 +376,14 @@ func (cli *grpcClient) CheckTxSync(params types.RequestCheckTx) (*types.Response
 	return cli.finishSyncCall(reqres).GetCheckTx(), cli.Error()
 }
 
+<<<<<<< HEAD
 func (cli *grpcClient) QuerySync(req types.RequestQuery) (*types.ResponseQuery, error) {
 	reqres := cli.QueryAsync(req)
 	return cli.finishSyncCall(reqres).GetQuery(), cli.Error()
+=======
+func (cli *grpcClient) Commit(ctx context.Context, _ *types.RequestCommit) (*types.ResponseCommit, error) {
+	return cli.client.Commit(ctx, types.ToRequestCommit().GetCommit(), grpc.WaitForReady(true))
+>>>>>>> 111d252d7 (Fix lints (#625))
 }
 
 func (cli *grpcClient) CommitSync() (*types.ResponseCommit, error) {

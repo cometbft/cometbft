@@ -33,16 +33,22 @@ import (
 // test.
 type cleanupFunc func()
 
+<<<<<<< HEAD:mempool/v0/clist_mempool_test.go
 func newMempoolWithAppMock(cc proxy.ClientCreator, client abciclient.Client) (*CListMempool, cleanupFunc, error) {
 	conf := config.ResetTestRoot("mempool_test")
+=======
+func newMempoolWithAppMock(client abciclient.Client) (*CListMempool, cleanupFunc, error) {
+	conf := test.ResetTestRoot("mempool_test")
+>>>>>>> 111d252d7 (Fix lints (#625)):mempool/clist_mempool_test.go
 
-	mp, cu := newMempoolWithAppAndConfigMock(cc, conf, client)
+	mp, cu := newMempoolWithAppAndConfigMock(conf, client)
 	return mp, cu, nil
 }
 
-func newMempoolWithAppAndConfigMock(cc proxy.ClientCreator,
+func newMempoolWithAppAndConfigMock(
 	cfg *config.Config,
-	client abciclient.Client) (*CListMempool, cleanupFunc) {
+	client abciclient.Client,
+) (*CListMempool, cleanupFunc) {
 	appConnMem := client
 	appConnMem.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "mempool"))
 	err := appConnMem.Start()
@@ -254,9 +260,13 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 	mockClient.On("FlushAsync", mock.Anything).Return(abciclient.NewReqRes(abci.ToRequestFlush()), nil)
 	mockClient.On("SetResponseCallback", mock.MatchedBy(func(cb abciclient.Callback) bool { callback = cb; return true }))
 
+<<<<<<< HEAD:mempool/v0/clist_mempool_test.go
 	app := kvstore.NewApplication()
 	cc := proxy.NewLocalClientCreator(app)
 	mp, cleanup, err := newMempoolWithAppMock(cc, mockClient)
+=======
+	mp, cleanup, err := newMempoolWithAppMock(mockClient)
+>>>>>>> 111d252d7 (Fix lints (#625)):mempool/clist_mempool_test.go
 	require.NoError(t, err)
 	defer cleanup()
 
@@ -632,10 +642,16 @@ func TestMempoolTxsBytes(t *testing.T) {
 	require.NoError(t, err)
 	assert.EqualValues(t, 9, mp.SizeBytes())
 	assert.Error(t, mp.RemoveTxByKey(types.Tx([]byte{0x07}).Key()))
+<<<<<<< HEAD:mempool/v0/clist_mempool_test.go
 	assert.EqualValues(t, 9, mp.SizeBytes())
 	assert.NoError(t, mp.RemoveTxByKey(types.Tx([]byte{0x06}).Key()))
 	assert.EqualValues(t, 8, mp.SizeBytes())
 
+=======
+	assert.EqualValues(t, 20, mp.SizeBytes())
+	assert.NoError(t, mp.RemoveTxByKey(types.Tx(tx1).Key()))
+	assert.EqualValues(t, 10, mp.SizeBytes())
+>>>>>>> 111d252d7 (Fix lints (#625)):mempool/clist_mempool_test.go
 }
 
 // This will non-deterministically catch some concurrency failures like

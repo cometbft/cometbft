@@ -147,11 +147,18 @@ func dedupHeight(conditions []query.Condition) (dedupConditions []query.Conditio
 			if c.Op == query.OpEqual {
 				if found || heightRangeExists {
 					continue
+<<<<<<< HEAD
 				} else {
 					heightCondition = append(heightCondition, c)
 					heightInfo.height = c.Operand.(int64)
 					found = true
+=======
+>>>>>>> 111d252d7 (Fix lints (#625))
 				}
+				heightCondition = append(heightCondition, c)
+				heightInfo.height = int64(c.Arg.Number())
+
+				found = true
 			} else {
 				heightInfo.onlyHeightEq = false
 				heightRangeExists = true

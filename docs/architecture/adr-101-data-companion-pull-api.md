@@ -80,13 +80,13 @@ At the time of this writing, it is proposed that CometBFT implement a full
 gRPC interface ([\#81]). As such, we have several options when it comes to
 implementing the data companion pull API:
 
-1. Extend the existing RPC API to simply provide the additional data
-   companion-specific endpoints. In order to meet the
+1. Extend the proposed gRPC API from [\#81] to simply provide the additional
+   data companion-specific endpoints. In order to meet the
    [requirements](#requirements), however, some of the endpoints will have to be
    protected by default. This is simpler for clients to interact with though,
    because they only need to interact with a single endpoint for all of their
    needs.
-2. Implement a separate RPC API on a different port to the standard gRPC
+2. Implement a separate gRPC API on a different port to the standard gRPC
    interface. This allows for a clearer distinction between the standard and
    data companion-specific gRPC interfaces, but complicates the server and
    client interaction models.
@@ -100,9 +100,8 @@ will implement these services.
 
 #### Block Service
 
-When implementing gRPC support for a node, this service (or at least a slight
-variation of it) would be applicable anyways, regardless of whether this ADR is
-implemented.
+The following `BlockService` will be implemented as part of [\#81], regardless
+of whether or not this ADR is implemented.
 
 ```protobuf
 syntax = "proto3";
@@ -115,9 +114,11 @@ import "tendermint/types/block.proto";
 
 // BlockService provides information about blocks.
 service BlockService {
-    // GetLatestBlockID returns a stream of the latest block IDs as they are
-    // committed by the network.
-    rpc GetLatestBlockID(GetLatestBlockIDRequest) returns (stream GetLatestBlockIDResponse) {}
+    // GetLatestHeight returns a stream of the latest block heights committed by
+    // the network. This is a long-lived stream that is only terminated by the
+    // server if an error occurs. The companion is expected to handle such
+    // disconnections and automatically reconnect.
+    rpc GetLatestHeight(GetLatestHeightRequest) returns (stream GetLatestHeightResponse) {}
 
     // GetBlock attempts to retrieve the block at a particular height.
     rpc GetBlock(GetBlockRequest) returns (GetBlockResponse) {}
@@ -127,19 +128,17 @@ service BlockService {
     rpc GetBlockResults(GetBlockResultsRequest) returns (GetBlockResultsResponse) {}
 }
 
-message GetLatestBlockIDRequest {}
+message GetLatestHeightRequest {}
 
-// GetLatestBlockIDResponse is a lightweight reference to the latest committed
-// block.
-message GetLatestBlockIDResponse {
-    // The height of the latest committed block.
+// GetLatestHeightResponse provides the height of the latest committed block.
+message GetLatestHeightResponse {
+    // The height of the latest committed block. Will be 0 if no data has been
+    // committed yet.
     int64 height = 1;
-    // The ID of the latest committed block.
-    tendermint.types.BlockID block_id = 2;
 }
 
 message GetBlockRequest {
-    // The height of the block to get.
+    // The height of the block to get. Set to 0 to return the latest block.
     int64 height = 1;
 }
 
@@ -149,30 +148,51 @@ message GetBlockResponse {
 }
 
 message GetBlockResultsRequest {
-    // The height of the block results to get.
+    // The height of the block results to get. Set to 0 to return the latest
+    // block.
     int64 height = 1;
 }
 
 message GetBlockResultsResponse {
-    // All events produced by the ABCI BeginBlock call for the block.
-    repeated tendermint.abci.Event begin_block_events = 1;
+    // The height of the block whose results are provided in the remaining
+    // fields.
+    int64 height = 1;
 
-    // All transaction results produced by block execution.
-    repeated tendermint.abci.ExecTxResult tx_results = 2;
+    // All events produced by the ABCI FinalizeBlock call.
+    repeated tendermint.abci.Event events = 2;
+
+    // All transaction results (and their associated events) produced by block
+    // execution.
+    repeated tendermint.abci.ExecTxResult tx_results = 3;
 
     // Validator updates during block execution.
-    repeated tendermint.abci.ValidatorUpdate validator_updates = 3;
+    repeated tendermint.abci.ValidatorUpdate validator_updates = 4;
 
     // Consensus parameter updates during block execution.
-    tendermint.types.ConsensusParams consensus_param_updates = 4;
+    tendermint.types.ConsensusParams consensus_param_updates = 5;
 
-    // All events produced by the ABCI EndBlock call.
-    // NB: This should be called finalize_block_events when ABCI 2.0 lands.
-    repeated tendermint.abci.Event end_block_events = 5;
+    // The app hash returned by the application after execution of all of the
+    // transactions in the block.
+    bytes app_hash = 6;
 }
 ```
 
+There are several reasons as to why there are two separate gRPC calls for this
+data as opposed to just one:
+
+1. The quantity of data stored by each is application-dependent, and coalescing
+   the two types of data could impose significant overhead in some cases.
+2. The existing JSON-RPC API distinguishes between endpoints providing these two
+   types of data (`/block` and `/block_results`), and the `BlockService` should
+   simply provide a gRPC alternative to these two endpoints.
+3. Eventually, when we no longer need to store block results at all, we can
+   simply deprecate the `GetBlockResults` API call without affecting clients who
+   rely on `GetBlock`.
+
 #### Data Companion Service
+
+This gRPC service is the only novel service proposed for the data companion API,
+and effectively gives the data companion a say in how the node prunes its data.
 
 ```protobuf
 syntax = "proto3";
@@ -224,16 +244,23 @@ be applied.
 
 As covered in the [gRPC API section](#grpc-api), it would be preferable to
 implement some form of access control for sensitive, data companion-specific
-APIs. At least **basic HTTP authentication** should be implemented for these
-endpoints, where credentials should be obtained from an `.htpasswd` file, using
-the same format as [Apache `.htpasswd` files][htpasswd], whose location is set
-in the CometBFT configuration file.
+APIs. Two main possibilities are considered here for access control:
 
-`.htpasswd` files are relatively standard and are supported by many web servers.
-The format is relatively straightforward to parse and interpret.
+1. Only allow the `DataCompanionService` to be exposed via a gRPC endpoint bound
+   to `localhost`. This, however, only caters for deployments run on VMs, and
+   not for those running in Docker containers. In general, in a containerized
+   environment, it would be preferable to have the companion run in a separate
+   container to the node, such that it fails and recovers independently of the
+   node.
 
-We should strongly consider only supporting the bcrypt encryption option for
-passwords stored in `.htpasswd` files.
+2. Implement **basic HTTP authentication** on the `DataCompanionService`, where
+   credentials should be obtained from an `.htpasswd` file, using the same
+   format as [Apache `.htpasswd` files][htpasswd], whose location is set in the
+   CometBFT configuration file.
+
+   `.htpasswd` files are relatively standard and are supported by many web
+   servers. bcrypt encryption for passwords stored in `.htpasswd` files is
+   strongly recommended here.
 
 ### Configuration
 
@@ -254,12 +281,6 @@ companion API.
 
 # Is the data companion gRPC API enabled at all? Default: false
 enabled = false
-
-# The maximum number of blocks to allow the data companion's retain height to
-# lag behind the current height. The node will block all other operations until
-# the companion's retain height is less than `max_retain_lag` blocks behind the
-# current height. Default: 100
-max_retain_lag = 100
 
 # Authentication configuration for the data companion.
 [data_companion.authentication]
@@ -284,8 +305,27 @@ The following metrics are proposed to be added to monitor the health of the
 interaction between a node and its data companion:
 
 - `data_companion_retain_height` - The current retain height as requested by the
-  data companion. This can give operators insight into whether the companion is
-  lagging significantly behind the current network height.
+  data companion. This can give operators insight into how the data companion is
+  affecting pruning.
+- `data_companion_block_response_height` - The highest height for block response
+  data sent to the companion since node startup. This can give operators insight
+  into whether the data companion is significantly lagging behind the node.
+- `data_companion_block_results_response_height` - The highest height for block
+  result response data sent to the companion since node startup. This can give
+  operators insight into whether the data companion is significantly lagging
+  behind the node.
+- `data_companion_block_response_count` - The total number of block responses
+  sent to the data companion since node startup.
+- `data_companion_block_result_response_count` - The total number of block
+  results responses sent to the data companion since node startup.
+- `data_companion_block_response_bytes` - The total number of bytes sent to the
+  data companion since startup for block response data. This can potentially
+  alert operators to bottlenecks in communication between the node and the data
+  companion.
+- `data_companion_block_results_response_bytes` - The total number of bytes sent
+  to the data companion since startup for block results response data. This can
+  potentially alert operators to bottlenecks in communication between the node
+  and the data companion.
 
 ## Consequences
 
@@ -305,7 +345,7 @@ interaction between a node and its data companion:
 - Increases system complexity slightly in the short-term
 - If data companions are not correctly implemented and deployed (e.g. if a
   companion is attached to the same storage as the node, and/or if its retain
-  height signaling is poorly handled), this could result in substantially
+  height signalling is poorly handled), this could result in substantially
   increased storage usage
 
 ### Neutral

@@ -68,7 +68,7 @@ func testThemAll() string {
 	return out.String()
 }
 
-func TestRngConcurrencySafety(t *testing.T) {
+func TestRngConcurrencySafety(_ *testing.T) {
 	var wg sync.WaitGroup
 	for i := 0; i < 100; i++ {
 		wg.Add(1)

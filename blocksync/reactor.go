@@ -66,8 +66,8 @@ type Reactor struct {
 
 // NewReactor returns new reactor instance.
 func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
-	blockSync bool, metrics *Metrics) *Reactor {
-
+	blockSync bool, metrics *Metrics,
+) *Reactor {
 	if state.LastBlockHeight != store.Height() {
 		panic(fmt.Sprintf("state (%v) and store (%v) height mismatch", state.LastBlockHeight,
 			store.Height()))
@@ -169,15 +169,13 @@ func (bcR *Reactor) AddPeer(peer p2p.Peer) {
 }
 
 // RemovePeer implements Reactor by removing peer from the pool.
-func (bcR *Reactor) RemovePeer(peer p2p.Peer, reason interface{}) {
+func (bcR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
 	bcR.pool.RemovePeer(peer.ID())
 }
 
 // respondToPeer loads a block and sends it to the requesting peer,
 // if we have it. Otherwise, we'll respond saying we don't have it.
-func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest,
-	src p2p.Peer) (queued bool) {
-
+func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queued bool) {
 	block := bcR.store.LoadBlock(msg.Height)
 	if block == nil {
 		bcR.Logger.Info("Peer asking for a block we don't have", "src", src, "height", msg.Height)

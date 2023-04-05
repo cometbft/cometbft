@@ -224,9 +224,9 @@ flowchart RL
     comet --> companion
 ```
 
-As can be seen in this diagram, CometBFT connects out to both the ABCI
-application and data companion service based on the CometBFT node's
-configuration.
+As can be seen in this diagram, CometBFT (client) connects out to both the ABCI
+application (server) and data companion service (server) based on the CometBFT
+node's configuration.
 
 The fact that CometBFT connects out to the companion service instead of the
 other way around provides a natural constraint on the number of consumers of the

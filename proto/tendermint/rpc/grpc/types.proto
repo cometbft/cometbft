@@ -26,6 +26,10 @@ message ResponseBroadcastTx {
 //----------------------------------------
 // Service Definition
 
+// BroadcastAPI
+//
+// Deprecated: This API will be superseded by a more comprehensive gRPC-based
+// broadcast API, and is scheduled for removal after v0.38.
 service BroadcastAPI {
   rpc Ping(RequestPing) returns (ResponsePing);
   rpc BroadcastTx(RequestBroadcastTx) returns (ResponseBroadcastTx);

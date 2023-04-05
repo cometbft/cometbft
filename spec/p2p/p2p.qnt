@@ -488,6 +488,15 @@ module p2p {
                 PersistentPeers: Set({ID: "bucky", networkAddress: "127.0.0.9:10"}),
                 MaxNumOutboundPeers: 5,
                 MaxNumInboundPeers: 10,
+            },
+             {ID: "mulder", networkAddress: "127.0.0.1177:210"} -> {
+                peerState: Map(),
+                connections: Set(),
+                AddressBook: add,
+                IsUnconditional: Set({ID: "alien", networkAddress: "127.0.0.142:10"}),
+                PersistentPeers: Set({ID: "monster", networkAddress: "127.0.0.19:10"}),
+                MaxNumOutboundPeers: 5,
+                MaxNumInboundPeers: 10,
             }
         )
         }

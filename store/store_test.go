@@ -1,7 +1,6 @@
 package store
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"runtime/debug"
@@ -14,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+<<<<<<< HEAD
 	cfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/libs/log"
@@ -24,6 +24,19 @@ import (
 	"github.com/tendermint/tendermint/types"
 	cmttime "github.com/tendermint/tendermint/types/time"
 	"github.com/tendermint/tendermint/version"
+=======
+	dbm "github.com/cometbft/cometbft-db"
+
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/internal/test"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	cmtstore "github.com/cometbft/cometbft/proto/tendermint/store"
+	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/cometbft/cometbft/version"
+>>>>>>> 111d252d7 (Fix lints (#625))
 )
 
 // A cleanupFunc cleans up any config / test files created for a particular
@@ -54,8 +67,13 @@ func makeBlock(height int64, state sm.State, lastCommit *types.Commit) *types.Bl
 	return block
 }
 
+<<<<<<< HEAD
 func makeStateAndBlockStore(logger log.Logger) (sm.State, *BlockStore, cleanupFunc) {
 	config := cfg.ResetTestRoot("blockchain_reactor_test")
+=======
+func makeStateAndBlockStore() (sm.State, *BlockStore, cleanupFunc) {
+	config := test.ResetTestRoot("blockchain_reactor_test")
+>>>>>>> 111d252d7 (Fix lints (#625))
 	// blockDB := dbm.NewDebugDB("blockDB", dbm.NewMemDB())
 	// stateDB := dbm.NewDebugDB("stateDB", dbm.NewMemDB())
 	blockDB := dbm.NewMemDB()
@@ -160,7 +178,7 @@ func TestMain(m *testing.M) {
 // TODO: This test should be simplified ...
 
 func TestBlockStoreSaveLoadBlock(t *testing.T) {
-	state, bs, cleanup := makeStateAndBlockStore(log.NewTMLogger(new(bytes.Buffer)))
+	state, bs, cleanup := makeStateAndBlockStore()
 	defer cleanup()
 	require.Equal(t, bs.Base(), int64(0), "initially the base should be zero")
 	require.Equal(t, bs.Height(), int64(0), "initially the height should be zero")
@@ -228,8 +246,14 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 					Height:          5,
 					ChainID:         "block_test",
 					Time:            cmttime.Now(),
+<<<<<<< HEAD
 					ProposerAddress: cmtrand.Bytes(crypto.AddressSize)},
 				makeTestCommit(5, cmttime.Now()),
+=======
+					ProposerAddress: cmtrand.Bytes(crypto.AddressSize),
+				},
+				makeTestExtCommit(5, cmttime.Now()).ToCommit(),
+>>>>>>> 111d252d7 (Fix lints (#625))
 			),
 			parts:      validPartSet,
 			seenCommit: makeTestCommit(5, cmttime.Now()),
@@ -368,6 +392,109 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 	}
 }
 
+<<<<<<< HEAD
+=======
+// stripExtensions removes all VoteExtension data from an ExtendedCommit. This
+// is useful when dealing with an ExendedCommit but vote extension data is
+// expected to be absent.
+func stripExtensions(ec *types.ExtendedCommit) bool {
+	stripped := false
+	for idx := range ec.ExtendedSignatures {
+		if len(ec.ExtendedSignatures[idx].Extension) > 0 || len(ec.ExtendedSignatures[idx].ExtensionSignature) > 0 {
+			stripped = true
+		}
+		ec.ExtendedSignatures[idx].Extension = nil
+		ec.ExtendedSignatures[idx].ExtensionSignature = nil
+	}
+	return stripped
+}
+
+// TestSaveBlockWithExtendedCommitPanicOnAbsentExtension tests that saving a
+// block with an extended commit panics when the extension data is absent.
+func TestSaveBlockWithExtendedCommitPanicOnAbsentExtension(t *testing.T) {
+	for _, testCase := range []struct {
+		name           string
+		malleateCommit func(*types.ExtendedCommit)
+		shouldPanic    bool
+	}{
+		{
+			name:           "basic save",
+			malleateCommit: func(_ *types.ExtendedCommit) {},
+			shouldPanic:    false,
+		},
+		{
+			name: "save commit with no extensions",
+			malleateCommit: func(c *types.ExtendedCommit) {
+				stripExtensions(c)
+			},
+			shouldPanic: true,
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			state, bs, cleanup := makeStateAndBlockStore()
+			defer cleanup()
+			h := bs.Height() + 1
+			block := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
+
+			seenCommit := makeTestExtCommit(block.Header.Height, cmttime.Now())
+			ps, err := block.MakePartSet(2)
+			require.NoError(t, err)
+			testCase.malleateCommit(seenCommit)
+			if testCase.shouldPanic {
+				require.Panics(t, func() {
+					bs.SaveBlockWithExtendedCommit(block, ps, seenCommit)
+				})
+			} else {
+				bs.SaveBlockWithExtendedCommit(block, ps, seenCommit)
+			}
+		})
+	}
+}
+
+// TestLoadBlockExtendedCommit tests loading the extended commit for a previously
+// saved block. The load method should return nil when only a commit was saved and
+// return the extended commit otherwise.
+func TestLoadBlockExtendedCommit(t *testing.T) {
+	for _, testCase := range []struct {
+		name         string
+		saveExtended bool
+		expectResult bool
+	}{
+		{
+			name:         "save commit",
+			saveExtended: false,
+			expectResult: false,
+		},
+		{
+			name:         "save extended commit",
+			saveExtended: true,
+			expectResult: true,
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			state, bs, cleanup := makeStateAndBlockStore()
+			defer cleanup()
+			h := bs.Height() + 1
+			block := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
+			seenCommit := makeTestExtCommit(block.Header.Height, cmttime.Now())
+			ps, err := block.MakePartSet(2)
+			require.NoError(t, err)
+			if testCase.saveExtended {
+				bs.SaveBlockWithExtendedCommit(block, ps, seenCommit)
+			} else {
+				bs.SaveBlock(block, ps, seenCommit.ToCommit())
+			}
+			res := bs.LoadBlockExtendedCommit(block.Height)
+			if testCase.expectResult {
+				require.Equal(t, seenCommit, res)
+			} else {
+				require.Nil(t, res)
+			}
+		})
+	}
+}
+
+>>>>>>> 111d252d7 (Fix lints (#625))
 func TestLoadBaseMeta(t *testing.T) {
 	config := cfg.ResetTestRoot("blockchain_reactor_test")
 	defer os.RemoveAll(config.RootDir)
@@ -555,7 +682,7 @@ func TestLoadBlockMeta(t *testing.T) {
 }
 
 func TestBlockFetchAtHeight(t *testing.T) {
-	state, bs, cleanup := makeStateAndBlockStore(log.NewTMLogger(new(bytes.Buffer)))
+	state, bs, cleanup := makeStateAndBlockStore()
 	defer cleanup()
 	require.Equal(t, bs.Height(), int64(0), "initially the height should be zero")
 	block := makeBlock(bs.Height()+1, state, new(types.Commit))

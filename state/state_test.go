@@ -282,7 +282,11 @@ func TestOneValidatorChangesSaveLoad(t *testing.T) {
 			power++
 		}
 		header, blockID, responses := makeHeaderPartsResponsesValPowerChange(state, power)
+<<<<<<< HEAD
 		validatorUpdates, err = types.PB2TM.ValidatorUpdates(responses.EndBlock.ValidatorUpdates)
+=======
+		validatorUpdates, err = types.PB2TM.ValidatorUpdates(responses.ValidatorUpdates)
+>>>>>>> 111d252d7 (Fix lints (#625))
 		require.NoError(t, err)
 		state, err = sm.UpdateState(state, blockID, &header, responses, validatorUpdates)
 		require.NoError(t, err)
@@ -1037,8 +1041,13 @@ func TestConsensusParamsChangesSaveLoad(t *testing.T) {
 			changeIndex++
 			cp = params[changeIndex]
 		}
+<<<<<<< HEAD
 		header, blockID, responses := makeHeaderPartsResponsesParams(state, cp)
 		validatorUpdates, err = types.PB2TM.ValidatorUpdates(responses.EndBlock.ValidatorUpdates)
+=======
+		header, blockID, responses := makeHeaderPartsResponsesParams(state, cp.ToProto())
+		validatorUpdates, err = types.PB2TM.ValidatorUpdates(responses.ValidatorUpdates)
+>>>>>>> 111d252d7 (Fix lints (#625))
 		require.NoError(t, err)
 		state, err = sm.UpdateState(state, blockID, &header, responses, validatorUpdates)
 

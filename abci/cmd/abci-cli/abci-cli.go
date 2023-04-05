@@ -56,7 +56,6 @@ var RootCmd = &cobra.Command{
 	Short: "the ABCI CLI tool wraps an ABCI client",
 	Long:  "the ABCI CLI tool wraps an ABCI client and is used for testing ABCI servers",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-
 		switch cmd.Use {
 		case "counter", "kvstore": // for the examples apps, don't pre-run
 			return nil
@@ -209,6 +208,7 @@ var echoCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE:  cmdEcho,
 }
+
 var infoCmd = &cobra.Command{
 	Use:   "info",
 	Short: "get some info about the application",
@@ -293,7 +293,6 @@ var testCmd = &cobra.Command{
 
 // Generates new Args array based off of previous call args to maintain flag persistence
 func persistentArgs(line []byte) []string {
-
 	// generate the arguments to run from original os.Args
 	// to maintain flag arguments
 	args := os.Args
@@ -320,7 +319,12 @@ func compose(fs []func() error) error {
 	return err
 }
 
+<<<<<<< HEAD
 func cmdTest(cmd *cobra.Command, args []string) error {
+=======
+func cmdTest(cmd *cobra.Command, _ []string) error {
+	ctx := cmd.Context()
+>>>>>>> 111d252d7 (Fix lints (#625))
 	return compose(
 		[]func() error{
 			func() error { return servertest.InitChain(client) },
@@ -342,7 +346,7 @@ func cmdTest(cmd *cobra.Command, args []string) error {
 		})
 }
 
-func cmdBatch(cmd *cobra.Command, args []string) error {
+func cmdBatch(cmd *cobra.Command, _ []string) error {
 	bufReader := bufio.NewReader(os.Stdin)
 LOOP:
 	for {
@@ -368,7 +372,7 @@ LOOP:
 	return nil
 }
 
-func cmdConsole(cmd *cobra.Command, args []string) error {
+func cmdConsole(cmd *cobra.Command, _ []string) error {
 	for {
 		fmt.Printf("> ")
 		bufReader := bufio.NewReader(os.Stdin)
@@ -651,7 +655,7 @@ func cmdCounter(cmd *cobra.Command, args []string) error {
 	select {}
 }
 
-func cmdKVStore(cmd *cobra.Command, args []string) error {
+func cmdKVStore(*cobra.Command, []string) error {
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 
 	// Create the application - in memory or persisted to disk
@@ -687,12 +691,17 @@ func cmdKVStore(cmd *cobra.Command, args []string) error {
 
 //--------------------------------------------------------------------------------
 
+<<<<<<< HEAD
 func printResponse(cmd *cobra.Command, args []string, rsp response) {
 
+=======
+func printResponse(cmd *cobra.Command, args []string, rsps ...response) {
+>>>>>>> 111d252d7 (Fix lints (#625))
 	if flagVerbose {
 		fmt.Println(">", cmd.Use, strings.Join(args, " "))
 	}
 
+<<<<<<< HEAD
 	// Always print the status code.
 	if rsp.Code == types.CodeTypeOK {
 		fmt.Printf("-> code: OK\n")
@@ -700,6 +709,15 @@ func printResponse(cmd *cobra.Command, args []string, rsp response) {
 		fmt.Printf("-> code: %d\n", rsp.Code)
 
 	}
+=======
+	for _, rsp := range rsps {
+		// Always print the status code.
+		if rsp.Code == types.CodeTypeOK {
+			fmt.Printf("-> code: OK\n")
+		} else {
+			fmt.Printf("-> code: %d\n", rsp.Code)
+		}
+>>>>>>> 111d252d7 (Fix lints (#625))
 
 	if len(rsp.Data) != 0 {
 		// Do no print this line when using the commit command

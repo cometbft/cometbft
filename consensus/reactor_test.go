@@ -119,9 +119,9 @@ func TestReactorBasic(t *testing.T) {
 	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, N)
 	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
 	// wait till everyone makes the first new block
-	timeoutWaitGroup(t, N, func(j int) {
+	timeoutWaitGroup(N, func(j int) {
 		<-blocksSubs[j].Out()
-	}, css)
+	})
 }
 
 // Ensure we can process blocks with evidence
@@ -224,11 +224,11 @@ func TestReactorWithEvidence(t *testing.T) {
 
 	// we expect for each validator that is the proposer to propose one piece of evidence.
 	for i := 0; i < nValidators; i++ {
-		timeoutWaitGroup(t, nValidators, func(j int) {
+		timeoutWaitGroup(nValidators, func(j int) {
 			msg := <-blocksSubs[j].Out()
 			block := msg.Data().(types.EventDataNewBlock).Block
 			assert.Len(t, block.Evidence.Evidence, 1)
-		}, css)
+		})
 	}
 }
 
@@ -251,9 +251,9 @@ func TestReactorCreatesBlockWhenEmptyBlocksFalse(t *testing.T) {
 	}
 
 	// wait till everyone makes the first new block
-	timeoutWaitGroup(t, N, func(j int) {
+	timeoutWaitGroup(N, func(j int) {
 		<-blocksSubs[j].Out()
-	}, css)
+	})
 }
 
 func TestLegacyReactorReceiveBasicIfAddPeerHasntBeenCalledYet(t *testing.T) {
@@ -345,9 +345,9 @@ func TestReactorRecordsVotesAndBlockParts(t *testing.T) {
 	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
 
 	// wait till everyone makes the first new block
-	timeoutWaitGroup(t, N, func(j int) {
+	timeoutWaitGroup(N, func(j int) {
 		<-blocksSubs[j].Out()
-	}, css)
+	})
 
 	// Get peer
 	peer := reactors[1].Switch.Peers().List()[0]
@@ -383,9 +383,9 @@ func TestReactorVotingPowerChange(t *testing.T) {
 	}
 
 	// wait till everyone makes block 1
-	timeoutWaitGroup(t, nVals, func(j int) {
+	timeoutWaitGroup(nVals, func(j int) {
 		<-blocksSubs[j].Out()
-	}, css)
+	})
 
 	//---------------------------------------------------------------------------
 	logger.Debug("---------------------------- Testing changing the voting power of one validator a few times")
@@ -466,9 +466,9 @@ func TestReactorValidatorSetChanges(t *testing.T) {
 	}
 
 	// wait till everyone makes block 1
-	timeoutWaitGroup(t, nPeers, func(j int) {
+	timeoutWaitGroup(nPeers, func(j int) {
 		<-blocksSubs[j].Out()
-	}, css)
+	})
 
 	//---------------------------------------------------------------------------
 	logger.Info("---------------------------- Testing adding one validator")
@@ -536,6 +536,7 @@ func TestReactorValidatorSetChanges(t *testing.T) {
 	require.NoError(t, err)
 	newValidatorTx3 := kvstore.MakeValSetChangeTx(newVal3ABCI, testMinPower)
 
+<<<<<<< HEAD
 	waitForAndValidateBlock(t, nPeers, activeVals, blocksSubs, css, newValidatorTx2, newValidatorTx3)
 	waitForAndValidateBlockWithTx(t, nPeers, activeVals, blocksSubs, css, newValidatorTx2, newValidatorTx3)
 	waitForAndValidateBlock(t, nPeers, activeVals, blocksSubs, css)
@@ -555,6 +556,28 @@ func TestReactorValidatorSetChanges(t *testing.T) {
 	delete(activeVals, string(newValidatorPubKey2.Address()))
 	delete(activeVals, string(newValidatorPubKey3.Address()))
 	waitForBlockWithUpdatedValsAndValidateIt(t, nPeers, activeVals, blocksSubs, css)
+=======
+	t.Run("Testing adding two validators at once", func(t *testing.T) {
+		waitForAndValidateBlock(t, nPeers, activeVals, blocksSubs, css, newValidatorTx2, newValidatorTx3)
+		waitForAndValidateBlockWithTx(t, nPeers, activeVals, blocksSubs, css, newValidatorTx2, newValidatorTx3)
+		waitForAndValidateBlock(t, nPeers, activeVals, blocksSubs, css)
+		activeVals[string(newValidatorPubKey2.Address())] = struct{}{}
+		activeVals[string(newValidatorPubKey3.Address())] = struct{}{}
+		waitForBlockWithUpdatedValsAndValidateIt(t, nPeers, activeVals, blocksSubs, css)
+	})
+
+	t.Run("Testing removing two validators at once", func(t *testing.T) {
+		removeValidatorTx2 := kvstore.MakeValSetChangeTx(newVal2ABCI, 0)
+		removeValidatorTx3 := kvstore.MakeValSetChangeTx(newVal3ABCI, 0)
+
+		waitForAndValidateBlock(t, nPeers, activeVals, blocksSubs, css, removeValidatorTx2, removeValidatorTx3)
+		waitForAndValidateBlockWithTx(t, nPeers, activeVals, blocksSubs, css, removeValidatorTx2, removeValidatorTx3)
+		waitForAndValidateBlock(t, nPeers, activeVals, blocksSubs, css)
+		delete(activeVals, string(newValidatorPubKey2.Address()))
+		delete(activeVals, string(newValidatorPubKey3.Address()))
+		waitForBlockWithUpdatedValsAndValidateIt(t, nPeers, activeVals, blocksSubs, css)
+	})
+>>>>>>> 111d252d7 (Fix lints (#625))
 }
 
 // Check we can make blocks with skip_timeout_commit=false
@@ -571,9 +594,9 @@ func TestReactorWithTimeoutCommit(t *testing.T) {
 	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
 
 	// wait till everyone makes the first new block
-	timeoutWaitGroup(t, N-1, func(j int) {
+	timeoutWaitGroup(N-1, func(j int) {
 		<-blocksSubs[j].Out()
-	}, css)
+	})
 }
 
 func waitForAndValidateBlock(
@@ -584,7 +607,7 @@ func waitForAndValidateBlock(
 	css []*State,
 	txs ...[]byte,
 ) {
-	timeoutWaitGroup(t, n, func(j int) {
+	timeoutWaitGroup(n, func(j int) {
 		css[j].Logger.Debug("waitForAndValidateBlock")
 		msg := <-blocksSubs[j].Out()
 		newBlock := msg.Data().(types.EventDataNewBlock).Block
@@ -595,7 +618,7 @@ func waitForAndValidateBlock(
 			err := assertMempool(css[j].txNotifier).CheckTx(tx, nil, mempl.TxInfo{})
 			assert.Nil(t, err)
 		}
-	}, css)
+	})
 }
 
 func waitForAndValidateBlockWithTx(
@@ -606,7 +629,7 @@ func waitForAndValidateBlockWithTx(
 	css []*State,
 	txs ...[]byte,
 ) {
-	timeoutWaitGroup(t, n, func(j int) {
+	timeoutWaitGroup(n, func(j int) {
 		ntxs := 0
 	BLOCK_TX_LOOP:
 		for {
@@ -629,8 +652,12 @@ func waitForAndValidateBlockWithTx(
 				break BLOCK_TX_LOOP
 			}
 		}
+<<<<<<< HEAD
 
 	}, css)
+=======
+	})
+>>>>>>> 111d252d7 (Fix lints (#625))
 }
 
 func waitForBlockWithUpdatedValsAndValidateIt(
@@ -640,8 +667,12 @@ func waitForBlockWithUpdatedValsAndValidateIt(
 	blocksSubs []types.Subscription,
 	css []*State,
 ) {
+<<<<<<< HEAD
 	timeoutWaitGroup(t, n, func(j int) {
 
+=======
+	timeoutWaitGroup(n, func(j int) {
+>>>>>>> 111d252d7 (Fix lints (#625))
 		var newBlock *types.Block
 	LOOP:
 		for {
@@ -651,17 +682,24 @@ func waitForBlockWithUpdatedValsAndValidateIt(
 			if newBlock.LastCommit.Size() == len(updatedVals) {
 				css[j].Logger.Debug("waitForBlockWithUpdatedValsAndValidateIt: Got block", "height", newBlock.Height)
 				break LOOP
+<<<<<<< HEAD
 			} else {
 				css[j].Logger.Debug(
 					"waitForBlockWithUpdatedValsAndValidateIt: Got block with no new validators. Skipping",
 					"height",
 					newBlock.Height)
+=======
+>>>>>>> 111d252d7 (Fix lints (#625))
 			}
+			css[j].Logger.Debug(
+				"waitForBlockWithUpdatedValsAndValidateIt: Got block with no new validators. Skipping",
+				"height", newBlock.Height, "last_commit", newBlock.LastCommit.Size(), "updated_vals", len(updatedVals),
+			)
 		}
 
 		err := validateBlock(newBlock, updatedVals)
 		assert.Nil(t, err)
-	}, css)
+	})
 }
 
 // expects high synchrony!
@@ -681,7 +719,7 @@ func validateBlock(block *types.Block, activeVals map[string]struct{}) error {
 	return nil
 }
 
-func timeoutWaitGroup(t *testing.T, n int, f func(int), css []*State) {
+func timeoutWaitGroup(n int, f func(int)) {
 	wg := new(sync.WaitGroup)
 	wg.Add(n)
 	for i := 0; i < n; i++ {

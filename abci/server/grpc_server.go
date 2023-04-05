@@ -36,7 +36,6 @@ func NewGRPCServer(protoAddr string, app types.ABCIApplicationServer) service.Se
 
 // OnStart starts the gRPC service.
 func (s *GRPCServer) OnStart() error {
-
 	ln, err := net.Listen(s.proto, s.addr)
 	if err != nil {
 		return err
@@ -59,3 +58,21 @@ func (s *GRPCServer) OnStart() error {
 func (s *GRPCServer) OnStop() {
 	s.server.Stop()
 }
+<<<<<<< HEAD
+=======
+
+//-------------------------------------------------------
+
+// gRPCApplication is a gRPC shim for Application
+type gRPCApplication struct {
+	types.Application
+}
+
+func (app *gRPCApplication) Echo(_ context.Context, req *types.RequestEcho) (*types.ResponseEcho, error) {
+	return &types.ResponseEcho{Message: req.Message}, nil
+}
+
+func (app *gRPCApplication) Flush(context.Context, *types.RequestFlush) (*types.ResponseFlush, error) {
+	return &types.ResponseFlush{}, nil
+}
+>>>>>>> 111d252d7 (Fix lints (#625))

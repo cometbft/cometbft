@@ -218,8 +218,14 @@ func (w *byteBufferWAL) WriteSync(m WALMessage) error {
 func (w *byteBufferWAL) FlushAndSync() error { return nil }
 
 func (w *byteBufferWAL) SearchForEndHeight(
+<<<<<<< HEAD
 	height int64,
 	options *WALSearchOptions) (rd io.ReadCloser, found bool, err error) {
+=======
+	int64,
+	*WALSearchOptions,
+) (rd io.ReadCloser, found bool, err error) {
+>>>>>>> 111d252d7 (Fix lints (#625))
 	return nil, false, nil
 }
 

@@ -100,8 +100,13 @@ func init() {
 	)
 }
 
+<<<<<<< HEAD
 func runProxy(cmd *cobra.Command, args []string) error {
 	// Initialise logger.
+=======
+func runProxy(_ *cobra.Command, args []string) error {
+	// Initialize logger.
+>>>>>>> 111d252d7 (Fix lints (#625))
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 	var option log.Option
 	if verbose {

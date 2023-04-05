@@ -28,11 +28,11 @@ func clearConfig(dir string) {
 		panic(err)
 	}
 	if err := os.Unsetenv("TMHOME"); err != nil {
-		//XXX: Deprecated.
+		// XXX: Deprecated.
 		panic(err)
 	}
 	if err := os.Unsetenv("TM_HOME"); err != nil {
-		//XXX: Deprecated.
+		// XXX: Deprecated.
 		panic(err)
 	}
 
@@ -56,7 +56,7 @@ func testRootCmd() *cobra.Command {
 	return rootCmd
 }
 
-func testSetup(rootDir string, args []string, env map[string]string) error {
+func testSetup(args []string, env map[string]string) error {
 	clearConfig(defaultRoot)
 
 	rootCmd := testRootCmd()
@@ -76,14 +76,14 @@ func TestRootHome(t *testing.T) {
 	}{
 		{nil, nil, defaultRoot},
 		{[]string{"--home", newRoot}, nil, newRoot},
-		{nil, map[string]string{"TMHOME": newRoot}, newRoot}, //XXX: Deprecated.
+		{nil, map[string]string{"TMHOME": newRoot}, newRoot}, // XXX: Deprecated.
 		{nil, map[string]string{"CMTHOME": newRoot}, newRoot},
 	}
 
 	for i, tc := range cases {
 		idxString := strconv.Itoa(i)
 
-		err := testSetup(defaultRoot, tc.args, tc.env)
+		err := testSetup(tc.args, tc.env)
 		require.Nil(t, err, idxString)
 
 		assert.Equal(t, tc.root, config.RootDir, idxString)
@@ -116,7 +116,7 @@ func TestRootFlagsEnv(t *testing.T) {
 	for i, tc := range cases {
 		idxString := strconv.Itoa(i)
 
-		err := testSetup(defaultRoot, tc.args, tc.env)
+		err := testSetup(tc.args, tc.env)
 		require.Nil(t, err, idxString)
 
 		assert.Equal(t, tc.logLevel, config.LogLevel, idxString)

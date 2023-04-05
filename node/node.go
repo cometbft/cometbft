@@ -842,7 +842,11 @@ func NewNode(config *cfg.Config,
 		*config.StateSync,
 		proxyApp.Snapshot(),
 		proxyApp.Query(),
+<<<<<<< HEAD
 		config.StateSync.TempDir,
+=======
+		ssMetrics,
+>>>>>>> 111d252d7 (Fix lints (#625))
 	)
 	stateSyncReactor.SetLogger(logger.With("module", "statesync"))
 
@@ -995,8 +999,13 @@ func (n *Node) OnStart() error {
 		if !ok {
 			return fmt.Errorf("this blockchain reactor does not support switching from state sync")
 		}
+<<<<<<< HEAD
 		err := startStateSync(n.stateSyncReactor, bcR, n.consensusReactor, n.stateSyncProvider,
 			n.config.StateSync, n.config.FastSyncMode, n.stateStore, n.blockStore, n.stateSyncGenesis)
+=======
+		err := startStateSync(n.stateSyncReactor, bcR, n.stateSyncProvider,
+			n.config.StateSync, n.stateStore, n.blockStore, n.stateSyncGenesis)
+>>>>>>> 111d252d7 (Fix lints (#625))
 		if err != nil {
 			return fmt.Errorf("failed to start state sync: %w", err)
 		}

@@ -28,10 +28,10 @@ type mockNodeInfo struct {
 	addr *NetAddress
 }
 
-func (ni mockNodeInfo) ID() ID                              { return ni.addr.ID }
-func (ni mockNodeInfo) NetAddress() (*NetAddress, error)    { return ni.addr, nil }
-func (ni mockNodeInfo) Validate() error                     { return nil }
-func (ni mockNodeInfo) CompatibleWith(other NodeInfo) error { return nil }
+func (ni mockNodeInfo) ID() ID                           { return ni.addr.ID }
+func (ni mockNodeInfo) NetAddress() (*NetAddress, error) { return ni.addr, nil }
+func (ni mockNodeInfo) Validate() error                  { return nil }
+func (ni mockNodeInfo) CompatibleWith(NodeInfo) error    { return nil }
 
 func AddPeerToSwitchPeerSet(sw *Switch, peer Peer) {
 	sw.peers.Add(peer) //nolint:errcheck // ignore error
@@ -88,7 +88,7 @@ func MakeConnectedSwitches(cfg *config.P2PConfig,
 ) []*Switch {
 	switches := make([]*Switch, n)
 	for i := 0; i < n; i++ {
-		switches[i] = MakeSwitch(cfg, i, TestHost, "123.123.123", initSwitch)
+		switches[i] = MakeSwitch(cfg, i, initSwitch)
 	}
 
 	if err := StartSwitches(switches); err != nil {
@@ -183,11 +183,9 @@ func StartSwitches(switches []*Switch) error {
 func MakeSwitch(
 	cfg *config.P2PConfig,
 	i int,
-	network, version string,
 	initSwitch func(int, *Switch) *Switch,
 	opts ...SwitchOption,
 ) *Switch {
-
 	nodeKey := NodeKey{
 		PrivKey: ed25519.GenPrivKey(),
 	}
@@ -296,7 +294,7 @@ type AddrBookMock struct {
 
 var _ AddrBook = (*AddrBookMock)(nil)
 
-func (book *AddrBookMock) AddAddress(addr *NetAddress, src *NetAddress) error {
+func (book *AddrBookMock) AddAddress(addr *NetAddress, _ *NetAddress) error {
 	book.Addrs[addr.String()] = struct{}{}
 	return nil
 }
@@ -310,6 +308,7 @@ func (book *AddrBookMock) HasAddress(addr *NetAddress) bool {
 	_, ok := book.Addrs[addr.String()]
 	return ok
 }
+
 func (book *AddrBookMock) RemoveAddress(addr *NetAddress) {
 	delete(book.Addrs, addr.String())
 }

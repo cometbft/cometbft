@@ -389,8 +389,7 @@ func TestSignerSignVoteErrors(t *testing.T) {
 	}
 }
 
-func brokenHandler(privVal types.PrivValidator, request privvalproto.Message,
-	chainID string) (privvalproto.Message, error) {
+func brokenHandler(_ types.PrivValidator, request privvalproto.Message, _ string) (privvalproto.Message, error) {
 	var res privvalproto.Message
 	var err error
 

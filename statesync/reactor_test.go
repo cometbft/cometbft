@@ -26,11 +26,13 @@ func TestReactor_Receive_ChunkRequest(t *testing.T) {
 		"chunk is returned": {
 			&ssproto.ChunkRequest{Height: 1, Format: 1, Index: 1},
 			[]byte{1, 2, 3},
-			&ssproto.ChunkResponse{Height: 1, Format: 1, Index: 1, Chunk: []byte{1, 2, 3}}},
+			&ssproto.ChunkResponse{Height: 1, Format: 1, Index: 1, Chunk: []byte{1, 2, 3}},
+		},
 		"empty chunk is returned, as nil": {
 			&ssproto.ChunkRequest{Height: 1, Format: 1, Index: 1},
 			[]byte{},
-			&ssproto.ChunkResponse{Height: 1, Format: 1, Index: 1, Chunk: nil}},
+			&ssproto.ChunkResponse{Height: 1, Format: 1, Index: 1, Chunk: nil},
+		},
 		"nil (missing) chunk is returned as missing": {
 			&ssproto.ChunkRequest{Height: 1, Format: 1, Index: 1},
 			nil,
@@ -71,7 +73,11 @@ func TestReactor_Receive_ChunkRequest(t *testing.T) {
 
 			// Start a reactor and send a ssproto.ChunkRequest, then wait for and check response
 			cfg := config.DefaultStateSyncConfig()
+<<<<<<< HEAD
 			r := NewReactor(*cfg, conn, nil, "")
+=======
+			r := NewReactor(*cfg, conn, nil, NopMetrics())
+>>>>>>> 111d252d7 (Fix lints (#625))
 			err := r.Start()
 			require.NoError(t, err)
 			t.Cleanup(func() {
@@ -161,7 +167,11 @@ func TestReactor_Receive_SnapshotsRequest(t *testing.T) {
 
 			// Start a reactor and send a SnapshotsRequestMessage, then wait for and check responses
 			cfg := config.DefaultStateSyncConfig()
+<<<<<<< HEAD
 			r := NewReactor(*cfg, conn, nil, "")
+=======
+			r := NewReactor(*cfg, conn, nil, NopMetrics())
+>>>>>>> 111d252d7 (Fix lints (#625))
 			err := r.Start()
 			require.NoError(t, err)
 			t.Cleanup(func() {

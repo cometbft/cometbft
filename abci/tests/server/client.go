@@ -76,8 +76,39 @@ func DeliverTx(client abcicli.Client, txBytes []byte, codeExp uint32, dataExp []
 	return nil
 }
 
+<<<<<<< HEAD
 func CheckTx(client abcicli.Client, txBytes []byte, codeExp uint32, dataExp []byte) error {
 	res, _ := client.CheckTxSync(types.RequestCheckTx{Tx: txBytes})
+=======
+func PrepareProposal(ctx context.Context, client abcicli.Client, txBytes [][]byte, txExpected [][]byte, _ []byte) error {
+	res, _ := client.PrepareProposal(ctx, &types.RequestPrepareProposal{Txs: txBytes})
+	for i, tx := range res.Txs {
+		if !bytes.Equal(tx, txExpected[i]) {
+			fmt.Println("Failed test: PrepareProposal")
+			fmt.Printf("PrepareProposal transaction was unexpected. Got %x expected %x.",
+				tx, txExpected[i])
+			return errors.New("PrepareProposal error")
+		}
+	}
+	fmt.Println("Passed test: PrepareProposal")
+	return nil
+}
+
+func ProcessProposal(ctx context.Context, client abcicli.Client, txBytes [][]byte, statusExp types.ResponseProcessProposal_ProposalStatus) error {
+	res, _ := client.ProcessProposal(ctx, &types.RequestProcessProposal{Txs: txBytes})
+	if res.Status != statusExp {
+		fmt.Println("Failed test: ProcessProposal")
+		fmt.Printf("ProcessProposal response status was unexpected. Got %v expected %v.",
+			res.Status, statusExp)
+		return errors.New("ProcessProposal error")
+	}
+	fmt.Println("Passed test: ProcessProposal")
+	return nil
+}
+
+func CheckTx(ctx context.Context, client abcicli.Client, txBytes []byte, codeExp uint32, dataExp []byte) error {
+	res, _ := client.CheckTx(ctx, &types.RequestCheckTx{Tx: txBytes})
+>>>>>>> 111d252d7 (Fix lints (#625))
 	code, data, log := res.Code, res.Data, res.Log
 	if code != codeExp {
 		fmt.Println("Failed test: CheckTx")

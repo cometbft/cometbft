@@ -19,8 +19,15 @@ func NewReactor() *Reactor {
 	return r
 }
 
+<<<<<<< HEAD
 func (r *Reactor) GetChannels() []*conn.ChannelDescriptor            { return r.Channels }
 func (r *Reactor) AddPeer(peer p2p.Peer)                             {}
 func (r *Reactor) RemovePeer(peer p2p.Peer, reason interface{})      {}
 func (r *Reactor) ReceiveEnvelope(e p2p.Envelope)                    {}
 func (r *Reactor) Receive(chID byte, peer p2p.Peer, msgBytes []byte) {}
+=======
+func (r *Reactor) GetChannels() []*conn.ChannelDescriptor { return r.Channels }
+func (r *Reactor) AddPeer(_ p2p.Peer)                     {}
+func (r *Reactor) RemovePeer(_ p2p.Peer, _ interface{})   {}
+func (r *Reactor) Receive(_ p2p.Envelope)                 {}
+>>>>>>> 111d252d7 (Fix lints (#625))

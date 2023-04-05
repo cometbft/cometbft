@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+<<<<<<< HEAD
 	"github.com/tendermint/tendermint/abci/example/kvstore"
 	abci "github.com/tendermint/tendermint/abci/types"
 	cfg "github.com/tendermint/tendermint/config"
@@ -31,6 +32,25 @@ import (
 	"github.com/tendermint/tendermint/proxy"
 	sm "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/types"
+=======
+	dbm "github.com/cometbft/cometbft-db"
+
+	"github.com/cometbft/cometbft/abci/example/kvstore"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/abci/types/mocks"
+	cfg "github.com/cometbft/cometbft/config"
+	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/internal/test"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/mempool"
+	"github.com/cometbft/cometbft/privval"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/proxy"
+	sm "github.com/cometbft/cometbft/state"
+	smmocks "github.com/cometbft/cometbft/state/mocks"
+	"github.com/cometbft/cometbft/types"
+>>>>>>> 111d252d7 (Fix lints (#625))
 )
 
 func TestMain(m *testing.M) {
@@ -63,8 +83,11 @@ func TestMain(m *testing.M) {
 // and which ones we need the wal for - then we'd also be able to only flush the
 // wal writer when we need to, instead of with every message.
 
-func startNewStateAndWaitForBlock(t *testing.T, consensusReplayConfig *cfg.Config,
-	lastBlockHeight int64, blockDB dbm.DB, stateStore sm.Store,
+func startNewStateAndWaitForBlock(
+	t *testing.T,
+	consensusReplayConfig *cfg.Config,
+	blockDB dbm.DB,
+	stateStore sm.Store,
 ) {
 	logger := log.TestingLogger()
 	state, _ := stateStore.LoadFromDBOrGenesisFile(consensusReplayConfig.GenesisFile())
@@ -207,7 +230,7 @@ LOOP:
 			t.Logf("WAL panicked: %v", err)
 
 			// make sure we can make blocks after a crash
-			startNewStateAndWaitForBlock(t, consensusReplayConfig, cs.Height, blockDB, stateStore)
+			startNewStateAndWaitForBlock(t, consensusReplayConfig, blockDB, stateStore)
 
 			// stop consensus state and transactions sender (initFn)
 			cs.Stop() //nolint:errcheck // Logging this error causes failure
@@ -682,8 +705,11 @@ func testHandshakeReplay(t *testing.T, config *cfg.Config, nBlocks int, mode uin
 		walFile := tempWALWithData(walBody)
 		config.Consensus.SetWalFile(walFile)
 
+<<<<<<< HEAD
 		privVal := privval.LoadFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile())
 
+=======
+>>>>>>> 111d252d7 (Fix lints (#625))
 		wal, err := NewWAL(walFile)
 		require.NoError(t, err)
 		wal.SetLogger(log.TestingLogger())
@@ -696,9 +722,14 @@ func testHandshakeReplay(t *testing.T, config *cfg.Config, nBlocks int, mode uin
 		})
 		chain, commits, err = makeBlockchainFromWAL(wal)
 		require.NoError(t, err)
+<<<<<<< HEAD
 		pubKey, err := privVal.GetPubKey()
 		require.NoError(t, err)
 		stateDB, genesisState, store = stateAndStore(config, pubKey, kvstore.ProtocolVersion)
+=======
+		stateDB, genesisState, store = stateAndStore(t, testConfig, kvstore.AppVersion)
+	}
+>>>>>>> 111d252d7 (Fix lints (#625))
 
 	}
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
@@ -901,9 +932,13 @@ func TestHandshakePanicsIfAppReturnsWrongAppHash(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 	privVal := privval.LoadFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile())
 	const appVersion = 0x0
+<<<<<<< HEAD
 	pubKey, err := privVal.GetPubKey()
 	require.NoError(t, err)
 	stateDB, state, store := stateAndStore(config, pubKey, appVersion)
+=======
+	stateDB, state, store := stateAndStore(t, config, appVersion)
+>>>>>>> 111d252d7 (Fix lints (#625))
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -1016,7 +1051,11 @@ type badApp struct {
 	onlyLastHashIsWrong bool
 }
 
+<<<<<<< HEAD
 func (app *badApp) Commit() abci.ResponseCommit {
+=======
+func (app *badApp) FinalizeBlock(context.Context, *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
+>>>>>>> 111d252d7 (Fix lints (#625))
 	app.height++
 	if app.onlyLastHashIsWrong {
 		if app.height == app.numBlocks {
@@ -1160,7 +1199,6 @@ func readPieceFromWAL(msg *TimedWALMessage) interface{} {
 // fresh state and mock store
 func stateAndStore(
 	config *cfg.Config,
-	pubKey crypto.PubKey,
 	appVersion uint64,
 ) (dbm.DB, sm.State, *mockBlockStore) {
 	stateDB := dbm.NewMemDB()
@@ -1197,10 +1235,14 @@ func (bs *mockBlockStore) Base() int64                         { return bs.base 
 func (bs *mockBlockStore) Size() int64                         { return bs.Height() - bs.Base() + 1 }
 func (bs *mockBlockStore) LoadBaseMeta() *types.BlockMeta      { return bs.LoadBlockMeta(bs.base) }
 func (bs *mockBlockStore) LoadBlock(height int64) *types.Block { return bs.chain[height-1] }
-func (bs *mockBlockStore) LoadBlockByHash(hash []byte) *types.Block {
+func (bs *mockBlockStore) LoadBlockByHash([]byte) *types.Block {
 	return bs.chain[int64(len(bs.chain))-1]
 }
+<<<<<<< HEAD
 
+=======
+func (bs *mockBlockStore) LoadBlockMetaByHash([]byte) *types.BlockMeta { return nil }
+>>>>>>> 111d252d7 (Fix lints (#625))
 func (bs *mockBlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 	block := bs.chain[height-1]
 	return &types.BlockMeta{
@@ -1208,8 +1250,16 @@ func (bs *mockBlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 		Header:  block.Header,
 	}
 }
+<<<<<<< HEAD
 func (bs *mockBlockStore) LoadBlockPart(height int64, index int) *types.Part { return nil }
 func (bs *mockBlockStore) SaveBlock(block *types.Block, blockParts *types.PartSet, seenCommit *types.Commit) {
+=======
+func (bs *mockBlockStore) LoadBlockPart(int64, int) *types.Part { return nil }
+func (bs *mockBlockStore) SaveBlockWithExtendedCommit(*types.Block, *types.PartSet, *types.ExtendedCommit) {
+}
+
+func (bs *mockBlockStore) SaveBlock(*types.Block, *types.PartSet, *types.Commit) {
+>>>>>>> 111d252d7 (Fix lints (#625))
 }
 
 func (bs *mockBlockStore) LoadBlockCommit(height int64) *types.Commit {
@@ -1217,10 +1267,22 @@ func (bs *mockBlockStore) LoadBlockCommit(height int64) *types.Commit {
 }
 
 func (bs *mockBlockStore) LoadSeenCommit(height int64) *types.Commit {
+<<<<<<< HEAD
 	return bs.commits[height-1]
 }
 
 func (bs *mockBlockStore) PruneBlocks(height int64) (uint64, error) {
+=======
+	return bs.extCommits[height-1].ToCommit()
+}
+
+func (bs *mockBlockStore) LoadBlockExtendedCommit(height int64) *types.ExtendedCommit {
+	return bs.extCommits[height-1]
+}
+
+func (bs *mockBlockStore) PruneBlocks(height int64, _ sm.State) (uint64, int64, error) {
+	evidencePoint := height
+>>>>>>> 111d252d7 (Fix lints (#625))
 	pruned := uint64(0)
 	for i := int64(0); i < height-1; i++ {
 		bs.chain[i] = nil
@@ -1242,10 +1304,14 @@ func TestHandshakeUpdatesValidators(t *testing.T) {
 
 	config := ResetConfig("handshake_test_")
 	defer os.RemoveAll(config.RootDir)
+<<<<<<< HEAD
 	privVal := privval.LoadFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile())
 	pubKey, err := privVal.GetPubKey()
 	require.NoError(t, err)
 	stateDB, state, store := stateAndStore(config, pubKey, 0x0)
+=======
+	stateDB, state, store := stateAndStore(t, config, 0x0)
+>>>>>>> 111d252d7 (Fix lints (#625))
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -1267,6 +1333,7 @@ func TestHandshakeUpdatesValidators(t *testing.T) {
 	if err := handshaker.Handshake(proxyApp); err != nil {
 		t.Fatalf("Error on abci handshake: %v", err)
 	}
+	var err error
 	// reload the state, check the validator set was updated
 	state, err = stateStore.Load()
 	require.NoError(t, err)

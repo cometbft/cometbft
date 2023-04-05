@@ -42,7 +42,7 @@ numbering our ADRs from 100 onwards.
 
 ### Proposed
 
-- [ADR-102: Standalone RPC](./adr-102-standalone-rpc.md)
+- [ADR-102: RPC Companion](./adr-102-rpc-companion.md)
 
 ### Accepted
 

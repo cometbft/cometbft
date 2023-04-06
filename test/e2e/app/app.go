@@ -125,7 +125,7 @@ func NewApplication(cfg *Config) (*Application, error) {
 }
 
 // Info implements ABCI.
-func (app *Application) Info(_ context.Context, req *abci.RequestInfo) (*abci.ResponseInfo, error) {
+func (app *Application) Info(_ context.Context, _ *abci.RequestInfo) (*abci.ResponseInfo, error) {
 	return &abci.ResponseInfo{
 		Version:          version.ABCIVersion,
 		AppVersion:       appVersion,
@@ -150,7 +150,7 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 	app.state.Set(prefixReservedKey+suffixVoteExtHeight, strconv.FormatInt(req.ConsensusParams.Abci.VoteExtensionsEnableHeight, 10))
 	app.logger.Info("setting initial height in app_state", "initial_height", req.InitialHeight)
 	app.state.Set(prefixReservedKey+suffixInitialHeight, strconv.FormatInt(req.InitialHeight, 10))
-	//Get validators from genesis
+	// Get validators from genesis
 	if req.Validators != nil {
 		for _, val := range req.Validators {
 			val := val
@@ -187,7 +187,7 @@ func (app *Application) CheckTx(_ context.Context, req *abci.RequestCheckTx) (*a
 
 // FinalizeBlock implements ABCI.
 func (app *Application) FinalizeBlock(_ context.Context, req *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
-	var txs = make([]*abci.ExecTxResult, len(req.Txs))
+	txs := make([]*abci.ExecTxResult, len(req.Txs))
 
 	for i, tx := range req.Txs {
 		key, value, err := parseTx(tx)
@@ -269,7 +269,7 @@ func (app *Application) Query(_ context.Context, req *abci.RequestQuery) (*abci.
 }
 
 // ListSnapshots implements ABCI.
-func (app *Application) ListSnapshots(_ context.Context, req *abci.RequestListSnapshots) (*abci.ResponseListSnapshots, error) {
+func (app *Application) ListSnapshots(_ context.Context, _ *abci.RequestListSnapshots) (*abci.ResponseListSnapshots, error) {
 	snapshots, err := app.snapshots.List()
 	if err != nil {
 		panic(err)
@@ -336,8 +336,8 @@ func (app *Application) ApplySnapshotChunk(_ context.Context, req *abci.RequestA
 // The special vote extension-generated transaction must fit within an empty block
 // and takes precedence over all other transactions coming from the mempool.
 func (app *Application) PrepareProposal(
-	_ context.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
-
+	_ context.Context, req *abci.RequestPrepareProposal,
+) (*abci.ResponsePrepareProposal, error) {
 	_, areExtensionsEnabled := app.checkHeightAndExtensions(true, req.Height, "PrepareProposal")
 
 	txs := make([][]byte, 0, len(req.Txs)+1)
@@ -638,7 +638,7 @@ func (app *Application) verifyAndSum(
 		}
 		cve := cmtproto.CanonicalVoteExtension{
 			Extension: vote.VoteExtension,
-			Height:    currentHeight - 1, //the vote extension was signed in the previous height
+			Height:    currentHeight - 1, // the vote extension was signed in the previous height
 			Round:     int64(extCommit.Round),
 			ChainId:   chainID,
 		}
@@ -728,7 +728,7 @@ func (app *Application) verifyExtensionTx(height int64, payload string) error {
 		return fmt.Errorf("failed to sum and verify in process proposal: %w", err)
 	}
 
-	//Final check that the proposer behaved correctly
+	// Final check that the proposer behaved correctly
 	if int64(expSum) != sum {
 		return fmt.Errorf("sum is not consistent with vote extension payload: %d!=%d", expSum, sum)
 	}

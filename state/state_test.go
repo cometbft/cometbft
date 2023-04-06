@@ -277,7 +277,7 @@ func TestOneValidatorChangesSaveLoad(t *testing.T) {
 			changeIndex++
 			power++
 		}
-		header, blockID, responses := makeHeaderPartsResponsesValPowerChange(t, state, power)
+		header, blockID, responses := makeHeaderPartsResponsesValPowerChange(state, power)
 		validatorUpdates, err = types.PB2TM.ValidatorUpdates(responses.ValidatorUpdates)
 		require.NoError(t, err)
 		state, err = sm.UpdateState(state, blockID, &header, responses, validatorUpdates)
@@ -953,7 +953,7 @@ func TestManyValidatorChangesSaveLoad(t *testing.T) {
 	pubkey := ed25519.GenPrivKey().PubKey()
 
 	// Swap the first validator with a new one (validator set size stays the same).
-	header, blockID, responses := makeHeaderPartsResponsesValPubKeyChange(t, state, pubkey)
+	header, blockID, responses := makeHeaderPartsResponsesValPubKeyChange(state, pubkey)
 
 	// Save state etc.
 	var validatorUpdates []*types.Validator
@@ -1036,7 +1036,7 @@ func TestConsensusParamsChangesSaveLoad(t *testing.T) {
 			changeIndex++
 			cp = params[changeIndex]
 		}
-		header, blockID, responses := makeHeaderPartsResponsesParams(t, state, cp.ToProto())
+		header, blockID, responses := makeHeaderPartsResponsesParams(state, cp.ToProto())
 		validatorUpdates, err = types.PB2TM.ValidatorUpdates(responses.ValidatorUpdates)
 		require.NoError(t, err)
 		state, err = sm.UpdateState(state, blockID, &header, responses, validatorUpdates)

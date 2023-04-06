@@ -1,7 +1,6 @@
 package store
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"runtime/debug"
@@ -17,7 +16,6 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/internal/test"
-	"github.com/cometbft/cometbft/libs/log"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	cmtstore "github.com/cometbft/cometbft/proto/tendermint/store"
 	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
@@ -53,7 +51,7 @@ func makeTestExtCommit(height int64, timestamp time.Time) *types.ExtendedCommit 
 	}
 }
 
-func makeStateAndBlockStore(logger log.Logger) (sm.State, *BlockStore, cleanupFunc) {
+func makeStateAndBlockStore() (sm.State, *BlockStore, cleanupFunc) {
 	config := test.ResetTestRoot("blockchain_reactor_test")
 	// blockDB := dbm.NewDebugDB("blockDB", dbm.NewMemDB())
 	// stateDB := dbm.NewDebugDB("stateDB", dbm.NewMemDB())
@@ -138,7 +136,7 @@ func newInMemoryBlockStore() (*BlockStore, dbm.DB) {
 // TODO: This test should be simplified ...
 
 func TestBlockStoreSaveLoadBlock(t *testing.T) {
-	state, bs, cleanup := makeStateAndBlockStore(log.NewTMLogger(new(bytes.Buffer)))
+	state, bs, cleanup := makeStateAndBlockStore()
 	defer cleanup()
 	require.Equal(t, bs.Base(), int64(0), "initially the base should be zero")
 	require.Equal(t, bs.Height(), int64(0), "initially the height should be zero")
@@ -209,7 +207,8 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 					Height:          5,
 					ChainID:         "block_test",
 					Time:            cmttime.Now(),
-					ProposerAddress: cmtrand.Bytes(crypto.AddressSize)},
+					ProposerAddress: cmtrand.Bytes(crypto.AddressSize),
+				},
 				makeTestExtCommit(5, cmttime.Now()).ToCommit(),
 			),
 			parts:      validPartSet,
@@ -389,7 +388,7 @@ func TestSaveBlockWithExtendedCommitPanicOnAbsentExtension(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
-			state, bs, cleanup := makeStateAndBlockStore(log.NewTMLogger(new(bytes.Buffer)))
+			state, bs, cleanup := makeStateAndBlockStore()
 			defer cleanup()
 			h := bs.Height() + 1
 			block := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
@@ -430,7 +429,7 @@ func TestLoadBlockExtendedCommit(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
-			state, bs, cleanup := makeStateAndBlockStore(log.NewTMLogger(new(bytes.Buffer)))
+			state, bs, cleanup := makeStateAndBlockStore()
 			defer cleanup()
 			h := bs.Height() + 1
 			block := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
@@ -689,7 +688,7 @@ func TestLoadBlockMetaByHash(t *testing.T) {
 }
 
 func TestBlockFetchAtHeight(t *testing.T) {
-	state, bs, cleanup := makeStateAndBlockStore(log.NewTMLogger(new(bytes.Buffer)))
+	state, bs, cleanup := makeStateAndBlockStore()
 	defer cleanup()
 	require.Equal(t, bs.Height(), int64(0), "initially the height should be zero")
 	block := state.MakeBlock(bs.Height()+1, nil, new(types.Commit), nil, state.Validators.GetProposer().Address)

@@ -319,7 +319,6 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 		switches[i] = p2p.MakeSwitch(
 			config.P2P,
 			i,
-			"foo", "1.0.0",
 			func(i int, sw *p2p.Switch) *p2p.Switch {
 				return sw
 			})

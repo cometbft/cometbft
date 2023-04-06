@@ -19,7 +19,6 @@ import (
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
-	core_grpc "github.com/cometbft/cometbft/rpc/grpc"
 	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 )
 
@@ -53,16 +52,6 @@ func waitForRPC() {
 
 		fmt.Println("error", err)
 		time.Sleep(time.Millisecond)
-	}
-}
-
-func waitForGRPC() {
-	client := GetGRPCClient()
-	for {
-		_, err := client.Ping(context.Background(), &core_grpc.RequestPing{})
-		if err == nil {
-			return
-		}
 	}
 }
 
@@ -113,12 +102,6 @@ func GetConfig(forceCreate ...bool) *cfg.Config {
 	return globalConfig
 }
 
-func GetGRPCClient() core_grpc.BroadcastAPIClient {
-	grpcAddr := globalConfig.RPC.GRPCListenAddress
-	//nolint:staticcheck // SA1019: core_grpc.StartGRPCClient is deprecated: A new gRPC API will be introduced after v0.38.
-	return core_grpc.StartGRPCClient(grpcAddr)
-}
-
 // StartTendermint starts a test CometBFT server in a go routine and returns when it is initialized
 func StartTendermint(app abci.Application, opts ...func(*Options)) *nm.Node {
 	nodeOpts := defaultOptions
@@ -133,7 +116,6 @@ func StartTendermint(app abci.Application, opts ...func(*Options)) *nm.Node {
 
 	// wait for rpc
 	waitForRPC()
-	waitForGRPC()
 
 	if !nodeOpts.suppressStdout {
 		fmt.Println("CometBFT running!")

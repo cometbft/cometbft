@@ -10,7 +10,7 @@ import (
 )
 
 // DefaultDirPerm is the default permissions used when creating directories.
-const DefaultDirPerm = 0700
+const DefaultDirPerm = 0o700
 
 var configTemplate *template.Template
 
@@ -61,7 +61,7 @@ func WriteConfigFile(configFilePath string, config *Config) {
 		panic(err)
 	}
 
-	cmtos.MustWriteFile(configFilePath, buffer.Bytes(), 0644)
+	cmtos.MustWriteFile(configFilePath, buffer.Bytes(), 0o644)
 }
 
 // Note: any changes to the comments/variables/mapstructure
@@ -168,24 +168,10 @@ cors_allowed_methods = [{{ range .RPC.CORSAllowedMethods }}{{ printf "%q, " . }}
 # A list of non simple headers the client is allowed to use with cross-domain requests
 cors_allowed_headers = [{{ range .RPC.CORSAllowedHeaders }}{{ printf "%q, " . }}{{end}}]
 
-# TCP or UNIX socket address for the gRPC server to listen on
-# NOTE: This server only supports /broadcast_tx_commit
-grpc_laddr = "{{ .RPC.GRPCListenAddress }}"
-
-# Maximum number of simultaneous connections.
-# Does not include RPC (HTTP&WebSocket) connections. See max_open_connections
-# If you want to accept a larger number than the default, make sure
-# you increase your OS limits.
-# 0 - unlimited.
-# Should be < {ulimit -Sn} - {MaxNumInboundPeers} - {MaxNumOutboundPeers} - {N of wal, db and other open files}
-# 1024 - 40 - 10 - 50 = 924 = ~900
-grpc_max_open_connections = {{ .RPC.GRPCMaxOpenConnections }}
-
 # Activate unsafe RPC commands like /dial_seeds and /unsafe_flush_mempool
 unsafe = {{ .RPC.Unsafe }}
 
 # Maximum number of simultaneous connections (including WebSocket).
-# Does not include gRPC connections. See grpc_max_open_connections
 # If you want to accept a larger number than the default, make sure
 # you increase your OS limits.
 # 0 - unlimited.
@@ -199,8 +185,8 @@ max_open_connections = {{ .RPC.MaxOpenConnections }}
 max_subscription_clients = {{ .RPC.MaxSubscriptionClients }}
 
 # Maximum number of unique queries a given client can /subscribe to
-# If you're using GRPC (or Local RPC client) and /broadcast_tx_commit, set to
-# the estimated # maximum number of broadcast_tx_commit calls per block.
+# If you're using /broadcast_tx_commit, set to the estimated # maximum number
+# of broadcast_tx_commit calls per block.
 max_subscriptions_per_client = {{ .RPC.MaxSubscriptionsPerClient }}
 
 # Experimental parameter to specify the maximum number of events a node will

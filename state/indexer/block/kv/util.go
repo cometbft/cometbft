@@ -125,17 +125,19 @@ func parseEventSeqFromEventKey(key []byte) (int64, error) {
 	// function_type = 'being_block_event' | 'end_block_event'
 	if len(remaining) != 0 {
 		var typ string
-		remaining2, err := orderedcode.Parse(remaining, &typ) // Check if 2 or 3
-		if err != nil {                                       // If it cannot parse the event function type, it could be 1
+		remaining2, err := orderedcode.Parse(remaining, &typ) // Check if we have scenarios 2. or 3. (described above).
+		if err != nil {                                       // If it cannot parse the event function type, it could be 1.
 			remaining, err2 := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height, &eventSeq)
-			if err2 != nil || len(remaining) != 0 { // We should not have anything else after the eventSeq
-				return 0, fmt.Errorf("failed to parse event key: %w", err)
+			if err2 != nil || len(remaining) != 0 { // We should not have anything else after the eventSeq.
+				return 0, fmt.Errorf("failed to parse event key: %w; and %w", err, err2)
 			}
 
 		} else {
-			remaining, err2 := orderedcode.Parse(remaining2, &eventSeq) // If 2, , retrieve the eventSeq, otherwise ignore
-			if err2 != nil || len(remaining) != 0 {                     // We should not have anything else after the eventSeq
-				return 0, fmt.Errorf("failed to parse event key: %w", err)
+			remaining, err2 := orderedcode.Parse(remaining2, &eventSeq) // If the event follows the scenario in 2.,
+			// retrieve the eventSeq, otherwise, there should be no remainder
+			// and no error and this parsing has no effect.
+			if err2 != nil || len(remaining) != 0 { // We should not have anything else after the eventSeq if in 2.
+				return 0, fmt.Errorf("failed to parse event key: %w", err2)
 			}
 		}
 	}

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 )
 
 // BlockMeta contains meta information.

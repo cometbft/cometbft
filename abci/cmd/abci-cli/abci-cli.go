@@ -20,7 +20,7 @@ import (
 	servertest "github.com/cometbft/cometbft/abci/tests/server"
 	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/abci/version"
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
+	crypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 )
 
 // client is a global variable so it can be reused by the console
@@ -760,7 +760,7 @@ func printResponse(cmd *cobra.Command, args []string, rsps ...response) {
 			fmt.Printf("-> log: %s\n", rsp.Log)
 		}
 		if cmd.Use == "process_proposal" {
-			fmt.Printf("-> status: %s\n", types.ResponseProcessProposal_ProposalStatus_name[rsp.Status])
+			fmt.Printf("-> status: %s\n", types.ResponseProcessProposal_ProposalStatus(rsp.Status).String())
 		}
 
 		if rsp.Query != nil {

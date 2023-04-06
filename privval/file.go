@@ -9,6 +9,7 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
@@ -16,7 +17,6 @@ import (
 	cmtos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/libs/tempfile"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
@@ -32,9 +32,9 @@ const (
 // A vote is either stepPrevote or stepPrecommit.
 func voteToStep(vote *cmtproto.Vote) int8 {
 	switch vote.Type {
-	case cmtproto.PrevoteType:
+	case types.SignedMsgType_PREVOTE:
 		return stepPrevote
-	case cmtproto.PrecommitType:
+	case types.SignedMsgType_PRECOMMIT:
 		return stepPrecommit
 	default:
 		panic(fmt.Sprintf("Unknown vote type: %v", vote.Type))
@@ -323,7 +323,7 @@ func (pv *FilePV) signVote(chainID string, vote *cmtproto.Vote) error {
 	// precommits, the extension signature will always be empty.
 	// Even if the signed over data is empty, we still add the signature
 	var extSig []byte
-	if vote.Type == cmtproto.PrecommitType && !types.ProtoBlockIDIsNil(&vote.BlockID) {
+	if vote.Type == types.SignedMsgType_PRECOMMIT && !types.ProtoBlockIDIsNil(&vote.BlockID) {
 		extSignBytes := types.VoteExtensionSignBytes(chainID, vote)
 		extSig, err = pv.Key.PrivKey.Sign(extSignBytes)
 		if err != nil {

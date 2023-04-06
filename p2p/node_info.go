@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"reflect"
 
+	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmtstrings "github.com/cometbft/cometbft/libs/strings"
-	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
 	"github.com/cometbft/cometbft/version"
 )
 

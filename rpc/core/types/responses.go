@@ -5,10 +5,10 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/p2p"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 )
 

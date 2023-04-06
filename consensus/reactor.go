@@ -14,8 +14,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p"
-	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
@@ -284,9 +283,9 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 			// (and consequently shows which we don't have)
 			var ourVotes *bits.BitArray
 			switch msg.Type {
-			case cmtproto.PrevoteType:
+			case types.SignedMsgType_PREVOTE:
 				ourVotes = votes.Prevotes(msg.Round).BitArrayByBlockID(msg.BlockID)
-			case cmtproto.PrecommitType:
+			case types.SignedMsgType_PRECOMMIT:
 				ourVotes = votes.Precommits(msg.Round).BitArrayByBlockID(msg.BlockID)
 			default:
 				panic("Bad VoteSetBitsMessage field Type. Forgot to add a check in ValidateBasic?")
@@ -364,9 +363,9 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 			if height == msg.Height {
 				var ourVotes *bits.BitArray
 				switch msg.Type {
-				case cmtproto.PrevoteType:
+				case types.SignedMsgType_PREVOTE:
 					ourVotes = votes.Prevotes(msg.Round).BitArrayByBlockID(msg.BlockID)
-				case cmtproto.PrecommitType:
+				case types.SignedMsgType_PRECOMMIT:
 					ourVotes = votes.Precommits(msg.Round).BitArrayByBlockID(msg.BlockID)
 				default:
 					panic("Bad VoteSetBitsMessage field Type. Forgot to add a check in ValidateBasic?")
@@ -852,7 +851,7 @@ OUTER_LOOP:
 						Message: &cmtcons.VoteSetMaj23{
 							Height:  prs.Height,
 							Round:   prs.Round,
-							Type:    cmtproto.PrevoteType,
+							Type:    types.SignedMsgType_PREVOTE,
 							BlockID: maj23.ToProto(),
 						},
 					})
@@ -872,7 +871,7 @@ OUTER_LOOP:
 						Message: &cmtcons.VoteSetMaj23{
 							Height:  prs.Height,
 							Round:   prs.Round,
-							Type:    cmtproto.PrecommitType,
+							Type:    types.SignedMsgType_PRECOMMIT,
 							BlockID: maj23.ToProto(),
 						},
 					})
@@ -893,7 +892,7 @@ OUTER_LOOP:
 						Message: &cmtcons.VoteSetMaj23{
 							Height:  prs.Height,
 							Round:   prs.ProposalPOLRound,
-							Type:    cmtproto.PrevoteType,
+							Type:    types.SignedMsgType_PREVOTE,
 							BlockID: maj23.ToProto(),
 						},
 					})
@@ -916,7 +915,7 @@ OUTER_LOOP:
 						Message: &cmtcons.VoteSetMaj23{
 							Height:  prs.Height,
 							Round:   commit.Round,
-							Type:    cmtproto.PrecommitType,
+							Type:    types.SignedMsgType_PRECOMMIT,
 							BlockID: commit.BlockID.ToProto(),
 						},
 					})
@@ -1160,7 +1159,7 @@ func (ps *PeerState) PickVoteToSend(votes types.VoteSetReader) (vote *types.Vote
 	}
 
 	height, round, votesType, size :=
-		votes.GetHeight(), votes.GetRound(), cmtproto.SignedMsgType(votes.Type()), votes.Size()
+		votes.GetHeight(), votes.GetRound(), types.SignedMsgType(votes.Type()), votes.Size()
 
 	// Lazily set data using 'votes'.
 	if votes.IsCommit() {
@@ -1178,7 +1177,7 @@ func (ps *PeerState) PickVoteToSend(votes types.VoteSetReader) (vote *types.Vote
 	return nil, false
 }
 
-func (ps *PeerState) getVoteBitArray(height int64, round int32, votesType cmtproto.SignedMsgType) *bits.BitArray {
+func (ps *PeerState) getVoteBitArray(height int64, round int32, votesType types.SignedMsgType) *bits.BitArray {
 	if !types.IsVoteTypeValid(votesType) {
 		return nil
 	}
@@ -1186,25 +1185,25 @@ func (ps *PeerState) getVoteBitArray(height int64, round int32, votesType cmtpro
 	if ps.PRS.Height == height {
 		if ps.PRS.Round == round {
 			switch votesType {
-			case cmtproto.PrevoteType:
+			case types.SignedMsgType_PREVOTE:
 				return ps.PRS.Prevotes
-			case cmtproto.PrecommitType:
+			case types.SignedMsgType_PRECOMMIT:
 				return ps.PRS.Precommits
 			}
 		}
 		if ps.PRS.CatchupCommitRound == round {
 			switch votesType {
-			case cmtproto.PrevoteType:
+			case types.SignedMsgType_PREVOTE:
 				return nil
-			case cmtproto.PrecommitType:
+			case types.SignedMsgType_PRECOMMIT:
 				return ps.PRS.CatchupCommit
 			}
 		}
 		if ps.PRS.ProposalPOLRound == round {
 			switch votesType {
-			case cmtproto.PrevoteType:
+			case types.SignedMsgType_PREVOTE:
 				return ps.PRS.ProposalPOL
-			case cmtproto.PrecommitType:
+			case types.SignedMsgType_PRECOMMIT:
 				return nil
 			}
 		}
@@ -1213,9 +1212,9 @@ func (ps *PeerState) getVoteBitArray(height int64, round int32, votesType cmtpro
 	if ps.PRS.Height == height+1 {
 		if ps.PRS.LastCommitRound == round {
 			switch votesType {
-			case cmtproto.PrevoteType:
+			case types.SignedMsgType_PREVOTE:
 				return nil
-			case cmtproto.PrecommitType:
+			case types.SignedMsgType_PRECOMMIT:
 				return ps.PRS.LastCommit
 			}
 		}
@@ -1330,7 +1329,7 @@ func (ps *PeerState) SetHasVote(vote *types.Vote) {
 	ps.setHasVote(vote.Height, vote.Round, vote.Type, vote.ValidatorIndex)
 }
 
-func (ps *PeerState) setHasVote(height int64, round int32, voteType cmtproto.SignedMsgType, index int32) {
+func (ps *PeerState) setHasVote(height int64, round int32, voteType types.SignedMsgType, index int32) {
 	ps.logger.Debug("setHasVote",
 		"peerH/R",
 		log.NewLazySprintf("%d/%d", ps.PRS.Height, ps.PRS.Round),
@@ -1708,7 +1707,7 @@ func (m *VoteMessage) String() string {
 type HasVoteMessage struct {
 	Height int64
 	Round  int32
-	Type   cmtproto.SignedMsgType
+	Type   types.SignedMsgType
 	Index  int32
 }
 
@@ -1740,7 +1739,7 @@ func (m *HasVoteMessage) String() string {
 type VoteSetMaj23Message struct {
 	Height  int64
 	Round   int32
-	Type    cmtproto.SignedMsgType
+	Type    types.SignedMsgType
 	BlockID types.BlockID
 }
 
@@ -1772,7 +1771,7 @@ func (m *VoteSetMaj23Message) String() string {
 type VoteSetBitsMessage struct {
 	Height  int64
 	Round   int32
-	Type    cmtproto.SignedMsgType
+	Type    types.SignedMsgType
 	BlockID types.BlockID
 	Votes   *bits.BitArray
 }

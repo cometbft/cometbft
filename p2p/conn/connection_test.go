@@ -11,10 +11,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
+	pbtypes "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/protoio"
-	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
-	"github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 const maxPingPongPacketSize = 1024 // bytes
@@ -532,7 +532,7 @@ func TestMConnectionReadErrorUnknownMsgType(t *testing.T) {
 	defer mconnServer.Stop() //nolint:errcheck // ignore for tests
 
 	// send msg with unknown msg type
-	_, err := protoio.NewDelimitedWriter(mconnClient.conn).WriteMsg(&types.Header{ChainID: "x"})
+	_, err := protoio.NewDelimitedWriter(mconnClient.conn).WriteMsg(&pbtypes.Header{ChainID: "x"})
 	require.NoError(t, err)
 	assert.True(t, expectSend(chOnErr), "unknown msg type")
 }

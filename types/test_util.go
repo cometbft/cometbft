@@ -5,8 +5,7 @@ import (
 	"testing"
 	"time"
 
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/version"
 	"github.com/stretchr/testify/require"
 )
@@ -25,7 +24,7 @@ func MakeExtCommit(blockID BlockID, height int64, round int32,
 			ValidatorIndex:   int32(i),
 			Height:           height,
 			Round:            round,
-			Type:             cmtproto.PrecommitType,
+			Type:             SignedMsgType_PRECOMMIT,
 			BlockID:          blockID,
 			Timestamp:        now,
 		}
@@ -60,7 +59,7 @@ func MakeVote(
 	valIndex int32,
 	height int64,
 	round int32,
-	step cmtproto.SignedMsgType,
+	step SignedMsgType,
 	blockID BlockID,
 	time time.Time,
 ) (*Vote, error) {
@@ -79,7 +78,7 @@ func MakeVote(
 		Timestamp:        time,
 	}
 
-	extensionsEnabled := step == cmtproto.PrecommitType
+	extensionsEnabled := step == SignedMsgType_PRECOMMIT
 	if _, err := SignAndCheckVote(vote, val, chainID, extensionsEnabled); err != nil {
 		return nil, err
 	}
@@ -94,7 +93,7 @@ func MakeVoteNoError(
 	valIndex int32,
 	height int64,
 	round int32,
-	step cmtproto.SignedMsgType,
+	step SignedMsgType,
 	blockID BlockID,
 	time time.Time,
 ) *Vote {

@@ -149,7 +149,7 @@ module P2PInstCheat {
 
     import P2PAbstract.* //as PA
 
-    action unchangedAll = PAunchangedAll
+    action PInstUnchangedAll = PAunchangedAll
 
 //====== [VOC-GOSSIP-P2P-ACTIONS] P2P-I
     //[DEF-UNICAST]
@@ -173,9 +173,9 @@ module P2PInstCheat {
 
 
 //===== Steps
-    action deliverMessageStep = all {PAunchangedAll, true}
+    action deliverMessageStep = all {PInstUnchangedAll, true}
 
-    action PInstStep = all {PAunchangedAll, false}
+    action PInstStep = all {PInstUnchangedAll, false}
 }
 
 
@@ -196,7 +196,7 @@ module P2PInstNetwork {
     type OutGoingMsg = {dst:Proc, msg: GOSSIPMessage}
     type IncomingMsg = {src:Proc, msg: GOSSIPMessage}
 
-    action unchangedAll = PAunchangedAll
+    action PInstUnchangedAll = PAunchangedAll
 
     def nonDelMsgs(p): Proc => Set[{src: Proc, dst: Proc, msg:GOSSIPMessage}] = {
         sMsgs.filter(m => m.src == p and not(m.in(rMsgs)))
@@ -296,15 +296,11 @@ module P2PTests {
     }
 
 //init and step, used for random walks a fully configured "stack"
-    action init = PInstInit
+    action PTInit = PInstInit
 
-    action step = PInstStep
+    action PTStep = PInstStep
 
 //===== Runs/Debug
-    run NOOPTest: bool = {
-        init
-    }
-
     run sendReceiveInARingTest: bool = {
         PInstInit
             //connect some nodes
@@ -327,7 +323,7 @@ module P2PTests {
                 }
             )
             .then(deliverMessageStep.repeated(2))
-            .then(all {RGPUnicast, unchangedAll})
+            .then(all {RGPUnicast, PInstUnchangedAll})
             .then(
                 all {
                     send(1,3,{gat: "query"}),
@@ -368,7 +364,7 @@ module P2PTests {
                 }
             )
             .then(deliverMessageStep.repeated(3))
-            .then(all {RGPUnicast, unchangedAll})
+            .then(all {RGPUnicast, PInstUnchangedAll})
     }
 
     run sendReceiveInStarConnectedTest: bool = {
@@ -393,7 +389,7 @@ module P2PTests {
                 }
             )
             .then(deliverMessageStep.repeated(2))
-            .then(all {RGPUnicast, unchangedAll})
+            .then(all {RGPUnicast, PInstUnchangedAll})
             .then(
                 all {
                     send(2,3,{gat: "query"}),
@@ -430,7 +426,7 @@ module P2PTests {
                 }
             )
             .then(deliverMessageStep.repeated(2))
-            .then(all {RGPUnicast, unchangedAll})
+            .then(all {RGPUnicast, PInstUnchangedAll})
             .then(
                 val p = cnProcs.keys().filter(pa => cnProcs.get(pa) != Procs ).oneOf()
                 val q = Procs.exclude(cnProcs.get(p)).oneOf()
@@ -444,7 +440,7 @@ module P2PTests {
 
     }
 
-//===== Tests
+//===== Test Steps
     //Update the connections
     action randomDropConnectionStep() = all {
         Procs.filter(ap => cnProcs.get(ap).size() > 0).size() > 0,
@@ -492,9 +488,9 @@ module P2PTests {
         randomMessageStep
     }
 
-    //quint test gossip.qnt --main P2PTests --verbosity=3
+    //quint test gossip.qnt --main P2PTests--verbosity=3
     //quint run gossip.qnt --main P2PTests --step randomStep --verbosity=3
-    //quint run gossip.qnt --main P2PTests --verbosity=3
+    //quint run gossip.qnt --main P2PTests --init PTInit --step PTStep --verbosity=3
 }
 
 
@@ -552,7 +548,7 @@ module GossipInstCheat {
     val fullState = {adds: globalViewAdds, dels: globalViewDels}
 
     //Unchanged
-    action unchangedGossip() = all {
+    action GInstUnchangedAll() = all {
         globalViewAdds' = globalViewAdds,
         globalViewDels' = globalViewDels,
     }
@@ -587,13 +583,18 @@ module GossipInstCheat {
 
 
 //===== Steps (anything ending in Step sets the whole state and may be used in `run`)
-    action addEntryStep(p, e) = all {
+    action addTupleStep(p, e) = all {
             addTuple(p, e),
             //unchanged
             globalViewDels' = globalViewDels,
     }
 
     //Step does not need to do anything, since everything is imediatelly gossiped.
+        //Gossip using P2P
+    action gossipStep(p,q) = all {
+        GInstUnchangedAll
+    }
+
     action GInstStep: bool = true
 }
 
@@ -621,7 +622,7 @@ module GossipInstNoP2P {
     val fullState = {adds: localViewAdds, dels: localViewDels}
 
     //Unchanged
-    action unchangedGossip() = all {
+    action GInstUnchangedAll() = all {
         localViewAdds' = localViewAdds,
         localViewDels' = localViewDels,
     }
@@ -695,22 +696,14 @@ module GossipInstNoP2P {
 
 }
 
-/*
 
 //This module implements GOSSIP-I using P2P-I. Nodes converge by exchanging messages.
-module GossipP2P {
-
+module GossipInstP2P {
     import Helpers.*
-    //import Globals as G
-
-//    import GossipI.*
-    import GossipAbstract as GA
-    //TODO: remove once Quint supports it.
-    type Proc = GA::Proc
-    val Procs = GA::Procs
-    type CONSTuple = GA::CONSTuple
-
+    import Globals.*
     import P2PI.*
+    import GossipI.*
+    import GossipAbstract.* //as GA
 
     var localViewAdds : Proc -> Set[CONSTuple]
     var localViewDels : Proc -> Set[CONSTuple]
@@ -726,15 +719,14 @@ module GossipP2P {
     val fullState = {adds: localViewAdds, dels: localViewDels}
 
     //Unchanged
-    action unchanged() = all {
+    action GInstUnchangedAll() = all {
         localViewAdds' = localViewAdds,
         localViewDels' = localViewDels,
     }
 
-
     // This is a version of gossip that uses messages from the P2P layer.
     action gossip(p,q) = all {
-        //TODO
+        //TODO: any
         //send query message
         //send query response
         //receive query response
@@ -744,7 +736,7 @@ module GossipP2P {
         //merge
 
         //TODO: temporary unchanged
-        unchanged,
+        GInstUnchangedAll,
     }
 
 //====== [VOC-CONS-GOSSIP-ACTIONS] GOSSIP-I
@@ -767,15 +759,9 @@ module GossipP2P {
     def localView(p) = localViewAdds.get(p).exclude(localViewDels.get(p))
 
 //===== Init (anything ending with Init sets the whole state and can serve as the spec `init` clause)
-    action init: bool = all {
+    action GInstInit: bool = all {
         localViewAdds' = Procs.mapBy(_ => Set()),
         localViewDels' = Procs.mapBy(_ => Set())
-    }
-
-    action randomEntryInit: bool = all {
-        val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL"}
-        localViewAdds' = Procs.mapBy(p => if (p == 1) Set(entry) else Set()),
-        localViewDels' = Procs.mapBy(_ => Set()),
     }
 
 //===== Steps (anything ending in Step sets the whole state and may be used in `run`)
@@ -783,7 +769,8 @@ module GossipP2P {
     action gossipStep(p,q) = all {
         gossip(p,q),
     }
-    action addEntryStep(p, e) = all {
+
+    action addTupleStep(p, e) = all {
             addTuple(p, e),
             //unchanged
             localViewDels' = localViewDels,
@@ -797,27 +784,32 @@ module GossipP2P {
         gossipStep(p,q)
     }
 
-    action stutter = all {
-        unchanged,
+/*
+    action randomEntryInit: bool = all {
+        val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL"}
+        localViewAdds' = Procs.mapBy(p => if (p == 1) Set(entry) else Set()),
+        localViewDels' = Procs.mapBy(_ => Set()),
     }
+*/
+
 }
 
 //This module checks for GOSSIP-I invariants on some implementation.
 module GossipInv {
-    //import Globals.*
+    import Globals.*
 
-    import GossipCheat as G
+    import GossipInstCheat.* //as GI
 //    import GossipNoP2P as G
 //    import GossipP2P as G
 
 //===== Invariants
 //================================= TS-VALIDITY
     val NoDoubleMessage: bool = {
-        G::Procs.forall(p =>
-            G::Procs.forall(q =>
-                val lvP = G::localView(p)
+        Procs.forall(p =>
+            Procs.forall(q =>
+                val lvP = localView(p)
                 lvP.forall(mp =>
-                    val lvQ = G::localView(q)
+                    val lvQ = localView(q)
                     lvQ.forall(mq =>
                         and (
                             mp.tag == mq.tag,
@@ -832,11 +824,11 @@ module GossipInv {
     }
 
     val NoSpuriousProposals: bool = {
-        G::Procs.forall(p =>
-            G::Procs.forall(q =>
-                val lvP = G::localView(p).filter(m => m.tag == "proposal")
+        Procs.forall(p =>
+            Procs.forall(q =>
+                val lvP = localView(p).filter(m => m.tag == "proposal")
                 lvP.forall(mp =>
-                    val lvQ = G::localView(q).filter(m => m.tag == "proposal")
+                    val lvQ = localView(q).filter(m => m.tag == "proposal")
                     lvQ.forall(mq =>
                         and (
                             mp.height == mq.height,
@@ -854,20 +846,21 @@ module GossipInv {
 //================================= REQ-CONS-GOSSIP
     //[REQ-CONS-GOSSIP-CONVERGENCE]
     temporal RCGConvergence = {
-        always (
-            G::globalView.forall(t =>
+            globalView.forall(t =>
                 eventually (
                     any {
-                        G::Procs.forall(p => G::localView(p).contains(t)),
-                        not (G::globalView.contains(t))
+                        Procs.forall(p => localView(p).contains(t)),
+                        not (globalView.contains(t))
                     }
                 )
             )
-        )
     }
+
+    temporal RCGConvergenceProp = always (RCGConvergence)
 
 }
 
+/*
 
 //This method implements the supersession of state, wherever it actually sits.
 module SupersessionOracle {
@@ -910,227 +903,168 @@ module SupersessionOracle {
     }
 }
 
+*/
 
-
-module P2PTests {
-    import Helpers.*
-    //import Globals(Procs = Set(1,2,3,4,5)) as G
-    //import P2PI.*
-
-    //import P2PAbstract as PA
-
-    import P2PTestHelper.*
-
-    import P2PCheat as P
-    //import P2PNetwork as P
-
-
-
-}
 
 //==== Gossip Tests
 
-module GossipRingTests {
+module GossipTests {
     import Globals.*
     import P2PI.*
 
-    import P2PAbstract as P
-    //import P2PNetwork as P
+    import P2PAbstract.*
+    //import P2PInstCheat.* //as PInst
+    import P2PInstNetwork.* //as PInst
+    import P2PTests.* //as PT
 
-    import GossipGlobal(Param = true) as G
-//    import GossipAbstract(Param(Param = true) as G
-//    import GossipP2P(Param = true) as G
+//    import GossipInstCheat.* //as GInst
+    import GossipInstNoP2P.*
+//    import GossipInstP2P.*
 
-    action connectStep() = {
-        all {
-            P::cnProcs' = Procs.mapBy(p => if (p < size(Procs)) Set(p+1) else Set(0)),
-            P::maxCon' = P::maxCon,
-            P::igProcs' = P::igProcs,
-            G::unchangedGossip,
-        }
+
+    action GTInit = all {
+        PInstInit,
+        GInstInit
+    }
+
+    action GTUnchangedAll = all {
+        PInstUnchangedAll,
+        GInstUnchangedAll
     }
 
 //===== Runs/Debug
-    action stutter = all {
-        P::stutter,
-        G::stutter,
-    }
-
-    run sendReceiveInARingTest: bool = {
-        G::init
-            //connect some nodes
-            .then(connectStep)
-            //send and receive messages
-            //TODO
-    }
-
-    run gossipInARingTest: bool = {
+    run gossipInRingTopoTest: bool = {
         val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL"}
-        G::init
+
+        GTInit
             //connect some nodes
-            .then(connectStep)
+            .then(
+                all {
+                    connectRingStep,
+                    GInstUnchangedAll
+                })
             //add one entry
-            .then(G::addEntryStep(1, entry))
-            //gossip
-            .then(G::gossipStepCheat(1,2))
-            .then(G::gossipStepCheat(2,3))
-            .then(G::gossipStepCheat(3,4))
-            .then(G::gossipStepCheat(4,5))
-            .then(G::gossipStepCheat(1,2))
             .then(all {
-                //All see the entry
-                G::Procs.forall(p => G::localView(p).contains(entry)),
-                stutter
+                addTupleStep(1, entry),
+                PInstUnchangedAll
             })
-    }
-}
-
-
-module GossipFullTests {
-    import GossipAbstract(Procs = Set(1,2,3,4,5)) as G
-
-//===== Runs/Debug
-    action stutter = all {
-        G::stutter,
-    }
-
-    action connectStep() = {
-        all {
-            G::cnProcs' = G::Procs.mapBy(p => G::Procs),
-            G::maxCon' = G::maxCon,
-            G::igProcs' = G::igProcs,
-            G::unchangedGossip,
+            //gossip
+            .then((all {
+                val pqs = tuples(Procs,Procs).filter(t => t._1 != t._2 and localView(t._1) != localView(t._2))
+                if (pqs.size() > 0) all {
+                    val pq = pqs.oneOf()
+                    gossipStep(pq._1, pq._2),
+                    PInstUnchangedAll
+                } else
+                GTUnchangedAll
+            }).repeated(size(Procs)))
+            .then( all {
+                //All see the entry
+                Procs.forall(p => localView(p).contains(entry)),
+                GTUnchangedAll
+            })
         }
-    }
 
-    run sendReceiveInFullyConnectedTest: bool = {
-        G::init
-            //connect some nodes
-            .then(connectStep)
-            //send and receive messages
-            //TODO
-    }
-
-   run gossipInFullTest: bool = {
+    run gossipCliqueTopoTest: bool = {
         val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL"}
-        G::init
+
+        GTInit
             //connect some nodes
-            .then(connectStep)
+            .then(
+                all {
+                    connectFullStep,
+                    GInstUnchangedAll
+                })
             //add one entry
-            .then(G::addEntryStep(1, entry))
-            //gossip
-            .then(G::gossipStepCheat(1,2))
-            .then(G::gossipStepCheat(1,3))
-            .then(G::gossipStepCheat(3,4))
-            .then(G::gossipStepCheat(3,5))
             .then(all {
+                addTupleStep(1, entry),
+                PInstUnchangedAll
+            })
+            //gossip
+            .then((all {
+                val pqs = tuples(Procs,Procs).filter(t => t._1 != t._2 and localView(t._1) != localView(t._2))
+                if (pqs.size() > 0) all {
+                    val pq = pqs.oneOf()
+                    gossipStep(pq._1, pq._2),
+                    PInstUnchangedAll
+                } else
+                GTUnchangedAll
+            }).repeated(size(Procs)))
+            .then( all {
                 //All see the entry
-                G::Procs.forall(p => G::localView(p).contains(entry)),
-                stutter
+                Procs.forall(p => localView(p).contains(entry)),
+                GTUnchangedAll
             })
-    }
-}
-
-
-
-
-module GossipStarTests {
-
-    import GossipAbstract(Procs = Set(1,2,3,4,5)) as G
-
-    action connectStep() = {
-        all {
-            G::cnProcs' = G::Procs.mapBy(p => if (p ==1 ) G::Procs.G::minusE(1) else Set(1)),
-            G::maxCon' = G::maxCon,
-            G::igProcs' = G::igProcs,
-            G::unchangedGossip,
         }
-    }
 
-//===== Runs/Debug
-    action stutter = all {
-        G::stutter,
-    }
-
-    run gossipStarTest: bool = {
+    run gossipInStarTopoTest: bool = {
         val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL"}
 
-        G::init
+        GTInit
             //connect some nodes
-            .then(connectStep)
-            //add one entries
-            .then(G::addEntryStep(1, entry))
-            //gossip
-            .then(G::step)
-            .repeated(5)
+            .then(
+                all {
+                    connectStarStep,
+                    GInstUnchangedAll
+                })
+            //add one entry
             .then(all {
-                //Some see the entry
-                G::Procs.G::minusE(1).exists(p => G::localView(p).contains(entry)),
-                stutter
+                addTupleStep(1, entry),
+                PInstUnchangedAll
             })
-    }
-
-    run gossipRandomTest: bool = {
-        val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL"}
-
-        G::init
-            //connect some nodes
-            .then(connectStep)
-            //add one entries
-            .then(G::addEntryStep(1, entry))
             //gossip
-            .then(G::step)
-            .repeated(5)
-            .then(all {
-                //Some see the entry
-                G::Procs.G::minusE(1).exists(p => G::localView(p).contains(entry)),
-                stutter
+            .then((all {
+                val pqs = tuples(Procs,Procs).filter(t => t._1 != t._2 and localView(t._1) != localView(t._2))
+                if (pqs.size() > 0) all {
+                    val pq = pqs.oneOf()
+                    gossipStep(pq._1, pq._2),
+                    PInstUnchangedAll
+                } else
+                GTUnchangedAll
+            }).repeated(size(Procs)))
+            .then( all {
+                //All see the entry
+                Procs.forall(p => localView(p).contains(entry)),
+                GTUnchangedAll
             })
-    }
-
-}
-
-
-module GossipRandomTests {
-
-    import GossipAbstract(Procs = Set(1,2,3,4,5)) as G
-
-//===== Runs/Debug
-    action stutter = all {
-        G::stutter,
-    }
-
-    action randomConnectStep() = {
-        //TODO: Describe a random connected graph, without iteration, efficiently
-        //nondet f = Procs.setOfMaps(powerset(Procs)).oneOf()
-        all {
-            G::cnProcs' = G::Procs.mapBy(p => if (p < size(G::Procs)-1) Set(p+1, p+2) else if (p == size(G::Procs)-1) Set(p+1,1) else Set(1,2)),
-            G::maxCon' = G::maxCon,
-            G::igProcs' = G::igProcs,
-            G::unchangedGossip,
         }
-    }
 
-
-    run gossipRandomTest: bool = {
+    run gossipInRandomTopoTest: bool = {
         val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL"}
 
-        G::init
+        GTInit
             //connect some nodes
-            .then(randomConnectStep)
-            //add one entries
-            .then(G::addEntryStep(1, entry))
-            //gossip
-            .then(G::step)
-            .repeated(5)
+            .then(
+                all {
+                    connectRandomStep,
+                    GInstUnchangedAll
+                })
+            //add one entry
             .then(all {
-                //Some see the entry
-                G::Procs.G::minusE(1).exists(p => G::localView(p).contains(entry)),
-                stutter
+                addTupleStep(1, entry),
+                PInstUnchangedAll
             })
-    }
+            //gossip
+            .then((all {
+                val pqs = tuples(Procs,Procs).filter(t => t._1 != t._2 and localView(t._1) != localView(t._2))
+                if (pqs.size() > 0) all {
+                    val pq = pqs.oneOf()
+                    gossipStep(pq._1, pq._2),
+                    PInstUnchangedAll
+                } else
+                GTUnchangedAll
+            }).repeated(size(Procs)))
+            .then( all {
+                //All see the entry
+                Procs.forall(p => localView(p).contains(entry)),
+                GTUnchangedAll
+            })
+        }
+
 
 }
+
+/*
 
 
 module ConsensusMock {
@@ -1168,6 +1102,7 @@ module ConsensusMock {
 To test this spec
 
 - quint test reactor.qnt //Runs all tests
+- quint test gossip.qnt --main GossipTests --verbosity=3
 - quint run --max-samples 10000 --max-steps 10 --invariant RGPIgnoring reactor.qnt
 */
 

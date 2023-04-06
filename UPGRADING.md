@@ -36,12 +36,12 @@ This guide provides instructions for upgrading to specific versions of CometBFT.
 
 
 
-### kvindexer indexing changes
+### kvindexer changes to indexing block events
 
 The changes desribed here are internal to the implementation of the kvindexer, and they are transparent to the 
 user. However, if you own a fork with a modified version of the indexer, you should be aware of these changes. 
 
-* Indexer key for events will not contain information about the function that returned the event. 
+* Indexer key for block events will not contain information about the function that returned the event. 
 The events were indexed by their attributes, event type, the function that returned them, the height and 
 event sequence. The function returning events in old (pre `v0.38`) versions of CometBFT were `BeginBlock` or `EndBlock`. 
 As events are returned now only via `FinalizeBlock`, the value of this field has no use, and will be removed. 

@@ -60,17 +60,24 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 
 			Buckets: stdprometheus.ExponentialBuckets(1, 2, 5),
 		}, labels).With(labelsAndValues...),
+		TxsReceivedMoreThanOnce: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "txs_received_more_than_once",
+			Help:      "Number of times transactions were received more than once.",
+		}, labels).With(labelsAndValues...),
 	}
 }
 
 func NopMetrics() *Metrics {
 	return &Metrics{
-		Size:                 discard.NewGauge(),
-		TxSizeBytes:          discard.NewHistogram(),
-		FailedTxs:            discard.NewCounter(),
-		RejectedTxs:          discard.NewCounter(),
-		EvictedTxs:           discard.NewCounter(),
-		RecheckTimes:         discard.NewCounter(),
-		TimesTxsWereReceived: discard.NewHistogram(),
+		Size:                    discard.NewGauge(),
+		TxSizeBytes:             discard.NewHistogram(),
+		FailedTxs:               discard.NewCounter(),
+		RejectedTxs:             discard.NewCounter(),
+		EvictedTxs:              discard.NewCounter(),
+		RecheckTimes:            discard.NewCounter(),
+		TimesTxsWereReceived:    discard.NewHistogram(),
+		TxsReceivedMoreThanOnce: discard.NewCounter(),
 	}
 }

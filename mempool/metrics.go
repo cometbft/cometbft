@@ -49,6 +49,9 @@ type Metrics struct {
 
 	// For keeping track of the number of times each transaction in the mempool was received.
 	timesTxWasReceived sync.Map
+
+	// Number of times transactions were received more than once.
+	TxsReceivedMoreThanOnce metrics.Counter
 }
 
 func (m *Metrics) countOneTimeTxWasReceived(tx types.TxKey) {

@@ -1,4 +1,4 @@
-package blocksync
+package v1
 
 import (
 	"fmt"

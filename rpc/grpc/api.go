@@ -3,10 +3,29 @@ package coregrpc
 import (
 	"context"
 
+	"github.com/cosmos/gogoproto/grpc"
+
 	abci "github.com/cometbft/cometbft/abci/types"
+	v1 "github.com/cometbft/cometbft/api/cometbft/rpc/grpc/v1"
+	v3 "github.com/cometbft/cometbft/api/cometbft/rpc/grpc/v3"
 	core "github.com/cometbft/cometbft/rpc/core"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
+
+type BroadcastAPIClient = v3.BroadcastAPIClient
+type BroadcastAPIServer = v3.BroadcastAPIServer
+type RequestBroadcastTx = v1.RequestBroadcastTx
+type RequestPing = v1.RequestPing
+type ResponseBroadcastTx = v3.ResponseBroadcastTx
+type ResponsePing = v1.ResponsePing
+
+func NewBroadcastAPIClient(cc grpc.ClientConn) BroadcastAPIClient {
+	return v3.NewBroadcastAPIClient(cc)
+}
+
+func RegisterBroadcastAPIServer(s grpc.Server, srv BroadcastAPIServer) {
+	v3.RegisterBroadcastAPIServer(s, srv)
+}
 
 type broadcastAPI struct {
 	env *core.Environment

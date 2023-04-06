@@ -1,4 +1,4 @@
-package consensus
+package v1
 
 import (
 	"fmt"

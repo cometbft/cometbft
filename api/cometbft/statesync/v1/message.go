@@ -1,4 +1,4 @@
-package statesync
+package v1
 
 import (
 	"fmt"

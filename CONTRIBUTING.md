@@ -46,8 +46,8 @@ When the problem as well as proposed solution are well understood,
 changes should start with a [draft
 pull request](https://github.blog/2019-02-14-introducing-draft-pull-requests/)
 against `main`. The draft signals that work is underway and is not ready for
-review. Only users that are familiar with the issue or have some context are
-expected to write comments at this point. When the work is ready for feedback,
+review. Only users that are familiar with the issue, or those that the author explicitly requested a review from
+are expected to write comments at this point. When the work is ready for feedback,
 hitting "Ready for Review" will signal to the maintainers to take a look, and to
 the rest of the community that feedback is welcome.
 

@@ -543,11 +543,13 @@ module p2p {
         nondet dial = oneOf(OperatorAddressBook.powerset())
         nondet seedResponse = oneOf(Environment.powerset())
             any {            
-                actionDialPeer(a, outgoing),
+                actionDialPeer(a, outgoing), // create a rawConnection
                 lowerLevelDialPeerFailed(a, outgoing),
-                lowerLevelDialPeerSuccess(a, outgoing),
+                lowerLevelDialPeerSuccess(a, outgoing), // if dialed node modeled, we require Transportaccept
 
-                actionTransportAccept(a, incoming),
+                // action to add rawConnection where first element is not in modeledNodes
+
+                actionTransportAccept(a, incoming), // guarded by existence of rawconnection where a is second element 
                 lowerLevelTransportAcceptFailed(a, incoming),
                 lowerLevelTransportAcceptSuccess(a, incoming),
 

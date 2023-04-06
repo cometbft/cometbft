@@ -44,37 +44,39 @@ type Metrics struct {
 	// Number of times transactions are rechecked in the mempool.
 	RecheckTimes metrics.Counter
 
-	// Histogram of times a transaction was received.
-	TimesTxsWereReceived metrics.Histogram `metrics_buckettype:"exp" metrics_bucketsizes:"1,2,5"`
-
-	// For keeping track of the number of times each transaction in the mempool was received.
-	// map from types.TxKey prefix to uint64
-	timesTxWasReceived sync.Map
-	// For each transaction indicates whether was a change in its timesTxWasReceived counter.
-	// map from types.TxKey prefix bool
-	timesTxWasReceivedIncreased sync.Map
-
 	// Number of times transactions were received more than once.
 	TxsReceivedMoreThanOnce metrics.Counter
+
+	// Histogram of times a transaction was received.
+	TimesTxsWereReceived metrics.Histogram `metrics_buckettype:"exp" metrics_bucketsizes:"1,2,5"`
+	// For keeping track of the number of times each transaction in the mempool
+	// was received and whether that value was observed.
+	txsReceived sync.Map
+}
+
+type txReceivedCounter struct {
+	count       uint64
+	wasObserved bool
 }
 
 func (m *Metrics) countOneTimeTxWasReceived(tx types.TxKey) {
-	value, _ := m.timesTxWasReceived.LoadOrStore(tx, uint64(0))
-	m.timesTxWasReceived.Store(tx, value.(uint64)+1)
-	m.timesTxWasReceivedIncreased.Store(tx, true)
+	value, _ := m.txsReceived.LoadOrStore(tx, txReceivedCounter{0, false})
+	counter := value.(txReceivedCounter)
+	counter.count += 1
+	m.txsReceived.Store(tx, counter)
 }
 
 func (m *Metrics) resetTimesTxWasReceived(tx types.TxKey) {
-	m.timesTxWasReceived.Delete(tx)
-	m.timesTxWasReceivedIncreased.Delete(tx)
+	m.txsReceived.Delete(tx)
 }
 
 func (m *Metrics) observeTimesTxsWereReceived() {
-	m.timesTxWasReceived.Range(func(key, value interface{}) bool {
-		tx := key.(types.TxKey)
-		if valueIncreased, _ := m.timesTxWasReceivedIncreased.Load(tx); valueIncreased.(bool) {
-			m.TimesTxsWereReceived.Observe(float64(value.(uint64)))
-			m.timesTxWasReceivedIncreased.Store(tx, false)
+	m.txsReceived.Range(func(key, value interface{}) bool {
+		counter := value.(txReceivedCounter)
+		if !counter.wasObserved {
+			m.TimesTxsWereReceived.Observe(float64(counter.count))
+			counter.wasObserved = true
+			m.txsReceived.Store(key.(types.TxKey), counter)
 		}
 		return true
 	})

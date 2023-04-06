@@ -51,6 +51,10 @@ are expected to write comments at this point. When the work is ready for feedbac
 hitting "Ready for Review" will signal to the maintainers to take a look, and to
 the rest of the community that feedback is welcome.
 
+**The team may opt to ignore unsolicited comments/feedback on draft PRs**, as having to
+respond to feedback on work that is not marked as "Ready for Review" interferes with the
+process of getting the work to the point that it is ready to review.
+
 ![Contributing flow](./docs/imgs/contributing.png)
 
 Each stage of the process is aimed at creating feedback cycles which align contributors and maintainers to make sure:

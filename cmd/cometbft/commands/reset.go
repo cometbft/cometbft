@@ -24,8 +24,9 @@ var keepAddrBook bool
 
 // ResetStateCmd removes the database of the specified CometBFT core instance.
 var ResetStateCmd = &cobra.Command{
-	Use:   "reset-state",
-	Short: "Remove all the data and WAL",
+	Use:     "reset-state",
+	Aliases: []string{"reset_state"},
+	Short:   "Remove all the data and WAL",
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		config, err = ParseConfig(cmd)
 		if err != nil {

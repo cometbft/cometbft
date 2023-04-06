@@ -12,7 +12,7 @@ import (
 
 // NetInfo returns network info.
 // More: https://docs.cometbft.com/main/rpc/#/Info/net_info
-func (env *Environment) NetInfo(ctx *rpctypes.Context) (*ctypes.ResultNetInfo, error) {
+func (env *Environment) NetInfo(*rpctypes.Context) (*ctypes.ResultNetInfo, error) {
 	peersList := env.P2PPeers.Peers().List()
 	peers := make([]ctypes.Peer, 0, len(peersList))
 	for _, peer := range peersList {
@@ -39,7 +39,7 @@ func (env *Environment) NetInfo(ctx *rpctypes.Context) (*ctypes.ResultNetInfo, e
 }
 
 // UnsafeDialSeeds dials the given seeds (comma-separated id@IP:PORT).
-func (env *Environment) UnsafeDialSeeds(ctx *rpctypes.Context, seeds []string) (*ctypes.ResultDialSeeds, error) {
+func (env *Environment) UnsafeDialSeeds(_ *rpctypes.Context, seeds []string) (*ctypes.ResultDialSeeds, error) {
 	if len(seeds) == 0 {
 		return &ctypes.ResultDialSeeds{}, errors.New("no seeds provided")
 	}
@@ -53,10 +53,10 @@ func (env *Environment) UnsafeDialSeeds(ctx *rpctypes.Context, seeds []string) (
 // UnsafeDialPeers dials the given peers (comma-separated id@IP:PORT),
 // optionally making them persistent.
 func (env *Environment) UnsafeDialPeers(
-	ctx *rpctypes.Context,
+	_ *rpctypes.Context,
 	peers []string,
-	persistent, unconditional, private bool) (*ctypes.ResultDialPeers, error) {
-
+	persistent, unconditional, private bool,
+) (*ctypes.ResultDialPeers, error) {
 	if len(peers) == 0 {
 		return &ctypes.ResultDialPeers{}, errors.New("no peers provided")
 	}
@@ -96,7 +96,7 @@ func (env *Environment) UnsafeDialPeers(
 
 // Genesis returns genesis file.
 // More: https://docs.cometbft.com/main/rpc/#/Info/genesis
-func (env *Environment) Genesis(ctx *rpctypes.Context) (*ctypes.ResultGenesis, error) {
+func (env *Environment) Genesis(*rpctypes.Context) (*ctypes.ResultGenesis, error) {
 	if len(env.genChunks) > 1 {
 		return nil, errors.New("genesis response is large, please use the genesis_chunked API instead")
 	}
@@ -104,7 +104,7 @@ func (env *Environment) Genesis(ctx *rpctypes.Context) (*ctypes.ResultGenesis, e
 	return &ctypes.ResultGenesis{Genesis: env.GenDoc}, nil
 }
 
-func (env *Environment) GenesisChunked(ctx *rpctypes.Context, chunk uint) (*ctypes.ResultGenesisChunk, error) {
+func (env *Environment) GenesisChunked(_ *rpctypes.Context, chunk uint) (*ctypes.ResultGenesisChunk, error) {
 	if env.genChunks == nil {
 		return nil, fmt.Errorf("service configuration error, genesis chunks are not initialized")
 	}

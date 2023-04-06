@@ -133,7 +133,6 @@ func TestPersistentKVStoreInfo(t *testing.T) {
 	resInfo, err = kvstore.Info(ctx, &types.RequestInfo{})
 	require.NoError(t, err)
 	require.Equal(t, height, resInfo.LastBlockHeight)
-
 }
 
 // add a validator, remove a validator, update a validator
@@ -200,7 +199,6 @@ func TestValUpdates(t *testing.T) {
 	vals1 = append([]types.ValidatorUpdate{v1}, vals1[1:]...)
 	vals2 = kvstore.getValidators()
 	valsEqual(t, vals1, vals2)
-
 }
 
 func TestCheckTx(t *testing.T) {
@@ -208,7 +206,7 @@ func TestCheckTx(t *testing.T) {
 	defer cancel()
 	kvstore := NewInMemoryApplication()
 
-	val := RandVal(1)
+	val := RandVal()
 
 	testCases := []struct {
 		expCode uint32
@@ -255,7 +253,8 @@ func makeApplyBlock(
 	kvstore types.Application,
 	heightInt int,
 	diff []types.ValidatorUpdate,
-	txs ...[]byte) {
+	txs ...[]byte,
+) {
 	// make and apply block
 	height := int64(heightInt)
 	hash := []byte("foo")
@@ -270,7 +269,6 @@ func makeApplyBlock(
 	require.NoError(t, err)
 
 	valsEqual(t, diff, resFinalizeBlock.ValidatorUpdates)
-
 }
 
 // order doesn't matter

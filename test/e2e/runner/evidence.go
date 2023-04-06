@@ -96,7 +96,7 @@ func InjectEvidence(ctx context.Context, r *rand.Rand, testnet *e2e.Testnet, amo
 		} else {
 			var dve *types.DuplicateVoteEvidence
 			dve, err = generateDuplicateVoteEvidence(
-				ctx, privVals, evidenceHeight, valSet, testnet.Name, blockRes.Block.Time,
+				privVals, evidenceHeight, valSet, testnet.Name, blockRes.Block.Time,
 			)
 			if dve.VoteA.Height < testnet.VoteExtensionsEnableHeight {
 				dve.VoteA.Extension = nil
@@ -201,7 +201,6 @@ func generateLightClientAttackEvidence(
 // generateDuplicateVoteEvidence picks a random validator from the val set and
 // returns duplicate vote evidence against the validator
 func generateDuplicateVoteEvidence(
-	ctx context.Context,
 	privVals []types.MockPV,
 	height int64,
 	vals *types.ValidatorSet,

@@ -266,7 +266,6 @@ func NewNode(config *cfg.Config,
 		*config.StateSync,
 		proxyApp.Snapshot(),
 		proxyApp.Query(),
-		config.StateSync.TempDir,
 		ssMetrics,
 	)
 	stateSyncReactor.SetLogger(logger.With("module", "statesync"))
@@ -425,7 +424,7 @@ func (n *Node) OnStart() error {
 		if !ok {
 			return fmt.Errorf("this blocksync reactor does not support switching from state sync")
 		}
-		err := startStateSync(n.stateSyncReactor, bcR, n.consensusReactor, n.stateSyncProvider,
+		err := startStateSync(n.stateSyncReactor, bcR, n.stateSyncProvider,
 			n.config.StateSync, n.stateStore, n.blockStore, n.stateSyncGenesis)
 		if err != nil {
 			return fmt.Errorf("failed to start state sync: %w", err)
@@ -640,6 +639,7 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 			return nil, err
 		}
 		go func() {
+			//nolint:staticcheck // SA1019: core_grpc.StartGRPCClient is deprecated: A new gRPC API will be introduced after v0.38.
 			if err := grpccore.StartGRPCServer(env, listener); err != nil {
 				n.Logger.Error("Error starting gRPC server", "err", err)
 			}

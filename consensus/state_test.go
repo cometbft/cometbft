@@ -134,7 +134,6 @@ func TestStateProposerSelection2(t *testing.T) {
 		ensureNewRound(newRoundCh, height, i+round+1) // wait for the new round event each round
 		incrementRound(vss[1:]...)
 	}
-
 }
 
 // a non-validator should timeout into the prevote round
@@ -695,7 +694,7 @@ func TestStateLockPOLRelock(t *testing.T) {
 	ensureNewTimeout(timeoutWaitCh, height, round, cs1.config.Precommit(round).Nanoseconds())
 
 	round++ // moving to the next round
-	//XXX: this isnt guaranteed to get there before the timeoutPropose ...
+	// XXX: this isnt guaranteed to get there before the timeoutPropose ...
 	if err := cs1.SetProposalAndBlock(prop, propBlock, propBlockParts, "some peer"); err != nil {
 		t.Fatal(err)
 	}
@@ -1017,7 +1016,7 @@ func TestStateLockPOLSafety1(t *testing.T) {
 	round++ // moving to the next round
 	ensureNewRound(newRoundCh, height, round)
 
-	//XXX: this isnt guaranteed to get there before the timeoutPropose ...
+	// XXX: this isnt guaranteed to get there before the timeoutPropose ...
 	if err := cs1.SetProposalAndBlock(prop, propBlock, propBlockParts, "some peer"); err != nil {
 		t.Fatal(err)
 	}
@@ -1180,7 +1179,6 @@ func TestStateLockPOLSafety2(t *testing.T) {
 	ensureNoNewUnlock(unlockCh)
 	ensurePrevote(voteCh, height, round)
 	validatePrevote(t, cs1, round, vss[0], propBlockHash1)
-
 }
 
 // 4 vals.
@@ -1543,7 +1541,6 @@ func TestExtendVoteCalledWhenEnabled(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 // TestVerifyVoteExtensionNotCalledOnAbsentPrecommit tests that the VerifyVoteExtension
@@ -1606,7 +1603,6 @@ func TestVerifyVoteExtensionNotCalledOnAbsentPrecommit(t *testing.T) {
 		Height:           height,
 		VoteExtension:    []byte("extension"),
 	})
-
 }
 
 // TestPrepareProposalReceivesVoteExtensions tests that the PrepareProposal method
@@ -1696,7 +1692,7 @@ func TestPrepareProposalReceivesVoteExtensions(t *testing.T) {
 		require.NotZero(t, len(vote.ExtensionSignature))
 		cve := cmtproto.CanonicalVoteExtension{
 			Extension: vote.VoteExtension,
-			Height:    height - 1, //the vote extension was signed in the previous height
+			Height:    height - 1, // the vote extension was signed in the previous height
 			Round:     int64(rpp.LocalLastCommit.Round),
 			ChainId:   test.DefaultTestChainID,
 		}
@@ -1905,7 +1901,7 @@ func TestVoteExtensionEnableHeight(t *testing.T) {
 // 4 vals, 3 Nil Precommits at P0
 // What we want:
 // P0 waits for timeoutPrecommit before starting next round
-func TestWaitingTimeoutOnNilPolka(t *testing.T) {
+func TestWaitingTimeoutOnNilPolka(*testing.T) {
 	cs1, vss := randState(4)
 	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
 	height, round := cs1.Height, cs1.Round
@@ -2057,7 +2053,6 @@ func TestEmitNewValidBlockEventOnCommitWithoutBlock(t *testing.T) {
 	assert.True(t, rs.Step == cstypes.RoundStepCommit)
 	assert.True(t, rs.ProposalBlock == nil)
 	assert.True(t, rs.ProposalBlockParts.Header().Equals(propBlockParts.Header()))
-
 }
 
 // What we want:
@@ -2435,7 +2430,6 @@ func TestStateOutputsBlockPartsStats(t *testing.T) {
 		t.Errorf("should not output stats message after receiving the known block part!")
 	case <-time.After(50 * time.Millisecond):
 	}
-
 }
 
 func TestStateOutputVoteStats(t *testing.T) {
@@ -2468,7 +2462,6 @@ func TestStateOutputVoteStats(t *testing.T) {
 		t.Errorf("should not output stats message after receiving the known vote or vote from bigger height")
 	case <-time.After(50 * time.Millisecond):
 	}
-
 }
 
 func TestSignSameVoteTwice(t *testing.T) {
@@ -2517,7 +2510,8 @@ func signAddPrecommitWithExtension(
 	hash []byte,
 	header types.PartSetHeader,
 	extension []byte,
-	stub *validatorStub) {
+	stub *validatorStub,
+) {
 	v, err := stub.signVote(cmtproto.PrecommitType, hash, header, extension, true)
 	require.NoError(t, err, "failed to sign vote")
 	addVotes(cs, v)

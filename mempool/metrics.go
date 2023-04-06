@@ -48,7 +48,11 @@ type Metrics struct {
 	TimesTxsWereReceived metrics.Histogram `metrics_buckettype:"exp" metrics_bucketsizes:"1,2,5"`
 
 	// For keeping track of the number of times each transaction in the mempool was received.
+	// map from types.TxKey prefix to uint64
 	timesTxWasReceived sync.Map
+	// For each transaction indicates whether was a change in its timesTxWasReceived counter.
+	// map from types.TxKey prefix bool
+	timesTxWasReceivedIncreased sync.Map
 
 	// Number of times transactions were received more than once.
 	TxsReceivedMoreThanOnce metrics.Counter
@@ -57,15 +61,21 @@ type Metrics struct {
 func (m *Metrics) countOneTimeTxWasReceived(tx types.TxKey) {
 	value, _ := m.timesTxWasReceived.LoadOrStore(tx, uint64(0))
 	m.timesTxWasReceived.Store(tx, value.(uint64)+1)
+	m.timesTxWasReceivedIncreased.Store(tx, true)
 }
 
 func (m *Metrics) resetTimesTxWasReceived(tx types.TxKey) {
 	m.timesTxWasReceived.Delete(tx)
+	m.timesTxWasReceivedIncreased.Delete(tx)
 }
 
 func (m *Metrics) observeTimesTxsWereReceived() {
-	m.timesTxWasReceived.Range(func(_, value interface{}) bool {
-		m.TimesTxsWereReceived.Observe(float64(value.(uint64)))
+	m.timesTxWasReceived.Range(func(key, value interface{}) bool {
+		tx := key.(types.TxKey)
+		if valueIncreased, _ := m.timesTxWasReceivedIncreased.Load(tx); valueIncreased.(bool) {
+			m.TimesTxsWereReceived.Observe(float64(value.(uint64)))
+			m.timesTxWasReceivedIncreased.Store(tx, false)
+		}
 		return true
 	})
 }

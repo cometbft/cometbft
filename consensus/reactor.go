@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"runtime"
 	"sync"
 	"time"
 
@@ -744,7 +745,12 @@ OUTER_LOOP:
 			// Load the block's extended commit for prs.Height,
 			// which contains precommit signatures for prs.Height.
 			var ec *types.ExtendedCommit
-			if conR.conS.state.ConsensusParams.ABCI.VoteExtensionsEnabled(prs.Height) {
+			var veEnabled bool
+			for i := 0; i < 10000; i++ {
+				runtime.Gosched()
+				veEnabled = conR.conS.state.ConsensusParams.ABCI.VoteExtensionsEnabled(prs.Height)
+			}
+			if veEnabled {
 				ec = conR.conS.blockStore.LoadBlockExtendedCommit(prs.Height)
 			} else {
 				ec = conR.conS.blockStore.LoadBlockCommit(prs.Height).WrappedExtendedCommit()

@@ -14,8 +14,10 @@ To connect to a node via websocket from the CLI, you can use a tool such as
 [wscat](https://github.com/websockets/wscat) and run:
 
 ```sh
-wscat ws://127.0.0.1:26657/websocket
+wscat -c ws://127.0.0.1:26657/websocket
 ```
+
+NOTE: If your node's RPC endpoint is TLS-enabled, utilize the scheme `wss` instead of `ws`.
 
 You can subscribe to any of the events above by calling the `subscribe` RPC
 method via Websocket along with a valid query.

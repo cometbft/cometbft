@@ -14,7 +14,7 @@ docker:
 # order to build a binary with a CometBFT node in it (for built-in
 # ABCI testing).
 node:
-	go build -race $(BUILD_FLAGS) -tags '$(BUILD_TAGS)' -o build/node ./node
+	go build $(BUILD_FLAGS) -tags '$(BUILD_TAGS)' -o build/node ./node
 
 generator:
 	go build -o build/generator ./generator

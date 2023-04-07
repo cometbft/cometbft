@@ -745,10 +745,12 @@ OUTER_LOOP:
 			// which contains precommit signatures for prs.Height.
 			var ec *types.ExtendedCommit
 			var veEnabled bool
+			conR.conS.mtx.RLock()
 			for i := 0; i < 10000; i++ {
 				time.Sleep(30 * time.Microsecond)
 				veEnabled = conR.conS.state.ConsensusParams.ABCI.VoteExtensionsEnabled(prs.Height)
 			}
+			conR.conS.mtx.RUnlock()
 			if veEnabled {
 				ec = conR.conS.blockStore.LoadBlockExtendedCommit(prs.Height)
 			} else {

@@ -1,11 +1,10 @@
 package main
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"os"
-
-	"context"
 
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	coregrpc "github.com/cometbft/cometbft/rpc/grpc"
@@ -26,6 +25,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	//nolint:staticcheck // SA1019: core_grpc.StartGRPCClient is deprecated: A new gRPC API will be introduced after v0.38.
 	clientGRPC := coregrpc.StartGRPCClient(grpcAddr)
 	res, err := clientGRPC.BroadcastTx(context.Background(), &coregrpc.RequestBroadcastTx{Tx: txBytes})
 	if err != nil {

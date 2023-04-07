@@ -107,6 +107,8 @@ func (conR *Reactor) OnStop() {
 func (conR *Reactor) SwitchToConsensus(state sm.State, skipWAL bool) {
 	conR.Logger.Info("SwitchToConsensus")
 
+	// We need to lock, as we are not entering consensus state from State's `handleMsg` or `handleTimeout`
+	conR.conS.mtx.Lock()
 	// We have no votes, so reconstruct LastCommit from SeenCommit
 	if state.LastBlockHeight > 0 {
 		conR.conS.reconstructLastCommit(state)
@@ -115,6 +117,7 @@ func (conR *Reactor) SwitchToConsensus(state sm.State, skipWAL bool) {
 	// NOTE: The line below causes broadcastNewRoundStepRoutine() to broadcast a
 	// NewRoundStepMessage.
 	conR.conS.updateToState(state)
+	conR.conS.mtx.Unlock()
 
 	conR.mtx.Lock()
 	conR.waitSync = false

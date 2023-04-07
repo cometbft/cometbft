@@ -3,7 +3,6 @@ package commands
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -91,6 +90,7 @@ var RootCmd = &cobra.Command{
 		return nil
 	},
 }
+<<<<<<< HEAD
 
 // deprecateSnakeCase is a util function for 0.34.1. Should be removed in 0.35
 func deprecateSnakeCase(cmd *cobra.Command, args []string) {
@@ -98,3 +98,5 @@ func deprecateSnakeCase(cmd *cobra.Command, args []string) {
 		fmt.Println("Deprecated: snake_case commands will be replaced by hyphen-case commands in the next major release")
 	}
 }
+=======
+>>>>>>> c1214b290 (cmd: Remove snake case deprecation warning (#626))

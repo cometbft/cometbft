@@ -26,8 +26,8 @@ module P2PI {
  //====== [VOC-GOSSIP-P2P-TYPES] P2P-I
     type GOSSIPMessage =
         | {tag: "query" }
-        | {tag: "query_response" }
-        | {tag: "update", tuple: Set[(str, int, int, str, int)]}
+        | {tag: "query_response", tuples: Set[{tag:str, height: int, round:int, signer:int}] }
+        | {tag: "update", tuples: Set[{tag:str, height:int, round:int, payload:str, signer:int}]}
 
 //==== Exported methods P2P-I
     //action send(p,q,m): (Proc, Proc, GOSSIPMessage) => bool
@@ -207,7 +207,11 @@ module P2PInstNetwork {
     //The P2P unicast API.
     action send(p,q,m): (Proc, Proc, GOSSIPMessage) => bool = all {
         q.in(cnProcs.get(p)),
-        sMsgs' = plusE(sMsgs, {src:p, dst:q, msg:m}),
+        val msg = {src:p, dst:q, msg:m}
+        all {
+            not(msg.in(sMsgs)),
+            sMsgs' = plusE(sMsgs, msg),
+        },
         rMsgs' = rMsgs
     }
 
@@ -301,14 +305,14 @@ module P2PTests {
     action PTStep = PInstStep
 
 //===== Runs/Debug
-    run sendReceiveInARingTest: bool = {
+    run sendReceiveInRingTopTest: bool = {
         PInstInit
             //connect some nodes
             .then(connectRingStep)
             //send and receive messages
             .then(
                 all {
-                    send(1,2,{gat: "query"}),
+                    send(1,2,{tag: "query"}),
 
                     cnProcs' = cnProcs,
                     igProcs' = igProcs,
@@ -316,7 +320,7 @@ module P2PTests {
             )
             .then(
                 all {
-                    send(2,3,{gat: "query"}),
+                    send(2,3,{tag: "query"}),
 
                     cnProcs' = cnProcs,
                     igProcs' = igProcs,
@@ -326,7 +330,7 @@ module P2PTests {
             .then(all {RGPUnicast, PInstUnchangedAll})
             .then(
                 all {
-                    send(1,3,{gat: "query"}),
+                    send(1,3,{tag: "query"}),
 
                     cnProcs' = cnProcs,
                     igProcs' = igProcs,
@@ -341,7 +345,7 @@ module P2PTests {
             //send and receive messages
             .then(
                 all {
-                    send(1,2,{gat: "query"}),
+                    send(1,2,{tag: "query"}),
 
                     cnProcs' = cnProcs,
                     igProcs' = igProcs,
@@ -349,7 +353,7 @@ module P2PTests {
             )
             .then(
                 all {
-                    send(1,3,{gat: "query"}),
+                    send(1,3,{tag: "query"}),
 
                     cnProcs' = cnProcs,
                     igProcs' = igProcs,
@@ -357,7 +361,7 @@ module P2PTests {
             )
             .then(
                 all {
-                    send(2,3,{gat: "query"}),
+                    send(2,3,{tag: "query"}),
 
                     cnProcs' = cnProcs,
                     igProcs' = igProcs,
@@ -374,7 +378,7 @@ module P2PTests {
             //send and receive messages
             .then(
                 all {
-                    send(1,2,{gat: "query"}),
+                    send(1,2,{tag: "query"}),
 
                     cnProcs' = cnProcs,
                     igProcs' = igProcs,
@@ -382,7 +386,7 @@ module P2PTests {
             )
             .then(
                 all {
-                    send(1,3,{gat: "query"}),
+                    send(1,3,{tag: "query"}),
 
                     cnProcs' = cnProcs,
                     igProcs' = igProcs,
@@ -392,7 +396,7 @@ module P2PTests {
             .then(all {RGPUnicast, PInstUnchangedAll})
             .then(
                 all {
-                    send(2,3,{gat: "query"}),
+                    send(2,3,{tag: "query"}),
 
                     cnProcs' = cnProcs,
                     igProcs' = igProcs,
@@ -409,7 +413,7 @@ module P2PTests {
                 val p = cnProcs.keys().filter(pa => cnProcs.get(pa).size() > 0 ).oneOf()
                 val q = cnProcs.get(p).oneOf()
                 all {
-                    send(p,q,{gat: "query"}),
+                    send(p,q,{tag: "query"}),
 
                     cnProcs' = cnProcs,
                     igProcs' = igProcs,
@@ -419,7 +423,7 @@ module P2PTests {
                 val p = cnProcs.keys().filter(pa => cnProcs.get(pa).size() > 0 ).oneOf()
                 val q = cnProcs.get(p).oneOf()
                 all {
-                    send(p,q,{gat: "query"}),
+                    send(p,q,{tag: "query"}),
 
                     cnProcs' = cnProcs,
                     igProcs' = igProcs,
@@ -431,7 +435,7 @@ module P2PTests {
                 val p = cnProcs.keys().filter(pa => cnProcs.get(pa) != Procs ).oneOf()
                 val q = Procs.exclude(cnProcs.get(p)).oneOf()
                 all {
-                    send(p,q,{gat: "query"}),
+                    send(p,q,{tag: "query"}),
 
                     cnProcs' = cnProcs,
                     igProcs' = igProcs,
@@ -475,7 +479,7 @@ module P2PTests {
         val p = Procs.oneOf()
         val q = Procs.oneOf()
         all {
-            send(p,q,{gat: "query"}),
+            send(p,q,{tag: "query"}),
 
             cnProcs' = cnProcs,
             igProcs' = igProcs,
@@ -701,12 +705,19 @@ module GossipInstNoP2P {
 module GossipInstP2P {
     import Helpers.*
     import Globals.*
+
     import P2PI.*
+    import P2PAbstract.*
+
+    //import P2PInstCheat.* //as PInst
+    import P2PInstNetwork.* //as PInst
+
     import GossipI.*
     import GossipAbstract.* //as GA
 
     var localViewAdds : Proc -> Set[CONSTuple]
     var localViewDels : Proc -> Set[CONSTuple]
+    var processed: Set[{src:Proc, dst:Proc, msg: GOSSIPMessage}]
 
     //Helper
     def globalView: Set[CONSTuple] = {
@@ -718,25 +729,100 @@ module GossipInstP2P {
 
     val fullState = {adds: localViewAdds, dels: localViewDels}
 
+    //The local view
+    def localView(p) = localViewAdds.get(p).exclude(localViewDels.get(p))
+
     //Unchanged
     action GInstUnchangedAll() = all {
         localViewAdds' = localViewAdds,
         localViewDels' = localViewDels,
+        processed' = processed
+    }
+
+
+
+    //send query message
+    action sendQuery(p: Proc, q: Proc): bool = all{
+        send(p,q, {tag: "query"}),
+        cnProcs' = cnProcs,
+        igProcs' = igProcs,
+        GInstUnchangedAll,
+    }
+
+    def entryToSummary(e: {tag:str, height:int, round:int, payload:str, signer:int}): {tag:str, height:int, round:int, signer:int} = {
+        {tag:e.tag, height:e.height, round:e.round, signer:e.signer}
+    }
+
+    def getMySummary(p: Proc): Set[{tag:str, height:int, round:int, signer:int}] = {
+        localView(p).map(e => entryToSummary(e))
+    }
+
+    def getMyTuples(p: Proc): Set[{tag:str, height:int, round:int, payload:str, signer:int}] = {
+        localView(p)
+    }
+
+    //send query response
+    action respondQuery(p: Proc, q: Proc): bool = all{
+        val m = received(q)
+                .exclude(processed)
+                .filter(e => e.src == p)
+                .filter(e => e.msg.tag == "query")
+                .oneOf()
+        val myTuples = getMySummary(q)
+        all {
+            send(q,p, {tag: "query_response", tuples: myTuples}),
+
+            cnProcs' = cnProcs,
+            igProcs' = igProcs,
+            localViewAdds' = localViewAdds,
+            localViewDels' = localViewDels,
+            processed' = plusE(processed, m),
+        }
+    }
+
+    //receive query response //TODO
+    //identify differences
+    //send differences
+    action processResponse(p: Proc, q: Proc): bool = all{
+        val m = received(p).exclude(processed).filter(e => e.src == q).filter(e => e.msg.tag == "query_response").oneOf()
+
+        val myTuples = getMyTuples(p)
+        val myUpdates = myTuples.filter(e => not ( m.msg.tuples.contains(entryToSummary(e))))
+        all {
+            send(p,q, {tag: "update", tuples: myUpdates}),
+            cnProcs' = cnProcs,
+            igProcs' = igProcs,
+            localViewAdds' = localViewAdds,
+            localViewDels' = localViewDels,
+            processed' = plusE(processed, m),
+        }
+    }
+
+    //receive differences //TODO
+    //merge
+    action processDiff(p: Proc, q: Proc): bool = all{
+        val m = received(q)
+                .exclude(processed)
+                .filter(e => e.src == p)
+                .filter(e => e.msg.tag == "update")
+                .oneOf()
+
+        all {
+            localViewAdds' = plusE2(localViewAdds, p, m.msg.tuples),
+
+            localViewDels' = localViewDels,
+            processed' = plusE(processed, m),
+            PInstStep,
+
+        }
     }
 
     // This is a version of gossip that uses messages from the P2P layer.
-    action gossip(p,q) = all {
-        //TODO: any
-        //send query message
-        //send query response
-        //receive query response
-        //identify differences
-        //send differences
-        //receive differences
-        //merge
-
-        //TODO: temporary unchanged
-        GInstUnchangedAll,
+    action gossip(p,q) = any {
+        sendQuery(p,q),
+        respondQuery(p,q),
+        processResponse(p,q),
+        processDiff(p,q),
     }
 
 //====== [VOC-CONS-GOSSIP-ACTIONS] GOSSIP-I
@@ -755,25 +841,34 @@ module GossipInstP2P {
     }
 
     //[DEF-READ-TUPLE]
-    //The local view
-    def localView(p) = localViewAdds.get(p).exclude(localViewDels.get(p))
+    //See localView(p), above
 
 //===== Init (anything ending with Init sets the whole state and can serve as the spec `init` clause)
     action GInstInit: bool = all {
         localViewAdds' = Procs.mapBy(_ => Set()),
-        localViewDels' = Procs.mapBy(_ => Set())
+        localViewDels' = Procs.mapBy(_ => Set()),
+        processed' = Set(),
+
+        PInstInit,
     }
 
 //===== Steps (anything ending in Step sets the whole state and may be used in `run`)
     //Gossip using P2P
-    action gossipStep(p,q) = all {
+    action gossipStep(p,q) = any {
         gossip(p,q),
+
+        all {
+            PInstStep,
+            GInstUnchangedAll,
+        }
     }
 
     action addTupleStep(p, e) = all {
             addTuple(p, e),
             //unchanged
             localViewDels' = localViewDels,
+            processed' = processed,
+            PAunchangedAll,
     }
 
     action step: bool = any {
@@ -784,9 +879,10 @@ module GossipInstP2P {
         gossipStep(p,q)
     }
 
+
 /*
     action randomEntryInit: bool = all {
-        val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL"}
+        val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL", signer: 1}
         localViewAdds' = Procs.mapBy(p => if (p == 1) Set(entry) else Set()),
         localViewDels' = Procs.mapBy(_ => Set()),
     }
@@ -914,29 +1010,19 @@ module GossipTests {
 
     import P2PAbstract.*
     //import P2PInstCheat.* //as PInst
-    import P2PInstNetwork.* //as PInst
+    //import P2PInstNetwork.* //as PInst
     import P2PTests.* //as PT
 
 //    import GossipInstCheat.* //as GInst
-    import GossipInstNoP2P.*
-//    import GossipInstP2P.*
-
-
-    action GTInit = all {
-        PInstInit,
-        GInstInit
-    }
-
-    action GTUnchangedAll = all {
-        PInstUnchangedAll,
-        GInstUnchangedAll
-    }
+//    import GossipInstNoP2P.*
+    import GossipInstP2P.*
 
 //===== Runs/Debug
     run gossipInRingTopoTest: bool = {
-        val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL"}
+        val signer = 1
+        val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL", signer: signer}
 
-        GTInit
+        GInstInit
             //connect some nodes
             .then(
                 all {
@@ -945,8 +1031,7 @@ module GossipTests {
                 })
             //add one entry
             .then(all {
-                addTupleStep(1, entry),
-                PInstUnchangedAll
+                addTupleStep(signer, entry),
             })
             //gossip
             .then((all {
@@ -954,23 +1039,27 @@ module GossipTests {
                 if (pqs.size() > 0) all {
                     val pq = pqs.oneOf()
                     gossipStep(pq._1, pq._2),
-                    PInstUnchangedAll
-                } else
-                GTUnchangedAll
+                } else {
+                    all {
+                        PAunchangedAll,
+                        GInstUnchangedAll
+                    }
+                }
             }).repeated(size(Procs)))
             .then( all {
                 //All see the entry
                 Procs.forall(p => localView(p).contains(entry)),
-                GTUnchangedAll
+                PAunchangedAll,
+                GInstUnchangedAll
             })
-        }
+       }
 
     run gossipCliqueTopoTest: bool = {
         val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL"}
 
-        GTInit
+        GInstInit
             //connect some nodes
-            .then(
+                .then(
                 all {
                     connectFullStep,
                     GInstUnchangedAll
@@ -978,7 +1067,6 @@ module GossipTests {
             //add one entry
             .then(all {
                 addTupleStep(1, entry),
-                PInstUnchangedAll
             })
             //gossip
             .then((all {
@@ -986,22 +1074,26 @@ module GossipTests {
                 if (pqs.size() > 0) all {
                     val pq = pqs.oneOf()
                     gossipStep(pq._1, pq._2),
-                    PInstUnchangedAll
-                } else
-                GTUnchangedAll
+                } else {
+                    all {
+                        PAunchangedAll,
+                        GInstUnchangedAll
+                    }
+                }
             }).repeated(size(Procs)))
             .then( all {
                 //All see the entry
                 Procs.forall(p => localView(p).contains(entry)),
-                GTUnchangedAll
+                PAunchangedAll,
+                GInstUnchangedAll
             })
         }
 
     run gossipInStarTopoTest: bool = {
         val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL"}
 
-        GTInit
-            //connect some nodes
+        GInstInit
+/*             //connect some nodes
             .then(
                 all {
                     connectStarStep,
@@ -1010,7 +1102,6 @@ module GossipTests {
             //add one entry
             .then(all {
                 addTupleStep(1, entry),
-                PInstUnchangedAll
             })
             //gossip
             .then((all {
@@ -1018,7 +1109,6 @@ module GossipTests {
                 if (pqs.size() > 0) all {
                     val pq = pqs.oneOf()
                     gossipStep(pq._1, pq._2),
-                    PInstUnchangedAll
                 } else
                 GTUnchangedAll
             }).repeated(size(Procs)))
@@ -1026,14 +1116,14 @@ module GossipTests {
                 //All see the entry
                 Procs.forall(p => localView(p).contains(entry)),
                 GTUnchangedAll
-            })
+            }) */
         }
 
     run gossipInRandomTopoTest: bool = {
         val entry = {tag:"proposal", height:1, round:0, payload:"PROPOSAL"}
 
-        GTInit
-            //connect some nodes
+        GInstInit
+/*             //connect some nodes
             .then(
                 all {
                     connectRandomStep,
@@ -1042,7 +1132,6 @@ module GossipTests {
             //add one entry
             .then(all {
                 addTupleStep(1, entry),
-                PInstUnchangedAll
             })
             //gossip
             .then((all {
@@ -1050,7 +1139,6 @@ module GossipTests {
                 if (pqs.size() > 0) all {
                     val pq = pqs.oneOf()
                     gossipStep(pq._1, pq._2),
-                    PInstUnchangedAll
                 } else
                 GTUnchangedAll
             }).repeated(size(Procs)))
@@ -1058,7 +1146,7 @@ module GossipTests {
                 //All see the entry
                 Procs.forall(p => localView(p).contains(entry)),
                 GTUnchangedAll
-            })
+            }) */
         }
 
 

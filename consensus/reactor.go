@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"runtime"
 	"sync"
 	"time"
 
@@ -747,7 +746,7 @@ OUTER_LOOP:
 			var ec *types.ExtendedCommit
 			var veEnabled bool
 			for i := 0; i < 10000; i++ {
-				runtime.Gosched()
+				time.Sleep(30 * time.Microsecond)
 				veEnabled = conR.conS.state.ConsensusParams.ABCI.VoteExtensionsEnabled(prs.Height)
 			}
 			if veEnabled {

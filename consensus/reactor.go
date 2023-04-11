@@ -744,9 +744,12 @@ OUTER_LOOP:
 			// Load the block's extended commit for prs.Height,
 			// which contains precommit signatures for prs.Height.
 			var ec *types.ExtendedCommit
-			conR.conS.mtx.RLock()
-			veEnabled := conR.conS.state.ConsensusParams.ABCI.VoteExtensionsEnabled(prs.Height)
-			conR.conS.mtx.RUnlock()
+			var veEnabled bool
+			func() {
+				conR.conS.mtx.RLock()
+				defer conR.conS.mtx.RUnlock()
+				veEnabled = conR.conS.state.ConsensusParams.ABCI.VoteExtensionsEnabled(prs.Height)
+			}()
 			if veEnabled {
 				ec = conR.conS.blockStore.LoadBlockExtendedCommit(prs.Height)
 			} else {

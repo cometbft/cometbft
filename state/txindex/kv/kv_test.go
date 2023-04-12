@@ -155,7 +155,6 @@ func TestTxSearch(t *testing.T) {
 }
 
 func TestTxSearchEventMatch(t *testing.T) {
-
 	indexer := NewTxIndex(db.NewMemDB())
 
 	txResult := txResultWithEvents([]abci.Event{
@@ -251,6 +250,7 @@ func TestTxSearchEventMatch(t *testing.T) {
 		})
 	}
 }
+
 func TestTxSearchWithCancelation(t *testing.T) {
 	indexer := NewTxIndex(db.NewMemDB())
 
@@ -421,11 +421,11 @@ func TestTxSearchOneTxWithMultipleSameTagsButDifferentValues(t *testing.T) {
 	for _, tc := range testCases {
 		results, err := indexer.Search(ctx, query.MustCompile(tc.q))
 		assert.NoError(t, err)
-		len := 0
+		n := 0
 		if tc.found {
-			len = 1
+			n = 1
 		}
-		assert.Len(t, results, len)
+		assert.Len(t, results, n)
 		assert.True(t, !tc.found || proto.Equal(txResult, results[0]))
 
 	}

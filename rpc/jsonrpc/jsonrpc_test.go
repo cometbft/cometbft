@@ -71,27 +71,27 @@ var Routes = map[string]*server.RPCFunc{
 	"echo_default":    server.NewRPCFunc(EchoWithDefault, "arg", server.Cacheable("arg")),
 }
 
-func EchoResult(ctx *types.Context, v string) (*ResultEcho, error) {
+func EchoResult(_ *types.Context, v string) (*ResultEcho, error) {
 	return &ResultEcho{v}, nil
 }
 
-func EchoWSResult(ctx *types.Context, v string) (*ResultEcho, error) {
+func EchoWSResult(_ *types.Context, v string) (*ResultEcho, error) {
 	return &ResultEcho{v}, nil
 }
 
-func EchoIntResult(ctx *types.Context, v int) (*ResultEchoInt, error) {
+func EchoIntResult(_ *types.Context, v int) (*ResultEchoInt, error) {
 	return &ResultEchoInt{v}, nil
 }
 
-func EchoBytesResult(ctx *types.Context, v []byte) (*ResultEchoBytes, error) {
+func EchoBytesResult(_ *types.Context, v []byte) (*ResultEchoBytes, error) {
 	return &ResultEchoBytes{v}, nil
 }
 
-func EchoDataBytesResult(ctx *types.Context, v cmtbytes.HexBytes) (*ResultEchoDataBytes, error) {
+func EchoDataBytesResult(_ *types.Context, v cmtbytes.HexBytes) (*ResultEchoDataBytes, error) {
 	return &ResultEchoDataBytes{v}, nil
 }
 
-func EchoWithDefault(ctx *types.Context, v *int) (*ResultEchoWithDefault, error) {
+func EchoWithDefault(_ *types.Context, v *int) (*ResultEchoWithDefault, error) {
 	val := -1
 	if v != nil {
 		val = *v

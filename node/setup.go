@@ -469,9 +469,14 @@ func createPEXReactorAndAddToSwitch(addrBook pex.AddrBook, config *cfg.Config,
 }
 
 // startStateSync starts an asynchronous state sync process, then switches to block sync mode.
-func startStateSync(ssR *statesync.Reactor, bcR blockSyncReactor, conR *cs.Reactor,
-	stateProvider statesync.StateProvider, config *cfg.StateSyncConfig,
-	stateStore sm.Store, blockStore *store.BlockStore, state sm.State,
+func startStateSync(
+	ssR *statesync.Reactor,
+	bcR blockSyncReactor,
+	stateProvider statesync.StateProvider,
+	config *cfg.StateSyncConfig,
+	stateStore sm.Store,
+	blockStore *store.BlockStore,
+	state sm.State,
 ) error {
 	ssR.Logger.Info("Starting state sync")
 
@@ -580,11 +585,7 @@ func saveGenesisDoc(db dbm.DB, genDoc *types.GenesisDoc) error {
 	if err != nil {
 		return fmt.Errorf("failed to save genesis doc due to marshaling error: %w", err)
 	}
-	if err := db.SetSync(genesisDocKey, b); err != nil {
-		return err
-	}
-
-	return nil
+	return db.SetSync(genesisDocKey, b)
 }
 
 func createAndStartPrivValidatorSocketClient(

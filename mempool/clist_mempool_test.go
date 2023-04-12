@@ -33,16 +33,17 @@ import (
 // test.
 type cleanupFunc func()
 
-func newMempoolWithAppMock(cc proxy.ClientCreator, client abciclient.Client) (*CListMempool, cleanupFunc, error) {
+func newMempoolWithAppMock(client abciclient.Client) (*CListMempool, cleanupFunc, error) {
 	conf := test.ResetTestRoot("mempool_test")
 
-	mp, cu := newMempoolWithAppAndConfigMock(cc, conf, client)
+	mp, cu := newMempoolWithAppAndConfigMock(conf, client)
 	return mp, cu, nil
 }
 
-func newMempoolWithAppAndConfigMock(cc proxy.ClientCreator,
+func newMempoolWithAppAndConfigMock(
 	cfg *config.Config,
-	client abciclient.Client) (*CListMempool, cleanupFunc) {
+	client abciclient.Client,
+) (*CListMempool, cleanupFunc) {
 	appConnMem := client
 	appConnMem.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "mempool"))
 	err := appConnMem.Start()
@@ -250,9 +251,7 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 	mockClient.On("Error").Return(nil).Times(4)
 	mockClient.On("SetResponseCallback", mock.MatchedBy(func(cb abciclient.Callback) bool { callback = cb; return true }))
 
-	app := kvstore.NewInMemoryApplication()
-	cc := proxy.NewLocalClientCreator(app)
-	mp, cleanup, err := newMempoolWithAppMock(cc, mockClient)
+	mp, cleanup, err := newMempoolWithAppMock(mockClient)
 	require.NoError(t, err)
 	defer cleanup()
 
@@ -631,7 +630,6 @@ func TestMempoolTxsBytes(t *testing.T) {
 	assert.EqualValues(t, 20, mp.SizeBytes())
 	assert.NoError(t, mp.RemoveTxByKey(types.Tx(tx1).Key()))
 	assert.EqualValues(t, 10, mp.SizeBytes())
-
 }
 
 // This will non-deterministically catch some concurrency failures like

@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	goamino "github.com/tendermint/go-amino"
 
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtcrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
@@ -209,8 +208,8 @@ func TestVsa2022_100(t *testing.T) {
 	value := []byte{0x37}
 	vhash := tmhash.Sum(value)
 	bz := new(bytes.Buffer)
-	_ = goamino.EncodeByteSlice(bz, key)
-	_ = goamino.EncodeByteSlice(bz, vhash)
+	_ = encodeByteSlice(bz, key)
+	_ = encodeByteSlice(bz, vhash)
 	kvhash := tmhash.Sum(append([]byte{0}, bz.Bytes()...))
 
 	// the malicious `op`

@@ -7,6 +7,8 @@ module Helpers {
     pure def plusE(s, e): (Set[a],a) => Set[a] = s.union(Set(e))
     pure def plusE2(m, p, e): (i -> Set[a], i, a) => i -> Set[a] = m.set(p, m.get(p).union(Set(e)))
     pure def plusEs2(m, p, es): (i -> Set[a], i, Set[a]) => i -> Set[a] = m.set(p, m.get(p).union(es))
+
+    pure def print(msg, toPrint) = true
 }
 
 module Globals {
@@ -58,7 +60,6 @@ module P2PAbstract {
         cnProcs' = cnProcs,
         rMsgs' = rMsgs,
         sMsgs' = sMsgs
-
     }
 
 
@@ -258,7 +259,7 @@ module P2PTests {
         //Find a node not in the ring.
         val nonConnected = Procs.filter(p => if (p < size(Procs)) not(cnProcs.get(p).contains(p+1)) else not(cnProcs.get(p).contains(1)))
         all {
-            cnProcs' = Procs.mapBy(p => if (p < size(Procs)) Set(p+1) else Set(1)),
+            cnProcs' = Procs.mapBy(p => if (p == 1) Set(Procs.size(), 2) else if (p == Procs.size()) Set(1, p-1) else Set(p-1, p+1)),
             igProcs' = igProcs,
 
             sMsgs' = sMsgs,
@@ -801,19 +802,21 @@ module GossipInstP2P {
     //receive differences //TODO
     //merge
     action processDiff(p: Proc, q: Proc): bool = all{
-        val m = received(q)
+        val ms = received(q)
                 .exclude(processed)
                 .filter(e => e.src == p)
                 .filter(e => e.msg.tag == "update")
-                .oneOf()
 
         all {
-            localViewAdds' = plusE2(localViewAdds, p, m.msg.tuples),
-
+            print("processDiff", ms),
+            ms != Set(),
+            val m = ms.oneOf()
+            all {
+                localViewAdds' = plusE2(localViewAdds, q, m.msg.tuples),
+                processed' = plusE(processed, m),
+            },
             localViewDels' = localViewDels,
-            processed' = plusE(processed, m),
-            PInstStep,
-
+            PInstUnchangedAll,
         }
     }
 
@@ -1005,6 +1008,7 @@ module SupersessionOracle {
 //==== Gossip Tests
 
 module GossipTests {
+    import Helpers.*
     import Globals.*
     import P2PI.*
 
@@ -1016,6 +1020,14 @@ module GossipTests {
 //    import GossipInstCheat.* //as GInst
 //    import GossipInstNoP2P.*
     import GossipInstP2P.*
+
+def gossipablePairs =
+    tuples(Procs,Procs).filter(t => and (
+        t._1 != t._2,
+        localView(t._1) != localView(t._2),
+        cnProcs.get(t._1).contains(t._2)
+    ))
+
 
 //===== Runs/Debug
     run gossipInRingTopoTest: bool = {
@@ -1034,18 +1046,22 @@ module GossipTests {
                 addTupleStep(signer, entry),
             })
             //gossip
-            .then((all {
-                val pqs = tuples(Procs,Procs).filter(t => t._1 != t._2 and localView(t._1) != localView(t._2))
+            .then(( all{
+                val pqs = gossipablePairs
                 if (pqs.size() > 0) all {
+                    print ("step yeah", pqs),
                     val pq = pqs.oneOf()
                     gossipStep(pq._1, pq._2),
-                } else {
-                    all {
-                        PAunchangedAll,
-                        GInstUnchangedAll
-                    }
+                    print("local views", localViewAdds)
+                } else all {
+                    print ("step nope", pqs),
+                    //Either it progresses or all have the entry.
+                    Procs.forall(p => localView(p).contains(entry)),
+                    PAunchangedAll,
+                    GInstUnchangedAll
                 }
-            }).repeated(size(Procs)))
+            //*2 gossip flows per link. *7 steps needed per gossip.
+            }).repeated(size(Procs)*2*7))
             .then( all {
                 //All see the entry
                 Procs.forall(p => localView(p).contains(entry)),
@@ -1070,7 +1086,7 @@ module GossipTests {
             })
             //gossip
             .then((all {
-                val pqs = tuples(Procs,Procs).filter(t => t._1 != t._2 and localView(t._1) != localView(t._2))
+                val pqs = gossipablePairs
                 if (pqs.size() > 0) all {
                     val pq = pqs.oneOf()
                     gossipStep(pq._1, pq._2),
@@ -1105,7 +1121,7 @@ module GossipTests {
             })
             //gossip
             .then((all {
-                val pqs = tuples(Procs,Procs).filter(t => t._1 != t._2 and localView(t._1) != localView(t._2))
+                val pqs = gossipablePairs
                 if (pqs.size() > 0) all {
                     val pq = pqs.oneOf()
                     gossipStep(pq._1, pq._2),
@@ -1135,7 +1151,7 @@ module GossipTests {
             })
             //gossip
             .then((all {
-                val pqs = tuples(Procs,Procs).filter(t => t._1 != t._2 and localView(t._1) != localView(t._2))
+                val pqs = gossipablePairs
                 if (pqs.size() > 0) all {
                     val pq = pqs.oneOf()
                     gossipStep(pq._1, pq._2),

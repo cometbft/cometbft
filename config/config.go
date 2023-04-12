@@ -340,9 +340,9 @@ type RPCConfig struct {
 	// of broadcast_tx_commit calls per block.
 	MaxSubscriptionClients int `mapstructure:"max_subscription_clients"`
 
-	// Maximum number of unique queries a given client can /subscribe to If
-	// you're using /broadcast_tx_commit, set to the estimated maximum number of
-	// broadcast_tx_commit calls per block.
+	// Maximum number of unique queries a given client can /subscribe to. If
+	// you're using /broadcast_tx_commit, set to the estimated maximum number
+	// of broadcast_tx_commit calls per block.
 	MaxSubscriptionsPerClient int `mapstructure:"max_subscriptions_per_client"`
 
 	// The number of events that can be buffered per subscription before

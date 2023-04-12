@@ -2,10 +2,6 @@
 
 export GO111MODULE=on
 
-if [[ "$GRPC_BROADCAST_TX" == "" ]]; then
-	GRPC_BROADCAST_TX=""
-fi
-
 set -u
 
 #####################
@@ -34,15 +30,6 @@ function getCode() {
 	fi
 }
 
-# build grpc client if needed
-if [[ "$GRPC_BROADCAST_TX" != "" ]]; then
-	if [  -f test/app/grpc_client ]; then
-		rm test/app/grpc_client
-	fi
-	echo "... building grpc_client"
-	go build -mod=readonly -o test/app/grpc_client test/app/grpc_client.go
-fi
-
 function sendTx() {
 	TX=$1
 	set +u
@@ -51,18 +38,12 @@ function sendTx() {
 		SHOULD_ERR=false
 	fi
 	set -u
-	if [[ "$GRPC_BROADCAST_TX" == "" ]]; then
-		RESPONSE=$(curl -s localhost:26657/broadcast_tx_commit?tx=0x"$TX")
-		IS_ERR=$(echo "$RESPONSE" | jq 'has("error")')
-		ERROR=$(echo "$RESPONSE" | jq '.error')
-		ERROR=$(echo "$ERROR" | tr -d '"') # remove surrounding quotes
+    RESPONSE=$(curl -s localhost:26657/broadcast_tx_commit?tx=0x"$TX")
+    IS_ERR=$(echo "$RESPONSE" | jq 'has("error")')
+    ERROR=$(echo "$RESPONSE" | jq '.error')
+    ERROR=$(echo "$ERROR" | tr -d '"') # remove surrounding quotes
 
-		RESPONSE=$(echo "$RESPONSE" | jq '.result')
-	else
-		RESPONSE=$(./test/app/grpc_client "$TX")
-		IS_ERR=false
-		ERROR=""
-	fi
+    RESPONSE=$(echo "$RESPONSE" | jq '.result')
 
 	echo "RESPONSE"
 	echo "$RESPONSE"

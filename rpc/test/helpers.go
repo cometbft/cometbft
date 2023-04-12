@@ -19,7 +19,6 @@ import (
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
-	core_grpc "github.com/cometbft/cometbft/rpc/grpc"
 	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 )
 
@@ -56,16 +55,6 @@ func waitForRPC() {
 	}
 }
 
-func waitForGRPC() {
-	client := GetGRPCClient()
-	for {
-		_, err := client.Ping(context.Background(), &core_grpc.RequestPing{})
-		if err == nil {
-			return
-		}
-	}
-}
-
 // f**ing long, but unique for each test
 func makePathname() string {
 	// get path
@@ -86,9 +75,8 @@ func randPort() int {
 	return port
 }
 
-func makeAddrs() (string, string, string) {
+func makeAddrs() (string, string) {
 	return fmt.Sprintf("tcp://127.0.0.1:%d", randPort()),
-		fmt.Sprintf("tcp://127.0.0.1:%d", randPort()),
 		fmt.Sprintf("tcp://127.0.0.1:%d", randPort())
 }
 
@@ -97,11 +85,10 @@ func createConfig() *cfg.Config {
 	c := test.ResetTestRoot(pathname)
 
 	// and we use random ports to run in parallel
-	tm, rpc, grpc := makeAddrs()
+	tm, rpc := makeAddrs()
 	c.P2P.ListenAddress = tm
 	c.RPC.ListenAddress = rpc
 	c.RPC.CORSAllowedOrigins = []string{"https://cometbft.com/"}
-	c.RPC.GRPCListenAddress = grpc
 	return c
 }
 
@@ -111,12 +98,6 @@ func GetConfig(forceCreate ...bool) *cfg.Config {
 		globalConfig = createConfig()
 	}
 	return globalConfig
-}
-
-func GetGRPCClient() core_grpc.BroadcastAPIClient {
-	grpcAddr := globalConfig.RPC.GRPCListenAddress
-	//nolint:staticcheck // SA1019: core_grpc.StartGRPCClient is deprecated: A new gRPC API will be introduced after v0.38.
-	return core_grpc.StartGRPCClient(grpcAddr)
 }
 
 // StartTendermint starts a test CometBFT server in a go routine and returns when it is initialized
@@ -133,7 +114,6 @@ func StartTendermint(app abci.Application, opts ...func(*Options)) *nm.Node {
 
 	// wait for rpc
 	waitForRPC()
-	waitForGRPC()
 
 	if !nodeOpts.suppressStdout {
 		fmt.Println("CometBFT running!")

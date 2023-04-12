@@ -136,7 +136,7 @@ max_open_connections = 900
 max_subscription_clients = 100
 
 # Maximum number of unique queries a given client can /subscribe to
-# If you're using /broadcast_tx_commit, set to the estimated # maximum number
+# If you're using /broadcast_tx_commit, set to the estimated maximum number
 # of broadcast_tx_commit calls per block.
 max_subscriptions_per_client = 5
 

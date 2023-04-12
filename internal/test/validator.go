@@ -10,7 +10,7 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-func Validator(ctx context.Context, votingPower int64) (*types.Validator, types.PrivValidator, error) {
+func Validator(_ context.Context, votingPower int64) (*types.Validator, types.PrivValidator, error) {
 	privVal := types.NewMockPV()
 	pubKey, err := privVal.GetPubKey()
 	if err != nil {

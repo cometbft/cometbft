@@ -73,6 +73,7 @@ func (sp *Proof) Verify(rootHash []byte, leaf []byte) error {
 	return nil
 }
 
+// Compute the root hash given a leaf hash.  Panics in case of errors.
 func (sp *Proof) ComputeRootHash() []byte {
 	computedHash, err := sp.computeRootHash()
 	if err != nil {
@@ -81,7 +82,7 @@ func (sp *Proof) ComputeRootHash() []byte {
 	return computedHash
 }
 
-// Compute the root hash given a leaf hash.  Does not verify the result.
+// Compute the root hash given a leaf hash.
 func (sp *Proof) computeRootHash() ([]byte, error) {
 	return computeHashFromAunts(
 		sp.Index,

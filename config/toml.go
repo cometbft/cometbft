@@ -239,7 +239,7 @@ tls_cert_file = "{{ .RPC.TLSCertFile }}"
 
 # The path to a file containing matching private key that is used to create the HTTPS server.
 # Might be either absolute path or path related to CometBFT's config directory.
-# NOTE: both tls-cert-file and tls-key-file must be present for CometBFT to create HTTPS server.
+# NOTE: both tls_cert_file and tls_key_file must be present for CometBFT to create HTTPS server.
 # Otherwise, HTTP server is run.
 tls_key_file = "{{ .RPC.TLSKeyFile }}"
 
@@ -265,7 +265,7 @@ external_address = "{{ .P2P.ExternalAddress }}"
 seeds = "{{ .P2P.Seeds }}"
 
 # Comma separated list of peers to be added to the peer store
-# on startup. Either BootstrapPeers or PersistentPeers are
+# on startup. Either bootstrap_peers or persistent_peers is
 # needed for peer discovery
 bootstrap_peers = "{{ .P2P.BootstrapPeers }}"
 
@@ -326,27 +326,27 @@ handshake_timeout = "{{ .P2P.HandshakeTimeout }}"
 dial_timeout = "{{ .P2P.DialTimeout }}"
 
 #######################################################
-###          Mempool Configuration Option          ###
+###          Mempool Configuration Options          ###
 #######################################################
 [mempool]
 
-# Recheck (default: true) defines whether CometBFT should recheck the
+# recheck (default: true) defines whether CometBFT should recheck the
 # validity for all remaining transaction in the mempool after a block.
 # Since a block affects the application state, some transactions in the
 # mempool may become invalid. If this does not apply to your application,
 # you can disable rechecking.
 recheck = {{ .Mempool.Recheck }}
 
-# Broadcast (default: true) defines whether the mempool should relay
+# broadcast (default: true) defines whether the mempool should relay
 # transactions to other peers. Setting this to false will stop the mempool
 # from relaying transactions to other peers until they are included in a
 # block. In other words, if Broadcast is disabled, only the peer you send
 # the tx to will see it until it is included in a block.
 broadcast = {{ .Mempool.Broadcast }}
 
-# WalPath (default: "") configures the location of the Write Ahead Log
+# wal_dir (default: "") configures the location of the Write Ahead Log
 # (WAL) for the mempool. The WAL is disabled by default. To enable, set
-# WalPath to where you want the WAL to be written (e.g.
+# wal_dir to where you want the WAL to be written (e.g.
 # "data/mempool.wal").
 wal_dir = "{{ js .Mempool.WalPath }}"
 

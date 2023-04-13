@@ -31,7 +31,6 @@ type State struct {
 	values map[string]string
 	hash   []byte
 
-	// private fields aren't marshaled to disk.
 	currentFile string
 	// app saves current and previous state for rollback functionality
 	previousFile    string

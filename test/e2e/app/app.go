@@ -129,8 +129,8 @@ func (app *Application) Info(_ context.Context, _ *abci.RequestInfo) (*abci.Resp
 	return &abci.ResponseInfo{
 		Version:          version.ABCIVersion,
 		AppVersion:       appVersion,
-		LastBlockHeight:  int64(app.state.Height),
-		LastBlockAppHash: app.state.Hash,
+		LastBlockHeight:  int64(app.state.GetHeight()),
+		LastBlockAppHash: app.state.GetHash(),
 	}, nil
 }
 
@@ -160,7 +160,7 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 		}
 	}
 	resp := &abci.ResponseInitChain{
-		AppHash: app.state.Hash,
+		AppHash: app.state.GetHash(),
 	}
 	if resp.Validators, err = app.validatorUpdates(0); err != nil {
 		return nil, err
@@ -262,7 +262,7 @@ func (app *Application) Commit(_ context.Context, _ *abci.RequestCommit) (*abci.
 // Query implements ABCI.
 func (app *Application) Query(_ context.Context, req *abci.RequestQuery) (*abci.ResponseQuery, error) {
 	return &abci.ResponseQuery{
-		Height: int64(app.state.Height),
+		Height: int64(app.state.GetHeight()),
 		Key:    req.Data,
 		Value:  []byte(app.state.Get(string(req.Data))),
 	}, nil
@@ -502,7 +502,7 @@ func (app *Application) getAppHeight() int64 {
 		panic(fmt.Errorf("malformed initial height %q in database", initialHeightStr))
 	}
 
-	appHeight := int64(app.state.Height)
+	appHeight := int64(app.state.GetHeight())
 	if appHeight == 0 {
 		appHeight = initialHeight - 1
 	}

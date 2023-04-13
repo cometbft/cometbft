@@ -17,12 +17,19 @@ const (
 	prevStateFileName = "prev_app_state.json"
 )
 
-// State is the application state.
-type State struct {
-	sync.RWMutex
+// Used exclusively in serialization/deserialization of State.
+type serializedState struct {
 	Height uint64
 	Values map[string]string
 	Hash   []byte
+}
+
+// State is the application state.
+type State struct {
+	sync.RWMutex
+	height uint64
+	values map[string]string
+	hash   []byte
 
 	// private fields aren't marshaled to disk.
 	currentFile string
@@ -35,12 +42,12 @@ type State struct {
 // NewState creates a new state.
 func NewState(dir string, persistInterval uint64) (*State, error) {
 	state := &State{
-		Values:          make(map[string]string),
+		values:          make(map[string]string),
 		currentFile:     filepath.Join(dir, stateFileName),
 		previousFile:    filepath.Join(dir, prevStateFileName),
 		persistInterval: persistInterval,
 	}
-	state.Hash = hashItems(state.Values, state.Height)
+	state.hash = hashItems(state.values, state.height)
 	err := state.load()
 	switch {
 	case errors.Is(err, os.ErrNotExist):
@@ -66,17 +73,26 @@ func (s *State) load() error {
 			return fmt.Errorf("failed to read state from %q: %w", s.currentFile, err)
 		}
 	}
-	err = json.Unmarshal(bz, s)
+	var ss serializedState
+	err = json.Unmarshal(bz, &ss)
 	if err != nil {
 		return fmt.Errorf("invalid state data in %q: %w", s.currentFile, err)
 	}
+	s.height = ss.Height
+	s.values = ss.Values
+	s.hash = ss.Hash
 	return nil
 }
 
 // save saves the state to disk. It does not take out a lock since it is called
 // internally by Commit which does lock.
 func (s *State) save() error {
-	bz, err := json.Marshal(s)
+	ss := serializedState{
+		Height: s.height,
+		Values: s.values,
+		Hash:   s.hash,
+	}
+	bz, err := json.Marshal(&ss)
 	if err != nil {
 		return fmt.Errorf("failed to marshal state: %w", err)
 	}
@@ -97,11 +113,41 @@ func (s *State) save() error {
 	return os.Rename(newFile, s.currentFile)
 }
 
+// GetHeight provides a thread-safe way of accessing the current height of the
+// state.
+func (s *State) GetHeight() uint64 {
+	s.RLock()
+	defer s.RUnlock()
+	return s.height
+}
+
+// GetHash provides a thread-safe way of accessing a copy of the current state
+// hash.
+func (s *State) GetHash() []byte {
+	s.RLock()
+	defer s.RUnlock()
+	hash := make([]byte, len(s.hash))
+	copy(hash, s.hash)
+	return hash
+}
+
+// GetValues provides a thread-safe way of obtaining a copy of the current
+// state values.
+func (s *State) GetValues() map[string]string {
+	s.RLock()
+	defer s.RUnlock()
+	values := make(map[string]string, len(s.values))
+	for k, v := range s.values {
+		values[k] = v
+	}
+	return values
+}
+
 // Export exports key/value pairs as JSON, used for state sync snapshots.
 func (s *State) Export() ([]byte, error) {
 	s.RLock()
 	defer s.RUnlock()
-	return json.Marshal(s.Values)
+	return json.Marshal(s.values)
 }
 
 // Import imports key/value pairs from JSON bytes, used for InitChain.AppStateBytes and
@@ -114,9 +160,9 @@ func (s *State) Import(height uint64, jsonBytes []byte) error {
 	if err != nil {
 		return fmt.Errorf("failed to decode imported JSON data: %w", err)
 	}
-	s.Height = height
-	s.Values = values
-	s.Hash = hashItems(values, height)
+	s.height = height
+	s.values = values
+	s.hash = hashItems(values, height)
 	return s.save()
 }
 
@@ -124,7 +170,7 @@ func (s *State) Import(height uint64, jsonBytes []byte) error {
 func (s *State) Get(key string) string {
 	s.RLock()
 	defer s.RUnlock()
-	return s.Values[key]
+	return s.values[key]
 }
 
 // Set sets a value. Setting an empty value is equivalent to deleting it.
@@ -132,9 +178,9 @@ func (s *State) Set(key, value string) {
 	s.Lock()
 	defer s.Unlock()
 	if value == "" {
-		delete(s.Values, key)
+		delete(s.values, key)
 	} else {
-		s.Values[key] = value
+		s.values[key] = value
 	}
 }
 
@@ -143,28 +189,28 @@ func (s *State) Finalize() []byte {
 	s.Lock()
 	defer s.Unlock()
 	switch {
-	case s.Height > 0:
-		s.Height++
+	case s.height > 0:
+		s.height++
 	case s.initialHeight > 0:
-		s.Height = s.initialHeight
+		s.height = s.initialHeight
 	default:
-		s.Height = 1
+		s.height = 1
 	}
-	s.Hash = hashItems(s.Values, s.Height)
-	return s.Hash
+	s.hash = hashItems(s.values, s.height)
+	return s.hash
 }
 
 // Commit commits the current state.
 func (s *State) Commit() (uint64, error) {
 	s.Lock()
 	defer s.Unlock()
-	if s.persistInterval > 0 && s.Height%s.persistInterval == 0 {
+	if s.persistInterval > 0 && s.height%s.persistInterval == 0 {
 		err := s.save()
 		if err != nil {
 			return 0, err
 		}
 	}
-	return s.Height, nil
+	return s.height, nil
 }
 
 func (s *State) Rollback() error {

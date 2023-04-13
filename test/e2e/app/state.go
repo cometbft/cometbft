@@ -218,10 +218,14 @@ func (s *State) Rollback() error {
 	if err != nil {
 		return fmt.Errorf("failed to read state from %q: %w", s.previousFile, err)
 	}
-	err = json.Unmarshal(bz, s)
+	var ss serializedState
+	err = json.Unmarshal(bz, &ss)
 	if err != nil {
 		return fmt.Errorf("invalid state data in %q: %w", s.previousFile, err)
 	}
+	s.height = ss.Height
+	s.hash = ss.Hash
+	s.values = ss.Values
 	return nil
 }
 

@@ -4,6 +4,7 @@ import cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 
 type SignedMsgType = cmtproto.SignedMsgType
 
+//nolint:revive,stylecheck
 const (
 	SignedMsgType_UNKNOWN   SignedMsgType = cmtproto.UnknownType
 	SignedMsgType_PREVOTE   SignedMsgType = cmtproto.PrevoteType

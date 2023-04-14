@@ -1,4 +1,4 @@
-//nolint:revive
+//nolint:revive,stylecheck
 package privval
 
 import (

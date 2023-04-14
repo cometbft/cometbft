@@ -112,14 +112,6 @@ func (s *State) save() error {
 	return os.Rename(newFile, s.currentFile)
 }
 
-// GetHeight provides a thread-safe way of accessing the current height of the
-// state.
-func (s *State) GetHeight() uint64 {
-	s.RLock()
-	defer s.RUnlock()
-	return s.height
-}
-
 // GetHash provides a thread-safe way of accessing a copy of the current state
 // hash.
 func (s *State) GetHash() []byte {
@@ -128,6 +120,17 @@ func (s *State) GetHash() []byte {
 	hash := make([]byte, len(s.hash))
 	copy(hash, s.hash)
 	return hash
+}
+
+// Info returns both the height and hash simultaneously, and is used in the
+// ABCI Info call.
+func (s *State) Info() (uint64, []byte) {
+	s.RLock()
+	defer s.RUnlock()
+	height := s.height
+	hash := make([]byte, len(s.hash))
+	copy(hash, s.hash)
+	return height, hash
 }
 
 // GetValues provides a thread-safe way of obtaining a copy of the current
@@ -143,10 +146,17 @@ func (s *State) GetValues() map[string]string {
 }
 
 // Export exports key/value pairs as JSON, used for state sync snapshots.
-func (s *State) Export() ([]byte, error) {
+// Additionally returns the current height and hash of the state.
+func (s *State) Export() ([]byte, uint64, []byte, error) {
 	s.RLock()
 	defer s.RUnlock()
-	return json.Marshal(s.values)
+	bz, err := json.Marshal(s.values)
+	if err != nil {
+		return nil, 0, nil, err
+	}
+	height := s.height
+	stateHash := hashItems(s.values, height)
+	return bz, height, stateHash, nil
 }
 
 // Import imports key/value pairs from JSON bytes, used for InitChain.AppStateBytes and
@@ -181,6 +191,16 @@ func (s *State) Set(key, value string) {
 	} else {
 		s.values[key] = value
 	}
+}
+
+// Query is used in the ABCI Query call, and provides both the current height
+// and the value associated with the given key.
+func (s *State) Query(key string) (uint64, string) {
+	s.RLock()
+	defer s.RUnlock()
+	height := s.height
+	value := s.values[key]
+	return height, value
 }
 
 // Finalize is called after applying a block, updating the height and returning the new app_hash

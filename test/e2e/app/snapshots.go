@@ -84,15 +84,14 @@ func (s *SnapshotStore) saveMetadata() error {
 func (s *SnapshotStore) Create(state *State) (abci.Snapshot, error) {
 	s.Lock()
 	defer s.Unlock()
-	bz, err := state.Export()
+	bz, height, stateHash, err := state.Export()
 	if err != nil {
 		return abci.Snapshot{}, err
 	}
-	height := state.GetHeight()
 	snapshot := abci.Snapshot{
 		Height: height,
 		Format: 1,
-		Hash:   hashItems(state.GetValues(), height),
+		Hash:   stateHash,
 		Chunks: byteChunks(bz),
 	}
 	err = os.WriteFile(filepath.Join(s.dir, fmt.Sprintf("%v.json", height)), bz, 0o644) //nolint:gosec

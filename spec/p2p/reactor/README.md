@@ -25,3 +25,6 @@ described using a [Grammar](./grammar.md).
 The expected operation of a reactor will be modelled using
 [Quint](https://github.com/informalsystems/quint),
 an executable specification language.
+
+A reactor is a [`Service`](../../../libs/service/service.go) controlled by the P2P layer.
+We modelled a generic service in [quint](./service.qnt).

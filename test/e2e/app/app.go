@@ -125,12 +125,13 @@ func NewApplication(cfg *Config) (*Application, error) {
 }
 
 // Info implements ABCI.
-func (app *Application) Info(_ context.Context, _ *abci.RequestInfo) (*abci.ResponseInfo, error) {
+func (app *Application) Info(context.Context, *abci.RequestInfo) (*abci.ResponseInfo, error) {
+	height, hash := app.state.Info()
 	return &abci.ResponseInfo{
 		Version:          version.ABCIVersion,
 		AppVersion:       appVersion,
-		LastBlockHeight:  int64(app.state.Height),
-		LastBlockAppHash: app.state.Hash,
+		LastBlockHeight:  int64(height),
+		LastBlockAppHash: hash,
 	}, nil
 }
 
@@ -160,7 +161,7 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 		}
 	}
 	resp := &abci.ResponseInitChain{
-		AppHash: app.state.Hash,
+		AppHash: app.state.GetHash(),
 	}
 	if resp.Validators, err = app.validatorUpdates(0); err != nil {
 		return nil, err
@@ -261,15 +262,16 @@ func (app *Application) Commit(_ context.Context, _ *abci.RequestCommit) (*abci.
 
 // Query implements ABCI.
 func (app *Application) Query(_ context.Context, req *abci.RequestQuery) (*abci.ResponseQuery, error) {
+	value, height := app.state.Query(string(req.Data))
 	return &abci.ResponseQuery{
-		Height: int64(app.state.Height),
+		Height: int64(height),
 		Key:    req.Data,
-		Value:  []byte(app.state.Get(string(req.Data))),
+		Value:  []byte(value),
 	}, nil
 }
 
 // ListSnapshots implements ABCI.
-func (app *Application) ListSnapshots(_ context.Context, _ *abci.RequestListSnapshots) (*abci.ResponseListSnapshots, error) {
+func (app *Application) ListSnapshots(context.Context, *abci.RequestListSnapshots) (*abci.ResponseListSnapshots, error) {
 	snapshots, err := app.snapshots.List()
 	if err != nil {
 		panic(err)
@@ -493,7 +495,7 @@ func (app *Application) Rollback() error {
 }
 
 func (app *Application) getAppHeight() int64 {
-	initialHeightStr := app.state.Get(prefixReservedKey + suffixInitialHeight)
+	initialHeightStr, height := app.state.Query(prefixReservedKey + suffixInitialHeight)
 	if len(initialHeightStr) == 0 {
 		panic("initial height not set in database")
 	}
@@ -502,7 +504,7 @@ func (app *Application) getAppHeight() int64 {
 		panic(fmt.Errorf("malformed initial height %q in database", initialHeightStr))
 	}
 
-	appHeight := int64(app.state.Height)
+	appHeight := int64(height)
 	if appHeight == 0 {
 		appHeight = initialHeight - 1
 	}

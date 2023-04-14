@@ -6,12 +6,12 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
+	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 	cstypes "github.com/cometbft/cometbft/consensus/types"
 	"github.com/cometbft/cometbft/libs/bits"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/p2p"
-	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -25,7 +25,7 @@ func MsgToWrappedProto(msg Message) (cmtcons.Message, error) {
 
 	switch msg := msg.(type) {
 	case *NewRoundStepMessage:
-		pb.Sum = &cmtcons.Message_NewRoundStep{NewRoundStep: &cmtcons.NewRoundStep {
+		pb.Sum = &cmtcons.Message_NewRoundStep{NewRoundStep: &cmtcons.NewRoundStep{
 			Height:                msg.Height,
 			Round:                 msg.Round,
 			Step:                  uint32(msg.Step),

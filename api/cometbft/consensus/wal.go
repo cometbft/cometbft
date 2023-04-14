@@ -1,8 +1,8 @@
 package consensus
 
 import (
-	"github.com/cometbft/cometbft/api/cometbft/consensus/v1"
-	"github.com/cometbft/cometbft/api/cometbft/consensus/v2"
+	v1 "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
+	v2 "github.com/cometbft/cometbft/api/cometbft/consensus/v2"
 )
 
 type WALMessage = v2.WALMessage

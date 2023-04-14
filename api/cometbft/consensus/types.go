@@ -1,8 +1,8 @@
 package consensus
 
 import (
-	"github.com/cometbft/cometbft/api/cometbft/consensus/v1"
-	"github.com/cometbft/cometbft/api/cometbft/consensus/v2"
+	v1 "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
+	v2 "github.com/cometbft/cometbft/api/cometbft/consensus/v2"
 )
 
 type Message = v2.Message
@@ -25,4 +25,3 @@ type ProposalPOL = v1.ProposalPOL
 type Vote = v2.Vote
 type VoteSetBits = v1.VoteSetBits
 type VoteSetMaj23 = v1.VoteSetMaj23
-

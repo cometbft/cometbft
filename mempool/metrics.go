@@ -55,8 +55,7 @@ type txReceivedCounter struct {
 func (m *Metrics) countOneTimeTxWasReceived(tx types.TxKey) {
 	value, _ := m.txsReceived.LoadOrStore(tx, txReceivedCounter{0, false})
 	counter := value.(txReceivedCounter)
-	counter.count += 1
-	m.txsReceived.Store(tx, counter)
+	m.txsReceived.Store(tx, txReceivedCounter{counter.count + 1, false})
 }
 
 func (m *Metrics) resetTimesTxWasReceived(tx types.TxKey) {
@@ -68,8 +67,7 @@ func (m *Metrics) observeTimesTxsWereReceived() {
 		counter := value.(txReceivedCounter)
 		if !counter.wasObserved {
 			m.TimesTxsWereReceived.Observe(float64(counter.count))
-			counter.wasObserved = true
-			m.txsReceived.Store(key.(types.TxKey), counter)
+			m.txsReceived.Store(key.(types.TxKey), txReceivedCounter{counter.count, true})
 		}
 		return true
 	})

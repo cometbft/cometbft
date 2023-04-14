@@ -36,6 +36,7 @@ issues:
         - gofmt
         - goimports
         - govet
+        - stylecheck
   max-same-issues: 50
 
 linters-settings:

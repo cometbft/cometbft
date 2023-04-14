@@ -45,7 +45,7 @@ type Metrics struct {
 	RecheckTimes metrics.Counter
 
 	// Number of times transactions were received more than once.
-	TxsReceivedMoreThanOnce metrics.Counter
+	AlreadyReceivedTxs metrics.Counter
 
 	// Histogram of times a transaction was received.
 	TimesTxsWereReceived metrics.Histogram `metrics_buckettype:"exp" metrics_bucketsizes:"1,2,5"`

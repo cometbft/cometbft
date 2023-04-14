@@ -124,18 +124,6 @@ func (s *State) Info() (uint64, []byte) {
 	return height, hash
 }
 
-// GetValues provides a thread-safe way of obtaining a copy of the current
-// state values.
-func (s *State) GetValues() map[string]string {
-	s.RLock()
-	defer s.RUnlock()
-	values := make(map[string]string, len(s.values))
-	for k, v := range s.values {
-		values[k] = v
-	}
-	return values
-}
-
 // Export exports key/value pairs as JSON, used for state sync snapshots.
 // Additionally returns the current height and hash of the state.
 func (s *State) Export() ([]byte, uint64, []byte, error) {

@@ -179,9 +179,8 @@ func TestMsgToProto(t *testing.T) {
 			if tt.wantErr {
 				assert.Equal(t, err != nil, tt.wantErr)
 				return
-			} else {
-				require.NoError(t, err)
 			}
+			require.NoError(t, err)
 			pb, err := wpb.Unwrap()
 			require.NoError(t, err)
 			assert.EqualValues(t, tt.want, pb, tt.testName)

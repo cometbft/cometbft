@@ -262,7 +262,7 @@ func (app *Application) Commit(_ context.Context, _ *abci.RequestCommit) (*abci.
 
 // Query implements ABCI.
 func (app *Application) Query(_ context.Context, req *abci.RequestQuery) (*abci.ResponseQuery, error) {
-	height, value := app.state.Query(string(req.Data))
+	value, height := app.state.Query(string(req.Data))
 	return &abci.ResponseQuery{
 		Height: int64(height),
 		Key:    req.Data,
@@ -495,7 +495,7 @@ func (app *Application) Rollback() error {
 }
 
 func (app *Application) getAppHeight() int64 {
-	height, initialHeightStr := app.state.Query(prefixReservedKey + suffixInitialHeight)
+	initialHeightStr, height := app.state.Query(prefixReservedKey + suffixInitialHeight)
 	if len(initialHeightStr) == 0 {
 		panic("initial height not set in database")
 	}

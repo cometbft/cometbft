@@ -174,12 +174,12 @@ func (s *State) Set(key, value string) {
 
 // Query is used in the ABCI Query call, and provides both the current height
 // and the value associated with the given key.
-func (s *State) Query(key string) (uint64, string) {
+func (s *State) Query(key string) (string, uint64) {
 	s.RLock()
 	defer s.RUnlock()
 	height := s.height
 	value := s.values[key]
-	return height, value
+	return value, height
 }
 
 // Finalize is called after applying a block, updating the height and returning the new app_hash

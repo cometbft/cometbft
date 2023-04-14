@@ -17,7 +17,8 @@ const (
 	prevStateFileName = "prev_app_state.json"
 )
 
-// Used exclusively in serialization/deserialization of State.
+// Intermediate type used exclusively in serialization/deserialization of
+// State, such that State need not expose any of its internal values publicly.
 type serializedState struct {
 	Height uint64
 	Values map[string]string
@@ -72,26 +73,16 @@ func (s *State) load() error {
 			return fmt.Errorf("failed to read state from %q: %w", s.currentFile, err)
 		}
 	}
-	var ss serializedState
-	err = json.Unmarshal(bz, &ss)
-	if err != nil {
+	if err := json.Unmarshal(bz, s); err != nil {
 		return fmt.Errorf("invalid state data in %q: %w", s.currentFile, err)
 	}
-	s.height = ss.Height
-	s.values = ss.Values
-	s.hash = ss.Hash
 	return nil
 }
 
 // save saves the state to disk. It does not take out a lock since it is called
 // internally by Commit which does lock.
 func (s *State) save() error {
-	ss := serializedState{
-		Height: s.height,
-		Values: s.values,
-		Hash:   s.hash,
-	}
-	bz, err := json.Marshal(&ss)
+	bz, err := json.Marshal(s)
 	if err != nil {
 		return fmt.Errorf("failed to marshal state: %w", err)
 	}
@@ -237,15 +228,30 @@ func (s *State) Rollback() error {
 	if err != nil {
 		return fmt.Errorf("failed to read state from %q: %w", s.previousFile, err)
 	}
-	var ss serializedState
-	err = json.Unmarshal(bz, &ss)
-	if err != nil {
+	if err := json.Unmarshal(bz, s); err != nil {
 		return fmt.Errorf("invalid state data in %q: %w", s.previousFile, err)
 	}
-	s.height = ss.Height
-	s.hash = ss.Hash
-	s.values = ss.Values
 	return nil
+}
+
+func (s *State) UnmarshalJSON(b []byte) error {
+	var ss serializedState
+	if err := json.Unmarshal(b, &ss); err != nil {
+		return err
+	}
+	s.height = ss.Height
+	s.values = ss.Values
+	s.hash = ss.Hash
+	return nil
+}
+
+func (s *State) MarshalJSON() ([]byte, error) {
+	ss := &serializedState{
+		Height: s.height,
+		Values: s.values,
+		Hash:   s.hash,
+	}
+	return json.Marshal(ss)
 }
 
 // hashItems hashes a set of key/value items.

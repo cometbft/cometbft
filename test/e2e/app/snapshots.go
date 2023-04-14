@@ -31,7 +31,7 @@ type SnapshotStore struct {
 // NewSnapshotStore creates a new snapshot store.
 func NewSnapshotStore(dir string) (*SnapshotStore, error) {
 	store := &SnapshotStore{dir: dir}
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil, err
 	}
 	if err := store.loadMetadata(); err != nil {
@@ -84,17 +84,17 @@ func (s *SnapshotStore) saveMetadata() error {
 func (s *SnapshotStore) Create(state *State) (abci.Snapshot, error) {
 	s.Lock()
 	defer s.Unlock()
-	bz, err := state.Export()
+	bz, height, stateHash, err := state.Export()
 	if err != nil {
 		return abci.Snapshot{}, err
 	}
 	snapshot := abci.Snapshot{
-		Height: state.Height,
+		Height: height,
 		Format: 1,
-		Hash:   hashItems(state.Values, state.Height),
+		Hash:   stateHash,
 		Chunks: byteChunks(bz),
 	}
-	err = os.WriteFile(filepath.Join(s.dir, fmt.Sprintf("%v.json", state.Height)), bz, 0o644) //nolint:gosec
+	err = os.WriteFile(filepath.Join(s.dir, fmt.Sprintf("%v.json", height)), bz, 0o644) //nolint:gosec
 	if err != nil {
 		return abci.Snapshot{}, err
 	}

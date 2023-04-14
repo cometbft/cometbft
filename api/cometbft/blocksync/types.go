@@ -1,5 +1,4 @@
 //nolint:revive
-
 package blocksync
 
 import (

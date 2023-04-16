@@ -25,6 +25,10 @@ like the file below, however, double check by inspecting the
 # "$HOME/.cometbft" by default, but could be changed via $CMTHOME env variable
 # or --home cmd flag.
 
+# The version of CometBFT binary that created or 
+# last modified the config file. Do not modify this.
+version = "0.34.x"
+
 #######################################################################
 ###                   Main Base Config Options                      ###
 #######################################################################
@@ -35,11 +39,6 @@ proxy_app = "tcp://127.0.0.1:26658"
 
 # A custom human readable name for this node
 moniker = "anonymous"
-
-# If this node is many blocks behind the tip of the chain, FastSync
-# allows them to catchup quickly by downloading blocks in parallel
-# and verifying their commits
-fast_sync = true
 
 # Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb
 # * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
@@ -120,18 +119,16 @@ cors_allowed_methods = ["HEAD", "GET", "POST", ]
 # A list of non simple headers the client is allowed to use with cross-domain requests
 cors_allowed_headers = ["Origin", "Accept", "Content-Type", "X-Requested-With", "X-Server-Time", ]
 
-# TCP or UNIX socket address for the gRPC server to listen on
-# NOTE: This server only supports /broadcast_tx_commit
-grpc_laddr = ""
+# Activate unsafe RPC commands like /dial_seeds and /unsafe_flush_mempool
+unsafe = false
 
-# Maximum number of simultaneous connections.
-# Does not include RPC (HTTP&WebSocket) connections. See max_open_connections
+# Maximum number of simultaneous connections (including WebSocket).
 # If you want to accept a larger number than the default, make sure
 # you increase your OS limits.
 # 0 - unlimited.
 # Should be < {ulimit -Sn} - {MaxNumInboundPeers} - {MaxNumOutboundPeers} - {N of wal, db and other open files}
 # 1024 - 40 - 10 - 50 = 924 = ~900
-grpc_max_open_connections = 900
+max_open_connections = 900
 
 # Activate unsafe RPC commands like /dial_seeds and /unsafe_flush_mempool
 unsafe = false
@@ -154,6 +151,33 @@ max_subscription_clients = 100
 # If you're using GRPC (or Local RPC client) and /broadcast_tx_commit, set to
 # the estimated # maximum number of broadcast_tx_commit calls per block.
 max_subscriptions_per_client = 5
+
+# Experimental parameter to specify the maximum number of events a node will
+# buffer, per subscription, before returning an error and closing the
+# subscription. Must be set to at least 100, but higher values will accommodate
+# higher event throughput rates (and will use more memory).
+experimental_subscription_buffer_size = 200
+
+# Experimental parameter to specify the maximum number of RPC responses that
+# can be buffered per WebSocket client. If clients cannot read from the
+# WebSocket endpoint fast enough, they will be disconnected, so increasing this
+# parameter may reduce the chances of them being disconnected (but will cause
+# the node to use more memory).
+
+# Must be at least the same as "experimental_subscription_buffer_size",
+# otherwise connections could be dropped unnecessarily. This value should
+# ideally be somewhat higher than "experimental_subscription_buffer_size" to
+# accommodate non-subscription-related RPC responses.
+experimental_websocket_write_buffer_size = 200
+
+# If a WebSocket client cannot read fast enough, at present we may
+# silently drop events instead of generating an error or disconnecting the
+# client.
+#
+# Enabling this experimental parameter will cause the WebSocket connection to
+# be closed instead if it cannot read fast enough, allowing for greater
+# predictability in subscription behavior.
+experimental_close_on_slow_client = false
 
 # How long to wait for a tx to be committed during /broadcast_tx_commit.
 # WARNING: Using a value larger than 10s will result in increasing the
@@ -201,6 +225,11 @@ external_address = ""
 
 # Comma separated list of seed nodes to connect to
 seeds = ""
+
+# Comma separated list of peers to be added to the peer store
+# on startup. Either bootstrap_peers or persistent_peers is
+# needed for peer discovery
+bootstrap_peers = ""
 
 # Comma separated list of nodes to keep persistent connections to
 persistent_peers = ""
@@ -263,8 +292,25 @@ dial_timeout = "3s"
 #######################################################
 [mempool]
 
+# recheck (default: true) defines whether CometBFT should recheck the
+# validity for all remaining transaction in the mempool after a block.
+# Since a block affects the application state, some transactions in the
+# mempool may become invalid. If this does not apply to your application,
+# you can disable rechecking.
 recheck = true
+
+# broadcast (default: true) defines whether the mempool should relay
+# transactions to other peers. Setting this to false will stop the mempool
+# from relaying transactions to other peers until they are included in a
+# block. In other words, if Broadcast is disabled, only the peer you send
+# the tx to will see it until it is included in a block.
 broadcast = true
+
+# wal_dir (default: "") configures the location of the Write Ahead Log
+# (WAL) for the mempool. The WAL is disabled by default. To enable, set
+# wal_dir to where you want the WAL to be written (e.g.
+# "data/mempool.wal").
+# "data/mempool.wal").
 wal_dir = ""
 
 # Maximum number of transactions in the mempool
@@ -290,7 +336,7 @@ max_tx_bytes = 1048576
 # Maximum size of a batch of transactions to send to a peer
 # Including space needed by encoding (one varint per transaction).
 # XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
-max_batch_bytes = 10485760
+max_batch_bytes = 0
 
 #######################################################
 ###         State Sync Configuration Options        ###
@@ -312,21 +358,33 @@ enable = false
 rpc_servers = ""
 trust_height = 0
 trust_hash = ""
-trust_period = "0s"
+trust_period = "168h0m0s"
+
+# Time to spend discovering snapshots before initiating a restore.
+discovery_time = "15s"
 
 # Temporary directory for state sync snapshot chunks, defaults to the OS tempdir (typically /tmp).
 # Will create a new, randomly named directory within, and remove it when done.
 temp_dir = ""
 
-#######################################################
-###       Fast Sync Configuration Connections       ###
-#######################################################
-[fastsync]
+# The timeout duration before re-requesting a chunk, possibly from a different
+# peer (default: 1 minute).
+chunk_request_timeout = "10s"
 
-# Fast Sync version to use:
-#   1) "v0" (default) - the legacy fast sync implementation
-#   2) "v1" - refactor of v0 version for better testability
-#   2) "v2" - complete redesign of v0, optimized for testability & readability
+# The number of concurrent chunk fetchers to run (default: 1).
+chunk_fetchers = "4"
+
+#######################################################
+###       Block Sync Configuration Options          ###
+#######################################################
+[blocksync]
+
+# Block Sync version to use:
+#
+# In v0.37, v1 and v2 of the block sync protocols were deprecated.
+# Please use v0 instead.
+#
+#   1) "v0" - the default block sync implementation
 version = "v0"
 
 #######################################################
@@ -371,6 +429,17 @@ peer_gossip_sleep_duration = "100ms"
 peer_query_maj23_sleep_duration = "2s"
 
 #######################################################
+###         Storage Configuration Options           ###
+#######################################################
+[storage]
+
+# Set to true to discard ABCI responses from the state store, which can save a
+# considerable amount of disk space. Set to false to ensure ABCI responses are
+# persisted. ABCI responses are required for /block_results RPC queries, and to
+# reindex events in the command-line tool.
+discard_abci_responses = false
+
+#######################################################
 ###   Transaction Indexer Configuration Options     ###
 #######################################################
 [tx_index]
@@ -385,6 +454,10 @@ peer_query_maj23_sleep_duration = "2s"
 #   2) "kv" (default) - the simplest possible indexer, backed by key-value storage (defaults to levelDB; see DBBackend).
 # 		- When "kv" is chosen "tx.height" and "tx.hash" will always be indexed.
 indexer = "kv"
+
+# The PostgreSQL connection configuration, the connection format:
+#   postgresql://<user>:<password>@<host>:<port>/<db>?<opts>
+psql-conn = ""
 
 #######################################################
 ###       Instrumentation Configuration Options     ###
@@ -406,44 +479,25 @@ prometheus_listen_addr = ":26660"
 max_open_connections = 3
 
 # Instrumentation namespace
-namespace = "cometbft"
-
-```
+ namespace = "cometbft"
+ ```
 
 ## Empty blocks VS no empty blocks
-
 ### create_empty_blocks = true
 
-If `create_empty_blocks` is set to `true` in your config, blocks will be
-created ~ every second (with default consensus parameters). You can regulate
-the delay between blocks by changing the `timeout_commit`. E.g. `timeout_commit = "10s"` should result in ~ 10 second blocks.
+If `create_empty_blocks` is set to `true` in your config, blocks will be created ~ every second (with default consensus parameters). You can regulate the delay between blocks by changing the `timeout_commit`. E.g. `timeout_commit = "10s"` should result in ~ 10 second blocks.
 
 ### create_empty_blocks = false
 
 In this setting, blocks are created when transactions received.
 
-Note after the block H, CometBFT creates something we call a "proof block"
-(only if the application hash changed) H+1. The reason for this is to support
-proofs. If you have a transaction in block H that changes the state to X, the
-new application hash will only be included in block H+1. If after your
-transaction is committed, you want to get a light-client proof for the new state
-(X), you need the new block to be committed in order to do that because the new
-block has the new application hash for the state X. That's why we make a new
-(empty) block if the application hash changes. Otherwise, you won't be able to
-make a proof for the new state.
+Note after the block H, CometBFT creates something we call a "proof block" (only if the application hash changed) H+1. The reason for this is to support proofs. If you have a transaction in block H that changes the state to X, the new application hash will only be included in block H+1. If after your transaction is committed, you want to get a light-client proof for the new state (X), you need the new block to be committed in order to do that because the new block has the new application hash for the state X. That's why we make a new (empty) block if the application hash changes. Otherwise, you won't be able to make a proof for the new state.
 
-Plus, if you set `create_empty_blocks_interval` to something other than the
-default (`0`), CometBFT will be creating empty blocks even in the absence of
-transactions every `create_empty_blocks_interval`. For instance, with
-`create_empty_blocks = false` and `create_empty_blocks_interval = "30s"`,
-CometBFT will only create blocks if there are transactions, or after waiting
-30 seconds without receiving any transactions.
+Plus, if you set `create_empty_blocks_interval` to something other than the default (`0`), CometBFT will be creating empty blocks even in the absence of transactions every `create_empty_blocks_interval.` For instance, with `create_empty_blocks = false` and `create_empty_blocks_interval = "30s"`, CometBFT will only create blocks if there are transactions, or after waiting 30 seconds without receiving any transactions.
 
 ## Consensus timeouts explained
-
 There's a variety of information about timeouts in [Running in
 production](./running-in-production.md#configuration-parameters).
-
 You can also find more detailed explanation in the paper describing
 the Tendermint consensus algorithm, adopted by CometBFT: [The latest
 gossip on BFT consensus](https://arxiv.org/abs/1807.04938).
@@ -460,12 +514,9 @@ timeout_precommit = "1s"
 timeout_precommit_delta = "500ms"
 timeout_commit = "1s"
 ```
-
 Note that in a successful round, the only timeout that we absolutely wait no
 matter what is `timeout_commit`.
-
 Here's a brief summary of the timeouts:
-
 - `timeout_propose` = how long we wait for a proposal block before prevoting nil
 - `timeout_propose_delta` = how much  `timeout_propose` increases with each round
 - `timeout_prevote` = how long we wait after receiving +2/3 prevotes for
@@ -477,3 +528,4 @@ Here's a brief summary of the timeouts:
 - `timeout_commit` = how long we wait after committing a block, before starting
   on the new height (this gives us a chance to receive some more precommits,
   even though we already have +2/3)
+

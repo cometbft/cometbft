@@ -25,9 +25,9 @@ like the file below, however, double check by inspecting the
 # "$HOME/.cometbft" by default, but could be changed via $CMTHOME env variable
 # or --home cmd flag.
 
-# The version of CometBFT binary that created or 
+# The version of the CometBFT binary that created or
 # last modified the config file. Do not modify this.
-version = "0.38.x"
+version = "0.38.0"
 
 #######################################################################
 ###                   Main Base Config Options                      ###
@@ -65,7 +65,7 @@ db_backend = "goleveldb"
 db_dir = "data"
 
 # Output level for logging, including package level options
-log_level = "main:info,state:info,statesync:info,*:error"
+log_level = "info"
 
 # Output format: 'plain' (colored text) or 'json'
 log_format = "plain"
@@ -119,16 +119,18 @@ cors_allowed_methods = ["HEAD", "GET", "POST", ]
 # A list of non simple headers the client is allowed to use with cross-domain requests
 cors_allowed_headers = ["Origin", "Accept", "Content-Type", "X-Requested-With", "X-Server-Time", ]
 
-# Activate unsafe RPC commands like /dial_seeds and /unsafe_flush_mempool
-unsafe = false
+# TCP or UNIX socket address for the gRPC server to listen on
+# NOTE: This server only supports /broadcast_tx_commit
+grpc_laddr = ""
 
-# Maximum number of simultaneous connections (including WebSocket).
+# Maximum number of simultaneous connections.
+# Does not include RPC (HTTP&WebSocket) connections. See max_open_connections
 # If you want to accept a larger number than the default, make sure
 # you increase your OS limits.
 # 0 - unlimited.
 # Should be < {ulimit -Sn} - {MaxNumInboundPeers} - {MaxNumOutboundPeers} - {N of wal, db and other open files}
 # 1024 - 40 - 10 - 50 = 924 = ~900
-max_open_connections = 900
+grpc_max_open_connections = 900
 
 # Activate unsafe RPC commands like /dial_seeds and /unsafe_flush_mempool
 unsafe = false
@@ -163,7 +165,7 @@ experimental_subscription_buffer_size = 200
 # WebSocket endpoint fast enough, they will be disconnected, so increasing this
 # parameter may reduce the chances of them being disconnected (but will cause
 # the node to use more memory).
-
+#
 # Must be at least the same as "experimental_subscription_buffer_size",
 # otherwise connections could be dropped unnecessarily. This value should
 # ideally be somewhat higher than "experimental_subscription_buffer_size" to
@@ -202,7 +204,7 @@ tls_cert_file = ""
 
 # The path to a file containing matching private key that is used to create the HTTPS server.
 # Might be either absolute path or path related to CometBFT's config directory.
-# NOTE: both tls_cert_file and tls_key_file must be present for CometBFT to create HTTPS server.
+# NOTE: both tls-cert-file and tls-key-file must be present for CometBFT to create HTTPS server.
 # Otherwise, HTTP server is run.
 tls_key_file = ""
 
@@ -220,14 +222,15 @@ laddr = "tcp://0.0.0.0:26656"
 # Address to advertise to peers for them to dial
 # If empty, will use the same port as the laddr,
 # and will introspect on the listener or use UPnP
-# to figure out the address.
+# to figure out the address. ip and port are required
+# example: 159.89.10.97:26656
 external_address = ""
 
 # Comma separated list of seed nodes to connect to
 seeds = ""
 
 # Comma separated list of peers to be added to the peer store
-# on startup. Either bootstrap_peers or persistent_peers is
+# on startup. Either BootstrapPeers or PersistentPeers are
 # needed for peer discovery
 bootstrap_peers = ""
 
@@ -288,28 +291,27 @@ handshake_timeout = "20s"
 dial_timeout = "3s"
 
 #######################################################
-###          Mempool Configurattion Option          ###
+###          Mempool Configuration Option          ###
 #######################################################
 [mempool]
 
-# recheck (default: true) defines whether CometBFT should recheck the
+# Recheck (default: true) defines whether CometBFT should recheck the
 # validity for all remaining transaction in the mempool after a block.
 # Since a block affects the application state, some transactions in the
 # mempool may become invalid. If this does not apply to your application,
 # you can disable rechecking.
 recheck = true
 
-# broadcast (default: true) defines whether the mempool should relay
+# Broadcast (default: true) defines whether the mempool should relay
 # transactions to other peers. Setting this to false will stop the mempool
 # from relaying transactions to other peers until they are included in a
 # block. In other words, if Broadcast is disabled, only the peer you send
 # the tx to will see it until it is included in a block.
 broadcast = true
 
-# wal_dir (default: "") configures the location of the Write Ahead Log
+# WalPath (default: "") configures the location of the Write Ahead Log
 # (WAL) for the mempool. The WAL is disabled by default. To enable, set
-# wal_dir to where you want the WAL to be written (e.g.
-# "data/mempool.wal").
+# WalPath to where you want the WAL to be written (e.g.
 # "data/mempool.wal").
 wal_dir = ""
 
@@ -453,6 +455,8 @@ discard_abci_responses = false
 #   1) "null"
 #   2) "kv" (default) - the simplest possible indexer, backed by key-value storage (defaults to levelDB; see DBBackend).
 # 		- When "kv" is chosen "tx.height" and "tx.hash" will always be indexed.
+#   3) "psql" - the indexer services backed by PostgreSQL.
+# When "kv" or "psql" is chosen "tx.height" and "tx.hash" will always be indexed.
 indexer = "kv"
 
 # The PostgreSQL connection configuration, the connection format:
@@ -479,7 +483,8 @@ prometheus_listen_addr = ":26660"
 max_open_connections = 3
 
 # Instrumentation namespace
- namespace = "cometbft"
+namespace = "cometbft"
+
  ```
 
 ## Empty blocks VS no empty blocks

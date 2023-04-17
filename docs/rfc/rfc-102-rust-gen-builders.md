@@ -98,7 +98,11 @@ impl HelloRequest {
     }
 }
 
-pub mod prost_buidlers {
+pub mod prost_builders {
+    pub struct HelloRequestBuilder {
+        inner: super::HelloRequest,
+    }
+
     impl HelloRequestBuilder {
         pub fn version(mut self, version: i32) -> Self {
             self.inner.version = version;
@@ -112,7 +116,7 @@ pub mod prost_buidlers {
             self
         }
 
-        pub fn build(self) -> super::HandshakeRequest {
+        pub fn build(self) -> super::HelloRequest {
             self.inner
         }
     }

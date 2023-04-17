@@ -25,10 +25,6 @@ like the file below, however, double check by inspecting the
 # "$HOME/.cometbft" by default, but could be changed via $CMTHOME env variable
 # or --home cmd flag.
 
-# The version of CometBFT binary that created or 
-# last modified the config file. Do not modify this.
-version = "0.34.x"
-
 #######################################################################
 ###                   Main Base Config Options                      ###
 #######################################################################
@@ -38,7 +34,12 @@ version = "0.34.x"
 proxy_app = "tcp://127.0.0.1:26658"
 
 # A custom human readable name for this node
-moniker = "anonymous"
+moniker = "Aliasgars-M1-Pro.local"
+
+# If this node is many blocks behind the tip of the chain, FastSync
+# allows them to catchup quickly by downloading blocks in parallel
+# and verifying their commits
+fast_sync = true
 
 # Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb
 # * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
@@ -65,7 +66,7 @@ db_backend = "goleveldb"
 db_dir = "data"
 
 # Output level for logging, including package level options
-log_level = "main:info,state:info,statesync:info,*:error"
+log_level = "info"
 
 # Output format: 'plain' (colored text) or 'json'
 log_format = "plain"
@@ -119,16 +120,18 @@ cors_allowed_methods = ["HEAD", "GET", "POST", ]
 # A list of non simple headers the client is allowed to use with cross-domain requests
 cors_allowed_headers = ["Origin", "Accept", "Content-Type", "X-Requested-With", "X-Server-Time", ]
 
-# Activate unsafe RPC commands like /dial_seeds and /unsafe_flush_mempool
-unsafe = false
+# TCP or UNIX socket address for the gRPC server to listen on
+# NOTE: This server only supports /broadcast_tx_commit
+grpc_laddr = ""
 
-# Maximum number of simultaneous connections (including WebSocket).
+# Maximum number of simultaneous connections.
+# Does not include RPC (HTTP&WebSocket) connections. See max_open_connections
 # If you want to accept a larger number than the default, make sure
 # you increase your OS limits.
 # 0 - unlimited.
 # Should be < {ulimit -Sn} - {MaxNumInboundPeers} - {MaxNumOutboundPeers} - {N of wal, db and other open files}
 # 1024 - 40 - 10 - 50 = 924 = ~900
-max_open_connections = 900
+grpc_max_open_connections = 900
 
 # Activate unsafe RPC commands like /dial_seeds and /unsafe_flush_mempool
 unsafe = false
@@ -163,7 +166,7 @@ experimental_subscription_buffer_size = 200
 # WebSocket endpoint fast enough, they will be disconnected, so increasing this
 # parameter may reduce the chances of them being disconnected (but will cause
 # the node to use more memory).
-
+#
 # Must be at least the same as "experimental_subscription_buffer_size",
 # otherwise connections could be dropped unnecessarily. This value should
 # ideally be somewhat higher than "experimental_subscription_buffer_size" to
@@ -176,7 +179,7 @@ experimental_websocket_write_buffer_size = 200
 #
 # Enabling this experimental parameter will cause the WebSocket connection to
 # be closed instead if it cannot read fast enough, allowing for greater
-# predictability in subscription behavior.
+# predictability in subscription behaviour.
 experimental_close_on_slow_client = false
 
 # How long to wait for a tx to be committed during /broadcast_tx_commit.
@@ -202,7 +205,7 @@ tls_cert_file = ""
 
 # The path to a file containing matching private key that is used to create the HTTPS server.
 # Might be either absolute path or path related to CometBFT's config directory.
-# NOTE: both tls_cert_file and tls_key_file must be present for CometBFT to create HTTPS server.
+# NOTE: both tls-cert-file and tls-key-file must be present for CometBFT to create HTTPS server.
 # Otherwise, HTTP server is run.
 tls_key_file = ""
 
@@ -220,16 +223,12 @@ laddr = "tcp://0.0.0.0:26656"
 # Address to advertise to peers for them to dial
 # If empty, will use the same port as the laddr,
 # and will introspect on the listener or use UPnP
-# to figure out the address.
+# to figure out the address. ip and port are required
+# example: 159.89.10.97:26656
 external_address = ""
 
 # Comma separated list of seed nodes to connect to
 seeds = ""
-
-# Comma separated list of peers to be added to the peer store
-# on startup. Either bootstrap_peers or persistent_peers is
-# needed for peer discovery
-bootstrap_peers = ""
 
 # Comma separated list of nodes to keep persistent connections to
 persistent_peers = ""
@@ -288,29 +287,22 @@ handshake_timeout = "20s"
 dial_timeout = "3s"
 
 #######################################################
-###          Mempool Configurattion Option          ###
+###          Mempool Configuration Option          ###
 #######################################################
 [mempool]
 
-# recheck (default: true) defines whether CometBFT should recheck the
+# Mempool version to use:
+#   1) "v0" - (default) FIFO mempool.
+#   2) "v1" - prioritized mempool.
+version = "v0"
+
+# Recheck (default: true) defines whether CometBFT should recheck the
 # validity for all remaining transaction in the mempool after a block.
 # Since a block affects the application state, some transactions in the
 # mempool may become invalid. If this does not apply to your application,
 # you can disable rechecking.
 recheck = true
-
-# broadcast (default: true) defines whether the mempool should relay
-# transactions to other peers. Setting this to false will stop the mempool
-# from relaying transactions to other peers until they are included in a
-# block. In other words, if Broadcast is disabled, only the peer you send
-# the tx to will see it until it is included in a block.
 broadcast = true
-
-# wal_dir (default: "") configures the location of the Write Ahead Log
-# (WAL) for the mempool. The WAL is disabled by default. To enable, set
-# wal_dir to where you want the WAL to be written (e.g.
-# "data/mempool.wal").
-# "data/mempool.wal").
 wal_dir = ""
 
 # Maximum number of transactions in the mempool
@@ -337,6 +329,22 @@ max_tx_bytes = 1048576
 # Including space needed by encoding (one varint per transaction).
 # XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
 max_batch_bytes = 0
+
+# ttl-duration, if non-zero, defines the maximum amount of time a transaction
+# can exist for in the mempool.
+#
+# Note, if ttl-num-blocks is also defined, a transaction will be removed if it
+# has existed in the mempool at least ttl-num-blocks number of blocks or if it's
+# insertion time into the mempool is beyond ttl-duration.
+ttl-duration = "0s"
+
+# ttl-num-blocks, if non-zero, defines the maximum number of blocks a transaction
+# can exist for in the mempool.
+#
+# Note, if ttl-duration is also defined, a transaction will be removed if it
+# has existed in the mempool at least ttl-num-blocks number of blocks or if
+# it's insertion time into the mempool is beyond ttl-duration.
+ttl-num-blocks = 0
 
 #######################################################
 ###         State Sync Configuration Options        ###
@@ -375,16 +383,14 @@ chunk_request_timeout = "10s"
 chunk_fetchers = "4"
 
 #######################################################
-###       Block Sync Configuration Options          ###
+###       Fast Sync Configuration Connections       ###
 #######################################################
-[blocksync]
+[fastsync]
 
-# Block Sync version to use:
-#
-# In v0.37, v1 and v2 of the block sync protocols were deprecated.
-# Please use v0 instead.
-#
-#   1) "v0" - the default block sync implementation
+# Fast Sync version to use:
+#   1) "v0" (default) - the legacy fast sync implementation
+#   2) "v1" - refactor of v0 version for better testability
+#   2) "v2" - complete redesign of v0, optimized for testability & readability
 version = "v0"
 
 #######################################################
@@ -453,6 +459,8 @@ discard_abci_responses = false
 #   1) "null"
 #   2) "kv" (default) - the simplest possible indexer, backed by key-value storage (defaults to levelDB; see DBBackend).
 # 		- When "kv" is chosen "tx.height" and "tx.hash" will always be indexed.
+#   3) "psql" - the indexer services backed by PostgreSQL.
+# When "kv" or "psql" is chosen "tx.height" and "tx.hash" will always be indexed.
 indexer = "kv"
 
 # The PostgreSQL connection configuration, the connection format:
@@ -479,7 +487,7 @@ prometheus_listen_addr = ":26660"
 max_open_connections = 3
 
 # Instrumentation namespace
- namespace = "cometbft"
+namespace = "cometbft"
  ```
 
 ## Empty blocks VS no empty blocks

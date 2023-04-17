@@ -17,6 +17,7 @@ like the file below, however, double check by inspecting the
 `config.toml` created with your version of `cometbft` installed:
 
 ```toml
+
 # This is a TOML config file.
 # For more information, see https://github.com/toml-lang/toml
 

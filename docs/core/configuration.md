@@ -36,10 +36,13 @@ proxy_app = "tcp://127.0.0.1:26658"
 # A custom human readable name for this node
 moniker = "anonymous"
 
-# If this node is many blocks behind the tip of the chain, FastSync
+# If this node is many blocks behind the tip of the chain, BlockSync
 # allows them to catchup quickly by downloading blocks in parallel
 # and verifying their commits
-fast_sync = true
+#
+# Deprecated: this key will be removed and BlockSync will be enabled 
+# unconditionally in the next major release.
+block_sync = true
 
 # Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb
 # * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
@@ -179,7 +182,7 @@ experimental_websocket_write_buffer_size = 200
 #
 # Enabling this experimental parameter will cause the WebSocket connection to
 # be closed instead if it cannot read fast enough, allowing for greater
-# predictability in subscription behaviour.
+# predictability in subscription behavior.
 experimental_close_on_slow_client = false
 
 # How long to wait for a tx to be committed during /broadcast_tx_commit.
@@ -293,14 +296,9 @@ dial_timeout = "3s"
 
 # Mempool version to use:
 #   1) "v0" - (default) FIFO mempool.
-#   2) "v1" - prioritized mempool.
+#   2) "v1" - prioritized mempool (deprecated; will be removed in the next release).
 version = "v0"
 
-# Recheck (default: true) defines whether CometBFT should recheck the
-# validity for all remaining transaction in the mempool after a block.
-# Since a block affects the application state, some transactions in the
-# mempool may become invalid. If this does not apply to your application,
-# you can disable rechecking.
 recheck = true
 broadcast = true
 wal_dir = ""
@@ -383,14 +381,16 @@ chunk_request_timeout = "10s"
 chunk_fetchers = "4"
 
 #######################################################
-###       Fast Sync Configuration Connections       ###
+###       Block Sync Configuration Options          ###
 #######################################################
-[fastsync]
+[blocksync]
 
-# Fast Sync version to use:
-#   1) "v0" (default) - the legacy fast sync implementation
-#   2) "v1" - refactor of v0 version for better testability
-#   2) "v2" - complete redesign of v0, optimized for testability & readability
+# Block Sync version to use:
+# 
+# In v0.37, v1 and v2 of the block sync protocols were deprecated.
+# Please use v0 instead.
+#
+#   1) "v0" - the default block sync implementation
 version = "v0"
 
 #######################################################

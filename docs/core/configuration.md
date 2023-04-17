@@ -34,7 +34,7 @@ like the file below, however, double check by inspecting the
 proxy_app = "tcp://127.0.0.1:26658"
 
 # A custom human readable name for this node
-moniker = "Aliasgars-M1-Pro.local"
+moniker = "anonymous"
 
 # If this node is many blocks behind the tip of the chain, FastSync
 # allows them to catchup quickly by downloading blocks in parallel

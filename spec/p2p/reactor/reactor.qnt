@@ -52,30 +52,10 @@ module reactor {
 
 	var state: ReactorState
 
-	// Get Routines associated to a Peer.
-	def peerRoutines(peer: Peer): Set[Routine] = {
-		state.routines.filter(r => r.peerID == peer.ID)
-	}
-
-	// Start routines to interact with a Peer.
-	// Returns the started routines (can be multiple).
-	def startRoutines(peer: Peer): Set[Routine] = {
-		Set({name: "ioRoutine", peerID: peer.ID})
-		//.union(Set({name: "auxRoutine", peerID: peer}))
-	}
-
-	// Stop routines interacting a Peer.
-	// Returns the stopped routines (can be multiple).
-	// FIXME: this method now does not do anything useful.
-	def stopRoutines(peer: Peer): Set[Routine] = {
-		peerRoutines(peer)
-	}
-
 	/*
 	 * GetChannels returns the list of MConnection.ChannelDescriptor. Make sure
 	 * that each ID is unique across all the reactors added to the switch.
 	 */
-	// FIXME: could be a state variable, but it should never change.
 	def GetChannels(): Set[ChannelDescriptor] = {
 		Set({ID: 3, Priority: 1})
 		//.union(Set({ID: 7, Priority: 2}))
@@ -87,56 +67,69 @@ module reactor {
 	 * InitPeer is called by the switch before the peer is started. Use it to
 	 * initialize data for the peer (e.g. peer state).
 	 */
-	// TODO: returns a possibly updated peer.
-	def InitPeer(peer: Peer): Peer = {
-		peer
+	// FIXME: this method should return an updated peer!
+	def InitPeer(s: ReactorState, peer: Peer): ReactorState = {
+		{
+			peers: s.peers.union(Set(peer)),
+			routines: s.routines, // unchanged
+		}
 	}
 
 	action initPeer(peer: Peer): bool = all {
-		not(peer.in(state.peers)),
-		val updatedPeer = InitPeer(peer)
-		state' = {
-			peers: state.peers.union(Set(updatedPeer)),
-			routines: state.routines,
-		}
+		not(peer.in(state.peers)), // No previous InitPeer(peer)
+		state' = state.InitPeer(peer)
 	}
 
 	/* 
 	 * AddPeer is called by the switch after the peer is added and successfully
 	 * started. Use it to start goroutines communicating with the peer.
 	 */
-	action AddPeer(peer: Peer): bool = all {
-		peer.in(state.peers), // initPeer(peer) and not RemovePeer(peer)
-		peerRoutines(peer).size() == 0,	// StartPeer(peer) not called twice
-		state' = {
-			routines: state.routines.union(startRoutines(peer)),
-			peers: state.peers,
+	def AddPeer(s: ReactorState, peer: Peer): ReactorState = {
+		val startedRoutines = Set( {name: "ioRoutine", peerID: peer.ID} )
+		{
+			peers: s.peers, // unchanged
+			routines: s.routines.union(startedRoutines),
 		}
+	}
+
+	action addPeer(peer: Peer): bool = all {
+		peer.in(state.peers), // InitPeer(peer) and not RemovePeer(peer)
+		state.routines.filter(r => r.peerID == peer.ID).size() == 0,
+		state' = AddPeer(state, peer)
 	}
 
 	/*
 	 * RemovePeer is called by the switch when the peer is stopped (due to error
 	 * or other reason).
 	 */
-	action RemovePeer(peer: Peer, reason: str): bool = all {
+	def RemovePeer(s: ReactorState, peer: Peer, reason: str): ReactorState = {
+		val stoppedRoutines = state.routines.filter(r => r.peerID == peer.ID)
+		{
+			peers: s.peers.exclude(Set(peer)),
+			routines: s.routines.exclude(stoppedRoutines),
+		}
+	}
+
+	action removePeer(peer: Peer, reason: str): bool = all {
 		peer.in(state.peers), // InitPeer(peer) and not RemovePeer(peer)
 		// Routines could be already stopped if Peer has erroed.
 		// Namely, we can have peerRoutines(peer).Size() == 0.
-		state' = {
-			routines: state.routines.exclude(stopRoutines(peer)),
-			peers: state.peers.exclude(Set(peer)),
-		}
+		state' = state.RemovePeer(peer, reason)
 	}
 
 	/*
 	 * Receive is called by the switch when an envelope is received from any connected
 	 * peer on any of the channels registered by the reactor.
 	 */
-	// FIXME: action or def? In the current shape, it does not change any state.
-	def Receive(e: Envelope): bool = all {
+	def Receive(s: ReactorState, e: Envelope): ReactorState = {
+		// Process the payload: e.Message
+		s
+	}
+
+	action receive(e: Envelope): bool = all {
 		e.Src.in(state.peers), // Sender is an active/connected peer
 		GetChannels.exists(c => c.ID == e.ChannelID), // Registered for the channel
-		// Process the payload: e.Message
+		state' = Receive(state, e)
 	}
 
 	// HELPERS

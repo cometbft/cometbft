@@ -16,15 +16,34 @@ module reactor {
 		ID: str,
 	}
 
-	// Peers that have been initialized but not yet removed.
-	// The reactor should expect receiving messages from them.
-	var peers: Set[Peer]
+	// Byte ID used by channels.
+	type Byte = int
+
+	// Channel configuration.
+	// Only the Byte ID is relevant by now.
+	type ChannelDescriptor = {
+		ID: Byte,
+		Priority: int,
+	}
+
+	/*
+	 * Envelope contains a message with sender routing info.
+	 */
+	type Envelope = {
+		Src: Peer, // Sender
+		Message: str, // Payload
+		ChannelID: Byte,
+	}
 
 	// A Routine is used to interact with an active Peer.
 	type Routine = {
 		name: str,
 		peerID: str,
 	}
+
+	// Peers that have been initialized but not yet removed.
+	// The reactor should expect receiving messages from them.
+	var peers: Set[Peer]
 
 	// The reactor runs multiple routines.
 	var routines: Set[Routine]
@@ -46,16 +65,6 @@ module reactor {
 	// FIXME: this method now does not do anything useful.
 	def stopRoutines(peer: Peer): Set[Routine] = {
 		peerRoutines(peer)
-	}
-
-	// Byte ID used by channels.
-	type Byte = int
-
-	// Channel configuration.
-	// Only the Byte ID is relevant by now.
-	type ChannelDescriptor = {
-		ID: Byte,
-		Priority: int,
 	}
 
 	/*
@@ -107,15 +116,6 @@ module reactor {
 		// Namely, we can have peerRoutines(peer).Size() == 0.
 		routines' = routines.exclude(stopRoutines(peer)),
 		peers' = peers.exclude(Set(peer)),
-	}
-
-	/*
-	 * Envelope contains a message with sender routing info.
-	 */
-	type Envelope = {
-		Src: Peer, // Sender
-		Message: str, // Payload
-		ChannelID: Byte,
 	}
 
 	/*

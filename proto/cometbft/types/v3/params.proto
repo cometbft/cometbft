@@ -15,7 +15,7 @@ message ConsensusParams {
   v2.BlockParams     block     = 1;
   v1.EvidenceParams  evidence  = 2;
   v1.ValidatorParams validator = 3;
-  v2.VersionParams   version   = 4;
+  v1.VersionParams   version   = 4;
   ABCIParams         abci      = 5;
 }
 

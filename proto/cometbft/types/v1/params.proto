@@ -68,7 +68,8 @@ message VersionParams {
   option (gogoproto.populate) = true;
   option (gogoproto.equal)    = true;
 
-  uint64 app_version = 1;
+  // Was named app_version in Tendermint 0.34
+  uint64 app = 1;
 }
 
 // HashedParams is a subset of ConsensusParams.

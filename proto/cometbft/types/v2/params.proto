@@ -14,7 +14,7 @@ message ConsensusParams {
   BlockParams        block     = 1;
   v1.EvidenceParams  evidence  = 2;
   v1.ValidatorParams validator = 3;
-  VersionParams      version   = 4;
+  v1.VersionParams   version   = 4;
 }
 
 // BlockParams contains limits on the block size.
@@ -27,13 +27,4 @@ message BlockParams {
   int64 max_gas = 2;
 
   reserved 3;  // was TimeIotaMs see https://github.com/tendermint/tendermint/pull/5792
-}
-
-// VersionParams contains the ABCI application version.
-message VersionParams {
-  option (gogoproto.populate) = true;
-  option (gogoproto.equal)    = true;
-
-  // Was named app_version in v1
-  uint64 app = 1;
 }

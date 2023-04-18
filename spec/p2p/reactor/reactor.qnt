@@ -49,11 +49,48 @@ module reactor {
 		// The reactor runs multiple routines.
 		routines: Set[Routine],
 
+		// Service implementation.
+		started: bool,
+		stopped: bool,
+
 		// Indicates whether a switch was set.
 		switch: bool,
 	}
 
 	var state: ReactorState
+
+	/*
+	 * Start the service.
+	 * If it's already started or stopped, will return an error.
+	 */
+	def OnStart(s: ReactorState): ReactorState = {
+		s.with("started", true)
+	}
+
+	action start(): bool = all {
+		not(state.started) and not(state.stopped),
+		state' = state.OnStart()
+	}
+
+	/*
+	 * Stop the service.
+	 * If it's already stopped, will return an error.
+	 */
+	def OnStop(s: ReactorState): ReactorState = {
+		s.with("stopped", true)
+	}
+
+	action stop(): bool = all {
+		state.started and not(state.stopped),
+		state' = state.OnStop()
+	}
+
+	/*
+	 * Return true if the service is running.
+	 */
+	def IsRunning(s: ReactorState): bool = {
+		s.started and not(s.stopped)
+	}
 
 	/*
 	 * SetSwitch allows setting a switch.
@@ -83,6 +120,7 @@ module reactor {
 	}
 
 	action initPeer(peer: Peer): bool = all {
+		state.IsRunning(),
 		not(peer.in(state.peers)), // No previous InitPeer(peer)
 		state' = state.InitPeer(peer)
 	}
@@ -97,6 +135,7 @@ module reactor {
 	}
 
 	action addPeer(peer: Peer): bool = all {
+		state.IsRunning(),
 		peer.in(state.peers), // InitPeer(peer) and not RemovePeer(peer)
 		state.routines.filter(r => r.peerID == peer.ID).size() == 0,
 		state' = AddPeer(state, peer)
@@ -113,6 +152,7 @@ module reactor {
 	}
 
 	action removePeer(peer: Peer, reason: str): bool = all {
+		state.IsRunning(),
 		peer.in(state.peers), // InitPeer(peer) and not RemovePeer(peer)
 		// Routines could be already stopped if Peer has erroed.
 		// Namely, we can have peerRoutines(peer).Size() == 0.
@@ -129,6 +169,7 @@ module reactor {
 	}
 
 	action receive(e: Envelope): bool = all {
+		state.IsRunning(),
 		e.Src.in(state.peers), // Sender is an active/connected peer
 		GetChannels.exists(c => c.ID == e.ChannelID), // Registered for the channel
 		state' = Receive(state, e)
@@ -140,6 +181,8 @@ module reactor {
 		state' = {
 			peers: Set(),
 			routines: Set(),
+			started: false,
+			stopped: false,
 			switch: false,
 		}
 	}

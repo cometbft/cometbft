@@ -32,10 +32,10 @@ message EndHeight {
 
 message WALMessage {
   oneof sum {
-    cometbft.types.v1.EventDataRoundState   event_data_round_state = 1;
-    MsgInfo                              msg_info               = 2;
-    TimeoutInfo                          timeout_info           = 3;
-    EndHeight                            end_height             = 4;
+    cometbft.types.v1.EventDataRoundState event_data_round_state = 1;
+    MsgInfo                               msg_info               = 2;
+    TimeoutInfo                           timeout_info           = 3;
+    EndHeight                             end_height             = 4;
   }
 }
 

@@ -19,22 +19,22 @@ import "google/protobuf/timestamp.proto";
 
 message Request {
   oneof value {
-    v1.RequestEcho                echo                 = 1;
-    v1.RequestFlush               flush                = 2;
-    RequestInfo                   info                 = 3;
-    RequestInitChain              init_chain           = 5;
-    v1.RequestQuery               query                = 6;
-    RequestBeginBlock             begin_block          = 7;
-    v1.RequestCheckTx             check_tx             = 8;
-    v1.RequestDeliverTx           deliver_tx           = 9;
-    v1.RequestEndBlock            end_block            = 10;
-    v1.RequestCommit              commit               = 11;
-    v1.RequestListSnapshots       list_snapshots       = 12;
-    v1.RequestOfferSnapshot       offer_snapshot       = 13;
-    v1.RequestLoadSnapshotChunk   load_snapshot_chunk  = 14;
-    v1.RequestApplySnapshotChunk  apply_snapshot_chunk = 15;
-    RequestPrepareProposal        prepare_proposal     = 16;
-    RequestProcessProposal        process_proposal     = 17;
+    v1.RequestEcho               echo                 = 1;
+    v1.RequestFlush              flush                = 2;
+    RequestInfo                  info                 = 3;
+    RequestInitChain             init_chain           = 5;
+    v1.RequestQuery              query                = 6;
+    RequestBeginBlock            begin_block          = 7;
+    v1.RequestCheckTx            check_tx             = 8;
+    v1.RequestDeliverTx          deliver_tx           = 9;
+    v1.RequestEndBlock           end_block            = 10;
+    v1.RequestCommit             commit               = 11;
+    v1.RequestListSnapshots      list_snapshots       = 12;
+    v1.RequestOfferSnapshot      offer_snapshot       = 13;
+    v1.RequestLoadSnapshotChunk  load_snapshot_chunk  = 14;
+    v1.RequestApplySnapshotChunk apply_snapshot_chunk = 15;
+    RequestPrepareProposal       prepare_proposal     = 16;
+    RequestProcessProposal       process_proposal     = 17;
   }
   reserved 4;
 }
@@ -49,18 +49,18 @@ message RequestInfo {
 message RequestInitChain {
   google.protobuf.Timestamp time = 1
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
-  string                           chain_id         = 2;
+  string                            chain_id         = 2;
   cometbft.types.v2.ConsensusParams consensus_params = 3;
-  repeated v1.ValidatorUpdate         validators       = 4 [(gogoproto.nullable) = false];
-  bytes                            app_state_bytes  = 5;
-  int64                            initial_height   = 6;
+  repeated v1.ValidatorUpdate validators             = 4 [(gogoproto.nullable) = false];
+  bytes                       app_state_bytes        = 5;
+  int64                       initial_height         = 6;
 }
 
 message RequestBeginBlock {
-  bytes                   hash                 = 1;
+  bytes                    hash                 = 1;
   cometbft.types.v1.Header header               = 2 [(gogoproto.nullable) = false];
-  CommitInfo              last_commit_info     = 3 [(gogoproto.nullable) = false];
-  repeated Misbehavior    byzantine_validators = 4 [(gogoproto.nullable) = false];
+  CommitInfo               last_commit_info     = 3 [(gogoproto.nullable) = false];
+  repeated Misbehavior     byzantine_validators = 4 [(gogoproto.nullable) = false];
 }
 
 message RequestPrepareProposal {
@@ -119,8 +119,8 @@ message Response {
 
 message ResponseInitChain {
   cometbft.types.v2.ConsensusParams consensus_params = 1;
-  repeated v1.ValidatorUpdate       validators       = 2 [(gogoproto.nullable) = false];
-  bytes                             app_hash         = 3;
+  repeated v1.ValidatorUpdate validators             = 2 [(gogoproto.nullable) = false];
+  bytes                       app_hash               = 3;
 }
 
 message ResponseBeginBlock {
@@ -161,7 +161,7 @@ message ResponseDeliverTx {
 }
 
 message ResponseEndBlock {
-  repeated v1.ValidatorUpdate          validator_updates       = 1 [(gogoproto.nullable) = false];
+  repeated v1.ValidatorUpdate       validator_updates       = 1 [(gogoproto.nullable) = false];
   cometbft.types.v2.ConsensusParams consensus_param_updates = 2;
   repeated Event                    events                  = 3
       [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
@@ -185,8 +185,8 @@ message ResponseProcessProposal {
 // Misc.
 
 message CommitInfo {
-  int32                 round = 1;
-  repeated v1.VoteInfo  votes = 2 [(gogoproto.nullable) = false];
+  int32    round             = 1;
+  repeated v1.VoteInfo votes = 2 [(gogoproto.nullable) = false];
 }
 
 // ExtendedCommitInfo is similar to CommitInfo except that it is only used in

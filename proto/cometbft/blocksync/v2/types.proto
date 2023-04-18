@@ -16,10 +16,10 @@ message BlockResponse {
 
 message Message {
   oneof sum {
-    v1.BlockRequest     block_request     = 1;
-    v1.NoBlockResponse  no_block_response = 2;
-    BlockResponse       block_response    = 3;
-    v1.StatusRequest    status_request    = 4;
-    v1.StatusResponse   status_response   = 5;
+    v1.BlockRequest    block_request     = 1;
+    v1.NoBlockResponse no_block_response = 2;
+    BlockResponse      block_response    = 3;
+    v1.StatusRequest   status_request    = 4;
+    v1.StatusResponse  status_response   = 5;
   }
 }

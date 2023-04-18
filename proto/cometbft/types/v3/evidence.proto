@@ -11,8 +11,8 @@ import "google/protobuf/timestamp.proto";
 
 message Evidence {
   oneof sum {
-    DuplicateVoteEvidence         duplicate_vote_evidence      = 1;
-    v1.LightClientAttackEvidence  light_client_attack_evidence = 2;
+    DuplicateVoteEvidence        duplicate_vote_evidence      = 1;
+    v1.LightClientAttackEvidence light_client_attack_evidence = 2;
   }
 }
 

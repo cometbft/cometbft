@@ -28,32 +28,32 @@ message PubKeyRequest {
 
 // PubKeyResponse is a response message containing the public key.
 message PubKeyResponse {
-  cometbft.crypto.v1.PublicKey  pub_key = 1 [(gogoproto.nullable) = false];
-  RemoteSignerError             error   = 2;
+  cometbft.crypto.v1.PublicKey pub_key = 1 [(gogoproto.nullable) = false];
+  RemoteSignerError            error   = 2;
 }
 
 // SignVoteRequest is a request to sign a vote
 message SignVoteRequest {
-  cometbft.types.v1.Vote  vote     = 1;
-  string                  chain_id = 2;
+  cometbft.types.v1.Vote vote     = 1;
+  string                 chain_id = 2;
 }
 
 // SignedVoteResponse is a response containing a signed vote or an error
 message SignedVoteResponse {
-  cometbft.types.v1.Vote  vote  = 1 [(gogoproto.nullable) = false];
-  RemoteSignerError       error = 2;
+  cometbft.types.v1.Vote vote  = 1 [(gogoproto.nullable) = false];
+  RemoteSignerError      error = 2;
 }
 
 // SignProposalRequest is a request to sign a proposal
 message SignProposalRequest {
-  cometbft.types.v1.Proposal  proposal = 1;
-  string                      chain_id = 2;
+  cometbft.types.v1.Proposal proposal = 1;
+  string                     chain_id = 2;
 }
 
 // SignedProposalResponse is response containing a signed proposal or an error
 message SignedProposalResponse {
-  cometbft.types.v1.Proposal  proposal = 1 [(gogoproto.nullable) = false];
-  RemoteSignerError           error    = 2;
+  cometbft.types.v1.Proposal proposal = 1 [(gogoproto.nullable) = false];
+  RemoteSignerError          error    = 2;
 }
 
 // PingRequest is a request to confirm that the connection is alive.

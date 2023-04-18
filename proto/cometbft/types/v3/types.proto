@@ -12,10 +12,10 @@ import "google/protobuf/timestamp.proto";
 // Vote represents a prevote or precommit vote from validators for
 // consensus.
 message Vote {
-  v1.SignedMsgType type = 1;
-  int64         height   = 2;
-  int32         round    = 3;
-  v1.BlockID    block_id = 4
+  v1.SignedMsgType type     = 1;
+  int64            height   = 2;
+  int32            round    = 3;
+  v1.BlockID       block_id = 4
       [(gogoproto.nullable) = false, (gogoproto.customname) = "BlockID"];  // zero if vote is nil.
   google.protobuf.Timestamp timestamp = 5
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
@@ -34,8 +34,8 @@ message Vote {
 }
 
 message ExtendedCommit {
-  int64   height   = 1;
-  int32   round    = 2;
+  int64      height   = 1;
+  int32      round    = 2;
   v1.BlockID block_id = 3
       [(gogoproto.nullable) = false, (gogoproto.customname) = "BlockID"];
   repeated ExtendedCommitSig extended_signatures = 4 [(gogoproto.nullable) = false];
@@ -45,7 +45,7 @@ message ExtendedCommit {
 // extension-related fields. We use two signatures to ensure backwards compatibility.
 // That is the digest of the original signature is still the same in prior versions
 message ExtendedCommitSig {
-  v1.BlockIDFlag block_id_flag     = 1;
+  v1.BlockIDFlag            block_id_flag     = 1;
   bytes                     validator_address = 2;
   google.protobuf.Timestamp timestamp         = 3
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];

@@ -22,8 +22,8 @@ message ABCIResponses {
 
 // ValidatorsInfo represents the latest validator set, or the last height it changed
 message ValidatorsInfo {
-  cometbft.types.v1.ValidatorSet  validator_set       = 1;
-  int64                           last_height_changed = 2;
+  cometbft.types.v1.ValidatorSet validator_set       = 1;
+  int64                          last_height_changed = 2;
 }
 
 // ConsensusParamsInfo represents the latest consensus params, or the last height it changed
@@ -51,7 +51,7 @@ message State {
 
   // LastBlockHeight=0 at genesis (ie. block(H=0) does not exist)
   int64                     last_block_height = 3;
-  cometbft.types.v1.BlockID    last_block_id    = 4
+  cometbft.types.v1.BlockID last_block_id     = 4
       [(gogoproto.nullable) = false, (gogoproto.customname) = "LastBlockID"];
   google.protobuf.Timestamp last_block_time = 5
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
@@ -62,10 +62,10 @@ message State {
   // Note that if s.LastBlockHeight causes a valset change,
   // we set s.LastHeightValidatorsChanged = s.LastBlockHeight + 1 + 1
   // Extra +1 due to nextValSet delay.
-  cometbft.types.v1.ValidatorSet  next_validators                = 6;
-  cometbft.types.v1.ValidatorSet  validators                     = 7;
-  cometbft.types.v1.ValidatorSet  last_validators                = 8;
-  int64                           last_height_validators_changed = 9;
+  cometbft.types.v1.ValidatorSet next_validators                = 6;
+  cometbft.types.v1.ValidatorSet validators                     = 7;
+  cometbft.types.v1.ValidatorSet last_validators                = 8;
+  int64                          last_height_validators_changed = 9;
 
   // Consensus parameters used for validating blocks.
   // Changes returned by EndBlock and updated after Commit.

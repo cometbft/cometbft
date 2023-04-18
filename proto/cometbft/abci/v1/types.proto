@@ -74,10 +74,10 @@ message RequestQuery {
 }
 
 message RequestBeginBlock {
-  bytes                     hash                 = 1;
-  cometbft.types.v1.Header  header               = 2 [(gogoproto.nullable) = false];
-  LastCommitInfo            last_commit_info     = 3 [(gogoproto.nullable) = false];
-  repeated Evidence         byzantine_validators = 4 [(gogoproto.nullable) = false];
+  bytes                    hash                 = 1;
+  cometbft.types.v1.Header header               = 2 [(gogoproto.nullable) = false];
+  LastCommitInfo           last_commit_info     = 3 [(gogoproto.nullable) = false];
+  repeated Evidence        byzantine_validators = 4 [(gogoproto.nullable) = false];
 }
 
 enum CheckTxType {
@@ -185,14 +185,14 @@ message ResponseInitChain {
 message ResponseQuery {
   uint32 code = 1;
   // bytes data = 2; // use "value" instead.
-  string                     log       = 3;  // nondeterministic
-  string                     info      = 4;  // nondeterministic
-  int64                      index     = 5;
-  bytes                      key       = 6;
-  bytes                      value     = 7;
+  string                      log       = 3;  // nondeterministic
+  string                      info      = 4;  // nondeterministic
+  int64                       index     = 5;
+  bytes                       key       = 6;
+  bytes                       value     = 7;
   cometbft.crypto.v1.ProofOps proof_ops = 8;
-  int64                      height    = 9;
-  string                     codespace = 10;
+  int64                       height    = 9;
+  string                      codespace = 10;
 }
 
 message ResponseBeginBlock {
@@ -287,7 +287,7 @@ message ResponseApplySnapshotChunk {
 // ConsensusParams contains all consensus-relevant parameters
 // that can be adjusted by the abci app
 message ConsensusParams {
-  BlockParams                      block     = 1;
+  BlockParams                       block     = 1;
   cometbft.types.v1.EvidenceParams  evidence  = 2;
   cometbft.types.v1.ValidatorParams validator = 3;
   cometbft.types.v1.VersionParams   version   = 4;
@@ -344,8 +344,8 @@ message Validator {
 }
 
 message ValidatorUpdate {
-  cometbft.crypto.v1.PublicKey   pub_key = 1 [(gogoproto.nullable) = false];
-  int64                       power   = 2;
+  cometbft.crypto.v1.PublicKey pub_key = 1 [(gogoproto.nullable) = false];
+  int64                        power   = 2;
 }
 
 message VoteInfo {

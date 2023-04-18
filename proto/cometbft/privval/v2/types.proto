@@ -10,14 +10,14 @@ option go_package = "github.com/cometbft/cometbft/api/cometbft/privval/v2";
 
 // SignVoteRequest is a request to sign a vote
 message SignVoteRequest {
-  cometbft.types.v3.Vote  vote     = 1;
-  string                  chain_id = 2;
+  cometbft.types.v3.Vote vote     = 1;
+  string                 chain_id = 2;
 }
 
 // SignedVoteResponse is a response containing a signed vote or an error
 message SignedVoteResponse {
-  cometbft.types.v3.Vote  vote  = 1 [(gogoproto.nullable) = false];
-  v1.RemoteSignerError       error = 2;
+  cometbft.types.v3.Vote vote  = 1 [(gogoproto.nullable) = false];
+  v1.RemoteSignerError   error = 2;
 }
 
 message Message {

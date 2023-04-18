@@ -26,11 +26,11 @@ message DuplicateVoteEvidence {
 
 // LightClientAttackEvidence contains evidence of a set of validators attempting to mislead a light client.
 message LightClientAttackEvidence {
-  cometbft.types.v1.LightBlock        conflicting_block    = 1;
-  int64                               common_height        = 2;
+  cometbft.types.v1.LightBlock conflicting_block            = 1;
+  int64                        common_height                = 2;
   repeated cometbft.types.v1.Validator byzantine_validators = 3;
-  int64                               total_voting_power   = 4;
-  google.protobuf.Timestamp           timestamp            = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  int64                                total_voting_power   = 4;
+  google.protobuf.Timestamp            timestamp            = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
 }
 
 message EvidenceList {

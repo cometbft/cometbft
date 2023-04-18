@@ -48,9 +48,19 @@ module reactor {
 
 		// The reactor runs multiple routines.
 		routines: Set[Routine],
+
+		// Indicates whether a switch was set.
+		switch: bool,
 	}
 
 	var state: ReactorState
+
+	/*
+	 * SetSwitch allows setting a switch.
+	 */
+	def SetSwitch(s: ReactorState, switch: bool): ReactorState = {
+		s.with("switch", switch)
+	}
 
 	/*
 	 * GetChannels returns the list of MConnection.ChannelDescriptor. Make sure
@@ -69,10 +79,7 @@ module reactor {
 	 */
 	// FIXME: this method should return an updated peer!
 	def InitPeer(s: ReactorState, peer: Peer): ReactorState = {
-		{
-			peers: s.peers.union(Set(peer)),
-			routines: s.routines, // unchanged
-		}
+		s.with("peers", s.peers.union(Set(peer)))
 	}
 
 	action initPeer(peer: Peer): bool = all {
@@ -86,10 +93,7 @@ module reactor {
 	 */
 	def AddPeer(s: ReactorState, peer: Peer): ReactorState = {
 		val startedRoutines = Set( {name: "ioRoutine", peerID: peer.ID} )
-		{
-			peers: s.peers, // unchanged
-			routines: s.routines.union(startedRoutines),
-		}
+		s.with("routines", s.routines.union(startedRoutines))
 	}
 
 	action addPeer(peer: Peer): bool = all {
@@ -104,10 +108,8 @@ module reactor {
 	 */
 	def RemovePeer(s: ReactorState, peer: Peer, reason: str): ReactorState = {
 		val stoppedRoutines = state.routines.filter(r => r.peerID == peer.ID)
-		{
-			peers: s.peers.exclude(Set(peer)),
-			routines: s.routines.exclude(stoppedRoutines),
-		}
+		s.with("peers", s.peers.exclude(Set(peer)))
+		 .with("routines", s.routines.exclude(stoppedRoutines))
 	}
 
 	action removePeer(peer: Peer, reason: str): bool = all {
@@ -138,6 +140,7 @@ module reactor {
 		state' = {
 			peers: Set(),
 			routines: Set(),
+			switch: false,
 		}
 	}
 

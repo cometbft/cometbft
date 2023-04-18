@@ -38,7 +38,7 @@ module reactor {
 	// Returns the started routines (can be multiple).
 	def startRoutines(peer: Peer): Set[Routine] = {
 		Set({name: "ioRoutine", peerID: peer.ID})
-		// Set({name: "auxRoutine", peerID: peer})
+		//.union(Set({name: "auxRoutine", peerID: peer}))
 	}
 
 	// Stop routines interacting a Peer.
@@ -47,6 +47,28 @@ module reactor {
 	def stopRoutines(peer: Peer): Set[Routine] = {
 		peerRoutines(peer)
 	}
+
+	// Byte ID used by channels.
+	type Byte = int
+
+	// Channel configuration.
+	// Only the Byte ID is relevant by now.
+	type ChannelDescriptor = {
+		ID: Byte,
+		Priority: int,
+	}
+
+	/*
+	 * GetChannels returns the list of MConnection.ChannelDescriptor. Make sure
+	 * that each ID is unique across all the reactors added to the switch.
+	 */
+	// FIXME: could be a state variable, but it should never change.
+	def GetChannels(): Set[ChannelDescriptor] = {
+		Set({ID: 3, Priority: 1})
+		//.union(Set({ID: 7, Priority: 2}))
+	}
+
+	// TODO: check that channel IDs are unique!
 
 	/*
 	 * InitPeer is called by the switch before the peer is started. Use it to
@@ -85,6 +107,26 @@ module reactor {
 		// Namely, we can have peerRoutines(peer).Size() == 0.
 		routines' = routines.exclude(stopRoutines(peer)),
 		peers' = peers.exclude(Set(peer)),
+	}
+
+	/*
+	 * Envelope contains a message with sender routing info.
+	 */
+	type Envelope = {
+		Src: Peer, // Sender
+		Message: str, // Payload
+		ChannelID: Byte,
+	}
+
+	/*
+	 * Receive is called by the switch when an envelope is received from any connected
+	 * peer on any of the channels registered by the reactor.
+	 */
+	// FIXME: action or def? In the current shape, it does not change any state.
+	def Receive(e: Envelope): bool = all {
+		e.Src.in(peers), // Sender is an active/connected peer
+		GetChannels.exists(c => c.ID == e.ChannelID), // Registered for the channel
+		// Process the payload: e.Message
 	}
 
 	// HELPERS

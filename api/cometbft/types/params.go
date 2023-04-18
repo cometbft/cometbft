@@ -12,4 +12,4 @@ type BlockParams = v2.BlockParams
 type EvidenceParams = v1.EvidenceParams
 type HashedParams = v1.HashedParams
 type ValidatorParams = v1.ValidatorParams
-type VersionParams = v2.VersionParams
+type VersionParams = v1.VersionParams

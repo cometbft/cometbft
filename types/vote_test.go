@@ -17,11 +17,11 @@ import (
 )
 
 func examplePrevote() *Vote {
-	return exampleVote(byte(SignedMsgType_PREVOTE))
+	return exampleVote(byte(PrevoteType))
 }
 
 func examplePrecommit() *Vote {
-	vote := exampleVote(byte(SignedMsgType_PRECOMMIT))
+	vote := exampleVote(byte(PrecommitType))
 	vote.ExtensionSignature = []byte("signature")
 	return vote
 }
@@ -74,7 +74,7 @@ func TestVoteSignBytesTestVectors(t *testing.T) {
 		},
 		// with proper (fixed size) height and round (PreCommit):
 		1: {
-			"", &Vote{Height: 1, Round: 1, Type: SignedMsgType_PRECOMMIT},
+			"", &Vote{Height: 1, Round: 1, Type: PrecommitType},
 			[]byte{
 				0x21,                                   // length
 				0x8,                                    // (field_number << 3) | wire_type
@@ -89,7 +89,7 @@ func TestVoteSignBytesTestVectors(t *testing.T) {
 		},
 		// with proper (fixed size) height and round (PreVote):
 		2: {
-			"", &Vote{Height: 1, Round: 1, Type: SignedMsgType_PREVOTE},
+			"", &Vote{Height: 1, Round: 1, Type: PrevoteType},
 			[]byte{
 				0x21,                                   // length
 				0x8,                                    // (field_number << 3) | wire_type
@@ -246,7 +246,7 @@ func TestVoteExtension(t *testing.T) {
 				Height:           height,
 				Round:            round,
 				Timestamp:        cmttime.Now(),
-				Type:             SignedMsgType_PRECOMMIT,
+				Type:             PrecommitType,
 				BlockID:          makeBlockIDRandom(),
 			}
 
@@ -273,8 +273,8 @@ func TestIsVoteTypeValid(t *testing.T) {
 		in   SignedMsgType
 		out  bool
 	}{
-		{"Prevote", SignedMsgType_PREVOTE, true},
-		{"Precommit", SignedMsgType_PRECOMMIT, true},
+		{"Prevote", PrevoteType, true},
+		{"Precommit", PrecommitType, true},
 		{"InvalidType", SignedMsgType(0x3), false},
 	}
 

@@ -136,7 +136,7 @@ func signVote(vs *validatorStub, voteType types.SignedMsgType, hash []byte, head
 	var ext []byte
 	// Only non-nil precommits are allowed to carry vote extensions.
 	if extEnabled {
-		if voteType != types.SignedMsgType_PRECOMMIT {
+		if voteType != types.PrecommitType {
 			panic(fmt.Errorf("vote type is not precommit but extensions enabled"))
 		}
 		if len(hash) != 0 || !header.IsZero() {
@@ -668,11 +668,11 @@ func ensureProposal(proposalCh <-chan cmtpubsub.Message, height int64, round int
 }
 
 func ensurePrecommit(voteCh <-chan cmtpubsub.Message, height int64, round int32) {
-	ensureVote(voteCh, height, round, types.SignedMsgType_PRECOMMIT)
+	ensureVote(voteCh, height, round, types.PrecommitType)
 }
 
 func ensurePrevote(voteCh <-chan cmtpubsub.Message, height int64, round int32) {
-	ensureVote(voteCh, height, round, types.SignedMsgType_PREVOTE)
+	ensureVote(voteCh, height, round, types.PrevoteType)
 }
 
 func ensureVote(voteCh <-chan cmtpubsub.Message, height int64, round int32,
@@ -702,12 +702,12 @@ func ensureVote(voteCh <-chan cmtpubsub.Message, height int64, round int32,
 
 func ensurePrevoteMatch(t *testing.T, voteCh <-chan cmtpubsub.Message, height int64, round int32, hash []byte) {
 	t.Helper()
-	ensureVoteMatch(t, voteCh, height, round, hash, types.SignedMsgType_PREVOTE)
+	ensureVoteMatch(t, voteCh, height, round, hash, types.PrevoteType)
 }
 
 func ensurePrecommitMatch(t *testing.T, voteCh <-chan cmtpubsub.Message, height int64, round int32, hash []byte) {
 	t.Helper()
-	ensureVoteMatch(t, voteCh, height, round, hash, types.SignedMsgType_PRECOMMIT)
+	ensureVoteMatch(t, voteCh, height, round, hash, types.PrecommitType)
 }
 
 func ensureVoteMatch(t *testing.T, voteCh <-chan cmtpubsub.Message, height int64, round int32, hash []byte, voteType types.SignedMsgType) {

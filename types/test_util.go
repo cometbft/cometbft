@@ -24,7 +24,7 @@ func MakeExtCommit(blockID BlockID, height int64, round int32,
 			ValidatorIndex:   int32(i),
 			Height:           height,
 			Round:            round,
-			Type:             SignedMsgType_PRECOMMIT,
+			Type:             PrecommitType,
 			BlockID:          blockID,
 			Timestamp:        now,
 		}
@@ -78,7 +78,7 @@ func MakeVote(
 		Timestamp:        time,
 	}
 
-	extensionsEnabled := step == SignedMsgType_PRECOMMIT
+	extensionsEnabled := step == PrecommitType
 	if _, err := SignAndCheckVote(vote, val, chainID, extensionsEnabled); err != nil {
 		return nil, err
 	}

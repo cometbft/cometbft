@@ -858,7 +858,7 @@ type Commit struct {
 func (commit *Commit) GetVote(valIdx int32) *Vote {
 	commitSig := commit.Signatures[valIdx]
 	return &Vote{
-		Type:             SignedMsgType_PRECOMMIT,
+		Type:             PrecommitType,
 		Height:           commit.Height,
 		Round:            commit.Round,
 		BlockID:          commitSig.BlockID(commit.BlockID),
@@ -1061,7 +1061,7 @@ func (ec *ExtendedCommit) Clone() *ExtendedCommit {
 // Panics if any of the votes have invalid or absent vote extension data.
 // Inverse of VoteSet.MakeExtendedCommit().
 func (ec *ExtendedCommit) ToExtendedVoteSet(chainID string, vals *ValidatorSet) *VoteSet {
-	voteSet := NewExtendedVoteSet(chainID, ec.Height, ec.Round, SignedMsgType_PRECOMMIT, vals)
+	voteSet := NewExtendedVoteSet(chainID, ec.Height, ec.Round, PrecommitType, vals)
 	ec.addSigsToVoteSet(voteSet)
 	return voteSet
 }
@@ -1087,7 +1087,7 @@ func (ec *ExtendedCommit) addSigsToVoteSet(voteSet *VoteSet) {
 // Panics if signatures from the commit can't be added to the voteset.
 // Inverse of VoteSet.MakeCommit().
 func (commit *Commit) ToVoteSet(chainID string, vals *ValidatorSet) *VoteSet {
-	voteSet := NewVoteSet(chainID, commit.Height, commit.Round, SignedMsgType_PRECOMMIT, vals)
+	voteSet := NewVoteSet(chainID, commit.Height, commit.Round, PrecommitType, vals)
 	for idx, cs := range commit.Signatures {
 		if cs.BlockIDFlag == BlockIDFlagAbsent {
 			continue // OK, some precommits can be missing.
@@ -1136,7 +1136,7 @@ func (ec *ExtendedCommit) ToCommit() *Commit {
 func (ec *ExtendedCommit) GetExtendedVote(valIndex int32) *Vote {
 	ecs := ec.ExtendedSignatures[valIndex]
 	return &Vote{
-		Type:               SignedMsgType_PRECOMMIT,
+		Type:               PrecommitType,
 		Height:             ec.Height,
 		Round:              ec.Round,
 		BlockID:            ecs.BlockID(ec.BlockID),
@@ -1152,7 +1152,7 @@ func (ec *ExtendedCommit) GetExtendedVote(valIndex int32) *Vote {
 // Type returns the vote type of the extended commit, which is always
 // VoteTypePrecommit
 // Implements VoteSetReader.
-func (ec *ExtendedCommit) Type() byte { return byte(SignedMsgType_PRECOMMIT) }
+func (ec *ExtendedCommit) Type() byte { return byte(PrecommitType) }
 
 // GetHeight returns height of the extended commit.
 // Implements VoteSetReader.

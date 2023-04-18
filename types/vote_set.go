@@ -441,7 +441,7 @@ func (voteSet *VoteSet) IsCommit() bool {
 	if voteSet == nil {
 		return false
 	}
-	if voteSet.signedMsgType != SignedMsgType_PRECOMMIT {
+	if voteSet.signedMsgType != PrecommitType {
 		return false
 	}
 	voteSet.mtx.Lock()
@@ -636,7 +636,7 @@ func (voteSet *VoteSet) MakeExtendedCommit(ap ABCIParams) *ExtendedCommit {
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
 
-	if voteSet.signedMsgType != SignedMsgType_PRECOMMIT {
+	if voteSet.signedMsgType != PrecommitType {
 		panic("Cannot MakeExtendCommit() unless VoteSet.Type is PrecommitType")
 	}
 

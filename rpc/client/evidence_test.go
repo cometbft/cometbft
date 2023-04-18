@@ -60,7 +60,7 @@ func makeEvidences(
 		ValidatorIndex:   0,
 		Height:           1,
 		Round:            0,
-		Type:             types.SignedMsgType_PREVOTE,
+		Type:             types.PrevoteType,
 		Timestamp:        defaultTestTime,
 		BlockID: types.BlockID{
 			Hash: tmhash.Sum(cmtrand.Bytes(tmhash.Size)),
@@ -101,7 +101,7 @@ func makeEvidences(
 	// different type
 	{
 		v := vote2
-		v.Type = types.SignedMsgType_PRECOMMIT
+		v.Type = types.PrecommitType
 		fakes = append(fakes, newEvidence(t, val, &vote, &v, chainID))
 	}
 

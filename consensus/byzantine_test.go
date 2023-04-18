@@ -144,9 +144,9 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		// allow first height to happen normally so that byzantine validator is no longer proposer
 		if height == prevoteHeight {
 			bcs.Logger.Info("Sending two votes")
-			prevote1, err := bcs.signVote(types.SignedMsgType_PREVOTE, bcs.ProposalBlock.Hash(), bcs.ProposalBlockParts.Header())
+			prevote1, err := bcs.signVote(types.PrevoteType, bcs.ProposalBlock.Hash(), bcs.ProposalBlockParts.Header())
 			require.NoError(t, err)
-			prevote2, err := bcs.signVote(types.SignedMsgType_PREVOTE, nil, types.PartSetHeader{})
+			prevote2, err := bcs.signVote(types.PrevoteType, nil, types.PartSetHeader{})
 			require.NoError(t, err)
 			peerList := reactors[byzantineNode].Switch.Peers().List()
 			bcs.Logger.Info("Getting peer list", "peers", peerList)
@@ -541,8 +541,8 @@ func sendProposalAndParts(
 
 	// votes
 	cs.mtx.Lock()
-	prevote, _ := cs.signVote(types.SignedMsgType_PREVOTE, blockHash, parts.Header())
-	precommit, _ := cs.signVote(types.SignedMsgType_PRECOMMIT, blockHash, parts.Header())
+	prevote, _ := cs.signVote(types.PrevoteType, blockHash, parts.Header())
+	precommit, _ := cs.signVote(types.PrecommitType, blockHash, parts.Header())
 	cs.mtx.Unlock()
 	peer.Send(p2p.Envelope{
 		ChannelID: VoteChannel,

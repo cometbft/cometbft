@@ -22,7 +22,7 @@ var stamp = time.Date(2019, 10, 13, 16, 14, 44, 0, time.UTC)
 
 func exampleVote() *types.Vote {
 	return &types.Vote{
-		Type:             types.SignedMsgType_PRECOMMIT,
+		Type:             types.PrecommitType,
 		Height:           3,
 		Round:            2,
 		BlockID:          types.BlockID{Hash: tmhash.Sum([]byte("blockID_hash")), PartSetHeader: types.PartSetHeader{Total: 1000000, Hash: tmhash.Sum([]byte("blockID_part_set_header_hash"))}},

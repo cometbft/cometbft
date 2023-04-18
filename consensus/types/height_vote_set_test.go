@@ -87,7 +87,7 @@ func makeVoteHR(
 		valIndex,
 		height,
 		round,
-		types.SignedMsgType_PRECOMMIT,
+		types.PrecommitType,
 		types.BlockID{Hash: randBytes, PartSetHeader: types.PartSetHeader{}},
 		cmttime.Now(),
 	)

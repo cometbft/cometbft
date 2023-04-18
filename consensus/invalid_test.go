@@ -85,7 +85,7 @@ func invalidDoPrevoteFunc(t *testing.T, height int64, round int32, cs *State, sw
 			Height:           cs.Height,
 			Round:            cs.Round,
 			Timestamp:        cs.voteTime(),
-			Type:             types.SignedMsgType_PRECOMMIT,
+			Type:             types.PrecommitType,
 			BlockID: types.BlockID{
 				Hash:          blockHash,
 				PartSetHeader: types.PartSetHeader{Total: 1, Hash: cmtrand.Bytes(32)}},

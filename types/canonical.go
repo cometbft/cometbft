@@ -41,7 +41,7 @@ func CanonicalizePartSetHeader(psh cmtproto.PartSetHeader) cmtproto.CanonicalPar
 // CanonicalizeVote transforms the given Proposal to a CanonicalProposal.
 func CanonicalizeProposal(chainID string, proposal *cmtproto.Proposal) cmtproto.CanonicalProposal {
 	return cmtproto.CanonicalProposal{
-		Type:      SignedMsgType_PROPOSAL,
+		Type:      ProposalType,
 		Height:    proposal.Height,       // encoded as sfixed64
 		Round:     int64(proposal.Round), // encoded as sfixed64
 		POLRound:  int64(proposal.PolRound),

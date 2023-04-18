@@ -40,7 +40,7 @@ func TestResetValidator(t *testing.T) {
 
 	// test vote
 	height, round := int64(10), int32(1)
-	voteType := types.SignedMsgType_PREVOTE
+	voteType := types.PrevoteType
 	randBytes := cmtrand.Bytes(tmhash.Size)
 	blockID := types.BlockID{Hash: randBytes, PartSetHeader: types.PartSetHeader{}}
 	vote := newVote(privVal.Key.Address, 0, height, round, voteType, blockID, nil)
@@ -156,7 +156,7 @@ func TestSignVote(t *testing.T) {
 		PartSetHeader: types.PartSetHeader{Total: 10, Hash: randbytes2}}
 
 	height, round := int64(10), int32(1)
-	voteType := types.SignedMsgType_PREVOTE
+	voteType := types.PrevoteType
 
 	// sign a vote for first time
 	vote := newVote(privVal.Key.Address, 0, height, round, voteType, block1, nil)
@@ -272,7 +272,7 @@ func TestDifferByTimestamp(t *testing.T) {
 
 	// test vote
 	{
-		voteType := types.SignedMsgType_PREVOTE
+		voteType := types.PrevoteType
 		blockID := types.BlockID{Hash: randbytes, PartSetHeader: types.PartSetHeader{}}
 		vote := newVote(privVal.Key.Address, 0, height, round, voteType, blockID, nil)
 		v := vote.ToProto()
@@ -310,7 +310,7 @@ func TestVoteExtensionsAreAlwaysSigned(t *testing.T) {
 	}
 
 	height, round := int64(10), int32(1)
-	voteType := types.SignedMsgType_PRECOMMIT
+	voteType := types.PrecommitType
 
 	// We initially sign this vote without an extension
 	vote1 := newVote(privVal.Key.Address, 0, height, round, voteType, block, nil)

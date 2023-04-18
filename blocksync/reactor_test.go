@@ -139,7 +139,7 @@ func newReactor(
 			idx,
 			thisBlock.Header.Height,
 			0,
-			types.SignedMsgType_PRECOMMIT,
+			types.PrecommitType,
 			blockID,
 			time.Now(),
 		)

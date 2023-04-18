@@ -229,7 +229,7 @@ func TestValidateBlockCommit(t *testing.T) {
 			idx,
 			height,
 			0,
-			types.SignedMsgType_PRECOMMIT,
+			types.PrecommitType,
 			blockID,
 			time.Now(),
 		)
@@ -243,7 +243,7 @@ func TestValidateBlockCommit(t *testing.T) {
 			Height:           height,
 			Round:            0,
 			Timestamp:        cmttime.Now(),
-			Type:             types.SignedMsgType_PRECOMMIT,
+			Type:             types.PrecommitType,
 			BlockID:          blockID,
 		}
 

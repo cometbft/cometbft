@@ -103,7 +103,7 @@ func makeValidCommit(
 			int32(i),
 			height,
 			0,
-			types.SignedMsgType_PRECOMMIT,
+			types.PrecommitType,
 			blockID,
 			time.Now(),
 		)

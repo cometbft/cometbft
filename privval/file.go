@@ -32,9 +32,9 @@ const (
 // A vote is either stepPrevote or stepPrecommit.
 func voteToStep(vote *cmtproto.Vote) int8 {
 	switch vote.Type {
-	case types.SignedMsgType_PREVOTE:
+	case types.PrevoteType:
 		return stepPrevote
-	case types.SignedMsgType_PRECOMMIT:
+	case types.PrecommitType:
 		return stepPrecommit
 	default:
 		panic(fmt.Sprintf("Unknown vote type: %v", vote.Type))
@@ -323,7 +323,7 @@ func (pv *FilePV) signVote(chainID string, vote *cmtproto.Vote) error {
 	// precommits, the extension signature will always be empty.
 	// Even if the signed over data is empty, we still add the signature
 	var extSig []byte
-	if vote.Type == types.SignedMsgType_PRECOMMIT && !types.ProtoBlockIDIsNil(&vote.BlockID) {
+	if vote.Type == types.PrecommitType && !types.ProtoBlockIDIsNil(&vote.BlockID) {
 		extSignBytes := types.VoteExtensionSignBytes(chainID, vote)
 		extSig, err = pv.Key.PrivKey.Sign(extSignBytes)
 		if err != nil {

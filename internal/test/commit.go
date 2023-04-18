@@ -19,7 +19,7 @@ func MakeCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet, valida
 			ValidatorIndex:   int32(i),
 			Height:           voteSet.GetHeight(),
 			Round:            voteSet.GetRound(),
-			Type:             types.SignedMsgType_PRECOMMIT,
+			Type:             types.PrecommitType,
 			BlockID:          blockID,
 			Timestamp:        now,
 		}
@@ -61,7 +61,7 @@ func MakeCommit(blockID types.BlockID, height int64, round int32, valSet *types.
 			ValidatorIndex:   idx,
 			Height:           height,
 			Round:            round,
-			Type:             types.SignedMsgType_PRECOMMIT,
+			Type:             types.PrecommitType,
 			BlockID:          blockID,
 			Timestamp:        now,
 		}

@@ -114,12 +114,12 @@ func (hvs *HeightVoteSet) addRound(round int32) {
 		panic("addRound() for an existing round")
 	}
 	// log.Debug("addRound(round)", "round", round)
-	prevotes := types.NewVoteSet(hvs.chainID, hvs.height, round, types.SignedMsgType_PREVOTE, hvs.valSet)
+	prevotes := types.NewVoteSet(hvs.chainID, hvs.height, round, types.PrevoteType, hvs.valSet)
 	var precommits *types.VoteSet
 	if hvs.extensionsEnabled {
-		precommits = types.NewExtendedVoteSet(hvs.chainID, hvs.height, round, types.SignedMsgType_PRECOMMIT, hvs.valSet)
+		precommits = types.NewExtendedVoteSet(hvs.chainID, hvs.height, round, types.PrecommitType, hvs.valSet)
 	} else {
-		precommits = types.NewVoteSet(hvs.chainID, hvs.height, round, types.SignedMsgType_PRECOMMIT, hvs.valSet)
+		precommits = types.NewVoteSet(hvs.chainID, hvs.height, round, types.PrecommitType, hvs.valSet)
 	}
 	hvs.roundVoteSets[round] = RoundVoteSet{
 		Prevotes:   prevotes,
@@ -157,13 +157,13 @@ func (hvs *HeightVoteSet) AddVote(vote *types.Vote, peerID p2p.ID, extEnabled bo
 func (hvs *HeightVoteSet) Prevotes(round int32) *types.VoteSet {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
-	return hvs.getVoteSet(round, types.SignedMsgType_PREVOTE)
+	return hvs.getVoteSet(round, types.PrevoteType)
 }
 
 func (hvs *HeightVoteSet) Precommits(round int32) *types.VoteSet {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
-	return hvs.getVoteSet(round, types.SignedMsgType_PRECOMMIT)
+	return hvs.getVoteSet(round, types.PrecommitType)
 }
 
 // Last round and blockID that has +2/3 prevotes for a particular block or nil.
@@ -172,7 +172,7 @@ func (hvs *HeightVoteSet) POLInfo() (polRound int32, polBlockID types.BlockID) {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
 	for r := hvs.round; r >= 0; r-- {
-		rvs := hvs.getVoteSet(r, types.SignedMsgType_PREVOTE)
+		rvs := hvs.getVoteSet(r, types.PrevoteType)
 		polBlockID, ok := rvs.TwoThirdsMajority()
 		if ok {
 			return r, polBlockID
@@ -187,9 +187,9 @@ func (hvs *HeightVoteSet) getVoteSet(round int32, voteType types.SignedMsgType) 
 		return nil
 	}
 	switch voteType {
-	case types.SignedMsgType_PREVOTE:
+	case types.PrevoteType:
 		return rvs.Prevotes
-	case types.SignedMsgType_PRECOMMIT:
+	case types.PrecommitType:
 		return rvs.Precommits
 	default:
 		panic(fmt.Sprintf("Unexpected vote type %X", voteType))

@@ -356,7 +356,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	ensureNewRound(newRoundCh, height, 0)
 	ensureNewProposal(proposalCh, height, round)
 	rs := css[0].GetRoundState()
-	signAddVotes(css[0], types.SignedMsgType_PRECOMMIT, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, vss[1:nVals]...)
+	signAddVotes(css[0], types.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, vss[1:nVals]...)
 	ensureNewRound(newRoundCh, height+1, 0)
 
 	// HEIGHT 2
@@ -388,7 +388,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	}
 	ensureNewProposal(proposalCh, height, round)
 	rs = css[0].GetRoundState()
-	signAddVotes(css[0], types.SignedMsgType_PRECOMMIT, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, vss[1:nVals]...)
+	signAddVotes(css[0], types.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, vss[1:nVals]...)
 	ensureNewRound(newRoundCh, height+1, 0)
 
 	// HEIGHT 3
@@ -420,7 +420,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	}
 	ensureNewProposal(proposalCh, height, round)
 	rs = css[0].GetRoundState()
-	signAddVotes(css[0], types.SignedMsgType_PRECOMMIT, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, vss[1:nVals]...)
+	signAddVotes(css[0], types.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, vss[1:nVals]...)
 	ensureNewRound(newRoundCh, height+1, 0)
 
 	// HEIGHT 4
@@ -488,7 +488,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 		if i == selfIndex {
 			continue
 		}
-		signAddVotes(css[0], types.SignedMsgType_PRECOMMIT, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, newVss[i])
+		signAddVotes(css[0], types.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, newVss[i])
 	}
 
 	ensureNewRound(newRoundCh, height+1, 0)
@@ -507,7 +507,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 		if i == selfIndex {
 			continue
 		}
-		signAddVotes(css[0], types.SignedMsgType_PRECOMMIT, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, newVss[i])
+		signAddVotes(css[0], types.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, newVss[i])
 	}
 	ensureNewRound(newRoundCh, height+1, 0)
 
@@ -544,7 +544,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 		if i == selfIndex {
 			continue
 		}
-		signAddVotes(css[0], types.SignedMsgType_PRECOMMIT, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, newVss[i])
+		signAddVotes(css[0], types.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, newVss[i])
 	}
 	ensureNewRound(newRoundCh, height+1, 0)
 
@@ -1086,7 +1086,7 @@ func makeBlockchainFromWAL(wal WAL) ([]*types.Block, []*types.ExtendedCommit, er
 				return nil, nil, err
 			}
 		case *types.Vote:
-			if p.Type == types.SignedMsgType_PRECOMMIT {
+			if p.Type == types.PrecommitType {
 				thisBlockExtCommit = &types.ExtendedCommit{
 					Height:             p.Height,
 					Round:              p.Round,

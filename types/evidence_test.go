@@ -94,7 +94,7 @@ func TestLightClientAttackEvidenceBasic(t *testing.T) {
 	height := int64(5)
 	commonHeight := height - 1
 	nValidators := 10
-	voteSet, valSet, privVals := randVoteSet(height, 1, SignedMsgType_PRECOMMIT, nValidators, 1, false)
+	voteSet, valSet, privVals := randVoteSet(height, 1, PrecommitType, nValidators, 1, false)
 	header := makeHeaderRandom()
 	header.Height = height
 	blockID := makeBlockID(tmhash.Sum([]byte("blockhash")), math.MaxInt32, tmhash.Sum([]byte("partshash")))
@@ -155,7 +155,7 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 	height := int64(5)
 	commonHeight := height - 1
 	nValidators := 10
-	voteSet, valSet, privVals := randVoteSet(height, 1, SignedMsgType_PRECOMMIT, nValidators, 1, false)
+	voteSet, valSet, privVals := randVoteSet(height, 1, PrecommitType, nValidators, 1, false)
 	header := makeHeaderRandom()
 	header.Height = height
 	header.ValidatorsHash = valSet.Hash()

@@ -265,7 +265,7 @@ func TestReactorReceiveDoesNotPanicIfAddPeerHasntBeenCalledYet(t *testing.T) {
 				Height: 1,
 				Round:  1,
 				Index:  1,
-				Type:   types.SignedMsgType_PREVOTE,
+				Type:   types.PrevoteType,
 			},
 		})
 		reactor.AddPeer(peer)
@@ -295,7 +295,7 @@ func TestReactorReceivePanicsIfInitPeerHasntBeenCalledYet(t *testing.T) {
 				Height: 1,
 				Round:  1,
 				Index:  1,
-				Type:   types.SignedMsgType_PREVOTE,
+				Type:   types.PrevoteType,
 			},
 		})
 	})
@@ -370,11 +370,11 @@ func TestSwitchToConsensusVoteExtensions(t *testing.T) {
 
 			var voteSet *types.VoteSet
 			if testCase.includeExtensions {
-				voteSet = types.NewExtendedVoteSet(cs.state.ChainID, testCase.storedHeight, 0, types.SignedMsgType_PRECOMMIT, cs.state.Validators)
+				voteSet = types.NewExtendedVoteSet(cs.state.ChainID, testCase.storedHeight, 0, types.PrecommitType, cs.state.Validators)
 			} else {
-				voteSet = types.NewVoteSet(cs.state.ChainID, testCase.storedHeight, 0, types.SignedMsgType_PRECOMMIT, cs.state.Validators)
+				voteSet = types.NewVoteSet(cs.state.ChainID, testCase.storedHeight, 0, types.PrecommitType, cs.state.Validators)
 			}
-			signedVote := signVote(validator, types.SignedMsgType_PRECOMMIT, propBlock.Hash(), blockParts.Header(), testCase.includeExtensions)
+			signedVote := signVote(validator, types.PrecommitType, propBlock.Hash(), blockParts.Header(), testCase.includeExtensions)
 
 			var veHeight int64
 			if testCase.includeExtensions {

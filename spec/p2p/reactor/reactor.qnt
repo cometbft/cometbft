@@ -41,16 +41,20 @@ module reactor {
 		peerID: str,
 	}
 
-	// Peers that have been initialized but not yet removed.
-	// The reactor should expect receiving messages from them.
-	var peers: Set[Peer]
+	type ReactorState = {
+		// Peers that have been initialized but not yet removed.
+		// The reactor should expect receiving messages from them.
+		peers: Set[Peer],
 
-	// The reactor runs multiple routines.
-	var routines: Set[Routine]
+		// The reactor runs multiple routines.
+		routines: Set[Routine],
+	}
+
+	var state: ReactorState
 
 	// Get Routines associated to a Peer.
 	def peerRoutines(peer: Peer): Set[Routine] = {
-		routines.filter(r => r.peerID == peer.ID)
+		state.routines.filter(r => r.peerID == peer.ID)
 	}
 
 	// Start routines to interact with a Peer.
@@ -89,10 +93,12 @@ module reactor {
 	}
 
 	action initPeer(peer: Peer): bool = all {
-		not(peer.in(peers)),
+		not(peer.in(state.peers)),
 		val updatedPeer = InitPeer(peer)
-		peers' = peers.union(Set(updatedPeer)),
-		routines' = routines,
+		state' = {
+			peers: state.peers.union(Set(updatedPeer)),
+			routines: state.routines,
+		}
 	}
 
 	/* 
@@ -100,10 +106,12 @@ module reactor {
 	 * started. Use it to start goroutines communicating with the peer.
 	 */
 	action AddPeer(peer: Peer): bool = all {
-		peer.in(peers), // initPeer(peer) and not RemovePeer(peer)
+		peer.in(state.peers), // initPeer(peer) and not RemovePeer(peer)
 		peerRoutines(peer).size() == 0,	// StartPeer(peer) not called twice
-		routines' = routines.union(startRoutines(peer)),
-		peers' = peers,
+		state' = {
+			routines: state.routines.union(startRoutines(peer)),
+			peers: state.peers,
+		}
 	}
 
 	/*
@@ -111,11 +119,13 @@ module reactor {
 	 * or other reason).
 	 */
 	action RemovePeer(peer: Peer, reason: str): bool = all {
-		peer.in(peers), // InitPeer(peer) and not RemovePeer(peer)
+		peer.in(state.peers), // InitPeer(peer) and not RemovePeer(peer)
 		// Routines could be already stopped if Peer has erroed.
 		// Namely, we can have peerRoutines(peer).Size() == 0.
-		routines' = routines.exclude(stopRoutines(peer)),
-		peers' = peers.exclude(Set(peer)),
+		state' = {
+			routines: state.routines.exclude(stopRoutines(peer)),
+			peers: state.peers.exclude(Set(peer)),
+		}
 	}
 
 	/*
@@ -124,7 +134,7 @@ module reactor {
 	 */
 	// FIXME: action or def? In the current shape, it does not change any state.
 	def Receive(e: Envelope): bool = all {
-		e.Src.in(peers), // Sender is an active/connected peer
+		e.Src.in(state.peers), // Sender is an active/connected peer
 		GetChannels.exists(c => c.ID == e.ChannelID), // Registered for the channel
 		// Process the payload: e.Message
 	}
@@ -132,12 +142,10 @@ module reactor {
 	// HELPERS
 
 	action init = all {
-		peers' = Set(),
-		routines' = Set(),
-	}
-
-	def state() = {
-		{peers: peers, routines: routines }
+		state' = {
+			peers: Set(),
+			routines: Set(),
+		}
 	}
 
 //	// STATE of the P2P layer

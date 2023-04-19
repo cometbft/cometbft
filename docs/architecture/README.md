@@ -42,6 +42,8 @@ numbering our ADRs from 100 onwards.
 
 ### Proposed
 
+- [ADR-103: Local state sync support](./adr-103-local-state-sync.md)
+
 ### Accepted
 
 ### Implemented

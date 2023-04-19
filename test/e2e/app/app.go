@@ -392,7 +392,7 @@ func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, 
 
 // logRequest log the request using the app's logger.
 func (app *Application) logRequest(req *abci.Request) {
-	s, err := GetRequestString(req)
+	s, err := GetABCIRequestString(req)
 	if err != nil {
 		panic(err)
 	}

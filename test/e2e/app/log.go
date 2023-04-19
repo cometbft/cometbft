@@ -11,7 +11,7 @@ import (
 const ABCI_REQ = "abci"
 
 // GetRequestString gets the string representation of the request that will be logged by the application.
-func GetRequestString(req *abci.Request) (string, error) {
+func GetABCIRequestString(req *abci.Request) (string, error) {
 	b, err := proto.Marshal(req)
 	if err != nil {
 		return "", err
@@ -20,8 +20,8 @@ func GetRequestString(req *abci.Request) (string, error) {
 	return s, nil
 }
 
-// GetRequestFromString parse string and try to get a string of a Request created by GetRequestString.
-func GetRequestFromString(s string) (*abci.Request, error) {
+// GetABCIRequestFromString parse string and try to get a string of a Request created by GetRequestString.
+func GetABCIRequestFromString(s string) (*abci.Request, error) {
 	if !strings.Contains(s, ABCI_REQ) {
 		return nil, fmt.Errorf("String passed to GetRequestFromString does not have any abci request!\n")
 	}

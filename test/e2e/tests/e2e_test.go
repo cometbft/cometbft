@@ -11,9 +11,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
-	abci_call "github.com/cometbft/cometbft/test/e2e/abci"
+	app "github.com/cometbft/cometbft/test/e2e/app"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/types"
 )
@@ -145,24 +146,29 @@ func fetchBlockChain(t *testing.T) []*types.Block {
 	return blocks
 }
 
-// loadAbciCalls go through the logs and collect all ABCI calls
-func loadAbciCalls(dir string) map[string][]*abci_call.ABCICall {
-	m := make(map[string][]*abci_call.ABCICall)
-	// The command you want to run along with the argument
-	out, err := exec.Command("docker-compose", "-f", filepath.Join(dir, "docker-compose.yml"), "logs").Output()
+// fetchABCIRequestsByNodeName go through the logs and collect all ABCI requests for each node.
+func fetchABCIRequestsByNodeName(t *testing.T) map[string][]*abci.Request {
+	testnet := loadTestnet(t)
+	// Printing the logs of all nodes in the testnet.
+	dir := filepath.Join(testnet.Dir, "docker-compose.yml")
+	out, err := exec.Command("docker-compose", "-f", dir, "logs").Output()
 	if err != nil {
 		return nil
 	}
+	m := make(map[string][]*abci.Request)
 	lines := strings.Split(string(out), "\n")
 	for _, line := range lines {
-		if strings.Contains(line, "ABCI-Call") {
-			parts := strings.Fields(line)
-			nodeName := parts[0][5:]
-			var a abci_call.ABCICall
-			a.FromString(parts[3])
-			m[nodeName] = append(m[nodeName], &a)
+		r, err := app.GetABCIRequestFromString(line)
+		if err != nil {
+			continue
 		}
+		// Getting node's name.
+		// First string in line is nodeName, however it has a 5-char prefix that we
+		// need to skip. I don't know what do these 5-chars stand for.
+		parts := strings.Fields(line)
+		nodeName := parts[0]
+		nodeName = nodeName[5:]
+		m[nodeName] = append(m[nodeName], r)
 	}
-
 	return m
 }

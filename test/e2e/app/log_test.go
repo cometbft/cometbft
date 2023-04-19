@@ -28,11 +28,11 @@ func TestLogging(t *testing.T) {
 		{Value: &abci.Request_ProcessProposal{ProcessProposal: &abci.RequestProcessProposal{}}},
 	}
 	for _, r := range reqs {
-		s, err := GetRequestString(r)
+		s, err := GetABCIRequestString(r)
 		if err != nil {
 			t.Error(err)
 		}
-		rr, err := GetRequestFromString(s)
+		rr, err := GetABCIRequestFromString(s)
 		if err != nil {
 			t.Error(err)
 		}

@@ -50,10 +50,16 @@ func (app *Application) logRequest(req *abci.Request) {
 that returns `abci.Request` from the string are provided in files `test/e2e/app/log.go` and `test/e2e/app/log_test.go`, respectively. 
 
 
-### 2) Go program for parsing the logs
-This can be a separated Go program that is receiving the logs and filter parameters as input, and it gives back a set of observed ABCI++ calls as output.
+### 2) Parsing the logs
+We need a code that will take the logs from all nodes and parse the ABCI requests that were logged by the application. 
 
-#### Implementation
+<strong>Implementation</strong>
+
+This logic is implemented inside the `fetchABCIRequestsByNodeName()` function that resides in `test/e2e/tests/e2e_test.go` file. This function does three things:
+- Takes the output of all nodes in the testnet from the moment we launched the testnet until the function is called. It uses the `docker-compose logs` command. 
+- Parses the logs line by line and extracts the node name and the abci request, if one exists.
+- Returns the map where the key is the node name and the value is the list of all abci requests logged on that node. 
+ 
 
 ### 3) ABCI++ grammar checker
 This can also be a separate program that is receiving a set of ABCI++ calls as input and is returning whether they respect the grammar or not. Ideally, we should use some library here that will help us. Specifically, the library should receive the grammar and set of events and gives whether the set of events are possible within this grammar. 

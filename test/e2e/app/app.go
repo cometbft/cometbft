@@ -108,7 +108,7 @@ func NewApplication(cfg *Config) (*Application, error) {
 // Info implements ABCI.
 func (app *Application) Info(req abci.RequestInfo) abci.ResponseInfo {
 
-	r := &abci.Request{Value: &abci.Request_Info{Info: &req}}
+	r := &abci.Request{Value: &abci.Request_Info{Info: &abci.RequestInfo{}}}
 	app.logRequest(r)
 
 	return abci.ResponseInfo{
@@ -122,7 +122,7 @@ func (app *Application) Info(req abci.RequestInfo) abci.ResponseInfo {
 // Info implements ABCI.
 func (app *Application) InitChain(req abci.RequestInitChain) abci.ResponseInitChain {
 
-	r := &abci.Request{Value: &abci.Request_InitChain{InitChain: &req}}
+	r := &abci.Request{Value: &abci.Request_InitChain{InitChain: &abci.RequestInitChain{}}}
 	app.logRequest(r)
 
 	var err error
@@ -145,7 +145,7 @@ func (app *Application) InitChain(req abci.RequestInitChain) abci.ResponseInitCh
 // CheckTx implements ABCI.
 func (app *Application) CheckTx(req abci.RequestCheckTx) abci.ResponseCheckTx {
 
-	r := &abci.Request{Value: &abci.Request_CheckTx{CheckTx: &req}}
+	r := &abci.Request{Value: &abci.Request_CheckTx{CheckTx: &abci.RequestCheckTx{}}}
 	app.logRequest(r)
 
 	_, _, err := parseTx(req.Tx)
@@ -166,7 +166,7 @@ func (app *Application) CheckTx(req abci.RequestCheckTx) abci.ResponseCheckTx {
 // CheckTx implements ABCI.
 func (app *Application) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 
-	r := &abci.Request{Value: &abci.Request_BeginBlock{BeginBlock: &req}}
+	r := &abci.Request{Value: &abci.Request_BeginBlock{BeginBlock: &abci.RequestBeginBlock{}}}
 	app.logRequest(r)
 
 	return abci.ResponseBeginBlock{}
@@ -175,7 +175,7 @@ func (app *Application) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBegi
 // DeliverTx implements ABCI.
 func (app *Application) DeliverTx(req abci.RequestDeliverTx) abci.ResponseDeliverTx {
 
-	r := &abci.Request{Value: &abci.Request_DeliverTx{DeliverTx: &req}}
+	r := &abci.Request{Value: &abci.Request_DeliverTx{DeliverTx: &abci.RequestDeliverTx{}}}
 	app.logRequest(r)
 
 	key, value, err := parseTx(req.Tx)
@@ -189,7 +189,7 @@ func (app *Application) DeliverTx(req abci.RequestDeliverTx) abci.ResponseDelive
 // EndBlock implements ABCI.
 func (app *Application) EndBlock(req abci.RequestEndBlock) abci.ResponseEndBlock {
 
-	r := &abci.Request{Value: &abci.Request_EndBlock{EndBlock: &req}}
+	r := &abci.Request{Value: &abci.Request_EndBlock{EndBlock: &abci.RequestEndBlock{}}}
 	app.logRequest(r)
 
 	valUpdates, err := app.validatorUpdates(uint64(req.Height))
@@ -247,7 +247,7 @@ func (app *Application) Commit() abci.ResponseCommit {
 // Query implements ABCI.
 func (app *Application) Query(req abci.RequestQuery) abci.ResponseQuery {
 
-	r := &abci.Request{Value: &abci.Request_Query{Query: &req}}
+	r := &abci.Request{Value: &abci.Request_Query{Query: &abci.RequestQuery{}}}
 	app.logRequest(r)
 
 	return abci.ResponseQuery{
@@ -260,7 +260,7 @@ func (app *Application) Query(req abci.RequestQuery) abci.ResponseQuery {
 // ListSnapshots implements ABCI.
 func (app *Application) ListSnapshots(req abci.RequestListSnapshots) abci.ResponseListSnapshots {
 
-	r := &abci.Request{Value: &abci.Request_ListSnapshots{ListSnapshots: &req}}
+	r := &abci.Request{Value: &abci.Request_ListSnapshots{ListSnapshots: &abci.RequestListSnapshots{}}}
 	app.logRequest(r)
 
 	snapshots, err := app.snapshots.List()
@@ -273,7 +273,7 @@ func (app *Application) ListSnapshots(req abci.RequestListSnapshots) abci.Respon
 // LoadSnapshotChunk implements ABCI.
 func (app *Application) LoadSnapshotChunk(req abci.RequestLoadSnapshotChunk) abci.ResponseLoadSnapshotChunk {
 
-	r := &abci.Request{Value: &abci.Request_LoadSnapshotChunk{LoadSnapshotChunk: &req}}
+	r := &abci.Request{Value: &abci.Request_LoadSnapshotChunk{LoadSnapshotChunk: &abci.RequestLoadSnapshotChunk{}}}
 	app.logRequest(r)
 
 	chunk, err := app.snapshots.LoadChunk(req.Height, req.Format, req.Chunk)
@@ -286,7 +286,7 @@ func (app *Application) LoadSnapshotChunk(req abci.RequestLoadSnapshotChunk) abc
 // OfferSnapshot implements ABCI.
 func (app *Application) OfferSnapshot(req abci.RequestOfferSnapshot) abci.ResponseOfferSnapshot {
 
-	r := &abci.Request{Value: &abci.Request_OfferSnapshot{OfferSnapshot: &req}}
+	r := &abci.Request{Value: &abci.Request_OfferSnapshot{OfferSnapshot: &abci.RequestOfferSnapshot{}}}
 	app.logRequest(r)
 
 	if app.restoreSnapshot != nil {
@@ -300,7 +300,7 @@ func (app *Application) OfferSnapshot(req abci.RequestOfferSnapshot) abci.Respon
 // ApplySnapshotChunk implements ABCI.
 func (app *Application) ApplySnapshotChunk(req abci.RequestApplySnapshotChunk) abci.ResponseApplySnapshotChunk {
 
-	r := &abci.Request{Value: &abci.Request_ApplySnapshotChunk{ApplySnapshotChunk: &req}}
+	r := &abci.Request{Value: &abci.Request_ApplySnapshotChunk{ApplySnapshotChunk: &abci.RequestApplySnapshotChunk{}}}
 	app.logRequest(r)
 
 	if app.restoreSnapshot == nil {
@@ -326,7 +326,7 @@ func (app *Application) PrepareProposal(
 	req abci.RequestPrepareProposal,
 ) abci.ResponsePrepareProposal {
 
-	r := &abci.Request{Value: &abci.Request_PrepareProposal{PrepareProposal: &req}}
+	r := &abci.Request{Value: &abci.Request_PrepareProposal{PrepareProposal: &abci.RequestPrepareProposal{}}}
 	app.logRequest(r)
 
 	txs := make([][]byte, 0, len(req.Txs))
@@ -350,7 +350,7 @@ func (app *Application) PrepareProposal(
 // It accepts any proposal that does not contain a malformed transaction.
 func (app *Application) ProcessProposal(req abci.RequestProcessProposal) abci.ResponseProcessProposal {
 
-	r := &abci.Request{Value: &abci.Request_ProcessProposal{ProcessProposal: &req}}
+	r := &abci.Request{Value: &abci.Request_ProcessProposal{ProcessProposal: &abci.RequestProcessProposal{}}}
 	app.logRequest(r)
 
 	for _, tx := range req.Txs {

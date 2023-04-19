@@ -8,7 +8,7 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 )
 
-const ABCI_CALL = "abci"
+const ABCI_REQ = "abci"
 
 // GetRequestString gets the string representation of the request that will be logged by the application.
 func GetRequestString(req *abci.Request) (string, error) {
@@ -16,14 +16,17 @@ func GetRequestString(req *abci.Request) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	s := ABCI_CALL + "|" + string(b)
+	s := ABCI_REQ + string(b) + ABCI_REQ
 	return s, nil
 }
 
-// GetRequestFromString gets a Request from a string created by GetRequestString.
+// GetRequestFromString parse string and try to get a string of a Request created by GetRequestString.
 func GetRequestFromString(s string) (*abci.Request, error) {
-	parts := strings.Split(s, "|")
-	if len(parts) != 2 || parts[0] != ABCI_CALL {
+	if !strings.Contains(s, ABCI_REQ) {
+		return nil, fmt.Errorf("String passed to GetRequestFromString does not have any abci request!\n")
+	}
+	parts := strings.Split(s, ABCI_REQ)
+	if len(parts) != 3 {
 		return nil, fmt.Errorf("String passed to GetRequestFromString does not have a good format!\n")
 	}
 	req := &abci.Request{}

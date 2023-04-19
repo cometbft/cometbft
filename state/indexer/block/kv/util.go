@@ -114,7 +114,7 @@ func parseEventSeqFromEventKey(key []byte) (int64, error) {
 
 	remaining, err := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height)
 	if err != nil {
-		return 0, fmt.Errorf("failed to parse event key: %w", err)
+		return 0, fmt.Errorf("failed to parse event sequence: %w", err)
 	}
 
 	// We either have an event sequence or a function type (potentially) followed by an event sequence.
@@ -129,17 +129,20 @@ func parseEventSeqFromEventKey(key []byte) (int64, error) {
 		if err != nil {                                       // If it cannot parse the event function type, it could be 1.
 			remaining, err2 := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height, &eventSeq)
 			if err2 != nil || len(remaining) != 0 { // We should not have anything else after the eventSeq.
-				return 0, fmt.Errorf("failed to parse event key: %w; and %w", err, err2)
+				return 0, fmt.Errorf("failed to parse event sequence: %w; and %w", err, err2)
 			}
-
 		} else {
-			remaining, err2 := orderedcode.Parse(remaining2, &eventSeq) // If the event follows the scenario in 2.,
-			// retrieve the eventSeq, otherwise, there should be no remainder
-			// and no error and this parsing has no effect.
-			if err2 != nil || len(remaining) != 0 { // We should not have anything else after the eventSeq if in 2.
-				return 0, fmt.Errorf("failed to parse event key: %w", err2)
+			if len(remaining2) != 0 { // Are we in case 2 or 3
+				remaining, err2 := orderedcode.Parse(remaining2, &eventSeq) // the event follows the scenario in 2.,
+				// retrieve the eventSeq
+				// there should be no error
+				if err2 != nil || len(remaining) != 0 { // We should not have anything else after the eventSeq if in 2.
+					return 0, fmt.Errorf("failed to parse event sequence: %w", err2)
+				}
 			}
 		}
+	} else {
+		return 0, fmt.Errorf("failed to parse event sequence, invalid event format")
 	}
 
 	return eventSeq, nil

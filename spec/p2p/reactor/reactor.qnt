@@ -59,6 +59,43 @@ module reactor {
 
 	var state: ReactorState
 
+	action init = all {
+		state' = {
+			peers: Set(),
+			routines: Set(),
+			started: false,
+			stopped: false,
+			switch: false,
+		}
+	}
+
+	/*
+	 * GetChannels returns the list of MConnection.ChannelDescriptor. Make sure
+	 * that each ID is unique across all the reactors added to the switch.
+	 */
+	// TODO: we need a way to configure the returned channels!
+	def GetChannels(s: ReactorState): Set[ChannelDescriptor] = {
+		Set({ID: 3, Priority: 1})
+		.union(Set({ID: 7, Priority: 2}))
+		//.union(Set({ID: 3, Priority: 2})) // setup should fail!
+	}
+
+	/*
+	 * SetSwitch allows setting a switch.
+	 */
+	def SetSwitch(s: ReactorState, switch: bool): ReactorState = {
+		s.with("switch", switch)
+	}
+
+	// Code: Switch.AddReactor(name string, reactor Reactor)
+	action setup() = all {
+		not(state.switch),
+		val channels = state.GetChannels()
+		val chIDs = channels.map(c => c.ID)
+		channels.size() == chIDs.size(), // channel IDs are unique
+		state' = state.SetSwitch(true),
+	}
+
 	/*
 	 * Start the service.
 	 * If it's already started or stopped, will return an error.
@@ -68,6 +105,7 @@ module reactor {
 	}
 
 	action start(): bool = all {
+		state.switch,
 		not(state.started) and not(state.stopped),
 		state' = state.OnStart()
 	}
@@ -93,24 +131,6 @@ module reactor {
 	}
 
 	/*
-	 * SetSwitch allows setting a switch.
-	 */
-	def SetSwitch(s: ReactorState, switch: bool): ReactorState = {
-		s.with("switch", switch)
-	}
-
-	/*
-	 * GetChannels returns the list of MConnection.ChannelDescriptor. Make sure
-	 * that each ID is unique across all the reactors added to the switch.
-	 */
-	def GetChannels(): Set[ChannelDescriptor] = {
-		Set({ID: 3, Priority: 1})
-		//.union(Set({ID: 7, Priority: 2}))
-	}
-
-	// TODO: check that channel IDs are unique!
-
-	/*
 	 * InitPeer is called by the switch before the peer is started. Use it to
 	 * initialize data for the peer (e.g. peer state).
 	 */
@@ -120,7 +140,7 @@ module reactor {
 	}
 
 	action initPeer(peer: Peer): bool = all {
-		state.IsRunning(),
+		state.switch and state.IsRunning(),
 		not(peer.in(state.peers)), // No previous InitPeer(peer)
 		state' = state.InitPeer(peer)
 	}
@@ -135,7 +155,7 @@ module reactor {
 	}
 
 	action addPeer(peer: Peer): bool = all {
-		state.IsRunning(),
+		state.switch and state.IsRunning(),
 		peer.in(state.peers), // InitPeer(peer) and not RemovePeer(peer)
 		state.routines.filter(r => r.peerID == peer.ID).size() == 0,
 		state' = AddPeer(state, peer)
@@ -152,7 +172,7 @@ module reactor {
 	}
 
 	action removePeer(peer: Peer, reason: str): bool = all {
-		state.IsRunning(),
+		state.switch and state.IsRunning(),
 		peer.in(state.peers), // InitPeer(peer) and not RemovePeer(peer)
 		// Routines could be already stopped if Peer has erroed.
 		// Namely, we can have peerRoutines(peer).Size() == 0.
@@ -169,22 +189,11 @@ module reactor {
 	}
 
 	action receive(e: Envelope): bool = all {
-		state.IsRunning(),
+		state.switch and state.IsRunning(),
 		e.Src.in(state.peers), // Sender is an active/connected peer
-		GetChannels.exists(c => c.ID == e.ChannelID), // Registered for the channel
+		state.GetChannels().exists(
+			c => c.ID == e.ChannelID), // Registered for the channel
 		state' = Receive(state, e)
-	}
-
-	// HELPERS
-
-	action init = all {
-		state' = {
-			peers: Set(),
-			routines: Set(),
-			started: false,
-			stopped: false,
-			switch: false,
-		}
 	}
 
 //	// STATE of the P2P layer

@@ -1,0 +1,40 @@
+€syntax = "proto3";
+
+package orderbook;
+option go_package = "github.com/tendermint/tendermint/abci/example/orderbook";
+
+import "wire.proto";
+
+message MsgBid {
+    Pair pair  = 1;
+    OrderBid bid_order = 2;
+}
+
+message MsgAsk {
+    Pair pair  = 1;
+    OrderAsk ask_order = 2;
+}
+
+message MsgCreateAccount {
+    bytes public_key = 1;
+    repeated Commodity commodities = 2;
+}
+
+message MsgRegisterPair {
+    Pair pair = 1;
+}
+
+message MsgTradeSet {
+    TradeSet trade_set = 1;
+}
+
+message Msg {
+    //a Msg has to be one of the below
+    oneof sum {
+        MsgBid msg_bid = 1;
+        MsgAsk msg_ask = 2;
+        MsgRegisterPair msg_register_pair = 3;
+        MsgCreateAccount msg_create_account = 4;
+        MsgTradeSet msg_trade_set = 5;
+    }
+}

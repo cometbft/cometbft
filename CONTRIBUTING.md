@@ -39,8 +39,8 @@ release?
 
 2. **Each pull request must be at most 300 lines of code changes**. Larger
    changes must be structured as a series of pull requests of at most 300 lines
-   of code changes, each building upon the previous one, all ideally tracked in
-   a tracking issue.
+   of code changes each, each building upon the previous one, all ideally
+   tracked in a tracking issue.
 
    If a single PR absolutely has to be larger, it _must_ be structured such that
    it can be reviewed commit by commit, with each commit doing _one logical

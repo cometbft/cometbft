@@ -8,27 +8,22 @@ should bear this goal in mind in deciding if they should target the main
 CometBFT project or a potential fork. When targeting the main CometBFT project,
 the following process leads to the best chance of landing changes in `main`.
 
-All work on the code base should be motivated by a [GitHub
-Issue](https://github.com/cometbft/cometbft/issues).
-[Search](https://github.com/cometbft/cometbft/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)
-is a good place to start when looking for places to contribute. If you would
-like to work on an issue which already exists, please indicate so by leaving a
-comment.
+All work on the code base should be motivated by a [GitHub Issue][gh-issues].
+[Search][search-issues] is a good place to start when looking for places to
+contribute. If you would like to work on an issue which already exists, please
+indicate so by leaving a comment.
 
-All new contributions should start with a [GitHub
-Issue](https://github.com/cometbft/cometbft/issues/new/choose). The issue helps
-capture the problem you're trying to solve and allows for early feedback. Once
-the issue is created the process can proceed in different directions depending
-on how well defined the problem and potential solution are. If the change is
-simple and well understood, maintainers will indicate their support with a
-heartfelt emoji.
+All new contributions should start with a [GitHub Issue][new-gh-issue]. The
+issue helps capture the problem you're trying to solve and allows for early
+feedback. Once the issue is created the process can proceed in different
+directions depending on how well defined the problem and potential solution are.
+If the change is simple and well understood, maintainers will indicate their
+support with a heartfelt emoji.
 
 If the issue would benefit from thorough discussion, maintainers may request
-that you create a [Request For
-Comment](https://github.com/cometbft/cometbft/tree/main/docs/rfc) in the
-CometBFT repo. Discussion at the RFC stage will build collective
-understanding of the dimensions of the problems and help structure conversations
-around trade-offs.
+that you create a [Request For Comment][rfcs] in the CometBFT repo. Discussion
+at the RFC stage will build collective understanding of the dimensions of the
+problems and help structure conversations around trade-offs.
 
 When the problem is well understood but the solution leads to large structural
 changes to the code base, these changes should be proposed in the form of an
@@ -42,45 +37,49 @@ an ADR.
 
 Find the largest existing ADR number and bump it by 1.
 
-When the problem as well as proposed solution are well understood,
-changes should start with a [draft
-pull request](https://github.blog/2019-02-14-introducing-draft-pull-requests/)
-against `main`. The draft signals that work is underway and is not ready for
-review. Only users that are familiar with the issue, or those that the author explicitly requested a review from
-are expected to write comments at this point. When the work is ready for feedback,
-hitting "Ready for Review" will signal to the maintainers to take a look, and to
-the rest of the community that feedback is welcome.
+When the problem as well as proposed solution are well understood, changes
+should start with a [draft pull request][gh-draft-prs] against `main`. The draft
+signals that work is underway and is not ready for review. Only users that are
+familiar with the issue, or those that the author explicitly requested a review
+from are expected to write comments at this point. When the work is ready for
+feedback, hitting "Ready for Review" will signal to the maintainers to take a
+look, and to the rest of the community that feedback is welcome.
 
-**The team may opt to ignore unsolicited comments/feedback on draft PRs**, as having to
-respond to feedback on work that is not marked as "Ready for Review" interferes with the
-process of getting the work to the point that it is ready to review.
+**The team may opt to ignore unsolicited comments/feedback on draft PRs**, as
+having to respond to feedback on work that is not marked as "Ready for Review"
+interferes with the process of getting the work to the point that it is ready to
+review.
 
 ![Contributing flow](./docs/imgs/contributing.png)
 
-Each stage of the process is aimed at creating feedback cycles which align contributors and maintainers to make sure:
+Each stage of the process is aimed at creating feedback cycles which align
+contributors and maintainers to make sure:
 
-- Contributors don’t waste their time implementing/proposing features which won’t land in `main`.
-- Maintainers have the necessary context in order to support and review contributions.
-
+- Contributors don’t waste their time implementing/proposing features which
+  won’t land in `main`.
+- Maintainers have the necessary context in order to support and review
+  contributions.
 
 ## Forking
 
-Please note that Go requires code to live under absolute paths, which complicates forking.
-While my fork lives at `https://github.com/ebuchman/cometbft`,
-the code should never exist at `$GOPATH/src/github.com/ebuchman/cometbft`.
-Instead, we use `git remote` to add the fork as a new remote for the original repo,
+Please note that Go requires code to live under absolute paths, which
+complicates forking. While my fork lives at
+`https://github.com/ebuchman/cometbft`, the code should never exist at
+`$GOPATH/src/github.com/ebuchman/cometbft`. Instead, we use `git remote` to add
+the fork as a new remote for the original repo,
 `$GOPATH/src/github.com/cometbft/cometbft`, and do all the work there.
 
 For instance, to create a fork and work on a branch of it, I would:
 
 - Create the fork on GitHub, using the fork button.
-- Go to the original repo checked out locally (i.e. `$GOPATH/src/github.com/cometbft/cometbft`)
+- Go to the original repo checked out locally (i.e.
+  `$GOPATH/src/github.com/cometbft/cometbft`)
 - `git remote rename origin upstream`
 - `git remote add origin git@github.com:ebuchman/basecoin.git`
 
-Now `origin` refers to my fork and `upstream` refers to the CometBFT version.
-So I can `git push -u origin main` to update my fork, and make pull requests to CometBFT from there.
-Of course, replace `ebuchman` with your git handle.
+Now `origin` refers to my fork and `upstream` refers to the CometBFT version. So
+I can `git push -u origin main` to update my fork, and make pull requests to
+CometBFT from there. Of course, replace `ebuchman` with your git handle.
 
 To pull in updates from the origin repo, run
 
@@ -89,34 +88,32 @@ To pull in updates from the origin repo, run
 
 ## Dependencies
 
-We use [go modules](https://github.com/golang/go/wiki/Modules) to manage dependencies.
+We use [Go modules] to manage dependencies.
 
-That said, the `main` branch of every CometBFT repository should just build
-with `go get`, which means they should be kept up-to-date with their
-dependencies so we can get away with telling people they can just `go get` our
-software.
+That said, the `main` branch of every CometBFT repository should just build with
+`go get`, which means they should be kept up-to-date with their dependencies so
+we can get away with telling people they can just `go get` our software.
 
 Since some dependencies are not under our control, a third party may break our
-build, in which case we can fall back on `go mod tidy`. Even for dependencies under our control, go helps us to
-keep multiple repos in sync as they evolve. Anything with an executable, such
-as apps, tools, and the core, should use dep.
+build, in which case we can fall back on `go mod tidy`. Even for dependencies
+under our control, go helps us to keep multiple repos in sync as they evolve.
+Anything with an executable, such as apps, tools, and the core, should use dep.
 
 Run `go list -u -m all` to get a list of dependencies that may not be
 up-to-date.
 
 When updating dependencies, please only update the particular dependencies you
-need. Instead of running `go get -u=patch`, which will update anything,
-specify exactly the dependency you want to update.
+need. Instead of running `go get -u=patch`, which will update anything, specify
+exactly the dependency you want to update.
 
 ## Protobuf
 
-We use [Protocol Buffers](https://developers.google.com/protocol-buffers) along
-with [`gogoproto`](https://github.com/cosmos/gogoproto) to generate code for use
+We use [Protocol Buffers] along with [`gogoproto`] to generate code for use
 across CometBFT.
 
 To generate proto stubs, lint, and check protos for breaking changes, you will
-need to install [buf](https://buf.build/) and `gogoproto`. Then, from the root
-of the repository, run:
+need to install [buf] and `gogoproto`. Then, from the root of the repository,
+run:
 
 ```bash
 # Lint all of the .proto files
@@ -130,9 +127,8 @@ make proto-check-breaking
 make proto-gen
 ```
 
-To automatically format `.proto` files, you will need
-[`clang-format`](https://clang.llvm.org/docs/ClangFormat.html) installed. Once
-installed, you can run:
+To automatically format `.proto` files, you will need [`clang-format`]
+installed. Once installed, you can run:
 
 ```bash
 make proto-format
@@ -140,7 +136,8 @@ make proto-format
 
 ### Visual Studio Code
 
-If you are a VS Code user, you may want to add the following to your `.vscode/settings.json`:
+If you are a VS Code user, you may want to add the following to your
+`.vscode/settings.json`:
 
 ```json
 {
@@ -154,12 +151,13 @@ If you are a VS Code user, you may want to add the following to your `.vscode/se
 
 ## Changelog
 
-To manage and generate our changelog, we currently use [unclog](https://github.com/informalsystems/unclog).
+To manage and generate our changelog, we currently use [unclog].
 
 Every fix, improvement, feature, or breaking change should be made in a
 pull-request that includes a file
 `.changelog/unreleased/${category}/${issue-or-pr-number}-${description}.md`,
 where:
+
 - `category` is one of `improvements`, `breaking-changes`, `bug-fixes`,
   `features` and if multiple apply, create multiple files;
 - `description` is a short (4 to 6 word), hyphen separated description of the
@@ -293,8 +291,7 @@ Before merging a pull request:
 - Ensure pull branch is up-to-date with a recent `main` (GitHub won't let you
   merge without this!)
 - Run `make test` to ensure that all tests pass
-- [Squash](https://stackoverflow.com/questions/5189560/squash-my-last-x-commits-together-using-git)
-  merge pull request
+- [Squash][git-squash] merge pull request
 
 #### Pull Requests for Minor Releases
 
@@ -317,8 +314,7 @@ conflicts so that reviewers can be sure to take a thorough look.
 
 ### Git Commit Style
 
-We follow the [Go style guide on commit
-messages](https://tip.golang.org/doc/contribute.html#commit_messages). Write
+We follow the [Go style guide on commit messages][go-git-commit-style]. Write
 concise commits that start with the package name and have a description that
 finishes the sentence "This change modifies CometBFT to...". For example,
 
@@ -339,15 +335,15 @@ message, though!
 ### Unit tests
 
 Unit tests are located in `_test.go` files as directed by [the Go testing
-package](https://golang.org/pkg/testing/). If you're adding or removing a
-function, please check there's a `TestType_Method` test for it.
+package][go-testing]. If you're adding or removing a function, please check
+there's a `TestType_Method` test for it.
 
 Run: `make test`
 
 ### Integration tests
 
-Integration tests are also located in `_test.go` files. What differentiates
-them is a more complicated setup, which usually involves setting up two or more
+Integration tests are also located in `_test.go` files. What differentiates them
+is a more complicated setup, which usually involves setting up two or more
 components.
 
 Run: `make test_integrations`
@@ -371,26 +367,28 @@ cd test/e2e && \
 *NOTE: if you're just submitting your first PR, you won't need to touch these
 most probably (99.9%)*.
 
-[Fuzz tests](https://en.wikipedia.org/wiki/Fuzzing) can be found inside the
-`./test/fuzz` directory. See [README.md](./test/fuzz/README.md) for details.
+[Fuzz tests] can be found inside the `./test/fuzz` directory. See
+[README.md](./test/fuzz/README.md) for details.
 
 Run: `cd test/fuzz && make fuzz-{PACKAGE-COMPONENT}`
 
 ### RPC Testing
 
-**If you contribute to the RPC endpoints it's important to document your
-changes in the [Openapi file](./rpc/openapi/openapi.yaml)**.
+**If you contribute to the RPC endpoints it's important to document your changes
+in the [OpenAPI file](./rpc/openapi/openapi.yaml)**.
 
-To test your changes you must install `nodejs` and run:
-
-```bash
-npm i -g dredd
-make build-linux build-contract-tests-hooks
-make contract-tests
-```
-
-**WARNING: these are currently broken due to <https://github.com/apiaryio/dredd>
-not supporting complete OpenAPI 3**.
-
-This command will popup a network and check every endpoint against what has
-been documented.
+[gh-issues]: https://github.com/cometbft/cometbft/issues
+[search-issues]: https://github.com/cometbft/cometbft/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22
+[new-gh-issue]: https://github.com/cometbft/cometbft/issues/new/choose
+[rfcs]: https://github.com/cometbft/cometbft/tree/main/docs/rfc
+[gh-draft-prs]: https://github.blog/2019-02-14-introducing-draft-pull-requests/
+[Go modules]: https://github.com/golang/go/wiki/Modules
+[Protocol Buffers]: https://protobuf.dev/
+[`gogoproto`]: https://github.com/cosmos/gogoproto
+[buf]: https://buf.build/
+[`clang-format`]: https://clang.llvm.org/docs/ClangFormat.html
+[unclog]: https://github.com/informalsystems/unclog
+[git-squash]: https://stackoverflow.com/questions/5189560/squash-my-last-x-commits-together-using-git
+[go-git-commit-style]: https://tip.golang.org/doc/contribute.html#commit_messages
+[go-testing]: https://golang.org/pkg/testing/
+[Fuzz tests]: https://en.wikipedia.org/wiki/Fuzzing

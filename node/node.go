@@ -447,8 +447,8 @@ func (n *Node) OnStart() error {
 			n.Logger.Error("Failed to bootstrap node with new state", "err", err)
 			return err
 		}
-		n.consensusReactor.Metrics.StateSyncing.Set(0)
-		n.consensusReactor.Metrics.BlockSyncing.Set(1)
+		// n.stateSyncReactor.metrics.StateSyncing.Set(0)
+		// n.bcReactor.metrics.BlockSyncing.Set(1)
 
 		bcR, _ := n.bcReactor.(blockSyncReactor)
 		err = bcR.SwitchToBlockSync(state)

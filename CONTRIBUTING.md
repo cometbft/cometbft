@@ -5,60 +5,161 @@ may be helpful to understand the goal of the project. The goal of CometBFT is to
 develop a BFT consensus engine robust enough to support permissionless
 value-carrying networks. While all contributions are welcome, contributors
 should bear this goal in mind in deciding if they should target the main
-CometBFT project or a potential fork. When targeting the main CometBFT project,
-the following process leads to the best chance of landing changes in `main`.
+CometBFT project or a potential fork.
 
-All work on the code base should be motivated by a [GitHub Issue][gh-issues].
-[Search][search-issues] is a good place to start when looking for places to
-contribute. If you would like to work on an issue which already exists, please
-indicate so by leaving a comment.
+## Overview
+
+When targeting the main CometBFT project, following the processes outlined in
+this document will lead to the best chance of landing changes in a release.
+
+### Core team responsibility
+
+First and foremost, the CometBFT core team is responsible for maintaining this
+project over time. This means that the core team needs to understand the nature
+of, and agree to maintain, all of the changes that land on `main` or a backport
+branch. It may cost you a few days/weeks' worth of your time to submit a
+particular change, but it may cost the core team far more to maintain that
+change over the years.
+
+### Ease of reviewing
+
+The fact that the core team needs to be able to deeply understand the short-,
+medium- and long-term consequences of incoming changes means that changes need
+to be **easily reviewed**.
+
+What makes a change easy to review, and more likely to land in an upcoming
+release?
+
+1. **Each pull request must do _one thing_**. It must be very clear what that
+   one thing is when looking at the pull request title, description, and linked
+   issues. It must also be very clear what value it ultimately aims to deliver,
+   and to which user(s). A single pull request that does multiple things, or
+   without a clear articulation of the problem it attempts to solve, may be
+   rejected immediately.
+
+2. **Each pull request must be at most 300 lines of code changes**. Larger
+   changes must be structured as a series of pull requests of at most 300 lines
+   of code changes, each building upon the previous one, all ideally tracked in
+   a tracking issue.
+
+   If a single PR absolutely has to be larger, it _must_ be structured such that
+   it can be reviewed commit by commit, with each commit doing _one logical
+   thing_ (with a good description of what it aims to achieve in the Git
+   commit), and each commit ideally being no larger than 300 lines of code
+   changes. Poorly structured pull requests may be rejected immediately with a
+   request to restructure them.
+
+   This does not necessarily apply to documentation-related changes or
+   automatically generated code (e.g. generated from Protobuf definitions). But
+   automatically generated code changes should occur within separate commits, so
+   they are easily distinguishable from manual code changes.
+
+## Workflow
+
+The following diagram summarizes the general workflow used by the core team to
+make changes, with a full description of the workflow below the diagram.
+Exceptions to this process will naturally occur (e.g. in the case of urgent
+security fixes), but this is rare.
+
+Each stage of the process is aimed at creating feedback cycles which align
+contributors and maintainers to make sure:
+
+- Contributors don’t waste their time implementing/proposing features which
+  won't land in `main`.
+- Maintainers have the necessary context in order to support and review
+  contributions.
+
+```mermaid
+flowchart LR
+    complexity{Problem\ncomplexity}
+    issue("New issue\n(Problem articulation\nfor discussion)")
+    clarity{"Problem +\nsolution clarity"}
+    rfc("RFC pull request(s)")
+    rfc_merge("Merge RFC to main")
+    risk{"Solution\ncomplexity/risk"}
+    adr("ADR + PoC\npull request(s)")
+    adr_merge("Merge ADR to main\nand create tracking issue")
+    pr("Solution\npull request(s)")
+    merge("Merge to main/backport\nor feature branch")
+
+    complexity --"Low/Moderate/High"--> issue
+    complexity --Trivial--> pr
+    issue --> clarity
+    clarity --High--> risk
+    clarity --Low--> rfc
+    rfc --Approved--> rfc_merge
+    risk --"Moderate/High"--> adr
+    adr --"ADR accepted by core team"--> adr_merge
+    adr_merge --> pr
+    risk --Low--> pr
+    pr --Approved--> merge
+```
+
+### GitHub issues
+
+All non-trivial work on the code base should be motivated by a [GitHub
+Issue][gh-issues]. [Search][search-issues] is a good place to start when looking
+for places to contribute. If you would like to work on an issue which already
+exists, please indicate so by leaving a comment. If someone else is already
+assigned to that issue and you would like to contribute to it or take it over,
+please coordinate with the existing assignee(s) and only start work on it once
+you have been assigned to it. Unsolicited pull requests relating to issues
+assigned to other users may be rejected immediately.
 
 All new contributions should start with a [GitHub Issue][new-gh-issue]. The
-issue helps capture the problem you're trying to solve and allows for early
-feedback. Once the issue is created the process can proceed in different
-directions depending on how well defined the problem and potential solution are.
-If the change is simple and well understood, maintainers will indicate their
-support with a heartfelt emoji.
+issue helps capture the **problem** being solved and allows for early feedback.
+Problems must be captured in terms of the **impact** that they have on specific
+users. Once the issue is created the process can proceed in different directions
+depending on how well defined the problem and potential solution are. If the
+change is simple and well understood, maintainers will indicate their support
+with a heartfelt emoji.
+
+### Request for comments (RFCs)
 
 If the issue would benefit from thorough discussion, maintainers may request
 that you create a [Request For Comment][rfcs] in the CometBFT repo. Discussion
 at the RFC stage will build collective understanding of the dimensions of the
 problems and help structure conversations around trade-offs.
 
-When the problem is well understood but the solution leads to large structural
-changes to the code base, these changes should be proposed in the form of an
-[Architectural Decision Record (ADR)](./docs/architecture/). The ADR will help
-build consensus on an overall strategy to ensure the code base maintains
-coherence in the larger context. If you are not comfortable with writing an ADR,
-you can open a less-formal issue and the maintainers will help you turn it into
-an ADR.
+### Architecture decision records (ADRs)
 
-> How to pick a number for the ADR?
+When the problem is well understood but the solution leads to
+large/complex/risky structural changes to the code base, these changes should be
+proposed in the form of an [Architectural Decision Record
+(ADR)](./docs/architecture/). The ADR will help build consensus on an overall
+strategy to ensure the code base maintains coherence in the larger context. If
+you are not comfortable with writing an ADR, you can open a less-formal issue
+and the maintainers will help you turn it into an ADR. Sometimes the best way to
+demonstrate the value of an ADR is to build a proof-of-concept (PoC) along with
+the ADR - in this case, link to the PoC from the ADR PR.
 
-Find the largest existing ADR number and bump it by 1.
+**How does one pick a number for an new ADR?**
 
-When the problem as well as proposed solution are well understood, changes
-should start with a [draft pull request][gh-draft-prs] against `main`. The draft
-signals that work is underway and is not ready for review. Only users that are
-familiar with the issue, or those that the author explicitly requested a review
-from are expected to write comments at this point. When the work is ready for
-feedback, hitting "Ready for Review" will signal to the maintainers to take a
-look, and to the rest of the community that feedback is welcome.
+Find the largest existing ADR number (between those in `./docs/architecture/`
+and those that may be open as issues or pull requests) and bump it by 1.
+
+### Pull requests
+
+When the problem as well as proposed solution are well understood and low-risk,
+changes should start with a **pull request**.
+
+Please adhere to the guidelines in the [Ease of reviewing](#ease-of-reviewing)
+section above when submitting pull requests.
+
+### Draft pull requests
+
+One can optionally submit a [draft pull request][gh-draft-prs] against `main`,
+in which case this signals that work is underway and is not ready for review.
+Only users that are familiar with the issue, or those that the author explicitly
+requested a review from are expected to write comments at this point. When the
+work is ready for feedback, hitting "Ready for Review" will signal to the
+maintainers to take a look, and to the rest of the community that feedback is
+welcome.
 
 **The team may opt to ignore unsolicited comments/feedback on draft PRs**, as
 having to respond to feedback on work that is not marked as "Ready for Review"
 interferes with the process of getting the work to the point that it is ready to
 review.
-
-![Contributing flow](./docs/imgs/contributing.png)
-
-Each stage of the process is aimed at creating feedback cycles which align
-contributors and maintainers to make sure:
-
-- Contributors don’t waste their time implementing/proposing features which
-  won’t land in `main`.
-- Maintainers have the necessary context in order to support and review
-  contributions.
 
 ## Forking
 

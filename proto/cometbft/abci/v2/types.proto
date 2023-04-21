@@ -233,9 +233,9 @@ message ExtendedVoteInfo {
 }
 
 enum MisbehaviorType {
-  UNSPECIFIED         = 0;
-  DUPLICATE_VOTE      = 1;
-  LIGHT_CLIENT_ATTACK = 2;
+  MISBEHAVIOR_TYPE_UNSPECIFIED         = 0;
+  MISBEHAVIOR_TYPE_DUPLICATE_VOTE      = 1;
+  MISBEHAVIOR_TYPE_LIGHT_CLIENT_ATTACK = 2;
 }
 
 message Misbehavior {

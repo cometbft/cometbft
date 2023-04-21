@@ -83,8 +83,8 @@ message RequestBeginBlock {
 enum CheckTxType {
   option (gogoproto.goproto_enum_prefix)   = false;
 
-  CHECK_TX_TYPE_NEW     = 0 [(gogoproto.enumvalue_customname) = "New"];
-  CHECK_TX_TYPE_RECHECK = 1 [(gogoproto.enumvalue_customname) = "Recheck"];
+  CHECK_TX_TYPE_NEW     = 0;
+  CHECK_TX_TYPE_RECHECK = 1;
 }
 
 message RequestCheckTx {

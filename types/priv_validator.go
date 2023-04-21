@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 // PrivValidator defines the functionality of a local CometBFT validator
@@ -15,6 +15,7 @@ import (
 type PrivValidator interface {
 	GetPubKey() (crypto.PubKey, error)
 
+	// FIXME: should use the domain types defined in this package, not the proto types
 	SignVote(chainID string, vote *cmtproto.Vote) error
 	SignProposal(chainID string, proposal *cmtproto.Proposal) error
 }
@@ -85,7 +86,7 @@ func (pv MockPV) SignVote(chainID string, vote *cmtproto.Vote) error {
 
 	var extSig []byte
 	// We only sign vote extensions for non-nil precommits
-	if vote.Type == cmtproto.PrecommitType && !ProtoBlockIDIsNil(&vote.BlockID) {
+	if vote.Type == PrecommitType && !ProtoBlockIDIsNil(&vote.BlockID) {
 		extSignBytes := VoteExtensionSignBytes(useChainID, vote)
 		extSig, err = pv.PrivKey.Sign(extSignBytes)
 		if err != nil {

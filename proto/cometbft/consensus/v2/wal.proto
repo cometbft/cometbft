@@ -1,0 +1,33 @@
+syntax = "proto3";
+package cometbft.consensus.v2;
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/consensus/v2";
+
+import "cometbft/consensus/v1/wal.proto";
+
+import "cometbft/consensus/v2/types.proto";
+import "cometbft/types/v1/events.proto";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
+// MsgInfo are msgs from the reactor which may update the state
+message MsgInfo {
+  Message msg     = 1 [(gogoproto.nullable) = false];
+  string  peer_id = 2 [(gogoproto.customname) = "PeerID"];
+}
+
+message WALMessage {
+  oneof sum {
+    cometbft.types.v1.EventDataRoundState event_data_round_state = 1;
+    MsgInfo                               msg_info               = 2;
+    v1.TimeoutInfo                        timeout_info           = 3;
+    v1.EndHeight                          end_height             = 4;
+  }
+}
+
+// TimedWALMessage wraps WALMessage and adds Time for debugging purposes.
+message TimedWALMessage {
+  google.protobuf.Timestamp time = 1 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  WALMessage                msg  = 2;
+}

@@ -3,7 +3,7 @@ package types
 import (
 	"time"
 
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
@@ -41,7 +41,7 @@ func CanonicalizePartSetHeader(psh cmtproto.PartSetHeader) cmtproto.CanonicalPar
 // CanonicalizeVote transforms the given Proposal to a CanonicalProposal.
 func CanonicalizeProposal(chainID string, proposal *cmtproto.Proposal) cmtproto.CanonicalProposal {
 	return cmtproto.CanonicalProposal{
-		Type:      cmtproto.ProposalType,
+		Type:      ProposalType,
 		Height:    proposal.Height,       // encoded as sfixed64
 		Round:     int64(proposal.Round), // encoded as sfixed64
 		POLRound:  int64(proposal.PolRound),

@@ -10,12 +10,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/libs/bits"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/p2p"
-	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -47,7 +47,7 @@ func TestMsgToProto(t *testing.T) {
 	require.NoError(t, err)
 
 	proposal := types.Proposal{
-		Type:      cmtproto.ProposalType,
+		Type:      types.ProposalType,
 		Height:    1,
 		Round:     1,
 		POLRound:  1,
@@ -64,7 +64,7 @@ func TestMsgToProto(t *testing.T) {
 		0,
 		1,
 		0,
-		cmtproto.PrecommitType,
+		types.PrecommitType,
 		bi,
 		time.Now(),
 	)
@@ -175,11 +175,14 @@ func TestMsgToProto(t *testing.T) {
 	for _, tt := range testsCases {
 		tt := tt
 		t.Run(tt.testName, func(t *testing.T) {
-			pb, err := MsgToProto(tt.msg)
-			if tt.wantErr == true {
+			wpb, err := MsgToWrappedProto(tt.msg)
+			if tt.wantErr {
 				assert.Equal(t, err != nil, tt.wantErr)
 				return
 			}
+			require.NoError(t, err)
+			pb, err := wpb.Unwrap()
+			require.NoError(t, err)
 			assert.EqualValues(t, tt.want, pb, tt.testName)
 
 			msg, err := MsgFromProto(pb)
@@ -331,7 +334,7 @@ func TestConsMsgsVectors(t *testing.T) {
 	require.NoError(t, err)
 
 	proposal := types.Proposal{
-		Type:      cmtproto.ProposalType,
+		Type:      types.ProposalType,
 		Height:    1,
 		Round:     1,
 		POLRound:  1,
@@ -347,7 +350,7 @@ func TestConsMsgsVectors(t *testing.T) {
 		Height:           1,
 		Round:            0,
 		Timestamp:        date,
-		Type:             cmtproto.PrecommitType,
+		Type:             types.PrecommitType,
 		BlockID:          bi,
 	}
 	vpb := v.ToProto()
@@ -392,17 +395,17 @@ func TestConsMsgsVectors(t *testing.T) {
 			Vote: &cmtcons.Vote{Vote: vextPb}}},
 			"327b0a790802100122480a206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d1224080112206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d2a0608c0b89fdc0532146164645f6d6f72655f6578636c616d6174696f6e38014a09657874656e73696f6e"},
 		{"HasVote", &cmtcons.Message{Sum: &cmtcons.Message_HasVote{
-			HasVote: &cmtcons.HasVote{Height: 1, Round: 1, Type: cmtproto.PrevoteType, Index: 1}}},
+			HasVote: &cmtcons.HasVote{Height: 1, Round: 1, Type: types.PrevoteType, Index: 1}}},
 			"3a080801100118012001"},
 		{"HasVote", &cmtcons.Message{Sum: &cmtcons.Message_HasVote{
 			HasVote: &cmtcons.HasVote{Height: math.MaxInt64, Round: math.MaxInt32,
-				Type: cmtproto.PrevoteType, Index: math.MaxInt32}}},
+				Type: types.PrevoteType, Index: math.MaxInt32}}},
 			"3a1808ffffffffffffffff7f10ffffffff07180120ffffffff07"},
 		{"VoteSetMaj23", &cmtcons.Message{Sum: &cmtcons.Message_VoteSetMaj23{
-			VoteSetMaj23: &cmtcons.VoteSetMaj23{Height: 1, Round: 1, Type: cmtproto.PrevoteType, BlockID: pbBi}}},
+			VoteSetMaj23: &cmtcons.VoteSetMaj23{Height: 1, Round: 1, Type: types.PrevoteType, BlockID: pbBi}}},
 			"425008011001180122480a206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d1224080112206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d"},
 		{"VoteSetBits", &cmtcons.Message{Sum: &cmtcons.Message_VoteSetBits{
-			VoteSetBits: &cmtcons.VoteSetBits{Height: 1, Round: 1, Type: cmtproto.PrevoteType, BlockID: pbBi, Votes: *pbBits}}},
+			VoteSetBits: &cmtcons.VoteSetBits{Height: 1, Round: 1, Type: types.PrevoteType, BlockID: pbBi, Votes: *pbBits}}},
 			"4a5708011001180122480a206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d1224080112206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d2a050801120100"},
 	}
 

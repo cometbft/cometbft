@@ -1,0 +1,278 @@
+syntax = "proto3";
+package cometbft.abci.v2;
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/abci/v2";
+
+// For more information on gogo.proto, see:
+// https://github.com/cosmos/gogoproto/blob/master/extensions.md
+import "gogoproto/gogo.proto";
+import "cometbft/abci/v1/types.proto";
+import "cometbft/types/v1/types.proto";
+import "cometbft/types/v2/params.proto";
+import "google/protobuf/timestamp.proto";
+
+// NOTE: When using custom types, mind the warnings.
+// https://github.com/cosmos/gogoproto/blob/master/custom_types.md#warnings-and-issues
+
+//----------------------------------------
+// Request types
+
+message Request {
+  oneof value {
+    v1.RequestEcho               echo                 = 1;
+    v1.RequestFlush              flush                = 2;
+    RequestInfo                  info                 = 3;
+    RequestInitChain             init_chain           = 5;
+    v1.RequestQuery              query                = 6;
+    RequestBeginBlock            begin_block          = 7;
+    v1.RequestCheckTx            check_tx             = 8;
+    v1.RequestDeliverTx          deliver_tx           = 9;
+    v1.RequestEndBlock           end_block            = 10;
+    v1.RequestCommit             commit               = 11;
+    v1.RequestListSnapshots      list_snapshots       = 12;
+    v1.RequestOfferSnapshot      offer_snapshot       = 13;
+    v1.RequestLoadSnapshotChunk  load_snapshot_chunk  = 14;
+    v1.RequestApplySnapshotChunk apply_snapshot_chunk = 15;
+    RequestPrepareProposal       prepare_proposal     = 16;
+    RequestProcessProposal       process_proposal     = 17;
+  }
+  reserved 4;
+}
+
+message RequestInfo {
+  string version       = 1;
+  uint64 block_version = 2;
+  uint64 p2p_version   = 3;
+  string abci_version  = 4;
+}
+
+message RequestInitChain {
+  google.protobuf.Timestamp time = 1
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  string                            chain_id         = 2;
+  cometbft.types.v2.ConsensusParams consensus_params = 3;
+  repeated v1.ValidatorUpdate validators             = 4 [(gogoproto.nullable) = false];
+  bytes                       app_state_bytes        = 5;
+  int64                       initial_height         = 6;
+}
+
+message RequestBeginBlock {
+  bytes                    hash                 = 1;
+  cometbft.types.v1.Header header               = 2 [(gogoproto.nullable) = false];
+  CommitInfo               last_commit_info     = 3 [(gogoproto.nullable) = false];
+  repeated Misbehavior     byzantine_validators = 4 [(gogoproto.nullable) = false];
+}
+
+message RequestPrepareProposal {
+  // the modified transactions cannot exceed this size.
+  int64 max_tx_bytes = 1;
+  // txs is an array of transactions that will be included in a block,
+  // sent to the app for possible modifications.
+  repeated bytes            txs                  = 2;
+  ExtendedCommitInfo        local_last_commit    = 3 [(gogoproto.nullable) = false];
+  repeated Misbehavior      misbehavior          = 4 [(gogoproto.nullable) = false];
+  int64                     height               = 5;
+  google.protobuf.Timestamp time                 = 6 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  bytes                     next_validators_hash = 7;
+  // address of the public key of the validator proposing the block.
+  bytes proposer_address = 8;
+}
+
+message RequestProcessProposal {
+  repeated bytes       txs                  = 1;
+  CommitInfo           proposed_last_commit = 2 [(gogoproto.nullable) = false];
+  repeated Misbehavior misbehavior          = 3 [(gogoproto.nullable) = false];
+  // hash is the merkle root hash of the fields of the proposed block.
+  bytes                     hash                 = 4;
+  int64                     height               = 5;
+  google.protobuf.Timestamp time                 = 6 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  bytes                     next_validators_hash = 7;
+  // address of the public key of the original proposer of the block.
+  bytes proposer_address = 8;
+}
+
+//----------------------------------------
+// Response types
+
+message Response {
+  oneof value {
+    v1.ResponseException          exception            = 1;
+    v1.ResponseEcho               echo                 = 2;
+    v1.ResponseFlush              flush                = 3;
+    v1.ResponseInfo               info                 = 4;
+    ResponseInitChain             init_chain           = 6;
+    v1.ResponseQuery              query                = 7;
+    ResponseBeginBlock            begin_block          = 8;
+    ResponseCheckTx               check_tx             = 9;
+    ResponseDeliverTx             deliver_tx           = 10;
+    ResponseEndBlock              end_block            = 11;
+    v1.ResponseCommit             commit               = 12;
+    v1.ResponseListSnapshots      list_snapshots       = 13;
+    v1.ResponseOfferSnapshot      offer_snapshot       = 14;
+    v1.ResponseLoadSnapshotChunk  load_snapshot_chunk  = 15;
+    v1.ResponseApplySnapshotChunk apply_snapshot_chunk = 16;
+    ResponsePrepareProposal       prepare_proposal     = 17;
+    ResponseProcessProposal       process_proposal     = 18;
+  }
+  reserved 5;
+}
+
+message ResponseInitChain {
+  cometbft.types.v2.ConsensusParams consensus_params = 1;
+  repeated v1.ValidatorUpdate validators             = 2 [(gogoproto.nullable) = false];
+  bytes                       app_hash               = 3;
+}
+
+message ResponseBeginBlock {
+  repeated Event events = 1
+      [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
+}
+
+message ResponseCheckTx {
+  uint32         code       = 1;
+  bytes          data       = 2;
+  string         log        = 3;  // nondeterministic
+  string         info       = 4;  // nondeterministic
+  int64          gas_wanted = 5 [json_name = "gas_wanted"];
+  int64          gas_used   = 6 [json_name = "gas_used"];
+  repeated Event events     = 7
+      [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
+  string codespace = 8;
+  string sender    = 9;
+  int64  priority  = 10;
+
+  // mempool_error is set by CometBFT.
+  // ABCI applictions creating a ResponseCheckTX should not set mempool_error.
+  string mempool_error = 11;
+}
+
+message ResponseDeliverTx {
+  uint32         code       = 1;
+  bytes          data       = 2;
+  string         log        = 3;  // nondeterministic
+  string         info       = 4;  // nondeterministic
+  int64          gas_wanted = 5 [json_name = "gas_wanted"];
+  int64          gas_used   = 6 [json_name = "gas_used"];
+  repeated Event events     = 7 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag)  = "events,omitempty"
+  ];  // nondeterministic
+  string codespace = 8;
+}
+
+message ResponseEndBlock {
+  repeated v1.ValidatorUpdate       validator_updates       = 1 [(gogoproto.nullable) = false];
+  cometbft.types.v2.ConsensusParams consensus_param_updates = 2;
+  repeated Event                    events                  = 3
+      [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
+}
+
+message ResponsePrepareProposal {
+  repeated bytes txs = 1;
+}
+
+message ResponseProcessProposal {
+  ProposalStatus status = 1;
+
+  enum ProposalStatus {
+    UNKNOWN = 0;
+    ACCEPT  = 1;
+    REJECT  = 2;
+  }
+}
+
+//----------------------------------------
+// Misc.
+
+message CommitInfo {
+  int32    round             = 1;
+  repeated v1.VoteInfo votes = 2 [(gogoproto.nullable) = false];
+}
+
+// ExtendedCommitInfo is similar to CommitInfo except that it is only used in
+// the PrepareProposal request such that Tendermint can provide vote extensions
+// to the application.
+message ExtendedCommitInfo {
+  // The round at which the block proposer decided in the previous height.
+  int32 round = 1;
+  // List of validators' addresses in the last validator set with their voting
+  // information, including vote extensions.
+  repeated ExtendedVoteInfo votes = 2 [(gogoproto.nullable) = false];
+}
+
+// Event allows application developers to attach additional information to
+// ResponseFinalizeBlock (defined in .v3) and ResponseCheckTx.
+// Up to 0.37, this could also be used in ResponseBeginBlock, ResponseEndBlock,
+// and ResponseDeliverTx.
+// Later, transactions may be queried using these events.
+message Event {
+  string                  type       = 1;
+  repeated EventAttribute attributes = 2 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag)  = "attributes,omitempty"
+  ];
+}
+
+// EventAttribute is a single key-value pair, associated with an event.
+message EventAttribute {
+  string key   = 1;
+  string value = 2;
+  bool   index = 3;  // nondeterministic
+}
+
+//----------------------------------------
+// Blockchain Types
+
+message ExtendedVoteInfo {
+  // The validator that sent the vote.
+  v1.Validator validator = 1 [(gogoproto.nullable) = false];
+  // Indicates whether the validator signed the last block, allowing for rewards based on validator availability.
+  bool signed_last_block = 2;
+  // Non-deterministic extension provided by the sending validator's application.
+  bytes vote_extension = 3;
+}
+
+enum MisbehaviorType {
+  UNKNOWN             = 0;
+  DUPLICATE_VOTE      = 1;
+  LIGHT_CLIENT_ATTACK = 2;
+}
+
+message Misbehavior {
+  MisbehaviorType type = 1;
+  // The offending validator
+  v1.Validator validator = 2 [(gogoproto.nullable) = false];
+  // The height when the offense occurred
+  int64 height = 3;
+  // The corresponding time where the offense occurred
+  google.protobuf.Timestamp time = 4
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  // Total voting power of the validator set in case the ABCI application does
+  // not store historical validators.
+  // https://github.com/tendermint/tendermint/issues/4581
+  int64 total_voting_power = 5;
+}
+
+//----------------------------------------
+// Service Definition
+
+service ABCIApplication {
+  rpc Echo(v1.RequestEcho) returns (v1.ResponseEcho);
+  rpc Flush(v1.RequestFlush) returns (v1.ResponseFlush);
+  rpc Info(RequestInfo) returns (v1.ResponseInfo);
+  rpc DeliverTx(v1.RequestDeliverTx) returns (ResponseDeliverTx);
+  rpc CheckTx(v1.RequestCheckTx) returns (ResponseCheckTx);
+  rpc Query(v1.RequestQuery) returns (v1.ResponseQuery);
+  rpc Commit(v1.RequestCommit) returns (v1.ResponseCommit);
+  rpc InitChain(RequestInitChain) returns (ResponseInitChain);
+  rpc BeginBlock(RequestBeginBlock) returns (ResponseBeginBlock);
+  rpc EndBlock(v1.RequestEndBlock) returns (ResponseEndBlock);
+  rpc ListSnapshots(v1.RequestListSnapshots) returns (v1.ResponseListSnapshots);
+  rpc OfferSnapshot(v1.RequestOfferSnapshot) returns (v1.ResponseOfferSnapshot);
+  rpc LoadSnapshotChunk(v1.RequestLoadSnapshotChunk)
+      returns (v1.ResponseLoadSnapshotChunk);
+  rpc ApplySnapshotChunk(v1.RequestApplySnapshotChunk)
+      returns (v1.ResponseApplySnapshotChunk);
+  rpc PrepareProposal(RequestPrepareProposal) returns (ResponsePrepareProposal);
+  rpc ProcessProposal(RequestProcessProposal) returns (ResponseProcessProposal);
+}

@@ -8,20 +8,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/libs/protoio"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 func examplePrevote() *Vote {
-	return exampleVote(byte(cmtproto.PrevoteType))
+	return exampleVote(byte(PrevoteType))
 }
 
 func examplePrecommit() *Vote {
-	vote := exampleVote(byte(cmtproto.PrecommitType))
+	vote := exampleVote(byte(PrecommitType))
 	vote.ExtensionSignature = []byte("signature")
 	return vote
 }
@@ -33,7 +33,7 @@ func exampleVote(t byte) *Vote {
 	}
 
 	return &Vote{
-		Type:      cmtproto.SignedMsgType(t),
+		Type:      SignedMsgType(t),
 		Height:    12345,
 		Round:     2,
 		Timestamp: stamp,
@@ -74,7 +74,7 @@ func TestVoteSignBytesTestVectors(t *testing.T) {
 		},
 		// with proper (fixed size) height and round (PreCommit):
 		1: {
-			"", &Vote{Height: 1, Round: 1, Type: cmtproto.PrecommitType},
+			"", &Vote{Height: 1, Round: 1, Type: PrecommitType},
 			[]byte{
 				0x21,                                   // length
 				0x8,                                    // (field_number << 3) | wire_type
@@ -89,7 +89,7 @@ func TestVoteSignBytesTestVectors(t *testing.T) {
 		},
 		// with proper (fixed size) height and round (PreVote):
 		2: {
-			"", &Vote{Height: 1, Round: 1, Type: cmtproto.PrevoteType},
+			"", &Vote{Height: 1, Round: 1, Type: PrevoteType},
 			[]byte{
 				0x21,                                   // length
 				0x8,                                    // (field_number << 3) | wire_type
@@ -246,7 +246,7 @@ func TestVoteExtension(t *testing.T) {
 				Height:           height,
 				Round:            round,
 				Timestamp:        cmttime.Now(),
-				Type:             cmtproto.PrecommitType,
+				Type:             PrecommitType,
 				BlockID:          makeBlockIDRandom(),
 			}
 
@@ -270,12 +270,12 @@ func TestVoteExtension(t *testing.T) {
 func TestIsVoteTypeValid(t *testing.T) {
 	tc := []struct {
 		name string
-		in   cmtproto.SignedMsgType
+		in   SignedMsgType
 		out  bool
 	}{
-		{"Prevote", cmtproto.PrevoteType, true},
-		{"Precommit", cmtproto.PrecommitType, true},
-		{"InvalidType", cmtproto.SignedMsgType(0x3), false},
+		{"Prevote", PrevoteType, true},
+		{"Precommit", PrecommitType, true},
+		{"InvalidType", SignedMsgType(0x3), false},
 	}
 
 	for _, tt := range tc {

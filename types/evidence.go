@@ -10,11 +10,11 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 // Evidence represents any provable malicious activity by a validator.
@@ -616,7 +616,7 @@ func NewMockDuplicateVoteEvidenceWithValidator(height int64, time time.Time,
 func makeMockVote(height int64, round, index int32, addr Address,
 	blockID BlockID, time time.Time) *Vote {
 	return &Vote{
-		Type:             cmtproto.SignedMsgType(2),
+		Type:             SignedMsgType(2),
 		Height:           height,
 		Round:            round,
 		BlockID:          blockID,

@@ -8,13 +8,13 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/require"
 
+	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
+	privproto "github.com/cometbft/cometbft/api/cometbft/privval"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	cryptoproto "github.com/cometbft/cometbft/proto/tendermint/crypto"
-	privproto "github.com/cometbft/cometbft/proto/tendermint/privval"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -22,7 +22,7 @@ var stamp = time.Date(2019, 10, 13, 16, 14, 44, 0, time.UTC)
 
 func exampleVote() *types.Vote {
 	return &types.Vote{
-		Type:             cmtproto.PrecommitType,
+		Type:             types.PrecommitType,
 		Height:           3,
 		Round:            2,
 		BlockID:          types.BlockID{Hash: tmhash.Sum([]byte("blockID_hash")), PartSetHeader: types.PartSetHeader{Total: 1000000, Hash: tmhash.Sum([]byte("blockID_part_set_header_hash"))}},
@@ -36,7 +36,7 @@ func exampleVote() *types.Vote {
 func exampleProposal() *types.Proposal {
 
 	return &types.Proposal{
-		Type:      cmtproto.SignedMsgType(1),
+		Type:      types.SignedMsgType(1),
 		Height:    3,
 		Round:     2,
 		Timestamp: stamp,

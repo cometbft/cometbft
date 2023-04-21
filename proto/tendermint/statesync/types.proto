@@ -1,8 +1,6 @@
 syntax = "proto3";
 package tendermint.statesync;
 
-option go_package = "github.com/cometbft/cometbft/proto/tendermint/statesync";
-
 message Message {
   oneof sum {
     SnapshotsRequest  snapshots_request  = 1;

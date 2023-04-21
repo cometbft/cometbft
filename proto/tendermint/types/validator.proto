@@ -1,8 +1,6 @@
 syntax = "proto3";
 package tendermint.types;
 
-option go_package = "github.com/cometbft/cometbft/proto/tendermint/types";
-
 import "gogoproto/gogo.proto";
 import "tendermint/crypto/keys.proto";
 
@@ -16,7 +14,6 @@ enum BlockIDFlag {
   BLOCK_ID_FLAG_COMMIT  = 2 [(gogoproto.enumvalue_customname) = "BlockIDFlagCommit"];   // voted for the block that received the majority
   BLOCK_ID_FLAG_NIL     = 3 [(gogoproto.enumvalue_customname) = "BlockIDFlagNil"];      // voted for nil
 }
-
 
 message ValidatorSet {
   repeated Validator validators         = 1;

@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
+	v3 "github.com/cometbft/cometbft/api/cometbft/abci/v3"
 	"github.com/cometbft/cometbft/libs/protoio"
 )
 
@@ -29,97 +30,97 @@ func ReadMessage(r io.Reader, msg proto.Message) error {
 
 func ToRequestEcho(message string) *Request {
 	return &Request{
-		Value: &Request_Echo{&RequestEcho{Message: message}},
+		Value: &v3.Request_Echo{Echo: &RequestEcho{Message: message}},
 	}
 }
 
 func ToRequestFlush() *Request {
 	return &Request{
-		Value: &Request_Flush{&RequestFlush{}},
+		Value: &v3.Request_Flush{Flush: &RequestFlush{}},
 	}
 }
 
 func ToRequestInfo(req *RequestInfo) *Request {
 	return &Request{
-		Value: &Request_Info{req},
+		Value: &v3.Request_Info{Info: req},
 	}
 }
 
 func ToRequestCheckTx(req *RequestCheckTx) *Request {
 	return &Request{
-		Value: &Request_CheckTx{req},
+		Value: &v3.Request_CheckTx{CheckTx: req},
 	}
 }
 
 func ToRequestCommit() *Request {
 	return &Request{
-		Value: &Request_Commit{&RequestCommit{}},
+		Value: &v3.Request_Commit{Commit: &RequestCommit{}},
 	}
 }
 
 func ToRequestQuery(req *RequestQuery) *Request {
 	return &Request{
-		Value: &Request_Query{req},
+		Value: &v3.Request_Query{Query: req},
 	}
 }
 
 func ToRequestInitChain(req *RequestInitChain) *Request {
 	return &Request{
-		Value: &Request_InitChain{req},
+		Value: &v3.Request_InitChain{InitChain: req},
 	}
 }
 
 func ToRequestListSnapshots(req *RequestListSnapshots) *Request {
 	return &Request{
-		Value: &Request_ListSnapshots{req},
+		Value: &v3.Request_ListSnapshots{ListSnapshots: req},
 	}
 }
 
 func ToRequestOfferSnapshot(req *RequestOfferSnapshot) *Request {
 	return &Request{
-		Value: &Request_OfferSnapshot{req},
+		Value: &v3.Request_OfferSnapshot{OfferSnapshot: req},
 	}
 }
 
 func ToRequestLoadSnapshotChunk(req *RequestLoadSnapshotChunk) *Request {
 	return &Request{
-		Value: &Request_LoadSnapshotChunk{req},
+		Value: &v3.Request_LoadSnapshotChunk{LoadSnapshotChunk: req},
 	}
 }
 
 func ToRequestApplySnapshotChunk(req *RequestApplySnapshotChunk) *Request {
 	return &Request{
-		Value: &Request_ApplySnapshotChunk{req},
+		Value: &v3.Request_ApplySnapshotChunk{ApplySnapshotChunk: req},
 	}
 }
 
 func ToRequestPrepareProposal(req *RequestPrepareProposal) *Request {
 	return &Request{
-		Value: &Request_PrepareProposal{req},
+		Value: &v3.Request_PrepareProposal{PrepareProposal: req},
 	}
 }
 
 func ToRequestProcessProposal(req *RequestProcessProposal) *Request {
 	return &Request{
-		Value: &Request_ProcessProposal{req},
+		Value: &v3.Request_ProcessProposal{ProcessProposal: req},
 	}
 }
 
 func ToRequestExtendVote(req *RequestExtendVote) *Request {
 	return &Request{
-		Value: &Request_ExtendVote{req},
+		Value: &v3.Request_ExtendVote{ExtendVote: req},
 	}
 }
 
 func ToRequestVerifyVoteExtension(req *RequestVerifyVoteExtension) *Request {
 	return &Request{
-		Value: &Request_VerifyVoteExtension{req},
+		Value: &v3.Request_VerifyVoteExtension{VerifyVoteExtension: req},
 	}
 }
 
 func ToRequestFinalizeBlock(req *RequestFinalizeBlock) *Request {
 	return &Request{
-		Value: &Request_FinalizeBlock{req},
+		Value: &v3.Request_FinalizeBlock{FinalizeBlock: req},
 	}
 }
 
@@ -127,102 +128,102 @@ func ToRequestFinalizeBlock(req *RequestFinalizeBlock) *Request {
 
 func ToResponseException(errStr string) *Response {
 	return &Response{
-		Value: &Response_Exception{&ResponseException{Error: errStr}},
+		Value: &v3.Response_Exception{Exception: &ResponseException{Error: errStr}},
 	}
 }
 
 func ToResponseEcho(message string) *Response {
 	return &Response{
-		Value: &Response_Echo{&ResponseEcho{Message: message}},
+		Value: &v3.Response_Echo{Echo: &ResponseEcho{Message: message}},
 	}
 }
 
 func ToResponseFlush() *Response {
 	return &Response{
-		Value: &Response_Flush{&ResponseFlush{}},
+		Value: &v3.Response_Flush{Flush: &ResponseFlush{}},
 	}
 }
 
 func ToResponseInfo(res *ResponseInfo) *Response {
 	return &Response{
-		Value: &Response_Info{res},
+		Value: &v3.Response_Info{Info: res},
 	}
 }
 
 func ToResponseCheckTx(res *ResponseCheckTx) *Response {
 	return &Response{
-		Value: &Response_CheckTx{res},
+		Value: &v3.Response_CheckTx{CheckTx: res},
 	}
 }
 
 func ToResponseCommit(res *ResponseCommit) *Response {
 	return &Response{
-		Value: &Response_Commit{res},
+		Value: &v3.Response_Commit{Commit: res},
 	}
 }
 
 func ToResponseQuery(res *ResponseQuery) *Response {
 	return &Response{
-		Value: &Response_Query{res},
+		Value: &v3.Response_Query{Query: res},
 	}
 }
 
 func ToResponseInitChain(res *ResponseInitChain) *Response {
 	return &Response{
-		Value: &Response_InitChain{res},
+		Value: &v3.Response_InitChain{InitChain: res},
 	}
 }
 
 func ToResponseListSnapshots(res *ResponseListSnapshots) *Response {
 	return &Response{
-		Value: &Response_ListSnapshots{res},
+		Value: &v3.Response_ListSnapshots{ListSnapshots: res},
 	}
 }
 
 func ToResponseOfferSnapshot(res *ResponseOfferSnapshot) *Response {
 	return &Response{
-		Value: &Response_OfferSnapshot{res},
+		Value: &v3.Response_OfferSnapshot{OfferSnapshot: res},
 	}
 }
 
 func ToResponseLoadSnapshotChunk(res *ResponseLoadSnapshotChunk) *Response {
 	return &Response{
-		Value: &Response_LoadSnapshotChunk{res},
+		Value: &v3.Response_LoadSnapshotChunk{LoadSnapshotChunk: res},
 	}
 }
 
 func ToResponseApplySnapshotChunk(res *ResponseApplySnapshotChunk) *Response {
 	return &Response{
-		Value: &Response_ApplySnapshotChunk{res},
+		Value: &v3.Response_ApplySnapshotChunk{ApplySnapshotChunk: res},
 	}
 }
 
 func ToResponsePrepareProposal(res *ResponsePrepareProposal) *Response {
 	return &Response{
-		Value: &Response_PrepareProposal{res},
+		Value: &v3.Response_PrepareProposal{PrepareProposal: res},
 	}
 }
 
 func ToResponseProcessProposal(res *ResponseProcessProposal) *Response {
 	return &Response{
-		Value: &Response_ProcessProposal{res},
+		Value: &v3.Response_ProcessProposal{ProcessProposal: res},
 	}
 }
 
 func ToResponseExtendVote(res *ResponseExtendVote) *Response {
 	return &Response{
-		Value: &Response_ExtendVote{res},
+		Value: &v3.Response_ExtendVote{ExtendVote: res},
 	}
 }
 
 func ToResponseVerifyVoteExtension(res *ResponseVerifyVoteExtension) *Response {
 	return &Response{
-		Value: &Response_VerifyVoteExtension{res},
+		Value: &v3.Response_VerifyVoteExtension{VerifyVoteExtension: res},
 	}
 }
 
 func ToResponseFinalizeBlock(res *ResponseFinalizeBlock) *Response {
 	return &Response{
-		Value: &Response_FinalizeBlock{res},
+		Value: &v3.Response_FinalizeBlock{FinalizeBlock: res},
 	}
 }

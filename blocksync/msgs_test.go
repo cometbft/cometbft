@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync"
 	"github.com/cometbft/cometbft/blocksync"
-	bcproto "github.com/cometbft/cometbft/proto/tendermint/blocksync"
 	"github.com/cometbft/cometbft/types"
 )
 

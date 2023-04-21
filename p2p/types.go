@@ -3,8 +3,8 @@ package p2p
 import (
 	"github.com/cosmos/gogoproto/proto"
 
+	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	"github.com/cometbft/cometbft/p2p/conn"
-	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
 )
 
 type ChannelDescriptor = conn.ChannelDescriptor
@@ -32,6 +32,10 @@ type Wrapper interface {
 	proto.Message
 
 	// Wrap will take the underlying message and wrap it in its wrapper type.
+	//
+	// NOTE: The consumer should only use the result to marshal the message into
+	// the wire format. Dynamic casts to any of the declared wrapper types
+	// may not produce the expected result.
 	Wrap() proto.Message
 }
 

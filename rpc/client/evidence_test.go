@@ -16,7 +16,6 @@ import (
 	"github.com/cometbft/cometbft/internal/test"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/privval"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/rpc/client"
 	rpctest "github.com/cometbft/cometbft/rpc/test"
 	"github.com/cometbft/cometbft/types"
@@ -61,7 +60,7 @@ func makeEvidences(
 		ValidatorIndex:   0,
 		Height:           1,
 		Round:            0,
-		Type:             cmtproto.PrevoteType,
+		Type:             types.PrevoteType,
 		Timestamp:        defaultTestTime,
 		BlockID: types.BlockID{
 			Hash: tmhash.Sum(cmtrand.Bytes(tmhash.Size)),
@@ -102,7 +101,7 @@ func makeEvidences(
 	// different type
 	{
 		v := vote2
-		v.Type = cmtproto.PrecommitType
+		v.Type = types.PrecommitType
 		fakes = append(fakes, newEvidence(t, val, &vote, &v, chainID))
 	}
 

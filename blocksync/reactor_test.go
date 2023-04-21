@@ -19,7 +19,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	mpmocks "github.com/cometbft/cometbft/mempool/mocks"
 	"github.com/cometbft/cometbft/p2p"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/proxy"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/store"
@@ -140,7 +139,7 @@ func newReactor(
 			idx,
 			thisBlock.Header.Height,
 			0,
-			cmtproto.PrecommitType,
+			types.PrecommitType,
 			blockID,
 			time.Now(),
 		)

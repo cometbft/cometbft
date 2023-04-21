@@ -15,6 +15,7 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
@@ -23,7 +24,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	p2pmocks "github.com/cometbft/cometbft/p2p/mocks"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 )
@@ -356,7 +356,7 @@ func exampleVote(t byte) *types.Vote {
 	}
 
 	return &types.Vote{
-		Type:      cmtproto.SignedMsgType(t),
+		Type:      types.SignedMsgType(t),
 		Height:    3,
 		Round:     2,
 		Timestamp: stamp,

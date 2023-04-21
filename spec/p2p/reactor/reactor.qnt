@@ -8,12 +8,16 @@
 // Code: https://github.com/cometbft/cometbft/blob/main/p2p/base_reactor.go
 module reactor {
 
+	// Unique ID of a node.
+	type NodeID = str
+
 	/*
 	 * Peer is an interface representing a peer connected on a reactor.
 	 */
-	// This is very minimal representation: only a string ID.
 	type Peer = {
-		ID: str,
+		ID: NodeID,
+
+		// Other fields can be added to represent the p2p operation.
 	}
 
 	// Byte ID used by channels.
@@ -38,13 +42,13 @@ module reactor {
 	// A Routine is used to interact with an active Peer.
 	type Routine = {
 		name: str,
-		peerID: str,
+		peer: Peer,
 	}
 
 	type ReactorState = {
 		// Peers that have been initialized but not yet removed.
 		// The reactor should expect receiving messages from them.
-		peers: Set[Peer],
+		peers: Set[NodeID],
 
 		// The reactor runs multiple routines.
 		routines: Set[Routine],
@@ -112,7 +116,8 @@ module reactor {
 	// Code: Switch.OnStop()
 	action stop(): bool = all {
 		state.started and not(state.stopped),
-		state.peers.size() == 0, // RemovePeer(p) for all peers
+		// Either no peer was added or all peers were removed
+		state.peers.size() == 0,
 		state' = state.OnStop()
 	}
 
@@ -129,13 +134,13 @@ module reactor {
 	 */
 	def InitPeer(s: ReactorState, peer: Peer): (ReactorState, Peer) = {
 		val updatedPeer = peer // Peer can be updated here
-		(s.with("peers", s.peers.union(Set(updatedPeer))), updatedPeer)
+		(s.with("peers", s.peers.union(Set(peer.ID))), updatedPeer)
 	}
 
 	// Code: Switch.addPeer(p Peer): preamble
 	action initPeer(peer: Peer): bool = all {
 		state.switch and state.IsRunning(),
-		not(peer.in(state.peers)), // No previous InitPeer(peer)
+		not(peer.ID.in(state.peers)),
 		state' = state.InitPeer(peer)._1 // Updated peer not used here
 	}
 
@@ -144,15 +149,15 @@ module reactor {
 	 * started. Use it to start goroutines communicating with the peer.
 	 */
 	def AddPeer(s: ReactorState, peer: Peer): ReactorState = {
-		val startedRoutines = Set( {name: "ioRoutine", peerID: peer.ID} )
+		val startedRoutines = Set( {name: "ioRoutine", peer: peer} )
 		s.with("routines", s.routines.union(startedRoutines))
 	}
 
 	// Code: Switch.addPeer(p Peer): conclusion
 	action addPeer(peer: Peer): bool = all {
 		state.switch and state.IsRunning(),
-		peer.in(state.peers), // InitPeer(peer) and not RemovePeer(peer)
-		state.routines.filter(r => r.peerID == peer.ID).size() == 0,
+		peer.ID.in(state.peers), // InitPeer(peer) and not RemovePeer(peer)
+		state.routines.filter(r => r.peer.ID == peer.ID).size() == 0,
 		state' = AddPeer(state, peer)
 	}
 
@@ -161,15 +166,15 @@ module reactor {
 	 * or other reason).
 	 */
 	def RemovePeer(s: ReactorState, peer: Peer, reason: str): ReactorState = {
-		val stoppedRoutines = state.routines.filter(r => r.peerID == peer.ID)
-		s.with("peers", s.peers.exclude(Set(peer)))
+		val stoppedRoutines = state.routines.filter(r => r.peer.ID == peer.ID)
+		s.with("peers", s.peers.exclude(Set(peer.ID)))
 		 .with("routines", s.routines.exclude(stoppedRoutines))
 	}
 
 	// Code: Switch.stopAndRemovePeer(peer Peer, reason interface{})
 	action removePeer(peer: Peer, reason: str): bool = all {
 		state.switch and state.IsRunning(),
-		peer.in(state.peers), // InitPeer(peer) and not RemovePeer(peer)
+		peer.ID.in(state.peers), // InitPeer(peer) and not RemovePeer(peer)
 		// Routines might not be started, namely: not AddPeer(peer)
 		// Routines could also be already stopped if Peer has erroed.
 		state' = state.RemovePeer(peer, reason)
@@ -186,7 +191,7 @@ module reactor {
 
 	action receive(e: Envelope): bool = all {
 		state.switch and state.IsRunning(),
-		e.Src.in(state.peers), // Sender is an active/connected peer
+		e.Src.ID.in(state.peers), // Sender is an active peer
 		state.GetChannels().exists(
 			c => c.ID == e.ChannelID), // Registered for the channel
 		state' = Receive(state, e)

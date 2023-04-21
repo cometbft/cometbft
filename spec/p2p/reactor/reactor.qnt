@@ -59,16 +59,6 @@ module reactor {
 
 	var state: ReactorState
 
-	action init = all {
-		state' = {
-			peers: Set(),
-			routines: Set(),
-			started: false,
-			stopped: false,
-			switch: false,
-		}
-	}
-
 	/*
 	 * GetChannels returns the list of MConnection.ChannelDescriptor. Make sure
 	 * that each ID is unique across all the reactors added to the switch.
@@ -200,6 +190,39 @@ module reactor {
 		state.GetChannels().exists(
 			c => c.ID == e.ChannelID), // Registered for the channel
 		state' = Receive(state, e)
+	}
+
+	// Simulation support
+
+	action init = all {
+		state' = {
+			peers: Set(),
+			routines: Set(),
+			started: false,
+			stopped: false,
+			switch: false,
+		}
+	}
+
+	pure val samplePeers = Set({ID: "p1"}, {ID: "p3"})
+	pure val sampleChIDs = Set(1, 3, 7) // ChannelID 1 not registered
+	pure val sampleMsgs  = Set("ping", "pong")
+
+	action step = any {
+		// One-shot actions
+		setup,
+		start,
+		stop,
+		// Peer-specific actions
+		nondet peer = oneOf(samplePeers)
+		any {
+			initPeer(peer),
+			addPeer(peer),
+			removePeer(peer, "no reason"),
+			receive({Src: peer,
+				ChannelID: oneOf(sampleChIDs),
+				Message: oneOf(sampleMsgs)}),
+		},
 	}
 
 }

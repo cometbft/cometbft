@@ -14,7 +14,7 @@ this document will lead to the best chance of landing changes in a release.
 
 ### Core team responsibility
 
-First and foremost, the CometBFT core team is responsible for maintaining this
+The CometBFT core team is responsible for stewarding this
 project over time. This means that the core team needs to understand the nature
 of, and agree to maintain, all of the changes that land on `main` or a backport
 branch. It may cost a few days/weeks' worth of time to _submit_ a

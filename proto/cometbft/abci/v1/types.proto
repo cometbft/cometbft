@@ -81,6 +81,8 @@ message RequestBeginBlock {
 }
 
 enum CheckTxType {
+  option (gogoproto.goproto_enum_prefix)   = false;
+
   CHECK_TX_TYPE_NEW     = 0 [(gogoproto.enumvalue_customname) = "New"];
   CHECK_TX_TYPE_RECHECK = 1 [(gogoproto.enumvalue_customname) = "Recheck"];
 }
@@ -354,6 +356,8 @@ message VoteInfo {
 }
 
 enum EvidenceType {
+  option (gogoproto.goproto_enum_prefix)   = false;
+
   EVIDENCE_TYPE_UNSPECIFIED         = 0;
   EVIDENCE_TYPE_DUPLICATE_VOTE      = 1;
   EVIDENCE_TYPE_LIGHT_CLIENT_ATTACK = 2;

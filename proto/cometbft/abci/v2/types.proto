@@ -233,6 +233,8 @@ message ExtendedVoteInfo {
 }
 
 enum MisbehaviorType {
+  option (gogoproto.goproto_enum_prefix)   = false;
+
   MISBEHAVIOR_TYPE_UNSPECIFIED         = 0;
   MISBEHAVIOR_TYPE_DUPLICATE_VOTE      = 1;
   MISBEHAVIOR_TYPE_LIGHT_CLIENT_ATTACK = 2;

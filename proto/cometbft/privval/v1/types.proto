@@ -8,7 +8,7 @@ import "gogoproto/gogo.proto";
 option go_package = "github.com/cometbft/cometbft/api/cometbft/privval/v1";
 
 enum Errors {
-  ERRORS_UNKNOWN             = 0;
+  ERRORS_UNSPECIFIED         = 0;
   ERRORS_UNEXPECTED_RESPONSE = 1;
   ERRORS_NO_CONNECTION       = 2;
   ERRORS_CONNECTION_TIMEOUT  = 3;

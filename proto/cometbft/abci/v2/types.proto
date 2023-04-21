@@ -175,9 +175,9 @@ message ResponseProcessProposal {
   ProposalStatus status = 1;
 
   enum ProposalStatus {
-    UNKNOWN = 0;
-    ACCEPT  = 1;
-    REJECT  = 2;
+    UNSPECIFIED = 0;
+    ACCEPT      = 1;
+    REJECT      = 2;
   }
 }
 
@@ -233,7 +233,7 @@ message ExtendedVoteInfo {
 }
 
 enum MisbehaviorType {
-  UNKNOWN             = 0;
+  UNSPECIFIED         = 0;
   DUPLICATE_VOTE      = 1;
   LIGHT_CLIENT_ATTACK = 2;
 }

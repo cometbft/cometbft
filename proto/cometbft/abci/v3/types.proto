@@ -192,7 +192,7 @@ message ResponseVerifyVoteExtension {
   VerifyStatus status = 1;
 
   enum VerifyStatus {
-    UNKNOWN = 0;
+    UNSPECIFIED = 0;
     ACCEPT  = 1;
     // Rejecting the vote extension will reject the entire precommit by the sender.
     // Incorrectly implementing this thus has liveness implications as it may affect

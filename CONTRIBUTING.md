@@ -17,9 +17,9 @@ this document will lead to the best chance of landing changes in a release.
 First and foremost, the CometBFT core team is responsible for maintaining this
 project over time. This means that the core team needs to understand the nature
 of, and agree to maintain, all of the changes that land on `main` or a backport
-branch. It may cost you a few days/weeks' worth of your time to submit a
-particular change, but it may cost the core team far more to maintain that
-change over the years.
+branch. It may cost a few days/weeks' worth of time to _submit_ a
+particular change, but _maintaining_ that change over the years has a
+much higher cost that the core team will bear.
 
 ### Ease of reviewing
 

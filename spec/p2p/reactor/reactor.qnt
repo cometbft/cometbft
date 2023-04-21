@@ -137,16 +137,16 @@ module reactor {
 	 * InitPeer is called by the switch before the peer is started. Use it to
 	 * initialize data for the peer (e.g. peer state).
 	 */
-	// TODO: the interface method should return an updated peer!
-	def InitPeer(s: ReactorState, peer: Peer): ReactorState = {
-		s.with("peers", s.peers.union(Set(peer)))
+	def InitPeer(s: ReactorState, peer: Peer): (ReactorState, Peer) = {
+		val updatedPeer = peer // Peer can be updated here
+		(s.with("peers", s.peers.union(Set(updatedPeer))), updatedPeer)
 	}
 
 	// Code: Switch.addPeer(p Peer): preamble
 	action initPeer(peer: Peer): bool = all {
 		state.switch and state.IsRunning(),
 		not(peer.in(state.peers)), // No previous InitPeer(peer)
-		state' = state.InitPeer(peer)
+		state' = state.InitPeer(peer)._1 // Updated peer not used here
 	}
 
 	/* 

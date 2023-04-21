@@ -36,7 +36,7 @@ func (r ResponseVerifyVoteExtension) IsAccepted() bool {
 
 // IsStatusUnknown returns true if Code is Unknown
 func (r ResponseVerifyVoteExtension) IsStatusUnknown() bool {
-	return r.Status == ResponseVerifyVoteExtension_UNKNOWN
+	return r.Status == ResponseVerifyVoteExtension_UNSPECIFIED
 }
 
 //---------------------------------------------------------------------------

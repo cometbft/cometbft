@@ -650,7 +650,7 @@ func (mem *CListMempool) recheckTxs() {
 		memTx := e.Value.(*mempoolTx)
 		_, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{
 			Tx:   memTx.tx,
-			Type: abci.CheckTxType_Recheck,
+			Type: abci.CHECK_TX_TYPE_RECHECK,
 		})
 		if err != nil {
 			mem.logger.Error("recheckTx", err, "err")

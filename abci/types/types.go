@@ -112,22 +112,22 @@ func RegisterABCIServer(s grpc.Server, srv ABCIServer) {
 type CheckTxType = v1.CheckTxType
 
 const (
-	CheckTxType_New     CheckTxType = v1.CheckTxType_New
-	CheckTxType_Recheck CheckTxType = v1.CheckTxType_Recheck
+	CHECK_TX_TYPE_NEW     CheckTxType = v1.CHECK_TX_TYPE_NEW
+	CHECK_TX_TYPE_RECHECK CheckTxType = v1.CHECK_TX_TYPE_RECHECK
 )
 
 type MisbehaviorType = v2.MisbehaviorType
 
 const (
-	MisbehaviorType_UNKNOWN             MisbehaviorType = v2.MisbehaviorType_UNKNOWN
-	MisbehaviorType_DUPLICATE_VOTE      MisbehaviorType = v2.MisbehaviorType_DUPLICATE_VOTE
-	MisbehaviorType_LIGHT_CLIENT_ATTACK MisbehaviorType = v2.MisbehaviorType_LIGHT_CLIENT_ATTACK
+	MISBEHAVIOR_TYPE_UNSPECIFIED         MisbehaviorType = v2.MISBEHAVIOR_TYPE_UNSPECIFIED
+	MISBEHAVIOR_TYPE_DUPLICATE_VOTE      MisbehaviorType = v2.MISBEHAVIOR_TYPE_DUPLICATE_VOTE
+	MISBEHAVIOR_TYPE_LIGHT_CLIENT_ATTACK MisbehaviorType = v2.MISBEHAVIOR_TYPE_LIGHT_CLIENT_ATTACK
 )
 
 type ResponseApplySnapshotChunk_Result = v1.ResponseApplySnapshotChunk_Result
 
 const (
-	ResponseApplySnapshotChunk_UNKNOWN         ResponseApplySnapshotChunk_Result = v1.ResponseApplySnapshotChunk_UNKNOWN
+	ResponseApplySnapshotChunk_UNSPECIFIED     ResponseApplySnapshotChunk_Result = v1.ResponseApplySnapshotChunk_UNSPECIFIED
 	ResponseApplySnapshotChunk_ACCEPT          ResponseApplySnapshotChunk_Result = v1.ResponseApplySnapshotChunk_ACCEPT
 	ResponseApplySnapshotChunk_ABORT           ResponseApplySnapshotChunk_Result = v1.ResponseApplySnapshotChunk_ABORT
 	ResponseApplySnapshotChunk_RETRY           ResponseApplySnapshotChunk_Result = v1.ResponseApplySnapshotChunk_RETRY
@@ -138,7 +138,7 @@ const (
 type ResponseOfferSnapshot_Result = v1.ResponseOfferSnapshot_Result
 
 const (
-	ResponseOfferSnapshot_UNKNOWN       ResponseOfferSnapshot_Result = v1.ResponseOfferSnapshot_UNKNOWN
+	ResponseOfferSnapshot_UNSPECIFIED   ResponseOfferSnapshot_Result = v1.ResponseOfferSnapshot_UNSPECIFIED
 	ResponseOfferSnapshot_ACCEPT        ResponseOfferSnapshot_Result = v1.ResponseOfferSnapshot_ACCEPT
 	ResponseOfferSnapshot_ABORT         ResponseOfferSnapshot_Result = v1.ResponseOfferSnapshot_ABORT
 	ResponseOfferSnapshot_REJECT        ResponseOfferSnapshot_Result = v1.ResponseOfferSnapshot_REJECT
@@ -149,17 +149,17 @@ const (
 type ResponseProcessProposal_ProposalStatus = v2.ResponseProcessProposal_ProposalStatus
 
 const (
-	ResponseProcessProposal_UNKNOWN ResponseProcessProposal_ProposalStatus = v2.ResponseProcessProposal_UNKNOWN
-	ResponseProcessProposal_ACCEPT  ResponseProcessProposal_ProposalStatus = v2.ResponseProcessProposal_ACCEPT
-	ResponseProcessProposal_REJECT  ResponseProcessProposal_ProposalStatus = v2.ResponseProcessProposal_REJECT
+	ResponseProcessProposal_UNSPECIFIED ResponseProcessProposal_ProposalStatus = v2.ResponseProcessProposal_UNSPECIFIED
+	ResponseProcessProposal_ACCEPT      ResponseProcessProposal_ProposalStatus = v2.ResponseProcessProposal_ACCEPT
+	ResponseProcessProposal_REJECT      ResponseProcessProposal_ProposalStatus = v2.ResponseProcessProposal_REJECT
 )
 
 type ResponseVerifyVoteExtension_VerifyStatus = v3.ResponseVerifyVoteExtension_VerifyStatus
 
 const (
-	ResponseVerifyVoteExtension_UNKNOWN ResponseVerifyVoteExtension_VerifyStatus = v3.ResponseVerifyVoteExtension_UNKNOWN
-	ResponseVerifyVoteExtension_ACCEPT  ResponseVerifyVoteExtension_VerifyStatus = v3.ResponseVerifyVoteExtension_ACCEPT
-	ResponseVerifyVoteExtension_REJECT  ResponseVerifyVoteExtension_VerifyStatus = v3.ResponseVerifyVoteExtension_REJECT
+	ResponseVerifyVoteExtension_UNSPECIFIED ResponseVerifyVoteExtension_VerifyStatus = v3.ResponseVerifyVoteExtension_UNSPECIFIED
+	ResponseVerifyVoteExtension_ACCEPT      ResponseVerifyVoteExtension_VerifyStatus = v3.ResponseVerifyVoteExtension_ACCEPT
+	ResponseVerifyVoteExtension_REJECT      ResponseVerifyVoteExtension_VerifyStatus = v3.ResponseVerifyVoteExtension_REJECT
 )
 
 const (

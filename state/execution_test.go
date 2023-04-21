@@ -304,14 +304,14 @@ func TestFinalizeBlockMisbehavior(t *testing.T) {
 
 	abciMb := []abci.Misbehavior{
 		{
-			Type:             abci.MisbehaviorType_DUPLICATE_VOTE,
+			Type:             abci.MISBEHAVIOR_TYPE_DUPLICATE_VOTE,
 			Height:           3,
 			Time:             defaultEvidenceTime,
 			Validator:        types.TM2PB.Validator(state.Validators.Validators[0]),
 			TotalVotingPower: 10,
 		},
 		{
-			Type:             abci.MisbehaviorType_LIGHT_CLIENT_ATTACK,
+			Type:             abci.MISBEHAVIOR_TYPE_LIGHT_CLIENT_ATTACK,
 			Height:           8,
 			Time:             defaultEvidenceTime,
 			Validator:        types.TM2PB.Validator(state.Validators.Validators[0]),

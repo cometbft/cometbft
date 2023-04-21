@@ -199,7 +199,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.RequestFinal
 
 	// Punish validators who committed equivocation.
 	for _, ev := range req.Misbehavior {
-		if ev.Type == types.MisbehaviorType_DUPLICATE_VOTE {
+		if ev.Type == types.MISBEHAVIOR_TYPE_DUPLICATE_VOTE {
 			addr := string(ev.Validator.Address)
 			if pubKey, ok := app.valAddrToPubKeyMap[addr]; ok {
 				app.valUpdates = append(app.valUpdates, types.ValidatorUpdate{

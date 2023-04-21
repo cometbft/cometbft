@@ -80,7 +80,7 @@ func NewDuplicateVoteEvidence(vote1, vote2 *Vote, blockTime time.Time, valSet *V
 // ABCI returns the application relevant representation of the evidence
 func (dve *DuplicateVoteEvidence) ABCI() []abci.Misbehavior {
 	return []abci.Misbehavior{{
-		Type: abci.MisbehaviorType_DUPLICATE_VOTE,
+		Type: abci.MISBEHAVIOR_TYPE_DUPLICATE_VOTE,
 		Validator: abci.Validator{
 			Address: dve.VoteA.ValidatorAddress,
 			Power:   dve.ValidatorPower,
@@ -223,7 +223,7 @@ func (l *LightClientAttackEvidence) ABCI() []abci.Misbehavior {
 	abciEv := make([]abci.Misbehavior, len(l.ByzantineValidators))
 	for idx, val := range l.ByzantineValidators {
 		abciEv[idx] = abci.Misbehavior{
-			Type:             abci.MisbehaviorType_LIGHT_CLIENT_ATTACK,
+			Type:             abci.MISBEHAVIOR_TYPE_LIGHT_CLIENT_ATTACK,
 			Validator:        TM2PB.Validator(val),
 			Height:           l.Height(),
 			Time:             l.Timestamp,

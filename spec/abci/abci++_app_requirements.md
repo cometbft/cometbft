@@ -334,8 +334,8 @@ responded to and no new ones can begin.
 After the `Commit` call returns, while still holding the mempool lock, `CheckTx` is run again on all
 transactions that remain in the node's local mempool after filtering those included in the block.
 Parameter `Type` in `RequestCheckTx`
-indicates whether an incoming transaction is new (`CheckTxType_New`), or a
-recheck (`CheckTxType_Recheck`).
+indicates whether an incoming transaction is new (`CHECK_TX_TYPE_NEW`), or a
+recheck (`CHECK_TX_TYPE_RECHECK`).
 
 Finally, after re-checking transactions in the mempool, CometBFT will unlock
 the mempool connection. New transactions are once again able to be processed through `CheckTx`.

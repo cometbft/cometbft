@@ -378,7 +378,7 @@ func TestSyncer_offerSnapshot(t *testing.T) {
 		"reject":           {abci.ResponseOfferSnapshot_REJECT, nil, errRejectSnapshot},
 		"reject_format":    {abci.ResponseOfferSnapshot_REJECT_FORMAT, nil, errRejectFormat},
 		"reject_sender":    {abci.ResponseOfferSnapshot_REJECT_SENDER, nil, errRejectSender},
-		"unknown":          {abci.ResponseOfferSnapshot_UNKNOWN, nil, unknownErr},
+		"unknown":          {abci.ResponseOfferSnapshot_UNSPECIFIED, nil, unknownErr},
 		"error":            {0, boom, boom},
 		"unknown non-zero": {9, nil, unknownErr},
 	}
@@ -419,7 +419,7 @@ func TestSyncer_applyChunks_Results(t *testing.T) {
 		"retry":            {abci.ResponseApplySnapshotChunk_RETRY, nil, nil},
 		"retry_snapshot":   {abci.ResponseApplySnapshotChunk_RETRY_SNAPSHOT, nil, errRetrySnapshot},
 		"reject_snapshot":  {abci.ResponseApplySnapshotChunk_REJECT_SNAPSHOT, nil, errRejectSnapshot},
-		"unknown":          {abci.ResponseApplySnapshotChunk_UNKNOWN, nil, unknownErr},
+		"unknown":          {abci.ResponseApplySnapshotChunk_UNSPECIFIED, nil, unknownErr},
 		"error":            {0, boom, boom},
 		"unknown non-zero": {9, nil, unknownErr},
 	}

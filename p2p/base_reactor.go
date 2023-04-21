@@ -60,8 +60,8 @@ func NewBaseReactor(name string, impl Reactor) *BaseReactor {
 func (br *BaseReactor) SetSwitch(sw *Switch) {
 	br.Switch = sw
 }
-func (*BaseReactor) GetChannels() []*conn.ChannelDescriptor   { return nil }
-func (*BaseReactor) AddPeer(peer Peer)                        {}
-func (*BaseReactor) RemovePeer(peer Peer, reason interface{}) {}
-func (*BaseReactor) Receive(e Envelope)                       {}
-func (*BaseReactor) InitPeer(peer Peer) Peer                  { return peer }
+func (*BaseReactor) GetChannels() []*conn.ChannelDescriptor { return nil }
+func (*BaseReactor) AddPeer(Peer)                           {}
+func (*BaseReactor) RemovePeer(Peer, interface{})           {}
+func (*BaseReactor) Receive(Envelope)                       {}
+func (*BaseReactor) InitPeer(peer Peer) Peer                { return peer }

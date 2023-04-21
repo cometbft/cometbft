@@ -15,11 +15,10 @@ var GenValidatorCmd = &cobra.Command{
 	Use:     "gen-validator",
 	Aliases: []string{"gen_validator"},
 	Short:   "Generate new validator keypair",
-	PreRun:  deprecateSnakeCase,
 	Run:     genValidator,
 }
 
-func genValidator(cmd *cobra.Command, args []string) {
+func genValidator(*cobra.Command, []string) {
 	pv := privval.GenFilePV("", "")
 	jsbz, err := cmtjson.Marshal(pv)
 	if err != nil {

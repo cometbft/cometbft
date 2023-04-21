@@ -68,7 +68,7 @@ func FinalizeBlock(ctx context.Context, client abcicli.Client, txBytes [][]byte,
 	return nil
 }
 
-func PrepareProposal(ctx context.Context, client abcicli.Client, txBytes [][]byte, txExpected [][]byte, dataExp []byte) error {
+func PrepareProposal(ctx context.Context, client abcicli.Client, txBytes [][]byte, txExpected [][]byte, _ []byte) error {
 	res, _ := client.PrepareProposal(ctx, &types.RequestPrepareProposal{Txs: txBytes})
 	for i, tx := range res.Txs {
 		if !bytes.Equal(tx, txExpected[i]) {

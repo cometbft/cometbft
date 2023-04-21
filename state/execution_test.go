@@ -85,6 +85,7 @@ func TestApplyBlock(t *testing.T) {
 // block.
 func TestFinalizeBlockDecidedLastCommit(t *testing.T) {
 	app := &testApp{}
+	baseTime := time.Now()
 	cc := proxy.NewLocalClientCreator(app)
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
@@ -146,6 +147,7 @@ func TestFinalizeBlockDecidedLastCommit(t *testing.T) {
 			blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 			_, err = blockExec.ApplyBlock(state, blockID, block)
 			require.NoError(t, err)
+			require.True(t, app.LastTime.After(baseTime))
 
 			// -> app receives a list of validators with a bool indicating if they signed
 			for i, v := range app.CommitVotes {

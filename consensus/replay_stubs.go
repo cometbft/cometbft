@@ -20,22 +20,22 @@ func (emptyMempool) Lock()            {}
 func (emptyMempool) Unlock()          {}
 func (emptyMempool) Size() int        { return 0 }
 func (emptyMempool) SizeBytes() int64 { return 0 }
-func (emptyMempool) CheckTx(_ types.Tx, _ func(*abci.ResponseCheckTx), _ mempl.TxInfo) error {
+func (emptyMempool) CheckTx(types.Tx, func(*abci.ResponseCheckTx), mempl.TxInfo) error {
 	return nil
 }
 
-func (txmp emptyMempool) RemoveTxByKey(txKey types.TxKey) error {
+func (txmp emptyMempool) RemoveTxByKey(types.TxKey) error {
 	return nil
 }
 
-func (emptyMempool) ReapMaxBytesMaxGas(_, _ int64) types.Txs { return types.Txs{} }
-func (emptyMempool) ReapMaxTxs(n int) types.Txs              { return types.Txs{} }
+func (emptyMempool) ReapMaxBytesMaxGas(int64, int64) types.Txs { return types.Txs{} }
+func (emptyMempool) ReapMaxTxs(int) types.Txs                  { return types.Txs{} }
 func (emptyMempool) Update(
-	_ int64,
-	_ types.Txs,
-	_ []*abci.ExecTxResult,
-	_ mempl.PreCheckFunc,
-	_ mempl.PostCheckFunc,
+	int64,
+	types.Txs,
+	[]*abci.ExecTxResult,
+	mempl.PreCheckFunc,
+	mempl.PostCheckFunc,
 ) error {
 	return nil
 }
@@ -74,6 +74,6 @@ type mockProxyApp struct {
 	finalizeBlockResponse *abci.ResponseFinalizeBlock
 }
 
-func (mock *mockProxyApp) FinalizeBlock(_ context.Context, req *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
+func (mock *mockProxyApp) FinalizeBlock(context.Context, *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
 	return mock.finalizeBlockResponse, nil
 }

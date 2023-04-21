@@ -17,14 +17,21 @@ const (
 	prevStateFileName = "prev_app_state.json"
 )
 
-// State is the application state.
-type State struct {
-	sync.RWMutex
+// Intermediate type used exclusively in serialization/deserialization of
+// State, such that State need not expose any of its internal values publicly.
+type serializedState struct {
 	Height uint64
 	Values map[string]string
 	Hash   []byte
+}
 
-	// private fields aren't marshaled to disk.
+// State is the application state.
+type State struct {
+	sync.RWMutex
+	height uint64
+	values map[string]string
+	hash   []byte
+
 	currentFile string
 	// app saves current and previous state for rollback functionality
 	previousFile    string
@@ -35,12 +42,12 @@ type State struct {
 // NewState creates a new state.
 func NewState(dir string, persistInterval uint64) (*State, error) {
 	state := &State{
-		Values:          make(map[string]string),
+		values:          make(map[string]string),
 		currentFile:     filepath.Join(dir, stateFileName),
 		previousFile:    filepath.Join(dir, prevStateFileName),
 		persistInterval: persistInterval,
 	}
-	state.Hash = hashItems(state.Values, state.Height)
+	state.hash = hashItems(state.values, state.height)
 	err := state.load()
 	switch {
 	case errors.Is(err, os.ErrNotExist):
@@ -66,8 +73,7 @@ func (s *State) load() error {
 			return fmt.Errorf("failed to read state from %q: %w", s.currentFile, err)
 		}
 	}
-	err = json.Unmarshal(bz, s)
-	if err != nil {
+	if err := json.Unmarshal(bz, s); err != nil {
 		return fmt.Errorf("invalid state data in %q: %w", s.currentFile, err)
 	}
 	return nil
@@ -97,11 +103,39 @@ func (s *State) save() error {
 	return os.Rename(newFile, s.currentFile)
 }
 
-// Export exports key/value pairs as JSON, used for state sync snapshots.
-func (s *State) Export() ([]byte, error) {
+// GetHash provides a thread-safe way of accessing a copy of the current state
+// hash.
+func (s *State) GetHash() []byte {
 	s.RLock()
 	defer s.RUnlock()
-	return json.Marshal(s.Values)
+	hash := make([]byte, len(s.hash))
+	copy(hash, s.hash)
+	return hash
+}
+
+// Info returns both the height and hash simultaneously, and is used in the
+// ABCI Info call.
+func (s *State) Info() (uint64, []byte) {
+	s.RLock()
+	defer s.RUnlock()
+	height := s.height
+	hash := make([]byte, len(s.hash))
+	copy(hash, s.hash)
+	return height, hash
+}
+
+// Export exports key/value pairs as JSON, used for state sync snapshots.
+// Additionally returns the current height and hash of the state.
+func (s *State) Export() ([]byte, uint64, []byte, error) {
+	s.RLock()
+	defer s.RUnlock()
+	bz, err := json.Marshal(s.values)
+	if err != nil {
+		return nil, 0, nil, err
+	}
+	height := s.height
+	stateHash := hashItems(s.values, height)
+	return bz, height, stateHash, nil
 }
 
 // Import imports key/value pairs from JSON bytes, used for InitChain.AppStateBytes and
@@ -114,9 +148,9 @@ func (s *State) Import(height uint64, jsonBytes []byte) error {
 	if err != nil {
 		return fmt.Errorf("failed to decode imported JSON data: %w", err)
 	}
-	s.Height = height
-	s.Values = values
-	s.Hash = hashItems(values, height)
+	s.height = height
+	s.values = values
+	s.hash = hashItems(values, height)
 	return s.save()
 }
 
@@ -124,7 +158,7 @@ func (s *State) Import(height uint64, jsonBytes []byte) error {
 func (s *State) Get(key string) string {
 	s.RLock()
 	defer s.RUnlock()
-	return s.Values[key]
+	return s.values[key]
 }
 
 // Set sets a value. Setting an empty value is equivalent to deleting it.
@@ -132,10 +166,20 @@ func (s *State) Set(key, value string) {
 	s.Lock()
 	defer s.Unlock()
 	if value == "" {
-		delete(s.Values, key)
+		delete(s.values, key)
 	} else {
-		s.Values[key] = value
+		s.values[key] = value
 	}
+}
+
+// Query is used in the ABCI Query call, and provides both the current height
+// and the value associated with the given key.
+func (s *State) Query(key string) (string, uint64) {
+	s.RLock()
+	defer s.RUnlock()
+	height := s.height
+	value := s.values[key]
+	return value, height
 }
 
 // Finalize is called after applying a block, updating the height and returning the new app_hash
@@ -143,28 +187,28 @@ func (s *State) Finalize() []byte {
 	s.Lock()
 	defer s.Unlock()
 	switch {
-	case s.Height > 0:
-		s.Height++
+	case s.height > 0:
+		s.height++
 	case s.initialHeight > 0:
-		s.Height = s.initialHeight
+		s.height = s.initialHeight
 	default:
-		s.Height = 1
+		s.height = 1
 	}
-	s.Hash = hashItems(s.Values, s.Height)
-	return s.Hash
+	s.hash = hashItems(s.values, s.height)
+	return s.hash
 }
 
 // Commit commits the current state.
 func (s *State) Commit() (uint64, error) {
 	s.Lock()
 	defer s.Unlock()
-	if s.persistInterval > 0 && s.Height%s.persistInterval == 0 {
+	if s.persistInterval > 0 && s.height%s.persistInterval == 0 {
 		err := s.save()
 		if err != nil {
 			return 0, err
 		}
 	}
-	return s.Height, nil
+	return s.height, nil
 }
 
 func (s *State) Rollback() error {
@@ -172,11 +216,30 @@ func (s *State) Rollback() error {
 	if err != nil {
 		return fmt.Errorf("failed to read state from %q: %w", s.previousFile, err)
 	}
-	err = json.Unmarshal(bz, s)
-	if err != nil {
+	if err := json.Unmarshal(bz, s); err != nil {
 		return fmt.Errorf("invalid state data in %q: %w", s.previousFile, err)
 	}
 	return nil
+}
+
+func (s *State) UnmarshalJSON(b []byte) error {
+	var ss serializedState
+	if err := json.Unmarshal(b, &ss); err != nil {
+		return err
+	}
+	s.height = ss.Height
+	s.values = ss.Values
+	s.hash = ss.Hash
+	return nil
+}
+
+func (s *State) MarshalJSON() ([]byte, error) {
+	ss := &serializedState{
+		Height: s.height,
+		Values: s.values,
+		Hash:   s.hash,
+	}
+	return json.Marshal(ss)
 }
 
 // hashItems hashes a set of key/value items.

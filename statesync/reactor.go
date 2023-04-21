@@ -47,10 +47,8 @@ func NewReactor(
 	cfg config.StateSyncConfig,
 	conn proxy.AppConnSnapshot,
 	connQuery proxy.AppConnQuery,
-	tempDir string,
 	metrics *Metrics,
 ) *Reactor {
-
 	r := &Reactor{
 		cfg:       cfg,
 		conn:      conn,
@@ -97,7 +95,7 @@ func (r *Reactor) AddPeer(peer p2p.Peer) {
 }
 
 // RemovePeer implements p2p.Reactor.
-func (r *Reactor) RemovePeer(peer p2p.Peer, reason interface{}) {
+func (r *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
 	r.mtx.RLock()
 	defer r.mtx.RUnlock()
 	if r.syncer != nil {

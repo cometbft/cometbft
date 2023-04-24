@@ -141,3 +141,38 @@ peer-stop       = [peer-error] remove-peer
 When this method is invoked, the peer's send and receive routine were already stopped.
 This means that the reactor should not receive any further message from this
 peer and should not try sending messages to the removed peer.
+
+### Receiving messages
+
+The main duty of a reactor is to handle incoming messages on the channels it
+has registered with the p2p layer.
+
+When a message is received from a connected peer on any of the channels
+registered by the reactor, the node will deliver the message to the reactor
+invoking the `Receive(Envelope)` method.
+
+```abnf
+peer-start      = [receive] (peer-connected / start-error)
+peer-connected  = add-peer *receive peer-stop
+```
+
+Notice that _pre-condition_ for receiving a message from a `Peer` is that the
+p2p layer has previously invoked `InitPeer(Peer)` for that peer.
+While this is not the common case, the reactor should be able to handle the
+delivery of messages from a `Peer` before `AddPeer(Peer)` is invoked.
+This can happen because starting the send and receive routines interacting with
+a peer and invoking `AddPeer` are performed in parallel by the p2p layer.
+
+The reactor receives a message packed into an `Envelope` with the following content:
+
+- `ChannelID`: the channel the message belongs to
+- `Src`: the `Peer` from which the message was received
+- `Message`: the message's payload, unmarshalled using protocol buffers
+
+Two important observations regarding the implementation of the `Receive` method:
+
+1. Concurrency: the implementation should consider concurrent invocations of
+   the `Receive` method, as messages received from different peers about at the
+same time can be delivered to the reactor concurrently.
+1. The implementation should be non-blocking, as it is directly invoked
+   by the receive routines of peers.

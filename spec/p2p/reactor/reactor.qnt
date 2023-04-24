@@ -57,7 +57,7 @@ module reactor {
 		started: bool,
 		stopped: bool,
 
-		// Indicates whether a switch was set: reactor setup.
+		// Indicates whether a switch was set: reactor registration.
 		switch: bool,
 	}
 
@@ -71,7 +71,7 @@ module reactor {
 	def GetChannels(s: ReactorState): Set[ChannelDescriptor] = {
 		Set({ID: 3, Priority: 1})
 		.union(Set({ID: 7, Priority: 2}))
-		//.union(Set({ID: 3, Priority: 2})) // setup should fail!
+		//.union(Set({ID: 3, Priority: 2})) // registration should fail!
 	}
 
 	/*
@@ -82,7 +82,7 @@ module reactor {
 	}
 
 	// Code: Switch.AddReactor(name string, reactor Reactor)
-	action setup() = all {
+	action register() = all {
 		not(state.switch),
 		val channels = state.GetChannels()
 		val chIDs = channels.map(c => c.ID)
@@ -215,7 +215,7 @@ module reactor {
 
 	action step = any {
 		// One-shot actions
-		setup,
+		register,
 		start,
 		stop,
 		// Peer-specific actions

@@ -34,8 +34,8 @@ from the p2p layer to a reactor:
 
 
 ```abnf
-start           = add-reactor on-start *peer-connection on-stop
-add-reactor     = get-channels set-switch
+start           = registration on-start *peer-connection on-stop
+registration    = get-channels set-switch
 
 ; Refers to a single peer, reactor should support multiple concurrent peers
 peer-connection = init-peer peer-start
@@ -76,7 +76,7 @@ In other words, there is no support for registering a reactor on a running node:
 reactors must be registered as part of the setup of a node.
 
 ```abnf
-add-reactor     = get-channels set-switch
+registration     = get-channels set-switch
 ```
 
 As part of the registration procedure, the p2p layer retrieves from the reactor
@@ -95,7 +95,7 @@ A reactor should implement the [`Service`](../../../libs/service/service.go) int
 in particular, a startup `OnStart()` and a shutdown `OnStop()` methods:
 
 ```abnf
-start           = add-reactor on-start *peer-connection on-stop
+start           = registration on-start *peer-connection on-stop
 ```
 
 As part of the startup of a node, all registered reactors are started by the p2p layer.
@@ -158,10 +158,10 @@ peer-connected  = add-peer *receive peer-stop
 
 Notice that _pre-condition_ for receiving a message from a `Peer` is that the
 p2p layer has previously invoked `InitPeer(Peer)` for that peer.
-While this is not the common case, the reactor should be able to handle the
-delivery of messages from a `Peer` before `AddPeer(Peer)` is invoked.
-This can happen because starting the send and receive routines interacting with
-a peer and invoking `AddPeer` are performed in parallel by the p2p layer.
+While this is not the common case, the reactor should be able to handle
+messages from a `Peer` before `AddPeer(Peer)` is invoked.
+This happens because starting the peer's send and receive routines
+and adding the peer are done in parallel.
 
 The reactor receives a message packed into an `Envelope` with the following content:
 
@@ -175,4 +175,4 @@ Two important observations regarding the implementation of the `Receive` method:
    the `Receive` method, as messages received from different peers about at the
 same time can be delivered to the reactor concurrently.
 1. The implementation should be non-blocking, as it is directly invoked
-   by the receive routines of peers.
+   by the peers' receive routines.

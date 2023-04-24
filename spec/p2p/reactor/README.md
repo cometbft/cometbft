@@ -37,10 +37,10 @@ start           = registration on-start *peer-management on-stop
 registration    = get-channels set-switch
 
 ; Refers to a single peer, a reactor should support multiple concurrent peers
-peer-management = init-peer peer-start peer-stop
-peer-start      = [receive] (peer-connected / start-error)
+peer-management = init-peer start-peer stop-peer
+start-peer      = [receive] (peer-connected / start-error)
 peer-connected  = add-peer *receive
-peer-stop       = [peer-error] remove-peer
+stop-peer       = [peer-error] remove-peer
 
 ; Service interface
 on-start        = %s"<OnStart>"
@@ -107,44 +107,57 @@ not expect any interaction.
 
 ### Peer management
 
+The core of a reactor's operation is the interaction with peers or, more
+precisely, with companion reactors operating in peers connected to the node.
+The grammar extract below represents the interaction of the reactor with a
+single peer:
+
 ```abnf
 ; Refers to a single peer, a reactor should support multiple concurrent peers
-peer-management = init-peer peer-start peer-stop
+peer-management = init-peer start-peer stop-peer
 ```
-
-### Add peer
 
 The p2p layer informs all registered reactors when it establishes a connection
 with a `Peer`, using the `InitPeer(Peer)` method.
+When this method is invoked, the `Peer` has not yet been started, namely the
+routines for sending messages to and receiving messages from the peer are not running.
+This method should be used to initialize state or data related to the new
+peer, but not to interact with it.
 
-It is up to the reactor to define how to process this event.
-The typical behavior is to setup routines that, given some conditions or events,
-send messages to the added peer, using the provided `Peer` handler.
+The next step is to start the communication routines with the new `Peer`.
+As detailed in the following, this procedure may or may not succeed.
+In any case, the peer is eventually stopped, which concludes the management of
+that `Peer` instance.
 
-Adding a peer to a reactor has two steps.
-In the first step, the `Peer` has not yet been started.
-This step should be used to initialize state or data related to the new peer,
-but not to interact with it:
+### Start peer
 
-```abnf
-peer-management = init-peer peer-start peer-stop
-```
-
-The second step is performed after the peer's send and receive routines are
-started without errors.
-The updated `Peer` handler provided to this method can then be used to interact with the peer:
+Once a `Peer` is initialized by every reactor, the p2p layer starts the peer's
+communication routines and adds the `Peer` to the set of connected peers.
+If both steps are concluded without errors, the reactor's `AddPeer(Peer)` is invoked:
 
 ```abnf
-peer-start      = [receive] (peer-connected / start-error)
+start-peer      = [receive] (peer-connected / start-error)
 peer-connected  = add-peer *receive
 ```
 
-### Remove Peer
+In case of errors, a message is logged informing that the p2p layer failed to start the peer.
+This is not a common scenario and it is only expected to happen when
+interacting with a misbehaving peer.
+
+```abnf
+peer-connected  = add-peer *receive
+````
+
+It is up to the reactor to define how to process the `AddPeer(Peer)` event.
+The typical behavior is to setup routines that, given some conditions or events,
+send messages to the added peer, using the provided `Peer` handler.
+
+### Stop Peer
 
 The p2p layer also informs all registered reactors when it disconnects from a `Peer`:
 
 ```abnf
-peer-stop       = [peer-error] remove-peer
+stop-peer       = [peer-error] remove-peer
 ```
 
 When this method is invoked, the peer's send and receive routine were already stopped.
@@ -161,7 +174,7 @@ registered by the reactor, the node will deliver the message to the reactor
 invoking the `Receive(Envelope)` method.
 
 ```abnf
-peer-start      = [receive] (peer-connected / start-error)
+start-peer      = [receive] (peer-connected / start-error)
 peer-connected  = add-peer *receive
 ```
 

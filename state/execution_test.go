@@ -206,7 +206,7 @@ func TestFinalizeBlockValidators(t *testing.T) {
 		desc                     string
 		lastCommitSigs           []types.ExtendedCommitSig
 		expectedAbsentValidators []int
-		shouldHaveTs             bool
+		shouldHaveTime           bool
 	}{
 		{"none absent", []types.ExtendedCommitSig{commitSig0, commitSig1}, []int{}, true},
 		{"one absent", []types.ExtendedCommitSig{commitSig0, absentSig}, []int{1}, true},
@@ -226,7 +226,7 @@ func TestFinalizeBlockValidators(t *testing.T) {
 		_, err = sm.ExecCommitBlock(proxyApp.Consensus(), block, log.TestingLogger(), stateStore, 1)
 		require.NoError(t, err, tc.desc)
 		require.True(t,
-			!tc.shouldHaveTs ||
+			!tc.shouldHaveTime ||
 				app.LastTime.Equal(now) || app.LastTime.After(now),
 			"'last_time' should be at or after 'now'; tc %v, last_time %v, now %v", tc.desc, app.LastTime, now,
 		)

@@ -142,15 +142,16 @@ connected-peer  = add-peer *receive
 
 In case of errors, a message is logged informing that the p2p layer failed to start the peer.
 This is not a common scenario and it is only expected to happen when
-interacting with a misbehaving peer.
+interacting with a misbehaving peer. A practical example is reported on this
+[issue](https://github.com/tendermint/tendermint/pull/9500).
 
 ```abnf
 connected-peer  = add-peer *receive
 ````
 
 It is up to the reactor to define how to process the `AddPeer(Peer)` event.
-The typical behavior is to setup routines that, given some conditions or events,
-send messages to the added peer, using the provided `Peer` handler.
+The typical behavior is to start routines that, given some conditions or events
+(e.g. messages), send messages to the added peer, using the provided `Peer` handler.
 
 ### Stop Peer
 
@@ -161,15 +162,18 @@ using the `RemovePeer(Peer, reason)` method:
 stop-peer       = [peer-error] remove-peer
 ```
 
-This method is invoked after the p2p layer has stopped peer's send and receive routine.
-Depending of the reason for which the peer was stopped, different log messages can be produced.
+This method is invoked after the p2p layer has stopped peer's send and receive routines.
+Depending of the `reason` for which the peer was stopped, different log
+messages can be produced.
 After removing a peer from all reactors, the `Peer` instance is also removed from
 the set of connected peers.
+This enables the same peer to reconnect and `InitPeer(Peer)` to be invoked for
+the new connection.
 
 From the removal of a `Peer` , the reactor should not receive any further message
 from the peer and should not try sending messages to the removed peer.
-This usually means stopping the communication routines that were started by the
-companion `Add(Peer)` method.
+This usually means stopping the routines that were started by the companion
+`Add(Peer)` method.
 
 ### Receiving messages
 
@@ -189,7 +193,7 @@ connected-peer  = add-peer *receive
 ```
 
 The most common scenario, however, is to start receiving messages from a peer
-when it becomes a connected peer and `AddPeer(Peer)` is invoked.
+after `AddPeer(Peer)` is invoked.
 An arbitrary number of messages can be received, until the peer is stopped and
 `RemovePeer(Peer)` is invoked.
 
@@ -205,8 +209,9 @@ The message is packed into an `Envelope` that contains:
 Two important observations regarding the implementation of the `Receive` method:
 
 1. Concurrency: the implementation should consider concurrent invocations of
-   the `Receive` method carrying messages received from different peers.
-   This is possible because the interaction with different peers is independent
-   and messages can be received in parallel.
-1. Non-blocking: the implementation of the `Receive` method is expected to be
-   non-blocking, as it is invoked by the peers' receive routines.
+   the `Receive` method carrying messages from different peers, as the
+   interaction with different peers is independent and messages can be received in parallel.
+1. Non-blocking: the implementation of the `Receive` method is expected not to block,
+   as it is invoked directly by the receive routines of the `Peer` instances.
+   In other words, while `Receive` does not return, other messages from that
+   peer cannot be delivered to this or to other reactors.

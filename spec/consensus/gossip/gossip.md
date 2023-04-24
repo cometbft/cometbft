@@ -16,8 +16,8 @@ To ensure progress and termination, the algorithm assumes a **Global Stabilizati
 
 |Gossip communication|
 |-----|
-| (i) If a correct process $p$ sends some message $m$ at time $t$, all correct processes will receive $m$ before $\text{max} \{t,\text{GST}\} + \Delta$.
-| (ii) If a correct process $p$ receives some message $m$ at time $t$, all correct processes will receive $m$ before $\text{max}\{t,\text{GST}\} + \Delta$.
+| (i) If a correct process $p$ sends some message $m$ at time $t$, all correct processes will receive $m$ before $\text{max} (t,\text{GST}) + \Delta$.
+| (ii) If a correct process $p$ receives some message $m$ at time $t$, all correct processes will receive $m$ before $\text{max}(t,\text{GST}) + \Delta$.
 
 Roughly speaking, if Gossip Communication is guaranteed, then all messages sent by correct processes will be eventually delivered to all correct processes and allow all correct processes to realize that the same conditions are.
 

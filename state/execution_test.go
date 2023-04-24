@@ -206,10 +206,11 @@ func TestFinalizeBlockValidators(t *testing.T) {
 		desc                     string
 		lastCommitSigs           []types.ExtendedCommitSig
 		expectedAbsentValidators []int
+		shouldHaveTs             bool
 	}{
-		{"none absent", []types.ExtendedCommitSig{commitSig0, commitSig1}, []int{}},
-		{"one absent", []types.ExtendedCommitSig{commitSig0, absentSig}, []int{1}},
-		{"multiple absent", []types.ExtendedCommitSig{absentSig, absentSig}, []int{0, 1}},
+		{"none absent", []types.ExtendedCommitSig{commitSig0, commitSig1}, []int{}, true},
+		{"one absent", []types.ExtendedCommitSig{commitSig0, absentSig}, []int{1}, true},
+		{"multiple absent", []types.ExtendedCommitSig{absentSig, absentSig}, []int{0, 1}, false},
 	}
 
 	for _, tc := range testCases {
@@ -224,7 +225,11 @@ func TestFinalizeBlockValidators(t *testing.T) {
 
 		_, err = sm.ExecCommitBlock(proxyApp.Consensus(), block, log.TestingLogger(), stateStore, 1)
 		require.NoError(t, err, tc.desc)
-		require.True(t, app.LastTime.After(now), "last_time %v now %v", app.LastTime, now)
+		require.True(t,
+			!tc.shouldHaveTs ||
+				app.LastTime.Equal(now) || app.LastTime.After(now),
+			"'last_time' should be at or after 'now'; tc %v, last_time %v, now %v", tc.desc, app.LastTime, now,
+		)
 
 		// -> app receives a list of validators with a bool indicating if they signed
 		ctr := 0

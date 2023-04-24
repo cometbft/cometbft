@@ -68,7 +68,7 @@ with an ABCI++ application, available [here](../../abci/abci%2B%2B_comet_expecte
 
 To become a reactor, a component has first to implement the `Reactor` interface,
 then to register the implementation with the p2p layer, using the
-`Switch.AddReactor(string, Reactor)` method.
+`Switch.AddReactor(name string, reactor Reactor)` method.
 
 The registration should happen before the node, in general, and the p2p layer,
 in particular, are started.
@@ -88,3 +88,17 @@ The second method `SetSwitch(Switch)` concludes the registration of a reactor,
 which can be seen as a handshake between the reactor and the p2p layer.
 The `Switch` is the main component of the p2p layer, being responsible for
 establishing connections with peers and routing messages.
+
+### Service interface
+
+A reactor should implement the [`Service`](../../../libs/service/service.go) interface.
+As such, it should implement a startup `OnStart()` and a shutdown `OnStop()` methods.
+
+```abnf
+start           = add-reactor on-start *peer-connection on-stop
+```
+
+As part of the startup of a node, all registered reactors are started by the p2p layer.
+When the node is shutdown, all registered reactors are stopped by the p2p layer.
+Observe that the `Service` interface specification establishes that a service
+can be started and stopped only once.

@@ -223,7 +223,8 @@ func TestFinalizeBlockValidators(t *testing.T) {
 		block := makeBlock(state, 2, lastCommit.ToCommit())
 
 		_, err = sm.ExecCommitBlock(proxyApp.Consensus(), block, log.TestingLogger(), stateStore, 1)
-		require.Nil(t, err, tc.desc)
+		require.NoError(t, err, tc.desc)
+		require.True(t, app.LastTime.After(now), "last_time %v now %v", app.LastTime, now)
 
 		// -> app receives a list of validators with a bool indicating if they signed
 		ctr := 0

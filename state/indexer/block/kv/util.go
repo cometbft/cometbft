@@ -123,28 +123,25 @@ func parseEventSeqFromEventKey(key []byte) (int64, error) {
 	// 2. Events indexed between v0.34.27 and v0.37.x will have a function type and an event sequence
 	// 3. Events indexed before v0.34.27 will only have a function type
 	// function_type = 'being_block_event' | 'end_block_event'
-	if len(remaining) != 0 {
-		var typ string
-		remaining2, err := orderedcode.Parse(remaining, &typ) // Check if we have scenarios 2. or 3. (described above).
-		if err != nil {                                       // If it cannot parse the event function type, it could be 1.
-			remaining, err2 := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height, &eventSeq)
-			if err2 != nil || len(remaining) != 0 { // We should not have anything else after the eventSeq.
-				return 0, fmt.Errorf("failed to parse event sequence: %w; and %w", err, err2)
-			}
-		} else {
-			if len(remaining2) != 0 { // Are we in case 2 or 3
-				remaining, err2 := orderedcode.Parse(remaining2, &eventSeq) // the event follows the scenario in 2.,
-				// retrieve the eventSeq
-				// there should be no error
-				if err2 != nil || len(remaining) != 0 { // We should not have anything else after the eventSeq if in 2.
-					return 0, fmt.Errorf("failed to parse event sequence: %w", err2)
-				}
-			}
-		}
-	} else {
+
+	if len(remaining) == 0 { // The event was not properly indexed
 		return 0, fmt.Errorf("failed to parse event sequence, invalid event format")
 	}
-
+	var typ string
+	remaining2, err := orderedcode.Parse(remaining, &typ) // Check if we have scenarios 2. or 3. (described above).
+	if err != nil {                                       // If it cannot parse the event function type, it could be 1.
+		remaining, err2 := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height, &eventSeq)
+		if err2 != nil || len(remaining) != 0 { // We should not have anything else after the eventSeq.
+			return 0, fmt.Errorf("failed to parse event sequence: %w; and %w", err, err2)
+		}
+	} else if len(remaining2) != 0 { // Are we in case 2 or 3
+		remaining, err2 := orderedcode.Parse(remaining2, &eventSeq) // the event follows the scenario in 2.,
+		// retrieve the eventSeq
+		// there should be no error
+		if err2 != nil || len(remaining) != 0 { // We should not have anything else after the eventSeq if in 2.
+			return 0, fmt.Errorf("failed to parse event sequence: %w", err2)
+		}
+	}
 	return eventSeq, nil
 }
 

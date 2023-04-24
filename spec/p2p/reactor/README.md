@@ -91,14 +91,53 @@ establishing connections with peers and routing messages.
 
 ### Service interface
 
-A reactor should implement the [`Service`](../../../libs/service/service.go) interface.
-As such, it should implement a startup `OnStart()` and a shutdown `OnStop()` methods.
+A reactor should implement the [`Service`](../../../libs/service/service.go) interface,
+in particular, a startup `OnStart()` and a shutdown `OnStop()` methods:
 
 ```abnf
 start           = add-reactor on-start *peer-connection on-stop
 ```
 
 As part of the startup of a node, all registered reactors are started by the p2p layer.
-When the node is shutdown, all registered reactors are stopped by the p2p layer.
+And when the node is shutdown, all registered reactors are stopped by the p2p layer.
 Observe that the `Service` interface specification establishes that a service
 can be started and stopped only once.
+So before being started or once stopped by the p2p layer, the reactor should
+not expect any interaction.
+
+### Peer management
+
+The p2p layer informs all registered reactors when it successfully establishes
+a connection with a `Peer`.
+
+It is up to the reactor to define how to process this event.
+The typical behavior is to setup routines that, given some conditions or events,
+send messages to the added peer, using the provided `Peer` handler.
+
+Adding a peer to a reactor has two steps.
+In the first step, the `Peer` has not yet been started.
+This step should be used to initialize state or data related to the new peer,
+but not to interact with it:
+
+```abnf
+peer-connection = init-peer peer-start
+```
+
+The second step is performed after the peer's send and receive routines are
+started without errors.
+The updated `Peer` handler provided to this method can then be used to interact with the peer:
+
+```abnf
+peer-start      = [receive] (peer-connected / start-error)
+peer-connected  = add-peer *receive peer-stop
+```
+
+The p2p layer also informs all registered reactors when it disconnects from a `Peer`:
+
+```abnf
+peer-stop       = [peer-error] remove-peer
+```
+
+When this method is invoked, the peer's send and receive routine were already stopped.
+This means that the reactor should not receive any further message from this
+peer and should not try sending messages to the removed peer.

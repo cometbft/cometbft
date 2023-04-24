@@ -26,7 +26,7 @@ the behaviour of the p2p layer described in the remaining of this document is
 modeled through state transitions.
 
 
-## Operation
+## Overview
 
 The following _grammar_ is a simplified representation of the expected sequence of calls
 from the p2p layer to a reactor:
@@ -63,7 +63,7 @@ specified in [IETF rfc7405](https://datatracker.ietf.org/doc/html/rfc7405)).
 It is inspired on the grammar produced to specify the interaction of CometBFT
 with an ABCI++ application, available [here](../../abci/abci%2B%2B_comet_expected_behavior.md).
 
-### Registration
+## Registration
 
 To become a reactor, a component has first to implement the `Reactor` interface,
 then to register the implementation with the p2p layer, using the
@@ -89,7 +89,7 @@ reactor and the p2p layer.
 The `Switch` is the main component of the p2p layer, being responsible for
 establishing connections with peers and routing messages.
 
-### Service interface
+## Service interface
 
 A reactor should implement the [`Service`](../../../libs/service/service.go) interface,
 in particular, a startup `OnStart()` and a shutdown `OnStop()` methods:
@@ -105,7 +105,7 @@ can be started and stopped only once.
 So before being started or once stopped by the p2p layer, the reactor should
 not expect any interaction.
 
-### Peer management
+## Peer management
 
 The core of a reactor's operation is the interaction with peers or, more
 precisely, with companion reactors operating in peers connected to the node.
@@ -129,7 +129,7 @@ As detailed in the following, this procedure may or may not succeed.
 In any case, the peer is eventually stopped, which concludes the management of
 that `Peer` instance.
 
-### Start peer
+## Start peer
 
 Once a `Peer` is initialized by every reactor, the p2p layer starts the peer's
 communication routines and adds the `Peer` to the set of connected peers.
@@ -147,13 +147,13 @@ interacting with a misbehaving peer. A practical example is reported on this
 
 ```abnf
 connected-peer  = add-peer *receive
-````
+```
 
 It is up to the reactor to define how to process the `AddPeer(Peer)` event.
 The typical behavior is to start routines that, given some conditions or events
 (e.g. messages), send messages to the added peer, using the provided `Peer` handler.
 
-### Stop Peer
+## Stop Peer
 
 The p2p layer informs all registered reactors when it disconnects from a `Peer`,
 using the `RemovePeer(Peer, reason)` method:
@@ -175,7 +175,7 @@ from the peer and should not try sending messages to the removed peer.
 This usually means stopping the routines that were started by the companion
 `Add(Peer)` method.
 
-### Receiving messages
+## Receive messages
 
 The main duty of a reactor is to handle incoming messages on the channels it
 has registered with the p2p layer.
@@ -212,6 +212,6 @@ Two important observations regarding the implementation of the `Receive` method:
    the `Receive` method carrying messages from different peers, as the
    interaction with different peers is independent and messages can be received in parallel.
 1. Non-blocking: the implementation of the `Receive` method is expected not to block,
-   as it is invoked directly by the receive routines of the `Peer` instances.
-   In other words, while `Receive` does not return, other messages from that
-   peer cannot be delivered to this or to other reactors.
+   as it is invoked directly by the receive routines.
+   In other words, while `Receive` does not return, other messages from the
+   same sender are not delivered to any reactor.

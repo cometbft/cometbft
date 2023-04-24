@@ -63,3 +63,28 @@ The grammar is written in case-sensitive Augmented Backus–Naur form (ABNF,
 specified in [IETF rfc7405](https://datatracker.ietf.org/doc/html/rfc7405)).
 It is inspired on the grammar produced to specify the interaction of CometBFT
 with an ABCI++ application, available [here](../../abci/abci%2B%2B_comet_expected_behavior.md).
+
+### Registration
+
+To become a reactor, a component has first to implement the `Reactor` interface,
+then to register the implementation with the p2p layer, using the
+`Switch.AddReactor(string, Reactor)` method.
+
+The registration should happen before the node, in general, and the p2p layer,
+in particular, are started.
+In other words, there is no support for registering a reactor on a running node:
+reactors must be registered as part of the setup of a node.
+
+```abnf
+add-reactor     = get-channels set-switch
+```
+
+As part of the registration procedure, the p2p layer retrieves from the reactor
+a list of channels the reactor is responsible for, using the `GetChannels()` method.
+The reactor implementation should thereafter expect that every message received
+by the p2p layer in the informed channels will be delivered to the reactor.
+
+The second method `SetSwitch(Switch)` concludes the registration of a reactor,
+which can be seen as a handshake between the reactor and the p2p layer.
+The `Switch` is the main component of the p2p layer, being responsible for
+establishing connections with peers and routing messages.

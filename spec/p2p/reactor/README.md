@@ -2,16 +2,15 @@
 
 Reactor is the generic name for a component that employs the p2p communication layer.
 
-The main source of documentation for a reactor is the p2p's
-[`Reactor`](../../../p2p/base_reactor.go) interface.
-A component has to implement the `Reactor` interface in order to use the
-communication services provided by the p2p layer.
+The main source of documentation for a reactor is the [`Reactor`](../../../p2p/base_reactor.go) interface.
+In order to use communication services provided by the p2p layer,
+a component has to implement the p2p's package `Reactor` interface.
 
 The goal of this document is to complement the existing documentation by
 specifying the behaviour of the p2p when interacting with a reactor.
-So while the `Reactor` interface determines what the p2p layer expects from a
-reactor, this documentation focuses on the behaviour that a reactor
-implementation should expect from the p2p layer.
+So while the `Reactor` interface defines the methods invoked and determines
+what the p2p layer expects from a reactor, this documentation focuses on the
+behaviour that a reactor implementation should expect from the p2p layer.
 
 > This is a work in progress, tracked by [issue #599](https://github.com/cometbft/cometbft/issues/599).
 
@@ -34,13 +33,13 @@ from the p2p layer to a reactor:
 
 
 ```abnf
-start           = registration on-start *peer-connection on-stop
+start           = registration on-start *peer-management on-stop
 registration    = get-channels set-switch
 
-; Refers to a single peer, reactor should support multiple concurrent peers
-peer-connection = init-peer peer-start
+; Refers to a single peer, a reactor should support multiple concurrent peers
+peer-management = init-peer peer-start peer-stop
 peer-start      = [receive] (peer-connected / start-error)
-peer-connected  = add-peer *receive peer-stop
+peer-connected  = add-peer *receive
 peer-stop       = [peer-error] remove-peer
 
 ; Service interface
@@ -68,7 +67,8 @@ with an ABCI++ application, available [here](../../abci/abci%2B%2B_comet_expecte
 
 To become a reactor, a component has first to implement the `Reactor` interface,
 then to register the implementation with the p2p layer, using the
-`Switch.AddReactor(name string, reactor Reactor)` method.
+`Switch.AddReactor(name string, reactor Reactor)` method, where `name` can be
+an arbitrary string.
 
 The registration should happen before the node, in general, and the p2p layer,
 in particular, are started.
@@ -79,13 +79,13 @@ reactors must be registered as part of the setup of a node.
 registration     = get-channels set-switch
 ```
 
-As part of the registration procedure, the p2p layer retrieves from the reactor
-a list of channels the reactor is responsible for, using the `GetChannels()` method.
-The reactor implementation should thereafter expect that every message received
-by the p2p layer in the informed channels will be delivered to the reactor.
+The p2p layer retrieves from the reactor a list of channels the reactor is
+responsible for, using the `GetChannels()` method.
+The reactor implementation should thereafter expect the delivery of every
+message received by the p2p layer in the informed channels.
 
-The second method `SetSwitch(Switch)` concludes the registration of a reactor,
-which can be seen as a handshake between the reactor and the p2p layer.
+The second method `SetSwitch(Switch)` concludes the handshake between the
+reactor and the p2p layer.
 The `Switch` is the main component of the p2p layer, being responsible for
 establishing connections with peers and routing messages.
 
@@ -95,7 +95,7 @@ A reactor should implement the [`Service`](../../../libs/service/service.go) int
 in particular, a startup `OnStart()` and a shutdown `OnStop()` methods:
 
 ```abnf
-start           = registration on-start *peer-connection on-stop
+start           = registration on-start *peer-management on-stop
 ```
 
 As part of the startup of a node, all registered reactors are started by the p2p layer.
@@ -107,8 +107,15 @@ not expect any interaction.
 
 ### Peer management
 
-The p2p layer informs all registered reactors when it successfully establishes
-a connection with a `Peer`.
+```abnf
+; Refers to a single peer, a reactor should support multiple concurrent peers
+peer-management = init-peer peer-start peer-stop
+```
+
+### Add peer
+
+The p2p layer informs all registered reactors when it establishes a connection
+with a `Peer`, using the `InitPeer(Peer)` method.
 
 It is up to the reactor to define how to process this event.
 The typical behavior is to setup routines that, given some conditions or events,
@@ -120,7 +127,7 @@ This step should be used to initialize state or data related to the new peer,
 but not to interact with it:
 
 ```abnf
-peer-connection = init-peer peer-start
+peer-management = init-peer peer-start peer-stop
 ```
 
 The second step is performed after the peer's send and receive routines are
@@ -129,8 +136,10 @@ The updated `Peer` handler provided to this method can then be used to interact 
 
 ```abnf
 peer-start      = [receive] (peer-connected / start-error)
-peer-connected  = add-peer *receive peer-stop
+peer-connected  = add-peer *receive
 ```
+
+### Remove Peer
 
 The p2p layer also informs all registered reactors when it disconnects from a `Peer`:
 
@@ -153,7 +162,7 @@ invoking the `Receive(Envelope)` method.
 
 ```abnf
 peer-start      = [receive] (peer-connected / start-error)
-peer-connected  = add-peer *receive peer-stop
+peer-connected  = add-peer *receive
 ```
 
 Notice that _pre-condition_ for receiving a message from a `Peer` is that the

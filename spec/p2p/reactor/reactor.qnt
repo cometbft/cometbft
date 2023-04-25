@@ -77,7 +77,7 @@ module reactor {
 	/*
 	 * SetSwitch allows setting a switch.
 	 */
-	def SetSwitch(s: ReactorState, switch: bool): ReactorState = {
+	pure def SetSwitch(s: ReactorState, switch: bool): ReactorState = {
 		s.with("switch", switch)
 	}
 
@@ -94,7 +94,7 @@ module reactor {
 	 * Start the service.
 	 * If it's already started or stopped, will return an error.
 	 */
-	def OnStart(s: ReactorState): ReactorState = {
+	pure def OnStart(s: ReactorState): ReactorState = {
 		s.with("started", true)
 	}
 
@@ -109,7 +109,7 @@ module reactor {
 	 * Stop the service.
 	 * If it's already stopped, will return an error.
 	 */
-	def OnStop(s: ReactorState): ReactorState = {
+	pure def OnStop(s: ReactorState): ReactorState = {
 		s.with("stopped", true)
 	}
 
@@ -124,7 +124,7 @@ module reactor {
 	/*
 	 * Return true if the service is running.
 	 */
-	def IsRunning(s: ReactorState): bool = {
+	pure def IsRunning(s: ReactorState): bool = {
 		s.started and not(s.stopped)
 	}
 
@@ -132,7 +132,7 @@ module reactor {
 	 * InitPeer is called by the switch before the peer is started. Use it to
 	 * initialize data for the peer (e.g. peer state).
 	 */
-	def InitPeer(s: ReactorState, peer: Peer): (ReactorState, Peer) = {
+	pure def InitPeer(s: ReactorState, peer: Peer): (ReactorState, Peer) = {
 		val updatedPeer = peer // Peer can be updated here
 		(s.with("peers", s.peers.union(Set(peer.ID))), updatedPeer)
 	}
@@ -165,8 +165,8 @@ module reactor {
 	 * RemovePeer is called by the switch when the peer is stopped (due to error
 	 * or other reason).
 	 */
-	def RemovePeer(s: ReactorState, peer: Peer, reason: str): ReactorState = {
-		val stoppedRoutines = state.routines.filter(r => r.peer.ID == peer.ID)
+	pure def RemovePeer(s: ReactorState, peer: Peer, reason: str): ReactorState = {
+		val stoppedRoutines = s.routines.filter(r => r.peer.ID == peer.ID)
 		s.with("peers", s.peers.exclude(Set(peer.ID)))
 		 .with("routines", s.routines.exclude(stoppedRoutines))
 	}
@@ -184,7 +184,7 @@ module reactor {
 	 * Receive is called by the switch when an envelope is received from any connected
 	 * peer on any of the channels registered by the reactor.
 	 */
-	def Receive(s: ReactorState, e: Envelope): ReactorState = {
+	pure def Receive(s: ReactorState, e: Envelope): ReactorState = {
 		// Process the payload: e.Message
 		s
 	}

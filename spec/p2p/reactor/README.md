@@ -31,7 +31,13 @@ modeled through state transitions.
 The following _grammar_ is a simplified representation of the expected sequence of calls
 from the p2p layer to a reactor.
 
-TODO: limitations
+While it is useful to provide an overview of the operation of a reactor,
+grammars have some limitations in terms of the behaviour they can express.
+For instance, the following grammar only represents the management of _a single peer_,
+which can connect, disconnect, and reconnect multiple times to the node.
+The p2p layer and the reactor should be able to handle multiple distinct peers in parallel.
+This means that multiple `peer-management` statements of the grammar below can "run"
+in parallel, each one referring to a distinct peer:
 
 ```abnf
 start           = registration on-start *peer-management on-stop

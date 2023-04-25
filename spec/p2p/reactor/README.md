@@ -29,8 +29,9 @@ modeled through state transitions.
 ## Overview
 
 The following _grammar_ is a simplified representation of the expected sequence of calls
-from the p2p layer to a reactor:
+from the p2p layer to a reactor.
 
+TODO: limitations
 
 ```abnf
 start           = registration on-start *peer-management on-stop
@@ -38,24 +39,24 @@ registration    = get-channels set-switch
 
 ; Refers to a single peer, a reactor should support multiple concurrent peers
 peer-management = init-peer start-peer stop-peer
-start-peer      = [receive] (connected-peer / start-error)
+start-peer      = [*receive] (connected-peer / start-error)
 connected-peer  = add-peer *receive
 stop-peer       = [peer-error] remove-peer
 
 ; Service interface
-on-start        = %s"<OnStart>"
-on-stop         = %s"<OnStop>"
+on-start        = %s"OnStart()"
+on-stop         = %s"OnStop()"
 ; Reactor interface
-get-channels    = %s"<GetChannels>"
-set-switch      = %s"<SetSwitch>"
-init-peer       = %s"<InitPeer>"
-add-peer        = %s"<AddPeer>"
-remove-peer     = %s"<RemovePeer>"
-receive         = %s"<Receive>"
+get-channels    = %s"GetChannels()"
+set-switch      = %s"SetSwitch(*Switch)"
+init-peer       = %s"InitPeer(Peer)"
+add-peer        = %s"AddPeer(Peer)"
+remove-peer     = %s"RemovePeer(Peer, reason)"
+receive         = %s"Receive(Envelope)"
 
 ; Errors, for reference
-start-error     = %s"Error starting peer"
-peer-error      = %s"Stopping peer for error"
+start-error     = %s"log(Error starting peer)"
+peer-error      = %s"log(Stopping peer for error)"
 ```
 
 The grammar is written in case-sensitive Augmented Backus–Naur form (ABNF,
@@ -76,7 +77,7 @@ In other words, there is no support for registering a reactor on a running node:
 reactors must be registered as part of the setup of a node.
 
 ```abnf
-registration     = get-channels set-switch
+registration    = get-channels set-switch
 ```
 
 The p2p layer retrieves from the reactor a list of channels the reactor is
@@ -136,7 +137,7 @@ communication routines and adds the `Peer` to the set of connected peers.
 If both steps are concluded without errors, the reactor's `AddPeer(Peer)` is invoked:
 
 ```abnf
-start-peer      = [receive] (connected-peer / start-error)
+start-peer      = [*receive] (connected-peer / start-error)
 connected-peer  = add-peer *receive
 ```
 
@@ -188,7 +189,7 @@ While this is not the usual scenario, it can happen because starting the peer's
 send and receive routines and adding the peer are done in parallel:
 
 ```abnf
-start-peer      = [receive] (connected-peer / start-error)
+start-peer      = [*receive] (connected-peer / start-error)
 connected-peer  = add-peer *receive
 ```
 

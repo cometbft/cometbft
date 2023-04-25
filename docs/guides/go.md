@@ -219,7 +219,6 @@ not do anything.
 So let's revisit the code adding the logic needed to implement our minimal key/value store
 and to start it along with the CometBFT Service.
 
-
 ### 1.3.1 Add a persistent data store
 
 Our application will need to write its state out to persistent storage so that it
@@ -589,9 +588,9 @@ go run github.com/cometbft/cometbft/cmd/cometbft@v0.38.0 init --home /tmp/cometb
 You should see an output similar to the following:
 
 ```bash
-I[2022-11-09|09:06:34.444] Generated private validator                  module=main keyFile=/tmp/cometbft-home/config/priv_validator_key.json stateFile=/tmp/cometbft-home/data/priv_validator_state.json
-I[2022-11-09|09:06:34.444] Generated node key                           module=main path=/tmp/cometbft-home/config/node_key.json
-I[2022-11-09|09:06:34.444] Generated genesis file                       module=main path=/tmp/cometbft-home/config/genesis.json
+I[2023-04-25|09:06:34.444] Generated private validator                  module=main keyFile=/tmp/cometbft-home/config/priv_validator_key.json stateFile=/tmp/cometbft-home/data/priv_validator_state.json
+I[2023-04-25|09:06:34.444] Generated node key                           module=main path=/tmp/cometbft-home/config/node_key.json
+I[2023-04-25|09:06:34.444] Generated genesis file                       module=main path=/tmp/cometbft-home/config/genesis.json
 ```
 
 Now rebuild the app:
@@ -609,11 +608,11 @@ Everything is now in place to run your application. Run:
 The application will start and you should see an output similar to the following:
 
 ```bash
-badger 2022/11/09 17:01:28 INFO: All 0 tables opened in 0s
-badger 2022/11/09 17:01:28 INFO: Discard stats nextEmptySlot: 0
-badger 2022/11/09 17:01:28 INFO: Set nextTxnTs to 0
-I[2022-11-09|17:01:28.726] service start                                msg="Starting ABCIServer service" impl=ABCIServer
-I[2022-11-09|17:01:28.726] Waiting for new connection...
+badger 2023-04-25 17:01:28 INFO: All 0 tables opened in 0s
+badger 2023-04-25 17:01:28 INFO: Discard stats nextEmptySlot: 0
+badger 2023-04-25 17:01:28 INFO: Set nextTxnTs to 0
+I[2023-04-25|17:01:28.726] service start                                msg="Starting ABCIServer service" impl=ABCIServer
+I[2023-04-25|17:01:28.726] Waiting for new connection...
 ```
 
 Then we need to start CometBFT service and point it to our application.
@@ -628,22 +627,23 @@ This should start the full node and connect to our ABCI application, which will 
 reflected in the application output.
 
 ```sh
-I[2022-11-09|17:07:08.124] service start                                msg="Starting ABCIServer service" impl=ABCIServer
-I[2022-11-09|17:07:08.124] Waiting for new connection...
-I[2022-11-09|17:08:12.702] Accepted a new connection
-I[2022-11-09|17:08:12.703] Waiting for new connection...
-I[2022-11-09|17:08:12.703] Accepted a new connection
-I[2022-11-09|17:08:12.703] Waiting for new connection...
+I[2023-04-25|17:07:08.124] service start                                msg="Starting ABCIServer service" impl=ABCIServer
+I[2023-04-25|17:07:08.124] Waiting for new connection...
+I[2023-04-25|17:08:12.702] Accepted a new connection
+I[2023-04-25|17:08:12.703] Waiting for new connection...
+I[2023-04-25|17:08:12.703] Accepted a new connection
+I[2023-04-25|17:08:12.703] Waiting for new connection...
 ```
 
 Also, the application using CometBFT Core is producing blocks  🎉🎉 and you can see this reflected in the log output of the service in lines like this:
 
 ```bash
-I[2022-11-09|09:08:52.147] received proposal                            module=consensus proposal="Proposal{2/0 (F518444C0E348270436A73FD0F0B9DFEA758286BEB29482F1E3BEA75330E825C:1:C73D3D1273F2, -1) AD19AE292A45 @ 2022-11-09T12:08:52.143393Z}"
-I[2022-11-09|09:08:52.152] received complete proposal block             module=consensus height=2 hash=F518444C0E348270436A73FD0F0B9DFEA758286BEB29482F1E3BEA75330E825C
-I[2022-11-09|09:08:52.160] finalizing commit of block                   module=consensus height=2 hash=F518444C0E348270436A73FD0F0B9DFEA758286BEB29482F1E3BEA75330E825C root= num_txs=0
-I[2022-11-09|09:08:52.167] executed block                               module=state height=2 num_valid_txs=0 num_invalid_txs=0
-I[2022-11-09|09:08:52.171] committed state                              module=state height=2 num_txs=0 app_hash=
+I[2023-04-25|09:08:52.147] received proposal                            module=consensus proposal="Proposal{2/0 (F518444C0E348270436A73FD0F0B9DFEA758286BEB29482F1E3BEA75330E825C:1:C73D3D1273F2, -1) AD19AE292A45 @ 2023-04-25T12:08:52.143393Z}"
+I[2023-04-25|09:08:52.147] received proposal                            module=consensus proposal="Proposal{2/0 (F518444C0E348270436A73FD0F0B9DFEA758286BEB29482F1E3BEA75330E825C:1:C73D3D1273F2, -1) AD19AE292A45 @ 2023-04-25T12:08:52.143393Z}"
+I[2023-04-25|09:08:52.152] received complete proposal block             module=consensus height=2 hash=F518444C0E348270436A73FD0F0B9DFEA758286BEB29482F1E3BEA75330E825C
+I[2023-04-25|09:08:52.160] finalizing commit of block                   module=consensus height=2 hash=F518444C0E348270436A73FD0F0B9DFEA758286BEB29482F1E3BEA75330E825C root= num_txs=0
+I[2023-04-25|09:08:52.167] executed block                               module=state height=2 num_valid_txs=0 num_invalid_txs=0
+I[2023-04-25|09:08:52.171] committed state                              module=state height=2 num_txs=0 app_hash=
 ```
 
 The blocks, as you can see from the `num_valid_txs=0` part, are empty, but let's remedy that next.

@@ -256,36 +256,6 @@ func TestStateBadProposal(t *testing.T) {
 	signAddVotes(cs1, cmtproto.PrecommitType, propBlock.Hash(), bps2.Header(), true, vs2)
 }
 
-func findBlockSizeLimit(t *testing.T, height, maxBytes int64, cs *State, partSize uint32, oversized bool) (*types.Block, *types.PartSet) {
-	var offset int64
-	if !oversized {
-		offset = -2
-	}
-	softMaxDataBytes := int(types.MaxDataBytes(maxBytes, 0, 0))
-	for i := softMaxDataBytes; i < softMaxDataBytes*2; i++ {
-		propBlock := cs.state.MakeBlock(
-			height,
-			[]types.Tx{[]byte("a=" + strings.Repeat("o", i-2))},
-			&types.Commit{},
-			nil,
-			cs.privValidatorPubKey.Address(),
-		)
-
-		propBlockParts, err := propBlock.MakePartSet(partSize)
-		require.NoError(t, err)
-		if propBlockParts.ByteSize() > maxBytes+offset {
-			s := "real max"
-			if oversized {
-				s = "off-by-1"
-			}
-			t.Log("Detected "+s+" data size for block;", "size", i, "softMaxDataBytes", softMaxDataBytes)
-			return propBlock, propBlockParts
-		}
-	}
-	require.Fail(t, "We shouldn't hit the end of the loop")
-	return nil, nil
-}
-
 func TestStateOversizedBlock(t *testing.T) {
 	const maxBytes = 2000
 
@@ -2561,4 +2531,34 @@ func signAddPrecommitWithExtension(
 	v, err := stub.signVote(cmtproto.PrecommitType, hash, header, extension, true)
 	require.NoError(t, err, "failed to sign vote")
 	addVotes(cs, v)
+}
+
+func findBlockSizeLimit(t *testing.T, height, maxBytes int64, cs *State, partSize uint32, oversized bool) (*types.Block, *types.PartSet) {
+	var offset int64
+	if !oversized {
+		offset = -2
+	}
+	softMaxDataBytes := int(types.MaxDataBytes(maxBytes, 0, 0))
+	for i := softMaxDataBytes; i < softMaxDataBytes*2; i++ {
+		propBlock := cs.state.MakeBlock(
+			height,
+			[]types.Tx{[]byte("a=" + strings.Repeat("o", i-2))},
+			&types.Commit{},
+			nil,
+			cs.privValidatorPubKey.Address(),
+		)
+
+		propBlockParts, err := propBlock.MakePartSet(partSize)
+		require.NoError(t, err)
+		if propBlockParts.ByteSize() > maxBytes+offset {
+			s := "real max"
+			if oversized {
+				s = "off-by-1"
+			}
+			t.Log("Detected "+s+" data size for block;", "size", i, "softMaxDataBytes", softMaxDataBytes)
+			return propBlock, propBlockParts
+		}
+	}
+	require.Fail(t, "We shouldn't hit the end of the loop")
+	return nil, nil
 }

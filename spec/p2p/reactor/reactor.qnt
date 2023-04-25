@@ -67,11 +67,10 @@ module reactor {
 	 * GetChannels returns the list of MConnection.ChannelDescriptor. Make sure
 	 * that each ID is unique across all the reactors added to the switch.
 	 */
-	// TODO: we need a way to configure the returned channels!
-	def GetChannels(s: ReactorState): Set[ChannelDescriptor] = {
+	pure def GetChannels(s: ReactorState): Set[ChannelDescriptor] = {
+		// This method should return a list of channels, e.g.:
 		Set({ID: 3, Priority: 1})
 		.union(Set({ID: 7, Priority: 2}))
-		//.union(Set({ID: 3, Priority: 2})) // registration should fail!
 	}
 
 	/*
@@ -95,6 +94,7 @@ module reactor {
 	 * If it's already started or stopped, will return an error.
 	 */
 	pure def OnStart(s: ReactorState): ReactorState = {
+		// Startup procedures should come here.
 		s.with("started", true)
 	}
 
@@ -110,6 +110,7 @@ module reactor {
 	 * If it's already stopped, will return an error.
 	 */
 	pure def OnStop(s: ReactorState): ReactorState = {
+		// Shutdown procedures should come here.
 		s.with("stopped", true)
 	}
 
@@ -133,7 +134,8 @@ module reactor {
 	 * initialize data for the peer (e.g. peer state).
 	 */
 	pure def InitPeer(s: ReactorState, peer: Peer): (ReactorState, Peer) = {
-		val updatedPeer = peer // Peer can be updated here
+		// This method can update the received peer, which is returned.
+		val updatedPeer = peer
 		(s.with("peers", s.peers.union(Set(peer.ID))), updatedPeer)
 	}
 
@@ -148,7 +150,9 @@ module reactor {
 	 * AddPeer is called by the switch after the peer is added and successfully
 	 * started. Use it to start goroutines communicating with the peer.
 	 */
-	def AddPeer(s: ReactorState, peer: Peer): ReactorState = {
+	pure def AddPeer(s: ReactorState, peer: Peer): ReactorState = {
+		// This method can be used to start routines to handle the peer.
+		// Below an example of an arbitrary 'ioRoutine' routine.
 		val startedRoutines = Set( {name: "ioRoutine", peer: peer} )
 		s.with("routines", s.routines.union(startedRoutines))
 	}
@@ -166,6 +170,7 @@ module reactor {
 	 * or other reason).
 	 */
 	pure def RemovePeer(s: ReactorState, peer: Peer, reason: str): ReactorState = {
+		// This method should stop routines created by `AddPeer(Peer)`.
 		val stoppedRoutines = s.routines.filter(r => r.peer.ID == peer.ID)
 		s.with("peers", s.peers.exclude(Set(peer.ID)))
 		 .with("routines", s.routines.exclude(stoppedRoutines))
@@ -185,7 +190,7 @@ module reactor {
 	 * peer on any of the channels registered by the reactor.
 	 */
 	pure def Receive(s: ReactorState, e: Envelope): ReactorState = {
-		// Process the payload: e.Message
+		// This method should process the message payload: e.Message.
 		s
 	}
 

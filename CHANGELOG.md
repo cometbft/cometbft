@@ -1,5 +1,38 @@
 # CHANGELOG
 
+## v0.37.1
+
+*April 26, 2023*
+
+This release fixes several bugs, and has had to introduce one small Go
+API-breaking change in the `crypto/merkle` package in order to address what
+could be a security issue for some users who directly and explicitly make use of
+that code.
+
+### BREAKING CHANGES
+
+- `[crypto/merkle]` Do not allow verification of Merkle Proofs against empty trees (`nil` root). `Proof.ComputeRootHash` now panics when it encounters an error, but `Proof.Verify` does not panic
+  ([\#558](https://github.com/cometbft/cometbft/issues/558))
+
+### BUG FIXES
+
+- `[consensus]` Unexpected error conditions in `ApplyBlock` are non-recoverable, so ignoring the error and carrying on is a bug. We replaced a `return` that disregarded the error by a `panic`.
+  ([\#496](https://github.com/cometbft/cometbft/pull/496))
+- `[consensus]` Rename `(*PeerState).ToJSON` to `MarshalJSON` to fix a logging data race
+  ([\#524](https://github.com/cometbft/cometbft/pull/524))
+- `[light]` Fixed an edge case where a light client would panic when attempting
+  to query a node that (1) has started from a non-zero height and (2) does
+  not yet have any data. The light client will now, correctly, not panic
+  _and_ keep the node in its list of providers in the same way it would if
+  it queried a node starting from height zero that does not yet have data
+  ([\#575](https://github.com/cometbft/cometbft/issues/575))
+
+### IMPROVEMENTS
+
+- `[jsonrpc/client]` Improve the error message for client errors stemming from
+  bad HTTP responses.
+  ([cometbft/cometbft\#638](https://github.com/cometbft/cometbft/pull/638))
+
 ## v0.37.0
 
 *March 6, 2023*

@@ -1,7 +1,14 @@
-# Upgrading Tendermint Core
+# Upgrading CometBFT
 
-This guide provides instructions for upgrading to specific versions of
-Tendermint Core.
+This guide provides instructions for upgrading to specific versions of CometBFT.
+
+## v0.37.1
+
+For users explicitly making use of the Go APIs provided in the `crypto/merkle`
+package, please note that, in order to fix a potential security issue, we had to
+make a breaking change here. This change should only affect a small minority of
+users. For more details, please see
+[\#557](https://github.com/cometbft/cometbft/issues/557).
 
 ## v0.37.0
 

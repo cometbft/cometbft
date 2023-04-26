@@ -143,7 +143,7 @@ return &abcitypes.ResponseInfo{}, nil
 }
 
 func (app *KVStoreApplication) Query(_ context.Context, req *abcitypes.RequestQuery) (*abcitypes.ResponseQuery, error) {
-return &abcitypes.ResponseQuery{}
+return &abcitypes.ResponseQuery{}, nil
 }
 
 func (app *KVStoreApplication) CheckTx(_ context.Context, check *abcitypes.RequestCheckTx) (*abcitypes.ResponseCheckTx, error) {

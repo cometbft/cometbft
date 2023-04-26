@@ -1,4 +1,4 @@
-*April 25, 2023*
+*April 26, 2023*
 
 This release fixes several bugs, and has had to introduce one small Go
 API-breaking change in the `crypto/merkle` package in order to address what

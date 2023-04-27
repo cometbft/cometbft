@@ -2,6 +2,7 @@ package query_test
 
 import (
 	"fmt"
+	"math/big"
 	"testing"
 	"time"
 
@@ -194,8 +195,8 @@ func TestConditions(t *testing.T) {
 		{
 			s: "tx.gas > 7 AND tx.gas < 9",
 			conditions: []query.Condition{
-				{CompositeKey: "tx.gas", Op: query.OpGreater, Operand: int64(7)},
-				{CompositeKey: "tx.gas", Op: query.OpLess, Operand: int64(9)},
+				{CompositeKey: "tx.gas", Op: query.OpGreater, Operand: big.NewInt(7)},
+				{CompositeKey: "tx.gas", Op: query.OpLess, Operand: big.NewInt(9)},
 			},
 		},
 		{

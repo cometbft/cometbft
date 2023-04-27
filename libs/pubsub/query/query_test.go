@@ -33,6 +33,7 @@ func TestMatches(t *testing.T) {
 		{"tx.gas > 7 AND tx.gas < 9", map[string][]string{"tx.gas": {"8"}}, false, true, false},
 		{"body.weight >= 3.5", map[string][]string{"body.weight": {"3.5"}}, false, true, false},
 		{"account.balance < 1000.0", map[string][]string{"account.balance": {"900"}}, false, true, false},
+		{"account.balance <= 10000000000000000000", map[string][]string{"account.balance": {"10000000000000000000"}}, false, true, false},
 		{"apples.kg <= 4", map[string][]string{"apples.kg": {"4.0"}}, false, true, false},
 		{"body.weight >= 4.5", map[string][]string{"body.weight": {fmt.Sprintf("%v", float32(4.5))}}, false, true, false},
 		{

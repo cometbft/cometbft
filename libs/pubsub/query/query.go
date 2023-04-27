@@ -10,6 +10,8 @@ package query
 
 import (
 	"fmt"
+	"math"
+	"math/big"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -152,16 +154,22 @@ func (q *Query) Conditions() ([]Condition, error) {
 
 				conditions = append(conditions, Condition{eventAttr, op, value})
 			} else {
-				value, err := strconv.ParseInt(number, 10, 64)
-				if err != nil {
-					err = fmt.Errorf(
-						"got %v while trying to parse %s as int64 (should never happen if the grammar is correct)",
-						err, number,
+				valueBig := new(big.Int)
+
+				valueBig, ok := valueBig.SetString(number, 10)
+				if !ok {
+					err := fmt.Errorf(
+						"problem parsing %s as bigint (should never happen if the grammar is correct)",
+						number,
 					)
 					return nil, err
 				}
 
-				conditions = append(conditions, Condition{eventAttr, op, value})
+				if valueBig.IsInt64() {
+					conditions = append(conditions, Condition{eventAttr, op, valueBig.Int64()})
+				} else {
+					conditions = append(conditions, Condition{eventAttr, op, valueBig})
+				}
 			}
 
 		case ruletime:
@@ -299,11 +307,13 @@ func (q *Query) Matches(events map[string][]string) (bool, error) {
 					return false, nil
 				}
 			} else {
-				value, err := strconv.ParseInt(number, 10, 64)
-				if err != nil {
-					err = fmt.Errorf(
-						"got %v while trying to parse %s as int64 (should never happen if the grammar is correct)",
-						err, number,
+				value := new(big.Int)
+				_, ok := value.SetString(number, 10)
+
+				if !ok {
+					err := fmt.Errorf(
+						"problem parsing %s as bigInt (should never happen if the grammar is correct)",
+						number,
 					)
 					return false, err
 				}
@@ -452,19 +462,68 @@ func matchValue(value string, op Operator, operand reflect.Value) (bool, error) 
 			return v == operandFloat64, nil
 		}
 
+	case reflect.Pointer:
+
+		var i *big.Int
+		if reflect.TypeOf(operand.Interface()) != reflect.TypeOf(i) {
+			break
+		}
+
+		filteredValue := numRegex.FindString(value)
+		var cmpRes int
+		if strings.ContainsAny(filteredValue, ".") {
+			floatVal := new(big.Float)
+			_, ok := floatVal.SetString(operand.Interface().(*big.Int).String())
+			if !ok {
+				return false, fmt.Errorf("failed to convert value %v from event attribute to float64", filteredValue)
+			}
+			v := new(big.Float)
+			v, ok = v.SetString(filteredValue)
+			if !ok {
+				return false, fmt.Errorf("failed to convert value %v from event attribute to float64", filteredValue)
+			}
+			cmpRes = floatVal.Cmp(v)
+		} else {
+			operandVal := operand.Interface().(*big.Int)
+			// try our best to convert value from tags to int64
+			v := new(big.Int)
+
+			v, ok := v.SetString(filteredValue, 10)
+
+			if !ok {
+				return false, fmt.Errorf("failed to convert value %v from event attribute to big int", filteredValue)
+			}
+			cmpRes = operandVal.Cmp(v)
+		}
+
+		switch op {
+		case OpLessEqual:
+			return cmpRes == 0 || cmpRes == 1, nil
+		case OpGreaterEqual:
+			return cmpRes == 0 || cmpRes == -1, nil
+		case OpLess:
+			return cmpRes == 1, nil
+		case OpGreater:
+			return cmpRes == -1, nil
+		case OpEqual:
+			return cmpRes == 0, nil
+		}
+
 	case reflect.Int64:
 		var v int64
 
 		operandInt := operand.Interface().(int64)
 		filteredValue := numRegex.FindString(value)
-
+		noFrac := true
 		// if value looks like float, we try to parse it as float
 		if strings.ContainsAny(filteredValue, ".") {
 			v1, err := strconv.ParseFloat(filteredValue, 64)
 			if err != nil {
 				return false, fmt.Errorf("failed to convert value %v from event attribute to float64: %w", filteredValue, err)
 			}
-
+			if _, frac := math.Modf(v1); frac != 0 {
+				noFrac = false // the numbers cannot be equal if the floating point has anything else than 0 as fraction
+			}
 			v = int64(v1)
 		} else {
 			var err error
@@ -477,15 +536,17 @@ func matchValue(value string, op Operator, operand reflect.Value) (bool, error) 
 
 		switch op {
 		case OpLessEqual:
-			return v <= operandInt, nil
+			return v < operandInt || (v == operandInt && noFrac), nil
 		case OpGreaterEqual:
-			return v >= operandInt, nil
+			return v > operandInt || (v == operandInt && noFrac), nil
 		case OpLess:
 			return v < operandInt, nil
 		case OpGreater:
-			return v > operandInt, nil
+			// If the float had fractions that were removed by the cast in L527 we need to check the second part of the condition
+			return v > operandInt || (v == operandInt && !noFrac), nil
 		case OpEqual:
-			return v == operandInt, nil
+			// noFrac confirms that they are actually equal in value
+			return v == operandInt && noFrac, nil
 		}
 
 	case reflect.String:

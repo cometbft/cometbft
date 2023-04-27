@@ -109,6 +109,14 @@ current release when wiring them up.
 A simple way of mitigating the impact here is to introduce type aliases for the
 latest versions of generated types, and make use of these aliases internally.
 
+### Rollout strategy
+
+The current recommended strategy to roll out this change is to accumulate all
+incremental changes on a **feature branch**, which can then be targeted to a
+specific release. At present, it is envisaged that CometBFT v0.39 or v0.40 will
+introduce these changes, but this could change based on negotiation with
+stakeholders.
+
 ## Consequences
 
 ### Positive

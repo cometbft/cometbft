@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
 	"sort"
 	"strconv"
 	"strings"
@@ -293,9 +294,10 @@ LOOP:
 			continue
 		}
 
-		if _, ok := qr.AnyBound().(int64); ok {
-			v, err := strconv.ParseInt(eventValue, 10, 64)
-			if err != nil {
+		if _, ok := qr.AnyBound().(*big.Int); ok { // This means that in a range we can only have integers, floats will be ignored
+			v := new(big.Int)
+			v, ok := v.SetString(eventValue, 10)
+			if !ok {
 				continue LOOP
 			}
 
@@ -364,15 +366,16 @@ func (idx *BlockerIndexer) setTmpHeights(tmpHeights map[string][]byte, it dbm.It
 
 }
 
-func checkBounds(ranges indexer.QueryRange, v int64) bool {
+func checkBounds(ranges indexer.QueryRange, v *big.Int) bool {
 	include := true
 	lowerBound := ranges.LowerBoundValue()
 	upperBound := ranges.UpperBoundValue()
-	if lowerBound != nil && v < lowerBound.(int64) {
+
+	if lowerBound != nil && v.Cmp(lowerBound.(*big.Int)) == -1 {
 		include = false
 	}
 
-	if upperBound != nil && v > upperBound.(int64) {
+	if upperBound != nil && v.Cmp(upperBound.(*big.Int)) == 1 {
 		include = false
 	}
 

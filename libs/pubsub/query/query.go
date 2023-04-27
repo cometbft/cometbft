@@ -164,12 +164,8 @@ func (q *Query) Conditions() ([]Condition, error) {
 					)
 					return nil, err
 				}
+				conditions = append(conditions, Condition{eventAttr, op, valueBig})
 
-				if valueBig.IsInt64() {
-					conditions = append(conditions, Condition{eventAttr, op, valueBig.Int64()})
-				} else {
-					conditions = append(conditions, Condition{eventAttr, op, valueBig})
-				}
 			}
 
 		case ruletime:
@@ -504,46 +500,6 @@ func matchValue(value string, op Operator, operand reflect.Value) (bool, error) 
 			return cmpRes == -1 || (cmpRes == 0 && !noFrac), nil
 		case OpEqual:
 			return cmpRes == 0 && noFrac, nil
-		}
-
-	case reflect.Int64:
-		var v int64
-
-		operandInt := operand.Interface().(int64)
-		filteredValue := numRegex.FindString(value)
-		noFrac := true
-		// if value looks like float, we try to parse it as float
-		if strings.ContainsAny(filteredValue, ".") {
-			v1, err := strconv.ParseFloat(filteredValue, 64)
-			if err != nil {
-				return false, fmt.Errorf("failed to convert value %v from event attribute to float64: %w", filteredValue, err)
-			}
-			if _, frac := math.Modf(v1); frac != 0 {
-				noFrac = false // the numbers cannot be equal if the floating point has anything else than 0 as fraction
-			}
-			v = int64(v1)
-		} else {
-			var err error
-			// try our best to convert value from tags to int64
-			v, err = strconv.ParseInt(filteredValue, 10, 64)
-			if err != nil {
-				return false, fmt.Errorf("failed to convert value %v from event attribute to int64: %w", filteredValue, err)
-			}
-		}
-
-		switch op {
-		case OpLessEqual:
-			return v < operandInt || (v == operandInt && noFrac), nil
-		case OpGreaterEqual:
-			return v > operandInt || (v == operandInt && noFrac), nil
-		case OpLess:
-			return v < operandInt, nil
-		case OpGreater:
-			// If the float had fractions that were removed by the cast in L527 we need to check the second part of the condition
-			return v > operandInt || (v == operandInt && !noFrac), nil
-		case OpEqual:
-			// noFrac confirms that they are actually equal in value
-			return v == operandInt && noFrac, nil
 		}
 
 	case reflect.String:

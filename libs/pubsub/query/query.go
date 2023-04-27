@@ -468,45 +468,42 @@ func matchValue(value string, op Operator, operand reflect.Value) (bool, error) 
 		if reflect.TypeOf(operand.Interface()) != reflect.TypeOf(i) {
 			break
 		}
-
+		noFrac := true
 		filteredValue := numRegex.FindString(value)
+		operandVal := operand.Interface().(*big.Int)
 		var cmpRes int
+		v := new(big.Int)
 		if strings.ContainsAny(filteredValue, ".") {
-			floatVal := new(big.Float)
-			_, ok := floatVal.SetString(operand.Interface().(*big.Int).String())
-			if !ok {
-				return false, fmt.Errorf("failed to convert value %v from event attribute to float64", filteredValue)
+			v1, err := strconv.ParseFloat(filteredValue, 64)
+			if err != nil {
+				return false, fmt.Errorf("failed to convert value %v from event attribute to float64: %w", filteredValue, err)
 			}
-			v := new(big.Float)
-			v, ok = v.SetString(filteredValue)
-			if !ok {
-				return false, fmt.Errorf("failed to convert value %v from event attribute to float64", filteredValue)
+			if _, frac := math.Modf(v1); frac != 0 {
+				noFrac = false // the numbers cannot be equal if the floating point has anything else than 0 as fraction
 			}
-			cmpRes = floatVal.Cmp(v)
+			v = big.NewInt(int64(v1))
 		} else {
-			operandVal := operand.Interface().(*big.Int)
-			// try our best to convert value from tags to int64
-			v := new(big.Int)
 
-			v, ok := v.SetString(filteredValue, 10)
+			// try our best to convert value from tags to int64
+			_, ok := v.SetString(filteredValue, 10)
 
 			if !ok {
 				return false, fmt.Errorf("failed to convert value %v from event attribute to big int", filteredValue)
 			}
-			cmpRes = operandVal.Cmp(v)
-		}
 
+		}
+		cmpRes = operandVal.Cmp(v)
 		switch op {
 		case OpLessEqual:
-			return cmpRes == 0 || cmpRes == 1, nil
+			return (cmpRes == 0 && noFrac) || cmpRes == 1, nil
 		case OpGreaterEqual:
-			return cmpRes == 0 || cmpRes == -1, nil
+			return (cmpRes == 0 && noFrac) || cmpRes == -1, nil
 		case OpLess:
 			return cmpRes == 1, nil
 		case OpGreater:
-			return cmpRes == -1, nil
+			return cmpRes == -1 || (cmpRes == 0 && !noFrac), nil
 		case OpEqual:
-			return cmpRes == 0, nil
+			return cmpRes == 0 && noFrac, nil
 		}
 
 	case reflect.Int64:

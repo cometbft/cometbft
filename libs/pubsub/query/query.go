@@ -463,10 +463,9 @@ func matchValue(value string, op Operator, operand reflect.Value) (bool, error) 
 		case *big.Int:
 			filteredValue := numRegex.FindString(value)
 			operandVal := operand.Interface().(*big.Int)
-			var cmpRes int
 			v := new(big.Int)
 			if strings.ContainsAny(filteredValue, ".") {
-				// we convert the float toa big float in case we are dealing with large numbers.
+				// we convert the float to a big float in case we are dealing with large numbers.
 				// Note though that this is not very precise, and floats that are very large might be rounded
 				// You should not rely in your queries onto comparing big numbers based on the decimal part.
 				v1 := new(big.Float)
@@ -490,7 +489,7 @@ func matchValue(value string, op Operator, operand reflect.Value) (bool, error) 
 				}
 
 			}
-			cmpRes = operandVal.Cmp(v)
+			cmpRes := operandVal.Cmp(v)
 			switch op {
 			case OpLessEqual:
 				return cmpRes == 0 || cmpRes == 1, nil

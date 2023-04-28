@@ -13,6 +13,11 @@ import (
 )
 
 func TestBigNumbers(t *testing.T) {
+	bigInt := "10000000000000000000"
+	bigIntAsFloat := "10000000000000000000.0"
+	bigFloat := "10000000000000000000.6"
+	doubleBigInt := "20000000000000000000"
+
 	testCases := []struct {
 		s        string
 		events   map[string][]string
@@ -21,17 +26,17 @@ func TestBigNumbers(t *testing.T) {
 		matchErr bool
 	}{
 
-		{"account.balance <= 10000000000000000000", map[string][]string{"account.balance": {"10000000000000000000"}}, false, true, false},
-		{"account.balance <= 10000000000000000000", map[string][]string{"account.balance": {"10000000000000000000.0"}}, false, true, false},
-		{"account.balance <= 20000000000000000000", map[string][]string{"account.balance": {"10000000000000000000"}}, false, true, false},
-		{"account.balance <= 10000000000000000000", map[string][]string{"account.balance": {"10000000000000000001"}}, false, false, false},
-		{"account.balance <= 10000000000000000002", map[string][]string{"account.balance": {"10000000000000000000.6"}}, false, true, false},
-		{"account.balance > 10000000000000000000", map[string][]string{"account.balance": {"10000000000000000000.6"}}, false, true, false},
+		{"account.balance <= " + bigInt, map[string][]string{"account.balance": {bigInt}}, false, true, false},
+		{"account.balance <= " + bigInt, map[string][]string{"account.balance": {bigIntAsFloat}}, false, true, false},
+		{"account.balance <= " + doubleBigInt, map[string][]string{"account.balance": {bigInt}}, false, true, false},
+		{"account.balance <= " + bigInt, map[string][]string{"account.balance": {"10000000000000000001"}}, false, false, false},
+		{"account.balance <= " + doubleBigInt, map[string][]string{"account.balance": {bigFloat}}, false, true, false},
+		{"account.balance > " + bigInt, map[string][]string{"account.balance": {bigFloat}}, false, true, false},
 		//This test should pass, the same as below, but floats that are too big cannot be properly converted, thus
 		// 10000000000000000000.6 gets rounded to 10000000000000000000
-		{"account.balance > 10000000000000000000.0", map[string][]string{"account.balance": {"10000000000000000000.6"}}, false, false, false},
+		{"account.balance > " + bigIntAsFloat, map[string][]string{"account.balance": {bigFloat}}, false, false, false},
 		{"account.balance > 11234.0", map[string][]string{"account.balance": {"11234.6"}}, false, true, false},
-		{"account.balance <= 10000000000000000000", map[string][]string{"account.balance": {"1000.45"}}, false, true, false},
+		{"account.balance <= " + bigInt, map[string][]string{"account.balance": {"1000.45"}}, false, true, false},
 	}
 
 	for _, tc := range testCases {
@@ -75,7 +80,6 @@ func TestMatches(t *testing.T) {
 		{"tx.gas > 7 AND tx.gas < 9", map[string][]string{"tx.gas": {"8"}}, false, true, false},
 		{"body.weight >= 3.5", map[string][]string{"body.weight": {"3.5"}}, false, true, false},
 		{"account.balance < 1000.0", map[string][]string{"account.balance": {"900"}}, false, true, false},
-
 		{"apples.kg <= 4", map[string][]string{"apples.kg": {"4.0"}}, false, true, false},
 		{"body.weight >= 4.5", map[string][]string{"body.weight": {fmt.Sprintf("%v", float32(4.5))}}, false, true, false},
 		{

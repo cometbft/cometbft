@@ -22,8 +22,10 @@ import (
 func TestBigInt(t *testing.T) {
 	indexer := NewTxIndex(db.NewMemDB())
 
+	bigInt := "10000000000000000000"
+
 	txResult := txResultWithEvents([]abci.Event{
-		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: "10000000000000000000", Index: true}}},
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: bigInt, Index: true}}},
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: "owner", Value: "/Ivan/", Index: true}}},
 		{Type: "", Attributes: []abci.EventAttribute{{Key: "not_allowed", Value: "Vlad", Index: true}}},
 	})
@@ -41,9 +43,10 @@ func TestBigInt(t *testing.T) {
 		// search by hash (lower)
 		{fmt.Sprintf("tx.hash = '%x'", hash), 1},
 		// search by exact match (one key) - bigint
-		{"account.number >= 10000000000000000000", 1},
+		{"account.number >= " + bigInt, 1},
 		// search by exact match (one key) - bigint range
-		{"account.number >= 10000000000000000000 AND tx.height = 1", 1},
+		{"account.number >= " + bigInt + " AND tx.height = 1", 1},
+		{"account.number < " + bigInt + " AND tx.height = 1", 0},
 	}
 
 	ctx := context.Background()

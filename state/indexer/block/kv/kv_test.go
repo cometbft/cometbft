@@ -318,6 +318,8 @@ func TestBlockIndexerMulti(t *testing.T) {
 }
 
 func TestBigInt(t *testing.T) {
+
+	bigInt := "10000000000000000000"
 	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))
 	indexer := blockidxkv.New(store)
 
@@ -348,7 +350,7 @@ func TestBigInt(t *testing.T) {
 					Attributes: []abci.EventAttribute{
 						{
 							Key:   "foo",
-							Value: "10000000000000000000",
+							Value: bigInt,
 							Index: true,
 						},
 						{
@@ -380,19 +382,31 @@ func TestBigInt(t *testing.T) {
 			results: []int64{1},
 		},
 		"query matches fields with big int and height - no match": {
-			q:       query.MustParse("end_event.foo = 10000000000000000000 AND end_event.bar = 500 AND block.height = 2"),
+			q:       query.MustParse("end_event.foo = " + bigInt + " AND end_event.bar = 500 AND block.height = 2"),
+			results: []int64{},
+		},
+		"query matches fields with big int with less and height - no match": {
+			q:       query.MustParse("end_event.foo <= " + bigInt + " AND end_event.bar = 500 AND block.height = 2"),
 			results: []int64{},
 		},
 		"query matches fields with big int and height - match": {
-			q:       query.MustParse("end_event.foo = 10000000000000000000 AND end_event.bar = 500 AND block.height = 1"),
+			q:       query.MustParse("end_event.foo = " + bigInt + " AND end_event.bar = 500 AND block.height = 1"),
 			results: []int64{1},
 		},
 		"query matches big int in range": {
-			q:       query.MustParse("end_event.foo = 10000000000000000000"),
+			q:       query.MustParse("end_event.foo = " + bigInt),
 			results: []int64{1},
 		},
 		"query matches big int in range with float - should fail as event values are only BigInts": {
-			q:       query.MustParse("end_event.bar >= 10000000000000000000"),
+			q:       query.MustParse("end_event.bar >= " + bigInt),
+			results: []int64{},
+		},
+		"query matches big int in range with float with less - found": {
+			q:       query.MustParse("end_event.foo <= " + bigInt),
+			results: []int64{1},
+		},
+		"query matches big int in range with float with less - not found": {
+			q:       query.MustParse("end_event.foo < " + bigInt + " AND end_event.foo > 100"),
 			results: []int64{},
 		},
 	}

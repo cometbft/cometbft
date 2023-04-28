@@ -287,8 +287,8 @@ func (q *Query) Matches(events map[string][]string) (bool, error) {
 				value, err := strconv.ParseFloat(number, 64)
 				if err != nil {
 					err = fmt.Errorf(
-						"problem parsing %s as big float (should never happen if the grammar is correct)",
-						number,
+						"got %v while trying to parse %s as float64 (should never happen if the grammar is correct)",
+						err, number,
 					)
 					return false, err
 				}

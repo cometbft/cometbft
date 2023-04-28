@@ -358,6 +358,11 @@ func TestBigInt(t *testing.T) {
 							Value: "500",
 							Index: true,
 						},
+						{
+							Key:   "bla",
+							Value: "500.5",
+							Index: true,
+						},
 					},
 				},
 			},
@@ -397,7 +402,7 @@ func TestBigInt(t *testing.T) {
 			q:       query.MustParse("end_event.foo = " + bigInt),
 			results: []int64{1},
 		},
-		"query matches big int in range with float - should fail as event values are only BigInts": {
+		"query matches big int in range with float - should fail as queries assume event values are only BigInts": {
 			q:       query.MustParse("end_event.bar >= " + bigInt),
 			results: []int64{},
 		},
@@ -408,6 +413,10 @@ func TestBigInt(t *testing.T) {
 		"query matches big int in range with float with less - not found": {
 			q:       query.MustParse("end_event.foo < " + bigInt + " AND end_event.foo > 100"),
 			results: []int64{},
+		},
+		"query parses float": {
+			q:       query.MustParse("end_event.bla >= 500"),
+			results: []int64{1},
 		},
 	}
 

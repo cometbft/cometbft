@@ -298,7 +298,13 @@ LOOP:
 			v := new(big.Int)
 			v, ok := v.SetString(eventValue, 10)
 			if !ok {
-				continue LOOP
+
+				v_f, err := strconv.ParseFloat(eventValue, 64)
+				if err != nil {
+					continue LOOP
+				}
+				v = new(big.Int)
+				v = v.SetInt64(int64(v_f))
 			}
 
 			if qr.Key != types.BlockHeightKey {

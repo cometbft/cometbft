@@ -461,7 +461,6 @@ func matchValue(value string, op Operator, operand reflect.Value) (bool, error) 
 
 		switch operand.Interface().(type) {
 		case *big.Int:
-			noFrac := true
 			filteredValue := numRegex.FindString(value)
 			operandVal := operand.Interface().(*big.Int)
 			var cmpRes int
@@ -494,15 +493,15 @@ func matchValue(value string, op Operator, operand reflect.Value) (bool, error) 
 			cmpRes = operandVal.Cmp(v)
 			switch op {
 			case OpLessEqual:
-				return (cmpRes == 0 && noFrac) || cmpRes == 1, nil
+				return cmpRes == 0 || cmpRes == 1, nil
 			case OpGreaterEqual:
-				return (cmpRes == 0 && noFrac) || cmpRes == -1, nil
+				return cmpRes == 0 || cmpRes == -1, nil
 			case OpLess:
 				return cmpRes == 1, nil
 			case OpGreater:
-				return cmpRes == -1 || (cmpRes == 0 && !noFrac), nil
+				return cmpRes == -1, nil
 			case OpEqual:
-				return cmpRes == 0 && noFrac, nil
+				return cmpRes == 0, nil
 			}
 
 		}

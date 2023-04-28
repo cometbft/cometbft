@@ -12,6 +12,47 @@ import (
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 )
 
+func TestBigNumbers(t *testing.T) {
+	testCases := []struct {
+		s        string
+		events   map[string][]string
+		err      bool
+		matches  bool
+		matchErr bool
+	}{
+
+		{"account.balance <= 10000000000000000000", map[string][]string{"account.balance": {"10000000000000000000"}}, false, true, false},
+		{"account.balance <= 10000000000000000000", map[string][]string{"account.balance": {"10000000000000000000.0"}}, false, true, false},
+		{"account.balance <= 20000000000000000000", map[string][]string{"account.balance": {"10000000000000000000"}}, false, true, false},
+		{"account.balance <= 10000000000000000000", map[string][]string{"account.balance": {"10000000000000000001"}}, false, false, false},
+		{"account.balance <= 10000000000000000002", map[string][]string{"account.balance": {"10000000000000000000.6"}}, false, true, false},
+		{"account.balance > 10000000000000000000", map[string][]string{"account.balance": {"10000000000000000000.6"}}, false, true, false},
+		//This test should pass, the same as below, but floats that are too big cannot be properly converted, thus
+		// 10000000000000000000.6 gets rounded to 10000000000000000000
+		{"account.balance > 10000000000000000000.0", map[string][]string{"account.balance": {"10000000000000000000.6"}}, false, false, false},
+		{"account.balance > 11234.0", map[string][]string{"account.balance": {"11234.6"}}, false, true, false},
+		{"account.balance <= 10000000000000000000", map[string][]string{"account.balance": {"1000.45"}}, false, true, false},
+	}
+
+	for _, tc := range testCases {
+		q, err := query.New(tc.s)
+		if !tc.err {
+			require.Nil(t, err)
+		}
+		require.NotNil(t, q, "Query '%s' should not be nil", tc.s)
+
+		if tc.matches {
+			match, err := q.Matches(tc.events)
+			assert.Nil(t, err, "Query '%s' should not error on match %v", tc.s, tc.events)
+			assert.True(t, match, "Query '%s' should match %v", tc.s, tc.events)
+		} else {
+			match, err := q.Matches(tc.events)
+			assert.Equal(t, tc.matchErr, err != nil, "Unexpected error for query '%s' match %v", tc.s, tc.events)
+			assert.False(t, match, "Query '%s' should not match %v", tc.s, tc.events)
+		}
+	}
+}
+
 func TestMatches(t *testing.T) {
 	var (
 		txDate = "2017-01-01"
@@ -34,7 +75,7 @@ func TestMatches(t *testing.T) {
 		{"tx.gas > 7 AND tx.gas < 9", map[string][]string{"tx.gas": {"8"}}, false, true, false},
 		{"body.weight >= 3.5", map[string][]string{"body.weight": {"3.5"}}, false, true, false},
 		{"account.balance < 1000.0", map[string][]string{"account.balance": {"900"}}, false, true, false},
-		{"account.balance <= 10000000000000000000", map[string][]string{"account.balance": {"10000000000000000000"}}, false, true, false},
+
 		{"apples.kg <= 4", map[string][]string{"apples.kg": {"4.0"}}, false, true, false},
 		{"body.weight >= 4.5", map[string][]string{"body.weight": {fmt.Sprintf("%v", float32(4.5))}}, false, true, false},
 		{

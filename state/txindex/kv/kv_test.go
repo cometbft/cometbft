@@ -19,6 +19,51 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+func TestBigInt(t *testing.T) {
+	indexer := NewTxIndex(db.NewMemDB())
+
+	txResult := txResultWithEvents([]abci.Event{
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: "10000000000000000000", Index: true}}},
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "owner", Value: "/Ivan/", Index: true}}},
+		{Type: "", Attributes: []abci.EventAttribute{{Key: "not_allowed", Value: "Vlad", Index: true}}},
+	})
+	hash := types.Tx(txResult.Tx).Hash()
+
+	err := indexer.Index(txResult)
+	require.NoError(t, err)
+
+	testCases := []struct {
+		q             string
+		resultsLength int
+	}{
+		//	search by hash
+		{fmt.Sprintf("tx.hash = '%X'", hash), 1},
+		// search by hash (lower)
+		{fmt.Sprintf("tx.hash = '%x'", hash), 1},
+		// search by exact match (one key) - bigint
+		{"account.number >= 10000000000000000000", 1},
+		// search by exact match (one key) - bigint range
+		{"account.number >= 10000000000000000000 AND tx.height = 1", 1},
+	}
+
+	ctx := context.Background()
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.q, func(t *testing.T) {
+			results, err := indexer.Search(ctx, query.MustParse(tc.q))
+			assert.NoError(t, err)
+
+			assert.Len(t, results, tc.resultsLength)
+			if tc.resultsLength > 0 {
+				for _, txr := range results {
+					assert.True(t, proto.Equal(txResult, txr))
+				}
+			}
+		})
+	}
+}
+
 func TestTxIndex(t *testing.T) {
 	indexer := NewTxIndex(db.NewMemDB())
 

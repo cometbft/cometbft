@@ -338,7 +338,7 @@ func TestBigInt(t *testing.T) {
 						},
 						{
 							Key:   "bar",
-							Value: "200",
+							Value: "10000000000000000000.56",
 							Index: true,
 						},
 					},
@@ -390,6 +390,10 @@ func TestBigInt(t *testing.T) {
 		"query matches big int in range": {
 			q:       query.MustParse("end_event.foo = 10000000000000000000"),
 			results: []int64{1},
+		},
+		"query matches big int in range with float - should fail as event values are only BigInts": {
+			q:       query.MustParse("end_event.bar >= 10000000000000000000"),
+			results: []int64{},
 		},
 	}
 

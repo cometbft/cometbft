@@ -10,7 +10,6 @@ package query
 
 import (
 	"fmt"
-	"math"
 	"math/big"
 	"reflect"
 	"regexp"
@@ -288,8 +287,8 @@ func (q *Query) Matches(events map[string][]string) (bool, error) {
 				value, err := strconv.ParseFloat(number, 64)
 				if err != nil {
 					err = fmt.Errorf(
-						"got %v while trying to parse %s as float64 (should never happen if the grammar is correct)",
-						err, number,
+						"problem parsing %s as big float (should never happen if the grammar is correct)",
+						number,
 					)
 					return false, err
 				}
@@ -460,48 +459,53 @@ func matchValue(value string, op Operator, operand reflect.Value) (bool, error) 
 
 	case reflect.Pointer:
 
-		var i *big.Int
-		if reflect.TypeOf(operand.Interface()) != reflect.TypeOf(i) {
-			break
-		}
-		noFrac := true
-		filteredValue := numRegex.FindString(value)
-		operandVal := operand.Interface().(*big.Int)
-		var cmpRes int
-		v := new(big.Int)
-		if strings.ContainsAny(filteredValue, ".") {
-			v1, err := strconv.ParseFloat(filteredValue, 64)
-			if err != nil {
-				return false, fmt.Errorf("failed to convert value %v from event attribute to float64: %w", filteredValue, err)
+		switch operand.Interface().(type) {
+		case *big.Int:
+			noFrac := true
+			filteredValue := numRegex.FindString(value)
+			operandVal := operand.Interface().(*big.Int)
+			var cmpRes int
+			v := new(big.Int)
+			if strings.ContainsAny(filteredValue, ".") {
+				// we convert the float toa big float in case we are dealing with large numbers.
+				// Note though that this is not very precise, and floats that are very large might be rounded
+				// You should not rely in your queries onto comparing big numbers based on the decimal part.
+				v1 := new(big.Float)
+				v1, ok := v1.SetString(filteredValue)
+				if !ok {
+					return false, fmt.Errorf("failed to convert value %v from event attribute to big float", filteredValue)
+				}
+				v, ok = v.SetString(v1.Text('f', 0), 10) // Gets the non decimal part of the float.
+				//  Maybe we could parse the float from the string directly but the conversion to
+				// big.Float checks whether the format of the number is indeed correct.
+				if !ok {
+					return false, fmt.Errorf("failed to convert value %s from float to int", v1.Text('f', 0))
+				}
+			} else {
+
+				// try our best to convert value from tags to int64
+				_, ok := v.SetString(filteredValue, 10)
+
+				if !ok {
+					return false, fmt.Errorf("failed to convert value %v from event attribute to big int", filteredValue)
+				}
+
 			}
-			if _, frac := math.Modf(v1); frac != 0 {
-				noFrac = false // the numbers cannot be equal if the floating point has anything else than 0 as fraction
-			}
-			v = big.NewInt(int64(v1))
-		} else {
-
-			// try our best to convert value from tags to int64
-			_, ok := v.SetString(filteredValue, 10)
-
-			if !ok {
-				return false, fmt.Errorf("failed to convert value %v from event attribute to big int", filteredValue)
+			cmpRes = operandVal.Cmp(v)
+			switch op {
+			case OpLessEqual:
+				return (cmpRes == 0 && noFrac) || cmpRes == 1, nil
+			case OpGreaterEqual:
+				return (cmpRes == 0 && noFrac) || cmpRes == -1, nil
+			case OpLess:
+				return cmpRes == 1, nil
+			case OpGreater:
+				return cmpRes == -1 || (cmpRes == 0 && !noFrac), nil
+			case OpEqual:
+				return cmpRes == 0 && noFrac, nil
 			}
 
 		}
-		cmpRes = operandVal.Cmp(v)
-		switch op {
-		case OpLessEqual:
-			return (cmpRes == 0 && noFrac) || cmpRes == 1, nil
-		case OpGreaterEqual:
-			return (cmpRes == 0 && noFrac) || cmpRes == -1, nil
-		case OpLess:
-			return cmpRes == 1, nil
-		case OpGreater:
-			return cmpRes == -1 || (cmpRes == 0 && !noFrac), nil
-		case OpEqual:
-			return cmpRes == 0 && noFrac, nil
-		}
-
 	case reflect.String:
 		switch op {
 		case OpEqual:

@@ -227,6 +227,10 @@ func TestConditions(t *testing.T) {
 	txTime, err := time.Parse(time.RFC3339, "2013-05-03T14:45:00Z")
 	require.NoError(t, err)
 
+	bigInt := new(big.Int)
+	bigInt, ok := bigInt.SetString("10000000000000000000", 10)
+	require.True(t, ok)
+
 	testCases := []struct {
 		s          string
 		conditions []query.Condition
@@ -241,6 +245,22 @@ func TestConditions(t *testing.T) {
 			s: "tx.gas > 7 AND tx.gas < 9",
 			conditions: []query.Condition{
 				{CompositeKey: "tx.gas", Op: query.OpGreater, Operand: big.NewInt(7)},
+				{CompositeKey: "tx.gas", Op: query.OpLess, Operand: big.NewInt(9)},
+			},
+		},
+		{
+
+			s: "tx.gas > 7.5 AND tx.gas < 9",
+			conditions: []query.Condition{
+				{CompositeKey: "tx.gas", Op: query.OpGreater, Operand: 7.5},
+				{CompositeKey: "tx.gas", Op: query.OpLess, Operand: big.NewInt(9)},
+			},
+		},
+		{
+
+			s: "tx.gas > " + bigInt.String() + " AND tx.gas < 9",
+			conditions: []query.Condition{
+				{CompositeKey: "tx.gas", Op: query.OpGreater, Operand: bigInt},
 				{CompositeKey: "tx.gas", Op: query.OpLess, Operand: big.NewInt(9)},
 			},
 		},

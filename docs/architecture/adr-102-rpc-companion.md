@@ -13,11 +13,10 @@ Accepted | Rejected | Deprecated | Superseded by
 
 ## Context
 
-This ADR proposes an architecture of a ***Standalone RPC*** solution implemented based on a Data Companion Pull API (proposed
-in the ADR-101 [TODO: add reference]). This solution can run as a sidecar concurrently with the full node, and it is optional.
+This ADR proposes an architecture of a ***Standalone RPC*** solution implemented based on the proposed [ADR-101 Data Companion Pull API](https://github.com/cometbft/cometbft/blob/thane/adr-084-data-companion-pull-api/docs/architecture/adr-101-data-companion-pull-api.md). This solution can run as a sidecar concurrently with the full node, and it is optional.
 
 This ADR provides a reference implementation of a system that can be used to offload queryable data from a CometBFT
-full node to a data companion that exposes the same endpoints as the regular RPC endpoints of a full CometBFT node,
+full node to a database and offering a service that exposes the same endpoints as the regular RPC endpoints of a full CometBFT node,
 which makes it easier for integrators of RPC clients such as client libraries and applications to switch to this
 ***Standalone RPC*** with as minimum effort as possible.
 
@@ -67,7 +66,7 @@ It is ***NOT*** in the scope of the **Standalone RPC**:
 
 ### API (v1)
 
-These are the initial API endpoints to be implemented for the RPC Companion (v1)
+These are the initial API endpoints to be implemented for the RPC Companion (v1) are:
 
 - /block
 - /block_results
@@ -79,10 +78,6 @@ the `/broadcast_tx_*` endpoints. Since there might be many load balanced RPC ser
 transactions, for example sequential transactions might be relayed in the wrong order causing the full node to reject some
 transactions with sequence mismatch errors. It is expected that RPC clients have logic to forward these requests directly
 to the full node.
-
-### Database Schema
-
-[TBD]
 
 ### High-level architecture
 
@@ -117,18 +112,72 @@ very high from a modern database perspective. While the frequency and number of 
 be much larger due to the fact that the RPC service instance can be scaled. Therefore, a database that provides a high read
 throughput should be favored.
 
-For this is initial solution implementation it is proposed that a modern relational database should be used in order to support
+For this is initial solution implementation it is proposed that the relational database [Postgresql](https://www.postgresql.org/) should be used in order to support
 the RPC scalability and this will also provide more flexibility when implementing the RPC v2 endpoints that can return data
-in different schemas.
+in different forms and custom indexers might also be crated to boost the performance.
 
-The data needs to be available both for the ingest service (writes) and the RPC server instance (reads) so an embedded key-value
-store is not recommended in this case since accessing the data remotely might not be optimal for an embedded key-value database and
-since the RPC might have many server instances running that will need to retrieve data concurrently it is recommended to use
-a well-known robust database engine that can support such load such as Postgres.
+The data needs to be available both for the ingest service (writes) and the RPC server instance (reads) so an embedded database
+is not recommended in this case since accessing the data remotely might not be optimal for an embedded key-value database. Also
+since the RPC might have many server instances (or processes) running that will need to retrieve data concurrently it is recommended to use
+a well-known robust database engine that can support such a load.
 
 Also, a database that can support ACID transactions is important to provide more guarantees that
-the data was successfully inserted in the database and this acknowledgement can be used by the ingest service to notify the
-full node to prune this inserted data.
+the data was successfully inserted in the database and that an acknowledgement can be sent back to the ingest service to notify the
+full node to prune the inserted data.
+
+#### Database Schema
+
+One of the challenges when implementing this solution is how to design a database schema that can be suitable to return responses that are
+equivalent to the existing endpoints but at the same time offers flexibility in returning customized responses in the future.
+
+Currently, CometBFT uses an abstraction layer from [cometbft-db](https://github.com/cometbft/cometbft-db) in order to support multiple embedded databases. These databases store
+data as key-value pairs using a byte array datatype, for example to set a value for a key:
+
+```go
+func (db *GoLevelDB) Set(key []byte, value []byte) error {
+	if len(key) == 0 {
+		return errKeyEmpty
+	}
+	if value == nil {
+		return errValueNil
+	}
+	if err := db.db.Put(key, value, nil); err != nil {
+		return err
+	}
+	return nil
+}
+```
+
+##### Data types
+
+This solution will implement a data schema in the database using its built-in datatypes. By using a relation database, there's a possibility
+to better normalize the data structures, this might provide savings in storage but might add to the complexity of returning a particular
+dataset because the data joins that will be required. Also, it would be important ensure the referential integrity is not violated since
+this can cause issues to the clients consuming the data.
+
+##### Schema migration
+
+Another point to consider is when the data structures change across CometBFT releases. There are a couple of way to provide a solution to this
+problem.
+
+One way is to support a mechanism to migrate the old data to the new data structures. This would require additional logic for the migration process
+that would need to be run before ingesting data from an upgraded full node that contains the new data structures. But this approach might also
+cause some issues, for example, if the new data structure has a new field that there's no corresponding value in the "old" data structure, probably
+the value would need to be set to `[null]` but this can have unintended consequences.
+
+Another potential solution for this scenario is to find a way in the database that can support "versioning" of data structures. For example, let's
+assume there's a `Block` structure, let's call it `v1`. If in the future there's a need to modify this structure that is not compatible with the
+previous data structure, then the database would support a `v2` schema for `Block` and an `index` table could determine the criteria on which
+data structure should be used for inserting or querying data.
+
+There's also a possibility that the data structure could be stored in parallel with the normalized data but in one blob, e.g. in a jsonb field
+that contains all the information needed to return the client, this could be an optimized way to serve the data but could add to the storage
+requirements. This could improve the performance for reading data from the database. An alternative approach to this problem that can offer
+similar results would be to use a "caching" layer.
+
+Here is the schema definition for a `Block` data structure:
+
+[TBD]
 
 ### RPC server instance
 

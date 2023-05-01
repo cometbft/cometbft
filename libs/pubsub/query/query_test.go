@@ -16,6 +16,7 @@ func TestBigNumbers(t *testing.T) {
 	bigInt := "10000000000000000000"
 	bigIntAsFloat := "10000000000000000000.0"
 	bigFloat := "10000000000000000000.6"
+	bigFloatLowerRounding := "10000000000000000000.1"
 	doubleBigInt := "20000000000000000000"
 
 	testCases := []struct {
@@ -32,6 +33,8 @@ func TestBigNumbers(t *testing.T) {
 		{"account.balance <= " + bigInt, map[string][]string{"account.balance": {"10000000000000000001"}}, false, false, false},
 		{"account.balance <= " + doubleBigInt, map[string][]string{"account.balance": {bigFloat}}, false, true, false},
 		{"account.balance > " + bigInt, map[string][]string{"account.balance": {bigFloat}}, false, true, false},
+		//The float will be rounded towards the lower int value, thus it will not be considered bigger
+		{"account.balance > " + bigInt, map[string][]string{"account.balance": {bigFloatLowerRounding}}, false, false, false},
 		//This test should pass, the same as below, but floats that are too big cannot be properly converted, thus
 		// 10000000000000000000.6 gets rounded to 10000000000000000000
 		{"account.balance > " + bigIntAsFloat, map[string][]string{"account.balance": {bigFloat}}, false, false, false},

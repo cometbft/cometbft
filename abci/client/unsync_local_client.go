@@ -262,6 +262,7 @@ func (app *unsyncLocalClient) ProcessProposalSync(req types.RequestProcessPropos
 func (app *unsyncLocalClient) callback(req *types.Request, res *types.Response) *ReqRes {
 	app.mtx.RLock()
 	defer app.mtx.RUnlock()
+	app.Callback(req, res)
 	rr := newLocalReqRes(req, res)
 	rr.callbackInvoked = true
 	return rr

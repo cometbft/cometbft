@@ -3,8 +3,7 @@ package syntax
 import (
 	"fmt"
 	"io"
-	"math"
-	"strconv"
+	"math/big"
 	"strings"
 	"time"
 )
@@ -68,17 +67,17 @@ func (a *Arg) String() string {
 	}
 }
 
-// Number returns the value of the argument text as a number, or a NaN if the
+// Number returns the value of the argument text as a number, or nil if the
 // text does not encode a valid number value.
-func (a *Arg) Number() float64 {
+func (a *Arg) Number() *big.Float {
 	if a == nil {
-		return -1
+		return nil
 	}
-	v, err := strconv.ParseFloat(a.text, 64)
-	if err == nil && v >= 0 {
-		return v
+	v, _, err := big.ParseFloat(a.text, 10, 0, big.ToNearestEven)
+	if err != nil {
+		return nil
 	}
-	return math.NaN()
+	return v
 }
 
 // Time returns the value of the argument text as a time, or the zero value if

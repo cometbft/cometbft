@@ -10,8 +10,8 @@ package query
 
 import (
 	"fmt"
+	"math/big"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -223,8 +223,9 @@ func compileCondition(cond syntax.Condition) (condition, error) {
 // tests for, but we should probably get rid of that.
 var extractNum = regexp.MustCompile(`^\d+(\.\d+)?`)
 
-func parseNumber(s string) (float64, error) {
-	return strconv.ParseFloat(extractNum.FindString(s), 64)
+func parseNumber(s string) (*big.Float, error) {
+	f, _, err := big.ParseFloat(extractNum.FindString(s), 10, 0, big.ToNearestEven)
+	return f, err
 }
 
 // A map of operator ⇒ argtype ⇒ match-constructor.
@@ -248,7 +249,7 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
-				return err == nil && w == v.(float64)
+				return err == nil && w.Cmp(v.(*big.Float)) == 0
 			}
 		},
 		syntax.TDate: func(v interface{}) func(string) bool {
@@ -268,7 +269,7 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
-				return err == nil && w < v.(float64)
+				return err == nil && w.Cmp(v.(*big.Float)) < 0
 			}
 		},
 		syntax.TDate: func(v interface{}) func(string) bool {
@@ -288,7 +289,7 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
-				return err == nil && w <= v.(float64)
+				return err == nil && w.Cmp(v.(*big.Float)) <= 0
 			}
 		},
 		syntax.TDate: func(v interface{}) func(string) bool {
@@ -308,7 +309,7 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
-				return err == nil && w > v.(float64)
+				return err == nil && w.Cmp(v.(*big.Float)) > 0
 			}
 		},
 		syntax.TDate: func(v interface{}) func(string) bool {
@@ -328,7 +329,7 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
-				return err == nil && w >= v.(float64)
+				return err == nil && w.Cmp(v.(*big.Float)) >= 0
 			}
 		},
 		syntax.TDate: func(v interface{}) func(string) bool {

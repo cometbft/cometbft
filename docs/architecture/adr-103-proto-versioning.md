@@ -63,9 +63,9 @@ versioning** policy.
 ### Implementation
 
 In order to implement Protobuf definition versioning, it is recommended to bring
-all of the Protobuf definitions for all major CometBFT releases thus far (v0.34,
-v0.37 and v0.38) into `main`, implementing versioning for each major version's
-definitions.
+all of the Protobuf definitions for all currently maintained major CometBFT
+releases thus far (v0.34, v0.37 and v0.38 as of the time of writing this ADR)
+into `main`, implementing versioning for each major version's definitions.
 
 For example, the v0.34 Protobuf definitions would be brought to `main` as `v1`
 (i.e. `proto/tendermint/types/types.proto` would become

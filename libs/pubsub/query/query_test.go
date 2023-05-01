@@ -62,6 +62,9 @@ var apiEvents = map[string][]string{
 	"transfer.amount": {
 		"160",
 	},
+	"big.value": {
+		"99999999999999999999", // max(uint64) == 18446744073709551615
+	},
 }
 
 var apiTypeEvents = []types.Event{
@@ -168,6 +171,15 @@ var apiTypeEvents = []types.Event{
 			{
 				Key:   "amount",
 				Value: "160",
+			},
+		},
+	},
+	{
+		Type: "big",
+		Attributes: []types.EventAttribute{
+			{
+				Key:   "value",
+				Value: "99999999999999999999",
 			},
 		},
 	},
@@ -300,6 +312,10 @@ func TestCompiledMatches(t *testing.T) {
 			apiEvents, false},
 		{`tm.event = 'Tx' AND rewards.withdraw.source = 'W'`,
 			apiEvents, false},
+
+		// Test cases for values that exceed the capacity if int64/float64.
+		{`big.value > 18446744073709551615 AND big.value <= 99999999999999999999`,
+			apiEvents, true},
 	}
 
 	// NOTE: The original implementation allowed arbitrary prefix matches on

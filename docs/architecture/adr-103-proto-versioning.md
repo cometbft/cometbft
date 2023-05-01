@@ -45,8 +45,8 @@ Some context is captured in [\#95] and the issues/PRs to which it links.
       making non-breaking changes to Protobuf message definitions, such as
       adding a new field. The upside to this approach is that non-breaking
       changes can be made in non-breaking releases of CometBFT, but the downside
-      is that some programming languages, such as Rust, cannot generate code in
-      a non-breaking way from these non-breaking changes.
+      is that some code generators, such as [prost] for Rust, cannot generate
+      non-breaking code from these non-breaking changes.
    2. **Sensitive**: Create a new version of a Protobuf message definition any
       time anything changes, including adding a new field. The upside to this
       approach is that generated code in languages like Rust is additive and
@@ -139,3 +139,4 @@ stakeholders.
 
 [\#95]: https://github.com/cometbft/cometbft/issues/95
 [buf-style]: https://buf.build/docs/best-practices/style-guide/
+[prost]: https://github.com/tokio-rs/prost/

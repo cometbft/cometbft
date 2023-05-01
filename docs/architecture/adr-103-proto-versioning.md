@@ -19,7 +19,8 @@ of CometBFT, this means that, when consuming those Protobuf definitions, they
 need to clone the CometBFT repository and check out the definitions for each and
 every major version they want to support. It also means that they need to
 manually diff the types to get a precise sense of what changed between CometBFT
-releases.
+releases. Moreover, the differences obtained with the manual diff are often
+undocumented.
 
 We hypothesize that, if we had to version our Protobuf definitions according to
 [Buf's style guide][buf-style], we could simplify integration efforts with

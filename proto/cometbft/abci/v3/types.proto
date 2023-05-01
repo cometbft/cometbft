@@ -15,6 +15,9 @@ import "google/protobuf/timestamp.proto";
 // NOTE: When using custom types, mind the warnings.
 // https://github.com/cosmos/gogoproto/blob/master/custom_types.md#warnings-and-issues
 
+// v2 type: ABCIApplication
+// Handling v2 as v3: REJECT
+// Handling v3 as v2: REJECT
 service ABCI {
   rpc Echo(v1.RequestEcho) returns (v1.ResponseEcho);
   rpc Flush(v1.RequestFlush) returns (v1.ResponseFlush);
@@ -39,6 +42,8 @@ service ABCI {
 //----------------------------------------
 // Request types
 
+// Handling v2 as v3: REJECT
+// Handling v3 as v2: REJECT
 message Request {
   oneof value {
     v1.RequestEcho               echo                  = 1;
@@ -61,6 +66,8 @@ message Request {
   reserved 4, 7, 9, 10;  // SetOption, BeginBlock, DeliverTx, EndBlock
 }
 
+// Handling v2 as v3: REJECT
+// Handling v3 as v2: REJECT
 message RequestInitChain {
   google.protobuf.Timestamp time = 1
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
@@ -71,6 +78,8 @@ message RequestInitChain {
   int64                       initial_height         = 6;
 }
 
+// Handling v2 as v3: REJECT
+// Handling v3 as v2: REJECT
 message RequestPrepareProposal {
   // the modified transactions cannot exceed this size.
   int64 max_tx_bytes = 1;
@@ -86,6 +95,8 @@ message RequestPrepareProposal {
   bytes proposer_address = 8;
 }
 
+// Handling v2 as v3: REJECT
+// Handling v3 as v2: REJECT
 message RequestProcessProposal {
   repeated bytes txs                  = 1;
   CommitInfo     proposed_last_commit = 2 [(gogoproto.nullable) = false];
@@ -100,6 +111,10 @@ message RequestProcessProposal {
 }
 
 // Extends a vote with application-injected data
+
+// v2 type: Does not exist
+// Handling v2 as v3: N/A
+// Handling v3 as v2: N/A
 message RequestExtendVote {
   // the hash of the block  that this vote may be referring to
   bytes hash = 1;
@@ -108,6 +123,10 @@ message RequestExtendVote {
 }
 
 // Verify the vote extension
+
+// v2 type: Does not exist
+// Handling v2 as v3: N/A
+// Handling v3 as v2: N/A
 message RequestVerifyVoteExtension {
   // the hash of the block that this received vote corresponds to
   bytes hash = 1;
@@ -117,6 +136,9 @@ message RequestVerifyVoteExtension {
   bytes vote_extension    = 4;
 }
 
+// v2 type: Does not exist
+// Handling v2 as v3: N/A
+// Handling v3 as v2: N/A
 message RequestFinalizeBlock {
   repeated bytes txs                  = 1;
   CommitInfo     decided_last_commit  = 2 [(gogoproto.nullable) = false];
@@ -133,6 +155,8 @@ message RequestFinalizeBlock {
 //----------------------------------------
 // Response types
 
+// Handling v2 as v3: REJECT
+// Handling v3 as v2: REJECT
 message Response {
   oneof value {
     v1.ResponseException          exception             = 1;
@@ -156,12 +180,16 @@ message Response {
   reserved 5, 8, 10, 11;  // SetOption, BeginBlock, DeliverTx, EndBlock
 }
 
+// Handling v2 as v3: REJECT
+// Handling v3 as v2: REJECT
 message ResponseInitChain {
   cometbft.types.v3.ConsensusParams consensus_params = 1;
   repeated v1.ValidatorUpdate validators             = 2 [(gogoproto.nullable) = false];
   bytes                       app_hash               = 3;
 }
 
+// Handling v2 as v3: REJECT
+// Handling v3 as v2: REJECT
 message ResponseCheckTx {
   uint32   code            = 1;
   bytes    data            = 2;
@@ -179,15 +207,23 @@ message ResponseCheckTx {
   reserved "sender", "priority", "mempool_error";
 }
 
+// Handling v2 as v3: REJECT
+// Handling v3 as v2: REJECT
 message ResponseCommit {
   reserved 1, 2;  // data was previously returned here
   int64 retain_height = 3;
 }
 
+// v2 type: Does not exist
+// Handling v2 as v3: N/A
+// Handling v3 as v2: N/A
 message ResponseExtendVote {
   bytes vote_extension = 1;
 }
 
+// v2 type: Does not exist
+// Handling v2 as v3: N/A
+// Handling v3 as v2: N/A
 message ResponseVerifyVoteExtension {
   VerifyStatus status = 1;
 
@@ -202,6 +238,9 @@ message ResponseVerifyVoteExtension {
   }
 }
 
+// v2 type: Does not exist
+// Handling v2 as v3: N/A
+// Handling v3 as v2: N/A
 message ResponseFinalizeBlock {
   // set of block events emmitted as part of executing the block
   repeated v2.Event events = 1
@@ -223,6 +262,20 @@ message ResponseFinalizeBlock {
 //----------------------------------------
 // Blockchain Types
 
+// Handling v1 as v3: ACCEPT
+//     IF signed_last_block:v1
+//         SET block_id_flag:v3 TO BLOCK_ID_FLAG_COMMIT -- information was lost
+//     ELSE
+//         SET block_id_flag:v3 TO BLOCK_ID_FLAG_ABSENT
+// Handling v3 as v1: ACCEPT
+//     SWITCH block_id_flag:v3
+//       CASE BLOCK_ID_FLAG_UNKNOWN:
+//         REJECT -- Invalid value
+//       CASE BLOCK_ID_FLAG_ABSENT:
+//         SET signed_last_block:v1 TO FALSE
+//       CASE BLOCK_ID_FLAG_COMMIT:
+//       CASE BLOCK_ID_FLAG_NIL:
+//         SET signed_last_block:v1 TO TRUE -- loss of information
 message VoteInfo {
   v1.Validator                  validator     = 1 [(gogoproto.nullable) = false];
   cometbft.types.v1.BlockIDFlag block_id_flag = 3;
@@ -230,6 +283,18 @@ message VoteInfo {
   reserved 2;  // signed_last_block
 }
 
+// Handling v2 as v3: REJECT
+// Handling v3 as v2: ACCEPT
+//     IGNORE vote_extension:v3
+//     IGNORE extension_signature:v3
+//     SWITCH block_id_flag:v3
+//       CASE BLOCK_ID_FLAG_UNKNOWN:
+//         REJECT -- Invalid value
+//       CASE BLOCK_ID_FLAG_ABSENT:
+//         SET signed_last_block:v2 TO FALSE
+//       CASE BLOCK_ID_FLAG_COMMIT:
+//       CASE BLOCK_ID_FLAG_NIL:
+//         SET signed_last_block:v2 TO TRUE -- loss of information
 message ExtendedVoteInfo {
   // The validator that sent the vote.
   v1.Validator validator = 1 [(gogoproto.nullable) = false];
@@ -246,6 +311,10 @@ message ExtendedVoteInfo {
 //----------------------------------------
 // Misc.
 
+// Handling v2 as v3: ACCEPT
+//     HANDLE votes:v2 AS votes:v3
+// Handling v3 as v2: ACCEPT
+//     HANDLE votes:v3 TO votes:v2
 message CommitInfo {
   int32             round = 1;
   repeated VoteInfo votes = 2 [(gogoproto.nullable) = false];
@@ -254,6 +323,10 @@ message CommitInfo {
 // ExtendedCommitInfo is similar to CommitInfo except that it is only used in
 // the PrepareProposal request such that Tendermint can provide vote extensions
 // to the application.
+
+// Handling v2 as v3: REJECT
+// Handling v3 as v2: ACCEPT
+//     HANDLE votes:v3 AS votes:v2
 message ExtendedCommitInfo {
   // The round at which the block proposer decided in the previous height.
   int32 round = 1;
@@ -265,6 +338,12 @@ message ExtendedCommitInfo {
 // ExecTxResult contains results of executing one individual transaction.
 //
 // * Its structure is equivalent to #ResponseDeliverTx which will be deprecated/deleted
+
+// v1 type: ResponseDeliverTx
+// Handling v1 as v3: ACCEPT
+//     HANDLE events:v1 AS events:v2
+// Handling v3 as v1: ACCEPT
+//     HANDLE events:v2 AS events:v1
 message ExecTxResult {
   uint32   code            = 1;
   bytes    data            = 2;
@@ -280,6 +359,11 @@ message ExecTxResult {
 // TxResult contains results of executing the transaction.
 //
 // One usage is indexing transaction results.
+
+// Handling v1 as v3: ACCEPT
+//     HANDLE result:v1 AS result:v3
+// Handling v3 as v1: ACCEPT
+//     HANDLE result:v3 AS result:v1
 message TxResult {
   int64        height = 1;
   uint32       index  = 2;

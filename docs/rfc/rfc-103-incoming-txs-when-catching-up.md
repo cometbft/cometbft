@@ -71,7 +71,7 @@ already-seen transactions, thus avoiding processing duplicates.
 Transactions remain in the cache until the application replies in
 `ResponseCheckTx` that a transaction is invalid. This can occur the first time a
 transaction is received and processed by `CheckTx`, or when all the transactions
-in the mempool need to be rechecked after updating the mempool. Another instance
+in the mempool need to be rechecked after a new block has been delivered to the application. Another instance
 is when the consensus reactor [updates](#update) the mempool after finalizing a
 block: if there was an error while executing a transaction, as indicated by the
 application in `ResponseFinalizeBlock`, then the transaction is removed from the

@@ -245,3 +245,11 @@ This behavior was fixed with CometBFT 0.34.26+. However, if the data was indexed
 Tendermint Core and not re-indexed, that data will be queried as if all the attributes within a height
 occurred within the same event.
 
+# Event attribute value types
+Users can use anything as an event value. However, if the even attrbute value is a number, the following restrictions apply:
+- Negative numbers will not be properly retrieved when querying the indexer
+- When querying the events using `tx_search` and `block_search`, the value given as part of the condition cannot be a float.
+- Any event value retrieved from the database will be represented as a `BigInt` (from `math/big`) (even if it is a floating point value).
+Floating point values are not rounded, the decimal part is simply truncated. This was the legacy behaviour before introducing
+the support for BigInts where a float was simply  cast to an `int64`. To preserve the same behaviour we are not rounding the float
+but will introduce this in newer versions.

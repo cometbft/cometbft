@@ -118,7 +118,7 @@ The protocol implements only one minor optimization. For each peer, the
 `broadcastTxRoutine` [function](#broadcast) in the mempool reactor iterates
 through all transactions in the mempool and sends them one by one to a peer.
 Just before sending a transaction, if the node suspects that the peer is lagging
-behind, it waits some time before sending it. This is the [code](#optimization):
+behind, it waits some time before checking again if the node has caught up. This is the [code](#optimization):
 ```golang
 if peerState.GetHeight() < memTx.Height()-1 {
   time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)

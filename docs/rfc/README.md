@@ -44,3 +44,4 @@ relating to Tendermint Core prior to forking, please see
 <!-- - [RFC-NNN: Title](./rfc-NNN-title.md) -->
 - [RFC-100: ABCI Vote Extension Propagation](./rfc-100-abci-vote-extension-propag.md)
 - [RFC-101: Banning peers based on ResponseCheckTx](./rfc-101-p2p-bad-peers-checktx.md)
+- [RFC-102: Incoming transactions when node is catching up](./rfc-103-incoming-txs-when-catching-up.md)

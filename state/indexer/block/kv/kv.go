@@ -298,7 +298,7 @@ LOOP:
 		if _, ok := qr.AnyBound().(*big.Int); ok {
 			v := new(big.Int)
 			v, ok := v.SetString(eventValue, 10)
-			if !ok { // If the number was not int it will might be a float so we get the int value
+			if !ok { // If the number was not int it might be a float so we get the int value
 				vfloat, err := strconv.ParseFloat(eventValue, 64)
 				if err != nil {
 					continue LOOP

@@ -32,10 +32,12 @@ func TestBigNumbers(t *testing.T) {
 		{"account.balance <= " + doubleBigInt, map[string][]string{"account.balance": {bigInt}}, false, true, false},
 		{"account.balance <= " + bigInt, map[string][]string{"account.balance": {"10000000000000000001"}}, false, false, false},
 		{"account.balance <= " + doubleBigInt, map[string][]string{"account.balance": {bigFloat}}, false, true, false},
-		{"account.balance > " + bigInt, map[string][]string{"account.balance": {bigFloat}}, false, true, false},
-		//The float will be rounded towards the lower int value, thus it will not be considered bigger
-		{"account.balance > " + bigInt, map[string][]string{"account.balance": {bigFloatLowerRounding}}, false, false, false},
-		//This test should pass, the same as below, but floats that are too big cannot be properly converted, thus
+		// To maintain compatibility with the old implementation which did a simple cast of float to int64, we do not round the float
+		// Thus both 10000000000000000000.6 and "10000000000000000000.1 are equal to 10000000000000000000
+		// and the test does not find a match
+		{"account.balance > " + bigInt, map[string][]string{"account.balance": {bigFloat}}, false, false, false},
+		{"account.balance > " + bigInt, map[string][]string{"account.balance": {bigFloatLowerRounding}}, true, false, false},
+		// This test should also find a match, but floats that are too big cannot be properly converted, thus
 		// 10000000000000000000.6 gets rounded to 10000000000000000000
 		{"account.balance > " + bigIntAsFloat, map[string][]string{"account.balance": {bigFloat}}, false, false, false},
 		{"account.balance > 11234.0", map[string][]string{"account.balance": {"11234.6"}}, false, true, false},

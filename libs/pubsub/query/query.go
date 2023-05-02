@@ -465,23 +465,27 @@ func matchValue(value string, op Operator, operand reflect.Value) (bool, error) 
 			operandVal := operand.Interface().(*big.Int)
 			v := new(big.Int)
 			if strings.ContainsAny(filteredValue, ".") {
-				// we convert the float to a big float in case we are dealing with large numbers.
-				// Note though that this is not very precise, and floats that are very large might be rounded
-				// You should not rely in your queries onto comparing big numbers based on the decimal part.
-				v1 := new(big.Float)
-				v1, ok := v1.SetString(filteredValue)
-				if !ok {
-					return false, fmt.Errorf("failed to convert value %v from event attribute to big float", filteredValue)
+				// We do this just to check whether the string can be parsed as a float
+				_, err := strconv.ParseFloat(filteredValue, 64)
+				if err != nil {
+					err = fmt.Errorf(
+						"got %v while trying to parse %s as float64 (should never happen if the grammar is correct)",
+						err, filteredValue,
+					)
+					return false, err
 				}
-				v, ok = v.SetString(v1.Text('f', 0), 10) // Gets the non decimal part of the float.
-				//  Maybe we could parse the float from the string directly but the conversion to
-				// big.Float checks whether the format of the number is indeed correct.
+
+				// If yes, we get the int part of the  string.
+				// We could simply cast the float to an int and use that to create a big int but
+				// if it is a number bigger than int64, it will not be parsed properly.
+				// If we use bigFloat and convert that to a string, the values will be rounded which
+				// is not what we want either.
+				_, ok := v.SetString(strings.Split(filteredValue, ".")[0], 10)
 				if !ok {
-					return false, fmt.Errorf("failed to convert value %s from float to int", v1.Text('f', 0))
+					return false, fmt.Errorf("failed to convert value %s from float to big int", filteredValue)
 				}
 			} else {
-
-				// try our best to convert value from tags to int64
+				// try our best to convert value from tags to big int
 				_, ok := v.SetString(filteredValue, 10)
 
 				if !ok {

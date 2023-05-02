@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"sort"
 	"strconv"
@@ -298,13 +299,14 @@ LOOP:
 			v := new(big.Int)
 			v, ok := v.SetString(eventValue, 10)
 			if !ok {
-
 				v_f, err := strconv.ParseFloat(eventValue, 64)
 				if err != nil {
 					continue LOOP
 				}
+				intPart, _ := math.Modf(v_f)
 				v = new(big.Int)
-				v = v.SetInt64(int64(v_f))
+				_, ok = v.SetString(fmt.Sprintf("%f", intPart), 10)
+
 			}
 
 			if qr.Key != types.BlockHeightKey {

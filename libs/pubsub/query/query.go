@@ -155,7 +155,7 @@ func (q *Query) Conditions() ([]Condition, error) {
 			} else {
 				valueBig := new(big.Int)
 
-				valueBig, ok := valueBig.SetString(number, 10)
+				_, ok := valueBig.SetString(number, 10)
 				if !ok {
 					err := fmt.Errorf(
 						"problem parsing %s as bigint (should never happen if the grammar is correct)",

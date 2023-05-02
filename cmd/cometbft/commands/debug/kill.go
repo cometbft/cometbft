@@ -3,6 +3,7 @@ package debug
 import (
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -123,11 +124,15 @@ func killProc(pid uint64, dir string) error {
 	go func() {
 		// Killing the CometBFT process with the '-ABRT|-6' signal will result in
 		// a goroutine stacktrace.
-		p, err := os.FindProcess(int(pid))
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to find PID to kill CometBFT process: %s", err)
-		} else if err = p.Signal(syscall.SIGABRT); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to kill CometBFT process: %s", err)
+		if pid <= math.MaxInt {
+			p, err := os.FindProcess(int(pid))
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "failed to find PID to kill CometBFT process: %s", err)
+			} else if err = p.Signal(syscall.SIGABRT); err != nil {
+				fmt.Fprintf(os.Stderr, "failed to kill CometBFT process: %s", err)
+			}
+		} else {
+			fmt.Fprintf(os.Stderr, "failed to convert PID to int (%v > %v)", pid, math.MaxInt)
 		}
 
 		// allow some time to allow the CometBFT process to be killed

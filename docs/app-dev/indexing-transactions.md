@@ -249,7 +249,6 @@ occurred within the same event.
 Users can use anything as an event value. However, if the even attrbute value is a number, the following restrictions apply:
 - Negative numbers will not be properly retrieved when querying the indexer
 - When querying the events using `tx_search` and `block_search`, the value given as part of the condition cannot be a float.
-- Any event value retrieved from the database will be represented as a `BigInt` (from `math/big`) (even if it is a floating point value).
-Floating point values are not rounded, the decimal part is simply truncated. This was the legacy behaviour before introducing
-the support for BigInts where a float was simply  cast to an `int64`. To preserve the same behaviour we are not rounding the float
-but will introduce this in newer versions.
+- Any event value retrieved from the database will be represented as a `BigInt` (from `math/big`)
+- Floating point values are not read from the database even with the introduction of `BigInt`. This was intentionally done 
+to keep the same beheaviour as was historically present and not introduce breaking  changes. This will be fixed in the 0.38 series.

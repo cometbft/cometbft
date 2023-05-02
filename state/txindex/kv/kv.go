@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"math"
 	"math/big"
 	"strconv"
 	"strings"
@@ -523,16 +522,7 @@ LOOP:
 			eventValue := extractValueFromKey(it.Key())
 			v, ok := v.SetString(eventValue, 10)
 			if !ok {
-				vFloat, err := strconv.ParseFloat(eventValue, 64)
-				if err != nil {
-					continue LOOP
-				}
-				intPart, _ := math.Modf(vFloat)
-				v = new(big.Int)
-				_, ok = v.SetString(strings.Split(fmt.Sprintf("%f", intPart), ".")[0], 10)
-				if !ok {
-					continue LOOP
-				}
+				continue LOOP
 			}
 			if qr.Key != types.TxHeightKey {
 				keyHeight, err := extractHeightFromKey(it.Key())

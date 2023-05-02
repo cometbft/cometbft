@@ -43,6 +43,8 @@ func (qr QueryRange) LowerBoundValue() interface{} {
 	}
 
 	switch t := qr.LowerBound.(type) {
+	case int64:
+		return t + 1
 	case *big.Int:
 		tmp := new(big.Int)
 		return tmp.Add(t, big.NewInt(1))

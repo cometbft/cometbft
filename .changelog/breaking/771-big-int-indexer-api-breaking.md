@@ -1,1 +1,0 @@
-- `[indexer]` `LowerBoundValue()/UpperBoundValue()` does not recognize `int64` anymore, supports rather `big.Int` ([\#771])

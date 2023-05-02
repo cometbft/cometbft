@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"math/big"
 	"sort"
 	"strconv"
@@ -298,18 +297,8 @@ LOOP:
 		if _, ok := qr.AnyBound().(*big.Int); ok {
 			v := new(big.Int)
 			v, ok := v.SetString(eventValue, 10)
-			if !ok { // If the number was not int it might be a float so we get the int value
-				vfloat, err := strconv.ParseFloat(eventValue, 64)
-				if err != nil {
-					continue LOOP
-				}
-				intPart, _ := math.Modf(vfloat)
-				v = new(big.Int)
-				_, ok = v.SetString(strings.Split(fmt.Sprintf("%f", intPart), ".")[0], 10)
-				if !ok {
-					err := fmt.Errorf("failed to convert %s to int", eventValue)
-					return nil, err
-				}
+			if !ok { // If the number was not int it might be a float but this behaviour is kept the same as before the patch
+				continue LOOP
 			}
 
 			if qr.Key != types.BlockHeightKey {

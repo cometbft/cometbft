@@ -23,12 +23,13 @@ func TestBigInt(t *testing.T) {
 	indexer := NewTxIndex(db.NewMemDB())
 
 	bigInt := "10000000000000000000"
+	bigIntPlus1 := "10000000000000000001"
 	bigFloat := bigInt + ".76"
 	bigFloatLower := bigInt + ".1"
 
 	txResult := txResultWithEvents([]abci.Event{
-		// {Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: bigInt, Index: true}}},
-		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: bigFloat, Index: true}}},
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: bigInt, Index: true}}},
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: bigIntPlus1, Index: true}}},
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: bigFloatLower, Index: true}}},
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: "owner", Value: "/Ivan/", Index: true}}},
 		{Type: "", Attributes: []abci.EventAttribute{{Key: "not_allowed", Value: "Vlad", Index: true}}},
@@ -63,13 +64,14 @@ func TestBigInt(t *testing.T) {
 		{fmt.Sprintf("tx.hash = '%x'", hash), txResult, 1},
 		{fmt.Sprintf("tx.hash = '%x'", hash2), txResult2, 1},
 		// search by exact match (one key) - bigint
-		{"account.number >= " + bigInt, nil, 2},
+		{"account.number >= " + bigInt, nil, 1},
 		// search by exact match (one key) - bigint range
-		{"account.number >= " + bigInt + " AND tx.height > 0", nil, 2},
+		{"account.number >= " + bigInt + " AND tx.height > 0", nil, 1},
 		{"account.number >= " + bigInt + " AND tx.height > 0 AND account.owner = '/Ivan/'", nil, 0},
-		{"account.number >= " + bigInt + " AND tx.height > 0 AND account.amount > 4", txResult2, 1},
-		{"account.number >= " + bigInt + " AND tx.height > 0 AND account.amount = 5", txResult2, 1},
-		{"account.number >= " + bigInt + " AND account.amount <= 5", txResult2, 1},
+		// Floats are not parsed
+		{"account.number >= " + bigInt + " AND tx.height > 0 AND account.amount > 4", txResult2, 0},
+		{"account.number >= " + bigInt + " AND tx.height > 0 AND account.amount = 5", txResult2, 0},
+		{"account.number >= " + bigInt + " AND account.amount <= 5", txResult2, 0},
 		{"account.number < " + bigInt + " AND tx.height = 1", nil, 0},
 	}
 

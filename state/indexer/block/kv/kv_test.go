@@ -407,9 +407,9 @@ func TestBigInt(t *testing.T) {
 			q:       query.MustParse("end_event.foo = " + bigInt),
 			results: []int64{1},
 		},
-		"query matches big int in range with float - passes as float is converted to int": {
+		"query matches big int in range with float - does not pass as float is not converted to int": {
 			q:       query.MustParse("end_event.bar >= " + bigInt),
-			results: []int64{1},
+			results: []int64{},
 		},
 		"query matches big int in range with float - fails because float is converted to int": {
 			q:       query.MustParse("end_event.bar > " + bigInt),
@@ -431,9 +431,9 @@ func TestBigInt(t *testing.T) {
 			q:       query.MustParse("end_event.foo < " + bigInt + " AND end_event.foo > 100"),
 			results: []int64{},
 		},
-		"query parses float": {
+		"query does not parse float": {
 			q:       query.MustParse("end_event.bla >= 500"),
-			results: []int64{1},
+			results: []int64{},
 		},
 	}
 

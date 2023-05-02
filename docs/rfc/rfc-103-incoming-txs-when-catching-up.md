@@ -142,7 +142,7 @@ where:
 
 > Note that the evidence reactor implements a similar optimization.
 
-Should this code be removed from the mempool reactor to make it consistent with
+Should the code for this optimization be removed from the mempool reactor to make it consistent with
 how the [RPC endpoints](#rpc) are implemented? Experimental evidence shows that
 actually the optimization works and improves the behavior of the nodes. The
 following picture shows the results of an experiment with four interconnected

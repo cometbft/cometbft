@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"math"
 	"math/big"
 	"strconv"
 	"strings"
@@ -519,9 +520,19 @@ LOOP:
 
 		if _, ok := qr.AnyBound().(*big.Int); ok {
 			v := new(big.Int)
-			v, ok := v.SetString(extractValueFromKey(it.Key()), 10)
+			eventValue := extractValueFromKey(it.Key())
+			v, ok := v.SetString(eventValue, 10)
 			if !ok {
-				continue LOOP
+				v_f, err := strconv.ParseFloat(eventValue, 64)
+				if err != nil {
+					continue LOOP
+				}
+				intPart, _ := math.Modf(v_f)
+				v = new(big.Int)
+				_, ok = v.SetString(strings.Split(fmt.Sprintf("%f", intPart), ".")[0], 10)
+				if !ok {
+					continue LOOP
+				}
 			}
 			if qr.Key != types.TxHeightKey {
 				keyHeight, err := extractHeightFromKey(it.Key())

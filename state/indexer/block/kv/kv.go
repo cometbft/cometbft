@@ -295,18 +295,21 @@ LOOP:
 			continue
 		}
 
-		if _, ok := qr.AnyBound().(*big.Int); ok { // This means that in a range we can only have integers, floats will be ignored
+		if _, ok := qr.AnyBound().(*big.Int); ok {
 			v := new(big.Int)
 			v, ok := v.SetString(eventValue, 10)
-			if !ok {
+			if !ok { // If the number was not int it will might be a float so we get the int value
 				v_f, err := strconv.ParseFloat(eventValue, 64)
 				if err != nil {
 					continue LOOP
 				}
 				intPart, _ := math.Modf(v_f)
 				v = new(big.Int)
-				_, ok = v.SetString(fmt.Sprintf("%f", intPart), 10)
-
+				_, ok = v.SetString(strings.Split(fmt.Sprintf("%f", intPart), ".")[0], 10)
+				if !ok {
+					err := fmt.Errorf("failed to convert %s to int", eventValue)
+					return nil, err
+				}
 			}
 
 			if qr.Key != types.BlockHeightKey {

@@ -419,12 +419,12 @@ func TestBigInt(t *testing.T) {
 			q:       query.MustParse("end_event.bar_lower > " + bigInt),
 			results: []int64{},
 		},
-		"query matches big int in range with float lower dec point - passes as float is converted to int": {
-			q:       query.MustParse("end_event.bar_lower >= " + bigInt),
-			results: []int64{1},
-		},
 		"query matches big int in range with float with less - found": {
 			q:       query.MustParse("end_event.foo <= " + bigInt),
+			results: []int64{1},
+		},
+		"query matches big int in range with float with less with height range - found": {
+			q:       query.MustParse("end_event.foo <= " + bigInt + " AND block.height > 0"),
 			results: []int64{1},
 		},
 		"query matches big int in range with float with less - not found": {

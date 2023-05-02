@@ -523,11 +523,11 @@ LOOP:
 			eventValue := extractValueFromKey(it.Key())
 			v, ok := v.SetString(eventValue, 10)
 			if !ok {
-				v_f, err := strconv.ParseFloat(eventValue, 64)
+				vFloat, err := strconv.ParseFloat(eventValue, 64)
 				if err != nil {
 					continue LOOP
 				}
-				intPart, _ := math.Modf(v_f)
+				intPart, _ := math.Modf(vFloat)
 				v = new(big.Int)
 				_, ok = v.SetString(strings.Split(fmt.Sprintf("%f", intPart), ".")[0], 10)
 				if !ok {

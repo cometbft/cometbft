@@ -299,11 +299,11 @@ LOOP:
 			v := new(big.Int)
 			v, ok := v.SetString(eventValue, 10)
 			if !ok { // If the number was not int it will might be a float so we get the int value
-				v_f, err := strconv.ParseFloat(eventValue, 64)
+				vfloat, err := strconv.ParseFloat(eventValue, 64)
 				if err != nil {
 					continue LOOP
 				}
-				intPart, _ := math.Modf(v_f)
+				intPart, _ := math.Modf(vfloat)
 				v = new(big.Int)
 				_, ok = v.SetString(strings.Split(fmt.Sprintf("%f", intPart), ".")[0], 10)
 				if !ok {

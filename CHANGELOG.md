@@ -6,14 +6,21 @@
 
 - The `TMHOME` environment variable was renamed to `CMTHOME`, and all environment variables starting with `TM_` are instead prefixed with `CMT_`
   ([\#211](https://github.com/cometbft/cometbft/issues/211))
-- `[protobuf]` Remove fields `sender`, `priority`, and `mempool_error` from
-  `ResponseCheckTx`. ([\#260](https://github.com/cometbft/cometbft/issues/260))
 - `[mempool]` Remove priority mempool.
   ([\#260](https://github.com/cometbft/cometbft/issues/260))
 - `[config]` Remove `Version` field from `MempoolConfig`.
   ([\#260](https://github.com/cometbft/cometbft/issues/260))
+- `[protobuf]` Remove fields `sender`, `priority`, and `mempool_error` from
+  `ResponseCheckTx`. ([\#260](https://github.com/cometbft/cometbft/issues/260))
+- `[node]` Removed methods from `Node` type: `BlockStore`, `ConsensusState`, `ConsensusReactor`,
+  `MempoolReactor`, `PEXReactor`, `EvidencePool`, `ProxyApp`
+  ([\#286](https://github.com/cometbft/cometbft/issues/286))
+- `[p2p]` Modified method `AddReactor` in `Switch` type: it is no longer returning the added `Reactor`
+  ([\#286](https://github.com/cometbft/cometbft/issues/286))
 - Bump minimum Go version to 1.20
   ([\#385](https://github.com/cometbft/cometbft/issues/385))
+- `[crypto/merkle]` Do not allow verification of Merkle Proofs against empty trees (`nil` root). `Proof.ComputeRootHash` now panics when it encounters an error, but `Proof.Verify` does not panic
+  ([\#558](https://github.com/cometbft/cometbft/issues/558))
 - `[state]` Move pruneBlocks from node/state to state/execution.
   ([\#6541](https://github.com/tendermint/tendermint/pull/6541))
 - `[abci]` Move `app_hash` parameter from `Commit` to `FinalizeBlock`
@@ -25,11 +32,11 @@
   ([\#9625](https://github.com/tendermint/tendermint/pull/9625))
 - `[rpc]` Remove global environment and replace with constructor
   ([\#9655](https://github.com/tendermint/tendermint/pull/9655))
+- `[node]` Move DBContext and DBProvider from the node package to the config
+  package. ([\#9655](https://github.com/tendermint/tendermint/pull/9655))
 - `[inspect]` Add a new `inspect` command for introspecting
   the state and block store of a crashed tendermint node.
   ([\#9655](https://github.com/tendermint/tendermint/pull/9655))
-- `[node]` Move DBContext and DBProvider from the node package to the config
-  package. ([\#9655](https://github.com/tendermint/tendermint/pull/9655))
 - `[metrics]` Move state-syncing and block-syncing metrics to
   their respective packages. Move labels from block_syncing
   -> blocksync_syncing and state_syncing -> statesync_syncing
@@ -50,10 +57,23 @@
   ([\#496](https://github.com/cometbft/cometbft/pull/496))
 - `[consensus]` Rename `(*PeerState).ToJSON` to `MarshalJSON` to fix a logging data race
   ([\#524](https://github.com/cometbft/cometbft/pull/524))
+- `[light]` Fixed an edge case where a light client would panic when attempting
+  to query a node that (1) has started from a non-zero height and (2) does
+  not yet have any data. The light client will now, correctly, not panic
+  _and_ keep the node in its list of providers in the same way it would if
+  it queried a node starting from height zero that does not yet have data
+  ([\#575](https://github.com/cometbft/cometbft/issues/575))
 - `[docker]` Ensure Docker image uses consistent version of Go.
   ([\#9462](https://github.com/tendermint/tendermint/pull/9462))
 - `[abci-cli]` Fix broken abci-cli help command.
   ([\#9717](https://github.com/tendermint/tendermint/pull/9717))
+
+### DEPRECATIONS
+
+- `[rpc/grpc]` Mark the gRPC broadcast API as deprecated.
+  It will be superseded by a broader API as part of
+  [\#81](https://github.com/cometbft/cometbft/issues/81)
+  ([\#650](https://github.com/cometbft/cometbft/issues/650))
 
 ### FEATURES
 
@@ -73,6 +93,9 @@
   ([\#136](https://github.com/cometbft/cometbft/issues/136))
 - `[blocksync]` Generate new metrics during BlockSync
   ([\#543](https://github.com/cometbft/cometbft/pull/543))
+- `[jsonrpc/client]` Improve the error message for client errors stemming from
+  bad HTTP responses.
+  ([cometbft/cometbft\#638](https://github.com/cometbft/cometbft/pull/638))
 - `[crypto/merkle]` Improve HashAlternatives performance
   ([\#6443](https://github.com/tendermint/tendermint/pull/6443))
 - `[p2p/pex]` Improve addrBook.hash performance

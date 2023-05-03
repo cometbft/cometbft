@@ -2,6 +2,7 @@
 
 ## Changelog
 
+- 2023-05-03: Mark as rejected in favour of ADR-101 (@thanethomson)
 - 2023-04-04: Update based on review feedback (@thanethomson)
 - 2023-02-28: Renumber from 082 to 100 (@thanethomson)
 - 2022-01-05: Sync requirements with those of [ADR 101][adr-101] (@thanethomson)
@@ -13,7 +14,7 @@
 
 ## Status
 
-Accepted | Rejected | Deprecated | Superseded by
+Rejected
 
 ## Context
 

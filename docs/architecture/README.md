@@ -42,8 +42,6 @@ numbering our ADRs from 100 onwards.
 
 ### Proposed
 
-- [ADR-100: Data companion push API](./adr-100-data-companion-push-api.md)
-
 ### Accepted
 
 ### Implemented
@@ -51,3 +49,5 @@ numbering our ADRs from 100 onwards.
 ### Deprecated
 
 ### Rejected
+
+- [ADR-100: Data companion push API](./adr-100-data-companion-push-api.md)

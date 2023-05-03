@@ -169,7 +169,7 @@ func (cli *socketClient) recvResponseRoutine(conn io.Reader) {
 			return
 		}
 
-		var res = &types.Response{}
+		res := &types.Response{}
 		err := types.ReadMessage(r, res)
 		if err != nil {
 			cli.stopForError(fmt.Errorf("read message: %w", err))
@@ -291,7 +291,7 @@ func (cli *socketClient) Query(ctx context.Context, req *types.RequestQuery) (*t
 	return reqRes.Response.GetQuery(), cli.Error()
 }
 
-func (cli *socketClient) Commit(ctx context.Context, req *types.RequestCommit) (*types.ResponseCommit, error) {
+func (cli *socketClient) Commit(ctx context.Context, _ *types.RequestCommit) (*types.ResponseCommit, error) {
 	reqRes, err := cli.queueRequest(ctx, types.ToRequestCommit())
 	if err != nil {
 		return nil, err

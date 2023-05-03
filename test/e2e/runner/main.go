@@ -327,11 +327,7 @@ Does not run any perturbations.
 				return err
 			}
 
-			if err := Cleanup(cli.testnet); err != nil {
-				return err
-			}
-
-			return nil
+			return Cleanup(cli.testnet)
 		},
 	})
 

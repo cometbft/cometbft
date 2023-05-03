@@ -85,6 +85,7 @@ func TestApplyBlock(t *testing.T) {
 // block.
 func TestFinalizeBlockDecidedLastCommit(t *testing.T) {
 	app := &testApp{}
+	baseTime := time.Now()
 	cc := proxy.NewLocalClientCreator(app)
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
@@ -146,6 +147,7 @@ func TestFinalizeBlockDecidedLastCommit(t *testing.T) {
 			blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 			_, err = blockExec.ApplyBlock(state, blockID, block)
 			require.NoError(t, err)
+			require.True(t, app.LastTime.After(baseTime))
 
 			// -> app receives a list of validators with a bool indicating if they signed
 			for i, v := range app.CommitVotes {
@@ -204,10 +206,11 @@ func TestFinalizeBlockValidators(t *testing.T) {
 		desc                     string
 		lastCommitSigs           []types.ExtendedCommitSig
 		expectedAbsentValidators []int
+		shouldHaveTime           bool
 	}{
-		{"none absent", []types.ExtendedCommitSig{commitSig0, commitSig1}, []int{}},
-		{"one absent", []types.ExtendedCommitSig{commitSig0, absentSig}, []int{1}},
-		{"multiple absent", []types.ExtendedCommitSig{absentSig, absentSig}, []int{0, 1}},
+		{"none absent", []types.ExtendedCommitSig{commitSig0, commitSig1}, []int{}, true},
+		{"one absent", []types.ExtendedCommitSig{commitSig0, absentSig}, []int{1}, true},
+		{"multiple absent", []types.ExtendedCommitSig{absentSig, absentSig}, []int{0, 1}, false},
 	}
 
 	for _, tc := range testCases {
@@ -221,7 +224,12 @@ func TestFinalizeBlockValidators(t *testing.T) {
 		block := makeBlock(state, 2, lastCommit.ToCommit())
 
 		_, err = sm.ExecCommitBlock(proxyApp.Consensus(), block, log.TestingLogger(), stateStore, 1)
-		require.Nil(t, err, tc.desc)
+		require.NoError(t, err, tc.desc)
+		require.True(t,
+			!tc.shouldHaveTime ||
+				app.LastTime.Equal(now) || app.LastTime.After(now),
+			"'last_time' should be at or after 'now'; tc %v, last_time %v, now %v", tc.desc, app.LastTime, now,
+		)
 
 		// -> app receives a list of validators with a bool indicating if they signed
 		ctr := 0

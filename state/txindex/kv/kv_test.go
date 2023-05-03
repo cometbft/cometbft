@@ -19,6 +19,77 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+func TestBigInt(t *testing.T) {
+	indexer := NewTxIndex(db.NewMemDB())
+
+	bigInt := "10000000000000000000"
+	bigIntPlus1 := "10000000000000000001"
+	bigFloat := bigInt + ".76"
+	bigFloatLower := bigInt + ".1"
+
+	txResult := txResultWithEvents([]abci.Event{
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: bigInt, Index: true}}},
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: bigIntPlus1, Index: true}}},
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: bigFloatLower, Index: true}}},
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "owner", Value: "/Ivan/", Index: true}}},
+		{Type: "", Attributes: []abci.EventAttribute{{Key: "not_allowed", Value: "Vlad", Index: true}}},
+	})
+	hash := types.Tx(txResult.Tx).Hash()
+
+	err := indexer.Index(txResult)
+
+	require.NoError(t, err)
+
+	txResult2 := txResultWithEvents([]abci.Event{
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: bigFloat, Index: true}}},
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: bigFloat, Index: true}, {Key: "amount", Value: "5", Index: true}}},
+	})
+
+	txResult2.Tx = types.Tx("NEW TX")
+	txResult2.Height = 2
+	txResult2.Index = 2
+
+	hash2 := types.Tx(txResult2.Tx).Hash()
+
+	err = indexer.Index(txResult2)
+	require.NoError(t, err)
+	testCases := []struct {
+		q             string
+		txRes         *abci.TxResult
+		resultsLength int
+	}{
+		//	search by hash
+		{fmt.Sprintf("tx.hash = '%X'", hash), txResult, 1},
+		// search by hash (lower)
+		{fmt.Sprintf("tx.hash = '%x'", hash), txResult, 1},
+		{fmt.Sprintf("tx.hash = '%x'", hash2), txResult2, 1},
+		// search by exact match (one key) - bigint
+		{"account.number >= " + bigInt, nil, 1},
+		// search by exact match (one key) - bigint range
+		{"account.number >= " + bigInt + " AND tx.height > 0", nil, 1},
+		{"account.number >= " + bigInt + " AND tx.height > 0 AND account.owner = '/Ivan/'", nil, 0},
+		// Floats are not parsed
+		{"account.number >= " + bigInt + " AND tx.height > 0 AND account.amount > 4", txResult2, 0},
+		{"account.number >= " + bigInt + " AND tx.height > 0 AND account.amount = 5", txResult2, 0},
+		{"account.number >= " + bigInt + " AND account.amount <= 5", txResult2, 0},
+		{"account.number < " + bigInt + " AND tx.height = 1", nil, 0},
+	}
+
+	ctx := context.Background()
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.q, func(t *testing.T) {
+			results, err := indexer.Search(ctx, query.MustParse(tc.q))
+			assert.NoError(t, err)
+			assert.Len(t, results, tc.resultsLength)
+			if tc.resultsLength > 0 && tc.txRes != nil {
+				assert.True(t, proto.Equal(results[0], tc.txRes))
+			}
+		})
+	}
+}
+
 func TestTxIndex(t *testing.T) {
 	indexer := NewTxIndex(db.NewMemDB())
 

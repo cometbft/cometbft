@@ -2,6 +2,7 @@ package kv
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 	"github.com/cometbft/cometbft/state/indexer"
@@ -60,7 +61,7 @@ func dedupHeight(conditions []query.Condition) (dedupConditions []query.Conditio
 				} else {
 					found = true
 					heightCondition = append(heightCondition, c)
-					heightInfo.height = c.Operand.(int64)
+					heightInfo.height = c.Operand.(*big.Int).Int64() //Height is always int64
 				}
 			} else {
 				heightInfo.onlyHeightEq = false
@@ -89,7 +90,7 @@ func dedupHeight(conditions []query.Condition) (dedupConditions []query.Conditio
 
 func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) bool {
 	if heightInfo.heightRange.Key != "" {
-		if !checkBounds(heightInfo.heightRange, keyHeight) {
+		if !checkBounds(heightInfo.heightRange, big.NewInt(keyHeight)) {
 			return false
 		}
 	} else {

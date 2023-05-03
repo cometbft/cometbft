@@ -3,6 +3,7 @@ package kv
 import (
 	"encoding/binary"
 	"fmt"
+	"math/big"
 	"strconv"
 
 	"github.com/google/orderedcode"
@@ -149,7 +150,7 @@ func dedupHeight(conditions []query.Condition) (dedupConditions []query.Conditio
 					continue
 				} else {
 					heightCondition = append(heightCondition, c)
-					heightInfo.height = c.Operand.(int64)
+					heightInfo.height = c.Operand.(*big.Int).Int64() // As height is assumed to always be int64
 					found = true
 				}
 			} else {
@@ -180,7 +181,7 @@ func dedupHeight(conditions []query.Condition) (dedupConditions []query.Conditio
 
 func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) bool {
 	if heightInfo.heightRange.Key != "" {
-		if !checkBounds(heightInfo.heightRange, keyHeight) {
+		if !checkBounds(heightInfo.heightRange, big.NewInt(keyHeight)) {
 			return false
 		}
 	} else {

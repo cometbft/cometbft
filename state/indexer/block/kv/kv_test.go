@@ -249,23 +249,11 @@ func TestBlockIndexerMulti(t *testing.T) {
 			q:       query.MustParse("block.height = 1"),
 			results: []int64{1},
 		},
-		"query return all events from a height - exact - no match.events": {
-			q:       query.MustParse("block.height = 1"),
-			results: []int64{1},
-		},
 		"query return all events from a height - exact (deduplicate height)": {
 			q:       query.MustParse("block.height = 1 AND block.height = 2"),
 			results: []int64{1},
 		},
-		"query return all events from a height - exact (deduplicate height) - no match.events": {
-			q:       query.MustParse("block.height = 1 AND block.height = 2"),
-			results: []int64{1},
-		},
 		"query return all events from a height - range": {
-			q:       query.MustParse("block.height < 2 AND block.height > 0 AND block.height > 0"),
-			results: []int64{1},
-		},
-		"query return all events from a height - range - no match.events": {
 			q:       query.MustParse("block.height < 2 AND block.height > 0 AND block.height > 0"),
 			results: []int64{1},
 		},
@@ -278,10 +266,6 @@ func TestBlockIndexerMulti(t *testing.T) {
 			results: []int64{},
 		},
 		"query matches fields from same event": {
-			q:       query.MustParse("end_event.bar < 300 AND end_event.foo = 100 AND block.height > 0 AND block.height <= 2"),
-			results: []int64{1, 2},
-		},
-		"query matches fields from same event - no match.events": {
 			q:       query.MustParse("end_event.bar < 300 AND end_event.foo = 100 AND block.height > 0 AND block.height <= 2"),
 			results: []int64{1, 2},
 		},
@@ -313,20 +297,142 @@ func TestBlockIndexerMulti(t *testing.T) {
 			q:       query.MustParse("end_event.bar > 100 AND end_event.bar <= 500"),
 			results: []int64{1, 2},
 		},
-		"query matches all fields from multiple events - no match.events": {
-			q:       query.MustParse("end_event.bar > 100 AND end_event.bar <= 500"),
-			results: []int64{1, 2},
-		},
 		"query with height range and height equality - should ignore equality": {
 			q:       query.MustParse("block.height = 2 AND end_event.foo >= 100 AND block.height < 2"),
 			results: []int64{1},
 		},
 		"query with non-existent field": {
-			q:       query.MustParse("end_event.baz = 100"),
+			q:       query.MustParse("end_event.bar = 100"),
 			results: []int64{},
 		},
-		"query with non-existent field ": {
-			q:       query.MustParse("end_event.baz = 100"),
+	}
+
+	for name, tc := range testCases {
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			results, err := indexer.Search(context.Background(), tc.q)
+			require.NoError(t, err)
+			require.Equal(t, tc.results, results)
+		})
+	}
+}
+
+func TestBigInt(t *testing.T) {
+
+	bigInt := "10000000000000000000"
+	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))
+	indexer := blockidxkv.New(store)
+
+	require.NoError(t, indexer.Index(types.EventDataNewBlockHeader{
+		Header: types.Header{Height: 1},
+		ResultBeginBlock: abci.ResponseBeginBlock{
+			Events: []abci.Event{},
+		},
+		ResultEndBlock: abci.ResponseEndBlock{
+			Events: []abci.Event{
+				{
+					Type: "end_event",
+					Attributes: []abci.EventAttribute{
+						{
+							Key:   "foo",
+							Value: "100",
+							Index: true,
+						},
+						{
+							Key:   "bar",
+							Value: "10000000000000000000.76",
+							Index: true,
+						},
+						{
+							Key:   "bar_lower",
+							Value: "10000000000000000000.1",
+							Index: true,
+						},
+					},
+				},
+				{
+					Type: "end_event",
+					Attributes: []abci.EventAttribute{
+						{
+							Key:   "foo",
+							Value: bigInt,
+							Index: true,
+						},
+						{
+							Key:   "bar",
+							Value: "500",
+							Index: true,
+						},
+						{
+							Key:   "bla",
+							Value: "500.5",
+							Index: true,
+						},
+					},
+				},
+			},
+		},
+	}))
+
+	testCases := map[string]struct {
+		q       *query.Query
+		results []int64
+	}{
+
+		"query return all events from a height - exact": {
+			q:       query.MustParse("block.height = 1"),
+			results: []int64{1},
+		},
+		"query return all events from a height - exact (deduplicate height)": {
+			q:       query.MustParse("block.height = 1 AND block.height = 2"),
+			results: []int64{1},
+		},
+		"query return all events from a height - range": {
+			q:       query.MustParse("block.height < 2 AND block.height > 0 AND block.height > 0"),
+			results: []int64{1},
+		},
+		"query matches fields with big int and height - no match": {
+			q:       query.MustParse("end_event.foo = " + bigInt + " AND end_event.bar = 500 AND block.height = 2"),
+			results: []int64{},
+		},
+		"query matches fields with big int with less and height - no match": {
+			q:       query.MustParse("end_event.foo <= " + bigInt + " AND end_event.bar = 500 AND block.height = 2"),
+			results: []int64{},
+		},
+		"query matches fields with big int and height - match": {
+			q:       query.MustParse("end_event.foo = " + bigInt + " AND end_event.bar = 500 AND block.height = 1"),
+			results: []int64{1},
+		},
+		"query matches big int in range": {
+			q:       query.MustParse("end_event.foo = " + bigInt),
+			results: []int64{1},
+		},
+		"query matches big int in range with float - does not pass as float is not converted to int": {
+			q:       query.MustParse("end_event.bar >= " + bigInt),
+			results: []int64{},
+		},
+		"query matches big int in range with float - fails because float is converted to int": {
+			q:       query.MustParse("end_event.bar > " + bigInt),
+			results: []int64{},
+		},
+		"query matches big int in range with float lower dec point - fails because float is converted to int": {
+			q:       query.MustParse("end_event.bar_lower > " + bigInt),
+			results: []int64{},
+		},
+		"query matches big int in range with float with less - found": {
+			q:       query.MustParse("end_event.foo <= " + bigInt),
+			results: []int64{1},
+		},
+		"query matches big int in range with float with less with height range - found": {
+			q:       query.MustParse("end_event.foo <= " + bigInt + " AND block.height > 0"),
+			results: []int64{1},
+		},
+		"query matches big int in range with float with less - not found": {
+			q:       query.MustParse("end_event.foo < " + bigInt + " AND end_event.foo > 100"),
+			results: []int64{},
+		},
+		"query does not parse float": {
+			q:       query.MustParse("end_event.bla >= 500"),
 			results: []int64{},
 		},
 	}

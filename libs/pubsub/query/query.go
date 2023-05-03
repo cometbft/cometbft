@@ -480,7 +480,7 @@ func matchValue(value string, op Operator, operand reflect.Value) (bool, error) 
 				// if it is a number bigger than int64, it will not be parsed properly.
 				// If we use bigFloat and convert that to a string, the values will be rounded which
 				// is not what we want either.
-				// Here we are simulating the behaviour that int64(floatValue). This was the default behaviour
+				// Here we are simulating the behavior that int64(floatValue). This was the default behavior
 				// before introducing BigInts and we do not want to break the logic in minor releases.
 				_, ok := v.SetString(strings.Split(filteredValue, ".")[0], 10)
 				if !ok {

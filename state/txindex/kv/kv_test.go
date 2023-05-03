@@ -211,23 +211,19 @@ func TestTxSearchEventMatch(t *testing.T) {
 			q:             "tx.height < 2 AND account.number = 3 AND account.number = 2 AND account.number = 5",
 			resultsLength: 0,
 		},
-		"Deduplication test - should return nothing if attribute repeats multiple times with match events": {
-			q:             "tx.height < 2 AND account.number = 3 AND account.number = 2 AND account.number = 5",
-			resultsLength: 0,
-		},
-		" Match range with match events": {
+		" Match range with special character": {
 			q:             "account.number < 2 AND account.owner = '/Ivan/.test'",
 			resultsLength: 0,
 		},
-		" Match range with match events 2": {
+		" Match range with special character 2": {
 			q:             "account.number <= 2 AND account.owner = '/Ivan/.test' AND tx.height > 0",
 			resultsLength: 1,
 		},
-		" Match range with match events contains with multiple items": {
+		" Match range with contains with multiple items": {
 			q:             "account.number <= 2 AND account.owner CONTAINS '/Iv' AND account.owner CONTAINS 'an' AND tx.height = 1",
 			resultsLength: 1,
 		},
-		" Match range with match events contains": {
+		" Match range with contains": {
 			q:             "account.number <= 2 AND account.owner CONTAINS 'an' AND tx.height > 0",
 			resultsLength: 1,
 		},

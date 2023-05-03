@@ -444,9 +444,6 @@ this as an additive, opt-in change, thereby not impacting existing APIs. This
 way we can evolve this API until such time that consumers are satisfied with
 removal of the old APIs mentioned in [implications](#implications).
 
-This also means we could potentially release this as a non-breaking change (i.e.
-in a patch release).
-
 ## Follow-Up Work
 
 If implemented, we should consider releasing our own RPC companion server with

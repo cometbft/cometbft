@@ -249,6 +249,8 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
+				vval := v.(*big.Float)
+				fmt.Println(vval.Text('f', 64))
 				return err == nil && w.Cmp(v.(*big.Float)) == 0
 			}
 		},
@@ -269,6 +271,8 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
+				vval := v.(*big.Float)
+				fmt.Println(vval.Text('f', 64))
 				return err == nil && w.Cmp(v.(*big.Float)) < 0
 			}
 		},
@@ -289,6 +293,8 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
+				vval := v.(*big.Float)
+				fmt.Println(vval.Text('f', 64))
 				return err == nil && w.Cmp(v.(*big.Float)) <= 0
 			}
 		},
@@ -329,6 +335,8 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
+				vval := v.(*big.Float)
+				fmt.Println(vval.Text('f', 64))
 				return err == nil && w.Cmp(v.(*big.Float)) >= 0
 			}
 		},

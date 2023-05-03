@@ -73,7 +73,7 @@ func (a *Arg) Number() *big.Float {
 	if a == nil {
 		return nil
 	}
-	v, _, err := big.ParseFloat(a.text, 10, 0, big.ToNearestEven)
+	v, _, err := big.ParseFloat(a.text, 10, 125, big.ToNearestEven)
 	if err != nil {
 		return nil
 	}

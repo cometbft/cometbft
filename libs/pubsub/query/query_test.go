@@ -62,9 +62,6 @@ var apiEvents = map[string][]string{
 	"transfer.amount": {
 		"160",
 	},
-	"big.value": {
-		"99999999999999999999", // max(uint64) == 18446744073709551615
-	},
 }
 
 var apiTypeEvents = []types.Event{
@@ -174,15 +171,84 @@ var apiTypeEvents = []types.Event{
 			},
 		},
 	},
-	{
-		Type: "big",
-		Attributes: []types.EventAttribute{
-			{
-				Key:   "value",
-				Value: "99999999999999999999",
-			},
-		},
+}
+
+var apiBigNumTest = map[string][]string{
+	"big.value": {
+		"99999999999999999999",
 	},
+	"big2.value": {
+		"18446744073709551615", // max(uint64) == 18446744073709551615
+	},
+	"big.floatvalue": {
+		"99999999999999999999.10",
+	},
+	"big2.floatvalue": {
+		"18446744073709551615.6", // max(uint64) == 18446744073709551615
+	},
+}
+
+func TestBigNumbers(t *testing.T) {
+
+	testCases := []struct {
+		s       string
+		events  map[string][]string
+		matches bool
+	}{
+
+		// Test cases for values that exceed the capacity if int64/float64.
+		// {`big.value >= 99999999999999999999`,
+		// 	apiBigNumTest,
+		// 	true},
+		{`big.value > 99999999999999999998`,
+			apiBigNumTest,
+			true},
+		// {`big2.value <= 18446744073709551615`,
+		// 	apiBigNumTest, true},
+		// {`big.floatvalue >= 99999999999999999999`,
+		// 	apiBigNumTest,
+		// 	true},
+		{`big.floatvalue > 99999999999999999998.10`,
+			apiBigNumTest,
+			true},
+		{`big.floatvalue > 99999999999999999998`,
+			apiBigNumTest,
+			true},
+		// {`big2.floatvalue <= 18446744073709551615.6`,
+		// 	apiBigNumTest,
+		// 	true},
+		// {`big2.floatvalue <= 18446744073709551615.6`,
+		// 	apiBigNumTest,
+		// 	true},
+		// {`big2.floatvalue >= 18446744073709551615`,
+		// 	apiBigNumTest,
+		// 	true},
+		// {`big2.floatvalue >= 12.5`,
+		// 	apiBigNumTest,
+		// 	true},
+		// {`big.value >= 10`,
+		// 	apiBigNumTest,
+		// 	true},
+	}
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("%02d", i+1), func(t *testing.T) {
+			c, err := query.New(tc.s)
+			if err != nil {
+				t.Fatalf("NewCompiled %#q: unexpected error: %v", tc.s, err)
+			}
+
+			got, err := c.Matches(tc.events)
+			if err != nil {
+				t.Errorf("Query: %#q\nInput: %+v\nMatches: got error %v",
+					tc.s, tc.events, err)
+			}
+			if got != tc.matches {
+				t.Errorf("Query: %#q\nInput: %+v\nMatches: got %v, want %v",
+					tc.s, tc.events, got, tc.matches)
+			}
+		})
+	}
 }
 
 func TestCompiledMatches(t *testing.T) {
@@ -315,6 +381,8 @@ func TestCompiledMatches(t *testing.T) {
 
 		// Test cases for values that exceed the capacity if int64/float64.
 		{`big.value > 18446744073709551615 AND big.value <= 99999999999999999999`,
+			apiEvents, true},
+		{`big2.value >= 18446744073709551615`,
 			apiEvents, true},
 	}
 

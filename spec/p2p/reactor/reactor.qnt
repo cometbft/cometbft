@@ -116,7 +116,7 @@ module reactor {
 
 	// Code: Switch.OnStop()
 	action stop(): bool = all {
-		state.started and not(state.stopped),
+		IsRunning(state),
 		// Either no peer was added or all peers were removed
 		state.peers.size() == 0,
 		state' = state.OnStop()

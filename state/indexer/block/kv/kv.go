@@ -297,7 +297,7 @@ LOOP:
 		if _, ok := qr.AnyBound().(*big.Int); ok {
 			v := new(big.Int)
 			v, ok := v.SetString(eventValue, 10)
-			if !ok { // If the number was not int it might be a float but this behaviour is kept the same as before the patch
+			if !ok { // If the number was not int it might be a float but this behavior is kept the same as before the patch
 				continue LOOP
 			}
 

@@ -112,6 +112,16 @@ reject transactions if its validity depends on the application state. And the
 reactor only propagates transactions that are validated and stored in the
 mempool.
 
+__Decision__ Nodes that are catching up cannot guarantee effective handling of
+incoming transactions. They are not yet prepared to participate in transaction
+propagation properly. Therefore we see no strong reason at this stage for
+keeping the mempool reactor operational and the `broadcast_tx_*` endpoints open.
+Instead, we believe that nodes should reject incoming transactions until they
+switch to consensus mode. This approach will provide clearer semantics for the
+RPC endpoints, thus improving the user experience. Please refer to issue
+[#785](https://github.com/cometbft/cometbft/issues/785), which will address this
+decision.
+
 ### Outbound messages
 
 We cannot control or predict what a client may send to the RPC endpoints, but we
@@ -165,7 +175,7 @@ is disabled (left side), while the orange node is catching up, both its mempool
 size (top graph) and the number of rejected transactions (middle graph)
 increases significantly compared to the optimizated code (right side). 
 
-In summary, the results presented above indicate that the optimization is
+__Decision__ The results presented above indicate that the optimization is
 effectively improving the system's performance and should be kept for now. In
 particular, the decrease in mempool size implies that the memory usage of the
 catching-up node is lower compared to those with the unoptimized code.

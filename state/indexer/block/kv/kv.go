@@ -71,7 +71,7 @@ func (idx *BlockerIndexer) Index(bh types.EventDataNewBlockEvents) error {
 	}
 
 	// 2. index block events
-	if err := idx.indexEvents(batch, bh.Events, "finalize_block", height); err != nil {
+	if err := idx.indexEvents(batch, bh.Events, height); err != nil {
 		return fmt.Errorf("failed to index FinalizeBlock events: %w", err)
 	}
 
@@ -521,7 +521,7 @@ func (idx *BlockerIndexer) match(
 	return filteredHeights, nil
 }
 
-func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, typ string, height int64) error {
+func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, height int64) error {
 	heightBz := int64ToBytes(height)
 
 	for _, event := range events {
@@ -543,7 +543,7 @@ func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, typ
 			}
 
 			if attr.GetIndex() {
-				key, err := eventKey(compositeKey, typ, attr.Value, height, idx.eventSeq)
+				key, err := eventKey(compositeKey, attr.Value, height, idx.eventSeq)
 				if err != nil {
 					return fmt.Errorf("failed to create block index key: %w", err)
 				}

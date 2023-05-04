@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"math/big"
 	"sort"
 	"strconv"
@@ -290,17 +289,18 @@ LOOP:
 		if _, ok := qr.AnyBound().(*big.Int); ok {
 			v := new(big.Int)
 			v, ok := v.SetString(eventValue, 10)
-			if !ok { // If the number was not int it will might be a float so we get the int value
-				v_f, err := strconv.ParseFloat(eventValue, 64)
+			var eventF *big.Float
+			if !ok { // If the event value retrieved from the database is not an integer,
+				// it might be a float. We convert the condition into a float to get as accurate
+				// of a comparison as possible. For query x > 100 and x = 100.2, we have two choises:
+				// 1. convert 100.2  to 100 and don't return a match
+				// 2. convert 100 to 100.0 and return a match.
+				// This implementation follows 2.
+				// For floating points with a precision beyond 125, the comparison might fail
+				eventF = new(big.Float)
+				eventF, _, err = big.ParseFloat(eventValue, 10, 125, big.ToNearestEven)
 				if err != nil {
 					continue LOOP
-				}
-				intPart, _ := math.Modf(v_f)
-				v = new(big.Int)
-				_, ok = v.SetString(strings.Split(fmt.Sprintf("%f", intPart), ".")[0], 10)
-				if !ok {
-					err := fmt.Errorf("failed to convert %s to int", eventValue)
-					return nil, err
 				}
 			}
 
@@ -310,9 +310,16 @@ LOOP:
 					continue LOOP
 				}
 			}
-			if checkBounds(qr, v) {
-				idx.setTmpHeights(tmpHeights, it)
+			if ok {
+				if checkBounds(qr, v) {
+					idx.setTmpHeights(tmpHeights, it)
+				}
+			} else {
+				if checkBounds(qr, eventF) {
+					idx.setTmpHeights(tmpHeights, it)
+				}
 			}
+
 		}
 
 		select {
@@ -379,7 +386,7 @@ func compareFloat(op1 *big.Float, op2 interface{}) (int, error) {
 	case *big.Float:
 		return op1.Cmp(opVal), nil
 	default:
-		return -1, fmt.Errorf("unable to parse arguments")
+		return -2, fmt.Errorf("unable to parse arguments")
 	}
 }
 
@@ -396,7 +403,7 @@ func compareInt(op1 *big.Int, op2 interface{}) (int, error) {
 		}
 		return op1.Cmp(vInt), err
 	default:
-		return -1, fmt.Errorf("unable to parse arguments")
+		return -2, fmt.Errorf("unable to parse arguments")
 	}
 }
 func checkBounds(ranges indexer.QueryRange, v interface{}) bool {

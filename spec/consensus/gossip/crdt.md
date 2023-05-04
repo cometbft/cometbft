@@ -70,52 +70,55 @@ Let $\bar{e}$ be the tombstone for an entry $e$; if, during synchronization, a n
 
 However small tombstones may be, with time they will accrue and need to be garbage collected, in which case the corresponding entry may be added again; again, this will not break correctness and as long as tombstones are kept for long enough, the risk of re-adding becomes minimal.
 
-In the case of the Tendermint algorithm we note that staleness comes from adding newer messages (belonging to higher rounds and heights) to the tuple space.
-If, as an optimization to Approach Two, these newer messages are exchanged first, then the stale messages can be excluded before being shared to other nodes that might have forgotten them and tombstones may not be needed at all.
+In the case of the Tendermint algorithm we note that staleness comes from adding newer entries (belonging to higher rounds and heights) to the tuple space.
+If, as an optimization to Approach Two, these newer entries are exchanged first, then the stale entries can be excluded before being shared to other nodes that might have forgotten them and tombstones may not be needed at all.
 
 While gossiping of tombstones themselves could be useful, it adds the risk of malicious nodes using them to disrupt the system.
-This could be prevented by tombstones carrying the set of messages that led to the entry removal, but these messages need to be gossiped as well, allowing the counterpart in the gossip to do its own cleanup and without needing the bloated tombstone at all; hence the tombstones should be local only.
+This could be prevented by tombstones carrying the set of entries that led to the entry removal, but these messages need to be gossiped as well, allowing the counterpart in the gossip to do its own cleanup and without needing the bloated tombstone at all; hence the tombstones should be local only.
 
 ### Equivocation and forgery
 
-The originator validator of each tuple signs it before adding it to the tuple space therefore making it unfeasible to forge messages from other validators unless they collude, which does not add to power of attacks.
+The originator validator of each tuple signs it before adding it to the tuple space therefore making it unfeasible to forge entries from other validators unless they collude, which does not add to the power of attacks.
 Equivocation attacks are not averted, but will be detected once two tuples differing only on the payload are added to the same local view and may be used as evidence of misbehavior.[^todo1]
 The Tendermint algorithm itself tolerates equivocation attacks within certain bounds.
 
-[^todo1]: Formalize using [Making CRDTs Byzantine Fault Tolerant](https://martin.kleppmann.com/papers/bft-crdt-papoc22.pdf) as basis; "Many CRDTs, such as Logoot [44] and Treedoc [ 36], assign a unique identifier to each item (e.g. each element in a sequence); the data structure does not allow multiple items with the same ID, since then an ID would be ambiguous.” Use payload itself as ID?
+[^todo1]: 1) Do we need anything more in terms of making this data structure byzantine fault tolerant? If looking this structure independently, then a byzantine node could simply add more and entries. From TM point of though, those messages won't cause any harm. 2) How does TM prevent a byz node from "flooding" the network with nill votes today? it does not, so we are not making the problem worse. 3)If needed, look into [Making CRDTs Byzantine Fault Tolerant](https://martin.kleppmann.com/papers/bft-crdt-papoc22.pdf) for inspiration: "Many CRDTs, such as Logoot [44] and Treedoc [ 36], assign a unique identifier to each item (e.g. each element in a sequence); the data structure does not allow multiple items with the same ID, since then an ID would be ambiguous.” Can we use the payload itself as ID? However this work is focused on operation-based CRDT, not state-based.
 
 ### Querying the Tuple Space
 
 The tuple space is consulted through queries, which have the same form as the entries.
-Queries return all entries whose values match those in the query, where a `*` matches all values.
-Nodes can only query their own local views, not the global view $T$.
+Queries return all entries in their local views whose values match those in the query; `*` matches all values.
 For example, suppose a node's local view of the tuple space has the following entries, here organized as rows of a table for easier visualization:
 
-| Height | Round | Step      | Validator | Payload |
-| ------ | ----- | --------- | --------- | ------- |
-| 1      | 0     | Proposal  | v1        | pp      |
-| 1      | 0     | PreVote   | v1        | vp      |
-| 1      | 1     | PreCommit | v2        | cp      |
-| 2      | 0     | Proposal  | v1        | pp'     |
-| 2      | 2     | PreVote   | v2        | vp'     |
-| 2      | 3     | PreCommit | v2        | cp'     |
+| Height | Round | Step      | Validator | Payload        |
+| ------ | ----- | --------- | --------- | -------------- |
+| 1      | 0     | Proposal  | v1        | pp1            |
+| 1      | 0     | PreVote   | v1        | vp1            |
+| 1      | 1     | PreCommit | v2        | cp1            |
+| 2      | 0     | Proposal  | v1        | pp2            |
+| 2      | 2     | PreVote   | v2        | vp2            |
+| 2      | 3     | PreCommit | v2        | cp2   [^todo2] |
+| 2      | 3     | PreCommit | v2        | cp2'  [^todo2] |
 
-- Query $\lang 0, 0, Proposal, v1, * \rang$ returns $\{ \lang 0, 0, Proposal, v1, pp \rang \}$
-- Query $\lang 0, 0, *, v1, * \rang$ returns $\{ \lang 0, 0, Proposal, v1, pp \rang,  \lang 0, 0, PreVote, v1, vp \rang \}$.
+- Query $\lang 0, 0, Proposal, v1, * \rang$ returns $\{ \lang 0, 0, Proposal, v1, pp1 \rang \}$
+- Query $\lang 0, 0, *, v1, * \rang$ returns $\{ \lang 0, 0, Proposal, v1, pp1 \rang,  \lang 0, 0, PreVote, v1, vp1 \rang \}$.
 
 If needed for disambiguation, queries are subscripted with the node being queried.
 
+[^todo2]: These tuples are evidence of an equivocation attack. It is not clear yet if we should keep both entries in the local view.
+
 #### State Validity
 
-Let $\text{ValSet}_h \subseteq P$ be the set of validators of height $h$ and $\text{Prop}_{h,r}$ be the proposer of round $r$ of height $h$.
+Let $V_h \subseteq P$ be the set of validators of height $h$ and $\pi^h_r \in V_h$ be the proposer of round $r$ of height $h$.
+When the context eliminates any ambiguity on the height number, we might write these values simply as $V$ and $\pi_r$.
 
-Given that each validator can execute each step only once per round, a query that specifies height, round, step and validator must either return empty or a single tuple.
+Given that each validator can execute each step only once per round, a query that specifies height, round, step and validator SHOULD either return empty or a single tuple.
 
-- $\forall h \in \N, r \in \N, s \in \{\text{Proposal, PreVote, PreCommit}\}, v \in \text{ValSet}_h$,  $\cup_{p \in P} \lang h, r, s, v, * \rang_p$ contains at most one element.
+- $\forall h \in \N, \forall r \in \N, \forall s \in \{\text{Proposal, PreVote, PreCommit}\}, \forall v \in V_h$,  $\cup_{p \in P} \lang h, r, s, v, * \rang_p$ contains at most one element.
 
 In the specific case of the Proposal step, only the proposer of the round can have a matching entry.
 
-- $\forall h \in \N, r \in \N, \lang h, r, \cup_{p \in P} \text{Proposal}, *, * \rang_p$ contains at most one element and it also matches $\cup_{p\in P} \lang h, r, \text{Proposal}, \text{Prop}_{h,r}, * \rang_p$.
+- $\forall h \in \N, \forall r \in \N$, $\cup_{p \in P} \lang h, r, \text{Proposal}, *, * \rang_p$ contains at most one element and it also matches $\cup_{p\in P} \lang h, r, \text{Proposal}, \pi^h_r, * \rang_p$
 
 A violation of these rules is a misbehavior by the validator signing the offending entries.
 

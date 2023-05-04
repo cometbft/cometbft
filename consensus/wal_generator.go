@@ -139,11 +139,10 @@ func randPort() int {
 	return base + cmtrand.Intn(spread)
 }
 
-func makeAddrs() (string, string, string) {
+func makeAddrs() (string, string) {
 	start := randPort()
 	return fmt.Sprintf("tcp://127.0.0.1:%d", start),
-		fmt.Sprintf("tcp://127.0.0.1:%d", start+1),
-		fmt.Sprintf("tcp://127.0.0.1:%d", start+2)
+		fmt.Sprintf("tcp://127.0.0.1:%d", start+1)
 }
 
 // getConfig returns a config for test cases
@@ -151,10 +150,9 @@ func getConfig(t *testing.T) *cfg.Config {
 	c := test.ResetTestRoot(t.Name())
 
 	// and we use random ports to run in parallel
-	cmt, rpc, grpc := makeAddrs()
+	cmt, rpc := makeAddrs()
 	c.P2P.ListenAddress = cmt
 	c.RPC.ListenAddress = rpc
-	c.RPC.GRPCListenAddress = grpc
 	return c
 }
 

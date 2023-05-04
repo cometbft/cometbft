@@ -14,7 +14,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
-	app "github.com/cometbft/cometbft/test/e2e/app"
+	"github.com/cometbft/cometbft/test/e2e/app"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/types"
 )
@@ -156,18 +156,30 @@ func fetchABCIRequestsByNodeName(t *testing.T) map[string][]*abci.Request {
 		return nil
 	}
 	m := make(map[string][]*abci.Request)
+	// Parse output line by line.
 	lines := strings.Split(string(out), "\n")
 	for _, line := range lines {
 		r, err := app.GetABCIRequestFromString(line)
-		if err != nil {
+		require.NoError(t, err)
+		// Ship the lines that does not contain abci request.
+		if r == nil {
 			continue
 		}
 		// Getting node's name.
-		// First string in line is nodeName, however it has a 5-char prefix that we
-		// need to skip. I don't know what do these 5-chars stand for.
+		// First string in line is nodeName, however it has prefix for colored output that we
+		// need to skip. I don't know exactly how it looks like but manually I found out that it
+		// ends with 'm'. So I try to find first 'm' and then take everything after as nodeName.
 		parts := strings.Fields(line)
-		nodeName := parts[0]
-		nodeName = nodeName[5:]
+		partWithNodeName := parts[0]
+		index := 0
+		for i := 0; i < len(partWithNodeName); i++ {
+			if partWithNodeName[i] == 'm' {
+				index = i + 1
+				break
+			}
+		}
+		nodeName := string(partWithNodeName[index:])
+
 		m[nodeName] = append(m[nodeName], r)
 	}
 	return m

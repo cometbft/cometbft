@@ -38,7 +38,7 @@ endpoints](#rpc) are open, allowing the node to [receive](#receive) and process
 transactions from other nodes and clients.
 
 The node could start the consensus protocol immediately to reconstruct the block
-history, but this could take a very long time. BlockSync and StateSync are much
+history, but this could take a very long time. State sync and block sync are much
 faster mechanisms to bootstrap the node and reach the latest heights of the
 chain. When a node is performing BlockSync or StateSync, it is in *catch up*
 mode. Once synchronization finishes, the node may not necessarily be at the

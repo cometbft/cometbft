@@ -370,7 +370,7 @@ func (n Node) Validate(testnet Testnet) error {
 		return fmt.Errorf("local port %v must be >1024", n.PrometheusProxyPort)
 	}
 	for _, peer := range testnet.Nodes {
-		if peer.Name != n.Name && peer.ProxyPort == n.ProxyPort && peer.InternalIP.Equal(n.InternalIP) {
+		if peer.Name != n.Name && peer.ProxyPort == n.ProxyPort && peer.ExternalIP.Equal(n.ExternalIP) {
 			return fmt.Errorf("peer %q also has local port %v", peer.Name, n.ProxyPort)
 		}
 		if n.PrometheusProxyPort > 0 {

@@ -3,7 +3,6 @@ package digitalocean
 import (
 	"context"
 	"fmt"
-	"net"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
@@ -42,7 +41,4 @@ func (p Provider) TerminateComet(ctx context.Context, n *e2e.Node) error {
 }
 func (p Provider) KillComet(ctx context.Context, n *e2e.Node) error {
 	return e2essh.Exec(p.SSHConfig, fmt.Sprintf("%s:%d", n.ExternalIP, sshPort), fmt.Sprintf("systemctl -s SIGKILL %s", testappName))
-}
-func (p Provider) GetReachableIP(ctx context.Context, n *e2e.Node) net.IP {
-	return n.InternalIP
 }

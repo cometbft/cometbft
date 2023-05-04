@@ -2,7 +2,6 @@ package infra
 
 import (
 	"context"
-	"net"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
@@ -19,6 +18,4 @@ type Provider interface {
 	StartComet(context.Context, *e2e.Node) error
 	KillComet(context.Context, *e2e.Node) error
 	TerminateComet(context.Context, *e2e.Node) error
-
-	GetReachableIP(context.Context, *e2e.Node) net.IP
 }

@@ -52,7 +52,9 @@ func GetExecutionString(reqs []*abci.Request) string {
 	s := ""
 	for _, r := range reqs {
 		t := getRequestTerminal(r)
-		s += " " + t
+		if t != "" {
+			s += " " + t
+		}
 	}
 	return s
 }

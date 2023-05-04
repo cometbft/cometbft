@@ -17,3 +17,13 @@ func TestABCIGrammar(t *testing.T) {
 		}
 	})
 }
+
+func TestNodeNameExtracting(t *testing.T) {
+	m := fetchABCIRequestsByNodeName(t)
+	testNode(t, func(t *testing.T, node e2e.Node) {
+		_, ok := m[node.Name]
+		if !ok {
+			t.Errorf("Node %v is not in map.\n", node.Name)
+		}
+	})
+}

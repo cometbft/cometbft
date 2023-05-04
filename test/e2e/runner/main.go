@@ -103,7 +103,7 @@ func NewCLI() *CLI {
 					SSHConfig:          cfg,
 				}
 			default:
-				cli.infp = &infra.NoopProvider{}
+				return fmt.Errorf("bad infrastructure type: %s", inft)
 			}
 			return nil
 		},

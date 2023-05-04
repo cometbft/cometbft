@@ -13,7 +13,7 @@ import (
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 )
 
-var _ infra.Provider = &Provider{}
+var _ infra.Provider = (*Provider)(nil)
 
 // Provider implements a docker-compose backed infrastructure provider.
 type Provider struct {
@@ -39,13 +39,13 @@ func (p *Provider) Setup() error {
 func (p Provider) CreateNode(ctx context.Context, n *e2e.Node) error {
 	return ExecCompose(ctx, p.Testnet.Dir, "up", "-d", "--no-start", n.Name)
 }
-func (p Provider) StartTendermint(ctx context.Context, n *e2e.Node) error {
+func (p Provider) StartComet(ctx context.Context, n *e2e.Node) error {
 	return ExecCompose(ctx, p.Testnet.Dir, "start", n.Name)
 }
-func (p Provider) TerminateTendermint(ctx context.Context, n *e2e.Node) error {
+func (p Provider) TerminateComet(ctx context.Context, n *e2e.Node) error {
 	return ExecCompose(ctx, p.Testnet.Dir, "kill", "-s", "SIGTERM", n.Name)
 }
-func (p Provider) KillTendermint(ctx context.Context, n *e2e.Node) error {
+func (p Provider) KillComet(ctx context.Context, n *e2e.Node) error {
 	return ExecCompose(ctx, p.Testnet.Dir, "kill", "-s", "SIGKILL", n.Name)
 }
 func (p Provider) GetReachableIP(ctx context.Context, n *e2e.Node) net.IP {

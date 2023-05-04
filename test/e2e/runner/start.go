@@ -49,7 +49,7 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 		if err != nil {
 			return err
 		}
-		err = p.StartTendermint(context.Background(), node)
+		err = p.StartComet(context.Background(), node)
 		if err != nil {
 			return err
 		}
@@ -124,7 +124,7 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 		if err != nil {
 			return err
 		}
-		err = p.StartTendermint(context.Background(), node)
+		err = p.StartComet(context.Background(), node)
 		if err != nil {
 			return err
 		}

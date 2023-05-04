@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"math"
+	"math/big"
 	"strconv"
 	"strings"
 
@@ -514,11 +516,30 @@ LOOP:
 			continue
 		}
 
-		if _, ok := qr.AnyBound().(int64); ok {
-			v, err := strconv.ParseInt(extractValueFromKey(it.Key()), 10, 64)
-			if err != nil {
-				continue LOOP
+		if _, ok := qr.AnyBound().(*big.Int); ok {
+
+			v := new(big.Int)
+
+			eventValue := extractValueFromKey(it.Key())
+			v, ok := v.SetString(eventValue, 10)
+			if !ok {
+				v_f, err := strconv.ParseFloat(eventValue, 64)
+				if err != nil {
+					continue LOOP
+				}
+				intPart, _ := math.Modf(v_f)
+				v = new(big.Int)
+				_, ok = v.SetString(strings.Split(fmt.Sprintf("%f", intPart), ".")[0], 10)
+				if !ok {
+					continue LOOP
+				}
 			}
+
+			// v, err := strconv.ParseInt(extractValueFromKey(it.Key()), 10, 64)
+			// if err != nil {
+			// 	continue LOOP
+			// }
+
 			if qr.Key != types.TxHeightKey {
 				keyHeight, err := extractHeightFromKey(it.Key())
 				if err != nil || !checkHeightConditions(heightInfo, keyHeight) {
@@ -659,17 +680,70 @@ func startKey(fields ...interface{}) []byte {
 	return b.Bytes()
 }
 
-func checkBounds(ranges indexer.QueryRange, v int64) bool {
+func compareFloat(op1 *big.Float, op2 interface{}) (int, error) {
+	switch opVal := op2.(type) {
+	case *big.Int:
+		vF, _, err := big.ParseFloat(opVal.String(), 10, op1.Prec(), big.ToNearestEven)
+		if err != nil {
+			err = fmt.Errorf("failed to convert %s to float", opVal)
+		}
+		return op1.Cmp(vF), err
+	case *big.Float:
+		return op1.Cmp(opVal), nil
+	default:
+		return -1, fmt.Errorf("unable to parse arguments")
+	}
+}
+
+func compareInt(op1 *big.Int, op2 interface{}) (int, error) {
+	switch opVal := op2.(type) {
+	case *big.Int:
+		return op1.Cmp(opVal), nil
+	case *big.Float:
+		vInt := new(big.Int)
+		_, ok := vInt.SetString(strings.Split(opVal.Text('f', 125), ".")[0], 10)
+		var err error
+		if !ok {
+			err = fmt.Errorf("failed to convert %f to int", opVal)
+		}
+		return op1.Cmp(vInt), err
+	default:
+		return -1, fmt.Errorf("unable to parse arguments")
+	}
+}
+
+func checkBounds(ranges indexer.QueryRange, v interface{}) bool {
 	include := true
 	lowerBound := ranges.LowerBoundValue()
 	upperBound := ranges.UpperBoundValue()
-	if lowerBound != nil && v < lowerBound.(int64) {
-		include = false
-	}
+	switch vVal := v.(type) {
+	case *big.Int:
+		if lowerBound != nil {
+			cmp, err := compareInt(vVal, lowerBound)
+			if err == nil && cmp == -1 {
+				include = false
+			}
+		}
+		if upperBound != nil {
+			cmp, err := compareInt(vVal, upperBound)
+			if err == nil && cmp == 1 {
+				include = false
+			}
+		}
 
-	if upperBound != nil && v > upperBound.(int64) {
-		include = false
+	case *big.Float:
+		if lowerBound != nil {
+			cmp, err := compareFloat(vVal, lowerBound)
+			if err == nil && cmp == -1 {
+				include = false
+			}
+		}
+		if upperBound != nil {
+			cmp, err := compareFloat(vVal, upperBound)
+			if err == nil && cmp == 1 {
+				include = false
+			}
+		}
 	}
-
 	return include
 }

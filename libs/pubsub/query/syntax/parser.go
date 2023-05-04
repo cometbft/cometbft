@@ -69,15 +69,19 @@ func (a *Arg) String() string {
 
 // Number returns the value of the argument text as a number, or nil if the
 // text does not encode a valid number value.
-func (a *Arg) Number() *big.Float {
+func (a *Arg) Number() interface{} {
 	if a == nil {
 		return nil
 	}
-	v, _, err := big.ParseFloat(a.text, 10, 125, big.ToNearestEven)
-	if err != nil {
-		return nil
+	intVal := new(big.Int)
+	if _, ok := intVal.SetString(a.text, 10); !ok {
+		f, _, err := big.ParseFloat(a.text, 10, 125, big.ToNearestEven)
+		if err != nil {
+			return nil
+		}
+		return f
 	}
-	return v
+	return intVal
 }
 
 // Time returns the value of the argument text as a time, or the zero value if

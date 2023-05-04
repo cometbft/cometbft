@@ -178,7 +178,7 @@ var apiBigNumTest = map[string][]string{
 		"99999999999999999999",
 	},
 	"big2.value": {
-		"18446744073709551615", // max(uint64) == 18446744073709551615
+		"18446744073709551615",
 	},
 	"big.floatvalue": {
 		"99999999999999999999.10",
@@ -197,38 +197,38 @@ func TestBigNumbers(t *testing.T) {
 	}{
 
 		// Test cases for values that exceed the capacity if int64/float64.
-		// {`big.value >= 99999999999999999999`,
-		// 	apiBigNumTest,
-		// 	true},
+		{`big.value >= 99999999999999999999`,
+			apiBigNumTest,
+			true},
 		{`big.value > 99999999999999999998`,
 			apiBigNumTest,
 			true},
-		// {`big2.value <= 18446744073709551615`,
-		// 	apiBigNumTest, true},
-		// {`big.floatvalue >= 99999999999999999999`,
-		// 	apiBigNumTest,
-		// 	true},
+		{`big2.value <= 18446744073709551615`,
+			apiBigNumTest, true},
+		{`big.floatvalue >= 99999999999999999999`,
+			apiBigNumTest,
+			true},
 		{`big.floatvalue > 99999999999999999998.10`,
 			apiBigNumTest,
 			true},
 		{`big.floatvalue > 99999999999999999998`,
 			apiBigNumTest,
 			true},
-		// {`big2.floatvalue <= 18446744073709551615.6`,
-		// 	apiBigNumTest,
-		// 	true},
-		// {`big2.floatvalue <= 18446744073709551615.6`,
-		// 	apiBigNumTest,
-		// 	true},
-		// {`big2.floatvalue >= 18446744073709551615`,
-		// 	apiBigNumTest,
-		// 	true},
-		// {`big2.floatvalue >= 12.5`,
-		// 	apiBigNumTest,
-		// 	true},
-		// {`big.value >= 10`,
-		// 	apiBigNumTest,
-		// 	true},
+		{`big2.floatvalue <= 18446744073709551615.6`,
+			apiBigNumTest,
+			true},
+		{`big2.floatvalue <= 18446744073709551615.6`,
+			apiBigNumTest,
+			true},
+		{`big2.floatvalue >= 18446744073709551615`,
+			apiBigNumTest,
+			true},
+		{`big2.floatvalue >= 12.5`,
+			apiBigNumTest,
+			true},
+		{`big.value >= 10`,
+			apiBigNumTest,
+			true},
 	}
 
 	for i, tc := range testCases {
@@ -378,12 +378,6 @@ func TestCompiledMatches(t *testing.T) {
 			apiEvents, false},
 		{`tm.event = 'Tx' AND rewards.withdraw.source = 'W'`,
 			apiEvents, false},
-
-		// Test cases for values that exceed the capacity if int64/float64.
-		{`big.value > 18446744073709551615 AND big.value <= 99999999999999999999`,
-			apiEvents, true},
-		{`big2.value >= 18446744073709551615`,
-			apiEvents, true},
 	}
 
 	// NOTE: The original implementation allowed arbitrary prefix matches on

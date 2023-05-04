@@ -3,6 +3,7 @@ package kv
 import (
 	"encoding/binary"
 	"fmt"
+	"math/big"
 	"strconv"
 
 	"github.com/google/orderedcode"
@@ -144,6 +145,16 @@ func parseEventSeqFromEventKey(key []byte) (int64, error) {
 	}
 	return eventSeq, nil
 }
+func getInt64(v interface{}) (int64, error) {
+	switch vVal := v.(type) {
+	case *big.Int:
+		return vVal.Int64(), nil
+	case *big.Float:
+		iVal, _ := vVal.Int64()
+		return iVal, nil
+	}
+	return -1, fmt.Errorf("unable to parse height")
+}
 
 // Remove all occurrences of height equality queries except one. While we are traversing the conditions, check whether the only condition in
 // addition to match events is the height equality or height range query. At the same time, if we do have a height range condition
@@ -162,8 +173,11 @@ func dedupHeight(conditions []syntax.Condition) (dedupConditions []syntax.Condit
 					continue
 				}
 				heightCondition = append(heightCondition, c)
-				heightInfo.height = int64(c.Arg.Number())
-
+				hVal, err := getInt64(c.Arg.Number())
+				if err != nil {
+					return
+				}
+				heightInfo.height = hVal
 				found = true
 			} else {
 				heightInfo.onlyHeightEq = false
@@ -193,7 +207,7 @@ func dedupHeight(conditions []syntax.Condition) (dedupConditions []syntax.Condit
 
 func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) bool {
 	if heightInfo.heightRange.Key != "" {
-		if !checkBounds(heightInfo.heightRange, keyHeight) {
+		if !checkBounds(heightInfo.heightRange, big.NewInt(keyHeight)) {
 			return false
 		}
 	} else {

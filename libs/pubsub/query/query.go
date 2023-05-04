@@ -180,6 +180,38 @@ func (c condition) matchesEvent(event types.Event) bool {
 	return false
 }
 
+func compareFloat(op1 *big.Float, op2 interface{}) (int, error) {
+	switch opVal := op2.(type) {
+	case *big.Int:
+		vF, _, err := big.ParseFloat(opVal.String(), 10, op1.Prec(), big.ToNearestEven)
+		if err != nil {
+			err = fmt.Errorf("failed to convert %s to float", opVal)
+		}
+		return op1.Cmp(vF), err
+	case *big.Float:
+		return op1.Cmp(opVal), nil
+	default:
+		return -1, fmt.Errorf("unable to parse arguments")
+	}
+}
+
+func compareInt(op1 *big.Int, op2 interface{}) (int, error) {
+	switch opVal := op2.(type) {
+	case *big.Int:
+		return op1.Cmp(opVal), nil
+	case *big.Float:
+		vInt := new(big.Int)
+		_, ok := vInt.SetString(strings.Split(opVal.Text('f', 125), ".")[0], 10)
+		var err error
+		if !ok {
+			err = fmt.Errorf("failed to convert %f to int", opVal)
+		}
+		return op1.Cmp(vInt), err
+	default:
+		return -1, fmt.Errorf("unable to parse arguments")
+	}
+}
+
 func compileCondition(cond syntax.Condition) (condition, error) {
 	out := condition{tag: cond.Tag}
 
@@ -223,9 +255,13 @@ func compileCondition(cond syntax.Condition) (condition, error) {
 // tests for, but we should probably get rid of that.
 var extractNum = regexp.MustCompile(`^\d+(\.\d+)?`)
 
-func parseNumber(s string) (*big.Float, error) {
-	f, _, err := big.ParseFloat(extractNum.FindString(s), 10, 0, big.ToNearestEven)
-	return f, err
+func parseNumber(s string) (interface{}, error) { //*big.Float, error) {
+	intVal := new(big.Int)
+	if _, ok := intVal.SetString(s, 10); !ok {
+		f, _, err := big.ParseFloat(extractNum.FindString(s), 10, 125, big.ToNearestEven)
+		return f, err
+	}
+	return intVal, nil
 }
 
 // A map of operator ⇒ argtype ⇒ match-constructor.
@@ -249,9 +285,19 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
-				vval := v.(*big.Float)
-				fmt.Println(vval.Text('f', 64))
-				return err == nil && w.Cmp(v.(*big.Float)) == 0
+				if err != nil {
+					return false
+				}
+				switch wVal := w.(type) {
+				case *big.Float:
+					cmp, err := compareFloat(wVal, v)
+					return err == nil && cmp == 0
+				case *big.Int:
+					cmp, err := compareInt(wVal, v)
+					return err == nil && cmp == 0
+				default:
+					return false
+				}
 			}
 		},
 		syntax.TDate: func(v interface{}) func(string) bool {
@@ -271,9 +317,19 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
-				vval := v.(*big.Float)
-				fmt.Println(vval.Text('f', 64))
-				return err == nil && w.Cmp(v.(*big.Float)) < 0
+				if err != nil {
+					return false
+				}
+				switch wVal := w.(type) {
+				case *big.Float:
+					cmp, err := compareFloat(wVal, v)
+					return err == nil && cmp < 0
+				case *big.Int:
+					cmp, err := compareInt(wVal, v)
+					return err == nil && cmp < 0
+				default:
+					return false
+				}
 			}
 		},
 		syntax.TDate: func(v interface{}) func(string) bool {
@@ -293,9 +349,19 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
-				vval := v.(*big.Float)
-				fmt.Println(vval.Text('f', 64))
-				return err == nil && w.Cmp(v.(*big.Float)) <= 0
+				if err != nil {
+					return false
+				}
+				switch wVal := w.(type) {
+				case *big.Float:
+					cmp, err := compareFloat(wVal, v)
+					return err == nil && cmp <= 0
+				case *big.Int:
+					cmp, err := compareInt(wVal, v)
+					return err == nil && cmp <= 0
+				default:
+					return false
+				}
 			}
 		},
 		syntax.TDate: func(v interface{}) func(string) bool {
@@ -315,7 +381,19 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
-				return err == nil && w.Cmp(v.(*big.Float)) > 0
+				if err != nil {
+					return false
+				}
+				switch wVal := w.(type) {
+				case *big.Float:
+					cmp, err := compareFloat(wVal, v)
+					return err == nil && cmp > 0
+				case *big.Int:
+					cmp, err := compareInt(wVal, v)
+					return err == nil && cmp > 0
+				default:
+					return false
+				}
 			}
 		},
 		syntax.TDate: func(v interface{}) func(string) bool {
@@ -335,9 +413,19 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
-				vval := v.(*big.Float)
-				fmt.Println(vval.Text('f', 64))
-				return err == nil && w.Cmp(v.(*big.Float)) >= 0
+				if err != nil {
+					return false
+				}
+				switch wVal := w.(type) {
+				case *big.Float:
+					cmp, err := compareFloat(wVal, v)
+					return err == nil && cmp >= 0
+				case *big.Int:
+					cmp, err := compareInt(wVal, v)
+					return err == nil && cmp >= 0
+				default:
+					return false
+				}
 			}
 		},
 		syntax.TDate: func(v interface{}) func(string) bool {

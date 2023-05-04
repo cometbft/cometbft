@@ -2,6 +2,7 @@ package kv
 
 import (
 	"fmt"
+	"math/big"
 
 	cmtsyntax "github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/state/indexer"
@@ -46,6 +47,16 @@ func ParseEventSeqFromEventKey(key []byte) (int64, error) {
 	return eventSeq, nil
 }
 
+func getInt64(v interface{}) (int64, error) {
+	switch vVal := v.(type) {
+	case *big.Int:
+		return vVal.Int64(), nil
+	case *big.Float:
+		iVal, _ := vVal.Int64()
+		return iVal, nil
+	}
+	return -1, fmt.Errorf("unable to parse height")
+}
 func dedupHeight(conditions []cmtsyntax.Condition) (dedupConditions []cmtsyntax.Condition, heightInfo HeightInfo) {
 	heightInfo.heightEqIdx = -1
 	heightRangeExists := false
@@ -61,7 +72,12 @@ func dedupHeight(conditions []cmtsyntax.Condition) (dedupConditions []cmtsyntax.
 				}
 				found = true
 				heightCondition = append(heightCondition, c)
-				heightInfo.height = int64(c.Arg.Number())
+
+				hVal, err := getInt64(c.Arg.Number())
+				if err != nil {
+					return
+				}
+				heightInfo.height = hVal
 			} else {
 				heightInfo.onlyHeightEq = false
 				heightRangeExists = true
@@ -89,7 +105,7 @@ func dedupHeight(conditions []cmtsyntax.Condition) (dedupConditions []cmtsyntax.
 
 func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) bool {
 	if heightInfo.heightRange.Key != "" {
-		if !checkBounds(heightInfo.heightRange, keyHeight) {
+		if !checkBounds(heightInfo.heightRange, big.NewInt(keyHeight)) {
 			return false
 		}
 	} else {

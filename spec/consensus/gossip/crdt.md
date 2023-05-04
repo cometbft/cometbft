@@ -145,22 +145,21 @@ Although GST may be too strong an expectation, in practice timely communication 
 
 Let's recall why we are considering using a tuple space to propagate Tendermint's messages.
 It should be straightforward to see that Reliable Broadcast may be used to achieve Eventual Convergence and the Gossip Communication property may be used to implement Eventual $\Delta$-Timely Convergence:
-to add an entry to the tuple space, broadcast the entry;
-once delivered, add the entry to the local view.[^proof]
-If indeed we use the Gossip Communication property, then there are no obvious gains.
+
+- to add an entry to the tuple space, broadcast the entry;
+- once delivered, add the entry to the local view.[^proof]
+
+But if indeed we use the Gossip Communication property, then there are no obvious gains with respect to simply using broadcasts directly.
 
 It should also be clear that if no entries are ever removed from the tuple space, then the inverse is also true:
-to broadcast a message, add it to the local view;
-once an entry is added to the local view, deliver it.
 
-> :warning:
-> TODO: The latter is probably not true.
-> Assume a Byzantine process that equivocates. Lets  be a correct process that receives a version of the equivocating message, and  a correct process that receives the other version. From Gossip communication (ii), any correct process should deliver both versions. Eventual -Timely Convergence only allows us to deliver one of them.
+- to broadcast a message, add it to the local view;
+- once an entry is added to the local view, deliver it.
 
 However, if entries can be removed, then the Tuple Space is actually weaker, since some entries may never be seen by some nodes, and should be easier to implement.
 We argue later that it can be implemented using Anti-Entropy or Epidemic protocols/Gossiping (not equal to the Gossip Communication property).
 We pointed out [previously](#on-the-need-for-the-gossip-communication-property) that the Gossip Communication property is overkill for Tendermint because it requires even stale messages to be delivered.
-Removing tuple is exactly how stale messages get removed.
+We remove corresponding to stale messages and never deliver them them.
 
 [^proof]:  TODO: do we need to extend here?
 

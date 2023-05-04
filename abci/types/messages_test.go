@@ -9,12 +9,12 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/assert"
 
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 func TestMarshalJSON(t *testing.T) {
-	b, err := json.Marshal(&ResponseDeliverTx{})
-	assert.Nil(t, err)
+	b, err := json.Marshal(&ExecTxResult{Code: 1})
+	assert.NoError(t, err)
 	// include empty fields.
 	assert.True(t, strings.Contains(string(b), "code"))
 	r1 := ResponseCheckTx{
@@ -61,7 +61,7 @@ func TestWriteReadMessageSimple(t *testing.T) {
 
 func TestWriteReadMessage(t *testing.T) {
 	cases := []proto.Message{
-		&tmproto.Header{
+		&cmtproto.Header{
 			Height:  4,
 			ChainID: "test",
 		},
@@ -73,7 +73,7 @@ func TestWriteReadMessage(t *testing.T) {
 		err := WriteMessage(c, buf)
 		assert.Nil(t, err)
 
-		msg := new(tmproto.Header)
+		msg := new(cmtproto.Header)
 		err = ReadMessage(buf, msg)
 		assert.Nil(t, err)
 

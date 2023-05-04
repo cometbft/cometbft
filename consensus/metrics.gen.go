@@ -150,6 +150,12 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "full_prevote_delay",
 			Help:      "Interval in seconds between the proposal timestamp and the timestamp of the latest prevote in a round where all validators voted.",
 		}, append(labels, "proposer_address")).With(labelsAndValues...),
+		VoteExtensionReceiveCount: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "vote_extension_receive_count",
+			Help:      "VoteExtensionReceiveCount is the number of vote extensions received by this node. The metric is annotated by the status of the vote extension from the application, either 'accepted' or 'rejected'.",
+		}, append(labels, "status")).With(labelsAndValues...),
 		ProposalReceiveCount: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -160,7 +166,7 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "proposal_create_count",
-			Help:      "ProposalCreationCount is the total number of proposals created by this node since process start.",
+			Help:      "ProposalCreationCount is the total number of proposals created by this node since process start. The metric is annotated by the status of the proposal from the application, either 'accepted' or 'rejected'.",
 		}, labels).With(labelsAndValues...),
 		RoundVotingPowerPercent: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
@@ -201,6 +207,7 @@ func NopMetrics() *Metrics {
 		BlockGossipPartsReceived:  discard.NewCounter(),
 		QuorumPrevoteDelay:        discard.NewGauge(),
 		FullPrevoteDelay:          discard.NewGauge(),
+		VoteExtensionReceiveCount: discard.NewCounter(),
 		ProposalReceiveCount:      discard.NewCounter(),
 		ProposalCreateCount:       discard.NewCounter(),
 		RoundVotingPowerPercent:   discard.NewGauge(),

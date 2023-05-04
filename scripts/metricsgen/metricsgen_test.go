@@ -13,7 +13,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	metricsgen "github.com/tendermint/tendermint/scripts/metricsgen"
+	metricsgen "github.com/cometbft/cometbft/scripts/metricsgen"
 )
 
 const testDataDir = "./testdata"

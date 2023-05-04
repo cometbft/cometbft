@@ -9,17 +9,23 @@ import (
 
 // Command executes a shell command.
 func Command(ctx context.Context, args ...string) error {
+	_, err := CommandOutput(ctx, args...)
+	return err
+}
+
+// CommandOutput executes a shell command and return the command's output.
+func CommandOutput(ctx context.Context, args ...string) ([]byte, error) {
 	//nolint: gosec
 	// G204: Subprocess launched with a potential tainted input or cmd arguments
 	cmd := osexec.CommandContext(ctx, args[0], args[1:]...)
 	out, err := cmd.CombinedOutput()
 	switch err := err.(type) {
 	case nil:
-		return nil
+		return out, nil
 	case *osexec.ExitError:
-		return fmt.Errorf("failed to run %q:\n%v", args, string(out))
+		return nil, fmt.Errorf("failed to run %q:\n%v", args, string(out))
 	default:
-		return err
+		return nil, err
 	}
 }
 

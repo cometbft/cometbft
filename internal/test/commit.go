@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 func MakeCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet, validators []types.PrivValidator, now time.Time) (*types.Commit, error) {
@@ -21,7 +20,7 @@ func MakeCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet, valida
 			ValidatorIndex:   int32(i),
 			Height:           voteSet.GetHeight(),
 			Round:            voteSet.GetRound(),
-			Type:             tmproto.PrecommitType,
+			Type:             cmtproto.PrecommitType,
 			BlockID:          blockID,
 			Timestamp:        now,
 		}
@@ -37,11 +36,7 @@ func MakeCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet, valida
 		}
 	}
 
-	return voteSet.MakeCommit(), nil
-}
-
-func MakeVoteSet(lastState sm.State, round int32) *types.VoteSet {
-	return types.NewVoteSet(lastState.ChainID, lastState.LastBlockHeight+1, round, tmproto.PrecommitType, lastState.NextValidators)
+	return voteSet.MakeExtendedCommit(types.ABCIParams{VoteExtensionsEnableHeight: 0}).ToCommit(), nil
 }
 
 func MakeCommit(blockID types.BlockID, height int64, round int32, valSet *types.ValidatorSet, privVals []types.PrivValidator, chainID string, now time.Time) (*types.Commit, error) {
@@ -67,7 +62,7 @@ func MakeCommit(blockID types.BlockID, height int64, round int32, valSet *types.
 			ValidatorIndex:   idx,
 			Height:           height,
 			Round:            round,
-			Type:             tmproto.PrecommitType,
+			Type:             cmtproto.PrecommitType,
 			BlockID:          blockID,
 			Timestamp:        now,
 		}
@@ -86,5 +81,5 @@ func MakeCommit(blockID types.BlockID, height int64, round int32, valSet *types.
 		}
 	}
 
-	return types.NewCommit(height, round, blockID, sigs), nil
+	return &types.Commit{Height: height, Round: round, BlockID: blockID, Signatures: sigs}, nil
 }

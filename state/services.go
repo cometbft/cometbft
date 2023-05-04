@@ -1,7 +1,7 @@
 package state
 
 import (
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 //------------------------------------------------------
@@ -25,6 +25,7 @@ type BlockStore interface {
 	LoadBlock(height int64) *types.Block
 
 	SaveBlock(block *types.Block, blockParts *types.PartSet, seenCommit *types.Commit)
+	SaveBlockWithExtendedCommit(block *types.Block, blockParts *types.PartSet, seenCommit *types.ExtendedCommit)
 
 	PruneBlocks(height int64, state State) (uint64, int64, error)
 
@@ -34,6 +35,7 @@ type BlockStore interface {
 
 	LoadBlockCommit(height int64) *types.Commit
 	LoadSeenCommit(height int64) *types.Commit
+	LoadBlockExtendedCommit(height int64) *types.ExtendedCommit
 
 	DeleteLatestBlock() error
 
@@ -57,10 +59,10 @@ type EvidencePool interface {
 // to the consensus evidence pool interface
 type EmptyEvidencePool struct{}
 
-func (EmptyEvidencePool) PendingEvidence(maxBytes int64) (ev []types.Evidence, size int64) {
+func (EmptyEvidencePool) PendingEvidence(int64) (ev []types.Evidence, size int64) {
 	return nil, 0
 }
 func (EmptyEvidencePool) AddEvidence(types.Evidence) error                { return nil }
 func (EmptyEvidencePool) Update(State, types.EvidenceList)                {}
-func (EmptyEvidencePool) CheckEvidence(evList types.EvidenceList) error   { return nil }
-func (EmptyEvidencePool) ReportConflictingVotes(voteA, voteB *types.Vote) {}
+func (EmptyEvidencePool) CheckEvidence(types.EvidenceList) error          { return nil }
+func (EmptyEvidencePool) ReportConflictingVotes(*types.Vote, *types.Vote) {}

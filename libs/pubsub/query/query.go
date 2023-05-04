@@ -1,5 +1,5 @@
 // Package query implements the custom query format used to filter event
-// subscriptions in Tendermint.
+// subscriptions in CometBFT.
 //
 //	abci.invoice.number=22 AND abci.invoice.owner=Ivan
 //
@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/pubsub/query/syntax"
+	"github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 )
 
 // All is a query that matches all events.

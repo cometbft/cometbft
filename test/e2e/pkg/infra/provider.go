@@ -3,7 +3,7 @@ package infra
 import (
 	"context"
 
-	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
 // Provider defines an API for manipulating the infrastructure of a

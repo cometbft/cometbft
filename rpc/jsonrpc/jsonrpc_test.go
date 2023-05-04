@@ -18,13 +18,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	tmbytes "github.com/tendermint/tendermint/libs/bytes"
-	"github.com/tendermint/tendermint/libs/log"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
 
-	client "github.com/tendermint/tendermint/rpc/jsonrpc/client"
-	server "github.com/tendermint/tendermint/rpc/jsonrpc/server"
-	types "github.com/tendermint/tendermint/rpc/jsonrpc/types"
+	client "github.com/cometbft/cometbft/rpc/jsonrpc/client"
+	server "github.com/cometbft/cometbft/rpc/jsonrpc/server"
+	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 // Client and Server should work over tcp or unix sockets
@@ -54,7 +54,7 @@ type ResultEchoBytes struct {
 }
 
 type ResultEchoDataBytes struct {
-	Value tmbytes.HexBytes `json:"value"`
+	Value cmtbytes.HexBytes `json:"value"`
 }
 
 type ResultEchoWithDefault struct {
@@ -71,27 +71,27 @@ var Routes = map[string]*server.RPCFunc{
 	"echo_default":    server.NewRPCFunc(EchoWithDefault, "arg", server.Cacheable("arg")),
 }
 
-func EchoResult(ctx *types.Context, v string) (*ResultEcho, error) {
+func EchoResult(_ *types.Context, v string) (*ResultEcho, error) {
 	return &ResultEcho{v}, nil
 }
 
-func EchoWSResult(ctx *types.Context, v string) (*ResultEcho, error) {
+func EchoWSResult(_ *types.Context, v string) (*ResultEcho, error) {
 	return &ResultEcho{v}, nil
 }
 
-func EchoIntResult(ctx *types.Context, v int) (*ResultEchoInt, error) {
+func EchoIntResult(_ *types.Context, v int) (*ResultEchoInt, error) {
 	return &ResultEchoInt{v}, nil
 }
 
-func EchoBytesResult(ctx *types.Context, v []byte) (*ResultEchoBytes, error) {
+func EchoBytesResult(_ *types.Context, v []byte) (*ResultEchoBytes, error) {
 	return &ResultEchoBytes{v}, nil
 }
 
-func EchoDataBytesResult(ctx *types.Context, v tmbytes.HexBytes) (*ResultEchoDataBytes, error) {
+func EchoDataBytesResult(_ *types.Context, v cmtbytes.HexBytes) (*ResultEchoDataBytes, error) {
 	return &ResultEchoDataBytes{v}, nil
 }
 
-func EchoWithDefault(ctx *types.Context, v *int) (*ResultEchoWithDefault, error) {
+func EchoWithDefault(_ *types.Context, v *int) (*ResultEchoWithDefault, error) {
 	val := -1
 	if v != nil {
 		val = *v
@@ -201,7 +201,7 @@ func echoBytesViaHTTP(cl client.Caller, bytes []byte) ([]byte, error) {
 	return result.Value, nil
 }
 
-func echoDataBytesViaHTTP(cl client.Caller, bytes tmbytes.HexBytes) (tmbytes.HexBytes, error) {
+func echoDataBytesViaHTTP(cl client.Caller, bytes cmtbytes.HexBytes) (cmtbytes.HexBytes, error) {
 	params := map[string]interface{}{
 		"arg": bytes,
 	}
@@ -235,12 +235,12 @@ func testWithHTTPClient(t *testing.T, cl client.HTTPClient) {
 	require.NoError(t, err)
 	assert.Equal(t, got2, val2)
 
-	val3 := tmbytes.HexBytes(randBytes(t))
+	val3 := cmtbytes.HexBytes(randBytes(t))
 	got3, err := echoDataBytesViaHTTP(cl, val3)
 	require.NoError(t, err)
 	assert.Equal(t, got3, val3)
 
-	val4 := tmrand.Intn(10000)
+	val4 := cmtrand.Intn(10000)
 	got4, err := echoIntViaHTTP(cl, val4)
 	require.NoError(t, err)
 	assert.Equal(t, got4, val4)
@@ -249,7 +249,7 @@ func testWithHTTPClient(t *testing.T, cl client.HTTPClient) {
 	require.NoError(t, err)
 	assert.Equal(t, got5, -1)
 
-	val6 := tmrand.Intn(10000)
+	val6 := cmtrand.Intn(10000)
 	got6, err := echoWithDefaultViaHTTP(cl, &val6)
 	require.NoError(t, err)
 	assert.Equal(t, got6, val6)
@@ -447,7 +447,7 @@ func TestJSONRPCCaching(t *testing.T) {
 	assert.Equal(t, "", res1.Header.Get("Cache-control"))
 
 	// Supplying the arg should result in caching
-	params["arg"] = tmrand.Intn(10000)
+	params["arg"] = cmtrand.Intn(10000)
 	req, err = types.MapToRequest(types.JSONRPCIntID(1001), "echo_default", params)
 	require.NoError(t, err)
 
@@ -483,7 +483,7 @@ func TestURICaching(t *testing.T) {
 	assert.Equal(t, "", res1.Header.Get("Cache-control"))
 
 	// Supplying the arg should result in caching
-	args.Set("arg", fmt.Sprintf("%d", tmrand.Intn(10000)))
+	args.Set("arg", fmt.Sprintf("%d", cmtrand.Intn(10000)))
 	res2, err := rawURIRequest(t, cl, httpAddr+"/echo_default", args)
 	defer func() { _ = res2.Body.Close() }()
 	require.NoError(t, err)
@@ -500,7 +500,7 @@ func rawURIRequest(t *testing.T, cl *http.Client, url string, args url.Values) (
 }
 
 func randBytes(t *testing.T) []byte {
-	n := tmrand.Intn(10) + 2
+	n := cmtrand.Intn(10) + 2
 	buf := make([]byte, n)
 	_, err := crand.Read(buf)
 	require.Nil(t, err)

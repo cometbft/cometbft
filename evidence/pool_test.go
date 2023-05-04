@@ -9,22 +9,21 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	"github.com/tendermint/tendermint/evidence"
-	"github.com/tendermint/tendermint/evidence/mocks"
-	"github.com/tendermint/tendermint/internal/test"
-	"github.com/tendermint/tendermint/libs/log"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	sm "github.com/tendermint/tendermint/state"
-	smmocks "github.com/tendermint/tendermint/state/mocks"
-	"github.com/tendermint/tendermint/store"
-	"github.com/tendermint/tendermint/types"
-	"github.com/tendermint/tendermint/version"
+	"github.com/cometbft/cometbft/evidence"
+	"github.com/cometbft/cometbft/evidence/mocks"
+	"github.com/cometbft/cometbft/internal/test"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	sm "github.com/cometbft/cometbft/state"
+	smmocks "github.com/cometbft/cometbft/state/mocks"
+	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/version"
 )
 
 func TestMain(m *testing.M) {
-
 	code := m.Run()
 	os.Exit(code)
 }
@@ -92,7 +91,6 @@ func TestEvidencePoolBasic(t *testing.T) {
 	assert.NoError(t, pool.AddEvidence(ev))
 	evs, _ = pool.PendingEvidence(defaultEvidenceMaxBytes)
 	assert.Equal(t, 1, len(evs))
-
 }
 
 // Tests inbound evidence for the right time and height
@@ -126,8 +124,10 @@ func TestAddExpiredEvidence(t *testing.T) {
 		{height, defaultEvidenceTime, false, "valid evidence"},
 		{expiredHeight, defaultEvidenceTime, false, "valid evidence (despite old height)"},
 		{height - 1, expiredEvidenceTime, false, "valid evidence (despite old time)"},
-		{expiredHeight - 1, expiredEvidenceTime, true,
-			"evidence from height 1 (created at: 2019-01-01 00:00:00 +0000 UTC) is too old"},
+		{
+			expiredHeight - 1, expiredEvidenceTime, true,
+			"evidence from height 1 (created at: 2019-01-01 00:00:00 +0000 UTC) is too old",
+		},
 		{height, defaultEvidenceTime.Add(1 * time.Minute), true, "evidence time and block time is different"},
 	}
 
@@ -196,8 +196,8 @@ func TestEvidencePoolUpdate(t *testing.T) {
 	ev, err := types.NewMockDuplicateVoteEvidenceWithValidator(height, defaultEvidenceTime.Add(21*time.Minute),
 		val, evidenceChainID)
 	require.NoError(t, err)
-	lastCommit := makeCommit(height, val.PrivKey.PubKey().Address())
-	block := types.MakeBlock(height+1, []types.Tx{}, lastCommit, []types.Evidence{ev})
+	lastExtCommit := makeExtCommit(height, val.PrivKey.PubKey().Address())
+	block := types.MakeBlock(height+1, []types.Tx{}, lastExtCommit.ToCommit(), []types.Evidence{ev})
 	// update state (partially)
 	state.LastBlockHeight = height + 1
 	state.LastBlockTime = defaultEvidenceTime.Add(22 * time.Minute)
@@ -353,7 +353,6 @@ func TestRecoverPendingEvidence(t *testing.T) {
 	assert.Equal(t, 1, len(evList))
 	next := newPool.EvidenceFront()
 	assert.Equal(t, goodEvidence, next.Value.(types.Evidence))
-
 }
 
 func initializeStateFromValidatorSet(valSet *types.ValidatorSet, height int64) sm.Store {
@@ -395,7 +394,6 @@ func initializeStateFromValidatorSet(valSet *types.ValidatorSet, height int64) s
 }
 
 func initializeValidatorState(privVal types.PrivValidator, height int64) sm.Store {
-
 	pubKey, _ := privVal.GetPubKey()
 	validator := &types.Validator{Address: pubKey.Address(), VotingPower: 10, PubKey: pubKey}
 
@@ -414,31 +412,36 @@ func initializeBlockStore(db dbm.DB, state sm.State, valAddr []byte) (*store.Blo
 	blockStore := store.NewBlockStore(db)
 
 	for i := int64(1); i <= state.LastBlockHeight; i++ {
-		lastCommit := makeCommit(i-1, valAddr)
-		block := state.MakeBlock(i, test.MakeNTxs(i, 1), lastCommit, nil, state.Validators.Proposer.Address)
+		lastCommit := makeExtCommit(i-1, valAddr)
+		block := state.MakeBlock(i, test.MakeNTxs(i, 1), lastCommit.ToCommit(), nil, state.Validators.Proposer.Address)
 		block.Header.Time = defaultEvidenceTime.Add(time.Duration(i) * time.Minute)
-		block.Header.Version = tmversion.Consensus{Block: version.BlockProtocol, App: 1}
+		block.Header.Version = cmtversion.Consensus{Block: version.BlockProtocol, App: 1}
 		const parts = 1
 		partSet, err := block.MakePartSet(parts)
 		if err != nil {
 			return nil, err
 		}
 
-		seenCommit := makeCommit(i, valAddr)
-		blockStore.SaveBlock(block, partSet, seenCommit)
+		seenCommit := makeExtCommit(i, valAddr)
+		blockStore.SaveBlockWithExtendedCommit(block, partSet, seenCommit)
 	}
 
 	return blockStore, nil
 }
 
-func makeCommit(height int64, valAddr []byte) *types.Commit {
-	commitSigs := []types.CommitSig{{
-		BlockIDFlag:      types.BlockIDFlagCommit,
-		ValidatorAddress: valAddr,
-		Timestamp:        defaultEvidenceTime,
-		Signature:        []byte("Signature"),
-	}}
-	return types.NewCommit(height, 0, types.BlockID{}, commitSigs)
+func makeExtCommit(height int64, valAddr []byte) *types.ExtendedCommit {
+	return &types.ExtendedCommit{
+		Height: height,
+		ExtendedSignatures: []types.ExtendedCommitSig{{
+			CommitSig: types.CommitSig{
+				BlockIDFlag:      types.BlockIDFlagCommit,
+				ValidatorAddress: valAddr,
+				Timestamp:        defaultEvidenceTime,
+				Signature:        []byte("Signature"),
+			},
+			ExtensionSignature: []byte("Extended Signature"),
+		}},
+	}
 }
 
 func defaultTestPool(t *testing.T, height int64) (*evidence.Pool, types.MockPV) {

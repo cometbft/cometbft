@@ -6,11 +6,11 @@ import (
 	"strings"
 	"sync"
 
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	"github.com/tendermint/tendermint/p2p"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/types"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
+	"github.com/cometbft/cometbft/p2p"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 type RoundVoteSet struct {
@@ -39,9 +39,10 @@ We let each peer provide us with up to 2 unexpected "catchup" rounds.
 One for their LastCommit round, and another for the official commit round.
 */
 type HeightVoteSet struct {
-	chainID string
-	height  int64
-	valSet  *types.ValidatorSet
+	chainID           string
+	height            int64
+	valSet            *types.ValidatorSet
+	extensionsEnabled bool
 
 	mtx               sync.Mutex
 	round             int32                  // max tracked round
@@ -51,7 +52,17 @@ type HeightVoteSet struct {
 
 func NewHeightVoteSet(chainID string, height int64, valSet *types.ValidatorSet) *HeightVoteSet {
 	hvs := &HeightVoteSet{
-		chainID: chainID,
+		chainID:           chainID,
+		extensionsEnabled: false,
+	}
+	hvs.Reset(height, valSet)
+	return hvs
+}
+
+func NewExtendedHeightVoteSet(chainID string, height int64, valSet *types.ValidatorSet) *HeightVoteSet {
+	hvs := &HeightVoteSet{
+		chainID:           chainID,
+		extensionsEnabled: true,
 	}
 	hvs.Reset(height, valSet)
 	return hvs
@@ -86,7 +97,7 @@ func (hvs *HeightVoteSet) Round() int32 {
 func (hvs *HeightVoteSet) SetRound(round int32) {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
-	newRound := tmmath.SafeSubInt32(hvs.round, 1)
+	newRound := cmtmath.SafeSubInt32(hvs.round, 1)
 	if hvs.round != 0 && (round < newRound) {
 		panic("SetRound() must increment hvs.round")
 	}
@@ -104,8 +115,13 @@ func (hvs *HeightVoteSet) addRound(round int32) {
 		panic("addRound() for an existing round")
 	}
 	// log.Debug("addRound(round)", "round", round)
-	prevotes := types.NewVoteSet(hvs.chainID, hvs.height, round, tmproto.PrevoteType, hvs.valSet)
-	precommits := types.NewVoteSet(hvs.chainID, hvs.height, round, tmproto.PrecommitType, hvs.valSet)
+	prevotes := types.NewVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrevoteType, hvs.valSet)
+	var precommits *types.VoteSet
+	if hvs.extensionsEnabled {
+		precommits = types.NewExtendedVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrecommitType, hvs.valSet)
+	} else {
+		precommits = types.NewVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrecommitType, hvs.valSet)
+	}
 	hvs.roundVoteSets[round] = RoundVoteSet{
 		Prevotes:   prevotes,
 		Precommits: precommits,
@@ -114,9 +130,12 @@ func (hvs *HeightVoteSet) addRound(round int32) {
 
 // Duplicate votes return added=false, err=nil.
 // By convention, peerID is "" if origin is self.
-func (hvs *HeightVoteSet) AddVote(vote *types.Vote, peerID p2p.ID) (added bool, err error) {
+func (hvs *HeightVoteSet) AddVote(vote *types.Vote, peerID p2p.ID, extEnabled bool) (added bool, err error) {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
+	if hvs.extensionsEnabled != extEnabled {
+		panic(fmt.Errorf("extensions enabled general param does not match the one in HeightVoteSet %t!=%t", hvs.extensionsEnabled, extEnabled))
+	}
 	if !types.IsVoteTypeValid(vote.Type) {
 		return
 	}
@@ -139,13 +158,13 @@ func (hvs *HeightVoteSet) AddVote(vote *types.Vote, peerID p2p.ID) (added bool, 
 func (hvs *HeightVoteSet) Prevotes(round int32) *types.VoteSet {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
-	return hvs.getVoteSet(round, tmproto.PrevoteType)
+	return hvs.getVoteSet(round, cmtproto.PrevoteType)
 }
 
 func (hvs *HeightVoteSet) Precommits(round int32) *types.VoteSet {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
-	return hvs.getVoteSet(round, tmproto.PrecommitType)
+	return hvs.getVoteSet(round, cmtproto.PrecommitType)
 }
 
 // Last round and blockID that has +2/3 prevotes for a particular block or nil.
@@ -154,7 +173,7 @@ func (hvs *HeightVoteSet) POLInfo() (polRound int32, polBlockID types.BlockID) {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
 	for r := hvs.round; r >= 0; r-- {
-		rvs := hvs.getVoteSet(r, tmproto.PrevoteType)
+		rvs := hvs.getVoteSet(r, cmtproto.PrevoteType)
 		polBlockID, ok := rvs.TwoThirdsMajority()
 		if ok {
 			return r, polBlockID
@@ -163,15 +182,15 @@ func (hvs *HeightVoteSet) POLInfo() (polRound int32, polBlockID types.BlockID) {
 	return -1, types.BlockID{}
 }
 
-func (hvs *HeightVoteSet) getVoteSet(round int32, voteType tmproto.SignedMsgType) *types.VoteSet {
+func (hvs *HeightVoteSet) getVoteSet(round int32, voteType cmtproto.SignedMsgType) *types.VoteSet {
 	rvs, ok := hvs.roundVoteSets[round]
 	if !ok {
 		return nil
 	}
 	switch voteType {
-	case tmproto.PrevoteType:
+	case cmtproto.PrevoteType:
 		return rvs.Prevotes
-	case tmproto.PrecommitType:
+	case cmtproto.PrecommitType:
 		return rvs.Precommits
 	default:
 		panic(fmt.Sprintf("Unexpected vote type %X", voteType))
@@ -184,7 +203,7 @@ func (hvs *HeightVoteSet) getVoteSet(round int32, voteType tmproto.SignedMsgType
 // TODO: implement ability to remove peers too
 func (hvs *HeightVoteSet) SetPeerMaj23(
 	round int32,
-	voteType tmproto.SignedMsgType,
+	voteType cmtproto.SignedMsgType,
 	peerID p2p.ID,
 	blockID types.BlockID) error {
 	hvs.mtx.Lock()
@@ -238,7 +257,7 @@ func (hvs *HeightVoteSet) StringIndented(indent string) string {
 func (hvs *HeightVoteSet) MarshalJSON() ([]byte, error) {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
-	return tmjson.Marshal(hvs.toAllRoundVotes())
+	return cmtjson.Marshal(hvs.toAllRoundVotes())
 }
 
 func (hvs *HeightVoteSet) toAllRoundVotes() []roundVotes {

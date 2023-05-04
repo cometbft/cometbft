@@ -7,11 +7,11 @@ import (
 	"os"
 	"testing"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/pubsub/query"
-	"github.com/tendermint/tendermint/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/pubsub/query"
+	"github.com/cometbft/cometbft/types"
 )
 
 func BenchmarkTxSearch(b *testing.B) {
@@ -47,7 +47,7 @@ func BenchmarkTxSearch(b *testing.B) {
 			Height: int64(i),
 			Index:  0,
 			Tx:     types.Tx(string(txBz)),
-			Result: abci.ResponseDeliverTx{
+			Result: abci.ExecTxResult{
 				Data:   []byte{0},
 				Code:   abci.CodeTypeOK,
 				Log:    "",

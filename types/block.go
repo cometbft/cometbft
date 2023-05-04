@@ -10,16 +10,16 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	gogotypes "github.com/cosmos/gogoproto/types"
 
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/merkle"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	"github.com/tendermint/tendermint/libs/bits"
-	tmbytes "github.com/tendermint/tendermint/libs/bytes"
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	"github.com/tendermint/tendermint/version"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/merkle"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	"github.com/cometbft/cometbft/libs/bits"
+	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	"github.com/cometbft/cometbft/version"
 )
 
 const (
@@ -39,9 +39,9 @@ const (
 	MaxOverheadForBlock int64 = 11
 )
 
-// Block defines the atomic unit of a Tendermint blockchain.
+// Block defines the atomic unit of a CometBFT blockchain.
 type Block struct {
-	mtx tmsync.Mutex
+	mtx cmtsync.Mutex
 
 	Header     `json:"header"`
 	Data       `json:"data"`
@@ -120,7 +120,7 @@ func (b *Block) fillHeader() {
 
 // Hash computes and returns the block hash.
 // If the block is incomplete, block hash is nil for safety.
-func (b *Block) Hash() tmbytes.HexBytes {
+func (b *Block) Hash() cmtbytes.HexBytes {
 	if b == nil {
 		return nil
 	}
@@ -217,12 +217,12 @@ func (b *Block) StringShort() string {
 }
 
 // ToProto converts Block to protobuf
-func (b *Block) ToProto() (*tmproto.Block, error) {
+func (b *Block) ToProto() (*cmtproto.Block, error) {
 	if b == nil {
 		return nil, errors.New("nil Block")
 	}
 
-	pb := new(tmproto.Block)
+	pb := new(cmtproto.Block)
 
 	pb.Header = *b.Header.ToProto()
 	pb.LastCommit = b.LastCommit.ToProto()
@@ -239,7 +239,7 @@ func (b *Block) ToProto() (*tmproto.Block, error) {
 
 // FromProto sets a protobuf Block to the given pointer.
 // It returns an error if the block is invalid.
-func BlockFromProto(bp *tmproto.Block) (*Block, error) {
+func BlockFromProto(bp *cmtproto.Block) (*Block, error) {
 	if bp == nil {
 		return nil, errors.New("nil block")
 	}
@@ -317,43 +317,43 @@ func MaxDataBytesNoEvidence(maxBytes int64, valsCount int) int64 {
 
 //-----------------------------------------------------------------------------
 
-// Header defines the structure of a Tendermint block header.
+// Header defines the structure of a CometBFT block header.
 // NOTE: changes to the Header should be duplicated in:
 // - header.Hash()
 // - abci.Header
-// - https://github.com/tendermint/tendermint/blob/main/spec/blockchain/blockchain.md
+// - https://github.com/cometbft/cometbft/blob/main/spec/blockchain/blockchain.md
 type Header struct {
 	// basic block info
-	Version tmversion.Consensus `json:"version"`
-	ChainID string              `json:"chain_id"`
-	Height  int64               `json:"height"`
-	Time    time.Time           `json:"time"`
+	Version cmtversion.Consensus `json:"version"`
+	ChainID string               `json:"chain_id"`
+	Height  int64                `json:"height"`
+	Time    time.Time            `json:"time"`
 
 	// prev block info
 	LastBlockID BlockID `json:"last_block_id"`
 
 	// hashes of block data
-	LastCommitHash tmbytes.HexBytes `json:"last_commit_hash"` // commit from validators from the last block
-	DataHash       tmbytes.HexBytes `json:"data_hash"`        // transactions
+	LastCommitHash cmtbytes.HexBytes `json:"last_commit_hash"` // commit from validators from the last block
+	DataHash       cmtbytes.HexBytes `json:"data_hash"`        // transactions
 
 	// hashes from the app output from the prev block
-	ValidatorsHash     tmbytes.HexBytes `json:"validators_hash"`      // validators for the current block
-	NextValidatorsHash tmbytes.HexBytes `json:"next_validators_hash"` // validators for the next block
-	ConsensusHash      tmbytes.HexBytes `json:"consensus_hash"`       // consensus params for current block
-	AppHash            tmbytes.HexBytes `json:"app_hash"`             // state after txs from the previous block
+	ValidatorsHash     cmtbytes.HexBytes `json:"validators_hash"`      // validators for the current block
+	NextValidatorsHash cmtbytes.HexBytes `json:"next_validators_hash"` // validators for the next block
+	ConsensusHash      cmtbytes.HexBytes `json:"consensus_hash"`       // consensus params for current block
+	AppHash            cmtbytes.HexBytes `json:"app_hash"`             // state after txs from the previous block
 	// root hash of all results from the txs from the previous block
-	// see `deterministicResponseDeliverTx` to understand which parts of a tx is hashed into here
-	LastResultsHash tmbytes.HexBytes `json:"last_results_hash"`
+	// see `deterministicExecTxResult` to understand which parts of a tx is hashed into here
+	LastResultsHash cmtbytes.HexBytes `json:"last_results_hash"`
 
 	// consensus info
-	EvidenceHash    tmbytes.HexBytes `json:"evidence_hash"`    // evidence included in the block
-	ProposerAddress Address          `json:"proposer_address"` // original proposer of the block
+	EvidenceHash    cmtbytes.HexBytes `json:"evidence_hash"`    // evidence included in the block
+	ProposerAddress Address           `json:"proposer_address"` // original proposer of the block
 }
 
 // Populate the Header with state-derived data.
 // Call this after MakeBlock to complete the Header.
 func (h *Header) Populate(
-	version tmversion.Consensus, chainID string,
+	version cmtversion.Consensus, chainID string,
 	timestamp time.Time, lastBlockID BlockID,
 	valHash, nextValHash []byte,
 	consensusHash, appHash, lastResultsHash []byte,
@@ -437,7 +437,7 @@ func (h Header) ValidateBasic() error {
 // Returns nil if ValidatorHash is missing,
 // since a Header is not valid unless there is
 // a ValidatorsHash (corresponding to the validator set).
-func (h *Header) Hash() tmbytes.HexBytes {
+func (h *Header) Hash() cmtbytes.HexBytes {
 	if h == nil || len(h.ValidatorsHash) == 0 {
 		return nil
 	}
@@ -514,12 +514,12 @@ func (h *Header) StringIndented(indent string) string {
 }
 
 // ToProto converts Header to protobuf
-func (h *Header) ToProto() *tmproto.Header {
+func (h *Header) ToProto() *cmtproto.Header {
 	if h == nil {
 		return nil
 	}
 
-	return &tmproto.Header{
+	return &cmtproto.Header{
 		Version:            h.Version,
 		ChainID:            h.ChainID,
 		Height:             h.Height,
@@ -539,7 +539,7 @@ func (h *Header) ToProto() *tmproto.Header {
 
 // FromProto sets a protobuf Header to the given pointer.
 // It returns an error if the header is invalid.
-func HeaderFromProto(ph *tmproto.Header) (Header, error) {
+func HeaderFromProto(ph *cmtproto.Header) (Header, error) {
 	if ph == nil {
 		return Header{}, errors.New("nil Header")
 	}
@@ -600,16 +600,6 @@ type CommitSig struct {
 	Signature        []byte      `json:"signature"`
 }
 
-// NewCommitSigForBlock returns new CommitSig with BlockIDFlagCommit.
-func NewCommitSigForBlock(signature []byte, valAddr Address, ts time.Time) CommitSig {
-	return CommitSig{
-		BlockIDFlag:      BlockIDFlagCommit,
-		ValidatorAddress: valAddr,
-		Timestamp:        ts,
-		Signature:        signature,
-	}
-}
-
 func MaxCommitBytes(valCount int) int64 {
 	// From the repeated commit sig field
 	var protoEncodingOverhead int64 = 2
@@ -624,16 +614,6 @@ func NewCommitSigAbsent() CommitSig {
 	}
 }
 
-// ForBlock returns true if CommitSig is for the block.
-func (cs CommitSig) ForBlock() bool {
-	return cs.BlockIDFlag == BlockIDFlagCommit
-}
-
-// Absent returns true if CommitSig is absent.
-func (cs CommitSig) Absent() bool {
-	return cs.BlockIDFlag == BlockIDFlagAbsent
-}
-
 // CommitSig returns a string representation of CommitSig.
 //
 // 1. first 6 bytes of signature
@@ -642,8 +622,8 @@ func (cs CommitSig) Absent() bool {
 // 4. timestamp
 func (cs CommitSig) String() string {
 	return fmt.Sprintf("CommitSig{%X by %X on %v @ %s}",
-		tmbytes.Fingerprint(cs.Signature),
-		tmbytes.Fingerprint(cs.ValidatorAddress),
+		cmtbytes.Fingerprint(cs.Signature),
+		cmtbytes.Fingerprint(cs.ValidatorAddress),
 		cs.BlockIDFlag,
 		CanonicalTime(cs.Timestamp))
 }
@@ -706,13 +686,13 @@ func (cs CommitSig) ValidateBasic() error {
 }
 
 // ToProto converts CommitSig to protobuf
-func (cs *CommitSig) ToProto() *tmproto.CommitSig {
+func (cs *CommitSig) ToProto() *cmtproto.CommitSig {
 	if cs == nil {
 		return nil
 	}
 
-	return &tmproto.CommitSig{
-		BlockIdFlag:      tmproto.BlockIDFlag(cs.BlockIDFlag),
+	return &cmtproto.CommitSig{
+		BlockIdFlag:      cmtproto.BlockIDFlag(cs.BlockIDFlag),
 		ValidatorAddress: cs.ValidatorAddress,
 		Timestamp:        cs.Timestamp,
 		Signature:        cs.Signature,
@@ -721,14 +701,133 @@ func (cs *CommitSig) ToProto() *tmproto.CommitSig {
 
 // FromProto sets a protobuf CommitSig to the given pointer.
 // It returns an error if the CommitSig is invalid.
-func (cs *CommitSig) FromProto(csp tmproto.CommitSig) error {
-
+func (cs *CommitSig) FromProto(csp cmtproto.CommitSig) error {
 	cs.BlockIDFlag = BlockIDFlag(csp.BlockIdFlag)
 	cs.ValidatorAddress = csp.ValidatorAddress
 	cs.Timestamp = csp.Timestamp
 	cs.Signature = csp.Signature
 
 	return cs.ValidateBasic()
+}
+
+//-------------------------------------
+
+// ExtendedCommitSig contains a commit signature along with its corresponding
+// vote extension and vote extension signature.
+type ExtendedCommitSig struct {
+	CommitSig                 // Commit signature
+	Extension          []byte // Vote extension
+	ExtensionSignature []byte // Vote extension signature
+}
+
+// NewExtendedCommitSigAbsent returns new ExtendedCommitSig with
+// BlockIDFlagAbsent. Other fields are all empty.
+func NewExtendedCommitSigAbsent() ExtendedCommitSig {
+	return ExtendedCommitSig{CommitSig: NewCommitSigAbsent()}
+}
+
+// String returns a string representation of an ExtendedCommitSig.
+//
+// 1. commit sig
+// 2. first 6 bytes of vote extension
+// 3. first 6 bytes of vote extension signature
+func (ecs ExtendedCommitSig) String() string {
+	return fmt.Sprintf("ExtendedCommitSig{%s with %X %X}",
+		ecs.CommitSig,
+		cmtbytes.Fingerprint(ecs.Extension),
+		cmtbytes.Fingerprint(ecs.ExtensionSignature),
+	)
+}
+
+// ValidateBasic checks whether the structure is well-formed.
+func (ecs ExtendedCommitSig) ValidateBasic() error {
+	if err := ecs.CommitSig.ValidateBasic(); err != nil {
+		return err
+	}
+
+	if ecs.BlockIDFlag == BlockIDFlagCommit {
+		if len(ecs.Extension) > MaxVoteExtensionSize {
+			return fmt.Errorf("vote extension is too big (max: %d)", MaxVoteExtensionSize)
+		}
+		if len(ecs.ExtensionSignature) > MaxSignatureSize {
+			return fmt.Errorf("vote extension signature is too big (max: %d)", MaxSignatureSize)
+		}
+		return nil
+	}
+
+	if len(ecs.ExtensionSignature) == 0 && len(ecs.Extension) != 0 {
+		return errors.New("vote extension signature absent on vote with extension")
+	}
+	return nil
+}
+
+// EnsureExtensions validates that a vote extensions signature is present for
+// this ExtendedCommitSig.
+func (ecs ExtendedCommitSig) EnsureExtension(extEnabled bool) error {
+	if extEnabled {
+		if ecs.BlockIDFlag == BlockIDFlagCommit && len(ecs.ExtensionSignature) == 0 {
+			return fmt.Errorf("vote extension signature is missing; validator addr %s, timestamp %v",
+				ecs.ValidatorAddress.String(),
+				ecs.Timestamp,
+			)
+		}
+		if ecs.BlockIDFlag != BlockIDFlagCommit && len(ecs.Extension) != 0 {
+			return fmt.Errorf("non-commit vote extension present; validator addr %s, timestamp %v",
+				ecs.ValidatorAddress.String(),
+				ecs.Timestamp,
+			)
+		}
+		if ecs.BlockIDFlag != BlockIDFlagCommit && len(ecs.ExtensionSignature) != 0 {
+			return fmt.Errorf("non-commit vote extension signature present; validator addr %s, timestamp %v",
+				ecs.ValidatorAddress.String(),
+				ecs.Timestamp,
+			)
+		}
+	} else {
+		if len(ecs.Extension) != 0 {
+			return fmt.Errorf("vote extension present but extensions disabled; validator addr %s, timestamp %v",
+				ecs.ValidatorAddress.String(),
+				ecs.Timestamp,
+			)
+		}
+		if len(ecs.ExtensionSignature) != 0 {
+			return fmt.Errorf("vote extension signature present but extensions disabled; validator addr %s, timestamp %v",
+				ecs.ValidatorAddress.String(),
+				ecs.Timestamp,
+			)
+		}
+	}
+	return nil
+}
+
+// ToProto converts the ExtendedCommitSig to its Protobuf representation.
+func (ecs *ExtendedCommitSig) ToProto() *cmtproto.ExtendedCommitSig {
+	if ecs == nil {
+		return nil
+	}
+
+	return &cmtproto.ExtendedCommitSig{
+		BlockIdFlag:        cmtproto.BlockIDFlag(ecs.BlockIDFlag),
+		ValidatorAddress:   ecs.ValidatorAddress,
+		Timestamp:          ecs.Timestamp,
+		Signature:          ecs.Signature,
+		Extension:          ecs.Extension,
+		ExtensionSignature: ecs.ExtensionSignature,
+	}
+}
+
+// FromProto populates the ExtendedCommitSig with values from the given
+// Protobuf representation. Returns an error if the ExtendedCommitSig is
+// invalid.
+func (ecs *ExtendedCommitSig) FromProto(ecsp cmtproto.ExtendedCommitSig) error {
+	ecs.BlockIDFlag = BlockIDFlag(ecsp.BlockIdFlag)
+	ecs.ValidatorAddress = ecsp.ValidatorAddress
+	ecs.Timestamp = ecsp.Timestamp
+	ecs.Signature = ecsp.Signature
+	ecs.Extension = ecsp.Extension
+	ecs.ExtensionSignature = ecsp.ExtensionSignature
+
+	return ecs.ValidateBasic()
 }
 
 //-------------------------------------
@@ -748,44 +847,18 @@ type Commit struct {
 	// Memoized in first call to corresponding method.
 	// NOTE: can't memoize in constructor because constructor isn't used for
 	// unmarshaling.
-	hash     tmbytes.HexBytes
-	bitArray *bits.BitArray
+	hash cmtbytes.HexBytes
 }
 
-// NewCommit returns a new Commit.
-func NewCommit(height int64, round int32, blockID BlockID, commitSigs []CommitSig) *Commit {
-	return &Commit{
-		Height:     height,
-		Round:      round,
-		BlockID:    blockID,
-		Signatures: commitSigs,
-	}
-}
-
-// CommitToVoteSet constructs a VoteSet from the Commit and validator set.
-// Panics if signatures from the commit can't be added to the voteset.
-// Inverse of VoteSet.MakeCommit().
-func CommitToVoteSet(chainID string, commit *Commit, vals *ValidatorSet) *VoteSet {
-	voteSet := NewVoteSet(chainID, commit.Height, commit.Round, tmproto.PrecommitType, vals)
-	for idx, commitSig := range commit.Signatures {
-		if commitSig.Absent() {
-			continue // OK, some precommits can be missing.
-		}
-		added, err := voteSet.AddVote(commit.GetVote(int32(idx)))
-		if !added || err != nil {
-			panic(fmt.Sprintf("Failed to reconstruct LastCommit: %v", err))
-		}
-	}
-	return voteSet
-}
-
-// GetVote converts the CommitSig for the given valIdx to a Vote.
+// GetVote converts the CommitSig for the given valIdx to a Vote. Commits do
+// not contain vote extensions, so the vote extension and vote extension
+// signature will not be present in the returned vote.
 // Returns nil if the precommit at valIdx is nil.
 // Panics if valIdx >= commit.Size().
 func (commit *Commit) GetVote(valIdx int32) *Vote {
 	commitSig := commit.Signatures[valIdx]
 	return &Vote{
-		Type:             tmproto.PrecommitType,
+		Type:             cmtproto.PrecommitType,
 		Height:           commit.Height,
 		Round:            commit.Round,
 		BlockID:          commitSig.BlockID(commit.BlockID),
@@ -810,58 +883,12 @@ func (commit *Commit) VoteSignBytes(chainID string, valIdx int32) []byte {
 	return VoteSignBytes(chainID, v)
 }
 
-// Type returns the vote type of the commit, which is always VoteTypePrecommit
-// Implements VoteSetReader.
-func (commit *Commit) Type() byte {
-	return byte(tmproto.PrecommitType)
-}
-
-// GetHeight returns height of the commit.
-// Implements VoteSetReader.
-func (commit *Commit) GetHeight() int64 {
-	return commit.Height
-}
-
-// GetRound returns height of the commit.
-// Implements VoteSetReader.
-func (commit *Commit) GetRound() int32 {
-	return commit.Round
-}
-
 // Size returns the number of signatures in the commit.
-// Implements VoteSetReader.
 func (commit *Commit) Size() int {
 	if commit == nil {
 		return 0
 	}
 	return len(commit.Signatures)
-}
-
-// BitArray returns a BitArray of which validators voted for BlockID or nil in this commit.
-// Implements VoteSetReader.
-func (commit *Commit) BitArray() *bits.BitArray {
-	if commit.bitArray == nil {
-		commit.bitArray = bits.NewBitArray(len(commit.Signatures))
-		for i, commitSig := range commit.Signatures {
-			// TODO: need to check the BlockID otherwise we could be counting conflicts,
-			// not just the one with +2/3 !
-			commit.bitArray.SetIndex(i, !commitSig.Absent())
-		}
-	}
-	return commit.bitArray
-}
-
-// GetByIndex returns the vote corresponding to a given validator index.
-// Panics if `index >= commit.Size()`.
-// Implements VoteSetReader.
-func (commit *Commit) GetByIndex(valIdx int32) *Vote {
-	return commit.GetVote(valIdx)
-}
-
-// IsCommit returns true if there is at least one signature.
-// Implements VoteSetReader.
-func (commit *Commit) IsCommit() bool {
-	return len(commit.Signatures) != 0
 }
 
 // ValidateBasic performs basic validation that doesn't involve state data.
@@ -892,7 +919,7 @@ func (commit *Commit) ValidateBasic() error {
 }
 
 // Hash returns the hash of the commit
-func (commit *Commit) Hash() tmbytes.HexBytes {
+func (commit *Commit) Hash() cmtbytes.HexBytes {
 	if commit == nil {
 		return nil
 	}
@@ -910,6 +937,26 @@ func (commit *Commit) Hash() tmbytes.HexBytes {
 		commit.hash = merkle.HashFromByteSlices(bs)
 	}
 	return commit.hash
+}
+
+// WrappedExtendedCommit wraps a commit as an ExtendedCommit.
+// The VoteExtension fields of the resulting value will by nil.
+// Wrapping a Commit as an ExtendedCommit is useful when an API
+// requires an ExtendedCommit wire type but does not
+// need the VoteExtension data.
+func (commit *Commit) WrappedExtendedCommit() *ExtendedCommit {
+	cs := make([]ExtendedCommitSig, len(commit.Signatures))
+	for idx, s := range commit.Signatures {
+		cs[idx] = ExtendedCommitSig{
+			CommitSig: s,
+		}
+	}
+	return &ExtendedCommit{
+		Height:             commit.Height,
+		Round:              commit.Round,
+		BlockID:            commit.BlockID,
+		ExtendedSignatures: cs,
+	}
 }
 
 // StringIndented returns a string representation of the commit.
@@ -937,13 +984,13 @@ func (commit *Commit) StringIndented(indent string) string {
 }
 
 // ToProto converts Commit to protobuf
-func (commit *Commit) ToProto() *tmproto.Commit {
+func (commit *Commit) ToProto() *cmtproto.Commit {
 	if commit == nil {
 		return nil
 	}
 
-	c := new(tmproto.Commit)
-	sigs := make([]tmproto.CommitSig, len(commit.Signatures))
+	c := new(cmtproto.Commit)
+	sigs := make([]cmtproto.CommitSig, len(commit.Signatures))
 	for i := range commit.Signatures {
 		sigs[i] = *commit.Signatures[i].ToProto()
 	}
@@ -958,7 +1005,7 @@ func (commit *Commit) ToProto() *tmproto.Commit {
 
 // FromProto sets a protobuf Commit to the given pointer.
 // It returns an error if the commit is invalid.
-func CommitFromProto(cp *tmproto.Commit) (*Commit, error) {
+func CommitFromProto(cp *cmtproto.Commit) (*Commit, error) {
 	if cp == nil {
 		return nil, errors.New("nil Commit")
 	}
@@ -987,7 +1034,247 @@ func CommitFromProto(cp *tmproto.Commit) (*Commit, error) {
 	return commit, commit.ValidateBasic()
 }
 
-//-----------------------------------------------------------------------------
+//-------------------------------------
+
+// ExtendedCommit is similar to Commit, except that its signatures also retain
+// their corresponding vote extensions and vote extension signatures.
+type ExtendedCommit struct {
+	Height             int64
+	Round              int32
+	BlockID            BlockID
+	ExtendedSignatures []ExtendedCommitSig
+
+	bitArray *bits.BitArray
+}
+
+// Clone creates a deep copy of this extended commit.
+func (ec *ExtendedCommit) Clone() *ExtendedCommit {
+	sigs := make([]ExtendedCommitSig, len(ec.ExtendedSignatures))
+	copy(sigs, ec.ExtendedSignatures)
+	ecc := *ec
+	ecc.ExtendedSignatures = sigs
+	return &ecc
+}
+
+// ToExtendedVoteSet constructs a VoteSet from the Commit and validator set.
+// Panics if signatures from the ExtendedCommit can't be added to the voteset.
+// Panics if any of the votes have invalid or absent vote extension data.
+// Inverse of VoteSet.MakeExtendedCommit().
+func (ec *ExtendedCommit) ToExtendedVoteSet(chainID string, vals *ValidatorSet) *VoteSet {
+	voteSet := NewExtendedVoteSet(chainID, ec.Height, ec.Round, cmtproto.PrecommitType, vals)
+	ec.addSigsToVoteSet(voteSet)
+	return voteSet
+}
+
+// addSigsToVoteSet adds all of the signature to voteSet.
+func (ec *ExtendedCommit) addSigsToVoteSet(voteSet *VoteSet) {
+	for idx, ecs := range ec.ExtendedSignatures {
+		if ecs.BlockIDFlag == BlockIDFlagAbsent {
+			continue // OK, some precommits can be missing.
+		}
+		vote := ec.GetExtendedVote(int32(idx))
+		if err := vote.ValidateBasic(); err != nil {
+			panic(fmt.Errorf("failed to validate vote reconstructed from LastCommit: %w", err))
+		}
+		added, err := voteSet.AddVote(vote)
+		if !added || err != nil {
+			panic(fmt.Errorf("failed to reconstruct vote set from extended commit: %w", err))
+		}
+	}
+}
+
+// ToVoteSet constructs a VoteSet from the Commit and validator set.
+// Panics if signatures from the commit can't be added to the voteset.
+// Inverse of VoteSet.MakeCommit().
+func (commit *Commit) ToVoteSet(chainID string, vals *ValidatorSet) *VoteSet {
+	voteSet := NewVoteSet(chainID, commit.Height, commit.Round, cmtproto.PrecommitType, vals)
+	for idx, cs := range commit.Signatures {
+		if cs.BlockIDFlag == BlockIDFlagAbsent {
+			continue // OK, some precommits can be missing.
+		}
+		vote := commit.GetVote(int32(idx))
+		if err := vote.ValidateBasic(); err != nil {
+			panic(fmt.Errorf("failed to validate vote reconstructed from commit: %w", err))
+		}
+		added, err := voteSet.AddVote(vote)
+		if !added || err != nil {
+			panic(fmt.Errorf("failed to reconstruct vote set from commit: %w", err))
+		}
+	}
+	return voteSet
+}
+
+// EnsureExtensions validates that a vote extensions signature is present for
+// every ExtendedCommitSig in the ExtendedCommit.
+func (ec *ExtendedCommit) EnsureExtensions(extEnabled bool) error {
+	for _, ecs := range ec.ExtendedSignatures {
+		if err := ecs.EnsureExtension(extEnabled); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ToCommit converts an ExtendedCommit to a Commit by removing all vote
+// extension-related fields.
+func (ec *ExtendedCommit) ToCommit() *Commit {
+	cs := make([]CommitSig, len(ec.ExtendedSignatures))
+	for idx, ecs := range ec.ExtendedSignatures {
+		cs[idx] = ecs.CommitSig
+	}
+	return &Commit{
+		Height:     ec.Height,
+		Round:      ec.Round,
+		BlockID:    ec.BlockID,
+		Signatures: cs,
+	}
+}
+
+// GetExtendedVote converts the ExtendedCommitSig for the given validator
+// index to a Vote with a vote extensions.
+// It panics if valIndex is out of range.
+func (ec *ExtendedCommit) GetExtendedVote(valIndex int32) *Vote {
+	ecs := ec.ExtendedSignatures[valIndex]
+	return &Vote{
+		Type:               cmtproto.PrecommitType,
+		Height:             ec.Height,
+		Round:              ec.Round,
+		BlockID:            ecs.BlockID(ec.BlockID),
+		Timestamp:          ecs.Timestamp,
+		ValidatorAddress:   ecs.ValidatorAddress,
+		ValidatorIndex:     valIndex,
+		Signature:          ecs.Signature,
+		Extension:          ecs.Extension,
+		ExtensionSignature: ecs.ExtensionSignature,
+	}
+}
+
+// Type returns the vote type of the extended commit, which is always
+// VoteTypePrecommit
+// Implements VoteSetReader.
+func (ec *ExtendedCommit) Type() byte { return byte(cmtproto.PrecommitType) }
+
+// GetHeight returns height of the extended commit.
+// Implements VoteSetReader.
+func (ec *ExtendedCommit) GetHeight() int64 { return ec.Height }
+
+// GetRound returns height of the extended commit.
+// Implements VoteSetReader.
+func (ec *ExtendedCommit) GetRound() int32 { return ec.Round }
+
+// Size returns the number of signatures in the extended commit.
+// Implements VoteSetReader.
+func (ec *ExtendedCommit) Size() int {
+	if ec == nil {
+		return 0
+	}
+	return len(ec.ExtendedSignatures)
+}
+
+// BitArray returns a BitArray of which validators voted for BlockID or nil in
+// this extended commit.
+// Implements VoteSetReader.
+func (ec *ExtendedCommit) BitArray() *bits.BitArray {
+	if ec.bitArray == nil {
+		ec.bitArray = bits.NewBitArray(len(ec.ExtendedSignatures))
+		for i, extCommitSig := range ec.ExtendedSignatures {
+			// TODO: need to check the BlockID otherwise we could be counting conflicts,
+			//       not just the one with +2/3 !
+			ec.bitArray.SetIndex(i, extCommitSig.BlockIDFlag != BlockIDFlagAbsent)
+		}
+	}
+	return ec.bitArray
+}
+
+// GetByIndex returns the vote corresponding to a given validator index.
+// Panics if `index >= extCommit.Size()`.
+// Implements VoteSetReader.
+func (ec *ExtendedCommit) GetByIndex(valIdx int32) *Vote {
+	return ec.GetExtendedVote(valIdx)
+}
+
+// IsCommit returns true if there is at least one signature.
+// Implements VoteSetReader.
+func (ec *ExtendedCommit) IsCommit() bool {
+	return len(ec.ExtendedSignatures) != 0
+}
+
+// ValidateBasic checks whether the extended commit is well-formed. Does not
+// actually check the cryptographic signatures.
+func (ec *ExtendedCommit) ValidateBasic() error {
+	if ec.Height < 0 {
+		return errors.New("negative Height")
+	}
+	if ec.Round < 0 {
+		return errors.New("negative Round")
+	}
+
+	if ec.Height >= 1 {
+		if ec.BlockID.IsZero() {
+			return errors.New("extended commit cannot be for nil block")
+		}
+
+		if len(ec.ExtendedSignatures) == 0 {
+			return errors.New("no signatures in commit")
+		}
+		for i, extCommitSig := range ec.ExtendedSignatures {
+			if err := extCommitSig.ValidateBasic(); err != nil {
+				return fmt.Errorf("wrong ExtendedCommitSig #%d: %v", i, err)
+			}
+		}
+	}
+	return nil
+}
+
+// ToProto converts ExtendedCommit to protobuf
+func (ec *ExtendedCommit) ToProto() *cmtproto.ExtendedCommit {
+	if ec == nil {
+		return nil
+	}
+
+	c := new(cmtproto.ExtendedCommit)
+	sigs := make([]cmtproto.ExtendedCommitSig, len(ec.ExtendedSignatures))
+	for i := range ec.ExtendedSignatures {
+		sigs[i] = *ec.ExtendedSignatures[i].ToProto()
+	}
+	c.ExtendedSignatures = sigs
+
+	c.Height = ec.Height
+	c.Round = ec.Round
+	c.BlockID = ec.BlockID.ToProto()
+
+	return c
+}
+
+// ExtendedCommitFromProto constructs an ExtendedCommit from the given Protobuf
+// representation. It returns an error if the extended commit is invalid.
+func ExtendedCommitFromProto(ecp *cmtproto.ExtendedCommit) (*ExtendedCommit, error) {
+	if ecp == nil {
+		return nil, errors.New("nil ExtendedCommit")
+	}
+
+	extCommit := new(ExtendedCommit)
+
+	bi, err := BlockIDFromProto(&ecp.BlockID)
+	if err != nil {
+		return nil, err
+	}
+
+	sigs := make([]ExtendedCommitSig, len(ecp.ExtendedSignatures))
+	for i := range ecp.ExtendedSignatures {
+		if err := sigs[i].FromProto(ecp.ExtendedSignatures[i]); err != nil {
+			return nil, err
+		}
+	}
+	extCommit.ExtendedSignatures = sigs
+	extCommit.Height = ecp.Height
+	extCommit.Round = ecp.Round
+	extCommit.BlockID = *bi
+
+	return extCommit, extCommit.ValidateBasic()
+}
+
+//-------------------------------------
 
 // Data contains the set of transactions included in the block
 type Data struct {
@@ -998,11 +1285,11 @@ type Data struct {
 	Txs Txs `json:"txs"`
 
 	// Volatile
-	hash tmbytes.HexBytes
+	hash cmtbytes.HexBytes
 }
 
 // Hash returns the hash of the data
-func (data *Data) Hash() tmbytes.HexBytes {
+func (data *Data) Hash() cmtbytes.HexBytes {
 	if data == nil {
 		return (Txs{}).Hash()
 	}
@@ -1017,7 +1304,7 @@ func (data *Data) StringIndented(indent string) string {
 	if data == nil {
 		return "nil-Data"
 	}
-	txStrings := make([]string, tmmath.MinInt(len(data.Txs), 21))
+	txStrings := make([]string, cmtmath.MinInt(len(data.Txs), 21))
 	for i, tx := range data.Txs {
 		if i == 20 {
 			txStrings[i] = fmt.Sprintf("... (%v total)", len(data.Txs))
@@ -1033,8 +1320,8 @@ func (data *Data) StringIndented(indent string) string {
 }
 
 // ToProto converts Data to protobuf
-func (data *Data) ToProto() tmproto.Data {
-	tp := new(tmproto.Data)
+func (data *Data) ToProto() cmtproto.Data {
+	tp := new(cmtproto.Data)
 
 	if len(data.Txs) > 0 {
 		txBzs := make([][]byte, len(data.Txs))
@@ -1049,7 +1336,7 @@ func (data *Data) ToProto() tmproto.Data {
 
 // DataFromProto takes a protobuf representation of Data &
 // returns the native type.
-func DataFromProto(dp *tmproto.Data) (Data, error) {
+func DataFromProto(dp *cmtproto.Data) (Data, error) {
 	if dp == nil {
 		return Data{}, errors.New("nil data")
 	}
@@ -1075,12 +1362,12 @@ type EvidenceData struct {
 	Evidence EvidenceList `json:"evidence"`
 
 	// Volatile. Used as cache
-	hash     tmbytes.HexBytes
+	hash     cmtbytes.HexBytes
 	byteSize int64
 }
 
 // Hash returns the hash of the data.
-func (data *EvidenceData) Hash() tmbytes.HexBytes {
+func (data *EvidenceData) Hash() cmtbytes.HexBytes {
 	if data.hash == nil {
 		data.hash = data.Evidence.Hash()
 	}
@@ -1104,7 +1391,7 @@ func (data *EvidenceData) StringIndented(indent string) string {
 	if data == nil {
 		return "nil-Evidence"
 	}
-	evStrings := make([]string, tmmath.MinInt(len(data.Evidence), 21))
+	evStrings := make([]string, cmtmath.MinInt(len(data.Evidence), 21))
 	for i, ev := range data.Evidence {
 		if i == 20 {
 			evStrings[i] = fmt.Sprintf("... (%v total)", len(data.Evidence))
@@ -1120,13 +1407,13 @@ func (data *EvidenceData) StringIndented(indent string) string {
 }
 
 // ToProto converts EvidenceData to protobuf
-func (data *EvidenceData) ToProto() (*tmproto.EvidenceList, error) {
+func (data *EvidenceData) ToProto() (*cmtproto.EvidenceList, error) {
 	if data == nil {
 		return nil, errors.New("nil evidence data")
 	}
 
-	evi := new(tmproto.EvidenceList)
-	eviBzs := make([]tmproto.Evidence, len(data.Evidence))
+	evi := new(cmtproto.EvidenceList)
+	eviBzs := make([]cmtproto.Evidence, len(data.Evidence))
 	for i := range data.Evidence {
 		protoEvi, err := EvidenceToProto(data.Evidence[i])
 		if err != nil {
@@ -1140,7 +1427,7 @@ func (data *EvidenceData) ToProto() (*tmproto.EvidenceList, error) {
 }
 
 // FromProto sets a protobuf EvidenceData to the given pointer.
-func (data *EvidenceData) FromProto(eviData *tmproto.EvidenceList) error {
+func (data *EvidenceData) FromProto(eviData *cmtproto.EvidenceList) error {
 	if eviData == nil {
 		return errors.New("nil evidenceData")
 	}
@@ -1163,8 +1450,8 @@ func (data *EvidenceData) FromProto(eviData *tmproto.EvidenceList) error {
 
 // BlockID
 type BlockID struct {
-	Hash          tmbytes.HexBytes `json:"hash"`
-	PartSetHeader PartSetHeader    `json:"parts"`
+	Hash          cmtbytes.HexBytes `json:"hash"`
+	PartSetHeader PartSetHeader     `json:"parts"`
 }
 
 // Equals returns true if the BlockID matches the given BlockID
@@ -1220,12 +1507,12 @@ func (blockID BlockID) String() string {
 }
 
 // ToProto converts BlockID to protobuf
-func (blockID *BlockID) ToProto() tmproto.BlockID {
+func (blockID *BlockID) ToProto() cmtproto.BlockID {
 	if blockID == nil {
-		return tmproto.BlockID{}
+		return cmtproto.BlockID{}
 	}
 
-	return tmproto.BlockID{
+	return cmtproto.BlockID{
 		Hash:          blockID.Hash,
 		PartSetHeader: blockID.PartSetHeader.ToProto(),
 	}
@@ -1233,7 +1520,7 @@ func (blockID *BlockID) ToProto() tmproto.BlockID {
 
 // FromProto sets a protobuf BlockID to the given pointer.
 // It returns an error if the block id is invalid.
-func BlockIDFromProto(bID *tmproto.BlockID) (*BlockID, error) {
+func BlockIDFromProto(bID *cmtproto.BlockID) (*BlockID, error) {
 	if bID == nil {
 		return nil, errors.New("nil BlockID")
 	}
@@ -1248,4 +1535,10 @@ func BlockIDFromProto(bID *tmproto.BlockID) (*BlockID, error) {
 	blockID.Hash = bID.Hash
 
 	return blockID, blockID.ValidateBasic()
+}
+
+// ProtoBlockIDIsNil is similar to the IsNil function on BlockID, but for the
+// Protobuf representation.
+func ProtoBlockIDIsNil(bID *cmtproto.BlockID) bool {
+	return len(bID.Hash) == 0 && ProtoPartSetHeaderIsZero(&bID.PartSetHeader)
 }

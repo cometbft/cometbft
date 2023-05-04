@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/tendermint/tendermint/light/provider"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/light/provider"
+	"github.com/cometbft/cometbft/types"
 )
 
 // The detector component of the light client detects and handles attacks on the light client.
 // More info here:
-// tendermint/docs/architecture/adr-047-handling-evidence-from-light-client.md
+// cometbft/docs/architecture/adr-047-handling-evidence-from-light-client.md
 
 // detectDivergence is a second wall of defense for the light client.
 //
@@ -34,7 +34,7 @@ func (c *Client) detectDivergence(ctx context.Context, primaryTrace []*types.Lig
 		lastVerifiedHeader = primaryTrace[len(primaryTrace)-1].SignedHeader
 		witnessesToRemove  = make([]int, 0)
 	)
-	c.logger.Debug("Running detector against trace", "endBlockHeight", lastVerifiedHeader.Height,
+	c.logger.Debug("Running detector against trace", "finalizeBlockHeight", lastVerifiedHeader.Height,
 		"endBlockHash", lastVerifiedHeader.Hash, "length", len(primaryTrace))
 
 	c.providerMutex.Lock()

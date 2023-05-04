@@ -2,7 +2,7 @@
 
 # events
 
-`import "github.com/tendermint/tendermint/libs/events"`
+`import "github.com/cometbft/cometbft/libs/events"`
 
 ## Overview
 
@@ -24,7 +24,7 @@ Pub-Sub in go with event caching
 
 ### Package files
 
-[event_cache.go](./event_cache.go) [events.go](./events.go) 
+[event_cache.go](./event_cache.go) [events.go](./events.go)
 
 
 ## Type [EventCache](./event_cache.go?s=116:179#L5)
@@ -100,7 +100,7 @@ type EventData interface {
 }
 ```
 
-Generic event data can be typed and registered with tendermint/go-amino
+Generic event data can be typed and registered with [tendermint/go-amino](https://github.com/tendermint/go-amino)
 via concrete implementation of this interface
 
 

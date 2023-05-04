@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
-	"github.com/tendermint/tendermint/test/e2e/pkg/infra"
-	e2essh "github.com/tendermint/tendermint/test/e2e/pkg/ssh"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
+	e2essh "github.com/cometbft/cometbft/test/e2e/pkg/ssh"
 	"golang.org/x/crypto/ssh"
 )
 

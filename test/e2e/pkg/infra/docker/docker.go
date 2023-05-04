@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"text/template"
 
-	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
-	"github.com/tendermint/tendermint/test/e2e/pkg/exec"
-	"github.com/tendermint/tendermint/test/e2e/pkg/infra"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/test/e2e/pkg/exec"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 )
 
 var _ infra.Provider = &Provider{}
@@ -28,7 +28,7 @@ func (p *Provider) Setup() error {
 	}
 	//nolint: gosec
 	// G306: Expect WriteFile permissions to be 0600 or less
-	err = os.WriteFile(filepath.Join(p.Testnet.Dir, "docker-compose.yml"), compose, 0644)
+	err = os.WriteFile(filepath.Join(p.Testnet.Dir, "docker-compose.yml"), compose, 0o644)
 	if err != nil {
 		return err
 	}
@@ -72,20 +72,49 @@ services:
     labels:
       e2e: true
     container_name: {{ .Name }}
-    image: tendermint/e2e-node:{{ .Version }}
-{{- if eq .ABCIProtocol "builtin" }}
+    image: {{ .Version }}
+{{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_unsync") }}
     entrypoint: /usr/bin/entrypoint-builtin
 {{- end }}
     init: true
     ports:
     - 26656
     - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657
+{{- if .PrometheusProxyPort }}
+    - {{ .PrometheusProxyPort }}:26660
+{{- end }}
     - 6060
     volumes:
+    - ./{{ .Name }}:/cometbft
     - ./{{ .Name }}:/tendermint
     networks:
       {{ $.Name }}:
         ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .InternalIP }}
+{{- if ne .Version $.UpgradeVersion}}
+
+  {{ .Name }}_u:
+    labels:
+      e2e: true
+    container_name: {{ .Name }}_u
+    image: {{ $.UpgradeVersion }}
+{{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_unsync") }}
+    entrypoint: /usr/bin/entrypoint-builtin
+{{- end }}
+    init: true
+    ports:
+    - 26656
+    - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657
+{{- if .PrometheusProxyPort }}
+    - {{ .PrometheusProxyPort }}:26660
+{{- end }}
+    - 6060
+    volumes:
+    - ./{{ .Name }}:/cometbft
+    - ./{{ .Name }}:/tendermint
+    networks:
+      {{ $.Name }}:
+        ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .InternalIP }}
+{{- end }}
 
 {{end}}`)
 	if err != nil {
@@ -102,6 +131,13 @@ services:
 // ExecCompose runs a Docker Compose command for a testnet.
 func ExecCompose(ctx context.Context, dir string, args ...string) error {
 	return exec.Command(ctx, append(
+		[]string{"docker-compose", "-f", filepath.Join(dir, "docker-compose.yml")},
+		args...)...)
+}
+
+// ExecCompose runs a Docker Compose command for a testnet and returns the command's output.
+func ExecComposeOutput(ctx context.Context, dir string, args ...string) ([]byte, error) {
+	return exec.CommandOutput(ctx, append(
 		[]string{"docker-compose", "-f", filepath.Join(dir, "docker-compose.yml")},
 		args...)...)
 }

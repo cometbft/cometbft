@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/tendermint/tendermint/crypto/batch"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmmath "github.com/tendermint/tendermint/libs/math"
+	"github.com/cometbft/cometbft/crypto/batch"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
 )
 
 const batchVerifyThreshold = 2
@@ -19,7 +19,7 @@ func shouldBatchVerify(vals *ValidatorSet, commit *Commit) bool {
 //
 // It checks all the signatures! While it's safe to exit as soon as we have
 // 2/3+ signatures, doing so would impact incentivization logic in the ABCI
-// application that depends on the LastCommitInfo sent in BeginBlock, which
+// application that depends on the LastCommitInfo sent in FinalizeBlock, which
 // includes which validators signed. For instance, Gaia incentivizes proposers
 // with a bonus for including more than +2/3 of the signatures.
 func VerifyCommit(chainID string, vals *ValidatorSet, blockID BlockID,
@@ -34,10 +34,10 @@ func VerifyCommit(chainID string, vals *ValidatorSet, blockID BlockID,
 	votingPowerNeeded := vals.TotalVotingPower() * 2 / 3
 
 	// ignore all absent signatures
-	ignore := func(c CommitSig) bool { return c.Absent() }
+	ignore := func(c CommitSig) bool { return c.BlockIDFlag == BlockIDFlagAbsent }
 
 	// only count the signatures that are for the block
-	count := func(c CommitSig) bool { return c.ForBlock() }
+	count := func(c CommitSig) bool { return c.BlockIDFlag == BlockIDFlagCommit }
 
 	// attempt to batch verify
 	if shouldBatchVerify(vals, commit) {
@@ -67,7 +67,7 @@ func VerifyCommitLight(chainID string, vals *ValidatorSet, blockID BlockID,
 	votingPowerNeeded := vals.TotalVotingPower() * 2 / 3
 
 	// ignore all commit signatures that are not for the block
-	ignore := func(c CommitSig) bool { return !c.ForBlock() }
+	ignore := func(c CommitSig) bool { return c.BlockIDFlag != BlockIDFlagCommit }
 
 	// count all the remaining signatures
 	count := func(c CommitSig) bool { return true }
@@ -91,7 +91,7 @@ func VerifyCommitLight(chainID string, vals *ValidatorSet, blockID BlockID,
 //
 // This method is primarily used by the light client and does not check all the
 // signatures.
-func VerifyCommitLightTrusting(chainID string, vals *ValidatorSet, commit *Commit, trustLevel tmmath.Fraction) error {
+func VerifyCommitLightTrusting(chainID string, vals *ValidatorSet, commit *Commit, trustLevel cmtmath.Fraction) error {
 	// sanity checks
 	if vals == nil {
 		return errors.New("nil validator set")
@@ -111,7 +111,7 @@ func VerifyCommitLightTrusting(chainID string, vals *ValidatorSet, commit *Commi
 	votingPowerNeeded := totalVotingPowerMulByNumerator / int64(trustLevel.Denominator)
 
 	// ignore all commit signatures that are not for the block
-	ignore := func(c CommitSig) bool { return !c.ForBlock() }
+	ignore := func(c CommitSig) bool { return c.BlockIDFlag != BlockIDFlagCommit }
 
 	// count all the remaining signatures
 	count := func(c CommitSig) bool { return true }

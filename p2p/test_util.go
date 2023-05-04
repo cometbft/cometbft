@@ -5,14 +5,14 @@ import (
 	"net"
 	"time"
 
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/log"
-	tmnet "github.com/tendermint/tendermint/libs/net"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtnet "github.com/cometbft/cometbft/libs/net"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
 
-	"github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/p2p/conn"
+	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/p2p/conn"
 )
 
 const testCh = 0x01
@@ -23,10 +23,10 @@ type mockNodeInfo struct {
 	addr *NetAddress
 }
 
-func (ni mockNodeInfo) ID() ID                              { return ni.addr.ID }
-func (ni mockNodeInfo) NetAddress() (*NetAddress, error)    { return ni.addr, nil }
-func (ni mockNodeInfo) Validate() error                     { return nil }
-func (ni mockNodeInfo) CompatibleWith(other NodeInfo) error { return nil }
+func (ni mockNodeInfo) ID() ID                           { return ni.addr.ID }
+func (ni mockNodeInfo) NetAddress() (*NetAddress, error) { return ni.addr, nil }
+func (ni mockNodeInfo) Validate() error                  { return nil }
+func (ni mockNodeInfo) CompatibleWith(NodeInfo) error    { return nil }
 
 func AddPeerToSwitchPeerSet(sw *Switch, peer Peer) {
 	sw.peers.Add(peer) //nolint:errcheck // ignore error
@@ -51,11 +51,11 @@ func CreateRoutableAddr() (addr string, netAddr *NetAddress) {
 	for {
 		var err error
 		addr = fmt.Sprintf("%X@%v.%v.%v.%v:26656",
-			tmrand.Bytes(20),
-			tmrand.Int()%256,
-			tmrand.Int()%256,
-			tmrand.Int()%256,
-			tmrand.Int()%256)
+			cmtrand.Bytes(20),
+			cmtrand.Int()%256,
+			cmtrand.Int()%256,
+			cmtrand.Int()%256,
+			cmtrand.Int()%256)
 		netAddr, err = NewNetAddressString(addr)
 		if err != nil {
 			panic(err)
@@ -83,7 +83,7 @@ func MakeConnectedSwitches(cfg *config.P2PConfig,
 ) []*Switch {
 	switches := make([]*Switch, n)
 	for i := 0; i < n; i++ {
-		switches[i] = MakeSwitch(cfg, i, TestHost, "123.123.123", initSwitch)
+		switches[i] = MakeSwitch(cfg, i, initSwitch)
 	}
 
 	if err := StartSwitches(switches); err != nil {
@@ -178,11 +178,9 @@ func StartSwitches(switches []*Switch) error {
 func MakeSwitch(
 	cfg *config.P2PConfig,
 	i int,
-	network, version string,
 	initSwitch func(int, *Switch) *Switch,
 	opts ...SwitchOption,
 ) *Switch {
-
 	nodeKey := NodeKey{
 		PrivKey: ed25519.GenPrivKey(),
 	}
@@ -276,7 +274,7 @@ func testNodeInfoWithNetwork(id ID, name, network string) NodeInfo {
 }
 
 func getFreePort() int {
-	port, err := tmnet.GetFreePort()
+	port, err := cmtnet.GetFreePort()
 	if err != nil {
 		panic(err)
 	}
@@ -291,7 +289,7 @@ type AddrBookMock struct {
 
 var _ AddrBook = (*AddrBookMock)(nil)
 
-func (book *AddrBookMock) AddAddress(addr *NetAddress, src *NetAddress) error {
+func (book *AddrBookMock) AddAddress(addr *NetAddress, _ *NetAddress) error {
 	book.Addrs[addr.String()] = struct{}{}
 	return nil
 }
@@ -305,6 +303,7 @@ func (book *AddrBookMock) HasAddress(addr *NetAddress) bool {
 	_, ok := book.Addrs[addr.String()]
 	return ok
 }
+
 func (book *AddrBookMock) RemoveAddress(addr *NetAddress) {
 	delete(book.Addrs, addr.String())
 }

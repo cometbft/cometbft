@@ -1,6 +1,7 @@
 package merkle
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"testing"
@@ -8,7 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	tmcrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtcrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 )
 
 const ProofOpDomino = "test:domino"
@@ -29,8 +31,8 @@ func NewDominoOp(key, input, output string) DominoOp {
 	}
 }
 
-func (dop DominoOp) ProofOp() tmcrypto.ProofOp {
-	dopb := tmcrypto.DominoOp{
+func (dop DominoOp) ProofOp() cmtcrypto.ProofOp {
+	dopb := cmtcrypto.DominoOp{
 		Key:    dop.key,
 		Input:  dop.Input,
 		Output: dop.Output,
@@ -40,7 +42,7 @@ func (dop DominoOp) ProofOp() tmcrypto.ProofOp {
 		panic(err)
 	}
 
-	return tmcrypto.ProofOp{
+	return cmtcrypto.ProofOp{
 		Type: ProofOpDomino,
 		Key:  []byte(dop.key),
 		Data: bz,
@@ -197,4 +199,27 @@ func TestVoteProtobuf(t *testing.T) {
 			require.Error(t, err)
 		}
 	}
+}
+
+// TestVsa2022_100 verifies https://blog.verichains.io/p/vsa-2022-100-tendermint-forging-membership-proof
+func TestVsa2022_100(t *testing.T) {
+	// a fake key-value pair and its hash
+	key := []byte{0x13}
+	value := []byte{0x37}
+	vhash := tmhash.Sum(value)
+	bz := new(bytes.Buffer)
+	_ = encodeByteSlice(bz, key)
+	_ = encodeByteSlice(bz, vhash)
+	kvhash := tmhash.Sum(append([]byte{0}, bz.Bytes()...))
+
+	// the malicious `op`
+	op := NewValueOp(
+		key,
+		&Proof{LeafHash: kvhash},
+	)
+
+	// the nil root
+	var root []byte
+
+	assert.NotNil(t, ProofOperators{op}.Verify(root, "/"+string(key), [][]byte{value}))
 }

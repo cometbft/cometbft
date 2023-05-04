@@ -13,12 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tendermint/tendermint/consensus/types"
-	"github.com/tendermint/tendermint/crypto/merkle"
-	"github.com/tendermint/tendermint/libs/autofile"
-	"github.com/tendermint/tendermint/libs/log"
-	tmtypes "github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	"github.com/cometbft/cometbft/consensus/types"
+	"github.com/cometbft/cometbft/crypto/merkle"
+	"github.com/cometbft/cometbft/libs/autofile"
+	"github.com/cometbft/cometbft/libs/log"
+	cmttypes "github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 const (
@@ -56,7 +56,7 @@ func TestWALTruncate(t *testing.T) {
 	// 60 block's size nearly 70K, greater than group's headBuf size(4096 * 10),
 	// when headBuf is full, truncate content will Flush to the file. at this
 	// time, RotateFile is called, truncate content exist in each file.
-	err = WALGenerateNBlocks(t, wal.Group(), 60)
+	err = WALGenerateNBlocks(t, wal.Group(), 60, getConfig(t))
 	require.NoError(t, err)
 
 	time.Sleep(1 * time.Millisecond) // wait groupCheckDuration, make sure RotateFile run
@@ -75,17 +75,17 @@ func TestWALTruncate(t *testing.T) {
 	dec := NewWALDecoder(gr)
 	msg, err := dec.Decode()
 	assert.NoError(t, err, "expected to decode a message")
-	rs, ok := msg.Msg.(tmtypes.EventDataRoundState)
+	rs, ok := msg.Msg.(cmttypes.EventDataRoundState)
 	assert.True(t, ok, "expected message of type EventDataRoundState")
 	assert.Equal(t, rs.Height, h+1, "wrong height")
 }
 
 func TestWALEncoderDecoder(t *testing.T) {
-	now := tmtime.Now()
+	now := cmttime.Now()
 	msgs := []TimedWALMessage{
 		{Time: now, Msg: EndHeightMessage{0}},
 		{Time: now, Msg: timeoutInfo{Duration: time.Second, Height: 1, Round: 1, Step: types.RoundStepPropose}},
-		{Time: now, Msg: tmtypes.EventDataRoundState{Height: 1, Round: 1, Step: ""}},
+		{Time: now, Msg: cmttypes.EventDataRoundState{Height: 1, Round: 1, Step: ""}},
 	}
 
 	b := new(bytes.Buffer)
@@ -130,7 +130,7 @@ func TestWALWrite(t *testing.T) {
 	msg := &BlockPartMessage{
 		Height: 1,
 		Round:  1,
-		Part: &tmtypes.Part{
+		Part: &cmttypes.Part{
 			Index: 1,
 			Bytes: make([]byte, 1),
 			Proof: merkle.Proof{
@@ -150,7 +150,7 @@ func TestWALWrite(t *testing.T) {
 }
 
 func TestWALSearchForEndHeight(t *testing.T) {
-	walBody, err := WALWithNBlocks(t, 6)
+	walBody, err := WALWithNBlocks(t, 6, getConfig(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,7 +170,7 @@ func TestWALSearchForEndHeight(t *testing.T) {
 	dec := NewWALDecoder(gr)
 	msg, err := dec.Decode()
 	assert.NoError(t, err, "expected to decode a message")
-	rs, ok := msg.Msg.(tmtypes.EventDataRoundState)
+	rs, ok := msg.Msg.(cmttypes.EventDataRoundState)
 	assert.True(t, ok, "expected message of type EventDataRoundState")
 	assert.Equal(t, rs.Height, h+1, "wrong height")
 }
@@ -188,7 +188,7 @@ func TestWALPeriodicSync(t *testing.T) {
 	wal.SetLogger(log.TestingLogger())
 
 	// Generate some data
-	err = WALGenerateNBlocks(t, wal.Group(), 5)
+	err = WALGenerateNBlocks(t, wal.Group(), 5, getConfig(t))
 	require.NoError(t, err)
 
 	// We should have data in the buffer now

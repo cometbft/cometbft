@@ -5,14 +5,15 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	db "github.com/tendermint/tm-db"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
-	blockidxkv "github.com/tendermint/tendermint/state/indexer/block/kv"
-	"github.com/tendermint/tendermint/state/txindex"
-	"github.com/tendermint/tendermint/state/txindex/kv"
-	"github.com/tendermint/tendermint/types"
+	db "github.com/cometbft/cometbft-db"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/log"
+	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
+	"github.com/cometbft/cometbft/state/txindex"
+	"github.com/cometbft/cometbft/state/txindex/kv"
+	"github.com/cometbft/cometbft/types"
 )
 
 func TestIndexerServiceIndexesBlocks(t *testing.T) {
@@ -42,9 +43,21 @@ func TestIndexerServiceIndexesBlocks(t *testing.T) {
 		}
 	})
 
-	// publish block with txs
-	err = eventBus.PublishEventNewBlockHeader(types.EventDataNewBlockHeader{
-		Header: types.Header{Height: 1},
+	// publish block with events
+	err = eventBus.PublishEventNewBlockEvents(types.EventDataNewBlockEvents{
+		Height: 1,
+		Events: []abci.Event{
+			{
+				Type: "begin_event",
+				Attributes: []abci.EventAttribute{
+					{
+						Key:   "proposer",
+						Value: "FCAA001",
+						Index: true,
+					},
+				},
+			},
+		},
 		NumTxs: int64(2),
 	})
 	require.NoError(t, err)
@@ -52,7 +65,7 @@ func TestIndexerServiceIndexesBlocks(t *testing.T) {
 		Height: 1,
 		Index:  uint32(0),
 		Tx:     types.Tx("foo"),
-		Result: abci.ResponseDeliverTx{Code: 0},
+		Result: abci.ExecTxResult{Code: 0},
 	}
 	err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult1})
 	require.NoError(t, err)
@@ -60,7 +73,7 @@ func TestIndexerServiceIndexesBlocks(t *testing.T) {
 		Height: 1,
 		Index:  uint32(1),
 		Tx:     types.Tx("bar"),
-		Result: abci.ResponseDeliverTx{Code: 0},
+		Result: abci.ExecTxResult{Code: 0},
 	}
 	err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult2})
 	require.NoError(t, err)

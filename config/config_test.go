@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tendermint/tendermint/config"
+	"github.com/cometbft/cometbft/config"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -29,7 +29,6 @@ func TestDefaultConfig(t *testing.T) {
 	assert.Equal("/foo/bar", cfg.GenesisFile())
 	assert.Equal("/opt/data", cfg.DBDir())
 	assert.Equal("/foo/wal/mem", cfg.Mempool.WalDir())
-
 }
 
 func TestConfigValidateBasic(t *testing.T) {
@@ -71,7 +70,6 @@ func TestRPCConfigValidateBasic(t *testing.T) {
 	assert.NoError(t, cfg.ValidateBasic())
 
 	fieldsToTest := []string{
-		"GRPCMaxOpenConnections",
 		"MaxOpenConnections",
 		"MaxSubscriptionClients",
 		"MaxSubscriptionsPerClient",

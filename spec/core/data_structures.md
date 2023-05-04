@@ -1,42 +1,46 @@
+---
+order: 1
+---
+
 # Data Structures
 
-Here we describe the data structures in the Tendermint blockchain and the rules for validating them.
+Here we describe the data structures in the CometBFT blockchain and the rules for validating them.
 
-The Tendermint blockchains consists of a short list of data types:
+The CometBFT blockchain consists of a short list of data types:
 
 - [Data Structures](#data-structures)
-  - [Block](#block)
-  - [Execution](#execution)
-  - [Header](#header)
-  - [Version](#version)
-  - [BlockID](#blockid)
-  - [PartSetHeader](#partsetheader)
-  - [Part](#part)
-  - [Time](#time)
-  - [Data](#data)
-  - [Commit](#commit)
-  - [CommitSig](#commitsig)
-  - [BlockIDFlag](#blockidflag)
-  - [Vote](#vote)
-  - [CanonicalVote](#canonicalvote)
-  - [Proposal](#proposal)
-  - [SignedMsgType](#signedmsgtype)
-  - [Signature](#signature)
-  - [EvidenceList](#evidencelist)
-  - [Evidence](#evidence)
-    - [DuplicateVoteEvidence](#duplicatevoteevidence)
-    - [LightClientAttackEvidence](#lightclientattackevidence)
-  - [LightBlock](#lightblock)
-  - [SignedHeader](#signedheader)
-  - [ValidatorSet](#validatorset)
-  - [Validator](#validator)
-  - [Address](#address)
-  - [ConsensusParams](#consensusparams)
-    - [BlockParams](#blockparams)
-    - [EvidenceParams](#evidenceparams)
-    - [ValidatorParams](#validatorparams)
-    - [VersionParams](#versionparams)
-  - [Proof](#proof)
+    - [Block](#block)
+    - [Execution](#execution)
+    - [Header](#header)
+    - [Version](#version)
+    - [BlockID](#blockid)
+    - [PartSetHeader](#partsetheader)
+    - [Part](#part)
+    - [Time](#time)
+    - [Data](#data)
+    - [Commit](#commit)
+    - [CommitSig](#commitsig)
+    - [BlockIDFlag](#blockidflag)
+    - [Vote](#vote)
+    - [CanonicalVote](#canonicalvote)
+    - [Proposal](#proposal)
+    - [SignedMsgType](#signedmsgtype)
+    - [Signature](#signature)
+    - [EvidenceList](#evidencelist)
+    - [Evidence](#evidence)
+        - [DuplicateVoteEvidence](#duplicatevoteevidence)
+        - [LightClientAttackEvidence](#lightclientattackevidence)
+    - [LightBlock](#lightblock)
+    - [SignedHeader](#signedheader)
+    - [ValidatorSet](#validatorset)
+    - [Validator](#validator)
+    - [Address](#address)
+    - [ConsensusParams](#consensusparams)
+        - [BlockParams](#blockparams)
+        - [EvidenceParams](#evidenceparams)
+        - [ValidatorParams](#validatorparams)
+        - [VersionParams](#versionparams)
+    - [Proof](#proof)
 
 
 ## Block
@@ -47,7 +51,7 @@ and a list of evidence of malfeasance (ie. signing conflicting votes).
 | Name   | Type              | Description                                                                                                                                                                          | Validation                                               |
 |--------|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------|
 | Header | [Header](#header) | Header corresponding to the block. This field contains information used throughout consensus and other areas of the protocol. To find out what it contains, visit [header](#header) | Must adhere to the validation rules of [header](#header) |
-| Data       | [Data](#data)                  | Data contains a list of transactions. The contents of the transaction is unknown to Tendermint.                                                                                      | This field can be empty or populated, but no validation is performed. Applications can perform validation on individual transactions prior to block creation using [checkTx](https://github.com/tendermint/tendermint/blob/main/spec/abci/abci++_methods.md#checktx).
+| Data       | [Data](#data)                  | Data contains a list of transactions. The contents of the transaction is unknown to CometBFT.                                                                                      | This field can be empty or populated, but no validation is performed. Applications can perform validation on individual transactions prior to block creation using [checkTx](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_methods.md#checktx).
 | Evidence   | [EvidenceList](#evidencelist) | Evidence contains a list of infractions committed by validators.                                                                                                                     | Can be empty, but when populated the validations rules from [evidenceList](#evidencelist) apply |
 | LastCommit | [Commit](#commit)              | `LastCommit` includes one vote for every validator.  All votes must either be for the previous block, nil or absent. If a vote is for the previous block it must have a valid signature from the corresponding validator. The sum of the voting power of the validators that voted must be greater than 2/3 of the total voting power of the complete validator set. The number of votes in a commit is limited to 10000 (see `types.MaxVotesCount`).                                                                                             | Must be empty for the initial height and must adhere to the validation rules of [commit](#commit).  |
 
@@ -67,7 +71,7 @@ and `ABCIApp` is an ABCI application that can return results and changes to the 
 set (TODO). Execute is defined as:
 
 ```go
-func Execute(s State, app ABCIApp, block Block) State {
+func Execute(state State, app ABCIApp, block Block) State {
  // Fuction ApplyBlock executes block of transactions against the app and returns the new root hash of the app state,
  // modifications to the validator set and the changes of the consensus parameters.
  AppHash, ValidatorChanges, ConsensusParamChanges := app.ApplyBlock(block)
@@ -78,7 +82,6 @@ func Execute(s State, app ABCIApp, block Block) State {
   InitialHeight:   state.InitialHeight,
   LastResults:     abciResponses.DeliverTxResults,
   AppHash:         AppHash,
-  InitialHeight:   state.InitialHeight,
   LastValidators:  state.Validators,
   Validators:      state.NextValidators,
   NextValidators:  UpdateValidators(state.NextValidators, ValidatorChanges),
@@ -128,7 +131,7 @@ the data in the current block, the previous block, and the results returned by t
 | ValidatorHash     | slice of bytes (`[]byte`) | MerkleRoot of the current validator set. The validators are first sorted by voting power (descending), then by address (ascending) prior to computing the MerkleRoot.                                                                                                                                                                                                                 | Must  be of length 32                                                                                                                                                                            |
 | NextValidatorHash | slice of bytes (`[]byte`) | MerkleRoot of the next validator set. The validators are first sorted by voting power (descending), then by address (ascending) prior to computing the MerkleRoot.                                                                                                                                                                                                                    | Must  be of length 32                                                                                                                                                                            |
 | ConsensusHash     | slice of bytes (`[]byte`) | Hash of the protobuf encoded consensus parameters.                                                                                                                                                                                                                                                                                                                                    | Must  be of length 32                                                                                                                                                                            |
-| AppHash           | slice of bytes (`[]byte`) | Arbitrary byte array returned by the application after executing and commiting the previous block. It serves as the basis for validating any merkle proofs that comes from the ABCI application and represents the state of the actual application rather than the state of the blockchain itself. The first block's `block.Header.AppHash` is given by `ResponseInitChain.app_hash`. | This hash is determined by the application, Tendermint can not perform validation on it.                                                                                                         |
+| AppHash           | slice of bytes (`[]byte`) | Arbitrary byte array returned by the application after executing and commiting the previous block. It serves as the basis for validating any merkle proofs that comes from the ABCI application and represents the state of the actual application rather than the state of the blockchain itself. The first block's `block.Header.AppHash` is given by `ResponseInitChain.app_hash`. | This hash is determined by the application, CometBFT can not perform validation on it.                                                                                                         |
 | LastResultHash    | slice of bytes (`[]byte`) | `LastResultsHash` is the root hash of a Merkle tree built from `ResponseDeliverTx` responses (`Log`,`Info`, `Codespace` and `Events` fields are ignored).                                                                                                                                                                                                                             | Must  be of length 32. The first block has `block.Header.ResultsHash == MerkleRoot(nil)`, i.e. the hash of an empty input, for RFC-6962 conformance.                                             |
 | EvidenceHash      | slice of bytes (`[]byte`) | MerkleRoot of the evidence of Byzantine behavior included in this block.                                                                                                                                                                                                                                                                                                             | Must  be of length 32                                                                                                                                                                            |
 | ProposerAddress   | slice of bytes (`[]byte`) | Address of the original proposer of the block. Validator must be in the current validatorSet.                                                                                                                                                                                                                                                                                         | Must  be of length 20                                                                                                                                                                            |
@@ -142,7 +145,7 @@ versioning that this can refer to)
 | Name  | type   | Description                                                                                                     | Validation                                                                                                         |
 |-------|--------|-----------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
 | Block | uint64 | This number represents the version of the block protocol and must be the same throughout an operational network | Must be equal to protocol version being used in a network (`block.Version.Block == state.Version.Consensus.Block`) |
-| App   | uint64 | App version is decided on by the application. Read [here](https://github.com/tendermint/tendermint/blob/main/spec/abci/abci++_app_requirements.md)                                 | `block.Version.App == state.Version.Consensus.App`                                                                 |
+| App   | uint64 | App version is decided on by the application. Read [here](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_app_requirements.md)                                 | `block.Version.App == state.Version.Consensus.App`                                                                 |
 
 ## BlockID
 
@@ -164,7 +167,7 @@ See [MerkleRoot](./encoding.md#MerkleRoot) for details.
 
 ## Part
 
-Part defines a part of a block. In Tendermint blocks are broken into `parts` for gossip.
+Part defines a part of a block. In CometBFT blocks are broken into `parts` for gossip.
 
 | Name  | Type            | Description                       | Validation           |
 |-------|-----------------|-----------------------------------|----------------------|
@@ -174,7 +177,7 @@ Part defines a part of a block. In Tendermint blocks are broken into `parts` for
 
 ## Time
 
-Tendermint uses the [Google.Protobuf.Timestamp](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp)
+CometBFT uses the [Google.Protobuf.Timestamp](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp)
 format, which uses two integers, one 64 bit integer for Seconds and a 32 bit integer for Nanoseconds.
 
 ## Data
@@ -183,7 +186,7 @@ Data is just a wrapper for a list of transactions, where transactions are arbitr
 
 | Name | Type                       | Description            | Validation                                                                  |
 |------|----------------------------|------------------------|-----------------------------------------------------------------------------|
-| Txs  | Matrix of bytes ([][]byte) | Slice of transactions. | Validation does not occur on this field, this data is unknown to Tendermint |
+| Txs  | Matrix of bytes ([][]byte) | Slice of transactions. | Validation does not occur on this field, this data is unknown to CometBFT |
 
 ## Commit
 
@@ -191,10 +194,22 @@ Commit is a simple wrapper for a list of signatures, with one for each validator
 
 | Name       | Type                             | Description                                                          | Validation                                                                                               |
 |------------|----------------------------------|----------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
-| Height     | uint64                            | Height at which this commit was created.                             | Must be > 0                                                                                              |
+| Height     | int64                            | Height at which this commit was created.                             | Must be > 0                                                                                              |
 | Round      | int32                            | Round that the commit corresponds to.                                | Must be > 0                                                                                              |
 | BlockID    | [BlockID](#blockid)              | The blockID of the corresponding block.                              | Must adhere to the validation rules of [BlockID](#blockid).                                              |
 | Signatures | Array of [CommitSig](#commitsig) | Array of commit signatures that correspond to current validator set. | Length of signatures must be > 0 and adhere to the validation of each individual [Commitsig](#commitsig) |
+
+## ExtendedCommit
+
+`ExtendedCommit`, similarly to Commit, wraps a list of votes with signatures together with other data needed to verify them.
+In addition, it contains the verified vote extensions, one for each non-`nil` vote, along with the extension signatures.
+
+| Name               | Type                                     | Description                                                                         | Validation                                                                                                               |
+|--------------------|------------------------------------------|-------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| Height             | int64                                    | Height at which this commit was created.                                            | Must be > 0                                                                                                              |
+| Round              | int32                                    | Round that the commit corresponds to.                                               | Must be > 0                                                                                                              |
+| BlockID            | [BlockID](#blockid)                      | The blockID of the corresponding block.                                             | Must adhere to the validation rules of [BlockID](#blockid).                                                              |
+| ExtendedSignatures | Array of [ExtendedCommitSig](#commitsig) | The current validator set's commit signatures, extension, and extension signatures. | Length of signatures must be > 0 and adhere to the validation of each individual [ExtendedCommitSig](#extendedcommitsig) |
 
 ## CommitSig
 
@@ -202,15 +217,32 @@ Commit is a simple wrapper for a list of signatures, with one for each validator
 a particular `BlockID` or was absent. It's a part of the `Commit` and can be used
 to reconstruct the vote set given the validator set.
 
-| Name             | Type                        | Description                                                                                                                                                      | Validation                                                        |
-|------------------|-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
+| Name             | Type                        | Description                                                                                                                                       | Validation                                                        |
+|------------------|-----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
 | BlockIDFlag      | [BlockIDFlag](#blockidflag) | Represents the validators participation in consensus: its vote was not received, voted for the block that received the majority, or voted for nil | Must be one of the fields in the [BlockIDFlag](#blockidflag) enum |
-| ValidatorAddress | [Address](#address)         | Address of the validator                                                                                                                                         | Must be of length 20                                              |
-| Timestamp        | [Time](#time)               | This field will vary from `CommitSig` to `CommitSig`. It represents the timestamp of the validator.                                                              | [Time](#time)                                                     |
-| Signature        | [Signature](#signature)     | Signature corresponding to the validators participation in consensus.                                                                                            | The length of the signature must be > 0 and < than  64            |
+| ValidatorAddress | [Address](#address)         | Address of the validator                                                                                                                          | Must be of length 20                                              |
+| Timestamp        | [Time](#time)               | This field will vary from `CommitSig` to `CommitSig`. It represents the timestamp of the validator.                                               | [Time](#time)                                                     |
+| Signature        | [Signature](#signature)     | Signature corresponding to the validators participation in consensus.                                                                             | The length of the signature must be > 0 and < than  64            |
 
 NOTE: `ValidatorAddress` and `Timestamp` fields may be removed in the future
-(see [ADR-25](https://github.com/tendermint/tendermint/blob/main/docs/architecture/adr-025-commit.md)).
+(see [ADR-25](https://github.com/cometbft/cometbft/blob/main/docs/architecture/adr-025-commit.md)).
+
+## ExtendedCommitSig
+
+`ExtendedCommitSig` represents a signature of a validator that has voted either for `nil`,
+a particular `BlockID` or was absent. It is part of the `ExtendedCommit` and can be used
+to reconstruct the vote set given the validator set.
+Additionally it contains the vote extensions that were attached to each non-`nil` precommit vote.
+All these extensions have been verified by the application operating at the signing validator's node.
+
+| Name               | Type                        | Description                                                                                                                                       | Validation                                                          |
+|--------------------|-----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
+| BlockIDFlag        | [BlockIDFlag](#blockidflag) | Represents the validators participation in consensus: its vote was not received, voted for the block that received the majority, or voted for nil | Must be one of the fields in the [BlockIDFlag](#blockidflag) enum   |
+| ValidatorAddress   | [Address](#address)         | Address of the validator                                                                                                                          | Must be of length 20                                                |
+| Timestamp          | [Time](#time)               | This field will vary from `CommitSig` to `CommitSig`. It represents the timestamp of the validator.                                               |                                                                     |
+| Signature          | [Signature](#signature)     | Signature corresponding to the validators participation in consensus.                                                                             | Length must be > 0 and < 64                                         |
+| Extension          | bytes                       | Vote extension provided by the Application running on the sender of the precommit vote, and verified by the local application.                    | Length must be zero if BlockIDFlag is not `Commit`                  |
+| ExtensionSignature | [Signature](#signature)     | Signature of the vote extension.                                                                                                                  | Length must be > 0 and < than 64 if BlockIDFlag is `Commit`, else 0 |
 
 ## BlockIDFlag
 
@@ -230,32 +262,33 @@ enum BlockIDFlag {
 A vote is a signed message from a validator for a particular block.
 The vote includes information about the validator signing it. When stored in the blockchain or propagated over the network, votes are encoded in Protobuf.
 
-| Name             | Type                            | Description                                                                                 | Validation                                                                                           |
-|------------------|---------------------------------|---------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
-| Type             | [SignedMsgType](#signedmsgtype) | Either prevote or precommit. [SignedMsgType](#signedmsgtype)                                | A Vote is valid if its corresponding fields are included in the enum [signedMsgType](#signedmsgtype) |
-| Height           | uint64                           | Height for which this vote was created for                                                  | Must be > 0                                                                                          |
-| Round            | int32                           | Round that the commit corresponds to.                                                       | Must be > 0                                                                                          |
-| BlockID          | [BlockID](#blockid)             | The blockID of the corresponding block.                                                     | [BlockID](#blockid)                                                                                  |
-| Timestamp        | [Time](#time)                   | Timestamp represents the time at which a validator signed.                                  | [Time](#time)                                                                                        |
-| ValidatorAddress | slice of bytes (`[]byte`)       | Address of the validator                                                                    | Length must be equal to 20                                                                           |
-| ValidatorIndex   | int32                           | Index at a specific block height that corresponds to the Index of the validator in the set. | must be > 0                                                                                          |
-| Signature        | slice of bytes (`[]byte`)       | Signature by the validator if they participated in consensus for the associated bock.       | Length of signature must be > 0 and < 64                                                             |
+| Name               | Type                            | Description                                                                              | Validation                               |
+|--------------------|---------------------------------|------------------------------------------------------------------------------------------|------------------------------------------|
+| Type               | [SignedMsgType](#signedmsgtype) | The type of message the vote refers to                                                   | Must be `PrevoteType` or `PrecommitType` |
+| Height             | int64                           | Height for which this vote was created for                                               | Must be > 0                              |
+| Round              | int32                           | Round that the commit corresponds to.                                                    | Must be > 0                              |
+| BlockID            | [BlockID](#blockid)             | The blockID of the corresponding block.                                                  |                                          |
+| Timestamp          | [Time](#time)                   | Timestamp represents the time at which a validator signed.                               |                                          |
+| ValidatorAddress   | bytes                           | Address of the validator                                                                 | Length must be equal to 20               |
+| ValidatorIndex     | int32                           | Index at a specific block height corresponding to the Index of the validator in the set. | Must be > 0                              |
+| Signature          | bytes                           | Signature by the validator if they participated in consensus for the associated block.   | Length must be > 0 and < 64              |
+| Extension          | bytes                           | Vote extension provided by the Application running at the validator's node.              | Length can be 0                          |
+| ExtensionSignature | bytes                           | Signature for the extension                                                              | Length must be > 0 and < 64              |
 
 ## CanonicalVote
 
-CanonicalVote is for validator signing. This type will not be present in a block. Votes are represented via `CanonicalVote` and also encoded using protobuf via `type.SignBytes` which includes the `ChainID`, and uses a different ordering of
-the fields.
+CanonicalVote is for validator signing. This type will not be present in a block.
+Votes are represented via `CanonicalVote` and also encoded using protobuf via `type.SignBytes` which includes the `ChainID`,
+and uses a different ordering of the fields.
 
-```proto
-message CanonicalVote {
-  SignedMsgType             type      = 1;
-  fixed64                  height    = 2;
-  sfixed64                  round     = 3;
-  CanonicalBlockID          block_id  = 4;
-  google.protobuf.Timestamp timestamp = 5;
-  string                    chain_id  = 6;
-}
-```
+| Name      | Type                            | Description                             | Validation                               |
+|-----------|---------------------------------|-----------------------------------------|------------------------------------------|
+| Type      | [SignedMsgType](#signedmsgtype) | The type of message the vote refers to  | Must be `PrevoteType` or `PrecommitType` |
+| Height    | int64                           | Height in which the vote was provided.  | Must be > 0                              |
+| Round     | int64                           | Round in which the vote was provided.   | Must be > 0                              |
+| BlockID   | string                          | ID of the block the vote refers to.     |                                          |
+| Timestamp | string                          | Time of the vote.                       |                                          |
+| ChainID   | string                          | ID of the blockchain running consensus. |                                          |
 
 For signing, votes are represented via [`CanonicalVote`](#canonicalvote) and also encoded using protobuf via
 `type.SignBytes` which includes the `ChainID`, and uses a different ordering of
@@ -276,6 +309,18 @@ func (vote *Vote) Verify(chainID string, pubKey crypto.PubKey) error {
  return nil
 }
 ```
+
+### CanonicalVoteExtension
+
+Vote extensions are signed using a representation similar to votes.
+This is the structure to marshall in order to obtain the bytes to sign or verify the signature.
+
+| Name      | Type   | Description                                 | Validation           |
+|-----------|--------|---------------------------------------------|----------------------|
+| Extension | bytes  | Vote extension provided by the Application. | Can have zero length |
+| Height    | int64  | Height in which the extension was provided. | Must be > 0          |
+| Round     | int64  | Round in which the extension was provided.  | Must be > 0          |
+| ChainID   | string | ID of the blockchain running consensus.     |                      |
 
 ## Proposal
 
@@ -313,7 +358,7 @@ enum SignedMsgType {
 
 ## Signature
 
-Signatures in Tendermint are raw bytes representing the underlying signature.
+Signatures in CometBFT are raw bytes representing the underlying signature.
 
 See the [signature spec](./encoding.md#key-types) for more.
 
@@ -327,9 +372,9 @@ EvidenceList is a simple wrapper for a list of evidence:
 
 ## Evidence
 
-Evidence in Tendermint is used to indicate breaches in the consensus by a validator.
+Evidence in CometBFT is used to indicate breaches in the consensus by a validator.
 
-More information on how evidence works in Tendermint can be found [here](../consensus/evidence.md)
+More information on how evidence works in CometBFT can be found [here](../consensus/evidence.md)
 
 ### DuplicateVoteEvidence
 

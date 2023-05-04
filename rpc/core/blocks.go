@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/tendermint/tendermint/libs/bytes"
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	tmquery "github.com/tendermint/tendermint/libs/pubsub/query"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	rpctypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
-	blockidxnull "github.com/tendermint/tendermint/state/indexer/block/null"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/libs/bytes"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	blockidxnull "github.com/cometbft/cometbft/state/indexer/block/null"
+	"github.com/cometbft/cometbft/types"
 )
 
 // BlockchainInfo gets block headers for minHeight <= height <= maxHeight.
@@ -23,11 +23,11 @@ import (
 // At most 20 items will be returned. Block headers are returned in descending
 // order (highest first).
 //
-// More: https://docs.tendermint.com/master/rpc/#/Info/blockchain
+// More: https://docs.cometbft.com/main/rpc/#/Info/blockchain
 func (env *Environment) BlockchainInfo(
-	ctx *rpctypes.Context,
-	minHeight, maxHeight int64) (*ctypes.ResultBlockchainInfo, error) {
-
+	_ *rpctypes.Context,
+	minHeight, maxHeight int64,
+) (*ctypes.ResultBlockchainInfo, error) {
 	const limit int64 = 20
 	var err error
 	minHeight, maxHeight, err = filterMinMax(
@@ -49,7 +49,8 @@ func (env *Environment) BlockchainInfo(
 
 	return &ctypes.ResultBlockchainInfo{
 		LastHeight: env.BlockStore.Height(),
-		BlockMetas: blockMetas}, nil
+		BlockMetas: blockMetas,
+	}, nil
 }
 
 // error if either min or max are negative or min > max
@@ -70,14 +71,14 @@ func filterMinMax(base, height, min, max, limit int64) (int64, int64, error) {
 	}
 
 	// limit max to the height
-	max = tmmath.MinInt64(height, max)
+	max = cmtmath.MinInt64(height, max)
 
 	// limit min to the base
-	min = tmmath.MaxInt64(base, min)
+	min = cmtmath.MaxInt64(base, min)
 
 	// limit min to within `limit` of max
 	// so the total number of blocks returned will be `limit`
-	min = tmmath.MaxInt64(min, max-limit+1)
+	min = cmtmath.MaxInt64(min, max-limit+1)
 
 	if min > max {
 		return min, max, fmt.Errorf("min height %d can't be greater than max height %d", min, max)
@@ -87,8 +88,8 @@ func filterMinMax(base, height, min, max, limit int64) (int64, int64, error) {
 
 // Header gets block header at a given height.
 // If no height is provided, it will fetch the latest header.
-// More: https://docs.tendermint.com/master/rpc/#/Info/header
-func (env *Environment) Header(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultHeader, error) {
+// More: https://docs.cometbft.com/main/rpc/#/Info/header
+func (env *Environment) Header(_ *rpctypes.Context, heightPtr *int64) (*ctypes.ResultHeader, error) {
 	height, err := env.getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
 		return nil, err
@@ -103,8 +104,8 @@ func (env *Environment) Header(ctx *rpctypes.Context, heightPtr *int64) (*ctypes
 }
 
 // HeaderByHash gets header by hash.
-// More: https://docs.tendermint.com/master/rpc/#/Info/header_by_hash
-func (env *Environment) HeaderByHash(ctx *rpctypes.Context, hash bytes.HexBytes) (*ctypes.ResultHeader, error) {
+// More: https://docs.cometbft.com/main/rpc/#/Info/header_by_hash
+func (env *Environment) HeaderByHash(_ *rpctypes.Context, hash bytes.HexBytes) (*ctypes.ResultHeader, error) {
 	// N.B. The hash parameter is HexBytes so that the reflective parameter
 	// decoding logic in the HTTP service will correctly translate from JSON.
 	// See https://github.com/tendermint/tendermint/issues/6802 for context.
@@ -119,8 +120,8 @@ func (env *Environment) HeaderByHash(ctx *rpctypes.Context, hash bytes.HexBytes)
 
 // Block gets block at a given height.
 // If no height is provided, it will fetch the latest block.
-// More: https://docs.tendermint.com/master/rpc/#/Info/block
-func (env *Environment) Block(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlock, error) {
+// More: https://docs.cometbft.com/main/rpc/#/Info/block
+func (env *Environment) Block(_ *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlock, error) {
 	height, err := env.getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
 		return nil, err
@@ -135,8 +136,8 @@ func (env *Environment) Block(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.
 }
 
 // BlockByHash gets block by hash.
-// More: https://docs.tendermint.com/master/rpc/#/Info/block_by_hash
-func (env *Environment) BlockByHash(ctx *rpctypes.Context, hash []byte) (*ctypes.ResultBlock, error) {
+// More: https://docs.cometbft.com/main/rpc/#/Info/block_by_hash
+func (env *Environment) BlockByHash(_ *rpctypes.Context, hash []byte) (*ctypes.ResultBlock, error) {
 	block := env.BlockStore.LoadBlockByHash(hash)
 	if block == nil {
 		return &ctypes.ResultBlock{BlockID: types.BlockID{}, Block: nil}, nil
@@ -148,8 +149,8 @@ func (env *Environment) BlockByHash(ctx *rpctypes.Context, hash []byte) (*ctypes
 
 // Commit gets block commit at a given height.
 // If no height is provided, it will fetch the commit for the latest block.
-// More: https://docs.tendermint.com/master/rpc/#/Info/commit
-func (env *Environment) Commit(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultCommit, error) {
+// More: https://docs.cometbft.com/main/rpc/#/Info/commit
+func (env *Environment) Commit(_ *rpctypes.Context, heightPtr *int64) (*ctypes.ResultCommit, error) {
 	height, err := env.getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
 		return nil, err
@@ -179,43 +180,41 @@ func (env *Environment) Commit(ctx *rpctypes.Context, heightPtr *int64) (*ctypes
 // Results are for the height of the block containing the txs.
 // Thus response.results.deliver_tx[5] is the results of executing
 // getBlock(h).Txs[5]
-// More: https://docs.tendermint.com/master/rpc/#/Info/block_results
-func (env *Environment) BlockResults(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlockResults, error) {
+// More: https://docs.cometbft.com/main/rpc/#/Info/block_results
+func (env *Environment) BlockResults(_ *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlockResults, error) {
 	height, err := env.getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
 		return nil, err
 	}
 
-	results, err := env.StateStore.LoadABCIResponses(height)
+	results, err := env.StateStore.LoadFinalizeBlockResponse(height)
 	if err != nil {
 		return nil, err
 	}
 
 	return &ctypes.ResultBlockResults{
 		Height:                height,
-		TxsResults:            results.DeliverTxs,
-		BeginBlockEvents:      results.BeginBlock.Events,
-		EndBlockEvents:        results.EndBlock.Events,
-		ValidatorUpdates:      results.EndBlock.ValidatorUpdates,
-		ConsensusParamUpdates: results.EndBlock.ConsensusParamUpdates,
+		TxsResults:            results.TxResults,
+		FinalizeBlockEvents:   results.Events,
+		ValidatorUpdates:      results.ValidatorUpdates,
+		ConsensusParamUpdates: results.ConsensusParamUpdates,
 	}, nil
 }
 
-// BlockSearch searches for a paginated set of blocks matching BeginBlock and
-// EndBlock event search criteria.
+// BlockSearch searches for a paginated set of blocks matching
+// FinalizeBlock event search criteria.
 func (env *Environment) BlockSearch(
 	ctx *rpctypes.Context,
 	query string,
 	pagePtr, perPagePtr *int,
 	orderBy string,
 ) (*ctypes.ResultBlockSearch, error) {
-
 	// skip if block indexing is disabled
 	if _, ok := env.BlockIndexer.(*blockidxnull.BlockerIndexer); ok {
 		return nil, errors.New("block indexing is disabled")
 	}
 
-	q, err := tmquery.New(query)
+	q, err := cmtquery.New(query)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +246,7 @@ func (env *Environment) BlockSearch(
 	}
 
 	skipCount := validateSkipCount(page, perPage)
-	pageSize := tmmath.MinInt(perPage, totalCount-skipCount)
+	pageSize := cmtmath.MinInt(perPage, totalCount-skipCount)
 
 	apiResults := make([]*ctypes.ResultBlock, 0, pageSize)
 	for i := skipCount; i < skipCount+pageSize; i++ {

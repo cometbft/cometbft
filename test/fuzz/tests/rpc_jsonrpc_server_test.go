@@ -1,4 +1,4 @@
-//go:build gofuzz || go1.18
+//go:build gofuzz || go1.20
 
 package tests
 
@@ -10,9 +10,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/tendermint/tendermint/libs/log"
-	rpcserver "github.com/tendermint/tendermint/rpc/jsonrpc/server"
-	rpctypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/libs/log"
+	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
+	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 func FuzzRPCJSONRPCServer(f *testing.F) {
@@ -20,7 +20,7 @@ func FuzzRPCJSONRPCServer(f *testing.F) {
 		S string `json:"s"`
 		I int    `json:"i"`
 	}
-	var rpcFuncMap = map[string]*rpcserver.RPCFunc{
+	rpcFuncMap := map[string]*rpcserver.RPCFunc{
 		"c": rpcserver.NewRPCFunc(func(ctx *rpctypes.Context, args *args, options ...rpcserver.Option) (string, error) {
 			return "foo", nil
 		}, "args"),

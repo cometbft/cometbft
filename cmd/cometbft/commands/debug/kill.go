@@ -32,8 +32,13 @@ $ cometbft debug 34255 /path/to/tm-debug.zip`,
 	RunE: killCmdHandler,
 }
 
+<<<<<<< HEAD
 func killCmdHandler(cmd *cobra.Command, args []string) error {
 	pid, err := strconv.ParseUint(args[0], 10, 64)
+=======
+func killCmdHandler(_ *cobra.Command, args []string) error {
+	pid, err := strconv.Atoi(args[0])
+>>>>>>> 03c5e7727 (Unsafe int cast in `kill` command (#783))
 	if err != nil {
 		return err
 	}
@@ -100,7 +105,7 @@ func killCmdHandler(cmd *cobra.Command, args []string) error {
 // is tailed and piped to a file under the directory dir. An error is returned
 // if the output file cannot be created or the tail command cannot be started.
 // An error is not returned if any subsequent syscall fails.
-func killProc(pid uint64, dir string) error {
+func killProc(pid int, dir string) error {
 	// pipe STDERR output from tailing the CometBFT process to a file
 	//
 	// NOTE: This will only work on UNIX systems.
@@ -123,7 +128,7 @@ func killProc(pid uint64, dir string) error {
 	go func() {
 		// Killing the CometBFT process with the '-ABRT|-6' signal will result in
 		// a goroutine stacktrace.
-		p, err := os.FindProcess(int(pid))
+		p, err := os.FindProcess(pid)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "failed to find PID to kill CometBFT process: %s", err)
 		} else if err = p.Signal(syscall.SIGABRT); err != nil {

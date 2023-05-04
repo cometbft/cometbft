@@ -11,7 +11,7 @@ Once a node starts running and is initialized, it can receive transactions from
 clients via RPC endpoints or from other nodes via P2P channels in its mempool
 reactor. The node then validates these transactions using `CheckTx` calls to the
 application. This process occurs even when the node is catching up to reach the
-latest block heights through BlockSync or StateSync, and the application may not
+latest block heights through state sync or block sync , and the application may not
 be up to date yet. If a transaction's validity depends on the application state,
 it will likely be rejected by the application when received at this stage.
 

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -8,7 +9,7 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 )
 
-const ABCI_REQ = "abci"
+const ABCI_REQ = "abci:"
 
 // GetRequestString gets the string representation of the request that will be logged by the application.
 func GetABCIRequestString(req *abci.Request) (string, error) {
@@ -16,7 +17,8 @@ func GetABCIRequestString(req *abci.Request) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	s := ABCI_REQ + string(b) + ABCI_REQ
+	reqStr := base64.StdEncoding.EncodeToString(b)
+	s := ABCI_REQ + reqStr
 	return s, nil
 }
 
@@ -26,12 +28,16 @@ func GetABCIRequestFromString(s string) (*abci.Request, error) {
 		return nil, fmt.Errorf("String passed to GetRequestFromString does not have any abci request!\n")
 	}
 	parts := strings.Split(s, ABCI_REQ)
-	if len(parts) != 3 {
+	if len(parts) != 2 {
 		return nil, fmt.Errorf("String passed to GetRequestFromString does not have a good format!\n")
 	}
 	req := &abci.Request{}
-	reqBytes := []byte(parts[1])
-	err := proto.Unmarshal(reqBytes, req)
+	reqStr := parts[1]
+	b, err := base64.StdEncoding.DecodeString(reqStr)
+	if err != nil {
+		return nil, err
+	}
+	err = proto.Unmarshal(b, req)
 	if err != nil {
 		return nil, err
 	}

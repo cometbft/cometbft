@@ -39,5 +39,6 @@ func TestLogging(t *testing.T) {
 		if !reflect.DeepEqual(r, rr) {
 			t.Errorf("Logging unsuccessful: got %v expected %v\n", rr, r)
 		}
+
 	}
 }

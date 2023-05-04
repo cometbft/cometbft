@@ -188,7 +188,6 @@ func (app *Application) DeliverTx(req abci.RequestDeliverTx) abci.ResponseDelive
 
 // EndBlock implements ABCI.
 func (app *Application) EndBlock(req abci.RequestEndBlock) abci.ResponseEndBlock {
-
 	r := &abci.Request{Value: &abci.Request_EndBlock{EndBlock: &abci.RequestEndBlock{}}}
 	app.logRequest(r)
 
@@ -349,7 +348,7 @@ func (app *Application) PrepareProposal(
 // ProcessProposal implements part of the Application interface.
 // It accepts any proposal that does not contain a malformed transaction.
 func (app *Application) ProcessProposal(req abci.RequestProcessProposal) abci.ResponseProcessProposal {
-
+	//app.logger.Debug("ovo" + req.)
 	r := &abci.Request{Value: &abci.Request_ProcessProposal{ProcessProposal: &abci.RequestProcessProposal{}}}
 	app.logRequest(r)
 

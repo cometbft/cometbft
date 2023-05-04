@@ -3,6 +3,7 @@ package docker
 import (
 	"bytes"
 	"context"
+	"net"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -46,6 +47,9 @@ func (p Provider) TerminateTendermint(ctx context.Context, n *e2e.Node) error {
 }
 func (p Provider) KillTendermint(ctx context.Context, n *e2e.Node) error {
 	return ExecCompose(ctx, p.Testnet.Dir, "kill", "-s", "SIGKILL", n.Name)
+}
+func (p Provider) GetReachableIP(ctx context.Context, n *e2e.Node) net.IP {
+	return n.ExternalIP
 }
 
 // dockerComposeBytes generates a Docker Compose config file for a testnet and returns the

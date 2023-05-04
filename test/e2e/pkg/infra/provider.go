@@ -2,6 +2,7 @@ package infra
 
 import (
 	"context"
+	"net"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
@@ -18,6 +19,8 @@ type Provider interface {
 	StartTendermint(context.Context, *e2e.Node) error
 	KillTendermint(context.Context, *e2e.Node) error
 	TerminateTendermint(context.Context, *e2e.Node) error
+
+	GetReachableIP(context.Context, *e2e.Node) net.IP
 }
 
 // NoopProvider implements the provider interface by performing noops for every
@@ -31,5 +34,6 @@ func (NoopProvider) CreateNode(_ context.Context, _ *e2e.Node) error          { 
 func (NoopProvider) StartTendermint(_ context.Context, _ *e2e.Node) error     { return nil }
 func (NoopProvider) TerminateTendermint(_ context.Context, _ *e2e.Node) error { return nil }
 func (NoopProvider) KillTendermint(_ context.Context, _ *e2e.Node) error      { return nil }
+func (NoopProvider) GetReachableIP(_ context.Context, _ *e2e.Node) net.IP     { return nil }
 
 var _ Provider = NoopProvider{}

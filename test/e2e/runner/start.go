@@ -57,9 +57,21 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 			return err
 		}
 		if node.PrometheusProxyPort > 0 {
-			logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://%s:%v; with Prometheus on http://%s:%v/metrics", node.Name, node.InternalIP, node.ProxyPort, node.InternalIP, node.PrometheusProxyPort))
+			logger.Info("start", "msg",
+				log.NewLazySprintf("Node %v up on http://%s:%v; with Prometheus on http://%s:%v/metrics",
+					node.Name,
+					p.GetReachableIP(context.Background(), node),
+					node.ProxyPort,
+					p.GetReachableIP(context.Background(), node),
+					node.PrometheusProxyPort,
+				),
+			)
 		} else {
-			logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://%s:%v", node.Name, node.InternalIP, node.ProxyPort))
+			logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://%s:%v",
+				node.Name,
+				p.GetReachableIP(context.Background(), node),
+				node.ProxyPort,
+			))
 		}
 	}
 

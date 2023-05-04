@@ -616,7 +616,7 @@ func (mem *CListMempool) Update(
 		//   100
 		// https://github.com/tendermint/tendermint/issues/3322.
 		if err := mem.RemoveTxByKey(tx.Key()); err != nil {
-			mem.logger.Error("Committed transaction could not be removed from mempool", "error", err.Error())
+			mem.logger.Error("Committed transaction could not be removed from mempool", "key", tx.Key(), err.Error())
 		}
 	}
 

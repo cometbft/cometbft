@@ -190,7 +190,6 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		nodeNames = append(nodeNames, name)
 	}
 	sort.Strings(nodeNames)
-	localHostIP := net.ParseIP("127.0.0.1")
 
 	for _, name := range nodeNames {
 		nodeManifest := manifest.Nodes[name]
@@ -198,8 +197,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		if !ok {
 			return nil, fmt.Errorf("information for node '%s' missing from infrastructure data", name)
 		}
-		extIP := localHostIP
-		if ifd.Provider != "docker" {
+		extIP := ind.ExtIPAddress
+		if len(extIP) == 0 {
 			extIP = ind.IPAddress
 		}
 		v := nodeManifest.Version

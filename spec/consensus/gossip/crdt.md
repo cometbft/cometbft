@@ -128,24 +128,18 @@ Consider the following definition for **Eventual Convergence**.
 
 |Eventual Convergence|
 |-----|
-| If there exists a correct process $p$ such that $e \in t_p$, then, eventually, for every correct process $q$, $e \in t_q$ or there exists a correct process $r$ such that $\bar{e} \in t_r$.|
+| If there exists a correct process $p \in P$ such that $e \in t_p$, then, eventually, for every correct process $q \in P$, either $e \in t_q$ or $e$ is stale in $t_q$.
 
-> **Note**
-> Nodes may learn of an entry deletion before learning of its addition.
-
-In order to ensure convergence even in the presence of failures, the network must be connected in such a way to allow communication around any malicious nodes, that is, to provide paths between correct ones through correct nodes.
-Even if paths connecting correct nodes exist, effectively using requires timeouts to not expire precociously and aborting communication attempts.
+In order to ensure convergence even in the presence of failures, the network must be connected in such a way to allow communication around any malicious nodes, that is, to provide paths connecting correct nodes.
+Even if paths connecting correct nodes exist, effectively using them requires timeouts to not expire precociously and abort communication attempts.
 Timeout values can be guaranteed to eventually be enough for communication after a GST is reached, which implies that all communication between correct processes will eventually happen timely, which implies that the tuple space will converge and keep converging.
 Formally, if there is a GST then following holds true:
 
 | Eventual $\Delta$-Timely Convergence |
 |---|
-| If $e\in t_p$, for some correct process $p$, at instant $t$, then by $\text{max}(t,\text{GST}) + \Delta$, either $e \in t_q$, for every correct process $q$ or $e$ is stale in $\bar{e} \in t_p$.
+| If $e\in t_p$, for some correct process $p \in P$, at instant $t$, then by $\text{max}(t,\text{GST}) + \Delta$, for every correct process $q \in P$, either $e \in t_q$ or $e$ is stale in $t_p$.
 
 Although GST may be too strong an expectation, in practice timely communication frequently happens within small stable periods, also leading to convergence.
-
-> :warning:
-> TODO: need to update to consider staleness and not only tombstones.
 
 ### Why use a Tuple Space
 

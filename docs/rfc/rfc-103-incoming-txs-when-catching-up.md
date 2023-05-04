@@ -40,7 +40,7 @@ transactions from other nodes and clients.
 The node could start the consensus protocol immediately to reconstruct the block
 history, but this could take a very long time. State sync and block sync are much
 faster mechanisms to bootstrap the node and reach the latest heights of the
-chain. When a node is performing BlockSync or StateSync, it is in *catch up*
+chain. While a node is performing state sync or block sync, it is in *catch up*
 mode. Once synchronization finishes, the node may not necessarily be at the
 latest height, but it is assumed to be fairly close to it, so the node is ready
 to fully participate in consensus. At this point, it switches to *consensus*

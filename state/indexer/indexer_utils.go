@@ -25,7 +25,7 @@ func compareFloat(op1 *big.Float, op2 interface{}) (int, bool, error) {
 	}
 }
 
-// If the event value we compare againsg the condition (op2) is an integer
+// If the event value we compare against the condition (op2) is an integer
 // we convert the int to float with a precision equal to the number of bits
 // needed to represent the integer to avoid rounding issues with floats
 // where 100 would equal to 100.2 because 100.2 is rounded to 100, while 100.7

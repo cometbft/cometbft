@@ -228,10 +228,10 @@ func parseNumber(s string) (*big.Float, error) {
 	if _, ok := intVal.SetString(s, 10); !ok {
 		f, _, err := big.ParseFloat(extractNum.FindString(s), 10, 125, big.ToNearestEven)
 		return f, err
-	} else {
-		f, _, err := big.ParseFloat(extractNum.FindString(s), 10, uint(intVal.BitLen()), big.ToNearestEven)
-		return f, err
 	}
+	f, _, err := big.ParseFloat(extractNum.FindString(s), 10, uint(intVal.BitLen()), big.ToNearestEven)
+	return f, err
+
 }
 
 // A map of operator ⇒ argtype ⇒ match-constructor.

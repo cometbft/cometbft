@@ -80,22 +80,22 @@ func (a *Arg) Number() *big.Float {
 			return nil
 		}
 		return f
-	} else {
-		// If it is indeed a big integer, we make sure to convert it to a float with enough precision
-		// to represent all the bits
-		bitLen := uint(intVal.BitLen())
-		var f *big.Float
-		var err error
-		if bitLen < 64 {
-			f, _, err = big.ParseFloat(a.text, 10, 0, big.ToNearestEven)
-		} else {
-			f, _, err = big.ParseFloat(a.text, 10, uint(intVal.BitLen()), big.ToNearestEven)
-		}
-		if err != nil {
-			return nil
-		}
-		return f
 	}
+	// If it is indeed a big integer, we make sure to convert it to a float with enough precision
+	// to represent all the bits
+	bitLen := uint(intVal.BitLen())
+	var f *big.Float
+	var err error
+	if bitLen < 64 {
+		f, _, err = big.ParseFloat(a.text, 10, 0, big.ToNearestEven)
+	} else {
+		f, _, err = big.ParseFloat(a.text, 10, uint(intVal.BitLen()), big.ToNearestEven)
+	}
+	if err != nil {
+		return nil
+	}
+	return f
+
 }
 
 // Time returns the value of the argument text as a time, or the zero value if

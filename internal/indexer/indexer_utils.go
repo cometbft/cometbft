@@ -8,7 +8,7 @@ import (
 )
 
 // If the actual event value is a float, we get the condition and parse it as a float
-// to compare agains
+// to compare against
 func compareFloat(op1 *big.Float, op2 interface{}) (int, bool, error) {
 	switch opVal := op2.(type) {
 	case *big.Int:

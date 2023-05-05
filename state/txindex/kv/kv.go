@@ -350,7 +350,7 @@ func lookForHash(conditions []query.Condition) (hash []byte, ok bool, err error)
 func lookForHeight(conditions []query.Condition) (height int64, heightIdx int) {
 	for i, c := range conditions {
 		if c.CompositeKey == types.TxHeightKey && c.Op == query.OpEqual {
-			return c.Operand.(int64), i
+			return c.Operand.(*big.Int).Int64(), i
 		}
 	}
 	return 0, -1

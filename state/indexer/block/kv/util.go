@@ -136,7 +136,7 @@ func parseEventSeqFromEventKey(key []byte) (int64, error) {
 func lookForHeight(conditions []query.Condition) (int64, bool, int) {
 	for i, c := range conditions {
 		if c.CompositeKey == types.BlockHeightKey && c.Op == query.OpEqual {
-			return c.Operand.(int64), true, i
+			return c.Operand.(*big.Int).Int64(), true, i
 		}
 	}
 
@@ -197,7 +197,7 @@ func dedupMatchEvents(conditions []query.Condition) ([]query.Condition, bool) {
 	for i, c := range conditions {
 		if c.CompositeKey == types.MatchEventKey {
 			// Match events should be added only via RPC as the very first query condition
-			if i == 0 && c.Op == query.OpEqual && c.Operand.(int64) == 1 {
+			if i == 0 && c.Op == query.OpEqual && c.Operand.(*big.Int).Int64() == 1 {
 				dedupConditions = append(dedupConditions, c)
 				matchEvents = true
 			}

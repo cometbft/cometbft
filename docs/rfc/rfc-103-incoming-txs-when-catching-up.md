@@ -12,10 +12,10 @@ Once a node starts running and is initialized, it can receive transactions from
 clients via RPC endpoints or from other nodes via P2P channels in its mempool
 reactor. The node then validates these transactions using `CheckTx` calls to the
 application. This process occurs even when the node is catching up to reach the
-latest block heights through state sync or block sync, and the application's
-state may not be up to date yet. If a transaction's validity depends on the
-application state, it will likely be rejected by the application when received
-at this stage.
+latest block heights through state sync or block sync, and the application may
+not be up to date yet with the latest height of the blockchain. If a
+transaction's validity depends on the application state, it will likely be
+rejected by the application when received at this stage.
 
 This document aims to answer the following questions:
 - How should a node handle incoming transactions while catching up? Should it
@@ -71,8 +71,8 @@ add the transaction to the mempool and removes it from the cache.
 
 ### Mempool cache
 
-The mempool implements a cache of received transactions that it uses to discard
-already-seen transactions, thus avoiding processing duplicates.
+The mempool reactor implements a cache of received transactions that it uses to
+discard already-seen transactions, thus avoiding processing duplicates.
 
 Transactions remain in the cache until the application replies that a
 transaction is invalid. This can occur in three cases.
@@ -104,7 +104,7 @@ when there is sufficient free space in the mempool.
 ### Inbound messages
 
 A node that is not in consensus mode, should accept or reject incoming
-transactions? Currently the mempool accepts and validates all incoming
+transactions? The mempool reactor currently accepts and validates all incoming
 transactions. It only implements the cache to discard already-seen transactions.
 
 There are not many reasons at this stage to have an operational mempool reactor

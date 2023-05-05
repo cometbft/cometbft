@@ -1,9 +1,8 @@
 package digitalocean
 
 import (
-	"bytes"
 	"context"
-	"html/template"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,31 +24,36 @@ func (p *Provider) Setup() error {
 	return nil
 }
 
+const ymlSystemd = "systemd-action.yml"
+
 func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
-	nodeNames := make([]string, len(nodes))
+	nodeIPs := make([]string, len(nodes))
 	for i, n := range nodes {
-		nodeNames[i] = n.Name
+		nodeIPs[i] = n.ExternalIP.String()
 	}
-	const yml = "start-network.yml"
-	if err := p.writePlaybook(yml); err != nil {
+	if err := p.writePlaybook(ymlSystemd, true); err != nil {
 		return err
 	}
 
-	return execAnsible(ctx, p.Testnet.Dir, yml, "--limit", strings.Join(nodeNames, ","))
+	return execAnsible(ctx, p.Testnet.Dir, ymlSystemd, nodeIPs)
 }
-func (p Provider) StopTestnet(_ context.Context) error {
-	//TODO Not implemented (next PR)
-	return nil
-}
+func (p Provider) StopTestnet(ctx context.Context) error {
+	nodeIPs := make([]string, len(p.Testnet.Nodes))
+	for i, n := range p.Testnet.Nodes {
+		nodeIPs[i] = n.ExternalIP.String()
+	}
 
-func (p Provider) writePlaybook(yaml string) error {
-	playbook, err := ansibleStartBytes(p.Testnet)
-	if err != nil {
+	if err := p.writePlaybook(ymlSystemd, false); err != nil {
 		return err
 	}
+	return execAnsible(ctx, p.Testnet.Dir, ymlSystemd, nodeIPs)
+}
+
+func (p Provider) writePlaybook(yaml string, starting bool) error {
+	playbook := ansibleSystemdBytes(starting)
 	//nolint: gosec
 	// G306: Expect WriteFile permissions to be 0600 or less
-	err = os.WriteFile(filepath.Join(p.Testnet.Dir, yaml), playbook, 0o644)
+	err := os.WriteFile(filepath.Join(p.Testnet.Dir, yaml), []byte(playbook), 0o644)
 	if err != nil {
 		return err
 	}
@@ -58,35 +62,30 @@ func (p Provider) writePlaybook(yaml string) error {
 
 // file as bytes to be written out to disk.
 // ansibleStartBytes generates an Ansible playbook to start the network
-func ansibleStartBytes(testnet *e2e.Testnet) ([]byte, error) {
-	tmpl, err := template.New("ansible-start").Parse(`- name: start testapp
-  hosts: validators
+func ansibleSystemdBytes(starting bool) string {
+	startStop := "stopped"
+	if starting {
+		startStop = "started"
+	}
+	playbook := fmt.Sprintf(`- name: start/stop testapp
+  hosts: all
   gather_facts: yes
   vars:
     ansible_host_key_checking: false
 
   tasks:
-  - name: start the systemd-unit
+  - name: operate on the systemd-unit
     ansible.builtin.systemd:
       name: testappd
-      state: started
-      enabled: yes`)
-	if err != nil {
-		return nil, err
-	}
-	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, testnet)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+      state: %s
+      enabled: yes`, startStop)
+	return playbook
 }
 
 // ExecCompose runs a Docker Compose command for a testnet.
-func execAnsible(ctx context.Context, dir, playbook string, args ...string) error {
+func execAnsible(ctx context.Context, dir, playbook string, nodeIPs []string, args ...string) error {
 	playbook = filepath.Join(dir, playbook)
-	hostsFile := filepath.Join(dir, "hosts")
-	return exec.Command(ctx, append(
-		[]string{"ansible-playbook", playbook, "-f", "50", "-u", "root", "-i", hostsFile},
+	return exec.CommandVerbose(ctx, append(
+		[]string{"ansible-playbook", playbook, "-f", "50", "-u", "root", "--inventory", strings.Join(nodeIPs, ",") + ","},
 		args...)...)
 }

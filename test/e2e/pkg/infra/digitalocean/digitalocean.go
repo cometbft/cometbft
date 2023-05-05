@@ -20,7 +20,7 @@ func (p *Provider) Setup() error {
 	return nil
 }
 
-func (p Provider) StartNodes(_ context.Context, nodes ...*e2e.Node) error {
+func (p Provider) StartNodes(_ context.Context, _ ...*e2e.Node) error {
 	//TODO Not implemented (next PR)
 	return nil
 }

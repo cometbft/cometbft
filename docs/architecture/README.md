@@ -50,3 +50,4 @@ numbering our ADRs from 100 onwards.
 
 ### Rejected
 
+- [ADR-100: Data companion push API](./adr-100-data-companion-push-api.md)

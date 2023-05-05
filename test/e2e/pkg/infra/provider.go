@@ -14,6 +14,11 @@ type Provider interface {
 	// provider during testnet setup.
 	Setup() error
 
+	// Starts the nodes passed as parameter. A nodes MUST NOT
+	// be started twice before calling StopTestnet
+	// If no nodes are passed, start the whole network
 	StartNodes(context.Context, ...*e2e.Node) error
+
+	// Stops the whole network
 	StopTestnet(context.Context) error
 }

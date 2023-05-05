@@ -42,17 +42,16 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 
 	// Start initial nodes (StartAt: 0)
 	logger.Info("Starting initial network nodes...")
+	nodesAtZero := make([]*e2e.Node, 0)
 	for len(nodeQueue) > 0 && nodeQueue[0].StartAt == 0 {
-		node := nodeQueue[0]
+		nodesAtZero = append(nodesAtZero, nodeQueue[0])
 		nodeQueue = nodeQueue[1:]
-		err := p.CreateNode(context.Background(), node)
-		if err != nil {
-			return err
-		}
-		err = p.StartComet(context.Background(), node)
-		if err != nil {
-			return err
-		}
+	}
+	err := p.StartComet(context.Background(), nodesAtZero...)
+	if err != nil {
+		return err
+	}
+	for _, node := range nodesAtZero {
 		if _, err := waitForNode(ctx, node, 0, 15*time.Second); err != nil {
 			return err
 		}
@@ -120,11 +119,7 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 
 		logger.Info("Starting catch up node", "node", node.Name, "height", node.StartAt)
 
-		err := p.CreateNode(context.Background(), node)
-		if err != nil {
-			return err
-		}
-		err = p.StartComet(context.Background(), node)
+		err := p.StartComet(context.Background(), node)
 		if err != nil {
 			return err
 		}

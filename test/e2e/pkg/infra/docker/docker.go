@@ -35,11 +35,12 @@ func (p *Provider) Setup() error {
 	return nil
 }
 
-func (p Provider) CreateNode(ctx context.Context, n *e2e.Node) error {
-	return ExecCompose(ctx, p.Testnet.Dir, "up", "-d", "--no-start", n.Name)
-}
-func (p Provider) StartComet(ctx context.Context, n *e2e.Node) error {
-	return ExecCompose(ctx, p.Testnet.Dir, "start", n.Name)
+func (p Provider) StartComet(ctx context.Context, nodes ...*e2e.Node) error {
+	nodeNames := make([]string, len(nodes))
+	for i, n := range nodes {
+		nodeNames[i] = n.Name
+	}
+	return ExecCompose(ctx, p.Testnet.Dir, append([]string{"up", "-d"}, nodeNames...)...)
 }
 func (p Provider) TerminateComet(ctx context.Context, n *e2e.Node) error {
 	return ExecCompose(ctx, p.Testnet.Dir, "kill", "-s", "SIGTERM", n.Name)

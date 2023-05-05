@@ -15,7 +15,6 @@ import (
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra/digitalocean"
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
-	e2essh "github.com/cometbft/cometbft/test/e2e/pkg/ssh"
 )
 
 const randomSeed = 2308084734268
@@ -93,14 +92,9 @@ func NewCLI() *CLI {
 			case "docker":
 				cli.infp = &docker.Provider{Testnet: testnet}
 			case "digital-ocean":
-				cfg, err := e2essh.NewClientConfig()
-				if err != nil {
-					return err
-				}
 				cli.infp = &digitalocean.Provider{
 					Testnet:            testnet,
 					InfrastructureData: ifd,
-					SSHConfig:          cfg,
 				}
 			default:
 				return fmt.Errorf("bad infrastructure type: %s", inft)

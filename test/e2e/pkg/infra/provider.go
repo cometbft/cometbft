@@ -14,8 +14,7 @@ type Provider interface {
 	// provider during testnet setup.
 	Setup() error
 
-	CreateNode(context.Context, *e2e.Node) error
-	StartComet(context.Context, *e2e.Node) error
+	StartComet(context.Context, ...*e2e.Node) error
 	KillComet(context.Context, *e2e.Node) error
 	TerminateComet(context.Context, *e2e.Node) error
 }

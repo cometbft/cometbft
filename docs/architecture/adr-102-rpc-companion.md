@@ -64,14 +64,26 @@ It is ***NOT*** in the scope of the **Standalone RPC**:
   of the race conditions that might occur in a load balanced Standalone RPC environment.
 2. Provide an authentication mechanism for the RPC query endpoints
 
-### API (v1)
+### RPC Endpoints
 
-These are the initial API endpoints to be implemented for the RPC Companion (v1) are:
+These are the planned RPC companion endpoints to be implemented that will mirror the CometBFT RPC endpoints. The endpoints
+on this following table are the ones that can be implemented first since it seems it will be straightforward and less complex
 
-- /block
-- /block_results
+| **RPC Companion Endpoint** | **CometBFT Endpoint** | **Parameters**                                   | **Description**                         | **Notes**                                                                                                                                                                                                                                                                               |
+|----------------------------|-----------------------|--------------------------------------------------|-----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `/v1/health`               | `/health`             |                                                  | Get node health                         | This endpoint basically only returns an empty response. This can be used to test if the server RPC is up.  While this on CometBFT is used to return a response if the full node is up, when using the companion service this will return an `OK` status if the companion service is up. |
+| `/v1/abci_info`            | `/abci_info`          |                                                  | Get information about the application   | This companion endpoint will return the same response structure as the CometBFT endpoint. The companion endpoint will the latest information stored in its database that was retrived from the full node.                                                                               |
+| `/v1/abci_query`           | `/abci_query`         | * path <br/> * data <br/> * height <br/> * prove | Query information from the application  | This companion endpoint will return the same response structure as the CometBFT endpoint. The RPC companion service will have to implement ... [TODO: query translation ?]                                                                                                     |
+| `/v1/block`                | `/block`              | * height                                         | Get block at a specified height         | This companion endpoint will return the same response structure as the CometBFT endpoint. The data retrieved from the companion database for a particular block will have to be properly serialized into the `block` struct in order to be returned as a response [see section ?].      |
+| `/v1/block_by_hash`        | `/block_by_hash`      | * hash                                           | Get block by its hash                   | This companion endpoint will return the same response structure as the CometBFT endpoint.                                                                                                                                                                                               |
+| `/v1/block_results`        | `/block_results`      | * height                                         | Get block results at a specified height | This companion endpoint will return the same response structure as the CometBFT endpoint. The data retrieved from the companion database for a particular block result will have to be properly serialized into the `ResultsBlockResults` struct in order to be returned as a response. |
 
-[TBD] Implement the "search" endpoints (tx_search and block_search)
+The following endpoint can also be implemented but they require some more effort and complexity to have them implemented, these are mostly the _search_ and _query_ endpoints.
+
+| **RPC Companion Endpoint** | **CometBFT Endpoint** | **Parameters**                                         | **Description**                        | **Notes**                                                                                                                                                                                                                                                                               |
+|----------------------------|-----------------------|--------------------------------------------------------|----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `/v1/abci_query`           | `/abci_query`         | * path <br/> * data <br/> * height <br/> * prove       | Query information from the application | This companion endpoint will return the same response structure as the CometBFT endpoint. The RPC companion service will have to implement ... [TODO: query translation ?]                                                                                                     |
+| `/v1//block_search`        | `/block_search`       | * query <br/> * page <br/> * per_page <br/> * order_by | Query information about a block        | This companion endpoint will return the same response structure as the CometBFT endpoint. The RPC companion service will have to implement ... [TODO: query translation ?]                                                                                                     |
 
 > NOTE: The RPC Companion server instances should not implement endpoints that can modify state in the blockchain such as
 the `/broadcast_tx_*` endpoints. Since there might be many load balanced RPC server instances, this might cause issues with

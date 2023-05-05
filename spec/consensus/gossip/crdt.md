@@ -66,9 +66,10 @@ However, if the second approach described [above](#nodes-state-as-a-tuple-space)
 Although stale entries do not affect the algorithm, or they would not be considered stale, not adding the entries back is important for performance and resource utilization sake.
 
 One way to prevent re-adding entries is keeping _tombstones_ for the removed entries.
+A tombstone is nothing but an that supersedes a specific other entry.
 Let $\bar{e}$ be the tombstone for an entry $e$; if, during synchronization, a node is informed of $e$ but it already has $\bar{e}$, then it does not add $e$ to its local view.
 
-However small tombstones may be, with time they will accrue and need to be garbage collected, in which case the corresponding entry may be added again; again, this will not break correctness and as long as tombstones are kept for long enough, the risk of re-adding becomes minimal.
+However small tombstones may be (for example, they could contain just the hash of the entry it supersedes), with time they will accrue and need to be garbage collected, in which case the corresponding entry may be added again; again, this will not break correctness and as long as tombstones are kept for long enough, the risk of re-adding becomes minimal.
 
 In the case of the Tendermint algorithm we note that staleness comes from adding newer entries (belonging to higher rounds and heights) to the tuple space.
 If, as an optimization to Approach Two, these newer entries are exchanged first, then the stale entries can be excluded before being shared to other nodes that might have forgotten them and tombstones may not be needed at all.
@@ -170,7 +171,7 @@ We remove corresponding to stale messages and never deliver them them.
 ## The tuple space as a CRDT
 
 Conflict-free Replicated Data Types (CRDT) are distributed data structures that explore commutativity in update operations to achieve [Strong Eventual Consistency](https://en.wikipedia.org/wiki/Eventual_consistency#Strong_eventual_consistency).
-As an example of CRDT, consider a counter which updated by increment operations, known as Grown only counter (G-Counter): as long as the same set of operations are executed by two replicas, their views of the counter will be the same, irrespective of the execution order.
+As an example of CRDT, consider a counter updated by increment operations, known as Grown only counter (G-Counter): as long as the same set of operations are executed by two replicas, their views of the counter will be the same, irrespective of the execution order.
 
 More relevant CRDT are the Grown only Set (G-Set), in which operations add elements to a set, and the [2-Phase Set](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type#2P-Set_(Two-Phase_Set)) (2P-Set), which combines two G-Set to collect inclusions and exclusions to a set.
 
@@ -180,100 +181,89 @@ If the reliable communication primitive precludes duplication, then applying all
 If duplications are allowed, then the operations must be made idempotent somehow.
 
 State-based CRDT do not rely on reliable communication.
-Instead it assumes that replicas will compare their states and converge two-by-two using a merge function; as long as the function is commutative, associative and idempotent, the states will converge.
+Instead they assumes that replicas will compare their states and converge two-by-two using a merge function;
+as long as the function is commutative, associative and idempotent, the states will converge.
 For example, in the G-Set case, the merge operator is simply the union of the sets.
 
-The two approaches for converging the message sets in the Tendermint algorithm described [earlier](#nodes-state-as-a-tuple-space), without the deletion of entries, correspond to the operation-based and state-based [Grow-only Set](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type#G-Set_(Grow-only_Set)) CRDT and removals may be handled using a 2P-Set, explained next.
+The two approaches for converging the message sets in the Tendermint algorithm described [earlier](#nodes-state-as-a-tuple-space), without the deletion of entries, correspond to the operation- and state-based [Grow-only Set](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type#G-Set_(Grow-only_Set)) CRDT;
+if removals must be handled, then using a 2P-Set is an option.
+To the best of our knowledge, no existing CRDT supports superseding of elements, until now.
+
+### About supersession
+
+Let
+
+- `e1` and `e2` be `Entry`;
+- `v1` and `v2` be a set of `Entry`, also referred to as a view;
+
+We say that `e1` is superseded by `v1` if subset of `v1` makes `e1` stale.
+We say that `v1` is superseded by `v2` all elements of `v1` are superseded by `v2`.
+
+Supersession must respect the following properties:
+
+1. Transitive: if `e1` is superseded by `v1` and `v1` is superseded by `v2`, then `e1` is superseded by `v2`;
+1. Reflexive: `v1` is superseded by `v1`
+1. Anti-symmetric: if `v1` is superseded by `v2` and `v2` is superseded by `v1` then `v1 == v2`
+1. if `e1` is superseded by `v1` then `e1` is superseded by any sets obtained by replacing entries in `v1` by their corresponding tombstones;
+
+> :warning:
+> this should ensure no cycles.
+
+> :warning: TODO
+> Prove that `merge` operator is:
+
+> - associative:
+> - commutative
+> - idempotent.
+
+> :warning: TODO
+> `view.exists(e => e.isStale(view)).implies(e.isStale(removeStale(view.addEntry(e)))`
+> wrong usage of `exists` in the previous definition. `e` is not quantified in the `implies`
+
+
 
 ### Set with Superseding Elements - CRDT
 
 We define here the Set with Superseding Elements CRDT (SSE) as a set in which the containing of some elements may render other elements stale or superseded.
 Stale elements are irrelevant from the point of view of the set's users and therefore may be removed from the set.
 Our definition of SSE is as a state-based CRDT, but an equivalent operations-based definition must exist.
+The corresponding Quint definitions are in [sse.qnt](sse.qnt).
 
-- The SSE is defined in terms of the generic element type `Entry`.
+- `Entry`
+    - a tuple or record;
+    - application specific;
 
-  ```bash
-  type Entry: ??? //TODO: best way to define?
-  ```
+- `EntryOrTs`
+    - a wrapper around an `Entry` to also represent tombstones;
+    - a whapper that is not a tombstone is alive;
 
-- The value of the SSE is called its `View` and it is formed by two sets, `addSet` and `delSet`.
+- `View`:
+    - the information maintained by replicas;
+    - a set of `EntryOrTs`
+    - the empty `View` is the empty set.
+    - TODO: what about a set with just tombstones?
 
-- `addSet` is the set of elements known to have been added but not known to have been removed from the SSE;
-- `delSet` is the set of elements known to have been removed, in case adding elements back to the set must be prevented through explicit reminders and if this is not the case, then `delSet` will always be empty;
-- the empty SSE is the `View` in which both `addSet` and `delSet` are empty;
+- `isSupersededBy(ets: EntryOrTs, view: View): bool`:
+    - returns true if the `Entry` is superseded in the `View`;
+    - is application specific;
 
-  ```bash
-  type View = {addSet: Set[Entry], delSet: Set[Entry]}
+- `removeStale(view: View): (View,View)`
+    - returns a new view without all the stale entries and a view with just the stale entries;
 
-  pure def makeView(adds: Set[Entry], dels: Set[Entry]): View =
-    {addSet: adds, delSet: dels}
 
-  pure val bot:View = {addSet:Set(), delSet:Set()}
-  ```
+- `hasEntry(v: View, e:Entry):bool` returns `true` iff the view contains a live `EntryOrTs` for the entry;
 
-- given Entry `e` and View `v`, we say that
+- `addEntry(v:View, e: Entry): View`
+    - constructs a new `View` with the entry in it, if the original does not have a tombstone preventing it;
 
-  ```bash
-  all {
-    v.contains(e).implies(
-      all {
-        v.addSet.contains(e),
-        not(v.delSet.contains(e))
-      }
-    )
-  }
-  ```
+- `merge(lhs: View, rhs: View): View`
+    - combines two `View` into a new `View` that is a superset of the inputs
+    - stale entries are removed;
 
-- `addEntry`/`delEntry` adds/removes an entry to/from the `View` and returns the modified view
+- `delEntry(v:View, e: Entry): View`
+    - constructs a new `View` without the `Entry` and with the corresponding tombstone;
 
-  ```bash
-  pure def addEntry(v:View, e: Entry): View =
-    if (v.delSet.contains(e))
-      v
-    else
-        v.with("addSet", v.addSet.union(Set(e)))
 
-  pure def delEntry(v:View, e: Entry): View =
-    v.with("addSet", v.addSet.exclude(Set(e)))
-      .with("delSet", v.delSet.union(Set(e)))
-  ```
-
-- the `merge` operator combines two `View` into a new `View` that is a superset of the inputs, with stale entries removed.
-
-  ```bash
-  pure def merge(lhs: View, rhs: View): View =
-      val dels = lhs.delSet.union(rhs.delSet)
-      val adds = lhs.addSet.union(rhs.addSet).exclude(dels)
-      removeStale(makeView(adds, dels))
-  ```
-
-- the `removeStale` operator removes all stale elements from the SSE removing it from `addSet`, adding it to `delSet`, or both, depending on the SSE use.
-
-  ```bash
-  pure def removeStale(v: View): View //Application dependent.
-  ```
-
-- about supersession
-
-    1. transitive: if `a` supersedes `b` and `b` supersedes `c` then `a` supersedes `c`
-    1. asymmetric: if `a` supersedes `b` then `b` does not supersede `a`
-    1. non-reflexive: `a` does not supersede `a`
-    1. `view.exists(e => e.isStale(view)).implies(e.isStale(removeStale(view.addEntry(e)))`
-
-    > :warning:
-    > TODO: wrong usage of `exists` in the previous definition. `e` is not quantified in the `implies`
-    > TODO: Is non-reflexivity needed?
-    > TODO: this should ensure no cycles.
-
-    Hence the `merge` operator is:
-
-    - associative:
-    - commutative
-    - idempotent.
-
-    > :warning:
-    > TODO: there is a leap of faith here. Be skeptical.
 
 
 ## TODO

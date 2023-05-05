@@ -28,11 +28,11 @@ func TestBigInt(t *testing.T) {
 	bigFloatLower := bigInt + ".1"
 
 	txResult := txResultWithEvents([]abci.Event{
-		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: bigInt, Index: true}}},
-		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: bigIntPlus1, Index: true}}},
-		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: bigFloatLower, Index: true}}},
-		{Type: "account", Attributes: []abci.EventAttribute{{Key: "owner", Value: "/Ivan/", Index: true}}},
-		{Type: "", Attributes: []abci.EventAttribute{{Key: "not_allowed", Value: "Vlad", Index: true}}},
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: []byte("number"), Value: []byte(bigInt), Index: true}}},
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: []byte("number"), Value: []byte(bigIntPlus1), Index: true}}},
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: []byte("number"), Value: []byte(bigFloatLower), Index: true}}},
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: []byte("owner"), Value: []byte("/Ivan/"), Index: true}}},
+		{Type: "", Attributes: []abci.EventAttribute{{Key: []byte("not_allowed"), Value: []byte("Vlad"), Index: true}}},
 	})
 	hash := types.Tx(txResult.Tx).Hash()
 
@@ -41,8 +41,8 @@ func TestBigInt(t *testing.T) {
 	require.NoError(t, err)
 
 	txResult2 := txResultWithEvents([]abci.Event{
-		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: bigFloat, Index: true}}},
-		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: bigFloat, Index: true}, {Key: "amount", Value: "5", Index: true}}},
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: []byte("number"), Value: []byte(bigFloat), Index: true}}},
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: []byte("number"), Value: []byte(bigFloat), Index: true}, {Key: []byte("amount"), Value: []byte("5"), Index: true}}},
 	})
 
 	txResult2.Tx = types.Tx("NEW TX")

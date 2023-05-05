@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/orderedcode"
 
+	idxutil "github.com/cometbft/cometbft/internal/indexer"
 	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/types"
@@ -195,7 +196,7 @@ func dedupHeight(conditions []syntax.Condition) (dedupConditions []syntax.Condit
 
 func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) bool {
 	if heightInfo.heightRange.Key != "" {
-		if !indexer.CheckBounds(heightInfo.heightRange, big.NewInt(keyHeight)) {
+		if !idxutil.CheckBounds(heightInfo.heightRange, big.NewInt(keyHeight)) {
 			return false
 		}
 	} else {

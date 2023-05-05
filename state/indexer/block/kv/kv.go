@@ -15,6 +15,7 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	idxutil "github.com/cometbft/cometbft/internal/indexer"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/state/indexer"
@@ -306,11 +307,11 @@ LOOP:
 				}
 			}
 			if !ok {
-				if indexer.CheckBounds(qr, vF) {
+				if idxutil.CheckBounds(qr, vF) {
 					idx.setTmpHeights(tmpHeights, it)
 				}
 			} else {
-				if indexer.CheckBounds(qr, v) {
+				if idxutil.CheckBounds(qr, v) {
 					idx.setTmpHeights(tmpHeights, it)
 				}
 			}

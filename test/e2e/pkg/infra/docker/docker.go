@@ -43,7 +43,7 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 	return ExecCompose(ctx, p.Testnet.Dir, append([]string{"up", "-d"}, nodeNames...)...)
 }
 func (p Provider) StopTestnet(ctx context.Context) error {
-	return ExecCompose(context.Background(), p.Testnet.Dir, "down")
+	return ExecCompose(ctx, p.Testnet.Dir, "down")
 }
 
 // dockerComposeBytes generates a Docker Compose config file for a testnet and returns the

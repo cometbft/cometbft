@@ -20,11 +20,11 @@ func (p *Provider) Setup() error {
 	return nil
 }
 
-func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
+func (p Provider) StartNodes(_ context.Context, nodes ...*e2e.Node) error {
 	//TODO Not implemented (next PR)
 	return nil
 }
-func (p Provider) StopTestnet(ctx context.Context) error {
+func (p Provider) StopTestnet(_ context.Context) error {
 	//TODO Not implemented (next PR)
 	return nil
 }

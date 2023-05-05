@@ -50,7 +50,7 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "already_received_txs",
-			Help:      "Number of times transactions were received more than once.",
+			Help:      "Number of duplicate transaction reception.",
 		}, labels).With(labelsAndValues...),
 		TimesTxsWereReceived: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
 			Namespace: namespace,

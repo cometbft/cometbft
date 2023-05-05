@@ -39,11 +39,12 @@ const (
 	ModeLight     Mode = "light"
 	ModeSeed      Mode = "seed"
 
-	ProtocolBuiltin Protocol = "builtin"
-	ProtocolFile    Protocol = "file"
-	ProtocolGRPC    Protocol = "grpc"
-	ProtocolTCP     Protocol = "tcp"
-	ProtocolUNIX    Protocol = "unix"
+	ProtocolBuiltin       Protocol = "builtin"
+	ProtocolBuiltinUnsync Protocol = "builtin_unsync"
+	ProtocolFile          Protocol = "file"
+	ProtocolGRPC          Protocol = "grpc"
+	ProtocolTCP           Protocol = "tcp"
+	ProtocolUNIX          Protocol = "unix"
 
 	PerturbationDisconnect Perturbation = "disconnect"
 	PerturbationKill       Perturbation = "kill"
@@ -82,7 +83,6 @@ type Node struct {
 	Version          string
 	Testnet          *Testnet
 	Mode             Mode
-	SyncApp          bool // Should we use a synchronized app with an unsynchronized local client?
 	PrivvalKey       crypto.PrivKey
 	NodeKey          crypto.PrivKey
 	InternalIP       net.IP
@@ -189,7 +189,6 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 			ExternalIP:       extIP,
 			ProxyPort:        ind.Port,
 			Mode:             ModeValidator,
-			SyncApp:          nodeManifest.SyncApp,
 			Database:         "goleveldb",
 			ABCIProtocol:     Protocol(testnet.ABCIProtocol),
 			PrivvalProtocol:  ProtocolFile,
@@ -332,7 +331,7 @@ func (n Node) Validate(testnet Testnet) error {
 			return fmt.Errorf("local port %v must be >1024", n.ProxyPort)
 		}
 		for _, peer := range testnet.Nodes {
-			if peer.Name != n.Name && peer.ProxyPort == n.ProxyPort && peer.InternalIP.Equal(n.InternalIP) {
+			if peer.Name != n.Name && peer.ProxyPort == n.ProxyPort && peer.ExternalIP.Equal(n.ExternalIP) {
 				return fmt.Errorf("peer %q also has local port %v", peer.Name, n.ProxyPort)
 			}
 		}
@@ -353,11 +352,11 @@ func (n Node) Validate(testnet Testnet) error {
 		return fmt.Errorf("invalid database setting %q", n.Database)
 	}
 	switch n.ABCIProtocol {
-	case ProtocolBuiltin, ProtocolUNIX, ProtocolTCP, ProtocolGRPC:
+	case ProtocolBuiltin, ProtocolBuiltinUnsync, ProtocolUNIX, ProtocolTCP, ProtocolGRPC:
 	default:
 		return fmt.Errorf("invalid ABCI protocol setting %q", n.ABCIProtocol)
 	}
-	if n.Mode == ModeLight && n.ABCIProtocol != ProtocolBuiltin {
+	if n.Mode == ModeLight && n.ABCIProtocol != ProtocolBuiltin && n.ABCIProtocol != ProtocolBuiltinUnsync {
 		return errors.New("light client must use builtin protocol")
 	}
 	switch n.PrivvalProtocol {

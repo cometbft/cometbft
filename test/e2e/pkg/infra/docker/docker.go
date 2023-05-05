@@ -28,7 +28,7 @@ func (p *Provider) Setup() error {
 	}
 	//nolint: gosec
 	// G306: Expect WriteFile permissions to be 0600 or less
-	err = os.WriteFile(filepath.Join(p.Testnet.Dir, "docker-compose.yml"), compose, 0644)
+	err = os.WriteFile(filepath.Join(p.Testnet.Dir, "docker-compose.yml"), compose, 0o644)
 	if err != nil {
 		return err
 	}
@@ -46,6 +46,12 @@ func (p Provider) TerminateTendermint(ctx context.Context, n *e2e.Node) error {
 }
 func (p Provider) KillTendermint(ctx context.Context, n *e2e.Node) error {
 	return ExecCompose(ctx, p.Testnet.Dir, "kill", "-s", "SIGKILL", n.Name)
+}
+func (p Provider) Connect(ctx context.Context, n *e2e.Node) error {
+	return Exec(ctx, "network", "connect", p.Testnet.Name+"_"+p.Testnet.Name, n.Name)
+}
+func (p Provider) Disconnect(ctx context.Context, n *e2e.Node) error {
+	return Exec(ctx, "network", "disconnect", p.Testnet.Name+"_"+p.Testnet.Name, n.Name)
 }
 
 // dockerComposeBytes generates a Docker Compose config file for a testnet and returns the
@@ -75,6 +81,9 @@ services:
     image: tendermint/e2e-node:{{ .Version }}
 {{- if eq .ABCIProtocol "builtin" }}
     entrypoint: /usr/bin/entrypoint-builtin
+{{- else }}{{ if eq .ABCIProtocol "builtin_unsync" }}
+    entrypoint: /usr/bin/entrypoint-builtin
+{{- end }}
 {{- end }}
     init: true
     ports:

@@ -42,3 +42,15 @@ func (p Provider) TerminateTendermint(ctx context.Context, n *e2e.Node) error {
 func (p Provider) KillTendermint(ctx context.Context, n *e2e.Node) error {
 	return e2essh.Exec(p.SSHConfig, fmt.Sprintf("%s:%d", n.ExternalIP, sshPort), fmt.Sprintf("systemctl -s SIGKILL %s", testappName))
 }
+func (p Provider) Disconnect(ctx context.Context, n *e2e.Node) error {
+	return e2essh.MultiExec(p.SSHConfig, fmt.Sprintf("%s:%d", n.ExternalIP, sshPort),
+		"iptables -A INPUT -p tcp --destination-port 26656 -j REJECT --reject-with tcp-reset",
+		"iptables -A OUTPUT -p tcp --destination-port 26656 -j REJECT --reject-with tcp-reset",
+	)
+}
+func (p Provider) Connect(ctx context.Context, n *e2e.Node) error {
+	return e2essh.MultiExec(p.SSHConfig, fmt.Sprintf("%s:%d", n.ExternalIP, sshPort),
+		"iptables -D INPUT -p tcp --destination-port 26656 -j REJECT --reject-with tcp-reset",
+		"iptables -D OUTPUT -p tcp --destination-port 26656 -j REJECT --reject-with tcp-reset",
+	)
+}

@@ -2,32 +2,9 @@
 
 ## Changelog
 
-- {date}: {changelog}
+- 2023-05-05: Initial Draft (@cason)
 
 ## Status
-
-> An architecture decision is considered "proposed" when a PR containing the ADR
-> is submitted. When merged, an ADR must have a status associated with it, which
-> must be one of: "Accepted", "Rejected", "Deprecated" or "Superseded".
->
-> An accepted ADR's implementation status must be tracked via a tracking issue,
-> milestone or project board (only one of these is necessary). For example:
->
->     Accepted
->
->     [Tracking issue](https://github.com/cometbft/cometbft/issues/123)
->     [Milestone](https://github.com/cometbft/cometbft/milestones/123)
->     [Project board](https://github.com/orgs/cometbft/projects/123)
->
-> Rejected ADRs are captured as a record of recommendations that we specifically
-> do not (and possibly never) want to implement. The ADR itself must, for
-> posterity, include reasoning as to why it was rejected.
->
-> If an ADR is deprecated, simply write "Deprecated" in this section. If an ADR
-> is superseded by one or more other ADRs, provide local a reference to those
-> ADRs, e.g.:
->
->     Superseded by [ADR 123](./adr-123.md)
 
 Accepted | Rejected | Deprecated | Superseded by
 
@@ -148,6 +125,10 @@ In other words, the following operation should be, in general terms, possible:
 > Are there any relevant PR comments, issues that led up to this, or articles
 > referenced for why we made the given design choice? If so link them here!
 
-- {reference link}
+- [State sync][state-sync] description, as part of ABCI++ spec
+- [ADR 083][adr083]: original proposal on Tendermint Core repository
+- [ADR 103][adr103]: original proposal ported to CometBFT repository
 
 [state-sync]: https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_app_requirements.md#state-sync
+[adr083]: https://github.com/tendermint/tendermint/pull/9651
+[adr103]: https://github.com/cometbft/cometbft/pull/729

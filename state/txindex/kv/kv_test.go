@@ -64,15 +64,15 @@ func TestBigInt(t *testing.T) {
 		{fmt.Sprintf("tx.hash = '%x'", hash), txResult, 1},
 		{fmt.Sprintf("tx.hash = '%x'", hash2), txResult2, 1},
 		// search by exact match (one key) - bigint
-		{"account.number >= " + bigInt, nil, 1},
+		{"match.events = 1 AND  account.number >= " + bigInt, nil, 1},
 		// search by exact match (one key) - bigint range
-		{"account.number >= " + bigInt + " AND tx.height > 0", nil, 1},
-		{"account.number >= " + bigInt + " AND tx.height > 0 AND account.owner = '/Ivan/'", nil, 0},
+		{"match.events = 1 AND  account.number >= " + bigInt + " AND tx.height > 0", nil, 1},
+		{"match.events = 1 AND account.number >= " + bigInt + " AND tx.height > 0 AND account.owner = '/Ivan/'", nil, 0},
 		// Floats are not parsed
-		{"account.number >= " + bigInt + " AND tx.height > 0 AND account.amount > 4", txResult2, 0},
-		{"account.number >= " + bigInt + " AND tx.height > 0 AND account.amount = 5", txResult2, 0},
-		{"account.number >= " + bigInt + " AND account.amount <= 5", txResult2, 0},
-		{"account.number < " + bigInt + " AND tx.height = 1", nil, 0},
+		{"match.events = 1 AND  account.number >= " + bigInt + " AND tx.height > 0 AND account.amount > 4", txResult2, 0},
+		{"match.events = 1 AND  account.number >= " + bigInt + " AND tx.height > 0 AND account.amount = 5", txResult2, 0},
+		{"match.events = 1 AND  account.number >= " + bigInt + " AND account.amount <= 5", txResult2, 0},
+		{"match.events = 1 AND  account.number < " + bigInt + " AND tx.height = 1", nil, 0},
 	}
 
 	ctx := context.Background()

@@ -55,6 +55,34 @@ while preserving the core of State sync's operation.
 > before making a decision. It should contain a explanation on why the alternative
 > approach(es) were not chosen.
 
+### Manual application state transfer
+
+The proposed [ADR 083][adr083]/[ADR 103][adr103] inspired the discussions that
+led to this ADR. At first glance, their proposal might look identical to the
+solution discussed here. The main distinction is that their proposal does not
+involve installing application snapshots, but relies on node operators to
+manually synchronize the application state.
+
+More precisely, their proposal is to
+"_allow applications to start with a bootstrapped state_
+(i.e., the application has already a state before the node is started)
+_alongside an empty CometBFT instance_
+(i.e., the node's block store is empty and the state store is at genesis state)
+_using a subsystem of the state sync protocol_".
+
+Starting from an "empty CometBFT instance" is a requirement for running State
+sync, which is maintained in the current proposal.
+The mentioned "subsystem of the state sync protocol" is the light client,
+responsible for verifying the application state and for bootstrapping
+CometBFT's block store and state store accordingly.
+
+The distinction, therefore, lies in the way which the state of the application
+from a running node is transferred to the new node to be bootstrapped.
+Instead of relying on application snapshots, produced by the application but
+handled by State sync, [ADR 083][adr083]/[ADR 103][adr103] assumes that node
+operators are able to manually synchronize the application state from a running
+node (it might be required stopping it) to a not-yet-started fresh node.
+
 ## Decision
 
 > This section records the decision that was made.
@@ -63,6 +91,7 @@ while preserving the core of State sync's operation.
 
 State sync should support the bootstrap of new nodes from application snapshots
 obtained out-of-band by node operators.
+
 In other words, the following operation should be, in general terms, possible:
 
 1. When configuring a new node, operators should be able to define where (e.g.,

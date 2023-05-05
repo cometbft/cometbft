@@ -2,6 +2,7 @@ package kv
 
 import (
 	"fmt"
+	"math/big"
 
 	cmtsyntax "github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/state/indexer"
@@ -61,7 +62,8 @@ func dedupHeight(conditions []cmtsyntax.Condition) (dedupConditions []cmtsyntax.
 				}
 				found = true
 				heightCondition = append(heightCondition, c)
-				heightInfo.height = int64(c.Arg.Number())
+				h, _ := c.Arg.Number().Int64()
+				heightInfo.height = h
 			} else {
 				heightInfo.onlyHeightEq = false
 				heightRangeExists = true
@@ -89,7 +91,7 @@ func dedupHeight(conditions []cmtsyntax.Condition) (dedupConditions []cmtsyntax.
 
 func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) bool {
 	if heightInfo.heightRange.Key != "" {
-		if !checkBounds(heightInfo.heightRange, keyHeight) {
+		if !indexer.CheckBounds(heightInfo.heightRange, big.NewInt(keyHeight)) {
 			return false
 		}
 	} else {

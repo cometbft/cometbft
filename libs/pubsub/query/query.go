@@ -224,8 +224,14 @@ func compileCondition(cond syntax.Condition) (condition, error) {
 var extractNum = regexp.MustCompile(`^\d+(\.\d+)?`)
 
 func parseNumber(s string) (*big.Float, error) {
-	f, _, err := big.ParseFloat(extractNum.FindString(s), 10, 0, big.ToNearestEven)
-	return f, err
+	intVal := new(big.Int)
+	if _, ok := intVal.SetString(s, 10); !ok {
+		f, _, err := big.ParseFloat(extractNum.FindString(s), 10, 125, big.ToNearestEven)
+		return f, err
+	} else {
+		f, _, err := big.ParseFloat(extractNum.FindString(s), 10, uint(intVal.BitLen()), big.ToNearestEven)
+		return f, err
+	}
 }
 
 // A map of operator ⇒ argtype ⇒ match-constructor.

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
 	"sort"
 	"strconv"
 	"strings"
@@ -285,10 +286,17 @@ LOOP:
 			continue
 		}
 
-		if _, ok := qr.AnyBound().(int64); ok {
-			v, err := strconv.ParseInt(eventValue, 10, 64)
-			if err != nil {
-				continue LOOP
+		if _, ok := qr.AnyBound().(*big.Float); ok {
+			v := new(big.Int)
+			v, ok := v.SetString(eventValue, 10)
+			var vF *big.Float
+			if !ok {
+				// The precision here is 125. For numbers bigger than this, the value
+				// will not be parsed properly
+				vF, _, err = big.ParseFloat(eventValue, 10, 125, big.ToNearestEven)
+				if err != nil {
+					continue LOOP
+				}
 			}
 
 			if qr.Key != types.BlockHeightKey {
@@ -297,8 +305,14 @@ LOOP:
 					continue LOOP
 				}
 			}
-			if checkBounds(qr, v) {
-				idx.setTmpHeights(tmpHeights, it)
+			if !ok {
+				if indexer.CheckBounds(qr, vF) {
+					idx.setTmpHeights(tmpHeights, it)
+				}
+			} else {
+				if indexer.CheckBounds(qr, v) {
+					idx.setTmpHeights(tmpHeights, it)
+				}
 			}
 		}
 
@@ -354,21 +368,6 @@ func (idx *BlockerIndexer) setTmpHeights(tmpHeights map[string][]byte, it dbm.It
 	retVal := it.Value()
 	tmpHeights[string(retVal)+strconv.FormatInt(eventSeq, 10)] = it.Value()
 
-}
-
-func checkBounds(ranges indexer.QueryRange, v int64) bool {
-	include := true
-	lowerBound := ranges.LowerBoundValue()
-	upperBound := ranges.UpperBoundValue()
-	if lowerBound != nil && v < lowerBound.(int64) {
-		include = false
-	}
-
-	if upperBound != nil && v > upperBound.(int64) {
-		include = false
-	}
-
-	return include
 }
 
 // match returns all matching heights that meet a given query condition and start

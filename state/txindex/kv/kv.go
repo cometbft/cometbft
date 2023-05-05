@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
 
@@ -514,20 +515,31 @@ LOOP:
 			continue
 		}
 
-		if _, ok := qr.AnyBound().(int64); ok {
-			v, err := strconv.ParseInt(extractValueFromKey(it.Key()), 10, 64)
-			if err != nil {
-				continue LOOP
+		if _, ok := qr.AnyBound().(*big.Float); ok {
+			v := new(big.Int)
+			v, ok := v.SetString(extractValueFromKey(it.Key()), 10)
+			var vF *big.Float
+			if !ok {
+				vF, _, err = big.ParseFloat(extractValueFromKey(it.Key()), 10, 125, big.ToNearestEven)
+				if err != nil {
+					continue LOOP
+				}
+
 			}
 			if qr.Key != types.TxHeightKey {
 				keyHeight, err := extractHeightFromKey(it.Key())
 				if err != nil || !checkHeightConditions(heightInfo, keyHeight) {
 					continue LOOP
 				}
-
 			}
-			if checkBounds(qr, v) {
-				txi.setTmpHashes(tmpHashes, it)
+			if !ok {
+				if indexer.CheckBounds(qr, vF) {
+					txi.setTmpHashes(tmpHashes, it)
+				}
+			} else {
+				if indexer.CheckBounds(qr, v) {
+					txi.setTmpHashes(tmpHashes, it)
+				}
 			}
 
 			// XXX: passing time in a ABCI Events is not yet implemented
@@ -657,19 +669,4 @@ func startKey(fields ...interface{}) []byte {
 		b.Write([]byte(fmt.Sprintf("%v", f) + tagKeySeparator))
 	}
 	return b.Bytes()
-}
-
-func checkBounds(ranges indexer.QueryRange, v int64) bool {
-	include := true
-	lowerBound := ranges.LowerBoundValue()
-	upperBound := ranges.UpperBoundValue()
-	if lowerBound != nil && v < lowerBound.(int64) {
-		include = false
-	}
-
-	if upperBound != nil && v > upperBound.(int64) {
-		include = false
-	}
-
-	return include
 }

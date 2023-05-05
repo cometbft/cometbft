@@ -35,18 +35,15 @@ func (p *Provider) Setup() error {
 	return nil
 }
 
-func (p Provider) StartComet(ctx context.Context, nodes ...*e2e.Node) error {
+func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 	nodeNames := make([]string, len(nodes))
 	for i, n := range nodes {
 		nodeNames[i] = n.Name
 	}
 	return ExecCompose(ctx, p.Testnet.Dir, append([]string{"up", "-d"}, nodeNames...)...)
 }
-func (p Provider) TerminateComet(ctx context.Context, n *e2e.Node) error {
-	return ExecCompose(ctx, p.Testnet.Dir, "kill", "-s", "SIGTERM", n.Name)
-}
-func (p Provider) KillComet(ctx context.Context, n *e2e.Node) error {
-	return ExecCompose(ctx, p.Testnet.Dir, "kill", "-s", "SIGKILL", n.Name)
+func (p Provider) StopTestnet(ctx context.Context) error {
+	return ExecCompose(context.Background(), p.Testnet.Dir, "down")
 }
 
 // dockerComposeBytes generates a Docker Compose config file for a testnet and returns the

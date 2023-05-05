@@ -25,15 +25,11 @@ func (p *Provider) Setup() error {
 	return nil
 }
 
-func (p Provider) StartComet(ctx context.Context, nodes ...*e2e.Node) error {
+func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 	//TODO Not implemented
 	return nil
 }
-func (p Provider) TerminateComet(ctx context.Context, n *e2e.Node) error {
-	//TODO Not implemented
-	return nil
-}
-func (p Provider) KillComet(ctx context.Context, n *e2e.Node) error {
+func (p Provider) StopTestnet(ctx context.Context) error {
 	//TODO Not implemented
 	return nil
 }

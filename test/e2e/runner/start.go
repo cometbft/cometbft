@@ -47,7 +47,7 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 		nodesAtZero = append(nodesAtZero, nodeQueue[0])
 		nodeQueue = nodeQueue[1:]
 	}
-	err := p.StartComet(context.Background(), nodesAtZero...)
+	err := p.StartNodes(context.Background(), nodesAtZero...)
 	if err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 
 		logger.Info("Starting catch up node", "node", node.Name, "height", node.StartAt)
 
-		err := p.StartComet(context.Background(), node)
+		err := p.StartNodes(context.Background(), node)
 		if err != nil {
 			return err
 		}

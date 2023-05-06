@@ -373,12 +373,9 @@ companion, but only if the data companion is the exclusive user of those APIs.
 - [ADR 100 - Data Companion Push API][adr-100]
 - [\#81 - rpc: Add gRPC support][\#81]
 
-<!--
-TODO(thane): Replace GitHub links with relative Markdown file links once ADR-100 is merged.
--->
-[adr-100-context]: https://github.com/cometbft/cometbft/blob/thane/adr-082-data-companion-api/docs/architecture/adr-100-data-companion-push-api.md#context
-[adr-100]: https://github.com/cometbft/cometbft/blob/thane/adr-082-data-companion-api/docs/architecture/adr-100-data-companion-push-api.md
-[adr-100-req]: https://github.com/cometbft/cometbft/blob/thane/adr-082-data-companion-api/docs/architecture/adr-100-data-companion-push-api.md#requirements
-[adr-100-alt]: https://github.com/cometbft/cometbft/blob/thane/adr-082-data-companion-api/docs/architecture/adr-100-data-companion-push-api.md#alternative-approaches
+[adr-100-context]: ./adr-100-data-companion-push-api.md#context
+[adr-100]: ./adr-100-data-companion-push-api.md
+[adr-100-req]: ./adr-100-data-companion-push-api.md#requirements
+[adr-100-alt]: ./adr-100-data-companion-push-api.md#alternative-approaches
 [\#81]: https://github.com/cometbft/cometbft/issues/81
 [abci-commit]: ../../spec/abci/abci++_methods.md#commit

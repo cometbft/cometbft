@@ -1,8 +1,8 @@
 ---
-order: 2
+order: 4
 ---
 
-# Creating a built-in application in Go
+# Creating an application in Go
 
 ## Guide Assumptions
 
@@ -33,13 +33,12 @@ On the one hand, to get maximum performance you can run your application in
 the same process as the CometBFT, as long as your application is written in Go.
 [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) is written
 this way.
-This is the approach followed in this tutorial.
+If that is the way you wish to proceed, use the [Creating a built-in application in Go](./go-built-in.md) guide instead of this one.
 
 On the other hand, having a separate application might give you better security
 guarantees as two processes would be communicating via established binary protocol.
 CometBFT will not have access to application's state.
-If that is the way you wish to proceed, use the [Creating an application in Go](./go.md) guide instead of this one.
-
+This is the approach followed in this tutorial.
 
 ## 1.1 Installing Go
 
@@ -110,6 +109,7 @@ go get
 go build
 ```
 
+
 ## 1.3 Writing a CometBFT application
 
 CometBFT communicates with the application through the Application
@@ -153,7 +153,6 @@ func (app *KVStoreApplication) CheckTx(tx abcitypes.RequestCheckTx) abcitypes.Re
 func (app *KVStoreApplication) InitChain(chain abcitypes.RequestInitChain) abcitypes.ResponseInitChain {
 	return abcitypes.ResponseInitChain{}
 }
-
 
 func (app *KVStoreApplication) BeginBlock(block abcitypes.RequestBeginBlock) abcitypes.ResponseBeginBlock {
 	return abcitypes.ResponseBeginBlock{}
@@ -218,7 +217,7 @@ Our application will need to write its state out to persistent storage so that i
 can stop and start without losing all of its data.
 
 For this tutorial, we will use [BadgerDB](https://github.com/dgraph-io/badger), a
-fast embedded key-value store.
+a fast embedded key-value store.
 
 First, add Badger as a dependency of your go module using the `go get` command:
 
@@ -302,7 +301,7 @@ its validation checks. The specific value of the code is meaningless to CometBFT
 Non-zero codes are logged by CometBFT so applications can provide more specific
 information on why the transaction was rejected.
 
-Note that `CheckTx` does not execute the transaction, it only verifies that the transaction could be executed. We do not know yet if the rest of the network has agreed to accept this transaction into a block.
+Note that `CheckTx` does not execute the transaction, it only verifies that that the transaction could be executed. We do not know yet if the rest of the network has agreed to accept this transaction into a block.
 
 
 Finally, make sure to add the bytes package to the `import` stanza at the top of `app.go`:
@@ -326,7 +325,7 @@ application over three ABCI method calls: `BeginBlock`, `DeliverTx`, and `EndBlo
 receive a block.
 - `DeliverTx` is called repeatedly, once for each application transaction that was included in the block.
 - `EndBlock` is called once to indicate to the application that no more transactions
-will be delivered to the application within this block.
+will be delivered to the application in within this block.
 
 Note that, to implement these calls in our application we're going to make use of Badger's
 transaction mechanism. We will always refer to these as Badger transactions, not to
@@ -449,9 +448,11 @@ Since it reads only committed data from the store, transactions that are part of
 that is being processed are not reflected in the query result.
 
 
-## 1.4 Starting an application and a CometBFT instance in the same process
 
-Now that we have the basic functionality of our application in place, let's put it all together inside of our main.go file.
+
+## 1.4 Starting an application and a CometBFT instance
+
+Now that we have the basic functionality of our application in place, let's put it all together inside of our `main.go` file.
 
 Change the contents of your `main.go` file to the following.
 
@@ -461,9 +462,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/privval"
-	"github.com/cometbft/cometbft/proxy"
+	abciserver "github.com/cometbft/cometbft/abci/server"
 	"log"
 	"os"
 	"os/signal"
@@ -471,37 +470,21 @@ import (
 	"syscall"
 
 	"github.com/dgraph-io/badger/v3"
-	"github.com/spf13/viper"
-	cfg "github.com/cometbft/cometbft/config"
-	cmtflags "github.com/cometbft/cometbft/libs/cli/flags"
 	cmtlog "github.com/cometbft/cometbft/libs/log"
-	nm "github.com/cometbft/cometbft/node"
 )
 
 var homeDir string
+var socketAddr string
 
 func init() {
-	flag.StringVar(&homeDir, "cmt-home", "", "Path to the CometBFT config directory (if empty, uses $HOME/.cometbft)")
+	flag.StringVar(&homeDir, "kv-home", "", "Path to the kvstore directory (if empty, uses $HOME/.kvstore)")
+	flag.StringVar(&socketAddr, "socket-addr", "unix://example.sock", "Unix domain socket address (if empty, uses \"unix://example.sock\"")
 }
 
 func main() {
 	flag.Parse()
 	if homeDir == "" {
-		homeDir = os.ExpandEnv("$HOME/.cometbft")
-	}
-	config := cfg.DefaultConfig()
-
-	config.SetRoot(homeDir)
-
-	viper.SetConfigFile(fmt.Sprintf("%s/%s", homeDir, "config/config.toml"))
-	if err := viper.ReadInConfig(); err != nil {
-		log.Fatalf("Reading config: %v", err)
-	}
-	if err := viper.Unmarshal(config); err != nil {
-		log.Fatalf("Decoding config: %v", err)
-	}
-	if err := config.ValidateBasic(); err != nil {
-		log.Fatalf("Invalid configuration data: %v", err)
+		homeDir = os.ExpandEnv("$HOME/.kvstore")
 	}
 
 	dbPath := filepath.Join(homeDir, "badger")
@@ -511,47 +494,22 @@ func main() {
 	}
 	defer func() {
 		if err := db.Close(); err != nil {
-			log.Printf("Closing database: %v", err)
+			log.Fatalf("Closing database: %v", err)
 		}
 	}()
 
 	app := NewKVStoreApplication(db)
 
-	pv := privval.LoadFilePV(
-		config.PrivValidatorKeyFile(),
-		config.PrivValidatorStateFile(),
-	)
-
-	nodeKey, err := p2p.LoadNodeKey(config.NodeKeyFile())
-	if err != nil {
-		log.Fatalf("failed to load node's key: %v", err)
-	}
-
 	logger := cmtlog.NewTMLogger(cmtlog.NewSyncWriter(os.Stdout))
-	logger, err = cmtflags.ParseLogLevel(config.LogLevel, logger, cfg.DefaultLogLevel)
-	if err != nil {
-		log.Fatalf("failed to parse log level: %v", err)
+
+	server := abciserver.NewSocketServer(socketAddr, app)
+	server.SetLogger(logger)
+
+	if err := server.Start(); err != nil {
+		fmt.Fprintf(os.Stderr, "error starting socket server: %v", err)
+		os.Exit(1)
 	}
-
-	node, err := nm.NewNode(
-		config,
-		pv,
-		nodeKey,
-		proxy.NewLocalClientCreator(app),
-		nm.DefaultGenesisDocProviderFunc(config),
-		nm.DefaultDBProvider,
-		nm.DefaultMetricsProvider(config.Instrumentation),
-		logger)
-
-	if err != nil {
-		log.Fatalf("Creating node: %v", err)
-	}
-
-	node.Start()
-	defer func() {
-		node.Stop()
-		node.Wait()
-	}()
+	defer server.Stop()
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -561,27 +519,7 @@ func main() {
 
 This is a huge blob of code, so let's break it down into pieces.
 
-First, we use [viper](https://github.com/spf13/viper) to load the CometBFT configuration files, which we will generate later:
-
-
-```go
-	config := cfg.DefaultValidatorConfig()
-
-	config.SetRoot(homeDir)
-
-	viper.SetConfigFile(fmt.Sprintf("%s/%s", homeDir, "config/config.toml"))
-	if err := viper.ReadInConfig(); err != nil {
-		log.Fatalf("Reading config: %v", err)
-	}
-	if err := viper.Unmarshal(config); err != nil {
-		log.Fatalf("Decoding config: %v", err)
-	}
-	if err := config.ValidateBasic(); err != nil {
-		log.Fatalf("Invalid configuration data: %v", err)
-	}
-```
-
-Next, we initialize the Badger database and create an app instance.
+First, we initialize the Badger database and create an app instance:
 
 ```go
 	dbPath := filepath.Join(homeDir, "badger")
@@ -598,59 +536,27 @@ Next, we initialize the Badger database and create an app instance.
 	app := NewKVStoreApplication(db)
 ```
 
-We use `FilePV`, which is a private validator (i.e. thing which signs consensus
-messages). Normally, you would use `SignerRemote` to connect to an external
-[HSM](https://kb.certus.one/hsm.html).
+For **Windows** users, restarting this app will make badger throw an error as it requires value log to be truncated. For more information on this, visit [here](https://github.com/dgraph-io/badger/issues/744).
+This can be avoided by setting the truncate option to true, like this:
 
 ```go
-	pv := privval.LoadFilePV(
-		config.PrivValidatorKeyFile(),
-		config.PrivValidatorStateFile(),
-	)
+	db, err := badger.Open(badger.DefaultOptions("/tmp/badger").WithTruncate(true))
 ```
 
-`nodeKey` is needed to identify the node in a p2p network.
+Then we start the ABCI server and add some signal handling to gracefully stop
+it upon receiving SIGTERM or Ctrl-C. CometBFT will act as a client,
+which connects to our server and send us transactions and other messages.
 
 ```go
-	nodeKey, err := p2p.LoadNodeKey(config.NodeKeyFile())
-	if err != nil {
-		return nil, fmt.Errorf("failed to load node's key: %w", err)
+	server := abciserver.NewSocketServer(socketAddr, app)
+	server.SetLogger(logger)
+
+	if err := server.Start(); err != nil {
+		fmt.Fprintf(os.Stderr, "error starting socket server: %v", err)
+		os.Exit(1)
 	}
-```
+	defer server.Stop()
 
-Now we have everything set up to run the CometBFT node. We construct
-a node by passing it the configuration, the logger, a handle to our application and
-the genesis information:
-
-```go
-	node, err := nm.NewNode(
-		config,
-		pv,
-		nodeKey,
-		proxy.NewLocalClientCreator(app),
-		nm.DefaultGenesisDocProviderFunc(config),
-		nm.DefaultDBProvider,
-		nm.DefaultMetricsProvider(config.Instrumentation),
-		logger)
-
-	if err != nil {
-		log.Fatalf("Creating node: %v", err)
-	}
-```
-
-Finally, we start the node, i.e., the CometBFT service inside our application:
-
-```go
-	node.Start()
-	defer func() {
-		node.Stop()
-		node.Wait()
-	}()
-```
-
-The additional logic at the end of the file allows the program to catch SIGTERM. This means that the node can shut down gracefully when an operator tries to kill the program:
-
-```go
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	<-c
@@ -685,22 +591,40 @@ go build -mod=mod # use -mod=mod to automatically refresh the dependencies
 Everything is now in place to run your application. Run:
 
 ```bash
-./kvstore -cmt-home /tmp/cometbft-home
+./kvstore -kv-home /tmp/badger-home
 ```
 
-The application will start and you should see a continuous output starting with:
+The application will start and you should see an output similar to the following:
 
 ```bash
-badger 2022/11/09 09:08:50 INFO: All 0 tables opened in 0s
-badger 2022/11/09 09:08:50 INFO: Discard stats nextEmptySlot: 0
-badger 2022/11/09 09:08:50 INFO: Set nextTxnTs to 0
-I[2022-11-09|09:08:50.085] service start                                module=proxy msg="Starting multiAppConn service" impl=multiAppConn
-I[2022-11-09|09:08:50.085] service start                                module=abci-client connection=query msg="Starting localClient service" impl=localClient
-I[2022-11-09|09:08:50.085] service start                                module=abci-client connection=snapshot msg="Starting localClient service" impl=localClient
-...
+badger 2022/11/09 17:01:28 INFO: All 0 tables opened in 0s
+badger 2022/11/09 17:01:28 INFO: Discard stats nextEmptySlot: 0
+badger 2022/11/09 17:01:28 INFO: Set nextTxnTs to 0
+I[2022-11-09|17:01:28.726] service start                                msg="Starting ABCIServer service" impl=ABCIServer
+I[2022-11-09|17:01:28.726] Waiting for new connection...
 ```
 
-More importantly, the application using CometBFT is producing blocks  🎉🎉 and you can see this reflected in the log output in lines like this:
+Then we need to start CometBFT service and point it to our application.
+Open a new terminal window and cd to the same folder where the app is running.
+Then execute the following command:
+
+```bash
+go run github.com/cometbft/cometbft/cmd/cometbft@v0.34.27 node --home /tmp/cometbft-home --proxy_app=unix://example.sock
+```
+
+This should start the full node and connect to our ABCI application, which will be
+reflected in the application output.
+
+```sh
+I[2022-11-09|17:07:08.124] service start                                msg="Starting ABCIServer service" impl=ABCIServer
+I[2022-11-09|17:07:08.124] Waiting for new connection...
+I[2022-11-09|17:08:12.702] Accepted a new connection
+I[2022-11-09|17:08:12.703] Waiting for new connection...
+I[2022-11-09|17:08:12.703] Accepted a new connection
+I[2022-11-09|17:08:12.703] Waiting for new connection...
+```
+
+Also, the application using CometBFT Core is producing blocks  🎉🎉 and you can see this reflected in the log output of the service in lines like this:
 
 ```bash
 I[2022-11-09|09:08:52.147] received proposal                            module=consensus proposal="Proposal{2/0 (F518444C0E348270436A73FD0F0B9DFEA758286BEB29482F1E3BEA75330E825C:1:C73D3D1273F2, -1) AD19AE292A45 @ 2022-11-09T12:08:52.143393Z}"

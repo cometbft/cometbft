@@ -2,6 +2,14 @@
 
 This guide provides instructions for upgrading to specific versions of CometBFT.
 
+## v0.34.28
+
+For users explicitly making use of the Go APIs provided in the `crypto/merkle`
+package, please note that, in order to fix a potential security issue, we had to
+make a breaking change here. This change should only affect a small minority of
+users. For more details, please see
+[\#557](https://github.com/cometbft/cometbft/issues/557).
+
 ## v0.34.27
 
 This is the first official release of CometBFT, forked originally from
@@ -40,7 +48,7 @@ subsequent major release of CometBFT.
 
 ### Building CometBFT
 
-CometBFT must be compiled using Go 1.19 or higher. The use of Go 1.18 is not 
+CometBFT must be compiled using Go 1.19 or higher. The use of Go 1.18 is not
 supported, since this version has reached end-of-life with the release of [Go 1.20][go120].
 
 ### Troubleshooting

@@ -2,8 +2,8 @@ openapi: 3.0.0
 info:
   title: CometBFT RPC
   contact:
-    name: CometBFT RPC
-    url: https://github.com/cometbft/cometbft/issues/new/choose
+    name: CometBFT
+    url: https://cometbft.com/
   description: |
     CometBFT supports the following RPC protocols:
 
@@ -17,11 +17,21 @@ info:
     `$CMTHOME/config/config.toml` file or by using the `--rpc.X` command-line
     flags.
 
-    Default rpc listen address is `tcp://0.0.0.0:26657`.
+    The default RPC listen address is `tcp://127.0.0.1:26657`.
     To set another address, set the `laddr` config parameter to desired value.
     CORS (Cross-Origin Resource Sharing) can be enabled by setting
     `cors_allowed_origins`, `cors_allowed_methods`, `cors_allowed_headers`
     config parameters.
+
+    If testing using a local RPC node, under the `[rpc]`
+    section change the `cors_allowed_origins` property, please add the URL of
+    the site where this OpenAPI document is running, for example:
+
+      `cors_allowed_origins = ["http://localhost:8088"]`
+
+    or if testing from the official documentation site:
+
+      `cors_allowed_origins = ["https://docs.cometbft.com"]`
 
     ## Arguments
 
@@ -47,22 +57,21 @@ info:
     Asynchronous RPC functions like event `subscribe` and `unsubscribe` are
     only available via websockets.
 
-    Example using https://github.com/hashrocket/ws:
+    For example using the [websocat](https://github.com/vi/websocat) tool, you can subscribe for 'NewBlock` events
+    with the following command:
 
-        ws ws://localhost:26657/websocket
-        > { "jsonrpc": "2.0", "method": "subscribe", "params": ["tm.event='NewBlock'"], "id": 1 }
+        echo '{ "jsonrpc": "2.0","method": "subscribe","id": 0,"params": {"query": "tm.event='"'NewBlock'"'"} }' | websocat -n -t ws://127.0.0.1:26657/websocket
+
   version: "v0.34"
   license:
     name: Apache 2.0
     url: https://github.com/cometbft/cometbft/blob/v0.34.x/LICENSE
 servers:
-  - url: https://rpc.cosmos.network
-    description: Cosmos mainnet node to interact with the CometBFT RPC
+  - url: https://rpc.cosmos.directory/cosmoshub
+    description: Interact with the CometBFT RPC from a public node in the Cosmos registry
   - url: http://localhost:26657
-    description: Interact with the CometBFT RPC locally on your device
+    description: Interact with CometBFT RPC node running locally
 tags:
-  - name: Websocket
-    description: Subscribe/unsubscribe are reserved for websocket events.
   - name: Info
     description: Informations about the node APIs
   - name: Tx
@@ -93,10 +102,10 @@ paths:
         drop transactions, which might become valid in the future
         (https://github.com/tendermint/tendermint/issues/3322)
 
-
         Please refer to
         https://docs.cometbft.com/v0.34/core/using-cometbft.html#formatting
         for formatting/encoding rules.
+
       parameters:
         - in: query
           name: tx
@@ -141,6 +150,7 @@ paths:
         Please refer to
         https://docs.cometbft.com/v0.34/core/using-cometbft.html#formatting
         for formatting/encoding rules.
+
       parameters:
         - in: query
           name: tx
@@ -183,6 +193,7 @@ paths:
         Please refer to
         https://docs.cometbft.com/v0.34/core/using-cometbft.html#formatting
         for formatting/encoding rules.
+
       parameters:
         - in: query
           name: tx
@@ -234,225 +245,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CheckTxResponse"
-        "500":
-          description: empty error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-  /subscribe:
-    get:
-      summary: Subscribe for events via WebSocket.
-      tags:
-        - Websocket
-      operationId: subscribe
-      description: |
-        To tell which events you want, you need to provide a query. query is a
-        string, which has a form: "condition AND condition ..." (no OR at the
-        moment). condition has a form: "key operation operand". key is a string with
-        a restricted set of possible symbols ( \t\n\r\\()"'=>< are not allowed).
-        operation can be "=", "<", "<=", ">", ">=", "CONTAINS" AND "EXISTS". operand
-        can be a string (escaped with single quotes), number, date or time.
-
-        Examples:
-              tm.event = 'NewBlock'               # new blocks
-              tm.event = 'CompleteProposal'       # node got a complete proposal
-              tm.event = 'Tx' AND tx.hash = 'XYZ' # single transaction
-              tm.event = 'Tx' AND tx.height = 5   # all txs of the fifth block
-              tx.height = 5                       # all txs of the fifth block
-
-        CometBFT provides a few predefined keys: tm.event, tx.hash and tx.height.
-        Note for transactions, you can define additional keys by providing events with
-        DeliverTx response.
-
-        import (
-            abci "github.com/cometbft/cometbft/abci/types"
-            "github.com/cometbft/cometbft/libs/pubsub/query"
-        )
-
-        abci.ResponseDeliverTx{
-          Events: []abci.Event{
-              {
-                  Type: "rewards.withdraw",
-                  Attributes: abci.EventAttribute{
-                      {Key: []byte("address"), Value: []byte("AddrA"), Index: true},
-                      {Key: []byte("source"), Value: []byte("SrcX"), Index: true},
-                      {Key: []byte("amount"), Value: []byte("..."), Index: true},
-                      {Key: []byte("balance"), Value: []byte("..."), Index: true},
-                  },
-              },
-              {
-                  Type: "rewards.withdraw",
-                  Attributes: abci.EventAttribute{
-                      {Key: []byte("address"), Value: []byte("AddrB"), Index: true},
-                      {Key: []byte("source"), Value: []byte("SrcY"), Index: true},
-                      {Key: []byte("amount"), Value: []byte("..."), Index: true},
-                      {Key: []byte("balance"), Value: []byte("..."), Index: true},
-                  },
-              },
-              {
-                  Type: "transfer",
-                  Attributes: abci.EventAttribute{
-                      {Key: []byte("sender"), Value: []byte("AddrC"), Index: true},
-                      {Key: []byte("recipient"), Value: []byte("AddrD"), Index: true},
-                      {Key: []byte("amount"), Value: []byte("..."), Index: true},
-                  },
-              },
-          },
-        }
-
-        All events are indexed by a composite key of the form {eventType}.{evenAttrKey}.
-        In the above examples, the following keys would be indexed:
-           - rewards.withdraw.address
-           - rewards.withdraw.source
-           - rewards.withdraw.amount
-           - rewards.withdraw.balance
-           - transfer.sender
-           - transfer.recipient
-           - transfer.amount
-
-        Multiple event types with duplicate keys are allowed and are meant to
-        categorize unique and distinct events. In the above example, all events
-        indexed under the key `rewards.withdraw.address` will have the following
-        values stored and queryable:
-
-           - AddrA
-           - AddrB
-
-        To create a query for txs where address AddrA withdrew rewards:
-        query.MustParse("tm.event = 'Tx' AND rewards.withdraw.address = 'AddrA'")
-
-        To create a query for txs where address AddrA withdrew rewards from source Y:
-        query.MustParse("tm.event = 'Tx' AND rewards.withdraw.address = 'AddrA' AND rewards.withdraw.source = 'Y'")
-
-        To create a query for txs where AddrA transferred funds:
-        query.MustParse("tm.event = 'Tx' AND transfer.sender = 'AddrA'")
-
-        The following queries would return no results:
-        query.MustParse("tm.event = 'Tx' AND transfer.sender = 'AddrZ'")
-        query.MustParse("tm.event = 'Tx' AND rewards.withdraw.address = 'AddrZ'")
-        query.MustParse("tm.event = 'Tx' AND rewards.withdraw.source = 'W'")
-
-        See list of all possible events here
-        https://godoc.org/github.com/cometbft/cometbft/types#pkg-constants
-
-        For complete query syntax, check out
-        https://godoc.org/github.com/cometbft/cometbft/libs/pubsub/query.
-
-        ```go
-        import rpchttp "github.com/cometbft/rpc/client/http"
-        import "github.com/cometbft/cometbft/types"
-
-        client := rpchttp.New("tcp:0.0.0.0:26657", "/websocket")
-        err := client.Start()
-        if err != nil {
-          handle error
-        }
-        defer client.Stop()
-        ctx, cancel := context.WithTimeout(context.Background(), 1 * time.Second)
-        defer cancel()
-        query := "tm.event = 'Tx' AND tx.height = 3"
-        txs, err := client.Subscribe(ctx, "test-client", query)
-        if err != nil {
-          handle error
-        }
-
-        go func() {
-         for e := range txs {
-           fmt.Println("got ", e.Data.(types.EventDataTx))
-           }
-        }()
-        ```
-
-        NOTE: if you're not reading events fast enough, CometBFT might
-        terminate the subscription.
-      parameters:
-        - in: query
-          name: query
-          required: true
-          schema:
-            type: string
-            example: tm.event = 'Tx' AND tx.height = 5
-          description: |
-            query is a string, which has a form: "condition AND condition ..." (no OR at the
-            moment). condition has a form: "key operation operand". key is a string with
-            a restricted set of possible symbols ( \t\n\r\\()"'=>< are not allowed).
-            operation can be "=", "<", "<=", ">", ">=", "CONTAINS". operand can be a
-            string (escaped with single quotes), number, date or time.
-      responses:
-        "200":
-          description: empty answer
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/EmptyResponse"
-        "500":
-          description: empty error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-  /unsubscribe:
-    get:
-      summary: Unsubscribe from event on Websocket
-      tags:
-        - Websocket
-      operationId: unsubscribe
-      description: |
-        ```go
-        client := rpchttp.New("tcp:0.0.0.0:26657", "/websocket")
-        err := client.Start()
-        if err != nil {
-           handle error
-        }
-        defer client.Stop()
-        query := "tm.event = 'Tx' AND tx.height = 3"
-        err = client.Unsubscribe(context.Background(), "test-client", query)
-        if err != nil {
-           handle error
-        }
-        ```
-      parameters:
-        - in: query
-          name: query
-          required: true
-          schema:
-            type: string
-            example: tm.event = 'Tx' AND tx.height = 5
-          description: |
-            query is a string, which has a form: "condition AND condition ..." (no OR at the
-            moment). condition has a form: "key operation operand". key is a string with
-            a restricted set of possible symbols ( \t\n\r\\()"'=>< are not allowed).
-            operation can be "=", "<", "<=", ">", ">=", "CONTAINS". operand can be a
-            string (escaped with single quotes), number, date or time.
-      responses:
-        "200":
-          description: Answer
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/EmptyResponse"
-        "500":
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-  /unsubscribe_all:
-    get:
-      summary: Unsubscribe from all events via WebSocket
-      tags:
-        - Websocket
-      operationId: unsubscribe_all
-      description: |
-        Unsubscribe from all events via WebSocket
-      responses:
-        "200":
-          description: empty answer
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/EmptyResponse"
         "500":
           description: empty error
           content:

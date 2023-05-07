@@ -33,6 +33,7 @@ func main() {
 		cmd.InspectCmd,
 		debug.DebugCmd,
 		cli.NewCompletionCmd(rootCmd, true),
+		cmd.BootstrapStateCmd,
 	)
 
 	// NOTE:

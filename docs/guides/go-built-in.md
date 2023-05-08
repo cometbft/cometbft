@@ -324,9 +324,9 @@ abcitypes "github.com/cometbft/cometbft/abci/types"
 
 ### 1.3.3 FinalizeBlock
 
-`FinalizeBlock` is a method introduced in CometBFT v0.38.0 which replaces the traditional ABCI methods of `BeginBlock`, `DeliverTx`, and `EndBlock`.
+`FinalizeBlock` is an ABCI method introduced in CometBFT v0.38.0. This replaces the functionality provided previously (pre-v0.38.0) by the combination of ABCI methods `BeginBlock`, `DeliverTx`, and `EndBlock`.
 
-This method is responsible for executing the block and returning a response to the consensus engine. By implementing `ProcessProposal`, transactions are processed before the block execution phase and are already present in the state machine. This means that there is no need for the traditional ABCI methods of `BeginBlock`, `DeliverTx`, and `EndBlock` to handle the transaction execution and state updates. This simplifies the ABCI interface and increases flexibility in the execution pipeline.
+This method is responsible for executing the block and returning a response to the consensus engine. The `ProcessProposal` method provides the transactions to the state machine before the block is finalized. This means that there is no need for the traditional ABCI methods of `BeginBlock`, `DeliverTx`, and `EndBlock` to handle the transaction execution and state updates. Instead, the application (state machine) can choose to optimistically execute even before the block is finalized. Providing a single `FinalizeBlock` method to signal finalization of a block simplifies the ABCI interface and increases flexibility in the execution pipeline.
 
 The `FinalizeBlock` method executes the block, including any necessary transaction processing and state updates, and returns a `ResponseFinalizeBlock` object which contains any necessary information about the executed block.
 

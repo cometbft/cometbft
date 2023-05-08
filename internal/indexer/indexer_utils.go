@@ -54,11 +54,11 @@ func CheckBounds(ranges indexer.QueryRange, v interface{}) bool {
 	// It is expected that for x > 5, the value of lowerBound is 6.
 	// This is achieved by adding one to the actual lower bound.
 	// For a query of x < 5, the value of upper bound is 4.
-	// This is achieved by substracting one from the actual upper bound.
+	// This is achieved by subtracting one from the actual upper bound.
 
-	// For integers this behaviour will work. However, for floats, we cannot simply add/sub 1.
-	// Query :x < 5.5 ; x = 5 should match the query. If we substracted one as for integers,
-	// the upperBound would be 4.5 and x would not match.  Thus we do not substract anything for
+	// For integers this behavior will work. However, for floats, we cannot simply add/sub 1.
+	// Query :x < 5.5 ; x = 5 should match the query. If we subtracted one as for integers,
+	// the upperBound would be 4.5 and x would not match.  Thus we do not subtract anything for
 	// floating point bounds. But that means that compare could return
 
 	// We can rewrite these functions to not add/sub 1 but the function handles also time arguments.
@@ -69,10 +69,10 @@ func CheckBounds(ranges indexer.QueryRange, v interface{}) bool {
 
 	// *Explanation for the isFloat condition below.*
 	// In LowerBoundValue(), for floating points, we cannot simply add 1 due to the reasons explained in
-	// in the comment at the beginning. The same is true for substracting one for UpperBoundValue().
+	// in the comment at the beginning. The same is true for subtracting one for UpperBoundValue().
 	// That means that for integers, if the condition is >=, cmp will be either 0 or 1
 	// ( cmp == -1 should always be false).
-	// 	But if the lowerBound is a float, we have not substracted one, so returning a 0
+	// 	But if the lowerBound is a float, we have not subtracted one, so returning a 0
 	// is correct only if ranges.IncludeLowerBound is true.
 	// example int: x < 100; upperBound = 99; if x.Cmp(99) == 0 the condition holds
 	// example float: x < 100.0; upperBound = 100.0; if x.Cmp(100) ==0 then returning x

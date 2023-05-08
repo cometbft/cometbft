@@ -51,7 +51,7 @@ are converted into a float with a precision equal to the number of bits needed
 to represent this integer. This is done to avoid precision loss for big integers when they 
 are converted with the default precision (`64`). 
 - When comparing two values, if either one of them is a float, the other one will be represented 
-as a big float. Integeres are again parsed as big floats with a precision equal to the number 
+as a big float. Integers are again parsed as big floats with a precision equal to the number 
 of bits required to represent them. 
 - As with all floating point comparisons, comparing floats with decimal values can lead to imprecise 
 results. 

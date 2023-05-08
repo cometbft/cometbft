@@ -72,13 +72,13 @@ on this following table are the ones that can be implemented first since it seem
 | **RPC Companion Endpoint** | **CometBFT Endpoint** | **Parameters**                                   | **Description**                         | **Notes**                                                                                                                                                                                                                                                                               |
 |----------------------------|-----------------------|--------------------------------------------------|-----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `/v1/health`               | `/health`             |                                                  | Get node health                         | This endpoint basically only returns an empty response. This can be used to test if the server RPC is up.  While this on CometBFT is used to return a response if the full node is up, when using the companion service this will return an `OK` status if the companion service is up. |
-| `/v1/abci_info`            | `/abci_info`          |                                                  | Get information about the application   | This companion endpoint will return the same response structure as the CometBFT endpoint. The companion endpoint will the latest information stored in its database that was retrived from the full node.                                                                               |
+| `/v1/abci_info`            | `/abci_info`          |                                                  | Get information about the application   | This companion endpoint will return the same response structure as the CometBFT endpoint. The companion endpoint will the latest information stored in its database that was retrieved from the full node.                                                                               |
 | `/v1/abci_query`           | `/abci_query`         | * path <br/> * data <br/> * height <br/> * prove | Query information from the application  | This companion endpoint will return the same response structure as the CometBFT endpoint. The RPC companion service will have to implement ... [TODO: query translation ?]                                                                                                     |
 | `/v1/block`                | `/block`              | * height                                         | Get block at a specified height         | This companion endpoint will return the same response structure as the CometBFT endpoint. The data retrieved from the companion database for a particular block will have to be properly serialized into the `block` struct in order to be returned as a response [see section ?].      |
 | `/v1/block_by_hash`        | `/block_by_hash`      | * hash                                           | Get block by its hash                   | This companion endpoint will return the same response structure as the CometBFT endpoint.                                                                                                                                                                                               |
 | `/v1/block_results`        | `/block_results`      | * height                                         | Get block results at a specified height | This companion endpoint will return the same response structure as the CometBFT endpoint. The data retrieved from the companion database for a particular block result will have to be properly serialized into the `ResultsBlockResults` struct in order to be returned as a response. |
 
-The following endpoint can also be implemented but they require some more effort and complexity to have them implemented, these are mostly the _search_ and _query_ endpoints.
+The following endpoint can also be implemented, but they require some more effort and complexity to have them implemented, these are mostly the _search_ and _query_ endpoints.
 
 | **RPC Companion Endpoint** | **CometBFT Endpoint** | **Parameters**                                         | **Description**                        | **Notes**                                                                                                                                                                                                                                                                               |
 |----------------------------|-----------------------|--------------------------------------------------------|----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -105,7 +105,7 @@ the database. In the future, if a gRPC interface is implemented in the full node
 from the server.
 
 The **ingest service** can control the pruning on the full node via a mechanism to track a `retain height`. Once the ingest service
-pulls the data from the full node and is able to process it and it gets an acknowledgement from the database that the data was inserted,
+pulls the data from the full node and is able to process it, and it gets an acknowledgement from the database that the data was inserted,
 the **ingest service** can communicate with the full node notifying it that a specific height has been processed and set the processed
 height as the `retain height` on the full node signaling this way to the node that this height can be pruned.
 
@@ -162,7 +162,7 @@ func (db *GoLevelDB) Set(key []byte, value []byte) error {
 
 ##### Data types
 
-This solution will implement a data schema in the database using its built-in datatypes. By using a relation database, there's a possibility
+This solution will implement a data schema in the database using its built-in data types. By using a relation database, there's a possibility
 to better normalize the data structures, this might provide savings in storage but might add to the complexity of returning a particular
 dataset because the data joins that will be required. Also, it would be important ensure the referential integrity is not violated since
 this can cause issues to the clients consuming the data.

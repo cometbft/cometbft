@@ -15,9 +15,9 @@ func compareFloat(op1 *big.Float, op2 interface{}) (int, bool, error) {
 		vF, _, err := big.ParseFloat(opVal.String(), 10, uint(opVal.BitLen()), big.ToNearestEven)
 		if err != nil {
 			err = fmt.Errorf("failed to convert %s to float", opVal)
+			return -1, false, err
 		}
 		cmp := op1.Cmp(vF)
-
 		return cmp, false, err
 
 	case *big.Float:

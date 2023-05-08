@@ -98,7 +98,7 @@ module github.com/me/example
 go 1.20
 
 require (
-github.com/cometbft/cometbft v0.38.0
+    github.com/cometbft/cometbft v0.38.0
 )
 ```
 
@@ -127,7 +127,7 @@ Create a file called `app.go` with the following contents:
 package main
 
 import (
-abcitypes "github.com/cometbft/cometbft/abci/types"
+    abcitypes "github.com/cometbft/cometbft/abci/types"
 )
 
 type KVStoreApplication struct{}
@@ -135,60 +135,60 @@ type KVStoreApplication struct{}
 var _ abcitypes.Application = (*KVStoreApplication)(nil)
 
 func NewKVStoreApplication() *KVStoreApplication {
-return &KVStoreApplication{}
+    return &KVStoreApplication{}
 }
 
 func (app *KVStoreApplication) Info(_ context.Context, info *abcitypes.RequestInfo) (*abcitypes.ResponseInfo, error) {
-return &abcitypes.ResponseInfo{}, nil
+    return &abcitypes.ResponseInfo{}, nil
 }
 
 func (app *KVStoreApplication) Query(_ context.Context, req *abcitypes.RequestQuery) (*abcitypes.ResponseQuery, error) {
-return &abcitypes.ResponseQuery{}
+    return &abcitypes.ResponseQuery{}
 }
 
 func (app *KVStoreApplication) CheckTx(_ context.Context, check *abcitypes.RequestCheckTx) (*abcitypes.ResponseCheckTx, error) {
-return &abcitypes.ResponseCheckTx{Code: code}, nil
+    return &abcitypes.ResponseCheckTx{Code: code}, nil
 }
 
 func (app *KVStoreApplication) InitChain(_ context.Context, chain *abcitypes.RequestInitChain) (*abcitypes.ResponseInitChain, error) {
-return &abcitypes.ResponseInitChain{}, nil
+    return &abcitypes.ResponseInitChain{}, nil
 }
 
 func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abcitypes.RequestPrepareProposal) (*abcitypes.ResponsePrepareProposal, error) {
-return &abcitypes.ResponsePrepareProposal{}, nil
+    return &abcitypes.ResponsePrepareProposal{}, nil
 }
 
 func (app *KVStoreApplication) ProcessProposal(_ context.Context, proposal *abcitypes.RequestProcessProposal) (*abcitypes.ResponseProcessProposal, error) {
-return &abcitypes.ResponseProcessProposal{}, nil
+    return &abcitypes.ResponseProcessProposal{}, nil
 }
 
 func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.RequestFinalizeBlock) (*abcitypes.ResponseFinalizeBlock, error) {
-return &abcitypes.ResponseFinalizeBlock{}, nil
+    return &abcitypes.ResponseFinalizeBlock{}, nil
 }
 
 func (app KVStoreApplication) Commit(_ context.Context, commit *abcitypes.RequestCommit) (*abcitypes.ResponseCommit, error) {
-return &abcitypes.ResponseCommit{}, nil
+    return &abcitypes.ResponseCommit{}, nil
 }
 
 func (app *KVStoreApplication) ListSnapshots(_ context.Context, snapshots *abcitypes.RequestListSnapshots) (*abcitypes.ResponseListSnapshots, error) {
-return &abcitypes.ResponseListSnapshots{}, nil
+    return &abcitypes.ResponseListSnapshots{}, nil
 }
 
 func (app *KVStoreApplication) OfferSnapshot(_ context.Context, snapshot *abcitypes.RequestOfferSnapshot) (*abcitypes.ResponseOfferSnapshot, error) {
-return &abcitypes.ResponseOfferSnapshot{}, nil
+    return &abcitypes.ResponseOfferSnapshot{}, nil
 }
 
 func (app *KVStoreApplication) LoadSnapshotChunk(_ context.Context, chunk *abcitypes.RequestLoadSnapshotChunk) (*abcitypes.ResponseLoadSnapshotChunk, error) {
-return &abcitypes.ResponseLoadSnapshotChunk{}, nil
+    return &abcitypes.ResponseLoadSnapshotChunk{}, nil
 }
 
 func (app *KVStoreApplication) ApplySnapshotChunk(_ context.Context, chunk *abcitypes.RequestApplySnapshotChunk) (*abcitypes.ResponseApplySnapshotChunk, error) {
 
-return &abcitypes.ResponseApplySnapshotChunk{Result: abcitypes.ResponseApplySnapshotChunk_ACCEPT}, nil
+    return &abcitypes.ResponseApplySnapshotChunk{Result: abcitypes.ResponseApplySnapshotChunk_ACCEPT}, nil
 }
 
 func (app KVStoreApplication) ExtendVote(_ context.Context, extend *abcitypes.RequestExtendVote) (*abcitypes.ResponseExtendVote, error) {
-return &abcitypes.ResponseExtendVote{}, nil
+    return &abcitypes.ResponseExtendVote{}, nil
 }
 
 func (app *KVStoreApplication) VerifyVoteExtension(_ context.Context, verify *abcitypes.RequestVerifyVoteExtension) (*abcitypes.ResponseVerifyVoteExtension, error) {
@@ -235,14 +235,14 @@ Next, let's update the application and its constructor to receive a handle to th
 
 ```go
 type KVStoreApplication struct {
-db           *badger.DB
-onGoingBlock *badger.Txn
+    db           *badger.DB
+    onGoingBlock *badger.Txn
 }
 
 var _ abcitypes.Application = (*KVStoreApplication)(nil)
 
 func NewKVStoreApplication(db *badger.DB) *KVStoreApplication {
-return &KVStoreApplication{db: db}
+    return &KVStoreApplication{db: db}
 }
 ```
 
@@ -253,15 +253,15 @@ Next, update the `import` stanza at the top to include the Badger library:
 
 ```go
 import(
-"github.com/dgraph-io/badger/v3"
-abcitypes "github.com/cometbft/cometbft/abci/types"
+    "github.com/dgraph-io/badger/v3"
+    abcitypes "github.com/cometbft/cometbft/abci/types"
 )
 ```
 
 Finally, update the `main.go` file to invoke the updated constructor:
 
 ```go
-_ = NewKVStoreApplication(nil)
+    _ = NewKVStoreApplication(nil)
 ```
 
 ### 1.3.2 CheckTx
@@ -277,13 +277,13 @@ For that, let's add the following helper method to app.go:
 
 ```go
 func (app *KVStoreApplication) isValid(tx []byte) uint32 {
-// check format
-parts := bytes.Split(tx, []byte("="))
-if len(parts) != 2 {
-return 1
-}
+    // check format
+    parts := bytes.Split(tx, []byte("="))
+    if len(parts) != 2 {
+        return 1
+    }
 
-return 0
+    return 0
 }
 ```
 
@@ -291,8 +291,8 @@ Now you can rewrite the `CheckTx` method to use the helper function:
 
 ```go
 func (app *KVStoreApplication) CheckTx(_ context.Context, check *abcitypes.RequestCheckTx) (*abcitypes.ResponseCheckTx, error) {
-code := app.isValid(check.Tx)
-return &abcitypes.ResponseCheckTx{Code: code}, nil
+    code := app.isValid(check.Tx)
+    return &abcitypes.ResponseCheckTx{Code: code}, nil
 }
 ```
 
@@ -315,10 +315,10 @@ Finally, make sure to add the bytes package to the `import` stanza at the top of
 
 ```go
 import(
-"bytes"
+    "bytes"
 
-"github.com/dgraph-io/badger/v3"
-abcitypes "github.com/cometbft/cometbft/abci/types"
+    "github.com/dgraph-io/badger/v3"
+    abcitypes "github.com/cometbft/cometbft/abci/types"
 )
 ```
 
@@ -332,37 +332,38 @@ The `FinalizeBlock` method executes the block, including any necessary transacti
 
 ```go
 func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.RequestFinalizeBlock) (*abcitypes.ResponseFinalizeBlock, error) {
-var txs = make([]*abcitypes.ExecTxResult, len(req.Txs))
+    var txs = make([]*abcitypes.ExecTxResult, len(req.Txs))
 
-app.onGoingBlock = app.db.NewTransaction(true)
-for i, tx := range req.Txs {
-if code := app.isValid(tx); code != 0 {
-log.Printf("Error in tx in if")
-txs[i] = &abcitypes.ExecTxResult{Code: code}
-} else {
-parts := bytes.SplitN(tx, []byte("="), 2)
-key, value := parts[0], parts[1]
-log.Printf("Adding key %s with value %s", key, value)
+    app.onGoingBlock = app.db.NewTransaction(true)
+    for i, tx := range req.Txs {
+        if code := app.isValid(tx); code != 0 {
+            log.Printf("Error in tx in if")
+            txs[i] = &abcitypes.ExecTxResult{Code: code}
+        } else {
+            parts := bytes.SplitN(tx, []byte("="), 2)
+            key, value := parts[0], parts[1]
+            log.Printf("Adding key %s with value %s", key, value)
 
-if err := app.onGoingBlock.Set(key, value); err != nil {
-log.Panicf("Error writing to database, unable to execute tx: %v", err)
-}
-log.Printf("Successfully added key %s with value %s", key, value)
+            if err := app.onGoingBlock.Set(key, value); err != nil {
+                log.Panicf("Error writing to database, unable to execute tx: %v", err)
+            }
 
-// Marshal the ExecTxResult to the txs slice element
-txs[i] = &abcitypes.ExecTxResult{}
-if _, err := txs[i].MarshalToSizedBuffer(nil); err != nil {
-log.Panicf("Error marshalling tx result: %v", err)
-}
-}
-}
+            log.Printf("Successfully added key %s with value %s", key, value)
 
-return &abcitypes.ResponseFinalizeBlock{
-TxResults:        txs,
-AppHash:          []byte{},
-Events:           []abcitypes.Event{},
-ValidatorUpdates: abcitypes.ValidatorUpdates{},
-}, nil
+            // Marshal the ExecTxResult to the txs slice element
+            txs[i] = &abcitypes.ExecTxResult{}
+            if _, err := txs[i].MarshalToSizedBuffer(nil); err != nil {
+                log.Panicf("Error marshalling tx result: %v", err)
+            }
+        }
+    }
+
+    return &abcitypes.ResponseFinalizeBlock{
+    TxResults:        txs,
+    AppHash:          []byte{},
+    Events:           []abcitypes.Event{},
+    ValidatorUpdates: abcitypes.ValidatorUpdates{},
+    }, nil
 }
 ```
 
@@ -373,10 +374,10 @@ persist the resulting state:
 
 ```go
 func (app KVStoreApplication) Commit(_ context.Context, commit *abcitypes.RequestCommit) (*abcitypes.ResponseCommit, error) {
-if err := app.onGoingBlock.Commit(); err != nil {
-return &abcitypes.ResponseCommit{}, err
-}
-return &abcitypes.ResponseCommit{}, nil
+    if err := app.onGoingBlock.Commit(); err != nil {
+    return &abcitypes.ResponseCommit{}, err
+    }
+    return &abcitypes.ResponseCommit{}, nil
 }
 ```
 
@@ -384,11 +385,11 @@ Finally, make sure to add the log library to the `import` stanza as well:
 
 ```go
 import (
-"bytes"
-"log"
+    "bytes"
+    "log"
 
-"github.com/dgraph-io/badger/v3"
-abcitypes "github.com/cometbft/cometbft/abci/types"
+    "github.com/dgraph-io/badger/v3"
+    abcitypes "github.com/cometbft/cometbft/abci/types"
 )
 ```
 
@@ -404,28 +405,28 @@ handled in the `Query` method. To do this, let's rewrite the `Query` method in `
 
 ```go
 func (app *KVStoreApplication) Query(_ context.Context, req *abcitypes.RequestQuery) (*abcitypes.ResponseQuery, error) {
-resp := abcitypes.ResponseQuery{Key: req.Data}
+    resp := abcitypes.ResponseQuery{Key: req.Data}
 
-dbErr := app.db.View(func(txn *badger.Txn) error {
-item, err := txn.Get(req.Data)
-if err != nil {
-if err != badger.ErrKeyNotFound {
-return err
-}
-resp.Log = "key does not exist"
-return nil
-}
+    dbErr := app.db.View(func(txn *badger.Txn) error {
+        item, err := txn.Get(req.Data)
+        if err != nil {
+            if err != badger.ErrKeyNotFound {
+                return err
+            }
+            resp.Log = "key does not exist"
+            return nil
+        }
 
-return item.Value(func(val []byte) error {
-resp.Log = "exists"
-resp.Value = val
-return nil
-})
-})
-if dbErr != nil {
-log.Panicf("Error reading database, unable to execute query: %v", dbErr)
-}
-return &resp, nil
+        return item.Value(func(val []byte) error {
+            resp.Log = "exists"
+            resp.Value = val
+            return nil
+        })
+    })
+    if dbErr != nil {
+        log.Panicf("Error reading database, unable to execute query: %v", dbErr)
+    }
+    return &resp, nil
 }
 ```
 
@@ -449,7 +450,7 @@ In the following code, the application simply returns the unmodified group of tr
 
 ```go
 func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abcitypes.RequestPrepareProposal) (*abcitypes.ResponsePrepareProposal, error) {
-return &abcitypes.ResponsePrepareProposal{Txs: proposal.Txs}, nil
+    return &abcitypes.ResponsePrepareProposal{Txs: proposal.Txs}, nil
 }
 ```
 
@@ -462,7 +463,7 @@ The following code simply accepts all proposals:
 
 ```go
 func (app *KVStoreApplication) ProcessProposal(_ context.Context, proposal *abcitypes.RequestProcessProposal) (*abcitypes.ResponseProcessProposal, error) {
-return &abcitypes.ResponseProcessProposal{Status: abcitypes.ResponseProcessProposal_ACCEPT}, nil
+    return &abcitypes.ResponseProcessProposal{Status: abcitypes.ResponseProcessProposal_ACCEPT}, nil
 }
 ```
 
@@ -476,98 +477,97 @@ Change the contents of your `main.go` file to the following.
 package main
 
 import (
-"flag"
-"fmt"
-"github.com/cometbft/cometbft/p2p"
-"github.com/cometbft/cometbft/privval"
-"github.com/cometbft/cometbft/proxy"
-"log"
-"os"
-"os/signal"
-"path/filepath"
-"syscall"
+    "flag"
+    "fmt"
+    "github.com/cometbft/cometbft/p2p"
+    "github.com/cometbft/cometbft/privval"
+    "github.com/cometbft/cometbft/proxy"
+    "log"
+    "os"
+    "os/signal"
+    "path/filepath"
+    "syscall"
 
-"github.com/dgraph-io/badger/v3"
-"github.com/spf13/viper"
-cfg "github.com/cometbft/cometbft/config"
-cmtflags "github.com/cometbft/cometbft/libs/cli/flags"
-cmtlog "github.com/cometbft/cometbft/libs/log"
-nm "github.com/cometbft/cometbft/node"
+    "github.com/dgraph-io/badger/v3"
+    "github.com/spf13/viper"
+    cfg "github.com/cometbft/cometbft/config"
+    cmtflags "github.com/cometbft/cometbft/libs/cli/flags"
+    cmtlog "github.com/cometbft/cometbft/libs/log"
+    nm "github.com/cometbft/cometbft/node"
 )
 
 var homeDir string
 
 func init() {
-flag.StringVar(&homeDir, "cmt-home", "", "Path to the CometBFT config directory (if empty, uses $HOME/.cometbft)")
+    flag.StringVar(&homeDir, "cmt-home", "", "Path to the CometBFT config directory (if empty, uses $HOME/.cometbft)")
 }
 
 func main() {
-flag.Parse()
-if homeDir == "" {
-homeDir = os.ExpandEnv("$HOME/.cometbft")
-}
-config := cfg.DefaultConfig()
+    flag.Parse()
+    if homeDir == "" {
+        homeDir = os.ExpandEnv("$HOME/.cometbft")
+    }
 
-config.SetRoot(homeDir)
-
-viper.SetConfigFile(fmt.Sprintf("%s/%s", homeDir, "config/config.toml"))
-if err := viper.ReadInConfig(); err != nil {
-log.Fatalf("Reading config: %v", err)
-}
-if err := viper.Unmarshal(config); err != nil {
-log.Fatalf("Decoding config: %v", err)
-}
-if err := config.ValidateBasic(); err != nil {
-log.Fatalf("Invalid configuration data: %v", err)
-}
-
-dbPath := filepath.Join(homeDir, "badger")
-db, err := badger.Open(badger.DefaultOptions(dbPath))
-if err != nil {
-log.Fatalf("Opening database: %v", err)
-}
-defer func() {
-if err := db.Close(); err != nil {
-log.Printf("Closing database: %v", err)
-}
+    config := cfg.DefaultConfig()
+    config.SetRoot(homeDir)
+    viper.SetConfigFile(fmt.Sprintf("%s/%s", homeDir, "config/config.toml"))
+    
+    if err := viper.ReadInConfig(); err != nil {
+        log.Fatalf("Reading config: %v", err)
+    }
+    if err := viper.Unmarshal(config); err != nil {
+        log.Fatalf("Decoding config: %v", err)
+    }
+    if err := config.ValidateBasic(); err != nil {
+        log.Fatalf("Invalid configuration data: %v", err)
+    }
+    dbPath := filepath.Join(homeDir, "badger")
+    db, err := badger.Open(badger.DefaultOptions(dbPath))
+    
+    if err != nil {
+        log.Fatalf("Opening database: %v", err)
+    }
+    defer func() {
+    if err := db.Close(); err != nil {
+        log.Printf("Closing database: %v", err)
+    }
 }()
 
 app := NewKVStoreApplication(db)
 
 pv := privval.LoadFilePV(
-config.PrivValidatorKeyFile(),
-config.PrivValidatorStateFile(),
+    config.PrivValidatorKeyFile(),
+    config.PrivValidatorStateFile(),
 )
 
 nodeKey, err := p2p.LoadNodeKey(config.NodeKeyFile())
 if err != nil {
-log.Fatalf("failed to load node's key: %v", err)
+    log.Fatalf("failed to load node's key: %v", err)
 }
 
 logger := cmtlog.NewTMLogger(cmtlog.NewSyncWriter(os.Stdout))
 logger, err = cmtflags.ParseLogLevel(config.LogLevel, logger, cfg.DefaultLogLevel)
-if err != nil {
-log.Fatalf("failed to parse log level: %v", err)
-}
 
+if err != nil {
+    log.Fatalf("failed to parse log level: %v", err)
+}
 node, err := nm.NewNode(
-config,
-pv,
-nodeKey,
-proxy.NewLocalClientCreator(app),
-nm.DefaultGenesisDocProviderFunc(config),
-nm.DefaultDBProvider,
-nm.DefaultMetricsProvider(config.Instrumentation),
+    config,
+    pv,
+    nodeKey,
+    proxy.NewLocalClientCreator(app),
+    nm.DefaultGenesisDocProviderFunc(config),
+    nm.DefaultDBProvider,
+    nm.DefaultMetricsProvider(config.Instrumentation),
 logger)
 
 if err != nil {
-log.Fatalf("Creating node: %v", err)
+    log.Fatalf("Creating node: %v", err)
 }
-
 node.Start()
 defer func() {
-node.Stop()
-node.Wait()
+    node.Stop()
+    node.Wait()
 }()
 
 c := make(chan os.Signal, 1)
@@ -587,13 +587,13 @@ config.SetRoot(homeDir)
 
 viper.SetConfigFile(fmt.Sprintf("%s/%s", homeDir, "config/config.toml"))
 if err := viper.ReadInConfig(); err != nil {
-log.Fatalf("Reading config: %v", err)
+    log.Fatalf("Reading config: %v", err)
 }
 if err := viper.Unmarshal(config); err != nil {
-log.Fatalf("Decoding config: %v", err)
+    log.Fatalf("Decoding config: %v", err)
 }
 if err := config.ValidateBasic(); err != nil {
-log.Fatalf("Invalid configuration data: %v", err)
+    log.Fatalf("Invalid configuration data: %v", err)
 }
 ```
 
@@ -603,12 +603,12 @@ Next, we initialize the Badger database and create an app instance.
 dbPath := filepath.Join(homeDir, "badger")
 db, err := badger.Open(badger.DefaultOptions(dbPath))
 if err != nil {
-log.Fatalf("Opening database: %v", err)
+    log.Fatalf("Opening database: %v", err)
 }
 defer func() {
-if err := db.Close(); err != nil {
-log.Fatalf("Closing database: %v", err)
-}
+    if err := db.Close(); err != nil {
+        log.Fatalf("Closing database: %v", err)
+    }
 }()
 
 app := NewKVStoreApplication(db)
@@ -620,8 +620,8 @@ messages). Normally, you would use `SignerRemote` to connect to an external
 
 ```go
 pv := privval.LoadFilePV(
-config.PrivValidatorKeyFile(),
-config.PrivValidatorStateFile(),
+    config.PrivValidatorKeyFile(),
+    config.PrivValidatorStateFile(),
 )
 ```
 
@@ -630,7 +630,7 @@ config.PrivValidatorStateFile(),
 ```go
 nodeKey, err := p2p.LoadNodeKey(config.NodeKeyFile())
 if err != nil {
-return nil, fmt.Errorf("failed to load node's key: %w", err)
+    return nil, fmt.Errorf("failed to load node's key: %w", err)
 }
 ```
 
@@ -640,17 +640,17 @@ the genesis information:
 
 ```go
 node, err := nm.NewNode(
-config,
-pv,
-nodeKey,
-proxy.NewLocalClientCreator(app),
-nm.DefaultGenesisDocProviderFunc(config),
-nm.DefaultDBProvider,
-nm.DefaultMetricsProvider(config.Instrumentation),
+    config,
+    pv,
+    nodeKey,
+    proxy.NewLocalClientCreator(app),
+    nm.DefaultGenesisDocProviderFunc(config),
+    nm.DefaultDBProvider,
+    nm.DefaultMetricsProvider(config.Instrumentation),
 logger)
 
 if err != nil {
-log.Fatalf("Creating node: %v", err)
+    log.Fatalf("Creating node: %v", err)
 }
 ```
 
@@ -659,8 +659,8 @@ Finally, we start the node, i.e., the CometBFT service inside our application:
 ```go
 node.Start()
 defer func() {
-node.Stop()
-node.Wait()
+    node.Stop()
+    node.Wait()
 }()
 ```
 
@@ -753,8 +753,8 @@ The request returns a `json` object with a `key` and `value` field set.
 
 ```json
 ...
-"key": "dGVuZGVybWludA==",
-"value": "cm9ja3M=",
+    "key": "dGVuZGVybWludA==",
+    "value": "cm9ja3M=",
 ...
 ```
 

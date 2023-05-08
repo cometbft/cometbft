@@ -44,10 +44,12 @@ sync and/or Consensus to catch up with the latest state of the network.
 
 The purpose of this ADR is to provide node operators with more flexibility in
 defining how or where State sync should look for application snapshots.
-The goal is to provide an alternative to the synchronization mechanism
-currently adopted by State sync, discovering and fetching application snapshots
-from peers in the network, in order to address the above mentioned limitations,
-while preserving the core of State sync's operation.
+More precisely, it enables State sync to support the bootstrap of nodes from
+application snapshots obtained _out-of-band_ by operators.
+The objetive is to provide an alternative to the mechanism currently adopted by
+State sync, discovering and fetching application snapshots from peers in the
+network, in order to address the above mentioned limitations, while preserving
+most of State sync's operation.
 
 ## Alternative Approaches
 
@@ -81,7 +83,7 @@ from a running node is transferred to the new node to be bootstrapped.
 Instead of relying on application snapshots, produced by the application but
 handled by State sync, [ADR 083][adr083]/[ADR 103][adr103] assumes that node
 operators are able to manually synchronize the application state from a running
-node (it might be required stopping it) to a not-yet-started fresh node.
+node (it might be necessary to stop it) to a not-yet-started fresh node.
 
 ## Decision
 
@@ -145,9 +147,20 @@ In other words, the following operation should be, in general terms, possible:
 
 ### Positive
 
+- This is a non-breaking change: it provides an alternative and complementary
+  implementation for State sync
+- Node operators will not need to use workarounds to make State sync to download
+  application snapshots from specific nodes in the network, in particular from
+  nodes that are controlled by the same operators
+
 ### Negative
 
 ### Neutral
+
+- Additional complexity, with additional parameters for State sync's
+  configuration and the bootstrap of a node
+- Additional complexity, with the possible addition of a CLI command to save
+  application snapshots to the file system
 
 ## References
 

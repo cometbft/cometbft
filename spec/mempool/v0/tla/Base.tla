@@ -1,4 +1,4 @@
----- MODULE Base ----
+--------------------------------- MODULE Base ----------------------------------
 EXTENDS Integers
 
 CONSTANTS
@@ -17,7 +17,6 @@ NoNode == "no-node"
 NoError == "none"
 
 isValid(tx) ==
-    \* tx == InvalidTx
     TRUE
 
 \* @typeAlias: HEIGHT = Int;

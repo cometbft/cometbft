@@ -60,6 +60,10 @@ vars == <<requestResponses, requestSenders>>
 Unchanged == UNCHANGED vars
 
 --------------------------------------------------------------------------------
+(******************************************************************************)
+(* Actions *)
+(******************************************************************************)
+
 \* EmptyMap is not accepted by Apalache's typechecker.
 \* @type: REQUEST -> RESPONSE;
 EmptyMapResponses == [x \in {} |-> NoResponse]
@@ -70,7 +74,6 @@ Init ==
     /\ requestResponses = [n \in NodeIds |-> EmptyMapResponses]
     /\ requestSenders = [n \in NodeIds |-> EmptyMapNodeIds]
 
---------------------------------------------------------------------------------
 \* The app receives a request and creates a response.
 ProcessCheckTxRequest(nodeId) == 
     \* /\ PrintT(<<"ProcessCheckTxRequest", nodeId>>)

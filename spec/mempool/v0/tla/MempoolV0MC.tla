@@ -12,14 +12,18 @@ instance_MempoolMaxSize == 3
 instance_Configs == [x \in NodeIds |->
     CASE x = "n1" -> [keepInvalidTxsInCache |-> FALSE]
       [] x = "n2" -> [keepInvalidTxsInCache |-> FALSE]
-      [] x = "n3" -> [keepInvalidTxsInCache |-> FALSE]
+    \*   [] x = "n3" -> [keepInvalidTxsInCache |-> FALSE]
     \*   [] x = "n4" -> [keepInvalidTxsInCache |-> FALSE]
 ]
 
+\* instance_Peers == [x \in NodeIds |->
+\*     CASE x = "n1" -> {"n2", "n3"}
+\*       [] x = "n2" -> {"n1", "n3"}
+\*       [] x = "n3" -> {"n1", "n2"}
+\* ]
 instance_Peers == [x \in NodeIds |->
-    CASE x = "n1" -> {"n2", "n3"}
-      [] x = "n2" -> {"n1", "n3"}
-      [] x = "n3" -> {"n1", "n2"}
+    CASE x = "n1" -> {"n2"}
+      [] x = "n2" -> {"n1"}
 ]
 
 --------------------------------------------------------------------------------

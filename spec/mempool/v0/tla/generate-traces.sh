@@ -4,7 +4,7 @@ declare -a tests=("EmptyCache" "NonEmptyCache")
 
 MAIN_TLA_FILE="MempoolV0MC.tla"
 TRACE_MAX_LENGTH=5
-MAX_ERRORS=10
+NUM_TRACES_PER_TEST=5
 TRACES_ROOT_DIR="./traces"
 
 for TEST in "${tests[@]}"; do
@@ -12,7 +12,7 @@ for TEST in "${tests[@]}"; do
     OUT_DIR=./_apalache-out/$TEST
     NEGATED_TEST=Not$TEST
     time apalache-mc check --features=no-rows \
-        --cinit=ConstInit --length=$TRACE_MAX_LENGTH --max-error=$MAX_ERRORS --view=View \
+        --cinit=ConstInit --length=$TRACE_MAX_LENGTH --max-error=$NUM_TRACES_PER_TEST --view=View \
         --inv="$NEGATED_TEST" \
         --out-dir="$OUT_DIR" \
         "$MAIN_TLA_FILE"

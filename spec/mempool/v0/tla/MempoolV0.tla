@@ -14,17 +14,18 @@ EXTENDS Base, Integers, Sequences, Maps, TLC, FiniteSets
 CONSTANTS 
     \* @type: Int;
     MempoolMaxSize,
+    
+    \* The configuration of each node
     \* @typeAlias: CONFIG = [keepInvalidTxsInCache: Bool];
     \* @type: NODE_ID -> CONFIG;
     Configs,
+    
+    \* The network topology.
     \* @type: NODE_ID -> Set(NODE_ID);
     Peers
 
 ASSUME MempoolMaxSize > 0
 ASSUME \A n \in NodeIds: n \notin Peers[n]
-
-Steps == {"Init", "CheckTx", "ReceiveTx", "SendTx", "ReceiveCheckTxResponse", 
-    "ReceiveRecheckTxResponse", "ABCI!ProcessCheckTxRequest", "Update"}
 
 --------------------------------------------------------------------------------
 (******************************************************************************)
@@ -66,6 +67,9 @@ SendTo(msg, peer) == msgs' = [msgs EXCEPT ![peer] = @ \union {msg}]
 
 vars == <<mempool, sender, cache, step, error, chainHeight, msgs>>
 --------------------------------------------------------------------------------
+Steps == {"Init", "CheckTx", "ReceiveTx", "SendTx", "ReceiveCheckTxResponse", 
+    "ReceiveRecheckTxResponse", "ABCI!ProcessCheckTxRequest", "Update"}
+
 \* @type: Set(ERROR);
 Errors == {NoError, "ErrMempoolIsFull", "ErrTxInCache"}
 
@@ -89,7 +93,6 @@ EmptyMapNodeIds == [x \in {} |-> {}]
 
 Init == 
     /\ mempool = [x \in NodeIds |-> {}]
-    \* /\ mempool = [x \in NodeIds |-> <<>>]
     /\ sender = [x \in NodeIds |-> EmptyMapNodeIds]
     /\ cache = [x \in NodeIds |-> {}]
     /\ step = [x \in NodeIds |-> "Init"]
@@ -115,7 +118,7 @@ addSender(nodeId, tx, senderId) ==
     sender' = [sender EXCEPT ![nodeId] = 
         MapPut(@, tx, (IF tx \in DOMAIN @ THEN @[tx] ELSE {}) \union {senderId})]
 
-removeAllsender(nodeId, txs) ==
+removeSenders(nodeId, txs) ==
     sender' = [sender EXCEPT ![nodeId] = MapRemoveMany(@, txs)] 
 
 (******************************************************************************)
@@ -134,13 +137,13 @@ addToMempool(nodeId, tx, senderId) ==
 \* @type: (NODE_ID, Set(TX)) => Bool;
 removeFromMempool(nodeId, txs) ==
     /\ mempool' = [mempool EXCEPT ![nodeId] = @ \ txs]
-    /\ removeAllsender(nodeId, txs)
+    /\ removeSenders(nodeId, txs)
 
 mempoolIsEmpty(nodeId) ==
     mempool[nodeId] = {}
 
 mempoolIsFull(nodeId) ==
-    Cardinality(mempool[nodeId]) >= MempoolMaxSize
+    Cardinality(mempool[nodeId]) > MempoolMaxSize
 
 (******************************************************************************)
 (* Cache *)
@@ -172,6 +175,7 @@ or from a peer via P2P. If valid, add it to the mempool. *)
 \* @type: (NODE_ID, TX, NODE_ID) => Bool;
 CheckTx(nodeId, tx, senderId) ==
     \* /\ PrintT(<<"CheckTx", nodeId, tx, senderId>>)
+    /\ step' = [step EXCEPT ![nodeId] = "CheckTx"]
     /\ mempool' = mempool
     /\ IF mempoolIsFull(nodeId) THEN
             /\ sender' = sender
@@ -196,17 +200,18 @@ CheckTx(nodeId, tx, senderId) ==
             /\ ABCI!SendRequestNewCheckTx(nodeId, tx, senderId)
     /\ UNCHANGED chainHeight
 
-(* Receive a transaction from a peer *)
+(* Receive a transaction from a peer and validate it with CheckTx. *)
 ReceiveTx(nodeId) == 
+    /\ step' = [step EXCEPT ![nodeId] = "ReceiveTx"]
     /\ \E msg \in msgs[nodeId]:
         /\ CheckTx(nodeId, msg.tx, msg.sender)
         /\ msgs' = [msgs EXCEPT ![nodeId] = @ \ {msg}]
-    /\ step' = [step EXCEPT ![nodeId] = "ReceiveTx"]
 
-(* The node loops through its mempool and sends the tx one by one to all its
-peers. *)
+(* The mempool reactor loops through its mempool and sends transactions one by
+one to each of its peers. *)
 \* [Reactor.broadcastTxRoutine] https://github.com/CometBFT/cometbft/blob/5049f2cc6cf519554d6cd90bcca0abe39ce4c9df/mempool/reactor.go#L132
 SendTx(nodeId) ==
+    /\ step' = [step EXCEPT ![nodeId] = "SendTx"]
     /\ \E peer \in Peers[nodeId], tx \in mempool[nodeId]:
         LET msg == [sender |-> nodeId, tx |-> tx] IN
         \* If the msg was not already sent to this peer.
@@ -216,13 +221,14 @@ SendTx(nodeId) ==
         /\ SendTo(msg, peer)
         /\ UNCHANGED <<mempool, cache, error, chainHeight, sender>>
         /\ ABCI!Unchanged
-    /\ step' = [step EXCEPT ![nodeId] = "SendTx"]
 
+\* Callback that handles the response to a CheckTx request to a transaction sent
+\* for the first time.
 \* Note: tx and sender are arguments to the function resCbFirstTime.
 \* [CListMempool.resCbFirstTime]: https://github.com/CometBFT/cometbft/blob/6498d67efdf0a539e3ca0dc3e4a5d7cb79878bb2/mempool/clist_mempool.go#L369
 \* @type: (NODE_ID) => Bool;
 ReceiveCheckTxResponse(nodeId) ==
-    \* /\ PrintT(<<"ReceiveCheckTxResponse", nodeId>>)
+    /\ step' = [step EXCEPT ![nodeId] = "ReceiveCheckTxResponse"]
     /\ \E request \in ABCI!CheckRequests(nodeId):
         LET response == ABCI!ResponseFor(nodeId, request) IN
         LET senderId == ABCI!SenderFor(nodeId, request) IN
@@ -243,11 +249,13 @@ ReceiveCheckTxResponse(nodeId) ==
                 /\ setError(nodeId, NoError)
         /\ ABCI!RemoveRequest(nodeId, request)
     /\ UNCHANGED <<chainHeight, msgs>>
-    /\ step' = [step EXCEPT ![nodeId] = "ReceiveCheckTxResponse"]
 
+\* Callback that handles the response to a CheckTx request to a transaction sent
+\* after the first time (on Update).
 \* [CListMempool.resCbRecheck]: https://github.com/CometBFT/cometbft/blob/5a8bd742619c08e997e70bc2bbb74650d25a141a/mempool/clist_mempool.go#L432
 \* @type: (NODE_ID) => Bool;
 ReceiveRecheckTxResponse(nodeId) == 
+    /\ step' = [step EXCEPT ![nodeId] = "ReceiveRecheckTxResponse"]
     /\ \E request \in ABCI!RecheckRequests(nodeId):
         LET response == ABCI!ResponseFor(nodeId, request) IN
         /\ inMempool(nodeId, request.tx)
@@ -260,20 +268,19 @@ ReceiveRecheckTxResponse(nodeId) ==
                 /\ cache' = cache
         /\ ABCI!RemoveRequest(nodeId, request)
     /\ UNCHANGED <<error, chainHeight, msgs>>
-    /\ step' = [step EXCEPT ![nodeId] = "ReceiveRecheckTxResponse"]
 
 (* The consensus reactors first reaps a list of transactions from the mempool,
 executes the transactions in the app, adds them to a newly block, and finally
 updates the mempool. The list of transactions is taken in FIFO order but we
 don't care about the order in this spec. Then we model the mempool txs as a set
 instead of a sequence of transactions. *)
-
-(*BlockExecutor calls Update to update the mempool after executing txs.
+(* BlockExecutor calls Update to update the mempool after executing txs.
 txResults are the results of ResponseFinalizeBlock for every tx in txs.
 BlockExecutor holds the mempool lock while calling this function. *)
 \* @type: (NODE_ID, HEIGHT, Set(TX), (TX -> Bool)) => Bool;
 Update(nodeId, height, txs, txValidResults) ==
     \* /\ PrintT(<<"Update", nodeId, height, txs, txValidResults>>)
+    /\ step' = [step EXCEPT ![nodeId] = "Update"]
     /\ txs # {}
     /\ chainHeight' = [chainHeight EXCEPT ![nodeId] = height]
         \* TODO: need to model consensus: all nodes should create the same block
@@ -298,7 +305,6 @@ Update(nodeId, height, txs, txValidResults) ==
             ABCI!SendRequestRecheckTxs(nodeId, txs)
 
     /\ UNCHANGED <<error, msgs>>
-    /\ step' = [step EXCEPT ![nodeId] = "Update"]
 
 --------------------------------------------------------------------------------
 Next == 
@@ -308,18 +314,24 @@ Next ==
             /\ CheckTx(nodeId, tx, senderId)
             /\ step' = [step EXCEPT ![nodeId] = "CheckTx"]
             /\ UNCHANGED msgs
+
         \* Receive a transaction from a peer
         \/ ReceiveTx(nodeId)
+
         \* Send a transaction in the mempool to a peer
         \/ SendTx(nodeId)
+
         \* Receive a (New) CheckTx response from the application
         \/ ReceiveCheckTxResponse(nodeId)
+
         \* Receive a (Recheck) CheckTx response from the application
         \/ ReceiveRecheckTxResponse(nodeId)
+
         \* Consensus reactor updates the mempool
         \/ \E txs \in (SUBSET Txs \ {{}}): 
             \E txValidResults \in [txs -> BOOLEAN]:
             Update(nodeId, chainHeight[nodeId] + 1, txs, txValidResults)
+
         \* The ABCI application process a request and generates a response
         \/  /\ ABCI!ProcessCheckTxRequest(nodeId)
             /\ step' = [step EXCEPT ![nodeId] = "ABCI!ProcessCheckTxRequest"]
@@ -346,6 +358,26 @@ ReceiveRecheckTxResponseProp ==
     \E nodeId \in NodeIds:
         step[nodeId] = "ReceiveRecheckTxResponse"
 NotReceiveRecheckTxResponse == ~ ReceiveRecheckTxResponseProp
+
+SendTxTest ==
+    \E nodeId \in NodeIds:
+        step[nodeId] = "SendTx"
+NotSendTxTest == ~ SendTxTest
+
+\* @ typeAlias: STATE = [requestResponses: NODE_ID -> REQUEST -> RESPONSE, requestSenders: NODE_ID -> REQUEST -> NODE_ID, mempool: NODE_ID -> Set(TX), sender: NODE_ID -> TX -> Set(NODE_ID), cache: NODE_ID -> Set(TX), step: NODE_ID -> Str, error: NODE_ID -> ERROR, chainHeight: NODE_ID -> HEIGHT];
+\* @typeAlias: STATE = [step: NODE_ID -> Str];
+\* @type: Seq(STATE) => Bool;
+SendThenCheck(trace) ==
+    \E i, j \in DOMAIN trace: i < j /\
+        \E n \in NodeIds:
+            LET state1 == trace[i] IN 
+            LET state2 == trace[j] IN
+            /\ state1.step[n] = "SendTx"
+            /\ state2.step[n] = "CheckTx" 
+            \* /\ Len(trace) = 10
+
+\* @type: Seq(STATE) => Bool;
+NotSendThenCheck(trace) == ~ SendThenCheck(trace)
 
 ================================================================================
 Created by Hernán Vanzetto on 1 May 2023

@@ -8,16 +8,15 @@
 (* function is actually total.                                                *)
 (******************************************************************************)
 
+\* The set of all maps with (partial) domain S and codomain T.
+\* @type: (Set(a), Set(b)) => Set(a -> b);
+Maps(S, T) == UNION { [A -> T]: A \in SUBSET S }
+
 \* @type: (a -> b, Set(a), Set(b)) => Bool;
 IsMap(f, S, T) ==
     /\ f = [x \in DOMAIN f |-> f[x]]
     /\ DOMAIN f \subseteq S
     /\ \A x \in DOMAIN f: f[x] \in T
-
-\* The set of all maps with (partial) domain S and codomain T.
-\* Maps(S, T) == { m \in [S -> T]: IsMap(m, S, T) }
-Maps(S, T) == { f \in [S -> T]: DOMAIN f \subseteq S }
-\* Maps(S, T) == { [x \in DOMAIN f |-> f[x]]:  }
 
 THEOREM MapsDef ==
     ASSUME NEW f, NEW S, NEW T

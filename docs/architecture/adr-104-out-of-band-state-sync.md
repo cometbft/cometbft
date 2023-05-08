@@ -46,7 +46,7 @@ The purpose of this ADR is to provide node operators with more flexibility in
 defining how or where State sync should look for application snapshots.
 More precisely, it enables State sync to support the bootstrap of nodes from
 application snapshots obtained _out-of-band_ by operators.
-The objetive is to provide an alternative to the mechanism currently adopted by
+The goal is to provide an alternative to the mechanism currently adopted by
 State sync, discovering and fetching application snapshots from peers in the
 network, in order to address the above mentioned limitations, while preserving
 most of State sync's operation.
@@ -56,6 +56,32 @@ most of State sync's operation.
 > This section contains information around alternative options that are considered
 > before making a decision. It should contain a explanation on why the alternative
 > approach(es) were not chosen.
+
+### Strengthen p2p-based State sync
+
+This ADR proposes a workaround for some limitations of the existing State sync
+protocol, briefly summarized above. A more comprehensive and sustainable
+long-term solution would require addressing such limitations.
+
+From a protocol design point of view, probably the major limitation of State
+sync is the lack of mechanisms to incentivize and reward established nodes that
+provide "good" (updated and consistent) snapshots to peers.
+The existing protocol is essentially altruistic: it assumes that established
+nodes will support the bootstrap of fresh nodes without receiving anything in
+return, other than having new peers joining their network.
+
+From an operational point of view, the design of the p2p layer should take into
+consideration the fact that not every node in the network is a "good" State
+sync server. Fresh nodes, which need support for bootstrapping, should then be
+able to discover peers in the network that are able or willing to provide
+application snapshots.
+The implementation of this feature would require a more complex content-based
+peer discovery mechanism.
+
+However, while relevant, strengthening p2p-based State sync should be seen as
+_orthogonal_ to the solution proposed in this ADR, which should have relevant use
+cases even for an enhanced version of State sync.
+
 
 ### Manual application state transfer
 
@@ -84,6 +110,17 @@ Instead of relying on application snapshots, produced by the application but
 handled by State sync, [ADR 083][adr083]/[ADR 103][adr103] assumes that node
 operators are able to manually synchronize the application state from a running
 node (it might be necessary to stop it) to a not-yet-started fresh node.
+
+The main limitation of this approach is that it relies on the ability of node
+operators to properly synchronize the application state between two nodes.
+While experienced node operators are likely able to perform this operation in a
+proper way, we have to consider a broader set of users and emphasize that it is
+an operation susceptible to errors.
+Furthermore, it is an operation that is, by definition, application-specific:
+applications are free to manage their state as they see fit, and this includes
+how and where the state is persisted.
+Node operators would therefore need to know the specifics of each application
+in order to adopt this solution.
 
 ## Decision
 

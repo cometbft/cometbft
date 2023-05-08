@@ -267,8 +267,11 @@ is ignored and the data is retrieved as if `match_events=false`.
 Additionally, if a node that was running Tendermint Core 
 when the data was first indexed, and switched to CometBFT, is queried, it will retrieve this previously indexed
 data as if `match_events=false` (attributes can match the query conditions across different events on the same height).
+
 # Event attribute value types
-Users can use anything as an event value. However, if the even attrbute value is a number, the following restrictions apply:
+
+Users can use anything as an event value. However, if the event attribute value is a number, the following restrictions apply:
+
 - Negative numbers will not be properly retrieved when querying the indexer
 - When querying the events using `tx_search` and `block_search`, the value given as part of the condition cannot be a float.
 - Any event value retrieved from the database will be represented as a `BigInt` (from `math/big`)

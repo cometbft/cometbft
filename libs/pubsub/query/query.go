@@ -153,7 +153,6 @@ func (q *Query) Conditions() ([]Condition, error) {
 				conditions = append(conditions, Condition{eventAttr, op, value})
 			} else {
 				valueBig := new(big.Int)
-
 				_, ok := valueBig.SetString(number, 10)
 				if !ok {
 					err := fmt.Errorf(
@@ -303,7 +302,6 @@ func (q *Query) Matches(events map[string][]string) (bool, error) {
 			} else {
 				value := new(big.Int)
 				_, ok := value.SetString(number, 10)
-
 				if !ok {
 					err := fmt.Errorf(
 						"problem parsing %s as bigInt (should never happen if the grammar is correct)",
@@ -488,7 +486,6 @@ func matchValue(value string, op Operator, operand reflect.Value) (bool, error) 
 			} else {
 				// try our best to convert value from tags to big int
 				_, ok := v.SetString(filteredValue, 10)
-
 				if !ok {
 					return false, fmt.Errorf("failed to convert value %v from event attribute to big int", filteredValue)
 				}

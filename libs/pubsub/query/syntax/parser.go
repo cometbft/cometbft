@@ -77,6 +77,9 @@ func (a *Arg) Number() *big.Float {
 	if _, ok := intVal.SetString(a.text, 10); !ok {
 		f, _, err := big.ParseFloat(a.text, 10, 125, big.ToNearestEven)
 		if err != nil {
+
+			fmt.Println(err)
+
 			return nil
 		}
 		return f
@@ -86,10 +89,10 @@ func (a *Arg) Number() *big.Float {
 	bitLen := uint(intVal.BitLen())
 	var f *big.Float
 	var err error
-	if bitLen < 64 {
+	if bitLen <= 64 {
 		f, _, err = big.ParseFloat(a.text, 10, 0, big.ToNearestEven)
 	} else {
-		f, _, err = big.ParseFloat(a.text, 10, uint(intVal.BitLen()), big.ToNearestEven)
+		f, _, err = big.ParseFloat(a.text, 10, bitLen, big.ToNearestEven)
 	}
 	if err != nil {
 		return nil

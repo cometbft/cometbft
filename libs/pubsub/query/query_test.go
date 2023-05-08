@@ -173,22 +173,22 @@ var apiTypeEvents = []types.Event{
 	},
 }
 
-var apiBigNumTest = map[string][]string{
-	"big.value": {
-		"99999999999999999999",
-	},
-	"big2.value": {
-		"18446744073709551615", // max(uint64) == 18446744073709551615
-	},
-	"big.floatvalue": {
-		"99999999999999999999.10",
-	},
-	"big2.floatvalue": {
-		"18446744073709551615.6", // max(uint64) == 18446744073709551615
-	},
-}
-
 func TestBigNumbers(t *testing.T) {
+
+	apiBigNumTest := map[string][]string{
+		"big.value": {
+			"99999999999999999999",
+		},
+		"big2.value": {
+			"18446744073709551615", // max(uint64) == 18446744073709551615
+		},
+		"big.floatvalue": {
+			"99999999999999999999.10",
+		},
+		"big2.floatvalue": {
+			"18446744073709551615.6", // max(uint64) == 18446744073709551615
+		},
+	}
 
 	testCases := []struct {
 		s       string

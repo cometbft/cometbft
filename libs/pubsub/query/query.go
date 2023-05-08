@@ -227,6 +227,9 @@ func parseNumber(s string) (*big.Float, error) {
 	intVal := new(big.Int)
 	if _, ok := intVal.SetString(s, 10); !ok {
 		f, _, err := big.ParseFloat(extractNum.FindString(s), 10, 125, big.ToNearestEven)
+		if err != nil {
+			fmt.Println(err)
+		}
 		return f, err
 	}
 	f, _, err := big.ParseFloat(extractNum.FindString(s), 10, uint(intVal.BitLen()), big.ToNearestEven)
@@ -255,8 +258,6 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
-				vval := v.(*big.Float)
-				fmt.Println(vval.Text('f', 64))
 				return err == nil && w.Cmp(v.(*big.Float)) == 0
 			}
 		},
@@ -277,8 +278,6 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
-				vval := v.(*big.Float)
-				fmt.Println(vval.Text('f', 64))
 				return err == nil && w.Cmp(v.(*big.Float)) < 0
 			}
 		},
@@ -299,8 +298,6 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
-				vval := v.(*big.Float)
-				fmt.Println(vval.Text('f', 64))
 				return err == nil && w.Cmp(v.(*big.Float)) <= 0
 			}
 		},
@@ -341,8 +338,6 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
-				vval := v.(*big.Float)
-				fmt.Println(vval.Text('f', 64))
 				return err == nil && w.Cmp(v.(*big.Float)) >= 0
 			}
 		},

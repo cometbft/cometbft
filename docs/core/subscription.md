@@ -40,6 +40,25 @@ You can also use tags, given you had included them into DeliverTx
 response, to query transaction results. See [Indexing
 transactions](../app-dev/indexing-transactions.md) for details.
 
+## Query parameter and event type restrictions
+
+While CometBFT imposes no restrictions on the application with regards to the type of 
+the event output, there are several considerations that need to be taken into account 
+when querying events. 
+
+- Queries convert all event values to `big.Float` , provided by `math/big`. Integers
+are converted into a float with a precision equal to the number of bits needed
+to represent this integer. This is done to avoid precision loss for big integers when they 
+are converted with the default precision (`64`). 
+- When comparing two values, if either one of them is a float, the other one will be represented 
+as a big float. Integeres are again parsed as big floats with a precision equal to the number 
+of bits required to represent them. 
+- As with all floating point comparisons, comparing floats with decimal values can lead to imprecise 
+results. 
+- Queries cannot include negative numbers 
+
+Prior to version v38.x, floats were not supported as query parameters. 
+
 ## ValidatorSetUpdates
 
 When validator set changes, ValidatorSetUpdates event is published. The

@@ -11,6 +11,7 @@ CONSTANTS
 
 \* @type: NODE_ID;
 NoNode == "no-node"
+ASSUME NoNode \notin NodeIds
 
 \* @type: TX;
 InvalidTx == "invalid-tx"
@@ -21,11 +22,8 @@ isValid(tx) == tx \notin {InvalidTx}
 NoError == "none"
 
 \* @typeAlias: HEIGHT = Int;
-\* @type: HEIGHT;
-FirstHeight == 0
 \* @type: Set(HEIGHT);
-Heights == {FirstHeight, 1, 2, 3, 4}
-
+Heights == {1, 2, 3, 4}
 
 --------------------------------------------------------------------------------
 \* Bounded sequences

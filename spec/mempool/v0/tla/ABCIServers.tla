@@ -20,7 +20,7 @@ VARIABLES
 
 TypeOK ==
     /\ IsFuncMap(requestResponses, NodeIds, RequestCheckTx, Responses)
-    /\ IsFuncMap(requestSenders, NodeIds, RequestCheckTx, NodeIds)
+    /\ IsFuncMap(requestSenders, NodeIds, RequestCheckTx, NodeIds \cup {NoNode})
 
 --------------------------------------------------------------------------------
 (******************************************************************************)

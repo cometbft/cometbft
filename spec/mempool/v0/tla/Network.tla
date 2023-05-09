@@ -29,11 +29,15 @@ SendTo(msg, peer) ==
 Receive(nodeId, msg) ==
     msgs' = [msgs EXCEPT ![nodeId] = @ \ {msg}]
 
+Unchanged ==
+    UNCHANGED msgs
+
+--------------------------------------------------------------------------------
 IncomingMsgs(nodeId) ==
     msgs[nodeId]
 
 ReceivedMsg(nodeId, msg) ==
-    \E m \in msgs[nodeId]: m = msg
+    \E m \in IncomingMsgs(nodeId): m = msg
 
 ================================================================================
 Created by Hernán Vanzetto on 9 May 2023

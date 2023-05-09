@@ -20,7 +20,7 @@ recent state machine snapshot, instead of replaying all historical blocks.
 
 > 2. What is the problem?
 
-With the widespread adoption of State sync to bootstrap nodes, however,
+With the widespread adoption of state sync to bootstrap nodes, however,
 what should be one of its strengths - the ability to discover and fetch
 application snapshots from peers in the p2p network - has turned out to be one
 of its weakness.
@@ -28,28 +28,28 @@ In fact, while downloading recent snapshots is very convenient for new nodes
 (clients of the protocol), providing snapshots to multiple peers (as servers of
 the protocol) is _bandwidth-consuming_.
 As a result, the number of nodes in production CometBFT networks offering the
-State sync service (i.e., servers offering snapshots) has been limited, which
+state sync service (i.e., servers offering snapshots) has been limited, which
 has rendered the service _fragile_ (from the client's point of view).
 
 > 3. High level idea behind the solution
 
-This ADR stems from the observation that State sync is more than a protocol to
+This ADR stems from the observation that state sync is more than a protocol to
 discover and fetch snapshots from peers in the network.
-In fact, in addition to installing a snapshot, State sync also checks the
+In fact, in addition to installing a snapshot, state sync also checks the
 consistency of the installed application state with the state (`appHash`)
 recorded on the blockchain at the same height, and bootstraps CometBFT's block
 store and state store accordingly.
-As a result, once State sync is completed the node can safely switch to Block
+As a result, once state sync is completed the node can safely switch to Block
 sync and/or Consensus to catch up with the latest state of the network.
 
 The purpose of this ADR is to provide node operators with more flexibility in
-defining how or where State sync should look for application snapshots.
-More precisely, it enables State sync to support the bootstrap of nodes from
+defining how or where state sync should look for application snapshots.
+More precisely, it enables state sync to support the bootstrap of nodes from
 application snapshots obtained _out-of-band_ by operators.
 The goal is to provide an alternative to the mechanism currently adopted by
-State sync, discovering and fetching application snapshots from peers in the
+state sync, discovering and fetching application snapshots from peers in the
 network, in order to address the above mentioned limitations, while preserving
-most of State sync's operation.
+most of state sync's operation.
 
 ## Alternative Approaches
 
@@ -57,13 +57,13 @@ most of State sync's operation.
 > before making a decision. It should contain a explanation on why the alternative
 > approach(es) were not chosen.
 
-### Strengthen p2p-based State sync
+### Strengthen p2p-based state sync
 
-This ADR proposes a workaround for some limitations of the existing State sync
+This ADR proposes a workaround for some limitations of the existing state sync
 protocol, briefly summarized above. A more comprehensive and sustainable
 long-term solution would require addressing such limitations.
 
-From a protocol design point of view, probably the major limitation of State
+From a protocol design point of view, probably the major limitation of state
 sync is the lack of mechanisms to incentivize and reward established nodes that
 provide "good" (updated and consistent) snapshots to peers.
 The existing protocol is essentially altruistic: it assumes that established
@@ -71,16 +71,16 @@ nodes will support the bootstrap of fresh nodes without receiving anything in
 return, other than having new peers joining their network.
 
 From an operational point of view, the design of the p2p layer should take into
-consideration the fact that not every node in the network is a "good" State
+consideration the fact that not every node in the network is a "good" state
 sync server. Fresh nodes, which need support for bootstrapping, should then be
 able to discover peers in the network that are able or willing to provide
 application snapshots.
 The implementation of this feature would require a more complex content-based
 peer discovery mechanism.
 
-However, while relevant, strengthening p2p-based State sync should be seen as
+However, while relevant, strengthening p2p-based state sync should be seen as
 _orthogonal_ to the solution proposed in this ADR, which should have relevant use
-cases even for an enhanced version of State sync.
+cases even for an enhanced version of state sync.
 
 
 ### Manual application state transfer
@@ -98,7 +98,7 @@ _alongside an empty CometBFT instance_
 (i.e., the node's block store is empty and the state store is at genesis state)
 _using a subsystem of the state sync protocol_".
 
-Starting from an "empty CometBFT instance" is a requirement for running State
+Starting from an "empty CometBFT instance" is a requirement for running state
 sync, which is maintained in the current proposal.
 The mentioned "subsystem of the state sync protocol" is the light client,
 responsible for verifying the application state and for bootstrapping
@@ -107,7 +107,7 @@ CometBFT's block store and state store accordingly.
 The distinction, therefore, lies in the way which the state of the application
 from a running node is transferred to the new node to be bootstrapped.
 Instead of relying on application snapshots, produced by the application but
-handled by State sync, [ADR 083][adr083]/[ADR 103][adr103] assumes that node
+handled by state sync, [ADR 083][adr083]/[ADR 103][adr103] assumes that node
 operators are able to manually synchronize the application state from a running
 node (it might be necessary to stop it) to a not-yet-started fresh node.
 
@@ -134,14 +134,14 @@ obtained out-of-band by node operators.
 In other words, the following operation should be, in general terms, possible:
 
 1. When configuring a new node, operators should be able to define where (e.g.,
-   a local file system location) the client side of State sync should look for
+   a local file system location) the client side of state sync should look for
    application snapshots to install or restore;
-1. Operators should be able to instruct the server side of State sync on a
+1. Operators should be able to instruct the server side of state sync on a
    running node to export application snapshots, when they are available,
    to a given location (e.g., at the local file system);
 1. It is up to node operators to transfer application snapshots produced by the
    running node (server side) to the new node (client side) to be bootstrapped
-   using this new State sync feature.
+   using this new state sync feature.
 
 
 ## Detailed Design
@@ -185,8 +185,8 @@ In other words, the following operation should be, in general terms, possible:
 ### Positive
 
 - This is a non-breaking change: it provides an alternative and complementary
-  implementation for State sync
-- Node operators will not need to use workarounds to make State sync to download
+  implementation for state sync
+- Node operators will not need to use workarounds to make state sync to download
   application snapshots from specific nodes in the network, in particular from
   nodes that are controlled by the same operators
 
@@ -194,7 +194,7 @@ In other words, the following operation should be, in general terms, possible:
 
 ### Neutral
 
-- Additional complexity, with additional parameters for State sync's
+- Additional complexity, with additional parameters for state sync's
   configuration and the bootstrap of a node
 - Additional complexity, with the possible addition of a CLI command to save
   application snapshots to the file system

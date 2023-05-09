@@ -67,19 +67,15 @@ SendTo(msg, peer) == msgs' = [msgs EXCEPT ![peer] = @ \union {msg}]
 
 vars == <<mempool, sender, cache, step, error, chainHeight, msgs>>
 --------------------------------------------------------------------------------
-Steps == {"Init", "CheckTx", "ReceiveTx", "SendTx", "ReceiveCheckTxResponse", 
-    "ReceiveRecheckTxResponse", "ABCI!ProcessCheckTxRequest", "Update"}
+Steps == {"Init", "CheckTx", "ReceiveCheckTxResponse", 
+    "Update", "ReceiveRecheckTxResponse", 
+    "P2P_ReceiveTxs", "P2P_SendTx", "ABCI!ProcessCheckTxRequest"}
 
 \* @type: Set(ERROR);
 Errors == {NoError, "ErrMempoolIsFull", "ErrTxInCache"}
 
 TypeOK == 
     /\ mempool \in [NodeIds -> SUBSET Txs]
-    \* /\ mempool \in [NodeIds -> BSeq(Txs)]
-    \* /\ mempool = [x \in NodeIds |-> mempool[x]]
-    \* /\ DOMAIN mempool = NodeIds 
-    \* /\ \A x \in NodeIds: mempool[x] \in Seq(Txs)
-    
     /\ IsFuncMap(sender, NodeIds, Txs, SUBSET NodeIds)
     /\ cache \in [NodeIds -> SUBSET Txs]
     /\ step \in [NodeIds -> Steps]
@@ -174,7 +170,6 @@ or from a peer via P2P. If valid, add it to the mempool. *)
 \* [CListMempool.CheckTx]: https://github.com/CometBFT/cometbft/blob/5a8bd742619c08e997e70bc2bbb74650d25a141a/mempool/clist_mempool.go#L202
 \* @type: (NODE_ID, TX, NODE_ID) => Bool;
 CheckTx(nodeId, tx, senderId) ==
-    \* /\ PrintT(<<"CheckTx", nodeId, tx, senderId>>)
     /\ step' = [step EXCEPT ![nodeId] = "CheckTx"]
     /\ mempool' = mempool
     /\ IF mempoolIsFull(nodeId) THEN
@@ -200,27 +195,12 @@ CheckTx(nodeId, tx, senderId) ==
             /\ ABCI!SendRequestNewCheckTx(nodeId, tx, senderId)
     /\ UNCHANGED chainHeight
 
-(* Receive a transaction from a peer and validate it with CheckTx. *)
-ReceiveTx(nodeId) == 
-    /\ step' = [step EXCEPT ![nodeId] = "ReceiveTx"]
-    /\ \E msg \in msgs[nodeId]:
-        /\ CheckTx(nodeId, msg.tx, msg.sender)
-        /\ msgs' = [msgs EXCEPT ![nodeId] = @ \ {msg}]
-
-(* The mempool reactor loops through its mempool and sends transactions one by
-one to each of its peers. *)
-\* [Reactor.broadcastTxRoutine] https://github.com/CometBFT/cometbft/blob/5049f2cc6cf519554d6cd90bcca0abe39ce4c9df/mempool/reactor.go#L132
-SendTx(nodeId) ==
-    /\ step' = [step EXCEPT ![nodeId] = "SendTx"]
-    /\ \E peer \in Peers[nodeId], tx \in mempool[nodeId]:
-        LET msg == [sender |-> nodeId, tx |-> tx] IN
-        \* If the msg was not already sent to this peer.
-        /\ ~ \E m \in msgs[peer]: m = msg
-        \* If the peer is not a tx's sender.
-        /\ tx \in DOMAIN sender[nodeId] => peer \notin sender[nodeId][tx]
-        /\ SendTo(msg, peer)
-        /\ UNCHANGED <<mempool, cache, error, chainHeight, sender>>
-        /\ ABCI!Unchanged
+\* Receive a specific transaction from a client via RPC. */
+\* [Environment.BroadcastTxAsync]: https://github.com/CometBFT/cometbft/blob/111d252d75a4839341ff461d4e0cf152ca2cc13d/rpc/core/mempool.go#L22
+CheckTxRPC(nodeId, tx) ==
+    /\ step' = [step EXCEPT ![nodeId] = "CheckTx"]
+    /\ CheckTx(nodeId, tx, NoNode)
+    /\ UNCHANGED msgs
 
 \* Callback that handles the response to a CheckTx request to a transaction sent
 \* for the first time.
@@ -277,14 +257,16 @@ instead of a sequence of transactions. *)
 (* BlockExecutor calls Update to update the mempool after executing txs.
 txResults are the results of ResponseFinalizeBlock for every tx in txs.
 BlockExecutor holds the mempool lock while calling this function. *)
+\* [CListMempool.Update] https://github.com/CometBFT/cometbft/blob/6498d67efdf0a539e3ca0dc3e4a5d7cb79878bb2/mempool/clist_mempool.go#L577
 \* @type: (NODE_ID, HEIGHT, Set(TX), (TX -> Bool)) => Bool;
 Update(nodeId, height, txs, txValidResults) ==
-    \* /\ PrintT(<<"Update", nodeId, height, txs, txValidResults>>)
     /\ step' = [step EXCEPT ![nodeId] = "Update"]
     /\ txs # {}
+    
     /\ chainHeight' = [chainHeight EXCEPT ![nodeId] = height]
         \* TODO: need to model consensus: all nodes should create the same block
     
+    \* Remove all txs from the mempool.
     /\ removeFromMempool(nodeId, txs)
     
     \* update cache for all transactions
@@ -306,31 +288,51 @@ Update(nodeId, height, txs, txValidResults) ==
 
     /\ UNCHANGED <<error, msgs>>
 
+(* Receive a transaction from a peer and validate it with CheckTx. *)
+\* [Reactor.Receive]: https://github.com/CometBFT/cometbft/blob/111d252d75a4839341ff461d4e0cf152ca2cc13d/mempool/reactor.go#L93
+P2P_ReceiveTxs(nodeId) == 
+    /\ step' = [step EXCEPT ![nodeId] = "P2P_ReceiveTxs"]
+    /\ \E msg \in msgs[nodeId]:
+        /\ CheckTx(nodeId, msg.tx, msg.sender)
+        /\ msgs' = [msgs EXCEPT ![nodeId] = @ \ {msg}]
+
+(* The mempool reactor loops through its mempool and sends transactions one by
+one to each of its peers. *)
+\* [Reactor.broadcastTxRoutine] https://github.com/CometBFT/cometbft/blob/5049f2cc6cf519554d6cd90bcca0abe39ce4c9df/mempool/reactor.go#L132
+P2P_SendTx(nodeId) ==
+    /\ step' = [step EXCEPT ![nodeId] = "P2P_SendTx"]
+    /\ \E peer \in Peers[nodeId], tx \in mempool[nodeId]:
+        LET msg == [sender |-> nodeId, tx |-> tx] IN
+        \* If the msg was not already sent to this peer.
+        /\ ~ \E m \in msgs[peer]: m = msg
+        \* If the peer is not a tx's sender.
+        /\ tx \in DOMAIN sender[nodeId] => peer \notin sender[nodeId][tx]
+        /\ SendTo(msg, peer)
+        /\ UNCHANGED <<mempool, cache, error, chainHeight, sender>>
+        /\ ABCI!Unchanged
+
 --------------------------------------------------------------------------------
 Next == 
     \E nodeId \in NodeIds:
-        \* Receive some transaction from a client
-        \/ \E tx \in Txs, senderId \in (NodeIds \ {nodeId}): 
-            /\ CheckTx(nodeId, tx, senderId)
-            /\ step' = [step EXCEPT ![nodeId] = "CheckTx"]
-            /\ UNCHANGED msgs
-
-        \* Receive a transaction from a peer
-        \/ ReceiveTx(nodeId)
-
-        \* Send a transaction in the mempool to a peer
-        \/ SendTx(nodeId)
+        \* Receive some transaction from a client via RPC
+        \/ \E tx \in Txs: CheckTxRPC(nodeId, tx)    
 
         \* Receive a (New) CheckTx response from the application
         \/ ReceiveCheckTxResponse(nodeId)
-
-        \* Receive a (Recheck) CheckTx response from the application
-        \/ ReceiveRecheckTxResponse(nodeId)
 
         \* Consensus reactor updates the mempool
         \/ \E txs \in (SUBSET Txs \ {{}}): 
             \E txValidResults \in [txs -> BOOLEAN]:
             Update(nodeId, chainHeight[nodeId] + 1, txs, txValidResults)
+
+        \* Receive a (Recheck) CheckTx response from the application
+        \/ ReceiveRecheckTxResponse(nodeId)
+
+        \* Receive a transaction from a peer
+        \/ P2P_ReceiveTxs(nodeId)
+
+        \* Send a transaction in the mempool to a peer
+        \/ P2P_SendTx(nodeId)
 
         \* The ABCI application process a request and generates a response
         \/  /\ ABCI!ProcessCheckTxRequest(nodeId)
@@ -364,8 +366,8 @@ SendTxTest ==
         step[nodeId] = "SendTx"
 NotSendTxTest == ~ SendTxTest
 
-\* @ typeAlias: STATE = [requestResponses: NODE_ID -> REQUEST -> RESPONSE, requestSenders: NODE_ID -> REQUEST -> NODE_ID, mempool: NODE_ID -> Set(TX), sender: NODE_ID -> TX -> Set(NODE_ID), cache: NODE_ID -> Set(TX), step: NODE_ID -> Str, error: NODE_ID -> ERROR, chainHeight: NODE_ID -> HEIGHT];
-\* @typeAlias: STATE = [step: NODE_ID -> Str];
+\* @ typeAlias: STATE = [step: NODE_ID -> Str];
+\* @typeAlias: STATE = [requestResponses: NODE_ID -> REQUEST -> RESPONSE, requestSenders: NODE_ID -> REQUEST -> NODE_ID, mempool: NODE_ID -> Set(TX), sender: NODE_ID -> TX -> Set(NODE_ID), cache: NODE_ID -> Set(TX), step: NODE_ID -> Str, error: NODE_ID -> ERROR, chainHeight: NODE_ID -> HEIGHT];
 \* @type: Seq(STATE) => Bool;
 SendThenCheck(trace) ==
     \E i, j \in DOMAIN trace: i < j /\

@@ -22,11 +22,11 @@ for TEST in "${tests[@]}"; do
 
     TRACES_DIR="$TRACES_ROOT_DIR/$TEST"
     mkdir -p "$TRACES_DIR"
-    rm -f "$TRACES_DIR/*.itf.json"
+    rm -f "$TRACES_DIR/*.itf.json" # Warning: we are removing the previous generated files!
 
     echo "cp $OUT_DIR/*.itf.json $TRACES_DIR"
-    cp "$OUT_DIR/*.itf.json" "$TRACES_DIR"
-    rm "$TRACES_DIR/violation.itf.json"
+    cp $OUT_DIR/*.itf.json $TRACES_DIR
+    rm -f $TRACES_DIR/violation.itf.json # this one is the same as violation1.itf.json
 
-    ls -a "$TRACES_DIR/*.itf.json" | xargs -I{} bash -c "mv $0 ${0/violation/sample}" {}
+    ls -a $TRACES_DIR/*.itf.json | sed -e 'p;s/violation/sample/' | xargs -n2 mv
 done

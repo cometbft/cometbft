@@ -2,7 +2,11 @@ all:
 	@echo "Targets:"
 	@echo "\ttraces"
 	@echo "\ttypecheck"
+	@echo "\ttlc"
 	@echo "\tclean"
+
+TLA_MODULE := MempoolV0MC
+TLC_JAR := ~/dev/tla/tools/tla2tools.jar
 
 .PHONY: traces
 traces:
@@ -10,7 +14,11 @@ traces:
 
 .PHONY: typecheck
 typecheck:
-	apalache-mc typecheck --features=no-rows MempoolV0MC.tla
+	apalache-mc typecheck --features=no-rows $(TLA_MODULE).tla
+
+.PHONY: tlc
+tlc:
+	java -XX:+UseParallelGC -classpath $(TLC_JAR) tlc2.TLC $(TLA_MODULE)
 
 .PHONY: clean
 clean:

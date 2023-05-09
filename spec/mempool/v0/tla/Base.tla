@@ -12,12 +12,13 @@ CONSTANTS
 \* @type: NODE_ID;
 NoNode == "no-node"
 
+\* @type: TX;
+InvalidTx == "invalid-tx"
+isValid(tx) == tx \notin {InvalidTx}
+
 \* @typeAlias: ERROR = Str;
 \* @type: ERROR;
 NoError == "none"
-
-isValid(tx) ==
-    TRUE
 
 \* @typeAlias: HEIGHT = Int;
 \* @type: HEIGHT;

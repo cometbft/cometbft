@@ -48,8 +48,6 @@ func compareInt(op1 *big.Int, op2 interface{}) (int, bool, error) {
 }
 
 func CheckBounds(ranges indexer.QueryRange, v interface{}) bool {
-	include := true
-
 	// These functions fetch the lower and upper bounds of the query
 	// It is expected that for x > 5, the value of lowerBound is 6.
 	// This is achieved by adding one to the actual lower bound.
@@ -85,7 +83,7 @@ func CheckBounds(ranges indexer.QueryRange, v interface{}) bool {
 				return false
 			}
 			if cmp == -1 || (isFloat && cmp == 0 && !ranges.IncludeLowerBound) {
-				include = false
+				return false
 			}
 		}
 		if upperBound != nil {
@@ -94,7 +92,7 @@ func CheckBounds(ranges indexer.QueryRange, v interface{}) bool {
 				return false
 			}
 			if cmp == 1 || (isFloat && cmp == 0 && !ranges.IncludeUpperBound) {
-				include = false
+				return false
 			}
 		}
 
@@ -105,7 +103,7 @@ func CheckBounds(ranges indexer.QueryRange, v interface{}) bool {
 				return false
 			}
 			if cmp == -1 || (cmp == 0 && isFloat && !ranges.IncludeLowerBound) {
-				include = false
+				return false
 			}
 		}
 		if upperBound != nil {
@@ -114,12 +112,12 @@ func CheckBounds(ranges indexer.QueryRange, v interface{}) bool {
 				return false
 			}
 			if cmp == 1 || (cmp == 0 && isFloat && !ranges.IncludeUpperBound) {
-				include = false
+				return false
 			}
 		}
 
 	default:
 		return false
 	}
-	return include
+	return true
 }

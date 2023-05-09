@@ -228,7 +228,7 @@ func parseNumber(s string) (*big.Float, error) {
 	if _, ok := intVal.SetString(s, 10); !ok {
 		f, _, err := big.ParseFloat(extractNum.FindString(s), 10, 125, big.ToNearestEven)
 		if err != nil {
-			fmt.Println(err)
+			return nil, err
 		}
 		return f, err
 	}

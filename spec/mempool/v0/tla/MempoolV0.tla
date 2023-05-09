@@ -55,6 +55,8 @@ VARIABLES
     \* @type: NODE_ID -> HEIGHT;
     chainHeight
 
+\* vars == <<mempool, sender, cache, step, error, chainHeight>>
+
 --------------------------------------------------------------------------------
 \* Network state
 VARIABLES
@@ -62,10 +64,7 @@ VARIABLES
     \* @type: NODE_ID -> Set(MSG);
     msgs
 
-TxMsgs == [sender: NodeIds, tx: Txs]
-SendTo(msg, peer) == msgs' = [msgs EXCEPT ![peer] = @ \union {msg}]
-
-vars == <<mempool, sender, cache, step, error, chainHeight, msgs>>
+Network == INSTANCE Network
 --------------------------------------------------------------------------------
 Steps == {"Init", "CheckTx", "ReceiveCheckTxResponse", 
     "Update", "ReceiveRecheckTxResponse", 
@@ -81,7 +80,7 @@ TypeOK ==
     /\ step \in [NodeIds -> Steps]
     /\ error \in [NodeIds -> Errors]
     /\ chainHeight \in [NodeIds -> Heights]
-    /\ msgs \in [NodeIds -> SUBSET TxMsgs]
+    /\ Network!TypeOK
     /\ ABCI!TypeOK
 
 \* EmptyMap is not accepted by Apalache's typechecker.
@@ -94,7 +93,7 @@ Init ==
     /\ step = [x \in NodeIds |-> "Init"]
     /\ error = [x \in NodeIds |-> NoError]
     /\ chainHeight = [x \in NodeIds |-> FirstHeight]
-    /\ msgs = [x \in NodeIds |-> {}]
+    /\ Network!Init
     /\ ABCI!Init
 
 --------------------------------------------------------------------------------
@@ -292,9 +291,9 @@ Update(nodeId, height, txs, txValidResults) ==
 \* [Reactor.Receive]: https://github.com/CometBFT/cometbft/blob/111d252d75a4839341ff461d4e0cf152ca2cc13d/mempool/reactor.go#L93
 P2P_ReceiveTxs(nodeId) == 
     /\ step' = [step EXCEPT ![nodeId] = "P2P_ReceiveTxs"]
-    /\ \E msg \in msgs[nodeId]:
+    /\ \E msg \in Network!IncomingMsgs(nodeId):
         /\ CheckTx(nodeId, msg.tx, msg.sender)
-        /\ msgs' = [msgs EXCEPT ![nodeId] = @ \ {msg}]
+        /\ Network!Receive(nodeId, msg)
 
 (* The mempool reactor loops through its mempool and sends transactions one by
 one to each of its peers. *)
@@ -304,10 +303,10 @@ P2P_SendTx(nodeId) ==
     /\ \E peer \in Peers[nodeId], tx \in mempool[nodeId]:
         LET msg == [sender |-> nodeId, tx |-> tx] IN
         \* If the msg was not already sent to this peer.
-        /\ ~ \E m \in msgs[peer]: m = msg
+        /\ ~ Network!ReceivedMsg(peer, msg)
         \* If the peer is not a tx's sender.
         /\ tx \in DOMAIN sender[nodeId] => peer \notin sender[nodeId][tx]
-        /\ SendTo(msg, peer)
+        /\ Network!SendTo(msg, peer)
         /\ UNCHANGED <<mempool, cache, error, chainHeight, sender>>
         /\ ABCI!Unchanged
 

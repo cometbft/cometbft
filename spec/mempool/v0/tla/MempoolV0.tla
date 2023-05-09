@@ -43,14 +43,16 @@ VARIABLES
     sender,
     \* @type: NODE_ID -> Set(TX);
     cache,
+    \* @type: NODE_ID -> HEIGHT;
+    chainHeight
+
+VARIABLES
     \* @type: NODE_ID -> Str;
     step,
     \* @type: NODE_ID -> ERROR;
     error,
-    \* @type: NODE_ID -> HEIGHT;
-    chainHeight
 
-\* vars == <<mempool, sender, cache, step, error, chainHeight>>
+\* vars == <<mempool, sender, cache, chainHeight, step, error>>
 
 --------------------------------------------------------------------------------
 \* Network state
@@ -72,9 +74,9 @@ TypeOK ==
     /\ mempool \in [NodeIds -> SUBSET Txs]
     /\ IsFuncMap(sender, NodeIds, Txs, SUBSET NodeIds)
     /\ cache \in [NodeIds -> SUBSET Txs]
+    /\ chainHeight \in [NodeIds -> Heights]
     /\ step \in [NodeIds -> Steps]
     /\ error \in [NodeIds -> Errors]
-    /\ chainHeight \in [NodeIds -> Heights]
     /\ Network!TypeOK
     /\ ABCI!TypeOK
 
@@ -85,9 +87,9 @@ Init ==
     /\ mempool = [x \in NodeIds |-> {}]
     /\ sender = [x \in NodeIds |-> EmptyMapNodeIds]
     /\ cache = [x \in NodeIds |-> {}]
+    /\ chainHeight = [x \in NodeIds |-> FirstHeight]
     /\ step = [x \in NodeIds |-> "Init"]
     /\ error = [x \in NodeIds |-> NoError]
-    /\ chainHeight = [x \in NodeIds |-> FirstHeight]
     /\ Network!Init
     /\ ABCI!Init
 
@@ -95,6 +97,9 @@ Init ==
 (******************************************************************************)
 (* Auxiliary definitions *)
 (******************************************************************************)
+
+setStep(nodeId, s) ==
+    step' = [step EXCEPT ![nodeId] = s]
 
 setError(nodeId, err) ==
     error' = [error EXCEPT ![nodeId] = err]
@@ -164,7 +169,7 @@ or from a peer via P2P. If valid, add it to the mempool. *)
 \* [CListMempool.CheckTx]: https://github.com/CometBFT/cometbft/blob/5a8bd742619c08e997e70bc2bbb74650d25a141a/mempool/clist_mempool.go#L202
 \* @type: (NODE_ID, TX, NODE_ID) => Bool;
 CheckTx(nodeId, tx, senderId) ==
-    /\ step' = [step EXCEPT ![nodeId] = "CheckTx"]
+    /\ setStep(nodeId, "CheckTx")
     /\ mempool' = mempool
     /\ IF mempoolIsFull(nodeId) THEN
             /\ sender' = sender
@@ -192,7 +197,7 @@ CheckTx(nodeId, tx, senderId) ==
 \* Receive a specific transaction from a client via RPC. */
 \* [Environment.BroadcastTxAsync]: https://github.com/CometBFT/cometbft/blob/111d252d75a4839341ff461d4e0cf152ca2cc13d/rpc/core/mempool.go#L22
 CheckTxRPC(nodeId, tx) ==
-    /\ step' = [step EXCEPT ![nodeId] = "CheckTx"]
+    /\ setStep(nodeId, "CheckTx")
     /\ CheckTx(nodeId, tx, NoNode)
     /\ UNCHANGED msgs
 
@@ -202,7 +207,7 @@ CheckTxRPC(nodeId, tx) ==
 \* [CListMempool.resCbFirstTime]: https://github.com/CometBFT/cometbft/blob/6498d67efdf0a539e3ca0dc3e4a5d7cb79878bb2/mempool/clist_mempool.go#L369
 \* @type: (NODE_ID) => Bool;
 ReceiveCheckTxResponse(nodeId) ==
-    /\ step' = [step EXCEPT ![nodeId] = "ReceiveCheckTxResponse"]
+    /\ setStep(nodeId, "ReceiveCheckTxResponse")
     /\ \E request \in ABCI!CheckRequests(nodeId):
         LET response == ABCI!ResponseFor(nodeId, request) IN
         LET senderId == ABCI!SenderFor(nodeId, request) IN
@@ -229,7 +234,7 @@ ReceiveCheckTxResponse(nodeId) ==
 \* [CListMempool.resCbRecheck]: https://github.com/CometBFT/cometbft/blob/5a8bd742619c08e997e70bc2bbb74650d25a141a/mempool/clist_mempool.go#L432
 \* @type: (NODE_ID) => Bool;
 ReceiveRecheckTxResponse(nodeId) == 
-    /\ step' = [step EXCEPT ![nodeId] = "ReceiveRecheckTxResponse"]
+    /\ setStep(nodeId, "ReceiveRecheckTxResponse")
     /\ \E request \in ABCI!RecheckRequests(nodeId):
         LET response == ABCI!ResponseFor(nodeId, request) IN
         /\ inMempool(nodeId, request.tx)
@@ -254,7 +259,7 @@ BlockExecutor holds the mempool lock while calling this function. *)
 \* [CListMempool.Update] https://github.com/CometBFT/cometbft/blob/6498d67efdf0a539e3ca0dc3e4a5d7cb79878bb2/mempool/clist_mempool.go#L577
 \* @type: (NODE_ID, HEIGHT, Set(TX), (TX -> Bool)) => Bool;
 Update(nodeId, height, txs, txValidResults) ==
-    /\ step' = [step EXCEPT ![nodeId] = "Update"]
+    /\ setStep(nodeId, "Update")
     /\ txs # {}
     
     /\ chainHeight' = [chainHeight EXCEPT ![nodeId] = height]
@@ -285,7 +290,7 @@ Update(nodeId, height, txs, txValidResults) ==
 (* Receive a transaction from a peer and validate it with CheckTx. *)
 \* [Reactor.Receive]: https://github.com/CometBFT/cometbft/blob/111d252d75a4839341ff461d4e0cf152ca2cc13d/mempool/reactor.go#L93
 P2P_ReceiveTxs(nodeId) == 
-    /\ step' = [step EXCEPT ![nodeId] = "P2P_ReceiveTxs"]
+    /\ setStep(nodeId, "P2P_ReceiveTxs")
     /\ \E msg \in Network!IncomingMsgs(nodeId):
         /\ CheckTx(nodeId, msg.tx, msg.sender)
         /\ Network!Receive(nodeId, msg)
@@ -294,7 +299,7 @@ P2P_ReceiveTxs(nodeId) ==
 one to each of its peers. *)
 \* [Reactor.broadcastTxRoutine] https://github.com/CometBFT/cometbft/blob/5049f2cc6cf519554d6cd90bcca0abe39ce4c9df/mempool/reactor.go#L132
 P2P_SendTx(nodeId) ==
-    /\ step' = [step EXCEPT ![nodeId] = "P2P_SendTx"]
+    /\ setStep(nodeId, "P2P_SendTx")
     /\ \E peer \in Network!Peers[nodeId], tx \in mempool[nodeId]:
         LET msg == [sender |-> nodeId, tx |-> tx] IN
         \* If the msg was not already sent to this peer.
@@ -330,7 +335,7 @@ Next ==
 
         \* The ABCI application process a request and generates a response
         \/  /\ ABCI!ProcessCheckTxRequest(nodeId)
-            /\ step' = [step EXCEPT ![nodeId] = "ABCI!ProcessCheckTxRequest"]
+            /\ setStep(nodeId, "ABCI!ProcessCheckTxRequest")
             /\ UNCHANGED <<mempool, sender, cache, error, chainHeight, msgs>>
 
 --------------------------------------------------------------------------------

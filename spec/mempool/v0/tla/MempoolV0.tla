@@ -18,13 +18,27 @@ CONSTANTS
     \* The configuration of each node
     \* @typeAlias: CONFIG = [keepInvalidTxsInCache: Bool];
     \* @type: NODE_ID -> CONFIG;
-    Configs,
+    Configs
 
 ASSUME MempoolMaxSize > 0
 
 --------------------------------------------------------------------------------
+\* Network state
+VARIABLES
+    \* @typeAlias: MSG = [sender: NODE_ID, tx: TX];
+    \* @type: NODE_ID -> Set(MSG);
+    msgs
+
+CONSTANTS
+    \* The network topology.
+    \* @type: NODE_ID -> Set(NODE_ID);
+    Peers
+
+Network == INSTANCE Network 
+
+--------------------------------------------------------------------------------
 (******************************************************************************)
-(* The ABCI application *)
+(* ABCI applications for each node.                                           *)
 (******************************************************************************)
 VARIABLES 
     \* @type: NODE_ID -> REQUEST -> RESPONSE;
@@ -35,9 +49,14 @@ VARIABLES
 ABCI == INSTANCE ABCIServers
 
 --------------------------------------------------------------------------------
+
+\* @typeAlias: MEMPOOL_TX = [tx: TX, height: HEIGHT];
+\* @type: Set(MEMPOOL_TX);
+MempoolTxs == [tx: Txs, height: Heights]
+
 \* Node states
 VARIABLES
-    \* @type: NODE_ID -> Set(TX);
+    \* @type: NODE_ID -> Set(MEMPOOL_TX);
     mempool,
     \* @type: NODE_ID -> TX -> Set(NODE_ID);
     sender,
@@ -50,18 +69,10 @@ VARIABLES
     \* @type: NODE_ID -> Str;
     step,
     \* @type: NODE_ID -> ERROR;
-    error,
+    error
 
 \* vars == <<mempool, sender, cache, chainHeight, step, error>>
 
---------------------------------------------------------------------------------
-\* Network state
-VARIABLES
-    \* @typeAlias: MSG = [sender: NODE_ID, tx: TX];
-    \* @type: NODE_ID -> Set(MSG);
-    msgs
-
-Network == INSTANCE Network
 --------------------------------------------------------------------------------
 Steps == {"Init", "CheckTx", "ReceiveCheckTxResponse", 
     "Update", "ReceiveRecheckTxResponse", 
@@ -71,7 +82,7 @@ Steps == {"Init", "CheckTx", "ReceiveCheckTxResponse",
 Errors == {NoError, "ErrMempoolIsFull", "ErrTxInCache"}
 
 TypeOK == 
-    /\ mempool \in [NodeIds -> SUBSET Txs]
+    /\ mempool \in [NodeIds -> SUBSET MempoolTxs]
     /\ IsFuncMap(sender, NodeIds, Txs, SUBSET NodeIds)
     /\ cache \in [NodeIds -> SUBSET Txs]
     /\ chainHeight \in [NodeIds -> Heights]
@@ -120,25 +131,28 @@ removeSenders(nodeId, txs) ==
 (* Mempool *)
 (******************************************************************************)
 
-inMempool(nodeId, tx) ==
-    tx \in mempool[nodeId]
-
-\* @type: (NODE_ID, TX, NODE_ID) => Bool;
-addToMempool(nodeId, tx, senderId) ==
-    /\ mempool' = [mempool EXCEPT ![nodeId] = @ \cup {tx}]
-    /\ addSender(nodeId, tx, senderId)
-    \* /\ setTxHeight(nodeId, tx)
-
-\* @type: (NODE_ID, Set(TX)) => Bool;
-removeFromMempool(nodeId, txs) ==
-    /\ mempool' = [mempool EXCEPT ![nodeId] = @ \ txs]
-    /\ removeSenders(nodeId, txs)
-
 mempoolIsEmpty(nodeId) ==
     mempool[nodeId] = {}
 
 mempoolIsFull(nodeId) ==
     Cardinality(mempool[nodeId]) > MempoolMaxSize
+
+mempoolTxs(nodeId) ==
+    { e.tx: e \in mempool[nodeId] }
+
+inMempool(nodeId, tx) ==
+    tx \in mempoolTxs(nodeId)
+
+\* @type: (NODE_ID, TX, HEIGHT, NODE_ID) => Bool;
+addToMempool(nodeId, tx, h, senderId) ==
+    /\ mempool' = [mempool EXCEPT ![nodeId] = @ \cup {[tx |-> tx, height |-> h]}]
+    /\ addSender(nodeId, tx, senderId)
+    \* /\ setTxHeight(nodeId, tx)
+
+\* @type: (NODE_ID, Set(TX)) => Bool;
+removeFromMempool(nodeId, txs) ==
+    /\ mempool' = [mempool EXCEPT ![nodeId] = {e \in @: e.tx \notin txs}]
+    /\ removeSenders(nodeId, txs)
 
 (******************************************************************************)
 (* Cache *)
@@ -218,7 +232,7 @@ ReceiveCheckTxResponse(nodeId) ==
                     /\ forceRemoveFromCache(nodeId, request.tx)
                     /\ setError(nodeId, "ErrMempoolIsFull")
                 ELSE
-                    /\ addToMempool(nodeId, request.tx, senderId)
+                    /\ addToMempool(nodeId, request.tx, chainHeight[nodeId], senderId)
                     /\ cache' = cache
                     /\ setError(nodeId, NoError)
            ELSE \* ignore invalid transaction
@@ -300,7 +314,7 @@ one to each of its peers. *)
 \* [Reactor.broadcastTxRoutine] https://github.com/CometBFT/cometbft/blob/5049f2cc6cf519554d6cd90bcca0abe39ce4c9df/mempool/reactor.go#L132
 P2P_SendTx(nodeId) ==
     /\ setStep(nodeId, "P2P_SendTx")
-    /\ \E peer \in Network!Peers[nodeId], tx \in mempool[nodeId]:
+    /\ \E peer \in Peers[nodeId], tx \in mempoolTxs(nodeId):
         LET msg == [sender |-> nodeId, tx |-> tx] IN
         \* If the msg was not already sent to this peer.
         /\ ~ Network!ReceivedMsg(peer, msg)
@@ -319,8 +333,8 @@ Next ==
         \* Receive a (New) CheckTx response from the application
         \/ ReceiveCheckTxResponse(nodeId)
 
-        \* Consensus reactor updates the mempool
-        \/ \E txs \in (SUBSET Txs \ {{}}): 
+        \* Consensus reactor creates a block and updates the mempool
+        \/ \E txs \in SUBSET mempoolTxs(nodeId): 
             \E txValidResults \in [txs -> BOOLEAN]:
                 Update(nodeId, chainHeight[nodeId] + 1, txs, txValidResults)
 
@@ -345,13 +359,13 @@ Next ==
 
 EmptyCache == 
     \E nodeId \in NodeIds:
-        /\ mempool[nodeId] # {}
+        /\ ~ mempoolIsEmpty(nodeId)
         /\ cache[nodeId] = {}
 NotEmptyCache == ~ EmptyCache
 
 NonEmptyCache == 
     \E nodeId \in NodeIds:
-        /\ mempool[nodeId] # {}
+        /\ ~ mempoolIsEmpty(nodeId)
         /\ cache[nodeId] # {}
 NotNonEmptyCache == ~ NonEmptyCache
 

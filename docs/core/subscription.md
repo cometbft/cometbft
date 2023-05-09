@@ -44,9 +44,9 @@ transactions](../app-dev/indexing-transactions.md) for details.
 
 While CometBFT imposes no restrictions on the application with regards to the type of 
 the event output, there are several considerations that need to be taken into account 
-when querying events. 
+when querying events with numeric values.
 
-- Queries convert all event values to `big.Float` , provided by `math/big`. Integers
+- Queries convert all numeric event values to `big.Float` , provided by `math/big`. Integers
 are converted into a float with a precision equal to the number of bits needed
 to represent this integer. This is done to avoid precision loss for big integers when they 
 are converted with the default precision (`64`). 
@@ -57,7 +57,7 @@ of bits required to represent them.
 results. 
 - Queries cannot include negative numbers 
 
-Prior to version v38.x, floats were not supported as query parameters. 
+Prior to version `v0.38.x`, floats were not supported as query parameters. 
 
 ## ValidatorSetUpdates
 

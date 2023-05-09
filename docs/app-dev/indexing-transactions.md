@@ -278,10 +278,10 @@ occurred within the same event.
 
 ## Event attribute value types
 
-Users can use anything as an event value. However, if the event attribute value is a number, the following needs to be taken into accound:
+Users can use anything as an event value. However, if the event attribute value is a number, the following needs to be taken into account:
 
 - Negative numbers will not be properly retrieved when querying the indexer.
-- Event values are converted to big floats( from the `big/math` package). The precision of the floating point number is set to the bit length 
-of the integer it is supposed to represent. This was not present before CometBFT v0.38.x and all float values were ignored. 
+- Event values are converted to big floats (from the `big/math` package). The precision of the floating point number is set to the bit length 
+of the integer it is supposed to represent, so that there is no loss of information due to insufficient precision. This was not present before CometBFT v0.38.x and all float values were ignored. 
 - As of CometBFT v0.38.x, queries can contain floating point numbers as well.
 - Note that comparing to floats can be imprecise with a high number of decimals. 

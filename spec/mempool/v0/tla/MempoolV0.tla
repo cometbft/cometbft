@@ -19,13 +19,8 @@ CONSTANTS
     \* @typeAlias: CONFIG = [keepInvalidTxsInCache: Bool];
     \* @type: NODE_ID -> CONFIG;
     Configs,
-    
-    \* The network topology.
-    \* @type: NODE_ID -> Set(NODE_ID);
-    Peers
 
 ASSUME MempoolMaxSize > 0
-ASSUME \A n \in NodeIds: n \notin Peers[n]
 
 --------------------------------------------------------------------------------
 (******************************************************************************)
@@ -300,7 +295,7 @@ one to each of its peers. *)
 \* [Reactor.broadcastTxRoutine] https://github.com/CometBFT/cometbft/blob/5049f2cc6cf519554d6cd90bcca0abe39ce4c9df/mempool/reactor.go#L132
 P2P_SendTx(nodeId) ==
     /\ step' = [step EXCEPT ![nodeId] = "P2P_SendTx"]
-    /\ \E peer \in Peers[nodeId], tx \in mempool[nodeId]:
+    /\ \E peer \in Network!Peers[nodeId], tx \in mempool[nodeId]:
         LET msg == [sender |-> nodeId, tx |-> tx] IN
         \* If the msg was not already sent to this peer.
         /\ ~ Network!ReceivedMsg(peer, msg)
@@ -322,7 +317,7 @@ Next ==
         \* Consensus reactor updates the mempool
         \/ \E txs \in (SUBSET Txs \ {{}}): 
             \E txValidResults \in [txs -> BOOLEAN]:
-            Update(nodeId, chainHeight[nodeId] + 1, txs, txValidResults)
+                Update(nodeId, chainHeight[nodeId] + 1, txs, txValidResults)
 
         \* Receive a (Recheck) CheckTx response from the application
         \/ ReceiveRecheckTxResponse(nodeId)

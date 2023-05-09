@@ -1,6 +1,13 @@
 ------------------------------- MODULE Network -------------------------------
 EXTENDS Base
 
+CONSTANTS
+    \* The network topology.
+    \* @type: NODE_ID -> Set(NODE_ID);
+    Peers
+
+ASSUME \A n \in NodeIds: n \notin Peers[n]
+
 \* Network state
 VARIABLES
     \* For each node, a set of incoming messages not yet processed.

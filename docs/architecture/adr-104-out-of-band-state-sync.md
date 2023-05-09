@@ -111,7 +111,7 @@ handled by State sync, [ADR 083][adr083]/[ADR 103][adr103] assumes that node
 operators are able to manually synchronize the application state from a running
 node (it might be necessary to stop it) to a not-yet-started fresh node.
 
-The main limitation of this approach is that it relies on the ability of node
+The main limitation of the approach in [ADR 083][adr083]/[ADR 103][adr103] is that it relies on the ability of node
 operators to properly synchronize the application state between two nodes.
 While experienced node operators are likely able to perform this operation in a
 proper way, we have to consider a broader set of users and emphasize that it is

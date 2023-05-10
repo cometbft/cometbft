@@ -2,15 +2,16 @@
 
 Reactor is the generic name for a component that employs the p2p communication layer.
 
-The main source of documentation for a reactor is the [`Reactor`](../../../p2p/base_reactor.go) interface.
-In order to use communication services provided by the p2p layer,
-a component has to implement the p2p's package `Reactor` interface.
+A component has to implement the [`Reactor`][reactor-interface] interface
+in order to use communication services provided by the p2p layer.
+This interface is currently the main source of documentation for a reactor.
 
-The goal of this document is to complement the existing documentation by
-specifying the behaviour of the p2p when interacting with a reactor.
-So while the `Reactor` interface defines the methods invoked and determines
-what the p2p layer expects from a reactor, this documentation focuses on the
-behaviour that a reactor implementation should expect from the p2p layer.
+The goal of this document is to specify the behaviour of the p2p communication
+layer when interacting with a reactor.
+So while the [`Reactor`][reactor-interface] interface declares the methods
+invoked and determines what the p2p layer expects from a reactor,
+this documentation focuses on the behaviour that a reactor implementation
+should expect from the p2p layer.
 
 > This is a work in progress, tracked by [issue #599](https://github.com/cometbft/cometbft/issues/599).
 
@@ -218,3 +219,5 @@ Two important observations regarding the implementation of the `Receive` method:
    as it is invoked directly by the receive routines.
    In other words, while `Receive` does not return, other messages from the
    same sender are not delivered to any reactor.
+
+[reactor-interface]: ../../../p2p/base_reactor.go

@@ -173,7 +173,7 @@ We remove corresponding to stale messages and never deliver them them.
 Conflict-free Replicated Data Types (CRDT) are distributed data structures that explore commutativity in update operations to achieve [Strong Eventual Consistency](https://en.wikipedia.org/wiki/Eventual_consistency#Strong_eventual_consistency).
 As an example of CRDT, consider a counter updated by increment operations, known as Grown only counter (G-Counter): as long as the same set of operations are executed by two replicas, their views of the counter will be the same, irrespective of the execution order.
 
-More relevant CRDT are the Grown only Set (G-Set), in which operations add elements to a set, and the [2-Phase Set](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type#2P-Set_(Two-Phase_Set)) (2P-Set), which combines two G-Set to collect inclusions and exclusions to a set.
+More relevant CRDT are the Grow only Set (G-Set), in which operations add elements to a set, and the [2-Phase Set](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type#2P-Set_(Two-Phase_Set)) (2P-Set), which combines two G-Set to collect inclusions and exclusions to a set.
 
 CRDT may be defined in two ways, operation- and state-based.
 Operation-based CRDT use reliable communication to ensure that all updates (operations) are delivered to all replicas.
@@ -181,7 +181,7 @@ If the reliable communication primitive precludes duplication, then applying all
 If duplications are allowed, then the operations must be made idempotent somehow.
 
 State-based CRDT do not rely on reliable communication.
-Instead they assumes that replicas will compare their states and converge two-by-two using a merge function;
+Instead they assume that replicas will compare their states and converge two-by-two using a merge function;
 as long as the function is commutative, associative and idempotent, the states will converge.
 For example, in the G-Set case, the merge operator is simply the union of the sets.
 
@@ -191,68 +191,101 @@ To the best of our knowledge, no existing CRDT supports superseding of elements,
 
 ### About supersession
 
-Let
+We call an entry of the tuple space an **Entry**[^tuple] and call **View** a set of Entry.
 
-- `e1` and `e2` be `Entry`;
-- `v1` and `v2` be a set of `Entry`, also referred to as a view;
+[^tuple]: We use Entry instead of Tuple not to conflict with the use of tuple in Quint.
 
-We say that `e1` is superseded by `v1` if subset of `v1` makes `e1` stale.
-We say that `v1` is superseded by `v2` all elements of `v1` are superseded by `v2`.
+Let $v_1, v_2, v_3$ be **View**.
+We say that $v_1$ is superseded by $v_2$ if all elements of $v_1$ are rendered stale by some subset of $v_2$ and note this relation as $v_1 < v_2$.
+For all $e \in v_1$, if $v_1 < v_2$ then we abuse the notation and terminology and simply say that $e$ is superseded by $v_2$ and note it as $e < v_2$
 
-Supersession must respect the following properties:
+The supersession $<$ relation must respect the following properties:[^not_contains]
 
-1. Transitive: if `e1` is superseded by `v1` and `v1` is superseded by `v2`, then `e1` is superseded by `v2`;
-1. Reflexive: `v1` is superseded by `v1`
-1. Anti-symmetric: if `v1` is superseded by `v2` and `v2` is superseded by `v1` then `v1 == v2`
-1. if `e1` is superseded by `v1` then `e1` is superseded by any sets obtained by replacing entries in `v1` by their corresponding tombstones;
+[^not_contains]: $v_1 \subset v_2 \implies v_1 < v_2$ but $v_1 < v_2 \not\implies v_1 \subset v_2$
 
-> :warning:
-> this should ensure no cycles.
+1. Transitivity: if $v_1 < v_2$ and $v_2 < v_3$, then $v_1 < v_3$;
+1. Reflexiveness: $v < v$;
+1. Anti-symmetry: if $v_1 < v_2$ and $v_3 < v_2$ then $v_1 = v_2$;
+1. Tombstone validity: if $v_1 < v_2$, then $v_1$ is superseded by any sets obtained by replacing entries in $v_2$ by their corresponding tombstones;[^tomb_ss]
+
+[^tomb_ss]: In other words, $e < \{\bar{e}\}$
+
+### Superseding Views CRDT
+
+We define here the Superseding Views CRDT (SSE)[^name] as a set in which superseded elements are removed as new elements are added.
+Since superseded elements are irrelevant from the point of view of CRDT users, they may be removed without prejudice as long as the CRDT properties are ensured.
+
+[^name]: settle on a name.
+
+We define SSE is as a state-based CRDT. 
+While an equivalent operations-based definition must exist, it is out of the scope of this document.
+
+
+#### The merge operator - $\sqcup$
+
+State based CRDT use a merge operation to combine two replica states.
+In our CRDT we embed the removal of superseded messages, as defined in the previous section, in the merge operation.
+
+Let $\mathcal{V}$ be the power set of entries, or the set of all views of a system.
+The merge operator $\sqcup: \mathcal{V} x \mathcal{V} \rightarrow \mathcal{V}$ is defined as the union of the input views, without the entries superseded by the other elements in the union, that is: $v_1 \sqcup v_2 = [e: e \in (v_1 \cup v_2) \land e < (v_1 \cup v_2 \setminus \{e\})]$
 
 > :warning: TODO
-> Prove that `merge` operator is:
+>
+> Prove that $\sqcup$ is  associative, commutative and idempotent;
+>
+> Show that $(\mathcal{V}, \cap, \cup_s)$ is a lattice
+>
+> - implies that there are no cycles;
+> - For any $v_1 \in \mathcal{V}$ and entry $e$, $e < v_1$ implies that for any $v_2 \in \mathcal{V}$, $e < v_1 \sqcup v_2$ view.  
+>  `view.forall(e => (e.isStale(view)).implies(e.isStale(removeStale(view.addEntry(e)))`
+>
+> Should be enough to QED.
 
-> - associative:
-> - commutative
-> - idempotent.
+#### SSE API
 
-> :warning: TODO
-> `view.exists(e => e.isStale(view)).implies(e.isStale(removeStale(view.addEntry(e)))`
-> wrong usage of `exists` in the previous definition. `e` is not quantified in the `implies`
-
-
-
-### Set with Superseding Elements - CRDT
-
-We define here the Set with Superseding Elements CRDT (SSE) as a set in which the containing of some elements may render other elements stale or superseded.
-Stale elements are irrelevant from the point of view of the set's users and therefore may be removed from the set.
-Our definition of SSE is as a state-based CRDT, but an equivalent operations-based definition must exist.
-The corresponding Quint definitions are in [sse.qnt](sse.qnt).
+The SSE is generically defined in terms of
 
 - `Entry`
-    - a tuple or record;
+    - a tuple of values;
     - application specific;
+- `View`
+    - a set of `Entry`;
 
-- `EntryOrTs`
-    - a wrapper around an `Entry` to also represent tombstones;
-    - a whapper that is not a tombstone is alive;
+ and the `isSupersededBy` function
 
-- `View`:
-    - the information maintained by replicas;
-    - a set of `EntryOrTs`
-    - the empty `View` is the empty set.
-    - TODO: what about a set with just tombstones?
+- `isSupersededBy(v1: View, v2: View): bool`:
+    - returns true iff all elements of `v1` are superseded by `v2`;
+    - implements the $<$ relation;
 
-- `isSupersededBy(ets: EntryOrTs, view: View): bool`:
-    - returns true if the `Entry` is superseded in the `View`;
-    - is application specific;
-- `removeStale(view: View): (View,View)`
-    - returns a new view without all the stale entries and a view with just the stale entries;
-- `hasEntry(v: View, e:Entry):bool` returns `true` iff the view contains a live `EntryOrTs` for the entry;
-- `addEntry(v:View, e: Entry): View`
-    - constructs a new `View` with the entry in it, if the original does not have a tombstone preventing it;
+With these we can define the following operators:
+
+- `removeStale(view: View): (View, View)`
+    - returns a tuple `(v1,v2)` such that `v1` has the entries in `view` that are not superseded by the remainder elements and `v2` is `view` minus `v1`;
 - `merge(lhs: View, rhs: View): View`
-    - combines two `View` into a new `View` that is a superset of the inputs
-    - stale entries are removed;
+    - returns the result of `removeStale` applied to the union of `lhs` and `rhs`;
+    - implements the $\sqcup$ relation;
+
+And the following helpers:
+
+- `addEntry(v:View, e: Entry): View = merge(v, Set(e))`
+    - returns the result of `removeStale` applied to the union of `view` and `{e}`;
+- `hasEntry(v: View, e:Entry):bool = removeStale(v).contains(e)`
+
+And optionally:
+
 - `delEntry(v:View, e: Entry): View`
-    - constructs a new `View` without the `Entry` and with the corresponding tombstone;
+    - choose `et` such that
+        - `isSuperseded({e}, {et})`
+        - for any `e'` such that `isSuperseded({e'}, {et}) implies isSuperseded({e'}, {e})`
+    - return `addEntry(v, et)`;
+    - `delEntry` adds tombstone for `e` to `view`;
+
+#### Example 1
+
+The `Lexy1` module in [sse.qnt](sse.qnt) specifies an SSE in which entries are tuples of three integer numbers.
+In `Lexy1` an entry `(a,b,c)` is superseded by a view `v` if an only if `v` contains an entry  `(d,e,f)` such that `a < d` or `a == d, b == e, c <= f` or `v` or such a `(d,e,f)` is superseded in `v`.
+
+#### Example 2
+
+The `Lexy2` module in [sse.qnt](sse.qnt) specifies an SSE in which entries are tuples of three natural numbers and a boolean.
+In `Lexy2` an entry `(a,b,c,t)` is superseded by a view `v` if an only if `v` contains an entry  `(d,e,f,u)` such that `a < d` or `a == d, b == e, c <= f` or `a == d, b == e, c == f, u == true`, or such a `(d,e,f,t)` is superseded in `v`.

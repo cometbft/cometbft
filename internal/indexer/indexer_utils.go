@@ -12,13 +12,10 @@ import (
 func compareFloat(op1 *big.Float, op2 interface{}) (int, bool, error) {
 	switch opVal := op2.(type) {
 	case *big.Int:
-		vF, _, err := big.ParseFloat(opVal.String(), 10, uint(opVal.BitLen()), big.ToNearestEven)
-		if err != nil {
-			err = fmt.Errorf("failed to convert %s to float", opVal)
-			return -1, false, err
-		}
+		vF := new(big.Float)
+		vF.SetInt(opVal)
 		cmp := op1.Cmp(vF)
-		return cmp, false, err
+		return cmp, false, nil
 
 	case *big.Float:
 		return op1.Cmp(opVal), true, nil
@@ -38,10 +35,8 @@ func compareInt(op1 *big.Int, op2 interface{}) (int, bool, error) {
 	case *big.Int:
 		return op1.Cmp(opVal), false, nil
 	case *big.Float:
-		vF, _, err := big.ParseFloat(op1.String(), 10, uint(op1.BitLen()), big.ToNearestEven)
-		if err != nil {
-			return -1, true, fmt.Errorf("failed to convert %f to int", opVal)
-		}
+		vF := new(big.Float)
+		vF.SetInt(op1)
 		return vF.Cmp(opVal), true, nil
 	default:
 		return -1, false, fmt.Errorf("unable to parse arguments")

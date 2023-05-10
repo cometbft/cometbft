@@ -64,6 +64,8 @@ module reactor {
 
 	var state: ReactorState
 
+	// Pure definitions below represent the `p2p.Reactor` interface methods:
+
 	/*
 	 * GetChannels returns the list of MConnection.ChannelDescriptor. Make sure
 	 * that each ID is unique across all the reactors added to the switch.
@@ -78,15 +80,6 @@ module reactor {
 	 */
 	pure def SetSwitch(s: ReactorState, switch: bool): ReactorState = {
 		s.with("switch", switch)
-	}
-
-	// Code: Switch.AddReactor(name string, reactor Reactor)
-	action register() = all {
-		not(state.switch),
-		val channels = state.GetChannels()
-		val chIDs = channels.map(c => c.ID)
-		channels.size() == chIDs.size(), // channel IDs are unique
-		state' = state.SetSwitch(true),
 	}
 
 	/*
@@ -105,13 +98,6 @@ module reactor {
 		s.with("started", true)
 	}
 
-	// Code: Switch.OnStart()
-	action start(): bool = all {
-		state.switch,
-		not(state.started) and not(state.stopped),
-		state' = state.OnStart()
-	}
-
 	/*
 	 * Stop the service.
 	 * If it's already stopped, will return an error.
@@ -119,14 +105,6 @@ module reactor {
 	pure def OnStop(s: ReactorState): ReactorState = {
 		// Shutdown procedures should come here.
 		s.with("stopped", true)
-	}
-
-	// Code: Switch.OnStop()
-	action stop(): bool = all {
-		IsRunning(state),
-		// Either no peer was added or all peers were removed
-		state.peers.size() == 0,
-		state' = state.OnStop()
 	}
 
 	/*
@@ -137,13 +115,6 @@ module reactor {
 		// This method can update the received peer, which is returned.
 		val updatedPeer = peer
 		(s.with("peers", s.peers.union(Set(peer.ID))), updatedPeer)
-	}
-
-	// Code: Switch.addPeer(p Peer): preamble
-	action initPeer(peer: Peer): bool = all {
-		state.switch and state.IsRunning(),
-		not(peer.ID.in(state.peers)),
-		state' = state.InitPeer(peer)._1 // Updated peer not used here
 	}
 
 	/* 
@@ -157,14 +128,6 @@ module reactor {
 		s.with("routines", s.routines.union(startedRoutines))
 	}
 
-	// Code: Switch.addPeer(p Peer): conclusion
-	action addPeer(peer: Peer): bool = all {
-		state.switch and state.IsRunning(),
-		peer.ID.in(state.peers), // InitPeer(peer) and not RemovePeer(peer)
-		state.routines.filter(r => r.peer.ID == peer.ID).size() == 0,
-		state' = AddPeer(state, peer)
-	}
-
 	/*
 	 * RemovePeer is called by the switch when the peer is stopped (due to error
 	 * or other reason).
@@ -176,15 +139,6 @@ module reactor {
 		 .with("routines", s.routines.exclude(stoppedRoutines))
 	}
 
-	// Code: Switch.stopAndRemovePeer(peer Peer, reason interface{})
-	action removePeer(peer: Peer, reason: str): bool = all {
-		state.switch and state.IsRunning(),
-		peer.ID.in(state.peers), // InitPeer(peer) and not RemovePeer(peer)
-		// Routines might not be started, namely: not AddPeer(peer)
-		// Routines could also be already stopped if Peer has erroed.
-		state' = state.RemovePeer(peer, reason)
-	}
-
 	/*
 	 * Receive is called by the switch when an envelope is received from any connected
 	 * peer on any of the channels registered by the reactor.
@@ -194,12 +148,63 @@ module reactor {
 		s
 	}
 
+	// State transitions performed by the p2p layer, invoking `p2p.Reactor` methods:
+
+	// Code: Switch.AddReactor(name string, reactor Reactor)
+	action register() = all {
+		not(state.switch),
+		val channels = state.GetChannels()
+		val chIDs = channels.map(c => c.ID)
+		channels.size() == chIDs.size(), // channel IDs are unique
+		state' = state.SetSwitch(true),
+	}
+
+	// Code: Switch.OnStart()
+	action start(): bool = all {
+		state.switch,
+		not(state.started) and not(state.stopped),
+		state' = state.OnStart()
+	}
+
+	// Code: Switch.addPeer(p Peer): preamble
+	action initPeer(peer: Peer): bool = all {
+		state.switch and state.IsRunning(),
+		not(peer.ID.in(state.peers)),
+		state' = state.InitPeer(peer)._1 // Updated peer not used here
+	}
+
+	// Code: Switch.addPeer(p Peer): conclusion
+	action addPeer(peer: Peer): bool = all {
+		state.switch and state.IsRunning(),
+		peer.ID.in(state.peers), // InitPeer(peer) and not RemovePeer(peer)
+		state.routines.filter(r => r.peer.ID == peer.ID).size() == 0,
+		state' = AddPeer(state, peer)
+	}
+
+	// Code: Switch.stopAndRemovePeer(peer Peer, reason interface{})
+	action removePeer(peer: Peer, reason: str): bool = all {
+		state.switch and state.IsRunning(),
+		peer.ID.in(state.peers), // InitPeer(peer) and not RemovePeer(peer)
+		// Routines might not be started, namely: not AddPeer(peer)
+		// Routines could also be already stopped if Peer has erroed.
+		state' = state.RemovePeer(peer, reason)
+	}
+
+	// Code: Peer type, onReceive := func(chID byte, msgBytes []byte)
 	action receive(e: Envelope): bool = all {
 		state.switch and state.IsRunning(),
 		e.Src.ID.in(state.peers), // Sender is an active peer
 		state.GetChannels().exists(
 			c => c.ID == e.ChannelID), // Registered for the channel
 		state' = Receive(state, e)
+	}
+
+	// Code: Switch.OnStop()
+	action stop(): bool = all {
+		IsRunning(state),
+		// Either no peer was added or all peers were removed
+		state.peers.size() == 0,
+		state' = state.OnStop()
 	}
 
 	// Simulation support

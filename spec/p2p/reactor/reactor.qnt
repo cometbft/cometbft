@@ -21,11 +21,10 @@ module reactor {
 		// Other fields can be added to represent the p2p operation.
 	}
 
-	// Byte ID used by channels.
+	// Byte ID used by channels, must be globally unique.
 	type Byte = str
 
 	// Channel configuration.
-	// Only the Byte ID is relevant here.
 	type ChannelDescriptor = {
 		ID: Byte,
 		Priority: int,
@@ -58,11 +57,9 @@ module reactor {
 		started: bool,
 		stopped: bool,
 
-		// Indicates whether a switch was set: reactor registration.
+		// Indicates whether a switch was set and the reactor registered.
 		switch: bool,
 	}
-
-	var state: ReactorState
 
 	// Pure definitions below represent the `p2p.Reactor` interface methods:
 
@@ -80,13 +77,6 @@ module reactor {
 	 */
 	pure def SetSwitch(s: ReactorState, switch: bool): ReactorState = {
 		s.with("switch", switch)
-	}
-
-	/*
-	 * Return true if the service is running.
-	 */
-	pure def IsRunning(s: ReactorState): bool = {
-		s.started and not(s.stopped)
 	}
 
 	/*
@@ -148,6 +138,14 @@ module reactor {
 		s
 	}
 
+	// Global state
+
+	var state: ReactorState
+
+	pure def IsRunning(s: ReactorState): bool = {
+		s.started and not(s.stopped)
+	}
+
 	// State transitions performed by the p2p layer, invoking `p2p.Reactor` methods:
 
 	// Code: Switch.AddReactor(name string, reactor Reactor)
@@ -156,11 +154,11 @@ module reactor {
 		val channels = state.GetChannels()
 		val chIDs = channels.map(c => c.ID)
 		channels.size() == chIDs.size(), // channel IDs are unique
-		state' = state.SetSwitch(true),
+		state' = state.SetSwitch(true)
 	}
 
 	// Code: Switch.OnStart()
-	action start(): bool = all {
+	action start() = all {
 		state.switch,
 		not(state.started) and not(state.stopped),
 		state' = state.OnStart()
@@ -200,7 +198,7 @@ module reactor {
 	}
 
 	// Code: Switch.OnStop()
-	action stop(): bool = all {
+	action stop = all {
 		IsRunning(state),
 		// Either no peer was added or all peers were removed
 		state.peers.size() == 0,
@@ -237,7 +235,7 @@ module reactor {
 			receive({Src: peer,
 				ChannelID: oneOf(sampleChIDs),
 				Message: oneOf(sampleMsgs)}),
-		},
+		}
 	}
 
 }

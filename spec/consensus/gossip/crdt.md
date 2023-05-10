@@ -274,18 +274,33 @@ And the following helpers:
 And optionally:
 
 - `delEntry(v:View, e: Entry): View`
-    - choose `et` such that
-        - `isSuperseded({e}, {et})`
-        - for any `e'` such that `isSuperseded({e'}, {et}) implies isSuperseded({e'}, {e})`
-    - return `addEntry(v, et)`;
     - `delEntry` adds tombstone for `e` to `view`;
+    - `makeTs` must be provided
+        - choose `et` such that
+            - `isSuperseded({e}, {et})`
+            - for any `e'` such that `isSuperseded({e'}, {et}) implies isSuperseded({e'}, {e})`
+    - return `addEntry(v, makeTs(e))`;
 
 #### Example 1
 
 The `Lexy1` module in [sse.qnt](sse.qnt) specifies an SSE in which entries are tuples of three integer numbers.
-In `Lexy1` an entry `(a,b,c)` is superseded by a view `v` if an only if `v` contains an entry  `(d,e,f)` such that `a < d` or `a == d, b == e, c <= f` or `v` or such a `(d,e,f)` is superseded in `v`.
+
+An entry `(a,b,c)` is superseded by a view `v` if an only if `v` contains an entry  `(d,e,f)` such that 
+
+- either `a < d`
+- or `a == d, b == e, c <= f`
+- or `(d,e,f)` is superseded in `v`.
 
 #### Example 2
 
-The `Lexy2` module in [sse.qnt](sse.qnt) specifies an SSE in which entries are tuples of three natural numbers and a boolean.
-In `Lexy2` an entry `(a,b,c,t)` is superseded by a view `v` if an only if `v` contains an entry  `(d,e,f,u)` such that `a < d` or `a == d, b == e, c <= f` or `a == d, b == e, c == f, u == true`, or such a `(d,e,f,t)` is superseded in `v`.
+The `Lexy2` module in [sse.qnt](sse.qnt) specifies an SSE in which entries are tuples of three integer numbers and a boolean.
+
+In `Lexy2` an entry `(a,b,c,t)` is superseded by a view `v` if an only if `v` contains an entry  `(d,e,f,u)` such that 
+
+- either `a < d`
+- or `a == d, b == e, c < f`
+- or `a == d, b == e, c == f, t == u`,
+- or `a == d, b == e, c == f, u == true`,
+- or `(d,e,f,u)` is superseded in `v`.
+
+As specified, the boolean in the entry acts as a tombstone marker.

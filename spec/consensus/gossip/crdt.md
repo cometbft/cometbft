@@ -160,7 +160,7 @@ It should also be clear that if no entries are ever removed from the tuple space
 However, if entries can be removed, then the Tuple Space is actually weaker, since some entries may never be seen by some nodes, and should be easier to implement.
 We argue later that it can be implemented using Anti-Entropy or Epidemic protocols/Gossiping (not equal to the Gossip Communication property).
 We pointed out [previously](#on-the-need-for-the-gossip-communication-property) that the Gossip Communication property is overkill for Tendermint because it requires even stale messages to be delivered.
-We remove corresponding to stale messages and never deliver them them.
+We remove entries corresponding to stale messages and never deliver them them.
 
 [^proof]:  TODO: do we need to extend here?
 

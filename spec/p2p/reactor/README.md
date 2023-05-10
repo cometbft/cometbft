@@ -74,8 +74,8 @@ with an ABCI++ application, available [here](../../abci/abci%2B%2B_comet_expecte
 
 To become a reactor, a component has first to implement the `Reactor` interface,
 then to register the implementation with the p2p layer, using the
-`Switch.AddReactor(name string, reactor Reactor)` method, where `name` can be
-an arbitrary string.
+`Switch.AddReactor(name string, reactor Reactor)` method,
+with a global unique `name` for the reactor.
 
 The registration should happen before the node, in general, and the p2p layer,
 in particular, are started.
@@ -151,10 +151,6 @@ In case of errors, a message is logged informing that the p2p layer failed to st
 This is not a common scenario and it is only expected to happen when
 interacting with a misbehaving peer. A practical example is reported on this
 [issue](https://github.com/tendermint/tendermint/pull/9500).
-
-```abnf
-connected-peer  = add-peer *receive
-```
 
 It is up to the reactor to define how to process the `AddPeer(Peer)` event.
 The typical behavior is to start routines that, given some conditions or events

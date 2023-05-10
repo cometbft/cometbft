@@ -24,6 +24,7 @@ import (
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/proxy"
 	rpccore "github.com/cometbft/cometbft/rpc/core"
+	grpcserver "github.com/cometbft/cometbft/rpc/grpc/server"
 	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/state/indexer"
@@ -617,6 +618,25 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 		}
 
 		listeners[i] = listener
+	}
+
+	if n.config.GRPC.ListenAddress != "" {
+		listener, err := grpcserver.Listen(n.config.GRPC.ListenAddress)
+		if err != nil {
+			return nil, err
+		}
+		opts := []grpcserver.Option{
+			grpcserver.WithLogger(n.Logger),
+		}
+		if n.config.GRPC.VersionService.Enabled {
+			opts = append(opts, grpcserver.WithVersionService())
+		}
+		go func() {
+			if err := grpcserver.Serve(listener, opts...); err != nil {
+				n.Logger.Error("Error starting gRPC server", "err", err)
+			}
+		}()
+		listeners = append(listeners, listener)
 	}
 
 	return listeners, nil

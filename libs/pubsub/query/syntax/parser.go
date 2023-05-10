@@ -77,9 +77,6 @@ func (a *Arg) Number() *big.Float {
 	if _, ok := intVal.SetString(a.text, 10); !ok {
 		f, _, err := big.ParseFloat(a.text, 10, 125, big.ToNearestEven)
 		if err != nil {
-
-			fmt.Println(err)
-
 			return nil
 		}
 		return f

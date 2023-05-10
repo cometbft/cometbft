@@ -16,6 +16,7 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	idxutil "github.com/cometbft/cometbft/internal/indexer"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/state/indexer"
@@ -33,12 +34,17 @@ type BlockerIndexer struct {
 	// Add unique event identifier to use when querying
 	// Matching will be done both on height AND eventSeq
 	eventSeq int64
+	log      log.Logger
 }
 
 func New(store dbm.DB) *BlockerIndexer {
 	return &BlockerIndexer{
 		store: store,
 	}
+}
+
+func (idx *BlockerIndexer) SetLogger(l log.Logger) {
+	idx.log = l
 }
 
 // Has returns true if the given height has been indexed. An error is returned
@@ -302,16 +308,31 @@ LOOP:
 
 			if qr.Key != types.BlockHeightKey {
 				keyHeight, err := parseHeightFromEventKey(it.Key())
-				if err != nil || !checkHeightConditions(heightInfo, keyHeight) {
+				if err != nil {
+					idx.log.Error("failure to parse height from key:", err)
+					continue LOOP
+				}
+				withinHeight, err := checkHeightConditions(heightInfo, keyHeight)
+				if err != nil {
+					idx.log.Error("failure checking for height bounds:", err)
+					continue LOOP
+				}
+				if !withinHeight {
 					continue LOOP
 				}
 			}
+
+			var withinBounds bool
+			var err error
 			if !ok {
-				if idxutil.CheckBounds(qr, vF) {
-					idx.setTmpHeights(tmpHeights, it)
-				}
+				withinBounds, err = idxutil.CheckBounds(qr, vF)
 			} else {
-				if idxutil.CheckBounds(qr, v) {
+				withinBounds, err = idxutil.CheckBounds(qr, v)
+			}
+			if err != nil {
+				idx.log.Error("failed to parse bounds:", err)
+			} else {
+				if withinBounds {
 					idx.setTmpHeights(tmpHeights, it)
 				}
 			}
@@ -404,7 +425,16 @@ func (idx *BlockerIndexer) match(
 		for ; it.Valid(); it.Next() {
 
 			keyHeight, err := parseHeightFromEventKey(it.Key())
-			if err != nil || !checkHeightConditions(heightInfo, keyHeight) {
+			if err != nil {
+				idx.log.Error("failure to parse height from key:", err)
+				continue
+			}
+			withinHeight, err := checkHeightConditions(heightInfo, keyHeight)
+			if err != nil {
+				idx.log.Error("failure checking for height bounds:", err)
+				continue
+			}
+			if !withinHeight {
 				continue
 			}
 
@@ -432,10 +462,21 @@ func (idx *BlockerIndexer) match(
 		defer it.Close()
 
 		for ; it.Valid(); it.Next() {
+
 			keyHeight, err := parseHeightFromEventKey(it.Key())
-			if err != nil || !checkHeightConditions(heightInfo, keyHeight) {
+			if err != nil {
+				idx.log.Error("failure to parse height from key:", err)
 				continue
 			}
+			withinHeight, err := checkHeightConditions(heightInfo, keyHeight)
+			if err != nil {
+				idx.log.Error("failure checking for height bounds:", err)
+				continue
+			}
+			if !withinHeight {
+				continue
+			}
+
 			idx.setTmpHeights(tmpHeights, it)
 
 			select {
@@ -470,7 +511,16 @@ func (idx *BlockerIndexer) match(
 
 			if strings.Contains(eventValue, c.Arg.Value()) {
 				keyHeight, err := parseHeightFromEventKey(it.Key())
-				if err != nil || !checkHeightConditions(heightInfo, keyHeight) {
+				if err != nil {
+					idx.log.Error("failure to parse height from key:", err)
+					continue
+				}
+				withinHeight, err := checkHeightConditions(heightInfo, keyHeight)
+				if err != nil {
+					idx.log.Error("failure checking for height bounds:", err)
+					continue
+				}
+				if !withinHeight {
 					continue
 				}
 				idx.setTmpHeights(tmpHeights, it)

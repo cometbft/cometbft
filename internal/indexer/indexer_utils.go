@@ -33,6 +33,7 @@ func compareFloat(op1 *big.Float, op2 interface{}) (int, bool, error) {
 // where 100 would equal to 100.2 because 100.2 is rounded to 100, while 100.7
 // would be rounded to 101.
 func compareInt(op1 *big.Int, op2 interface{}) (int, bool, error) {
+
 	switch opVal := op2.(type) {
 	case *big.Int:
 		return op1.Cmp(opVal), false, nil
@@ -47,7 +48,7 @@ func compareInt(op1 *big.Int, op2 interface{}) (int, bool, error) {
 	}
 }
 
-func CheckBounds(ranges indexer.QueryRange, v interface{}) bool {
+func CheckBounds(ranges indexer.QueryRange, v interface{}) (bool, error) {
 	// These functions fetch the lower and upper bounds of the query
 	// It is expected that for x > 5, the value of lowerBound is 6.
 	// This is achieved by adding one to the actual lower bound.
@@ -80,19 +81,19 @@ func CheckBounds(ranges indexer.QueryRange, v interface{}) bool {
 		if lowerBound != nil {
 			cmp, isFloat, err := compareInt(vVal, lowerBound)
 			if err != nil {
-				return false
+				return false, err
 			}
 			if cmp == -1 || (isFloat && cmp == 0 && !ranges.IncludeLowerBound) {
-				return false
+				return false, err
 			}
 		}
 		if upperBound != nil {
 			cmp, isFloat, err := compareInt(vVal, upperBound)
 			if err != nil {
-				return false
+				return false, err
 			}
 			if cmp == 1 || (isFloat && cmp == 0 && !ranges.IncludeUpperBound) {
-				return false
+				return false, err
 			}
 		}
 
@@ -100,24 +101,24 @@ func CheckBounds(ranges indexer.QueryRange, v interface{}) bool {
 		if lowerBound != nil {
 			cmp, isFloat, err := compareFloat(vVal, lowerBound)
 			if err != nil {
-				return false
+				return false, err
 			}
 			if cmp == -1 || (cmp == 0 && isFloat && !ranges.IncludeLowerBound) {
-				return false
+				return false, err
 			}
 		}
 		if upperBound != nil {
 			cmp, isFloat, err := compareFloat(vVal, upperBound)
 			if err != nil {
-				return false
+				return false, err
 			}
 			if cmp == 1 || (cmp == 0 && isFloat && !ranges.IncludeUpperBound) {
-				return false
+				return false, err
 			}
 		}
 
 	default:
-		return false
+		return false, fmt.Errorf("invalid argument type in query")
 	}
-	return true
+	return true, nil
 }

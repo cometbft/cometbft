@@ -58,7 +58,7 @@ func CheckBounds(ranges indexer.QueryRange, v interface{}) (bool, error) {
 	// For integers this behavior will work. However, for floats, we cannot simply add/sub 1.
 	// Query :x < 5.5 ; x = 5 should match the query. If we subtracted one as for integers,
 	// the upperBound would be 4.5 and x would not match.  Thus we do not subtract anything for
-	// floating point bounds. But that means that compare could return
+	// floating point bounds.
 
 	// We can rewrite these functions to not add/sub 1 but the function handles also time arguments.
 	// To be sure we are not breaking existing queries that compare time, and as we are planning to replace

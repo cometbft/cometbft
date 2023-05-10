@@ -15,16 +15,13 @@ should expect from the p2p layer.
 
 > This is a work in progress, tracked by [issue #599](https://github.com/cometbft/cometbft/issues/599).
 
-
-## Contents
-
-The operation of the p2p layer when interacting with a reactor is modelled in
-[Quint](https://github.com/informalsystems/quint), an executable specification language.
-
-The Quint specification is available on the companion [`reactor.qnt`](./reactor.qnt) file.
-The `Reactor` interface methods are the base for the specification, while
-the behaviour of the p2p layer described in the remaining of this document is
-modeled through state transitions.
+This specification is accompanied by a more comprehensive model, in the
+[`reactor.qnt`](./reactor.qnt) file, written in [Quint][quint-repo], an
+executable specification language.
+The methods declared in the [`Reactor`][reactor-interface] interface are
+modeled in Quint, providing some examples of how they should be implemented.
+The behaviour of the p2p layer when interacting with a reactor is modeled in
+the form of state transitions, or `action`s in the Quint nomenclature.
 
 
 ## Overview
@@ -225,3 +222,4 @@ Two important observations regarding the implementation of the `Receive` method:
    same sender are not delivered to any reactor.
 
 [reactor-interface]: ../../../p2p/base_reactor.go
+[quint-repo]: https://github.com/informalsystems/quint

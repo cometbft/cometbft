@@ -22,7 +22,7 @@ module reactor {
 	}
 
 	// Byte ID used by channels.
-	type Byte = int
+	type Byte = str
 
 	// Channel configuration.
 	// Only the Byte ID is relevant here.
@@ -70,8 +70,7 @@ module reactor {
 	 */
 	pure def GetChannels(s: ReactorState): Set[ChannelDescriptor] = {
 		// This method should return a list of channels, e.g.:
-		Set({ID: 3, Priority: 1})
-		.union(Set({ID: 7, Priority: 2}))
+		Set({ID: "3", Priority: 1}, {ID: "7", Priority: 2})
 	}
 
 	/*
@@ -88,6 +87,13 @@ module reactor {
 		val chIDs = channels.map(c => c.ID)
 		channels.size() == chIDs.size(), // channel IDs are unique
 		state' = state.SetSwitch(true),
+	}
+
+	/*
+	 * Return true if the service is running.
+	 */
+	pure def IsRunning(s: ReactorState): bool = {
+		s.started and not(s.stopped)
 	}
 
 	/*
@@ -121,13 +127,6 @@ module reactor {
 		// Either no peer was added or all peers were removed
 		state.peers.size() == 0,
 		state' = state.OnStop()
-	}
-
-	/*
-	 * Return true if the service is running.
-	 */
-	pure def IsRunning(s: ReactorState): bool = {
-		s.started and not(s.stopped)
 	}
 
 	/*
@@ -216,7 +215,7 @@ module reactor {
 	}
 
 	pure val samplePeers = Set({ID: "p1"}, {ID: "p3"})
-	pure val sampleChIDs = Set(1, 3, 7) // ChannelID 1 not registered
+	pure val sampleChIDs = Set("1", "3", "7") // ChannelID 1 not registered
 	pure val sampleMsgs  = Set("ping", "pong")
 
 	action step = any {

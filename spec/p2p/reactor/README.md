@@ -32,24 +32,23 @@ modeled through state transitions.
 The following _grammar_ is a simplified representation of the expected sequence of calls
 from the p2p layer to a reactor.
 Note that the grammar represents events referring to a _single reactor_, while
-the p2p layer supports the execution of multiple reactors, each of them being
-submitted to the sequence of calls represented by the following grammar.
+the p2p layer supports the execution of multiple reactors.
 
 While it is useful to provide an overview of the operation of a reactor,
 grammars have some limitations in terms of the behaviour they can express.
 For instance, the following grammar only represents the management of _a single peer_,
-namely of a peer with a given `ID` which can connect, disconnect, and reconnect
+namely of a peer with a given ID which can connect, disconnect, and reconnect
 multiple times to the node.
 The p2p layer and every reactor should be able to handle multiple distinct peers in parallel.
 This means that multiple occurrences of non-terminal `peer-management` of the
-grammar below can "run" in parallel, each one referring and producing events
-associated to a distinct peer:
+grammar below can "run" independently and in parallel, each one referring and
+producing events associated to a different peer:
 
 ```abnf
 start           = registration on-start *peer-management on-stop
 registration    = get-channels set-switch
 
-; Refers to a single peer, a reactor should support multiple concurrent peers
+; Refers to a single peer, a reactor must support multiple concurrent peers
 peer-management = init-peer start-peer stop-peer
 start-peer      = [*receive] (connected-peer / start-error)
 connected-peer  = add-peer *receive
@@ -83,7 +82,7 @@ then to register the implementation with the p2p layer, using the
 `Switch.AddReactor(name string, reactor Reactor)` method,
 with a global unique `name` for the reactor.
 
-The registration should happen before the node, in general, and the p2p layer,
+The registration must happen before the node, in general, and the p2p layer,
 in particular, are started.
 In other words, there is no support for registering a reactor on a running node:
 reactors must be registered as part of the setup of a node.
@@ -104,7 +103,7 @@ establishing connections with peers and routing messages.
 
 ## Service interface
 
-A reactor should implement the [`Service`](../../../libs/service/service.go) interface,
+A reactor must implement the [`Service`](../../../libs/service/service.go) interface,
 in particular, a startup `OnStart()` and a shutdown `OnStop()` methods:
 
 ```abnf
@@ -126,7 +125,7 @@ The grammar extract below represents the interaction of the reactor with a
 single peer:
 
 ```abnf
-; Refers to a single peer, a reactor should support multiple concurrent peers
+; Refers to a single peer, a reactor must support multiple concurrent peers
 peer-management = init-peer start-peer stop-peer
 ```
 
@@ -180,7 +179,7 @@ This enables the same peer to reconnect and `InitPeer(Peer)` to be invoked for
 the new connection.
 
 From the removal of a `Peer` , the reactor should not receive any further message
-from the peer and should not try sending messages to the removed peer.
+from the peer and must not try sending messages to the removed peer.
 This usually means stopping the routines that were started by the companion
 `Add(Peer)` method.
 
@@ -191,7 +190,7 @@ has registered with the p2p layer.
 
 The _pre-condition_ for receiving a message from a `Peer` is that the p2p layer
 has previously invoked `InitPeer(Peer)`.
-This means that the reactor should be able to receive a message from a `Peer`
+This means that the reactor must be able to receive a message from a `Peer`
 _before_ `AddPeer(Peer)` is called.
 While this is not the usual scenario, it can happen because starting the peer's
 send and receive routines and adding the peer are done in parallel:

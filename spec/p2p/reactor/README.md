@@ -13,16 +13,17 @@ invoked and determines what the p2p layer expects from a reactor,
 this documentation focuses on the behaviour that a reactor implementation
 should expect from the p2p layer.
 
-> This is a work in progress, tracked by [issue #599](https://github.com/cometbft/cometbft/issues/599).
-
-This specification is accompanied by a more comprehensive model, in the
-[`reactor.qnt`](./reactor.qnt) file, written in [Quint][quint-repo], an
-executable specification language.
+This specification is accompanied by the [`reactor.qnt`](./reactor.qnt) file,
+a more comprehensive model of the reactor's operation written in
+[Quint][quint-repo], an executable specification language.
 The methods declared in the [`Reactor`][reactor-interface] interface are
-modeled in Quint, providing some examples of how they should be implemented.
-The behaviour of the p2p layer when interacting with a reactor is modeled in
-the form of state transitions, or `action`s in the Quint nomenclature.
+modeled in Quint, in the form of `pure def` methods, providing some examples of
+how they should be implemented.
+The behaviour of the p2p layer when interacting with a reactor, by invoking the
+interface methods, is modeled in the form of state transitions, or `action`s in
+the Quint nomenclature.
 
+> This is a work in progress, tracked by [issue #599](https://github.com/cometbft/cometbft/issues/599).
 
 ## Overview
 
@@ -68,7 +69,7 @@ peer-error      = %s"log(Stopping peer for error)"
 ```
 
 The grammar is written in case-sensitive Augmented Backus–Naur form (ABNF,
-specified in [IETF rfc7405](https://datatracker.ietf.org/doc/html/rfc7405)).
+specified in [IETF RFC 7405](https://datatracker.ietf.org/doc/html/rfc7405)).
 It is inspired on the grammar produced to specify the interaction of CometBFT
 with an ABCI++ application, available [here](../../abci/abci%2B%2B_comet_expected_behavior.md).
 
@@ -151,7 +152,7 @@ connected-peer  = add-peer *receive
 
 In case of errors, a message is logged informing that the p2p layer failed to start the peer.
 This is not a common scenario and it is only expected to happen when
-interacting with a misbehaving peer. A practical example is reported on this
+interacting with a misbehaving or slow peer. A practical example is reported on this
 [issue](https://github.com/tendermint/tendermint/pull/9500).
 
 It is up to the reactor to define how to process the `AddPeer(Peer)` event.

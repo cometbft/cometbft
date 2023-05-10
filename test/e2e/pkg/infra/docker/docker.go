@@ -64,7 +64,8 @@ services:
     init: true
     ports:
     - 26656
-    - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657
+    - {{ if .RPCProxyPort }}{{ .RPCProxyPort }}:{{ end }}26657
+    - {{ if .GRPCProxyPort }}{{ .GRPCProxyPort }}:{{ end }}26670
 {{- if .PrometheusProxyPort }}
     - {{ .PrometheusProxyPort }}:26660
 {{- end }}

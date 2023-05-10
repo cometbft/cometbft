@@ -36,7 +36,7 @@ grammars have some limitations in terms of the behaviour they can express.
 For instance, the following grammar only represents the management of _a single peer_,
 which can connect, disconnect, and reconnect multiple times to the node.
 The p2p layer and the reactor should be able to handle multiple distinct peers in parallel.
-This means that multiple `peer-management` statements of the grammar below can "run"
+This means that multiple occurrences of non-terminal `peer-management` of the grammar below can "run"
 in parallel, each one referring to a distinct peer:
 
 ```abnf
@@ -106,7 +106,7 @@ start           = registration on-start *peer-management on-stop
 ```
 
 As part of the startup of a node, all registered reactors are started by the p2p layer.
-And when the node is shutdown, all registered reactors are stopped by the p2p layer.
+And when the node is shut down, all registered reactors are stopped by the p2p layer.
 Observe that the `Service` interface specification establishes that a service
 can be started and stopped only once.
 So before being started or once stopped by the p2p layer, the reactor should
@@ -115,7 +115,7 @@ not expect any interaction.
 ## Peer management
 
 The core of a reactor's operation is the interaction with peers or, more
-precisely, with companion reactors operating in peers connected to the node.
+precisely, with companion reactors operating on the same channels in peers connected to the node.
 The grammar extract below represents the interaction of the reactor with a
 single peer:
 

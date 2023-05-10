@@ -27,5 +27,5 @@ func (idx *BlockerIndexer) Search(context.Context, *query.Query) ([]int64, error
 	return []int64{}, nil
 }
 
-func (idx *BlockerIndexer) SetLogger(l log.Logger) {
+func (idx *BlockerIndexer) SetLogger(log.Logger) {
 }

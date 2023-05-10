@@ -35,6 +35,6 @@ func (txi *TxIndex) Search(_ context.Context, _ *query.Query) ([]*abci.TxResult,
 	return []*abci.TxResult{}, nil
 }
 
-func (txi *TxIndex) SetLogger(l log.Logger) {
+func (txi *TxIndex) SetLogger(log.Logger) {
 
 }

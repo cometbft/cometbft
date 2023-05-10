@@ -47,8 +47,8 @@ func NewTxIndex(store dbm.DB) *TxIndex {
 	}
 }
 
-func (tx *TxIndex) SetLogger(l log.Logger) {
-	tx.log = l
+func (txi *TxIndex) SetLogger(l log.Logger) {
+	txi.log = l
 }
 
 // Get gets transaction from the TxIndex storage and returns it or nil if the

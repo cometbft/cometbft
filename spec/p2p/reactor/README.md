@@ -31,14 +31,19 @@ modeled through state transitions.
 
 The following _grammar_ is a simplified representation of the expected sequence of calls
 from the p2p layer to a reactor.
+Note that the grammar represents events referring to a _single reactor_, while
+the p2p layer supports the execution of multiple reactors, each of them being
+submitted to the sequence of calls represented by the following grammar.
 
 While it is useful to provide an overview of the operation of a reactor,
 grammars have some limitations in terms of the behaviour they can express.
 For instance, the following grammar only represents the management of _a single peer_,
-which can connect, disconnect, and reconnect multiple times to the node.
-The p2p layer and the reactor should be able to handle multiple distinct peers in parallel.
-This means that multiple occurrences of non-terminal `peer-management` of the grammar below can "run"
-in parallel, each one referring to a distinct peer:
+namely of a peer with a given `ID` which can connect, disconnect, and reconnect
+multiple times to the node.
+The p2p layer and every reactor should be able to handle multiple distinct peers in parallel.
+This means that multiple occurrences of non-terminal `peer-management` of the
+grammar below can "run" in parallel, each one referring and producing events
+associated to a distinct peer:
 
 ```abnf
 start           = registration on-start *peer-management on-stop

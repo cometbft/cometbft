@@ -119,7 +119,7 @@ transactions with sequence mismatch errors. These requests will proxy to the ful
 
 ### High-level architecture
 
-![High-level architecture](images/adr-102-architecture.svg)
+![High-level architecture](images/adr-102-architecture.jpeg)
 
 This diagram shows all the required components for a full Standalone RPC solution. The solution implementation contains
 many parts and each one is described below:

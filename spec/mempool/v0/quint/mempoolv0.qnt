@@ -16,10 +16,10 @@ module Base {
 
     // Transactions
     type Tx = str
-    val InvalidTx: Tx = "invalid"
+    val InvalidTx: Tx = "invalid-tx"
     // const Txs: Set[Tx]
-    val Txs: Set[Tx] = Set("tx1", "tx2", "invalid")
-    def isValid(tx) = tx == InvalidTx
+    val Txs: Set[Tx] = Set("tx1", "tx2", InvalidTx)
+    def isValid(tx) = tx != InvalidTx
     type Error = str
 
     // Error
@@ -32,8 +32,6 @@ module Base {
 
 module ABCIMessages {
     import Base.*
-
-    val InvalidTxError: Error = "invalid-tx"
 
     // [tendermint.abci.CheckTxType]: https://github.com/CometBFT/cometbft/blob/4790ea3e46475064d5475c787427ae926c5a9e94/proto/tendermint/abci/types.proto#L94
     val CheckTxTypes = Set("New", "Recheck")
@@ -57,8 +55,6 @@ module ABCIServers {
     import Base.*
     import ABCIMessages.*
 
-    val NoResponse: Response = {tag: "NoResponse", err: NoError}
-
     type ABCIRequests = {tag: str, tx: Tx}
     val ABCIRequestTags = Set("CheckTx", "RecheckTx")
     
@@ -67,62 +63,74 @@ module ABCIServers {
     // Each request maps to a the node id of a sender and the response, if available.
     var requestSenderResponses: NodeId -> (Request -> (NodeId, Response))
 
+    val NoResponse: Response = {tag: "", err: NoError}
+
+    //--------------------------------------------------------------------------
+    val InvalidTxError: Error = "err:invalid-tx"
+    val MempoolIsFullError: Error = "err:mempool-full"
+    val TxInCacheError: Error = "err:tx-in-cache"
+    val InvalidTxWarning: Error = "warn:invalid-tx"
+
     //--------------------------------------------------------------------------
     // Auxiliary definitions
     //--------------------------------------------------------------------------
 
     def ABCI_SenderFor(nodeId, request) = 
         (requestSenderResponses.get(nodeId).get(request))._1
+    
     def ABCI_ResponseFor(nodeId, request) = 
         requestSenderResponses.get(nodeId).get(request)._2
 
-    def Requests(nodeId: NodeId, checkTxType: str): Set[Request] =
-        requestSenderResponses.get(nodeId)
-            .keys()
-            .filter(r => and {
-                r.checkTxType == checkTxType,
-                ABCI_ResponseFor(nodeId, r) != NoResponse
-            })
-    def ABCI_CheckRequests(nodeId) = Requests(nodeId, "New")
-    def ABCI_RecheckRequests(nodeId) = Requests(nodeId, "Recheck")
+    def HasResponse(noreId, request) =
+        ABCI_ResponseFor(nodeId, r) != NoResponse
 
-    val emptyRequest = (NoNode, NoResponse)
+    def RequestsWithResponse(nodeId: NodeId, checkTxType: str): Set[Request] =
+        requestSenderResponses.get(nodeId).keys()
+            .filter(r => r.checkTxType == checkTxType and HasResponse(nodeId, r))
+    def ABCI_CheckTxRequests(nodeId) = RequestsWithResponse(nodeId, "New")
+    def ABCI_RecheckTxRequests(nodeId) = RequestsWithResponse(nodeId, "Recheck")
+
+    val EmptyResponse = (NoNode, NoResponse)
 
     //--------------------------------------------------------------------------
     // Actions
     //--------------------------------------------------------------------------
 
     action ABCI_Init =
-        requestSenderResponses' = NodeIds.mapBy(_ => Set().mapBy(_ => emptyRequest))
+        requestSenderResponses' = NodeIds.mapBy(_ => Set().mapBy(_ => EmptyResponse))
 
-    // The app receives a CheckTx request and creates a response.
-    action ABCI_ProcessCheckTxRequest(nodeId) = {
-        nondet req: Request = oneOf(requestSenderResponses.get(nodeId).keys()) 
-        all {
-            ABCI_ResponseFor(nodeId, req) == NoResponse,
-            val err = if (isValid(req.tx)) NoError else InvalidTxError
-            val resp = {tag: req.tag, err: err}
-            val senderId = ABCI_SenderFor(nodeId, req)
-            requestSenderResponses' = requestSenderResponses.put(nodeId, requestSenderResponses.get(nodeId).put(req, (senderId, resp))),
-        }
-    }
-
+    // For a "New" request we store the sender.
     action ABCI_SendRequestNewCheckTx(nodeId, tx, senderId) = 
         val req = {tag: "CheckTx", tx: tx, checkTxType: "New"}
-        requestSenderResponses' = requestSenderResponses.put(nodeId, requestSenderResponses.get(nodeId).put(req, (senderId, NoResponse)))
+        requestSenderResponses' = requestSenderResponses.put(nodeId, 
+            requestSenderResponses.get(nodeId).put(req, (senderId, NoResponse)))
 
+    // For "Recheck" we send multiple requests at once.
     action ABCI_SendRequestRecheckTxs(nodeId, txs) =
         val newRequests = txs.map(tx => {tag: "CheckTx", tx: tx, checkTxType: "Recheck"})
         // Add all the new requests, with no sender and no response.
         requestSenderResponses' = requestSenderResponses.put(nodeId, {
             val m = requestSenderResponses.get(nodeId)
-            m.keys().mapBy(req => if (req.in(newRequests)) emptyRequest else m.get(req))
+            m.keys().mapBy(req => if (req.in(newRequests)) EmptyResponse else m.get(req))
         })
 
+    // The app receives a CheckTx request and creates a response.
+    action ABCI_ProcessCheckTxRequest(nodeId) =
+        nondet req: Request = oneOf(requestSenderResponses.get(nodeId).keys()) 
+        all {
+            not(HasResponse(nodeId, req)),
+            val senderId = ABCI_SenderFor(nodeId, req)
+            val err = if (isValid(req.tx)) NoError else InvalidTxError
+            val resp = { tag: req.tag, err: err }
+            requestSenderResponses' = requestSenderResponses.put(nodeId, 
+                requestSenderResponses.get(nodeId).put(req, (senderId, resp))),
+        }
+
     action ABCI_RemoveRequest(nodeId, request) = all {
-        ABCI_ResponseFor(nodeId, request) != NoResponse,
+        HasResponse(nodeId, request),
         // TODO: remove entry instead of setting to NoResponse
-        requestSenderResponses' = requestSenderResponses.put(nodeId, requestSenderResponses.get(nodeId).put(request, emptyRequest)), 
+        requestSenderResponses' = requestSenderResponses.put(nodeId, 
+            requestSenderResponses.get(nodeId).put(request, EmptyResponse)), 
     }
 
     action ABCI_Unchanged =
@@ -204,10 +212,10 @@ module MempoolV0 {
     val MempoolMaxSize: int = 2
     // assume(MempoolMaxSize > 0)
 
-    type Config = {keepInvalidTxsInCache: bool}
+    type Config = { keepInvalidTxsInCache: bool }
     // const Configs: NodeId -> Config
     // Configs = Map("n1" -> {keepInvalidTxsInCache -> false}, "n2" -> {keepInvalidTxsInCache -> false}, "n2" -> {keepInvalidTxsInCache -> false}), 
-    val Configs: NodeId -> Config = NodeIds.mapBy(_ => {keepInvalidTxsInCache: false})
+    val Configs: NodeId -> Config = NodeIds.mapBy(_ => { keepInvalidTxsInCache: false })
 
     //--------------------------------------------------------------------------
     // Node metadata
@@ -217,40 +225,29 @@ module MempoolV0 {
         "Update", "ReceiveRecheckTxResponse", "P2P_ReceiveTxs", "P2P_SendTx", 
         "ABCI::ProcessCheckTxRequest")
 
-    var step: {node: NodeId, name: Step}
-    var error: NodeId -> Error
+    var step: { node: NodeId, name: Step }
+    var error: (NodeId, Error)
 
     /* Auxiliary definitions */
     action setStep(nodeId, s) =
-        step' = {node: nodeId, name: s}
+        step' = { node: nodeId, name: s }
 
     action setError(nodeId, err) =
-        error' = error.put(nodeId, err)
+        error' = (nodeId, err)
 
     //--------------------------------------------------------------------------
     // Mempool state
     //--------------------------------------------------------------------------
     // [mempoolTx]: https://github.com/CometBFT/cometbft/blob/6498d67efdf0a539e3ca0dc3e4a5d7cb79878bb2/mempool/clist_mempool.go#L671
-    type MempoolTx = {tx: Tx, height: Height}
+    type MempoolTx = { 
+        tx: Tx, 
+        height: Height, 
+        senders: Set[NodeId]
+    }
     
     var mempool: NodeId -> Set[MempoolTx]
-    var sender: NodeId -> Tx -> Set[NodeId]
     var cache: NodeId -> Set[Tx]
     var height: NodeId -> Height
-
-    //--------------------------------------------------------------------------
-    /* Sender auxiliary definitions */
-    action addSender(nodeId, tx, senderId) = {
-        val senderTxMap = sender.get(nodeId)
-        val senderIds = senderTxMap.get(tx)
-        sender' = sender.put(nodeId, senderTxMap.put(tx, senderIds.union(Set(senderId))))
-    }
-
-    action removeSender(nodeId, txs) = {
-        val txSenderMap: Tx -> Set[NodeId] = sender.get(nodeId)
-        val updatedKeys = txSenderMap.keys().exclude(txs)
-        sender' = sender.put(nodeId, updatedKeys.mapBy(tx => txSenderMap.get(tx)))
-    }
 
     //--------------------------------------------------------------------------
     /* Cache auxiliary definitions */
@@ -263,9 +260,9 @@ module MempoolV0 {
     action forceRemoveFromCache(nodeId: NodeId, tx: Tx): bool =
         cache' = cache.put(nodeId, cache.get(nodeId).exclude(Set(tx)))
 
-    action removeFromCache(nodeId, tx) =
-        if (Configs.get(nodeId).keepInvalidTxsInCache) {
-            forceRemoveFromCache(nodeId, tx)
+    action removeFromCache(nodeId, invalidTx) =
+        if (not(Configs.get(nodeId).keepInvalidTxsInCache)) {
+            forceRemoveFromCache(nodeId, invalidTx)
         } else cache' = cache
 
     //--------------------------------------------------------------------------
@@ -279,28 +276,44 @@ module MempoolV0 {
     def mempoolTxs(nodeId) = 
         mempool.get(nodeId).map(e => e.tx)
 
+    def memTxFor(nodeId, tx) =
+        mempool.get(nodeId).filter(e => e.tx == tx)
+    
+    def sendersFor(nodeId: NodeId, tx: Tx): Set[NodeId] = 
+        memTxFor(nodeId, tx).map(e => e.senders).flatten()
+
     def inMempool(nodeId, tx) =
         tx.in(mempoolTxs(nodeId))
 
-    action addToMempool(nodeId, tx, h, senderId) = all {
-        mempool' = mempool.put(nodeId, mempool.get(nodeId).union(Set({tx: tx, height: h}))),
-        addSender(nodeId, tx, senderId),
-    }
+    def senderFor(nodeId, tx) = 
+        mempool.get(nodeId).map(e => e.tx)
 
-    action removeFromMempool(nodeId: NodeId, txs: Set[Tx]): bool = all {
-        mempool' = mempool.put(nodeId, mempool.get(nodeId).filter(e => e.tx.in(txs))),
-        removeSender(nodeId, txs),
-    }
+    action addToMempool(nodeId, tx, h, senderId) =
+        val senders = if (senderId == NoNode) Set() else Set(senderId)
+        val memTx = {tx: tx, height: h, senders: senders}
+        mempool' = mempool.put(nodeId, 
+            mempool.get(nodeId).union(Set(memTx)))
+
+    action removeFromMempool(nodeId: NodeId, txs: Set[Tx]): bool =
+        mempool' = mempool.put(nodeId, 
+            mempool.get(nodeId).filter(e => e.tx.in(txs)))
+
+    action addSender(nodeId, tx, senderId) =
+        if (inMempool(nodeId, tx)) {
+            val oldMemTx: MempoolTx = memTxFor(nodeId, tx).chooseSome()
+            val newMemTx = oldMemTx.with("senders", oldMemTx.senders.union(senderId))
+            mempool' = mempool.put(nodeId, 
+                mempool.get(nodeId).exclude(Set(oldMemTx)).union(Set(newMemTx)))
+        } else mempool' = mempool
 
     //--------------------------------------------------------------------------
     // Actions
     //--------------------------------------------------------------------------
     action Init = all {
         mempool' = NodeIds.mapBy(_ => Set()),
-        sender' = NodeIds.mapBy(_ => Map()),
         cache' = NodeIds.mapBy(_ => Set()),
         step' = {node: NoNode, name: "Init"},
-        error' = NodeIds.mapBy(_ => NoError),
+        error' = (NoNode, NoError),
         height' = NodeIds.mapBy(_ => 0),
         Network_Init,
         Chain_Init,
@@ -310,11 +323,10 @@ module MempoolV0 {
     /** Validate a transaction and add it to the mempool. */
     // [CListMempool.CheckTx]: https://github.com/CometBFT/cometbft/blob/5a8bd742619c08e997e70bc2bbb74650d25a141a/mempool/clist_mempool.go#L202
     action CheckTx(nodeId: NodeId, tx: Tx, senderId: NodeId): bool = all {
-        mempool' = mempool,
         if (mempoolIsFull(nodeId)) all {
-            sender' = sender,
+            mempool' = mempool,
             cache' = cache,
-            setError(nodeId, "ErrMempoolIsFull"),
+            setError(nodeId, MempoolIsFullError),
             ABCI_Unchanged,
         } else all {
             if (inCache(nodeId, tx)) all {
@@ -325,13 +337,13 @@ module MempoolV0 {
                 if (inMempool(nodeId, tx)) {
                     addSender(nodeId, tx, senderId)
                 } else {
-                    sender' = sender
+                    mempool' = mempool
                 },
                 cache' = cache,
-                setError(nodeId, "ErrTxInCache"),
+                setError(nodeId, TxInCacheError),
                 ABCI_Unchanged,
             } else all {
-                sender' = sender,
+                mempool' = mempool,
                 addToCache(nodeId, tx),
                 setError(nodeId, NoError),
                 ABCI_SendRequestNewCheckTx(nodeId, tx, senderId),
@@ -357,9 +369,10 @@ module MempoolV0 {
     // Callback function to process a CheckTx response.
     // Note that tx and sender are arguments to CListMempool.resCbFirstTime.
     // [CListMempool.resCbFirstTime]: https://github.com/CometBFT/cometbft/blob/6498d67efdf0a539e3ca0dc3e4a5d7cb79878bb2/mempool/clist_mempool.go#L369
-    action ReceiveCheckTxResponse(nodeId: NodeId): bool = all {
+    action ReceiveCheckTxResponse(nodeId) = all {
         setStep(nodeId, "ReceiveCheckTxResponse"),
-        nondet request = oneOf(ABCI_CheckRequests(nodeId)) all {
+        ABCI_CheckTxRequests(nodeId) != Set(),
+        nondet request = oneOf(ABCI_CheckTxRequests(nodeId)) all {
             val response = ABCI_ResponseFor(nodeId, request)
             val senderId = ABCI_SenderFor(nodeId, request)
             all {
@@ -367,19 +380,17 @@ module MempoolV0 {
                 if (response.err == NoError) {
                     if (mempoolIsFull(nodeId)) all {
                         forceRemoveFromCache(nodeId, request.tx), // There may be enough space for tx later.
-                        setError(nodeId, "ErrMempoolIsFull"),
+                        setError(nodeId, MempoolIsFullError),
                         mempool' = mempool,
-                        sender' = sender,
                     } else all { 
-                        addToMempool(nodeId, request.tx, height.get(nodeId), senderId),
+                        addToMempool(nodeId, request.tx, height.get(nodeId), senderId), // TODO: check if tx is in mempool
                         cache' = cache,
                         setError(nodeId, NoError),
                     }
                 } else all { // ignore invalid transaction
                     mempool' = mempool,
-                    sender' = sender,
                     removeFromCache(nodeId, request.tx),
-                    setError(nodeId, NoError),
+                    setError(nodeId, InvalidTxWarning),
                 }
             }
         },
@@ -418,7 +429,7 @@ module MempoolV0 {
             ABCI_Unchanged
         },
 
-        error' = error,
+        setError(nodeId, NoError),
         Network_Unchanged,
         Chain_Unchanged,
     }
@@ -435,24 +446,23 @@ module MempoolV0 {
     // [CListMempool.resCbRecheck]: https://github.com/CometBFT/cometbft/blob/6498d67efdf0a539e3ca0dc3e4a5d7cb79878bb2/mempool/clist_mempool.go#L432
     action ReceiveRecheckTxResponse(nodeId: NodeId): bool = all {
         setStep(nodeId, "ReceiveRecheckTxResponse"),
-        nondet request = oneOf(ABCI_RecheckRequests(nodeId))
+        nondet request = oneOf(ABCI_RecheckTxRequests(nodeId))
         all {
             val response = ABCI_ResponseFor(nodeId, request)
             all {
                 inMempool(nodeId, request.tx),
                 ABCI_RemoveRequest(nodeId, request),
-                if (response.err == NoError) all {
+                if (response.err != NoError) all {
                     // Tx became invalidated due to newly committed block.
                     removeFromMempool(nodeId, Set(request.tx)),
                     removeFromCache(nodeId, request.tx),
                 } else all {
                     mempool' = mempool,
-                    sender' = sender,
                     cache' = cache,
                 }
             }
         },
-        error' = error,
+        setError(nodeId, NoError),
         height' = height,
         Network_Unchanged,
         Chain_Unchanged,
@@ -488,13 +498,12 @@ module MempoolV0 {
             // If the msg was not already sent to this peer.
             Network_IncomingMsgs(peer).forall(m => m != msg),
             // If the peer is not a tx's sender.
-            tx.in(sender.get(nodeId).keys()) implies not(peer.in(sender.get(nodeId).get(tx))),
+            not(peer.in(sendersFor(nodeId, tx))),
             SendTo(msg, peer),
             mempool' = mempool,
             cache' = cache,
             height' = height,
-            sender' = sender,
-            error' = error,
+            setError(nodeId, NoError),
             ABCI_Unchanged,
             Chain_Unchanged,
         }
@@ -506,10 +515,9 @@ module MempoolV0 {
         setStep(nodeId, "ABCI::ProcessCheckTxRequest"),
         ABCI_ProcessCheckTxRequest(nodeId),
         mempool' = mempool, 
-        sender' = sender, 
         height' = height, 
         cache' = cache, 
-        error' = error, 
+        setError(nodeId, NoError),
         Network_Unchanged,
         Chain_Unchanged,
     }
@@ -547,10 +555,9 @@ module MempoolV0 {
             txs.forall(tx => isValid(tx)),
             Chain_NewBlockFrom(txs),
             mempool' = mempool, 
-            sender' = sender, 
             height' = height, 
             cache' = cache, 
-            error' = error, 
+            setError(NoNode, NoError),
             Network_Unchanged,
         }
 
@@ -559,15 +566,42 @@ module MempoolV0 {
         .then(CheckTxRPC_("n1", "tx1"))
         .then(ABCI_ProcessRequest("n1"))
         .then(ReceiveCheckTxResponse("n1"))
+    
+    run Test2 = Test1
         .then(Update("n1", 1, Set("tx1"), Map("tx1" -> true)))
+
+    run Test3 = Test1
+        .then(Update("n1", 1, Set("tx1"), Map("tx1" -> false)))
+
+    run Test4 = Test1
+        .then(Update("n1", 1, Set("tx2"), Map("tx2" -> true)))
+
+    run TestInvalid1 = Init
+        .then(CheckTxRPC_("n1", InvalidTx))
+        .then(ABCI_ProcessRequest("n1"))
+        .then(ReceiveCheckTxResponse("n1"))
 
     //--------------------------------------------------------------------------
     def NodeState(nodeId) = (
-        ("error", error.get(nodeId)),
         ("mempool", mempool.get(nodeId)), 
-        ("sender", sender.get(nodeId)),
         ("cache", cache.get(nodeId)),
         ("height", height.get(nodeId)),
+        ("abci requests", requestSenderResponses.get(nodeId)),
+        ("incoming msgs", msgs.get(nodeId)),
+    )
+
+    def State = (
+        ("step", step),
+        ("error", error),
+        ("chain", chain),
     )
 
 }
+
+module __repl__ {
+    import Base.*
+    import ABCIServers.*
+    import Chain.*
+    import Network.*
+    import MempoolV0.*
+} //-- __repl__

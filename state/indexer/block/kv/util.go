@@ -3,6 +3,7 @@ package kv
 import (
 	"encoding/binary"
 	"fmt"
+	"math/big"
 	"strconv"
 
 	"github.com/google/orderedcode"
@@ -135,7 +136,7 @@ func parseEventSeqFromEventKey(key []byte) (int64, error) {
 func lookForHeight(conditions []query.Condition) (int64, bool, int) {
 	for i, c := range conditions {
 		if c.CompositeKey == types.BlockHeightKey && c.Op == query.OpEqual {
-			return c.Operand.(int64), true, i
+			return c.Operand.(*big.Int).Int64(), true, i
 		}
 	}
 
@@ -159,7 +160,7 @@ func dedupHeight(conditions []query.Condition) (dedupConditions []query.Conditio
 					continue
 				} else {
 					heightCondition = append(heightCondition, c)
-					heightInfo.height = c.Operand.(int64)
+					heightInfo.height = c.Operand.(*big.Int).Int64() // As height is assumed to always be int64
 					found = true
 				}
 			} else {
@@ -196,7 +197,7 @@ func dedupMatchEvents(conditions []query.Condition) ([]query.Condition, bool) {
 	for i, c := range conditions {
 		if c.CompositeKey == types.MatchEventKey {
 			// Match events should be added only via RPC as the very first query condition
-			if i == 0 && c.Op == query.OpEqual && c.Operand.(int64) == 1 {
+			if i == 0 && c.Op == query.OpEqual && c.Operand.(*big.Int).Int64() == 1 {
 				dedupConditions = append(dedupConditions, c)
 				matchEvents = true
 			}
@@ -210,7 +211,7 @@ func dedupMatchEvents(conditions []query.Condition) ([]query.Condition, bool) {
 
 func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) bool {
 	if heightInfo.heightRange.Key != "" {
-		if !checkBounds(heightInfo.heightRange, keyHeight) {
+		if !checkBounds(heightInfo.heightRange, big.NewInt(keyHeight)) {
 			return false
 		}
 	} else {

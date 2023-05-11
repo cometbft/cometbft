@@ -2,6 +2,7 @@ package kv
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/google/orderedcode"
 	"github.com/tendermint/tendermint/libs/pubsub/query"
@@ -33,7 +34,7 @@ func dedupMatchEvents(conditions []query.Condition) ([]query.Condition, bool) {
 	for i, c := range conditions {
 		if c.CompositeKey == types.MatchEventKey {
 			// Match events should be added only via RPC as the very first query condition
-			if i == 0 && c.Op == query.OpEqual && c.Operand.(int64) == 1 {
+			if i == 0 && c.Op == query.OpEqual && c.Operand.(*big.Int).Int64() == 1 {
 				dedupConditions = append(dedupConditions, c)
 				matchEvents = true
 			}
@@ -79,7 +80,7 @@ func dedupHeight(conditions []query.Condition) (dedupConditions []query.Conditio
 				} else {
 					found = true
 					heightCondition = append(heightCondition, c)
-					heightInfo.height = c.Operand.(int64)
+					heightInfo.height = c.Operand.(*big.Int).Int64() //Height is always int64
 				}
 			} else {
 				heightInfo.onlyHeightEq = false
@@ -110,7 +111,7 @@ func dedupHeight(conditions []query.Condition) (dedupConditions []query.Conditio
 
 func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) bool {
 	if heightInfo.heightRange.Key != "" {
-		if !checkBounds(heightInfo.heightRange, keyHeight) {
+		if !checkBounds(heightInfo.heightRange, big.NewInt(keyHeight)) {
 			return false
 		}
 	} else {

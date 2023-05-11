@@ -1,3 +1,5 @@
+// -*- mode: Bluespec; -*-
+
 // Pure Helper functions
 module Spells {
     pure def excludeE(s, e): (Set[a],a) => Set[a] = s.exclude(Set(e))

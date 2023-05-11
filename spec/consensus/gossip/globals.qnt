@@ -1,3 +1,5 @@
+// -*- mode: Bluespec; -*-
+
 // Global parameters.
 // Must be imported as `Globals.*`
 module Globals {

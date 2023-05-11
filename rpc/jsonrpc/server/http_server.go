@@ -3,11 +3,15 @@ package server
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"runtime/debug"
 	"strings"
@@ -15,6 +19,7 @@ import (
 
 	"golang.org/x/net/netutil"
 
+	"github.com/dgraph-io/ristretto"
 	"github.com/tendermint/tendermint/libs/log"
 	types "github.com/tendermint/tendermint/rpc/jsonrpc/types"
 )
@@ -45,21 +50,65 @@ func DefaultConfig() *Config {
 	}
 }
 
-// Serve creates a http.Server and calls Serve with the given listener. It
-// wraps handler with RecoverAndLogHandler and a handler, which limits the max
-// body size to config.MaxBodyBytes.
-//
-// NOTE: This function blocks - you may want to call it in a go-routine.
 func Serve(listener net.Listener, handler http.Handler, logger log.Logger, config *Config) error {
+	cache, err := ristretto.NewCache(&ristretto.Config{
+		NumCounters: 1e7,     // number of keys to track frequency of (10M).
+		MaxCost:     8 << 30, // maximum cost of cache (8GB).
+		BufferItems: 64,
+	})
+	if err != nil {
+		logger.Error("could not create cache", "err", err)
+		return err
+	}
+
+	cacheMiddleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cacheKey := r.URL.String()
+			var cacheValue []byte
+			if val, found := cache.Get(cacheKey); found {
+				cacheValue = val.([]byte)
+				w.Header().Set("X-Cache", "hit")
+				_, _ = w.Write(cacheValue)
+				return
+			}
+			w.Header().Set("X-Cache", "miss")
+
+			r.Body = http.MaxBytesReader(w, r.Body, config.MaxBodyBytes)
+			buf := new(bytes.Buffer)
+			tee := io.TeeReader(r.Body, buf)
+			r.Body = ioutil.NopCloser(buf)
+			r2, err := http.NewRequest(r.Method, r.URL.String(), tee)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			r2.Header = r.Header
+
+			rec := httptest.NewRecorder()
+			next.ServeHTTP(rec, r2)
+
+			for k, v := range rec.Header() {
+				w.Header()[k] = v
+			}
+			w.WriteHeader(rec.Code)
+			_, err = w.Write(rec.Body.Bytes())
+			if err != nil {
+				logger.Error("failed to write response", "err", err)
+			}
+
+			cache.SetWithTTL(cacheKey, rec.Body.Bytes(), 1, time.Hour)
+		})
+	}
+
 	logger.Info("serve", "msg", log.NewLazySprintf("Starting RPC HTTP server on %s", listener.Addr()))
 	s := &http.Server{
-		Handler:           RecoverAndLogHandler(maxBytesHandler{h: handler, n: config.MaxBodyBytes}, logger),
+		Handler:           RecoverAndLogHandler(cacheMiddleware(maxBytesHandler{h: handler, n: config.MaxBodyBytes}), logger),
 		ReadTimeout:       config.ReadTimeout,
 		ReadHeaderTimeout: config.ReadTimeout,
 		WriteTimeout:      config.WriteTimeout,
 		MaxHeaderBytes:    config.MaxHeaderBytes,
 	}
-	err := s.Serve(listener)
+	err = s.Serve(listener)
 	logger.Info("RPC HTTP server stopped", "err", err)
 	return err
 }

@@ -41,15 +41,14 @@ module Lexy1 {
     pure def hasEntry(v: View, e:Entry):bool = v.contains(e)
 
 
-
-
-
+    //Unit tests
     run isSupersededByTest = all {
         assert(Set((1,1,1)).isSupersededBy(Set((2,1,1)))),
         assert(Set((1,1,1)).isSupersededBy(Set((2,2,2)))),
         assert(Set((1,1,2)).isSupersededBy(Set((1,1,2)))),
         assert(Set((1,1,1)).isSupersededBy(Set((1,1,2)))),
         assert(Set((2,1,1)).isSupersededBy(Set((2,1,1)))),
+        assert(not(Set((2,1,1)).isSupersededBy(Set((2,2,2))))),
         assert(not(Set((2,1,1)).isSupersededBy(Set((1,1,1))))),
         assert(not(Set((2,1,1)).isSupersededBy(Set((1,2,2))))),
     }
@@ -154,6 +153,7 @@ module Lexy2 {
         assert(Set((1,1,1,false)).isSupersededBy(Set((1,1,2,true)))),
         assert(Set((2,1,1,false)).isSupersededBy(Set((2,1,1,false)))),
         assert(Set((2,1,1,false)).isSupersededBy(Set((2,1,1,true)))),
+        assert(not(Set((2,1,1,false)).isSupersededBy(Set((2,2,2,false))))),
         assert(not(Set((2,1,1,false)).isSupersededBy(Set((1,1,1,false))))),
         assert(not(Set((2,1,1,false)).isSupersededBy(Set((1,1,1,true))))),
         assert(not(Set((2,1,1,false)).isSupersededBy(Set((1,2,2,false))))),

@@ -13,51 +13,33 @@ Responses == ResponseCheckTx \union {NoResponse}
 \* The ABCIServer receives requests in a queue (a set actually) and responds
 \* to a queue (set) of responses.
 VARIABLES 
-    \* @type: NODE_ID -> REQUEST -> RESPONSE;
-    requestResponses,
-    \* @type: NODE_ID -> REQUEST -> NODE_ID;
-    requestSenders
+    \* For each node, we keep a mapping from requests to 
+    \* - the sender of the request, if available, and
+    \* - to the response from the application, when available.
+    \* @type: NODE_ID -> REQUEST -> <<NODE_ID, RESPONSE>>;
+    requestResponses
 
 TypeOK ==
-    /\ IsFuncMap(requestResponses, NodeIds, RequestCheckTx, Responses)
-    /\ IsFuncMap(requestSenders, NodeIds, RequestCheckTx, NodeIds \cup {NoNode})
+    IsFuncMap(requestResponses, NodeIds, RequestCheckTx, (NodeIds \cup {NoNode}) \X Responses)
 
 --------------------------------------------------------------------------------
 (******************************************************************************)
 (* Auxiliary definitions *)
 (******************************************************************************)
 
-\* @type: (NODE_ID, TX, NODE_ID) => Bool;
-SendRequestNewCheckTx(nodeId, tx, sender) == 
-    LET req == [tag |-> "CheckTx", tx |-> tx, checkTxType |-> "New"] IN
-    /\ requestResponses' = [requestResponses EXCEPT ![nodeId] = MapPut(@, req, NoResponse)]
-    /\ requestSenders' = [requestSenders EXCEPT ![nodeId] = MapPut(@, req, sender)]
+SenderFor(nodeId, request) == requestResponses[nodeId][request][1]
+ResponseFor(nodeId, request) == requestResponses[nodeId][request][2]
 
-\* @type: (NODE_ID, Set(TX)) => Bool;
-SendRequestRecheckTxs(nodeId, txs) == 
-    LET reqs == {[tag |-> "CheckTx", tx |-> tx, checkTxType |-> "Recheck"]: tx \in txs} IN
-    /\ requestResponses' = [requestResponses EXCEPT ![nodeId] = MapPutMany(@, reqs, NoResponse)]
-    /\ requestSenders' = requestSenders
-
-ResponseFor(nodeId, request) == requestResponses[nodeId][request]
-SenderFor(nodeId, request) == requestSenders[nodeId][request]
+HasResponse(nodeId, request) ==
+    ResponseFor(nodeId, request) # NoResponse
 
 Requests(nodeId, checkTxType) == 
     { r \in DOMAIN requestResponses[nodeId]: 
         /\ r.checkTxType = checkTxType 
-        /\ requestResponses[nodeId][r] # NoResponse }
+        /\ HasResponse(nodeId, r) }
 
 CheckRequests(nodeId) == Requests(nodeId, "New")
 RecheckRequests(nodeId) == Requests(nodeId, "Recheck")
-
-\* @type: (NODE_ID, REQUEST) => Bool;
-RemoveRequest(nodeId, request) ==
-    /\ requestResponses[nodeId][request] # NoResponse
-    /\ requestResponses' = [requestResponses EXCEPT ![nodeId] = MapRemove(@, request)]
-    /\ requestSenders' = [requestSenders EXCEPT ![nodeId] = MapRemove(@, request)]
-
-vars == <<requestResponses, requestSenders>>
-Unchanged == UNCHANGED vars
 
 --------------------------------------------------------------------------------
 (******************************************************************************)
@@ -65,24 +47,36 @@ Unchanged == UNCHANGED vars
 (******************************************************************************)
 
 \* EmptyMap is not accepted by Apalache's typechecker.
-\* @type: REQUEST -> RESPONSE;
-EmptyMapResponses == [x \in {} |-> NoResponse]
-\* @type: REQUEST -> NODE_ID;
-EmptyMapNodeIds == [x \in {} |-> NoNode]
+\* @type: REQUEST -> <<NODE_ID, RESPONSE>>;
+EmptyMapResponses == [x \in {} |-> <<NoNode, NoResponse>>]
 
 Init ==
-    /\ requestResponses = [n \in NodeIds |-> EmptyMapResponses]
-    /\ requestSenders = [n \in NodeIds |-> EmptyMapNodeIds]
+    requestResponses = [n \in NodeIds |-> EmptyMapResponses]
+
+\* @type: (NODE_ID, Set(TX)) => Bool;
+SendRequestRecheckTxs(nodeId, txs) == 
+    LET reqs == {[tag |-> "CheckTx", tx |-> tx, checkTxType |-> "Recheck"]: tx \in txs} IN
+    requestResponses' = [requestResponses EXCEPT ![nodeId] = MapPutMany(@, reqs, <<NoNode, NoResponse>>)]
+
+\* @type: (NODE_ID, TX, NODE_ID) => Bool;
+SendRequestNewCheckTx(nodeId, tx, sender) == 
+    LET req == [tag |-> "CheckTx", tx |-> tx, checkTxType |-> "New"] IN
+    requestResponses' = [requestResponses EXCEPT ![nodeId] = MapPut(@, req, <<sender, NoResponse>>)]
 
 \* The app receives a request and creates a response.
 ProcessCheckTxRequest(nodeId) == 
-    \* /\ PrintT(<<"ProcessCheckTxRequest", nodeId>>)
-    /\ \E request \in DOMAIN requestResponses[nodeId]:
-        /\ requestResponses[nodeId][request] = NoResponse
+    \E request \in DOMAIN requestResponses[nodeId]:
+        /\ ~ HasResponse(nodeId, request)
         /\ LET err == IF isValid(request.tx) THEN NoError ELSE InvalidTxError IN
            LET response == [tag |-> request.tag, error |-> err] IN
-           requestResponses' = [requestResponses EXCEPT ![nodeId] = MapPut(@, request, response)]
-    /\ requestSenders' = requestSenders
+           requestResponses' = [requestResponses EXCEPT ![nodeId] = MapPut(@, request, <<SenderFor(nodeId, request), response>>)]
+
+\* @type: (NODE_ID, REQUEST) => Bool;
+RemoveRequest(nodeId, request) ==
+    /\ HasResponse(nodeId, request)
+    /\ requestResponses' = [requestResponses EXCEPT ![nodeId] = MapRemove(@, request)]
+
+Unchanged == UNCHANGED requestResponses
 
 ================================================================================
 Created by Hernán Vanzetto on 1 May 2023

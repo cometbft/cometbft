@@ -8,7 +8,7 @@ VARIABLES
 --------------------------------------------------------------------------------
 Max(S) == CHOOSE x \in S: \A y \in S: x >= y
 
-LatestHeight == Max(DOMAIN chain \union {1})
+LatestHeight == Max(DOMAIN chain \union {0})
 
 IsEmpty ==
     DOMAIN chain = {}
@@ -26,7 +26,7 @@ TypeOK ==
 Init ==
     chain = [x \in {} |-> {}]
 
-SetNext(txs) == 
+NewBlockFrom(txs) == 
     chain' = MapPut(chain, LatestHeight + 1, txs)
 
 Unchanged == 

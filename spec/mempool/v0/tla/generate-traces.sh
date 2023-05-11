@@ -20,13 +20,19 @@ for TEST in "${tests[@]}"; do
     LAST_GENERATED_DIR=$(ls -rt "$OUT_DIR/$MAIN_TLA_FILE/" | tail -1)
     OUT_DIR="$OUT_DIR/$MAIN_TLA_FILE/$LAST_GENERATED_DIR"
 
+    # Prepare directory for trace files
     TRACES_DIR="$TRACES_ROOT_DIR/$TEST"
     mkdir -p "$TRACES_DIR"
     rm -f "$TRACES_DIR/*.itf.json" # Warning: we are removing the previous generated files!
 
+    # Copy trace files to test directory
     echo "cp $OUT_DIR/*.itf.json $TRACES_DIR"
     cp $OUT_DIR/*.itf.json $TRACES_DIR
     rm -f $TRACES_DIR/violation.itf.json # this one is the same as violation1.itf.json
 
+    # Rename trace files
     ls -a $TRACES_DIR/*.itf.json | sed -e 'p;s/violation/sample/' | xargs -n2 mv
+    
+    # Show all final files
+    ls -la $TRACES_DIR/*.itf.json
 done

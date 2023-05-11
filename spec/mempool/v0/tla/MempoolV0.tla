@@ -49,10 +49,8 @@ Chain == INSTANCE Chain
 (* ABCI applications for each node.                                           *)
 (******************************************************************************)
 VARIABLES 
-    \* @type: NODE_ID -> REQUEST -> RESPONSE;
-    requestResponses,
-    \* @type: NODE_ID -> REQUEST -> NODE_ID;
-    requestSenders
+    \* @type: NODE_ID -> REQUEST -> <<NODE_ID, RESPONSE>>;
+    requestResponses
 
 ABCI == INSTANCE ABCIServers
 
@@ -75,8 +73,9 @@ VARIABLES
     \* @type: NODE_ID -> HEIGHT;
     height
 
+\* To keep track of actions
 VARIABLES
-    \* @type: NODE_ID -> Str;
+    \* @type: [node: NODE_ID, step: Str];
     step,
     \* @type: NODE_ID -> ERROR;
     error
@@ -86,7 +85,8 @@ VARIABLES
 --------------------------------------------------------------------------------
 Steps == {"Init", "CheckTx", "ReceiveCheckTxResponse", 
     "Update", "ReceiveRecheckTxResponse", 
-    "P2P_ReceiveTxs", "P2P_SendTx", "ABCI!ProcessCheckTxRequest"}
+    "P2P_ReceiveTxs", "P2P_SendTx", "ABCI!ProcessCheckTxRequest", 
+    "Chain!NewBlock"}
 
 \* @type: Set(ERROR);
 Errors == {NoError, "ErrMempoolIsFull", "ErrTxInCache"}
@@ -95,7 +95,7 @@ TypeOK ==
     /\ mempool \in [NodeIds -> SUBSET MempoolTxs]
     /\ cache \in [NodeIds -> SUBSET Txs]
     /\ height \in [NodeIds -> Heights]
-    /\ step \in [NodeIds -> Steps]
+    /\ step \in [node: NodeIds \cup {NoNode}, name: Steps]
     /\ error \in [NodeIds -> Errors]
     /\ Network!TypeOK
     /\ Chain!TypeOK
@@ -107,8 +107,8 @@ EmptyMapNodeIds == [x \in {} |-> {}]
 Init == 
     /\ mempool = [x \in NodeIds |-> {}]
     /\ cache = [x \in NodeIds |-> {}]
-    /\ height = [x \in NodeIds |-> 1]
-    /\ step = [x \in NodeIds |-> "Init"]
+    /\ height = [x \in NodeIds |-> 0]
+    /\ step = [node |-> NoNode, name |-> "Init"]
     /\ error = [x \in NodeIds |-> NoError]
     /\ Network!Init
     /\ Chain!Init
@@ -120,7 +120,7 @@ Init ==
 (******************************************************************************)
 
 setStep(nodeId, s) ==
-    step' = [step EXCEPT ![nodeId] = s]
+    step' = [node |-> nodeId, step |-> s]
 
 setError(nodeId, err) ==
     error' = [error EXCEPT ![nodeId] = err]
@@ -328,43 +328,48 @@ P2P_SendTx(nodeId) ==
         /\ ABCI!Unchanged
 
 --------------------------------------------------------------------------------
-Next == 
-    \/  /\ \E nodeId \in NodeIds:
-            \* Receive some transaction from a client via RPC
-            \/ \E tx \in Txs: CheckTxRPC(nodeId, tx)    
+NodeNext == 
+    \E nodeId \in NodeIds:
+        \* Receive some transaction from a client via RPC
+        \/ \E tx \in Txs: CheckTxRPC(nodeId, tx)
 
-            \* Receive a (New) CheckTx response from the application
-            \/ ReceiveCheckTxResponse(nodeId)
+        \* Receive a (New) CheckTx response from the application
+        \/ ReceiveCheckTxResponse(nodeId)
 
-            \* Consensus reactor creates a block and updates the mempool
-            \/  /\ ~ Chain!IsEmpty
-                /\ height[nodeId] <= Chain!LatestHeight
-                /\ LET txs == Chain!GetBlock(height[nodeId]) IN
-                    \E txValidResults \in [txs -> BOOLEAN]:
-                        Update(nodeId, height[nodeId] + 1, txs, txValidResults)
+        \* Consensus reactor creates a block and updates the mempool
+        \/  /\ ~ Chain!IsEmpty
+            /\ height[nodeId] <= Chain!LatestHeight
+            /\ LET txs == Chain!GetBlock(height[nodeId]) IN
+                \E txValidResults \in [txs -> BOOLEAN]:
+                    Update(nodeId, height[nodeId], txs, txValidResults)
 
-            \* Receive a (Recheck) CheckTx response from the application
-            \/ ReceiveRecheckTxResponse(nodeId)
+        \* Receive a (Recheck) CheckTx response from the application
+        \/ ReceiveRecheckTxResponse(nodeId)
 
-            \* Receive a transaction from a peer
-            \/ P2P_ReceiveTxs(nodeId)
+        \* Receive a transaction from a peer
+        \/ P2P_ReceiveTxs(nodeId)
 
-            \* Send a transaction in the mempool to a peer
-            \/ P2P_SendTx(nodeId)
+        \* Send a transaction in the mempool to a peer
+        \/ P2P_SendTx(nodeId)
 
-            \* The ABCI application process a request and generates a response
-            \/  /\ ABCI!ProcessCheckTxRequest(nodeId)
-                /\ setStep(nodeId, "ABCI!ProcessCheckTxRequest")
-                /\ UNCHANGED <<mempool, cache, height, error>>
-                /\ Network!Unchanged
+        \* The ABCI application process a request and generates a response
+        \/  /\ ABCI!ProcessCheckTxRequest(nodeId)
+            /\ setStep(nodeId, "ABCI!ProcessCheckTxRequest")
+            /\ UNCHANGED <<mempool, cache, height, error>>
+            /\ Network!Unchanged
 
+Next ==
+    \/  /\ NodeNext
         /\ Chain!Unchanged
 
     \* Some node, not necessarily in NodeIds, adds a new block to the chain.
+    \* The transactions for the new block are not already in the chain, and they 
+    \* are all valid.
     \/ \E txs \in SUBSET (Txs \ Chain!AllTxsInChain) \ {{}}:
         /\ \A tx \in txs: isValid(tx)
-        /\ Chain!SetNext(txs)
-        /\ UNCHANGED <<mempool, cache, step, height, error>>
+        /\ Chain!NewBlockFrom(txs)
+        /\ setStep(NoNode, "Chain!NewBlock")
+        /\ UNCHANGED <<mempool, cache, height, error>>
         /\ Network!Unchanged
         /\ ABCI!Unchanged
 
@@ -385,18 +390,19 @@ NonEmptyCache ==
         /\ cache[nodeId] # {}
 NotNonEmptyCache == ~ NonEmptyCache
 
-ReceiveRecheckTxResponseProp ==
-    \E nodeId \in NodeIds:
-        step[nodeId] = "ReceiveRecheckTxResponse"
-NotReceiveRecheckTxResponse == ~ ReceiveRecheckTxResponseProp
+ReceiveRecheckTxResponseTest ==
+    \E nodeId \in NodeIds: step.nodeId = "ReceiveRecheckTxResponse"
+NotReceiveRecheckTxResponse == ~ ReceiveRecheckTxResponseTest
+
+P2PReceiveTxsTest ==
+    \E nodeId \in NodeIds: step.nodeId = "P2P_ReceiveTxs"
+NotP2PReceiveTxs == ~ P2PReceiveTxsTest
 
 SendTxTest ==
-    \E nodeId \in NodeIds:
-        step[nodeId] = "SendTx"
-NotSendTxTest == ~ SendTxTest
+    \E nodeId \in NodeIds: step.nodeId = "SendTx"
+NotSendTx == ~ SendTxTest
 
-\* @ typeAlias: STATE = [step: NODE_ID -> Str];
-\* @typeAlias: STATE = [requestResponses: NODE_ID -> REQUEST -> RESPONSE, requestSenders: NODE_ID -> REQUEST -> NODE_ID, mempool: NODE_ID -> Set(TX), cache: NODE_ID -> Set(TX), step: NODE_ID -> Str, error: NODE_ID -> ERROR, height: NODE_ID -> HEIGHT];
+\* @typeAlias: STATE = [msgs: NODE_ID -> Set(MSG), chain: HEIGHT -> Set(TX), requestResponses: NODE_ID -> REQUEST -> <<NODE_ID, RESPONSE>>, mempool: NODE_ID -> Set(MEMPOOL_TX), cache: NODE_ID -> Set(TX), height: NODE_ID -> HEIGHT, step: NODE_ID -> Str, error: NODE_ID -> ERROR];
 \* @type: Seq(STATE) => Bool;
 SendThenCheck(trace) ==
     \E i, j \in DOMAIN trace: i < j /\
@@ -409,6 +415,19 @@ SendThenCheck(trace) ==
 
 \* @type: Seq(STATE) => Bool;
 NotSendThenCheck(trace) == ~ SendThenCheck(trace)
+
+\* @type: Seq(STATE) => Bool;
+RemoveFromCacheThenAddAgain(trace) ==
+    \E i, j \in DOMAIN trace: i < j /\
+        \E n \in NodeIds:
+            LET state1 == trace[i] IN 
+            LET state2 == trace[j] IN
+            /\ state1.step[n] = "Update"
+            /\ state1.cache[n] = {}
+            /\ state2.cache[n] # {}
+
+\* @type: Seq(STATE) => Bool;
+NotRemoveFromCacheThenAddAgain(trace) == ~ RemoveFromCacheThenAddAgain(trace)
 
 ================================================================================
 Created by Hernán Vanzetto on 1 May 2023

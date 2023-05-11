@@ -25,3 +25,5 @@ This specification is divided into multiple documents and should be read in the 
 ## Status
 
 - V1 - Consolidation of work done on PR #74 as a "mergeable" PR.
+- V2 - Refined type CRDT and example instantiations
+- V3 - CRDT for Gossip

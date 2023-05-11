@@ -35,17 +35,17 @@ module ABCIMessages {
 
     val InvalidTxError: Error = "invalid-tx"
 
-    // https://github.com/CometBFT/cometbft/blob/4790ea3e46475064d5475c787427ae926c5a9e94/proto/tendermint/abci/types.proto#L94
+    // [tendermint.abci.CheckTxType]: https://github.com/CometBFT/cometbft/blob/4790ea3e46475064d5475c787427ae926c5a9e94/proto/tendermint/abci/types.proto#L94
     val CheckTxTypes = Set("New", "Recheck")
 
-    // https://github.com/CometBFT/cometbft/blob/4790ea3e46475064d5475c787427ae926c5a9e94/proto/tendermint/abci/types.proto#L99
+    // [tendermint.abci.RequestCheckTx]: https://github.com/CometBFT/cometbft/blob/4790ea3e46475064d5475c787427ae926c5a9e94/proto/tendermint/abci/types.proto#L99
     type Request = {
         tag: str, 
         tx: Tx, 
         checkTxType: str
     }
 
-    // https://github.com/CometBFT/cometbft/blob/4790ea3e46475064d5475c787427ae926c5a9e94/proto/tendermint/abci/types.proto#L254
+    // [tendermint.abci.ResponseCheckTx]: https://github.com/CometBFT/cometbft/blob/4790ea3e46475064d5475c787427ae926c5a9e94/proto/tendermint/abci/types.proto#L254
     type Response = {
         tag: str, 
         err: Error // called `code` in protobuf
@@ -149,16 +149,54 @@ module Network {
     var msgs: NodeId -> Set[TxsMsg] // map from receiver to messages to process
 
     //--------------------------------------------------------------------------
-    /* Network auxiliary definitions */
+    action Network_Init =
+        msgs' = NodeIds.mapBy(_ => Set())
+
     action SendTo(msg: TxsMsg, peer: NodeId): bool =
         msgs' = msgs.put(peer, msgs.get(peer).union(Set(msg)))
 
     action ReceiveMsg(nodeId: NodeId, msg: TxsMsg): bool =
         msgs' = msgs.put(nodeId, msgs.get(nodeId).exclude(Set(msg)))    
+
+    action Network_Unchanged =
+        msgs' = msgs
+
+    //--------------------------------------------------------------------------
+    def Network_IncomingMsgs(nodeId) =
+        msgs.get(nodeId)
+}
+
+module Chain {
+    import Base.* 
+
+    var chain: List[Set[Tx]]
+
+    val Chain_latestHeight = chain.length() - 1
+
+    val Chain_isEmpty = 
+        chain.length() == 0
+
+    def Chain_getBlock(h) =
+        chain[h]
+
+    val Chain_allTxsInChain =
+        chain.foldl(Set(), (s, x) => s.union(x))
+
+    //--------------------------------------------------------------------------
+    action Chain_Init =
+        chain' = List()
+
+    action Chain_NewBlockFrom(txs) =
+        chain' = chain.append(txs)
+
+    action Chain_Unchanged = 
+        chain' = chain
+
 }
 
 module MempoolV0 {
     import Base.* 
+    import Chain.*
     import ABCIServers.* // as ABCI
     import Network.*
 
@@ -182,12 +220,12 @@ module MempoolV0 {
         "Update", "ReceiveRecheckTxResponse", "P2P_ReceiveTxs", "P2P_SendTx", 
         "ABCI::ProcessCheckTxRequest")
 
-    var step: NodeId -> Step
+    var step: {node: NodeId, name: Step}
     var error: NodeId -> Error
 
     /* Auxiliary definitions */
     action setStep(nodeId, s) =
-        step' = step.put(nodeId, s)
+        step' = {node: nodeId, name: s}
 
     action setError(nodeId, err) =
         error' = error.put(nodeId, err)
@@ -264,10 +302,11 @@ module MempoolV0 {
         mempool' = NodeIds.mapBy(_ => Set()),
         sender' = NodeIds.mapBy(_ => Map()),
         cache' = NodeIds.mapBy(_ => Set()),
-        msgs' = NodeIds.mapBy(_ => Set()),
-        step' = NodeIds.mapBy(_ => "Init"),
+        step' = {node: NoNode, name: "Init"},
         error' = NodeIds.mapBy(_ => NoError),
         height' = NodeIds.mapBy(_ => 0),
+        Network_Init,
+        Chain_Init,
         ABCI_Init,
     }
     
@@ -309,14 +348,14 @@ module MempoolV0 {
     action CheckTxRPC_(nodeId, tx) = all {
         setStep(nodeId, "CheckTx"),
         CheckTx(nodeId, tx, NoNode),
-        msgs' = msgs,
+        Network_Unchanged,
+        Chain_Unchanged,
     }
 
     /* Receive some transaction from a client via RPC. */
-    action CheckTxRPC(nodeId) = {
+    action CheckTxRPC(nodeId) =
         nondet tx = oneOf(Txs)
         CheckTxRPC_(nodeId, tx)
-    }
 
     // Callback function to process a CheckTx response.
     // Note that tx and sender are arguments to CListMempool.resCbFirstTime.
@@ -347,15 +386,16 @@ module MempoolV0 {
                 }
             }
         },
-        msgs' = msgs,
         height' = height,
+        Network_Unchanged,
+        Chain_Unchanged,
     }
 
     /** Consensus' BlockExecutor calls Update to update the mempool after executing txs.
       * txResults are the results of ResponseFinalizeBlock for every tx in txs.
       * BlockExecutor holds the mempool lock while calling this function.
       */
-    // [CListMempool.Update] https://github.com/CometBFT/cometbft/blob/6498d67efdf0a539e3ca0dc3e4a5d7cb79878bb2/mempool/clist_mempool.go#L577
+    // [CListMempool.Update]: https://github.com/CometBFT/cometbft/blob/6498d67efdf0a539e3ca0dc3e4a5d7cb79878bb2/mempool/clist_mempool.go#L577
     action Update(nodeId: NodeId, h: Height, txs: Set[Tx], txValidResults: Tx -> bool): bool = all {
         setStep(nodeId, "Update"),
         txs != Set(),
@@ -381,8 +421,17 @@ module MempoolV0 {
             ABCI_Unchanged
         },
 
-        msgs' = msgs,
         error' = error,
+        Network_Unchanged,
+        Chain_Unchanged,
+    }
+
+    action Consensus_Update(nodeId: NodeId): bool = all {
+        not(Chain_isEmpty),
+        height.get(nodeId) <= Chain_latestHeight,
+        val txs: Set[Tx] = Chain_getBlock(height.get(nodeId))
+        nondet txValidResults: Tx -> Bool = oneOf(txs.setOfMaps(Bool))
+        Update(nodeId, height.get(nodeId), txs, txValidResults),
     }
 
     // Callback function to process a CheckTx response, when rechecking.
@@ -406,9 +455,10 @@ module MempoolV0 {
                 }
             }
         },
-        msgs' = msgs,
         error' = error,
         height' = height,
+        Network_Unchanged,
+        Chain_Unchanged,
     }
 
     //--------------------------------------------------------------------------
@@ -419,17 +469,18 @@ module MempoolV0 {
     // [Reactor.Receive]: https://github.com/CometBFT/cometbft/blob/111d252d75a4839341ff461d4e0cf152ca2cc13d/mempool/reactor.go#L93
     action P2P_ReceiveTxs(nodeId) = all {
         setStep(nodeId, "P2P_ReceiveTxs"),
-        msgs.get(nodeId) != Set(),
-        nondet msg = oneOf(msgs.get(nodeId))
+        Network_IncomingMsgs(nodeId) != Set(),
+        nondet msg = oneOf(Network_IncomingMsgs(nodeId))
         all {
             CheckTx(nodeId, msg.tx, msg.senderId),
             ReceiveMsg(nodeId, msg),
+            Chain_Unchanged,
         }
     }
 
     /* The reactor loops through its mempool and sends the tx one by one to all
      * each of its peers. */
-    // [Reactor.broadcastTxRoutine] https://github.com/CometBFT/cometbft/blob/5049f2cc6cf519554d6cd90bcca0abe39ce4c9df/mempool/reactor.go#L132
+    // [Reactor.broadcastTxRoutine]: https://github.com/CometBFT/cometbft/blob/5049f2cc6cf519554d6cd90bcca0abe39ce4c9df/mempool/reactor.go#L132
     action P2P_SendTx(nodeId: NodeId): bool = all {
         setStep(nodeId, "P2P_SendTx"),
         not(mempoolIsEmpty(nodeId)),
@@ -438,7 +489,7 @@ module MempoolV0 {
         val msg = {tag: "Txs", senderId: nodeId, tx: tx}
         all {
             // If the msg was not already sent to this peer.
-            msgs.get(peer).forall(m => m != msg),
+            Network_IncomingMsgs(peer).forall(m => m != msg),
             // If the peer is not a tx's sender.
             tx.in(sender.get(nodeId).keys()) implies not(peer.in(sender.get(nodeId).get(tx))),
             SendTo(msg, peer),
@@ -448,6 +499,7 @@ module MempoolV0 {
             sender' = sender,
             error' = error,
             ABCI_Unchanged,
+            Chain_Unchanged,
         }
     }
 
@@ -461,11 +513,12 @@ module MempoolV0 {
         height' = height, 
         cache' = cache, 
         error' = error, 
-        msgs' = msgs,
+        Network_Unchanged,
+        Chain_Unchanged,
     }
 
-    /* All possible actions */
-    action Next =
+    /* All possible actions on a node. */
+    action NodeNext =
         nondet nodeId = oneOf(NodeIds)
         any {
             // Receive a transaction from a client via RPC
@@ -475,9 +528,7 @@ module MempoolV0 {
             ReceiveCheckTxResponse(nodeId),
 
             // Consensus reactor updates the mempool and rechecks txs
-            nondet txs = oneOf(Txs.powerset().exclude(Set(Set())))
-            nondet txValidResults = oneOf(txs.setOfMaps(Bool))
-            Update(nodeId, height.get(nodeId) + 1, txs, txValidResults),
+            Consensus_Update(nodeId),
 
             // Receive a (Recheck) CheckTx response from the application
             ReceiveRecheckTxResponse(nodeId),
@@ -492,6 +543,20 @@ module MempoolV0 {
             ABCI_ProcessRequest(nodeId),
         }
 
+    /* There is action in the chain too. */
+    action ChainNext =
+        nondet txs = oneOf(Txs.exclude(Chain_allTxsInChain).powerset().exclude(Set(Set())))
+        all {
+            txs.forall(tx => isValid(tx)),
+            Chain_NewBlockFrom(txs),
+            mempool' = mempool, 
+            sender' = sender, 
+            height' = height, 
+            cache' = cache, 
+            error' = error, 
+            Network_Unchanged,
+        }
+
     //--------------------------------------------------------------------------
     run Test1 = Init
         .then(CheckTxRPC_("n1", "tx1"))
@@ -501,7 +566,6 @@ module MempoolV0 {
 
     //--------------------------------------------------------------------------
     def NodeState(nodeId) = (
-        ("step", step.get(nodeId)),
         ("error", error.get(nodeId)),
         ("mempool", mempool.get(nodeId)), 
         ("sender", sender.get(nodeId)),

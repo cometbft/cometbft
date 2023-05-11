@@ -7,6 +7,22 @@
 // One of the goals of this spec is to make their actions and data structures
 // easily mapped to the code.
 
+// From: https://github.com/informalsystems/quint/blob/main/examples/spells/basicSpells.qnt
+module basicSpells {
+    /// An annotation for writing preconditions.
+    pure def require(__cond: bool): bool = __cond
+
+    /// Remove a set element.
+    pure def setRemove(__set: Set[a], __elem: a): Set[a] = {
+        __set.exclude(Set(__elem))
+    }
+
+    /// Remove a map entry.
+    pure def mapRemove(__map: a -> b, __key: a): a -> b = {
+        __map.keys().setRemove(__key).mapBy(__k => __map.get(__k))
+    }
+}
+
 module Base {
     // Nodes
     type NodeId = str
@@ -52,6 +68,7 @@ module ABCIMessages {
 
 // An ABCI server receives asynchronous ABCI requests and replies with ABCI responses.
 module ABCIServers {
+    import basicSpells.* //from "./basicSpells"
     import Base.*
     import ABCIMessages.*
 
@@ -74,19 +91,18 @@ module ABCIServers {
     //--------------------------------------------------------------------------
     // Auxiliary definitions
     //--------------------------------------------------------------------------
-
     def ABCI_SenderFor(nodeId, request) = 
         (requestSenderResponses.get(nodeId).get(request))._1
     
     def ABCI_ResponseFor(nodeId, request) = 
         requestSenderResponses.get(nodeId).get(request)._2
 
-    def HasResponse(noreId, request) =
-        ABCI_ResponseFor(nodeId, r) != NoResponse
+    def hasResponse(nodeId, request) =
+        ABCI_ResponseFor(nodeId, request) != NoResponse
 
     def RequestsWithResponse(nodeId: NodeId, checkTxType: str): Set[Request] =
         requestSenderResponses.get(nodeId).keys()
-            .filter(r => r.checkTxType == checkTxType and HasResponse(nodeId, r))
+            .filter(r => r.checkTxType == checkTxType and hasResponse(nodeId, r))
     def ABCI_CheckTxRequests(nodeId) = RequestsWithResponse(nodeId, "New")
     def ABCI_RecheckTxRequests(nodeId) = RequestsWithResponse(nodeId, "Recheck")
 
@@ -95,9 +111,8 @@ module ABCIServers {
     //--------------------------------------------------------------------------
     // Actions
     //--------------------------------------------------------------------------
-
     action ABCI_Init =
-        requestSenderResponses' = NodeIds.mapBy(_ => Set().mapBy(_ => EmptyResponse))
+        requestSenderResponses' = NodeIds.mapBy(_ => Map())
 
     // For a "New" request we store the sender.
     action ABCI_SendRequestNewCheckTx(nodeId, tx, senderId) = 
@@ -107,7 +122,7 @@ module ABCIServers {
 
     // For "Recheck" we send multiple requests at once.
     action ABCI_SendRequestRecheckTxs(nodeId, txs) =
-        val newRequests = txs.map(tx => {tag: "CheckTx", tx: tx, checkTxType: "Recheck"})
+        val newRequests = txs.map(tx => { tag: "CheckTx", tx: tx, checkTxType: "Recheck" })
         // Add all the new requests, with no sender and no response.
         requestSenderResponses' = requestSenderResponses.put(nodeId, {
             val m = requestSenderResponses.get(nodeId)
@@ -118,7 +133,7 @@ module ABCIServers {
     action ABCI_ProcessCheckTxRequest(nodeId) =
         nondet req: Request = oneOf(requestSenderResponses.get(nodeId).keys()) 
         all {
-            not(HasResponse(nodeId, req)),
+            require(not(hasResponse(nodeId, req))),
             val senderId = ABCI_SenderFor(nodeId, req)
             val err = if (isValid(req.tx)) NoError else InvalidTxError
             val resp = { tag: req.tag, err: err }
@@ -127,10 +142,9 @@ module ABCIServers {
         }
 
     action ABCI_RemoveRequest(nodeId, request) = all {
-        HasResponse(nodeId, request),
-        // TODO: remove entry instead of setting to NoResponse
+        require(hasResponse(nodeId, request)), // We keep this condition to allow the action to return false; otherwise it will always evaluate to true.
         requestSenderResponses' = requestSenderResponses.put(nodeId, 
-            requestSenderResponses.get(nodeId).put(request, EmptyResponse)), 
+            requestSenderResponses.get(nodeId).mapRemove(request)), 
     }
 
     action ABCI_Unchanged =
@@ -176,7 +190,8 @@ module Chain {
 
     var chain: List[Set[Tx]]
 
-    val Chain_latestHeight = chain.length() - 1
+    val Chain_latestHeight = 
+        chain.length() - 1
 
     val Chain_isEmpty = 
         chain.length() == 0
@@ -200,6 +215,7 @@ module Chain {
 }
 
 module MempoolV0 {
+    import basicSpells.* //from "./basicSpells"
     import Base.* 
     import Chain.*
     import ABCIServers.* // as ABCI
@@ -406,7 +422,7 @@ module MempoolV0 {
     // [CListMempool.Update]: https://github.com/CometBFT/cometbft/blob/6498d67efdf0a539e3ca0dc3e4a5d7cb79878bb2/mempool/clist_mempool.go#L577
     action Update(nodeId: NodeId, h: Height, txs: Set[Tx], txValidResults: Tx -> bool): bool = all {
         setStep(nodeId, "Update"),
-        txs != Set(),
+        require(txs != Set()),
 
         height' = height.put(nodeId, h),
 
@@ -435,8 +451,8 @@ module MempoolV0 {
     }
 
     action Consensus_Update(nodeId: NodeId): bool = all {
-        not(Chain_isEmpty),
-        height.get(nodeId) <= Chain_latestHeight,
+        require(not(Chain_isEmpty)),
+        require(height.get(nodeId) <= Chain_latestHeight),
         val txs: Set[Tx] = Chain_getBlock(height.get(nodeId))
         nondet txValidResults: Tx -> Bool = oneOf(txs.setOfMaps(Bool))
         Update(nodeId, height.get(nodeId), txs, txValidResults),
@@ -450,7 +466,7 @@ module MempoolV0 {
         all {
             val response = ABCI_ResponseFor(nodeId, request)
             all {
-                inMempool(nodeId, request.tx),
+                require(inMempool(nodeId, request.tx)),
                 ABCI_RemoveRequest(nodeId, request),
                 if (response.err != NoError) all {
                     // Tx became invalidated due to newly committed block.
@@ -471,12 +487,11 @@ module MempoolV0 {
     //--------------------------------------------------------------------------
     // P2P Reactor actions
     //--------------------------------------------------------------------------
-
     /* Receive a Txs message from a peer, and calls CheckTx on each Tx. */
     // [Reactor.Receive]: https://github.com/CometBFT/cometbft/blob/111d252d75a4839341ff461d4e0cf152ca2cc13d/mempool/reactor.go#L93
     action P2P_ReceiveTxs(nodeId) = all {
         setStep(nodeId, "P2P_ReceiveTxs"),
-        Network_IncomingMsgs(nodeId) != Set(),
+        require(Network_IncomingMsgs(nodeId) != Set()),
         nondet msg = oneOf(Network_IncomingMsgs(nodeId))
         all {
             CheckTx(nodeId, msg.tx, msg.senderId),
@@ -490,7 +505,7 @@ module MempoolV0 {
     // [Reactor.broadcastTxRoutine]: https://github.com/CometBFT/cometbft/blob/5049f2cc6cf519554d6cd90bcca0abe39ce4c9df/mempool/reactor.go#L132
     action P2P_SendTx(nodeId: NodeId): bool = all {
         setStep(nodeId, "P2P_SendTx"),
-        not(mempoolIsEmpty(nodeId)),
+        require(not(mempoolIsEmpty(nodeId))),
         nondet peer = oneOf(Peers.get(nodeId))
         nondet tx = oneOf(mempoolTxs(nodeId))
         val msg = {tag: "Txs", senderId: nodeId, tx: tx}
@@ -552,7 +567,7 @@ module MempoolV0 {
     action ChainNext =
         nondet txs = oneOf(Txs.exclude(Chain_allTxsInChain).powerset().exclude(Set(Set())))
         all {
-            txs.forall(tx => isValid(tx)),
+            require(txs.forall(tx => isValid(tx))),
             Chain_NewBlockFrom(txs),
             mempool' = mempool, 
             height' = height, 

@@ -64,73 +64,70 @@ module ABCIServers {
     
     // The ABCIServer receives requests in a queue (a set actually) and responds
     // to a queue (set) of responses.
-    var requestResponses: NodeId -> (Request -> Response)
-    var requestSender: NodeId -> Request -> NodeId
-
-    //--------------------------------------------------------------------------
-    // Initial state and actions
-    //--------------------------------------------------------------------------
-
-    action ABCI_Init = all {
-        requestResponses' = NodeIds.mapBy(_ => Set().mapBy(_ => NoResponse)),
-        requestSender' = NodeIds.mapBy(_ => Set().mapBy(_ => NoNode)),
-    }
-
-    // The app receives a CheckTx request and creates a response.
-    action ABCI_ProcessCheckTxRequest(nodeId) = {
-        nondet req: Request = oneOf(requestResponses.get(nodeId).keys()) 
-        all {
-            // req.tag.in(Set("CheckTx", "RecheckTx")),
-            requestResponses.get(nodeId).get(req) == NoResponse,
-            val err = if (isValid(req.tx)) NoError else InvalidTxError
-            val resp = {tag: req.tag, err: err}
-            requestResponses' = requestResponses.put(nodeId, requestResponses.get(nodeId).put(req, resp)),
-            requestSender' = requestSender,
-        }
-    }
-
-    action ABCI_SendRequestNewCheckTx(nodeId, tx, senderId) = 
-        val req = {tag: "CheckTx", tx: tx, checkTxType: "New"}
-        all {
-            requestResponses' = requestResponses.put(nodeId, requestResponses.get(nodeId).put(req, NoResponse)),
-            requestSender' = requestSender.put(nodeId, requestSender.get(nodeId).put(req, senderId)),
-        }
-
-    action ABCI_SendRequestRecheckTxs(nodeId, txs) = all {
-        val reqs = txs.map(tx => {tag: "CheckTx", tx: tx, checkTxType: "Recheck"})
-        requestResponses' = requestResponses.put(nodeId, {
-            val m = requestResponses.get(nodeId)
-            m.keys().mapBy(req => if (req.in(reqs)) NoResponse else m.get(req))
-        }),
-        requestSender' = requestSender,
-    }
-
-    action ABCI_RemoveRequest(nodeId, request) = all {
-        requestResponses.get(nodeId).get(request) != NoResponse,
-        requestResponses' = requestResponses.put(nodeId, requestResponses.get(nodeId).put(request, NoResponse)), // TODO: remove entry instead of setting to NoResponse
-        requestSender' = requestSender.put(nodeId, requestSender.get(nodeId).put(request, NoNode)), // TODO: remove entry instead of setting to NoNode
-    }
-
-    action ABCI_Unchanged = all {
-        requestResponses' = requestResponses,
-        requestSender' = requestSender,
-    }
+    // Each request maps to a the node id of a sender and the response, if available.
+    var requestSenderResponses: NodeId -> (Request -> (NodeId, Response))
 
     //--------------------------------------------------------------------------
     // Auxiliary definitions
     //--------------------------------------------------------------------------
 
-    def ABCI_ResponseFor(nodeId, request) = requestResponses.get(nodeId).get(request)
-    def ABCI_SenderFor(nodeId, request) = requestSender.get(nodeId).get(request)
+    def ABCI_SenderFor(nodeId, request) = 
+        (requestSenderResponses.get(nodeId).get(request))._1
+    def ABCI_ResponseFor(nodeId, request) = 
+        requestSenderResponses.get(nodeId).get(request)._2
 
     def Requests(nodeId: NodeId, checkTxType: str): Set[Request] =
-        requestResponses.get(nodeId).keys()
+        requestSenderResponses.get(nodeId)
+            .keys()
             .filter(r => and {
                 r.checkTxType == checkTxType,
-                requestResponses.get(nodeId).get(r) != NoResponse
+                ABCI_ResponseFor(nodeId, r) != NoResponse
             })
     def ABCI_CheckRequests(nodeId) = Requests(nodeId, "New")
     def ABCI_RecheckRequests(nodeId) = Requests(nodeId, "Recheck")
+
+    val emptyRequest = (NoNode, NoResponse)
+
+    //--------------------------------------------------------------------------
+    // Actions
+    //--------------------------------------------------------------------------
+
+    action ABCI_Init =
+        requestSenderResponses' = NodeIds.mapBy(_ => Set().mapBy(_ => emptyRequest))
+
+    // The app receives a CheckTx request and creates a response.
+    action ABCI_ProcessCheckTxRequest(nodeId) = {
+        nondet req: Request = oneOf(requestSenderResponses.get(nodeId).keys()) 
+        all {
+            ABCI_ResponseFor(nodeId, req) == NoResponse,
+            val err = if (isValid(req.tx)) NoError else InvalidTxError
+            val resp = {tag: req.tag, err: err}
+            val senderId = ABCI_SenderFor(nodeId, req)
+            requestSenderResponses' = requestSenderResponses.put(nodeId, requestSenderResponses.get(nodeId).put(req, (senderId, resp))),
+        }
+    }
+
+    action ABCI_SendRequestNewCheckTx(nodeId, tx, senderId) = 
+        val req = {tag: "CheckTx", tx: tx, checkTxType: "New"}
+        requestSenderResponses' = requestSenderResponses.put(nodeId, requestSenderResponses.get(nodeId).put(req, (senderId, NoResponse)))
+
+    action ABCI_SendRequestRecheckTxs(nodeId, txs) =
+        val newRequests = txs.map(tx => {tag: "CheckTx", tx: tx, checkTxType: "Recheck"})
+        // Add all the new requests, with no sender and no response.
+        requestSenderResponses' = requestSenderResponses.put(nodeId, {
+            val m = requestSenderResponses.get(nodeId)
+            m.keys().mapBy(req => if (req.in(newRequests)) emptyRequest else m.get(req))
+        })
+
+    action ABCI_RemoveRequest(nodeId, request) = all {
+        ABCI_ResponseFor(nodeId, request) != NoResponse,
+        // TODO: remove entry instead of setting to NoResponse
+        requestSenderResponses' = requestSenderResponses.put(nodeId, requestSenderResponses.get(nodeId).put(request, emptyRequest)), 
+    }
+
+    action ABCI_Unchanged =
+        requestSenderResponses' = requestSenderResponses
+
 }
 
 module Network {

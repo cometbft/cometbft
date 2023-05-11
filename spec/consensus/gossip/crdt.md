@@ -285,11 +285,13 @@ And optionally:
 
 The `Lexy1` module in [sse.qnt](sse.qnt) specifies an SSE in which entries are tuples of three integer numbers.
 
-An entry `(a,b,c)` is superseded by a view `v` if an only if `v` contains an entry  `(d,e,f)` such that 
+An entry `(a,b,c)` is superseded by a view `v` if an only if `v` contains an entry  `(d,e,f)` such that
 
 - either `a < d`
 - or `a == d, b == e, c <= f`
 - or `(d,e,f)` is superseded in `v`.
+
+The tuple could be interpreted as instance, node and round of some distributed protocol such that tuples from previous instances are obsoleted by tuples from new instances, and tuples from previous rounds are obsoleted by tuples for new rounds of the same node.
 
 #### Example 2
 
@@ -303,4 +305,7 @@ In `Lexy2` an entry `(a,b,c,t)` is superseded by a view `v` if an only if `v` co
 - or `a == d, b == e, c == f, u == true`,
 - or `(d,e,f,u)` is superseded in `v`.
 
-As specified, the boolean in the entry acts as a tombstone marker.
+
+
+As in previous example, the tuple could be interpreted as instance, node and round of some distributed protocol such that tuples from previous instances are obsoleted by tuples from new instances, and tuples from previous rounds are obsoleted by tuples for new rounds of the same node.
+As an extra condition, the boolean in the tuple acts as a tombstone marker for a tuple.

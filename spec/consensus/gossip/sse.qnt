@@ -1,3 +1,5 @@
+// -*- mode: Bluespec; -*-
+
 module Lexy1 {
     import Spells.* from "./spells"
 

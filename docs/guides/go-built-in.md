@@ -528,51 +528,54 @@ func main() {
         log.Fatalf("Opening database: %v", err)
     }
     defer func() {
-    if err := db.Close(); err != nil {
-        log.Printf("Closing database: %v", err)
+        if err := db.Close(); err != nil {
+            log.Printf("Closing database: %v", err)
+        }
+    }()
+
+    app := NewKVStoreApplication(db)
+
+    pv := privval.LoadFilePV(
+        config.PrivValidatorKeyFile(),
+        config.PrivValidatorStateFile(),
+    )
+
+    nodeKey, err := p2p.LoadNodeKey(config.NodeKeyFile())
+    if err != nil {
+        log.Fatalf("failed to load node's key: %v", err)
     }
-}()
 
-app := NewKVStoreApplication(db)
+    logger := cmtlog.NewTMLogger(cmtlog.NewSyncWriter(os.Stdout))
+    logger, err = cmtflags.ParseLogLevel(config.LogLevel, logger, cfg.DefaultLogLevel)
 
-pv := privval.LoadFilePV(
-    config.PrivValidatorKeyFile(),
-    config.PrivValidatorStateFile(),
-)
+    if err != nil {
+        log.Fatalf("failed to parse log level: %v", err)
+    }
+    
+    node, err := nm.NewNode(
+        config,
+        pv,
+        nodeKey,
+        proxy.NewLocalClientCreator(app),
+        nm.DefaultGenesisDocProviderFunc(config),
+        nm.DefaultDBProvider,
+        nm.DefaultMetricsProvider(config.Instrumentation),
+        logger
+    )
 
-nodeKey, err := p2p.LoadNodeKey(config.NodeKeyFile())
-if err != nil {
-    log.Fatalf("failed to load node's key: %v", err)
-}
+    if err != nil {
+        log.Fatalf("Creating node: %v", err)
+    }
+    
+    node.Start()
+    defer func() {
+        node.Stop()
+        node.Wait()
+    }()
 
-logger := cmtlog.NewTMLogger(cmtlog.NewSyncWriter(os.Stdout))
-logger, err = cmtflags.ParseLogLevel(config.LogLevel, logger, cfg.DefaultLogLevel)
-
-if err != nil {
-    log.Fatalf("failed to parse log level: %v", err)
-}
-node, err := nm.NewNode(
-    config,
-    pv,
-    nodeKey,
-    proxy.NewLocalClientCreator(app),
-    nm.DefaultGenesisDocProviderFunc(config),
-    nm.DefaultDBProvider,
-    nm.DefaultMetricsProvider(config.Instrumentation),
-logger)
-
-if err != nil {
-    log.Fatalf("Creating node: %v", err)
-}
-node.Start()
-defer func() {
-    node.Stop()
-    node.Wait()
-}()
-
-c := make(chan os.Signal, 1)
-signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-<-c
+    c := make(chan os.Signal, 1)
+    signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+    <-c
 }
 ```
 

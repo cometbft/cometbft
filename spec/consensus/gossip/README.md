@@ -4,9 +4,10 @@
 
 This specification is divided into multiple documents and should be read in the following order:
 
-- [layers.md](layers.md): describes the architecture used in CometBFT and where this specification is focused;
-- [crdt.md](crdt.md): explains the rationale of using a CRDT in the gossiping and defines the CRDT used, SSE;
-- [sse.qnt](sse.qnt): Quint spec of our ;
+- [architecture.md](architecture.md): describes the architecture used in CometBFT and where this specification is focused;
+- [crdt.md](crdt.md): explains the rationale for using a CRDT in the gossiping and defines the CRDT used, SSE;
+- [sse.qnt](sse.qnt): Quint spec of our two instantiation examples of our CRDT;
+- [gossip.md](gossip.md):
 
 
 ## Conventions

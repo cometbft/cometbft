@@ -154,9 +154,9 @@ removeFromMempool(nodeId, txs) ==
 
 \* @type: (NODE_ID, TX, NODE_ID) => Bool;
 addSender(nodeId, tx, senderId) ==
-    LET memTx == CHOOSE e \in mempool[nodeId]: e.tx = tx IN
-    LET memTxUpdated == [memTx EXCEPT !.senders = @ \cup {senderId}] IN
-    mempool' = [mempool EXCEPT ![nodeId] = (@ \ {memTx}) \cup {memTxUpdated}]
+    LET oldMemTx == CHOOSE e \in mempool[nodeId]: e.tx = tx IN
+    LET memTxUpdated == [oldMemTx EXCEPT !.senders = @ \cup {senderId}] IN
+    mempool' = [mempool EXCEPT ![nodeId] = (@ \ {oldMemTx}) \cup {memTxUpdated}]
 
 (******************************************************************************)
 (* Cache *)

@@ -1,6 +1,6 @@
 --------------------------------- MODULE Maps ----------------------------------
 (******************************************************************************)
-(* Maps represent partial functions.                                          *)
+(* Maps are partial functions.                                                *)
 (*                                                                            *)
 (* In TLA+ functions are total, that is, they are defined over all elements   *)
 (* of their domain S. A map represents a partial function over S, that is, a  *)

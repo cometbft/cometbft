@@ -15,7 +15,7 @@ ASSUME NoNode \notin NodeIds
 
 \* @type: TX;
 InvalidTx == "invalid-tx"
-isValid(tx) == tx \notin {InvalidTx}
+isValid(tx) == tx # InvalidTx
 
 \* @typeAlias: ERROR = Str;
 \* @type: ERROR;
@@ -23,7 +23,7 @@ NoError == "none"
 
 \* @typeAlias: HEIGHT = Int;
 \* @type: Set(HEIGHT);
-Heights == {0, 1, 2, 3, 4}
+Heights == { 0, 1, 2, 3, 4 }
 
 --------------------------------------------------------------------------------
 \* Bounded sequences

@@ -67,9 +67,10 @@ SendRequestNewCheckTx(nodeId, tx, sender) ==
 ProcessCheckTxRequest(nodeId) == 
     \E request \in DOMAIN requestResponses[nodeId]:
         /\ ~ HasResponse(nodeId, request)
-        /\ LET err == IF isValid(request.tx) THEN NoError ELSE InvalidTxError IN
+        /\ LET sender == SenderFor(nodeId, request) IN
+           LET err == IF isValid(request.tx) THEN NoError ELSE InvalidTxError IN
            LET response == [tag |-> request.tag, error |-> err] IN
-           requestResponses' = [requestResponses EXCEPT ![nodeId] = MapPut(@, request, <<SenderFor(nodeId, request), response>>)]
+           requestResponses' = [requestResponses EXCEPT ![nodeId] = MapPut(@, request, <<sender, response>>)]
 
 \* @type: (NODE_ID, REQUEST) => Bool;
 RemoveRequest(nodeId, request) ==

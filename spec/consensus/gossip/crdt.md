@@ -246,7 +246,7 @@ The merge operator $\sqcup: \mathcal{V} x \mathcal{V} \rightarrow \mathcal{V}$ i
 The SSE is generically defined in terms of
 
 - `Entry`
-    - a tuple of values;
+    - a tuple/record of values;
     - application specific;
 - `View`
     - a set of `Entry`;
@@ -257,6 +257,10 @@ The SSE is generically defined in terms of
     - returns true iff all elements of `v1` are superseded by `v2`;
     - implements the $<$ relation;
 
+- `matches(e:Entry, oe:OEntry):bool`
+    - `OEntry` is a tuple/record such that, for each field of `Entry`, `OEntry` has a `Option` field with the same base type.
+    - Returns true if each field of `e` equals the corresponding field of `oe` or the corresponding field of `oe` is `none`.
+
 With these we can define the following operators:
 
 - `removeStale(view: View): (View, View)`
@@ -265,10 +269,12 @@ With these we can define the following operators:
     - returns the result of `removeStale` applied to the union of `lhs` and `rhs`;
     - implements the $\sqcup$ relation;
 
-And the following helpers:
+The following helpers:
 
 - `addEntry(v:View, e: Entry): View = merge(v, Set(e))`
     - returns the result of `removeStale` applied to the union of `view` and `{e}`;
+- `query(v:view, oe:OEntry)`
+    - Returns a view with the entries in `v` that match `oe`.
 - `hasEntry(v: View, e:Entry):bool = removeStale(v).contains(e)`
 
 And optionally:
@@ -304,8 +310,6 @@ In `Lexy2` an entry `(a,b,c,t)` is superseded by a view `v` if an only if `v` co
 - or `a == d, b == e, c == f, t == u`,
 - or `a == d, b == e, c == f, u == true`,
 - or `(d,e,f,u)` is superseded in `v`.
-
-
 
 As in previous example, the tuple could be interpreted as instance, node and round of some distributed protocol such that tuples from previous instances are obsoleted by tuples from new instances, and tuples from previous rounds are obsoleted by tuples for new rounds of the same node.
 As an extra condition, the boolean in the tuple acts as a tombstone marker for a tuple.

@@ -2,9 +2,11 @@
 
 module Lexy1 {
     import Spells.* from "./spells"
+    import OInt as OInt from "./option"
 
     //User provided
     type Entry = (int, int, int)
+    type EntryO = (OInt::OType,OInt::OType,OInt::OType)
 
     type View = Set[Entry]
     pure val bot:View = Set()
@@ -24,6 +26,13 @@ module Lexy1 {
             )
         )
 
+    pure def matches(e: Entry, oe:EntryO):bool = all {
+        OInt::nsoe(oe._1,e._1),
+        OInt::nsoe(oe._2,e._2),
+        OInt::nsoe(oe._3,e._3),
+    }
+
+
     pure def removeStale(view: View): (View,View) =
         val superseded = view.filter(e => Set(e).isSupersededBy(view.excludeE(e)))
         val alive = view.exclude(superseded)
@@ -38,10 +47,19 @@ module Lexy1 {
         val newViewAndStale = v.unionE(e).removeStale()
         newViewAndStale._1
 
+    pure def query(view, oe) =
+        view.filter(e => e.matches(oe))
+
     pure def hasEntry(v: View, e:Entry):bool = v.contains(e)
 
-
     //Unit tests
+    run matchesTest = all {
+        assert((0,0,0).matches((OInt::valueOf(0),OInt::valueOf(0),OInt::valueOf(0)))),
+        assert((0,0,0).matches((OInt::none,OInt::valueOf(0),OInt::valueOf(0)))),
+        assert((0,0,0).matches((OInt::valueOf(0),OInt::none,OInt::valueOf(0)))),
+        assert((0,0,0).matches((OInt::none,OInt::valueOf(0),OInt::none))),
+    }
+
     run isSupersededByTest = all {
         assert(Set((1,1,1)).isSupersededBy(Set((2,1,1)))),
         assert(Set((1,1,1)).isSupersededBy(Set((2,2,2)))),
@@ -78,15 +96,31 @@ module Lexy1 {
         assert(bot.addEntry((1,1,1)).addEntry((1,1,2)).hasEntry((1,1,2))),
     }
 
+    run queryTest = all {
+        //Note that the view below have not had stale entries removed.
+        val view = Set((1,1,1),(1,1,2),(2,1,2))
+        val view1nn = Set((1,1,1),(1,1,2))
+        val viewn1n = view
+        val viewnn2 = Set((1,1,2),(2,1,2))
+        all {
+            assert(view.query((OInt::valueOf(1),OInt::none,OInt::none)) == view1nn),
+            assert(view.query((OInt::none,OInt::valueOf(1),OInt::none)) == viewn1n),
+            assert(view.query((OInt::none,OInt::none,OInt::valueOf(2))) == viewnn2),
+        }
+    }
 }
 
 
 
 module Lexy2 {
     import Spells.* from "./spells"
+    import OInt as OInt from "./option"
+    import OBool as OBool from "./option"
 
     //User provided
     type Entry = (int, int, int, bool)
+    type EntryO = (OInt::OType,OInt::OType,OInt::OType,OBool::OType)
+
 
     //User provided
     pure def toTombstone(e: Entry): Entry = (e._1, e._1, e._3, true)
@@ -118,6 +152,14 @@ module Lexy2 {
             )
         )
 
+    pure def matches(e: Entry, oe:EntryO):bool = all {
+        OInt::nsoe(oe._1,e._1),
+        OInt::nsoe(oe._2,e._2),
+        OInt::nsoe(oe._3,e._3),
+        OBool::nsoe(oe._4,e._4),
+    }
+
+
     pure def removeStale(view: View): (View,View) =
         val superseded = view.filter(e => Set(e).isSupersededBy(view.excludeE(e)))
         val alive = view.exclude(superseded)
@@ -132,11 +174,24 @@ module Lexy2 {
         val newViewAndStale = v.unionE(e).removeStale()
         newViewAndStale._1
 
+    pure def query(view, oe) =
+        view.filter(e => e.matches(oe))
+
     pure def hasEntry(v: View, e:Entry):bool = v.contains(e)
 
     // Removes entry from the view and adds a tombstone.
     pure def delEntry(v:View, e: Entry): View =
         v.addEntry(e.toTombstone())
+
+    //Unit tests
+    run matchesTest = all {
+        assert((0,0,0,false).matches((OInt::valueOf(0),OInt::valueOf(0),OInt::valueOf(0),OBool::valueOf(false)))),
+        assert((0,0,0,false).matches((OInt::none,OInt::valueOf(0),OInt::valueOf(0),OBool::valueOf(false)))),
+        assert((0,0,0,false).matches((OInt::valueOf(0),OInt::none,OInt::valueOf(0),OBool::valueOf(false)))),
+        assert((0,0,0,false).matches((OInt::none,OInt::valueOf(0),OInt::none,OBool::valueOf(false)))),
+        assert((0,0,0,false).matches((OInt::none,OInt::valueOf(0),OInt::none,OBool::none))),
+    }
+
 
     run isSupersededByTest = all {
         assert(Set((1,1,1,false)).isSupersededBy(Set((1,1,1,true)))),
@@ -204,5 +259,18 @@ module Lexy2 {
         assert(bot.addEntry((1,1,1,false)).addEntry((1,2,1,false)).hasEntry((1,1,1,false))),
         assert(bot.addEntry((1,1,1,false)).addEntry((1,2,1,true)).hasEntry((1,2,1,true))),
         assert(bot.addEntry((1,1,1,false)).addEntry((1,2,1,true)).hasEntry((1,1,1,false))),
+    }
+
+    run queryTest = all {
+        //Note that the view below have not had stale entries removed.
+        val view = Set((1,1,1,false),(1,1,2,false),(2,1,2,true))
+        val view1nnf = Set((1,1,1,false),(1,1,2,false))
+        val viewn1nn = view
+        val viewnn2n = Set((1,1,2,false),(2,1,2,true))
+        all {
+            assert(view.query((OInt::valueOf(1),OInt::none,OInt::none,OBool::valueOf(false))) == view1nnf),
+            assert(view.query((OInt::none,OInt::valueOf(1),OInt::none,OBool::none)) == viewn1nn),
+            assert(view.query((OInt::none,OInt::none,OInt::valueOf(2),OBool::none)) == viewnn2n),
+        }
     }
 }

@@ -25,15 +25,15 @@ Decide : BeginBlock DeliverTxs EndBlock | BeginBlock EndBlock ;
 DeliverTxs : DeliverTx | DeliverTx DeliverTxs ; 
 
 
-InitChain : "1" ;
-BeginBlock : "2" ; 
-DeliverTx : "3" ;
-EndBlock : "4" ;
-Commit : "5" ;
-OfferSnapshot : "6" ;
-ApplyChunk : "7" ; 
-PrepareProposal : "8" ; 
-ProcessProposal : "9" ;
+InitChain : "<InitChain>" ;
+BeginBlock : "<BeginBlock>" ; 
+DeliverTx : "<DeliverTx>" ;
+EndBlock : "<EndBlock>" ;
+Commit : "<Commit>" ;
+OfferSnapshot : "<OfferSnapshot>" ;
+ApplyChunk : "<ApplyChunk>" ; 
+PrepareProposal : "<PrepareProposal>" ; 
+ProcessProposal : "<ProcessProposal>" ;
 
 
 ```

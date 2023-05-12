@@ -2,12 +2,13 @@ package e2e
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 )
 
 type Test struct {
 	name      string
-	execution string
+	abciCalls []string
 	result    bool
 }
 
@@ -15,65 +16,66 @@ var tests = []Test{
 	// start = clean-start
 	// clean-start = init-chain consensus-exec
 	// consensus-height = decide commit
-	{"consensus-exec-missing", "1", false},
-	{"empty-block-1", "1 2 4 5", true},
-	{"begin-block-missing-1", "1 4 5", false},
-	{"end-block-missing-1", "1 2 5", false},
-	{"commit-missing-1", "1 2 4", false},
-	{"one-tx-block-1", "1 2 3 4 5", true},
-	{"multiple-tx-block-1", "1 2 3 3 4 5", true},
+	{"consensus-exec-missing", []string{InitChain}, false},
+	{"empty-block-1", []string{InitChain, BeginBlock, EndBlock, Commit}, true},
+	{"begin-block-missing-1", []string{InitChain, EndBlock, Commit}, false},
+	{"end-block-missing-1", []string{InitChain, BeginBlock, Commit}, false},
+	{"commit-missing-1", []string{InitChain, BeginBlock, EndBlock}, false},
+	{"one-tx-block-1", []string{InitChain, BeginBlock, DeliverTx, EndBlock, Commit}, true},
+	{"multiple-tx-block-1", []string{InitChain, BeginBlock, DeliverTx, DeliverTx, EndBlock, Commit}, true},
 	// consensus-height = *consensus-round decide commit
-	{"proposer-round-1", "1 8 9 2 4 5", true},
-	{"process-proposal-missing-1", "1 8 2 4 5", false},
-	{"non-proposer-round-1", "1 9 2 4 5", true},
-	{"multiple-rounds-1", "1 8 9 9 8 9 9 9 2 4 5", true},
+	{"proposer-round-1", []string{InitChain, PrepareProposal, ProcessProposal, BeginBlock, EndBlock, Commit}, true},
+	{"process-proposal-missing-1", []string{InitChain, PrepareProposal, BeginBlock, EndBlock, Commit}, false},
+	{"non-proposer-round-1", []string{InitChain, ProcessProposal, BeginBlock, EndBlock, Commit}, true},
+	{"multiple-rounds-1", []string{InitChain, PrepareProposal, ProcessProposal, ProcessProposal, PrepareProposal, ProcessProposal, ProcessProposal, ProcessProposal, BeginBlock, EndBlock, Commit}, true},
 
 	// clean-start = init-chain state-sync consensus-exec
 	// state-sync = success-sync
-	{"one-apply-chunk-1", "1 6 7 2 4 5", true},
-	{"multiple-apply-chunks-1", "1 6 7 7 2 4 5", true},
-	{"offer-snapshot-missing-1", "1 7 2 4 5", false},
-	{"apply-chunk-missing", "1 6 2 4 5", false},
+	{"one-apply-chunk-1", []string{InitChain, OfferSnapshot, ApplyChunk, BeginBlock, EndBlock, Commit}, true},
+	{"multiple-apply-chunks-1", []string{InitChain, OfferSnapshot, ApplyChunk, ApplyChunk, BeginBlock, EndBlock, Commit}, true},
+	{"offer-snapshot-missing-1", []string{InitChain, ApplyChunk, BeginBlock, EndBlock, Commit}, false},
+	{"apply-chunk-missing", []string{InitChain, OfferSnapshot, BeginBlock, EndBlock, Commit}, false},
 	// state-sync = *state-sync-attempt success-sync
-	{"one-apply-chunk-2", "1 6 7 6 7 2 4 5", true},
-	{"mutliple-apply-chunks-2", "1 6 7 7 7 6 7 2 4 5", true},
-	{"offer-snapshot-missing-2", "1 7 6 7 2 4 5", false},
-	{"no-apply-chunk", "1 6 6 7 2 4 5", true},
+	{"one-apply-chunk-2", []string{InitChain, OfferSnapshot, ApplyChunk, OfferSnapshot, ApplyChunk, BeginBlock, EndBlock, Commit}, true},
+	{"mutliple-apply-chunks-2", []string{InitChain, OfferSnapshot, ApplyChunk, ApplyChunk, ApplyChunk, OfferSnapshot, ApplyChunk, BeginBlock, EndBlock, Commit}, true},
+	{"offer-snapshot-missing-2", []string{InitChain, ApplyChunk, OfferSnapshot, ApplyChunk, BeginBlock, EndBlock, Commit}, false},
+	{"no-apply-chunk", []string{InitChain, OfferSnapshot, OfferSnapshot, ApplyChunk, BeginBlock, EndBlock, Commit}, true},
 
 	// start = recovery
 	// recovery = consensus-exec
 	// consensus-height = decide commit
-	{"empty-block-2", "2 4 5", true},
-	{"begin-block-missing-2", "4 5", false},
-	{"end-block-missing-2", "2 5", false},
-	{"commit-missing-2", "2 4", false},
-	{"one-tx-block-2", "2 3 4 5", true},
-	{"multiple-tx-block-2", "2 3 3 4 5", true},
+	{"empty-block-2", []string{BeginBlock, EndBlock, Commit}, true},
+	{"begin-block-missing-2", []string{EndBlock, Commit}, false},
+	{"end-block-missing-2", []string{BeginBlock, Commit}, false},
+	{"commit-missing-2", []string{BeginBlock, EndBlock}, false},
+	{"one-tx-block-2", []string{BeginBlock, DeliverTx, EndBlock, Commit}, true},
+	{"multiple-tx-block-2", []string{BeginBlock, DeliverTx, DeliverTx, EndBlock, Commit}, true},
 	// consensus-height = *consensus-round decide commit
-	{"proposer-round-2", "8 9 2 4 5", true},
-	{"process-proposal-missing-2", "8 2 4 5", false},
-	{"non-proposer-round-2", "9 2 4 5", true},
-	{"multiple-rounds-2", "8 9 9 8 9 9 9 2 4 5", true},
+	{"proposer-round-2", []string{PrepareProposal, ProcessProposal, BeginBlock, EndBlock, Commit}, true},
+	{"process-proposal-missing-2", []string{PrepareProposal, BeginBlock, EndBlock, Commit}, false},
+	{"non-proposer-round-2", []string{ProcessProposal, BeginBlock, EndBlock, Commit}, true},
+	{"multiple-rounds-2", []string{PrepareProposal, ProcessProposal, ProcessProposal, PrepareProposal, ProcessProposal, ProcessProposal, ProcessProposal, BeginBlock, EndBlock, Commit}, true},
 
 	// corner cases
-	{"empty execution", "", false},
+	{"empty execution", []string{""}, false},
 }
 
 func TestVerify(t *testing.T) {
 	for _, test := range tests {
-		result, err := Verify(test.execution)
+		execution := strings.Join(test.abciCalls, " ")
+		result, err := Verify(execution)
 		if result == test.result {
 			continue
 		}
 		if err == nil {
-			err = fmt.Errorf("Grammar parsed an incorrect execution: %v\n", test.execution)
+			err = fmt.Errorf("Grammar parsed an incorrect execution: %v\n", execution)
 		}
 		t.Errorf("Test %v returned %v, expected %v\n Error: %v\n", test.name, result, test.result, err)
 	}
 }
 
 func TestVerifySpecific(t *testing.T) {
-	execution := "1 2 3 3 3 3 3 4 5 2 3 3 3 3 4 5 2 4 5 2 3 4 5 2 3 3 3 3 4 5 2 4 5 2 3 4 5 2 3 3 4 5 2 3 3 3 4 5 2 3 4 5 9 2 3 3 3 4 5 9 2 3 3 4 5 9 2 3 3 4 5 9 2 3 3 3 3 4 5 9 2 3 3 4 5 9 2 3 3 3 4 5 8 9 2 3 4 5 9 2 3 3 3 3 4 5 8 9 2 3 4 5 9 2 3 3 3 3 4 5 9 2 3 3 4 5 9 2 3 3 3 4 5 8 9 2 3 3 4 5 9 2 3 3 3 3 4 5 9 2 3 3 4 5 9 2 3 3 4 5 9 2 3 3 3 3 4 5 9 2 3 3 4 5 9 2 3 3 3 3 4 5 9 2 3 3 4 5 8 9 2 3 3 4 5 9 2 3 3 3 3 4 5 9 2 3 3 4 5 9 2 3 3 4 5 9 2 3 3 3 3 4 5 9 2 3 3 3 3 3 3 3 3 3 4 5 9 2 3 3 4 5 9 2 3 3 3 4 5 8 9 2 3 3 3 4 5 9 2 3 3 3 3 4 5 9 2 3 3 3 3 3 3 3 3 3 3 3 3 4 5 9 2 3 3 3 3 4 5 9 2 3 3 3 3 3 3 3 3 3 4 5 9 2 3 3 3 3 4 5 9 2 3 3 4 5 8 9 2 3 3 3 3 3 3 3 3 3 3 4 5 8 9 2 3 3 4 5 9 2 3 3 3 3 4 5 9 2 3 3 4 5 9 2 3 3 3 3 3 3 3 3 3 3 4 5 9 2 3 3 4 5 9 2 3 3 4 5 2 3 3 3 4 5 2 3 3 4 5 8 9 2 3 3 3 3 3 3 3 3 4 5 9 2 3 3 4 5 9 2 3 3 3 3 4 5 2 3 3 4 5 2 3 4 5 2 3 3 3 3 4 5 2 3 3 4 5 2 3 3 3 3 4 5 8 9 2 3 3 3 3 3 3 3 3 3 3 3 3 4 5 2 3 3 3 4 5 2 3 4 5 2 3 3 3 3 4 5 2 3 3 4 5 2 3 3 4 5 2 3 3 3 4 5 2 3 3 4 5 8 2 3 3 3 3 3 3 3 3 3 3 3 3 4 5 2 3 3 4 5 2 3 4 5 2 3 3 3 3 4 5 9 2 3 3 4 5 9 2 3 3 3 3 4 5 9 2 3 3 4 5 9 2 3 3 3 3 4 5 8 9 2 3 3 4 5 9 2 3 3 4 5 9 2 3 3 3 4 5 9 2 3 3 4 5 9 2 3 3 3 3 4 5 9 2 3 3 4 5 9 2 3 3 3 3 4 5 9 2 3 3 4 5 8 9 2 3 3 4 5 9 2 3 3 3 3 3 4 5 9 2 3 3 3 4 5 9 2 3 3 3 3 4 5 9 2 3 3 4 5 9 2 3 3 4 5 9 2 3 3 3 3 4 5 9 2 3 3 4 5 8 9 2 3 3 3 3 4 5 9 2 3 3 4 5 9 2 3 3 4 5 9 2 3 3 3 3 4 5 9 2 3 3 4 5 9 2 3 3 3 3 4 5 9 2 4 5 9 2 4 5 8 9 2 4 5 9 2 4 5 9 2 4 5 9 2 4 5"
+	execution := ""
 	_, err := Verify(execution)
 	if err != nil {
 		t.Error(err)

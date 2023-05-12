@@ -10,15 +10,15 @@ import (
 
 // abciGrammar terminals from "/pkg/grammar/abci_grammar.md" file.
 const (
-	InitChain       = "1"
-	BeginBlock      = "2"
-	DeliverTx       = "3"
-	EndBlock        = "4"
-	Commit          = "5"
-	OfferSnapshot   = "6"
-	ApplyChunk      = "7"
-	PrepareProposal = "8"
-	ProcessProposal = "9"
+	InitChain       = "<InitChain>"
+	BeginBlock      = "<BeginBlock>"
+	DeliverTx       = "<DeliverTx>"
+	EndBlock        = "<EndBlock>"
+	Commit          = "<Commit>"
+	OfferSnapshot   = "<OfferSnapshot>"
+	ApplyChunk      = "<ApplyChunk>"
+	PrepareProposal = "<PrepareProposal>"
+	ProcessProposal = "<ProcessProposal>"
 )
 
 // getRequestTerminal returns a value of a corresponding terminal in the abci grammar for a specific request.
@@ -63,7 +63,7 @@ func Verify(execution string) (bool, error) {
 	lexer := lexer.New([]rune(execution))
 	_, errs := parser.Parse(lexer)
 	if len(errs) > 0 {
-		err := combineParseErrors(execution, errs)
+		err := fmt.Errorf("Parser failed\nNumber of errors: %v\nFirst error: %v\nExecution: %v\n", len(errs), errs[0], execution)
 		return false, err
 	}
 	return true, nil

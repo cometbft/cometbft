@@ -3,6 +3,8 @@
 module CRDT {
     import Spells.* from "./spells"
     import Globals.* from "./globals"
+    import OInt as OInt from "./option"
+    import OStr as OStr from "./option"
 
     type Value = str //TODO: sum type
 
@@ -14,11 +16,19 @@ module CRDT {
                     | {tag: "PreCommit"}
 
     type Entry = {
-        height: NatNum, 
-        round: NatNum, 
-        msgType: MsgType, 
-        validator: ProcId, 
+        height: NatNum,
+        round: NatNum,
+        msgType: MsgType,
+        validator: ProcId,
         value: Value
+    }
+
+    type EntryO = {
+        height: OInt::OType,
+        round: OInt::OType,
+        msgType: OStr::OType,
+        validator: OInt::OType,
+        value: OStr::OType
     }
 
     pure def makeEntry(height: NatNum, round: NatNum, msgType: str, validator: ProcId, value: Value): Entry =
@@ -28,6 +38,14 @@ module CRDT {
     pure val bot:View = Set()
 
     pure def isSupersededBy(v1: View, v2: View): bool = true //TODO
+
+    pure def matches(e: Entry, oe:EntryO):bool = all {
+        OInt::nsoe(oe.height, e.height),
+        OInt::nsoe(oe.round, e.round),
+        OStr::nsoe(oe.msgType, e.msgType.tag),
+        OInt::nsoe(oe.validator, e.validator),
+        OStr::nsoe(oe.value, e.value),
+    }
 
     pure def removeStale(view: View): (View,View) =
         val superseded = view.filter(e => Set(e).isSupersededBy(view.excludeE(e)))
@@ -43,6 +61,9 @@ module CRDT {
         val newViewAndStale = v.unionE(e).removeStale()
         newViewAndStale._1
 
+    pure def query(view, oe) =
+        view.filter(e => e.matches(oe))
+
     pure def hasEntry(v: View, e:Entry):bool = v.contains(e)
 
     //Unit tests
@@ -57,6 +78,44 @@ module CRDT {
         assert(makeEntry(1, 1, "Proposal", 1, "") == entry1)
     }
 
+    run matchesTest = all {
+        val entry1 = makeEntry(1,1,"Proposal",1,"")
+        all {
+            assert(entry1
+                .matches({
+                    height: OInt::none, 
+                    round: OInt::none,
+                    msgType: OStr::none,
+                    validator: OInt::none,
+                    value: OStr::none
+                })),
+            assert(entry1
+                .matches({
+                    height: OInt::valueOf(1),
+                    round: OInt::valueOf(1),
+                    msgType: OStr::valueOf("Proposal"),
+                    validator: OInt::valueOf(1),
+                    value: OStr::valueOf("")
+                })),
+            assert(entry1
+                .matches({
+                    height: OInt::none, 
+                    round: OInt::valueOf(1),
+                    msgType: OStr::valueOf("Proposal"),
+                    validator: OInt::valueOf(1),
+                    value: OStr::valueOf("")
+                })),
+            assert(entry1
+                .matches({
+                    height: OInt::none, 
+                    round: OInt::valueOf(1),
+                    msgType: OStr::none,
+                    validator: OInt::valueOf(1),
+                    value: OStr::valueOf("")
+                })),
+        }
+    }
+
     run isSupersededByTest = all {
         //Higher hight
         assert(Set(makeEntry(1,1,"Proposal",1,"")).isSupersededBy(Set(makeEntry(2,1,"Proposal",1,"")))),
@@ -64,35 +123,14 @@ module CRDT {
 
         //Different validator from the same hight
         assert(not(Set(makeEntry(1,1,"Proposal",1,"")).isSupersededBy(Set(makeEntry(1,1,"Proposal",2,""))))),
-        /*
-        assert(Set((1,1,2)).isSupersededBy(Set((1,1,2)))),
-        assert(Set((1,1,1)).isSupersededBy(Set((1,1,2)))),
-        assert(Set((2,1,1)).isSupersededBy(Set((2,1,1)))),
-        assert(not(Set((2,1,1)).isSupersededBy(Set((2,2,2))))),
-        assert(not(Set((2,1,1)).isSupersededBy(Set((1,1,1))))),
-        assert(not(Set((2,1,1)).isSupersededBy(Set((1,2,2))))),
-
-        assert(makeEntry(1,1,"Proposal",1,"")).isSupersededBy(Set((1,1,1,true)))),
-        */
     }
 
     run removeStaleTest = all {
-        true,
-        /*
-        assert(Set((1,1,1)).removeStale() 
-                == (Set((1,1,1)), bot)),
-        assert(Set((1,1,1), (2,1,1), (2,1,2), (2,2,2)).removeStale() 
-                == (Set((2,1,2), (2,2,2)), Set((1,1,1),(2,1,1)))),
-        */
+        false,
     }
 
     run mergeTest = all {
-        true,
-        /*
-        assert(Set((1,1,1)).merge(Set((1,1,1))) == Set((1,1,1))),
-        assert(Set((1,1,1), (2,1,2)).merge(Set((2,1,1), (2,1,2), (2,2,2))) == Set((2,1,2), (2,2,2))),
-        assert(Set((1,1,1), (1,2,1)).merge(Set((1,3,1), (1,1,2), (1,2,2))) == Set((1,3,1), (1,1,2), (1,2,2))),
-        */
+        false,
     }
 
     run addEntryTest = all {
@@ -113,5 +151,42 @@ module CRDT {
                   .addEntry(makeEntry(1, 1, "Proposal", 2, ""))
                   .hasEntry(makeEntry(1, 1, "Proposal", 2, ""))),
         assert(not(bot.addEntry(makeEntry(1, 1, "Proposal", 1, "")).hasEntry(makeEntry(1, 1, "Proposal", 2, "")))),
+    }
+
+    run queryTest = all {
+        val view = Set(
+                    makeEntry(1, 1, "Proposal", 1, ""), 
+                    makeEntry(1, 1, "Proposal", 2, ""), 
+                    makeEntry(2, 1, "Proposal", 2, ""))
+        val view1nn = Set(
+                    makeEntry(1, 1, "Proposal", 1, ""), 
+                    makeEntry(1, 1, "Proposal", 2, ""))
+        val viewn1n = view
+        val viewnn2 = Set(
+                    makeEntry(1, 1, "Proposal", 2, ""), 
+                    makeEntry(2, 1, "Proposal", 2, ""))
+        all {
+            assert(view.query({
+                    height: OInt::valueOf(1),
+                    round: OInt::none, 
+                    validator: OInt::none,
+                    msgType: OStr::none,
+                    value: OStr::valueOf("")
+                }) == view1nn),
+            assert(view.query({
+                    height: OInt::none, 
+                    round: OInt::valueOf(1),
+                    validator: OInt::none,
+                    msgType: OStr::none,
+                    value: OStr::valueOf("")
+                }) == viewn1n),
+            assert(view.query({
+                    height: OInt::none, 
+                    round: OInt::none,
+                    validator: OInt::valueOf(2),
+                    msgType: OStr::none,
+                    value: OStr::valueOf("")
+                }) == viewnn2)
+        }
     }
 }

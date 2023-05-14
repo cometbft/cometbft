@@ -19,10 +19,6 @@ import (
 	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
-// Setting this value to 900 should allow one to keep short response failures
-// in the logs, but limit overall line length to < 1024 characters.
-const maxWriteErrorResponseLen int = 900
-
 // Config is a RPC server configuration.
 type Config struct {
 	// see netutil.LimitListener
@@ -192,7 +188,7 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 				// If RPCResponse
 				if res, ok := e.(types.RPCResponse); ok {
 					if wErr := WriteRPCResponseHTTP(rww, res); wErr != nil {
-						logger.Error("failed to write response", "res", truncateLoggedResponse(res), "err", wErr)
+						logger.Error("failed to write response", "err", wErr)
 					}
 				} else {
 					// Panics can contain anything, attempt to normalize it as an error.
@@ -211,7 +207,7 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 
 					res := types.RPCInternalError(types.JSONRPCIntID(-1), err)
 					if wErr := WriteRPCResponseHTTPError(rww, http.StatusInternalServerError, res); wErr != nil {
-						logger.Error("failed to write response", "res", truncateLoggedResponse(res), "err", wErr)
+						logger.Error("failed to write response", "err", wErr)
 					}
 				}
 			}
@@ -280,20 +276,4 @@ func Listen(addr string, maxOpenConnections int) (listener net.Listener, err err
 	}
 
 	return listener, nil
-}
-
-// Logging of RPC responses can sometimes result in very long log lines.
-// See https://github.com/cometbft/cometbft/issues/654
-func truncateLoggedResponse(res interface{}) string {
-	var s string
-	b, err := json.Marshal(res)
-	if err != nil {
-		s = fmt.Sprintf("%s", res)
-	} else {
-		s = string(b)
-	}
-	if len(s) > maxWriteErrorResponseLen {
-		s = s[:maxWriteErrorResponseLen] + " ... (truncated)"
-	}
-	return s
 }

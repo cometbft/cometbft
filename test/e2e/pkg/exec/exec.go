@@ -13,7 +13,7 @@ func Command(ctx context.Context, args ...string) error {
 	return err
 }
 
-// CommandOutput executes a shell command and return the command's output.
+// CommandOutput executes a shell command and returns the command's output.
 func CommandOutput(ctx context.Context, args ...string) ([]byte, error) {
 	//nolint: gosec
 	// G204: Subprocess launched with a potential tainted input or cmd arguments

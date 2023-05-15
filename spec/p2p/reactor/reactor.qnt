@@ -57,8 +57,8 @@ module reactor {
 		started: bool,
 		stopped: bool,
 
-		// Indicates whether a switch was set and the reactor registered.
-		switch: bool,
+		// Indicates whether the reactor was registered.
+		registered: bool,
 	}
 
 	// Pure definitions below represent the `p2p.Reactor` interface methods:
@@ -76,7 +76,7 @@ module reactor {
 	 * SetSwitch allows setting a switch.
 	 */
 	pure def SetSwitch(s: ReactorState, switch: bool): ReactorState = {
-		s.with("switch", switch)
+		s.with("registered", switch)
 	}
 
 	/*
@@ -150,7 +150,7 @@ module reactor {
 
 	// Code: Switch.AddReactor(name string, reactor Reactor)
 	action register() = all {
-		not(state.switch),
+		not(state.registered),
 		val channels = state.GetChannels()
 		val chIDs = channels.map(c => c.ID)
 		channels.size() == chIDs.size(), // channel IDs are unique
@@ -159,21 +159,21 @@ module reactor {
 
 	// Code: Switch.OnStart()
 	action start() = all {
-		state.switch,
+		state.registered,
 		not(state.started) and not(state.stopped),
 		state' = state.OnStart()
 	}
 
 	// Code: Switch.addPeer(p Peer): preamble
 	action initPeer(peer: Peer): bool = all {
-		state.switch and state.IsRunning(),
+		state.registered and state.IsRunning(),
 		not(peer.ID.in(state.peers)),
 		state' = state.InitPeer(peer)._1 // Updated peer not used here
 	}
 
 	// Code: Switch.addPeer(p Peer): conclusion
 	action addPeer(peer: Peer): bool = all {
-		state.switch and state.IsRunning(),
+		state.registered and state.IsRunning(),
 		peer.ID.in(state.peers), // InitPeer(peer) and not RemovePeer(peer)
 		state.routines.filter(r => r.peer.ID == peer.ID).size() == 0,
 		state' = AddPeer(state, peer)
@@ -181,7 +181,7 @@ module reactor {
 
 	// Code: Switch.stopAndRemovePeer(peer Peer, reason interface{})
 	action removePeer(peer: Peer, reason: str): bool = all {
-		state.switch and state.IsRunning(),
+		state.registered and state.IsRunning(),
 		peer.ID.in(state.peers), // InitPeer(peer) and not RemovePeer(peer)
 		// Routines might not be started, namely: not AddPeer(peer)
 		// Routines could also be already stopped if Peer has erroed.
@@ -190,7 +190,7 @@ module reactor {
 
 	// Code: Peer type, onReceive := func(chID byte, msgBytes []byte)
 	action receive(e: Envelope): bool = all {
-		state.switch and state.IsRunning(),
+		state.registered and state.IsRunning(),
 		e.Src.ID.in(state.peers), // Sender is an active peer
 		state.GetChannels().exists(
 			c => c.ID == e.ChannelID), // Registered for the channel
@@ -199,7 +199,7 @@ module reactor {
 
 	// Code: Switch.OnStop()
 	action stop = all {
-		IsRunning(state),
+		state.registered and IsRunning(state),
 		// Either no peer was added or all peers were removed
 		state.peers.size() == 0,
 		state' = state.OnStop()
@@ -213,7 +213,7 @@ module reactor {
 			routines: Set(),
 			started: false,
 			stopped: false,
-			switch: false,
+			registered: false,
 		}
 	}
 

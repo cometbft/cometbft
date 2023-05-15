@@ -153,7 +153,7 @@ module ABCIServers {
             require(not(nodeId.hasResponse(req))),
             val senderId = ABCI_senderFor(nodeId, req)
             val err = if (req.tx.isValid()) noError else InvalidTxError
-            val resp = tag: req.tag, err: err }
+            val resp = { tag: req.tag, err: err }
             requestSenderResponses' = requestSenderResponses.put(nodeId, 
                 requestSenderResponses.get(nodeId).put(req, (senderId, resp))),
         }

@@ -53,12 +53,8 @@ module reactor {
 		// The reactor runs multiple routines.
 		routines: Set[Routine],
 
-		// Service implementation.
-		started: bool,
-		stopped: bool,
-
-		// Indicates whether the reactor was registered.
-		registered: bool,
+		// Values: init -> registered -> running -> stopped
+		state: str,
 
 		// Name with which the reactor was registered.
 		name: str,
@@ -69,9 +65,7 @@ module reactor {
 		{
 			peers: Set(),
 			routines: Set(),
-			started: false,
-			stopped: false,
-			registered: false,
+			state: "init",
 			name: "",
 		}
 	}
@@ -91,7 +85,7 @@ module reactor {
 	 * SetSwitch allows setting a switch.
 	 */
 	pure def SetSwitch(s: ReactorState, switch: bool): ReactorState = {
-		s.with("registered", switch)
+		s.with("state", "registered")
 	}
 
 	/*
@@ -100,7 +94,7 @@ module reactor {
 	 */
 	pure def OnStart(s: ReactorState): ReactorState = {
 		// Startup procedures should come here.
-		s.with("started", true)
+		s.with("state", "running")
 	}
 
 	/*
@@ -109,7 +103,7 @@ module reactor {
 	 */
 	pure def OnStop(s: ReactorState): ReactorState = {
 		// Shutdown procedures should come here.
-		s.with("stopped", true)
+		s.with("state", "stopped")
 	}
 
 	/*
@@ -158,14 +152,12 @@ module reactor {
 	// Reactors are unique identified by their names.
 	var reactors: str -> ReactorState
 
-	pure def IsRunning(s: ReactorState): bool = {
-		s.started and not(s.stopped)
-	}
 
 	// State transitions performed by the p2p layer, invoking `p2p.Reactor` methods:
 
 	// Code: Switch.AddReactor(name string, reactor Reactor)
 	action register(name: str, reactor: ReactorState): bool = all {
+		reactor.state == "init",
 		not(name.in(reactors.keys())), // Name must be unique
 		val channels = reactor.GetChannels()
 		val chIDs = channels.map(c => c.ID)
@@ -176,15 +168,14 @@ module reactor {
 
 	// Code: Switch.OnStart()
 	action start(reactor: ReactorState): bool = all {
-		reactor.registered,
-		not(reactor.started) and not(reactor.stopped),
+		reactor.state == "registered",
 		val _reactor = reactor.OnStart()
 		reactors' = reactors.set(reactor.name, _reactor)
 	}
 
 	// Code: Switch.addPeer(p Peer): preamble
 	action initPeer(reactor: ReactorState, peer: Peer): bool = all {
-		reactor.registered and reactor.IsRunning(),
+		reactor.state == "running",
 		not(peer.ID.in(reactor.peers)),
 		val _reactor = reactor.InitPeer(peer)._1 // Updated peer not used
 		reactors' = reactors.set(reactor.name, _reactor)
@@ -192,7 +183,7 @@ module reactor {
 
 	// Code: Switch.addPeer(p Peer): conclusion
 	action addPeer(reactor: ReactorState, peer: Peer): bool = all {
-		reactor.registered and reactor.IsRunning(),
+		reactor.state == "running",
 		peer.ID.in(reactor.peers), // InitPeer(peer) and not RemovePeer(peer)
 		reactor.routines.filter(r => r.peer.ID == peer.ID).size() == 0,
 		val _reactor = AddPeer(reactor, peer)
@@ -201,7 +192,7 @@ module reactor {
 
 	// Code: Switch.stopAndRemovePeer(peer Peer, reason interface{})
 	action removePeer(reactor: ReactorState, peer: Peer, reason: str): bool = all {
-		reactor.registered and reactor.IsRunning(),
+		reactor.state == "running",
 		peer.ID.in(reactor.peers), // InitPeer(peer) and not RemovePeer(peer)
 		// Routines might not be started, namely: not AddPeer(peer)
 		// Routines could also be already stopped if Peer has erroed.
@@ -211,7 +202,7 @@ module reactor {
 
 	// Code: Peer type, onReceive := func(chID byte, msgBytes []byte)
 	action receive(reactor: ReactorState, e: Envelope): bool = all {
-		reactor.registered and reactor.IsRunning(),
+		reactor.state == "running",
 		e.Src.ID.in(reactor.peers), // Sender is an active peer
 		reactor.GetChannels().exists(
 			c => c.ID == e.ChannelID), // Registered for the channel
@@ -221,7 +212,7 @@ module reactor {
 
 	// Code: Switch.OnStop()
 	action stop(reactor: ReactorState): bool = all {
-		reactor.registered and IsRunning(reactor),
+		reactor.state == "running",
 		// Either no peer was added or all peers were removed
 		reactor.peers.size() == 0,
 		val _reactor = reactor.OnStop()

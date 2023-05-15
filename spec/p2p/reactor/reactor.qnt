@@ -61,6 +61,17 @@ module reactor {
 		registered: bool,
 	}
 
+	// Produces a new, uninitialized reactor.
+	pure def NewReactor(): ReactorState = {
+		{
+			peers: Set(),
+			routines: Set(),
+			started: false,
+			stopped: false,
+			registered: false,
+		}
+	}
+
 	// Pure definitions below represent the `p2p.Reactor` interface methods:
 
 	/*
@@ -208,13 +219,7 @@ module reactor {
 	// Simulation support
 
 	action init = all {
-		state' = {
-			peers: Set(),
-			routines: Set(),
-			started: false,
-			stopped: false,
-			registered: false,
-		}
+		state' = NewReactor
 	}
 
 	pure val samplePeers = Set({ID: "p1"}, {ID: "p3"})

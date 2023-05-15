@@ -58,6 +58,9 @@ module reactor {
 
 		// Name with which the reactor was registered.
 		name: str,
+
+		// Channels the reactor is responsible for.
+		channels: Set[ChannelDescriptor],
 	}
 
 	// Produces a new, uninitialized reactor.
@@ -67,6 +70,7 @@ module reactor {
 			routines: Set(),
 			state: "init",
 			name: "",
+			channels: Set(),
 		}
 	}
 
@@ -77,8 +81,7 @@ module reactor {
 	 * that each ID is unique across all the reactors added to the switch.
 	 */
 	pure def GetChannels(s: ReactorState): Set[ChannelDescriptor] = {
-		// This method should return a list of channels, e.g.:
-		Set({ID: "3", Priority: 1}, {ID: "7", Priority: 2})
+		s.channels // Static list, configured at initialization.
 	}
 
 	/*
@@ -225,18 +228,21 @@ module reactor {
 		reactors' = Map()
 	}
 
+	// Modelled reactor configuration
 	pure val reactorName = "myReactor"
-	pure val samplePeers = Set({ID: "p1"}, {ID: "p3"})
-	pure val sampleChIDs = Set("1", "3", "7") // ChannelID 1 not registered
-	pure val sampleMsgs  = Set("ping", "pong")
+	pure val reactorChannels = Set({ID: "3", Priority: 1}, {ID: "7", Priority: 2})
 
-	// For retro-compatibility: the state of the "main" reactor
+	// For retro-compatibility: the state of the modelled reactor
 	def state(): ReactorState = {
 		reactors.get(reactorName)
 	}
 
+	pure val samplePeers = Set({ID: "p1"}, {ID: "p3"})
+	pure val sampleChIDs = Set("1", "3", "7") // ChannelID 1 not registered
+	pure val sampleMsgs  = Set("ping", "pong")
+
 	action step = any {
-		register(reactorName, NewReactor),
+		register(reactorName, NewReactor.with("channels", reactorChannels))
 		val reactor = reactors.get(reactorName)
 		any {
 			reactor.start(),

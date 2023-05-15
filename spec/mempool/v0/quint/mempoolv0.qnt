@@ -1,3 +1,4 @@
+// -*- mode: Bluespec; -*-
 /** Mempool V0
   * 
   */
@@ -43,7 +44,7 @@ module Base {
 
     // Heights
     type Height = int
-    val Heights = Set(0, 1, 2, 3, 4)
+    val Heights = 0.to(4)
 
     //--------------------------------------------------------------------------
     // More spells
@@ -86,7 +87,7 @@ module ABCIServers {
     import Base.*
     import ABCIMessages.*
 
-    type ABCIRequests = {tag: str, tx: Tx}
+    type ABCIRequests = { tag: str, tx: Tx }
     val ABCIRequestTags = Set("CheckTx", "RecheckTx")
     
     // The ABCIServer receives requests in a queue (a set actually) and responds
@@ -132,7 +133,7 @@ module ABCIServers {
 
     // For a "New" request we store the sender.
     action ABCI_SendRequestNewCheckTx(nodeId, tx, senderId) = 
-        val req = {tag: "CheckTx", tx: tx, checkTxType: "New"}
+        val req = { tag: "CheckTx", tx: tx, checkTxType: "New" }
         requestSenderResponses' = requestSenderResponses.put(nodeId, 
             requestSenderResponses.get(nodeId).put(req, (senderId, noResponse)))
 
@@ -152,7 +153,7 @@ module ABCIServers {
             require(not(nodeId.hasResponse(req))),
             val senderId = ABCI_senderFor(nodeId, req)
             val err = if (req.tx.isValid()) noError else InvalidTxError
-            val resp = { tag: req.tag, err: err }
+            val resp = tag: req.tag, err: err }
             requestSenderResponses' = requestSenderResponses.put(nodeId, 
                 requestSenderResponses.get(nodeId).put(req, (senderId, resp))),
         }
@@ -181,7 +182,7 @@ module Network {
 
     //--------------------------------------------------------------------------
     // Network state
-    type TxsMsg = {tag: str, senderId: NodeId, tx: Tx}
+    type TxsMsg = { tag: str, senderId: NodeId, tx: Tx }
     var msgs: NodeId -> Set[TxsMsg] // map from receiver to messages to process
 
     //--------------------------------------------------------------------------
@@ -247,7 +248,7 @@ module MempoolV0 {
 
     type Config = { keepInvalidTxsInCache: bool }
     // const Configs: NodeId -> Config
-    // Configs = Map("n1" -> {keepInvalidTxsInCache -> false}, "n2" -> {keepInvalidTxsInCache -> false}, "n2" -> {keepInvalidTxsInCache -> false}), 
+    // Configs = Map("n1" -> { keepInvalidTxsInCache -> false }, "n2" -> { keepInvalidTxsInCache -> false }, "n2" -> { keepInvalidTxsInCache -> false }), 
     val Configs: NodeId -> Config = NodeIds.mapBy(_ => { keepInvalidTxsInCache: false })
 
     //--------------------------------------------------------------------------
@@ -517,7 +518,7 @@ module MempoolV0 {
         setStep(nodeId, "P2P_SendTx"),
         require(not(mempoolIsEmpty(nodeId))),
         nondet tx = oneOf(mempoolTxs(nodeId))
-        val msg = {tag: "Txs", senderId: nodeId, tx: tx}
+        val msg = { tag: "Txs", senderId: nodeId, tx: tx }
         all {
             // If the msg was not already sent to this peer.
             Network_incomingMsgs(peer).forall(m => m != msg),
@@ -605,6 +606,9 @@ module MempoolV0 {
         Network_Unchanged,
         Chain_Unchanged,
     }
+
+    // action assert__(__action: bool, __cond: bool): bool =
+    //     __action.then(assert_(__cond))
 
     run test1 = Init
         .then(CheckTxRPC_("n1", "tx1"))

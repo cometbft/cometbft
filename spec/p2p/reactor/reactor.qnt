@@ -59,6 +59,9 @@ module reactor {
 
 		// Indicates whether the reactor was registered.
 		registered: bool,
+
+		// Name with which the reactor was registered.
+		name: str,
 	}
 
 	// Produces a new, uninitialized reactor.
@@ -69,6 +72,7 @@ module reactor {
 			started: false,
 			stopped: false,
 			registered: false,
+			name: "",
 		}
 	}
 
@@ -160,12 +164,12 @@ module reactor {
 	// State transitions performed by the p2p layer, invoking `p2p.Reactor` methods:
 
 	// Code: Switch.AddReactor(name string, reactor Reactor)
-	action register() = all {
+	action register(name: str): bool = all {
 		not(state.registered),
 		val channels = state.GetChannels()
 		val chIDs = channels.map(c => c.ID)
 		channels.size() == chIDs.size(), // channel IDs are unique
-		state' = state.SetSwitch(true)
+		state' = state.SetSwitch(true).with("name", name)
 	}
 
 	// Code: Switch.OnStart()
@@ -222,13 +226,14 @@ module reactor {
 		state' = NewReactor
 	}
 
+	pure val reactorName = "myReactor"
 	pure val samplePeers = Set({ID: "p1"}, {ID: "p3"})
 	pure val sampleChIDs = Set("1", "3", "7") // ChannelID 1 not registered
 	pure val sampleMsgs  = Set("ping", "pong")
 
 	action step = any {
 		// One-shot actions
-		register,
+		register(reactorName),
 		start,
 		stop,
 		// Peer-specific actions

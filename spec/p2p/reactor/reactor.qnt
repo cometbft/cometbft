@@ -155,7 +155,8 @@ module reactor {
 
 	// Global state
 
-	var state: ReactorState
+	// Reactors are unique identified by their names.
+	var reactors: str -> ReactorState
 
 	pure def IsRunning(s: ReactorState): bool = {
 		s.started and not(s.stopped)
@@ -165,25 +166,28 @@ module reactor {
 
 	// Code: Switch.AddReactor(name string, reactor Reactor)
 	action register(name: str, reactor: ReactorState): bool = all {
-		not(state.registered),
+		not(name.in(reactors.keys())), // Name must be unique
 		val channels = reactor.GetChannels()
 		val chIDs = channels.map(c => c.ID)
 		channels.size() == chIDs.size(), // channel IDs are unique
-		state' = reactor.SetSwitch(true).with("name", name)
+		val _reactor = reactor.SetSwitch(true).with("name", name)
+		reactors' = reactors.put(name, _reactor)
 	}
 
 	// Code: Switch.OnStart()
 	action start(reactor: ReactorState): bool = all {
 		reactor.registered,
 		not(reactor.started) and not(reactor.stopped),
-		state' = reactor.OnStart()
+		val _reactor = reactor.OnStart()
+		reactors' = reactors.set(reactor.name, _reactor)
 	}
 
 	// Code: Switch.addPeer(p Peer): preamble
 	action initPeer(reactor: ReactorState, peer: Peer): bool = all {
 		reactor.registered and reactor.IsRunning(),
 		not(peer.ID.in(reactor.peers)),
-		state' = reactor.InitPeer(peer)._1 // Updated peer not used here
+		val _reactor = reactor.InitPeer(peer)._1 // Updated peer not used
+		reactors' = reactors.set(reactor.name, _reactor)
 	}
 
 	// Code: Switch.addPeer(p Peer): conclusion
@@ -191,7 +195,8 @@ module reactor {
 		reactor.registered and reactor.IsRunning(),
 		peer.ID.in(reactor.peers), // InitPeer(peer) and not RemovePeer(peer)
 		reactor.routines.filter(r => r.peer.ID == peer.ID).size() == 0,
-		state' = AddPeer(reactor, peer)
+		val _reactor = AddPeer(reactor, peer)
+		reactors' = reactors.set(reactor.name, _reactor)
 	}
 
 	// Code: Switch.stopAndRemovePeer(peer Peer, reason interface{})
@@ -200,7 +205,8 @@ module reactor {
 		peer.ID.in(reactor.peers), // InitPeer(peer) and not RemovePeer(peer)
 		// Routines might not be started, namely: not AddPeer(peer)
 		// Routines could also be already stopped if Peer has erroed.
-		state' = reactor.RemovePeer(peer, reason)
+		val _reactor = reactor.RemovePeer(peer, reason)
+		reactors' = reactors.set(reactor.name, _reactor)
 	}
 
 	// Code: Peer type, onReceive := func(chID byte, msgBytes []byte)
@@ -209,7 +215,8 @@ module reactor {
 		e.Src.ID.in(reactor.peers), // Sender is an active peer
 		reactor.GetChannels().exists(
 			c => c.ID == e.ChannelID), // Registered for the channel
-		state' = reactor.Receive(e)
+		val _reactor = reactor.Receive(e)
+		reactors' = reactors.set(reactor.name, _reactor)
 	}
 
 	// Code: Switch.OnStop()
@@ -217,13 +224,14 @@ module reactor {
 		reactor.registered and IsRunning(reactor),
 		// Either no peer was added or all peers were removed
 		reactor.peers.size() == 0,
-		state' = reactor.OnStop()
+		val _reactor = reactor.OnStop()
+		reactors' = reactors.set(reactor.name, _reactor)
 	}
 
 	// Simulation support
 
 	action init = all {
-		state' = NewReactor
+		reactors' = Map()
 	}
 
 	pure val reactorName = "myReactor"
@@ -231,16 +239,20 @@ module reactor {
 	pure val sampleChIDs = Set("1", "3", "7") // ChannelID 1 not registered
 	pure val sampleMsgs  = Set("ping", "pong")
 
+	// For retro-compatibility: the state of the "main" reactor
+	def state(): ReactorState = {
+		reactors.get(reactorName)
+	}
+
 	action step = any {
 		register(reactorName, NewReactor),
-		// One-shot actions
-		val reactor = state
+		val reactor = reactors.get(reactorName)
 		any {
 			reactor.start(),
 			reactor.stop(),
-			// Peer-specific actions
 			nondet peer = oneOf(samplePeers)
 			any {
+				// Peer-specific actions
 				reactor.initPeer(peer),
 				reactor.addPeer(peer),
 				reactor.removePeer(peer, "no reason"),

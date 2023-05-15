@@ -164,60 +164,60 @@ module reactor {
 	// State transitions performed by the p2p layer, invoking `p2p.Reactor` methods:
 
 	// Code: Switch.AddReactor(name string, reactor Reactor)
-	action register(name: str): bool = all {
+	action register(name: str, reactor: ReactorState): bool = all {
 		not(state.registered),
-		val channels = state.GetChannels()
+		val channels = reactor.GetChannels()
 		val chIDs = channels.map(c => c.ID)
 		channels.size() == chIDs.size(), // channel IDs are unique
-		state' = state.SetSwitch(true).with("name", name)
+		state' = reactor.SetSwitch(true).with("name", name)
 	}
 
 	// Code: Switch.OnStart()
-	action start() = all {
-		state.registered,
-		not(state.started) and not(state.stopped),
-		state' = state.OnStart()
+	action start(reactor: ReactorState): bool = all {
+		reactor.registered,
+		not(reactor.started) and not(reactor.stopped),
+		state' = reactor.OnStart()
 	}
 
 	// Code: Switch.addPeer(p Peer): preamble
-	action initPeer(peer: Peer): bool = all {
-		state.registered and state.IsRunning(),
-		not(peer.ID.in(state.peers)),
-		state' = state.InitPeer(peer)._1 // Updated peer not used here
+	action initPeer(reactor: ReactorState, peer: Peer): bool = all {
+		reactor.registered and reactor.IsRunning(),
+		not(peer.ID.in(reactor.peers)),
+		state' = reactor.InitPeer(peer)._1 // Updated peer not used here
 	}
 
 	// Code: Switch.addPeer(p Peer): conclusion
-	action addPeer(peer: Peer): bool = all {
-		state.registered and state.IsRunning(),
-		peer.ID.in(state.peers), // InitPeer(peer) and not RemovePeer(peer)
-		state.routines.filter(r => r.peer.ID == peer.ID).size() == 0,
-		state' = AddPeer(state, peer)
+	action addPeer(reactor: ReactorState, peer: Peer): bool = all {
+		reactor.registered and reactor.IsRunning(),
+		peer.ID.in(reactor.peers), // InitPeer(peer) and not RemovePeer(peer)
+		reactor.routines.filter(r => r.peer.ID == peer.ID).size() == 0,
+		state' = AddPeer(reactor, peer)
 	}
 
 	// Code: Switch.stopAndRemovePeer(peer Peer, reason interface{})
-	action removePeer(peer: Peer, reason: str): bool = all {
-		state.registered and state.IsRunning(),
-		peer.ID.in(state.peers), // InitPeer(peer) and not RemovePeer(peer)
+	action removePeer(reactor: ReactorState, peer: Peer, reason: str): bool = all {
+		reactor.registered and reactor.IsRunning(),
+		peer.ID.in(reactor.peers), // InitPeer(peer) and not RemovePeer(peer)
 		// Routines might not be started, namely: not AddPeer(peer)
 		// Routines could also be already stopped if Peer has erroed.
-		state' = state.RemovePeer(peer, reason)
+		state' = reactor.RemovePeer(peer, reason)
 	}
 
 	// Code: Peer type, onReceive := func(chID byte, msgBytes []byte)
-	action receive(e: Envelope): bool = all {
-		state.registered and state.IsRunning(),
-		e.Src.ID.in(state.peers), // Sender is an active peer
-		state.GetChannels().exists(
+	action receive(reactor: ReactorState, e: Envelope): bool = all {
+		reactor.registered and reactor.IsRunning(),
+		e.Src.ID.in(reactor.peers), // Sender is an active peer
+		reactor.GetChannels().exists(
 			c => c.ID == e.ChannelID), // Registered for the channel
-		state' = Receive(state, e)
+		state' = reactor.Receive(e)
 	}
 
 	// Code: Switch.OnStop()
-	action stop = all {
-		state.registered and IsRunning(state),
+	action stop(reactor: ReactorState): bool = all {
+		reactor.registered and IsRunning(reactor),
 		// Either no peer was added or all peers were removed
-		state.peers.size() == 0,
-		state' = state.OnStop()
+		reactor.peers.size() == 0,
+		state' = reactor.OnStop()
 	}
 
 	// Simulation support
@@ -232,19 +232,22 @@ module reactor {
 	pure val sampleMsgs  = Set("ping", "pong")
 
 	action step = any {
+		register(reactorName, NewReactor),
 		// One-shot actions
-		register(reactorName),
-		start,
-		stop,
-		// Peer-specific actions
-		nondet peer = oneOf(samplePeers)
+		val reactor = state
 		any {
-			initPeer(peer),
-			addPeer(peer),
-			removePeer(peer, "no reason"),
-			receive({Src: peer,
-				ChannelID: oneOf(sampleChIDs),
-				Message: oneOf(sampleMsgs)}),
+			reactor.start(),
+			reactor.stop(),
+			// Peer-specific actions
+			nondet peer = oneOf(samplePeers)
+			any {
+				reactor.initPeer(peer),
+				reactor.addPeer(peer),
+				reactor.removePeer(peer, "no reason"),
+				reactor.receive({Src: peer,
+					ChannelID: oneOf(sampleChIDs),
+					Message: oneOf(sampleMsgs)}),
+			}
 		}
 	}
 

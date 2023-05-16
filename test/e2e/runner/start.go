@@ -56,21 +56,9 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 			return err
 		}
 		if node.PrometheusProxyPort > 0 {
-			logger.Info("start", "msg",
-				log.NewLazySprintf("Node %v up on http://%s:%v; with Prometheus on http://%s:%v/metrics",
-					node.Name,
-					node.ExternalIP,
-					node.ProxyPort,
-					node.ExternalIP,
-					node.PrometheusProxyPort,
-				),
-			)
+			logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://127.0.0.1:%v; with Prometheus on http://127.0.0.1:%v/metrics", node.Name, node.RPCProxyPort, node.PrometheusProxyPort))
 		} else {
-			logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://%s:%v",
-				node.Name,
-				node.ExternalIP,
-				node.ProxyPort,
-			))
+			logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://127.0.0.1:%v", node.Name, node.RPCProxyPort))
 		}
 	}
 
@@ -127,8 +115,8 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 		if err != nil {
 			return err
 		}
-		logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://%s:%v at height %v",
-			node.Name, node.ExternalIP, node.ProxyPort, status.SyncInfo.LatestBlockHeight))
+		logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://127.0.0.1:%v at height %v",
+			node.Name, node.RPCProxyPort, status.SyncInfo.LatestBlockHeight))
 	}
 
 	return nil

@@ -28,3 +28,7 @@ func (p Provider) StopTestnet(_ context.Context) error {
 	//TODO Not implemented (next PR)
 	return nil
 }
+
+func (p Provider) GetInfrastructureData() *e2e.InfrastructureData {
+	return &p.InfrastructureData
+}

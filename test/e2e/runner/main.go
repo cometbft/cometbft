@@ -31,7 +31,6 @@ type CLI struct {
 	testnet  *e2e.Testnet
 	preserve bool
 	infp     infra.Provider
-	ifd      e2e.InfrastructureData
 }
 
 // NewCLI sets up the CLI.
@@ -80,7 +79,6 @@ func NewCLI() *CLI {
 			default:
 				return fmt.Errorf("unknown infrastructure type '%s'", inft)
 			}
-			cli.ifd = ifd
 
 			testnet, err := e2e.LoadTestnet(file, ifd)
 			if err != nil {
@@ -90,7 +88,10 @@ func NewCLI() *CLI {
 			cli.testnet = testnet
 			switch inft {
 			case "docker":
-				cli.infp = &docker.Provider{Testnet: testnet}
+				cli.infp = &docker.Provider{
+					Testnet:            testnet,
+					InfrastructureData: ifd,
+				}
 			case "digital-ocean":
 				cli.infp = &digitalocean.Provider{
 					Testnet:            testnet,
@@ -155,7 +156,7 @@ func NewCLI() *CLI {
 			if err := Wait(cmd.Context(), cli.testnet, 5); err != nil { // wait for network to settle before tests
 				return err
 			}
-			if err := Test(cli.testnet, cli.ifd); err != nil {
+			if err := Test(cli.testnet, cli.infp.GetInfrastructureData()); err != nil {
 				return err
 			}
 			if !cli.preserve {
@@ -260,7 +261,7 @@ func NewCLI() *CLI {
 		Use:   "test",
 		Short: "Runs test cases against a running testnet",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return Test(cli.testnet, cli.ifd)
+			return Test(cli.testnet, cli.infp.GetInfrastructureData())
 		},
 	})
 

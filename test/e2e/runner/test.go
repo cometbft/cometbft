@@ -9,7 +9,7 @@ import (
 )
 
 // Test runs test cases under tests/
-func Test(testnet *e2e.Testnet, ifd e2e.InfrastructureData) error {
+func Test(testnet *e2e.Testnet, ifd *e2e.InfrastructureData) error {
 	logger.Info("Running tests in ./tests/...")
 
 	err := os.Setenv("E2E_MANIFEST", testnet.File)

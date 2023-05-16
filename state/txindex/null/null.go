@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/cometbft/cometbft/libs/log"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 	"github.com/cometbft/cometbft/state/txindex"
@@ -31,4 +33,8 @@ func (txi *TxIndex) Index(_ *abci.TxResult) error {
 
 func (txi *TxIndex) Search(_ context.Context, _ *query.Query) ([]*abci.TxResult, error) {
 	return []*abci.TxResult{}, nil
+}
+
+func (txi *TxIndex) SetLogger(log.Logger) {
+
 }

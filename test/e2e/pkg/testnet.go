@@ -96,7 +96,8 @@ type Node struct {
 	Mode                Mode
 	PrivvalKey          crypto.PrivKey
 	NodeKey             crypto.PrivKey
-	IP                  net.IP
+	InternalIP          net.IP
+	ExternalIP          net.IP
 	RPCProxyPort        uint32
 	GRPCProxyPort       uint32
 	StartAt             int64
@@ -200,6 +201,10 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		if !ok {
 			return nil, fmt.Errorf("information for node '%s' missing from infrastructure data", name)
 		}
+		extIP := ind.ExtIPAddress
+		if len(extIP) == 0 {
+			extIP = ind.IPAddress
+		}
 		v := nodeManifest.Version
 		if v == "" {
 			v = localVersion
@@ -211,7 +216,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			Testnet:          testnet,
 			PrivvalKey:       keyGen.Generate(manifest.KeyType),
 			NodeKey:          keyGen.Generate("ed25519"),
-			IP:               ind.IPAddress,
+			InternalIP:       ind.IPAddress,
+			ExternalIP:       extIP,
 			RPCProxyPort:     proxyPortGen.Next(),
 			GRPCProxyPort:    proxyPortGen.Next(),
 			Mode:             ModeValidator,
@@ -352,11 +358,11 @@ func (n Node) Validate(testnet Testnet) error {
 	if n.Name == "" {
 		return errors.New("node has no name")
 	}
-	if n.IP == nil {
+	if n.InternalIP == nil {
 		return errors.New("node has no IP address")
 	}
-	if !testnet.IP.Contains(n.IP) {
-		return fmt.Errorf("node IP %v is not in testnet network %v", n.IP, testnet.IP)
+	if !testnet.IP.Contains(n.InternalIP) {
+		return fmt.Errorf("node IP %v is not in testnet network %v", n.InternalIP, testnet.IP)
 	}
 	if n.RPCProxyPort == n.PrometheusProxyPort {
 		return fmt.Errorf("node local port %v used also for Prometheus local port", n.RPCProxyPort)
@@ -368,7 +374,7 @@ func (n Node) Validate(testnet Testnet) error {
 		return fmt.Errorf("local port %v must be >1024", n.PrometheusProxyPort)
 	}
 	for _, peer := range testnet.Nodes {
-		if peer.Name != n.Name && peer.RPCProxyPort == n.RPCProxyPort {
+		if peer.Name != n.Name && peer.RPCProxyPort == n.RPCProxyPort && peer.ExternalIP.Equal(n.ExternalIP) {
 			return fmt.Errorf("peer %q also has local port %v", peer.Name, n.RPCProxyPort)
 		}
 		if n.PrometheusProxyPort > 0 {
@@ -489,8 +495,8 @@ func (t Testnet) HasPerturbations() bool {
 
 // Address returns a P2P endpoint address for the node.
 func (n Node) AddressP2P(withID bool) string {
-	ip := n.IP.String()
-	if n.IP.To4() == nil {
+	ip := n.InternalIP.String()
+	if n.InternalIP.To4() == nil {
 		// IPv6 addresses must be wrapped in [] to avoid conflict with : port separator
 		ip = fmt.Sprintf("[%v]", ip)
 	}
@@ -503,8 +509,8 @@ func (n Node) AddressP2P(withID bool) string {
 
 // Address returns an RPC endpoint address for the node.
 func (n Node) AddressRPC() string {
-	ip := n.IP.String()
-	if n.IP.To4() == nil {
+	ip := n.InternalIP.String()
+	if n.InternalIP.To4() == nil {
 		// IPv6 addresses must be wrapped in [] to avoid conflict with : port separator
 		ip = fmt.Sprintf("[%v]", ip)
 	}
@@ -513,7 +519,7 @@ func (n Node) AddressRPC() string {
 
 // Client returns an RPC client for the node.
 func (n Node) Client() (*rpchttp.HTTP, error) {
-	return rpchttp.New(fmt.Sprintf("http://127.0.0.1:%v", n.RPCProxyPort), "/websocket")
+	return rpchttp.New(fmt.Sprintf("http://%s:%v", n.ExternalIP, n.RPCProxyPort), "/websocket")
 }
 
 // GRPCClient creates a gRPC client for the node.

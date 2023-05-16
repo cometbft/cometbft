@@ -1,0 +1,26 @@
+syntax = "proto3";
+package dydxcometbft.subaccounts;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/cometbft/cometbft/proto/dydxcometbft/subaccounts";
+
+// PerpetualPositions are an account’s positions of a `Perpetual`.
+// Therefore they hold any information needed to trade perpetuals.
+message PerpetualPosition {
+  // The `Id` of the `Perpetual`.
+  uint32 perpetual_id = 1;
+  // The size of the position in base quantums.
+  bytes quantums = 2 [
+    (gogoproto.customtype) =
+    "github.com/cometbft/cometbft/proto/dydxcometbft/gotypes.SerializableInt",
+    (gogoproto.nullable) = false
+  ];
+  // The funding_index of the `Perpetual` the last time this position was
+  // settled.
+  bytes funding_index = 3 [
+    (gogoproto.customtype) =
+    "github.com/cometbft/cometbft/proto/dydxcometbft/gotypes.SerializableInt",
+    (gogoproto.nullable) = false
+  ];
+}

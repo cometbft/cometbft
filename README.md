@@ -20,6 +20,19 @@ Note that this doesn't pull in upstream tags, so in order to do this follow thes
 1. `git fetch upstream`
 2. `git push --tags`
 
+## dYdX Proto maintenance
+
+In order to support some of our custom functionality, we require some dydx protobuf files to be copied into this repository. Currently, the source of truth for protos is in `dydxprotocol/v4`, and any changes that require updates to any of the protos in this repository should be sync'd over as well. Here are steps for updating and compiling the protos here.
+
+1. Modify the protos in `proto/dydxcometbft`.
+2. `make proto-gen`
+
+Note that the protos cannot be copied over directly. golang protobufs share a global namespace, and we have changed the package name slightly to avoid a name clash.
+
+We've also included a new dependency in the `buf.yaml` file for `"cosmos_proto/cosmos.proto"`. If this needs to be updated, run `buf build`. For more information, read [here](https://github.com/dydxprotocol/v4/tree/main/proto#update-protos).
+
+In the future, we will aim to have a single source of truth for protos.
+
 ## Updating CometBFT to new versions
 
 When a new version of CometBFT is published, we may want to adopt the changes in our fork. This process can be somewhat tedious, but below are the recommended steps to accomplish this.

@@ -303,9 +303,10 @@ func (txmp *TxMempool) allEntriesSorted() []*WrappedTx {
 	for _, tx := range txmp.txByKey {
 		w := tx.Value.(*WrappedTx)
 
-		// If this transaction is Cosmos transaction containing a `PlaceOrder` or `CancelOrder` message,
+		// If this transaction is Cosmos transaction containing a
+		// short term `PlaceOrder` or `CancelOrder` message,
 		// don't include it in the list of transactions.
-		if mempool.IsClobOrderTransaction(w.tx, txmp.logger) {
+		if mempool.IsShortTermClobOrderTransaction(w.tx, txmp.logger) {
 			continue
 		}
 
@@ -681,9 +682,10 @@ func (txmp *TxMempool) recheckTransactions() {
 		next := e.Next()
 
 		wtx := e.Value.(*WrappedTx)
-		// If this transaction is Cosmos transaction containing a `PlaceOrder` or `CancelOrder` message,
+		// If this transaction is Cosmos transaction containing a
+		// short term `PlaceOrder` or `CancelOrder` message,
 		// remove it from the mempool instead of rechecking.
-		if mempool.IsClobOrderTransaction(wtx.tx, txmp.logger) {
+		if mempool.IsShortTermClobOrderTransaction(wtx.tx, txmp.logger) {
 			txmp.removeTxByElement(e)
 		} else {
 			wtxs = append(wtxs, wtx)

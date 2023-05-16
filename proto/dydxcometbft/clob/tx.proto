@@ -1,0 +1,116 @@
+syntax = "proto3";
+package dydxcometbft.clob;
+
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+import "dydxcometbft/clob/order.proto";
+import "dydxcometbft/clob/matches.proto";
+
+// this line is used by starport scaffolding # proto/tx/import
+
+option go_package = "github.com/cometbft/cometbft/proto/dydxcometbft/clob";
+
+// Msg defines the Msg service.
+service Msg {
+  // ProposedOperations is a temporary message used by block proposers
+  // for matching orders as part of the ABCI++ workaround.
+  rpc ProposedOperations(MsgProposedOperations)
+      returns (MsgProposedOperationsResponse);
+  // PlaceOrder allows accounts to place orders on the orderbook.
+  rpc PlaceOrder(MsgPlaceOrder) returns (MsgPlaceOrderResponse);
+  // CancelOrder allows accounts to cancel existing orders on the orderbook.
+  rpc CancelOrder(MsgCancelOrder) returns (MsgCancelOrderResponse);
+}
+
+// MsgProposedOperations is a message injected by block proposers to
+// specify the operations that occurred in a block.
+message MsgProposedOperations {
+  // The list of operations proposed by the block proposer.
+  repeated Operation operations_queue = 1 [ (gogoproto.nullable) = false ];
+  // A list of order hashes that should have the add-to-orderbook
+  // collateralization check performed when they are placed in the `DeliverTx`
+  // validation flow.
+  repeated bytes add_to_orderbook_collat_check_order_hashes = 2;
+  // The address of the block proposer.
+  string proposer = 3 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+}
+
+// MsgProposedOperationsResponse is the response type of the message injected
+// by block proposers to specify the operations that occurred in a block.
+message MsgProposedOperationsResponse {}
+
+// MsgPlaceOrder is a request type used for placing orders.
+message MsgPlaceOrder { Order order = 1 [ (gogoproto.nullable) = false ]; }
+
+// MsgPlaceOrderResponse is a response type used for placing orders.
+message MsgPlaceOrderResponse {}
+
+// MsgCancelOrder is a request type used for canceling orders.
+message MsgCancelOrder {
+  OrderId order_id = 1 [ (gogoproto.nullable) = false ];
+  // Information about when the order cancellation expires.
+  oneof good_til_oneof {
+    // The last block this order cancellation can be executed at.
+    // Used only for Short-Term orders and must be zero for stateful orders.
+    uint32 good_til_block = 2;
+
+    // good_til_block_time represents the unix timestamp (in seconds) at which a
+    // stateful order cancellation will be considered expired. The
+    // good_til_block_time is always evaluated against the previous block's
+    // `BlockTime` instead of the block in which the order is committed.
+    // This value must be zero for Short-Term orders.
+    fixed32 good_til_block_time = 3;
+  }
+}
+
+// MsgCancelOrderResponse is a response type used for canceling orders.
+message MsgCancelOrderResponse {}
+
+// Operation represents an operation in the proposed operations.
+message Operation {
+  // operation represents the operation that occurred, which can be a match,
+  // order placement, order cancellation, or the placement of a pre-existing
+  // stateful order.
+  oneof operation {
+    ClobMatch match = 1;
+    MsgPlaceOrder order_placement = 2;
+    MsgCancelOrder order_cancellation = 3;
+    OrderId preexisting_stateful_order = 4;
+  }
+}
+
+// RemoveOrder is used for including order removals in the operations queue.
+message RemoveOrder {
+  OrderId order_id = 1 [ (gogoproto.nullable) = false ];
+
+  // RemovalReason represent the reason why an order was removed.
+  enum RemovalReason {
+    // REMOVAL_REASON_UNSPECIFIED represents an unspecified removal reason and
+    // is an invalid value.
+    REMOVAL_REASON_UNSPECIFIED = 0;
+    // REMOVAL_REASON_UNDERCOLLATERALIZED represents a removal of an order which
+    // if filled in isolation with respect to the current state of the
+    // subaccount would leave the subaccount undercollateralized.
+    REMOVAL_REASON_UNDERCOLLATERALIZED = 1;
+    // REMOVAL_REASON_REDUCE_ONLY_INVALID represents a removal of a reduce-only
+    // order which if filled in isolation with respect to the current state of
+    // the subaccount would cause the subaccount's existing position to increase
+    // or change sides.
+    REMOVAL_REASON_REDUCE_ONLY_INVALID = 2;
+    // REMOVAL_REASON_INVALID_WHEN_TRIGGERED_POST_ONLY represents a removal of a
+    // triggered order that was deemed invalid upon being triggered because it
+    // crossed maker orders on the book of the proposer.
+    REMOVAL_REASON_INVALID_WHEN_TRIGGERED_POST_ONLY = 3;
+    // REMOVAL_REASON_INVALID_WHEN_TRIGGERED_SELF_TRADE represents a removal of
+    // a triggered order that was deemed invalid upon being triggered because it
+    // constituted a self trade on the proposers orderbook.
+    REMOVAL_REASON_INVALID_WHEN_TRIGGERED_SELF_TRADE = 4;
+    // REMOVAL_REASON_TRIGGERED_IOC represents a removal of a triggered IOC
+    // order. IOC orders should always be removed in the block after they are
+    // triggered.
+    REMOVAL_REASON_TRIGGERED_IOC = 5;
+    // TODO(DEC-1544): Add REMOVAL_REASON_INVALID_WHEN_TRIGGERED_FOK.
+  }
+
+  RemovalReason removal_reason = 2;
+}

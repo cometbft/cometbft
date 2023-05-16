@@ -1,6 +1,8 @@
 version: v1
 deps:
   - buf.build/cosmos/gogo-proto
+    # Latest release was in Dec 2021, https://buf.build/cosmos/cosmos-proto/commits/main
+  - buf.build/cosmos/cosmos-proto:1935555c206d4afb9e94615dfd0fad31
 breaking:
   use:
     - FILE

@@ -420,14 +420,14 @@ func (mem *CListMempool) resCbFirstTime(
 				"total", mem.Size(),
 			)
 
-			// If this transaction is a `PlaceOrder` or `CancelOrder` transaction,
+			// If this transaction is a short term `PlaceOrder` or `CancelOrder` transaction,
 			// don't call `notifyTxsAvailable()`. The `notifyTxsAvailable()` function
 			// uses a channel in the mempool called `txsAvailable` to signal to the
 			// consensus algorithm that transactions are available to be included in
 			// the next proposal. If no transactions are available for inclusion in
 			// the next proposal, the consensus algorithm will wait for `create_empty_blocks_interval`
 			// before proposing an empty block instead.
-			if mempool.IsClobOrderTransaction(memTx.tx, mem.logger) {
+			if mempool.IsShortTermClobOrderTransaction(memTx.tx, mem.logger) {
 				return
 			}
 
@@ -560,9 +560,10 @@ func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
 		memTx := e.Value.(*mempoolTx)
 
-		// If this transaction is Cosmos transaction containing a `PlaceOrder` or `CancelOrder` message,
+		// If this transaction is Cosmos transaction containing a
+		// short term `PlaceOrder` or `CancelOrder` message,
 		// don't include it in the next proposed block.
-		if mempool.IsClobOrderTransaction(memTx.tx, mem.logger) {
+		if mempool.IsShortTermClobOrderTransaction(memTx.tx, mem.logger) {
 			continue
 		}
 
@@ -677,9 +678,10 @@ func (mem *CListMempool) recheckTxs() {
 
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
 		memTx := e.Value.(*mempoolTx)
-		// If this transaction is Cosmos transaction containing a `PlaceOrder` or `CancelOrder` message,
+		// If this transaction is Cosmos transaction containing a
+		// short term `PlaceOrder` or `CancelOrder` message,
 		// remove it from the mempool instead of rechecking.
-		if mempool.IsClobOrderTransaction(memTx.tx, mem.logger) {
+		if mempool.IsShortTermClobOrderTransaction(memTx.tx, mem.logger) {
 			mem.removeTx(memTx.tx, e, false)
 		}
 	}

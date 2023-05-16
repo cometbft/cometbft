@@ -23,6 +23,7 @@ module CRDT {
         value: Value
     }
 
+    //An entry with optional fields, which correspond to * in a query, if not set.
     type EntryO = {
         height: OInt::OType,
         round: OInt::OType,
@@ -37,7 +38,35 @@ module CRDT {
     type View = Set[Entry]
     pure val bot:View = Set()
 
-    pure def isSupersededBy(v1: View, v2: View): bool = true //TODO
+    /*
+    Some considerations wrt to supersession.
+    - Latest decided hight
+        - If h is the last decided height, then anything from h' < h is stale.
+        - Keeping information from a few decided hights might be useful for helping nodes catch up.
+        - This is an optimization.
+        - How to determine the last decided height (h) and the current height (h+1)
+        - How to prevent bizantine nodes from sending messages from higher hights, in a way compatible with CRDT?
+    - Latest round
+        - How to determine the current round based on the CRDT?
+        - How to prevent bizantine nodes from sending messages from higher rounds, in a way compatible with CRDT?
+    - Merging any subset of the state does not compromise correctness
+        - Allows for optimizations.
+        - As long as all messages are possibly merged, eventual strong consistency is ensured.
+    - Ordering of gossip heuristics
+        - Are they just heuristics or have they been proved correct anywhere or at least discussed?
+    */
+    pure def isSupersededBy(v1: View, v2: View): bool = 
+    {
+        val currentHeight
+        //Ignore votes from higher heights until you are ready for them.
+        
+        val currentRound
+        //Ignore votes from higher rounds until you are ready for them.
+
+        //ignore pre-votes if you have seen pre-commits.
+        
+
+    }
 
     pure def matches(e: Entry, oe:EntryO):bool = all {
         OInt::nsoe(oe.height, e.height),

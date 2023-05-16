@@ -32,6 +32,7 @@ module Lexy1 {
         OInt::nsoe(oe._3,e._3),
     }
 
+
     pure def removeStale(view: View): (View,View) =
         val superseded = view.filter(e => Set(e).isSupersededBy(view.excludeE(e)))
         val alive = view.exclude(superseded)

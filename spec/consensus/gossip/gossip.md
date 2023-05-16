@@ -1,26 +1,22 @@
 # CONS/GOSSIP interactions
 
+CONS interacts with GOSSIP to update the gossip state and to evaluate the current state to check for conditions that enable actions.
+To update the state, CONS passes GOSSIP a tuple and to evaluate the conditions CONS queries the tuple space.
+The exact mechanism by which tuples and query results are exchanged is implementation dependent[^options], but here we describe it as function calls.
 
-## Southbound Interaction - GOSSIP-I
-CONS interacts southbound only with GOSSIP, to update the gossip state and to evaluate the current state to check for conditions that enable actions.
+[^options:] Some implementation options
+>
+> - check on conditions on a loop, starting from the hightest known round of the hightest known height and down the round numbers, sleeping on each iteration for some predefined amount of time;
+> - set callbacks to inspect conditions on a (height,round) whenever a new message for such height and round is received;
+> - provide GOSSIP with queries and predicates over the query results before hand, so GOSSIP will execute them according to its convenience and optimizing it, and with callbacks to be invoked when the predicates evaluate to true;
+>
+> All approaches should be equivalent and not impact the specification much, even if the corresponding implementations would be much different.
 
-To update the state, CONS passes a tuple GOSSIP a tuple with the exact content to be added to the tuple space through a functional call.
-Implementation as free to do this through message calls, IPC or any other means.
 
-To check for conditions, we assume that CONS constantly evaluates all conditions by directly accessing the GOSSIP state, as this keeps the specification simpler.
-The exact mechanism of how conditions are evaluated is implementation specific, but some high level examples would be:
-- check on conditions on a loop, starting from the hightest known round of the hightest known height and down the round numbers, sleeping on each iteration for some predefined amount of time;
-- set callbacks to inspect conditions on a (height,round) whenever a new message for such height and round is received;
-- provide GOSSIP with evaluation predicates that GOSSIP will execute according to its convenience and with callbacks to be invoked when the predicates evaluate to true.
 
-All approaches should be equivalent and not impact the specification much, even if the corresponding implementations would be much different.[^setsorpred]
 
-[^setsorpred]: **TODO**: should we not specify these shared variables and instead pass predicates to GOSSIP from consensus? Variables make it harder to separate the CONS from GOSSIP, as the the variables are shared, but is highly efficient. Predicates are cleaner, but harder to implement efficiently. For example, when a vote arrives, multiple predicates may have to be tested independently, while with variables the tests may collaborate with each other.
 
-The state accessed by CONS is assumed to be valid.
-However this is achieved is a concern of the GOSSIP and P2P layers. [^todo-validity]
 
-[^todo-validity]: **TODO**: ensure that this requirement is mentioned in Gossip/P2P
 
 ### Shared Vocabulary
 
@@ -46,9 +42,6 @@ CONS is provided access to the local view.
 ```qnt reactor.gen.qnt
 <<DEF-READ-TUPLE>>
 ```
-
-> **Note**
-> If you read previous versions of this draft, you will recall GOSSIP was aware of supersession. In this version, I am hiding supersession in REQ-CONS-GOSSIP-REMOVE and initially attributing the task of identifying superseded entries to CONS, which then removes what has been superseded. A a later refined version of this spec will clearly specify how supersession is handled and translated into removals.
 
 
 As per the discussion in [Part I](#part-1-background), CONS requires GOSSIP to be a valid tuple space

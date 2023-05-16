@@ -300,3 +300,140 @@ func TestBlockIndexerMulti(t *testing.T) {
 		})
 	}
 }
+
+func TestBigInt(t *testing.T) {
+
+	bigInt := "10000000000000000000"
+	bigFloat := bigInt + ".76"
+	bigFloatLower := bigInt + ".1"
+	bigIntSmaller := "9999999999999999999"
+	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))
+	indexer := blockidxkv.New(store)
+
+	require.NoError(t, indexer.Index(types.EventDataNewBlockEvents{
+		Height: 1,
+		Events: []abci.Event{
+			{},
+			{
+				Type: "end_event",
+				Attributes: []abci.EventAttribute{
+					{
+						Key:   "foo",
+						Value: "100",
+						Index: true,
+					},
+					{
+						Key:   "bar",
+						Value: bigFloat,
+						Index: true,
+					},
+					{
+						Key:   "bar_lower",
+						Value: bigFloatLower,
+						Index: true,
+					},
+				},
+			},
+			{
+				Type: "end_event",
+				Attributes: []abci.EventAttribute{
+					{
+						Key:   "foo",
+						Value: bigInt,
+						Index: true,
+					},
+					{
+						Key:   "bar",
+						Value: "500",
+						Index: true,
+					},
+					{
+						Key:   "bla",
+						Value: "500.5",
+						Index: true,
+					},
+				},
+			},
+		},
+	},
+	))
+
+	testCases := map[string]struct {
+		q       *query.Query
+		results []int64
+	}{
+
+		"query return all events from a height - exact": {
+			q:       query.MustCompile("block.height = 1"),
+			results: []int64{1},
+		},
+		"query return all events from a height - exact (deduplicate height)": {
+			q:       query.MustCompile("block.height = 1 AND block.height = 2"),
+			results: []int64{1},
+		},
+		"query return all events from a height - range": {
+			q:       query.MustCompile("block.height < 2 AND block.height > 0 AND block.height > 0"),
+			results: []int64{1},
+		},
+		"query matches fields with big int and height - no match": {
+			q:       query.MustCompile("end_event.foo = " + bigInt + " AND end_event.bar = 500 AND block.height = 2"),
+			results: []int64{},
+		},
+		"query matches fields with big int with less and height - no match": {
+			q:       query.MustCompile("end_event.foo <= " + bigInt + " AND end_event.bar = 500 AND block.height = 2"),
+			results: []int64{},
+		},
+		"query matches fields with big int and height - match": {
+			q:       query.MustCompile("end_event.foo = " + bigInt + " AND end_event.bar = 500 AND block.height = 1"),
+			results: []int64{1},
+		},
+		"query matches big int in range": {
+			q:       query.MustCompile("end_event.foo = " + bigInt),
+			results: []int64{1},
+		},
+		"query matches big int in range with float with equality ": {
+			q:       query.MustCompile("end_event.bar >= " + bigInt),
+			results: []int64{1},
+		},
+		"query matches big int in range with float ": {
+			q:       query.MustCompile("end_event.bar > " + bigInt),
+			results: []int64{1},
+		},
+		"query matches big int in range with float lower dec point ": {
+			q:       query.MustCompile("end_event.bar_lower > " + bigInt),
+			results: []int64{1},
+		},
+		"query matches big int in range with float with less - found": {
+			q:       query.MustCompile("end_event.foo <= " + bigInt),
+			results: []int64{1},
+		},
+		"query matches big int in range with float with less with height range - found": {
+			q:       query.MustCompile("end_event.foo <= " + bigInt + " AND block.height > 0"),
+			results: []int64{1},
+		},
+		"query matches big int in range with float with less - not found": {
+			q:       query.MustCompile("end_event.foo < " + bigInt + " AND end_event.foo > 100"),
+			results: []int64{},
+		},
+		"query does not parse float": {
+			q:       query.MustCompile("end_event.bla >= 500"),
+			results: []int64{1},
+		},
+		"query condition float": {
+			q:       query.MustCompile("end_event.bla < " + bigFloat),
+			results: []int64{1},
+		},
+		"query condition big int plus one": {
+			q:       query.MustCompile("end_event.foo > " + bigIntSmaller),
+			results: []int64{1},
+		},
+	}
+	for name, tc := range testCases {
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			results, err := indexer.Search(context.Background(), tc.q)
+			require.NoError(t, err)
+			require.Equal(t, tc.results, results)
+		})
+	}
+}

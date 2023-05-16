@@ -155,23 +155,33 @@ module reactor {
 	// Reactors are unique identified by their names.
 	var reactors: str -> ReactorState
 
+	// Reactor (name) assigned to each channel ID.
+	var reactorsByCh: Byte -> str
+
 	// Helper action to (only) update the state of a given reactor.
 	action updateReactorTo(reactor: ReactorState): bool = all {
 		reactors' = reactors.set(reactor.name, reactor),
+		reactorsByCh' = reactorsByCh
 	}
-
 
 	// State transitions performed by the p2p layer, invoking `p2p.Reactor` methods:
 
 	// Code: Switch.AddReactor(name string, reactor Reactor)
 	action register(name: str, reactor: ReactorState): bool = all {
 		reactor.state == "init",
-		not(name.in(reactors.keys())), // Name must be unique
-		val channels = reactor.GetChannels()
-		val chIDs = channels.map(c => c.ID)
-		channels.size() == chIDs.size(), // channel IDs are unique
-		val _reactor = reactor.SetSwitch(true).with("name", name)
-		reactors' = reactors.put(name, _reactor),
+		// Assign the reactor as responsible for its channel IDs, which
+		// should not be already assigned to another reactor.
+		val chIDs = reactor.GetChannels().map(c => c.ID)
+		all {
+			size(chIDs.intersect(reactorsByCh.keys())) == 0,
+			reactorsByCh' = reactorsByCh.keys().union(chIDs).
+					mapBy(id => if (id.in(chIDs)) name
+						    else reactorsByCh.get(id)),
+		},
+		// Register the reactor by its name, which must be unique.
+		not(name.in(reactors.keys())),
+		reactors' = reactors.put(name,
+			reactor.SetSwitch(true).with("name", name))
 	}
 
 	// Code: Switch.OnStart()
@@ -207,9 +217,12 @@ module reactor {
 	// Code: Peer type, onReceive := func(chID byte, msgBytes []byte)
 	action receive(reactor: ReactorState, e: Envelope): bool = all {
 		reactor.state == "running",
-		e.Src.ID.in(reactor.peers), // Sender is an active peer
-		reactor.GetChannels().exists(
-			c => c.ID == e.ChannelID), // Registered for the channel
+		// The message's sender is an active peer
+		e.Src.ID.in(reactor.peers),
+		// Reactor is assigned to the message's channel ID
+		e.ChannelID.in(reactorsByCh.keys()),
+		reactorsByCh.get(e.ChannelID) == reactor.name,
+		reactor.GetChannels().exists(c => c.ID == e.ChannelID),
 		updateReactorTo(reactor.Receive(e))
 	}
 
@@ -225,6 +238,7 @@ module reactor {
 
 	action init = all {
 		reactors' = Map(),
+		reactorsByCh' = Map(),
 	}
 
 	// Modelled reactor configuration

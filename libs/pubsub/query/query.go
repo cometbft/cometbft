@@ -218,9 +218,9 @@ func compileCondition(cond syntax.Condition) (condition, error) {
 	return out, nil
 }
 
-// TODO(creachadair): The existing implementation allows anything number shaped
-// to be treated as a number. This preserves the parts of that behavior we had
-// tests for, but we should probably get rid of that.
+// We use this regex to support queries of the from "8atom", "6.5stake",
+// which are actively used in production.
+// The regex takes care of removing the non-number suffix.
 var extractNum = regexp.MustCompile(`^\d+(\.\d+)?`)
 
 func parseNumber(s string) (*big.Float, error) {

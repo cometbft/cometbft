@@ -218,7 +218,7 @@ func compileCondition(cond syntax.Condition) (condition, error) {
 	return out, nil
 }
 
-// We use this regex to support queries of the from "8atom", "6.5stake",
+// We use this regex to support queries of the form "8atom", "6.5stake",
 // which are actively used in production.
 // The regex takes care of removing the non-number suffix.
 var extractNum = regexp.MustCompile(`^\d+(\.\d+)?`)

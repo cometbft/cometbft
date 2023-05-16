@@ -8,9 +8,10 @@ import (
 
 	"github.com/cometbft/cometbft/libs/log"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 )
 
-func Start(ctx context.Context, testnet *e2e.Testnet) error {
+func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 	if len(testnet.Nodes) == 0 {
 		return fmt.Errorf("no nodes in testnet")
 	}
@@ -41,19 +42,35 @@ func Start(ctx context.Context, testnet *e2e.Testnet) error {
 
 	// Start initial nodes (StartAt: 0)
 	logger.Info("Starting initial network nodes...")
+	nodesAtZero := make([]*e2e.Node, 0)
 	for len(nodeQueue) > 0 && nodeQueue[0].StartAt == 0 {
-		node := nodeQueue[0]
+		nodesAtZero = append(nodesAtZero, nodeQueue[0])
 		nodeQueue = nodeQueue[1:]
-		if err := execCompose(testnet.Dir, "up", "-d", node.Name); err != nil {
-			return err
-		}
+	}
+	err := p.StartNodes(context.Background(), nodesAtZero...)
+	if err != nil {
+		return err
+	}
+	for _, node := range nodesAtZero {
 		if _, err := waitForNode(ctx, node, 0, 15*time.Second); err != nil {
 			return err
 		}
 		if node.PrometheusProxyPort > 0 {
-			logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://127.0.0.1:%v; with Prometheus on http://127.0.0.1:%v/metrics", node.Name, node.ProxyPort, node.PrometheusProxyPort))
+			logger.Info("start", "msg",
+				log.NewLazySprintf("Node %v up on http://%s:%v; with Prometheus on http://%s:%v/metrics",
+					node.Name,
+					node.ExternalIP,
+					node.ProxyPort,
+					node.ExternalIP,
+					node.PrometheusProxyPort,
+				),
+			)
 		} else {
-			logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://127.0.0.1:%v", node.Name, node.ProxyPort))
+			logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://%s:%v",
+				node.Name,
+				node.ExternalIP,
+				node.ProxyPort,
+			))
 		}
 	}
 
@@ -102,15 +119,16 @@ func Start(ctx context.Context, testnet *e2e.Testnet) error {
 
 		logger.Info("Starting catch up node", "node", node.Name, "height", node.StartAt)
 
-		if err := execCompose(testnet.Dir, "up", "-d", node.Name); err != nil {
+		err := p.StartNodes(context.Background(), node)
+		if err != nil {
 			return err
 		}
 		status, err := waitForNode(ctx, node, node.StartAt, 3*time.Minute)
 		if err != nil {
 			return err
 		}
-		logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://127.0.0.1:%v at height %v",
-			node.Name, node.ProxyPort, status.SyncInfo.LatestBlockHeight))
+		logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://%s:%v at height %v",
+			node.Name, node.ExternalIP, node.ProxyPort, status.SyncInfo.LatestBlockHeight))
 	}
 
 	return nil

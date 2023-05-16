@@ -11,8 +11,7 @@ var _ infra.Provider = (*Provider)(nil)
 
 // Provider implements a DigitalOcean-backed infrastructure provider.
 type Provider struct {
-	Testnet            *e2e.Testnet
-	InfrastructureData e2e.InfrastructureData
+	infra.ProviderData
 }
 
 // Noop currently. Setup is performed externally to the e2e test tool.
@@ -27,8 +26,4 @@ func (p Provider) StartNodes(_ context.Context, _ ...*e2e.Node) error {
 func (p Provider) StopTestnet(_ context.Context) error {
 	//TODO Not implemented (next PR)
 	return nil
-}
-
-func (p Provider) GetInfrastructureData() *e2e.InfrastructureData {
-	return &p.InfrastructureData
 }

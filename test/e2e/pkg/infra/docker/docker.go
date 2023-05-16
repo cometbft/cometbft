@@ -16,8 +16,7 @@ var _ infra.Provider = (*Provider)(nil)
 
 // Provider implements a docker-compose backed infrastructure provider.
 type Provider struct {
-	Testnet            *e2e.Testnet
-	InfrastructureData e2e.InfrastructureData
+	infra.ProviderData
 }
 
 // Setup generates the docker-compose file and write it to disk, erroring if
@@ -45,10 +44,6 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 }
 func (p Provider) StopTestnet(ctx context.Context) error {
 	return ExecCompose(ctx, p.Testnet.Dir, "down")
-}
-
-func (p Provider) GetInfrastructureData() *e2e.InfrastructureData {
-	return &p.InfrastructureData
 }
 
 // dockerComposeBytes generates a Docker Compose config file for a testnet and returns the

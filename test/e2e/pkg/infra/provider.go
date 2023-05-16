@@ -25,3 +25,13 @@ type Provider interface {
 	// Returns the the provider's infrastructure data
 	GetInfrastructureData() *e2e.InfrastructureData
 }
+
+type ProviderData struct {
+	Testnet            *e2e.Testnet
+	InfrastructureData e2e.InfrastructureData
+}
+
+// Returns the the provider's infrastructure data
+func (pd ProviderData) GetInfrastructureData() *e2e.InfrastructureData {
+	return &pd.InfrastructureData
+}

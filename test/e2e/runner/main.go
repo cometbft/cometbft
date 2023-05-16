@@ -89,13 +89,17 @@ func NewCLI() *CLI {
 			switch inft {
 			case "docker":
 				cli.infp = &docker.Provider{
-					Testnet:            testnet,
-					InfrastructureData: ifd,
+					ProviderData: infra.ProviderData{
+						Testnet:            testnet,
+						InfrastructureData: ifd,
+					},
 				}
 			case "digital-ocean":
 				cli.infp = &digitalocean.Provider{
-					Testnet:            testnet,
-					InfrastructureData: ifd,
+					ProviderData: infra.ProviderData{
+						Testnet:            testnet,
+						InfrastructureData: ifd,
+					},
 				}
 			default:
 				return fmt.Errorf("bad infrastructure type: %s", inft)

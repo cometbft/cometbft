@@ -192,7 +192,7 @@ func NewCLI() *CLI {
 
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "start",
-		Short: "Starts the Docker testnet, waiting for nodes to become available",
+		Short: "Starts the testnet, waiting for nodes to become available",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, err := os.Stat(cli.testnet.Dir)
 			if os.IsNotExist(err) {
@@ -207,7 +207,7 @@ func NewCLI() *CLI {
 
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "perturb",
-		Short: "Perturbs the Docker testnet, e.g. by restarting or disconnecting nodes",
+		Short: "Perturbs the testnet, e.g. by restarting or disconnecting nodes",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return Perturb(cmd.Context(), cli.testnet)
 		},
@@ -223,7 +223,7 @@ func NewCLI() *CLI {
 
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "stop",
-		Short: "Stops the Docker testnet",
+		Short: "Stops the testnet",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Info("Stopping testnet")
 			return cli.infp.StopTestnet(context.Background())

@@ -164,6 +164,8 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg.Moniker = node.Name
 	cfg.ProxyApp = AppAddressTCP
 	cfg.RPC.ListenAddress = "tcp://0.0.0.0:26657"
+	cfg.GRPC.ListenAddress = "tcp://0.0.0.0:26670"
+	cfg.GRPC.VersionService.Enabled = true
 	cfg.RPC.PprofListenAddress = ":6060"
 	cfg.P2P.ExternalAddress = fmt.Sprintf("tcp://%v", node.AddressP2P(false))
 	cfg.P2P.AddrBookStrict = false
@@ -267,7 +269,7 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		"dir":                    "data/app",
 		"listen":                 AppAddressUNIX,
 		"mode":                   node.Mode,
-		"proxy_port":             node.ProxyPort,
+		"proxy_port":             node.RPCProxyPort,
 		"protocol":               "socket",
 		"persist_interval":       node.PersistInterval,
 		"snapshot_interval":      node.SnapshotInterval,

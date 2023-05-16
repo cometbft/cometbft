@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/cometbft/cometbft/version"
@@ -70,6 +71,7 @@ type Config struct {
 
 	// Options for services
 	RPC             *RPCConfig             `mapstructure:"rpc"`
+	GRPC            *GRPCConfig            `mapstructure:"grpc"`
 	P2P             *P2PConfig             `mapstructure:"p2p"`
 	Mempool         *MempoolConfig         `mapstructure:"mempool"`
 	StateSync       *StateSyncConfig       `mapstructure:"statesync"`
@@ -85,6 +87,7 @@ func DefaultConfig() *Config {
 	return &Config{
 		BaseConfig:      DefaultBaseConfig(),
 		RPC:             DefaultRPCConfig(),
+		GRPC:            DefaultGRPCConfig(),
 		P2P:             DefaultP2PConfig(),
 		Mempool:         DefaultMempoolConfig(),
 		StateSync:       DefaultStateSyncConfig(),
@@ -101,6 +104,7 @@ func TestConfig() *Config {
 	return &Config{
 		BaseConfig:      TestBaseConfig(),
 		RPC:             TestRPCConfig(),
+		GRPC:            TestGRPCConfig(),
 		P2P:             TestP2PConfig(),
 		Mempool:         TestMempoolConfig(),
 		StateSync:       TestStateSyncConfig(),
@@ -130,6 +134,9 @@ func (cfg *Config) ValidateBasic() error {
 	}
 	if err := cfg.RPC.ValidateBasic(); err != nil {
 		return fmt.Errorf("error in [rpc] section: %w", err)
+	}
+	if err := cfg.GRPC.ValidateBasic(); err != nil {
+		return fmt.Errorf("error in [grpc] section: %w", err)
 	}
 	if err := cfg.P2P.ValidateBasic(); err != nil {
 		return fmt.Errorf("error in [p2p] section: %w", err)
@@ -499,6 +506,63 @@ func (cfg RPCConfig) CertFile() string {
 
 func (cfg RPCConfig) IsTLSEnabled() bool {
 	return cfg.TLSCertFile != "" && cfg.TLSKeyFile != ""
+}
+
+//-----------------------------------------------------------------------------
+// GRPCConfig
+
+// GRPCConfig defines the configuration for the CometBFT gRPC server.
+type GRPCConfig struct {
+	// TCP or Unix socket address for the gRPC server to listen on. If empty,
+	// the gRPC server will be disabled.
+	ListenAddress string `mapstructure:"laddr"`
+
+	// The gRPC version service provides version information about the node and
+	// the protocols it uses.
+	VersionService *GRPCVersionServiceConfig `mapstructure:"version_service"`
+}
+
+func DefaultGRPCConfig() *GRPCConfig {
+	return &GRPCConfig{
+		ListenAddress:  "",
+		VersionService: DefaultGRPCVersionServiceConfig(),
+	}
+}
+
+func TestGRPCConfig() *GRPCConfig {
+	return &GRPCConfig{
+		ListenAddress:  "tcp://127.0.0.1:36670",
+		VersionService: TestGRPCVersionServiceConfig(),
+	}
+}
+
+func (cfg *GRPCConfig) ValidateBasic() error {
+	if len(cfg.ListenAddress) > 0 {
+		addrParts := strings.SplitN(cfg.ListenAddress, "://", 2)
+		if len(addrParts) != 2 {
+			return fmt.Errorf(
+				"invalid listening address %s (use fully formed addresses, including the tcp:// or unix:// prefix)",
+				cfg.ListenAddress,
+			)
+		}
+	}
+	return nil
+}
+
+type GRPCVersionServiceConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+func DefaultGRPCVersionServiceConfig() *GRPCVersionServiceConfig {
+	return &GRPCVersionServiceConfig{
+		Enabled: true,
+	}
+}
+
+func TestGRPCVersionServiceConfig() *GRPCVersionServiceConfig {
+	return &GRPCVersionServiceConfig{
+		Enabled: true,
+	}
 }
 
 //-----------------------------------------------------------------------------

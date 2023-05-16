@@ -154,6 +154,8 @@ func createAndStartIndexerService(
 		return nil, nil, nil, err
 	}
 
+	txIndexer.SetLogger(logger.With("module", "txindex"))
+	blockIndexer.SetLogger(logger.With("module", "txindex"))
 	indexerService := txindex.NewIndexerService(txIndexer, blockIndexer, eventBus, false)
 	indexerService.SetLogger(logger.With("module", "txindex"))
 

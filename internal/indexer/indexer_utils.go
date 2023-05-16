@@ -20,7 +20,7 @@ func compareFloat(op1 *big.Float, op2 interface{}) (int, bool, error) {
 	case *big.Float:
 		return op1.Cmp(opVal), true, nil
 	default:
-		return -1, false, fmt.Errorf("unable to parse arguments")
+		return -1, false, fmt.Errorf("unable to parse arguments, bad type: %T", op2)
 	}
 }
 
@@ -39,7 +39,7 @@ func compareInt(op1 *big.Int, op2 interface{}) (int, bool, error) {
 		vF.SetInt(op1)
 		return vF.Cmp(opVal), true, nil
 	default:
-		return -1, false, fmt.Errorf("unable to parse arguments")
+		return -1, false, fmt.Errorf("unable to parse arguments, unexpected type: %T", op2)
 	}
 }
 
@@ -113,7 +113,7 @@ func CheckBounds(ranges indexer.QueryRange, v interface{}) (bool, error) {
 		}
 
 	default:
-		return false, fmt.Errorf("invalid argument type in query")
+		return false, fmt.Errorf("invalid argument type in query: %T", v)
 	}
 	return true, nil
 }

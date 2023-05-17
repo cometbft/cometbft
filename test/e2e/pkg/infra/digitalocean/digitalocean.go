@@ -59,16 +59,16 @@ func (p Provider) StopTestnet(ctx context.Context) error {
 	}
 	return execAnsible(ctx, p.Testnet.Dir, playbookFile, nodeIPs)
 }
-func (p Provider) Connect(ctx context.Context, _ string, ip string) error {
-	playbook := ansiblePerturbConnectionBytes(false)
+func (p Provider) Disconnect(ctx context.Context, _ string, ip string) error {
+	playbook := ansiblePerturbConnectionBytes(true)
 	playbookFile := getNextPlaybookFilename()
 	if err := p.writePlaybook(playbookFile, playbook); err != nil {
 		return err
 	}
 	return execAnsible(ctx, p.Testnet.Dir, playbookFile, []string{ip})
 }
-func (p Provider) Disconnect(ctx context.Context, _ string, ip string) error {
-	playbook := ansiblePerturbConnectionBytes(true)
+func (p Provider) Reconnect(ctx context.Context, _ string, ip string) error {
+	playbook := ansiblePerturbConnectionBytes(false)
 	playbookFile := getNextPlaybookFilename()
 	if err := p.writePlaybook(playbookFile, playbook); err != nil {
 		return err

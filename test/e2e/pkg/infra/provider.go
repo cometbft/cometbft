@@ -22,11 +22,17 @@ type Provider interface {
 	// Stops the whole network
 	StopTestnet(context.Context) error
 
-	Connect(context.Context, string, string) error
+	// Disconnects the node from the network
 	Disconnect(context.Context, string, string) error
+
+	// Reconnects the node to the network.
+	// This should only be called after Disconnect
+	Reconnect(context.Context, string, string) error
 
 	// Returns the the provider's infrastructure data
 	GetInfrastructureData() *e2e.InfrastructureData
+
+	// Checks whether the node has been upgraded in this run
 	CheckUpgraded(context.Context, *e2e.Node) (string, bool, error)
 }
 

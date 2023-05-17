@@ -48,7 +48,7 @@ func PerturbNode(ctx context.Context, node *e2e.Node, perturbation e2e.Perturbat
 			return nil, err
 		}
 		time.Sleep(10 * time.Second)
-		if err := ifp.Connect(context.Background(), name, node.ExternalIP.String()); err != nil {
+		if err := ifp.Reconnect(context.Background(), name, node.ExternalIP.String()); err != nil {
 			return nil, err
 		}
 

@@ -83,7 +83,7 @@ func (p Provider) writePlaybook(yaml, playbook string) error {
 	return nil
 }
 
-const basePlaybook = `- name: start/stop testapp
+const basePlaybook = `- name: e2e custom playbook
   hosts: all
   gather_facts: yes
   vars:
@@ -133,7 +133,7 @@ func ansiblePerturbConnectionBytes(disconnect bool) string {
 	playbook := basePlaybook
 	for _, dir := range []string{"INPUT", "OUTPUT"} {
 		playbook = ansibleAddShellTasks(playbook, disconnecting+" node",
-			fmt.Sprintf("iptables %s %s -p tcp --destination-port 26656 -j REJECT --reject-with tcp-reset", op, dir))
+			fmt.Sprintf("iptables %s %s -p tcp --dport 26656 -j DROP", op, dir))
 	}
 	return playbook
 }

@@ -97,15 +97,15 @@ func ansibleAddSystemdTask(playbook string, starting bool) string {
 		startStop = "started"
 	}
 	contents := fmt.Sprintf(`    ansible.builtin.systemd:
-	  name: testappd
-	  state: %s
-	  enabled: yes`, startStop)
+      name: testappd
+      state: %s
+      enabled: yes`, startStop)
 
 	return ansibleAddTask(playbook, "operate on the systemd-unit", contents)
 }
 
 func ansibleAddShellTasks(playbook, name string, shells ...string) string {
-	for shell := range shells {
+	for _, shell := range shells {
 		contents := fmt.Sprintf("    shell: \"%s\"\n", shell)
 		playbook = ansibleAddTask(playbook, name, contents)
 	}

@@ -22,10 +22,11 @@ type Provider interface {
 	// Stops the whole network
 	StopTestnet(context.Context) error
 
+	Connect(context.Context, string) error
+	Disconnect(context.Context, string) error
+
 	// Returns the the provider's infrastructure data
 	GetInfrastructureData() *e2e.InfrastructureData
-	Connect(context.Context, *e2e.Node) error
-	Disconnect(context.Context, *e2e.Node) error
 }
 
 type ProviderData struct {

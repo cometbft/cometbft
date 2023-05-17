@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -24,10 +25,13 @@ func (p *Provider) Setup() error {
 	return nil
 }
 
-const (
-	ymlSystemd = "systemd-action.yml"
-	ymlConnect = "connect-action.yml"
-)
+var ymlPlaybookSeq int
+
+func getNextPlaybookFilename() string {
+	const ymlPlaybookAction = "playbook-action"
+	ymlPlaybookSeq++
+	return ymlPlaybookAction + strconv.Itoa(ymlPlaybookSeq) + ".yml"
+}
 
 func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 	nodeIPs := make([]string, len(nodes))
@@ -35,11 +39,12 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 		nodeIPs[i] = n.ExternalIP.String()
 	}
 	playbook := ansibleSystemdBytes(true)
-	if err := p.writePlaybook(ymlSystemd, playbook); err != nil {
+	playbookFile := getNextPlaybookFilename()
+	if err := p.writePlaybook(playbookFile, playbook); err != nil {
 		return err
 	}
 
-	return execAnsible(ctx, p.Testnet.Dir, ymlSystemd, nodeIPs)
+	return execAnsible(ctx, p.Testnet.Dir, playbookFile, nodeIPs)
 }
 func (p Provider) StopTestnet(ctx context.Context) error {
 	nodeIPs := make([]string, len(p.Testnet.Nodes))
@@ -48,24 +53,27 @@ func (p Provider) StopTestnet(ctx context.Context) error {
 	}
 
 	playbook := ansibleSystemdBytes(false)
-	if err := p.writePlaybook(ymlSystemd, playbook); err != nil {
+	playbookFile := getNextPlaybookFilename()
+	if err := p.writePlaybook(playbookFile, playbook); err != nil {
 		return err
 	}
-	return execAnsible(ctx, p.Testnet.Dir, ymlSystemd, nodeIPs)
+	return execAnsible(ctx, p.Testnet.Dir, playbookFile, nodeIPs)
 }
 func (p Provider) Connect(ctx context.Context, _ string, ip string) error {
 	playbook := ansiblePerturbConnectionBytes(false)
-	if err := p.writePlaybook(ymlConnect, playbook); err != nil {
+	playbookFile := getNextPlaybookFilename()
+	if err := p.writePlaybook(playbookFile, playbook); err != nil {
 		return err
 	}
-	return execAnsible(ctx, p.Testnet.Dir, ymlConnect, []string{ip})
+	return execAnsible(ctx, p.Testnet.Dir, playbookFile, []string{ip})
 }
 func (p Provider) Disconnect(ctx context.Context, _ string, ip string) error {
 	playbook := ansiblePerturbConnectionBytes(true)
-	if err := p.writePlaybook(ymlConnect, playbook); err != nil {
+	playbookFile := getNextPlaybookFilename()
+	if err := p.writePlaybook(playbookFile, playbook); err != nil {
 		return err
 	}
-	return execAnsible(ctx, p.Testnet.Dir, ymlConnect, []string{ip})
+	return execAnsible(ctx, p.Testnet.Dir, playbookFile, []string{ip})
 }
 
 func (p Provider) CheckUpgraded(ctx context.Context, node *e2e.Node) (string, bool, error) {

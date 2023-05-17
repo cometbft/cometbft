@@ -43,6 +43,7 @@ numbering our ADRs from 100 onwards.
 ### Proposed
 
 - [ADR-103: Protobuf definition versioning](./adr-103-proto-versioning.md)
+- [ADR-105: gRPC API](./adr-105-grpc-api.md)
 
 ### Accepted
 

@@ -1,6 +1,7 @@
 package indexer
 
 import (
+	"math/big"
 	"time"
 
 	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
@@ -44,7 +45,17 @@ func (qr QueryRange) LowerBoundValue() interface{} {
 	switch t := qr.LowerBound.(type) {
 	case int64:
 		return t + 1
+	case *big.Int:
+		tmp := new(big.Int)
+		return tmp.Add(t, big.NewInt(1))
 
+	case *big.Float:
+		// For floats we cannot simply add one as the float to float
+		// comparison is more finegrained.
+		// When comparing to integers, adding one is also incorrect:
+		// example: x >100.2 ; x = 101 float increased to 101.2 and condition
+		// is not satisfied
+		return t
 	case time.Time:
 		return t.Unix() + 1
 
@@ -67,7 +78,11 @@ func (qr QueryRange) UpperBoundValue() interface{} {
 	switch t := qr.UpperBound.(type) {
 	case int64:
 		return t - 1
-
+	case *big.Int:
+		tmp := new(big.Int)
+		return tmp.Sub(t, big.NewInt(1))
+	case *big.Float:
+		return t
 	case time.Time:
 		return t.Unix() - 1
 
@@ -182,7 +197,7 @@ func conditionArg(c syntax.Condition) interface{} {
 	}
 	switch c.Arg.Type {
 	case syntax.TNumber:
-		return int64(c.Arg.Number())
+		return c.Arg.Number()
 	case syntax.TTime, syntax.TDate:
 		return c.Arg.Time()
 	default:

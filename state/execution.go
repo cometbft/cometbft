@@ -681,6 +681,7 @@ func ExecCommitBlock(
 		NextValidatorsHash: block.NextValidatorsHash,
 		ProposerAddress:    block.ProposerAddress,
 		Height:             block.Height,
+		Time:               block.Time,
 		DecidedLastCommit:  commitInfo,
 		Misbehavior:        block.Evidence.Evidence.ToABCI(),
 		Txs:                block.Txs.ToSliceOfBytes(),

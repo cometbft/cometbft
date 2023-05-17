@@ -75,7 +75,8 @@ with an ABCI++ application, available [here](../../abci/abci%2B%2B_comet_expecte
 
 ## Registration
 
-To become a reactor, a component has first to implement the `Reactor` interface,
+To become a reactor, a component has first to implement the
+[`Reactor`][reactor-interface] interface,
 then to register the implementation with the p2p layer, using the
 `Switch.AddReactor(name string, reactor Reactor)` method,
 with a global unique `name` for the reactor.
@@ -141,7 +142,7 @@ that `Peer` instance.
 
 ## Start peer
 
-Once a `Peer` is initialized by every reactor, the p2p layer starts the peer's
+Once `InitPeer(Peer)` is invoked for every registered reactor, the p2p layer starts the peer's
 communication routines and adds the `Peer` to the set of connected peers.
 If both steps are concluded without errors, the reactor's `AddPeer(Peer)` is invoked:
 
@@ -189,9 +190,10 @@ has registered with the p2p layer.
 The _pre-condition_ for receiving a message from a `Peer` is that the p2p layer
 has previously invoked `InitPeer(Peer)`.
 This means that the reactor must be able to receive a message from a `Peer`
-_before_ `AddPeer(Peer)` is called.
-While this is not the usual scenario, it can happen because starting the peer's
-send and receive routines and adding the peer are done in parallel:
+_before_ `AddPeer(Peer)` is invoked.
+This happens because the peer's send and receive routines are started before,
+and should be already running when the p2p layer adds the peer to every
+registered reactor.
 
 ```abnf
 start-peer      = [*receive] (connected-peer / start-error)
@@ -209,7 +211,7 @@ reactor via the `Receive(Envelope)` method.
 The message is packed into an `Envelope` that contains:
 
 - `ChannelID`: the channel the message belongs to
-- `Src`: the source or sender `Peer`, from which the message was received
+- `Src`: the source `Peer` handler, from which the message was received
 - `Message`: the actual message's payload, unmarshalled using protocol buffers
 
 Two important observations regarding the implementation of the `Receive` method:

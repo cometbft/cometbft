@@ -76,7 +76,7 @@ func (p Provider) Reconnect(ctx context.Context, _ string, ip string) error {
 	return execAnsible(ctx, p.Testnet.Dir, playbookFile, []string{ip})
 }
 
-func (p Provider) CheckUpgraded(ctx context.Context, node *e2e.Node) (string, bool, error) {
+func (p Provider) CheckUpgraded(_ context.Context, node *e2e.Node) (string, bool, error) {
 	// Upgrade not supported yet by DO provider
 	return node.Name, false, nil
 }

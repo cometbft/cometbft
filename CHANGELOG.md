@@ -21,6 +21,15 @@
   ([\#385](https://github.com/cometbft/cometbft/issues/385))
 - `[crypto/merkle]` Do not allow verification of Merkle Proofs against empty trees (`nil` root). `Proof.ComputeRootHash` now panics when it encounters an error, but `Proof.Verify` does not panic
   ([\#558](https://github.com/cometbft/cometbft/issues/558))
+- `[state/kvindexer]` Remove the function type from the event key stored in the database. This should be breaking only
+for people who forked CometBFT and interact directly with the indexers kvstore.
+  ([\#774](https://github.com/cometbft/cometbft/pull/774))
+- `[pubsub]` Added support for big integers and big floats in the pubsub event query system.
+  Breaking changes: function `Number` in package `libs/pubsub/query/syntax` changed its return value.
+  ([\#797](https://github.com/cometbft/cometbft/pull/797))
+- `[kvindexer]` Added support for big integers and big floats in the kvindexer.
+  Breaking changes: function `Number` in package `libs/pubsub/query/syntax` changed its return value.
+  ([\#797](https://github.com/cometbft/cometbft/pull/797))
 - `[state]` Move pruneBlocks from node/state to state/execution.
   ([\#6541](https://github.com/tendermint/tendermint/pull/6541))
 - `[abci]` Move `app_hash` parameter from `Commit` to `FinalizeBlock`
@@ -96,6 +105,12 @@
 - `[jsonrpc/client]` Improve the error message for client errors stemming from
   bad HTTP responses.
   ([cometbft/cometbft\#638](https://github.com/cometbft/cometbft/pull/638))
+- `[rpc]` Remove response data from response failure logs in order
+  to prevent large quantities of log data from being produced
+  ([\#654](https://github.com/cometbft/cometbft/issues/654))
+- `[pubsub/kvindexer]` Numeric query conditions and event values are represented as big floats with default precision of 125.
+  Integers are read as "big ints" and represented with as many bits as they need when converting to floats.
+  ([\#797](https://github.com/cometbft/cometbft/pull/797))
 - `[crypto/merkle]` Improve HashAlternatives performance
   ([\#6443](https://github.com/tendermint/tendermint/pull/6443))
 - `[p2p/pex]` Improve addrBook.hash performance

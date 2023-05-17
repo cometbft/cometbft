@@ -24,14 +24,18 @@ func (p *Provider) Setup() error {
 	return nil
 }
 
-const ymlSystemd = "systemd-action.yml"
+const (
+	ymlSystemd = "systemd-action.yml"
+	ymlConnect = "connect-action.yml"
+)
 
 func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 	nodeIPs := make([]string, len(nodes))
 	for i, n := range nodes {
 		nodeIPs[i] = n.ExternalIP.String()
 	}
-	if err := p.writePlaybook(ymlSystemd, true); err != nil {
+	playbook := ansibleSystemdBytes(true)
+	if err := p.writePlaybook(ymlSystemd, playbook); err != nil {
 		return err
 	}
 
@@ -43,27 +47,28 @@ func (p Provider) StopTestnet(ctx context.Context) error {
 		nodeIPs[i] = n.ExternalIP.String()
 	}
 
-	if err := p.writePlaybook(ymlSystemd, false); err != nil {
+	playbook := ansibleSystemdBytes(false)
+	if err := p.writePlaybook(ymlSystemd, playbook); err != nil {
 		return err
 	}
 	return execAnsible(ctx, p.Testnet.Dir, ymlSystemd, nodeIPs)
 }
-
-func (p Provider) Disconnect(ctx context.Context, n *e2e.Node) error {
-	return e2essh.MultiExec(p.SSHConfig, fmt.Sprintf("%s:%d", n.ExternalIP, sshPort),
-		"iptables -A INPUT -p tcp --destination-port 26656 -j REJECT --reject-with tcp-reset",
-		"iptables -A OUTPUT -p tcp --destination-port 26656 -j REJECT --reject-with tcp-reset",
-	)
+func (p Provider) Connect(ctx context.Context, _ string, ip string) error {
+	playbook := ansiblePerturbConnectionBytes(false)
+	if err := p.writePlaybook(ymlConnect, playbook); err != nil {
+		return err
+	}
+	return execAnsible(ctx, p.Testnet.Dir, ymlConnect, []string{ip})
 }
-func (p Provider) Connect(ctx context.Context, n *e2e.Node) error {
-	return e2essh.MultiExec(p.SSHConfig, fmt.Sprintf("%s:%d", n.ExternalIP, sshPort),
-		"iptables -D INPUT -p tcp --destination-port 26656 -j REJECT --reject-with tcp-reset",
-		"iptables -D OUTPUT -p tcp --destination-port 26656 -j REJECT --reject-with tcp-reset",
-	)
+func (p Provider) Disconnect(ctx context.Context, _ string, ip string) error {
+	playbook := ansiblePerturbConnectionBytes(true)
+	if err := p.writePlaybook(ymlConnect, playbook); err != nil {
+		return err
+	}
+	return execAnsible(ctx, p.Testnet.Dir, ymlConnect, []string{ip})
 }
 
-func (p Provider) writePlaybook(yaml string, starting bool) error {
-	playbook := ansibleSystemdBytes(starting)
+func (p Provider) writePlaybook(yaml, playbook string) error {
 	//nolint: gosec
 	// G306: Expect WriteFile permissions to be 0600 or less
 	err := os.WriteFile(filepath.Join(p.Testnet.Dir, yaml), []byte(playbook), 0o644)
@@ -73,25 +78,58 @@ func (p Provider) writePlaybook(yaml string, starting bool) error {
 	return nil
 }
 
-// file as bytes to be written out to disk.
-// ansibleStartBytes generates an Ansible playbook to start the network
-func ansibleSystemdBytes(starting bool) string {
-	startStop := "stopped"
-	if starting {
-		startStop = "started"
-	}
-	playbook := fmt.Sprintf(`- name: start/stop testapp
+const basePlaybook = `- name: start/stop testapp
   hosts: all
   gather_facts: yes
   vars:
     ansible_host_key_checking: false
 
   tasks:
-  - name: operate on the systemd-unit
-    ansible.builtin.systemd:
-      name: testappd
-      state: %s
-      enabled: yes`, startStop)
+`
+
+func ansibleAddTask(playbook, name, contents string) string {
+	return playbook + "  - name: " + name + "\n" + contents
+}
+
+func ansibleAddSystemdTask(playbook string, starting bool) string {
+	startStop := "stopped"
+	if starting {
+		startStop = "started"
+	}
+	contents := fmt.Sprintf(`    ansible.builtin.systemd:
+	  name: testappd
+	  state: %s
+	  enabled: yes`, startStop)
+
+	return ansibleAddTask(playbook, "operate on the systemd-unit", contents)
+}
+
+func ansibleAddShellTasks(playbook, name string, shells ...string) string {
+	for shell := range shells {
+		contents := fmt.Sprintf("    shell: \"%s\"\n", shell)
+		playbook = ansibleAddTask(playbook, name, contents)
+	}
+	return playbook
+}
+
+// file as bytes to be written out to disk.
+// ansibleStartBytes generates an Ansible playbook to start the network
+func ansibleSystemdBytes(starting bool) string {
+	return ansibleAddSystemdTask(basePlaybook, starting)
+}
+
+func ansiblePerturbConnectionBytes(disconnect bool) string {
+	disconnecting := "disconnect"
+	op := "-A"
+	if disconnect {
+		disconnecting = "reconnect"
+		op = "-D"
+	}
+	playbook := basePlaybook
+	for _, dir := range []string{"INPUT", "OUTPUT"} {
+		playbook = ansibleAddShellTasks(playbook, disconnecting+" node",
+			"iptables %s %s -p tcp --destination-port 26656 -j REJECT --reject-with tcp-reset", op, dir)
+	}
 	return playbook
 }
 

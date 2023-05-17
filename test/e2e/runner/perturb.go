@@ -47,11 +47,11 @@ func PerturbNode(ctx context.Context, node *e2e.Node, perturbation e2e.Perturbat
 	switch perturbation {
 	case e2e.PerturbationDisconnect:
 		logger.Info("perturb node", "msg", log.NewLazySprintf("Disconnecting node %v...", node.Name))
-		if err := ifp.Disconnect(context.Background(), name); err != nil {
+		if err := ifp.Disconnect(context.Background(), name, node.ExternalIP.String()); err != nil {
 			return nil, err
 		}
 		time.Sleep(10 * time.Second)
-		if err := ifp.Connect(context.Background(), name); err != nil {
+		if err := ifp.Connect(context.Background(), name, node.ExternalIP.String()); err != nil {
 			return nil, err
 		}
 

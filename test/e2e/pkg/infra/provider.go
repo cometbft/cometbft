@@ -22,8 +22,8 @@ type Provider interface {
 	// Stops the whole network
 	StopTestnet(context.Context) error
 
-	Connect(context.Context, string) error
-	Disconnect(context.Context, string) error
+	Connect(context.Context, string, string) error
+	Disconnect(context.Context, string, string) error
 
 	// Returns the the provider's infrastructure data
 	GetInfrastructureData() *e2e.InfrastructureData

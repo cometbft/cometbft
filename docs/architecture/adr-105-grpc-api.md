@@ -88,6 +88,21 @@ be worked out in the implementation.
 - `BlockResultsService` - Provides information about block execution results.
   - `GetByHeight` - Fetch the block results associated with a particular height.
 
+### Service Versioning
+
+Every service will be versioned, for example:
+
+- `VersionService` will have its Protobuf definition under
+  `tendermint.services.version.v1` (or `cometbft.services.version.v1` after
+  [\#94] has been merged)
+- `NodeService` will have its definitions under `tendermint.services.node.v1`
+- `TransactionService` will have its definitions under
+  `tendermint.services.transaction.v1`
+- etc.
+
+The general approach to versioning our Protobuf definitions is captured in [ADR
+103][adr-103].
+
 ### Go API
 
 #### Server
@@ -194,11 +209,13 @@ TODO: Replace ADR 101/102-related PR links with direct links to the ADRs once
       merged.
 -->
 [\#81]: https://github.com/cometbft/cometbft/issues/81
+[\#94]: https://github.com/cometbft/cometbft/issues/94
 [adr-057]: ./tendermint-core/adr-057-RPC.md
 [tendermint/tendermint\#7121]: https://github.com/tendermint/tendermint/pull/7121
 [tendermint/tendermint\#9683]: https://github.com/tendermint/tendermint/pull/9683
 [adr-101]: https://github.com/cometbft/cometbft/pull/82
 [adr-102]: https://github.com/cometbft/cometbft/pull/658
+[adr-103]: ./adr-103-proto-versioning.md
 [adr-075]: ./tendermint-core/adr-075-rpc-subscription.md
 [rpc-docs]: https://docs.cometbft.com/v0.37/rpc/
 [penumbra-proxy-svc]: https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.client.v1alpha1#penumbra.client.v1alpha1.TendermintProxyService

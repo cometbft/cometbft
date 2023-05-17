@@ -27,6 +27,7 @@ type Provider interface {
 
 	// Returns the the provider's infrastructure data
 	GetInfrastructureData() *e2e.InfrastructureData
+	CheckUpgraded(context.Context, *e2e.Node) (string, bool, error)
 }
 
 type ProviderData struct {

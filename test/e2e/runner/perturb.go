@@ -30,15 +30,12 @@ func Perturb(ctx context.Context, testnet *e2e.Testnet, ifp infra.Provider) erro
 // after recovering.
 func PerturbNode(ctx context.Context, node *e2e.Node, perturbation e2e.Perturbation, ifp infra.Provider) (*rpctypes.ResultStatus, error) {
 	testnet := node.Testnet
-	out, err := docker.ExecComposeOutput(context.Background(), testnet.Dir, "ps", "-q", node.Name)
+
+	name, upgraded, err := ifp.CheckUpgraded(ctx, node)
 	if err != nil {
 		return nil, err
 	}
-	name := node.Name
-	upgraded := false
-	if len(out) == 0 {
-		name = name + "_u"
-		upgraded = true
+	if upgraded {
 		logger.Info("perturb node", "msg",
 			log.NewLazySprintf("Node %v already upgraded, operating on alternate container %v",
 				node.Name, name))

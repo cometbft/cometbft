@@ -52,6 +52,21 @@ func (p Provider) Disconnect(ctx context.Context, name string, _ string) error {
 	return Exec(ctx, "network", "disconnect", p.Testnet.Name+"_"+p.Testnet.Name, name)
 }
 
+func (p Provider) CheckUpgraded(ctx context.Context, node *e2e.Node) (string, bool, error) {
+	testnet := node.Testnet
+	out, err := ExecComposeOutput(ctx, testnet.Dir, "ps", "-q", node.Name)
+	if err != nil {
+		return "", false, err
+	}
+	name := node.Name
+	upgraded := false
+	if len(out) == 0 {
+		name = name + "_u"
+		upgraded = true
+	}
+	return name, upgraded, nil
+}
+
 // dockerComposeBytes generates a Docker Compose config file for a testnet and returns the
 // file as bytes to be written out to disk.
 func dockerComposeBytes(testnet *e2e.Testnet) ([]byte, error) {

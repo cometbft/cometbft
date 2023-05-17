@@ -68,6 +68,11 @@ func (p Provider) Disconnect(ctx context.Context, _ string, ip string) error {
 	return execAnsible(ctx, p.Testnet.Dir, ymlConnect, []string{ip})
 }
 
+func (p Provider) CheckUpgraded(ctx context.Context, node *e2e.Node) (string, bool, error) {
+	// Upgrade not supported yet by DO provider
+	return node.Name, false, nil
+}
+
 func (p Provider) writePlaybook(yaml, playbook string) error {
 	//nolint: gosec
 	// G306: Expect WriteFile permissions to be 0600 or less

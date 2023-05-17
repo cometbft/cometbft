@@ -133,7 +133,7 @@ func ansiblePerturbConnectionBytes(disconnect bool) string {
 	playbook := basePlaybook
 	for _, dir := range []string{"INPUT", "OUTPUT"} {
 		playbook = ansibleAddShellTasks(playbook, disconnecting+" node",
-			"iptables %s %s -p tcp --destination-port 26656 -j REJECT --reject-with tcp-reset", op, dir)
+			fmt.Sprintf("iptables %s %s -p tcp --destination-port 26656 -j REJECT --reject-with tcp-reset", op, dir))
 	}
 	return playbook
 }

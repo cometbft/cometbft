@@ -114,13 +114,10 @@ func (rs *Reports) calculateAll() {
 		rs.l = append(rs.l, r)
 	}
 	sort.Slice(rs.l, func(i, j int) bool {
-		if rs.l[i].Connections < rs.l[j].Connections {
-			return true
+		if rs.l[i].Connections == rs.l[j].Connections {
+			return rs.l[i].Rate < rs.l[j].Rate
 		}
-		if rs.l[i].Connections > rs.l[j].Connections {
-			return false
-		}
-		return rs.l[i].Rate < rs.l[j].Rate
+		return rs.l[i].Connections < rs.l[j].Connections
 	})
 
 }

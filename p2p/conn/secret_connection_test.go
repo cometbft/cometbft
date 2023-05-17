@@ -17,12 +17,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/crypto/sr25519"
-	"github.com/tendermint/tendermint/libs/async"
-	tmos "github.com/tendermint/tendermint/libs/os"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/sr25519"
+	"github.com/cometbft/cometbft/libs/async"
+	cmtos "github.com/cometbft/cometbft/libs/os"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
 )
 
 // Run go test -update from within this module
@@ -65,7 +65,7 @@ func TestSecretConnectionHandshake(t *testing.T) {
 
 func TestConcurrentWrite(t *testing.T) {
 	fooSecConn, barSecConn := makeSecretConnPair(t)
-	fooWriteText := tmrand.Str(dataMaxSize)
+	fooWriteText := cmtrand.Str(dataMaxSize)
 
 	// write from two routines.
 	// should be safe from race according to net.Conn:
@@ -87,7 +87,7 @@ func TestConcurrentWrite(t *testing.T) {
 
 func TestConcurrentRead(t *testing.T) {
 	fooSecConn, barSecConn := makeSecretConnPair(t)
-	fooWriteText := tmrand.Str(dataMaxSize)
+	fooWriteText := cmtrand.Str(dataMaxSize)
 	n := 100
 
 	// read from two routines.
@@ -114,8 +114,8 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 
 	// Pre-generate the things to write (for foo & bar)
 	for i := 0; i < 100; i++ {
-		fooWrites = append(fooWrites, tmrand.Str((tmrand.Int()%(dataMaxSize*5))+1))
-		barWrites = append(barWrites, tmrand.Str((tmrand.Int()%(dataMaxSize*5))+1))
+		fooWrites = append(fooWrites, cmtrand.Str((cmtrand.Int()%(dataMaxSize*5))+1))
+		barWrites = append(barWrites, cmtrand.Str((cmtrand.Int()%(dataMaxSize*5))+1))
 	}
 
 	// A helper that will run with (fooConn, fooWrites, fooReads) and vice versa
@@ -129,7 +129,7 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 				return nil, true, err
 			}
 			// In parallel, handle some reads and writes.
-			var trs, ok = async.Parallel(
+			trs, ok := async.Parallel(
 				func(_ int) (interface{}, bool, error) {
 					// Node writes:
 					for _, nodeWrite := range nodeWrites {
@@ -182,7 +182,7 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 	}
 
 	// Run foo & bar in parallel
-	var trs, ok = async.Parallel(
+	trs, ok := async.Parallel(
 		genNodeRunner("foo", fooConn, fooWrites, &fooReads),
 		genNodeRunner("bar", barConn, barWrites, &barReads),
 	)
@@ -194,9 +194,9 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 	compareWritesReads := func(writes []string, reads []string) {
 		for {
 			// Pop next write & corresponding reads
-			var read = ""
-			var write = writes[0]
-			var readCount = 0
+			read := ""
+			write := writes[0]
+			readCount := 0
 			for _, readChunk := range reads {
 				read += readChunk
 				readCount++
@@ -229,7 +229,7 @@ func TestDeriveSecretsAndChallengeGolden(t *testing.T) {
 	if *update {
 		t.Logf("Updating golden test vector file %s", goldenFilepath)
 		data := createGoldenTestVectors(t)
-		err := tmos.WriteFile(goldenFilepath, []byte(data), 0644)
+		err := cmtos.WriteFile(goldenFilepath, []byte(data), 0o644)
 		require.NoError(t, err)
 	}
 	f, err := os.Open(goldenFilepath)
@@ -259,11 +259,11 @@ func TestDeriveSecretsAndChallengeGolden(t *testing.T) {
 }
 
 func TestNilPubkey(t *testing.T) {
-	var fooConn, barConn = makeKVStoreConnPair()
+	fooConn, barConn := makeKVStoreConnPair()
 	defer fooConn.Close()
 	defer barConn.Close()
-	var fooPrvKey = ed25519.GenPrivKey()
-	var barPrvKey = privKeyWithNilPubKey{ed25519.GenPrivKey()}
+	fooPrvKey := ed25519.GenPrivKey()
+	barPrvKey := privKeyWithNilPubKey{ed25519.GenPrivKey()}
 
 	go MakeSecretConnection(fooConn, fooPrvKey) //nolint:errcheck // ignore for tests
 
@@ -273,11 +273,11 @@ func TestNilPubkey(t *testing.T) {
 }
 
 func TestNonEd25519Pubkey(t *testing.T) {
-	var fooConn, barConn = makeKVStoreConnPair()
+	fooConn, barConn := makeKVStoreConnPair()
 	defer fooConn.Close()
 	defer barConn.Close()
-	var fooPrvKey = ed25519.GenPrivKey()
-	var barPrvKey = sr25519.GenPrivKey()
+	fooPrvKey := ed25519.GenPrivKey()
+	barPrvKey := sr25519.GenPrivKey()
 
 	go MakeSecretConnection(fooConn, fooPrvKey) //nolint:errcheck // ignore for tests
 
@@ -309,14 +309,14 @@ func readLots(t *testing.T, wg *sync.WaitGroup, conn io.Reader, n int) {
 // Creates the data for a test vector file.
 // The file format is:
 // Hex(diffie_hellman_secret), loc_is_least, Hex(recvSecret), Hex(sendSecret), Hex(challenge)
-func createGoldenTestVectors(t *testing.T) string {
+func createGoldenTestVectors(*testing.T) string {
 	data := ""
 	for i := 0; i < 32; i++ {
-		randSecretVector := tmrand.Bytes(32)
+		randSecretVector := cmtrand.Bytes(32)
 		randSecret := new([32]byte)
 		copy((*randSecret)[:], randSecretVector)
 		data += hex.EncodeToString((*randSecret)[:]) + ","
-		locIsLeast := tmrand.Bool()
+		locIsLeast := cmtrand.Bool()
 		data += strconv.FormatBool(locIsLeast) + ","
 		recvSecret, sendSecret := deriveSecrets(randSecret, locIsLeast)
 		data += hex.EncodeToString((*recvSecret)[:]) + ","
@@ -342,7 +342,7 @@ func makeSecretConnPair(tb testing.TB) (fooSecConn, barSecConn *SecretConnection
 	)
 
 	// Make connections from both sides in parallel.
-	var trs, ok = async.Parallel(
+	trs, ok := async.Parallel(
 		func(_ int) (val interface{}, abort bool, err error) {
 			fooSecConn, err = MakeSecretConnection(fooConn, fooPrvKey)
 			if err != nil {
@@ -398,7 +398,7 @@ func BenchmarkWriteSecretConnection(b *testing.B) {
 	}
 	fooWriteBytes := make([][]byte, 0, len(randomMsgSizes))
 	for _, size := range randomMsgSizes {
-		fooWriteBytes = append(fooWriteBytes, tmrand.Bytes(size))
+		fooWriteBytes = append(fooWriteBytes, cmtrand.Bytes(size))
 	}
 	// Consume reads from bar's reader
 	go func() {
@@ -416,7 +416,7 @@ func BenchmarkWriteSecretConnection(b *testing.B) {
 
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		idx := tmrand.Intn(len(fooWriteBytes))
+		idx := cmtrand.Intn(len(fooWriteBytes))
 		_, err := fooSecConn.Write(fooWriteBytes[idx])
 		if err != nil {
 			b.Errorf("failed to write to fooSecConn: %v", err)
@@ -446,11 +446,11 @@ func BenchmarkReadSecretConnection(b *testing.B) {
 	}
 	fooWriteBytes := make([][]byte, 0, len(randomMsgSizes))
 	for _, size := range randomMsgSizes {
-		fooWriteBytes = append(fooWriteBytes, tmrand.Bytes(size))
+		fooWriteBytes = append(fooWriteBytes, cmtrand.Bytes(size))
 	}
 	go func() {
 		for i := 0; i < b.N; i++ {
-			idx := tmrand.Intn(len(fooWriteBytes))
+			idx := cmtrand.Intn(len(fooWriteBytes))
 			_, err := fooSecConn.Write(fooWriteBytes[idx])
 			if err != nil {
 				b.Errorf("failed to write to fooSecConn: %v, %v,%v", err, i, b.N)

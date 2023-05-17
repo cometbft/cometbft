@@ -5,11 +5,11 @@ The concept of light clients was introduced in the Bitcoin white paper. It
 describes a watcher of distributed consensus process that only validates the
 consensus algorithm and not the state machine transactions within.
 
-Tendermint light clients allow bandwidth & compute-constrained devices, such as
+CometBFT light clients allow bandwidth & compute-constrained devices, such as
 smartphones, low-power embedded chips, or other blockchains to efficiently
-verify the consensus of a Tendermint blockchain. This forms the basis of safe
+verify the consensus of a CometBFT blockchain. This forms the basis of safe
 and efficient state synchronization for new network nodes and inter-blockchain
-communication (where a light client of one Tendermint instance runs in another
+communication (where a light client of one CometBFT instance runs in another
 chain's state machine).
 
 In a network that is expected to reliably punish validators for misbehavior by
@@ -28,7 +28,7 @@ fork the network at some point in its prior history. See Vitalik's post at
 [Proof of Stake: How I Learned to Love Weak
 Subjectivity](https://blog.ethereum.org/2014/11/25/proof-stake-learned-love-weak-subjectivity/).
 
-NOTE: Tendermint provides a somewhat different (stronger) light client model
+NOTE: CometBFT provides a somewhat different (stronger) light client model
 than Bitcoin under eclipse, since the eclipsing node(s) can only fool the light
 client if they have two-thirds of the private keys from the last root-of-trust.
 
@@ -94,7 +94,7 @@ Check out other examples in example_test.go
 ## 2. Pure functions to verify a new header (see verifier.go)
 
 Verify function verifies a new header against some trusted header. See
-https://github.com/tendermint/tendermint/blob/main/spec/consensus/light-client/verification.md
+https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/README.md
 for details.
 
 There are two methods of verification: sequential and bisection
@@ -111,17 +111,17 @@ refer to docs/imgs/light_client_bisection_alg.png
 
 ## 3. Secure RPC proxy
 
-Tendermint RPC exposes a lot of info, but a malicious node could return any
+CometBFT RPC exposes a lot of info, but a malicious node could return any
 data it wants to queries, or even to block headers, even making up fake
 signatures from non-existent validators to justify it. Secure RPC proxy serves
 as a wrapper, which verifies all the headers, using a light client connected to
 some other node.
 
 See
-https://docs.tendermint.com/main/tendermint-core/light-client-protocol.html
+https://docs.cometbft.com/main/core/light-client.html
 for usage example.
 Or see
-https://github.com/tendermint/tendermint/tree/main/spec/consensus/light-client
+https://github.com/cometbft/cometbft/tree/main/spec/consensus/light-client
 for the full spec
 */
 package light

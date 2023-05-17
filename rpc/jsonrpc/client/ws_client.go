@@ -12,11 +12,11 @@ import (
 	"github.com/gorilla/websocket"
 	metrics "github.com/rcrowley/go-metrics"
 
-	"github.com/tendermint/tendermint/libs/log"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/libs/service"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
-	types "github.com/tendermint/tendermint/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 const (
@@ -58,7 +58,7 @@ type WSClient struct { //nolint: maligned
 
 	wg sync.WaitGroup
 
-	mtx            tmsync.RWMutex
+	mtx            cmtsync.RWMutex
 	sentLastPingAt time.Time
 	reconnecting   bool
 	nextReqID      int
@@ -290,7 +290,7 @@ func (c *WSClient) reconnect() error {
 	}()
 
 	for {
-		jitter := time.Duration(tmrand.Float64() * float64(time.Second)) // 1s == (1e9 ns)
+		jitter := time.Duration(cmtrand.Float64() * float64(time.Second)) // 1s == (1e9 ns)
 		backoffDuration := jitter + ((1 << uint(attempt)) * time.Second)
 
 		c.Logger.Info("reconnecting", "attempt", attempt+1, "backoff_duration", backoffDuration)

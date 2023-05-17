@@ -3,11 +3,11 @@ package proxy
 import (
 	"fmt"
 
-	abcicli "github.com/tendermint/tendermint/abci/client"
-	"github.com/tendermint/tendermint/abci/example/kvstore"
-	"github.com/tendermint/tendermint/abci/types"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
-	e2e "github.com/tendermint/tendermint/test/e2e/app"
+	abcicli "github.com/cometbft/cometbft/abci/client"
+	"github.com/cometbft/cometbft/abci/example/kvstore"
+	"github.com/cometbft/cometbft/abci/types"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	e2e "github.com/cometbft/cometbft/test/e2e/app"
 )
 
 //go:generate ../scripts/mockery_generate.sh ClientCreator
@@ -22,7 +22,7 @@ type ClientCreator interface {
 // local proxy uses a mutex on an in-proc app
 
 type localClientCreator struct {
-	mtx *tmsync.Mutex
+	mtx *cmtsync.Mutex
 	app types.Application
 }
 
@@ -34,7 +34,7 @@ type localClientCreator struct {
 // use [NewUnsyncLocalClientCreator].
 func NewLocalClientCreator(app types.Application) ClientCreator {
 	return &localClientCreator{
-		mtx: new(tmsync.Mutex),
+		mtx: new(cmtsync.Mutex),
 		app: app,
 	}
 }
@@ -106,13 +106,13 @@ func (r *remoteClientCreator) NewABCIClient() (abcicli.Client, error) {
 func DefaultClientCreator(addr, transport, dbDir string) ClientCreator {
 	switch addr {
 	case "kvstore":
-		return NewLocalClientCreator(kvstore.NewApplication())
+		return NewLocalClientCreator(kvstore.NewInMemoryApplication())
 	case "kvstore_unsync":
-		return NewUnsyncLocalClientCreator(kvstore.NewApplication())
+		return NewUnsyncLocalClientCreator(kvstore.NewInMemoryApplication())
 	case "persistent_kvstore":
-		return NewLocalClientCreator(kvstore.NewPersistentKVStoreApplication(dbDir))
+		return NewLocalClientCreator(kvstore.NewPersistentApplication(dbDir))
 	case "persistent_kvstore_unsync":
-		return NewUnsyncLocalClientCreator(kvstore.NewPersistentKVStoreApplication(dbDir))
+		return NewUnsyncLocalClientCreator(kvstore.NewPersistentApplication(dbDir))
 	case "e2e":
 		app, err := e2e.NewApplication(e2e.DefaultConfig(dbDir))
 		if err != nil {

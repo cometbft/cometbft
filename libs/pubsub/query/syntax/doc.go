@@ -1,4 +1,4 @@
-// Package syntax defines a scanner and parser for the Tendermint event filter
+// Package syntax defines a scanner and parser for the CometBFT event filter
 // query language. A query selects events by their types and attribute values.
 //
 // # Grammar

@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/tendermint/tendermint/abci/types"
-	tmnet "github.com/tendermint/tendermint/libs/net"
+	"github.com/cometbft/cometbft/abci/types"
+	cmtnet "github.com/cometbft/cometbft/libs/net"
 )
 
 func main() {
 
-	conn, err := tmnet.Connect("unix://test.sock")
+	conn, err := cmtnet.Connect("unix://test.sock")
 	if err != nil {
 		log.Fatal(err.Error())
 	}

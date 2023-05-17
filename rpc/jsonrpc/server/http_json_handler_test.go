@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tendermint/tendermint/libs/log"
-	types "github.com/tendermint/tendermint/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/libs/log"
+	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 func testMux() *http.ServeMux {
@@ -195,17 +195,16 @@ func TestRPCNotificationInBatch(t *testing.T) {
 			if tt.expectCount > 1 {
 				t.Errorf("#%d: expected an array, couldn't unmarshal it\nblob: %s", i, blob)
 				continue
-			} else {
-				// we were expecting an error here, so let's unmarshal a single response
-				var response types.RPCResponse
-				err = json.Unmarshal(blob, &response)
-				if err != nil {
-					t.Errorf("#%d: expected successful parsing of an RPCResponse\nblob: %s", i, blob)
-					continue
-				}
-				// have a single-element result
-				responses = []types.RPCResponse{response}
 			}
+			// we were expecting an error here, so let's unmarshal a single response
+			var response types.RPCResponse
+			err = json.Unmarshal(blob, &response)
+			if err != nil {
+				t.Errorf("#%d: expected successful parsing of an RPCResponse\nblob: %s", i, blob)
+				continue
+			}
+			// have a single-element result
+			responses = []types.RPCResponse{response}
 		}
 		if tt.expectCount != len(responses) {
 			t.Errorf("#%d: expected %d response(s), but got %d\nblob: %s", i, tt.expectCount, len(responses), blob)

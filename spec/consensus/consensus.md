@@ -14,10 +14,8 @@ order: 1
   just "step").
 - A node is said to be _at_ a given height, round, and step, or at
   `(H,R,S)`, or at `(H,R)` in short to omit the step.
-- To _prevote_ or _precommit_ something means to broadcast a [prevote
-  vote](https://godoc.org/github.com/tendermint/tendermint/types#Vote)
-  or [first precommit
-  vote](https://godoc.org/github.com/tendermint/tendermint/types#FirstPrecommit)
+- To _prevote_ or _precommit_ something means to broadcast a prevote
+  or precommit [vote](https://github.com/cometbft/cometbft/blob/af3bc47df982e271d4d340a3c5e0d773e440466d/types/vote.go#L50)
   for something.
 - A vote _at_ `(H,R)` is a vote signed with the bytes for `H` and `R`
   included in its [sign-bytes](../core/data_structures.md#vote).
@@ -108,7 +106,7 @@ example,
 - Nodes gossip prevotes for the proposed PoLC (proof-of-lock-change)
   round if one is proposed.
 - Nodes gossip to nodes lagging in blockchain height with block
-  [commits](https://godoc.org/github.com/tendermint/tendermint/types#Commit)
+  [commits](https://github.com/cometbft/cometbft/blob/af3bc47df982e271d4d340a3c5e0d773e440466d/types/block.go#L738)
   for older blocks.
 - Nodes opportunistically gossip `ReceivedVote` messages to hint peers what
   votes it already has.
@@ -123,7 +121,7 @@ A proposal is signed and published by the designated proposer at each
 round. The proposer is chosen by a deterministic and non-choking round
 robin selection algorithm that selects proposers in proportion to their
 voting power (see
-[implementation](https://github.com/tendermint/tendermint/blob/main/types/validator_set.go)).
+[implementation](https://github.com/cometbft/cometbft/blob/af3bc47df982e271d4d340a3c5e0d773e440466d/types/validator_set.go#L51)).
 
 A proposal at `(H,R)` is composed of a block and an optional latest
 `PoLC-Round < R` which is included iff the proposer knows of one. This
@@ -285,7 +283,7 @@ tells peers that this node has (or does not have) a +2/3 majority for B
 majority. Peers can react by responding with appropriate votes.
 
 We will implement such an algorithm for the next iteration of the
-Tendermint consensus protocol.
+consensus protocol.
 
 Other potential improvements include adding more data in votes such as
 the last known PoLC round that caused a lock change, and the last voted
@@ -295,7 +293,7 @@ may make JSet verification/gossip logic easier to implement.
 ### Censorship Attacks
 
 Due to the definition of a block
-[commit](https://github.com/tendermint/tendermint/blob/main/docs/tendermint-core/validators.md), any 1/3+ coalition of
+[commit](https://github.com/cometbft/cometbft/blob/main/docs/core/validators.md), any 1/3+ coalition of
 validators can halt the blockchain by not broadcasting their votes. Such
 a coalition can also censor particular transactions by rejecting blocks
 that include these transactions, though this would result in a

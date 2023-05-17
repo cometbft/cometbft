@@ -1,19 +1,19 @@
 package types
 
 import (
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto/merkle"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto/merkle"
 )
 
 // ABCIResults wraps the deliver tx results to return a proof.
-type ABCIResults []*abci.ResponseDeliverTx
+type ABCIResults []*abci.ExecTxResult
 
-// NewResults strips non-deterministic fields from ResponseDeliverTx responses
+// NewResults strips non-deterministic fields from ExecTxResult responses
 // and returns ABCIResults.
-func NewResults(responses []*abci.ResponseDeliverTx) ABCIResults {
+func NewResults(responses []*abci.ExecTxResult) ABCIResults {
 	res := make(ABCIResults, len(responses))
 	for i, d := range responses {
-		res[i] = deterministicResponseDeliverTx(d)
+		res[i] = deterministicExecTxResult(d)
 	}
 	return res
 }
@@ -42,10 +42,10 @@ func (a ABCIResults) toByteSlices() [][]byte {
 	return bzs
 }
 
-// deterministicResponseDeliverTx strips non-deterministic fields from
-// ResponseDeliverTx and returns another ResponseDeliverTx.
-func deterministicResponseDeliverTx(response *abci.ResponseDeliverTx) *abci.ResponseDeliverTx {
-	return &abci.ResponseDeliverTx{
+// deterministicExecTxResult strips non-deterministic fields from
+// ExecTxResult and returns another ExecTxResult.
+func deterministicExecTxResult(response *abci.ExecTxResult) *abci.ExecTxResult {
+	return &abci.ExecTxResult{
 		Code:      response.Code,
 		Data:      response.Data,
 		GasWanted: response.GasWanted,

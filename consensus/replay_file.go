@@ -10,15 +10,15 @@ import (
 	"strconv"
 	"strings"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	cfg "github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/libs/log"
-	tmos "github.com/tendermint/tendermint/libs/os"
-	"github.com/tendermint/tendermint/proxy"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/store"
-	"github.com/tendermint/tendermint/types"
+	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtos "github.com/cometbft/cometbft/libs/os"
+	"github.com/cometbft/cometbft/proxy"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -34,13 +34,12 @@ func RunReplayFile(config cfg.BaseConfig, csConfig *cfg.ConsensusConfig, console
 	consensusState := newConsensusStateForReplay(config, csConfig)
 
 	if err := consensusState.ReplayFile(csConfig.WalFile(), console); err != nil {
-		tmos.Exit(fmt.Sprintf("Error during consensus replay: %v", err))
+		cmtos.Exit(fmt.Sprintf("Error during consensus replay: %v", err))
 	}
 }
 
 // Replay msgs in file or start the console
 func (cs *State) ReplayFile(file string, console bool) error {
-
 	if cs.IsRunning() {
 		return errors.New("cs is already running, cannot replay")
 	}
@@ -64,7 +63,7 @@ func (cs *State) ReplayFile(file string, console bool) error {
 	}()
 
 	// just open the file for reading, no need to use wal
-	fp, err := os.OpenFile(file, os.O_RDONLY, 0600)
+	fp, err := os.OpenFile(file, os.O_RDONLY, 0o600)
 	if err != nil {
 		return err
 	}
@@ -137,7 +136,7 @@ func (pb *playback) replayReset(count int, newStepSub types.Subscription) error 
 	if err := pb.fp.Close(); err != nil {
 		return err
 	}
-	fp, err := os.OpenFile(pb.fileName, os.O_RDONLY, 0600)
+	fp, err := os.OpenFile(pb.fileName, os.O_RDONLY, 0o600)
 	if err != nil {
 		return err
 	}
@@ -185,9 +184,9 @@ func (pb *playback) replayConsoleLoop() int {
 		bufReader := bufio.NewReader(os.Stdin)
 		line, more, err := bufReader.ReadLine()
 		if more {
-			tmos.Exit("input is too long")
+			cmtos.Exit("input is too long")
 		} else if err != nil {
-			tmos.Exit(err.Error())
+			cmtos.Exit(err.Error())
 		}
 
 		tokens := strings.Split(string(line), " ")
@@ -222,7 +221,7 @@ func (pb *playback) replayConsoleLoop() int {
 
 			newStepSub, err := pb.cs.eventBus.Subscribe(ctx, subscriber, types.EventQueryNewRoundStep)
 			if err != nil {
-				tmos.Exit(fmt.Sprintf("failed to subscribe %s to %v", subscriber, types.EventQueryNewRoundStep))
+				cmtos.Exit(fmt.Sprintf("failed to subscribe %s to %v", subscriber, types.EventQueryNewRoundStep))
 			}
 			defer func() {
 				if err := pb.cs.eventBus.Unsubscribe(ctx, subscriber, types.EventQueryNewRoundStep); err != nil {
@@ -288,25 +287,25 @@ func newConsensusStateForReplay(config cfg.BaseConfig, csConfig *cfg.ConsensusCo
 	// Get BlockStore
 	blockStoreDB, err := dbm.NewDB("blockstore", dbType, config.DBDir())
 	if err != nil {
-		tmos.Exit(err.Error())
+		cmtos.Exit(err.Error())
 	}
 	blockStore := store.NewBlockStore(blockStoreDB)
 
 	// Get State
 	stateDB, err := dbm.NewDB("state", dbType, config.DBDir())
 	if err != nil {
-		tmos.Exit(err.Error())
+		cmtos.Exit(err.Error())
 	}
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
 	gdoc, err := sm.MakeGenesisDocFromFile(config.GenesisFile())
 	if err != nil {
-		tmos.Exit(err.Error())
+		cmtos.Exit(err.Error())
 	}
 	state, err := sm.MakeGenesisState(gdoc)
 	if err != nil {
-		tmos.Exit(err.Error())
+		cmtos.Exit(err.Error())
 	}
 
 	// Create proxyAppConn connection (consensus, mempool, query)
@@ -314,19 +313,19 @@ func newConsensusStateForReplay(config cfg.BaseConfig, csConfig *cfg.ConsensusCo
 	proxyApp := proxy.NewAppConns(clientCreator, proxy.NopMetrics())
 	err = proxyApp.Start()
 	if err != nil {
-		tmos.Exit(fmt.Sprintf("Error starting proxy app conns: %v", err))
+		cmtos.Exit(fmt.Sprintf("Error starting proxy app conns: %v", err))
 	}
 
 	eventBus := types.NewEventBus()
 	if err := eventBus.Start(); err != nil {
-		tmos.Exit(fmt.Sprintf("Failed to start event bus: %v", err))
+		cmtos.Exit(fmt.Sprintf("Failed to start event bus: %v", err))
 	}
 
 	handshaker := NewHandshaker(stateStore, state, blockStore, gdoc)
 	handshaker.SetEventBus(eventBus)
 	err = handshaker.Handshake(proxyApp)
 	if err != nil {
-		tmos.Exit(fmt.Sprintf("Error on handshake: %v", err))
+		cmtos.Exit(fmt.Sprintf("Error on handshake: %v", err))
 	}
 
 	mempool, evpool := emptyMempool{}, sm.EmptyEvidencePool{}

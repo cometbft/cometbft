@@ -1,8 +1,8 @@
 package p2p
 
 import (
-	"github.com/tendermint/tendermint/libs/service"
-	"github.com/tendermint/tendermint/p2p/conn"
+	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/p2p/conn"
 )
 
 // Reactor is responsible for handling incoming messages on one or more
@@ -60,8 +60,8 @@ func NewBaseReactor(name string, impl Reactor) *BaseReactor {
 func (br *BaseReactor) SetSwitch(sw *Switch) {
 	br.Switch = sw
 }
-func (*BaseReactor) GetChannels() []*conn.ChannelDescriptor   { return nil }
-func (*BaseReactor) AddPeer(peer Peer)                        {}
-func (*BaseReactor) RemovePeer(peer Peer, reason interface{}) {}
-func (*BaseReactor) Receive(e Envelope)                       {}
-func (*BaseReactor) InitPeer(peer Peer) Peer                  { return peer }
+func (*BaseReactor) GetChannels() []*conn.ChannelDescriptor { return nil }
+func (*BaseReactor) AddPeer(Peer)                           {}
+func (*BaseReactor) RemovePeer(Peer, interface{})           {}
+func (*BaseReactor) Receive(Envelope)                       {}
+func (*BaseReactor) InitPeer(peer Peer) Peer                { return peer }

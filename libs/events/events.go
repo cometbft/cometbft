@@ -4,8 +4,8 @@ package events
 import (
 	"fmt"
 
-	"github.com/tendermint/tendermint/libs/service"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 // ErrListenerWasRemoved is returned by AddEvent if the listener was removed.
@@ -54,7 +54,7 @@ type EventSwitch interface {
 type eventSwitch struct {
 	service.BaseService
 
-	mtx        tmsync.RWMutex
+	mtx        cmtsync.RWMutex
 	eventCells map[string]*eventCell
 	listeners  map[string]*eventListener
 }
@@ -162,7 +162,7 @@ func (evsw *eventSwitch) FireEvent(event string, data EventData) {
 
 // eventCell handles keeping track of listener callbacks for a given event.
 type eventCell struct {
-	mtx       tmsync.RWMutex
+	mtx       cmtsync.RWMutex
 	listeners map[string]EventCallback
 }
 
@@ -206,7 +206,7 @@ type EventCallback func(data EventData)
 type eventListener struct {
 	id string
 
-	mtx     tmsync.RWMutex
+	mtx     cmtsync.RWMutex
 	removed bool
 	events  []string
 }

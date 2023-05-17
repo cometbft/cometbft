@@ -13,19 +13,19 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	cfg "github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	"github.com/tendermint/tendermint/evidence"
-	"github.com/tendermint/tendermint/evidence/mocks"
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/p2p"
-	p2pmocks "github.com/tendermint/tendermint/p2p/mocks"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/types"
+	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	"github.com/cometbft/cometbft/evidence"
+	"github.com/cometbft/cometbft/evidence/mocks"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/p2p"
+	p2pmocks "github.com/cometbft/cometbft/p2p/mocks"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/types"
 )
 
 var (
@@ -241,7 +241,8 @@ func evidenceLogger() log.Logger {
 
 // connect N evidence reactors through N switches
 func makeAndConnectReactorsAndPools(config *cfg.Config, stateStores []sm.Store) ([]*evidence.Reactor,
-	[]*evidence.Pool) {
+	[]*evidence.Pool,
+) {
 	N := len(stateStores)
 
 	reactors := make([]*evidence.Reactor, N)
@@ -267,7 +268,6 @@ func makeAndConnectReactorsAndPools(config *cfg.Config, stateStores []sm.Store) 
 	p2p.MakeConnectedSwitches(config.P2P, N, func(i int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("EVIDENCE", reactors[i])
 		return s
-
 	}, p2p.Connect2Switches)
 
 	return reactors, pools
@@ -350,13 +350,13 @@ func (ps peerState) GetHeight() int64 {
 }
 
 func exampleVote(t byte) *types.Vote {
-	var stamp, err = time.Parse(types.TimeFormat, "2017-12-25T03:00:01.234Z")
+	stamp, err := time.Parse(types.TimeFormat, "2017-12-25T03:00:01.234Z")
 	if err != nil {
 		panic(err)
 	}
 
 	return &types.Vote{
-		Type:      tmproto.SignedMsgType(t),
+		Type:      cmtproto.SignedMsgType(t),
 		Height:    3,
 		Round:     2,
 		Timestamp: stamp,
@@ -374,7 +374,6 @@ func exampleVote(t byte) *types.Vote {
 
 //nolint:lll //ignore line length for tests
 func TestEvidenceVectors(t *testing.T) {
-
 	val := &types.Validator{
 		Address:     crypto.AddressHash([]byte("validator_address")),
 		VotingPower: 10,
@@ -401,14 +400,14 @@ func TestEvidenceVectors(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 
-		evi := make([]tmproto.Evidence, len(tc.evidenceList))
+		evi := make([]cmtproto.Evidence, len(tc.evidenceList))
 		for i := 0; i < len(tc.evidenceList); i++ {
 			ev, err := types.EvidenceToProto(tc.evidenceList[i])
 			require.NoError(t, err, tc.testName)
 			evi[i] = *ev
 		}
 
-		epl := tmproto.EvidenceList{
+		epl := cmtproto.EvidenceList{
 			Evidence: evi,
 		}
 
@@ -418,5 +417,4 @@ func TestEvidenceVectors(t *testing.T) {
 		require.Equal(t, tc.expBytes, hex.EncodeToString(bz), tc.testName)
 
 	}
-
 }

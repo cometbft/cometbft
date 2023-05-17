@@ -1,4 +1,4 @@
-//go:build gofuzz || go1.18
+//go:build gofuzz || go1.20
 
 package tests
 
@@ -9,9 +9,9 @@ import (
 	"log"
 	"testing"
 
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/async"
-	sc "github.com/tendermint/tendermint/p2p/conn"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/libs/async"
+	sc "github.com/cometbft/cometbft/p2p/conn"
 )
 
 func FuzzP2PSecretConnection(f *testing.F) {
@@ -91,7 +91,7 @@ func makeSecretConnPair() (fooSecConn, barSecConn *sc.SecretConnection) {
 	)
 
 	// Make connections from both sides in parallel.
-	var trs, ok = async.Parallel(
+	trs, ok := async.Parallel(
 		func(_ int) (val interface{}, abort bool, err error) {
 			fooSecConn, err = sc.MakeSecretConnection(fooConn, fooPrvKey)
 			if err != nil {

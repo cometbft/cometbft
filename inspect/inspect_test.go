@@ -10,21 +10,19 @@ import (
 	"testing"
 	"time"
 
+	abcitypes "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/inspect"
+	"github.com/cometbft/cometbft/internal/test"
+	"github.com/cometbft/cometbft/libs/pubsub/query"
+	httpclient "github.com/cometbft/cometbft/rpc/client/http"
+	indexermocks "github.com/cometbft/cometbft/state/indexer/mocks"
+	statemocks "github.com/cometbft/cometbft/state/mocks"
+	txindexmocks "github.com/cometbft/cometbft/state/txindex/mocks"
+	"github.com/cometbft/cometbft/types"
 	"github.com/fortytw2/leaktest"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	abcitypes "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/inspect"
-	"github.com/tendermint/tendermint/internal/test"
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/libs/pubsub/query"
-	"github.com/tendermint/tendermint/proto/tendermint/state"
-	httpclient "github.com/tendermint/tendermint/rpc/client/http"
-	indexermocks "github.com/tendermint/tendermint/state/indexer/mocks"
-	statemocks "github.com/tendermint/tendermint/state/mocks"
-	txindexmocks "github.com/tendermint/tendermint/state/txindex/mocks"
-	"github.com/tendermint/tendermint/types"
 )
 
 func TestInspectConstructor(t *testing.T) {
@@ -36,7 +34,6 @@ func TestInspectConstructor(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, d)
 	})
-
 }
 
 func TestInspectRun(t *testing.T) {
@@ -56,7 +53,6 @@ func TestInspectRun(t *testing.T) {
 		cancel()
 		stoppedWG.Wait()
 	})
-
 }
 
 func TestBlock(t *testing.T) {
@@ -78,8 +74,7 @@ func TestBlock(t *testing.T) {
 	blkIdxMock := &indexermocks.BlockIndexer{}
 
 	rpcConfig := config.TestRPCConfig()
-	l := log.TestingLogger()
-	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock, l)
+	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock)
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
@@ -131,8 +126,7 @@ func TestTxSearch(t *testing.T) {
 		Return([]*abcitypes.TxResult{testTxResult}, nil)
 
 	rpcConfig := config.TestRPCConfig()
-	l := log.TestingLogger()
-	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock, l)
+	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock)
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
@@ -151,7 +145,7 @@ func TestTxSearch(t *testing.T) {
 	cli, err := httpclient.New(rpcConfig.ListenAddress, "/websocket")
 	require.NoError(t, err)
 
-	var page = 1
+	page := 1
 	resultTxSearch, err := cli.TxSearch(context.Background(), testQuery, false, &page, &page, "")
 	require.NoError(t, err)
 	require.Len(t, resultTxSearch.Txs, 1)
@@ -164,6 +158,7 @@ func TestTxSearch(t *testing.T) {
 	stateStoreMock.AssertExpectations(t)
 	blockStoreMock.AssertExpectations(t)
 }
+
 func TestTx(t *testing.T) {
 	testHash := []byte("test")
 	testTx := []byte("tx")
@@ -179,8 +174,7 @@ func TestTx(t *testing.T) {
 	}, nil)
 
 	rpcConfig := config.TestRPCConfig()
-	l := log.TestingLogger()
-	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock, l)
+	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock)
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
@@ -210,6 +204,7 @@ func TestTx(t *testing.T) {
 	stateStoreMock.AssertExpectations(t)
 	blockStoreMock.AssertExpectations(t)
 }
+
 func TestConsensusParams(t *testing.T) {
 	testHeight := int64(1)
 	testMaxGas := int64(55)
@@ -227,8 +222,7 @@ func TestConsensusParams(t *testing.T) {
 	txIndexerMock := &txindexmocks.TxIndexer{}
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	rpcConfig := config.TestRPCConfig()
-	l := log.TestingLogger()
-	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock, l)
+	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
@@ -263,15 +257,13 @@ func TestBlockResults(t *testing.T) {
 	testGasUsed := int64(100)
 	stateStoreMock := &statemocks.Store{}
 	stateStoreMock.On("Close").Return(nil)
-	//	tmstate "github.com/tendermint/tendermint/proto/tendermint/state"
-	stateStoreMock.On("LoadABCIResponses", testHeight).Return(&state.ABCIResponses{
-		DeliverTxs: []*abcitypes.ResponseDeliverTx{
+	//	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
+	stateStoreMock.On("LoadFinalizeBlockResponse", testHeight).Return(&abcitypes.ResponseFinalizeBlock{
+		TxResults: []*abcitypes.ExecTxResult{
 			{
 				GasUsed: testGasUsed,
 			},
 		},
-		EndBlock:   &abcitypes.ResponseEndBlock{},
-		BeginBlock: &abcitypes.ResponseBeginBlock{},
 	}, nil)
 	blockStoreMock := &statemocks.BlockStore{}
 	blockStoreMock.On("Close").Return(nil)
@@ -280,8 +272,7 @@ func TestBlockResults(t *testing.T) {
 	txIndexerMock := &txindexmocks.TxIndexer{}
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	rpcConfig := config.TestRPCConfig()
-	l := log.TestingLogger()
-	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock, l)
+	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
@@ -328,8 +319,7 @@ func TestCommit(t *testing.T) {
 	txIndexerMock := &txindexmocks.TxIndexer{}
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	rpcConfig := config.TestRPCConfig()
-	l := log.TestingLogger()
-	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock, l)
+	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
@@ -382,8 +372,7 @@ func TestBlockByHash(t *testing.T) {
 	txIndexerMock := &txindexmocks.TxIndexer{}
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	rpcConfig := config.TestRPCConfig()
-	l := log.TestingLogger()
-	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock, l)
+	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
@@ -435,8 +424,7 @@ func TestBlockchain(t *testing.T) {
 	txIndexerMock := &txindexmocks.TxIndexer{}
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	rpcConfig := config.TestRPCConfig()
-	l := log.TestingLogger()
-	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock, l)
+	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
@@ -488,8 +476,7 @@ func TestValidators(t *testing.T) {
 	txIndexerMock := &txindexmocks.TxIndexer{}
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	rpcConfig := config.TestRPCConfig()
-	l := log.TestingLogger()
-	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock, l)
+	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
@@ -549,8 +536,7 @@ func TestBlockSearch(t *testing.T) {
 		mock.MatchedBy(func(q *query.Query) bool { return testQuery == q.String() })).
 		Return([]int64{testHeight}, nil)
 	rpcConfig := config.TestRPCConfig()
-	l := log.TestingLogger()
-	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock, l)
+	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}

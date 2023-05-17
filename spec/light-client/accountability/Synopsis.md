@@ -1,7 +1,7 @@
 
 # Synopsis
 
- A TLA+ specification of a simplified Tendermint consensus, tuned for
+ A TLA+ specification of a simplified Tendermint consensus algorithm, tuned for
  fork accountability. The simplifications are as follows:
 
 - the procotol runs for one height, that is, one-shot consensus

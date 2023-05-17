@@ -10,7 +10,7 @@ parent:
 This directory contains work-in-progress English and TLA+ specifications for the Light Client
 protocol. Implementations of the light client can be found in
 [Rust](https://github.com/informalsystems/tendermint-rs/tree/master/light-client) and
-[Go](https://github.com/tendermint/tendermint/tree/main/light).
+[Go](https://github.com/cometbft/cometbft/tree/main/light).
 
 Light clients are assumed to be initialized once from a trusted source
 with a trusted header and validator set. The light client
@@ -31,9 +31,9 @@ In case a lightclient attack is detected, the lightclient submits evidence to a 
 
 The [English specification](verification/verification_001_published.md) describes the light client
 commit verification problem in terms of the temporal properties
-[LCV-DIST-SAFE.1](https://github.com/tendermint/tendermint/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1) and
-[LCV-DIST-LIVE.1](https://github.com/tendermint/tendermint/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-live1).
-Commit verification is assumed to operate within the Tendermint Failure Model, where +2/3 of validators are correct for some time period and
+[LCV-DIST-SAFE.1](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-safe1) and
+[LCV-DIST-LIVE.1](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_001_published.md#lcv-dist-live1).
+Commit verification is assumed to operate within the Cosmos Failure Model, where +2/3 of validators are correct for some time period and
 validator sets can change arbitrarily at each height.
 
 A light client protocol is also provided, including all checks that
@@ -124,7 +124,7 @@ protocol matches corresponding headers provided by the secondaries.
 If this is not the case, the protocol analyses the verification traces
 of the involved full nodes
 and generates
-[evidence](detection/detection_003_reviewed.md#tmbc-lc-evidence-data1)
+[evidence](detection/detection_003_reviewed.md#cmbc-lc-evidence-data1)
 of misbehavior that can be submitted to a full node so that
 the faulty validators can be punished.
 
@@ -186,7 +186,7 @@ The detailed experimental results are to be added soon.
 ## Accountability
 
 The [English specification](attacks/isolate-attackers_002_reviewed.md)
-defines the protocol that is executed on a full node upon receiving attack [evidence](detection/detection_003_reviewed.md#tmbc-lc-evidence-data1) from a lightclient. In particular, the protocol handles three types of attacks
+defines the protocol that is executed on a full node upon receiving attack [evidence](detection/detection_003_reviewed.md#cmbc-lc-evidence-data1) from a lightclient. In particular, the protocol handles three types of attacks
 
 - lunatic
 - equivocation

@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/tendermint/tendermint/libs/log"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 const (
@@ -31,7 +31,7 @@ type CLI struct {
 func NewCLI() *CLI {
 	cli := &CLI{}
 	cli.root = &cobra.Command{
-		Use:           "generator",
+		Use:           "generator -d dir [-g int] [-m version_weight_csv] [-p]",
 		Short:         "End-to-end testnet generator",
 		SilenceUsage:  true,
 		SilenceErrors: true, // we'll output them ourselves in Run()
@@ -44,31 +44,41 @@ func NewCLI() *CLI {
 			if err != nil {
 				return err
 			}
-			multiversion, err := cmd.Flags().GetString("multi-version")
+			multiVersion, err := cmd.Flags().GetString("multi-version")
 			if err != nil {
 				return err
 			}
-			return cli.generate(dir, groups, multiversion)
+			prometheus, err := cmd.Flags().GetBool("prometheus")
+			if err != nil {
+				return err
+			}
+			return cli.generate(dir, groups, multiVersion, prometheus)
 		},
 	}
 
 	cli.root.PersistentFlags().StringP("dir", "d", "", "Output directory for manifests")
 	_ = cli.root.MarkPersistentFlagRequired("dir")
-	cli.root.PersistentFlags().StringP("multi-version", "m", "", "Include multi-version testing."+
-		"If multi-version is not specified, then only the current Tendermint version will be used in generated testnets.")
+	cli.root.PersistentFlags().StringP("multi-version", "m", "", "Comma-separated list of versions of CometBFT to test in the generated testnets, "+
+		"or empty to only use this branch's version")
 	cli.root.PersistentFlags().IntP("groups", "g", 0, "Number of groups")
+	cli.root.PersistentFlags().BoolP("prometheus", "p", false, "Enable generation of Prometheus metrics on all manifests")
 
 	return cli
 }
 
 // generate generates manifests in a directory.
-func (cli *CLI) generate(dir string, groups int, multiversion string) error {
+func (cli *CLI) generate(dir string, groups int, multiVersion string, prometheus bool) error {
 	err := os.MkdirAll(dir, 0o755)
 	if err != nil {
 		return err
 	}
 
-	manifests, err := Generate(rand.New(rand.NewSource(randomSeed)), multiversion) //nolint:gosec
+	cfg := &generateConfig{
+		randSource:   rand.New(rand.NewSource(randomSeed)), //nolint:gosec
+		multiVersion: multiVersion,
+		prometheus:   prometheus,
+	}
+	manifests, err := Generate(cfg)
 	if err != nil {
 		return err
 	}

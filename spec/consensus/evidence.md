@@ -1,11 +1,14 @@
+---
+---
+
 # Evidence
 
-Evidence is an important component of Tendermint's security model. Whilst the core
+Evidence is an important component of CometBFT's security model. Whilst the core
 consensus protocol provides correctness gaurantees for state machine replication
 that can tolerate less than 1/3 failures, the evidence system looks to detect and
 gossip byzantine faults whose combined power is greater than  or equal to 1/3. It is worth noting that
 the evidence system is designed purely to detect possible attacks, gossip them,
-commit them on chain and inform the application running on top of Tendermint.
+commit them on chain and inform the application running on top of CometBFT.
 Evidence in itself does not punish "bad actors", this is left to the discretion
 of the application. A common form of punishment is slashing where the validators
 that were caught violating the protocol have all or a portion of their voting
@@ -16,7 +19,7 @@ security on a "best effort" basis.
 This document walks through the various forms of evidence, how they are detected,
 gossiped, verified and committed.
 
-> NOTE: Evidence here is internal to tendermint and should not be confused with
+> NOTE: Evidence here is internal to CometBFT and should not be confused with
 > application evidence
 
 ## Detection
@@ -188,8 +191,8 @@ type LightClientAttackEvidence struct {
 
   // abci specific information
   ByzantineValidators []*Validator
-  TotalVotingPower    int64       
-  Timestamp           time.Time 
+  TotalVotingPower    int64
+  Timestamp           time.Time
 }
 ```
 

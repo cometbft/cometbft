@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tendermint/tendermint/libs/bytes"
-	"github.com/tendermint/tendermint/rpc/client/mock"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+	"github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/rpc/client/mock"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 )
 
 func TestStatus(t *testing.T) {

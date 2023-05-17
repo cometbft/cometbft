@@ -1,12 +1,12 @@
 /*
 Package inspect provides a tool for investigating the state of a
-failed Tendermint node.
+failed CometBFT node.
 
-This package provides the Inspector type. The Inspector type runs a subset of the Tendermint
-RPC endpoints that are useful for debugging issues with Tendermint consensus.
+This package provides the Inspector type. The Inspector type runs a subset of the CometBFT
+RPC endpoints that are useful for debugging issues with CometBFT's consensus.
 
-When a node running the Tendermint consensus engine detects an inconsistent consensus state,
-the entire node will crash. The Tendermint consensus engine cannot run in this
+When a node running the CometBFT's consensus engine detects an inconsistent consensus state,
+the entire node will crash. The CometBFT's consensus engine cannot run in this
 inconsistent state so the node will not be able to start up again.
 
 The RPC endpoints provided by the Inspector type allow for a node operator to inspect

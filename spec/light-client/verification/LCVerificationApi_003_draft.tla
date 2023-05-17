@@ -15,7 +15,7 @@ CONSTANTS
        be larger than CLOCK_DRIFT (otherwise, there will be a bug) *)
   FAULTY_RATIO
     (* a pair <<a, b>> that limits that ratio of faulty validator in the blockchain
-       from above (exclusive). Tendermint security model prescribes 1 / 3. *)
+       from above (exclusive). Cosmos security model prescribes 1 / 3. *)
 
 VARIABLES  
   localClock (* current time as measured by the light client *)

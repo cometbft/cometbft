@@ -3,8 +3,8 @@ order: 2
 ---
 # BFT Time
 
-Tendermint provides a deterministic, Byzantine fault-tolerant, source of time.
-Time in Tendermint is defined with the Time field of the block header.
+CometBFT provides a deterministic, Byzantine fault-tolerant, source of time.
+Time in CometBFT is defined with the Time field of the block header.
 
 It satisfies the following properties:
 
@@ -15,12 +15,13 @@ valid values for the Time field of the block header is defined only by
 Precommit messages (from the LastCommit field) sent by correct processes, i.e.,
 a faulty process cannot arbitrarily increase the Time value.  
 
-In the context of Tendermint, time is of type int64 and denotes UNIX time in milliseconds, i.e.,
-corresponds to the number of milliseconds since January 1, 1970. Before defining rules that need to be enforced by the
-Tendermint consensus protocol, so the properties above holds, we introduce the following definition:
+In the context of CometBFT, time is of type int64 and denotes UNIX time in milliseconds, i.e.,
+corresponds to the number of milliseconds since January 1, 1970.
+Before defining rules that need to be enforced by Tendermint, the consensus algorithm adopted in CometBFT,
+so the properties above holds, we introduce the following definition:
 
 - median of a Commit is equal to the median of `Vote.Time` fields of the `Vote` messages,
-where the value of `Vote.Time` is counted number of times proportional to the process voting power. As in Tendermint
+where the value of `Vote.Time` is counted number of times proportional to the process voting power. As
 the voting power is not uniform (one process one vote), a vote message is actually an aggregator of the same votes whose
 number is equal to the voting power of the process that has casted the corresponding votes message.
 

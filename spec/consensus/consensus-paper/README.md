@@ -1,7 +1,7 @@
-# Tendermint-spec
+# Consensus Paper
 
 The repository contains the specification (and the proofs) of the Tendermint
-consensus protocol.
+consensus protocol, adopted in CometBFT.
 
 ## How to install Latex on Mac OS
 

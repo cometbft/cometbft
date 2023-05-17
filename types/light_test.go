@@ -7,9 +7,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/tendermint/tendermint/crypto"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	"github.com/tendermint/tendermint/version"
+	"github.com/cometbft/cometbft/crypto"
+	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	"github.com/cometbft/cometbft/version"
 )
 
 func TestLightBlockValidateBasic(t *testing.T) {
@@ -115,7 +115,7 @@ func TestSignedHeaderValidateBasic(t *testing.T) {
 	chainID := "𠜎"
 	timestamp := time.Date(math.MaxInt64, 0, 0, 0, 0, 0, math.MaxInt64, time.UTC)
 	h := Header{
-		Version:            tmversion.Consensus{Block: version.BlockProtocol, App: math.MaxInt64},
+		Version:            cmtversion.Consensus{Block: version.BlockProtocol, App: math.MaxInt64},
 		ChainID:            chainID,
 		Height:             commit.Height,
 		Time:               timestamp,

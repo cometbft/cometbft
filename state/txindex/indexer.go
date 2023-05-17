@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/pubsub/query"
+	"github.com/cometbft/cometbft/libs/log"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/pubsub/query"
 )
 
 // XXX/TODO: These types should be moved to the indexer package.
@@ -26,6 +28,9 @@ type TxIndexer interface {
 
 	// Search allows you to query for transactions.
 	Search(ctx context.Context, q *query.Query) ([]*abci.TxResult, error)
+
+	//Set Logger
+	SetLogger(l log.Logger)
 }
 
 // Batch groups together multiple Index operations to be performed at the same time.

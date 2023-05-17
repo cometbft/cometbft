@@ -3,7 +3,7 @@ package infra
 import (
 	"context"
 
-	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
 // Provider defines an API for manipulating the infrastructure of a
@@ -14,26 +14,26 @@ type Provider interface {
 	// provider during testnet setup.
 	Setup() error
 
-	CreateNode(context.Context, *e2e.Node) error
-	StartTendermint(context.Context, *e2e.Node) error
-	KillTendermint(context.Context, *e2e.Node) error
-	TerminateTendermint(context.Context, *e2e.Node) error
+	// Starts the nodes passed as parameter. A nodes MUST NOT
+	// be started twice before calling StopTestnet
+	// If no nodes are passed, start the whole network
+	StartNodes(context.Context, ...*e2e.Node) error
+
+	// Stops the whole network
+	StopTestnet(context.Context) error
+
+	// Returns the the provider's infrastructure data
+	GetInfrastructureData() *e2e.InfrastructureData
 	Connect(context.Context, *e2e.Node) error
 	Disconnect(context.Context, *e2e.Node) error
 }
 
-// NoopProvider implements the provider interface by performing noops for every
-// interface method. This may be useful if the infrastructure is managed by a
-// separate process.
-type NoopProvider struct {
+type ProviderData struct {
+	Testnet            *e2e.Testnet
+	InfrastructureData e2e.InfrastructureData
 }
 
-func (NoopProvider) Setup() error                                             { return nil }
-func (NoopProvider) CreateNode(_ context.Context, _ *e2e.Node) error          { return nil }
-func (NoopProvider) StartTendermint(_ context.Context, _ *e2e.Node) error     { return nil }
-func (NoopProvider) TerminateTendermint(_ context.Context, _ *e2e.Node) error { return nil }
-func (NoopProvider) KillTendermint(_ context.Context, _ *e2e.Node) error      { return nil }
-func (NoopProvider) Connect(_ context.Context, _ *e2e.Node) error             { return nil }
-func (NoopProvider) Disconnect(_ context.Context, _ *e2e.Node) error          { return nil }
-
-var _ Provider = NoopProvider{}
+// Returns the the provider's infrastructure data
+func (pd ProviderData) GetInfrastructureData() *e2e.InfrastructureData {
+	return &pd.InfrastructureData
+}

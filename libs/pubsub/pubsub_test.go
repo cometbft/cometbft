@@ -10,10 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tendermint/tendermint/libs/log"
+	"github.com/cometbft/cometbft/libs/log"
 
-	"github.com/tendermint/tendermint/libs/pubsub"
-	"github.com/tendermint/tendermint/libs/pubsub/query"
+	"github.com/cometbft/cometbft/libs/pubsub"
+	"github.com/cometbft/cometbft/libs/pubsub/query"
 )
 
 const (

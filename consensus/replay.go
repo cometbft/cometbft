@@ -2,18 +2,19 @@ package consensus
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"hash/crc32"
 	"io"
 	"reflect"
 	"time"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto/merkle"
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/proxy"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto/merkle"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/proxy"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/types"
 )
 
 var crc32c = crc32.MakeTable(crc32.Castagnoli)
@@ -75,7 +76,7 @@ func (cs *State) readReplayMessage(msg *TimedWALMessage, newStepSub types.Subscr
 		case *VoteMessage:
 			v := msg.Vote
 			cs.Logger.Info("Replay: Vote", "height", v.Height, "round", v.Round, "type", v.Type,
-				"blockID", v.BlockID, "peer", peerID)
+				"blockID", v.BlockID, "peer", peerID, "extensionLen", len(v.Extension), "extSigLen", len(v.ExtensionSignature))
 		}
 
 		cs.handleMsg(m)
@@ -241,7 +242,7 @@ func (h *Handshaker) NBlocks() int {
 func (h *Handshaker) Handshake(proxyApp proxy.AppConns) error {
 
 	// Handshake is done via ABCI Info on the query conn.
-	res, err := proxyApp.Query().InfoSync(proxy.RequestInfo)
+	res, err := proxyApp.Query().Info(context.TODO(), proxy.RequestInfo)
 	if err != nil {
 		return fmt.Errorf("error calling Info: %v", err)
 	}
@@ -265,12 +266,12 @@ func (h *Handshaker) Handshake(proxyApp proxy.AppConns) error {
 	}
 
 	// Replay blocks up to the latest in the blockstore.
-	_, err = h.ReplayBlocks(h.initialState, appHash, blockHeight, proxyApp)
+	appHash, err = h.ReplayBlocks(h.initialState, appHash, blockHeight, proxyApp)
 	if err != nil {
 		return fmt.Errorf("error on replay: %v", err)
 	}
 
-	h.logger.Info("Completed ABCI Handshake - Tendermint and App are synced",
+	h.logger.Info("Completed ABCI Handshake - CometBFT and App are synced",
 		"appHeight", blockHeight, "appHash", log.NewLazySprintf("%X", appHash))
 
 	// TODO: (on restart) replay mempool
@@ -308,7 +309,7 @@ func (h *Handshaker) ReplayBlocks(
 		validatorSet := types.NewValidatorSet(validators)
 		nextVals := types.TM2PB.ValidatorUpdates(validatorSet)
 		pbparams := h.genDoc.ConsensusParams.ToProto()
-		req := abci.RequestInitChain{
+		req := &abci.RequestInitChain{
 			Time:            h.genDoc.GenesisTime,
 			ChainId:         h.genDoc.ChainID,
 			InitialHeight:   h.genDoc.InitialHeight,
@@ -316,7 +317,7 @@ func (h *Handshaker) ReplayBlocks(
 			Validators:      nextVals,
 			AppStateBytes:   h.genDoc.AppState,
 		}
-		res, err := proxyApp.Consensus().InitChainSync(req)
+		res, err := proxyApp.Consensus().InitChain(context.TODO(), req)
 		if err != nil {
 			return nil, err
 		}
@@ -374,11 +375,11 @@ func (h *Handshaker) ReplayBlocks(
 		return appHash, sm.ErrAppBlockHeightTooHigh{CoreHeight: storeBlockHeight, AppHeight: appBlockHeight}
 
 	case storeBlockHeight < stateBlockHeight:
-		// the state should never be ahead of the store (this is under tendermint's control)
+		// the state should never be ahead of the store (this is under CometBFT's control)
 		panic(fmt.Sprintf("StateBlockHeight (%d) > StoreBlockHeight (%d)", stateBlockHeight, storeBlockHeight))
 
 	case storeBlockHeight > stateBlockHeight+1:
-		// store should be at most one ahead of the state (this is under tendermint's control)
+		// store should be at most one ahead of the state (this is under CometBFT's control)
 		panic(fmt.Sprintf("StoreBlockHeight (%d) > StateBlockHeight + 1 (%d)", storeBlockHeight, stateBlockHeight+1))
 	}
 
@@ -386,7 +387,7 @@ func (h *Handshaker) ReplayBlocks(
 	// Now either store is equal to state, or one ahead.
 	// For each, consider all cases of where the app could be, given app <= store
 	if storeBlockHeight == stateBlockHeight {
-		// Tendermint ran Commit and saved the state.
+		// CometBFT ran Commit and saved the state.
 		// Either the app is asking for replay, or we're all synced up.
 		if appBlockHeight < storeBlockHeight {
 			// the app is behind, so replay blocks, but no need to go through WAL (state is already synced to store)
@@ -418,11 +419,18 @@ func (h *Handshaker) ReplayBlocks(
 
 		case appBlockHeight == storeBlockHeight:
 			// We ran Commit, but didn't save the state, so replayBlock with mock app.
-			abciResponses, err := h.stateStore.LoadLastABCIResponse(storeBlockHeight)
+			finalizeBlockResponse, err := h.stateStore.LoadLastFinalizeBlockResponse(storeBlockHeight)
 			if err != nil {
 				return nil, err
 			}
-			mockApp := newMockProxyApp(appHash, abciResponses)
+			// NOTE: There is a rare edge case where a node has upgraded from
+			// v0.37 with endblock to v0.38 with finalize block and thus
+			// does not have the app hash saved from the previous height
+			// here we take the appHash provided from the Info handshake
+			if len(finalizeBlockResponse.AppHash) == 0 {
+				finalizeBlockResponse.AppHash = appHash
+			}
+			mockApp := newMockProxyApp(finalizeBlockResponse)
 			h.logger.Info("Replay last block using mock app")
 			state, err = h.replayBlock(state, storeBlockHeight, mockApp)
 			return state.AppHash, err
@@ -527,7 +535,7 @@ func assertAppHashEqualsOneFromState(appHash []byte, state sm.State) {
 
 State: %v
 
-Did you reset Tendermint without resetting your application's data?`,
+Did you reset CometBFT without resetting your application's data?`,
 			appHash, state.AppHash, state))
 	}
 }

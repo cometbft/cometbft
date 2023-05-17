@@ -1,22 +1,22 @@
 package types
 
 import (
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto"
-	cryptoenc "github.com/tendermint/tendermint/crypto/encoding"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto"
+	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 //-------------------------------------------------------
 
-// TM2PB is used for converting Tendermint ABCI to protobuf ABCI.
+// TM2PB is used for converting CometBFT ABCI to protobuf ABCI.
 // UNSTABLE
 var TM2PB = tm2pb{}
 
 type tm2pb struct{}
 
-func (tm2pb) Header(header *Header) tmproto.Header {
-	return tmproto.Header{
+func (tm2pb) Header(header *Header) cmtproto.Header {
+	return cmtproto.Header{
 		Version: header.Version,
 		ChainID: header.ChainID,
 		Height:  header.Height,
@@ -45,15 +45,15 @@ func (tm2pb) Validator(val *Validator) abci.Validator {
 	}
 }
 
-func (tm2pb) BlockID(blockID BlockID) tmproto.BlockID {
-	return tmproto.BlockID{
+func (tm2pb) BlockID(blockID BlockID) cmtproto.BlockID {
+	return cmtproto.BlockID{
 		Hash:          blockID.Hash,
 		PartSetHeader: TM2PB.PartSetHeader(blockID.PartSetHeader),
 	}
 }
 
-func (tm2pb) PartSetHeader(header PartSetHeader) tmproto.PartSetHeader {
-	return tmproto.PartSetHeader{
+func (tm2pb) PartSetHeader(header PartSetHeader) cmtproto.PartSetHeader {
+	return cmtproto.PartSetHeader{
 		Total: header.Total,
 		Hash:  header.Hash,
 	}
@@ -94,20 +94,20 @@ func (tm2pb) NewValidatorUpdate(pubkey crypto.PubKey, power int64) abci.Validato
 
 //----------------------------------------------------------------------------
 
-// PB2TM is used for converting protobuf ABCI to Tendermint ABCI.
+// PB2TM is used for converting protobuf ABCI to CometBFT ABCI.
 // UNSTABLE
 var PB2TM = pb2tm{}
 
 type pb2tm struct{}
 
 func (pb2tm) ValidatorUpdates(vals []abci.ValidatorUpdate) ([]*Validator, error) {
-	tmVals := make([]*Validator, len(vals))
+	cmtVals := make([]*Validator, len(vals))
 	for i, v := range vals {
 		pub, err := cryptoenc.PubKeyFromProto(v.PubKey)
 		if err != nil {
 			return nil, err
 		}
-		tmVals[i] = NewValidator(pub, v.Power)
+		cmtVals[i] = NewValidator(pub, v.Power)
 	}
-	return tmVals, nil
+	return cmtVals, nil
 }

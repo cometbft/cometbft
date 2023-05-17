@@ -8,13 +8,13 @@ With Docker Compose, you can spin up local testnets with a single command.
 
 ## Requirements
 
-1. [Install tendermint](../introduction/install.md)
+1. [Install CometBFT](../introduction/install.md)
 2. [Install docker](https://docs.docker.com/engine/installation/)
 3. [Install docker-compose](https://docs.docker.com/compose/install/)
 
 ## Build
 
-Build the `tendermint` binary and, optionally, the `tendermint/localnode`
+Build the `cometbft` binary and, optionally, the `cometbft/localnode`
 docker image.
 
 Note the binary will be mounted into the container so it can be updated without
@@ -24,7 +24,7 @@ rebuilding the image.
 # Build the linux binary in ./build
 make build-linux
 
-# (optionally) Build tendermint/localnode image
+# (optionally) Build cometbft/localnode image
 make build-docker-localnode
 ```
 
@@ -54,16 +54,16 @@ make localnet-start
 ## Configuration
 
 The `make localnet-start` creates files for a 4-node testnet in `./build` by
-calling the `tendermint testnet` command.
+calling the `cometbft testnet` command.
 
-The `./build` directory is mounted to the `/tendermint` mount point to attach
+The `./build` directory is mounted to the `/cometbft` mount point to attach
 the binary and config files to the container.
 
 To change the number of validators / non-validators change the `localnet-start` Makefile target [here](../../Makefile):
 
 ```makefile
 localnet-start: localnet-stop
-  @if ! [ -f build/node0/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build:/tendermint:Z tendermint/localnode testnet --v 5 --n 3 --o . --populate-persistent-peers --starting-ip-address 192.167.10.2 ; fi
+  @if ! [ -f build/node0/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build:/cometbft:Z cometbft/localnode testnet --v 5 --n 3 --o . --populate-persistent-peers --starting-ip-address 192.167.10.2 ; fi
   docker-compose up
 ```
 
@@ -74,14 +74,14 @@ Adding 4 more nodes is required in order to fully utilize the config files that 
 ```yml
   node3: # bump by 1 for every node
     container_name: node3 # bump by 1 for every node
-    image: "tendermint/localnode"
+    image: "cometbft/localnode"
     environment:
       - ID=3
-      - LOG=${LOG:-tendermint.log}
+      - LOG=${LOG:-cometbft.log}
     ports:
       - "26663-26664:26656-26657" # Bump 26663-26664 by one for every node
     volumes:
-      - ./build:/tendermint:Z
+      - ./build:/cometbft:Z
     networks:
       localnet:
         ipv4_address: 192.167.10.5 # bump the final digit by 1 for every node
@@ -96,7 +96,7 @@ rm -rf ./build/node*
 
 ## Configuring ABCI containers
 
-To use your own ABCI applications with 4-node setup edit the [docker-compose.yaml](https://github.com/tendermint/tendermint/blob/v0.34.x/docker-compose.yml) file and add image to your ABCI application.
+To use your own ABCI applications with 4-node setup edit the [docker-compose.yaml](https://github.com/cometbft/cometbft/blob/main/docker-compose.yml) file and add images to your ABCI application.
 
 ```yml
  abci0:
@@ -145,30 +145,30 @@ To use your own ABCI applications with 4-node setup edit the [docker-compose.yam
 
 ```
 
-Override the [command](https://github.com/tendermint/tendermint/blob/v0.34.x/networks/local/localnode/Dockerfile#L12) in each node to connect to it's ABCI.
+Override the [command](https://github.com/cometbft/cometbft/blob/main/networks/local/localnode/Dockerfile#L11) in each node to connect to it's ABCI.
 
 ```yml
   node0:
     container_name: node0
-    image: "tendermint/localnode"
+    image: "cometbft/localnode"
     ports:
       - "26656-26657:26656-26657"
     environment:
       - ID=0
-      - LOG=$${LOG:-tendermint.log}
+      - LOG=$${LOG:-cometbft.log}
     volumes:
-      - ./build:/tendermint:Z
+      - ./build:/cometbft:Z
     command: node --proxy_app=tcp://abci0:26658
     networks:
       localnet:
         ipv4_address: 192.167.10.2
 ```
 
-Similarly do for node1, node2 and node3 then [run testnet](https://github.com/tendermint/tendermint/blob/v0.34.x/docs/networks/docker-compose.md#run-a-testnet)
+Similarly do for node1, node2 and node3 then [run testnet](#run-a-testnet).
 
 ## Logging
 
-Log is saved under the attached volume, in the `tendermint.log` file. If the
+Log is saved under the attached volume, in the `cometbft.log` file. If the
 `LOG` environment variable is set to `stdout` at start, the log is not saved,
 but printed on the screen.
 

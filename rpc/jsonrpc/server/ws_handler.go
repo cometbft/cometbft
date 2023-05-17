@@ -12,9 +12,9 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/libs/service"
-	types "github.com/tendermint/tendermint/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/service"
+	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 // WebSocket handler
@@ -52,7 +52,7 @@ func NewWebsocketManager(
 				// The default behavior would be relevant to browser-based clients,
 				// afaik. I suppose having a pass-through is a workaround for allowing
 				// for more complex security schemes, shifting the burden of
-				// AuthN/AuthZ outside the Tendermint RPC.
+				// AuthN/AuthZ outside the CometBFT RPC.
 				// I can't think of other uses right now that would warrant a TODO
 				// though. The real backstory of this TODO shall remain shrouded in
 				// mystery

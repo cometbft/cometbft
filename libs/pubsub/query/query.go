@@ -1,5 +1,5 @@
 // Package query implements the custom query format used to filter event
-// subscriptions in Tendermint.
+// subscriptions in CometBFT.
 //
 //	abci.invoice.number=22 AND abci.invoice.owner=Ivan
 //
@@ -10,13 +10,13 @@ package query
 
 import (
 	"fmt"
+	"math/big"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/pubsub/query/syntax"
+	"github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 )
 
 // All is a query that matches all events.
@@ -218,13 +218,23 @@ func compileCondition(cond syntax.Condition) (condition, error) {
 	return out, nil
 }
 
-// TODO(creachadair): The existing implementation allows anything number shaped
-// to be treated as a number. This preserves the parts of that behavior we had
-// tests for, but we should probably get rid of that.
+// We use this regex to support queries of the from "8atom", "6.5stake",
+// which are actively used in production.
+// The regex takes care of removing the non-number suffix.
 var extractNum = regexp.MustCompile(`^\d+(\.\d+)?`)
 
-func parseNumber(s string) (float64, error) {
-	return strconv.ParseFloat(extractNum.FindString(s), 64)
+func parseNumber(s string) (*big.Float, error) {
+	intVal := new(big.Int)
+	if _, ok := intVal.SetString(s, 10); !ok {
+		f, _, err := big.ParseFloat(extractNum.FindString(s), 10, 125, big.ToNearestEven)
+		if err != nil {
+			return nil, err
+		}
+		return f, err
+	}
+	f, _, err := big.ParseFloat(extractNum.FindString(s), 10, uint(intVal.BitLen()), big.ToNearestEven)
+	return f, err
+
 }
 
 // A map of operator ⇒ argtype ⇒ match-constructor.
@@ -248,7 +258,7 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
-				return err == nil && w == v.(float64)
+				return err == nil && w.Cmp(v.(*big.Float)) == 0
 			}
 		},
 		syntax.TDate: func(v interface{}) func(string) bool {
@@ -268,7 +278,7 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
-				return err == nil && w < v.(float64)
+				return err == nil && w.Cmp(v.(*big.Float)) < 0
 			}
 		},
 		syntax.TDate: func(v interface{}) func(string) bool {
@@ -288,7 +298,7 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
-				return err == nil && w <= v.(float64)
+				return err == nil && w.Cmp(v.(*big.Float)) <= 0
 			}
 		},
 		syntax.TDate: func(v interface{}) func(string) bool {
@@ -308,7 +318,7 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
-				return err == nil && w > v.(float64)
+				return err == nil && w.Cmp(v.(*big.Float)) > 0
 			}
 		},
 		syntax.TDate: func(v interface{}) func(string) bool {
@@ -328,7 +338,7 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		syntax.TNumber: func(v interface{}) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
-				return err == nil && w >= v.(float64)
+				return err == nil && w.Cmp(v.(*big.Float)) >= 0
 			}
 		},
 		syntax.TDate: func(v interface{}) func(string) bool {

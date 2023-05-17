@@ -15,8 +15,8 @@ Make sure you [have Go installed](https://golang.org/doc/install).
 Next, install the `abci-cli` tool and example applications:
 
 ```sh
-git clone https://github.com/tendermint/tendermint.git
-cd tendermint
+git clone https://github.com/cometbft/cometbft.git
+cd cometbft
 make install_abci
 ```
 
@@ -32,8 +32,8 @@ Available Commands:
   commit           commit the application state and return the Merkle root hash
   completion       Generate the autocompletion script for the specified shell
   console          start an interactive ABCI console for multiple commands
-  deliver_tx       deliver a new transaction to the application
   echo             have the application echo a message
+  finalize_block   deliver a block of transactions to the application
   help             Help about any command
   info             get some info about the application
   kvstore          ABCI demo example
@@ -65,7 +65,7 @@ purposes.
 We'll start a kvstore application, which was installed at the same time
 as `abci-cli` above. The kvstore just stores transactions in a merkle
 tree. Its code can be found
-[here](https://github.com/tendermint/tendermint/blob/main/abci/cmd/abci-cli/abci-cli.go)
+[here](https://github.com/cometbft/cometbft/blob/main/abci/cmd/abci-cli/abci-cli.go)
 and looks like the following:
 
 ```go
@@ -146,7 +146,7 @@ response.
 
 The server may be generic for a particular language, and we provide a
 [reference implementation in
-Golang](https://github.com/tendermint/tendermint/tree/main/abci/server). See the
+Golang](https://github.com/cometbft/cometbft/tree/main/abci/server). See the
 [list of other ABCI implementations](https://github.com/tendermint/awesome#ecosystem) for servers in
 other languages.
 
@@ -173,96 +173,77 @@ Try running these commands:
 -> data: hello
 -> data.hex: 0x68656C6C6F
 
-> info 
+> info
 -> code: OK
 -> data: {"size":0}
 -> data.hex: 0x7B2273697A65223A307D
 
-> prepare_proposal "abc"
+> prepare_proposal "abc=123"
 -> code: OK
--> log: Succeeded. Tx: abc
+-> log: Succeeded. Tx: abc=123
 
-> process_proposal "abc"
+> process_proposal "abc==456"
+-> code: OK
+-> status: REJECT
+
+> process_proposal "abc=123"
 -> code: OK
 -> status: ACCEPT
 
-> commit 
+> finalize_block "abc=123"
 -> code: OK
--> data.hex: 0x0000000000000000
+-> code: OK
+-> data.hex: 0x0200000000000000
 
-> deliver_tx "abc"
+> commit
 -> code: OK
 
-> info 
+> info
 -> code: OK
 -> data: {"size":1}
 -> data.hex: 0x7B2273697A65223A317D
 
-> commit 
--> code: OK
--> data.hex: 0x0200000000000000
-
 > query "abc"
 -> code: OK
 -> log: exists
--> height: 2
+-> height: 0
 -> key: abc
 -> key.hex: 616263
--> value: abc
--> value.hex: 616263
+-> value: 123
+-> value.hex: 313233
 
-> deliver_tx "def=xyz"
+> finalize_block "def=xyz" "ghi=123"
 -> code: OK
+-> code: OK
+-> code: OK
+-> data.hex: 0x0600000000000000
 
-> commit 
+> commit
 -> code: OK
--> data.hex: 0x0400000000000000
 
 > query "def"
 -> code: OK
 -> log: exists
--> height: 3
+-> height: 0
 -> key: def
 -> key.hex: 646566
 -> value: xyz
 -> value.hex: 78797A
-
-> prepare_proposal "preparedef"
--> code: OK
--> log: Succeeded. Tx: replacedef
-
-> process_proposal "replacedef"
--> code: OK
--> status: ACCEPT
-
-> process_proposal "preparedef"
--> code: OK
--> status: REJECT
-
-> prepare_proposal 
-
-> process_proposal 
--> code: OK
--> status: ACCEPT
-
-> commit 
--> code: OK
--> data.hex: 0x0400000000000000
 ```
 
-Note that if we do `deliver_tx "abc"` it will store `(abc, abc)`, but if
-we do `deliver_tx "abc=efg"` it will store `(abc, efg)`.
+Note that if we do `finalize_block "abc" ...` it will store `(abc, abc)`, but if
+we do `finalize_block "abc=efg" ...` it will store `(abc, efg)`.
 
 You could put the commands in a file and run
 `abci-cli --verbose batch < myfile`.
 
 
 Note that the `abci-cli` is designed strictly for testing and debugging. In a real
-deployment, the role of sending messages is taken by Tendermint, which
+deployment, the role of sending messages is taken by CometBFT, which
 connects to the app using three separate connections, each with its own
 pattern of messages.
 
-For examples of running an ABCI app with Tendermint, see the 
+For examples of running an ABCI app with CometBFT, see the
 [getting started guide](./getting-started.md).
 
 ## Bounties

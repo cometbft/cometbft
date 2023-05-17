@@ -7,10 +7,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/tendermint/tendermint/libs/log"
-	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
-	"github.com/tendermint/tendermint/test/e2e/pkg/exec"
-	"github.com/tendermint/tendermint/test/e2e/pkg/infra/docker"
+	"github.com/cometbft/cometbft/libs/log"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/test/e2e/pkg/exec"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
 )
 
 // Cleanup removes the Docker Compose containers and testnet directory.
@@ -65,7 +65,7 @@ func cleanupDir(dir string) error {
 
 	logger.Info("cleanup dir", "msg", log.NewLazySprintf("Removing testnet directory %q", dir))
 
-	// On Linux, some local files in the volume will be owned by root since Tendermint
+	// On Linux, some local files in the volume will be owned by root since CometBFT
 	// runs as root inside the container, so we need to clean them up from within a
 	// container running as root too.
 	absDir, err := filepath.Abs(dir)
@@ -73,7 +73,7 @@ func cleanupDir(dir string) error {
 		return err
 	}
 	err = docker.Exec(context.Background(), "run", "--rm", "--entrypoint", "", "-v", fmt.Sprintf("%v:/network", absDir),
-		"tendermint/e2e-node", "sh", "-c", "rm -rf /network/*/")
+		"cometbft/e2e-node", "sh", "-c", "rm -rf /network/*/")
 	if err != nil {
 		return err
 	}

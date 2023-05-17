@@ -1,9 +1,9 @@
 #!/bin/bash
-# This script is invoked by OSS-Fuzz to run fuzz tests against Tendermint core.
+# This script is invoked by OSS-Fuzz to run fuzz tests against CometBFT.
 # See https://github.com/google/oss-fuzz/blob/master/projects/tendermint/build.sh
 set -euo pipefail
 
-export FUZZ_ROOT="github.com/tendermint/tendermint"
+export FUZZ_ROOT="github.com/cometbft/cometbft"
 
 build_go_fuzzer() {
 	local function="$1"

@@ -3,14 +3,14 @@ package light_test
 import (
 	"time"
 
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
-	"github.com/tendermint/tendermint/version"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/cometbft/cometbft/version"
 )
 
 // privKeys is a helper type for testing.
@@ -90,7 +90,12 @@ func (pkz privKeys) signHeader(header *types.Header, valSet *types.ValidatorSet,
 		commitSigs[vote.ValidatorIndex] = vote.CommitSig()
 	}
 
-	return types.NewCommit(header.Height, 1, blockID, commitSigs)
+	return &types.Commit{
+		Height:     header.Height,
+		Round:      1,
+		BlockID:    blockID,
+		Signatures: commitSigs,
+	}
 }
 
 func makeVote(header *types.Header, valset *types.ValidatorSet,
@@ -103,8 +108,8 @@ func makeVote(header *types.Header, valset *types.ValidatorSet,
 		ValidatorIndex:   idx,
 		Height:           header.Height,
 		Round:            1,
-		Timestamp:        tmtime.Now(),
-		Type:             tmproto.PrecommitType,
+		Timestamp:        cmttime.Now(),
+		Type:             cmtproto.PrecommitType,
 		BlockID:          blockID,
 	}
 
@@ -115,8 +120,14 @@ func makeVote(header *types.Header, valset *types.ValidatorSet,
 	if err != nil {
 		panic(err)
 	}
-
 	vote.Signature = sig
+
+	extSignBytes := types.VoteExtensionSignBytes(header.ChainID, v)
+	extSig, err := key.Sign(extSignBytes)
+	if err != nil {
+		panic(err)
+	}
+	vote.ExtensionSignature = extSig
 
 	return vote
 }
@@ -125,7 +136,7 @@ func genHeader(chainID string, height int64, bTime time.Time, txs types.Txs,
 	valset, nextValset *types.ValidatorSet, appHash, consHash, resHash []byte) *types.Header {
 
 	return &types.Header{
-		Version: tmversion.Consensus{Block: version.BlockProtocol, App: 0},
+		Version: cmtversion.Consensus{Block: version.BlockProtocol, App: 0},
 		ChainID: chainID,
 		Height:  height,
 		Time:    bTime,

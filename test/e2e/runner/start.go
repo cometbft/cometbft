@@ -6,12 +6,12 @@ import (
 	"sort"
 	"time"
 
-	"github.com/tendermint/tendermint/libs/log"
-	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
-	"github.com/tendermint/tendermint/test/e2e/pkg/infra"
+	"github.com/cometbft/cometbft/libs/log"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 )
 
-func Start(testnet *e2e.Testnet, p infra.Provider) error {
+func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 	if len(testnet.Nodes) == 0 {
 		return fmt.Errorf("no nodes in testnet")
 	}
@@ -42,21 +42,36 @@ func Start(testnet *e2e.Testnet, p infra.Provider) error {
 
 	// Start initial nodes (StartAt: 0)
 	logger.Info("Starting initial network nodes...")
+	nodesAtZero := make([]*e2e.Node, 0)
 	for len(nodeQueue) > 0 && nodeQueue[0].StartAt == 0 {
-		node := nodeQueue[0]
+		nodesAtZero = append(nodesAtZero, nodeQueue[0])
 		nodeQueue = nodeQueue[1:]
-		err := p.CreateNode(context.Background(), node)
-		if err != nil {
+	}
+	err := p.StartNodes(context.Background(), nodesAtZero...)
+	if err != nil {
+		return err
+	}
+	for _, node := range nodesAtZero {
+		if _, err := waitForNode(ctx, node, 0, 15*time.Second); err != nil {
 			return err
 		}
-		err = p.StartTendermint(context.Background(), node)
-		if err != nil {
-			return err
+		if node.PrometheusProxyPort > 0 {
+			logger.Info("start", "msg",
+				log.NewLazySprintf("Node %v up on http://%s:%v; with Prometheus on http://%s:%v/metrics",
+					node.Name,
+					node.ExternalIP,
+					node.ProxyPort,
+					node.ExternalIP,
+					node.PrometheusProxyPort,
+				),
+			)
+		} else {
+			logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://%s:%v",
+				node.Name,
+				node.ExternalIP,
+				node.ProxyPort,
+			))
 		}
-		if _, err := waitForNode(node, 0, 15*time.Second); err != nil {
-			return err
-		}
-		logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://%s:%v", node.Name, node.InternalIP, node.ProxyPort))
 	}
 
 	networkHeight := testnet.InitialHeight
@@ -67,7 +82,7 @@ func Start(testnet *e2e.Testnet, p infra.Provider) error {
 		"nodes", len(testnet.Nodes)-len(nodeQueue),
 		"pending", len(nodeQueue))
 
-	block, blockID, err := waitForHeight(testnet, networkHeight)
+	block, blockID, err := waitForHeight(ctx, testnet, networkHeight)
 	if err != nil {
 		return err
 	}
@@ -97,27 +112,23 @@ func Start(testnet *e2e.Testnet, p infra.Provider) error {
 				"node", node.Name,
 				"height", networkHeight)
 
-			if _, _, err := waitForHeight(testnet, networkHeight); err != nil {
+			if _, _, err := waitForHeight(ctx, testnet, networkHeight); err != nil {
 				return err
 			}
 		}
 
 		logger.Info("Starting catch up node", "node", node.Name, "height", node.StartAt)
 
-		err := p.CreateNode(context.Background(), node)
+		err := p.StartNodes(context.Background(), node)
 		if err != nil {
 			return err
 		}
-		err = p.StartTendermint(context.Background(), node)
-		if err != nil {
-			return err
-		}
-		status, err := waitForNode(node, node.StartAt, 3*time.Minute)
+		status, err := waitForNode(ctx, node, node.StartAt, 3*time.Minute)
 		if err != nil {
 			return err
 		}
 		logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://%s:%v at height %v",
-			node.Name, node.InternalIP, node.ProxyPort, status.SyncInfo.LatestBlockHeight))
+			node.Name, node.ExternalIP, node.ProxyPort, status.SyncInfo.LatestBlockHeight))
 	}
 
 	return nil

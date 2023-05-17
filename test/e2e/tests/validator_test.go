@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
-	"github.com/tendermint/tendermint/types"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/types"
 )
 
 // Tests that validator sets are available and correct according to

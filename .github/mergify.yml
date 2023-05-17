@@ -2,13 +2,13 @@ queue_rules:
   - name: default
     conditions:
       - base=main
-      - label=S:automerge
+      - label=automerge
 
 pull_request_rules:
   - name: Automerge to main
     conditions:
       - base=main
-      - label=S:automerge
+      - label=automerge
     actions:
       queue:
         method: squash
@@ -17,10 +17,18 @@ pull_request_rules:
           {{ title }} (#{{ number }})
 
           {{ body }}
+  - name: backport patches to v0.38.x branch
+    conditions:
+      - base=main
+      - label=backport-to-v0.38.x
+    actions:
+      backport:
+        branches:
+          - v0.38.x
   - name: backport patches to v0.37.x branch
     conditions:
       - base=main
-      - label=S:backport-to-v0.37.x
+      - label=backport-to-v0.37.x
     actions:
       backport:
         branches:
@@ -28,7 +36,7 @@ pull_request_rules:
   - name: backport patches to v0.34.x branch
     conditions:
       - base=main
-      - label=S:backport-to-v0.34.x
+      - label=backport-to-v0.34.x
     actions:
       backport:
         branches:

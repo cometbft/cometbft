@@ -1,3 +1,3 @@
 # Core Verification
 
-Deprecated, please see [light-client/accountability](https://github.com/tendermint/tendermint/blob/main/spec/consensus/light-client/verification.md).
+Deprecated, please see [light-client/verification](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification).

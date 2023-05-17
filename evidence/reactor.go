@@ -6,11 +6,11 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	clist "github.com/tendermint/tendermint/libs/clist"
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/p2p"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/types"
+	clist "github.com/cometbft/cometbft/libs/clist"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/p2p"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -57,7 +57,7 @@ func (evR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 			ID:                  EvidenceChannel,
 			Priority:            6,
 			RecvMessageCapacity: maxMsgSize,
-			MessageType:         &tmproto.EvidenceList{},
+			MessageType:         &cmtproto.EvidenceList{},
 		},
 	}
 }
@@ -217,8 +217,8 @@ type PeerState interface {
 
 // encodemsg takes a array of evidence
 // returns the byte encoding of the List Message
-func evidenceListToProto(evis []types.Evidence) (*tmproto.EvidenceList, error) {
-	evi := make([]tmproto.Evidence, len(evis))
+func evidenceListToProto(evis []types.Evidence) (*cmtproto.EvidenceList, error) {
+	evi := make([]cmtproto.Evidence, len(evis))
 	for i := 0; i < len(evis); i++ {
 		ev, err := types.EvidenceToProto(evis[i])
 		if err != nil {
@@ -226,14 +226,14 @@ func evidenceListToProto(evis []types.Evidence) (*tmproto.EvidenceList, error) {
 		}
 		evi[i] = *ev
 	}
-	epl := tmproto.EvidenceList{
+	epl := cmtproto.EvidenceList{
 		Evidence: evi,
 	}
 	return &epl, nil
 }
 
 func evidenceListFromProto(m proto.Message) ([]types.Evidence, error) {
-	lm := m.(*tmproto.EvidenceList)
+	lm := m.(*cmtproto.EvidenceList)
 
 	evis := make([]types.Evidence, len(lm.Evidence))
 	for i := 0; i < len(lm.Evidence); i++ {

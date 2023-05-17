@@ -8,15 +8,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	ctest "github.com/tendermint/tendermint/libs/test"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	ctest "github.com/cometbft/cometbft/libs/test"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 func makeTxs(cnt, size int) Txs {
 	txs := make(Txs, cnt)
 	for i := 0; i < cnt; i++ {
-		txs[i] = tmrand.Bytes(size)
+		txs[i] = cmtrand.Bytes(size)
 	}
 	return txs
 }
@@ -77,7 +77,7 @@ func TestValidTxProof(t *testing.T) {
 			// read-write must also work
 			var (
 				p2  TxProof
-				pb2 tmproto.TxProof
+				pb2 cmtproto.TxProof
 			)
 			pbProof := proof.ToProto()
 			bin, err := pbProof.Marshal()
@@ -128,7 +128,7 @@ func assertBadProof(t *testing.T, root []byte, bad []byte, good TxProof) {
 
 	var (
 		proof   TxProof
-		pbProof tmproto.TxProof
+		pbProof cmtproto.TxProof
 	)
 	err := pbProof.Unmarshal(bad)
 	if err == nil {

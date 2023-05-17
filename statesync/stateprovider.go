@@ -6,20 +6,20 @@ import (
 	"strings"
 	"time"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	"github.com/tendermint/tendermint/libs/log"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
-	"github.com/tendermint/tendermint/light"
-	lightprovider "github.com/tendermint/tendermint/light/provider"
-	lighthttp "github.com/tendermint/tendermint/light/provider/http"
-	lightrpc "github.com/tendermint/tendermint/light/rpc"
-	lightdb "github.com/tendermint/tendermint/light/store/db"
-	tmstate "github.com/tendermint/tendermint/proto/tendermint/state"
-	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
-	sm "github.com/tendermint/tendermint/state"
-	"github.com/tendermint/tendermint/types"
-	"github.com/tendermint/tendermint/version"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/light"
+	lightprovider "github.com/cometbft/cometbft/light/provider"
+	lighthttp "github.com/cometbft/cometbft/light/provider/http"
+	lightrpc "github.com/cometbft/cometbft/light/rpc"
+	lightdb "github.com/cometbft/cometbft/light/store/db"
+	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/version"
 )
 
 //go:generate ../scripts/mockery_generate.sh StateProvider
@@ -37,9 +37,9 @@ type StateProvider interface {
 
 // lightClientStateProvider is a state provider using the light client.
 type lightClientStateProvider struct {
-	tmsync.Mutex  // light.Client is not concurrency-safe
+	cmtsync.Mutex // light.Client is not concurrency-safe
 	lc            *light.Client
-	version       tmstate.Version
+	version       cmtstate.Version
 	initialHeight int64
 	providers     map[lightprovider.Provider]string
 }
@@ -48,7 +48,7 @@ type lightClientStateProvider struct {
 func NewLightClientStateProvider(
 	ctx context.Context,
 	chainID string,
-	version tmstate.Version,
+	version cmtstate.Version,
 	initialHeight int64,
 	servers []string,
 	trustOptions light.TrustOptions,
@@ -156,7 +156,7 @@ func (s *lightClientStateProvider) State(ctx context.Context, height uint64) (sm
 		return sm.State{}, err
 	}
 
-	state.Version = tmstate.Version{
+	state.Version = cmtstate.Version{
 		Consensus: currentLightBlock.Version,
 		Software:  version.TMCoreSemVer,
 	}

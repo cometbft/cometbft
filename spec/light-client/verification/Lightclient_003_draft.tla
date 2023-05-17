@@ -25,7 +25,7 @@ CONSTANTS
     (* is primary correct? *)  
   FAULTY_RATIO
     (* a pair <<a, b>> that limits that ratio of faulty validator in the blockchain
-       from above (exclusive). Tendermint security model prescribes 1 / 3. *)
+       from above (exclusive). Cosmos security model prescribes 1 / 3. *)
 
 VARIABLES       (* see TypeOK below for the variable types *)
   localClock,   (* the local clock of the light client *)

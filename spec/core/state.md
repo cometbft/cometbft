@@ -1,3 +1,7 @@
+---
+order: 4
+---
+
 # State
 
 The state contains information whose cryptographic digest is included in block headers, and thus is

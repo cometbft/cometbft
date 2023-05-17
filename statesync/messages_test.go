@@ -7,9 +7,9 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tendermint/tendermint/p2p"
-	ssproto "github.com/tendermint/tendermint/proto/tendermint/statesync"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	"github.com/cometbft/cometbft/p2p"
+	ssproto "github.com/cometbft/cometbft/proto/tendermint/statesync"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 func TestValidateMsg(t *testing.T) {
@@ -18,7 +18,7 @@ func TestValidateMsg(t *testing.T) {
 		valid bool
 	}{
 		"nil":       {nil, false},
-		"unrelated": {&tmproto.Block{}, false},
+		"unrelated": {&cmtproto.Block{}, false},
 
 		"ChunkRequest valid":    {&ssproto.ChunkRequest{Height: 1, Format: 1, Index: 1}, true},
 		"ChunkRequest 0 height": {&ssproto.ChunkRequest{Height: 0, Format: 1, Index: 1}, false},

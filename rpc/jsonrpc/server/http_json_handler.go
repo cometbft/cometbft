@@ -9,9 +9,9 @@ import (
 	"reflect"
 	"sort"
 
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	"github.com/tendermint/tendermint/libs/log"
-	types "github.com/tendermint/tendermint/rpc/jsonrpc/types"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	"github.com/cometbft/cometbft/libs/log"
+	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 // HTTP + JSON handler
@@ -25,7 +25,7 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 				fmt.Errorf("error reading request body: %w", err),
 			)
 			if wErr := WriteRPCResponseHTTPError(w, http.StatusBadRequest, res); wErr != nil {
-				logger.Error("failed to write response", "res", res, "err", wErr)
+				logger.Error("failed to write response", "err", wErr)
 			}
 			return
 		}
@@ -48,7 +48,7 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 			if err := json.Unmarshal(b, &request); err != nil {
 				res := types.RPCParseError(fmt.Errorf("error unmarshaling request: %w", err))
 				if wErr := WriteRPCResponseHTTPError(w, http.StatusInternalServerError, res); wErr != nil {
-					logger.Error("failed to write response", "res", res, "err", wErr)
+					logger.Error("failed to write response", "err", wErr)
 				}
 				return
 			}
@@ -122,7 +122,7 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 				wErr = WriteRPCResponseHTTP(w, responses...)
 			}
 			if wErr != nil {
-				logger.Error("failed to write responses", "res", responses, "err", wErr)
+				logger.Error("failed to write responses", "err", wErr)
 			}
 		}
 	}
@@ -152,7 +152,7 @@ func mapParamsToArgs(
 
 		if p, ok := params[argName]; ok && p != nil && len(p) > 0 {
 			val := reflect.New(argType)
-			err := tmjson.Unmarshal(p, val.Interface())
+			err := cmtjson.Unmarshal(p, val.Interface())
 			if err != nil {
 				return nil, err
 			}
@@ -179,7 +179,7 @@ func arrayParamsToArgs(
 	for i, p := range params {
 		argType := rpcFunc.args[i+argsOffset]
 		val := reflect.New(argType)
-		err := tmjson.Unmarshal(p, val.Interface())
+		err := cmtjson.Unmarshal(p, val.Interface())
 		if err != nil {
 			return nil, err
 		}

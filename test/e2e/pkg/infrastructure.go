@@ -17,7 +17,7 @@ const (
 // InfrastructureData contains the relevant information for a set of existing
 // infrastructure that is to be used for running a testnet.
 type InfrastructureData struct {
-	path string
+	Path string
 
 	// Provider is the name of infrastructure provider backing the testnet.
 	// For example, 'docker' if it is running locally in a docker network or
@@ -38,12 +38,9 @@ type InfrastructureData struct {
 // InstanceData contains the relevant information for a machine instance backing
 // one of the nodes in the testnet.
 type InstanceData struct {
-	IPAddress net.IP `json:"ip_address"`
-	Port      uint32 `json:"port"`
-}
-
-func (i InfrastructureData) Path() string {
-	return i.path
+	IPAddress    net.IP `json:"ip_address"`
+	ExtIPAddress net.IP `json:"ext_ip_address"`
+	Port         uint32 `json:"port"`
 }
 
 func NewDockerInfrastructureData(m Manifest) (InfrastructureData, error) {
@@ -63,10 +60,12 @@ func NewDockerInfrastructureData(m Manifest) (InfrastructureData, error) {
 		Instances: make(map[string]InstanceData),
 		Network:   netAddress,
 	}
+	localHostIP := net.ParseIP("127.0.0.1")
 	for name := range m.Nodes {
 		ifd.Instances[name] = InstanceData{
-			IPAddress: ipGen.Next(),
-			Port:      portGen.Next(),
+			IPAddress:    ipGen.Next(),
+			ExtIPAddress: localHostIP,
+			Port:         portGen.Next(),
 		}
 	}
 	return ifd, nil
@@ -85,6 +84,6 @@ func InfrastructureDataFromFile(p string) (InfrastructureData, error) {
 	if ifd.Network == "" {
 		ifd.Network = globalIPv4CIDR
 	}
-	ifd.path = p
+	ifd.Path = p
 	return ifd, nil
 }

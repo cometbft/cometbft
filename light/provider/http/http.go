@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tendermint/tendermint/light/provider"
-	rpcclient "github.com/tendermint/tendermint/rpc/client"
-	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/light/provider"
+	rpcclient "github.com/cometbft/cometbft/rpc/client"
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	"github.com/cometbft/cometbft/types"
 )
 
 var (
@@ -180,6 +180,15 @@ func (p *http) signedHeader(ctx context.Context, height *int64) (*types.SignedHe
 		commit, err := p.client.Commit(ctx, height)
 		switch {
 		case err == nil:
+			// See https://github.com/cometbft/cometbft/issues/575
+			// If the node is starting at a non-zero height, but does not yet
+			// have any blocks, it can return an empty signed header without
+			// returning an error.
+			if commit.SignedHeader.IsEmpty() {
+				// Technically this means that the provider still needs to
+				// catch up.
+				return nil, provider.ErrHeightTooHigh
+			}
 			return &commit.SignedHeader, nil
 
 		case regexpTooHigh.MatchString(err.Error()):

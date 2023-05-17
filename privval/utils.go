@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/log"
-	tmnet "github.com/tendermint/tendermint/libs/net"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtnet "github.com/cometbft/cometbft/libs/net"
 )
 
 // IsConnTimeout returns a boolean indicating whether the error is known to
@@ -29,7 +29,7 @@ func IsConnTimeout(err error) bool {
 func NewSignerListener(listenAddr string, logger log.Logger) (*SignerListenerEndpoint, error) {
 	var listener net.Listener
 
-	protocol, address := tmnet.ProtocolAndAddress(listenAddr)
+	protocol, address := cmtnet.ProtocolAndAddress(listenAddr)
 	ln, err := net.Listen(protocol, address)
 	if err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ func NewSignerListener(listenAddr string, logger log.Logger) (*SignerListenerEnd
 
 // GetFreeLocalhostAddrPort returns a free localhost:port address
 func GetFreeLocalhostAddrPort() string {
-	port, err := tmnet.GetFreePort()
+	port, err := cmtnet.GetFreePort()
 	if err != nil {
 		panic(err)
 	}

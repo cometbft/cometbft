@@ -14,14 +14,14 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	flow "github.com/tendermint/tendermint/libs/flowrate"
-	"github.com/tendermint/tendermint/libs/log"
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	"github.com/tendermint/tendermint/libs/protoio"
-	"github.com/tendermint/tendermint/libs/service"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
-	"github.com/tendermint/tendermint/libs/timer"
-	tmp2p "github.com/tendermint/tendermint/proto/tendermint/p2p"
+	flow "github.com/cometbft/cometbft/libs/flowrate"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
+	"github.com/cometbft/cometbft/libs/protoio"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/libs/timer"
+	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
 )
 
 const (
@@ -47,8 +47,10 @@ const (
 	defaultPongTimeout         = 45 * time.Second
 )
 
-type receiveCbFunc func(chID byte, msgBytes []byte)
-type errorCbFunc func(interface{})
+type (
+	receiveCbFunc func(chID byte, msgBytes []byte)
+	errorCbFunc   func(interface{})
+)
 
 /*
 Each peer has one `MConnection` (multiplex connection) instance.
@@ -102,7 +104,7 @@ type MConnection struct {
 
 	// used to ensure FlushStop and OnStop
 	// are safe to call concurrently.
-	stopMtx tmsync.Mutex
+	stopMtx cmtsync.Mutex
 
 	flushTimer *timer.ThrottleTimer // flush writes as necessary but throttled.
 	pingTimer  *time.Ticker         // send pings periodically
@@ -190,8 +192,8 @@ func NewMConnectionWithConfig(
 	}
 
 	// Create channels
-	var channelsIdx = map[byte]*Channel{}
-	var channels = []*Channel{}
+	channelsIdx := map[byte]*Channel{}
+	channels := []*Channel{}
 
 	for _, desc := range chDescs {
 		channel := newChannel(mconn, *desc)
@@ -570,7 +572,7 @@ FOR_LOOP:
 		// Peek into bufConnReader for debugging
 		/*
 			if numBytes := c.bufConnReader.Buffered(); numBytes > 0 {
-				bz, err := c.bufConnReader.Peek(tmmath.MinInt(numBytes, 100))
+				bz, err := c.bufConnReader.Peek(cmtmath.MinInt(numBytes, 100))
 				if err == nil {
 					// return
 				} else {
@@ -657,6 +659,7 @@ FOR_LOOP:
 
 	// Cleanup
 	close(c.pong)
+	//nolint:revive
 	for range c.pong {
 		// Drain
 	}
@@ -830,14 +833,14 @@ func (ch *Channel) isSendPending() bool {
 func (ch *Channel) nextPacketMsg() tmp2p.PacketMsg {
 	packet := tmp2p.PacketMsg{ChannelID: int32(ch.desc.ID)}
 	maxSize := ch.maxPacketMsgPayloadSize
-	packet.Data = ch.sending[:tmmath.MinInt(maxSize, len(ch.sending))]
+	packet.Data = ch.sending[:cmtmath.MinInt(maxSize, len(ch.sending))]
 	if len(ch.sending) <= maxSize {
 		packet.EOF = true
 		ch.sending = nil
 		atomic.AddInt32(&ch.sendQueueSize, -1) // decrement sendQueueSize
 	} else {
 		packet.EOF = false
-		ch.sending = ch.sending[tmmath.MinInt(maxSize, len(ch.sending)):]
+		ch.sending = ch.sending[cmtmath.MinInt(maxSize, len(ch.sending)):]
 	}
 	return packet
 }
@@ -856,7 +859,7 @@ func (ch *Channel) writePacketMsgTo(w io.Writer) (n int, err error) {
 // Not goroutine-safe
 func (ch *Channel) recvPacketMsg(packet tmp2p.PacketMsg) ([]byte, error) {
 	ch.Logger.Debug("Read PacketMsg", "conn", ch.conn, "packet", packet)
-	var recvCap, recvReceived = ch.desc.RecvMessageCapacity, len(ch.recving) + len(packet.Data)
+	recvCap, recvReceived := ch.desc.RecvMessageCapacity, len(ch.recving)+len(packet.Data)
 	if recvCap < recvReceived {
 		return nil, fmt.Errorf("received message exceeds available capacity: %v < %v", recvCap, recvReceived)
 	}

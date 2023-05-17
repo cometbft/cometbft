@@ -7,16 +7,16 @@ import (
 	"path/filepath"
 	"text/template"
 
-	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
-	"github.com/tendermint/tendermint/test/e2e/pkg/exec"
-	"github.com/tendermint/tendermint/test/e2e/pkg/infra"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/test/e2e/pkg/exec"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 )
 
-var _ infra.Provider = &Provider{}
+var _ infra.Provider = (*Provider)(nil)
 
 // Provider implements a docker-compose backed infrastructure provider.
 type Provider struct {
-	Testnet *e2e.Testnet
+	infra.ProviderData
 }
 
 // Setup generates the docker-compose file and write it to disk, erroring if
@@ -35,17 +35,15 @@ func (p *Provider) Setup() error {
 	return nil
 }
 
-func (p Provider) CreateNode(ctx context.Context, n *e2e.Node) error {
-	return ExecCompose(ctx, p.Testnet.Dir, "create", n.Name)
+func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
+	nodeNames := make([]string, len(nodes))
+	for i, n := range nodes {
+		nodeNames[i] = n.Name
+	}
+	return ExecCompose(ctx, p.Testnet.Dir, append([]string{"up", "-d"}, nodeNames...)...)
 }
-func (p Provider) StartTendermint(ctx context.Context, n *e2e.Node) error {
-	return ExecCompose(ctx, p.Testnet.Dir, "start", n.Name)
-}
-func (p Provider) TerminateTendermint(ctx context.Context, n *e2e.Node) error {
-	return ExecCompose(ctx, p.Testnet.Dir, "kill", "-s", "SIGTERM", n.Name)
-}
-func (p Provider) KillTendermint(ctx context.Context, n *e2e.Node) error {
-	return ExecCompose(ctx, p.Testnet.Dir, "kill", "-s", "SIGKILL", n.Name)
+func (p Provider) StopTestnet(ctx context.Context) error {
+	return ExecCompose(ctx, p.Testnet.Dir, "down")
 }
 func (p Provider) Connect(ctx context.Context, n *e2e.Node) error {
 	return Exec(ctx, "network", "connect", p.Testnet.Name+"_"+p.Testnet.Name, n.Name)
@@ -78,23 +76,49 @@ services:
     labels:
       e2e: true
     container_name: {{ .Name }}
-    image: tendermint/e2e-node:{{ .Version }}
-{{- if eq .ABCIProtocol "builtin" }}
+    image: {{ .Version }}
+{{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_unsync") }}
     entrypoint: /usr/bin/entrypoint-builtin
-{{- else }}{{ if eq .ABCIProtocol "builtin_unsync" }}
-    entrypoint: /usr/bin/entrypoint-builtin
-{{- end }}
 {{- end }}
     init: true
     ports:
     - 26656
     - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657
+{{- if .PrometheusProxyPort }}
+    - {{ .PrometheusProxyPort }}:26660
+{{- end }}
     - 6060
     volumes:
+    - ./{{ .Name }}:/cometbft
     - ./{{ .Name }}:/tendermint
     networks:
       {{ $.Name }}:
         ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .InternalIP }}
+{{- if ne .Version $.UpgradeVersion}}
+
+  {{ .Name }}_u:
+    labels:
+      e2e: true
+    container_name: {{ .Name }}_u
+    image: {{ $.UpgradeVersion }}
+{{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_unsync") }}
+    entrypoint: /usr/bin/entrypoint-builtin
+{{- end }}
+    init: true
+    ports:
+    - 26656
+    - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657
+{{- if .PrometheusProxyPort }}
+    - {{ .PrometheusProxyPort }}:26660
+{{- end }}
+    - 6060
+    volumes:
+    - ./{{ .Name }}:/cometbft
+    - ./{{ .Name }}:/tendermint
+    networks:
+      {{ $.Name }}:
+        ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .InternalIP }}
+{{- end }}
 
 {{end}}`)
 	if err != nil {
@@ -111,6 +135,13 @@ services:
 // ExecCompose runs a Docker Compose command for a testnet.
 func ExecCompose(ctx context.Context, dir string, args ...string) error {
 	return exec.Command(ctx, append(
+		[]string{"docker-compose", "-f", filepath.Join(dir, "docker-compose.yml")},
+		args...)...)
+}
+
+// ExecCompose runs a Docker Compose command for a testnet and returns the command's output.
+func ExecComposeOutput(ctx context.Context, dir string, args ...string) ([]byte, error) {
+	return exec.CommandOutput(ctx, append(
 		[]string{"docker-compose", "-f", filepath.Join(dir, "docker-compose.yml")},
 		args...)...)
 }

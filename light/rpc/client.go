@@ -8,17 +8,15 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/cosmos/gogoproto/proto"
-
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto/merkle"
-	tmbytes "github.com/tendermint/tendermint/libs/bytes"
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	service "github.com/tendermint/tendermint/libs/service"
-	rpcclient "github.com/tendermint/tendermint/rpc/client"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	rpctypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/crypto/merkle"
+	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
+	service "github.com/cometbft/cometbft/libs/service"
+	rpcclient "github.com/cometbft/cometbft/rpc/client"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/types"
 )
 
 var errNegOrZeroHeight = errors.New("negative or zero height")
@@ -125,12 +123,12 @@ func (c *Client) ABCIInfo(ctx context.Context) (*ctypes.ResultABCIInfo, error) {
 }
 
 // ABCIQuery requests proof by default.
-func (c *Client) ABCIQuery(ctx context.Context, path string, data tmbytes.HexBytes) (*ctypes.ResultABCIQuery, error) {
+func (c *Client) ABCIQuery(ctx context.Context, path string, data cmtbytes.HexBytes) (*ctypes.ResultABCIQuery, error) {
 	return c.ABCIQueryWithOptions(ctx, path, data, rpcclient.DefaultABCIQueryOptions)
 }
 
 // ABCIQueryWithOptions returns an error if opts.Prove is false.
-func (c *Client) ABCIQueryWithOptions(ctx context.Context, path string, data tmbytes.HexBytes,
+func (c *Client) ABCIQueryWithOptions(ctx context.Context, path string, data cmtbytes.HexBytes,
 	opts rpcclient.ABCIQueryOptions) (*ctypes.ResultABCIQuery, error) {
 
 	// always request the proof
@@ -379,6 +377,7 @@ func (c *Client) BlockByHash(ctx context.Context, hash []byte) (*ctypes.ResultBl
 
 // BlockResults returns the block results for the given height. If no height is
 // provided, the results of the block preceding the latest are returned.
+// NOTE: Light client only verifies the tx results
 func (c *Client) BlockResults(ctx context.Context, height *int64) (*ctypes.ResultBlockResults, error) {
 	var h int64
 	if height == nil {
@@ -410,27 +409,8 @@ func (c *Client) BlockResults(ctx context.Context, height *int64) (*ctypes.Resul
 		return nil, err
 	}
 
-	// proto-encode BeginBlock events
-	bbeBytes, err := proto.Marshal(&abci.ResponseBeginBlock{
-		Events: res.BeginBlockEvents,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// Build a Merkle tree of proto-encoded DeliverTx results and get a hash.
-	results := types.NewResults(res.TxsResults)
-
-	// proto-encode EndBlock events.
-	ebeBytes, err := proto.Marshal(&abci.ResponseEndBlock{
-		Events: res.EndBlockEvents,
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	// Build a Merkle tree out of the above 3 binary slices.
-	rH := merkle.HashFromByteSlices([][]byte{bbeBytes, results.Hash(), ebeBytes})
+	rH := state.TxResultsHash(res.TxsResults)
 
 	// Verify block results.
 	if !bytes.Equal(rH, trustedBlock.LastResultsHash) {
@@ -452,7 +432,7 @@ func (c *Client) Header(ctx context.Context, height *int64) (*ctypes.ResultHeade
 }
 
 // HeaderByHash calls rpcclient#HeaderByHash and updates the client if it's falling behind.
-func (c *Client) HeaderByHash(ctx context.Context, hash tmbytes.HexBytes) (*ctypes.ResultHeader, error) {
+func (c *Client) HeaderByHash(ctx context.Context, hash cmtbytes.HexBytes) (*ctypes.ResultHeader, error) {
 	res, err := c.next.HeaderByHash(ctx, hash)
 	if err != nil {
 		return nil, err
@@ -553,7 +533,7 @@ func (c *Client) Validators(
 	}
 
 	skipCount := validateSkipCount(page, perPage)
-	v := l.ValidatorSet.Validators[skipCount : skipCount+tmmath.MinInt(perPage, totalCount-skipCount)]
+	v := l.ValidatorSet.Validators[skipCount : skipCount+cmtmath.MinInt(perPage, totalCount-skipCount)]
 
 	return &ctypes.ResultValidators{
 		BlockHeight: l.Height,

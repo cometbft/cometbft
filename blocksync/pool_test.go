@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tendermint/tendermint/libs/log"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/types"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/types"
 )
 
 func init() {
@@ -42,7 +42,10 @@ func (p testPeer) runInputRoutine() {
 // Request desired, pretend like we got the block immediately.
 func (p testPeer) simulateInput(input inputData) {
 	block := &types.Block{Header: types.Header{Height: input.request.Height}}
-	input.pool.AddBlock(input.request.PeerID, block, 123)
+	extCommit := &types.ExtendedCommit{
+		Height: input.request.Height,
+	}
+	_ = input.pool.AddBlock(input.request.PeerID, block, extCommit, 123)
 	// TODO: uncommenting this creates a race which is detected by:
 	// https://github.com/golang/go/blob/2bd767b1022dd3254bcec469f0ee164024726486/src/testing/testing.go#L854-L856
 	// see: https://github.com/tendermint/tendermint/issues/3390#issue-418379890
@@ -66,8 +69,8 @@ func (ps testPeers) stop() {
 func makePeers(numPeers int, minHeight, maxHeight int64) testPeers {
 	peers := make(testPeers, numPeers)
 	for i := 0; i < numPeers; i++ {
-		peerID := p2p.ID(tmrand.Str(12))
-		height := minHeight + tmrand.Int63n(maxHeight-minHeight)
+		peerID := p2p.ID(cmtrand.Str(12))
+		height := minHeight + cmtrand.Int63n(maxHeight-minHeight)
 		base := minHeight + int64(i)
 		if base > height {
 			base = height
@@ -112,7 +115,7 @@ func TestBlockPoolBasic(t *testing.T) {
 			if !pool.IsRunning() {
 				return
 			}
-			first, second := pool.PeekTwoBlocks()
+			first, second, _ := pool.PeekTwoBlocks()
 			if first != nil && second != nil {
 				pool.PopRequest()
 			} else {
@@ -171,7 +174,7 @@ func TestBlockPoolTimeout(t *testing.T) {
 			if !pool.IsRunning() {
 				return
 			}
-			first, second := pool.PeekTwoBlocks()
+			first, second, _ := pool.PeekTwoBlocks()
 			if first != nil && second != nil {
 				pool.PopRequest()
 			} else {

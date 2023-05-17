@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto/merkle"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto/merkle"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 // Evidence represents any provable malicious activity by a validator.
@@ -145,10 +145,10 @@ func (dve *DuplicateVoteEvidence) ValidateBasic() error {
 }
 
 // ToProto encodes DuplicateVoteEvidence to protobuf
-func (dve *DuplicateVoteEvidence) ToProto() *tmproto.DuplicateVoteEvidence {
+func (dve *DuplicateVoteEvidence) ToProto() *cmtproto.DuplicateVoteEvidence {
 	voteB := dve.VoteB.ToProto()
 	voteA := dve.VoteA.ToProto()
-	tp := tmproto.DuplicateVoteEvidence{
+	tp := cmtproto.DuplicateVoteEvidence{
 		VoteA:            voteA,
 		VoteB:            voteB,
 		TotalVotingPower: dve.TotalVotingPower,
@@ -159,19 +159,33 @@ func (dve *DuplicateVoteEvidence) ToProto() *tmproto.DuplicateVoteEvidence {
 }
 
 // DuplicateVoteEvidenceFromProto decodes protobuf into DuplicateVoteEvidence
-func DuplicateVoteEvidenceFromProto(pb *tmproto.DuplicateVoteEvidence) (*DuplicateVoteEvidence, error) {
+func DuplicateVoteEvidenceFromProto(pb *cmtproto.DuplicateVoteEvidence) (*DuplicateVoteEvidence, error) {
 	if pb == nil {
 		return nil, errors.New("nil duplicate vote evidence")
 	}
 
-	vA, err := VoteFromProto(pb.VoteA)
-	if err != nil {
-		return nil, err
+	var vA *Vote
+	if pb.VoteA != nil {
+		var err error
+		vA, err = VoteFromProto(pb.VoteA)
+		if err != nil {
+			return nil, err
+		}
+		if err = vA.ValidateBasic(); err != nil {
+			return nil, err
+		}
 	}
 
-	vB, err := VoteFromProto(pb.VoteB)
-	if err != nil {
-		return nil, err
+	var vB *Vote
+	if pb.VoteB != nil {
+		var err error
+		vB, err = VoteFromProto(pb.VoteB)
+		if err != nil {
+			return nil, err
+		}
+		if err = vB.ValidateBasic(); err != nil {
+			return nil, err
+		}
 	}
 
 	dve := &DuplicateVoteEvidence{
@@ -191,7 +205,7 @@ func DuplicateVoteEvidenceFromProto(pb *tmproto.DuplicateVoteEvidence) (*Duplica
 // a light client such that a full node can verify, propose and commit the evidence on-chain for
 // punishment of the malicious validators. There are three forms of attacks: Lunatic, Equivocation
 // and Amnesia. These attacks are exhaustive. You can find a more detailed overview of this at
-// tendermint/docs/architecture/adr-047-handling-evidence-from-light-client.md
+// cometbft/docs/architecture/adr-047-handling-evidence-from-light-client.md
 type LightClientAttackEvidence struct {
 	ConflictingBlock *LightBlock
 	CommonHeight     int64
@@ -242,7 +256,7 @@ func (l *LightClientAttackEvidence) GetByzantineValidators(commonVals *Validator
 	// validators who are in the commonVals and voted for the lunatic header
 	if l.ConflictingHeaderIsInvalid(trusted.Header) {
 		for _, commitSig := range l.ConflictingBlock.Commit.Signatures {
-			if !commitSig.ForBlock() {
+			if commitSig.BlockIDFlag != BlockIDFlagCommit {
 				continue
 			}
 
@@ -262,12 +276,12 @@ func (l *LightClientAttackEvidence) GetByzantineValidators(commonVals *Validator
 		// only need a single loop to find the validators that voted twice.
 		for i := 0; i < len(l.ConflictingBlock.Commit.Signatures); i++ {
 			sigA := l.ConflictingBlock.Commit.Signatures[i]
-			if sigA.Absent() {
+			if sigA.BlockIDFlag != BlockIDFlagCommit {
 				continue
 			}
 
 			sigB := trusted.Commit.Signatures[i]
-			if sigB.Absent() {
+			if sigB.BlockIDFlag != BlockIDFlagCommit {
 				continue
 			}
 
@@ -372,13 +386,13 @@ func (l *LightClientAttackEvidence) ValidateBasic() error {
 }
 
 // ToProto encodes LightClientAttackEvidence to protobuf
-func (l *LightClientAttackEvidence) ToProto() (*tmproto.LightClientAttackEvidence, error) {
+func (l *LightClientAttackEvidence) ToProto() (*cmtproto.LightClientAttackEvidence, error) {
 	conflictingBlock, err := l.ConflictingBlock.ToProto()
 	if err != nil {
 		return nil, err
 	}
 
-	byzVals := make([]*tmproto.Validator, len(l.ByzantineValidators))
+	byzVals := make([]*cmtproto.Validator, len(l.ByzantineValidators))
 	for idx, val := range l.ByzantineValidators {
 		valpb, err := val.ToProto()
 		if err != nil {
@@ -387,7 +401,7 @@ func (l *LightClientAttackEvidence) ToProto() (*tmproto.LightClientAttackEvidenc
 		byzVals[idx] = valpb
 	}
 
-	return &tmproto.LightClientAttackEvidence{
+	return &cmtproto.LightClientAttackEvidence{
 		ConflictingBlock:    conflictingBlock,
 		CommonHeight:        l.CommonHeight,
 		ByzantineValidators: byzVals,
@@ -397,7 +411,7 @@ func (l *LightClientAttackEvidence) ToProto() (*tmproto.LightClientAttackEvidenc
 }
 
 // LightClientAttackEvidenceFromProto decodes protobuf
-func LightClientAttackEvidenceFromProto(lpb *tmproto.LightClientAttackEvidence) (*LightClientAttackEvidence, error) {
+func LightClientAttackEvidenceFromProto(lpb *cmtproto.LightClientAttackEvidence) (*LightClientAttackEvidence, error) {
 	if lpb == nil {
 		return nil, errors.New("empty light client attack evidence")
 	}
@@ -478,7 +492,7 @@ func (evl EvidenceList) ToABCI() []abci.Misbehavior {
 
 // EvidenceToProto is a generalized function for encoding evidence that conforms to the
 // evidence interface to protobuf
-func EvidenceToProto(evidence Evidence) (*tmproto.Evidence, error) {
+func EvidenceToProto(evidence Evidence) (*cmtproto.Evidence, error) {
 	if evidence == nil {
 		return nil, errors.New("nil evidence")
 	}
@@ -486,8 +500,8 @@ func EvidenceToProto(evidence Evidence) (*tmproto.Evidence, error) {
 	switch evi := evidence.(type) {
 	case *DuplicateVoteEvidence:
 		pbev := evi.ToProto()
-		return &tmproto.Evidence{
-			Sum: &tmproto.Evidence_DuplicateVoteEvidence{
+		return &cmtproto.Evidence{
+			Sum: &cmtproto.Evidence_DuplicateVoteEvidence{
 				DuplicateVoteEvidence: pbev,
 			},
 		}, nil
@@ -497,8 +511,8 @@ func EvidenceToProto(evidence Evidence) (*tmproto.Evidence, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &tmproto.Evidence{
-			Sum: &tmproto.Evidence_LightClientAttackEvidence{
+		return &cmtproto.Evidence{
+			Sum: &cmtproto.Evidence_LightClientAttackEvidence{
 				LightClientAttackEvidence: pbev,
 			},
 		}, nil
@@ -510,15 +524,15 @@ func EvidenceToProto(evidence Evidence) (*tmproto.Evidence, error) {
 
 // EvidenceFromProto is a generalized function for decoding protobuf into the
 // evidence interface
-func EvidenceFromProto(evidence *tmproto.Evidence) (Evidence, error) {
+func EvidenceFromProto(evidence *cmtproto.Evidence) (Evidence, error) {
 	if evidence == nil {
 		return nil, errors.New("nil evidence")
 	}
 
 	switch evi := evidence.Sum.(type) {
-	case *tmproto.Evidence_DuplicateVoteEvidence:
+	case *cmtproto.Evidence_DuplicateVoteEvidence:
 		return DuplicateVoteEvidenceFromProto(evi.DuplicateVoteEvidence)
-	case *tmproto.Evidence_LightClientAttackEvidence:
+	case *cmtproto.Evidence_LightClientAttackEvidence:
 		return LightClientAttackEvidenceFromProto(evi.LightClientAttackEvidence)
 	default:
 		return nil, errors.New("evidence is not recognized")
@@ -526,8 +540,8 @@ func EvidenceFromProto(evidence *tmproto.Evidence) (Evidence, error) {
 }
 
 func init() {
-	tmjson.RegisterType(&DuplicateVoteEvidence{}, "tendermint/DuplicateVoteEvidence")
-	tmjson.RegisterType(&LightClientAttackEvidence{}, "tendermint/LightClientAttackEvidence")
+	cmtjson.RegisterType(&DuplicateVoteEvidence{}, "tendermint/DuplicateVoteEvidence")
+	cmtjson.RegisterType(&LightClientAttackEvidence{}, "tendermint/LightClientAttackEvidence")
 }
 
 //-------------------------------------------- ERRORS --------------------------------------
@@ -602,7 +616,7 @@ func NewMockDuplicateVoteEvidenceWithValidator(height int64, time time.Time,
 func makeMockVote(height int64, round, index int32, addr Address,
 	blockID BlockID, time time.Time) *Vote {
 	return &Vote{
-		Type:             tmproto.SignedMsgType(2),
+		Type:             cmtproto.SignedMsgType(2),
 		Height:           height,
 		Round:            round,
 		BlockID:          blockID,
@@ -614,10 +628,10 @@ func makeMockVote(height int64, round, index int32, addr Address,
 
 func randBlockID() BlockID {
 	return BlockID{
-		Hash: tmrand.Bytes(tmhash.Size),
+		Hash: cmtrand.Bytes(tmhash.Size),
 		PartSetHeader: PartSetHeader{
 			Total: 1,
-			Hash:  tmrand.Bytes(tmhash.Size),
+			Hash:  cmtrand.Bytes(tmhash.Size),
 		},
 	}
 }

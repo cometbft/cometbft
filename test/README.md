@@ -1,9 +1,9 @@
-# Tendermint Tests
+# CometBFT Tests
 
 The unit tests (ie. the `go test` s) can be run with `make test`.
 The integration tests can be run with `make test_integrations`.
 
-Running the integrations test will build a docker container with local version of tendermint
+Running the integrations test will build a docker container with local version of CometBFT
 and run the following tests in docker containers:
 
 - go tests, with --race
@@ -11,7 +11,7 @@ and run the following tests in docker containers:
 - app tests
     - kvstore app over socket
 - persistence tests
-    - crash tendermint at each of many predefined points, restart, and ensure it syncs properly with the app
+    - crash cometbft at each of many predefined points, restart, and ensure it syncs properly with the app
 
 ## Fuzzing
 

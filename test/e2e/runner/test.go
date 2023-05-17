@@ -4,19 +4,19 @@ import (
 	"context"
 	"os"
 
-	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
-	"github.com/tendermint/tendermint/test/e2e/pkg/exec"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/test/e2e/pkg/exec"
 )
 
 // Test runs test cases under tests/
-func Test(testnet *e2e.Testnet, ifd e2e.InfrastructureData) error {
+func Test(testnet *e2e.Testnet, ifd *e2e.InfrastructureData) error {
 	logger.Info("Running tests in ./tests/...")
 
 	err := os.Setenv("E2E_MANIFEST", testnet.File)
 	if err != nil {
 		return err
 	}
-	if p := ifd.Path(); p != "" {
+	if p := ifd.Path; p != "" {
 		err = os.Setenv("INFRASTRUCTURE_DATA", p)
 		if err != nil {
 			return err

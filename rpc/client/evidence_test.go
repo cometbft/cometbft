@@ -9,17 +9,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	cryptoenc "github.com/tendermint/tendermint/crypto/encoding"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	"github.com/tendermint/tendermint/internal/test"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/privval"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/rpc/client"
-	rpctest "github.com/tendermint/tendermint/rpc/test"
-	"github.com/tendermint/tendermint/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	"github.com/cometbft/cometbft/internal/test"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/privval"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/rpc/client"
+	rpctest "github.com/cometbft/cometbft/rpc/test"
+	"github.com/cometbft/cometbft/types"
 )
 
 // For some reason the empty node used in tests has a time of
@@ -61,10 +61,10 @@ func makeEvidences(
 		ValidatorIndex:   0,
 		Height:           1,
 		Round:            0,
-		Type:             tmproto.PrevoteType,
+		Type:             cmtproto.PrevoteType,
 		Timestamp:        defaultTestTime,
 		BlockID: types.BlockID{
-			Hash: tmhash.Sum(tmrand.Bytes(tmhash.Size)),
+			Hash: tmhash.Sum(cmtrand.Bytes(tmhash.Size)),
 			PartSetHeader: types.PartSetHeader{
 				Total: 1000,
 				Hash:  tmhash.Sum([]byte("partset")),
@@ -102,7 +102,7 @@ func makeEvidences(
 	// different type
 	{
 		v := vote2
-		v.Type = tmproto.PrecommitType
+		v.Type = cmtproto.PrecommitType
 		fakes = append(fakes, newEvidence(t, val, &vote, &v, chainID))
 	}
 

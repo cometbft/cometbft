@@ -9,10 +9,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
-	rpctypes "github.com/tendermint/tendermint/rpc/core/types"
-	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
-	"github.com/tendermint/tendermint/types"
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/types"
 )
 
 func init() {
@@ -98,7 +98,7 @@ func loadTestnet(t *testing.T) e2e.Testnet {
 	}
 	require.NoError(t, err)
 
-	testnet, err := e2e.LoadTestnet(m, manifestFile, ifd)
+	testnet, err := e2e.LoadTestnet(manifestFile, ifd)
 	require.NoError(t, err)
 	testnetCache[manifestFile] = *testnet
 	return *testnet

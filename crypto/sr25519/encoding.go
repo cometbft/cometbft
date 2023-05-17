@@ -1,6 +1,6 @@
 package sr25519
 
-import tmjson "github.com/tendermint/tendermint/libs/json"
+import cmtjson "github.com/cometbft/cometbft/libs/json"
 
 const (
 	PrivKeyName = "tendermint/PrivKeySr25519"
@@ -8,6 +8,6 @@ const (
 )
 
 func init() {
-	tmjson.RegisterType(PubKey{}, PubKeyName)
-	tmjson.RegisterType(PrivKey{}, PrivKeyName)
+	cmtjson.RegisterType(PubKey{}, PubKeyName)
+	cmtjson.RegisterType(PrivKey{}, PrivKeyName)
 }

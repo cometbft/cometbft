@@ -5,7 +5,7 @@ import "tendermint/crypto/keys.proto";
 import "tendermint/types/types.proto";
 import "gogoproto/gogo.proto";
 
-option go_package = "github.com/tendermint/tendermint/proto/tendermint/privval";
+option go_package = "github.com/cometbft/cometbft/proto/tendermint/privval";
 
 enum Errors {
   ERRORS_UNKNOWN             = 0;

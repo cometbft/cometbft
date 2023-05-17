@@ -24,7 +24,7 @@ type Executable interface {
 	Execute() error
 }
 
-// PrepareBaseCmd is meant for tendermint and other servers
+// PrepareBaseCmd is meant for CometBFT and other servers
 func PrepareBaseCmd(cmd *cobra.Command, envPrefix, defaultHome string) Executor {
 	cobra.OnInitialize(func() { initEnv(envPrefix) })
 	cmd.PersistentFlags().StringP(HomeFlag, "", defaultHome, "directory for config and data")
@@ -125,7 +125,7 @@ func concatCobraCmdFuncs(fs ...cobraCmdFunc) cobraCmdFunc {
 }
 
 // Bind all flags and read the config into viper
-func bindFlagsLoadViper(cmd *cobra.Command, args []string) error {
+func bindFlagsLoadViper(cmd *cobra.Command, _ []string) error {
 	// cmd.Flags() includes flags from this command and all persistent flags from the parent
 	if err := viper.BindPFlags(cmd.Flags()); err != nil {
 		return err
@@ -138,17 +138,15 @@ func bindFlagsLoadViper(cmd *cobra.Command, args []string) error {
 	viper.AddConfigPath(filepath.Join(homeDir, "config")) // search root directory /config
 
 	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		// stderr, so if we redirect output to json file, this doesn't appear
-		// fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
-	} else if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+	err := viper.ReadInConfig()
+	if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 		// ignore not found error, return other errors
 		return err
 	}
 	return nil
 }
 
-func validateOutput(cmd *cobra.Command, args []string) error {
+func validateOutput(_ *cobra.Command, _ []string) error {
 	// validate output format
 	output := viper.GetString(OutputFlag)
 	switch output {

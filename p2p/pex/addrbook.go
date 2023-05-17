@@ -1,4 +1,4 @@
-// Modified for Tendermint
+// Modified for CometBFT
 // Originally Copyright (c) 2013-2014 Conformal Systems LLC.
 // https://github.com/conformal/btcd/blob/master/LICENSE
 
@@ -16,13 +16,13 @@ import (
 
 	"github.com/minio/highwayhash"
 
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/libs/log"
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/libs/service"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
-	"github.com/tendermint/tendermint/p2p"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/libs/log"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/p2p"
 )
 
 const (
@@ -89,8 +89,8 @@ type addrBook struct {
 	service.BaseService
 
 	// accessed concurrently
-	mtx        tmsync.Mutex
-	rand       *tmrand.Rand
+	mtx        cmtsync.Mutex
+	rand       *cmtrand.Rand
 	ourAddrs   map[string]struct{}
 	privateIDs map[p2p.ID]struct{}
 	addrLookup map[p2p.ID]*knownAddress // new & old
@@ -122,7 +122,7 @@ func mustNewHasher() hash.Hash64 {
 // Use Start to begin processing asynchronous address updates.
 func NewAddrBook(filePath string, routabilityStrict bool) AddrBook {
 	am := &addrBook{
-		rand:              tmrand.NewRand(),
+		rand:              cmtrand.NewRand(),
 		ourAddrs:          make(map[string]struct{}),
 		privateIDs:        make(map[p2p.ID]struct{}),
 		addrLookup:        make(map[p2p.ID]*knownAddress),
@@ -403,10 +403,10 @@ func (a *addrBook) GetSelection() []*p2p.NetAddress {
 		return nil
 	}
 
-	numAddresses := tmmath.MaxInt(
-		tmmath.MinInt(minGetSelection, bookSize),
+	numAddresses := cmtmath.MaxInt(
+		cmtmath.MinInt(minGetSelection, bookSize),
 		bookSize*getSelectionPercent/100)
-	numAddresses = tmmath.MinInt(maxGetSelection, numAddresses)
+	numAddresses = cmtmath.MinInt(maxGetSelection, numAddresses)
 
 	// XXX: instead of making a list of all addresses, shuffling, and slicing a random chunk,
 	// could we just select a random numAddresses of indexes?
@@ -421,7 +421,7 @@ func (a *addrBook) GetSelection() []*p2p.NetAddress {
 	// `numAddresses' since we are throwing the rest.
 	for i := 0; i < numAddresses; i++ {
 		// pick a number between current index and the end
-		j := tmrand.Intn(len(allAddr)-i) + i
+		j := cmtrand.Intn(len(allAddr)-i) + i
 		allAddr[i], allAddr[j] = allAddr[j], allAddr[i]
 	}
 
@@ -460,14 +460,14 @@ func (a *addrBook) GetSelectionWithBias(biasTowardsNewAddrs int) []*p2p.NetAddre
 		biasTowardsNewAddrs = 0
 	}
 
-	numAddresses := tmmath.MaxInt(
-		tmmath.MinInt(minGetSelection, bookSize),
+	numAddresses := cmtmath.MaxInt(
+		cmtmath.MinInt(minGetSelection, bookSize),
 		bookSize*getSelectionPercent/100)
-	numAddresses = tmmath.MinInt(maxGetSelection, numAddresses)
+	numAddresses = cmtmath.MinInt(maxGetSelection, numAddresses)
 
 	// number of new addresses that, if possible, should be in the beginning of the selection
 	// if there are no enough old addrs, will choose new addr instead.
-	numRequiredNewAdd := tmmath.MaxInt(percentageOfNum(biasTowardsNewAddrs, numAddresses), numAddresses-a.nOld)
+	numRequiredNewAdd := cmtmath.MaxInt(percentageOfNum(biasTowardsNewAddrs, numAddresses), numAddresses-a.nOld)
 	selection := a.randomPickAddresses(bucketTypeNew, numRequiredNewAdd)
 	selection = append(selection, a.randomPickAddresses(bucketTypeOld, numAddresses-len(selection))...)
 	return selection

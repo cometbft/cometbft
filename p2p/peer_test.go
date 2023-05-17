@@ -11,14 +11,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/bytes"
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/proto/tendermint/p2p"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/proto/tendermint/p2p"
 
-	"github.com/tendermint/tendermint/config"
-	tmconn "github.com/tendermint/tendermint/p2p/conn"
+	"github.com/cometbft/cometbft/config"
+	cmtconn "github.com/cometbft/cometbft/p2p/conn"
 )
 
 func TestPeerBasic(t *testing.T) {
@@ -29,7 +29,7 @@ func TestPeerBasic(t *testing.T) {
 	rp.Start()
 	t.Cleanup(rp.Stop)
 
-	p, err := createOutboundPeerAndPerformHandshake(rp.Addr(), cfg, tmconn.DefaultMConnConfig())
+	p, err := createOutboundPeerAndPerformHandshake(rp.Addr(), cfg, cmtconn.DefaultMConnConfig())
 	require.Nil(err)
 
 	err = p.Start()
@@ -59,7 +59,7 @@ func TestPeerSend(t *testing.T) {
 	rp.Start()
 	t.Cleanup(rp.Stop)
 
-	p, err := createOutboundPeerAndPerformHandshake(rp.Addr(), config, tmconn.DefaultMConnConfig())
+	p, err := createOutboundPeerAndPerformHandshake(rp.Addr(), config, cmtconn.DefaultMConnConfig())
 	require.Nil(err)
 
 	err = p.Start()
@@ -78,9 +78,9 @@ func TestPeerSend(t *testing.T) {
 func createOutboundPeerAndPerformHandshake(
 	addr *NetAddress,
 	config *config.P2PConfig,
-	mConfig tmconn.MConnConfig,
+	mConfig cmtconn.MConnConfig,
 ) (*peer, error) {
-	chDescs := []*tmconn.ChannelDescriptor{
+	chDescs := []*cmtconn.ChannelDescriptor{
 		{ID: testCh, Priority: 1},
 	}
 	reactorsByCh := map[byte]Reactor{testCh: NewTestReactor(chDescs, true)}

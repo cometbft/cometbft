@@ -5,13 +5,13 @@ implement the p2p layer, and summarizes the main types they implement.
 Types play the role of classes in Go.
 
 The reference version for this documentation is the branch
-[`v0.34.x`](https://github.com/tendermint/tendermint/tree/v0.34.x/p2p).
+[`v0.34.x`](https://github.com/cometbft/cometbft/tree/v0.34.x/p2p).
 
 State of August 2022.
 
 ## Package `p2p`
 
-Implementation of the p2p layer of Tendermint.
+Implementation of the p2p layer of CometBFT.
 
 ### `base_reactor.go`
 
@@ -48,7 +48,7 @@ but currently is not produced outside tests.
 `ErrTransportClosed` is produced by the [transport](#transportgo)
 and handled by the [switch](#switchgo).
 
-`ErrNetAddressNoID`, `ErrNetAddressInvalid`, and `ErrNetAddressLookup` 
+`ErrNetAddressNoID`, `ErrNetAddressInvalid`, and `ErrNetAddressLookup`
 are parsing a string to create an instance of `NetAddress`.
 It can be returned in the setup of the [switch](#switchgo)
 and of the [PEX reactor](#pex_reactorgo),
@@ -92,7 +92,7 @@ It is implemented by `DefaultNodeInfo` type.
 
 The [switch](#switchgo) stores the local `NodeInfo`.
 
-The `NodeInfo` of connected peers is produced by the 
+The `NodeInfo` of connected peers is produced by the
 [transport](#transportgo) during the handshake, and stored in [`Peer`](#peergo) instances.
 
 ### `peer.go`
@@ -143,7 +143,7 @@ Aliases for p2p's `conn` package types.
 
 ## Package `p2p.conn`
 
-Implements the connection between Tendermint nodes,
+Implements the connection between CometBFT nodes,
 which is encrypted, authenticated, and multiplexed.
 
 ### `connection.go`
@@ -228,12 +228,12 @@ The PEX reactor also manages an [address book](#addrbookgo) instance.
 Go documentation of `Metric` type:
 
 > // Metric - keeps track of peer reliability
-> // See tendermint/docs/architecture/adr-006-trust-metric.md for details
+> // See cometbft/docs/architecture/adr-006-trust-metric.md for details
 
-Not imported by any other Tendermint source file.
+Not imported by any other CometBFT source file.
 
 ## Package `p2p.upnp`
 
 This package implementation was taken from "taipei-torrent".
 
-It is used by the `probe-upnp` command of the Tendermint binary. 
+It is used by the `probe-upnp` command of the CometBFT binary.

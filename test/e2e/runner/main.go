@@ -10,12 +10,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/tendermint/tendermint/libs/log"
-	e2e "github.com/tendermint/tendermint/test/e2e/pkg"
-	"github.com/tendermint/tendermint/test/e2e/pkg/infra"
-	"github.com/tendermint/tendermint/test/e2e/pkg/infra/digitalocean"
-	"github.com/tendermint/tendermint/test/e2e/pkg/infra/docker"
-	e2essh "github.com/tendermint/tendermint/test/e2e/pkg/ssh"
+	"github.com/cometbft/cometbft/libs/log"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra/digitalocean"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
 )
 
 const randomSeed = 2308084734268
@@ -32,7 +31,6 @@ type CLI struct {
 	testnet  *e2e.Testnet
 	preserve bool
 	infp     infra.Provider
-	ifd      e2e.InfrastructureData
 }
 
 // NewCLI sets up the CLI.
@@ -81,9 +79,8 @@ func NewCLI() *CLI {
 			default:
 				return fmt.Errorf("unknown infrastructure type '%s'", inft)
 			}
-			cli.ifd = ifd
 
-			testnet, err := e2e.LoadTestnet(m, file, ifd)
+			testnet, err := e2e.LoadTestnet(file, ifd)
 			if err != nil {
 				return fmt.Errorf("loading testnet: %s", err)
 			}
@@ -91,19 +88,21 @@ func NewCLI() *CLI {
 			cli.testnet = testnet
 			switch inft {
 			case "docker":
-				cli.infp = &docker.Provider{Testnet: testnet}
-			case "digital-ocean":
-				cfg, err := e2essh.NewClientConfig()
-				if err != nil {
-					return err
+				cli.infp = &docker.Provider{
+					ProviderData: infra.ProviderData{
+						Testnet:            testnet,
+						InfrastructureData: ifd,
+					},
 				}
+			case "digital-ocean":
 				cli.infp = &digitalocean.Provider{
-					Testnet:            testnet,
-					InfrastructureData: ifd,
-					SSHConfig:          cfg,
+					ProviderData: infra.ProviderData{
+						Testnet:            testnet,
+						InfrastructureData: ifd,
+					},
 				}
 			default:
-				cli.infp = &infra.NoopProvider{}
+				return fmt.Errorf("bad infrastructure type: %s", inft)
 			}
 			return nil
 		},
@@ -128,19 +127,19 @@ func NewCLI() *CLI {
 				chLoadResult <- err
 			}()
 
-			if err := Start(cli.testnet, cli.infp); err != nil {
+			if err := Start(cmd.Context(), cli.testnet, cli.infp); err != nil {
 				return err
 			}
 
-			if err := Wait(cli.testnet, 5); err != nil { // allow some txs to go through
+			if err := Wait(cmd.Context(), cli.testnet, 5); err != nil { // allow some txs to go through
 				return err
 			}
 
 			if cli.testnet.HasPerturbations() {
-				if err := Perturb(cli.testnet, cli.infp); err != nil {
+				if err := Perturb(cmd.Context(), cli.testnet, cli.infp); err != nil {
 					return err
 				}
-				if err := Wait(cli.testnet, 5); err != nil { // allow some txs to go through
+				if err := Wait(cmd.Context(), cli.testnet, 5); err != nil { // allow some txs to go through
 					return err
 				}
 			}
@@ -149,7 +148,7 @@ func NewCLI() *CLI {
 				if err := InjectEvidence(ctx, r, cli.testnet, cli.testnet.Evidence); err != nil {
 					return err
 				}
-				if err := Wait(cli.testnet, 5); err != nil { // ensure chain progress
+				if err := Wait(cmd.Context(), cli.testnet, 5); err != nil { // ensure chain progress
 					return err
 				}
 			}
@@ -158,10 +157,10 @@ func NewCLI() *CLI {
 			if err := <-chLoadResult; err != nil {
 				return err
 			}
-			if err := Wait(cli.testnet, 5); err != nil { // wait for network to settle before tests
+			if err := Wait(cmd.Context(), cli.testnet, 5); err != nil { // wait for network to settle before tests
 				return err
 			}
-			if err := Test(cli.testnet, cli.ifd); err != nil {
+			if err := Test(cli.testnet, cli.infp.GetInfrastructureData()); err != nil {
 				return err
 			}
 			if !cli.preserve {
@@ -193,7 +192,7 @@ func NewCLI() *CLI {
 
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "start",
-		Short: "Starts the Docker testnet, waiting for nodes to become available",
+		Short: "Starts the testnet, waiting for nodes to become available",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, err := os.Stat(cli.testnet.Dir)
 			if os.IsNotExist(err) {
@@ -202,15 +201,15 @@ func NewCLI() *CLI {
 			if err != nil {
 				return err
 			}
-			return Start(cli.testnet, cli.infp)
+			return Start(cmd.Context(), cli.testnet, cli.infp)
 		},
 	})
 
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "perturb",
-		Short: "Perturbs the Docker testnet, e.g. by restarting or disconnecting nodes",
+		Short: "Perturbs the testnet, e.g. by restarting or disconnecting nodes",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return Perturb(cli.testnet, cli.infp)
+			return Perturb(cmd.Context(), cli.testnet, cli.infp)
 		},
 	})
 
@@ -218,16 +217,16 @@ func NewCLI() *CLI {
 		Use:   "wait",
 		Short: "Waits for a few blocks to be produced and all nodes to catch up",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return Wait(cli.testnet, 5)
+			return Wait(cmd.Context(), cli.testnet, 5)
 		},
 	})
 
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "stop",
-		Short: "Stops the Docker testnet",
+		Short: "Stops the testnet",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Info("Stopping testnet")
-			return docker.ExecCompose(context.Background(), cli.testnet.Dir, "down")
+			return cli.infp.StopTestnet(context.Background())
 		},
 	})
 
@@ -266,7 +265,7 @@ func NewCLI() *CLI {
 		Use:   "test",
 		Short: "Runs test cases against a running testnet",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return Test(cli.testnet, cli.ifd)
+			return Test(cli.testnet, cli.infp.GetInfrastructureData())
 		},
 	})
 
@@ -315,7 +314,7 @@ Does not run any perturbations.
 			}
 
 			chLoadResult := make(chan error)
-			ctx, loadCancel := context.WithCancel(context.Background())
+			ctx, loadCancel := context.WithCancel(cmd.Context())
 			defer loadCancel()
 			go func() {
 				err := Load(ctx, cli.testnet)
@@ -325,16 +324,16 @@ Does not run any perturbations.
 				chLoadResult <- err
 			}()
 
-			if err := Start(cli.testnet, cli.infp); err != nil {
+			if err := Start(cmd.Context(), cli.testnet, cli.infp); err != nil {
 				return err
 			}
 
-			if err := Wait(cli.testnet, 5); err != nil { // allow some txs to go through
+			if err := Wait(cmd.Context(), cli.testnet, 5); err != nil { // allow some txs to go through
 				return err
 			}
 
 			// we benchmark performance over the next 100 blocks
-			if err := Benchmark(cli.testnet, 100); err != nil {
+			if err := Benchmark(cmd.Context(), cli.testnet, 100); err != nil {
 				return err
 			}
 
@@ -343,11 +342,7 @@ Does not run any perturbations.
 				return err
 			}
 
-			if err := Cleanup(cli.testnet); err != nil {
-				return err
-			}
-
-			return nil
+			return Cleanup(cli.testnet)
 		},
 	})
 

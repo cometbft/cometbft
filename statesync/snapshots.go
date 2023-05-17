@@ -6,8 +6,8 @@ import (
 	"math/rand"
 	"sort"
 
-	tmsync "github.com/tendermint/tendermint/libs/sync"
-	"github.com/tendermint/tendermint/p2p"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/p2p"
 )
 
 // snapshotKey is a snapshot key used for lookups.
@@ -40,7 +40,7 @@ func (s *snapshot) Key() snapshotKey {
 
 // snapshotPool discovers and aggregates snapshots across peers.
 type snapshotPool struct {
-	tmsync.Mutex
+	cmtsync.Mutex
 	snapshots     map[snapshotKey]*snapshot
 	snapshotPeers map[snapshotKey]map[p2p.ID]p2p.Peer
 

@@ -132,11 +132,11 @@ func ansibleSystemdBytes(starting bool) string {
 }
 
 func ansiblePerturbConnectionBytes(disconnect bool) string {
-	disconnecting := "disconnect"
-	op := "-A"
+	disconnecting := "reconnect"
+	op := "-D"
 	if disconnect {
-		disconnecting = "reconnect"
-		op = "-D"
+		disconnecting = "disconnect"
+		op = "-A"
 	}
 	playbook := basePlaybook
 	for _, dir := range []string{"INPUT", "OUTPUT"} {

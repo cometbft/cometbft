@@ -435,7 +435,8 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	require.NoError(t, err)
 
-	n, err := NewNode(config,
+	n, err := NewNode(context.Background(),
+		config,
 		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
 		nodeKey,
 		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),

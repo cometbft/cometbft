@@ -333,6 +333,8 @@ Providing a single `FinalizeBlock` method to signal finalization of a block simp
 
 The `FinalizeBlock` method executes the block, including any necessary transaction processing and state updates, and returns a `ResponseFinalizeBlock` object which contains any necessary information about the executed block.
 
+**Note:** `FinalizeBlock` only prepares the update to be made and does not change the state of the Blockchain. The change of state happens in a later stage i.e. is `commit` phase.
+
 ```go
 func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.RequestFinalizeBlock) (*abcitypes.ResponseFinalizeBlock, error) {
     var txs = make([]*abcitypes.ExecTxResult, len(req.Txs))
@@ -446,7 +448,7 @@ included in blocks, it groups some of these transactions and then gives the appl
 to modify the group by invoking `PrepareProposal`.
 
 The application is free to modify the group before returning from the call, as long as the resulting set
-does not use more bytes than `RequestPrepareProposal.max_tx_bytes'
+does not use more bytes than `RequestPrepareProposal.max_tx_bytes`
 For example, the application may reorder, add, or even remove transactions from the group to improve the
 execution of the block once accepted.
 In the following code, the application simply returns the unmodified group of transactions:

@@ -147,7 +147,7 @@ func (app *KVStoreApplication) Query(_ context.Context, req *abcitypes.RequestQu
 }
 
 func (app *KVStoreApplication) CheckTx(_ context.Context, check *abcitypes.RequestCheckTx) (*abcitypes.ResponseCheckTx, error) {
-    return &abcitypes.ResponseCheckTx{Code: code}, nil
+    return &abcitypes.ResponseCheckTx{}, nil
 }
 
 func (app *KVStoreApplication) InitChain(_ context.Context, chain *abcitypes.RequestInitChain) (*abcitypes.ResponseInitChain, error) {
@@ -183,7 +183,6 @@ func (app *KVStoreApplication) LoadSnapshotChunk(_ context.Context, chunk *abcit
 }
 
 func (app *KVStoreApplication) ApplySnapshotChunk(_ context.Context, chunk *abcitypes.RequestApplySnapshotChunk) (*abcitypes.ResponseApplySnapshotChunk, error) {
-
     return &abcitypes.ResponseApplySnapshotChunk{Result: abcitypes.ResponseApplySnapshotChunk_ACCEPT}, nil
 }
 
@@ -192,7 +191,7 @@ func (app KVStoreApplication) ExtendVote(_ context.Context, extend *abcitypes.Re
 }
 
 func (app *KVStoreApplication) VerifyVoteExtension(_ context.Context, verify *abcitypes.RequestVerifyVoteExtension) (*abcitypes.ResponseVerifyVoteExtension, error) {
-return &abcitypes.ResponseVerifyVoteExtension{}, nil
+    return &abcitypes.ResponseVerifyVoteExtension{}, nil
 }
 ```
 
@@ -311,7 +310,7 @@ information on why the transaction was rejected.
 
 Note that `CheckTx` does not execute the transaction, it only verifies that the transaction could be executed. We do not know yet if the rest of the network has agreed to accept this transaction into a block.
 
-Finally, make sure to add the bytes package to the `import` stanza at the top of `app.go`:
+Finally, make sure to add the `bytes` package to the `import` stanza at the top of `app.go`:
 
 ```go
 import(
@@ -326,7 +325,11 @@ import(
 
 `FinalizeBlock` is an ABCI method introduced in CometBFT v0.38.0. This replaces the functionality provided previously (pre-v0.38.0) by the combination of ABCI methods `BeginBlock`, `DeliverTx`, and `EndBlock`.
 
-This method is responsible for executing the block and returning a response to the consensus engine. The `ProcessProposal` method provides the transactions to the state machine before the block is finalized. This means that there is no need for the traditional ABCI methods of `BeginBlock`, `DeliverTx`, and `EndBlock` to handle the transaction execution and state updates. Instead, the application (state machine) can choose to optimistically execute even before the block is finalized. Providing a single `FinalizeBlock` method to signal finalization of a block simplifies the ABCI interface and increases flexibility in the execution pipeline.
+This method is responsible for executing the block and returning a response to the consensus engine.
+The `ProcessProposal` method provides the transactions to the state machine before the block is finalized.
+This means that there is no need for the traditional ABCI methods of `BeginBlock`, `DeliverTx`, and `EndBlock` to handle the transaction execution and state updates. 
+Instead, the application (state machine) can choose to optimistically execute even before the block is finalized.
+Providing a single `FinalizeBlock` method to signal finalization of a block simplifies the ABCI interface and increases flexibility in the execution pipeline.
 
 The `FinalizeBlock` method executes the block, including any necessary transaction processing and state updates, and returns a `ResponseFinalizeBlock` object which contains any necessary information about the executed block.
 
@@ -337,7 +340,7 @@ func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.R
     app.onGoingBlock = app.db.NewTransaction(true)
     for i, tx := range req.Txs {
         if code := app.isValid(tx); code != 0 {
-            log.Printf("Error in tx in if")
+            log.Printf("Error: invalid transaction index %v", i)
             txs[i] = &abcitypes.ExecTxResult{Code: code}
         } else {
             parts := bytes.SplitN(tx, []byte("="), 2)
@@ -375,7 +378,7 @@ persist the resulting state:
 ```go
 func (app KVStoreApplication) Commit(_ context.Context, commit *abcitypes.RequestCommit) (*abcitypes.ResponseCommit, error) {
     if err := app.onGoingBlock.Commit(); err != nil {
-    return &abcitypes.ResponseCommit{}, err
+        return &abcitypes.ResponseCommit{}, err
     }
     return &abcitypes.ResponseCommit{}, nil
 }

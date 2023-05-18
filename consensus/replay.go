@@ -242,7 +242,7 @@ func (h *Handshaker) NBlocks() int {
 func (h *Handshaker) Handshake(ctx context.Context, proxyApp proxy.AppConns) error {
 
 	// Handshake is done via ABCI Info on the query conn.
-	res, err := proxyApp.Query().Info(context.TODO(), proxy.RequestInfo)
+	res, err := proxyApp.Query().Info(ctx, proxy.RequestInfo)
 	if err != nil {
 		return fmt.Errorf("error calling Info: %v", err)
 	}

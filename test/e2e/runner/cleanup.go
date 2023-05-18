@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -8,6 +9,8 @@ import (
 
 	"github.com/cometbft/cometbft/libs/log"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/test/e2e/pkg/exec"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
 )
 
 // Cleanup removes the Docker Compose containers and testnet directory.
@@ -32,13 +35,13 @@ func cleanupDocker() error {
 	// does this by default. Ugly, but works.
 	xargsR := `$(if [[ $OSTYPE == "linux-gnu"* ]]; then echo -n "-r"; fi)`
 
-	err := exec("bash", "-c", fmt.Sprintf(
+	err := exec.Command(context.Background(), "bash", "-c", fmt.Sprintf(
 		"docker container ls -qa --filter label=e2e | xargs %v docker container rm -f", xargsR))
 	if err != nil {
 		return err
 	}
 
-	err = exec("bash", "-c", fmt.Sprintf(
+	err = exec.Command(context.Background(), "bash", "-c", fmt.Sprintf(
 		"docker network ls -q --filter label=e2e | xargs %v docker network rm", xargsR))
 	if err != nil {
 		return err
@@ -69,7 +72,7 @@ func cleanupDir(dir string) error {
 	if err != nil {
 		return err
 	}
-	err = execDocker("run", "--rm", "--entrypoint", "", "-v", fmt.Sprintf("%v:/network", absDir),
+	err = docker.Exec(context.Background(), "run", "--rm", "--entrypoint", "", "-v", fmt.Sprintf("%v:/network", absDir),
 		"cometbft/e2e-node", "sh", "-c", "rm -rf /network/*/")
 	if err != nil {
 		return err

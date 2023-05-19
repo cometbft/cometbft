@@ -1,1 +1,1 @@
-- `[node]` Make handshake cancelable. ([cometbft/cometbft\#857](https://github.com/cometbft/cometbft/pull/857))
+- `[node]` Make handshake cancelable ([cometbft/cometbft\#857](https://github.com/cometbft/cometbft/pull/857))

@@ -1,0 +1,1 @@
+- `[node]` `NewNode` and `Handshaker.Handshake` require `context.Context` as the first parameter. ([cometbft/cometbft\#857](https://github.com/cometbft/cometbft/pull/857))

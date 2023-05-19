@@ -31,13 +31,10 @@ type Metrics struct {
 	//metrics:Number of rejected transactions.
 	RejectedTxs metrics.Counter
 
-	// EvictedTxs defines the number of evicted transactions. These are valid
-	// transactions that passed CheckTx and existed in the mempool but were later
-	// evicted to make room for higher priority valid transactions that passed
-	// CheckTx.
-	//metrics:Number of evicted transactions.
-	EvictedTxs metrics.Counter
-
 	// Number of times transactions are rechecked in the mempool.
 	RecheckTimes metrics.Counter
+
+	// Number of times transactions were received more than once.
+	//metrics:Number of duplicate transaction reception.
+	AlreadyReceivedTxs metrics.Counter
 }

@@ -5,8 +5,10 @@ package mocks
 import (
 	context "context"
 
-	query "github.com/cometbft/cometbft/libs/pubsub/query"
+	log "github.com/cometbft/cometbft/libs/log"
 	mock "github.com/stretchr/testify/mock"
+
+	query "github.com/cometbft/cometbft/libs/pubsub/query"
 
 	txindex "github.com/cometbft/cometbft/state/txindex"
 
@@ -96,6 +98,11 @@ func (_m *TxIndexer) Search(ctx context.Context, q *query.Query) ([]*types.TxRes
 	}
 
 	return r0, r1
+}
+
+// SetLogger provides a mock function with given fields: l
+func (_m *TxIndexer) SetLogger(l log.Logger) {
+	_m.Called(l)
 }
 
 type mockConstructorTestingTNewTxIndexer interface {

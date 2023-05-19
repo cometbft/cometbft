@@ -1,9 +1,6 @@
 package mempool
 
 import (
-	"sync"
-
-	"github.com/cometbft/cometbft/types"
 	"github.com/go-kit/kit/metrics"
 )
 
@@ -40,36 +37,4 @@ type Metrics struct {
 	// Number of times transactions were received more than once.
 	//metrics:Number of duplicate transaction reception.
 	AlreadyReceivedTxs metrics.Counter
-
-	// Histogram of times a transaction was received.
-	TimesTxsWereReceived metrics.Histogram `metrics_buckettype:"exp" metrics_bucketsizes:"1,2,5"`
-	// For keeping track of the number of times each transaction in the mempool
-	// was received and whether that value was observed.
-	txsReceived sync.Map
-}
-
-type txReceivedCounter struct {
-	count       uint64
-	wasObserved bool
-}
-
-func (m *Metrics) countOneTimeTxWasReceived(tx types.TxKey) {
-	value, _ := m.txsReceived.LoadOrStore(tx, txReceivedCounter{0, false})
-	counter := value.(txReceivedCounter)
-	m.txsReceived.Store(tx, txReceivedCounter{counter.count + 1, false})
-}
-
-func (m *Metrics) resetTimesTxWasReceived(tx types.TxKey) {
-	m.txsReceived.Delete(tx)
-}
-
-func (m *Metrics) observeTimesTxsWereReceived() {
-	m.txsReceived.Range(func(key, value interface{}) bool {
-		counter := value.(txReceivedCounter)
-		if !counter.wasObserved {
-			m.TimesTxsWereReceived.Observe(float64(counter.count))
-			m.txsReceived.Store(key.(types.TxKey), txReceivedCounter{counter.count, true})
-		}
-		return true
-	})
 }

@@ -52,25 +52,16 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "already_received_txs",
 			Help:      "Number of duplicate transaction reception.",
 		}, labels).With(labelsAndValues...),
-		TimesTxsWereReceived: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
-			Namespace: namespace,
-			Subsystem: MetricsSubsystem,
-			Name:      "times_txs_were_received",
-			Help:      "Histogram of times a transaction was received.",
-
-			Buckets: stdprometheus.ExponentialBuckets(1, 2, 5),
-		}, labels).With(labelsAndValues...),
 	}
 }
 
 func NopMetrics() *Metrics {
 	return &Metrics{
-		Size:                 discard.NewGauge(),
-		TxSizeBytes:          discard.NewHistogram(),
-		FailedTxs:            discard.NewCounter(),
-		RejectedTxs:          discard.NewCounter(),
-		RecheckTimes:         discard.NewCounter(),
-		AlreadyReceivedTxs:   discard.NewCounter(),
-		TimesTxsWereReceived: discard.NewHistogram(),
+		Size:               discard.NewGauge(),
+		TxSizeBytes:        discard.NewHistogram(),
+		FailedTxs:          discard.NewCounter(),
+		RejectedTxs:        discard.NewCounter(),
+		RecheckTimes:       discard.NewCounter(),
+		AlreadyReceivedTxs: discard.NewCounter(),
 	}
 }

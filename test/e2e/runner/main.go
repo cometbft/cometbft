@@ -136,7 +136,7 @@ func NewCLI() *CLI {
 			}
 
 			if cli.testnet.HasPerturbations() {
-				if err := Perturb(cmd.Context(), cli.testnet); err != nil {
+				if err := Perturb(cmd.Context(), cli.testnet, cli.infp); err != nil {
 					return err
 				}
 				if err := Wait(cmd.Context(), cli.testnet, 5); err != nil { // allow some txs to go through
@@ -209,7 +209,7 @@ func NewCLI() *CLI {
 		Use:   "perturb",
 		Short: "Perturbs the testnet, e.g. by restarting or disconnecting nodes",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return Perturb(cmd.Context(), cli.testnet)
+			return Perturb(cmd.Context(), cli.testnet, cli.infp)
 		},
 	})
 

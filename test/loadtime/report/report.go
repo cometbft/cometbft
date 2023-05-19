@@ -2,6 +2,7 @@ package report
 
 import (
 	"math"
+	"sort"
 	"sync"
 	"time"
 
@@ -112,6 +113,13 @@ func (rs *Reports) calculateAll() {
 		r.StdDev = time.Duration(int64(stat.StdDev(toFloat(r.All), nil)))
 		rs.l = append(rs.l, r)
 	}
+	sort.Slice(rs.l, func(i, j int) bool {
+		if rs.l[i].Connections == rs.l[j].Connections {
+			return rs.l[i].Rate < rs.l[j].Rate
+		}
+		return rs.l[i].Connections < rs.l[j].Connections
+	})
+
 }
 
 func (rs *Reports) addError() {

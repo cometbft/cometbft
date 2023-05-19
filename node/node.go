@@ -144,6 +144,23 @@ func NewNode(config *cfg.Config,
 	logger log.Logger,
 	options ...Option,
 ) (*Node, error) {
+	return NewNodeWithContext(context.TODO(), config, privValidator,
+		nodeKey, clientCreator, genesisDocProvider, dbProvider,
+		metricsProvider, logger, options...)
+}
+
+// NewNodeWithContext is cancellable version of NewNode.
+func NewNodeWithContext(ctx context.Context,
+	config *cfg.Config,
+	privValidator types.PrivValidator,
+	nodeKey *p2p.NodeKey,
+	clientCreator proxy.ClientCreator,
+	genesisDocProvider GenesisDocProvider,
+	dbProvider cfg.DBProvider,
+	metricsProvider MetricsProvider,
+	logger log.Logger,
+	options ...Option,
+) (*Node, error) {
 	blockStore, stateDB, err := initDBs(config, dbProvider)
 	if err != nil {
 		return nil, err
@@ -207,7 +224,7 @@ func NewNode(config *cfg.Config,
 	// and replays any blocks as necessary to sync CometBFT with the app.
 	consensusLogger := logger.With("module", "consensus")
 	if !stateSync {
-		if err := doHandshake(stateStore, state, blockStore, genDoc, eventBus, proxyApp, consensusLogger); err != nil {
+		if err := doHandshake(ctx, stateStore, state, blockStore, genDoc, eventBus, proxyApp, consensusLogger); err != nil {
 			return nil, err
 		}
 

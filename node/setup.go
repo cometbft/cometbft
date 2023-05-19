@@ -167,6 +167,7 @@ func createAndStartIndexerService(
 }
 
 func doHandshake(
+	ctx context.Context,
 	stateStore sm.Store,
 	state sm.State,
 	blockStore sm.BlockStore,
@@ -178,7 +179,7 @@ func doHandshake(
 	handshaker := cs.NewHandshaker(stateStore, state, blockStore, genDoc)
 	handshaker.SetLogger(consensusLogger)
 	handshaker.SetEventBus(eventBus)
-	if err := handshaker.Handshake(proxyApp); err != nil {
+	if err := handshaker.HandshakeWithContext(ctx, proxyApp); err != nil {
 		return fmt.Errorf("error during handshake: %v", err)
 	}
 	return nil

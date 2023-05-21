@@ -206,6 +206,10 @@ func _nonJSONStringToArg(rt reflect.Type, arg string) (reflect.Value, bool, erro
 		return reflect.ValueOf([]byte(v.String())), true, nil
 	}
 
+	if !isQuotedString && expectingString {
+		return reflect.ValueOf(arg), true, nil
+	}
+
 	return reflect.ValueOf(nil), false, nil
 }
 

@@ -12,6 +12,9 @@ LD_FLAGS += $(LDFLAGS)
 ifeq (,$(findstring nostrip,$(COMETBFT_BUILD_OPTIONS)))
   BUILD_FLAGS += -trimpath
   LD_FLAGS += -s -w
+else
+  #prepare for delve
+  BUILD_FLAGS+= -gcflags "all=-N -l"
 endif
 
 # handle race
@@ -41,3 +44,4 @@ endif
 ifeq (boltdb,$(findstring boltdb,$(COMETBFT_BUILD_OPTIONS)))
   BUILD_TAGS += boltdb
 endif
+

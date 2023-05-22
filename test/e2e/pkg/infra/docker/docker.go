@@ -82,6 +82,8 @@ services:
     - {{ .PrometheusProxyPort }}:26660
 {{- end }}
     - 6060
+    - 2345
+    - 2346
     volumes:
     - ./{{ .Name }}:/cometbft
     - ./{{ .Name }}:/tendermint
@@ -106,6 +108,8 @@ services:
     - {{ .PrometheusProxyPort }}:26660
 {{- end }}
     - 6060
+    - 2345
+    - 2346
     volumes:
     - ./{{ .Name }}:/cometbft
     - ./{{ .Name }}:/tendermint

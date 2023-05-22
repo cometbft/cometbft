@@ -1,2 +1,10 @@
+vote_extensions_enable_height = 0
+check_tx_delay = "1000s"
+finalize_block_delay = "1000ms"
+prepare_proposal_delay = "1000ms"
+process_proposal_delay = "1000ms"
+vote_extension_delay = "20ms"
+vote_extension_size = 8192
+
 [rpc]
 laddr = "tcp://0.0.0.0:26657"

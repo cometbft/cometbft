@@ -100,7 +100,7 @@ type Config struct {
 	VoteExtensionDelay   time.Duration `toml:"vote_extension_delay"`
 
 	// Vote extension padding size, to simulate different vote extension sizes.
-	VoteExtensionSize uint64 `toml:"vote_extension_size"`
+	VoteExtensionSize uint `toml:"vote_extension_size"`
 }
 
 func DefaultConfig(dir string) *Config {

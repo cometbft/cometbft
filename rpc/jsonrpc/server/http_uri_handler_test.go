@@ -9,7 +9,7 @@ import (
 )
 
 func Test__nonJSONStringToArg(t *testing.T) {
-	s := "foo"
+	s := "unquoted-string"
 	v, ok, err := _nonJSONStringToArg(reflect.TypeOf(""), s)
 	require.NoError(t, err)
 	require.True(t, ok)

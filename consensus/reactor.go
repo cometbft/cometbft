@@ -1,6 +1,7 @@
 package consensus
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -1074,8 +1075,8 @@ func (ps *PeerState) GetRoundState() *cstypes.PeerRoundState {
 func (ps *PeerState) MarshalJSON() ([]byte, error) {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
-
-	return cmtjson.Marshal(ps)
+	type aPeerState PeerState
+	return json.Marshal(aPeerState(*ps))
 }
 
 // GetHeight returns an atomic snapshot of the PeerRoundState's height

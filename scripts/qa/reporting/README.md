@@ -69,7 +69,7 @@ Example:
 # cXrY_merged.png - Independent plot of experiments of configuration (c=X,r=Y) combined as single curve.
 # e_ID.png - independent plot with just experiment with id ID as a single curve.
 
-
+mkdir -p imgs
 python3 latency_plotter.py /path/to/csv/files/raw.csv
 ```
 

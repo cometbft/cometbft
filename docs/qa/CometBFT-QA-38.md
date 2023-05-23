@@ -27,16 +27,51 @@ testbed, plus nodes to introduce load and collect metrics.
 As in previous iterations of our QA experiments, we first find the transaction
 load on which the system begins to show a degraded performance. Then we run the
 experiments with the system subjected to a load slightly under the saturation
-point. 
-
-The method to identify the saturation point is explained
+point. The method to identify the saturation point is explained
 [here](CometBFT-QA-34.md#saturation-point) and its application to the baseline
 is described [here](TMCore-QA-37.md#finding-the-saturation-point). 
 
-We chose `c=1,r=400` as the configuration for our experiments, where `c` is the
-number of connections created by the load runner process to the target node, and
-`r` is the rate or number of transactions issued per second. We could have
-choosen `c=2,r=200`, which has a transaction load equal to `c=1,r=400`.
+The following table summarizes the results for the different experiments
+(extracted from
+[`v038_report_tabbed.txt`](img38/200nodes/v038_report_tabbed.txt)). The X axis
+(`c`) is the number of connections created by the load runner process to the
+target node. The Y axis (`r`) is the rate or number of transactions issued per
+second.
+
+|        | c=1       | c=2       | c=4   |
+| ------ | --------: | --------: | ----: |
+| r=200  | 17800     | **33259** | 33259 |
+| r=400  | **35600** | 41565     | 41384 |
+| r=800  | 36831     | 38686     | 40816 |
+| r=1600 | 40600     | 45034     | 39830 |
+
+We can observe in the table that the system is saturated beyond the diagonal
+defined by the entries `c=1,r=400` and `c=2,r=200`. Entries in the diagonal have
+the same amount of transaction load, so we can consider them equivalent. For the
+chosen diagonal, the expected number of processed transactions is `1 * 400 tx/s * 89 s = 35600`. 
+(Note that we use 89 out of 90 seconds of the experiment because transactions
+sent during the last second are not counted.) The experiments in the diagonal
+below expect double that number, that is, `1 * 800 tx/s * 89 s = 71200`, but the
+system is not able to process such load, thus it is saturated.
+
+Also note that, compared to the previous QA tests, we have tried to find the
+saturation point within a higher range of load values for the rate `r`. In
+particular, we didn't run the experiment on the configuration `c=1,r=400`.
+
+For the rest of these experiments, we chose `c=1,r=400` as the configuration. We
+could have chose the equivalent `c=2,r=200`, which is the same used in our
+baseline version, but for simplicity we decided to use the one with only one
+connection.
+
+For comparison, this is the table with the baseline version, where the
+saturation point is beyond the diagonal defined by `r=200,c=2` and `r=100,c=4`.
+
+|       | c=1   | c=2       | c=4       |
+| ----- | ----: | --------: | --------: |
+| r=25  | 2225  | 4450      | 8900      |
+| r=50  | 4450  | 8900      | 17800     |
+| r=100 | 8900  | 17800     | **35600** |
+| r=200 | 17800 | **35600** | 38660     |
 
 ## Latencies
 

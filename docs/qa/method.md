@@ -262,7 +262,7 @@ This section explains how the tests were carried out for reproducibility purpose
 8. Run `make rotate` to start the script that creates the ephemeral nodes, and kills them when they are caught up.
     * WARNING: If you run this command from your laptop, the laptop needs to be up and connected for the full length
       of the experiment.
-    * [This](http://161.35.205.129:9090/classic/graph?g0.range_input=100m&g0.expr=cometbft_consensus_height%7Bjob%3D~%22ephemeral.*%22%7D%20or%20cometbft_blocksync_latest_block_height%7Bjob%3D~%22ephemeral.*%22%7D&g0.tab=0&g1.range_input=100m&g1.expr=cometbft_mempool_size%7Bjob!~%22ephemeral.*%22%7D&g1.tab=0&g2.range_input=100m&g2.expr=cometbft_consensus_num_txs%7Bjob!~%22ephemeral.*%22%7D&g2.tab=0)
+    * [This](http://<PROMETHEUS-NODE-IP>:9090/classic/graph?g0.range_input=100m&g0.expr=cometbft_consensus_height%7Bjob%3D~%22ephemeral.*%22%7D%20or%20cometbft_blocksync_latest_block_height%7Bjob%3D~%22ephemeral.*%22%7D&g0.tab=0&g1.range_input=100m&g1.expr=cometbft_mempool_size%7Bjob!~%22ephemeral.*%22%7D&g1.tab=0&g2.range_input=100m&g2.expr=cometbft_consensus_num_txs%7Bjob!~%22ephemeral.*%22%7D&g2.tab=0)
       is an example Prometheus URL you can use to monitor the test case's progress
 9. When the height of the chain reaches 3000, stop the `make runload` script.
 10. When the rotate script has made two iterations (i.e., all ephemeral nodes have caught up twice)

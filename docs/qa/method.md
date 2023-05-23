@@ -38,7 +38,6 @@ _200 Node Test_, and _Rotating Nodes Test_.
 
 ### Requirements for Result Extraction
 
-* Matlab or Octave
 * [Prometheus DB][prometheus] to collect metrics from nodes
 * Prometheus DB to process queries (may be different node from the previous)
 * blockstore DB of one of the full nodes in the testnet

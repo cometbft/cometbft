@@ -58,16 +58,19 @@ This section explains how the tests were carried out for reproducibility purpose
 3. Set the variable `VERSION_TAG` in the `Makefile` to the git hash that is to be tested.
    * If you are running the base test, which implies an homogeneous network (all nodes are running the same version),
      then make sure makefile variable `VERSION2_WEIGHT` is set to 0
-   * If you are running a mixed network, set the variable `VERSION_TAG2` to the other version you want deployed
-     in the network. The, adjust the weight variables `VERSION_WEIGHT` and `VERSION2_WEIGHT` to configure the
+   * If you are running a mixed network, set the variable `VERSION2_TAG` to the other version you want deployed
+     in the network.
+     Then adjust the weight variables `VERSION_WEIGHT` and `VERSION2_WEIGHT` to configure the
      desired proportion of nodes running each of the two configured versions.
 4. Follow steps 5-10 of the `README.md` to configure and start the 200 node testnet
     * WARNING: Do NOT forget to run `make terraform-destroy` as soon as you are done with the tests (see step 9)
 5. As a sanity check, connect to the Prometheus node's web interface (port 9090)
-   and check the graph for the `cometbft_consensus_height` metric. All nodes
-   should be increasing their heights.
-   - You can find the Prometheus node's IP address in `ansible/hosts` under section `[prometheus]`. 
-   - The following URL will display the metrics `cometbft_consensus_height` and `cometbft_mempool_size`:
+    and check the graph for the `cometbft_consensus_height` metric. All nodes
+    should be increasing their heights.
+
+    * You can find the Prometheus node's IP address in `ansible/hosts` under section `[prometheus]`. 
+    * The following URL will display the metrics `cometbft_consensus_height` and `cometbft_mempool_size`:
+
       ```
       http://<PROMETHEUS-NODE-IP>:9090/classic/graph?g0.range_input=1h&g0.expr=cometbft_consensus_height&g0.tab=0&g1.range_input=1h&g1.expr=cometbft_mempool_size&g1.tab=0
       ```

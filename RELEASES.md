@@ -328,8 +328,8 @@ and limitation that real-world  deployments of CometBFT experience in production
 #### 200 Node Testnet
 
 To test the stability and performance of CometBFT in a real world scenario,
-a 200 node test network is run. The network comprises 5 seed nodes, 175
-validators and 20 non-validating full nodes. All nodes begin by dialing
+a 200 node test network is run. The network comprises 5 seed nodes, 100
+validators and 95 non-validating full nodes. All nodes begin by dialing
 a subset of the seed nodes to discover peers. The network is run for several
 days, with metrics being collected continuously. In cases of changes to performance
 critical systems, testnets of larger sizes should be considered.
@@ -377,16 +377,10 @@ The Vote-extension Testnet is used to determine how vote-extensions affect the p
 The testnet consists of 175 validators, 20 non-validator full-nodes, and 5 seed nodes.
 All 195 full-nodes begin by dialing a subset of the seed nodes to discover peers.
 Once all full-nodes are started, a 5 minute period is waited while load-generators are started and before any load is introduced in the system.
-Once the startup period is over, the load generators requests at a constant rate of YYYY req/s during 150 seconds.
+Once the startup period is over, the load generators issue requests at a constant rate during 150 seconds.
 The load generation step is repeated 5 times with intervals of 60 seconds in between to allow the system to quiesce.
 A wide set of metrics is captured during the whole experiment but, unless abnormalities are observed, the first and last 30 seconds of each 150 interval are discarded; the remainder 90 seconds are used in computing aggregated metrics.
 The application used in the experiment is the same used on the (#200-node-testnet), so the results are comparable.
-
-
-> :warning: TODO
->
-> * Which nodes double down as load generators? 1 extra node only?
-> * how many load generators? 1?
 
 [unclog]: https://github.com/informalsystems/unclog
 [unclog-release]: https://github.com/informalsystems/unclog#releasing-a-new-versions-change-set

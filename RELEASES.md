@@ -345,6 +345,21 @@ to blocksync to the head of the chain and begins producing blocks using
 consensus it is stopped. Once stopped, a new node is started and
 takes its place. This network is run for several days.
 
+#### Vote-extension Testnet
+
+CometBFT v0.38.0 introduced **vote-extensions**, which are added as the name suggests, to precommit votes sent by validators.
+The Vote-extension Testnet is used to determine how vote-extensions affect the performance of CometBFT, under various settings.
+The application used in the experiment is the same used on the (#200-node-testnet), but is configured differently to gauge de effects of varying vote extension sizes.
+In the (#200-node-testnet) the application extends pre-commit votes with a 64 bit number encoded with variable compression.
+In the Vote-extension Testnet, pre-commit votes are extended with a non-compressed extension of configurable size.
+Experiments are run with multiple sizes to determine their impact and, for comparison sake, we include a run with the same with the same settings as in the (#200-node-testnet).
+
+The testnet consists of 175 validators, 20 non-validator full-nodes, and 5 seed nodes.
+All 195 full-nodes begin by dialing a subset of the seed nodes to discover peers.
+Once all full-nodes are started, a 5 minute period is waited before starting an experiment.
+For each experiment, the load generators issue requests at a constant rate during 150 seconds, then wait for 60 seconds allow the system to quiesce, then repeat the load generation; the load generation step is repeated 5 times for each experiment.
+A wide set of metrics is captured during the whole experiment but, unless abnormalities are observed, the first and last 30 seconds of each 150 load generation step are discarded; the remainder 90 seconds are used in computing aggregated metrics.
+
 #### Network Partition Testnet
 
 CometBFT is expected to recover from network partitions. A partition where no
@@ -370,17 +385,6 @@ the total stake. The remaining 33% of the stake is configured to belong to
 a validator that is never actually run in the test network. The network is run
 for multiple days, ensuring that it is able to produce blocks without issue.
 
-#### Vote-extension Testnet
-
-CometBFT v0.38.0 introduced **vote-extensions**, which are added as the name suggests, to votes sent by validators.
-The Vote-extension Testnet is used to determine how vote-extensions affect the performance of CometBFT, under various settings.
-The testnet consists of 175 validators, 20 non-validator full-nodes, and 5 seed nodes.
-All 195 full-nodes begin by dialing a subset of the seed nodes to discover peers.
-Once all full-nodes are started, a 5 minute period is waited while load-generators are started and before any load is introduced in the system.
-Once the startup period is over, the load generators issue requests at a constant rate during 150 seconds.
-The load generation step is repeated 5 times with intervals of 60 seconds in between to allow the system to quiesce.
-A wide set of metrics is captured during the whole experiment but, unless abnormalities are observed, the first and last 30 seconds of each 150 interval are discarded; the remainder 90 seconds are used in computing aggregated metrics.
-The application used in the experiment is the same used on the (#200-node-testnet), so the results are comparable.
 
 [unclog]: https://github.com/informalsystems/unclog
 [unclog-release]: https://github.com/informalsystems/unclog#releasing-a-new-versions-change-set

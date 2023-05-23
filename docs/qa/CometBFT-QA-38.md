@@ -183,7 +183,7 @@ similar to above.
 ### Memory Resident Set Size
 
 The following graph shows the Resident Set Size of all monitored processes, with
-maximum memory usage of 1.6GB, slighlty lower than the baseline shown after.
+maximum memory usage of 1.6GB, slightly lower than the baseline shown after.
 
 ![rss](img38/200nodes/memory.png)
 
@@ -242,3 +242,111 @@ commit versions used in the experiments.
 
 
 [\#9548]: https://github.com/tendermint/tendermint/issues/9548
+
+
+## Rotating Node Testnet
+
+We use `c=1,r=400` as load, which can be considered a safe workload, as it was close to (but below)
+the saturation point in the 200 node testnet. This testnet has less nodes (10 validators and 25 full nodes).
+
+Unlike in the baseline tests, the version of CometBFT used for these tests is _not_ affected by [\#9539],
+which was fixed right after having run rotating testnet for `v0.37`.
+As a result, the load introduced in this iteration of the test is higher as transactions do not get rejected.
+
+### Latencies
+
+The plot of all latencies can be seen here.
+
+![rotating-all-latencies](img38/rotating/rotating_latencies.png)
+
+Which is similar to the baseline.
+
+![rotating-all-latencies](img37/200nodes_tm037/v037_rotating_latencies.png)
+
+The average increase of about 1 second with respect to the baseline is due to the higher
+transaction load produced (remember the baseline was affected by [\#9539], whereby most transactions
+produced were rejected by `CheckTx`)
+
+### Prometheus Metrics
+
+The set of metrics shown here roughly match those shown on the baseline (`v0.37`) for the same experiment.
+We also show the baseline results for comparison.
+
+#### Blocks and Transactions per minute
+
+This following plot shows the blocks produced per minute.
+
+![rotating-heights](img38/rotating/rotating_block_rate.png)
+
+This is similar to the baseline, shown below.
+
+![rotating-heights-bl](img37/rotating/rotating_block_rate.png)
+
+The following plot shows only the heights reported by ephemeral nodes, both when they were blocksyncing
+and when they were running consensus.
+The second plot is the baseline plot for comparison. The baseline lacks the heights when the nodes were
+blocksyncing as that metric was implemented afterwards.
+
+![rotating-heights-ephe](img38/rotating/rotating_eph_heights.png)
+
+![rotating-heights-ephe-bl](img37/rotating/rotating_eph_heights.png)
+
+We seen that heights follow a similar pattern in both plots: they grow in length as the experiment advances.
+
+The following plot shows the transactions processed per minute.
+
+![rotating-total-txs](img38/rotating/rotating_txs_rate.png)
+
+For comparison, this is the baseline plot.
+
+![rotating-total-txs-bl](img37/rotating/rotating_txs_rate.png)
+
+We can see the rate is much lower in the baseline plot.
+The reason is that the baseline was affected by [\#9539], whereby `CheckTx` rejected most transactions
+produced by the load runner.
+
+#### Peers
+
+The plot below shows the evolution of the number of peers throughout the experiment.
+
+![rotating-peers](img38/rotating/rotating_peers.png)
+
+This is the baseline plot, for comparison.
+
+![rotating-peers-bl](img37/rotating/rotating_peers.png)
+
+The plotted values and their evolution are comparable in both plots.
+
+For further details on these plots, see the [this section](./TMCore-QA-34.md#peers-1).
+
+#### Memory Resident Set Size
+
+The average Resident Set Size (RSS) over all processes is notably bigger on `v0.38.0-alpha.2` than on the baseline.
+The reason for this is, again, the fact that `CheckTx` was rejecting most transactions submitted on the baseline
+and therefore the overall transaction load was lower on the baseline.
+This is consistent with the difference seen in the transaction rate plots
+in the [previous section](#blocks-and-transactions-per-minute).
+
+![rotating-rss-avg](img38/rotating/rotating_avg_memory.png)
+
+![rotating-rss-avg-bl](img37/rotating/rotating_avg_memory.png)
+
+#### CPU utilization
+
+The plots show metric `load1` for all nodes for `v0.38.0-alpha.2` and for the baseline.
+
+![rotating-load1](img38/rotating/rotating_cpu.png)
+
+![rotating-load1-bl](img37/rotating/rotating_cpu.png)
+
+In both cases, it is contained under 5 most of the time, which is considered normal load.
+The load seems to be more important on `v0.38.0-alpha.2` on average because of the bigger
+number of transactions processed per minute as compared to the baseline.
+
+### Test Result
+
+| Scenario | Date       | Version                                                    | Result |
+| -------- | ---------- | ---------------------------------------------------------- | ------ |
+| Rotating | 2023-05-23 | v0.38.0-alpha.2 (e9abb116e29beb830cf111b824c8e2174d538838) | Pass   |
+
+[\#9539]: https://github.com/tendermint/tendermint/issues/9539

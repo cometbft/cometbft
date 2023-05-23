@@ -26,7 +26,7 @@ _200 Node Test_, and _Rotating Nodes Test_.
 * An account at Digital Ocean (DO), with a high droplet limit (>202)
 * The machine to orchestrate the tests should have the following installed:
     * A clone of the [testnet repository][testnet-repo]
-        * This repository contains all the scripts mentioned in the reminder of this section
+        * This repository contains all the scripts mentioned in the remainder of this section
     * [Digital Ocean CLI][doctl]
     * [Terraform CLI][Terraform]
     * [Ansible CLI][Ansible]
@@ -39,9 +39,10 @@ _200 Node Test_, and _Rotating Nodes Test_.
 ### Requirements for Result Extraction
 
 * Matlab or Octave
-* [Prometheus][prometheus] server installed
+* [Prometheus DB][prometheus] to collect metrics from nodes
+* Prometheus DB to process queries (may be different node from the previous)
 * blockstore DB of one of the full nodes in the testnet
-* Prometheus DB
+
 
 [prometheus]: https://prometheus.io/
 

@@ -49,13 +49,13 @@ We can observe in the table that the system is saturated beyond the diagonal
 defined by the entries `c=1,r=400` and `c=2,r=200`. Entries in the diagonal have
 the same amount of transaction load, so we can consider them equivalent. For the
 chosen diagonal, the expected number of processed transactions is `1 * 400 tx/s * 89 s = 35600`. 
-(Note that we use 89 out of 90 seconds of the experiment because transactions
-sent during the last second are not counted.) The experiments in the diagonal
+(Note that we use 89 out of 90 seconds of the experiment because the last transaction batch
+coincides with the end of the experiment and is thus not sent.) The experiments in the diagonal
 below expect double that number, that is, `1 * 800 tx/s * 89 s = 71200`, but the
 system is not able to process such load, thus it is saturated.
 
 Therefore, for the rest of these experiments, we chose `c=1,r=400` as the
-configuration. We could have chose the equivalent `c=2,r=200`, which is the same
+configuration. We could have chosen the equivalent `c=2,r=200`, which is the same
 used in our baseline version, but for simplicity we decided to use the one with
 only one connection.
 

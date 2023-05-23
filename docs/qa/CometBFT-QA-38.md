@@ -54,14 +54,16 @@ sent during the last second are not counted.) The experiments in the diagonal
 below expect double that number, that is, `1 * 800 tx/s * 89 s = 71200`, but the
 system is not able to process such load, thus it is saturated.
 
+Therefore, for the rest of these experiments, we chose `c=1,r=400` as the
+configuration. We could have chose the equivalent `c=2,r=200`, which is the same
+used in our baseline version, but for simplicity we decided to use the one with
+only one connection.
+
 Also note that, compared to the previous QA tests, we have tried to find the
 saturation point within a higher range of load values for the rate `r`. In
-particular, we didn't run the experiment on the configuration `c=1,r=400`.
-
-For the rest of these experiments, we chose `c=1,r=400` as the configuration. We
-could have chose the equivalent `c=2,r=200`, which is the same used in our
-baseline version, but for simplicity we decided to use the one with only one
-connection.
+particular we run tests with `r` equal to or above `200`, while in the previous
+tests `r` was `200` or lower. In particular, for our baseline version we didn't
+run the experiment on the configuration `c=1,r=400`.
 
 For comparison, this is the table with the baseline version, where the
 saturation point is beyond the diagonal defined by `r=200,c=2` and `r=100,c=4`.
@@ -81,11 +83,15 @@ configuration `c=1,r=400`.
 ![latency-1-400](img38/200nodes/e_de676ecf-038e-443f-a26a-27915f29e312.png).
 
 For reference, the following figure shows the latencies of one of the
-experiments in the baseline, where `c=2,r=200` is equivalent to the same
-configuration used in this experiment. As can be seen, latencies are quite
-similar, and even in some cases the baseline has slightly higher latencies.
+experiments for `c=2,r=200` in the baseline. 
 
 ![latency-2-200-37](img37/200nodes_cmt037/e_75cb89a8-f876-4698-82f3-8aaab0b361af.png)
+
+As can be seen, in most cases the latencies are very similar, and in some cases,
+the baseline has slightly higher latencies than the version under test. Thus,
+from this small experiment, we can say that the latencies measured on the two
+versions are equivalent, or at least that the version under test is not worse
+than the baseline.
 
 ## Prometheus Metrics on the Chosen Experiment
 
@@ -215,7 +221,6 @@ commit versions used in the experiments.
 
 | Scenario | Date       | Version                                                    | Result |
 | -------- | ---------- | ---------------------------------------------------------- | ------ |
-| CometBFT | 2023-02-14 | v0.37.0-alpha.3 (bef9a830e7ea7da30fa48f2cc236b1f465cc5833) | Pass   |
 | CometBFT | 2023-05-21 | v0.38.0-alpha.2 (1f524d12996204f8fd9d41aa5aca215f80f06f5e) | Pass   |
 
 

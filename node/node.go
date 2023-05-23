@@ -133,7 +133,8 @@ func StateProvider(stateProvider statesync.StateProvider) Option {
 //------------------------------------------------------------------------------
 
 // NewNode returns a new, ready to go, CometBFT Node.
-func NewNode(config *cfg.Config,
+func NewNode(ctx context.Context,
+	config *cfg.Config,
 	privValidator types.PrivValidator,
 	nodeKey *p2p.NodeKey,
 	clientCreator proxy.ClientCreator,
@@ -206,7 +207,7 @@ func NewNode(config *cfg.Config,
 	// and replays any blocks as necessary to sync CometBFT with the app.
 	consensusLogger := logger.With("module", "consensus")
 	if !stateSync {
-		if err := doHandshake(stateStore, state, blockStore, genDoc, eventBus, proxyApp, consensusLogger); err != nil {
+		if err := doHandshake(ctx, stateStore, state, blockStore, genDoc, eventBus, proxyApp, consensusLogger); err != nil {
 			return nil, err
 		}
 

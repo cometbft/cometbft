@@ -467,7 +467,7 @@ func (app *Application) ExtendVote(_ context.Context, req *abci.RequestExtendVot
 		}
 	}
 
-	app.logger.Info("generated vote extension", "len", extLen, "ext", fmt.Sprintf("%x", ext[:4]), "height", appHeight)
+	app.logger.Info("generated vote extension", "height", appHeight, "vote_extension", fmt.Sprintf("%x", ext[:4]), "len", extLen)
 	return &abci.ResponseExtendVote{
 		VoteExtension: ext[:extLen],
 	}, nil
@@ -491,7 +491,7 @@ func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.Request
 
 	num, err := parseVoteExtension(app.cfg, req.VoteExtension)
 	if err != nil {
-		app.logger.Error("failed to parse vote extension", "vote_extension", req.VoteExtension, "err", err)
+		app.logger.Error("failed to parse vote extension", "vote_extension", fmt.Sprintf("%x", req.VoteExtension[:4]), "err", err)
 		return &abci.ResponseVerifyVoteExtension{
 			Status: abci.ResponseVerifyVoteExtension_REJECT,
 		}, nil
@@ -501,7 +501,7 @@ func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.Request
 		time.Sleep(app.cfg.VoteExtensionDelay)
 	}
 
-	app.logger.Info("verified vote extension value", "height", req.Height, "vote_extension", req.VoteExtension, "num", num)
+	app.logger.Info("verified vote extension value", "height", req.Height, "vote_extension", fmt.Sprintf("%x", req.VoteExtension[:4]), "num", num)
 	return &abci.ResponseVerifyVoteExtension{
 		Status: abci.ResponseVerifyVoteExtension_ACCEPT,
 	}, nil

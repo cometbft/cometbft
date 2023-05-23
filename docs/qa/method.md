@@ -73,8 +73,8 @@ This section explains how the tests were carried out for reproducibility purpose
         * It is running 90-seconds-long experiments in a loop with different loads.
     * If you already know the saturation load, you can simply run the test (several times) for 90 seconds with a load somewhat
       below saturation:
-        * set makefile variables `ROTATE_CONNECTIONS`, `ROTATE_TX_RATE`, to values that will produce the desired transaction load.
-        * set `ROTATE_TOTAL_TIME` to 90 (seconds).
+        * set makefile variables `LOAD_CONNECTIONS`, `LOAD_TX_RATE`, to values that will produce the desired transaction load.
+        * set `LOAD_TOTAL_TIME` to 90 (seconds).
         * run "make runload" and wait for it to complete. You may want to run this several times so the data from different runs can be compared.
 7. Run `make retrieve-data` to gather all relevant data from the testnet into the orchestrating machine
     * Alternatively, you may want to run `make retrieve-prometheus-data` and `make retrieve-blockstore` separately.
@@ -99,11 +99,12 @@ The CometBFT team should improve it at every iteration to increase the amount of
 #### Steps
 
 1. Unzip the blockstore into a directory
-2. Extract the latency report and the raw latencies for all the experiments. Run these commands from the directory containing the blockstore
+2. Extract the latency report and the raw latencies for all the experiments. Run these commands from the directory containing the blockstore.
+  It is advisable to adjust the hash in the `go run` command to the latest possible.
     * ```bash
        mkdir results
-       go run github.com/cometbft/cometbft/test/loadtime/cmd/report@f1aaa436d --database-type goleveldb --data-dir ./ > results/report.txt`
-       go run github.com/cometbft/cometbft/test/loadtime/cmd/report@f1aaa436d --database-type goleveldb --data-dir ./ --csv results/raw.csv`
+       go run github.com/cometbft/cometbft/test/loadtime/cmd/report@1f524d129 --database-type goleveldb --data-dir ./ > results/report.txt
+       go run github.com/cometbft/cometbft/test/loadtime/cmd/report@1f524d129 --database-type goleveldb --data-dir ./ --csv results/raw.csv
        ```
 3. File `report.txt` contains an unordered list of experiments with varying concurrent connections and transaction rate
     * If you are looking for the saturation point
@@ -229,29 +230,32 @@ This section explains how the tests were carried out for reproducibility purpose
 6. As a sanity check, connect to the Prometheus node's web interface and check the graph for the `tendermint_consensus_height` metric.
    All nodes should be increasing their heights.
 7. On a different shell,
-    * run `make runload ROTATE_CONNECTIONS=X ROTATE_TX_RATE=Y`
+    * run `make runload LOAD_CONNECTIONS=X LOAD_TX_RATE=Y LOAD_TOTAL_TIME=Z`
     * `X` and `Y` should reflect a load below the saturation point (see, e.g.,
       [this paragraph](CometBFT-QA-34.md#finding-the-saturation-point) for further info)
+    * `Z` (in seconds) should be big enough to keep running throughout the test, until we manually stop it in step 9.
+      In principle, a good value for `Z` is `7200` (2 hours)
 8. Run `make rotate` to start the script that creates the ephemeral nodes, and kills them when they are caught up.
-    * WARNING: If you run this command from your laptop, the laptop needs to be up and connected for full length
+    * WARNING: If you run this command from your laptop, the laptop needs to be up and connected for the full length
       of the experiment.
-9. When the height of the chain reaches 3000, stop the `make rotate` script
+    * [This](http://161.35.205.129:9090/classic/graph?g0.range_input=100m&g0.expr=cometbft_consensus_height%7Bjob%3D~%22ephemeral.*%22%7D%20or%20cometbft_blocksync_latest_block_height%7Bjob%3D~%22ephemeral.*%22%7D&g0.tab=0&g1.range_input=100m&g1.expr=cometbft_mempool_size%7Bjob!~%22ephemeral.*%22%7D&g1.tab=0&g2.range_input=100m&g2.expr=cometbft_consensus_num_txs%7Bjob!~%22ephemeral.*%22%7D&g2.tab=0)
+      is an example Prometheus URL you can use to monitor the test case's progress
+9. When the height of the chain reaches 3000, stop the `make runload` script.
 10. When the rotate script has made two iterations (i.e., all ephemeral nodes have caught up twice)
     after height 3000 was reached, stop `make rotate`
-11. Run `make retrieve-data` to gather all relevant data from the testnet into the orchestrating machine
-12. Verify that the data was collected without errors
+11. Run `make stop-network`
+12. Run `make retrieve-data` to gather all relevant data from the testnet into the orchestrating machine
+13. Verify that the data was collected without errors
     * at least one blockstore DB for a CometBFT validator
     * the Prometheus database from the Prometheus node
     * for extra care, you can run `zip -T` on the `prometheus.zip` file and (one of) the `blockstore.db.zip` file(s)
-13. **Run `make terraform-destroy`**
+14. **Run `make terraform-destroy`**
 
 Steps 8 to 10 are highly manual at the moment and will be improved in next iterations.
 
 ### Result Extraction
 
-In order to obtain a latency plot, follow the instructions above for the 200 node experiment, but:
-
-* The `results.txt` file contains only one experiment
-* Therefore, no need for any `for` loops
+In order to obtain a latency plot, follow the instructions above for the 200 node experiment,
+but the `results.txt` file contains only one experiment.
 
 As for prometheus, the same method as for the 200 node experiment can be applied.

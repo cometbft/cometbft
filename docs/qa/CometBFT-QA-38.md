@@ -198,6 +198,8 @@ of unconstrained growth.
 
 ### CPU utilization
 
+#### Comparison to baseline
+
 The best metric from Prometheus to gauge CPU utilization in a Unix machine is
 `load1`, as it usually appears in the [output of
 `top`](https://www.digitalocean.com/community/tutorials/load-average-in-linux).
@@ -210,6 +212,21 @@ The baseline had a similar behavior.
 
 ![load1-baseline](img37/200nodes_cmt037/cpu.png)
 
+#### Impact of vote extension signature verification
+
+It is important to notice that the baseline (`v0.37.x`) does not implement vote extensions,
+whereas the version under test (`v0.38.0-alpha.2`) _does_ implement them, and they are
+configured to be activated since height 1.
+The e2e application used in these tests verifies all received vote extension signatures (up to 175)
+twice per height: upon `PrepareProposal` (for sanity) and upon `ProcessProposal` (to demonstrate how
+real applications can do it).
+
+The fact that there is no noticeable difference in the CPU utilization plots of
+the baseline and `v0.38.0-alpha.2` means that re-verifying up 175 vote extension signatures twice
+(besides the initial verification done by CometBFT when receiving them from the network)
+has no performance impact in the current version of the system: the bottlenecks are elsewhere.
+Thus, we should focus on optimizing other parts of the system: the ones that cause the current
+bottlenecks (mempool gossip duplication, leaner proposal structure, optimized consensus gossip).
 
 ## Test Results
 

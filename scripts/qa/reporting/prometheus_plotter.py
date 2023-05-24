@@ -15,9 +15,10 @@ from urllib.parse import urljoin
 
 from prometheus_pandas import query
 
+#release = 'v0.37.0-alpha.2'
 release = 'v0.38.0-alpha.2'
 path = os.path.join('imgs')
-prometheus = query.Prometheus('http://localhost:9091')
+prometheus = query.Prometheus('http://localhost:9090')
 
 # Time window
 #window_size = dict(seconds=150) #CMT 0.37.x-alpha3
@@ -25,8 +26,8 @@ prometheus = query.Prometheus('http://localhost:9091')
 #window_size = dict(seconds=115) #CMT v0.38 (200 nodes) baseline
 #window_size = dict(seconds=130) #homogeneous
 #window_size = dict(seconds=127) #baseline
-window_size = dict(hours=1, minutes=28, seconds=25) #TM v0.37 (rotating)
-#window_size = dict(hours=1, minutes=46) #CMT v0.38 (rotating)
+#window_size = dict(hours=1, minutes=28, seconds=25) #TM v0.37.0-alpha.2 (rotating)
+window_size = dict(hours=1, minutes=46) #CMT v0.38.0-alpha.2 (rotating)
 
 
 ext_window_size = dict(seconds=145)
@@ -37,12 +38,12 @@ ext_window_size = dict(seconds=145)
 #left_end = '2023-02-14T15:18:00Z' #cmt1 tm1
 #left_end = '2023-02-07T18:07:00Z' #homogeneous
 #left_end = '2022-10-13T19:41:23Z' #baseline
-#left_end = '2023-02-22T18:56:29Z' #CMT 0.37.x-alpha3
+#left_end = '2023-02-22T18:56:29Z' #CMT v0.37.x-alpha3
 #left_end = '2022-10-13T15:57:50Z' #TM v0.37 (200 nodes) baseline
 #left_end = '2023-03-20T19:45:35Z' #feature/abci++vef merged with main (7d8c9d426)
-#left_end = '2023-05-22T09:39:20Z' #CMT 0.38.0-alpha.2
-left_end = '2022-10-10T15:47:15Z' #CMT 0.38.0-alpha.2 - rotating
-#left_end = '2023-05-23T08:09:50Z' #CMT 0.38.0-alpha.2 - rotating
+#left_end = '2023-05-22T09:39:20Z' #CMT v0.38.0-alpha.2
+#left_end = '2022-10-10T15:47:15Z' #TM v0.37.0-alpha.2 - rotating
+left_end = '2023-05-23T08:09:50Z' #CMT v0.38.0-alpha.2 - rotating
 
 right_end = pd.to_datetime(left_end) + pd.Timedelta(**window_size)
 time_window = (left_end, right_end.strftime('%Y-%m-%dT%H:%M:%SZ'))
@@ -52,8 +53,8 @@ ext_time_window = (left_end, ext_right_end.strftime('%Y-%m-%dT%H:%M:%SZ'))
 
 
 
-#fork='cometbft'
-fork='tendermint'
+fork='cometbft'
+#fork='tendermint'
 
 # Do prometheus queries, depending on the test case
 queries200Nodes = [
@@ -92,7 +93,7 @@ queriesRotating = [
 queries = queriesRotating
 
 
-for (query, file_name, pandas_params, plot_average)  in queries:
+for (query, file_name, pandas_params, plot_average) in queries:
     print(query)
 
     data_frame = prometheus.query_range(*query)
@@ -100,6 +101,7 @@ for (query, file_name, pandas_params, plot_average)  in queries:
     data_frame = data_frame.set_index(md.date2num(data_frame.index))
 
 
+    pandas_params["title"] += "  -  " + release
     ax = data_frame.plot(**pandas_params)
     if plot_average:
         average = data_frame.mean(axis=1)

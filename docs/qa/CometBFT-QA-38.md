@@ -250,6 +250,11 @@ commit versions used in the experiments.
 We use `c=1,r=400` as load, which can be considered a safe workload, as it was close to (but below)
 the saturation point in the 200 node testnet. This testnet has less nodes (10 validators and 25 full nodes).
 
+Importantly, the baseline considered in this section is `v0.37.0-alpha.2` (Tendermint Core),
+which is **different** from the one used in the [previous section](#200-node-testbed).
+The reason is that this testnet was not re-tested for `v0.37.0-alpha.3` (CometBFT),
+since it was not deemed necessary.
+
 Unlike in the baseline tests, the version of CometBFT used for these tests is _not_ affected by [\#9539],
 which was fixed right after having run rotating testnet for `v0.37`.
 As a result, the load introduced in this iteration of the test is higher as transactions do not get rejected.

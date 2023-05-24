@@ -17,7 +17,11 @@ range of ABCI++ functionality (ABCI 2.0), and other several improvements
 described in the
 [CHANGELOG](https://github.com/cometbft/cometbft/blob/v0.38.0-alpha.2/CHANGELOG.md).
 
-## Testbed
+## Issues discovered
+
+TODO
+
+## 200 Node Testbed
 
 As in other iterations of our QA process, we have used a 200-node network as
 testbed, plus nodes to introduce load and collect metrics.
@@ -75,7 +79,7 @@ saturation point is beyond the diagonal defined by `r=200,c=2` and `r=100,c=4`.
 | r=100 | 8900  | 17800     | **35600** |
 | r=200 | 17800 | **35600** | 38660     |
 
-## Latencies
+### Latencies
 
 The following figure plots the latencies of the experiment carried out with the
 configuration `c=1,r=400`.
@@ -93,12 +97,12 @@ from this small experiment, we can say that the latencies measured on the two
 versions are equivalent, or at least that the version under test is not worse
 than the baseline.
 
-## Prometheus Metrics on the Chosen Experiment
+### Prometheus Metrics on the Chosen Experiment
 
 This section further examines key metrics for this experiment extracted from
 Prometheus data regarding the chosen experiment with configuration `c=1,r=400`.
 
-### Mempool Size
+#### Mempool Size
 
 The mempool size, a count of the number of transactions in the mempool, was
 shown to be stable and homogeneous at all full nodes. It did not exhibit any
@@ -124,7 +128,7 @@ The behavior is similar to the observed in the baseline, presented next.
 ![mempool-avg-baseline](img37/200nodes_cmt037/avg_mempool_size.png)
 
 
-### Peers
+#### Peers
 
 The number of peers was stable at all nodes. It was higher for the seed nodes
 (around 140) than for the rest (between 20 and 70 for most nodes). The red
@@ -138,7 +142,7 @@ than 50 peers is due to [\#9548].
 ![peers](img37/200nodes_cmt037/peers.png)
 
 
-### Consensus Rounds per Height
+#### Consensus Rounds per Height
 
 Most heights took just one round, that is, round 0, but some nodes needed to
 advance to round 1.
@@ -150,7 +154,7 @@ The following specific run of the baseline required some nodes to reach round 1.
 ![rounds](img37/200nodes_cmt037/rounds.png)
 
 
-### Blocks Produced per Minute, Transactions Processed per Minute
+#### Blocks Produced per Minute, Transactions Processed per Minute
 
 The following plot shows the rate in which blocks were created, from the point
 of view of each node. That is, it shows when each node learned that a new block
@@ -180,7 +184,7 @@ similar to above.
 ![total-txs-baseline](img37/200nodes_cmt037/total_txs_rate.png)
 
 
-### Memory Resident Set Size
+#### Memory Resident Set Size
 
 The following graph shows the Resident Set Size of all monitored processes, with
 maximum memory usage of 1.6GB, slightly lower than the baseline shown after.
@@ -196,9 +200,9 @@ The memory of all processes went down as the load is removed, showing no signs
 of unconstrained growth.
 
 
-### CPU utilization
+#### CPU utilization
 
-#### Comparison to baseline
+##### Comparison to baseline
 
 The best metric from Prometheus to gauge CPU utilization in a Unix machine is
 `load1`, as it usually appears in the [output of
@@ -212,7 +216,7 @@ The baseline had a similar behavior.
 
 ![load1-baseline](img37/200nodes_cmt037/cpu.png)
 
-#### Impact of vote extension signature verification
+##### Impact of vote extension signature verification
 
 It is important to notice that the baseline (`v0.37.x`) does not implement vote extensions,
 whereas the version under test (`v0.38.0-alpha.2`) _does_ implement them, and they are
@@ -228,7 +232,7 @@ has no performance impact in the current version of the system: the bottlenecks 
 Thus, we should focus on optimizing other parts of the system: the ones that cause the current
 bottlenecks (mempool gossip duplication, leaner proposal structure, optimized consensus gossip).
 
-## Test Results
+### Test Results
 
 The comparison against the baseline results show that both scenarios had similar
 numbers and are therefore equivalent.
@@ -238,10 +242,7 @@ commit versions used in the experiments.
 
 | Scenario | Date       | Version                                                    | Result |
 | -------- | ---------- | ---------------------------------------------------------- | ------ |
-| CometBFT | 2023-05-21 | v0.38.0-alpha.2 (1f524d12996204f8fd9d41aa5aca215f80f06f5e) | Pass   |
-
-
-[\#9548]: https://github.com/tendermint/tendermint/issues/9548
+| 200-node | 2023-05-21 | v0.38.0-alpha.2 (1f524d12996204f8fd9d41aa5aca215f80f06f5e) | Pass   |
 
 
 ## Rotating Node Testnet
@@ -350,3 +351,4 @@ number of transactions processed per minute as compared to the baseline.
 | Rotating | 2023-05-23 | v0.38.0-alpha.2 (e9abb116e29beb830cf111b824c8e2174d538838) | Pass   |
 
 [\#9539]: https://github.com/tendermint/tendermint/issues/9539
+[\#9548]: https://github.com/tendermint/tendermint/issues/9548

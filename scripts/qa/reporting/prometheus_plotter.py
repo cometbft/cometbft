@@ -20,10 +20,11 @@ prometheus = query.Prometheus('http://localhost:9090')
 
 # Time window
 #window_size = dict(seconds=150) #CMT 0.37.x-alpha3
-window_size = dict(seconds=126) #TM v0.37 (200 nodes) baseline
+#window_size = dict(seconds=126) #TM v0.37 (200 nodes) baseline
+window_size = dict(seconds=115) #CMT v0.38 (200 nodes) baseline
 #window_size = dict(seconds=130) #homogeneous
 #window_size = dict(seconds=127) #baseline
-ext_window_size = dict(seconds=180)
+ext_window_size = dict(seconds=145)
 
 # Use the time provided by latency_plotter for the selected experiment.
 #left_end = '2023-02-08T13:12:20Z' #cmt2 tm1
@@ -33,7 +34,8 @@ ext_window_size = dict(seconds=180)
 #left_end = '2022-10-13T19:41:23Z' #baseline
 #left_end = '2023-02-22T18:56:29Z' #CMT 0.37.x-alpha3
 #left_end = '2022-10-13T15:57:50Z' #TM v0.37 (200 nodes) baseline
-left_end = '2023-03-20T19:45:35Z' #feature/abci++vef merged with main (7d8c9d426)
+#left_end = '2023-03-20T19:45:35Z' #feature/abci++vef merged with main (7d8c9d426)
+left_end = '2023-05-22T09:39:20Z' #CMT 0.38.0-alpha.2
 
 right_end = pd.to_datetime(left_end) + pd.Timedelta(**window_size)
 time_window = (left_end, right_end.strftime('%Y-%m-%dT%H:%M:%SZ'))

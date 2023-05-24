@@ -359,6 +359,53 @@ number of transactions processed per minute as compared to the baseline.
 | -------- | ---------- | ---------------------------------------------------------- | ------ |
 | Rotating | 2023-05-23 | v0.38.0-alpha.2 (e9abb116e29beb830cf111b824c8e2174d538838) | Pass   |
 
+
+
+## Vote Extensions Testbed
+
+Method
+
+1. update the app configuration
+    - Since the extendVote method does not allow us to identify the block is empty or not so that extensions are skipped for empty blocks (during test pauses) we need to disable proposing empty blocks at all.
+      ```bash
+      sed $INPLACE_SED_FLAG "s/=create_empty_blocks .*/create_empty_blocks = false/g" $file
+      ```
+    - `make configgen`
+2. ansible-playbook ./ansible/re-init-testapp.yaml -u root -i ./ansible/hosts --limit=validators -e "testnet_dir=testnet" -f 20
+3. run load
+
+
+
+### Results
+| Scenario | Date       | Version                                                    | Result |
+| -------- | ---------- | ---------------------------------------------------------- | ------ |
+| Rotating | 2023-05-23 | v0.38.0-alpha.2 (e9abb116e29beb830cf111b824c8e2174d538838) | Pass   |
+
+#### baseline 
+
+Test performed with VERSION_TAG ?= 9fc711b6514f99b2dc0864fc703cb81214f01783 #vote extension sizes. 
+which is alph plus VE size option
+
+#### various sizes
+
+#### Observations
+
+- The size of the extension should be felt on the voting and in the proposal, since the extensions are added to the proposal as well.
+- how is the block size limited? do the extensions fit? the proposal itself is small.
+- block sizes depending on the extension sizes
+- txs per block depending on the extension sizes
+	- remember that there is one special transaction
+- we need to evaluate the effect of transaction sizes as well.
+
+
+- first run
+
+
+#### Conclusions
+
+
+
+
 [\#9539]: https://github.com/tendermint/tendermint/issues/9539
 [\#9548]: https://github.com/tendermint/tendermint/issues/9548
 [\#539]: https://github.com/cometbft/cometbft/issues/539

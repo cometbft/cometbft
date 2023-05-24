@@ -283,3 +283,57 @@ In order to obtain a latency plot, follow the instructions above for the 200 nod
 but the `results.txt` file contains only one experiment.
 
 As for prometheus, the same method as for the 200 node experiment can be applied.
+
+## Vote Extensions Testnet
+
+### Running the test
+
+This section explains how the tests were carried out for reproducibility purposes.
+
+1. [If you haven't done it before]
+   Follow steps 1-4 of the `README.md` at the top of the testnet repository to configure Terraform, and `doctl`.
+2. Copy file `varyVESize.toml` onto `testnet.toml` (do NOT commit this change).
+3. Set variable `VERSION_TAG` in the `Makefile` to the git hash that is to be tested.
+4. Follow steps 5-10 of the `README.md` to configure and start the "stable" part of the rotating node testnet
+    * WARNING: Do NOT forget to run `make terraform-destroy` as soon as you are done with the tests
+
+5. Configure the load runner to produce the desired transaction load.
+    * set makefile variables `ROTATE_CONNECTIONS`, `ROTATE_TX_RATE`, to values that will produce the desired transaction load.
+    * set `ROTATE_TOTAL_TIME` to 150 (seconds).
+    * set `ITERATIONS` to the number of iterations that each configuration should run for. Default is 1 time.
+6. Disable the generation of empty blocks, so the system quiesces in between runs. 
+    * edit `scripts/configgen.sh` to uncomment the following lines
+      ```bash
+      #sed $INPLACE_SED_FLAG "s/=create_empty_blocks .*/create_empty_blocks = false/g" $file
+      #sed $INPLACE_SED_FLAG "s/create_empty_blocks_interval .*/create_empty_blocks_interval = \"600s\"/g" $file
+      ```
+
+7. Repeat the following steps for each desired `vote_extension_size`
+    * Update the `vote_extensions_size` in the `testnet.toml` to the desired value.
+    * `make configgen`
+    * `ANSIBLE_SSH_RETRIES=10 ansible-playbook ./ansible/re-init-testapp.yaml -u root -i ./ansible/hosts --limit=validators -e "testnet_dir=testnet" -f 20`
+    * `make restart`
+    * Run "make runload" and wait for it to complete.
+      You may want to run this several times and combine data from different runs.
+
+8. Run `make retrieve-data` to gather all relevant data from the testnet into the orchestrating machine
+9. Verify that the data was collected without errors
+    * at least one blockstore DB for a CometBFT validator
+    * the Prometheus database from the Prometheus node
+    * for extra care, you can run `zip -T` on the `prometheus.zip` file and (one of) the `blockstore.db.zip` file(s)
+10. **Run `make terraform-destroy`**
+
+
+### Result Extraction
+
+In order to obtain a latency plot, follow the instructions above for the 200 node experiment, but:
+
+* The `results.txt` file contains only one experiment
+* Therefore, no need for any `for` loops
+
+As for prometheus, the same method as for the 200 node experiment can be applied.
+
+
+8. Run `make rotate` to start the script that creates the ephemeral nodes, and kills them when they are caught up.
+    * WARNING: If you run this command from your laptop, the laptop needs to be up and connected for full length
+      of the experiment.

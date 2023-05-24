@@ -25,7 +25,7 @@ described in the
 * (critical, fixed) [\#562] - There were several bugs in the metrics-related
   logic that were causing panics when the testnets were started.
 
-## 200 Node Testbed
+## 200 Node Testnet
 
 As in other iterations of our QA process, we have used a 200-node network as
 testbed, plus nodes to introduce load and collect metrics.

@@ -19,7 +19,11 @@ described in the
 
 ## Issues discovered
 
-TODO
+* (critical, fixed) [\#539] and [\#546] - This bug causes the proposer to crash in
+  `PrepareProposal` because it does not have extensions while it should.
+  This happens mainly when the proposer was catching up.
+* (critical, fixed) [\#562] - There were several bugs in the metrics-related
+  logic that were causing panics when the testnets were started.
 
 ## 200 Node Testbed
 
@@ -357,3 +361,6 @@ number of transactions processed per minute as compared to the baseline.
 
 [\#9539]: https://github.com/tendermint/tendermint/issues/9539
 [\#9548]: https://github.com/tendermint/tendermint/issues/9548
+[\#539]: https://github.com/cometbft/cometbft/issues/539
+[\#546]: https://github.com/cometbft/cometbft/issues/546
+[\#562]: https://github.com/cometbft/cometbft/issues/562

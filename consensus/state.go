@@ -2001,7 +2001,7 @@ func (cs *State) handleCompleteProposal(blockHeight int64) {
 	if cs.Step <= cstypes.RoundStepPropose && cs.isProposalComplete() {
 		// Move onto the next step
 		cs.enterPrevote(blockHeight, cs.Round)
-		if hasTwoThirds { // this is an optimization as this will be triggered when prevote is added
+		if hasTwoThirds { // this is an optimisation as this will be triggered when prevote is added
 			cs.enterPrecommit(blockHeight, cs.Round)
 		}
 	} else if cs.Step == cstypes.RoundStepCommit {

@@ -79,7 +79,8 @@ python3 latency_plotter.py /path/to/csv/files/raw.csv
 2. Tweak the script to your needs
    1. Adjust the time window
    2. Select the right fork 
-   3. Tweak/add/remove metrics 
+   3. Select the right test case
+   4. Tweak/add/remove metrics
 3. Run the script as follows
    ```bash
    # Do the following while ensuring that the virtual environment is activated (see

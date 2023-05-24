@@ -266,7 +266,7 @@ Which is similar to the baseline.
 
 The average increase of about 1 second with respect to the baseline is due to the higher
 transaction load produced (remember the baseline was affected by [\#9539], whereby most transactions
-produced were rejected by `CheckTx`)
+produced were rejected by `CheckTx`).
 
 ### Prometheus Metrics
 

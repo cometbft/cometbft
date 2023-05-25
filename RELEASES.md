@@ -352,7 +352,7 @@ The Vote-extension Testnet is used to determine how vote-extensions affect the p
 The application used in the experiment is the same used on the (#200-node-testnet), but is configured differently to gauge de effects of varying vote extension sizes.
 In the (#200-node-testnet) the application extends pre-commit votes with a 64 bit number encoded with variable compression.
 In the Vote-extension Testnet, pre-commit votes are extended with a non-compressed extension of configurable size.
-Experiments are run with multiple sizes to determine their impact and, for comparison sake, we include a run with the same with the same settings as in the (#200-node-testnet).
+Experiments are run with multiple sizes to determine their impact and, for comparison sake, we include a run with the same settings as in the (#200-node-testnet).
 
 The testnet consists of 175 validators, 20 non-validator full-nodes, and 5 seed nodes.
 All 195 full-nodes begin by dialing a subset of the seed nodes to discover peers.

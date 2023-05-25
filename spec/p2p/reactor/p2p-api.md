@@ -1,14 +1,22 @@
 # API for Reactors
 
-The [`Switch`][switch-type] is the central component of the p2p layer implementation.
-It manages all the reactors running in a node, registered during the node setup phase
-(see the reactor's [Registration section][reactor-registration]),
-and keeps track of the connections with peers.
+This document describes the API provided by the p2p layer to the protocol
+layer, namely to the registered reactors.
+
+This API consists of two interfaces: the one provided by the `Switch` instance,
+and the ones provides by multiple `Peer` instances, one per connected peer.
+The `Switch` instance is provided to every reactor as part of the reactor's
+[registration procedure][reactor-registration].
+The multiple `Peer` instances are provided to every registered reactor whenever
+a [new connection with a peer][reactor-addpeer] is established.
+
 
 ## `Switch` API
 
-The table below summarizes the interaction of the standard reactors with the
-p2p layer, by listing the [`Switch`][switch-type] methods used by them:
+The [`Switch`][switch-type] is the central component of the p2p layer
+implementation.  It manages all the reactors running in a node and keeps track
+of the connections with peers.
+The table below summarizes the interaction of the standard reactors with the `Switch`:
 
 | `Switch` API method                                     | consensus | block sync | state sync | mempool | evidence  | PEX   |
 |--------------------------------------------|-----------|------------|------------|---------|-----------|-------|
@@ -133,9 +141,15 @@ should be avoided, as it violates the assumption that reactors are independent.
 
 ## `Peer` API
 
+The [`Peer`][peer-interface] interface represents a connected peer.
+A `Peer` instance encapsulates a multiplex connection that implements the
+actual communication (sending and receiving messages) with a peer.
+When a connection is established with a peer, the `Switch` provides the
+corresponding `Peer` instance to all registered reactors.
+From this point, reactors can use the methods of the new `Peer` instance.
+
 The table below summarizes the interaction of the standard reactors with
-connected peers, by listing the [`Peer`][peer-interface] interface methods used
-by them:
+connected peers, with the `Peer` methods used by them:
 
 | `Peer` API method                                     | consensus | block sync | state sync | mempool | evidence  | PEX   |
 |--------------------------------------------|-----------|------------|------------|---------|-----------|-------|
@@ -256,5 +270,6 @@ The `TrySend()` method is a _non-blocking_ method, it _immediately_ returns
 [switch-type]: ../../../p2p/switch.go
 
 [reactor-interface]: ../../../p2p/base_reactor.go
-[reactor-registration]: ./README.md#registration
-[reactor-channels]: ./README.md#registration
+[reactor-registration]: ./reactor.md#registration
+[reactor-channels]: ./reactor.md#registration
+[reactor-addpeer]: ./reactor.md#peer-management

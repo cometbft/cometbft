@@ -268,8 +268,7 @@ retrieve the proper state and `AppHash`, verify it with the application, and ret
 last commit for the snapshot height.
 - Save the retrieved values into the state and block stores. 
 
-This code is essentially what the existing implementation of the statesync reactor does, once state syncing is complete 
-minus the functions that apply the snapshot chunks (as this has already been done offline). 
+This code is essentially what CometBFT does as part of node setup, once state syncing is complete.
 
 
 ### CometBFT based local state sync
@@ -288,7 +287,7 @@ to export the snapshots into a portable format (via `dump`).
 
 Having support for this within CometBFT, the app can automatically perform this export when taking snapshots. 
 
-In order to supported local State sync, the following changes to CometBFT are necessary:
+In order to support local State sync, the following changes to CometBFT are necessary:
 
 1. Adding new configuration options to the config file.
 2. Introduce a CLI command that can explicitly tell the application to create a snapshot export, in case 

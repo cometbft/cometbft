@@ -267,9 +267,10 @@ Until it has been resolved, the application developers have to, within their boo
 
 - Create a state and block store
 - Launch a light client to obtain and verify the block header for a given height.
-- Use the light client's `State` and `Commit` functions to 
-retrieve the proper state and `AppHash`, verify it with the application, and retrieve the 
-last commit for the snapshot height.
+- Use the light client's `State` function to 
+verify that the `AppHash` for that block matches the `AppHash` obtained via
+the call to `Info` (which is done on startup). 
+- Use `Commit` to retrieve the last commit for the snapshot height. 
 - Save the retrieved values into the state and block stores. 
 
 This code is essentially what CometBFT does as part of node setup, once state syncing is complete.

@@ -200,9 +200,16 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.RequestFinali
 		if err != nil {
 			panic(err) // shouldn't happen since we verified it in CheckTx and ProcessProposal
 		}
-		if key == prefixReservedKey {
+		if key == voteExtensionKey {
+			//Further parse the value.
+			value, _, err = parseValue(value)
+			if err != nil {
+				panic(err) // shouldn't since the voteExtension value should be splittable.
+			}
+		} else if key == prefixReservedKey {
 			panic(fmt.Errorf("detected a transaction with key %q; this key is reserved and should have been filtered out", prefixReservedKey))
 		}
+
 		app.state.Set(key, value)
 
 		txs[i] = &abci.ExecTxResult{Code: kvstore.CodeTypeOK}
@@ -606,6 +613,18 @@ func parseTx(tx []byte) (string, string, error) {
 	return string(parts[0]), string(parts[1]), nil
 }
 
+// parseTx parses a tx in 'key=value' format into a key and value.
+func parseValue(value string) (string, string, error) {
+	parts := strings.Split(value, "|")
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid value format: %q", string(value))
+	}
+	if len(parts[0]) == 0 {
+		return "", "", errors.New("value cannot be empty")
+	}
+	return string(parts[0]), string(parts[1]), nil
+}
+
 func (app *Application) verifyAndSum(
 	areExtensionsEnabled bool,
 	currentHeight int64,
@@ -771,5 +790,6 @@ func parseVoteExtension(cfg *Config, ext []byte) (int64, error) {
 		}
 		return num, nil
 	}
-	return int64(len(ext)), nil
+	//Return 0 here so the state is not updated and the system may quiesce.
+	return int64(0), nil
 }

@@ -2,6 +2,7 @@ package app
 
 import (
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -46,7 +47,7 @@ func NewState(dir string, persistInterval uint64) (*State, error) {
 		previousFile:    filepath.Join(dir, prevStateFileName),
 		persistInterval: persistInterval,
 	}
-	state.hash = hashItems(state.values)
+	state.hash = hashItems(state.values, state.height)
 	err := state.load()
 	switch {
 	case errors.Is(err, os.ErrNotExist):
@@ -133,7 +134,7 @@ func (s *State) Export() ([]byte, uint64, []byte, error) {
 		return nil, 0, nil, err
 	}
 	height := s.height
-	stateHash := hashItems(s.values)
+	stateHash := hashItems(s.values, height)
 	return bz, height, stateHash, nil
 }
 
@@ -149,7 +150,7 @@ func (s *State) Import(height uint64, jsonBytes []byte) error {
 	}
 	s.height = height
 	s.values = values
-	s.hash = hashItems(values)
+	s.hash = hashItems(values, height)
 	return s.save()
 }
 
@@ -193,7 +194,7 @@ func (s *State) Finalize() []byte {
 	default:
 		s.height = 1
 	}
-	s.hash = hashItems(s.values)
+	s.hash = hashItems(s.values, s.height)
 	return s.hash
 }
 
@@ -242,7 +243,7 @@ func (s *State) MarshalJSON() ([]byte, error) {
 }
 
 // hashItems hashes a set of key/value items.
-func hashItems(items map[string]string) []byte {
+func hashItems(items map[string]string, height uint64) []byte {
 	keys := make([]string, 0, len(items))
 	for key := range items {
 		keys = append(keys, key)
@@ -250,6 +251,9 @@ func hashItems(items map[string]string) []byte {
 	sort.Strings(keys)
 
 	hasher := sha256.New()
+	var b [8]byte
+	binary.BigEndian.PutUint64(b[:], height)
+	_, _ = hasher.Write(b[:])
 	for _, key := range keys {
 		_, _ = hasher.Write([]byte(key))
 		_, _ = hasher.Write([]byte{0})

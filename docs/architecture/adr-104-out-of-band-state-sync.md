@@ -24,7 +24,7 @@ recent state machine snapshot, instead of replaying all historical blocks.
 With the widespread adoption of state sync to bootstrap nodes, however,
 what should be one of its strengths - the ability to discover and fetch
 application snapshots from peers in the p2p network - has turned out to be one
-of its weakness.
+of its weaknesses.
 In fact, while downloading recent snapshots is very convenient for new nodes
 (clients of the protocol), providing snapshots to multiple peers (as servers of
 the protocol) is _bandwidth-consuming_, especially without a clear incentive for
@@ -129,12 +129,16 @@ is that it relies on the ability of node
 operators to properly synchronize the application state between two nodes.
 While experienced node operators are likely able to perform this operation in a
 proper way, we have to consider a broader set of users and emphasize that it is
-an operation susceptible to errors.
+an operation susceptible to errors. Thus operators need to know the format of the 
+application's DB, export the data properly and guarantee consistensy. That is,
+they have to make sure that nobody is trying to read the export while they are 
+writing a new one
 Furthermore, it is an operation that is, by definition, application-specific:
 applications are free to manage their state as they see fit, and this includes
 how and where the state is persisted.
 Node operators would therefore need to know the specifics of each application
 in order to adopt this solution.
+
 
 ## Decision
 
@@ -198,7 +202,7 @@ comet bootstrap-state          Bootstrap the state of CometBFT's state and block
 ```
 
 These commands enable the implementation of both the client and server side of statesync. 
-Namely, a statesync server can use `dump` to create a portable archieve format out existing snapshots,
+Namely, a statesync server can use `dump` to create a portable archive format out existing snapshots,
 or trigger snapshot creation using `export`. 
 
 The client side, restores the application state from a local snapshot that was previously exported, using

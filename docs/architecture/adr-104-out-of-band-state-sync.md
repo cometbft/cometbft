@@ -293,7 +293,7 @@ In order to supported local State sync, the following changes to CometBFT are ne
 1. Adding new configuration options to the config file.
 2. Introduce a CLI command that can explicitly tell the application to create a snapshot export, in case 
 operators decide not to generate periodical exports.
-3. Introcude a CLI command to extract a snapshot from the exported format.
+3. Extract a snapshot from the exported format.
 4. Alter existing ABCI calls to signal to the application that we want to create a snapshot export periodically. 
 5. Allow reading a snaphsot from a compressed format into CometBFT and offer it to the application via
 the existing `OfferSnapshot` ABCI call. 
@@ -396,9 +396,6 @@ with the following parameters:
     |---------------|----------|------------------------------------------------------------------------|--------------|
     | snapshot      | Snapshot | Extracted snapshot from the exported format                            | 1            |
     | chunks        | []Chunk  | Snapshot chunks                                                        | 2            |
-
-
-
 
 
 ## Consequences

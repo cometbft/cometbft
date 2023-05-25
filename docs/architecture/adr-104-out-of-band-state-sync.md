@@ -285,7 +285,7 @@ On the client side, the main difference between local State sync done by the app
 application has to perform the sync offline, in order to properly set up CometBFT's initial state. Furthermore, the
 application developer has to manually bootstrap CometBFTs state and block stores. 
 With support for local State sync, a node can simply load a snapshot from a predefined location and offer it to the application
-as is currently done via networked state sync. 
+as is currently done via networked State sync. 
 
 On the server side, without any support for local State sync, an operator has to manually instruct the application
 to export the snapshots into a portable format (via `dump`). 
@@ -298,7 +298,7 @@ In order to support local State sync, the following changes to CometBFT are nece
 2. Introduce a CLI command that can explicitly tell the application to create a snapshot export, in case 
 operators decide not to generate periodical exports.
 3. Extract a snapshot from the exported format.
-4. Alter existing ABCI calls to signal to the application that we want to create a snapshot export periodically. 
+4. Potentially alter existing ABCI calls to signal to the application that we want to create a snapshot export periodically. 
 5. Allow reading a snaphsot from a compressed format into CometBFT and offer it to the application via
 the existing `OfferSnapshot` ABCI call. 
 
@@ -308,9 +308,9 @@ At a very high level, there are two possible solutions and we will present both:
 1. The application will export snapshots into an exportable format on the server side. When a node syncs up, CometBFT will
 send this as a blob of bytes to the application to uncompress and apply the snapshot. 
 
-2. CometBFT creates a snapshot using existing ABCI calls and exports it into a format of our chosing. CometBFT is then in charge of
-reading in and parsing the exproted snapshot into a snapshot that can be offered to the application via the existing `OfferSnapshot` 
-and `ApplyChunk` methods. 
+2. CometBFT creates a snapshot using existing ABCI calls and exports it into a format of our choosing. CometBFT is then in charge of
+reading in and parsing the exported snapshot into a snapshot that can be offered to the application via the existing `OfferSnapshot` 
+and `ApplyChunk` methods. This option does not alter any current APIs and is a good candidate for an initial implementation.
 
  
 #### Config file additions
@@ -346,8 +346,7 @@ The `dump` command can be implemented in two ways:
 
 1. Rely on the existing ABCI functions `ListSnapshots` and `LoadChunks` to retrieve the snapshots and chunks from a peer. 
 This approach requires no change to the current API and is easy to implement. Furthermore, CometBFT has complete control
-over the format of the exported snapshot. It does however involve more than one ABCI call and network data transfer
-data transafer. 
+over the format of the exported snapshot. It does however involve more than one ABCI call and network data transfer. 
 2.  Extend `RequestListSnapshots` with a flag to indicate that we want an exportable snapshot format and extend `ResponseListSnapshot` to return a 
 path and format of the exported snapshots.
 
@@ -375,7 +374,7 @@ is chosen at the time, creates or asks the application to create snapshot export
 **Export file consistency**
 
 The same caveat of making sure the data exported is not corrupted by concurrent reads and writes applies here as well. If we decide to simply export
-snapshots into a compressed file, we need to make sure that we do not return files that are not already written. 
+snapshots into a compressed file, we need to make sure that we do not return files that with ongoing writes.
 An alternative is for CometBFT to provide a Snapshot export store with snapshot isolation. This store would essentially be pruned as soon as a new snapshot is written,
 thus not taking too much more space.
 
@@ -427,13 +426,13 @@ Unlike networked statesync, we do not refetch individual chunks, thus if the chu
 ## Consequences
 
 Adding the support for a node to sync up using a local snapshot can speed up the syncing process, especially as
-networke based State sync has proven be fragile. 
+network based State sync has proven to be fragile. 
 
 ### Positive
 
-- This is a non-breaking change: it provides an alternative and complementary
-  implementation for state sync
-- Node operators will not need to use workarounds to make state sync to download
+- There is a possibility to implement this in a non-breaking manner: providing an alternative and complementary
+  implementation for State sync
+- Node operators will not need to use workarounds to make State sync to download
   application snapshots from specific nodes in the network, in particular from
   nodes that are controlled by the same operators
 
@@ -443,15 +442,12 @@ networke based State sync has proven be fragile.
 
 ### Neutral
 
-- Additional complexity, with additional parameters for state sync's
+- Additional complexity, with additional parameters for State sync's
   configuration and the bootstrap of a node
 - Additional complexity, with the possible addition of a CLI command to save
   application snapshots to the file system
 
 ## References
-
-> Are there any relevant PR comments, issues that led up to this, or articles
-> referenced for why we made the given design choice? If so link them here!
 
 - [State sync][state-sync] description, as part of ABCI++ spec
 - Original issue on Tendermint Core repository: [statesync: bootstrap node with state obtained out-of-band #4642][original-issue]

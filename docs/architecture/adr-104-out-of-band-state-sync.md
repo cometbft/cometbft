@@ -297,6 +297,17 @@ operators decide not to generate periodical exports.
 4. Alter existing ABCI calls to signal to the application that we want to create a snapshot export periodically. 
 5. Allow reading a snaphsot from a compressed format into CometBFT and offer it to the application via
 the existing `OfferSnapshot` ABCI call. 
+
+
+At a very high level, there are two possible solutions and we will present both:
+
+1. The application will export snapshots into an exportable format on the server side. When a node syncs up, CometBFT will
+send this as a blob of bytes to the application to uncompress and apply the snapshot. 
+
+2. CometBFT creates a snapshot using existing ABCI calls and exports it into a format of our chosing. CometBFT is then in charge of
+reading in and parsing the exproted snapshot into a snapshot that can be offered to the application via the existing `OfferSnapshot` 
+and `ApplyChunk` methods. 
+
  
 #### Config file additions
 
@@ -328,6 +339,7 @@ as snapshot generation, dumping and loading a local snapshot would be built into
  while the node is running, we do not need to rely on a CLI for this functionality.
 
 The `dump` command can be implemented in two ways:
+
 1. Rely on the existing ABCI functions `ListSnapshots` and `LoadChunks` to retrieve the snapshots and chunks from a peer. 
 This approach requires no change to the current API and is easy to implement. Furthermore, CometBFT has complete control
 over the format of the exported snapshot. It does however involve more than one ABCI call and network data transfer
@@ -374,29 +386,39 @@ Note that, if it is not CometBFT that created the snapshot export from the data 
 CometBFT might not be aware of how the snapshot was exported, and needs to ask the application to restore the snapshot.
 
 If a snapshot was created using option 1 from the previous section, or the export format is known to CometBFT (like `tar, gzip` etc.), 
-CometBFT can extract the snapshot itself, and offer it to the application via `RequestOfferSnapshot`. 
-If this is not the case, and we cannot extract the snapshot, we need to ask the application to do so.
-Reusing `OfferSnapshot` command is not enough as the Response returns only an accept/reject code. 
+CometBFT can extract the snapshot itself, and offer it to the application via `RequestOfferSnapshot` without any API changes. 
 
-Thus, we propose introducing a new ABCI call of the form `ExportSnapshot`. This would be used if the exported snapshot format is not known to CometBFT, 
-with the following parameters:
+If CometBFT is not the one who created the exported file, we introduce a new ABCI call `UnpackSnapshot` 
+to send the exported snapshot as a blob of bytes to the application, which uncompresses it, installs it 
+and responds whether the snapshot is accepted and the chunk application has passed. 
 
 
 * **Request**:
 
-    | Name           | Type    | Description                                 | Field Number |
-    |----------------|---------|---------------------------------------------|--------------|
-    | snapshot       | [] byte | Snapshot export created by the application. | 1            |
+    | Name            | Type    | Description                                 | Field Number |
+    |-----------------|---------|---------------------------------------------|--------------|
+    | exportedSnapshot| [] byte | Snapshot export created by the application. | 1            |
 
     Commit signals the application to persist application state. It takes no parameters.
 
 * **Response**:
 
-    | Name          | Type     | Description                                                            | Field Number |
-    |---------------|----------|------------------------------------------------------------------------|--------------|
-    | snapshot      | Snapshot | Extracted snapshot from the exported format                            | 1            |
-    | chunks        | []Chunk  | Snapshot chunks                                                        | 2            |
+    | Name               | Type                                                    | Description                            | Field Number |
+    |--------------------|-------------------------------------------------------- |----------------------------------------|--------------|
+    | result             | [Result](../../spec/abci/abci%2B%2B_methods.md#result)  | The result of the snapshot offer.      | 1            |
+    | resultChunk        | ResultC                                                 | The result of applying the chunks.     | 2            |
 
+```proto
+  enum ResultC {
+    UNKNOWN         = 0;  // Unknown result, abort all snapshot restoration
+    ACCEPT          = 1;  // The chunks were accepted.
+    ABORT           = 2;  // Abort snapshot restoration, and don't try any other snapshots.
+    RETRY_SNAPSHOT  = 3;  // Restart this snapshot from `OfferSnapshot`, reusing chunks unless instructed otherwise.
+    REJECT_SNAPSHOT = 4;  // Reject this snapshot, try a different one.
+  }
+```
+
+Unlike networked statesync, we do not refetch individual chunks, thus if the chunk application of the exported snapshot fails, snapshot application fails. 
 
 ## Consequences
 

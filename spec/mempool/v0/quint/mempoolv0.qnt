@@ -29,7 +29,7 @@ module mempoolv0 {
     val Configs: NodeId -> Config = NodeIds.mapBy(_ => { keepInvalidTxsInCache: false })
 
     //--------------------------------------------------------------------------
-    // Node metadata
+    // Auxiliary variables
     //--------------------------------------------------------------------------
     type Step = str
     val Steps: Set[Step] = Set("init", "CheckTx", "ReceiveCheckTxResponse", 
@@ -37,14 +37,14 @@ module mempoolv0 {
         "ABCI::ProcessCheckTxRequest")
 
     var step: { node: NodeId, name: Step }
-    var error: (NodeId, Error)
 
-    /* Auxiliary definitions */
     action setStep(nodeId, s) =
         step' = { node: nodeId, name: s }
 
+    var error: { node: NodeId, error: Error }
+
     action setError(nodeId, err) =
-        error' = (nodeId, err)
+        error' = { node: nodeId, error: err }
 
     //--------------------------------------------------------------------------
     // Mempool state
@@ -127,7 +127,7 @@ module mempoolv0 {
         mempool' = NodeIds.mapBy(_ => Set()),
         cache' = NodeIds.mapBy(_ => Set()),
         step' = { node: noNode, name: "init" },
-        error' = (noNode, noError),
+        error' = { node: noNode, error: noError },
         height' = NodeIds.mapBy(_ => 0),
         History_init,
         Network_init,

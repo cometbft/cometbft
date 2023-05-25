@@ -294,15 +294,15 @@ This section explains how the tests were carried out for reproducibility purpose
    Follow steps 1-4 of the `README.md` at the top of the testnet repository to configure Terraform, and `doctl`.
 2. Copy file `varyVESize.toml` onto `testnet.toml` (do NOT commit this change).
 3. Set variable `VERSION_TAG` in the `Makefile` to the git hash that is to be tested.
-4. Follow steps 5-10 of the `README.md` to configure and start the "stable" part of the rotating node testnet
+4. Follow steps 5-10 of the `README.md` to configure and start the testnet
     * WARNING: Do NOT forget to run `make terraform-destroy` as soon as you are done with the tests
-
 5. Configure the load runner to produce the desired transaction load.
     * set makefile variables `ROTATE_CONNECTIONS`, `ROTATE_TX_RATE`, to values that will produce the desired transaction load.
     * set `ROTATE_TOTAL_TIME` to 150 (seconds).
-    * set `ITERATIONS` to the number of iterations that each configuration should run for. Default is 1 time.
-6. Disable the generation of empty blocks, so the system quiesces in between runs. 
+    * set `ITERATIONS` to the number of iterations that each configuration should run for. Default is once.
+6. Disable the generation of empty blocks, so the system quieces in between runs.
     * edit `scripts/configgen.sh` to uncomment the following lines
+
       ```bash
       #sed $INPLACE_SED_FLAG "s/=create_empty_blocks .*/create_empty_blocks = false/g" $file
       #sed $INPLACE_SED_FLAG "s/create_empty_blocks_interval .*/create_empty_blocks_interval = \"600s\"/g" $file

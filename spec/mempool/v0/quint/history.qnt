@@ -15,14 +15,14 @@ module history {
         historySubmittedTxs' = NodeIds.mapBy(_ => Set()),
     }
 
-    action History_recordMempoolTx(nodeId: NodeId, tx: Tx): bool = all {
-        historyMempoolTxs' = historyMempoolTxs.put(nodeId, historyMempoolTxs.get(nodeId).setAdd(tx)),
+    action History_recordMempoolTx(nodeId, tx) = all {
+        historyMempoolTxs' = historyMempoolTxs.mapPut(nodeId, (txs) => txs.setAdd(tx)),
         historySubmittedTxs' = historySubmittedTxs,
     }
 
     action History_recordSubmittedTx(nodeId, tx) = all {
         historyMempoolTxs' = historyMempoolTxs,
-        historySubmittedTxs' = historySubmittedTxs.put(nodeId, historySubmittedTxs.get(nodeId).setAdd(tx)),
+        historySubmittedTxs' = historySubmittedTxs.mapPut(nodeId, (txs) => txs.setAdd(tx)),
     }
 
     action History_unchanged = all {

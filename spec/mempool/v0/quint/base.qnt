@@ -36,4 +36,16 @@ module base {
 
     pure def nonEmpty(__set: Set[a]): bool =
         __set != Set()
+
+    /// Update a map entry using the previous value.
+    ///
+    /// @param __map the map to update
+    /// @param __key the key to search for
+    /// @param __f a function that returns the new value for __key 
+    ///   when applied to __key's old value
+    /// @returns a new map equal to __map except that __key maps
+    ///   to __f applied to __key's old value
+    def mapPut(__map: a -> b, __key: a, __f: b => b): (a -> b) = 
+        __map.put(__key, __f(__map.get(__key)))
+
 }

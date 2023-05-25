@@ -56,17 +56,15 @@ module abciServers {
     // For a "New" request we store the sender.
     action ABCI_SendRequestNewCheckTx(nodeId, tx, senderId, h) = 
         val req = { tag: "CheckTx", tx: tx, checkTxType: "New" }
-        requestSenderResponses' = requestSenderResponses.put(nodeId, 
-            requestSenderResponses.get(nodeId).put(req, (senderId, h, noResponse)))
+        requestSenderResponses' = requestSenderResponses.mapPut(nodeId, 
+            (rs) => rs.put(req, (senderId, h, noResponse)))
 
     // For "Recheck" we send multiple requests at once.
     action ABCI_SendRequestRecheckTxs(nodeId, txs) =
         val newRequests = txs.map(tx => { tag: "CheckTx", tx: tx, checkTxType: "Recheck" })
         // Add all the new requests, with no sender and no response.
-        requestSenderResponses' = requestSenderResponses.put(nodeId, {
-            val m = requestSenderResponses.get(nodeId)
-            m.keys().mapBy(req => if (req.in(newRequests)) emptyResponse else m.get(req))
-        })
+        requestSenderResponses' = requestSenderResponses.mapPut(nodeId, (rs) =>
+            rs.keys().mapBy(req => if (req.in(newRequests)) emptyResponse else rs.get(req)))
 
     // The app receives a CheckTx request and creates a response.
     action ABCI_ProcessCheckTxRequest(nodeId) =
@@ -77,14 +75,13 @@ module abciServers {
             val h = ABCI_heightFor(nodeId, req)
             val err = if (req.tx.isValidAt(h)) noError else InvalidTxError
             val resp = { tag: req.tag, err: err }
-            requestSenderResponses' = requestSenderResponses.put(nodeId, 
-                requestSenderResponses.get(nodeId).put(req, (senderId, h, resp))),
+            requestSenderResponses' = requestSenderResponses.mapPut(nodeId, 
+                (rs) => rs.put(req, (senderId, h, resp))),
         }
 
     action ABCI_RemoveRequest(nodeId, request) = all {
         require(hasResponse(nodeId, request)), // We keep this condition to allow the action to return false; otherwise it will always evaluate to true.
-        requestSenderResponses' = requestSenderResponses.put(nodeId, 
-            requestSenderResponses.get(nodeId).mapRemove(request)), 
+        requestSenderResponses' = requestSenderResponses.mapPut(nodeId, (rs) => rs.mapRemove(request)), 
     }
 
     action ABCI_unchanged =

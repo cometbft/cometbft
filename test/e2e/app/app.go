@@ -204,7 +204,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.RequestFinali
 			//Further parse the value.
 			value, _, err = parseValue(value)
 			if err != nil {
-				panic(err) // shouldn't since the voteExtension value should be splittable.
+				panic(err) // shouldn't since the voteExtension value should be split-able.
 			}
 		} else if key == prefixReservedKey {
 			panic(fmt.Errorf("detected a transaction with key %q; this key is reserved and should have been filtered out", prefixReservedKey))
@@ -791,5 +791,5 @@ func parseVoteExtension(cfg *Config, ext []byte) (int64, error) {
 		return num, nil
 	}
 	//Return 0 here so the state is not updated and the system may quiesce.
-	return int64(0), nil
+	return 0, nil
 }

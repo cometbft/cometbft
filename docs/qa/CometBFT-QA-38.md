@@ -363,30 +363,23 @@ number of transactions processed per minute as compared to the baseline.
 
 ## Vote Extensions Testbed
 
-Method
+In this test we evaluate the effect of varyig the sizes of vote extensions added to pre-commit votes on the performance of CometBFT.
+Each validator adds a random sequence of bytes with the same predefined size, and the proposer of the following height aggregates the extensions from a quorum of validators from the previous height as "proof" that its proposal was chosen based on such extensions.
+With this test we aim at answering the following questions
 
-1. update the app configuration
-    - Since the extendVote method does not allow us to identify the block is empty or not so that extensions are skipped for empty blocks (during test pauses) we need to disable proposing empty blocks at all.
-      ```bash
-      sed $INPLACE_SED_FLAG "s/=create_empty_blocks .*/create_empty_blocks = false/g" $file
-      ```
-    - `make configgen`
-2. ansible-playbook ./ansible/re-init-testapp.yaml -u root -i ./ansible/hosts --limit=validators -e "testnet_dir=testnet" -f 20
-3. run load
+- what is the effect on block sizes
+- what is the effect on block and transaction rates
+- what is the effect on the network usage
 
+All tests were performed on commit 9fc711b6514f99b2dc0864fc703cb81214f01783, which corresponds to v0.38.0-alpha.2 plus commits to add the ability to vary the vote extension sizes.
+As baseline we use vote extensions of size 4 bytes, compressed as variable size integers, the same behavior observed on the vanila v0.38.0-alpha.2.
+For the various sizes we initially explored. 
 
+| Size | Effect |
+| ---  | ---   |
+| baseline | |
+| 8192 | |
 
-### Results
-| Scenario | Date       | Version                                                    | Result |
-| -------- | ---------- | ---------------------------------------------------------- | ------ |
-| Rotating | 2023-05-23 | v0.38.0-alpha.2 (e9abb116e29beb830cf111b824c8e2174d538838) | Pass   |
-
-#### baseline 
-
-Test performed with VERSION_TAG ?= 9fc711b6514f99b2dc0864fc703cb81214f01783 #vote extension sizes. 
-which is alph plus VE size option
-
-#### various sizes
 
 #### Observations
 
@@ -396,10 +389,15 @@ which is alph plus VE size option
 - txs per block depending on the extension sizes
 	- remember that there is one special transaction
 - we need to evaluate the effect of transaction sizes as well.
-
+- the mempool never got completely empty
 
 - first run
 
+### Results
+
+| Scenario | Date       | Version                                                    | Result |
+| -------- | ---------- | ---------------------------------------------------------- | ------ |
+| Rotating | 2023-05-23 | v0.38.0-alpha.2 + varying vote extensions  (9fc711b6514f99b2dc0864fc703cb81214f01783 ) | |
 
 #### Conclusions
 

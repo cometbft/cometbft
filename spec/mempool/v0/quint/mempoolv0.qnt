@@ -109,7 +109,7 @@ module mempoolv0 {
     }
 
     action removeFromMempool(nodeId: NodeId, txs: Set[Tx]): bool =
-        mempool' = mempool.put(nodeId, mempool.get(nodeId).filter(e => e.tx.in(txs)))
+        mempool' = mempool.put(nodeId, mempool.get(nodeId).filter(e => not(e.tx.in(txs))))
 
     action addSender(nodeId, tx, senderId) =
         if (inMempool(nodeId, tx)) {

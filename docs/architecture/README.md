@@ -42,7 +42,7 @@ numbering our ADRs from 100 onwards.
 
 ### Proposed
 
-- [ADR-104: Out-of-band state sync support](./adr-104-out-of-band-state-sync.md)
+- [ADR-104: State sync from local snapshot](./adr-104-out-of-band-state-sync.md)
 
 ### Accepted
 

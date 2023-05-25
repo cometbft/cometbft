@@ -8,236 +8,12 @@
 // One of the goals of this spec is to make their actions and data structures
 // easily mapped to the code.
 
-// From: https://github.com/informalsystems/quint/blob/main/examples/spells/basicSpells.qnt
-module basicSpells {
-    /// An annotation for writing preconditions.
-    pure def require(__cond: bool): bool = __cond
-
-    /// Remove a set element.
-    pure def setRemove(__set: Set[a], __elem: a): Set[a] = {
-        __set.exclude(Set(__elem))
-    }
-
-    /// Remove a map entry.
-    pure def mapRemove(__map: a -> b, __key: a): a -> b = {
-        __map.keys().setRemove(__key).mapBy(__k => __map.get(__k))
-    }
-}
-
-module Base {
-    // Nodes
-    type NodeId = str
-    val noNode: NodeId = "no-node"
-    // const NodeIds: Set[NodeId]
-    val NodeIds: Set[NodeId] = Set(noNode, "n1", "n2", "n3")
-
-    // Transactions
-    type Tx = str
-    val invalidTx: Tx = "invalid-tx"
-    // const Txs: Set[Tx]
-    val Txs: Set[Tx] = Set("tx1", "tx2", invalidTx)
-    def isValid(tx) = tx != invalidTx
-    type Error = str
-
-    // Error
-    val noError: Error = "none"
-
-    // Heights
-    type Height = int
-    val Heights = 0.to(4)
-
-    //--------------------------------------------------------------------------
-    // More spells
-    //--------------------------------------------------------------------------
-    pure def setAdd(__set: Set[a], __elem: a): Set[a] =
-        __set.union(Set(__elem))
-
-    pure def isEmpty(__set: Set[a]): bool =
-        __set == Set()
-
-    pure def nonEmpty(__set: Set[a]): bool =
-        __set != Set()
-
-}
-
-/* Messages as defined in the protobuf files */
-module ABCIMessages {
-    import Base.*
-
-    // [tendermint.abci.CheckTxType]: https://github.com/CometBFT/cometbft/blob/4790ea3e46475064d5475c787427ae926c5a9e94/proto/tendermint/abci/types.proto#L94
-    val CheckTxTypes = Set("New", "Recheck")
-
-    // [tendermint.abci.RequestCheckTx]: https://github.com/CometBFT/cometbft/blob/4790ea3e46475064d5475c787427ae926c5a9e94/proto/tendermint/abci/types.proto#L99
-    type Request = {
-        tag: str, // The only value that we use is "CheckTx".
-        tx: Tx, 
-        checkTxType: str,
-    }
-
-    // [tendermint.abci.ResponseCheckTx]: https://github.com/CometBFT/cometbft/blob/4790ea3e46475064d5475c787427ae926c5a9e94/proto/tendermint/abci/types.proto#L254
-    type Response = {
-        tag: str, 
-        err: Error, // called `code` in protobuf
-    }
-}
-
-// An ABCI server receives asynchronous ABCI requests and replies with ABCI responses.
-module ABCIServers {
-    import basicSpells.* //from "./basicSpells"
-    import Base.*
-    import ABCIMessages.*
-
-    type ABCIRequests = { tag: str, tx: Tx }
-    val ABCIRequestTags = Set("CheckTx", "RecheckTx")
-    
-    // The ABCIServer receives requests in a queue (a set actually) and responds
-    // to a queue (set) of responses. Each request maps to the node id of the
-    // sender and to the response, if available.
-    var requestSenderResponses: NodeId -> (Request -> (NodeId, Response))
-
-    val noResponse: Response = { tag: "", err: noError }
-
-    //--------------------------------------------------------------------------
-    // Errors
-    //--------------------------------------------------------------------------
-    val InvalidTxError: Error = "err:invalid-tx"
-    val MempoolIsFullError: Error = "err:mempool-full"
-    val TxInCacheError: Error = "err:tx-in-cache"
-    val InvalidTxWarning: Error = "warn:invalid-tx"
-
-    //--------------------------------------------------------------------------
-    // Auxiliary definitions
-    //--------------------------------------------------------------------------
-    def ABCI_senderFor(nodeId, request) = 
-        (requestSenderResponses.get(nodeId).get(request))._1
-    
-    def ABCI_responseFor(nodeId, request) = 
-        requestSenderResponses.get(nodeId).get(request)._2
-
-    def hasResponse(nodeId, request) =
-        ABCI_responseFor(nodeId, request) != noResponse
-
-    def requestsWithResponse(nodeId: NodeId, checkTxType: str): Set[Request] =
-        requestSenderResponses.get(nodeId).keys()
-            .filter(r => r.checkTxType == checkTxType and nodeId.hasResponse(r))
-    def ABCI_checkTxRequests(nodeId) = requestsWithResponse(nodeId, "New")
-    def ABCI_recheckTxRequests(nodeId) = requestsWithResponse(nodeId, "Recheck")
-
-    val emptyResponse = (noNode, noResponse)
-
-    //--------------------------------------------------------------------------
-    // Actions
-    //--------------------------------------------------------------------------
-    action ABCI_Init =
-        requestSenderResponses' = NodeIds.mapBy(_ => Map())
-
-    // For a "New" request we store the sender.
-    action ABCI_SendRequestNewCheckTx(nodeId, tx, senderId) = 
-        val req = { tag: "CheckTx", tx: tx, checkTxType: "New" }
-        requestSenderResponses' = requestSenderResponses.put(nodeId, 
-            requestSenderResponses.get(nodeId).put(req, (senderId, noResponse)))
-
-    // For "Recheck" we send multiple requests at once.
-    action ABCI_SendRequestRecheckTxs(nodeId, txs) =
-        val newRequests = txs.map(tx => { tag: "CheckTx", tx: tx, checkTxType: "Recheck" })
-        // Add all the new requests, with no sender and no response.
-        requestSenderResponses' = requestSenderResponses.put(nodeId, {
-            val m = requestSenderResponses.get(nodeId)
-            m.keys().mapBy(req => if (req.in(newRequests)) emptyResponse else m.get(req))
-        })
-
-    // The app receives a CheckTx request and creates a response.
-    action ABCI_ProcessCheckTxRequest(nodeId) =
-        nondet req: Request = oneOf(requestSenderResponses.get(nodeId).keys()) 
-        all {
-            require(not(nodeId.hasResponse(req))),
-            val senderId = ABCI_senderFor(nodeId, req)
-            val err = if (req.tx.isValid()) noError else InvalidTxError
-            val resp = { tag: req.tag, err: err }
-            requestSenderResponses' = requestSenderResponses.put(nodeId, 
-                requestSenderResponses.get(nodeId).put(req, (senderId, resp))),
-        }
-
-    action ABCI_RemoveRequest(nodeId, request) = all {
-        require(hasResponse(nodeId, request)), // We keep this condition to allow the action to return false; otherwise it will always evaluate to true.
-        requestSenderResponses' = requestSenderResponses.put(nodeId, 
-            requestSenderResponses.get(nodeId).mapRemove(request)), 
-    }
-
-    action ABCI_Unchanged =
-        requestSenderResponses' = requestSenderResponses
-
-}
-
-module Network {
-    import basicSpells.* //from "./basicSpells"
-    import Base.* 
-
-    // const Peers: NodeId -> Set[NodeId]
-    val Peers: NodeId -> Set[NodeId] = Map(
-        "n1" -> Set("n2", "n3"),
-        "n2" -> Set("n1", "n3"),
-        "n3" -> Set("n1", "n2")
-    )
-
-    //--------------------------------------------------------------------------
-    // Network state
-    type TxsMsg = { tag: str, senderId: NodeId, tx: Tx }
-    var msgs: NodeId -> Set[TxsMsg] // map from receiver to messages to process
-
-    //--------------------------------------------------------------------------
-    action Network_Init =
-        msgs' = NodeIds.mapBy(_ => Set())
-
-    action sendTo(msg: TxsMsg, peer: NodeId): bool =
-        msgs' = msgs.put(peer, msgs.get(peer).setAdd(msg))
-
-    action receiveMsg(nodeId: NodeId, msg: TxsMsg): bool =
-        msgs' = msgs.put(nodeId, msgs.get(nodeId).setRemove(msg))    
-
-    action Network_Unchanged =
-        msgs' = msgs
-
-    //--------------------------------------------------------------------------
-    def Network_incomingMsgs(nodeId) =
-        msgs.get(nodeId)
-}
-
-module Chain {
-    import Base.* 
-
-    var chain: List[Set[Tx]]
-
-    val Chain_latestHeight = 
-        chain.length() - 1
-
-    val Chain_isEmpty = 
-        chain.length() == 0
-
-    def Chain_getBlock(h) =
-        chain[h]
-
-    val Chain_allTxsInChain =
-        chain.foldl(Set(), (s, x) => s.union(x))
-
-    //--------------------------------------------------------------------------
-    action Chain_Init =
-        chain' = List()
-
-    action Chain_NewBlockFrom(txs) =
-        chain' = chain.append(txs)
-
-    action Chain_Unchanged = 
-        chain' = chain
-
-}
-
-module MempoolV0 {
-    import basicSpells.* //from "./basicSpells"
-    import Base.* 
-    import Chain.*
-    import ABCIServers.* // as ABCI
-    import Network.*
+module mempoolv0 {
+    import myBasicSpells.* from "./myBasicSpells"
+    import base.* from "./base"
+    import chain.* from "./chain"
+    import abciServers.* from "./abciServers"
+    import network.* from "./network"
 
     //--------------------------------------------------------------------------
     // Spec parameters
@@ -591,6 +367,15 @@ module MempoolV0 {
             ABCI_Unchanged,
             Network_Unchanged,
         }
+}
+
+module mempoolTests {
+    import myBasicSpells.* from "./myBasicSpells"
+    import base.* from "./base"
+    import chain.* from "./chain"
+    import abciServers.* from "./abciServers"
+    import network.* from "./network"
+    import mempoolv0.* //from "./mempoolv0"
 
     //--------------------------------------------------------------------------
     // Tests
@@ -655,9 +440,10 @@ module MempoolV0 {
 }
 
 module __repl__ {
-    import Base.*
-    import ABCIServers.*
-    import Chain.*
-    import Network.*
-    import MempoolV0.*
+    // import base.* from "./base"
+    import chain.* from "./chain"
+    import abciServers.* from "./abciServers"
+    import network.* from "./network"
+    import mempoolv0.* //from "./mempoolv0"
+    import mempoolTests.* 
 } //-- __repl__

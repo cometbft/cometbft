@@ -11,7 +11,7 @@ Accepted | Rejected | Deprecated | Superseded by
 
 ## Context
 
-> 1. What is state sync?
+1. What is state sync?
 
 From CometBFT v0.34, synchronizing a fresh node with the rest of the network
 can benefit from [state sync][state-sync], a protocol for discovering,
@@ -19,7 +19,7 @@ fetching, and installing application snapshots.
 State sync is able to rapidly bootstrap a node by installing a relatively
 recent state machine snapshot, instead of replaying all historical blocks.
 
-> 2. What is the problem?
+2. What is the problem?
 
 With the widespread adoption of state sync to bootstrap nodes, however,
 what should be one of its strengths - the ability to discover and fetch
@@ -34,7 +34,7 @@ state sync service (i.e., servers offering snapshots) has been limited, which
 has rendered the service _fragile_ (from the client's point of view). In other words, it is very
 hard to find a node with _good_ snapshots, leading nodes to often block during sync up.
 
-> 3. High level idea behind the solution
+3. High level idea behind the solution
 
 This ADR stems from the observation that state sync is more than a protocol to
 discover and fetch snapshots from peers in the network.
@@ -48,28 +48,27 @@ sync and/or Consensus to catch up with the latest state of the network.
 The purpose of this ADR is to provide node operators with more flexibility in
 defining how or where state sync should look for application snapshots.
 More precisely, it enables state sync to support the bootstrap of nodes from
-application snapshots obtained _out-of-band_ by operators.
+application snapshots obtained _out-of-band_ by operators, available to the 
+node _locally_.
+Applications dump snapshots into an exportable format, which can be then obtained
+by the operators and placed on the syncing node. The node can then sync locally 
+without transfering snapshots via the network.
 The goal is to provide an alternative to the mechanism currently adopted by
 state sync, discovering and fetching application snapshots from peers in the
 network, in order to address the above mentioned limitations, while preserving
-most of state sync's operation.
+most of state sync's operation. 
 
 The ADR presents two solutions:
 
-> 1. The first solution is implemented by the application and was proposed and 
-implemented by the SDK (PR #16067 and #16061). This ADR describes the solution 
+1. The first solution is implemented by the application and was proposed and 
+implemented by the SDK (PR [#16067][sdk-pr2] and [#16061][sdk-pr1] ). This ADR describes the solution 
 in a general way, proividing guidlines to non-SDK based applications if they wish
 to implement their own local state sync. 
-> 2. The second part of the ADR proposes a more general solution, that uses ABCI
+2. The second part of the ADR proposes a more general solution, that uses ABCI
 to achieve the same behaviour achieved by the SDK.
 
 
 ## Alternative Approaches
-
-> This section contains information around alternative options that were considered
-> before making a decision. It should contain an explanation on why the alternative
-> approach(es) were not chosen.
-
 
 ### Strengthen p2p-based state sync
 
@@ -125,7 +124,8 @@ handled by state sync, [ADR 083][adr083]/[ADR 103][adr103] assumes that node
 operators are able to manually synchronize the application state from a running
 node (it might be necessary to stop it) to a not-yet-started fresh node.
 
-The main limitation of the approach in [ADR 083][adr083]/[ADR 103][adr103] is that it relies on the ability of node
+The main limitation of the approach in [ADR 083][adr083]/[ADR 103][adr103] 
+is that it relies on the ability of node
 operators to properly synchronize the application state between two nodes.
 While experienced node operators are likely able to perform this operation in a
 proper way, we have to consider a broader set of users and emphasize that it is
@@ -138,11 +138,29 @@ in order to adopt this solution.
 
 ## Decision
 
+State sync should support the bootstrap of new nodes from application snapshots
+available locally. Implementing this option does not mean that networked State sync
+should be removed, but not both should be enabled at the same time. 
+
+In other words, the following operation should be, in general terms, possible:
+
+1. When configuring a new node, operators should be able to define where (e.g.,
+   a local file system location) the client side of state sync should look for
+   application snapshots to install or restore;
+2. Operators should be able to instruct the server side of State sync on a
+   running node to export application snapshots, when they are available,
+   to a given location (e.g., at the local file system);
+3. It is up to node operators to transfer application snapshots produced by the
+   running node (server side) to the new node (client side) to be bootstrapped
+   using this new State sync feature.
+
+
+
 As the SDK implemented a solution for all applications using it, and we do not have
 users requesting local state sync that are running in production, we will not implement the generally applicable
 solution. 
 
-This ADR will outline both the solution implemented by the SDK, as well as a design proposal of a 
+This ADR will outline both, the solution implemented by the SDK, as well as a design proposal of a 
 generally applicable solution, that can be later on picked up and implemented in CometBFT.
 
 ## Detailed Design
@@ -154,27 +172,28 @@ chose to implement local state sync differently, or implement only a subset of t
 implemented by the SDK.
 
 This solution exposes a command line interface enabling a node to manipulate the snapshots
-including dumping existing snapshots to an exportable format, loading and deleting exported snapshots,
-as well as bootstraping a node's state based on a local snapshot. 
+including dumping existing snapshots to an exportable format, loading, restoring and deleting exported snapshots,
+as well as a command to bootstrap the node by resetting CometBFT's state and block store. 
 
 The SDK exposes the following commands for snapshot manipulation:
 
 ```script
 
-delete      Delete a local snapshot
+delete      Delete a snapshot from the local snapshot store
 dump        Dump the snapshot as portable archive format
 export      Export app state to snapshot store
 list        List local snapshots
 load        Load a snapshot archive file into snapshot store
-restore     Restore app state from local snapshot
+restore     Restore app state from a snapshot stored in the local snapshot store
 
 ```
 
-and the following command to bootstrap the state of CometBFT upon a completed state sync:
+and the following command to bootstrap the state of CometBFT upon installing a snapshot:
 
 ``` script
 
-comet bootstrap-state          Bootstrap the state of CometBFT's state and block store
+comet bootstrap-state          Bootstrap the state of CometBFT's state and block store from the
+                               application's state
 
 ```
 
@@ -183,11 +202,14 @@ Namely, a statesync server can use `dump` to create a portable archieve format o
 or trigger snapshot creation using `export`. 
 
 The client side, restores the application state from a local snapshot that was previously exported, using
-`restore`. Upon successful completion of the previous sequence of commands, the state of CometBFT is bootstrapped
+`restore`. Before `restore` can be called, the client has to `load` an archived snapshot into its
+local snapshot store.
+Upon successful completion of the previous sequence of commands, the state of CometBFT is bootstrapped
 using `bootstrap-state` and CometBFT can be launched. 
 
 
 There are three prerequisites for this solution to work when a node is syncing:
+
 1. The application has access to the snapshot database
 2. CometBFTs state and block stores are empty or reset
 3. CometBFT is not running while the node is state syncing 
@@ -200,7 +222,7 @@ In order to be able to dump or export the snapshots, the application must have a
 
 We describe the main interface expected from the snapshot database and used by the above mentioned CLI commands
 for snapshot manipulation. 
-The interface was derived from the SDK's implementation of local state sync.  
+The interface was derived from the SDK's implementation of local State sync.  
 
 ```golang
 
@@ -208,21 +230,21 @@ The interface was derived from the SDK's implementation of local state sync.
 func (s *Store) Delete(height uint64, format uint32) error
 
 // Retrieves a snapshot for a certain height
-func (s *Store) Get(height uint64, format uint32) (*types.Snapshot, error) 
+func (s *Store) Get(height uint64, format uint32) (*Snapshot, error) 
 
 // List recent snapshots, in reverse order (newest first)
-func (s *Store) List() ([]*types.Snapshot, error)
+func (s *Store) List() ([]*Snapshot, error)
 
 // Loads a snapshot (both metadata and binary chunks). The chunks must be consumed and closed.
 // Returns nil if the snapshot does not exist.
-func (s *Store) Load(height uint64, format uint32) (*types.Snapshot, <-chan io.ReadCloser, error)
+func (s *Store) Load(height uint64, format uint32) (*Snapshot, <-chan io.ReadCloser, error)
 
 // LoadChunk loads a chunk from disk, or returns nil if it does not exist. The caller must call
 // Close() on it when done.
 func (s *Store) LoadChunk(height uint64, format, chunk uint32) (io.ReadCloser, error)
 
 // Save saves a snapshot to disk, returning it.
-func (s *Store) Save(height uint64, format uint32, chunks <-chan io.ReadCloser) (*types.Snapshot, error) 
+func (s *Store) Save(height uint64, format uint32, chunks <-chan io.ReadCloser) (*Snapshot, error) 
 
 // PathChunk generates a snapshot chunk path.
 func (s *Store) PathChunk(height uint64, format, chunk uint32) string
@@ -233,15 +255,17 @@ In order to dump a snapshot, an application needs to retrieve all the chunks sto
 
 **CometBFT state bootstrap**
 
-In addition to managing snapshots, it is neccessary to bootstrap (setup) the state and block store of CometBFT
-in order for CometBFT to continue with block sync and consensus after state sync. 
-At the moment of writing this ADR, there is no command line in CometBFT that supports this.
-Thus application developers have to, within their bootstraping command:
+In addition to managing snapshots, it is neccessary to bootstrap (setup) the state and block store of CometBFT to start up.
+Upon a successful start, CometBFT performs block sync and consensus. 
+At the moment of writing this ADR, there is no command line in CometBFT that supports this, but an [issue][state-bootstrap]
+has been opened to address this.
+Until it has been resolved, the application developers have to, within their bootstraping command:
 
 - Create a state and block store
-- Launch a light client to verify the snapshot headers
+- Launch a light client to obtain and verify the block header for a given height.
 - Use the light client's `State` and `Commit` functions to 
-retrieve the proper state, verify the `AppHash` and retrieve the `LastCommit`.
+retrieve the proper state and `AppHash`, verify it with the application, and retrieve the 
+last commit for the snapshot height.
 - Save the retrieved values into the state and block stores. 
 
 This code is essentially what the existing implementation of the statesync reactor does, once state syncing is complete 
@@ -253,14 +277,34 @@ minus the functions that apply the snapshot chunks (as this has already been don
 Given that snapshot manipulation is entirely application defined, and to avoid pulling this functionality into
 CometBFT, we propose a solution using ABCI, that mimics the behaviour described in the previous section.
 
-Local state sync can be performed online, while CometBFT is running, by reading the snapshots from a 
-predefined location. For this to be possible, this ADR proposes the following additions to the configuration file:
+On the client side, the main difference between local State sync done by the application and CometBFT is that the 
+application has to perform the sync offline, in order to properly set up CometBFT's initial state. Furthermore, the
+application developer has to manually bootstrap CometBFTs state and block stores. 
+With support for local State sync, a node can simply load a snapshot from a predefined location and offer it to the application
+as is currently done via networked state sync. 
+
+On the server side, without any support for local State sync, an operator has to manually instruct the application
+to export the snapshots into a portable format (via `dump`). 
+
+Having support for this within CometBFT, the app can automatically perform this export when taking snapshots. 
+
+In order to supported local State sync, the following changes to CometBFT are necessary:
+
+1. Adding new configuration options to the config file.
+2. Introduce a CLI command that can explicitly tell the application to create a snapshot export, in case 
+operators decide not to generate periodical exports.
+3. Introcude a CLI command to extract a snapshot from the exported format.
+4. Alter existing ABCI calls to signal to the application that we want to create a snapshot export periodically. 
+5. Allow reading a snaphsot from a compressed format into CometBFT and offer it to the application via
+the existing `OfferSnapshot` ABCI call. 
+ 
+#### Config file additions
 
 ```bash
 [statesync]
 # State syncing from a local snapshot
 local_sync=false 
-# Path to snapshot, will be ignored if local_sync=true
+# Path to snapshot, will be ignored if local_sync=false
 snapshot_load_path=""
 # Periodically dump snapshots into archive format (optional)
 auto_snapshot_dump=false
@@ -271,8 +315,7 @@ snapshot_dump_path=""
 snapshot_dump_format=""
 ```
 
-Operators can instruct the application to periodically dump the existing snapshots into an exportable arhive format.
-They can also configure the path and format of the file to use when exporting snapshots.
+#### *CLI command for application snapshot management*
 
 CometBFT exposes a CLI command to instruct the application to dump the existing snapshots into an exportable format:
 
@@ -280,36 +323,88 @@ CometBFT exposes a CLI command to instruct the application to dump the existing 
 dump      Dump existing snapshots to exportable file format.
 ```
 
-We can expand the CLI interface to allow for additional operations, similar to the above provided CLI. However,
-as snapshot generation and dumping would be built in into CometBFT, while the node is running, we do not need
-to rely on a CLI for this functionality.
-
-Applications can themselves be in charge of dumping the snapshots into a given file format. An alternative solution is 
-that CometBFT, itself, after recieveing snapshots obtained via `ListSnapshots`, generates a file and dumps it to 
-a predefined location. 
-
-On startup, if `local_sync` is set to `true`, CometBFT will try to look for an existing snapshot at the path
-given by the operator. The snapshots will be loaded and state restored as if they came from a peer in the current implementation. 
+We could expand the CLI interface to allow for additional operations, similar to the above provided CLI. However,
+as snapshot generation, dumping and loading a local snapshot would be built into CometBFT,
+ while the node is running, we do not need to rely on a CLI for this functionality.
 
 The `dump` command can be implemented in two ways:
-- Rely on the existing ABCI functions `ListSnapshots` and `LoadChunks` to retrieve the snapshots and chunks from a peer. 
-This approach requires no change to the current API and is easy to implement. It however involves more than one ABCI call and 
+1. Rely on the existing ABCI functions `ListSnapshots` and `LoadChunks` to retrieve the snapshots and chunks from a peer. 
+This approach requires no change to the current API and is easy to implement. Furthermore, CometBFT has complete control
+over the format of the exported snapshot. It does however involve more than one ABCI call and network data transfer
 data transafer. 
-- Extend `RequestListSnapshots` with a flag to indicate that we want an exportable snapshot format and extend `ResponseListSnapshot` to return a 
+2.  Extend `RequestListSnapshots` with a flag to indicate that we want an exportable snapshot format and extend `ResponseListSnapshot` to return a 
 path and format of the exported snapshots.
-- Add path parameters to the command, and include the path into `RequestListSnapshots` instructing the application to generate a snapshot export
-at a given location. 
+
+An improvement to the second option mentioned above would be to add path parameters to the command,
+ and include the path into `RequestListSnapshots` instructing the application to generate a snapshot export
+at a given location.
+
+A third option is the introduction of a new ABCI call: `ExportSnapshots`, which will have the same effect as option 2 above.
+
+
+#### *Automatic snapshot exporting*
+
+Applications generate snapshots in fixed time intervals. The application itself measures the time passed since the last snapshot,
+and CometBFT has no role in instructing the application when to take snapshots. 
+
+The State sync reactor currently retrieves a list of snapshots from a peer, who obtains these snapshots via ABCI (`RequestListSnapshots`). 
+
+Applications can thus themselves be in charge of dumping the snapshots into a given file format, the same way they generate snapshots.
+ If `auto_snapshot_dump` is true, 
+CometBFT instructs the application to export the snapshots periodically.
+
+An alternative solution is that CometBFT, itself, using the implementation of the `dump` command, whichever 
+is chosen at the time, creates or asks the application to create snapshot exports. 
+
+**Export file consistency**
 
 The same caveat of making sure the data exported is not corrupted by concurrent reads and writes applies here as well. If we decide to simply export
 snapshots into a compressed file, we need to make sure that we do not return files that are not already written. 
 An alternative is for CometBFT to provide a Snapshot export store with snapshot isolation. This store would essentially be pruned as soon as a new snapshot is written,
 thus not taking too much more space.
 
+If it is the application that exports the snapshots, it is something the application developer has to be aware of.
+
+#### Syncing a node using local snapshots
+
+On startup, if `local_sync` is set to `true`, CometBFT will try to look for an existing snapshot at the path
+given by the operator. The snapshots will be loaded and state restored as if they came from a peer in the current implementation. 
+
+Note that, if it is not CometBFT that created the snapshot export from the data retrieved via ABCI (a combination of `ListSnapshots` and `LoadChunks`),
+CometBFT might not be aware of how the snapshot was exported, and needs to ask the application to restore the snapshot.
+
+If a snapshot was created using option 1 from the previous section, or the export format is known to CometBFT (like `tar, gzip` etc.), 
+CometBFT can extract the snapshot itself, and offer it to the application via `RequestOfferSnapshot`. 
+If this is not the case, and we cannot extract the snapshot, we need to ask the application to do so.
+Reusing `OfferSnapshot` command is not enough as the Response returns only an accept/reject code. 
+
+Thus, we propose introducing a new ABCI call of the form `ExportSnapshot`. This would be used if the exported snapshot format is not known to CometBFT, 
+with the following parameters:
+
+
+* **Request**:
+
+    | Name           | Type    | Description                                 | Field Number |
+    |----------------|---------|---------------------------------------------|--------------|
+    | snapshot       | [] byte | Snapshot export created by the application. | 1            |
+
+    Commit signals the application to persist application state. It takes no parameters.
+
+* **Response**:
+
+    | Name          | Type     | Description                                                            | Field Number |
+    |---------------|----------|------------------------------------------------------------------------|--------------|
+    | snapshot      | Snapshot | Extracted snapshot from the exported format                            | 1            |
+    | chunks        | []Chunk  | Snapshot chunks                                                        | 2            |
+
+
+
+
 
 ## Consequences
 
-> This section describes the consequences, after applying the decision. All
-> consequences should be summarized here, not just the "positive" ones.
+Adding the support for a node to sync up using a local snapshot can speed up the syncing process, especially as
+networke based State sync has proven be fragile. 
 
 ### Positive
 
@@ -320,6 +415,8 @@ thus not taking too much more space.
   nodes that are controlled by the same operators
 
 ### Negative
+
+- Implementing additional ABCI functions is API breaking and might not be backwards compatible. 
 
 ### Neutral
 
@@ -342,3 +439,6 @@ thus not taking too much more space.
 [original-issue]: https://github.com/tendermint/tendermint/issues/4642
 [adr083]: https://github.com/tendermint/tendermint/pull/9651
 [adr103]: https://github.com/cometbft/cometbft/pull/729
+[state-bootstrap]:  https://github.com/cometbft/cometbft/issues/884
+[sdk-pr1]: https://github.com/cosmos/cosmos-sdk/pull/16061
+[sdk-pr2]: https://github.com/cosmos/cosmos-sdk/pull/16067

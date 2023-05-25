@@ -68,7 +68,7 @@ for (key,ax) in zip(groups.groups.keys(), [axes] if ncols == 1 else axes.flatten
 
     #Save individual axes
     extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-    fig.savefig(os.path.join(path,'e_'+key + '.png'), bbox_inches=extent.expanded(1.2, 1.2))
+    fig.savefig(os.path.join(path,'e_'+key + '.png'), bbox_inches=extent.expanded(1.2, 1.3))
 
 fig.suptitle('200-node testnet experiments - ' + release)
 
@@ -107,7 +107,7 @@ for (key,ax) in zip(groups.groups.keys(), [axes] if ncols == 1 else axes.flatten
     
     #Save individual axes
     extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-    fig.savefig(os.path.join(path,'c'+str(con) + 'r'+ str(rate) + '.png'), bbox_inches=extent.expanded(1.2, 1.2))
+    fig.savefig(os.path.join(path,'c'+str(con) + 'r'+ str(rate) + '.png'), bbox_inches=extent.expanded(1.2, 1.3))
 
 fig.suptitle('200-node testnet configurations - ' + release)
 

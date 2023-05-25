@@ -1,8 +1,6 @@
 # Reactors
 
-Reactor is the generic name for a component that employs the p2p communication layer.
-
-A component has to implement the [`Reactor`][reactor-interface] interface
+A component has to implement the [`p2p.Reactor`][reactor-interface] interface
 in order to use communication services provided by the p2p layer.
 This interface is currently the main source of documentation for a reactor.
 
@@ -22,8 +20,6 @@ how they should be implemented.
 The behaviour of the p2p layer when interacting with a reactor, by invoking the
 interface methods, is modeled in the form of state transitions, or `action`s in
 the Quint nomenclature.
-
-> This is a work in progress, tracked by [issue #599](https://github.com/cometbft/cometbft/issues/599).
 
 ## Overview
 

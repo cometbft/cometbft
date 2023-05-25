@@ -4,22 +4,26 @@ module base {
     type NodeId = str
     val noNode: NodeId = "no-node"
     // const NodeIds: Set[NodeId]
-    val NodeIds: Set[NodeId] = Set(noNode, "n1", "n2", "n3")
-
-    // Transactions
-    type Tx = str
-    val invalidTx: Tx = "invalid-tx"
-    // const Txs: Set[Tx]
-    val Txs: Set[Tx] = Set("tx1", "tx2", invalidTx)
-    def isValid(tx) = tx != invalidTx
-    type Error = str
-
-    // Error
-    val noError: Error = "none"
+    val NodeIds: Set[NodeId] = Set("n1", "n2", "n3")
 
     // Heights
     type Height = int
-    val Heights = 0.to(4)
+    val Heights = 0.to(3)
+
+    // Transactions
+    type Tx = str
+    // val invalidTx: Tx = "invalid-tx"
+    // const Txs: Set[Tx]
+    val Txs: Set[Tx] = Set("tx1", "tx2", "tx3")
+    def isValidAt(tx: Tx, h: Height): bool = any {
+        h == 1 and tx.in(Set("tx1")),
+        h == 2 and tx.in(Set("tx2", "tx3")),
+        h == 3 and tx.in(Set("tx2", "tx3")),
+    }
+
+    // Error
+    type Error = str
+    val noError: Error = "none"
 
     //--------------------------------------------------------------------------
     // More spells

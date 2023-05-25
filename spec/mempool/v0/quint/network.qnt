@@ -1,6 +1,6 @@
 // -*- mode: Bluespec; -*-
 module network {
-    import myBasicSpells.* from "./myBasicSpells"
+    import basicSpells.* from "./basicSpells"
     import base.* from "./base"
 
     // const Peers: NodeId -> Set[NodeId]

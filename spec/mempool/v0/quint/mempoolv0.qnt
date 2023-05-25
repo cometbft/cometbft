@@ -9,7 +9,7 @@
 // easily mapped to the code.
 
 module mempoolv0 {
-    import myBasicSpells.* from "./myBasicSpells"
+    import basicSpells.* from "./basicSpells"
     import base.* from "./base"
     import chain.* from "./chain"
     import abciServers.* from "./abciServers"
@@ -51,12 +51,16 @@ module mempoolv0 {
     // [mempoolTx]: https://github.com/CometBFT/cometbft/blob/6498d67efdf0a539e3ca0dc3e4a5d7cb79878bb2/mempool/clist_mempool.go#L671
     type MempoolTx = { 
         tx: Tx, 
-        height: Height, 
-        senders: Set[NodeId]
+        height: Height, // height at which tx was validated
+        senders: Set[NodeId] // peers that send tx, or none if tx was emmitted by a client
     }
     
     var mempool: NodeId -> Set[MempoolTx]
+    
+    // The transactions received by a node.
     var cache: NodeId -> Set[Tx]
+    
+    // The last block Update()'d to.
     var height: NodeId -> Height
 
     //--------------------------------------------------------------------------
@@ -98,10 +102,11 @@ module mempoolv0 {
     def senderFor(nodeId, tx) = 
         mempool.get(nodeId).map(e => e.tx)
 
-    action addToMempool(nodeId, tx, h, senderId) =
+    action addToMempool(nodeId, tx, h, senderId) = all {
         val senders = if (senderId == noNode) Set() else Set(senderId)
         val memTx = { tx: tx, height: h, senders: senders }
-        mempool' = mempool.put(nodeId, mempool.get(nodeId).setAdd(memTx))
+        mempool' = mempool.put(nodeId, mempool.get(nodeId).setAdd(memTx)),
+    }
 
     action removeFromMempool(nodeId: NodeId, txs: Set[Tx]): bool =
         mempool' = mempool.put(nodeId, mempool.get(nodeId).filter(e => e.tx.in(txs)))
@@ -131,9 +136,9 @@ module mempoolv0 {
     // [CListMempool.CheckTx]: https://github.com/CometBFT/cometbft/blob/5a8bd742619c08e997e70bc2bbb74650d25a141a/mempool/clist_mempool.go#L202
     action CheckTx(nodeId: NodeId, tx: Tx, senderId: NodeId): bool = all {
         if (mempoolIsFull(nodeId)) all {
+            setError(nodeId, MempoolIsFullError),
             mempool' = mempool,
             cache' = cache,
-            setError(nodeId, MempoolIsFullError),
             ABCI_unchanged,
         } else all {
             if (inCache(nodeId, tx)) all {
@@ -141,17 +146,15 @@ module mempoolv0 {
                 // Note it's possible a tx is still in the cache but no longer in the mempool
                 // (eg. after committing a block, txs are removed from mempool but not cache),
                 // so we only record the sender for txs still in the mempool.
-                if (inMempool(nodeId, tx)) {
-                    addSender(nodeId, tx, senderId)
-                } else mempool' = mempool,
-                cache' = cache,
+                addSender(nodeId, tx, senderId),
                 setError(nodeId, TxInCacheError),
+                cache' = cache,
                 ABCI_unchanged,
             } else all {
-                mempool' = mempool,
                 addToCache(nodeId, tx),
+                ABCI_SendRequestNewCheckTx(nodeId, tx, senderId, height.get(nodeId) + 1),
                 setError(nodeId, noError),
-                ABCI_SendRequestNewCheckTx(nodeId, tx, senderId),
+                mempool' = mempool,
             }
         },
         height' = height,
@@ -176,10 +179,9 @@ module mempoolv0 {
     // [CListMempool.resCbFirstTime]: https://github.com/CometBFT/cometbft/blob/6498d67efdf0a539e3ca0dc3e4a5d7cb79878bb2/mempool/clist_mempool.go#L369
     action ReceiveCheckTxResponse(nodeId) = all {
         setStep(nodeId, "ReceiveCheckTxResponse"),
-        ABCI_checkTxRequests(nodeId) != Set(),
+        ABCI_checkTxRequests(nodeId).nonEmpty(),
         nondet request = oneOf(ABCI_checkTxRequests(nodeId)) all {
             val response = ABCI_responseFor(nodeId, request)
-            val senderId = ABCI_senderFor(nodeId, request)
             all {
                 ABCI_RemoveRequest(nodeId, request),
                 if (response.err == noError) {
@@ -188,7 +190,10 @@ module mempoolv0 {
                         setError(nodeId, MempoolIsFullError),
                         mempool' = mempool,
                     } else all { 
-                        addToMempool(nodeId, request.tx, height.get(nodeId), senderId), // TODO: check if tx is in mempool
+                        require(not(inMempool(nodeId, request.tx))),
+                        val senderId = ABCI_senderFor(nodeId, request)
+                        val h = ABCI_heightFor(nodeId, request) // height at which tx was validated
+                        addToMempool(nodeId, request.tx, h, senderId),
                         cache' = cache,
                         setError(nodeId, noError),
                     }
@@ -211,7 +216,8 @@ module mempoolv0 {
     // [CListMempool.Update]: https://github.com/CometBFT/cometbft/blob/6498d67efdf0a539e3ca0dc3e4a5d7cb79878bb2/mempool/clist_mempool.go#L577
     action Update(nodeId: NodeId, h: Height, txs: Set[Tx], txValidResults: Tx -> bool): bool = all {
         setStep(nodeId, "Update"),
-        require(txs != Set()),
+        require(h > height.get(nodeId)),
+        require(txs.nonEmpty()),
 
         // Update mempool's height.
         height' = height.put(nodeId, h),
@@ -221,16 +227,20 @@ module mempoolv0 {
 
         // Update cache for all transactions.
         // - Add valid committed txs to the cache (in case they are missing).
+        //      It may happen that tx has never been seen by this node before,
+        //      so we add it to the cache just for this case.
         // - Remove invalid txs, if keepInvalidTxsInCache is false.
+        //      If we know that tx is invalid, we need to remove it from the cache.
         val validTxs = txs.filter(tx => txValidResults.get(tx))
         val invalidTxs = txs.filter(tx => not(txValidResults.get(tx)) and not(Configs.get(nodeId).keepInvalidTxsInCache)) 
         cache' = cache.put(nodeId, cache.get(nodeId).union(validTxs).exclude(invalidTxs)),
 
         // Either recheck non-committed txs to see if they became invalid
         // or just notify there're some txs left.
-        if (not(mempoolIsEmpty(nodeId))) {
+        val txsStillInMempool = mempoolTxs(nodeId).exclude(txs)
+        if (txsStillInMempool.nonEmpty()) {
             // CHECK: in the code, ReceiveRecheckTxResponse may be called concurrently.
-            ABCI_SendRequestRecheckTxs(nodeId, txs)
+            ABCI_SendRequestRecheckTxs(nodeId, txsStillInMempool)
         } else ABCI_unchanged,
 
         setError(nodeId, noError),
@@ -238,12 +248,25 @@ module mempoolv0 {
         Chain_unchanged,
     }
 
+    // Consensus reactor updates the mempool and rechecks outstanding txs.
     action Consensus_Update(nodeId: NodeId): bool = all {
         require(not(Chain_isEmpty)),
         require(height.get(nodeId) <= Chain_latestHeight),
-        val txs: Set[Tx] = Chain_getBlock(height.get(nodeId))
-        nondet txValidResults: Tx -> Bool = oneOf(txs.setOfMaps(Bool))
-        Update(nodeId, height.get(nodeId), txs, txValidResults),
+        val h = height.get(nodeId) + 1
+        any {
+            all {
+                // this node is not the proposer: take the block from the chain
+                val txs: Set[Tx] = Chain_getBlock(height.get(nodeId))
+                val txValidResults: Tx -> bool = txs.mapBy(tx => isValidAt(tx, h)) // all txs should be valid because they are committed
+                Update(nodeId, h, txs, txValidResults),
+            },
+            all {
+                // this block is the proposer: take the block from the mempool
+                nondet txs: Set[Tx] = oneOf(mempoolTxs(nodeId).powerset().setRemove(Set()))
+                val txValidResults: Tx -> bool = txs.mapBy(tx => isValidAt(tx, h))
+                Update(nodeId, h, txs, txValidResults),
+            },
+        }
     }
 
     // Callback function to process a CheckTx response, when rechecking.
@@ -279,7 +302,7 @@ module mempoolv0 {
     // [Reactor.Receive]: https://github.com/CometBFT/cometbft/blob/111d252d75a4839341ff461d4e0cf152ca2cc13d/mempool/reactor.go#L93
     action P2P_ReceiveTxs(nodeId) = all {
         setStep(nodeId, "P2P_ReceiveTxs"),
-        require(Network_incomingMsgs(nodeId) != Set()),
+        require(Network_incomingMsgs(nodeId).nonEmpty()),
         nondet msg = oneOf(Network_incomingMsgs(nodeId))
         all {
             CheckTx(nodeId, msg.tx, msg.senderId),
@@ -301,13 +324,13 @@ module mempoolv0 {
             // If the peer is not a tx's sender.
             not(peer.in(sendersFor(nodeId, tx))),
             sendTo(msg, peer),
+            setError(nodeId, noError),
             mempool' = mempool,
             cache' = cache,
             height' = height,
-            setError(nodeId, noError),
             ABCI_unchanged,
             Chain_unchanged,
-        }   
+        }
     }
 
     // [Reactor.broadcastTxRoutine]: https://github.com/CometBFT/cometbft/blob/5049f2cc6cf519554d6cd90bcca0abe39ce4c9df/mempool/reactor.go#L132
@@ -320,10 +343,10 @@ module mempoolv0 {
     action ABCI_ProcessRequest(nodeId) = all {
         setStep(nodeId, "ABCI::ProcessCheckTxRequest"),
         ABCI_ProcessCheckTxRequest(nodeId),
+        setError(nodeId, noError),
         mempool' = mempool, 
         height' = height, 
         cache' = cache, 
-        setError(nodeId, noError),
         Network_unchanged,
         Chain_unchanged,
     }
@@ -358,7 +381,7 @@ module mempoolv0 {
     action ChainNext =
         nondet txs = oneOf(Txs.exclude(Chain_allTxsInChain).powerset().setRemove(Set()))
         all {
-            require(txs.forall(tx => isValid(tx))),
+            require(txs.forall(tx => isValidAt(tx, Chain_latestHeight + 1))),
             Chain_newBlockFrom(txs),
             mempool' = mempool, 
             height' = height, 
@@ -369,9 +392,10 @@ module mempoolv0 {
         }
 }
 
-module mempoolTests {
-    import myBasicSpells.* from "./myBasicSpells"
+module tests {
     import base.* from "./base"
+    import basicSpells.* from "./basicSpells"
+    // import base.* from "./base"
     import chain.* from "./chain"
     import abciServers.* from "./abciServers"
     import network.* from "./network"
@@ -396,29 +420,40 @@ module mempoolTests {
     //     __action.then(assert_(__cond))
 
     run test1 = init
+        .then(assert_(isValidAt("tx1", 1)))
         .then(CheckTx_RPC("n1", "tx1"))
         .then(ABCI_ProcessRequest("n1"))
         .then(ReceiveCheckTxResponse("n1"))
-        .then(assert_(inMempool("n1", "tx1")))
-        .then(assert_(inCache("n1", "tx1")))
+        .then(assert_(inMempool("n1", "tx1") and inCache("n1", "tx1")))
     
     run test2 = test1
         .then(Update("n1", 1, Set("tx1"), Map("tx1" -> true)))
-        .then(P2P_SendTx_("n1", "n2"))
-        .then(P2P_ReceiveTxs("n2"))
-        .then(ABCI_ProcessRequest("n2"))
-        .then(ReceiveCheckTxResponse("n2"))
-        .then(assert_(inMempool("n2", "tx1")))
-        .then(assert_(inCache("n2", "tx1")))
+        .then(assert_(not(inMempool("n1", "tx1")) and inCache("n1", "tx1")))
 
     run test3 = test1
-        .then(Update("n1", 1, Set("tx1"), Map("tx1" -> false)))
+        .then(P2P_SendTx_("n1", "n2"))
+        // .then(Update("n1", 1, Set("tx1"), Map("tx1" -> true)))
+        // .then(assert_(not(inMempool("n1", "tx1")) and inCache("n1", "tx1")))
+        .then(P2P_ReceiveTxs("n2"))
+        .then(assert_(not(inMempool("n2", "tx1")) and inCache("n2", "tx1")))
 
-    run test4 = test1
+    run test4 = test3
+        .then(ABCI_ProcessRequest("n2"))
+        .then(ReceiveCheckTxResponse("n2"))
+        .then(assert_(inMempool("n2", "tx1") and inCache("n2", "tx1")))
+
+    run test5 = test4
+        .then(Update("n2", 1, Set("tx1"), Map("tx1" -> "tx1".isValidAt(1))))
+        .then(assert_(not(inMempool("n2", "tx1")) and inCache("n2", "tx1")))
+
+    run test8 = test1
+        .then(Update("n1", 2, Set("tx1"), Map("tx1" -> "tx1".isValidAt(2))))
+
+    run test9 = test1
         .then(Update("n1", 1, Set("tx2"), Map("tx2" -> true)))
 
     run testInvalid1 = init
-        .then(CheckTx_RPC("n1", invalidTx))
+        .then(CheckTx_RPC("n1", "tx3")) // tx3 is invalid at height 0 according to isValidAt
         .then(ABCI_ProcessRequest("n1"))
         .then(ReceiveCheckTxResponse("n1"))
 
@@ -431,6 +466,9 @@ module mempoolTests {
         ("p2p incoming msgs", msgs.get(nodeId)),
     )
     def ns(nodeId) = nodeState(nodeId)
+    val s1 = ns("n1")
+    val s2 = ns("n2")
+    val s3 = ns("n3")
 
     def state = (
         ("step", step),
@@ -440,10 +478,11 @@ module mempoolTests {
 }
 
 module __repl__ {
-    // import base.* from "./base"
+    import base.* from "./base"
     import chain.* from "./chain"
     import abciServers.* from "./abciServers"
     import network.* from "./network"
     import mempoolv0.* //from "./mempoolv0"
-    import mempoolTests.* 
+    // import properties.* 
+    import tests.* 
 } //-- __repl__

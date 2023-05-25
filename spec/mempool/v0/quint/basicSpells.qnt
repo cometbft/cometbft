@@ -1,6 +1,6 @@
 // -*- mode: Bluespec; -*-
 // From: https://github.com/informalsystems/quint/blob/main/examples/spells/basicSpells.qnt
-module myBasicSpells {
+module basicSpells {
     /// An annotation for writing preconditions.
     pure def require(__cond: bool): bool = __cond
 

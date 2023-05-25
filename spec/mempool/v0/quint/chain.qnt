@@ -16,6 +16,8 @@ module chain {
     val Chain_allTxsInChain =
         chain.foldl(Set(), (s, x) => s.union(x))
 
+    // def Chain_inChain(tx, h) = ...
+
     //--------------------------------------------------------------------------
     action Chain_init =
         chain' = List()

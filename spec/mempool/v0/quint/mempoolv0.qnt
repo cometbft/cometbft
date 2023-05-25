@@ -1,12 +1,12 @@
 // -*- mode: Bluespec; -*-
 /** Mempool V0
-  * 
+  *
+  * One of the goals of this spec is to easily map actions and data structures
+  * to the implementation. 
   */
-// Assumption: The network topology is fixed: nodes do not leave or join the
-// network, peers do not change.
 
-// One of the goals of this spec is to make their actions and data structures
-// easily mapped to the code.
+// Assumptions: 
+// - The network topology is fixed: nodes do not leave or join the network, peers do not change.
 
 module mempoolv0 {
     import basicSpells.* from "./basicSpells"
@@ -14,6 +14,7 @@ module mempoolv0 {
     import chain.* from "./chain"
     import abciServers.* from "./abciServers"
     import network.* from "./network"
+    import history.* from "./history"
 
     //--------------------------------------------------------------------------
     // Spec parameters
@@ -106,6 +107,7 @@ module mempoolv0 {
         val senders = if (senderId == noNode) Set() else Set(senderId)
         val memTx = { tx: tx, height: h, senders: senders }
         mempool' = mempool.put(nodeId, mempool.get(nodeId).setAdd(memTx)),
+        History_recordMempoolTx(nodeId, tx),
     }
 
     action removeFromMempool(nodeId: NodeId, txs: Set[Tx]): bool =
@@ -127,6 +129,7 @@ module mempoolv0 {
         step' = { node: noNode, name: "init" },
         error' = (noNode, noError),
         height' = NodeIds.mapBy(_ => 0),
+        History_init,
         Network_init,
         Chain_init,
         ABCI_init,
@@ -165,6 +168,7 @@ module mempoolv0 {
     action CheckTx_RPC(nodeId, tx) = all {
         setStep(nodeId, "CheckTx"),
         CheckTx(nodeId, tx, noNode),
+        History_recordSubmittedTx(nodeId, tx),
         Network_unchanged,
         Chain_unchanged,
     }
@@ -189,6 +193,7 @@ module mempoolv0 {
                         forceRemoveFromCache(nodeId, request.tx), // There may be enough space for tx later.
                         setError(nodeId, MempoolIsFullError),
                         mempool' = mempool,
+                        History_unchanged,
                     } else all { 
                         require(not(inMempool(nodeId, request.tx))),
                         val senderId = ABCI_senderFor(nodeId, request)
@@ -201,6 +206,7 @@ module mempoolv0 {
                     mempool' = mempool,
                     removeFromCache(nodeId, request.tx),
                     setError(nodeId, InvalidTxWarning),
+                    History_unchanged,
                 }
             }
         },
@@ -244,6 +250,7 @@ module mempoolv0 {
         } else ABCI_unchanged,
 
         setError(nodeId, noError),
+        History_unchanged,
         Network_unchanged,
         Chain_unchanged,
     }
@@ -291,6 +298,7 @@ module mempoolv0 {
         },
         setError(nodeId, noError),
         height' = height,
+        History_unchanged,
         Network_unchanged,
         Chain_unchanged,
     }
@@ -307,6 +315,7 @@ module mempoolv0 {
         all {
             CheckTx(nodeId, msg.tx, msg.senderId),
             receiveMsg(nodeId, msg),
+            History_unchanged,
             Chain_unchanged,
         }
     }
@@ -328,6 +337,7 @@ module mempoolv0 {
             mempool' = mempool,
             cache' = cache,
             height' = height,
+            History_unchanged,
             ABCI_unchanged,
             Chain_unchanged,
         }
@@ -347,6 +357,7 @@ module mempoolv0 {
         mempool' = mempool, 
         height' = height, 
         cache' = cache, 
+        History_unchanged,
         Network_unchanged,
         Chain_unchanged,
     }
@@ -387,6 +398,7 @@ module mempoolv0 {
             height' = height, 
             cache' = cache, 
             setError(noNode, noError),
+            History_unchanged,
             ABCI_unchanged,
             Network_unchanged,
         }
@@ -395,15 +407,16 @@ module mempoolv0 {
 module tests {
     import base.* from "./base"
     import basicSpells.* from "./basicSpells"
-    // import base.* from "./base"
     import chain.* from "./chain"
     import abciServers.* from "./abciServers"
     import network.* from "./network"
+    import history.* from "./history"
     import mempoolv0.* //from "./mempoolv0"
 
-    //--------------------------------------------------------------------------
-    // Tests
-    //--------------------------------------------------------------------------
+    val node1 = "n1"
+    val node2 = "n2"
+    val node3 = "n3"
+
     action assert_(__cond: bool): bool = all {
         __cond,
         mempool' = mempool, 
@@ -411,6 +424,7 @@ module tests {
         cache' = cache,
         step' = step, 
         error' = error,
+        History_unchanged,
         ABCI_unchanged,
         Network_unchanged,
         Chain_unchanged,
@@ -419,21 +433,22 @@ module tests {
     // action assert__(__action: bool, __cond: bool): bool =
     //     __action.then(assert_(__cond))
 
+    //--------------------------------------------------------------------------
+    // Tests
+    //--------------------------------------------------------------------------
     run test1 = init
-        .then(assert_(isValidAt("tx1", 1)))
-        .then(CheckTx_RPC("n1", "tx1"))
-        .then(ABCI_ProcessRequest("n1"))
-        .then(ReceiveCheckTxResponse("n1"))
-        .then(assert_(inMempool("n1", "tx1") and inCache("n1", "tx1")))
+        .then(assert_("tx1".isValidAt(1)))
+        .then(node1.CheckTx_RPC("tx1"))
+        .then(node1.ABCI_ProcessRequest())
+        .then(node1.ReceiveCheckTxResponse())
+        .then(assert_(node1.inMempool("tx1") and node1.inCache("tx1")))
     
     run test2 = test1
-        .then(Update("n1", 1, Set("tx1"), Map("tx1" -> true)))
-        .then(assert_(not(inMempool("n1", "tx1")) and inCache("n1", "tx1")))
+        .then(node1.Update(1, Set("tx1"), Map("tx1" -> true)))
+        .then(assert_(not(node1.inMempool("tx1")) and node1.inCache("tx1")))
 
     run test3 = test1
         .then(P2P_SendTx_("n1", "n2"))
-        // .then(Update("n1", 1, Set("tx1"), Map("tx1" -> true)))
-        // .then(assert_(not(inMempool("n1", "tx1")) and inCache("n1", "tx1")))
         .then(P2P_ReceiveTxs("n2"))
         .then(assert_(not(inMempool("n2", "tx1")) and inCache("n2", "tx1")))
 

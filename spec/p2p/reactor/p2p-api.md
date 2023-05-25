@@ -42,8 +42,8 @@ the p2p layer: the set of connected peers.
 
 The `Peers()` method returns the current set of connected peers.
 The returned `IPeerSet` is an immutable concurrency-safe copy of this set.
-Observe that the `Peer` handlers returned by this method were previously added
-to the reactor via the `InitPeer(Peer)` method,
+Observe that the `Peer` handlers returned by this method were previously
+[added to the reactor][reactor-addpeer] via the `InitPeer(Peer)` method,
 but not yet removed via the `RemovePeer(Peer)` method.
 Thus, a priori, reactors should already have this information.
 
@@ -101,8 +101,8 @@ Reactors can instruct the p2p layer to disconnect from a peer.
 Using the p2p layer's nomenclature, the reactor requests a peer to be stopped.
 The peer's send and receive routines are in fact stopped, interrupting the
 communication with the peer.
-The `Peer` is then removed from every registered reactor, using the
-`RemovePeer(Peer)` method, and from the set of connected peers.
+The `Peer` is then [removed from every registered reactor][reactor-removepeer],
+using the `RemovePeer(Peer)` method, and from the set of connected peers.
 
     func (sw *Switch) StopPeerForError(peer Peer, reason interface{})
 
@@ -273,3 +273,4 @@ The `TrySend()` method is a _non-blocking_ method, it _immediately_ returns
 [reactor-registration]: ./reactor.md#registration
 [reactor-channels]: ./reactor.md#registration
 [reactor-addpeer]: ./reactor.md#peer-management
+[reactor-removepeer]: ./reactor.md#stop-peer

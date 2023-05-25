@@ -1,4 +1,4 @@
-# Reactors
+# Reactor API
 
 A component has to implement the [`p2p.Reactor`][reactor-interface] interface
 in order to use communication services provided by the p2p layer.
@@ -95,6 +95,8 @@ The second method `SetSwitch(Switch)` concludes the handshake between the
 reactor and the p2p layer.
 The `Switch` is the main component of the p2p layer, being responsible for
 establishing connections with peers and routing messages.
+The `Switch` instance provides a number of methods for all registered reactors,
+documented in the companion [API for Reactors](./p2p-api.md#switch-api) document.
 
 ## Service interface
 
@@ -153,8 +155,10 @@ interacting with a misbehaving or slow peer. A practical example is reported on 
 [issue](https://github.com/tendermint/tendermint/pull/9500).
 
 It is up to the reactor to define how to process the `AddPeer(Peer)` event.
-The typical behavior is to start routines that, given some conditions or events
-(e.g. messages), send messages to the added peer, using the provided `Peer` handler.
+The typical behavior is to start routines that, given some conditions or events,
+send messages to the added peer, using the provided `Peer` instance.
+The companion [API for Reactors](./p2p-api.md#peer-api) documents the methods
+provided by `Peer` instances, available from when they are added to the reactors.
 
 ## Stop Peer
 

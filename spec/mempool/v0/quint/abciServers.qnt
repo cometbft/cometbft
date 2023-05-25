@@ -47,7 +47,7 @@ module abciServers {
     //--------------------------------------------------------------------------
     // Actions
     //--------------------------------------------------------------------------
-    action ABCI_Init =
+    action ABCI_init =
         requestSenderResponses' = NodeIds.mapBy(_ => Map())
 
     // For a "New" request we store the sender.
@@ -83,7 +83,7 @@ module abciServers {
             requestSenderResponses.get(nodeId).mapRemove(request)), 
     }
 
-    action ABCI_Unchanged =
+    action ABCI_unchanged =
         requestSenderResponses' = requestSenderResponses
 
 }

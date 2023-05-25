@@ -17,12 +17,12 @@ module chain {
         chain.foldl(Set(), (s, x) => s.union(x))
 
     //--------------------------------------------------------------------------
-    action Chain_Init =
+    action Chain_init =
         chain' = List()
 
-    action Chain_NewBlockFrom(txs) =
+    action Chain_newBlockFrom(txs) =
         chain' = chain.append(txs)
 
-    action Chain_Unchanged = 
+    action Chain_unchanged = 
         chain' = chain
 }

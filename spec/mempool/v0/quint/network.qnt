@@ -16,7 +16,7 @@ module network {
     var msgs: NodeId -> Set[TxsMsg] // map from receiver to messages to process
 
     //--------------------------------------------------------------------------
-    action Network_Init =
+    action Network_init =
         msgs' = NodeIds.mapBy(_ => Set())
 
     action sendTo(msg: TxsMsg, peer: NodeId): bool =
@@ -25,7 +25,7 @@ module network {
     action receiveMsg(nodeId: NodeId, msg: TxsMsg): bool =
         msgs' = msgs.put(nodeId, msgs.get(nodeId).setRemove(msg))    
 
-    action Network_Unchanged =
+    action Network_unchanged =
         msgs' = msgs
 
     //--------------------------------------------------------------------------

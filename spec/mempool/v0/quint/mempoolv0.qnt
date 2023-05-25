@@ -31,7 +31,7 @@ module mempoolv0 {
     // Node metadata
     //--------------------------------------------------------------------------
     type Step = str
-    val Steps: Set[Step] = Set("Init", "CheckTx", "ReceiveCheckTxResponse", 
+    val Steps: Set[Step] = Set("init", "CheckTx", "ReceiveCheckTxResponse", 
         "Update", "ReceiveRecheckTxResponse", "P2P_ReceiveTxs", "P2P_SendTx", 
         "ABCI::ProcessCheckTxRequest")
 
@@ -116,15 +116,15 @@ module mempoolv0 {
     //--------------------------------------------------------------------------
     // Actions
     //--------------------------------------------------------------------------
-    action Init = all {
+    action init = all {
         mempool' = NodeIds.mapBy(_ => Set()),
         cache' = NodeIds.mapBy(_ => Set()),
-        step' = { node: noNode, name: "Init" },
+        step' = { node: noNode, name: "init" },
         error' = (noNode, noError),
         height' = NodeIds.mapBy(_ => 0),
-        Network_Init,
-        Chain_Init,
-        ABCI_Init,
+        Network_init,
+        Chain_init,
+        ABCI_init,
     }
     
     /** Validate a transaction and add it to the mempool. */
@@ -134,7 +134,7 @@ module mempoolv0 {
             mempool' = mempool,
             cache' = cache,
             setError(nodeId, MempoolIsFullError),
-            ABCI_Unchanged,
+            ABCI_unchanged,
         } else all {
             if (inCache(nodeId, tx)) all {
         		// Record new sender for the tx we've already seen.
@@ -146,7 +146,7 @@ module mempoolv0 {
                 } else mempool' = mempool,
                 cache' = cache,
                 setError(nodeId, TxInCacheError),
-                ABCI_Unchanged,
+                ABCI_unchanged,
             } else all {
                 mempool' = mempool,
                 addToCache(nodeId, tx),
@@ -159,17 +159,17 @@ module mempoolv0 {
 
     /* Receive a specific transaction from a client via RPC. */
     // [Environment.BroadcastTxAsync]: https://github.com/CometBFT/cometbft/blob/111d252d75a4839341ff461d4e0cf152ca2cc13d/rpc/core/mempool.go#L22
-    action CheckTxRPC_(nodeId, tx) = all {
+    action CheckTx_RPC(nodeId, tx) = all {
         setStep(nodeId, "CheckTx"),
         CheckTx(nodeId, tx, noNode),
-        Network_Unchanged,
-        Chain_Unchanged,
+        Network_unchanged,
+        Chain_unchanged,
     }
 
     /* Receive some transaction from a client via RPC. */
     action CheckTxRPC(nodeId) =
         nondet tx = oneOf(Txs)
-        CheckTxRPC_(nodeId, tx)
+        CheckTx_RPC(nodeId, tx)
 
     // Callback function to process a CheckTx response.
     // Note that tx and sender are arguments to CListMempool.resCbFirstTime.
@@ -200,8 +200,8 @@ module mempoolv0 {
             }
         },
         height' = height,
-        Network_Unchanged,
-        Chain_Unchanged,
+        Network_unchanged,
+        Chain_unchanged,
     }
 
     /** Consensus' BlockExecutor calls Update to update the mempool after executing txs.
@@ -231,11 +231,11 @@ module mempoolv0 {
         if (not(mempoolIsEmpty(nodeId))) {
             // CHECK: in the code, ReceiveRecheckTxResponse may be called concurrently.
             ABCI_SendRequestRecheckTxs(nodeId, txs)
-        } else ABCI_Unchanged,
+        } else ABCI_unchanged,
 
         setError(nodeId, noError),
-        Network_Unchanged,
-        Chain_Unchanged,
+        Network_unchanged,
+        Chain_unchanged,
     }
 
     action Consensus_Update(nodeId: NodeId): bool = all {
@@ -268,8 +268,8 @@ module mempoolv0 {
         },
         setError(nodeId, noError),
         height' = height,
-        Network_Unchanged,
-        Chain_Unchanged,
+        Network_unchanged,
+        Chain_unchanged,
     }
 
     //--------------------------------------------------------------------------
@@ -284,7 +284,7 @@ module mempoolv0 {
         all {
             CheckTx(nodeId, msg.tx, msg.senderId),
             receiveMsg(nodeId, msg),
-            Chain_Unchanged,
+            Chain_unchanged,
         }
     }
 
@@ -305,8 +305,8 @@ module mempoolv0 {
             cache' = cache,
             height' = height,
             setError(nodeId, noError),
-            ABCI_Unchanged,
-            Chain_Unchanged,
+            ABCI_unchanged,
+            Chain_unchanged,
         }   
     }
 
@@ -324,8 +324,8 @@ module mempoolv0 {
         height' = height, 
         cache' = cache, 
         setError(nodeId, noError),
-        Network_Unchanged,
-        Chain_Unchanged,
+        Network_unchanged,
+        Chain_unchanged,
     }
 
     /* All possible actions on a node. */
@@ -359,13 +359,13 @@ module mempoolv0 {
         nondet txs = oneOf(Txs.exclude(Chain_allTxsInChain).powerset().setRemove(Set()))
         all {
             require(txs.forall(tx => isValid(tx))),
-            Chain_NewBlockFrom(txs),
+            Chain_newBlockFrom(txs),
             mempool' = mempool, 
             height' = height, 
             cache' = cache, 
             setError(noNode, noError),
-            ABCI_Unchanged,
-            Network_Unchanged,
+            ABCI_unchanged,
+            Network_unchanged,
         }
 }
 
@@ -387,16 +387,16 @@ module mempoolTests {
         cache' = cache,
         step' = step, 
         error' = error,
-        ABCI_Unchanged,
-        Network_Unchanged,
-        Chain_Unchanged,
+        ABCI_unchanged,
+        Network_unchanged,
+        Chain_unchanged,
     }
 
     // action assert__(__action: bool, __cond: bool): bool =
     //     __action.then(assert_(__cond))
 
-    run test1 = Init
-        .then(CheckTxRPC_("n1", "tx1"))
+    run test1 = init
+        .then(CheckTx_RPC("n1", "tx1"))
         .then(ABCI_ProcessRequest("n1"))
         .then(ReceiveCheckTxResponse("n1"))
         .then(assert_(inMempool("n1", "tx1")))
@@ -417,8 +417,8 @@ module mempoolTests {
     run test4 = test1
         .then(Update("n1", 1, Set("tx2"), Map("tx2" -> true)))
 
-    run testInvalid1 = Init
-        .then(CheckTxRPC_("n1", invalidTx))
+    run testInvalid1 = init
+        .then(CheckTx_RPC("n1", invalidTx))
         .then(ABCI_ProcessRequest("n1"))
         .then(ReceiveCheckTxResponse("n1"))
 

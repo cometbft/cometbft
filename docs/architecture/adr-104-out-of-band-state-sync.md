@@ -1,4 +1,4 @@
-# ADR 104: Out-of-band state sync support
+# ADR 104: State sync from local application snapshot
 
 ## Changelog
 
@@ -31,7 +31,7 @@ the protocol) is _bandwidth-consuming_, especially without a clear incentive for
 node operators to provide this service. 
 As a result, the number of nodes in production CometBFT networks offering the
 state sync service (i.e., servers offering snapshots) has been limited, which
-has rendered the service _fragile_ (from the client's point of view). It is very
+has rendered the service _fragile_ (from the client's point of view). In other words, it is very
 hard to find a node with _good_ snapshots, leading nodes to often block during sync up.
 
 > 3. High level idea behind the solution
@@ -101,9 +101,9 @@ cases even for an enhanced version of state sync.
 
 The proposed [ADR 083][adr083]/[ADR 103][adr103] inspired the discussions that
 led to this ADR. At first glance, their proposal might look identical to the
-solution discussed here. The main distinction is that their proposal does not
-involve installing application snapshots, but relies on node operators to
-manually synchronize the application state.
+solution discussed here. The main distinction is that these older proposals do not
+involve installing application _snapshots_, but rely on node operators to
+manually synchronize the application _state_.
 
 More precisely, their proposal is to
 "_allow applications to start with a bootstrapped state_
@@ -248,7 +248,7 @@ This code is essentially what the existing implementation of the statesync react
 minus the functions that apply the snapshot chunks (as this has already been done offline). 
 
 
-## CometBFT based local state sync
+### CometBFT based local state sync
 
 Given that snapshot manipulation is entirely application defined, and to avoid pulling this functionality into
 CometBFT, we propose a solution using ABCI, that mimics the behaviour described in the previous section.

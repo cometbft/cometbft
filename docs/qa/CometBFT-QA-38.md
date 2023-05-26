@@ -371,7 +371,7 @@ With this test we aim at answering the following questions
 - what is the effect on block and transaction rates
 - what is the effect on the network usage
 
-All tests were performed on commit 9fc711b6514f99b2dc0864fc703cb81214f01783, which corresponds to v0.38.0-alpha.2 plus commits to add the ability to vary the vote extension sizes.
+All tests were performed on commit ??? , which corresponds to v0.38.0-alpha.2 plus commits to add the ability to vary the vote extension sizes.
 As baseline we use vote extensions of size 4 bytes, compressed as variable size integers, the same behavior observed on the vanila v0.38.0-alpha.2.
 For the various sizes we initially explored. 
 
@@ -379,6 +379,11 @@ For the various sizes we initially explored.
 | ---  | ---   |
 | baseline | |
 | 8192 | |
+baseline x
+vote_extension_size = 8192 x
+vote_extension_size = 16384 x
+vote_extension_size = 32768
+vote_extension_size = 65536
 
 
 #### Observations
@@ -387,11 +392,15 @@ For the various sizes we initially explored.
 - how is the block size limited? do the extensions fit? the proposal itself is small.
 - block sizes depending on the extension sizes
 - txs per block depending on the extension sizes
-	- remember that there is one special transaction
+   - remember that there is one special transaction
 - we need to evaluate the effect of transaction sizes as well.
 - the mempool never got completely empty
+- 5 minute interval to clean up the mempool. heights continue to happen, with vote extensions.
 
-- first run
+- baseline
+	- Thu May 25 15:21:00 -03 2023
+	- Thu May 25 15:51:08 -03 2023
+- 8192
 
 ### Results
 

@@ -299,14 +299,7 @@ This section explains how the tests were carried out for reproducibility purpose
 5. Configure the load runner to produce the desired transaction load.
     * set makefile variables `ROTATE_CONNECTIONS`, `ROTATE_TX_RATE`, to values that will produce the desired transaction load.
     * set `ROTATE_TOTAL_TIME` to 150 (seconds).
-    * set `ITERATIONS` to the number of iterations that each configuration should run for. Default is once.
-6. Disable the generation of empty blocks, so the system quieces in between runs.
-    * edit `scripts/configgen.sh` to uncomment the following lines
-
-      ```bash
-      #sed $INPLACE_SED_FLAG "s/=create_empty_blocks .*/create_empty_blocks = false/g" $file
-      #sed $INPLACE_SED_FLAG "s/create_empty_blocks_interval .*/create_empty_blocks_interval = \"600s\"/g" $file
-      ```
+    * set `ITERATIONS` to the number of iterations that each configuration should run for.
 
 7. Repeat the following steps for each desired `vote_extension_size`
     * Update the `vote_extensions_size` in the `testnet.toml` to the desired value.
@@ -315,6 +308,7 @@ This section explains how the tests were carried out for reproducibility purpose
     * `make restart`
     * Run "make runload" and wait for it to complete.
       You may want to run this several times and combine data from different runs.
+    * `make retrieve-data`
 
 8. Run `make retrieve-data` to gather all relevant data from the testnet into the orchestrating machine
 9. Verify that the data was collected without errors

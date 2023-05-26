@@ -222,7 +222,7 @@ The CometBFT team should improve it at every iteration to increase the amount of
 [`latency_throughput.py`]: ../../scripts/qa/reporting/README.md#Latency-vs-Throughput-Plotting
 
 14. Alternatively,  follow the instructions for the [`latency_plotter.py`] script.
-    This script generates a series of plots per experiment and configuration that my
+    This script generates a series of plots per experiment and configuration that may
     help with visualizing Latency vs Throughput variation.
 
 [`latency_plotter.py`]: ../../scripts/qa/reporting/README.md#Latency-vs-Throughput-Plotting-version-2
@@ -302,20 +302,21 @@ This section explains how the tests were carried out for reproducibility purpose
     * set `ITERATIONS` to the number of iterations that each configuration should run for.
 
 7. Repeat the following steps for each desired `vote_extension_size`
-    * Update the `vote_extensions_size` in the `testnet.toml` to the desired value.
-    * `make configgen`
-    * `ANSIBLE_SSH_RETRIES=10 ansible-playbook ./ansible/re-init-testapp.yaml -u root -i ./ansible/hosts --limit=validators -e "testnet_dir=testnet" -f 20`
-    * `make restart`
-    * Run "make runload" and wait for it to complete.
-      You may want to run this several times and combine data from different runs.
-    * `make retrieve-data`
-
-8. Run `make retrieve-data` to gather all relevant data from the testnet into the orchestrating machine
-9. Verify that the data was collected without errors
-    * at least one blockstore DB for a CometBFT validator
-    * the Prometheus database from the Prometheus node
-    * for extra care, you can run `zip -T` on the `prometheus.zip` file and (one of) the `blockstore.db.zip` file(s)
-10. **Run `make terraform-destroy`**
+    1. Update the configuration
+        * Update the `vote_extensions_size` in the `testnet.toml` to the desired value.
+        * `make configgen`
+        * `ANSIBLE_SSH_RETRIES=10 ansible-playbook ./ansible/re-init-testapp.yaml -u root -i ./ansible/hosts --limit=validators -e "testnet_dir=testnet" -f 20`
+        * `make restart`
+    2. Run the test
+        * `make runload`
+          This will repeat the tests `ITERATIONS` times every time it is invoked. 
+    3. Collect your data 
+        * `make retrieve-data` 
+          Gathers all relevant data from the testnet into the orchestrating machine, inside folder `experiments`.
+          Two subfolders are created, one blockstore DB for a CometBFT validator and one for the Prometheus DB data.
+        * Verify that the data was collected without errors with `zip -T` on the `prometheus.zip` file and (one of) the `blockstore.db.zip` file(s).
+8. Clean up your setup.
+    * `make terraform-destroy`; don't forget that you need to type **yes** for it to complete.
 
 
 ### Result Extraction
@@ -327,7 +328,3 @@ In order to obtain a latency plot, follow the instructions above for the 200 nod
 
 As for prometheus, the same method as for the 200 node experiment can be applied.
 
-
-8. Run `make rotate` to start the script that creates the ephemeral nodes, and kills them when they are caught up.
-    * WARNING: If you run this command from your laptop, the laptop needs to be up and connected for full length
-      of the experiment.

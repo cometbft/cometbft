@@ -5,7 +5,7 @@
   * to the implementation. 
   */
 
-// Assumptions: 
+// Assumptions/Simplifications: 
 // - The network topology is fixed: nodes do not leave or join the network, peers do not change.
 
 module mempoolv0 {
@@ -26,7 +26,8 @@ module mempoolv0 {
     type Config = { keepInvalidTxsInCache: bool }
     // const Configs: NodeId -> Config
     // Configs = Map("n1" -> { keepInvalidTxsInCache -> false }, "n2" -> { keepInvalidTxsInCache -> false }, "n2" -> { keepInvalidTxsInCache -> false }), 
-    val Configs: NodeId -> Config = NodeIds.mapBy(_ => { keepInvalidTxsInCache: false })
+    val Configs: NodeId -> Config = 
+        NodeIds.mapBy(_ => { keepInvalidTxsInCache: false })
 
     //--------------------------------------------------------------------------
     // Auxiliary variables
@@ -114,7 +115,7 @@ module mempoolv0 {
     }
 
     action removeFromMempool(node: NodeId, txs: Set[Tx]): bool =
-        mempool' = mempool.mapPut(node, (memTxs) => memTxs.filter(e => not(e.tx.in(txs))))
+        mempool' = mempool.mapPut(node, (memTxs) => memTxs.filter(e => e.tx.notIn(txs)))
 
     action addSender(node, tx, senderId) =
         if (node.inMempool(tx)) {
@@ -332,15 +333,15 @@ module mempoolv0 {
         val msg = { tag: "Txs", senderId: node, tx: tx }
         all {
             // If the msg was not already sent to this peer.
-            Network_incomingMsgs(peer).forall(m => m != msg),
+            require(peer.Network_incomingMsgs().forall(m => m != msg)),
             // If the peer is not a tx's sender.
-            not(peer.in(node.sendersFor(tx))),
+            require(peer.notIn(node.sendersFor(tx))),
             sendTo(msg, peer),
             node.setError(noError),
+            node.History_recordGossippedTx(tx),
             mempool' = mempool,
             cache' = cache,
             height' = height,
-            History_unchanged,
             ABCI_unchanged,
             Chain_unchanged,
         }

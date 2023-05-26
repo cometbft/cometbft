@@ -57,7 +57,7 @@ func PubKeyToProto(k crypto.PubKey) (pc.PublicKey, error) {
 				Secp256K1: k,
 			},
 		}
-	case *bls12381.PubKey:
+	case bls12381.PubKey:
 		if !bls12381.Enabled {
 			return kp, ErrUnsupportedKey{Key: k}
 		}

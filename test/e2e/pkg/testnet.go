@@ -95,6 +95,7 @@ type Testnet struct {
 	BlockMaxBytes                                        int64
 	VoteExtensionsEnableHeight                           int64
 	VoteExtensionsUpdateHeight                           int64
+	VoteExtensionSize                                    uint
 	ExperimentalMaxGossipConnectionsToPersistentPeers    uint
 	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint
 }
@@ -180,8 +181,13 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		BlockMaxBytes:              manifest.BlockMaxBytes,
 		VoteExtensionsEnableHeight: manifest.VoteExtensionsEnableHeight,
 		VoteExtensionsUpdateHeight: manifest.VoteExtensionsUpdateHeight,
+		VoteExtensionSize:          manifest.VoteExtensionSize,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
+	}
+
+	if len(manifest.KeyType) != 0 {
+		testnet.KeyType = manifest.KeyType
 	}
 	if manifest.InitialHeight > 0 {
 		testnet.InitialHeight = manifest.InitialHeight

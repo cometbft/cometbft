@@ -66,6 +66,7 @@ var (
 	voteExtensionUpdateHeight = uniformChoice{int64(-1), int64(0), int64(1)} // -1: genesis, 0: InitChain, 1: (use offset)
 	voteExtensionEnabled      = weightedChoice{true: 3, false: 1}
 	voteExtensionHeightOffset = uniformChoice{int64(0), int64(10), int64(100)}
+	voteExtensionSize         = uniformChoice{uint(128), uint(512), uint(2048), uint(8192)} //TODO: define the right values depending on experiment results.
 	keyType                   = uniformChoice{ed25519.KeyType, secp256k1.KeyType, bls12381.KeyType}
 )
 
@@ -163,6 +164,8 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 		baseHeight := max(manifest.VoteExtensionsUpdateHeight+1, manifest.InitialHeight)
 		manifest.VoteExtensionsEnableHeight = baseHeight + voteExtensionHeightOffset.Choose(r).(int64)
 	}
+
+	manifest.VoteExtensionSize = voteExtensionSize.Choose(r).(uint)
 
 	var numSeeds, numValidators, numFulls, numLightClients int
 	switch opt["topology"].(string) {

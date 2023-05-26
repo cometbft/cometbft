@@ -396,6 +396,18 @@ func (mem *CListMempool) resCbFirstTime(
 				return
 			}
 
+			// Check transaction not already in the mempool
+			if _, ok := mem.txsMap.Load(types.Tx(tx).Key()); ok {
+				mem.logger.Debug(
+					"transaction already there",
+					"tx", types.Tx(tx).Hash(),
+					"res", r,
+					"height", mem.height,
+					"total", mem.Size(),
+				)
+				return
+			}
+
 			memTx := &mempoolTx{
 				height:    mem.height,
 				gasWanted: r.CheckTx.GasWanted,

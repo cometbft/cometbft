@@ -39,13 +39,13 @@ module mempoolv0 {
 
     var step: { node: NodeId, name: Step }
 
-    action setStep(nodeId, s) =
-        step' = { node: nodeId, name: s }
+    action setStep(node, s) =
+        step' = { node: node, name: s }
 
     var error: { node: NodeId, error: Error }
 
-    action setError(nodeId, err) =
-        error' = { node: nodeId, error: err }
+    action setError(node, err) =
+        error' = { node: node, error: err }
 
     //--------------------------------------------------------------------------
     // Mempool state
@@ -141,6 +141,7 @@ module mempoolv0 {
     
     /** Validate a transaction and add it to the mempool. */
     // [CListMempool.CheckTx]: https://github.com/CometBFT/cometbft/blob/5a8bd742619c08e997e70bc2bbb74650d25a141a/mempool/clist_mempool.go#L202
+    //-- __subaction__: this action is not part of the next-state relation
     action CheckTx(node: NodeId, tx: Tx, senderId: NodeId): bool = all {
         if (node.mempoolIsFull()) all {
             node.setError(MempoolIsFullError),
@@ -169,6 +170,7 @@ module mempoolv0 {
 
     /* Receive a specific transaction from a client via RPC. */
     // [Environment.BroadcastTxAsync]: https://github.com/CometBFT/cometbft/blob/111d252d75a4839341ff461d4e0cf152ca2cc13d/rpc/core/mempool.go#L22
+    //-- __subaction__: this action is not part of the next-state relation
     action CheckTx_RPC(node, tx) = all {
         node.setStep("CheckTx"),
         node.CheckTx(tx, noNode),
@@ -224,6 +226,7 @@ module mempoolv0 {
       * BlockExecutor holds the mempool lock while calling this function.
       */
     // [CListMempool.Update]: https://github.com/CometBFT/cometbft/blob/6498d67efdf0a539e3ca0dc3e4a5d7cb79878bb2/mempool/clist_mempool.go#L577
+    //-- __subaction__: this action is not part of the next-state relation
     action Update(node: NodeId, h: Height, txs: Set[Tx], txValidResults: Tx -> bool): bool = all {
         node.setStep("Update"),
         require(h > node.Height_()),
@@ -326,6 +329,7 @@ module mempoolv0 {
 
     /* The reactor loops through its mempool and sends the tx one by one to all
      * each of its peers. */
+    //-- __subaction__: this action is not part of the next-state relation
     action P2P_SendTx_(node: NodeId, peer: NodeId): bool = all {
         node.setStep("P2P_SendTx"),
         require(not(node.mempoolIsEmpty())),
@@ -420,6 +424,9 @@ module tests {
     val node1 = "n1"
     val node2 = "n2"
     val node3 = "n3"
+    val tx1 = "tx1"
+    val tx2 = "tx2"
+    val tx3 = "tx3"
 
     action assert_(__cond: bool): bool = all {
         __cond,
@@ -441,47 +448,47 @@ module tests {
     // Tests
     //--------------------------------------------------------------------------
     run test1 = init
-        .then(assert_("tx1".isValidAt(1)))
-        .then(node1.CheckTx_RPC("tx1"))
+        .then(assert_(tx1.isValidAt(1)))
+        .then(node1.CheckTx_RPC(tx1))
         .then(node1.ABCI_ProcessRequest())
         .then(node1.ReceiveCheckTxResponse())
-        .then(assert_(node1.inMempool("tx1") and "tx1".in(node1.Cache())))
+        .then(assert_(node1.inMempool(tx1) and tx1.in(node1.Cache())))
     
     run test2 = test1
-        .then(node1.Update(1, Set("tx1"), Map("tx1" -> true)))
-        .then(assert_(not(node1.inMempool("tx1")) and "tx1".in(node1.Cache())))
+        .then(node1.Update(1, Set(tx1), Map(tx1 -> true)))
+        .then(assert_(not(node1.inMempool(tx1)) and tx1.in(node1.Cache())))
 
     run test3 = test1
         .then(node1.P2P_SendTx_(node2))
         .then(node2.P2P_ReceiveTxs())
-        .then(assert_(not(node2.inMempool("tx1")) and "tx1".in(node2.Cache())))
+        .then(assert_(not(node2.inMempool(tx1)) and tx1.in(node2.Cache())))
 
     run test4 = test3
         .then(node2.ABCI_ProcessRequest())
         .then(node2.ReceiveCheckTxResponse())
-        .then(assert_(node2.inMempool("tx1") and "tx1".in(node2.Cache())))
+        .then(assert_(node2.inMempool(tx1) and tx1.in(node2.Cache())))
 
     run test5 = test4
-        .then(node2.Update(1, Set("tx1"), Map("tx1" -> "tx1".isValidAt(1))))
-        .then(assert_(not(node2.inMempool("tx1")) and "tx1".in(node2.Cache())))
+        .then(node2.Update(1, Set(tx1), Map(tx1 -> tx1.isValidAt(1))))
+        .then(assert_(not(node2.inMempool(tx1)) and tx1.in(node2.Cache())))
 
     run test8 = test1
-        .then(Update("n1", 2, Set("tx1"), Map("tx1" -> "tx1".isValidAt(2))))
+        .then(Update(node1, 2, Set(tx1), Map(tx1 -> tx1.isValidAt(2))))
 
     run test9 = test1
-        .then(Update("n1", 1, Set("tx2"), Map("tx2" -> true)))
+        .then(Update(node1, 1, Set(tx2), Map(tx2 -> true)))
 
     run testInvalid1 = init
-        .then(CheckTx_RPC("n1", "tx3")) // tx3 is invalid at height 0 according to isValidAt
-        .then(ABCI_ProcessRequest("n1"))
-        .then(ReceiveCheckTxResponse("n1"))
+        .then(CheckTx_RPC(node1, tx3)) // tx3 is invalid at height 0 according to isValidAt
+        .then(ABCI_ProcessRequest(node1))
+        .then(ReceiveCheckTxResponse(node1))
 
     //--------------------------------------------------------------------------
     def nodeState(node) = (
         ("mempool", node.Mempool()), 
         ("cache", node.Cache()),
         ("height", node.Height_()),
-        ("abci requests", requestSenderResponses.get(node)),
+        ("abci requests", requestResponses.get(node)),
         ("p2p incoming msgs", msgs.get(node)),
     )
     def ns(nodeId) = nodeState(nodeId)
@@ -501,7 +508,7 @@ module __repl__ {
     import chain.* from "./chain"
     import abciServers.* from "./abciServers"
     import network.* from "./network"
-    import mempoolv0.* //from "./mempoolv0"
-    // import properties.* 
+    import mempoolv0.*
+    // import properties.* from "./properties"
     import tests.* 
 } //-- __repl__

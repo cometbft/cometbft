@@ -34,7 +34,6 @@ module chain {
     run txsUpToTest = Chain_init
         .then(Chain_newBlockFrom(Set("tx1")))
         .then(Chain_newBlockFrom(Set("tx2", "tx3")))
-        .then(Chain_unchanged)
         .then(all {
             assert(txsUpTo(1) == Set("tx1")),
             assert(txsUpTo(2) == Set("tx1", "tx2", "tx3")),

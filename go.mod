@@ -23,7 +23,7 @@ require (
 	github.com/pointlander/peg v1.0.1
 	github.com/prometheus/client_golang v1.15.1
 	github.com/prometheus/client_model v0.4.0
-	github.com/prometheus/common v0.43.0
+	github.com/prometheus/common v0.44.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rs/cors v1.9.0
 	github.com/sasha-s/go-deadlock v0.3.1
@@ -51,7 +51,7 @@ require (
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
-	github.com/vektra/mockery/v2 v2.27.1
+	github.com/vektra/mockery/v2 v2.28.1
 	golang.org/x/sync v0.2.0
 	gonum.org/v1/gonum v0.13.0
 	google.golang.org/protobuf v1.30.0

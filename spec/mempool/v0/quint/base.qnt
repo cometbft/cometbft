@@ -40,9 +40,17 @@ module base {
     pure def notIn(__x: a, __set: Set[a]): bool =
         not(__x.in(__set))
 
-    pure def listAsSet(__list: List[a]): Set[a] =
+    pure def nonEmptyPowerset(__set: Set[a]): Set[Set[a]] =
+        __set.powerset().exclude(Set(Set()))
+
+    //--------------------------------------------------------------------------
+    pure def listToSet(__list: List[a]): Set[a] =
         __list.foldl(Set(), (__s, __x) => __s.setAdd(__x))
 
+    pure def setToList(__set: Set[a]): List[a] =
+        __set.fold(List(), (__l, __x) => __l.append(__x))
+
+    //--------------------------------------------------------------------------
     /// Update a map entry using the previous value.
     ///
     /// @param __map the map to update

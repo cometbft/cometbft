@@ -37,15 +37,15 @@ module mempoolv0 {
         "Update", "ReceiveRecheckTxResponse", "P2P_ReceiveTxs", "P2P_SendTx", 
         "ABCI::ProcessCheckTxRequest")
 
-    var step: { node: NodeId, name: Step }
+    var _step: { node: NodeId, name: Step, args: str -> str }
 
-    action setStep(node, s) =
-        step' = { node: node, name: s }
+    action setStep(node, s, args) =
+        _step' = { node: node, name: s, args: args }
 
-    var error: { node: NodeId, error: Error }
+    var _error: { node: NodeId, error: Error }
 
     action setError(node, err) =
-        error' = { node: node, error: err }
+        _error' = { node: node, error: err }
 
     //--------------------------------------------------------------------------
     // Mempool state
@@ -95,9 +95,10 @@ module mempoolv0 {
     def mempoolTxs(node: NodeId): Set[Tx] = 
         node.Mempool().map(e => e.tx)
 
+    // Return value is Optional: either an empty set or a singleton.
     def memTxFor(node: NodeId, tx: Tx): Set[MempoolTx] =
         node.Mempool().filter(e => e.tx == tx)
-    
+
     def sendersFor(node: NodeId, tx: Tx): Set[NodeId] = 
         node.memTxFor(tx).map(e => e.senders).flatten()
 
@@ -130,8 +131,8 @@ module mempoolv0 {
     action init = all {
         mempool' = NodeIds.mapBy(_ => Set()),
         cache' = NodeIds.mapBy(_ => Set()),
-        step' = { node: noNode, name: "init" },
-        error' = { node: noNode, error: noError },
+        _step' = { node: noNode, name: "init", args: Map() },
+        _error' = { node: noNode, error: noError },
         height' = NodeIds.mapBy(_ => 0),
         History_init,
         Network_init,
@@ -172,7 +173,7 @@ module mempoolv0 {
     // [Environment.BroadcastTxAsync]: https://github.com/CometBFT/cometbft/blob/111d252d75a4839341ff461d4e0cf152ca2cc13d/rpc/core/mempool.go#L22
     //-- __subaction__: this action is not part of the next-state relation
     action CheckTx_RPC(node, tx) = all {
-        node.setStep("CheckTx"),
+        node.setStep("CheckTx", Map("node" -> tx)),
         node.CheckTx(tx, noNode),
         node.History_recordSubmittedTx(tx),
         Network_unchanged,
@@ -188,7 +189,7 @@ module mempoolv0 {
     // Note that tx and sender are arguments to CListMempool.resCbFirstTime.
     // [CListMempool.resCbFirstTime]: https://github.com/CometBFT/cometbft/blob/6498d67efdf0a539e3ca0dc3e4a5d7cb79878bb2/mempool/clist_mempool.go#L369
     action ReceiveCheckTxResponse(node) = all {
-        node.setStep("ReceiveCheckTxResponse"),
+        node.setStep("ReceiveCheckTxResponse", Map()),
         node.ABCI_checkTxRequests().nonEmpty(),
         nondet request = oneOf(node.ABCI_checkTxRequests()) all {
             val response = node.ABCI_responseFor(request)
@@ -228,7 +229,7 @@ module mempoolv0 {
     // [CListMempool.Update]: https://github.com/CometBFT/cometbft/blob/6498d67efdf0a539e3ca0dc3e4a5d7cb79878bb2/mempool/clist_mempool.go#L577
     //-- __subaction__: this action is not part of the next-state relation
     action Update(node: NodeId, h: Height, txs: Set[Tx], txValidResults: Tx -> bool): bool = all {
-        node.setStep("Update"),
+        node.setStep("Update", Map("node" -> node)),
         require(h > node.Height_()),
         require(txs.nonEmpty()),
 
@@ -276,7 +277,7 @@ module mempoolv0 {
             },
             all {
                 // this block is the proposer: take the block from the mempool
-                nondet txs: Set[Tx] = oneOf(node.mempoolTxs().powerset().setRemove(Set()))
+                nondet txs: Set[Tx] = oneOf(node.mempoolTxs().nonEmptyPowerset())
                 val txValidResults: Tx -> bool = txs.mapBy(tx => isValidAt(tx, h))
                 node.Update(h, txs, txValidResults),
             },
@@ -286,7 +287,8 @@ module mempoolv0 {
     // Callback function to process a CheckTx response, when rechecking.
     // [CListMempool.resCbRecheck]: https://github.com/CometBFT/cometbft/blob/6498d67efdf0a539e3ca0dc3e4a5d7cb79878bb2/mempool/clist_mempool.go#L432
     action ReceiveRecheckTxResponse(node: NodeId): bool = all {
-        node.setStep("ReceiveRecheckTxResponse"),
+        node.setStep("ReceiveRecheckTxResponse", Map("node" -> node)),
+        node.ABCI_recheckTxRequests().nonEmpty(),
         nondet request = oneOf(node.ABCI_recheckTxRequests())
         all {
             val response = node.ABCI_responseFor(request)
@@ -316,7 +318,7 @@ module mempoolv0 {
     /* Receive a Txs message from a peer, and calls CheckTx on each Tx. */
     // [Reactor.Receive]: https://github.com/CometBFT/cometbft/blob/111d252d75a4839341ff461d4e0cf152ca2cc13d/mempool/reactor.go#L93
     action P2P_ReceiveTxs(node) = all {
-        node.setStep("P2P_ReceiveTxs"),
+        node.setStep("P2P_ReceiveTxs", Map("node" -> node)),
         require(node.Network_incomingMsgs().nonEmpty()),
         nondet msg = oneOf(node.Network_incomingMsgs())
         all {
@@ -331,7 +333,7 @@ module mempoolv0 {
      * each of its peers. */
     //-- __subaction__: this action is not part of the next-state relation
     action P2P_SendTx_(node: NodeId, peer: NodeId): bool = all {
-        node.setStep("P2P_SendTx"),
+        node.setStep("P2P_SendTx", Map("node" -> node, "peer" -> peer)),
         require(not(node.mempoolIsEmpty())),
         nondet tx = oneOf(node.mempoolTxs())
         val msg = { tag: "Txs", senderId: node, tx: tx }
@@ -359,7 +361,7 @@ module mempoolv0 {
     //--------------------------------------------------------------------------
     // The ABCI application process a request and generates a response
     action ABCI_ProcessRequest(node) = all {
-        node.setStep("ABCI::ProcessCheckTxRequest"),
+        node.setStep("ABCI::ProcessCheckTxRequest", Map("node" -> node)),
         node.ABCI_ProcessCheckTxRequest(),
         node.setError(noError),
         mempool' = mempool, 
@@ -398,14 +400,16 @@ module mempoolv0 {
 
     /* There may be action in other nodes too. */
     action ChainNext =
-        nondet txs = oneOf(Txs.exclude(Chain_allTxsInChain).powerset().setRemove(Set()))
+        val notCommittedTxs = Txs.exclude(Chain_allTxsInChain)
+        nondet txs = oneOf(notCommittedTxs.nonEmptyPowerset())
         all {
             require(txs.forall(tx => isValidAt(tx, Chain_latestHeight + 1))),
             Chain_newBlockFrom(txs),
+            setStep(noNode, "ChainNext", txs.mapBy(x => x)),
+            setError(noNode, noError),
             mempool' = mempool, 
             height' = height, 
             cache' = cache, 
-            setError(noNode, noError),
             History_unchanged,
             ABCI_unchanged,
             Network_unchanged,
@@ -433,8 +437,8 @@ module tests {
         mempool' = mempool, 
         height' = height, 
         cache' = cache,
-        step' = step, 
-        error' = error,
+        _step' = _step,
+        _error' = _error,
         History_unchanged,
         ABCI_unchanged,
         Network_unchanged,
@@ -497,8 +501,8 @@ module tests {
     val s3 = ns("n3")
 
     def state = (
-        ("step", step),
-        ("error", error),
+        ("step", _step),
+        ("error", _error),
         ("chain", chain),
     )
 }

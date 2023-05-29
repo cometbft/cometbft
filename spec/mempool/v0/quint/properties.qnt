@@ -10,14 +10,14 @@ module properties {
         node.History_gossipped(tx) implies node.History_hadInMempool(tx)
     ))
 
-    // Transactions committed to the chain cannot be in or have belonged to the mempool.
+    // Transactions committed to the chain cannot be in the mempool.
     val invariant2 = NodeIds.forall(node => Txs.forall(tx => 
-        tx.Chain_committedUpTo(node.Height_()) implies not(node.History_hadInMempool(tx))
+        tx.Chain_committedUpTo(node.Height_()) implies not(node.inMempool(tx))
     ))
 
     // Only valid transactions are present in the mempool.
     val invariant3 = Txs.forall(tx => NodeIds.forall(node => 
-        node.inMempool(tx) implies tx.isValidAt(node.Height_())
+        node.inMempool(tx) implies tx.isValidAt(node.memTxFor(tx).chooseSome().height)
     ))
 
     temporal safety = always(all {

@@ -67,7 +67,8 @@ module abciServers {
             rs.keys().mapBy(req => if (req.in(newRequests)) emptyResponse else rs.get(req)))
 
     // The app receives a CheckTx request and creates a response.
-    action ABCI_ProcessCheckTxRequest(node) =
+    action ABCI_ProcessCheckTxRequest(node) = all {
+        node.Requests().nonEmpty(),
         nondet req: Request = oneOf(node.Requests())
         all {
             require(not(node.hasResponseFor(req))),
@@ -77,6 +78,7 @@ module abciServers {
             val resp = { tag: req.tag, err: err }
             requestResponses' = requestResponses.mapPut(node, (rs) => rs.put(req, (senderId, h, resp))),
         }
+    }
 
     action ABCI_RemoveRequest(nodeId, request) = all {
         require(hasResponseFor(nodeId, request)), // We keep this condition to allow the action to return false; otherwise it will always evaluate to true.

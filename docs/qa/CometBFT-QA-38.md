@@ -435,6 +435,7 @@ It is clear from the overview  plots that as the vote extension sizes increase, 
 Although the rate of transaction processing also decreases, it does not seem to decrease as fast.
 
 **baseline**
+
 ![block rate](img38/voteExtensions/baseline_block_rate.png)
 
 ![txs rate](img38/voteExtensions/baseline_total_txs_rate.png)
@@ -459,15 +460,40 @@ Although the rate of transaction processing also decreases, it does not seem to 
 
 #### First run
 
+**baseline**
+
+![block rate](img38/voteExtensions/baseline_1_block_rate.png)
+
+![txs rate](img38/voteExtensions/baseline_1_total_txs_rate.png)
+
+**8k**
+
+![block rate](img38/voteExtensions/08k_1_block_rate.png)
+
+![txs rate](img38/voteExtensions/08k_1_total_txs_rate.png)
+
+**16k**
+
+![block rate](img38/voteExtensions/16k_1_block_rate.png)
+
+![txs rate](img38/voteExtensions/16k_1_total_txs_rate.png)
+
+**32k**
+
+![block rate](img38/voteExtensions/32k_1_block_rate.png)
+
+![txs rate](img38/voteExtensions/32k_1_total_txs_rate.png)
 
 
 ### Number of rounds
 
 The effect of vote extensions are also felt on the number of rounds needed to reach consensus.
+We show the results for the whole experiments.
 
 #### Overview
 
 **baseline**
+
 ![number of rounds](img38/voteExtensions/baseline_rounds.png)
 
 **8k**
@@ -483,10 +509,8 @@ The effect of vote extensions are also felt on the number of rounds needed to re
 ![number of rounds](img38/voteExtensions/32k_rounds.png)
 
 
-
 ### CPU
 
-#### Overview
 
 The CPU usage reached the same peaks on all tests, but the following graphs show that with larger Vote Extensions, nodes take longer to reduce the CPU usage.
 This could mean that a backlog of processing is forming during the execution of the tests with larger extensions.
@@ -509,8 +533,6 @@ This could mean that a backlog of processing is forming during the execution of 
 
 
 ### Resident Memory
-
-#### Overview
 
 The same conclusion reached for CPU usage may be drawn for the memory.
 That is, that a backlog of work is formed during the tests and catching up (freeing of memory) happens after the test is done.
@@ -536,8 +558,6 @@ That is, that a backlog of work is formed during the tests and catching up (free
 
 ### Mempool size
 
-#### Overview
-
 This metric shows how many transactions are outstanding in the nodes' mempools.
 Observe that in all runs, the number of transactions in the mempool quickly drops to zero between runs.
 
@@ -552,7 +572,6 @@ Observe that in all runs, the number of transactions in the mempool quickly drop
 **16k**
 
 ![rotating-mempool-avg](img38/voteExtensions/16k_avg_mempool_size.png)
-
 
 **32k**
 
@@ -572,6 +591,7 @@ Observe that in all runs, the number of transactions in the mempool quickly drop
 * we need to evaluate the effect of transaction sizes as well.
 * the mempool never got completely empty on some nodes
 * 5 minute interval to clean up the mempool. heights continue to happen, with vote extensions.
+* if the mempool size drops quickly, why is the memory slow to empty? Slow GC?
 
 
 ### Results

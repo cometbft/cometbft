@@ -1,9 +1,11 @@
-package e2e
+package grammar
 
 import (
 	"fmt"
 	"strings"
 	"testing"
+
+	abci "github.com/cometbft/cometbft/abci/types"
 )
 
 type Test struct {
@@ -62,8 +64,9 @@ var tests = []Test{
 
 func TestVerify(t *testing.T) {
 	for _, test := range tests {
+		checker := NewGrammarChecker(DefaultConfig())
 		execution := strings.Join(test.abciCalls, " ")
-		result, err := Verify(execution)
+		result, err := checker.VerifyExecution(execution)
 		if result == test.result {
 			continue
 		}
@@ -75,9 +78,32 @@ func TestVerify(t *testing.T) {
 }
 
 func TestVerifySpecific(t *testing.T) {
-	execution := ""
-	_, err := Verify(execution)
+	//calls := []string{PrepareProposal, BeginBlock, EndBlock, Commit}
+	//execution := strings.Join(calls, " ")
+	checker := NewGrammarChecker(DefaultConfig())
+	execution := InitChain + " " + BeginBlock + "\n" + EndBlock
+	_, err := checker.VerifyExecution(execution)
 	if err != nil {
 		t.Error(err)
+	}
+}
+
+func TestFilterLastHeight(t *testing.T) {
+	reqs := []*abci.Request{
+		&abci.Request{Value: &abci.Request_InitChain{InitChain: &abci.RequestInitChain{}}},
+		&abci.Request{Value: &abci.Request_BeginBlock{BeginBlock: &abci.RequestBeginBlock{}}},
+		&abci.Request{Value: &abci.Request_EndBlock{EndBlock: &abci.RequestEndBlock{}}},
+		&abci.Request{Value: &abci.Request_Commit{Commit: &abci.RequestCommit{}}},
+	}
+	checker := NewGrammarChecker(DefaultConfig())
+	rr, n := checker.filterLastHeight(reqs)
+	if len(reqs) != len(rr) || n != 0 {
+		t.Errorf("FilterLastHeight filtered %v abci calls, expected %v\n", n, 0)
+	}
+
+	reqs = append(reqs, &abci.Request{Value: &abci.Request_BeginBlock{BeginBlock: &abci.RequestBeginBlock{}}})
+	rrr, n := checker.filterLastHeight(reqs)
+	if len(rr) != len(rrr) || n != 1 {
+		t.Errorf("FilterLastHeight filtered %v abci calls, expected %v\n", n, 1)
 	}
 }

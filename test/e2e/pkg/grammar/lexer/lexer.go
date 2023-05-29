@@ -283,13 +283,107 @@ func not(r rune, set []rune) bool {
 
 var accept = []token.Type{ 
 	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.T_2, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.T_4, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.T_3, 
+	token.T_5, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
 	token.T_0, 
 	token.T_1, 
-	token.T_2, 
-	token.T_3, 
-	token.T_4, 
-	token.T_5, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
 	token.T_6, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
+	token.Error, 
 	token.T_7, 
 	token.T_8, 
 }
@@ -298,76 +392,828 @@ var nextState = []func(r rune) state{
 	// Set0
 	func(r rune) state {
 		switch { 
-		case r == '1':
+		case r == '<':
 			return 1 
-		case r == '2':
-			return 2 
-		case r == '3':
-			return 3 
-		case r == '4':
-			return 4 
-		case r == '5':
-			return 5 
-		case r == '6':
-			return 6 
-		case r == '7':
-			return 7 
-		case r == '8':
-			return 8 
-		case r == '9':
-			return 9 
 		}
 		return nullState
 	}, 
 	// Set1
 	func(r rune) state {
 		switch { 
+		case r == 'A':
+			return 2 
+		case r == 'B':
+			return 3 
+		case r == 'C':
+			return 4 
+		case r == 'D':
+			return 5 
+		case r == 'E':
+			return 6 
+		case r == 'I':
+			return 7 
+		case r == 'O':
+			return 8 
+		case r == 'P':
+			return 9 
 		}
 		return nullState
 	}, 
 	// Set2
 	func(r rune) state {
 		switch { 
+		case r == 'p':
+			return 10 
 		}
 		return nullState
 	}, 
 	// Set3
 	func(r rune) state {
 		switch { 
+		case r == 'e':
+			return 11 
 		}
 		return nullState
 	}, 
 	// Set4
 	func(r rune) state {
 		switch { 
+		case r == 'o':
+			return 12 
 		}
 		return nullState
 	}, 
 	// Set5
 	func(r rune) state {
 		switch { 
+		case r == 'e':
+			return 13 
 		}
 		return nullState
 	}, 
 	// Set6
 	func(r rune) state {
 		switch { 
+		case r == 'n':
+			return 14 
 		}
 		return nullState
 	}, 
 	// Set7
 	func(r rune) state {
 		switch { 
+		case r == 'n':
+			return 15 
 		}
 		return nullState
 	}, 
 	// Set8
 	func(r rune) state {
 		switch { 
+		case r == 'f':
+			return 16 
 		}
 		return nullState
 	}, 
 	// Set9
+	func(r rune) state {
+		switch { 
+		case r == 'r':
+			return 17 
+		}
+		return nullState
+	}, 
+	// Set10
+	func(r rune) state {
+		switch { 
+		case r == 'p':
+			return 18 
+		}
+		return nullState
+	}, 
+	// Set11
+	func(r rune) state {
+		switch { 
+		case r == 'g':
+			return 19 
+		}
+		return nullState
+	}, 
+	// Set12
+	func(r rune) state {
+		switch { 
+		case r == 'm':
+			return 20 
+		}
+		return nullState
+	}, 
+	// Set13
+	func(r rune) state {
+		switch { 
+		case r == 'l':
+			return 21 
+		}
+		return nullState
+	}, 
+	// Set14
+	func(r rune) state {
+		switch { 
+		case r == 'd':
+			return 22 
+		}
+		return nullState
+	}, 
+	// Set15
+	func(r rune) state {
+		switch { 
+		case r == 'i':
+			return 23 
+		}
+		return nullState
+	}, 
+	// Set16
+	func(r rune) state {
+		switch { 
+		case r == 'f':
+			return 24 
+		}
+		return nullState
+	}, 
+	// Set17
+	func(r rune) state {
+		switch { 
+		case r == 'e':
+			return 25 
+		case r == 'o':
+			return 26 
+		}
+		return nullState
+	}, 
+	// Set18
+	func(r rune) state {
+		switch { 
+		case r == 'l':
+			return 27 
+		}
+		return nullState
+	}, 
+	// Set19
+	func(r rune) state {
+		switch { 
+		case r == 'i':
+			return 28 
+		}
+		return nullState
+	}, 
+	// Set20
+	func(r rune) state {
+		switch { 
+		case r == 'm':
+			return 29 
+		}
+		return nullState
+	}, 
+	// Set21
+	func(r rune) state {
+		switch { 
+		case r == 'i':
+			return 30 
+		}
+		return nullState
+	}, 
+	// Set22
+	func(r rune) state {
+		switch { 
+		case r == 'B':
+			return 31 
+		}
+		return nullState
+	}, 
+	// Set23
+	func(r rune) state {
+		switch { 
+		case r == 't':
+			return 32 
+		}
+		return nullState
+	}, 
+	// Set24
+	func(r rune) state {
+		switch { 
+		case r == 'e':
+			return 33 
+		}
+		return nullState
+	}, 
+	// Set25
+	func(r rune) state {
+		switch { 
+		case r == 'p':
+			return 34 
+		}
+		return nullState
+	}, 
+	// Set26
+	func(r rune) state {
+		switch { 
+		case r == 'c':
+			return 35 
+		}
+		return nullState
+	}, 
+	// Set27
+	func(r rune) state {
+		switch { 
+		case r == 'y':
+			return 36 
+		}
+		return nullState
+	}, 
+	// Set28
+	func(r rune) state {
+		switch { 
+		case r == 'n':
+			return 37 
+		}
+		return nullState
+	}, 
+	// Set29
+	func(r rune) state {
+		switch { 
+		case r == 'i':
+			return 38 
+		}
+		return nullState
+	}, 
+	// Set30
+	func(r rune) state {
+		switch { 
+		case r == 'v':
+			return 39 
+		}
+		return nullState
+	}, 
+	// Set31
+	func(r rune) state {
+		switch { 
+		case r == 'l':
+			return 40 
+		}
+		return nullState
+	}, 
+	// Set32
+	func(r rune) state {
+		switch { 
+		case r == 'C':
+			return 41 
+		}
+		return nullState
+	}, 
+	// Set33
+	func(r rune) state {
+		switch { 
+		case r == 'r':
+			return 42 
+		}
+		return nullState
+	}, 
+	// Set34
+	func(r rune) state {
+		switch { 
+		case r == 'a':
+			return 43 
+		}
+		return nullState
+	}, 
+	// Set35
+	func(r rune) state {
+		switch { 
+		case r == 'e':
+			return 44 
+		}
+		return nullState
+	}, 
+	// Set36
+	func(r rune) state {
+		switch { 
+		case r == 'C':
+			return 45 
+		}
+		return nullState
+	}, 
+	// Set37
+	func(r rune) state {
+		switch { 
+		case r == 'B':
+			return 46 
+		}
+		return nullState
+	}, 
+	// Set38
+	func(r rune) state {
+		switch { 
+		case r == 't':
+			return 47 
+		}
+		return nullState
+	}, 
+	// Set39
+	func(r rune) state {
+		switch { 
+		case r == 'e':
+			return 48 
+		}
+		return nullState
+	}, 
+	// Set40
+	func(r rune) state {
+		switch { 
+		case r == 'o':
+			return 49 
+		}
+		return nullState
+	}, 
+	// Set41
+	func(r rune) state {
+		switch { 
+		case r == 'h':
+			return 50 
+		}
+		return nullState
+	}, 
+	// Set42
+	func(r rune) state {
+		switch { 
+		case r == 'S':
+			return 51 
+		}
+		return nullState
+	}, 
+	// Set43
+	func(r rune) state {
+		switch { 
+		case r == 'r':
+			return 52 
+		}
+		return nullState
+	}, 
+	// Set44
+	func(r rune) state {
+		switch { 
+		case r == 's':
+			return 53 
+		}
+		return nullState
+	}, 
+	// Set45
+	func(r rune) state {
+		switch { 
+		case r == 'h':
+			return 54 
+		}
+		return nullState
+	}, 
+	// Set46
+	func(r rune) state {
+		switch { 
+		case r == 'l':
+			return 55 
+		}
+		return nullState
+	}, 
+	// Set47
+	func(r rune) state {
+		switch { 
+		case r == '>':
+			return 56 
+		}
+		return nullState
+	}, 
+	// Set48
+	func(r rune) state {
+		switch { 
+		case r == 'r':
+			return 57 
+		}
+		return nullState
+	}, 
+	// Set49
+	func(r rune) state {
+		switch { 
+		case r == 'c':
+			return 58 
+		}
+		return nullState
+	}, 
+	// Set50
+	func(r rune) state {
+		switch { 
+		case r == 'a':
+			return 59 
+		}
+		return nullState
+	}, 
+	// Set51
+	func(r rune) state {
+		switch { 
+		case r == 'n':
+			return 60 
+		}
+		return nullState
+	}, 
+	// Set52
+	func(r rune) state {
+		switch { 
+		case r == 'e':
+			return 61 
+		}
+		return nullState
+	}, 
+	// Set53
+	func(r rune) state {
+		switch { 
+		case r == 's':
+			return 62 
+		}
+		return nullState
+	}, 
+	// Set54
+	func(r rune) state {
+		switch { 
+		case r == 'u':
+			return 63 
+		}
+		return nullState
+	}, 
+	// Set55
+	func(r rune) state {
+		switch { 
+		case r == 'o':
+			return 64 
+		}
+		return nullState
+	}, 
+	// Set56
+	func(r rune) state {
+		switch { 
+		}
+		return nullState
+	}, 
+	// Set57
+	func(r rune) state {
+		switch { 
+		case r == 'T':
+			return 65 
+		}
+		return nullState
+	}, 
+	// Set58
+	func(r rune) state {
+		switch { 
+		case r == 'k':
+			return 66 
+		}
+		return nullState
+	}, 
+	// Set59
+	func(r rune) state {
+		switch { 
+		case r == 'i':
+			return 67 
+		}
+		return nullState
+	}, 
+	// Set60
+	func(r rune) state {
+		switch { 
+		case r == 'a':
+			return 68 
+		}
+		return nullState
+	}, 
+	// Set61
+	func(r rune) state {
+		switch { 
+		case r == 'P':
+			return 69 
+		}
+		return nullState
+	}, 
+	// Set62
+	func(r rune) state {
+		switch { 
+		case r == 'P':
+			return 70 
+		}
+		return nullState
+	}, 
+	// Set63
+	func(r rune) state {
+		switch { 
+		case r == 'n':
+			return 71 
+		}
+		return nullState
+	}, 
+	// Set64
+	func(r rune) state {
+		switch { 
+		case r == 'c':
+			return 72 
+		}
+		return nullState
+	}, 
+	// Set65
+	func(r rune) state {
+		switch { 
+		case r == 'x':
+			return 73 
+		}
+		return nullState
+	}, 
+	// Set66
+	func(r rune) state {
+		switch { 
+		case r == '>':
+			return 74 
+		}
+		return nullState
+	}, 
+	// Set67
+	func(r rune) state {
+		switch { 
+		case r == 'n':
+			return 75 
+		}
+		return nullState
+	}, 
+	// Set68
+	func(r rune) state {
+		switch { 
+		case r == 'p':
+			return 76 
+		}
+		return nullState
+	}, 
+	// Set69
+	func(r rune) state {
+		switch { 
+		case r == 'r':
+			return 77 
+		}
+		return nullState
+	}, 
+	// Set70
+	func(r rune) state {
+		switch { 
+		case r == 'r':
+			return 78 
+		}
+		return nullState
+	}, 
+	// Set71
+	func(r rune) state {
+		switch { 
+		case r == 'k':
+			return 79 
+		}
+		return nullState
+	}, 
+	// Set72
+	func(r rune) state {
+		switch { 
+		case r == 'k':
+			return 80 
+		}
+		return nullState
+	}, 
+	// Set73
+	func(r rune) state {
+		switch { 
+		case r == '>':
+			return 81 
+		}
+		return nullState
+	}, 
+	// Set74
+	func(r rune) state {
+		switch { 
+		}
+		return nullState
+	}, 
+	// Set75
+	func(r rune) state {
+		switch { 
+		case r == '>':
+			return 82 
+		}
+		return nullState
+	}, 
+	// Set76
+	func(r rune) state {
+		switch { 
+		case r == 's':
+			return 83 
+		}
+		return nullState
+	}, 
+	// Set77
+	func(r rune) state {
+		switch { 
+		case r == 'o':
+			return 84 
+		}
+		return nullState
+	}, 
+	// Set78
+	func(r rune) state {
+		switch { 
+		case r == 'o':
+			return 85 
+		}
+		return nullState
+	}, 
+	// Set79
+	func(r rune) state {
+		switch { 
+		case r == '>':
+			return 86 
+		}
+		return nullState
+	}, 
+	// Set80
+	func(r rune) state {
+		switch { 
+		case r == '>':
+			return 87 
+		}
+		return nullState
+	}, 
+	// Set81
+	func(r rune) state {
+		switch { 
+		}
+		return nullState
+	}, 
+	// Set82
+	func(r rune) state {
+		switch { 
+		}
+		return nullState
+	}, 
+	// Set83
+	func(r rune) state {
+		switch { 
+		case r == 'h':
+			return 88 
+		}
+		return nullState
+	}, 
+	// Set84
+	func(r rune) state {
+		switch { 
+		case r == 'p':
+			return 89 
+		}
+		return nullState
+	}, 
+	// Set85
+	func(r rune) state {
+		switch { 
+		case r == 'p':
+			return 90 
+		}
+		return nullState
+	}, 
+	// Set86
+	func(r rune) state {
+		switch { 
+		}
+		return nullState
+	}, 
+	// Set87
+	func(r rune) state {
+		switch { 
+		}
+		return nullState
+	}, 
+	// Set88
+	func(r rune) state {
+		switch { 
+		case r == 'o':
+			return 91 
+		}
+		return nullState
+	}, 
+	// Set89
+	func(r rune) state {
+		switch { 
+		case r == 'o':
+			return 92 
+		}
+		return nullState
+	}, 
+	// Set90
+	func(r rune) state {
+		switch { 
+		case r == 'o':
+			return 93 
+		}
+		return nullState
+	}, 
+	// Set91
+	func(r rune) state {
+		switch { 
+		case r == 't':
+			return 94 
+		}
+		return nullState
+	}, 
+	// Set92
+	func(r rune) state {
+		switch { 
+		case r == 's':
+			return 95 
+		}
+		return nullState
+	}, 
+	// Set93
+	func(r rune) state {
+		switch { 
+		case r == 's':
+			return 96 
+		}
+		return nullState
+	}, 
+	// Set94
+	func(r rune) state {
+		switch { 
+		case r == '>':
+			return 97 
+		}
+		return nullState
+	}, 
+	// Set95
+	func(r rune) state {
+		switch { 
+		case r == 'a':
+			return 98 
+		}
+		return nullState
+	}, 
+	// Set96
+	func(r rune) state {
+		switch { 
+		case r == 'a':
+			return 99 
+		}
+		return nullState
+	}, 
+	// Set97
+	func(r rune) state {
+		switch { 
+		}
+		return nullState
+	}, 
+	// Set98
+	func(r rune) state {
+		switch { 
+		case r == 'l':
+			return 100 
+		}
+		return nullState
+	}, 
+	// Set99
+	func(r rune) state {
+		switch { 
+		case r == 'l':
+			return 101 
+		}
+		return nullState
+	}, 
+	// Set100
+	func(r rune) state {
+		switch { 
+		case r == '>':
+			return 102 
+		}
+		return nullState
+	}, 
+	// Set101
+	func(r rune) state {
+		switch { 
+		case r == '>':
+			return 103 
+		}
+		return nullState
+	}, 
+	// Set102
+	func(r rune) state {
+		switch { 
+		}
+		return nullState
+	}, 
+	// Set103
 	func(r rune) state {
 		switch { 
 		}

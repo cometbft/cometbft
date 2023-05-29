@@ -65,7 +65,7 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 		// p.DumpDescriptors()
 
 		switch L {
-		case slot.ApplyChunk0R0: // ApplyChunk : ∙7
+		case slot.ApplyChunk0R0: // ApplyChunk : ∙<ApplyChunk>
 
 			p.bsrSet.Add(slot.ApplyChunk0R1, cU, p.cI, p.cI+1)
 			p.cI++
@@ -102,7 +102,7 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			} else {
 				p.parseError(slot.ApplyChunks1R0, p.cI, followSets[symbols.NT_ApplyChunks])
 			}
-		case slot.BeginBlock0R0: // BeginBlock : ∙2
+		case slot.BeginBlock0R0: // BeginBlock : ∙<BeginBlock>
 
 			p.bsrSet.Add(slot.BeginBlock0R1, cU, p.cI, p.cI+1)
 			p.cI++
@@ -155,7 +155,7 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			} else {
 				p.parseError(slot.CleanStart1R0, p.cI, followSets[symbols.NT_CleanStart])
 			}
-		case slot.Commit0R0: // Commit : ∙5
+		case slot.Commit0R0: // Commit : ∙<Commit>
 
 			p.bsrSet.Add(slot.Commit0R1, cU, p.cI, p.cI+1)
 			p.cI++
@@ -338,7 +338,7 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			} else {
 				p.parseError(slot.Decide1R0, p.cI, followSets[symbols.NT_Decide])
 			}
-		case slot.DeliverTx0R0: // DeliverTx : ∙3
+		case slot.DeliverTx0R0: // DeliverTx : ∙<DeliverTx>
 
 			p.bsrSet.Add(slot.DeliverTx0R1, cU, p.cI, p.cI+1)
 			p.cI++
@@ -375,7 +375,7 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			} else {
 				p.parseError(slot.DeliverTxs1R0, p.cI, followSets[symbols.NT_DeliverTxs])
 			}
-		case slot.EndBlock0R0: // EndBlock : ∙4
+		case slot.EndBlock0R0: // EndBlock : ∙<EndBlock>
 
 			p.bsrSet.Add(slot.EndBlock0R1, cU, p.cI, p.cI+1)
 			p.cI++
@@ -384,7 +384,7 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			} else {
 				p.parseError(slot.EndBlock0R0, p.cI, followSets[symbols.NT_EndBlock])
 			}
-		case slot.InitChain0R0: // InitChain : ∙1
+		case slot.InitChain0R0: // InitChain : ∙<InitChain>
 
 			p.bsrSet.Add(slot.InitChain0R1, cU, p.cI, p.cI+1)
 			p.cI++
@@ -403,7 +403,7 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			} else {
 				p.parseError(slot.NonProposer0R0, p.cI, followSets[symbols.NT_NonProposer])
 			}
-		case slot.OfferSnapshot0R0: // OfferSnapshot : ∙6
+		case slot.OfferSnapshot0R0: // OfferSnapshot : ∙<OfferSnapshot>
 
 			p.bsrSet.Add(slot.OfferSnapshot0R1, cU, p.cI, p.cI+1)
 			p.cI++
@@ -412,7 +412,7 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			} else {
 				p.parseError(slot.OfferSnapshot0R0, p.cI, followSets[symbols.NT_OfferSnapshot])
 			}
-		case slot.PrepareProposal0R0: // PrepareProposal : ∙8
+		case slot.PrepareProposal0R0: // PrepareProposal : ∙<PrepareProposal>
 
 			p.bsrSet.Add(slot.PrepareProposal0R1, cU, p.cI, p.cI+1)
 			p.cI++
@@ -421,7 +421,7 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			} else {
 				p.parseError(slot.PrepareProposal0R0, p.cI, followSets[symbols.NT_PrepareProposal])
 			}
-		case slot.ProcessProposal0R0: // ProcessProposal : ∙9
+		case slot.ProcessProposal0R0: // ProcessProposal : ∙<ProcessProposal>
 
 			p.bsrSet.Add(slot.ProcessProposal0R1, cU, p.cI, p.cI+1)
 			p.cI++
@@ -826,66 +826,66 @@ func (p *parser) testSelect(l slot.Label) bool {
 }
 
 var first = []map[token.Type]string{
-	// ApplyChunk : ∙7
+	// ApplyChunk : ∙<ApplyChunk>
 	{
-		token.T_6: "7",
+		token.T_0: "<ApplyChunk>",
 	},
-	// ApplyChunk : 7 ∙
+	// ApplyChunk : <ApplyChunk> ∙
 	{
-		token.T_1: "2",
-		token.T_5: "6",
-		token.T_6: "7",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_0: "<ApplyChunk>",
+		token.T_1: "<BeginBlock>",
+		token.T_6: "<OfferSnapshot>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// ApplyChunks : ∙ApplyChunk
 	{
-		token.T_6: "7",
+		token.T_0: "<ApplyChunk>",
 	},
 	// ApplyChunks : ApplyChunk ∙
 	{
-		token.T_1: "2",
-		token.T_5: "6",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_6: "<OfferSnapshot>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// ApplyChunks : ∙ApplyChunk ApplyChunks
 	{
-		token.T_6: "7",
+		token.T_0: "<ApplyChunk>",
 	},
 	// ApplyChunks : ApplyChunk ∙ApplyChunks
 	{
-		token.T_6: "7",
+		token.T_0: "<ApplyChunk>",
 	},
 	// ApplyChunks : ApplyChunk ApplyChunks ∙
 	{
-		token.T_1: "2",
-		token.T_5: "6",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_6: "<OfferSnapshot>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
-	// BeginBlock : ∙2
+	// BeginBlock : ∙<BeginBlock>
 	{
-		token.T_1: "2",
+		token.T_1: "<BeginBlock>",
 	},
-	// BeginBlock : 2 ∙
+	// BeginBlock : <BeginBlock> ∙
 	{
-		token.T_2: "3",
-		token.T_3: "4",
+		token.T_3: "<DeliverTx>",
+		token.T_4: "<EndBlock>",
 	},
 	// CleanStart : ∙InitChain StateSync ConsensusExec
 	{
-		token.T_0: "1",
+		token.T_5: "<InitChain>",
 	},
 	// CleanStart : InitChain ∙StateSync ConsensusExec
 	{
-		token.T_5: "6",
+		token.T_6: "<OfferSnapshot>",
 	},
 	// CleanStart : InitChain StateSync ∙ConsensusExec
 	{
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// CleanStart : InitChain StateSync ConsensusExec ∙
 	{
@@ -893,34 +893,34 @@ var first = []map[token.Type]string{
 	},
 	// CleanStart : ∙InitChain ConsensusExec
 	{
-		token.T_0: "1",
+		token.T_5: "<InitChain>",
 	},
 	// CleanStart : InitChain ∙ConsensusExec
 	{
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// CleanStart : InitChain ConsensusExec ∙
 	{
 		token.EOF: "$",
 	},
-	// Commit : ∙5
+	// Commit : ∙<Commit>
 	{
-		token.T_4: "5",
+		token.T_2: "<Commit>",
 	},
-	// Commit : 5 ∙
+	// Commit : <Commit> ∙
 	{
 		token.EOF: "$",
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// ConsensusExec : ∙ConsensusHeights
 	{
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// ConsensusExec : ConsensusHeights ∙
 	{
@@ -928,44 +928,44 @@ var first = []map[token.Type]string{
 	},
 	// ConsensusHeight : ∙ConsensusRounds Decide Commit
 	{
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// ConsensusHeight : ConsensusRounds ∙Decide Commit
 	{
-		token.T_1: "2",
+		token.T_1: "<BeginBlock>",
 	},
 	// ConsensusHeight : ConsensusRounds Decide ∙Commit
 	{
-		token.T_4: "5",
+		token.T_2: "<Commit>",
 	},
 	// ConsensusHeight : ConsensusRounds Decide Commit ∙
 	{
 		token.EOF: "$",
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// ConsensusHeight : ∙Decide Commit
 	{
-		token.T_1: "2",
+		token.T_1: "<BeginBlock>",
 	},
 	// ConsensusHeight : Decide ∙Commit
 	{
-		token.T_4: "5",
+		token.T_2: "<Commit>",
 	},
 	// ConsensusHeight : Decide Commit ∙
 	{
 		token.EOF: "$",
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// ConsensusHeights : ∙ConsensusHeight
 	{
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// ConsensusHeights : ConsensusHeight ∙
 	{
@@ -973,15 +973,15 @@ var first = []map[token.Type]string{
 	},
 	// ConsensusHeights : ∙ConsensusHeight ConsensusHeights
 	{
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// ConsensusHeights : ConsensusHeight ∙ConsensusHeights
 	{
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// ConsensusHeights : ConsensusHeight ConsensusHeights ∙
 	{
@@ -989,179 +989,179 @@ var first = []map[token.Type]string{
 	},
 	// ConsensusRound : ∙Proposer
 	{
-		token.T_7: "8",
+		token.T_7: "<PrepareProposal>",
 	},
 	// ConsensusRound : Proposer ∙
 	{
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// ConsensusRound : ∙NonProposer
 	{
-		token.T_8: "9",
+		token.T_8: "<ProcessProposal>",
 	},
 	// ConsensusRound : NonProposer ∙
 	{
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// ConsensusRounds : ∙ConsensusRound
 	{
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// ConsensusRounds : ConsensusRound ∙
 	{
-		token.T_1: "2",
+		token.T_1: "<BeginBlock>",
 	},
 	// ConsensusRounds : ∙ConsensusRound ConsensusRounds
 	{
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// ConsensusRounds : ConsensusRound ∙ConsensusRounds
 	{
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// ConsensusRounds : ConsensusRound ConsensusRounds ∙
 	{
-		token.T_1: "2",
+		token.T_1: "<BeginBlock>",
 	},
 	// Decide : ∙BeginBlock DeliverTxs EndBlock
 	{
-		token.T_1: "2",
+		token.T_1: "<BeginBlock>",
 	},
 	// Decide : BeginBlock ∙DeliverTxs EndBlock
 	{
-		token.T_2: "3",
+		token.T_3: "<DeliverTx>",
 	},
 	// Decide : BeginBlock DeliverTxs ∙EndBlock
 	{
-		token.T_3: "4",
+		token.T_4: "<EndBlock>",
 	},
 	// Decide : BeginBlock DeliverTxs EndBlock ∙
 	{
-		token.T_4: "5",
+		token.T_2: "<Commit>",
 	},
 	// Decide : ∙BeginBlock EndBlock
 	{
-		token.T_1: "2",
+		token.T_1: "<BeginBlock>",
 	},
 	// Decide : BeginBlock ∙EndBlock
 	{
-		token.T_3: "4",
+		token.T_4: "<EndBlock>",
 	},
 	// Decide : BeginBlock EndBlock ∙
 	{
-		token.T_4: "5",
+		token.T_2: "<Commit>",
 	},
-	// DeliverTx : ∙3
+	// DeliverTx : ∙<DeliverTx>
 	{
-		token.T_2: "3",
+		token.T_3: "<DeliverTx>",
 	},
-	// DeliverTx : 3 ∙
+	// DeliverTx : <DeliverTx> ∙
 	{
-		token.T_2: "3",
-		token.T_3: "4",
+		token.T_3: "<DeliverTx>",
+		token.T_4: "<EndBlock>",
 	},
 	// DeliverTxs : ∙DeliverTx
 	{
-		token.T_2: "3",
+		token.T_3: "<DeliverTx>",
 	},
 	// DeliverTxs : DeliverTx ∙
 	{
-		token.T_3: "4",
+		token.T_4: "<EndBlock>",
 	},
 	// DeliverTxs : ∙DeliverTx DeliverTxs
 	{
-		token.T_2: "3",
+		token.T_3: "<DeliverTx>",
 	},
 	// DeliverTxs : DeliverTx ∙DeliverTxs
 	{
-		token.T_2: "3",
+		token.T_3: "<DeliverTx>",
 	},
 	// DeliverTxs : DeliverTx DeliverTxs ∙
 	{
-		token.T_3: "4",
+		token.T_4: "<EndBlock>",
 	},
-	// EndBlock : ∙4
+	// EndBlock : ∙<EndBlock>
 	{
-		token.T_3: "4",
+		token.T_4: "<EndBlock>",
 	},
-	// EndBlock : 4 ∙
+	// EndBlock : <EndBlock> ∙
 	{
-		token.T_4: "5",
+		token.T_2: "<Commit>",
 	},
-	// InitChain : ∙1
+	// InitChain : ∙<InitChain>
 	{
-		token.T_0: "1",
+		token.T_5: "<InitChain>",
 	},
-	// InitChain : 1 ∙
+	// InitChain : <InitChain> ∙
 	{
-		token.T_1: "2",
-		token.T_5: "6",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_6: "<OfferSnapshot>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// NonProposer : ∙ProcessProposal
 	{
-		token.T_8: "9",
+		token.T_8: "<ProcessProposal>",
 	},
 	// NonProposer : ProcessProposal ∙
 	{
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
-	// OfferSnapshot : ∙6
+	// OfferSnapshot : ∙<OfferSnapshot>
 	{
-		token.T_5: "6",
+		token.T_6: "<OfferSnapshot>",
 	},
-	// OfferSnapshot : 6 ∙
+	// OfferSnapshot : <OfferSnapshot> ∙
 	{
-		token.T_5: "6",
-		token.T_6: "7",
+		token.T_0: "<ApplyChunk>",
+		token.T_6: "<OfferSnapshot>",
 	},
-	// PrepareProposal : ∙8
+	// PrepareProposal : ∙<PrepareProposal>
 	{
-		token.T_7: "8",
+		token.T_7: "<PrepareProposal>",
 	},
-	// PrepareProposal : 8 ∙
+	// PrepareProposal : <PrepareProposal> ∙
 	{
-		token.T_8: "9",
+		token.T_8: "<ProcessProposal>",
 	},
-	// ProcessProposal : ∙9
+	// ProcessProposal : ∙<ProcessProposal>
 	{
-		token.T_8: "9",
+		token.T_8: "<ProcessProposal>",
 	},
-	// ProcessProposal : 9 ∙
+	// ProcessProposal : <ProcessProposal> ∙
 	{
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// Proposer : ∙PrepareProposal ProcessProposal
 	{
-		token.T_7: "8",
+		token.T_7: "<PrepareProposal>",
 	},
 	// Proposer : PrepareProposal ∙ProcessProposal
 	{
-		token.T_8: "9",
+		token.T_8: "<ProcessProposal>",
 	},
 	// Proposer : PrepareProposal ProcessProposal ∙
 	{
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// Recovery : ∙ConsensusExec
 	{
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// Recovery : ConsensusExec ∙
 	{
@@ -1169,7 +1169,7 @@ var first = []map[token.Type]string{
 	},
 	// Start : ∙CleanStart
 	{
-		token.T_0: "1",
+		token.T_5: "<InitChain>",
 	},
 	// Start : CleanStart ∙
 	{
@@ -1177,9 +1177,9 @@ var first = []map[token.Type]string{
 	},
 	// Start : ∙Recovery
 	{
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// Start : Recovery ∙
 	{
@@ -1187,104 +1187,104 @@ var first = []map[token.Type]string{
 	},
 	// StateSync : ∙StateSyncAttempts SuccessSync
 	{
-		token.T_5: "6",
+		token.T_6: "<OfferSnapshot>",
 	},
 	// StateSync : StateSyncAttempts ∙SuccessSync
 	{
-		token.T_5: "6",
+		token.T_6: "<OfferSnapshot>",
 	},
 	// StateSync : StateSyncAttempts SuccessSync ∙
 	{
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// StateSync : ∙SuccessSync
 	{
-		token.T_5: "6",
+		token.T_6: "<OfferSnapshot>",
 	},
 	// StateSync : SuccessSync ∙
 	{
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// StateSyncAttempt : ∙OfferSnapshot ApplyChunks
 	{
-		token.T_5: "6",
+		token.T_6: "<OfferSnapshot>",
 	},
 	// StateSyncAttempt : OfferSnapshot ∙ApplyChunks
 	{
-		token.T_6: "7",
+		token.T_0: "<ApplyChunk>",
 	},
 	// StateSyncAttempt : OfferSnapshot ApplyChunks ∙
 	{
-		token.T_5: "6",
+		token.T_6: "<OfferSnapshot>",
 	},
 	// StateSyncAttempt : ∙OfferSnapshot
 	{
-		token.T_5: "6",
+		token.T_6: "<OfferSnapshot>",
 	},
 	// StateSyncAttempt : OfferSnapshot ∙
 	{
-		token.T_5: "6",
+		token.T_6: "<OfferSnapshot>",
 	},
 	// StateSyncAttempts : ∙StateSyncAttempt
 	{
-		token.T_5: "6",
+		token.T_6: "<OfferSnapshot>",
 	},
 	// StateSyncAttempts : StateSyncAttempt ∙
 	{
-		token.T_5: "6",
+		token.T_6: "<OfferSnapshot>",
 	},
 	// StateSyncAttempts : ∙StateSyncAttempt StateSyncAttempts
 	{
-		token.T_5: "6",
+		token.T_6: "<OfferSnapshot>",
 	},
 	// StateSyncAttempts : StateSyncAttempt ∙StateSyncAttempts
 	{
-		token.T_5: "6",
+		token.T_6: "<OfferSnapshot>",
 	},
 	// StateSyncAttempts : StateSyncAttempt StateSyncAttempts ∙
 	{
-		token.T_5: "6",
+		token.T_6: "<OfferSnapshot>",
 	},
 	// SuccessSync : ∙OfferSnapshot ApplyChunks
 	{
-		token.T_5: "6",
+		token.T_6: "<OfferSnapshot>",
 	},
 	// SuccessSync : OfferSnapshot ∙ApplyChunks
 	{
-		token.T_6: "7",
+		token.T_0: "<ApplyChunk>",
 	},
 	// SuccessSync : OfferSnapshot ApplyChunks ∙
 	{
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 }
 
 var followSets = []map[token.Type]string{
 	// ApplyChunk
 	{
-		token.T_1: "2",
-		token.T_5: "6",
-		token.T_6: "7",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_0: "<ApplyChunk>",
+		token.T_1: "<BeginBlock>",
+		token.T_6: "<OfferSnapshot>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// ApplyChunks
 	{
-		token.T_1: "2",
-		token.T_5: "6",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_6: "<OfferSnapshot>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// BeginBlock
 	{
-		token.T_2: "3",
-		token.T_3: "4",
+		token.T_3: "<DeliverTx>",
+		token.T_4: "<EndBlock>",
 	},
 	// CleanStart
 	{
@@ -1293,9 +1293,9 @@ var followSets = []map[token.Type]string{
 	// Commit
 	{
 		token.EOF: "$",
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// ConsensusExec
 	{
@@ -1304,9 +1304,9 @@ var followSets = []map[token.Type]string{
 	// ConsensusHeight
 	{
 		token.EOF: "$",
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// ConsensusHeights
 	{
@@ -1314,64 +1314,64 @@ var followSets = []map[token.Type]string{
 	},
 	// ConsensusRound
 	{
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// ConsensusRounds
 	{
-		token.T_1: "2",
+		token.T_1: "<BeginBlock>",
 	},
 	// Decide
 	{
-		token.T_4: "5",
+		token.T_2: "<Commit>",
 	},
 	// DeliverTx
 	{
-		token.T_2: "3",
-		token.T_3: "4",
+		token.T_3: "<DeliverTx>",
+		token.T_4: "<EndBlock>",
 	},
 	// DeliverTxs
 	{
-		token.T_3: "4",
+		token.T_4: "<EndBlock>",
 	},
 	// EndBlock
 	{
-		token.T_4: "5",
+		token.T_2: "<Commit>",
 	},
 	// InitChain
 	{
-		token.T_1: "2",
-		token.T_5: "6",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_6: "<OfferSnapshot>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// NonProposer
 	{
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// OfferSnapshot
 	{
-		token.T_5: "6",
-		token.T_6: "7",
+		token.T_0: "<ApplyChunk>",
+		token.T_6: "<OfferSnapshot>",
 	},
 	// PrepareProposal
 	{
-		token.T_8: "9",
+		token.T_8: "<ProcessProposal>",
 	},
 	// ProcessProposal
 	{
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// Proposer
 	{
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// Recovery
 	{
@@ -1383,23 +1383,23 @@ var followSets = []map[token.Type]string{
 	},
 	// StateSync
 	{
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 	// StateSyncAttempt
 	{
-		token.T_5: "6",
+		token.T_6: "<OfferSnapshot>",
 	},
 	// StateSyncAttempts
 	{
-		token.T_5: "6",
+		token.T_6: "<OfferSnapshot>",
 	},
 	// SuccessSync
 	{
-		token.T_1: "2",
-		token.T_7: "8",
-		token.T_8: "9",
+		token.T_1: "<BeginBlock>",
+		token.T_7: "<PrepareProposal>",
+		token.T_8: "<ProcessProposal>",
 	},
 }
 

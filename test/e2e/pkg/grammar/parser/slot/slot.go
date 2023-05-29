@@ -198,14 +198,14 @@ var slots = map[Label]*Slot{
 	ApplyChunk0R0: {
 		symbols.NT_ApplyChunk, 0, 0, 
 		symbols.Symbols{  
-			symbols.T_6,
+			symbols.T_0,
 		}, 
 		ApplyChunk0R0, 
 	},
 	ApplyChunk0R1: {
 		symbols.NT_ApplyChunk, 0, 1, 
 		symbols.Symbols{  
-			symbols.T_6,
+			symbols.T_0,
 		}, 
 		ApplyChunk0R1, 
 	},
@@ -324,14 +324,14 @@ var slots = map[Label]*Slot{
 	Commit0R0: {
 		symbols.NT_Commit, 0, 0, 
 		symbols.Symbols{  
-			symbols.T_4,
+			symbols.T_2,
 		}, 
 		Commit0R0, 
 	},
 	Commit0R1: {
 		symbols.NT_Commit, 0, 1, 
 		symbols.Symbols{  
-			symbols.T_4,
+			symbols.T_2,
 		}, 
 		Commit0R1, 
 	},
@@ -576,14 +576,14 @@ var slots = map[Label]*Slot{
 	DeliverTx0R0: {
 		symbols.NT_DeliverTx, 0, 0, 
 		symbols.Symbols{  
-			symbols.T_2,
+			symbols.T_3,
 		}, 
 		DeliverTx0R0, 
 	},
 	DeliverTx0R1: {
 		symbols.NT_DeliverTx, 0, 1, 
 		symbols.Symbols{  
-			symbols.T_2,
+			symbols.T_3,
 		}, 
 		DeliverTx0R1, 
 	},
@@ -628,28 +628,28 @@ var slots = map[Label]*Slot{
 	EndBlock0R0: {
 		symbols.NT_EndBlock, 0, 0, 
 		symbols.Symbols{  
-			symbols.T_3,
+			symbols.T_4,
 		}, 
 		EndBlock0R0, 
 	},
 	EndBlock0R1: {
 		symbols.NT_EndBlock, 0, 1, 
 		symbols.Symbols{  
-			symbols.T_3,
+			symbols.T_4,
 		}, 
 		EndBlock0R1, 
 	},
 	InitChain0R0: {
 		symbols.NT_InitChain, 0, 0, 
 		symbols.Symbols{  
-			symbols.T_0,
+			symbols.T_5,
 		}, 
 		InitChain0R0, 
 	},
 	InitChain0R1: {
 		symbols.NT_InitChain, 0, 1, 
 		symbols.Symbols{  
-			symbols.T_0,
+			symbols.T_5,
 		}, 
 		InitChain0R1, 
 	},
@@ -670,14 +670,14 @@ var slots = map[Label]*Slot{
 	OfferSnapshot0R0: {
 		symbols.NT_OfferSnapshot, 0, 0, 
 		symbols.Symbols{  
-			symbols.T_5,
+			symbols.T_6,
 		}, 
 		OfferSnapshot0R0, 
 	},
 	OfferSnapshot0R1: {
 		symbols.NT_OfferSnapshot, 0, 1, 
 		symbols.Symbols{  
-			symbols.T_5,
+			symbols.T_6,
 		}, 
 		OfferSnapshot0R1, 
 	},

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-release = 'abci++vef_Smoke'
+release = 'v0.38.0-alpha2'
 
 #FIXME: figure out in which timezone prometheus was running to adjust to UTC.
 tz = pytz.timezone('America/Sao_Paulo')
@@ -70,7 +70,7 @@ for (key,ax) in zip(groups.groups.keys(), [axes] if ncols == 1 else axes.flatten
     extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
     fig.savefig(os.path.join(path,'e_'+key + '.png'), bbox_inches=extent.expanded(1.2, 1.3))
 
-fig.suptitle('200-node testnet experiments - ' + release)
+fig.suptitle('Vote Extensions Testnet - ' + release)
 
 # Save the figure with subplots
 fig.savefig(os.path.join(path,'all_experiments.png'))
@@ -109,7 +109,8 @@ for (key,ax) in zip(groups.groups.keys(), [axes] if ncols == 1 else axes.flatten
     extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
     fig.savefig(os.path.join(path,'c'+str(con) + 'r'+ str(rate) + '.png'), bbox_inches=extent.expanded(1.2, 1.3))
 
-fig.suptitle('200-node testnet configurations - ' + release)
+fig.suptitle('Vote Extensions Testnet - ' + release)
+
 
 # Save the figure with subplots
 fig.savefig(os.path.join(path,'all_configs.png'))

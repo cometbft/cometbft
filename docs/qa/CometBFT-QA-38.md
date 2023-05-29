@@ -386,7 +386,6 @@ The following table summarizes the test cases.
 | 8k       | 8192                   | 2023-05-26 |
 | 16k      | 16384                  | 2023-05-26 |
 | 32k      | 32768                  | 2023-05-26 |
-| 65k      | 65536                  | 2023-05-26 |
 
 
 ### Latency
@@ -413,28 +412,165 @@ The following figures show the latencies observed on each of the 5 runs of each 
 
 ![[img38/voteExtensions/all_experiments_64k.png]]
 
-To simplify comparing the different experiments, the following figures combines runs in a single image.
-Each color is a different run.
-It can be easily seen from these picture that as the vote extension size grows, latency varies more and higher latencies become more common.
+To simplify comparing the different experiments, the following figures combine runs of the same experiment; each color is a different run.
 
 |                                                            |                                                  |
 | ---------------------------------------------------------- | ------------------------------------------------ |
 | baseline ![[img38/voteExtensions/all_c1r400_baseline.png]] |                                                  |
 | 8k ![[img38/voteExtensions/all_c1r400_8k.png]]             | 16k ![[img38/voteExtensions/all_c1r400_16k.png]] |
-| 32k ![[img38/voteExtensions/all_c1r400_32k.png]]           | 32k ![[img38/voteExtensions/all_c1r400_64k.png]] |
+| 32k ![[img38/voteExtensions/all_c1r400_32k.png]]           | 64k ![[img38/voteExtensions/all_c1r400_64k.png]] |
+
+It can be easily seen from these pictures that as the larger the vote extension size, the more latency varies more and the more common higher latencies become.
+
+
+### Blocks and Transactions per minute
+
+The following plots show the blocks produced per minute and transactions processed per minute.
+We have divided the presentation in an overview section, which shows the metrics for the whole experiment (five runs) and a detailed sample, which shows the metrics for the first of the five runs.
+We repeat the approach for the other metrics as well.
+
+#### Overview
+
+It is clear from the overview  plots that as the vote extension sizes increase, the rate of block creation decreases.
+Although the rate of transaction processing also decreases, it does not seem to decrease as fast.
+
+**baseline**
+![block rate](img38/voteExtensions/baseline_block_rate.png)
+
+![txs rate](img38/voteExtensions/baseline_total_txs_rate.png)
+
+**8k**
+
+![block rate](img38/voteExtensions/8k_block_rate.png)
+
+![txs rate](img38/voteExtensions/08k_total_txs_rate.png)
+
+**16k**
+
+![block rate](img38/voteExtensions/16k_block_rate.png)
+
+![txs rate](img38/voteExtensions/16k_total_txs_rate.png)
+
+**32k**
+
+![block rate](img38/voteExtensions/32k_block_rate.png)
+
+![txs rate](img38/voteExtensions/32k_total_txs_rate.png)
+
+#### First run
+
+
+
+### Number of rounds
+
+The effect of vote extensions are also felt on the number of rounds needed to reach consensus.
+
+#### Overview
+
+**baseline**
+![number of rounds](img38/voteExtensions/baseline_rounds.png)
+
+**8k**
+
+![number of rounds](img38/voteExtensions/08k_rounds.png)
+
+**16k**
+
+![number of rounds](img38/voteExtensions/16k_rounds.png)
+
+**32k**
+
+![number of rounds](img38/voteExtensions/32k_rounds.png)
+
+
+
+### CPU
+
+#### Overview
+
+The CPU usage reached the same peaks on all tests, but the following graphs show that with larger Vote Extensions, nodes take longer to reduce the CPU usage.
+This could mean that a backlog of processing is forming during the execution of the tests with larger extensions.
+
+**baseline**
+
+![cpu-avg](img38/voteExtensions/baseline_avg_cpu.png)
+
+**8k**
+
+![cpu-avg](img38/voteExtensions/08k_avg_cpu.png)
+
+**16k**
+
+![cpu-avg](img38/voteExtensions/16k_avg_cpu.png)
+
+**32k**
+
+![cpu-avg](img38/voteExtensions/32k_avg_cpu.png)
+
+
+### Resident Memory
+
+#### Overview
+
+The same conclusion reached for CPU usage may be drawn for the memory.
+That is, that a backlog of work is formed during the tests and catching up (freeing of memory) happens after the test is done.
+
+> :warning:
+> A more worrying trend is that the bottom of the memory usage seems to increase in between runs.
+
+**baseline**
+
+![rotating-rss-avg](img38/voteExtensions/baseline_avg_memory.png)
+
+**8k**
+
+![rotating-rss-avg](img38/voteExtensions/08k_avg_memory.png)
+
+**16k**
+
+![rotating-rss-avg](img38/voteExtensions/16k_avg_memory.png)
+
+**32k**
+
+![rotating-rss-avg](img38/voteExtensions/32k_avg_memory.png)
+
+### Mempool size
+
+#### Overview
+
+This metric shows how many transactions are outstanding in the nodes' mempools.
+Observe that in all runs, the number of transactions in the mempool quickly drops to zero between runs.
+
+**baseline**
+
+![rotating-mempool-avg](img38/voteExtensions/baseline_avg_mempool_size.png)
+
+**8k**
+
+![rotating-mempool-avg](img38/voteExtensions/08k_avg_mempool_size.png)
+
+**16k**
+
+![rotating-mempool-avg](img38/voteExtensions/16k_avg_mempool_size.png)
+
+
+**32k**
+
+![rotating-mempool-avg](img38/voteExtensions/32k_avg_mempool_size.png)
+
+
+
 
 #### Observations/Questions
 
 * what is the effect on block sizes
-* what is the effect on block and transaction rates
+    * how is the block size limited? do the extensions fit? the proposal itself is small.
+    * block sizes depending on the extension sizes
 * what is the effect on the network usage
-
-* how is the block size limited? do the extensions fit? the proposal itself is small.
-* block sizes depending on the extension sizes
 * txs per block depending on the extension sizes
     * remember that there is one special transaction
 * we need to evaluate the effect of transaction sizes as well.
-* the mempool never got completely empty
+* the mempool never got completely empty on some nodes
 * 5 minute interval to clean up the mempool. heights continue to happen, with vote extensions.
 
 

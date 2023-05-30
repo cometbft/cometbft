@@ -100,6 +100,32 @@ func NewCListMempool(
 	return mp
 }
 
+func (mem *CListMempool) getElement(txKey types.TxKey) (*clist.CElement, bool) {
+	if e, ok := mem.txsMap.Load(txKey); ok {
+		return e.(*clist.CElement), true
+	}
+	return nil, false
+}
+
+func (mem *CListMempool) getEntry(txKey types.TxKey) *mempoolTx {
+	if e, ok := mem.getElement(txKey); ok {
+		return e.Value.(*mempoolTx)
+	}
+	return nil
+}
+
+func (mem *CListMempool) removeAllTxs() {
+	for e := mem.txs.Front(); e != nil; e = e.Next() {
+		mem.txs.Remove(e)
+		e.DetachPrev()
+	}
+
+	mem.txsMap.Range(func(key, _ interface{}) bool {
+		mem.txsMap.Delete(key)
+		return true
+	})
+}
+
 // NOTE: not thread safe - should only be called once, on startup
 func (mem *CListMempool) EnableTxsAvailable() {
 	mem.txsAvailable = make(chan struct{}, 1)
@@ -162,15 +188,7 @@ func (mem *CListMempool) Flush() {
 	_ = atomic.SwapInt64(&mem.txsBytes, 0)
 	mem.cache.Reset()
 
-	for e := mem.txs.Front(); e != nil; e = e.Next() {
-		mem.txs.Remove(e)
-		e.DetachPrev()
-	}
-
-	mem.txsMap.Range(func(key, _ interface{}) bool {
-		mem.txsMap.Delete(key)
-		return true
-	})
+	mem.removeAllTxs()
 }
 
 // TxsFront returns the first transaction in the ordered list for peer
@@ -240,9 +258,8 @@ func (mem *CListMempool) CheckTx(
 		// Note it's possible a tx is still in the cache but no longer in the mempool
 		// (eg. after committing a block, txs are removed from mempool but not cache),
 		// so we only record the sender for txs still in the mempool.
-		if e, ok := mem.txsMap.Load(tx.Key()); ok {
-			memTx := e.(*clist.CElement).Value.(*mempoolTx)
-			memTx.senders.LoadOrStore(txInfo.SenderID, true)
+		if memTx := mem.getEntry(tx.Key()); memTx != nil {
+			memTx.AddSender(txInfo.SenderID)
 			// TODO: consider punishing peer for dups,
 			// its non-trivial since invalid txs can become valid,
 			// but they can spam the same tx with little cost to them atm.
@@ -325,24 +342,16 @@ func (mem *CListMempool) addTx(memTx *mempoolTx) {
 // Called from:
 //   - Update (lock held) if tx was committed
 //   - resCbRecheck (lock not held) if tx was invalidated
-func (mem *CListMempool) removeTx(tx types.Tx, elem *clist.CElement) {
-	mem.txs.Remove(elem)
-	elem.DetachPrev()
-	mem.txsMap.Delete(tx.Key())
-	atomic.AddInt64(&mem.txsBytes, int64(-len(tx)))
-}
-
-// RemoveTxByKey removes a transaction from the mempool by its TxKey index.
 func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
-	if e, ok := mem.txsMap.Load(txKey); ok {
-		memTx := e.(*clist.CElement).Value.(*mempoolTx)
-		if memTx != nil {
-			mem.removeTx(memTx.tx, e.(*clist.CElement))
-			return nil
-		}
-		return errors.New("found empty transaction")
+	if elem, ok := mem.getElement(txKey); ok {
+		mem.txs.Remove(elem)
+		elem.DetachPrev()
+		mem.txsMap.Delete(txKey)
+		tx := elem.Value.(*mempoolTx).tx
+		atomic.AddInt64(&mem.txsBytes, int64(-len(tx)))
+		return nil
 	}
-	return errors.New("transaction not found")
+	return errors.New("transaction not found in mempool")
 }
 
 func (mem *CListMempool) isFull(txSize int) error {
@@ -394,7 +403,7 @@ func (mem *CListMempool) resCbFirstTime(
 				gasWanted: r.CheckTx.GasWanted,
 				tx:        tx,
 			}
-			memTx.senders.Store(peerID, true)
+			memTx.AddSender(peerID)
 			mem.addTx(memTx)
 			mem.logger.Debug(
 				"added good transaction",
@@ -472,7 +481,9 @@ func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 		if (r.CheckTx.Code != abci.CodeTypeOK) || postCheckErr != nil {
 			// Tx became invalidated due to newly committed block.
 			mem.logger.Debug("tx is no longer valid", "tx", types.Tx(tx).Hash(), "res", r, "err", postCheckErr)
-			mem.removeTx(tx, mem.recheckCursor)
+			if err := mem.RemoveTxByKey(memTx.tx.Key()); err != nil {
+				mem.logger.Debug("Transaction could not be removed from mempool", err)
+			}
 			// We remove the invalid tx from the cache because it might be good later
 			if !mem.config.KeepInvalidTxsInCache {
 				mem.cache.Remove(tx)
@@ -664,22 +675,4 @@ func (mem *CListMempool) recheckTxs() {
 	// In <v0.37 we would call FlushAsync at the end of recheckTx forcing the buffer to flush
 	// all pending messages to the app. There doesn't seem to be any need here as the buffer
 	// will get flushed regularly or when filled.
-}
-
-//--------------------------------------------------------------------------------
-
-// mempoolTx is a transaction that successfully ran
-type mempoolTx struct {
-	height    int64    // height that this tx had been validated in
-	gasWanted int64    // amount of gas this tx states it will require
-	tx        types.Tx //
-
-	// ids of peers who've sent us this tx (as a map for quick lookups).
-	// senders: PeerID -> bool
-	senders sync.Map
-}
-
-// Height returns the height for this transaction
-func (memTx *mempoolTx) Height() int64 {
-	return atomic.LoadInt64(&memTx.height)
 }

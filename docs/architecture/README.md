@@ -44,7 +44,7 @@ numbering our ADRs from 100 onwards.
 
 ### Accepted
 
-- [ADR-111: `nop` Mempool](./adr-111-nop-mempool.md)
+- [ADR-104: State sync from local snapshot](./adr-104-out-of-band-state-sync.md)
 
 ### Implemented
 

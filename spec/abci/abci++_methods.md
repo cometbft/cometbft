@@ -44,7 +44,7 @@ title: Methods
     | version             | string | The application software semantic version           | 2            |
     | app_version         | uint64 | The application protocol version                    | 3            |
     | last_block_height   | int64  | Latest height for which the app persisted its state | 4            |
-    | last_block_app_hash | bytes  | Latest AppHash returned by `Commit`                 | 5            |
+    | last_block_app_hash | bytes  | Latest AppHash returned by `FinalizeBlock`          | 5            |
 
 * **Usage**:
     * Return information about the application state.

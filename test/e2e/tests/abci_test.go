@@ -9,9 +9,9 @@ import (
 
 func TestABCIGrammar(t *testing.T) {
 	m := fetchABCIRequestsByNodeName(t)
+	checker := grammar.NewGrammarChecker(grammar.DefaultConfig())
 	testNode(t, func(t *testing.T, node e2e.Node) {
 		reqs := m[node.Name]
-		checker := grammar.NewGrammarChecker(grammar.DefaultConfig())
 		_, err := checker.Verify(reqs)
 		if err != nil {
 			t.Error(err)

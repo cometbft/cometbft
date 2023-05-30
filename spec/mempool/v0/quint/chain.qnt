@@ -6,7 +6,7 @@ module chain {
     var chain: Chain
 
     val Chain_latestHeight = 
-        chain.length() - 1
+        chain.length()
 
     val Chain_isEmpty = 
         chain.length() == 0

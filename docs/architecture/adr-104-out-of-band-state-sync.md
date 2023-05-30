@@ -214,7 +214,7 @@ using `bootstrap-state` and CometBFT can be launched.
 
 There are three prerequisites for this solution to work when a node is syncing:
 
-1. The application has access to the snapshot database
+1. The application has access to the snapshot store (usually as a separate database used by applications)
 2. CometBFT's state and block stores are empty or reset
 3. CometBFT is not running while the node is state syncing 
 
@@ -369,11 +369,13 @@ Applications can thus themselves be in charge of dumping the snapshots into a gi
 CometBFT instructs the application to export the snapshots periodically.
 
 An alternative solution is that CometBFT, itself, using the implementation of the `dump` command, whichever 
-is chosen at the time, creates or asks the application to create snapshot exports. 
+is chosen at the time, creates or asks the application to create snapshot exports. This is not forcing the 
+application to create a snapshot at the time of he request, rather *dumps* existing snapshots into
+an exportable file format. 
 
 **Export file consistency**
 
-The same caveat of making sure the data exported is not corrupted by concurrent reads and writes applies here as well. If we decide to simply export
+The same caveat of making sure the file into which the snapshot is exported is not corrupted by concurrent reads and writes applies here as well. If we decide to simply export
 snapshots into a compressed file, we need to make sure that we do not return files that with ongoing writes.
 An alternative is for CometBFT to provide a Snapshot export store with snapshot isolation. This store would essentially be pruned as soon as a new snapshot is written,
 thus not taking too much more space.
@@ -388,10 +390,10 @@ given by the operator. If a snapshot is available, it will be loaded and state r
 Note that, if it is not CometBFT that created the snapshot export from the data retrieved via ABCI (a combination of `ListSnapshots` and `LoadChunks`),
 CometBFT might not be aware of how the snapshot was exported, and needs to ask the application to restore the snapshot.
 
-If a snapshot was created using option 1 from the previous section, or the export format is known to CometBFT (like `tar, gzip` etc.), 
+If a snapshot was created using option 1 (by CometBFT) from the previous section, or the export format is known to CometBFT (like `tar, gzip` etc.), 
 CometBFT can extract the snapshot itself, and offer it to the application via `RequestOfferSnapshot` without any API changes. 
 
-If CometBFT is not the one who created the exported file, we introduce a new ABCI call `UnpackSnapshot` 
+If CometBFT is **not** the one who created the exported file, we introduce a new ABCI call `UnpackSnapshot` 
 to send the exported snapshot as a blob of bytes to the application, which uncompresses it, installs it 
 and responds whether the snapshot is accepted (as in `OfferSnapshot`) and the chunks application has passed (as in `LoadChunk`). 
 

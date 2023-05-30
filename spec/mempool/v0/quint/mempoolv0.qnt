@@ -56,12 +56,14 @@ module mempoolv0 {
         height: Height, // height at which tx was validated
         senders: Set[NodeId] // peers that send tx, or none if tx was emmitted by a client
     }
-    
+
+    val noMempoolTx = { tx: "", height: 0, senders: Set() }
+
     var mempool: NodeId -> Set[MempoolTx]
-    
+
     // The transactions received by a node.
     var cache: NodeId -> Set[Tx]
-    
+
     // The last block Update()'d to.
     var height: NodeId -> Height
 
@@ -95,10 +97,17 @@ module mempoolv0 {
     def mempoolTxs(node: NodeId): Set[Tx] = 
         node.Mempool().map(e => e.tx)
 
-    // Return value is Optional: either an empty set or a singleton.
+    // Returned value is Optional: either none or a singleton.
     def memTxFor(node: NodeId, tx: Tx): Set[MempoolTx] =
         node.Mempool().filter(e => e.tx == tx)
 
+    // Get the element from the singleton or none in any other case
+    def chooseSomeMemTxFor(node: NodeId, tx: Tx): MempoolTx =
+        // node.memTxFor(tx).chooseSome()
+        val memTxs = node.memTxFor(tx).setToList()
+        if (memTxs.length() == 1) memTxs[0] else noMempoolTx
+
+    // Returned value is Optional: either none or a singleton.
     def sendersFor(node: NodeId, tx: Tx): Set[NodeId] = 
         node.memTxFor(tx).map(e => e.senders).flatten()
 
@@ -120,7 +129,7 @@ module mempoolv0 {
 
     action addSender(node, tx, senderId) =
         if (node.inMempool(tx)) {
-            val oldMemTx: MempoolTx = node.memTxFor(tx).chooseSome()
+            val oldMemTx: MempoolTx = node.chooseSomeMemTxFor(tx)
             val newMemTx = oldMemTx.with("senders", oldMemTx.senders.union(senderId))
             mempool' = mempool.mapPut(node, (memTxs) => memTxs.setRemove(oldMemTx).setAdd(newMemTx))
         } else mempool' = mempool
@@ -277,6 +286,7 @@ module mempoolv0 {
             },
             all {
                 // this block is the proposer: take the block from the mempool
+                require(node.mempoolTxs().nonEmpty()),
                 nondet txs: Set[Tx] = oneOf(node.mempoolTxs().nonEmptyPowerset())
                 val txValidResults: Tx -> bool = txs.mapBy(tx => isValidAt(tx, h))
                 node.Update(h, txs, txValidResults),

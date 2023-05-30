@@ -92,6 +92,9 @@ type Manifest struct {
 	// Enable or disable Prometheus metrics on all nodes.
 	// Defaults to false (disabled).
 	Prometheus bool `toml:"prometheus"`
+
+	// Defines a minimum size for the vote extensions.
+	VoteExtensionSize uint `toml:"vote_extension_size"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

@@ -4,7 +4,7 @@ This document describes the API provided by the p2p layer to the protocol
 layer, namely to the registered reactors.
 
 This API consists of two interfaces: the one provided by the `Switch` instance,
-and the ones provides by multiple `Peer` instances, one per connected peer.
+and the ones provided by multiple `Peer` instances, one per connected peer.
 The `Switch` instance is provided to every reactor as part of the reactor's
 [registration procedure][reactor-registration].
 The multiple `Peer` instances are provided to every registered reactor whenever
@@ -87,7 +87,7 @@ towards "good" peers:
     func (sw *Switch) MarkPeerAsGood(peer Peer)
 
 At the moment, it is up to the consensus reactor to vet a peer.
-A peer is marked as good when the consensus protocol receives
+A peer is marked as good whenever the consensus protocol collects a multiple of
 `votesToContributeToBecomeGoodPeer = 10000` useful votes or
 `blocksToContributeToBecomeGoodPeer = 10000` useful block parts from that peer.
 A vote or block part are "useful" when they are valid, expected by the node at
@@ -235,7 +235,7 @@ There are two methods for sending messages:
     func (p Peer) Send(e Envelope) bool
     func (p Peer) TrySend(e Envelope) bool
 
-The two message-sending methods receive an `Envelope`, which content should be
+The two message-sending methods receive an `Envelope`, whose content should be
 set as follows:
 
 - `ChannelID`: the channel the message should be sent through, which defines

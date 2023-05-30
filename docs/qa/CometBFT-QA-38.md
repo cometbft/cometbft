@@ -394,31 +394,31 @@ The following figures show the latencies observed on each of the 5 runs of each 
 
 **Baseline**
 
-![[img38/voteExtensions/all_experiments_baseline.png]]
+![](img38/voteExtensions/all_experiments_baseline.png)
 
 **8k**
 
-![[img38/voteExtensions/all_experiments_8k.png]]
+![](img38/voteExtensions/all_experiments_8k.png)
 
 **16k**
 
-![[img38/voteExtensions/all_experiments_16k.png]]
+![](img38/voteExtensions/all_experiments_16k.png)
 
 **32k**
 
-![[img38/voteExtensions/all_experiments_32k.png]]
+![](img38/voteExtensions/all_experiments_32k.png)
 
 **64k**
 
-![[img38/voteExtensions/all_experiments_64k.png]]
+![](img38/voteExtensions/all_experiments_64k.png)
 
 To simplify comparing the different experiments, the following figures combine runs of the same experiment; each color is a different run.
 
 |                                                            |                                                  |
 | ---------------------------------------------------------- | ------------------------------------------------ |
-| baseline ![[img38/voteExtensions/all_c1r400_baseline.png]] |                                                  |
-| 8k ![[img38/voteExtensions/all_c1r400_8k.png]]             | 16k ![[img38/voteExtensions/all_c1r400_16k.png]] |
-| 32k ![[img38/voteExtensions/all_c1r400_32k.png]]           | 64k ![[img38/voteExtensions/all_c1r400_64k.png]] |
+| baseline ![](img38/voteExtensions/all_c1r400_baseline.png) |                                                  |
+| 8k ![](img38/voteExtensions/all_c1r400_8k.png)             | 16k ![](img38/voteExtensions/all_c1r400_16k.png) |
+| 32k ![](img38/voteExtensions/all_c1r400_32k.png)           | 64k ![](img38/voteExtensions/all_c1r400_64k.png) |
 
 It can be easily seen from these pictures that as the larger the vote extension size, the more latency varies more and the more common higher latencies become.
 

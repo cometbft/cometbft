@@ -59,14 +59,14 @@ func GetABCIRequestString(req *abci.Request) (string, error) {
 	return s, nil
 }
 ```
-In addition, we surround the new string with `abci-call` constants so that I can find lines with ABCI++ request more easily.
+In addition, we surround the new string with `abci-call` constants so that we can find lines with ABCI++ request more easily.
 
 Lastly, if in the future we want to log another ABCI++ request type, we just need to do the same thing: 
 create a corresponding `abci.Request` and log it via 
 `app.logRequest(r)`. 
 
 ### 2) Parsing the logs
-We need a code that will take the logs from all nodes and parse the ABCI++ requests that were logged by the application. 
+We need a code that will take the logs from all nodes and collect the ABCI++ requests that were logged by the application. 
 
 <strong>Implementation</strong>
 
@@ -79,18 +79,116 @@ We can now use the list of `abci.Request` to refer to ABCI++ requests of any typ
  
 
 ### 3) ABCI++ grammar checker
+The idea here was to find a library that automatically verifies whether a specific execution respects the prescribed grammar. 
+
+<strong>Implementation</strong>
+We found the following library - https://github.com/goccmack/gogll. It generates a GLL or LR(1) parser and FSA-based lexer for any context-free grammar. What we needed to do is to write ABCI++ grammar (ref to the grammar)
+using the synthax that the library understand. 
+The new grammar is below and can be found inside `test/e2e/pkg/grammar/abci_grammar.md` file.
+
+```abnf
+
+Start : CleanStart | Recovery ;
+
+CleanStart : InitChain StateSync ConsensusExec | InitChain ConsensusExec ;
+StateSync : StateSyncAttempts SuccessSync |  SuccessSync ; 
+StateSyncAttempts : StateSyncAttempt | StateSyncAttempt StateSyncAttempts ;
+StateSyncAttempt : OfferSnapshot ApplyChunks | OfferSnapshot ;
+SuccessSync : OfferSnapshot ApplyChunks ; 
+ApplyChunks : ApplyChunk | ApplyChunk ApplyChunks ;  
+
+Recovery :  ConsensusExec ;
+
+ConsensusExec : ConsensusHeights ;
+ConsensusHeights : ConsensusHeight | ConsensusHeight ConsensusHeights ;
+ConsensusHeight : ConsensusRounds Decide Commit | Decide Commit ;
+ConsensusRounds : ConsensusRound | ConsensusRound ConsensusRounds ;
+ConsensusRound : Proposer | NonProposer ; 
+
+Proposer : PrepareProposal ProcessProposal ; 
+NonProposer: ProcessProposal ;
+Decide : BeginBlock DeliverTxs EndBlock | BeginBlock EndBlock ; 
+DeliverTxs : DeliverTx | DeliverTx DeliverTxs ; 
 
 
-#### Implementation
+InitChain : "<InitChain>" ;
+BeginBlock : "<BeginBlock>" ; 
+DeliverTx : "<DeliverTx>" ;
+EndBlock : "<EndBlock>" ;
+Commit : "<Commit>" ;
+OfferSnapshot : "<OfferSnapshot>" ;
+ApplyChunk : "<ApplyChunk>" ; 
+PrepareProposal : "<PrepareProposal>" ; 
+ProcessProposal : "<ProcessProposal>" ;
+ 
+ ```
+
+If you compare this grammar with the original one, you will notice that method
+`Info` is removed. The reason is that, as explained in the section [CometBFT's expected behaviour](../../spec/abci/abci%2B%2B_tmint_expected_behavior.md#valid-method-call-sequences), one of the 
+purposes of the `Info` method is part of the RPC handling from an external 
+client, which can happen at any time, and as such, cannot be expressed with 
+grammar.  
+This is not the case with the other two purposes, but since the Application does 
+not distinguish between different cases of why the `Info` is called, we removed 
+it totally from the new grammar. The Application is still logging the `Info` 
+call, but a specific test would need to be written to check whether it happens
+in the right moment. 
+
+The `gogll` library receives the file with the grammar as input, and it generates the corresponding parser and lexer. The code that 
+this library generates is inside the following directories: 
+- `test/e2e/pkg/grammar/lexer`,
+- `test/e2e/pkg/grammar/parser`,
+- `test/e2e/pkg/grammar/sppf`,
+- `test/e2e/pkg/grammar/token`.
+
+Apart from this auto-generated code, we implemented `GrammarChecker` abstraction
+which knows how to use the generated parser and lexer to verify whether a
+specific execution (set of ABCI++ calls logged by the Application while the
+testnet was running) respects the ABCI++ grammar. The implementation and tests 
+for it are inside `test/e2e/pkg/grammar/checker.go` and 
+`test/e2e/pkg/grammar/checker_test.go`, respectively. 
+
+How the `GrammarChecker` works is demonstrated with the test `TestABCIGrammar`
+implemented in `test/e2e/tests/abci_test.go` file. 
+
+```go
+func TestABCIGrammar(t *testing.T) {
+	m := fetchABCIRequestsByNodeName(t)
+	checker := grammar.NewGrammarChecker(grammar.DefaultConfig())
+	testNode(t, func(t *testing.T, node e2e.Node) {
+		reqs := m[node.Name]
+		_, err := checker.Verify(reqs)
+		if err != nil {
+			t.Error(err)
+		}
+	})
+}
+```
+
+Specifically, it first fetches all ABCI++ requests and creates a `GrammarChecker` object. Then for each
+node in the testnet it checks if a specific set of requests respects the ABCI++ 
+grammar by calling `checker.Verify(reqs)` method. If this method returns an error, the specific execution does not respect the grammar. 
+
+The `Verify()` method is shown below. It takes a list of requests and does the following things:
+- filter the last height. Basically, it removes all ABCI++ requests after the 
+last `Commit`. This is needed because when we collect the requests, we collect 
+all requests from the start until we call `fetchABCIRequestsByNodeName()`. As a result the last height may be incomplete, and 
+the parser may return an error. The simple example here is that the last 
+request is `BeginBlock`; however `EndBlock` still did not happen, and the parser
+will return an error that `EndBlock` is missing, even though the `EndBlock` may happen but after the moment when the `fetchABCIRequestsByNodeName()` was invoked. 
+
+
+
 
 ## Status
 
 Partially implemented.
-
+To-do list:
+- integrating the generation of parser/lexer into the codebase.
 ## Consequences
 
 ### Positive
-- We will be able to check whether CommetBFT respects ABCI++ grammar. 
+- We should be able to check whether CommetBFT respects ABCI++ grammar. 
 ### Negative
 
 ### Neutral

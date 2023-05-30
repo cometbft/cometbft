@@ -327,4 +327,3 @@ In order to obtain a latency plot, follow the instructions above for the 200 nod
 * Therefore, no need for any `for` loops
 
 As for prometheus, the same method as for the 200 node experiment can be applied.
-

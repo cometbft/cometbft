@@ -1,26 +1,39 @@
 // -*- mode: Bluespec; -*-
+module params {
+
+    val __NodeIds = Set("n1", "n2")
+
+    val __Heights = 0.to(2)
+
+    val __Txs = Set("tx1", "tx2")
+
+    def __isValidAt(tx, h) = or {
+        h == 1 and tx.in(Set("tx1")),
+        h == 2 and tx.in(Set("tx2")),
+    }
+
+}
+
 module base {
+    import params.*
+
     // Nodes
     type NodeId = str
     val noNode: NodeId = "no-node"
     // const NodeIds: Set[NodeId]
-    val NodeIds: Set[NodeId] = Set("n1", "n2", "n3")
+    val NodeIds: Set[NodeId] = __NodeIds
 
     // Heights
     type Height = int
-    val Heights = 0.to(3)
+    val Heights = __Heights
 
     // Transactions
     type Tx = str
     // val invalidTx: Tx = "invalid-tx"
     // const Txs: Set[Tx]
-    val Txs: Set[Tx] = Set("tx1", "tx2", "tx3")
-    def isValidAt(tx: Tx, h: Height): bool = any {
-        h == 1 and tx.in(Set("tx1")),
-        h == 2 and tx.in(Set("tx2", "tx3")),
-        h == 3 and tx.in(Set("tx2", "tx3")),
-    }
-
+    val Txs: Set[Tx] = __Txs
+    def isValidAt(tx: Tx, h: Height): bool = __isValidAt(tx, h)
+    
     // Error
     type Error = str
     val noError: Error = "none"

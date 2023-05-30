@@ -100,15 +100,15 @@ func NewCListMempool(
 	return mp
 }
 
-func (mem *CListMempool) getElement(txKey types.TxKey) (*clist.CElement, bool) {
+func (mem *CListMempool) getCElement(txKey types.TxKey) (*clist.CElement, bool) {
 	if e, ok := mem.txsMap.Load(txKey); ok {
 		return e.(*clist.CElement), true
 	}
 	return nil, false
 }
 
-func (mem *CListMempool) getEntry(txKey types.TxKey) *mempoolTx {
-	if e, ok := mem.getElement(txKey); ok {
+func (mem *CListMempool) getMemTx(txKey types.TxKey) *mempoolTx {
+	if e, ok := mem.getCElement(txKey); ok {
 		return e.Value.(*mempoolTx)
 	}
 	return nil
@@ -258,7 +258,7 @@ func (mem *CListMempool) CheckTx(
 		// Note it's possible a tx is still in the cache but no longer in the mempool
 		// (eg. after committing a block, txs are removed from mempool but not cache),
 		// so we only record the sender for txs still in the mempool.
-		if memTx := mem.getEntry(tx.Key()); memTx != nil {
+		if memTx := mem.getMemTx(tx.Key()); memTx != nil {
 			memTx.AddSender(txInfo.SenderID)
 			// TODO: consider punishing peer for dups,
 			// its non-trivial since invalid txs can become valid,
@@ -343,7 +343,7 @@ func (mem *CListMempool) addTx(memTx *mempoolTx) {
 //   - Update (lock held) if tx was committed
 //   - resCbRecheck (lock not held) if tx was invalidated
 func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
-	if elem, ok := mem.getElement(txKey); ok {
+	if elem, ok := mem.getCElement(txKey); ok {
 		mem.txs.Remove(elem)
 		elem.DetachPrev()
 		mem.txsMap.Delete(txKey)

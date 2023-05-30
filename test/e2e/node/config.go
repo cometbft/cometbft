@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/BurntSushi/toml"
 
@@ -24,17 +25,31 @@ type Config struct {
 	PrivValKey       string                      `toml:"privval_key"`
 	PrivValState     string                      `toml:"privval_state"`
 	KeyType          string                      `toml:"key_type"`
+
+	PrepareProposalDelay time.Duration `toml:"prepare_proposal_delay"`
+	ProcessProposalDelay time.Duration `toml:"process_proposal_delay"`
+	CheckTxDelay         time.Duration `toml:"check_tx_delay"`
+	FinalizeBlockDelay   time.Duration `toml:"finalize_block_delay"`
+	VoteExtensionDelay   time.Duration `toml:"vote_extension_delay"`
+
+	VoteExtensionSize uint `toml:"vote_extension_size"`
 }
 
 // App extracts out the application specific configuration parameters
 func (cfg *Config) App() *app.Config {
 	return &app.Config{
-		Dir:              cfg.Dir,
-		SnapshotInterval: cfg.SnapshotInterval,
-		RetainBlocks:     cfg.RetainBlocks,
-		KeyType:          cfg.KeyType,
-		ValidatorUpdates: cfg.ValidatorUpdates,
-		PersistInterval:  cfg.PersistInterval,
+		Dir:                  cfg.Dir,
+		SnapshotInterval:     cfg.SnapshotInterval,
+		RetainBlocks:         cfg.RetainBlocks,
+		KeyType:              cfg.KeyType,
+		ValidatorUpdates:     cfg.ValidatorUpdates,
+		PersistInterval:      cfg.PersistInterval,
+		PrepareProposalDelay: cfg.PrepareProposalDelay,
+		ProcessProposalDelay: cfg.ProcessProposalDelay,
+		CheckTxDelay:         cfg.CheckTxDelay,
+		FinalizeBlockDelay:   cfg.FinalizeBlockDelay,
+		VoteExtensionDelay:   cfg.VoteExtensionDelay,
+		VoteExtensionSize:    cfg.VoteExtensionSize,
 	}
 }
 

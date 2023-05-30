@@ -27,9 +27,9 @@ const (
 	// DefaultLogLevel defines a default log level as INFO.
 	DefaultLogLevel = "info"
 
-	DefaultTendermintDir = ".cometbft"
-	DefaultConfigDir     = "config"
-	DefaultDataDir       = "data"
+	DefaultCometDir  = ".cometbft"
+	DefaultConfigDir = "config"
+	DefaultDataDir   = "data"
 
 	DefaultConfigFileName  = "config.toml"
 	DefaultGenesisJSONName = "genesis.json"

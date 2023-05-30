@@ -428,15 +428,12 @@ func (mem *CListMempool) resCbFirstTime(
 // The case where the app checks the tx for the first time is handled by the
 // resCbFirstTime callback.
 func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
-	// It is possible that the CheckTx request was sent and a response received,
-	// but the counter numRecheckingRequests was not increased yet. With the
-	// counter in zero, it will panic when we decrease it below.
-	if mem.noRecheckingRequests() {
+	if req.GetCheckTx().GetType() != abci.CheckTxType_Recheck {
 		return
 	}
 
-	if req.GetCheckTx().GetType() != abci.CheckTxType_Recheck {
-		return
+	if mem.noRecheckingRequests() {
+		panic("Trying to process a re-CheckTx response with counter numRecheckingRequests = 0")
 	}
 
 	switch r := res.Value.(type) {
@@ -635,6 +632,11 @@ func (mem *CListMempool) recheckTxs() {
 	// Push txs to proxyAppConn
 	// NOTE: globalCb may be called concurrently.
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
+		// We need to increase this counter before sending the re-CheckTx
+		// request. Otherwise, when processing the response, the counter at zero
+		// can be decreased.
+		mem.increaseNumRecheckingRequests()
+
 		memTx := e.Value.(*mempoolTx)
 		_, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{
 			Tx:   memTx.tx,
@@ -644,7 +646,6 @@ func (mem *CListMempool) recheckTxs() {
 			mem.logger.Error("recheckTx", err, "err")
 			return
 		}
-		mem.increaseNumRecheckingRequests()
 	}
 
 	// In <v0.37 we would call FlushAsync at the end of recheckTx forcing the buffer to flush
@@ -657,10 +658,12 @@ func (mem *CListMempool) noRecheckingRequests() bool {
 }
 
 func (mem *CListMempool) increaseNumRecheckingRequests() uint32 {
+	mem.logger.Info("increaseNumRecheckingRequests")
 	return atomic.AddUint32(&mem.numRecheckingRequests, 1)
 }
 
 func (mem *CListMempool) decreaseNumRecheckingRequests() uint32 {
+	mem.logger.Info("decreaseNumRecheckingRequests")
 	if mem.noRecheckingRequests() {
 		panic("Cannot decrease 0 rechecking requests")
 	}

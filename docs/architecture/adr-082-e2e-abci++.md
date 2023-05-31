@@ -14,11 +14,12 @@ Issue: [353](https://github.com/cometbft/cometbft/issues/353).
 ## Decision
 
 ### 1) ABCI++ requests logging
-We plan to do this at the Application side. Every time the App receives a request, it logs it.
+The idea was to do this at the Application side. Every time the Application 
+receives a request, it logs it.
 
 <strong>Implementation</strong>
 
-The key idea behind this part of the implementation was to log the request concisely and use the existing structures as much as possible. 
+The rationale behind this part of the implementation was to log the request concisely and use the existing structures as much as possible. 
 
 Whenever an ABCI request is made, the application will create `abci.Request` (`abci` stands for `"github.com/cometbft/cometbft/abci/types"`) and log it.  The example is below.  
 
@@ -60,8 +61,7 @@ func GetABCIRequestString(req *abci.Request) (string, error) {
 }
 ```
 In addition, we surround the new string with `abci-call` constants so that we can find lines with ABCI++ request more easily.
-
-Lastly, if in the future we want to log another ABCI++ request type, we just need to do the same thing: 
+If in the future we want to log another ABCI++ request type, we just need to do the same thing: 
 create a corresponding `abci.Request` and log it via 
 `app.logRequest(r)`. 
 
@@ -74,7 +74,7 @@ This logic is implemented inside the `fetchABCIRequestsByNodeName()` function th
 - Takes the output of all nodes in the testnet from the moment we launched the testnet until the function is called. It uses the `docker-compose logs` command. 
 - Parses the logs line by line and extracts the node name and the  `abci.Request`, if one exists. The node name is extracted manually and `abci.Request` is received by forwarding each line to the `app.GetABCIRequestFromString(req)` method.
 - Returns the map where the key is the node name, and the value is the list of all `abci.Request` logged on that node. 
-We can now use the list of `abci.Request` to refer to ABCI++ requests of any type, which is why we logged them in the previously described way. 
+We can now use `[]*abci.Request` to store ABCI++ requests of any type, which is why we logged them in the previously described way. 
 
  
 
@@ -83,7 +83,7 @@ The idea here was to find a library that automatically verifies whether a specif
 
 <strong>Implementation</strong>
 
-We found the following library - https://github.com/goccmack/gogll. It generates a GLL or LR(1) parser and FSA-based lexer for any context-free grammar. What we needed to do is to rewrite ABCI++ grammar (ref to the grammar)
+We found the following library - https://github.com/goccmack/gogll. It generates a GLL or LR(1) parser and FSA-based lexer for any context-free grammar. What we needed to do is to rewrite ABCI++ grammar ([CometBFT's expected behaviour](../../spec/abci/abci%2B%2B_tmint_expected_behavior.md#valid-method-call-sequences))
 using the synthax that the library understand. 
 The new grammar is below and can be found inside `test/e2e/pkg/grammar/abci_grammar.md` file.
 
@@ -124,13 +124,13 @@ ProcessProposal : "<ProcessProposal>" ;
  
  ```
 
-If you compare this grammar with the original one, you will notice that method
+If you compare this grammar with the original one, you will notice that 
 `Info` is removed. The reason is that, as explained in the section [CometBFT's expected behaviour](../../spec/abci/abci%2B%2B_tmint_expected_behavior.md#valid-method-call-sequences), one of the 
-purposes of the `Info` method is part of the RPC handling from an external 
-client, which can happen at any time, and as such, cannot be expressed with 
+purposes of the `Info` method is being part of the RPC handling from an external 
+client. Since this can happen at any time, it cannot be expressed with the 
 grammar.  
-This is not the case with the other two purposes, but since the Application does 
-not distinguish between different cases of why the `Info` is called, we removed 
+This is not true in other cases, but since the Application does 
+not know why the `Info` is called, we removed 
 it totally from the new grammar. The Application is still logging the `Info` 
 call, but a specific test would need to be written to check whether it happens
 in the right moment. 
@@ -144,7 +144,7 @@ this library generates is inside the following directories:
 
 Apart from this auto-generated code, we implemented `GrammarChecker` abstraction
 which knows how to use the generated parser and lexer to verify whether a
-specific execution (set of ABCI++ calls logged by the Application while the
+specific execution (list of ABCI++ calls logged by the Application while the
 testnet was running) respects the ABCI++ grammar. The implementation and tests 
 for it are inside `test/e2e/pkg/grammar/checker.go` and 
 `test/e2e/pkg/grammar/checker_test.go`, respectively. 
@@ -188,23 +188,22 @@ func (g *GrammarChecker) Verify(reqs []*abci.Request) (bool, error) {
 }
 ```
 
-It takes a list of requests and does the following things:
-- filter the last height. Basically, it removes all ABCI++ requests after the 
-last `Commit`. This is needed because when we collect the requests, we collect 
-all requests from the start until we call `fetchABCIRequestsByNodeName()`. As a result, the last height may be incomplete, and 
+It takes a list of requests and does the following things.
+- Filter the last height. Basically, it removes all ABCI++ requests after the 
+last `Commit`. `fetchABCIRequestsByNodeName()` can be called in the middle of the height. As a result, the last height may be incomplete, and 
 the parser may return an error. The simple example here is that the last 
-request is `BeginBlock`; however, `EndBlock` still did not happen, and the parser
+request fetched via `fetchABCIRequestsByNodeName()` is `BeginBlock`; however, `EndBlock` happens after 
+`fetchABCIRequestsByNodeName()` was invoked. Consequently, the parser
 will return an error that `EndBlock` is missing, even though the `EndBlock` 
-may happen, but after the moment when the `fetchABCIRequestsByNodeName()` 
-was invoked. 
-- generates an execution string by replacing `abci.Request` with the 
+will happen.  
+- Generates an execution string by replacing `abci.Request` with the 
 corresponding terminal from the grammar. This logic is implemented in
 `GetExecutionString()` function. This function receives a list of `abci.
-Request` and generates a string where each request that the grammar covers 
+Request` and generates a string where each request the grammar covers 
 will be replaced with a corresponding terminal. For example, `abci.
 BeginBlock` is replaced with `<BeginBlock>`. If the request is not covered 
 by the grammar, it will be ignored. 
-- checks if the resulting string with terminals respects the grammar. This 
+- Checks if the resulting string with terminals respects the grammar. This 
 logic is implemented inside the `VerifyExecution` function. 
 
 ```go
@@ -257,6 +256,7 @@ moment, we are printing the last 10 errors; however, this is part of the configu
 ## Status
 
 Partially implemented.
+
 To-do list:
 - integrating the generation of parser/lexer into the codebase.
 ## Consequences

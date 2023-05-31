@@ -1161,6 +1161,13 @@ func (ps *PeerState) SetHasProposalBlockPart(height int64, round int32, index in
 }
 
 func (ps *PeerState) setHasProposalBlockPart(height int64, round int32, index int) {
+	ps.logger.Debug("setHasProposalBlockPart",
+		"peerH/R",
+		log.NewLazySprintf("%d/%d", ps.PRS.Height, ps.PRS.Round),
+		"H/R",
+		log.NewLazySprintf("%d/%d", height, round),
+		"index", index)
+
 	if ps.PRS.Height != height || ps.PRS.Round != round {
 		return
 	}
@@ -1853,7 +1860,7 @@ func (m *VoteSetBitsMessage) String() string {
 
 //-------------------------------------
 
-// HasBlockPartMessage is sent to indicate that a particular block part has been received.
+// HasProposalBlockPartMessage is sent to indicate that a particular block part has been received.
 type HasProposalBlockPartMessage struct {
 	Height int64
 	Round  int32

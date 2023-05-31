@@ -268,24 +268,44 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 		// ensure that the callback that the mempool sets on the ReqRes is run.
 		reqRes.InvokeCallback()
 	}
+	assert.Equal(t, 4, mp.Size())
 
 	// Calling update to remove the first transaction from the mempool.
 	// This call also triggers the mempool to recheck its remaining transactions.
 	err = mp.Update(0, []types.Tx{txs[0]}, abciResponses(1, abci.CodeTypeOK), nil, nil)
 	require.Nil(t, err)
+	assert.Equal(t, 3, mp.Size())
 
 	// The mempool has now sent its requests off to the client to be rechecked
 	// and is waiting for the corresponding callbacks to be called.
-	// We now call the mempool-supplied callback on the first and third transaction.
-	// This simulates the client dropping the second request.
+	// We now call the mempool-supplied callback on the second and fourth transactions.
+	// This simulates the client dropping the third request.
 	// Previous versions of this code panicked when the ABCI application missed
 	// a recheck-tx request.
-	resp := &abci.ResponseCheckTx{Code: abci.CodeTypeOK}
-	req := &abci.RequestCheckTx{Tx: txs[1]}
-	callback(abci.ToRequestCheckTx(req), abci.ToResponseCheckTx(resp))
+	// Also note that responses can be processed in a non-sequential order.
 
-	req = &abci.RequestCheckTx{Tx: txs[3]}
+	// Process response for fourth tx, which is invalid: remove it from mempool.
+	req := &abci.RequestCheckTx{Tx: txs[3], Type: abci.CheckTxType_Recheck}
+	resp := &abci.ResponseCheckTx{Code: 1}
 	callback(abci.ToRequestCheckTx(req), abci.ToResponseCheckTx(resp))
+	assert.Equal(t, 2, mp.Size())
+
+	// Receive same response as before: mempool does not change.
+	callback(abci.ToRequestCheckTx(req), abci.ToResponseCheckTx(resp))
+	assert.Equal(t, 2, mp.Size())
+
+	// Process response for second tx, which is valid: keep it in mempool.
+	req = &abci.RequestCheckTx{Tx: txs[1], Type: abci.CheckTxType_Recheck}
+	resp = &abci.ResponseCheckTx{Code: abci.CodeTypeOK}
+	callback(abci.ToRequestCheckTx(req), abci.ToResponseCheckTx(resp))
+	assert.Equal(t, 2, mp.Size())
+
+	// Process response for second tx, which is now invalid: remove it from mempool.
+	req = &abci.RequestCheckTx{Tx: txs[1], Type: abci.CheckTxType_Recheck}
+	resp = &abci.ResponseCheckTx{Code: 1}
+	callback(abci.ToRequestCheckTx(req), abci.ToResponseCheckTx(resp))
+	assert.Equal(t, 1, mp.Size())
+
 	mockClient.AssertExpectations(t)
 }
 

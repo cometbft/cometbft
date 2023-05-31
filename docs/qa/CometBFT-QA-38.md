@@ -392,7 +392,10 @@ The following table summarizes the test cases.
 
 ### Latency
 
-The following figures show the latencies observed on each of the 5 runs of each experiment.
+The following figures show the latencies observed on each of the 5 runs of each experiment;
+the redline shows the average of each run.
+It can be easily seen from these graphs that the larger the vote extension size, the more latency varies and the more common higher latencies become.
+Even in the case of extensions of size 2k, the mean latency goes from below 5s to nearly 10s.
 
 **Baseline**
 
@@ -418,16 +421,16 @@ The following figures show the latencies observed on each of the 5 runs of each 
 
 ![](img38/voteExtensions/all_experiments_32k.png)
 
-To simplify comparing the different experiments, the following figures combine runs of the same experiment; each color is a different run.
+The following graphs combine all the runs of the same experiment.
+They show that latency variation greatly increases with the increase of vote extensions.
+In particular, for the 16k and 32k cases, the system goes through large gaps without transaction delivery.
+As discussed later, this is the result of heights taking multiple rounds to finish and new transactions being held until the next block is agree upon.
 
 |                                                            |                                                  |
 | ---------------------------------------------------------- | ------------------------------------------------ |
-| baseline ![](img38/voteExtensions/all_c1r400_baseline.png) |                                                  |
-| 2k ![](img38/voteExtensions/all_c1r400_2k.png)             | 4k ![](img38/voteExtensions/all_c1r400_4k.png) |
-| 8k ![](img38/voteExtensions/all_c1r400_8k.png)             | 16k ![](img38/voteExtensions/all_c1r400_16k.png) |
-| 32k ![](img38/voteExtensions/all_c1r400_32k.png)           |  |
-
-It can be easily seen from these pictures that as the larger the vote extension size, the more latency varies more and the more common higher latencies become.
+| baseline ![](img38/voteExtensions/all_c1r400_baseline.png) | 2k ![](img38/voteExtensions/all_c1r400_2k.png)   |
+| 4k ![](img38/voteExtensions/all_c1r400_4k.png)             | 8k ![](img38/voteExtensions/all_c1r400_8k.png)   |
+| 16k ![](img38/voteExtensions/all_c1r400_16k.png)           | 32k ![](img38/voteExtensions/all_c1r400_32k.png) |
 
 
 ### Blocks and Transactions per minute
@@ -435,109 +438,69 @@ It can be easily seen from these pictures that as the larger the vote extension 
 The following plots show the blocks produced per minute and transactions processed per minute.
 We have divided the presentation in an overview section, which shows the metrics for the whole experiment (five runs) and a detailed sample, which shows the metrics for the first of the five runs.
 We repeat the approach for the other metrics as well.
+The dashed red line shows the moving average over a 20s window.
 
 #### Overview
 
 It is clear from the overview  plots that as the vote extension sizes increase, the rate of block creation decreases.
 Although the rate of transaction processing also decreases, it does not seem to decrease as fast.
 
-**baseline**
-
-![block rate](img38/voteExtensions/baseline_block_rate.png)
-
-![txs rate](img38/voteExtensions/baseline_total_txs_rate.png)
-
-**8k**
-
-![block rate](img38/voteExtensions/8k_block_rate.png)
-
-![txs rate](img38/voteExtensions/08k_total_txs_rate.png)
-
-**16k**
-
-![block rate](img38/voteExtensions/16k_block_rate.png)
-
-![txs rate](img38/voteExtensions/16k_total_txs_rate.png)
-
-**32k**
-
-![block rate](img38/voteExtensions/32k_block_rate.png)
-
-![txs rate](img38/voteExtensions/32k_total_txs_rate.png)
+| Experiment   | Block creation rate                                         | Transaction rate                                              |
+| ------------ | ----------------------------------------------------------- | ------------------------------------------------------------- |
+| **baseline** | ![block rate](img38/voteExtensions/baseline_block_rate.png) | ![txs rate](img38/voteExtensions/baseline_total_txs_rate.png) |
+| **2k**       | ![block rate](img38/voteExtensions/02k_block_rate.png)      | ![txs rate](img38/voteExtensions/02k_total_txs_rate.png)      |
+| **4k**       | ![block rate](img38/voteExtensions/04k_block_rate.png)      | ![txs rate](img38/voteExtensions/04k_total_txs_rate.png)      |
+| **8k**       | ![block rate](img38/voteExtensions/8k_block_rate.png)       | ![txs rate](img38/voteExtensions/08k_total_txs_rate.png)      |
+| **16k**      | ![block rate](img38/voteExtensions/16k_block_rate.png)      | ![txs rate](img38/voteExtensions/16k_total_txs_rate.png)      |
+| **32k**      | ![block rate](img38/voteExtensions/32k_block_rate.png)      | ![txs rate](img38/voteExtensions/32k_total_txs_rate.png)      |
 
 #### First run
 
-**baseline**
-
-![block rate](img38/voteExtensions/baseline_1_block_rate.png)
-
-![txs rate](img38/voteExtensions/baseline_1_total_txs_rate.png)
-
-**8k**
-
-![block rate](img38/voteExtensions/08k_1_block_rate.png)
-
-![txs rate](img38/voteExtensions/08k_1_total_txs_rate.png)
-
-**16k**
-
-![block rate](img38/voteExtensions/16k_1_block_rate.png)
-
-![txs rate](img38/voteExtensions/16k_1_total_txs_rate.png)
-
-**32k**
-
-![block rate](img38/voteExtensions/32k_1_block_rate.png)
-
-![txs rate](img38/voteExtensions/32k_1_total_txs_rate.png)
+| Experiment   | Block creation rate                                           | Transaction rate                                                |
+| ------------ | ------------------------------------------------------------- | --------------------------------------------------------------- |
+| **baseline** | ![block rate](img38/voteExtensions/baseline_1_block_rate.png) | ![txs rate](img38/voteExtensions/baseline_1_total_txs_rate.png) |
+| **2k**       | ![block rate](img38/voteExtensions/02k_1_block_rate.png)      | ![txs rate](img38/voteExtensions/02k_1_total_txs_rate.png)      |
+| **4k**       | ![block rate](img38/voteExtensions/04k_1_block_rate.png)      | ![txs rate](img38/voteExtensions/04k_1_total_txs_rate.png)      |
+| **8k**       | ![block rate](img38/voteExtensions/08k_1_block_rate.png)      | ![txs rate](img38/voteExtensions/08k_1_total_txs_rate.png)      |
+| **16k**      | ![block rate](img38/voteExtensions/16k_1_block_rate.png)      | ![txs rate](img38/voteExtensions/16k_1_total_txs_rate.png)      |
+| **32k**      | ![block rate](img38/voteExtensions/32k_1_block_rate.png)      | ![txs rate](img38/voteExtensions/32k_1_total_txs_rate.png)      |
 
 
 ### Number of rounds
 
 The effect of vote extensions are also felt on the number of rounds needed to reach consensus.
-We show the results for the whole experiments.
+The following graphs show the number of the highest round required to reach consensus during the whole experiment.
 
-#### Overview
+In the baseline and low loads, most blocks were agreed upon during round 0.
+As the load increases, more and more blocks were required.
+In the 32k case se see round 5 being reached frequently.
 
-**baseline**
+| Experiment   | Number of Rounds per block                                    |
+| ------------ | ------------------------------------------------------------- |
+| **baseline** | ![number of rounds](img38/voteExtensions/baseline_rounds.png) |
+| **2k**       | ![number of rounds](img38/voteExtensions/02k_rounds.png)      |
+| **4k**       | ![number of rounds](img38/voteExtensions/04k_rounds.png)      |
+| **8k**       | ![number of rounds](img38/voteExtensions/08k_rounds.png)      |
+| **16k**      | ![number of rounds](img38/voteExtensions/16k_rounds.png)      |
+| **32k**      | ![number of rounds](img38/voteExtensions/32k_rounds.png)      |
 
-![number of rounds](img38/voteExtensions/baseline_rounds.png)
 
-**8k**
-
-![number of rounds](img38/voteExtensions/08k_rounds.png)
-
-**16k**
-
-![number of rounds](img38/voteExtensions/16k_rounds.png)
-
-**32k**
-
-![number of rounds](img38/voteExtensions/32k_rounds.png)
-
+We conjecture that the reason is that the timeouts used are inadequate for the extra traffic in the network.
 
 ### CPU
-
 
 The CPU usage reached the same peaks on all tests, but the following graphs show that with larger Vote Extensions, nodes take longer to reduce the CPU usage.
 This could mean that a backlog of processing is forming during the execution of the tests with larger extensions.
 
-**baseline**
 
-![cpu-avg](img38/voteExtensions/baseline_avg_cpu.png)
-
-**8k**
-
-![cpu-avg](img38/voteExtensions/08k_avg_cpu.png)
-
-**16k**
-
-![cpu-avg](img38/voteExtensions/16k_avg_cpu.png)
-
-**32k**
-
-![cpu-avg](img38/voteExtensions/32k_avg_cpu.png)
-
+| Experiment   | CPU                                                   |
+| ------------ | ----------------------------------------------------- |
+| **baseline** | ![cpu-avg](img38/voteExtensions/baseline_avg_cpu.png) |
+| **2k**       | ![cpu-avg](img38/voteExtensions/02k_avg_cpu.png)      |
+| **4k**       | ![cpu-avg](img38/voteExtensions/04k_avg_cpu.png)      |
+| **8k**       | ![cpu-avg](img38/voteExtensions/08k_avg_cpu.png)      |
+| **16k**      | ![cpu-avg](img38/voteExtensions/16k_avg_cpu.png)      |
+| **32k**      | ![cpu-avg](img38/voteExtensions/32k_avg_cpu.png)      |
 
 ### Resident Memory
 
@@ -546,48 +509,36 @@ That is, that a backlog of work is formed during the tests and catching up (free
 
 > :warning:
 > A more worrying trend is that the bottom of the memory usage seems to increase in between runs.
+> This will be investigated in a future issue.
 
-**baseline**
 
-![rotating-rss-avg](img38/voteExtensions/baseline_avg_memory.png)
-
-**8k**
-
-![rotating-rss-avg](img38/voteExtensions/08k_avg_memory.png)
-
-**16k**
-
-![rotating-rss-avg](img38/voteExtensions/16k_avg_memory.png)
-
-**32k**
-
-![rotating-rss-avg](img38/voteExtensions/32k_avg_memory.png)
+| Experiment   | Resident Set Size                                        |
+| ------------ | -------------------------------------------------------- |
+| **baseline** | ![rss-avg](img38/voteExtensions/baseline_avg_memory.png) |
+| **8k**       | ![rss-avg](img38/voteExtensions/02k_avg_memory.png)      |
+| **8k**       | ![rss-avg](img38/voteExtensions/04k_avg_memory.png)      |
+| **8k**       | ![rss-avg](img38/voteExtensions/08k_avg_memory.png)      |
+| **16k**      | ![rss-avg](img38/voteExtensions/16k_avg_memory.png)      |
+| **32k**      | ![rss-avg](img38/voteExtensions/32k_avg_memory.png)      |
 
 ### Mempool size
 
 This metric shows how many transactions are outstanding in the nodes' mempools.
-Observe that in all runs, the number of transactions in the mempool quickly drops to zero between runs.
+Observe that in all runs, the average number of transactions in the mempool quickly drops to near zero between runs.
 
-**baseline**
 
-![rotating-mempool-avg](img38/voteExtensions/baseline_avg_mempool_size.png)
-
-**8k**
-
-![rotating-mempool-avg](img38/voteExtensions/08k_avg_mempool_size.png)
-
-**16k**
-
-![rotating-mempool-avg](img38/voteExtensions/16k_avg_mempool_size.png)
-
-**32k**
-
-![rotating-mempool-avg](img38/voteExtensions/32k_avg_mempool_size.png)
+| Experiment   | Resident Set Size                                                  |
+| ------------ | ------------------------------------------------------------------ |
+| **baseline** | ![mempool-avg](img38/voteExtensions/baseline_avg_mempool_size.png) |
+| **8k**       | ![mempool-avg](img38/voteExtensions/02k_avg_mempool_size.png)      |
+| **8k**       | ![mempool-avg](img38/voteExtensions/04k_avg_mempool_size.png)      |
+| **8k**       | ![mempool-avg](img38/voteExtensions/08k_avg_mempool_size.png)      |
+| **16k**      | ![mempool-avg](img38/voteExtensions/16k_avg_mempool_size.png)      |
+| **32k**      | ![mempool-avg](img38/voteExtensions/32k_avg_mempool_size.png)      |
 
 
 
-
-#### Observations/Questions
+#### Observations/Questions/TODOs
 
 * what is the effect on block sizes
     * how is the block size limited? do the extensions fit? the proposal itself is small.
@@ -599,6 +550,9 @@ Observe that in all runs, the number of transactions in the mempool quickly drop
 * the mempool never got completely empty on some nodes
 * 5 minute interval to clean up the mempool. heights continue to happen, with vote extensions.
 * if the mempool size drops quickly, why is the memory slow to empty? Slow GC?
+* run with longer timeouts
+* run baseline for 20 minutes straight.
+
 
 
 ### Results

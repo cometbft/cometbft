@@ -206,6 +206,12 @@ func MsgFromProto(p proto.Message) (Message, error) {
 			Type:   msg.Type,
 			Index:  msg.Index,
 		}
+	case *cmtcons.HasProposalBlockPart:
+		pb = &HasProposalBlockPartMessage{
+			Height: msg.Height,
+			Round:  msg.Round,
+			Index:  int32(msg.Index),
+		}
 	case *cmtcons.VoteSetMaj23:
 		bi, err := types.BlockIDFromProto(&msg.BlockID)
 		if err != nil {

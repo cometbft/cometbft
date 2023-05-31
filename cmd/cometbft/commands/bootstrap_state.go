@@ -8,6 +8,7 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/light"
 	"github.com/cometbft/cometbft/node"
+	cmtstore "github.com/cometbft/cometbft/proto/tendermint/store"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/statesync"
 	"github.com/cometbft/cometbft/store"
@@ -79,6 +80,12 @@ func bootstrapStateCmd(height uint64) error {
 	if err := stateStore.Bootstrap(state); err != nil {
 		return err
 	}
+
+	store.SaveBlockStoreState(&cmtstore.BlockStoreState{
+		// it breaks the invariant that blocks in range [Base, Height] must exists, but it do works in practice.
+		Base:   state.LastBlockHeight,
+		Height: state.LastBlockHeight,
+	}, blockStoreDB)
 
 	return blockStore.SaveSeenCommit(state.LastBlockHeight, commit)
 }

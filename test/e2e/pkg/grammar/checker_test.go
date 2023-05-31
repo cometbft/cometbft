@@ -81,7 +81,8 @@ func TestVerifySpecific(t *testing.T) {
 	//calls := []string{PrepareProposal, BeginBlock, EndBlock, Commit}
 	//execution := strings.Join(calls, " ")
 	checker := NewGrammarChecker(DefaultConfig())
-	execution := InitChain + " " + BeginBlock + "\n" + EndBlock
+	//execution := InitChain + " " + BeginBlock + "" + EndBlock
+	execution := InitChain + " " + BeginBlock + " " + DeliverTx + " " + DeliverTx + " " + DeliverTx + "\n" + DeliverTx + " " + DeliverTx + " " + DeliverTx + " " + DeliverTx + " " + DeliverTx + "\n" + DeliverTx + " " + DeliverTx + " " + DeliverTx + " " + DeliverTx + " " + DeliverTx + "\n" + DeliverTx + " " + DeliverTx + " " + DeliverTx + " " + Commit + " " + BeginBlock + "\n" + DeliverTx + " " + DeliverTx + " " + DeliverTx + " " + DeliverTx + " " + DeliverTx + "\n" + DeliverTx + " " + DeliverTx + " " + DeliverTx + " " + EndBlock + " " + Commit
 	_, err := checker.VerifyExecution(execution)
 	if err != nil {
 		t.Error(err)

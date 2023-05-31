@@ -97,17 +97,19 @@ func (g *GrammarChecker) GetExecutionString(reqs []*abci.Request) (string, int) 
 	n := 0
 	for _, r := range reqs {
 		t := g.getRequestTerminal(r)
-		if t != "" {
-			// Every fifth terminal I put in new line. This is needed
-			// so we can find the parsing error, if there is one, more
-			// easily.
-			if n != 0 && n%g.cfg.MaxTerminalsInLine == 0 {
-				s += "\n" + t
-			} else {
-				s += " " + t
-			}
-			n++
+		if t == "" {
+			continue
 		}
+		// Every fifth terminal I put in new line. This is needed
+		// so we can find the parsing error, if there is one, more
+		// easily.
+		if n != 0 && n%g.cfg.MaxTerminalsInLine == 0 {
+			s += "\n" + t
+		} else {
+			s += " " + t
+		}
+		n++
+
 	}
 	return s, n
 }
@@ -161,7 +163,7 @@ func (g *GrammarChecker) combineParseErrors(execution string, errs []*parser.Err
 			break
 		}
 		lines := g.getStringOfLinesAroundError(execution, e)
-		err := fmt.Errorf("Error %v: [%v]\nExecution:\n%v", i, e, lines)
+		err := fmt.Errorf("***Error %v***\n%v\nExecution:\n%v", i, e, lines)
 		s = fmt.Sprintf("%v%v\n", s, err)
 	}
 	return fmt.Errorf("%v\n", s)

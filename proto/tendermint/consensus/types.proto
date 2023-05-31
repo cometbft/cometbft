@@ -95,5 +95,6 @@ message Message {
     HasVote       has_vote        = 7;
     VoteSetMaj23  vote_set_maj23  = 8;
     VoteSetBits   vote_set_bits   = 9;
+    HasProposalBlockPart       has_proposal_block_part        = 10;
   }
 }

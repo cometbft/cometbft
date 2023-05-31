@@ -2,7 +2,7 @@
 
 // An ABCI server (an application) receives asynchronous ABCI requests and
 // replies with ABCI responses.
-module abciServers {
+module abciServersAsync {
     import basicSpells.* from "./basicSpells"
     import base.* from "./base"
     import abciMessages.* from "./abciMessages"
@@ -45,8 +45,6 @@ module abciServers {
     def ABCI_checkTxRequests(node) = node.requestsWithResponse("New")
     def ABCI_recheckTxRequests(node) = node.requestsWithResponse("Recheck")
 
-    val emptyResponse = (noNode, -1, noResponse)
-
     //--------------------------------------------------------------------------
     // Actions
     //--------------------------------------------------------------------------
@@ -56,29 +54,20 @@ module abciServers {
     // For a "New" request we store the sender.
     action ABCI_SendRequestNewCheckTx(nodeId, tx, senderId, h) = 
         val req = { tag: "CheckTx", tx: tx, checkTxType: "New" }
+        val err = if (req.tx.isValidAt(h)) noError else InvalidTxError
+        val resp = { tag: req.tag, err: err }
         requestResponses' = requestResponses.mapPut(nodeId, 
-            (rs) => rs.put(req, (senderId, h, noResponse)))
+            (rs) => rs.put(req, (senderId, h, resp)))
 
     // For "Recheck" we send multiple requests at once.
-    action ABCI_SendRequestRecheckTxs(nodeId, txs) =
+    action ABCI_SendRequestRecheckTxs(nodeId, txs, h) =
         val newRequests = txs.map(tx => { tag: "CheckTx", tx: tx, checkTxType: "Recheck" })
-        // Add all the new requests, with no sender and no response.
+        // Add all the new requests, with no sender.
         requestResponses' = requestResponses.mapPut(nodeId, (rs) =>
-            rs.keys().mapBy(req => if (req.in(newRequests)) emptyResponse else rs.get(req)))
-
-    // The app receives a CheckTx request and creates a response.
-    action ABCI_ProcessCheckTxRequest(node) = all {
-        node.Requests().nonEmpty(),
-        nondet req: Request = oneOf(node.Requests())
-        all {
-            require(not(node.hasResponseFor(req))),
-            val senderId = node.ABCI_senderFor(req)
-            val h = node.ABCI_heightFor(req)
-            val err = if (req.tx.isValidAt(h)) noError else InvalidTxError
-            val resp = { tag: req.tag, err: err }
-            requestResponses' = requestResponses.mapPut(node, (rs) => rs.put(req, (senderId, h, resp))),
-        }
-    }
+            rs.keys().mapBy(req => if (req.in(newRequests)) {
+                val err = if (req.tx.isValidAt(h)) noError else InvalidTxError
+                (noNode, h, { tag: req.tag, err: err }) 
+            } else rs.get(req)))
 
     action ABCI_RemoveRequest(nodeId, request) = all {
         require(hasResponseFor(nodeId, request)), // We keep this condition to allow the action to return false; otherwise it will always evaluate to true.

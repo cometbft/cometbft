@@ -12,12 +12,12 @@ module properties {
 
     // Transactions committed to the chain cannot be in the mempool.
     val invariant2 = NodeIds.forall(node => Txs.forall(tx => 
-        tx.Chain_committedUpTo(node.Height_()) implies not(node.inMempool(tx))
+        tx.Chain_committedUpTo(node.MempoolHeight()) implies not(node.inMempool(tx))
     ))
 
     // Only valid transactions are present in the mempool.
     val invariant3 = Txs.forall(tx => NodeIds.forall(node => 
-        node.inMempool(tx) implies tx.isValidAt(node.memTxFor(tx).chooseSome().height)
+        node.inMempool(tx) implies tx.isValidAt(node.chooseSomeMemTxFor(tx).height)
     ))
 
     temporal safety = always(all {
@@ -29,11 +29,10 @@ module properties {
     // If a transaction tx is in the mempool of a node, then eventually tx will remain
     // forever committed to the chain or be forever invalid.
     temporal invariant4 = Txs.forall(tx => NodeIds.forall(node => always(
-        node.inMempool(tx) implies eventually(always(tx.Chain_committedUpTo(node.Height_()) or not(tx.isValidAt(node.Height_()))))
+        node.inMempool(tx) implies eventually(always(tx.Chain_committedUpTo(node.MempoolHeight()) or not(tx.isValidAt(node.MempoolHeight()))))
     )))
 
     temporal liveness = {
         invariant4
     }
-
 }

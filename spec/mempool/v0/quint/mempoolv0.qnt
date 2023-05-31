@@ -10,24 +10,21 @@
 
 module mempoolv0 {
     import basicSpells.* from "./basicSpells"
+    import params as Params from "./base"
     import base.* from "./base"
     import chain.* from "./chain"
-    import abciServersAsync.* from "./abciServersAsync"
+    import abciServers.* from "./abciServers"
     import network.* from "./network"
     import history.* from "./history"
 
     //--------------------------------------------------------------------------
     // Spec parameters
     //--------------------------------------------------------------------------
-    // const MempoolMaxSize: int
-    val MempoolMaxSize: int = 2
+    val MempoolMaxSize: int = Params::__MempoolMaxSize
     // assume(MempoolMaxSize > 0)
 
     type Config = { keepInvalidTxsInCache: bool }
-    // const Configs: NodeId -> Config
-    // Configs = Map("n1" -> { keepInvalidTxsInCache -> false }, "n2" -> { keepInvalidTxsInCache -> false }, "n2" -> { keepInvalidTxsInCache -> false }), 
-    val Configs: NodeId -> Config = 
-        NodeIds.mapBy(_ => { keepInvalidTxsInCache: false })
+    val Configs: NodeId -> Config = Params::__Configs
 
     //--------------------------------------------------------------------------
     // Auxiliary variables
@@ -395,20 +392,23 @@ module mempoolv0 {
         }
 
     /* There may be action in other nodes too. */
-    action ChainNext =
+    action ChainNext = 
         val notCommittedTxs = Txs.exclude(Chain_allTxsInChain)
-        nondet txs = oneOf(notCommittedTxs.nonEmptyPowerset())
         all {
-            require(txs.forall(tx => isValidAt(tx, Chain_latestHeight + 1))),
-            Chain_newBlockFrom(txs),
-            setStep(noNode, "ChainNext", txs.mapBy(x => x)),
-            setError(noNode, noError),
-            mempool' = mempool, 
-            mempoolHeight' = mempoolHeight, 
-            cache' = cache, 
-            History_unchanged,
-            ABCI_unchanged,
-            Network_unchanged,
+            require(notCommittedTxs.nonEmpty()),
+            nondet txs = oneOf(notCommittedTxs.nonEmptyPowerset())
+            all {
+                require(txs.forall(tx => isValidAt(tx, Chain_latestHeight + 1))),
+                Chain_newBlockFrom(txs),
+                setStep(noNode, "ChainNext", txs.mapBy(x => x)),
+                setError(noNode, noError),
+                mempool' = mempool, 
+                mempoolHeight' = mempoolHeight, 
+                cache' = cache, 
+                History_unchanged,
+                ABCI_unchanged,
+                Network_unchanged,
+            }
         }
     
     action step = any { NodeNext, ChainNext }
@@ -418,7 +418,7 @@ module tests {
     import base.* from "./base"
     import basicSpells.* from "./basicSpells"
     import chain.* from "./chain"
-    import abciServersAsync.* from "./abciServersAsync"
+    import abciServers.* from "./abciServers"
     import network.* from "./network"
     import history.* from "./history"
     import mempoolv0.* //from "./mempoolv0"
@@ -499,7 +499,7 @@ module tests {
 module __repl__ {
     import base.* from "./base"
     import chain.* from "./chain"
-    import abciServersAsync.* from "./abciServersAsync"
+    import abciServers.* from "./abciServers"
     import network.* from "./network"
     import mempoolv0.*
     // import properties.* from "./properties"

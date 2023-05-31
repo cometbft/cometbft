@@ -12,6 +12,18 @@ module params {
         h == 2 and tx.in(Set("tx2")),
     }
 
+    // network topology
+    val __Peers = Map(
+        "n1" -> Set("n2", "n3"),
+        "n2" -> Set("n1", "n3"),
+        "n3" -> Set("n1", "n2")
+    )
+
+    val __MempoolMaxSize: int = 2
+
+    val __Configs = 
+        __NodeIds.mapBy(_ => { keepInvalidTxsInCache: false })
+
 }
 
 module base {
@@ -74,5 +86,15 @@ module base {
     ///   to __f applied to __key's old value
     pure def mapPut(__map: a -> b, __key: a, __f: b => b): (a -> b) = 
         __map.put(__key, __f(__map.get(__key)))
+
+    /// Update a set of map entries.
+    ///
+    /// @param __map the map to update
+    /// @param __keys the set of keys to be updated in __map
+    /// @param __values a function that returns the value for a key in __keys
+    /// @returns a new map equal to __map except that for each key k in __keys 
+    ///   will map to __values(k)
+    pure def mapPutMany(__map: a -> b, __keys: Set[a], __values: a => b): (a -> b) = 
+        __map.keys().union(__keys).mapBy(k => if (k.in(__keys)) __values(k) else __map.get(k))
 
 }

@@ -1,14 +1,11 @@
 // -*- mode: Bluespec; -*-
 module network {
     import basicSpells.* from "./basicSpells"
+    import params as Params from "./base"
     import base.* from "./base"
 
     // const Peers: NodeId -> Set[NodeId]
-    val Peers: NodeId -> Set[NodeId] = Map(
-        "n1" -> Set("n2", "n3"),
-        "n2" -> Set("n1", "n3"),
-        "n3" -> Set("n1", "n2")
-    )
+    val Peers: NodeId -> Set[NodeId] = Params::__Peers
 
     //--------------------------------------------------------------------------
     // Network state

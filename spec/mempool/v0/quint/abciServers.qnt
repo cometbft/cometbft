@@ -1,8 +1,8 @@
 // -*- mode: Bluespec; -*-
 
-// An ABCI server (an application) receives asynchronous ABCI requests and
-// replies with ABCI responses.
-module abciServersAsync {
+// An ABCI server implemented by an application receives asynchronous ABCI
+// requests and replies with ABCI responses.
+module abciServers {
     import basicSpells.* from "./basicSpells"
     import base.* from "./base"
     import abciMessages.* from "./abciMessages"
@@ -36,14 +36,10 @@ module abciServersAsync {
     def ABCI_heightFor(node, request) = node.ResponsesTo(request)._2
     def ABCI_responseFor(node, request) = node.ResponsesTo(request)._3
 
-    def hasResponseFor(node, request) =
-        node.ABCI_responseFor(request) != noResponse
-
-    def requestsWithResponse(node: NodeId, checkTxType: str): Set[Request] =
-        node.Requests().filter(r => r.checkTxType == checkTxType and node.hasResponseFor(r))
-
-    def ABCI_checkTxRequests(node) = node.requestsWithResponse("New")
-    def ABCI_recheckTxRequests(node) = node.requestsWithResponse("Recheck")
+    def ABCI_checkTxRequests(node) = 
+        node.Requests().filter(r => r.checkTxType == "New")
+    def ABCI_recheckTxRequests(node) = 
+        node.Requests().filter(r => r.checkTxType =="Recheck")
 
     //--------------------------------------------------------------------------
     // Actions
@@ -62,17 +58,14 @@ module abciServersAsync {
     // For "Recheck" we send multiple requests at once.
     action ABCI_SendRequestRecheckTxs(nodeId, txs, h) =
         val newRequests = txs.map(tx => { tag: "CheckTx", tx: tx, checkTxType: "Recheck" })
-        // Add all the new requests, with no sender.
         requestResponses' = requestResponses.mapPut(nodeId, (rs) =>
-            rs.keys().mapBy(req => if (req.in(newRequests)) {
+            rs.mapPutMany(newRequests, (req) => {
                 val err = if (req.tx.isValidAt(h)) noError else InvalidTxError
                 (noNode, h, { tag: req.tag, err: err }) 
-            } else rs.get(req)))
+            }))
 
-    action ABCI_RemoveRequest(nodeId, request) = all {
-        require(hasResponseFor(nodeId, request)), // We keep this condition to allow the action to return false; otherwise it will always evaluate to true.
-        requestResponses' = requestResponses.mapPut(nodeId, (rs) => rs.mapRemove(request)), 
-    }
+    action ABCI_RemoveRequest(nodeId, request) =
+        requestResponses' = requestResponses.mapPut(nodeId, (rs) => rs.mapRemove(request))
 
     action ABCI_unchanged =
         requestResponses' = requestResponses

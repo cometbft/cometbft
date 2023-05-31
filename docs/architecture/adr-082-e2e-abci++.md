@@ -198,8 +198,7 @@ will return an error that `EndBlock` is missing, even though the `EndBlock`
 will happen.  
 - Generates an execution string by replacing `abci.Request` with the 
 corresponding terminal from the grammar. This logic is implemented in
-`GetExecutionString()` function. This function receives a list of `abci.
-Request` and generates a string where each request the grammar covers 
+`GetExecutionString()` function. This function receives a list of `abci.Request` and generates a string where each request the grammar covers 
 will be replaced with a corresponding terminal. For example, `abci.
 BeginBlock` is replaced with `<BeginBlock>`. If the request is not covered 
 by the grammar, it will be ignored. 
@@ -246,6 +245,14 @@ a grammar production. Usually, the error of interest is the one that has
 parsed the largest number of tokens. This is why, at the 
 moment, we are printing the last 10 errors; however, this is part of the configuration and can be changed. 
 
+### Suporting additional ABCI++ requests
+
+Here we present all the steps we need to do if we want to support other 
+ABCI++ requests in the future: 
+
+- The application needs to log the new request in the same way as we do now.
+- We should include the new request to the grammar and generate a new parser and lexer.  
+- We should modify `getRequestTerminal()` method inside `test/e2e/pkg/grammar/checker.go` to return a grammar terminal for the new ABCI++ request. 
 
 
 

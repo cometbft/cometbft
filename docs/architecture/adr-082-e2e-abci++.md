@@ -166,7 +166,7 @@ func TestABCIGrammar(t *testing.T) {
 }
 ```
 
-Specifically, it first fetches all ABCI++ requests and creates a `GrammarChecker` object. Then for each
+Specifically, the test first fetches all ABCI++ requests and creates a `GrammarChecker` object. Then for each
 node in the testnet it checks if a specific set of requests respects the ABCI++ 
 grammar by calling `checker.Verify(reqs)` method. If this method returns an error, the specific execution does not respect the grammar. 
 

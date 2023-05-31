@@ -19,40 +19,40 @@ module history {
     def _GossippedTxs(node) = gossippedTxs.get(node)
 
     // A node has or has had tx in its mempool.
-    def History_hadInMempool(node, tx) = tx.in(node._MempoolTxs())
+    def hadInMempool(node, tx) = tx.in(node._MempoolTxs())
 
     // A node has received tx submitted by a client via RPC.
-    def History_receivedViaRPC(node, tx) = tx.in(node._ReceivedTxs())
+    def receivedViaRPC(node, tx) = tx.in(node._ReceivedTxs())
 
     // A node has gossipped tx to a peer.
-    def History_gossipped(node, tx) = tx.in(node._GossippedTxs())
+    def gossipped(node, tx) = tx.in(node._GossippedTxs())
 
     //--------------------------------------------------------------------------
-    action History_init = all {
+    action init = all {
         historicMempoolTxs' = NodeIds.mapBy(_ => Set()),
         txsReceivedViaRPC' = NodeIds.mapBy(_ => Set()),
         gossippedTxs' = NodeIds.mapBy(_ => Set()),
     }
 
-    action History_recordMempoolTx(nodeId, tx) = all {
+    action recordMempoolTx(nodeId, tx) = all {
         historicMempoolTxs' = historicMempoolTxs.mapPut(nodeId, (txs) => txs.setAdd(tx)),
         txsReceivedViaRPC' = txsReceivedViaRPC,
         gossippedTxs' = gossippedTxs,
     }
 
-    action History_recordSubmittedTx(nodeId, tx) = all {
+    action recordSubmittedTx(nodeId, tx) = all {
         historicMempoolTxs' = historicMempoolTxs,
         txsReceivedViaRPC' = txsReceivedViaRPC.mapPut(nodeId, (txs) => txs.setAdd(tx)),
         gossippedTxs' = gossippedTxs,
     }
 
-    action History_recordGossippedTx(nodeId, tx) = all {
+    action recordGossippedTx(nodeId, tx) = all {
         historicMempoolTxs' = historicMempoolTxs,
         txsReceivedViaRPC' = txsReceivedViaRPC,
         gossippedTxs' = gossippedTxs.mapPut(nodeId, (txs) => txs.setAdd(tx)),
     }
 
-    action History_unchanged = all {
+    action unchanged = all {
         historicMempoolTxs' = historicMempoolTxs,
         txsReceivedViaRPC' = txsReceivedViaRPC,
         gossippedTxs' = gossippedTxs,

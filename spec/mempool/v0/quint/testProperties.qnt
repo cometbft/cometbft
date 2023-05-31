@@ -1,7 +1,7 @@
 // Test properties that define scenarios for extracting traces
 module testProperties {
     import base.* from "./base"
-    import chain.* from "./chain"
+    import chain as Chain from "./chain"
     import mempoolv0.* from "./mempoolv0"
 
     //--------------------------------------------------------------------------
@@ -47,8 +47,8 @@ module testProperties {
     val notSameTx = not(SameTx)
 
     //--------------------------------------------------------------------------
-    val EmptyChain = Chain_allTxsInChain.isEmpty()
+    val EmptyChain = Chain::chainIsEmpty
 
-    val FullChain = Chain_allTxsInChain == Set("tx1", "tx2")
+    val FullChain = Chain::allTxsInChain == Set("tx1", "tx2")
     val notFullChain = not(FullChain)    
 }

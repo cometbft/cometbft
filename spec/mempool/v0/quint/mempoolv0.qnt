@@ -12,10 +12,11 @@ module mempoolv0 {
     import basicSpells.* from "./basicSpells"
     import params as Params from "./base"
     import base.* from "./base"
-    import chain.* from "./chain"
-    import abciServers.* from "./abciServers"
-    import network.* from "./network"
-    import history.* from "./history"
+    import errors.* from "./errors"
+    import chain as Chain from "./chain"
+    import abciServers as ABCI from "./abciServers"
+    import network as Network from "./network"
+    import history as History from "./history"
 
     //--------------------------------------------------------------------------
     // Spec parameters
@@ -138,10 +139,10 @@ module mempoolv0 {
         _step' = { node: noNode, name: "init", args: Map() },
         _error' = { node: noNode, error: noError },
         mempoolHeight' = NodeIds.mapBy(_ => 0),
-        History_init,
-        Network_init,
-        Chain_init,
-        ABCI_init,
+        History::init,
+        Network::init,
+        Chain::init,
+        ABCI::init,
     }
     
     /** Validate a transaction and add it to the mempool. */
@@ -152,7 +153,7 @@ module mempoolv0 {
             node.setError(MempoolIsFullError),
             mempool' = mempool,
             cache' = cache,
-            ABCI_unchanged,
+            ABCI::unchanged,
         } else all {
             if (tx.in(node.Cache())) all {
         		// Record new sender for the tx we've already seen.
@@ -162,10 +163,10 @@ module mempoolv0 {
                 node.addSender(tx, senderId),
                 node.setError(TxInCacheError),
                 cache' = cache,
-                ABCI_unchanged,
+                ABCI::unchanged,
             } else all {
                 node.addToCache(tx),
-                node.ABCI_SendRequestNewCheckTx(tx, senderId, node.MempoolHeight() + 1),
+                node.ABCI::sendRequestNewCheckTx(tx, senderId, node.MempoolHeight() + 1),
                 node.setError(noError),
                 mempool' = mempool,
             }
@@ -179,13 +180,13 @@ module mempoolv0 {
     action CheckTx_RPC(node, tx) = all {
         node.setStep("CheckTx", Map("node" -> tx)),
         node.CheckTx(tx, noNode),
-        node.History_recordSubmittedTx(tx),
-        Network_unchanged,
-        Chain_unchanged,
+        History::recordSubmittedTx(node, tx),
+        Network::unchanged,
+        Chain::unchanged,
     }
 
     /* Receive some transaction from a client via RPC. */
-    action CheckTxRPC(node) =
+    action ReceiveTxViaRPC(node) =
         nondet tx = oneOf(Txs)
         node.CheckTx_RPC(tx)
 
@@ -194,36 +195,36 @@ module mempoolv0 {
     // [CListMempool.resCbFirstTime]: https://github.com/CometBFT/cometbft/blob/6498d67efdf0a539e3ca0dc3e4a5d7cb79878bb2/mempool/clist_mempool.go#L369
     action ReceiveCheckTxResponse(node) = all {
         node.setStep("ReceiveCheckTxResponse", Map()),
-        node.ABCI_checkTxRequests().nonEmpty(),
-        nondet request = oneOf(node.ABCI_checkTxRequests()) 
-        val response = node.ABCI_responseFor(request)
+        node.ABCI::checkTxRequests().nonEmpty(),
+        nondet req = oneOf(node.ABCI::checkTxRequests()) 
+        val resp = node.ABCI::responseFor(req)
         all {
-            node.ABCI_RemoveRequest(request),
-            if (response.err == noError) {
+            node.ABCI::removeRequest(req),
+            if (resp.err == noError) {
                 if (node.mempoolIsFull()) all {
-                    node.forceRemoveFromCache(request.tx), // There may be enough space for tx later.
+                    node.forceRemoveFromCache(req.tx), // There may be enough space for tx later.
                     node.setError(MempoolIsFullError),
                     mempool' = mempool,
-                    History_unchanged,
+                    History::unchanged,
                 } else all { 
-                    require(not(node.inMempool(request.tx))),
-                    val senderId = node.ABCI_senderFor(request)
-                    val h = node.ABCI_heightFor(request) // height at which tx was validated
-                    node.addToMempool(request.tx, h, senderId),
+                    require(not(node.inMempool(req.tx))),
+                    val senderId = node.ABCI::senderFor(req)
+                    val h = node.ABCI::heightFor(req) // height at which tx was validated
+                    node.addToMempool(req.tx, h, senderId),
                     node.setError(noError),
-                    node.History_recordMempoolTx(request.tx),
+                    node.History::recordMempoolTx(req.tx),
                     cache' = cache,
                 }
             } else all { // ignore invalid transaction
-                node.removeFromCache(request.tx),
+                node.removeFromCache(req.tx),
                 node.setError(InvalidTxWarning),
                 mempool' = mempool,
-                History_unchanged,
+                History::unchanged,
             }
         },
         mempoolHeight' = mempoolHeight,
-        Network_unchanged,
-        Chain_unchanged,
+        Network::unchanged,
+        Chain::unchanged,
     }
 
     /** Consensus' BlockExecutor calls Update to update the mempool after executing txs.
@@ -258,28 +259,28 @@ module mempoolv0 {
         val txsStillInMempool = node.mempoolTxs().exclude(txs)
         if (txsStillInMempool.nonEmpty())
             // CHECK: in the code, ReceiveRecheckTxResponse may be called concurrently.
-            node.ABCI_SendRequestRecheckTxs(txsStillInMempool, h)
-        else ABCI_unchanged,
+            node.ABCI::sendRequestRecheckTxs(txsStillInMempool, h)
+        else ABCI::unchanged,
 
         node.setError(noError),
-        History_unchanged,
-        Network_unchanged,
+        History::unchanged,
+        Network::unchanged,
     }
 
     // Consensus reactor updates the mempool with the latest block just created
     // and rechecks outstanding txs.
     action Consensus_Update(node: NodeId): bool = all {
-        require(not(Chain_isEmpty)),
-        require(node.MempoolHeight() <= Chain_latestHeight),
+        require(not(Chain::chainIsEmpty)),
+        require(node.MempoolHeight() <= Chain::latestHeight),
         val h = node.MempoolHeight() + 1 // block's height
         any {
             // This node is not the proposer: take the block from the chain.
             // All txs are valid because they are committed in the chain.
-            val txs: Set[Tx] = Chain_getBlock(node.MempoolHeight())
+            val txs: Set[Tx] = Chain::getBlock(node.MempoolHeight())
             val txValidResults: Tx -> bool = txs.mapBy(_ => true)
             all {
                 node.Update(h, txs, txValidResults),
-                Chain_unchanged,
+                Chain::unchanged,
             },
             all {
                 // This node is the proposer: take the block from the mempool.
@@ -288,7 +289,7 @@ module mempoolv0 {
                 val txValidResults: Tx -> bool = txs.mapBy(tx => isValidAt(tx, h))
                 all {
                     node.Update(h, txs, txValidResults),
-                    Chain_newBlockFrom(txs),
+                    Chain::newBlockFrom(txs),
                 }
             },
         }
@@ -298,13 +299,13 @@ module mempoolv0 {
     // [CListMempool.resCbRecheck]: https://github.com/CometBFT/cometbft/blob/6498d67efdf0a539e3ca0dc3e4a5d7cb79878bb2/mempool/clist_mempool.go#L432
     action ReceiveRecheckTxResponse(node: NodeId): bool = all {
         node.setStep("ReceiveRecheckTxResponse", Map("node" -> node)),
-        node.ABCI_recheckTxRequests().nonEmpty(),
-        nondet request = oneOf(node.ABCI_recheckTxRequests())
+        node.ABCI::recheckTxRequests().nonEmpty(),
+        nondet request = oneOf(node.ABCI::recheckTxRequests())
         all {
-            val response = node.ABCI_responseFor(request)
+            val response = node.ABCI::responseFor(request)
             all {
                 require(node.inMempool(request.tx)),
-                node.ABCI_RemoveRequest(request),
+                node.ABCI::removeRequest(request),
                 if (response.err != noError) all {
                     // Tx became invalidated due to newly committed block.
                     node.removeFromMempool(Set(request.tx)),
@@ -317,9 +318,9 @@ module mempoolv0 {
         },
         node.setError(noError),
         mempoolHeight' = mempoolHeight,
-        History_unchanged,
-        Network_unchanged,
-        Chain_unchanged,
+        History::unchanged,
+        Network::unchanged,
+        Chain::unchanged,
     }
 
     //--------------------------------------------------------------------------
@@ -329,13 +330,13 @@ module mempoolv0 {
     // [Reactor.Receive]: https://github.com/CometBFT/cometbft/blob/111d252d75a4839341ff461d4e0cf152ca2cc13d/mempool/reactor.go#L93
     action P2P_ReceiveTxs(node) = all {
         node.setStep("P2P_ReceiveTxs", Map("node" -> node)),
-        require(node.Network_incomingMsgs().nonEmpty()),
-        nondet msg = oneOf(node.Network_incomingMsgs())
+        require(node.Network::incomingMsgs().nonEmpty()),
+        nondet msg = oneOf(node.Network::incomingMsgs())
         all {
             node.CheckTx(msg.tx, msg.senderId),
-            node.receiveMsg(msg),
-            History_unchanged,
-            Chain_unchanged,
+            node.Network::receiveMsg(msg),
+            History::unchanged,
+            Chain::unchanged,
         }
     }
 
@@ -349,31 +350,31 @@ module mempoolv0 {
         val msg = { tag: "Txs", senderId: node, tx: tx }
         all {
             // If the msg was not already sent to this peer.
-            require(peer.Network_incomingMsgs().forall(m => m != msg)),
+            require(peer.Network::incomingMsgs().forall(m => m != msg)),
             // If the peer is not a tx's sender.
             require(peer.notIn(node.sendersFor(tx))),
-            sendTo(msg, peer),
+            Network::sendTo(msg, peer),
             node.setError(noError),
-            node.History_recordGossippedTx(tx),
+            node.History::recordGossippedTx(tx),
             mempool' = mempool,
             cache' = cache,
             mempoolHeight' = mempoolHeight,
-            ABCI_unchanged,
-            Chain_unchanged,
+            ABCI::unchanged,
+            Chain::unchanged,
         }
     }
 
     // [Reactor.broadcastTxRoutine]: https://github.com/CometBFT/cometbft/blob/5049f2cc6cf519554d6cd90bcca0abe39ce4c9df/mempool/reactor.go#L132
     action P2P_SendTx(node: NodeId): bool =
-        nondet peer = oneOf(Peers.get(node))
+        nondet peer = oneOf(Network::Peers.get(node))
         node.P2P_SendTx_(peer)
 
     /* All possible actions on a node. */
     action NodeNext =
         nondet node = oneOf(NodeIds)
         any {
-            // Receive a transaction from a client via RPC
-            node.CheckTxRPC(),
+            // Receive a transaction from a client via RPC endpoints broadcast_tx_*
+            node.ReceiveTxViaRPC(),
 
             // Receive a (New) CheckTx response from the application
             node.ReceiveCheckTxResponse(),
@@ -393,115 +394,33 @@ module mempoolv0 {
 
     /* There may be action in other nodes too. */
     action ChainNext = 
-        val notCommittedTxs = Txs.exclude(Chain_allTxsInChain)
+        val notCommittedTxs = Txs.exclude(Chain::allTxsInChain)
         all {
             require(notCommittedTxs.nonEmpty()),
             nondet txs = oneOf(notCommittedTxs.nonEmptyPowerset())
             all {
-                require(txs.forall(tx => isValidAt(tx, Chain_latestHeight + 1))),
-                Chain_newBlockFrom(txs),
+                require(txs.forall(tx => isValidAt(tx, Chain::latestHeight + 1))),
+                Chain::newBlockFrom(txs),
                 setStep(noNode, "ChainNext", txs.mapBy(x => x)),
                 setError(noNode, noError),
                 mempool' = mempool, 
                 mempoolHeight' = mempoolHeight, 
                 cache' = cache, 
-                History_unchanged,
-                ABCI_unchanged,
-                Network_unchanged,
+                History::unchanged,
+                ABCI::unchanged,
+                Network::unchanged,
             }
         }
     
     action step = any { NodeNext, ChainNext }
 }
 
-module tests {
-    import base.* from "./base"
-    import basicSpells.* from "./basicSpells"
-    import chain.* from "./chain"
-    import abciServers.* from "./abciServers"
-    import network.* from "./network"
-    import history.* from "./history"
-    import mempoolv0.* //from "./mempoolv0"
-
-    val node1 = "n1"
-    val node2 = "n2"
-    val node3 = "n3"
-    val tx1 = "tx1"
-    val tx2 = "tx2"
-    val tx3 = "tx3"
-
-    action assert_(__cond: bool): bool = all {
-        __cond,
-        mempool' = mempool, 
-        mempoolHeight' = mempoolHeight, 
-        cache' = cache,
-        _step' = _step,
-        _error' = _error,
-        History_unchanged,
-        ABCI_unchanged,
-        Network_unchanged,
-        Chain_unchanged,
-    }
-
-    // action assert__(__action: bool, __cond: bool): bool =
-    //     __action.then(assert_(__cond))
-
-    //--------------------------------------------------------------------------
-    // Tests
-    //--------------------------------------------------------------------------
-    run test1 = init
-        .then(assert_(tx1.isValidAt(1)))
-        .then(node1.CheckTx_RPC(tx1))
-        .then(node1.ReceiveCheckTxResponse())
-        .then(assert_(node1.inMempool(tx1) and tx1.in(node1.Cache())))
-    
-    run test2 = test1
-        .then(all{ node1.Update(1, Set(tx1), Map(tx1 -> true)), Chain_unchanged })
-        .then(assert_(not(node1.inMempool(tx1)) and tx1.in(node1.Cache())))
-
-    run test3 = test1
-        .then(node1.P2P_SendTx_(node2))
-        .then(node2.P2P_ReceiveTxs())
-        .then(assert_(not(node2.inMempool(tx1)) and tx1.in(node2.Cache())))
-
-    run test4 = test3
-        .then(node2.ReceiveCheckTxResponse())
-        .then(assert_(node2.inMempool(tx1) and tx1.in(node2.Cache())))
-
-    run test5 = test4
-        .then(all { node2.Update(1, Set(tx1), Map(tx1 -> tx1.isValidAt(1))), Chain_unchanged })
-        .then(assert_(not(node2.inMempool(tx1)) and tx1.in(node2.Cache())))
-
-    run testInvalid1 = init
-        .then(CheckTx_RPC(node1, tx3)) // tx3 is invalid at height 0 according to isValidAt
-        .then(ReceiveCheckTxResponse(node1))
-
-    //--------------------------------------------------------------------------
-    def nodeState(node) = (
-        ("mempool", node.Mempool()), 
-        ("cache", node.Cache()),
-        ("height", node.MempoolHeight()),
-        ("abci requests", requestResponses.get(node)),
-        ("p2p incoming msgs", msgs.get(node)),
-    )
-    def ns(nodeId) = nodeState(nodeId)
-    val s1 = ns("n1")
-    val s2 = ns("n2")
-    val s3 = ns("n3")
-
-    def state = (
-        ("step", _step),
-        ("error", _error),
-        ("chain", chain),
-    )
-}
-
-module __repl__ {
-    import base.* from "./base"
-    import chain.* from "./chain"
-    import abciServers.* from "./abciServers"
-    import network.* from "./network"
-    import mempoolv0.*
-    // import properties.* from "./properties"
-    import tests.* 
-} //-- __repl__
+// module __repl__ {
+//     import base.* from "./base"
+//     import chain as Chain from "./chain"
+//     // import abciServers as ABCI from "./abciServers"
+//     // import network as Network from "./network"
+//     import mempoolv0.*
+//     // import properties.* from "./properties"
+//     // import tests.* from "./tests"
+// } //-- __repl__

@@ -5,26 +5,26 @@ module chain {
     type Chain = List[Set[Tx]]
     var chain: Chain
 
-    val Chain_latestHeight = 
+    val latestHeight = 
         chain.length()
 
-    val Chain_isEmpty = 
+    val chainIsEmpty = 
         chain.length() == 0
 
-    def Chain_getBlock(h) =
+    def getBlock(h) =
         chain[h]
 
-    val Chain_allTxsInChain =
+    val allTxsInChain =
         chain.foldl(Set(), (s, x) => s.union(x))
 
     //--------------------------------------------------------------------------
-    action Chain_init =
+    action init =
         chain' = List()
 
-    action Chain_newBlockFrom(txs) =
+    action newBlockFrom(txs) =
         chain' = chain.append(txs)
 
-    action Chain_unchanged = 
+    action unchanged = 
         chain' = chain
 
     //--------------------------------------------------------------------------
@@ -35,23 +35,23 @@ module chain {
         else
             ch.slice(0, h).listToSet().flatten()
 
-    run txsUpToTest1 = Chain_init
+    run txsUpToTest1 = init
         .then(all {
             assert(chain.txsUpTo(0) == Set("")),
-            Chain_unchanged,
+            unchanged,
         })
 
     run txsUpToTest = txsUpToTest1
-        .then(Chain_newBlockFrom(Set("tx1")))
-        .then(Chain_newBlockFrom(Set("tx2", "tx3")))
+        .then(newBlockFrom(Set("tx1")))
+        .then(newBlockFrom(Set("tx2", "tx3")))
         .then(all {
             assert(chain.txsUpTo(1) == Set("tx1")),
             assert(chain.txsUpTo(2) == Set("tx1", "tx2", "tx3")),
-            Chain_unchanged,
+            unchanged,
         })
 
     // The transaction `tx` is committed to the chain, at most at height `h`.
-    def Chain_committedUpTo(tx: Tx, h: Height): bool = 
+    def committedUpTo(tx: Tx, h: Height): bool = 
         tx.in(chain.txsUpTo(h))
 
 }

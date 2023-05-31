@@ -45,10 +45,6 @@ module base {
     // const Txs: Set[Tx]
     val Txs: Set[Tx] = __Txs
     def isValidAt(tx: Tx, h: Height): bool = __isValidAt(tx, h)
-    
-    // Error
-    type Error = str
-    val noError: Error = "none"
 
     //--------------------------------------------------------------------------
     // More spells

@@ -2,6 +2,7 @@
 /* Messages as defined in the protobuf files */
 module abciMessages {
     import base.* from "./base"
+    import errors.* from "./errors"
 
     // [tendermint.abci.CheckTxType]: https://github.com/CometBFT/cometbft/blob/4790ea3e46475064d5475c787427ae926c5a9e94/proto/tendermint/abci/types.proto#L94
     val CheckTxTypes = Set("New", "Recheck")

@@ -152,7 +152,7 @@ module reactor {
 
 	// Global state
 
-	// Reactors are unique identified by their names.
+	// Reactors are uniquely identified by their names.
 	var reactors: str -> ReactorState
 
 	// Reactor (name) assigned to each channel ID.

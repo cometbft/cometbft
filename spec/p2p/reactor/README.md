@@ -23,7 +23,7 @@ The remaining of the documentation is organized as follows:
   a reactor.
   In other words, the interaction of the p2p layer with the protocol layer (bottom-up).
 
-- [API for Reactors](./p2p-api.md): documents the interface provided by the p2p
+- [P2P API](./p2p-api.md): documents the interface provided by the p2p
   layer to the reactors, through the `Switch` and `Peer` abstractions.
   In other words, the interaction of the protocol layer with the p2p layer (top-down).
 

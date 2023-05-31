@@ -1,15 +1,15 @@
 # Reactor API
 
-A component has to implement the [`p2p.Reactor`][reactor-interface] interface
+A component has to implement the [`p2p.Reactor` interface][reactor-interface]
 in order to use communication services provided by the p2p layer.
 This interface is currently the main source of documentation for a reactor.
 
 The goal of this document is to specify the behaviour of the p2p communication
 layer when interacting with a reactor.
-So while the [`Reactor`][reactor-interface] interface declares the methods
+So while the [`Reactor interface`][reactor-interface] declares the methods
 invoked and determines what the p2p layer expects from a reactor,
-this documentation focuses on the behaviour that a reactor implementation
-should expect from the p2p layer.
+this documentation focuses on the **temporal behaviour** that a reactor implementation
+should expect from the p2p layer. (That is, in which orders the functions may be called)
 
 This specification is accompanied by the [`reactor.qnt`](./reactor.qnt) file,
 a more comprehensive model of the reactor's operation written in

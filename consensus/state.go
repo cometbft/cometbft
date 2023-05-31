@@ -2013,6 +2013,8 @@ func (cs *State) handleCompleteProposal(blockHeight int64) {
 // Attempt to add the vote. if its a duplicate signature, dupeout the validator
 func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 	added, err := cs.addVote(vote, peerID)
+
+	// NOTE: some of these errors are swallowed here
 	if err != nil {
 		// If the vote height is off, we'll just ignore it,
 		// But if it's a conflicting sig, add it to the cs.evpool.
@@ -2087,6 +2089,10 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 
 		added, err = cs.LastCommit.AddVote(vote)
 		if !added {
+			// If the vote wasnt added but there's no error, its a duplicate vote
+			if err == nil {
+				cs.metrics.DuplicateVote.Add(1)
+			}
 			return
 		}
 
@@ -2161,6 +2167,11 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 	added, err = cs.Votes.AddVote(vote, peerID, extEnabled)
 	if !added {
 		// Either duplicate, or error upon cs.Votes.AddByIndex()
+
+		// If the vote wasnt added but there's no error, its a duplicate vote
+		if err == nil {
+			cs.metrics.DuplicateVote.Add(1)
+		}
 		return
 	}
 	if vote.Round == cs.Round {

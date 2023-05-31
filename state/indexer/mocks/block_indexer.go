@@ -5,6 +5,8 @@ package mocks
 import (
 	context "context"
 
+	log "github.com/cometbft/cometbft/libs/log"
+
 	mock "github.com/stretchr/testify/mock"
 
 	query "github.com/cometbft/cometbft/libs/pubsub/query"
@@ -79,6 +81,11 @@ func (_m *BlockIndexer) Search(ctx context.Context, q *query.Query) ([]int64, er
 	}
 
 	return r0, r1
+}
+
+// SetLogger provides a mock function with given fields: l
+func (_m *BlockIndexer) SetLogger(l log.Logger) {
+	_m.Called(l)
 }
 
 type mockConstructorTestingTNewBlockIndexer interface {

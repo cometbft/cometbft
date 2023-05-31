@@ -191,14 +191,22 @@ func (g *GrammarChecker) Verify(reqs []*abci.Request) (bool, error) {
 It takes a list of requests and does the following things:
 - filter the last height. Basically, it removes all ABCI++ requests after the 
 last `Commit`. This is needed because when we collect the requests, we collect 
-all requests from the start until we call `fetchABCIRequestsByNodeName()`. As a result the last height may be incomplete, and 
+all requests from the start until we call `fetchABCIRequestsByNodeName()`. As a result, the last height may be incomplete, and 
 the parser may return an error. The simple example here is that the last 
-request is `BeginBlock`; however `EndBlock` still did not happen, and the parser
-will return an error that `EndBlock` is missing, even though the `EndBlock` may happen but after the moment when the `fetchABCIRequestsByNodeName()` was invoked. 
-- generates an execution string by replacing each `abci.Request` with the 
-corresponding terminal from the grammar. For example, `abci.BeginBlock` 
-is replaced with `<BeginBlock>`. 
-- checks if the resulting string with terminals respects the grammar. This logic is implemented inside `VerifyExecution` function. 
+request is `BeginBlock`; however, `EndBlock` still did not happen, and the parser
+will return an error that `EndBlock` is missing, even though the `EndBlock` 
+may happen, but after the moment when the `fetchABCIRequestsByNodeName()` 
+was invoked. 
+- generates an execution string by replacing `abci.Request` with the 
+corresponding terminal from the grammar. This logic is implemented in
+`GetExecutionString()` function. This function receives a list of `abci.
+Request` and generates a string where each request that the grammar covers 
+will be replaced with a corresponding terminal. For example, `abci.
+BeginBlock` is replaced with `<BeginBlock>`. If the request is not covered 
+by the grammar, it will be ignored. 
+- checks if the resulting string with terminals respects the grammar. This 
+logic is implemented inside the `VerifyExecution` function. 
+
 ```go
 func (g *GrammarChecker) VerifyExecution(execution string) (bool, error) {
 	lexer := lexer.New([]rune(execution))
@@ -210,10 +218,10 @@ func (g *GrammarChecker) VerifyExecution(execution string) (bool, error) {
 	return true, nil
 }
 ```
-This function is the only function that is using auto-generated parser and 
-lexer. It returns true if the execution is valid, otherwise it returns an 
-error that is composed of parser errors and some additional information 
-that we added. An example of an error returned by `VerifyExecution`
+This function is the only function that uses auto-generated parser and 
+lexer. It returns true if the execution is valid. Otherwise, it returns an 
+error composed of parser errors and some additional information 
+we added. An example of an error produced by `VerifyExecution`
 is the following:
 
 ```
@@ -228,15 +236,16 @@ Execution:
 5:<DeliverTx> <DeliverTx> <DeliverTx> <DeliverTx> <DeliverTx>
 6:<DeliverTx> <DeliverTx> <DeliverTx> <EndBlock> <Commit>
 ```
-Parse error shown above represent an error that happened at grammar slot
+The parse error shown above represents an error that happened at the grammar slot
 `DeliverTx : ∙<DeliverTx>`, specifically an error occurs at token 
 `I[18]=<Commit> (217,225) <Commit>` which is 18th token in the whole 
-execution, at line 4 column 37. Instead of `<Commit>` the grammar was 
+execution, at line 4, column 37. Instead of `<Commit>` the grammar was 
 expecting either `<EndBlock>` or another `<DeliverTx>`.
 In addition, the output shows the lines around the line with an error. 
-Notice here that the parser can return a lot of errors. Usually, the error
-that happens later in the execution is more important. This is why at the 
-moment we are printing last 10, however this is part of the configuration and can be changed. 
+Notice here that the parser can return many errors because the parser returns an error at every point at which the parser fails to parse
+a grammar production. Usually, the error of interest is the one that has 
+parsed the largest number of tokens. This is why, at the 
+moment, we are printing the last 10 errors; however, this is part of the configuration and can be changed. 
 
 
 

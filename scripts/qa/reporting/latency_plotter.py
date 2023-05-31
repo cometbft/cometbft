@@ -59,7 +59,7 @@ for (key,ax) in zip(groups.groups.keys(), [axes] if ncols == 1 else axes.flatten
         startTime = subGroup['block_time'].min()
         dt = tz.localize(datetime.fromtimestamp(startTime)).astimezone(pytz.utc)
         print('exp ' + key + ' starts at ' + dt.strftime("%Y-%m-%dT%H:%M:%SZ"))
-        subGroupMod = subGroup['block_time'].apply(lambda x: x - startTime)
+        subGroupMod = subGroup['block_time'].apply(lambda x: x - startTime )
 
         (con,rate) = subKey
         label = 'c='+str(con) + ' r='+ str(rate)
@@ -101,6 +101,8 @@ for (key,ax) in zip(groups.groups.keys(), [axes] if ncols == 1 else axes.flatten
     for (subKey) in paramGroups.groups.keys():
         subGroup = paramGroups.get_group(subKey)
         startTime = subGroup['block_time'].min()
+        endTime = subGroup['block_time'].max()
+        print("duh ", endTime, " doh", endTime, " dah", endTime - startTime)
         subGroupMod = subGroup['block_time'].apply(lambda x: x - startTime)
         ax.scatter(subGroupMod, subGroup.duration_ns, label=label)
     #ax.legend()

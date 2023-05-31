@@ -45,19 +45,21 @@ ext_window_size = dict(seconds=200)
 #left_end = '2022-10-10T15:47:15Z' #TM v0.37.0-alpha.2 - rotating
 #left_end = '2023-05-23T08:09:50Z' #CMT v0.38.0-alpha.2 - rotating
 
-#right_end = pd.to_datetime(left_end) + pd.Timedelta(**window_size)
-#right_end = pd.to_datetime(left_end) + pd.Timedelta(**window_size)
-#time_window = (left_end, right_end.strftime('%Y-%m-%dT%H:%M:%SZ'))
-
 left_end = '2023-05-25T18:18:04Z' #CMT v0.38.0-alpha.2 - ve baseline
-right_end = '2023-05-25T18:54:04Z' #CMT v0.38.0-alpha.2 - ve baseline
 left_end = '2023-05-25T19:42:08Z' #CMT v0.38.0-alpha.2 - ve 8k
-right_end = '2023-05-25T20:16:00Z' #CMT v0.38.0-alpha.2 - ve 8k
-left_end = '2023-05-26T00:28:12Z' #CMT v0.38.0-alpha.2 - ve 16k
-right_end = '2023-05-26T01:01:57Z' #CMT v0.38.0-alpha.2 - ve 16k 
-left_end = '2023-05-26T02:12:27Z' #CMT v0.38.0-alpha.2 - ve 32k
-right_end = '2023-05-26T02:46:19Z' #CMT v0.38.0-alpha.2 - ve 32k 
-time_window = (left_end, right_end)
+#left_end = '2023-05-26T00:28:12Z' #CMT v0.38.0-alpha.2 - ve 16k
+#left_end = '2023-05-26T02:12:27Z' #CMT v0.38.0-alpha.2 - ve 32k
+
+#right_end = '2023-05-25T18:54:04Z' #CMT v0.38.0-alpha.2 - ve baseline
+#right_end = '2023-05-25T20:16:00Z' #CMT v0.38.0-alpha.2 - ve 8k
+#right_end = '2023-05-26T01:01:57Z' #CMT v0.38.0-alpha.2 - ve 16k 
+#right_end = '2023-05-26T02:46:19Z' #CMT v0.38.0-alpha.2 - ve 32k 
+right_end = pd.to_datetime(left_end) + pd.Timedelta(**window_size)
+
+#If you set only the left end, then use the next.
+time_window = (left_end, right_end.strftime('%Y-%m-%dT%H:%M:%SZ'))
+#Otherwise, use the next.
+#time_window = (left_end, right_end)
 
 ext_right_end = pd.to_datetime(left_end) + pd.Timedelta(**ext_window_size)
 ext_time_window = (left_end, ext_right_end.strftime('%Y-%m-%dT%H:%M:%SZ'))

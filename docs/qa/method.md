@@ -232,9 +232,10 @@ This section explains how the tests were carried out for reproducibility purpose
     * set makefile variables `ROTATE_CONNECTIONS`, `ROTATE_TX_RATE`, to values that will produce the desired transaction load.
     * set `ROTATE_TOTAL_TIME` to 150 (seconds).
     * set `ITERATIONS` to the number of iterations that each configuration should run for.
+6. Execute steps 5-10 of the `README.md` file at the testnet repository.
 
 7. Repeat the following steps for each desired `vote_extension_size`
-    1. Update the configuration
+    1. Update the configuration (you can skip this step if you didn't change the `vote_extension_size`)
         * Update the `vote_extensions_size` in the `testnet.toml` to the desired value.
         * `make configgen`
         * `ANSIBLE_SSH_RETRIES=10 ansible-playbook ./ansible/re-init-testapp.yaml -u root -i ./ansible/hosts --limit=validators -e "testnet_dir=testnet" -f 20`

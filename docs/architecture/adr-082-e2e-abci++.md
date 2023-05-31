@@ -216,6 +216,32 @@ error that is composed of parser errors and some additional information
 that we added. An example of an error returned by `VerifyExecution`
 is the following:
 
+```
+***Error 0***
+Parse Error: DeliverTx : ∙<DeliverTx>  I[18]=<Commit> (217,225) <Commit> at line 4 col 37
+Expected one of: [<EndBlock>,<DeliverTx>]
+Execution:
+1:<InitChain> <BeginBlock> <DeliverTx> <DeliverTx> <DeliverTx>
+2:<DeliverTx> <DeliverTx> <DeliverTx> <DeliverTx> <DeliverTx>
+3:<DeliverTx> <DeliverTx> <DeliverTx> <DeliverTx> <DeliverTx>
+4:<DeliverTx> <DeliverTx> <DeliverTx> <Commit> <BeginBlock>
+5:<DeliverTx> <DeliverTx> <DeliverTx> <DeliverTx> <DeliverTx>
+6:<DeliverTx> <DeliverTx> <DeliverTx> <EndBlock> <Commit>
+```
+Parse error shown above represent an error that happened at grammar slot
+`DeliverTx : ∙<DeliverTx>`, specifically an error occurs at token 
+`I[18]=<Commit> (217,225) <Commit>` which is 18th token in the whole 
+execution, at line 4 column 37. Instead of `<Commit>` the grammar was 
+expecting either `<EndBlock>` or another `<DeliverTx>`.
+In addition, the output shows the lines around the line with an error. 
+Notice here that the parser can return a lot of errors. Usually, the error
+that happens later in the execution is more important. This is why at the 
+moment we are printing last 10, however this is part of the configuration and can be changed. 
+
+
+
+
+
 
 
 

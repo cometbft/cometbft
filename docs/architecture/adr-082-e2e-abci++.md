@@ -82,7 +82,8 @@ We can now use the list of `abci.Request` to refer to ABCI++ requests of any typ
 The idea here was to find a library that automatically verifies whether a specific execution respects the prescribed grammar. 
 
 <strong>Implementation</strong>
-We found the following library - https://github.com/goccmack/gogll. It generates a GLL or LR(1) parser and FSA-based lexer for any context-free grammar. What we needed to do is to write ABCI++ grammar (ref to the grammar)
+
+We found the following library - https://github.com/goccmack/gogll. It generates a GLL or LR(1) parser and FSA-based lexer for any context-free grammar. What we needed to do is to rewrite ABCI++ grammar (ref to the grammar)
 using the synthax that the library understand. 
 The new grammar is below and can be found inside `test/e2e/pkg/grammar/abci_grammar.md` file.
 
@@ -169,13 +170,51 @@ Specifically, it first fetches all ABCI++ requests and creates a `GrammarChecker
 node in the testnet it checks if a specific set of requests respects the ABCI++ 
 grammar by calling `checker.Verify(reqs)` method. If this method returns an error, the specific execution does not respect the grammar. 
 
-The `Verify()` method is shown below. It takes a list of requests and does the following things:
+The `Verify()` method is shown below. 
+```go
+
+func (g *GrammarChecker) Verify(reqs []*abci.Request) (bool, error) {
+	var r []*abci.Request
+	var n int
+	if g.cfg.FilterLastHeight {
+		r, n = g.filterLastHeight(reqs)
+		if n != 0 {
+			debugMsg := fmt.Sprintf("Last height filtered, removed last %v abci calls out of %v.\n", n, len(reqs))
+			g.logger.Debug(debugMsg)
+		}
+	}
+	s, _ := g.GetExecutionString(r)
+	return g.VerifyExecution(s)
+}
+```
+
+It takes a list of requests and does the following things:
 - filter the last height. Basically, it removes all ABCI++ requests after the 
 last `Commit`. This is needed because when we collect the requests, we collect 
 all requests from the start until we call `fetchABCIRequestsByNodeName()`. As a result the last height may be incomplete, and 
 the parser may return an error. The simple example here is that the last 
 request is `BeginBlock`; however `EndBlock` still did not happen, and the parser
 will return an error that `EndBlock` is missing, even though the `EndBlock` may happen but after the moment when the `fetchABCIRequestsByNodeName()` was invoked. 
+- generates an execution string by replacing each `abci.Request` with the 
+corresponding terminal from the grammar. For example, `abci.BeginBlock` 
+is replaced with `<BeginBlock>`. 
+- checks if the resulting string with terminals respects the grammar. This logic is implemented inside `VerifyExecution` function. 
+```go
+func (g *GrammarChecker) VerifyExecution(execution string) (bool, error) {
+	lexer := lexer.New([]rune(execution))
+	_, errs := parser.Parse(lexer)
+	if len(errs) > 0 {
+		err := g.combineParseErrors(execution, errs, g.cfg.MaxNumberOfErrorsToShow)
+		return false, err
+	}
+	return true, nil
+}
+```
+This function is the only function that is using auto-generated parser and 
+lexer. It returns true if the execution is valid, otherwise it returns an 
+error that is composed of parser errors and some additional information 
+that we added. An example of an error returned by `VerifyExecution`
+is the following:
 
 
 

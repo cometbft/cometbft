@@ -64,6 +64,9 @@ type Metrics struct {
 	// Number of block parts transmitted by each peer.
 	BlockParts metrics.Counter `metrics_labels:"peer_id"`
 
+	// Number of times we received a duplicate block part
+	DuplicateBlockPart metrics.Counter
+
 	// Number of times we received a duplicate vote
 	DuplicateVote metrics.Counter
 

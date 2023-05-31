@@ -84,6 +84,7 @@ type Testnet struct {
 	UpgradeVersion             string
 	Prometheus                 bool
 	VoteExtensionsEnableHeight int64
+	VoteExtensionSize          uint
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -161,6 +162,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		UpgradeVersion:             manifest.UpgradeVersion,
 		Prometheus:                 manifest.Prometheus,
 		VoteExtensionsEnableHeight: manifest.VoteExtensionsEnableHeight,
+		VoteExtensionSize:          manifest.VoteExtensionSize,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType

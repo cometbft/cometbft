@@ -258,7 +258,7 @@ func (mem *CListMempool) CheckTx(
 		// (eg. after committing a block, txs are removed from mempool but not cache),
 		// so we only record the sender for txs still in the mempool.
 		if memTx := mem.getMemTx(tx.Key()); memTx != nil {
-			memTx.AddSender(txInfo.SenderID)
+			memTx.addSender(txInfo.SenderID)
 			// TODO: consider punishing peer for dups,
 			// its non-trivial since invalid txs can become valid,
 			// but they can spam the same tx with little cost to them atm.
@@ -400,7 +400,7 @@ func (mem *CListMempool) resCbFirstTime(
 				gasWanted: r.CheckTx.GasWanted,
 				tx:        tx,
 			}
-			memTx.AddSender(txInfo.SenderID)
+			memTx.addSender(txInfo.SenderID)
 			mem.addTx(memTx)
 			mem.logger.Debug(
 				"added good transaction",

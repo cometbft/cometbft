@@ -181,7 +181,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// NOTE: Transaction batching was disabled due to
 		// https://github.com/tendermint/tendermint/issues/5796
 
-		if !memTx.IsSender(peerID) {
+		if !memTx.isSender(peerID) {
 			success := peer.Send(p2p.Envelope{
 				ChannelID: MempoolChannel,
 				Message:   &protomem.Txs{Txs: [][]byte{memTx.tx}},

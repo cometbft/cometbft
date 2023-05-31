@@ -23,12 +23,12 @@ func (memTx *mempoolTx) Height() int64 {
 	return atomic.LoadInt64(&memTx.height)
 }
 
-func (memTx *mempoolTx) IsSender(peerID uint16) bool {
+func (memTx *mempoolTx) isSender(peerID uint16) bool {
 	_, ok := memTx.senders.Load(peerID)
 	return ok
 }
 
-func (memTx *mempoolTx) AddSender(senderID uint16) bool {
+func (memTx *mempoolTx) addSender(senderID uint16) bool {
 	_, added := memTx.senders.LoadOrStore(senderID, true)
 	return added
 }

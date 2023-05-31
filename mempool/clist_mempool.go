@@ -455,7 +455,7 @@ func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 			// Tx became invalidated due to newly committed block.
 			mem.logger.Debug("tx is no longer valid", "tx", tx.Hash(), "res", r, "err", postCheckErr)
 			if err := mem.RemoveTxByKey(memTx.tx.Key()); err != nil {
-				mem.logger.Debug("Transaction could not be removed from mempool", err)
+				mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
 			}
 			// We remove the invalid tx from the cache because it might be good later
 			if !mem.config.KeepInvalidTxsInCache {

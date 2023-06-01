@@ -508,8 +508,9 @@ The same conclusion reached for CPU usage may be drawn for the memory.
 That is, that a backlog of work is formed during the tests and catching up (freeing of memory) happens after the test is done.
 
 > :warning:
-> A more worrying trend is that the bottom of the memory usage seems to increase in between runs.
-> This will be investigated in a future issue.
+A more worrying trend is that the bottom of the memory usage seems to increase in between runs.
+We have investigated this in longer runs and confirmed that there is no such a trend.
+
 
 
 | Experiment   | Resident Set Size                                        |

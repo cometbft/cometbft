@@ -83,7 +83,7 @@ The idea here was to find a library that automatically verifies whether a specif
 
 <strong>Implementation</strong>
 
-We found the following library - https://github.com/goccmack/gogll. It generates a GLL or LR(1) parser and FSA-based lexer for any context-free grammar. What we needed to do is to rewrite ABCI++ grammar ([CometBFT's expected behaviour](../../spec/abci/abci%2B%2B_tmint_expected_behavior.md#valid-method-call-sequences))
+We found the following library - https://github.com/goccmack/gogll. It generates a GLL or LR(1) parser and FSA-based lexer for any context-free grammar. What we needed to do is to rewrite ABCI++ grammar ([CometBFT's expected behaviour](../../spec/abci/abci%2B%2B_comet_expected_behavior.md#valid-method-call-sequences))
 using the synthax that the library understand. 
 The new grammar is below and can be found inside `test/e2e/pkg/grammar/abci_grammar.md` file.
 
@@ -125,7 +125,7 @@ ProcessProposal : "<ProcessProposal>" ;
  ```
 
 If you compare this grammar with the original one, you will notice that 
-`Info` is removed. The reason is that, as explained in the section [CometBFT's expected behaviour](../../spec/abci/abci%2B%2B_tmint_expected_behavior.md#valid-method-call-sequences), one of the 
+`Info` is removed. The reason is that, as explained in the section [CometBFT's expected behaviour](../../spec/abci/abci%2B%2B_comet_expected_behavior.md#valid-method-call-sequences), one of the 
 purposes of the `Info` method is being part of the RPC handling from an external 
 client. Since this can happen at any time, it cannot be expressed with the 
 grammar.  

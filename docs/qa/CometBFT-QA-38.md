@@ -366,9 +366,9 @@ number of transactions processed per minute as compared to the baseline.
 In this testnet we evaluate the effect of varying the sizes of vote extensions added to pre-commit votes on the performance of CometBFT.
 The test uses the Key/Value store in our [[end-to-end]] test framework, which has the following simplified flow:
 
-1. When validators send their pre-commit votes to a block of height $i$, they first extend the vote as they seem fit in `ExtendVote`
+1. When validators send their pre-commit votes to a block of height $i$, they first extend the vote as they see fit in `ExtendVote`.
 2. When a proposer for height $i+1$ creates a block to propose, in `PrepareProposal`, it prepends the transactions with a special transaction, which modifies a reserved key. The transaction value is derived from the extensions from height $i$; in this example, the value is derived from the vote extensions and includes the set itself, hexa encoded as string.
-3. When a validator send their pre-vote for the block proposed in $i+1$, they first double check in `ProcessProposal` that the special transaction in the block was properly built by the proposer.
+3. When a validator sends their pre-vote for the block proposed in $i+1$, they first double check in `ProcessProposal` that the special transaction in the block was properly built by the proposer.
 4. When validators send their pre-commit for the block proposed in $i+1$, they first extend the vote, and the steps repeat for heights $i+2$ and so on.
 
 For this test, extensions are random sequences of bytes with a predefined `vote_extension_size`.
@@ -376,7 +376,7 @@ Hence, two effects are seen on the network.
 First, pre-commit vote message sizes will increase by the specified `vote_extension_size` and, second, block messages will increase by 117 x `vote_extension_size` x 2, where 117 is the quorum size in the testnet and 2 comes from hexa encoding the extensions.
 
 All tests were performed on commit d5baba237ab3a04c1fd4a7b10927ba2e6a2aab27, which corresponds to v0.38.0-alpha.2 plus commits to add the ability to vary the vote extension sizes to the test application.
-Although the same commit is used for the baseline, in this configuration the behavior observed is the same as in the "vanila" v0.38.0-alpha.2 test application, that is, vote extensions are 8-byte integers, compressed as variable size integers instead of a random sequence of size `vote_extension_size`.
+Although the same commit is used for the baseline, in this configuration the behavior observed is the same as in the "vanilla" v0.38.0-alpha.2 test application, that is, vote extensions are 8-byte integers, compressed as variable size integers instead of a random sequence of size `vote_extension_size`.
 
 The following table summarizes the test cases.
 
@@ -424,7 +424,7 @@ Even in the case of extensions of size 2k, the mean latency goes from below 5s t
 The following graphs combine all the runs of the same experiment.
 They show that latency variation greatly increases with the increase of vote extensions.
 In particular, for the 16k and 32k cases, the system goes through large gaps without transaction delivery.
-As discussed later, this is the result of heights taking multiple rounds to finish and new transactions being held until the next block is agree upon.
+As discussed later, this is the result of heights taking multiple rounds to finish and new transactions being held until the next block is agreed upon.
 
 |                                                            |                                                  |
 | ---------------------------------------------------------- | ------------------------------------------------ |
@@ -471,8 +471,8 @@ Although the rate of transaction processing also decreases, it does not seem to 
 The effect of vote extensions are also felt on the number of rounds needed to reach consensus.
 The following graphs show the number of the highest round required to reach consensus during the whole experiment.
 
-In the baseline and low loads, most blocks were agreed upon during round 0.
-As the load increases, more and more blocks were required.
+In the baseline and low vote extension lengths, most blocks were agreed upon during round 0.
+As the load increases, more and more rounds were required.
 In the 32k case se see round 5 being reached frequently.
 
 | Experiment   | Number of Rounds per block                                    |
@@ -515,8 +515,8 @@ That is, that a backlog of work is formed during the tests and catching up (free
 | Experiment   | Resident Set Size                                        |
 | ------------ | -------------------------------------------------------- |
 | **baseline** | ![rss-avg](img38/voteExtensions/baseline_avg_memory.png) |
-| **8k**       | ![rss-avg](img38/voteExtensions/02k_avg_memory.png)      |
-| **8k**       | ![rss-avg](img38/voteExtensions/04k_avg_memory.png)      |
+| **2k**       | ![rss-avg](img38/voteExtensions/02k_avg_memory.png)      |
+| **4k**       | ![rss-avg](img38/voteExtensions/04k_avg_memory.png)      |
 | **8k**       | ![rss-avg](img38/voteExtensions/08k_avg_memory.png)      |
 | **16k**      | ![rss-avg](img38/voteExtensions/16k_avg_memory.png)      |
 | **32k**      | ![rss-avg](img38/voteExtensions/32k_avg_memory.png)      |
@@ -530,8 +530,8 @@ Observe that in all runs, the average number of transactions in the mempool quic
 | Experiment   | Resident Set Size                                                  |
 | ------------ | ------------------------------------------------------------------ |
 | **baseline** | ![mempool-avg](img38/voteExtensions/baseline_avg_mempool_size.png) |
-| **8k**       | ![mempool-avg](img38/voteExtensions/02k_avg_mempool_size.png)      |
-| **8k**       | ![mempool-avg](img38/voteExtensions/04k_avg_mempool_size.png)      |
+| **2k**       | ![mempool-avg](img38/voteExtensions/02k_avg_mempool_size.png)      |
+| **4k**       | ![mempool-avg](img38/voteExtensions/04k_avg_mempool_size.png)      |
 | **8k**       | ![mempool-avg](img38/voteExtensions/08k_avg_mempool_size.png)      |
 | **16k**      | ![mempool-avg](img38/voteExtensions/16k_avg_mempool_size.png)      |
 | **32k**      | ![mempool-avg](img38/voteExtensions/32k_avg_mempool_size.png)      |
@@ -559,7 +559,7 @@ Observe that in all runs, the average number of transactions in the mempool quic
 
 | Scenario | Date       | Version                                                                               | Result |
 | -------- | ---------- | ------------------------------------------------------------------------------------- | ------ |
-| Rotating | 2023-05-23 | v0.38.0-alpha.2 + varying vote extensions  (9fc711b6514f99b2dc0864fc703cb81214f01783) |        |
+| VESize | 2023-05-23 | v0.38.0-alpha.2 + varying vote extensions  (9fc711b6514f99b2dc0864fc703cb81214f01783) |        |
 
 #### Conclusions
 

@@ -941,7 +941,7 @@ type ConsensusConfig struct {
 
 	DoubleSignCheckHeight int64 `mapstructure:"double_sign_check_height"`
 
-	// toggle HasBlockPart
+	// toggle sending the HasProposalBlockPart message
 	HasBlockPart bool `mapstructure:"has_block_part"`
 }
 

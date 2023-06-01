@@ -461,8 +461,12 @@ skip_timeout_commit = {{ .Consensus.SkipTimeoutCommit }}
 create_empty_blocks = {{ .Consensus.CreateEmptyBlocks }}
 create_empty_blocks_interval = "{{ .Consensus.CreateEmptyBlocksInterval }}"
 
+# Should we send HasProposalBlockParts messages?
+has_block_part = "{{ .Consensus.HasBlockPart }}"
+
 # Reactor sleep duration parameters
 peer_gossip_sleep_duration = "{{ .Consensus.PeerGossipSleepDuration }}"
+peer_gossip_fast_sleep_duration = "{{ .Consensus.PeerGossipFastSleepDuration }}"
 peer_query_maj23_sleep_duration = "{{ .Consensus.PeerQueryMaj23SleepDuration }}"
 
 #######################################################

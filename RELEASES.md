@@ -325,8 +325,8 @@ and limitation that real-world  deployments of CometBFT experience in production
 #### 200 Node Testnet
 
 To test the stability and performance of CometBFT in a real world scenario,
-a 200 node test network is run. The network comprises 5 seed nodes, 100
-validators and 95 non-validating full nodes. All nodes begin by dialing
+a 200 node test network is run. The network comprises 5 seed nodes, 175
+validators and 20 non-validating full nodes. All nodes begin by dialing
 a subset of the seed nodes to discover peers. The network is run for several
 days, with metrics being collected continuously. In cases of changes to performance
 critical systems, testnets of larger sizes should be considered.

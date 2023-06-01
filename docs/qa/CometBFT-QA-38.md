@@ -373,7 +373,7 @@ The test uses the Key/Value store in our [[end-to-end]] test framework, which ha
 
 For this test, extensions are random sequences of bytes with a predefined `vote_extension_size`.
 Hence, two effects are seen on the network.
-First, pre-commit vote message sizes will increase by the specified `vote_extension_size` and, second, block messages will increase by 117 x `vote_extension_size` x 2, where 117 is the quorum size in the testnet and 2 comes from hexa encoding the extensions.
+First, pre-commit vote message sizes will increase by the specified `vote_extension_size` and, second, block messages will increase by twice  `vote_extension_size`, given then hexa encoding of extensions, times the number of extensions received, i.e. at least 2/3 of 175.
 
 All tests were performed on commit d5baba237ab3a04c1fd4a7b10927ba2e6a2aab27, which corresponds to v0.38.0-alpha.2 plus commits to add the ability to vary the vote extension sizes to the test application.
 Although the same commit is used for the baseline, in this configuration the behavior observed is the same as in the "vanilla" v0.38.0-alpha.2 test application, that is, vote extensions are 8-byte integers, compressed as variable size integers instead of a random sequence of size `vote_extension_size`.
@@ -538,21 +538,6 @@ Observe that in all runs, the average number of transactions in the mempool quic
 
 
 
-#### Observations/Questions/TODOs
-
-* what is the effect on block sizes
-    * how is the block size limited? do the extensions fit? the proposal itself is small.
-    * block sizes depending on the extension sizes
-* what is the effect on the network usage
-* txs per block depending on the extension sizes
-    * remember that there is one special transaction
-* we need to evaluate the effect of transaction sizes as well.
-* the mempool never got completely empty on some nodes
-* 5 minute interval to clean up the mempool. heights continue to happen, with vote extensions.
-* if the mempool size drops quickly, why is the memory slow to empty? Slow GC?
-* run with longer timeouts
-* run baseline for 20 minutes straight.
-
 
 
 ### Results
@@ -561,9 +546,6 @@ Observe that in all runs, the average number of transactions in the mempool quic
 | -------- | ---------- | ------------------------------------------------------------------------------------- | ------ |
 | VESize | 2023-05-23 | v0.38.0-alpha.2 + varying vote extensions  (9fc711b6514f99b2dc0864fc703cb81214f01783) |        |
 
-#### Conclusions
-
-
 
 
 [\#9539]: https://github.com/tendermint/tendermint/issues/9539
@@ -571,4 +553,4 @@ Observe that in all runs, the average number of transactions in the mempool quic
 [\#539]: https://github.com/cometbft/cometbft/issues/539
 [\#546]: https://github.com/cometbft/cometbft/issues/546
 [\#562]: https://github.com/cometbft/cometbft/issues/562
-[end-to-end]: TODO
+[end-to-end]: https://github.com/cometbft/cometbft/tree/main/test/e2e

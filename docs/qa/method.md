@@ -259,4 +259,4 @@ In order to obtain a latency plot, follow the instructions above for the 200 nod
 * The `results.txt` file contains only one experiment
 * Therefore, no need for any `for` loops
 
-As for prometheus, the same method as for the 200 node experiment can be applied.
+As for Prometheus, the same method as for the 200 node experiment can be applied.

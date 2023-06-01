@@ -3,6 +3,7 @@ package consensus
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"reflect"
 	"sync"
 	"time"
@@ -573,6 +574,15 @@ OUTER_LOOP:
 		if !peer.IsRunning() || !conR.IsRunning() {
 			return
 		}
+
+		if conR.conS.config.PeerGossipFastSleepDuration > 0 {
+			// config sets upper bound for sleep. convert to int and pick a random amount to sleep
+			// TODO: assumes its in ms. should be fine but fix.
+			msInt := int(conR.conS.config.PeerGossipFastSleepDuration / time.Millisecond)
+			r := time.Duration(rand.Intn(msInt))
+			time.Sleep(r * time.Millisecond)
+		}
+
 		rs := conR.getRoundState()
 		prs := ps.GetRoundState()
 
@@ -731,6 +741,15 @@ func (conR *Reactor) gossipVotesRoutine(peer p2p.Peer, ps *PeerState) {
 
 OUTER_LOOP:
 	for {
+
+		if conR.conS.config.PeerGossipFastSleepDuration > 0 {
+			// config sets upper bound for sleep. convert to int and pick a random amount to sleep
+			// TODO: assumes its in ms. should be fine but fix.
+			msInt := int(conR.conS.config.PeerGossipFastSleepDuration / time.Millisecond)
+			r := time.Duration(rand.Intn(msInt))
+			time.Sleep(r * time.Millisecond)
+		}
+
 		// Manage disconnects from self or peer.
 		if !peer.IsRunning() || !conR.IsRunning() {
 			return
@@ -743,10 +762,6 @@ OUTER_LOOP:
 			sleeping = 2
 		case 2: // No more sleep
 			sleeping = 0
-		}
-
-		if conR.conS.config.PeerGossipFastSleepDuration > 0 {
-			time.Sleep(conR.conS.config.PeerGossipFastSleepDuration)
 		}
 
 		// logger.Debug("gossipVotesRoutine", "rsHeight", rs.Height, "rsRound", rs.Round,

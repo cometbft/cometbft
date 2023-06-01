@@ -14,9 +14,8 @@ module params {
 
     // network topology
     val __Peers = Map(
-        "n1" -> Set("n2", "n3"),
-        "n2" -> Set("n1", "n3"),
-        "n3" -> Set("n1", "n2")
+        "n1" -> Set("n2"),
+        "n2" -> Set("n1")
     )
 
     val __MempoolMaxSize: int = 2
@@ -92,5 +91,8 @@ module base {
     ///   will map to __values(k)
     pure def mapPutMany(__map: a -> b, __keys: Set[a], __values: a => b): (a -> b) = 
         __map.keys().union(__keys).mapBy(k => if (k.in(__keys)) __values(k) else __map.get(k))
+
+    pure def mapValues(__map: a -> b): Set[b] = 
+        __map.keys().map(k => __map.get(k))
 
 }

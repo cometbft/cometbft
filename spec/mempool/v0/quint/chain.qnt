@@ -11,8 +11,8 @@ module chain {
     val chainIsEmpty = 
         chain.length() == 0
 
-    def getBlock(h) =
-        chain[h]
+    def getBlockAt(h) =
+        chain[h - 1]
 
     val allTxsInChain =
         chain.foldl(Set(), (s, x) => s.union(x))
@@ -21,7 +21,7 @@ module chain {
     action init =
         chain' = List()
 
-    action newBlockFrom(txs) =
+    action addNewBlock(txs) =
         chain' = chain.append(txs)
 
     action unchanged = 
@@ -35,23 +35,34 @@ module chain {
         else
             ch.slice(0, h).listToSet().flatten()
 
-    run txsUpToTest1 = init
-        .then(all {
-            assert(chain.txsUpTo(0) == Set("")),
-            unchanged,
-        })
-
-    run txsUpToTest = txsUpToTest1
-        .then(newBlockFrom(Set("tx1")))
-        .then(newBlockFrom(Set("tx2", "tx3")))
-        .then(all {
-            assert(chain.txsUpTo(1) == Set("tx1")),
-            assert(chain.txsUpTo(2) == Set("tx1", "tx2", "tx3")),
-            unchanged,
-        })
-
     // The transaction `tx` is committed to the chain, at most at height `h`.
     def committedUpTo(tx: Tx, h: Height): bool = 
         tx.in(chain.txsUpTo(h))
 
+    //--------------------------------------------------------------------------
+    run chainTest = (chain' = List())
+        .then(all {
+            assert(latestHeight == 0),
+            assert(allTxsInChain == Set()),
+            assert(chain.txsUpTo(0) == Set()),
+            unchanged,
+        })
+        .then(addNewBlock(Set("tx1")))
+        .then(all {
+            assert(latestHeight == 1),
+            assert(allTxsInChain == Set("tx1")),
+            assert(chain.txsUpTo(1) == Set("tx1")),
+            assert(getBlockAt(1) == Set("tx1")),
+            unchanged,
+        })
+        .then(addNewBlock(Set("tx2", "tx3")))
+        .then(all {
+            assert(latestHeight == 2),
+            assert(allTxsInChain == Set("tx1", "tx2", "tx3")),
+            assert(chain.txsUpTo(0) == Set()),
+            assert(chain.txsUpTo(1) == Set("tx1")),
+            assert(chain.txsUpTo(2) == Set("tx1", "tx2", "tx3")),
+            assert(getBlockAt(2) == Set("tx2", "tx3")),
+            unchanged,
+        })
 }

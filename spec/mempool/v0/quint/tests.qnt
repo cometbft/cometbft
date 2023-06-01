@@ -1,8 +1,9 @@
 module tests {
     import base.* from "./base"
     import basicSpells.* from "./basicSpells"
-    import chain as Chain from "./chain"
+    import errors.* from "./errors"
     import mempoolv0.* from "./mempoolv0"
+    import chain as Chain from "./chain"
     import abciServers as ABCI from "./abciServers"
     import network as Network from "./network"
     import history as History from "./history"
@@ -34,7 +35,6 @@ module tests {
     // Tests
     //--------------------------------------------------------------------------
     run test1 = init
-        .then(assert_(tx1.isValidAt(1)))
         .then(node1.CheckTx_RPC(tx1))
         .then(node1.ReceiveCheckTxResponse())
         .then(assert_(node1.inMempool(tx1) and tx1.in(node1.Cache())))
@@ -57,11 +57,40 @@ module tests {
         .then(assert_(not(node2.inMempool(tx1)) and tx1.in(node2.Cache())))
 
     run testInvalid1 = init
-        .then(CheckTx_RPC(node1, tx3)) // tx3 is invalid at height 0 according to isValidAt
+        .then(assert_(not(tx3.isValidAt(0))))
+        .then(CheckTx_RPC(node1, tx3))
         .then(ReceiveCheckTxResponse(node1))
 
     //--------------------------------------------------------------------------
-    // Helper definitions
+    // an initial state with a non-empty chain
+    action init1 = all {
+        mempool' = NodeIds.mapBy(_ => Set()),
+        cache' = NodeIds.mapBy(_ => Set()),
+        _step' = { node: noNode, name: "init", args: Map() },
+        _error' = { node: noNode, error: noError },
+        mempoolHeight' = NodeIds.mapBy(_ => 0),
+        History::init,
+        Network::init,
+        Chain::chain' = List(Set("tx1")),
+        ABCI::init,
+    }
+
+    run testUpdate1 = init1
+        .then(node1.BlockExecutor_MempoolUpdate_nonProposer())
+        .then(assert_(not(node1.inMempool(tx1)) and tx1.in(node1.Cache())))
+
+    //--------------------------------------------------------------------------
+    // P2P
+    //--------------------------------------------------------------------------
+    run testNet1 = test1
+        .then(P2P_SendTx_(node1, node2))
+        .then(assert_(node2.Network::incomingMsgs().nonEmpty()))
+        .then(P2P_ReceiveTxs(node2))
+        .then(assert_(node2.Network::incomingMsgs().isEmpty()))
+        .then(assert_(tx1.in(node2.Cache())))
+
+    //--------------------------------------------------------------------------
+    // Helper functions for debugging
     //--------------------------------------------------------------------------
     def nodeState(node) = (
         ("mempool", node.Mempool()), 
@@ -80,4 +109,20 @@ module tests {
         ("error", _error),
         ("chain", Chain::chain),
     )
+
+    def history = (
+        ("historicMempoolTxs", History::historicMempoolTxs),
+        ("txsReceivedViaRPC", History::txsReceivedViaRPC),
+        ("gossippedTxs", History::gossippedTxs),
+    )
 }
+
+module __repl__ {
+    import base.* from "./base"
+    import chain as Chain from "./chain"
+    // import abciServers as ABCI from "./abciServers"
+    import network as Network from "./network"
+    import mempoolv0.* from "./mempoolv0"
+    import tests.* 
+    // import properties.* from "./properties"
+} //-- __repl__

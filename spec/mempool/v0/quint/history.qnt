@@ -57,14 +57,4 @@ module history {
         txsReceivedViaRPC' = txsReceivedViaRPC,
         gossippedTxs' = gossippedTxs,
     }
-
-    //--------------------------------------------------------------------------
-
-    // for debugging in repl
-    def history = (
-        ("historicMempoolTxs", historicMempoolTxs),
-        ("txsReceivedViaRPC", txsReceivedViaRPC),
-        ("gossippedTxs", gossippedTxs),
-    )
-
 }

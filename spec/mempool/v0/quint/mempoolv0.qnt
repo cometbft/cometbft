@@ -31,10 +31,6 @@ module mempoolv0 {
     // Auxiliary variables
     //--------------------------------------------------------------------------
     type Step = str
-    val Steps: Set[Step] = Set("init", "CheckTx", "ReceiveCheckTxResponse", 
-        "Update", "ReceiveRecheckTxResponse", "P2P_ReceiveTxs", "P2P_SendTx", 
-        "ABCI::ProcessCheckTxRequest")
-
     var _step: { node: NodeId, name: Step, args: str -> str }
 
     action setStep(node, s, args) =
@@ -174,22 +170,6 @@ module mempoolv0 {
         mempoolHeight' = mempoolHeight,
     }
 
-    /* Receive a specific transaction from a client via RPC. */
-    // [Environment.BroadcastTxAsync]: https://github.com/CometBFT/cometbft/blob/111d252d75a4839341ff461d4e0cf152ca2cc13d/rpc/core/mempool.go#L22
-    //-- __subaction__: this action is not part of the next-state relation
-    action CheckTx_RPC(node, tx) = all {
-        node.setStep("CheckTx", Map("node" -> tx)),
-        node.CheckTx(tx, noNode),
-        History::recordSubmittedTx(node, tx),
-        Network::unchanged,
-        Chain::unchanged,
-    }
-
-    /* Receive some transaction from a client via RPC. */
-    action ReceiveTxViaRPC(node) =
-        nondet tx = oneOf(Txs)
-        node.CheckTx_RPC(tx)
-
     // Callback function to process a CheckTx response.
     // Note that tx and sender are arguments to CListMempool.resCbFirstTime.
     // [CListMempool.resCbFirstTime]: https://github.com/CometBFT/cometbft/blob/6498d67efdf0a539e3ca0dc3e4a5d7cb79878bb2/mempool/clist_mempool.go#L369
@@ -267,34 +247,6 @@ module mempoolv0 {
         Network::unchanged,
     }
 
-    // Consensus reactor updates the mempool with the latest block just created
-    // and rechecks outstanding txs.
-    action Consensus_Update(node: NodeId): bool = all {
-        require(not(Chain::chainIsEmpty)),
-        require(node.MempoolHeight() <= Chain::latestHeight),
-        val h = node.MempoolHeight() + 1 // block's height
-        any {
-            // This node is not the proposer: take the block from the chain.
-            // All txs are valid because they are committed in the chain.
-            val txs: Set[Tx] = Chain::getBlock(node.MempoolHeight())
-            val txValidResults: Tx -> bool = txs.mapBy(_ => true)
-            all {
-                node.Update(h, txs, txValidResults),
-                Chain::unchanged,
-            },
-            all {
-                // This node is the proposer: take the block from the mempool.
-                require(node.mempoolTxs().nonEmpty()),
-                nondet txs: Set[Tx] = oneOf(node.mempoolTxs().nonEmptyPowerset())
-                val txValidResults: Tx -> bool = txs.mapBy(tx => isValidAt(tx, h))
-                all {
-                    node.Update(h, txs, txValidResults),
-                    Chain::newBlockFrom(txs),
-                }
-            },
-        }
-    }
-
     // Callback function to process a CheckTx response, when rechecking.
     // [CListMempool.resCbRecheck]: https://github.com/CometBFT/cometbft/blob/6498d67efdf0a539e3ca0dc3e4a5d7cb79878bb2/mempool/clist_mempool.go#L432
     action ReceiveRecheckTxResponse(node: NodeId): bool = all {
@@ -322,9 +274,65 @@ module mempoolv0 {
         Network::unchanged,
         Chain::unchanged,
     }
+    //--------------------------------------------------------------------------
+    // RPC initiated actions
+    //--------------------------------------------------------------------------
+    /* Receive a specific transaction from a client via RPC. */
+    // [Environment.BroadcastTxAsync]: https://github.com/CometBFT/cometbft/blob/111d252d75a4839341ff461d4e0cf152ca2cc13d/rpc/core/mempool.go#L22
+    //-- __subaction__: this action is not part of the next-state relation
+    action CheckTx_RPC(node, tx) = all {
+        node.setStep("ReceiveTxViaRPC", Map("node" -> tx)),
+        node.CheckTx(tx, noNode),
+        History::recordSubmittedTx(node, tx),
+        Network::unchanged,
+        Chain::unchanged,
+    }
+
+    /* Receive some transaction from a client via RPC. */
+    action ReceiveTxViaRPC(node) =
+        nondet tx = oneOf(Txs)
+        node.CheckTx_RPC(tx)
+
+    /* Receive some transaction from a client via RPC: only a transaction that
+     * was not sent before. */
+    action ReceiveNonRepeatedTxViaRPC(node) =
+        nondet tx = oneOf(Txs.exclude(History::txsReceivedViaRPC.mapValues().flatten()))
+        node.CheckTx_RPC(tx)
 
     //--------------------------------------------------------------------------
-    // P2P Reactor actions
+    // Consensus actions
+    //--------------------------------------------------------------------------
+    // Consensus reactor's BlockExecutor updates the mempool with the latest
+    // block it created and rechecks outstanding txs.
+    // This node is not the proposer: take the block from the chain.
+    //-- __subaction__: this action is not part of the next-state relation
+    action BlockExecutor_MempoolUpdate_nonProposer(node) = all {
+        require(not(Chain::chainIsEmpty)),
+        require(node.MempoolHeight() <= Chain::latestHeight),
+        val nextBlockHeight = node.MempoolHeight() + 1
+        val txs: Set[Tx] = Chain::getBlockAt(nextBlockHeight)
+        // All txs are valid because they are committed in the chain.
+        node.Update(nextBlockHeight, txs, txs.mapBy(_ => true)),
+        Chain::unchanged,
+    }
+
+    // Consensus reactor's BlockExecutor updates the mempool with the latest
+    // block it created and rechecks outstanding txs.
+    // This node is the proposer: create a block from the mempool.
+    //-- __subaction__: this action is not part of the next-state relation
+    action BlockExecutor_MempoolUpdate_proposer(node) = all {
+        require(node.mempoolTxs().nonEmpty()),
+        val nextBlockHeight = node.MempoolHeight() + 1
+        nondet txs = oneOf(node.mempoolTxs().nonEmptyPowerset())
+        all {
+            val txValidResults: Tx -> bool = txs.mapBy(tx => tx.isValidAt(nextBlockHeight))
+            node.Update(nextBlockHeight, txs, txValidResults),
+            Chain::addNewBlock(txs),
+        }
+    }
+
+    //--------------------------------------------------------------------------
+    // Mempool reactor (P2P) actions
     //--------------------------------------------------------------------------
     /* Receive a Txs message from a peer, and calls CheckTx on each Tx. */
     // [Reactor.Receive]: https://github.com/CometBFT/cometbft/blob/111d252d75a4839341ff461d4e0cf152ca2cc13d/mempool/reactor.go#L93
@@ -340,7 +348,7 @@ module mempoolv0 {
         }
     }
 
-    /* The reactor loops through its mempool and sends the tx one by one to all
+    /* The reactor loops through its mempool and sends the tx one by one to
      * each of its peers. */
     //-- __subaction__: this action is not part of the next-state relation
     action P2P_SendTx_(node: NodeId, peer: NodeId): bool = all {
@@ -369,18 +377,48 @@ module mempoolv0 {
         nondet peer = oneOf(Network::Peers.get(node))
         node.P2P_SendTx_(peer)
 
+    /* The reactor sends at once a tx in the mempool to all its peers. */
+    // [Reactor.broadcastTxRoutine]: https://github.com/CometBFT/cometbft/blob/5049f2cc6cf519554d6cd90bcca0abe39ce4c9df/mempool/reactor.go#L132
+    action P2P_BroadcastTx(node: NodeId): bool = all {
+        node.setStep("P2P_BroadcastTx", Map("node" -> node)),
+        require(not(node.mempoolIsEmpty())),
+        nondet tx = oneOf(node.mempoolTxs())
+        val msg = { tag: "Txs", senderId: node, tx: tx }
+        val peers = Network::Peers.get(node).exclude(node.sendersFor(tx))
+        all {
+            // If the msg was not already sent to all the peers.
+            require(peers.forall(peer => peer.Network::incomingMsgs().forall(m => m != msg))),
+            Network::sendToMany(msg, peers),
+            node.setError(noError),
+            node.History::recordGossippedTx(tx),
+            mempool' = mempool,
+            cache' = cache,
+            mempoolHeight' = mempoolHeight,
+            ABCI::unchanged,
+            Chain::unchanged,
+        }
+    }
+
+    //--------------------------------------------------------------------------
     /* All possible actions on a node. */
     action NodeNext =
         nondet node = oneOf(NodeIds)
         any {
             // Receive a transaction from a client via RPC endpoints broadcast_tx_*
             node.ReceiveTxViaRPC(),
+            // Receive a transaction from a client via RPC endpoints broadcast_tx_*, only transactions not sent before.
+            // node.ReceiveNonRepeatedTxViaRPC(),
 
             // Receive a (New) CheckTx response from the application
             node.ReceiveCheckTxResponse(),
 
-            // Consensus reactor updates the mempool and rechecks txs
-            node.Consensus_Update(),
+            // Consensus reactor's BlockExecutor updates the mempool and rechecks txs.
+            // There are two cases:
+            // - The node is not the proposer: it computes the block from consensus votes 
+            //   (here it takes the block from the chain).
+            node.BlockExecutor_MempoolUpdate_nonProposer(),
+            // - The node is the proposer: it creates a block from the mempool.
+            node.BlockExecutor_MempoolUpdate_proposer(),
 
             // Receive a (Recheck) CheckTx response from the application
             node.ReceiveRecheckTxResponse(),
@@ -389,7 +427,9 @@ module mempoolv0 {
             node.P2P_ReceiveTxs(),
 
             // Send a transaction in the mempool to a peer
-            node.P2P_SendTx(),
+            // node.P2P_SendTx(),
+            // Send a transaction in the mempool to all its peers
+            node.P2P_BroadcastTx(),
         }
 
     /* There may be action in other nodes too. */
@@ -400,7 +440,7 @@ module mempoolv0 {
             nondet txs = oneOf(notCommittedTxs.nonEmptyPowerset())
             all {
                 require(txs.forall(tx => isValidAt(tx, Chain::latestHeight + 1))),
-                Chain::newBlockFrom(txs),
+                Chain::addNewBlock(txs),
                 setStep(noNode, "ChainNext", txs.mapBy(x => x)),
                 setError(noNode, noError),
                 mempool' = mempool, 
@@ -412,15 +452,60 @@ module mempoolv0 {
             }
         }
     
-    action step = any { NodeNext, ChainNext }
-}
+    // action step = any { NodeNext, ChainNext }
+    action step = NodeNext
 
-// module __repl__ {
-//     import base.* from "./base"
-//     import chain as Chain from "./chain"
-//     // import abciServers as ABCI from "./abciServers"
-//     // import network as Network from "./network"
-//     import mempoolv0.*
-//     // import properties.* from "./properties"
-//     // import tests.* from "./tests"
-// } //-- __repl__
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    // NOTE: tried to move this section to its own module but for some reason
+    // quint complains.
+    //--------------------------------------------------------------------------
+    // Test properties that define scenarios for extracting traces
+    //--------------------------------------------------------------------------
+
+    // a node whose mempool is not empty
+    val mempoolNonEmpty = 
+        nondet node = oneOf(NodeIds)
+        node.mempoolTxs().nonEmpty()
+    val notMempoolNonEmpty = not(mempoolNonEmpty)
+
+    // a node whose cache has tx that is not in the mempool
+    val InCacheNotInMempool = 
+        nondet node = oneOf(NodeIds)
+        all {
+            node.Cache().nonEmpty(),
+            nondet tx = oneOf(node.Cache())
+            tx.notIn(node.mempoolTxs())
+        }
+    val notInCacheNotInMempool = not(InCacheNotInMempool)
+
+    // a node whose cache has tx that is also in the mempool
+    val InCacheInMempool = 
+        nondet node = oneOf(NodeIds)
+        all {
+            node.Cache().nonEmpty(),
+            nondet tx = oneOf(node.Cache())
+            tx.in(node.mempoolTxs())
+        }
+    val notInCacheInMempool = not(InCacheInMempool)
+
+    // two different nodes have the same tx in mempool
+    val SameTx = 
+        nondet tx = oneOf(Txs)
+        nondet n1 = oneOf(NodeIds)
+        nondet n2 = oneOf(NodeIds)
+        all {
+            n1 != n2,
+            tx.in(n1.mempoolTxs()),
+            tx.in(n2.mempoolTxs()),
+        }
+    val notSameTx = not(SameTx)
+
+    //--------------------------------------------------------------------------
+    val EmptyChain = 
+        Chain::chainIsEmpty
+
+    val FullChain = 
+        Chain::allTxsInChain == Txs
+    val notFullChain = not(FullChain)
+}

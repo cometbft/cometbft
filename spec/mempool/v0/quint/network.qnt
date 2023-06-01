@@ -20,10 +20,13 @@ module network {
         msgs' = NodeIds.mapBy(_ => Set())
 
     action sendTo(msg: TxsMsg, peer: NodeId): bool =
-        msgs' = msgs.mapPut(peer, (ms) => ms.setAdd(msg))
+        msgs' = msgs.mapPut(peer, (_msgs) => _msgs.setAdd(msg))
+
+    action sendToMany(msg: TxsMsg, peers: Set[NodeId]): bool =
+        msgs' = msgs.mapPutMany(peers, (peer) => peer.incomingMsgs().setAdd(msg))
 
     action receiveMsg(nodeId: NodeId, msg: TxsMsg): bool =
-        msgs' = msgs.mapPut(nodeId, (ms) => ms.setRemove(msg))    
+        msgs' = msgs.mapPut(nodeId, (_msgs) => _msgs.setRemove(msg))    
 
     action unchanged =
         msgs' = msgs

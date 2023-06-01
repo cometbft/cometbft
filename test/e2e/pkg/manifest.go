@@ -95,6 +95,11 @@ type Manifest struct {
 
 	// Defines a minimum size for the vote extensions.
 	VoteExtensionSize uint `toml:"vote_extension_size"`
+
+	// Upper bound of sleep duration then gossipping votes and block parts
+	PeerGossipFastSleepDuration time.Duration `toml:"peer_gossip_fast_sleep_duration"`
+	// Whether so broadcast HasBlockPart messages (false: effectively disables feature)
+	HasBlockPart bool `toml:"has_block_part"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

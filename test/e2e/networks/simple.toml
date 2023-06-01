@@ -1,3 +1,6 @@
+has_block_part = true
+peer_gossip_fast_sleep_duration = "150ms"
+
 [node.validator01]
 [node.validator02]
 [node.validator03]

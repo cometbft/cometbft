@@ -937,8 +937,12 @@ type ConsensusConfig struct {
 	// Reactor sleep duration parameters
 	PeerGossipSleepDuration     time.Duration `mapstructure:"peer_gossip_sleep_duration"`
 	PeerQueryMaj23SleepDuration time.Duration `mapstructure:"peer_query_maj23_sleep_duration"`
+	PeerGossipFastSleepDuration time.Duration `mapstructure:"peer_gossip_fast_sleep_duration"`
 
 	DoubleSignCheckHeight int64 `mapstructure:"double_sign_check_height"`
+
+	// toggle HasBlockPart
+	HasBlockPart bool `mapstructure:"has_block_part"`
 }
 
 // DefaultConsensusConfig returns a default configuration for the consensus service
@@ -957,7 +961,9 @@ func DefaultConsensusConfig() *ConsensusConfig {
 		CreateEmptyBlocksInterval:   0 * time.Second,
 		PeerGossipSleepDuration:     100 * time.Millisecond,
 		PeerQueryMaj23SleepDuration: 2000 * time.Millisecond,
+		PeerGossipFastSleepDuration: 0 * time.Millisecond,
 		DoubleSignCheckHeight:       int64(0),
+		HasBlockPart:                false,
 	}
 }
 

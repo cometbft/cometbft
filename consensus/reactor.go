@@ -433,11 +433,13 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 		conR.Logger.Error("Error adding listener for events", "err", err)
 	}
 
-	if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventProposalBlockPart,
-		func(data cmtevents.EventData) {
-			conR.broadcastHasProposalBlockPartMessage(data.(*BlockPartMessage))
-		}); err != nil {
-		conR.Logger.Error("Error adding listener for events", "err", err)
+	if conR.conS.config.HasBlockPart {
+		if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventProposalBlockPart,
+			func(data cmtevents.EventData) {
+				conR.broadcastHasProposalBlockPartMessage(data.(*BlockPartMessage))
+			}); err != nil {
+			conR.Logger.Error("Error adding listener for events", "err", err)
+		}
 	}
 
 }
@@ -741,6 +743,10 @@ OUTER_LOOP:
 			sleeping = 2
 		case 2: // No more sleep
 			sleeping = 0
+		}
+
+		if conR.conS.config.PeerGossipFastSleepDuration > 0 {
+			time.Sleep(conR.conS.config.PeerGossipFastSleepDuration)
 		}
 
 		// logger.Debug("gossipVotesRoutine", "rsHeight", rs.Height, "rsRound", rs.Round,

@@ -1,3 +1,5 @@
+// -*- mode: Bluespec; -*-
+
 module OInt {
     type OType = (int,bool)
     pure def valueOf(v: int):OType = (v, true)

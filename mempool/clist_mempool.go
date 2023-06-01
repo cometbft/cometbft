@@ -397,7 +397,9 @@ func (mem *CListMempool) resCbFirstTime(
 			}
 
 			// Check transaction not already in the mempool
-			if _, ok := mem.txsMap.Load(types.Tx(tx).Key()); ok {
+			if e, ok := mem.txsMap.Load(types.Tx(tx).Key()); ok {
+				memTx := e.(*clist.CElement).Value.(*mempoolTx)
+				memTx.senders.LoadOrStore(peerID, true)
 				mem.logger.Debug(
 					"transaction already there, not adding it again",
 					"tx", types.Tx(tx).Hash(),

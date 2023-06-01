@@ -937,11 +937,12 @@ type ConsensusConfig struct {
 	// Reactor sleep duration parameters
 	PeerGossipSleepDuration     time.Duration `mapstructure:"peer_gossip_sleep_duration"`
 	PeerQueryMaj23SleepDuration time.Duration `mapstructure:"peer_query_maj23_sleep_duration"`
-	PeerGossipFastSleepDuration time.Duration `mapstructure:"peer_gossip_fast_sleep_duration"` // upper bound
+	PeerGossipFastSleepDuration time.Duration `mapstructure:"peer_gossip_fast_sleep_duration"` // upper bound on randomly selected values
 
 	DoubleSignCheckHeight int64 `mapstructure:"double_sign_check_height"`
 
 	// toggle sending the HasProposalBlockPart message
+	// this should ultimately be removed from the config, its here now for ease of testing/benchmarking.
 	HasBlockPart bool `mapstructure:"has_block_part"`
 }
 

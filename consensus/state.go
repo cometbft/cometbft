@@ -1890,7 +1890,7 @@ func (cs *State) defaultSetProposal(proposal *types.Proposal) error {
 		return ErrInvalidProposalSignature
 	}
 
-	proposal.Signature = p.Signature // WAT ?
+	proposal.Signature = p.Signature
 
 	cs.Proposal = proposal
 	// We don't update cs.ProposalBlockParts if it is already set.

@@ -79,7 +79,7 @@ func (conR *Reactor) OnStart() error {
 	go conR.peerStatsRoutine()
 
 	conR.subscribeToBroadcastEvents()
-	go conR.updateRoundStateRoutine() // WAT
+	go conR.updateRoundStateRoutine()
 
 	if !conR.WaitSync() {
 		err := conR.conS.Start()
@@ -542,9 +542,6 @@ func (conR *Reactor) sendNewRoundStepMessage(peer p2p.Peer) {
 	})
 }
 
-// WAT
-// TODO: figure out how to remove this
-// workaround for lock contention (!)
 func (conR *Reactor) updateRoundStateRoutine() {
 	t := time.NewTicker(100 * time.Microsecond)
 	defer t.Stop()
@@ -575,9 +572,11 @@ OUTER_LOOP:
 			return
 		}
 
+		// sleep random amount to give reactor a chance to receive HasProposalBlockPart messages
+		// so we can reduce the amount of redundant block parts we send
 		if conR.conS.config.PeerGossipFastSleepDuration > 0 {
-			// config sets upper bound for sleep. convert to int and pick a random amount to sleep
-			// TODO: assumes its in ms. should be fine but fix.
+			// the config sets an upper bound for how long we sleep.
+			// TODO: this assumes its in ms to convert it to int and back. should be fine but fix.
 			msInt := int(conR.conS.config.PeerGossipFastSleepDuration / time.Millisecond)
 			r := time.Duration(rand.Intn(msInt))
 			time.Sleep(r * time.Millisecond)
@@ -742,18 +741,21 @@ func (conR *Reactor) gossipVotesRoutine(peer p2p.Peer, ps *PeerState) {
 OUTER_LOOP:
 	for {
 
+		// Manage disconnects from self or peer.
+		if !peer.IsRunning() || !conR.IsRunning() {
+			return
+		}
+
+		// sleep random amount to give reactor a chance to receive HasVote messages
+		// so we can reduce the amount of redundant votes we send
 		if conR.conS.config.PeerGossipFastSleepDuration > 0 {
-			// config sets upper bound for sleep. convert to int and pick a random amount to sleep
-			// TODO: assumes its in ms. should be fine but fix.
+			// the config sets an upper bound for how long we sleep.
+			// TODO: this assumes its in ms to convert it to int and back. should be fine but fix.
 			msInt := int(conR.conS.config.PeerGossipFastSleepDuration / time.Millisecond)
 			r := time.Duration(rand.Intn(msInt))
 			time.Sleep(r * time.Millisecond)
 		}
 
-		// Manage disconnects from self or peer.
-		if !peer.IsRunning() || !conR.IsRunning() {
-			return
-		}
 		rs := conR.getRoundState()
 		prs := ps.GetRoundState()
 

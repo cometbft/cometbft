@@ -544,7 +544,7 @@ Observe that in all runs, the average number of transactions in the mempool quic
 
 | Scenario | Date       | Version                                                                               | Result |
 | -------- | ---------- | ------------------------------------------------------------------------------------- | ------ |
-| VESize | 2023-05-23 | v0.38.0-alpha.2 + varying vote extensions  (9fc711b6514f99b2dc0864fc703cb81214f01783) |        |
+| VESize   | 2023-05-23 | v0.38.0-alpha.2 + varying vote extensions  (9fc711b6514f99b2dc0864fc703cb81214f01783) |  N/A   |
 
 
 

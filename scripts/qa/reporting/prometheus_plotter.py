@@ -27,10 +27,10 @@ prometheus = query.Prometheus('http://localhost:9090')
 #window_size = dict(seconds=130) #homogeneous
 #window_size = dict(seconds=127) #baseline
 #window_size = dict(seconds=115) #CMT v0.38.0-alpha.2 (200 nodes)
-window_size = dict(hours=1, minutes=46) #CMT v0.38.0-alpha.2 (rotating)
+#window_size = dict(hours=1, minutes=46) #CMT v0.38.0-alpha.2 (rotating)
+window_size = dict(seconds=150) #CMT v0.38.0-alpha.2 (ve baseline)
 
-
-ext_window_size = dict(seconds=145)
+ext_window_size = dict(seconds=200)
 
 # Use the time provided by latency_plotter for the selected experiment.
 #left_end = '2023-02-08T13:12:20Z' #cmt2 tm1
@@ -43,14 +43,30 @@ ext_window_size = dict(seconds=145)
 #left_end = '2023-03-20T19:45:35Z' #feature/abci++vef merged with main (7d8c9d426)
 #left_end = '2023-05-22T09:39:20Z' #CMT v0.38.0-alpha.2 - 200 nodes
 #left_end = '2022-10-10T15:47:15Z' #TM v0.37.0-alpha.2 - rotating
-left_end = '2023-05-23T08:09:50Z' #CMT v0.38.0-alpha.2 - rotating
+#left_end = '2023-05-23T08:09:50Z' #CMT v0.38.0-alpha.2 - rotating
 
-right_end = pd.to_datetime(left_end) + pd.Timedelta(**window_size)
-time_window = (left_end, right_end.strftime('%Y-%m-%dT%H:%M:%SZ'))
+#left_end = '2023-05-25T18:18:04Z' #CMT v0.38.0-alpha.2 - ve baseline
+#left_end = '2023-05-30T19:05:32Z' #CMT v0.38.0-alpha.2 - ve 2k
+left_end = '2023-05-30T20:44:46Z' #CMT v0.38.0-alpha.2 - ve 4k
+#left_end = '2023-05-25T19:42:08Z' #CMT v0.38.0-alpha.2 - ve 8k
+#left_end = '2023-05-26T00:28:12Z' #CMT v0.38.0-alpha.2 - ve 16k
+#left_end = '2023-05-26T02:12:27Z' #CMT v0.38.0-alpha.2 - ve 32k
+
+useManualrightEnd = False
+if useManualrightEnd: 
+   #right_end = '2023-05-25T18:54:04Z' #CMT v0.38.0-alpha.2 - ve baseline
+   #right_end = '2023-05-30T19:40:41Z' #CMT v0.38.0-alpha.2 - ve 2k
+   right_end = '2023-05-30T21:15:37Z' #CMT v0.38.0-alpha.2 - ve 4k
+   #right_end = '2023-05-25T20:16:00Z' #CMT v0.38.0-alpha.2 - ve 8k
+   #right_end = '2023-05-26T01:01:57Z' #CMT v0.38.0-alpha.2 - ve 16k 
+   #right_end = '2023-05-26T02:46:19Z' #CMT v0.38.0-alpha.2 - ve 32k 
+   time_window = (left_end, right_end)
+else:
+   right_end = pd.to_datetime(left_end) + pd.Timedelta(**window_size)
+   time_window = (left_end, right_end.strftime('%Y-%m-%dT%H:%M:%SZ'))
 
 ext_right_end = pd.to_datetime(left_end) + pd.Timedelta(**ext_window_size)
 ext_time_window = (left_end, ext_right_end.strftime('%Y-%m-%dT%H:%M:%SZ'))
-
 
 
 fork='cometbft'
@@ -89,8 +105,25 @@ queriesRotating = [
     (( 'node_load1',                                     time_window[0], time_window[1], '1s'), 'rotating_cpu',           dict(ylabel='load',           xlabel='time', title='Node Load',                      legend=False, figsize=(10,6), grid=True), False),
 ]
 
+queriesVExtension= [
+    (( fork + '_mempool_size',                     time_window[0], time_window[1], '1s'), 'mempool_size',              dict(ylabel='TXs',               xlabel='time (s)', title='Mempool Size',                   legend=False, figsize=(10,6), grid=True, kind='area',stacked=True), False),
+    (( fork + '_mempool_size',                     time_window[0], time_window[1], '1s'), 'mempool_size_not_stacked',              dict(ylabel='TXs',               xlabel='time (s)', title='Mempool Size',                   legend=False, figsize=(10,6), grid=True, stacked=False), False),
+    (( fork + '_p2p_peers',                        time_window[0], time_window[1], '1s'), 'peers',                     dict(ylabel='# Peers',           xlabel='time (s)', title='Peers',                          legend=False, figsize=(10,6), grid=True), True),
+    (( 'avg(' + fork + '_mempool_size)',                time_window[0], time_window[1], '1s'), 'avg_mempool_size',          dict(ylabel='TXs',               xlabel='time (s)', title='Average Mempool Size',           legend=False, figsize=(10,6), grid=True), False),
+    (( fork + '_consensus_rounds',                 time_window[0], time_window[1], '1s'), 'rounds',                    dict(ylabel='# Rounds',          xlabel='time (s)', title='Rounds per block',               legend=False, figsize=(10,6), grid=True), False),
+    (( 'process_resident_memory_bytes',             time_window[0], time_window[1], '1s'), 'memory',                    dict(ylabel='Memory (bytes)',    xlabel='time (s)', title='Memory usage',                   legend=False, figsize=(10,6), grid=True), False),
+    (( 'avg(process_resident_memory_bytes)',        time_window[0], time_window[1], '1s'), 'avg_memory',                dict(ylabel='Memory (bytes)',    xlabel='time (s)', title='Average Memory usage',           legend=False, figsize=(10,6), grid=True), False),
+    (( 'node_load1',                                time_window[0], time_window[1], '1s'), 'cpu',                       dict(ylabel='Load',              xlabel='time (s)', title='Node load',                      legend=False, figsize=(10,6), grid=True), False), 
+    (( 'avg(node_load1)',                           time_window[0], time_window[1], '1s'), 'avg_cpu',                   dict(ylabel='Load',              xlabel='time (s)', title='Average Node load',              legend=False, figsize=(10,6), grid=True), False),
+    (( fork + '_consensus_height',                 time_window[0], time_window[1], '1s'), 'blocks',            dict(ylabel='# Blocks',          xlabel='time (s)', title='Blocks in time',                 legend=False, figsize=(10,6), grid=True), False), 
+    (( 'rate(' + fork + '_consensus_height[20s])*60',    time_window[0], time_window[1], '1s'), 'block_rate',        dict(ylabel='Blocks/min',        xlabel='time (s)', title='Rate of block creation',         legend=False, figsize=(10,6), grid=True), True),
+    (( fork + '_consensus_total_txs',              time_window[0], time_window[1], '1s'), 'total_txs',         dict(ylabel='# TXs',             xlabel='time (s)', title='Transactions in time',           legend=False, figsize=(10,6), grid=True), False),
+    (( 'rate(' + fork + '_consensus_total_txs[20s])*60', time_window[0], time_window[1], '1s'), 'total_txs_rate',    dict(ylabel='TXs/min',           xlabel='time (s)', title='Rate of transaction processing', legend=False, figsize=(10,6), grid=True), True),
+]
+
 #queries = queries200Nodes
-queries = queriesRotating
+#queries = queriesRotating
+queries = queriesVExtension
 
 
 for (query, file_name, pandas_params, plot_average) in queries:

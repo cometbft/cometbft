@@ -359,8 +359,198 @@ number of transactions processed per minute as compared to the baseline.
 | -------- | ---------- | ---------------------------------------------------------- | ------ |
 | Rotating | 2023-05-23 | v0.38.0-alpha.2 (e9abb116e29beb830cf111b824c8e2174d538838) | Pass   |
 
+
+
+## Vote Extensions Testbed
+
+In this testnet we evaluate the effect of varying the sizes of vote extensions added to pre-commit votes on the performance of CometBFT.
+The test uses the Key/Value store in our [[end-to-end]] test framework, which has the following simplified flow:
+
+1. When validators send their pre-commit votes to a block of height $i$, they first extend the vote as they see fit in `ExtendVote`.
+2. When a proposer for height $i+1$ creates a block to propose, in `PrepareProposal`, it prepends the transactions with a special transaction, which modifies a reserved key. The transaction value is derived from the extensions from height $i$; in this example, the value is derived from the vote extensions and includes the set itself, hexa encoded as string.
+3. When a validator sends their pre-vote for the block proposed in $i+1$, they first double check in `ProcessProposal` that the special transaction in the block was properly built by the proposer.
+4. When validators send their pre-commit for the block proposed in $i+1$, they first extend the vote, and the steps repeat for heights $i+2$ and so on.
+
+For this test, extensions are random sequences of bytes with a predefined `vote_extension_size`.
+Hence, two effects are seen on the network.
+First, pre-commit vote message sizes will increase by the specified `vote_extension_size` and, second, block messages will increase by twice  `vote_extension_size`, given then hexa encoding of extensions, times the number of extensions received, i.e. at least 2/3 of 175.
+
+All tests were performed on commit d5baba237ab3a04c1fd4a7b10927ba2e6a2aab27, which corresponds to v0.38.0-alpha.2 plus commits to add the ability to vary the vote extension sizes to the test application.
+Although the same commit is used for the baseline, in this configuration the behavior observed is the same as in the "vanilla" v0.38.0-alpha.2 test application, that is, vote extensions are 8-byte integers, compressed as variable size integers instead of a random sequence of size `vote_extension_size`.
+
+The following table summarizes the test cases.
+
+| Name     | Extension Size (bytes) | Date       |
+| -------- | ---------------------- | ---------- |
+| baseline | 8 (varint)             | 2023-05-26 |
+| 2k       | 2048                   | 2023-05-29 |
+| 4k       | 4094                   | 2023-05-29 |
+| 8k       | 8192                   | 2023-05-26 |
+| 16k      | 16384                  | 2023-05-26 |
+| 32k      | 32768                  | 2023-05-26 |
+
+
+### Latency
+
+The following figures show the latencies observed on each of the 5 runs of each experiment;
+the redline shows the average of each run.
+It can be easily seen from these graphs that the larger the vote extension size, the more latency varies and the more common higher latencies become.
+Even in the case of extensions of size 2k, the mean latency goes from below 5s to nearly 10s.
+
+**Baseline**
+
+![](img38/voteExtensions/all_experiments_baseline.png)
+
+**2k**
+
+![](img38/voteExtensions/all_experiments_2k.png)
+
+**4k**
+
+![](img38/voteExtensions/all_experiments_4k.png)
+
+**8k**
+
+![](img38/voteExtensions/all_experiments_8k.png)
+
+**16k**
+
+![](img38/voteExtensions/all_experiments_16k.png)
+
+**32k**
+
+![](img38/voteExtensions/all_experiments_32k.png)
+
+The following graphs combine all the runs of the same experiment.
+They show that latency variation greatly increases with the increase of vote extensions.
+In particular, for the 16k and 32k cases, the system goes through large gaps without transaction delivery.
+As discussed later, this is the result of heights taking multiple rounds to finish and new transactions being held until the next block is agreed upon.
+
+|                                                            |                                                  |
+| ---------------------------------------------------------- | ------------------------------------------------ |
+| baseline ![](img38/voteExtensions/all_c1r400_baseline.png) | 2k ![](img38/voteExtensions/all_c1r400_2k.png)   |
+| 4k ![](img38/voteExtensions/all_c1r400_4k.png)             | 8k ![](img38/voteExtensions/all_c1r400_8k.png)   |
+| 16k ![](img38/voteExtensions/all_c1r400_16k.png)           | 32k ![](img38/voteExtensions/all_c1r400_32k.png) |
+
+
+### Blocks and Transactions per minute
+
+The following plots show the blocks produced per minute and transactions processed per minute.
+We have divided the presentation in an overview section, which shows the metrics for the whole experiment (five runs) and a detailed sample, which shows the metrics for the first of the five runs.
+We repeat the approach for the other metrics as well.
+The dashed red line shows the moving average over a 20s window.
+
+#### Overview
+
+It is clear from the overview  plots that as the vote extension sizes increase, the rate of block creation decreases.
+Although the rate of transaction processing also decreases, it does not seem to decrease as fast.
+
+| Experiment   | Block creation rate                                         | Transaction rate                                              |
+| ------------ | ----------------------------------------------------------- | ------------------------------------------------------------- |
+| **baseline** | ![block rate](img38/voteExtensions/baseline_block_rate.png) | ![txs rate](img38/voteExtensions/baseline_total_txs_rate.png) |
+| **2k**       | ![block rate](img38/voteExtensions/02k_block_rate.png)      | ![txs rate](img38/voteExtensions/02k_total_txs_rate.png)      |
+| **4k**       | ![block rate](img38/voteExtensions/04k_block_rate.png)      | ![txs rate](img38/voteExtensions/04k_total_txs_rate.png)      |
+| **8k**       | ![block rate](img38/voteExtensions/8k_block_rate.png)       | ![txs rate](img38/voteExtensions/08k_total_txs_rate.png)      |
+| **16k**      | ![block rate](img38/voteExtensions/16k_block_rate.png)      | ![txs rate](img38/voteExtensions/16k_total_txs_rate.png)      |
+| **32k**      | ![block rate](img38/voteExtensions/32k_block_rate.png)      | ![txs rate](img38/voteExtensions/32k_total_txs_rate.png)      |
+
+#### First run
+
+| Experiment   | Block creation rate                                           | Transaction rate                                                |
+| ------------ | ------------------------------------------------------------- | --------------------------------------------------------------- |
+| **baseline** | ![block rate](img38/voteExtensions/baseline_1_block_rate.png) | ![txs rate](img38/voteExtensions/baseline_1_total_txs_rate.png) |
+| **2k**       | ![block rate](img38/voteExtensions/02k_1_block_rate.png)      | ![txs rate](img38/voteExtensions/02k_1_total_txs_rate.png)      |
+| **4k**       | ![block rate](img38/voteExtensions/04k_1_block_rate.png)      | ![txs rate](img38/voteExtensions/04k_1_total_txs_rate.png)      |
+| **8k**       | ![block rate](img38/voteExtensions/08k_1_block_rate.png)      | ![txs rate](img38/voteExtensions/08k_1_total_txs_rate.png)      |
+| **16k**      | ![block rate](img38/voteExtensions/16k_1_block_rate.png)      | ![txs rate](img38/voteExtensions/16k_1_total_txs_rate.png)      |
+| **32k**      | ![block rate](img38/voteExtensions/32k_1_block_rate.png)      | ![txs rate](img38/voteExtensions/32k_1_total_txs_rate.png)      |
+
+
+### Number of rounds
+
+The effect of vote extensions are also felt on the number of rounds needed to reach consensus.
+The following graphs show the number of the highest round required to reach consensus during the whole experiment.
+
+In the baseline and low vote extension lengths, most blocks were agreed upon during round 0.
+As the load increases, more and more rounds were required.
+In the 32k case se see round 5 being reached frequently.
+
+| Experiment   | Number of Rounds per block                                    |
+| ------------ | ------------------------------------------------------------- |
+| **baseline** | ![number of rounds](img38/voteExtensions/baseline_rounds.png) |
+| **2k**       | ![number of rounds](img38/voteExtensions/02k_rounds.png)      |
+| **4k**       | ![number of rounds](img38/voteExtensions/04k_rounds.png)      |
+| **8k**       | ![number of rounds](img38/voteExtensions/08k_rounds.png)      |
+| **16k**      | ![number of rounds](img38/voteExtensions/16k_rounds.png)      |
+| **32k**      | ![number of rounds](img38/voteExtensions/32k_rounds.png)      |
+
+
+We conjecture that the reason is that the timeouts used are inadequate for the extra traffic in the network.
+
+### CPU
+
+The CPU usage reached the same peaks on all tests, but the following graphs show that with larger Vote Extensions, nodes take longer to reduce the CPU usage.
+This could mean that a backlog of processing is forming during the execution of the tests with larger extensions.
+
+
+| Experiment   | CPU                                                   |
+| ------------ | ----------------------------------------------------- |
+| **baseline** | ![cpu-avg](img38/voteExtensions/baseline_avg_cpu.png) |
+| **2k**       | ![cpu-avg](img38/voteExtensions/02k_avg_cpu.png)      |
+| **4k**       | ![cpu-avg](img38/voteExtensions/04k_avg_cpu.png)      |
+| **8k**       | ![cpu-avg](img38/voteExtensions/08k_avg_cpu.png)      |
+| **16k**      | ![cpu-avg](img38/voteExtensions/16k_avg_cpu.png)      |
+| **32k**      | ![cpu-avg](img38/voteExtensions/32k_avg_cpu.png)      |
+
+### Resident Memory
+
+The same conclusion reached for CPU usage may be drawn for the memory.
+That is, that a backlog of work is formed during the tests and catching up (freeing of memory) happens after the test is done.
+
+A more worrying trend is that the bottom of the memory usage seems to increase in between runs.
+We have investigated this in longer runs and confirmed that there is no such a trend.
+
+
+
+| Experiment   | Resident Set Size                                        |
+| ------------ | -------------------------------------------------------- |
+| **baseline** | ![rss-avg](img38/voteExtensions/baseline_avg_memory.png) |
+| **2k**       | ![rss-avg](img38/voteExtensions/02k_avg_memory.png)      |
+| **4k**       | ![rss-avg](img38/voteExtensions/04k_avg_memory.png)      |
+| **8k**       | ![rss-avg](img38/voteExtensions/08k_avg_memory.png)      |
+| **16k**      | ![rss-avg](img38/voteExtensions/16k_avg_memory.png)      |
+| **32k**      | ![rss-avg](img38/voteExtensions/32k_avg_memory.png)      |
+
+### Mempool size
+
+This metric shows how many transactions are outstanding in the nodes' mempools.
+Observe that in all runs, the average number of transactions in the mempool quickly drops to near zero between runs.
+
+
+| Experiment   | Resident Set Size                                                  |
+| ------------ | ------------------------------------------------------------------ |
+| **baseline** | ![mempool-avg](img38/voteExtensions/baseline_avg_mempool_size.png) |
+| **2k**       | ![mempool-avg](img38/voteExtensions/02k_avg_mempool_size.png)      |
+| **4k**       | ![mempool-avg](img38/voteExtensions/04k_avg_mempool_size.png)      |
+| **8k**       | ![mempool-avg](img38/voteExtensions/08k_avg_mempool_size.png)      |
+| **16k**      | ![mempool-avg](img38/voteExtensions/16k_avg_mempool_size.png)      |
+| **32k**      | ![mempool-avg](img38/voteExtensions/32k_avg_mempool_size.png)      |
+
+
+
+
+
+### Results
+
+| Scenario | Date       | Version                                                                               | Result |
+| -------- | ---------- | ------------------------------------------------------------------------------------- | ------ |
+| VESize   | 2023-05-23 | v0.38.0-alpha.2 + varying vote extensions  (9fc711b6514f99b2dc0864fc703cb81214f01783) |  N/A   |
+
+
+
 [\#9539]: https://github.com/tendermint/tendermint/issues/9539
 [\#9548]: https://github.com/tendermint/tendermint/issues/9548
 [\#539]: https://github.com/cometbft/cometbft/issues/539
 [\#546]: https://github.com/cometbft/cometbft/issues/546
 [\#562]: https://github.com/cometbft/cometbft/issues/562
+[end-to-end]: https://github.com/cometbft/cometbft/tree/main/test/e2e

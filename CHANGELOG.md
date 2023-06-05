@@ -72,6 +72,8 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
   _and_ keep the node in its list of providers in the same way it would if
   it queried a node starting from height zero that does not yet have data
   ([\#575](https://github.com/cometbft/cometbft/issues/575))
+- `[abci]` Restore the snake_case naming in JSON serialization of
+  `ExecTxResult` ([\#855](https://github.com/cometbft/cometbft/issues/855)).
 - `[docker]` Ensure Docker image uses consistent version of Go.
   ([\#9462](https://github.com/tendermint/tendermint/pull/9462))
 - `[abci-cli]` Fix broken abci-cli help command.

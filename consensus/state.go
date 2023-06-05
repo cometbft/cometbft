@@ -2089,7 +2089,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 		if cs.Step != cstypes.RoundStepNewHeight {
 			// Late precommit at prior height is ignored
 			cs.Logger.Debug("precommit vote came in after commit timeout and has been ignored", "vote", vote)
-			return
+			return added, err
 		}
 
 		added, err = cs.LastCommit.AddVote(vote)
@@ -2098,7 +2098,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 			if err == nil {
 				cs.metrics.DuplicateVote.Add(1)
 			}
-			return
+			return added, err
 		}
 
 		cs.Logger.Debug("added vote to last precommits", "last_commit", cs.LastCommit.StringShort())
@@ -2115,14 +2115,14 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 			cs.enterNewRound(cs.Height, 0)
 		}
 
-		return
+		return added, err
 	}
 
 	// Height mismatch is ignored.
 	// Not necessarily a bad peer, but not favorable behavior.
 	if vote.Height != cs.Height {
 		cs.Logger.Debug("vote ignored and not added", "vote_height", vote.Height, "cs_height", cs.Height, "peer", peerID)
-		return
+		return added, err
 	}
 
 	// Check to see if the chain is configured to extend votes.
@@ -2177,7 +2177,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 		if err == nil {
 			cs.metrics.DuplicateVote.Add(1)
 		}
-		return
+		return added, err
 	}
 	if vote.Round == cs.Round {
 		vals := cs.state.Validators

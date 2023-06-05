@@ -72,13 +72,13 @@ func testHairpin(listener net.Listener, extAddr string, logger log.Logger) (supp
 	outConn, err := net.Dial("tcp", extAddr)
 	if err != nil {
 		logger.Info("test hair pin", "msg", log.NewLazySprintf("Outgoing connection dial error: %v", err))
-		return
+		return supportsHairpin
 	}
 
 	n, err := outConn.Write([]byte("test data"))
 	if err != nil {
 		logger.Info("test hair pin", "msg", log.NewLazySprintf("Outgoing connection write error: %v", err))
-		return
+		return supportsHairpin
 	}
 	logger.Info("test hair pin", "msg", log.NewLazySprintf("Outgoing connection wrote %v bytes", n))
 

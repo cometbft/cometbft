@@ -129,7 +129,7 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 				return nil, true, err
 			}
 			// In parallel, handle some reads and writes.
-			var trs, ok = async.Parallel(
+			trs, ok := async.Parallel(
 				func(_ int) (interface{}, bool, error) {
 					// Node writes:
 					for _, nodeWrite := range nodeWrites {
@@ -182,7 +182,7 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 	}
 
 	// Run foo & bar in parallel
-	var trs, ok = async.Parallel(
+	trs, ok := async.Parallel(
 		genNodeRunner("foo", fooConn, fooWrites, &fooReads),
 		genNodeRunner("bar", barConn, barWrites, &barReads),
 	)
@@ -194,9 +194,9 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 	compareWritesReads := func(writes []string, reads []string) {
 		for {
 			// Pop next write & corresponding reads
-			var read = ""
-			var write = writes[0]
-			var readCount = 0
+			read := ""
+			write := writes[0]
+			readCount := 0
 			for _, readChunk := range reads {
 				read += readChunk
 				readCount++
@@ -229,7 +229,7 @@ func TestDeriveSecretsAndChallengeGolden(t *testing.T) {
 	if *update {
 		t.Logf("Updating golden test vector file %s", goldenFilepath)
 		data := createGoldenTestVectors(t)
-		err := cmtos.WriteFile(goldenFilepath, []byte(data), 0644)
+		err := cmtos.WriteFile(goldenFilepath, []byte(data), 0o644)
 		require.NoError(t, err)
 	}
 	f, err := os.Open(goldenFilepath)
@@ -259,11 +259,11 @@ func TestDeriveSecretsAndChallengeGolden(t *testing.T) {
 }
 
 func TestNilPubkey(t *testing.T) {
-	var fooConn, barConn = makeKVStoreConnPair()
+	fooConn, barConn := makeKVStoreConnPair()
 	defer fooConn.Close()
 	defer barConn.Close()
-	var fooPrvKey = ed25519.GenPrivKey()
-	var barPrvKey = privKeyWithNilPubKey{ed25519.GenPrivKey()}
+	fooPrvKey := ed25519.GenPrivKey()
+	barPrvKey := privKeyWithNilPubKey{ed25519.GenPrivKey()}
 
 	go MakeSecretConnection(fooConn, fooPrvKey) //nolint:errcheck // ignore for tests
 
@@ -273,11 +273,11 @@ func TestNilPubkey(t *testing.T) {
 }
 
 func TestNonEd25519Pubkey(t *testing.T) {
-	var fooConn, barConn = makeKVStoreConnPair()
+	fooConn, barConn := makeKVStoreConnPair()
 	defer fooConn.Close()
 	defer barConn.Close()
-	var fooPrvKey = ed25519.GenPrivKey()
-	var barPrvKey = sr25519.GenPrivKey()
+	fooPrvKey := ed25519.GenPrivKey()
+	barPrvKey := sr25519.GenPrivKey()
 
 	go MakeSecretConnection(fooConn, fooPrvKey) //nolint:errcheck // ignore for tests
 
@@ -309,7 +309,7 @@ func readLots(t *testing.T, wg *sync.WaitGroup, conn io.Reader, n int) {
 // Creates the data for a test vector file.
 // The file format is:
 // Hex(diffie_hellman_secret), loc_is_least, Hex(recvSecret), Hex(sendSecret), Hex(challenge)
-func createGoldenTestVectors(t *testing.T) string {
+func createGoldenTestVectors(*testing.T) string {
 	data := ""
 	for i := 0; i < 32; i++ {
 		randSecretVector := cmtrand.Bytes(32)
@@ -342,7 +342,7 @@ func makeSecretConnPair(tb testing.TB) (fooSecConn, barSecConn *SecretConnection
 	)
 
 	// Make connections from both sides in parallel.
-	var trs, ok = async.Parallel(
+	trs, ok := async.Parallel(
 		func(_ int) (val interface{}, abort bool, err error) {
 			fooSecConn, err = MakeSecretConnection(fooConn, fooPrvKey)
 			if err != nil {

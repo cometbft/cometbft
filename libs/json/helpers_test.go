@@ -33,8 +33,10 @@ type Boat struct {
 func (b Boat) Drive() error { return nil }
 
 // These are public and private encryption keys.
-type PublicKey [8]byte
-type PrivateKey [8]byte
+type (
+	PublicKey  [8]byte
+	PrivateKey [8]byte
+)
 
 // Custom has custom marshalers and unmarshalers, taking pointer receivers.
 type CustomPtr struct {
@@ -45,7 +47,7 @@ func (c *CustomPtr) MarshalJSON() ([]byte, error) {
 	return []byte("\"custom\""), nil
 }
 
-func (c *CustomPtr) UnmarshalJSON(bz []byte) error {
+func (c *CustomPtr) UnmarshalJSON(_ []byte) error {
 	c.Value = "custom"
 	return nil
 }
@@ -60,7 +62,7 @@ func (c CustomValue) MarshalJSON() ([]byte, error) {
 	return []byte("\"custom\""), nil
 }
 
-func (c CustomValue) UnmarshalJSON(bz []byte) error {
+func (c CustomValue) UnmarshalJSON(_ []byte) error {
 	return nil
 }
 

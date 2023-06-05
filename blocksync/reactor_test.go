@@ -19,6 +19,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	mpmocks "github.com/cometbft/cometbft/mempool/mocks"
 	"github.com/cometbft/cometbft/p2p"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/proxy"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/store"
@@ -41,10 +42,13 @@ func randGenesisDoc(numValidators int, randPower bool, minPower int64) (*types.G
 	}
 	sort.Sort(types.PrivValidatorsByAddress(privValidators))
 
+	consPar := types.DefaultConsensusParams()
+	consPar.ABCI.VoteExtensionsEnableHeight = 1
 	return &types.GenesisDoc{
-		GenesisTime: cmttime.Now(),
-		ChainID:     test.DefaultTestChainID,
-		Validators:  validators,
+		GenesisTime:     cmttime.Now(),
+		ChainID:         test.DefaultTestChainID,
+		Validators:      validators,
+		ConsensusParams: consPar,
 	}, privValidators
 }
 
@@ -64,7 +68,7 @@ func newReactor(
 		panic("only support one validator")
 	}
 
-	app := &testApp{}
+	app := abci.NewBaseApplication()
 	cc := proxy.NewLocalClientCreator(app)
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
@@ -110,40 +114,52 @@ func newReactor(
 		panic(err)
 	}
 
+	// The commit we are building for the current height.
+	seenExtCommit := &types.ExtendedCommit{}
+
 	// let's add some blocks in
 	for blockHeight := int64(1); blockHeight <= maxBlockHeight; blockHeight++ {
-		lastCommit := types.NewCommit(blockHeight-1, 0, types.BlockID{}, nil)
-		if blockHeight > 1 {
-			lastBlockMeta := blockStore.LoadBlockMeta(blockHeight - 1)
-			lastBlock := blockStore.LoadBlock(blockHeight - 1)
+		lastExtCommit := seenExtCommit.Clone()
 
-			vote, err := types.MakeVote(
-				lastBlock.Header.Height,
-				lastBlockMeta.BlockID,
-				state.Validators,
-				privVals[0],
-				lastBlock.Header.ChainID,
-				time.Now(),
-			)
-			if err != nil {
-				panic(err)
-			}
-			lastCommit = types.NewCommit(vote.Height, vote.Round,
-				lastBlockMeta.BlockID, []types.CommitSig{vote.CommitSig()})
-		}
-
-		thisBlock := state.MakeBlock(blockHeight, nil, lastCommit, nil, state.Validators.Proposer.Address)
+		thisBlock := state.MakeBlock(blockHeight, nil, lastExtCommit.ToCommit(), nil, state.Validators.Proposer.Address)
 
 		thisParts, err := thisBlock.MakePartSet(types.BlockPartSizeBytes)
 		require.NoError(t, err)
 		blockID := types.BlockID{Hash: thisBlock.Hash(), PartSetHeader: thisParts.Header()}
+
+		// Simulate a commit for the current height
+		pubKey, err := privVals[0].GetPubKey()
+		if err != nil {
+			panic(err)
+		}
+		addr := pubKey.Address()
+		idx, _ := state.Validators.GetByAddress(addr)
+		vote, err := types.MakeVote(
+			privVals[0],
+			thisBlock.Header.ChainID,
+			idx,
+			thisBlock.Header.Height,
+			0,
+			cmtproto.PrecommitType,
+			blockID,
+			time.Now(),
+		)
+		if err != nil {
+			panic(err)
+		}
+		seenExtCommit = &types.ExtendedCommit{
+			Height:             vote.Height,
+			Round:              vote.Round,
+			BlockID:            blockID,
+			ExtendedSignatures: []types.ExtendedCommitSig{vote.ExtendedCommitSig()},
+		}
 
 		state, err = blockExec.ApplyBlock(state, blockID, thisBlock)
 		if err != nil {
 			panic(fmt.Errorf("error apply block: %w", err))
 		}
 
-		blockStore.SaveBlock(thisBlock, thisParts, lastCommit)
+		blockStore.SaveBlockWithExtendedCommit(thisBlock, thisParts, seenExtCommit)
 	}
 
 	bcReactor := NewReactor(state.Copy(), blockExec, blockStore, fastSync, NopMetrics())
@@ -296,36 +312,69 @@ func TestBadBlockStopsPeer(t *testing.T) {
 	assert.True(t, lastReactorPair.reactor.Switch.Peers().Size() < len(reactorPairs)-1)
 }
 
-type testApp struct {
-	abci.BaseApplication
-}
+func TestCheckSwitchToConsensusLastHeightZero(t *testing.T) {
+	const maxBlockHeight = int64(45)
 
-var _ abci.Application = (*testApp)(nil)
+	config = test.ResetTestRoot("blocksync_reactor_test")
+	defer os.RemoveAll(config.RootDir)
+	genDoc, privVals := randGenesisDoc(1, false, 30)
 
-func (app *testApp) Info(req abci.RequestInfo) (resInfo abci.ResponseInfo) {
-	return abci.ResponseInfo{}
-}
+	reactorPairs := make([]ReactorPair, 1, 2)
+	reactorPairs[0] = newReactor(t, log.TestingLogger(), genDoc, privVals, 0)
+	reactorPairs[0].reactor.switchToConsensusMs = 50
+	defer func() {
+		for _, r := range reactorPairs {
+			err := r.reactor.Stop()
+			require.NoError(t, err)
+			err = r.app.Stop()
+			require.NoError(t, err)
+		}
+	}()
 
-func (app *testApp) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
-	return abci.ResponseBeginBlock{}
-}
+	reactorPairs = append(reactorPairs, newReactor(t, log.TestingLogger(), genDoc, privVals, maxBlockHeight))
 
-func (app *testApp) EndBlock(req abci.RequestEndBlock) abci.ResponseEndBlock {
-	return abci.ResponseEndBlock{}
-}
+	var switches []*p2p.Switch
+	for _, r := range reactorPairs {
+		switches = append(switches, p2p.MakeConnectedSwitches(config.P2P, 1, func(i int, s *p2p.Switch) *p2p.Switch {
+			s.AddReactor("BLOCKSYNC", r.reactor)
+			return s
+		}, p2p.Connect2Switches)...)
+	}
 
-func (app *testApp) DeliverTx(req abci.RequestDeliverTx) abci.ResponseDeliverTx {
-	return abci.ResponseDeliverTx{Events: []abci.Event{}}
-}
+	time.Sleep(60 * time.Millisecond)
 
-func (app *testApp) CheckTx(req abci.RequestCheckTx) abci.ResponseCheckTx {
-	return abci.ResponseCheckTx{}
-}
+	// Connect both switches
+	p2p.Connect2Switches(switches, 0, 1)
 
-func (app *testApp) Commit() abci.ResponseCommit {
-	return abci.ResponseCommit{}
-}
+	startTime := time.Now()
+	for {
+		time.Sleep(20 * time.Millisecond)
+		caughtUp := true
+		for _, r := range reactorPairs {
+			if !r.reactor.pool.IsCaughtUp() {
+				caughtUp = false
+				break
+			}
+		}
+		if caughtUp {
+			break
+		}
+		if time.Since(startTime) > 90*time.Second {
+			msg := "timeout: reactors didn't catch up;"
+			for i, r := range reactorPairs {
+				h, p, lr := r.reactor.pool.GetStatus()
+				c := r.reactor.pool.IsCaughtUp()
+				msg += fmt.Sprintf(" reactor#%d (h %d, p %d, lr %d, c %t);", i, h, p, lr, c)
+			}
+			require.Fail(t, msg)
+		}
+	}
 
-func (app *testApp) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) {
-	return
+	// -1 because of "-1" in IsCaughtUp
+	// -1 pool.height points to the _next_ height
+	// -1 because we measure height of block store
+	const maxDiff = 3
+	for _, r := range reactorPairs {
+		assert.GreaterOrEqual(t, r.reactor.store.Height(), maxBlockHeight-maxDiff)
+	}
 }

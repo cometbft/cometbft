@@ -17,9 +17,7 @@ import (
 	cmtos "github.com/cometbft/cometbft/libs/os"
 )
 
-var (
-	defaultRoot = os.ExpandEnv("$HOME/.some/test/dir")
-)
+var defaultRoot = os.ExpandEnv("$HOME/.some/test/dir")
 
 // clearConfig clears env vars, the given root dir, and resets viper.
 func clearConfig(dir string) {
@@ -30,11 +28,11 @@ func clearConfig(dir string) {
 		panic(err)
 	}
 	if err := os.Unsetenv("TMHOME"); err != nil {
-		//XXX: Deprecated.
+		// XXX: Deprecated.
 		panic(err)
 	}
 	if err := os.Unsetenv("TM_HOME"); err != nil {
-		//XXX: Deprecated.
+		// XXX: Deprecated.
 		panic(err)
 	}
 
@@ -58,7 +56,7 @@ func testRootCmd() *cobra.Command {
 	return rootCmd
 }
 
-func testSetup(rootDir string, args []string, env map[string]string) error {
+func testSetup(args []string, env map[string]string) error {
 	clearConfig(defaultRoot)
 
 	rootCmd := testRootCmd()
@@ -78,14 +76,14 @@ func TestRootHome(t *testing.T) {
 	}{
 		{nil, nil, defaultRoot},
 		{[]string{"--home", newRoot}, nil, newRoot},
-		{nil, map[string]string{"TMHOME": newRoot}, newRoot}, //XXX: Deprecated.
+		{nil, map[string]string{"TMHOME": newRoot}, newRoot}, // XXX: Deprecated.
 		{nil, map[string]string{"CMTHOME": newRoot}, newRoot},
 	}
 
 	for i, tc := range cases {
 		idxString := strconv.Itoa(i)
 
-		err := testSetup(defaultRoot, tc.args, tc.env)
+		err := testSetup(tc.args, tc.env)
 		require.Nil(t, err, idxString)
 
 		assert.Equal(t, tc.root, config.RootDir, idxString)
@@ -96,7 +94,6 @@ func TestRootHome(t *testing.T) {
 }
 
 func TestRootFlagsEnv(t *testing.T) {
-
 	// defaults
 	defaults := cfg.DefaultConfig()
 	defaultLogLvl := defaults.LogLevel
@@ -119,7 +116,7 @@ func TestRootFlagsEnv(t *testing.T) {
 	for i, tc := range cases {
 		idxString := strconv.Itoa(i)
 
-		err := testSetup(defaultRoot, tc.args, tc.env)
+		err := testSetup(tc.args, tc.env)
 		require.Nil(t, err, idxString)
 
 		assert.Equal(t, tc.logLevel, config.LogLevel, idxString)
@@ -127,7 +124,6 @@ func TestRootFlagsEnv(t *testing.T) {
 }
 
 func TestRootConfig(t *testing.T) {
-
 	// write non-default config
 	nonDefaultLogLvl := "abc:debug"
 	cvals := map[string]string{
@@ -152,7 +148,7 @@ func TestRootConfig(t *testing.T) {
 
 		// XXX: path must match cfg.defaultConfigPath
 		configFilePath := filepath.Join(defaultRoot, "config")
-		err := cmtos.EnsureDir(configFilePath, 0700)
+		err := cmtos.EnsureDir(configFilePath, 0o700)
 		require.Nil(t, err)
 
 		// write the non-defaults to a different path
@@ -180,5 +176,5 @@ func WriteConfigVals(dir string, vals map[string]string) error {
 		data += fmt.Sprintf("%s = \"%s\"\n", k, v)
 	}
 	cfile := filepath.Join(dir, "config.toml")
-	return os.WriteFile(cfile, []byte(data), 0600)
+	return os.WriteFile(cfile, []byte(data), 0o600)
 }

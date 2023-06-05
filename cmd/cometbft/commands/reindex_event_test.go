@@ -14,7 +14,6 @@ import (
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/test"
-	prototmstate "github.com/cometbft/cometbft/proto/tendermint/state"
 	blockmocks "github.com/cometbft/cometbft/state/indexer/mocks"
 	"github.com/cometbft/cometbft/state/mocks"
 	txmocks "github.com/cometbft/cometbft/state/txindex/mocks"
@@ -140,25 +139,24 @@ func TestReIndexEvent(t *testing.T) {
 		On("LoadBlock", base).Return(&types.Block{Data: types.Data{Txs: types.Txs{make(types.Tx, 1)}}}).
 		On("LoadBlock", height).Return(&types.Block{Data: types.Data{Txs: types.Txs{make(types.Tx, 1)}}})
 
-	dtx := abcitypes.ResponseDeliverTx{}
-	abciResp := &prototmstate.ABCIResponses{
-		DeliverTxs: []*abcitypes.ResponseDeliverTx{&dtx},
-		EndBlock:   &abcitypes.ResponseEndBlock{},
-		BeginBlock: &abcitypes.ResponseBeginBlock{},
+	abciResp := &abcitypes.ResponseFinalizeBlock{
+		TxResults: []*abcitypes.ExecTxResult{
+			{Code: 1},
+		},
 	}
 
 	mockBlockIndexer.
-		On("Index", mock.AnythingOfType("types.EventDataNewBlockHeader")).Return(errors.New("")).Once().
-		On("Index", mock.AnythingOfType("types.EventDataNewBlockHeader")).Return(nil)
+		On("Index", mock.AnythingOfType("types.EventDataNewBlockEvents")).Return(errors.New("")).Once().
+		On("Index", mock.AnythingOfType("types.EventDataNewBlockEvents")).Return(nil)
 
 	mockTxIndexer.
 		On("AddBatch", mock.AnythingOfType("*txindex.Batch")).Return(errors.New("")).Once().
 		On("AddBatch", mock.AnythingOfType("*txindex.Batch")).Return(nil)
 
 	mockStateStore.
-		On("LoadABCIResponses", base).Return(nil, errors.New("")).Once().
-		On("LoadABCIResponses", base).Return(abciResp, nil).
-		On("LoadABCIResponses", height).Return(abciResp, nil)
+		On("LoadFinalizeBlockResponse", base).Return(nil, errors.New("")).Once().
+		On("LoadFinalizeBlockResponse", base).Return(abciResp, nil).
+		On("LoadFinalizeBlockResponse", height).Return(abciResp, nil)
 
 	testCases := []struct {
 		startHeight int64
@@ -166,7 +164,7 @@ func TestReIndexEvent(t *testing.T) {
 		reIndexErr  bool
 	}{
 		{base, height, true}, // LoadBlock error
-		{base, height, true}, // LoadABCIResponses error
+		{base, height, true}, // LoadFinalizeBlockResponse error
 		{base, height, true}, // index block event error
 		{base, height, true}, // index tx event error
 		{base, base, false},

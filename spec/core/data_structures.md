@@ -71,7 +71,7 @@ and `ABCIApp` is an ABCI application that can return results and changes to the 
 set (TODO). Execute is defined as:
 
 ```go
-func Execute(s State, app ABCIApp, block Block) State {
+func Execute(state State, app ABCIApp, block Block) State {
  // Fuction ApplyBlock executes block of transactions against the app and returns the new root hash of the app state,
  // modifications to the validator set and the changes of the consensus parameters.
  AppHash, ValidatorChanges, ConsensusParamChanges := app.ApplyBlock(block)
@@ -82,7 +82,6 @@ func Execute(s State, app ABCIApp, block Block) State {
   InitialHeight:   state.InitialHeight,
   LastResults:     abciResponses.DeliverTxResults,
   AppHash:         AppHash,
-  InitialHeight:   state.InitialHeight,
   LastValidators:  state.Validators,
   Validators:      state.NextValidators,
   NextValidators:  UpdateValidators(state.NextValidators, ValidatorChanges),
@@ -195,10 +194,22 @@ Commit is a simple wrapper for a list of signatures, with one for each validator
 
 | Name       | Type                             | Description                                                          | Validation                                                                                               |
 |------------|----------------------------------|----------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
-| Height     | uint64                            | Height at which this commit was created.                             | Must be > 0                                                                                              |
+| Height     | int64                            | Height at which this commit was created.                             | Must be > 0                                                                                              |
 | Round      | int32                            | Round that the commit corresponds to.                                | Must be > 0                                                                                              |
 | BlockID    | [BlockID](#blockid)              | The blockID of the corresponding block.                              | Must adhere to the validation rules of [BlockID](#blockid).                                              |
 | Signatures | Array of [CommitSig](#commitsig) | Array of commit signatures that correspond to current validator set. | Length of signatures must be > 0 and adhere to the validation of each individual [Commitsig](#commitsig) |
+
+## ExtendedCommit
+
+`ExtendedCommit`, similarly to Commit, wraps a list of votes with signatures together with other data needed to verify them.
+In addition, it contains the verified vote extensions, one for each non-`nil` vote, along with the extension signatures.
+
+| Name               | Type                                     | Description                                                                         | Validation                                                                                                               |
+|--------------------|------------------------------------------|-------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| Height             | int64                                    | Height at which this commit was created.                                            | Must be > 0                                                                                                              |
+| Round              | int32                                    | Round that the commit corresponds to.                                               | Must be > 0                                                                                                              |
+| BlockID            | [BlockID](#blockid)                      | The blockID of the corresponding block.                                             | Must adhere to the validation rules of [BlockID](#blockid).                                                              |
+| ExtendedSignatures | Array of [ExtendedCommitSig](#commitsig) | The current validator set's commit signatures, extension, and extension signatures. | Length of signatures must be > 0 and adhere to the validation of each individual [ExtendedCommitSig](#extendedcommitsig) |
 
 ## CommitSig
 
@@ -206,15 +217,32 @@ Commit is a simple wrapper for a list of signatures, with one for each validator
 a particular `BlockID` or was absent. It's a part of the `Commit` and can be used
 to reconstruct the vote set given the validator set.
 
-| Name             | Type                        | Description                                                                                                                                                      | Validation                                                        |
-|------------------|-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
+| Name             | Type                        | Description                                                                                                                                       | Validation                                                        |
+|------------------|-----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
 | BlockIDFlag      | [BlockIDFlag](#blockidflag) | Represents the validators participation in consensus: its vote was not received, voted for the block that received the majority, or voted for nil | Must be one of the fields in the [BlockIDFlag](#blockidflag) enum |
-| ValidatorAddress | [Address](#address)         | Address of the validator                                                                                                                                         | Must be of length 20                                              |
-| Timestamp        | [Time](#time)               | This field will vary from `CommitSig` to `CommitSig`. It represents the timestamp of the validator.                                                              | [Time](#time)                                                     |
-| Signature        | [Signature](#signature)     | Signature corresponding to the validators participation in consensus.                                                                                            | The length of the signature must be > 0 and < than  64            |
+| ValidatorAddress | [Address](#address)         | Address of the validator                                                                                                                          | Must be of length 20                                              |
+| Timestamp        | [Time](#time)               | This field will vary from `CommitSig` to `CommitSig`. It represents the timestamp of the validator.                                               | [Time](#time)                                                     |
+| Signature        | [Signature](#signature)     | Signature corresponding to the validators participation in consensus.                                                                             | The length of the signature must be > 0 and < than  64            |
 
 NOTE: `ValidatorAddress` and `Timestamp` fields may be removed in the future
 (see [ADR-25](https://github.com/cometbft/cometbft/blob/main/docs/architecture/adr-025-commit.md)).
+
+## ExtendedCommitSig
+
+`ExtendedCommitSig` represents a signature of a validator that has voted either for `nil`,
+a particular `BlockID` or was absent. It is part of the `ExtendedCommit` and can be used
+to reconstruct the vote set given the validator set.
+Additionally it contains the vote extensions that were attached to each non-`nil` precommit vote.
+All these extensions have been verified by the application operating at the signing validator's node.
+
+| Name               | Type                        | Description                                                                                                                                       | Validation                                                          |
+|--------------------|-----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
+| BlockIDFlag        | [BlockIDFlag](#blockidflag) | Represents the validators participation in consensus: its vote was not received, voted for the block that received the majority, or voted for nil | Must be one of the fields in the [BlockIDFlag](#blockidflag) enum   |
+| ValidatorAddress   | [Address](#address)         | Address of the validator                                                                                                                          | Must be of length 20                                                |
+| Timestamp          | [Time](#time)               | This field will vary from `CommitSig` to `CommitSig`. It represents the timestamp of the validator.                                               |                                                                     |
+| Signature          | [Signature](#signature)     | Signature corresponding to the validators participation in consensus.                                                                             | Length must be > 0 and < 64                                         |
+| Extension          | bytes                       | Vote extension provided by the Application running on the sender of the precommit vote, and verified by the local application.                    | Length must be zero if BlockIDFlag is not `Commit`                  |
+| ExtensionSignature | [Signature](#signature)     | Signature of the vote extension.                                                                                                                  | Length must be > 0 and < than 64 if BlockIDFlag is `Commit`, else 0 |
 
 ## BlockIDFlag
 
@@ -234,32 +262,33 @@ enum BlockIDFlag {
 A vote is a signed message from a validator for a particular block.
 The vote includes information about the validator signing it. When stored in the blockchain or propagated over the network, votes are encoded in Protobuf.
 
-| Name             | Type                            | Description                                                                                 | Validation                                                                                           |
-|------------------|---------------------------------|---------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
-| Type             | [SignedMsgType](#signedmsgtype) | Either prevote or precommit. [SignedMsgType](#signedmsgtype)                                | A Vote is valid if its corresponding fields are included in the enum [signedMsgType](#signedmsgtype) |
-| Height           | uint64                           | Height for which this vote was created for                                                  | Must be > 0                                                                                          |
-| Round            | int32                           | Round that the commit corresponds to.                                                       | Must be > 0                                                                                          |
-| BlockID          | [BlockID](#blockid)             | The blockID of the corresponding block.                                                     | [BlockID](#blockid)                                                                                  |
-| Timestamp        | [Time](#time)                   | Timestamp represents the time at which a validator signed.                                  | [Time](#time)                                                                                        |
-| ValidatorAddress | slice of bytes (`[]byte`)       | Address of the validator                                                                    | Length must be equal to 20                                                                           |
-| ValidatorIndex   | int32                           | Index at a specific block height that corresponds to the Index of the validator in the set. | must be > 0                                                                                          |
-| Signature        | slice of bytes (`[]byte`)       | Signature by the validator if they participated in consensus for the associated bock.       | Length of signature must be > 0 and < 64                                                             |
+| Name               | Type                            | Description                                                                              | Validation                               |
+|--------------------|---------------------------------|------------------------------------------------------------------------------------------|------------------------------------------|
+| Type               | [SignedMsgType](#signedmsgtype) | The type of message the vote refers to                                                   | Must be `PrevoteType` or `PrecommitType` |
+| Height             | int64                           | Height for which this vote was created for                                               | Must be > 0                              |
+| Round              | int32                           | Round that the commit corresponds to.                                                    | Must be > 0                              |
+| BlockID            | [BlockID](#blockid)             | The blockID of the corresponding block.                                                  |                                          |
+| Timestamp          | [Time](#time)                   | Timestamp represents the time at which a validator signed.                               |                                          |
+| ValidatorAddress   | bytes                           | Address of the validator                                                                 | Length must be equal to 20               |
+| ValidatorIndex     | int32                           | Index at a specific block height corresponding to the Index of the validator in the set. | Must be > 0                              |
+| Signature          | bytes                           | Signature by the validator if they participated in consensus for the associated block.   | Length must be > 0 and < 64              |
+| Extension          | bytes                           | Vote extension provided by the Application running at the validator's node.              | Length can be 0                          |
+| ExtensionSignature | bytes                           | Signature for the extension                                                              | Length must be > 0 and < 64              |
 
 ## CanonicalVote
 
-CanonicalVote is for validator signing. This type will not be present in a block. Votes are represented via `CanonicalVote` and also encoded using protobuf via `type.SignBytes` which includes the `ChainID`, and uses a different ordering of
-the fields.
+CanonicalVote is for validator signing. This type will not be present in a block.
+Votes are represented via `CanonicalVote` and also encoded using protobuf via `type.SignBytes` which includes the `ChainID`,
+and uses a different ordering of the fields.
 
-```proto
-message CanonicalVote {
-  SignedMsgType             type      = 1;
-  fixed64                  height    = 2;
-  sfixed64                  round     = 3;
-  CanonicalBlockID          block_id  = 4;
-  google.protobuf.Timestamp timestamp = 5;
-  string                    chain_id  = 6;
-}
-```
+| Name      | Type                            | Description                             | Validation                               |
+|-----------|---------------------------------|-----------------------------------------|------------------------------------------|
+| Type      | [SignedMsgType](#signedmsgtype) | The type of message the vote refers to  | Must be `PrevoteType` or `PrecommitType` |
+| Height    | int64                           | Height in which the vote was provided.  | Must be > 0                              |
+| Round     | int64                           | Round in which the vote was provided.   | Must be > 0                              |
+| BlockID   | string                          | ID of the block the vote refers to.     |                                          |
+| Timestamp | string                          | Time of the vote.                       |                                          |
+| ChainID   | string                          | ID of the blockchain running consensus. |                                          |
 
 For signing, votes are represented via [`CanonicalVote`](#canonicalvote) and also encoded using protobuf via
 `type.SignBytes` which includes the `ChainID`, and uses a different ordering of
@@ -280,6 +309,18 @@ func (vote *Vote) Verify(chainID string, pubKey crypto.PubKey) error {
  return nil
 }
 ```
+
+### CanonicalVoteExtension
+
+Vote extensions are signed using a representation similar to votes.
+This is the structure to marshall in order to obtain the bytes to sign or verify the signature.
+
+| Name      | Type   | Description                                 | Validation           |
+|-----------|--------|---------------------------------------------|----------------------|
+| Extension | bytes  | Vote extension provided by the Application. | Can have zero length |
+| Height    | int64  | Height in which the extension was provided. | Must be > 0          |
+| Round     | int64  | Round in which the extension was provided.  | Must be > 0          |
+| ChainID   | string | ID of the blockchain running consensus.     |                      |
 
 ## Proposal
 

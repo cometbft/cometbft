@@ -26,11 +26,13 @@ func TestReactor_Receive_ChunkRequest(t *testing.T) {
 		"chunk is returned": {
 			&ssproto.ChunkRequest{Height: 1, Format: 1, Index: 1},
 			[]byte{1, 2, 3},
-			&ssproto.ChunkResponse{Height: 1, Format: 1, Index: 1, Chunk: []byte{1, 2, 3}}},
+			&ssproto.ChunkResponse{Height: 1, Format: 1, Index: 1, Chunk: []byte{1, 2, 3}},
+		},
 		"empty chunk is returned, as nil": {
 			&ssproto.ChunkRequest{Height: 1, Format: 1, Index: 1},
 			[]byte{},
-			&ssproto.ChunkResponse{Height: 1, Format: 1, Index: 1, Chunk: nil}},
+			&ssproto.ChunkResponse{Height: 1, Format: 1, Index: 1, Chunk: nil},
+		},
 		"nil (missing) chunk is returned as missing": {
 			&ssproto.ChunkRequest{Height: 1, Format: 1, Index: 1},
 			nil,
@@ -43,7 +45,7 @@ func TestReactor_Receive_ChunkRequest(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			// Mock ABCI connection to return local snapshots
 			conn := &proxymocks.AppConnSnapshot{}
-			conn.On("LoadSnapshotChunkSync", abci.RequestLoadSnapshotChunk{
+			conn.On("LoadSnapshotChunk", mock.Anything, &abci.RequestLoadSnapshotChunk{
 				Height: tc.request.Height,
 				Format: tc.request.Format,
 				Chunk:  tc.request.Index,
@@ -71,7 +73,7 @@ func TestReactor_Receive_ChunkRequest(t *testing.T) {
 
 			// Start a reactor and send a ssproto.ChunkRequest, then wait for and check response
 			cfg := config.DefaultStateSyncConfig()
-			r := NewReactor(*cfg, conn, nil, "", NopMetrics())
+			r := NewReactor(*cfg, conn, nil, NopMetrics())
 			err := r.Start()
 			require.NoError(t, err)
 			t.Cleanup(func() {
@@ -135,7 +137,7 @@ func TestReactor_Receive_SnapshotsRequest(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			// Mock ABCI connection to return local snapshots
 			conn := &proxymocks.AppConnSnapshot{}
-			conn.On("ListSnapshotsSync", abci.RequestListSnapshots{}).Return(&abci.ResponseListSnapshots{
+			conn.On("ListSnapshots", mock.Anything, &abci.RequestListSnapshots{}).Return(&abci.ResponseListSnapshots{
 				Snapshots: tc.snapshots,
 			}, nil)
 
@@ -161,7 +163,7 @@ func TestReactor_Receive_SnapshotsRequest(t *testing.T) {
 
 			// Start a reactor and send a SnapshotsRequestMessage, then wait for and check responses
 			cfg := config.DefaultStateSyncConfig()
-			r := NewReactor(*cfg, conn, nil, "", NopMetrics())
+			r := NewReactor(*cfg, conn, nil, NopMetrics())
 			err := r.Start()
 			require.NoError(t, err)
 			t.Cleanup(func() {

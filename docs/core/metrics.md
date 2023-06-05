@@ -44,6 +44,7 @@ The following metrics are available:
 | consensus\_block\_gossip\_parts\_received  | Counter   | matches\_current | Number of block parts received by the node                                                                                                 |
 | consensus\_quorum\_prevote\_delay          | Gauge     |                  | Interval in seconds between the proposal timestamp and the timestamp of the earliest prevote that achieved a quorum                        |
 | consensus\_full\_prevote\_delay            | Gauge     |                  | Interval in seconds between the proposal timestamp and the timestamp of the latest prevote in a round where all validators voted           |
+| consensus\_vote\_extension\_receive\_count | Counter   | status           | Number of vote extensions received                                                                                                         |
 | consensus\_proposal\_receive\_count        | Counter   | status           | Total number of proposals received by the node since process start                                                                         |
 | consensus\_proposal\_create\_count         | Counter   |                  | Total number of proposals created by the node since process start                                                                          |
 | consensus\_round\_voting\_power\_percent   | Gauge     | vote\_type       | A value between 0 and 1.0 representing the percentage of the total voting power per vote type received within a round                      |

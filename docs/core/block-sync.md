@@ -18,17 +18,14 @@ consensus gossip protocol.
 
 ## Using Block Sync
 
-To support faster syncing, CometBFT offers a `block-sync` mode, which
-is enabled by default, and can be toggled in the `config.toml` or via
-`--block_sync=false`.
-
-In this mode, the CometBFT daemon will sync hundreds of times faster
-than if it used the real-time consensus process. Once caught up, the
-daemon will switch out of Block Sync and into the normal consensus mode.
-After running for some time, the node is considered `caught up` if it
-has at least one peer and its height is at least as high as the max
-reported peer height.
-See [the IsCaughtUp method](https://github.com/cometbft/cometbft/blob/main/blocksync/pool.go#L168).
+When starting from scratch, nodes will use the Block Sync mode.
+In this mode, the CometBFT daemon
+will sync hundreds of times faster than if it used the real-time consensus
+process. Once caught up, the daemon will switch out of Block Sync and into the
+normal consensus mode. After running for some time, the node is considered
+`caught up` if it has at least one peer and its height is at least as high as
+the max reported peer height. See [the IsCaughtUp
+method](https://github.com/cometbft/cometbft/blob/main/blocksync/pool.go#L168).
 
 Note: While there have historically been multiple versions of blocksync, v0, v1, and v2, all versions
 other than v0 have been deprecated in favor of the simplest and most well understood algorithm.

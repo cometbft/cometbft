@@ -129,6 +129,9 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	}
 	// set the app version to 1
 	genesis.ConsensusParams.Version.App = 1
+	genesis.ConsensusParams.Evidence.MaxAgeNumBlocks = e2e.EvidenceAgeHeight
+	genesis.ConsensusParams.Evidence.MaxAgeDuration = e2e.EvidenceAgeTime
+	genesis.ConsensusParams.ABCI.VoteExtensionsEnableHeight = testnet.VoteExtensionsEnableHeight
 	for validator, power := range testnet.Validators {
 		genesis.Validators = append(genesis.Validators, types.GenesisValidator{
 			Name:    validator.Name,
@@ -163,6 +166,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg.P2P.AddrBookStrict = false
 	cfg.DBBackend = node.Database
 	cfg.StateSync.DiscoveryTime = 5 * time.Second
+	cfg.BlockSync.Version = node.BlockSyncVersion
 
 	switch node.ABCIProtocol {
 	case e2e.ProtocolUNIX:
@@ -209,12 +213,6 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		return nil, fmt.Errorf("unexpected mode %q", node.Mode)
 	}
 
-	if node.BlockSync == "" {
-		cfg.BlockSyncMode = false
-	} else {
-		cfg.BlockSync.Version = node.BlockSync
-	}
-
 	if node.StateSync {
 		cfg.StateSync.Enable = true
 		cfg.StateSync.RPCServers = []string{}
@@ -243,6 +241,11 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		}
 		cfg.P2P.PersistentPeers += peer.AddressP2P(true)
 	}
+
+	if node.Prometheus {
+		cfg.Instrumentation.Prometheus = true
+	}
+
 	return cfg, nil
 }
 
@@ -253,7 +256,6 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		"dir":                    "data/app",
 		"listen":                 AppAddressUNIX,
 		"mode":                   node.Mode,
-		"proxy_port":             node.ProxyPort,
 		"protocol":               "socket",
 		"persist_interval":       node.PersistInterval,
 		"snapshot_interval":      node.SnapshotInterval,
@@ -262,6 +264,9 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		"prepare_proposal_delay": node.Testnet.PrepareProposalDelay,
 		"process_proposal_delay": node.Testnet.ProcessProposalDelay,
 		"check_tx_delay":         node.Testnet.CheckTxDelay,
+		"vote_extension_delay":   node.Testnet.VoteExtensionDelay,
+		"finalize_block_delay":   node.Testnet.FinalizeBlockDelay,
+		"vote_extension_size":    node.Testnet.VoteExtensionSize,
 	}
 	switch node.ABCIProtocol {
 	case e2e.ProtocolUNIX:

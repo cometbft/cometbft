@@ -6,21 +6,21 @@ title: Overview and basic concepts
 ## Outline
 
 - [Overview and basic concepts](#overview-and-basic-concepts)
-    - [ABCI++ vs. ABCI](#abci-vs-abci)
-    - [Method overview](#method-overview)
-        - [Consensus/block execution methods](#consensusblock-execution-methods)
-        - [Mempool methods](#mempool-methods)
-        - [Info methods](#info-methods)
-        - [State-sync methods](#state-sync-methods)
-        - [Other methods](#other-methods)
-    - [Proposal timeout](#proposal-timeout)
-    - [Deterministic State-Machine Replication](#deterministic-state-machine-replication)
-    - [Events](#events)
-    - [Evidence](#evidence)
-    - [Errors](#errors)
-        - [`CheckTx`](#checktx)
-        - [`DeliverTx`](#delivertx)
-        - [`Query`](#query)
+  - [ABCI++ vs. ABCI](#abci-vs-abci)
+  - [Method overview](#method-overview)
+    - [Consensus/block execution methods](#consensusblock-execution-methods)
+    - [Mempool methods](#mempool-methods)
+    - [Info methods](#info-methods)
+    - [State-sync methods](#state-sync-methods)
+    - [Other methods](#other-methods)
+  - [Proposal timeout](#proposal-timeout)
+  - [Deterministic State-Machine Replication](#deterministic-state-machine-replication)
+  - [Events](#events)
+  - [Evidence](#evidence)
+  - [Errors](#errors)
+    - [`CheckTx`](#checktx)
+    - [`ExecTxResult` (as part of `FinalizeBlock`)](#exectxresult-as-part-of-finalizeblock)
+    - [`Query`](#query)
 
 # Overview and basic concepts
 
@@ -29,7 +29,7 @@ title: Overview and basic concepts
 [&#8593; Back to Outline](#outline)
 
 The Application's main role is to execute blocks decided (a.k.a. finalized) by consensus. The
-decided blocks are the consensus's main ouput to the (replicated) Application. With ABCI, the
+decided blocks are the consensus's main output to the (replicated) Application. With ABCI, the
 application only interacts with consensus at *decision* time. This restricted mode of interaction
 prevents numerous features for the Application, including many scalability improvements that are
 now better understood than when ABCI was first written. For example, many ideas proposed to improve
@@ -40,18 +40,16 @@ as the Application cannot require validators to do more than executing the trans
 finalized blocks. This includes features such as threshold cryptography, and guaranteed IBC
 connection attempts.
 
-ABCI++ addresses these limitations by allowing the application to intervene at two key places of
-consensus execution: (a) at the moment a new proposal is to be created and (b) at the moment a
-proposal is to be validated. The new interface allows block proposers to perform application-dependent
+ABCI++ addresses these limitations by allowing the application to intervene at three key places of
+consensus execution: (a) at the moment a new proposal is to be created, (b) at the moment a
+proposal is to be validated, and (c) at the moment a (precommit) vote is sent/received. 
+The new interface allows block proposers to perform application-dependent
 work in a block through the `PrepareProposal` method (a); and validators to perform application-dependent work
-and checks in a proposed block through the `ProcessProposal` method (b).
+and checks in a proposed block through the `ProcessProposal` method (b); and applications to require their validators 
+to do more than just validate blocks through the `ExtendVote` and `VerifyVoteExtensions` methods (c). 
 
-<!-- Furthermore, ABCI++ coalesces {`BeginBlock`, [`DeliverTx`], `EndBlock`} into `FinalizeBlock`, as a
-simplified, efficient way to deliver a decided block to the Application. -->
-
-We plan to extend this to allow applications to intervene at the moment a (precommit) vote is sent/received.
-The applications could then require their validators to do more than just validating blocks through the `ExtendVote`
-and `VerifyVoteExtension` methods.
+Furthermore, ABCI 2.0 coalesces {`BeginBlock`, [`DeliverTx`], `EndBlock`} into `FinalizeBlock`, as a
+simplified, efficient way to deliver a decided block to the Application.
 
 ## Method overview
 
@@ -62,13 +60,12 @@ Methods can be classified into four categories: *consensus*, *mempool*, *info*, 
 
 ### Consensus/block execution methods
 
-The first time a new blockchain is started, CometBFT calls `InitChain`. From then on, methods `BeginBlock`,
- `DeliverTx` and `EndBlock` are executed upon the decision of each block, resulting in an updated Application
-state. One `DeliverTx` is called for each transaction in the block. The result is an updated application state.
-Cryptographic commitments to the results of `DeliverTx`, and an application-provided hash in `Commit` are included in the header of the next block. During the execution of an instance of consensus, which decides the block for a given
-height, and before method `BeginBlock` is called, methods `PrepareProposal` and `ProcessProposal`,
- may be called several times. See
-[CometBFT's expected behavior](./abci++_comet_expected_behavior.md) for details on the possible
+The first time a new blockchain is started, CometBFT calls `InitChain`. From then on, method 
+`FinalizeBlock` is executed upon the decision of each block, resulting in an updated Application
+state. During the execution of an instance of consensus, which decides the block for a given
+height, and before method `FinalizeBlock` is called, methods `PrepareProposal`, `ProcessProposal`,
+`ExtendVote`, and `VerifyVoteExtension` may be called several times. See
+[CometBFT's expected behavior](abci++_comet_expected_behavior.md) for details on the possible
 call sequences of these methods.
 
 - [**InitChain:**](./abci++_methods.md#initchain) This method initializes the blockchain.
@@ -99,23 +96,6 @@ call sequences of these methods.
   the proposal is invalid (e.g., an invalid transaction); the Application can
   ignore the invalid part of the prepared proposal at block execution time.
 
-- [**BeginBlock:**](./abci++_methods.md#beginblock) Is called exactly once after a block has been decided
-  and executes once before all `DeliverTx` method calls.
-
-- [**DeliverTx**](./abci++_methods.md#delivertx) Upon completion of `BeginBlock`,
-`DeliverTx` is called once
-  for each of the transactions within the block. The application defines further checks to confirm their
-  validity - for example a key-value store might verify that the key does not already exist. Note that
-  even if a transaction does not pass the check in `DeliverTx`, it will still be part of the block as the
-  block has already been voted on (unlike with `CheckTx` which would dismiss such a transaction). The responses
-  returned by `DeliverTx` are included in the header of the next block.
-
-- [**EndBlock**](./abci++_methods.md#endblock) It is executed once all transactions have been processed via
- `DeliverTx` to inform the application that no other transactions will be delivered as part of the current
- block and to ask for changes of the validator set and consensus parameters to be used in the following block.
- As with `DeliverTx`, cryptographic commitments of the responses returned are included in the header of the next block.
-<!--
-
 - [**ExtendVote:**](./abci++_methods.md#extendvote) It allows applications to force their
   validators to do more than just validate within consensus. `ExtendVote` allows applications to
   include non-deterministic data, opaque to the consensus algorithm, to precommit messages (the final round of
@@ -136,19 +116,17 @@ call sequences of these methods.
   As a general rule, an Application that detects an invalid vote extension SHOULD
   accept it in `ResponseVerifyVoteExtension` and ignore it in its own logic. CometBFT calls it when
   a process receives a precommit message with a (possibly empty) vote extension.
--->
 
-<!---
 - [**FinalizeBlock:**](./abci++_methods.md#finalizeblock) It delivers a decided block to the
   Application. The Application must execute the transactions in the block deterministically and
   update its state accordingly. Cryptographic commitments to the block and transaction results,
   returned via the corresponding parameters in `ResponseFinalizeBlock`, are included in the header
   of the next block. CometBFT calls it when a new block is decided.
--->
+
 - [**Commit:**](./abci++_methods.md#commit) Instructs the Application to persist its
   state. It is a fundamental part of CometBFT's crash-recovery mechanism that ensures the
-  synchronization between CometBFT and the Applicatin upon recovery. CometBFT calls it just after
-  having persisted the data returned by calls to `DeliverTx` and `EndBlock` . The Application can now discard
+  synchronization between CometBFT and the Application upon recovery. CometBFT calls it just after
+  having persisted the data returned by calls to `ResponseFinalizeBlock`. The Application can now discard
   any state or data except the one resulting from executing the transactions in the decided block.
 
 ### Mempool methods
@@ -244,28 +222,27 @@ ABCI++ applications must implement deterministic finite-state machines to be
 securely replicated by the CometBFT consensus engine. This means block execution
 must be strictly deterministic: given the same
 ordered set of transactions, all nodes will compute identical responses, for all
-successive `BeginBlock`, `DeliverTx`, `EndBlock`, and `Commit` calls. This is critical because the
+successive `FinalizeBlock` calls. This is critical because the
 responses are included in the header of the next block, either via a Merkle root
 or directly, so all nodes must agree on exactly what they are.
 
 For this reason, it is recommended that application state is not exposed to any
 external user or process except via the ABCI connections to a consensus engine
 like CometBFT. The Application must only change its state based on input
-from block execution (`BeginBlock`, `DeliverTx`, `EndBlock`, and `Commit` calls), and not through
+from block execution (`FinalizeBlock` calls), and not through
 any other kind of request. This is the only way to ensure all nodes see the same
 transactions and compute the same results.
 
 Some Applications may choose to implement immediate execution, which entails executing the blocks
 that are about to be proposed (via `PrepareProposal`), and those that the Application is asked to
 validate (via `ProcessProposal`). However, the state changes caused by processing those
-proposed blocks must never replace the previous state until the block execution calls confirm
+proposed blocks must never replace the previous state until `FinalizeBlock` confirms
 the block decided.
 
-<!--
 Additionally, vote extensions or the validation thereof (via `ExtendVote` or
 `VerifyVoteExtension`) must *never* have side effects on the current state.
 They can only be used when their data is provided in a `RequestPrepareProposal` call.
--->
+
 If there is some non-determinism in the state machine, consensus will eventually
 fail as nodes disagree over the correct values for the block header. The
 non-determinism must be fixed and the nodes restarted.
@@ -289,7 +266,7 @@ Sources of non-determinism in applications may include:
 
 See [#56](https://github.com/tendermint/abci/issues/56) for the original discussion.
 
-Note that some methods (`Query, DeliverTx`) return non-deterministic data in the form
+Note that some methods (`Query`, `FinalizeBlock`) return non-deterministic data in the form
 of `Info` and `Log` fields. The `Log` is intended for the literal output from the Application's
 logger, while the `Info` is any additional info that should be returned. These are the only fields
 that are not included in block header computations, so we don't need agreement
@@ -299,12 +276,12 @@ on them. All other fields in the `Response*` must be strictly deterministic.
 
 [&#8593; Back to Outline](#outline)
 
-Methods `BeginBlock, DeliverTx` and `EndBlock` include an `events` field in their
-`Response*`.
+Method `FinalizeBlock` includes an `events` field at the top level in its
+`Response*`, and one `events` field per transaction included in the block.
 Applications may respond to this ABCI++ method with an event list for each executed
 transaction, and a general event list for the block itself.
 Events allow applications to associate metadata with transactions and blocks.
-Events returned via these ABCI methods do not impact the consensus algorithm in any way
+Events returned via `FinalizeBlock` do not impact the consensus algorithm in any way
 and instead exist to power subscriptions and queries of CometBFT state.
 
 An `Event` contains a `type` and a list of `EventAttributes`, which are key-value
@@ -340,7 +317,7 @@ message EventAttribute {
 Example:
 
 ```go
- abci.ResponseDeliverTx{
+ abci.ResponseFinalizeBlock{
   // ...
  Events: []abci.Event{
   {
@@ -402,7 +379,7 @@ enum EvidenceType {
 
 [&#8593; Back to Outline](#outline)
 
-The `Query`, `CheckTx` and `DeliverTx` methods include a `Code` field in their `Response*`.
+The `Query` and `CheckTx` methods include a `Code` field in their `Response*`.
 Field `Code` is meant to contain an application-specific response code.
 A response code of `0` indicates no error.  Any other response code
 indicates to CometBFT that an error occurred.
@@ -411,20 +388,18 @@ These methods also return a `Codespace` string to CometBFT. This field is
 used to disambiguate `Code` values returned by different domains of the
 Application. The `Codespace` is a namespace for the `Code`.
 
-Methods `Echo`, `Info`, `BeginBlock`, `EndBlock`, `Commit` and `InitChain` do not return errors.
+Methods `Echo`, `Info`, `Commit` and `InitChain` do not return errors.
 An error in any of these methods represents a critical issue that CometBFT
 has no reasonable way to handle. If there is an error in one
 of these methods, the Application must crash to ensure that the error is safely
 handled by an operator.
 
-<!--
 Method `FinalizeBlock` is a special case. It contains a number of
 `Code` and `Codespace` fields as part of type `ExecTxResult`. Each of
 these codes reports errors related to the transaction it is attached to.
 However, `FinalizeBlock` does not return errors at the top level, so the
 same considerations on critical issues made for `Echo`, `Info`, and
 `InitChain` also apply here.
--->
 
 The handling of non-zero response codes by CometBFT is described below.
 
@@ -434,18 +409,12 @@ When CometBFT receives a `ResponseCheckTx` with a non-zero `Code`, the associate
 transaction will not be added to CometBFT's mempool or it will be removed if
 it is already included.
 
-### `DeliverTx`
+### `ExecTxResult` (as part of `FinalizeBlock`)
 
-The `DeliverTx` ABCI method delivers transactions from CometBFT to the application.
-When CometBFT receives a `ResponseDeliverTx` with a non-zero `Code`, the response code is logged.
-The transaction was already included in a block, so the `Code` does not influence consensus.
-
-<!--
 The `ExecTxResult` type delivers transaction results from the Application to CometBFT. When
 CometBFT receives a `ResponseFinalizeBlock` containing an `ExecTxResult` with a non-zero `Code`,
 the response code is logged. Past `Code` values can be queried by clients. As the transaction was
 part of a decided block, the `Code` does not influence consensus.
--->
 
 ### `Query`
 

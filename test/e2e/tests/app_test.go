@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"testing"
 	"time"
 
@@ -38,19 +39,27 @@ func TestApp_Hash(t *testing.T) {
 	testNode(t, func(t *testing.T, node e2e.Node) {
 		client, err := node.Client()
 		require.NoError(t, err)
+
 		info, err := client.ABCIInfo(ctx)
 		require.NoError(t, err)
 		require.NotEmpty(t, info.Response.LastBlockAppHash, "expected app to return app hash")
 
-		block, err := client.Block(ctx, nil)
-		require.NoError(t, err)
-		require.EqualValues(t, info.Response.LastBlockAppHash, block.Block.AppHash,
-			"app hash does not match last block's app hash")
+		// In next-block execution, the app hash is stored in the next block
+		requestedHeight := info.Response.LastBlockHeight + 1
 
-		status, err := client.Status(ctx)
+		require.Eventually(t, func() bool {
+			status, err := client.Status(ctx)
+			require.NoError(t, err)
+			require.NotZero(t, status.SyncInfo.LatestBlockHeight)
+			return status.SyncInfo.LatestBlockHeight >= requestedHeight
+		}, 5*time.Second, 500*time.Millisecond)
+
+		block, err := client.Block(ctx, &requestedHeight)
 		require.NoError(t, err)
-		require.EqualValues(t, info.Response.LastBlockAppHash, status.SyncInfo.LatestAppHash,
-			"app hash does not match node status")
+		require.Equal(t,
+			fmt.Sprintf("%x", info.Response.LastBlockAppHash),
+			fmt.Sprintf("%x", block.Block.AppHash.Bytes()),
+			"app hash does not match last block's app hash")
 	})
 }
 
@@ -93,5 +102,30 @@ func TestApp_Tx(t *testing.T) {
 		assert.Equal(t, key, string(abciResp.Response.Key))
 		assert.Equal(t, value, string(abciResp.Response.Value))
 
+	})
+}
+
+func TestApp_VoteExtensions(t *testing.T) {
+	testNode(t, func(t *testing.T, node e2e.Node) {
+		client, err := node.Client()
+		require.NoError(t, err)
+		info, err := client.ABCIInfo(ctx)
+		require.NoError(t, err)
+
+		// This special value should have been created by way of vote extensions
+		resp, err := client.ABCIQuery(ctx, "", []byte("extensionSum"))
+		require.NoError(t, err)
+
+		// if extensions are not enabled on the network, we should expect
+		// the app to have any extension value set (via a normal tx).
+		if node.Testnet.VoteExtensionsEnableHeight != 0 &&
+			info.Response.LastBlockHeight > node.Testnet.VoteExtensionsEnableHeight {
+
+			parts := bytes.Split(resp.Response.Value, []byte("|"))
+			require.Len(t, parts, 2)
+			extSum, err := strconv.Atoi(string(parts[0]))
+			require.NoError(t, err)
+			require.GreaterOrEqual(t, extSum, 0)
+		}
 	})
 }

@@ -57,15 +57,17 @@ func TestMsgToProto(t *testing.T) {
 	}
 	pbProposal := proposal.ToProto()
 
-	pv := types.NewMockPV()
-	pk, err := pv.GetPubKey()
-	require.NoError(t, err)
-	val := types.NewValidator(pk, 100)
-
-	vote, err := types.MakeVote(
-		1, types.BlockID{}, &types.ValidatorSet{Proposer: val, Validators: []*types.Validator{val}},
-		pv, "chainID", time.Now())
-	require.NoError(t, err)
+	vote := types.MakeVoteNoError(
+		t,
+		types.NewMockPV(),
+		"chainID",
+		0,
+		1,
+		0,
+		cmtproto.PrecommitType,
+		bi,
+		time.Now(),
+	)
 	pbVote := vote.ToProto()
 
 	testsCases := []struct {
@@ -349,6 +351,8 @@ func TestConsMsgsVectors(t *testing.T) {
 		BlockID:          bi,
 	}
 	vpb := v.ToProto()
+	v.Extension = []byte("extension")
+	vextPb := v.ToProto()
 
 	testCases := []struct {
 		testName string
@@ -381,9 +385,12 @@ func TestConsMsgsVectors(t *testing.T) {
 		{"BlockPart", &cmtcons.Message{Sum: &cmtcons.Message_BlockPart{
 			BlockPart: &cmtcons.BlockPart{Height: 1, Round: 1, Part: *pbParts}}},
 			"2a36080110011a3008011204746573741a26080110011a206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d"},
-		{"Vote", &cmtcons.Message{Sum: &cmtcons.Message_Vote{
+		{"Vote_without_ext", &cmtcons.Message{Sum: &cmtcons.Message_Vote{
 			Vote: &cmtcons.Vote{Vote: vpb}}},
 			"32700a6e0802100122480a206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d1224080112206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d2a0608c0b89fdc0532146164645f6d6f72655f6578636c616d6174696f6e3801"},
+		{"Vote_with_ext", &cmtcons.Message{Sum: &cmtcons.Message_Vote{
+			Vote: &cmtcons.Vote{Vote: vextPb}}},
+			"327b0a790802100122480a206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d1224080112206164645f6d6f72655f6578636c616d6174696f6e5f6d61726b735f636f64652d2a0608c0b89fdc0532146164645f6d6f72655f6578636c616d6174696f6e38014a09657874656e73696f6e"},
 		{"HasVote", &cmtcons.Message{Sum: &cmtcons.Message_HasVote{
 			HasVote: &cmtcons.HasVote{Height: 1, Round: 1, Type: cmtproto.PrevoteType, Index: 1}}},
 			"3a080801100118012001"},

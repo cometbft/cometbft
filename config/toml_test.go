@@ -66,7 +66,6 @@ func assertValidConfig(t *testing.T, configFile string) {
 		"moniker",
 		"seeds",
 		"proxy_app",
-		"block_sync",
 		"create_empty_blocks",
 		"peer",
 		"timeout",

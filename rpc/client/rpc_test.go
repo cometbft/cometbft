@@ -252,7 +252,7 @@ func TestAppCalls(t *testing.T) {
 		k, v, tx := MakeTxKV()
 		bres, err := c.BroadcastTxCommit(context.Background(), tx)
 		require.NoError(err)
-		require.True(bres.DeliverTx.IsOK())
+		require.True(bres.TxResult.IsOK())
 		txh := bres.Height
 		apph := txh + 1 // this is where the tx will be applied to the state
 
@@ -368,7 +368,7 @@ func TestBroadcastTxCommit(t *testing.T) {
 		bres, err := c.BroadcastTxCommit(context.Background(), tx)
 		require.Nil(err, "%d: %+v", i, err)
 		require.True(bres.CheckTx.IsOK())
-		require.True(bres.DeliverTx.IsOK())
+		require.True(bres.TxResult.IsOK())
 
 		require.Equal(0, mempool.Size())
 	}
@@ -377,9 +377,9 @@ func TestBroadcastTxCommit(t *testing.T) {
 func TestUnconfirmedTxs(t *testing.T) {
 	_, _, tx := MakeTxKV()
 
-	ch := make(chan *abci.Response, 1)
+	ch := make(chan *abci.ResponseCheckTx, 1)
 	mempool := node.Mempool()
-	err := mempool.CheckTx(tx, func(resp *abci.Response) { ch <- resp }, mempl.TxInfo{})
+	err := mempool.CheckTx(tx, func(resp *abci.ResponseCheckTx) { ch <- resp }, mempl.TxInfo{})
 	require.NoError(t, err)
 
 	// wait for tx to arrive in mempoool.
@@ -407,9 +407,9 @@ func TestUnconfirmedTxs(t *testing.T) {
 func TestNumUnconfirmedTxs(t *testing.T) {
 	_, _, tx := MakeTxKV()
 
-	ch := make(chan *abci.Response, 1)
+	ch := make(chan *abci.ResponseCheckTx, 1)
 	mempool := node.Mempool()
-	err := mempool.CheckTx(tx, func(resp *abci.Response) { ch <- resp }, mempl.TxInfo{})
+	err := mempool.CheckTx(tx, func(resp *abci.ResponseCheckTx) { ch <- resp }, mempl.TxInfo{})
 	require.NoError(t, err)
 
 	// wait for tx to arrive in mempoool.
@@ -516,6 +516,31 @@ func TestTxSearchWithTimeout(t *testing.T) {
 	require.Greater(t, len(result.Txs), 0, "expected a lot of transactions")
 }
 
+// This test does nothing if we do not call app.SetGenBlockEvents() within main_test.go
+// It will nevertheless pass as there are no events being generated.
+func TestBlockSearch(t *testing.T) {
+	c := getHTTPClient()
+
+	// first we broadcast a few txs
+	for i := 0; i < 10; i++ {
+		_, _, tx := MakeTxKV()
+
+		_, err := c.BroadcastTxCommit(context.Background(), tx)
+		require.NoError(t, err)
+	}
+	require.NoError(t, client.WaitForHeight(c, 5, nil))
+	result, err := c.BlockSearch(context.Background(), "begin_event.foo = 100", nil, nil, "asc")
+	require.NoError(t, err)
+	blockCount := len(result.Blocks)
+	// if we generate block events within the test (by uncommenting
+	// the code in line main_test.go:L23) then we expect len(result.Blocks)
+	// to be at least 5
+	// require.GreaterOrEqual(t, blockCount, 5)
+
+	// otherwise it is 0
+	require.Equal(t, blockCount, 0)
+
+}
 func TestTxSearch(t *testing.T) {
 	c := getHTTPClient()
 
@@ -536,8 +561,7 @@ func TestTxSearch(t *testing.T) {
 	find := result.Txs[len(result.Txs)-1]
 	anotherTxHash := types.Tx("a different tx").Hash()
 
-	for i, c := range GetClients() {
-		t.Logf("client %d", i)
+	for _, c := range GetClients() {
 
 		// now we query for the tx.
 		result, err := c.TxSearch(context.Background(), fmt.Sprintf("tx.hash='%v'", find.Hash), true, nil, nil, "asc")
@@ -616,16 +640,17 @@ func TestTxSearch(t *testing.T) {
 			pages     = int(math.Ceil(float64(txCount) / float64(perPage)))
 		)
 
+		totalTx := 0
 		for page := 1; page <= pages; page++ {
 			page := page
-			result, err := c.TxSearch(context.Background(), "tx.height >= 1", false, &page, &perPage, "asc")
+			result, err := c.TxSearch(context.Background(), "tx.height >= 1", true, &page, &perPage, "asc")
 			require.NoError(t, err)
 			if page < pages {
 				require.Len(t, result.Txs, perPage)
 			} else {
 				require.LessOrEqual(t, len(result.Txs), perPage)
 			}
-			require.Equal(t, txCount, result.TotalCount)
+			totalTx = totalTx + len(result.Txs)
 			for _, tx := range result.Txs {
 				require.False(t, seen[tx.Height],
 					"Found duplicate height %v in page %v", tx.Height, page)
@@ -635,6 +660,7 @@ func TestTxSearch(t *testing.T) {
 				maxHeight = tx.Height
 			}
 		}
+		require.Equal(t, txCount, totalTx)
 		require.Len(t, seen, txCount)
 	}
 }

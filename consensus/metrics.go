@@ -8,7 +8,6 @@ import (
 
 	cstypes "github.com/cometbft/cometbft/consensus/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -91,6 +90,11 @@ type Metrics struct {
 	//metrics:Interval in seconds between the proposal timestamp and the timestamp of the latest prevote in a round where all validators voted.
 	FullPrevoteDelay metrics.Gauge `metrics_labels:"proposer_address"`
 
+	// VoteExtensionReceiveCount is the number of vote extensions received by this
+	// node. The metric is annotated by the status of the vote extension from the
+	// application, either 'accepted' or 'rejected'.
+	VoteExtensionReceiveCount metrics.Counter `metrics_labels:"status"`
+
 	// ProposalReceiveCount is the total number of proposals received by this node
 	// since process start.
 	// The metric is annotated by the status of the proposal from the application,
@@ -99,6 +103,8 @@ type Metrics struct {
 
 	// ProposalCreationCount is the total number of proposals created by this node
 	// since process start.
+	// The metric is annotated by the status of the proposal from the application,
+	// either 'accepted' or 'rejected'.
 	ProposalCreateCount metrics.Counter
 
 	// RoundVotingPowerPercent is the percentage of the total voting power received
@@ -112,20 +118,20 @@ type Metrics struct {
 	LateVotes metrics.Counter `metrics_labels:"vote_type"`
 }
 
-// RecordConsMetrics uses for recording the block related metrics during fast-sync.
-func (m *Metrics) RecordConsMetrics(block *types.Block) {
-	m.NumTxs.Set(float64(len(block.Data.Txs)))
-	m.TotalTxs.Add(float64(len(block.Data.Txs)))
-	m.BlockSizeBytes.Set(float64(block.Size()))
-	m.CommittedHeight.Set(float64(block.Height))
-}
-
 func (m *Metrics) MarkProposalProcessed(accepted bool) {
 	status := "accepted"
 	if !accepted {
 		status = "rejected"
 	}
 	m.ProposalReceiveCount.With("status", status).Add(1)
+}
+
+func (m *Metrics) MarkVoteExtensionReceived(accepted bool) {
+	status := "accepted"
+	if !accepted {
+		status = "rejected"
+	}
+	m.VoteExtensionReceiveCount.With("status", status).Add(1)
 }
 
 func (m *Metrics) MarkVoteReceived(vt cmtproto.SignedMsgType, power, totalPower int64) {
@@ -138,6 +144,14 @@ func (m *Metrics) MarkRound(r int32, st time.Time) {
 	m.Rounds.Set(float64(r))
 	roundTime := time.Since(st).Seconds()
 	m.RoundDurationSeconds.Observe(roundTime)
+
+	pvt := cmtproto.PrevoteType
+	pvn := strings.ToLower(strings.TrimPrefix(pvt.String(), "SIGNED_MSG_TYPE_"))
+	m.RoundVotingPowerPercent.With("vote_type", pvn).Set(0)
+
+	pct := cmtproto.PrecommitType
+	pcn := strings.ToLower(strings.TrimPrefix(pct.String(), "SIGNED_MSG_TYPE_"))
+	m.RoundVotingPowerPercent.With("vote_type", pcn).Set(0)
 }
 
 func (m *Metrics) MarkLateVote(vt cmtproto.SignedMsgType) {

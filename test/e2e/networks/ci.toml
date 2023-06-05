@@ -3,6 +3,7 @@
 
 ipv6 = true
 initial_height = 1000
+vote_extensions_enable_height = 1007
 evidence = 5
 initial_state = { initial01 = "a", initial02 = "b", initial03 = "c" }
 prepare_proposal_delay = "100ms"
@@ -10,6 +11,7 @@ process_proposal_delay = "100ms"
 check_tx_delay = "0ms"
 # The most common case (e.g. Cosmos SDK-based chains).
 abci_protocol = "builtin"
+prometheus = true
 
 [validators]
 validator01 = 100
@@ -61,7 +63,6 @@ database = "rocksdb"
 perturb = ["pause"]
 
 [node.validator05]
-block_sync = "v0" 
 start_at = 1005 # Becomes part of the validator set at 1010
 persistent_peers = ["validator01", "full01"]
 database = "cleveldb"
@@ -71,7 +72,6 @@ perturb = ["kill", "pause", "disconnect", "restart"]
 [node.full01]
 start_at = 1010
 mode = "full"
-block_sync = "v0"
 persistent_peers = ["validator01", "validator02", "validator03", "validator04", "validator05"]
 retain_blocks = 10
 perturb = ["restart"]
@@ -79,7 +79,6 @@ perturb = ["restart"]
 [node.full02]
 start_at = 1015
 mode = "full"
-block_sync = "v0"
 state_sync = true
 seeds = ["seed01"]
 perturb = ["restart"]

@@ -24,7 +24,6 @@ import (
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/proxy"
 	rpccore "github.com/cometbft/cometbft/rpc/core"
-	grpccore "github.com/cometbft/cometbft/rpc/grpc"
 	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/state/indexer"
@@ -134,7 +133,8 @@ func StateProvider(stateProvider statesync.StateProvider) Option {
 //------------------------------------------------------------------------------
 
 // NewNode returns a new, ready to go, CometBFT Node.
-func NewNode(config *cfg.Config,
+func NewNode(ctx context.Context,
+	config *cfg.Config,
 	privValidator types.PrivValidator,
 	nodeKey *p2p.NodeKey,
 	clientCreator proxy.ClientCreator,
@@ -169,7 +169,7 @@ func NewNode(config *cfg.Config,
 	// EventBus and IndexerService must be started before the handshake because
 	// we might need to index the txs of the replayed block as this might not have happened
 	// when the node stopped last time (i.e. the node stopped after it saved the block
-	// but before it indexed the txs, or, endblocker panicked)
+	// but before it indexed the txs)
 	eventBus, err := createAndStartEventBus(logger)
 	if err != nil {
 		return nil, err
@@ -207,7 +207,7 @@ func NewNode(config *cfg.Config,
 	// and replays any blocks as necessary to sync CometBFT with the app.
 	consensusLogger := logger.With("module", "consensus")
 	if !stateSync {
-		if err := doHandshake(stateStore, state, blockStore, genDoc, eventBus, proxyApp, consensusLogger); err != nil {
+		if err := doHandshake(ctx, stateStore, state, blockStore, genDoc, eventBus, proxyApp, consensusLogger); err != nil {
 			return nil, err
 		}
 
@@ -222,7 +222,7 @@ func NewNode(config *cfg.Config,
 
 	// Determine whether we should do block sync. This must happen after the handshake, since the
 	// app may modify the validator set, specifying ourself as the only validator.
-	blockSync := config.BlockSyncMode && !onlyValidatorIsUs(state, pubKey)
+	blockSync := !onlyValidatorIsUs(state, pubKey)
 
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
 
@@ -266,7 +266,6 @@ func NewNode(config *cfg.Config,
 		*config.StateSync,
 		proxyApp.Snapshot(),
 		proxyApp.Query(),
-		config.StateSync.TempDir,
 		ssMetrics,
 	)
 	stateSyncReactor.SetLogger(logger.With("module", "statesync"))
@@ -425,8 +424,8 @@ func (n *Node) OnStart() error {
 		if !ok {
 			return fmt.Errorf("this blocksync reactor does not support switching from state sync")
 		}
-		err := startStateSync(n.stateSyncReactor, bcR, n.consensusReactor, n.stateSyncProvider,
-			n.config.StateSync, n.config.BlockSyncMode, n.stateStore, n.blockStore, n.stateSyncGenesis)
+		err := startStateSync(n.stateSyncReactor, bcR, n.stateSyncProvider,
+			n.config.StateSync, n.stateStore, n.blockStore, n.stateSyncGenesis)
 		if err != nil {
 			return fmt.Errorf("failed to start state sync: %w", err)
 		}
@@ -619,33 +618,6 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 		}
 
 		listeners[i] = listener
-	}
-
-	// we expose a simplified api over grpc for convenience to app devs
-	grpcListenAddr := n.config.RPC.GRPCListenAddress
-	if grpcListenAddr != "" {
-		config := rpcserver.DefaultConfig()
-		config.MaxBodyBytes = n.config.RPC.MaxBodyBytes
-		config.MaxHeaderBytes = n.config.RPC.MaxHeaderBytes
-		// NOTE: GRPCMaxOpenConnections is used, not MaxOpenConnections
-		config.MaxOpenConnections = n.config.RPC.GRPCMaxOpenConnections
-		// If necessary adjust global WriteTimeout to ensure it's greater than
-		// TimeoutBroadcastTxCommit.
-		// See https://github.com/tendermint/tendermint/issues/3435
-		if config.WriteTimeout <= n.config.RPC.TimeoutBroadcastTxCommit {
-			config.WriteTimeout = n.config.RPC.TimeoutBroadcastTxCommit + 1*time.Second
-		}
-		listener, err := rpcserver.Listen(grpcListenAddr, config.MaxOpenConnections)
-		if err != nil {
-			return nil, err
-		}
-		go func() {
-			if err := grpccore.StartGRPCServer(env, listener); err != nil {
-				n.Logger.Error("Error starting gRPC server", "err", err)
-			}
-		}()
-		listeners = append(listeners, listener)
-
 	}
 
 	return listeners, nil

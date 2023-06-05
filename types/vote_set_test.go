@@ -15,7 +15,7 @@ import (
 
 func TestVoteSet_AddVote_Good(t *testing.T) {
 	height, round := int64(1), int32(0)
-	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 10, 1)
+	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 10, 1, false)
 	val0 := privValidators[0]
 
 	val0p, err := val0.GetPubKey()
@@ -47,7 +47,7 @@ func TestVoteSet_AddVote_Good(t *testing.T) {
 
 func TestVoteSet_AddVote_Bad(t *testing.T) {
 	height, round := int64(1), int32(0)
-	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 10, 1)
+	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 10, 1, false)
 
 	voteProto := &Vote{
 		ValidatorAddress: nil,
@@ -118,11 +118,12 @@ func TestVoteSet_AddVote_Bad(t *testing.T) {
 			t.Errorf("expected VoteSet.Add to fail, wrong type")
 		}
 	}
+
 }
 
 func TestVoteSet_2_3Majority(t *testing.T) {
 	height, round := int64(1), int32(0)
-	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 10, 1)
+	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 10, 1, false)
 
 	voteProto := &Vote{
 		ValidatorAddress: nil, // NOTE: must fill in
@@ -172,7 +173,7 @@ func TestVoteSet_2_3Majority(t *testing.T) {
 
 func TestVoteSet_2_3MajorityRedux(t *testing.T) {
 	height, round := int64(1), int32(0)
-	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 100, 1)
+	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 100, 1, false)
 
 	blockHash := crypto.CRandBytes(32)
 	blockPartsTotal := uint32(123)
@@ -271,7 +272,7 @@ func TestVoteSet_2_3MajorityRedux(t *testing.T) {
 
 func TestVoteSet_Conflicts(t *testing.T) {
 	height, round := int64(1), int32(0)
-	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 4, 1)
+	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 4, 1, false)
 	blockHash1 := cmtrand.Bytes(32)
 	blockHash2 := cmtrand.Bytes(32)
 
@@ -400,7 +401,7 @@ func TestVoteSet_Conflicts(t *testing.T) {
 
 func TestVoteSet_MakeCommit(t *testing.T) {
 	height, round := int64(1), int32(0)
-	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrecommitType, 10, 1)
+	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrecommitType, 10, 1, true)
 	blockHash, blockPartSetHeader := crypto.CRandBytes(32), PartSetHeader{123, crypto.CRandBytes(32)}
 
 	voteProto := &Vote{
@@ -426,7 +427,8 @@ func TestVoteSet_MakeCommit(t *testing.T) {
 	}
 
 	// MakeCommit should fail.
-	assert.Panics(t, func() { voteSet.MakeCommit() }, "Doesn't have +2/3 majority")
+	veHeightParam := ABCIParams{VoteExtensionsEnableHeight: height}
+	assert.Panics(t, func() { voteSet.MakeExtendedCommit(veHeightParam) }, "Doesn't have +2/3 majority")
 
 	// 7th voted for some other block.
 	{
@@ -463,14 +465,97 @@ func TestVoteSet_MakeCommit(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	commit := voteSet.MakeCommit()
+	extCommit := voteSet.MakeExtendedCommit(veHeightParam)
 
 	// Commit should have 10 elements
-	assert.Equal(t, 10, len(commit.Signatures))
+	assert.Equal(t, 10, len(extCommit.ExtendedSignatures))
 
 	// Ensure that Commit is good.
-	if err := commit.ValidateBasic(); err != nil {
+	if err := extCommit.ValidateBasic(); err != nil {
 		t.Errorf("error in Commit.ValidateBasic(): %v", err)
+	}
+}
+
+// TestVoteSet_VoteExtensionsEnabled tests that the vote set correctly validates
+// vote extension data when either required or not required.
+func TestVoteSet_VoteExtensionsEnabled(t *testing.T) {
+	for _, tc := range []struct {
+		name              string
+		requireExtensions bool
+		addExtension      bool
+		exepectError      bool
+	}{
+		{
+			name:              "no extension but expected",
+			requireExtensions: true,
+			addExtension:      false,
+			exepectError:      true,
+		},
+		{
+			name:              "invalid extensions but not expected",
+			requireExtensions: true,
+			addExtension:      false,
+			exepectError:      true,
+		},
+		{
+			name:              "no extension and not expected",
+			requireExtensions: false,
+			addExtension:      false,
+			exepectError:      false,
+		},
+		{
+			name:              "extension and expected",
+			requireExtensions: true,
+			addExtension:      true,
+			exepectError:      false,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			height, round := int64(1), int32(0)
+			valSet, privValidators := RandValidatorSet(5, 10)
+			var voteSet *VoteSet
+			if tc.requireExtensions {
+				voteSet = NewExtendedVoteSet("test_chain_id", height, round, cmtproto.PrecommitType, valSet)
+			} else {
+				voteSet = NewVoteSet("test_chain_id", height, round, cmtproto.PrecommitType, valSet)
+			}
+
+			val0 := privValidators[0]
+
+			val0p, err := val0.GetPubKey()
+			require.NoError(t, err)
+			val0Addr := val0p.Address()
+			blockHash := crypto.CRandBytes(32)
+			blockPartsTotal := uint32(123)
+			blockPartSetHeader := PartSetHeader{blockPartsTotal, crypto.CRandBytes(32)}
+
+			vote := &Vote{
+				ValidatorAddress: val0Addr,
+				ValidatorIndex:   0,
+				Height:           height,
+				Round:            round,
+				Type:             cmtproto.PrecommitType,
+				Timestamp:        cmttime.Now(),
+				BlockID:          BlockID{blockHash, blockPartSetHeader},
+			}
+			v := vote.ToProto()
+			err = val0.SignVote(voteSet.ChainID(), v)
+			require.NoError(t, err)
+			vote.Signature = v.Signature
+
+			if tc.addExtension {
+				vote.ExtensionSignature = v.ExtensionSignature
+			}
+
+			added, err := voteSet.AddVote(vote)
+			if tc.exepectError {
+				require.Error(t, err)
+				require.False(t, added)
+			} else {
+				require.NoError(t, err)
+				require.True(t, added)
+			}
+		})
 	}
 }
 
@@ -481,8 +566,15 @@ func randVoteSet(
 	signedMsgType cmtproto.SignedMsgType,
 	numValidators int,
 	votingPower int64,
+	extEnabled bool,
 ) (*VoteSet, *ValidatorSet, []PrivValidator) {
 	valSet, privValidators := RandValidatorSet(numValidators, votingPower)
+	if extEnabled {
+		if signedMsgType != cmtproto.PrecommitType {
+			return nil, nil, nil
+		}
+		return NewExtendedVoteSet("test_chain_id", height, round, signedMsgType, valSet), valSet, privValidators
+	}
 	return NewVoteSet("test_chain_id", height, round, signedMsgType, valSet), valSet, privValidators
 }
 

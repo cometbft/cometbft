@@ -59,12 +59,16 @@ var (
 	lightNodePerturbations = probSetChoice{
 		"upgrade": 0.3,
 	}
+	voteExtensionEnableHeightOffset = uniformChoice{int64(0), int64(10), int64(100)}
+	voteExtensionEnabled            = uniformChoice{true, false}
+	voteExtensionSize               = uniformChoice{uint(128), uint(512), uint(2048), uint(8192)} //TODO: define the right values depending on experiment results.
 )
 
 type generateConfig struct {
 	randSource   *rand.Rand
 	outputDir    string
 	multiVersion string
+	prometheus   bool
 }
 
 // Generate generates random testnets using the given RNG.
@@ -106,7 +110,7 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 	}
 	manifests := []e2e.Manifest{}
 	for _, opt := range combinations(testnetCombinations) {
-		manifest, err := generateTestnet(cfg.randSource, opt, upgradeVersion)
+		manifest, err := generateTestnet(cfg.randSource, opt, upgradeVersion, cfg.prometheus)
 		if err != nil {
 			return nil, err
 		}
@@ -116,7 +120,7 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 }
 
 // generateTestnet generates a single testnet with the given options.
-func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion string) (e2e.Manifest, error) {
+func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion string, prometheus bool) (e2e.Manifest, error) {
 	manifest := e2e.Manifest{
 		IPv6:             ipv6.Choose(r).(bool),
 		ABCIProtocol:     nodeABCIProtocols.Choose(r).(string),
@@ -127,6 +131,7 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 		Evidence:         evidence.Choose(r).(int),
 		Nodes:            map[string]*e2e.ManifestNode{},
 		UpgradeVersion:   upgradeVersion,
+		Prometheus:       prometheus,
 	}
 
 	switch abciDelays.Choose(r).(string) {
@@ -134,11 +139,21 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 	case "small":
 		manifest.PrepareProposalDelay = 100 * time.Millisecond
 		manifest.ProcessProposalDelay = 100 * time.Millisecond
+		manifest.VoteExtensionDelay = 20 * time.Millisecond
+		manifest.FinalizeBlockDelay = 200 * time.Millisecond
 	case "large":
 		manifest.PrepareProposalDelay = 200 * time.Millisecond
 		manifest.ProcessProposalDelay = 200 * time.Millisecond
 		manifest.CheckTxDelay = 20 * time.Millisecond
+		manifest.VoteExtensionDelay = 100 * time.Millisecond
+		manifest.FinalizeBlockDelay = 500 * time.Millisecond
 	}
+
+	if voteExtensionEnabled.Choose(r).(bool) {
+		manifest.VoteExtensionsEnableHeight = manifest.InitialHeight + voteExtensionEnableHeightOffset.Choose(r).(int64)
+	}
+
+	manifest.VoteExtensionSize = voteExtensionSize.Choose(r).(uint)
 
 	var numSeeds, numValidators, numFulls, numLightClients int
 	switch opt["topology"].(string) {
@@ -159,7 +174,7 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 	// First we generate seed nodes, starting at the initial height.
 	for i := 1; i <= numSeeds; i++ {
 		manifest.Nodes[fmt.Sprintf("seed%02d", i)] = generateNode(
-			r, e2e.ModeSeed, 0, manifest.InitialHeight, false)
+			r, e2e.ModeSeed, 0, false)
 	}
 
 	// Next, we generate validators. We make sure a BFT quorum of validators start
@@ -175,7 +190,7 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 		}
 		name := fmt.Sprintf("validator%02d", i)
 		manifest.Nodes[name] = generateNode(
-			r, e2e.ModeValidator, startAt, manifest.InitialHeight, i <= 2)
+			r, e2e.ModeValidator, startAt, i <= 2)
 
 		if startAt == 0 {
 			(*manifest.Validators)[name] = int64(30 + r.Intn(71))
@@ -204,7 +219,7 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 			nextStartAt += 5
 		}
 		manifest.Nodes[fmt.Sprintf("full%02d", i)] = generateNode(
-			r, e2e.ModeFull, startAt, manifest.InitialHeight, false)
+			r, e2e.ModeFull, startAt, false)
 	}
 
 	// We now set up peer discovery for nodes. Seed nodes are fully meshed with
@@ -267,7 +282,7 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 // here, since we need to know the overall network topology and startup
 // sequencing.
 func generateNode(
-	r *rand.Rand, mode e2e.Mode, startAt int64, initialHeight int64, forceArchive bool,
+	r *rand.Rand, mode e2e.Mode, startAt int64, forceArchive bool,
 ) *e2e.ManifestNode {
 	node := e2e.ManifestNode{
 		Version:          nodeVersions.Choose(r).(string),
@@ -275,7 +290,7 @@ func generateNode(
 		StartAt:          startAt,
 		Database:         nodeDatabases.Choose(r).(string),
 		PrivvalProtocol:  nodePrivvalProtocols.Choose(r).(string),
-		BlockSync:        nodeBlockSyncs.Choose(r).(string),
+		BlockSyncVersion: nodeBlockSyncs.Choose(r).(string),
 		StateSync:        nodeStateSyncs.Choose(r).(bool) && startAt > 0,
 		PersistInterval:  ptrUint64(uint64(nodePersistIntervals.Choose(r).(int))),
 		SnapshotInterval: uint64(nodeSnapshotIntervals.Choose(r).(int)),

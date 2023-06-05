@@ -59,9 +59,7 @@ func IsASCIIText(s string) bool {
 		return false
 	}
 	for _, b := range []byte(s) {
-		if 32 <= b && b <= 126 {
-			// good
-		} else {
+		if b < 32 || b > 126 {
 			return false
 		}
 	}

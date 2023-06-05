@@ -8,7 +8,6 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/clist"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p"
 	protomem "github.com/cometbft/cometbft/proto/tendermint/mempool"
 	"github.com/cometbft/cometbft/types"
@@ -22,69 +21,6 @@ type Reactor struct {
 	config  *cfg.MempoolConfig
 	mempool *CListMempool
 	ids     *mempoolIDs
-}
-
-type mempoolIDs struct {
-	mtx       cmtsync.RWMutex
-	peerMap   map[p2p.ID]uint16
-	nextID    uint16              // assumes that a node will never have over 65536 active peers
-	activeIDs map[uint16]struct{} // used to check if a given peerID key is used, the value doesn't matter
-}
-
-// Reserve searches for the next unused ID and assigns it to the
-// peer.
-func (ids *mempoolIDs) ReserveForPeer(peer p2p.Peer) {
-	ids.mtx.Lock()
-	defer ids.mtx.Unlock()
-
-	curID := ids.nextPeerID()
-	ids.peerMap[peer.ID()] = curID
-	ids.activeIDs[curID] = struct{}{}
-}
-
-// nextPeerID returns the next unused peer ID to use.
-// This assumes that ids's mutex is already locked.
-func (ids *mempoolIDs) nextPeerID() uint16 {
-	if len(ids.activeIDs) == MaxActiveIDs {
-		panic(fmt.Sprintf("node has maximum %d active IDs and wanted to get one more", MaxActiveIDs))
-	}
-
-	_, idExists := ids.activeIDs[ids.nextID]
-	for idExists {
-		ids.nextID++
-		_, idExists = ids.activeIDs[ids.nextID]
-	}
-	curID := ids.nextID
-	ids.nextID++
-	return curID
-}
-
-// Reclaim returns the ID reserved for the peer back to unused pool.
-func (ids *mempoolIDs) Reclaim(peer p2p.Peer) {
-	ids.mtx.Lock()
-	defer ids.mtx.Unlock()
-
-	removedID, ok := ids.peerMap[peer.ID()]
-	if ok {
-		delete(ids.activeIDs, removedID)
-		delete(ids.peerMap, peer.ID())
-	}
-}
-
-// GetForPeer returns an ID reserved for the peer.
-func (ids *mempoolIDs) GetForPeer(peer p2p.Peer) uint16 {
-	ids.mtx.RLock()
-	defer ids.mtx.RUnlock()
-
-	return ids.peerMap[peer.ID()]
-}
-
-func newMempoolIDs() *mempoolIDs {
-	return &mempoolIDs{
-		peerMap:   make(map[p2p.ID]uint16),
-		activeIDs: map[uint16]struct{}{0: {}},
-		nextID:    1, // reserve unknownPeerID(0) for mempoolReactor.BroadcastTx
-	}
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
@@ -147,7 +83,7 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 }
 
 // RemovePeer implements Reactor.
-func (memR *Reactor) RemovePeer(peer p2p.Peer, reason interface{}) {
+func (memR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
 	memR.ids.Reclaim(peer)
 	// broadcast routine checks if peer is gone and returns
 }
@@ -230,7 +166,12 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			continue
 		}
 
-		// Allow for a lag of 1 block.
+		// If we suspect that the peer is lagging behind, at least by more than
+		// one block, we don't send the transaction immediately. This code
+		// reduces the mempool size and the recheck-tx rate of the receiving
+		// node. See [RFC 103] for an analysis on this optimization.
+		//
+		// [RFC 103]: https://github.com/cometbft/cometbft/pull/735
 		memTx := next.Value.(*mempoolTx)
 		if peerState.GetHeight() < memTx.Height()-1 {
 			time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
@@ -240,7 +181,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// NOTE: Transaction batching was disabled due to
 		// https://github.com/tendermint/tendermint/issues/5796
 
-		if _, ok := memTx.senders.Load(peerID); !ok {
+		if !memTx.isSender(peerID) {
 			success := peer.Send(p2p.Envelope{
 				ChannelID: MempoolChannel,
 				Message:   &protomem.Txs{Txs: [][]byte{memTx.tx}},
@@ -261,14 +202,4 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			return
 		}
 	}
-}
-
-// TxsMessage is a Message containing transactions.
-type TxsMessage struct {
-	Txs []types.Tx
-}
-
-// String returns a string representation of the TxsMessage.
-func (m *TxsMessage) String() string {
-	return fmt.Sprintf("[TxsMessage %v]", m.Txs)
 }

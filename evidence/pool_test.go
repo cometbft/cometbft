@@ -196,8 +196,8 @@ func TestEvidencePoolUpdate(t *testing.T) {
 	ev, err := types.NewMockDuplicateVoteEvidenceWithValidator(height, defaultEvidenceTime.Add(21*time.Minute),
 		val, evidenceChainID)
 	require.NoError(t, err)
-	lastCommit := makeCommit(height, val.PrivKey.PubKey().Address())
-	block := types.MakeBlock(height+1, []types.Tx{}, lastCommit, []types.Evidence{ev})
+	lastExtCommit := makeExtCommit(height, val.PrivKey.PubKey().Address())
+	block := types.MakeBlock(height+1, []types.Tx{}, lastExtCommit.ToCommit(), []types.Evidence{ev})
 	// update state (partially)
 	state.LastBlockHeight = height + 1
 	state.LastBlockTime = defaultEvidenceTime.Add(22 * time.Minute)
@@ -412,8 +412,8 @@ func initializeBlockStore(db dbm.DB, state sm.State, valAddr []byte) (*store.Blo
 	blockStore := store.NewBlockStore(db)
 
 	for i := int64(1); i <= state.LastBlockHeight; i++ {
-		lastCommit := makeCommit(i-1, valAddr)
-		block := state.MakeBlock(i, test.MakeNTxs(i, 1), lastCommit, nil, state.Validators.Proposer.Address)
+		lastCommit := makeExtCommit(i-1, valAddr)
+		block := state.MakeBlock(i, test.MakeNTxs(i, 1), lastCommit.ToCommit(), nil, state.Validators.Proposer.Address)
 		block.Header.Time = defaultEvidenceTime.Add(time.Duration(i) * time.Minute)
 		block.Header.Version = cmtversion.Consensus{Block: version.BlockProtocol, App: 1}
 		const parts = 1
@@ -422,21 +422,26 @@ func initializeBlockStore(db dbm.DB, state sm.State, valAddr []byte) (*store.Blo
 			return nil, err
 		}
 
-		seenCommit := makeCommit(i, valAddr)
-		blockStore.SaveBlock(block, partSet, seenCommit)
+		seenCommit := makeExtCommit(i, valAddr)
+		blockStore.SaveBlockWithExtendedCommit(block, partSet, seenCommit)
 	}
 
 	return blockStore, nil
 }
 
-func makeCommit(height int64, valAddr []byte) *types.Commit {
-	commitSigs := []types.CommitSig{{
-		BlockIDFlag:      types.BlockIDFlagCommit,
-		ValidatorAddress: valAddr,
-		Timestamp:        defaultEvidenceTime,
-		Signature:        []byte("Signature"),
-	}}
-	return types.NewCommit(height, 0, types.BlockID{}, commitSigs)
+func makeExtCommit(height int64, valAddr []byte) *types.ExtendedCommit {
+	return &types.ExtendedCommit{
+		Height: height,
+		ExtendedSignatures: []types.ExtendedCommitSig{{
+			CommitSig: types.CommitSig{
+				BlockIDFlag:      types.BlockIDFlagCommit,
+				ValidatorAddress: valAddr,
+				Timestamp:        defaultEvidenceTime,
+				Signature:        []byte("Signature"),
+			},
+			ExtensionSignature: []byte("Extended Signature"),
+		}},
+	}
 }
 
 func defaultTestPool(t *testing.T, height int64) (*evidence.Pool, types.MockPV) {

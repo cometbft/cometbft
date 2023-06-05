@@ -97,10 +97,7 @@ func iotest(writer protoio.WriteCloser, reader protoio.ReadCloser) error {
 	if i != size {
 		panic("not enough messages read")
 	}
-	if err := reader.Close(); err != nil {
-		return err
-	}
-	return nil
+	return reader.Close()
 }
 
 type buffer struct {

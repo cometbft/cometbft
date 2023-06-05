@@ -14,9 +14,7 @@ import (
 	nm "github.com/cometbft/cometbft/node"
 )
 
-var (
-	genesisHash []byte
-)
+var genesisHash []byte
 
 // AddNodeFlags exposes some common configuration options on the command-line
 // These are exposed for convenience of commands embedding a CometBFT node
@@ -31,7 +29,6 @@ func AddNodeFlags(cmd *cobra.Command) {
 		"socket address to listen on for connections from external priv_validator process")
 
 	// node flags
-	cmd.Flags().Bool("block_sync", config.BlockSyncMode, "sync the block chain using the blocksync algorithm")
 	cmd.Flags().BytesHexVar(
 		&genesisHash,
 		"genesis_hash",
@@ -51,10 +48,6 @@ func AddNodeFlags(cmd *cobra.Command) {
 
 	// rpc flags
 	cmd.Flags().String("rpc.laddr", config.RPC.ListenAddress, "RPC listen address. Port required")
-	cmd.Flags().String(
-		"rpc.grpc_laddr",
-		config.RPC.GRPCListenAddress,
-		"GRPC listen address (BroadcastTx only). Port required")
 	cmd.Flags().Bool("rpc.unsafe", config.RPC.Unsafe, "enabled unsafe rpc methods")
 	cmd.Flags().String("rpc.pprof_laddr", config.RPC.PprofListenAddress, "pprof listen address (https://golang.org/pkg/net/http/pprof)")
 

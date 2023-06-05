@@ -187,7 +187,7 @@ For example, in the G-Set case, the merge operator is simply the union of the se
 
 The two approaches for converging the message sets in the Tendermint algorithm described [earlier](#nodes-state-as-a-tuple-space), without the deletion of entries, correspond to the operation- and state-based [Grow-only Set](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type#G-Set_(Grow-only_Set)) CRDT;
 if removals must be handled, then using a 2P-Set is an option.
-Next we introduce a CRDT in which some removals happen internally to the CRDT, based on the fact that the information in some entries becomes stale or have been superseded by the information in other entries present.
+Next we introduce a CRDT in which some removals happen internally to the CRDT, based on the fact that the information in some entries becomes stale or has been superseded by the information in other entries present.
 
 ### About supersession
 
@@ -312,6 +312,8 @@ In `Lexy2` an entry `(a,b,c,t)` is superseded by a view `v` if an only if `v` co
 - or `(d,e,f,u)` is superseded in `v`.
 
 As in previous example, the tuple could be interpreted as instance, node and round of some distributed protocol such that tuples from previous instances are obsoleted by tuples from new instances, and tuples from previous rounds are obsoleted by tuples for new rounds of the same node.
-As an extra condition, the boolean in the tuple acts as a tombstone marker for a tuple.
+As an extra condition, the boolean acts as a tombstone marker for a tuple.
 
 #### An SSE for Tendermint
+
+> :warning: TODO

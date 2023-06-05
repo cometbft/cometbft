@@ -32,7 +32,6 @@ module Lexy1 {
         OInt::nsoe(oe._3,e._3),
     }
 
-
     pure def removeStale(view: View): (View,View) =
         val superseded = view.filter(e => Set(e).isSupersededBy(view.excludeE(e)))
         val alive = view.exclude(superseded)
@@ -121,6 +120,8 @@ module Lexy2 {
     type Entry = (int, int, int, bool)
     type EntryO = (OInt::OType,OInt::OType,OInt::OType,OBool::OType)
 
+    //User provided
+    type Entry = (int, int, int, bool)
 
     //User provided
     pure def toTombstone(e: Entry): Entry = (e._1, e._1, e._3, true)
@@ -159,7 +160,6 @@ module Lexy2 {
         OBool::nsoe(oe._4,e._4),
     }
 
-
     pure def removeStale(view: View): (View,View) =
         val superseded = view.filter(e => Set(e).isSupersededBy(view.excludeE(e)))
         val alive = view.exclude(superseded)
@@ -191,7 +191,6 @@ module Lexy2 {
         assert((0,0,0,false).matches((OInt::none,OInt::valueOf(0),OInt::none,OBool::valueOf(false)))),
         assert((0,0,0,false).matches((OInt::none,OInt::valueOf(0),OInt::none,OBool::none))),
     }
-
 
     run isSupersededByTest = all {
         assert(Set((1,1,1,false)).isSupersededBy(Set((1,1,1,true)))),

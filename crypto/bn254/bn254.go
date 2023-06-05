@@ -20,11 +20,11 @@ import (
 )
 
 const (
-	PrivKeyName = "tendermint/PrivKeyBn254"
-	PubKeyName  = "tendermint/PubKeyBn254"
-	KeyType     = "bn254"
-	PubKeySize  = bn254.SizeOfG1AffineCompressed
-	PrivKeySize = sizePrivateKey
+	PrivKeyName    = "tendermint/PrivKeyBn254"
+	PubKeyName     = "tendermint/PubKeyBn254"
+	KeyType        = "bn254"
+	PubKeySize     = bn254.SizeOfG1AffineCompressed
+	PrivKeySize    = sizePrivateKey
 	sizeFr         = fr.Bytes
 	sizeFp         = fp.Bytes
 	sizePublicKey  = sizeFp
@@ -90,6 +90,7 @@ func (pubKey PubKey) SetBytes(buf []byte) error {
 	}
 	return nil
 }
+
 // Bytes returns the PubKey byte format.
 func (pubKey PubKey) Bytes() []byte {
 	return pubKey[:]
@@ -154,16 +155,15 @@ func init() {
 	_, _, G1Base, G2Base = bn254.Generators()
 }
 
-/* Loop until we find a valid G2 point derived from:
-   X0=uint256(keccak256(msg || i)))
-   X1=uint256(keccak256(i || msg)))
+// Loop until we find a valid G2 point derived from:
+// X0=uint256(keccak256(msg || i)))
+// X1=uint256(keccak256(i || msg)))
+//
+// Y0,Y1=Decompress(X0, X1)
+//
+// Point is then recoverable from the tuple (msg, i, Y0, Y1)
+// TODO: this function can likely be further optimized
 
-   Y0,Y1=Decompress(X0, X1)
-
-   Point is then recoverable from the tuple (msg, i, Y0, Y1)
-
-TODO: performance
-*/
 func hashedMessage(msg []byte) (bn254.G2Affine, uint32) {
 	var point bn254.G2Affine
 	var i = uint32(0)

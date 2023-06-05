@@ -3,13 +3,11 @@ module params {
 
     val __NodeIds = Set("n1", "n2")
 
-    val __Heights = 0.to(2)
-
-    val __Txs = Set("tx1", "tx2")
+    val __Txs = Set("tx1", "tx2", "tx3", "tx4")
 
     def __isValidAt(tx, h) = or {
-        h == 1 and tx.in(Set("tx1")),
-        h == 2 and tx.in(Set("tx2")),
+        tx.in(Set("tx1", "tx2")) and h == 1,
+        tx.in(Set("tx3", "tx4")) and h == 2,
     }
 
     // network topology
@@ -34,15 +32,14 @@ module base {
     // const NodeIds: Set[NodeId]
     val NodeIds: Set[NodeId] = __NodeIds
 
-    // Heights
-    type Height = int
-    val Heights = __Heights
-
     // Transactions
     type Tx = str
     // val invalidTx: Tx = "invalid-tx"
     // const Txs: Set[Tx]
     val Txs: Set[Tx] = __Txs
+
+    // Heights
+    type Height = int
     def isValidAt(tx: Tx, h: Height): bool = __isValidAt(tx, h)
 
     //--------------------------------------------------------------------------

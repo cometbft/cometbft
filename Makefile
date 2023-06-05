@@ -230,7 +230,7 @@ format:
 
 lint:
 	@echo "--> Running linter"
-	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.2 run --out-format=tab 
+	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
 .PHONY: lint
 
 vulncheck:

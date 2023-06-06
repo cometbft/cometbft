@@ -6,6 +6,7 @@ import (
 	"fmt"
 	mrand "math/rand"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -640,35 +641,35 @@ func TestMempoolTxsBytes(t *testing.T) {
 
 func TestMempoolNoCacheOverflow(t *testing.T) {
 	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
-	app := kvstore.NewInMemoryApplication()
+	app := kvstore.NewApplication()
 	_, server := newRemoteApp(t, sockPath, app)
 	t.Cleanup(func() {
 		if err := server.Stop(); err != nil {
 			t.Error(err)
 		}
 	})
-	cfg := test.ResetTestRoot("mempool_test")
+	cfg := config.ResetTestRoot("mempool_test")
 	mp, cleanup := newMempoolWithAppAndConfig(proxy.NewRemoteClientCreator(sockPath, "socket", true), cfg)
 	defer cleanup()
 
 	// add tx0
-	var tx0 = kvstore.NewTxFromID(0)
-	err := mp.CheckTx(tx0, nil, TxInfo{})
+	var tx0 = types.Tx([]byte{0x01})
+	err := mp.CheckTx(tx0, nil, mempool.TxInfo{})
 	require.NoError(t, err)
 	err = mp.FlushAppConn()
 	require.NoError(t, err)
 
 	// saturate the cache to remove tx0
 	for i := 1; i <= mp.config.CacheSize; i++ {
-		err = mp.CheckTx(kvstore.NewTxFromID(i), nil, TxInfo{})
+		err = mp.CheckTx(types.Tx([]byte(strconv.Itoa(i))), nil, mempool.TxInfo{})
 		require.NoError(t, err)
 	}
 	err = mp.FlushAppConn()
 	require.NoError(t, err)
-	assert.False(t, mp.cache.Has(kvstore.NewTxFromID(0)))
+	assert.False(t, mp.cache.Has(types.Tx([]byte{0x01})))
 
 	// add again tx0
-	err = mp.CheckTx(tx0, nil, TxInfo{})
+	err = mp.CheckTx(tx0, nil, mempool.TxInfo{})
 	require.NoError(t, err)
 	err = mp.FlushAppConn()
 	require.NoError(t, err)

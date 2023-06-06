@@ -17,6 +17,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/cometbft/cometbft/libs/log"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 	"github.com/cometbft/cometbft/state/txindex"
@@ -58,6 +60,8 @@ func (BackportTxIndexer) Search(context.Context, *query.Query) ([]*abci.TxResult
 	return nil, errors.New("the TxIndexer.Search method is not supported")
 }
 
+func (BackportTxIndexer) SetLogger(log.Logger) {}
+
 // BlockIndexer returns a bridge that implements the CometBFT v0.34 block
 // indexer interface, using the Postgres event sink as a backing store.
 func (es *EventSink) BlockIndexer() BackportBlockIndexer {
@@ -70,7 +74,7 @@ type BackportBlockIndexer struct{ psql *EventSink }
 
 // Has is implemented to satisfy the BlockIndexer interface, but it is not
 // supported by the psql event sink and reports an error for all inputs.
-func (BackportBlockIndexer) Has(height int64) (bool, error) {
+func (BackportBlockIndexer) Has(_ int64) (bool, error) {
 	return false, errors.New("the BlockIndexer.Has method is not supported")
 }
 
@@ -85,3 +89,5 @@ func (b BackportBlockIndexer) Index(block types.EventDataNewBlockEvents) error {
 func (BackportBlockIndexer) Search(context.Context, *query.Query) ([]int64, error) {
 	return nil, errors.New("the BlockIndexer.Search method is not supported")
 }
+
+func (BackportBlockIndexer) SetLogger(log.Logger) {}

@@ -67,7 +67,7 @@ func DefaultNewNode(config *cfg.Config, logger log.Logger) (*Node, error) {
 		return nil, fmt.Errorf("failed to load or gen node key %s: %w", config.NodeKeyFile(), err)
 	}
 
-	return NewNode(config,
+	return NewNode(context.Background(), config,
 		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
 		nodeKey,
 		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
@@ -154,6 +154,8 @@ func createAndStartIndexerService(
 		return nil, nil, nil, err
 	}
 
+	txIndexer.SetLogger(logger.With("module", "txindex"))
+	blockIndexer.SetLogger(logger.With("module", "txindex"))
 	indexerService := txindex.NewIndexerService(txIndexer, blockIndexer, eventBus, false)
 	indexerService.SetLogger(logger.With("module", "txindex"))
 
@@ -165,6 +167,7 @@ func createAndStartIndexerService(
 }
 
 func doHandshake(
+	ctx context.Context,
 	stateStore sm.Store,
 	state sm.State,
 	blockStore sm.BlockStore,
@@ -176,7 +179,7 @@ func doHandshake(
 	handshaker := cs.NewHandshaker(stateStore, state, blockStore, genDoc)
 	handshaker.SetLogger(consensusLogger)
 	handshaker.SetEventBus(eventBus)
-	if err := handshaker.Handshake(proxyApp); err != nil {
+	if err := handshaker.Handshake(ctx, proxyApp); err != nil {
 		return fmt.Errorf("error during handshake: %v", err)
 	}
 	return nil
@@ -469,9 +472,14 @@ func createPEXReactorAndAddToSwitch(addrBook pex.AddrBook, config *cfg.Config,
 }
 
 // startStateSync starts an asynchronous state sync process, then switches to block sync mode.
-func startStateSync(ssR *statesync.Reactor, bcR blockSyncReactor, conR *cs.Reactor,
-	stateProvider statesync.StateProvider, config *cfg.StateSyncConfig,
-	stateStore sm.Store, blockStore *store.BlockStore, state sm.State,
+func startStateSync(
+	ssR *statesync.Reactor,
+	bcR blockSyncReactor,
+	stateProvider statesync.StateProvider,
+	config *cfg.StateSyncConfig,
+	stateStore sm.Store,
+	blockStore *store.BlockStore,
+	state sm.State,
 ) error {
 	ssR.Logger.Info("Starting state sync")
 
@@ -580,11 +588,7 @@ func saveGenesisDoc(db dbm.DB, genDoc *types.GenesisDoc) error {
 	if err != nil {
 		return fmt.Errorf("failed to save genesis doc due to marshaling error: %w", err)
 	}
-	if err := db.SetSync(genesisDocKey, b); err != nil {
-		return err
-	}
-
-	return nil
+	return db.SetSync(genesisDocKey, b)
 }
 
 func createAndStartPrivValidatorSocketClient(

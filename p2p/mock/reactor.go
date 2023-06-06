@@ -19,7 +19,7 @@ func NewReactor() *Reactor {
 	return r
 }
 
-func (r *Reactor) GetChannels() []*conn.ChannelDescriptor       { return r.Channels }
-func (r *Reactor) AddPeer(peer p2p.Peer)                        {}
-func (r *Reactor) RemovePeer(peer p2p.Peer, reason interface{}) {}
-func (r *Reactor) Receive(e p2p.Envelope)                       {}
+func (r *Reactor) GetChannels() []*conn.ChannelDescriptor { return r.Channels }
+func (r *Reactor) AddPeer(_ p2p.Peer)                     {}
+func (r *Reactor) RemovePeer(_ p2p.Peer, _ interface{})   {}
+func (r *Reactor) Receive(_ p2p.Envelope)                 {}

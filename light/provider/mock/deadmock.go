@@ -20,10 +20,10 @@ func (p *deadMock) ChainID() string { return p.chainID }
 
 func (p *deadMock) String() string { return "deadMock" }
 
-func (p *deadMock) LightBlock(_ context.Context, height int64) (*types.LightBlock, error) {
+func (p *deadMock) LightBlock(context.Context, int64) (*types.LightBlock, error) {
 	return nil, provider.ErrNoResponse
 }
 
-func (p *deadMock) ReportEvidence(_ context.Context, ev types.Evidence) error {
+func (p *deadMock) ReportEvidence(context.Context, types.Evidence) error {
 	return provider.ErrNoResponse
 }

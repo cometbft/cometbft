@@ -14,7 +14,7 @@ import (
 
 // RandVal creates one random validator, with a key derived
 // from the input value
-func RandVal(i int) types.ValidatorUpdate {
+func RandVal() types.ValidatorUpdate {
 	pubkey := cmtrand.Bytes(32)
 	power := cmtrand.Uint16() + 1
 	v := types.UpdateValidator(pubkey, int64(power), "")
@@ -28,7 +28,7 @@ func RandVal(i int) types.ValidatorUpdate {
 func RandVals(cnt int) []types.ValidatorUpdate {
 	res := make([]types.ValidatorUpdate, cnt)
 	for i := 0; i < cnt; i++ {
-		res[i] = RandVal(i)
+		res[i] = RandVal()
 	}
 	return res
 }

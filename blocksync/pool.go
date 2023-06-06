@@ -664,9 +664,8 @@ OUTER_LOOP:
 				if peerID == bpr.peerID {
 					bpr.reset()
 					continue OUTER_LOOP
-				} else {
-					continue WAIT_LOOP
 				}
+				continue WAIT_LOOP
 			case <-bpr.gotBlockCh:
 				// We got a block!
 				// Continue the for-loop and wait til Quit.

@@ -75,6 +75,6 @@ func TestGRPC(t *testing.T) {
 	}
 }
 
-func dialerFunc(ctx context.Context, addr string) (net.Conn, error) {
+func dialerFunc(_ context.Context, addr string) (net.Conn, error) {
 	return cmtnet.Connect(addr)
 }

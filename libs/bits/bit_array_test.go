@@ -28,7 +28,6 @@ func randBitArray(bits int) (*BitArray, []byte) {
 }
 
 func TestAnd(t *testing.T) {
-
 	bA1, _ := randBitArray(51)
 	bA2, _ := randBitArray(31)
 	bA3 := bA1.And(bA2)
@@ -53,7 +52,6 @@ func TestAnd(t *testing.T) {
 }
 
 func TestOr(t *testing.T) {
-
 	bA1, _ := randBitArray(51)
 	bA2, _ := randBitArray(31)
 	bA3 := bA1.Or(bA2)
@@ -143,7 +141,7 @@ func TestPickRandom(t *testing.T) {
 	}
 }
 
-func TestBytes(t *testing.T) {
+func TestBytes(_ *testing.T) {
 	bA := NewBitArray(4)
 	bA.SetIndex(0, true)
 	check := func(bA *BitArray, bz []byte) {
@@ -188,7 +186,7 @@ func TestEmptyFull(t *testing.T) {
 	}
 }
 
-func TestUpdateNeverPanics(t *testing.T) {
+func TestUpdateNeverPanics(_ *testing.T) {
 	newRandBitArray := func(n int) *BitArray {
 		ba, _ := randBitArray(n)
 		return ba
@@ -210,7 +208,7 @@ func TestUpdateNeverPanics(t *testing.T) {
 	}
 }
 
-func TestNewBitArrayNeverCrashesOnNegatives(t *testing.T) {
+func TestNewBitArrayNeverCrashesOnNegatives(_ *testing.T) {
 	bitList := []int{-127, -128, -1 << 31}
 	for _, bits := range bitList {
 		_ = NewBitArray(bits)
@@ -218,7 +216,6 @@ func TestNewBitArrayNeverCrashesOnNegatives(t *testing.T) {
 }
 
 func TestJSONMarshalUnmarshal(t *testing.T) {
-
 	bA1 := NewBitArray(0)
 
 	bA2 := NewBitArray(1)

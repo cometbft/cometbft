@@ -3,12 +3,13 @@ package app
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -29,6 +30,7 @@ import (
 const (
 	appVersion                 = 1
 	voteExtensionKey    string = "extensionSum"
+	voteExtensionMaxLen int64  = 1024 * 1024 * 128 //TODO: should be smaller.
 	voteExtensionMaxVal int64  = 128
 	prefixReservedKey   string = "reservedTxKey_"
 	suffixChainID       string = "ChainID"
@@ -96,6 +98,9 @@ type Config struct {
 	CheckTxDelay         time.Duration `toml:"check_tx_delay"`
 	FinalizeBlockDelay   time.Duration `toml:"finalize_block_delay"`
 	VoteExtensionDelay   time.Duration `toml:"vote_extension_delay"`
+
+	// Vote extension padding size, to simulate different vote extension sizes.
+	VoteExtensionSize uint `toml:"vote_extension_size"`
 }
 
 func DefaultConfig(dir string) *Config {
@@ -125,12 +130,13 @@ func NewApplication(cfg *Config) (*Application, error) {
 }
 
 // Info implements ABCI.
-func (app *Application) Info(_ context.Context, req *abci.RequestInfo) (*abci.ResponseInfo, error) {
+func (app *Application) Info(context.Context, *abci.RequestInfo) (*abci.ResponseInfo, error) {
+	height, hash := app.state.Info()
 	return &abci.ResponseInfo{
 		Version:          version.ABCIVersion,
 		AppVersion:       appVersion,
-		LastBlockHeight:  int64(app.state.Height),
-		LastBlockAppHash: app.state.Hash,
+		LastBlockHeight:  int64(height),
+		LastBlockAppHash: hash,
 	}, nil
 }
 
@@ -150,7 +156,7 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 	app.state.Set(prefixReservedKey+suffixVoteExtHeight, strconv.FormatInt(req.ConsensusParams.Abci.VoteExtensionsEnableHeight, 10))
 	app.logger.Info("setting initial height in app_state", "initial_height", req.InitialHeight)
 	app.state.Set(prefixReservedKey+suffixInitialHeight, strconv.FormatInt(req.InitialHeight, 10))
-	//Get validators from genesis
+	// Get validators from genesis
 	if req.Validators != nil {
 		for _, val := range req.Validators {
 			val := val
@@ -160,7 +166,7 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 		}
 	}
 	resp := &abci.ResponseInitChain{
-		AppHash: app.state.Hash,
+		AppHash: app.state.GetHash(),
 	}
 	if resp.Validators, err = app.validatorUpdates(0); err != nil {
 		return nil, err
@@ -187,7 +193,7 @@ func (app *Application) CheckTx(_ context.Context, req *abci.RequestCheckTx) (*a
 
 // FinalizeBlock implements ABCI.
 func (app *Application) FinalizeBlock(_ context.Context, req *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
-	var txs = make([]*abci.ExecTxResult, len(req.Txs))
+	txs := make([]*abci.ExecTxResult, len(req.Txs))
 
 	for i, tx := range req.Txs {
 		key, value, err := parseTx(tx)
@@ -261,15 +267,16 @@ func (app *Application) Commit(_ context.Context, _ *abci.RequestCommit) (*abci.
 
 // Query implements ABCI.
 func (app *Application) Query(_ context.Context, req *abci.RequestQuery) (*abci.ResponseQuery, error) {
+	value, height := app.state.Query(string(req.Data))
 	return &abci.ResponseQuery{
-		Height: int64(app.state.Height),
+		Height: int64(height),
 		Key:    req.Data,
-		Value:  []byte(app.state.Get(string(req.Data))),
+		Value:  []byte(value),
 	}, nil
 }
 
 // ListSnapshots implements ABCI.
-func (app *Application) ListSnapshots(_ context.Context, req *abci.RequestListSnapshots) (*abci.ResponseListSnapshots, error) {
+func (app *Application) ListSnapshots(context.Context, *abci.RequestListSnapshots) (*abci.ResponseListSnapshots, error) {
 	snapshots, err := app.snapshots.List()
 	if err != nil {
 		panic(err)
@@ -321,7 +328,9 @@ func (app *Application) ApplySnapshotChunk(_ context.Context, req *abci.RequestA
 // proposal from them when it's our turn to do so. If the current height has
 // vote extension enabled, this method will use vote extensions from the previous
 // height, passed from CometBFT as parameters to construct a special transaction
-// whose value is the sum of all of the vote extensions from the previous round.
+// whose value is the sum of all of the vote extensions from the previous round,
+// if voteExtensionSize has not been specified or the sum of all vote extensions
+// sizes, if a size has been specified.
 //
 // Additionally, we verify the vote extension signatures passed from CometBFT and
 // include all data necessary for such verification in the special transaction's
@@ -336,8 +345,8 @@ func (app *Application) ApplySnapshotChunk(_ context.Context, req *abci.RequestA
 // The special vote extension-generated transaction must fit within an empty block
 // and takes precedence over all other transactions coming from the mempool.
 func (app *Application) PrepareProposal(
-	_ context.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
-
+	_ context.Context, req *abci.RequestPrepareProposal,
+) (*abci.ResponsePrepareProposal, error) {
 	_, areExtensionsEnabled := app.checkHeightAndExtensions(true, req.Height, "PrepareProposal")
 
 	txs := make([][]byte, 0, len(req.Txs)+1)
@@ -437,18 +446,28 @@ func (app *Application) ExtendVote(_ context.Context, req *abci.RequestExtendVot
 		panic(fmt.Errorf("received call to ExtendVote at height %d, when vote extensions are disabled", appHeight))
 	}
 
-	ext := make([]byte, binary.MaxVarintLen64)
-	// We don't care that these values are generated by a weak random number
-	// generator. It's just for test purposes.
-	//nolint:gosec // G404: Use of weak random number generator
-	num := rand.Int63n(voteExtensionMaxVal)
-	extLen := binary.PutVarint(ext, num)
-
 	if app.cfg.VoteExtensionDelay != 0 {
 		time.Sleep(app.cfg.VoteExtensionDelay)
 	}
 
-	app.logger.Info("generated vote extension", "num", num, "ext", fmt.Sprintf("%x", ext[:extLen]), "height", appHeight)
+	var ext []byte
+	var extLen int
+	if app.cfg.VoteExtensionSize != 0 {
+		ext = make([]byte, app.cfg.VoteExtensionSize)
+		if _, err := rand.Read(ext); err != nil {
+			panic(fmt.Errorf("could not extend vote. Len:%d", len(ext)))
+		}
+		extLen = len(ext)
+	} else {
+		ext = make([]byte, 8)
+		if num, err := rand.Int(rand.Reader, big.NewInt(voteExtensionMaxVal)); err != nil {
+			panic(fmt.Errorf("could not extend vote. Len:%d", len(ext)))
+		} else {
+			extLen = binary.PutVarint(ext, num.Int64())
+		}
+	}
+
+	app.logger.Info("generated vote extension", "height", appHeight, "vote_extension", fmt.Sprintf("%x", ext[:4]), "len", extLen)
 	return &abci.ResponseExtendVote{
 		VoteExtension: ext[:extLen],
 	}, nil
@@ -470,9 +489,9 @@ func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.Request
 		}, nil
 	}
 
-	num, err := parseVoteExtension(req.VoteExtension)
+	num, err := parseVoteExtension(app.cfg, req.VoteExtension)
 	if err != nil {
-		app.logger.Error("failed to parse vote extension", "vote_extension", req.VoteExtension, "err", err)
+		app.logger.Error("failed to parse vote extension", "vote_extension", fmt.Sprintf("%x", req.VoteExtension[:4]), "err", err)
 		return &abci.ResponseVerifyVoteExtension{
 			Status: abci.ResponseVerifyVoteExtension_REJECT,
 		}, nil
@@ -482,7 +501,7 @@ func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.Request
 		time.Sleep(app.cfg.VoteExtensionDelay)
 	}
 
-	app.logger.Info("verified vote extension value", "height", req.Height, "vote_extension", req.VoteExtension, "num", num)
+	app.logger.Info("verified vote extension value", "height", req.Height, "vote_extension", fmt.Sprintf("%x", req.VoteExtension[:4]), "num", num)
 	return &abci.ResponseVerifyVoteExtension{
 		Status: abci.ResponseVerifyVoteExtension_ACCEPT,
 	}, nil
@@ -493,7 +512,7 @@ func (app *Application) Rollback() error {
 }
 
 func (app *Application) getAppHeight() int64 {
-	initialHeightStr := app.state.Get(prefixReservedKey + suffixInitialHeight)
+	initialHeightStr, height := app.state.Query(prefixReservedKey + suffixInitialHeight)
 	if len(initialHeightStr) == 0 {
 		panic("initial height not set in database")
 	}
@@ -502,7 +521,7 @@ func (app *Application) getAppHeight() int64 {
 		panic(fmt.Errorf("malformed initial height %q in database", initialHeightStr))
 	}
 
-	appHeight := int64(app.state.Height)
+	appHeight := int64(height)
 	if appHeight == 0 {
 		appHeight = initialHeight - 1
 	}
@@ -638,7 +657,7 @@ func (app *Application) verifyAndSum(
 		}
 		cve := cmtproto.CanonicalVoteExtension{
 			Extension: vote.VoteExtension,
-			Height:    currentHeight - 1, //the vote extension was signed in the previous height
+			Height:    currentHeight - 1, // the vote extension was signed in the previous height
 			Round:     int64(extCommit.Round),
 			ChainId:   chainID,
 		}
@@ -670,7 +689,7 @@ func (app *Application) verifyAndSum(
 			return 0, errors.New("received vote with invalid signature")
 		}
 
-		extValue, err := parseVoteExtension(vote.VoteExtension)
+		extValue, err := parseVoteExtension(app.cfg, vote.VoteExtension)
 		// The extension's format should have been verified in VerifyVoteExtension
 		if err != nil {
 			return 0, fmt.Errorf("failed to parse vote extension: %w", err)
@@ -728,25 +747,29 @@ func (app *Application) verifyExtensionTx(height int64, payload string) error {
 		return fmt.Errorf("failed to sum and verify in process proposal: %w", err)
 	}
 
-	//Final check that the proposer behaved correctly
+	// Final check that the proposer behaved correctly
 	if int64(expSum) != sum {
 		return fmt.Errorf("sum is not consistent with vote extension payload: %d!=%d", expSum, sum)
 	}
 	return nil
 }
 
-// parseVoteExtension attempts to parse the given extension data into a positive
-// integer value.
-func parseVoteExtension(ext []byte) (int64, error) {
-	num, errVal := binary.Varint(ext)
-	if errVal == 0 {
-		return 0, errors.New("vote extension is too small to parse")
+// If extension size was not specified, then parseVoteExtension attempts to parse
+// the given extension data into a positive integer.
+// Otherwise it is the size of the extension.
+func parseVoteExtension(cfg *Config, ext []byte) (int64, error) {
+	if cfg.VoteExtensionSize == 0 {
+		num, errVal := binary.Varint(ext)
+		if errVal == 0 {
+			return 0, errors.New("vote extension is too small to parse")
+		}
+		if errVal < 0 {
+			return 0, errors.New("vote extension value is too large")
+		}
+		if num >= voteExtensionMaxVal {
+			return 0, fmt.Errorf("vote extension value must be smaller than %d (was %d)", voteExtensionMaxVal, num)
+		}
+		return num, nil
 	}
-	if errVal < 0 {
-		return 0, errors.New("vote extension value is too large")
-	}
-	if num >= voteExtensionMaxVal {
-		return 0, fmt.Errorf("vote extension value must be smaller than %d (was %d)", voteExtensionMaxVal, num)
-	}
-	return num, nil
+	return int64(len(ext)), nil
 }

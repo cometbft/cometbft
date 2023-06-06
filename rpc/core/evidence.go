@@ -12,9 +12,9 @@ import (
 // BroadcastEvidence broadcasts evidence of the misbehavior.
 // More: https://docs.cometbft.com/main/rpc/#/Evidence/broadcast_evidence
 func (env *Environment) BroadcastEvidence(
-	ctx *rpctypes.Context,
-	ev types.Evidence) (*ctypes.ResultBroadcastEvidence, error) {
-
+	_ *rpctypes.Context,
+	ev types.Evidence,
+) (*ctypes.ResultBroadcastEvidence, error) {
 	if ev == nil {
 		return nil, errors.New("no evidence was provided")
 	}

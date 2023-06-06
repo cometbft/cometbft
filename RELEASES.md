@@ -93,6 +93,15 @@ the 0.38.x line.
    Be sure to merge this PR before making other changes on the newly-created
    backport branch.
 
+5. Ensure that the RPC docs' `version` field in `rpc/openapi/openapi.yaml` has
+   been updated from `main` to the backport branch version.
+
+6. Prepare the [CometBFT documentation
+   repository](https://github.com/cometbft/cometbft-docs) to build the release
+   branch's version by updating the
+   [VERSIONS](https://github.com/cometbft/cometbft-docs/blob/main/VERSIONS)
+   file.
+
 After doing these steps, go back to `main` and do the following:
 
 1. Create a new workflow to run e2e nightlies for the new backport branch. (See
@@ -105,6 +114,9 @@ After doing these steps, go back to `main` and do the following:
 3. Add a new section to the Dependabot config (`.github/dependabot.yml`) to
    enable automatic update of Go dependencies on this branch. Copy and edit one
    of the existing branch configurations to set the correct `target-branch`.
+
+4. Remove all changelog entries from `.changelog/unreleased` that are destined
+   for release from the backport branch.
 
 [e2e]: https://github.com/cometbft/cometbft/blob/main/.github/workflows/e2e-nightly-main.yml
 
@@ -148,7 +160,7 @@ backport branch (see above). Otherwise:
 1. Start from the backport branch (e.g. `v0.38.x`).
 2. Run the integration tests and the E2E nightlies
    (which can be triggered from the GitHub UI;
-   e.g., <https://github.com/cometbft/cometbft/actions/workflows/e2e-nightly-37x.yml>).
+   e.g., <https://github.com/cometbft/cometbft/actions/workflows/e2e-manual.yml>).
 3. Prepare the pre-release documentation:
    * Build the changelog with [unclog] _without_ doing an unclog release, and
      commit the built changelog. This ensures that all changelog entries appear
@@ -316,8 +328,8 @@ and limitation that real-world  deployments of CometBFT experience in production
 #### 200 Node Testnet
 
 To test the stability and performance of CometBFT in a real world scenario,
-a 200 node test network is run. The network comprises 5 seed nodes, 100
-validators and 95 non-validating full nodes. All nodes begin by dialing
+a 200 node test network is run. The network comprises 5 seed nodes, 175
+validators and 20 non-validating full nodes. All nodes begin by dialing
 a subset of the seed nodes to discover peers. The network is run for several
 days, with metrics being collected continuously. In cases of changes to performance
 critical systems, testnets of larger sizes should be considered.
@@ -332,6 +344,20 @@ connects to the network by dialing one of the seed nodes. Once the node is able
 to blocksync to the head of the chain and begins producing blocks using
 consensus it is stopped. Once stopped, a new node is started and
 takes its place. This network is run for several days.
+
+#### Vote-extension Testnet
+
+CometBFT v0.38.0 introduced **vote-extensions**, which are added as the name suggests, to precommit votes sent by validators.
+The Vote-extension Testnet is used to determine how vote-extensions affect the performance of CometBFT, under various settings.
+The application used in the experiment is the same used on the (#200-node-testnet), but is configured differently to gauge de effects of varying vote extension sizes.
+In the (#200-node-testnet) the application extends pre-commit votes with a 64 bit number encoded with variable compression.
+In the Vote-extension Testnet, pre-commit votes are extended with a non-compressed extension of configurable size.
+Experiments are run with multiple sizes to determine their impact and, for comparison sake, we include a run with the same settings as in the (#200-node-testnet).
+
+The testnet consists of 175 validators, 20 non-validator full-nodes, and 5 seed nodes.
+All 195 full-nodes begin by dialing a subset of the seed nodes to discover peers.
+Once all full-nodes are started, a 5 minute period is waited before starting an experiment.
+For each experiment, the load generators issue requests at a constant rate during 150 seconds, then wait for 5 minutes to allow the system to quiesce, then repeat the load generation; the load generation step is repeated 5 times for each experiment.
 
 #### Network Partition Testnet
 
@@ -357,6 +383,7 @@ of 150 validators is configured to only possess a cumulative stake of 67% of
 the total stake. The remaining 33% of the stake is configured to belong to
 a validator that is never actually run in the test network. The network is run
 for multiple days, ensuring that it is able to produce blocks without issue.
+
 
 [unclog]: https://github.com/informalsystems/unclog
 [unclog-release]: https://github.com/informalsystems/unclog#releasing-a-new-versions-change-set

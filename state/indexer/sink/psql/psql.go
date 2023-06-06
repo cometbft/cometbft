@@ -219,7 +219,6 @@ INSERT INTO `+tableTxResults+` (block_id, index, created_at, tx_hash, tx_result)
 				return fmt.Errorf("indexing transaction events: %w", err)
 			}
 			return nil
-
 		}); err != nil {
 			return err
 		}
@@ -228,22 +227,22 @@ INSERT INTO `+tableTxResults+` (block_id, index, created_at, tx_hash, tx_result)
 }
 
 // SearchBlockEvents is not implemented by this sink, and reports an error for all queries.
-func (es *EventSink) SearchBlockEvents(ctx context.Context, q *query.Query) ([]int64, error) {
+func (es *EventSink) SearchBlockEvents(_ context.Context, _ *query.Query) ([]int64, error) {
 	return nil, errors.New("block search is not supported via the postgres event sink")
 }
 
 // SearchTxEvents is not implemented by this sink, and reports an error for all queries.
-func (es *EventSink) SearchTxEvents(ctx context.Context, q *query.Query) ([]*abci.TxResult, error) {
+func (es *EventSink) SearchTxEvents(_ context.Context, _ *query.Query) ([]*abci.TxResult, error) {
 	return nil, errors.New("tx search is not supported via the postgres event sink")
 }
 
 // GetTxByHash is not implemented by this sink, and reports an error for all queries.
-func (es *EventSink) GetTxByHash(hash []byte) (*abci.TxResult, error) {
+func (es *EventSink) GetTxByHash(_ []byte) (*abci.TxResult, error) {
 	return nil, errors.New("getTxByHash is not supported via the postgres event sink")
 }
 
 // HasBlock is not implemented by this sink, and reports an error for all queries.
-func (es *EventSink) HasBlock(h int64) (bool, error) {
+func (es *EventSink) HasBlock(_ int64) (bool, error) {
 	return false, errors.New("hasBlock is not supported via the postgres event sink")
 }
 

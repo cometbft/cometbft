@@ -27,9 +27,7 @@ import (
 	p2pproto "github.com/cometbft/cometbft/proto/tendermint/p2p"
 )
 
-var (
-	cfg *config.P2PConfig
-)
+var cfg *config.P2PConfig
 
 func init() {
 	cfg = config.DefaultP2PConfig()
@@ -67,9 +65,9 @@ func (tr *TestReactor) GetChannels() []*conn.ChannelDescriptor {
 	return tr.channels
 }
 
-func (tr *TestReactor) AddPeer(peer Peer) {}
+func (tr *TestReactor) AddPeer(Peer) {}
 
-func (tr *TestReactor) RemovePeer(peer Peer, reason interface{}) {}
+func (tr *TestReactor) RemovePeer(Peer, interface{}) {}
 
 func (tr *TestReactor) Receive(e Envelope) {
 	if tr.logMessages {
@@ -91,16 +89,17 @@ func (tr *TestReactor) getMsgs(chID byte) []PeerMessage {
 
 // convenience method for creating two switches connected to each other.
 // XXX: note this uses net.Pipe and not a proper TCP conn
-func MakeSwitchPair(t testing.TB, initSwitch func(int, *Switch) *Switch) (*Switch, *Switch) {
+func MakeSwitchPair(initSwitch func(int, *Switch) *Switch) (*Switch, *Switch) {
 	// Create two switches that will be interconnected.
 	switches := MakeConnectedSwitches(cfg, 2, initSwitch, Connect2Switches)
 	return switches[0], switches[1]
 }
 
-func initSwitchFunc(i int, sw *Switch) *Switch {
+func initSwitchFunc(_ int, sw *Switch) *Switch {
 	sw.SetAddrBook(&AddrBookMock{
 		Addrs:    make(map[string]struct{}),
-		OurAddrs: make(map[string]struct{})})
+		OurAddrs: make(map[string]struct{}),
+	})
 
 	// Make two reactors of two channels each
 	sw.AddReactor("foo", NewTestReactor([]*conn.ChannelDescriptor{
@@ -116,7 +115,7 @@ func initSwitchFunc(i int, sw *Switch) *Switch {
 }
 
 func TestSwitches(t *testing.T) {
-	s1, s2 := MakeSwitchPair(t, initSwitchFunc)
+	s1, s2 := MakeSwitchPair(initSwitchFunc)
 	t.Cleanup(func() {
 		if err := s1.Stop(); err != nil {
 			t.Error(err)
@@ -205,7 +204,7 @@ func assertMsgReceivedWithTimeout(
 }
 
 func TestSwitchFiltersOutItself(t *testing.T) {
-	s1 := MakeSwitch(cfg, 1, "127.0.0.1", "123.123.123", initSwitchFunc)
+	s1 := MakeSwitch(cfg, 1, initSwitchFunc)
 
 	// simulate s1 having a public IP by creating a remote peer with the same ID
 	rp := &remotePeer{PrivKey: s1.nodeKey.PrivKey, Config: cfg}
@@ -241,8 +240,6 @@ func TestSwitchPeerFilter(t *testing.T) {
 		sw = MakeSwitch(
 			cfg,
 			1,
-			"testing",
-			"123.123.123",
 			initSwitchFunc,
 			SwitchPeerFilters(filters...),
 		)
@@ -291,8 +288,6 @@ func TestSwitchPeerFilterTimeout(t *testing.T) {
 		sw = MakeSwitch(
 			cfg,
 			1,
-			"testing",
-			"123.123.123",
 			initSwitchFunc,
 			SwitchFilterTimeout(5*time.Millisecond),
 			SwitchPeerFilters(filters...),
@@ -328,7 +323,7 @@ func TestSwitchPeerFilterTimeout(t *testing.T) {
 }
 
 func TestSwitchPeerFilterDuplicate(t *testing.T) {
-	sw := MakeSwitch(cfg, 1, "testing", "123.123.123", initSwitchFunc)
+	sw := MakeSwitch(cfg, 1, initSwitchFunc)
 	err := sw.Start()
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -376,7 +371,7 @@ func assertNoPeersAfterTimeout(t *testing.T, sw *Switch, timeout time.Duration) 
 func TestSwitchStopsNonPersistentPeerOnError(t *testing.T) {
 	assert, require := assert.New(t), require.New(t)
 
-	sw := MakeSwitch(cfg, 1, "testing", "123.123.123", initSwitchFunc)
+	sw := MakeSwitch(cfg, 1, initSwitchFunc)
 	err := sw.Start()
 	if err != nil {
 		t.Error(err)
@@ -436,7 +431,7 @@ func TestSwitchStopPeerForError(t *testing.T) {
 	p2pMetrics := PrometheusMetrics(namespace)
 
 	// make two connected switches
-	sw1, sw2 := MakeSwitchPair(t, func(i int, sw *Switch) *Switch {
+	sw1, sw2 := MakeSwitchPair(func(i int, sw *Switch) *Switch {
 		// set metrics on sw1
 		if i == 0 {
 			opt := WithMetrics(p2pMetrics)
@@ -471,7 +466,7 @@ func TestSwitchStopPeerForError(t *testing.T) {
 }
 
 func TestSwitchReconnectsToOutboundPersistentPeer(t *testing.T) {
-	sw := MakeSwitch(cfg, 1, "testing", "123.123.123", initSwitchFunc)
+	sw := MakeSwitch(cfg, 1, initSwitchFunc)
 	err := sw.Start()
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -521,7 +516,7 @@ func TestSwitchReconnectsToOutboundPersistentPeer(t *testing.T) {
 }
 
 func TestSwitchReconnectsToInboundPersistentPeer(t *testing.T) {
-	sw := MakeSwitch(cfg, 1, "testing", "123.123.123", initSwitchFunc)
+	sw := MakeSwitch(cfg, 1, initSwitchFunc)
 	err := sw.Start()
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -554,7 +549,7 @@ func TestSwitchDialPeersAsync(t *testing.T) {
 		return
 	}
 
-	sw := MakeSwitch(cfg, 1, "testing", "123.123.123", initSwitchFunc)
+	sw := MakeSwitch(cfg, 1, initSwitchFunc)
 	err := sw.Start()
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -620,7 +615,7 @@ func TestSwitchAcceptRoutine(t *testing.T) {
 	}
 
 	// make switch
-	sw := MakeSwitch(cfg, 1, "testing", "123.123.123", initSwitchFunc)
+	sw := MakeSwitch(cfg, 1, initSwitchFunc)
 	err := sw.AddUnconditionalPeerIDs(unconditionalPeerIDs)
 	require.NoError(t, err)
 	err = sw.Start()
@@ -702,12 +697,14 @@ func (et errorTransport) NetAddress() NetAddress {
 	panic("not implemented")
 }
 
-func (et errorTransport) Accept(c peerConfig) (Peer, error) {
+func (et errorTransport) Accept(peerConfig) (Peer, error) {
 	return nil, et.acceptErr
 }
+
 func (errorTransport) Dial(NetAddress, peerConfig) (Peer, error) {
 	panic("not implemented")
 }
+
 func (errorTransport) Cleanup(Peer) {
 	panic("not implemented")
 }
@@ -749,7 +746,7 @@ type mockReactor struct {
 	initCalledBeforeRemoveFinished uint32
 }
 
-func (r *mockReactor) RemovePeer(peer Peer, reason interface{}) {
+func (r *mockReactor) RemovePeer(Peer, interface{}) {
 	atomic.StoreUint32(&r.removePeerInProgress, 1)
 	defer atomic.StoreUint32(&r.removePeerInProgress, 0)
 	time.Sleep(100 * time.Millisecond)
@@ -774,7 +771,7 @@ func TestSwitchInitPeerIsNotCalledBeforeRemovePeer(t *testing.T) {
 	reactor.BaseReactor = NewBaseReactor("mockReactor", reactor)
 
 	// make switch
-	sw := MakeSwitch(cfg, 1, "testing", "123.123.123", func(i int, sw *Switch) *Switch {
+	sw := MakeSwitch(cfg, 1, func(i int, sw *Switch) *Switch {
 		sw.AddReactor("mock", reactor)
 		return sw
 	})
@@ -813,7 +810,7 @@ func TestSwitchInitPeerIsNotCalledBeforeRemovePeer(t *testing.T) {
 }
 
 func BenchmarkSwitchBroadcast(b *testing.B) {
-	s1, s2 := MakeSwitchPair(b, func(i int, sw *Switch) *Switch {
+	s1, s2 := MakeSwitchPair(func(i int, sw *Switch) *Switch {
 		// Make bar reactors of bar channels each
 		sw.AddReactor("foo", NewTestReactor([]*conn.ChannelDescriptor{
 			{ID: byte(0x00), Priority: 10},
@@ -862,8 +859,7 @@ func BenchmarkSwitchBroadcast(b *testing.B) {
 }
 
 func TestSwitchRemovalErr(t *testing.T) {
-
-	sw1, sw2 := MakeSwitchPair(t, func(i int, sw *Switch) *Switch {
+	sw1, sw2 := MakeSwitchPair(func(i int, sw *Switch) *Switch {
 		return initSwitchFunc(i, sw)
 	})
 	assert.Equal(t, len(sw1.Peers().List()), 1)

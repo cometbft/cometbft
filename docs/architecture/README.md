@@ -43,8 +43,12 @@ numbering our ADRs from 100 onwards.
 ### Proposed
 
 - [ADR-102: RPC Companion](./adr-102-rpc-companion.md)
+- [ADR-103: Protobuf definition versioning](./adr-103-proto-versioning.md)
+
 
 ### Accepted
+
+- [ADR-104: State sync from local snapshot](./adr-104-out-of-band-state-sync.md)
 
 ### Implemented
 
@@ -52,3 +56,4 @@ numbering our ADRs from 100 onwards.
 
 ### Rejected
 
+- [ADR-100: Data companion push API](./adr-100-data-companion-push-api.md)

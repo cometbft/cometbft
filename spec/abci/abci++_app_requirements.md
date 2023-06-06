@@ -174,7 +174,7 @@ Additionally, *p*'s `FinalizeBlock` creates a set of transaction results *T<sub>
 Note that Requirements 11 and 12, combined with the Agreement property of consensus ensure
 state machine replication, i.e., the Application state evolves consistently at all correct processes.
 
-Finally, notice that neither `PrepareProposal` nor `ExtendVote` have determinism-related
+Also, notice that neither `PrepareProposal` nor `ExtendVote` have determinism-related
 requirements associated.
 Indeed, `PrepareProposal` is not required to be deterministic:
 
@@ -187,6 +187,31 @@ Likewise, `ExtendVote` can also be non-deterministic:
   but may also depend on other values or operations.
 * *w<sup>r</sup><sub>p</sub> = w<sup>r</sup><sub>q</sub> &#8655;
   e<sup>r</sup><sub>p</sub> = e<sup>r</sup><sub>q</sub>*
+
+Unlike all requirements described above,
+which affect the ABCI methods of the [Consensus Connection](#consensus-connection),
+the following requirement is on the [Mempool Connection](#mempool-connection).
+Let *CheckTxCode<sub>tx,p,t</sub>* denote the error code returned by *p*'s Application, via `ReponseCheckTx`,
+to CometBFT's `RequestCheckTx` call occurring at time *t* and having transaction *tx* as parameter.
+Let predicate *OK(CheckTxCode)* denote whether *CheckTxCode* is `SUCCESS`.
+
+
+* Requirement 13 [`CheckTx`, non-oscillation]: For any correct process *p*
+  and any transaction *tx*,
+  (a) either *OK(CheckTxCode<sub>tx,p,t<sub>0</sub></sub>) = OK(CheckTxCode<sub>tx,p,t<sub>1</sub></sub>)*
+  for any two times *t<sub>0</sub>* and *t<sub>1</sub>* in *p*'s execution, or
+  (b) there exists a time *t<sub>stable</sub>* in *p*'s execution
+  such that *&#172; OK(CheckTxCode<sub>tx,p,t</sub>)* for all *t > t<sub>stable</sub>*.
+
+Requirement 13 has two main conditions. The implementation of `CheckTx` must fullfill at least one of them.
+Condition (a) mandates that `CheckTx` on a transaction never changes its result,
+in other words, that the checks implemented are stateless (e.g., well-formedness, signature verification).
+Condition (b) states that, if the transaction stays in the mempool long enough, if will eventually fail
+`CheckTx` forever. Finally, note that Requirement 13 is local to process *p*, i.e.,
+no restrictions are made across different correct processes.
+So we could have that this is true:
+*OK(CheckTxCode<sub>tx,p,t</sub>) &#8800; OK(CheckTxCode<sub>tx,q,t</sub>)*
+for *p &#8800; q*.
 
 ## Managing the Application state and related topics
 

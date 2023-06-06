@@ -206,7 +206,7 @@ func (app *Application) CheckTx(_ context.Context, req *abci.RequestCheckTx) (*a
 // FinalizeBlock implements ABCI.
 func (app *Application) FinalizeBlock(_ context.Context, req *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
 
-	r := &abci.Request{Value: &abci.Request_BeginBlock{BeginBlock: &abci.RequestBeginBlock{}}}
+	r := &abci.Request{Value: &abci.Request_FinalizeBlock{FinalizeBlock: &abci.RequestFinalizeBlock{}}}
 	app.logRequest(r)
 
 	txs := make([]*abci.ExecTxResult, len(req.Txs))

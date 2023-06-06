@@ -136,14 +136,12 @@ const(
     Error  Type = iota  // Error 
     EOF  // $ 
     T_0  // <ApplyChunk> 
-    T_1  // <BeginBlock> 
-    T_2  // <Commit> 
-    T_3  // <DeliverTx> 
-    T_4  // <EndBlock> 
-    T_5  // <InitChain> 
-    T_6  // <OfferSnapshot> 
-    T_7  // <PrepareProposal> 
-    T_8  // <ProcessProposal> 
+    T_1  // <Commit> 
+    T_2  // <FinalizeBlock> 
+    T_3  // <InitChain> 
+    T_4  // <OfferSnapshot> 
+    T_5  // <PrepareProposal> 
+    T_6  // <ProcessProposal> 
 )
 
 var TypeToString = []string{ 
@@ -156,8 +154,6 @@ var TypeToString = []string{
     "T_4",
     "T_5",
     "T_6",
-    "T_7",
-    "T_8",
 }
 
 var StringToType = map[string] Type { 
@@ -170,18 +166,14 @@ var StringToType = map[string] Type {
     "T_4" : T_4, 
     "T_5" : T_5, 
     "T_6" : T_6, 
-    "T_7" : T_7, 
-    "T_8" : T_8, 
 }
 
 var TypeToID = []string { 
     "Error", 
     "$", 
     "<ApplyChunk>", 
-    "<BeginBlock>", 
     "<Commit>", 
-    "<DeliverTx>", 
-    "<EndBlock>", 
+    "<FinalizeBlock>", 
     "<InitChain>", 
     "<OfferSnapshot>", 
     "<PrepareProposal>", 
@@ -192,19 +184,15 @@ var IDToType = map[string]Type {
     "Error": 0, 
     "$": 1, 
     "<ApplyChunk>": 2, 
-    "<BeginBlock>": 3, 
-    "<Commit>": 4, 
-    "<DeliverTx>": 5, 
-    "<EndBlock>": 6, 
-    "<InitChain>": 7, 
-    "<OfferSnapshot>": 8, 
-    "<PrepareProposal>": 9, 
-    "<ProcessProposal>": 10, 
+    "<Commit>": 3, 
+    "<FinalizeBlock>": 4, 
+    "<InitChain>": 5, 
+    "<OfferSnapshot>": 6, 
+    "<PrepareProposal>": 7, 
+    "<ProcessProposal>": 8, 
 }
 
 var Suppress = []bool { 
-    false, 
-    false, 
     false, 
     false, 
     false, 

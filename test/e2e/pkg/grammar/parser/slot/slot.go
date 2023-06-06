@@ -19,8 +19,6 @@ const(
 	ApplyChunks1R0
 	ApplyChunks1R1
 	ApplyChunks1R2
-	BeginBlock0R0
-	BeginBlock0R1
 	CleanStart0R0
 	CleanStart0R1
 	CleanStart0R2
@@ -55,20 +53,6 @@ const(
 	ConsensusRounds1R2
 	Decide0R0
 	Decide0R1
-	Decide0R2
-	Decide0R3
-	Decide1R0
-	Decide1R1
-	Decide1R2
-	DeliverTx0R0
-	DeliverTx0R1
-	DeliverTxs0R0
-	DeliverTxs0R1
-	DeliverTxs1R0
-	DeliverTxs1R1
-	DeliverTxs1R2
-	EndBlock0R0
-	EndBlock0R1
 	InitChain0R0
 	InitChain0R1
 	NonProposer0R0
@@ -247,20 +231,6 @@ var slots = map[Label]*Slot{
 		}, 
 		ApplyChunks1R2, 
 	},
-	BeginBlock0R0: {
-		symbols.NT_BeginBlock, 0, 0, 
-		symbols.Symbols{  
-			symbols.T_1,
-		}, 
-		BeginBlock0R0, 
-	},
-	BeginBlock0R1: {
-		symbols.NT_BeginBlock, 0, 1, 
-		symbols.Symbols{  
-			symbols.T_1,
-		}, 
-		BeginBlock0R1, 
-	},
 	CleanStart0R0: {
 		symbols.NT_CleanStart, 0, 0, 
 		symbols.Symbols{  
@@ -324,14 +294,14 @@ var slots = map[Label]*Slot{
 	Commit0R0: {
 		symbols.NT_Commit, 0, 0, 
 		symbols.Symbols{  
-			symbols.T_2,
+			symbols.T_1,
 		}, 
 		Commit0R0, 
 	},
 	Commit0R1: {
 		symbols.NT_Commit, 0, 1, 
 		symbols.Symbols{  
-			symbols.T_2,
+			symbols.T_1,
 		}, 
 		Commit0R1, 
 	},
@@ -516,140 +486,28 @@ var slots = map[Label]*Slot{
 	Decide0R0: {
 		symbols.NT_Decide, 0, 0, 
 		symbols.Symbols{  
-			symbols.NT_BeginBlock, 
-			symbols.NT_DeliverTxs, 
-			symbols.NT_EndBlock,
+			symbols.T_2,
 		}, 
 		Decide0R0, 
 	},
 	Decide0R1: {
 		symbols.NT_Decide, 0, 1, 
 		symbols.Symbols{  
-			symbols.NT_BeginBlock, 
-			symbols.NT_DeliverTxs, 
-			symbols.NT_EndBlock,
+			symbols.T_2,
 		}, 
 		Decide0R1, 
-	},
-	Decide0R2: {
-		symbols.NT_Decide, 0, 2, 
-		symbols.Symbols{  
-			symbols.NT_BeginBlock, 
-			symbols.NT_DeliverTxs, 
-			symbols.NT_EndBlock,
-		}, 
-		Decide0R2, 
-	},
-	Decide0R3: {
-		symbols.NT_Decide, 0, 3, 
-		symbols.Symbols{  
-			symbols.NT_BeginBlock, 
-			symbols.NT_DeliverTxs, 
-			symbols.NT_EndBlock,
-		}, 
-		Decide0R3, 
-	},
-	Decide1R0: {
-		symbols.NT_Decide, 1, 0, 
-		symbols.Symbols{  
-			symbols.NT_BeginBlock, 
-			symbols.NT_EndBlock,
-		}, 
-		Decide1R0, 
-	},
-	Decide1R1: {
-		symbols.NT_Decide, 1, 1, 
-		symbols.Symbols{  
-			symbols.NT_BeginBlock, 
-			symbols.NT_EndBlock,
-		}, 
-		Decide1R1, 
-	},
-	Decide1R2: {
-		symbols.NT_Decide, 1, 2, 
-		symbols.Symbols{  
-			symbols.NT_BeginBlock, 
-			symbols.NT_EndBlock,
-		}, 
-		Decide1R2, 
-	},
-	DeliverTx0R0: {
-		symbols.NT_DeliverTx, 0, 0, 
-		symbols.Symbols{  
-			symbols.T_3,
-		}, 
-		DeliverTx0R0, 
-	},
-	DeliverTx0R1: {
-		symbols.NT_DeliverTx, 0, 1, 
-		symbols.Symbols{  
-			symbols.T_3,
-		}, 
-		DeliverTx0R1, 
-	},
-	DeliverTxs0R0: {
-		symbols.NT_DeliverTxs, 0, 0, 
-		symbols.Symbols{  
-			symbols.NT_DeliverTx,
-		}, 
-		DeliverTxs0R0, 
-	},
-	DeliverTxs0R1: {
-		symbols.NT_DeliverTxs, 0, 1, 
-		symbols.Symbols{  
-			symbols.NT_DeliverTx,
-		}, 
-		DeliverTxs0R1, 
-	},
-	DeliverTxs1R0: {
-		symbols.NT_DeliverTxs, 1, 0, 
-		symbols.Symbols{  
-			symbols.NT_DeliverTx, 
-			symbols.NT_DeliverTxs,
-		}, 
-		DeliverTxs1R0, 
-	},
-	DeliverTxs1R1: {
-		symbols.NT_DeliverTxs, 1, 1, 
-		symbols.Symbols{  
-			symbols.NT_DeliverTx, 
-			symbols.NT_DeliverTxs,
-		}, 
-		DeliverTxs1R1, 
-	},
-	DeliverTxs1R2: {
-		symbols.NT_DeliverTxs, 1, 2, 
-		symbols.Symbols{  
-			symbols.NT_DeliverTx, 
-			symbols.NT_DeliverTxs,
-		}, 
-		DeliverTxs1R2, 
-	},
-	EndBlock0R0: {
-		symbols.NT_EndBlock, 0, 0, 
-		symbols.Symbols{  
-			symbols.T_4,
-		}, 
-		EndBlock0R0, 
-	},
-	EndBlock0R1: {
-		symbols.NT_EndBlock, 0, 1, 
-		symbols.Symbols{  
-			symbols.T_4,
-		}, 
-		EndBlock0R1, 
 	},
 	InitChain0R0: {
 		symbols.NT_InitChain, 0, 0, 
 		symbols.Symbols{  
-			symbols.T_5,
+			symbols.T_3,
 		}, 
 		InitChain0R0, 
 	},
 	InitChain0R1: {
 		symbols.NT_InitChain, 0, 1, 
 		symbols.Symbols{  
-			symbols.T_5,
+			symbols.T_3,
 		}, 
 		InitChain0R1, 
 	},
@@ -670,42 +528,42 @@ var slots = map[Label]*Slot{
 	OfferSnapshot0R0: {
 		symbols.NT_OfferSnapshot, 0, 0, 
 		symbols.Symbols{  
-			symbols.T_6,
+			symbols.T_4,
 		}, 
 		OfferSnapshot0R0, 
 	},
 	OfferSnapshot0R1: {
 		symbols.NT_OfferSnapshot, 0, 1, 
 		symbols.Symbols{  
-			symbols.T_6,
+			symbols.T_4,
 		}, 
 		OfferSnapshot0R1, 
 	},
 	PrepareProposal0R0: {
 		symbols.NT_PrepareProposal, 0, 0, 
 		symbols.Symbols{  
-			symbols.T_7,
+			symbols.T_5,
 		}, 
 		PrepareProposal0R0, 
 	},
 	PrepareProposal0R1: {
 		symbols.NT_PrepareProposal, 0, 1, 
 		symbols.Symbols{  
-			symbols.T_7,
+			symbols.T_5,
 		}, 
 		PrepareProposal0R1, 
 	},
 	ProcessProposal0R0: {
 		symbols.NT_ProcessProposal, 0, 0, 
 		symbols.Symbols{  
-			symbols.T_8,
+			symbols.T_6,
 		}, 
 		ProcessProposal0R0, 
 	},
 	ProcessProposal0R1: {
 		symbols.NT_ProcessProposal, 0, 1, 
 		symbols.Symbols{  
-			symbols.T_8,
+			symbols.T_6,
 		}, 
 		ProcessProposal0R1, 
 	},
@@ -923,8 +781,6 @@ var slotIndex = map[Index]Label {
 	Index{ symbols.NT_ApplyChunks,1,0 }: ApplyChunks1R0,
 	Index{ symbols.NT_ApplyChunks,1,1 }: ApplyChunks1R1,
 	Index{ symbols.NT_ApplyChunks,1,2 }: ApplyChunks1R2,
-	Index{ symbols.NT_BeginBlock,0,0 }: BeginBlock0R0,
-	Index{ symbols.NT_BeginBlock,0,1 }: BeginBlock0R1,
 	Index{ symbols.NT_CleanStart,0,0 }: CleanStart0R0,
 	Index{ symbols.NT_CleanStart,0,1 }: CleanStart0R1,
 	Index{ symbols.NT_CleanStart,0,2 }: CleanStart0R2,
@@ -959,20 +815,6 @@ var slotIndex = map[Index]Label {
 	Index{ symbols.NT_ConsensusRounds,1,2 }: ConsensusRounds1R2,
 	Index{ symbols.NT_Decide,0,0 }: Decide0R0,
 	Index{ symbols.NT_Decide,0,1 }: Decide0R1,
-	Index{ symbols.NT_Decide,0,2 }: Decide0R2,
-	Index{ symbols.NT_Decide,0,3 }: Decide0R3,
-	Index{ symbols.NT_Decide,1,0 }: Decide1R0,
-	Index{ symbols.NT_Decide,1,1 }: Decide1R1,
-	Index{ symbols.NT_Decide,1,2 }: Decide1R2,
-	Index{ symbols.NT_DeliverTx,0,0 }: DeliverTx0R0,
-	Index{ symbols.NT_DeliverTx,0,1 }: DeliverTx0R1,
-	Index{ symbols.NT_DeliverTxs,0,0 }: DeliverTxs0R0,
-	Index{ symbols.NT_DeliverTxs,0,1 }: DeliverTxs0R1,
-	Index{ symbols.NT_DeliverTxs,1,0 }: DeliverTxs1R0,
-	Index{ symbols.NT_DeliverTxs,1,1 }: DeliverTxs1R1,
-	Index{ symbols.NT_DeliverTxs,1,2 }: DeliverTxs1R2,
-	Index{ symbols.NT_EndBlock,0,0 }: EndBlock0R0,
-	Index{ symbols.NT_EndBlock,0,1 }: EndBlock0R1,
 	Index{ symbols.NT_InitChain,0,0 }: InitChain0R0,
 	Index{ symbols.NT_InitChain,0,1 }: InitChain0R1,
 	Index{ symbols.NT_NonProposer,0,0 }: NonProposer0R0,
@@ -1028,12 +870,8 @@ var alternates = map[symbols.NT][]Label{
 	symbols.NT_ConsensusRound:[]Label{ ConsensusRound0R0,ConsensusRound1R0 },
 	symbols.NT_Proposer:[]Label{ Proposer0R0 },
 	symbols.NT_NonProposer:[]Label{ NonProposer0R0 },
-	symbols.NT_Decide:[]Label{ Decide0R0,Decide1R0 },
-	symbols.NT_DeliverTxs:[]Label{ DeliverTxs0R0,DeliverTxs1R0 },
 	symbols.NT_InitChain:[]Label{ InitChain0R0 },
-	symbols.NT_BeginBlock:[]Label{ BeginBlock0R0 },
-	symbols.NT_DeliverTx:[]Label{ DeliverTx0R0 },
-	symbols.NT_EndBlock:[]Label{ EndBlock0R0 },
+	symbols.NT_Decide:[]Label{ Decide0R0 },
 	symbols.NT_Commit:[]Label{ Commit0R0 },
 	symbols.NT_OfferSnapshot:[]Label{ OfferSnapshot0R0 },
 	symbols.NT_ApplyChunk:[]Label{ ApplyChunk0R0 },

@@ -19,44 +19,38 @@ var tests = []Test{
 	// clean-start = init-chain consensus-exec
 	// consensus-height = decide commit
 	{"consensus-exec-missing", []string{InitChain}, false},
-	{"empty-block-1", []string{InitChain, BeginBlock, EndBlock, Commit}, true},
-	{"begin-block-missing-1", []string{InitChain, EndBlock, Commit}, false},
-	{"end-block-missing-1", []string{InitChain, BeginBlock, Commit}, false},
-	{"commit-missing-1", []string{InitChain, BeginBlock, EndBlock}, false},
-	{"one-tx-block-1", []string{InitChain, BeginBlock, DeliverTx, EndBlock, Commit}, true},
-	{"multiple-tx-block-1", []string{InitChain, BeginBlock, DeliverTx, DeliverTx, EndBlock, Commit}, true},
+	{"empty-block-1", []string{InitChain, FinalizeBlock, Commit}, true},
+	{"finalize-block-missing-1", []string{InitChain, Commit}, false},
+	{"commit-missing-1", []string{InitChain, FinalizeBlock}, false},
 	// consensus-height = *consensus-round decide commit
-	{"proposer-round-1", []string{InitChain, PrepareProposal, ProcessProposal, BeginBlock, EndBlock, Commit}, true},
-	{"process-proposal-missing-1", []string{InitChain, PrepareProposal, BeginBlock, EndBlock, Commit}, false},
-	{"non-proposer-round-1", []string{InitChain, ProcessProposal, BeginBlock, EndBlock, Commit}, true},
-	{"multiple-rounds-1", []string{InitChain, PrepareProposal, ProcessProposal, ProcessProposal, PrepareProposal, ProcessProposal, ProcessProposal, ProcessProposal, BeginBlock, EndBlock, Commit}, true},
+	{"proposer-round-1", []string{InitChain, PrepareProposal, ProcessProposal, FinalizeBlock, Commit}, true},
+	{"process-proposal-missing-1", []string{InitChain, PrepareProposal, FinalizeBlock, Commit}, false},
+	{"non-proposer-round-1", []string{InitChain, ProcessProposal, FinalizeBlock, Commit}, true},
+	{"multiple-rounds-1", []string{InitChain, PrepareProposal, ProcessProposal, ProcessProposal, PrepareProposal, ProcessProposal, ProcessProposal, ProcessProposal, FinalizeBlock, Commit}, true},
 
 	// clean-start = init-chain state-sync consensus-exec
 	// state-sync = success-sync
-	{"one-apply-chunk-1", []string{InitChain, OfferSnapshot, ApplyChunk, BeginBlock, EndBlock, Commit}, true},
-	{"multiple-apply-chunks-1", []string{InitChain, OfferSnapshot, ApplyChunk, ApplyChunk, BeginBlock, EndBlock, Commit}, true},
-	{"offer-snapshot-missing-1", []string{InitChain, ApplyChunk, BeginBlock, EndBlock, Commit}, false},
-	{"apply-chunk-missing", []string{InitChain, OfferSnapshot, BeginBlock, EndBlock, Commit}, false},
+	{"one-apply-chunk-1", []string{InitChain, OfferSnapshot, ApplyChunk, FinalizeBlock, Commit}, true},
+	{"multiple-apply-chunks-1", []string{InitChain, OfferSnapshot, ApplyChunk, ApplyChunk, FinalizeBlock, Commit}, true},
+	{"offer-snapshot-missing-1", []string{InitChain, ApplyChunk, FinalizeBlock, Commit}, false},
+	{"apply-chunk-missing", []string{InitChain, OfferSnapshot, FinalizeBlock, Commit}, false},
 	// state-sync = *state-sync-attempt success-sync
-	{"one-apply-chunk-2", []string{InitChain, OfferSnapshot, ApplyChunk, OfferSnapshot, ApplyChunk, BeginBlock, EndBlock, Commit}, true},
-	{"mutliple-apply-chunks-2", []string{InitChain, OfferSnapshot, ApplyChunk, ApplyChunk, ApplyChunk, OfferSnapshot, ApplyChunk, BeginBlock, EndBlock, Commit}, true},
-	{"offer-snapshot-missing-2", []string{InitChain, ApplyChunk, OfferSnapshot, ApplyChunk, BeginBlock, EndBlock, Commit}, false},
-	{"no-apply-chunk", []string{InitChain, OfferSnapshot, OfferSnapshot, ApplyChunk, BeginBlock, EndBlock, Commit}, true},
+	{"one-apply-chunk-2", []string{InitChain, OfferSnapshot, ApplyChunk, OfferSnapshot, ApplyChunk, FinalizeBlock, Commit}, true},
+	{"mutliple-apply-chunks-2", []string{InitChain, OfferSnapshot, ApplyChunk, ApplyChunk, ApplyChunk, OfferSnapshot, ApplyChunk, FinalizeBlock, Commit}, true},
+	{"offer-snapshot-missing-2", []string{InitChain, ApplyChunk, OfferSnapshot, ApplyChunk, FinalizeBlock, Commit}, false},
+	{"no-apply-chunk", []string{InitChain, OfferSnapshot, OfferSnapshot, ApplyChunk, FinalizeBlock, Commit}, true},
 
 	// start = recovery
 	// recovery = consensus-exec
 	// consensus-height = decide commit
-	{"empty-block-2", []string{BeginBlock, EndBlock, Commit}, true},
-	{"begin-block-missing-2", []string{EndBlock, Commit}, false},
-	{"end-block-missing-2", []string{BeginBlock, Commit}, false},
-	{"commit-missing-2", []string{BeginBlock, EndBlock}, false},
-	{"one-tx-block-2", []string{BeginBlock, DeliverTx, EndBlock, Commit}, true},
-	{"multiple-tx-block-2", []string{BeginBlock, DeliverTx, DeliverTx, EndBlock, Commit}, true},
+	{"empty-block-2", []string{FinalizeBlock, Commit}, true},
+	{"finalize-block-missing-2", []string{Commit}, false},
+	{"commit-missing-2", []string{FinalizeBlock}, false},
 	// consensus-height = *consensus-round decide commit
-	{"proposer-round-2", []string{PrepareProposal, ProcessProposal, BeginBlock, EndBlock, Commit}, true},
-	{"process-proposal-missing-2", []string{PrepareProposal, BeginBlock, EndBlock, Commit}, false},
-	{"non-proposer-round-2", []string{ProcessProposal, BeginBlock, EndBlock, Commit}, true},
-	{"multiple-rounds-2", []string{PrepareProposal, ProcessProposal, ProcessProposal, PrepareProposal, ProcessProposal, ProcessProposal, ProcessProposal, BeginBlock, EndBlock, Commit}, true},
+	{"proposer-round-2", []string{PrepareProposal, ProcessProposal, FinalizeBlock, Commit}, true},
+	{"process-proposal-missing-2", []string{PrepareProposal, FinalizeBlock, Commit}, false},
+	{"non-proposer-round-2", []string{ProcessProposal, FinalizeBlock, Commit}, true},
+	{"multiple-rounds-2", []string{PrepareProposal, ProcessProposal, ProcessProposal, PrepareProposal, ProcessProposal, ProcessProposal, ProcessProposal, FinalizeBlock, Commit}, true},
 
 	// corner cases
 	{"empty execution", []string{""}, false},
@@ -81,8 +75,7 @@ func TestVerifySpecific(t *testing.T) {
 	//calls := []string{PrepareProposal, BeginBlock, EndBlock, Commit}
 	//execution := strings.Join(calls, " ")
 	checker := NewGrammarChecker(DefaultConfig())
-	//execution := InitChain + " " + BeginBlock + "" + EndBlock
-	execution := InitChain + " " + BeginBlock + " " + DeliverTx + " " + DeliverTx + " " + DeliverTx + "\n" + DeliverTx + " " + DeliverTx + " " + DeliverTx + " " + DeliverTx + " " + DeliverTx + "\n" + DeliverTx + " " + DeliverTx + " " + DeliverTx + " " + DeliverTx + " " + DeliverTx + "\n" + DeliverTx + " " + DeliverTx + " " + DeliverTx + " " + Commit + " " + BeginBlock + "\n" + DeliverTx + " " + DeliverTx + " " + DeliverTx + " " + DeliverTx + " " + DeliverTx + "\n" + DeliverTx + " " + DeliverTx + " " + DeliverTx + " " + EndBlock + " " + Commit
+	execution := InitChain + " " + FinalizeBlock + "" + Commit
 	_, err := checker.VerifyExecution(execution)
 	if err != nil {
 		t.Error(err)
@@ -92,8 +85,7 @@ func TestVerifySpecific(t *testing.T) {
 func TestFilterLastHeight(t *testing.T) {
 	reqs := []*abci.Request{
 		&abci.Request{Value: &abci.Request_InitChain{InitChain: &abci.RequestInitChain{}}},
-		&abci.Request{Value: &abci.Request_BeginBlock{BeginBlock: &abci.RequestBeginBlock{}}},
-		&abci.Request{Value: &abci.Request_EndBlock{EndBlock: &abci.RequestEndBlock{}}},
+		&abci.Request{Value: &abci.Request_FinalizeBlock{FinalizeBlock: &abci.RequestFinalizeBlock{}}},
 		&abci.Request{Value: &abci.Request_Commit{Commit: &abci.RequestCommit{}}},
 	}
 	checker := NewGrammarChecker(DefaultConfig())
@@ -102,7 +94,7 @@ func TestFilterLastHeight(t *testing.T) {
 		t.Errorf("FilterLastHeight filtered %v abci calls, expected %v\n", n, 0)
 	}
 
-	reqs = append(reqs, &abci.Request{Value: &abci.Request_BeginBlock{BeginBlock: &abci.RequestBeginBlock{}}})
+	reqs = append(reqs, &abci.Request{Value: &abci.Request_FinalizeBlock{FinalizeBlock: &abci.RequestFinalizeBlock{}}})
 	rrr, n := checker.filterLastHeight(reqs)
 	if len(rr) != len(rrr) || n != 1 {
 		t.Errorf("FilterLastHeight filtered %v abci calls, expected %v\n", n, 1)

@@ -21,7 +21,6 @@ type NT int
 const( 
 	NT_ApplyChunk NT = iota
 	NT_ApplyChunks 
-	NT_BeginBlock 
 	NT_CleanStart 
 	NT_Commit 
 	NT_ConsensusExec 
@@ -30,9 +29,6 @@ const(
 	NT_ConsensusRound 
 	NT_ConsensusRounds 
 	NT_Decide 
-	NT_DeliverTx 
-	NT_DeliverTxs 
-	NT_EndBlock 
 	NT_InitChain 
 	NT_NonProposer 
 	NT_OfferSnapshot 
@@ -51,14 +47,12 @@ const(
 type T int
 const( 
 	T_0 T = iota // <ApplyChunk> 
-	T_1  // <BeginBlock> 
-	T_2  // <Commit> 
-	T_3  // <DeliverTx> 
-	T_4  // <EndBlock> 
-	T_5  // <InitChain> 
-	T_6  // <OfferSnapshot> 
-	T_7  // <PrepareProposal> 
-	T_8  // <ProcessProposal> 
+	T_1  // <Commit> 
+	T_2  // <FinalizeBlock> 
+	T_3  // <InitChain> 
+	T_4  // <OfferSnapshot> 
+	T_5  // <PrepareProposal> 
+	T_6  // <ProcessProposal> 
 )
 
 type Symbols []Symbol
@@ -128,7 +122,6 @@ func ToNT(sym string) NT {
 var ntToString = []string { 
 	"ApplyChunk", /* NT_ApplyChunk */
 	"ApplyChunks", /* NT_ApplyChunks */
-	"BeginBlock", /* NT_BeginBlock */
 	"CleanStart", /* NT_CleanStart */
 	"Commit", /* NT_Commit */
 	"ConsensusExec", /* NT_ConsensusExec */
@@ -137,9 +130,6 @@ var ntToString = []string {
 	"ConsensusRound", /* NT_ConsensusRound */
 	"ConsensusRounds", /* NT_ConsensusRounds */
 	"Decide", /* NT_Decide */
-	"DeliverTx", /* NT_DeliverTx */
-	"DeliverTxs", /* NT_DeliverTxs */
-	"EndBlock", /* NT_EndBlock */
 	"InitChain", /* NT_InitChain */
 	"NonProposer", /* NT_NonProposer */
 	"OfferSnapshot", /* NT_OfferSnapshot */
@@ -156,20 +146,17 @@ var ntToString = []string {
 
 var tToString = []string { 
 	"<ApplyChunk>", /* T_0 */
-	"<BeginBlock>", /* T_1 */
-	"<Commit>", /* T_2 */
-	"<DeliverTx>", /* T_3 */
-	"<EndBlock>", /* T_4 */
-	"<InitChain>", /* T_5 */
-	"<OfferSnapshot>", /* T_6 */
-	"<PrepareProposal>", /* T_7 */
-	"<ProcessProposal>", /* T_8 */ 
+	"<Commit>", /* T_1 */
+	"<FinalizeBlock>", /* T_2 */
+	"<InitChain>", /* T_3 */
+	"<OfferSnapshot>", /* T_4 */
+	"<PrepareProposal>", /* T_5 */
+	"<ProcessProposal>", /* T_6 */ 
 }
 
 var stringNT = map[string]NT{ 
 	"ApplyChunk":NT_ApplyChunk,
 	"ApplyChunks":NT_ApplyChunks,
-	"BeginBlock":NT_BeginBlock,
 	"CleanStart":NT_CleanStart,
 	"Commit":NT_Commit,
 	"ConsensusExec":NT_ConsensusExec,
@@ -178,9 +165,6 @@ var stringNT = map[string]NT{
 	"ConsensusRound":NT_ConsensusRound,
 	"ConsensusRounds":NT_ConsensusRounds,
 	"Decide":NT_Decide,
-	"DeliverTx":NT_DeliverTx,
-	"DeliverTxs":NT_DeliverTxs,
-	"EndBlock":NT_EndBlock,
 	"InitChain":NT_InitChain,
 	"NonProposer":NT_NonProposer,
 	"OfferSnapshot":NT_OfferSnapshot,

@@ -15,9 +15,7 @@ import (
 // abciGrammar terminals from "/pkg/grammar/abci_grammar.md" file.
 const (
 	InitChain       = "<InitChain>"
-	BeginBlock      = "<BeginBlock>"
-	DeliverTx       = "<DeliverTx>"
-	EndBlock        = "<EndBlock>"
+	FinalizeBlock   = "<FinalizeBlock>"
 	Commit          = "<Commit>"
 	OfferSnapshot   = "<OfferSnapshot>"
 	ApplyChunk      = "<ApplyChunk>"
@@ -69,12 +67,8 @@ func (g *GrammarChecker) getRequestTerminal(req *abci.Request) string {
 	switch req.Value.(type) {
 	case *abci.Request_InitChain:
 		return InitChain
-	case *abci.Request_BeginBlock:
-		return BeginBlock
-	case *abci.Request_DeliverTx:
-		return DeliverTx
-	case *abci.Request_EndBlock:
-		return EndBlock
+	case *abci.Request_FinalizeBlock:
+		return FinalizeBlock
 	case *abci.Request_Commit:
 		return Commit
 	case *abci.Request_OfferSnapshot:

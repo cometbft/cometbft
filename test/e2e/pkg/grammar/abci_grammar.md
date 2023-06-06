@@ -21,14 +21,10 @@ ConsensusRound : Proposer | NonProposer ;
 
 Proposer : PrepareProposal ProcessProposal ; 
 NonProposer: ProcessProposal ;
-Decide : BeginBlock DeliverTxs EndBlock | BeginBlock EndBlock ; 
-DeliverTxs : DeliverTx | DeliverTx DeliverTxs ; 
 
 
 InitChain : "<InitChain>" ;
-BeginBlock : "<BeginBlock>" ; 
-DeliverTx : "<DeliverTx>" ;
-EndBlock : "<EndBlock>" ;
+Decide : "<FinalizeBlock>" ; 
 Commit : "<Commit>" ;
 OfferSnapshot : "<OfferSnapshot>" ;
 ApplyChunk : "<ApplyChunk>" ; 

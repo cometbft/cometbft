@@ -62,7 +62,7 @@ func GetABCIRequestString(req *abci.Request) (string, error) {
 	return s, nil
 }
 ```
-In addition, we surround the new string with `abci-call` constants so that we can find lines with ABCI++ request more easily.
+In addition, we surround the new string with `abci-req` constants so that we can find lines with ABCI++ request more easily.
 If in the future we want to log another ABCI++ request type, we just need to do the same thing: 
 create a corresponding `abci.Request` and log it via 
 `app.logRequest(r)`. 
@@ -133,8 +133,9 @@ it totally from the new grammar. The Application is still logging the `Info`
 call, but a specific test would need to be written to check whether it happens
 in the right moment. 
 
-The `gogll` library receives the file with the grammar as input, and it generates the corresponding parser and lexer. The code that 
-this library generates is inside the following directories: 
+The `gogll` library receives the file with the grammar as input, and it generates the corresponding parser and lexer. Specifically, we need to run 
+`gogll pkg/grammar/abci_grammar.md` from `test/e2e/` directory.
+The resulted code is inside the following directories: 
 - `test/e2e/pkg/grammar/lexer`,
 - `test/e2e/pkg/grammar/parser`,
 - `test/e2e/pkg/grammar/sppf`,
@@ -196,7 +197,7 @@ will return an error that `ProcessProposal` is missing, even though the `Process
 will happen after.  
 - Generates an execution string by replacing `abci.Request` with the 
 corresponding terminal from the grammar. This logic is implemented in
-`GetExecutionString()` function. This function receives a list of `abci.Request` and generates a string where each request the grammar covers 
+`GetExecutionString()` function. This function receives a list of `abci.Request` and generates a string where every request the grammar covers 
 will be replaced with a corresponding terminal. For example, `abci.Request_PrepareProposal` is replaced with `<PrepareProposal>`. If the request is not covered 
 by the grammar, it will be ignored. 
 - Checks if the resulting string with terminals respects the grammar. This 
@@ -220,22 +221,20 @@ we added. An example of an error produced by `VerifyExecution`
 is the following:
 
 ```
-***Error 0***
-Parse Error: DeliverTx : ∙<DeliverTx>  I[18]=<Commit> (217,225) <Commit> at line 4 col 37
-Expected one of: [<EndBlock>,<DeliverTx>]
-Execution:
-1:<InitChain> <BeginBlock> <DeliverTx> <DeliverTx> <DeliverTx>
-2:<DeliverTx> <DeliverTx> <DeliverTx> <DeliverTx> <DeliverTx>
-3:<DeliverTx> <DeliverTx> <DeliverTx> <DeliverTx> <DeliverTx>
-4:<DeliverTx> <DeliverTx> <DeliverTx> <Commit> <BeginBlock>
-5:<DeliverTx> <DeliverTx> <DeliverTx> <DeliverTx> <DeliverTx>
-6:<DeliverTx> <DeliverTx> <DeliverTx> <EndBlock> <Commit>
+Parser failed, number of errors is 11
+    ***Error 0***
+    Parse Error: ProcessProposal : ∙<ProcessProposal>  I[11]=<Commit> (193,201) <Commit> at line 3 col 19
+    Expected one of: [<FinalizeBlock>,<PrepareProposal>,<ProcessProposal>]
+    Execution:
+    1:<InitChain> <ProcessProposal> <ProcessProposal> <ProcessProposal> <ProcessProposal> 
+    2:<ProcessProposal> <ProcessProposal> <ProcessProposal> <ProcessProposal> <ProcessProposal>
+	3:<ProcessProposal> <Commit>
 ```
 The parse error shown above represents an error that happened at the grammar slot
-`DeliverTx : ∙<DeliverTx>`, specifically an error occurs at token 
-`I[18]=<Commit> (217,225) <Commit>` which is 18th token in the whole 
-execution, at line 4, column 37. Instead of `<Commit>` the grammar was 
-expecting either `<EndBlock>` or another `<DeliverTx>`.
+`ProcessProposal : ∙<ProcessProposal>`, specifically an error occurs at token 
+`I[11]=<Commit> (193,201) <Commit>` which is 12th token in the whole 
+execution, at line 3, column 19. Instead of `<Commit>` the grammar was 
+expecting `<FinalizeBlock>`,`<PrepareProposal>` or `<ProcessProposal>`.
 In addition, the output shows the lines around the line with an error. 
 Notice here that the parser can return many errors because the parser returns an error at every point at which the parser fails to parse
 a grammar production. Usually, the error of interest is the one that has 
@@ -252,14 +251,9 @@ ABCI++ requests in the future:
 - We should modify `getRequestTerminal()` method inside `test/e2e/pkg/grammar/checker.go` to return a grammar terminal for the new ABCI++ request. 
 
 
-
-
-
-
-
 ## Status
 
-Partially implemented.
+Implemented.
 
 To-do list:
 - integrating the generation of parser/lexer into the codebase.

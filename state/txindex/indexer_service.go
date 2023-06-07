@@ -99,7 +99,7 @@ func (is *IndexerService) OnStart() error {
 						return
 					}
 				} else {
-					is.Logger.Info("indexed block events", "height", height)
+					is.Logger.Debug("indexed block events", "height", height)
 				}
 
 				if err = is.txIdxr.AddBatch(batch); err != nil {

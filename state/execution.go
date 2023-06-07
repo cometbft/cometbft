@@ -233,7 +233,7 @@ func (blockExec *BlockExecutor) ApplyBlock(
 		return state, fmt.Errorf("expected tx results length to match size of transactions in block. Expected %d, got %d", len(block.Data.Txs), len(abciResponse.TxResults))
 	}
 
-	blockExec.logger.Debug("executed block", "height", block.Height, "app_hash", abciResponse.AppHash)
+	blockExec.logger.Info("executed block", "height", block.Height, "app_hash", abciResponse.AppHash)
 
 	fail.Fail() // XXX
 

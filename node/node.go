@@ -205,7 +205,7 @@ func NewNode(ctx context.Context,
 
 	// Create the handshaker, which calls RequestInfo, sets the AppVersion on the state,
 	// and replays any blocks as necessary to sync CometBFT with the app.
-	consensusLogger := logger.With("module", "consensus")
+	consensusLogger := log.NewFilter(logger, log.AllowInfoWith("module", "consensus"))
 	if !stateSync {
 		if err := doHandshake(ctx, stateStore, state, blockStore, genDoc, eventBus, proxyApp, consensusLogger); err != nil {
 			return nil, err

@@ -45,7 +45,7 @@ func (cs *State) readReplayMessage(msg *TimedWALMessage, newStepSub types.Subscr
 	// for logging
 	switch m := msg.Msg.(type) {
 	case types.EventDataRoundState:
-		cs.Logger.Info("Replay: New Step", "height", m.Height, "round", m.Round, "step", m.Step)
+		cs.Logger.Debug("Replay: New Step", "height", m.Height, "round", m.Round, "step", m.Step)
 		// these are playback checks
 		ticker := time.After(time.Second * 2)
 		if newStepSub != nil {
@@ -69,19 +69,19 @@ func (cs *State) readReplayMessage(msg *TimedWALMessage, newStepSub types.Subscr
 		switch msg := m.Msg.(type) {
 		case *ProposalMessage:
 			p := msg.Proposal
-			cs.Logger.Info("Replay: Proposal", "height", p.Height, "round", p.Round, "header",
+			cs.Logger.Debug("Replay: Proposal", "height", p.Height, "round", p.Round, "header",
 				p.BlockID.PartSetHeader, "pol", p.POLRound, "peer", peerID)
 		case *BlockPartMessage:
-			cs.Logger.Info("Replay: BlockPart", "height", msg.Height, "round", msg.Round, "peer", peerID)
+			cs.Logger.Debug("Replay: BlockPart", "height", msg.Height, "round", msg.Round, "peer", peerID)
 		case *VoteMessage:
 			v := msg.Vote
-			cs.Logger.Info("Replay: Vote", "height", v.Height, "round", v.Round, "type", v.Type,
+			cs.Logger.Debug("Replay: Vote", "height", v.Height, "round", v.Round, "type", v.Type,
 				"blockID", v.BlockID, "peer", peerID, "extensionLen", len(v.Extension), "extSigLen", len(v.ExtensionSignature))
 		}
 
 		cs.handleMsg(m)
 	case timeoutInfo:
-		cs.Logger.Info("Replay: Timeout", "height", m.Height, "round", m.Round, "step", m.Step, "dur", m.Duration)
+		cs.Logger.Debug("Replay: Timeout", "height", m.Height, "round", m.Round, "step", m.Step, "dur", m.Duration)
 		cs.handleTimeout(m, cs.RoundState)
 	default:
 		return fmt.Errorf("replay: Unknown TimedWALMessage type: %v", reflect.TypeOf(msg.Msg))
@@ -89,7 +89,7 @@ func (cs *State) readReplayMessage(msg *TimedWALMessage, newStepSub types.Subscr
 	return nil
 }
 
-// Replay only those messages since the last block.  `timeoutRoutine` should
+// Replay only those messages since the last block. `timeoutRoutine` should
 // run concurrently to read off tickChan.
 func (cs *State) catchupReplay(csHeight int64) error {
 
@@ -137,7 +137,7 @@ func (cs *State) catchupReplay(csHeight int64) error {
 	}
 	defer gr.Close()
 
-	cs.Logger.Info("Catchup by replaying consensus messages", "height", csHeight)
+	cs.Logger.Debug("Catchup by replaying consensus messages", "height", csHeight)
 
 	var msg *TimedWALMessage
 	dec := WALDecoder{gr}
@@ -254,7 +254,6 @@ func (h *Handshaker) Handshake(ctx context.Context, proxyApp proxy.AppConns) err
 	appHash := res.LastBlockAppHash
 
 	h.logger.Info("ABCI Handshake App Info",
-		"height", blockHeight,
 		"hash", log.NewLazySprintf("%X", appHash),
 		"software-version", res.Version,
 		"protocol-version", res.AppVersion,
@@ -414,7 +413,7 @@ func (h *Handshaker) ReplayBlocks(
 			// so replayBlock with the real app.
 			// NOTE: We could instead use the cs.WAL on cs.Start,
 			// but we'd have to allow the WAL to replay a block that wrote it's #ENDHEIGHT
-			h.logger.Info("Replay last block using real app")
+			h.logger.Debug("Replay last block using real app")
 			state, err = h.replayBlock(state, storeBlockHeight, proxyApp.Consensus())
 			return state.AppHash, err
 
@@ -432,7 +431,7 @@ func (h *Handshaker) ReplayBlocks(
 				finalizeBlockResponse.AppHash = appHash
 			}
 			mockApp := newMockProxyApp(finalizeBlockResponse)
-			h.logger.Info("Replay last block using mock app")
+			h.logger.Debug("Replay last block using mock app")
 			state, err = h.replayBlock(state, storeBlockHeight, mockApp)
 			return state.AppHash, err
 		}
@@ -477,7 +476,7 @@ func (h *Handshaker) replayBlocks(
 		default:
 		}
 
-		h.logger.Info("Applying block", "height", i)
+		h.logger.Debug("Applying block", "height", i)
 		block := h.store.LoadBlock(i)
 		// Extra check to ensure the app was not changed in a way it shouldn't have.
 		if len(appHash) > 0 {
@@ -487,6 +486,10 @@ func (h *Handshaker) replayBlocks(
 		appHash, err = sm.ExecCommitBlock(proxyApp.Consensus(), block, h.logger, h.stateStore, h.genDoc.InitialHeight)
 		if err != nil {
 			return nil, err
+		}
+
+		if i == firstBlock || i%1000 == 0 || i == finalBlock {
+			h.logger.Info("executed blocks up to", "height", block.Height, "app_hash", appHash)
 		}
 
 		h.nBlocks++

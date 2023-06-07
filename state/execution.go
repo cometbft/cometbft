@@ -220,7 +220,7 @@ func (blockExec *BlockExecutor) ApplyBlock(
 		return state, err
 	}
 
-	blockExec.logger.Info(
+	blockExec.logger.Debug(
 		"finalized block",
 		"height", block.Height,
 		"num_txs_res", len(abciResponse.TxResults),
@@ -233,7 +233,7 @@ func (blockExec *BlockExecutor) ApplyBlock(
 		return state, fmt.Errorf("expected tx results length to match size of transactions in block. Expected %d, got %d", len(block.Data.Txs), len(abciResponse.TxResults))
 	}
 
-	blockExec.logger.Info("executed block", "height", block.Height, "app_hash", abciResponse.AppHash)
+	blockExec.logger.Debug("executed block", "height", block.Height, "app_hash", abciResponse.AppHash)
 
 	fail.Fail() // XXX
 
@@ -372,7 +372,7 @@ func (blockExec *BlockExecutor) Commit(
 	}
 
 	// ResponseCommit has no error code - just data
-	blockExec.logger.Info(
+	blockExec.logger.Debug(
 		"committed state",
 		"height", block.Height,
 		"block_app_hash", fmt.Sprintf("%X", block.AppHash),
@@ -696,7 +696,7 @@ func ExecCommitBlock(
 		return nil, fmt.Errorf("expected tx results length to match size of transactions in block. Expected %d, got %d", len(block.Data.Txs), len(resp.TxResults))
 	}
 
-	logger.Info("executed block", "height", block.Height, "app_hash", resp.AppHash)
+	logger.Debug("executed block", "height", block.Height, "app_hash", resp.AppHash)
 
 	// Commit block
 	_, err = appConnConsensus.Commit(context.TODO())

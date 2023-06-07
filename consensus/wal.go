@@ -241,7 +241,7 @@ func (wal *BaseWAL) SearchForEndHeight(
 	// NOTE: starting from the last file in the group because we're usually
 	// searching for the last height. See replay.go
 	min, max := wal.group.MinIndex(), wal.group.MaxIndex()
-	wal.Logger.Info("Searching for height", "height", height, "min", min, "max", max)
+	wal.Logger.Debug("Searching for height", "height", height, "min", min, "max", max)
 	for index := max; index >= min; index-- {
 		gr, err = wal.group.NewReader(index)
 		if err != nil {
@@ -272,7 +272,7 @@ func (wal *BaseWAL) SearchForEndHeight(
 			if m, ok := msg.Msg.(EndHeightMessage); ok {
 				lastHeightFound = m.Height
 				if m.Height == height { // found
-					wal.Logger.Info("Found", "height", height, "index", index)
+					wal.Logger.Debug("Found", "height", height, "index", index)
 					return gr, true, nil
 				}
 			}

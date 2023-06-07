@@ -72,7 +72,8 @@ func NewReactor(consensusState *State, waitSync bool, options ...ReactorOption) 
 // OnStart implements BaseService by subscribing to events, which later will be
 // broadcasted to other peers and starting state if we're not in block sync.
 func (conR *Reactor) OnStart() error {
-	conR.Logger.Info("Reactor ", "waitSync", conR.WaitSync())
+	conR.Logger.Debug("Consensus OnStart")
+	conR.Logger.Debug("waitSync", conR.WaitSync())
 
 	// start routine that computes peer statistics for evaluating peer quality
 	go conR.peerStatsRoutine()
@@ -93,6 +94,7 @@ func (conR *Reactor) OnStart() error {
 // OnStop implements BaseService by unsubscribing from events and stopping
 // state.
 func (conR *Reactor) OnStop() {
+	conR.Logger.Debug("Consensus OnStop")
 	conR.unsubscribeFromBroadcastEvents()
 	if err := conR.conS.Stop(); err != nil {
 		conR.Logger.Error("Error stopping consensus state", "err", err)
@@ -105,7 +107,7 @@ func (conR *Reactor) OnStop() {
 // SwitchToConsensus switches from block_sync mode to consensus mode.
 // It resets the state, turns off block_sync, and starts the consensus state-machine
 func (conR *Reactor) SwitchToConsensus(state sm.State, skipWAL bool) {
-	conR.Logger.Info("SwitchToConsensus")
+	conR.Logger.Debug("Consensus SwitchToConsensus")
 
 	func() {
 		// We need to lock, as we are not entering consensus state from State's `handleMsg` or `handleTimeout`
@@ -189,6 +191,8 @@ func (conR *Reactor) InitPeer(peer p2p.Peer) p2p.Peer {
 // AddPeer implements Reactor by spawning multiple gossiping goroutines for the
 // peer.
 func (conR *Reactor) AddPeer(peer p2p.Peer) {
+	conR.Logger.Debug("Consensus AddPeer", peer)
+
 	if !conR.IsRunning() {
 		return
 	}
@@ -210,7 +214,8 @@ func (conR *Reactor) AddPeer(peer p2p.Peer) {
 }
 
 // RemovePeer is a noop.
-func (conR *Reactor) RemovePeer(p2p.Peer, interface{}) {
+func (conR *Reactor) RemovePeer(peer p2p.Peer, reason interface{}) {
+	conR.Logger.Debug("Consensus RemovePeer", peer, reason)
 	if !conR.IsRunning() {
 		return
 	}
@@ -315,7 +320,7 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 
 	case DataChannel:
 		if conR.WaitSync() {
-			conR.Logger.Info("Ignoring message received during sync", "msg", msg)
+			conR.Logger.Debug("Ignoring message received during sync", "msg", msg)
 			return
 		}
 		switch msg := msg.(type) {
@@ -334,7 +339,7 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 
 	case VoteChannel:
 		if conR.WaitSync() {
-			conR.Logger.Info("Ignoring message received during sync", "msg", msg)
+			conR.Logger.Debug("Ignoring message received during sync", "msg", msg)
 			return
 		}
 		switch msg := msg.(type) {
@@ -356,7 +361,7 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 
 	case VoteSetBitsChannel:
 		if conR.WaitSync() {
-			conR.Logger.Info("Ignoring message received during sync", "msg", msg)
+			conR.Logger.Debug("Ignoring message received during sync", "msg", msg)
 			return
 		}
 		switch msg := msg.(type) {
@@ -547,6 +552,7 @@ OUTER_LOOP:
 		}
 		rs := conR.getRoundState()
 		prs := ps.GetRoundState()
+		heightLogger := logger.With("prs.height", prs.Height)
 
 		// Send proposal Block parts?
 		if rs.ProposalBlockParts.HasHeader(prs.ProposalBlockPartSetHeader) {
@@ -573,9 +579,7 @@ OUTER_LOOP:
 
 		// If the peer is on a previous height that we have, help catch up.
 		blockStoreBase := conR.conS.blockStore.Base()
-		if blockStoreBase > 0 && 0 < prs.Height && prs.Height < rs.Height && prs.Height >= blockStoreBase {
-			heightLogger := logger.With("height", prs.Height)
-
+		if prs.Height < rs.Height && blockStoreBase > 0 && 0 < prs.Height && prs.Height >= blockStoreBase {
 			// if we never received the commit message from the peer, the block parts wont be initialized
 			if prs.ProposalBlockParts == nil {
 				blockMeta := conR.conS.blockStore.LoadBlockMeta(prs.Height)
@@ -595,8 +599,8 @@ OUTER_LOOP:
 
 		// If height and round don't match, sleep.
 		if (rs.Height != prs.Height) || (rs.Round != prs.Round) {
-			// logger.Info("Peer Height|Round mismatch, sleeping",
-			// "peerHeight", prs.Height, "peerRound", prs.Round, "peer", peer)
+			//TODO: Instead of timed sleeps, should we wait for a wake-up call?
+			heightLogger.Debug("Peer Height|Round mismatch", "round", prs.Round)
 			time.Sleep(conR.conS.config.PeerGossipSleepDuration)
 			continue OUTER_LOOP
 		}
@@ -610,7 +614,7 @@ OUTER_LOOP:
 		if rs.Proposal != nil && !prs.Proposal {
 			// Proposal: share the proposal metadata with peer.
 			{
-				logger.Debug("Sending proposal", "height", prs.Height, "round", prs.Round)
+				heightLogger.Debug("Sending proposal", "round", prs.Round)
 				if peer.Send(p2p.Envelope{
 					ChannelID: DataChannel,
 					Message:   &cmtcons.Proposal{Proposal: *rs.Proposal.ToProto()},
@@ -624,7 +628,7 @@ OUTER_LOOP:
 			// rs.Proposal was validated, so rs.Proposal.POLRound <= rs.Round,
 			// so we definitely have rs.Votes.Prevotes(rs.Proposal.POLRound).
 			if 0 <= rs.Proposal.POLRound {
-				logger.Debug("Sending POL", "height", prs.Height, "round", prs.Round)
+				heightLogger.Debug("Sending POL", "round", prs.Round)
 				peer.Send(p2p.Envelope{
 					ChannelID: DataChannel,
 					Message: &cmtcons.ProposalPOL{
@@ -650,12 +654,12 @@ func (conR *Reactor) gossipDataForCatchup(logger log.Logger, rs *cstypes.RoundSt
 		// Ensure that the peer's PartSetHeader is correct
 		blockMeta := conR.conS.blockStore.LoadBlockMeta(prs.Height)
 		if blockMeta == nil {
-			logger.Error("Failed to load block meta", "ourHeight", rs.Height,
+			logger.Error("Failed to load block meta", "rs.height", rs.Height,
 				"blockstoreBase", conR.conS.blockStore.Base(), "blockstoreHeight", conR.conS.blockStore.Height())
 			time.Sleep(conR.conS.config.PeerGossipSleepDuration)
 			return
 		} else if !blockMeta.BlockID.PartSetHeader.Equals(prs.ProposalBlockPartSetHeader) {
-			logger.Info("Peer ProposalBlockPartSetHeader mismatch, sleeping",
+			logger.Error("Peer ProposalBlockPartSetHeader mismatch, sleeping",
 				"blockPartSetHeader", blockMeta.BlockID.PartSetHeader, "peerBlockPartSetHeader", prs.ProposalBlockPartSetHeader)
 			time.Sleep(conR.conS.config.PeerGossipSleepDuration)
 			return
@@ -669,7 +673,8 @@ func (conR *Reactor) gossipDataForCatchup(logger log.Logger, rs *cstypes.RoundSt
 			return
 		}
 		// Send the part
-		logger.Debug("Sending block part for catchup", "round", prs.Round, "index", index)
+		logger.Debug("Sending block part for catchup", "rs.height", rs.Height, "prs.round", prs.Round, "index", index)
+
 		pp, err := part.ToProto()
 		if err != nil {
 			logger.Error("Could not convert part to proto", "index", index, "error", err)
@@ -709,6 +714,7 @@ OUTER_LOOP:
 		}
 		rs := conR.getRoundState()
 		prs := ps.GetRoundState()
+		logger = logger.With("prs.height", prs.Height)
 
 		switch sleeping {
 		case 1: // First sleep
@@ -717,13 +723,9 @@ OUTER_LOOP:
 			sleeping = 0
 		}
 
-		// logger.Debug("gossipVotesRoutine", "rsHeight", rs.Height, "rsRound", rs.Round,
-		// "prsHeight", prs.Height, "prsRound", prs.Round, "prsStep", prs.Step)
-
 		// If height matches, then send LastCommit, Prevotes, Precommits.
 		if rs.Height == prs.Height {
-			heightLogger := logger.With("height", prs.Height)
-			if conR.gossipVotesForHeight(heightLogger, rs, prs, ps) {
+			if conR.gossipVotesForHeight(logger, rs, prs, ps) {
 				continue OUTER_LOOP
 			}
 		}
@@ -732,7 +734,7 @@ OUTER_LOOP:
 		// If peer is lagging by height 1, send LastCommit.
 		if prs.Height != 0 && rs.Height == prs.Height+1 {
 			if ps.PickSendVote(rs.LastCommit) {
-				logger.Debug("Picked rs.LastCommit to send", "height", prs.Height)
+				logger.Debug("Picked rs.LastCommit to send")
 				continue OUTER_LOOP
 			}
 		}
@@ -759,7 +761,7 @@ OUTER_LOOP:
 				continue
 			}
 			if ps.PickSendVote(ec) {
-				logger.Debug("Picked Catchup commit to send", "height", prs.Height)
+				logger.Debug("Picked Catchup commit to send")
 				continue OUTER_LOOP
 			}
 		}
@@ -767,7 +769,7 @@ OUTER_LOOP:
 		if sleeping == 0 {
 			// We sent nothing. Sleep...
 			sleeping = 1
-			logger.Debug("No votes to send, sleeping", "rs.Height", rs.Height, "prs.Height", prs.Height,
+			logger.Debug("No votes to send, sleeping", "rs.Height", rs.Height,
 				"localPV", rs.Votes.Prevotes(rs.Round).BitArray(), "peerPV", prs.Prevotes,
 				"localPC", rs.Votes.Precommits(rs.Round).BitArray(), "peerPC", prs.Precommits)
 		} else if sleeping == 2 {
@@ -942,7 +944,7 @@ OUTER_LOOP:
 func (conR *Reactor) peerStatsRoutine() {
 	for {
 		if !conR.IsRunning() {
-			conR.Logger.Info("Stopping peerStatsRoutine")
+			conR.Logger.Debug("Stopping peerStatsRoutine")
 			return
 		}
 

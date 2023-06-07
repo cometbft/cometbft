@@ -10,6 +10,8 @@ We want to test whether CommetBFT respects the ABCI++ grammar. To do this, we ne
 
 Issue: [353](https://github.com/cometbft/cometbft/issues/353).
 
+Current version does not support vote extensions. However, this is the next step. 
+
 
 ## Decision
 
@@ -24,11 +26,11 @@ The rationale behind this part of the implementation was to log the request conc
 Whenever an ABCI request is made, the application will create `abci.Request` (`abci` stands for `"github.com/cometbft/cometbft/abci/types"`) and log it.  The example is below.  
 
 ```go
-func (app *Application) InitChain(req abci.RequestInitChain) abci.ResponseInitChain {
+func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
 
 	r := &abci.Request{Value: &abci.Request_InitChain{InitChain: &abci.RequestInitChain{}}}
 	app.logRequest(r)
-
+    
 	...
 }
 ```
@@ -108,14 +110,10 @@ ConsensusRound : Proposer | NonProposer ;
 
 Proposer : PrepareProposal ProcessProposal ; 
 NonProposer: ProcessProposal ;
-Decide : BeginBlock DeliverTxs EndBlock | BeginBlock EndBlock ; 
-DeliverTxs : DeliverTx | DeliverTx DeliverTxs ; 
 
 
 InitChain : "<InitChain>" ;
-BeginBlock : "<BeginBlock>" ; 
-DeliverTx : "<DeliverTx>" ;
-EndBlock : "<EndBlock>" ;
+Decide : "<FinalizeBlock>" ; 
 Commit : "<Commit>" ;
 OfferSnapshot : "<OfferSnapshot>" ;
 ApplyChunk : "<ApplyChunk>" ; 
@@ -124,10 +122,10 @@ ProcessProposal : "<ProcessProposal>" ;
  
  ```
 
-If you compare this grammar with the original one, you will notice that 
+If you compare this grammar with the original one, you will notice that, in addition to vote extensions,  
 `Info` is removed. The reason is that, as explained in the section [CometBFT's expected behaviour](../../spec/abci/abci%2B%2B_comet_expected_behavior.md#valid-method-call-sequences), one of the 
 purposes of the `Info` method is being part of the RPC handling from an external 
-client. Since this can happen at any time, it cannot be expressed with the 
+client. Since this can happen at any time, it complicates the 
 grammar.  
 This is not true in other cases, but since the Application does 
 not know why the `Info` is called, we removed 
@@ -190,17 +188,16 @@ func (g *GrammarChecker) Verify(reqs []*abci.Request) (bool, error) {
 
 It takes a list of requests and does the following things.
 - Filter the last height. Basically, it removes all ABCI++ requests after the 
-last `Commit`. `fetchABCIRequestsByNodeName()` can be called in the middle of the height. As a result, the last height may be incomplete, and 
+last `Commit`. Function `fetchABCIRequestsByNodeName()` can be called in the middle of the height. As a result, the last height may be incomplete, and 
 the parser may return an error. The simple example here is that the last 
-request fetched via `fetchABCIRequestsByNodeName()` is `BeginBlock`; however, `EndBlock` happens after 
+request fetched via `fetchABCIRequestsByNodeName()` is `PrepareProposal`; however, `ProcessProposal` happens after 
 `fetchABCIRequestsByNodeName()` was invoked. Consequently, the parser
-will return an error that `EndBlock` is missing, even though the `EndBlock` 
-will happen.  
+will return an error that `ProcessProposal` is missing, even though the `ProcessProposal` 
+will happen after.  
 - Generates an execution string by replacing `abci.Request` with the 
 corresponding terminal from the grammar. This logic is implemented in
 `GetExecutionString()` function. This function receives a list of `abci.Request` and generates a string where each request the grammar covers 
-will be replaced with a corresponding terminal. For example, `abci.
-BeginBlock` is replaced with `<BeginBlock>`. If the request is not covered 
+will be replaced with a corresponding terminal. For example, `abci.Request_PrepareProposal` is replaced with `<PrepareProposal>`. If the request is not covered 
 by the grammar, it will be ignored. 
 - Checks if the resulting string with terminals respects the grammar. This 
 logic is implemented inside the `VerifyExecution` function. 

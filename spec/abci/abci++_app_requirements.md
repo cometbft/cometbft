@@ -191,22 +191,23 @@ Likewise, `ExtendVote` can also be non-deterministic:
 Unlike all requirements described above,
 which affect the ABCI methods of the [Consensus Connection](#consensus-connection),
 the following requirement is on the [Mempool Connection](#mempool-connection).
-Let *CheckTxCode<sub>tx,p,t</sub>* denote the error code returned by *p*'s Application, via `ReponseCheckTx`,
+Let *CheckTxCode<sub>tx,p,t</sub>* denote the error code returned by *p*'s Application, via `ResponseCheckTx`,
 to CometBFT's `RequestCheckTx` call occurring at time *t* and having transaction *tx* as parameter.
 Let predicate *OK(CheckTxCode)* denote whether *CheckTxCode* is `SUCCESS`.
 
 
 * Requirement 13 [`CheckTx`, non-oscillation]: For any correct process *p*
   and any transaction *tx*,
-  (a) either *OK(CheckTxCode<sub>tx,p,t<sub>0</sub></sub>) = OK(CheckTxCode<sub>tx,p,t<sub>1</sub></sub>)*
+  
+  - (a) either *OK(CheckTxCode<sub>tx,p,t<sub>0</sub></sub>) = OK(CheckTxCode<sub>tx,p,t<sub>1</sub></sub>)*
   for any two times *t<sub>0</sub>* and *t<sub>1</sub>* in *p*'s execution, or
-  (b) there exists a time *t<sub>stable</sub>* in *p*'s execution
+  - (b) there exists a time *t<sub>stable</sub>* in *p*'s execution
   such that *&#172; OK(CheckTxCode<sub>tx,p,t</sub>)* for all *t > t<sub>stable</sub>*.
 
-Requirement 13 has two main conditions. The implementation of `CheckTx` must fullfill at least one of them.
+Requirement 13 has two main conditions. The implementation of `CheckTx` must fulfill at least one of them.
 Condition (a) mandates that `CheckTx` on a transaction never changes its result,
 in other words, that the checks implemented are stateless (e.g., well-formedness, signature verification).
-Condition (b) states that, if the transaction stays in the mempool long enough, if will eventually fail
+Condition (b) states that, if the transaction stays in the mempool long enough, it will eventually fail
 `CheckTx` forever. Finally, note that Requirement 13 is local to process *p*, i.e.,
 no restrictions are made across different correct processes.
 So we could have that this is true:

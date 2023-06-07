@@ -76,7 +76,7 @@ func loadTestnet(t *testing.T) e2e.Testnet {
 	ifdType := os.Getenv("INFRASTRUCTURE_DATA")
 	ifdFile := os.Getenv("INFRASTRUCTURE_FILE")
 	if ifdFile == "" && ifdType != "docker" {
-		t.Skip("INFRASTRUCTURE_DATA not set and INFRASTRUCTURE_TYPE is not docker")
+		t.Fatalf("INFRASTRUCTURE_DATA not set and INFRASTRUCTURE_TYPE is not docker")
 	}
 	testnetCacheMtx.Lock()
 	defer testnetCacheMtx.Unlock()

@@ -208,7 +208,9 @@ Requirement 13 has two main conditions. The implementation of `CheckTx` must ful
 Condition (a) mandates that `CheckTx` on a transaction never changes its result,
 in other words, that the checks implemented are stateless (e.g., well-formedness, signature verification).
 Condition (b) states that, if the transaction stays in the mempool long enough, it will eventually fail
-`CheckTx` forever. Finally, note that Requirement 13 is local to process *p*, i.e.,
+`CheckTx` forever.
+Condition (b) is aiming at `CheckTx` implementations that read the blockchain's state.
+Finally, note that Requirement 13 is local to process *p*, i.e.,
 no restrictions are made across different correct processes.
 So we could have that this is true:
 *OK(CheckTxCode<sub>tx,p,t</sub>) &#8800; OK(CheckTxCode<sub>tx,q,t</sub>)*

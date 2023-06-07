@@ -196,20 +196,23 @@ to CometBFT's `RequestCheckTx` call occurring at time *t* and having transaction
 Let predicate *OK(CheckTxCode)* denote whether *CheckTxCode* is `SUCCESS`.
 
 
-* Requirement 13 [`CheckTx`, non-oscillation]: For any correct process *p*
+* Requirement 13 [`CheckTx`, finite-oscillation]: For any correct process *p*
   and any transaction *tx*,
   
-  - (a) either *OK(CheckTxCode<sub>tx,p,t<sub>0</sub></sub>) = OK(CheckTxCode<sub>tx,p,t<sub>1</sub></sub>)*
-  for any two times *t<sub>0</sub>* and *t<sub>1</sub>* in *p*'s execution, or
-  - (b) there exists a time *t<sub>stable</sub>* in *p*'s execution
-  such that *&#172; OK(CheckTxCode<sub>tx,p,t</sub>)* for all *t > t<sub>stable</sub>*.
+    - (a) either *OK(CheckTxCode<sub>tx,p,t<sub>0</sub></sub>) = OK(CheckTxCode<sub>tx,p,t<sub>1</sub></sub>)*
+      for any two times *t<sub>0</sub>* and *t<sub>1</sub>* in *p*'s execution, or
+    - (b) there exists a time *t<sub>stable</sub>* in *p*'s execution
+      such that *&#172; OK(CheckTxCode<sub>tx,p,t</sub>)* for all *t > t<sub>stable</sub>*.
 
 Requirement 13 has two main conditions. The implementation of `CheckTx` must fulfill at least one of them.
 Condition (a) mandates that `CheckTx` on a transaction never changes its result,
 in other words, that the checks implemented are stateless (e.g., well-formedness, signature verification).
 Condition (b) states that, if the transaction stays in the mempool long enough, it will eventually fail
 `CheckTx` forever.
-Condition (b) is aiming at `CheckTx` implementations that read the blockchain's state.
+Condition (b) is aiming at `CheckTx` implementations that read the Application's state,
+whose result can oscillate as the tx might be validated against different states in successive calls to `CheckTx`.
+Thus, condition (b), while being local to a process *p*, will make sure that the transaction will eventually
+leave the mempool of *all* full nodes.
 Finally, note that Requirement 13 is local to process *p*, i.e.,
 no restrictions are made across different correct processes.
 So we could have that this is true:

@@ -290,7 +290,7 @@ similar results would be to use a "caching" layer.
 
 ### RPC server instance
 
-The **RPC server instance** is a node that runs the RPC API process for the data companion. This server instance provide an RPC API (v1) with
+The **RPC server instance** is a node that runs the RPC API process for the data companion. This server instance provides an RPC API (v1) with
 the same JSONRPC methods in the full node endpoint. The RPC Companion service will expose the same JSONRPC methods and will accept the same request types and
 return wire compatible responses (should match the same response as the equivalent full node RPC endpoint).
 

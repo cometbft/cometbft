@@ -299,7 +299,7 @@ fulfill the request. The data should be serialized in a way that makes it wire c
 
 Identical requests should return idempotent responses, no side effects should cause the RPC service to return different responses.
 
-The RPC service endpoints should be exposes through an external load-balancer service such as Cloudflare or AWS ELB, or
+The RPC service endpoints should be exposed through an external load-balancer service such as Cloudflare or AWS ELB, or
 a server running its own load balancer mechanism (e.g. nginx).
 
 The RPC clients should make requests to the **RPC Companion** server instances through this load balancer.

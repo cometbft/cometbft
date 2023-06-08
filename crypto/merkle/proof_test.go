@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	tmcrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+	cmtcrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 const ProofOpDomino = "test:domino"
@@ -29,8 +29,8 @@ func NewDominoOp(key, input, output string) DominoOp {
 	}
 }
 
-func (dop DominoOp) ProofOp() tmcrypto.ProofOp {
-	dopb := tmcrypto.DominoOp{
+func (dop DominoOp) ProofOp() cmtcrypto.ProofOp {
+	dopb := cmtcrypto.DominoOp{
 		Key:    dop.key,
 		Input:  dop.Input,
 		Output: dop.Output,
@@ -40,7 +40,7 @@ func (dop DominoOp) ProofOp() tmcrypto.ProofOp {
 		panic(err)
 	}
 
-	return tmcrypto.ProofOp{
+	return cmtcrypto.ProofOp{
 		Type: ProofOpDomino,
 		Key:  []byte(dop.key),
 		Data: bz,

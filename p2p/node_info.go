@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"reflect"
 
-	tmbytes "github.com/tendermint/tendermint/libs/bytes"
-	tmstrings "github.com/tendermint/tendermint/libs/strings"
+	cmtbytes "github.com/tendermint/tendermint/libs/bytes"
+	cmtstrings "github.com/tendermint/tendermint/libs/strings"
 	tmp2p "github.com/tendermint/tendermint/proto/tendermint/p2p"
 	"github.com/tendermint/tendermint/version"
 )
@@ -75,7 +75,7 @@ func NewProtocolVersion(p2p, block, app uint64) ProtocolVersion {
 var _ NodeInfo = DefaultNodeInfo{}
 
 // DefaultNodeInfo is the basic node information exchanged
-// between two peers during the Tendermint P2P handshake.
+// between two peers during the CometBFT P2P handshake.
 type DefaultNodeInfo struct {
 	ProtocolVersion ProtocolVersion `json:"protocol_version"`
 
@@ -86,9 +86,9 @@ type DefaultNodeInfo struct {
 
 	// Check compatibility.
 	// Channels are HexBytes so easier to read as JSON
-	Network  string           `json:"network"`  // network/chain ID
-	Version  string           `json:"version"`  // major.minor.revision
-	Channels tmbytes.HexBytes `json:"channels"` // channels this node knows about
+	Network  string            `json:"network"`  // network/chain ID
+	Version  string            `json:"version"`  // major.minor.revision
+	Channels cmtbytes.HexBytes `json:"channels"` // channels this node knows about
 
 	// ASCIIText fields
 	Moniker string               `json:"moniker"` // arbitrary moniker
@@ -133,7 +133,7 @@ func (info DefaultNodeInfo) Validate() error {
 
 	// Validate Version
 	if len(info.Version) > 0 &&
-		(!tmstrings.IsASCIIText(info.Version) || tmstrings.ASCIITrim(info.Version) == "") {
+		(!cmtstrings.IsASCIIText(info.Version) || cmtstrings.ASCIITrim(info.Version) == "") {
 
 		return fmt.Errorf("info.Version must be valid ASCII text without tabs, but got %v", info.Version)
 	}
@@ -152,7 +152,7 @@ func (info DefaultNodeInfo) Validate() error {
 	}
 
 	// Validate Moniker.
-	if !tmstrings.IsASCIIText(info.Moniker) || tmstrings.ASCIITrim(info.Moniker) == "" {
+	if !cmtstrings.IsASCIIText(info.Moniker) || cmtstrings.ASCIITrim(info.Moniker) == "" {
 		return fmt.Errorf("info.Moniker must be valid non-empty ASCII text without tabs, but got %v", info.Moniker)
 	}
 
@@ -166,7 +166,7 @@ func (info DefaultNodeInfo) Validate() error {
 	}
 	// XXX: Should we be more strict about address formats?
 	rpcAddr := other.RPCAddress
-	if len(rpcAddr) > 0 && (!tmstrings.IsASCIIText(rpcAddr) || tmstrings.ASCIITrim(rpcAddr) == "") {
+	if len(rpcAddr) > 0 && (!cmtstrings.IsASCIIText(rpcAddr) || cmtstrings.ASCIITrim(rpcAddr) == "") {
 		return fmt.Errorf("info.Other.RPCAddress=%v must be valid ASCII text without tabs", rpcAddr)
 	}
 

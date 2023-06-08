@@ -2,10 +2,10 @@ package client
 
 /*
 The client package provides a general purpose interface (Client) for connecting
-to a tendermint node, as well as higher-level functionality.
+to a CometBFT node, as well as higher-level functionality.
 
 The main implementation for production code is client.HTTP, which
-connects via http to the jsonrpc interface of the tendermint node.
+connects via http to the jsonrpc interface of the CometBFT node.
 
 For connecting to a node running in the same process (eg. when
 compiling the abci app in the same process), you can use the client.Local
@@ -114,7 +114,7 @@ type NetworkClient interface {
 }
 
 // EventsClient is reactive, you can subscribe to any message, given the proper
-// string. see tendermint/types/events.go
+// string. see cometbft/types/events.go
 type EventsClient interface {
 	// Subscribe subscribes given subscriber to query. Returns a channel with
 	// cap=1 onto which events are published. An error is returned if it fails to

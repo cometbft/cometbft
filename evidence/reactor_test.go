@@ -8,12 +8,13 @@ import (
 	"time"
 
 	"github.com/fortytw2/leaktest"
-	"github.com/go-kit/kit/log/term"
+	"github.com/go-kit/log/term"
+	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
 	cfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/crypto"
@@ -23,7 +24,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/p2p"
 	p2pmocks "github.com/tendermint/tendermint/p2p/mocks"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	sm "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/types"
 )
@@ -199,7 +200,7 @@ func TestReactorBroadcastEvidenceMemoryLeak(t *testing.T) {
 	pool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 	require.NoError(t, err)
 
-	p := &p2pmocks.Peer{}
+	p := &p2pmocks.PeerEnvelopeSender{}
 
 	p.On("IsRunning").Once().Return(true)
 	p.On("IsRunning").Return(false)
@@ -207,7 +208,10 @@ func TestReactorBroadcastEvidenceMemoryLeak(t *testing.T) {
 	// i.e. broadcastEvidenceRoutine finishes when peer is stopped
 	defer leaktest.CheckTimeout(t, 10*time.Second)()
 
-	p.On("Send", evidence.EvidenceChannel, mock.AnythingOfType("[]uint8")).Return(false)
+	p.On("SendEnvelope", mock.MatchedBy(func(i interface{}) bool {
+		e, ok := i.(p2p.Envelope)
+		return ok && e.ChannelID == evidence.EvidenceChannel
+	})).Return(false)
 	quitChan := make(<-chan struct{})
 	p.On("Quit").Return(quitChan)
 	ps := peerState{2}
@@ -351,7 +355,7 @@ func exampleVote(t byte) *types.Vote {
 	}
 
 	return &types.Vote{
-		Type:      tmproto.SignedMsgType(t),
+		Type:      cmtproto.SignedMsgType(t),
 		Height:    3,
 		Round:     2,
 		Timestamp: stamp,
@@ -366,8 +370,35 @@ func exampleVote(t byte) *types.Vote {
 		ValidatorIndex:   56789,
 	}
 }
+func TestLegacyReactorReceiveBasic(t *testing.T) {
+	config := cfg.TestConfig()
+	N := 1
 
-// nolint:lll //ignore line length for tests
+	stateDBs := make([]sm.Store, N)
+	val := types.NewMockPV()
+	stateDBs[0] = initializeValidatorState(val, 1)
+
+	reactors, _ := makeAndConnectReactorsAndPools(config, stateDBs)
+
+	var (
+		reactor = reactors[0]
+		peer    = &p2pmocks.Peer{}
+	)
+	quitChan := make(<-chan struct{})
+	peer.On("Quit").Return(quitChan)
+
+	reactor.InitPeer(peer)
+	reactor.AddPeer(peer)
+	e := &cmtproto.EvidenceList{}
+	msg, err := proto.Marshal(e)
+	assert.NoError(t, err)
+
+	assert.NotPanics(t, func() {
+		reactor.Receive(evidence.EvidenceChannel, peer, msg)
+	})
+}
+
+//nolint:lll //ignore line length for tests
 func TestEvidenceVectors(t *testing.T) {
 
 	val := &types.Validator{
@@ -395,14 +426,14 @@ func TestEvidenceVectors(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 
-		evi := make([]tmproto.Evidence, len(tc.evidenceList))
+		evi := make([]cmtproto.Evidence, len(tc.evidenceList))
 		for i := 0; i < len(tc.evidenceList); i++ {
 			ev, err := types.EvidenceToProto(tc.evidenceList[i])
 			require.NoError(t, err, tc.testName)
 			evi[i] = *ev
 		}
 
-		epl := tmproto.EvidenceList{
+		epl := cmtproto.EvidenceList{
 			Evidence: evi,
 		}
 

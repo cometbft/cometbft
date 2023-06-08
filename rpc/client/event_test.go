@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	abci "github.com/tendermint/tendermint/abci/types"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
 	"github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	"github.com/tendermint/tendermint/types"
@@ -21,8 +21,8 @@ var waitForEventTimeout = 8 * time.Second
 
 // MakeTxKV returns a text transaction, allong with expected key, value pair
 func MakeTxKV() ([]byte, []byte, []byte) {
-	k := []byte(tmrand.Str(8))
-	v := []byte(tmrand.Str(8))
+	k := []byte(cmtrand.Str(8))
+	v := []byte(cmtrand.Str(8))
 	return k, v, append(k, append([]byte("="), v...)...)
 }
 

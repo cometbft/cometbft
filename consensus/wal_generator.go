@@ -9,12 +9,12 @@ import (
 	"testing"
 	"time"
 
-	db "github.com/tendermint/tm-db"
+	db "github.com/cometbft/cometbft-db"
 
 	"github.com/tendermint/tendermint/abci/example/kvstore"
 	cfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/libs/log"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
 	sm "github.com/tendermint/tendermint/state"
@@ -47,7 +47,9 @@ func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int) (err error) {
 	}
 	blockStoreDB := db.NewMemDB()
 	stateDB := blockStoreDB
-	stateStore := sm.NewStore(stateDB)
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
 	state, err := sm.MakeGenesisState(genDoc)
 	if err != nil {
 		return fmt.Errorf("failed to make genesis state: %w", err)
@@ -115,7 +117,7 @@ func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int) (err error) {
 		if err := consensusState.Stop(); err != nil {
 			t.Error(err)
 		}
-		return fmt.Errorf("waited too long for tendermint to produce %d blocks (grep logs for `wal_generator`)", numBlocks)
+		return fmt.Errorf("waited too long for CometBFT to produce %d blocks (grep logs for `wal_generator`)", numBlocks)
 	}
 }
 
@@ -135,7 +137,7 @@ func WALWithNBlocks(t *testing.T, numBlocks int) (data []byte, err error) {
 func randPort() int {
 	// returns between base and base + spread
 	base, spread := 20000, 20000
-	return base + tmrand.Intn(spread)
+	return base + cmtrand.Intn(spread)
 }
 
 func makeAddrs() (string, string, string) {
@@ -150,8 +152,8 @@ func getConfig(t *testing.T) *cfg.Config {
 	c := cfg.ResetTestRoot(t.Name())
 
 	// and we use random ports to run in parallel
-	tm, rpc, grpc := makeAddrs()
-	c.P2P.ListenAddress = tm
+	cmt, rpc, grpc := makeAddrs()
+	c.P2P.ListenAddress = cmt
 	c.RPC.ListenAddress = rpc
 	c.RPC.GRPCListenAddress = grpc
 	return c

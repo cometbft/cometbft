@@ -1,13 +1,9 @@
 package version
 
-var (
-	TMCoreSemVer = TMVersionDefault
-)
-
 const (
-	// TMVersionDefault is the used as the fallback version of Tendermint Core
+	// TMCoreSemVer is the used as the fallback version of CometBFT Core
 	// when not using git describe. It is formatted with semantic versioning.
-	TMVersionDefault = "0.34.14"
+	TMCoreSemVer = "0.34.27"
 	// ABCISemVer is the semantic version of the ABCI library
 	ABCISemVer = "0.17.0"
 
@@ -23,3 +19,7 @@ var (
 	// This includes validity of blocks and state updates.
 	BlockProtocol uint64 = 11
 )
+
+// TMGitCommitHash uses git rev-parse HEAD to find commit hash which is helpful
+// for the engineering team when working with the cometbft binary. See Makefile
+var TMGitCommitHash = ""

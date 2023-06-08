@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/tendermint/tendermint/libs/log"
-	tmos "github.com/tendermint/tendermint/libs/os"
+	cmtos "github.com/tendermint/tendermint/libs/os"
 	rpcserver "github.com/tendermint/tendermint/rpc/jsonrpc/server"
 	rpctypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
 )
@@ -30,16 +30,16 @@ func main() {
 	)
 
 	// Stop upon receiving SIGTERM or CTRL-C.
-	tmos.TrapSignal(logger, func() {})
+	cmtos.TrapSignal(logger, func() {})
 
 	rpcserver.RegisterRPCFuncs(mux, routes, logger)
 	config := rpcserver.DefaultConfig()
 	listener, err := rpcserver.Listen("tcp://127.0.0.1:8008", config)
 	if err != nil {
-		tmos.Exit(err.Error())
+		cmtos.Exit(err.Error())
 	}
 
 	if err = rpcserver.Serve(listener, mux, logger, config); err != nil {
-		tmos.Exit(err.Error())
+		cmtos.Exit(err.Error())
 	}
 }

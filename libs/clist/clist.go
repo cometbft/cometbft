@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"sync"
 
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 )
 
 // MaxLength is the max allowed number of elements a linked list is
@@ -24,7 +24,6 @@ import (
 const MaxLength = int(^uint(0) >> 1)
 
 /*
-
 CElement is an element of a linked-list
 Traversal from a CElement is goroutine-safe.
 
@@ -41,10 +40,9 @@ the for-loop. Use sync.Cond when you need serial access to the
 "condition". In our case our condition is if `next != nil || removed`,
 and there's no reason to serialize that condition for goroutines
 waiting on NextWait() (since it's just a read operation).
-
 */
 type CElement struct {
-	mtx        tmsync.RWMutex
+	mtx        cmtsync.RWMutex
 	prev       *CElement
 	prevWg     *sync.WaitGroup
 	prevWaitCh chan struct{}
@@ -220,7 +218,7 @@ func (e *CElement) SetRemoved() {
 // Operations are goroutine-safe.
 // Panics if length grows beyond the max.
 type CList struct {
-	mtx    tmsync.RWMutex
+	mtx    cmtsync.RWMutex
 	wg     *sync.WaitGroup
 	waitCh chan struct{}
 	head   *CElement // first element

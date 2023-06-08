@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
+	db "github.com/cometbft/cometbft-db"
 	"github.com/stretchr/testify/require"
-	db "github.com/tendermint/tm-db"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
@@ -32,7 +32,7 @@ func TestIndexerServiceIndexesBlocks(t *testing.T) {
 	txIndexer := kv.NewTxIndex(store)
 	blockIndexer := blockidxkv.New(db.NewPrefixDB(store, []byte("block_events")))
 
-	service := txindex.NewIndexerService(txIndexer, blockIndexer, eventBus)
+	service := txindex.NewIndexerService(txIndexer, blockIndexer, eventBus, false)
 	service.SetLogger(log.TestingLogger())
 	err = service.Start()
 	require.NoError(t, err)

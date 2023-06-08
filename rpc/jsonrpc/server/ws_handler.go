@@ -52,7 +52,7 @@ func NewWebsocketManager(
 				// The default behaviour would be relevant to browser-based clients,
 				// afaik. I suppose having a pass-through is a workaround for allowing
 				// for more complex security schemes, shifting the burden of
-				// AuthN/AuthZ outside the Tendermint RPC.
+				// AuthN/AuthZ outside the CometBFT RPC.
 				// I can't think of other uses right now that would warrant a TODO
 				// though. The real backstory of this TODO shall remain shrouded in
 				// mystery
@@ -431,7 +431,10 @@ func (wsc *wsConnection) writeRoutine() {
 				return
 			}
 		case msg := <-wsc.writeChan:
-			jsonBytes, err := json.MarshalIndent(msg, "", "  ")
+			// Use json.MarshalIndent instead of Marshal for pretty output.
+			// Pretty output not necessary, since most consumers of WS events are
+			// automated processes, not humans.
+			jsonBytes, err := json.Marshal(msg)
 			if err != nil {
 				wsc.Logger.Error("Failed to marshal RPCResponse to JSON", "err", err)
 				continue

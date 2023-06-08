@@ -1,14 +1,14 @@
-project_name: tendermint
+project_name: cometbft
 
 env:
   # Require use of Go modules.
   - GO111MODULE=on
 
 builds:
-  - id: "Tendermint"
-    main: ./cmd/tendermint/main.go
+  - id: "cometbft"
+    main: ./cmd/cometbft/main.go
     ldflags:
-      - -s -w -X github.com/tendermint/tendermint/version.TMCoreSemVer={{ .Version }}
+      - -s -w -X github.com/cometbft/cometbft/version.TMCoreSemVer={{ .Version }}
     env:
       - CGO_ENABLED=0
     goos:
@@ -25,4 +25,13 @@ checksum:
   algorithm: sha256
 
 release:
-  name_template: "{{.Version}} (WARNING: BETA SOFTWARE)"
+  prerelease: auto
+  name_template: "v{{.Version}}"
+
+archives:
+  - files:
+      - LICENSE
+      - README.md
+      - UPGRADING.md
+      - SECURITY.md
+      - CHANGELOG.md

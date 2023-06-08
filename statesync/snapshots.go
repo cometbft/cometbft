@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"sort"
 
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 	"github.com/tendermint/tendermint/p2p"
 )
 
@@ -40,7 +40,7 @@ func (s *snapshot) Key() snapshotKey {
 
 // snapshotPool discovers and aggregates snapshots across peers.
 type snapshotPool struct {
-	tmsync.Mutex
+	cmtsync.Mutex
 	snapshots     map[snapshotKey]*snapshot
 	snapshotPeers map[snapshotKey]map[p2p.ID]p2p.Peer
 
@@ -132,7 +132,7 @@ func (p *snapshotPool) GetPeer(snapshot *snapshot) p2p.Peer {
 	if len(peers) == 0 {
 		return nil
 	}
-	return peers[rand.Intn(len(peers))] // nolint:gosec // G404: Use of weak random number generator
+	return peers[rand.Intn(len(peers))] //nolint:gosec // G404: Use of weak random number generator
 }
 
 // GetPeers returns the peers for a snapshot.

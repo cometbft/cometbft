@@ -1,12 +1,12 @@
-FROM golang:1.15
+FROM golang:1.19
 
 # Grab deps (jq, hexdump, xxd, killall)
 RUN apt-get update && \
   apt-get install -y --no-install-recommends \
   jq bsdmainutils vim-common psmisc netcat curl
 
-# Setup tendermint repo
-ENV REPO $GOPATH/src/github.com/tendermint/tendermint
+# Setup CometBFT repo
+ENV REPO $GOPATH/src/github.com/cometbft/cometbft
 ENV GOBIN $GOPATH/bin
 WORKDIR $REPO
 
@@ -21,10 +21,10 @@ RUN make tools
 # install ABCI CLI
 RUN make install_abci
 
-# install Tendermint
+# install CometBFT
 RUN make install
 
-RUN tendermint testnet \
+RUN cometbft testnet \
   --config $REPO/test/docker/config-template.toml \
   --node-dir-prefix="mach" \
   --v=4 \

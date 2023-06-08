@@ -1,7 +1,6 @@
 package autofile
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -11,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	tmos "github.com/tendermint/tendermint/libs/os"
+	cmtos "github.com/tendermint/tendermint/libs/os"
 )
 
 func TestSIGHUP(t *testing.T) {
@@ -24,7 +23,7 @@ func TestSIGHUP(t *testing.T) {
 	})
 
 	// First, create a temporary directory and move into it
-	dir, err := ioutil.TempDir("", "sighup_test")
+	dir, err := os.MkdirTemp("", "sighup_test")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		os.RemoveAll(dir)
@@ -49,7 +48,7 @@ func TestSIGHUP(t *testing.T) {
 	require.NoError(t, err)
 
 	// Move into a different temporary directory
-	otherDir, err := ioutil.TempDir("", "sighup_test_other")
+	otherDir, err := os.MkdirTemp("", "sighup_test_other")
 	require.NoError(t, err)
 	defer os.RemoveAll(otherDir)
 	err = os.Chdir(otherDir)
@@ -71,15 +70,15 @@ func TestSIGHUP(t *testing.T) {
 	require.NoError(t, err)
 
 	// Both files should exist
-	if body := tmos.MustReadFile(filepath.Join(dir, name+"_old")); string(body) != "Line 1\nLine 2\n" {
+	if body := cmtos.MustReadFile(filepath.Join(dir, name+"_old")); string(body) != "Line 1\nLine 2\n" {
 		t.Errorf("unexpected body %s", body)
 	}
-	if body := tmos.MustReadFile(filepath.Join(dir, name)); string(body) != "Line 3\nLine 4\n" {
+	if body := cmtos.MustReadFile(filepath.Join(dir, name)); string(body) != "Line 3\nLine 4\n" {
 		t.Errorf("unexpected body %s", body)
 	}
 
 	// The current directory should be empty
-	files, err := ioutil.ReadDir(".")
+	files, err := os.ReadDir(".")
 	require.NoError(t, err)
 	assert.Empty(t, files)
 }
@@ -87,7 +86,7 @@ func TestSIGHUP(t *testing.T) {
 // // Manually modify file permissions, close, and reopen using autofile:
 // // We expect the file permissions to be changed back to the intended perms.
 // func TestOpenAutoFilePerms(t *testing.T) {
-// 	file, err := ioutil.TempFile("", "permission_test")
+// 	file, err := os.CreateTemp("", "permission_test")
 // 	require.NoError(t, err)
 // 	err = file.Close()
 // 	require.NoError(t, err)
@@ -113,7 +112,7 @@ func TestSIGHUP(t *testing.T) {
 
 func TestAutoFileSize(t *testing.T) {
 	// First, create an AutoFile writing to a tempfile dir
-	f, err := ioutil.TempFile("", "sighup_test")
+	f, err := os.CreateTemp("", "sighup_test")
 	require.NoError(t, err)
 	err = f.Close()
 	require.NoError(t, err)

@@ -10,8 +10,8 @@ import (
 
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/libs/log"
-	tmnet "github.com/tendermint/tendermint/libs/net"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	cmtnet "github.com/tendermint/tendermint/libs/net"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
 	"github.com/tendermint/tendermint/types"
 )
 
@@ -67,7 +67,7 @@ func TestSignerRemoteRetryTCPOnly(t *testing.T) {
 	SignerDialerEndpointTimeoutReadWrite(time.Millisecond)(dialerEndpoint)
 	SignerDialerEndpointConnRetries(retries)(dialerEndpoint)
 
-	chainID := tmrand.Str(12)
+	chainID := cmtrand.Str(12)
 	mockPV := types.NewMockPV()
 	signerServer := NewSignerServer(dialerEndpoint, chainID, mockPV)
 
@@ -91,7 +91,7 @@ func TestRetryConnToRemoteSigner(t *testing.T) {
 	for _, tc := range getDialerTestCases(t) {
 		var (
 			logger           = log.TestingLogger()
-			chainID          = tmrand.Str(12)
+			chainID          = cmtrand.Str(12)
 			mockPV           = types.NewMockPV()
 			endpointIsOpenCh = make(chan struct{})
 			thisConnTimeout  = testTimeoutReadWrite
@@ -146,7 +146,7 @@ func TestRetryConnToRemoteSigner(t *testing.T) {
 }
 
 func newSignerListenerEndpoint(logger log.Logger, addr string, timeoutReadWrite time.Duration) *SignerListenerEndpoint {
-	proto, address := tmnet.ProtocolAndAddress(addr)
+	proto, address := cmtnet.ProtocolAndAddress(addr)
 
 	ln, err := net.Listen(proto, address)
 	logger.Info("SignerListener: Listening", "proto", proto, "address", address)

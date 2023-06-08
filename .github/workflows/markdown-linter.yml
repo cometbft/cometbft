@@ -1,0 +1,33 @@
+name: Markdown Linter
+on:
+  push:
+    branches:
+      - v0.34.x
+    paths:
+      - "**.md"
+      - "**.yml"
+      - "**.yaml"
+  pull_request:
+    branches: [v0.34.x]
+    paths:
+      - "**.md"
+      - "**.yml"
+
+jobs:
+  build:
+    name: Super linter
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Lint Code Base
+        uses: docker://github/super-linter:v4
+        env:
+          VALIDATE_ALL_CODEBASE: true
+          DEFAULT_BRANCH: v0.34.x
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_MD: true
+          VALIDATE_OPENAPI: true
+          VALIDATE_YAML: true
+          YAML_CONFIG_FILE: yaml-lint.yml
+          FILTER_REGEX_EXCLUDE: "/workspace/tools/mintnet-kubernetes/*.yaml | /workspace/tools/mintnet-kubernetes/examples/*.yaml | workspace/tools/mintnet-kubernetes/assets/*.yaml | /workspace/tools/mintnet-kubernetes/examples/dummy/*.yaml | /workspace/tools/mintnet-kubernetes/examples/counter/*.yaml"

@@ -8,13 +8,13 @@ import (
 	"sync/atomic"
 	"time"
 
+	dbm "github.com/cometbft/cometbft-db"
 	"github.com/gogo/protobuf/proto"
 	gogotypes "github.com/gogo/protobuf/types"
-	dbm "github.com/tendermint/tm-db"
 
 	clist "github.com/tendermint/tendermint/libs/clist"
 	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	sm "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/types"
 )
@@ -97,11 +97,11 @@ func (evpool *Pool) PendingEvidence(maxBytes int64) ([]types.Evidence, int64) {
 
 // Update takes both the new state and the evidence committed at that height and performs
 // the following operations:
-// 1. Take any conflicting votes from consensus and use the state's LastBlockTime to form
-//    DuplicateVoteEvidence and add it to the pool.
-// 2. Update the pool's state which contains evidence params relating to expiry.
-// 3. Moves pending evidence that has now been committed into the committed pool.
-// 4. Removes any expired evidence based on both height and time.
+//  1. Take any conflicting votes from consensus and use the state's LastBlockTime to form
+//     DuplicateVoteEvidence and add it to the pool.
+//  2. Update the pool's state which contains evidence params relating to expiry.
+//  3. Moves pending evidence that has now been committed into the committed pool.
+//  4. Removes any expired evidence based on both height and time.
 func (evpool *Pool) Update(state sm.State, ev types.EvidenceList) {
 	// sanity check
 	if state.LastBlockHeight <= evpool.state.LastBlockHeight {
@@ -256,6 +256,10 @@ func (evpool *Pool) State() sm.State {
 	return evpool.state
 }
 
+func (evpool *Pool) Close() error {
+	return evpool.evidenceStore.Close()
+}
+
 // IsExpired checks whether evidence or a polc is expired by checking whether a height and time is older
 // than set by the evidence consensus parameters
 func (evpool *Pool) isExpired(height int64, time time.Time) bool {
@@ -358,7 +362,7 @@ func (evpool *Pool) listEvidence(prefixKey byte, maxBytes int64) ([]types.Eviden
 		evSize    int64
 		totalSize int64
 		evidence  []types.Evidence
-		evList    tmproto.EvidenceList // used for calculating the bytes size
+		evList    cmtproto.EvidenceList // used for calculating the bytes size
 	)
 
 	iter, err := dbm.IteratePrefix(evpool.evidenceStore, []byte{prefixKey})
@@ -367,7 +371,7 @@ func (evpool *Pool) listEvidence(prefixKey byte, maxBytes int64) ([]types.Eviden
 	}
 	defer iter.Close()
 	for ; iter.Valid(); iter.Next() {
-		var evpb tmproto.Evidence
+		var evpb cmtproto.Evidence
 		err := evpb.Unmarshal(iter.Value())
 		if err != nil {
 			return evidence, totalSize, err
@@ -530,7 +534,7 @@ type duplicateVoteSet struct {
 }
 
 func bytesToEv(evBytes []byte) (types.Evidence, error) {
-	var evpb tmproto.Evidence
+	var evpb cmtproto.Evidence
 	err := evpb.Unmarshal(evBytes)
 	if err != nil {
 		return &types.DuplicateVoteEvidence{}, err

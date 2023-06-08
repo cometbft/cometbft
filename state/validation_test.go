@@ -13,11 +13,11 @@ import (
 	"github.com/tendermint/tendermint/crypto/tmhash"
 	"github.com/tendermint/tendermint/libs/log"
 	memmock "github.com/tendermint/tendermint/mempool/mock"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	sm "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/state/mocks"
 	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	cmttime "github.com/tendermint/tendermint/types/time"
 )
 
 const validationTestsStopHeight int64 = 10
@@ -28,7 +28,9 @@ func TestValidateBlockHeader(t *testing.T) {
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
 	state, stateDB, privVals := makeState(3, 1)
-	stateStore := sm.NewStore(stateDB)
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		log.TestingLogger(),
@@ -99,7 +101,9 @@ func TestValidateBlockCommit(t *testing.T) {
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
 	state, stateDB, privVals := makeState(1, 1)
-	stateStore := sm.NewStore(stateDB)
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		log.TestingLogger(),
@@ -187,8 +191,8 @@ func TestValidateBlockCommit(t *testing.T) {
 			ValidatorIndex:   0,
 			Height:           height,
 			Round:            0,
-			Timestamp:        tmtime.Now(),
-			Type:             tmproto.PrecommitType,
+			Timestamp:        cmttime.Now(),
+			Type:             cmtproto.PrecommitType,
 			BlockID:          blockID,
 		}
 
@@ -213,7 +217,9 @@ func TestValidateBlockEvidence(t *testing.T) {
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
 	state, stateDB, privVals := makeState(4, 1)
-	stateStore := sm.NewStore(stateDB)
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
 	defaultEvidenceTime := time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	evpool := &mocks.EvidencePool{}
@@ -240,7 +246,7 @@ func TestValidateBlockEvidence(t *testing.T) {
 				A block with too much evidence fails
 			*/
 			evidence := make([]types.Evidence, 0)
-			var currentBytes int64 = 0
+			var currentBytes int64
 			// more bytes than the maximum allowed for evidence
 			for currentBytes <= maxBytesEvidence {
 				newEv := types.NewMockDuplicateVoteEvidenceWithValidator(height, time.Now(),
@@ -260,7 +266,7 @@ func TestValidateBlockEvidence(t *testing.T) {
 			A good block with several pieces of good evidence passes
 		*/
 		evidence := make([]types.Evidence, 0)
-		var currentBytes int64 = 0
+		var currentBytes int64
 		// precisely the amount of allowed evidence
 		for {
 			newEv := types.NewMockDuplicateVoteEvidenceWithValidator(height, defaultEvidenceTime,

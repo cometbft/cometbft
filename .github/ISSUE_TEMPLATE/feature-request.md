@@ -1,7 +1,7 @@
 ---
 name: Feature Request
 about: Create a proposal to request a feature
-
+labels: enhancement, needs-triage
 ---
 
 <!-- < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < ☺ 
@@ -11,18 +11,20 @@ v    Word of caution: poorly thought-out proposals may be rejected
 v                     without deliberation 
 ☺ > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > >  -->
 
-## Summary
+## Feature Request
+
+### Summary
 
 <!-- Short, concise description of the proposed feature -->
 
-## Problem Definition
+### Problem Definition
 
-<!-- Why do we need this feature? 
+<!-- Why do we need this feature?
 What problems may be addressed by introducing this feature?
-What benefits does Tendermint stand to gain by including this feature?
+What benefits does CometBFT stand to gain by including this feature?
 Are there any disadvantages of including this feature? -->
 
-## Proposal
+### Proposal
 
 <!-- Detailed description of requirements of implementation -->
 

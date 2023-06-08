@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
 	"github.com/tendermint/tendermint/abci/example/code"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -113,7 +113,7 @@ func deliverTxsRange(cs *State, start, end int) {
 func TestMempoolTxConcurrentWithCommit(t *testing.T) {
 	state, privVals := randGenesisState(1, false, 10)
 	blockDB := dbm.NewMemDB()
-	stateStore := sm.NewStore(blockDB)
+	stateStore := sm.NewStore(blockDB, sm.StoreOptions{DiscardABCIResponses: false})
 	cs := newStateWithConfigAndBlockStore(config, state, privVals[0], NewCounterApplication(), blockDB)
 	err := stateStore.Save(state)
 	require.NoError(t, err)
@@ -138,7 +138,7 @@ func TestMempoolRmBadTx(t *testing.T) {
 	state, privVals := randGenesisState(1, false, 10)
 	app := NewCounterApplication()
 	blockDB := dbm.NewMemDB()
-	stateStore := sm.NewStore(blockDB)
+	stateStore := sm.NewStore(blockDB, sm.StoreOptions{DiscardABCIResponses: false})
 	cs := newStateWithConfigAndBlockStore(config, state, privVals[0], app, blockDB)
 	err := stateStore.Save(state)
 	require.NoError(t, err)

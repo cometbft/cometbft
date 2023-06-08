@@ -1,161 +1,183 @@
-# Tendermint
+# CometBFT
 
-![banner](docs/tendermint-core-image.jpg)
+[Byzantine-Fault Tolerant][bft] [State Machine Replication][smr]. Or
+[Blockchain], for short.
 
-[Byzantine-Fault Tolerant](https://en.wikipedia.org/wiki/Byzantine_fault_tolerance)
-[State Machines](https://en.wikipedia.org/wiki/State_machine_replication).
-Or [Blockchain](<https://en.wikipedia.org/wiki/Blockchain_(database)>), for short.
+[![Version][version-badge]][version-url]
+[![API Reference][api-badge]][api-url]
+[![Go version][go-badge]][go-url]
+[![Discord chat][discord-badge]][discord-url]
+[![License][license-badge]][license-url]
+[![Sourcegraph][sg-badge]][sg-url]
 
-[![version](https://img.shields.io/github/tag/tendermint/tendermint.svg)](https://github.com/tendermint/tendermint/releases/latest)
-[![API Reference](https://camo.githubusercontent.com/915b7be44ada53c290eb157634330494ebe3e30a/68747470733a2f2f676f646f632e6f72672f6769746875622e636f6d2f676f6c616e672f6764646f3f7374617475732e737667)](https://pkg.go.dev/github.com/tendermint/tendermint)
-[![Go version](https://img.shields.io/badge/go-1.15-blue.svg)](https://github.com/moovweb/gvm)
-[![Discord chat](https://img.shields.io/discord/669268347736686612.svg)](https://discord.gg/AzefAFd)
-[![license](https://img.shields.io/github/license/tendermint/tendermint.svg)](https://github.com/tendermint/tendermint/blob/master/LICENSE)
-[![tendermint/tendermint](https://tokei.rs/b1/github/tendermint/tendermint?category=lines)](https://github.com/tendermint/tendermint)
-[![Sourcegraph](https://sourcegraph.com/github.com/tendermint/tendermint/-/badge.svg)](https://sourcegraph.com/github.com/tendermint/tendermint?badge)
+| Branch  | Tests                                    | Linting                               |
+|---------|------------------------------------------|---------------------------------------|
+| main    | [![Tests][tests-badge]][tests-url]       | [![Lint][lint-badge]][lint-url]       |
+| v0.37.x | [![Tests][tests-badge-v037x]][tests-url] | [![Lint][lint-badge-v037x]][lint-url] |
+| v0.34.x | [![Tests][tests-badge-v034x]][tests-url] | [![Lint][lint-badge-v034x]][lint-url] |
 
-| Branch | Tests                                                                                                                                                                                                                                                  | Coverage                                                                                                                             | Linting                                                                    |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
-| master | [![CircleCI](https://circleci.com/gh/tendermint/tendermint/tree/master.svg?style=shield)](https://circleci.com/gh/tendermint/tendermint/tree/master) </br> ![Tests](https://github.com/tendermint/tendermint/workflows/Tests/badge.svg?branch=master) | [![codecov](https://codecov.io/gh/tendermint/tendermint/branch/master/graph/badge.svg)](https://codecov.io/gh/tendermint/tendermint) | ![Lint](https://github.com/tendermint/tendermint/workflows/Lint/badge.svg) |
+CometBFT is a Byzantine Fault Tolerant (BFT) middleware that takes a
+state transition machine - written in any programming language - and securely
+replicates it on many machines.
 
-Tendermint Core is Byzantine Fault Tolerant (BFT) middleware that takes a state transition machine - written in any programming language -
-and securely replicates it on many machines.
+It is a fork of [Tendermint Core][tm-core] and implements the Tendermint
+consensus algorithm.
 
-For protocol details, see [the specification](https://github.com/tendermint/spec).
+For protocol details, refer to the [CometBFT Specification](./spec/README.md).
 
-For detailed analysis of the consensus protocol, including safety and liveness proofs,
-see our recent paper, "[The latest gossip on BFT consensus](https://arxiv.org/abs/1807.04938)".
+For detailed analysis of the consensus protocol, including safety and liveness
+proofs, read our paper, "[The latest gossip on BFT
+consensus](https://arxiv.org/abs/1807.04938)".
+
+## Documentation
+
+Complete documentation can be found on the
+[website](https://docs.cometbft.com/).
 
 ## Releases
 
-Please do not depend on master as your production branch. Use [releases](https://github.com/tendermint/tendermint/releases) instead.
+Please do not depend on `main` as your production branch. Use
+[releases](https://github.com/cometbft/cometbft/releases) instead.
 
-Tendermint is being used in production in both private and public environments,
-most notably the blockchains of the [Cosmos Network](https://cosmos.network/).
-However, we are still making breaking changes to the protocol and the APIs and have not yet released v1.0.
-See below for more details about [versioning](#versioning).
+We haven't released v1.0 yet
+since we are making breaking changes to the protocol and the APIs. See below for
+more details about [versioning](#versioning).
 
-In any case, if you intend to run Tendermint in production, we're happy to help. You can
-contact us [over email](mailto:hello@interchain.berlin) or [join the chat](https://discord.gg/AzefAFd).
+In any case, if you intend to run CometBFT in production, we're happy to help.
+
+To contact us, you can also 
+[join the chat](https://discord.com/channels/669268347736686612/669283915743232011).
+
+More on how releases are conducted can be found [here](./RELEASES.md).
 
 ## Security
 
 To report a security vulnerability, see our [bug bounty
-program](https://hackerone.com/tendermint). 
-For examples of the kinds of bugs we're looking for, see [our security policy](SECURITY.md)
-
-We also maintain a dedicated mailing list for security updates. We will only ever use this mailing list
-to notify you of vulnerabilities and fixes in Tendermint Core. You can subscribe [here](http://eepurl.com/gZ5hQD).
+program](https://hackerone.com/cosmos). For examples of the kinds of bugs we're
+looking for, see [our security policy](SECURITY.md).
 
 ## Minimum requirements
 
-| Requirement | Notes            |
-| ----------- | ---------------- |
-| Go version  | Go1.15 or higher |
-
-## Documentation
-
-Complete documentation can be found on the [website](https://docs.tendermint.com/master/).
+| Requirement | Notes             |
+|-------------|-------------------|
+| Go version  | Go 1.19 or higher |
 
 ### Install
 
-See the [install instructions](/docs/introduction/install.md).
+See the [install instructions](./docs/introduction/install.md).
 
 ### Quick Start
 
-- [Single node](/docs/introduction/quick-start.md)
-- [Local cluster using docker-compose](/docs/networks/docker-compose.md)
-- [Remote cluster using Terraform and Ansible](/docs/networks/terraform-and-ansible.md)
-- [Join the Cosmos testnet](https://cosmos.network/testnet)
+- [Single node](./docs/introduction/quick-start.md)
+- [Local cluster using docker-compose](./docs/networks/docker-compose.md)
 
 ## Contributing
 
 Please abide by the [Code of Conduct](CODE_OF_CONDUCT.md) in all interactions.
 
-Before contributing to the project, please take a look at the [contributing guidelines](CONTRIBUTING.md)
-and the [style guide](STYLE_GUIDE.md). You may also find it helpful to read the
-[specifications](https://github.com/tendermint/spec), watch the [Developer Sessions](/docs/DEV_SESSIONS.md), 
-and familiarize yourself with our
-[Architectural Decision Records](https://github.com/tendermint/tendermint/tree/master/docs/architecture).
+Before contributing to the project, please take a look at the [contributing
+guidelines](CONTRIBUTING.md) and the [style guide](STYLE_GUIDE.md). You may also
+find it helpful to read the [specifications](./spec/README.md), and familiarize
+yourself with our [Architectural Decision Records
+(ADRs)](./docs/architecture/README.md) and [Request For Comments
+(RFCs)](./docs/rfc/README.md).
 
 ## Versioning
 
 ### Semantic Versioning
 
-Tendermint uses [Semantic Versioning](http://semver.org/) to determine when and how the version changes.
-According to SemVer, anything in the public API can change at any time before version 1.0.0
+CometBFT uses [Semantic Versioning](http://semver.org/) to determine when and
+how the version changes. According to SemVer, anything in the public API can
+change at any time before version 1.0.0
 
-To provide some stability to Tendermint users in these 0.X.X days, the MINOR version is used
-to signal breaking changes across a subset of the total public API. This subset includes all
-interfaces exposed to other processes (cli, rpc, p2p, etc.), but does not
-include the Go APIs.
+To provide some stability to users of 0.X.X versions of CometBFT, the MINOR
+version is used to signal breaking changes across CometBFT's API. This API
+includes all publicly exposed types, functions, and methods in non-internal Go
+packages as well as the types and methods accessible via the CometBFT RPC
+interface.
 
-That said, breaking changes in the following packages will be documented in the
-CHANGELOG even if they don't lead to MINOR version bumps:
-
-- crypto
-- config
-- libs
-    - bech32
-    - bits
-    - bytes
-    - json
-    - log
-    - math
-    - net
-    - os
-    - protoio
-    - rand
-    - sync
-    - strings
-    - service
-- node
-- rpc/client
-- types
+Breaking changes to these public APIs will be documented in the CHANGELOG.
 
 ### Upgrades
 
-In an effort to avoid accumulating technical debt prior to 1.0.0,
-we do not guarantee that breaking changes (ie. bumps in the MINOR version)
-will work with existing Tendermint blockchains. In these cases you will
-have to start a new blockchain, or write something custom to get the old
-data into the new chain. However, any bump in the PATCH version should be 
-compatible with existing blockchain histories.
-
+In an effort to avoid accumulating technical debt prior to 1.0.0, we do not
+guarantee that breaking changes (i.e. bumps in the MINOR version) will work with
+existing CometBFT blockchains. In these cases you will have to start a new
+blockchain, or write something custom to get the old data into the new chain.
+However, any bump in the PATCH version should be compatible with existing
+blockchain histories.
 
 For more information on upgrading, see [UPGRADING.md](./UPGRADING.md).
 
 ### Supported Versions
 
-Because we are a small core team, we only ship patch updates, including security updates,
-to the most recent minor release and the second-most recent minor release. Consequently,
-we strongly recommend keeping Tendermint up-to-date. Upgrading instructions can be found
-in [UPGRADING.md](./UPGRADING.md).
+Because we are a small core team, we have limited capacity to ship patch
+updates, including security updates. Consequently, we strongly recommend keeping
+CometBFT up-to-date. Upgrading instructions can be found in
+[UPGRADING.md](./UPGRADING.md).
+
+Currently supported versions include:
+
+- v0.34.x: CometBFT v0.34.25 is compatible with Tendermint Core v0.34.24
+- v0.37.x: (release candidate)
 
 ## Resources
 
-### Tendermint Core
+### Libraries
 
-For details about the blockchain data structures and the p2p protocols, see the
-[Tendermint specification](https://docs.tendermint.com/master/spec/).
-
-For details on using the software, see the [documentation](/docs/) which is also
-hosted at: <https://docs.tendermint.com/master/>
-
-### Tools
-
-Benchmarking is provided by [`tm-load-test`](https://github.com/informalsystems/tm-load-test).
-Additional tooling can be found in [/docs/tools](/docs/tools).
+- [Cosmos SDK](http://github.com/cosmos/cosmos-sdk); A framework for building
+  applications in Golang
+- [Tendermint in Rust](https://github.com/informalsystems/tendermint-rs)
+- [ABCI Tower](https://github.com/penumbra-zone/tower-abci)
 
 ### Applications
 
-- [Cosmos SDK](http://github.com/cosmos/cosmos-sdk); a cryptocurrency application framework
-- [Ethermint](http://github.com/cosmos/ethermint); Ethereum on Tendermint
-- [Many more](https://tendermint.com/ecosystem)
+- [Cosmos Hub](https://hub.cosmos.network/)
+- [Terra](https://www.terra.money/)
+- [Celestia](https://celestia.org/)
+- [Anoma](https://anoma.network/)
+- [Vocdoni](https://docs.vocdoni.io/)
 
 ### Research
+
+Below are links to the original Tendermint consensus algorithm and relevant
+whitepapers which CosmosBFT will continue to build on.
 
 - [The latest gossip on BFT consensus](https://arxiv.org/abs/1807.04938)
 - [Master's Thesis on Tendermint](https://atrium.lib.uoguelph.ca/xmlui/handle/10214/9769)
 - [Original Whitepaper: "Tendermint: Consensus Without Mining"](https://tendermint.com/static/docs/tendermint.pdf)
-- [Blog](https://blog.cosmos.network/tendermint/home)
+
+## Join us
+
+CometBFT is currently maintained by [Informal
+Systems](https://informal.systems). If you'd like to work full-time on CometBFT,
+[we're hiring](https://informal.systems/careers)!
+
+Funding for CometBFT development comes primarily from the [Interchain
+Foundation](https://interchain.io), a Swiss non-profit. Informal Systems also
+maintains [cometbft.com](https://cometbft.com).
+
+[bft]: https://en.wikipedia.org/wiki/Byzantine_fault_tolerance
+[smr]: https://en.wikipedia.org/wiki/State_machine_replication
+[Blockchain]: https://en.wikipedia.org/wiki/Blockchain
+[version-badge]: https://img.shields.io/github/v/release/cometbft/cometbft.svg
+[version-url]: https://github.com/cometbft/cometbft/releases/latest
+[api-badge]: https://camo.githubusercontent.com/915b7be44ada53c290eb157634330494ebe3e30a/68747470733a2f2f676f646f632e6f72672f6769746875622e636f6d2f676f6c616e672f6764646f3f7374617475732e737667
+[api-url]: https://pkg.go.dev/github.com/cometbft/cometbft
+[go-badge]: https://img.shields.io/badge/go-1.19-blue.svg
+[go-url]: https://github.com/moovweb/gvm
+[discord-badge]: https://img.shields.io/discord/669268347736686612.svg
+[discord-url]: https://discord.gg/cosmosnetwork
+[license-badge]: https://img.shields.io/github/license/cometbft/cometbft.svg
+[license-url]: https://github.com/cometbft/cometbft/blob/main/LICENSE
+[sg-badge]: https://sourcegraph.com/github.com/cometbft/cometbft/-/badge.svg
+[sg-url]: https://sourcegraph.com/github.com/cometbft/cometbft?badge
+[tests-url]: https://github.com/cometbft/cometbft/actions/workflows/tests.yml
+[tests-badge]: https://github.com/cometbft/cometbft/actions/workflows/tests.yml/badge.svg?branch=main
+[tests-badge-v037x]: https://github.com/cometbft/cometbft/actions/workflows/tests.yml/badge.svg?branch=v0.37.x
+[tests-badge-v034x]: https://github.com/cometbft/cometbft/actions/workflows/tests.yml/badge.svg?branch=v0.34.x
+[lint-badge]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml/badge.svg?branch=main
+[lint-badge-v034x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml/badge.svg?branch=v0.34.x
+[lint-badge-v037x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml/badge.svg?branch=v0.37.x
+[lint-url]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml
+[tm-core]: https://github.com/tendermint/tendermint

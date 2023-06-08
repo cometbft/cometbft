@@ -23,6 +23,11 @@ const (
 
 	// DefaultLogLevel defines a default log level as INFO.
 	DefaultLogLevel = "info"
+
+	// Mempool versions. V1 is prioritized mempool, v0 is regular mempool.
+	// Default is v0.
+	MempoolV0 = "v0"
+	MempoolV1 = "v1"
 )
 
 // NOTE: Most of the structs & relevant comments + the
@@ -32,7 +37,7 @@ const (
 // config/toml.go
 // NOTE: libs/cli must know to look in the config dir!
 var (
-	DefaultTendermintDir = ".tendermint"
+	DefaultTendermintDir = ".cometbft"
 	defaultConfigDir     = "config"
 	defaultDataDir       = "data"
 
@@ -52,9 +57,12 @@ var (
 
 	defaultNodeKeyPath  = filepath.Join(defaultConfigDir, defaultNodeKeyName)
 	defaultAddrBookPath = filepath.Join(defaultConfigDir, defaultAddrBookName)
+
+	minSubscriptionBufferSize     = 100
+	defaultSubscriptionBufferSize = 200
 )
 
-// Config defines the top level configuration for a Tendermint node
+// Config defines the top level configuration for a CometBFT node
 type Config struct {
 	// Top level options use an anonymous struct
 	BaseConfig `mapstructure:",squash"`
@@ -66,11 +74,12 @@ type Config struct {
 	StateSync       *StateSyncConfig       `mapstructure:"statesync"`
 	FastSync        *FastSyncConfig        `mapstructure:"fastsync"`
 	Consensus       *ConsensusConfig       `mapstructure:"consensus"`
+	Storage         *StorageConfig         `mapstructure:"storage"`
 	TxIndex         *TxIndexConfig         `mapstructure:"tx_index"`
 	Instrumentation *InstrumentationConfig `mapstructure:"instrumentation"`
 }
 
-// DefaultConfig returns a default configuration for a Tendermint node
+// DefaultConfig returns a default configuration for a CometBFT node
 func DefaultConfig() *Config {
 	return &Config{
 		BaseConfig:      DefaultBaseConfig(),
@@ -80,6 +89,7 @@ func DefaultConfig() *Config {
 		StateSync:       DefaultStateSyncConfig(),
 		FastSync:        DefaultFastSyncConfig(),
 		Consensus:       DefaultConsensusConfig(),
+		Storage:         DefaultStorageConfig(),
 		TxIndex:         DefaultTxIndexConfig(),
 		Instrumentation: DefaultInstrumentationConfig(),
 	}
@@ -95,6 +105,7 @@ func TestConfig() *Config {
 		StateSync:       TestStateSyncConfig(),
 		FastSync:        TestFastSyncConfig(),
 		Consensus:       TestConsensusConfig(),
+		Storage:         TestStorageConfig(),
 		TxIndex:         TestTxIndexConfig(),
 		Instrumentation: TestInstrumentationConfig(),
 	}
@@ -143,7 +154,7 @@ func (cfg *Config) ValidateBasic() error {
 //-----------------------------------------------------------------------------
 // BaseConfig
 
-// BaseConfig defines the base configuration for a Tendermint node
+// BaseConfig defines the base configuration for a CometBFT node
 type BaseConfig struct { //nolint: maligned
 	// chainID is unexposed and immutable but here for convenience
 	chainID string
@@ -153,7 +164,7 @@ type BaseConfig struct { //nolint: maligned
 	RootDir string `mapstructure:"home"`
 
 	// TCP or UNIX socket address of the ABCI application,
-	// or the name of an ABCI application compiled in with the Tendermint binary
+	// or the name of an ABCI application compiled in with the CometBFT binary
 	ProxyApp string `mapstructure:"proxy_app"`
 
 	// A custom human readable name for this node
@@ -203,7 +214,7 @@ type BaseConfig struct { //nolint: maligned
 	// Path to the JSON file containing the last sign state of a validator
 	PrivValidatorState string `mapstructure:"priv_validator_state_file"`
 
-	// TCP or UNIX socket address for Tendermint to listen on for
+	// TCP or UNIX socket address for CometBFT to listen on for
 	// connections from an external PrivValidator process
 	PrivValidatorListenAddr string `mapstructure:"priv_validator_laddr"`
 
@@ -218,7 +229,7 @@ type BaseConfig struct { //nolint: maligned
 	FilterPeers bool `mapstructure:"filter_peers"` // false
 }
 
-// DefaultBaseConfig returns a default base configuration for a Tendermint node
+// DefaultBaseConfig returns a default base configuration for a CometBFT node
 func DefaultBaseConfig() BaseConfig {
 	return BaseConfig{
 		Genesis:            defaultGenesisJSONPath,
@@ -237,10 +248,10 @@ func DefaultBaseConfig() BaseConfig {
 	}
 }
 
-// TestBaseConfig returns a base configuration for testing a Tendermint node
+// TestBaseConfig returns a base configuration for testing a CometBFT node
 func TestBaseConfig() BaseConfig {
 	cfg := DefaultBaseConfig()
-	cfg.chainID = "tendermint_test"
+	cfg.chainID = "cometbft_test"
 	cfg.ProxyApp = "kvstore"
 	cfg.FastSyncMode = false
 	cfg.DBBackend = "memdb"
@@ -290,7 +301,7 @@ func (cfg BaseConfig) ValidateBasic() error {
 //-----------------------------------------------------------------------------
 // RPCConfig
 
-// RPCConfig defines the configuration options for the Tendermint RPC server
+// RPCConfig defines the configuration options for the CometBFT RPC server
 type RPCConfig struct {
 	RootDir string `mapstructure:"home"`
 
@@ -342,6 +353,29 @@ type RPCConfig struct {
 	// to the estimated maximum number of broadcast_tx_commit calls per block.
 	MaxSubscriptionsPerClient int `mapstructure:"max_subscriptions_per_client"`
 
+	// The number of events that can be buffered per subscription before
+	// returning `ErrOutOfCapacity`.
+	SubscriptionBufferSize int `mapstructure:"experimental_subscription_buffer_size"`
+
+	// The maximum number of responses that can be buffered per WebSocket
+	// client. If clients cannot read from the WebSocket endpoint fast enough,
+	// they will be disconnected, so increasing this parameter may reduce the
+	// chances of them being disconnected (but will cause the node to use more
+	// memory).
+	//
+	// Must be at least the same as `SubscriptionBufferSize`, otherwise
+	// connections may be dropped unnecessarily.
+	WebSocketWriteBufferSize int `mapstructure:"experimental_websocket_write_buffer_size"`
+
+	// If a WebSocket client cannot read fast enough, at present we may
+	// silently drop events instead of generating an error or disconnecting the
+	// client.
+	//
+	// Enabling this parameter will cause the WebSocket connection to be closed
+	// instead if it cannot read fast enough, allowing for greater
+	// predictability in subscription behaviour.
+	CloseOnSlowClient bool `mapstructure:"experimental_close_on_slow_client"`
+
 	// How long to wait for a tx to be committed during /broadcast_tx_commit
 	// WARNING: Using a value larger than 10s will result in increasing the
 	// global HTTP write timeout, which applies to all connections and endpoints.
@@ -355,20 +389,20 @@ type RPCConfig struct {
 	MaxHeaderBytes int `mapstructure:"max_header_bytes"`
 
 	// The path to a file containing certificate that is used to create the HTTPS server.
-	// Might be either absolute path or path related to Tendermint's config directory.
+	// Might be either absolute path or path related to CometBFT's config directory.
 	//
 	// If the certificate is signed by a certificate authority,
 	// the certFile should be the concatenation of the server's certificate, any intermediates,
 	// and the CA's certificate.
 	//
-	// NOTE: both tls_cert_file and tls_key_file must be present for Tendermint to create HTTPS server.
+	// NOTE: both tls_cert_file and tls_key_file must be present for CometBFT to create HTTPS server.
 	// Otherwise, HTTP server is run.
 	TLSCertFile string `mapstructure:"tls_cert_file"`
 
 	// The path to a file containing matching private key that is used to create the HTTPS server.
-	// Might be either absolute path or path related to tendermint's config directory.
+	// Might be either absolute path or path related to CometBFT's config directory.
 	//
-	// NOTE: both tls_cert_file and tls_key_file must be present for Tendermint to create HTTPS server.
+	// NOTE: both tls_cert_file and tls_key_file must be present for CometBFT to create HTTPS server.
 	// Otherwise, HTTP server is run.
 	TLSKeyFile string `mapstructure:"tls_key_file"`
 
@@ -391,7 +425,9 @@ func DefaultRPCConfig() *RPCConfig {
 
 		MaxSubscriptionClients:    100,
 		MaxSubscriptionsPerClient: 5,
+		SubscriptionBufferSize:    defaultSubscriptionBufferSize,
 		TimeoutBroadcastTxCommit:  10 * time.Second,
+		WebSocketWriteBufferSize:  defaultSubscriptionBufferSize,
 
 		MaxBodyBytes:   int64(1000000), // 1MB
 		MaxHeaderBytes: 1 << 20,        // same as the net/http default
@@ -424,6 +460,18 @@ func (cfg *RPCConfig) ValidateBasic() error {
 	}
 	if cfg.MaxSubscriptionsPerClient < 0 {
 		return errors.New("max_subscriptions_per_client can't be negative")
+	}
+	if cfg.SubscriptionBufferSize < minSubscriptionBufferSize {
+		return fmt.Errorf(
+			"experimental_subscription_buffer_size must be >= %d",
+			minSubscriptionBufferSize,
+		)
+	}
+	if cfg.WebSocketWriteBufferSize < cfg.SubscriptionBufferSize {
+		return fmt.Errorf(
+			"experimental_websocket_write_buffer_size must be >= experimental_subscription_buffer_size (%d)",
+			cfg.SubscriptionBufferSize,
+		)
 	}
 	if cfg.TimeoutBroadcastTxCommit < 0 {
 		return errors.New("timeout_broadcast_tx_commit can't be negative")
@@ -465,7 +513,7 @@ func (cfg RPCConfig) IsTLSEnabled() bool {
 //-----------------------------------------------------------------------------
 // P2PConfig
 
-// P2PConfig defines the configuration options for the Tendermint peer-to-peer networking layer
+// P2PConfig defines the configuration options for the CometBFT peer-to-peer networking layer
 type P2PConfig struct { //nolint: maligned
 	RootDir string `mapstructure:"home"`
 
@@ -634,12 +682,33 @@ func DefaultFuzzConnConfig() *FuzzConnConfig {
 //-----------------------------------------------------------------------------
 // MempoolConfig
 
-// MempoolConfig defines the configuration options for the Tendermint mempool
+// MempoolConfig defines the configuration options for the CometBFT mempool
 type MempoolConfig struct {
-	RootDir   string `mapstructure:"home"`
-	Recheck   bool   `mapstructure:"recheck"`
-	Broadcast bool   `mapstructure:"broadcast"`
-	WalPath   string `mapstructure:"wal_dir"`
+	// Mempool version to use:
+	//  1) "v0" - (default) FIFO mempool.
+	//  2) "v1" - prioritized mempool.
+	Version string `mapstructure:"version"`
+	// RootDir is the root directory for all data. This should be configured via
+	// the $CMTHOME env variable or --home cmd flag rather than overriding this
+	// struct field.
+	RootDir string `mapstructure:"home"`
+	// Recheck (default: true) defines whether CometBFT should recheck the
+	// validity for all remaining transaction in the mempool after a block.
+	// Since a block affects the application state, some transactions in the
+	// mempool may become invalid. If this does not apply to your application,
+	// you can disable rechecking.
+	Recheck bool `mapstructure:"recheck"`
+	// Broadcast (default: true) defines whether the mempool should relay
+	// transactions to other peers. Setting this to false will stop the mempool
+	// from relaying transactions to other peers until they are included in a
+	// block. In other words, if Broadcast is disabled, only the peer you send
+	// the tx to will see it until it is included in a block.
+	Broadcast bool `mapstructure:"broadcast"`
+	// WalPath (default: "") configures the location of the Write Ahead Log
+	// (WAL) for the mempool. The WAL is disabled by default. To enable, set
+	// WalPath to where you want the WAL to be written (e.g.
+	// "data/mempool.wal").
+	WalPath string `mapstructure:"wal_dir"`
 	// Maximum number of transactions in the mempool
 	Size int `mapstructure:"size"`
 	// Limit the total size of all txs in the mempool.
@@ -659,24 +728,43 @@ type MempoolConfig struct {
 	// Including space needed by encoding (one varint per transaction).
 	// XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
 	MaxBatchBytes int `mapstructure:"max_batch_bytes"`
+
+	// TTLDuration, if non-zero, defines the maximum amount of time a transaction
+	// can exist for in the mempool.
+	//
+	// Note, if TTLNumBlocks is also defined, a transaction will be removed if it
+	// has existed in the mempool at least TTLNumBlocks number of blocks or if it's
+	// insertion time into the mempool is beyond TTLDuration.
+	TTLDuration time.Duration `mapstructure:"ttl-duration"`
+
+	// TTLNumBlocks, if non-zero, defines the maximum number of blocks a transaction
+	// can exist for in the mempool.
+	//
+	// Note, if TTLDuration is also defined, a transaction will be removed if it
+	// has existed in the mempool at least TTLNumBlocks number of blocks or if
+	// it's insertion time into the mempool is beyond TTLDuration.
+	TTLNumBlocks int64 `mapstructure:"ttl-num-blocks"`
 }
 
-// DefaultMempoolConfig returns a default configuration for the Tendermint mempool
+// DefaultMempoolConfig returns a default configuration for the CometBFT mempool
 func DefaultMempoolConfig() *MempoolConfig {
 	return &MempoolConfig{
+		Version:   MempoolV0,
 		Recheck:   true,
 		Broadcast: true,
 		WalPath:   "",
 		// Each signature verification takes .5ms, Size reduced until we implement
 		// ABCI Recheck
-		Size:        5000,
-		MaxTxsBytes: 1024 * 1024 * 1024, // 1GB
-		CacheSize:   10000,
-		MaxTxBytes:  1024 * 1024, // 1MB
+		Size:         5000,
+		MaxTxsBytes:  1024 * 1024 * 1024, // 1GB
+		CacheSize:    10000,
+		MaxTxBytes:   1024 * 1024, // 1MB
+		TTLDuration:  0 * time.Second,
+		TTLNumBlocks: 0,
 	}
 }
 
-// TestMempoolConfig returns a configuration for testing the Tendermint mempool
+// TestMempoolConfig returns a configuration for testing the CometBFT mempool
 func TestMempoolConfig() *MempoolConfig {
 	cfg := DefaultMempoolConfig()
 	cfg.CacheSize = 1000
@@ -714,7 +802,7 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 //-----------------------------------------------------------------------------
 // StateSyncConfig
 
-// StateSyncConfig defines the configuration for the Tendermint state sync service
+// StateSyncConfig defines the configuration for the CometBFT state sync service
 type StateSyncConfig struct {
 	Enable              bool          `mapstructure:"enable"`
 	TempDir             string        `mapstructure:"temp_dir"`
@@ -804,7 +892,7 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 //-----------------------------------------------------------------------------
 // FastSyncConfig
 
-// FastSyncConfig defines the configuration for the Tendermint fast sync service
+// FastSyncConfig defines the configuration for the CometBFT fast sync service
 type FastSyncConfig struct {
 	Version string `mapstructure:"version"`
 }
@@ -838,7 +926,7 @@ func (cfg *FastSyncConfig) ValidateBasic() error {
 //-----------------------------------------------------------------------------
 // ConsensusConfig
 
-// ConsensusConfig defines the configuration for the Tendermint consensus service,
+// ConsensusConfig defines the configuration for the Tendermint consensus algorithm, adopted by CometBFT,
 // including timeouts and details about the WAL and the block structure.
 type ConsensusConfig struct {
 	RootDir string `mapstructure:"home"`
@@ -1000,11 +1088,41 @@ func (cfg *ConsensusConfig) ValidateBasic() error {
 }
 
 //-----------------------------------------------------------------------------
+// StorageConfig
+
+// StorageConfig allows more fine-grained control over certain storage-related
+// behavior.
+type StorageConfig struct {
+	// Set to false to ensure ABCI responses are persisted. ABCI responses are
+	// required for `/block_results` RPC queries, and to reindex events in the
+	// command-line tool.
+	DiscardABCIResponses bool `mapstructure:"discard_abci_responses"`
+}
+
+// DefaultStorageConfig returns the default configuration options relating to
+// CometBFT storage optimization.
+func DefaultStorageConfig() *StorageConfig {
+	return &StorageConfig{
+		DiscardABCIResponses: false,
+	}
+}
+
+// TestStorageConfig returns storage configuration that can be used for
+// testing.
+func TestStorageConfig() *StorageConfig {
+	return &StorageConfig{
+		DiscardABCIResponses: false,
+	}
+}
+
+// -----------------------------------------------------------------------------
 // TxIndexConfig
 // Remember that Event has the following structure:
 // type: [
-//  key: value,
-//  ...
+//
+//	key: value,
+//	...
+//
 // ]
 //
 // CompositeKeys are constructed by `type.key`
@@ -1067,7 +1185,7 @@ func DefaultInstrumentationConfig() *InstrumentationConfig {
 		Prometheus:           false,
 		PrometheusListenAddr: ":26660",
 		MaxOpenConnections:   3,
-		Namespace:            "tendermint",
+		Namespace:            "cometbft",
 	}
 }
 

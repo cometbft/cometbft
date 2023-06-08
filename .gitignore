@@ -4,17 +4,13 @@
 *.bak
 .DS_Store
 build/*
-rpc/test/.tendermint
-.tendermint
+.cometbft
+.cometbft-lite
+rpc/test/.cometbft
 remote_dump
 .revision
 vendor
 .vagrant
-test/e2e/build
-test/maverick/maverick
-test/e2e/networks/*/
-test/p2p/data/
-test/logs
 coverage.txt
 docs/_build
 docs/dist
@@ -22,8 +18,13 @@ docs/.vuepress/dist
 *.log
 abci-cli
 docs/node_modules/
+docs/.vuepress/public/rpc
 index.html.md
 
+libs/pubsub/query/fuzz_test/output
+profile\.out
+remote_dump
+rpc/test/.cometbft
 scripts/wal2json/wal2json
 scripts/cutWALUntil/cutWALUntil
 
@@ -35,7 +36,6 @@ scripts/cutWALUntil/cutWALUntil
 libs/pubsub/query/fuzz_test/output
 shunit2
 
-.tendermint-lite
 addrbook.json
 
 */vendor
@@ -46,6 +46,8 @@ terraform.tfstate
 terraform.tfstate.backup
 terraform.tfstate.d
 profile\.out
+test/app/grpc_client
+test/loadtime/build
 test/e2e/build
 test/e2e/networks/*/
 test/logs
@@ -56,3 +58,11 @@ test/fuzz/**/corpus
 test/fuzz/**/crashers
 test/fuzz/**/suppressions
 test/fuzz/**/*.zip
+*.aux
+*.bbl
+*.blg
+*.pdf
+*.gz
+*.dvi
+# Python virtual environments
+.venv

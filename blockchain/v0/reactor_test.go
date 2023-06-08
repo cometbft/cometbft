@@ -7,21 +7,23 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	cfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/mempool/mock"
 	"github.com/tendermint/tendermint/p2p"
+	bcproto "github.com/tendermint/tendermint/proto/tendermint/blockchain"
 	"github.com/tendermint/tendermint/proxy"
 	sm "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/store"
 	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	cmttime "github.com/tendermint/tendermint/types/time"
 )
 
 var config *cfg.Config
@@ -40,7 +42,7 @@ func randGenesisDoc(numValidators int, randPower bool, minPower int64) (*types.G
 	sort.Sort(types.PrivValidatorsByAddress(privValidators))
 
 	return &types.GenesisDoc{
-		GenesisTime: tmtime.Now(),
+		GenesisTime: cmttime.Now(),
 		ChainID:     config.ChainID(),
 		Validators:  validators,
 	}, privValidators
@@ -70,7 +72,9 @@ func newBlockchainReactor(
 
 	blockDB := dbm.NewMemDB()
 	stateDB := dbm.NewMemDB()
-	stateStore := sm.NewStore(stateDB)
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
 	blockStore := store.NewBlockStore(blockDB)
 
 	state, err := stateStore.LoadFromDBOrGenesisDoc(genDoc)
@@ -83,7 +87,9 @@ func newBlockchainReactor(
 	// pool.height is determined from the store.
 	fastSync := true
 	db := dbm.NewMemDB()
-	stateStore = sm.NewStore(db)
+	stateStore = sm.NewStore(db, sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
 	blockExec := sm.NewBlockExecutor(stateStore, log.TestingLogger(), proxyApp.Consensus(),
 		mock.Mempool{}, sm.EmptyEvidencePool{})
 	if err = stateStore.Save(state); err != nil {
@@ -186,6 +192,25 @@ func TestNoBlockResponse(t *testing.T) {
 			assert.True(t, block == nil)
 		}
 	}
+}
+
+func TestLegacyReactorReceiveBasic(t *testing.T) {
+	config = cfg.ResetTestRoot("blockchain_reactor_test")
+	defer os.RemoveAll(config.RootDir)
+	genDoc, privVals := randGenesisDoc(1, false, 30)
+	reactor := newBlockchainReactor(log.TestingLogger(), genDoc, privVals, 10).reactor
+	peer := p2p.CreateRandomPeer(false)
+
+	reactor.InitPeer(peer)
+	reactor.AddPeer(peer)
+	m := &bcproto.StatusRequest{}
+	wm := m.Wrap()
+	msg, err := proto.Marshal(wm)
+	assert.NoError(t, err)
+
+	assert.NotPanics(t, func() {
+		reactor.Receive(BlockchainChannel, peer, msg)
+	})
 }
 
 // NOTE: This is too hard to test without

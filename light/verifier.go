@@ -6,26 +6,26 @@ import (
 	"fmt"
 	"time"
 
-	tmmath "github.com/tendermint/tendermint/libs/math"
+	cmtmath "github.com/tendermint/tendermint/libs/math"
 	"github.com/tendermint/tendermint/types"
 )
 
 var (
 	// DefaultTrustLevel - new header can be trusted if at least one correct
 	// validator signed it.
-	DefaultTrustLevel = tmmath.Fraction{Numerator: 1, Denominator: 3}
+	DefaultTrustLevel = cmtmath.Fraction{Numerator: 1, Denominator: 3}
 )
 
 // VerifyNonAdjacent verifies non-adjacent untrustedHeader against
 // trustedHeader. It ensures that:
 //
-//	a) trustedHeader can still be trusted (if not, ErrOldHeaderExpired is returned)
-//	b) untrustedHeader is valid (if not, ErrInvalidHeader is returned)
-//	c) trustLevel ([1/3, 1]) of trustedHeaderVals (or trustedHeaderNextVals)
-//  signed correctly (if not, ErrNewValSetCantBeTrusted is returned)
-//	d) more than 2/3 of untrustedVals have signed h2
-//    (otherwise, ErrInvalidHeader is returned)
-//  e) headers are non-adjacent.
+//		a) trustedHeader can still be trusted (if not, ErrOldHeaderExpired is returned)
+//		b) untrustedHeader is valid (if not, ErrInvalidHeader is returned)
+//		c) trustLevel ([1/3, 1]) of trustedHeaderVals (or trustedHeaderNextVals)
+//	 signed correctly (if not, ErrNewValSetCantBeTrusted is returned)
+//		d) more than 2/3 of untrustedVals have signed h2
+//	   (otherwise, ErrInvalidHeader is returned)
+//	 e) headers are non-adjacent.
 //
 // maxClockDrift defines how much untrustedHeader.Time can drift into the
 // future.
@@ -37,7 +37,7 @@ func VerifyNonAdjacent(
 	trustingPeriod time.Duration,
 	now time.Time,
 	maxClockDrift time.Duration,
-	trustLevel tmmath.Fraction) error {
+	trustLevel cmtmath.Fraction) error {
 
 	if untrustedHeader.Height == trustedHeader.Height+1 {
 		return errors.New("headers must be non adjacent in height")
@@ -81,12 +81,12 @@ func VerifyNonAdjacent(
 // VerifyAdjacent verifies directly adjacent untrustedHeader against
 // trustedHeader. It ensures that:
 //
-//  a) trustedHeader can still be trusted (if not, ErrOldHeaderExpired is returned)
-//  b) untrustedHeader is valid (if not, ErrInvalidHeader is returned)
-//  c) untrustedHeader.ValidatorsHash equals trustedHeader.NextValidatorsHash
-//  d) more than 2/3 of new validators (untrustedVals) have signed h2
-//    (otherwise, ErrInvalidHeader is returned)
-//  e) headers are adjacent.
+//	a) trustedHeader can still be trusted (if not, ErrOldHeaderExpired is returned)
+//	b) untrustedHeader is valid (if not, ErrInvalidHeader is returned)
+//	c) untrustedHeader.ValidatorsHash equals trustedHeader.NextValidatorsHash
+//	d) more than 2/3 of new validators (untrustedVals) have signed h2
+//	  (otherwise, ErrInvalidHeader is returned)
+//	e) headers are adjacent.
 //
 // maxClockDrift defines how much untrustedHeader.Time can drift into the
 // future.
@@ -140,7 +140,7 @@ func Verify(
 	trustingPeriod time.Duration,
 	now time.Time,
 	maxClockDrift time.Duration,
-	trustLevel tmmath.Fraction) error {
+	trustLevel cmtmath.Fraction) error {
 
 	if untrustedHeader.Height != trustedHeader.Height+1 {
 		return VerifyNonAdjacent(trustedHeader, trustedVals, untrustedHeader, untrustedVals,
@@ -194,7 +194,7 @@ func verifyNewHeaderAndVals(
 // ValidateTrustLevel checks that trustLevel is within the allowed range [1/3,
 // 1]. If not, it returns an error. 1/3 is the minimum amount of trust needed
 // which does not break the security model.
-func ValidateTrustLevel(lvl tmmath.Fraction) error {
+func ValidateTrustLevel(lvl cmtmath.Fraction) error {
 	if lvl.Numerator*3 < lvl.Denominator || // < 1/3
 		lvl.Numerator > lvl.Denominator || // > 1
 		lvl.Denominator == 0 {
@@ -212,12 +212,12 @@ func HeaderExpired(h *types.SignedHeader, trustingPeriod time.Duration, now time
 // VerifyBackwards verifies an untrusted header with a height one less than
 // that of an adjacent trusted header. It ensures that:
 //
-// 	a) untrusted header is valid
-//  b) untrusted header has a time before the trusted header
-//  c) that the LastBlockID hash of the trusted header is the same as the hash
-//  of the trusted header
+//		a) untrusted header is valid
+//	 b) untrusted header has a time before the trusted header
+//	 c) that the LastBlockID hash of the trusted header is the same as the hash
+//	 of the trusted header
 //
-//  For any of these cases ErrInvalidHeader is returned.
+//	 For any of these cases ErrInvalidHeader is returned.
 func VerifyBackwards(untrustedHeader, trustedHeader *types.Header) error {
 	if err := untrustedHeader.ValidateBasic(); err != nil {
 		return ErrInvalidHeader{err}

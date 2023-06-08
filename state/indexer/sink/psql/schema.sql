@@ -1,6 +1,6 @@
 /*
   This file defines the database schema for the PostgresQL ("psql") event sink
-  implementation in Tendermint. The operator must create a database and install
+  implementation in CometBFT. The operator must create a database and install
   this schema before using the database to index events.
  */
 

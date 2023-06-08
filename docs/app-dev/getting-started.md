@@ -4,25 +4,27 @@ order: 1
 
 # Getting Started
 
-## First Tendermint App
+## First CometBFT App
 
-As a general purpose blockchain engine, Tendermint is agnostic to the
+As a general purpose blockchain engine, CometBFT is agnostic to the
 application you want to run. So, to run a complete blockchain that does
-something useful, you must start two programs: one is Tendermint Core,
+something useful, you must start two programs: one is CometBFT,
 the other is your application, which can be written in any programming
 language. Recall from [the intro to
-ABCI](../introduction/what-is-tendermint.md#abci-overview) that Tendermint Core handles all the p2p and consensus stuff, and just forwards transactions to the
+ABCI](../introduction/what-is-cometbft.md#abci-overview) that CometBFT
+handles all the p2p and consensus stuff, and just forwards transactions to the
 application when they need to be validated, or when they're ready to be
-committed to a block.
+executed and committed.
 
 In this guide, we show you some examples of how to run an application
-using Tendermint.
+using CometBFT.
 
 ### Install
 
 The first apps we will work with are written in Go. To install them, you
 need to [install Go](https://golang.org/doc/install), put
-`$GOPATH/bin` in your `$PATH` and enable go modules with these instructions:
+`$GOPATH/bin` in your `$PATH` and enable go modules. If you use `bash`,
+follow these instructions:
 
 ```bash
 echo export GOPATH=\"\$HOME/go\" >> ~/.bash_profile
@@ -31,17 +33,46 @@ echo export PATH=\"\$PATH:\$GOPATH/bin\" >> ~/.bash_profile
 
 Then run
 
-```sh
-go get github.com/tendermint/tendermint
-cd $GOPATH/src/github.com/tendermint/tendermint
+```bash
+go get github.com/cometbft/cometbft
+cd $GOPATH/src/github.com/cometbft/cometbft
 make install_abci
 ```
 
-Now you should have the `abci-cli` installed; you'll see a couple of
-commands (`counter` and `kvstore`) that are example applications written
-in Go. See below for an application written in JavaScript.
+Now you should have the `abci-cli` installed; run `abci-cli` to see the list of commands:
 
-Now, let's run some apps!
+```
+Usage:
+  abci-cli [command]
+
+Available Commands:
+  batch            run a batch of abci commands against an application
+  check_tx         validate a transaction
+  commit           commit the application state and return the Merkle root hash
+  completion       Generate the autocompletion script for the specified shell
+  console          start an interactive ABCI console for multiple commands
+  deliver_tx       deliver a new transaction to the application
+  echo             have the application echo a message
+  help             Help about any command
+  info             get some info about the application
+  kvstore          ABCI demo example
+  query            query the application state
+  test             run integration tests
+  version          print ABCI console version
+
+Flags:
+      --abci string        either socket or grpc (default "socket")
+      --address string     address of application socket (default "tcp://0.0.0.0:26658")
+  -h, --help               help for abci-cli
+      --log_level string   set the logger level (default "debug")
+  -v, --verbose            print the command and results as if it were a console session
+
+Use "abci-cli [command] --help" for more information about a command.
+```
+
+You'll notice the `kvstore` command, an example application written in Go.
+
+Now, let's run an app!
 
 ## KVStore - A First Example
 
@@ -57,23 +88,23 @@ Let's start a kvstore application.
 abci-cli kvstore
 ```
 
-In another terminal, we can start Tendermint. You should already have the
-Tendermint binary installed. If not, follow the steps from
-[here](../introduction/install.md). If you have never run Tendermint
+In another terminal, we can start CometBFT. You should already have the
+CometBFT binary installed. If not, follow the steps from
+[here](../introduction/install.md). If you have never run CometBFT
 before, use:
 
 ```sh
-tendermint init
-tendermint node
+cometbft init
+cometbft node
 ```
 
-If you have used Tendermint, you may want to reset the data for a new
-blockchain by running `tendermint unsafe_reset_all`. Then you can run
-`tendermint node` to start Tendermint, and connect to the app. For more
-details, see [the guide on using Tendermint](../tendermint-core/using-tendermint.md).
+If you have used CometBFT, you may want to reset the data for a new
+blockchain by running `cometbft unsafe-reset-all`. Then you can run
+`cometbft node` to start CometBFT, and connect to the app. For more
+details, see [the guide on using CometBFT](../core/using-cometbft.md).
 
-You should see Tendermint making blocks! We can get the status of our
-Tendermint node as follows:
+You should see CometBFT making blocks! We can get the status of our
+CometBFT node as follows:
 
 ```sh
 curl -s localhost:26657/status
@@ -164,133 +195,3 @@ curl -s 'localhost:26657/abci_query?data="name"'
 
 Try some other transactions and queries to make sure everything is
 working!
-
-## Counter - Another Example
-
-Now that we've got the hang of it, let's try another application, the
-`counter` app.
-
-The counter app doesn't use a Merkle tree, it just counts how many times
-we've sent a transaction, or committed the state.
-
-This application has two modes: `serial=off` and `serial=on`.
-
-When `serial=on`, transactions must be a big-endian encoded incrementing
-integer, starting at 0.
-
-If `serial=off`, there are no restrictions on transactions.
-
-In a live blockchain, transactions collect in memory before they are
-committed into blocks. To avoid wasting resources on invalid
-transactions, ABCI provides the `CheckTx` message, which application
-developers can use to accept or reject transactions, before they are
-stored in memory or gossipped to other peers.
-
-In this instance of the counter app, with `serial=on`, `CheckTx` only
-allows transactions whose integer is greater than the last committed
-one.
-
-Let's kill the previous instance of `tendermint` and the `kvstore`
-application, and start the counter app. We can enable `serial=on` with a
-flag:
-
-```sh
-abci-cli counter --serial
-```
-
-In another window, reset then start Tendermint:
-
-```sh
-tendermint unsafe_reset_all
-tendermint node
-```
-
-Once again, you can see the blocks streaming by. Let's send some
-transactions. Since we have set `serial=on`, the first transaction must
-be the number `0`:
-
-```sh
-curl localhost:26657/broadcast_tx_commit?tx=0x00
-```
-
-Note the empty (hence successful) response. The next transaction must be
-the number `1`. If instead, we try to send a `5`, we get an error:
-
-```json
-> curl localhost:26657/broadcast_tx_commit?tx=0x05
-{
-  "jsonrpc": "2.0",
-  "id": "",
-  "result": {
-    "check_tx": {},
-    "deliver_tx": {
-      "code": 2,
-      "log": "Invalid nonce. Expected 1, got 5"
-    },
-    "hash": "33B93DFF98749B0D6996A70F64071347060DC19C",
-    "height": 34
-  }
-}
-```
-
-But if we send a `1`, it works again:
-
-```json
-> curl localhost:26657/broadcast_tx_commit?tx=0x01
-{
-  "jsonrpc": "2.0",
-  "id": "",
-  "result": {
-    "check_tx": {},
-    "deliver_tx": {},
-    "hash": "F17854A977F6FA7EEA1BD758E296710B86F72F3D",
-    "height": 60
-  }
-}
-```
-
-For more details on the `broadcast_tx` API, see [the guide on using
-Tendermint](../tendermint-core/using-tendermint.md).
-
-## CounterJS - Example in Another Language
-
-We also want to run applications in another language - in this case,
-we'll run a Javascript version of the `counter`. To run it, you'll need
-to [install node](https://nodejs.org/en/download/).
-
-You'll also need to fetch the relevant repository, from
-[here](https://github.com/tendermint/js-abci), then install it:
-
-```sh
-git clone https://github.com/tendermint/js-abci.git
-cd js-abci
-npm install abci
-```
-
-Kill the previous `counter` and `tendermint` processes. Now run the app:
-
-```sh
-node example/counter.js
-```
-
-In another window, reset and start `tendermint`:
-
-```sh
-tendermint unsafe_reset_all
-tendermint node
-```
-
-Once again, you should see blocks streaming by - but now, our
-application is written in Javascript! Try sending some transactions, and
-like before - the results should be the same:
-
-```sh
-# ok
-curl localhost:26657/broadcast_tx_commit?tx=0x00
-# invalid nonce
-curl localhost:26657/broadcast_tx_commit?tx=0x05
-# ok
-curl localhost:26657/broadcast_tx_commit?tx=0x01
-```
-
-Neat, eh?

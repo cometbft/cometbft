@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
 	sm "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/types"
 )
@@ -25,15 +25,17 @@ func TestTxFilter(t *testing.T) {
 		tx    types.Tx
 		isErr bool
 	}{
-		{types.Tx(tmrand.Bytes(2155)), false},
-		{types.Tx(tmrand.Bytes(2156)), true},
-		{types.Tx(tmrand.Bytes(3000)), true},
+		{types.Tx(cmtrand.Bytes(2155)), false},
+		{types.Tx(cmtrand.Bytes(2156)), true},
+		{types.Tx(cmtrand.Bytes(3000)), true},
 	}
 
 	for i, tc := range testCases {
 		stateDB, err := dbm.NewDB("state", "memdb", os.TempDir())
 		require.NoError(t, err)
-		stateStore := sm.NewStore(stateDB)
+		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+			DiscardABCIResponses: false,
+		})
 		state, err := stateStore.LoadFromDBOrGenesisDoc(genDoc)
 		require.NoError(t, err)
 

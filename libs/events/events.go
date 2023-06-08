@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/tendermint/tendermint/libs/service"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 )
 
 // ErrListenerWasRemoved is returned by AddEvent if the listener was removed.
@@ -18,8 +18,7 @@ func (e ErrListenerWasRemoved) Error() string {
 	return fmt.Sprintf("listener #%s was removed", e.listenerID)
 }
 
-// EventData is a generic event data can be typed and registered with
-// tendermint/go-amino via concrete implementation of this interface.
+// EventData is a generic event data.
 type EventData interface{}
 
 // Eventable is the interface reactors and other modules must export to become
@@ -54,7 +53,7 @@ type EventSwitch interface {
 type eventSwitch struct {
 	service.BaseService
 
-	mtx        tmsync.RWMutex
+	mtx        cmtsync.RWMutex
 	eventCells map[string]*eventCell
 	listeners  map[string]*eventListener
 }
@@ -162,7 +161,7 @@ func (evsw *eventSwitch) FireEvent(event string, data EventData) {
 
 // eventCell handles keeping track of listener callbacks for a given event.
 type eventCell struct {
-	mtx       tmsync.RWMutex
+	mtx       cmtsync.RWMutex
 	listeners map[string]EventCallback
 }
 
@@ -206,7 +205,7 @@ type EventCallback func(data EventData)
 type eventListener struct {
 	id string
 
-	mtx     tmsync.RWMutex
+	mtx     cmtsync.RWMutex
 	removed bool
 	events  []string
 }

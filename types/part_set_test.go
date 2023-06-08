@@ -1,14 +1,14 @@
 package types
 
 import (
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/tendermint/tendermint/crypto/merkle"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
 )
 
 const (
@@ -18,7 +18,7 @@ const (
 func TestBasicPartSet(t *testing.T) {
 	// Construct random data of size partSize * 100
 	nParts := 100
-	data := tmrand.Bytes(testPartSize * nParts)
+	data := cmtrand.Bytes(testPartSize * nParts)
 	partSet := NewPartSetFromData(data, testPartSize)
 
 	assert.NotEmpty(t, partSet.Hash())
@@ -57,7 +57,7 @@ func TestBasicPartSet(t *testing.T) {
 
 	// Reconstruct data, assert that they are equal.
 	data2Reader := partSet2.GetReader()
-	data2, err := ioutil.ReadAll(data2Reader)
+	data2, err := io.ReadAll(data2Reader)
 	require.NoError(t, err)
 
 	assert.Equal(t, data, data2)
@@ -65,7 +65,7 @@ func TestBasicPartSet(t *testing.T) {
 
 func TestWrongProof(t *testing.T) {
 	// Construct random data of size partSize * 100
-	data := tmrand.Bytes(testPartSize * 100)
+	data := cmtrand.Bytes(testPartSize * 100)
 	partSet := NewPartSetFromData(data, testPartSize)
 
 	// Test adding a part with wrong data.
@@ -100,7 +100,7 @@ func TestPartSetHeaderValidateBasic(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.testName, func(t *testing.T) {
-			data := tmrand.Bytes(testPartSize * 100)
+			data := cmtrand.Bytes(testPartSize * 100)
 			ps := NewPartSetFromData(data, testPartSize)
 			psHeader := ps.Header()
 			tc.malleatePartSetHeader(&psHeader)
@@ -129,7 +129,7 @@ func TestPartValidateBasic(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.testName, func(t *testing.T) {
-			data := tmrand.Bytes(testPartSize * 100)
+			data := cmtrand.Bytes(testPartSize * 100)
 			ps := NewPartSetFromData(data, testPartSize)
 			part := ps.GetPart(0)
 			tc.malleatePart(part)
@@ -145,8 +145,10 @@ func TestParSetHeaderProtoBuf(t *testing.T) {
 		expPass bool
 	}{
 		{"success empty", &PartSetHeader{}, true},
-		{"success",
-			&PartSetHeader{Total: 1, Hash: []byte("hash")}, true},
+		{
+			"success",
+			&PartSetHeader{Total: 1, Hash: []byte("hash")}, true,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -162,11 +164,10 @@ func TestParSetHeaderProtoBuf(t *testing.T) {
 }
 
 func TestPartProtoBuf(t *testing.T) {
-
 	proof := merkle.Proof{
 		Total:    1,
 		Index:    1,
-		LeafHash: tmrand.Bytes(32),
+		LeafHash: cmtrand.Bytes(32),
 	}
 	testCases := []struct {
 		msg     string
@@ -175,8 +176,10 @@ func TestPartProtoBuf(t *testing.T) {
 	}{
 		{"failure empty", &Part{}, false},
 		{"failure nil", nil, false},
-		{"success",
-			&Part{Index: 1, Bytes: tmrand.Bytes(32), Proof: proof}, true},
+		{
+			"success",
+			&Part{Index: 1, Bytes: cmtrand.Bytes(32), Proof: proof}, true,
+		},
 	}
 
 	for _, tc := range testCases {

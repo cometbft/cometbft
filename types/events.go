@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	abci "github.com/tendermint/tendermint/abci/types"
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	tmpubsub "github.com/tendermint/tendermint/libs/pubsub"
-	tmquery "github.com/tendermint/tendermint/libs/pubsub/query"
+	cmtjson "github.com/tendermint/tendermint/libs/json"
+	cmtpubsub "github.com/tendermint/tendermint/libs/pubsub"
+	cmtquery "github.com/tendermint/tendermint/libs/pubsub/query"
 )
 
 // Reserved event types (alphabetically sorted).
@@ -46,16 +46,16 @@ type TMEventData interface {
 }
 
 func init() {
-	tmjson.RegisterType(EventDataNewBlock{}, "tendermint/event/NewBlock")
-	tmjson.RegisterType(EventDataNewBlockHeader{}, "tendermint/event/NewBlockHeader")
-	tmjson.RegisterType(EventDataNewEvidence{}, "tendermint/event/NewEvidence")
-	tmjson.RegisterType(EventDataTx{}, "tendermint/event/Tx")
-	tmjson.RegisterType(EventDataRoundState{}, "tendermint/event/RoundState")
-	tmjson.RegisterType(EventDataNewRound{}, "tendermint/event/NewRound")
-	tmjson.RegisterType(EventDataCompleteProposal{}, "tendermint/event/CompleteProposal")
-	tmjson.RegisterType(EventDataVote{}, "tendermint/event/Vote")
-	tmjson.RegisterType(EventDataValidatorSetUpdates{}, "tendermint/event/ValidatorSetUpdates")
-	tmjson.RegisterType(EventDataString(""), "tendermint/event/ProposalString")
+	cmtjson.RegisterType(EventDataNewBlock{}, "tendermint/event/NewBlock")
+	cmtjson.RegisterType(EventDataNewBlockHeader{}, "tendermint/event/NewBlockHeader")
+	cmtjson.RegisterType(EventDataNewEvidence{}, "tendermint/event/NewEvidence")
+	cmtjson.RegisterType(EventDataTx{}, "tendermint/event/Tx")
+	cmtjson.RegisterType(EventDataRoundState{}, "tendermint/event/RoundState")
+	cmtjson.RegisterType(EventDataNewRound{}, "tendermint/event/NewRound")
+	cmtjson.RegisterType(EventDataCompleteProposal{}, "tendermint/event/CompleteProposal")
+	cmtjson.RegisterType(EventDataVote{}, "tendermint/event/Vote")
+	cmtjson.RegisterType(EventDataValidatorSetUpdates{}, "tendermint/event/ValidatorSetUpdates")
+	cmtjson.RegisterType(EventDataString(""), "tendermint/event/ProposalString")
 }
 
 // Most event messages are basic types (a block, a transaction)
@@ -140,6 +140,11 @@ const (
 	// BlockHeightKey is a reserved key used for indexing BeginBlock and Endblock
 	// events.
 	BlockHeightKey = "block.height"
+
+	// MatchEventsKey is a reserved key used to indicate to the indexer that the
+	// conditions in the query have to have occurred both on the same height
+	// as well as in the same event
+	MatchEventKey = "match.events"
 )
 
 var (
@@ -161,12 +166,12 @@ var (
 	EventQueryVote                = QueryForEvent(EventVote)
 )
 
-func EventQueryTxFor(tx Tx) tmpubsub.Query {
-	return tmquery.MustParse(fmt.Sprintf("%s='%s' AND %s='%X'", EventTypeKey, EventTx, TxHashKey, tx.Hash()))
+func EventQueryTxFor(tx Tx) cmtpubsub.Query {
+	return cmtquery.MustParse(fmt.Sprintf("%s='%s' AND %s='%X'", EventTypeKey, EventTx, TxHashKey, tx.Hash()))
 }
 
-func QueryForEvent(eventType string) tmpubsub.Query {
-	return tmquery.MustParse(fmt.Sprintf("%s='%s'", EventTypeKey, eventType))
+func QueryForEvent(eventType string) cmtpubsub.Query {
+	return cmtquery.MustParse(fmt.Sprintf("%s='%s'", EventTypeKey, eventType))
 }
 
 // BlockEventPublisher publishes all block related events

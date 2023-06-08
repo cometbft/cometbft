@@ -5,7 +5,7 @@ import (
 	mrand "math/rand"
 	"time"
 
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 )
 
 const (
@@ -20,7 +20,7 @@ const (
 // All of the methods here are suitable for concurrent use.
 // This is achieved by using a mutex lock on all of the provided methods.
 type Rand struct {
-	tmsync.Mutex
+	cmtsync.Mutex
 	rand *mrand.Rand
 }
 
@@ -48,7 +48,7 @@ func (r *Rand) init() {
 }
 
 func (r *Rand) reset(seed int64) {
-	r.rand = mrand.New(mrand.NewSource(seed)) // nolint:gosec // G404: Use of weak random number generator
+	r.rand = mrand.New(mrand.NewSource(seed)) //nolint:gosec,nolintlint // G404: Use of weak random number generator
 }
 
 //----------------------------------------

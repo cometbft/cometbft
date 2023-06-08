@@ -3,7 +3,6 @@ package consensus
 import (
 	"bytes"
 	"crypto/rand"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -18,8 +17,8 @@ import (
 	"github.com/tendermint/tendermint/crypto/merkle"
 	"github.com/tendermint/tendermint/libs/autofile"
 	"github.com/tendermint/tendermint/libs/log"
-	tmtypes "github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	cmttypes "github.com/tendermint/tendermint/types"
+	cmttime "github.com/tendermint/tendermint/types/time"
 )
 
 const (
@@ -27,7 +26,7 @@ const (
 )
 
 func TestWALTruncate(t *testing.T) {
-	walDir, err := ioutil.TempDir("", "wal")
+	walDir, err := os.MkdirTemp("", "wal")
 	require.NoError(t, err)
 	defer os.RemoveAll(walDir)
 
@@ -76,17 +75,17 @@ func TestWALTruncate(t *testing.T) {
 	dec := NewWALDecoder(gr)
 	msg, err := dec.Decode()
 	assert.NoError(t, err, "expected to decode a message")
-	rs, ok := msg.Msg.(tmtypes.EventDataRoundState)
+	rs, ok := msg.Msg.(cmttypes.EventDataRoundState)
 	assert.True(t, ok, "expected message of type EventDataRoundState")
 	assert.Equal(t, rs.Height, h+1, "wrong height")
 }
 
 func TestWALEncoderDecoder(t *testing.T) {
-	now := tmtime.Now()
+	now := cmttime.Now()
 	msgs := []TimedWALMessage{
 		{Time: now, Msg: EndHeightMessage{0}},
 		{Time: now, Msg: timeoutInfo{Duration: time.Second, Height: 1, Round: 1, Step: types.RoundStepPropose}},
-		{Time: now, Msg: tmtypes.EventDataRoundState{Height: 1, Round: 1, Step: ""}},
+		{Time: now, Msg: cmttypes.EventDataRoundState{Height: 1, Round: 1, Step: ""}},
 	}
 
 	b := new(bytes.Buffer)
@@ -109,7 +108,7 @@ func TestWALEncoderDecoder(t *testing.T) {
 }
 
 func TestWALWrite(t *testing.T) {
-	walDir, err := ioutil.TempDir("", "wal")
+	walDir, err := os.MkdirTemp("", "wal")
 	require.NoError(t, err)
 	defer os.RemoveAll(walDir)
 	walFile := filepath.Join(walDir, "wal")
@@ -131,7 +130,7 @@ func TestWALWrite(t *testing.T) {
 	msg := &BlockPartMessage{
 		Height: 1,
 		Round:  1,
-		Part: &tmtypes.Part{
+		Part: &cmttypes.Part{
 			Index: 1,
 			Bytes: make([]byte, 1),
 			Proof: merkle.Proof{
@@ -171,13 +170,13 @@ func TestWALSearchForEndHeight(t *testing.T) {
 	dec := NewWALDecoder(gr)
 	msg, err := dec.Decode()
 	assert.NoError(t, err, "expected to decode a message")
-	rs, ok := msg.Msg.(tmtypes.EventDataRoundState)
+	rs, ok := msg.Msg.(cmttypes.EventDataRoundState)
 	assert.True(t, ok, "expected message of type EventDataRoundState")
 	assert.Equal(t, rs.Height, h+1, "wrong height")
 }
 
 func TestWALPeriodicSync(t *testing.T) {
-	walDir, err := ioutil.TempDir("", "wal")
+	walDir, err := os.MkdirTemp("", "wal")
 	require.NoError(t, err)
 	defer os.RemoveAll(walDir)
 
@@ -269,18 +268,23 @@ func BenchmarkWalDecode512B(b *testing.B) {
 func BenchmarkWalDecode10KB(b *testing.B) {
 	benchmarkWalDecode(b, 10*1024)
 }
+
 func BenchmarkWalDecode100KB(b *testing.B) {
 	benchmarkWalDecode(b, 100*1024)
 }
+
 func BenchmarkWalDecode1MB(b *testing.B) {
 	benchmarkWalDecode(b, 1024*1024)
 }
+
 func BenchmarkWalDecode10MB(b *testing.B) {
 	benchmarkWalDecode(b, 10*1024*1024)
 }
+
 func BenchmarkWalDecode100MB(b *testing.B) {
 	benchmarkWalDecode(b, 100*1024*1024)
 }
+
 func BenchmarkWalDecode1GB(b *testing.B) {
 	benchmarkWalDecode(b, 1024*1024*1024)
 }

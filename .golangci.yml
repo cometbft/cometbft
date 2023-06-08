@@ -1,62 +1,46 @@
 linters:
   enable:
+    - asciicheck
     - bodyclose
-    - deadcode
     - depguard
     - dogsled
     - dupl
     - errcheck
     - exportloopref
-    # - funlen
-    # - gochecknoglobals
-    # - gochecknoinits
     - goconst
-    - gocritic
-    # - gocyclo
-    # - godox
     - gofmt
     - goimports
-    - golint
+    - revive
     - gosec
     - gosimple
     - govet
     - ineffassign
-    # - interfacer
-    - lll
     - misspell
-    # - maligned
     - nakedret
+    - nolintlint
     - prealloc
-    # - scopelint
     - staticcheck
-    - structcheck
+    # - structcheck // to be fixed by golangci-lint
     - stylecheck
     - typecheck
     - unconvert
-    # - unparam
     - unused
-    - varcheck
-    # - whitespace
-    # - wsl
-    # - gocognit
-    - nolintlint
 
 issues:
   exclude-rules:
     - path: _test\.go
       linters:
         - gosec
-    - linters:
-        - lll
-      source: "https://"
   max-same-issues: 50
 
 linters-settings:
   dogsled:
     max-blank-identifiers: 3
-  maligned:
-    suggest-new: true
-  # govet:
-  #   check-shadowing: true
   golint:
     min-confidence: 0
+  maligned:
+    suggest-new: true
+
+run:
+  skip-files:
+    - libs/pubsub/query/query.peg.go

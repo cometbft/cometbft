@@ -7,8 +7,9 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/require"
 
+	"github.com/tendermint/tendermint/p2p"
 	ssproto "github.com/tendermint/tendermint/proto/tendermint/statesync"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 func TestValidateMsg(t *testing.T) {
@@ -17,7 +18,7 @@ func TestValidateMsg(t *testing.T) {
 		valid bool
 	}{
 		"nil":       {nil, false},
-		"unrelated": {&tmproto.Block{}, false},
+		"unrelated": {&cmtproto.Block{}, false},
 
 		"ChunkRequest valid":    {&ssproto.ChunkRequest{Height: 1, Format: 1, Index: 1}, true},
 		"ChunkRequest 0 height": {&ssproto.ChunkRequest{Height: 0, Format: 1, Index: 1}, false},
@@ -99,8 +100,9 @@ func TestStateSyncVectors(t *testing.T) {
 
 	for _, tc := range testCases {
 		tc := tc
-
-		bz := mustEncodeMsg(tc.msg)
+		w := tc.msg.(p2p.Wrapper).Wrap()
+		bz, err := proto.Marshal(w)
+		require.NoError(t, err)
 
 		require.Equal(t, tc.expBytes, hex.EncodeToString(bz), tc.testName)
 	}

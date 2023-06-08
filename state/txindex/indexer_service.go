@@ -19,9 +19,10 @@ const (
 type IndexerService struct {
 	service.BaseService
 
-	txIdxr    TxIndexer
-	blockIdxr indexer.BlockIndexer
-	eventBus  *types.EventBus
+	txIdxr           TxIndexer
+	blockIdxr        indexer.BlockIndexer
+	eventBus         *types.EventBus
+	terminateOnError bool
 }
 
 // NewIndexerService returns a new service instance.
@@ -29,9 +30,10 @@ func NewIndexerService(
 	txIdxr TxIndexer,
 	blockIdxr indexer.BlockIndexer,
 	eventBus *types.EventBus,
+	terminateOnError bool,
 ) *IndexerService {
 
-	is := &IndexerService{txIdxr: txIdxr, blockIdxr: blockIdxr, eventBus: eventBus}
+	is := &IndexerService{txIdxr: txIdxr, blockIdxr: blockIdxr, eventBus: eventBus, terminateOnError: terminateOnError}
 	is.BaseService = *service.NewBaseService(nil, "IndexerService", is)
 	return is
 }
@@ -40,7 +42,7 @@ func NewIndexerService(
 // and indexing them by events.
 func (is *IndexerService) OnStart() error {
 	// Use SubscribeUnbuffered here to ensure both subscriptions does not get
-	// cancelled due to not pulling messages fast enough. Cause this might
+	// canceled due to not pulling messages fast enough. Cause this might
 	// sometimes happen when there are no other subscribers.
 	blockHeadersSub, err := is.eventBus.SubscribeUnbuffered(
 		context.Background(),
@@ -73,19 +75,38 @@ func (is *IndexerService) OnStart() error {
 						"index", txResult.Index,
 						"err", err,
 					)
+
+					if is.terminateOnError {
+						if err := is.Stop(); err != nil {
+							is.Logger.Error("failed to stop", "err", err)
+						}
+						return
+					}
 				}
 			}
 
 			if err := is.blockIdxr.Index(eventDataHeader); err != nil {
 				is.Logger.Error("failed to index block", "height", height, "err", err)
+				if is.terminateOnError {
+					if err := is.Stop(); err != nil {
+						is.Logger.Error("failed to stop", "err", err)
+					}
+					return
+				}
 			} else {
-				is.Logger.Info("indexed block", "height", height)
+				is.Logger.Info("indexed block exents", "height", height)
 			}
 
 			if err = is.txIdxr.AddBatch(batch); err != nil {
 				is.Logger.Error("failed to index block txs", "height", height, "err", err)
+				if is.terminateOnError {
+					if err := is.Stop(); err != nil {
+						is.Logger.Error("failed to stop", "err", err)
+					}
+					return
+				}
 			} else {
-				is.Logger.Debug("indexed block txs", "height", height, "num_txs", eventDataHeader.NumTxs)
+				is.Logger.Debug("indexed transactions", "height", height, "num_txs", eventDataHeader.NumTxs)
 			}
 		}
 	}()

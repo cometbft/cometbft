@@ -1,4 +1,3 @@
-//nolint: gosec
 package main
 
 import (
@@ -32,7 +31,7 @@ type CLI struct {
 func NewCLI() *CLI {
 	cli := &CLI{}
 	cli.root = &cobra.Command{
-		Use:           "generator",
+		Use:           "generator -d dir [-g int] [-m version_weight_csv]",
 		Short:         "End-to-end testnet generator",
 		SilenceUsage:  true,
 		SilenceErrors: true, // we'll output them ourselves in Run()
@@ -45,25 +44,35 @@ func NewCLI() *CLI {
 			if err != nil {
 				return err
 			}
-			return cli.generate(dir, groups)
+			multiVersion, err := cmd.Flags().GetString("multi-version")
+			if err != nil {
+				return err
+			}
+			return cli.generate(dir, groups, multiVersion)
 		},
 	}
 
 	cli.root.PersistentFlags().StringP("dir", "d", "", "Output directory for manifests")
 	_ = cli.root.MarkPersistentFlagRequired("dir")
+	cli.root.PersistentFlags().StringP("multi-version", "m", "", "Comma-separated list of versions of CometBFT to test in the generated testnets, "+
+		"or empty to only use this branch's version")
 	cli.root.PersistentFlags().IntP("groups", "g", 0, "Number of groups")
 
 	return cli
 }
 
 // generate generates manifests in a directory.
-func (cli *CLI) generate(dir string, groups int) error {
-	err := os.MkdirAll(dir, 0755)
+func (cli *CLI) generate(dir string, groups int, multiVersion string) error {
+	err := os.MkdirAll(dir, 0o755)
 	if err != nil {
 		return err
 	}
 
-	manifests, err := Generate(rand.New(rand.NewSource(randomSeed)))
+	cfg := &generateConfig{
+		randSource:   rand.New(rand.NewSource(randomSeed)), //nolint:gosec
+		multiVersion: multiVersion,
+	}
+	manifests, err := Generate(cfg)
 	if err != nil {
 		return err
 	}

@@ -6,7 +6,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
-	tmnet "github.com/tendermint/tendermint/libs/net"
+	cmtnet "github.com/tendermint/tendermint/libs/net"
 )
 
 // Config is an gRPC server configuration.
@@ -26,6 +26,7 @@ func StartGRPCServer(ln net.Listener) error {
 // StartGRPCClient dials the gRPC server using protoAddr and returns a new
 // BroadcastAPIClient.
 func StartGRPCClient(protoAddr string) BroadcastAPIClient {
+	//nolint:staticcheck // SA1019 Existing use of deprecated but supported dial option.
 	conn, err := grpc.Dial(protoAddr, grpc.WithInsecure(), grpc.WithContextDialer(dialerFunc))
 	if err != nil {
 		panic(err)
@@ -34,5 +35,5 @@ func StartGRPCClient(protoAddr string) BroadcastAPIClient {
 }
 
 func dialerFunc(ctx context.Context, addr string) (net.Conn, error) {
-	return tmnet.Connect(addr)
+	return cmtnet.Connect(addr)
 }

@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/tendermint/tendermint/crypto/merkle"
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtmath "github.com/tendermint/tendermint/libs/math"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 const (
@@ -411,14 +411,17 @@ func processChanges(origChanges []*Validator) (updates, removals []*Validator, e
 //
 // Inputs:
 // updates - a list of proper validator changes, i.e. they have been verified by processChanges for duplicates
-//   and invalid values.
+//
+//	and invalid values.
+//
 // vals - the original validator set. Note that vals is NOT modified by this function.
 // removedPower - the total voting power that will be removed after the updates are verified and applied.
 //
 // Returns:
 // tvpAfterUpdatesBeforeRemovals -  the new total voting power if these updates would be applied without the removals.
-//   Note that this will be < 2 * MaxTotalVotingPower in case high power validators are removed and
-//   validators are added/ updated with high power values.
+//
+//	Note that this will be < 2 * MaxTotalVotingPower in case high power validators are removed and
+//	validators are added/ updated with high power values.
 //
 // err - non-nil if the maximum allowed total voting power would be exceeded
 func verifyUpdates(
@@ -467,8 +470,9 @@ func numNewValidators(updates []*Validator, vals *ValidatorSet) int {
 // 'updates' parameter must be a list of unique validators to be added or updated.
 //
 // 'updatedTotalVotingPower' is the total voting power of a set where all updates would be applied but
-//   not the removals. It must be < 2*MaxTotalVotingPower and may be close to this limit if close to
-//   MaxTotalVotingPower will be removed. This is still safe from overflow since MaxTotalVotingPower is maxInt64/8.
+//
+//	not the removals. It must be < 2*MaxTotalVotingPower and may be close to this limit if close to
+//	MaxTotalVotingPower will be removed. This is still safe from overflow since MaxTotalVotingPower is maxInt64/8.
 //
 // No changes are made to the validator set 'vals'.
 func computeNewPriorities(updates []*Validator, vals *ValidatorSet, updatedTotalVotingPower int64) {
@@ -638,14 +642,15 @@ func (vals *ValidatorSet) updateWithChangeSet(changes []*Validator, allowDeletes
 
 // UpdateWithChangeSet attempts to update the validator set with 'changes'.
 // It performs the following steps:
-// - validates the changes making sure there are no duplicates and splits them in updates and deletes
-// - verifies that applying the changes will not result in errors
-// - computes the total voting power BEFORE removals to ensure that in the next steps the priorities
-//   across old and newly added validators are fair
-// - computes the priorities of new validators against the final set
-// - applies the updates against the validator set
-// - applies the removals against the validator set
-// - performs scaling and centering of priority values
+//   - validates the changes making sure there are no duplicates and splits them in updates and deletes
+//   - verifies that applying the changes will not result in errors
+//   - computes the total voting power BEFORE removals to ensure that in the next steps the priorities
+//     across old and newly added validators are fair
+//   - computes the priorities of new validators against the final set
+//   - applies the updates against the validator set
+//   - applies the removals against the validator set
+//   - performs scaling and centering of priority values
+//
 // If an error is detected during verification steps, it is returned and the validator set
 // is not changed.
 func (vals *ValidatorSet) UpdateWithChangeSet(changes []*Validator) error {
@@ -767,7 +772,7 @@ func (vals *ValidatorSet) VerifyCommitLight(chainID string, blockID BlockID,
 //
 // This method is primarily used by the light client and does not check all the
 // signatures.
-func (vals *ValidatorSet) VerifyCommitLightTrusting(chainID string, commit *Commit, trustLevel tmmath.Fraction) error {
+func (vals *ValidatorSet) VerifyCommitLightTrusting(chainID string, commit *Commit, trustLevel cmtmath.Fraction) error {
 	// sanity check
 	if trustLevel.Denominator == 0 {
 		return errors.New("trustLevel has zero Denominator")
@@ -924,13 +929,13 @@ func (valz ValidatorsByAddress) Swap(i, j int) {
 }
 
 // ToProto converts ValidatorSet to protobuf
-func (vals *ValidatorSet) ToProto() (*tmproto.ValidatorSet, error) {
+func (vals *ValidatorSet) ToProto() (*cmtproto.ValidatorSet, error) {
 	if vals.IsNilOrEmpty() {
-		return &tmproto.ValidatorSet{}, nil // validator set should never be nil
+		return &cmtproto.ValidatorSet{}, nil // validator set should never be nil
 	}
 
-	vp := new(tmproto.ValidatorSet)
-	valsProto := make([]*tmproto.Validator, len(vals.Validators))
+	vp := new(cmtproto.ValidatorSet)
+	valsProto := make([]*cmtproto.Validator, len(vals.Validators))
 	for i := 0; i < len(vals.Validators); i++ {
 		valp, err := vals.Validators[i].ToProto()
 		if err != nil {
@@ -956,7 +961,7 @@ func (vals *ValidatorSet) ToProto() (*tmproto.ValidatorSet, error) {
 // ValidatorSetFromProto sets a protobuf ValidatorSet to the given pointer.
 // It returns an error if any of the validators from the set or the proposer
 // is invalid
-func ValidatorSetFromProto(vp *tmproto.ValidatorSet) (*ValidatorSet, error) {
+func ValidatorSetFromProto(vp *cmtproto.ValidatorSet) (*ValidatorSet, error) {
 	if vp == nil {
 		return nil, errors.New("nil validator set") // validator set should never be nil, bigger issues are at play if empty
 	}

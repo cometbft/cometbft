@@ -5,25 +5,25 @@ import (
 	"testing"
 
 	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 func TestCanonicalizeBlockID(t *testing.T) {
-	randhash := tmrand.Bytes(tmhash.Size)
-	block1 := tmproto.BlockID{Hash: randhash,
-		PartSetHeader: tmproto.PartSetHeader{Total: 5, Hash: randhash}}
-	block2 := tmproto.BlockID{Hash: randhash,
-		PartSetHeader: tmproto.PartSetHeader{Total: 10, Hash: randhash}}
-	cblock1 := tmproto.CanonicalBlockID{Hash: randhash,
-		PartSetHeader: tmproto.CanonicalPartSetHeader{Total: 5, Hash: randhash}}
-	cblock2 := tmproto.CanonicalBlockID{Hash: randhash,
-		PartSetHeader: tmproto.CanonicalPartSetHeader{Total: 10, Hash: randhash}}
+	randhash := cmtrand.Bytes(tmhash.Size)
+	block1 := cmtproto.BlockID{Hash: randhash,
+		PartSetHeader: cmtproto.PartSetHeader{Total: 5, Hash: randhash}}
+	block2 := cmtproto.BlockID{Hash: randhash,
+		PartSetHeader: cmtproto.PartSetHeader{Total: 10, Hash: randhash}}
+	cblock1 := cmtproto.CanonicalBlockID{Hash: randhash,
+		PartSetHeader: cmtproto.CanonicalPartSetHeader{Total: 5, Hash: randhash}}
+	cblock2 := cmtproto.CanonicalBlockID{Hash: randhash,
+		PartSetHeader: cmtproto.CanonicalPartSetHeader{Total: 10, Hash: randhash}}
 
 	tests := []struct {
 		name string
-		args tmproto.BlockID
-		want *tmproto.CanonicalBlockID
+		args cmtproto.BlockID
+		want *cmtproto.CanonicalBlockID
 	}{
 		{"first", block1, &cblock1},
 		{"second", block2, &cblock2},

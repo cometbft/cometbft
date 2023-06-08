@@ -10,7 +10,7 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/libs/log"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 	"github.com/tendermint/tendermint/light"
 	"github.com/tendermint/tendermint/p2p"
 	ssproto "github.com/tendermint/tendermint/proto/tendermint/statesync"
@@ -60,7 +60,7 @@ type syncer struct {
 	chunkFetchers int32
 	retryTimeout  time.Duration
 
-	mtx    tmsync.RWMutex
+	mtx    cmtsync.RWMutex
 	chunks *chunkQueue
 }
 
@@ -126,7 +126,11 @@ func (s *syncer) AddSnapshot(peer p2p.Peer, snapshot *snapshot) (bool, error) {
 // to discover snapshots, later we may want to do retries and stuff.
 func (s *syncer) AddPeer(peer p2p.Peer) {
 	s.logger.Debug("Requesting snapshots from peer", "peer", peer.ID())
-	peer.Send(SnapshotChannel, mustEncodeMsg(&ssproto.SnapshotsRequest{}))
+	e := p2p.Envelope{
+		ChannelID: SnapshotChannel,
+		Message:   &ssproto.SnapshotsRequest{},
+	}
+	p2p.SendEnvelopeShim(peer, e, s.logger) //nolint: staticcheck
 }
 
 // RemovePeer removes a peer from the pool.
@@ -144,7 +148,7 @@ func (s *syncer) SyncAny(discoveryTime time.Duration, retryHook func()) (sm.Stat
 	}
 
 	if discoveryTime > 0 {
-		s.logger.Info(fmt.Sprintf("Discovering snapshots for %v", discoveryTime))
+		s.logger.Info("sync any", "msg", log.NewLazySprintf("Discovering snapshots for %v", discoveryTime))
 		time.Sleep(discoveryTime)
 	}
 
@@ -166,7 +170,7 @@ func (s *syncer) SyncAny(discoveryTime time.Duration, retryHook func()) (sm.Stat
 				return sm.State{}, nil, errNoSnapshots
 			}
 			retryHook()
-			s.logger.Info(fmt.Sprintf("Discovering snapshots for %v", discoveryTime))
+			s.logger.Info("sync any", "msg", log.NewLazySprintf("Discovering snapshots for %v", discoveryTime))
 			time.Sleep(discoveryTime)
 			continue
 		}
@@ -280,7 +284,7 @@ func (s *syncer) Sync(snapshot *snapshot, chunks *chunkQueue) (sm.State, *types.
 	// Optimistically build new state, so we don't discover any light client failures at the end.
 	state, err := s.stateProvider.State(pctx, snapshot.Height)
 	if err != nil {
-		s.logger.Info("failed to fetch and verify tendermint state", "err", err)
+		s.logger.Info("failed to fetch and verify CometBFT state", "err", err)
 		if err == light.ErrNoWitnesses {
 			return sm.State{}, nil, err
 		}
@@ -301,12 +305,10 @@ func (s *syncer) Sync(snapshot *snapshot, chunks *chunkQueue) (sm.State, *types.
 		return sm.State{}, nil, err
 	}
 
-	// Verify app and update app version
-	appVersion, err := s.verifyApp(snapshot)
-	if err != nil {
+	// Verify app and app version
+	if err := s.verifyApp(snapshot, state.Version.Consensus.App); err != nil {
 		return sm.State{}, nil, err
 	}
-	state.Version.Consensus.App = appVersion
 
 	// Done! 🎉
 	s.logger.Info("Snapshot restored", "height", snapshot.Height, "format", snapshot.Format,
@@ -469,32 +471,46 @@ func (s *syncer) requestChunk(snapshot *snapshot, chunk uint32) {
 	}
 	s.logger.Debug("Requesting snapshot chunk", "height", snapshot.Height,
 		"format", snapshot.Format, "chunk", chunk, "peer", peer.ID())
-	peer.Send(ChunkChannel, mustEncodeMsg(&ssproto.ChunkRequest{
-		Height: snapshot.Height,
-		Format: snapshot.Format,
-		Index:  chunk,
-	}))
+	p2p.SendEnvelopeShim(peer, p2p.Envelope{ //nolint: staticcheck
+		ChannelID: ChunkChannel,
+		Message: &ssproto.ChunkRequest{
+			Height: snapshot.Height,
+			Format: snapshot.Format,
+			Index:  chunk,
+		},
+	}, s.logger)
 }
 
-// verifyApp verifies the sync, checking the app hash and last block height. It returns the
-// app version, which should be returned as part of the initial state.
-func (s *syncer) verifyApp(snapshot *snapshot) (uint64, error) {
+// verifyApp verifies the sync, checking the app hash, last block height and app version
+func (s *syncer) verifyApp(snapshot *snapshot, appVersion uint64) error {
 	resp, err := s.connQuery.InfoSync(proxy.RequestInfo)
 	if err != nil {
-		return 0, fmt.Errorf("failed to query ABCI app for appHash: %w", err)
+		return fmt.Errorf("failed to query ABCI app for appHash: %w", err)
+	}
+
+	// sanity check that the app version in the block matches the application's own record
+	// of its version
+	if resp.AppVersion != appVersion {
+		// An error here most likely means that the app hasn't inplemented state sync
+		// or the Info call correctly
+		return fmt.Errorf("app version mismatch. Expected: %d, got: %d",
+			appVersion, resp.AppVersion)
 	}
 	if !bytes.Equal(snapshot.trustedAppHash, resp.LastBlockAppHash) {
 		s.logger.Error("appHash verification failed",
 			"expected", snapshot.trustedAppHash,
 			"actual", resp.LastBlockAppHash)
-		return 0, errVerifyFailed
+		return errVerifyFailed
 	}
 	if uint64(resp.LastBlockHeight) != snapshot.Height {
-		s.logger.Error("ABCI app reported unexpected last block height",
-			"expected", snapshot.Height, "actual", resp.LastBlockHeight)
-		return 0, errVerifyFailed
+		s.logger.Error(
+			"ABCI app reported unexpected last block height",
+			"expected", snapshot.Height,
+			"actual", resp.LastBlockHeight,
+		)
+		return errVerifyFailed
 	}
 
 	s.logger.Info("Verified ABCI app", "height", snapshot.Height, "appHash", snapshot.trustedAppHash)
-	return resp.AppVersion, nil
+	return nil
 }

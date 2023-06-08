@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/tendermint/tendermint/crypto"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/types"
 )
 
@@ -63,7 +63,7 @@ func (sc *RetrySignerClient) GetPubKey() (crypto.PubKey, error) {
 	return nil, fmt.Errorf("exhausted all attempts to get pubkey: %w", err)
 }
 
-func (sc *RetrySignerClient) SignVote(chainID string, vote *tmproto.Vote) error {
+func (sc *RetrySignerClient) SignVote(chainID string, vote *cmtproto.Vote) error {
 	var err error
 	for i := 0; i < sc.retries || sc.retries == 0; i++ {
 		err = sc.next.SignVote(chainID, vote)
@@ -79,7 +79,7 @@ func (sc *RetrySignerClient) SignVote(chainID string, vote *tmproto.Vote) error 
 	return fmt.Errorf("exhausted all attempts to sign vote: %w", err)
 }
 
-func (sc *RetrySignerClient) SignProposal(chainID string, proposal *tmproto.Proposal) error {
+func (sc *RetrySignerClient) SignProposal(chainID string, proposal *cmtproto.Proposal) error {
 	var err error
 	for i := 0; i < sc.retries || sc.retries == 0; i++ {
 		err = sc.next.SignProposal(chainID, proposal)

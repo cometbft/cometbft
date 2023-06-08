@@ -2,7 +2,6 @@ package autofile
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -10,14 +9,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	tmos "github.com/tendermint/tendermint/libs/os"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	cmtos "github.com/tendermint/tendermint/libs/os"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
 )
 
 func createTestGroupWithHeadSizeLimit(t *testing.T, headSizeLimit int64) *Group {
-	testID := tmrand.Str(12)
+	testID := cmtrand.Str(12)
 	testDir := "_test_" + testID
-	err := tmos.EnsureDir(testDir, 0700)
+	err := cmtos.EnsureDir(testDir, 0o700)
 	require.NoError(t, err, "Error creating dir")
 
 	headPath := testDir + "/myfile"
@@ -50,7 +49,7 @@ func TestCheckHeadSizeLimit(t *testing.T) {
 
 	// Write 1000 bytes 999 times.
 	for i := 0; i < 999; i++ {
-		err := g.WriteLine(tmrand.Str(999))
+		err := g.WriteLine(cmtrand.Str(999))
 		require.NoError(t, err, "Error appending to head")
 	}
 	err := g.FlushAndSync()
@@ -62,7 +61,7 @@ func TestCheckHeadSizeLimit(t *testing.T) {
 	assertGroupInfo(t, g.ReadGroupInfo(), 0, 0, 999000, 999000)
 
 	// Write 1000 more bytes.
-	err = g.WriteLine(tmrand.Str(999))
+	err = g.WriteLine(cmtrand.Str(999))
 	require.NoError(t, err, "Error appending to head")
 	err = g.FlushAndSync()
 	require.NoError(t, err)
@@ -72,7 +71,7 @@ func TestCheckHeadSizeLimit(t *testing.T) {
 	assertGroupInfo(t, g.ReadGroupInfo(), 0, 1, 1000000, 0)
 
 	// Write 1000 more bytes.
-	err = g.WriteLine(tmrand.Str(999))
+	err = g.WriteLine(cmtrand.Str(999))
 	require.NoError(t, err, "Error appending to head")
 	err = g.FlushAndSync()
 	require.NoError(t, err)
@@ -83,7 +82,7 @@ func TestCheckHeadSizeLimit(t *testing.T) {
 
 	// Write 1000 bytes 999 times.
 	for i := 0; i < 999; i++ {
-		err = g.WriteLine(tmrand.Str(999))
+		err = g.WriteLine(cmtrand.Str(999))
 		require.NoError(t, err, "Error appending to head")
 	}
 	err = g.FlushAndSync()
@@ -95,7 +94,7 @@ func TestCheckHeadSizeLimit(t *testing.T) {
 	assertGroupInfo(t, g.ReadGroupInfo(), 0, 2, 2000000, 0)
 
 	// Write 1000 more bytes.
-	_, err = g.Head.Write([]byte(tmrand.Str(999) + "\n"))
+	_, err = g.Head.Write([]byte(cmtrand.Str(999) + "\n"))
 	require.NoError(t, err, "Error appending to head")
 	err = g.FlushAndSync()
 	require.NoError(t, err)
@@ -122,7 +121,7 @@ func TestRotateFile(t *testing.T) {
 		}
 	}()
 
-	dir, err := ioutil.TempDir("", "rotate_test")
+	dir, err := os.MkdirTemp("", "rotate_test")
 	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 	err = os.Chdir(dir)
@@ -151,21 +150,21 @@ func TestRotateFile(t *testing.T) {
 	require.NoError(t, err)
 
 	// Read g.Head.Path+"000"
-	body1, err := ioutil.ReadFile(g.Head.Path + ".000")
+	body1, err := os.ReadFile(g.Head.Path + ".000")
 	assert.NoError(t, err, "Failed to read first rolled file")
 	if string(body1) != "Line 1\nLine 2\nLine 3\n" {
 		t.Errorf("got unexpected contents: [%v]", string(body1))
 	}
 
 	// Read g.Head.Path
-	body2, err := ioutil.ReadFile(g.Head.Path)
+	body2, err := os.ReadFile(g.Head.Path)
 	assert.NoError(t, err, "Failed to read first rolled file")
 	if string(body2) != "Line 4\nLine 5\nLine 6\n" {
 		t.Errorf("got unexpected contents: [%v]", string(body2))
 	}
 
 	// Make sure there are no files in the current, temporary directory
-	files, err := ioutil.ReadDir(".")
+	files, err := os.ReadDir(".")
 	require.NoError(t, err)
 	assert.Empty(t, files)
 

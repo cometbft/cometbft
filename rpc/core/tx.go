@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sort"
 
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	tmquery "github.com/tendermint/tendermint/libs/pubsub/query"
+	cmtmath "github.com/tendermint/tendermint/libs/math"
+	cmtquery "github.com/tendermint/tendermint/libs/pubsub/query"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	rpctypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
 	"github.com/tendermint/tendermint/state/txindex/null"
@@ -16,7 +16,7 @@ import (
 // Tx allows you to query the transaction results. `nil` could mean the
 // transaction is in the mempool, invalidated, or was not sent in the first
 // place.
-// More: https://docs.tendermint.com/master/rpc/#/Info/tx
+// More: https://docs.cometbft.com/v0.34/rpc/#/Info/tx
 func Tx(ctx *rpctypes.Context, hash []byte, prove bool) (*ctypes.ResultTx, error) {
 	// if index is disabled, return error
 	if _, ok := env.TxIndexer.(*null.TxIndex); ok {
@@ -53,7 +53,7 @@ func Tx(ctx *rpctypes.Context, hash []byte, prove bool) (*ctypes.ResultTx, error
 
 // TxSearch allows you to query for multiple transactions results. It returns a
 // list of transactions (maximum ?per_page entries) and the total count.
-// More: https://docs.tendermint.com/master/rpc/#/Info/tx_search
+// More: https://docs.cometbft.com/v0.34/rpc/#/Info/tx_search
 func TxSearch(
 	ctx *rpctypes.Context,
 	query string,
@@ -65,9 +65,11 @@ func TxSearch(
 	// if index is disabled, return error
 	if _, ok := env.TxIndexer.(*null.TxIndex); ok {
 		return nil, errors.New("transaction indexing is disabled")
+	} else if len(query) > maxQueryLength {
+		return nil, errors.New("maximum query length exceeded")
 	}
 
-	q, err := tmquery.New(query)
+	q, err := cmtquery.New(query)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +109,7 @@ func TxSearch(
 	}
 
 	skipCount := validateSkipCount(page, perPage)
-	pageSize := tmmath.MinInt(perPage, totalCount-skipCount)
+	pageSize := cmtmath.MinInt(perPage, totalCount-skipCount)
 
 	apiResults := make([]*ctypes.ResultTx, 0, pageSize)
 	for i := skipCount; i < skipCount+pageSize; i++ {
@@ -130,4 +132,26 @@ func TxSearch(
 	}
 
 	return &ctypes.ResultTxSearch{Txs: apiResults, TotalCount: totalCount}, nil
+}
+
+// TxSearchMatchEvents allows you to query for multiple transactions results and match the
+// query attributes to a common event. It returns a
+// list of transactions (maximum ?per_page entries) and the total count.
+// More: https://docs.cometbft.com/v0.34/rpc/#/Info/tx_search
+func TxSearchMatchEvents(
+	ctx *rpctypes.Context,
+	query string,
+	prove bool,
+	pagePtr, perPagePtr *int,
+	orderBy string,
+	matchEvents bool,
+) (*ctypes.ResultTxSearch, error) {
+
+	if matchEvents {
+		query = "match.events = 1 AND " + query
+	} else {
+		query = "match.events = 0 AND " + query
+	}
+	return TxSearch(ctx, query, prove, pagePtr, perPagePtr, orderBy)
+
 }

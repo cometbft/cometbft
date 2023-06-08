@@ -9,12 +9,18 @@ parent:
 
 ## Quick Start
 
-Get Tendermint up-and-running quickly with the [quick-start guide](./quick-start.md)!
+Get CometBFT up and running quickly with the
+[quick-start guide](./quick-start.md)!
 
 ## Install
 
 Detailed [installation instructions](./install.md).
 
-## What is Tendermint
+## Upgrading from Tendermint Core
 
-Dive into [what Tendermint is and why](./what-is-tendermint.md)!
+See our [upgrading guidelines](./upgrading-from-tm.md) if you are interested in
+switching to CometBFT from Tendermint Core.
+
+## What is CometBFT
+
+Dive into [what CometBFT is and why](./what-is-cometbft.md)!

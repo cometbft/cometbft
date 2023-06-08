@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 var (
@@ -19,7 +19,7 @@ var (
 
 func TestConsensusParamsValidation(t *testing.T) {
 	testCases := []struct {
-		params tmproto.ConsensusParams
+		params cmtproto.ConsensusParams
 		valid  bool
 	}{
 		// test block params
@@ -57,26 +57,26 @@ func makeParams(
 	evidenceAge int64,
 	maxEvidenceBytes int64,
 	pubkeyTypes []string,
-) tmproto.ConsensusParams {
-	return tmproto.ConsensusParams{
-		Block: tmproto.BlockParams{
+) cmtproto.ConsensusParams {
+	return cmtproto.ConsensusParams{
+		Block: cmtproto.BlockParams{
 			MaxBytes:   blockBytes,
 			MaxGas:     blockGas,
 			TimeIotaMs: blockTimeIotaMs,
 		},
-		Evidence: tmproto.EvidenceParams{
+		Evidence: cmtproto.EvidenceParams{
 			MaxAgeNumBlocks: evidenceAge,
 			MaxAgeDuration:  time.Duration(evidenceAge),
 			MaxBytes:        maxEvidenceBytes,
 		},
-		Validator: tmproto.ValidatorParams{
+		Validator: cmtproto.ValidatorParams{
 			PubKeyTypes: pubkeyTypes,
 		},
 	}
 }
 
 func TestConsensusParamsHash(t *testing.T) {
-	params := []tmproto.ConsensusParams{
+	params := []cmtproto.ConsensusParams{
 		makeParams(4, 2, 10, 3, 1, valEd25519),
 		makeParams(1, 4, 10, 3, 1, valEd25519),
 		makeParams(1, 2, 10, 4, 1, valEd25519),
@@ -104,9 +104,9 @@ func TestConsensusParamsHash(t *testing.T) {
 
 func TestConsensusParamsUpdate(t *testing.T) {
 	testCases := []struct {
-		params        tmproto.ConsensusParams
+		params        cmtproto.ConsensusParams
 		updates       *abci.ConsensusParams
-		updatedParams tmproto.ConsensusParams
+		updatedParams cmtproto.ConsensusParams
 	}{
 		// empty updates
 		{
@@ -122,12 +122,12 @@ func TestConsensusParamsUpdate(t *testing.T) {
 					MaxBytes: 100,
 					MaxGas:   200,
 				},
-				Evidence: &tmproto.EvidenceParams{
+				Evidence: &cmtproto.EvidenceParams{
 					MaxAgeNumBlocks: 300,
 					MaxAgeDuration:  time.Duration(300),
 					MaxBytes:        50,
 				},
-				Validator: &tmproto.ValidatorParams{
+				Validator: &cmtproto.ValidatorParams{
 					PubKeyTypes: valSecp256k1,
 				},
 			},
@@ -145,7 +145,7 @@ func TestConsensusParamsUpdate_AppVersion(t *testing.T) {
 	assert.EqualValues(t, 0, params.Version.AppVersion)
 
 	updated := UpdateConsensusParams(params,
-		&abci.ConsensusParams{Version: &tmproto.VersionParams{AppVersion: 1}})
+		&abci.ConsensusParams{Version: &cmtproto.VersionParams{AppVersion: 1}})
 
 	assert.EqualValues(t, 1, updated.Version.AppVersion)
 }

@@ -2,7 +2,7 @@ package kvstore
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"sort"
 	"testing"
 
@@ -15,7 +15,7 @@ import (
 	"github.com/tendermint/tendermint/abci/example/code"
 	abciserver "github.com/tendermint/tendermint/abci/server"
 	"github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 const (
@@ -71,7 +71,7 @@ func TestKVStoreKV(t *testing.T) {
 }
 
 func TestPersistentKVStoreKV(t *testing.T) {
-	dir, err := ioutil.TempDir("/tmp", "abci-kvstore-test") // TODO
+	dir, err := os.MkdirTemp("/tmp", "abci-kvstore-test") // TODO
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +87,7 @@ func TestPersistentKVStoreKV(t *testing.T) {
 }
 
 func TestPersistentKVStoreInfo(t *testing.T) {
-	dir, err := ioutil.TempDir("/tmp", "abci-kvstore-test") // TODO
+	dir, err := os.MkdirTemp("/tmp", "abci-kvstore-test") // TODO
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +103,7 @@ func TestPersistentKVStoreInfo(t *testing.T) {
 	// make and apply block
 	height = int64(1)
 	hash := []byte("foo")
-	header := tmproto.Header{
+	header := cmtproto.Header{
 		Height: height,
 	}
 	kvstore.BeginBlock(types.RequestBeginBlock{Hash: hash, Header: header})
@@ -114,12 +114,11 @@ func TestPersistentKVStoreInfo(t *testing.T) {
 	if resInfo.LastBlockHeight != height {
 		t.Fatalf("expected height of %d, got %d", height, resInfo.LastBlockHeight)
 	}
-
 }
 
 // add a validator, remove a validator, update a validator
 func TestValUpdates(t *testing.T) {
-	dir, err := ioutil.TempDir("/tmp", "abci-kvstore-test") // TODO
+	dir, err := os.MkdirTemp("/tmp", "abci-kvstore-test") // TODO
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,7 +161,7 @@ func TestValUpdates(t *testing.T) {
 
 	makeApplyBlock(t, kvstore, 2, diff, tx1, tx2, tx3)
 
-	vals1 = append(vals[:nInit-2], vals[nInit+1]) // nolint: gocritic
+	vals1 = append(vals[:nInit-2], vals[nInit+1]) //nolint: gocritic
 	vals2 = kvstore.Validators()
 	valsEqual(t, vals1, vals2)
 
@@ -181,7 +180,6 @@ func TestValUpdates(t *testing.T) {
 	vals1 = append([]types.ValidatorUpdate{v1}, vals1[1:]...)
 	vals2 = kvstore.Validators()
 	valsEqual(t, vals1, vals2)
-
 }
 
 func makeApplyBlock(
@@ -189,11 +187,12 @@ func makeApplyBlock(
 	kvstore types.Application,
 	heightInt int,
 	diff []types.ValidatorUpdate,
-	txs ...[]byte) {
+	txs ...[]byte,
+) {
 	// make and apply block
 	height := int64(heightInt)
 	hash := []byte("foo")
-	header := tmproto.Header{
+	header := cmtproto.Header{
 		Height: height,
 	}
 
@@ -207,7 +206,6 @@ func makeApplyBlock(
 	kvstore.Commit()
 
 	valsEqual(t, diff, resEndBlock.ValidatorUpdates)
-
 }
 
 // order doesn't matter
@@ -293,7 +291,7 @@ func TestClientServer(t *testing.T) {
 
 	// set up grpc app
 	kvstore = NewApplication()
-	gclient, gserver, err := makeGRPCClientServer(kvstore, "kvstore-grpc")
+	gclient, gserver, err := makeGRPCClientServer(kvstore, "/tmp/kvstore-grpc")
 	require.NoError(t, err)
 
 	t.Cleanup(func() {

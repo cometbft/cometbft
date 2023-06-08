@@ -1,23 +1,19 @@
-// Copyright 2017 Tendermint. All rights reserved.
-// Use of this source code is governed by Apache 2 LICENSE that can be found in the LICENSE file.
-
 package trust
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
+	dbm "github.com/cometbft/cometbft-db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	dbm "github.com/tendermint/tm-db"
 
 	"github.com/tendermint/tendermint/libs/log"
 )
 
 func TestTrustMetricStoreSaveLoad(t *testing.T) {
-	dir, err := ioutil.TempDir("", "trust_test")
+	dir, err := os.MkdirTemp("", "trust_test")
 	require.NoError(t, err)
 	defer os.Remove(dir)
 

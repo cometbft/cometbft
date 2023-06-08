@@ -3,7 +3,7 @@ package pubsub
 import (
 	"errors"
 
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 )
 
 var (
@@ -12,7 +12,7 @@ var (
 
 	// ErrOutOfCapacity is returned by Err when a client is not pulling messages
 	// fast enough. Note the client's subscription will be terminated.
-	ErrOutOfCapacity = errors.New("client is not pulling messages fast enough")
+	ErrOutOfCapacity = errors.New("internal subscription event buffer is out of capacity")
 )
 
 // A Subscription represents a client subscription for a particular query and
@@ -23,16 +23,16 @@ var (
 type Subscription struct {
 	out chan Message
 
-	cancelled chan struct{}
-	mtx       tmsync.RWMutex
-	err       error
+	canceled chan struct{}
+	mtx      cmtsync.RWMutex
+	err      error
 }
 
 // NewSubscription returns a new subscription with the given outCapacity.
 func NewSubscription(outCapacity int) *Subscription {
 	return &Subscription{
-		out:       make(chan Message, outCapacity),
-		cancelled: make(chan struct{}),
+		out:      make(chan Message, outCapacity),
+		canceled: make(chan struct{}),
 	}
 }
 
@@ -46,14 +46,15 @@ func (s *Subscription) Out() <-chan Message {
 // Cancelled returns a channel that's closed when the subscription is
 // terminated and supposed to be used in a select statement.
 func (s *Subscription) Cancelled() <-chan struct{} {
-	return s.cancelled
+	return s.canceled
 }
 
-// Err returns nil if the channel returned by Cancelled is not yet closed.
+// Err returns nil if the channel returned is not yet closed.
 // If the channel is closed, Err returns a non-nil error explaining why:
 //   - ErrUnsubscribed if the subscriber choose to unsubscribe,
 //   - ErrOutOfCapacity if the subscriber is not pulling messages fast enough
-//   and the channel returned by Out became full,
+//     and the channel returned by Out became full,
+//
 // After Err returns a non-nil error, successive calls to Err return the same
 // error.
 func (s *Subscription) Err() error {
@@ -66,7 +67,7 @@ func (s *Subscription) cancel(err error) {
 	s.mtx.Lock()
 	s.err = err
 	s.mtx.Unlock()
-	close(s.cancelled)
+	close(s.canceled)
 }
 
 // Message glues data and events together.

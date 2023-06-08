@@ -13,7 +13,7 @@ Accepted | Rejected | Deprecated | Superseded by
 This ADR proposes an architecture of an ***RPC Companion*** solution implemented based on the proposed [ADR-101 Data Companion Pull API](https://github.com/cometbft/cometbft/blob/thane/adr-084-data-companion-pull-api/docs/architecture/adr-101-data-companion-pull-api.md). This solution can run as a sidecar concurrently with the full node, and it is optional.
 
 This ADR provides a reference implementation of a system that can be used to offload queryable data from a CometBFT
-full node to a database and offering a service that exposes the same JSONRPC methods on a endpoint as the regular JSONRPC methods of an CometBFT node endpoint,
+full node to a database and offering a service that exposes the same JSONRPC methods on a endpoint as the regular JSONRPC methods of a CometBFT node endpoint,
 which makes it easier for integrators of RPC clients such as client libraries and applications to switch to this
 ***RPC Companion*** with as minimum effort as possible.
 

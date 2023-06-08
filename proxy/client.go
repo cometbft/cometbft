@@ -7,9 +7,11 @@ import (
 	"github.com/tendermint/tendermint/abci/example/counter"
 	"github.com/tendermint/tendermint/abci/example/kvstore"
 	"github.com/tendermint/tendermint/abci/types"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 	e2e "github.com/tendermint/tendermint/test/e2e/app"
 )
+
+//go:generate ../scripts/mockery_generate.sh ClientCreator
 
 // ClientCreator creates new ABCI clients.
 type ClientCreator interface {
@@ -21,7 +23,7 @@ type ClientCreator interface {
 // local proxy uses a mutex on an in-proc app
 
 type localClientCreator struct {
-	mtx *tmsync.Mutex
+	mtx *cmtsync.Mutex
 	app types.Application
 }
 
@@ -29,7 +31,7 @@ type localClientCreator struct {
 // which will be running locally.
 func NewLocalClientCreator(app types.Application) ClientCreator {
 	return &localClientCreator{
-		mtx: new(tmsync.Mutex),
+		mtx: new(cmtsync.Mutex),
 		app: app,
 	}
 }
@@ -42,12 +44,12 @@ func (l *localClientCreator) NewABCIClient() (abcicli.Client, error) {
 // committing proxy ensures only actual DB writes block queries
 
 type committingClientCreator struct {
-	mtx *tmsync.RWInitMutex
+	mtx *cmtsync.RWInitMutex
 	app types.Application
 }
 
 func NewCommittingClientCreator(app types.Application) ClientCreator {
-	mtx := tmsync.NewRWInitMutex()
+	mtx := cmtsync.NewRWInitMutex()
 	return &committingClientCreator{
 		mtx: mtx,
 		app: app,

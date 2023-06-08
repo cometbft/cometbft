@@ -3,7 +3,6 @@ package pex
 import (
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"net"
 	"os"
@@ -14,8 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/tendermint/tendermint/libs/log"
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	cmtmath "github.com/tendermint/tendermint/libs/math"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
 	"github.com/tendermint/tendermint/p2p"
 )
 
@@ -194,13 +193,13 @@ func randNetAddressPairs(t *testing.T, n int) []netAddressPair {
 func randIPv4Address(t *testing.T) *p2p.NetAddress {
 	for {
 		ip := fmt.Sprintf("%v.%v.%v.%v",
-			tmrand.Intn(254)+1,
-			tmrand.Intn(255),
-			tmrand.Intn(255),
-			tmrand.Intn(255),
+			cmtrand.Intn(254)+1,
+			cmtrand.Intn(255),
+			cmtrand.Intn(255),
+			cmtrand.Intn(255),
 		)
-		port := tmrand.Intn(65535-1) + 1
-		id := p2p.ID(hex.EncodeToString(tmrand.Bytes(p2p.IDByteLength)))
+		port := cmtrand.Intn(65535-1) + 1
+		id := p2p.ID(hex.EncodeToString(cmtrand.Bytes(p2p.IDByteLength)))
 		idAddr := p2p.IDAddressString(id, fmt.Sprintf("%v:%v", ip, port))
 		addr, err := p2p.NewNetAddressString(idAddr)
 		assert.Nil(t, err, "error generating rand network address")
@@ -526,8 +525,8 @@ func testAddrBookAddressSelection(t *testing.T, bookSize int) {
 		// There is at least one partition and at most three.
 		var (
 			k      = percentageOfNum(biasToSelectNewPeers, nAddrs)
-			expNew = tmmath.MinInt(nNew, tmmath.MaxInt(k, nAddrs-nBookOld))
-			expOld = tmmath.MinInt(nOld, nAddrs-expNew)
+			expNew = cmtmath.MinInt(nNew, cmtmath.MaxInt(k, nAddrs-nBookOld))
+			expOld = cmtmath.MinInt(nOld, nAddrs-expNew)
 		)
 
 		// Verify that the number of old and new addresses are as expected
@@ -581,7 +580,7 @@ func TestMultipleAddrBookAddressSelection(t *testing.T) {
 	ranges := [...][]int{{33, 100}, {100, 175}}
 	bookSizes := make([]int, 0, len(ranges))
 	for _, r := range ranges {
-		bookSizes = append(bookSizes, tmrand.Intn(r[1]-r[0])+r[0])
+		bookSizes = append(bookSizes, cmtrand.Intn(r[1]-r[0])+r[0])
 	}
 	t.Logf("Testing address selection for the following book sizes %v\n", bookSizes)
 	for _, bookSize := range bookSizes {
@@ -718,7 +717,7 @@ func assertMOldAndNNewAddrsInSelection(t *testing.T, m, n int, addrs []*p2p.NetA
 }
 
 func createTempFileName(prefix string) string {
-	f, err := ioutil.TempFile("", prefix)
+	f, err := os.CreateTemp("", prefix)
 	if err != nil {
 		panic(err)
 	}

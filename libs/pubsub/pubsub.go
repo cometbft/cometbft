@@ -12,26 +12,25 @@
 //
 // Example:
 //
-//     q, err := query.New("account.name='John'")
-//     if err != nil {
-//         return err
-//     }
-//     ctx, cancel := context.WithTimeout(context.Background(), 1 * time.Second)
-//     defer cancel()
-//     subscription, err := pubsub.Subscribe(ctx, "johns-transactions", q)
-//     if err != nil {
-//         return err
-//     }
+//	q, err := query.New("account.name='John'")
+//	if err != nil {
+//	    return err
+//	}
+//	ctx, cancel := context.WithTimeout(context.Background(), 1 * time.Second)
+//	defer cancel()
+//	subscription, err := pubsub.Subscribe(ctx, "johns-transactions", q)
+//	if err != nil {
+//	    return err
+//	}
 //
-//     for {
-//         select {
-//         case msg <- subscription.Out():
-//             // handle msg.Data() and msg.Events()
-//         case <-subscription.Cancelled():
-//             return subscription.Err()
-//         }
-//     }
-//
+//	for {
+//	    select {
+//	    case msg <- subscription.Out():
+//	        // handle msg.Data() and msg.Events()
+//	    case <-subscription.Cancelled():
+//	        return subscription.Err()
+//	    }
+//	}
 package pubsub
 
 import (
@@ -40,7 +39,7 @@ import (
 	"fmt"
 
 	"github.com/tendermint/tendermint/libs/service"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 )
 
 type operation int
@@ -96,7 +95,7 @@ type Server struct {
 
 	// check if we have subscription before
 	// subscribing or unsubscribing
-	mtx           tmsync.RWMutex
+	mtx           cmtsync.RWMutex
 	subscriptions map[string]map[string]struct{} // subscriber -> query (string) -> empty struct
 }
 
@@ -194,7 +193,7 @@ func (s *Server) subscribe(ctx context.Context, clientID string, query Query, ou
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	case <-s.Quit():
-		return nil, nil
+		return nil, errors.New("service is shutting down")
 	}
 }
 

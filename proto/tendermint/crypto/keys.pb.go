@@ -24,9 +24,10 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// PublicKey defines the keys available for use with Tendermint Validators
+// PublicKey defines the keys available for use with Validators
 type PublicKey struct {
 	// Types that are valid to be assigned to Sum:
+	//
 	//	*PublicKey_Ed25519
 	//	*PublicKey_Secp256K1
 	Sum isPublicKey_Sum `protobuf_oneof:"sum"`

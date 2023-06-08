@@ -4,7 +4,7 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/clist"
 	mempl "github.com/tendermint/tendermint/mempool"
-	tmstate "github.com/tendermint/tendermint/proto/tendermint/state"
+	cmtstate "github.com/tendermint/tendermint/proto/tendermint/state"
 	"github.com/tendermint/tendermint/proxy"
 	"github.com/tendermint/tendermint/types"
 )
@@ -15,12 +15,14 @@ type emptyMempool struct{}
 
 var _ mempl.Mempool = emptyMempool{}
 
-func (emptyMempool) Lock()     {}
-func (emptyMempool) Unlock()   {}
-func (emptyMempool) Size() int { return 0 }
+func (emptyMempool) Lock()            {}
+func (emptyMempool) Unlock()          {}
+func (emptyMempool) Size() int        { return 0 }
+func (emptyMempool) SizeBytes() int64 { return 0 }
 func (emptyMempool) CheckTx(_ types.Tx, _ func(*abci.Response), _ mempl.TxInfo) error {
 	return nil
 }
+func (emptyMempool) RemoveTxByKey(txKey types.TxKey) error   { return nil }
 func (emptyMempool) ReapMaxBytesMaxGas(_, _ int64) types.Txs { return types.Txs{} }
 func (emptyMempool) ReapMaxTxs(n int) types.Txs              { return types.Txs{} }
 func (emptyMempool) Update(
@@ -50,7 +52,7 @@ func (emptyMempool) CloseWAL()      {}
 // Useful because we don't want to call Commit() twice for the same block on
 // the real app.
 
-func newMockProxyApp(appHash []byte, abciResponses *tmstate.ABCIResponses) proxy.AppConnConsensus {
+func newMockProxyApp(appHash []byte, abciResponses *cmtstate.ABCIResponses) proxy.AppConnConsensus {
 	clientCreator := proxy.NewLocalClientCreator(&mockProxyApp{
 		appHash:       appHash,
 		abciResponses: abciResponses,
@@ -68,7 +70,7 @@ type mockProxyApp struct {
 
 	appHash       []byte
 	txCount       int
-	abciResponses *tmstate.ABCIResponses
+	abciResponses *cmtstate.ABCIResponses
 }
 
 func (mock *mockProxyApp) DeliverTx(req abci.RequestDeliverTx) abci.ResponseDeliverTx {

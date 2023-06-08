@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sort"
 
-	tmmath "github.com/tendermint/tendermint/libs/math"
-	tmquery "github.com/tendermint/tendermint/libs/pubsub/query"
+	cmtmath "github.com/tendermint/tendermint/libs/math"
+	cmtquery "github.com/tendermint/tendermint/libs/pubsub/query"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	rpctypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
 	blockidxnull "github.com/tendermint/tendermint/state/indexer/block/null"
@@ -14,8 +14,15 @@ import (
 )
 
 // BlockchainInfo gets block headers for minHeight <= height <= maxHeight.
-// Block headers are returned in descending order (highest first).
-// More: https://docs.tendermint.com/master/rpc/#/Info/blockchain
+//
+// If maxHeight does not yet exist, blocks up to the current height will be
+// returned. If minHeight does not exist (due to pruning), earliest existing
+// height will be used.
+//
+// At most 20 items will be returned. Block headers are returned in descending
+// order (highest first).
+//
+// More: https://docs.cometbft.com/v0.34/rpc/#/Info/blockchain
 func BlockchainInfo(ctx *rpctypes.Context, minHeight, maxHeight int64) (*ctypes.ResultBlockchainInfo, error) {
 	// maximum 20 block metas
 	const limit int64 = 20
@@ -60,14 +67,14 @@ func filterMinMax(base, height, min, max, limit int64) (int64, int64, error) {
 	}
 
 	// limit max to the height
-	max = tmmath.MinInt64(height, max)
+	max = cmtmath.MinInt64(height, max)
 
 	// limit min to the base
-	min = tmmath.MaxInt64(base, min)
+	min = cmtmath.MaxInt64(base, min)
 
 	// limit min to within `limit` of max
 	// so the total number of blocks returned will be `limit`
-	min = tmmath.MaxInt64(min, max-limit+1)
+	min = cmtmath.MaxInt64(min, max-limit+1)
 
 	if min > max {
 		return min, max, fmt.Errorf("min height %d can't be greater than max height %d", min, max)
@@ -77,7 +84,7 @@ func filterMinMax(base, height, min, max, limit int64) (int64, int64, error) {
 
 // Block gets block at a given height.
 // If no height is provided, it will fetch the latest block.
-// More: https://docs.tendermint.com/master/rpc/#/Info/block
+// More: https://docs.cometbft.com/v0.34/rpc/#/Info/block
 func Block(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlock, error) {
 	height, err := getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
@@ -93,7 +100,7 @@ func Block(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlock, error)
 }
 
 // BlockByHash gets block by hash.
-// More: https://docs.tendermint.com/master/rpc/#/Info/block_by_hash
+// More: https://docs.cometbft.com/v0.34/rpc/#/Info/block_by_hash
 func BlockByHash(ctx *rpctypes.Context, hash []byte) (*ctypes.ResultBlock, error) {
 	block := env.BlockStore.LoadBlockByHash(hash)
 	if block == nil {
@@ -106,7 +113,7 @@ func BlockByHash(ctx *rpctypes.Context, hash []byte) (*ctypes.ResultBlock, error
 
 // Commit gets block commit at a given height.
 // If no height is provided, it will fetch the commit for the latest block.
-// More: https://docs.tendermint.com/master/rpc/#/Info/commit
+// More: https://docs.cometbft.com/v0.34/rpc/#/Info/commit
 func Commit(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultCommit, error) {
 	height, err := getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
@@ -133,11 +140,12 @@ func Commit(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultCommit, erro
 
 // BlockResults gets ABCIResults at a given height.
 // If no height is provided, it will fetch results for the latest block.
+// When DiscardABCIResponses is enabled, an error will be returned.
 //
 // Results are for the height of the block containing the txs.
 // Thus response.results.deliver_tx[5] is the results of executing
 // getBlock(h).Txs[5]
-// More: https://docs.tendermint.com/master/rpc/#/Info/block_results
+// More: https://docs.cometbft.com/v0.34/rpc/#/Info/block_results
 func BlockResults(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlockResults, error) {
 	height, err := getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
@@ -159,6 +167,21 @@ func BlockResults(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlockR
 	}, nil
 }
 
+func BlockSearchMatchEvents(
+	ctx *rpctypes.Context,
+	query string,
+	pagePtr, perPagePtr *int,
+	orderBy string,
+	matchEvents bool,
+) (*ctypes.ResultBlockSearch, error) {
+	if matchEvents {
+		query = "match.events = 1 AND " + query
+	} else {
+		query = "match.events = 0 AND " + query
+	}
+	return BlockSearch(ctx, query, pagePtr, perPagePtr, orderBy)
+}
+
 // BlockSearch searches for a paginated set of blocks matching BeginBlock and
 // EndBlock event search criteria.
 func BlockSearch(
@@ -172,8 +195,7 @@ func BlockSearch(
 	if _, ok := env.BlockIndexer.(*blockidxnull.BlockerIndexer); ok {
 		return nil, errors.New("block indexing is disabled")
 	}
-
-	q, err := tmquery.New(query)
+	q, err := cmtquery.New(query)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +227,7 @@ func BlockSearch(
 	}
 
 	skipCount := validateSkipCount(page, perPage)
-	pageSize := tmmath.MinInt(perPage, totalCount-skipCount)
+	pageSize := cmtmath.MinInt(perPage, totalCount-skipCount)
 
 	apiResults := make([]*ctypes.ResultBlock, 0, pageSize)
 	for i := skipCount; i < skipCount+pageSize; i++ {

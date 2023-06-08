@@ -1,11 +1,11 @@
 package state
 
 import (
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
 	abci "github.com/tendermint/tendermint/abci/types"
-	tmstate "github.com/tendermint/tendermint/proto/tendermint/state"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtstate "github.com/tendermint/tendermint/proto/tendermint/state"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/types"
 )
 
@@ -28,7 +28,7 @@ func UpdateState(
 	state State,
 	blockID types.BlockID,
 	header *types.Header,
-	abciResponses *tmstate.ABCIResponses,
+	abciResponses *cmtstate.ABCIResponses,
 	validatorUpdates []*types.Validator,
 ) (State, error) {
 	return updateState(state, blockID, header, abciResponses, validatorUpdates)
@@ -36,13 +36,13 @@ func UpdateState(
 
 // ValidateValidatorUpdates is an alias for validateValidatorUpdates exported
 // from execution.go, exclusively and explicitly for testing.
-func ValidateValidatorUpdates(abciUpdates []abci.ValidatorUpdate, params tmproto.ValidatorParams) error {
+func ValidateValidatorUpdates(abciUpdates []abci.ValidatorUpdate, params cmtproto.ValidatorParams) error {
 	return validateValidatorUpdates(abciUpdates, params)
 }
 
 // SaveValidatorsInfo is an alias for the private saveValidatorsInfo method in
 // store.go, exported exclusively and explicitly for testing.
 func SaveValidatorsInfo(db dbm.DB, height, lastHeightChanged int64, valSet *types.ValidatorSet) error {
-	stateStore := dbStore{db}
+	stateStore := dbStore{db, StoreOptions{DiscardABCIResponses: false}}
 	return stateStore.saveValidatorsInfo(height, lastHeightChanged, valSet)
 }

@@ -10,12 +10,12 @@ import (
 	"math"
 	"time"
 
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 )
 
 // Monitor monitors and limits the transfer rate of a data stream.
 type Monitor struct {
-	mu      tmsync.Mutex  // Mutex guarding access to all internal fields
+	mu      cmtsync.Mutex // Mutex guarding access to all internal fields
 	active  bool          // Flag indicating an active transfer
 	start   time.Duration // Transfer start time (clock() value)
 	bytes   int64         // Total number of bytes transferred
@@ -39,10 +39,10 @@ type Monitor struct {
 // weight of each sample in the exponential moving average (EMA) calculation.
 // The exact formulas are:
 //
-// 	sampleTime = currentTime - prevSampleTime
-// 	sampleRate = byteCount / sampleTime
-// 	weight     = 1 - exp(-sampleTime/windowSize)
-// 	newRate    = weight*sampleRate + (1-weight)*oldRate
+//	sampleTime = currentTime - prevSampleTime
+//	sampleRate = byteCount / sampleTime
+//	weight     = 1 - exp(-sampleTime/windowSize)
+//	newRate    = weight*sampleRate + (1-weight)*oldRate
 //
 // The default values for sampleRate and windowSize (if <= 0) are 100ms and 1s,
 // respectively.

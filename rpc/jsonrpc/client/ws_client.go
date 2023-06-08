@@ -12,9 +12,10 @@ import (
 	"github.com/gorilla/websocket"
 	metrics "github.com/rcrowley/go-metrics"
 
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	"github.com/tendermint/tendermint/libs/log"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
 	"github.com/tendermint/tendermint/libs/service"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 	types "github.com/tendermint/tendermint/rpc/jsonrpc/types"
 )
 
@@ -29,7 +30,7 @@ const (
 // the remote server.
 //
 // WSClient is safe for concurrent use by multiple goroutines.
-type WSClient struct { // nolint: maligned
+type WSClient struct { //nolint: maligned
 	conn *websocket.Conn
 
 	Address  string // IP:PORT or /path/to/socket
@@ -57,7 +58,7 @@ type WSClient struct { // nolint: maligned
 
 	wg sync.WaitGroup
 
-	mtx            tmsync.RWMutex
+	mtx            cmtsync.RWMutex
 	sentLastPingAt time.Time
 	reconnecting   bool
 	nextReqID      int
@@ -88,8 +89,10 @@ func NewWS(remoteAddr, endpoint string, options ...func(*WSClient)) (*WSClient, 
 	if err != nil {
 		return nil, err
 	}
-	// default to ws protocol, unless wss is explicitly specified
-	if parsedURL.Scheme != protoWSS {
+	// default to ws protocol, unless wss or https is specified
+	if parsedURL.Scheme == protoHTTPS {
+		parsedURL.Scheme = protoWSS
+	} else if parsedURL.Scheme != protoWSS {
 		parsedURL.Scheme = protoWS
 	}
 
@@ -264,7 +267,7 @@ func (c *WSClient) dial() error {
 		Proxy:   http.ProxyFromEnvironment,
 	}
 	rHeader := http.Header{}
-	conn, _, err := dialer.Dial(c.protocol+"://"+c.Address+c.Endpoint, rHeader) // nolint:bodyclose
+	conn, _, err := dialer.Dial(c.protocol+"://"+c.Address+c.Endpoint, rHeader) //nolint:bodyclose
 	if err != nil {
 		return err
 	}
@@ -287,7 +290,7 @@ func (c *WSClient) reconnect() error {
 	}()
 
 	for {
-		jitter := time.Duration(tmrand.Float64() * float64(time.Second)) // 1s == (1e9 ns)
+		jitter := time.Duration(cmtrand.Float64() * float64(time.Second)) // 1s == (1e9 ns)
 		backoffDuration := jitter + ((1 << uint(attempt)) * time.Second)
 
 		c.Logger.Info("reconnecting", "attempt", attempt+1, "backoff_duration", backoffDuration)
@@ -511,7 +514,7 @@ func (c *WSClient) readRoutine() {
 		// c.wg.Wait() in c.Stop(). Note we rely on Quit being closed so that it sends unlimited Quit signals to stop
 		// both readRoutine and writeRoutine
 
-		c.Logger.Info("got response", "id", response.ID, "result", fmt.Sprintf("%X", response.Result))
+		c.Logger.Info("got response", "id", response.ID, "result", log.NewLazySprintf("%X", response.Result))
 
 		select {
 		case <-c.Quit():

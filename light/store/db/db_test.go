@@ -8,12 +8,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
+	cmtversion "github.com/tendermint/tendermint/proto/tendermint/version"
 	"github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tendermint/version"
 )
@@ -175,8 +175,8 @@ func randLightBlock(height int64) *types.LightBlock {
 	return &types.LightBlock{
 		SignedHeader: &types.SignedHeader{
 			Header: &types.Header{
-				Version:            tmversion.Consensus{Block: version.BlockProtocol, App: 0},
-				ChainID:            tmrand.Str(12),
+				Version:            cmtversion.Consensus{Block: version.BlockProtocol, App: 0},
+				ChainID:            cmtrand.Str(12),
 				Height:             height,
 				Time:               time.Now(),
 				LastBlockID:        types.BlockID{},

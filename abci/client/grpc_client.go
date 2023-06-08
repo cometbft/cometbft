@@ -10,9 +10,9 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/tendermint/tendermint/abci/types"
-	tmnet "github.com/tendermint/tendermint/libs/net"
+	cmtnet "github.com/tendermint/tendermint/libs/net"
 	"github.com/tendermint/tendermint/libs/service"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 )
 
 var _ Client = (*grpcClient)(nil)
@@ -27,7 +27,7 @@ type grpcClient struct {
 	conn     *grpc.ClientConn
 	chReqRes chan *ReqRes // dispatches "async" responses to callbacks *in order*, needed by mempool
 
-	mtx   tmsync.Mutex
+	mtx   cmtsync.Mutex
 	addr  string
 	err   error
 	resCb func(*types.Request, *types.Response) // listens to all callbacks
@@ -50,7 +50,7 @@ func NewGRPCClient(addr string, mustConnect bool) Client {
 }
 
 func dialerFunc(ctx context.Context, addr string) (net.Conn, error) {
-	return tmnet.Connect(addr)
+	return cmtnet.Connect(addr)
 }
 
 func (cli *grpcClient) OnStart() error {
@@ -66,7 +66,6 @@ func (cli *grpcClient) OnStart() error {
 			cli.mtx.Lock()
 			defer cli.mtx.Unlock()
 
-			reqres.SetDone()
 			reqres.Done()
 
 			// Notify client listener if set
@@ -75,9 +74,7 @@ func (cli *grpcClient) OnStart() error {
 			}
 
 			// Notify reqRes listener if set
-			if cb := reqres.GetCallback(); cb != nil {
-				cb(reqres.Response)
-			}
+			reqres.InvokeCallback()
 		}
 		for reqres := range cli.chReqRes {
 			if reqres != nil {
@@ -90,6 +87,7 @@ func (cli *grpcClient) OnStart() error {
 
 RETRY_LOOP:
 	for {
+		//nolint:staticcheck // SA1019 Existing use of deprecated but supported dial option.
 		conn, err := grpc.Dial(cli.addr, grpc.WithInsecure(), grpc.WithContextDialer(dialerFunc))
 		if err != nil {
 			if cli.mustConnect {
@@ -342,7 +340,9 @@ func (cli *grpcClient) finishSyncCall(reqres *ReqRes) *types.Response {
 //----------------------------------------
 
 func (cli *grpcClient) FlushSync() error {
-	return nil
+	reqres := cli.FlushAsync()
+	cli.finishSyncCall(reqres).GetFlush()
+	return cli.Error()
 }
 
 func (cli *grpcClient) EchoSync(msg string) (*types.ResponseEcho, error) {

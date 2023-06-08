@@ -6,22 +6,23 @@ import (
 	"strings"
 	"time"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
 	"github.com/tendermint/tendermint/libs/log"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 	"github.com/tendermint/tendermint/light"
 	lightprovider "github.com/tendermint/tendermint/light/provider"
 	lighthttp "github.com/tendermint/tendermint/light/provider/http"
 	lightrpc "github.com/tendermint/tendermint/light/rpc"
 	lightdb "github.com/tendermint/tendermint/light/store/db"
-	tmstate "github.com/tendermint/tendermint/proto/tendermint/state"
+	cmtstate "github.com/tendermint/tendermint/proto/tendermint/state"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 	sm "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/types"
+	"github.com/tendermint/tendermint/version"
 )
 
-//go:generate mockery --case underscore --name StateProvider
+//go:generate ../scripts/mockery_generate.sh StateProvider
 
 // StateProvider is a provider of trusted state data for bootstrapping a node. This refers
 // to the state.State object, not the state machine.
@@ -36,9 +37,9 @@ type StateProvider interface {
 
 // lightClientStateProvider is a state provider using the light client.
 type lightClientStateProvider struct {
-	tmsync.Mutex  // light.Client is not concurrency-safe
+	cmtsync.Mutex // light.Client is not concurrency-safe
 	lc            *light.Client
-	version       tmstate.Version
+	version       cmtstate.Version
 	initialHeight int64
 	providers     map[lightprovider.Provider]string
 }
@@ -47,7 +48,7 @@ type lightClientStateProvider struct {
 func NewLightClientStateProvider(
 	ctx context.Context,
 	chainID string,
-	version tmstate.Version,
+	version cmtstate.Version,
 	initialHeight int64,
 	servers []string,
 	trustOptions light.TrustOptions,
@@ -155,6 +156,10 @@ func (s *lightClientStateProvider) State(ctx context.Context, height uint64) (sm
 		return sm.State{}, err
 	}
 
+	state.Version = cmtstate.Version{
+		Consensus: currentLightBlock.Version,
+		Software:  version.TMCoreSemVer,
+	}
 	state.LastBlockHeight = lastLightBlock.Height
 	state.LastBlockTime = lastLightBlock.Time
 	state.LastBlockID = lastLightBlock.Commit.BlockID

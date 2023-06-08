@@ -1,8 +1,12 @@
 package consensus
 
 import (
+	"strings"
+	"time"
+
 	"github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/discard"
+	cstypes "github.com/tendermint/tendermint/consensus/types"
 
 	prometheus "github.com/go-kit/kit/metrics/prometheus"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
@@ -60,6 +64,30 @@ type Metrics struct {
 
 	// Number of blockparts transmitted by peer.
 	BlockParts metrics.Counter
+
+	// Histogram of step duration.
+	StepDuration metrics.Histogram
+	stepStart    time.Time
+
+	// Number of block parts received by the node, separated by whether the part
+	// was relevant to the block the node is trying to gather or not.
+	BlockGossipPartsReceived metrics.Counter
+
+	// QuroumPrevoteMessageDelay is the interval in seconds between the proposal
+	// timestamp and the timestamp of the earliest prevote that achieved a quorum
+	// during the prevote step.
+	//
+	// To compute it, sum the voting power over each prevote received, in increasing
+	// order of timestamp. The timestamp of the first prevote to increase the sum to
+	// be above 2/3 of the total voting power of the network defines the endpoint
+	// the endpoint of the interval. Subtract the proposal timestamp from this endpoint
+	// to obtain the quorum delay.
+	QuorumPrevoteMessageDelay metrics.Gauge
+
+	// FullPrevoteMessageDelay is the interval in seconds between the proposal
+	// timestamp and the timestamp of the latest prevote in a round where 100%
+	// of the voting power on the network issued prevotes.
+	FullPrevoteMessageDelay metrics.Gauge
 }
 
 // PrometheusMetrics returns Metrics build using Prometheus client library.
@@ -83,7 +111,6 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "rounds",
 			Help:      "Number of rounds.",
 		}, labels).With(labelsAndValues...),
-
 		Validators: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -186,6 +213,34 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "block_parts",
 			Help:      "Number of blockparts transmitted by peer.",
 		}, append(labels, "peer_id")).With(labelsAndValues...),
+		BlockGossipPartsReceived: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "block_gossip_parts_received",
+			Help: "Number of block parts received by the node, labeled by whether the " +
+				"part was relevant to the block the node was currently gathering or not.",
+		}, append(labels, "matches_current")).With(labelsAndValues...),
+		StepDuration: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "step_duration_seconds",
+			Help:      "Time spent per step.",
+			Buckets:   stdprometheus.ExponentialBucketsRange(0.1, 100, 8),
+		}, append(labels, "step")).With(labelsAndValues...),
+		QuorumPrevoteMessageDelay: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "quorum_prevote_message_delay",
+			Help: "Difference in seconds between the proposal timestamp and the timestamp " +
+				"of the latest prevote that achieved a quorum in the prevote step.",
+		}, labels).With(labelsAndValues...),
+		FullPrevoteMessageDelay: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "full_prevote_message_delay",
+			Help: "Difference in seconds between the proposal timestamp and the timestamp " +
+				"of the latest prevote that achieved 100% of the voting power in the prevote step.",
+		}, labels).With(labelsAndValues...),
 	}
 }
 
@@ -196,7 +251,8 @@ func NopMetrics() *Metrics {
 
 		ValidatorLastSignedHeight: discard.NewGauge(),
 
-		Rounds: discard.NewGauge(),
+		Rounds:       discard.NewGauge(),
+		StepDuration: discard.NewHistogram(),
 
 		Validators:               discard.NewGauge(),
 		ValidatorsPower:          discard.NewGauge(),
@@ -209,12 +265,28 @@ func NopMetrics() *Metrics {
 
 		BlockIntervalSeconds: discard.NewHistogram(),
 
-		NumTxs:          discard.NewGauge(),
-		BlockSizeBytes:  discard.NewGauge(),
-		TotalTxs:        discard.NewGauge(),
-		CommittedHeight: discard.NewGauge(),
-		FastSyncing:     discard.NewGauge(),
-		StateSyncing:    discard.NewGauge(),
-		BlockParts:      discard.NewCounter(),
+		NumTxs:                    discard.NewGauge(),
+		BlockSizeBytes:            discard.NewGauge(),
+		TotalTxs:                  discard.NewGauge(),
+		CommittedHeight:           discard.NewGauge(),
+		FastSyncing:               discard.NewGauge(),
+		StateSyncing:              discard.NewGauge(),
+		BlockParts:                discard.NewCounter(),
+		BlockGossipPartsReceived:  discard.NewCounter(),
+		QuorumPrevoteMessageDelay: discard.NewGauge(),
+		FullPrevoteMessageDelay:   discard.NewGauge(),
 	}
+}
+
+func (m *Metrics) MarkRound(r int32) {
+	m.Rounds.Set(float64(r))
+}
+
+func (m *Metrics) MarkStep(s cstypes.RoundStepType) {
+	if !m.stepStart.IsZero() {
+		stepTime := time.Since(m.stepStart).Seconds()
+		stepName := strings.TrimPrefix(s.String(), "RoundStep")
+		m.StepDuration.With("step", stepName).Observe(stepTime)
+	}
+	m.stepStart = time.Now()
 }

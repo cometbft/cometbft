@@ -1,6 +1,3 @@
-// Copyright 2017 Tendermint. All rights reserved.
-// Use of this source code is governed by Apache 2 LICENSE that can be found in the LICENSE file.
-
 package trust
 
 import (
@@ -8,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
 	"github.com/tendermint/tendermint/libs/service"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 )
 
 const defaultStorePeriodicSaveInterval = 1 * time.Minute
@@ -26,7 +23,7 @@ type MetricStore struct {
 	peerMetrics map[string]*Metric
 
 	// Mutex that protects the map and history data file
-	mtx tmsync.Mutex
+	mtx cmtsync.Mutex
 
 	// The db where peer trust metric history data will be stored
 	db dbm.DB

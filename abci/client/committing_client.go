@@ -3,7 +3,7 @@ package abcicli
 import (
 	types "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/service"
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 )
 
 var _ Client = (*committingClient)(nil)
@@ -27,15 +27,15 @@ type committingClient struct {
 	// InitChain
 	// Commit - sets the Initialized state
 	// ApplySnapshotChunk
-	mtx *tmsync.RWInitMutex
+	mtx *cmtsync.RWInitMutex
 
 	types.Application
 	Callback
 }
 
-func NewCommittingClient(mtx *tmsync.RWInitMutex, app types.Application) Client {
+func NewCommittingClient(mtx *cmtsync.RWInitMutex, app types.Application) Client {
 	if mtx == nil {
-		mtx = tmsync.NewRWInitMutex()
+		mtx = cmtsync.NewRWInitMutex()
 	}
 	cli := &committingClient{
 		mtx:         mtx,

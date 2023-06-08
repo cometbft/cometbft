@@ -8,19 +8,19 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	cmd "github.com/tendermint/tendermint/cmd/tendermint/commands"
-	"github.com/tendermint/tendermint/cmd/tendermint/commands/debug"
+	cmd "github.com/tendermint/tendermint/cmd/cometbft/commands"
+	"github.com/tendermint/tendermint/cmd/cometbft/commands/debug"
 	cfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/libs/cli"
-	tmflags "github.com/tendermint/tendermint/libs/cli/flags"
+	cmtflags "github.com/tendermint/tendermint/libs/cli/flags"
 	"github.com/tendermint/tendermint/libs/log"
-	tmos "github.com/tendermint/tendermint/libs/os"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+	cmtos "github.com/tendermint/tendermint/libs/os"
+	cmtrand "github.com/tendermint/tendermint/libs/rand"
 	"github.com/tendermint/tendermint/p2p"
 	cs "github.com/tendermint/tendermint/test/maverick/consensus"
 	nd "github.com/tendermint/tendermint/test/maverick/node"
 	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	cmttime "github.com/tendermint/tendermint/types/time"
 )
 
 var (
@@ -51,11 +51,11 @@ func ParseConfig() (*cfg.Config, error) {
 	return conf, err
 }
 
-// RootCmd is the root command for Tendermint core.
+// RootCmd is the root command for CometBFT.
 var RootCmd = &cobra.Command{
 	Use:   "maverick",
-	Short: "Tendermint Maverick Node",
-	Long: "Tendermint Maverick Node for testing with faulty consensus misbehaviors in a testnet. Contains " +
+	Short: "CometBFT Maverick Node",
+	Long: "CometBFT Maverick Node for testing with faulty consensus misbehaviors in a testnet. Contains " +
 		"all the functionality of a normal node but custom misbehaviors can be injected when running the node " +
 		"through a flag. See maverick node --help for how the misbehavior flag is constructured",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
@@ -70,7 +70,7 @@ var RootCmd = &cobra.Command{
 			logger = log.NewTMJSONLogger(log.NewSyncWriter(os.Stdout))
 		}
 
-		logger, err = tmflags.ParseLogLevel(config.LogLevel, logger, cfg.DefaultLogLevel)
+		logger, err = cmtflags.ParseLogLevel(config.LogLevel, logger, cfg.DefaultLogLevel)
 		if err != nil {
 			return err
 		}
@@ -125,7 +125,7 @@ func main() {
 			"e.g. --misbehaviors double-prevote,3\n"+
 			"You can also have multiple misbehaviors: e.g. double-prevote,3,no-vote,5")
 
-	cmd := cli.PrepareBaseCmd(rootCmd, "TM", os.ExpandEnv(filepath.Join("$HOME", cfg.DefaultTendermintDir)))
+	cmd := cli.PrepareBaseCmd(rootCmd, "CMT", os.ExpandEnv(filepath.Join("$HOME", cfg.DefaultTendermintDir)))
 	if err := cmd.Execute(); err != nil {
 		panic(err)
 	}
@@ -149,7 +149,7 @@ func startNode(config *cfg.Config, logger log.Logger, misbehaviorFlag string) er
 	logger.Info("Started node", "nodeInfo", node.Switch().NodeInfo())
 
 	// Stop upon receiving SIGTERM or CTRL-C.
-	tmos.TrapSignal(logger, func() {
+	cmtos.TrapSignal(logger, func() {
 		if node.IsRunning() {
 			if err := node.Stop(); err != nil {
 				logger.Error("unable to stop the node", "error", err)
@@ -163,7 +163,7 @@ func startNode(config *cfg.Config, logger log.Logger, misbehaviorFlag string) er
 
 var InitFilesCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Initialize Tendermint",
+	Short: "Initialize CometBFT",
 	RunE:  initFiles,
 }
 
@@ -176,7 +176,7 @@ func initFilesWithConfig(config *cfg.Config) error {
 	privValKeyFile := config.PrivValidatorKeyFile()
 	privValStateFile := config.PrivValidatorStateFile()
 	var pv *nd.FilePV
-	if tmos.FileExists(privValKeyFile) {
+	if cmtos.FileExists(privValKeyFile) {
 		pv = nd.LoadFilePV(privValKeyFile, privValStateFile)
 		logger.Info("Found private validator", "keyFile", privValKeyFile,
 			"stateFile", privValStateFile)
@@ -188,7 +188,7 @@ func initFilesWithConfig(config *cfg.Config) error {
 	}
 
 	nodeKeyFile := config.NodeKeyFile()
-	if tmos.FileExists(nodeKeyFile) {
+	if cmtos.FileExists(nodeKeyFile) {
 		logger.Info("Found node key", "path", nodeKeyFile)
 	} else {
 		if _, err := p2p.LoadOrGenNodeKey(nodeKeyFile); err != nil {
@@ -199,12 +199,12 @@ func initFilesWithConfig(config *cfg.Config) error {
 
 	// genesis file
 	genFile := config.GenesisFile()
-	if tmos.FileExists(genFile) {
+	if cmtos.FileExists(genFile) {
 		logger.Info("Found genesis file", "path", genFile)
 	} else {
 		genDoc := types.GenesisDoc{
-			ChainID:         fmt.Sprintf("test-chain-%v", tmrand.Str(6)),
-			GenesisTime:     tmtime.Now(),
+			ChainID:         fmt.Sprintf("test-chain-%v", cmtrand.Str(6)),
+			GenesisTime:     cmttime.Now(),
 			ConsensusParams: types.DefaultConsensusParams(),
 		}
 		pubKey, err := pv.GetPubKey()

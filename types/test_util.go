@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtversion "github.com/tendermint/tendermint/proto/tendermint/version"
 	"github.com/tendermint/tendermint/version"
 )
 
@@ -23,7 +23,7 @@ func MakeCommit(blockID BlockID, height int64, round int32,
 			ValidatorIndex:   int32(i),
 			Height:           height,
 			Round:            round,
-			Type:             tmproto.PrecommitType,
+			Type:             cmtproto.PrecommitType,
 			BlockID:          blockID,
 			Timestamp:        now,
 		}
@@ -67,7 +67,7 @@ func MakeVote(
 		Height:           height,
 		Round:            0,
 		Timestamp:        now,
-		Type:             tmproto.PrecommitType,
+		Type:             cmtproto.PrecommitType,
 		BlockID:          blockID,
 	}
 	v := vote.ToProto()
@@ -87,7 +87,7 @@ func MakeVote(
 func MakeBlock(height int64, txs []Tx, lastCommit *Commit, evidence []Evidence) *Block {
 	block := &Block{
 		Header: Header{
-			Version: tmversion.Consensus{Block: version.BlockProtocol, App: 0},
+			Version: cmtversion.Consensus{Block: version.BlockProtocol, App: 0},
 			Height:  height,
 		},
 		Data: Data{

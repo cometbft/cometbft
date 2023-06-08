@@ -4,10 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/tendermint/tendermint/libs/log"
 )
 
 type logger interface {
@@ -21,7 +22,7 @@ func TrapSignal(logger logger, cb func()) {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		for sig := range c {
-			logger.Info(fmt.Sprintf("captured %v, exiting...", sig))
+			logger.Info("signal trapped", "msg", log.NewLazySprintf("captured %v, exiting...", sig))
 			if cb != nil {
 				cb()
 			}
@@ -60,11 +61,11 @@ func FileExists(filePath string) bool {
 }
 
 func ReadFile(filePath string) ([]byte, error) {
-	return ioutil.ReadFile(filePath)
+	return os.ReadFile(filePath)
 }
 
 func MustReadFile(filePath string) []byte {
-	fileBytes, err := ioutil.ReadFile(filePath)
+	fileBytes, err := os.ReadFile(filePath)
 	if err != nil {
 		Exit(fmt.Sprintf("MustReadFile failed: %v", err))
 		return nil
@@ -73,7 +74,7 @@ func MustReadFile(filePath string) []byte {
 }
 
 func WriteFile(filePath string, contents []byte, mode os.FileMode) error {
-	return ioutil.WriteFile(filePath, contents, mode)
+	return os.WriteFile(filePath, contents, mode)
 }
 
 func MustWriteFile(filePath string, contents []byte, mode os.FileMode) {

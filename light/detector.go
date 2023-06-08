@@ -13,7 +13,7 @@ import (
 
 // The detector component of the light client detects and handles attacks on the light client.
 // More info here:
-// tendermint/docs/architecture/adr-047-handling-evidence-from-light-client.md
+// cometbft/docs/architecture/adr-047-handling-evidence-from-light-client.md
 
 // detectDivergence is a second wall of defense for the light client.
 //
@@ -109,7 +109,9 @@ func (c *Client) detectDivergence(ctx context.Context, primaryTrace []*types.Lig
 //
 // 1: errConflictingHeaders -> there may have been an attack on this light client
 // 2: errBadWitness -> the witness has either not responded, doesn't have the header or has given us an invalid one
-//    Note: In the case of an invalid header we remove the witness
+//
+//	Note: In the case of an invalid header we remove the witness
+//
 // 3: nil -> the hashes of the two headers match
 func (c *Client) compareNewHeaderWithWitness(ctx context.Context, errc chan error, h *types.SignedHeader,
 	witness provider.Provider, witnessIndex int) {
@@ -243,7 +245,7 @@ func (c *Client) handleConflictingHeaders(
 	if primaryBlock.Commit.Round != witnessTrace[len(witnessTrace)-1].Commit.Round {
 		c.logger.Info("The light client has detected, and prevented, an attempted amnesia attack." +
 			" We think this attack is pretty unlikely, so if you see it, that's interesting to us." +
-			" Can you let us know by opening an issue through https://github.com/tendermint/tendermint/issues/new?")
+			" Can you let us know by opening an issue through https://github.com/comet/comet/issues/new?")
 	}
 
 	// This may not be valid because the witness itself is at fault. So now we reverse it, examining the
@@ -275,16 +277,16 @@ func (c *Client) handleConflictingHeaders(
 // it has received from another and preforms verifySkipping at the heights of each of the intermediate
 // headers in the trace until it reaches the divergentHeader. 1 of 2 things can happen.
 //
-// 1. The light client verifies a header that is different to the intermediate header in the trace. This
-//    is the bifurcation point and the light client can create evidence from it
-// 2. The source stops responding, doesn't have the block or sends an invalid header in which case we
-//    return the error and remove the witness
+//  1. The light client verifies a header that is different to the intermediate header in the trace. This
+//     is the bifurcation point and the light client can create evidence from it
+//  2. The source stops responding, doesn't have the block or sends an invalid header in which case we
+//     return the error and remove the witness
 //
 // CONTRACT:
-// 1. Trace can not be empty len(trace) > 0
-// 2. The last block in the trace can not be of a lower height than the target block
-//    trace[len(trace)-1].Height >= targetBlock.Height
-// 3. The
+//  1. Trace can not be empty len(trace) > 0
+//  2. The last block in the trace can not be of a lower height than the target block
+//     trace[len(trace)-1].Height >= targetBlock.Height
+//  3. The
 func (c *Client) examineConflictingHeaderAgainstTrace(
 	ctx context.Context,
 	trace []*types.LightBlock,

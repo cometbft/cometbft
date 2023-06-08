@@ -8,12 +8,12 @@ import (
 	"reflect"
 
 	"github.com/tendermint/tendermint/abci/types"
-	tmnet "github.com/tendermint/tendermint/libs/net"
+	cmtnet "github.com/tendermint/tendermint/libs/net"
 )
 
 func main() {
 
-	conn, err := tmnet.Connect("unix://test.sock")
+	conn, err := cmtnet.Connect("unix://test.sock")
 	if err != nil {
 		log.Fatal(err.Error())
 	}

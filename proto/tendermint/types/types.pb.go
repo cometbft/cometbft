@@ -261,7 +261,7 @@ func (m *BlockID) GetPartSetHeader() PartSetHeader {
 	return PartSetHeader{}
 }
 
-// Header defines the structure of a Tendermint block header.
+// Header defines the structure of a block header.
 type Header struct {
 	// basic block info
 	Version version.Consensus `protobuf:"bytes,1,opt,name=version,proto3" json:"version"`

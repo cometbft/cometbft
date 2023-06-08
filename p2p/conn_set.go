@@ -3,7 +3,7 @@ package p2p
 import (
 	"net"
 
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 )
 
 // ConnSet is a lookup table for connections and all their ips.
@@ -21,7 +21,7 @@ type connSetItem struct {
 }
 
 type connSet struct {
-	tmsync.RWMutex
+	cmtsync.RWMutex
 
 	conns map[string]connSetItem
 }

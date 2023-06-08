@@ -7,10 +7,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
 	abci "github.com/tendermint/tendermint/abci/types"
-	tmstate "github.com/tendermint/tendermint/proto/tendermint/state"
+	cmtstate "github.com/tendermint/tendermint/proto/tendermint/state"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	rpctypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
 	sm "github.com/tendermint/tendermint/state"
@@ -70,7 +70,7 @@ func TestBlockchainInfo(t *testing.T) {
 }
 
 func TestBlockResults(t *testing.T) {
-	results := &tmstate.ABCIResponses{
+	results := &cmtstate.ABCIResponses{
 		DeliverTxs: []*abci.ResponseDeliverTx{
 			{Code: 0, Data: []byte{0x01}, Log: "ok"},
 			{Code: 0, Data: []byte{0x02}, Log: "ok"},
@@ -81,7 +81,9 @@ func TestBlockResults(t *testing.T) {
 	}
 
 	env = &Environment{}
-	env.StateStore = sm.NewStore(dbm.NewMemDB())
+	env.StateStore = sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
 	err := env.StateStore.SaveABCIResponses(100, results)
 	require.NoError(t, err)
 	env.BlockStore = mockBlockStore{height: 100}

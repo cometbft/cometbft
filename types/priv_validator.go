@@ -7,16 +7,16 @@ import (
 
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
-// PrivValidator defines the functionality of a local Tendermint validator
+// PrivValidator defines the functionality of a local CometBFT validator
 // that signs votes and proposals, and never double signs.
 type PrivValidator interface {
 	GetPubKey() (crypto.PubKey, error)
 
-	SignVote(chainID string, vote *tmproto.Vote) error
-	SignProposal(chainID string, proposal *tmproto.Proposal) error
+	SignVote(chainID string, vote *cmtproto.Vote) error
+	SignProposal(chainID string, proposal *cmtproto.Proposal) error
 }
 
 type PrivValidatorsByAddress []PrivValidator
@@ -70,7 +70,7 @@ func (pv MockPV) GetPubKey() (crypto.PubKey, error) {
 }
 
 // Implements PrivValidator.
-func (pv MockPV) SignVote(chainID string, vote *tmproto.Vote) error {
+func (pv MockPV) SignVote(chainID string, vote *cmtproto.Vote) error {
 	useChainID := chainID
 	if pv.breakVoteSigning {
 		useChainID = "incorrect-chain-id"
@@ -86,7 +86,7 @@ func (pv MockPV) SignVote(chainID string, vote *tmproto.Vote) error {
 }
 
 // Implements PrivValidator.
-func (pv MockPV) SignProposal(chainID string, proposal *tmproto.Proposal) error {
+func (pv MockPV) SignProposal(chainID string, proposal *cmtproto.Proposal) error {
 	useChainID := chainID
 	if pv.breakProposalSigning {
 		useChainID = "incorrect-chain-id"
@@ -129,12 +129,12 @@ type ErroringMockPV struct {
 var ErroringMockPVErr = errors.New("erroringMockPV always returns an error")
 
 // Implements PrivValidator.
-func (pv *ErroringMockPV) SignVote(chainID string, vote *tmproto.Vote) error {
+func (pv *ErroringMockPV) SignVote(chainID string, vote *cmtproto.Vote) error {
 	return ErroringMockPVErr
 }
 
 // Implements PrivValidator.
-func (pv *ErroringMockPV) SignProposal(chainID string, proposal *tmproto.Proposal) error {
+func (pv *ErroringMockPV) SignProposal(chainID string, proposal *cmtproto.Proposal) error {
 	return ErroringMockPVErr
 }
 

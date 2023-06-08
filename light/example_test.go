@@ -3,13 +3,12 @@ package light_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	stdlog "log"
 	"os"
 	"testing"
 	"time"
 
-	dbm "github.com/tendermint/tm-db"
+	dbm "github.com/cometbft/cometbft-db"
 
 	"github.com/tendermint/tendermint/abci/example/kvstore"
 	"github.com/tendermint/tendermint/libs/log"
@@ -22,10 +21,10 @@ import (
 
 // Automatically getting new headers and verifying them.
 func ExampleClient_Update() {
-	// give Tendermint time to generate some blocks
+	// give CometBFT time to generate some blocks
 	time.Sleep(5 * time.Second)
 
-	dbDir, err := ioutil.TempDir("", "light-client-example")
+	dbDir, err := os.MkdirTemp("", "light-client-example")
 	if err != nil {
 		stdlog.Fatal(err)
 	}
@@ -90,10 +89,10 @@ func ExampleClient_Update() {
 
 // Manually getting light blocks and verifying them.
 func ExampleClient_VerifyLightBlockAtHeight() {
-	// give Tendermint time to generate some blocks
+	// give CometBFT time to generate some blocks
 	time.Sleep(5 * time.Second)
 
-	dbDir, err := ioutil.TempDir("", "light-client-example")
+	dbDir, err := os.MkdirTemp("", "light-client-example")
 	if err != nil {
 		stdlog.Fatal(err)
 	}
@@ -156,7 +155,7 @@ func ExampleClient_VerifyLightBlockAtHeight() {
 }
 
 func TestMain(m *testing.M) {
-	// start a tendermint node (and kvstore) in the background to test against
+	// start a CometBFT node (and kvstore) in the background to test against
 	app := kvstore.NewApplication()
 	node := rpctest.StartTendermint(app, rpctest.SuppressStdout)
 

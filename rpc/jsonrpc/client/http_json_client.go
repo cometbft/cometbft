@@ -5,13 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
 	"strings"
 
-	tmsync "github.com/tendermint/tendermint/libs/sync"
+	cmtsync "github.com/tendermint/tendermint/libs/sync"
 	types "github.com/tendermint/tendermint/rpc/jsonrpc/types"
 )
 
@@ -128,7 +128,7 @@ type Client struct {
 
 	client *http.Client
 
-	mtx       tmsync.Mutex
+	mtx       cmtsync.Mutex
 	nextReqID int
 }
 
@@ -217,7 +217,7 @@ func (c *Client) Call(
 
 	defer httpResponse.Body.Close()
 
-	responseBytes, err := ioutil.ReadAll(httpResponse.Body)
+	responseBytes, err := io.ReadAll(httpResponse.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
@@ -265,7 +265,7 @@ func (c *Client) sendBatch(ctx context.Context, requests []*jsonRPCBufferedReque
 
 	defer httpResponse.Body.Close()
 
-	responseBytes, err := ioutil.ReadAll(httpResponse.Body)
+	responseBytes, err := io.ReadAll(httpResponse.Body)
 	if err != nil {
 		return nil, fmt.Errorf("read response body: %w", err)
 	}
@@ -302,7 +302,7 @@ type jsonRPCBufferedRequest struct {
 type RequestBatch struct {
 	client *Client
 
-	mtx      tmsync.Mutex
+	mtx      cmtsync.Mutex
 	requests []*jsonRPCBufferedRequest
 }
 

@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	kitlog "github.com/go-kit/kit/log"
-	kitlevel "github.com/go-kit/kit/log/level"
+	kitlog "github.com/go-kit/log"
+	kitlevel "github.com/go-kit/log/level"
 	"github.com/go-logfmt/logfmt"
 )
 
@@ -37,7 +37,7 @@ type tmfmtLogger struct {
 }
 
 // NewTMFmtLogger returns a logger that encodes keyvals to the Writer in
-// Tendermint custom format. Note complex types (structs, maps, slices)
+// CometBFT custom format. Note complex types (structs, maps, slices)
 // formatted as "%+v".
 //
 // Each log event produces no more than one call to w.Write.
@@ -65,7 +65,7 @@ func (l tmfmtLogger) Log(keyvals ...interface{}) error {
 		switch keyvals[i] {
 		case kitlevel.Key():
 			excludeIndexes = append(excludeIndexes, i)
-			switch keyvals[i+1].(type) { // nolint:gocritic
+			switch keyvals[i+1].(type) { //nolint:gocritic
 			case string:
 				lvl = keyvals[i+1].(string)
 			case kitlevel.Value:
@@ -87,9 +87,15 @@ func (l tmfmtLogger) Log(keyvals ...interface{}) error {
 		if b, ok := keyvals[i+1].([]byte); ok {
 			keyvals[i+1] = strings.ToUpper(hex.EncodeToString(b))
 		}
+
+		// Realize stringers
+		if s, ok := keyvals[i+1].(fmt.Stringer); ok {
+			keyvals[i+1] = s.String()
+		}
+
 	}
 
-	// Form a custom Tendermint line
+	// Form a custom CometBFT line
 	//
 	// Example:
 	//     D[2016-05-02|11:06:44.322]   Stopping AddrBook (ignoring: already stopped)

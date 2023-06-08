@@ -1,6 +1,7 @@
-// Package query provides a parser for a custom query format:
+// Package query implements the custom query format used to filter event
+// subscriptions in CometBFT.
 //
-//		abci.invoice.number=22 AND abci.invoice.owner=Ivan
+//	abci.invoice.number=22 AND abci.invoice.owner=Ivan
 //
 // See query.peg for the grammar, which is a https://en.wikipedia.org/wiki/Parsing_expression_grammar.
 // More: https://github.com/PhilippeSigaud/Pegged/wiki/PEG-Basics

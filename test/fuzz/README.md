@@ -1,6 +1,6 @@
 # fuzz
 
-Fuzzing for various packages in Tendermint using [go-fuzz](https://github.com/dvyukov/go-fuzz) library.
+Fuzzing for various packages in CometBFT using [go-fuzz](https://github.com/dvyukov/go-fuzz) library.
 
 Inputs:
 

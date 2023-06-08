@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/tendermint/tendermint/crypto"
-	tmbytes "github.com/tendermint/tendermint/libs/bytes"
+	cmtbytes "github.com/tendermint/tendermint/libs/bytes"
 	"github.com/tendermint/tendermint/libs/protoio"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 const (
@@ -48,14 +48,14 @@ type Address = crypto.Address
 // Vote represents a prevote, precommit, or commit vote from validators for
 // consensus.
 type Vote struct {
-	Type             tmproto.SignedMsgType `json:"type"`
-	Height           int64                 `json:"height"`
-	Round            int32                 `json:"round"`    // assume there will not be greater than 2_147_483_647 rounds
-	BlockID          BlockID               `json:"block_id"` // zero if vote is nil.
-	Timestamp        time.Time             `json:"timestamp"`
-	ValidatorAddress Address               `json:"validator_address"`
-	ValidatorIndex   int32                 `json:"validator_index"`
-	Signature        []byte                `json:"signature"`
+	Type             cmtproto.SignedMsgType `json:"type"`
+	Height           int64                  `json:"height"`
+	Round            int32                  `json:"round"`    // assume there will not be greater than 2_147_483_647 rounds
+	BlockID          BlockID                `json:"block_id"` // zero if vote is nil.
+	Timestamp        time.Time              `json:"timestamp"`
+	ValidatorAddress Address                `json:"validator_address"`
+	ValidatorIndex   int32                  `json:"validator_index"`
+	Signature        []byte                 `json:"signature"`
 }
 
 // CommitSig converts the Vote to a CommitSig.
@@ -90,7 +90,7 @@ func (vote *Vote) CommitSig() CommitSig {
 // devices that rely on this encoding.
 //
 // See CanonicalizeVote
-func VoteSignBytes(chainID string, vote *tmproto.Vote) []byte {
+func VoteSignBytes(chainID string, vote *cmtproto.Vote) []byte {
 	pb := CanonicalizeVote(chainID, vote)
 	bz, err := protoio.MarshalDelimited(&pb)
 	if err != nil {
@@ -123,9 +123,9 @@ func (vote *Vote) String() string {
 
 	var typeString string
 	switch vote.Type {
-	case tmproto.PrevoteType:
+	case cmtproto.PrevoteType:
 		typeString = "Prevote"
-	case tmproto.PrecommitType:
+	case cmtproto.PrecommitType:
 		typeString = "Precommit"
 	default:
 		panic("Unknown vote type")
@@ -133,13 +133,13 @@ func (vote *Vote) String() string {
 
 	return fmt.Sprintf("Vote{%v:%X %v/%02d/%v(%v) %X %X @ %s}",
 		vote.ValidatorIndex,
-		tmbytes.Fingerprint(vote.ValidatorAddress),
+		cmtbytes.Fingerprint(vote.ValidatorAddress),
 		vote.Height,
 		vote.Round,
 		vote.Type,
 		typeString,
-		tmbytes.Fingerprint(vote.BlockID.Hash),
-		tmbytes.Fingerprint(vote.Signature),
+		cmtbytes.Fingerprint(vote.BlockID.Hash),
+		cmtbytes.Fingerprint(vote.Signature),
 		CanonicalTime(vote.Timestamp),
 	)
 }
@@ -203,12 +203,12 @@ func (vote *Vote) ValidateBasic() error {
 
 // ToProto converts the handwritten type to proto generated type
 // return type, nil if everything converts safely, otherwise nil, error
-func (vote *Vote) ToProto() *tmproto.Vote {
+func (vote *Vote) ToProto() *cmtproto.Vote {
 	if vote == nil {
 		return nil
 	}
 
-	return &tmproto.Vote{
+	return &cmtproto.Vote{
 		Type:             vote.Type,
 		Height:           vote.Height,
 		Round:            vote.Round,
@@ -222,7 +222,7 @@ func (vote *Vote) ToProto() *tmproto.Vote {
 
 // FromProto converts a proto generetad type to a handwritten type
 // return type, nil if everything converts safely, otherwise nil, error
-func VoteFromProto(pv *tmproto.Vote) (*Vote, error) {
+func VoteFromProto(pv *cmtproto.Vote) (*Vote, error) {
 	if pv == nil {
 		return nil, errors.New("nil vote")
 	}

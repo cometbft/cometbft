@@ -4,23 +4,23 @@ import (
 	"errors"
 	"fmt"
 
-	tmcon "github.com/tendermint/tendermint/consensus"
+	cmtcon "github.com/tendermint/tendermint/consensus"
 	cstypes "github.com/tendermint/tendermint/consensus/types"
-	tmmath "github.com/tendermint/tendermint/libs/math"
+	cmtmath "github.com/tendermint/tendermint/libs/math"
 	"github.com/tendermint/tendermint/p2p"
-	tmcons "github.com/tendermint/tendermint/proto/tendermint/consensus"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	cmtcons "github.com/tendermint/tendermint/proto/tendermint/consensus"
+	cmtproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/types"
 )
 
-func WALToProto(msg tmcon.WALMessage) (*tmcons.WALMessage, error) {
-	var pb tmcons.WALMessage
+func WALToProto(msg cmtcon.WALMessage) (*cmtcons.WALMessage, error) {
+	var pb cmtcons.WALMessage
 
 	switch msg := msg.(type) {
 	case types.EventDataRoundState:
-		pb = tmcons.WALMessage{
-			Sum: &tmcons.WALMessage_EventDataRoundState{
-				EventDataRoundState: &tmproto.EventDataRoundState{
+		pb = cmtcons.WALMessage{
+			Sum: &cmtcons.WALMessage_EventDataRoundState{
+				EventDataRoundState: &cmtproto.EventDataRoundState{
 					Height: msg.Height,
 					Round:  msg.Round,
 					Step:   msg.Step,
@@ -28,22 +28,22 @@ func WALToProto(msg tmcon.WALMessage) (*tmcons.WALMessage, error) {
 			},
 		}
 	case msgInfo:
-		consMsg, err := tmcon.MsgToProto(msg.Msg)
+		consMsg, err := cmtcon.MsgToProto(msg.Msg)
 		if err != nil {
 			return nil, err
 		}
-		pb = tmcons.WALMessage{
-			Sum: &tmcons.WALMessage_MsgInfo{
-				MsgInfo: &tmcons.MsgInfo{
+		pb = cmtcons.WALMessage{
+			Sum: &cmtcons.WALMessage_MsgInfo{
+				MsgInfo: &cmtcons.MsgInfo{
 					Msg:    *consMsg,
 					PeerID: string(msg.PeerID),
 				},
 			},
 		}
 	case timeoutInfo:
-		pb = tmcons.WALMessage{
-			Sum: &tmcons.WALMessage_TimeoutInfo{
-				TimeoutInfo: &tmcons.TimeoutInfo{
+		pb = cmtcons.WALMessage{
+			Sum: &cmtcons.WALMessage_TimeoutInfo{
+				TimeoutInfo: &cmtcons.TimeoutInfo{
 					Duration: msg.Duration,
 					Height:   msg.Height,
 					Round:    msg.Round,
@@ -51,10 +51,10 @@ func WALToProto(msg tmcon.WALMessage) (*tmcons.WALMessage, error) {
 				},
 			},
 		}
-	case tmcon.EndHeightMessage:
-		pb = tmcons.WALMessage{
-			Sum: &tmcons.WALMessage_EndHeight{
-				EndHeight: &tmcons.EndHeight{
+	case cmtcon.EndHeightMessage:
+		pb = cmtcons.WALMessage{
+			Sum: &cmtcons.WALMessage_EndHeight{
+				EndHeight: &cmtcons.EndHeight{
 					Height: msg.Height,
 				},
 			},
@@ -67,21 +67,21 @@ func WALToProto(msg tmcon.WALMessage) (*tmcons.WALMessage, error) {
 }
 
 // WALFromProto takes a proto wal message and return a consensus walMessage and error
-func WALFromProto(msg *tmcons.WALMessage) (tmcon.WALMessage, error) {
+func WALFromProto(msg *cmtcons.WALMessage) (cmtcon.WALMessage, error) {
 	if msg == nil {
 		return nil, errors.New("nil WAL message")
 	}
-	var pb tmcon.WALMessage
+	var pb cmtcon.WALMessage
 
 	switch msg := msg.Sum.(type) {
-	case *tmcons.WALMessage_EventDataRoundState:
+	case *cmtcons.WALMessage_EventDataRoundState:
 		pb = types.EventDataRoundState{
 			Height: msg.EventDataRoundState.Height,
 			Round:  msg.EventDataRoundState.Round,
 			Step:   msg.EventDataRoundState.Step,
 		}
-	case *tmcons.WALMessage_MsgInfo:
-		walMsg, err := tmcon.MsgFromProto(&msg.MsgInfo.Msg)
+	case *cmtcons.WALMessage_MsgInfo:
+		walMsg, err := cmtcon.MsgFromProto(&msg.MsgInfo.Msg)
 		if err != nil {
 			return nil, fmt.Errorf("msgInfo from proto error: %w", err)
 		}
@@ -90,8 +90,8 @@ func WALFromProto(msg *tmcons.WALMessage) (tmcon.WALMessage, error) {
 			PeerID: p2p.ID(msg.MsgInfo.PeerID),
 		}
 
-	case *tmcons.WALMessage_TimeoutInfo:
-		tis, err := tmmath.SafeConvertUint8(int64(msg.TimeoutInfo.Step))
+	case *cmtcons.WALMessage_TimeoutInfo:
+		tis, err := cmtmath.SafeConvertUint8(int64(msg.TimeoutInfo.Step))
 		// deny message based on possible overflow
 		if err != nil {
 			return nil, fmt.Errorf("denying message due to possible overflow: %w", err)
@@ -103,8 +103,8 @@ func WALFromProto(msg *tmcons.WALMessage) (tmcon.WALMessage, error) {
 			Step:     cstypes.RoundStepType(tis),
 		}
 		return pb, nil
-	case *tmcons.WALMessage_EndHeight:
-		pb := tmcon.EndHeightMessage{
+	case *cmtcons.WALMessage_EndHeight:
+		pb := cmtcon.EndHeightMessage{
 			Height: msg.EndHeight.Height,
 		}
 		return pb, nil

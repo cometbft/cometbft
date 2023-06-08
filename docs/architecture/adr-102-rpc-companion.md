@@ -1,8 +1,5 @@
 # ADR-102: RPC Companion
 
-## [**Work In Progress**]
-Please wait until this section is removed to provide feedback or add comments.
-
 ## Changelog
 
 - 2022-03-27: First draft (@andynog)

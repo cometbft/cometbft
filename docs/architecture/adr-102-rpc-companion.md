@@ -17,7 +17,7 @@ full node to a database and offering a service that exposes the same JSONRPC met
 which makes it easier for integrators of RPC clients such as client libraries and applications to switch to this
 ***RPC Companion*** with as minimum effort as possible.
 
-This architecture also make it possible to scale horizontally the querying capacity of a full node by running multiple
+This architecture also makes it possible to scale horizontally the querying capacity of a full node by running multiple
 copies of the ***RPC Companion*** server instances that can be behind a scalable load-balancer (e.g. Cloudflare)  and can serve
 the data in a more reliable way.
 

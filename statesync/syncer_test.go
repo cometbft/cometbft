@@ -29,7 +29,7 @@ import (
 const testAppVersion = 9
 
 // Sets up a basic syncer that can be used to test OfferSnapshot requests
-func setupOfferSyncer(t *testing.T) (*syncer, *proxymocks.AppConnSnapshot) {
+func setupOfferSyncer() (*syncer, *proxymocks.AppConnSnapshot) {
 	connQuery := &proxymocks.AppConnQuery{}
 	connSnapshot := &proxymocks.AppConnSnapshot{}
 	stateProvider := &mocks.StateProvider{}
@@ -124,17 +124,17 @@ func TestSyncer_SyncAny(t *testing.T) {
 
 	// Both peers report back with snapshots. One of them also returns a snapshot we don't want, in
 	// format 2, which will be rejected by the ABCI application.
-	new, err := syncer.AddSnapshot(peerA, s)
+	isNew, err := syncer.AddSnapshot(peerA, s)
 	require.NoError(t, err)
-	assert.True(t, new)
+	assert.True(t, isNew)
 
-	new, err = syncer.AddSnapshot(peerB, s)
+	isNew, err = syncer.AddSnapshot(peerB, s)
 	require.NoError(t, err)
-	assert.False(t, new)
+	assert.False(t, isNew)
 
-	new, err = syncer.AddSnapshot(peerB, &snapshot{Height: 2, Format: 2, Chunks: 3, Hash: []byte{1}})
+	isNew, err = syncer.AddSnapshot(peerB, &snapshot{Height: 2, Format: 2, Chunks: 3, Hash: []byte{1}})
 	require.NoError(t, err)
-	assert.True(t, new)
+	assert.True(t, isNew)
 
 	// We start a sync, with peers sending back chunks when requested. We first reject the snapshot
 	// with height 2 format 2, and accept the snapshot at height 1.
@@ -232,13 +232,13 @@ func TestSyncer_SyncAny(t *testing.T) {
 }
 
 func TestSyncer_SyncAny_noSnapshots(t *testing.T) {
-	syncer, _ := setupOfferSyncer(t)
+	syncer, _ := setupOfferSyncer()
 	_, _, err := syncer.SyncAny(0, func() {})
 	assert.Equal(t, errNoSnapshots, err)
 }
 
 func TestSyncer_SyncAny_abort(t *testing.T) {
-	syncer, connSnapshot := setupOfferSyncer(t)
+	syncer, connSnapshot := setupOfferSyncer()
 
 	s := &snapshot{Height: 1, Format: 1, Chunks: 3, Hash: []byte{1, 2, 3}}
 	_, err := syncer.AddSnapshot(simplePeer("id"), s)
@@ -253,7 +253,7 @@ func TestSyncer_SyncAny_abort(t *testing.T) {
 }
 
 func TestSyncer_SyncAny_reject(t *testing.T) {
-	syncer, connSnapshot := setupOfferSyncer(t)
+	syncer, connSnapshot := setupOfferSyncer()
 
 	// s22 is tried first, then s12, then s11, then errNoSnapshots
 	s22 := &snapshot{Height: 2, Format: 2, Chunks: 3, Hash: []byte{1, 2, 3}}
@@ -284,7 +284,7 @@ func TestSyncer_SyncAny_reject(t *testing.T) {
 }
 
 func TestSyncer_SyncAny_reject_format(t *testing.T) {
-	syncer, connSnapshot := setupOfferSyncer(t)
+	syncer, connSnapshot := setupOfferSyncer()
 
 	// s22 is tried first, which reject s22 and s12, then s11 will abort.
 	s22 := &snapshot{Height: 2, Format: 2, Chunks: 3, Hash: []byte{1, 2, 3}}
@@ -311,7 +311,7 @@ func TestSyncer_SyncAny_reject_format(t *testing.T) {
 }
 
 func TestSyncer_SyncAny_reject_sender(t *testing.T) {
-	syncer, connSnapshot := setupOfferSyncer(t)
+	syncer, connSnapshot := setupOfferSyncer()
 
 	peerA := simplePeer("a")
 	peerB := simplePeer("b")
@@ -349,7 +349,7 @@ func TestSyncer_SyncAny_reject_sender(t *testing.T) {
 }
 
 func TestSyncer_SyncAny_abciError(t *testing.T) {
-	syncer, connSnapshot := setupOfferSyncer(t)
+	syncer, connSnapshot := setupOfferSyncer()
 
 	errBoom := errors.New("boom")
 	s := &snapshot{Height: 1, Format: 1, Chunks: 3, Hash: []byte{1, 2, 3}}
@@ -385,7 +385,7 @@ func TestSyncer_offerSnapshot(t *testing.T) {
 	for name, tc := range testcases {
 		tc := tc
 		t.Run(name, func(t *testing.T) {
-			syncer, connSnapshot := setupOfferSyncer(t)
+			syncer, connSnapshot := setupOfferSyncer()
 			s := &snapshot{Height: 1, Format: 1, Chunks: 3, Hash: []byte{1, 2, 3}, trustedAppHash: []byte("app_hash")}
 			connSnapshot.On("OfferSnapshot", mock.Anything, &abci.RequestOfferSnapshot{
 				Snapshot: toABCI(s),
@@ -447,7 +447,8 @@ func TestSyncer_applyChunks_Results(t *testing.T) {
 				connSnapshot.On("ApplySnapshotChunk", mock.Anything, &abci.RequestApplySnapshotChunk{
 					Index: 0, Chunk: body,
 				}).Once().Return(&abci.ResponseApplySnapshotChunk{
-					Result: abci.ResponseApplySnapshotChunk_ACCEPT}, nil)
+					Result: abci.ResponseApplySnapshotChunk_ACCEPT,
+				}, nil)
 			}
 
 			err = syncer.applyChunks(chunks)

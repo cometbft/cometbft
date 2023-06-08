@@ -33,16 +33,17 @@ import (
 // test.
 type cleanupFunc func()
 
-func newMempoolWithAppMock(cc proxy.ClientCreator, client abciclient.Client) (*CListMempool, cleanupFunc, error) {
+func newMempoolWithAppMock(client abciclient.Client) (*CListMempool, cleanupFunc, error) {
 	conf := test.ResetTestRoot("mempool_test")
 
-	mp, cu := newMempoolWithAppAndConfigMock(cc, conf, client)
+	mp, cu := newMempoolWithAppAndConfigMock(conf, client)
 	return mp, cu, nil
 }
 
-func newMempoolWithAppAndConfigMock(cc proxy.ClientCreator,
+func newMempoolWithAppAndConfigMock(
 	cfg *config.Config,
-	client abciclient.Client) (*CListMempool, cleanupFunc) {
+	client abciclient.Client,
+) (*CListMempool, cleanupFunc) {
 	appConnMem := client
 	appConnMem.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "mempool"))
 	err := appConnMem.Start()
@@ -250,9 +251,7 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 	mockClient.On("Error").Return(nil).Times(4)
 	mockClient.On("SetResponseCallback", mock.MatchedBy(func(cb abciclient.Callback) bool { callback = cb; return true }))
 
-	app := kvstore.NewInMemoryApplication()
-	cc := proxy.NewLocalClientCreator(app)
-	mp, cleanup, err := newMempoolWithAppMock(cc, mockClient)
+	mp, cleanup, err := newMempoolWithAppMock(mockClient)
 	require.NoError(t, err)
 	defer cleanup()
 
@@ -631,7 +630,51 @@ func TestMempoolTxsBytes(t *testing.T) {
 	assert.EqualValues(t, 20, mp.SizeBytes())
 	assert.NoError(t, mp.RemoveTxByKey(types.Tx(tx1).Key()))
 	assert.EqualValues(t, 10, mp.SizeBytes())
+}
 
+func TestMempoolNoCacheOverflow(t *testing.T) {
+	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
+	app := kvstore.NewInMemoryApplication()
+	_, server := newRemoteApp(t, sockPath, app)
+	t.Cleanup(func() {
+		if err := server.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+	cfg := test.ResetTestRoot("mempool_test")
+	mp, cleanup := newMempoolWithAppAndConfig(proxy.NewRemoteClientCreator(sockPath, "socket", true), cfg)
+	defer cleanup()
+
+	// add tx0
+	var tx0 = kvstore.NewTxFromID(0)
+	err := mp.CheckTx(tx0, nil, TxInfo{})
+	require.NoError(t, err)
+	err = mp.FlushAppConn()
+	require.NoError(t, err)
+
+	// saturate the cache to remove tx0
+	for i := 1; i <= mp.config.CacheSize; i++ {
+		err = mp.CheckTx(kvstore.NewTxFromID(i), nil, TxInfo{})
+		require.NoError(t, err)
+	}
+	err = mp.FlushAppConn()
+	require.NoError(t, err)
+	assert.False(t, mp.cache.Has(kvstore.NewTxFromID(0)))
+
+	// add again tx0
+	err = mp.CheckTx(tx0, nil, TxInfo{})
+	require.NoError(t, err)
+	err = mp.FlushAppConn()
+	require.NoError(t, err)
+
+	// tx0 should appear only once in mp.txs
+	found := 0
+	for e := mp.txs.Front(); e != nil; e = e.Next() {
+		if types.Tx.Key(e.Value.(*mempoolTx).tx) == types.Tx.Key(tx0) {
+			found++
+		}
+	}
+	assert.True(t, found == 1)
 }
 
 // This will non-deterministically catch some concurrency failures like

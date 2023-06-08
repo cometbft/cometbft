@@ -49,7 +49,7 @@ func NewGRPCClient(addr string, mustConnect bool) Client {
 	return cli
 }
 
-func dialerFunc(ctx context.Context, addr string) (net.Conn, error) {
+func dialerFunc(_ context.Context, addr string) (net.Conn, error) {
 	return cmtnet.Connect(addr)
 }
 
@@ -202,7 +202,7 @@ func (cli *grpcClient) Query(ctx context.Context, req *types.RequestQuery) (*typ
 	return cli.client.Query(ctx, types.ToRequestQuery(req).GetQuery(), grpc.WaitForReady(true))
 }
 
-func (cli *grpcClient) Commit(ctx context.Context, req *types.RequestCommit) (*types.ResponseCommit, error) {
+func (cli *grpcClient) Commit(ctx context.Context, _ *types.RequestCommit) (*types.ResponseCommit, error) {
 	return cli.client.Commit(ctx, types.ToRequestCommit().GetCommit(), grpc.WaitForReady(true))
 }
 

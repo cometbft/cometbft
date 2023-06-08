@@ -44,7 +44,7 @@ func init() {
 		String("db-dir", config.DBPath, "database directory")
 }
 
-func runInspect(cmd *cobra.Command, args []string) error {
+func runInspect(cmd *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithCancel(cmd.Context())
 	defer cancel()
 
@@ -77,11 +77,8 @@ func runInspect(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	ins := inspect.New(config.RPC, blockStore, stateStore, txIndexer, blockIndexer, logger)
+	ins := inspect.New(config.RPC, blockStore, stateStore, txIndexer, blockIndexer)
 
 	logger.Info("starting inspect server")
-	if err := ins.Run(ctx); err != nil {
-		return err
-	}
-	return nil
+	return ins.Run(ctx)
 }

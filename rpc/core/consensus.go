@@ -16,10 +16,10 @@ import (
 //
 // More: https://docs.cometbft.com/main/rpc/#/Info/validators
 func (env *Environment) Validators(
-	ctx *rpctypes.Context,
+	_ *rpctypes.Context,
 	heightPtr *int64,
-	pagePtr, perPagePtr *int) (*ctypes.ResultValidators, error) {
-
+	pagePtr, perPagePtr *int,
+) (*ctypes.ResultValidators, error) {
 	// The latest validator that we know is the NextValidator of the last block.
 	height, err := env.getHeight(env.latestUncommittedHeight(), heightPtr)
 	if err != nil {
@@ -46,13 +46,14 @@ func (env *Environment) Validators(
 		BlockHeight: height,
 		Validators:  v,
 		Count:       len(v),
-		Total:       totalCount}, nil
+		Total:       totalCount,
+	}, nil
 }
 
 // DumpConsensusState dumps consensus state.
 // UNSTABLE
 // More: https://docs.cometbft.com/main/rpc/#/Info/dump_consensus_state
-func (env *Environment) DumpConsensusState(ctx *rpctypes.Context) (*ctypes.ResultDumpConsensusState, error) {
+func (env *Environment) DumpConsensusState(*rpctypes.Context) (*ctypes.ResultDumpConsensusState, error) {
 	// Get Peer consensus states.
 	peers := env.P2PPeers.Peers().List()
 	peerStates := make([]ctypes.PeerStateInfo, len(peers))
@@ -79,13 +80,14 @@ func (env *Environment) DumpConsensusState(ctx *rpctypes.Context) (*ctypes.Resul
 	}
 	return &ctypes.ResultDumpConsensusState{
 		RoundState: roundState,
-		Peers:      peerStates}, nil
+		Peers:      peerStates,
+	}, nil
 }
 
 // ConsensusState returns a concise summary of the consensus state.
 // UNSTABLE
 // More: https://docs.cometbft.com/main/rpc/#/Info/consensus_state
-func (env *Environment) GetConsensusState(ctx *rpctypes.Context) (*ctypes.ResultConsensusState, error) {
+func (env *Environment) GetConsensusState(*rpctypes.Context) (*ctypes.ResultConsensusState, error) {
 	// Get self round state.
 	bz, err := env.ConsensusState.GetRoundStateSimpleJSON()
 	return &ctypes.ResultConsensusState{RoundState: bz}, err
@@ -95,9 +97,9 @@ func (env *Environment) GetConsensusState(ctx *rpctypes.Context) (*ctypes.Result
 // If no height is provided, it will fetch the latest consensus params.
 // More: https://docs.cometbft.com/main/rpc/#/Info/consensus_params
 func (env *Environment) ConsensusParams(
-	ctx *rpctypes.Context,
-	heightPtr *int64) (*ctypes.ResultConsensusParams, error) {
-
+	_ *rpctypes.Context,
+	heightPtr *int64,
+) (*ctypes.ResultConsensusParams, error) {
 	// The latest consensus params that we know is the consensus params after the
 	// last block.
 	height, err := env.getHeight(env.latestUncommittedHeight(), heightPtr)
@@ -111,5 +113,6 @@ func (env *Environment) ConsensusParams(
 	}
 	return &ctypes.ResultConsensusParams{
 		BlockHeight:     height,
-		ConsensusParams: consensusParams}, nil
+		ConsensusParams: consensusParams,
+	}, nil
 }

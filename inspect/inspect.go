@@ -21,9 +21,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-var (
-	logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
-)
+var logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 
 // Inspector manages an RPC service that exports methods to debug a failed node.
 // After a node shuts down due to a consensus failure, it will no longer start
@@ -50,7 +48,13 @@ type Inspector struct {
 // The caller is responsible for starting and stopping the Inspector service.
 //
 //nolint:lll
-func New(cfg *config.RPCConfig, bs state.BlockStore, ss state.Store, txidx txindex.TxIndexer, blkidx indexer.BlockIndexer, lg log.Logger) *Inspector {
+func New(
+	cfg *config.RPCConfig,
+	bs state.BlockStore,
+	ss state.Store,
+	txidx txindex.TxIndexer,
+	blkidx indexer.BlockIndexer,
+) *Inspector {
 	routes := rpc.Routes(*cfg, ss, bs, txidx, blkidx, logger)
 	eb := types.NewEventBus()
 	eb.SetLogger(logger.With("module", "events"))
@@ -82,9 +86,8 @@ func NewFromConfig(cfg *config.Config) (*Inspector, error) {
 	if err != nil {
 		return nil, err
 	}
-	lg := logger.With("module", "inspect")
 	ss := state.NewStore(sDB, state.StoreOptions{})
-	return New(cfg.RPC, bs, ss, txidx, blkidx, lg), nil
+	return New(cfg.RPC, bs, ss, txidx, blkidx), nil
 }
 
 // Run starts the Inspector servers and blocks until the servers shut down. The passed

@@ -48,21 +48,21 @@ func TestReactorInvalidPrecommit(t *testing.T) {
 	// and otherwise disable the priv validator
 	byzVal.mtx.Lock()
 	pv := byzVal.privValidator
-	byzVal.doPrevote = func(height int64, round int32) {
-		invalidDoPrevoteFunc(t, height, round, byzVal, byzR.Switch, pv)
+	byzVal.doPrevote = func(int64, int32) {
+		invalidDoPrevoteFunc(t, byzVal, byzR.Switch, pv)
 	}
 	byzVal.mtx.Unlock()
 
 	// wait for a bunch of blocks
 	// TODO: make this tighter by ensuring the halt happens by block 2
 	for i := 0; i < 10; i++ {
-		timeoutWaitGroup(t, N, func(j int) {
+		timeoutWaitGroup(N, func(j int) {
 			<-blocksSubs[j].Out()
-		}, css)
+		})
 	}
 }
 
-func invalidDoPrevoteFunc(t *testing.T, height int64, round int32, cs *State, sw *p2p.Switch, pv types.PrivValidator) {
+func invalidDoPrevoteFunc(t *testing.T, cs *State, sw *p2p.Switch, pv types.PrivValidator) {
 	// routine to:
 	// - precommit for a random block
 	// - send precommit to all peers
@@ -89,7 +89,8 @@ func invalidDoPrevoteFunc(t *testing.T, height int64, round int32, cs *State, sw
 			Type:             cmtproto.PrecommitType,
 			BlockID: types.BlockID{
 				Hash:          blockHash,
-				PartSetHeader: types.PartSetHeader{Total: 1, Hash: cmtrand.Bytes(32)}},
+				PartSetHeader: types.PartSetHeader{Total: 1, Hash: cmtrand.Bytes(32)},
+			},
 		}
 		p := precommit.ToProto()
 		err = cs.privValidator.SignVote(cs.state.ChainID, p)

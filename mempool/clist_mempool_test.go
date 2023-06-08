@@ -20,6 +20,7 @@ import (
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abciserver "github.com/cometbft/cometbft/abci/server"
 	abci "github.com/cometbft/cometbft/abci/types"
+	types2 "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
@@ -740,4 +741,17 @@ func abciResponses(n int, code uint32) []*abci.ExecTxResult {
 		responses = append(responses, &abci.ExecTxResult{Code: code})
 	}
 	return responses
+}
+
+func doCommit(mp Mempool, app abci.Application, txs types.Txs, height int64) {
+	rfb := &types2.RequestFinalizeBlock{Txs: make([][]byte, len(txs))}
+	for i, tx := range txs {
+		rfb.Txs[i] = tx
+	}
+	app.FinalizeBlock(context.Background(), rfb)
+	mp.Lock()
+	mp.FlushAppConn()
+	app.Commit(context.Background(), &abci.RequestCommit{})
+	mp.Update(height, txs, abciResponses(txs.Len(), abci.CodeTypeOK), nil, nil)
+	mp.Unlock()
 }

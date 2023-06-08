@@ -140,7 +140,7 @@ many parts and each one is described below:
 
 ### [Ingest Service](#ingest-service)
 
-The **Ingest Service** pulls the data from the full node RPC endpoint and store the information retrieved in
+The **Ingest Service** pulls the data from the full node RPC endpoint and stores the information retrieved in
 the RPC Companion database.
 
 > In the future, if a gRPC interface is implemented in the full node this might be used to pull the data

@@ -204,7 +204,7 @@ Let predicate *OK(CheckTxCode)* denote whether *CheckTxCode* is `SUCCESS`.
     - (b) there exists a time *t<sub>stable</sub>* in *p*'s execution
       such that *&#172; OK(CheckTxCode<sub>tx,p,t</sub>)* for all *t > t<sub>stable</sub>*.
 
-Requirement 13 has two main conditions. The implementation of `CheckTx` must fulfill at least one of them.
+Requirement 13 has two conditions. The implementation of `CheckTx` must fulfill at least one of them.
 Condition (a) mandates that `CheckTx` on a transaction never changes its result,
 in other words, that the checks implemented are stateless (e.g., well-formedness, signature verification).
 Condition (b) states that, if the transaction stays in the mempool long enough, it will eventually fail

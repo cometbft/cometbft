@@ -6,6 +6,8 @@ title: Requirements for the Application
 # Requirements for the Application
 
 - [Formal Requirements](#formal-requirements)
+  - [Consensus Connection Requirements](#consensus-connection-requirements)
+  - [Mempool Connection Requirements](#mempool-connection-requirements)
 - [Managing the Application state and related topics](#managing-the-application-state-and-related-topics)
   - [Connection State](#connection-state)
     - [Concurrency](#concurrency)
@@ -32,6 +34,8 @@ title: Requirements for the Application
 
 
 ## Formal Requirements
+
+### Consensus Connection Requirements
 
 This section specifies what CometBFT expects from the Application. It is structured as a set
 of formal requirements that can be used for testing and verification of the Application's logic.
@@ -188,36 +192,33 @@ Likewise, `ExtendVote` can also be non-deterministic:
 * *w<sup>r</sup><sub>p</sub> = w<sup>r</sup><sub>q</sub> &#8655;
   e<sup>r</sup><sub>p</sub> = e<sup>r</sup><sub>q</sub>*
 
-Unlike all requirements described above,
-which affect the ABCI methods of the [Consensus Connection](#consensus-connection),
-the following requirement is on the [Mempool Connection](#mempool-connection).
-Let *CheckTxCode<sub>tx,p,t</sub>* denote the code returned by *p*'s Application, via `ResponseCheckTx`,
-to CometBFT's `RequestCheckTx` call occurring at time *t* and having transaction *tx* as parameter.
+### Mempool Connection Requirements
+
+Before defining our notation, we need to introduce a requirement for `CheckTx` to always
+yield the same result while *p*'s Application is at a given height.
+
+* Requirement 13 [`CheckTx`, same-height immutability]: For any correct process *p*,
+  any transaction *tx*, and any height *h<sub>p</sub>*,
+  `ResponseCheckTx` returns the same result code while *p* is at *h<sub>p</sub>*.
+
+Requirement 13 allows us to use heights rather than time in our notation.
+Let *CheckTxCode<sub>tx,p,h</sub>* denote the result  code returned by *p*'s Application, via `ResponseCheckTx`,
+to CometBFT's `RequestCheckTx` call occurring while the Application is at height *h*
+and having transaction *tx* as parameter.
 Let predicate *OK(CheckTxCode)* denote whether *CheckTxCode* is `SUCCESS`.
 
+* Requirement 14 [`CheckTx`, eventual non-oscillation]: For any correct process *p*
+  and any transaction *tx*, there exists a height *h<sub>p,stable</sub>*
+  such that *OK(CheckTxCode<sub>tx,p,h<sub>p,stable</sub></sub>) = OK(CheckTxCode<sub>tx,p,h</sub>)*
+  for any height *h > h<sub>p,stable</sub>*.
 
-* Requirement 13 [`CheckTx`, finite-oscillation]: For any correct process *p*
-  and any transaction *tx*,
-  
-    - (a) either *OK(CheckTxCode<sub>tx,p,t<sub>0</sub></sub>) = OK(CheckTxCode<sub>tx,p,t<sub>1</sub></sub>)*
-      for any two times *t<sub>0</sub>* and *t<sub>1</sub>* in *p*'s execution, or
-    - (b) there exists a time *t<sub>stable</sub>* in *p*'s execution
-      such that *&#172; OK(CheckTxCode<sub>tx,p,t</sub>)* for all *t > t<sub>stable</sub>*.
-
-Requirement 13 has two conditions. The implementation of `CheckTx` must fulfill at least one of them.
-Condition (a) mandates that `CheckTx` on a transaction never changes its result,
-in other words, that the checks implemented are stateless (e.g., well-formedness, signature verification).
-Condition (b) states that, if the transaction stays in the mempool long enough, it will eventually fail
-`CheckTx` forever.
-Condition (b) is aiming at `CheckTx` implementations that read the Application's state,
-whose result can oscillate as the tx might be validated against different states in successive calls to `CheckTx`.
-Thus, condition (b), while being local to a process *p*, will make sure that the transaction will eventually
-leave the mempool of *all* full nodes.
-Finally, note that Requirement 13 is local to process *p*, i.e.,
-no restrictions are made across different correct processes.
-So we could have that this is true:
-*OK(CheckTxCode<sub>tx,p,t</sub>) &#8800; OK(CheckTxCode<sub>tx,q,t</sub>)*
-for *p &#8800; q*.
+Requirement 14, local to process *p*, ensures that
+a transaction will eventually stop oscillating between `CheckTx` success and failure
+if it stays in *p's* mempool for long enough.
+Thus, whilst being a requirement local to *p*, it ensures that
+a transaction will leave the mempool of *all* full nodes,
+either because it is expunged everywhere due to failing `CheckTx` calls,
+or because it stays valid long enough to be gossipped, proposed and decided.
 
 ## Managing the Application state and related topics
 

@@ -191,7 +191,7 @@ Likewise, `ExtendVote` can also be non-deterministic:
 Unlike all requirements described above,
 which affect the ABCI methods of the [Consensus Connection](#consensus-connection),
 the following requirement is on the [Mempool Connection](#mempool-connection).
-Let *CheckTxCode<sub>tx,p,t</sub>* denote the error code returned by *p*'s Application, via `ResponseCheckTx`,
+Let *CheckTxCode<sub>tx,p,t</sub>* denote the code returned by *p*'s Application, via `ResponseCheckTx`,
 to CometBFT's `RequestCheckTx` call occurring at time *t* and having transaction *tx* as parameter.
 Let predicate *OK(CheckTxCode)* denote whether *CheckTxCode* is `SUCCESS`.
 

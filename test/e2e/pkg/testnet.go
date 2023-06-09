@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"net"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -184,14 +183,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		testnet.LoadTxSizeBytes = defaultTxSizeBytes
 	}
 
-	// Set up nodes, in alphabetical order (IPs and ports get same order).
-	nodeNames := []string{}
-	for name := range manifest.Nodes {
-		nodeNames = append(nodeNames, name)
-	}
-	sort.Strings(nodeNames)
-
-	for _, name := range nodeNames {
+	for _, name := range sortNodeNames(manifest) {
 		nodeManifest := manifest.Nodes[name]
 		ind, ok := ifd.Instances[name]
 		if !ok {

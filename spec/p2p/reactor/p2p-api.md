@@ -138,6 +138,11 @@ While this behaviour makes sense when the method is invoked by other components
 of the p2p layer (e.g., in the case of communication errors), it does not make
 sense when it is invoked by a reactor.
 
+> **Note**
+>
+> A more comprehensive discussion regarding this topic can be found on the
+> [knowledge-base repository](https://github.com/cometbft/knowledge-base/blob/main/p2p/reactors/stop-peer.md).
+
     func (sw *Switch) StopPeerGracefully(peer Peer)
 
 The second method instructs the switch to disconnect from a peer for no

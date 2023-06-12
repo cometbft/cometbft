@@ -70,10 +70,16 @@ message to that peer, using the `Peer.Send()` method
 The result of each unicast send operation (success or failure) is added to the
 returned channel, which is closed when all operations are completed.
 
-> _Note_: while this method is helpful, being adopted by several standard
-> reactors, its current _implementation_ is not efficient, as the marshalling
-> of the provided message is performed as part of the `Peer.Send()` helper
-> method, that is, once per connected peer.
+> **Notes**:
+>
+> - The current _implementation_ of the `Switch.Broadcast(Envelope)` method is
+>   not efficient, as the marshalling of the provided message is performed as
+>   part of the `Peer.Send(Envelope)` helper method, that is, once per
+>   connected peer.
+> - The return value of the broadcast method is not considered by any of the
+>   standard reactors that employ the method. One of the reasons is that is is
+>   not possible to associate each of the boolean outputs added to the
+>   returned channel to a peer.
 
 ### Vetting Peers
 

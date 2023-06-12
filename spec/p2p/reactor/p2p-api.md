@@ -10,6 +10,11 @@ The `Switch` instance is provided to every reactor as part of the reactor's
 The multiple `Peer` instances are provided to every registered reactor whenever
 a [new connection with a peer][reactor-addpeer] is established.
 
+> **Note**
+>
+> The practical reasons that lead to the interface to be provided in two parts,
+> `Switch` and `Peer` instances are discussed in more datail in the
+> [knowledge-base repository](https://github.com/cometbft/knowledge-base/blob/main/p2p/reactors/switch-peer.md).
 
 ## `Switch` API
 

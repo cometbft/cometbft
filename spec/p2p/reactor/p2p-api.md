@@ -62,7 +62,7 @@ currently attempting to connect, so not (yet) connected peers.
 > state, is not an information that should regard the protocol layer.
 > In fact, with the exception of the PEX reactor, which can be considered part
 > of the p2p layer implementation, no standard reactor actually uses this
-> information, that could be removed.
+> information, that could be removed when this interface is refactored.
 
 ### Broadcast
 
@@ -78,7 +78,7 @@ message to that peer, using the `Peer.Send()` method
 The result of each unicast send operation (success or failure) is added to the
 returned channel, which is closed when all operations are completed.
 
-> **Notes**:
+> **Note**
 >
 > - The current _implementation_ of the `Switch.Broadcast(Envelope)` method is
 >   not efficient, as the marshalling of the provided message is performed as
@@ -101,13 +101,12 @@ towards "good" peers:
     func (sw *Switch) MarkPeerAsGood(peer Peer)
 
 At the moment, it is up to the consensus reactor to vet a peer.
-A peer is marked as good whenever the consensus protocol collects a multiple of
-`votesToContributeToBecomeGoodPeer = 10000` useful votes or
-`blocksToContributeToBecomeGoodPeer = 10000` useful block parts from that peer.
-A vote or block part are "useful" when they are valid, expected by the node at
-that stage of the protocol, and received for the first time;
-duplicated or redundant messages, fairly common in gossip-based communication,
-are not counted as "useful".
+In the current logic, a peer is marked as good whenever the consensus protocol
+collects a multiple of `votesToContributeToBecomeGoodPeer = 10000` useful votes
+or `blocksToContributeToBecomeGoodPeer = 10000` useful block parts from that peer.
+By "useful", the consensus implementation considers messages that are valid and
+that are received by the node when the node is expected for such information,
+which excludes for instance duplicated or late received messages.
 
 ### Stopping Peers
 

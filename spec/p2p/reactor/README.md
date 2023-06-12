@@ -2,16 +2,16 @@
 
 Reactor is the generic name for a component that employs the p2p communication layer.
 
-This section documents this **northbound interface** of the p2p layer,
-or the interaction of the p2p layer with reactors.
-The diagram below summarizes this interaction, representing some relevant event
-flows:
+This section documents the interaction of the p2p communication layer with the
+reactors.
+The diagram below summarizes this interaction, namely the **northbound interface**
+of the p2p communication layer, representing some relevant event flows:
 
 <img src="p2p-reactors.png" style="background-color: white">
 
 Each of the protocols running a CometBFT node implements a reactor and registers
 the implementation with the p2p layer.
-The p2p layer then provides network events to the registered reactors, the main
+The p2p layer provides network events to the registered reactors, the main
 two being new connections with peers and received messages.
 The reactors provide to the p2p layer messages to be sent to
 peers and commands to control the operation of the p2p layer.

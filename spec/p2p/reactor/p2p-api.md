@@ -106,7 +106,14 @@ collects a multiple of `votesToContributeToBecomeGoodPeer = 10000` useful votes
 or `blocksToContributeToBecomeGoodPeer = 10000` useful block parts from that peer.
 By "useful", the consensus implementation considers messages that are valid and
 that are received by the node when the node is expected for such information,
-which excludes for instance duplicated or late received messages.
+which excludes duplicated or late received messages.
+
+> **Note**
+>
+> The switch doesn't currently provide a method to mark a peer as a bad peer.
+> In fact, the peer quality management is really implemented in the current
+> version of the p2p layer.
+> This topic is being discussed in the [knowledge-base repository](https://github.com/cometbft/knowledge-base/blob/main/p2p/reactors/peer-quality.md).
 
 ### Stopping Peers
 

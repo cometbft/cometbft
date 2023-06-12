@@ -18,7 +18,12 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+
+	_ "embed"
 )
+
+//go:embed prometheus-yaml.tmpl
+var prometheusYamlTemplate string
 
 const (
 	randomSeed               int64  = 2308084734268
@@ -486,15 +491,7 @@ func (t Testnet) HasPerturbations() bool {
 }
 
 func (t Testnet) prometheusConfigBytes() ([]byte, error) {
-	tmpl, err := template.New("prometheus-yaml").Parse(`global:
-  scrape_interval: 1s
-
-scrape_configs:
-{{- range .Nodes }}
-  - job_name: '{{ .Name }}'
-    static_configs:
-      - targets: ['localhost:{{ .PrometheusProxyPort }}']
-{{end}}`)
+	tmpl, err := template.New("prometheus-yaml").Parse(prometheusYamlTemplate)
 	if err != nil {
 		return nil, err
 	}

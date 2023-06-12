@@ -27,8 +27,10 @@ The following _grammar_ is a simplified representation of the expected sequence 
 from the p2p layer to a reactor.
 Note that the grammar represents events referring to a _single reactor_, while
 the p2p layer supports the execution of multiple reactors.
+For a more detailed representation of the sequence of calls from the p2p layer
+to reactors, please refer to the companion Quint model.
 
-While it is useful to provide an overview of the operation of a reactor,
+While useful to provide an overview of the operation of a reactor,
 grammars have some limitations in terms of the behaviour they can express.
 For instance, the following grammar only represents the management of _a single peer_,
 namely of a peer with a given ID which can connect, disconnect, and reconnect

@@ -656,12 +656,10 @@ func (mem *CListMempool) noRecheckingRequests() bool {
 }
 
 func (mem *CListMempool) increaseNumRecheckingRequests() uint32 {
-	mem.logger.Info("increaseNumRecheckingRequests")
 	return atomic.AddUint32(&mem.numRecheckingRequests, 1)
 }
 
 func (mem *CListMempool) decreaseNumRecheckingRequests() uint32 {
-	mem.logger.Info("decreaseNumRecheckingRequests")
 	if mem.noRecheckingRequests() {
 		panic("Cannot decrease 0 rechecking requests")
 	}

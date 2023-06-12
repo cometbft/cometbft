@@ -102,11 +102,11 @@ func (mem *CListMempool) getCElement(txKey types.TxKey) (*clist.CElement, bool) 
 	return nil, false
 }
 
-func (mem *CListMempool) getMemTx(txKey types.TxKey) (*mempoolTx, bool) {
+func (mem *CListMempool) getMemTx(txKey types.TxKey) *mempoolTx {
 	if e, ok := mem.getCElement(txKey); ok {
-		return e.Value.(*mempoolTx), true
+		return e.Value.(*mempoolTx)
 	}
-	return nil, false
+	return nil
 }
 
 // Called from:
@@ -256,7 +256,7 @@ func (mem *CListMempool) CheckTx(
 		// Note it's possible a tx is still in the cache but no longer in the mempool
 		// (eg. after committing a block, txs are removed from mempool but not cache),
 		// so we only record the sender for txs still in the mempool.
-		if memTx, found := mem.getMemTx(tx.Key()); found {
+		if memTx := mem.getMemTx(tx.Key()); memTx != nil {
 			memTx.addSender(txInfo.SenderID)
 			// TODO: consider punishing peer for dups,
 			// its non-trivial since invalid txs can become valid,
@@ -439,8 +439,8 @@ func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 		mem.metrics.RecheckTimes.Add(1)
 
 		tx := types.Tx(req.GetCheckTx().Tx)
-		memTx, found := mem.getMemTx(tx.Key())
-		if !found {
+		memTx := mem.getMemTx(tx.Key())
+		if memTx == nil {
 			return
 		}
 

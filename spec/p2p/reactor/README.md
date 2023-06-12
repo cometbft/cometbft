@@ -16,6 +16,19 @@ two being new connections with peers and received messages.
 The reactors provide to the p2p layer messages to be sent to
 peers and commands to control the operation of the p2p layer.
 
+It is worth noting that the components depicted in the diagram below run
+multiple routines and that the illustrated actions happen in parallel.
+For instance, the connection establishment routines run in parallel, invoking
+the depicted `AddPeer` method concurrently.
+Once a connection is fully established, each `Peer` instance runs a send and a
+receive routines.
+The send routine collects messages from multiple reactors to a peer, packaging
+then into raw messages which are transmitted to the peer.
+The receive routine processes incoming messages and forwards them to the
+destination reactors, invoking the depicted `Receive` methods.
+In addition, the reactors run multiple routines for interacting
+with the peers (for example, to send messages to them) or with the `Switch`.
+
 The remaining of the documentation is organized as follows:
 
 - [Reactor API](./reactor.md): documents the [`p2p.Reactor`][reactor-interface]

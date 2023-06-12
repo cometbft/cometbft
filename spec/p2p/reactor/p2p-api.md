@@ -56,6 +56,14 @@ a peer the node has accepted a connection from.
 The third field `dialing` reports the number of peers to which the node is
 currently attempting to connect, so not (yet) connected peers.
 
+> **Note**
+>
+> The third field returned by `NumPeers()`, the number of peers in `dialing`
+> state, is not an information that should regard the protocol layer.
+> In fact, with the exception of the PEX reactor, which can be considered part
+> of the p2p layer implementation, no standard reactor actually uses this
+> information, that could be removed.
+
 ### Broadcast
 
 The switch provides, mostly for historical or retro-compatibility reasons,

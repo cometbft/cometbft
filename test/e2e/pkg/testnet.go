@@ -22,9 +22,6 @@ import (
 	_ "embed"
 )
 
-//go:embed prometheus-yaml.tmpl
-var prometheusYamlTemplate string
-
 const (
 	randomSeed               int64  = 2308084734268
 	proxyPortFirst           uint32 = 5701
@@ -489,6 +486,9 @@ func (t Testnet) HasPerturbations() bool {
 	}
 	return false
 }
+
+//go:embed templates/prometheus-yaml.tmpl
+var prometheusYamlTemplate string
 
 func (t Testnet) prometheusConfigBytes() ([]byte, error) {
 	tmpl, err := template.New("prometheus-yaml").Parse(prometheusYamlTemplate)

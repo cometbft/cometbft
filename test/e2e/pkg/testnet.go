@@ -1,14 +1,17 @@
 package e2e
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"math/rand"
 	"net"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/cometbft/cometbft/crypto"
@@ -480,6 +483,39 @@ func (t Testnet) HasPerturbations() bool {
 		}
 	}
 	return false
+}
+
+func (t Testnet) prometheusConfigBytes() ([]byte, error) {
+	tmpl, err := template.New("prometheus-yaml").Parse(`global:
+  scrape_interval: 1s
+
+scrape_configs:
+{{- range .Nodes }}
+  - job_name: '{{ .Name }}'
+    static_configs:
+      - targets: ['localhost:{{ .PrometheusProxyPort }}']
+{{end}}`)
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, t)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (t Testnet) WritePrometheusConfig() error {
+	bytes, err := t.prometheusConfigBytes()
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(filepath.Join(t.Dir, "prometheus.yml"), bytes, 0o644) //nolint:gosec
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Address returns a P2P endpoint address for the node.

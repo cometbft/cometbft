@@ -249,6 +249,11 @@ reported by the peer.
 This information, produced by the Consensus reactor, influences the interaction
 of these two reactors with their peers.
 
+> **Note**
+>
+> More details of how this key-value store is used to share state between reactors can be found on the
+> [knowledge-base repository](https://github.com/cometbft/knowledge-base/blob/main/p2p/reactors/peer-kvstore.md).
+
 ### Send methods
 
 Finally, a `Peer` instance allows a reactor to send messages to companion

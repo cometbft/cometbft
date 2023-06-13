@@ -204,7 +204,7 @@ If *CheckTxCodes<sub>tx,p,h</sub>* is a singleton set, i.e. the Application alwa
 the same result code in `ResponseCheckTx` while at height *h*,
 we define *CheckTxCode<sub>tx,p,h</sub>* as the singleton value of *CheckTxCodes<sub>tx,p,h</sub>*.
 If *CheckTxCodes<sub>tx,p,h</sub>* is not a singleton set, *CheckTxCode<sub>tx,p,h</sub>* is undefined.
-Let predicate *OK(CheckTxCode)* denote whether *CheckTxCode* is `SUCCESS`.
+Let predicate *OK(CheckTxCode<sub>tx,p,h</sub>)* denote whether *CheckTxCode<sub>tx,p,h</sub>* is `SUCCESS`.
 
 * Requirement 13 [`CheckTx`, eventual non-oscillation]: There exists a boolean value *b*,
   and a height *h<sub>stable</sub>*  such that

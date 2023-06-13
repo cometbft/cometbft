@@ -156,7 +156,7 @@ The **Ingest Service** should query the full node for the last `retain height` a
 and process all the heights missing on the database until it catches up with the full node latest height.
 
 In case the **Ingest Service** becomes unavailable for a long time and there are several heights to be synchronized, it is
-important for the **Ingest Service** to do it in a throttled way in order not to stress the full node and cause issues in its consensus processing.
+important for the **Ingest Service** to do it in a throttled way in order not to stress the full node and hinder block generation.
 
 ### [Database](#database)
 

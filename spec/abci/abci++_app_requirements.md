@@ -206,10 +206,10 @@ we define *CheckTxCode<sub>tx,p,h</sub>* as the singleton value of *CheckTxCodes
 If *CheckTxCodes<sub>tx,p,h</sub>* is not a singleton set, *CheckTxCode<sub>tx,p,h</sub>* is undefined.
 Let predicate *OK(CheckTxCode<sub>tx,p,h</sub>)* denote whether *CheckTxCode<sub>tx,p,h</sub>* is `SUCCESS`.
 
-* Requirement 13 [`CheckTx`, eventual non-oscillation]: There exists a boolean value *b*,
-  and a height *h<sub>stable</sub>*  such that
-  for any correct process *p*
-  and any transaction *tx*,
+* Requirement 13 [`CheckTx`, eventual non-oscillation]: For any transaction *tx*,
+  there exists a boolean value *b*,
+  and a height *h<sub>stable</sub>* such that,
+  for any correct process *p*,
   *CheckTxCode<sub>tx,p,h</sub>* is defined, and
   *OK(CheckTxCode<sub>tx,p,h</sub>) = b*
   for any height *h &#8805; h<sub>stable</sub>*.
@@ -224,6 +224,7 @@ or because it stays valid long enough to be gossipped, proposed and decided.
 Although Requirement 13 defines a global *h<sub>stable</sub>*, application developers
 can consider such stabilization height as local to process *p* (*h<sub>p,stable</sub>*),
 without loss for generality.
+In contrast, the value of *b* MUST be the same across all processes.
 
 ## Managing the Application state and related topics
 

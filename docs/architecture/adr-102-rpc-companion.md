@@ -48,7 +48,7 @@ its own storage (database)
 2. Provide its own storage ([Database](#database)) that can handle a high-load of reads and also have a good performance on inserting data.
 3. Implement a [database schema](#database-schema) that needs to be backwards compatible with the current CometBFT RPC.
 4. Do not enforce any breaking changes to the existing RPC.
-5. Ensure the responses returned by the [RPC Companion v1 endpoint](#rpc-endpoint) is wire compatible with the existing CometBFT endpoint.
+5. Ensure the responses returned by the [RPC Companion v1 endpoint](#rpc-endpoint) is wire compatible with the existing CometBFT JSONRPC endpoint.
 6. Implement tests to verify backwards compatibility.
 7. Be able to handle multiple concurrent requests and return idempotent responses.
 8. Do not crash or panic if the querying demand is very high or large responses are returned.
@@ -61,7 +61,7 @@ It is ***NOT*** in the scope of the **RPC Companion**:
 
 ### [RPC Endpoint](#rpc-endpoint)
 
-The RPC Companion endpoint will be the same as the CometBFT endpoint but with a `/v1` appended to it. The RPC Companion endpoint
+The RPC Companion endpoint will be the same as the CometBFT JSONRPC endpoint but with a `/v1` appended to it. The RPC Companion endpoint
 might also use a different port than the default CometBFT RPC port (e.g. `26657`).
 
 For example, suppose these are the URLs for each RPC endpoint:
@@ -70,7 +70,7 @@ CometRPC -> `http://cosmos.host:26657`
 
 RPC Companion -> `http://rpc-companion.host:8080/v1`
 
-To make a request for a `block` at height `5` using the CometBFT endpoint:
+To make a request for a `block` at height `5` using the CometBFT JSONRPC endpoint:
 
 `curl --header "Content-Type: application/json" --request POST --data '{"method": "block", "params": ["5"], "id": 1}' http://cosmos.host:26657`
 
@@ -80,53 +80,53 @@ The make the same request to the RPC Companion endpoint:
 
 > Note that only the URL changes between these two `curl` commands
 
-The RPC Companion will accept JSONRPC requests, the same way as the CometBFT RPC endpoint does.
+The RPC Companion will accept JSONRPC requests, the same way as the CometBFT JSONRPC endpoint does.
 
 The methods for the RPC Companion endpoint on the following table are the ones that can be implemented first since it seems it will be straightforward and less complex
 
-| **JSONRPC method**   | **JSONRPC Parameters**                 | **Description**                                 | **Notes**                                                                                                                                                                                                                                                                               |
-|----------------------|----------------------------------------|-------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `abci_info`          |                                        | Get information about the application           | This companion endpoint will return the same response structure as the CometBFT endpoint. The companion endpoint will return the latest information stored in its database that was retrieved from the full node.                                                                       |
-| `block`              | * height                               | Get block at a specified height                 | This companion endpoint will return the same response structure as the CometBFT endpoint. The data retrieved from the companion database for a particular block will have to be properly serialized into the `block` struct in order to be returned as a response.                      |
-| `block_by_hash`      | * hash                                 | Get block by its hash                           | This companion endpoint will return the same response structure as the CometBFT endpoint.                                                                                                                                                                                               |
-| `block_results`      | * height                               | Get block results at a specified height         | This companion endpoint will return the same response structure as the CometBFT endpoint. The data retrieved from the companion database for a particular block result will have to be properly serialized into the `ResultsBlockResults` struct in order to be returned as a response. |
-| `blockchain`         | * minHeight <br/> * maxHeight          | Get blocks in a specified height range          | This companion endpoint will return the same response structure as the CometBFT endpoint. The data retrieved from the companion database will include one or more blocks.                                                                                                               |
-| `commit`             | * height                               | Get commit results at a specified height        | This companion endpoint will return the same response structure as the CometBFT endpoint.                                                                                                                                                                                               |
-| `consensus_params`   | * height                               | Get consensus parameters at a specified height  | This companion endpoint will return the same response structure as the CometBFT endpoint.                                                                                                                                                                                               |
-| `header`             | * height                               | Get header at a specified height                | This companion endpoint will return the same response structure as the CometBFT endpoint.                                                                                                                                                                                               |
-| `header_by_hash`     | * hash                                 | Get header by its hash                          | This companion endpoint will return the same response structure as the CometBFT endpoint.                                                                                                                                                                                               |
-| `health`             |                                        | Get node health                                 | This endpoint basically only returns an empty response. This can be used to test if the server RPC is up.  While this on CometBFT is used to return a response if the full node is up, when using the companion service this will return an `OK` status if the companion service is up. |
-| `tx`                 | * hash <br/> * prove                   | Get a transaction by its hash                   | This companion endpoint will return the same response structure as the CometBFT endpoint.                                                                                                                                                                                               |
-| `validators`         | * height <br/> * page <br/> * per_page | Get validator set at a specified height         | This companion endpoint will return the same response structure as the CometBFT endpoint.                                                                                                                                                                                               |
+| **JSONRPC method**   | **JSONRPC Parameters**                 | **Description**                                 | **Notes**                                                                                                                                                                                                                                                                             |
+|----------------------|----------------------------------------|-------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `abci_info`          |                                        | Get information about the application           | This method will return the same response structure as the equivalent CometBFT method. It will return the latest information stored in its database that was retrieved from the full node.                                                                                            |
+| `block`              | * height                               | Get block at a specified height                 | This method will return the same response structure as the equivalent CometBFT method. The data retrieved from the companion database for a particular block will have to be properly serialized into the `block` struct in order to be returned as a response.                       |
+| `block_by_hash`      | * hash                                 | Get block by its hash                           | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
+| `block_results`      | * height                               | Get block results at a specified height         | This method will return the same response structure as the equivalent CometBFT method. The data retrieved from the companion database for a particular block result will have to be properly serialized into the `ResultsBlockResults` struct in order to be returned as a response.  |
+| `blockchain`         | * minHeight <br/> * maxHeight          | Get blocks in a specified height range          | This method will return the same response structure as the equivalent CometBFT method. The data retrieved from the companion database will include one or more blocks.                                                                                                                |
+| `commit`             | * height                               | Get commit results at a specified height        | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
+| `consensus_params`   | * height                               | Get consensus parameters at a specified height  | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
+| `header`             | * height                               | Get header at a specified height                | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
+| `header_by_hash`     | * hash                                 | Get header by its hash                          | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
+| `health`             |                                        | Get node health                                 | This method basically only returns an empty response. This can be used to test if the server RPC is up.  While this on CometBFT is used to return a response if the full node is up, when using the companion service this will return an `OK` status if the companion service is up. |
+| `tx`                 | * hash <br/> * prove                   | Get a transaction by its hash                   | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
+| `validators`         | * height <br/> * page <br/> * per_page | Get validator set at a specified height         | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
 
-The following endpoints can also be implemented, but might require some additional effort and complexity to be implemented. These are mostly the `search` and `query` endpoints.
+The following methods can also be implemented, but might require some additional effort and complexity to be implemented. These are mostly the ones that provides `search` and `query` functionalities.
 
-| **JSONRPC method**   | **JSONRPC Parameters**                                               | **Description**                        | **Notes**                                                                                                                                                                                    |
-|----------------------|----------------------------------------------------------------------|----------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `abci_query`         | * path <br/> * data <br/> * height <br/> * prove                     | Query information from the application | This companion endpoint will return the same response structure as the CometBFT endpoint. The RPC companion service will have to implement a proper abci parameter to sql query translation  |
-| `block_search`       | * query <br/> * page <br/> * per_page <br/> * order_by               | Query information about a block        | This companion endpoint will return the same response structure as the CometBFT endpoint. The RPC companion service will have to implement a proper query parameter to sql query translation |
-| `tx_search`          | * query <br/> * page <br/> * per_page <br/> * prove <br/> * order_by | Query information about transactions   | This companion endpoint will return the same response structure as the CometBFT endpoint. The RPC companion service will have to implement a proper query parameter to sql query translation |
+| **JSONRPC method**   | **JSONRPC Parameters**                                               | **Description**                        | **Notes**                                                                                                                                                                                  |
+|----------------------|----------------------------------------------------------------------|----------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `abci_query`         | * path <br/> * data <br/> * height <br/> * prove                     | Query information from the application | This method will return the same response structure as the equivalent CometBFT method. The RPC companion service will have to implement a proper abci parameter to sql query translation.  |
+| `block_search`       | * query <br/> * page <br/> * per_page <br/> * order_by               | Query information about a block        | This method will return the same response structure as the equivalent CometBFT method. The RPC companion service will have to implement a proper query parameter to sql query translation. |
+| `tx_search`          | * query <br/> * page <br/> * per_page <br/> * prove <br/> * order_by | Query information about transactions   | This method will return the same response structure as the equivalent CometBFT method. The RPC companion service will have to implement a proper query parameter to sql query translation. |
 
-These endpoints will proxy the request to the full node. Since they are not dependent on data retrieval from the RPC Companion database they should just act as proxies to the full node.
+These methods will proxy the request to the full node. Since they are not dependent on data retrieval from the RPC Companion database they should just act as proxies to the full node.
 
 Making these proxied methods available throught the RPC Companion endpoint will ensure that clients don't need to implement a routing logic for methods that would not be available in the RPC Companion endpoint.
 
-> The `/broadcast_tx_*` endpoints might need some additional logic for proxying since some of them have different asynchronicity patterns.
+> The `/broadcast_tx_*` methods might need some additional logic for proxying since some of them have different asynchronicity patterns.
 
-| **JSONRPC method**     | *JSONRPC Parameters** | **Description**                           | **Notes**                                                                                                                                                                                                                                       | Proxy |
-|------------------------|-----------------------|-------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------|
-| `broadcast_evidence`   | * evidence            | Broadcast evidence of the misbehavior     | The evidence parameter is in JSON format                                                                                                                                                                                                        | yes   |
-| `broadcast_tx_async`   | * tx                  | Broadcast a transaction                   | Returns right away with no response                                                                                                                                                                                                             | yes   |
-| `broadcast_tx_sync`    | * tx                  | Broadcast a transaction                   | Returns with the response from CheckTx                                                                                                                                                                                                          | yes   |
-| `broadcast_tx_commit`  | * tx                  | Broadcast a transaction                   | Returns with the responses from CheckTx and DeliverTx                                                                                                                                                                                           | yes   |
-| `check_tx`             | * tx                  | Check a transaction                       | Checks a transaction without executing it                                                                                                                                                                                                       | yes   |
-| `consensus_state`      |                       | Gets consensus state                      | The consensus state will not be stored in the RPC companion database so it should proxy the request to the full node                                                                                                                            | yes   |
-| `dump_consensus_state` |                       | Gets the full consensus state             | The consensus state will not be stored in the RPC companion database so it should proxy the request to the full node                                                                                                                            | yes   |
-| `genesis`              |                       | Gets the genesis information              | The RPC companion service can proxy the genesis request to the full node. If there are use cases that serving the genesis from the RPC companion service (no proxy) is desirable then it can be implemented as a RPC companion service endpoint | yes   |
-| `net_info`             |                       | Gets network information                  | The request should proxy to the full node since the RPC companion database will not store network information                                                                                                                                   | yes   |
-| `unconfirmed_txs`      | * limit               | Gets the list of unconfirmed transactions | The request should proxy to the full node since the RPC companion database will not store unconfirmed transactions information                                                                                                                  | yes   |
-| `num_unconfirmed_txs`  |                       | Gets data about unconfirmed transactions  | The request should proxy to the full node since the RPC companion database will not store unconfirmed transactions information                                                                                                                  | yes   |
-| `status`               |                       | Gets node status                          | The request should proxy to the full node since the RPC companion database will not store node status information                                                                                                                               | yes   |
+| **JSONRPC method**     | *JSONRPC Parameters** | **Description**                           | **Notes**                                                                                                                                                                                                             | Proxy |
+|------------------------|-----------------------|-------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------|
+| `broadcast_evidence`   | * evidence            | Broadcast evidence of the misbehavior     | The evidence parameter is in JSON format                                                                                                                                                                              | yes   |
+| `broadcast_tx_async`   | * tx                  | Broadcast a transaction                   | Returns right away with no response                                                                                                                                                                                   | yes   |
+| `broadcast_tx_sync`    | * tx                  | Broadcast a transaction                   | Returns with the response from CheckTx                                                                                                                                                                                | yes   |
+| `broadcast_tx_commit`  | * tx                  | Broadcast a transaction                   | Returns with the responses from CheckTx and DeliverTx                                                                                                                                                                 | yes   |
+| `check_tx`             | * tx                  | Check a transaction                       | Checks a transaction without executing it                                                                                                                                                                             | yes   |
+| `consensus_state`      |                       | Gets consensus state                      | The consensus state will not be stored in the RPC companion database so it should proxy the request to the full node                                                                                                  | yes   |
+| `dump_consensus_state` |                       | Gets the full consensus state             | The consensus state will not be stored in the RPC companion database so it should proxy the request to the full node                                                                                                  | yes   |
+| `genesis`              |                       | Gets the genesis information              | The RPC companion service can proxy the genesis request to the full node. If there are use cases that serving the genesis from the RPC companion service (no proxy) is desirable then it can be implemented as method | yes   |
+| `net_info`             |                       | Gets network information                  | The request should proxy to the full node since the RPC companion database will not store network information                                                                                                         | yes   |
+| `unconfirmed_txs`      | * limit               | Gets the list of unconfirmed transactions | The request should proxy to the full node since the RPC companion database will not store unconfirmed transactions information                                                                                        | yes   |
+| `num_unconfirmed_txs`  |                       | Gets data about unconfirmed transactions  | The request should proxy to the full node since the RPC companion database will not store unconfirmed transactions information                                                                                        | yes   |
+| `status`               |                       | Gets node status                          | The request should proxy to the full node since the RPC companion database will not store node status information                                                                                                     | yes   |
 
 > NOTE: The RPC Companion should not implement logic to store data in its database that can modify state in the blockchain such as
 the `broadcast_tx_*` methods.  These requests will proxy to the full node as outlined above.
@@ -140,7 +140,7 @@ many parts and each one is described below:
 
 ### [Ingest Service](#ingest-service)
 
-The **Ingest Service** pulls the data from the full node RPC endpoint and stores the information retrieved in
+The **Ingest Service** pulls the data from the full node JSONRPC endpoint and stores the information retrieved in
 the RPC Companion database.
 
 > In the future, if a gRPC interface is implemented in the full node this might be used to pull the data
@@ -167,7 +167,7 @@ be much larger due to the fact that the RPC service instance can be scaled. Ther
 throughput should be favored.
 
 For this is initial solution implementation it is proposed that the relational database [Postgresql](https://www.postgresql.org/) should be used in order to support
-the RPC scalability and this will also provide more flexibility when implementing the RPC v2 endpoints that can return data
+the RPC scalability and this will also provide more flexibility when implementing the RPC Companion `/v2` endpoint that can return data
 in different forms and database indexes might also be leveraged in order to boost the query responses performance.
 
 The data needs to be available both for the Ingest Service (writes) and the RPC server instance (reads) and these service might be running from different machines so an embedded database
@@ -182,7 +182,7 @@ full node to prune the inserted data.
 #### [Database Schema](#database-schema)
 
 One of the challenges when implementing this solution is how to design a database schema that can be suitable to return responses that are
-equivalent to the existing endpoints but at the same time offers flexibility in returning customized responses in the future.
+equivalent to the existing CometBFT JSONRPC endpoint but at the same time offers flexibility in returning customized responses in the future.
 
 Currently, CometBFT uses an abstraction layer from [cometbft-db](https://github.com/cometbft/cometbft-db) in order to support multiple embedded databases. These databases store
 data as key-value pairs using a byte array datatype, for example to set a value for a key:
@@ -290,23 +290,23 @@ similar results would be to use a "caching" layer.
 
 ### RPC server instance
 
-The **RPC server instance** is a node that runs the RPC API process for the data companion. This server instance provides an RPC API (v1) with
-the same JSONRPC methods in the full node endpoint. The RPC Companion service will expose the same JSONRPC methods and will accept the same request types and
-return wire compatible responses (should match the same response as the equivalent full node RPC endpoint).
+The **RPC server instance** is a node that runs the RPC API process for the data companion. This server instance provides an RPC API (`/v1`) with
+the same JSONRPC methods of the full node JSONRPC endpoint. The RPC Companion service will expose the same JSONRPC methods and will accept the same request types and
+return wire compatible responses (should match the same response as the equivalent full node JSONRPC endpoint).
 
 The **RPC server instance**, when serving a particular request, retrieves the required data from the database in order to
-fulfill the request. The data should be serialized in a way that makes it wire compatible with the CometBFT RPC endpoint.
+fulfill the request. The data should be serialized in a way that makes it wire compatible with the CometBFT JSONRPC endpoint.
 
 Identical requests should return idempotent responses, no side effects should cause the RPC service to return different responses.
 
-The RPC service endpoints should be exposed through an external load-balancer service such as Cloudflare or AWS ELB, or
+The RPC service endpoint should be exposed through an external load-balancer service such as Cloudflare or AWS ELB, or
 a server running its own load balancer mechanism (e.g. nginx).
 
 The RPC clients should make requests to the **RPC Companion** server instances through this load balancer.
 
 The **RPC server instance** will also implement logic for the proxied requests to the full node. It should properly handle the proxy requests and responses from the full node.
 
-The **RPC Companion** should support the `https` protocol in order to support secure endpoints access. It's recommended that
+The **RPC Companion** should support the `https` protocol in order to support a secure endpoint access. It's recommended that
 the `https` support is provided by the load balancer but in case there's a single **RPC Companion** server instance, having an
 option to use `https` is important and it's backwards compatible with the existing CometBFT RPC that supports that.
 
@@ -317,7 +317,7 @@ option to use `https` is important and it's backwards compatible with the existi
 
 - Alternative and optional **RPC Companion** that is more scalable and reliable with a higher query throughput.
 - Less backpressure on the full node that is running consensus.
-- Possibility for future additional endpoints (v2).
+- Possibility for future additional (e.g a `/v2`) with additional methods not available in the `/v1` endpoint.
 - Allow users to create better and faster indexers and analytics solutions.
 
 ### Negative

@@ -194,31 +194,36 @@ Likewise, `ExtendVote` can also be non-deterministic:
 
 ### Mempool Connection Requirements
 
-Before defining our notation, we need to introduce a requirement for `CheckTx` to always
-yield the same result while *p*'s Application is at a given height.
-
-* Requirement 13 [`CheckTx`, same-height immutability]: For any correct process *p*,
-  any transaction *tx*, and any height *h<sub>p</sub>*,
-  `ResponseCheckTx` returns the same result code while *p* is at *h<sub>p</sub>*.
-
-Requirement 13 allows us to use heights rather than time in our notation.
-Let *CheckTxCode<sub>tx,p,h</sub>* denote the result  code returned by *p*'s Application, via `ResponseCheckTx`,
-to CometBFT's `RequestCheckTx` call occurring while the Application is at height *h*
+Let *CheckTxCodes<sub>tx,p,h</sub>* denote the set of result codes returned by *p*'s Application,
+via `ResponseCheckTx`,
+to successive calls to `RequestCheckTx` occurring while the Application is at height *h*
 and having transaction *tx* as parameter.
+*CheckTxCodes<sub>tx,p,h</sub>* is a set since *p*'s Application may
+return different result codes during height *h*.
+If *CheckTxCodes<sub>tx,p,h</sub>* is a singleton set, i.e. the Application always returned
+the same result code in `ResponseCheckTx` while at height *h*,
+we define *CheckTxCode<sub>tx,p,h</sub>* as the singleton value of *CheckTxCodes<sub>tx,p,h</sub>*.
+If *CheckTxCodes<sub>tx,p,h</sub>* is not a singleton set, *CheckTxCode<sub>tx,p,h</sub>* is undefined.
 Let predicate *OK(CheckTxCode)* denote whether *CheckTxCode* is `SUCCESS`.
 
-* Requirement 14 [`CheckTx`, eventual non-oscillation]: For any correct process *p*
-  and any transaction *tx*, there exists a height *h<sub>p,stable</sub>*
-  such that *OK(CheckTxCode<sub>tx,p,h<sub>p,stable</sub></sub>) = OK(CheckTxCode<sub>tx,p,h</sub>)*
-  for any height *h > h<sub>p,stable</sub>*.
+* Requirement 13 [`CheckTx`, eventual non-oscillation]: There exists a boolean value *b*,
+  and a height *h<sub>stable</sub>*  such that
+  for any correct process *p*
+  and any transaction *tx*,
+  *CheckTxCode<sub>tx,p,h</sub>* is defined, and
+  *OK(CheckTxCode<sub>tx,p,h</sub>) = b*
+  for any height *h &#8805; h<sub>stable</sub>*.
 
-Requirement 14, local to process *p*, ensures that
+Requirement 13 ensures that
 a transaction will eventually stop oscillating between `CheckTx` success and failure
 if it stays in *p's* mempool for long enough.
-Thus, whilst being a requirement local to *p*, it ensures that
-a transaction will leave the mempool of *all* full nodes,
+This condition on the Application's behavior allows the mempool to ensure that
+a transaction will leave the mempool of all full nodes,
 either because it is expunged everywhere due to failing `CheckTx` calls,
 or because it stays valid long enough to be gossipped, proposed and decided.
+Although Requirement 13 defines a global *h<sub>stable</sub>*, application developers
+can consider such stabilization height as local to process *p* (*h<sub>p,stable</sub>*),
+without loss for generality.
 
 ## Managing the Application state and related topics
 

@@ -1102,5 +1102,27 @@ func TestMarshalJSON(t *testing.T) {
 	ps := NewPeerState(nil)
 	data, err := json.Marshal(ps)
 	require.NoError(t, err)
-	require.JSONEq(t, `{"round_state":{"height":0,"round":-1,"step":0,"start_time":"0001-01-01T00:00:00Z","proposal":false,"proposal_block_part_set_header":{"total":0,"hash":""},"proposal_block_parts":null,"proposal_pol_round":-1,"proposal_pol":null,"prevotes":null,"precommits":null,"last_commit_round":-1,"last_commit":null,"catchup_commit_round":-1,"catchup_commit":null},"stats":{"votes":0,"block_parts":0}}`, string(data))
+	require.JSONEq(t, `{
+		"round_state":{
+			"height": "0",
+			"round": -1,
+			"step": 0,
+			"start_time": "0001-01-01T00:00:00Z",
+			"proposal": false,
+			"proposal_block_part_set_header":
+				{"total":0, "hash":""},
+			"proposal_block_parts": null,
+			"proposal_pol_round": -1,
+			"proposal_pol": null,
+			"prevotes": null,
+			"precommits": null,
+			"last_commit_round": -1,
+			"last_commit": null,
+			"catchup_commit_round": -1,
+			"catchup_commit": null
+		},
+		"stats":{
+			"votes":"0",
+			"block_parts":"0"}
+		}`, string(data))
 }

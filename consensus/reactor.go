@@ -1,7 +1,6 @@
 package consensus
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -1076,7 +1075,7 @@ func (ps *PeerState) MarshalJSON() ([]byte, error) {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 	type aPeerState PeerState
-	return json.Marshal(aPeerState(*ps)) //nolint:govet // no risk of concurrent access to PeerState lock when json.Marshal
+	return cmtjson.Marshal(aPeerState(*ps)) //nolint:govet // no risk of concurrent access to PeerState lock when json.Marshal
 }
 
 // GetHeight returns an atomic snapshot of the PeerRoundState's height

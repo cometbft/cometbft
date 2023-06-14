@@ -1433,9 +1433,9 @@ func TestProcessProposalAccept(t *testing.T) {
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			m := abcimocks.NewApplication(t)
-			status := abci.ResponseProcessProposal_REJECT
+			status := abci.PROCESS_PROPOSAL_STATUS_REJECT
 			if testCase.accept {
-				status = abci.ResponseProcessProposal_ACCEPT
+				status = abci.PROCESS_PROPOSAL_STATUS_ACCEPT
 			}
 			m.On("ProcessProposal", mock.Anything, mock.Anything).Return(&abci.ResponseProcessProposal{Status: status}, nil)
 			m.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{}, nil).Maybe()
@@ -1482,13 +1482,13 @@ func TestExtendVoteCalledWhenEnabled(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			m := abcimocks.NewApplication(t)
 			m.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{}, nil)
-			m.On("ProcessProposal", mock.Anything, mock.Anything).Return(&abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil)
+			m.On("ProcessProposal", mock.Anything, mock.Anything).Return(&abci.ResponseProcessProposal{Status: abci.PROCESS_PROPOSAL_STATUS_ACCEPT}, nil)
 			if testCase.enabled {
 				m.On("ExtendVote", mock.Anything, mock.Anything).Return(&abci.ResponseExtendVote{
 					VoteExtension: []byte("extension"),
 				}, nil)
 				m.On("VerifyVoteExtension", mock.Anything, mock.Anything).Return(&abci.ResponseVerifyVoteExtension{
-					Status: abci.ResponseVerifyVoteExtension_ACCEPT,
+					Status: abci.VERIFY_VOTE_EXTENSION_STATUS_ACCEPT,
 				}, nil)
 			}
 			m.On("Commit", mock.Anything, mock.Anything).Return(&abci.ResponseCommit{}, nil).Maybe()
@@ -1564,12 +1564,12 @@ func TestExtendVoteCalledWhenEnabled(t *testing.T) {
 func TestVerifyVoteExtensionNotCalledOnAbsentPrecommit(t *testing.T) {
 	m := abcimocks.NewApplication(t)
 	m.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{}, nil)
-	m.On("ProcessProposal", mock.Anything, mock.Anything).Return(&abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil)
+	m.On("ProcessProposal", mock.Anything, mock.Anything).Return(&abci.ResponseProcessProposal{Status: abci.PROCESS_PROPOSAL_STATUS_ACCEPT}, nil)
 	m.On("ExtendVote", mock.Anything, mock.Anything).Return(&abci.ResponseExtendVote{
 		VoteExtension: []byte("extension"),
 	}, nil)
 	m.On("VerifyVoteExtension", mock.Anything, mock.Anything).Return(&abci.ResponseVerifyVoteExtension{
-		Status: abci.ResponseVerifyVoteExtension_ACCEPT,
+		Status: abci.VERIFY_VOTE_EXTENSION_STATUS_ACCEPT,
 	}, nil)
 	m.On("FinalizeBlock", mock.Anything, mock.Anything).Return(&abci.ResponseFinalizeBlock{}, nil).Maybe()
 	m.On("Commit", mock.Anything, mock.Anything).Return(&abci.ResponseCommit{}, nil).Maybe()
@@ -1640,7 +1640,7 @@ func TestPrepareProposalReceivesVoteExtensions(t *testing.T) {
 	m.On("ExtendVote", mock.Anything, mock.Anything).Return(&abci.ResponseExtendVote{
 		VoteExtension: voteExtensions[0],
 	}, nil)
-	m.On("ProcessProposal", mock.Anything, mock.Anything).Return(&abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil)
+	m.On("ProcessProposal", mock.Anything, mock.Anything).Return(&abci.ResponseProcessProposal{Status: abci.PROCESS_PROPOSAL_STATUS_ACCEPT}, nil)
 
 	// capture the prepare proposal request.
 	rpp := &abci.RequestPrepareProposal{}
@@ -1649,7 +1649,7 @@ func TestPrepareProposalReceivesVoteExtensions(t *testing.T) {
 		return true
 	})).Return(&abci.ResponsePrepareProposal{}, nil)
 
-	m.On("VerifyVoteExtension", mock.Anything, mock.Anything).Return(&abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_ACCEPT}, nil)
+	m.On("VerifyVoteExtension", mock.Anything, mock.Anything).Return(&abci.ResponseVerifyVoteExtension{Status: abci.VERIFY_VOTE_EXTENSION_STATUS_ACCEPT}, nil)
 	m.On("Commit", mock.Anything, mock.Anything).Return(&abci.ResponseCommit{}, nil).Maybe()
 	m.On("FinalizeBlock", mock.Anything, mock.Anything).Return(&abci.ResponseFinalizeBlock{}, nil)
 
@@ -1740,7 +1740,7 @@ func TestFinalizeBlockCalled(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			m := abcimocks.NewApplication(t)
 			m.On("ProcessProposal", mock.Anything, mock.Anything).Return(&abci.ResponseProcessProposal{
-				Status: abci.ResponseProcessProposal_ACCEPT,
+				Status: abci.PROCESS_PROPOSAL_STATUS_ACCEPT,
 			}, nil)
 			m.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{}, nil)
 			// We only expect VerifyVoteExtension to be called on non-nil precommits.
@@ -1748,7 +1748,7 @@ func TestFinalizeBlockCalled(t *testing.T) {
 			if !testCase.voteNil {
 				m.On("ExtendVote", mock.Anything, mock.Anything).Return(&abci.ResponseExtendVote{}, nil)
 				m.On("VerifyVoteExtension", mock.Anything, mock.Anything).Return(&abci.ResponseVerifyVoteExtension{
-					Status: abci.ResponseVerifyVoteExtension_ACCEPT,
+					Status: abci.VERIFY_VOTE_EXTENSION_STATUS_ACCEPT,
 				}, nil)
 			}
 			r := &abci.ResponseFinalizeBlock{AppHash: []byte("the_hash")}
@@ -1857,7 +1857,7 @@ func TestVoteExtensionEnableHeight(t *testing.T) {
 			numValidators := 3
 			m := abcimocks.NewApplication(t)
 			m.On("ProcessProposal", mock.Anything, mock.Anything).Return(&abci.ResponseProcessProposal{
-				Status: abci.ResponseProcessProposal_ACCEPT,
+				Status: abci.PROCESS_PROPOSAL_STATUS_ACCEPT,
 			}, nil)
 			m.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{}, nil)
 			if testCase.expectExtendCalled {
@@ -1865,7 +1865,7 @@ func TestVoteExtensionEnableHeight(t *testing.T) {
 			}
 			if testCase.expectVerifyCalled {
 				m.On("VerifyVoteExtension", mock.Anything, mock.Anything).Return(&abci.ResponseVerifyVoteExtension{
-					Status: abci.ResponseVerifyVoteExtension_ACCEPT,
+					Status: abci.VERIFY_VOTE_EXTENSION_STATUS_ACCEPT,
 				}, nil).Times(numValidators - 1)
 			}
 			m.On("FinalizeBlock", mock.Anything, mock.Anything).Return(&abci.ResponseFinalizeBlock{}, nil).Maybe()

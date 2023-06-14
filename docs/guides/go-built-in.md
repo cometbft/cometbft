@@ -485,7 +485,7 @@ The following code simply accepts all proposals:
 
 ```go
 func (app *KVStoreApplication) ProcessProposal(proposal abcitypes.RequestProcessProposal) abcitypes.ResponseProcessProposal {
-	return abcitypes.ResponseProcessProposal{Status: abcitypes.ResponseProcessProposal_ACCEPT}
+	return abcitypes.ResponseProcessProposal{Status: abcitypes.PROCESS_PROPOSAL_STATUS_ACCEPT}
 }
 ```
 

@@ -18,7 +18,6 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 
-<<<<<<< HEAD
 	abcicli "github.com/tendermint/tendermint/abci/client"
 	"github.com/tendermint/tendermint/abci/example/kvstore"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -41,30 +40,6 @@ import (
 	statemocks "github.com/tendermint/tendermint/state/mocks"
 	"github.com/tendermint/tendermint/store"
 	"github.com/tendermint/tendermint/types"
-=======
-	abcicli "github.com/cometbft/cometbft/abci/client"
-	"github.com/cometbft/cometbft/abci/example/kvstore"
-	abci "github.com/cometbft/cometbft/abci/types"
-	cfg "github.com/cometbft/cometbft/config"
-	cstypes "github.com/cometbft/cometbft/consensus/types"
-	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/crypto/tmhash"
-	"github.com/cometbft/cometbft/libs/bits"
-	"github.com/cometbft/cometbft/libs/bytes"
-	"github.com/cometbft/cometbft/libs/json"
-	"github.com/cometbft/cometbft/libs/log"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	mempl "github.com/cometbft/cometbft/mempool"
-	"github.com/cometbft/cometbft/p2p"
-	p2pmock "github.com/cometbft/cometbft/p2p/mock"
-	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/cometbft/cometbft/proxy"
-	sm "github.com/cometbft/cometbft/state"
-	statemocks "github.com/cometbft/cometbft/state/mocks"
-	"github.com/cometbft/cometbft/store"
-	"github.com/cometbft/cometbft/types"
->>>>>>> f6ea09171 (fix: avoid recursive call after rename to (*PeerState).MarshalJSON (#865))
 )
 
 //----------------------------------------------
@@ -1056,33 +1031,4 @@ func TestVoteSetBitsMessageValidateBasic(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestMarshalJSONPeerState(t *testing.T) {
-	ps := NewPeerState(nil)
-	data, err := json.Marshal(ps)
-	require.NoError(t, err)
-	require.JSONEq(t, `{
-		"round_state":{
-			"height": "0",
-			"round": -1,
-			"step": 0,
-			"start_time": "0001-01-01T00:00:00Z",
-			"proposal": false,
-			"proposal_block_part_set_header":
-				{"total":0, "hash":""},
-			"proposal_block_parts": null,
-			"proposal_pol_round": -1,
-			"proposal_pol": null,
-			"prevotes": null,
-			"precommits": null,
-			"last_commit_round": -1,
-			"last_commit": null,
-			"catchup_commit_round": -1,
-			"catchup_commit": null
-		},
-		"stats":{
-			"votes":"0",
-			"block_parts":"0"}
-		}`, string(data))
 }

@@ -1089,8 +1089,7 @@ func (ps *PeerState) MarshalJSON() ([]byte, error) {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 
-	type jsonPeerState PeerState
-	return cmtjson.Marshal((*jsonPeerState)(ps))
+	return cmtjson.Marshal(ps)
 }
 
 // GetHeight returns an atomic snapshot of the PeerRoundState's height

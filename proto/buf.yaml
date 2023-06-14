@@ -7,5 +7,20 @@ breaking:
 lint:
   use:
     - BASIC
+    - ENUM_VALUE_PREFIX
+    - ENUM_ZERO_VALUE_SUFFIX
     - FILE_LOWER_SNAKE_CASE
     - UNARY_RPC
+  allow_comment_ignores: true
+  ignore_only:
+    ENUM_VALUE_PREFIX:
+      - tendermint
+      - cometbft/abci/v1
+      - cometbft/abci/v2
+      - cometbft/abci/v3
+    ENUM_ZERO_VALUE_SUFFIX:
+      - tendermint
+      - cometbft/abci/v1
+      - cometbft/abci/v2
+      - cometbft/abci/v3
+  enum_zero_value_suffix: _UNKNOWN

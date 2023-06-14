@@ -56,6 +56,9 @@ message Request {
 enum CheckTxType {
   option (gogoproto.goproto_enum_prefix) = false;
 
+  // The non-conventional name for the zero value is preserved
+  // due to history of use.
+  // buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
   CHECK_TX_TYPE_NEW = 0;
   CHECK_TX_TYPE_RECHECK = 1;
 }

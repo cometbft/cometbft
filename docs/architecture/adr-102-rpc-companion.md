@@ -10,7 +10,10 @@ Accepted | Rejected | Deprecated | Superseded by
 
 ## Context
 
-This ADR proposes an architecture of an ***RPC Companion*** solution implemented based on the proposed [ADR-101 Data Companion Pull API](https://github.com/cometbft/cometbft/blob/thane/adr-084-data-companion-pull-api/docs/architecture/adr-101-data-companion-pull-api.md). This solution can run as a sidecar concurrently with the full node, and it is optional.
+This ADR proposes an architecture of an ***RPC Companion*** solution, an instance of the proposed [ADR-101 Data Companion Pull API](https://github.com/cometbft/cometbft/blob/thane/adr-084-data-companion-pull-api/docs/architecture/adr-101-data-companion-pull-api.md).
+
+This solution can run as a sidecar which is a separate process that runs concurrently with the full node, but the RPC Companion is optional meaning that the full node will still provide RPC services that can be queried directly if operators don't want to run
+a RPC Companion service.
 
 This ADR provides a reference implementation of a system that can be used to offload queryable data from a CometBFT
 full node to a database and offering a service that exposes the same JSONRPC methods on a endpoint as the regular JSONRPC methods of a CometBFT node endpoint,
@@ -45,15 +48,15 @@ The **RPC Companion** solution shall:
 
 1. Provide an **[Ingest Service](#ingest-service)** implemented as a data companion that can pull data from the node and store it on
 its own storage (database)
-2. Provide its own storage ([Database](#database)) that can handle a high-load of reads and also have a good performance on inserting data.
-3. Implement a [database schema](#database-schema) that needs to be backwards compatible with the current CometBFT RPC.
-4. Do not enforce any breaking changes to the existing RPC.
-5. Ensure the responses returned by the [RPC Companion v1 endpoint](#rpc-endpoint) is wire compatible with the existing CometBFT JSONRPC endpoint.
-6. Implement tests to verify backwards compatibility.
-7. Be able to handle multiple concurrent requests and return idempotent responses.
-8. Do not crash or panic if the querying demand is very high or large responses are returned.
-9. Storage optimized for an access pattern of faster read throughput than write.
-10. Provide metrics to allow operators to properly monitor the services and infrastructure.
+2. Provide its own storage ([Database](#database)) that can persist the data using a [database schema](#database-schema) that
+can store information that was fetched from the full node in a structured and normalized manner.
+3. Do not enforce any breaking changes to the existing RPC.
+4. Ensure the responses returned by the [RPC Companion v1 endpoint](#rpc-endpoint) is wire compatible with the existing CometBFT JSONRPC endpoint.
+5. Implement tests to verify backwards compatibility.
+6. Be able to handle multiple concurrent requests and return idempotent responses.
+7. Do not crash or panic if the querying demand is very high or large responses are returned.
+8. Storage optimized for an access pattern of faster read throughput than write.
+9. Provide metrics to allow operators to properly monitor the services and infrastructure.
 
 It is ***NOT*** in the scope of the **RPC Companion**:
 
@@ -99,7 +102,12 @@ The methods for the RPC Companion endpoint on the following table are the ones t
 | `tx`                 | * hash <br/> * prove                   | Get a transaction by its hash                   | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
 | `validators`         | * height <br/> * page <br/> * per_page | Get validator set at a specified height         | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
 
-The following methods can also be implemented, but might require some additional effort and complexity to be implemented. These are mostly the ones that provides `search` and `query` functionalities.
+The following methods can also be implemented, but might require some additional effort and complexity to be implemented.
+These are mostly the ones that provides `search` and `query` functionalities. These methods will proxy the request to the
+full node. Since they are not dependent on data retrieval from the RPC Companion database they should just act as proxies
+to the full node. In the future, it might be possible to implement these methods in the RPC Companion if the database
+stores all the information required to be indexed and the queries specified in the JSONRPC methods can be translated into
+SQL statements to return the queried data from the database.
 
 | **JSONRPC method**   | **JSONRPC Parameters**                                               | **Description**                        | **Notes**                                                                                                                                                                                  |
 |----------------------|----------------------------------------------------------------------|----------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -107,9 +115,7 @@ The following methods can also be implemented, but might require some additional
 | `block_search`       | * query <br/> * page <br/> * per_page <br/> * order_by               | Query information about a block        | This method will return the same response structure as the equivalent CometBFT method. The RPC companion service will have to implement a proper query parameter to sql query translation. |
 | `tx_search`          | * query <br/> * page <br/> * per_page <br/> * prove <br/> * order_by | Query information about transactions   | This method will return the same response structure as the equivalent CometBFT method. The RPC companion service will have to implement a proper query parameter to sql query translation. |
 
-These methods will proxy the request to the full node. Since they are not dependent on data retrieval from the RPC Companion database they should just act as proxies to the full node.
-
-Making these proxied methods available throught the RPC Companion endpoint will ensure that clients don't need to implement a routing logic for methods that would not be available in the RPC Companion endpoint.
+The following methods will proxy the requests through the RPC Companion endpoint to the full node to ensure that clients don't need to implement a routing logic for methods that would not be available in the RPC Companion endpoint.
 
 > The `/broadcast_tx_*` methods might need some additional logic for proxying since some of them have different asynchronicity patterns.
 
@@ -166,7 +172,7 @@ very high from a modern database perspective. While the frequency and number of 
 be much larger due to the fact that the RPC service instance can be scaled. Therefore, a database that provides a high read
 throughput should be favored.
 
-For this is initial solution implementation it is proposed that the relational database [Postgresql](https://www.postgresql.org/) should be used in order to support
+For this is initial solution implementation it is proposed that the relational database [PostgreSQL](https://www.postgresql.org/) should be used in order to support
 the RPC scalability and this will also provide more flexibility when implementing the RPC Companion `/v2` endpoint that can return data
 in different forms and database indexes might also be leveraged in order to boost the query responses performance.
 
@@ -202,7 +208,7 @@ func (db *GoLevelDB) Set(key []byte, value []byte) error {
 }
 ```
 
-Since the RPC Companion stores the information in a relational database, there are opportunities to better structure and normalize the data. Here is the schema definition for a table to persist a normalized `ResultBlock` data structure in the database (Postgresql)
+Since the RPC Companion stores the information in a relational database, there are opportunities to better structure and normalize the data. Here is the schema definition for a table to persist a normalized `ResultBlock` data structure in the database (PostgreSQL)
 
 ```sql
 -- Table: comet.result_block
@@ -244,14 +250,14 @@ Additional tables will be required to persist normalized data related to the blo
 
 ##### Data types
 
-This solution will implement a data schema in the database using Postgresql built-in data types. By using a relational database, there's a possibility
+This solution will implement a data schema in the database using PostgreSQL built-in data types. By using a relational database, there's a possibility
 to better normalize the data structures, this might provide savings in storage but might also add to the complexity of returning a particular
 dataset because the data joins that will be required. Also, it would be important ensure the referential integrity is not violated since
 this can cause issues to the clients consuming the data.
 
-In order to accurately ensure the database is storing the full node data types properly, the database might implement custom data types (`domains` in Postgresql).
+In order to accurately ensure the database is storing the full node data types properly, the database might implement custom data types (`domains` in PostgreSQL).
 
-For example, Postgresql doesn't have an unsigned `uint64` datatype, therefore in order to support this in the database, you can use a `domain`, which is a base types with additional constrains. For example, this is the definition of a `uint64` domain:
+For example, PostgreSQL doesn't have an unsigned `uint64` datatype, therefore in order to support this in the database, you can use a `domain`, which is a base types with additional constrains. For example, this is the definition of a `uint64` domain:
 
 ```sql
 -- DOMAIN: comet.uint64
@@ -323,7 +329,8 @@ option to use `https` is important and it's backwards compatible with the existi
 ### Negative
 
 - Additional infrastructure complexity to set up and maintain.
-- Additional infrastructure cost.
+- Additional infrastructure costs if using a load balanced setup for the RPC service endpoint (multiple nodes), a fail-over
+database setup (master/replica), load balancer costs, for example.
 
 ### Neutral
 

@@ -1,5 +1,43 @@
 # CHANGELOG
 
+## v0.37.2
+
+*June 14, 2023*
+
+Provides several minor bug fixes, as well as fixes for several low-severity
+security issues.
+
+### BUG FIXES
+
+- `[state/kvindex]` Querying event attributes that are bigger than int64 is now
+  enabled. We are not supporting reading floats from the db into the indexer
+  nor parsing them into BigFloats to not introduce breaking changes in minor
+  releases. ([\#771](https://github.com/cometbft/cometbft/pull/771))
+- `[pubsub]` Pubsub queries are now able to parse big integers (larger than
+  int64). Very big floats are also properly parsed into very big integers
+  instead of being truncated to int64.
+  ([\#771](https://github.com/cometbft/cometbft/pull/771))
+
+### IMPROVEMENTS
+
+- `[rpc]` Remove response data from response failure logs in order
+  to prevent large quantities of log data from being produced
+  ([\#654](https://github.com/cometbft/cometbft/issues/654))
+
+### SECURITY FIXES
+
+- `[rpc/jsonrpc/client]` **Low severity** - Prevent RPC
+  client credentials from being inadvertently dumped to logs
+  ([\#787](https://github.com/cometbft/cometbft/pull/787))
+- `[cmd/cometbft/commands/debug/kill]` **Low severity** - Fix unsafe int cast in
+  `debug kill` command ([\#793](https://github.com/cometbft/cometbft/pull/793))
+- `[consensus]` **Low severity** - Avoid recursive call after rename to
+  `(*PeerState).MarshalJSON`
+  ([\#863](https://github.com/cometbft/cometbft/pull/863))
+- `[mempool/clist_mempool]` **Low severity** - Prevent a transaction from
+  appearing twice in the mempool
+  ([\#890](https://github.com/cometbft/cometbft/pull/890): @otrack)
+
 ## v0.37.1
 
 *April 26, 2023*

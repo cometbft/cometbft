@@ -3,10 +3,12 @@ package kv
 import (
 	"encoding/binary"
 	"fmt"
+	"math/big"
 	"strconv"
 
 	"github.com/google/orderedcode"
 
+	idxutil "github.com/cometbft/cometbft/internal/indexer"
 	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/types"
@@ -49,13 +51,12 @@ func heightKey(height int64) ([]byte, error) {
 	)
 }
 
-func eventKey(compositeKey, typ, eventValue string, height int64, eventSeq int64) ([]byte, error) {
+func eventKey(compositeKey, eventValue string, height int64, eventSeq int64) ([]byte, error) {
 	return orderedcode.Append(
 		nil,
 		compositeKey,
 		eventValue,
 		height,
-		typ,
 		eventSeq,
 	)
 }
@@ -80,11 +81,11 @@ func parseValueFromPrimaryKey(key []byte) (string, error) {
 
 func parseValueFromEventKey(key []byte) (string, error) {
 	var (
-		compositeKey, typ, eventValue string
-		height                        int64
+		compositeKey, eventValue string
+		height                   int64
 	)
 
-	_, err := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height, &typ)
+	_, err := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse event key: %w", err)
 	}
@@ -94,11 +95,11 @@ func parseValueFromEventKey(key []byte) (string, error) {
 
 func parseHeightFromEventKey(key []byte) (int64, error) {
 	var (
-		compositeKey, typ, eventValue string
-		height                        int64
+		compositeKey, eventValue string
+		height                   int64
 	)
 
-	_, err := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height, &typ)
+	_, err := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height)
 	if err != nil {
 		return -1, fmt.Errorf("failed to parse event key: %w", err)
 	}
@@ -108,27 +109,41 @@ func parseHeightFromEventKey(key []byte) (int64, error) {
 
 func parseEventSeqFromEventKey(key []byte) (int64, error) {
 	var (
-		compositeKey, typ, eventValue string
-		height                        int64
-		eventSeq                      int64
+		compositeKey, eventValue string
+		height                   int64
+		eventSeq                 int64
 	)
 
-	remaining, err := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height, &typ)
+	remaining, err := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height)
 	if err != nil {
-		return 0, fmt.Errorf("failed to parse event key: %w", err)
+		return 0, fmt.Errorf("failed to parse event sequence: %w", err)
 	}
 
-	// This is done to support previous versions that did not have event sequence in their key
-	if len(remaining) != 0 {
-		remaining, err = orderedcode.Parse(remaining, &eventSeq)
-		if err != nil {
-			return 0, fmt.Errorf("failed to parse event key: %w", err)
+	// We either have an event sequence or a function type (potentially) followed by an event sequence.
+	// Potential scenarios:
+	// 1. Events indexed with v0.38.x and later, will only have an event sequence
+	// 2. Events indexed between v0.34.27 and v0.37.x will have a function type and an event sequence
+	// 3. Events indexed before v0.34.27 will only have a function type
+	// function_type = 'being_block_event' | 'end_block_event'
+
+	if len(remaining) == 0 { // The event was not properly indexed
+		return 0, fmt.Errorf("failed to parse event sequence, invalid event format")
+	}
+	var typ string
+	remaining2, err := orderedcode.Parse(remaining, &typ) // Check if we have scenarios 2. or 3. (described above).
+	if err != nil {                                       // If it cannot parse the event function type, it could be 1.
+		remaining, err2 := orderedcode.Parse(string(key), &compositeKey, &eventValue, &height, &eventSeq)
+		if err2 != nil || len(remaining) != 0 { // We should not have anything else after the eventSeq.
+			return 0, fmt.Errorf("failed to parse event sequence: %w; and %w", err, err2)
 		}
-		if len(remaining) != 0 {
-			return 0, fmt.Errorf("unexpected remainder in key: %s", remaining)
+	} else if len(remaining2) != 0 { // Are we in case 2 or 3
+		remaining, err2 := orderedcode.Parse(remaining2, &eventSeq) // the event follows the scenario in 2.,
+		// retrieve the eventSeq
+		// there should be no error
+		if err2 != nil || len(remaining) != 0 { // We should not have anything else after the eventSeq if in 2.
+			return 0, fmt.Errorf("failed to parse event sequence: %w", err2)
 		}
 	}
-
 	return eventSeq, nil
 }
 
@@ -148,10 +163,13 @@ func dedupHeight(conditions []syntax.Condition) (dedupConditions []syntax.Condit
 				if found || heightRangeExists {
 					continue
 				}
-				heightCondition = append(heightCondition, c)
-				heightInfo.height = int64(c.Arg.Number())
-
-				found = true
+				hFloat := c.Arg.Number()
+				if hFloat != nil {
+					h, _ := hFloat.Int64()
+					heightInfo.height = h
+					heightCondition = append(heightCondition, c)
+					found = true
+				}
 			} else {
 				heightInfo.onlyHeightEq = false
 				heightRangeExists = true
@@ -178,15 +196,16 @@ func dedupHeight(conditions []syntax.Condition) (dedupConditions []syntax.Condit
 	return dedupConditions, heightInfo, found
 }
 
-func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) bool {
+func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) (bool, error) {
 	if heightInfo.heightRange.Key != "" {
-		if !checkBounds(heightInfo.heightRange, keyHeight) {
-			return false
+		withinBounds, err := idxutil.CheckBounds(heightInfo.heightRange, big.NewInt(keyHeight))
+		if err != nil || !withinBounds {
+			return false, err
 		}
 	} else {
 		if heightInfo.height != 0 && keyHeight != heightInfo.height {
-			return false
+			return false, nil
 		}
 	}
-	return true
+	return true, nil
 }

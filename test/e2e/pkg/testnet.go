@@ -1,21 +1,25 @@
 package e2e
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"math/rand"
 	"net"
+	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+
+	_ "embed"
 )
 
 const (
@@ -84,6 +88,7 @@ type Testnet struct {
 	UpgradeVersion             string
 	Prometheus                 bool
 	VoteExtensionsEnableHeight int64
+	VoteExtensionSize          uint
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -94,7 +99,8 @@ type Node struct {
 	Mode                Mode
 	PrivvalKey          crypto.PrivKey
 	NodeKey             crypto.PrivKey
-	IP                  net.IP
+	InternalIP          net.IP
+	ExternalIP          net.IP
 	ProxyPort           uint32
 	StartAt             int64
 	BlockSyncVersion    string
@@ -131,7 +137,6 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	dir := strings.TrimSuffix(file, filepath.Ext(file))
 
 	keyGen := newKeyGenerator(randomSeed)
-	proxyPortGen := newPortGenerator(proxyPortFirst)
 	prometheusProxyPortGen := newPortGenerator(prometheusProxyPortFirst)
 	_, ipNet, err := net.ParseCIDR(ifd.Network)
 	if err != nil {
@@ -161,6 +166,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		UpgradeVersion:             manifest.UpgradeVersion,
 		Prometheus:                 manifest.Prometheus,
 		VoteExtensionsEnableHeight: manifest.VoteExtensionsEnableHeight,
+		VoteExtensionSize:          manifest.VoteExtensionSize,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
@@ -184,18 +190,15 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		testnet.LoadTxSizeBytes = defaultTxSizeBytes
 	}
 
-	// Set up nodes, in alphabetical order (IPs and ports get same order).
-	nodeNames := []string{}
-	for name := range manifest.Nodes {
-		nodeNames = append(nodeNames, name)
-	}
-	sort.Strings(nodeNames)
-
-	for _, name := range nodeNames {
+	for _, name := range sortNodeNames(manifest) {
 		nodeManifest := manifest.Nodes[name]
 		ind, ok := ifd.Instances[name]
 		if !ok {
 			return nil, fmt.Errorf("information for node '%s' missing from infrastructure data", name)
+		}
+		extIP := ind.ExtIPAddress
+		if len(extIP) == 0 {
+			extIP = ind.IPAddress
 		}
 		v := nodeManifest.Version
 		if v == "" {
@@ -208,8 +211,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			Testnet:          testnet,
 			PrivvalKey:       keyGen.Generate(manifest.KeyType),
 			NodeKey:          keyGen.Generate("ed25519"),
-			IP:               ind.IPAddress,
-			ProxyPort:        proxyPortGen.Next(),
+			InternalIP:       ind.IPAddress,
+			ExternalIP:       extIP,
+			ProxyPort:        ind.Port,
 			Mode:             ModeValidator,
 			Database:         "goleveldb",
 			ABCIProtocol:     Protocol(testnet.ABCIProtocol),
@@ -348,11 +352,11 @@ func (n Node) Validate(testnet Testnet) error {
 	if n.Name == "" {
 		return errors.New("node has no name")
 	}
-	if n.IP == nil {
+	if n.InternalIP == nil {
 		return errors.New("node has no IP address")
 	}
-	if !testnet.IP.Contains(n.IP) {
-		return fmt.Errorf("node IP %v is not in testnet network %v", n.IP, testnet.IP)
+	if !testnet.IP.Contains(n.InternalIP) {
+		return fmt.Errorf("node IP %v is not in testnet network %v", n.InternalIP, testnet.IP)
 	}
 	if n.ProxyPort == n.PrometheusProxyPort {
 		return fmt.Errorf("node local port %v used also for Prometheus local port", n.ProxyPort)
@@ -364,7 +368,7 @@ func (n Node) Validate(testnet Testnet) error {
 		return fmt.Errorf("local port %v must be >1024", n.PrometheusProxyPort)
 	}
 	for _, peer := range testnet.Nodes {
-		if peer.Name != n.Name && peer.ProxyPort == n.ProxyPort {
+		if peer.Name != n.Name && peer.ProxyPort == n.ProxyPort && peer.ExternalIP.Equal(n.ExternalIP) {
 			return fmt.Errorf("peer %q also has local port %v", peer.Name, n.ProxyPort)
 		}
 		if n.PrometheusProxyPort > 0 {
@@ -483,10 +487,38 @@ func (t Testnet) HasPerturbations() bool {
 	return false
 }
 
+//go:embed templates/prometheus-yaml.tmpl
+var prometheusYamlTemplate string
+
+func (t Testnet) prometheusConfigBytes() ([]byte, error) {
+	tmpl, err := template.New("prometheus-yaml").Parse(prometheusYamlTemplate)
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, t)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (t Testnet) WritePrometheusConfig() error {
+	bytes, err := t.prometheusConfigBytes()
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(filepath.Join(t.Dir, "prometheus.yaml"), bytes, 0o644) //nolint:gosec
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Address returns a P2P endpoint address for the node.
 func (n Node) AddressP2P(withID bool) string {
-	ip := n.IP.String()
-	if n.IP.To4() == nil {
+	ip := n.InternalIP.String()
+	if n.InternalIP.To4() == nil {
 		// IPv6 addresses must be wrapped in [] to avoid conflict with : port separator
 		ip = fmt.Sprintf("[%v]", ip)
 	}
@@ -499,8 +531,8 @@ func (n Node) AddressP2P(withID bool) string {
 
 // Address returns an RPC endpoint address for the node.
 func (n Node) AddressRPC() string {
-	ip := n.IP.String()
-	if n.IP.To4() == nil {
+	ip := n.InternalIP.String()
+	if n.InternalIP.To4() == nil {
 		// IPv6 addresses must be wrapped in [] to avoid conflict with : port separator
 		ip = fmt.Sprintf("[%v]", ip)
 	}
@@ -509,7 +541,7 @@ func (n Node) AddressRPC() string {
 
 // Client returns an RPC client for a node.
 func (n Node) Client() (*rpchttp.HTTP, error) {
-	return rpchttp.New(fmt.Sprintf("http://127.0.0.1:%v", n.ProxyPort), "/websocket")
+	return rpchttp.New(fmt.Sprintf("http://%s:%v", n.ExternalIP, n.ProxyPort), "/websocket")
 }
 
 // Stateless returns true if the node is either a seed node or a light node

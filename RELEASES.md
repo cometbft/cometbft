@@ -160,7 +160,7 @@ backport branch (see above). Otherwise:
 1. Start from the backport branch (e.g. `v0.38.x`).
 2. Run the integration tests and the E2E nightlies
    (which can be triggered from the GitHub UI;
-   e.g., <https://github.com/cometbft/cometbft/actions/workflows/e2e-nightly-37x.yml>).
+   e.g., <https://github.com/cometbft/cometbft/actions/workflows/e2e-manual.yml>).
 3. Prepare the pre-release documentation:
    * Build the changelog with [unclog] _without_ doing an unclog release, and
      commit the built changelog. This ensures that all changelog entries appear

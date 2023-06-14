@@ -7,6 +7,8 @@ title: Requirements for the Application
 
 ## Formal Requirements
 
+### Consensus Connection Requirements
+
 This section specifies what CometBFT expects from the Application. It is structured as a set
 of formal requirements that can be used for testing and verification of the Application's logic.
 
@@ -155,7 +157,7 @@ Additionally, *p*'s `DeliverTx` on transactions creates a set of transaction res
 Note that Requirements 11 and 12, combined with the Agreement property of consensus ensure
 state machine replication, i.e., the Application state evolves consistently at all correct processes.
 
-Finally, notice that `PrepareProposal` <!-- nor `ExtendVote` --> has determinism-related
+Also, notice that `PrepareProposal` <!-- nor `ExtendVote` --> has determinism-related
 requirements associated.
 Indeed, `PrepareProposal` is not required to be deterministic:
 
@@ -170,6 +172,41 @@ Likewise, `ExtendVote` can also be non-deterministic:
 * *w<sup>r</sup><sub>p</sub> = w<sup>r</sup><sub>q</sub> &#8655;
   e<sup>r</sup><sub>p</sub> = e<sup>r</sup><sub>q</sub>*
 -->
+
+### Mempool Connection Requirements
+
+Let *CheckTxCodes<sub>tx,p,h</sub>* denote the set of result codes returned by *p*'s Application,
+via `ResponseCheckTx`,
+to successive calls to `RequestCheckTx` occurring while the Application is at height *h*
+and having transaction *tx* as parameter.
+*CheckTxCodes<sub>tx,p,h</sub>* is a set since *p*'s Application may
+return different result codes during height *h*.
+If *CheckTxCodes<sub>tx,p,h</sub>* is a singleton set, i.e. the Application always returned
+the same result code in `ResponseCheckTx` while at height *h*,
+we define *CheckTxCode<sub>tx,p,h</sub>* as the singleton value of *CheckTxCodes<sub>tx,p,h</sub>*.
+If *CheckTxCodes<sub>tx,p,h</sub>* is not a singleton set, *CheckTxCode<sub>tx,p,h</sub>* is undefined.
+Let predicate *OK(CheckTxCode<sub>tx,p,h</sub>)* denote whether *CheckTxCode<sub>tx,p,h</sub>* is `SUCCESS`.
+
+* Requirement 13 [`CheckTx`, eventual non-oscillation]: For any transaction *tx*,
+  there exists a boolean value *b*,
+  and a height *h<sub>stable</sub>* such that,
+  for any correct process *p*,
+  *CheckTxCode<sub>tx,p,h</sub>* is defined, and
+  *OK(CheckTxCode<sub>tx,p,h</sub>) = b*
+  for any height *h &#8805; h<sub>stable</sub>*.
+
+Requirement 13 ensures that
+a transaction will eventually stop oscillating between `CheckTx` success and failure
+if it stays in *p's* mempool for long enough.
+This condition on the Application's behavior allows the mempool to ensure that
+a transaction will leave the mempool of all full nodes,
+either because it is expunged everywhere due to failing `CheckTx` calls,
+or because it stays valid long enough to be gossipped, proposed and decided.
+Although Requirement 13 defines a global *h<sub>stable</sub>*, application developers
+can consider such stabilization height as local to process *p* (*h<sub>p,stable</sub>*),
+without loss for generality.
+In contrast, the value of *b* MUST be the same across all processes.
+
 ## Managing the Application state and related topics
 
 ### Connection State

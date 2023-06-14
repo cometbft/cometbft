@@ -82,7 +82,7 @@ func PrepareProposal(ctx context.Context, client abcicli.Client, txBytes [][]byt
 	return nil
 }
 
-func ProcessProposal(ctx context.Context, client abcicli.Client, txBytes [][]byte, statusExp types.ResponseProcessProposal_ProposalStatus) error {
+func ProcessProposal(ctx context.Context, client abcicli.Client, txBytes [][]byte, statusExp types.ProcessProposalStatus) error {
 	res, _ := client.ProcessProposal(ctx, &types.RequestProcessProposal{Txs: txBytes})
 	if res.Status != statusExp {
 		fmt.Println("Failed test: ProcessProposal")

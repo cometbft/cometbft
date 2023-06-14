@@ -95,7 +95,7 @@ func (BaseApplication) PrepareProposal(_ context.Context, req *RequestPreparePro
 }
 
 func (BaseApplication) ProcessProposal(context.Context, *RequestProcessProposal) (*ResponseProcessProposal, error) {
-	return &ResponseProcessProposal{Status: ResponseProcessProposal_ACCEPT}, nil
+	return &ResponseProcessProposal{Status: PROCESS_PROPOSAL_STATUS_ACCEPT}, nil
 }
 
 func (BaseApplication) ExtendVote(context.Context, *RequestExtendVote) (*ResponseExtendVote, error) {
@@ -104,7 +104,7 @@ func (BaseApplication) ExtendVote(context.Context, *RequestExtendVote) (*Respons
 
 func (BaseApplication) VerifyVoteExtension(context.Context, *RequestVerifyVoteExtension) (*ResponseVerifyVoteExtension, error) {
 	return &ResponseVerifyVoteExtension{
-		Status: ResponseVerifyVoteExtension_ACCEPT,
+		Status: VERIFY_VOTE_EXTENSION_STATUS_ACCEPT,
 	}, nil
 }
 

@@ -355,7 +355,7 @@ func cmdTest(cmd *cobra.Command, _ []string) error {
 			func() error {
 				return servertest.ProcessProposal(ctx, client, [][]byte{
 					{0x01},
-				}, types.ResponseProcessProposal_ACCEPT)
+				}, types.PROCESS_PROPOSAL_STATUS_ACCEPT)
 			},
 		})
 }
@@ -757,7 +757,7 @@ func printResponse(cmd *cobra.Command, args []string, rsps ...response) {
 			fmt.Printf("-> log: %s\n", rsp.Log)
 		}
 		if cmd.Use == "process_proposal" {
-			fmt.Printf("-> status: %s\n", types.ResponseProcessProposal_ProposalStatus(rsp.Status).String())
+			fmt.Printf("-> status: %s\n", types.ProcessProposalStatus(rsp.Status).String())
 		}
 
 		if rsp.Query != nil {

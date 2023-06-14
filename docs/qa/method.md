@@ -118,113 +118,45 @@ The CometBFT team should improve it at every iteration to increase the amount of
 #### Steps
 
 1. Unzip the blockstore into a directory
-2. Extract the latency report and the raw latencies for all the experiments. Run these commands from the directory containing the blockstore.
-  It is advisable to adjust the hash in the `go run` command to the latest possible.
-    * ```bash
-       mkdir results
-       go run github.com/cometbft/cometbft/test/loadtime/cmd/report@1f524d129 --database-type goleveldb --data-dir ./ > results/report.txt
-       go run github.com/cometbft/cometbft/test/loadtime/cmd/report@1f524d129 --database-type goleveldb --data-dir ./ --csv results/raw.csv
-       ```
-3. File `report.txt` contains an unordered list of experiments with varying concurrent connections and transaction rate
-    * If you are looking for the saturation point
+2. To identify saturation points
+   1. Extract the latency report for all the experiments. 
+       * Run these commands from the directory containing the `blockstore.db` folder.
+       * It is advisable to adjust the hash in the `go run` command to the latest possible.
+       * ```bash
+         mkdir results
+         go run github.com/cometbft/cometbft/test/loadtime/cmd/report@3003ef7 --database-type goleveldb --data-dir ./ > results/report.txt
+         ```
+   2. File `report.txt` contains an unordered list of experiments with varying concurrent connections and transaction rate.
+      You will need to separate data per experiment.
+
         * Create files `report01.txt`, `report02.txt`, `report04.txt` and, for each experiment in file `report.txt`,
           copy its related lines to the filename that matches the number of connections, for example
+
           ```bash
           for cnum in 1 2 4; do echo "$cnum"; grep "Connections: $cnum" results/report.txt -B 2 -A 10 > results/report$cnum.txt;  done
           ```
 
         * Sort the experiments in `report01.txt` in ascending tx rate order. Likewise for `report02.txt` and `report04.txt`.
-    * Otherwise just keep `report.txt`, and skip step 4.
-4. Generate file `report_tabbed.txt` by showing the contents `report01.txt`, `report02.txt`, `report04.txt` side by side
-    * This effectively creates a table where rows are a particular tx rate and columns are a particular number of websocket connections.
-    * Combine the column files into a single table file:
-      * Replace tabs by spaces in all column files. For example, 
-        `sed -i.bak 's/\t/    /g' results/report1.txt`.
-      * Merge the new column files into one: 
-        `paste results/report1.txt results/report2.txt results/report4.txt | column -s $'\t' -t > report_tabbed.txt`
-5. Extract the raw latencies from file `raw.csv` using the following bash loop. This creates a `.csv` file and a `.dat` file per experiment.
-   The format of the `.dat` files is amenable to loading them as matrices in Octave.
-     * Adapt the values of the for loop variables according to the experiments that you ran (check `report.txt`).
-     * Adapt `report*.txt` to the files you produced in step 3.
+        * Otherwise just keep `report.txt`, and skip to the next step.
+    4. Generate file `report_tabbed.txt` by showing the contents `report01.txt`, `report02.txt`, `report04.txt` side by side
+        * This effectively creates a table where rows are a particular tx rate and columns are a particular number of websocket connections.
+        * Combine the column files into a single table file:
+           * Replace tabs by spaces in all column files. For example, 
+             `sed -i.bak 's/\t/    /g' results/report1.txt`.
+        * Merge the new column files into one: 
+           `paste results/report1.txt results/report2.txt results/report4.txt | column -s $'\t' -t > report_tabbed.txt`
 
-    ```bash
-    uuids=($(cat report01.txt report02.txt report04.txt | grep '^Experiment ID: ' | awk '{ print $3 }'))
-    c=1
-    rm -f *.dat
-    for i in 01 02 04; do
-      for j in 0025 0050 0100 0200; do
-        echo $i $j $c "${uuids[$c]}"
-        filename=c${i}_r${j}
-        grep ${uuids[$c]} raw.csv > ${filename}.csv
-        cat ${filename}.csv | tr , ' ' | awk '{ print $2, $3 }' >> ${filename}.dat
-        c=$(expr $c + 1)
-      done
-    done
-    ```
-
-6. Enter Octave
-7. Load all `.dat` files generated in step 5 into matrices using this Octave code snippet
-
-    ```octave
-    conns =  { "01"; "02"; "04" };
-    rates =  { "0025"; "0050"; "0100"; "0200" };
-    for i = 1:length(conns)
-      for j = 1:length(rates)
-        filename = strcat("c", conns{i}, "_r", rates{j}, ".dat");
-        load("-ascii", filename);
-      endfor
-    endfor
-    ```
-
-8. Set variable release to the current release undergoing QA
-
-    ```octave
-    release = "v0.34.x";
-    ```
-
-9. Generate a plot with all (or some) experiments, where the X axis is the experiment time,
-   and the y axis is the latency of transactions.
-   The following snippet plots all experiments.
-
-    ```octave
-    legends = {};
-    hold off;
-    for i = 1:length(conns)
-      for j = 1:length(rates)
-        data_name = strcat("c", conns{i}, "_r", rates{j});
-        l = strcat("c=", conns{i}, " r=", rates{j});
-        m = eval(data_name); plot((m(:,1) - min(m(:,1))) / 1e+9, m(:,2) / 1e+9, ".");
-        hold on;
-        legends(1, end+1) = l;
-      endfor
-    endfor
-    legend(legends, "location", "northeastoutside");
-    xlabel("experiment time (s)");
-    ylabel("latency (s)");
-    t = sprintf("200-node testnet - %s", release);
-    title(t);
-    ```
-
-10. Consider adjusting the axis, in case you want to compare your results to the baseline, for instance
-
-    ```octave
-    axis([0, 100, 0, 30], "tic");
-    ```
-
-11. Use Octave's GUI menu to save the plot (e.g. as `.png`)
-
-12. Repeat steps 9 and 10 to obtain as many plots as deemed necessary.
-
-13. To generate a latency vs throughput plot, using the raw CSV file generated
-    in step 2, follow the instructions for the [`latency_throughput.py`] script.
+3. To generate a latency vs throughput plot, extract the data as a CSV
+    * ```bash
+       go run github.com/cometbft/cometbft/test/loadtime/cmd/report@3003ef7 --database-type goleveldb --data-dir ./ --csv results/raw.csv
+       ```
+    * Follow the instructions for the [`latency_throughput.py`] script.
     This plot is useful to visualize the saturation point.
-
-[`latency_throughput.py`]: ../../scripts/qa/reporting/README.md#Latency-vs-Throughput-Plotting
-
-14. Alternatively,  follow the instructions for the [`latency_plotter.py`] script.
-    This script generates a series of plots per experiment and configuration that my
+    * Alternatively,  follow the instructions for the [`latency_plotter.py`] script.
+    This script generates a series of plots per experiment and configuration that may
     help with visualizing Latency vs Throughput variation.
 
+[`latency_throughput.py`]: ../../scripts/qa/reporting/README.md#Latency-vs-Throughput-Plotting
 [`latency_plotter.py`]: ../../scripts/qa/reporting/README.md#Latency-vs-Throughput-Plotting-version-2
 
 #### Extracting Prometheus Metrics
@@ -283,3 +215,48 @@ In order to obtain a latency plot, follow the instructions above for the 200 nod
 but the `results.txt` file contains only one experiment.
 
 As for prometheus, the same method as for the 200 node experiment can be applied.
+
+## Vote Extensions Testnet
+
+### Running the test
+
+This section explains how the tests were carried out for reproducibility purposes.
+
+1. [If you haven't done it before]
+   Follow steps 1-4 of the `README.md` at the top of the testnet repository to configure Terraform, and `doctl`.
+2. Copy file `varyVESize.toml` onto `testnet.toml` (do NOT commit this change).
+3. Set variable `VERSION_TAG` in the `Makefile` to the git hash that is to be tested.
+4. Follow steps 5-10 of the `README.md` to configure and start the testnet
+    * WARNING: Do NOT forget to run `make terraform-destroy` as soon as you are done with the tests
+5. Configure the load runner to produce the desired transaction load.
+    * set makefile variables `ROTATE_CONNECTIONS`, `ROTATE_TX_RATE`, to values that will produce the desired transaction load.
+    * set `ROTATE_TOTAL_TIME` to 150 (seconds).
+    * set `ITERATIONS` to the number of iterations that each configuration should run for.
+6. Execute steps 5-10 of the `README.md` file at the testnet repository.
+
+7. Repeat the following steps for each desired `vote_extension_size`
+    1. Update the configuration (you can skip this step if you didn't change the `vote_extension_size`)
+        * Update the `vote_extensions_size` in the `testnet.toml` to the desired value.
+        * `make configgen`
+        * `ANSIBLE_SSH_RETRIES=10 ansible-playbook ./ansible/re-init-testapp.yaml -u root -i ./ansible/hosts --limit=validators -e "testnet_dir=testnet" -f 20`
+        * `make restart`
+    2. Run the test
+        * `make runload`
+          This will repeat the tests `ITERATIONS` times every time it is invoked. 
+    3. Collect your data 
+        * `make retrieve-data` 
+          Gathers all relevant data from the testnet into the orchestrating machine, inside folder `experiments`.
+          Two subfolders are created, one blockstore DB for a CometBFT validator and one for the Prometheus DB data.
+        * Verify that the data was collected without errors with `zip -T` on the `prometheus.zip` file and (one of) the `blockstore.db.zip` file(s).
+8. Clean up your setup.
+    * `make terraform-destroy`; don't forget that you need to type **yes** for it to complete.
+
+
+### Result Extraction
+
+In order to obtain a latency plot, follow the instructions above for the 200 node experiment, but:
+
+* The `results.txt` file contains only one experiment
+* Therefore, no need for any `for` loops
+
+As for Prometheus, the same method as for the 200 node experiment can be applied.

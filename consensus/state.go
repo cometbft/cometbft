@@ -1940,6 +1940,11 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 	}
 
 	cs.metrics.BlockGossipPartsReceived.With("matches_current", "true").Add(1)
+	if !added {
+		// NOTE: we are disregarding possible duplicates above where heights dont match or we're not expecting block parts yet
+		// but between the matches_current = true and false, we have all the info.
+		cs.metrics.DuplicateBlockPart.Add(1)
+	}
 
 	if cs.ProposalBlockParts.ByteSize() > cs.state.ConsensusParams.Block.MaxBytes {
 		return added, fmt.Errorf("total size of proposal block parts exceeds maximum block bytes (%d > %d)",
@@ -2013,6 +2018,8 @@ func (cs *State) handleCompleteProposal(blockHeight int64) {
 // Attempt to add the vote. if its a duplicate signature, dupeout the validator
 func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 	added, err := cs.addVote(vote, peerID)
+
+	// NOTE: some of these errors are swallowed here
 	if err != nil {
 		// If the vote height is off, we'll just ignore it,
 		// But if it's a conflicting sig, add it to the cs.evpool.
@@ -2082,12 +2089,16 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 		if cs.Step != cstypes.RoundStepNewHeight {
 			// Late precommit at prior height is ignored
 			cs.Logger.Debug("precommit vote came in after commit timeout and has been ignored", "vote", vote)
-			return
+			return added, err
 		}
 
 		added, err = cs.LastCommit.AddVote(vote)
 		if !added {
-			return
+			// If the vote wasnt added but there's no error, its a duplicate vote
+			if err == nil {
+				cs.metrics.DuplicateVote.Add(1)
+			}
+			return added, err
 		}
 
 		cs.Logger.Debug("added vote to last precommits", "last_commit", cs.LastCommit.StringShort())
@@ -2104,14 +2115,14 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 			cs.enterNewRound(cs.Height, 0)
 		}
 
-		return
+		return added, err
 	}
 
 	// Height mismatch is ignored.
 	// Not necessarily a bad peer, but not favorable behavior.
 	if vote.Height != cs.Height {
 		cs.Logger.Debug("vote ignored and not added", "vote_height", vote.Height, "cs_height", cs.Height, "peer", peerID)
-		return
+		return added, err
 	}
 
 	// Check to see if the chain is configured to extend votes.
@@ -2161,7 +2172,12 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 	added, err = cs.Votes.AddVote(vote, peerID, extEnabled)
 	if !added {
 		// Either duplicate, or error upon cs.Votes.AddByIndex()
-		return
+
+		// If the vote wasnt added but there's no error, its a duplicate vote
+		if err == nil {
+			cs.metrics.DuplicateVote.Add(1)
+		}
+		return added, err
 	}
 	if vote.Round == cs.Round {
 		vals := cs.state.Validators

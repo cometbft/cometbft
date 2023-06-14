@@ -148,7 +148,7 @@ message ResponseOfferSnapshot {
 enum OfferSnapshotResult {
   option (gogoproto.goproto_enum_prefix) = false;
 
-  OFFER_SNAPSHOT_RESULT_UNSPECIFIED = 0; // Unknown result, abort all snapshot restoration
+  OFFER_SNAPSHOT_RESULT_UNKNOWN = 0; // Unknown result, abort all snapshot restoration
   OFFER_SNAPSHOT_RESULT_ACCEPT = 1; // Snapshot accepted, apply chunks
   OFFER_SNAPSHOT_RESULT_ABORT = 2; // Abort all snapshot restoration
   OFFER_SNAPSHOT_RESULT_REJECT = 3; // Reject this specific snapshot, try others
@@ -165,7 +165,7 @@ message ResponseApplySnapshotChunk {
 enum ApplySnapshotChunkResult {
   option (gogoproto.goproto_enum_prefix) = false;
 
-  APPLY_SNAPSHOT_CHUNK_RESULT_UNSPECIFIED = 0; // Unknown result, abort all snapshot restoration
+  APPLY_SNAPSHOT_CHUNK_RESULT_UNKNOWN = 0; // Unknown result, abort all snapshot restoration
   APPLY_SNAPSHOT_CHUNK_RESULT_ACCEPT = 1; // Chunk successfully accepted
   APPLY_SNAPSHOT_CHUNK_RESULT_ABORT = 2; // Abort all snapshot restoration
   APPLY_SNAPSHOT_CHUNK_RESULT_RETRY = 3; // Retry chunk (combine with refetch and reject)
@@ -180,7 +180,7 @@ message ResponseProcessProposal {
 enum ProcessProposalStatus {
   option (gogoproto.goproto_enum_prefix) = false;
 
-  PROCESS_PROPOSAL_STATUS_UNSPECIFIED = 0;
+  PROCESS_PROPOSAL_STATUS_UNKNOWN = 0;
   PROCESS_PROPOSAL_STATUS_ACCEPT = 1;
   PROCESS_PROPOSAL_STATUS_REJECT = 2;
 }
@@ -192,7 +192,7 @@ message ResponseVerifyVoteExtension {
 enum VerifyVoteExtensionStatus {
   option (gogoproto.goproto_enum_prefix) = false;
 
-  VERIFY_VOTE_EXTENSION_STATUS_UNSPECIFIED = 0;
+  VERIFY_VOTE_EXTENSION_STATUS_UNKNOWN = 0;
   VERIFY_VOTE_EXTENSION_STATUS_ACCEPT = 1;
   // Rejecting the vote extension will reject the entire precommit by the sender.
   // Incorrectly implementing this thus has liveness implications as it may affect
@@ -207,7 +207,7 @@ enum VerifyVoteExtensionStatus {
 enum MisbehaviorType {
   option (gogoproto.goproto_enum_prefix) = false;
 
-  MISBEHAVIOR_TYPE_UNSPECIFIED = 0;
+  MISBEHAVIOR_TYPE_UNKNOWN = 0;
   MISBEHAVIOR_TYPE_DUPLICATE_VOTE = 1;
   MISBEHAVIOR_TYPE_LIGHT_CLIENT_ATTACK = 2;
 }

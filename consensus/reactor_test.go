@@ -1098,7 +1098,7 @@ func TestVoteSetBitsMessageValidateBasic(t *testing.T) {
 	}
 }
 
-func TestMarshalJSON(t *testing.T) {
+func TestMarshalJSONPeerState(t *testing.T) {
 	ps := NewPeerState(nil)
 	data, err := json.Marshal(ps)
 	require.NoError(t, err)

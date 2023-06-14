@@ -11,22 +11,6 @@ This documentation, therefore, considers the releases `0.34.*` of CometBFT, more
 specifically, the branch [`v0.34.x`](https://github.com/cometbft/cometbft/tree/v0.34.x)
 of this repository.
 
-## Overview
-
-A CometBFT network is composed of multiple CometBFT instances, hereafter
-called **nodes**, that interact by exchanging messages.
-
-CometBFT assumes a partially-connected network model.
-This means that a node is not assumed to be directly connected to every other
-node in the network.
-Instead, each node is directly connected to a subset of other nodes in the
-network, hereafter called its **peers**.
-
-The peer-to-peer (p2p) communication layer is responsible for establishing
-connections between nodes in a CometBFT network,
-for managing the communication between a node and its peers,
-and for intermediating the exchange of messages between peers in CometBFT protocols.
-
 ## Contents
 
 The documentation follows the organization of the `p2p` package of CometBFT,

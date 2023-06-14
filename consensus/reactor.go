@@ -1074,8 +1074,18 @@ func (ps *PeerState) GetRoundState() *cstypes.PeerRoundState {
 func (ps *PeerState) MarshalJSON() ([]byte, error) {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
-	type aPeerState PeerState
-	return cmtjson.Marshal(aPeerState(*ps)) //nolint:govet // no risk of concurrent access to PeerState lock when json.Marshal
+
+	// We need to recreate a new type, rather than just copying PeerState,
+	// because the copying Mutexes is wrong (see doc of sync.Mutex)
+	type jsonPeerStateT struct {
+		PRS   cstypes.PeerRoundState `json:"round_state"`
+		Stats *peerStateStats        `json:"stats"`
+	}
+	peerStateCopy := jsonPeerStateT{
+		PRS:   ps.PRS,
+		Stats: ps.Stats,
+	}
+	return cmtjson.Marshal(peerStateCopy)
 }
 
 // GetHeight returns an atomic snapshot of the PeerRoundState's height

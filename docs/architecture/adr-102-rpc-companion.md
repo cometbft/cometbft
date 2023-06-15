@@ -326,7 +326,7 @@ option to use `https` is important and it's backwards compatible with the existi
 - Alternative and optional **RPC Companion** that is more scalable and reliable with a higher query throughput.
 - Less backpressure on the full node that is running consensus.
 - Possibility for future additional (e.g a `/v2`) with additional methods not available in the `/v1` endpoint.
-- Allow users to create better and faster indexers and analytics solutions.
+- Can act as a basis for users to create better and faster indexers and analytics solutions.
 
 ### Negative
 

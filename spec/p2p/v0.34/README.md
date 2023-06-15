@@ -4,10 +4,9 @@ This section documents the implementation of the peer-to-peer (p2p)
 communication layer in CometBFT.
 
 The documentation was [produced](https://github.com/tendermint/tendermint/pull/9348)
-using the `v0.34.*` releases of CometBFT as reference,
-more specifically, the branch
-[`v0.34.x`](https://github.com/cometbft/cometbft/tree/v0.34.x)
-of this repository.
+using the `v0.34.*` releases
+and the branch [`v0.34.x`](https://github.com/cometbft/cometbft/tree/v0.34.x)
+of this repository as reference.
 
 As no substancial changes were introduced in the p2p implementation, this
 documentation also applies to the subsequent CometBFT releases `v0.37.*`

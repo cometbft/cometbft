@@ -13,14 +13,14 @@ A CometBFT network is composed of multiple CometBFT instances, hereafter called
 CometBFT assumes a partially-connected network model.
 This means that a node is not assumed to be directly connected to every other
 node in the network.
-Instead, each node is directly connected to a subset of other nodes,
+Instead, each node is directly connected to only a subset of other nodes,
 hereafter called its `peers`.
 
-The peer-to-peer (p2p) communication layer is the component of CometBFT responsible for:
+The peer-to-peer (p2p) communication layer is then the component of CometBFT that:
 
-1. establishing connections between nodes in a CometBFT network
-2. managing the communication between a node and the connected peers
-3. intermediating the exchange of messages between peers in CometBFT protocols
+1. establishes connections between nodes in a CometBFT network
+2. manages the communication between a node and the connected peers
+3. intermediates the exchange of messages between peers in CometBFT protocols
 
 
 > **Note**

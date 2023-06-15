@@ -48,15 +48,14 @@ The **RPC Companion** solution shall:
 
 1. Provide an **[Ingest Service](#ingest-service)** implemented as a data companion that can pull data from the node and store it on
 its own storage (database)
-2. Provide its own storage ([Database](#database)) that can persist the data using a [database schema](#database-schema) that
+2. Provide a storage ([Database](#database)) that can persist the data using a [database schema](#database-schema) that
 can store information that was fetched from the full node in a structured and normalized manner.
 3. Do not enforce any breaking changes to the existing RPC.
 4. Ensure the responses returned by the [RPC Companion v1 endpoint](#rpc-endpoint) is wire compatible with the existing CometBFT JSONRPC endpoint.
 5. Implement tests to verify backwards compatibility.
 6. Be able to handle multiple concurrent requests and return idempotent responses.
-7. Do not crash or panic if the querying demand is very high or large responses are returned.
-8. Storage optimized for an access pattern of faster read throughput than write.
-9. Provide metrics to allow operators to properly monitor the services and infrastructure.
+7. Use a database that is optimized for an access pattern of faster read throughput than write throughput for storing data.
+8. Provide metrics to allow operators to properly monitor the services and infrastructure.
 
 It is ***NOT*** in the scope of the **RPC Companion**:
 
@@ -246,7 +245,8 @@ CREATE TABLE IF NOT EXISTS comet.result_block
 ) TABLESPACE pg_default;
 ```
 
-Additional tables will be required to persist normalized data related to the block structure. All database schema will be available in the `rpc-companion` Github repository under the `/database/schema` folder.
+Additional tables will be required to persist normalized data related to the block structure. All database schema will be
+available in the `rpc-companion` Github repository under the `/database/schema` folder.
 
 ##### Data types
 
@@ -255,9 +255,11 @@ to better normalize the data structures, this might provide savings in storage b
 dataset because the data joins that will be required. Also, it would be important ensure the referential integrity is not violated since
 this can cause issues to the clients consuming the data.
 
-In order to accurately ensure the database is storing the full node data types properly, the database might implement custom data types (`domains` in PostgreSQL).
+In order to accurately ensure the database is storing the full node data types properly, the database might implement
+custom data types (`domains` in PostgreSQL).
 
-For example, PostgreSQL doesn't have an unsigned `uint64` datatype, therefore in order to support this in the database, you can use a `domain`, which is a base types with additional constrains. For example, this is the definition of a `uint64` domain:
+For example, PostgreSQL doesn't have an unsigned `uint64` datatype, therefore in order to support this in the database,
+you can use a `domain`, which is a base type with additional constrains. For example, this is the definition of a `uint64` domain:
 
 ```sql
 -- DOMAIN: comet.uint64

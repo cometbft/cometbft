@@ -148,7 +148,8 @@ many parts and each one is described below:
 ### [Ingest Service](#ingest-service)
 
 The **Ingest Service** pulls the data from the full node JSONRPC endpoint and stores the information retrieved in
-the RPC Companion database.
+the RPC Companion database. The **Ingest Service** should run as a "singleton" which means only one instance of this service
+should be fetching the information from the CometBFT full node.
 
 > In the future, if a gRPC interface is implemented in the full node this might be used to pull the data
 from the server.
@@ -288,7 +289,10 @@ problem.
 One way is to support a mechanism to migrate the old data to the new data structures. This would require additional logic for the migration process
 that would need to be run before ingesting data from an upgraded full node that contains the new data structures. But this approach might also
 cause some issues, for example, if the new data structure has a new field that there's no corresponding value in the "old" data structure, probably
-the value would need to be set to `[null]` but this can have unintended consequences.
+the value would need to be set to `[null]` but this can have unintended consequences. It's important to ensure that in the future if this solution
+is largely adopted and used, then a change request that affects the schema as outlined above should also contain the details needs to ensure how
+PostgreSQL should handle this change.
+
 
 Another potential solution for this scenario is to find a way in the database that can support "versioning" of data structures. For example, let's
 assume there's a `Block` structure, let's call it `v1`. If in the future there's a need to modify this structure that is not compatible with the
@@ -310,8 +314,6 @@ return wire compatible responses (should match the same response as the equivale
 The **RPC server instance**, when serving a particular request, retrieves the required data from the database in order to
 fulfill the request. The data should be serialized in a way that makes it wire compatible with the CometBFT JSONRPC endpoint.
 
-Identical requests should return idempotent responses, no side effects should cause the RPC service to return different responses.
-
 The RPC service endpoint should be exposed through an external load-balancer service such as Cloudflare or AWS ELB, or
 a server running its own load balancer mechanism (e.g. nginx).
 
@@ -332,6 +334,7 @@ option to use `https` is important and it's backwards compatible with the existi
 - Less backpressure on the full node that is running consensus.
 - Possibility for future additional (e.g a `/v2`) with additional methods not available in the `/v1` endpoint.
 - Can act as a basis for users to create better and faster indexers and analytics solutions.
+- Possibility to turn off indexing on the full node if that can be offload to the RPC Companion.
 
 ### Negative
 

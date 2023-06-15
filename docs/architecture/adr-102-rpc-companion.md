@@ -16,7 +16,7 @@ This solution can run as a sidecar which is a separate process that runs concurr
 a RPC Companion service.
 
 This ADR provides a reference implementation of a system that can be used to offload queryable data from a CometBFT
-full node to a database and offering a service that exposes the same JSONRPC methods on a endpoint as the regular JSONRPC methods of a CometBFT node endpoint,
+full node to a database and offer a service exposing the same JSONRPC methods on a endpoint as the regular JSONRPC methods of a CometBFT node endpoint,
 which makes it easier for integrators of RPC clients such as client libraries and applications to switch to this
 ***RPC Companion*** with as minimum effort as possible.
 

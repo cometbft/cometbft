@@ -10,7 +10,7 @@ Accepted | Rejected | Deprecated | Superseded by
 
 ## Context
 
-This ADR proposes an architecture of an ***RPC Companion*** solution, an instance of the proposed [ADR-101 Data Companion Pull API](https://github.com/cometbft/cometbft/blob/thane/adr-084-data-companion-pull-api/docs/architecture/adr-101-data-companion-pull-api.md).
+This ADR proposes an architecture of an ***RPC Companion*** solution, an instance of the proposed [ADR-101 Data Companion Pull API](https://github.com/cometbft/cometbft/pull/82).
 
 This solution can run as a sidecar which is a separate process that runs concurrently with the full node, but the RPC Companion is optional meaning that the full node will still provide RPC services that can be queried directly if operators don't want to run
 a RPC Companion service.
@@ -21,13 +21,15 @@ which makes it easier for integrators of RPC clients such as client libraries an
 ***RPC Companion*** with as minimum effort as possible.
 
 This architecture also makes it possible to scale horizontally the querying capacity of a full node by running multiple
-copies of the ***RPC Companion*** server instances that can be behind a scalable load-balancer (e.g. Cloudflare)  and can serve
-the data in a more reliable way.
+copies of the ***RPC Companion*** server instances that can be behind a scalable load-balancer (e.g. Cloudflare) which
+makes it possible to serve the data in a more scalable way.
 
 ## Alternative Approaches
 
-Currently, there aren't any alternative solutions that are based on a data companion architecture. It is
-expected that integrators and operators propose and design their own solutions based on their specific use-cases.
+The Data Companion Pull API concept (ADR-101) is a new concept. It's expected that over time once this architecture is
+well understood and is well established, it's expected that users will create their own implementation to cater to their
+own use cases. The RPC Companion API is the first implementation of a Data Companion Pull API that can also serve as an example for
+other implementations.
 
 This ADR provides a reference implementation that can be used and adapted for individual use-cases.
 
@@ -166,13 +168,15 @@ important for the **Ingest Service** to do it in a throttled way in order not to
 ### [Database](#database)
 
 The database stores the data retrieved from the full node and provides this data for the RPC server instance. Since the frequency
-that blocks are generated on the chain are in the range from 5 seconds to 7 seconds on average, the _write_ back pressure is not
+that blocks are generated on the major CometBFT based chains are in the range of 10-50 blocks per minute, the _write_ back pressure is not
 very high from a modern database perspective. While the frequency and number of requests for reading the data from the database can
-be much larger due to the fact that the RPC service instance can be scaled. Therefore, a database that provides a high read
-throughput should be favored.
+be much larger due to the fact that the RPC service instances can be scaled. Therefore, a database that provides a high read
+throughput should be favored over the write throughput.
 
 For this is initial solution implementation it is proposed that the relational database [PostgreSQL](https://www.postgresql.org/) should be used in order to support
-the RPC scalability and this will also provide more flexibility when implementing the RPC Companion `/v2` endpoint that can return data
+the [RPC server instance](#rpc-instance) scalability
+
+Also, using a relational database will also provide more flexibility when implementing a future RPC Companion `/v2` endpoint that can return data
 in different forms and database indexes might also be leveraged in order to boost the query responses performance.
 
 The data needs to be available both for the Ingest Service (writes) and the RPC server instance (reads) and these service might be running from different machines so an embedded database
@@ -180,9 +184,10 @@ is not recommended in this case since accessing the data remotely might not be o
 since the RPC might have many server instances (or processes) running that will need to retrieve data concurrently it is recommended to use
 a well-known robust database engine that can support such a load.
 
-Also, a database that can support ACID transactions is important to provide more guarantees that
+Also, PostgreSQL supports ACID transactions, which is important to provide more guarantees that
 the data was successfully inserted in the database and that an acknowledgement can be sent back to the Ingest Service to notify the
-full node to prune the inserted data.
+full node to prune the inserted data. Supporting ACID transactions can also ensure that there are no partial reads (return data that was
+partially written to the database), avoiding that readers access incomplete or inconsistent data.
 
 #### [Database Schema](#database-schema)
 
@@ -296,7 +301,7 @@ requirements. This could improve the performance for reading data from the datab
 similar results would be to use a "caching" layer.
 
 
-### RPC server instance
+### [RPC server instance](#rpc-instance)
 
 The **RPC server instance** is a node that runs the RPC API process for the data companion. This server instance provides an RPC API (`/v1`) with
 the same JSONRPC methods of the full node JSONRPC endpoint. The RPC Companion service will expose the same JSONRPC methods and will accept the same request types and

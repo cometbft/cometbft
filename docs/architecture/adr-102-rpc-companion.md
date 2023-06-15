@@ -46,7 +46,7 @@ This solution shall meet the following requirements in order to provide real ben
 
 The **RPC Companion** solution shall:
 
-1. Provide an **[Ingest Service](#ingest-service)** implemented as a data companion that can pull data from the node and store it on
+1. Provide an **[Ingest Service](#ingest-service)** implemented as a data companion that can pull data from a CometBFT node and store it on
 its own storage (database)
 2. Provide its own storage ([Database](#database)) that can persist the data using a [database schema](#database-schema) that
 can store information that was fetched from the full node in a structured and normalized manner.

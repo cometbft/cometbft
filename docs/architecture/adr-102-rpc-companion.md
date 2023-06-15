@@ -77,7 +77,7 @@ To make a request for a `block` at height `5` using the CometBFT JSONRPC endpoin
 
 `curl --header "Content-Type: application/json" --request POST --data '{"method": "block", "params": ["5"], "id": 1}' http://cosmos.host:26657`
 
-The make the same request to the RPC Companion endpoint:
+To make the same request to the RPC Companion endpoint:
 
 `curl --header "Content-Type: application/json" --request POST --data '{"method": "block", "params": ["5"], "id": 1}' http://rpc-companion.host:8080/v1`
 

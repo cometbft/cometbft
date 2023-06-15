@@ -46,7 +46,7 @@ This solution shall meet the following requirements in order to provide real ben
 
 The **RPC Companion** solution shall:
 
-1. Provide an **[Ingest Service](#ingest-service)** implemented as a data companion that can pull data from the node and store it on
+1. Provide an **[Ingest Service](#ingest-service)** implemented as a data companion that can pull data from a CometBFT node and store it on
 its own storage (database)
 2. Provide a storage ([Database](#database)) that can persist the data using a [database schema](#database-schema) that
 can store information that was fetched from the full node in a structured and normalized manner.
@@ -165,7 +165,7 @@ important for the **Ingest Service** to do it in a throttled way in order not to
 
 ### [Database](#database)
 
-The database stores the data retrieved from the full node and provide this data for the RPC server instance. Since the frequency
+The database stores the data retrieved from the full node and provides this data for the RPC server instance. Since the frequency
 that blocks are generated on the chain are in the range from 5 seconds to 7 seconds on average, the _write_ back pressure is not
 very high from a modern database perspective. While the frequency and number of requests for reading the data from the database can
 be much larger due to the fact that the RPC service instance can be scaled. Therefore, a database that provides a high read

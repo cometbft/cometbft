@@ -7,13 +7,13 @@ The documentation was [produced](https://github.com/tendermint/tendermint/pull/9
 using the `v0.34.*` releases
 and the branch [`v0.34.x`](https://github.com/cometbft/cometbft/tree/v0.34.x)
 of this repository as reference.
-
-As no substancial changes were introduced in the p2p implementation, this
-documentation also applies to the subsequent CometBFT releases `v0.37.*`
-and `v0.38.*` [^v35].
+As there were no substancial changes in the p2p implementation, the
+documentation also applies to the releases `v0.37.*` and `v0.38.*` [^v35].
 
 [^v35]: The releases `v0.35.*` and `v0.36.*`, which included a major
   refactoring of the p2p layer implementation, were [discontinued][v35postmorten].
+
+[v35postmorten]: https://interchain-io.medium.com/discontinuing-tendermint-v0-35-a-postmortem-on-the-new-networking-layer-3696c811dabc
 
 ## Contents
 
@@ -27,15 +27,12 @@ which implements the following abstractions:
    connections from peers, for managing established connections, and for
    routing messages between the reactors and peers,
    that is, between local and remote instances of the CometBFT protocols;
-- [PEX Reactor](./pex.md): a reactor is the implementation of a protocol which
-  exchanges messages through the p2p layer. The PEX reactor manages the [Address Book](./addressbook.md)  and implements both the [PEX protocol](./pex-protocol.md) and the  [Peer Manager](./peer_manager.md) role.
+- [PEX Reactor](./pex.md): due to the several roles of this component, the
+  documentation is split in several parts:
     - [Peer Exchange protocol](./pex-protocol.md): enables nodes to exchange peer addresses, thus implementing a peer discovery service;
     - [Address Book](./addressbook.md): stores discovered peer addresses and
   quality metrics associated to peers with which the node has interacted;
     - [Peer Manager](./peer_manager.md): defines when and to which peers a node
   should dial, in order to establish outbound connections;
-- Finally, [Types](./types.md) and [Configuration](./configuration.md) provide
-   a list of existing types and configuration parameters used by the p2p layer implementation.
-
-[v35postmorten]: https://interchain-io.medium.com/discontinuing-tendermint-v0-35-a-postmortem-on-the-new-networking-layer-3696c811dabc
-
+- [Types](./types.md) and [Configuration](./configuration.md) provide a list of
+  existing types and configuration parameters used by the p2p package.

@@ -7,7 +7,7 @@ reactors.
 The diagram below summarizes this interaction, namely the **northbound interface**
 of the p2p communication layer, representing some relevant event flows:
 
-<img src="p2p-reactors.png" style="background-color: white">
+<img src="../images/p2p-reactors.png" style="background-color: white">
 
 Each of the protocols running a CometBFT node implements a reactor and registers
 the implementation with the p2p layer.

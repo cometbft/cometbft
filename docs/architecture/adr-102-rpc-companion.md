@@ -104,7 +104,7 @@ The methods for the RPC Companion endpoint on the following table are the ones t
 | `validators`         | * height <br/> * page <br/> * per_page | Get validator set at a specified height         | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
 
 The following methods can also be implemented, but might require some additional effort and complexity to be implemented.
-These are mostly the ones that provides `search` and `query` functionalities. These methods will proxy the request to the
+These are mostly the ones that provide `search` and `query` functionalities. These methods will proxy the request to the
 full node. Since they are not dependent on data retrieval from the RPC Companion database they should just act as proxies
 to the full node. In the future, it might be possible to implement these methods in the RPC Companion if the database
 stores all the information required to be indexed and the queries specified in the JSONRPC methods can be translated into

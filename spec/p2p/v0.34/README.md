@@ -1,19 +1,25 @@
-# Peer-to-Peer Communication
+# Implementation of the p2p layer
 
-This document describes the implementation of the peer-to-peer (p2p)
+This section documents the implementation of the peer-to-peer (p2p)
 communication layer in CometBFT.
 
-It is part of an [effort](https://github.com/cometbft/cometbft/issues/19)
-to produce a high-level specification of the operation of the p2p layer adopted
-in production CometBFT networks.
-
-This documentation, therefore, considers the releases `0.34.*` of CometBFT, more
-specifically, the branch [`v0.34.x`](https://github.com/cometbft/cometbft/tree/v0.34.x)
+The documentation was [produced](https://github.com/tendermint/tendermint/pull/9348)
+using the `v0.34.*` releases of CometBFT as reference,
+more specifically, the branch
+[`v0.34.x`](https://github.com/cometbft/cometbft/tree/v0.34.x)
 of this repository.
+
+As no substancial changes were introduced in the p2p implementation, this
+documentation also applies to the subsequent CometBFT releases `v0.37.*`
+and `v0.38.*` [^v35].
+
+[^v35]: The releases `v0.35.*` and `v0.36.*`, which included a major
+  refactoring of the p2p layer implementation, were [discontinued][v35postmorten].
 
 ## Contents
 
-The documentation follows the organization of the `p2p` package of CometBFT,
+The documentation follows the organization of the
+[`p2p` package](https://github.com/cometbft/cometbft/tree/v0.34.x/p2p),
 which implements the following abstractions:
 
 - [Transport](./transport.md): establishes secure and authenticated
@@ -32,23 +38,5 @@ which implements the following abstractions:
 - Finally, [Types](./types.md) and [Configuration](./configuration.md) provide
    a list of existing types and configuration parameters used by the p2p layer implementation.
 
-## Further References
-
-Existing documentation referring to the p2p layer:
-
-- <https://github.com/cometbft/cometbft/tree/main/spec/p2p>: p2p-related
-  configuration flags; overview of connections, peer instances, and reactors;
-  overview of peer discovery and node types; peer identity, secure connections
-  and peer authentication handshake.
-- <https://github.com/cometbft/cometbft/tree/main/spec/p2p/messages>: message
-  types and channel IDs of Block Sync, Mempool, Evidence, State Sync, PEX, and
-  Consensus reactors.
-- <https://docs.cometbft.com/v0.34/core>: the p2p layer
-  configuration and operation is documented in several pages.
-  This content is not necessarily up-to-date, some settings and concepts may
-  refer to the release `v0.35`, that was [discontinued][v35postmorten].
-- <https://github.com/cometbft/cometbft/tree/main/docs/core/pex>:
-  peer types, peer discovery, peer management overview, address book and peer
-  ranking. This documentation refers to the release `v0.35`, that was [discontinued][v35postmorten].
-
 [v35postmorten]: https://interchain-io.medium.com/discontinuing-tendermint-v0-35-a-postmortem-on-the-new-networking-layer-3696c811dabc
+

@@ -7,6 +7,7 @@ import (
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"sync/atomic"
 	"testing"
@@ -126,12 +127,20 @@ func BenchmarkUpdateRemoteClient(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 1; i <= b.N; i++ {
+
 		tx := kvstore.NewTxFromID(i)
-		mp.CheckTx(tx, nil, TxInfo{})
-		mp.FlushAppConn()
+
+		e := mp.CheckTx(tx, nil, TxInfo{})
+		require.True(b, e == nil)
+
+		e = mp.FlushAppConn()
+		require.True(b, e == nil)
+
 		require.True(b, mp.Size() == 1)
+
 		var txs = mp.ReapMaxTxs(mp.Size())
-		doCommit(mp, app, txs, int64(i))
+		doCommit(b, mp, app, txs, int64(i))
+		assert.True(b, true)
 	}
 
 }

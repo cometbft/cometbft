@@ -20,7 +20,6 @@ import (
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abciserver "github.com/cometbft/cometbft/abci/server"
 	abci "github.com/cometbft/cometbft/abci/types"
-	types2 "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
@@ -743,15 +742,19 @@ func abciResponses(n int, code uint32) []*abci.ExecTxResult {
 	return responses
 }
 
-func doCommit(mp Mempool, app abci.Application, txs types.Txs, height int64) {
-	rfb := &types2.RequestFinalizeBlock{Txs: make([][]byte, len(txs))}
+func doCommit(t require.TestingT, mp Mempool, app abci.Application, txs types.Txs, height int64) {
+	rfb := &abci.RequestFinalizeBlock{Txs: make([][]byte, len(txs))}
 	for i, tx := range txs {
 		rfb.Txs[i] = tx
 	}
-	app.FinalizeBlock(context.Background(), rfb)
+	_, e := app.FinalizeBlock(context.Background(), rfb)
+	require.True(t, e == nil)
 	mp.Lock()
-	mp.FlushAppConn()
-	app.Commit(context.Background(), &abci.RequestCommit{})
-	mp.Update(height, txs, abciResponses(txs.Len(), abci.CodeTypeOK), nil, nil)
+	e = mp.FlushAppConn()
+	require.True(t, e == nil)
+	_, e = app.Commit(context.Background(), &abci.RequestCommit{})
+	require.True(t, e == nil)
+	e = mp.Update(height, txs, abciResponses(txs.Len(), abci.CodeTypeOK), nil, nil)
+	require.True(t, e == nil)
 	mp.Unlock()
 }

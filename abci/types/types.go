@@ -140,7 +140,7 @@ var _ jsonRoundTripper = (*EventAttribute)(nil)
 
 // deterministicExecTxResult constructs a copy of response that omits
 // non-deterministic fields. The input response is not modified.
-func deterministicExecTxResult(response *ExecTxResult) *ExecTxResult {
+func DeterministicExecTxResult(response *ExecTxResult) *ExecTxResult {
 	return &ExecTxResult{
 		Code:      response.Code,
 		Data:      response.Data,

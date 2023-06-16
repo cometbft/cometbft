@@ -173,7 +173,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg.DBBackend = node.Database
 	cfg.StateSync.DiscoveryTime = 5 * time.Second
 	cfg.BlockSync.Version = node.BlockSyncVersion
-	cfg.Consensus.PeerGossipFastSleepDuration = node.Testnet.PeerGossipFastSleepDuration
+	cfg.Consensus.PeerGossipIntraloopSleepDuration = node.Testnet.PeerGossipIntraloopSleepDuration
 
 	switch node.ABCIProtocol {
 	case e2e.ProtocolUNIX:

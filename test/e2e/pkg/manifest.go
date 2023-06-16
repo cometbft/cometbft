@@ -97,7 +97,7 @@ type Manifest struct {
 	VoteExtensionSize uint `toml:"vote_extension_size"`
 
 	// Upper bound of sleep duration then gossipping votes and block parts
-	PeerGossipFastSleepDuration time.Duration `toml:"peer_gossip_fast_sleep_duration"`
+	PeerGossipIntraloopSleepDuration time.Duration `toml:"peer_gossip_intraloop_sleep_duration"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

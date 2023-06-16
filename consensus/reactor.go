@@ -571,9 +571,9 @@ OUTER_LOOP:
 
 		// sleep random amount to give reactor a chance to receive HasProposalBlockPart messages
 		// so we can reduce the amount of redundant block parts we send
-		if conR.conS.config.PeerGossipFastSleepDuration > 0 {
+		if conR.conS.config.PeerGossipIntraloopSleepDuration > 0 {
 			// the config sets an upper bound for how long we sleep.
-			randDuration := time.Duration(cmtrand.Int63n(int64(conR.conS.config.PeerGossipFastSleepDuration)))
+			randDuration := time.Duration(cmtrand.Int63n(int64(conR.conS.config.PeerGossipIntraloopSleepDuration)))
 			time.Sleep(randDuration)
 		}
 
@@ -743,9 +743,9 @@ OUTER_LOOP:
 
 		// sleep random amount to give reactor a chance to receive HasVote messages
 		// so we can reduce the amount of redundant votes we send
-		if conR.conS.config.PeerGossipFastSleepDuration > 0 {
+		if conR.conS.config.PeerGossipIntraloopSleepDuration > 0 {
 			// the config sets an upper bound for how long we sleep.
-			randDuration := time.Duration(cmtrand.Int63n(int64(conR.conS.config.PeerGossipFastSleepDuration)))
+			randDuration := time.Duration(cmtrand.Int63n(int64(conR.conS.config.PeerGossipIntraloopSleepDuration)))
 			time.Sleep(randDuration)
 		}
 

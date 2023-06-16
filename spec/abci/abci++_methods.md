@@ -355,12 +355,16 @@ title: Methods
             traceability, it is its responsibility's to support it. For instance, the Application
             could attach to a transformed transaction a list with the hashes of the transactions it
             derives from.
-    * CometBFT MAY include a list of transactions in `RequestPrepareProposal.txs` whose total
-      size in bytes exceeds `RequestPrepareProposal.max_tx_bytes`.
+    * The Application MAY configure CometBFT to include a list of transactions in `RequestPrepareProposal.txs`
+      whose total size in bytes exceeds `RequestPrepareProposal.max_tx_bytes`.
+      If the Application sets `ConsensusParams.Block.MaxBytes` to -1, CometBFT
+      will include _all_ transactions currently in the mempool in `RequestPrepareProposal.txs`,
+      which may not fit in `RequestPrepareProposal.max_tx_bytes`.
       Therefore, if the size of `RequestPrepareProposal.txs` is greater than
       `RequestPrepareProposal.max_tx_bytes`, the Application MUST remove transactions to ensure
       that the `RequestPrepareProposal.max_tx_bytes` limit is respected by those transactions
-      returned in `ResponsePrepareProposal.txs` .
+      returned in `ResponsePrepareProposal.txs`.
+      This is specified in [Requirement 2](./abci%2B%2B_app_requirements.md).
     * As a result of executing the prepared proposal, the Application may produce block events or transaction events.
       The Application must keep those events until a block is decided and then pass them on to CometBFT via
       `ResponseFinalizeBlock`.

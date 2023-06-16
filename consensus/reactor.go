@@ -3,7 +3,6 @@ package consensus
 import (
 	"errors"
 	"fmt"
-	"math/rand"
 	"reflect"
 	"sync"
 	"time"
@@ -13,6 +12,7 @@ import (
 	cmtevents "github.com/cometbft/cometbft/libs/events"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p"
 	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"
@@ -573,10 +573,8 @@ OUTER_LOOP:
 		// so we can reduce the amount of redundant block parts we send
 		if conR.conS.config.PeerGossipFastSleepDuration > 0 {
 			// the config sets an upper bound for how long we sleep.
-			// TODO: this assumes its in ms to convert it to int and back. should be fine but fix.
-			msInt := int(conR.conS.config.PeerGossipFastSleepDuration / time.Millisecond)
-			r := time.Duration(rand.Intn(msInt))
-			time.Sleep(r * time.Millisecond)
+			randDuration := time.Duration(cmtrand.Int63n(int64(conR.conS.config.PeerGossipFastSleepDuration)))
+			time.Sleep(randDuration)
 		}
 
 		rs := conR.getRoundState()
@@ -747,10 +745,8 @@ OUTER_LOOP:
 		// so we can reduce the amount of redundant votes we send
 		if conR.conS.config.PeerGossipFastSleepDuration > 0 {
 			// the config sets an upper bound for how long we sleep.
-			// TODO: this assumes its in ms to convert it to int and back. should be fine but fix.
-			msInt := int(conR.conS.config.PeerGossipFastSleepDuration / time.Millisecond)
-			r := time.Duration(rand.Intn(msInt))
-			time.Sleep(r * time.Millisecond)
+			randDuration := time.Duration(cmtrand.Int63n(int64(conR.conS.config.PeerGossipFastSleepDuration)))
+			time.Sleep(randDuration)
 		}
 
 		rs := conR.getRoundState()

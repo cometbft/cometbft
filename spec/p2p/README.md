@@ -10,7 +10,7 @@ parent:
 A CometBFT network is composed of multiple CometBFT instances, hereafter called
 `nodes`, that interact by exchanging messages.
 
-CometBFT assumes a partially-connected network model.
+The CometBFT protocols are designed under the assumption of a partially-connected network model.
 This means that a node is not assumed to be directly connected to every other
 node in the network.
 Instead, each node is directly connected to only a subset of other nodes,
@@ -34,8 +34,9 @@ The current content is organized as follows:
   p2p layer to the protocol layer, through the `Reactor` abstraction.
   This is a high-level specification (i.e., it should not be implementation-specific)
   of the p2p layer API, covering item 3. from the list above.
-- [`legacy-docs`](./legacy-docs/): the previous content of this directory has
-  been moved to this location. Part of this content is redundant,
+- [`legacy-docs`](./legacy-docs/): We keep older documentation in 
+  the `legacy-docs` directory, as overall, it contains useful information. 
+  However, part of this content is redundant,
   being more comprehensively covered in more recent documents,
   and some implementation details might be outdated
   (see [issue #981](https://github.com/cometbft/cometbft/issues/981)).

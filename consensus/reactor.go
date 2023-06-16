@@ -434,15 +434,12 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 		conR.Logger.Error("Error adding listener for events", "err", err)
 	}
 
-	if conR.conS.config.HasBlockPart {
-		if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventProposalBlockPart,
-			func(data cmtevents.EventData) {
-				conR.broadcastHasProposalBlockPartMessage(data.(*BlockPartMessage))
-			}); err != nil {
-			conR.Logger.Error("Error adding listener for events", "err", err)
-		}
+	if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventProposalBlockPart,
+		func(data cmtevents.EventData) {
+			conR.broadcastHasProposalBlockPartMessage(data.(*BlockPartMessage))
+		}); err != nil {
+		conR.Logger.Error("Error adding listener for events", "err", err)
 	}
-
 }
 
 func (conR *Reactor) unsubscribeFromBroadcastEvents() {

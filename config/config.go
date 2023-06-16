@@ -940,10 +940,6 @@ type ConsensusConfig struct {
 	PeerGossipFastSleepDuration time.Duration `mapstructure:"peer_gossip_fast_sleep_duration"` // upper bound on randomly selected values
 
 	DoubleSignCheckHeight int64 `mapstructure:"double_sign_check_height"`
-
-	// toggle sending the HasProposalBlockPart message
-	// this should ultimately be removed from the config, its here now for ease of testing/benchmarking.
-	HasBlockPart bool `mapstructure:"has_block_part"`
 }
 
 // DefaultConsensusConfig returns a default configuration for the consensus service
@@ -964,7 +960,6 @@ func DefaultConsensusConfig() *ConsensusConfig {
 		PeerQueryMaj23SleepDuration: 2000 * time.Millisecond,
 		PeerGossipFastSleepDuration: 50 * time.Millisecond,
 		DoubleSignCheckHeight:       int64(0),
-		HasBlockPart:                true,
 	}
 }
 

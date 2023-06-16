@@ -90,7 +90,6 @@ type Testnet struct {
 	VoteExtensionsEnableHeight  int64
 	VoteExtensionSize           uint
 	PeerGossipFastSleepDuration time.Duration
-	HasBlockPart                bool
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -170,7 +169,6 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		VoteExtensionsEnableHeight:  manifest.VoteExtensionsEnableHeight,
 		VoteExtensionSize:           manifest.VoteExtensionSize,
 		PeerGossipFastSleepDuration: manifest.PeerGossipFastSleepDuration,
-		HasBlockPart:                manifest.HasBlockPart,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType

@@ -1,19 +1,20 @@
 package mempool
 
 import (
-	"encoding/binary"
 	"fmt"
+	"testing"
+
+	"encoding/binary"
+	"sync/atomic"
+
+	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abciserver "github.com/cometbft/cometbft/abci/server"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/proxy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"sync/atomic"
-	"testing"
-
-	"github.com/cometbft/cometbft/abci/example/kvstore"
-	"github.com/cometbft/cometbft/proxy"
 )
 
 func BenchmarkReap(b *testing.B) {

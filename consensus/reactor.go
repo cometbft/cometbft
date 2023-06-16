@@ -511,7 +511,7 @@ func (conR *Reactor) broadcastHasProposalBlockPartMessage(partMsg *BlockPartMess
 	msg := &cmtcons.HasProposalBlockPart{
 		Height: partMsg.Height,
 		Round:  partMsg.Round,
-		Index:  partMsg.Part.Index,
+		Index:  int32(partMsg.Part.Index),
 	}
 	conR.Switch.Broadcast(p2p.Envelope{
 		ChannelID: StateChannel,

@@ -88,7 +88,7 @@ func MsgToProto(msg Message) (proto.Message, error) {
 		pb = &cmtcons.HasProposalBlockPart{
 			Height: msg.Height,
 			Round:  msg.Round,
-			Index:  uint32(msg.Index),
+			Index:  msg.Index,
 		}
 
 	case *VoteSetMaj23Message:
@@ -210,7 +210,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 		pb = &HasProposalBlockPartMessage{
 			Height: msg.Height,
 			Round:  msg.Round,
-			Index:  int32(msg.Index),
+			Index:  msg.Index,
 		}
 	case *cmtcons.VoteSetMaj23:
 		bi, err := types.BlockIDFromProto(&msg.BlockID)

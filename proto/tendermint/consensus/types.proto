@@ -62,9 +62,9 @@ message HasVote {
 
 // HasProposalBlockPart is sent to indicate that a particular proposal block part has been received.
 message HasProposalBlockPart {
-  int64  height = 1;
-  int32  round  = 2;
-  uint32 index  = 3;
+  int64 height = 1;
+  int32 round  = 2;
+  int32 index  = 3;
 }
 
 // VoteSetMaj23 is sent to indicate that a given BlockID has seen +2/3 votes.

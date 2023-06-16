@@ -94,7 +94,8 @@ func BenchmarkCheckDuplicateTx(b *testing.B) {
 	if err := mp.CheckTx(tx, nil, TxInfo{}); err != nil {
 		b.Fatal(err)
 	}
-	mp.FlushAppConn()
+	e := mp.FlushAppConn()
+	require.True(b, e == nil)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

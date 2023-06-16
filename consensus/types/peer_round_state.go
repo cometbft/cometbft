@@ -21,10 +21,10 @@ type PeerRoundState struct {
 	StartTime time.Time `json:"start_time"`
 
 	// True if peer has proposal for this round
-	// This bit array is length # of block parts
 	Proposal                   bool                `json:"proposal"`
 	ProposalBlockPartSetHeader types.PartSetHeader `json:"proposal_block_part_set_header"`
-	ProposalBlockParts         *bits.BitArray      `json:"proposal_block_parts"`
+	// This bit array is length(# of block parts)
+	ProposalBlockParts *bits.BitArray `json:"proposal_block_parts"`
 	// Proposal's POL round. -1 if none.
 	ProposalPOLRound int32 `json:"proposal_pol_round"`
 

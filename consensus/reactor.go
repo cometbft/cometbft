@@ -417,28 +417,28 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 		func(data cmtevents.EventData) {
 			conR.broadcastNewRoundStepMessage(data.(*cstypes.RoundState))
 		}); err != nil {
-		conR.Logger.Error("Error adding listener for events", "err", err)
+		conR.Logger.Error("Error adding listener for events (NewRoundStep)", "err", err)
 	}
 
 	if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventValidBlock,
 		func(data cmtevents.EventData) {
 			conR.broadcastNewValidBlockMessage(data.(*cstypes.RoundState))
 		}); err != nil {
-		conR.Logger.Error("Error adding listener for events", "err", err)
+		conR.Logger.Error("Error adding listener for events (ValidBlock)", "err", err)
 	}
 
 	if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventVote,
 		func(data cmtevents.EventData) {
 			conR.broadcastHasVoteMessage(data.(*types.Vote))
 		}); err != nil {
-		conR.Logger.Error("Error adding listener for events", "err", err)
+		conR.Logger.Error("Error adding listener for events (Vote)", "err", err)
 	}
 
 	if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventProposalBlockPart,
 		func(data cmtevents.EventData) {
 			conR.broadcastHasProposalBlockPartMessage(data.(*BlockPartMessage))
 		}); err != nil {
-		conR.Logger.Error("Error adding listener for events", "err", err)
+		conR.Logger.Error("Error adding listener for events (ProposalBlockPart)", "err", err)
 	}
 }
 
@@ -573,8 +573,8 @@ OUTER_LOOP:
 		// so we can reduce the amount of redundant block parts we send
 		if conR.conS.config.PeerGossipIntraloopSleepDuration > 0 {
 			// the config sets an upper bound for how long we sleep.
-			randDuration := time.Duration(cmtrand.Int63n(int64(conR.conS.config.PeerGossipIntraloopSleepDuration)))
-			time.Sleep(randDuration)
+			randDuration := cmtrand.Int63n(int64(conR.conS.config.PeerGossipIntraloopSleepDuration))
+			time.Sleep(time.Duration(randDuration))
 		}
 
 		rs := conR.getRoundState()
@@ -745,8 +745,8 @@ OUTER_LOOP:
 		// so we can reduce the amount of redundant votes we send
 		if conR.conS.config.PeerGossipIntraloopSleepDuration > 0 {
 			// the config sets an upper bound for how long we sleep.
-			randDuration := time.Duration(cmtrand.Int63n(int64(conR.conS.config.PeerGossipIntraloopSleepDuration)))
-			time.Sleep(randDuration)
+			randDuration := cmtrand.Int63n(int64(conR.conS.config.PeerGossipIntraloopSleepDuration))
+			time.Sleep(time.Duration(randDuration))
 		}
 
 		rs := conR.getRoundState()

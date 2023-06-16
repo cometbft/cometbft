@@ -1891,7 +1891,6 @@ func (cs *State) defaultSetProposal(proposal *types.Proposal) error {
 	}
 
 	proposal.Signature = p.Signature
-
 	cs.Proposal = proposal
 	// We don't update cs.ProposalBlockParts if it is already set.
 	// This happens if we're already in cstypes.RoundStepCommit or if there is a valid block in the current round.

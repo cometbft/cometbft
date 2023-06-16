@@ -1889,8 +1889,8 @@ type HasProposalBlockPartMessage struct {
 
 // ValidateBasic performs basic validation.
 func (m *HasProposalBlockPartMessage) ValidateBasic() error {
-	if m.Height < 0 {
-		return errors.New("negative Height")
+	if m.Height < 1 {
+		return errors.New("invalid Height (< 1)")
 	}
 	if m.Round < 0 {
 		return errors.New("negative Round")

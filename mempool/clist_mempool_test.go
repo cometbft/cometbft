@@ -3,11 +3,12 @@ package mempool
 import (
 	"context"
 	"encoding/binary"
-	"fmt"
 	mrand "math/rand"
 	"os"
 	"testing"
 	"time"
+
+	"fmt"
 
 	"github.com/cosmos/gogoproto/proto"
 	gogotypes "github.com/cosmos/gogoproto/types"

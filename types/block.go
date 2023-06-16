@@ -347,7 +347,7 @@ type Header struct {
 	ConsensusHash      cmtbytes.HexBytes `json:"consensus_hash"`       // consensus params for current block
 	AppHash            cmtbytes.HexBytes `json:"app_hash"`             // state after txs from the previous block
 	// root hash of all results from the txs from the previous block
-	// see `deterministicExecTxResult` to understand which parts of a tx is hashed into here
+	// see `DeterministicExecTxResult` to understand which parts of a tx is hashed into here
 	LastResultsHash cmtbytes.HexBytes `json:"last_results_hash"`
 
 	// consensus info

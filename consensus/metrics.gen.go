@@ -124,6 +124,18 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "block_parts",
 			Help:      "Number of block parts transmitted by each peer.",
 		}, append(labels, "peer_id")).With(labelsAndValues...),
+		DuplicateBlockPart: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "duplicate_block_part",
+			Help:      "Number of times we received a duplicate block part",
+		}, labels).With(labelsAndValues...),
+		DuplicateVote: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "duplicate_vote",
+			Help:      "Number of times we received a duplicate vote",
+		}, labels).With(labelsAndValues...),
 		StepDurationSeconds: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -203,6 +215,8 @@ func NopMetrics() *Metrics {
 		TotalTxs:                  discard.NewGauge(),
 		CommittedHeight:           discard.NewGauge(),
 		BlockParts:                discard.NewCounter(),
+		DuplicateBlockPart:        discard.NewCounter(),
+		DuplicateVote:             discard.NewCounter(),
 		StepDurationSeconds:       discard.NewHistogram(),
 		BlockGossipPartsReceived:  discard.NewCounter(),
 		QuorumPrevoteDelay:        discard.NewGauge(),

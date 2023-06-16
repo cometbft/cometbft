@@ -117,7 +117,7 @@ on instead of `~/.tendermint`.
 ### Environment variables
 
 The environment variable prefixes have now changed from `TM` to `CMT`. For
-example, `TMHOME` or `TM_HOME` become `CMTHOME`.
+example, `TMHOME` becomes `CMTHOME`.
 
 We have implemented a fallback check in case `TMHOME` is still set and `CMTHOME`
 is not, but you will start to see a warning message in the logs if the old

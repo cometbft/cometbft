@@ -592,10 +592,10 @@ func (txmp *TxMempool) addNewTransaction(wtx *WrappedTx, checkTxRes *abci.Respon
 
 	txmp.metrics.TxSizeBytes.Observe(float64(wtx.Size()))
 	txmp.metrics.Size.Set(float64(txmp.Size()))
-	txmp.logger.Info(
+	txmp.logger.Debug(
 		"inserted new valid transaction",
 		"priority", wtx.Priority(),
-		"tx", fmt.Sprintf("%X", wtx.tx.Hash()),
+		"tx", log.NewLazySprintf("%X", wtx.tx.Hash()),
 		"height", txmp.height,
 		"num_txs", txmp.Size(),
 	)

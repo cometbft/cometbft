@@ -24,9 +24,6 @@ func clearConfig(dir string) {
 	if err := os.Unsetenv("CMTHOME"); err != nil {
 		panic(err)
 	}
-	if err := os.Unsetenv("CMT_HOME"); err != nil {
-		panic(err)
-	}
 	if err := os.Unsetenv("TMHOME"); err != nil {
 		// XXX: Deprecated.
 		panic(err)

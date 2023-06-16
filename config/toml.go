@@ -71,8 +71,8 @@ const defaultConfigTemplate = `# This is a TOML config file.
 
 # NOTE: Any path below can be absolute (e.g. "/var/myawesomeapp/data") or
 # relative to the home directory (e.g. "data"). The home directory is
-# "$HOME/.cometbft" by default, but could be changed via $CMTHOME env variable
-# or --home cmd flag.
+# "$HOME/.cometbft" by default, but could be changed via $CMTHOME
+# (or $CMT_HOME) env variable or --home cmd flag.
 
 # The version of the CometBFT binary that created or
 # last modified the config file. Do not modify this.

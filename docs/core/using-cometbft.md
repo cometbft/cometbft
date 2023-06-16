@@ -14,7 +14,7 @@ number with `cometbft version`.
 ## Directory Root
 
 The default directory for blockchain data is `~/.cometbft`. Override
-this by setting the `CMTHOME` environment variable.
+this by setting the `CMTHOME` (or `CMT_HOME`) environment variable.
 
 ## Initialize
 

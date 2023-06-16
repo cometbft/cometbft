@@ -78,6 +78,7 @@ func TestRootHome(t *testing.T) {
 		{[]string{"--home", newRoot}, nil, newRoot},
 		{nil, map[string]string{"TMHOME": newRoot}, newRoot}, // XXX: Deprecated.
 		{nil, map[string]string{"CMTHOME": newRoot}, newRoot},
+		{nil, map[string]string{"CMT_HOME": newRoot}, newRoot},
 	}
 
 	for i, tc := range cases {

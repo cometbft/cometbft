@@ -686,8 +686,8 @@ func DefaultFuzzConnConfig() *FuzzConnConfig {
 // was removed (see https://github.com/cometbft/cometbft/issues/260).
 type MempoolConfig struct {
 	// RootDir is the root directory for all data. This should be configured via
-	// the $CMTHOME env variable or --home cmd flag rather than overriding this
-	// struct field.
+	// the $CMTHOME (or $CMT_HOME) env variable or --home cmd flag rather than
+	// overriding this struct field.
 	RootDir string `mapstructure:"home"`
 	// Recheck (default: true) defines whether CometBFT should recheck the
 	// validity for all remaining transaction in the mempool after a block.

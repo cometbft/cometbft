@@ -659,7 +659,7 @@ FOR_LOOP:
 
 	// Cleanup
 	close(c.pong)
-	//nolint:revive
+	
 	for range c.pong {
 		// Drain
 	}

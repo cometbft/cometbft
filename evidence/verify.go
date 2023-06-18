@@ -111,8 +111,8 @@ func VerifyLightClientAttack(
 	e *types.LightClientAttackEvidence,
 	commonHeader, trustedHeader *types.SignedHeader,
 	commonVals *types.ValidatorSet,
-	now time.Time, //nolint:revive
-	trustPeriod time.Duration, //nolint:revive
+	now time.Time, 
+	trustPeriod time.Duration, 
 ) error {
 	// TODO: Should the current time and trust period be used in this method?
 	// If not, why were the parameters present?

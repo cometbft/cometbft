@@ -17,8 +17,9 @@ import (
 	cmtos "github.com/tendermint/tendermint/libs/os"
 )
 
+var defaultRoot = os.ExpandEnv("$HOME/.some/test/dir")
+
 // clearConfig clears env vars, the given root dir, and resets viper.
-<<<<<<< HEAD
 func clearConfig(dir string) {
 	if err := os.Unsetenv("CMTHOME"); err != nil {
 		panic(err)
@@ -34,13 +35,10 @@ func clearConfig(dir string) {
 		//XXX: Deprecated.
 		panic(err)
 	}
-=======
-func clearConfig(t *testing.T, dir string) {
-	os.Clearenv()
-	err := os.RemoveAll(dir)
-	require.NoError(t, err)
->>>>>>> b7be568f4 (Add `CMT_HOME` (or remove it?) (#983))
 
+	if err := os.RemoveAll(dir); err != nil {
+		panic(err)
+	}
 	viper.Reset()
 	config = cfg.DefaultConfig()
 }
@@ -58,16 +56,11 @@ func testRootCmd() *cobra.Command {
 	return rootCmd
 }
 
-<<<<<<< HEAD
 func testSetup(rootDir string, args []string, env map[string]string) error {
 	clearConfig(defaultRoot)
-=======
-func testSetup(t *testing.T, root string, args []string, env map[string]string) error {
-	clearConfig(t, root)
->>>>>>> b7be568f4 (Add `CMT_HOME` (or remove it?) (#983))
 
 	rootCmd := testRootCmd()
-	cmd := cli.PrepareBaseCmd(rootCmd, "CMT", root)
+	cmd := cli.PrepareBaseCmd(rootCmd, "CMT", defaultRoot)
 
 	// run with the args and env
 	args = append([]string{rootCmd.Use}, args...)
@@ -75,31 +68,22 @@ func testSetup(t *testing.T, root string, args []string, env map[string]string) 
 }
 
 func TestRootHome(t *testing.T) {
-	tmpDir := os.TempDir()
-	root := filepath.Join(tmpDir, "adir")
-	newRoot := filepath.Join(tmpDir, "something-else")
-	defer clearConfig(t, root)
-	defer clearConfig(t, newRoot)
-
+	newRoot := filepath.Join(defaultRoot, "something-else")
 	cases := []struct {
 		args []string
 		env  map[string]string
 		root string
 	}{
-		{nil, nil, root},
+		{nil, nil, defaultRoot},
 		{[]string{"--home", newRoot}, nil, newRoot},
 		{nil, map[string]string{"TMHOME": newRoot}, newRoot}, //XXX: Deprecated.
 		{nil, map[string]string{"CMTHOME": newRoot}, newRoot},
 	}
 
 	for i, tc := range cases {
-		idxString := "idx: " + strconv.Itoa(i)
+		idxString := strconv.Itoa(i)
 
-<<<<<<< HEAD
 		err := testSetup(defaultRoot, tc.args, tc.env)
-=======
-		err := testSetup(t, root, tc.args, tc.env)
->>>>>>> b7be568f4 (Add `CMT_HOME` (or remove it?) (#983))
 		require.Nil(t, err, idxString)
 
 		assert.Equal(t, tc.root, config.RootDir, idxString)
@@ -131,15 +115,8 @@ func TestRootFlagsEnv(t *testing.T) {
 
 	for i, tc := range cases {
 		idxString := strconv.Itoa(i)
-<<<<<<< HEAD
 
 		err := testSetup(defaultRoot, tc.args, tc.env)
-=======
-		root := filepath.Join(os.TempDir(), "adir2_"+idxString)
-		idxString = "idx: " + idxString
-		defer clearConfig(t, root)
-		err := testSetup(t, root, tc.args, tc.env)
->>>>>>> b7be568f4 (Add `CMT_HOME` (or remove it?) (#983))
 		require.Nil(t, err, idxString)
 
 		assert.Equal(t, tc.logLevel, config.LogLevel, idxString)
@@ -167,11 +144,10 @@ func TestRootConfig(t *testing.T) {
 
 	for i, tc := range cases {
 		idxString := strconv.Itoa(i)
-		root := filepath.Join(os.TempDir(), "adir3_"+idxString)
-		idxString = "idx: " + idxString
-		defer clearConfig(t, root)
+		clearConfig(defaultRoot)
+
 		// XXX: path must match cfg.defaultConfigPath
-		configFilePath := filepath.Join(root, "config")
+		configFilePath := filepath.Join(defaultRoot, "config")
 		err := cmtos.EnsureDir(configFilePath, 0o700)
 		require.Nil(t, err)
 
@@ -181,7 +157,7 @@ func TestRootConfig(t *testing.T) {
 		require.Nil(t, err)
 
 		rootCmd := testRootCmd()
-		cmd := cli.PrepareBaseCmd(rootCmd, "CMT", root)
+		cmd := cli.PrepareBaseCmd(rootCmd, "CMT", defaultRoot)
 
 		// run with the args and env
 		tc.args = append([]string{rootCmd.Use}, tc.args...)

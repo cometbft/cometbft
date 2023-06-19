@@ -23,7 +23,7 @@ func BenchmarkReap(b *testing.B) {
 	mp, cleanup := newMempoolWithApp(cc)
 	defer cleanup()
 
-	mp.config.Size = 100000
+	mp.config.Size = 100_000_000 // so that the nmempool never saturates
 
 	size := 10000
 	for i := 0; i < size; i++ {

@@ -3,7 +3,7 @@ module github.com/cometbft/cometbft
 go 1.20
 
 require (
-	github.com/BurntSushi/toml v1.3.0
+	github.com/BurntSushi/toml v1.3.2
 	github.com/adlio/schema v1.3.4
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/fortytw2/leaktest v1.3.0
@@ -51,7 +51,7 @@ require (
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
-	github.com/vektra/mockery/v2 v2.28.2
+	github.com/vektra/mockery/v2 v2.29.0
 	golang.org/x/sync v0.2.0
 	gonum.org/v1/gonum v0.13.0
 	google.golang.org/protobuf v1.30.0

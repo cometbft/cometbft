@@ -1948,9 +1948,13 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 		cs.evsw.FireEvent(types.EventProposalBlockPart, msg)
 	}
 
-	if cs.ProposalBlockParts.ByteSize() > cs.state.ConsensusParams.Block.MaxBytes {
+	maxBytes := cs.state.ConsensusParams.Block.MaxBytes
+	if maxBytes == -1 {
+		maxBytes = int64(types.MaxBlockSizeBytes)
+	}
+	if cs.ProposalBlockParts.ByteSize() > maxBytes {
 		return added, fmt.Errorf("total size of proposal block parts exceeds maximum block bytes (%d > %d)",
-			cs.ProposalBlockParts.ByteSize(), cs.state.ConsensusParams.Block.MaxBytes,
+			cs.ProposalBlockParts.ByteSize(), maxBytes,
 		)
 	}
 	if added && cs.ProposalBlockParts.IsComplete() {

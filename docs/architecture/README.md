@@ -46,6 +46,7 @@ numbering our ADRs from 100 onwards.
 
 ### Accepted
 
+- [ADR-104: State sync from local snapshot](./adr-104-out-of-band-state-sync.md)
 ### Implemented
 
 ### Deprecated

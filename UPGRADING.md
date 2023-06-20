@@ -7,8 +7,8 @@ This guide provides instructions for upgrading to specific versions of CometBFT.
 ### Config Changes
 
 * A new config field, `BootstrapPeers` has been introduced as a means of
-  adding a list of addresses to the addressbook upon initializing a node. This is an
-  alternative to `PersistentPeers`. `PersistentPeers` shold be only used for
+  adding a list of addresses to the address book upon initializing a node. This is an
+  alternative to `PersistentPeers`. `PersistentPeers` should be only used for
   nodes that you want to keep a constant connection with i.e. sentry nodes
 * The field `Version` in the mempool section has been removed. The priority
   mempool (what was called version `v1`) has been removed (see below), thus
@@ -117,7 +117,7 @@ on instead of `~/.tendermint`.
 ### Environment variables
 
 The environment variable prefixes have now changed from `TM` to `CMT`. For
-example, `TMHOME` or `TM_HOME` become `CMTHOME` or `CMT_HOME`.
+example, `TMHOME` becomes `CMTHOME`.
 
 We have implemented a fallback check in case `TMHOME` is still set and `CMTHOME`
 is not, but you will start to see a warning message in the logs if the old

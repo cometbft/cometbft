@@ -44,7 +44,7 @@ title: Methods
     | version             | string | The application software semantic version           | 2            |
     | app_version         | uint64 | The application protocol version                    | 3            |
     | last_block_height   | int64  | Latest height for which the app persisted its state | 4            |
-    | last_block_app_hash | bytes  | Latest AppHash returned by `Commit`                 | 5            |
+    | last_block_app_hash | bytes  | Latest AppHash returned by `FinalizeBlock`          | 5            |
 
 * **Usage**:
     * Return information about the application state.
@@ -255,7 +255,7 @@ title: Methods
     can be spoofed by adversaries, so applications should employ additional verification schemes
     to avoid denial-of-service attacks. The verified `AppHash` is automatically checked against
     the restored application at the end of snapshot restoration.
-    * For more information, see the `Snapshot` data type or the [state sync section](../p2p/messages/state-sync.md).
+    * For more information, see the `Snapshot` data type or the [state sync section](../p2p/legacy-docs/messages/state-sync.md).
 
 ### ApplySnapshotChunk
 
@@ -355,12 +355,16 @@ title: Methods
             traceability, it is its responsibility's to support it. For instance, the Application
             could attach to a transformed transaction a list with the hashes of the transactions it
             derives from.
-    * CometBFT MAY include a list of transactions in `RequestPrepareProposal.txs` whose total
-      size in bytes exceeds `RequestPrepareProposal.max_tx_bytes`.
+    * The Application MAY configure CometBFT to include a list of transactions in `RequestPrepareProposal.txs`
+      whose total size in bytes exceeds `RequestPrepareProposal.max_tx_bytes`.
+      If the Application sets `ConsensusParams.Block.MaxBytes` to -1, CometBFT
+      will include _all_ transactions currently in the mempool in `RequestPrepareProposal.txs`,
+      which may not fit in `RequestPrepareProposal.max_tx_bytes`.
       Therefore, if the size of `RequestPrepareProposal.txs` is greater than
       `RequestPrepareProposal.max_tx_bytes`, the Application MUST remove transactions to ensure
       that the `RequestPrepareProposal.max_tx_bytes` limit is respected by those transactions
-      returned in `ResponsePrepareProposal.txs` .
+      returned in `ResponsePrepareProposal.txs`.
+      This is specified in [Requirement 2](./abci%2B%2B_app_requirements.md).
     * As a result of executing the prepared proposal, the Application may produce block events or transaction events.
       The Application must keep those events until a block is decided and then pass them on to CometBFT via
       `ResponseFinalizeBlock`.
@@ -775,7 +779,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
     | metadata | bytes  | Arbitrary application metadata, for example chunk hashes or other verification data.                                                                                              | 5            |
 
 * **Usage**:
-    * Used for state sync snapshots, see the [state sync section](../p2p/messages/state-sync.md) for details.
+    * Used for state sync snapshots, see the [state sync section](../p2p/legacy-docs/messages/state-sync.md) for details.
     * A snapshot is considered identical across nodes only if _all_ fields are equal (including
     `Metadata`). Chunks may be retrieved from all nodes that have the same snapshot.
     * When sent across the network, a snapshot message can be at most 4 MB.

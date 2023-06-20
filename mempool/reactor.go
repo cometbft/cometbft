@@ -2,8 +2,9 @@ package mempool
 
 import (
 	"errors"
-	"fmt"
 	"time"
+
+	"fmt"
 
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/clist"
@@ -181,7 +182,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// NOTE: Transaction batching was disabled due to
 		// https://github.com/tendermint/tendermint/issues/5796
 
-		if _, ok := memTx.senders.Load(peerID); !ok {
+		if !memTx.isSender(peerID) {
 			success := peer.Send(p2p.Envelope{
 				ChannelID: MempoolChannel,
 				Message:   &protomem.Txs{Txs: [][]byte{memTx.tx}},

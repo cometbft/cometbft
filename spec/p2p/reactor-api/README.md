@@ -7,7 +7,7 @@ reactors.
 The diagram below summarizes this interaction, namely the **northbound interface**
 of the p2p communication layer, representing some relevant event flows:
 
-<img src="p2p-reactors.png" style="background-color: white">
+<img src="../images/p2p-reactors.png" style="background-color: white">
 
 Each of the protocols running a CometBFT node implements a reactor and registers
 the implementation with the p2p layer.
@@ -39,7 +39,5 @@ The remaining of the documentation is organized as follows:
 - [P2P API](./p2p-api.md): documents the interface provided by the p2p
   layer to the reactors, through the `Switch` and `Peer` abstractions.
   In other words, the interaction of the protocol layer with the p2p layer (top-down).
-
-> This is a work in progress, tracked by [issue #599](https://github.com/cometbft/cometbft/issues/599).
 
 [reactor-interface]: ../../../p2p/base_reactor.go

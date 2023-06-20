@@ -147,7 +147,8 @@ func (params ConsensusParams) ValidateBasic() error {
 		return fmt.Errorf("block.MaxBytes cannot be 0")
 	}
 	if params.Block.MaxBytes < -1 {
-		return fmt.Errorf("block.MaxBytes must be greater than -1. Got %d",
+		return fmt.Errorf("block.MaxBytes must be -1 or greater than 0. Got %d",
+
 			params.Block.MaxBytes)
 	}
 	if params.Block.MaxBytes > MaxBlockSizeBytes {

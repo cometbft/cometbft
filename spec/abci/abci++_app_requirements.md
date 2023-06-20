@@ -73,7 +73,7 @@ Busy blockchains might seek to maximize the amount of transactions included in e
 the Application might configure CometBFT to increase the transactions passed to the application via `RequestPrepareProposal.txs`
 beyond the `RequestPrepareProposal.max_tx_bytes` limit. Currently, the application can do so by setting
 `ConsensusParams.Block.MaxBytes` to -1. This instructs CometBFT to provide *all* transactions in the mempool
-when calling `RequestPrepareProposal`, whose size may exceed `RequestPrepareProposal.max_tx_bytes`.
+when calling `RequestPrepareProposal`, whose aggregated size may exceed `RequestPrepareProposal.max_tx_bytes`.
 Thus, Requirement 2 ensures that the size in bytes of the
 transaction list returned by the application will never cause the resulting block to go beyond its byte size
 limit.
@@ -613,7 +613,7 @@ If the Application sets value -1, consensus will:
 - consider that the actual value to enforce is 100 MB
 - will provide *all* transactions in the mempool in calls to `PrepareProposal`
 
-Must not be 0; must have `-1 < MaxBytes < 100 MB`.
+`MaxBytes == -1` OR `0 < MaxBytes <= 100 MB`.
 
 ##### BlockParams.MaxGas
 

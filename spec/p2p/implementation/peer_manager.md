@@ -124,19 +124,19 @@ This is not done in the p2p package, but it is part of the procedure to set up a
 
 The picture below is a first attempt of illustrating the life cycle of an outbound peer:
 
-<img src="img/p2p_state.png" width="50%" title="Outgoing peers lifecycle">
+<img src="../images/p2p_state.png" width="50%" title="Outgoing peers lifecycle">
 
 A peer can be in the following states:
 
 - Candidate peers: peer addresses stored in the address boook, that can be
   retrieved via the [`PickAddress`](./addressbook.md#pick-address) method
-- [Dialing](switch.md#dialing-peers): peer addresses that are currently being
+- [Dialing](./switch.md#dialing-peers): peer addresses that are currently being
   dialed. This state exists to ensure that a single dialing routine exist per peer.
-- [Reconnecting](switch.md#reconnect-to-peer): persistent peers to which a node
+- [Reconnecting](./switch.md#reconnect-to-peer): persistent peers to which a node
   is currently reconnecting, as a previous connection attempt has failed.
 - Connected peers: peers that a node has successfully dialed, added as outbound peers.
-- [Bad peers](addressbook.md#bad-peers): peers marked as bad in the address
-  book due to exhibited [misbehavior](pex-protocol.md#misbehavior).
+- [Bad peers](./addressbook.md#bad-peers): peers marked as bad in the address
+  book due to exhibited [misbehavior](./pex-protocol.md#misbehavior).
   Peers can be reinstated after being marked as bad.
 
 ## Pending of documentation

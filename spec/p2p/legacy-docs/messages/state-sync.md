@@ -89,9 +89,9 @@ if necessary. The light block at the height of the snapshot will be used to veri
 
 | Name          | Type                                                    | Description                          | Field Number |
 |---------------|---------------------------------------------------------|--------------------------------------|--------------|
-| light_block   | [LightBlock](../../core/data_structures.md#lightblock)  | Light block at the height requested  | 1            |
+| light_block   | [LightBlock](../../../core/data_structures.md#lightblock)  | Light block at the height requested  | 1            |
 
-State sync will use [light client verification](../../../spec/light-client/verification/README.md) to verify
+State sync will use [light client verification](../../../light-client/verification/README.md) to verify
 the light blocks.
 
 If no state sync is in progress (i.e. during normal operation), any unsolicited response messages
@@ -113,7 +113,7 @@ A reciever to the request will use the state store to fetch the consensus params
 | Name     | Type   | Description                     | Field Number |
 |----------|--------|---------------------------------|--------------|
 | height   | uint64 | Height of the consensus params  | 1            |
-| consensus_params | [ConsensusParams](../../core/data_structures.md#ConsensusParams) | Consensus params at the height requested | 2 |
+| consensus_params | [ConsensusParams](../../../core/data_structures.md#ConsensusParams) | Consensus params at the height requested | 2 |
 
 
 ### Message

@@ -69,14 +69,14 @@ such that they will eventually be enough for completing `PrepareProposal`.
 * Requirement 2 [`PrepareProposal`, tx-size]: When *p*'s Application calls `ResponsePrepareProposal`, the
   total size in bytes of the transactions returned does not exceed `RequestPrepareProposal.max_tx_bytes`.
 
-Busy blockchains might seek to maximize the amount of transactions included in each block. Under those conditions,
-the Application might configure CometBFT to increase the transactions passed to the application via `RequestPrepareProposal.txs`
-beyond the `RequestPrepareProposal.max_tx_bytes` limit. Currently, the application can do so by setting
-`ConsensusParams.Block.MaxBytes` to -1. This instructs CometBFT to provide *all* transactions in the mempool
-when calling `RequestPrepareProposal`, whose aggregated size may exceed `RequestPrepareProposal.max_tx_bytes`.
-Thus, Requirement 2 ensures that the size in bytes of the
-transaction list returned by the application will never cause the resulting block to go beyond its byte size
-limit.
+Busy blockchains might seek to gain full visibility into transactions in CometBFT's mempool,
+rather than having visibility only on *a* subset of those transactions that fit in a block.
+The application can do so by setting `ConsensusParams.Block.MaxBytes` to -1.
+This instructs CometBFT (a) to enforce the maximum possible value for `MaxBytes` (100 MB) at CometBFT level,
+and (b) to provide *all* transactions in the mempool when calling `RequestPrepareProposal`.
+Under these settings, the aggregated size of all transactions may exceed `RequestPrepareProposal.max_tx_bytes`.
+Hence, Requirement 2 ensures that the size in bytes of the transaction list returned by the application will never
+cause the resulting block to go beyond its byte size limit.
 
 * Requirement 3 [`PrepareProposal`, `ProcessProposal`, coherence]: For any two correct processes *p* and *q*,
   if *q*'s CometBFT calls `RequestProcessProposal` on *u<sub>p</sub>*,

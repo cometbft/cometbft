@@ -613,7 +613,7 @@ If the Application sets value -1, consensus will:
 - consider that the actual value to enforce is 100 MB
 - will provide *all* transactions in the mempool in calls to `PrepareProposal`
 
-`MaxBytes == -1` OR `0 < MaxBytes <= 100 MB`.
+Must have `MaxBytes == -1` OR `0 < MaxBytes <= 100 MB`.
 
 ##### BlockParams.MaxGas
 

@@ -335,7 +335,7 @@ func TestCreateProposalBlock(t *testing.T) {
 	// check that the part set does not exceed the maximum block size
 	partSet, err := block.MakePartSet(partSize)
 	require.NoError(t, err)
-	assert.Less(t, partSet.ByteSize(), int64(maxBytes))
+	assert.Less(t, partSet.ByteSize(), maxBytes)
 
 	partSetFromHeader := types.NewPartSetFromHeader(partSet.Header())
 	for partSetFromHeader.Count() < partSetFromHeader.Total() {

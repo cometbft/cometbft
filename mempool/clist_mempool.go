@@ -138,8 +138,7 @@ func (mem *CListMempool) addToCache(tx types.Tx) bool {
 
 func (mem *CListMempool) forceRemoveFromCache(tx types.Tx) {
 	mem.cache.Remove(tx)
-	txKey := types.Tx(tx).Key()
-	mem.txSenders.Delete(txKey)
+	mem.txSenders.Delete(tx.Key())
 }
 
 func (mem *CListMempool) removeFromCache(tx types.Tx) {

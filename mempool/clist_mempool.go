@@ -121,7 +121,6 @@ func (mem *CListMempool) isSender(txKey types.TxKey, peerID uint16) bool {
 	senders, ok := mem.txSenders.Load(txKey)
 	return ok && senders.(map[uint16]bool)[peerID]
 }
-}
 
 func (mem *CListMempool) addSender(txKey types.TxKey, senderID uint16) bool {
 	senders, loaded := mem.txSenders.LoadOrStore(senderID, map[uint16]bool{senderID: true})

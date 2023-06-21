@@ -3,8 +3,9 @@ package mempool
 import (
 	"crypto/sha256"
 	"errors"
-	"fmt"
 	"math"
+
+	"fmt"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/types"

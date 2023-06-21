@@ -104,6 +104,12 @@ The total size of a block is limited in bytes by the `ConsensusParams.Block.MaxB
 Proposed blocks must be less than this size, and will be considered invalid
 otherwise.
 
+The Application may set `ConsensusParams.Block.MaxBytes` to -1.
+In that case, the actual block limit is set to 100 MB,
+and CometBFT will provide all transactions in the mempool as part of `PrepareProposal`.
+The application has to be careful to return a list of transactions in `ResponsePrepareProposal`
+whose size is less than or equal to `RequestPrepareProposal.MaxTxBytes`.
+
 Blocks should additionally be limited by the amount of "gas" consumed by the
 transactions in the block, though this is not yet implemented.
 

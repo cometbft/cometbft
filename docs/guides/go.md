@@ -362,9 +362,6 @@ func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.R
 
             // Marshal the ExecTxResult to the txs slice element
             txs[i] = &abcitypes.ExecTxResult{}
-            if _, err := txs[i].MarshalToSizedBuffer(nil); err != nil {
-                log.Panicf("Error marshalling tx result: %v", err)
-            }
         }
     }
 

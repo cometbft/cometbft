@@ -323,7 +323,7 @@ import(
 
 ### 1.3.3 FinalizeBlock
 
-`FinalizeBlock` is an ABCI method introduced in CometBFT v0.38.0. This replaces the functionality provided previously (pre-v0.38.0) by the combination of ABCI methods `BeginBlock`, `DeliverTx`, and `EndBlock`.
+`FinalizeBlock` is an ABCI method introduced in CometBFT `v0.38.0`. This replaces the functionality provided previously (pre-`v0.38.0`) by the combination of ABCI methods `BeginBlock`, `DeliverTx`, and `EndBlock`.
 
 This method is responsible for executing the block and returning a response to the consensus engine.
 The `ProcessProposal` method provides the transactions to the state machine before the block is finalized.
@@ -333,7 +333,7 @@ Providing a single `FinalizeBlock` method to signal finalization of a block simp
 
 The `FinalizeBlock` method executes the block, including any necessary transaction processing and state updates, and returns a `ResponseFinalizeBlock` object which contains any necessary information about the executed block.
 
-**Note:** `FinalizeBlock` only prepares the update to be made and does not change the state of the Blockchain. The change of state happens in a later stage i.e. is `commit` phase.
+**Note:** `FinalizeBlock` only prepares the update to be made and does not change the state of the application. The change of state happens in a later stage i.e. is `commit` phase.
 
 ```go
 func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.RequestFinalizeBlock) (*abcitypes.ResponseFinalizeBlock, error) {
@@ -365,9 +365,6 @@ func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.R
 
     return &abcitypes.ResponseFinalizeBlock{
     TxResults:        txs,
-    AppHash:          []byte{},
-    Events:           []abcitypes.Event{},
-    ValidatorUpdates: abcitypes.ValidatorUpdates{},
     }, nil
 }
 ```
@@ -379,10 +376,7 @@ persist the resulting state:
 
 ```go
 func (app KVStoreApplication) Commit(_ context.Context, commit *abcitypes.RequestCommit) (*abcitypes.ResponseCommit, error) {
-    if err := app.onGoingBlock.Commit(); err != nil {
-        return &abcitypes.ResponseCommit{}, err
-    }
-    return &abcitypes.ResponseCommit{}, nil
+    return &abcitypes.ResponseCommit{}, app.onGoingBlock.Commit()
 }
 ```
 

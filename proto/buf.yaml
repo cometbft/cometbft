@@ -11,7 +11,6 @@ lint:
     - ENUM_ZERO_VALUE_SUFFIX
     - FILE_LOWER_SNAKE_CASE
     - UNARY_RPC
-  allow_comment_ignores: true
   ignore_only:
     ENUM_VALUE_PREFIX:
       - tendermint

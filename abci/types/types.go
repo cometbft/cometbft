@@ -113,6 +113,7 @@ func RegisterABCIServer(s grpc.Server, srv ABCIServer) {
 type CheckTxType = v4.CheckTxType
 
 const (
+	CHECK_TX_TYPE_UNKNOWN CheckTxType = v4.CHECK_TX_TYPE_UNKNOWN
 	CHECK_TX_TYPE_NEW     CheckTxType = v4.CHECK_TX_TYPE_NEW
 	CHECK_TX_TYPE_RECHECK CheckTxType = v4.CHECK_TX_TYPE_RECHECK
 )

@@ -328,12 +328,18 @@ import(
 This method is responsible for executing the block and returning a response to the consensus engine.
 The `ProcessProposal` method provides the transactions to the state machine before the block is finalized.
 This means that there is no need for the traditional ABCI methods of `BeginBlock`, `DeliverTx`, and `EndBlock` to handle the transaction execution and state updates. 
-Instead, the application (state machine) can choose to optimistically execute even before the block is finalized.
-Providing a single `FinalizeBlock` method to signal finalization of a block simplifies the ABCI interface and increases flexibility in the execution pipeline.
+Providing a single `FinalizeBlock` method to signal the finalization of a block simplifies the ABCI interface and increases flexibility in the execution pipeline.
 
 The `FinalizeBlock` method executes the block, including any necessary transaction processing and state updates, and returns a `ResponseFinalizeBlock` object which contains any necessary information about the executed block.
 
 **Note:** `FinalizeBlock` only prepares the update to be made and does not change the state of the application. The change of state happens in a later stage i.e. is `commit` phase.
+
+Note that, to implement these calls in our application we're going to make use of Badger's transaction mechanism. We will always refer to these as Badger transactions, not to confuse them with the transactions included in the blocks delivered by CometBFT, the _application transactions_.
+
+First, let's create a new Badger transaction during `FinalizeBlock`. All application transactions in the current block will be executed within this Badger transaction.
+Next, let's modify `FinalizeBlock` to add the `key` and `value` to the database transaction every time our application receives a new application transaction through `RequestFinalizeBlock`.
+
+Note that we check the validity of the transaction _again_ during `FinalizeBlock`.
 
 ```go
 func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.RequestFinalizeBlock) (*abcitypes.ResponseFinalizeBlock, error) {
@@ -357,9 +363,6 @@ func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.R
 
             // Marshal the ExecTxResult to the txs slice element
             txs[i] = &abcitypes.ExecTxResult{}
-            if _, err := txs[i].MarshalToSizedBuffer(nil); err != nil {
-                log.Panicf("Error marshalling tx result: %v", err)
-            }
         }
     }
 
@@ -368,6 +371,8 @@ func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.R
     }, nil
 }
 ```
+
+Note that `FinalizeBlock` **cannot** yet commit the Badger transaction we were building during the block execution.
 
 The `Commit` method tells the application to make permanent the effects of
 the application transactions.

@@ -7,6 +7,7 @@ import (
 
 	"fmt"
 
+	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/types"
 )
@@ -33,7 +34,7 @@ const (
 type Mempool interface {
 	// CheckTx executes a new transaction against the application to determine
 	// its validity and whether it should be added to the mempool.
-	CheckTx(tx types.Tx, callback func(*abci.ResponseCheckTx), txInfo TxInfo) error
+	CheckTx(tx types.Tx, txInfo TxInfo) (*abcicli.ReqRes, error)
 
 	// RemoveTxByKey removes a transaction, identified by its key,
 	// from the mempool.

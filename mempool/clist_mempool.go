@@ -7,6 +7,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/clist"
@@ -256,9 +257,8 @@ func (mem *CListMempool) TxsWaitChan() <-chan struct{} {
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) CheckTx(
 	tx types.Tx,
-	cb func(*abci.ResponseCheckTx), // not used
 	txInfo TxInfo,
-) error {
+) (*abcicli.ReqRes, error) {
 	mem.updateMtx.RLock()
 	// use defer to unlock mutex because application (*local client*) might panic
 	defer mem.updateMtx.RUnlock()
@@ -266,11 +266,11 @@ func (mem *CListMempool) CheckTx(
 	txSize := len(tx)
 
 	if err := mem.isFull(txSize); err != nil {
-		return err
+		return nil, err
 	}
 
 	if txSize > mem.config.MaxTxBytes {
-		return ErrTxTooLarge{
+		return nil, ErrTxTooLarge{
 			Max:    mem.config.MaxTxBytes,
 			Actual: txSize,
 		}
@@ -278,7 +278,7 @@ func (mem *CListMempool) CheckTx(
 
 	if mem.preCheck != nil {
 		if err := mem.preCheck(tx); err != nil {
-			return ErrPreCheck{
+			return nil, ErrPreCheck{
 				Reason: err,
 			}
 		}
@@ -286,7 +286,7 @@ func (mem *CListMempool) CheckTx(
 
 	// NOTE: proxyAppConn may error if tx buffer is full
 	if err := mem.proxyAppConn.Error(); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Record the sender for any transaction received.
@@ -300,16 +300,16 @@ func (mem *CListMempool) CheckTx(
 		// TODO: consider punishing peer for dups,
 		// its non-trivial since invalid txs can become valid,
 		// but they can spam the same tx with little cost to them atm.
-		return ErrTxInCache
+		return nil, ErrTxInCache
 	}
 
-	_, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{Tx: tx})
+	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{Tx: tx})
 	if err != nil {
 		mem.logger.Error("RequestCheckTx", "err", err)
-		return err
+		return nil, err
 	}
 
-	return nil
+	return reqRes, nil
 }
 
 // Global callback that will be called after every ABCI response.
@@ -330,7 +330,6 @@ func (mem *CListMempool) globalCb(req *abci.Request, res *abci.Response) {
 			}
 			mem.metrics.RecheckTimes.Add(1)
 			mem.resCbRecheck(req, res)
-
 		}
 
 		// update metrics

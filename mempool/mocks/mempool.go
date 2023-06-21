@@ -3,6 +3,7 @@
 package mocks
 
 import (
+	abcicli "github.com/cometbft/cometbft/abci/client"
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	mempool "github.com/cometbft/cometbft/mempool"
 
@@ -16,18 +17,20 @@ type Mempool struct {
 	mock.Mock
 }
 
-// CheckTx provides a mock function with given fields: tx, callback, txInfo
-func (_m *Mempool) CheckTx(tx types.Tx, callback func(*abcitypes.ResponseCheckTx), txInfo mempool.TxInfo) error {
-	ret := _m.Called(tx, callback, txInfo)
+// CheckTx provides a mock function with given fields: tx, txInfo
+func (_m *Mempool) CheckTx(tx types.Tx, txInfo mempool.TxInfo) (*abcicli.ReqRes, error) {
+	ret := _m.Called(tx, txInfo)
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(types.Tx, func(*abcitypes.ResponseCheckTx), mempool.TxInfo) error); ok {
-		r0 = rf(tx, callback, txInfo)
+	var r0 *abcicli.ReqRes
+	var r1 error
+	if rf, ok := ret.Get(0).(func(types.Tx, mempool.TxInfo) (*abcicli.ReqRes, error)); ok {
+		r0, r1 = rf(tx, txInfo)
 	} else {
-		r0 = ret.Error(0)
+		r0 = nil
+		r1 = ret.Error(0)
 	}
 
-	return r0
+	return r0, r1
 }
 
 // EnableTxsAvailable provides a mock function with given fields:

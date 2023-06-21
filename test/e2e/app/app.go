@@ -503,7 +503,7 @@ func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.Request
 
 	app.logger.Info("verified vote extension value", "height", req.Height, "vote_extension", fmt.Sprintf("%x", req.VoteExtension[:4]), "num", num)
 	return &abci.ResponseVerifyVoteExtension{
-		Status: abci.VERIFY_VOTE_EXTENSION_STATUS_REJECT,
+		Status: abci.VERIFY_VOTE_EXTENSION_STATUS_ACCEPT,
 	}, nil
 }
 

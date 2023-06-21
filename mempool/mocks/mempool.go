@@ -5,6 +5,7 @@ package mocks
 import (
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abcitypes "github.com/cometbft/cometbft/abci/types"
+
 	mempool "github.com/cometbft/cometbft/mempool"
 
 	mock "github.com/stretchr/testify/mock"
@@ -24,10 +25,20 @@ func (_m *Mempool) CheckTx(tx types.Tx, txInfo mempool.TxInfo) (*abcicli.ReqRes,
 	var r0 *abcicli.ReqRes
 	var r1 error
 	if rf, ok := ret.Get(0).(func(types.Tx, mempool.TxInfo) (*abcicli.ReqRes, error)); ok {
-		r0, r1 = rf(tx, txInfo)
+		return rf(tx, txInfo)
+	}
+	if rf, ok := ret.Get(0).(func(types.Tx, mempool.TxInfo) *abcicli.ReqRes); ok {
+		r0 = rf(tx, txInfo)
 	} else {
-		r0 = nil
-		r1 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*abcicli.ReqRes)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(types.Tx, mempool.TxInfo) error); ok {
+		r1 = rf(tx, txInfo)
+	} else {
+		r1 = ret.Error(1)
 	}
 
 	return r0, r1

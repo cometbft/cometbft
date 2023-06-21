@@ -26,8 +26,9 @@ jobs:
           go-version: '1.19'
 
       - uses: actions/checkout@v3
-        with:
-          ref: 'v0.34.x'
+# AGORIC: We don't maintain a v0.34.x branch yet, so default will do.
+#        with:
+#          ref: 'v0.34.x'
 
       - name: Build
         working-directory: test/e2e

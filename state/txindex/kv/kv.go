@@ -5,14 +5,18 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
+
+	"github.com/cometbft/cometbft/libs/log"
 
 	"github.com/cosmos/gogoproto/proto"
 
 	dbm "github.com/cometbft/cometbft-db"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	idxutil "github.com/cometbft/cometbft/internal/indexer"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/state/indexer"
@@ -32,6 +36,8 @@ type TxIndex struct {
 	store dbm.DB
 	// Number the events in the event list
 	eventSeq int64
+
+	log log.Logger
 }
 
 // NewTxIndex creates new KV indexer.
@@ -39,6 +45,10 @@ func NewTxIndex(store dbm.DB) *TxIndex {
 	return &TxIndex{
 		store: store,
 	}
+}
+
+func (txi *TxIndex) SetLogger(l log.Logger) {
+	txi.log = l
 }
 
 // Get gets transaction from the TxIndex storage and returns it or nil if the
@@ -368,10 +378,18 @@ func (txi *TxIndex) match(
 			// If we have a height range in a query, we need only transactions
 			// for this height
 			keyHeight, err := extractHeightFromKey(it.Key())
-			if err != nil || !checkHeightConditions(heightInfo, keyHeight) {
+			if err != nil {
+				txi.log.Error("failure to parse height from key:", err)
 				continue
 			}
-
+			withinBounds, err := checkHeightConditions(heightInfo, keyHeight)
+			if err != nil {
+				txi.log.Error("failure checking for height bounds:", err)
+				continue
+			}
+			if !withinBounds {
+				continue
+			}
 			txi.setTmpHashes(tmpHashes, it)
 			// Potentially exit early.
 			select {
@@ -396,7 +414,16 @@ func (txi *TxIndex) match(
 	EXISTS_LOOP:
 		for ; it.Valid(); it.Next() {
 			keyHeight, err := extractHeightFromKey(it.Key())
-			if err != nil || !checkHeightConditions(heightInfo, keyHeight) {
+			if err != nil {
+				txi.log.Error("failure to parse height from key:", err)
+				continue
+			}
+			withinBounds, err := checkHeightConditions(heightInfo, keyHeight)
+			if err != nil {
+				txi.log.Error("failure checking for height bounds:", err)
+				continue
+			}
+			if !withinBounds {
 				continue
 			}
 			txi.setTmpHashes(tmpHashes, it)
@@ -430,7 +457,16 @@ func (txi *TxIndex) match(
 
 			if strings.Contains(extractValueFromKey(it.Key()), c.Arg.Value()) {
 				keyHeight, err := extractHeightFromKey(it.Key())
-				if err != nil || !checkHeightConditions(heightInfo, keyHeight) {
+				if err != nil {
+					txi.log.Error("failure to parse height from key:", err)
+					continue
+				}
+				withinBounds, err := checkHeightConditions(heightInfo, keyHeight)
+				if err != nil {
+					txi.log.Error("failure checking for height bounds:", err)
+					continue
+				}
+				if !withinBounds {
 					continue
 				}
 				txi.setTmpHashes(tmpHashes, it)
@@ -514,20 +550,45 @@ LOOP:
 			continue
 		}
 
-		if _, ok := qr.AnyBound().(int64); ok {
-			v, err := strconv.ParseInt(extractValueFromKey(it.Key()), 10, 64)
-			if err != nil {
-				continue LOOP
-			}
-			if qr.Key != types.TxHeightKey {
-				keyHeight, err := extractHeightFromKey(it.Key())
-				if err != nil || !checkHeightConditions(heightInfo, keyHeight) {
+		if _, ok := qr.AnyBound().(*big.Float); ok {
+			v := new(big.Int)
+			v, ok := v.SetString(extractValueFromKey(it.Key()), 10)
+			var vF *big.Float
+			if !ok {
+				vF, _, err = big.ParseFloat(extractValueFromKey(it.Key()), 10, 125, big.ToNearestEven)
+				if err != nil {
 					continue LOOP
 				}
 
 			}
-			if checkBounds(qr, v) {
-				txi.setTmpHashes(tmpHashes, it)
+			if qr.Key != types.TxHeightKey {
+				keyHeight, err := extractHeightFromKey(it.Key())
+				if err != nil {
+					txi.log.Error("failure to parse height from key:", err)
+					continue
+				}
+				withinBounds, err := checkHeightConditions(heightInfo, keyHeight)
+				if err != nil {
+					txi.log.Error("failure checking for height bounds:", err)
+					continue
+				}
+				if !withinBounds {
+					continue
+				}
+			}
+			var withinBounds bool
+			var err error
+			if !ok {
+				withinBounds, err = idxutil.CheckBounds(qr, vF)
+			} else {
+				withinBounds, err = idxutil.CheckBounds(qr, v)
+			}
+			if err != nil {
+				txi.log.Error("failed to parse bounds:", err)
+			} else {
+				if withinBounds {
+					txi.setTmpHashes(tmpHashes, it)
+				}
 			}
 
 			// XXX: passing time in a ABCI Events is not yet implemented
@@ -657,19 +718,4 @@ func startKey(fields ...interface{}) []byte {
 		b.Write([]byte(fmt.Sprintf("%v", f) + tagKeySeparator))
 	}
 	return b.Bytes()
-}
-
-func checkBounds(ranges indexer.QueryRange, v int64) bool {
-	include := true
-	lowerBound := ranges.LowerBoundValue()
-	upperBound := ranges.UpperBoundValue()
-	if lowerBound != nil && v < lowerBound.(int64) {
-		include = false
-	}
-
-	if upperBound != nil && v > upperBound.(int64) {
-		include = false
-	}
-
-	return include
 }

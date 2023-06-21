@@ -2,7 +2,9 @@ package kv
 
 import (
 	"fmt"
+	"math/big"
 
+	idxutil "github.com/cometbft/cometbft/internal/indexer"
 	cmtsyntax "github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/types"
@@ -59,9 +61,13 @@ func dedupHeight(conditions []cmtsyntax.Condition) (dedupConditions []cmtsyntax.
 				if heightRangeExists || found {
 					continue
 				}
-				found = true
-				heightCondition = append(heightCondition, c)
-				heightInfo.height = int64(c.Arg.Number())
+				hFloat := c.Arg.Number()
+				if hFloat != nil {
+					h, _ := hFloat.Int64()
+					heightInfo.height = h
+					found = true
+					heightCondition = append(heightCondition, c)
+				}
 			} else {
 				heightInfo.onlyHeightEq = false
 				heightRangeExists = true
@@ -87,15 +93,16 @@ func dedupHeight(conditions []cmtsyntax.Condition) (dedupConditions []cmtsyntax.
 	return dedupConditions, heightInfo
 }
 
-func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) bool {
+func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) (bool, error) {
 	if heightInfo.heightRange.Key != "" {
-		if !checkBounds(heightInfo.heightRange, keyHeight) {
-			return false
+		withinBounds, err := idxutil.CheckBounds(heightInfo.heightRange, big.NewInt(keyHeight))
+		if err != nil || !withinBounds {
+			return false, err
 		}
 	} else {
 		if heightInfo.height != 0 && keyHeight != heightInfo.height {
-			return false
+			return false, nil
 		}
 	}
-	return true
+	return true, nil
 }

@@ -6,6 +6,8 @@ title: Requirements for the Application
 # Requirements for the Application
 
 - [Formal Requirements](#formal-requirements)
+  - [Consensus Connection Requirements](#consensus-connection-requirements)
+  - [Mempool Connection Requirements](#mempool-connection-requirements)
 - [Managing the Application state and related topics](#managing-the-application-state-and-related-topics)
   - [Connection State](#connection-state)
     - [Concurrency](#concurrency)
@@ -33,6 +35,8 @@ title: Requirements for the Application
 
 ## Formal Requirements
 
+### Consensus Connection Requirements
+
 This section specifies what CometBFT expects from the Application. It is structured as a set
 of formal requirements that can be used for testing and verification of the Application's logic.
 
@@ -57,7 +61,7 @@ Process *p*'s prepared proposal can differ in two different rounds where *p* is 
 Full execution of blocks at `PrepareProposal` time stands on CometBFT's critical path. Thus,
 Requirement 1 ensures the Application or operator will set a value for `TimeoutPropose` such that the time it takes
 to fully execute blocks in `PrepareProposal` does not interfere with CometBFT's propose timer.
-Note that the violation of Requirement 1 may lead to further rounds, but will not 
+Note that the violation of Requirement 1 may lead to further rounds, but will not
 compromise liveness because even though `TimeoutPropose` is used as the initial
 value for proposal timeouts, CometBFT will be dynamically adjust these timeouts
 such that they will eventually be enough for completing `PrepareProposal`.
@@ -65,13 +69,14 @@ such that they will eventually be enough for completing `PrepareProposal`.
 * Requirement 2 [`PrepareProposal`, tx-size]: When *p*'s Application calls `ResponsePrepareProposal`, the
   total size in bytes of the transactions returned does not exceed `RequestPrepareProposal.max_tx_bytes`.
 
-Busy blockchains might seek to maximize the amount of transactions included in each block. Under those conditions,
-CometBFT might choose to increase the transactions passed to the Application via `RequestPrepareProposal.txs`
-beyond the `RequestPrepareProposal.max_tx_bytes` limit. The idea is that, if the Application drops some of
-those transactions, it can still return a transaction list whose byte size is as close to
-`RequestPrepareProposal.max_tx_bytes` as possible. Thus, Requirement 2 ensures that the size in bytes of the
-transaction list returned by the application will never cause the resulting block to go beyond its byte size
-limit.
+Busy blockchains might seek to gain full visibility into transactions in CometBFT's mempool,
+rather than having visibility only on *a* subset of those transactions that fit in a block.
+The application can do so by setting `ConsensusParams.Block.MaxBytes` to -1.
+This instructs CometBFT (a) to enforce the maximum possible value for `MaxBytes` (100 MB) at CometBFT level,
+and (b) to provide *all* transactions in the mempool when calling `RequestPrepareProposal`.
+Under these settings, the aggregated size of all transactions may exceed `RequestPrepareProposal.max_tx_bytes`.
+Hence, Requirement 2 ensures that the size in bytes of the transaction list returned by the application will never
+cause the resulting block to go beyond its byte size limit.
 
 * Requirement 3 [`PrepareProposal`, `ProcessProposal`, coherence]: For any two correct processes *p* and *q*,
   if *q*'s CometBFT calls `RequestProcessProposal` on *u<sub>p</sub>*,
@@ -174,7 +179,7 @@ Additionally, *p*'s `FinalizeBlock` creates a set of transaction results *T<sub>
 Note that Requirements 11 and 12, combined with the Agreement property of consensus ensure
 state machine replication, i.e., the Application state evolves consistently at all correct processes.
 
-Finally, notice that neither `PrepareProposal` nor `ExtendVote` have determinism-related
+Also, notice that neither `PrepareProposal` nor `ExtendVote` have determinism-related
 requirements associated.
 Indeed, `PrepareProposal` is not required to be deterministic:
 
@@ -187,6 +192,40 @@ Likewise, `ExtendVote` can also be non-deterministic:
   but may also depend on other values or operations.
 * *w<sup>r</sup><sub>p</sub> = w<sup>r</sup><sub>q</sub> &#8655;
   e<sup>r</sup><sub>p</sub> = e<sup>r</sup><sub>q</sub>*
+
+### Mempool Connection Requirements
+
+Let *CheckTxCodes<sub>tx,p,h</sub>* denote the set of result codes returned by *p*'s Application,
+via `ResponseCheckTx`,
+to successive calls to `RequestCheckTx` occurring while the Application is at height *h*
+and having transaction *tx* as parameter.
+*CheckTxCodes<sub>tx,p,h</sub>* is a set since *p*'s Application may
+return different result codes during height *h*.
+If *CheckTxCodes<sub>tx,p,h</sub>* is a singleton set, i.e. the Application always returned
+the same result code in `ResponseCheckTx` while at height *h*,
+we define *CheckTxCode<sub>tx,p,h</sub>* as the singleton value of *CheckTxCodes<sub>tx,p,h</sub>*.
+If *CheckTxCodes<sub>tx,p,h</sub>* is not a singleton set, *CheckTxCode<sub>tx,p,h</sub>* is undefined.
+Let predicate *OK(CheckTxCode<sub>tx,p,h</sub>)* denote whether *CheckTxCode<sub>tx,p,h</sub>* is `SUCCESS`.
+
+* Requirement 13 [`CheckTx`, eventual non-oscillation]: For any transaction *tx*,
+  there exists a boolean value *b*,
+  and a height *h<sub>stable</sub>* such that,
+  for any correct process *p*,
+  *CheckTxCode<sub>tx,p,h</sub>* is defined, and
+  *OK(CheckTxCode<sub>tx,p,h</sub>) = b*
+  for any height *h &#8805; h<sub>stable</sub>*.
+
+Requirement 13 ensures that
+a transaction will eventually stop oscillating between `CheckTx` success and failure
+if it stays in *p's* mempool for long enough.
+This condition on the Application's behavior allows the mempool to ensure that
+a transaction will leave the mempool of all full nodes,
+either because it is expunged everywhere due to failing `CheckTx` calls,
+or because it stays valid long enough to be gossipped, proposed and decided.
+Although Requirement 13 defines a global *h<sub>stable</sub>*, application developers
+can consider such stabilization height as local to process *p* (*h<sub>p,stable</sub>*),
+without loss for generality.
+In contrast, the value of *b* MUST be the same across all processes.
 
 ## Managing the Application state and related topics
 
@@ -562,7 +601,19 @@ This is enforced by the consensus algorithm.
 This implies a maximum transaction size that is this `MaxBytes`, less the expected size of
 the header, the validator set, and any included evidence in the block.
 
-Must have `0 < MaxBytes < 100 MB`.
+If the Application wants full control over the size of blocks,
+it can do so by enforcing a byte limit set up at the Application level.
+This Application-internal limit is used by `PrepareProposal` to bound the total size
+of transactions it returns, and by `ProcessProposal` to reject any received block
+whose total transaction size is bigger than the enforced limit.
+In such case, the Application MAY set `MaxBytes` to -1.
+
+If the Application sets value -1, consensus will:
+
+- consider that the actual value to enforce is 100 MB
+- will provide *all* transactions in the mempool in calls to `PrepareProposal`
+
+Must have `MaxBytes == -1` OR `0 < MaxBytes <= 100 MB`.
 
 ##### BlockParams.MaxGas
 

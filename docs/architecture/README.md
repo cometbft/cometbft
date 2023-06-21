@@ -42,11 +42,15 @@ numbering our ADRs from 100 onwards.
 
 ### Proposed
 
+- [ADR-103: Protobuf definition versioning](./adr-103-proto-versioning.md)
+
 ### Accepted
 
+- [ADR-104: State sync from local snapshot](./adr-104-out-of-band-state-sync.md)
 ### Implemented
 
 ### Deprecated
 
 ### Rejected
 
+- [ADR-100: Data companion push API](./adr-100-data-companion-push-api.md)

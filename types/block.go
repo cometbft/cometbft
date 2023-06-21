@@ -294,8 +294,7 @@ func MaxDataBytes(maxBytes, evidenceBytes int64, valsCount int) int64 {
 }
 
 // MaxDataBytesNoEvidence returns the maximum size of block's data when
-// evidence count is unknown. MaxEvidencePerBlock will be used for the size
-// of evidence.
+// evidence count is unknown (will be assumed to be 0).
 //
 // XXX: Panics on negative result.
 func MaxDataBytesNoEvidence(maxBytes int64, valsCount int) int64 {
@@ -306,7 +305,7 @@ func MaxDataBytesNoEvidence(maxBytes int64, valsCount int) int64 {
 
 	if maxDataBytes < 0 {
 		panic(fmt.Sprintf(
-			"Negative MaxDataBytesUnknownEvidence. Block.MaxBytes=%d is too small to accommodate header&lastCommit&evidence=%d",
+			"Negative MaxDataBytesNoEvidence. Block.MaxBytes=%d is too small to accommodate header&lastCommit&evidence=%d",
 			maxBytes,
 			-(maxDataBytes - maxBytes),
 		))
@@ -342,7 +341,7 @@ type Header struct {
 	ConsensusHash      cmtbytes.HexBytes `json:"consensus_hash"`       // consensus params for current block
 	AppHash            cmtbytes.HexBytes `json:"app_hash"`             // state after txs from the previous block
 	// root hash of all results from the txs from the previous block
-	// see `deterministicExecTxResult` to understand which parts of a tx is hashed into here
+	// see `DeterministicExecTxResult` to understand which parts of a tx is hashed into here
 	LastResultsHash cmtbytes.HexBytes `json:"last_results_hash"`
 
 	// consensus info

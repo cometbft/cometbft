@@ -53,19 +53,23 @@ message Request {
   reserved 4, 7, 9, 10; // SetOption, BeginBlock, DeliverTx, EndBlock
 }
 
+// Type of the transaction check request.
+//
+// This enumeration is incompatible with the CheckTxType definition in
+// cometbft.abci.v1 and therefore shall not be used in encoding with the same
+// field number.
 enum CheckTxType {
   option (gogoproto.goproto_enum_prefix) = false;
 
-  // The non-conventional name for the zero value is preserved
-  // due to history of use.
-  // buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
-  CHECK_TX_TYPE_NEW = 0;
-  CHECK_TX_TYPE_RECHECK = 1;
+  CHECK_TX_TYPE_UNKNOWN = 0;
+  CHECK_TX_TYPE_NEW = 1;
+  CHECK_TX_TYPE_RECHECK = 2;
 }
 
 message RequestCheckTx {
   bytes tx = 1;
-  CheckTxType type = 2;
+  CheckTxType type = 3;
+  reserved 2; // v1.CheckTxType type
 }
 
 message RequestPrepareProposal {

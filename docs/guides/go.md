@@ -381,10 +381,7 @@ persist the resulting state:
 
 ```go
 func (app KVStoreApplication) Commit(_ context.Context, commit *abcitypes.RequestCommit) (*abcitypes.ResponseCommit, error) {
-    if err := app.onGoingBlock.Commit(); err != nil {
-        return &abcitypes.ResponseCommit{}, err
-    }
-    return &abcitypes.ResponseCommit{}, nil
+    return &abcitypes.ResponseCommit{}, app.onGoingBlock.Commit()
 }
 ```
 

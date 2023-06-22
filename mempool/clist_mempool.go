@@ -135,15 +135,13 @@ func (mem *CListMempool) addSender(txKey types.TxKey, senderID uint16) bool {
 	mem.txSendersMtx.Lock()
 	defer mem.txSendersMtx.Unlock()
 
-	sendersSet, ok := mem.txSenders[txKey]
-	if ok {
+	if sendersSet, ok := mem.txSenders[txKey]; ok {
 		sendersSet[senderID] = true
 		mem.txSenders[txKey] = sendersSet
 		return false
-	} else {
-		mem.txSenders[txKey] = map[uint16]bool{senderID: true}
-		return true
 	}
+	mem.txSenders[txKey] = map[uint16]bool{senderID: true}
+	return true
 }
 
 func (mem *CListMempool) removeSenders(txKey types.TxKey) {

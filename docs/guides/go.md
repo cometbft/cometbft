@@ -323,21 +323,22 @@ import(
 
 ### 1.3.3 FinalizeBlock
 
+When the CometBFT consensus engine has decided on the block, the block is transferred to the
+application via the `FinalizeBlock` method.
 `FinalizeBlock` is an ABCI method introduced in CometBFT `v0.38.0`. This replaces the functionality provided previously (pre-`v0.38.0`) by the combination of ABCI methods `BeginBlock`, `DeliverTx`, and `EndBlock`.
+`FinalizeBlock`'s parameters are an aggregation of those in `BeginBlock`, `DeliverTx`, and `EndBlock`.
 
 This method is responsible for executing the block and returning a response to the consensus engine.
-The `ProcessProposal` method provides the transactions to the state machine before the block is finalized.
-This means that there is no need for the traditional ABCI methods of `BeginBlock`, `DeliverTx`, and `EndBlock` to handle the transaction execution and state updates. 
 Providing a single `FinalizeBlock` method to signal the finalization of a block simplifies the ABCI interface and increases flexibility in the execution pipeline.
 
 The `FinalizeBlock` method executes the block, including any necessary transaction processing and state updates, and returns a `ResponseFinalizeBlock` object which contains any necessary information about the executed block.
 
-**Note:** `FinalizeBlock` only prepares the update to be made and does not change the state of the application. The change of state happens in a later stage i.e. is `commit` phase.
+**Note:** `FinalizeBlock` only prepares the update to be made and does not change the state of the application. The state change is actually committed in a later stage i.e. in `commit` phase..
 
 Note that, to implement these calls in our application we're going to make use of Badger's transaction mechanism. We will always refer to these as Badger transactions, not to confuse them with the transactions included in the blocks delivered by CometBFT, the _application transactions_.
 
 First, let's create a new Badger transaction during `FinalizeBlock`. All application transactions in the current block will be executed within this Badger transaction.
-Next, let's modify `FinalizeBlock` to add the `key` and `value` to the database transaction every time our application receives a new application transaction through `RequestFinalizeBlock`.
+Next, let's modify `FinalizeBlock` to add the `key` and `value` to the database transaction every time our application processes a new application transaction from the list received through `RequestFinalizeBlock`.
 
 Note that we check the validity of the transaction _again_ during `FinalizeBlock`.
 
@@ -360,7 +361,6 @@ func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.R
             }
             log.Printf("Successfully added key %s with value %s", key, value)
 
-            // Marshal the ExecTxResult to the txs slice element
             txs[i] = &abcitypes.ExecTxResult{}
         }
     }

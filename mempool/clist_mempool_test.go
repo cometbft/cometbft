@@ -722,6 +722,33 @@ func TestMempoolRemoteAppConcurrency(t *testing.T) {
 	require.NoError(t, mp.FlushAppConn())
 }
 
+func TestMempoolSenders(t *testing.T) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+	wcfg := config.DefaultConfig()
+	mp, cleanup := newMempoolWithAppAndConfig(cc, wcfg)
+	defer cleanup()
+
+	tx1 := kvstore.NewTxFromID(1)
+	tx2 := kvstore.NewTxFromID(2)
+	require.False(t, mp.isSender(types.Tx(tx1).Key(), 1))
+
+	mp.addSender(types.Tx(tx1).Key(), 1)
+	mp.addSender(types.Tx(tx1).Key(), 2)
+	mp.addSender(types.Tx(tx2).Key(), 1)
+	require.True(t, mp.isSender(types.Tx(tx1).Key(), 1))
+	require.True(t, mp.isSender(types.Tx(tx1).Key(), 2))
+	require.True(t, mp.isSender(types.Tx(tx2).Key(), 1))
+
+	mp.removeSenders(types.Tx(tx1).Key())
+	require.False(t, mp.isSender(types.Tx(tx1).Key(), 1))
+	require.False(t, mp.isSender(types.Tx(tx1).Key(), 2))
+	require.True(t, mp.isSender(types.Tx(tx2).Key(), 1))
+
+	mp.resetSenders()
+	require.False(t, mp.isSender(types.Tx(tx2).Key(), 1))
+}
+
 // caller must close server
 func newRemoteApp(t *testing.T, addr string, app abci.Application) (abciclient.Client, service.Service) {
 	clientCreator, err := abciclient.NewClient(addr, "socket", true)

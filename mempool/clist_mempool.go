@@ -60,8 +60,8 @@ type CListMempool struct {
 	cache TxCache
 
 	// For each tx in the cache, the set of peer ids that've sent us the tx.
-	// txSenders: txKey -> (PeerID -> bool)
-	txSenders sync.Map
+	txSenders    map[types.TxKey]map[uint16]bool
+	txSendersMtx cmtsync.RWMutex
 
 	logger  log.Logger
 	metrics *Metrics
@@ -84,6 +84,7 @@ func NewCListMempool(
 		config:        cfg,
 		proxyAppConn:  proxyAppConn,
 		txs:           clist.New(),
+		txSenders:     make(map[types.TxKey]map[uint16]bool),
 		height:        height,
 		recheckCursor: nil,
 		recheckEnd:    nil,
@@ -118,21 +119,47 @@ func (mem *CListMempool) inMempool(txKey types.TxKey) bool {
 	return ok
 }
 
+// Called from:
+//   - mempool.reactor.broadcastTxRoutine
 func (mem *CListMempool) isSender(txKey types.TxKey, peerID uint16) bool {
-	mem.updateMtx.RLock()
-	defer mem.updateMtx.RUnlock()
+	mem.txSendersMtx.RLock()
+	defer mem.txSendersMtx.RUnlock()
 
-	senders, ok := mem.txSenders.Load(txKey)
-	return ok && senders.(map[uint16]bool)[peerID]
+	sendersSet, ok := mem.txSenders[txKey]
+	return ok && sendersSet[peerID]
 }
 
+// Called from:
+//   - CheckTx (lock held)
 func (mem *CListMempool) addSender(txKey types.TxKey, senderID uint16) bool {
-	senders, loaded := mem.txSenders.LoadOrStore(senderID, map[uint16]bool{senderID: true})
-	if loaded {
-		senders.(map[uint16]bool)[senderID] = true
+	mem.txSendersMtx.Lock()
+	defer mem.txSendersMtx.Unlock()
+
+	sendersSet, ok := mem.txSenders[txKey]
+	if ok {
+		sendersSet[senderID] = true
+		mem.txSenders[txKey] = sendersSet
+		return false
+	} else {
+		mem.txSenders[txKey] = map[uint16]bool{senderID: true}
+		return true
 	}
-	mem.txSenders.Store(txKey, senders)
-	return loaded
+}
+
+func (mem *CListMempool) removeSenders(txKey types.TxKey) {
+	mem.txSendersMtx.Lock()
+	defer mem.txSendersMtx.Unlock()
+
+	delete(mem.txSenders, txKey)
+}
+
+func (mem *CListMempool) resetSenders() {
+	mem.txSendersMtx.Lock()
+	defer mem.txSendersMtx.Unlock()
+
+	for txKey := range mem.txSenders {
+		delete(mem.txSenders, txKey)
+	}
 }
 
 func (mem *CListMempool) addToCache(tx types.Tx) bool {
@@ -141,7 +168,7 @@ func (mem *CListMempool) addToCache(tx types.Tx) bool {
 
 func (mem *CListMempool) forceRemoveFromCache(tx types.Tx) {
 	mem.cache.Remove(tx)
-	mem.txSenders.Delete(tx.Key())
+	mem.removeSenders(tx.Key())
 }
 
 func (mem *CListMempool) removeFromCache(tx types.Tx) {
@@ -223,10 +250,7 @@ func (mem *CListMempool) Flush() {
 
 	_ = atomic.SwapInt64(&mem.txsBytes, 0)
 	mem.cache.Reset()
-	mem.txSenders.Range(func(key, _ interface{}) bool {
-		mem.txSenders.Delete(key)
-		return true
-	})
+	mem.resetSenders()
 
 	mem.removeAllTxs()
 }

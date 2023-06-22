@@ -119,6 +119,9 @@ func (mem *CListMempool) inMempool(txKey types.TxKey) bool {
 }
 
 func (mem *CListMempool) isSender(txKey types.TxKey, peerID uint16) bool {
+	mem.updateMtx.RLock()
+	defer mem.updateMtx.RUnlock()
+
 	senders, ok := mem.txSenders.Load(txKey)
 	return ok && senders.(map[uint16]bool)[peerID]
 }

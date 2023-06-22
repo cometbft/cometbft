@@ -366,7 +366,7 @@ func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.R
     }
 
     return &abcitypes.ResponseFinalizeBlock{
-    TxResults:        txs,
+      TxResults:        txs,
     }, nil
 }
 ```

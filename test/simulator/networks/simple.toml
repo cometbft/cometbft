@@ -1,0 +1,20 @@
+prometheus = true
+load_tx_size_bytes = 100
+load_tx_batch_size = 100
+propagation_ratio=40
+[node.validator01]
+[node.validator02]
+[node.validator03]
+[node.validator04]
+[node.validator05]
+[node.validator06]
+[node.validator07]
+[node.validator08]
+[node.validator09]
+[node.validator10]
+[node.validator11]
+[node.validator12]
+[node.validator13]
+[node.validator14]
+[node.validator15]
+[node.validator16]

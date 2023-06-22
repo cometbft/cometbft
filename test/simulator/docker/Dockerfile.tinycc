@@ -1,0 +1,28 @@
+FROM golang:1.20-bullseye as base
+
+USER root:root
+
+ENV COMETBFT_BUILD_OPTIONS ""
+WORKDIR /src/cometbft
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN make build && cp build/cometbft /usr/bin/cometbft
+COPY test/simulator/docker/entrypoint* /usr/bin/
+RUN cd test/simulator && make node && cp build/node /usr/bin/app
+
+FROM gcr.io/distroless/static-debian11:debug
+
+USER root:root
+COPY --from=base /src/cometbft/test/simulator/build/node /usr/bin/app
+COPY --from=base /src/cometbft/test/simulator/docker/entrypoint* /usr/bin/
+
+WORKDIR /cometbft
+VOLUME /cometbft
+ENV CMTHOME=/cometbft
+ENV GORACE "halt_on_error=1"
+
+EXPOSE 26656 26657 26660 6060
+ENTRYPOINT ["/usr/bin/entrypoint-builtin"]
+CMD ["node"]
+STOPSIGNAL SIGTERM

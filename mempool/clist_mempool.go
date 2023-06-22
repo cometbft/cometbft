@@ -251,7 +251,10 @@ func (mem *CListMempool) CheckTx(
 		return err
 	}
 
+	mem.logger.Debug("CheckTx on: ", types.Tx(tx).Hash())
+
 	if !mem.cache.Push(tx) { // if the transaction already exists in the cache
+		mem.logger.Info("Already received: ", types.Tx(tx).Hash())
 		mem.metrics.AlreadyReceivedTxs.Add(1)
 		// Record a new sender for a tx we've already seen.
 		// Note it's possible a tx is still in the cache but no longer in the mempool

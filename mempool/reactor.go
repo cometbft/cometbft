@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"errors"
+	"math/rand"
 	"time"
 
 	"fmt"
@@ -78,6 +79,7 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 // AddPeer implements Reactor.
 // It starts a broadcast routine ensuring all txs are forwarded to the given peer.
 func (memR *Reactor) AddPeer(peer p2p.Peer) {
+	memR.Logger.Error("Adding peer", peer.ID(), "(", memR.config.Broadcast, " broadcast)")
 	if memR.config.Broadcast {
 		go memR.broadcastTxRoutine(peer)
 	}
@@ -92,7 +94,7 @@ func (memR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
 // Receive implements Reactor.
 // It adds any received transactions to the mempool.
 func (memR *Reactor) Receive(e p2p.Envelope) {
-	memR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
+	memR.Logger.Info("Receive", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 	switch msg := e.Message.(type) {
 	case *protomem.Txs:
 		protoTxs := msg.GetTxs()
@@ -133,7 +135,7 @@ type PeerState interface {
 func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 	peerID := memR.ids.GetForPeer(peer)
 	var next *clist.CElement
-
+	rand.Seed(time.Now().UnixNano())
 	for {
 		// In case of both next.NextWaitChan() and peer.Quit() are variable at the same time
 		if !memR.IsRunning() || !peer.IsRunning() {
@@ -156,16 +158,16 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		}
 
 		// Make sure the peer is up to date.
-		peerState, ok := peer.Get(types.PeerStateKey).(PeerState)
-		if !ok {
-			// Peer does not have a state yet. We set it in the consensus reactor, but
-			// when we add peer in Switch, the order we call reactors#AddPeer is
-			// different every time due to us using a map. Sometimes other reactors
-			// will be initialized before the consensus reactor. We should wait a few
-			// milliseconds and retry.
-			time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
-			continue
-		}
+		//peerState, ok := peer.Get(types.PeerStateKey).(PeerState)
+		//if !ok {
+		//	// Peer does not have a state yet. We set it in the consensus reactor, but
+		//	// when we add peer in Switch, the order we call reactors#AddPeer is
+		//	// different every time due to us using a map. Sometimes other reactors
+		//	// will be initialized before the consensus reactor. We should wait a few
+		//	// milliseconds and retry.
+		//	time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
+		//	continue
+		//}
 
 		// If we suspect that the peer is lagging behind, at least by more than
 		// one block, we don't send the transaction immediately. This code
@@ -174,23 +176,28 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		//
 		// [RFC 103]: https://github.com/cometbft/cometbft/pull/735
 		memTx := next.Value.(*mempoolTx)
-		if peerState.GetHeight() < memTx.Height()-1 {
-			time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
-			continue
-		}
+		//if peerState.GetHeight() < memTx.Height()-1 {
+		//	time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
+		//	continue
+		//}
 
 		// NOTE: Transaction batching was disabled due to
 		// https://github.com/tendermint/tendermint/issues/5796
 
 		if !memTx.isSender(peerID) {
-			success := peer.Send(p2p.Envelope{
-				ChannelID: MempoolChannel,
-				Message:   &protomem.Txs{Txs: [][]byte{memTx.tx}},
-			})
-			if !success {
-				time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
-				continue
+			memR.Logger.Debug("Sending ", memTx.tx.Hash(), " to", peerID)
+			if float32(rand.Intn(101)) <= memR.config.PropagationRatio {
+				success := peer.Send(p2p.Envelope{
+					ChannelID: MempoolChannel,
+					Message:   &protomem.Txs{Txs: [][]byte{memTx.tx}},
+				})
+				if !success {
+					time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
+					continue
+				}
 			}
+		} else {
+			memR.Logger.Debug("Not sending ", memTx.tx.Hash(), " to ", peerID)
 		}
 
 		select {

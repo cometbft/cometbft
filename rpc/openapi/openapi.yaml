@@ -1061,7 +1061,7 @@ paths:
           required: true
           schema:
             type: string
-            example: "/a/b/c"
+            example: '"/a/b/c"'
         - in: query
           name: data
           description: Data

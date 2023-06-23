@@ -32,6 +32,9 @@ type CListMempool struct {
 	notifiedTxsAvailable bool
 	txsAvailable         chan struct{} // fires once for each height, when the mempool is not empty
 
+	// notify listeners (ie. mempool reactor) when txs are removed from the pool
+	txsRemoved chan types.TxKey
+
 	config *config.MempoolConfig
 
 	// Exclusive mutex for Update method to prevent concurrent execution of
@@ -58,10 +61,6 @@ type CListMempool struct {
 	// This reduces the pressure on the proxyApp.
 	cache TxCache
 
-	// For each tx in the cache, the set of peer ids that've sent us the tx.
-	txSenders    map[types.TxKey]map[uint16]bool
-	txSendersMtx cmtsync.RWMutex
-
 	logger  log.Logger
 	metrics *Metrics
 }
@@ -83,7 +82,6 @@ func NewCListMempool(
 		config:        cfg,
 		proxyAppConn:  proxyAppConn,
 		txs:           clist.New(),
-		txSenders:     make(map[types.TxKey]map[uint16]bool),
 		height:        height,
 		recheckCursor: nil,
 		recheckEnd:    nil,
@@ -113,50 +111,9 @@ func (mem *CListMempool) getCElement(txKey types.TxKey) (*clist.CElement, bool) 
 	return nil, false
 }
 
-func (mem *CListMempool) inMempool(txKey types.TxKey) bool {
+func (mem *CListMempool) InMempool(txKey types.TxKey) bool {
 	_, ok := mem.getCElement(txKey)
 	return ok
-}
-
-// Called from:
-//   - mempool.reactor.broadcastTxRoutine
-func (mem *CListMempool) isSender(txKey types.TxKey, peerID uint16) bool {
-	mem.txSendersMtx.RLock()
-	defer mem.txSendersMtx.RUnlock()
-
-	sendersSet, ok := mem.txSenders[txKey]
-	return ok && sendersSet[peerID]
-}
-
-// Called from:
-//   - CheckTx (lock held)
-func (mem *CListMempool) addSender(txKey types.TxKey, senderID uint16) bool {
-	mem.txSendersMtx.Lock()
-	defer mem.txSendersMtx.Unlock()
-
-	if sendersSet, ok := mem.txSenders[txKey]; ok {
-		sendersSet[senderID] = true
-		mem.txSenders[txKey] = sendersSet
-		return false
-	}
-	mem.txSenders[txKey] = map[uint16]bool{senderID: true}
-	return true
-}
-
-func (mem *CListMempool) removeSenders(txKey types.TxKey) {
-	mem.txSendersMtx.Lock()
-	defer mem.txSendersMtx.Unlock()
-
-	delete(mem.txSenders, txKey)
-}
-
-func (mem *CListMempool) resetSenders() {
-	mem.txSendersMtx.Lock()
-	defer mem.txSendersMtx.Unlock()
-
-	for txKey := range mem.txSenders {
-		delete(mem.txSenders, txKey)
-	}
 }
 
 func (mem *CListMempool) addToCache(tx types.Tx) bool {
@@ -165,7 +122,6 @@ func (mem *CListMempool) addToCache(tx types.Tx) bool {
 
 func (mem *CListMempool) forceRemoveFromCache(tx types.Tx) {
 	mem.cache.Remove(tx)
-	mem.removeSenders(tx.Key())
 }
 
 func (mem *CListMempool) removeFromCache(tx types.Tx) {
@@ -189,6 +145,10 @@ func (mem *CListMempool) removeAllTxs() {
 // NOTE: not thread safe - should only be called once, on startup
 func (mem *CListMempool) EnableTxsAvailable() {
 	mem.txsAvailable = make(chan struct{}, 1)
+}
+
+func (mem *CListMempool) EnableTxsRemoved() {
+	mem.txsRemoved = make(chan types.TxKey)
 }
 
 // SetLogger sets the Logger.
@@ -247,7 +207,7 @@ func (mem *CListMempool) Flush() {
 
 	_ = atomic.SwapInt64(&mem.txsBytes, 0)
 	mem.cache.Reset()
-	mem.resetSenders()
+	// mem.resetSenders()
 
 	mem.removeAllTxs()
 }
@@ -271,17 +231,8 @@ func (mem *CListMempool) TxsWaitChan() <-chan struct{} {
 }
 
 // It blocks if we're waiting on Update() or Reap().
-// cb: A callback from the CheckTx command.
-//
-//	It gets called from another goroutine.
-//
-// CONTRACT: Either cb will get called, or err returned.
-//
 // Safe for concurrent use by multiple goroutines.
-func (mem *CListMempool) CheckTx(
-	tx types.Tx,
-	txInfo TxInfo,
-) (*abcicli.ReqRes, error) {
+func (mem *CListMempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
 	mem.updateMtx.RLock()
 	// use defer to unlock mutex because application (*local client*) might panic
 	defer mem.updateMtx.RUnlock()
@@ -311,12 +262,6 @@ func (mem *CListMempool) CheckTx(
 	if err := mem.proxyAppConn.Error(); err != nil {
 		return nil, err
 	}
-
-	// Record the sender for any transaction received.
-	// The sender is stored as long as the transaction is in the cache.
-	// Note that it's possible a tx is still in the cache but no longer in the mempool.
-	// For example, after committing a block, txs are removed from mempool but not the cache.
-	mem.addSender(tx.Key(), txInfo.SenderID)
 
 	if added := mem.addToCache(tx); !added {
 		mem.metrics.AlreadyReceivedTxs.Add(1)
@@ -381,8 +326,13 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 		mem.txs.Remove(elem)
 		elem.DetachPrev()
 		mem.txsMap.Delete(txKey)
+
+		// Tx is not propagated anymore, so list of senders is no longer needed.
+		mem.notifyTxRemoved(txKey)
+
 		tx := elem.Value.(*mempoolTx).tx
 		atomic.AddInt64(&mem.txsBytes, int64(-len(tx)))
+
 		return nil
 	}
 	return errors.New("transaction not found in mempool")
@@ -425,13 +375,13 @@ func (mem *CListMempool) resCbFirstTime(
 			// Check mempool isn't full again to reduce the chance of exceeding the
 			// limits.
 			if err := mem.isFull(len(tx)); err != nil {
-				mem.forceRemoveFromCache(tx) // mempool might have a space later
+				mem.forceRemoveFromCache(tx) // mempool might have space later
 				mem.logger.Error(err.Error())
 				return
 			}
 
 			// Check transaction not already in the mempool
-			if mem.inMempool(txKey) {
+			if mem.InMempool(txKey) {
 				mem.logger.Debug(
 					"transaction already there, not adding it again",
 					"tx", types.Tx(tx).Hash(),
@@ -556,6 +506,19 @@ func (mem *CListMempool) notifyTxsAvailable() {
 		mem.notifiedTxsAvailable = true
 		select {
 		case mem.txsAvailable <- struct{}{}:
+		default:
+		}
+	}
+}
+
+func (mem *CListMempool) TxsRemoved() <-chan types.TxKey {
+	return mem.txsRemoved
+}
+
+func (mem *CListMempool) notifyTxRemoved(tx types.TxKey) {
+	if mem.txsRemoved != nil {
+		select {
+		case mem.txsRemoved <- tx:
 		default:
 		}
 	}

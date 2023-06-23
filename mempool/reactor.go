@@ -9,6 +9,7 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/clist"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p"
 	protomem "github.com/cometbft/cometbft/proto/tendermint/mempool"
 	"github.com/cometbft/cometbft/types"
@@ -22,14 +23,24 @@ type Reactor struct {
 	config  *cfg.MempoolConfig
 	mempool *CListMempool
 	ids     *mempoolIDs
+
+	// `txSenders` maps every received transaction to the set of peer IDs that
+	// have sent the transaction to this node. Sender IDs are used during
+	// transaction propagation to avoid sending a transaction to a peer that
+	// already has it. A sender ID is the internal peer ID used in the mempool
+	// to identify the sender, storing two bytes with each transaction instead
+	// of 20 bytes for the types.NodeID.
+	txSenders    map[types.TxKey]map[uint16]bool
+	txSendersMtx cmtsync.RWMutex
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
 func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool) *Reactor {
 	memR := &Reactor{
-		config:  config,
-		mempool: mempool,
-		ids:     newMempoolIDs(),
+		config:    config,
+		mempool:   mempool,
+		ids:       newMempoolIDs(),
+		txSenders: make(map[types.TxKey]map[uint16]bool),
 	}
 	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
 	return memR
@@ -52,6 +63,10 @@ func (memR *Reactor) OnStart() error {
 	if !memR.config.Broadcast {
 		memR.Logger.Info("Tx broadcasting is disabled")
 	}
+
+	memR.mempool.EnableTxsRemoved()
+	go memR.updateSendersRoutine()
+
 	return nil
 }
 
@@ -100,19 +115,22 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 			memR.Logger.Error("received empty txs from peer", "src", e.Src)
 			return
 		}
-		txInfo := TxInfo{SenderID: memR.ids.GetForPeer(e.Src)}
-		if e.Src != nil {
-			txInfo.SenderP2PID = e.Src.ID()
-		}
 
 		var err error
-		for _, tx := range protoTxs {
-			ntx := types.Tx(tx)
-			_, err = memR.mempool.CheckTx(ntx, txInfo)
+		for _, txBytes := range protoTxs {
+			tx := types.Tx(txBytes)
+
+			// Record the sender of every transaction received.
+			// Senders are stored until the transaction is removed from the mempool.
+			// Note that it's possible a tx is still in the cache but no longer in the mempool.
+			// For example, after committing a block, txs are removed from mempool but not the cache.
+			memR.addSender(tx.Key(), memR.ids.GetForPeer(e.Src))
+
+			_, err = memR.mempool.CheckTx(tx)
 			if errors.Is(err, ErrTxInCache) {
-				memR.Logger.Debug("Tx already exists in cache", "tx", ntx.String())
+				memR.Logger.Debug("Tx already exists in cache", "tx", tx.String())
 			} else if err != nil {
-				memR.Logger.Info("Could not check tx", "tx", ntx.String(), "err", err)
+				memR.Logger.Info("Could not check tx", "tx", tx.String(), "err", err)
 			}
 		}
 	default:
@@ -182,7 +200,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// NOTE: Transaction batching was disabled due to
 		// https://github.com/tendermint/tendermint/issues/5796
 
-		if !memR.mempool.isSender(memTx.tx.Key(), peerID) {
+		if !memR.isSender(memTx.tx.Key(), peerID) {
 			success := peer.Send(p2p.Envelope{
 				ChannelID: MempoolChannel,
 				Message:   &protomem.Txs{Txs: [][]byte{memTx.tx}},
@@ -199,6 +217,45 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			next = next.Next()
 		case <-peer.Quit():
 			return
+		case <-memR.Quit():
+			return
+		}
+	}
+}
+
+func (memR *Reactor) isSender(txKey types.TxKey, peerID uint16) bool {
+	memR.txSendersMtx.RLock()
+	defer memR.txSendersMtx.RUnlock()
+
+	sendersSet, ok := memR.txSenders[txKey]
+	return ok && sendersSet[peerID]
+}
+
+func (memR *Reactor) addSender(txKey types.TxKey, senderID uint16) bool {
+	memR.txSendersMtx.Lock()
+	defer memR.txSendersMtx.Unlock()
+
+	if sendersSet, ok := memR.txSenders[txKey]; ok {
+		sendersSet[senderID] = true
+		memR.txSenders[txKey] = sendersSet
+		return false
+	}
+	memR.txSenders[txKey] = map[uint16]bool{senderID: true}
+	return true
+}
+
+func (memR *Reactor) removeSenders(txKey types.TxKey) {
+	memR.txSendersMtx.Lock()
+	defer memR.txSendersMtx.Unlock()
+
+	delete(memR.txSenders, txKey)
+}
+
+func (memR *Reactor) updateSendersRoutine() {
+	for {
+		select {
+		case txKey := <-memR.mempool.TxsRemoved():
+			memR.removeSenders(txKey)
 		case <-memR.Quit():
 			return
 		}

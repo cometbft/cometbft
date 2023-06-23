@@ -18,25 +18,25 @@ type Mempool struct {
 	mock.Mock
 }
 
-// CheckTx provides a mock function with given fields: tx, txInfo
-func (_m *Mempool) CheckTx(tx types.Tx, txInfo mempool.TxInfo) (*abcicli.ReqRes, error) {
-	ret := _m.Called(tx, txInfo)
+// CheckTx provides a mock function with given fields: tx
+func (_m *Mempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
+	ret := _m.Called(tx)
 
 	var r0 *abcicli.ReqRes
 	var r1 error
-	if rf, ok := ret.Get(0).(func(types.Tx, mempool.TxInfo) (*abcicli.ReqRes, error)); ok {
-		return rf(tx, txInfo)
+	if rf, ok := ret.Get(0).(func(types.Tx) (*abcicli.ReqRes, error)); ok {
+		return rf(tx)
 	}
-	if rf, ok := ret.Get(0).(func(types.Tx, mempool.TxInfo) *abcicli.ReqRes); ok {
-		r0 = rf(tx, txInfo)
+	if rf, ok := ret.Get(0).(func(types.Tx) *abcicli.ReqRes); ok {
+		r0 = rf(tx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*abcicli.ReqRes)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(types.Tx, mempool.TxInfo) error); ok {
-		r1 = rf(tx, txInfo)
+	if rf, ok := ret.Get(1).(func(types.Tx) error); ok {
+		r1 = rf(tx)
 	} else {
 		r1 = ret.Error(1)
 	}

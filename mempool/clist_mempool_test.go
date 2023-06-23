@@ -97,15 +97,13 @@ func ensureFire(t *testing.T, ch <-chan struct{}, timeoutMS int) {
 	}
 }
 
-// On mempool `mp`, call CheckTx `count` times with random transactions and
-// `peerID` as sender.
-func checkTxs(t *testing.T, mp Mempool, count int, peerID uint16) types.Txs {
+// On mempool `mp`, call CheckTx `count` times with random transactions.
+func checkTxs(t *testing.T, mp Mempool, count int) types.Txs {
 	txs := make(types.Txs, count)
-	txInfo := TxInfo{SenderID: peerID}
 	for i := 0; i < count; i++ {
 		txBytes := kvstore.NewRandomTx(20)
 		txs[i] = txBytes
-		if _, err := mp.CheckTx(txBytes, txInfo); err != nil {
+		if _, err := mp.CheckTx(txBytes); err != nil {
 			// Skip invalid txs.
 			// TestMempoolFilters will fail otherwise. It asserts a number of txs
 			// returned.
@@ -125,7 +123,7 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 	defer cleanup()
 
 	// Ensure gas calculation behaves as expected
-	checkTxs(t, mp, 1, UnknownPeerID)
+	checkTxs(t, mp, 1)
 	tx0 := mp.TxsFront().Value.(*mempoolTx)
 	require.Equal(t, tx0.gasWanted, int64(1), "transactions gas was set incorrectly")
 	// ensure each tx is 20 bytes long
@@ -157,7 +155,7 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 		{20, 20000, 30, 20},
 	}
 	for tcIndex, tt := range tests {
-		checkTxs(t, mp, tt.numTxsToCreate, UnknownPeerID)
+		checkTxs(t, mp, tt.numTxsToCreate)
 		got := mp.ReapMaxBytesMaxGas(tt.maxBytes, tt.maxGas)
 		assert.Equal(t, tt.expectedNumTxs, len(got), "Got %d txs, expected %d, tc #%d",
 			len(got), tt.expectedNumTxs, tcIndex)
@@ -198,7 +196,7 @@ func TestMempoolFilters(t *testing.T) {
 	for tcIndex, tt := range tests {
 		err := mp.Update(1, emptyTxArr, abciResponses(len(emptyTxArr), abci.CodeTypeOK), tt.preFilter, tt.postFilter)
 		require.NoError(t, err)
-		checkTxs(t, mp, tt.numTxsToCreate, UnknownPeerID)
+		checkTxs(t, mp, tt.numTxsToCreate)
 		require.Equal(t, tt.expectedNumTxs, mp.Size(), "mempool had the incorrect size, on test case %d", tcIndex)
 		mp.Flush()
 	}
@@ -215,7 +213,7 @@ func TestMempoolUpdate(t *testing.T) {
 		tx1 := kvstore.NewTxFromID(1)
 		err := mp.Update(1, []types.Tx{tx1}, abciResponses(1, abci.CodeTypeOK), nil, nil)
 		require.NoError(t, err)
-		_, err = mp.CheckTx(tx1, TxInfo{})
+		_, err = mp.CheckTx(tx1)
 		if assert.Error(t, err) {
 			assert.Equal(t, ErrTxInCache, err)
 		}
@@ -224,7 +222,7 @@ func TestMempoolUpdate(t *testing.T) {
 	// 2. Removes valid txs from the mempool
 	{
 		tx2 := kvstore.NewTxFromID(2)
-		_, err := mp.CheckTx(tx2, TxInfo{})
+		_, err := mp.CheckTx(tx2)
 		require.NoError(t, err)
 		err = mp.Update(1, []types.Tx{tx2}, abciResponses(1, abci.CodeTypeOK), nil, nil)
 		require.NoError(t, err)
@@ -234,13 +232,13 @@ func TestMempoolUpdate(t *testing.T) {
 	// 3. Removes invalid transactions from the cache and the mempool (if present)
 	{
 		tx3 := kvstore.NewTxFromID(3)
-		_, err := mp.CheckTx(tx3, TxInfo{})
+		_, err := mp.CheckTx(tx3)
 		require.NoError(t, err)
 		err = mp.Update(1, []types.Tx{tx3}, abciResponses(1, 1), nil, nil)
 		require.NoError(t, err)
 		assert.Zero(t, mp.Size())
 
-		_, err = mp.CheckTx(tx3, TxInfo{})
+		_, err = mp.CheckTx(tx3)
 		require.NoError(t, err)
 	}
 }
@@ -265,7 +263,7 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 		reqRes.Response = abci.ToResponseCheckTx(&abci.ResponseCheckTx{Code: abci.CodeTypeOK})
 
 		mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes, nil)
-		_, err := mp.CheckTx(tx, TxInfo{})
+		_, err := mp.CheckTx(tx)
 		require.NoError(t, err)
 
 		// ensure that the callback that the mempool sets on the ReqRes is run.
@@ -308,7 +306,7 @@ func TestMempool_KeepInvalidTxsInCache(t *testing.T) {
 		b := make([]byte, 8)
 		binary.BigEndian.PutUint64(b, 1)
 
-		_, err := mp.CheckTx(b, TxInfo{})
+		_, err := mp.CheckTx(b)
 		require.NoError(t, err)
 
 		// simulate new block
@@ -321,13 +319,13 @@ func TestMempool_KeepInvalidTxsInCache(t *testing.T) {
 		require.NoError(t, err)
 
 		// a must be added to the cache
-		_, err = mp.CheckTx(a, TxInfo{})
+		_, err = mp.CheckTx(a)
 		if assert.Error(t, err) {
 			assert.Equal(t, ErrTxInCache, err)
 		}
 
 		// b must remain in the cache
-		_, err = mp.CheckTx(b, TxInfo{})
+		_, err = mp.CheckTx(b)
 		if assert.Error(t, err) {
 			assert.Equal(t, ErrTxInCache, err)
 		}
@@ -341,7 +339,7 @@ func TestMempool_KeepInvalidTxsInCache(t *testing.T) {
 		// remove a from the cache to test (2)
 		mp.cache.Remove(a)
 
-		_, err := mp.CheckTx(a, TxInfo{})
+		_, err := mp.CheckTx(a)
 		require.NoError(t, err)
 	}
 }
@@ -359,7 +357,7 @@ func TestTxsAvailable(t *testing.T) {
 	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
 
 	// send a bunch of txs, it should only fire once
-	txs := checkTxs(t, mp, 100, UnknownPeerID)
+	txs := checkTxs(t, mp, 100)
 	ensureFire(t, mp.TxsAvailable(), timeoutMS)
 	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
 
@@ -374,7 +372,7 @@ func TestTxsAvailable(t *testing.T) {
 	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
 
 	// send a bunch more txs. we already fired for this height so it shouldnt fire again
-	moreTxs := checkTxs(t, mp, 50, UnknownPeerID)
+	moreTxs := checkTxs(t, mp, 50)
 	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
 
 	// now call update with all the txs. it should not fire as there are no txs left
@@ -385,7 +383,7 @@ func TestTxsAvailable(t *testing.T) {
 	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
 
 	// send a bunch more txs, it should only fire once
-	checkTxs(t, mp, 100, UnknownPeerID)
+	checkTxs(t, mp, 100)
 	ensureFire(t, mp.TxsAvailable(), timeoutMS)
 	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
 }
@@ -407,7 +405,7 @@ func TestSerialReap(t *testing.T) {
 		// Deliver some txs.
 		for i := start; i < end; i++ {
 			txBytes := kvstore.NewTx(fmt.Sprintf("%d", i), "true")
-			_, err := mp.CheckTx(txBytes, TxInfo{})
+			_, err := mp.CheckTx(txBytes)
 			_, cached := cacheMap[string(txBytes)]
 			if cached {
 				require.NotNil(t, err, "expected error for cached tx")
@@ -417,7 +415,7 @@ func TestSerialReap(t *testing.T) {
 			cacheMap[string(txBytes)] = struct{}{}
 
 			// Duplicates are cached and should return error
-			_, err = mp.CheckTx(txBytes, TxInfo{})
+			_, err = mp.CheckTx(txBytes)
 			require.NotNil(t, err, "Expected error after CheckTx on duplicated tx")
 		}
 	}
@@ -528,7 +526,7 @@ func TestMempool_CheckTxChecksTxSize(t *testing.T) {
 
 		tx := cmtrand.Bytes(testCase.len)
 
-		_, err := mempl.CheckTx(tx, TxInfo{})
+		_, err := mempl.CheckTx(tx)
 		bv := gogotypes.BytesValue{Value: tx}
 		bz, err2 := bv.Marshal()
 		require.NoError(t, err2)
@@ -560,7 +558,7 @@ func TestMempoolTxsBytes(t *testing.T) {
 
 	// 2. len(tx) after CheckTx
 	tx1 := kvstore.NewRandomTx(10)
-	_, err := mp.CheckTx(tx1, TxInfo{})
+	_, err := mp.CheckTx(tx1)
 	require.NoError(t, err)
 	assert.EqualValues(t, 10, mp.SizeBytes())
 
@@ -571,7 +569,7 @@ func TestMempoolTxsBytes(t *testing.T) {
 
 	// 4. zero after Flush
 	tx2 := kvstore.NewRandomTx(20)
-	_, err = mp.CheckTx(tx2, TxInfo{})
+	_, err = mp.CheckTx(tx2)
 	require.NoError(t, err)
 	assert.EqualValues(t, 20, mp.SizeBytes())
 
@@ -580,11 +578,11 @@ func TestMempoolTxsBytes(t *testing.T) {
 
 	// 5. ErrMempoolIsFull is returned when/if MaxTxsBytes limit is reached.
 	tx3 := kvstore.NewRandomTx(100)
-	_, err = mp.CheckTx(tx3, TxInfo{})
+	_, err = mp.CheckTx(tx3)
 	require.NoError(t, err)
 
 	tx4 := kvstore.NewRandomTx(10)
-	_, err = mp.CheckTx(tx4, TxInfo{})
+	_, err = mp.CheckTx(tx4)
 	if assert.Error(t, err) {
 		assert.IsType(t, ErrMempoolIsFull{}, err)
 	}
@@ -598,7 +596,7 @@ func TestMempoolTxsBytes(t *testing.T) {
 
 	txBytes := kvstore.NewRandomTx(10)
 
-	_, err = mp.CheckTx(txBytes, TxInfo{})
+	_, err = mp.CheckTx(txBytes)
 	require.NoError(t, err)
 	assert.EqualValues(t, 10, mp.SizeBytes())
 
@@ -626,7 +624,7 @@ func TestMempoolTxsBytes(t *testing.T) {
 	assert.EqualValues(t, 10, mp.SizeBytes())
 
 	// 7. Test RemoveTxByKey function
-	_, err = mp.CheckTx(tx1, TxInfo{})
+	_, err = mp.CheckTx(tx1)
 	require.NoError(t, err)
 	assert.EqualValues(t, 20, mp.SizeBytes())
 	assert.Error(t, mp.RemoveTxByKey(types.Tx([]byte{0x07}).Key()))
@@ -650,14 +648,14 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 
 	// add tx0
 	var tx0 = kvstore.NewTxFromID(0)
-	_, err := mp.CheckTx(tx0, TxInfo{})
+	_, err := mp.CheckTx(tx0)
 	require.NoError(t, err)
 	err = mp.FlushAppConn()
 	require.NoError(t, err)
 
 	// saturate the cache to remove tx0
 	for i := 1; i <= mp.config.CacheSize; i++ {
-		_, err = mp.CheckTx(kvstore.NewTxFromID(i), TxInfo{})
+		_, err = mp.CheckTx(kvstore.NewTxFromID(i))
 		require.NoError(t, err)
 	}
 	err = mp.FlushAppConn()
@@ -665,7 +663,7 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 	assert.False(t, mp.cache.Has(kvstore.NewTxFromID(0)))
 
 	// add again tx0
-	_, err = mp.CheckTx(tx0, TxInfo{})
+	_, err = mp.CheckTx(tx0)
 	require.NoError(t, err)
 	err = mp.FlushAppConn()
 	require.NoError(t, err)
@@ -709,44 +707,15 @@ func TestMempoolRemoteAppConcurrency(t *testing.T) {
 
 	// simulate a group of peers sending them over and over
 	N := cfg.Mempool.Size
-	maxPeers := 5
 	for i := 0; i < N; i++ {
-		peerID := mrand.Intn(maxPeers)
 		txNum := mrand.Intn(nTxs)
 		tx := txs[txNum]
 
 		// this will err with ErrTxInCache many times ...
-		mp.CheckTx(tx, TxInfo{SenderID: uint16(peerID)}) //nolint: errcheck // will error
+		mp.CheckTx(tx) //nolint: errcheck // will error
 	}
 
 	require.NoError(t, mp.FlushAppConn())
-}
-
-func TestMempoolSenders(t *testing.T) {
-	app := kvstore.NewInMemoryApplication()
-	cc := proxy.NewLocalClientCreator(app)
-	wcfg := config.DefaultConfig()
-	mp, cleanup := newMempoolWithAppAndConfig(cc, wcfg)
-	defer cleanup()
-
-	tx1 := kvstore.NewTxFromID(1)
-	tx2 := kvstore.NewTxFromID(2)
-	require.False(t, mp.isSender(types.Tx(tx1).Key(), 1))
-
-	mp.addSender(types.Tx(tx1).Key(), 1)
-	mp.addSender(types.Tx(tx1).Key(), 2)
-	mp.addSender(types.Tx(tx2).Key(), 1)
-	require.True(t, mp.isSender(types.Tx(tx1).Key(), 1))
-	require.True(t, mp.isSender(types.Tx(tx1).Key(), 2))
-	require.True(t, mp.isSender(types.Tx(tx2).Key(), 1))
-
-	mp.removeSenders(types.Tx(tx1).Key())
-	require.False(t, mp.isSender(types.Tx(tx1).Key(), 1))
-	require.False(t, mp.isSender(types.Tx(tx1).Key(), 2))
-	require.True(t, mp.isSender(types.Tx(tx2).Key(), 1))
-
-	mp.resetSenders()
-	require.False(t, mp.isSender(types.Tx(tx2).Key(), 1))
 }
 
 // caller must close server

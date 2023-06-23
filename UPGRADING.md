@@ -20,6 +20,15 @@ coordinated upgrade.
 When upgrading from the v0.34 release series, please note that the Go module has
 now changed to `github.com/cometbft/cometbft`.
 
+## Config Changes
+
+* A new config field, `BootstrapPeers` has been introduced as a means of
+  adding a list of addresses to the addressbook upon initializing a node. This is an
+  alternative to `PersistentPeers`. `PersistentPeers` shold be only used for
+  nodes that you want to keep a constant connection with i.e. sentry nodes
+
+----
+
 ### ABCI Changes
 
 * The `ABCIVersion` is now `1.0.0`.

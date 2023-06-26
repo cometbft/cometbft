@@ -62,8 +62,8 @@ enum CheckTxType {
   option (gogoproto.goproto_enum_prefix) = false;
 
   CHECK_TX_TYPE_UNKNOWN = 0;
-  CHECK_TX_TYPE_CHECK = 2;
   CHECK_TX_TYPE_RECHECK = 1;
+  CHECK_TX_TYPE_CHECK = 2;
 }
 
 message RequestCheckTx {

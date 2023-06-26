@@ -11,8 +11,8 @@ Proposed
 ## Context
 
 Before adding a transaction to the mempool, we need to send a `CheckTx` message
-to the application for validating the transaction. There are two variants of
-this message, distinghished by the value in message field `type`:
+to the application for validating the transaction. There are [two variants][CheckTxType] of
+this message, distinguished by the value in message field `type`:
 - `CheckTxType_New` is for transactions that need to be validated before adding
 it to the mempool for the first time.
 - `CheckTxType_Recheck` is for transactions that are in the mempool and need to
@@ -34,9 +34,9 @@ duplicated messages. More importantly, this mechanism serves as the only means
 to stop propagating transactions.
 
 There are two design problems with this implementation. First, there is a
-complex pattern for handling callbacks on `New` requests. The following code
-snippet at the end of the `CheckTx` method, where transactions received for the
-first time are processed, demonstrates the issue:
+complex pattern for handling callbacks on `New` requests. The following [code
+snippet][CheckTxAsync] at the end of the `CheckTx` method, where transactions
+received for the first time are processed, demonstrates the issue:
 ``` golang
 	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{Tx: tx})
 	reqRes.SetCallback(mem.reqResCb(tx, txInfo, cb))
@@ -59,18 +59,6 @@ from the mempool implementation to the reactor. This change will simplify the
 code, establish a more clear separation of the propagation protocol and the data
 structure, and allow for future improvements to the mempool as a whole.
 
-## Alternative Approaches
-
-> This section contains information around alternative options that are considered
-> before making a decision. It should contain a explanation on why the alternative
-> approach(es) were not chosen.
-
-## Decision
-
-> This section records the decision that was made.
-> It is best to record as much info as possible from the discussion that happened.
-> This aids in not having to go back to the Pull Request to get the needed information.
-
 ## Detailed Design
  
 We propose the following changes to the mempool's reactor and data structure.
@@ -91,12 +79,12 @@ We propose the following changes to the mempool's reactor and data structure.
     functionality can be obtained with `ReqRes` response.
   - `txInfo` contains information about the sender, which is also no longer
     needed, as justified by the next point.
-- The list of senders for each transaction is stored in `mempoolTx`, the data
-  structure for the entries of `txs`. Move the senders out of `mempoolTx` to a
-  new map `txSenders` of type `map[types.TxKey]map[uint16]bool` in the mempool
-  reactor. `txSenders` would map transaction keys to a set of peer ids (of type
-  `uint16`). Add also a `cmtsync.RWMutex` lock to handle concurrent accesses to
-  the map.
+- The list of senders for each transaction is currently stored in `mempoolTx`,
+  the data structure for the entries of `txs`. Move the senders out of
+  `mempoolTx` to a new map `txSenders` of type `map[types.TxKey]map[uint16]bool`
+  in the mempool reactor. `txSenders` would map transaction keys to a set of
+  peer ids (of type `uint16`). Add also a `cmtsync.RWMutex` lock to handle
+  concurrent accesses to the map.
   - This refactoring should not change the fact that the list of senders live as
     long as the transactions are in the mempool. When a transaction is received
     by the reactor (either via RPC or P2P), we call `CheckTx`. We know whether a
@@ -107,8 +95,10 @@ We propose the following changes to the mempool's reactor and data structure.
 - In `CListMempool`, introduce a new channel `txsRemoved` of type `chan
   types.TxKey` to notify the mempool reactor that a transaction was removed from
   the mempool.
+  - This is the same mechanism used to notify the consensus reactor when there
+  are transactions available to include in a block.
 - In the mempool reactor, introduce a new goroutine to handle incoming
-  transaction keys in the `txsRemoved` channel. For each key received, update
+  transaction keys from the `txsRemoved` channel. For each key received, update
   `txSenders`.
 - In `CListMempool`, `resCbFirstTime` is the function that handles responses of
   type `CheckTxType_New`. Instead of setting it as an ad-hoc callback on each
@@ -136,15 +126,16 @@ None
 
 ### Neutral
 
-- A new channel in `CListMempool` for notifying removed transactions. This is
-  the same mechanism used to notify the consensus reactor when there available
-  transactions to include in a block. A new goroutine in the reactor handling
-  incoming messages in the new channel. This will be used for updating the list
-  of senders when a transaction is removed from the mempool.
+- We need to add a new channel in `CListMempool` for notifying removed
+  transactions. And a new goroutine in the reactor for handling incoming
+  messages in the new channel.
 
 ## References
 
-> Are there any relevant PR comments, issues that led up to this, or articles
-> referenced for why we made the given design choice? If so link them here!
+The trigger for this refactoring was [this comment][comment], where we discussed
+improvements to the concurrency in the mempool.
 
-- {reference link}
+
+[CheckTxType]: https://github.com/cometbft/cometbft/blob/main/proto/tendermint/abci/types.proto#L94-L97
+[CheckTxAsync]: https://github.com/cometbft/cometbft/blob/406f8175e352faee381f100ff17fd5c82888646a/mempool/clist_mempool.go#L269-L273
+[comment]: https://github.com/cometbft/cometbft/pull/895#issuecomment-1584948704

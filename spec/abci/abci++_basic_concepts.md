@@ -45,8 +45,8 @@ consensus execution: (a) at the moment a new proposal is to be created, (b) at t
 proposal is to be validated, and (c) at the moment a (precommit) vote is sent/received.
 The new interface allows block proposers to perform application-dependent
 work in a block through the `PrepareProposal` method (a); and validators to perform application-dependent work
-and checks in a proposed block through the `ProcessProposal` method (b); and applications to require their validators 
-to do more than just validate blocks through the `ExtendVote` and `VerifyVoteExtensions` methods (c). 
+and checks in a proposed block through the `ProcessProposal` method (b); and applications to require their validators
+to do more than just validate blocks through the `ExtendVote` and `VerifyVoteExtensions` methods (c).
 
 Furthermore, ABCI 2.0 coalesces {`BeginBlock`, [`DeliverTx`], `EndBlock`} into `FinalizeBlock`, as a
 simplified, efficient way to deliver a decided block to the Application.
@@ -107,7 +107,7 @@ call sequences of these methods.
   CometBFT calls `ExtendVote` when the consensus algorithm is about to send a non-`nil` precommit message.
   If the Application does not have vote extension information to provide at that time, it returns
   a 0-length byte array as its vote extension.
-  The logic `ExtendVote` MAY be non-deterministic.
+  The logic in `ExtendVote` MAY be non-deterministic.
 
 - [**VerifyVoteExtension:**](./abci++_methods.md#verifyvoteextension) It allows
   validators to validate the vote extension data attached to a precommit message. If the validation

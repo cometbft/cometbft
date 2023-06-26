@@ -131,11 +131,13 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 			// transaction is removed from the mempool.
 			// Note that it's possible a tx is still in the cache but no longer in the mempool.
 			// For example, after committing a block, txs are removed from mempool but not the cache.
-			reqRes.SetCallback(func(res *abci.Response) {
-				if res.GetCheckTx().Code == abci.CodeTypeOK {
-					memR.addSender(tx.Key(), memR.ids.GetForPeer(e.Src))
-				}
-			})
+			if reqRes != nil {
+				reqRes.SetCallback(func(res *abci.Response) {
+					if res.GetCheckTx().Code == abci.CodeTypeOK {
+						memR.addSender(tx.Key(), memR.ids.GetForPeer(e.Src))
+					}
+				})
+			}
 		}
 	default:
 		memR.Logger.Error("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)

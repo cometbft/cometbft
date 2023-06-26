@@ -6,6 +6,7 @@ import (
 
 	"fmt"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/clist"
 	"github.com/cometbft/cometbft/libs/log"
@@ -116,22 +117,25 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 			return
 		}
 
-		var err error
 		for _, txBytes := range protoTxs {
 			tx := types.Tx(txBytes)
-
-			// Record the sender of every transaction received.
-			// Senders are stored until the transaction is removed from the mempool.
-			// Note that it's possible a tx is still in the cache but no longer in the mempool.
-			// For example, after committing a block, txs are removed from mempool but not the cache.
-			memR.addSender(tx.Key(), memR.ids.GetForPeer(e.Src))
-
-			_, err = memR.mempool.CheckTx(tx)
+			reqRes, err := memR.mempool.CheckTx(tx)
 			if errors.Is(err, ErrTxInCache) {
 				memR.Logger.Debug("Tx already exists in cache", "tx", tx.String())
 			} else if err != nil {
 				memR.Logger.Info("Could not check tx", "tx", tx.String(), "err", err)
 			}
+
+			// Record the sender only when the transaction is valid and, as a
+			// consequence, added to the mempool. Senders are stored until the
+			// transaction is removed from the mempool.
+			// Note that it's possible a tx is still in the cache but no longer in the mempool.
+			// For example, after committing a block, txs are removed from mempool but not the cache.
+			reqRes.SetCallback(func(res *abci.Response) {
+				if res.GetCheckTx().Code == abci.CodeTypeOK {
+					memR.addSender(tx.Key(), memR.ids.GetForPeer(e.Src))
+				}
+			})
 		}
 	default:
 		memR.Logger.Error("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)

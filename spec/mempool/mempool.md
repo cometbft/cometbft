@@ -66,7 +66,7 @@ Notice that at this point the transactions returned to consensus are not removed
 This comes from the fact that the block is proposed but not decided yet.
 
 Proposing a block is the prerogative of the nodes acting as validators.
-At all the nodes (validators or not), consensus is also responsible for committing blocks of transactions to the blockchain.
+At all the full nodes (validators or not), consensus is responsible for committing blocks of transactions to the blockchain.
 Once a block is committed, all the transactions included in the block are removed from the mempool.
 This happens with an `update` call to the mempool.
 Before doing this call, consensus takes a `lock` on the mempool.

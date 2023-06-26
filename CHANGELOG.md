@@ -30,6 +30,15 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
 - `[kvindexer]` Added support for big integers and big floats in the kvindexer.
   Breaking changes: function `Number` in package `libs/pubsub/query/syntax` changed its return value.
   ([\#797](https://github.com/cometbft/cometbft/pull/797))
+- `[mempool]` Application can now set `ConsensusParams.Block.MaxBytes` to -1
+  to have visibility on all transactions in the
+  mempool at `PrepareProposal` time.
+  This means that the total size of transactions sent via `RequestPrepareProposal`
+  might exceed `RequestPrepareProposal.max_tx_bytes`.
+  If that is the case, the application MUST make sure that the total size of transactions
+  returned in `ResponsePrepareProposal.txs` does not exceed `RequestPrepareProposal.max_tx_bytes`,
+  otherwise CometBFT will panic.
+  ([\#980](https://github.com/cometbft/cometbft/issues/980))
 - `[state]` Move pruneBlocks from node/state to state/execution.
   ([\#6541](https://github.com/tendermint/tendermint/pull/6541))
 - `[abci]` Move `app_hash` parameter from `Commit` to `FinalizeBlock`
@@ -74,6 +83,9 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
   ([\#575](https://github.com/cometbft/cometbft/issues/575))
 - `[abci]` Restore the snake_case naming in JSON serialization of
   `ExecTxResult` ([\#855](https://github.com/cometbft/cometbft/issues/855)).
+- `[consensus]` Avoid recursive call after rename to (*PeerState).MarshalJSON
+  ([\#863](https://github.com/cometbft/cometbft/pull/863))
+- `[mempool/clist_mempool]` \#890 Prevent a transaction to appear twice in the mempool  (@otrack)
 - `[docker]` Ensure Docker image uses consistent version of Go.
   ([\#9462](https://github.com/tendermint/tendermint/pull/9462))
 - `[abci-cli]` Fix broken abci-cli help command.
@@ -113,6 +125,12 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
 - `[pubsub/kvindexer]` Numeric query conditions and event values are represented as big floats with default precision of 125.
   Integers are read as "big ints" and represented with as many bits as they need when converting to floats.
   ([\#797](https://github.com/cometbft/cometbft/pull/797))
+- `[node]` Make handshake cancelable ([cometbft/cometbft\#857](https://github.com/cometbft/cometbft/pull/857))
+- `[mempool]` Application can now set `ConsensusParams.Block.MaxBytes` to -1
+  to gain more control on the max size of transactions in a block.
+  It also allows the application to have visibility on all transactions in the
+  mempool at `PrepareProposal` time.
+  ([\#980](https://github.com/cometbft/cometbft/pull/980))
 - `[crypto/merkle]` Improve HashAlternatives performance
   ([\#6443](https://github.com/tendermint/tendermint/pull/6443))
 - `[p2p/pex]` Improve addrBook.hash performance

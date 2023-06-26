@@ -3,11 +3,12 @@ package mempool
 import (
 	"context"
 	"encoding/binary"
-	"fmt"
 	mrand "math/rand"
 	"os"
 	"testing"
 	"time"
+
+	"fmt"
 
 	"github.com/cosmos/gogoproto/proto"
 	gogotypes "github.com/cosmos/gogoproto/types"
@@ -740,4 +741,21 @@ func abciResponses(n int, code uint32) []*abci.ExecTxResult {
 		responses = append(responses, &abci.ExecTxResult{Code: code})
 	}
 	return responses
+}
+
+func doCommit(t require.TestingT, mp Mempool, app abci.Application, txs types.Txs, height int64) {
+	rfb := &abci.RequestFinalizeBlock{Txs: make([][]byte, len(txs))}
+	for i, tx := range txs {
+		rfb.Txs[i] = tx
+	}
+	_, e := app.FinalizeBlock(context.Background(), rfb)
+	require.True(t, e == nil)
+	mp.Lock()
+	e = mp.FlushAppConn()
+	require.True(t, e == nil)
+	_, e = app.Commit(context.Background(), &abci.RequestCommit{})
+	require.True(t, e == nil)
+	e = mp.Update(height, txs, abciResponses(txs.Len(), abci.CodeTypeOK), nil, nil)
+	require.True(t, e == nil)
+	mp.Unlock()
 }

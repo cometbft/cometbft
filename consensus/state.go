@@ -1944,11 +1944,17 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 		// NOTE: we are disregarding possible duplicates above where heights dont match or we're not expecting block parts yet
 		// but between the matches_current = true and false, we have all the info.
 		cs.metrics.DuplicateBlockPart.Add(1)
+	} else {
+		cs.evsw.FireEvent(types.EventProposalBlockPart, msg)
 	}
 
-	if cs.ProposalBlockParts.ByteSize() > cs.state.ConsensusParams.Block.MaxBytes {
+	maxBytes := cs.state.ConsensusParams.Block.MaxBytes
+	if maxBytes == -1 {
+		maxBytes = int64(types.MaxBlockSizeBytes)
+	}
+	if cs.ProposalBlockParts.ByteSize() > maxBytes {
 		return added, fmt.Errorf("total size of proposal block parts exceeds maximum block bytes (%d > %d)",
-			cs.ProposalBlockParts.ByteSize(), cs.state.ConsensusParams.Block.MaxBytes,
+			cs.ProposalBlockParts.ByteSize(), maxBytes,
 		)
 	}
 	if added && cs.ProposalBlockParts.IsComplete() {

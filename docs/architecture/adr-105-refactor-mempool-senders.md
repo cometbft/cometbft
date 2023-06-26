@@ -86,22 +86,24 @@ We propose the following changes to the mempool's reactor and data structure.
   - The returning `ReqRes` object can be used to set and invoke a callback to
     handle the response, if needed.
   - The callback parameter `cb` is no longer needed. Currently, this is mainly
-    used by the RPC endpoints `broadcast_tx_sync` and `broadcast_tx_commit`, but
-    the same functionality can be obtained with `ReqRes`.
+    used by the RPC endpoints `broadcast_tx_sync` and `broadcast_tx_commit`, and
+    in tests for checking that the response is valid. However, the same
+    functionality can be obtained with `ReqRes` response.
   - `txInfo` contains information about the sender, which is also no longer
     needed, as justified by the next point.
-- The list of senders for each transaction is stored in `mempoolTx`, the entries
-  for `txs`. Move the senders out of `mempoolTx` to a new map `txSenders` of
-  type `map[types.TxKey]map[uint16]bool` in the mempool reactor. `txSenders`
-  would map transaction keys to a set (a map to booleans) of peer ids. Add also
-  a `cmtsync.RWMutex` lock to handle concurrent accesses to the map.
+- The list of senders for each transaction is stored in `mempoolTx`, the data
+  structure for the entries of `txs`. Move the senders out of `mempoolTx` to a
+  new map `txSenders` of type `map[types.TxKey]map[uint16]bool` in the mempool
+  reactor. `txSenders` would map transaction keys to a set of peer ids (of type
+  `uint16`). Add also a `cmtsync.RWMutex` lock to handle concurrent accesses to
+  the map.
   - This refactoring should not change the fact that the list of senders live as
     long as the transactions are in the mempool. When a transaction is received
     by the reactor (either via RPC or P2P), we call `CheckTx`. We know whether a
     transaction is valid and was included in the mempool by reading the `ReqRes`
     response. If this is the case, record the list of senders in `txSenders`.
     When a transaction is removed from the mempool, notify the reactor to remove
-    the list of senders for that transaction.
+    the list of senders for that transaction, with the channel described below.
 - In `CListMempool`, introduce a new channel `txsRemoved` of type `chan
   types.TxKey` to notify the mempool reactor that a transaction was removed from
   the mempool.
@@ -115,7 +117,7 @@ We propose the following changes to the mempool's reactor and data structure.
 
 ## Consequences
 
-The refactoring proposed here would not affect how users and other peers
+The refactoring proposed here does not affect how users and other peers
 interact with the mempool. It will only change how transaction metadata is
 stored internally.
 

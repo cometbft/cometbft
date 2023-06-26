@@ -61,7 +61,7 @@ We further detail this mechanism below.
 The consensus protocol consumes transactions stored in the mempool to build blocks to be proposed.
 To this end, consensus requests from the mempool a list of transactions which abide by certain limits (namely, total number of transactions included, or total size in bytes).
 In the current implementation, the mempool is a list of transactions.
-Such a call returns the longest prefix of the list that is matching the requirements.
+Such a call returns the longest prefix of the list that matches the imposed limits.
 Notice that at this point the transactions returned to consensus are not removed from the mempool.
 This comes from the fact that the block is proposed but not decided yet.
 

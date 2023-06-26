@@ -8,6 +8,12 @@ docker:
 		--tag 0track/simulator-node:local-version \
 		-f docker/Dockerfile.tiny .
 
+docker-noop:
+	@echo "Building noop Docker image"
+	@docker build \
+		--tag 0track/simulator-node:local-version \
+		-f docker/Dockerfile.noop .
+
 # We need to build support for database backends into the app in
 # order to build a binary with a CometBFT node in it (for built-in
 # ABCI testing).

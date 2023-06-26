@@ -206,19 +206,27 @@ More details on managing state across connections can be found in the section on
 
 ## Proposal related timeouts
 
-`PrepareProposal` and `ProcessProposal` stand on the consensus algorithm critical path,
-i.e., CometBFT cannot make progress while these methods are being executed.
-Hence, if the Application takes a long time preparing a proposal or in verifying it,
-the default values of *TimeoutPropose* and *TimeoutPrevote* might not be sufficient
-to accommodate these methods' executions and validator nodes might time out and prevote `nil`.
+`PrepareProposal` stands on the consensus algorithm critical path,
+i.e., CometBFT cannot make progress while this method is being executed.
+Hence, if the Application takes a long time preparing a proposal,
+the default value of *TimeoutPropose* might not be sufficient
+to accommodate the method's execution and validator nodes might time out and prevote `nil`.
 The proposal, in this case, will probably be rejected and a new round will be necessary.
 If this happens successively, the liveness of CometBFT might be compromised.
 
-This is particularly important if applications need to execute the block to validate it.
-Then they would have to execute it in `PrepareProposal` and `ProcessProposal`.
 
-Operators will need to adjust the default values of *TimeoutPropose* and *TimeoutPrevote* in CometBFT's
-configuration file, in order to suit the needs of the particular application being deployed.
+Operators will need to adjust the default value of *TimeoutPropose* in CometBFT's configuration file,
+in order to suit the needs of the particular application being deployed.
+
+This is particularly important if applications implement *immediate execution*, a technique in
+which applications require the proposer to execute a block in `PrepareProposal` (and all validators to execute it in `ProcessProposal`) to ensure that all transactions are executable in case the block is decided.
+
+
+<!-- 
+A similar argument might be attempted for `ProcessProposal`, which is also in critical path,
+and *TimeoutPrevote*. However, the the PrevoteTimeout is only started after 2/3 of pre-votes, so
+it likely has had time enough to terminate its own `ProcessProposal` execution. 
+-->
 
 ## Deterministic State-Machine Replication
 
@@ -239,14 +247,13 @@ from block execution (`FinalizeBlock` calls), and not through
 any other kind of request. This is the only way to ensure all nodes see the same
 transactions and compute the same results.
 
-Some Applications may choose to execute blocks asynchronously to optimistically speed
-up the execution of `FinalizeBlock` and `Commit`, in what is sometimes referred as *immediate execution*.
-Applications do so by executing the blocks
-that are about to be proposed (via `PrepareProposal`), and those that the Application is asked to
-validate (via `ProcessProposal`).
+Applications that implement immediate execution (execute the blocks
+that are about to be proposed, in `PrepareProposal`, or that require validation, in `ProcessProposal`) produce a new state before a block is decided.
 The state changes caused by processing those
 proposed blocks must never replace the previous state until `FinalizeBlock` confirms
-the block decided.
+the block decided and `Commit` is invoked in it.
+
+The same is true to Applications that quickly accept blocks and execute the blocks optimistically in parallel with the remainder consensus steps to save time during `FinalizeBlock`; they must only apply the state change in `Commit`.
 
 Additionally, vote extensions or the validation thereof (via `ExtendVote` or
 `VerifyVoteExtension`) must *never* have side effects on the current state.

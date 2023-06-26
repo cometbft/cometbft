@@ -394,8 +394,7 @@ and _p_'s _validValue_ is `nil`:
    returns from the call.
 3. The Application uses the information received (transactions, commit info, misbehavior, time) to
     (potentially) modify the proposal.
-    * the Application MAY fully execute the block and produce a candidate state ([immediate
-      execution](./abci%2B%2B_basic_concepts.md#Immediate-execution))
+    * the Application MAY fully execute the block and produce a candidate state (immediate execution)
     * the Application can manipulate transactions:
         * leave transactions untouched
         * add new transactions (not present initially) to the proposal

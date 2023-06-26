@@ -94,7 +94,7 @@ func (blockExec *BlockExecutor) SetEventBus(eventBus types.BlockEventPublisher) 
 
 // CreateProposalBlock calls state.MakeBlock with evidence from the evpool
 // and txs from the mempool. The max bytes must be big enough to fit the commit.
-// Up to 1/10th of the block space is allocated for maximum sized evidence.
+// The block space is first allocated to outstanding evidence.
 // The rest is given to txs, up to the max gas.
 //
 // Contract: application will not return more bytes than are sent over the wire.
@@ -107,14 +107,23 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 ) (*types.Block, error) {
 
 	maxBytes := state.ConsensusParams.Block.MaxBytes
+	emptyMaxBytes := maxBytes == -1
+	if emptyMaxBytes {
+		maxBytes = int64(types.MaxBlockSizeBytes)
+	}
+
 	maxGas := state.ConsensusParams.Block.MaxGas
 
 	evidence, evSize := blockExec.evpool.PendingEvidence(state.ConsensusParams.Evidence.MaxBytes)
 
 	// Fetch a limited amount of valid txs
 	maxDataBytes := types.MaxDataBytes(maxBytes, evSize, state.Validators.Size())
+	maxReapBytes := maxDataBytes
+	if emptyMaxBytes {
+		maxReapBytes = -1
+	}
 
-	txs := blockExec.mempool.ReapMaxBytesMaxGas(maxDataBytes, maxGas)
+	txs := blockExec.mempool.ReapMaxBytesMaxGas(maxReapBytes, maxGas)
 	commit := lastExtCommit.ToCommit()
 	block := state.MakeBlock(height, txs, commit, evidence, proposerAddr)
 	rpp, err := blockExec.proxyApp.PrepareProposal(

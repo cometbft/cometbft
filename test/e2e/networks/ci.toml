@@ -12,6 +12,7 @@ check_tx_delay = "0ms"
 # The most common case (e.g. Cosmos SDK-based chains).
 abci_protocol = "builtin"
 prometheus = true
+peer_gossip_intraloop_sleep_duration = "50ms"
 
 [validators]
 validator01 = 100

@@ -138,6 +138,7 @@ func (mem *CListMempool) removeAllTxs() {
 
 	mem.txsMap.Range(func(key, _ interface{}) bool {
 		mem.txsMap.Delete(key)
+		mem.notifyTxRemoved(key.(types.TxKey))
 		return true
 	})
 }
@@ -207,7 +208,6 @@ func (mem *CListMempool) Flush() {
 
 	_ = atomic.SwapInt64(&mem.txsBytes, 0)
 	mem.cache.Reset()
-	// mem.resetSenders()
 
 	mem.removeAllTxs()
 }
@@ -326,13 +326,9 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 		mem.txs.Remove(elem)
 		elem.DetachPrev()
 		mem.txsMap.Delete(txKey)
-
-		// Tx is not propagated anymore, so list of senders is no longer needed.
 		mem.notifyTxRemoved(txKey)
-
 		tx := elem.Value.(*mempoolTx).tx
 		atomic.AddInt64(&mem.txsBytes, int64(-len(tx)))
-
 		return nil
 	}
 	return errors.New("transaction not found in mempool")

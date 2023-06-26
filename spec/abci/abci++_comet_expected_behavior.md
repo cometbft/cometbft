@@ -39,7 +39,7 @@ Application design should consider _any_ of these possible sequences.
 
 The following grammar, written in case-sensitive Augmented Backus–Naur form (ABNF, specified
 in [IETF rfc7405](https://datatracker.ietf.org/doc/html/rfc7405)), specifies all possible
-sequences of calls to ABCI++, taken by a correct process, across all heights from the genesis block,
+sequences of calls to ABCI++, taken by a **correct process**, across all heights from the genesis block,
 including recovery runs, from the point of view of the Application.
 
 ```abnf
@@ -155,9 +155,9 @@ Let us now examine the grammar line by line, providing further details.
 >consensus-round     = proposer / non-proposer
 >```
 
-* For every round, if the local process is the proposer of the current round, CometBFT calls `PrepareProposal`, followed by `ProcessProposal`. 
+* For every round, if the local process is the proposer of the current round, CometBFT calls `PrepareProposal`, followed by `ProcessProposal`.
 These two always come together because they reflect the same proposal that the process
-also delivers to itself. 
+also delivers to itself.
 
   Then, optionally, the Application is
   asked to extend its vote for that round. Calls to `VerifyVoteExtension` can come at any time: the
@@ -228,7 +228,7 @@ Finally, `Commit`, which is kept in ABCI++, no longer returns the `AppHash`. It 
 `FinalizeBlock` to do so. Thus, a slight refactoring of the old `Commit` implementation will be
 needed to move the return of `AppHash` to `FinalizeBlock`.
 
-## Accomodating for vote extensions
+## Accommodating for vote extensions
 
 In a manner transparent to the application, CometBFT ensures the node is provided with all
 the data it needs to participate in consensus. 
@@ -247,22 +247,18 @@ of the usage of `retain_height` stay the same.
 The decision to store 
 historical commits and potential optimizations, are discussed in detail in [RFC-100](./../../docs/rfc/rfc-100-abci-vote-extension-propag.md#current-limitations-and-possible-implementations)
 
-## Handling upgrades to ABCI 2.0 
+## Handling upgrades to ABCI 2.0
 
-If applications upgrade to ABCI 2.0, CometBFT internally ensures that the [application setup](./abci%2B%2B_app_requirements.md#application-configuration-required-to-switch-to-abci-20) is reflected in its operation. 
-CometBFT retrieves from the application configuration the value of `VoteExtensionsEnableHeight`( *h<sub>e</sub>*,), 
-the height at which vote extensions are required for consensus to proceed, and uses it to determine the data it stores and data it sends to a peer 
-that is catching up.
+If applications upgrade to ABCI 2.0, CometBFT internally ensures that the [application setup](./abci%2B%2B_app_requirements.md#application-configuration-required-to-switch-to-abci-20) is reflected in its operation.
+CometBFT retrieves from the application configuration the value of `VoteExtensionsEnableHeight`( *h<sub>e</sub>*,),
+the height at which vote extensions are required for consensus to proceed, and uses it to determine the data it stores and data it sends to a peer that is catching up.
 
 Namely, upon saving the block for a given height *h* in the block store at decision time
-- if *h ≥ h<sub>e</sub>*, the corresponding extended commit that was used to decide locally is saved as well
-- if *h < h<sub>e</sub>*, there are no changes to the data saved
+* if *h ≥ h<sub>e</sub>*, the corresponding extended commit that was used to decide locally is saved as well
+* if *h < h<sub>e</sub>*, there are no changes to the data saved
 
 In the catch-up mechanism, when a node *f* realizes that another peer is at height *h<sub>p</sub>*, which is more than 2 heights behind,
-- if *h<sub>p</sub> ≥ h<sub>e</sub>*, *f* uses the extended commit to
+* if *h<sub>p</sub> ≥ h<sub>e</sub>*, *f* uses the extended commit to
       reconstruct the precommit votes with their corresponding extensions
-- if *h<sub>p</sub> < h<sub>e</sub>*, *f* uses the canonical commit to reconstruct the precommit votes,
+* if *h<sub>p</sub> < h<sub>e</sub>*, *f* uses the canonical commit to reconstruct the precommit votes,
       as done for ABCI 1.0 and earlier.
-      
-
-

@@ -299,7 +299,7 @@ title: Methods
     peers are available), it will reject the snapshot and try a different one via `OfferSnapshot`.
     The application should be prepared to reset and accept it or abort as appropriate.
 
-## New methods introduced in ABCI++
+## New methods introduced in ABCI 2.0
 
 ### PrepareProposal
 
@@ -394,8 +394,8 @@ and _p_'s _validValue_ is `nil`:
    returns from the call.
 3. The Application uses the information received (transactions, commit info, misbehavior, time) to
     (potentially) modify the proposal.
-    * the Application MAY fully execute the block and produce a candidate state &mdash; immediate
-      execution
+    * the Application MAY fully execute the block and produce a candidate state ([immediate
+      execution](./abci%2B%2B_basic_concepts.md#Immediate-execution))
     * the Application can manipulate transactions:
         * leave transactions untouched
         * add new transactions (not present initially) to the proposal
@@ -444,6 +444,7 @@ the consensus algorithm will use it as proposal and will not call `RequestPrepar
       inform the Application of the block header's hash, which cannot be done at `PrepareProposal`
       time. In this case, the call to `RequestProcessProposal` occurs right after the call to
       `RequestPrepareProposal`.
+      However, there is no guarantee that the values of `RequestProcessProposal.txs` and `RequestProcessProposal.hash` will be the same as returned in the preceding `RequestPrepareProposal`.
     * The height and time values match the values from the header of the proposed block.
     * If `ResponseProcessProposal.status` is `REJECT`, consensus assumes the proposal received
       is not valid.

@@ -376,6 +376,7 @@ Does not run any perturbations.
 			}
 
 			if err := Start(cmd.Context(), cli.testnet, cli.infp); err != nil {
+				_ = cli.infp.StopTestnet(context.Background())
 				return err
 			}
 
@@ -392,6 +393,7 @@ Does not run any perturbations.
 
 			mempoolStats, err := Mempool(ctx, loadCancel, cli.testnet, 30*time.Second)
 			if err != nil {
+				_ = cli.infp.StopTestnet(context.Background())
 				return err
 			}
 
@@ -401,14 +403,14 @@ Does not run any perturbations.
 			}
 
 			txsSeen := mempoolStats.TxsSeen(cli.testnet)
-			complete := mempoolStats.Complete(cli.testnet, txs)
+			completion := mempoolStats.Completion(cli.testnet, txs)
 			totalBandwidth := mempoolStats.TotalBandwidth(cli.testnet)
 			usefulBandwidth := len(cli.testnet.Nodes) * int(txsSeen) * cli.testnet.LoadTxSizeBytes
 			overhead := math.Max(0, float64(totalBandwidth-usefulBandwidth)/float64(usefulBandwidth))
 
 			logger.Info("#txs sent = " + strconv.Itoa(txs))
 			logger.Info("#txs seen (on avg.) = " + fmt.Sprintf("%v", txsSeen))
-			logger.Info("complete (%) = " + fmt.Sprintf("%v", complete))
+			logger.Info("completion (on avg.) = " + fmt.Sprintf("%v", completion))
 			logger.Info("total bandwidth (B) = " + strconv.Itoa(totalBandwidth))
 			logger.Info("useful bandwidth (B) = " + strconv.Itoa(usefulBandwidth))
 			logger.Info("overhead = " + fmt.Sprintf("%v", overhead))

@@ -149,12 +149,10 @@ func (t *MempoolStats) TxsSeen(testnet *e2e.Testnet) float32 {
 	return float32(count) / float32(len(testnet.Nodes))
 }
 
-func (t *MempoolStats) Complete(testnet *e2e.Testnet, txsSent int) float32 {
-	count := 0
+func (t *MempoolStats) Completion(testnet *e2e.Testnet, txsSent int) float32 {
+	total := float32(0)
 	for _, n := range testnet.Nodes {
-		if t.seen[n] == txsSent {
-			count++
-		}
+		total += float32(t.seen[n]) / float32(txsSent)
 	}
-	return float32(100) * (float32(count) / float32(len(testnet.Nodes)))
+	return float32(100) * (total / float32(len(testnet.Nodes)))
 }

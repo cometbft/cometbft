@@ -552,6 +552,11 @@ func (n Node) Client() (*rpchttp.HTTP, error) {
 	return rpchttp.New(fmt.Sprintf("http://%s:%v", n.ExternalIP, n.ProxyPort), "/websocket")
 }
 
+// Client returns an RPC client for a node.
+func (n Node) ClientWithTimeout(timeout uint) (*rpchttp.HTTP, error) {
+	return rpchttp.NewWithTimeout(fmt.Sprintf("http://%s:%v", n.ExternalIP, n.ProxyPort), "/websocket", timeout)
+}
+
 // PrometheusClient returns an RPC client for a node.
 func (n Node) PrometheusClient() (*rpchttp.HTTP, error) {
 	return rpchttp.New(fmt.Sprintf("http://%s:%v", n.ExternalIP, n.PrometheusProxyPort), "/")

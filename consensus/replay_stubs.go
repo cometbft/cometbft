@@ -40,12 +40,14 @@ func (emptyMempool) Update(
 ) error {
 	return nil
 }
-func (emptyMempool) Flush()                        {}
-func (emptyMempool) FlushAppConn() error           { return nil }
-func (emptyMempool) TxsAvailable() <-chan struct{} { return make(chan struct{}) }
-func (emptyMempool) EnableTxsAvailable()           {}
-func (emptyMempool) TxsBytes() int64               { return 0 }
-func (emptyMempool) InMempool(types.TxKey) bool    { return false }
+func (emptyMempool) Flush()                         {}
+func (emptyMempool) FlushAppConn() error            { return nil }
+func (emptyMempool) TxsAvailable() <-chan struct{}  { return make(chan struct{}) }
+func (emptyMempool) EnableTxsAvailable()            {}
+func (emptyMempool) TxsRemoved() <-chan types.TxKey { return make(chan types.TxKey) }
+func (emptyMempool) EnableTxsRemoved()              {}
+func (emptyMempool) TxsBytes() int64                { return 0 }
+func (emptyMempool) InMempool(types.TxKey) bool     { return false }
 
 func (emptyMempool) TxsFront() *clist.CElement    { return nil }
 func (emptyMempool) TxsWaitChan() <-chan struct{} { return nil }

@@ -374,11 +374,11 @@ func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.R
 Transactions are not guaranteed to be valid when they are delivered to an application, even if they were valid when they were proposed.
 
 This can happen if the application state is used to determine transaction validity. 
-The application state may have changed between the initial execution of CheckTx and the transaction delivery in FinalizeBlock in a way that rendered the transaction no longer valid.
+The application state may have changed between the initial execution of `CheckTx` and the transaction delivery in `FinalizeBlock` in a way that rendered the transaction no longer valid.
 
-**Note** that FinalizeBlock cannot yet commit the Badger transaction we were building during the block execution.
+**Note** that `FinalizeBlock` cannot yet commit the Badger transaction we were building during the block execution.
 
-Other methods, such as Query, rely on a consistent view of the application's state, the application should only update its state by committing the Badger transactions when the full block has been delivered and the Commit method is invoked.
+Other methods, such as `Query`, rely on a consistent view of the application's state, the application should only update its state by committing the Badger transactions when the full block has been delivered and the Commit method is invoked.
 
 
 The `Commit` method tells the application to make permanent the effects of

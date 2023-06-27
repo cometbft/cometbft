@@ -333,7 +333,7 @@ Providing a single `FinalizeBlock` method to signal the finalization of a block 
 
 The `FinalizeBlock` method executes the block, including any necessary transaction processing and state updates, and returns a `ResponseFinalizeBlock` object which contains any necessary information about the executed block.
 
-**Note:** `FinalizeBlock` only prepares the update to be made and does not change the state of the application. The state change is actually committed in a later stage i.e. in `commit` phase..
+**Note:** `FinalizeBlock` only prepares the update to be made and does not change the state of the application. The state change is actually committed in a later stage i.e. in `commit` phase.
 
 Note that, to implement these calls in our application we're going to make use of Badger's transaction mechanism. We will always refer to these as Badger transactions, not to confuse them with the transactions included in the blocks delivered by CometBFT, the _application transactions_.
 
@@ -373,11 +373,11 @@ func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.R
 
 Transactions are not guaranteed to be valid when they are delivered to an application, even if they were valid when they were proposed.
 
-This can happen if the application state is used to determine transaction validity. The application state may have changed between the initial execution of CheckTx and the transaction delivery in FinalizeBlock in a way that rendered the transaction no longer valid.
+This can happen if the application state is used to determine transaction validity. The application state may have changed between the initial execution of `CheckTx` and the transaction delivery in `FinalizeBlock` in a way that rendered the transaction no longer valid.
 
-**Note** that FinalizeBlock cannot yet commit the Badger transaction we were building during the block execution.
+**Note** that `FinalizeBlock` cannot yet commit the Badger transaction we were building during the block execution.
 
-Other methods, such as Query, rely on a consistent view of the application's state, the application should only update its state by committing the Badger transactions when the full block has been delivered and the Commit method is invoked.
+Other methods, such as `Query`, rely on a consistent view of the application's state, the application should only update its state by committing the Badger transactions when the full block has been delivered and the `Commit` method is invoked.
 
 
 The `Commit` method tells the application to make permanent the effects of

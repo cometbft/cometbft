@@ -6,9 +6,9 @@ BINDIR=${DIR}/../build/
 source ${DIR}/utils.sh
 
 echo "nodes,propagation rate,sent,seen,completion,total bandwidth,useful bandwidth,overhead"
-for r in $(seq 5 5 5);
+for r in $(seq 5 5 40);
 do
-    for i in $(geometric 2 2 1);
+    for i in $(geometric 2 2 5);
     do
 	${DIR}/gen.sh ${i} ${r} > ${DIR}/simple.toml
 	${BINDIR}/runner -f ${DIR}/simple.toml mempool > ${TMPDIR}/log

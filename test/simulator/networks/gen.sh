@@ -13,5 +13,5 @@ echo -e $PREAMBLE
 for i in $(seq -f "%02g" 1 ${NODES})
 do
     echo "[node.validator${i}]"
-    echo "  seeds = [\"validator01\",\"validator02\",\"validator03\"]"
+    echo "  seeds = [\"validator01\",\"validator02\",\"validator03\"]" # FIXME
 done

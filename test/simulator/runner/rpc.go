@@ -108,7 +108,7 @@ func waitForNode(ctx context.Context, node *e2e.Node, height int64, timeout time
 			case time.Since(lastChanged) > timeout:
 				return nil, fmt.Errorf("timed out waiting for %v to reach height %v", node.Name, height)
 			case err != nil:
-			case status.SyncInfo.LatestBlockHeight >= height && (height == 0 || !status.SyncInfo.CatchingUp):
+			case status.SyncInfo.LatestBlockHeight >= height && (height == 0 || !status.SyncInfo.CatchingUp): // FIXME
 				logger.Info("Node synced")
 				return status, nil
 			case curHeight < status.SyncInfo.LatestBlockHeight:

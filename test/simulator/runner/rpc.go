@@ -99,6 +99,7 @@ func waitForNode(ctx context.Context, node *e2e.Node, height int64, timeout time
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		case <-timer.C:
+			logger.Info("Fetching status")
 			status, err := client.Status(ctx)
 			if err != nil {
 				logger.Error("Error connecting ", err)

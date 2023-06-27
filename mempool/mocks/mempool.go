@@ -49,6 +49,11 @@ func (_m *Mempool) EnableTxsAvailable() {
 	_m.Called()
 }
 
+// EnableTxsRemoved provides a mock function with given fields:
+func (_m *Mempool) EnableTxsRemoved() {
+	_m.Called()
+}
+
 // Flush provides a mock function with given fields:
 func (_m *Mempool) Flush() {
 	_m.Called()
@@ -157,6 +162,22 @@ func (_m *Mempool) TxsAvailable() <-chan struct{} {
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(<-chan struct{})
+		}
+	}
+
+	return r0
+}
+
+// TxsRemoved provides a mock function with given fields:
+func (_m *Mempool) TxsRemoved() <-chan types.TxKey {
+	ret := _m.Called()
+
+	var r0 <-chan types.TxKey
+	if rf, ok := ret.Get(0).(func() <-chan types.TxKey); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(<-chan types.TxKey)
 		}
 	}
 

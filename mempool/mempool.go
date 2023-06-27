@@ -95,6 +95,13 @@ type Mempool interface {
 	// trigger once every height when transactions are available.
 	EnableTxsAvailable()
 
+	// TxsRemoved returns a read-only channel that receives a transaction key
+	// when a transaction is removed from the mempool.
+	TxsRemoved() <-chan types.TxKey
+
+	// EnableTxsRemoved initializes the TxsRemoved channel.
+	EnableTxsRemoved()
+
 	// Size returns the number of transactions in the mempool.
 	Size() int
 

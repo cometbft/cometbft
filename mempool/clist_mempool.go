@@ -214,22 +214,17 @@ func (mem *CListMempool) Flush() {
 	mem.removeAllTxs()
 }
 
-// TxsFront returns the first transaction in the ordered list for peer
-// goroutines to call .NextWait() on.
-// FIXME: leaking implementation details!
-//
-// Safe for concurrent use by multiple goroutines.
-func (mem *CListMempool) TxsFront() *clist.CElement {
-	return mem.txs.Front()
+func (mem *CListMempool) Stop() error {
+	close(mem.txsRemoved)
+	return nil
 }
 
-// TxsWaitChan returns a channel to wait on transactions. It will be closed
-// once the mempool is not empty (ie. the internal `mem.txs` has at least one
-// element)
-//
-// Safe for concurrent use by multiple goroutines.
-func (mem *CListMempool) TxsWaitChan() <-chan struct{} {
-	return mem.txs.WaitChan()
+func (mem *CListMempool) NewIterator() MempoolIterator {
+	return &CListIterator{
+		txs:                mem.txs,
+		lastElement:        nil,
+		nextEntryAvailable: make(chan struct{}, 1),
+	}
 }
 
 // It blocks if we're waiting on Update() or Reap().
@@ -312,11 +307,11 @@ func (mem *CListMempool) globalCb(req *abci.Request, res *abci.Response) {
 
 // Called from:
 //   - resCbFirstTime (lock not held) if tx is valid
-func (mem *CListMempool) addTx(memTx *mempoolTx) {
-	e := mem.txs.PushBack(memTx)
-	mem.txsMap.Store(memTx.tx.Key(), e)
-	atomic.AddInt64(&mem.txsBytes, int64(len(memTx.tx)))
-	mem.metrics.TxSizeBytes.Observe(float64(len(memTx.tx)))
+func (mem *CListMempool) addTx(entry *MempoolEntry) {
+	e := mem.txs.PushBack(entry)
+	mem.txsMap.Store(entry.tx.Key(), e)
+	atomic.AddInt64(&mem.txsBytes, int64(len(entry.tx)))
+	mem.metrics.TxSizeBytes.Observe(float64(len(entry.tx)))
 }
 
 // RemoveTxByKey removes a transaction from the mempool by its TxKey index.
@@ -329,7 +324,7 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 		elem.DetachPrev()
 		mem.txsMap.Delete(txKey)
 		mem.notifyTxRemoved(txKey)
-		tx := elem.Value.(*mempoolTx).tx
+		tx := elem.Value.(*MempoolEntry).tx
 		atomic.AddInt64(&mem.txsBytes, int64(-len(tx)))
 		return nil
 	}
@@ -390,10 +385,10 @@ func (mem *CListMempool) resCbFirstTime(
 				return
 			}
 
-			mem.addTx(&mempoolTx{
+			mem.addTx(&MempoolEntry{
+				tx:        tx,
 				height:    mem.height,
 				gasWanted: r.CheckTx.GasWanted,
-				tx:        tx,
 			})
 			mem.logger.Debug(
 				"added valid transaction",
@@ -428,12 +423,12 @@ func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 	switch r := res.Value.(type) {
 	case *abci.Response_CheckTx:
 		tx := req.GetCheckTx().Tx
-		memTx := mem.recheckCursor.Value.(*mempoolTx)
+		entry := mem.recheckCursor.Value.(*MempoolEntry)
 
 		// Search through the remaining list of tx to recheck for a transaction that matches
 		// the one we received from the ABCI application.
 		for {
-			if bytes.Equal(tx, memTx.tx) {
+			if bytes.Equal(tx, entry.tx) {
 				// We've found a tx in the recheck list that matches the tx that we
 				// received from the ABCI application.
 				// Break, and use this transaction for further checks.
@@ -443,7 +438,7 @@ func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 			mem.logger.Error(
 				"re-CheckTx transaction mismatch",
 				"got", types.Tx(tx),
-				"expected", memTx.tx,
+				"expected", entry.tx,
 			)
 
 			if mem.recheckCursor == mem.recheckEnd {
@@ -455,7 +450,7 @@ func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 			}
 
 			mem.recheckCursor = mem.recheckCursor.Next()
-			memTx = mem.recheckCursor.Value.(*mempoolTx)
+			entry = mem.recheckCursor.Value.(*MempoolEntry)
 		}
 
 		var postCheckErr error
@@ -466,7 +461,7 @@ func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 		if (r.CheckTx.Code != abci.CodeTypeOK) || postCheckErr != nil {
 			// Tx became invalidated due to newly committed block.
 			mem.logger.Debug("tx is no longer valid", "tx", types.Tx(tx).Hash(), "res", r, "err", postCheckErr)
-			if err := mem.RemoveTxByKey(memTx.tx.Key()); err != nil {
+			if err := mem.RemoveTxByKey(entry.tx.Key()); err != nil {
 				mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
 			}
 			mem.removeFromCache(tx) // it might be valid later
@@ -537,11 +532,11 @@ func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 	// txs := make([]types.Tx, 0, cmtmath.MinInt(mem.txs.Len(), max/mem.avgTxSize))
 	txs := make([]types.Tx, 0, mem.txs.Len())
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
-		memTx := e.Value.(*mempoolTx)
+		entry := e.Value.(*MempoolEntry)
 
-		txs = append(txs, memTx.tx)
+		txs = append(txs, entry.tx)
 
-		dataSize := types.ComputeProtoSizeForTxs([]types.Tx{memTx.tx})
+		dataSize := types.ComputeProtoSizeForTxs([]types.Tx{entry.tx})
 
 		// Check total size requirement
 		if maxBytes > -1 && runningSize+dataSize > maxBytes {
@@ -554,7 +549,7 @@ func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 		// If maxGas is negative, skip this check.
 		// Since newTotalGas < masGas, which
 		// must be non-negative, it follows that this won't overflow.
-		newTotalGas := totalGas + memTx.gasWanted
+		newTotalGas := totalGas + entry.gasWanted
 		if maxGas > -1 && newTotalGas > maxGas {
 			return txs[:len(txs)-1]
 		}
@@ -574,8 +569,8 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 
 	txs := make([]types.Tx, 0, cmtmath.MinInt(mem.txs.Len(), max))
 	for e := mem.txs.Front(); e != nil && len(txs) <= max; e = e.Next() {
-		memTx := e.Value.(*mempoolTx)
-		txs = append(txs, memTx.tx)
+		entry := e.Value.(*MempoolEntry)
+		txs = append(txs, entry.tx)
 	}
 	return txs
 }
@@ -655,9 +650,9 @@ func (mem *CListMempool) recheckTxs() {
 	// Push txs to proxyAppConn
 	// NOTE: globalCb may be called concurrently.
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
-		memTx := e.Value.(*mempoolTx)
+		entry := e.Value.(*MempoolEntry)
 		_, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{
-			Tx:   memTx.tx,
+			Tx:   entry.tx,
 			Type: abci.CheckTxType_Recheck,
 		})
 		if err != nil {
@@ -669,4 +664,51 @@ func (mem *CListMempool) recheckTxs() {
 	// In <v0.37 we would call FlushAsync at the end of recheckTx forcing the buffer to flush
 	// all pending messages to the app. There doesn't seem to be any need here as the buffer
 	// will get flushed regularly or when filled.
+}
+
+type CListIterator struct {
+	txs                *clist.CList
+	lastElement        *clist.CElement
+	nextEntryAvailable chan struct{}
+	mtx                sync.RWMutex
+}
+
+// WaitNext waits for the next available entry. If the last accessed entry is
+// available, use it to wait for its next entry. Otherwise, wait for the first
+// entry in the list. In both cases, it will block until an entry is available.
+func (iter *CListIterator) WaitNext() <-chan struct{} {
+	iter.mtx.Lock()
+	defer iter.mtx.Unlock()
+
+	if iter.lastElement == nil {
+		<-iter.txs.WaitChan()
+	} else {
+		<-iter.lastElement.NextWaitChan()
+	}
+
+	select {
+	case iter.nextEntryAvailable <- struct{}{}:
+	default:
+	}
+
+	return iter.nextEntryAvailable
+}
+
+func (iter *CListIterator) NextEntry() *MempoolEntry {
+	iter.mtx.Lock()
+	defer iter.mtx.Unlock()
+
+	if iter.lastElement == nil {
+		iter.lastElement = iter.txs.Front()
+	} else {
+		iter.lastElement = iter.lastElement.Next()
+	}
+
+	// There is next element, or the element we found got removed in the
+	// meantime.
+	if iter.lastElement == nil {
+		return nil
+	}
+
+	return iter.lastElement.Value.(*MempoolEntry)
 }

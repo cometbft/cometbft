@@ -269,13 +269,12 @@ func (_m *BlockStore) Size() int64 {
 	return r0
 }
 
-type mockConstructorTestingTNewBlockStore interface {
+// NewBlockStore creates a new instance of BlockStore. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewBlockStore(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewBlockStore creates a new instance of BlockStore. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewBlockStore(t mockConstructorTestingTNewBlockStore) *BlockStore {
+}) *BlockStore {
 	mock := &BlockStore{}
 	mock.Mock.Test(t)
 

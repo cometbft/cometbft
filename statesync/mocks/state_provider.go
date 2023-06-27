@@ -92,13 +92,12 @@ func (_m *StateProvider) State(ctx context.Context, height uint64) (state.State,
 	return r0, r1
 }
 
-type mockConstructorTestingTNewStateProvider interface {
+// NewStateProvider creates a new instance of StateProvider. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewStateProvider(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewStateProvider creates a new instance of StateProvider. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewStateProvider(t mockConstructorTestingTNewStateProvider) *StateProvider {
+}) *StateProvider {
 	mock := &StateProvider{}
 	mock.Mock.Test(t)
 

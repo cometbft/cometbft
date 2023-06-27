@@ -405,7 +405,7 @@ Does not run any perturbations.
 			txsSeen := mempoolStats.TxsSeen(cli.testnet)
 			completion := mempoolStats.Completion(cli.testnet, txs)
 			totalBandwidth := mempoolStats.TotalBandwidth(cli.testnet)
-			usefulBandwidth := len(cli.testnet.Nodes) * int(txsSeen) * cli.testnet.LoadTxSizeBytes
+			usefulBandwidth := (len(cli.testnet.Nodes) - 1) * int(txsSeen) * cli.testnet.LoadTxSizeBytes // at most (n-1) receivers
 			overhead := math.Max(0, float64(totalBandwidth-usefulBandwidth)/float64(usefulBandwidth))
 
 			logger.Info("#txs sent = " + strconv.Itoa(txs))

@@ -1,5 +1,0 @@
-prometheus = true
-load_tx_size_bytes = 100
-load_tx_batch_size = 100
-propagation_ratio=1
-[node.validator01]

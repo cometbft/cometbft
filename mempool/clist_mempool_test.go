@@ -672,7 +672,7 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 	// tx0 should appear only once in mp.txs
 	found := 0
 	for e := mp.txs.Front(); e != nil; e = e.Next() {
-		if types.Tx.Key(e.Value.(*MempoolEntry).tx) == types.Tx.Key(tx0) {
+		if types.Tx.Key(e.Value.(*Entry).tx) == types.Tx.Key(tx0) {
 			found++
 		}
 	}

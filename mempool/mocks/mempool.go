@@ -81,15 +81,15 @@ func (_m *Mempool) Lock() {
 }
 
 // NewIterator provides a mock function with given fields:
-func (_m *Mempool) NewIterator() mempool.MempoolIterator {
+func (_m *Mempool) NewIterator() mempool.Iterator {
 	ret := _m.Called()
 
-	var r0 mempool.MempoolIterator
-	if rf, ok := ret.Get(0).(func() mempool.MempoolIterator); ok {
+	var r0 mempool.Iterator
+	if rf, ok := ret.Get(0).(func() mempool.Iterator); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(mempool.MempoolIterator)
+			r0 = ret.Get(0).(mempool.Iterator)
 		}
 	}
 

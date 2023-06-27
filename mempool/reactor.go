@@ -73,7 +73,9 @@ func (memR *Reactor) OnStart() error {
 // OnStop stops the reactor by signaling to all spawned goroutines to exit and
 // blocking until they all exit.
 func (memR *Reactor) OnStop() {
-	memR.mempool.Stop()
+	if err := memR.mempool.Stop(); err != nil {
+		memR.Logger.Error("Shutting down mempool reactor", "err", err)
+	}
 	// TODO: to complete
 }
 
@@ -162,7 +164,7 @@ type PeerState interface {
 // Send new mempool txs to peer.
 func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 	peerID := memR.ids.GetForPeer(peer)
-	var entry *MempoolEntry
+	var entry *Entry
 
 	iterator := memR.mempool.NewIterator()
 

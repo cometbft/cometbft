@@ -79,7 +79,7 @@ type Mempool interface {
 	// NewIterator returns an interator for traversing the mempool entries in an
 	// order defined by the implementation. If it gets to the end or the mempool
 	// is empty, it will start from the beginning.
-	NewIterator() MempoolIterator
+	NewIterator() Iterator
 
 	// FlushAppConn flushes the mempool connection to ensure async callback calls
 	// are done, e.g. from CheckTx.
@@ -214,17 +214,17 @@ func IsPreCheckError(err error) bool {
 	return errors.As(err, &ErrPreCheck{})
 }
 
-type MempoolEntry struct {
+type Entry struct {
 	tx        types.Tx // valid transaction
 	height    int64    // height at which the transaction was validated
 	gasWanted int64    // amount of gas this tx states it will require
 }
 
-func (memE *MempoolEntry) Height() int64 {
+func (memE *Entry) Height() int64 {
 	return atomic.LoadInt64(&memE.height)
 }
 
-type MempoolIterator interface {
+type Iterator interface {
 	// WaitNext blocks until the next entry is available.
 	WaitNext() <-chan struct{}
 
@@ -232,5 +232,5 @@ type MempoolIterator interface {
 	// method was called, in the order defined by the mempool implementation. If
 	// the mempool is empty or if it was not called before, return an arbitrary
 	// first entry.
-	NextEntry() *MempoolEntry
+	NextEntry() *Entry
 }

@@ -219,7 +219,7 @@ func (mem *CListMempool) Stop() error {
 	return nil
 }
 
-func (mem *CListMempool) NewIterator() MempoolIterator {
+func (mem *CListMempool) NewIterator() Iterator {
 	return &CListIterator{
 		txs:                mem.txs,
 		lastElement:        nil,
@@ -307,7 +307,7 @@ func (mem *CListMempool) globalCb(req *abci.Request, res *abci.Response) {
 
 // Called from:
 //   - resCbFirstTime (lock not held) if tx is valid
-func (mem *CListMempool) addTx(entry *MempoolEntry) {
+func (mem *CListMempool) addTx(entry *Entry) {
 	e := mem.txs.PushBack(entry)
 	mem.txsMap.Store(entry.tx.Key(), e)
 	atomic.AddInt64(&mem.txsBytes, int64(len(entry.tx)))
@@ -324,7 +324,7 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 		elem.DetachPrev()
 		mem.txsMap.Delete(txKey)
 		mem.notifyTxRemoved(txKey)
-		tx := elem.Value.(*MempoolEntry).tx
+		tx := elem.Value.(*Entry).tx
 		atomic.AddInt64(&mem.txsBytes, int64(-len(tx)))
 		return nil
 	}
@@ -385,7 +385,7 @@ func (mem *CListMempool) resCbFirstTime(
 				return
 			}
 
-			mem.addTx(&MempoolEntry{
+			mem.addTx(&Entry{
 				tx:        tx,
 				height:    mem.height,
 				gasWanted: r.CheckTx.GasWanted,
@@ -423,7 +423,7 @@ func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 	switch r := res.Value.(type) {
 	case *abci.Response_CheckTx:
 		tx := req.GetCheckTx().Tx
-		entry := mem.recheckCursor.Value.(*MempoolEntry)
+		entry := mem.recheckCursor.Value.(*Entry)
 
 		// Search through the remaining list of tx to recheck for a transaction that matches
 		// the one we received from the ABCI application.
@@ -450,7 +450,7 @@ func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 			}
 
 			mem.recheckCursor = mem.recheckCursor.Next()
-			entry = mem.recheckCursor.Value.(*MempoolEntry)
+			entry = mem.recheckCursor.Value.(*Entry)
 		}
 
 		var postCheckErr error
@@ -532,7 +532,7 @@ func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 	// txs := make([]types.Tx, 0, cmtmath.MinInt(mem.txs.Len(), max/mem.avgTxSize))
 	txs := make([]types.Tx, 0, mem.txs.Len())
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
-		entry := e.Value.(*MempoolEntry)
+		entry := e.Value.(*Entry)
 
 		txs = append(txs, entry.tx)
 
@@ -569,7 +569,7 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 
 	txs := make([]types.Tx, 0, cmtmath.MinInt(mem.txs.Len(), max))
 	for e := mem.txs.Front(); e != nil && len(txs) <= max; e = e.Next() {
-		entry := e.Value.(*MempoolEntry)
+		entry := e.Value.(*Entry)
 		txs = append(txs, entry.tx)
 	}
 	return txs
@@ -650,7 +650,7 @@ func (mem *CListMempool) recheckTxs() {
 	// Push txs to proxyAppConn
 	// NOTE: globalCb may be called concurrently.
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
-		entry := e.Value.(*MempoolEntry)
+		entry := e.Value.(*Entry)
 		_, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{
 			Tx:   entry.tx,
 			Type: abci.CheckTxType_Recheck,
@@ -694,7 +694,7 @@ func (iter *CListIterator) WaitNext() <-chan struct{} {
 	return iter.nextEntryAvailable
 }
 
-func (iter *CListIterator) NextEntry() *MempoolEntry {
+func (iter *CListIterator) NextEntry() *Entry {
 	iter.mtx.Lock()
 	defer iter.mtx.Unlock()
 
@@ -710,5 +710,5 @@ func (iter *CListIterator) NextEntry() *MempoolEntry {
 		return nil
 	}
 
-	return iter.lastElement.Value.(*MempoolEntry)
+	return iter.lastElement.Value.(*Entry)
 }

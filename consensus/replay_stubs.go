@@ -6,7 +6,6 @@ import (
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/clist"
-	"github.com/cometbft/cometbft/libs/log"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
@@ -41,16 +40,14 @@ func (emptyMempool) Update(
 ) error {
 	return nil
 }
-func (emptyMempool) Flush()                             {}
-func (emptyMempool) FlushAppConn() error                { return nil }
-func (emptyMempool) TxsAvailable() <-chan struct{}      { return make(chan struct{}) }
-func (emptyMempool) EnableTxsAvailable()                {}
-func (emptyMempool) TxsRemoved() <-chan types.TxKey     { return make(chan types.TxKey) }
-func (emptyMempool) EnableTxsRemoved()                  {}
-func (emptyMempool) TxsBytes() int64                    { return 0 }
-func (emptyMempool) Stop() error                        { return nil }
-func (emptyMempool) SetLogger(l log.Logger)             {}
-func (emptyMempool) NewIterator() mempl.MempoolIterator { return nil }
+func (emptyMempool) Flush()                         {}
+func (emptyMempool) FlushAppConn() error            { return nil }
+func (emptyMempool) TxsAvailable() <-chan struct{}  { return make(chan struct{}) }
+func (emptyMempool) EnableTxsAvailable()            {}
+func (emptyMempool) TxsRemoved() <-chan types.TxKey { return make(chan types.TxKey) }
+func (emptyMempool) EnableTxsRemoved()              {}
+func (emptyMempool) TxsBytes() int64                { return 0 }
+func (emptyMempool) InMempool(types.TxKey) bool     { return false }
 
 func (emptyMempool) TxsFront() *clist.CElement    { return nil }
 func (emptyMempool) TxsWaitChan() <-chan struct{} { return nil }

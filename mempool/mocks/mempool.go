@@ -6,8 +6,6 @@ import (
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 
-	log "github.com/cometbft/cometbft/libs/log"
-
 	mempool "github.com/cometbft/cometbft/mempool"
 
 	mock "github.com/stretchr/testify/mock"
@@ -80,22 +78,6 @@ func (_m *Mempool) Lock() {
 	_m.Called()
 }
 
-// NewIterator provides a mock function with given fields:
-func (_m *Mempool) NewIterator() mempool.MempoolIterator {
-	ret := _m.Called()
-
-	var r0 mempool.MempoolIterator
-	if rf, ok := ret.Get(0).(func() mempool.MempoolIterator); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(mempool.MempoolIterator)
-		}
-	}
-
-	return r0
-}
-
 // ReapMaxBytesMaxGas provides a mock function with given fields: maxBytes, maxGas
 func (_m *Mempool) ReapMaxBytesMaxGas(maxBytes int64, maxGas int64) types.Txs {
 	ret := _m.Called(maxBytes, maxGas)
@@ -142,11 +124,6 @@ func (_m *Mempool) RemoveTxByKey(txKey types.TxKey) error {
 	return r0
 }
 
-// SetLogger provides a mock function with given fields: l
-func (_m *Mempool) SetLogger(l log.Logger) {
-	_m.Called(l)
-}
-
 // Size provides a mock function with given fields:
 func (_m *Mempool) Size() int {
 	ret := _m.Called()
@@ -170,20 +147,6 @@ func (_m *Mempool) SizeBytes() int64 {
 		r0 = rf()
 	} else {
 		r0 = ret.Get(0).(int64)
-	}
-
-	return r0
-}
-
-// Stop provides a mock function with given fields:
-func (_m *Mempool) Stop() error {
-	ret := _m.Called()
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func() error); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Error(0)
 	}
 
 	return r0

@@ -95,18 +95,20 @@ func waitForNode(ctx context.Context, node *e2e.Node, height int64, timeout time
 			return nil, ctx.Err()
 		case <-timer.C:
 			status, err := client.Status(ctx)
-			logger.Info("Node has reached ", status.SyncInfo.LatestBlockHeight, "(goal=", curHeight, ")")
+			if err != nil {
+				logger.Error("Error connecting ", err)
+			}
 			switch {
 			case time.Since(lastChanged) > timeout:
 				return nil, fmt.Errorf("timed out waiting for %v to reach height %v", node.Name, height)
 			case err != nil:
 			case status.SyncInfo.LatestBlockHeight >= height && (height == 0 || !status.SyncInfo.CatchingUp):
+				logger.Info("Node synced")
 				return status, nil
 			case curHeight < status.SyncInfo.LatestBlockHeight:
 				curHeight = status.SyncInfo.LatestBlockHeight
 				lastChanged = time.Now()
 			}
-			logger.Error("Timeout waiting for ", node.Name)
 			timer.Reset(300 * time.Millisecond)
 		}
 	}

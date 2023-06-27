@@ -387,7 +387,7 @@ Does not run any perturbations.
 				chLoadResult <- txs
 			}()
 
-			mempoolStats, err := Mempool(ctx, loadCancel, cli.testnet, 30*time.Second)
+			mempoolStats, err := Mempool(ctx, loadCancel, cli.testnet, 5*time.Second)
 			if err != nil {
 				return err
 			}

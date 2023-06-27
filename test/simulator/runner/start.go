@@ -78,7 +78,7 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 	networkHeight := testnet.InitialHeight
 
 	if networkHeight == 0 {
-		logger.Info("Initial height is 0 (... waiting 5s)") // FIXME
+		logger.Info("Initial height is 0 (waiting 5s)") // FIXME
 		time.Sleep(5 * time.Second)
 		return nil
 	}

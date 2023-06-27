@@ -78,8 +78,10 @@ func waitForHeight(ctx context.Context, testnet *e2e.Testnet, height int64) (*ty
 
 // waitForNode waits for a node to become available and catch up to the given block height.
 func waitForNode(ctx context.Context, node *e2e.Node, height int64, timeout time.Duration) (*rpctypes.ResultStatus, error) {
+	logger.Info("Wait for node ", node.Name)
 	client, err := node.Client()
 	if err != nil {
+		logger.Error("Error connecting to ", node.Name)
 		return nil, err
 	}
 
@@ -93,6 +95,7 @@ func waitForNode(ctx context.Context, node *e2e.Node, height int64, timeout time
 			return nil, ctx.Err()
 		case <-timer.C:
 			status, err := client.Status(ctx)
+			logger.Info("Node has reached ", status.SyncInfo.LatestBlockHeight, "(goal=", curHeight, ")")
 			switch {
 			case time.Since(lastChanged) > timeout:
 				return nil, fmt.Errorf("timed out waiting for %v to reach height %v", node.Name, height)
@@ -103,7 +106,7 @@ func waitForNode(ctx context.Context, node *e2e.Node, height int64, timeout time
 				curHeight = status.SyncInfo.LatestBlockHeight
 				lastChanged = time.Now()
 			}
-
+			logger.Error("Timeout waiting for ", node.Name)
 			timer.Reset(300 * time.Millisecond)
 		}
 	}

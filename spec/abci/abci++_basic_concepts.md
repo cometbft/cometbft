@@ -219,8 +219,7 @@ Operators will need to adjust the default value of *TimeoutPropose* in CometBFT'
 in order to suit the needs of the particular application being deployed.
 
 This is particularly important if applications implement *immediate execution*, a technique in
-which applications require the proposer to execute a block in `PrepareProposal` (and all validators to execute it in `ProcessProposal`) to ensure that all transactions are executable in case the block is decided.
-
+which applications require the proposer to execute a block in `PrepareProposal` (and all validators to execute it in `ProcessProposal`) to validate the block as fully executable.
 
 <!-- 
 A similar argument might be attempted for `ProcessProposal`, which is also in critical path,
@@ -251,9 +250,9 @@ Applications that implement immediate execution (execute the blocks
 that are about to be proposed, in `PrepareProposal`, or that require validation, in `ProcessProposal`) produce a new state before a block is decided.
 The state changes caused by processing those
 proposed blocks must never replace the previous state until `FinalizeBlock` confirms
-the block decided and `Commit` is invoked in it.
+that the proposed block was decided and `Commit` is invoked for it.
 
-The same is true to Applications that quickly accept blocks and execute the blocks optimistically in parallel with the remainder consensus steps to save time during `FinalizeBlock`; they must only apply the state change in `Commit`.
+The same is true to Applications that quickly accept blocks and execute the blocks optimistically in parallel with the remainder consensus steps to save time during `FinalizeBlock`; they must only apply state changes in `Commit`.
 
 Additionally, vote extensions or the validation thereof (via `ExtendVote` or
 `VerifyVoteExtension`) must *never* have side effects on the current state.

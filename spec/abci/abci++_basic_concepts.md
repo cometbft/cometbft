@@ -212,20 +212,14 @@ Hence, if the Application takes a long time preparing a proposal,
 the default value of *TimeoutPropose* might not be sufficient
 to accommodate the method's execution and validator nodes might time out and prevote `nil`.
 The proposal, in this case, will probably be rejected and a new round will be necessary.
-If this happens successively, the liveness of CometBFT might be compromised.
 
-
-Operators will need to adjust the default value of *TimeoutPropose* in CometBFT's configuration file,
+Timeouts are automatically increased for each new round of a height and, if the execution of `PrepareProposal` is bound, eventually *TimeoutPropose*  will be long enough accommodate the execution of `PrepareProposal`.
+However, relying on this self adaptation could lead to performance degradation and, therefore,
+operators are suggested to adjust the default value of *TimeoutPropose* in CometBFT's configuration file,
 in order to suit the needs of the particular application being deployed.
 
-This is particularly important if applications implement *immediate execution*, a technique in
-which applications require the proposer to execute a block in `PrepareProposal` (and all validators to execute it in `ProcessProposal`) to validate the block as fully executable.
-
-<!-- 
-A similar argument might be attempted for `ProcessProposal`, which is also in critical path,
-and *TimeoutPrevote*. However, the the PrevoteTimeout is only started after 2/3 of pre-votes, so
-it likely has had time enough to terminate its own `ProcessProposal` execution. 
--->
+This is particularly important if applications implement *immediate execution*.
+To implement this technique, proposers need to execute the block being proposed within `PrepareProposal`, which could take longer than *TimeoutPropose*.
 
 ## Deterministic State-Machine Replication
 
@@ -252,7 +246,7 @@ The state changes caused by processing those
 proposed blocks must never replace the previous state until `FinalizeBlock` confirms
 that the proposed block was decided and `Commit` is invoked for it.
 
-The same is true to Applications that quickly accept blocks and execute the blocks optimistically in parallel with the remainder consensus steps to save time during `FinalizeBlock`; they must only apply state changes in `Commit`.
+The same is true to Applications that quickly accept blocks and execute the blocks optimistically in parallel with the remaining consensus steps to save time during `FinalizeBlock`; they must only apply state changes in `Commit`.
 
 Additionally, vote extensions or the validation thereof (via `ExtendVote` or
 `VerifyVoteExtension`) must *never* have side effects on the current state.

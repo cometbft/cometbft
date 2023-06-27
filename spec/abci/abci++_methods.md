@@ -440,10 +440,9 @@ the consensus algorithm will use it as proposal and will not call `RequestPrepar
         * However, any resulting state changes must be kept as _candidate state_,
           and the Application should be ready to discard it in case another block is decided.
     * `RequestProcessProposal` is also called at the proposer of a round. The reason for this is to
-      inform the Application of the block header's hash, which cannot be done at `PrepareProposal`
-      time. In this case, the call to `RequestProcessProposal` occurs right after the call to
-      `RequestPrepareProposal`.
-      However, there is no guarantee that the values of `RequestProcessProposal.txs` and `RequestProcessProposal.hash` will be the same as returned in the preceding `RequestPrepareProposal`.
+      inform the Application of the block header's hash, which is only calculated by CometBFT after the execution of `PrepareProposal`.
+      The call to `RequestProcessProposal` occurs right after the call to `RequestPrepareProposal`.
+      However, there is no guarantee that the value of `RequestProcessProposal.txs` will be the same returned by the preceding `RequestPrepareProposal`.
     * The height and time values match the values from the header of the proposed block.
     * If `ResponseProcessProposal.status` is `REJECT`, consensus assumes the proposal received
       is not valid.

@@ -204,7 +204,7 @@ and an [**Echo**](./abci++_methods.md#echo) method that is used for debugging.
 More details on managing state across connections can be found in the section on
 [Managing Application State](./abci%2B%2B_app_requirements.md#managing-the-application-state-and-related-topics).
 
-## Proposal related timeouts
+## Proposal timeout
 
 `PrepareProposal` stands on the consensus algorithm critical path,
 i.e., CometBFT cannot make progress while this method is being executed.
@@ -213,7 +213,7 @@ the default value of *TimeoutPropose* might not be sufficient
 to accommodate the method's execution and validator nodes might time out and prevote `nil`.
 The proposal, in this case, will probably be rejected and a new round will be necessary.
 
-Timeouts are automatically increased for each new round of a height and, if the execution of `PrepareProposal` is bound, eventually *TimeoutPropose*  will be long enough accommodate the execution of `PrepareProposal`.
+Timeouts are automatically increased for each new round of a height and, if the execution of `PrepareProposal` is bound, eventually *TimeoutPropose*  will be long enough to accommodate the execution of `PrepareProposal`.
 However, relying on this self adaptation could lead to performance degradation and, therefore,
 operators are suggested to adjust the default value of *TimeoutPropose* in CometBFT's configuration file,
 in order to suit the needs of the particular application being deployed.

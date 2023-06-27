@@ -156,7 +156,7 @@ Let us now examine the grammar line by line, providing further details.
 >```
 
 * For every round, if the local process is the proposer of the current round, CometBFT calls `PrepareProposal` and then `ProcessProposal`.
-These two always come together because once a proposal is prepared it is broadcast to all validators, including the proposer itself. In the absence of restarts, `ProcessProposal` is invoked with the proposal returned by `PrepareProposal`.
+These two always come together because once a proposal is prepared it is broadcast to all validators, including the proposer itself. In the absence of crashes, `ProcessProposal` is invoked with the proposal returned by `PrepareProposal`.
 
   Then, optionally, the Application is
   asked to extend its vote for that round. Calls to `VerifyVoteExtension` can come at any time: the

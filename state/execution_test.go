@@ -310,14 +310,14 @@ func TestFinalizeBlockMisbehavior(t *testing.T) {
 
 	abciMb := []abci.Misbehavior{
 		{
-			Type:             abci.MisbehaviorType_DUPLICATE_VOTE,
+			Type:             abci.MISBEHAVIOR_TYPE_DUPLICATE_VOTE,
 			Height:           3,
 			Time:             defaultEvidenceTime,
 			Validator:        types.TM2PB.Validator(state.Validators.Validators[0]),
 			TotalVotingPower: 10,
 		},
 		{
-			Type:             abci.MisbehaviorType_LIGHT_CLIENT_ATTACK,
+			Type:             abci.MISBEHAVIOR_TYPE_LIGHT_CLIENT_ATTACK,
 			Height:           8,
 			Time:             defaultEvidenceTime,
 			Validator:        types.TM2PB.Validator(state.Validators.Validators[0]),
@@ -367,7 +367,7 @@ func TestProcessProposal(t *testing.T) {
 
 	logger := log.NewNopLogger()
 	app := &abcimocks.Application{}
-	app.On("ProcessProposal", mock.Anything, mock.Anything).Return(&abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil)
+	app.On("ProcessProposal", mock.Anything, mock.Anything).Return(&abci.ResponseProcessProposal{Status: abci.PROCESS_PROPOSAL_STATUS_ACCEPT}, nil)
 
 	cc := proxy.NewLocalClientCreator(app)
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())

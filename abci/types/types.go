@@ -9,45 +9,46 @@ import (
 	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	v2 "github.com/cometbft/cometbft/api/cometbft/abci/v2"
 	v3 "github.com/cometbft/cometbft/api/cometbft/abci/v3"
+	v4 "github.com/cometbft/cometbft/api/cometbft/abci/v4"
 )
 
-type Request = v3.Request
+type Request = v4.Request
 type RequestEcho = v1.RequestEcho
 type RequestFlush = v1.RequestFlush
 type RequestInfo = v2.RequestInfo
 type RequestInitChain = v3.RequestInitChain
 type RequestQuery = v1.RequestQuery
-type RequestCheckTx = v1.RequestCheckTx
+type RequestCheckTx = v4.RequestCheckTx
 type RequestCommit = v1.RequestCommit
 type RequestListSnapshots = v1.RequestListSnapshots
 type RequestOfferSnapshot = v1.RequestOfferSnapshot
 type RequestLoadSnapshotChunk = v1.RequestLoadSnapshotChunk
 type RequestApplySnapshotChunk = v1.RequestApplySnapshotChunk
-type RequestPrepareProposal = v3.RequestPrepareProposal
-type RequestProcessProposal = v3.RequestProcessProposal
+type RequestPrepareProposal = v4.RequestPrepareProposal
+type RequestProcessProposal = v4.RequestProcessProposal
 type RequestExtendVote = v3.RequestExtendVote
 type RequestVerifyVoteExtension = v3.RequestVerifyVoteExtension
-type RequestFinalizeBlock = v3.RequestFinalizeBlock
+type RequestFinalizeBlock = v4.RequestFinalizeBlock
 
 // Discriminated Request variants are defined in the latest proto package.
-type Request_Echo = v3.Request_Echo
-type Request_Flush = v3.Request_Flush
-type Request_Info = v3.Request_Info
-type Request_InitChain = v3.Request_InitChain
-type Request_Query = v3.Request_Query
-type Request_CheckTx = v3.Request_CheckTx
-type Request_Commit = v3.Request_Commit
-type Request_ListSnapshots = v3.Request_ListSnapshots
-type Request_OfferSnapshot = v3.Request_OfferSnapshot
-type Request_LoadSnapshotChunk = v3.Request_LoadSnapshotChunk
-type Request_ApplySnapshotChunk = v3.Request_ApplySnapshotChunk
-type Request_PrepareProposal = v3.Request_PrepareProposal
-type Request_ProcessProposal = v3.Request_ProcessProposal
-type Request_ExtendVote = v3.Request_ExtendVote
-type Request_VerifyVoteExtension = v3.Request_VerifyVoteExtension
-type Request_FinalizeBlock = v3.Request_FinalizeBlock
+type Request_Echo = v4.Request_Echo
+type Request_Flush = v4.Request_Flush
+type Request_Info = v4.Request_Info
+type Request_InitChain = v4.Request_InitChain
+type Request_Query = v4.Request_Query
+type Request_CheckTx = v4.Request_CheckTx
+type Request_Commit = v4.Request_Commit
+type Request_ListSnapshots = v4.Request_ListSnapshots
+type Request_OfferSnapshot = v4.Request_OfferSnapshot
+type Request_LoadSnapshotChunk = v4.Request_LoadSnapshotChunk
+type Request_ApplySnapshotChunk = v4.Request_ApplySnapshotChunk
+type Request_PrepareProposal = v4.Request_PrepareProposal
+type Request_ProcessProposal = v4.Request_ProcessProposal
+type Request_ExtendVote = v4.Request_ExtendVote
+type Request_VerifyVoteExtension = v4.Request_VerifyVoteExtension
+type Request_FinalizeBlock = v4.Request_FinalizeBlock
 
-type Response = v3.Response
+type Response = v4.Response
 type ResponseException = v1.ResponseException
 type ResponseEcho = v1.ResponseEcho
 type ResponseFlush = v1.ResponseFlush
@@ -57,33 +58,33 @@ type ResponseQuery = v1.ResponseQuery
 type ResponseCheckTx = v3.ResponseCheckTx
 type ResponseCommit = v3.ResponseCommit
 type ResponseListSnapshots = v1.ResponseListSnapshots
-type ResponseOfferSnapshot = v1.ResponseOfferSnapshot
+type ResponseOfferSnapshot = v4.ResponseOfferSnapshot
 type ResponseLoadSnapshotChunk = v1.ResponseLoadSnapshotChunk
-type ResponseApplySnapshotChunk = v1.ResponseApplySnapshotChunk
+type ResponseApplySnapshotChunk = v4.ResponseApplySnapshotChunk
 type ResponsePrepareProposal = v2.ResponsePrepareProposal
-type ResponseProcessProposal = v2.ResponseProcessProposal
+type ResponseProcessProposal = v4.ResponseProcessProposal
 type ResponseExtendVote = v3.ResponseExtendVote
-type ResponseVerifyVoteExtension = v3.ResponseVerifyVoteExtension
+type ResponseVerifyVoteExtension = v4.ResponseVerifyVoteExtension
 type ResponseFinalizeBlock = v3.ResponseFinalizeBlock
 
 // Discriminated Response variants are defined in the latest proto package.
-type Response_Exception = v3.Response_Exception
-type Response_Echo = v3.Response_Echo
-type Response_Flush = v3.Response_Flush
-type Response_Info = v3.Response_Info
-type Response_InitChain = v3.Response_InitChain
-type Response_Query = v3.Response_Query
-type Response_CheckTx = v3.Response_CheckTx
-type Response_Commit = v3.Response_Commit
-type Response_ListSnapshots = v3.Response_ListSnapshots
-type Response_OfferSnapshot = v3.Response_OfferSnapshot
-type Response_LoadSnapshotChunk = v3.Response_LoadSnapshotChunk
-type Response_ApplySnapshotChunk = v3.Response_ApplySnapshotChunk
-type Response_PrepareProposal = v3.Response_PrepareProposal
-type Response_ProcessProposal = v3.Response_ProcessProposal
-type Response_ExtendVote = v3.Response_ExtendVote
-type Response_VerifyVoteExtension = v3.Response_VerifyVoteExtension
-type Response_FinalizeBlock = v3.Response_FinalizeBlock
+type Response_Exception = v4.Response_Exception
+type Response_Echo = v4.Response_Echo
+type Response_Flush = v4.Response_Flush
+type Response_Info = v4.Response_Info
+type Response_InitChain = v4.Response_InitChain
+type Response_Query = v4.Response_Query
+type Response_CheckTx = v4.Response_CheckTx
+type Response_Commit = v4.Response_Commit
+type Response_ListSnapshots = v4.Response_ListSnapshots
+type Response_OfferSnapshot = v4.Response_OfferSnapshot
+type Response_LoadSnapshotChunk = v4.Response_LoadSnapshotChunk
+type Response_ApplySnapshotChunk = v4.Response_ApplySnapshotChunk
+type Response_PrepareProposal = v4.Response_PrepareProposal
+type Response_ProcessProposal = v4.Response_ProcessProposal
+type Response_ExtendVote = v4.Response_ExtendVote
+type Response_VerifyVoteExtension = v4.Response_VerifyVoteExtension
+type Response_FinalizeBlock = v4.Response_FinalizeBlock
 
 type CommitInfo = v3.CommitInfo
 type ExecTxResult = v3.ExecTxResult
@@ -91,75 +92,76 @@ type ExtendedCommitInfo = v3.ExtendedCommitInfo
 type ExtendedVoteInfo = v3.ExtendedVoteInfo
 type Event = v2.Event
 type EventAttribute = v2.EventAttribute
-type Misbehavior = v2.Misbehavior
+type Misbehavior = v4.Misbehavior
 type Snapshot = v1.Snapshot
 type TxResult = v3.TxResult
 type Validator = v1.Validator
 type ValidatorUpdate = v1.ValidatorUpdate
 type VoteInfo = v3.VoteInfo
 
-type ABCIClient = v3.ABCIClient
-type ABCIServer = v3.ABCIServer
+type ABCIClient = v4.ABCIClient
+type ABCIServer = v4.ABCIServer
 
 func NewABCIClient(cc grpc.ClientConn) ABCIClient {
-	return v3.NewABCIClient(cc)
+	return v4.NewABCIClient(cc)
 }
 
 func RegisterABCIServer(s grpc.Server, srv ABCIServer) {
-	v3.RegisterABCIServer(s, srv)
+	v4.RegisterABCIServer(s, srv)
 }
 
-type CheckTxType = v1.CheckTxType
+type CheckTxType = v4.CheckTxType
 
 const (
-	CheckTxType_New     CheckTxType = v1.CheckTxType_New
-	CheckTxType_Recheck CheckTxType = v1.CheckTxType_Recheck
+	CHECK_TX_TYPE_UNKNOWN CheckTxType = v4.CHECK_TX_TYPE_UNKNOWN
+	CHECK_TX_TYPE_CHECK   CheckTxType = v4.CHECK_TX_TYPE_CHECK
+	CHECK_TX_TYPE_RECHECK CheckTxType = v4.CHECK_TX_TYPE_RECHECK
 )
 
-type MisbehaviorType = v2.MisbehaviorType
+type MisbehaviorType = v4.MisbehaviorType
 
 const (
-	MisbehaviorType_UNKNOWN             MisbehaviorType = v2.MisbehaviorType_UNKNOWN
-	MisbehaviorType_DUPLICATE_VOTE      MisbehaviorType = v2.MisbehaviorType_DUPLICATE_VOTE
-	MisbehaviorType_LIGHT_CLIENT_ATTACK MisbehaviorType = v2.MisbehaviorType_LIGHT_CLIENT_ATTACK
+	MISBEHAVIOR_TYPE_UNKNOWN             MisbehaviorType = v4.MISBEHAVIOR_TYPE_UNKNOWN
+	MISBEHAVIOR_TYPE_DUPLICATE_VOTE      MisbehaviorType = v4.MISBEHAVIOR_TYPE_DUPLICATE_VOTE
+	MISBEHAVIOR_TYPE_LIGHT_CLIENT_ATTACK MisbehaviorType = v4.MISBEHAVIOR_TYPE_LIGHT_CLIENT_ATTACK
 )
 
-type ResponseApplySnapshotChunk_Result = v1.ResponseApplySnapshotChunk_Result
+type ApplySnapshotChunkResult = v4.ApplySnapshotChunkResult
 
 const (
-	ResponseApplySnapshotChunk_UNKNOWN         ResponseApplySnapshotChunk_Result = v1.ResponseApplySnapshotChunk_UNKNOWN
-	ResponseApplySnapshotChunk_ACCEPT          ResponseApplySnapshotChunk_Result = v1.ResponseApplySnapshotChunk_ACCEPT
-	ResponseApplySnapshotChunk_ABORT           ResponseApplySnapshotChunk_Result = v1.ResponseApplySnapshotChunk_ABORT
-	ResponseApplySnapshotChunk_RETRY           ResponseApplySnapshotChunk_Result = v1.ResponseApplySnapshotChunk_RETRY
-	ResponseApplySnapshotChunk_RETRY_SNAPSHOT  ResponseApplySnapshotChunk_Result = v1.ResponseApplySnapshotChunk_RETRY_SNAPSHOT
-	ResponseApplySnapshotChunk_REJECT_SNAPSHOT ResponseApplySnapshotChunk_Result = v1.ResponseApplySnapshotChunk_REJECT_SNAPSHOT
+	APPLY_SNAPSHOT_CHUNK_RESULT_UNKNOWN         ApplySnapshotChunkResult = v4.APPLY_SNAPSHOT_CHUNK_RESULT_UNKNOWN
+	APPLY_SNAPSHOT_CHUNK_RESULT_ACCEPT          ApplySnapshotChunkResult = v4.APPLY_SNAPSHOT_CHUNK_RESULT_ACCEPT
+	APPLY_SNAPSHOT_CHUNK_RESULT_ABORT           ApplySnapshotChunkResult = v4.APPLY_SNAPSHOT_CHUNK_RESULT_ABORT
+	APPLY_SNAPSHOT_CHUNK_RESULT_RETRY           ApplySnapshotChunkResult = v4.APPLY_SNAPSHOT_CHUNK_RESULT_RETRY
+	APPLY_SNAPSHOT_CHUNK_RESULT_RETRY_SNAPSHOT  ApplySnapshotChunkResult = v4.APPLY_SNAPSHOT_CHUNK_RESULT_RETRY_SNAPSHOT
+	APPLY_SNAPSHOT_CHUNK_RESULT_REJECT_SNAPSHOT ApplySnapshotChunkResult = v4.APPLY_SNAPSHOT_CHUNK_RESULT_REJECT_SNAPSHOT
 )
 
-type ResponseOfferSnapshot_Result = v1.ResponseOfferSnapshot_Result
+type OfferSnapshotResult = v4.OfferSnapshotResult
 
 const (
-	ResponseOfferSnapshot_UNKNOWN       ResponseOfferSnapshot_Result = v1.ResponseOfferSnapshot_UNKNOWN
-	ResponseOfferSnapshot_ACCEPT        ResponseOfferSnapshot_Result = v1.ResponseOfferSnapshot_ACCEPT
-	ResponseOfferSnapshot_ABORT         ResponseOfferSnapshot_Result = v1.ResponseOfferSnapshot_ABORT
-	ResponseOfferSnapshot_REJECT        ResponseOfferSnapshot_Result = v1.ResponseOfferSnapshot_REJECT
-	ResponseOfferSnapshot_REJECT_FORMAT ResponseOfferSnapshot_Result = v1.ResponseOfferSnapshot_REJECT_FORMAT
-	ResponseOfferSnapshot_REJECT_SENDER ResponseOfferSnapshot_Result = v1.ResponseOfferSnapshot_REJECT_SENDER
+	OFFER_SNAPSHOT_RESULT_UNKNOWN       OfferSnapshotResult = v4.OFFER_SNAPSHOT_RESULT_UNKNOWN
+	OFFER_SNAPSHOT_RESULT_ACCEPT        OfferSnapshotResult = v4.OFFER_SNAPSHOT_RESULT_ACCEPT
+	OFFER_SNAPSHOT_RESULT_ABORT         OfferSnapshotResult = v4.OFFER_SNAPSHOT_RESULT_ABORT
+	OFFER_SNAPSHOT_RESULT_REJECT        OfferSnapshotResult = v4.OFFER_SNAPSHOT_RESULT_REJECT
+	OFFER_SNAPSHOT_RESULT_REJECT_FORMAT OfferSnapshotResult = v4.OFFER_SNAPSHOT_RESULT_REJECT_FORMAT
+	OFFER_SNAPSHOT_RESULT_REJECT_SENDER OfferSnapshotResult = v4.OFFER_SNAPSHOT_RESULT_REJECT_SENDER
 )
 
-type ResponseProcessProposal_ProposalStatus = v2.ResponseProcessProposal_ProposalStatus
+type ProcessProposalStatus = v4.ProcessProposalStatus
 
 const (
-	ResponseProcessProposal_UNKNOWN ResponseProcessProposal_ProposalStatus = v2.ResponseProcessProposal_UNKNOWN
-	ResponseProcessProposal_ACCEPT  ResponseProcessProposal_ProposalStatus = v2.ResponseProcessProposal_ACCEPT
-	ResponseProcessProposal_REJECT  ResponseProcessProposal_ProposalStatus = v2.ResponseProcessProposal_REJECT
+	PROCESS_PROPOSAL_STATUS_UNKNOWN ProcessProposalStatus = v4.PROCESS_PROPOSAL_STATUS_UNKNOWN
+	PROCESS_PROPOSAL_STATUS_ACCEPT  ProcessProposalStatus = v4.PROCESS_PROPOSAL_STATUS_ACCEPT
+	PROCESS_PROPOSAL_STATUS_REJECT  ProcessProposalStatus = v4.PROCESS_PROPOSAL_STATUS_REJECT
 )
 
-type ResponseVerifyVoteExtension_VerifyStatus = v3.ResponseVerifyVoteExtension_VerifyStatus
+type VerifyVoteExtensionStatus = v4.VerifyVoteExtensionStatus
 
 const (
-	ResponseVerifyVoteExtension_UNKNOWN ResponseVerifyVoteExtension_VerifyStatus = v3.ResponseVerifyVoteExtension_UNKNOWN
-	ResponseVerifyVoteExtension_ACCEPT  ResponseVerifyVoteExtension_VerifyStatus = v3.ResponseVerifyVoteExtension_ACCEPT
-	ResponseVerifyVoteExtension_REJECT  ResponseVerifyVoteExtension_VerifyStatus = v3.ResponseVerifyVoteExtension_REJECT
+	VERIFY_VOTE_EXTENSION_STATUS_UNKNOWN VerifyVoteExtensionStatus = v4.VERIFY_VOTE_EXTENSION_STATUS_UNKNOWN
+	VERIFY_VOTE_EXTENSION_STATUS_ACCEPT  VerifyVoteExtensionStatus = v4.VERIFY_VOTE_EXTENSION_STATUS_ACCEPT
+	VERIFY_VOTE_EXTENSION_STATUS_REJECT  VerifyVoteExtensionStatus = v4.VERIFY_VOTE_EXTENSION_STATUS_REJECT
 )
 
 const (

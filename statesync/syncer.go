@@ -336,17 +336,17 @@ func (s *syncer) offerSnapshot(snapshot *snapshot) error {
 		return fmt.Errorf("failed to offer snapshot: %w", err)
 	}
 	switch resp.Result {
-	case abci.ResponseOfferSnapshot_ACCEPT:
+	case abci.OFFER_SNAPSHOT_RESULT_ACCEPT:
 		s.logger.Info("Snapshot accepted, restoring", "height", snapshot.Height,
 			"format", snapshot.Format, "hash", log.NewLazySprintf("%X", snapshot.Hash))
 		return nil
-	case abci.ResponseOfferSnapshot_ABORT:
+	case abci.OFFER_SNAPSHOT_RESULT_ABORT:
 		return errAbort
-	case abci.ResponseOfferSnapshot_REJECT:
+	case abci.OFFER_SNAPSHOT_RESULT_REJECT:
 		return errRejectSnapshot
-	case abci.ResponseOfferSnapshot_REJECT_FORMAT:
+	case abci.OFFER_SNAPSHOT_RESULT_REJECT_FORMAT:
 		return errRejectFormat
-	case abci.ResponseOfferSnapshot_REJECT_SENDER:
+	case abci.OFFER_SNAPSHOT_RESULT_REJECT_SENDER:
 		return errRejectSender
 	default:
 		return fmt.Errorf("unknown ResponseOfferSnapshot result %v", resp.Result)
@@ -395,14 +395,14 @@ func (s *syncer) applyChunks(chunks *chunkQueue) error {
 		}
 
 		switch resp.Result {
-		case abci.ResponseApplySnapshotChunk_ACCEPT:
-		case abci.ResponseApplySnapshotChunk_ABORT:
+		case abci.APPLY_SNAPSHOT_CHUNK_RESULT_ACCEPT:
+		case abci.APPLY_SNAPSHOT_CHUNK_RESULT_ABORT:
 			return errAbort
-		case abci.ResponseApplySnapshotChunk_RETRY:
+		case abci.APPLY_SNAPSHOT_CHUNK_RESULT_RETRY:
 			chunks.Retry(chunk.Index)
-		case abci.ResponseApplySnapshotChunk_RETRY_SNAPSHOT:
+		case abci.APPLY_SNAPSHOT_CHUNK_RESULT_RETRY_SNAPSHOT:
 			return errRetrySnapshot
-		case abci.ResponseApplySnapshotChunk_REJECT_SNAPSHOT:
+		case abci.APPLY_SNAPSHOT_CHUNK_RESULT_REJECT_SNAPSHOT:
 			return errRejectSnapshot
 		default:
 			return fmt.Errorf("unknown ResponseApplySnapshotChunk result %v", resp.Result)

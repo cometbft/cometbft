@@ -182,10 +182,10 @@ func (app *Application) ProcessProposal(ctx context.Context, req *types.RequestP
 	for _, tx := range req.Txs {
 		// As CheckTx is a full validity check we can simply reuse this
 		if resp, err := app.CheckTx(ctx, &types.RequestCheckTx{Tx: tx}); err != nil || resp.Code != CodeTypeOK {
-			return &types.ResponseProcessProposal{Status: types.ResponseProcessProposal_REJECT}, nil
+			return &types.ResponseProcessProposal{Status: types.PROCESS_PROPOSAL_STATUS_REJECT}, nil
 		}
 	}
-	return &types.ResponseProcessProposal{Status: types.ResponseProcessProposal_ACCEPT}, nil
+	return &types.ResponseProcessProposal{Status: types.PROCESS_PROPOSAL_STATUS_ACCEPT}, nil
 }
 
 // FinalizeBlock executes the block against the application state. It punishes validators who equivocated and
@@ -199,7 +199,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.RequestFinal
 
 	// Punish validators who committed equivocation.
 	for _, ev := range req.Misbehavior {
-		if ev.Type == types.MisbehaviorType_DUPLICATE_VOTE {
+		if ev.Type == types.MISBEHAVIOR_TYPE_DUPLICATE_VOTE {
 			addr := string(ev.Validator.Address)
 			if pubKey, ok := app.valAddrToPubKeyMap[addr]; ok {
 				app.valUpdates = append(app.valUpdates, types.ValidatorUpdate{

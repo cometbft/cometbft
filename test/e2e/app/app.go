@@ -300,7 +300,7 @@ func (app *Application) OfferSnapshot(_ context.Context, req *abci.RequestOfferS
 	}
 	app.restoreSnapshot = req.Snapshot
 	app.restoreChunks = [][]byte{}
-	return &abci.ResponseOfferSnapshot{Result: abci.ResponseOfferSnapshot_ACCEPT}, nil
+	return &abci.ResponseOfferSnapshot{Result: abci.OFFER_SNAPSHOT_RESULT_ACCEPT}, nil
 }
 
 // ApplySnapshotChunk implements ABCI.
@@ -321,7 +321,7 @@ func (app *Application) ApplySnapshotChunk(_ context.Context, req *abci.RequestA
 		app.restoreSnapshot = nil
 		app.restoreChunks = nil
 	}
-	return &abci.ResponseApplySnapshotChunk{Result: abci.ResponseApplySnapshotChunk_ACCEPT}, nil
+	return &abci.ResponseApplySnapshotChunk{Result: abci.APPLY_SNAPSHOT_CHUNK_RESULT_ACCEPT}, nil
 }
 
 // PrepareProposal will take the given transactions and attempt to prepare a
@@ -403,7 +403,7 @@ func (app *Application) PrepareProposal(
 // ProcessProposal implements part of the Application interface.
 // It accepts any proposal that does not contain a malformed transaction.
 // NOTE It is up to real Applications to effect punitive behavior in the cases ProcessProposal
-// returns ResponseProcessProposal_REJECT, as it is evidence of misbehavior.
+// returns PROCESS_PROPOSAL_STATUS_REJECT, as it is evidence of misbehavior.
 func (app *Application) ProcessProposal(_ context.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
 	_, areExtensionsEnabled := app.checkHeightAndExtensions(true, req.Height, "ProcessProposal")
 
@@ -411,18 +411,18 @@ func (app *Application) ProcessProposal(_ context.Context, req *abci.RequestProc
 		k, v, err := parseTx(tx)
 		if err != nil {
 			app.logger.Error("malformed transaction in ProcessProposal", "tx", tx, "err", err)
-			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+			return &abci.ResponseProcessProposal{Status: abci.PROCESS_PROPOSAL_STATUS_REJECT}, nil
 		}
 		switch {
 		case areExtensionsEnabled && k == voteExtensionKey:
 			// Additional check for vote extension-related txs
 			if err := app.verifyExtensionTx(req.Height, v); err != nil {
 				app.logger.Error("vote extension transaction failed verification, rejecting proposal", k, v, "err", err)
-				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+				return &abci.ResponseProcessProposal{Status: abci.PROCESS_PROPOSAL_STATUS_REJECT}, nil
 			}
 		case strings.HasPrefix(k, prefixReservedKey):
 			app.logger.Error("key prefix %q is reserved and cannot be used in transactions, rejecting proposal", k)
-			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+			return &abci.ResponseProcessProposal{Status: abci.PROCESS_PROPOSAL_STATUS_REJECT}, nil
 		}
 	}
 
@@ -430,7 +430,7 @@ func (app *Application) ProcessProposal(_ context.Context, req *abci.RequestProc
 		time.Sleep(app.cfg.ProcessProposalDelay)
 	}
 
-	return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
+	return &abci.ResponseProcessProposal{Status: abci.PROCESS_PROPOSAL_STATUS_ACCEPT}, nil
 }
 
 // ExtendVote will produce vote extensions in the form of random numbers to
@@ -485,7 +485,7 @@ func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.Request
 	if len(req.VoteExtension) == 0 {
 		app.logger.Error("received empty vote extension")
 		return &abci.ResponseVerifyVoteExtension{
-			Status: abci.ResponseVerifyVoteExtension_REJECT,
+			Status: abci.VERIFY_VOTE_EXTENSION_STATUS_REJECT,
 		}, nil
 	}
 
@@ -493,7 +493,7 @@ func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.Request
 	if err != nil {
 		app.logger.Error("failed to parse vote extension", "vote_extension", fmt.Sprintf("%x", req.VoteExtension[:4]), "err", err)
 		return &abci.ResponseVerifyVoteExtension{
-			Status: abci.ResponseVerifyVoteExtension_REJECT,
+			Status: abci.VERIFY_VOTE_EXTENSION_STATUS_REJECT,
 		}, nil
 	}
 
@@ -503,7 +503,7 @@ func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.Request
 
 	app.logger.Info("verified vote extension value", "height", req.Height, "vote_extension", fmt.Sprintf("%x", req.VoteExtension[:4]), "num", num)
 	return &abci.ResponseVerifyVoteExtension{
-		Status: abci.ResponseVerifyVoteExtension_ACCEPT,
+		Status: abci.VERIFY_VOTE_EXTENSION_STATUS_ACCEPT,
 	}, nil
 }
 

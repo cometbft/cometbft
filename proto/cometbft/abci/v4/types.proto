@@ -1,0 +1,237 @@
+syntax = "proto3";
+package cometbft.abci.v4;
+
+import "cometbft/abci/v1/types.proto";
+import "cometbft/abci/v2/types.proto";
+import "cometbft/abci/v3/types.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/abci/v4";
+
+service ABCI {
+  rpc Echo(v1.RequestEcho) returns (v1.ResponseEcho);
+  rpc Flush(v1.RequestFlush) returns (v1.ResponseFlush);
+  rpc Info(v2.RequestInfo) returns (v1.ResponseInfo);
+  rpc CheckTx(RequestCheckTx) returns (v3.ResponseCheckTx);
+  rpc Query(v1.RequestQuery) returns (v1.ResponseQuery);
+  rpc Commit(v1.RequestCommit) returns (v3.ResponseCommit);
+  rpc InitChain(v3.RequestInitChain) returns (v3.ResponseInitChain);
+  rpc ListSnapshots(v1.RequestListSnapshots) returns (v1.ResponseListSnapshots);
+  rpc OfferSnapshot(v1.RequestOfferSnapshot) returns (ResponseOfferSnapshot);
+  rpc LoadSnapshotChunk(v1.RequestLoadSnapshotChunk) returns (v1.ResponseLoadSnapshotChunk);
+  rpc ApplySnapshotChunk(v1.RequestApplySnapshotChunk) returns (ResponseApplySnapshotChunk);
+  rpc PrepareProposal(RequestPrepareProposal) returns (v2.ResponsePrepareProposal);
+  rpc ProcessProposal(RequestProcessProposal) returns (ResponseProcessProposal);
+  rpc ExtendVote(v3.RequestExtendVote) returns (v3.ResponseExtendVote);
+  rpc VerifyVoteExtension(v3.RequestVerifyVoteExtension) returns (ResponseVerifyVoteExtension);
+  rpc FinalizeBlock(RequestFinalizeBlock) returns (v3.ResponseFinalizeBlock);
+}
+
+//----------------------------------------
+// Request types
+
+message Request {
+  oneof value {
+    v1.RequestEcho echo = 1;
+    v1.RequestFlush flush = 2;
+    v2.RequestInfo info = 3;
+    v3.RequestInitChain init_chain = 5;
+    v1.RequestQuery query = 6;
+    RequestCheckTx check_tx = 8;
+    v1.RequestCommit commit = 11;
+    v1.RequestListSnapshots list_snapshots = 12;
+    v1.RequestOfferSnapshot offer_snapshot = 13;
+    v1.RequestLoadSnapshotChunk load_snapshot_chunk = 14;
+    v1.RequestApplySnapshotChunk apply_snapshot_chunk = 15;
+    RequestPrepareProposal prepare_proposal = 16;
+    RequestProcessProposal process_proposal = 17;
+    v3.RequestExtendVote extend_vote = 18;
+    v3.RequestVerifyVoteExtension verify_vote_extension = 19;
+    RequestFinalizeBlock finalize_block = 20;
+  }
+  reserved 4, 7, 9, 10; // SetOption, BeginBlock, DeliverTx, EndBlock
+}
+
+// Type of the transaction check request.
+//
+// This enumeration is incompatible with the CheckTxType definition in
+// cometbft.abci.v1 and therefore shall not be used in encoding with the same
+// field number.
+enum CheckTxType {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  CHECK_TX_TYPE_UNKNOWN = 0;
+  CHECK_TX_TYPE_RECHECK = 1;
+  CHECK_TX_TYPE_CHECK = 2;
+}
+
+message RequestCheckTx {
+  bytes tx = 1;
+  CheckTxType type = 3;
+  reserved 2; // v1.CheckTxType type
+}
+
+message RequestPrepareProposal {
+  // the modified transactions cannot exceed this size.
+  int64 max_tx_bytes = 1;
+  // txs is an array of transactions that will be included in a block,
+  // sent to the app for possible modifications.
+  repeated bytes txs = 2;
+  v3.ExtendedCommitInfo local_last_commit = 3 [(gogoproto.nullable) = false];
+  repeated Misbehavior misbehavior = 4 [(gogoproto.nullable) = false];
+  int64 height = 5;
+  google.protobuf.Timestamp time = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.stdtime) = true
+  ];
+  bytes next_validators_hash = 7;
+  // address of the public key of the validator proposing the block.
+  bytes proposer_address = 8;
+}
+
+message RequestProcessProposal {
+  repeated bytes txs = 1;
+  v3.CommitInfo proposed_last_commit = 2 [(gogoproto.nullable) = false];
+  repeated Misbehavior misbehavior = 3 [(gogoproto.nullable) = false];
+  // Merkle root hash of the fields of the proposed block.
+  bytes hash = 4;
+  int64 height = 5;
+  google.protobuf.Timestamp time = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.stdtime) = true
+  ];
+  bytes next_validators_hash = 7;
+  // address of the public key of the original proposer of the block.
+  bytes proposer_address = 8;
+}
+
+message RequestFinalizeBlock {
+  repeated bytes txs = 1;
+  v3.CommitInfo decided_last_commit = 2 [(gogoproto.nullable) = false];
+  repeated Misbehavior misbehavior = 3 [(gogoproto.nullable) = false];
+  // Merkle root hash of the fields of the decided block.
+  bytes hash = 4;
+  int64 height = 5;
+  google.protobuf.Timestamp time = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.stdtime) = true
+  ];
+  bytes next_validators_hash = 7;
+  // address of the public key of the original proposer of the block.
+  bytes proposer_address = 8;
+}
+
+//----------------------------------------
+// Response types
+
+message Response {
+  oneof value {
+    v1.ResponseException exception = 1;
+    v1.ResponseEcho echo = 2;
+    v1.ResponseFlush flush = 3;
+    v1.ResponseInfo info = 4;
+    v3.ResponseInitChain init_chain = 6;
+    v1.ResponseQuery query = 7;
+    v3.ResponseCheckTx check_tx = 9;
+    v3.ResponseCommit commit = 12;
+    v1.ResponseListSnapshots list_snapshots = 13;
+    ResponseOfferSnapshot offer_snapshot = 14;
+    v1.ResponseLoadSnapshotChunk load_snapshot_chunk = 15;
+    ResponseApplySnapshotChunk apply_snapshot_chunk = 16;
+    v2.ResponsePrepareProposal prepare_proposal = 17;
+    ResponseProcessProposal process_proposal = 18;
+    v3.ResponseExtendVote extend_vote = 19;
+    ResponseVerifyVoteExtension verify_vote_extension = 20;
+    v3.ResponseFinalizeBlock finalize_block = 21;
+  }
+  reserved 5, 8, 10, 11; // SetOption, BeginBlock, DeliverTx, EndBlock
+}
+
+message ResponseOfferSnapshot {
+  OfferSnapshotResult result = 1;
+}
+
+enum OfferSnapshotResult {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  OFFER_SNAPSHOT_RESULT_UNKNOWN = 0; // Unknown result, abort all snapshot restoration
+  OFFER_SNAPSHOT_RESULT_ACCEPT = 1; // Snapshot accepted, apply chunks
+  OFFER_SNAPSHOT_RESULT_ABORT = 2; // Abort all snapshot restoration
+  OFFER_SNAPSHOT_RESULT_REJECT = 3; // Reject this specific snapshot, try others
+  OFFER_SNAPSHOT_RESULT_REJECT_FORMAT = 4; // Reject all snapshots of this format, try others
+  OFFER_SNAPSHOT_RESULT_REJECT_SENDER = 5; // Reject all snapshots from the sender(s), try others
+}
+
+message ResponseApplySnapshotChunk {
+  ApplySnapshotChunkResult result = 1;
+  repeated uint32 refetch_chunks = 2; // Chunks to refetch and reapply
+  repeated string reject_senders = 3; // Chunk senders to reject and ban
+}
+
+enum ApplySnapshotChunkResult {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  APPLY_SNAPSHOT_CHUNK_RESULT_UNKNOWN = 0; // Unknown result, abort all snapshot restoration
+  APPLY_SNAPSHOT_CHUNK_RESULT_ACCEPT = 1; // Chunk successfully accepted
+  APPLY_SNAPSHOT_CHUNK_RESULT_ABORT = 2; // Abort all snapshot restoration
+  APPLY_SNAPSHOT_CHUNK_RESULT_RETRY = 3; // Retry chunk (combine with refetch and reject)
+  APPLY_SNAPSHOT_CHUNK_RESULT_RETRY_SNAPSHOT = 4; // Retry snapshot (combine with refetch and reject)
+  APPLY_SNAPSHOT_CHUNK_RESULT_REJECT_SNAPSHOT = 5; // Reject this snapshot, try others
+}
+
+message ResponseProcessProposal {
+  ProcessProposalStatus status = 1;
+}
+
+enum ProcessProposalStatus {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  PROCESS_PROPOSAL_STATUS_UNKNOWN = 0;
+  PROCESS_PROPOSAL_STATUS_ACCEPT = 1;
+  PROCESS_PROPOSAL_STATUS_REJECT = 2;
+}
+
+message ResponseVerifyVoteExtension {
+  VerifyVoteExtensionStatus status = 1;
+}
+
+enum VerifyVoteExtensionStatus {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  VERIFY_VOTE_EXTENSION_STATUS_UNKNOWN = 0;
+  VERIFY_VOTE_EXTENSION_STATUS_ACCEPT = 1;
+  // Rejecting the vote extension will reject the entire precommit by the sender.
+  // Incorrectly implementing this thus has liveness implications as it may affect
+  // CometBFT's ability to receive 2/3+ valid votes to finalize the block.
+  // Honest nodes should never be rejected.
+  VERIFY_VOTE_EXTENSION_STATUS_REJECT = 2;
+}
+
+//----------------------------------------
+// Blockchain Types
+
+enum MisbehaviorType {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  MISBEHAVIOR_TYPE_UNKNOWN = 0;
+  MISBEHAVIOR_TYPE_DUPLICATE_VOTE = 1;
+  MISBEHAVIOR_TYPE_LIGHT_CLIENT_ATTACK = 2;
+}
+
+message Misbehavior {
+  MisbehaviorType type = 1;
+  // The offending validator
+  v1.Validator validator = 2 [(gogoproto.nullable) = false];
+  // The height when the offense occurred
+  int64 height = 3;
+  // The corresponding time where the offense occurred
+  google.protobuf.Timestamp time = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.stdtime) = true
+  ];
+  // Total voting power of the validator set in case the ABCI application does
+  // not store historical validators.
+  // https://github.com/tendermint/tendermint/issues/4581
+  int64 total_voting_power = 5;
+}

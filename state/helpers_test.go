@@ -297,8 +297,8 @@ func (app *testApp) ProcessProposal(
 ) (*abci.ResponseProcessProposal, error) {
 	for _, tx := range req.Txs {
 		if len(tx) == 0 {
-			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+			return &abci.ResponseProcessProposal{Status: abci.PROCESS_PROPOSAL_STATUS_REJECT}, nil
 		}
 	}
-	return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
+	return &abci.ResponseProcessProposal{Status: abci.PROCESS_PROPOSAL_STATUS_ACCEPT}, nil
 }

@@ -164,8 +164,8 @@ type PeerState interface {
 // Send new mempool txs to peer.
 func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 	peerID := memR.ids.GetForPeer(peer)
-	var entry *Entry
 
+	var entry *Entry
 	iterator := memR.mempool.NewIterator()
 
 	for {
@@ -178,7 +178,9 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		select {
 		case <-iterator.WaitNext():
 			entry = iterator.NextEntry()
-			if entry == nil { // The entry we found got removed in the meantime. Try again.
+			// There is no next entry, or the entry we found got removed in the
+			// meantime. Try again.
+			if entry == nil {
 				continue
 			}
 		case <-peer.Quit():

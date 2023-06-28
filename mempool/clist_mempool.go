@@ -667,15 +667,16 @@ func (mem *CListMempool) recheckTxs() {
 }
 
 type CListIterator struct {
-	txs                *clist.CList
-	lastElement        *clist.CElement
-	nextEntryAvailable chan struct{}
+	txs                *clist.CList    // pointer to the list of transactions
+	lastElement        *clist.CElement // last accessed element in the list
+	nextEntryAvailable chan struct{}   // channel to communicate that there is at least one entry available
 	mtx                sync.RWMutex
 }
 
-// WaitNext waits for the next available entry. If the last accessed entry is
-// available, use it to wait for its next entry. Otherwise, wait for the first
-// entry in the list. In both cases, it will block until an entry is available.
+// WaitNext waits for the next available entry in the mempool. If the last
+// accessed entry is available, use it to wait for its following entry.
+// Otherwise, wait for the first entry in the list. In both cases, it will block
+// until an entry is available.
 func (iter *CListIterator) WaitNext() <-chan struct{} {
 	iter.mtx.Lock()
 	defer iter.mtx.Unlock()
@@ -694,6 +695,9 @@ func (iter *CListIterator) WaitNext() <-chan struct{} {
 	return iter.nextEntryAvailable
 }
 
+// NextEntry tries to fetch the next entry as pointed by the last accessed
+// element. Returns nil if there are no entries available or if the entry is not
+// available anymore.
 func (iter *CListIterator) NextEntry() *Entry {
 	iter.mtx.Lock()
 	defer iter.mtx.Unlock()
@@ -704,7 +708,7 @@ func (iter *CListIterator) NextEntry() *Entry {
 		iter.lastElement = iter.lastElement.Next()
 	}
 
-	// There is next element, or the element we found got removed in the
+	// There isn't a next element, or the element we found got removed in the
 	// meantime.
 	if iter.lastElement == nil {
 		return nil

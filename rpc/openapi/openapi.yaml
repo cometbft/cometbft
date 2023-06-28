@@ -882,7 +882,7 @@ paths:
           required: true
           schema:
             type: string
-            example: "tx.height=1000"
+            example: '"tx.height=1000"'
         - in: query
           name: prove
           description: Include proofs of the transactions inclusion in the block
@@ -945,7 +945,7 @@ paths:
           required: true
           schema:
             type: string
-            example: "block.height > 1000 AND valset.changed > 0"
+            example: '"block.height > 1000 AND valset.changed > 0"'
         - in: query
           name: page
           description: "Page number (1-based)"
@@ -1061,7 +1061,7 @@ paths:
           required: true
           schema:
             type: string
-            example: "/a/b/c"
+            example: '"/a/b/c"'
         - in: query
           name: data
           description: Data

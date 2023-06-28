@@ -56,7 +56,7 @@ consensus-exec      = (inf)consensus-height
 consensus-height    = *consensus-round decide commit
 consensus-round     = proposer / non-proposer
 
-proposer            = *got-vote [prepare-proposal process-proposal] [extend]
+proposer            = *got-vote [prepare-proposal] [process-proposal] [extend]
 extend              = *got-vote extend-vote *got-vote
 non-proposer        = *got-vote [process-proposal] [extend]
 
@@ -130,7 +130,8 @@ Let us now examine the grammar line by line, providing further details.
 >```
 
 * In recovery mode, CometBFT first calls `Info` to know from which height it needs to replay decisions
-  to the Application. After this, CometBFT enters normal consensus execution.
+  to the Application. After this, CometBFT enters consensus execution, first in replay mode and then
+  in normal mode.
 
 >```abnf
 >recovery            = info consensus-exec
@@ -155,8 +156,18 @@ Let us now examine the grammar line by line, providing further details.
 >consensus-round     = proposer / non-proposer
 >```
 
-* For every round, if the local process is the proposer of the current round, CometBFT calls `PrepareProposal` and then `ProcessProposal`.
-These two always come together because once a proposal is prepared it is broadcast to all validators, including the proposer itself. In the absence of crashes, `ProcessProposal` is invoked with the proposal returned by `PrepareProposal`.
+* For every round, if the local process is the proposer of the current round, CometBFT calls `PrepareProposal`.
+  A successful execution of `ProcessProposal` implies in a proposal block being (i)signed and (ii)stored
+  (e.g., in stable storage).
+
+  A crash during this step will direct how the node proceeds the next time it is executed, for the same round, after restarted.
+  If it crashed before (i), then, during the recovery, `PrepareProposal` will execute as if for the first time.
+  Following a crash between (i) and (ii) and in (the likely) case `PrepareProposal` produces a different block,
+  the signing of the block will fail and no block will be stored.
+  If the crash happened after (ii), then signing fails but nothing happens to the stored block.
+  
+  If a block was stored, it is sent to all validators, including the proposer.
+  Receiving a proposal block triggers `ProcessProposal` with such a block.
 
   Then, optionally, the Application is
   asked to extend its vote for that round. Calls to `VerifyVoteExtension` can come at any time: the
@@ -164,7 +175,7 @@ These two always come together because once a proposal is prepared it is broadca
   of this height.
 
 >```abnf
->proposer            = *got-vote [prepare-proposal process-proposal] [extend]
+>proposer            = *got-vote [prepare-proposal] [process-proposal] [extend]
 >extend              = *got-vote extend-vote *got-vote
 >```
 

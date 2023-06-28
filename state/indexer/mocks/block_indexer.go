@@ -88,13 +88,12 @@ func (_m *BlockIndexer) SetLogger(l log.Logger) {
 	_m.Called(l)
 }
 
-type mockConstructorTestingTNewBlockIndexer interface {
+// NewBlockIndexer creates a new instance of BlockIndexer. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewBlockIndexer(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewBlockIndexer creates a new instance of BlockIndexer. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewBlockIndexer(t mockConstructorTestingTNewBlockIndexer) *BlockIndexer {
+}) *BlockIndexer {
 	mock := &BlockIndexer{}
 	mock.Mock.Test(t)
 

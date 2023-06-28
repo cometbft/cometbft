@@ -177,7 +177,7 @@ backport branch (see above). Otherwise:
 5. Open a PR with these changes against the backport branch.
 6. Once these changes have landed on the backport branch, be sure to pull them back down locally.
 7. Once you have the changes locally, create the new tag, specifying a name and a tag "message":
-   `git tag -a v0.38.0-rc1 -m "Release Candidate v0.38.0-rc1`
+   `git tag -a v0.38.0-rc1 -s -m "Release Candidate v0.38.0-rc1`
 8. Push the tag back up to origin:
    `git push origin v0.38.0-rc1`
    Now the tag should be available on the repo's releases page.
@@ -207,7 +207,7 @@ Before performing these steps, be sure the
 4. Open a PR with these changes against the backport branch.
 5. Once these changes are on the backport branch, push a tag with prepared release details.
    This will trigger the actual release `v0.38.0`.
-   * `git tag -a v0.38.0 -m 'Release v0.38.0'`
+   * `git tag -a v0.38.0 -s -m 'Release v0.38.0'`
    * `git push origin v0.38.0`
 6. Make sure that `main` is updated with the latest `CHANGELOG.md`, `CHANGELOG_PENDING.md`, and `UPGRADING.md`.
 
@@ -235,7 +235,7 @@ To create a patch release:
      releases, and only field additions are valid patch changes.)
 4. Open a PR with these changes that will land them back on `v0.38.x`
 5. Once this change has landed on the backport branch, make sure to pull it locally, then push a tag.
-   * `git tag -a v0.38.1 -m 'Release v0.38.1'`
+   * `git tag -a v0.38.1 -s -m 'Release v0.38.1'`
    * `git push origin v0.38.1`
 6. Create a pull request back to main with the CHANGELOG & version changes from the latest release.
    * Remove all `R:patch` labels from the pull requests that were included in the release.

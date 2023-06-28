@@ -168,13 +168,12 @@ func (_m *Mempool) Update(blockHeight int64, blockTxs types.Txs, deliverTxRespon
 	return r0
 }
 
-type mockConstructorTestingTNewMempool interface {
+// NewMempool creates a new instance of Mempool. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMempool(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewMempool creates a new instance of Mempool. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewMempool(t mockConstructorTestingTNewMempool) *Mempool {
+}) *Mempool {
 	mock := &Mempool{}
 	mock.Mock.Test(t)
 

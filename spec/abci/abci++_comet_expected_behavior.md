@@ -56,7 +56,7 @@ consensus-exec      = (inf)consensus-height
 consensus-height    = *consensus-round decide commit
 consensus-round     = proposer / non-proposer
 
-proposer            = *got-vote [prepare-proposal] [process-proposal] [extend]
+proposer            = *got-vote [prepare-proposal [process-proposal]] [extend]
 extend              = *got-vote extend-vote *got-vote
 non-proposer        = *got-vote [process-proposal] [extend]
 
@@ -175,7 +175,7 @@ Let us now examine the grammar line by line, providing further details.
   of this height.
 
 >```abnf
->proposer            = *got-vote [prepare-proposal] [process-proposal] [extend]
+>proposer            = *got-vote [prepare-proposal [process-proposal]] [extend]
 >extend              = *got-vote extend-vote *got-vote
 >```
 

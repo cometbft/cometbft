@@ -157,13 +157,13 @@ Let us now examine the grammar line by line, providing further details.
 >```
 
 * For every round, if the local process is the proposer of the current round, CometBFT calls `PrepareProposal`.
-  A successful execution of `ProcessProposal` implies in a proposal block being (i)signed and (ii)stored
+  A successful execution of `PrepareProposal` implies in a proposal block being (i)signed and (ii)stored
   (e.g., in stable storage).
 
   A crash during this step will direct how the node proceeds the next time it is executed, for the same round, after restarted.
   If it crashed before (i), then, during the recovery, `PrepareProposal` will execute as if for the first time.
   Following a crash between (i) and (ii) and in (the likely) case `PrepareProposal` produces a different block,
-  the signing of the block will fail and no block will be stored.
+  the signing of this block will fail, which means that the new block will not be stored or broadcast.
   If the crash happened after (ii), then signing fails but nothing happens to the stored block.
   
   If a block was stored, it is sent to all validators, including the proposer.

@@ -35,7 +35,7 @@ $r' <= r$, CometBFT can exhibit any of the following behaviours:
 1. Does not call `PrepareProposal` and/or `ProcessProposal`.
 
 In the rounds in which the process is the proposer, CometBFT's `PrepareProposal` call is always followed by the
-`ProcessProposal` call. The reason is that the process also broadcasts the proposal to itself, which is almost instantly delivered and triggers the `ProcessProposal` call.
+`ProcessProposal` call. The reason is that the process also broadcasts the proposal to itself, which is locally delivered and triggers the `ProcessProposal` call.
 The proposal processed by `ProcessProposal` is the same as what was returned by any of the preceding `PrepareProposal` invoked for the same height and round.
 While in the absence of restarts there is only one such preceding invocations, if the proposer restarts there could have been one extra invocation to `PrepareProposal` for each restart.
 

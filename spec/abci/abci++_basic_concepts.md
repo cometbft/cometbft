@@ -215,7 +215,7 @@ The proposal, in this case, will probably be rejected and a new round will be ne
 
 Timeouts are automatically increased for each new round of a height and, if the execution of `PrepareProposal` is bound, eventually *TimeoutPropose*  will be long enough to accommodate the execution of `PrepareProposal`.
 However, relying on this self adaptation could lead to performance degradation and, therefore,
-operators are suggested to adjust the default value of *TimeoutPropose* in CometBFT's configuration file,
+operators are suggested to adjust the initial value of *TimeoutPropose* in CometBFT's configuration file,
 in order to suit the needs of the particular application being deployed.
 
 This is particularly important if applications implement *immediate execution*.
@@ -241,7 +241,7 @@ any other kind of request. This is the only way to ensure all nodes see the same
 transactions and compute the same results.
 
 Applications that implement immediate execution (execute the blocks
-that are about to be proposed, in `PrepareProposal`, or that require validation, in `ProcessProposal`) produce a new state before a block is decided.
+that are about to be proposed, in `PrepareProposal`, or that require validation, in `ProcessProposal`) produce a new candidate state before a block is decided.
 The state changes caused by processing those
 proposed blocks must never replace the previous state until `FinalizeBlock` confirms
 that the proposed block was decided and `Commit` is invoked for it.

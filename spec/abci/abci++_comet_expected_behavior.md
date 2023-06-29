@@ -61,15 +61,9 @@ consensus-exec      = (inf)consensus-height
 consensus-height    = *consensus-round decide commit
 consensus-round     = proposer / non-proposer
 
-<<<<<<< HEAD
-proposer            = [prepare-proposal process-proposal]
+proposer            = [prepare-proposal [process-proposal]]
 non-proposer        = [process-proposal]
 decide              = begin-block  *deliver-txs end-block
-=======
-proposer            = *got-vote [prepare-proposal [process-proposal]] [extend]
-extend              = *got-vote extend-vote *got-vote
-non-proposer        = *got-vote [process-proposal] [extend]
->>>>>>> b23ef56f8 (Clarifies that processProposal may be called for set of transactions different from the one returned in the preceding prepareProposal (#1033))
 
 init-chain          = %s"<InitChain>"
 offer-snapshot      = %s"<OfferSnapshot>"

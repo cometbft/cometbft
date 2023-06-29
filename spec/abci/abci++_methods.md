@@ -439,7 +439,6 @@ the consensus algorithm will use it as proposal and will not call `RequestPrepar
          `RequestFinalizeBlock`.
         * However, any resulting state changes must be kept as _candidate state_,
           and the Application should be ready to discard it in case another block is decided.
-    * `RequestProcessProposal` is also called at the proposer of a round. The reason for this is to
     * `RequestProcessProposal` is also called at the proposer of a round.
       Normally the call to `RequestProcessProposal` occurs right after the call to `RequestPrepareProposal` and
       `RequestProcessProposal` matches the block produced based on `ResponsePrepareProposal` (i.e.,

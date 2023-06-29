@@ -198,8 +198,12 @@ func BootstrapState(height uint64, appHash []byte, config *cfg.Config) error {
 		return err
 	}
 
-	if appHash != nil && !bytes.Equal(appHash, state.AppHash) {
-		logger.Error("the app hash returned by the light client does not match the provided appHash, expected %x, got %x", state.AppHash, appHash)
+	if appHash == nil {
+		logger.Info("warning: cannot verify appHash. Verification will happen when node boots up!")
+	} else {
+		if !bytes.Equal(appHash, state.AppHash) {
+			logger.Error("the app hash returned by the light client does not match the provided appHash, expected %x, got %x", state.AppHash, appHash)
+		}
 	}
 
 	return nil

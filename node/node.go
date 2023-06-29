@@ -1,10 +1,12 @@
 package node
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -15,6 +17,7 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	cs "github.com/cometbft/cometbft/consensus"
 	"github.com/cometbft/cometbft/evidence"
+	"github.com/cometbft/cometbft/light"
 
 	"github.com/cometbft/cometbft/libs/log"
 	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
@@ -128,6 +131,78 @@ func StateProvider(stateProvider statesync.StateProvider) Option {
 	return func(n *Node) {
 		n.stateSyncProvider = stateProvider
 	}
+}
+
+// This function is expected to synchronize CometBFTs
+// stores with the application after statesync has been performed offline
+// It is expected that the blockstore and statestore are empty at
+// the time the function is called
+func BootstrapState(height uint64, appHash []byte, config *cfg.Config) error {
+	ctx := context.Background()
+	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+	if config == nil {
+		config = cfg.DefaultConfig()
+	}
+	blockStore, stateDB, err := initDBs(config, cfg.DefaultDBProvider)
+
+	if err != nil {
+		return err
+	}
+
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
+	})
+
+	if !blockStore.IsEmpty() {
+		logger.Error("overwriting non empty block store")
+	}
+	genState, _, err := LoadStateFromDBOrGenesisDocProvider(stateDB, DefaultGenesisDocProviderFunc(config))
+	if err != nil {
+		return err
+	}
+
+	stateProvider, err := statesync.NewLightClientStateProvider(
+		ctx,
+		genState.ChainID, genState.Version, genState.InitialHeight,
+		config.StateSync.RPCServers, light.TrustOptions{
+			Period: config.StateSync.TrustPeriod,
+			Height: config.StateSync.TrustHeight,
+			Hash:   config.StateSync.TrustHashBytes(),
+		}, logger.With("module", "light"))
+	if err != nil {
+		return fmt.Errorf("failed to set up light client state provider: %w", err)
+	}
+
+	state, err := stateProvider.State(ctx, height)
+	if err != nil {
+		return err
+	}
+
+	commit, err := stateProvider.Commit(ctx, height)
+	if err != nil {
+		return err
+	}
+
+	if err := stateStore.Bootstrap(state); err != nil {
+		return err
+	}
+
+	// store.SaveBlockStoreState(&cmtstore.BlockStoreState{
+	// 	// it breaks the invariant that blocks in range [Base, Height] must exists, but it do works in practice.
+
+	// 	Base:   state.LastBlockHeight,
+	// 	Height: state.LastBlockHeight,
+	// }, blockStore)
+	err = blockStore.SaveSeenCommit(state.LastBlockHeight, commit)
+	if err != nil {
+		return err
+	}
+
+	if appHash != nil && !bytes.Equal(appHash, state.AppHash) {
+		logger.Error("the app hash returned by the light client does not match the provided appHash, expected %x, got %x", state.AppHash, appHash)
+	}
+
+	return nil
 }
 
 //------------------------------------------------------------------------------

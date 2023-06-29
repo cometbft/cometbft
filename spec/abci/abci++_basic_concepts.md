@@ -177,7 +177,7 @@ call sequences of these methods.
 
 State sync allows new nodes to rapidly bootstrap by discovering, fetching, and applying
 state machine (application) snapshots instead of replaying historical blocks. For more details, see the
-[state sync documentation](../p2p/messages/state-sync.md).
+[state sync documentation](../p2p/legacy-docs/messages/state-sync.md).
 
 New nodes discover and request snapshots from other nodes in the P2P network.
 A CometBFT node that receives a request for snapshots from a peer will call

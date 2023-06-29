@@ -346,7 +346,7 @@ title: Methods
     can be spoofed by adversaries, so applications should employ additional verification schemes
     to avoid denial-of-service attacks. The verified `AppHash` is automatically checked against
     the restored application at the end of snapshot restoration.
-    * For more information, see the `Snapshot` data type or the [state sync section](../p2p/messages/state-sync.md).
+    * For more information, see the `Snapshot` data type or the [state sync section](../p2p/legacy-docs/messages/state-sync.md).
 
 ### ApplySnapshotChunk
 
@@ -864,7 +864,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
     | metadata | bytes  | Arbitrary application metadata, for example chunk hashes or other verification data.                                                                                              | 5            |
 
 * **Usage**:
-    * Used for state sync snapshots, see the [state sync section](../p2p/messages/state-sync.md) for details.
+    * Used for state sync snapshots, see the [state sync section](../p2p/legacy-docs/messages/state-sync.md) for details.
     * A snapshot is considered identical across nodes only if _all_ fields are equal (including
     `Metadata`). Chunks may be retrieved from all nodes that have the same snapshot.
     * When sent across the network, a snapshot message can be at most 4 MB.

@@ -44,7 +44,7 @@ Application design should consider _any_ of these possible sequences.
 
 The following grammar, written in case-sensitive Augmented Backus–Naur form (ABNF, specified
 in [IETF rfc7405](https://datatracker.ietf.org/doc/html/rfc7405)), specifies all possible
-sequences of calls to ABCI++, taken by a correct process, across all heights from the genesis block,
+sequences of calls to ABCI++, taken by a **correct process**, across all heights from the genesis block,
 including recovery runs, from the point of view of the Application.
 
 ```abnf
@@ -61,9 +61,15 @@ consensus-exec      = (inf)consensus-height
 consensus-height    = *consensus-round decide commit
 consensus-round     = proposer / non-proposer
 
+<<<<<<< HEAD
 proposer            = [prepare-proposal process-proposal]
 non-proposer        = [process-proposal]
 decide              = begin-block  *deliver-txs end-block
+=======
+proposer            = *got-vote [prepare-proposal [process-proposal]] [extend]
+extend              = *got-vote extend-vote *got-vote
+non-proposer        = *got-vote [process-proposal] [extend]
+>>>>>>> b23ef56f8 (Clarifies that processProposal may be called for set of transactions different from the one returned in the preceding prepareProposal (#1033))
 
 init-chain          = %s"<InitChain>"
 offer-snapshot      = %s"<OfferSnapshot>"
@@ -136,7 +142,12 @@ Let us now examine the grammar line by line, providing further details.
 >```
 
 * In recovery mode, CometBFT first calls `Info` to know from which height it needs to replay decisions
+<<<<<<< HEAD
   to the Application. After this, CometBFT enters nomal consensus execution.
+=======
+  to the Application. After this, CometBFT enters consensus execution, first in replay mode and then
+  in normal mode.
+>>>>>>> b23ef56f8 (Clarifies that processProposal may be called for set of transactions different from the one returned in the preceding prepareProposal (#1033))
 
 >```abnf
 >recovery            = info consensus-exec
@@ -161,9 +172,18 @@ Let us now examine the grammar line by line, providing further details.
 >consensus-round     = proposer / non-proposer
 >```
 
-* For every round, if the local process is the proposer of the current round, CometBFT calls `PrepareProposal`, followed by `ProcessProposal`. 
-These two always come together because they reflect the same proposal that the process
-also delivers to itself. 
+* For every round, if the local process is the proposer of the current round, CometBFT calls `PrepareProposal`.
+  A successful execution of `PrepareProposal` implies in a proposal block being (i)signed and (ii)stored
+  (e.g., in stable storage).
+
+  A crash during this step will direct how the node proceeds the next time it is executed, for the same round, after restarted.
+  If it crashed before (i), then, during the recovery, `PrepareProposal` will execute as if for the first time.
+  Following a crash between (i) and (ii) and in (the likely) case `PrepareProposal` produces a different block,
+  the signing of this block will fail, which means that the new block will not be stored or broadcast.
+  If the crash happened after (ii), then signing fails but nothing happens to the stored block.
+  
+  If a block was stored, it is sent to all validators, including the proposer.
+  Receiving a proposal block triggers `ProcessProposal` with such a block.
 
   <!-- 
 
@@ -174,7 +194,12 @@ also delivers to itself.
   -->
 
 >```abnf
+<<<<<<< HEAD
 >proposer            = [prepare-proposal process-proposal] 
+=======
+>proposer            = *got-vote [prepare-proposal [process-proposal]] [extend]
+>extend              = *got-vote extend-vote *got-vote
+>>>>>>> b23ef56f8 (Clarifies that processProposal may be called for set of transactions different from the one returned in the preceding prepareProposal (#1033))
 >```
 
 * Also for every round, if the local process is _not_ the proposer of the current round, CometBFT
@@ -244,4 +269,42 @@ As for the new methods:
 Finally, `Commit`, which is kept in ABCI++, no longer returns the `AppHash`. It is now up to
 `FinalizeBlock` to do so. Thus, a slight refactoring of the old `Commit` implementation will be
 needed to move the return of `AppHash` to `FinalizeBlock`.
+<<<<<<< HEAD
  -->
+=======
+
+## Accommodating for vote extensions
+
+In a manner transparent to the application, CometBFT ensures the node is provided with all
+the data it needs to participate in consensus. 
+
+In the case of recovering from a crash, or joining the network via state sync, CometBFT will make
+sure the node acquires the necessary vote extensions before switching to consensus. 
+
+If a node is already in consensus but falls behind, during catch-up, CometBFT will provide the node with 
+vote extensions from past heights by retrieving the extensions within `ExtendedCommit` for old heights that it had previously stored.
+
+We realize this is sub-optimal due to the increase in storage needed to store the extensions, we are 
+working on an optimization of this implementation which should alleviate this concern.
+However, the application can use the existing `retain_height` parameter to decide how much
+history it wants to keep, just as is done with the block history. The network-wide implications
+of the usage of `retain_height` stay the same.
+The decision to store 
+historical commits and potential optimizations, are discussed in detail in [RFC-100](./../../docs/rfc/rfc-100-abci-vote-extension-propag.md#current-limitations-and-possible-implementations)
+
+## Handling upgrades to ABCI 2.0
+
+If applications upgrade to ABCI 2.0, CometBFT internally ensures that the [application setup](./abci%2B%2B_app_requirements.md#application-configuration-required-to-switch-to-abci-20) is reflected in its operation.
+CometBFT retrieves from the application configuration the value of `VoteExtensionsEnableHeight`( *h<sub>e</sub>*,),
+the height at which vote extensions are required for consensus to proceed, and uses it to determine the data it stores and data it sends to a peer that is catching up.
+
+Namely, upon saving the block for a given height *h* in the block store at decision time
+* if *h ≥ h<sub>e</sub>*, the corresponding extended commit that was used to decide locally is saved as well
+* if *h < h<sub>e</sub>*, there are no changes to the data saved
+
+In the catch-up mechanism, when a node *f* realizes that another peer is at height *h<sub>p</sub>*, which is more than 2 heights behind,
+* if *h<sub>p</sub> ≥ h<sub>e</sub>*, *f* uses the extended commit to
+      reconstruct the precommit votes with their corresponding extensions
+* if *h<sub>p</sub> < h<sub>e</sub>*, *f* uses the canonical commit to reconstruct the precommit votes,
+      as done for ABCI 1.0 and earlier.
+>>>>>>> b23ef56f8 (Clarifies that processProposal may be called for set of transactions different from the one returned in the preceding prepareProposal (#1033))

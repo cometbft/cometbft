@@ -24,7 +24,7 @@ title: Overview and basic concepts
 
 # Overview and basic concepts
 
-## ABCI++ vs. ABCI
+## ABCI 2.0 vs. ABCI
 
 [&#8593; Back to Outline](#outline)
 
@@ -40,11 +40,21 @@ as the Application cannot require validators to do more than executing the trans
 finalized blocks. This includes features such as threshold cryptography, and guaranteed IBC
 connection attempts.
 
+<<<<<<< HEAD
 ABCI++ addresses these limitations by allowing the application to intervene at two key places of
 consensus execution: (a) at the moment a new proposal is to be created and (b) at the moment a
 proposal is to be validated. The new interface allows block proposers to perform application-dependent
 work in a block through the `PrepareProposal` method (a); and validators to perform application-dependent work
 and checks in a proposed block through the `ProcessProposal` method (b).
+=======
+ABCI 2.0 addresses these limitations by allowing the application to intervene at three key places of
+consensus execution: (a) at the moment a new proposal is to be created, (b) at the moment a
+proposal is to be validated, and (c) at the moment a (precommit) vote is sent/received.
+The new interface allows block proposers to perform application-dependent
+work in a block through the `PrepareProposal` method (a); and validators to perform application-dependent work
+and checks in a proposed block through the `ProcessProposal` method (b); and applications to require their validators
+to do more than just validate blocks through the `ExtendVote` and `VerifyVoteExtensions` methods (c).
+>>>>>>> b23ef56f8 (Clarifies that processProposal may be called for set of transactions different from the one returned in the preceding prepareProposal (#1033))
 
 <!-- Furthermore, ABCI++ coalesces {`BeginBlock`, [`DeliverTx`], `EndBlock`} into `FinalizeBlock`, as a
 simplified, efficient way to deliver a decided block to the Application. -->
@@ -53,7 +63,7 @@ We plan to extend this to allow applications to intervene at the moment a (preco
 The applications could then require their validators to do more than just validating blocks through the `ExtendVote`
 and `VerifyVoteExtension` methods.
 
-## Method overview
+## Methods overview
 
 
 [&#8593; Back to Outline](#outline)
@@ -62,6 +72,7 @@ Methods can be classified into four categories: *consensus*, *mempool*, *info*, 
 
 ### Consensus/block execution methods
 
+<<<<<<< HEAD
 The first time a new blockchain is started, CometBFT calls `InitChain`. From then on, methods `BeginBlock`,
  `DeliverTx` and `EndBlock` are executed upon the decision of each block, resulting in an updated Application
 state. One `DeliverTx` is called for each transaction in the block. The result is an updated application state.
@@ -69,6 +80,14 @@ Cryptographic commitments to the results of `DeliverTx`, and an application-prov
 height, and before method `BeginBlock` is called, methods `PrepareProposal` and `ProcessProposal`,
  may be called several times. See
 [CometBFT's expected behavior](./abci++_comet_expected_behavior.md) for details on the possible
+=======
+The first time a new blockchain is started, CometBFT calls `InitChain`. From then on, method
+`FinalizeBlock` is executed upon the decision of each block, resulting in an updated Application
+state. During the execution of an instance of consensus, which decides the block for a given
+height, and before method `FinalizeBlock` is called, methods `PrepareProposal`, `ProcessProposal`,
+`ExtendVote`, and `VerifyVoteExtension` may be called several times. See
+[CometBFT's expected behavior](abci++_comet_expected_behavior.md) for details on the possible
+>>>>>>> b23ef56f8 (Clarifies that processProposal may be called for set of transactions different from the one returned in the preceding prepareProposal (#1033))
 call sequences of these methods.
 
 - [**InitChain:**](./abci++_methods.md#initchain) This method initializes the blockchain.
@@ -85,20 +104,23 @@ call sequences of these methods.
   can make changes to the raw proposal, such as modifying the set of transactions or the order
   in which they appear, and returns the
   (potentially) modified proposal, called *prepared proposal* in the `ResponsePrepareProposal`
-  call. The logic modifying the raw proposal can be non-deterministic.
+  call.
+  The logic modifying the raw proposal MAY be non-deterministic.
 
 - [**ProcessProposal:**](./abci++_methods.md#processproposal) It allows a validator to
   perform application-dependent work in a proposed block. This enables features such as immediate
   block execution, and allows the Application to reject invalid blocks.
 
   CometBFT calls it when it receives a proposal and _validValue_ is `nil`.
-  The Application cannot modify the proposal at this point but can reject it if it is
+  The Application cannot modify the proposal at this point but can reject it if
   invalid. If that is the case, the consensus algorithm will prevote `nil` on the proposal, which has
   strong liveness implications for CometBFT. As a general rule, the Application
   SHOULD accept a prepared proposal passed via `ProcessProposal`, even if a part of
   the proposal is invalid (e.g., an invalid transaction); the Application can
   ignore the invalid part of the prepared proposal at block execution time.
+  The logic in `ProcessProposal` MUST be deterministic.
 
+<<<<<<< HEAD
 - [**BeginBlock:**](./abci++_methods.md#beginblock) Is called exactly once after a block has been decided
   and executes once before all `DeliverTx` method calls.
 
@@ -118,6 +140,10 @@ call sequences of these methods.
 
 - [**ExtendVote:**](./abci++_methods.md#extendvote) It allows applications to force their
   validators to do more than just validate within consensus. `ExtendVote` allows applications to
+=======
+- [**ExtendVote:**](./abci++_methods.md#extendvote) It allows applications to let their
+  validators do more than just validate within consensus. `ExtendVote` allows applications to
+>>>>>>> b23ef56f8 (Clarifies that processProposal may be called for set of transactions different from the one returned in the preceding prepareProposal (#1033))
   include non-deterministic data, opaque to the consensus algorithm, to precommit messages (the final round of
   voting). The data, called *vote extension*, will be broadcast and received together with the
   vote it is extending, and will be made available to the Application in the next height,
@@ -125,6 +151,7 @@ call sequences of these methods.
   CometBFT calls `ExtendVote` when the consensus algorithm is about to send a non-`nil` precommit message.
   If the Application does not have vote extension information to provide at that time, it returns
   a 0-length byte array as its vote extension.
+  The logic in `ExtendVote` MAY be non-deterministic.
 
 - [**VerifyVoteExtension:**](./abci++_methods.md#verifyvoteextension) It allows
   validators to validate the vote extension data attached to a precommit message. If the validation
@@ -136,7 +163,11 @@ call sequences of these methods.
   As a general rule, an Application that detects an invalid vote extension SHOULD
   accept it in `ResponseVerifyVoteExtension` and ignore it in its own logic. CometBFT calls it when
   a process receives a precommit message with a (possibly empty) vote extension.
+<<<<<<< HEAD
 -->
+=======
+  The logic in `VerifyVoteExtension` MUST be deterministic.
+>>>>>>> b23ef56f8 (Clarifies that processProposal may be called for set of transactions different from the one returned in the preceding prepareProposal (#1033))
 
 <!---
 - [**FinalizeBlock:**](./abci++_methods.md#finalizeblock) It delivers a decided block to the
@@ -224,23 +255,26 @@ More details on managing state across connections can be found in the section on
 
 ## Proposal timeout
 
-Immediate execution requires the Application to fully execute the prepared block
-before returning from `PrepareProposal`, this means that CometBFT cannot make progress
-during the block execution.
-This stands on the consensus algorithm critical path: if the Application takes a long time
-executing the block, the default value of *TimeoutPropose* might not be sufficient
-to accommodate the long block execution time and non-proposer nodes might time
-out and prevote `nil`. The proposal, in this case, will probably be rejected and a new round will be necessary.
+`PrepareProposal` stands on the consensus algorithm critical path,
+i.e., CometBFT cannot make progress while this method is being executed.
+Hence, if the Application takes a long time preparing a proposal,
+the default value of *TimeoutPropose* might not be sufficient
+to accommodate the method's execution and validator nodes might time out and prevote `nil`.
+The proposal, in this case, will probably be rejected and a new round will be necessary.
 
-
-Operators will need to adjust the default value of *TimeoutPropose* in CometBFT's configuration file,
+Timeouts are automatically increased for each new round of a height and, if the execution of `PrepareProposal` is bound, eventually *TimeoutPropose*  will be long enough to accommodate the execution of `PrepareProposal`.
+However, relying on this self adaptation could lead to performance degradation and, therefore,
+operators are suggested to adjust the initial value of *TimeoutPropose* in CometBFT's configuration file,
 in order to suit the needs of the particular application being deployed.
+
+This is particularly important if applications implement *immediate execution*.
+To implement this technique, proposers need to execute the block being proposed within `PrepareProposal`, which could take longer than *TimeoutPropose*.
 
 ## Deterministic State-Machine Replication
 
 [&#8593; Back to Outline](#outline)
 
-ABCI++ applications must implement deterministic finite-state machines to be
+ABCI applications must implement deterministic finite-state machines to be
 securely replicated by the CometBFT consensus engine. This means block execution
 must be strictly deterministic: given the same
 ordered set of transactions, all nodes will compute identical responses, for all
@@ -255,11 +289,21 @@ from block execution (`BeginBlock`, `DeliverTx`, `EndBlock`, and `Commit` calls)
 any other kind of request. This is the only way to ensure all nodes see the same
 transactions and compute the same results.
 
+<<<<<<< HEAD
 Some Applications may choose to implement immediate execution, which entails executing the blocks
 that are about to be proposed (via `PrepareProposal`), and those that the Application is asked to
 validate (via `ProcessProposal`). However, the state changes caused by processing those
 proposed blocks must never replace the previous state until the block execution calls confirm
 the block decided.
+=======
+Applications that implement immediate execution (execute the blocks
+that are about to be proposed, in `PrepareProposal`, or that require validation, in `ProcessProposal`) produce a new candidate state before a block is decided.
+The state changes caused by processing those
+proposed blocks must never replace the previous state until `FinalizeBlock` confirms
+that the proposed block was decided and `Commit` is invoked for it.
+
+The same is true to Applications that quickly accept blocks and execute the blocks optimistically in parallel with the remaining consensus steps to save time during `FinalizeBlock`; they must only apply state changes in `Commit`.
+>>>>>>> b23ef56f8 (Clarifies that processProposal may be called for set of transactions different from the one returned in the preceding prepareProposal (#1033))
 
 <!--
 Additionally, vote extensions or the validation thereof (via `ExtendVote` or
@@ -299,9 +343,15 @@ on them. All other fields in the `Response*` must be strictly deterministic.
 
 [&#8593; Back to Outline](#outline)
 
+<<<<<<< HEAD
 Methods `BeginBlock, DeliverTx` and `EndBlock` include an `events` field in their
 `Response*`.
 Applications may respond to this ABCI++ method with an event list for each executed
+=======
+Method `FinalizeBlock` includes an `events` field at the top level in its
+`Response*`, and one `events` field per transaction included in the block.
+Applications may respond to this ABCI 2.0 method with an event list for each executed
+>>>>>>> b23ef56f8 (Clarifies that processProposal may be called for set of transactions different from the one returned in the preceding prepareProposal (#1033))
 transaction, and a general event list for the block itself.
 Events allow applications to associate metadata with transactions and blocks.
 Events returned via these ABCI methods do not impact the consensus algorithm in any way

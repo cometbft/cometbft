@@ -61,7 +61,7 @@ Process *p*'s prepared proposal can differ in two different rounds where *p* is 
 Full execution of blocks at `PrepareProposal` time stands on CometBFT's critical path. Thus,
 Requirement 1 ensures the Application or operator will set a value for `TimeoutPropose` such that the time it takes
 to fully execute blocks in `PrepareProposal` does not interfere with CometBFT's propose timer.
-Note that the violation of Requirement 1 may lead to further rounds, but will not 
+Note that the violation of Requirement 1 may lead to further rounds, but will not
 compromise liveness because even though `TimeoutPropose` is used as the initial
 value for proposal timeouts, CometBFT will be dynamically adjust these timeouts
 such that they will eventually be enough for completing `PrepareProposal`.
@@ -69,13 +69,14 @@ such that they will eventually be enough for completing `PrepareProposal`.
 * Requirement 2 [`PrepareProposal`, tx-size]: When *p*'s Application calls `ResponsePrepareProposal`, the
   total size in bytes of the transactions returned does not exceed `RequestPrepareProposal.max_tx_bytes`.
 
-Busy blockchains might seek to maximize the amount of transactions included in each block. Under those conditions,
-CometBFT might choose to increase the transactions passed to the Application via `RequestPrepareProposal.txs`
-beyond the `RequestPrepareProposal.max_tx_bytes` limit. The idea is that, if the Application drops some of
-those transactions, it can still return a transaction list whose byte size is as close to
-`RequestPrepareProposal.max_tx_bytes` as possible. Thus, Requirement 2 ensures that the size in bytes of the
-transaction list returned by the application will never cause the resulting block to go beyond its byte size
-limit.
+Busy blockchains might seek to gain full visibility into transactions in CometBFT's mempool,
+rather than having visibility only on *a* subset of those transactions that fit in a block.
+The application can do so by setting `ConsensusParams.Block.MaxBytes` to -1.
+This instructs CometBFT (a) to enforce the maximum possible value for `MaxBytes` (100 MB) at CometBFT level,
+and (b) to provide *all* transactions in the mempool when calling `RequestPrepareProposal`.
+Under these settings, the aggregated size of all transactions may exceed `RequestPrepareProposal.max_tx_bytes`.
+Hence, Requirement 2 ensures that the size in bytes of the transaction list returned by the application will never
+cause the resulting block to go beyond its byte size limit.
 
 * Requirement 3 [`PrepareProposal`, `ProcessProposal`, coherence]: For any two correct processes *p* and *q*,
   if *q*'s CometBFT calls `RequestProcessProposal` on *u<sub>p</sub>*,
@@ -600,7 +601,19 @@ This is enforced by the consensus algorithm.
 This implies a maximum transaction size that is this `MaxBytes`, less the expected size of
 the header, the validator set, and any included evidence in the block.
 
-Must have `0 < MaxBytes < 100 MB`.
+If the Application wants full control over the size of blocks,
+it can do so by enforcing a byte limit set up at the Application level.
+This Application-internal limit is used by `PrepareProposal` to bound the total size
+of transactions it returns, and by `ProcessProposal` to reject any received block
+whose total transaction size is bigger than the enforced limit.
+In such case, the Application MAY set `MaxBytes` to -1.
+
+If the Application sets value -1, consensus will:
+
+- consider that the actual value to enforce is 100 MB
+- will provide *all* transactions in the mempool in calls to `PrepareProposal`
+
+Must have `MaxBytes == -1` OR `0 < MaxBytes <= 100 MB`.
 
 ##### BlockParams.MaxGas
 

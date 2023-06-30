@@ -264,10 +264,12 @@ func TestCreateProposalBlock(t *testing.T) {
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
-	maxBytes := 16384
-	var partSize uint32 = 256
-	maxEvidenceBytes := int64(maxBytes / 2)
-	state.ConsensusParams.Block.MaxBytes = int64(maxBytes)
+	var (
+		partSize uint32 = 256
+		maxBytes int64  = 16384
+	)
+	maxEvidenceBytes := maxBytes / 2
+	state.ConsensusParams.Block.MaxBytes = maxBytes
 	state.ConsensusParams.Evidence.MaxBytes = maxEvidenceBytes
 	proposerAddr, _ := state.Validators.GetByIndex(0)
 
@@ -305,7 +307,7 @@ func TestCreateProposalBlock(t *testing.T) {
 	// fill the mempool with more txs
 	// than can fit in a block
 	txLength := 100
-	for i := 0; i <= maxBytes/txLength; i++ {
+	for i := 0; i <= int(maxBytes)/txLength; i++ {
 		tx := cmtrand.Bytes(txLength)
 		err := mempool.CheckTx(tx, nil, mempl.TxInfo{})
 		assert.NoError(t, err)
@@ -333,7 +335,7 @@ func TestCreateProposalBlock(t *testing.T) {
 	// check that the part set does not exceed the maximum block size
 	partSet, err := block.MakePartSet(partSize)
 	require.NoError(t, err)
-	assert.Less(t, partSet.ByteSize(), int64(maxBytes))
+	assert.Less(t, partSet.ByteSize(), maxBytes)
 
 	partSetFromHeader := types.NewPartSetFromHeader(partSet.Header())
 	for partSetFromHeader.Count() < partSetFromHeader.Total() {

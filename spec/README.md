@@ -35,12 +35,12 @@ please submit them to our [bug bounty](https://cometbft.com/security)!
 
 ### P2P and Network Protocols
 
-- [The Base P2P Layer](./p2p/node.md): multiplex the protocols ("reactors") on authenticated and encrypted TCP connections
-- [Peer Exchange (PEX)](./p2p/messages/pex.md): gossip known peer addresses so peers can find each other
-- [Block Sync](./p2p/messages/block-sync.md): gossip blocks so peers can catch up quickly
-- [Consensus](./p2p/messages/consensus.md): gossip votes and block parts so new blocks can be committed
-- [Mempool](./p2p/messages/mempool.md): gossip transactions so they get included in blocks
-- [Evidence](./p2p/messages/evidence.md): sending invalid evidence will stop the peer
+- [The Base P2P Layer](./p2p/legacy-docs/node.md): multiplex the protocols ("reactors") on authenticated and encrypted TCP connections
+- [Peer Exchange (PEX)](./p2p/legacy-docs/messages/pex.md): gossip known peer addresses so peers can find each other
+- [Block Sync](./p2p/legacy-docs/messages/block-sync.md): gossip blocks so peers can catch up quickly
+- [Consensus](./p2p/legacy-docs/messages/consensus.md): gossip votes and block parts so new blocks can be committed
+- [Mempool](./p2p/legacy-docs/messages/mempool.md): gossip transactions so they get included in blocks
+- [Evidence](./p2p/legacy-docs/messages/evidence.md): sending invalid evidence will stop the peer
 
 ### RPC
 

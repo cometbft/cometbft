@@ -235,7 +235,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 		logger.Error("failed to close blockstore")
 	}
 	var err2 error
-	if err2 := stateStore.Close(); err2 != nil {
+	if err2 = stateStore.Close(); err2 != nil {
 		logger.Error("failed to close statestore")
 		return err2
 	}

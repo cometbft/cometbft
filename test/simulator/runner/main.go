@@ -362,6 +362,7 @@ Does not run any perturbations.
     total bandwidth: sum of all the bandwidth used by at the nodes
     useful bandwidth: #txs * tx_size * #nodes
     overhead: (total bandwidth - useful bandwidth) / (useful bandwidth)
+    redundancy: number of duplicates received per tx seen (on average)
 over a period of 1 minute.
 
 Does not run any perturbations.
@@ -407,6 +408,7 @@ Does not run any perturbations.
 
 			txsSeen := mempoolStats.TxsSeen(cli.testnet)
 			completion := mempoolStats.Completion(cli.testnet, txs)
+			redundancy := mempoolStats.Redundancy(cli.testnet)
 			totalBandwidth := mempoolStats.TotalBandwidth(cli.testnet)
 			usefulBandwidth := (len(cli.testnet.Nodes) - 1) * int(txsSeen) * cli.testnet.LoadTxSizeBytes // at most (n-1) receivers
 			overhead := math.Max(0, float64(totalBandwidth-usefulBandwidth)/float64(usefulBandwidth))
@@ -419,6 +421,7 @@ Does not run any perturbations.
 
 			logger.Info("#txs sent = " + strconv.Itoa(txs))
 			logger.Info("#txs seen (on avg.) = " + fmt.Sprintf("%v", txsSeen))
+			logger.Info("redundancy (on avg) = " + fmt.Sprintf("%v", redundancy))
 			logger.Info("completion (on avg.) = " + fmt.Sprintf("%v", completion))
 			logger.Info("total bandwidth (B) = " + strconv.Itoa(totalBandwidth))
 			logger.Info("useful bandwidth (B) = " + strconv.Itoa(usefulBandwidth))
@@ -457,12 +460,20 @@ Does not run any perturbations.
 				return err
 			}
 
+			redundant, err := json.Marshal(mempoolStats.Redundant(cli.testnet))
+			if err != nil {
+				logger.Error(fmt.Sprintf("Error while json-ing data on redundant txs: %v", err.Error()))
+				_ = cli.infp.StopTestnet(context.Background())
+				return err
+			}
+
 			logger.Info("bandwidth = " + fmt.Sprintf("%v", string(graph)))
-			
+			logger.Info("redundant = " + fmt.Sprintf("%v", string(redundant)))
+
 			return nil
 		},
 	})
-	
+
 	return cli
 }
 

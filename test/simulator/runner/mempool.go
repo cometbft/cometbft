@@ -61,7 +61,7 @@ func Mempool(ctx context.Context, loadCancel context.CancelFunc, testnet *e2e.Te
 type MempoolStats struct {
 	bandwidth map[*e2e.Node]map[*e2e.Node]int
 	seen      map[*e2e.Node]int
-	// FIXME add already_received_txs
+	redundant map[*e2e.Node]int
 }
 
 func FetchStats(testnet *e2e.Testnet) (MempoolStats, error) {
@@ -69,6 +69,7 @@ func FetchStats(testnet *e2e.Testnet) (MempoolStats, error) {
 
 	bw := map[*e2e.Node]map[*e2e.Node]int{}
 	seen := map[*e2e.Node]int{}
+	redundant := map[*e2e.Node]int{}
 
 	client, err := api.NewClient(api.Config{
 		Address: "http://localhost:9090",
@@ -96,6 +97,20 @@ func FetchStats(testnet *e2e.Testnet) (MempoolStats, error) {
 			}
 		}
 
+		result, _, err = v1api.Query(context.TODO(), "cometbft_mempool_already_received_txs", time.Now(), v1.WithTimeout(timeout))
+		if err != nil {
+			fmt.Printf("Error querying Prometheus: %v\n", err)
+			return MempoolStats{}, err
+		}
+
+		if len(result.(model.Vector)) != 0 {
+			redundant[n], err = strconv.Atoi(result.(model.Vector)[0].Value.String())
+			if err != nil {
+				fmt.Printf("Error querying Prometheus: %v\n", err)
+				return MempoolStats{}, err
+			}
+		}
+
 		bw[n] = map[*e2e.Node]int{}
 		for _, m := range testnet.Nodes {
 			bw[n][m] = 0
@@ -116,7 +131,7 @@ func FetchStats(testnet *e2e.Testnet) (MempoolStats, error) {
 			}
 		}
 	}
-	return MempoolStats{bandwidth: bw, seen: seen}, err
+	return MempoolStats{bandwidth: bw, seen: seen, redundant: redundant}, err
 }
 
 func (t *MempoolStats) Output() string {
@@ -174,4 +189,22 @@ func (t *MempoolStats) BandwidthGraph(testnet *e2e.Testnet, computeRatio bool) m
 		}
 	}
 	return result
+}
+
+func (t *MempoolStats) Redundant(testnet *e2e.Testnet) map[string]int {
+	result := map[string]int{}
+	for i, n := range testnet.Nodes {
+		result[strconv.Itoa(i)] = t.redundant[n]
+	}
+	return result
+}
+
+func (t *MempoolStats) Redundancy(testnet *e2e.Testnet) float32 {
+	rtotal := float32(0)
+	stotal := float32(0)
+	for _, n := range testnet.Nodes {
+		rtotal += float32(t.redundant[n])
+		stotal += float32(t.seen[n])
+	}
+	return rtotal / stotal
 }

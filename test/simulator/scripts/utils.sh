@@ -2,6 +2,8 @@
 
 DIR=$(dirname "${BASH_SOURCE[0]}")
 TMPDIR=/tmp
+BINDIR=${DIR}/../build/
+NETDIR=${DIR}/../networks/
 
 info() {
     local message=$1

@@ -1,0 +1,1 @@
+- `[state]` \#1075 When rollback, persist the new validator set if changed. (@yihuang)

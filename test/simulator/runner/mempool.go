@@ -50,7 +50,7 @@ func Mempool(ctx context.Context, loadCancel context.CancelFunc, testnet *e2e.Te
 
 	logger.Info("Fetching stats")
 
-	stats, err := fetchStats(testnet)
+	stats, err := FetchStats(testnet)
 	if err != nil {
 		return MempoolStats{}, nil
 	}
@@ -61,9 +61,10 @@ func Mempool(ctx context.Context, loadCancel context.CancelFunc, testnet *e2e.Te
 type MempoolStats struct {
 	bandwidth map[*e2e.Node]map[*e2e.Node]int
 	seen      map[*e2e.Node]int
+	// FIXME add already_received_txs
 }
 
-func fetchStats(testnet *e2e.Testnet) (MempoolStats, error) {
+func FetchStats(testnet *e2e.Testnet) (MempoolStats, error) {
 	timeout := 1 * time.Second
 
 	bw := map[*e2e.Node]map[*e2e.Node]int{}
@@ -155,4 +156,22 @@ func (t *MempoolStats) Completion(testnet *e2e.Testnet, txsSent int) float32 {
 		total += float32(t.seen[n]) / float32(txsSent)
 	}
 	return float32(100) * (total / float32(len(testnet.Nodes)))
+}
+
+func (t *MempoolStats) BandwidthGraph(testnet *e2e.Testnet, computeRatio bool) map[string]map[string]float32 {
+	result := map[string]map[string]float32{}
+	for i, n := range testnet.Nodes {
+		sum := 1
+		if computeRatio {
+			sum := 0
+			for _, m := range testnet.Nodes {
+				sum += t.bandwidth[n][m]
+			}
+		}
+		result[strconv.Itoa(i)] = map[string]float32{}
+		for j, m := range testnet.Nodes {
+			result[strconv.Itoa(i)][strconv.Itoa(j)] = float32(t.bandwidth[n][m]) / float32(sum)
+		}
+	}
+	return result
 }

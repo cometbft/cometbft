@@ -66,9 +66,9 @@ func Rollback(bs BlockStore, ss Store, removeBlock bool) (int64, []byte, error) 
 	}
 
 	valChangeHeight := invalidState.LastHeightValidatorsChanged
-	// this can only happen if the validator set changed since the last block
-	if valChangeHeight > rollbackHeight {
-		valChangeHeight = rollbackHeight + 1
+	// if validator set was changed in the last block, we just persist the new validator set,
+	if valChangeHeight > rollbackHeight+2 {
+		valChangeHeight = rollbackHeight + 2
 	}
 
 	paramsChangeHeight := invalidState.LastHeightConsensusParamsChanged

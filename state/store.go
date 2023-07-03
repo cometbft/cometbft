@@ -42,7 +42,7 @@ func calcABCIResponsesKey(height int64) []byte {
 //----------------------
 
 var lastABCIResponseKey = []byte("lastABCIResponseKey")
-var offlineStateSyncHeight = []byte("offlineStateSyncH")
+var offlineStateSyncHeight = []byte("offlineStateSyncHeightKey")
 
 //go:generate ../scripts/mockery_generate.sh Store
 
@@ -75,7 +75,7 @@ type Store interface {
 	Bootstrap(State) error
 	// PruneStates takes the height from which to start pruning and which height stop at
 	PruneStates(int64, int64, int64) error
-	// Saves the height at which the store is bootstrapped after out of band statesync, a value of zero clears the data
+	// Saves the height at which the store is bootstrapped after out of band statesync
 	SetOfflineStateSyncHeight(height int64) error
 	// Gets the height at which the store is bootstrapped after out of band statesync
 	GetOfflineStateSyncHeight() (int64, error)
@@ -99,6 +99,14 @@ type StoreOptions struct {
 }
 
 var _ Store = (*dbStore)(nil)
+
+func IsEmpty(store dbStore) (bool, error) {
+	state, err := store.Load()
+	if err != nil {
+		return false, err
+	}
+	return state.IsEmpty(), nil
+}
 
 // NewStore creates the dbStore of the state pkg.
 func NewStore(db dbm.DB, options StoreOptions) Store {
@@ -711,6 +719,9 @@ func (store dbStore) GetOfflineStateSyncHeight() (int64, error) {
 	}
 
 	height := int64FromBytes(buf)
+	if height < 0 {
+		return 0, errors.New("invalid value for height: height cannot be negative")
+	}
 	return height, nil
 }
 

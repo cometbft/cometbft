@@ -80,7 +80,7 @@ func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockS
 		// instead of 0.
 		storeHeight, err = blockExec.Store().GetOfflineStateSyncHeight()
 		if err != nil && err.Error() != "value empty" {
-			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s", err))
+			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s; expected state store height to be %v", err, state.LastBlockHeight))
 		}
 		err = blockExec.Store().SetOfflineStateSyncHeight(0)
 		if err != nil {

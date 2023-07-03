@@ -6,7 +6,9 @@ COMMIT_HASH := $(shell git rev-parse --short HEAD)
 LD_FLAGS = -X github.com/cometbft/cometbft/version.TMGitCommitHash=$(COMMIT_HASH)
 BUILD_FLAGS = -mod=readonly -ldflags "$(LD_FLAGS)"
 # allow users to pass additional flags via the conventional LDFLAGS variable
-LD_FLAGS += $(LDFLAGS)
+ifneq ($(strip $(LDFLAGS)),)
+	LD_FLAGS+=-extldflags=$(LDFLAGS)
+endif
 
 # handle nostrip
 ifeq (nostrip,$(findstring nostrip,$(COMETBFT_BUILD_OPTIONS)))

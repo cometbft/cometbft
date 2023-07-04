@@ -303,7 +303,7 @@ The `MarkBad` method marks a peer as bad and bans it for a period of time.
 This method is only invoked within the PEX reactor, with a banning time of 24
 hours, for the following reasons:
 
-- A peer misbehaves in the [PEX protocol](pex-protocol.md#misbehavior)
+- A peer misbehaves in the [PEX protocol](./pex-protocol.md#misbehavior)
 - When the `maxAttemptsToDial` limit (`16`) is reached for a peer
 - If an `ErrSwitchAuthenticationFailure` error is returned when dialing a peer
 

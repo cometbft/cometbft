@@ -2,6 +2,7 @@
 
 ## Changelog
 
+- 2023-07-04: Expand available endpoints based on user feedback (@thanethomson)
 - 2023-05-16: First draft (@thanethomson)
 
 ## Status
@@ -84,6 +85,8 @@ be worked out in the implementation.
   application being run by the node (via ABCI).
   - `Query` - Submit a query directly to the application via ABCI.
 - `BlockService` - Provides information about blocks.
+  - `GetLatestHeight` - Return a stream of latest block heights as new blocks
+    are committed to the blockchain.
   - `GetByHeight` - Fetch the block associated with a particular height.
 - `BlockResultsService` - Provides information about block execution results.
   - `GetByHeight` - Fetch the block results associated with a particular height.

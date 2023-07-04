@@ -73,14 +73,16 @@ be worked out in the implementation.
   interface.
   - `GetStatus` - Query the current node status, including node info, public
     key, latest block hash, app hash, block height and time.
+  - `GetHealth` - Lightweight mechanism to query the health of the node.
 - `TransactionService` - Facilitates broadcasting and querying of transactions.
-  - `BroadcastAsync` - Broadcast a transaction asynchronously. Does not wait
-    for the transaction to be validated via `CheckTx`, nor does it wait for the
+  - `BroadcastAsync` - Broadcast a transaction asynchronously. Does not wait for
+    the transaction to be validated via `CheckTx`, nor does it wait for the
     transaction to be committed.
   - `BroadcastSync` - Broadcast a transaction, but only return once `CheckTx`
     has been called on the transaction. Does not wait for the transaction to be
     committed.
   - `GetByHash` - Fetch a transaction by way of its hash.
+  - `Search` - Search for transactions with their results.
 - `ApplicationService` - Provides a proxy interface through which to access the
   application being run by the node (via ABCI).
   - `Query` - Submit a query directly to the application via ABCI.
@@ -88,8 +90,18 @@ be worked out in the implementation.
   - `GetLatestHeight` - Return a stream of latest block heights as new blocks
     are committed to the blockchain.
   - `GetByHeight` - Fetch the block associated with a particular height.
+  - `GetHeaderByHeight` - Fetch the header associated with the block at a
+    particular height.
+  - `Search` - Search for blocks by way of block events.
 - `BlockResultsService` - Provides information about block execution results.
   - `GetByHeight` - Fetch the block results associated with a particular height.
+- `ConsensusService` - Provides information about consensus.
+  - `GetConsensusParams` - Fetch the consensus parameters for a particular
+    height.
+- `NetworkService` - Provides information about the blockchain network.
+  - `GetGenesis` - Fetch paginated genesis data.
+  - `GetPeers` - Fetch information about the peers to which the node is
+    connected.
 
 ### Service Versioning
 

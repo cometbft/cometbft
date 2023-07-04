@@ -242,7 +242,6 @@ func (memR *Reactor) addSender(txKey types.TxKey, senderID uint16) bool {
 
 	if sendersSet, ok := memR.txSenders[txKey]; ok {
 		sendersSet[senderID] = true
-		memR.txSenders[txKey] = sendersSet
 		return false
 	}
 	memR.txSenders[txKey] = map[uint16]bool{senderID: true}

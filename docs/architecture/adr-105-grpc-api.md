@@ -96,8 +96,7 @@ be worked out in the implementation.
 - `BlockResultsService` - Provides information about block execution results.
   - `GetByHeight` - Fetch the block results associated with a particular height.
 - `ConsensusService` - Provides information about consensus.
-  - `GetConsensusParams` - Fetch the consensus parameters for a particular
-    height.
+  - `GetParams` - Fetch the consensus parameters for a particular height.
 - `NetworkService` - Provides information about the blockchain network.
   - `GetGenesis` - Fetch paginated genesis data.
   - `GetPeers` - Fetch information about the peers to which the node is

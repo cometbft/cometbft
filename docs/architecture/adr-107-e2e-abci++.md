@@ -29,17 +29,17 @@ Whenever an ABCI request is made, the application will create `abci.Request` (`a
 func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
 
 	r := &abci.Request{Value: &abci.Request_InitChain{InitChain: &abci.RequestInitChain{}}}
-	app.logRequest(r)
+	app.logAbciRequest(r)
     
 	...
 }
 ```
 Notice here that we create an empty `abci.RequestInitChain` object while we can also use the one passed to the `InitChain` function. The reason behind this is that, at the moment, we do not need specific fields of the request; we just need to be able to extract the information about the request type. For this, an empty object of a particular type is enough. 
 
-`app.logRequest(r)` function is a new function implemented in the same file (`test/e2e/app/app.go`). Its implementation is the following: 
+`app.logAbciRequest(r)` function is a new function implemented in the same file (`test/e2e/app/app.go`). Its implementation is the following: 
 
 ```go
-func (app *Application) logRequest(req *abci.Request) {
+func (app *Application) logAbciRequest(req *abci.Request) {
 	s, err := GetABCIRequestString(req)
 	if err != nil {
 		panic(err)
@@ -65,7 +65,7 @@ func GetABCIRequestString(req *abci.Request) (string, error) {
 In addition, we surround the new string with `abci-req` constants so that we can find lines with ABCI++ request more easily.
 If in the future we want to log another ABCI++ request type, we just need to do the same thing: 
 create a corresponding `abci.Request` and log it via 
-`app.logRequest(r)`. 
+`app.logAbciRequest(r)`. 
 
 ### 2) Parsing the logs
 We need a code that will take the logs from all nodes and collect the ABCI++ requests that were logged by the application. 

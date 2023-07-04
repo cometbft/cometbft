@@ -171,7 +171,6 @@ grammar by calling `checker.Verify(reqs)` method. If this method returns an erro
 
 The `Verify()` method is shown below. 
 ```go
-
 func (g *GrammarChecker) Verify(reqs []*abci.Request) (bool, error) {
 	var r []*abci.Request
 	var n int

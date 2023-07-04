@@ -86,7 +86,7 @@ The idea here was to find a library that automatically verifies whether a specif
 **Implementation**
 
 We found the following library - https://github.com/goccmack/gogll. It generates a GLL or LR(1) parser and FSA-based lexer for any context-free grammar. What we needed to do is to rewrite ABCI++ grammar ([CometBFT's expected behaviour](../../spec/abci/abci%2B%2B_comet_expected_behavior.md#valid-method-call-sequences))
-using the synthax that the library understand. 
+using the synthax that the library understands. 
 The new grammar is below and can be found inside `test/e2e/pkg/grammar/abci_grammar.md` file.
 
 ```abnf
@@ -171,7 +171,6 @@ grammar by calling `checker.Verify(reqs)` method. If this method returns an erro
 
 The `Verify()` method is shown below. 
 ```go
-
 func (g *GrammarChecker) Verify(reqs []*abci.Request) (bool, error) {
 	var r []*abci.Request
 	var n int

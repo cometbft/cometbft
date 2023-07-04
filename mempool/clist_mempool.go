@@ -144,11 +144,11 @@ func (mem *CListMempool) removeAllTxs() {
 }
 
 // NOTE: not thread safe - should only be called once, on startup
-func (mem *CListMempool) EnableTxsAvailable() {
-	mem.txsAvailable = make(chan struct{}, 1)
-}
+func (mem *CListMempool) InitChannels(notifyAvailable bool) {
+	if notifyAvailable {
+		mem.txsAvailable = make(chan struct{}, 1)
+	}
 
-func (mem *CListMempool) EnableTxsRemoved() {
 	// We assign a buffer of size 1024 to allow concurrent writes to the channel
 	// without blocking it.
 	mem.txsRemoved = make(chan types.TxKey, 1024)

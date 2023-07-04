@@ -35,7 +35,8 @@ type Reactor struct {
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
-func NewReactor(config *cfg.MempoolConfig, mempool Mempool) *Reactor {
+// The mempool's channel TxsAvailable will be initialized only when notifyAvailable is true.
+func NewReactor(config *cfg.MempoolConfig, mempool Mempool, notifyAvailable bool) *Reactor {
 	memR := &Reactor{
 		config:    config,
 		mempool:   mempool,
@@ -43,6 +44,7 @@ func NewReactor(config *cfg.MempoolConfig, mempool Mempool) *Reactor {
 		txSenders: make(map[types.TxKey]map[uint16]bool),
 	}
 	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
+	mempool.InitChannels(notifyAvailable)
 	return memR
 }
 
@@ -64,7 +66,6 @@ func (memR *Reactor) OnStart() error {
 		memR.Logger.Info("Tx broadcasting is disabled")
 	}
 
-	memR.mempool.EnableTxsRemoved()
 	go memR.updateSendersRoutine()
 
 	return nil

@@ -91,6 +91,12 @@ type Mempool interface {
 	// Flush removes all transactions from the mempool and caches.
 	Flush()
 
+	// InitChannels initializes the channels TxsAvailable and TxRemoved for
+	// communicating about changes in the mempool. TxsAvailable is read by the
+	// consensus reactor and it will be initialized only when notifyAvailable is
+	// true.
+	InitChannels(notifyAvailable bool)
+
 	// TxsAvailable returns a channel which fires once for every height, and only
 	// when transactions are available in the mempool.
 	//
@@ -98,16 +104,9 @@ type Mempool interface {
 	// 1. The returned channel may be nil if EnableTxsAvailable was not called.
 	TxsAvailable() <-chan struct{}
 
-	// EnableTxsAvailable initializes the TxsAvailable channel, ensuring it will
-	// trigger once every height when transactions are available.
-	EnableTxsAvailable()
-
 	// TxsRemoved returns a read-only channel that receives a transaction key
 	// when a transaction is removed from the mempool.
 	TxsRemoved() <-chan types.TxKey
-
-	// EnableTxsRemoved initializes the TxsRemoved channel.
-	EnableTxsRemoved()
 
 	// Size returns the number of transactions in the mempool.
 	Size() int

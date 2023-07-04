@@ -46,16 +46,6 @@ func (_m *Mempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
 	return r0, r1
 }
 
-// EnableTxsAvailable provides a mock function with given fields:
-func (_m *Mempool) EnableTxsAvailable() {
-	_m.Called()
-}
-
-// EnableTxsRemoved provides a mock function with given fields:
-func (_m *Mempool) EnableTxsRemoved() {
-	_m.Called()
-}
-
 // Flush provides a mock function with given fields:
 func (_m *Mempool) Flush() {
 	_m.Called()
@@ -73,6 +63,11 @@ func (_m *Mempool) FlushAppConn() error {
 	}
 
 	return r0
+}
+
+// InitChannels provides a mock function with given fields: notifyAvailable
+func (_m *Mempool) InitChannels(notifyAvailable bool) {
+	_m.Called(notifyAvailable)
 }
 
 // Lock provides a mock function with given fields:

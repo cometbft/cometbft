@@ -43,10 +43,9 @@ func (emptyMempool) Update(
 }
 func (emptyMempool) Flush()                         {}
 func (emptyMempool) FlushAppConn() error            { return nil }
+func (emptyMempool) InitChannels(bool)              {}
 func (emptyMempool) TxsAvailable() <-chan struct{}  { return make(chan struct{}) }
-func (emptyMempool) EnableTxsAvailable()            {}
 func (emptyMempool) TxsRemoved() <-chan types.TxKey { return make(chan types.TxKey) }
-func (emptyMempool) EnableTxsRemoved()              {}
 func (emptyMempool) TxsBytes() int64                { return 0 }
 func (emptyMempool) Stop() error                    { return nil }
 func (emptyMempool) SetLogger(log.Logger)           {}

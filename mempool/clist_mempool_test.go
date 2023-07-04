@@ -350,7 +350,7 @@ func TestTxsAvailable(t *testing.T) {
 	cc := proxy.NewLocalClientCreator(app)
 	mp, cleanup := newMempoolWithApp(cc)
 	defer cleanup()
-	mp.EnableTxsAvailable()
+	mp.InitChannels(true)
 
 	timeoutMS := 500
 

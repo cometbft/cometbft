@@ -126,9 +126,11 @@ None
 
 ### Neutral
 
-- We need to add a new channel in `CListMempool` for notifying removed
+- We would need to add a new channel in `CListMempool` for notifying removed
   transactions. And a new goroutine in the reactor for handling incoming
   messages in the new channel.
+- We would need to extend the existing tests to cover new scenarios related to
+  the new data structures and some potential concurrent issues.
 
 ## References
 

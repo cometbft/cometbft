@@ -19,7 +19,7 @@ Current version does not support vote extensions. However, this is the next step
 The idea was to do this at the Application side. Every time the Application 
 receives a request, it logs it.
 
-<strong>Implementation</strong>
+**Implementation**
 
 The rationale behind this part of the implementation was to log the request concisely and use the existing structures as much as possible. 
 

@@ -19,7 +19,7 @@ Current version does not support vote extensions. However, this is the next step
 The idea was to do this at the Application side. Every time the Application 
 receives a request, it logs it.
 
-<strong>Implementation</strong>
+**Implementation**
 
 The rationale behind this part of the implementation was to log the request concisely and use the existing structures as much as possible. 
 
@@ -70,7 +70,7 @@ create a corresponding `abci.Request` and log it via
 ### 2) Parsing the logs
 We need a code that will take the logs from all nodes and collect the ABCI++ requests that were logged by the application. 
 
-<strong>Implementation</strong>
+**Implementation**
 
 This logic is implemented inside the `fetchABCIRequestsByNodeName()` function that resides in `test/e2e/tests/e2e_test.go` file. This function does three things:
 - Takes the output of all nodes in the testnet from the moment we launched the testnet until the function is called. It uses the `docker-compose logs` command. 
@@ -83,7 +83,7 @@ We can now use `[]*abci.Request` to store ABCI++ requests of any type, which is 
 ### 3) ABCI++ grammar checker
 The idea here was to find a library that automatically verifies whether a specific execution respects the prescribed grammar. 
 
-<strong>Implementation</strong>
+**Implementation**
 
 We found the following library - https://github.com/goccmack/gogll. It generates a GLL or LR(1) parser and FSA-based lexer for any context-free grammar. What we needed to do is to rewrite ABCI++ grammar ([CometBFT's expected behaviour](../../spec/abci/abci%2B%2B_comet_expected_behavior.md#valid-method-call-sequences))
 using the synthax that the library understand. 

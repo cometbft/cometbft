@@ -138,8 +138,8 @@ github.com/btcsuite/snappy-go v0.0.0-20151229074030-0bdef8d06723/go.mod h1:8woku
 github.com/btcsuite/snappy-go v1.0.0/go.mod h1:8woku9dyThutzjeg+3xrA5iCpBRH8XEEg3lh6TiUghc=
 github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792/go.mod h1:ghJtEyQwv5/p4Mg4C0fgbePVuGr935/5ddU9Z3TmDRY=
 github.com/btcsuite/winsvc v1.0.0/go.mod h1:jsenWakMcC0zFBFurPLEAyrnc/teJEM1O46fmI40EZs=
-github.com/bufbuild/buf v1.22.0 h1:dCWUIx1gm3nm5U+FKdkVjaL+Rk9Ev3hh4XYMa2Cbn/o=
-github.com/bufbuild/buf v1.22.0/go.mod h1:ERFRzJiIjAOzUSJ3vz1zoI7XfxlBnCwZEyL+NJm4pko=
+github.com/bufbuild/buf v1.23.1 h1:BeMkA3+e9XTFEZPDlAI7cydFKlq24wwYiOHp8CvsRzc=
+github.com/bufbuild/buf v1.23.1/go.mod h1:ERFRzJiIjAOzUSJ3vz1zoI7XfxlBnCwZEyL+NJm4pko=
 github.com/bufbuild/connect-go v1.8.0 h1:srluNkFkZBfSfg9Qb6DrO+5nMaxix//h2ctrHZhMGKc=
 github.com/bufbuild/connect-go v1.8.0/go.mod h1:GmMJYR6orFqD0Y6ZgX8pwQ8j9baizDrIQMm1/a6LnHk=
 github.com/bufbuild/connect-opentelemetry-go v0.3.0 h1:AuZi3asTDKmjGtd2aqpyP4p5QvBFG/YEaHopViLatnk=

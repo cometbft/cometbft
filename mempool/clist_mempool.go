@@ -319,11 +319,11 @@ func (mem *CListMempool) addTx(entry *Entry) {
 //   - Update (lock held) if tx was committed
 //   - resCbRecheck (lock not held) if tx was invalidated
 func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
+	mem.notifyTxRemoved(txKey)
 	if elem, ok := mem.getCElement(txKey); ok {
 		mem.txs.Remove(elem)
 		elem.DetachPrev()
 		mem.txsMap.Delete(txKey)
-		mem.notifyTxRemoved(txKey)
 		tx := elem.Value.(*Entry).tx
 		atomic.AddInt64(&mem.txsBytes, int64(-len(tx)))
 		return nil

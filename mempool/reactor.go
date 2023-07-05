@@ -133,14 +133,13 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 				memR.Logger.Debug("Tx already exists in cache", "tx", tx.String())
 			} else if err != nil {
 				memR.Logger.Info("Could not check tx", "tx", tx.String(), "err", err)
-			}
-
-			// Record the sender only when the transaction is valid and, as a
-			// consequence, added to the mempool. Senders are stored until the
-			// transaction is removed from the mempool.
-			// Note that it's possible a tx is still in the cache but no longer in the mempool.
-			// For example, after committing a block, txs are removed from mempool but not the cache.
-			if reqRes != nil {
+			} else {
+				// Record the sender only when the transaction is valid and, as
+				// a consequence, added to the mempool. Senders are stored until
+				// the transaction is removed from the mempool. Note that it's
+				// possible a tx is still in the cache but no longer in the
+				// mempool. For example, after committing a block, txs are
+				// removed from mempool but not the cache.
 				reqRes.SetCallback(func(res *abci.Response) {
 					if res.GetCheckTx().Code == abci.CodeTypeOK {
 						memR.addSender(tx.Key(), memR.ids.GetForPeer(e.Src))

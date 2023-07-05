@@ -72,7 +72,7 @@ type Context interface {
 Actors can be built to facilitate different messaging patterns of varying
 degrees of complexity to one or more other actors:
 
-- One-shot/fire-and-forget messages
+- One-shot/fire-and-forget messaging
 - Request/reply semantics
 - Publish/subscribe mechanisms, where one actor can be created with the sole
   purpose of being the pub/sub router actor, whose sole job is to manage topics,

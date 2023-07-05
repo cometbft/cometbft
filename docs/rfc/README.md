@@ -46,3 +46,4 @@ relating to Tendermint Core prior to forking, please see
 - [RFC-101: Banning peers based on ResponseCheckTx](./rfc-101-p2p-bad-peers-checktx.md)
 - [RFC-102: Improve forward compatibility of proto-generated Rust code](./rfc-102-rust-gen-builders.md)
 - [RFC-103: Incoming transactions when node is catching up](./rfc-103-incoming-txs-when-catching-up.md)
+- [RFC-104: Rename proto versions to pre-v1 betas](./rfc-104-betaize-proto-versions.md)

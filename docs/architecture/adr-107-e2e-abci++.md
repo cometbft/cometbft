@@ -86,7 +86,8 @@ The idea here was to find a library that automatically verifies whether a specif
 **Implementation**
 
 We found the following library - https://github.com/goccmack/gogll. It generates a GLL or LR(1) parser and FSA-based lexer for any context-free grammar. What we needed to do is to rewrite ABCI++ grammar ([CometBFT's expected behaviour](../../spec/abci/abci%2B%2B_comet_expected_behavior.md#valid-method-call-sequences))
-using the synthax that the library understands. 
+using the syntax that the library understands. We should emphasise here that both grammars, the original and the new one, represent the expected behaviour
+from the perspective of one node. This is why, later, when we verify if the specific execution respects the grammar, we need to check the logs of each node separately. 
 The new grammar is below and can be found inside `test/e2e/pkg/grammar/abci_grammar.md` file.
 
 ```abnf
@@ -166,8 +167,9 @@ func TestABCIGrammar(t *testing.T) {
 ```
 
 Specifically, the test first fetches all ABCI++ requests and creates a `GrammarChecker` object. Then for each
-node in the testnet it checks if a specific set of requests respects the ABCI++ 
-grammar by calling `checker.Verify(reqs)` method. If this method returns an error, the specific execution does not respect the grammar. 
+node in the testnet, it checks if a specific set of requests, logged by this node, respects the ABCI++ 
+grammar by calling `checker.Verify(reqs)` method. If this method returns an error, the specific execution does not respect the grammar. Again, we do
+this for each node individually because the grammar describes the correct behaviour from the perspective of one node, and this is what the `checker.Verify(reqs)` inspects. 
 
 The `Verify()` method is shown below. 
 ```go

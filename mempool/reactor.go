@@ -177,10 +177,10 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// the peer was disconnected, or the reactor stopped.
 		select {
 		case <-iterator.WaitNext():
-			entry = iterator.NextEntry()
-			// There is no next entry, or the entry we found got removed in the
-			// meantime. Try again.
+			entry = iter.NextEntry()
 			if entry == nil {
+				// There is no next entry, or the entry we found got removed in the
+				// meantime. Try again.
 				continue
 			}
 		case <-peer.Quit():

@@ -702,14 +702,19 @@ func (iter *CListIterator) NextEntry() *Entry {
 	iter.mtx.Lock()
 	defer iter.mtx.Unlock()
 
-	if iter.lastElement == nil {
-		iter.lastElement = iter.txs.Front()
-	} else {
+	// If there is a last accessed element, attempt to get its next entry.
+	if iter.lastElement != nil {
 		iter.lastElement = iter.lastElement.Next()
 	}
 
-	// There isn't a next element, or the element we found got removed in the
-	// meantime.
+	// If initially there was no last element, or if the last accessed element
+	// was the last one, attempt to get the first entry.
+	if iter.lastElement == nil {
+		iter.lastElement = iter.txs.Front()
+	}
+
+	// If still there isn't a next element, or the element we found got removed
+	// in the meantime.
 	if iter.lastElement == nil {
 		return nil
 	}

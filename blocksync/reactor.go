@@ -68,17 +68,25 @@ type Reactor struct {
 func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
 	blockSync bool, metrics *Metrics,
 ) *Reactor {
-	if state.LastBlockHeight != store.Height() {
-		panic(fmt.Sprintf("state (%v) and store (%v) height mismatch", state.LastBlockHeight,
-			store.Height()))
-	}
 
+	storeHeight := store.Height()
+	var err error
+	if storeHeight == 0 {
+		storeHeight, err = blockExec.Store().GetOfflineStateSyncHeight()
+		if err != nil && err.Error() != "value empty" {
+			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s", err))
+		}
+	}
+	if state.LastBlockHeight != storeHeight {
+		panic(fmt.Sprintf("state (%v) and store (%v) height mismatch, stores were left in an inconsistent state", state.LastBlockHeight,
+			storeHeight))
+	}
 	requestsCh := make(chan BlockRequest, maxTotalRequesters)
 
 	const capacity = 1000                      // must be bigger than peers count
 	errorsCh := make(chan peerError, capacity) // so we don't block in #Receive#pool.AddBlock
 
-	startHeight := store.Height() + 1
+	startHeight := storeHeight + 1
 	if startHeight == 1 {
 		startHeight = state.InitialHeight
 	}
@@ -338,6 +346,12 @@ FOR_LOOP:
 			outbound, inbound, _ := bcR.Switch.NumPeers()
 			bcR.Logger.Debug("Consensus ticker", "numPending", numPending, "total", lenRequesters,
 				"outbound", outbound, "inbound", inbound, "lastHeight", state.LastBlockHeight)
+
+			offlineStateSyncedH, err := bcR.blockExec.Store().GetOfflineStateSyncHeight()
+			if err == nil && offlineStateSyncedH > 0 && blocksSynced == 0 {
+				continue FOR_LOOP
+			}
+			bcR.blockExec.Store().SetOfflineStateSyncHeight(0) //At this point stores are indistinguishable from a normal online state-sync boot
 
 			// The "if" statement below is a bit confusing, so here is a breakdown
 			// of its logic and purpose:

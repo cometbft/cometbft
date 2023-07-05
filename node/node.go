@@ -137,25 +137,31 @@ func StateProvider(stateProvider statesync.StateProvider) Option {
 // stores with the application after statesync has been performed offline
 // It is expected that the blockstore and statestore are empty at
 // the time the function is called
-func BootstrapState(height uint64, appHash []byte, config *cfg.Config) error {
-	ctx := context.Background()
+func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBProvider, height uint64, appHash []byte) error {
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	if config == nil {
 		config = cfg.DefaultConfig()
 	}
-	blockStore, stateDB, err := initDBs(config, cfg.DefaultDBProvider)
+
+	if dbProvider == nil {
+		dbProvider = cfg.DefaultDBProvider
+	}
+	blockStore, stateDB, err := initDBs(config, dbProvider)
 
 	if err != nil {
 		return err
 	}
-
+	if !blockStore.IsEmpty() {
+		return fmt.Errorf("blockstore not empty, trying to initialize non empty state")
+	}
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
 	})
 
-	if !blockStore.IsEmpty() {
-		logger.Error("overwriting non empty block store")
-	}
 	genState, _, err := LoadStateFromDBOrGenesisDocProvider(stateDB, DefaultGenesisDocProviderFunc(config))
 	if err != nil {
 		return err
@@ -187,12 +193,6 @@ func BootstrapState(height uint64, appHash []byte, config *cfg.Config) error {
 		return err
 	}
 
-	// store.SaveBlockStoreState(&cmtstore.BlockStoreState{
-	// 	// it breaks the invariant that blocks in range [Base, Height] must exists, but it do works in practice.
-
-	// 	Base:   state.LastBlockHeight,
-	// 	Height: state.LastBlockHeight,
-	// }, blockStore)
 	err = blockStore.SaveSeenCommit(state.LastBlockHeight, commit)
 	if err != nil {
 		return err
@@ -204,6 +204,18 @@ func BootstrapState(height uint64, appHash []byte, config *cfg.Config) error {
 		if !bytes.Equal(appHash, state.AppHash) {
 			logger.Error("the app hash returned by the light client does not match the provided appHash, expected %X, got %X", state.AppHash, appHash)
 		}
+	}
+
+	logger.Info("Setting lastHeight to ", state.LastBlockHeight)
+	err = stateStore.SetOfflineStateSyncHeight(state.LastBlockHeight)
+	if err != nil {
+		return fmt.Errorf("failed to set synced height")
+	}
+	if err := blockStore.Close(); err != nil {
+		logger.Error("failed to close blockstore")
+	}
+	if err := stateStore.Close(); err != nil {
+		logger.Error("failed to close statestore")
 	}
 
 	return nil
@@ -223,11 +235,11 @@ func NewNode(ctx context.Context,
 	logger log.Logger,
 	options ...Option,
 ) (*Node, error) {
+
 	blockStore, stateDB, err := initDBs(config, dbProvider)
 	if err != nil {
 		return nil, err
 	}
-
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
 	})

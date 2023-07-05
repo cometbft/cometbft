@@ -44,7 +44,8 @@ handler.
 
 ```go
 type Actor interface {
-    // Receive handles every incoming message sent to an actor.
+    // Receive handles every incoming message sent to an actor. It is the sole
+    // method responsible for mutating the state of the actor.
     Receive(ctx Context)
 }
 

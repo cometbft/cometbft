@@ -160,7 +160,7 @@ func TestABCIGrammar(t *testing.T) {
 		reqs := m[node.Name]
 		_, err := checker.Verify(reqs)
 		if err != nil {
-			t.Error(err)
+			t.Error(fmt.Errorf("ABCI grammar verification failed: %w", err))
 		}
 	})
 }

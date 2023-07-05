@@ -29,7 +29,10 @@ Whenever an ABCI request is made, the application will create `abci.Request` (`a
 func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
 
 	r := &abci.Request{Value: &abci.Request_InitChain{InitChain: &abci.RequestInitChain{}}}
-	app.logAbciRequest(r)
+	err := app.logAbciRequest(r)
+	if err != nil {
+		return nil, err
+	}
     
 	...
 }
@@ -39,12 +42,13 @@ Notice here that we create an empty `abci.RequestInitChain` object while we can 
 `app.logAbciRequest(r)` function is a new function implemented in the same file (`test/e2e/app/app.go`). Its implementation is the following: 
 
 ```go
-func (app *Application) logAbciRequest(req *abci.Request) {
+func (app *Application) logAbciRequest(req *abci.Request) error {
 	s, err := GetABCIRequestString(req)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	app.logger.Debug(s)
+	return nil
 }
 ```
 

@@ -166,7 +166,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 	peerID := memR.ids.GetForPeer(peer)
 
 	var entry *Entry
-	iterator := memR.mempool.NewIterator()
+	iter := memR.mempool.NewIterator()
 
 	for {
 		if !memR.IsRunning() || !peer.IsRunning() {
@@ -176,7 +176,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// Wait until either: a mempool entry is available in the channel, or
 		// the peer was disconnected, or the reactor stopped.
 		select {
-		case <-iterator.WaitNext():
+		case <-iter.WaitNext():
 			entry = iter.NextEntry()
 			if entry == nil {
 				// There is no next entry, or the entry we found got removed in the

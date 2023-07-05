@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"fmt"
 	"testing"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -14,7 +15,7 @@ func TestABCIGrammar(t *testing.T) {
 		reqs := m[node.Name]
 		_, err := checker.Verify(reqs)
 		if err != nil {
-			t.Error(err)
+			t.Error(fmt.Errorf("ABCI grammar verification failed: %w", err))
 		}
 	})
 }

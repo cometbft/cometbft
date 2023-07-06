@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/cometbft/cometbft/p2p/mock"
+	p2pmock "github.com/cometbft/cometbft/p2p/mock"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -133,6 +133,20 @@ func startNode(cfg *Config) error {
 		nodeLogger.Info("Using default (synchronized) local client creator")
 	}
 
+	registry := map[string]p2p.Reactor{}
+	registry["p2p.mock.reactor"] = p2pmock.NewReactor()
+
+	customReactors := map[string]p2p.Reactor{}
+	for k, v := range cfg.ExperimentalCustomReactors {
+		mock, ok := registry[v]
+		if ok {
+			customReactors[k] = mock
+			logger.Info("Mocking reactors: ", k, mock)
+		} else {
+			logger.Info("Not found: ", registry[k])
+		}
+	}
+
 	n, err := node.NewNode(context.Background(), cmtcfg,
 		privval.LoadOrGenFilePV(cmtcfg.PrivValidatorKeyFile(), cmtcfg.PrivValidatorStateFile()),
 		nodeKey,
@@ -141,7 +155,7 @@ func startNode(cfg *Config) error {
 		config.DefaultDBProvider,
 		node.DefaultMetricsProvider(cmtcfg.Instrumentation),
 		nodeLogger,
-		node.CustomReactors(map[string]p2p.Reactor{"CONSENSUS": mock.NewReactor()}),
+		node.CustomReactors(customReactors),
 	)
 	if err != nil {
 		return err

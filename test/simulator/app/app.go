@@ -101,6 +101,9 @@ type Config struct {
 
 	// Vote extension padding size, to simulate different vote extension sizes.
 	VoteExtensionSize uint `toml:"vote_extension_size"`
+
+	// Inject custom reactors (see node/main.go#startNode for a list of possibilities)
+	ExperimentalCustomReactors map[string]string `toml:"experimental_custom_reactors"`
 }
 
 func DefaultConfig(dir string) *Config {

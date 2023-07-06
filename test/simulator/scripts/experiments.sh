@@ -3,8 +3,15 @@
 DIR=$(dirname "${BASH_SOURCE[0]}")
 source ${DIR}/utils.sh
 
-echo "nodes;propagation_rate;sent;seen;completion;total_bandwidth;useful_bandwidth;redundancy;overhead;bandwidth"
-for r in $(seq 100 100 100);
+if [ $# -ne 1 ]; then
+    echo "usage: experiments output.file"
+    exit -1
+fi
+
+FILE=$1
+
+echo "nodes;propagation_rate;sent;seen;completion;total_bandwidth;useful_bandwidth;redundancy;overhead;bandwidth" > ${FILE}
+for r in $(seq 10 10 20);
 do
     for i in $(geometric 3 1 1);
     do
@@ -18,6 +25,8 @@ do
 	overhead=$(grep "overhead" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
 	redundancy=$(grep "redundancy" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
 	bandwidth=$(grep "bandwidth graph" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
-	echo ${i}";"${r}";"${sent}";"${seen}";"${completion}";"${totalBandwidth}";"${usefulBandwidth}";"${overhead}";"${redundancy}";"${bandwidth}
+	echo ${i}";"${r}";"${sent}";"${seen}";"${completion}";"${totalBandwidth}";"${usefulBandwidth}";"${overhead}";"${redundancy}";"${bandwidth} >> ${FILE}
     done
 done
+
+cat ${FILE}

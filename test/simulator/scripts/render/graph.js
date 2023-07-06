@@ -1,4 +1,4 @@
-var chartDom = document.getElementById('main');
+var chartDom = document.getElementById('graph');
 var myChart = echarts.init(chartDom);
 
 $.getJSON(

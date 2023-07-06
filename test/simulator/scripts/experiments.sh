@@ -4,16 +4,16 @@ DIR=$(dirname "${BASH_SOURCE[0]}")
 source ${DIR}/utils.sh
 
 if [ $# -ne 1 ]; then
-    echo "usage: experiments output.file"
+    echo "usage: experiments output.csv"
     exit -1
 fi
 
 FILE=$1
 
 echo "nodes;propagation_rate;sent;seen;completion;total_bandwidth;useful_bandwidth;redundancy;overhead;bandwidth" > ${FILE}
-for r in $(seq 10 10 20);
+for r in $(seq 10 10 50);
 do
-    for i in $(geometric 2 2 2);
+    for i in $(geometric 2 2 5);
     do
 	${DIR}/tmpl-gen.sh ${i} ${r} > ${NETDIR}/simple.toml
 	${BINDIR}/runner -f ${NETDIR}/simple.toml custom > ${TMPDIR}/log

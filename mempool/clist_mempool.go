@@ -149,9 +149,10 @@ func (mem *CListMempool) EnableTxsAvailable() {
 }
 
 func (mem *CListMempool) EnableTxsRemoved() {
-	// We assign a buffer of size 1024 to allow concurrent writes to the channel
-	// without blocking it.
-	mem.txsRemoved = make(chan types.TxKey, 1024)
+	// We assign the maximum number of transactions that the mempool can handle
+	// as the channel buffer to allow concurrent writes to the channel without
+	// blocking it.
+	mem.txsRemoved = make(chan types.TxKey, mem.config.Size)
 }
 
 // SetLogger sets the Logger.

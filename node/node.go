@@ -206,7 +206,10 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 		}
 	}
 
-	logger.Info("Setting lastHeight to ", state.LastBlockHeight)
+	// Once the stores are bootstrapped, we need to set the height at which the node has finished
+	// statesyncing. This will allow the blocksync reactor to fetch blocks at a proper height.
+	// In case this operation fails, it is equivalent to a failure in  online state sync where the operator
+	// needs to manually delete the state and blockstores and rerun the bootstrapping process.
 	err = stateStore.SetOfflineStateSyncHeight(state.LastBlockHeight)
 	if err != nil {
 		return fmt.Errorf("failed to set synced height")

@@ -20,7 +20,7 @@ ConsensusRounds : ConsensusRound | ConsensusRound ConsensusRounds ;
 ConsensusRound : Proposer | NonProposer ; 
 
 
-Proposer : PrepareProposal ProcessProposal | PrepareProposal ; 
+Proposer : PrepareProposal | PrepareProposal ProcessProposal ; 
 NonProposer: ProcessProposal ;
 
 

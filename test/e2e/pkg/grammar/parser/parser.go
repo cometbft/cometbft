@@ -340,28 +340,28 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			} else {
 				p.parseError(slot.ProcessProposal0R0, p.cI, followSets[symbols.NT_ProcessProposal])
 			}
-		case slot.Proposer0R0: // Proposer : ∙PrepareProposal ProcessProposal
+		case slot.Proposer0R0: // Proposer : ∙PrepareProposal
 
 			p.call(slot.Proposer0R1, cU, p.cI)
-		case slot.Proposer0R1: // Proposer : PrepareProposal ∙ProcessProposal
-
-			if !p.testSelect(slot.Proposer0R1) {
-				p.parseError(slot.Proposer0R1, p.cI, first[slot.Proposer0R1])
-				break
-			}
-
-			p.call(slot.Proposer0R2, cU, p.cI)
-		case slot.Proposer0R2: // Proposer : PrepareProposal ProcessProposal ∙
+		case slot.Proposer0R1: // Proposer : PrepareProposal ∙
 
 			if p.follow(symbols.NT_Proposer) {
 				p.rtn(symbols.NT_Proposer, cU, p.cI)
 			} else {
 				p.parseError(slot.Proposer0R0, p.cI, followSets[symbols.NT_Proposer])
 			}
-		case slot.Proposer1R0: // Proposer : ∙PrepareProposal
+		case slot.Proposer1R0: // Proposer : ∙PrepareProposal ProcessProposal
 
 			p.call(slot.Proposer1R1, cU, p.cI)
-		case slot.Proposer1R1: // Proposer : PrepareProposal ∙
+		case slot.Proposer1R1: // Proposer : PrepareProposal ∙ProcessProposal
+
+			if !p.testSelect(slot.Proposer1R1) {
+				p.parseError(slot.Proposer1R1, p.cI, first[slot.Proposer1R1])
+				break
+			}
+
+			p.call(slot.Proposer1R2, cU, p.cI)
+		case slot.Proposer1R2: // Proposer : PrepareProposal ProcessProposal ∙
 
 			if p.follow(symbols.NT_Proposer) {
 				p.rtn(symbols.NT_Proposer, cU, p.cI)
@@ -999,6 +999,16 @@ var first = []map[token.Type]string{
 		token.T_5: "prepare_proposal",
 		token.T_6: "process_proposal",
 	},
+	// Proposer : ∙PrepareProposal
+	{
+		token.T_5: "prepare_proposal",
+	},
+	// Proposer : PrepareProposal ∙
+	{
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
+	},
 	// Proposer : ∙PrepareProposal ProcessProposal
 	{
 		token.T_5: "prepare_proposal",
@@ -1008,16 +1018,6 @@ var first = []map[token.Type]string{
 		token.T_6: "process_proposal",
 	},
 	// Proposer : PrepareProposal ProcessProposal ∙
-	{
-		token.T_2: "finalize_block",
-		token.T_5: "prepare_proposal",
-		token.T_6: "process_proposal",
-	},
-	// Proposer : ∙PrepareProposal
-	{
-		token.T_5: "prepare_proposal",
-	},
-	// Proposer : PrepareProposal ∙
 	{
 		token.T_2: "finalize_block",
 		token.T_5: "prepare_proposal",

@@ -65,9 +65,9 @@ const(
 	ProcessProposal0R1
 	Proposer0R0
 	Proposer0R1
-	Proposer0R2
 	Proposer1R0
 	Proposer1R1
+	Proposer1R2
 	Recovery0R0
 	Recovery0R1
 	Start0R0
@@ -572,40 +572,40 @@ var slots = map[Label]*Slot{
 	Proposer0R0: {
 		symbols.NT_Proposer, 0, 0, 
 		symbols.Symbols{  
-			symbols.NT_PrepareProposal, 
-			symbols.NT_ProcessProposal,
+			symbols.NT_PrepareProposal,
 		}, 
 		Proposer0R0, 
 	},
 	Proposer0R1: {
 		symbols.NT_Proposer, 0, 1, 
 		symbols.Symbols{  
-			symbols.NT_PrepareProposal, 
-			symbols.NT_ProcessProposal,
+			symbols.NT_PrepareProposal,
 		}, 
 		Proposer0R1, 
-	},
-	Proposer0R2: {
-		symbols.NT_Proposer, 0, 2, 
-		symbols.Symbols{  
-			symbols.NT_PrepareProposal, 
-			symbols.NT_ProcessProposal,
-		}, 
-		Proposer0R2, 
 	},
 	Proposer1R0: {
 		symbols.NT_Proposer, 1, 0, 
 		symbols.Symbols{  
-			symbols.NT_PrepareProposal,
+			symbols.NT_PrepareProposal, 
+			symbols.NT_ProcessProposal,
 		}, 
 		Proposer1R0, 
 	},
 	Proposer1R1: {
 		symbols.NT_Proposer, 1, 1, 
 		symbols.Symbols{  
-			symbols.NT_PrepareProposal,
+			symbols.NT_PrepareProposal, 
+			symbols.NT_ProcessProposal,
 		}, 
 		Proposer1R1, 
+	},
+	Proposer1R2: {
+		symbols.NT_Proposer, 1, 2, 
+		symbols.Symbols{  
+			symbols.NT_PrepareProposal, 
+			symbols.NT_ProcessProposal,
+		}, 
+		Proposer1R2, 
 	},
 	Recovery0R0: {
 		symbols.NT_Recovery, 0, 0, 
@@ -843,9 +843,9 @@ var slotIndex = map[Index]Label {
 	Index{ symbols.NT_ProcessProposal,0,1 }: ProcessProposal0R1,
 	Index{ symbols.NT_Proposer,0,0 }: Proposer0R0,
 	Index{ symbols.NT_Proposer,0,1 }: Proposer0R1,
-	Index{ symbols.NT_Proposer,0,2 }: Proposer0R2,
 	Index{ symbols.NT_Proposer,1,0 }: Proposer1R0,
 	Index{ symbols.NT_Proposer,1,1 }: Proposer1R1,
+	Index{ symbols.NT_Proposer,1,2 }: Proposer1R2,
 	Index{ symbols.NT_Recovery,0,0 }: Recovery0R0,
 	Index{ symbols.NT_Recovery,0,1 }: Recovery0R1,
 	Index{ symbols.NT_Start,0,0 }: Start0R0,

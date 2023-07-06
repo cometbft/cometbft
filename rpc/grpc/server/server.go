@@ -6,7 +6,9 @@ import (
 	"strings"
 
 	"github.com/cometbft/cometbft/libs/log"
+	pbblocksvc "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
 	pbversionsvc "github.com/cometbft/cometbft/proto/tendermint/services/version/v1"
+	"github.com/cometbft/cometbft/rpc/grpc/server/services/blockservice"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/versionservice"
 	"google.golang.org/grpc"
 )
@@ -18,6 +20,7 @@ type Option func(*serverBuilder)
 type serverBuilder struct {
 	listener       net.Listener
 	versionService pbversionsvc.VersionServiceServer
+	blockService   pbblocksvc.BlockServiceServer
 	logger         log.Logger
 	grpcOpts       []grpc.ServerOption
 }
@@ -50,6 +53,13 @@ func Listen(addr string) (net.Listener, error) {
 func WithVersionService() Option {
 	return func(b *serverBuilder) {
 		b.versionService = versionservice.New()
+	}
+}
+
+// WithBlockService enables the block service on the CometBFT server.
+func WithBlockService() Option {
+	return func(b *serverBuilder) {
+		b.blockService = blockservice.New()
 	}
 }
 

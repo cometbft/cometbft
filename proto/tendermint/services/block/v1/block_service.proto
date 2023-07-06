@@ -1,0 +1,13 @@
+syntax = "proto3";
+package tendermint.services.block.v1;
+
+option go_package = "github.com/cometbft/cometbft/proto/tendermint/services/block/v1";
+
+import "tendermint/services/block/v1/block.proto";
+
+// BlockService provides information about blocks
+service BlockService {
+  // GetBlock retrieves the block information at a particular height, if no
+  // height is specified it returns the latest height
+  rpc GetBlock(GetBlockRequest) returns (GetBlockResponse);
+}

@@ -8,11 +8,11 @@ var headersMap = {
     "nodes" : "#nodes",
     "propagation_rate" : "propagation rate (%)",
     "sent" : "#sent",
-    "seen" : "#seen",
+    "seen" : "#seen (avg)",
     "completion" : "completion",
     "total_bandwidth" : "total bw. (KB)",
     "useful_bandwidth" : "useful bw. (KB)",
-    "redundancy" : "redundancy",
+    "redundancy" : "redundancy (avg)",
     "overhead" : "overhead",
     "bandwidth" : "bandwidth"
 }
@@ -36,7 +36,8 @@ function plotExperiments(dimension) {
 	    name: headersMap['propagation_rate']
 	},
 	zAxis3D: {
-	    name: headersMap[dimension]
+	    name: headersMap[dimension],
+	    
 	},
 	dataset: {
 	    dimensions: headers,
@@ -105,7 +106,7 @@ function plotGraph(idx) {
         );
         var j = 0;
         $.each(peers, function (m, bw) {
-            if (i != j) {
+            if (i != j && bw != 0) {
                 edges.push(
                     {
                         source: n,
@@ -170,7 +171,7 @@ function plotGraph(idx) {
 }
 
 jQuery.get(
-    'experiments.csv',
+    'experiments.csv?'+Math.random(),
     function (csv) {
 	var lines = csv.split("\n");
 	var results = [];
@@ -191,7 +192,8 @@ jQuery.get(
 
 	var dropdown = document.getElementsByClassName('dropdown-content')[0];
 	for(var i=1; i<headers.length; i++){
-	    if (headers[i] != "nodes" && headers[i] != "propagation_rate" && headers[i] != "bandwidth") {
+	    if ( i != 0 && i != 1 && i != headers.length-1 ) {
+		console.log(headers[i]);
 		var child = document.createElement('a');
 		child.setAttribute('onClick',"plotExperiments(\'"+headers[i]+"\')");
 		child.innerHTML = headersMap[headers[i]];

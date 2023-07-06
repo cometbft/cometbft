@@ -13,13 +13,13 @@ import (
 	e2e "github.com/cometbft/cometbft/test/simulator/pkg"
 )
 
-// Mempool is a simple function for fetching, calculating and printing the following mempool metrics:
-// - complete : % nodes receiving all txs
-// - total bandwidth: sum of all the bandwidth used by at the nodes
-// - useful bandwidth: total bandwidth / (#txs * tx_size * #nodes)
-// - overhead: (total bandwdith - useful bandwidth) / (useful bandwidth)
-func Mempool(ctx context.Context, loadCancel context.CancelFunc, testnet *e2e.Testnet, benchmarkDuration time.Duration) (MempoolStats, error) {
-	logger.Info("Beginning benchmark period...")
+// Custom is a benchmarking function that return the following metrics:
+// - a graph that shows the bandwidth consumption among nodes,
+// - how many times each node received a redundant transaction
+// - how many transactions seen by a node
+// and some related aggregated values.
+func Custom(ctx context.Context, loadCancel context.CancelFunc, testnet *e2e.Testnet, benchmarkDuration time.Duration) (MempoolStats, error) {
+	logger.Info("Starting custom benchmark.")
 	startAt := time.Now()
 
 	// wait for the length of the benchmark
@@ -34,7 +34,7 @@ func Mempool(ctx context.Context, loadCancel context.CancelFunc, testnet *e2e.Te
 		}
 	}
 
-	logger.Info("Ending benchmark period")
+	logger.Info("Ending benchmark.")
 
 	loadCancel()
 

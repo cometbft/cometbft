@@ -1,4 +1,0 @@
-#!/busybox/sh
-
-sleep 3600
-

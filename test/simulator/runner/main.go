@@ -355,9 +355,9 @@ Does not run any perturbations.
 	})
 
 	cli.root.AddCommand(&cobra.Command{
-		Use:   "mempool",
-		Short: "Benchmarks the mempool",
-		Long: `Benchmarks the following mempool metrics:
+		Use:   "custom",
+		Short: "A custom benchmark",
+		Long: `A custom benchmark that returns the following metrics:
     #tws sent : number of transactions sent in total
     #tws seen : number of transactions seen in total by the nodes (on average)
     completion : % nodes receiving all txs
@@ -366,7 +366,7 @@ Does not run any perturbations.
     overhead: (total bandwidth - useful bandwidth) / (useful bandwidth)
     redundancy: number of duplicates received per tx seen (on average)
     bandwidth graph: detailed bandwidth usage as a (json) graph
-over a period of 1 minute.
+End after 1 minute, or if some (optional) target is attained.
 Does not run any perturbations.
 		`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -396,7 +396,7 @@ Does not run any perturbations.
 				chLoadResult <- txs
 			}()
 
-			mempoolStats, err := Mempool(ctx, loadCancel, cli.testnet, 30*time.Second)
+			mempoolStats, err := Custom(ctx, loadCancel, cli.testnet, 60*time.Second)
 			if err != nil {
 				logger.Error(fmt.Sprintf("Error while injecting load: %v", err.Error()))
 				_ = cli.infp.StopTestnet(context.Background())

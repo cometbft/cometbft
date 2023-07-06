@@ -1,2 +1,2 @@
-- `[node/state]` Add API to bootstrap blockstore and statestore to a height
+- `[node/state]` Add API to bootstrap block store and state store to a height
   ([\#1057](https://github.com/tendermint/tendermint/pull/#1057)) (@yihuang)

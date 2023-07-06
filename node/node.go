@@ -133,11 +133,11 @@ func StateProvider(stateProvider statesync.StateProvider) Option {
 	}
 }
 
-// This function is expected to synchronize CometBFTs
-// stores with the application after statesync has been performed offline
-// It is expected that the blockstore and statestore are empty at
-// the time the function is called.
-// In case the blockstore is not empty, the function returns an error
+// BootstrapState synchronizes the stores with the application after state sync
+// has been performed offline. It is expected that the block store and state
+// store are empty at the time the function is called.
+//
+// If the block store is not empty, the function returns an error.
 func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBProvider, height uint64, appHash []byte) error {
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 	if ctx == nil {

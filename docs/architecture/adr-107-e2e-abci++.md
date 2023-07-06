@@ -113,7 +113,7 @@ ConsensusHeight : ConsensusRounds Decide Commit | Decide Commit ;
 ConsensusRounds : ConsensusRound | ConsensusRound ConsensusRounds ;
 ConsensusRound : Proposer | NonProposer ; 
 
-Proposer : PrepareProposal ProcessProposal ; 
+Proposer : PrepareProposal ProcessProposal | PrepareProposal ; 
 NonProposer: ProcessProposal ;
 
 
@@ -196,9 +196,9 @@ It takes a list of requests and does the following things.
 - Filter the last height. Basically, it removes all ABCI++ requests after the 
 last `Commit`. Function `fetchABCIRequestsByNodeName()` can be called in the middle of the height. As a result, the last height may be incomplete, and 
 the parser may return an error. The simple example here is that the last 
-request fetched via `fetchABCIRequestsByNodeName()` is `PrepareProposal`; however, `ProcessProposal` happens after 
+request fetched via `fetchABCIRequestsByNodeName()` is `Decide`; however, `Commit` happens after 
 `fetchABCIRequestsByNodeName()` was invoked. Consequently, the parser
-will return an error that `ProcessProposal` is missing, even though the `ProcessProposal` 
+will return an error that `Commit` is missing, even though the `Commit` 
 will happen after.  
 - Generates an execution string by replacing `abci.Request` with the 
 corresponding terminal from the grammar. This logic is implemented in

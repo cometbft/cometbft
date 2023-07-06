@@ -11,9 +11,9 @@ fi
 FILE=$1
 
 echo "nodes;propagation_rate;sent;seen;completion;total_bandwidth;useful_bandwidth;redundancy;overhead;bandwidth" > ${FILE}
-for r in $(seq 10 10 20);
+for r in $(seq 10 10 50);
 do
-    for i in $(geometric 3 1 1);
+    for i in $(geometric 2 2 6);
     do
 	${DIR}/tmpl-gen.sh ${i} ${r} > ${NETDIR}/simple.toml
 	${BINDIR}/runner -f ${NETDIR}/simple.toml mempool > ${TMPDIR}/log

@@ -65,7 +65,7 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 		// p.DumpDescriptors()
 
 		switch L {
-		case slot.ApplyChunk0R0: // ApplyChunk : ∙<ApplyChunk>
+		case slot.ApplyChunk0R0: // ApplyChunk : ∙apply_snapshot_chunk
 
 			p.bsrSet.Add(slot.ApplyChunk0R1, cU, p.cI, p.cI+1)
 			p.cI++
@@ -146,7 +146,7 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			} else {
 				p.parseError(slot.CleanStart1R0, p.cI, followSets[symbols.NT_CleanStart])
 			}
-		case slot.Commit0R0: // Commit : ∙<Commit>
+		case slot.Commit0R0: // Commit : ∙commit
 
 			p.bsrSet.Add(slot.Commit0R1, cU, p.cI, p.cI+1)
 			p.cI++
@@ -285,7 +285,7 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			} else {
 				p.parseError(slot.ConsensusRounds1R0, p.cI, followSets[symbols.NT_ConsensusRounds])
 			}
-		case slot.Decide0R0: // Decide : ∙<FinalizeBlock>
+		case slot.Decide0R0: // Decide : ∙finalize_block
 
 			p.bsrSet.Add(slot.Decide0R1, cU, p.cI, p.cI+1)
 			p.cI++
@@ -294,7 +294,7 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			} else {
 				p.parseError(slot.Decide0R0, p.cI, followSets[symbols.NT_Decide])
 			}
-		case slot.InitChain0R0: // InitChain : ∙<InitChain>
+		case slot.InitChain0R0: // InitChain : ∙init_chain
 
 			p.bsrSet.Add(slot.InitChain0R1, cU, p.cI, p.cI+1)
 			p.cI++
@@ -313,7 +313,7 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			} else {
 				p.parseError(slot.NonProposer0R0, p.cI, followSets[symbols.NT_NonProposer])
 			}
-		case slot.OfferSnapshot0R0: // OfferSnapshot : ∙<OfferSnapshot>
+		case slot.OfferSnapshot0R0: // OfferSnapshot : ∙offer_snapshot
 
 			p.bsrSet.Add(slot.OfferSnapshot0R1, cU, p.cI, p.cI+1)
 			p.cI++
@@ -322,7 +322,7 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			} else {
 				p.parseError(slot.OfferSnapshot0R0, p.cI, followSets[symbols.NT_OfferSnapshot])
 			}
-		case slot.PrepareProposal0R0: // PrepareProposal : ∙<PrepareProposal>
+		case slot.PrepareProposal0R0: // PrepareProposal : ∙prepare_proposal
 
 			p.bsrSet.Add(slot.PrepareProposal0R1, cU, p.cI, p.cI+1)
 			p.cI++
@@ -331,7 +331,7 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			} else {
 				p.parseError(slot.PrepareProposal0R0, p.cI, followSets[symbols.NT_PrepareProposal])
 			}
-		case slot.ProcessProposal0R0: // ProcessProposal : ∙<ProcessProposal>
+		case slot.ProcessProposal0R0: // ProcessProposal : ∙process_proposal
 
 			p.bsrSet.Add(slot.ProcessProposal0R1, cU, p.cI, p.cI+1)
 			p.cI++
@@ -746,57 +746,57 @@ func (p *parser) testSelect(l slot.Label) bool {
 }
 
 var first = []map[token.Type]string{
-	// ApplyChunk : ∙<ApplyChunk>
+	// ApplyChunk : ∙apply_snapshot_chunk
 	{
-		token.T_0: "<ApplyChunk>",
+		token.T_0: "apply_snapshot_chunk",
 	},
-	// ApplyChunk : <ApplyChunk> ∙
+	// ApplyChunk : apply_snapshot_chunk ∙
 	{
-		token.T_0: "<ApplyChunk>",
-		token.T_2: "<FinalizeBlock>",
-		token.T_4: "<OfferSnapshot>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_0: "apply_snapshot_chunk",
+		token.T_2: "finalize_block",
+		token.T_4: "offer_snapshot",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ApplyChunks : ∙ApplyChunk
 	{
-		token.T_0: "<ApplyChunk>",
+		token.T_0: "apply_snapshot_chunk",
 	},
 	// ApplyChunks : ApplyChunk ∙
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_4: "<OfferSnapshot>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_4: "offer_snapshot",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ApplyChunks : ∙ApplyChunk ApplyChunks
 	{
-		token.T_0: "<ApplyChunk>",
+		token.T_0: "apply_snapshot_chunk",
 	},
 	// ApplyChunks : ApplyChunk ∙ApplyChunks
 	{
-		token.T_0: "<ApplyChunk>",
+		token.T_0: "apply_snapshot_chunk",
 	},
 	// ApplyChunks : ApplyChunk ApplyChunks ∙
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_4: "<OfferSnapshot>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_4: "offer_snapshot",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// CleanStart : ∙InitChain StateSync ConsensusExec
 	{
-		token.T_3: "<InitChain>",
+		token.T_3: "init_chain",
 	},
 	// CleanStart : InitChain ∙StateSync ConsensusExec
 	{
-		token.T_4: "<OfferSnapshot>",
+		token.T_4: "offer_snapshot",
 	},
 	// CleanStart : InitChain StateSync ∙ConsensusExec
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// CleanStart : InitChain StateSync ConsensusExec ∙
 	{
@@ -804,34 +804,34 @@ var first = []map[token.Type]string{
 	},
 	// CleanStart : ∙InitChain ConsensusExec
 	{
-		token.T_3: "<InitChain>",
+		token.T_3: "init_chain",
 	},
 	// CleanStart : InitChain ∙ConsensusExec
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// CleanStart : InitChain ConsensusExec ∙
 	{
 		token.EOF: "$",
 	},
-	// Commit : ∙<Commit>
+	// Commit : ∙commit
 	{
-		token.T_1: "<Commit>",
+		token.T_1: "commit",
 	},
-	// Commit : <Commit> ∙
+	// Commit : commit ∙
 	{
 		token.EOF: "$",
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusExec : ∙ConsensusHeights
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusExec : ConsensusHeights ∙
 	{
@@ -839,44 +839,44 @@ var first = []map[token.Type]string{
 	},
 	// ConsensusHeight : ∙ConsensusRounds Decide Commit
 	{
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusHeight : ConsensusRounds ∙Decide Commit
 	{
-		token.T_2: "<FinalizeBlock>",
+		token.T_2: "finalize_block",
 	},
 	// ConsensusHeight : ConsensusRounds Decide ∙Commit
 	{
-		token.T_1: "<Commit>",
+		token.T_1: "commit",
 	},
 	// ConsensusHeight : ConsensusRounds Decide Commit ∙
 	{
 		token.EOF: "$",
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusHeight : ∙Decide Commit
 	{
-		token.T_2: "<FinalizeBlock>",
+		token.T_2: "finalize_block",
 	},
 	// ConsensusHeight : Decide ∙Commit
 	{
-		token.T_1: "<Commit>",
+		token.T_1: "commit",
 	},
 	// ConsensusHeight : Decide Commit ∙
 	{
 		token.EOF: "$",
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusHeights : ∙ConsensusHeight
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusHeights : ConsensusHeight ∙
 	{
@@ -884,15 +884,15 @@ var first = []map[token.Type]string{
 	},
 	// ConsensusHeights : ∙ConsensusHeight ConsensusHeights
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusHeights : ConsensusHeight ∙ConsensusHeights
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusHeights : ConsensusHeight ConsensusHeights ∙
 	{
@@ -900,134 +900,134 @@ var first = []map[token.Type]string{
 	},
 	// ConsensusRound : ∙Proposer
 	{
-		token.T_5: "<PrepareProposal>",
+		token.T_5: "prepare_proposal",
 	},
 	// ConsensusRound : Proposer ∙
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusRound : ∙NonProposer
 	{
-		token.T_6: "<ProcessProposal>",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusRound : NonProposer ∙
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusRounds : ∙ConsensusRound
 	{
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusRounds : ConsensusRound ∙
 	{
-		token.T_2: "<FinalizeBlock>",
+		token.T_2: "finalize_block",
 	},
 	// ConsensusRounds : ∙ConsensusRound ConsensusRounds
 	{
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusRounds : ConsensusRound ∙ConsensusRounds
 	{
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusRounds : ConsensusRound ConsensusRounds ∙
 	{
-		token.T_2: "<FinalizeBlock>",
+		token.T_2: "finalize_block",
 	},
-	// Decide : ∙<FinalizeBlock>
+	// Decide : ∙finalize_block
 	{
-		token.T_2: "<FinalizeBlock>",
+		token.T_2: "finalize_block",
 	},
-	// Decide : <FinalizeBlock> ∙
+	// Decide : finalize_block ∙
 	{
-		token.T_1: "<Commit>",
+		token.T_1: "commit",
 	},
-	// InitChain : ∙<InitChain>
+	// InitChain : ∙init_chain
 	{
-		token.T_3: "<InitChain>",
+		token.T_3: "init_chain",
 	},
-	// InitChain : <InitChain> ∙
+	// InitChain : init_chain ∙
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_4: "<OfferSnapshot>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_4: "offer_snapshot",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// NonProposer : ∙ProcessProposal
 	{
-		token.T_6: "<ProcessProposal>",
+		token.T_6: "process_proposal",
 	},
 	// NonProposer : ProcessProposal ∙
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
-	// OfferSnapshot : ∙<OfferSnapshot>
+	// OfferSnapshot : ∙offer_snapshot
 	{
-		token.T_4: "<OfferSnapshot>",
+		token.T_4: "offer_snapshot",
 	},
-	// OfferSnapshot : <OfferSnapshot> ∙
+	// OfferSnapshot : offer_snapshot ∙
 	{
-		token.T_0: "<ApplyChunk>",
-		token.T_4: "<OfferSnapshot>",
+		token.T_0: "apply_snapshot_chunk",
+		token.T_4: "offer_snapshot",
 	},
-	// PrepareProposal : ∙<PrepareProposal>
+	// PrepareProposal : ∙prepare_proposal
 	{
-		token.T_5: "<PrepareProposal>",
+		token.T_5: "prepare_proposal",
 	},
-	// PrepareProposal : <PrepareProposal> ∙
+	// PrepareProposal : prepare_proposal ∙
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
-	// ProcessProposal : ∙<ProcessProposal>
+	// ProcessProposal : ∙process_proposal
 	{
-		token.T_6: "<ProcessProposal>",
+		token.T_6: "process_proposal",
 	},
-	// ProcessProposal : <ProcessProposal> ∙
+	// ProcessProposal : process_proposal ∙
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// Proposer : ∙PrepareProposal ProcessProposal
 	{
-		token.T_5: "<PrepareProposal>",
+		token.T_5: "prepare_proposal",
 	},
 	// Proposer : PrepareProposal ∙ProcessProposal
 	{
-		token.T_6: "<ProcessProposal>",
+		token.T_6: "process_proposal",
 	},
 	// Proposer : PrepareProposal ProcessProposal ∙
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// Proposer : ∙PrepareProposal
 	{
-		token.T_5: "<PrepareProposal>",
+		token.T_5: "prepare_proposal",
 	},
 	// Proposer : PrepareProposal ∙
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// Recovery : ∙ConsensusExec
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// Recovery : ConsensusExec ∙
 	{
@@ -1035,7 +1035,7 @@ var first = []map[token.Type]string{
 	},
 	// Start : ∙CleanStart
 	{
-		token.T_3: "<InitChain>",
+		token.T_3: "init_chain",
 	},
 	// Start : CleanStart ∙
 	{
@@ -1043,9 +1043,9 @@ var first = []map[token.Type]string{
 	},
 	// Start : ∙Recovery
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// Start : Recovery ∙
 	{
@@ -1053,99 +1053,99 @@ var first = []map[token.Type]string{
 	},
 	// StateSync : ∙StateSyncAttempts SuccessSync
 	{
-		token.T_4: "<OfferSnapshot>",
+		token.T_4: "offer_snapshot",
 	},
 	// StateSync : StateSyncAttempts ∙SuccessSync
 	{
-		token.T_4: "<OfferSnapshot>",
+		token.T_4: "offer_snapshot",
 	},
 	// StateSync : StateSyncAttempts SuccessSync ∙
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// StateSync : ∙SuccessSync
 	{
-		token.T_4: "<OfferSnapshot>",
+		token.T_4: "offer_snapshot",
 	},
 	// StateSync : SuccessSync ∙
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// StateSyncAttempt : ∙OfferSnapshot ApplyChunks
 	{
-		token.T_4: "<OfferSnapshot>",
+		token.T_4: "offer_snapshot",
 	},
 	// StateSyncAttempt : OfferSnapshot ∙ApplyChunks
 	{
-		token.T_0: "<ApplyChunk>",
+		token.T_0: "apply_snapshot_chunk",
 	},
 	// StateSyncAttempt : OfferSnapshot ApplyChunks ∙
 	{
-		token.T_4: "<OfferSnapshot>",
+		token.T_4: "offer_snapshot",
 	},
 	// StateSyncAttempt : ∙OfferSnapshot
 	{
-		token.T_4: "<OfferSnapshot>",
+		token.T_4: "offer_snapshot",
 	},
 	// StateSyncAttempt : OfferSnapshot ∙
 	{
-		token.T_4: "<OfferSnapshot>",
+		token.T_4: "offer_snapshot",
 	},
 	// StateSyncAttempts : ∙StateSyncAttempt
 	{
-		token.T_4: "<OfferSnapshot>",
+		token.T_4: "offer_snapshot",
 	},
 	// StateSyncAttempts : StateSyncAttempt ∙
 	{
-		token.T_4: "<OfferSnapshot>",
+		token.T_4: "offer_snapshot",
 	},
 	// StateSyncAttempts : ∙StateSyncAttempt StateSyncAttempts
 	{
-		token.T_4: "<OfferSnapshot>",
+		token.T_4: "offer_snapshot",
 	},
 	// StateSyncAttempts : StateSyncAttempt ∙StateSyncAttempts
 	{
-		token.T_4: "<OfferSnapshot>",
+		token.T_4: "offer_snapshot",
 	},
 	// StateSyncAttempts : StateSyncAttempt StateSyncAttempts ∙
 	{
-		token.T_4: "<OfferSnapshot>",
+		token.T_4: "offer_snapshot",
 	},
 	// SuccessSync : ∙OfferSnapshot ApplyChunks
 	{
-		token.T_4: "<OfferSnapshot>",
+		token.T_4: "offer_snapshot",
 	},
 	// SuccessSync : OfferSnapshot ∙ApplyChunks
 	{
-		token.T_0: "<ApplyChunk>",
+		token.T_0: "apply_snapshot_chunk",
 	},
 	// SuccessSync : OfferSnapshot ApplyChunks ∙
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 }
 
 var followSets = []map[token.Type]string{
 	// ApplyChunk
 	{
-		token.T_0: "<ApplyChunk>",
-		token.T_2: "<FinalizeBlock>",
-		token.T_4: "<OfferSnapshot>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_0: "apply_snapshot_chunk",
+		token.T_2: "finalize_block",
+		token.T_4: "offer_snapshot",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ApplyChunks
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_4: "<OfferSnapshot>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_4: "offer_snapshot",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// CleanStart
 	{
@@ -1154,9 +1154,9 @@ var followSets = []map[token.Type]string{
 	// Commit
 	{
 		token.EOF: "$",
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusExec
 	{
@@ -1165,9 +1165,9 @@ var followSets = []map[token.Type]string{
 	// ConsensusHeight
 	{
 		token.EOF: "$",
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusHeights
 	{
@@ -1175,53 +1175,53 @@ var followSets = []map[token.Type]string{
 	},
 	// ConsensusRound
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusRounds
 	{
-		token.T_2: "<FinalizeBlock>",
+		token.T_2: "finalize_block",
 	},
 	// Decide
 	{
-		token.T_1: "<Commit>",
+		token.T_1: "commit",
 	},
 	// InitChain
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_4: "<OfferSnapshot>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_4: "offer_snapshot",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// NonProposer
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// OfferSnapshot
 	{
-		token.T_0: "<ApplyChunk>",
-		token.T_4: "<OfferSnapshot>",
+		token.T_0: "apply_snapshot_chunk",
+		token.T_4: "offer_snapshot",
 	},
 	// PrepareProposal
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ProcessProposal
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// Proposer
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// Recovery
 	{
@@ -1233,23 +1233,23 @@ var followSets = []map[token.Type]string{
 	},
 	// StateSync
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// StateSyncAttempt
 	{
-		token.T_4: "<OfferSnapshot>",
+		token.T_4: "offer_snapshot",
 	},
 	// StateSyncAttempts
 	{
-		token.T_4: "<OfferSnapshot>",
+		token.T_4: "offer_snapshot",
 	},
 	// SuccessSync
 	{
-		token.T_2: "<FinalizeBlock>",
-		token.T_5: "<PrepareProposal>",
-		token.T_6: "<ProcessProposal>",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 }
 

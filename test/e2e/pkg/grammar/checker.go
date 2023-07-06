@@ -12,17 +12,6 @@ import (
 	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/parser"
 )
 
-// abciGrammar terminals from "/pkg/grammar/abci_grammar.md" file.
-const (
-	InitChain       = "<InitChain>"
-	FinalizeBlock   = "<FinalizeBlock>"
-	Commit          = "<Commit>"
-	OfferSnapshot   = "<OfferSnapshot>"
-	ApplyChunk      = "<ApplyChunk>"
-	PrepareProposal = "<PrepareProposal>"
-	ProcessProposal = "<ProcessProposal>"
-)
-
 // GrammarChecker is a checker that can verify whether a specific set of abci calls
 // respect the abci grammar.
 type GrammarChecker struct {
@@ -64,24 +53,11 @@ func NewGrammarChecker(cfg *Config) *GrammarChecker {
 
 // getRequestTerminal returns a value of a corresponding terminal in the abci grammar for a specific request.
 func (g *GrammarChecker) getRequestTerminal(req *abci.Request) string {
-	switch req.Value.(type) {
-	case *abci.Request_InitChain:
-		return InitChain
-	case *abci.Request_FinalizeBlock:
-		return FinalizeBlock
-	case *abci.Request_Commit:
-		return Commit
-	case *abci.Request_OfferSnapshot:
-		return OfferSnapshot
-	case *abci.Request_ApplySnapshotChunk:
-		return ApplyChunk
-	case *abci.Request_PrepareProposal:
-		return PrepareProposal
-	case *abci.Request_ProcessProposal:
-		return ProcessProposal
-	default:
-		return ""
-	}
+	// req.String() produces an output like this "init_chain:<time:<seconds:-62135596800 > >"
+	// we take just the part before the ":" (init_chain, in previous example) for each request
+	s := req.String()
+	t := strings.Split(s, ":")[0]
+	return t
 }
 
 // GetExecutionString returns all requests that grammar understand as string of terminal symbols
@@ -141,7 +117,7 @@ func (g *GrammarChecker) filterLastHeight(reqs []*abci.Request) ([]*abci.Request
 	r := reqs[pos]
 	cnt := 0
 	// Find the last commit.
-	for g.getRequestTerminal(r) != Commit && pos >= 0 {
+	for g.getRequestTerminal(r) != "commit" && pos >= 0 {
 		pos--
 		r = reqs[pos]
 		cnt++

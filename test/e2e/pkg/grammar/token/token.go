@@ -135,13 +135,13 @@ func (t Type) ID() string {
 const(
     Error  Type = iota  // Error 
     EOF  // $ 
-    T_0  // <ApplyChunk> 
-    T_1  // <Commit> 
-    T_2  // <FinalizeBlock> 
-    T_3  // <InitChain> 
-    T_4  // <OfferSnapshot> 
-    T_5  // <PrepareProposal> 
-    T_6  // <ProcessProposal> 
+    T_0  // apply_snapshot_chunk 
+    T_1  // commit 
+    T_2  // finalize_block 
+    T_3  // init_chain 
+    T_4  // offer_snapshot 
+    T_5  // prepare_proposal 
+    T_6  // process_proposal 
 )
 
 var TypeToString = []string{ 
@@ -171,25 +171,25 @@ var StringToType = map[string] Type {
 var TypeToID = []string { 
     "Error", 
     "$", 
-    "<ApplyChunk>", 
-    "<Commit>", 
-    "<FinalizeBlock>", 
-    "<InitChain>", 
-    "<OfferSnapshot>", 
-    "<PrepareProposal>", 
-    "<ProcessProposal>", 
+    "apply_snapshot_chunk", 
+    "commit", 
+    "finalize_block", 
+    "init_chain", 
+    "offer_snapshot", 
+    "prepare_proposal", 
+    "process_proposal", 
 }
 
 var IDToType = map[string]Type { 
     "Error": 0, 
     "$": 1, 
-    "<ApplyChunk>": 2, 
-    "<Commit>": 3, 
-    "<FinalizeBlock>": 4, 
-    "<InitChain>": 5, 
-    "<OfferSnapshot>": 6, 
-    "<PrepareProposal>": 7, 
-    "<ProcessProposal>": 8, 
+    "apply_snapshot_chunk": 2, 
+    "commit": 3, 
+    "finalize_block": 4, 
+    "init_chain": 5, 
+    "offer_snapshot": 6, 
+    "prepare_proposal": 7, 
+    "process_proposal": 8, 
 }
 
 var Suppress = []bool { 

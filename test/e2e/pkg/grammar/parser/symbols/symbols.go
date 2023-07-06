@@ -46,13 +46,13 @@ const(
 // T is the type of terminals symbols
 type T int
 const( 
-	T_0 T = iota // <ApplyChunk> 
-	T_1  // <Commit> 
-	T_2  // <FinalizeBlock> 
-	T_3  // <InitChain> 
-	T_4  // <OfferSnapshot> 
-	T_5  // <PrepareProposal> 
-	T_6  // <ProcessProposal> 
+	T_0 T = iota // apply_snapshot_chunk 
+	T_1  // commit 
+	T_2  // finalize_block 
+	T_3  // init_chain 
+	T_4  // offer_snapshot 
+	T_5  // prepare_proposal 
+	T_6  // process_proposal 
 )
 
 type Symbols []Symbol
@@ -145,13 +145,13 @@ var ntToString = []string {
 }
 
 var tToString = []string { 
-	"<ApplyChunk>", /* T_0 */
-	"<Commit>", /* T_1 */
-	"<FinalizeBlock>", /* T_2 */
-	"<InitChain>", /* T_3 */
-	"<OfferSnapshot>", /* T_4 */
-	"<PrepareProposal>", /* T_5 */
-	"<ProcessProposal>", /* T_6 */ 
+	"apply_snapshot_chunk", /* T_0 */
+	"commit", /* T_1 */
+	"finalize_block", /* T_2 */
+	"init_chain", /* T_3 */
+	"offer_snapshot", /* T_4 */
+	"prepare_proposal", /* T_5 */
+	"process_proposal", /* T_6 */ 
 }
 
 var stringNT = map[string]NT{ 

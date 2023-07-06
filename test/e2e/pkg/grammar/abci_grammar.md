@@ -24,13 +24,13 @@ Proposer : PrepareProposal ProcessProposal | PrepareProposal ;
 NonProposer: ProcessProposal ;
 
 
-InitChain : "<InitChain>" ;
-Decide : "<FinalizeBlock>" ; 
-Commit : "<Commit>" ;
-OfferSnapshot : "<OfferSnapshot>" ;
-ApplyChunk : "<ApplyChunk>" ; 
-PrepareProposal : "<PrepareProposal>" ; 
-ProcessProposal : "<ProcessProposal>" ;
+InitChain : "init_chain" ;
+Decide : "finalize_block" ; 
+Commit : "commit" ;
+OfferSnapshot : "offer_snapshot" ;
+ApplyChunk : "apply_snapshot_chunk" ; 
+PrepareProposal : "prepare_proposal" ; 
+ProcessProposal : "process_proposal" ;
 
 
 ```

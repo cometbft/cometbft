@@ -17,9 +17,11 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	cs "github.com/cometbft/cometbft/consensus"
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/evidence"
 	"github.com/cometbft/cometbft/statesync"
 
+	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
 	mempl "github.com/cometbft/cometbft/mempool"
@@ -526,27 +528,56 @@ func startStateSync(
 
 //------------------------------------------------------------------------------
 
+var genesisDocHashKey = []byte("genesisDocHash")
+
 // loadStateFromDbOrGenesisDoc attempts to load the state from the
 // database, or creates one using the given genesisDocProvider. On success this also
 // returns the genesis doc loaded through the given provider.
-func loadStateFromDbOrGenesisDoc(stateStore sm.Store, genDoc *types.GenesisDoc) (sm.State, error) {
-	// 1. Attempt to load state form the database
+func loadStateFromDbOrGenesisDoc(
+	stateStore sm.Store,
+	stateDB dbm.DB,
+	genDoc *types.GenesisDoc,
+) (sm.State, error) {
+	// 1. Verify genesisDoc hash in db if exists
+	genDocHash, err := stateDB.Get(genesisDocHashKey)
+	if err != nil {
+		return sm.State{}, err
+	}
+
+	genDocBytes, err := cmtjson.Marshal(genDoc)
+	if err != nil {
+		return sm.State{}, fmt.Errorf("failed to save genesis doc hash due to marshaling error: %w", err)
+	}
+
+	incomingGenDocHash := tmhash.Sum(genDocBytes)
+	if len(genDocHash) != 0 && !bytes.Equal(genDocHash, incomingGenDocHash) {
+		return sm.State{}, fmt.Errorf("genesis doc hash in db does not match loaded genesis doc")
+	}
+
+	// 2. Attempt to load state form the database
 	state, err := stateStore.Load()
 	if err != nil {
 		return sm.State{}, err
 	}
 
 	if state.IsEmpty() {
-		// 2. If it's not there, derive it from the genesis doc
+		// 3. If it's not there, derive it from the genesis doc
 		state, err = sm.MakeGenesisState(genDoc)
 		if err != nil {
 			return sm.State{}, err
 		}
 
-		// 3. save the gensis document to the state store so
+		// 4. save the gensis document to the state store so
 		// its fetchable by other callers.
 		if err := stateStore.Save(state); err != nil {
 			return sm.State{}, err
+		}
+
+		// 5. Save the genDoc hash in the store if it doesn't already exist for future verification
+		if len(genDocHash) == 0 {
+			if err := stateDB.SetSync(genesisDocHashKey, incomingGenDocHash); err != nil {
+				return sm.State{}, fmt.Errorf("failed to save genesis doc hash to db: %w", err)
+			}
 		}
 	}
 

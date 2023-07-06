@@ -18,6 +18,7 @@ import (
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/evidence"
 	"github.com/cometbft/cometbft/internal/test"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
@@ -469,7 +470,7 @@ func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 	config := test.ResetTestRoot("node_new_node_genesis_hash")
 	defer os.RemoveAll(config.RootDir)
 
-	// Use goleveldb so we can reuse the db for the second node
+	// Use goleveldb so we can reuse the same db for the second NewNode()
 	config.DBBackend = string(dbm.GoLevelDBBackend)
 
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
@@ -488,7 +489,7 @@ func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	// Start and stop to close the db
+	// Start and stop to close the db for later reading
 	err = n.Start()
 	require.NoError(t, err)
 
@@ -501,7 +502,8 @@ func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 
 	genDocHash, err := stateDb.Get(genesisDocHashKey)
 	require.NoError(t, err)
-	require.NotNil(t, genDocHash)
+	require.NotNil(t, genDocHash, "genesis doc hash should be saved in db")
+	require.Len(t, genDocHash, tmhash.Size)
 
 	err = stateDb.Close()
 	require.NoError(t, err)
@@ -513,7 +515,6 @@ func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 	require.NoError(t, err)
 
 	genesisDoc.ChainID = "different-chain-id"
-
 	err = genesisDoc.SaveAs(config.GenesisFile())
 	require.NoError(t, err)
 
@@ -528,7 +529,7 @@ func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 		DefaultMetricsProvider(config.Instrumentation),
 		log.TestingLogger(),
 	)
-	require.Error(t, err)
+	require.Error(t, err, "NewNode should error when genesisDoc is changed")
 	require.Equal(t, "genesis doc hash in db does not match loaded genesis doc", err.Error())
 }
 

@@ -88,6 +88,7 @@ type Manifest struct {
 	LoadTxSizeBytes   int `toml:"load_tx_size_bytes"`
 	LoadTxBatchSize   int `toml:"load_tx_batch_size"`
 	LoadTxConnections int `toml:"load_tx_connections"`
+	LoadTxToSend      int `toml:"load_tx_to_send"`
 
 	// Enable or disable Prometheus metrics on all nodes.
 	// Defaults to false (disabled).

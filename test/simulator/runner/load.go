@@ -51,6 +51,11 @@ func Load(ctx context.Context, testnet *e2e.Testnet) (int, error) {
 		case <-chSuccess:
 			success++
 			timeout = stallTimeout
+			if success >= testnet.LoadTxToSend {
+				logger.Info("load", "msg", log.NewLazySprintf("Ending transaction load after %v txs (%.1f tx/s)...",
+					success, float64(success)/time.Since(started).Seconds()))
+				return success, nil
+			}
 		case <-time.After(timeout):
 			return 0, fmt.Errorf("unable to submit transactions for %v", timeout)
 		case <-ctx.Done():
@@ -64,7 +69,7 @@ func Load(ctx context.Context, testnet *e2e.Testnet) (int, error) {
 	}
 }
 
-// loadGenerate generates jobs until the context is canceled
+// loadGenerate generates jobs until the context is canceled or the target is attained
 func loadGenerate(ctx context.Context, txCh chan<- types.Tx, testnet *e2e.Testnet, id []byte) {
 	t := time.NewTimer(0)
 	defer t.Stop()

@@ -367,7 +367,6 @@ Does not run any perturbations.
     redundancy: number of duplicates received per tx seen (on average)
     bandwidth graph: detailed bandwidth usage as a (json) graph
 over a period of 1 minute.
-
 Does not run any perturbations.
 		`,
 		RunE: func(cmd *cobra.Command, args []string) error {

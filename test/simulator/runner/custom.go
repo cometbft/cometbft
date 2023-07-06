@@ -39,7 +39,7 @@ func Custom(ctx context.Context, loadCancel context.CancelFunc, testnet *e2e.Tes
 	loadCancel()
 
 	// grace period
-	timer = time.NewTimer(1 * time.Second)
+	timer = time.NewTimer(10 * time.Second)
 	defer timer.Stop()
 	select {
 	case <-timer.C:

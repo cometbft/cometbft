@@ -1,7 +1,7 @@
 FROM gcr.io/distroless/static-debian11:debug
 
 COPY build/node /app
-COPY docker/entrypoint-tiny /entrypoint
+COPY docker/entrypoint-fast /entrypoint
 
 WORKDIR /cometbft
 VOLUME /cometbft

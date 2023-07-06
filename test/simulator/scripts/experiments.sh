@@ -11,12 +11,12 @@ fi
 FILE=$1
 
 echo "nodes;propagation_rate;sent;seen;completion;total_bandwidth;useful_bandwidth;redundancy;overhead;bandwidth" > ${FILE}
-for r in $(seq 10 10 50);
+for r in $(seq 10 10 20);
 do
-    for i in $(geometric 2 2 6);
+    for i in $(geometric 2 2 2);
     do
 	${DIR}/tmpl-gen.sh ${i} ${r} > ${NETDIR}/simple.toml
-	${BINDIR}/runner -f ${NETDIR}/simple.toml mempool > ${TMPDIR}/log
+	${BINDIR}/runner -f ${NETDIR}/simple.toml custom > ${TMPDIR}/log
 	sent=$(grep "txs sent" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
 	seen=$(grep "txs seen" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
 	completion=$(grep "completion" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')

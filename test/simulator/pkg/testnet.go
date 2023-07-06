@@ -31,7 +31,7 @@ const (
 	defaultConnections = 1
 	defaultTxSizeBytes = 1024
 
-	localVersion = "0track/simulator-node:local-version"
+	localVersion = "cometbft/e2e-node:local-version"
 )
 
 type (

@@ -349,9 +349,9 @@ func ptrUint64(i uint64) *uint64 {
 
 // Parses strings like "v0.34.21:1,v0.34.22:2" to represent two versions
 // ("v0.34.21" and "v0.34.22") with weights of 1 and 2 respectively.
-// Versions may be specified as 0track/simulator-node:v0.34.27-alpha.1:1 or
+// Versions may be specified as cometbft/e2e-node:v0.34.27-alpha.1:1 or
 // ghcr.io/informalsystems/tendermint:v0.34.26:1.
-// If only the tag and weight are specified, 0track/simulator-node is assumed.
+// If only the tag and weight are specified, cometbft/e2e-node is assumed.
 // Also returns the last version in the list, which will be used for updates.
 func parseWeightedVersions(s string) (weightedChoice, string, error) {
 	wc := make(weightedChoice)
@@ -361,7 +361,7 @@ func parseWeightedVersions(s string) (weightedChoice, string, error) {
 		parts := strings.Split(strings.TrimSpace(wv), ":")
 		var ver string
 		if len(parts) == 2 {
-			ver = strings.TrimSpace(strings.Join([]string{"0track/simulator-node", parts[0]}, ":"))
+			ver = strings.TrimSpace(strings.Join([]string{"cometbft/e2e-node", parts[0]}, ":"))
 		} else if len(parts) == 3 {
 			ver = strings.TrimSpace(strings.Join([]string{parts[0], parts[1]}, ":"))
 		} else {

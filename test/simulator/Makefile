@@ -1,18 +1,24 @@
 include ../../common.mk
 
-all: node generator runner docker
+all: node generator runner docker-fast
 
 docker:
-	@echo "Building Simulator Docker image"
+	@echo "Building E2E Docker image"
 	@docker build \
-		--tag 0track/simulator-node:local-version \
-		-f docker/Dockerfile.tiny .
+		--tag cometbft/e2e-node:local-version \
+		-f docker/Dockerfile ../..
 
-docker-noop:
-	@echo "Building noop Docker image"
+docker-debug:
+	@echo "Building E2E Docker image for debugging"
 	@docker build \
-		--tag 0track/simulator-node:local-version \
-		-f docker/Dockerfile.noop .
+		--tag cometbft/e2e-node:local-version \
+		-f docker/Dockerfile.debug ../..
+
+docker-fast:
+	@echo "Building fast-prototyping E2E Docker image"
+	@docker build \
+		--tag cometbft/e2e-node:local-version \
+		-f docker/Dockerfile.fast .
 
 # We need to build support for database backends into the app in
 # order to build a binary with a CometBFT node in it (for built-in
@@ -26,4 +32,4 @@ generator:
 runner:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o build/runner ./runner
 
-.PHONY: all node docker generator runner 
+.PHONY: all node docker generator runner

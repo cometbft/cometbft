@@ -136,7 +136,8 @@ func StateProvider(stateProvider statesync.StateProvider) Option {
 // This function is expected to synchronize CometBFTs
 // stores with the application after statesync has been performed offline
 // It is expected that the blockstore and statestore are empty at
-// the time the function is called
+// the time the function is called.
+// In case the blockstore is not empty, the function returns an error
 func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBProvider, height uint64, appHash []byte) error {
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 	if ctx == nil {
@@ -144,6 +145,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	}
 
 	if config == nil {
+		logger.Info("no config provided, using default configuration")
 		config = cfg.DefaultConfig()
 	}
 
@@ -158,9 +160,19 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	if !blockStore.IsEmpty() {
 		return fmt.Errorf("blockstore not empty, trying to initialize non empty state")
 	}
+
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
 	})
+
+	state, err := stateStore.Load()
+	if err != nil {
+		return err
+	}
+
+	if !state.IsEmpty() {
+		return fmt.Errorf("state not empty, trying to initialize non empty state")
+	}
 
 	genState, _, err := LoadStateFromDBOrGenesisDocProvider(stateDB, DefaultGenesisDocProviderFunc(config))
 	if err != nil {
@@ -179,7 +191,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 		return fmt.Errorf("failed to set up light client state provider: %w", err)
 	}
 
-	state, err := stateProvider.State(ctx, height)
+	state, err = stateProvider.State(ctx, height)
 	if err != nil {
 		return err
 	}

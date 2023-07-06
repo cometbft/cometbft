@@ -48,7 +48,6 @@ func NewState(dir string, persistInterval uint64) (*State, error) {
 		persistInterval: persistInterval,
 	}
 	state.hash = hashItems(state.values, state.height)
-	fmt.Println("State file name :" + stateFileName)
 	err := state.load()
 	switch {
 	case errors.Is(err, os.ErrNotExist):
@@ -62,7 +61,6 @@ func NewState(dir string, persistInterval uint64) (*State, error) {
 // during construction.
 func (s *State) load() error {
 	bz, err := os.ReadFile(s.currentFile)
-	fmt.Println(s.currentFile)
 	if err != nil {
 		// if the current state doesn't exist then we try recover from the previous state
 		if errors.Is(err, os.ErrNotExist) {
@@ -84,7 +82,6 @@ func (s *State) load() error {
 // save saves the state to disk. It does not take out a lock since it is called
 // internally by Commit which does lock.
 func (s *State) save() error {
-	fmt.Println("Saving app state ", s.height)
 	bz, err := json.Marshal(s)
 	if err != nil {
 		return fmt.Errorf("failed to marshal state: %w", err)

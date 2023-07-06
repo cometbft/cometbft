@@ -76,6 +76,7 @@ func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockS
 		if err != nil && err.Error() != "value empty" {
 			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s", err))
 		}
+		blockExec.Store().SetOfflineStateSyncHeight(0)
 	}
 	if state.LastBlockHeight != storeHeight {
 		panic(fmt.Sprintf("state (%v) and store (%v) height mismatch, stores were left in an inconsistent state", state.LastBlockHeight,
@@ -346,12 +347,6 @@ FOR_LOOP:
 			outbound, inbound, _ := bcR.Switch.NumPeers()
 			bcR.Logger.Debug("Consensus ticker", "numPending", numPending, "total", lenRequesters,
 				"outbound", outbound, "inbound", inbound, "lastHeight", state.LastBlockHeight)
-
-			offlineStateSyncedH, err := bcR.blockExec.Store().GetOfflineStateSyncHeight()
-			if err == nil && offlineStateSyncedH > 0 && blocksSynced == 0 {
-				continue FOR_LOOP
-			}
-			bcR.blockExec.Store().SetOfflineStateSyncHeight(0) //At this point stores are indistinguishable from a normal online state-sync boot
 
 			// The "if" statement below is a bit confusing, so here is a breakdown
 			// of its logic and purpose:

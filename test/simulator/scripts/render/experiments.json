@@ -1,2 +1,0 @@
-nodes;propagation_rate;sent;seen;completion;total_bandwidth;useful_bandwidth;redundancy;overhead;bandwidth
-3;100;3000;3000;100;3669552;600000;5.11592;0.933;{"0":{"0":489702,"1":238272,"2":495210},"1":{"0":489702,"1":238272,"2":495210},"2":{"0":489702,"1":238272,"2":495210}}

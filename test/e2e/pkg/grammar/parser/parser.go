@@ -358,6 +358,16 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			} else {
 				p.parseError(slot.Proposer0R0, p.cI, followSets[symbols.NT_Proposer])
 			}
+		case slot.Proposer1R0: // Proposer : ∙PrepareProposal
+
+			p.call(slot.Proposer1R1, cU, p.cI)
+		case slot.Proposer1R1: // Proposer : PrepareProposal ∙
+
+			if p.follow(symbols.NT_Proposer) {
+				p.rtn(symbols.NT_Proposer, cU, p.cI)
+			} else {
+				p.parseError(slot.Proposer1R0, p.cI, followSets[symbols.NT_Proposer])
+			}
 		case slot.Recovery0R0: // Recovery : ∙ConsensusExec
 
 			p.call(slot.Recovery0R1, cU, p.cI)
@@ -975,6 +985,8 @@ var first = []map[token.Type]string{
 	},
 	// PrepareProposal : <PrepareProposal> ∙
 	{
+		token.T_2: "<FinalizeBlock>",
+		token.T_5: "<PrepareProposal>",
 		token.T_6: "<ProcessProposal>",
 	},
 	// ProcessProposal : ∙<ProcessProposal>
@@ -996,6 +1008,16 @@ var first = []map[token.Type]string{
 		token.T_6: "<ProcessProposal>",
 	},
 	// Proposer : PrepareProposal ProcessProposal ∙
+	{
+		token.T_2: "<FinalizeBlock>",
+		token.T_5: "<PrepareProposal>",
+		token.T_6: "<ProcessProposal>",
+	},
+	// Proposer : ∙PrepareProposal
+	{
+		token.T_5: "<PrepareProposal>",
+	},
+	// Proposer : PrepareProposal ∙
 	{
 		token.T_2: "<FinalizeBlock>",
 		token.T_5: "<PrepareProposal>",
@@ -1185,6 +1207,8 @@ var followSets = []map[token.Type]string{
 	},
 	// PrepareProposal
 	{
+		token.T_2: "<FinalizeBlock>",
+		token.T_5: "<PrepareProposal>",
 		token.T_6: "<ProcessProposal>",
 	},
 	// ProcessProposal

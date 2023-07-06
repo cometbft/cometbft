@@ -66,6 +66,8 @@ const(
 	Proposer0R0
 	Proposer0R1
 	Proposer0R2
+	Proposer1R0
+	Proposer1R1
 	Recovery0R0
 	Recovery0R1
 	Start0R0
@@ -591,6 +593,20 @@ var slots = map[Label]*Slot{
 		}, 
 		Proposer0R2, 
 	},
+	Proposer1R0: {
+		symbols.NT_Proposer, 1, 0, 
+		symbols.Symbols{  
+			symbols.NT_PrepareProposal,
+		}, 
+		Proposer1R0, 
+	},
+	Proposer1R1: {
+		symbols.NT_Proposer, 1, 1, 
+		symbols.Symbols{  
+			symbols.NT_PrepareProposal,
+		}, 
+		Proposer1R1, 
+	},
 	Recovery0R0: {
 		symbols.NT_Recovery, 0, 0, 
 		symbols.Symbols{  
@@ -828,6 +844,8 @@ var slotIndex = map[Index]Label {
 	Index{ symbols.NT_Proposer,0,0 }: Proposer0R0,
 	Index{ symbols.NT_Proposer,0,1 }: Proposer0R1,
 	Index{ symbols.NT_Proposer,0,2 }: Proposer0R2,
+	Index{ symbols.NT_Proposer,1,0 }: Proposer1R0,
+	Index{ symbols.NT_Proposer,1,1 }: Proposer1R1,
 	Index{ symbols.NT_Recovery,0,0 }: Recovery0R0,
 	Index{ symbols.NT_Recovery,0,1 }: Recovery0R1,
 	Index{ symbols.NT_Start,0,0 }: Start0R0,
@@ -868,7 +886,7 @@ var alternates = map[symbols.NT][]Label{
 	symbols.NT_ConsensusHeight:[]Label{ ConsensusHeight0R0,ConsensusHeight1R0 },
 	symbols.NT_ConsensusRounds:[]Label{ ConsensusRounds0R0,ConsensusRounds1R0 },
 	symbols.NT_ConsensusRound:[]Label{ ConsensusRound0R0,ConsensusRound1R0 },
-	symbols.NT_Proposer:[]Label{ Proposer0R0 },
+	symbols.NT_Proposer:[]Label{ Proposer0R0,Proposer1R0 },
 	symbols.NT_NonProposer:[]Label{ NonProposer0R0 },
 	symbols.NT_InitChain:[]Label{ InitChain0R0 },
 	symbols.NT_Decide:[]Label{ Decide0R0 },

@@ -24,7 +24,7 @@ var tests = []Test{
 	{"commit-missing-1", []string{InitChain, FinalizeBlock}, false},
 	// consensus-height = *consensus-round decide commit
 	{"proposer-round-1", []string{InitChain, PrepareProposal, ProcessProposal, FinalizeBlock, Commit}, true},
-	{"process-proposal-missing-1", []string{InitChain, PrepareProposal, FinalizeBlock, Commit}, false},
+	{"proposer-round-2", []string{InitChain, PrepareProposal, FinalizeBlock, Commit}, true},
 	{"non-proposer-round-1", []string{InitChain, ProcessProposal, FinalizeBlock, Commit}, true},
 	{"multiple-rounds-1", []string{InitChain, PrepareProposal, ProcessProposal, ProcessProposal, PrepareProposal, ProcessProposal, ProcessProposal, ProcessProposal, FinalizeBlock, Commit}, true},
 
@@ -47,8 +47,8 @@ var tests = []Test{
 	{"finalize-block-missing-2", []string{Commit}, false},
 	{"commit-missing-2", []string{FinalizeBlock}, false},
 	// consensus-height = *consensus-round decide commit
-	{"proposer-round-2", []string{PrepareProposal, ProcessProposal, FinalizeBlock, Commit}, true},
-	{"process-proposal-missing-2", []string{PrepareProposal, FinalizeBlock, Commit}, false},
+	{"proposer-round-3", []string{PrepareProposal, ProcessProposal, FinalizeBlock, Commit}, true},
+	{"proposer-round-4", []string{PrepareProposal, FinalizeBlock, Commit}, true},
 	{"non-proposer-round-2", []string{ProcessProposal, FinalizeBlock, Commit}, true},
 	{"multiple-rounds-2", []string{PrepareProposal, ProcessProposal, ProcessProposal, PrepareProposal, ProcessProposal, ProcessProposal, ProcessProposal, FinalizeBlock, Commit}, true},
 

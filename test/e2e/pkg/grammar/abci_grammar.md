@@ -19,7 +19,8 @@ ConsensusHeight : ConsensusRounds Decide Commit | Decide Commit ;
 ConsensusRounds : ConsensusRound | ConsensusRound ConsensusRounds ;
 ConsensusRound : Proposer | NonProposer ; 
 
-Proposer : PrepareProposal ProcessProposal ; 
+
+Proposer : PrepareProposal ProcessProposal | PrepareProposal ; 
 NonProposer: ProcessProposal ;
 
 

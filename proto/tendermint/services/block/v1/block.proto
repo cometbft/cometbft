@@ -4,9 +4,9 @@ package tendermint.services.block.v1;
 option go_package = "github.com/cometbft/cometbft/proto/tendermint/services/block/v1";
 
 message GetBlockRequest {
-  uint64 height   = 1; // the height of the block requested
+  int64 height   = 1; // the height of the block requested
 }
 
 message GetBlockResponse {
-  uint64 height   = 1;  // the height of the block
+  int64 height   = 1;  // the height of the block
 }

@@ -116,6 +116,12 @@ func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
 		)).Save()
 	}
 
+	if testnet.Prometheus {
+		if err := testnet.WritePrometheusConfig(); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -167,6 +173,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg.DBBackend = node.Database
 	cfg.StateSync.DiscoveryTime = 5 * time.Second
 	cfg.BlockSync.Version = node.BlockSyncVersion
+	cfg.Consensus.PeerGossipIntraloopSleepDuration = node.Testnet.PeerGossipIntraloopSleepDuration
 
 	switch node.ABCIProtocol {
 	case e2e.ProtocolUNIX:

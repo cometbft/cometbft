@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"sort"
 )
 
 const (
@@ -43,6 +44,16 @@ type InstanceData struct {
 	Port         uint32 `json:"port"`
 }
 
+func sortNodeNames(m Manifest) []string {
+	// Set up nodes, in alphabetical order (IPs and ports get same order).
+	nodeNames := []string{}
+	for name := range m.Nodes {
+		nodeNames = append(nodeNames, name)
+	}
+	sort.Strings(nodeNames)
+	return nodeNames
+}
+
 func NewDockerInfrastructureData(m Manifest) (InfrastructureData, error) {
 	netAddress := dockerIPv4CIDR
 	if m.IPv6 {
@@ -61,12 +72,13 @@ func NewDockerInfrastructureData(m Manifest) (InfrastructureData, error) {
 		Network:   netAddress,
 	}
 	localHostIP := net.ParseIP("127.0.0.1")
-	for name := range m.Nodes {
+	for _, name := range sortNodeNames(m) {
 		ifd.Instances[name] = InstanceData{
 			IPAddress:    ipGen.Next(),
 			ExtIPAddress: localHostIP,
 			Port:         portGen.Next(),
 		}
+
 	}
 	return ifd, nil
 }

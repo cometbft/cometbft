@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"context"
+	v1 "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
 	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	"testing"
 	"time"
@@ -44,7 +45,10 @@ func TestGRPC_Block(t *testing.T) {
 		client, err := node.GRPCClient(ctx)
 		require.NoError(t, err)
 
-		res, err := client.GetBlock(ctx, 1)
+		res, err := client.GetBlock(ctx, v1.GetBlockRequest{
+			Height: 1,
+		})
+
 		require.NoError(t, err)
 
 		header := types.Header{

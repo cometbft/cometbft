@@ -195,6 +195,19 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	if err != nil {
 		return err
 	}
+	if appHash == nil {
+		logger.Info("warning: cannot verify appHash. Verification will happen when node boots up!")
+	} else {
+		if !bytes.Equal(appHash, state.AppHash) {
+			if err := blockStore.Close(); err != nil {
+				logger.Error("failed to close blockstore")
+			}
+			if err := stateStore.Close(); err != nil {
+				logger.Error("failed to close statestore")
+			}
+			return fmt.Errorf("the app hash returned by the light client does not match the provided appHash, expected %X, got %X", state.AppHash, appHash)
+		}
+	}
 
 	commit, err := stateProvider.Commit(ctx, height)
 	if err != nil {
@@ -208,14 +221,6 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	err = blockStore.SaveSeenCommit(state.LastBlockHeight, commit)
 	if err != nil {
 		return err
-	}
-
-	if appHash == nil {
-		logger.Info("warning: cannot verify appHash. Verification will happen when node boots up!")
-	} else {
-		if !bytes.Equal(appHash, state.AppHash) {
-			logger.Error("the app hash returned by the light client does not match the provided appHash, expected %X, got %X", state.AppHash, appHash)
-		}
 	}
 
 	// Once the stores are bootstrapped, we need to set the height at which the node has finished

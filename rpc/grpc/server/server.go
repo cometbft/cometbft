@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"google.golang.org/grpc/reflection"
 	"net"
 	"strings"
 
@@ -90,6 +91,7 @@ func Serve(listener net.Listener, opts ...Option) error {
 		opt(b)
 	}
 	server := grpc.NewServer(b.grpcOpts...)
+	reflection.Register(server)
 	if b.versionService != nil {
 		pbversionsvc.RegisterVersionServiceServer(server, b.versionService)
 		b.logger.Debug("Registered version service")

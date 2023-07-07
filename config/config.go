@@ -521,8 +521,7 @@ type GRPCConfig struct {
 	// the protocols it uses.
 	VersionService *GRPCVersionServiceConfig `mapstructure:"version_service"`
 
-	// The gRPC version service provides version information about the node and
-	// the protocols it uses.
+	// The gRPC block service provides block information
 	BlockService *GRPCBlockServiceConfig `mapstructure:"block_service"`
 }
 

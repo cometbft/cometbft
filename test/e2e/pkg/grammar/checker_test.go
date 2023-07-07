@@ -78,7 +78,7 @@ func TestVerify(t *testing.T) {
 		if err == nil {
 			err = fmt.Errorf("Grammar parsed an incorrect execution: %v\n", execution)
 		}
-		t.Errorf("Test %v returned %v, expected %v\n Error: %v\n", test.name, result, test.result, err)
+		t.Errorf("Test %v returned %v, expected %v\nError: %v\n", test.name, result, test.result, err)
 	}
 }
 

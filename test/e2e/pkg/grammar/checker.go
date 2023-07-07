@@ -21,25 +21,16 @@ type GrammarChecker struct {
 
 // Config allows for setting some parameters mostly about errors logging.
 type Config struct {
-	// Tell if we should filter the last height.
-	FilterLastHeight bool
 	// Maximum number of errors grammar outputs.
 	MaxNumberOfErrorsToShow int
-	// How many abci calls grammar checker prints in the same line.
-	MaxTerminalsInLine int
-	// Number of lines with abci calls, before the line with an error, grammar checker prints.
-	NumberOfLinesToShowBeforeError int
-	// Number of lines with abci calls, after the line with an error, grammar checker prints.
-	NumberOfLinesToShowAfterError int
+	// Show full execution
+	ShowFullExecution bool
 }
 
 func DefaultConfig() *Config {
 	return &Config{
-		FilterLastHeight:               true,
-		MaxNumberOfErrorsToShow:        10,
-		MaxTerminalsInLine:             5,
-		NumberOfLinesToShowBeforeError: 5,
-		NumberOfLinesToShowAfterError:  5,
+		MaxNumberOfErrorsToShow: 1,
+		ShowFullExecution:       true,
 	}
 }
 
@@ -51,67 +42,64 @@ func NewGrammarChecker(cfg *Config) *GrammarChecker {
 	}
 }
 
+// isSupportedByGrammar returns true for all requests supported by the current grammar in "/pkg/grammar/abci_grammar.md" file.
+func (g *GrammarChecker) isSupportedByGrammar(req *abci.Request) bool {
+	switch req.Value.(type) {
+	case *abci.Request_InitChain, *abci.Request_FinalizeBlock, *abci.Request_Commit,
+		*abci.Request_OfferSnapshot, *abci.Request_ApplySnapshotChunk, *abci.Request_PrepareProposal,
+		*abci.Request_ProcessProposal:
+		return true
+	default:
+		return false
+	}
+}
+
 // getRequestTerminal returns a value of a corresponding terminal in the abci grammar for a specific request.
 func (g *GrammarChecker) getRequestTerminal(req *abci.Request) string {
-	// req.String() produces an output like this "init_chain:<time:<seconds:-62135596800 > >"
-	// we take just the part before the ":" (init_chain, in previous example) for each request
-	s := req.String()
-	t := strings.Split(s, ":")[0]
-	return t
+	if g.isSupportedByGrammar(req) {
+		// req.String() produces an output like this "init_chain:<time:<seconds:-62135596800 > >"
+		// we take just the part before the ":" (init_chain, in previous example) for each request
+		s := req.String()
+		t := strings.Split(s, ":")[0]
+		return t
+	}
+	return ""
+
 }
 
 // GetExecutionString returns all requests that grammar understand as string of terminal symbols
-// and number of requests included in it of all requests in parser readable format.
-func (g *GrammarChecker) GetExecutionString(reqs []*abci.Request) (string, int) {
+// in parser readable format.
+func (g *GrammarChecker) GetExecutionString(reqs []*abci.Request) string {
 	s := ""
-	n := 0
 	for _, r := range reqs {
 		t := g.getRequestTerminal(r)
 		if t == "" {
 			continue
 		}
-		// Every fifth terminal I put in new line. This is needed
-		// so we can find the parsing error, if there is one, more
-		// easily.
-		if n != 0 && n%g.cfg.MaxTerminalsInLine == 0 {
-			s += "\n" + t
+		// we ensure to have one height per line for readability
+		if t == "commit" {
+			s += t + "\n"
 		} else {
-			s += " " + t
+			s += t + " "
 		}
-		n++
-
 	}
-	return s, n
+	return s
 }
 
 // Verify verifies whether a list of request satisfy abci grammar.
 func (g *GrammarChecker) Verify(reqs []*abci.Request) (bool, error) {
 	var r []*abci.Request
 	var n int
-	if g.cfg.FilterLastHeight {
-		r, n = g.filterLastHeight(reqs)
-		if n != 0 {
-			debugMsg := fmt.Sprintf("Last height filtered, removed last %v abci calls out of %v.\n", n, len(reqs))
-			g.logger.Debug(debugMsg)
-		}
+	r, n = g.filterLastHeight(reqs)
+	if n != 0 {
+		debugMsg := fmt.Sprintf("Last height filtered, removed last %v abci calls out of %v.\n", n, len(reqs))
+		g.logger.Debug(debugMsg)
 	}
-	s, _ := g.GetExecutionString(r)
+	s := g.GetExecutionString(r)
 	return g.VerifyExecution(s)
 }
 
-// Verify checks if "execution string" respect abci grammar.
-// Only this method is using auto-generated code by gogll.
-func (g *GrammarChecker) VerifyExecution(execution string) (bool, error) {
-	lexer := lexer.New([]rune(execution))
-	_, errs := parser.Parse(lexer)
-	if len(errs) > 0 {
-		err := g.combineParseErrors(execution, errs, g.cfg.MaxNumberOfErrorsToShow)
-		return false, err
-	}
-	return true, nil
-}
-
-// filterLastHeight removes abci calls from the last height if <Commit> has not been called.
+// filterLastHeight removes abci calls from the last height if "commit" has not been called.
 func (g *GrammarChecker) filterLastHeight(reqs []*abci.Request) ([]*abci.Request, int) {
 	pos := len(reqs) - 1
 	r := reqs[pos]
@@ -125,32 +113,43 @@ func (g *GrammarChecker) filterLastHeight(reqs []*abci.Request) ([]*abci.Request
 	return reqs[:pos+1], cnt
 }
 
+// Verify checks if "execution string" respect abci grammar.
+// Only this method is using auto-generated code by gogll.
+func (g *GrammarChecker) VerifyExecution(execution string) (bool, error) {
+	lexer := lexer.New([]rune(execution))
+	_, errs := parser.Parse(lexer)
+	if len(errs) > 0 {
+		err := g.combineParseErrors(execution, errs, g.cfg.MaxNumberOfErrorsToShow)
+		if g.cfg.ShowFullExecution {
+			e := g.addLineNumbersToTheExecution(execution)
+			err = fmt.Errorf("%vFull execution:\n%v\n", err, e)
+		}
+		return false, err
+	}
+	return true, nil
+}
+
 // combineParseErrors combines all parse errors in one.
 func (g *GrammarChecker) combineParseErrors(execution string, errs []*parser.Error, n int) error {
 	s := fmt.Sprintf("Parser failed, number of errors is %v\n", len(errs))
+	heights := strings.Split(execution, "\n")
 	for i, e := range errs {
 		if i == n {
 			break
 		}
-		lines := g.getStringOfLinesAroundError(execution, e)
-		err := fmt.Errorf("***Error %v***\n%v\nExecution:\n%v", i, e, lines)
+		// e.Line-1 because parser returns line numbers starting from 1
+		heightWithError := heights[e.Line-1]
+		err := fmt.Errorf("---Error %v---\nHeight: %v\nABCI requests: %v", i, e.Line-1, heightWithError)
 		s = fmt.Sprintf("%v%v\n", s, err)
 	}
-	return fmt.Errorf("%v\n", s)
+	return fmt.Errorf("%v-------------\n", s)
 }
 
-func (g *GrammarChecker) getStringOfLinesAroundError(execution string, err *parser.Error) string {
-	lineNumber := err.Line
-	lines := strings.Split(execution, "\n")
+func (g *GrammarChecker) addLineNumbersToTheExecution(execution string) string {
+	heights := strings.Split(execution, "\n")
 	s := ""
-	for i, l := range lines {
-		// parser returns line numbers starting from 1.
-		index := i + 1
-		firstLine := lineNumber - g.cfg.NumberOfLinesToShowBeforeError
-		lastLine := lineNumber + g.cfg.NumberOfLinesToShowAfterError
-		if index >= firstLine && index <= lastLine {
-			s = fmt.Sprintf("%v%v:%v\n", s, i+1, l)
-		}
+	for i, l := range heights {
+		s = fmt.Sprintf("%v%v: %v\n", s, i, l)
 	}
 	return s
 }

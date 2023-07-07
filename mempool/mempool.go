@@ -4,10 +4,13 @@ import (
 	"crypto/sha256"
 	"errors"
 	"math"
+	"sync/atomic"
 
 	"fmt"
 
+	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -33,7 +36,7 @@ const (
 type Mempool interface {
 	// CheckTx executes a new transaction against the application to determine
 	// its validity and whether it should be added to the mempool.
-	CheckTx(tx types.Tx, callback func(*abci.ResponseCheckTx), txInfo TxInfo) error
+	CheckTx(tx types.Tx) (*abcicli.ReqRes, error)
 
 	// RemoveTxByKey removes a transaction, identified by its key,
 	// from the mempool.
@@ -73,6 +76,11 @@ type Mempool interface {
 		newPostFn PostCheckFunc,
 	) error
 
+	// NewIterator returns an interator for traversing the mempool entries in an
+	// order defined by the implementation. If it gets to the end or the mempool
+	// is empty, it will start from the beginning.
+	NewIterator() Iterator
+
 	// FlushAppConn flushes the mempool connection to ensure async callback calls
 	// are done, e.g. from CheckTx.
 	//
@@ -83,6 +91,12 @@ type Mempool interface {
 	// Flush removes all transactions from the mempool and caches.
 	Flush()
 
+	// InitChannels initializes the channels TxsAvailable and TxRemoved for
+	// communicating about changes in the mempool. TxsAvailable is read by the
+	// consensus reactor and it will be initialized only when notifyAvailable is
+	// true.
+	InitChannels(notifyAvailable bool)
+
 	// TxsAvailable returns a channel which fires once for every height, and only
 	// when transactions are available in the mempool.
 	//
@@ -90,15 +104,19 @@ type Mempool interface {
 	// 1. The returned channel may be nil if EnableTxsAvailable was not called.
 	TxsAvailable() <-chan struct{}
 
-	// EnableTxsAvailable initializes the TxsAvailable channel, ensuring it will
-	// trigger once every height when transactions are available.
-	EnableTxsAvailable()
+	// TxsRemoved returns a read-only channel that receives a transaction key
+	// when a transaction is removed from the mempool.
+	TxsRemoved() <-chan types.TxKey
 
 	// Size returns the number of transactions in the mempool.
 	Size() int
 
 	// SizeBytes returns the total size of all txs in the mempool.
 	SizeBytes() int64
+
+	Stop() error
+
+	SetLogger(l log.Logger)
 }
 
 // PreCheckFunc is an optional filter executed before CheckTx and rejects
@@ -193,4 +211,25 @@ func (e ErrPreCheck) Error() string {
 // IsPreCheckError returns true if err is due to pre check failure.
 func IsPreCheckError(err error) bool {
 	return errors.As(err, &ErrPreCheck{})
+}
+
+type Entry struct {
+	tx        types.Tx // valid transaction
+	height    int64    // height at which the transaction was validated
+	gasWanted int64    // amount of gas this tx states it will require
+}
+
+func (memE *Entry) Height() int64 {
+	return atomic.LoadInt64(&memE.height)
+}
+
+type Iterator interface {
+	// WaitNext blocks until the next entry is available.
+	WaitNext() <-chan struct{}
+
+	// NextEntry returns the following entry with respect to the last time this
+	// method was called, in the order defined by the mempool implementation. If
+	// the mempool is empty or if it was not called before, return an arbitrary
+	// first entry.
+	NextEntry() *Entry
 }

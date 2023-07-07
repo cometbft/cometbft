@@ -59,11 +59,11 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 		}
 	}
 
-	txs := checkTxs(t, reactors[0].mempool, numTxs, UnknownPeerID)
+	txs := checkTxs(t, reactors[0].mempool, numTxs)
 	waitForTxsOnReactors(t, txs, reactors)
 }
 
-// regression test for https://github.com/cometbft/cometbft/issues/5408
+// regression test for https://github.com/tendermint/tendermint/issues/5408
 func TestReactorConcurrency(t *testing.T) {
 	config := cfg.TestConfig()
 	const N = 2
@@ -89,7 +89,7 @@ func TestReactorConcurrency(t *testing.T) {
 
 		// 1. submit a bunch of txs
 		// 2. update the whole mempool
-		txs := checkTxs(t, reactors[0].mempool, numTxs, UnknownPeerID)
+		txs := checkTxs(t, reactors[0].mempool, numTxs)
 		go func() {
 			defer wg.Done()
 
@@ -106,7 +106,7 @@ func TestReactorConcurrency(t *testing.T) {
 
 		// 1. submit a bunch of txs
 		// 2. update none
-		_ = checkTxs(t, reactors[1].mempool, numTxs, UnknownPeerID)
+		_ = checkTxs(t, reactors[1].mempool, numTxs)
 		go func() {
 			defer wg.Done()
 
@@ -142,9 +142,24 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 		}
 	}
 
-	const peerID = 1
-	checkTxs(t, reactors[0].mempool, numTxs, peerID)
-	ensureNoTxs(t, reactors[peerID], 100*time.Millisecond)
+	// create random transactions
+	txs := make(types.Txs, numTxs)
+	for i := 0; i < numTxs; i++ {
+		txBytes := kvstore.NewRandomTx(20)
+		txs[i] = txBytes
+	}
+
+	const peerID0 = 0
+	const peerID1 = 1
+	// the second peer sends all the transactions to the first peer
+	for _, tx := range txs {
+		reactors[0].addSender(tx.Key(), peerID1)
+		_, err := reactors[peerID0].mempool.CheckTx(tx)
+		require.NoError(t, err)
+	}
+
+	// the second peer should not receive any transaction
+	ensureNoTxs(t, reactors[peerID1], 100*time.Millisecond)
 }
 
 func TestReactor_MaxTxBytes(t *testing.T) {
@@ -168,10 +183,9 @@ func TestReactor_MaxTxBytes(t *testing.T) {
 	// Broadcast a tx, which has the max size
 	// => ensure it's received by the second reactor.
 	tx1 := kvstore.NewRandomTx(config.Mempool.MaxTxBytes)
-	err := reactors[0].mempool.CheckTx(tx1, func(resp *abci.ResponseCheckTx) {
-		require.False(t, resp.IsErr())
-	}, TxInfo{SenderID: UnknownPeerID})
+	reqRes, err := reactors[0].mempool.CheckTx(tx1)
 	require.NoError(t, err)
+	require.False(t, reqRes.Response.GetCheckTx().IsErr())
 	waitForTxsOnReactors(t, []types.Tx{tx1}, reactors)
 
 	reactors[0].mempool.Flush()
@@ -180,10 +194,9 @@ func TestReactor_MaxTxBytes(t *testing.T) {
 	// Broadcast a tx, which is beyond the max size
 	// => ensure it's not sent
 	tx2 := kvstore.NewRandomTx(config.Mempool.MaxTxBytes + 1)
-	err = reactors[0].mempool.CheckTx(tx2, func(resp *abci.ResponseCheckTx) {
-		require.False(t, resp.IsErr())
-	}, TxInfo{SenderID: UnknownPeerID})
+	reqRes, err = reactors[0].mempool.CheckTx(tx2)
 	require.Error(t, err)
+	require.Nil(t, reqRes)
 }
 
 func TestBroadcastTxForPeerStopsWhenPeerStops(t *testing.T) {
@@ -259,6 +272,36 @@ func TestDontExhaustMaxActiveIDs(t *testing.T) {
 	}
 }
 
+func TestSenders(t *testing.T) {
+	config := cfg.TestConfig()
+	const N = 1
+	reactors, _ := makeAndConnectReactors(config, N)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				assert.NoError(t, err)
+			}
+		}
+	}()
+	reactor := reactors[0]
+
+	tx1 := kvstore.NewTxFromID(1)
+	tx2 := kvstore.NewTxFromID(2)
+	require.False(t, reactor.isSender(types.Tx(tx1).Key(), 1))
+
+	reactor.addSender(types.Tx(tx1).Key(), 1)
+	reactor.addSender(types.Tx(tx1).Key(), 2)
+	reactor.addSender(types.Tx(tx2).Key(), 1)
+	require.True(t, reactor.isSender(types.Tx(tx1).Key(), 1))
+	require.True(t, reactor.isSender(types.Tx(tx1).Key(), 2))
+	require.True(t, reactor.isSender(types.Tx(tx2).Key(), 1))
+
+	reactor.removeSenders(types.Tx(tx1).Key())
+	require.False(t, reactor.isSender(types.Tx(tx1).Key(), 1))
+	require.False(t, reactor.isSender(types.Tx(tx1).Key(), 2))
+	require.True(t, reactor.isSender(types.Tx(tx2).Key(), 1))
+}
+
 // mempoolLogger is a TestingLogger which uses a different
 // color for each validator ("validator" key must exist).
 func mempoolLogger() log.Logger {
@@ -282,7 +325,7 @@ func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switc
 		mempool, cleanup := newMempoolWithApp(cc)
 		defer cleanup()
 
-		reactors[i] = NewReactor(config.Mempool, mempool) // so we dont start the consensus states
+		reactors[i] = NewReactor(config.Mempool, mempool, false) // so we dont start the consensus states
 		reactors[i].SetLogger(logger.With("validator", i))
 	}
 

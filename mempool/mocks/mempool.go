@@ -3,7 +3,11 @@
 package mocks
 
 import (
+	abcicli "github.com/cometbft/cometbft/abci/client"
 	abcitypes "github.com/cometbft/cometbft/abci/types"
+
+	log "github.com/cometbft/cometbft/libs/log"
+
 	mempool "github.com/cometbft/cometbft/mempool"
 
 	mock "github.com/stretchr/testify/mock"
@@ -16,23 +20,30 @@ type Mempool struct {
 	mock.Mock
 }
 
-// CheckTx provides a mock function with given fields: tx, callback, txInfo
-func (_m *Mempool) CheckTx(tx types.Tx, callback func(*abcitypes.ResponseCheckTx), txInfo mempool.TxInfo) error {
-	ret := _m.Called(tx, callback, txInfo)
+// CheckTx provides a mock function with given fields: tx
+func (_m *Mempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
+	ret := _m.Called(tx)
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(types.Tx, func(*abcitypes.ResponseCheckTx), mempool.TxInfo) error); ok {
-		r0 = rf(tx, callback, txInfo)
+	var r0 *abcicli.ReqRes
+	var r1 error
+	if rf, ok := ret.Get(0).(func(types.Tx) (*abcicli.ReqRes, error)); ok {
+		return rf(tx)
+	}
+	if rf, ok := ret.Get(0).(func(types.Tx) *abcicli.ReqRes); ok {
+		r0 = rf(tx)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*abcicli.ReqRes)
+		}
 	}
 
-	return r0
-}
+	if rf, ok := ret.Get(1).(func(types.Tx) error); ok {
+		r1 = rf(tx)
+	} else {
+		r1 = ret.Error(1)
+	}
 
-// EnableTxsAvailable provides a mock function with given fields:
-func (_m *Mempool) EnableTxsAvailable() {
-	_m.Called()
+	return r0, r1
 }
 
 // Flush provides a mock function with given fields:
@@ -54,9 +65,30 @@ func (_m *Mempool) FlushAppConn() error {
 	return r0
 }
 
+// InitChannels provides a mock function with given fields: notifyAvailable
+func (_m *Mempool) InitChannels(notifyAvailable bool) {
+	_m.Called(notifyAvailable)
+}
+
 // Lock provides a mock function with given fields:
 func (_m *Mempool) Lock() {
 	_m.Called()
+}
+
+// NewIterator provides a mock function with given fields:
+func (_m *Mempool) NewIterator() mempool.Iterator {
+	ret := _m.Called()
+
+	var r0 mempool.Iterator
+	if rf, ok := ret.Get(0).(func() mempool.Iterator); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(mempool.Iterator)
+		}
+	}
+
+	return r0
 }
 
 // ReapMaxBytesMaxGas provides a mock function with given fields: maxBytes, maxGas
@@ -105,6 +137,11 @@ func (_m *Mempool) RemoveTxByKey(txKey types.TxKey) error {
 	return r0
 }
 
+// SetLogger provides a mock function with given fields: l
+func (_m *Mempool) SetLogger(l log.Logger) {
+	_m.Called(l)
+}
+
 // Size provides a mock function with given fields:
 func (_m *Mempool) Size() int {
 	ret := _m.Called()
@@ -133,6 +170,20 @@ func (_m *Mempool) SizeBytes() int64 {
 	return r0
 }
 
+// Stop provides a mock function with given fields:
+func (_m *Mempool) Stop() error {
+	ret := _m.Called()
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func() error); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // TxsAvailable provides a mock function with given fields:
 func (_m *Mempool) TxsAvailable() <-chan struct{} {
 	ret := _m.Called()
@@ -143,6 +194,22 @@ func (_m *Mempool) TxsAvailable() <-chan struct{} {
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(<-chan struct{})
+		}
+	}
+
+	return r0
+}
+
+// TxsRemoved provides a mock function with given fields:
+func (_m *Mempool) TxsRemoved() <-chan types.TxKey {
+	ret := _m.Called()
+
+	var r0 <-chan types.TxKey
+	if rf, ok := ret.Get(0).(func() <-chan types.TxKey); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(<-chan types.TxKey)
 		}
 	}
 

@@ -35,7 +35,7 @@ func TestMempoolNoProgressUntilTxsAvailable(t *testing.T) {
 	require.NoError(t, err)
 	state.AppHash = resp.LastBlockAppHash
 	cs := newStateWithConfig(config, state, privVals[0], app)
-	assertMempool(cs.txNotifier).EnableTxsAvailable()
+	assertMempool(cs.txNotifier).InitChannels(true)
 	height, round := cs.Height, cs.Round
 	newBlockCh := subscribe(cs.eventBus, types.EventQueryNewBlock)
 	startTestRound(cs, height, round)
@@ -60,7 +60,7 @@ func TestMempoolProgressAfterCreateEmptyBlocksInterval(t *testing.T) {
 	state.AppHash = resp.LastBlockAppHash
 	cs := newStateWithConfig(config, state, privVals[0], app)
 
-	assertMempool(cs.txNotifier).EnableTxsAvailable()
+	assertMempool(cs.txNotifier).InitChannels(true)
 
 	newBlockCh := subscribe(cs.eventBus, types.EventQueryNewBlock)
 	startTestRound(cs, cs.Height, cs.Round)
@@ -76,7 +76,7 @@ func TestMempoolProgressInHigherRound(t *testing.T) {
 	config.Consensus.CreateEmptyBlocks = false
 	state, privVals := randGenesisState(1, false, 10, nil)
 	cs := newStateWithConfig(config, state, privVals[0], kvstore.NewInMemoryApplication())
-	assertMempool(cs.txNotifier).EnableTxsAvailable()
+	assertMempool(cs.txNotifier).InitChannels(true)
 	height, round := cs.Height, cs.Round
 	newBlockCh := subscribe(cs.eventBus, types.EventQueryNewBlock)
 	newRoundCh := subscribe(cs.eventBus, types.EventQueryNewRound)
@@ -110,7 +110,7 @@ func TestMempoolProgressInHigherRound(t *testing.T) {
 func deliverTxsRange(t *testing.T, cs *State, start, end int) {
 	// Deliver some txs.
 	for i := start; i < end; i++ {
-		err := assertMempool(cs.txNotifier).CheckTx(kvstore.NewTx(fmt.Sprintf("%d", i), "true"), nil, mempl.TxInfo{})
+		_, err := assertMempool(cs.txNotifier).CheckTx(kvstore.NewTx(fmt.Sprintf("%d", i), "true"))
 		require.NoError(t, err)
 	}
 }
@@ -166,17 +166,16 @@ func TestMempoolRmBadTx(t *testing.T) {
 		// CheckTx should not err, but the app should return a bad abci code
 		// and the tx should get removed from the pool
 		invalidTx := []byte("invalidTx")
-		err := assertMempool(cs.txNotifier).CheckTx(invalidTx, func(r *abci.ResponseCheckTx) {
-			if r.Code != kvstore.CodeTypeInvalidTxFormat {
-				t.Errorf("expected checktx to return invalid format, got %v", r)
-				return
-			}
-			checkTxRespCh <- struct{}{}
-		}, mempl.TxInfo{})
+		reqRes, err := assertMempool(cs.txNotifier).CheckTx(invalidTx)
 		if err != nil {
 			t.Errorf("error after CheckTx: %v", err)
 			return
 		}
+		if reqRes.Response.GetCheckTx().Code != kvstore.CodeTypeInvalidTxFormat {
+			t.Errorf("expected checktx to return invalid format, got %v", reqRes.Response)
+			return
+		}
+		checkTxRespCh <- struct{}{}
 
 		// check for the tx
 		for {

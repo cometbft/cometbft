@@ -3,8 +3,10 @@ package consensus
 import (
 	"context"
 
+	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/clist"
+	"github.com/cometbft/cometbft/libs/log"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
@@ -20,8 +22,8 @@ func (emptyMempool) Lock()            {}
 func (emptyMempool) Unlock()          {}
 func (emptyMempool) Size() int        { return 0 }
 func (emptyMempool) SizeBytes() int64 { return 0 }
-func (emptyMempool) CheckTx(types.Tx, func(*abci.ResponseCheckTx), mempl.TxInfo) error {
-	return nil
+func (emptyMempool) CheckTx(types.Tx) (*abcicli.ReqRes, error) {
+	return nil, nil
 }
 
 func (txmp emptyMempool) RemoveTxByKey(types.TxKey) error {
@@ -39,11 +41,15 @@ func (emptyMempool) Update(
 ) error {
 	return nil
 }
-func (emptyMempool) Flush()                        {}
-func (emptyMempool) FlushAppConn() error           { return nil }
-func (emptyMempool) TxsAvailable() <-chan struct{} { return make(chan struct{}) }
-func (emptyMempool) EnableTxsAvailable()           {}
-func (emptyMempool) TxsBytes() int64               { return 0 }
+func (emptyMempool) Flush()                         {}
+func (emptyMempool) FlushAppConn() error            { return nil }
+func (emptyMempool) InitChannels(bool)              {}
+func (emptyMempool) TxsAvailable() <-chan struct{}  { return make(chan struct{}) }
+func (emptyMempool) TxsRemoved() <-chan types.TxKey { return make(chan types.TxKey) }
+func (emptyMempool) TxsBytes() int64                { return 0 }
+func (emptyMempool) Stop() error                    { return nil }
+func (emptyMempool) SetLogger(log.Logger)           {}
+func (emptyMempool) NewIterator() mempl.Iterator    { return nil }
 
 func (emptyMempool) TxsFront() *clist.CElement    { return nil }
 func (emptyMempool) TxsWaitChan() <-chan struct{} { return nil }

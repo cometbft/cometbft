@@ -79,9 +79,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 			mempl.WithPreCheck(sm.TxPreCheck(state)),
 			mempl.WithPostCheck(sm.TxPostCheck(state)))
 
-		if thisConfig.Consensus.WaitForTxs() {
-			mempool.EnableTxsAvailable()
-		}
+		mempool.InitChannels(thisConfig.Consensus.WaitForTxs())
 
 		// Make a full instance of the evidence pool
 		evidenceDB := dbm.NewMemDB()
@@ -330,7 +328,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 	for i := 0; i < N; i++ {
 
 		// enable txs so we can create different proposals
-		assertMempool(css[i].txNotifier).EnableTxsAvailable()
+		assertMempool(css[i].txNotifier).InitChannels(true)
 		// make first val byzantine
 		if i == 0 {
 			// NOTE: Now, test validators are MockPV, which by default doesn't

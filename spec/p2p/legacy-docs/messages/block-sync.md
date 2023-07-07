@@ -39,8 +39,8 @@ It also contains an extended commit _iff_ vote extensions are enabled at the blo
 
 | Name      | Type                                                           | Description                     | Field Number |
 |-----------|----------------------------------------------------------------|---------------------------------|--------------|
-| Block     | [Block](../../core/data_structures.md#block)                   | Requested Block                 | 1            |
-| ExtCommit | [ExtendedCommit](../../core/data_structures.md#extendedcommit) | Sender's LastCommit information | 2            |
+| Block     | [Block](../../../core/data_structures.md#block)                   | Requested Block                 | 1            |
+| ExtCommit | [ExtendedCommit](../../../core/data_structures.md#extendedcommit) | Sender's LastCommit information | 2            |
 
 ### StatusRequest
 

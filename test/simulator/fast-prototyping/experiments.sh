@@ -5,7 +5,7 @@ source ${DIR}/utils.sh
 
 if [ $# -ne 1 ]; then
     echo "usage: experiments output.csv"
-    exit -1
+    exit 1
 fi
 
 FILE=$1

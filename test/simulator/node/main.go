@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/cometbft/cometbft/mempool"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
 	"net/http"
 	"os"
@@ -133,8 +134,23 @@ func startNode(cfg *Config) error {
 		nodeLogger.Info("Using default (synchronized) local client creator")
 	}
 
+	n, err := node.NewNode(context.Background(), cmtcfg,
+		privval.LoadOrGenFilePV(cmtcfg.PrivValidatorKeyFile(), cmtcfg.PrivValidatorStateFile()),
+		nodeKey,
+		clientCreator,
+		node.DefaultGenesisDocProviderFunc(cmtcfg),
+		config.DefaultDBProvider,
+		node.DefaultMetricsProvider(cmtcfg.Instrumentation),
+		nodeLogger,
+	)
+
 	registry := map[string]p2p.Reactor{}
 	registry["p2p.mock.reactor"] = p2pmock.NewReactor()
+	// registry["fast-prototyping.reactors.mempool.gossip"] = gossip.NewReactor(cmtcfg.Mempool, mempool.CListMempool(n.Mempool()))
+
+	mp := n.Mempool()
+	a := mp.(mempool.CListMempool)
+	fmt.Println(a)
 
 	customReactors := map[string]p2p.Reactor{}
 	for k, v := range cfg.ExperimentalCustomReactors {
@@ -147,16 +163,6 @@ func startNode(cfg *Config) error {
 		}
 	}
 
-	n, err := node.NewNode(context.Background(), cmtcfg,
-		privval.LoadOrGenFilePV(cmtcfg.PrivValidatorKeyFile(), cmtcfg.PrivValidatorStateFile()),
-		nodeKey,
-		clientCreator,
-		node.DefaultGenesisDocProviderFunc(cmtcfg),
-		config.DefaultDBProvider,
-		node.DefaultMetricsProvider(cmtcfg.Instrumentation),
-		nodeLogger,
-		node.CustomReactors(customReactors),
-	)
 	if err != nil {
 		return err
 	}

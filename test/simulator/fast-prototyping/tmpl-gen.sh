@@ -2,12 +2,12 @@
 
 if [ $# -ne 2 ]; then
     echo "usage: gen.sh #nodes propagation_rate"
-    exit -1
+    exit 1
 fi
 
 NODES=$1
 RATE=$2
-PREAMBLE="prometheus = true\nload_tx_size_bytes = 100\nload_tx_to_send = 1000\nload_tx_batch_size = 100\npropagation_ratio=${RATE}\nexperimental_custom_reactors = {CONSENSUS = \"p2p.mock.reactor\"}"
+PREAMBLE="prometheus = true\nload_tx_size_bytes = 100\nload_tx_to_send = 1000\nload_tx_batch_size = 100\nexperimental_propagation_ratio=${RATE}\nexperimental_custom_reactors = {CONSENSUS = \"p2p.mock.reactor\"}"
 
 echo -e $PREAMBLE
 for i in $(seq -f "%02g" 1 ${NODES})

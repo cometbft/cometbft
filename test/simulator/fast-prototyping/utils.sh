@@ -21,9 +21,9 @@ log() {
 function geometric {
     if [ $# -ne 3 ]; then
 	echo "usage: genometric #initialValue #factor #times"
-	exit -1
+	exit 1
     fi
-    
+
     ((val = $1))
     ((mult = $2))
     ((count = $3))

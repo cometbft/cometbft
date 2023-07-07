@@ -375,9 +375,6 @@ max_tx_bytes = {{ .Mempool.MaxTxBytes }}
 # XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
 max_batch_bytes = {{ .Mempool.MaxBatchBytes }}
 
-# Propagation ratio
-propagation_ratio = {{ .Mempool.PropagationRatio }}
-
 #######################################################
 ###         State Sync Configuration Options        ###
 #######################################################

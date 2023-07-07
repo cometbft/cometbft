@@ -123,17 +123,17 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 // generateTestnet generates a single testnet with the given options.
 func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion string, prometheus bool, propagationRatio float32) (e2e.Manifest, error) {
 	manifest := e2e.Manifest{
-		IPv6:             ipv6.Choose(r).(bool),
-		ABCIProtocol:     nodeABCIProtocols.Choose(r).(string),
-		InitialHeight:    int64(opt["initialHeight"].(int)),
-		InitialState:     opt["initialState"].(map[string]string),
-		Validators:       &map[string]int64{},
-		ValidatorUpdates: map[string]map[string]int64{},
-		Evidence:         evidence.Choose(r).(int),
-		Nodes:            map[string]*e2e.ManifestNode{},
-		UpgradeVersion:   upgradeVersion,
-		Prometheus:       prometheus,
-		PropagationRatio: propagationRatio,
+		IPv6:                         ipv6.Choose(r).(bool),
+		ABCIProtocol:                 nodeABCIProtocols.Choose(r).(string),
+		InitialHeight:                int64(opt["initialHeight"].(int)),
+		InitialState:                 opt["initialState"].(map[string]string),
+		Validators:                   &map[string]int64{},
+		ValidatorUpdates:             map[string]map[string]int64{},
+		Evidence:                     evidence.Choose(r).(int),
+		Nodes:                        map[string]*e2e.ManifestNode{},
+		UpgradeVersion:               upgradeVersion,
+		Prometheus:                   prometheus,
+		ExperimentalPropagationRatio: propagationRatio,
 	}
 
 	switch abciDelays.Choose(r).(string) {

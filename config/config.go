@@ -708,8 +708,6 @@ type MempoolConfig struct {
 	WalPath string `mapstructure:"wal_dir"`
 	// Maximum number of transactions in the mempool
 	Size int `mapstructure:"size"`
-	// Likeliness to propagate a message in [0,1]
-	PropagationRatio float32 `mapstructure:"propagation_ratio"`
 	// Limit the total size of all txs in the mempool.
 	// This only accounts for raw transactions (e.g. given 1MB transactions and
 	// max_txs_bytes=5MB, mempool will only accept 5 transactions).
@@ -737,11 +735,10 @@ func DefaultMempoolConfig() *MempoolConfig {
 		WalPath:   "",
 		// Each signature verification takes .5ms, Size reduced until we implement
 		// ABCI Recheck
-		Size:             5000,
-		MaxTxsBytes:      1024 * 1024 * 1024, // 1GB
-		CacheSize:        10000,
-		MaxTxBytes:       1024 * 1024, // 1MB
-		PropagationRatio: 1.0,
+		Size:        5000,
+		MaxTxsBytes: 1024 * 1024 * 1024, // 1GB
+		CacheSize:   10000,
+		MaxTxBytes:  1024 * 1024, // 1MB
 	}
 }
 

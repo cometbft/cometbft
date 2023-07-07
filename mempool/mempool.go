@@ -11,7 +11,7 @@ import (
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/types"
+	types "github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -221,6 +221,14 @@ type Entry struct {
 
 func (memE *Entry) Height() int64 {
 	return atomic.LoadInt64(&memE.height)
+}
+
+func (memE *Entry) GetTxKey() types.TxKey {
+	return memE.tx.Key()
+}
+
+func (memE *Entry) GetTx() types.Tx {
+	return memE.tx
 }
 
 type Iterator interface {

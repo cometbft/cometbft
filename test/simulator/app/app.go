@@ -104,6 +104,9 @@ type Config struct {
 
 	// Inject custom reactors (see node/main.go#startNode for a list of possibilities)
 	ExperimentalCustomReactors map[string]string `toml:"experimental_custom_reactors"`
+
+	// Set gossip propagation rate (experimental mempool)
+	ExperimentalGossipPropagationRate float32 `toml:"experimental_gossip_propagation_rate"`
 }
 
 func DefaultConfig(dir string) *Config {

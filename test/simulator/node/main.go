@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/cometbft/cometbft/mempool"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
+	"github.com/cometbft/cometbft/test/simulator/fast-prototyping/reactors/mempool/gossip"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -144,13 +144,11 @@ func startNode(cfg *Config) error {
 		nodeLogger,
 	)
 
+	// wave custom reactors
+
 	registry := map[string]p2p.Reactor{}
 	registry["p2p.mock.reactor"] = p2pmock.NewReactor()
-	// registry["fast-prototyping.reactors.mempool.gossip"] = gossip.NewReactor(cmtcfg.Mempool, mempool.CListMempool(n.Mempool()))
-
-	mp := n.Mempool()
-	a := mp.(mempool.CListMempool)
-	fmt.Println(a)
+	registry["experimental.reactors.mempool.gossip"] = gossip.NewReactor(cmtcfg.Mempool, n.Mempool(), cfg.ExperimentalGossipPropagationRate)
 
 	customReactors := map[string]p2p.Reactor{}
 	for k, v := range cfg.ExperimentalCustomReactors {
@@ -162,6 +160,8 @@ func startNode(cfg *Config) error {
 			logger.Info("Not found: ", registry[k])
 		}
 	}
+
+	node.CustomReactors(customReactors)(n)
 
 	if err != nil {
 		return err

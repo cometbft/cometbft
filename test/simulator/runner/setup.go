@@ -252,8 +252,6 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		cfg.Instrumentation.Prometheus = true
 	}
 
-	cfg.Mempool.PropagationRatio = node.PropagationRatio
-
 	return cfg, nil
 }
 

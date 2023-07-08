@@ -8,7 +8,7 @@ import (
 
 // BlockServiceClient provides block information
 type BlockServiceClient interface {
-	GetBlock(ctx context.Context, request v1.GetBlockRequest) (*v1.GetBlockResponse, error)
+	GetBlock(ctx context.Context, request *v1.GetBlockRequest) (*v1.GetBlockResponse, error)
 }
 
 type blockServiceClient struct {
@@ -22,7 +22,7 @@ func newBlockServiceClient(conn grpc.ClientConn) BlockServiceClient {
 }
 
 // GetBlock implements BlockServiceClient
-func (c *blockServiceClient) GetBlock(ctx context.Context, request v1.GetBlockRequest) (*v1.GetBlockResponse, error) {
+func (c *blockServiceClient) GetBlock(ctx context.Context, request *v1.GetBlockRequest) (*v1.GetBlockResponse, error) {
 	res, err := c.client.GetBlock(ctx, &v1.GetBlockRequest{Height: request.Height})
 	if err != nil {
 		return nil, err
@@ -37,6 +37,6 @@ func newDisabledBlockServiceClient() BlockServiceClient {
 }
 
 // GetBlock implements BlockServiceClient
-func (*disabledBlockServiceClient) GetBlock(context.Context, v1.GetBlockRequest) (*v1.GetBlockResponse, error) {
+func (*disabledBlockServiceClient) GetBlock(context.Context, *v1.GetBlockRequest) (*v1.GetBlockResponse, error) {
 	panic("block service client is disabled")
 }

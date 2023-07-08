@@ -3,7 +3,10 @@ package client
 import (
 	"context"
 	v1 "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
+	protoType "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/cosmos/gogoproto/grpc"
+	"time"
 )
 
 // BlockServiceClient provides block information
@@ -23,11 +26,36 @@ func newBlockServiceClient(conn grpc.ClientConn) BlockServiceClient {
 
 // GetBlock implements BlockServiceClient
 func (c *blockServiceClient) GetBlock(ctx context.Context, request *v1.GetBlockRequest) (*v1.GetBlockResponse, error) {
-	res, err := c.client.GetBlock(ctx, &v1.GetBlockRequest{Height: request.Height})
-	if err != nil {
-		return nil, err
+	blockID := protoType.BlockID{
+		Hash:          nil,
+		PartSetHeader: protoType.PartSetHeader{},
 	}
-	return res, nil
+
+	block := protoType.Block{
+		Header: protoType.Header{
+			Version:            cmtversion.Consensus{},
+			ChainID:            "",
+			Height:             request.Height,
+			Time:               time.Now(),
+			LastCommitHash:     nil,
+			DataHash:           nil,
+			ValidatorsHash:     nil,
+			NextValidatorsHash: nil,
+			ConsensusHash:      nil,
+			AppHash:            nil,
+			LastResultsHash:    nil,
+			EvidenceHash:       nil,
+			ProposerAddress:    nil,
+		},
+		Data:       protoType.Data{},
+		Evidence:   protoType.EvidenceList{},
+		LastCommit: nil,
+	}
+	blockResp := &v1.GetBlockResponse{
+		BlockId: &blockID,
+		Block:   &block,
+	}
+	return blockResp, nil
 }
 
 type disabledBlockServiceClient struct{}

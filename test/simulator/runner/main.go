@@ -371,6 +371,10 @@ Does not run any perturbations.
 		`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
+			benchmarkDuration := 60 * time.Second
+
+			defer cli.infp.StopTestnet(context.Background())
+
 			if err := Cleanup(cli.testnet); err != nil {
 				return err
 			}
@@ -380,38 +384,50 @@ Does not run any perturbations.
 			}
 
 			if err := Start(cmd.Context(), cli.testnet, cli.infp); err != nil {
-				logger.Error(fmt.Sprintf("Error while starting nodes: %v", err.Error()))
-				_ = cli.infp.StopTestnet(context.Background())
 				return err
 			}
 
-			chLoadResult := make(chan int)
+			logger.Info("Waiting first PEX (30s)")
+			time.Sleep(30 * time.Second)
+
+			logger.Info("Starting custom benchmark.")
+
+			startAt := time.Now()
+			timer := time.NewTimer(benchmarkDuration)
+			defer timer.Stop()
+
 			ctx, loadCancel := context.WithCancel(cmd.Context())
 			defer loadCancel()
+			chLoadResult := make(chan int)
+
+			txs := 0
+
 			go func() {
-				txs, err := Load(ctx, cli.testnet)
+				res, err := Load(ctx, cli.testnet)
 				if err != nil {
 					logger.Error(fmt.Sprintf("Transaction load errored: %v", err.Error()))
+					loadCancel()
 				}
-				chLoadResult <- txs
+				chLoadResult <- res
 			}()
 
-			mempoolStats, err := Custom(ctx, loadCancel, cli.testnet, 60*time.Second)
-			if err != nil {
-				logger.Error(fmt.Sprintf("Error while injecting load: %v", err.Error()))
-				_ = cli.infp.StopTestnet(context.Background())
-				return err
+			select {
+			case txs = <-chLoadResult:
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-timer.C:
+				if time.Since(startAt) < benchmarkDuration {
+					return fmt.Errorf("timed out without reason")
+				}
 			}
+			logger.Info("Ending benchmark.")
 
-			txs := <-chLoadResult
-			if txs == 0 {
-				logger.Error("failed to submit any transactions")
-			}
+			logger.Info("Waiting grace period (5s).")
+			time.Sleep(30 * time.Second)
 
-			graph, err := json.Marshal(mempoolStats.BandwidthGraph(cli.testnet, false))
+			logger.Info("Fetching stats.")
+			mempoolStats, err := Fetch(cli.testnet)
 			if err != nil {
-				logger.Error(fmt.Sprintf("Error while json-ing communication graph: %v", err.Error()))
-				_ = cli.infp.StopTestnet(context.Background())
 				return err
 			}
 
@@ -421,12 +437,6 @@ Does not run any perturbations.
 			totalBandwidth := mempoolStats.TotalBandwidth(cli.testnet)
 			usefulBandwidth := (len(cli.testnet.Nodes) - 1) * int(txsSeen) * cli.testnet.LoadTxSizeBytes // at most (n-1) receivers
 			overhead := math.Max(0, float64(totalBandwidth-usefulBandwidth)/float64(usefulBandwidth))
-			graph, err = json.Marshal(mempoolStats.BandwidthGraph(cli.testnet, true))
-			if err != nil {
-				logger.Error(fmt.Sprintf("Error while json-ing communication graph: %v", err.Error()))
-				_ = cli.infp.StopTestnet(context.Background())
-				return err
-			}
 
 			logger.Info("#txs sent = " + strconv.Itoa(txs))
 			logger.Info("#txs seen (on avg.) = " + fmt.Sprintf("%v", txsSeen))
@@ -435,11 +445,11 @@ Does not run any perturbations.
 			logger.Info("useful bandwidth (B) = " + strconv.Itoa(usefulBandwidth))
 			logger.Info("overhead = " + fmt.Sprintf("%v", overhead))
 			logger.Info("redundancy (on avg) = " + fmt.Sprintf("%v", redundancy))
-			logger.Info("bandwidth graph = " + fmt.Sprintf("%v", string(graph)))
 
-			err = cli.infp.StopTestnet(context.Background())
-			if err != nil {
+			if graph, err := json.Marshal(mempoolStats.BandwidthGraph(cli.testnet, true)); err != nil {
 				return err
+			} else {
+				logger.Info("bandwidth graph = " + fmt.Sprintf("%v", string(graph)))
 			}
 
 			return Cleanup(cli.testnet)
@@ -449,34 +459,41 @@ Does not run any perturbations.
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "stats",
 		Short: "Display some statistics about a run",
-		Long: `Display the following global statistics:
-    node.bandwidth: detailed bandwidth usage as a (json) graph
-    mempoool.duplicate: duplicated txs in the mempool
+		Long: `Display the following global statistics (as json:
+    graph.bandwidth: mempool bandwidth usage
+    graph.peers: #peers of each node
+    mempoool.duplicates: #duplicated txs in the mempool at each node
 		`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			mempoolStats, err := FetchStats(cli.testnet)
+			_, err := WaitForAllNodes(context.TODO(), cli.testnet, 0, 5*time.Second)
 			if err != nil {
-				logger.Error(fmt.Sprintf("Error while fetching statistics: %v", err.Error()))
+				return err
+			}
+
+			mempoolStats, err := Fetch(cli.testnet)
+			if err != nil {
 				return err
 			}
 
 			graph, err := json.Marshal(mempoolStats.BandwidthGraph(cli.testnet, false))
 			if err != nil {
-				logger.Error(fmt.Sprintf("Error while json-ing communication graph: %v", err.Error()))
-				_ = cli.infp.StopTestnet(context.Background())
 				return err
 			}
 
-			redundant, err := json.Marshal(mempoolStats.Redundant(cli.testnet))
+			peers, err := json.Marshal(mempoolStats.Peers(cli.testnet))
 			if err != nil {
-				logger.Error(fmt.Sprintf("Error while json-ing data on redundant txs: %v", err.Error()))
-				_ = cli.infp.StopTestnet(context.Background())
 				return err
 			}
 
-			logger.Info("bandwidth graph = " + fmt.Sprintf("%v", string(graph)))
-			logger.Info("redundant = " + fmt.Sprintf("%v", string(redundant)))
+			duplicates, err := json.Marshal(mempoolStats.Duplicates(cli.testnet))
+			if err != nil {
+				return err
+			}
+
+			logger.Info("graph.bandwidth = " + fmt.Sprintf("%v", string(graph)))
+			logger.Info("graph.peers = " + fmt.Sprintf("%v", string(peers)))
+			logger.Info("mempool.duplicates = " + fmt.Sprintf("%v", string(duplicates)))
 
 			return nil
 		},

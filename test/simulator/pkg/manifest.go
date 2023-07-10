@@ -98,7 +98,7 @@ type Manifest struct {
 	VoteExtensionSize uint `toml:"vote_extension_size"`
 
 	// Likeliness to propagate a message
-	ExperimentalPropagationRatio float32 `toml:"experimental_propagation_ratio"`
+	ExperimentalGossipPropagationRate float32 `toml:"experimental_gossip_propagation_rate"`
 
 	// Inject custom reactors (see node/main.go#startNode for a list of possibilities)
 	ExperimentalCustomReactors map[string]string `toml:"experimental_custom_reactors"`

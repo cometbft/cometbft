@@ -103,6 +103,8 @@ func waitForNode(ctx context.Context, node *e2e.Node, height int64, timeout time
 			status, err := client.Status(ctx)
 			if err != nil {
 				logger.Error("Error connecting ", err)
+			} else {
+				node.ID = status.NodeInfo.ID()
 			}
 			switch {
 			case time.Since(lastChanged) > timeout:
@@ -120,8 +122,8 @@ func waitForNode(ctx context.Context, node *e2e.Node, height int64, timeout time
 	}
 }
 
-// waitForAllNodes waits for all nodes to become available and catch up to the given block height.
-func waitForAllNodes(ctx context.Context, testnet *e2e.Testnet, height int64, timeout time.Duration) (int64, error) {
+// WaitForAllNodes waits for all nodes to become available and catch up to the given block height.
+func WaitForAllNodes(ctx context.Context, testnet *e2e.Testnet, height int64, timeout time.Duration) (int64, error) {
 	var lastHeight int64
 
 	deadline := time.Now().Add(timeout)

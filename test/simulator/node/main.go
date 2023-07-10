@@ -155,7 +155,7 @@ func startNode(cfg *Config) error {
 		mock, ok := registry[v]
 		if ok {
 			customReactors[k] = mock
-			logger.Info("Mocking reactors: ", k, mock)
+			logger.Info("Mocking reactor: ", k, mock)
 		} else {
 			logger.Info("Not found: ", registry[k])
 		}

@@ -14,7 +14,7 @@ TMPL="custom"
 echo "nodes;propagation_rate;sent;seen;completion;total_bandwidth;useful_bandwidth;redundancy;overhead;bandwidth" > ${FILE}
 for r in $(seq 10 10 50);
 do
-    for i in $(geometric 2 2 5);
+    for i in $(geometric 2 2 4);
     do
 	${DIR}/tmpl-gen.sh ${i} ${r} > ${NETDIR}/${TMPL}.toml
 	${BINDIR}/runner -f ${NETDIR}/${TMPL}.toml custom > ${TMPDIR}/log

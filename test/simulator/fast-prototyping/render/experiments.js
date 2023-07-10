@@ -27,7 +27,7 @@ function plotExperiments(dimension) {
 	    text: 'Experiments',
 	    subtext: 'e2e - fast prototyping',
 	    left: 'center'
-	},	
+	},
 	grid3D: {},
 	xAxis3D: {
 	    name: headersMap['nodes']
@@ -37,7 +37,7 @@ function plotExperiments(dimension) {
 	},
 	zAxis3D: {
 	    name: headersMap[dimension],
-	    
+
 	},
 	dataset: {
 	    dimensions: headers,
@@ -64,18 +64,18 @@ function plotExperiments(dimension) {
 	graphChart.clear();
 	plotGraph(params.dataIndex);
     });
-    
+
 }
 
 function plotGraph(idx) {
     var data = graphs[idx];
-    
+
     var max = 0
     var min = Number.MAX_SAFE_INTEGER
 
     var option = {}
     var nodes = [];
-    var edges = [];	
+    var edges = [];
 
     $.each(data, function (n, peers) {
         $.each(peers, function (m, bw) {
@@ -146,7 +146,7 @@ function plotGraph(idx) {
 	    text: 'Bandwidth usage',
 	    subtext: "(#nodes = " + dataset[idx]["nodes"] + ", propagation rate = " + dataset[idx]["propagation_rate"] + ")",
 	    left: 'center'
-	},	
+	},
         tooltip: {},
         animationDurationUpdate: 1500,
         animationEasingUpdate: 'quinticInOut',
@@ -157,6 +157,8 @@ function plotGraph(idx) {
             data: nodes,
             links: edges,
             roam: true,
+            edgeSymbol: ['circle', 'arrow'],
+            edgeSymbolSize: [4, 10],
             labelLayout: {
                 hideOverlap: true
             },
@@ -167,23 +169,23 @@ function plotGraph(idx) {
     }
 
     option && graphChart.setOption(option);
-    
+
 }
 
 jQuery.get(
-    'experiments.csv?'+Math.random(),
+    'results.csv?'+Math.random(),
     function (csv) {
 	var lines = csv.split("\n");
 	var results = [];
 	headers=lines[0].split(";");
-	for(var i=1; i<lines.length; i++){	    
+	for(var i=1; i<lines.length; i++){
 	    var obj = {};
 	    var currentline=lines[i].split(";");
 	    // skip empty lines
 	    if (currentline.length > 1) {
 		for(var j=0; j<headers.length-1; j++){
 		    obj[headers[j]] = currentline[j];
-		}		
+		}
 		dataset.push(JSON.parse(JSON.stringify(obj)));
 		var graph = JSON.parse(currentline[j]);
 		graphs.push(graph);
@@ -200,11 +202,11 @@ jQuery.get(
 		dropdown.appendChild(child);
 	    }
 	}
-	
+
 	plotExperiments('overhead')
 
 	plotGraph(0)
-	
-	
+
+
     }
 );

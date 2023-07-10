@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"github.com/cometbft/cometbft/rpc/core"
 	"google.golang.org/grpc/reflection"
 	"net"
 	"strings"
@@ -58,9 +59,9 @@ func WithVersionService() Option {
 }
 
 // WithBlockService enables the block service on the CometBFT server.
-func WithBlockService() Option {
+func WithBlockService(env *core.Environment) Option {
 	return func(b *serverBuilder) {
-		b.blockService = blockservice.New()
+		b.blockService = blockservice.New(env)
 	}
 }
 

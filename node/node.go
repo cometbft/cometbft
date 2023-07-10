@@ -633,7 +633,7 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 			opts = append(opts, grpcserver.WithVersionService())
 		}
 		if n.config.GRPC.BlockService.Enabled {
-			opts = append(opts, grpcserver.WithBlockService())
+			opts = append(opts, grpcserver.WithBlockService(env))
 		}
 		go func() {
 			if err := grpcserver.Serve(listener, opts...); err != nil {

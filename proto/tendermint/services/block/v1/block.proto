@@ -1,6 +1,7 @@
 syntax = "proto3";
 package tendermint.services.block.v1;
 
+import "gogoproto/gogo.proto";
 import "tendermint/types/block.proto";
 import "tendermint/types/types.proto";
 
@@ -11,6 +12,6 @@ message GetBlockRequest {
 }
 
 message GetBlockResponse {
-  tendermint.types.BlockID block_id = 1;
-  tendermint.types.Block   block    = 2;
+  tendermint.types.BlockID block_id = 1 [(gogoproto.nullable) = false];
+  tendermint.types.Block   block    = 2 [(gogoproto.nullable) = false];
 }

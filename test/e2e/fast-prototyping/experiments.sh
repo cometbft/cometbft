@@ -11,10 +11,10 @@ fi
 FILE=$1
 TMPL="custom"
 
-echo "nodes;propagation_rate;sent;seen;completion;total_bandwidth;useful_bandwidth;redundancy;overhead;bandwidth" > ${FILE}
-for r in $(seq 50 10 100);
+echo "nodes;propagation_rate;sent;seen;completion;total_bandwidth;useful_bandwidth;overhead;redundancy;degree;bandwidth" > ${FILE}
+for r in $(seq 50 100 100);
 do
-    for i in $(geometric 8 2 4);
+    for i in $(geometric 8 2 1);
     do
 			${DIR}/tmpl-gen.sh ${i} ${r} > ${NETDIR}/${TMPL}.toml
 			${BINDIR}/runner -f ${NETDIR}/${TMPL}.toml custom > ${TMPDIR}/log
@@ -25,8 +25,9 @@ do
 			usefulBandwidth=$(grep "useful bandwidth" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
 			overhead=$(grep "overhead" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
 			redundancy=$(grep "redundancy" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
+			degree=$(grep "degree" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
 			bandwidth=$(grep "bandwidth graph" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
-			echo ${i}";"${r}";"${sent}";"${seen}";"${completion}";"${totalBandwidth}";"${usefulBandwidth}";"${overhead}";"${redundancy}";"${bandwidth} >> ${FILE}
+			echo ${i}";"${r}";"${sent}";"${seen}";"${completion}";"${totalBandwidth}";"${usefulBandwidth}";"${overhead}";"${redundancy}";"${degree}";"${bandwidth} >> ${FILE}
 			${BINDIR}/runner -f ${NETDIR}/${TMPL}.toml cleanup >> /dev/null
 			sleep 1
     done

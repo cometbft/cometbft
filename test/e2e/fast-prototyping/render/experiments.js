@@ -13,6 +13,7 @@ var headersMap = {
     "total_bandwidth" : "total bw. (KB)",
     "useful_bandwidth" : "useful bw. (KB)",
     "redundancy" : "redundancy (avg)",
+    "degree" : "degree (avg)",
     "overhead" : "overhead",
     "bandwidth" : "bandwidth"
 }

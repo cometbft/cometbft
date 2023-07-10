@@ -75,7 +75,7 @@ type Store interface {
 	Bootstrap(State) error
 	// PruneStates takes the height from which to start pruning and which height stop at
 	PruneStates(int64, int64, int64) error
-	// Saves the height at which the store is bootstrapped after out of band statesync
+	// Saves the height at which the store is bootstrapped after out of band statesync, a value of zero clears the data
 	SetOfflineStateSyncHeight(height int64) error
 	// Gets the height at which the store is bootstrapped after out of band statesync
 	GetOfflineStateSyncHeight() (int64, error)

@@ -231,14 +231,15 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	if err != nil {
 		return fmt.Errorf("failed to set synced height")
 	}
-	if err := blockStore.Close(); err != nil {
+	if err = blockStore.Close(); err != nil {
 		logger.Error("failed to close blockstore")
 	}
 	if err := stateStore.Close(); err != nil {
 		logger.Error("failed to close statestore")
+		return err2
 	}
 
-	return nil
+	return err
 }
 
 //------------------------------------------------------------------------------

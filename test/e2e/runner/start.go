@@ -51,14 +51,18 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 	if err != nil {
 		return err
 	}
+	logger.Info("Nodes started.")
 	for _, node := range nodesAtZero {
-		if _, err := waitForNode(ctx, node, 0, 15*time.Second); err != nil {
+		if status, err := waitForNode(ctx, node, 0, 30*time.Second); err != nil {
 			return err
+		} else {
+			node.ID = status.NodeInfo.ID()
 		}
 		if node.PrometheusProxyPort > 0 {
 			logger.Info("start", "msg",
-				log.NewLazySprintf("Node %v up on http://%s:%v; with Prometheus on http://%s:%v/metrics",
+				log.NewLazySprintf("Node %v (%v) up on http://%s:%v; with Prometheus on http://%s:%v/metrics",
 					node.Name,
+					node.ID,
 					node.ExternalIP,
 					node.ProxyPort,
 					node.ExternalIP,
@@ -75,6 +79,11 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 	}
 
 	networkHeight := testnet.InitialHeight
+
+	if networkHeight == 0 {
+		logger.Info("Initial height is 0")
+		return nil
+	}
 
 	// Wait for initial height
 	logger.Info("Waiting for initial height",

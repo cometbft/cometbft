@@ -1,4 +1,0 @@
-prometheus = true
-
-[node.validator01]
-

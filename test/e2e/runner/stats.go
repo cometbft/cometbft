@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	e2e "github.com/cometbft/cometbft/test/simulator/pkg"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
 type Stats struct {
@@ -146,6 +146,14 @@ func (t *Stats) Redundancy(testnet *e2e.Testnet) float32 {
 		stotal += float32(t.seen[n])
 	}
 	return rtotal / stotal
+}
+
+func (t *Stats) Degree(testnet *e2e.Testnet) float32 {
+	rtotal := float32(0)
+	for _, n := range testnet.Nodes {
+		rtotal += float32(t.peers[n])
+	}
+	return rtotal / float32(len(testnet.Nodes))
 }
 
 func query(v1api v1.API, timeout time.Duration, field string, node string, extra string) (int, error) {

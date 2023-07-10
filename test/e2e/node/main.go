@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	p2pmock "github.com/cometbft/cometbft/p2p/mock"
+	"github.com/cometbft/cometbft/test/e2e/fast-prototyping/reactors/mempool/gossip"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -141,6 +143,26 @@ func startNode(cfg *Config) error {
 		node.DefaultMetricsProvider(cmtcfg.Instrumentation),
 		nodeLogger,
 	)
+
+	// wave custom reactors
+
+	registry := map[string]p2p.Reactor{}
+	registry["p2p.mock.reactor"] = p2pmock.NewReactor()
+	registry["experimental.reactors.mempool.gossip"] = gossip.NewReactor(cmtcfg.Mempool, n.Mempool(), cfg.ExperimentalGossipPropagationRate)
+
+	customReactors := map[string]p2p.Reactor{}
+	for k, v := range cfg.ExperimentalCustomReactors {
+		mock, ok := registry[v]
+		if ok {
+			customReactors[k] = mock
+			logger.Info("Mocking reactor: ", k, mock)
+		} else {
+			logger.Info("Not found: ", registry[k])
+		}
+	}
+
+	node.CustomReactors(customReactors)(n)
+
 	if err != nil {
 		return err
 	}

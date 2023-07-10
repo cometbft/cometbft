@@ -76,8 +76,8 @@ generator. For example:
 ```
 
 **NB**: The corresponding Docker images for the relevant versions of the E2E
-node (the `cometbft/e2e-node` image) must be available on the local machine,
-or via [Docker Hub](https://hub.docker.com/r/cometbft/e2e-node).
+node (the `0track/simulator-node` image) must be available on the local machine,
+or via [Docker Hub](https://hub.docker.com/r/0track/simulator-node).
 
 Multiversion testnets can also perform uncoordinated upgrades. Nodes containing a
 perturbation of type `upgrade` will upgrade to the target version specified in

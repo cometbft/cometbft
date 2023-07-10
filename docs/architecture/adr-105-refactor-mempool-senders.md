@@ -3,6 +3,7 @@
 ## Changelog
 
 - 2023-06-26: Initial draft (@hvanz)
+- 2023-07-10: Add callback alternative (@hvanz)
 
 ## Status
 
@@ -61,7 +62,8 @@ structure, and allow for future improvements to the mempool as a whole.
 
 ## Detailed Design
  
-We propose the following changes to the mempool's reactor and data structure.
+We propose the following changes to the mempool's reactor and the `CListMempool`
+implementation.
 
 - In the `Mempool` interface, change the signature of `CheckTx` from
     ``` golang
@@ -92,18 +94,44 @@ We propose the following changes to the mempool's reactor and data structure.
     response. If this is the case, record the list of senders in `txSenders`.
     When a transaction is removed from the mempool, notify the reactor to remove
     the list of senders for that transaction, with the channel described below.
-- In `CListMempool`, introduce a new channel `txsRemoved` of type `chan
-  types.TxKey` to notify the mempool reactor that a transaction was removed from
-  the mempool.
-  - This is the same mechanism used to notify the consensus reactor when there
-  are transactions available to include in a block.
-- In the mempool reactor, introduce a new goroutine to handle incoming
-  transaction keys from the `txsRemoved` channel. For each key received, update
-  `txSenders`.
 - In `CListMempool`, `resCbFirstTime` is the function that handles responses of
   type `CheckTxType_New`. Instead of setting it as an ad-hoc callback on each
   transaction, we could now call it directly from `globalCb`, where responses of
   type `CheckTxType_Recheck` are already being handled.
+
+### Communicating that a transaction was removed from the mempool
+
+We have identified two approaches for communicating the removal of a transaction
+from the mempool to the reactor.
+
+1. With a channel and an infinite loop in a gouroutine.
+- In `CListMempool`, introduce a new channel `txsRemoved` of type `chan
+  types.TxKey` to notify the mempool reactor that a transaction was removed from
+  the mempool.
+- In the mempool reactor, spawn a goroutine to handle incoming transaction keys
+  from the `txsRemoved` channel. For each key received, update `txSenders`.
+2. With a callback.
+- In the mempool reactor's constructor, set a callback function in `CListMempool`.
+  The callback takes a transaction key as parameter. When invoked, it will
+  update `txSenders`. 
+- `CListMempool` stores the callback function as part of its state. When a
+  transaction is removed from the mempool, the callback is invoked.
+
+The channel and goroutine mechanism is the same used by the mempool to notify
+the consensus reactor when there are transactions available to be included in a
+new block. The advantage of the callback is that it is immediately called when a
+transaction is removed, reducing the chances of data races. 
+
+In any case, adding and removing the same transaction from the mempool is
+unlikely to happen in parallel. A transaction is removed from the mempool
+either:
+1. on updating the mempool, when the transaction is included in a block, or 
+2. when handling a `Recheck` CheckTx response, when the transaction was deemed
+   invalid by the application.
+
+In both cases, the transaction will still be in the cache. So, if the same
+transaction is received again, it will be discarded by the cache, and thus not
+added to the mempool and `txSenders`.
 
 ## Consequences
 
@@ -122,13 +150,11 @@ stored internally.
 
 ### Negative
 
-None
+- If chosen, adding a channel and a goroutine for communicating that a
+  transaction was removed may increase the concurrency complexity. 
 
 ### Neutral
 
-- We would need to add a new channel in `CListMempool` for notifying removed
-  transactions. And a new goroutine in the reactor for handling incoming
-  messages in the new channel.
 - We would need to extend the existing tests to cover new scenarios related to
   the new data structures and some potential concurrent issues.
 

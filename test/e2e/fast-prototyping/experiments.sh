@@ -12,7 +12,7 @@ FILE=$1
 TMPL="custom"
 
 echo "nodes;propagation_rate;sent;seen;completion;total_bandwidth;useful_bandwidth;overhead;redundancy;degree;bandwidth" > ${FILE}
-for r in $(seq 50 100 100);
+for r in $(seq 50 10 100);
 do
     for i in $(geometric 8 2 1);
     do

@@ -5,10 +5,13 @@ import (
 	"testing"
 	"time"
 
+	v1 "github.com/cometbft/cometbft/proto/tendermint/services/block_results/v1"
 	client2 "github.com/cometbft/cometbft/rpc/grpc/client"
+
+	"github.com/stretchr/testify/require"
+
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/version"
-	"github.com/stretchr/testify/require"
 )
 
 func TestGRPC_Version(t *testing.T) {
@@ -131,4 +134,64 @@ func TestGRPC_Block_GetLatestHeight(t *testing.T) {
 			require.Error(t, gCtx.Err())
 		}
 	}
+}
+
+func TestGRPC_GetBlockResults(t *testing.T) {
+	testNode(t, func(t *testing.T, node e2e.Node) {
+		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
+			return
+		}
+
+		blocks := fetchBlockChain(t)
+
+		client, err := node.Client()
+		require.NoError(t, err)
+		status, err := client.Status(ctx)
+		require.NoError(t, err)
+
+		first := status.SyncInfo.EarliestBlockHeight
+		last := status.SyncInfo.LatestBlockHeight
+		if node.RetainBlocks > 0 {
+			first++
+		}
+
+		ctx, ctxCancel := context.WithTimeout(context.Background(), time.Minute)
+		defer ctxCancel()
+		gRPCClient, err := node.GRPCClient(ctx)
+		require.NoError(t, err)
+
+		for _, block := range blocks {
+			successCases := []struct {
+				expectedHeight int64
+				request        v1.GetBlockResultsRequest
+			}{
+				{first, v1.GetBlockResultsRequest{Height: first}},
+				{last, v1.GetBlockResultsRequest{}},
+			}
+			errorCases := []struct {
+				request v1.GetBlockResultsRequest
+			}{
+				{v1.GetBlockResultsRequest{Height: -1}},
+				{v1.GetBlockResultsRequest{Height: 10000}},
+			}
+
+			if block.Header.Height < first {
+				continue
+			}
+			if block.Header.Height > last {
+				break
+			}
+			for _, tc := range successCases {
+				res, err := gRPCClient.GetBlockResults(ctx, tc.request)
+				// First block tests
+				require.NoError(t, err)
+				require.NotNil(t, res)
+				require.Equal(t, res.Height, tc.expectedHeight)
+			}
+			for _, tc := range errorCases {
+				_, err = gRPCClient.GetBlockResults(ctx, tc.request)
+				require.Error(t, err)
+			}
+		}
+	})
 }

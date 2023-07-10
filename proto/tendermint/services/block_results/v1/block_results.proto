@@ -1,0 +1,23 @@
+syntax = "proto3";
+package tendermint.services.block_results.v1;
+
+import "tendermint/abci/types.proto";
+import "tendermint/types/params.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/cometbft/cometbft/proto/tendermint/services/block_results/v1";
+
+message GetBlockResultsRequest {
+  int64 height = 1;
+}
+
+message GetBlockResultsResponse {
+  int64 height = 1;
+  repeated tendermint.abci.ExecTxResult txs_results  = 2;
+  repeated tendermint.abci.Event finalize_block_events = 3 [(gogoproto.nullable) = false];
+  repeated tendermint.abci.ValidatorUpdate validator_updates = 4 [(gogoproto.nullable) = false];
+  tendermint.types.ConsensusParams consensus_param_updates = 5;
+  bytes app_hash = 6;
+}
+
+

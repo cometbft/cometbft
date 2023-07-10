@@ -422,7 +422,7 @@ Does not run any perturbations.
 			}
 			logger.Info("Ending benchmark.")
 
-			logger.Info("Waiting grace period (5s).")
+			logger.Info("Waiting grace period (30s).")
 			time.Sleep(30 * time.Second)
 
 			logger.Info("Fetching stats.")

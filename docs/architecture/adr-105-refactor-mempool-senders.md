@@ -11,18 +11,18 @@ Proposed
 
 ## Context
 
-Before adding a transaction to the mempool, we need to send a `CheckTx` message
+Before adding a transaction to the mempool or deciding to keep it in the mempool after a block execution, we need to send a `CheckTx` message
 to the application for validating the transaction. There are [two variants][CheckTxType] of
 this message, distinguished by the value in message field `type`:
 - `CheckTxType_New` is for transactions that need to be validated before adding
-it to the mempool for the first time.
+it to the mempool.
 - `CheckTxType_Recheck` is for transactions that are in the mempool and need to
 be re-validated after committing a block and advancing to the next height.
 
 The mempool communicates with the ABCI server (that is, the application) by
 sending `abci.Request`s through the proxy `AppConnMempool`. The proxy provides a
 callback mechanism for handling `abci.Response`s. The current mempool
-implemention `CListMempool` (also called v0) utilizes this mechanism for
+implementation `CListMempool` (also called v0) utilizes this mechanism for
 `Recheck` transactions but not for `New` transactions. Instead `New`
 transactions require an ad-hoc mechanism for each request. 
 
@@ -31,7 +31,7 @@ record the ID of the peer that sent the transaction. However, this information
 is not included in `RequestCheckTx` messages. Recording the sender's ID is
 necessary for the transaction propagation protocol, which uses the recorded list
 of senders to prevent sending the transaction back to these peers, thus avoiding
-duplicated messages. More importantly, this mechanism serves as the only means
+sending duplicated messages. More importantly, this mechanism serves as the only means
 to stop propagating transactions.
 
 There are two design problems with this implementation. First, there is a

@@ -862,8 +862,8 @@ github.com/uudashr/gocognit v1.0.6 h1:2Cgi6MweCsdB6kpcVQp7EW4U23iBFQWfTXiWlyp842
 github.com/uudashr/gocognit v1.0.6/go.mod h1:nAIUuVBnYU7pcninia3BHOvQkpQCeO76Uscky5BOwcY=
 github.com/vbatts/tar-split v0.11.3 h1:hLFqsOLQ1SsppQNTMpkpPXClLDfC2A3Zgy9OUU+RVck=
 github.com/vbatts/tar-split v0.11.3/go.mod h1:9QlHN18E+fEH7RdG+QAJJcuya3rqT7eXSTY7wGrAokY=
-github.com/vektra/mockery/v2 v2.30.16 h1:XbUaK84eY7Hl/y6JeT7hVaA59Jgo4owlNWWgfL/gCQU=
-github.com/vektra/mockery/v2 v2.30.16/go.mod h1:9lREs4VEeQiUS3rizYQx1saxHu2JiIhThP0q9+fDegM=
+github.com/vektra/mockery/v2 v2.31.1 h1:dijChwjo9fBFJN9x93R0T2ZENEnYbvCuXHUXn+YYpCI=
+github.com/vektra/mockery/v2 v2.31.1/go.mod h1:9lREs4VEeQiUS3rizYQx1saxHu2JiIhThP0q9+fDegM=
 github.com/vishvananda/netlink v1.1.0/go.mod h1:cTgwzPIzzgDAYoQrMm0EdrjRUBkTqKYppBueQtXaqoE=
 github.com/vishvananda/netns v0.0.0-20191106174202-0a2b9b5464df/go.mod h1:JP3t17pCcGlemwknint6hfoeCVQrEMVwxRLRjXpq+BU=
 github.com/xanzy/ssh-agent v0.3.3 h1:+/15pJfg/RsTxqYcX6fHqOXZwwMP+2VyYWJeWM2qQFM=

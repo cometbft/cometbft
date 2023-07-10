@@ -38,7 +38,7 @@ There are two design problems with this implementation. First, there is a
 complex pattern for handling callbacks on `New` requests. The following [code
 snippet][CheckTxAsync] at the end of the `CheckTx` method, where transactions
 received for the first time are processed, demonstrates the issue:
-``` golang
+```golang
 	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{Tx: tx})
 	reqRes.SetCallback(mem.reqResCb(tx, txInfo, cb))
 ```
@@ -110,12 +110,16 @@ from the mempool to the reactor.
   the mempool.
 - In the mempool reactor, spawn a goroutine to handle incoming transaction keys
   from the `txsRemoved` channel. For each key received, update `txSenders`.
+- Add methods `TxsRemoved() <-chan types.TxKey` and `EnableTxsRemoved()` to the
+  `Mempool` interface.
 2. With a callback.
 - In the mempool reactor's constructor, set a callback function in `CListMempool`.
   The callback takes a transaction key as parameter. When invoked, it will
   update `txSenders`. 
 - `CListMempool` stores the callback function as part of its state. When a
   transaction is removed from the mempool, the callback is invoked.
+- Add a method `SetTxRemovedCallback(cb func(types.TxKey))` to the `Mempool`
+  interface.
 
 The channel and goroutine mechanism is the same used by the mempool to notify
 the consensus reactor when there are transactions available to be included in a

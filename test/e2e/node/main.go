@@ -144,7 +144,7 @@ func startNode(cfg *Config) error {
 		nodeLogger,
 	)
 
-	// wave custom reactors
+	// wave custom reactors here
 
 	registry := map[string]p2p.Reactor{}
 	registry["p2p.mock.reactor"] = p2pmock.NewReactor()

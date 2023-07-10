@@ -1,6 +1,6 @@
 include ../../common.mk
 
-all: node generator runner docker-fast
+all: node generator runner docker
 
 docker:
 	@echo "Building E2E Docker image"

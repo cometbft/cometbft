@@ -12,9 +12,9 @@ FILE=$1
 TMPL="custom"
 
 echo "nodes;propagation_rate;sent;seen;completion;total_bandwidth;useful_bandwidth;overhead;redundancy;degree;bandwidth" > ${FILE}
-for r in $(seq 50 10 100);
+for r in $(seq 50 50 100);
 do
-    for i in $(geometric 8 2 1);
+    for i in $(geometric 4 2 2);
     do
 			${DIR}/tmpl-gen.sh ${i} ${r} > ${NETDIR}/${TMPL}.toml
 			${BINDIR}/runner -f ${NETDIR}/${TMPL}.toml custom > ${TMPDIR}/log

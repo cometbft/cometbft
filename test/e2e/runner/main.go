@@ -387,8 +387,8 @@ Does not run any perturbations.
 				return err
 			}
 
-			logger.Info("Waiting first PEX (30s)")
-			time.Sleep(30 * time.Second)
+			logger.Info("First grace period (5s)")
+			time.Sleep(5 * time.Second)
 
 			logger.Info("Starting custom benchmark.")
 
@@ -422,8 +422,8 @@ Does not run any perturbations.
 			}
 			logger.Info("Ending benchmark.")
 
-			logger.Info("Waiting grace period (30s).")
-			time.Sleep(30 * time.Second)
+			logger.Info("Second grace period (5s).")
+			time.Sleep(5 * time.Second)
 
 			logger.Info("Fetching stats.")
 			mempoolStats, err := Fetch(cli.testnet)

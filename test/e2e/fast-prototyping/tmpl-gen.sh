@@ -10,8 +10,8 @@ RATE=$2
 PREAMBLE="\
 prometheus = true\n\
 load_tx_size_bytes = 100\n\
-load_tx_to_send = 1000\n\
-load_tx_batch_size = 100\n\
+load_tx_to_send = 100\n\
+load_tx_batch_size = 10\n\
 experimental_gossip_propagation_rate = ${RATE}\n\
 experimental_custom_reactors = {CONSENSUS = \"p2p.mock.reactor\", MEMPOOL = \"experimental.reactors.mempool.gossip\"}\
 "

@@ -32,8 +32,9 @@ type CListMempool struct {
 	notifiedTxsAvailable bool
 	txsAvailable         chan struct{} // fires once for each height, when the mempool is not empty
 
-	// notify listeners (ie. mempool reactor) when txs are removed from the pool
-	txsRemoved chan types.TxKey
+	// Function set by the reactor to be called when a transaction is removed
+	// from the mempool.
+	removeTxOnReactor func(txKey types.TxKey)
 
 	config *config.MempoolConfig
 
@@ -138,7 +139,7 @@ func (mem *CListMempool) removeAllTxs() {
 
 	mem.txsMap.Range(func(key, _ interface{}) bool {
 		mem.txsMap.Delete(key)
-		mem.notifyTxRemoved(key.(types.TxKey))
+		mem.invokeRemoveTxOnReactor(key.(types.TxKey))
 		return true
 	})
 }
@@ -148,11 +149,14 @@ func (mem *CListMempool) EnableTxsAvailable() {
 	mem.txsAvailable = make(chan struct{}, 1)
 }
 
-func (mem *CListMempool) EnableTxsRemoved() {
-	// We assign the maximum number of transactions that the mempool can handle
-	// as the channel buffer to allow concurrent writes to the channel without
-	// blocking it.
-	mem.txsRemoved = make(chan types.TxKey, mem.config.Size)
+func (mem *CListMempool) SetTxRemovedCallback(cb func(txKey types.TxKey)) {
+	mem.removeTxOnReactor = cb
+}
+
+func (mem *CListMempool) invokeRemoveTxOnReactor(txKey types.TxKey) {
+	if mem.removeTxOnReactor != nil {
+		mem.removeTxOnReactor(txKey)
+	}
 }
 
 // SetLogger sets the Logger.
@@ -325,7 +329,9 @@ func (mem *CListMempool) addTx(memTx *mempoolTx) {
 //   - Update (lock held) if tx was committed
 //   - resCbRecheck (lock not held) if tx was invalidated
 func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
-	mem.notifyTxRemoved(txKey)
+	// The transaction should be removed in the reactor, even if it cannot be
+	// found in the mempool.
+	mem.invokeRemoveTxOnReactor(txKey)
 	if elem, ok := mem.getCElement(txKey); ok {
 		mem.txs.Remove(elem)
 		elem.DetachPrev()
@@ -505,19 +511,6 @@ func (mem *CListMempool) notifyTxsAvailable() {
 		mem.notifiedTxsAvailable = true
 		select {
 		case mem.txsAvailable <- struct{}{}:
-		default:
-		}
-	}
-}
-
-func (mem *CListMempool) TxsRemoved() <-chan types.TxKey {
-	return mem.txsRemoved
-}
-
-func (mem *CListMempool) notifyTxRemoved(tx types.TxKey) {
-	if mem.txsRemoved != nil {
-		select {
-		case mem.txsRemoved <- tx:
 		default:
 		}
 	}

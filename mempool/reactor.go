@@ -44,6 +44,7 @@ func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool) *Reactor {
 		txSenders: make(map[types.TxKey]map[uint16]bool),
 	}
 	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
+	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
 	return memR
 }
 
@@ -64,9 +65,6 @@ func (memR *Reactor) OnStart() error {
 	if !memR.config.Broadcast {
 		memR.Logger.Info("Tx broadcasting is disabled")
 	}
-
-	memR.mempool.EnableTxsRemoved()
-	go memR.updateSendersRoutine()
 
 	return nil
 }
@@ -253,15 +251,4 @@ func (memR *Reactor) removeSenders(txKey types.TxKey) {
 	defer memR.txSendersMtx.Unlock()
 
 	delete(memR.txSenders, txKey)
-}
-
-func (memR *Reactor) updateSendersRoutine() {
-	for {
-		select {
-		case txKey := <-memR.mempool.TxsRemoved():
-			memR.removeSenders(txKey)
-		case <-memR.Quit():
-			return
-		}
-	}
 }

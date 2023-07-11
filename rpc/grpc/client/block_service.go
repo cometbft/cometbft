@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+
 	v1 "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
 	"github.com/cosmos/gogoproto/grpc"
 )

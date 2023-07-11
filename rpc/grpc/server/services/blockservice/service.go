@@ -2,33 +2,33 @@ package blockservice
 
 import (
 	context "context"
+
 	v1 "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
-	"github.com/cometbft/cometbft/rpc/core"
-	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/store"
 )
 
 type blockServiceServer struct {
-	nodeEnv *core.Environment
+	store *store.BlockStore
 }
 
 // New creates a new CometBFT version service server.
-func New(env *core.Environment) v1.BlockServiceServer {
-	return &blockServiceServer{nodeEnv: env}
+func New(store *store.BlockStore) v1.BlockServiceServer {
+	return &blockServiceServer{
+		store,
+	}
 }
 
 // GetBlock implements v1.BlockServiceServer
 func (s *blockServiceServer) GetBlock(ctx context.Context, req *v1.GetBlockRequest) (*v1.GetBlockResponse, error) {
-	resp, err := s.nodeEnv.Block(&rpctypes.Context{}, &req.Height)
+	block := s.store.LoadBlock(req.Height)
+	blockProto, err := block.ToProto()
 	if err != nil {
 		return nil, err
 	}
 
-	block, err := resp.Block.ToProto()
-	if err != nil {
-		return nil, err
-	}
+	blockID := s.store.LoadBlockMeta(req.Height)
 	return &v1.GetBlockResponse{
-		BlockId: resp.BlockID.ToProto(),
-		Block:   *block,
+		BlockId: blockID.BlockID.ToProto(),
+		Block:   *blockProto,
 	}, nil
 }

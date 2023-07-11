@@ -2,10 +2,11 @@ package server
 
 import (
 	"fmt"
-	"github.com/cometbft/cometbft/rpc/core"
-	"google.golang.org/grpc/reflection"
 	"net"
 	"strings"
+
+	"github.com/cometbft/cometbft/store"
+	"google.golang.org/grpc/reflection"
 
 	"github.com/cometbft/cometbft/libs/log"
 	pbblocksvc "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
@@ -59,9 +60,9 @@ func WithVersionService() Option {
 }
 
 // WithBlockService enables the block service on the CometBFT server.
-func WithBlockService(env *core.Environment) Option {
+func WithBlockService(store *store.BlockStore) Option {
 	return func(b *serverBuilder) {
-		b.blockService = blockservice.New(env)
+		b.blockService = blockservice.New(store)
 	}
 }
 

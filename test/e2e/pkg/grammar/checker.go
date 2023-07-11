@@ -21,20 +21,20 @@ type GrammarChecker struct {
 
 // Config allows for setting some parameters mostly about errors logging.
 type Config struct {
-	// Maximum number of errors grammar outputs.
-	MaxNumberOfErrorsToShow int
-	// Show full execution
+	// Number of errors checker outputs.
+	NumberOfErrorsToShow int
+	// Show full execution.
 	ShowFullExecution bool
 }
 
 func DefaultConfig() *Config {
 	return &Config{
-		MaxNumberOfErrorsToShow: 1,
-		ShowFullExecution:       true,
+		NumberOfErrorsToShow: 1,
+		ShowFullExecution:    true,
 	}
 }
 
-// NewGrammarChecker returns a grammar checher object.
+// NewGrammarChecker returns a grammar checker object.
 func NewGrammarChecker(cfg *Config) *GrammarChecker {
 	return &GrammarChecker{
 		cfg:    cfg,
@@ -76,7 +76,7 @@ func (g *GrammarChecker) GetExecutionString(reqs []*abci.Request) string {
 		if t == "" {
 			continue
 		}
-		// we ensure to have one height per line for readability
+		// We ensure to have one height per line for readability.
 		if t == "commit" {
 			s += t + "\n"
 		} else {
@@ -89,12 +89,7 @@ func (g *GrammarChecker) GetExecutionString(reqs []*abci.Request) string {
 // Verify verifies whether a list of request satisfy abci grammar.
 func (g *GrammarChecker) Verify(reqs []*abci.Request) (bool, error) {
 	var r []*abci.Request
-	var n int
-	r, n = g.filterLastHeight(reqs)
-	if n != 0 {
-		debugMsg := fmt.Sprintf("Last height filtered, removed last %v abci calls out of %v.\n", n, len(reqs))
-		g.logger.Debug(debugMsg)
-	}
+	r, _ = g.filterLastHeight(reqs)
 	s := g.GetExecutionString(r)
 	return g.VerifyExecution(s)
 }
@@ -119,10 +114,10 @@ func (g *GrammarChecker) VerifyExecution(execution string) (bool, error) {
 	lexer := lexer.New([]rune(execution))
 	_, errs := parser.Parse(lexer)
 	if len(errs) > 0 {
-		err := g.combineParseErrors(execution, errs, g.cfg.MaxNumberOfErrorsToShow)
+		err := g.combineParseErrors(execution, errs, g.cfg.NumberOfErrorsToShow)
 		if g.cfg.ShowFullExecution {
-			e := g.addLineNumbersToTheExecution(execution)
-			err = fmt.Errorf("%vFull execution:\n%v\n", err, e)
+			e := g.addHeightNumbersToTheExecution(execution)
+			err = fmt.Errorf("%v\nFull execution:\n%v", err, e)
 		}
 		return false, err
 	}
@@ -137,15 +132,20 @@ func (g *GrammarChecker) combineParseErrors(execution string, errs []*parser.Err
 		if i == n {
 			break
 		}
-		// e.Line-1 because parser returns line numbers starting from 1
-		heightWithError := heights[e.Line-1]
-		err := fmt.Errorf("---Error %v---\nHeight: %v\nABCI requests: %v", i, e.Line-1, heightWithError)
+		// e.Line-1 because the parser returns line numbers starting from 1
+		h := e.Line - 1
+		heightWithError := heights[h]
+		exp := []string{}
+		for _, ex := range e.Expected {
+			exp = append(exp, ex)
+		}
+		err := fmt.Errorf("---Error %v---\nHeight: %v\nABCI requests: %v\nUnexpected request: %v\nExpected one of: [%v]", i, h, heightWithError, e.Token.TypeID(), strings.Join(exp, ","))
 		s = fmt.Sprintf("%v%v\n", s, err)
 	}
-	return fmt.Errorf("%v-------------\n", s)
+	return fmt.Errorf("%v-------------", s)
 }
 
-func (g *GrammarChecker) addLineNumbersToTheExecution(execution string) string {
+func (g *GrammarChecker) addHeightNumbersToTheExecution(execution string) string {
 	heights := strings.Split(execution, "\n")
 	s := ""
 	for i, l := range heights {

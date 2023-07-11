@@ -14,7 +14,7 @@ ApplyChunks : ApplyChunk | ApplyChunk ApplyChunks ;
 Recovery :  ConsensusExec ;
 
 ConsensusExec : ConsensusHeights ;
-ConsensusHeights : ConsensusHeight | ConsensusHeight ConsensusHeights ;
+ConsensusHeights : ConsensusHeight | ConsensusHeight ConsensgiusHeights ;
 ConsensusHeight : ConsensusRounds Decide Commit | Decide Commit ;
 ConsensusRounds : ConsensusRound | ConsensusRound ConsensusRounds ;
 ConsensusRound : Proposer | NonProposer ; 

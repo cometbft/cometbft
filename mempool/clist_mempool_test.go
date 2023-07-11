@@ -650,7 +650,10 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 			t.Error(err)
 		}
 	})
+	// we need a mempool bigger than the cache to be able to saturate the cache
 	cfg := test.ResetTestRoot("mempool_test")
+	cfg.Mempool.Size = cfg.Mempool.CacheSize + 2 // two extra slots for tx0
+
 	mp, cleanup := newMempoolWithAppAndConfig(proxy.NewRemoteClientCreator(sockPath, "socket", true), cfg)
 	defer cleanup()
 

@@ -29,7 +29,7 @@ repository linter.
 ## Alternative Approaches
 
 We can do nothing and go ahead with the current versioning rework as per
-[ADR-103], which does solve the main problem of managing backward-incompatible
+[ADR 103], which does solve the main problem of managing backward-incompatible
 changes in the proto-derived definitions. Come 1.0 release time, we should find
 ourselves with a storied collection of versioned protobuf packages going up to
 `v4` or `v5` for some packages, where earlier versions refer to pre-1.0 releases
@@ -50,7 +50,7 @@ backward compatibility.
 
 At the time of this proposal, the changes will only affect the
 `feature/proto-update` feature branch, with no impact on users of any releases.
-[ADR-103] details the changes caused by the versioning approach in general.
+[ADR 103] details the changes caused by the versioning approach in general.
 
 ## Consequences
 

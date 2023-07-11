@@ -43,6 +43,7 @@ numbering our ADRs from 100 onwards.
 ### Proposed
 
 - [ADR-103: Protobuf definition versioning](./adr-103-proto-versioning.md)
+- [ADR-107: Rename protobuf versions of 0.x releases to pre-v1 betas](./adr-107-betaize-proto-versions.md)
 
 ### Accepted
 

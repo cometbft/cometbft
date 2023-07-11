@@ -97,13 +97,10 @@ func ensureFire(t *testing.T, ch <-chan struct{}, timeoutMS int) {
 	}
 }
 
-// On mempool `mp`, call CheckTx `count` times with random transactions.
-func checkTxs(t *testing.T, mp Mempool, count int) types.Txs {
-	txs := make(types.Txs, count)
-	for i := 0; i < count; i++ {
-		txBytes := kvstore.NewRandomTx(20)
-		txs[i] = txBytes
-		if _, err := mp.CheckTx(txBytes); err != nil {
+// Call CheckTx on a given mempool on each transaction in the list.
+func callCheckTx(t *testing.T, mp Mempool, txs types.Txs) {
+	for i, tx := range txs {
+		if _, err := mp.CheckTx(tx); err != nil {
 			// Skip invalid txs.
 			// TestMempoolFilters will fail otherwise. It asserts a number of txs
 			// returned.
@@ -113,6 +110,17 @@ func checkTxs(t *testing.T, mp Mempool, count int) types.Txs {
 			t.Fatalf("CheckTx failed: %v while checking #%d tx", err, i)
 		}
 	}
+}
+
+// Generate a list of random transactions of a given size and call CheckTx on
+// each of them.
+func checkTxs(t *testing.T, mp Mempool, count int) types.Txs {
+	txs := make(types.Txs, count)
+	for i := 0; i < count; i++ {
+		txBytes := kvstore.NewRandomTx(20)
+		txs[i] = txBytes
+	}
+	callCheckTx(t, mp, txs)
 	return txs
 }
 

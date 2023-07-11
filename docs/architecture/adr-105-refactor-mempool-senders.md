@@ -168,6 +168,6 @@ The trigger for this refactoring was [this comment][comment], where we discussed
 improvements to the concurrency in the mempool.
 
 
-[CheckTxType]: https://github.com/cometbft/cometbft/blob/main/proto/tendermint/abci/types.proto#L94-L97
+[CheckTxType]: https://github.com/cometbft/cometbft/blob/406f8175e352faee381f100ff17fd5c82888646a/proto/tendermint/abci/types.proto#L94-L97
 [CheckTxAsync]: https://github.com/cometbft/cometbft/blob/406f8175e352faee381f100ff17fd5c82888646a/mempool/clist_mempool.go#L269-L273
 [comment]: https://github.com/cometbft/cometbft/pull/895#issuecomment-1584948704

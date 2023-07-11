@@ -97,6 +97,10 @@ func Serve(listener net.Listener, opts ...Option) error {
 		pbversionsvc.RegisterVersionServiceServer(server, b.versionService)
 		b.logger.Debug("Registered version service")
 	}
+	if b.blockService != nil {
+		pbblocksvc.RegisterBlockServiceServer(server, b.blockService)
+		b.logger.Debug("Registered block service")
+	}
 	b.logger.Info("serve", "msg", fmt.Sprintf("Starting gRPC server on %s", listener.Addr()))
 	return server.Serve(b.listener)
 }

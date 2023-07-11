@@ -2,8 +2,8 @@
 
 ## Changelog
 
-- 2023-06-26: Initial draft (@hvanz)
 - 2023-07-10: Add callback alternative (@hvanz)
+- 2023-06-26: Initial draft (@hvanz)
 
 ## Status
 
@@ -104,7 +104,7 @@ implementation.
 We have identified two approaches for communicating the removal of a transaction
 from the mempool to the reactor.
 
-1. With a channel and an infinite loop in a gouroutine.
+1. With a channel and an infinite loop in a goroutine.
 - In `CListMempool`, introduce a new channel `txsRemoved` of type `chan
   types.TxKey` to notify the mempool reactor that a transaction was removed from
   the mempool.

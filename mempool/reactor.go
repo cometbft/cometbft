@@ -32,7 +32,7 @@ type Reactor struct {
 	// to identify the sender, storing two bytes with each transaction instead
 	// of 20 bytes for the types.NodeID.
 	txSenders    map[types.TxKey]map[uint16]bool
-	txSendersMtx cmtsync.RWMutex
+	txSendersMtx cmtsync.Mutex
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
@@ -227,8 +227,8 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 }
 
 func (memR *Reactor) isSender(txKey types.TxKey, peerID uint16) bool {
-	memR.txSendersMtx.RLock()
-	defer memR.txSendersMtx.RUnlock()
+	memR.txSendersMtx.Lock()
+	defer memR.txSendersMtx.Unlock()
 
 	sendersSet, ok := memR.txSenders[txKey]
 	return ok && sendersSet[peerID]

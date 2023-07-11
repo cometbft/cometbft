@@ -3,7 +3,6 @@ package mempool
 import (
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -434,7 +433,7 @@ func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switc
 func newUniqueTxs(n int) types.Txs {
 	txs := make(types.Txs, n)
 	for i := 0; i < n; i++ {
-		txs[i] = kvstore.NewTx(fmt.Sprintf("%d", i), "value")
+		txs[i] = kvstore.NewTxFromID(i)
 	}
 	return txs
 }

@@ -27,6 +27,7 @@ type TxCache interface {
 	// not treated as an access of the value.
 	Has(tx types.Tx) bool
 
+	// Size returns the number of entries in the cache.
 	Size() int
 }
 

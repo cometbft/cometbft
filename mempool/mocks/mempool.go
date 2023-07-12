@@ -46,6 +46,20 @@ func (_m *Mempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
 	return r0, r1
 }
 
+// Contains provides a mock function with given fields: txKey
+func (_m *Mempool) Contains(txKey types.TxKey) bool {
+	ret := _m.Called(txKey)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(types.TxKey) bool); ok {
+		r0 = rf(txKey)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
 // EnableTxsAvailable provides a mock function with given fields:
 func (_m *Mempool) EnableTxsAvailable() {
 	_m.Called()
@@ -65,20 +79,6 @@ func (_m *Mempool) FlushAppConn() error {
 		r0 = rf()
 	} else {
 		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// InMempool provides a mock function with given fields: txKey
-func (_m *Mempool) InMempool(txKey types.TxKey) bool {
-	ret := _m.Called(txKey)
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func(types.TxKey) bool); ok {
-		r0 = rf(txKey)
-	} else {
-		r0 = ret.Get(0).(bool)
 	}
 
 	return r0

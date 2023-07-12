@@ -344,7 +344,7 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 		// Txs included in a block should have been removed from the mempool and
 		// have no senders.
 		for _, tx := range append(validTxs, invalidTxs...) {
-			require.False(t, r.mempool.InMempool(tx.Key()))
+			require.False(t, r.mempool.Contains(tx.Key()))
 			_, hasSenders := r.txSenders[tx.Key()]
 			require.False(t, hasSenders)
 		}
@@ -370,7 +370,7 @@ func checkTxsInMempoolAndSenders(t *testing.T, r *Reactor, txs types.Txs, reacto
 	// Each transaction is in the mempool and, if it's not the first reactor, it
 	// has a non-empty list of senders.
 	for _, tx := range txs {
-		assert.True(t, r.mempool.InMempool(tx.Key()))
+		assert.True(t, r.mempool.Contains(tx.Key()))
 		senders, hasSenders := r.txSenders[tx.Key()]
 		if reactorIndex == 0 {
 			require.False(t, hasSenders)

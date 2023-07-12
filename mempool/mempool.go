@@ -76,8 +76,8 @@ type Mempool interface {
 		newPostFn PostCheckFunc,
 	) error
 
-	// InMempool returns true iff the transaction key is in the mempool.
-	InMempool(txKey types.TxKey) bool
+	// Contains returns true iff the transaction key is in the mempool.
+	Contains(txKey types.TxKey) bool
 
 	// NewIterator returns an interator for traversing the mempool entries in an
 	// order defined by the implementation. If it gets to the end or the mempool

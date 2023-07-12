@@ -47,6 +47,7 @@ type CListMempool struct {
 	// serial (ie. by abci responses which are called in serial).
 	recheckCursor *clist.CElement // next expected response
 	recheckEnd    *clist.CElement // re-checking stops here
+	recheckMtx    cmtsync.Mutex
 
 	// Map for quick access to txs to record sender in CheckTx.
 	// txsMap: txKey -> CElement
@@ -285,6 +286,9 @@ func (mem *CListMempool) CheckTx(
 // When rechecking, we don't need the peerID, so the recheck callback happens
 // here.
 func (mem *CListMempool) globalCb(req *abci.Request, res *abci.Response) {
+	mem.recheckMtx.Lock()
+	defer mem.recheckMtx.Unlock()
+
 	if mem.recheckCursor == nil {
 		return
 	}
@@ -311,6 +315,9 @@ func (mem *CListMempool) reqResCb(
 	externalCb func(*abci.ResponseCheckTx),
 ) func(res *abci.Response) {
 	return func(res *abci.Response) {
+		mem.recheckMtx.Lock()
+		defer mem.recheckMtx.Unlock()
+
 		if mem.recheckCursor != nil {
 			// this should never happen
 			panic("recheck cursor is not nil in reqResCb")
@@ -667,8 +674,10 @@ func (mem *CListMempool) recheckTxs() {
 		panic("recheckTxs is called, but the mempool is empty")
 	}
 
+	mem.recheckMtx.Lock()
 	mem.recheckCursor = mem.txs.Front()
 	mem.recheckEnd = mem.txs.Back()
+	mem.recheckMtx.Unlock()
 
 	// Push txs to proxyAppConn
 	// NOTE: globalCb may be called concurrently.

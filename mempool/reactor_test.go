@@ -66,8 +66,8 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 // regression test for https://github.com/tendermint/tendermint/issues/5408
 func TestReactorConcurrency(t *testing.T) {
 	config := cfg.TestConfig()
-	config.Mempool.Size = 5000
-	config.Mempool.CacheSize = 5000
+	config.Mempool.Size = 6000
+	config.Mempool.CacheSize = 6000
 	const N = 2
 	reactors, _ := makeAndConnectReactors(config, N)
 	defer func() {

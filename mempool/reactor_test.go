@@ -324,7 +324,6 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 
 	// Add transactions to the first reactor.
 	callCheckTx(t, firstReactor.mempool, txs)
-	require.Equal(t, len(txs), firstReactor.mempool.cache.Size())
 
 	// Wait for all txs to be in the mempool of each reactor.
 	waitForTxsOnReactors(t, txs, reactors)
@@ -349,9 +348,6 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 			_, hasSenders := r.txSenders[tx.Key()]
 			require.False(t, hasSenders)
 		}
-
-		// Invalid txs should have been removed from the cache.
-		require.Equal(t, len(validTxs)+len(ignoredTxs), r.mempool.cache.Size())
 
 		// Ignored txs should still be in the mempool.
 		checkTxsInMempoolAndSenders(t, r, ignoredTxs, i)

@@ -387,7 +387,7 @@ Does not run any perturbations.
 				return err
 			}
 
-			logger.Info("First grace period (5s)")
+			logger.Info("First grace period (10s)")
 			time.Sleep(5 * time.Second)
 
 			logger.Info("Starting custom benchmark.")

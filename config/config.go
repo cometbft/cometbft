@@ -745,6 +745,7 @@ func DefaultMempoolConfig() *MempoolConfig {
 // TestMempoolConfig returns a configuration for testing the CometBFT mempool
 func TestMempoolConfig() *MempoolConfig {
 	cfg := DefaultMempoolConfig()
+	cfg.Size = 1000
 	cfg.CacheSize = 1000
 	return cfg
 }
@@ -773,6 +774,9 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 	}
 	if cfg.MaxTxBytes < 0 {
 		return errors.New("max_tx_bytes can't be negative")
+	}
+	if cfg.Size > cfg.CacheSize {
+		return errors.New("mempool's cache cannot be smaller than mempool's capacity")
 	}
 	return nil
 }

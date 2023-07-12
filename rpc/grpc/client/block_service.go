@@ -39,20 +39,21 @@ func (c *blockServiceClient) GetBlock(ctx context.Context, height int64) (*Resul
 		return nil, err
 	}
 
-	partSetHeader := types.PartSetHeader{
-		Total: res.BlockId.PartSetHeader.Total,
-		Hash:  res.BlockId.PartSetHeader.Hash,
+	// convert Block from proto to core type
+	block, err := types.BlockFromProto(&res.Block)
+	if err != nil {
+		return nil, err
 	}
 
-	blockID := types.BlockID{
-		Hash:          res.BlockId.Hash,
-		PartSetHeader: partSetHeader,
+	// convert BlockID from proto to core type
+	blockID, err := types.BlockIDFromProto(&res.BlockId)
+	if err != nil {
+		return nil, err
 	}
 
-	// TODO: convert Block
 	response := ResultBlock{
-		BlockID: blockID,
-		Block:   nil,
+		BlockID: *blockID,
+		Block:   block,
 	}
 	return &response, nil
 }

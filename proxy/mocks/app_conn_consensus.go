@@ -211,13 +211,12 @@ func (_m *AppConnConsensus) VerifyVoteExtension(_a0 context.Context, _a1 *types.
 	return r0, r1
 }
 
-type mockConstructorTestingTNewAppConnConsensus interface {
+// NewAppConnConsensus creates a new instance of AppConnConsensus. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewAppConnConsensus(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewAppConnConsensus creates a new instance of AppConnConsensus. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewAppConnConsensus(t mockConstructorTestingTNewAppConnConsensus) *AppConnConsensus {
+}) *AppConnConsensus {
 	mock := &AppConnConsensus{}
 	mock.Mock.Test(t)
 

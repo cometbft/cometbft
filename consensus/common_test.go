@@ -415,7 +415,9 @@ func newStateWithConfigAndBlockStore(
 		mempl.WithPreCheck(sm.TxPreCheck(state)),
 		mempl.WithPostCheck(sm.TxPostCheck(state)))
 
-	mempool.InitChannels(thisConfig.Consensus.WaitForTxs())
+	if thisConfig.Consensus.WaitForTxs() {
+		mempool.EnableTxsAvailable()
+	}
 
 	evpool := sm.EmptyEvidencePool{}
 

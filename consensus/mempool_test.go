@@ -35,7 +35,7 @@ func TestMempoolNoProgressUntilTxsAvailable(t *testing.T) {
 	require.NoError(t, err)
 	state.AppHash = resp.LastBlockAppHash
 	cs := newStateWithConfig(config, state, privVals[0], app)
-	assertMempool(cs.txNotifier).InitChannels(true)
+	assertMempool(cs.txNotifier).EnableTxsAvailable()
 	height, round := cs.Height, cs.Round
 	newBlockCh := subscribe(cs.eventBus, types.EventQueryNewBlock)
 	startTestRound(cs, height, round)
@@ -60,7 +60,7 @@ func TestMempoolProgressAfterCreateEmptyBlocksInterval(t *testing.T) {
 	state.AppHash = resp.LastBlockAppHash
 	cs := newStateWithConfig(config, state, privVals[0], app)
 
-	assertMempool(cs.txNotifier).InitChannels(true)
+	assertMempool(cs.txNotifier).EnableTxsAvailable()
 
 	newBlockCh := subscribe(cs.eventBus, types.EventQueryNewBlock)
 	startTestRound(cs, cs.Height, cs.Round)
@@ -76,7 +76,7 @@ func TestMempoolProgressInHigherRound(t *testing.T) {
 	config.Consensus.CreateEmptyBlocks = false
 	state, privVals := randGenesisState(1, false, 10, nil)
 	cs := newStateWithConfig(config, state, privVals[0], kvstore.NewInMemoryApplication())
-	assertMempool(cs.txNotifier).InitChannels(true)
+	assertMempool(cs.txNotifier).EnableTxsAvailable()
 	height, round := cs.Height, cs.Round
 	newBlockCh := subscribe(cs.eventBus, types.EventQueryNewBlock)
 	newRoundCh := subscribe(cs.eventBus, types.EventQueryNewRound)
@@ -125,6 +125,7 @@ func TestMempoolTxConcurrentWithCommit(t *testing.T) {
 	newBlockEventsCh := subscribe(cs.eventBus, types.EventQueryNewBlockEvents)
 
 	const numTxs int64 = 3000
+	config.Mempool.Size = int(numTxs)
 	go deliverTxsRange(t, cs, 0, int(numTxs))
 
 	startTestRound(cs, cs.Height, cs.Round)

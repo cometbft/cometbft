@@ -21,7 +21,7 @@ import (
 type Reactor struct {
 	p2p.BaseReactor
 	config  *cfg.MempoolConfig
-	mempool Mempool
+	mempool *CListMempool
 	ids     *mempoolIDs
 
 	// `txSenders` maps every received transaction to the set of peer IDs that
@@ -31,12 +31,11 @@ type Reactor struct {
 	// to identify the sender, storing two bytes with each transaction instead
 	// of 20 bytes for the types.NodeID.
 	txSenders    map[types.TxKey]map[uint16]bool
-	txSendersMtx cmtsync.RWMutex
+	txSendersMtx cmtsync.Mutex
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
-// The mempool's channel TxsAvailable will be initialized only when notifyAvailable is true.
-func NewReactor(config *cfg.MempoolConfig, mempool Mempool, notifyAvailable bool) *Reactor {
+func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool) *Reactor {
 	memR := &Reactor{
 		config:    config,
 		mempool:   mempool,
@@ -44,7 +43,7 @@ func NewReactor(config *cfg.MempoolConfig, mempool Mempool, notifyAvailable bool
 		txSenders: make(map[types.TxKey]map[uint16]bool),
 	}
 	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
-	mempool.InitChannels(notifyAvailable)
+	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
 	return memR
 }
 
@@ -66,18 +65,7 @@ func (memR *Reactor) OnStart() error {
 		memR.Logger.Info("Tx broadcasting is disabled")
 	}
 
-	go memR.updateSendersRoutine()
-
 	return nil
-}
-
-// OnStop stops the reactor by signaling to all spawned goroutines to exit and
-// blocking until they all exit.
-func (memR *Reactor) OnStop() {
-	if err := memR.mempool.Stop(); err != nil {
-		memR.Logger.Error("Shutting down mempool reactor", "err", err)
-	}
-	// TODO: to complete
 }
 
 // GetChannels implements Reactor by returning the list of channels for this
@@ -169,6 +157,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 	iter := memR.mempool.NewIterator()
 
 	for {
+		// In case of both next.NextWaitChan() and peer.Quit() are variable at the same time
 		if !memR.IsRunning() || !peer.IsRunning() {
 			return
 		}
@@ -229,8 +218,8 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 }
 
 func (memR *Reactor) isSender(txKey types.TxKey, peerID uint16) bool {
-	memR.txSendersMtx.RLock()
-	defer memR.txSendersMtx.RUnlock()
+	memR.txSendersMtx.Lock()
+	defer memR.txSendersMtx.Unlock()
 
 	sendersSet, ok := memR.txSenders[txKey]
 	return ok && sendersSet[peerID]
@@ -253,15 +242,4 @@ func (memR *Reactor) removeSenders(txKey types.TxKey) {
 	defer memR.txSendersMtx.Unlock()
 
 	delete(memR.txSenders, txKey)
-}
-
-func (memR *Reactor) updateSendersRoutine() {
-	for {
-		select {
-		case txKey := <-memR.mempool.TxsRemoved():
-			memR.removeSenders(txKey)
-		case <-memR.Quit():
-			return
-		}
-	}
 }

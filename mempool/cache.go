@@ -26,6 +26,9 @@ type TxCache interface {
 	// Has reports whether tx is present in the cache. Checking for presence is
 	// not treated as an access of the value.
 	Has(tx types.Tx) bool
+
+	// Size returns the number of entries in the cache.
+	Size() int
 }
 
 var _ TxCache = (*LRUTxCache)(nil)
@@ -51,6 +54,10 @@ func NewLRUTxCache(cacheSize int) *LRUTxCache {
 // this should be used for testing purposes only!
 func (c *LRUTxCache) GetList() *list.List {
 	return c.list
+}
+
+func (c *LRUTxCache) Size() int {
+	return len(c.cacheMap)
 }
 
 func (c *LRUTxCache) Reset() {
@@ -118,3 +125,4 @@ func (NopTxCache) Reset()             {}
 func (NopTxCache) Push(types.Tx) bool { return true }
 func (NopTxCache) Remove(types.Tx)    {}
 func (NopTxCache) Has(types.Tx) bool  { return false }
+func (NopTxCache) Size() int          { return 0 }

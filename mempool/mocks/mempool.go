@@ -46,6 +46,11 @@ func (_m *Mempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
 	return r0, r1
 }
 
+// EnableTxsAvailable provides a mock function with given fields:
+func (_m *Mempool) EnableTxsAvailable() {
+	_m.Called()
+}
+
 // Flush provides a mock function with given fields:
 func (_m *Mempool) Flush() {
 	_m.Called()
@@ -65,9 +70,18 @@ func (_m *Mempool) FlushAppConn() error {
 	return r0
 }
 
-// InitChannels provides a mock function with given fields: notifyAvailable
-func (_m *Mempool) InitChannels(notifyAvailable bool) {
-	_m.Called(notifyAvailable)
+// InMempool provides a mock function with given fields: txKey
+func (_m *Mempool) InMempool(txKey types.TxKey) bool {
+	ret := _m.Called(txKey)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(types.TxKey) bool); ok {
+		r0 = rf(txKey)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
 }
 
 // Lock provides a mock function with given fields:
@@ -142,6 +156,11 @@ func (_m *Mempool) SetLogger(l log.Logger) {
 	_m.Called(l)
 }
 
+// SetTxRemovedCallback provides a mock function with given fields: cb
+func (_m *Mempool) SetTxRemovedCallback(cb func(types.TxKey)) {
+	_m.Called(cb)
+}
+
 // Size provides a mock function with given fields:
 func (_m *Mempool) Size() int {
 	ret := _m.Called()
@@ -170,20 +189,6 @@ func (_m *Mempool) SizeBytes() int64 {
 	return r0
 }
 
-// Stop provides a mock function with given fields:
-func (_m *Mempool) Stop() error {
-	ret := _m.Called()
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func() error); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // TxsAvailable provides a mock function with given fields:
 func (_m *Mempool) TxsAvailable() <-chan struct{} {
 	ret := _m.Called()
@@ -194,22 +199,6 @@ func (_m *Mempool) TxsAvailable() <-chan struct{} {
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(<-chan struct{})
-		}
-	}
-
-	return r0
-}
-
-// TxsRemoved provides a mock function with given fields:
-func (_m *Mempool) TxsRemoved() <-chan types.TxKey {
-	ret := _m.Called()
-
-	var r0 <-chan types.TxKey
-	if rf, ok := ret.Get(0).(func() <-chan types.TxKey); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(<-chan types.TxKey)
 		}
 	}
 
@@ -235,13 +224,12 @@ func (_m *Mempool) Update(blockHeight int64, blockTxs types.Txs, deliverTxRespon
 	return r0
 }
 
-type mockConstructorTestingTNewMempool interface {
+// NewMempool creates a new instance of Mempool. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMempool(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewMempool creates a new instance of Mempool. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewMempool(t mockConstructorTestingTNewMempool) *Mempool {
+}) *Mempool {
 	mock := &Mempool{}
 	mock.Mock.Test(t)
 

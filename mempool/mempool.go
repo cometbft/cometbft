@@ -76,6 +76,9 @@ type Mempool interface {
 		newPostFn PostCheckFunc,
 	) error
 
+	// InMempool returns true iff the transaction key is in the mempool.
+	InMempool(txKey types.TxKey) bool
+
 	// NewIterator returns an interator for traversing the mempool entries in an
 	// order defined by the implementation. If it gets to the end or the mempool
 	// is empty, it will start from the beginning.
@@ -91,12 +94,6 @@ type Mempool interface {
 	// Flush removes all transactions from the mempool and caches.
 	Flush()
 
-	// InitChannels initializes the channels TxsAvailable and TxRemoved for
-	// communicating about changes in the mempool. TxsAvailable is read by the
-	// consensus reactor and it will be initialized only when notifyAvailable is
-	// true.
-	InitChannels(notifyAvailable bool)
-
 	// TxsAvailable returns a channel which fires once for every height, and only
 	// when transactions are available in the mempool.
 	//
@@ -104,9 +101,13 @@ type Mempool interface {
 	// 1. The returned channel may be nil if EnableTxsAvailable was not called.
 	TxsAvailable() <-chan struct{}
 
-	// TxsRemoved returns a read-only channel that receives a transaction key
-	// when a transaction is removed from the mempool.
-	TxsRemoved() <-chan types.TxKey
+	// EnableTxsAvailable initializes the TxsAvailable channel, ensuring it will
+	// trigger once every height when transactions are available.
+	EnableTxsAvailable()
+
+	// Set a callback function to be called when a transaction is removed from
+	// the mempool.
+	SetTxRemovedCallback(cb func(types.TxKey))
 
 	// Size returns the number of transactions in the mempool.
 	Size() int
@@ -114,8 +115,7 @@ type Mempool interface {
 	// SizeBytes returns the total size of all txs in the mempool.
 	SizeBytes() int64
 
-	Stop() error
-
+	// SetLogger sets the logger for the mempool.
 	SetLogger(l log.Logger)
 }
 

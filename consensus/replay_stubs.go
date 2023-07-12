@@ -41,15 +41,16 @@ func (emptyMempool) Update(
 ) error {
 	return nil
 }
-func (emptyMempool) Flush()                         {}
-func (emptyMempool) FlushAppConn() error            { return nil }
-func (emptyMempool) InitChannels(bool)              {}
-func (emptyMempool) TxsAvailable() <-chan struct{}  { return make(chan struct{}) }
-func (emptyMempool) TxsRemoved() <-chan types.TxKey { return make(chan types.TxKey) }
-func (emptyMempool) TxsBytes() int64                { return 0 }
-func (emptyMempool) Stop() error                    { return nil }
-func (emptyMempool) SetLogger(log.Logger)           {}
-func (emptyMempool) NewIterator() mempl.Iterator    { return nil }
+func (emptyMempool) Flush()                                 {}
+func (emptyMempool) FlushAppConn() error                    { return nil }
+func (emptyMempool) EnableTxsAvailable()                    {}
+func (emptyMempool) TxsAvailable() <-chan struct{}          { return make(chan struct{}) }
+func (emptyMempool) SetTxRemovedCallback(func(types.TxKey)) {}
+func (emptyMempool) TxsBytes() int64                        { return 0 }
+func (emptyMempool) Stop() error                            { return nil }
+func (emptyMempool) SetLogger(log.Logger)                   {}
+func (emptyMempool) NewIterator() mempl.Iterator            { return nil }
+func (emptyMempool) InMempool(types.TxKey) bool             { return false }
 
 func (emptyMempool) TxsFront() *clist.CElement    { return nil }
 func (emptyMempool) TxsWaitChan() <-chan struct{} { return nil }

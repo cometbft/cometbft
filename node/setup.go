@@ -242,8 +242,10 @@ func createMempoolAndMempoolReactor(
 	reactor := mempl.NewReactor(
 		config.Mempool,
 		mp,
-		config.Consensus.WaitForTxs(),
 	)
+	if config.Consensus.WaitForTxs() {
+		mp.EnableTxsAvailable()
+	}
 	reactor.SetLogger(logger)
 
 	return mp, reactor

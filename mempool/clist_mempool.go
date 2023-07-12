@@ -32,8 +32,9 @@ type CListMempool struct {
 	notifiedTxsAvailable bool
 	txsAvailable         chan struct{} // fires once for each height, when the mempool is not empty
 
-	// notify listeners (ie. mempool reactor) when txs are removed from the pool
-	txsRemoved chan types.TxKey
+	// Function set by the reactor to be called when a transaction is removed
+	// from the mempool.
+	removeTxOnReactor func(txKey types.TxKey)
 
 	config *config.MempoolConfig
 
@@ -138,20 +139,24 @@ func (mem *CListMempool) removeAllTxs() {
 
 	mem.txsMap.Range(func(key, _ interface{}) bool {
 		mem.txsMap.Delete(key)
-		mem.notifyTxRemoved(key.(types.TxKey))
+		mem.invokeRemoveTxOnReactor(key.(types.TxKey))
 		return true
 	})
 }
 
 // NOTE: not thread safe - should only be called once, on startup
-func (mem *CListMempool) InitChannels(notifyAvailable bool) {
-	if notifyAvailable {
-		mem.txsAvailable = make(chan struct{}, 1)
-	}
+func (mem *CListMempool) EnableTxsAvailable() {
+	mem.txsAvailable = make(chan struct{}, 1)
+}
 
-	// We assign a buffer of size 1024 to allow concurrent writes to the channel
-	// without blocking it.
-	mem.txsRemoved = make(chan types.TxKey, 1024)
+func (mem *CListMempool) SetTxRemovedCallback(cb func(txKey types.TxKey)) {
+	mem.removeTxOnReactor = cb
+}
+
+func (mem *CListMempool) invokeRemoveTxOnReactor(txKey types.TxKey) {
+	if mem.removeTxOnReactor != nil {
+		mem.removeTxOnReactor(txKey)
+	}
 }
 
 // SetLogger sets the Logger.
@@ -214,9 +219,13 @@ func (mem *CListMempool) Flush() {
 	mem.removeAllTxs()
 }
 
-func (mem *CListMempool) Stop() error {
-	close(mem.txsRemoved)
-	return nil
+// TxsFront returns the first transaction in the ordered list for peer
+// goroutines to call .NextWait() on.
+// FIXME: leaking implementation details!
+//
+// Safe for concurrent use by multiple goroutines.
+func (mem *CListMempool) TxsFront() *clist.CElement {
+	return mem.txs.Front()
 }
 
 func (mem *CListMempool) NewIterator() Iterator {
@@ -319,7 +328,9 @@ func (mem *CListMempool) addTx(entry *Entry) {
 //   - Update (lock held) if tx was committed
 //   - resCbRecheck (lock not held) if tx was invalidated
 func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
-	mem.notifyTxRemoved(txKey)
+	// The transaction should be removed in the reactor, even if it cannot be
+	// found in the mempool.
+	mem.invokeRemoveTxOnReactor(txKey)
 	if elem, ok := mem.getCElement(txKey); ok {
 		mem.txs.Remove(elem)
 		elem.DetachPrev()
@@ -504,19 +515,6 @@ func (mem *CListMempool) notifyTxsAvailable() {
 	}
 }
 
-func (mem *CListMempool) TxsRemoved() <-chan types.TxKey {
-	return mem.txsRemoved
-}
-
-func (mem *CListMempool) notifyTxRemoved(tx types.TxKey) {
-	if mem.txsRemoved != nil {
-		select {
-		case mem.txsRemoved <- tx:
-		default:
-		}
-	}
-}
-
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 	mem.updateMtx.RLock()
@@ -576,6 +574,7 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 }
 
 // Lock() must be help by the caller during execution.
+// TODO: always returns nil
 func (mem *CListMempool) Update(
 	height int64,
 	txs types.Txs,

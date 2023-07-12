@@ -169,7 +169,9 @@ func TestReactorWithEvidence(t *testing.T) {
 			mempl.WithPreCheck(sm.TxPreCheck(state)),
 			mempl.WithPostCheck(sm.TxPostCheck(state)))
 
-		mempool.InitChannels(thisConfig.Consensus.WaitForTxs())
+		if thisConfig.Consensus.WaitForTxs() {
+			mempool.EnableTxsAvailable()
+		}
 
 		// mock the evidence pool
 		// everyone includes evidence of another double signing

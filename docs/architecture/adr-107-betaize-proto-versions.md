@@ -2,7 +2,7 @@
 
 ## Changelog
 
-- 2023-07-11: Initial draft
+- 2023-07-11: Initial draft (@mzabaluev)
 
 ## Status
 

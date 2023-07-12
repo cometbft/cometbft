@@ -526,9 +526,6 @@ type P2PConfig struct { //nolint: maligned
 	// Comma separated list of nodes to keep persistent connections to
 	PersistentPeers string `mapstructure:"persistent_peers"`
 
-	// UPNP port forwarding
-	UPNP bool `mapstructure:"upnp"`
-
 	// Path to address book
 	AddrBook string `mapstructure:"addr_book_file"`
 
@@ -593,7 +590,6 @@ func DefaultP2PConfig() *P2PConfig {
 	return &P2PConfig{
 		ListenAddress:                "tcp://0.0.0.0:26656",
 		ExternalAddress:              "",
-		UPNP:                         false,
 		AddrBook:                     defaultAddrBookPath,
 		AddrBookStrict:               true,
 		MaxNumInboundPeers:           40,

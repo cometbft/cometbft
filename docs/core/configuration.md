@@ -205,11 +205,9 @@ pprof_laddr = ""
 # Address to listen for incoming connections
 laddr = "tcp://0.0.0.0:26656"
 
-# Address to advertise to peers for them to dial
-# If empty, will use the same port as the laddr,
-# and will introspect on the listener or use UPnP
-# to figure out the address. ip and port are required
-# example: 159.89.10.97:26656
+# Address to advertise to peers for them to dial. If empty, will use the same
+# port as the laddr, and will introspect on the listener to figure out the
+# address. IP and port are required. Example: 159.89.10.97:26656
 external_address = ""
 
 # Comma separated list of seed nodes to connect to
@@ -222,9 +220,6 @@ bootstrap_peers = ""
 
 # Comma separated list of nodes to keep persistent connections to
 persistent_peers = ""
-
-# UPNP port forwarding
-upnp = false
 
 # Path to address book
 addr_book_file = "config/addrbook.json"

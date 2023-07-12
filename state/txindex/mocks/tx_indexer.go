@@ -105,13 +105,12 @@ func (_m *TxIndexer) SetLogger(l log.Logger) {
 	_m.Called(l)
 }
 
-type mockConstructorTestingTNewTxIndexer interface {
+// NewTxIndexer creates a new instance of TxIndexer. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewTxIndexer(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewTxIndexer creates a new instance of TxIndexer. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewTxIndexer(t mockConstructorTestingTNewTxIndexer) *TxIndexer {
+}) *TxIndexer {
 	mock := &TxIndexer{}
 	mock.Mock.Test(t)
 

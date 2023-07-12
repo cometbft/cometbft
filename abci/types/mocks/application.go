@@ -378,13 +378,12 @@ func (_m *Application) VerifyVoteExtension(_a0 context.Context, _a1 *types.Reque
 	return r0, r1
 }
 
-type mockConstructorTestingTNewApplication interface {
+// NewApplication creates a new instance of Application. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewApplication(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewApplication creates a new instance of Application. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewApplication(t mockConstructorTestingTNewApplication) *Application {
+}) *Application {
 	mock := &Application{}
 	mock.Mock.Test(t)
 

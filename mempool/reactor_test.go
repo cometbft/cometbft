@@ -63,9 +63,11 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 	waitForTxsOnReactors(t, txs, reactors)
 }
 
-// regression test for https://github.com/cometbft/cometbft/issues/5408
+// regression test for https://github.com/tendermint/tendermint/issues/5408
 func TestReactorConcurrency(t *testing.T) {
 	config := cfg.TestConfig()
+	config.Mempool.Size = 5000
+	config.Mempool.CacheSize = 5000
 	const N = 2
 	reactors, _ := makeAndConnectReactors(config, N)
 	defer func() {
@@ -92,16 +94,7 @@ func TestReactorConcurrency(t *testing.T) {
 		txs := checkTxs(t, reactors[0].mempool, numTxs)
 		go func() {
 			defer wg.Done()
-
-			reactors[0].mempool.Lock()
-			defer reactors[0].mempool.Unlock()
-
-			txResponses := make([]*abci.ExecTxResult, len(txs))
-			for i := range txs {
-				txResponses[i] = &abci.ExecTxResult{Code: 0}
-			}
-			err := reactors[0].mempool.Update(1, txs, txResponses, nil, nil)
-			assert.NoError(t, err)
+			updateMempool(t, reactors[0].mempool, txs, []types.Tx{})
 		}()
 
 		// 1. submit a bunch of txs
@@ -109,11 +102,7 @@ func TestReactorConcurrency(t *testing.T) {
 		_ = checkTxs(t, reactors[1].mempool, numTxs)
 		go func() {
 			defer wg.Done()
-
-			reactors[1].mempool.Lock()
-			defer reactors[1].mempool.Unlock()
-			err := reactors[1].mempool.Update(1, []types.Tx{}, make([]*abci.ExecTxResult, 0), nil, nil)
-			assert.NoError(t, err)
+			updateMempool(t, reactors[1].mempool, []types.Tx{}, []types.Tx{})
 		}()
 
 		// 1. flush the mempool

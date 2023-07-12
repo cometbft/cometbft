@@ -2,7 +2,6 @@ package e2e_test
 
 import (
 	"context"
-	v1 "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
 	"testing"
 	"time"
 
@@ -34,10 +33,11 @@ func TestGRPC_Version(t *testing.T) {
 
 func TestGRPC_Block(t *testing.T) {
 	testNode(t, func(t *testing.T, node e2e.Node) {
-		blocks := fetchBlockChain(t)
-		if node.Mode != e2e.ModeSeed {
+		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
 			return
 		}
+
+		blocks := fetchBlockChain(t)
 
 		client, err := node.Client()
 		require.NoError(t, err)
@@ -63,13 +63,21 @@ func TestGRPC_Block(t *testing.T) {
 				break
 			}
 
-			res, err := gRPCClient.GetBlock(ctx, v1.GetBlockRequest{
-				Height: 1,
-			})
-			require.NoError(t, err)
+			// Get first block
+			firstBlock, err := gRPCClient.GetBlock(ctx, first)
 
-			require.Equal(t, block, res.Block,
-				"block mismatch for height %d", block.Header.Height)
+			// First block tests
+			require.NoError(t, err)
+			require.NotNil(t, firstBlock.BlockID)
+			require.Equal(t, firstBlock.Block.Height, first)
+
+			// Get last block
+			lastBlock, err := gRPCClient.GetBlock(ctx, last)
+
+			// Last block tests
+			require.NoError(t, err)
+			require.NotNil(t, lastBlock.BlockID)
+			require.Equal(t, lastBlock.Block.Height, last)
 		}
 	})
 }

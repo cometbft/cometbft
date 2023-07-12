@@ -6,7 +6,7 @@
 
 ## Status
 
-Proposed (CHANGE BEFORE MERGING)
+Accepted
 
 ## Context
 

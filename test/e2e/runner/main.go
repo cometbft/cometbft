@@ -388,7 +388,7 @@ Does not run any perturbations.
 			}
 
 			logger.Info("First grace period (10s)")
-			time.Sleep(5 * time.Second)
+			time.Sleep(10 * time.Second)
 
 			logger.Info("Starting custom benchmark.")
 
@@ -422,8 +422,8 @@ Does not run any perturbations.
 			}
 			logger.Info("Ending benchmark.")
 
-			logger.Info("Second grace period (5s).")
-			time.Sleep(5 * time.Second)
+			logger.Info("Second grace period (10s).")
+			time.Sleep(10 * time.Second)
 
 			logger.Info("Fetching stats.")
 			mempoolStats, err := Fetch(cli.testnet)
@@ -453,6 +453,8 @@ Does not run any perturbations.
 			} else {
 				logger.Info("bandwidth graph = " + fmt.Sprintf("%v", string(graph)))
 			}
+
+			cli.infp.StopTestnet(context.Background())
 
 			return Cleanup(cli.testnet)
 		},

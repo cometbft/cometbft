@@ -8,7 +8,7 @@ For the impatient
 	cd path/to/cometbft/
 	E2E_DIR=$(pwd)/test/e2e
 	(cd ${E2E_DIR} && make node generator runner docker-fast)
-	${E2E_DIR}/fast-prototyping/experiments.sh ${E2E_DIR}/fast-prototyping/render/results.csv # takes around a minute
+	${E2E_DIR}/fast-prototyping/experiments.sh ${E2E_DIR}/fast-prototyping/render/results.csv # takes around two minutes
 	${E2E_DIR}/fast-prototyping/render.sh
 
 ## Injecting a custom reactor

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	cstypes "github.com/cometbft/cometbft/consensus/types"
@@ -42,22 +43,24 @@ type Reactor struct {
 
 	conS *State
 
-	mtx      cmtsync.RWMutex
-	waitSync bool
+	waitSync *atomic.Bool
 	eventBus *types.EventBus
-	rs       *cstypes.RoundState
+
+	rs    *cstypes.RoundState
+	rsMtx cmtsync.Mutex
 
 	Metrics *Metrics
 }
 
 type ReactorOption func(*Reactor)
 
-// NewReactor returns a new Reactor with the given
-// consensusState.
+// NewReactor returns a new Reactor with the given consensusState.
 func NewReactor(consensusState *State, waitSync bool, options ...ReactorOption) *Reactor {
+	ws := &atomic.Bool{}
+	ws.Store(waitSync)
 	conR := &Reactor{
 		conS:     consensusState,
-		waitSync: waitSync,
+		waitSync: ws,
 		rs:       consensusState.GetRoundState(),
 		Metrics:  NopMetrics(),
 	}
@@ -103,8 +106,9 @@ func (conR *Reactor) OnStop() {
 	}
 }
 
-// SwitchToConsensus switches from block_sync mode to consensus mode.
-// It resets the state, turns off block_sync, and starts the consensus state-machine
+// SwitchToConsensus switches from block sync or state sync mode to consensus
+// mode. It resets the state, turns off the syncing mode, and starts the
+// consensus state-machine
 func (conR *Reactor) SwitchToConsensus(state sm.State, skipWAL bool) {
 	conR.Logger.Info("SwitchToConsensus")
 
@@ -122,9 +126,7 @@ func (conR *Reactor) SwitchToConsensus(state sm.State, skipWAL bool) {
 		conR.conS.updateToState(state)
 	}()
 
-	conR.mtx.Lock()
-	conR.waitSync = false
-	conR.mtx.Unlock()
+	conR.waitSync.Store(false)
 
 	if skipWAL {
 		conR.conS.doWALCatchup = false
@@ -401,9 +403,7 @@ func (conR *Reactor) SetEventBus(b *types.EventBus) {
 
 // WaitSync returns whether the consensus reactor is waiting for state/block sync.
 func (conR *Reactor) WaitSync() bool {
-	conR.mtx.RLock()
-	defer conR.mtx.RUnlock()
-	return conR.waitSync
+	return conR.waitSync.Load()
 }
 
 //--------------------------------------
@@ -547,15 +547,15 @@ func (conR *Reactor) updateRoundStateRoutine() {
 			return
 		}
 		rs := conR.conS.GetRoundState()
-		conR.mtx.Lock()
+		conR.rsMtx.Lock()
 		conR.rs = rs
-		conR.mtx.Unlock()
+		conR.rsMtx.Unlock()
 	}
 }
 
 func (conR *Reactor) getRoundState() *cstypes.RoundState {
-	conR.mtx.RLock()
-	defer conR.mtx.RUnlock()
+	conR.rsMtx.Lock()
+	defer conR.rsMtx.Unlock()
 	return conR.rs
 }
 

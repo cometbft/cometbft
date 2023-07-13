@@ -35,6 +35,11 @@ type consensusReactor interface {
 	SwitchToConsensus(state sm.State, skipWAL bool)
 }
 
+type mempoolReactor interface {
+	// for when we finish doing block sync or state sync
+	EnableIncomingTxs()
+}
+
 type peerError struct {
 	err    error
 	peerID p2p.ID
@@ -376,12 +381,14 @@ FOR_LOOP:
 				continue FOR_LOOP
 			}
 			if bcR.pool.IsCaughtUp() {
-				bcR.Logger.Info("Time to switch to consensus reactor!", "height", height)
+				bcR.Logger.Info("Time to switch to consensus mode!", "height", height)
 				if err := bcR.pool.Stop(); err != nil {
 					bcR.Logger.Error("Error stopping pool", "err", err)
 				}
-				conR, ok := bcR.Switch.Reactor("CONSENSUS").(consensusReactor)
-				if ok {
+				if memR, ok := bcR.Switch.Reactor("MEMPOOL").(mempoolReactor); ok {
+					memR.EnableIncomingTxs()
+				}
+				if conR, ok := bcR.Switch.Reactor("CONSENSUS").(consensusReactor); ok {
 					conR.SwitchToConsensus(state, blocksSynced > 0 || stateSynced)
 				}
 				// else {

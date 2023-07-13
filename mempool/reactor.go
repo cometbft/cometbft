@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"errors"
+	"sync/atomic"
 	"time"
 
 	"fmt"
@@ -19,17 +20,21 @@ import (
 // peers you received it from.
 type Reactor struct {
 	p2p.BaseReactor
-	config  *cfg.MempoolConfig
-	mempool *CListMempool
-	ids     *mempoolIDs
+	config   *cfg.MempoolConfig
+	mempool  *CListMempool
+	ids      *mempoolIDs
+	waitSync *atomic.Bool
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
-func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool) *Reactor {
+func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool, waitSync bool) *Reactor {
+	ws := &atomic.Bool{}
+	ws.Store(waitSync)
 	memR := &Reactor{
-		config:  config,
-		mempool: mempool,
-		ids:     newMempoolIDs(),
+		config:   config,
+		mempool:  mempool,
+		ids:      newMempoolIDs(),
+		waitSync: ws,
 	}
 	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
 	return memR
@@ -95,6 +100,11 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 	memR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 	switch msg := e.Message.(type) {
 	case *protomem.Txs:
+		if memR.WaitSync() {
+			memR.Logger.Info("ignore message received during sync", "msg", msg)
+			return
+		}
+
 		protoTxs := msg.GetTxs()
 		if len(protoTxs) == 0 {
 			memR.Logger.Error("received empty txs from peer", "src", e.Src)
@@ -124,6 +134,15 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 	// broadcasting happens from go routines per peer
 }
 
+func (memR *Reactor) EnableIncomingTxs() {
+	memR.Logger.Info("enable incoming transactions")
+	memR.waitSync.Store(false)
+}
+
+func (memR *Reactor) WaitSync() bool {
+	return memR.waitSync.Load()
+}
+
 // PeerState describes the state of a peer.
 type PeerState interface {
 	GetHeight() int64
@@ -136,7 +155,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 
 	for {
 		// In case of both next.NextWaitChan() and peer.Quit() are variable at the same time
-		if !memR.IsRunning() || !peer.IsRunning() {
+		if !memR.IsRunning() || !peer.IsRunning() || memR.WaitSync() {
 			return
 		}
 		// This happens because the CElement we were looking at got garbage

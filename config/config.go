@@ -776,7 +776,7 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 		return errors.New("max_tx_bytes can't be negative")
 	}
 	if cfg.CacheSize < cfg.Size {
-		return errors.New("mempool's cache cannot be smaller than mempool's capacity")
+		return errors.New("mempool's cache_size cannot be smaller than mempool's size")
 	}
 	return nil
 }

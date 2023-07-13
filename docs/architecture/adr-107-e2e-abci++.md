@@ -89,7 +89,7 @@ The idea here was to find a library that automatically verifies whether a specif
 
 **Implementation**
 
-We found the following library - https://github.com/goccmack/gogll. It generates a GLL or LR(1) parser and FSA-based lexer for any context-free grammar. What we needed to do is to rewrite ABCI++ grammar ([CometBFT's expected behaviour](../../spec/abci/abci%2B%2B_comet_expected_behavior.md#valid-method-call-sequences))
+We found the following library - https://github.com/goccmack/gogll. It generates a GLL or LR(1) parser and an FSA-based lexer for any context-free grammar. What we needed to do is to rewrite ABCI++ grammar ([CometBFT's expected behaviour](../../spec/abci/abci%2B%2B_comet_expected_behavior.md#valid-method-call-sequences))
 using the syntax that the library understands. We should emphasise here that both grammars, the original and the new one, represent the expected behaviour
 from the perspective of one node. This is why, later, when we verify if the specific execution respects the grammar, we need to check the logs of each node separately. 
 The new grammar is below and can be found inside `test/e2e/pkg/grammar/abci_grammar.md` file.
@@ -117,13 +117,13 @@ Proposer : PrepareProposal | PrepareProposal ProcessProposal ;
 NonProposer: ProcessProposal ;
 
 
-InitChain : "<InitChain>" ;
-Decide : "<FinalizeBlock>" ; 
-Commit : "<Commit>" ;
-OfferSnapshot : "<OfferSnapshot>" ;
-ApplyChunk : "<ApplyChunk>" ; 
-PrepareProposal : "<PrepareProposal>" ; 
-ProcessProposal : "<ProcessProposal>" ;
+InitChain : "init_chain" ;
+Decide : "finalize_block" ; 
+Commit : "commit" ;
+OfferSnapshot : "offer_snapshot" ;
+ApplyChunk : "apply_snapshot_chunk" ; 
+PrepareProposal : "prepare_proposal" ; 
+ProcessProposal : "process_proposal" ;
  
  ```
 
@@ -140,7 +140,7 @@ in the right moment.
 
 The `gogll` library receives the file with the grammar as input, and it generates the corresponding parser and lexer. Specifically, we need to run 
 `gogll pkg/grammar/abci_grammar.md` from `test/e2e/` directory.
-The resulted code is inside the following directories: 
+The resulting code is inside the following directories: 
 - `test/e2e/pkg/grammar/lexer`,
 - `test/e2e/pkg/grammar/parser`,
 - `test/e2e/pkg/grammar/sppf`,
@@ -179,22 +179,15 @@ The `Verify()` method is shown below.
 ```go
 func (g *GrammarChecker) Verify(reqs []*abci.Request) (bool, error) {
 	var r []*abci.Request
-	var n int
-	if g.cfg.FilterLastHeight {
-		r, n = g.filterLastHeight(reqs)
-		if n != 0 {
-			debugMsg := fmt.Sprintf("Last height filtered, removed last %v abci calls out of %v.\n", n, len(reqs))
-			g.logger.Debug(debugMsg)
-		}
-	}
-	s, _ := g.GetExecutionString(r)
+	r, _ = g.filterLastHeight(reqs)
+	s := g.GetExecutionString(r)
 	return g.VerifyExecution(s)
 }
 ```
 
 It takes a list of requests and does the following things.
 - Filter the last height. Basically, it removes all ABCI++ requests after the 
-last `Commit`. Function `fetchABCIRequestsByNodeName()` can be called in the middle of the height. As a result, the last height may be incomplete, and 
+last `Commit`. The function `fetchABCIRequestsByNodeName()` can be called in the middle of the height. As a result, the last height may be incomplete, and 
 the parser may return an error. The simple example here is that the last 
 request fetched via `fetchABCIRequestsByNodeName()` is `Decide`; however, `Commit` happens after 
 `fetchABCIRequestsByNodeName()` was invoked. Consequently, the parser
@@ -203,8 +196,7 @@ will happen after.
 - Generates an execution string by replacing `abci.Request` with the 
 corresponding terminal from the grammar. This logic is implemented in
 `GetExecutionString()` function. This function receives a list of `abci.Request` and generates a string where every request the grammar covers 
-will be replaced with a corresponding terminal. For example, `abci.Request_PrepareProposal` is replaced with `<PrepareProposal>`. If the request is not covered 
-by the grammar, it will be ignored. 
+will be replaced with a corresponding terminal. For example, request `r` of type `abci.Request_PrepareProposal` is replaced with the string `prepare_proposal`, the first part of `r`'s string representation. If the grammar does not cover the request, it will be ignored. 
 - Checks if the resulting string with terminals respects the grammar. This 
 logic is implemented inside the `VerifyExecution` function. 
 
@@ -213,7 +205,11 @@ func (g *GrammarChecker) VerifyExecution(execution string) (bool, error) {
 	lexer := lexer.New([]rune(execution))
 	_, errs := parser.Parse(lexer)
 	if len(errs) > 0 {
-		err := g.combineParseErrors(execution, errs, g.cfg.MaxNumberOfErrorsToShow)
+		err := g.combineParseErrors(execution, errs, g.cfg.NumberOfErrorsToShow)
+		if g.cfg.ShowFullExecution {
+			e := g.addHeightNumbersToTheExecution(execution)
+			err = fmt.Errorf("%v\nFull execution:\n%v", err, e)
+		}
 		return false, err
 	}
 	return true, nil
@@ -222,29 +218,33 @@ func (g *GrammarChecker) VerifyExecution(execution string) (bool, error) {
 This function is the only function that uses auto-generated parser and 
 lexer. It returns true if the execution is valid. Otherwise, it returns an 
 error composed of parser errors and some additional information 
-we added. An example of an error produced by `VerifyExecution`
+we added. In addition, if the `ShowFullExecution` is set to `true`, it prints the whole execution. An example of an error produced by `VerifyExecution`
 is the following:
 
 ```
-Parser failed, number of errors is 11
-    ***Error 0***
-    Parse Error: ProcessProposal : ∙<ProcessProposal>  I[11]=<Commit> (193,201) <Commit> at line 3 col 19
-    Expected one of: [<FinalizeBlock>,<PrepareProposal>,<ProcessProposal>]
-    Execution:
-    1:<InitChain> <ProcessProposal> <ProcessProposal> <ProcessProposal> <ProcessProposal> 
-    2:<ProcessProposal> <ProcessProposal> <ProcessProposal> <ProcessProposal> <ProcessProposal>
-	3:<ProcessProposal> <Commit>
+ABCI grammar verification failed: Parser failed, number of errors is 2
+            ---Error 0---
+            Height: 0
+            ABCI requests: offer_snapshot apply_snapshot_chunk finalize_block commit
+            Unexpected request: offer_snapshot
+            Expected one of: [init_chain,process_proposal,finalize_block,prepare_proposal]
+            -------------
+            Full execution:
+            0: offer_snapshot apply_snapshot_chunk finalize_block commit
+            1: finalize_block commit
+            2: finalize_block commit
+            3: finalize_block commit
+            4: finalize_block commit
+            5: process_proposal finalize_block commit
+			...
 ```
-The parse error shown above represents an error that happened at the grammar slot
-`ProcessProposal : ∙<ProcessProposal>`, specifically an error occurs at token 
-`I[11]=<Commit> (193,201) <Commit>` which is 12th token in the whole 
-execution, at line 3, column 19. Instead of `<Commit>` the grammar was 
-expecting `<FinalizeBlock>`,`<PrepareProposal>` or `<ProcessProposal>`.
-In addition, the output shows the lines around the line with an error. 
+The parse error shown above represents an error that happened at height 0. The `ABCI requests` part represents 
+requests observed in this height, while `Unexpected request` and `Expected one of` represent the request which 
+should not happen, and the requests that should have happened instead, respectively. 
+Lastly, after the errors the full execution, one height per line, is printed. This can be turned off with the config flag. 
 Notice here that the parser can return many errors because the parser returns an error at every point at which the parser fails to parse
 a grammar production. Usually, the error of interest is the one that has 
-parsed the largest number of tokens. This is why, at the 
-moment, we are printing the last 10 errors; however, this is part of the configuration and can be changed. 
+parsed the largest number of tokens. This is why, by default, we are printing only the last error; however, this is also part of the configuration and can be changed. 
 
 ### Suporting additional ABCI++ requests
 
@@ -253,7 +253,7 @@ ABCI++ requests in the future:
 
 - The application needs to log the new request in the same way as we do now.
 - We should include the new request to the grammar and generate a new parser and lexer.  
-- We should modify `getRequestTerminal()` method inside `test/e2e/pkg/grammar/checker.go` to return a grammar terminal for the new ABCI++ request. 
+- We should add new requests to the list of supported requests. Namely, we should modify the function `isSupportedByGrammar()` in `test/e2e/pkg/grammar/checker.go` to return `true` for the new type of requests.
 
 
 ## Status

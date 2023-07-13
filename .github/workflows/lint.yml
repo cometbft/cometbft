@@ -10,6 +10,7 @@ name: Golang Linter
 
 on:
   pull_request:
+  merge_group:
   push:
     branches:
       - main

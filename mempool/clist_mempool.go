@@ -125,7 +125,10 @@ func (mem *CListMempool) forceRemoveFromCache(tx types.Tx) {
 	mem.cache.Remove(tx)
 }
 
-func (mem *CListMempool) removeFromCache(tx types.Tx) {
+// tryRemoveFromCache removes a transaction from the cache in case it can be
+// added to the mempool at a later stage (probably when the transaction becomes
+// valid).
+func (mem *CListMempool) tryRemoveFromCache(tx types.Tx) {
 	if !mem.config.KeepInvalidTxsInCache {
 		mem.forceRemoveFromCache(tx)
 	}
@@ -413,8 +416,7 @@ func (mem *CListMempool) resCbFirstTime(
 			)
 			mem.notifyTxsAvailable()
 		} else {
-			// ignore bad transaction
-			mem.removeFromCache(tx)
+			mem.tryRemoveFromCache(tx)
 			mem.logger.Debug(
 				"rejected invalid transaction",
 				"tx", types.Tx(tx).Hash(),
@@ -478,7 +480,7 @@ func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 			if err := mem.RemoveTxByKey(memTx.tx.Key()); err != nil {
 				mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
 			}
-			mem.removeFromCache(tx) // it might be valid later
+			mem.tryRemoveFromCache(tx)
 		}
 		if mem.recheckCursor == mem.recheckEnd {
 			mem.recheckCursor = nil
@@ -601,7 +603,7 @@ func (mem *CListMempool) Update(
 			// Add valid committed tx to the cache (if missing).
 			_ = mem.addToCache(tx)
 		} else {
-			mem.removeFromCache(tx)
+			mem.tryRemoveFromCache(tx)
 		}
 
 		// Remove committed tx from the mempool.

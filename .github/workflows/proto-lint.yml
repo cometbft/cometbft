@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'proto/**'
+  merge_group:
   push:
     branches:
       - main

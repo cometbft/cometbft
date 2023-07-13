@@ -2,6 +2,7 @@
 
 ## Changelog
 
+- 2023-07-13: Emphasize/clarify conclusions (@thanethomson)
 - 2023-06-29: First draft (@thanethomson)
 
 ## Abstract
@@ -170,13 +171,21 @@ The major drawbacks of using an existing framework are:
    in more loosely coupling system components, but provides poorer compile-time
    correctness guarantees and increases the range of tests needed.
 
-### Lessons from the actor model
+### Conclusion
 
-The primary lesson to be taken from the actor model is that, if there were a way
-to ensure that all reactor/service state is fully self-contained within each
-reactor/service, and interacting with that reactor/service followed a
-disciplined and consistent pattern, the system would be dramatically easier to
-both understand and test.
+It seems as though neither of adopting an actor model-based framework, nor a
+strict actor model, is desirable for CometBFT due to the drawbacks covered in
+this RFC.
+
+The primary lesson to be taken from the actor model, however, is that, if there
+were a way to ensure that all reactor/service state is fully self-contained
+within each reactor/service, and interacting with that reactor/service followed
+a disciplined and consistent pattern, the system would be dramatically easier to
+both understand and test. For instance, if all state for a particular protocol
+were self-contained, single-threaded and only ever mutated directly by a single
+active entity (i.e. reactor/service), the evolution of the state machine of that
+protocol could be more fully exercised by testing approaches like fuzzing or
+MBT.
 
 Implementing such changes would still involve substantial refactoring, but much
 less so than introducing a full-blown actor system. It would also allow for

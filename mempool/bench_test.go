@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"encoding/binary"
 	"sync/atomic"
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
@@ -28,7 +27,6 @@ func BenchmarkReap(b *testing.B) {
 	size := 10000
 	for i := 0; i < size; i++ {
 		tx := kvstore.NewTxFromID(i)
-		binary.BigEndian.PutUint64(tx, uint64(i))
 		if _, err := mp.CheckTx(tx); err != nil {
 			b.Fatal(err)
 		}

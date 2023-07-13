@@ -34,7 +34,7 @@ type CListMempool struct {
 
 	// Function set by the reactor to be called when a transaction is removed
 	// from the mempool.
-	removeTxOnReactor func(txKey types.TxKey)
+	removeTxOnReactorCb func(txKey types.TxKey)
 
 	config *config.MempoolConfig
 
@@ -150,12 +150,12 @@ func (mem *CListMempool) EnableTxsAvailable() {
 }
 
 func (mem *CListMempool) SetTxRemovedCallback(cb func(txKey types.TxKey)) {
-	mem.removeTxOnReactor = cb
+	mem.removeTxOnReactorCb = cb
 }
 
 func (mem *CListMempool) invokeRemoveTxOnReactor(txKey types.TxKey) {
-	if mem.removeTxOnReactor != nil {
-		mem.removeTxOnReactor(txKey)
+	if mem.removeTxOnReactorCb != nil {
+		mem.removeTxOnReactorCb(txKey)
 	}
 }
 

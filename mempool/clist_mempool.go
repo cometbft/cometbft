@@ -579,7 +579,7 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 }
 
 // Lock() must be help by the caller during execution.
-// TODO: always returns nil
+// TODO: this function always returns nil; remove the return value
 func (mem *CListMempool) Update(
 	height int64,
 	txs types.Txs,

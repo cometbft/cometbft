@@ -39,7 +39,7 @@ type CListMempool struct {
 	preCheck  PreCheckFunc
 	postCheck PostCheckFunc
 
-	txs          *clist.CList // concurrent linked-list of good txs
+	txs          *clist.CList // concurrent linked-list of valid txs
 	proxyAppConn proxy.AppConnMempool
 
 	// Track whether we're rechecking txs.
@@ -404,11 +404,11 @@ func (mem *CListMempool) resCbFirstTime(
 			}
 
 			// Check transaction not already in the mempool
-			if e, ok := mem.txsMap.Load(types.Tx(tx).Key()); ok {
-				memTx := e.(*clist.CElement).Value.(*mempoolTx)
+			if elem, ok := mem.txsMap.Load(types.Tx(tx).Key()); ok {
+				memTx := elem.(*clist.CElement).Value.(*mempoolTx)
 				memTx.addSender(txInfo.SenderID)
 				mem.logger.Debug(
-					"transaction already there, not adding it again",
+					"transaction already in mempool, not adding it again",
 					"tx", types.Tx(tx).Hash(),
 					"res", r,
 					"height", mem.height,
@@ -425,7 +425,7 @@ func (mem *CListMempool) resCbFirstTime(
 			memTx.addSender(txInfo.SenderID)
 			mem.addTx(memTx)
 			mem.logger.Debug(
-				"added good transaction",
+				"added valid transaction to mempool",
 				"tx", types.Tx(tx).Hash(),
 				"res", r,
 				"height", memTx.height,
@@ -433,9 +433,8 @@ func (mem *CListMempool) resCbFirstTime(
 			)
 			mem.notifyTxsAvailable()
 		} else {
-			// ignore bad transaction
 			mem.logger.Debug(
-				"rejected bad transaction",
+				"rejected invalid transaction",
 				"tx", types.Tx(tx).Hash(),
 				"peerID", txInfo.SenderP2PID,
 				"res", r,
@@ -612,6 +611,8 @@ func (mem *CListMempool) Update(
 	preCheck PreCheckFunc,
 	postCheck PostCheckFunc,
 ) error {
+	mem.logger.Debug("Update mempool", "height", height, "len(txs)", len(txs))
+
 	// Set height
 	mem.height = height
 	mem.notifiedTxsAvailable = false
@@ -653,7 +654,6 @@ func (mem *CListMempool) Update(
 	// or just notify there're some txs left.
 	if mem.Size() > 0 {
 		if mem.config.Recheck {
-			mem.logger.Debug("recheck txs", "numtxs", mem.Size(), "height", height)
 			mem.recheckTxs()
 			// At this point, mem.txs are being rechecked.
 			// mem.recheckCursor re-scans mem.txs and possibly removes some txs.
@@ -670,6 +670,7 @@ func (mem *CListMempool) Update(
 }
 
 func (mem *CListMempool) recheckTxs() {
+	mem.logger.Debug("recheck txs", "height", mem.height, "mem size", mem.Size())
 	if mem.Size() == 0 {
 		panic("recheckTxs is called, but the mempool is empty")
 	}

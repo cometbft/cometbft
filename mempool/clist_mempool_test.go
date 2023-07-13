@@ -97,6 +97,14 @@ func ensureFire(t *testing.T, ch <-chan struct{}, timeoutMS int) {
 	}
 }
 
+func newUniqueTxs(n int) types.Txs {
+	txs := make(types.Txs, n)
+	for i := 0; i < n; i++ {
+		txs[i] = kvstore.NewTxFromID(i)
+	}
+	return txs
+}
+
 func checkTxs(t *testing.T, mp Mempool, count int, peerID uint16) types.Txs {
 	txs := make(types.Txs, count)
 	txInfo := TxInfo{SenderID: peerID}
@@ -683,14 +691,6 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 		}
 	}
 	assert.True(t, found == 1)
-}
-
-func newUniqueTxs(n int) types.Txs {
-	txs := make(types.Txs, n)
-	for i := 0; i < n; i++ {
-		txs[i] = kvstore.NewTxFromID(i)
-	}
-	return txs
 }
 
 // This will non-deterministically catch some concurrency failures like

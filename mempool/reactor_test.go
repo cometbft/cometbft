@@ -104,7 +104,7 @@ func TestReactorConcurrency(t *testing.T) {
 		}()
 
 		// 1. submit a different bunch of txs
-		// 2. update none (will recheck all txs in the mempool)
+		// 2. update none (this will recheck all txs in the mempool)
 		_ = checkTxs(t, reactors[1].mempool, numTxs, UnknownPeerID)
 		go func() {
 			defer wg.Done()

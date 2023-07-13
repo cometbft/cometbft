@@ -154,6 +154,8 @@ func (mem *CListMempool) SetTxRemovedCallback(cb func(txKey types.TxKey)) {
 }
 
 func (mem *CListMempool) invokeRemoveTxOnReactor(txKey types.TxKey) {
+	// Note that the callback is nil in the unit tests, where there are no
+	// reactors.
 	if mem.removeTxOnReactorCb != nil {
 		mem.removeTxOnReactorCb(txKey)
 	}

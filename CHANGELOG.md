@@ -6,17 +6,12 @@
 
 - The `TMHOME` environment variable was renamed to `CMTHOME`, and all environment variables starting with `TM_` are instead prefixed with `CMT_`
   ([\#211](https://github.com/cometbft/cometbft/issues/211))
+- `[protobuf]` Remove fields `sender`, `priority`, and `mempool_error` from
+  `ResponseCheckTx`. ([\#260](https://github.com/cometbft/cometbft/issues/260))
 - `[mempool]` Remove priority mempool.
   ([\#260](https://github.com/cometbft/cometbft/issues/260))
 - `[config]` Remove `Version` field from `MempoolConfig`.
   ([\#260](https://github.com/cometbft/cometbft/issues/260))
-- `[protobuf]` Remove fields `sender`, `priority`, and `mempool_error` from
-  `ResponseCheckTx`. ([\#260](https://github.com/cometbft/cometbft/issues/260))
-- `[node]` Removed methods from `Node` type: `BlockStore`, `ConsensusState`, `ConsensusReactor`,
-  `MempoolReactor`, `PEXReactor`, `EvidencePool`, `ProxyApp`
-  ([\#286](https://github.com/cometbft/cometbft/issues/286))
-- `[p2p]` Modified method `AddReactor` in `Switch` type: it is no longer returning the added `Reactor`
-  ([\#286](https://github.com/cometbft/cometbft/issues/286))
 - Bump minimum Go version to 1.20
   ([\#385](https://github.com/cometbft/cometbft/issues/385))
 - `[crypto/merkle]` Do not allow verification of Merkle Proofs against empty trees (`nil` root). `Proof.ComputeRootHash` now panics when it encounters an error, but `Proof.Verify` does not panic
@@ -24,10 +19,10 @@
 - `[state/kvindexer]` Remove the function type from the event key stored in the database. This should be breaking only
 for people who forked CometBFT and interact directly with the indexers kvstore.
   ([\#774](https://github.com/cometbft/cometbft/pull/774))
-- `[pubsub]` Added support for big integers and big floats in the pubsub event query system.
+- `[kvindexer]` Added support for big integers and big floats in the kvindexer.
   Breaking changes: function `Number` in package `libs/pubsub/query/syntax` changed its return value.
   ([\#797](https://github.com/cometbft/cometbft/pull/797))
-- `[kvindexer]` Added support for big integers and big floats in the kvindexer.
+- `[pubsub]` Added support for big integers and big floats in the pubsub event query system.
   Breaking changes: function `Number` in package `libs/pubsub/query/syntax` changed its return value.
   ([\#797](https://github.com/cometbft/cometbft/pull/797))
 - `[mempool]` Application can now set `ConsensusParams.Block.MaxBytes` to -1
@@ -39,6 +34,9 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
   returned in `ResponsePrepareProposal.txs` does not exceed `RequestPrepareProposal.max_tx_bytes`,
   otherwise CometBFT will panic.
   ([\#980](https://github.com/cometbft/cometbft/issues/980))
+- `[node]` Removed `ConsensusState()` accessor from `Node`
+  struct - all access to consensus state should go via the reactor
+  ([\#1120](https://github.com/cometbft/cometbft/pull/1120))
 - `[state]` Move pruneBlocks from node/state to state/execution.
   ([\#6541](https://github.com/tendermint/tendermint/pull/6541))
 - `[abci]` Move `app_hash` parameter from `Commit` to `FinalizeBlock`
@@ -50,11 +48,11 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
   ([\#9625](https://github.com/tendermint/tendermint/pull/9625))
 - `[rpc]` Remove global environment and replace with constructor
   ([\#9655](https://github.com/tendermint/tendermint/pull/9655))
-- `[node]` Move DBContext and DBProvider from the node package to the config
-  package. ([\#9655](https://github.com/tendermint/tendermint/pull/9655))
 - `[inspect]` Add a new `inspect` command for introspecting
   the state and block store of a crashed tendermint node.
   ([\#9655](https://github.com/tendermint/tendermint/pull/9655))
+- `[node]` Move DBContext and DBProvider from the node package to the config
+  package. ([\#9655](https://github.com/tendermint/tendermint/pull/9655))
 - `[metrics]` Move state-syncing and block-syncing metrics to
   their respective packages. Move labels from block_syncing
   -> blocksync_syncing and state_syncing -> statesync_syncing

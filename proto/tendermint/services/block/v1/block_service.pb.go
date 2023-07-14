@@ -30,19 +30,20 @@ func init() {
 }
 
 var fileDescriptor_1488dadaa3ae41e3 = []byte{
-	// 190 bytes of a gzipped FileDescriptorProto
+	// 200 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x32, 0x28, 0x49, 0xcd, 0x4b,
 	0x49, 0x2d, 0xca, 0xcd, 0xcc, 0x2b, 0xd1, 0x2f, 0x4e, 0x2d, 0x2a, 0xcb, 0x4c, 0x4e, 0x2d, 0xd6,
 	0x4f, 0xca, 0xc9, 0x4f, 0xce, 0xd6, 0x2f, 0x33, 0x84, 0x30, 0xe2, 0xa1, 0xe2, 0x7a, 0x05, 0x45,
 	0xf9, 0x25, 0xf9, 0x42, 0x32, 0x08, 0x1d, 0x7a, 0x30, 0x1d, 0x7a, 0x60, 0x85, 0x7a, 0x65, 0x86,
-	0x52, 0x1a, 0x84, 0xcd, 0x83, 0x98, 0x63, 0x54, 0xc9, 0xc5, 0xe3, 0x04, 0xe2, 0x06, 0x43, 0x54,
-	0x09, 0x65, 0x72, 0x71, 0xb8, 0xa7, 0x96, 0x80, 0x85, 0x84, 0x74, 0xf5, 0xf0, 0x59, 0xa2, 0x07,
-	0x53, 0x17, 0x94, 0x5a, 0x58, 0x9a, 0x5a, 0x5c, 0x22, 0xa5, 0x47, 0xac, 0xf2, 0xe2, 0x82, 0xfc,
-	0xbc, 0xe2, 0x54, 0xa7, 0xc8, 0x13, 0x8f, 0xe4, 0x18, 0x2f, 0x3c, 0x92, 0x63, 0x7c, 0xf0, 0x48,
-	0x8e, 0x71, 0xc2, 0x63, 0x39, 0x86, 0x0b, 0x8f, 0xe5, 0x18, 0x6e, 0x3c, 0x96, 0x63, 0x88, 0xb2,
-	0x4f, 0xcf, 0x2c, 0xc9, 0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0xcf, 0x4d, 0x2d,
-	0x49, 0x4a, 0x2b, 0x41, 0x30, 0xc0, 0x0e, 0xd7, 0xc7, 0xe7, 0xc3, 0x24, 0x36, 0xb0, 0x1a, 0x63,
-	0x40, 0x00, 0x00, 0x00, 0xff, 0xff, 0x0b, 0xed, 0xe5, 0xda, 0x58, 0x01, 0x00, 0x00,
+	0x52, 0x1a, 0x84, 0xcd, 0x83, 0x98, 0x63, 0x34, 0x89, 0x91, 0x8b, 0xc7, 0x09, 0xc4, 0x0f, 0x86,
+	0x28, 0x13, 0x6a, 0x64, 0xe4, 0x12, 0x70, 0x4f, 0x2d, 0x01, 0x8b, 0x39, 0x55, 0x7a, 0xa4, 0x66,
+	0xa6, 0x67, 0x94, 0x08, 0x99, 0xea, 0xe1, 0xb3, 0x4e, 0x0f, 0x5d, 0x7d, 0x50, 0x6a, 0x61, 0x69,
+	0x6a, 0x71, 0x89, 0x94, 0x19, 0xa9, 0xda, 0x8a, 0x0b, 0xf2, 0xf3, 0x8a, 0x53, 0x9d, 0x22, 0x4f,
+	0x3c, 0x92, 0x63, 0xbc, 0xf0, 0x48, 0x8e, 0xf1, 0xc1, 0x23, 0x39, 0xc6, 0x09, 0x8f, 0xe5, 0x18,
+	0x2e, 0x3c, 0x96, 0x63, 0xb8, 0xf1, 0x58, 0x8e, 0x21, 0xca, 0x3e, 0x3d, 0xb3, 0x24, 0xa3, 0x34,
+	0x49, 0x2f, 0x39, 0x3f, 0x57, 0x3f, 0x39, 0x3f, 0x37, 0xb5, 0x24, 0x29, 0xad, 0x04, 0xc1, 0x00,
+	0x7b, 0x49, 0x1f, 0x9f, 0xdf, 0x93, 0xd8, 0xc0, 0x6a, 0x8c, 0x01, 0x01, 0x00, 0x00, 0xff, 0xff,
+	0x38, 0x66, 0x9d, 0xcb, 0x72, 0x01, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -57,9 +58,9 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type BlockServiceClient interface {
-	// GetBlock retrieves the block information at a particular height, if no
-	// height is specified it returns the latest height
-	GetBlock(ctx context.Context, in *GetBlockRequest, opts ...grpc.CallOption) (*GetBlockResponse, error)
+	// GetBlock retrieves the block information at a particular height,
+	// if height '0' (zero) is specified it returns the latest height
+	GetBlockByHeight(ctx context.Context, in *GetBlockByHeightRequest, opts ...grpc.CallOption) (*GetBlockByHeightResponse, error)
 }
 
 type blockServiceClient struct {
@@ -70,9 +71,9 @@ func NewBlockServiceClient(cc grpc1.ClientConn) BlockServiceClient {
 	return &blockServiceClient{cc}
 }
 
-func (c *blockServiceClient) GetBlock(ctx context.Context, in *GetBlockRequest, opts ...grpc.CallOption) (*GetBlockResponse, error) {
-	out := new(GetBlockResponse)
-	err := c.cc.Invoke(ctx, "/tendermint.services.block.v1.BlockService/GetBlock", in, out, opts...)
+func (c *blockServiceClient) GetBlockByHeight(ctx context.Context, in *GetBlockByHeightRequest, opts ...grpc.CallOption) (*GetBlockByHeightResponse, error) {
+	out := new(GetBlockByHeightResponse)
+	err := c.cc.Invoke(ctx, "/tendermint.services.block.v1.BlockService/GetBlockByHeight", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -81,37 +82,37 @@ func (c *blockServiceClient) GetBlock(ctx context.Context, in *GetBlockRequest, 
 
 // BlockServiceServer is the server API for BlockService service.
 type BlockServiceServer interface {
-	// GetBlock retrieves the block information at a particular height, if no
-	// height is specified it returns the latest height
-	GetBlock(context.Context, *GetBlockRequest) (*GetBlockResponse, error)
+	// GetBlock retrieves the block information at a particular height,
+	// if height '0' (zero) is specified it returns the latest height
+	GetBlockByHeight(context.Context, *GetBlockByHeightRequest) (*GetBlockByHeightResponse, error)
 }
 
 // UnimplementedBlockServiceServer can be embedded to have forward compatible implementations.
 type UnimplementedBlockServiceServer struct {
 }
 
-func (*UnimplementedBlockServiceServer) GetBlock(ctx context.Context, req *GetBlockRequest) (*GetBlockResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetBlock not implemented")
+func (*UnimplementedBlockServiceServer) GetBlockByHeight(ctx context.Context, req *GetBlockByHeightRequest) (*GetBlockByHeightResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBlockByHeight not implemented")
 }
 
 func RegisterBlockServiceServer(s grpc1.Server, srv BlockServiceServer) {
 	s.RegisterService(&_BlockService_serviceDesc, srv)
 }
 
-func _BlockService_GetBlock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetBlockRequest)
+func _BlockService_GetBlockByHeight_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBlockByHeightRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BlockServiceServer).GetBlock(ctx, in)
+		return srv.(BlockServiceServer).GetBlockByHeight(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/tendermint.services.block.v1.BlockService/GetBlock",
+		FullMethod: "/tendermint.services.block.v1.BlockService/GetBlockByHeight",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BlockServiceServer).GetBlock(ctx, req.(*GetBlockRequest))
+		return srv.(BlockServiceServer).GetBlockByHeight(ctx, req.(*GetBlockByHeightRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -121,8 +122,8 @@ var _BlockService_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*BlockServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetBlock",
-			Handler:    _BlockService_GetBlock_Handler,
+			MethodName: "GetBlockByHeight",
+			Handler:    _BlockService_GetBlockByHeight_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

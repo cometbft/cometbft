@@ -1,17 +1,16 @@
 syntax = "proto3";
 package tendermint.services.block.v1;
 
-import "gogoproto/gogo.proto";
 import "tendermint/types/block.proto";
 import "tendermint/types/types.proto";
 
 option go_package = "github.com/cometbft/cometbft/proto/tendermint/services/block/v1";
 
-message GetBlockRequest {
+message GetBlockByHeightRequest {
   int64 height = 1;  // the height of the block requested
 }
 
-message GetBlockResponse {
-  tendermint.types.BlockID block_id = 1 [(gogoproto.nullable) = false];
-  tendermint.types.Block   block    = 2 [(gogoproto.nullable) = false];
+message GetBlockByHeightResponse {
+  tendermint.types.BlockID block_id = 1;
+  tendermint.types.Block   block    = 2;
 }

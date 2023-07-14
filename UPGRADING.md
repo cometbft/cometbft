@@ -10,10 +10,6 @@ coordinated upgrade.
 
 ### Config Changes
 
-* A new config field, `BootstrapPeers` has been introduced as a means of adding
-  a list of addresses to the address book upon initializing a node. This is an
-  alternative to `PersistentPeers`. `PersistentPeers` should be only used for
-  nodes that you want to keep a constant connection with i.e. sentry nodes
 * The field `Version` in the mempool section has been removed. The priority
   mempool (what was called version `v1`) has been removed (see below), thus
   there is only one implementation of the mempool available (what was called

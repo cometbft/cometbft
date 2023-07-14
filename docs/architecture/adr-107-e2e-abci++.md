@@ -39,15 +39,18 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 ```
 Notice here that we create an empty `abci.RequestInitChain` object while we can also use the one passed to the `InitChain` function. The reason behind this is that, at the moment, we do not need specific fields of the request; we just need to be able to extract the information about the request type. For this, an empty object of a particular type is enough. 
 
-`app.logAbciRequest(r)` function is a new function implemented in the same file (`test/e2e/app/app.go`). Its implementation is the following: 
+The `app.logABCIRequest(r)` function is a new function implemented in the same file (`test/e2e/app/app.go`). If the `ABCIRequestsLoggingEnabled` flag is set to `true`, set automatically when abci tests are enabled, it logs received requests. The full implementation is the following: 
 
 ```go
-func (app *Application) logAbciRequest(req *abci.Request) error {
+func (app *Application) logABCIRequest(req *abci.Request) error {
+	if !app.cfg.ABCIRequestsLoggingEnabled {
+		return nil
+	}
 	s, err := GetABCIRequestString(req)
 	if err != nil {
 		return err
 	}
-	app.logger.Debug(s)
+	app.logger.Info(s)
 	return nil
 }
 ```
@@ -69,7 +72,7 @@ func GetABCIRequestString(req *abci.Request) (string, error) {
 In addition, we surround the new string with `abci-req` constants so that we can find lines with ABCI++ request more easily.
 If in the future we want to log another ABCI++ request type, we just need to do the same thing: 
 create a corresponding `abci.Request` and log it via 
-`app.logAbciRequest(r)`. 
+`app.logABCIRequest(r)`. 
 
 ### 2) Parsing the logs
 We need a code that will take the logs from all nodes and collect the ABCI++ requests that were logged by the application. 
@@ -161,6 +164,9 @@ func TestABCIGrammar(t *testing.T) {
 	m := fetchABCIRequestsByNodeName(t)
 	checker := grammar.NewGrammarChecker(grammar.DefaultConfig())
 	testNode(t, func(t *testing.T, node e2e.Node) {
+		if !node.Testnet.ABCITestsEnabled {
+			return
+		}
 		reqs := m[node.Name]
 		_, err := checker.Verify(reqs)
 		if err != nil {
@@ -173,7 +179,7 @@ func TestABCIGrammar(t *testing.T) {
 Specifically, the test first fetches all ABCI++ requests and creates a `GrammarChecker` object. Then for each
 node in the testnet, it checks if a specific set of requests, logged by this node, respects the ABCI++ 
 grammar by calling `checker.Verify(reqs)` method. If this method returns an error, the specific execution does not respect the grammar. Again, we do
-this for each node individually because the grammar describes the correct behaviour from the perspective of one node, and this is what the `checker.Verify(reqs)` inspects. 
+this for each node individually because the grammar describes the correct behaviour from the perspective of one node, and this is what the `checker.Verify(reqs)` inspects. The execution is verified only if `ABCITestsEnabled` is set to `true`. In other words, only if ABCI tests are enabled and this is done through the manifest file. Namely, if we want to test whether CometBFT respects ABCI grammar, we would need to enable these test by adding `abci_tests_enabled = true` in the manifest file of a particular testnet (e.g. `networks/ci.toml`).
 
 The `Verify()` method is shown below. 
 ```go

@@ -1,1 +1,3 @@
+abci_tests_enabled = true
+
 [node.validator]

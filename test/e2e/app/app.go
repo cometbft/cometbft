@@ -101,6 +101,9 @@ type Config struct {
 
 	// Vote extension padding size, to simulate different vote extension sizes.
 	VoteExtensionSize uint `toml:"vote_extension_size"`
+
+	// Flag for enabling and disabling logging of ABCI requests.
+	ABCIRequestsLoggingEnabled bool `toml:"abci_requests_logging_enabled"`
 }
 
 func DefaultConfig(dir string) *Config {
@@ -133,7 +136,7 @@ func NewApplication(cfg *Config) (*Application, error) {
 func (app *Application) Info(context.Context, *abci.RequestInfo) (*abci.ResponseInfo, error) {
 
 	r := &abci.Request{Value: &abci.Request_Info{Info: &abci.RequestInfo{}}}
-	err := app.logAbciRequest(r)
+	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +156,7 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 	var err error
 
 	r := &abci.Request{Value: &abci.Request_InitChain{InitChain: &abci.RequestInitChain{}}}
-	err = app.logAbciRequest(r)
+	err = app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +196,7 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 func (app *Application) CheckTx(_ context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
 
 	r := &abci.Request{Value: &abci.Request_CheckTx{CheckTx: &abci.RequestCheckTx{}}}
-	err := app.logAbciRequest(r)
+	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +220,7 @@ func (app *Application) CheckTx(_ context.Context, req *abci.RequestCheckTx) (*a
 func (app *Application) FinalizeBlock(_ context.Context, req *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
 
 	r := &abci.Request{Value: &abci.Request_FinalizeBlock{FinalizeBlock: &abci.RequestFinalizeBlock{}}}
-	err := app.logAbciRequest(r)
+	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
 	}
@@ -272,7 +275,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.RequestFinali
 func (app *Application) Commit(_ context.Context, _ *abci.RequestCommit) (*abci.ResponseCommit, error) {
 
 	r := &abci.Request{Value: &abci.Request_Commit{Commit: &abci.RequestCommit{}}}
-	err := app.logAbciRequest(r)
+	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
 	}
@@ -305,7 +308,7 @@ func (app *Application) Commit(_ context.Context, _ *abci.RequestCommit) (*abci.
 func (app *Application) Query(_ context.Context, req *abci.RequestQuery) (*abci.ResponseQuery, error) {
 
 	r := &abci.Request{Value: &abci.Request_Query{Query: &abci.RequestQuery{}}}
-	err := app.logAbciRequest(r)
+	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
 	}
@@ -322,7 +325,7 @@ func (app *Application) Query(_ context.Context, req *abci.RequestQuery) (*abci.
 func (app *Application) ListSnapshots(context.Context, *abci.RequestListSnapshots) (*abci.ResponseListSnapshots, error) {
 
 	r := &abci.Request{Value: &abci.Request_ListSnapshots{ListSnapshots: &abci.RequestListSnapshots{}}}
-	err := app.logAbciRequest(r)
+	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
 	}
@@ -338,7 +341,7 @@ func (app *Application) ListSnapshots(context.Context, *abci.RequestListSnapshot
 func (app *Application) LoadSnapshotChunk(_ context.Context, req *abci.RequestLoadSnapshotChunk) (*abci.ResponseLoadSnapshotChunk, error) {
 
 	r := &abci.Request{Value: &abci.Request_LoadSnapshotChunk{LoadSnapshotChunk: &abci.RequestLoadSnapshotChunk{}}}
-	err := app.logAbciRequest(r)
+	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
 	}
@@ -354,7 +357,7 @@ func (app *Application) LoadSnapshotChunk(_ context.Context, req *abci.RequestLo
 func (app *Application) OfferSnapshot(_ context.Context, req *abci.RequestOfferSnapshot) (*abci.ResponseOfferSnapshot, error) {
 
 	r := &abci.Request{Value: &abci.Request_OfferSnapshot{OfferSnapshot: &abci.RequestOfferSnapshot{}}}
-	err := app.logAbciRequest(r)
+	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
 	}
@@ -371,7 +374,7 @@ func (app *Application) OfferSnapshot(_ context.Context, req *abci.RequestOfferS
 func (app *Application) ApplySnapshotChunk(_ context.Context, req *abci.RequestApplySnapshotChunk) (*abci.ResponseApplySnapshotChunk, error) {
 
 	r := &abci.Request{Value: &abci.Request_ApplySnapshotChunk{ApplySnapshotChunk: &abci.RequestApplySnapshotChunk{}}}
-	err := app.logAbciRequest(r)
+	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
 	}
@@ -420,7 +423,7 @@ func (app *Application) PrepareProposal(
 ) (*abci.ResponsePrepareProposal, error) {
 
 	r := &abci.Request{Value: &abci.Request_PrepareProposal{PrepareProposal: &abci.RequestPrepareProposal{}}}
-	err := app.logAbciRequest(r)
+	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
 	}
@@ -485,7 +488,7 @@ func (app *Application) PrepareProposal(
 func (app *Application) ProcessProposal(_ context.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
 
 	r := &abci.Request{Value: &abci.Request_ProcessProposal{ProcessProposal: &abci.RequestProcessProposal{}}}
-	err := app.logAbciRequest(r)
+	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
 	}
@@ -680,12 +683,15 @@ func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, 
 }
 
 // logAbciRequest log the request using the app's logger.
-func (app *Application) logAbciRequest(req *abci.Request) error {
+func (app *Application) logABCIRequest(req *abci.Request) error {
+	if !app.cfg.ABCIRequestsLoggingEnabled {
+		return nil
+	}
 	s, err := GetABCIRequestString(req)
 	if err != nil {
 		return err
 	}
-	app.logger.Debug(s)
+	app.logger.Info(s)
 	return nil
 }
 

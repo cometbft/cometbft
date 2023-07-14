@@ -276,6 +276,13 @@ func (mem *CListMempool) CheckTx(
 	return nil
 }
 
+func (mem *CListMempool) recheckCursorIsNil() bool {
+	mem.recheckMtx.Lock()
+	defer mem.recheckMtx.Unlock()
+
+	return mem.recheckCursor == nil
+}
+
 // Global callback that will be called after every ABCI response.
 // Having a single global callback avoids needing to set a callback for each request.
 // However, processing the checkTx response requires the peerID (so we can track which txs we heard from who),
@@ -286,10 +293,7 @@ func (mem *CListMempool) CheckTx(
 // When rechecking, we don't need the peerID, so the recheck callback happens
 // here.
 func (mem *CListMempool) globalCb(req *abci.Request, res *abci.Response) {
-	mem.recheckMtx.Lock()
-	defer mem.recheckMtx.Unlock()
-
-	if mem.recheckCursor == nil {
+	if mem.recheckCursorIsNil() {
 		return
 	}
 
@@ -315,10 +319,7 @@ func (mem *CListMempool) reqResCb(
 	externalCb func(*abci.ResponseCheckTx),
 ) func(res *abci.Response) {
 	return func(res *abci.Response) {
-		mem.recheckMtx.Lock()
-		defer mem.recheckMtx.Unlock()
-
-		if mem.recheckCursor != nil {
+		if !mem.recheckCursorIsNil() {
 			// this should never happen
 			panic("recheck cursor is not nil in reqResCb")
 		}
@@ -460,6 +461,9 @@ func (mem *CListMempool) resCbFirstTime(
 func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 	switch r := res.Value.(type) {
 	case *abci.Response_CheckTx:
+		mem.recheckMtx.Lock()
+		defer mem.recheckMtx.Unlock()
+
 		tx := req.GetCheckTx().Tx
 		memTx := mem.recheckCursor.Value.(*mempoolTx)
 

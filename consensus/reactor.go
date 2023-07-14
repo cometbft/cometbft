@@ -107,11 +107,11 @@ func (conR *Reactor) OnStop() {
 }
 
 // SwitchToConsensus switches from block sync or state sync mode to consensus
-// mode. It resets the state, turns off the syncing mode, and starts the
-// consensus state-machine
+// mode.
 func (conR *Reactor) SwitchToConsensus(state sm.State, skipWAL bool) {
 	conR.Logger.Info("SwitchToConsensus")
 
+	// reset the state
 	func() {
 		// We need to lock, as we are not entering consensus state from State's `handleMsg` or `handleTimeout`
 		conR.conS.mtx.Lock()
@@ -126,11 +126,14 @@ func (conR *Reactor) SwitchToConsensus(state sm.State, skipWAL bool) {
 		conR.conS.updateToState(state)
 	}()
 
+	// stop waiting for syncing to finish
 	conR.waitSync.Store(false)
 
 	if skipWAL {
 		conR.conS.doWALCatchup = false
 	}
+
+	// start the consensus protocol
 	err := conR.conS.Start()
 	if err != nil {
 		panic(fmt.Sprintf(`Failed to start consensus state: %v

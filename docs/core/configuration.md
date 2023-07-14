@@ -215,11 +215,6 @@ external_address = ""
 # Comma separated list of seed nodes to connect to
 seeds = ""
 
-# Comma separated list of peers to be added to the peer store
-# on startup. Either bootstrap_peers or persistent_peers is
-# needed for peer discovery
-bootstrap_peers = ""
-
 # Comma separated list of nodes to keep persistent connections to
 persistent_peers = ""
 
@@ -298,7 +293,6 @@ broadcast = true
 # wal_dir (default: "") configures the location of the Write Ahead Log
 # (WAL) for the mempool. The WAL is disabled by default. To enable, set
 # wal_dir to where you want the WAL to be written (e.g.
-# "data/mempool.wal").
 # "data/mempool.wal").
 wal_dir = ""
 

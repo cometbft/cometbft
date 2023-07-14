@@ -64,7 +64,7 @@ func TestGRPC_Block(t *testing.T) {
 			}
 
 			// Get first block
-			firstBlock, err := gRPCClient.GetBlock(ctx, first)
+			firstBlock, err := gRPCClient.GetBlockByHeight(ctx, first)
 
 			// First block tests
 			require.NoError(t, err)
@@ -72,7 +72,7 @@ func TestGRPC_Block(t *testing.T) {
 			require.Equal(t, firstBlock.Block.Height, first)
 
 			// Get last block
-			lastBlock, err := gRPCClient.GetBlock(ctx, last)
+			lastBlock, err := gRPCClient.GetBlockByHeight(ctx, last)
 
 			// Last block tests
 			require.NoError(t, err)

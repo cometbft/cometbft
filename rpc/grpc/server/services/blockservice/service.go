@@ -4,7 +4,8 @@ import (
 	context "context"
 	"fmt"
 
-	v1 "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
+	blocksvc "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/store"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
@@ -16,14 +17,14 @@ type blockServiceServer struct {
 }
 
 // New creates a new CometBFT version service server.
-func New(store *store.BlockStore) v1.BlockServiceServer {
+func New(store *store.BlockStore) blocksvc.BlockServiceServer {
 	return &blockServiceServer{
 		store,
 	}
 }
 
-// GetBlock implements v1.BlockServiceServer
-func (s *blockServiceServer) GetBlock(ctx context.Context, req *v1.GetBlockRequest) (*v1.GetBlockResponse, error) {
+// GetByHeight implements v1.BlockServiceServer
+func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetBlockByHeightRequest) (*blocksvc.GetBlockByHeightResponse, error) {
 	var height int64
 
 	// retrieve the last height in the store
@@ -57,6 +58,8 @@ func (s *blockServiceServer) GetBlock(ctx context.Context, req *v1.GetBlockReque
 		}
 		return nil, st.Err()
 	}
+	var blockProto *cmtproto.Block
+	var blockIDProto cmtproto.BlockID
 
 	block := s.store.LoadBlock(height)
 	blockProto, err := block.ToProto()
@@ -64,9 +67,12 @@ func (s *blockServiceServer) GetBlock(ctx context.Context, req *v1.GetBlockReque
 		return nil, err
 	}
 
-	blockID := s.store.LoadBlockMeta(height)
-	return &v1.GetBlockResponse{
-		BlockId: blockID.BlockID.ToProto(),
-		Block:   *blockProto,
+	blockMeta := s.store.LoadBlockMeta(height)
+
+	blockIDProto = blockMeta.BlockID.ToProto()
+
+	return &blocksvc.GetBlockByHeightResponse{
+		BlockId: &blockIDProto,
+		Block:   blockProto,
 	}, nil
 }

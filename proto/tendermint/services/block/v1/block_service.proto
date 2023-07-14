@@ -9,5 +9,5 @@ import "tendermint/services/block/v1/block.proto";
 service BlockService {
   // GetBlock retrieves the block information at a particular height,
   // if height '0' (zero) is specified it returns the latest height
-  rpc GetBlockByHeight(GetBlockByHeightRequest) returns (GetBlockByHeightResponse);
+  rpc GetByHeight(GetBlockByHeightRequest) returns (GetBlockByHeightResponse);
 }

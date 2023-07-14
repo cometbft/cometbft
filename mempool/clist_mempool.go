@@ -669,16 +669,21 @@ func (mem *CListMempool) Update(
 	return nil
 }
 
+func (mem *CListMempool) initRecheckCursors() {
+	mem.recheckMtx.Lock()
+	defer mem.recheckMtx.Unlock()
+
+	mem.recheckCursor = mem.txs.Front()
+	mem.recheckEnd = mem.txs.Back()
+}
+
 func (mem *CListMempool) recheckTxs() {
 	mem.logger.Debug("recheck txs", "height", mem.height, "mem size", mem.Size())
 	if mem.Size() == 0 {
 		panic("recheckTxs is called, but the mempool is empty")
 	}
 
-	mem.recheckMtx.Lock()
-	mem.recheckCursor = mem.txs.Front()
-	mem.recheckEnd = mem.txs.Back()
-	mem.recheckMtx.Unlock()
+	mem.initRecheckCursors()
 
 	// Push txs to proxyAppConn
 	// NOTE: globalCb may be called concurrently.

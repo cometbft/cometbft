@@ -98,9 +98,6 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
 
 ### FEATURES
 
-- `[config]` Introduce `BootstrapPeers` to the config to allow
-  nodes to list peers to be added to the addressbook upon start up.
-  ([\#9680](https://github.com/tendermint/tendermint/pull/9680))
 - `[proxy]` Introduce `NewUnsyncLocalClientCreator`, which allows local ABCI
   clients to have the same concurrency model as remote clients (i.e. one
   mutex per client "connection", for each of the four ABCI "connections").

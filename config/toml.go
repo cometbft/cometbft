@@ -278,14 +278,6 @@ external_address = "{{ .P2P.ExternalAddress }}"
 # Comma separated list of seed nodes to connect to
 seeds = "{{ .P2P.Seeds }}"
 
-<<<<<<< HEAD
-# Comma separated list of peers to be added to the peer store
-# on startup. Either BootstrapPeers or PersistentPeers are
-# needed for peer discovery
-bootstrap_peers = "{{ .P2P.BootstrapPeers }}"
-
-=======
->>>>>>> 2d3ee28e8 (Revert "config: add bootstrap peers (#9680)" (#1109))
 # Comma separated list of nodes to keep persistent connections to
 persistent_peers = "{{ .P2P.PersistentPeers }}"
 

@@ -676,11 +676,6 @@ func (n *Node) BlockStore() *store.BlockStore {
 	return n.blockStore
 }
 
-// ConsensusState returns the Node's ConsensusState.
-func (n *Node) ConsensusState() *cs.State {
-	return n.consensusState
-}
-
 // ConsensusReactor returns the Node's ConsensusReactor.
 func (n *Node) ConsensusReactor() *cs.Reactor {
 	return n.consensusReactor

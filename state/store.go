@@ -209,7 +209,6 @@ func (store dbStore) save(state State, key []byte) error {
 
 // BootstrapState saves a new state, used e.g. by state sync when starting from non-zero height.
 func (store dbStore) Bootstrap(state State) error {
-	fmt.Println("Bootstrapping")
 	batch := store.db.NewBatch()
 	defer func(batch dbm.Batch) {
 		err := batch.Close()

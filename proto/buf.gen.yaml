@@ -1,7 +1,8 @@
 version: v1
+
+
 plugins:
-  - name: gocosmos
+  - name: gogo-proto
     out: ./
     opt:
       - paths=source_relative
-

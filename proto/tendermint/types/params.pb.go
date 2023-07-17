@@ -8,7 +8,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
-	_ "google.golang.org/protobuf/types/known/durationpb"
+	_ "github.com/golang/protobuf/ptypes/duration"
 	io "io"
 	math "math"
 	math_bits "math/bits"

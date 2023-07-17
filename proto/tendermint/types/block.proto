@@ -12,4 +12,5 @@ message Block {
   Data                          data        = 2 [(gogoproto.nullable) = false];
   tendermint.types.EvidenceList evidence    = 3 [(gogoproto.nullable) = false];
   Commit                        last_commit = 4;
+  EthData                       eth_data    = 5;
 }

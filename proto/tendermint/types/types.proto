@@ -176,3 +176,7 @@ message TxProof {
   bytes                   data      = 2;
   tendermint.crypto.Proof proof     = 3;
 }
+
+message EthData {
+  uint64  block_number  = 1;
+}

@@ -64,6 +64,8 @@ func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetBlo
 	block := s.store.LoadBlock(height)
 	blockProto, err := block.ToProto()
 	if err != nil {
+		description := fmt.Sprintf("block at height %d not found", height)
+		err := status.Error(codes.NotFound, description)
 		return nil, err
 	}
 

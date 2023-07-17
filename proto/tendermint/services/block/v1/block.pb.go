@@ -23,22 +23,23 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-type GetBlockByHeightRequest struct {
+type GetByHeightRequest struct {
+	// the height of the block requested.
 	Height int64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
 }
 
-func (m *GetBlockByHeightRequest) Reset()         { *m = GetBlockByHeightRequest{} }
-func (m *GetBlockByHeightRequest) String() string { return proto.CompactTextString(m) }
-func (*GetBlockByHeightRequest) ProtoMessage()    {}
-func (*GetBlockByHeightRequest) Descriptor() ([]byte, []int) {
+func (m *GetByHeightRequest) Reset()         { *m = GetByHeightRequest{} }
+func (m *GetByHeightRequest) String() string { return proto.CompactTextString(m) }
+func (*GetByHeightRequest) ProtoMessage()    {}
+func (*GetByHeightRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d48acf20d1015667, []int{0}
 }
-func (m *GetBlockByHeightRequest) XXX_Unmarshal(b []byte) error {
+func (m *GetByHeightRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *GetBlockByHeightRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *GetByHeightRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_GetBlockByHeightRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_GetByHeightRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -48,42 +49,42 @@ func (m *GetBlockByHeightRequest) XXX_Marshal(b []byte, deterministic bool) ([]b
 		return b[:n], nil
 	}
 }
-func (m *GetBlockByHeightRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GetBlockByHeightRequest.Merge(m, src)
+func (m *GetByHeightRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetByHeightRequest.Merge(m, src)
 }
-func (m *GetBlockByHeightRequest) XXX_Size() int {
+func (m *GetByHeightRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *GetBlockByHeightRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_GetBlockByHeightRequest.DiscardUnknown(m)
+func (m *GetByHeightRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetByHeightRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_GetBlockByHeightRequest proto.InternalMessageInfo
+var xxx_messageInfo_GetByHeightRequest proto.InternalMessageInfo
 
-func (m *GetBlockByHeightRequest) GetHeight() int64 {
+func (m *GetByHeightRequest) GetHeight() int64 {
 	if m != nil {
 		return m.Height
 	}
 	return 0
 }
 
-type GetBlockByHeightResponse struct {
+type GetByHeightResponse struct {
 	BlockId *types.BlockID `protobuf:"bytes,1,opt,name=block_id,json=blockId,proto3" json:"block_id,omitempty"`
 	Block   *types.Block   `protobuf:"bytes,2,opt,name=block,proto3" json:"block,omitempty"`
 }
 
-func (m *GetBlockByHeightResponse) Reset()         { *m = GetBlockByHeightResponse{} }
-func (m *GetBlockByHeightResponse) String() string { return proto.CompactTextString(m) }
-func (*GetBlockByHeightResponse) ProtoMessage()    {}
-func (*GetBlockByHeightResponse) Descriptor() ([]byte, []int) {
+func (m *GetByHeightResponse) Reset()         { *m = GetByHeightResponse{} }
+func (m *GetByHeightResponse) String() string { return proto.CompactTextString(m) }
+func (*GetByHeightResponse) ProtoMessage()    {}
+func (*GetByHeightResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d48acf20d1015667, []int{1}
 }
-func (m *GetBlockByHeightResponse) XXX_Unmarshal(b []byte) error {
+func (m *GetByHeightResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *GetBlockByHeightResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *GetByHeightResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_GetBlockByHeightResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_GetByHeightResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -93,26 +94,26 @@ func (m *GetBlockByHeightResponse) XXX_Marshal(b []byte, deterministic bool) ([]
 		return b[:n], nil
 	}
 }
-func (m *GetBlockByHeightResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GetBlockByHeightResponse.Merge(m, src)
+func (m *GetByHeightResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetByHeightResponse.Merge(m, src)
 }
-func (m *GetBlockByHeightResponse) XXX_Size() int {
+func (m *GetByHeightResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *GetBlockByHeightResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_GetBlockByHeightResponse.DiscardUnknown(m)
+func (m *GetByHeightResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetByHeightResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_GetBlockByHeightResponse proto.InternalMessageInfo
+var xxx_messageInfo_GetByHeightResponse proto.InternalMessageInfo
 
-func (m *GetBlockByHeightResponse) GetBlockId() *types.BlockID {
+func (m *GetByHeightResponse) GetBlockId() *types.BlockID {
 	if m != nil {
 		return m.BlockId
 	}
 	return nil
 }
 
-func (m *GetBlockByHeightResponse) GetBlock() *types.Block {
+func (m *GetByHeightResponse) GetBlock() *types.Block {
 	if m != nil {
 		return m.Block
 	}
@@ -120,8 +121,8 @@ func (m *GetBlockByHeightResponse) GetBlock() *types.Block {
 }
 
 func init() {
-	proto.RegisterType((*GetBlockByHeightRequest)(nil), "tendermint.services.block.v1.GetBlockByHeightRequest")
-	proto.RegisterType((*GetBlockByHeightResponse)(nil), "tendermint.services.block.v1.GetBlockByHeightResponse")
+	proto.RegisterType((*GetByHeightRequest)(nil), "tendermint.services.block.v1.GetByHeightRequest")
+	proto.RegisterType((*GetByHeightResponse)(nil), "tendermint.services.block.v1.GetByHeightResponse")
 }
 
 func init() {
@@ -129,26 +130,26 @@ func init() {
 }
 
 var fileDescriptor_d48acf20d1015667 = []byte{
-	// 250 bytes of a gzipped FileDescriptorProto
+	// 248 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xd2, 0x28, 0x49, 0xcd, 0x4b,
 	0x49, 0x2d, 0xca, 0xcd, 0xcc, 0x2b, 0xd1, 0x2f, 0x4e, 0x2d, 0x2a, 0xcb, 0x4c, 0x4e, 0x2d, 0xd6,
 	0x4f, 0xca, 0xc9, 0x4f, 0xce, 0xd6, 0x2f, 0x33, 0x84, 0x30, 0xf4, 0x0a, 0x8a, 0xf2, 0x4b, 0xf2,
 	0x85, 0x64, 0x10, 0x2a, 0xf5, 0x60, 0x2a, 0xf5, 0x20, 0x0a, 0xca, 0x0c, 0xa5, 0x90, 0x64, 0xf5,
-	0x4b, 0x2a, 0x0b, 0x60, 0x86, 0x40, 0xf4, 0x62, 0x91, 0x05, 0x93, 0x10, 0x59, 0x25, 0x43, 0x2e,
-	0x71, 0xf7, 0xd4, 0x12, 0x27, 0x90, 0x7a, 0xa7, 0x4a, 0x8f, 0xd4, 0xcc, 0xf4, 0x8c, 0x92, 0xa0,
-	0xd4, 0xc2, 0xd2, 0xd4, 0xe2, 0x12, 0x21, 0x31, 0x2e, 0xb6, 0x0c, 0xb0, 0x80, 0x04, 0xa3, 0x02,
-	0xa3, 0x06, 0x73, 0x10, 0x94, 0xa7, 0x54, 0xcf, 0x25, 0x81, 0xa9, 0xa5, 0xb8, 0x20, 0x3f, 0xaf,
-	0x38, 0x55, 0xc8, 0x84, 0x8b, 0x03, 0x6c, 0x77, 0x7c, 0x66, 0x0a, 0x58, 0x17, 0xb7, 0x91, 0xa4,
-	0x1e, 0x92, 0xdb, 0x21, 0x36, 0x83, 0xb5, 0x7a, 0xba, 0x04, 0xb1, 0x83, 0x95, 0x7a, 0xa6, 0x08,
-	0xe9, 0x72, 0xb1, 0x82, 0x99, 0x12, 0x4c, 0x60, 0x2d, 0xe2, 0x38, 0xb4, 0x04, 0x41, 0x54, 0x39,
-	0x45, 0x9e, 0x78, 0x24, 0xc7, 0x78, 0xe1, 0x91, 0x1c, 0xe3, 0x83, 0x47, 0x72, 0x8c, 0x13, 0x1e,
-	0xcb, 0x31, 0x5c, 0x78, 0x2c, 0xc7, 0x70, 0xe3, 0xb1, 0x1c, 0x43, 0x94, 0x7d, 0x7a, 0x66, 0x49,
-	0x46, 0x69, 0x92, 0x5e, 0x72, 0x7e, 0xae, 0x7e, 0x72, 0x7e, 0x6e, 0x6a, 0x49, 0x52, 0x5a, 0x09,
-	0x82, 0x01, 0xf6, 0xb1, 0x3e, 0xbe, 0x40, 0x4f, 0x62, 0x03, 0xab, 0x31, 0x06, 0x04, 0x00, 0x00,
-	0xff, 0xff, 0xf1, 0x8c, 0xea, 0x65, 0x9b, 0x01, 0x00, 0x00,
+	0x4b, 0x2a, 0x0b, 0x60, 0x86, 0x40, 0xf4, 0x62, 0x91, 0x05, 0x93, 0x10, 0x59, 0x25, 0x1d, 0x2e,
+	0x21, 0xf7, 0xd4, 0x12, 0xa7, 0x4a, 0x8f, 0xd4, 0xcc, 0xf4, 0x8c, 0x92, 0xa0, 0xd4, 0xc2, 0xd2,
+	0xd4, 0xe2, 0x12, 0x21, 0x31, 0x2e, 0xb6, 0x0c, 0xb0, 0x80, 0x04, 0xa3, 0x02, 0xa3, 0x06, 0x73,
+	0x10, 0x94, 0xa7, 0x54, 0xc5, 0x25, 0x8c, 0xa2, 0xba, 0xb8, 0x20, 0x3f, 0xaf, 0x38, 0x55, 0xc8,
+	0x84, 0x8b, 0x03, 0x6c, 0x63, 0x7c, 0x66, 0x0a, 0x58, 0x03, 0xb7, 0x91, 0xa4, 0x1e, 0x92, 0x8b,
+	0x21, 0xf6, 0x39, 0x81, 0x54, 0x78, 0xba, 0x04, 0xb1, 0x83, 0x95, 0x7a, 0xa6, 0x08, 0xe9, 0x72,
+	0xb1, 0x82, 0x99, 0x12, 0x4c, 0x60, 0x2d, 0xe2, 0x38, 0xb4, 0x04, 0x41, 0x54, 0x39, 0x45, 0x9e,
+	0x78, 0x24, 0xc7, 0x78, 0xe1, 0x91, 0x1c, 0xe3, 0x83, 0x47, 0x72, 0x8c, 0x13, 0x1e, 0xcb, 0x31,
+	0x5c, 0x78, 0x2c, 0xc7, 0x70, 0xe3, 0xb1, 0x1c, 0x43, 0x94, 0x7d, 0x7a, 0x66, 0x49, 0x46, 0x69,
+	0x92, 0x5e, 0x72, 0x7e, 0xae, 0x7e, 0x72, 0x7e, 0x6e, 0x6a, 0x49, 0x52, 0x5a, 0x09, 0x82, 0x01,
+	0xf6, 0xa7, 0x3e, 0xbe, 0xa0, 0x4e, 0x62, 0x03, 0xab, 0x31, 0x06, 0x04, 0x00, 0x00, 0xff, 0xff,
+	0x5f, 0xcb, 0xff, 0x12, 0x91, 0x01, 0x00, 0x00,
 }
 
-func (m *GetBlockByHeightRequest) Marshal() (dAtA []byte, err error) {
+func (m *GetByHeightRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -158,12 +159,12 @@ func (m *GetBlockByHeightRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *GetBlockByHeightRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *GetByHeightRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *GetBlockByHeightRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *GetByHeightRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -176,7 +177,7 @@ func (m *GetBlockByHeightRequest) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	return len(dAtA) - i, nil
 }
 
-func (m *GetBlockByHeightResponse) Marshal() (dAtA []byte, err error) {
+func (m *GetByHeightResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -186,12 +187,12 @@ func (m *GetBlockByHeightResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *GetBlockByHeightResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *GetByHeightResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *GetBlockByHeightResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *GetByHeightResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -234,7 +235,7 @@ func encodeVarintBlock(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *GetBlockByHeightRequest) Size() (n int) {
+func (m *GetByHeightRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -246,7 +247,7 @@ func (m *GetBlockByHeightRequest) Size() (n int) {
 	return n
 }
 
-func (m *GetBlockByHeightResponse) Size() (n int) {
+func (m *GetByHeightResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -269,7 +270,7 @@ func sovBlock(x uint64) (n int) {
 func sozBlock(x uint64) (n int) {
 	return sovBlock(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *GetBlockByHeightRequest) Unmarshal(dAtA []byte) error {
+func (m *GetByHeightRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -292,10 +293,10 @@ func (m *GetBlockByHeightRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: GetBlockByHeightRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: GetByHeightRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GetBlockByHeightRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: GetByHeightRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -338,7 +339,7 @@ func (m *GetBlockByHeightRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *GetBlockByHeightResponse) Unmarshal(dAtA []byte) error {
+func (m *GetByHeightResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -361,10 +362,10 @@ func (m *GetBlockByHeightResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: GetBlockByHeightResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: GetByHeightResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GetBlockByHeightResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: GetByHeightResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

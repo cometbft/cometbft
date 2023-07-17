@@ -24,7 +24,7 @@ func New(store *store.BlockStore) blocksvc.BlockServiceServer {
 }
 
 // GetByHeight implements v1.BlockServiceServer
-func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetBlockByHeightRequest) (*blocksvc.GetBlockByHeightResponse, error) {
+func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByHeightRequest) (*blocksvc.GetByHeightResponse, error) {
 	var height int64
 
 	// retrieve the last height in the store
@@ -73,7 +73,7 @@ func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetBlo
 
 	blockIDProto = blockMeta.BlockID.ToProto()
 
-	return &blocksvc.GetBlockByHeightResponse{
+	return &blocksvc.GetByHeightResponse{
 		BlockId: &blockIDProto,
 		Block:   blockProto,
 	}, nil

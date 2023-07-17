@@ -88,6 +88,7 @@ type Manifest struct {
 	LoadTxSizeBytes   int `toml:"load_tx_size_bytes"`
 	LoadTxBatchSize   int `toml:"load_tx_batch_size"`
 	LoadTxConnections int `toml:"load_tx_connections"`
+	LoadTxToSend      int `toml:"load_tx_to_send"`
 
 	// Enable or disable Prometheus metrics on all nodes.
 	// Defaults to false (disabled).
@@ -96,8 +97,11 @@ type Manifest struct {
 	// Defines a minimum size for the vote extensions.
 	VoteExtensionSize uint `toml:"vote_extension_size"`
 
-	// Upper bound of sleep duration then gossipping votes and block parts
-	PeerGossipIntraloopSleepDuration time.Duration `toml:"peer_gossip_intraloop_sleep_duration"`
+	// Likeliness to propagate a message
+	ExperimentalGossipPropagationRate float32 `toml:"experimental_gossip_propagation_rate"`
+
+	// Inject custom reactors (see node/main.go#startNode for a list of possibilities)
+	ExperimentalCustomReactors map[string]string `toml:"experimental_custom_reactors"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

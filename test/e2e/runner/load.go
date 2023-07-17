@@ -19,7 +19,7 @@ const workerPoolSize = 16
 
 // Load generates transactions against the network until the given context is
 // canceled.
-func Load(ctx context.Context, testnet *e2e.Testnet) error {
+func Load(ctx context.Context, testnet *e2e.Testnet) (int, error) {
 	initialTimeout := 1 * time.Minute
 	stallTimeout := 30 * time.Second
 	chSuccess := make(chan struct{})
@@ -51,20 +51,25 @@ func Load(ctx context.Context, testnet *e2e.Testnet) error {
 		case <-chSuccess:
 			success++
 			timeout = stallTimeout
+			if success >= testnet.LoadTxToSend {
+				logger.Info("load", "msg", log.NewLazySprintf("Ending transaction load after %v txs (%.1f tx/s)...",
+					success, float64(success)/time.Since(started).Seconds()))
+				return success, nil
+			}
 		case <-time.After(timeout):
-			return fmt.Errorf("unable to submit transactions for %v", timeout)
+			return 0, fmt.Errorf("unable to submit transactions for %v", timeout)
 		case <-ctx.Done():
 			if success == 0 {
-				return errors.New("failed to submit any transactions")
+				return 0, errors.New("failed to submit any transactions")
 			}
 			logger.Info("load", "msg", log.NewLazySprintf("Ending transaction load after %v txs (%.1f tx/s)...",
 				success, float64(success)/time.Since(started).Seconds()))
-			return nil
+			return success, nil
 		}
 	}
 }
 
-// loadGenerate generates jobs until the context is canceled
+// loadGenerate generates jobs until the context is canceled or the target is attained
 func loadGenerate(ctx context.Context, txCh chan<- types.Tx, testnet *e2e.Testnet, id []byte) {
 	t := time.NewTimer(0)
 	defer t.Stop()

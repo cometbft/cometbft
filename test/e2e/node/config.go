@@ -33,23 +33,29 @@ type Config struct {
 	VoteExtensionDelay   time.Duration `toml:"vote_extension_delay"`
 
 	VoteExtensionSize uint `toml:"vote_extension_size"`
+
+	// Experimental
+	ExperimentalCustomReactors        map[string]string `toml:"experimental_custom_reactors"`
+	ExperimentalGossipPropagationRate float32           `toml:"experimental_gossip_propagation_rate"`
 }
 
 // App extracts out the application specific configuration parameters
 func (cfg *Config) App() *app.Config {
 	return &app.Config{
-		Dir:                  cfg.Dir,
-		SnapshotInterval:     cfg.SnapshotInterval,
-		RetainBlocks:         cfg.RetainBlocks,
-		KeyType:              cfg.KeyType,
-		ValidatorUpdates:     cfg.ValidatorUpdates,
-		PersistInterval:      cfg.PersistInterval,
-		PrepareProposalDelay: cfg.PrepareProposalDelay,
-		ProcessProposalDelay: cfg.ProcessProposalDelay,
-		CheckTxDelay:         cfg.CheckTxDelay,
-		FinalizeBlockDelay:   cfg.FinalizeBlockDelay,
-		VoteExtensionDelay:   cfg.VoteExtensionDelay,
-		VoteExtensionSize:    cfg.VoteExtensionSize,
+		Dir:                               cfg.Dir,
+		SnapshotInterval:                  cfg.SnapshotInterval,
+		RetainBlocks:                      cfg.RetainBlocks,
+		KeyType:                           cfg.KeyType,
+		ValidatorUpdates:                  cfg.ValidatorUpdates,
+		PersistInterval:                   cfg.PersistInterval,
+		PrepareProposalDelay:              cfg.PrepareProposalDelay,
+		ProcessProposalDelay:              cfg.ProcessProposalDelay,
+		CheckTxDelay:                      cfg.CheckTxDelay,
+		FinalizeBlockDelay:                cfg.FinalizeBlockDelay,
+		VoteExtensionDelay:                cfg.VoteExtensionDelay,
+		VoteExtensionSize:                 cfg.VoteExtensionSize,
+		ExperimentalCustomReactors:        cfg.ExperimentalCustomReactors,
+		ExperimentalGossipPropagationRate: cfg.ExperimentalGossipPropagationRate,
 	}
 }
 

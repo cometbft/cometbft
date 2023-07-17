@@ -14,6 +14,8 @@ import (
 	"text/template"
 	"time"
 
+	p2p "github.com/cometbft/cometbft/p2p"
+
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
@@ -65,36 +67,39 @@ const (
 
 // Testnet represents a single testnet.
 type Testnet struct {
-	Name                             string
-	File                             string
-	Dir                              string
-	IP                               *net.IPNet
-	InitialHeight                    int64
-	InitialState                     map[string]string
-	Validators                       map[*Node]int64
-	ValidatorUpdates                 map[int64]map[*Node]int64
-	Nodes                            []*Node
-	KeyType                          string
-	Evidence                         int
-	LoadTxSizeBytes                  int
-	LoadTxBatchSize                  int
-	LoadTxConnections                int
-	ABCIProtocol                     string
-	PrepareProposalDelay             time.Duration
-	ProcessProposalDelay             time.Duration
-	CheckTxDelay                     time.Duration
-	VoteExtensionDelay               time.Duration
-	FinalizeBlockDelay               time.Duration
-	UpgradeVersion                   string
-	Prometheus                       bool
-	VoteExtensionsEnableHeight       int64
-	VoteExtensionSize                uint
-	PeerGossipIntraloopSleepDuration time.Duration
+	Name                              string
+	File                              string
+	Dir                               string
+	IP                                *net.IPNet
+	InitialHeight                     int64
+	InitialState                      map[string]string
+	Validators                        map[*Node]int64
+	ValidatorUpdates                  map[int64]map[*Node]int64
+	Nodes                             []*Node
+	KeyType                           string
+	Evidence                          int
+	LoadTxSizeBytes                   int
+	LoadTxBatchSize                   int
+	LoadTxConnections                 int
+	LoadTxToSend                      int
+	ABCIProtocol                      string
+	PrepareProposalDelay              time.Duration
+	ProcessProposalDelay              time.Duration
+	CheckTxDelay                      time.Duration
+	VoteExtensionDelay                time.Duration
+	FinalizeBlockDelay                time.Duration
+	UpgradeVersion                    string
+	Prometheus                        bool
+	VoteExtensionsEnableHeight        int64
+	VoteExtensionSize                 uint
+	ExperimentalGossipPropagationRate float32
+	ExperimentalCustomReactors        map[string]string
 }
 
 // Node represents a CometBFT node in a testnet.
 type Node struct {
 	Name                string
+	ID                  p2p.ID
 	Version             string
 	Testnet             *Testnet
 	Mode                Mode
@@ -118,6 +123,11 @@ type Node struct {
 	SendNoLoad          bool
 	Prometheus          bool
 	PrometheusProxyPort uint32
+	PropagationRatio    float32
+}
+
+func (n *Node) String() string {
+	return n.Name
 }
 
 // LoadTestnet loads a testnet from a manifest file, using the filename to
@@ -145,30 +155,32 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	testnet := &Testnet{
-		Name:                             filepath.Base(dir),
-		File:                             file,
-		Dir:                              dir,
-		IP:                               ipNet,
-		InitialHeight:                    1,
-		InitialState:                     manifest.InitialState,
-		Validators:                       map[*Node]int64{},
-		ValidatorUpdates:                 map[int64]map[*Node]int64{},
-		Nodes:                            []*Node{},
-		Evidence:                         manifest.Evidence,
-		LoadTxSizeBytes:                  manifest.LoadTxSizeBytes,
-		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
-		LoadTxConnections:                manifest.LoadTxConnections,
-		ABCIProtocol:                     manifest.ABCIProtocol,
-		PrepareProposalDelay:             manifest.PrepareProposalDelay,
-		ProcessProposalDelay:             manifest.ProcessProposalDelay,
-		CheckTxDelay:                     manifest.CheckTxDelay,
-		VoteExtensionDelay:               manifest.VoteExtensionDelay,
-		FinalizeBlockDelay:               manifest.FinalizeBlockDelay,
-		UpgradeVersion:                   manifest.UpgradeVersion,
-		Prometheus:                       manifest.Prometheus,
-		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
-		VoteExtensionSize:                manifest.VoteExtensionSize,
-		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
+		Name:                              filepath.Base(dir),
+		File:                              file,
+		Dir:                               dir,
+		IP:                                ipNet,
+		InitialHeight:                     0,
+		InitialState:                      manifest.InitialState,
+		Validators:                        map[*Node]int64{},
+		ValidatorUpdates:                  map[int64]map[*Node]int64{},
+		Nodes:                             []*Node{},
+		Evidence:                          manifest.Evidence,
+		LoadTxSizeBytes:                   manifest.LoadTxSizeBytes,
+		LoadTxBatchSize:                   manifest.LoadTxBatchSize,
+		LoadTxToSend:                      manifest.LoadTxToSend,
+		LoadTxConnections:                 manifest.LoadTxConnections,
+		ABCIProtocol:                      manifest.ABCIProtocol,
+		PrepareProposalDelay:              manifest.PrepareProposalDelay,
+		ProcessProposalDelay:              manifest.ProcessProposalDelay,
+		CheckTxDelay:                      manifest.CheckTxDelay,
+		VoteExtensionDelay:                manifest.VoteExtensionDelay,
+		FinalizeBlockDelay:                manifest.FinalizeBlockDelay,
+		UpgradeVersion:                    manifest.UpgradeVersion,
+		Prometheus:                        manifest.Prometheus,
+		VoteExtensionsEnableHeight:        manifest.VoteExtensionsEnableHeight,
+		VoteExtensionSize:                 manifest.VoteExtensionSize,
+		ExperimentalGossipPropagationRate: manifest.ExperimentalGossipPropagationRate,
+		ExperimentalCustomReactors:        manifest.ExperimentalCustomReactors,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
@@ -510,7 +522,7 @@ func (t Testnet) WritePrometheusConfig() error {
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(filepath.Join(t.Dir, "prometheus.yaml"), bytes, 0o644) //nolint:gosec
+	err = os.WriteFile(filepath.Join(t.Dir, "prometheus.yml"), bytes, 0o644) //nolint:gosec
 	if err != nil {
 		return err
 	}
@@ -544,6 +556,16 @@ func (n Node) AddressRPC() string {
 // Client returns an RPC client for a node.
 func (n Node) Client() (*rpchttp.HTTP, error) {
 	return rpchttp.New(fmt.Sprintf("http://%s:%v", n.ExternalIP, n.ProxyPort), "/websocket")
+}
+
+// Client returns an RPC client for a node.
+func (n Node) ClientWithTimeout(timeout uint) (*rpchttp.HTTP, error) {
+	return rpchttp.NewWithTimeout(fmt.Sprintf("http://%s:%v", n.ExternalIP, n.ProxyPort), "/websocket", timeout)
+}
+
+// PrometheusClient returns an RPC client for a node.
+func (n Node) PrometheusClient() (*rpchttp.HTTP, error) {
+	return rpchttp.New(fmt.Sprintf("http://%s:%v", n.ExternalIP, n.PrometheusProxyPort), "/")
 }
 
 // Stateless returns true if the node is either a seed node or a light node

@@ -12,10 +12,20 @@ import (
 
 //go:generate ../scripts/mockery_generate.sh ClientCreator
 
-// ClientCreator creates new ABCI clients.
+// ClientCreator creates new ABCI clients based on the intended use of the client.
 type ClientCreator interface {
-	// NewABCIClient returns a new ABCI client.
-	NewABCIClient() (abcicli.Client, error)
+	// NewABCIConsensusClient creates an ABCI client for handling
+	// consensus-related queries.
+	NewABCIConsensusClient() (abcicli.Client, error)
+	// NewABCIMempoolClient creates an ABCI client for handling mempool-related
+	// queries.
+	NewABCIMempoolClient() (abcicli.Client, error)
+	// NewABCIQueryClient creates an ABCI client for handling
+	// query/info-related queries.
+	NewABCIQueryClient() (abcicli.Client, error)
+	// NewABCISnapshotClient creates an ABCI client for handling
+	// snapshot-related queries.
+	NewABCISnapshotClient() (abcicli.Client, error)
 }
 
 //----------------------------------------------------
@@ -37,7 +47,27 @@ func NewLocalClientCreator(app types.Application) ClientCreator {
 	}
 }
 
-func (l *localClientCreator) NewABCIClient() (abcicli.Client, error) {
+// NewABCIConsensusClient implements ClientCreator.
+func (l *localClientCreator) NewABCIConsensusClient() (abcicli.Client, error) {
+	return l.newABCIClient()
+}
+
+// NewABCIMempoolClient implements ClientCreator.
+func (l *localClientCreator) NewABCIMempoolClient() (abcicli.Client, error) {
+	return l.newABCIClient()
+}
+
+// NewABCIQueryClient implements ClientCreator.
+func (l *localClientCreator) NewABCIQueryClient() (abcicli.Client, error) {
+	return l.newABCIClient()
+}
+
+// NewABCISnapshotClient implements ClientCreator.
+func (l *localClientCreator) NewABCISnapshotClient() (abcicli.Client, error) {
+	return l.newABCIClient()
+}
+
+func (l *localClientCreator) newABCIClient() (abcicli.Client, error) {
 	return abcicli.NewLocalClient(l.mtx, l.app), nil
 }
 
@@ -61,7 +91,27 @@ func NewRemoteClientCreator(addr, transport string, mustConnect bool) ClientCrea
 	}
 }
 
-func (r *remoteClientCreator) NewABCIClient() (abcicli.Client, error) {
+// NewABCIConsensusClient implements ClientCreator.
+func (r *remoteClientCreator) NewABCIConsensusClient() (abcicli.Client, error) {
+	return r.newABCIClient()
+}
+
+// NewABCIMempoolClient implements ClientCreator.
+func (r *remoteClientCreator) NewABCIMempoolClient() (abcicli.Client, error) {
+	return r.newABCIClient()
+}
+
+// NewABCIQueryClient implements ClientCreator.
+func (r *remoteClientCreator) NewABCIQueryClient() (abcicli.Client, error) {
+	return r.newABCIClient()
+}
+
+// NewABCISnapshotClient implements ClientCreator.
+func (r *remoteClientCreator) NewABCISnapshotClient() (abcicli.Client, error) {
+	return r.newABCIClient()
+}
+
+func (r *remoteClientCreator) newABCIClient() (abcicli.Client, error) {
 	remoteApp, err := abcicli.NewClient(r.addr, r.transport, r.mustConnect)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to proxy: %w", err)

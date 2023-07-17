@@ -31,7 +31,7 @@ func TestEcho(t *testing.T) {
 	})
 
 	// Start client
-	cli, err := clientCreator.NewABCIClient()
+	cli, err := clientCreator.NewABCIMempoolClient()
 	if err != nil {
 		t.Fatalf("Error creating ABCI client: %v", err.Error())
 	}
@@ -72,7 +72,7 @@ func BenchmarkEcho(b *testing.B) {
 	})
 
 	// Start client
-	cli, err := clientCreator.NewABCIClient()
+	cli, err := clientCreator.NewABCIMempoolClient()
 	if err != nil {
 		b.Fatalf("Error creating ABCI client: %v", err.Error())
 	}

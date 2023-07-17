@@ -62,15 +62,11 @@ type Manifest struct {
 	VoteExtensionsEnableHeight int64 `toml:"vote_extensions_enable_height"`
 
 	// ABCIProtocol specifies the protocol used to communicate with the ABCI
-	// application: "unix", "tcp", "grpc", "builtin" or "builtin_unsync".
+	// application: "unix", "tcp", "grpc", or "builtin".
 	//
 	// Defaults to "builtin". "builtin" will build a complete CometBFT node
 	// into the application and launch it instead of launching a separate
 	// CometBFT process.
-	//
-	// "builtin_unsync" is basically the same as "builtin", except that it uses
-	// an "unsynchronized" local client creator, which attempts to replicate the
-	// same concurrency model locally as the socket client.
 	ABCIProtocol string `toml:"abci_protocol"`
 
 	// Add artificial delays to each of the main ABCI calls to mimic computation time

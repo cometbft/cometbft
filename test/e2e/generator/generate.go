@@ -36,7 +36,7 @@ var (
 	nodeDatabases = uniformChoice{"goleveldb", "cleveldb", "rocksdb", "boltdb", "badgerdb"}
 	ipv6          = uniformChoice{false, true}
 	// FIXME: grpc disabled due to https://github.com/tendermint/tendermint/issues/5439
-	nodeABCIProtocols     = uniformChoice{"unix", "tcp", "builtin", "builtin_unsync"} // "grpc"
+	nodeABCIProtocols     = uniformChoice{"unix", "tcp", "builtin"} // "grpc"
 	nodePrivvalProtocols  = uniformChoice{"file", "unix", "tcp"}
 	nodeBlockSyncs        = uniformChoice{"v0"} // "v2"
 	nodeStateSyncs        = uniformChoice{false, true}
@@ -61,7 +61,7 @@ var (
 	}
 	voteExtensionEnableHeightOffset = uniformChoice{int64(0), int64(10), int64(100)}
 	voteExtensionEnabled            = uniformChoice{true, false}
-	voteExtensionSize               = uniformChoice{uint(128), uint(512), uint(2048), uint(8192)} //TODO: define the right values depending on experiment results.
+	voteExtensionSize               = uniformChoice{uint(128), uint(512), uint(2048), uint(8192)} // TODO: define the right values depending on experiment results.
 )
 
 type generateConfig struct {

@@ -94,7 +94,12 @@ func TestReactorConcurrency(t *testing.T) {
 		txs := checkTxs(t, reactors[0].mempool, numTxs)
 		go func() {
 			defer wg.Done()
-			updateMempool(t, reactors[0].mempool, txs, []types.Tx{})
+
+			reactors[0].mempool.Lock()
+			defer reactors[0].mempool.Unlock()
+
+			err := reactors[0].mempool.Update(1, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
+			assert.NoError(t, err)
 		}()
 
 		// 1. submit a bunch of txs
@@ -102,7 +107,11 @@ func TestReactorConcurrency(t *testing.T) {
 		_ = checkTxs(t, reactors[1].mempool, numTxs)
 		go func() {
 			defer wg.Done()
-			updateMempool(t, reactors[1].mempool, []types.Tx{}, []types.Tx{})
+
+			reactors[1].mempool.Lock()
+			defer reactors[1].mempool.Unlock()
+			err := reactors[1].mempool.Update(1, []types.Tx{}, make([]*abci.ExecTxResult, 0), nil, nil)
+			assert.NoError(t, err)
 		}()
 
 		// 1. flush the mempool
@@ -298,6 +307,8 @@ func TestReactorTxSendersLocal(t *testing.T) {
 // the list of senders in the reactor.
 func TestReactorTxSendersMultiNode(t *testing.T) {
 	config := cfg.TestConfig()
+	config.Mempool.Size = 1000
+	config.Mempool.CacheSize = 1000
 	const N = 3
 	reactors, _ := makeAndConnectReactors(config, N)
 	defer func() {
@@ -464,17 +475,14 @@ func waitForTxsOnReactor(t *testing.T, txs types.Txs, reactor *Reactor, reactorI
 }
 
 func updateMempool(t *testing.T, mp Mempool, validTxs types.Txs, invalidTxs types.Txs) {
-	txResponses := make([]*abci.ExecTxResult, len(validTxs)+len(invalidTxs))
-	for i := range validTxs {
-		txResponses[i] = &abci.ExecTxResult{Code: 0}
-	}
-	for i := range invalidTxs {
-		txResponses[i+len(validTxs)] = &abci.ExecTxResult{Code: 1}
-	}
-
 	allTxs := append(validTxs, invalidTxs...)
+
+	validTxResponses := abciResponses(len(validTxs), abci.CodeTypeOK)
+	invalidTxResponses := abciResponses(len(invalidTxs), 1)
+	allResponses := append(validTxResponses, invalidTxResponses...)
+
 	mp.Lock()
-	err := mp.Update(1, allTxs, txResponses, nil, nil)
+	err := mp.Update(1, allTxs, allResponses, nil, nil)
 	mp.Unlock()
 
 	require.NoError(t, err)

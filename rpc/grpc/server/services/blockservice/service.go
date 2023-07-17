@@ -23,7 +23,7 @@ func New(store *store.BlockStore) blocksvc.BlockServiceServer {
 	}
 }
 
-// GetByHeight implements v1.BlockServiceServer
+// GetByHeight implements v1.BlockServiceServer GetByHeight method
 func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByHeightRequest) (*blocksvc.GetByHeightResponse, error) {
 	var height int64
 
@@ -77,4 +77,10 @@ func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByH
 		BlockId: &blockIDProto,
 		Block:   blockProto,
 	}, nil
+}
+
+// GetLastestHeight implements v1.BlockServiceServer GetLatestHeight method
+func (s *blockServiceServer) GetLatestHeight(req *blocksvc.GetLatestHeightRequest, srv blocksvc.BlockService_GetLatestHeightServer) error {
+	err := status.Error(codes.Unimplemented, "not implemented")
+	return err
 }

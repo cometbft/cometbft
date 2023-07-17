@@ -15,3 +15,13 @@ message GetByHeightResponse {
   tendermint.types.BlockID block_id = 1;
   tendermint.types.Block   block    = 2;
 }
+
+message GetLatestHeightRequest {
+}
+
+// GetLatestHeightResponse provides the height of the latest committed block.
+message GetLatestHeightResponse {
+  // The height of the latest committed block. Will be 0 if no data has been
+  // committed yet.
+  uint64 height = 1;
+}

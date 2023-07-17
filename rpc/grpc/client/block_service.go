@@ -31,7 +31,7 @@ func newBlockServiceClient(conn grpc.ClientConn) BlockServiceClient {
 
 // GetBlockByHeight implements BlockServiceClient
 func (c *blockServiceClient) GetBlockByHeight(ctx context.Context, height int64) (*ResultBlock, error) {
-	req := blocksvc.GetBlockByHeightRequest{
+	req := blocksvc.GetByHeightRequest{
 		Height: height,
 	}
 	res, err := c.client.GetByHeight(ctx, &req)

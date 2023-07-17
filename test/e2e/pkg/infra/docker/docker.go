@@ -40,7 +40,7 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 	for i, n := range nodes {
 		nodeNames[i] = n.Name
 	}
-	return ExecCompose(ctx, p.Testnet.Dir, append([]string{"up", "-d"}, nodeNames...)...)
+	return ExecCompose(ctx, p.Testnet.Dir, "up", "--detach")
 }
 func (p Provider) StopTestnet(ctx context.Context) error {
 	return ExecCompose(ctx, p.Testnet.Dir, "down")
@@ -86,6 +86,14 @@ networks:
       - subnet: {{ .IP }}
 
 services:
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus
+    volumes:
+    - .:/etc/prometheus/
+    network_mode: "host"
+
+
 {{- range .Nodes }}
   {{ .Name }}:
     labels:
@@ -93,7 +101,7 @@ services:
     container_name: {{ .Name }}
     image: {{ .Version }}
 {{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_unsync") }}
-    entrypoint: /usr/bin/entrypoint-builtin
+    entrypoint: /entrypoint
 {{- end }}
     init: true
     ports:
@@ -107,7 +115,6 @@ services:
     - 2346
     volumes:
     - ./{{ .Name }}:/cometbft
-    - ./{{ .Name }}:/tendermint
     networks:
       {{ $.Name }}:
         ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .InternalIP }}
@@ -133,7 +140,6 @@ services:
     - 2346
     volumes:
     - ./{{ .Name }}:/cometbft
-    - ./{{ .Name }}:/tendermint
     networks:
       {{ $.Name }}:
         ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .InternalIP }}
@@ -153,22 +159,23 @@ services:
 
 // ExecCompose runs a Docker Compose command for a testnet.
 func ExecCompose(ctx context.Context, dir string, args ...string) error {
-	return exec.Command(ctx, append(
-		[]string{"docker-compose", "-f", filepath.Join(dir, "docker-compose.yml")},
-		args...)...)
+	str := append(
+		[]string{"docker", "compose", "-f", filepath.Join(dir, "docker-compose.yml")},
+		args...)
+	return exec.Command(ctx, str...)
 }
 
 // ExecCompose runs a Docker Compose command for a testnet and returns the command's output.
 func ExecComposeOutput(ctx context.Context, dir string, args ...string) ([]byte, error) {
 	return exec.CommandOutput(ctx, append(
-		[]string{"docker-compose", "-f", filepath.Join(dir, "docker-compose.yml")},
+		[]string{"docker", "compose", "-f", filepath.Join(dir, "docker-compose.yml")},
 		args...)...)
 }
 
 // ExecComposeVerbose runs a Docker Compose command for a testnet and displays its output.
 func ExecComposeVerbose(ctx context.Context, dir string, args ...string) error {
 	return exec.CommandVerbose(ctx, append(
-		[]string{"docker-compose", "-f", filepath.Join(dir, "docker-compose.yml")},
+		[]string{"docker", "compose", "-f", filepath.Join(dir, "docker-compose.yml")},
 		args...)...)
 }
 

@@ -17,6 +17,7 @@ type ResultBlock struct {
 // BlockServiceClient provides block information
 type BlockServiceClient interface {
 	GetBlockByHeight(ctx context.Context, height int64) (*ResultBlock, error)
+	GetBlockLatestHeight(ctx context.Context) (int64, error)
 }
 
 type blockServiceClient struct {
@@ -29,7 +30,7 @@ func newBlockServiceClient(conn grpc.ClientConn) BlockServiceClient {
 	}
 }
 
-// GetBlockByHeight implements BlockServiceClient
+// GetBlockByHeight implements BlockServiceClient GetBlockByHeight
 func (c *blockServiceClient) GetBlockByHeight(ctx context.Context, height int64) (*ResultBlock, error) {
 	req := blocksvc.GetByHeightRequest{
 		Height: height,
@@ -58,13 +59,34 @@ func (c *blockServiceClient) GetBlockByHeight(ctx context.Context, height int64)
 	return &response, nil
 }
 
+// GetBlockLatestHeight implements BlockServiceClient GetBlockLatestHeight
+func (c *blockServiceClient) GetBlockLatestHeight(ctx context.Context) (int64, error) {
+	req := blocksvc.GetLatestHeightRequest{}
+	latestHeight, err := c.client.GetLatestHeight(ctx, &req)
+	if err != nil {
+		return 0, err
+	}
+	for {
+		response, err := latestHeight.Recv()
+		if err != nil {
+			return 0, err
+		}
+		return response.Height, nil
+	}
+}
+
 type disabledBlockServiceClient struct{}
 
 func newDisabledBlockServiceClient() BlockServiceClient {
 	return &disabledBlockServiceClient{}
 }
 
-// GetBlockByHeight implements BlockServiceClient
+// GetBlockByHeight implements BlockServiceClient GetBlockByHeight - disabled client
 func (*disabledBlockServiceClient) GetBlockByHeight(context.Context, int64) (*ResultBlock, error) {
+	panic("block service client is disabled")
+}
+
+// GetBlockLatestHeight implements BlockServiceClient GetBlockLatestHeight - disabled client
+func (*disabledBlockServiceClient) GetBlockLatestHeight(context.Context) (int64, error) {
 	panic("block service client is disabled")
 }

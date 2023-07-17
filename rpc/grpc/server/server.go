@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/types"
 	"google.golang.org/grpc/reflection"
 
 	"github.com/cometbft/cometbft/libs/log"
@@ -60,9 +61,9 @@ func WithVersionService() Option {
 }
 
 // WithBlockService enables the block service on the CometBFT server.
-func WithBlockService(store *store.BlockStore) Option {
+func WithBlockService(store *store.BlockStore, eventBus *types.EventBus) Option {
 	return func(b *serverBuilder) {
-		b.blockService = blockservice.New(store)
+		b.blockService = blockservice.New(store, eventBus)
 	}
 }
 

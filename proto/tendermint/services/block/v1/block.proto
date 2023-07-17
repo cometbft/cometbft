@@ -16,6 +16,7 @@ message GetByHeightResponse {
   tendermint.types.Block   block    = 2;
 }
 
+// GetLatestHeightRequest - empty message since no parameter is required
 message GetLatestHeightRequest {
 }
 
@@ -23,5 +24,5 @@ message GetLatestHeightRequest {
 message GetLatestHeightResponse {
   // The height of the latest committed block. Will be 0 if no data has been
   // committed yet.
-  uint64 height = 1;
+  int64 height = 1;
 }

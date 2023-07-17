@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"net"
 	"strings"
 	"time"
@@ -266,6 +267,14 @@ func createEvidenceReactor(config *cfg.Config, dbProvider cfg.DBProvider,
 	evidenceReactor := evidence.NewReactor(evidencePool)
 	evidenceReactor.SetLogger(evidenceLogger)
 	return evidenceReactor, evidencePool, nil
+}
+
+func createEthClient(config *cfg.Config) (*ethclient.Client, error) {
+	ethClient, err := ethclient.Dial(config.RPC.EthRPCAddress)
+	if err != nil {
+		return nil, err
+	}
+	return ethClient, nil
 }
 
 func createBlocksyncReactor(config *cfg.Config,

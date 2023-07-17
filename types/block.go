@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"strings"
@@ -39,6 +40,20 @@ const (
 	MaxOverheadForBlock int64 = 11
 )
 
+type EthData struct {
+	BlockNumber uint64 `json:"block_number"`
+}
+
+func (e *EthData) Hash() cmtbytes.HexBytes {
+	blockNumberBytes := make([]byte, 8) // assuming BlockNumber is int64
+	binary.BigEndian.PutUint64(blockNumberBytes, uint64(e.BlockNumber))
+
+	es := make([][]byte, 1)
+	es[0] = blockNumberBytes
+
+	return merkle.HashFromByteSlices(es)
+}
+
 // Block defines the atomic unit of a CometBFT blockchain.
 type Block struct {
 	mtx cmtsync.Mutex
@@ -47,6 +62,7 @@ type Block struct {
 	Data       `json:"data"`
 	Evidence   EvidenceData `json:"evidence"`
 	LastCommit *Commit      `json:"last_commit"`
+	EthData    EthData      `json:"eth_data"`
 }
 
 // ValidateBasic performs basic validation that doesn't involve state data.
@@ -347,6 +363,8 @@ type Header struct {
 	// consensus info
 	EvidenceHash    cmtbytes.HexBytes `json:"evidence_hash"`    // evidence included in the block
 	ProposerAddress Address           `json:"proposer_address"` // original proposer of the block
+
+	EthDataHash		cmtbytes.HexBytes `json:"eth_data_hash"`
 }
 
 // Populate the Header with state-derived data.
@@ -368,6 +386,25 @@ func (h *Header) Populate(
 	h.AppHash = appHash
 	h.LastResultsHash = lastResultsHash
 	h.ProposerAddress = proposerAddress
+}
+
+func (h *Header) PopulateNew(version cmtversion.Consensus, chainID string,
+	timestamp time.Time, lastBlockID BlockID,
+	valHash, nextValHash []byte,
+	consensusHash, appHash, lastResultsHash []byte,
+	proposerAddress Address,
+	ethDataHash []byte,)  {
+	h.Version = version
+	h.ChainID = chainID
+	h.Time = timestamp
+	h.LastBlockID = lastBlockID
+	h.ValidatorsHash = valHash
+	h.NextValidatorsHash = nextValHash
+	h.ConsensusHash = consensusHash
+	h.AppHash = appHash
+	h.LastResultsHash = lastResultsHash
+	h.ProposerAddress = proposerAddress
+	h.EthDataHash = ethDataHash
 }
 
 // ValidateBasic performs stateless validation on a Header returning an error
@@ -455,6 +492,7 @@ func (h *Header) Hash() cmtbytes.HexBytes {
 	if err != nil {
 		return nil
 	}
+
 	return merkle.HashFromByteSlices([][]byte{
 		hbz,
 		cdcEncode(h.ChainID),
@@ -470,6 +508,7 @@ func (h *Header) Hash() cmtbytes.HexBytes {
 		cdcEncode(h.LastResultsHash),
 		cdcEncode(h.EvidenceHash),
 		cdcEncode(h.ProposerAddress),
+		cdcEncode(h.EthDataHash),
 	})
 }
 

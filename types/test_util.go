@@ -121,3 +121,20 @@ func MakeBlock(height int64, txs []Tx, lastCommit *Commit, evidence []Evidence) 
 	block.fillHeader()
 	return block
 }
+
+func MakeNewBlock(height int64, txs []Tx, lastCommit *Commit, evidence []Evidence, eData EthData) *Block  {
+	block := &Block{
+		Header: Header{
+			Version: cmtversion.Consensus{Block: version.BlockProtocol, App: 0},
+			Height:  height,
+		},
+		Data: Data{
+			Txs: txs,
+		},
+		Evidence:   EvidenceData{Evidence: evidence},
+		LastCommit: lastCommit,
+		EthData:    eData,
+	}
+	block.fillHeader()
+	return block
+}

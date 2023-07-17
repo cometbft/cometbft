@@ -327,6 +327,8 @@ type RPCConfig struct {
 	// Activate unsafe RPC commands like /dial_persistent_peers and /unsafe_flush_mempool
 	Unsafe bool `mapstructure:"unsafe"`
 
+	EthRPCAddress string `mapstructure:"eth_rpc_address"`
+
 	// Maximum number of simultaneous connections (including WebSocket).
 	// If you want to accept a larger number than the default, make sure
 	// you increase your OS limits.

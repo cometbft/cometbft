@@ -262,6 +262,39 @@ func (state State) MakeBlock(
 	return block
 }
 
+func (state State) MakeNewBlock(
+	height int64,
+	txs []types.Tx,
+	lastCommit *types.Commit,
+	evidence []types.Evidence,
+	proposerAddress []byte,
+	eData types.EthData,
+	) *types.Block {
+
+	// Build base block with block data.
+	block := types.MakeNewBlock(height, txs, lastCommit, evidence, eData)
+
+	// Set time.
+	var timestamp time.Time
+	if height == state.InitialHeight {
+		timestamp = state.LastBlockTime // genesis time
+	} else {
+		timestamp = MedianTime(lastCommit, state.LastValidators)
+	}
+
+	// Fill rest of header with state data.
+	block.Header.PopulateNew(
+		state.Version.Consensus, state.ChainID,
+		timestamp, state.LastBlockID,
+		state.Validators.Hash(), state.NextValidators.Hash(),
+		state.ConsensusParams.Hash(), state.AppHash, state.LastResultsHash,
+		proposerAddress,
+		eData.Hash(),
+	)
+
+	return block
+}
+
 // MedianTime computes a median time for a given Commit (based on Timestamp field of votes messages) and the
 // corresponding validator set. The computed time is always between timestamps of
 // the votes sent by honest processes, i.e., a faulty processes can not arbitrarily increase or decrease the

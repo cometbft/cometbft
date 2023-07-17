@@ -68,6 +68,8 @@ message Header {
   // consensus info
   bytes evidence_hash    = 13;  // evidence included in the block
   bytes proposer_address = 14;  // original proposer of the block
+
+  bytes eth_data_hash    = 15; // hash of the Eth block data
 }
 
 // Data contains the set of transactions included in the block

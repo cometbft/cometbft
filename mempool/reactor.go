@@ -155,9 +155,16 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 
 	for {
 		// In case of both next.NextWaitChan() and peer.Quit() are variable at the same time
-		if !memR.IsRunning() || !peer.IsRunning() || memR.WaitSync() {
+		if !memR.IsRunning() || !peer.IsRunning() {
 			return
 		}
+
+		// Wait a bit to send messages if the node is still catching up.
+		if memR.WaitSync() {
+			time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
+			continue
+		}
+
 		// This happens because the CElement we were looking at got garbage
 		// collected (removed). That is, .NextWait() returned nil. Go ahead and
 		// start from the beginning.

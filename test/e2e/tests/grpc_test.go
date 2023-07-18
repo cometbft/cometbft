@@ -83,6 +83,35 @@ func TestGRPC_Block_GetByHeight(t *testing.T) {
 }
 
 func TestGRPC_Block_GetLatestHeight(t *testing.T) {
-	testNode(t, func(t *testing.T, node e2e.Node) {
-	})
+
+	testnet := loadTestnet(t)
+	node := testnet.RandomNode()
+
+	ch := make(chan int64)
+	//gCtx, cancel := context.WithCancel(context.Background())
+	//defer cancel()
+	gCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	//gCtx := context.Background()
+	gRPCClient, err := node.GRPCClient(ctx)
+	require.NoError(t, err)
+
+	err = gRPCClient.GetBlockLatestHeight(gCtx, ch)
+	require.NoError(t, err)
+
+	for {
+		select {
+		case <-gCtx.Done():
+			return
+		default:
+			// received a new block height and test if it is less than height 20
+			// to ensure a few events are received
+			h := <-ch
+			if h == 20 {
+				<-gCtx.Done()
+			} else {
+				require.Less(t, h, int64(20))
+			}
+		}
+	}
 }

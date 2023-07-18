@@ -9,8 +9,10 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
+	"github.com/google/uuid"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 )
 
@@ -86,8 +88,22 @@ func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByH
 // GetLatestHeight implements v1.BlockServiceServer GetLatestHeight method
 func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest, stream blocksvc.BlockService_GetLatestHeightServer) error {
 
-	// TODO: OK to be the same for all clients ?
-	subscriber := "new_block_subscriber"
+	// Generate a unique subscriber ID based on client address, if not possible, generate a random ID using UUID
+	// The subscriber needs to be unique across all clients
+	var subscriber string
+	ctx := stream.Context()
+	p, ok := peer.FromContext(ctx)
+	if ok {
+		subscriber = fmt.Sprintf("subscriber_%s", p.Addr.String())
+	} else {
+		id, err := uuid.NewUUID()
+		if err != nil {
+			// cannot generate unique id
+			err := status.Error(codes.Internal, "error generating a subscriber id, cannot subscribe to new block events")
+			return err
+		}
+		subscriber = fmt.Sprintf("subscriber_%s", id.String())
+	}
 
 	var sub types.Subscription
 	sub, err := s.eventBus.Subscribe(context.Background(), subscriber, types.QueryForEvent(types.EventNewBlock), 1)
@@ -106,16 +122,18 @@ func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest,
 					return err
 				}
 			}
-		default:
-			continue
-
 		case <-sub.Canceled():
 			if sub.Err() == cmtpubsub.ErrUnsubscribed {
-				//TODO: Close stream?
-				return nil
+				err := status.Error(codes.Canceled, "client unsubscribed")
+				return err
 			}
+		default:
+			continue
+		}
+		err := sub.Err()
+		if err != nil {
+			err := status.Error(codes.Internal, "error in new block subscription")
+			return err
 		}
 	}
-
-	//https://github.com/cometbft/cometbft/blob/81ab2c2cc1a91cf10694aee5052db93b9f486d1f/rpc/client/event_test.go#L75
 }

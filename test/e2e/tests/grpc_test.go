@@ -87,6 +87,11 @@ func TestGRPC_Block_GetLatestHeight(t *testing.T) {
 	testnet := loadTestnet(t)
 	node := testnet.RandomNode()
 
+	client, err := node.Client()
+	require.NoError(t, err)
+	status, err := client.Status(ctx)
+	require.NoError(t, err)
+
 	ch := make(chan int64)
 	//gCtx, cancel := context.WithCancel(context.Background())
 	//defer cancel()
@@ -99,18 +104,19 @@ func TestGRPC_Block_GetLatestHeight(t *testing.T) {
 	err = gRPCClient.GetBlockLatestHeight(gCtx, ch)
 	require.NoError(t, err)
 
+	count := 0
 	for {
 		select {
 		case <-gCtx.Done():
 			return
 		default:
-			// received a new block height and test if it is less than height 20
-			// to ensure a few events are received
+			// received a new block height and test if it is greater than earliest block
 			h := <-ch
-			if h == 20 {
+			if count == 10 {
 				<-gCtx.Done()
 			} else {
-				require.Less(t, h, int64(20))
+				require.GreaterOrEqual(t, h, status.SyncInfo.EarliestBlockHeight)
+				count++
 			}
 		}
 	}

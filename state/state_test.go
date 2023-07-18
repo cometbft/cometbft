@@ -41,9 +41,8 @@ func setupTestCase(t *testing.T) (func(t *testing.T), dbm.DB, sm.State) {
 	return tearDown, stateDB, state
 }
 
-func setupBenchmarkCase(b *testing.B) (func(b *testing.B), dbm.DB, sm.State) {
+func setupBenchmarkCase(b *testing.B, dbType dbm.BackendType) (func(b *testing.B), dbm.DB, sm.State) {
 	config := test.ResetTestRoot("state_")
-	dbType := dbm.BackendType(config.DBBackend)
 	stateDB, err := dbm.NewDB("state", dbType, config.DBDir())
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
@@ -118,17 +117,45 @@ func TestStateSaveLoad(t *testing.T) {
 }
 
 func BenchmarkStateSave(b *testing.B) {
-	tearDown, stateDB, state := setupBenchmarkCase(b)
-	defer tearDown(b)
-	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
-		DiscardABCIResponses: false,
-	})
+	validatorsSetSizes := []int{10, 50, 100, 200}
+	dbTypes := []dbm.BackendType{
+		//   - requires gcc
+		//   - use cleveldb build tag (go build -tags cleveldb)
+		//	 - you should have levelDB installed
+		dbm.CLevelDBBackend,
+		//   - requires gcc
+		//   - use rocksdb build tag (go build -tags rocksdb)
+		//   - you should have rocksDB installed
+		dbm.RocksDBBackend,
+		//   - use badgerdb build tag (go build -tags badgerdb)
+		dbm.BadgerDBBackend,
+		//   - use boltdb build tag (go build -tags boltdb)
+		dbm.BoltDBBackend,
+		dbm.GoLevelDBBackend,
+		dbm.MemDBBackend,
+	}
 
-	for i := 0; i < b.N; i++ {
-		state.LastBlockHeight++
-		err := stateStore.Save(state)
-		if err != nil {
-			b.Fatal(err)
+	for _, dbType := range dbTypes {
+		for _, validatorsSetSize := range validatorsSetSizes {
+			tearDown, stateDB, state := setupBenchmarkCase(b, dbType)
+			stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+				DiscardABCIResponses: false,
+			})
+
+			state.Validators = genValSet(validatorsSetSize)
+			state.NextValidators = state.Validators.CopyIncrementProposerPriority(1)
+
+			b.Run(fmt.Sprintf("DBType:%s;ValidatorSetSize:%d", dbType, validatorsSetSize),
+				func(b *testing.B) {
+					for i := 0; i < b.N; i++ {
+						state.LastBlockHeight++
+						err := stateStore.Save(state)
+						if err != nil {
+							b.Fatal(err)
+						}
+					}
+				})
+			tearDown(b)
 		}
 	}
 }

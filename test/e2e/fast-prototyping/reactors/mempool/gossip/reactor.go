@@ -41,6 +41,7 @@ func NewReactor(config *cfg.MempoolConfig, mempool mempool.Mempool, rate float32
 		propagationRate: rate,
 	}
 	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
+	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
 	fmt.Println("starting with ", "propagation rate ", memR.propagationRate)
 	return memR
 }
@@ -62,19 +63,12 @@ func (memR *Reactor) OnStart() error {
 	if !memR.config.Broadcast {
 		memR.Logger.Info("Tx broadcasting is disabled")
 	}
-
-	go memR.updateSendersRoutine()
-
 	return nil
 }
 
 // OnStop stops the reactor by signaling to all spawned goroutines to exit and
 // blocking until they all exit.
 func (memR *Reactor) OnStop() {
-	if err := memR.mempool.Stop(); err != nil {
-		memR.Logger.Error("Shutting down mempool reactor", "err", err)
-	}
-	// TODO: to complete
 }
 
 // GetChannels implements Reactor by returning the list of channels for this
@@ -200,8 +194,8 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 }
 
 func (memR *Reactor) isSender(txKey types.TxKey, peerID uint16) bool {
-	memR.txSendersMtx.RLock()
-	defer memR.txSendersMtx.RUnlock()
+	memR.txSendersMtx.Lock()
+	defer memR.txSendersMtx.Unlock()
 
 	sendersSet, ok := memR.txSenders[txKey]
 	return ok && sendersSet[peerID]
@@ -224,15 +218,4 @@ func (memR *Reactor) removeSenders(txKey types.TxKey) {
 	defer memR.txSendersMtx.Unlock()
 
 	delete(memR.txSenders, txKey)
-}
-
-func (memR *Reactor) updateSendersRoutine() {
-	for {
-		select {
-		case txKey := <-memR.mempool.TxsRemoved():
-			memR.removeSenders(txKey)
-		case <-memR.Quit():
-			return
-		}
-	}
 }

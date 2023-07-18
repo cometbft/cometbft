@@ -71,6 +71,51 @@ func (l *localClientCreator) newABCIClient() (abcicli.Client, error) {
 	return abcicli.NewLocalClient(l.mtx, l.app), nil
 }
 
+//-------------------------------------------------------------------------
+// connection-synchronized local client uses a mutex per "connection" on an
+// in-process app
+
+type connSyncLocalClientCreator struct {
+	app types.Application
+}
+
+// NewConnSyncLocalClientCreator returns a [ClientCreator] for the given app,
+// which will be running locally.
+//
+// Returned clients are "connection-synchronized", meaning every client created
+// will have its own mutex, allowing interaction across clients to take place
+// in parallel, but every call on a particular client is effectively
+// serialized.
+func NewConnSyncLocalClientCreator(app types.Application) ClientCreator {
+	return &connSyncLocalClientCreator{
+		app: app,
+	}
+}
+
+// NewABCIConsensusClient implements ClientCreator.
+func (c *connSyncLocalClientCreator) NewABCIConsensusClient() (abcicli.Client, error) {
+	return c.newABCIClient()
+}
+
+// NewABCIMempoolClient implements ClientCreator.
+func (c *connSyncLocalClientCreator) NewABCIMempoolClient() (abcicli.Client, error) {
+	return c.newABCIClient()
+}
+
+// NewABCIQueryClient implements ClientCreator.
+func (c *connSyncLocalClientCreator) NewABCIQueryClient() (abcicli.Client, error) {
+	return c.newABCIClient()
+}
+
+// NewABCISnapshotClient implements ClientCreator.
+func (c *connSyncLocalClientCreator) NewABCISnapshotClient() (abcicli.Client, error) {
+	return c.newABCIClient()
+}
+
+func (c *connSyncLocalClientCreator) newABCIClient() (abcicli.Client, error) {
+	return abcicli.NewLocalClient(nil, c.app), nil
+}
+
 //---------------------------------------------------------------
 // remote proxy opens new connections to an external app process
 

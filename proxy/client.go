@@ -116,6 +116,56 @@ func (c *connSyncLocalClientCreator) newABCIClient() (abcicli.Client, error) {
 	return abcicli.NewLocalClient(nil, c.app), nil
 }
 
+//-----------------------------------------------------------------------------
+// advanced local client creator with a more complex concurrency model than the
+// other local client creators
+
+type consensusSyncLocalClientCreator struct {
+	app types.Application
+}
+
+// NewConsensusSyncLocalClientCreator returns a [ClientCreator] with a more
+// advanced concurrency model than that provided by [NewLocalClientCreator] or
+// [NewConnSyncLocalClientCreator].
+//
+// In this model (a "consensus-synchronized" model), only the consensus client
+// has a mutex over it to serialize consensus interactions. With all other
+// clients (mempool, query, snapshot), enforcing synchronization is left up to
+// the app.
+func NewConsensusSyncLocalClientCreator(app types.Application) ClientCreator {
+	return &consensusSyncLocalClientCreator{
+		app: app,
+	}
+}
+
+// NewABCIConsensusClient implements ClientCreator.
+func (c *consensusSyncLocalClientCreator) NewABCIConsensusClient() (abcicli.Client, error) {
+	// A mutex is created by the local client and applied across all
+	// consensus-related calls.
+	return abcicli.NewLocalClient(nil, c.app), nil
+}
+
+// NewABCIMempoolClient implements ClientCreator.
+func (c *consensusSyncLocalClientCreator) NewABCIMempoolClient() (abcicli.Client, error) {
+	// It is up to the ABCI app to manage its concurrency when handling
+	// mempool-related calls.
+	return abcicli.NewUnsyncLocalClient(c.app), nil
+}
+
+// NewABCIQueryClient implements ClientCreator.
+func (c *consensusSyncLocalClientCreator) NewABCIQueryClient() (abcicli.Client, error) {
+	// It is up to the ABCI app to manage its concurrency when handling
+	// query-related calls.
+	return abcicli.NewUnsyncLocalClient(c.app), nil
+}
+
+// NewABCISnapshotClient implements ClientCreator.
+func (c *consensusSyncLocalClientCreator) NewABCISnapshotClient() (abcicli.Client, error) {
+	// It is up to the ABCI app to manage its concurrency when handling
+	// snapshot-related calls.
+	return abcicli.NewUnsyncLocalClient(c.app), nil
+}
+
 //---------------------------------------------------------------
 // remote proxy opens new connections to an external app process
 

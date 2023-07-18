@@ -31,7 +31,7 @@ func TestGRPC_Version(t *testing.T) {
 	})
 }
 
-func TestGRPC_Block(t *testing.T) {
+func TestGRPC_Block_GetByHeight(t *testing.T) {
 	testNode(t, func(t *testing.T, node e2e.Node) {
 		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
 			return
@@ -79,5 +79,10 @@ func TestGRPC_Block(t *testing.T) {
 			require.NotNil(t, lastBlock.BlockID)
 			require.Equal(t, lastBlock.Block.Height, last)
 		}
+	})
+}
+
+func TestGRPC_Block_GetLatestHeight(t *testing.T) {
+	testNode(t, func(t *testing.T, node e2e.Node) {
 	})
 }

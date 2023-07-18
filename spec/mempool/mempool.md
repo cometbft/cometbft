@@ -1,10 +1,10 @@
 # Mempool
 
-In this document, we define the notion of **mempool** and characterize its role in the **CometBFT** protocol.
+In this document, we define the notion of **mempool** and characterize its role in **CometBFT**.
 First, we provide an overview of what is a mempool, and relate it to other blockchains.
 Then, the interactions with the consensus and client application are detailed.
 A formalization of the mempool follows.
-This formalization is readable in Quint [here](https://github.com/cometbft/cometbft/blob/main/spec/mempool/quint).
+This formalization is readable in Quint [here](./quint).
 
 ## Overview
 
@@ -15,7 +15,7 @@ Transactions in the mempool are consumed by consensus to create the next propose
 Once a new block in the blockchain is decided, the mempool is refreshed.
 We shall detail how shortly.
 
-A transaction can be received from a local client (through the ABCI interface), or a remote disseminating process.
+A transaction can be received from a local client, or a remote disseminating process.
 Each transaction is subject to a test by the client application.
 This test verifies that the transaction is _valid_.
 Such a test provides some form of protection against byzantine agents, whether they be clients or other system nodes.
@@ -34,7 +34,7 @@ In particular, once a transaction is added to the mempool, it is guaranteed to b
 
 ## Interactions
 
-In what follows, we present the interactions of the mempool with other parts of the CometBFT protocol.
+In what follows, we present the interactions of the mempool with other parts of CometBFT.
 Some of the specificities of the current implementation (`CListMempool`) are also detailed.
 
 **RPC server**
@@ -46,7 +46,7 @@ Transactions can also be received from other nodes, through a gossiping mechanis
 
 **ABCI application**
 As pointed out above, the mempool should only store and disseminate valid transactions.
-It is up to the ABCI (client) application to define whether a transaction is valid.
+It is up to the [ABCI](./../abci/abci%2B%2B_basic_concepts.md#mempool-methods) (client) application to define whether a transaction is valid.
 Transactions received locally are sent to the application to be validated, through the `checkTx` method from the mempool ABCI connection.
 Such a check indicates with a flag whether it is the first time (or not) that the transaction is sent for validation.
 Transactions that are validated by the application are later added to the mempool.
@@ -70,8 +70,8 @@ Proposing a block is the prerogative of the nodes acting as validators.
 At all the full nodes (validators or not), consensus is responsible for committing blocks of transactions to the blockchain.
 Once a block is committed, all the transactions included in the block are removed from the mempool.
 This happens with an `update` call to the mempool.
-Before doing this call, consensus takes a `lock` on the mempool.
-It then `flush` the connection with the client application.
+Before doing this call, CometBFT takes a `lock` on the mempool.
+Then, it `flush` the connection with the client application.
 When `flush` returns, all the pending validation requests are answered and/or dropped.
 Both operations aim at preventing any concurrent `checkTx` while the mempool is updated.
 At the end of `update`, all the transactions still in the mempool are re-validated (asynchronously) against the new state of the client application.
@@ -153,4 +153,4 @@ Given some transaction $tx$, variable $p.valid[tx]$ tracks the number of times t
 A weaker version of INV3 is as follows:  
 **INV3a.** $\forall tx. \forall p \in Correct. \square(tx \in p.hmempool \implies p.valid[tx] \in [1, \beta])$
 
-For further information regarding the current implementation of the mempool in CometBFT, the reader may consult [this](https://github.com/cometbft/knowledge-base/blob/main/protocols/mempool/v0/mempool-v0.md) document in the knowledge base.
+> For further information regarding the current implementation of the mempool in CometBFT, the reader may consult [this](https://github.com/cometbft/knowledge-base/blob/main/protocols/mempool/v0/mempool-v0.md) document in the knowledge base.

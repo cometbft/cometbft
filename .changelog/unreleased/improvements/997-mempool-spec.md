@@ -1,1 +1,0 @@
-- Add mempool specification in English and Quint ([#997](https://github.com/cometbft/cometbft/pull/997))

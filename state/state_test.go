@@ -41,6 +41,30 @@ func setupTestCase(t *testing.T) (func(t *testing.T), dbm.DB, sm.State) {
 	return tearDown, stateDB, state
 }
 
+func setupBenchmarkCase(b *testing.B) (func(b *testing.B), dbm.DB, sm.State) {
+	config := test.ResetTestRoot("state_")
+	dbType := dbm.BackendType(config.DBBackend)
+	stateDB, err := dbm.NewDB("state", dbType, config.DBDir())
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
+	if err != nil {
+		b.Fatal(err)
+	}
+	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
+	if err != nil {
+		b.Fatal(err)
+	}
+	err = stateStore.Save(state)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	tearDown := func(b *testing.B) { os.RemoveAll(config.RootDir) }
+
+	return tearDown, stateDB, state
+}
+
 // TestStateCopy tests the correct copying behavior of State.
 func TestStateCopy(t *testing.T) {
 	tearDown, _, state := setupTestCase(t)
@@ -91,6 +115,22 @@ func TestStateSaveLoad(t *testing.T) {
 	assert.True(state.Equals(loadedState),
 		fmt.Sprintf("expected state and its copy to be identical.\ngot: %v\nexpected: %v\n",
 			loadedState, state))
+}
+
+func BenchmarkStateSave(b *testing.B) {
+	tearDown, stateDB, state := setupBenchmarkCase(b)
+	defer tearDown(b)
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
+
+	for i := 0; i < b.N; i++ {
+		state.LastBlockHeight++
+		err := stateStore.Save(state)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
 }
 
 // TestFinalizeBlockResponsesSaveLoad1 tests saving and loading ABCIResponses.

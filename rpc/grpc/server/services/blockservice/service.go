@@ -94,7 +94,7 @@ func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest,
 		case <-sub.Canceled():
 			if sub.Err() == cmtpubsub.ErrUnsubscribed {
 				return status.Error(codes.Canceled, "client unsubscribed")
-			} else if sub.Err() == nil
+			}
 		default:
 			continue
 		}

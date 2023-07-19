@@ -693,6 +693,44 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 	assert.True(t, found == 1)
 }
 
+func TestMempoolRecheckRace(t *testing.T) {
+	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
+	app := kvstore.NewInMemoryApplication()
+	_, server := newRemoteApp(t, sockPath, app)
+	t.Cleanup(func() {
+		if err := server.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+	cfg := test.ResetTestRoot("mempool_test")
+	cfg.Mempool.Size = 1000
+	cfg.Mempool.CacheSize = 1000
+	mp, cleanup := newMempoolWithAppAndConfig(proxy.NewRemoteClientCreator(sockPath, "socket", true), cfg)
+	defer cleanup()
+
+	// Add a bunch of transactions to the mempool.
+	var err error
+	txs := newUniqueTxs(100)
+	for _, tx := range txs {
+		err = mp.CheckTx(tx, nil, TxInfo{})
+		require.NoError(t, err)
+	}
+	err = mp.FlushAppConn()
+	require.NoError(t, err)
+
+	// Update one transaction to force rechecking the rest.
+	mp.Lock()
+	err = mp.Update(1, txs[:1], abciResponses(1, abci.CodeTypeOK), nil, nil)
+	mp.Unlock()
+	require.NoError(t, err)
+
+	// Add again the same transaction that was updated. Checking this
+	// transaction and rechhecking the others simultaneously should not result
+	// in a data race for the variable recheckCursor.
+	err = mp.CheckTx(txs[:1][0], nil, TxInfo{})
+	require.Equal(t, err, ErrTxInCache)
+}
+
 // This will non-deterministically catch some concurrency failures like
 // https://github.com/tendermint/tendermint/issues/3509
 // TODO: all of the tests should probably also run using the remote proxy app

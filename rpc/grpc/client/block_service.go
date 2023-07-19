@@ -17,7 +17,9 @@ type ResultBlock struct {
 // BlockServiceClient provides block information
 type BlockServiceClient interface {
 	GetBlockByHeight(ctx context.Context, height int64) (*ResultBlock, error)
-	GetBlockLatestHeight(ctx context.Context, ch chan<- int64) error
+	// GetLatestHeight provides sends the latest committed block height to the given output
+	// channel as blocks are committed.
+	GetLatestHeight(ctx context.Context, out chan<- int64) error
 }
 
 type blockServiceClient struct {

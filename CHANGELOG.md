@@ -1,5 +1,70 @@
 # CHANGELOG
 
+## Unreleased
+
+### BREAKING CHANGES
+
+- `[crypto/merkle]` Do not allow verification of Merkle Proofs against empty trees (`nil` root). `Proof.ComputeRootHash` now panics when it encounters an error, but `Proof.Verify` does not panic
+  ([\#558](https://github.com/cometbft/cometbft/issues/558))
+- `[crypto/merkle]` The public `Proof.ComputeRootHash` function has been deleted.
+   ([\#558](https://github.com/cometbft/cometbft/issues/558))
+- `[rpc/grpc]` Remove the deprecated gRPC broadcast API
+  ([\#650](https://github.com/cometbft/cometbft/issues/650))
+- `[consensus]` `Handshaker.Handshake` now requires `context.Context` ([cometbft/cometbft\#857](https://github.com/cometbft/cometbft/pull/857))
+- `[node]` `NewNode` now requires `context.Context` as the first parameter ([cometbft/cometbft\#857](https://github.com/cometbft/cometbft/pull/857))
+- `[mempool]` Application can now set `ConsensusParams.Block.MaxBytes` to -1
+  to have visibility on all transactions in the
+  mempool at `PrepareProposal` time.
+  This means that the total size of transactions sent via `RequestPrepareProposal`
+  might exceed `RequestPrepareProposal.max_tx_bytes`.
+  If that is the case, the application MUST make sure that the total size of transactions
+  returned in `ResponsePrepareProposal.txs` does not exceed `RequestPrepareProposal.max_tx_bytes`,
+  otherwise CometBFT will panic.
+  ([\#980](https://github.com/cometbft/cometbft/issues/980))
+- `[p2p]` Remove UPnP functionality
+  ([\#1113](https://github.com/cometbft/cometbft/issues/1113))
+- `[node]` Removed `ConsensusState()` accessor from `Node`
+  struct - all access to consensus state should go via the reactor
+  ([\#1120](https://github.com/cometbft/cometbft/pull/1120))
+
+### BUG FIXES
+
+- `[consensus]` Avoid recursive call after rename to (*PeerState).MarshalJSON
+  ([\#863](https://github.com/cometbft/cometbft/pull/863))
+- `[mempool/clist_mempool]` \#890 Prevent a transaction to appear twice in the mempool  (@otrack)
+
+### FEATURES
+
+- `[proxy]` Introduce `NewConnSyncLocalClientCreator`, which allows local ABCI
+  clients to have the same concurrency model as remote clients (i.e. one mutex
+  per client "connection", for each of the four ABCI "connections").
+  ([\#9830](https://github.com/tendermint/tendermint/pull/9830))
+
+### IMPROVEMENTS
+
+- `[mempool]` Add a metric (a counter) to measure whether a tx was received more than once.
+  ([\#634](https://github.com/cometbft/cometbft/pull/634))
+- `[jsonrpc/client]` Improve the error message for client errors stemming from
+  bad HTTP responses.
+  ([cometbft/cometbft\#638](https://github.com/cometbft/cometbft/pull/638))
+- `[node]` Make handshake cancelable ([cometbft/cometbft\#857](https://github.com/cometbft/cometbft/pull/857))
+- `[consensus]` New metrics (counters) to track duplicate votes and block parts.
+  ([\#896](https://github.com/cometbft/cometbft/pull/896))
+- `[consensus]` Optimize vote and block part gossip with new message `HasProposalBlockPartMessage`,
+  which is similar to `HasVoteMessage`; and random sleep in the loop broadcasting those messages.
+  The sleep can be configured with new config `peer_gossip_intraloop_sleep_duration`, which is set to 0
+  by default as this is experimental.
+  Our scale tests show substantial bandwith improvement with a value of 50 ms.
+  ([\#904](https://github.com/cometbft/cometbft/pull/904))
+- Update Apalache type annotations in the light client spec ([#955](https://github.com/cometbft/cometbft/pull/955))
+- `[mempool]` Application can now set `ConsensusParams.Block.MaxBytes` to -1
+  to gain more control on the max size of transactions in a block.
+  It also allows the application to have visibility on all transactions in the
+  mempool at `PrepareProposal` time.
+  ([\#980](https://github.com/cometbft/cometbft/pull/980))
+- `[consensus]` Log vote validation failures at info level
+  ([\#1022](https://github.com/cometbft/cometbft/pull/1022))
+
 ## v0.37.2
 
 *June 14, 2023*

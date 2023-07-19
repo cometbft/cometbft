@@ -60,7 +60,7 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 	}
 
 	txs := checkTxs(t, reactors[0].mempool, numTxs)
-	waitForTxsOnReactors(t, txs, reactors)
+	waitForReactors(t, txs, reactors, checkTxsInOrder)
 }
 
 // regression test for https://github.com/tendermint/tendermint/issues/5408
@@ -180,7 +180,7 @@ func TestReactor_MaxTxBytes(t *testing.T) {
 	reqRes, err := reactors[0].mempool.CheckTx(tx1)
 	require.NoError(t, err)
 	require.False(t, reqRes.Response.GetCheckTx().IsErr())
-	waitForTxsOnReactors(t, []types.Tx{tx1}, reactors)
+	waitForReactors(t, []types.Tx{tx1}, reactors, checkTxsInOrder)
 
 	reactors[0].mempool.Flush()
 	reactors[1].mempool.Flush()
@@ -333,7 +333,7 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 	callCheckTx(t, firstReactor.mempool, txs)
 
 	// Wait for all txs to be in the mempool of each reactor.
-	waitForTxsOnReactors(t, txs, reactors)
+	waitForReactors(t, txs, reactors, checkTxsInMempool)
 	for i, r := range reactors {
 		checkTxsInMempoolAndSenders(t, r, txs, i)
 	}
@@ -367,6 +367,9 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 // Check that the mempool has exactly the given list of txs and, if it's not the
 // first reactor (reactorIndex == 0), then each tx has a non-empty list of senders.
 func checkTxsInMempoolAndSenders(t *testing.T, r *Reactor, txs types.Txs, reactorIndex int) {
+	r.txSendersMtx.Lock()
+	defer r.txSendersMtx.Unlock()
+
 	require.Equal(t, len(txs), r.mempool.Size())
 	if reactorIndex == 0 {
 		require.Zero(t, len(r.txSenders))
@@ -430,14 +433,15 @@ func newUniqueTxs(n int) types.Txs {
 	return txs
 }
 
-func waitForTxsOnReactors(t *testing.T, txs types.Txs, reactors []*Reactor) {
-	// wait for the txs in all mempools
+// Wait for all reactors to finish applying a testing function to a list of
+// transactions.
+func waitForReactors(t *testing.T, txs types.Txs, reactors []*Reactor, testFunc func(*testing.T, types.Txs, *Reactor, int)) {
 	wg := new(sync.WaitGroup)
 	for i, reactor := range reactors {
 		wg.Add(1)
 		go func(r *Reactor, reactorIndex int) {
 			defer wg.Done()
-			waitForTxsOnReactor(t, txs, r, reactorIndex)
+			testFunc(t, txs, r, reactorIndex)
 		}(reactor, i)
 	}
 
@@ -455,15 +459,30 @@ func waitForTxsOnReactors(t *testing.T, txs types.Txs, reactors []*Reactor) {
 	}
 }
 
-func waitForTxsOnReactor(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex int) {
-	mempool := reactor.mempool
-	for mempool.Size() < len(txs) {
+// Wait until the mempool has a certain number of transactions.
+func waitForNumTxsInMempool(numTxs int, mempool Mempool) {
+	for mempool.Size() < numTxs {
 		time.Sleep(time.Millisecond * 100)
 	}
+}
 
-	reapedTxs := mempool.ReapMaxTxs(len(txs))
+// Wait until all txs are in the mempool and check that the number of txs in the
+// mempool is as expected.
+func checkTxsInMempool(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex int) {
+	waitForNumTxsInMempool(len(txs), reactor.mempool)
+
+	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
 	require.Equal(t, len(txs), len(reapedTxs))
-	require.Equal(t, len(txs), mempool.Size())
+	require.Equal(t, len(txs), reactor.mempool.Size())
+}
+
+// Wait until all txs are in the mempool and check that they are in the same
+// order as given.
+func checkTxsInOrder(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex int) {
+	waitForNumTxsInMempool(len(txs), reactor.mempool)
+
+	// Check that all transactions in the mempool are in the same order as txs.
+	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
 	for i, tx := range txs {
 		assert.Equalf(t, tx, reapedTxs[i],
 			"txs at index %d on reactor %d don't match: %v vs %v", i, reactorIndex, tx, reapedTxs[i])

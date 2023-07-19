@@ -468,7 +468,7 @@ func waitForNumTxsInMempool(numTxs int, mempool Mempool) {
 
 // Wait until all txs are in the mempool and check that the number of txs in the
 // mempool is as expected.
-func checkTxsInMempool(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex int) {
+func checkTxsInMempool(t *testing.T, txs types.Txs, reactor *Reactor, _ int) {
 	waitForNumTxsInMempool(len(txs), reactor.mempool)
 
 	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))

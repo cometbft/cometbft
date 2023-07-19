@@ -34,7 +34,7 @@ type CListMempool struct {
 
 	// Function set by the reactor to be called when a transaction is removed
 	// from the mempool.
-	removeTxOnReactor func(txKey types.TxKey)
+	removeTxOnReactorCb func(txKey types.TxKey)
 
 	config *config.MempoolConfig
 
@@ -125,7 +125,10 @@ func (mem *CListMempool) forceRemoveFromCache(tx types.Tx) {
 	mem.cache.Remove(tx)
 }
 
-func (mem *CListMempool) removeFromCache(tx types.Tx) {
+// tryRemoveFromCache removes a transaction from the cache in case it can be
+// added to the mempool at a later stage (probably when the transaction becomes
+// valid).
+func (mem *CListMempool) tryRemoveFromCache(tx types.Tx) {
 	if !mem.config.KeepInvalidTxsInCache {
 		mem.forceRemoveFromCache(tx)
 	}
@@ -150,12 +153,14 @@ func (mem *CListMempool) EnableTxsAvailable() {
 }
 
 func (mem *CListMempool) SetTxRemovedCallback(cb func(txKey types.TxKey)) {
-	mem.removeTxOnReactor = cb
+	mem.removeTxOnReactorCb = cb
 }
 
 func (mem *CListMempool) invokeRemoveTxOnReactor(txKey types.TxKey) {
-	if mem.removeTxOnReactor != nil {
-		mem.removeTxOnReactor(txKey)
+	// Note that the callback is nil in the unit tests, where there are no
+	// reactors.
+	if mem.removeTxOnReactorCb != nil {
+		mem.removeTxOnReactorCb(txKey)
 	}
 }
 
@@ -328,7 +333,7 @@ func (mem *CListMempool) addTx(entry *Entry) {
 //   - Update (lock held) if tx was committed
 //   - resCbRecheck (lock not held) if tx was invalidated
 func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
-	// The transaction should be removed in the reactor, even if it cannot be
+	// The transaction should be removed from the reactor, even if it cannot be
 	// found in the mempool.
 	mem.invokeRemoveTxOnReactor(txKey)
 	if elem, ok := mem.getCElement(txKey); ok {
@@ -410,8 +415,7 @@ func (mem *CListMempool) resCbFirstTime(
 			)
 			mem.notifyTxsAvailable()
 		} else {
-			// ignore bad transaction
-			mem.removeFromCache(tx)
+			mem.tryRemoveFromCache(tx)
 			mem.logger.Debug(
 				"rejected invalid transaction",
 				"tx", types.Tx(tx).Hash(),
@@ -475,7 +479,7 @@ func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 			if err := mem.RemoveTxByKey(entry.tx.Key()); err != nil {
 				mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
 			}
-			mem.removeFromCache(tx) // it might be valid later
+			mem.tryRemoveFromCache(tx)
 		}
 		if mem.recheckCursor == mem.recheckEnd {
 			mem.recheckCursor = nil
@@ -574,7 +578,7 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 }
 
 // Lock() must be help by the caller during execution.
-// TODO: always returns nil
+// TODO: this function always returns nil; remove the return value
 func (mem *CListMempool) Update(
 	height int64,
 	txs types.Txs,
@@ -598,7 +602,7 @@ func (mem *CListMempool) Update(
 			// Add valid committed tx to the cache (if missing).
 			_ = mem.addToCache(tx)
 		} else {
-			mem.removeFromCache(tx)
+			mem.tryRemoveFromCache(tx)
 		}
 
 		// Remove committed tx from the mempool.

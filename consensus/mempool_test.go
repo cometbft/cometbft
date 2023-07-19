@@ -125,7 +125,6 @@ func TestMempoolTxConcurrentWithCommit(t *testing.T) {
 	newBlockEventsCh := subscribe(cs.eventBus, types.EventQueryNewBlockEvents)
 
 	const numTxs int64 = 3000
-	config.Mempool.Size = int(numTxs)
 	go deliverTxsRange(t, cs, 0, int(numTxs))
 
 	startTestRound(cs, cs.Height, cs.Round)

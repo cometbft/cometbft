@@ -39,8 +39,7 @@ func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByH
 		height = latestHeight
 	} else if req.Height < 0 {
 		description := fmt.Sprintf("got negative height (%d), please specify a height >= 0", req.Height)
-		err := status.Error(codes.InvalidArgument, description)
-		return nil, err
+		return nil, status.Error(codes.InvalidArgument, description)
 	} else {
 		height = req.Height
 	}
@@ -95,7 +94,7 @@ func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest,
 		case <-sub.Canceled():
 			if sub.Err() == cmtpubsub.ErrUnsubscribed {
 				return status.Error(codes.Canceled, "client unsubscribed")
-			}
+			} else if sub.Err() == nil
 		default:
 			continue
 		}

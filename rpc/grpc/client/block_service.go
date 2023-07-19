@@ -8,7 +8,7 @@ import (
 	"github.com/cosmos/gogoproto/grpc"
 )
 
-// ResultBlock Single block (with meta)
+// ResultBlock Block data returned by the CometBFT BlockService gRPC API.
 type ResultBlock struct {
 	BlockID types.BlockID `json:"block_id"`
 	Block   *types.Block  `json:"block"`
@@ -72,9 +72,11 @@ func (c *blockServiceClient) GetLatestHeight(ctx context.Context, ch chan<- int6
 
 	go func() {
 		for {
-			response, _ := latestHeight.Recv()
+			response, err := latestHeight.Recv()
+			if err != nil {
+				break
+			}
 			ch <- response.Height
-
 		}
 	}()
 	return nil

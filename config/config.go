@@ -570,8 +570,6 @@ func TestGRPCVersionServiceConfig() *GRPCVersionServiceConfig {
 	}
 }
 
-// GRPC Block Service configuration
-
 type GRPCBlockServiceConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }

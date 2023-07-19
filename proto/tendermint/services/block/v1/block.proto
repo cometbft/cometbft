@@ -7,7 +7,7 @@ import "tendermint/types/types.proto";
 option go_package = "github.com/cometbft/cometbft/proto/tendermint/services/block/v1";
 
 message GetByHeightRequest {
-  // the height of the block requested.
+  // The height of the block requested. If set to 0, the latest height will be returned.
   int64 height = 1;
 }
 

@@ -566,11 +566,6 @@ func TestPruningService(t *testing.T) {
 
 	// Check that basic pruning works
 	pruned, evidenceRetainHeight, err := pruningService.PruneBlocks(1200, sm.AppRequester, state)
-	// pruningService.PruneChannel <- sm.PruneMsg{Height: 1200, PruningRequester: 0, State: state}
-	// pruningDoneMsg := <-pruningService.PruningDone
-	// pruned := pruningDoneMsg.Pruned
-	// evidenceRetainHeight := pruningDoneMsg.EvidenceRetainHeight
-	// err = pruningDoneMsg.Err
 
 	require.NoError(t, err)
 	assert.EqualValues(t, 1199, pruned)

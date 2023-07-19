@@ -371,7 +371,7 @@ Does not run any perturbations.
 		`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			benchmarkDuration := 60 * time.Second
+			benchmarkDuration := 120 * time.Second
 
 			defer cli.infp.StopTestnet(context.Background())
 
@@ -419,6 +419,7 @@ Does not run any perturbations.
 				if time.Since(startAt) < benchmarkDuration {
 					return fmt.Errorf("timed out without reason")
 				}
+				return fmt.Errorf("benchamrk ran out of time")
 			}
 			logger.Info("Ending benchmark.")
 

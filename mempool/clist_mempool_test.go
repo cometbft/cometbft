@@ -802,17 +802,17 @@ func doCommit(t require.TestingT, mp Mempool, app abci.Application, txs types.Tx
 		rfb.Txs[i] = tx
 	}
 	_, err := app.FinalizeBlock(context.Background(), rfb)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	mp.Lock()
 	defer mp.Unlock()
 
 	err = mp.FlushAppConn()
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	_, err = app.Commit(context.Background(), &abci.RequestCommit{})
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	err = mp.Update(height, txs, abciResponses(txs.Len(), abci.CodeTypeOK), nil, nil)
-	require.Nil(t, err)
+	require.NoError(t, err)
 }

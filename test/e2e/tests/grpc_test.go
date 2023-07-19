@@ -93,15 +93,12 @@ func TestGRPC_Block_GetLatestHeight(t *testing.T) {
 	require.NoError(t, err)
 
 	ch := make(chan int64)
-	//gCtx, cancel := context.WithCancel(context.Background())
-	//defer cancel()
 	gCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
-	//gCtx := context.Background()
 	gRPCClient, err := node.GRPCClient(ctx)
 	require.NoError(t, err)
 
-	err = gRPCClient.GetBlockLatestHeight(gCtx, ch)
+	err = gRPCClient.GetLatestHeight(gCtx, ch)
 	require.NoError(t, err)
 
 	count := 0

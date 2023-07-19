@@ -61,8 +61,8 @@ func (c *blockServiceClient) GetBlockByHeight(ctx context.Context, height int64)
 	return &response, nil
 }
 
-// GetBlockLatestHeight implements BlockServiceClient GetBlockLatestHeight
-func (c *blockServiceClient) GetBlockLatestHeight(ctx context.Context, ch chan<- int64) error {
+// GetLatestHeight implements BlockServiceClient GetLatestHeight
+func (c *blockServiceClient) GetLatestHeight(ctx context.Context, ch chan<- int64) error {
 	req := blocksvc.GetLatestHeightRequest{}
 
 	latestHeight, err := c.client.GetLatestHeight(ctx, &req)
@@ -92,7 +92,7 @@ func (*disabledBlockServiceClient) GetBlockByHeight(context.Context, int64) (*Re
 	panic("block service client is disabled")
 }
 
-// GetBlockLatestHeight implements BlockServiceClient GetBlockLatestHeight - disabled client
-func (*disabledBlockServiceClient) GetBlockLatestHeight(context.Context, chan<- int64) error {
+// GetLatestHeight implements BlockServiceClient GetLatestHeight - disabled client
+func (*disabledBlockServiceClient) GetLatestHeight(context.Context, chan<- int64) error {
 	panic("block service client is disabled")
 }

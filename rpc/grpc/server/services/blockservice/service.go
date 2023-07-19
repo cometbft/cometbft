@@ -110,10 +110,8 @@ func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest,
 		default:
 			continue
 		}
-		err := sub.Err()
-		if err != nil {
-			err := status.Error(codes.Internal, "error in new block subscription")
-			return err
+		if sub.Err() != nil {
+			return status.Error(codes.Internal, "error in new block subscription")
 		}
 	}
 }

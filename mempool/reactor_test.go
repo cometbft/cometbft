@@ -141,11 +141,7 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 	}
 
 	// create random transactions
-	txs := make(types.Txs, numTxs)
-	for i := 0; i < numTxs; i++ {
-		txBytes := kvstore.NewRandomTx(20)
-		txs[i] = txBytes
-	}
+	txs := NewRandomTxs(numTxs, 20)
 
 	const peerID0 = 0
 	const peerID1 = 1

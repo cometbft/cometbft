@@ -112,14 +112,20 @@ func callCheckTx(t *testing.T, mp Mempool, txs types.Txs) {
 	}
 }
 
+// Generate a list of random transactions
+func NewRandomTxs(numTxs int, txLen int) types.Txs {
+	txs := make(types.Txs, numTxs)
+	for i := 0; i < numTxs; i++ {
+		txBytes := kvstore.NewRandomTx(txLen)
+		txs[i] = txBytes
+	}
+	return txs
+}
+
 // Generate a list of random transactions of a given size and call CheckTx on
 // each of them.
 func checkTxs(t *testing.T, mp Mempool, count int) types.Txs {
-	txs := make(types.Txs, count)
-	for i := 0; i < count; i++ {
-		txBytes := kvstore.NewRandomTx(20)
-		txs[i] = txBytes
-	}
+	txs := NewRandomTxs(count, 20)
 	callCheckTx(t, mp, txs)
 	return txs
 }
@@ -708,10 +714,7 @@ func TestMempoolRemoteAppConcurrency(t *testing.T) {
 	// generate small number of txs
 	nTxs := 10
 	txLen := 200
-	txs := make([]types.Tx, nTxs)
-	for i := 0; i < nTxs; i++ {
-		txs[i] = kvstore.NewRandomTx(txLen)
-	}
+	txs := NewRandomTxs(nTxs, txLen)
 
 	// simulate a group of peers sending them over and over
 	N := cfg.Mempool.Size

@@ -39,7 +39,7 @@ type CListMempool struct {
 	preCheck  PreCheckFunc
 	postCheck PostCheckFunc
 
-	txs          *clist.CList // concurrent linked-list of valid txs
+	txs          *clist.CList // concurrent linked-list of good txs
 	proxyAppConn proxy.AppConnMempool
 
 	// Track whether we're rechecking txs.
@@ -405,11 +405,11 @@ func (mem *CListMempool) resCbFirstTime(
 			}
 
 			// Check transaction not already in the mempool
-			if elem, ok := mem.txsMap.Load(types.Tx(tx).Key()); ok {
-				memTx := elem.(*clist.CElement).Value.(*mempoolTx)
+			if e, ok := mem.txsMap.Load(types.Tx(tx).Key()); ok {
+				memTx := e.(*clist.CElement).Value.(*mempoolTx)
 				memTx.addSender(txInfo.SenderID)
 				mem.logger.Debug(
-					"transaction already in mempool, not adding it again",
+					"transaction already there, not adding it again",
 					"tx", types.Tx(tx).Hash(),
 					"res", r,
 					"height", mem.height,
@@ -426,7 +426,7 @@ func (mem *CListMempool) resCbFirstTime(
 			memTx.addSender(txInfo.SenderID)
 			mem.addTx(memTx)
 			mem.logger.Debug(
-				"added valid transaction to mempool",
+				"added good transaction",
 				"tx", types.Tx(tx).Hash(),
 				"res", r,
 				"height", memTx.height,
@@ -434,8 +434,9 @@ func (mem *CListMempool) resCbFirstTime(
 			)
 			mem.notifyTxsAvailable()
 		} else {
+			// ignore bad transaction
 			mem.logger.Debug(
-				"rejected invalid transaction",
+				"rejected bad transaction",
 				"tx", types.Tx(tx).Hash(),
 				"peerID", txInfo.SenderP2PID,
 				"res", r,

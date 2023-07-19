@@ -85,7 +85,7 @@ func (p *Pruner) SetPruningHeight(retainHeightInfo RetainHeightInfo) (retainHeig
 				err = p.stateStore.SaveApplicationRetainHeight(retainHeightInfo.Height)
 				return retainHeightInfo.Height, err
 			}
-			return
+			return 0, err
 		}
 		if currentRetainHeight > retainHeightInfo.Height {
 			return currentRetainHeight, errors.New("cannot set a height lower than previously requested - blocks might have already been pruned")
@@ -99,9 +99,10 @@ func (p *Pruner) SetPruningHeight(retainHeightInfo RetainHeightInfo) (retainHeig
 				err = p.stateStore.SaveDataCompanionRetainHeight(retainHeightInfo.Height)
 				return retainHeightInfo.Height, err
 			}
-			return
+			return 0, err
 		}
 		if currentRetainHeight > retainHeightInfo.Height {
+			return currentRetainHeight, errors.New("cannot set a height lower than previously requested - blocks might have already been pruned")
 		}
 		err = p.stateStore.SaveDataCompanionRetainHeight(retainHeightInfo.Height)
 		return
@@ -112,13 +113,13 @@ func (p *Pruner) SetPruningHeight(retainHeightInfo RetainHeightInfo) (retainHeig
 				err = p.stateStore.SaveABCIResRetainHeight(retainHeightInfo.Height)
 				return retainHeightInfo.Height, err
 			}
-			return
+			return 0, err
 		}
 		if currentRetainHeight > retainHeightInfo.Height {
 			return currentRetainHeight, errors.New("cannot set a height lower than previously requested - blocks might have already been pruned")
 		}
 		err = p.stateStore.SaveABCIResRetainHeight(retainHeightInfo.Height)
-		return
+		return retainHeightInfo.Height, err
 	}
 
 	return 0, nil
@@ -172,9 +173,8 @@ func (p *Pruner) findMinRetainHeight() int64 {
 	if !noAppRetainHeightSet && !noDCRetainHeight {
 		if appRetainHeight < dcRetainHeight {
 			return appRetainHeight
-		} else {
-			return dcRetainHeight
 		}
+		return dcRetainHeight
 	}
 
 	if !noAppRetainHeightSet {

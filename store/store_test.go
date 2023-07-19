@@ -136,7 +136,7 @@ func newInMemoryBlockStore() (*BlockStore, dbm.DB) {
 
 // TODO: This test should be simplified ...
 
-func BenchmarkBlockStoreSaveLoadBlock(t *testing.B) {
+func TestBlockStoreSaveLoadBlock(t *testing.T) {
 	state, bs, cleanup := makeStateAndBlockStore()
 	defer cleanup()
 	require.Equal(t, bs.Base(), int64(0), "initially the base should be zero")

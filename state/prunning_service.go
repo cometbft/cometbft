@@ -25,8 +25,7 @@ var (
 
 type Pruner struct {
 	service.BaseService
-	currentRetainHeight int64
-	logger              log.Logger
+	logger log.Logger
 	// DB to which we save the retain heights
 	bs BlockStore
 	// State store to prune state from
@@ -89,7 +88,7 @@ func (p *Pruner) SetPruningHeight(retainHeightInfo RetainHeightInfo) (retainHeig
 			return
 		}
 		if currentRetainHeight > retainHeightInfo.Height {
-			return currentRetainHeight, errors.New("lower height already set")
+			return currentRetainHeight, errors.New("cannot set a height lower than previously requested - blocks might have already been pruned")
 		}
 		err = p.stateStore.SaveApplicationRetainHeight(retainHeightInfo.Height)
 		return
@@ -103,7 +102,6 @@ func (p *Pruner) SetPruningHeight(retainHeightInfo RetainHeightInfo) (retainHeig
 			return
 		}
 		if currentRetainHeight > retainHeightInfo.Height {
-			return currentRetainHeight, errors.New("lower height already set")
 		}
 		err = p.stateStore.SaveDataCompanionRetainHeight(retainHeightInfo.Height)
 		return
@@ -117,7 +115,7 @@ func (p *Pruner) SetPruningHeight(retainHeightInfo RetainHeightInfo) (retainHeig
 			return
 		}
 		if currentRetainHeight > retainHeightInfo.Height {
-			return currentRetainHeight, errors.New("lower height already set")
+			return currentRetainHeight, errors.New("cannot set a height lower than previously requested - blocks might have already been pruned")
 		}
 		err = p.stateStore.SaveABCIResRetainHeight(retainHeightInfo.Height)
 		return
@@ -208,15 +206,15 @@ func (p *Pruner) pruneBlocks(height int64) (pruned uint64, evRetainHeight int64,
 	p.logger.Info(fmt.Sprintf("Received pruning request for %d. Accepted retain height is : %d", height, height))
 	pruned, evRetainHeight, err = p.bs.PruneBlocks(height, state)
 	if err != nil {
-		p.logger.Error(fmt.Sprintf("failed to prune blocks for retain height %d with error: %s", p.currentRetainHeight, err))
+		p.logger.Error(fmt.Sprintf("failed to prune blocks for retain height %d with error: %s", height, err))
 	} else {
-		p.logger.Info("pruned blocks", "pruned", pruned, "retain_height", p.currentRetainHeight)
+		p.logger.Info("pruned blocks", "pruned", pruned, "retain_height", height)
 
 	}
-	// err = p.stateStore.PruneStates(base, height, evRetainHeight)
-	// if err != nil {
-	// 	p.logger.Error(fmt.Sprintf("failed to prune the state store with error: %s ", err))
-	// }
+	err = p.stateStore.PruneStates(base, height, evRetainHeight)
+	if err != nil {
+		p.logger.Error(fmt.Sprintf("failed to prune the state store with error: %s ", err))
+	}
 	return
 }
 

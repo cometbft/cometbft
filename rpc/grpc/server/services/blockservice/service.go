@@ -68,8 +68,6 @@ func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByH
 		}
 		return nil, st.Err()
 	}
-	var blockProto *cmtproto.Block
-	var blockIDProto cmtproto.BlockID
 
 	block := s.store.LoadBlock(height)
 	blockProto, err := block.ToProto()

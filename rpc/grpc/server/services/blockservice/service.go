@@ -100,8 +100,7 @@ func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest,
 			switch eventType := msg.Data().(type) {
 			case types.EventDataNewBlock:
 				if err := stream.Send(&blocksvc.GetLatestHeightResponse{Height: eventType.Block.Height}); err != nil {
-					err := status.Error(codes.Unimplemented, "cannot send stream response")
-					return err
+					return status.Error(codes.Unavailable, "cannot send stream response")
 				}
 			}
 		case <-sub.Canceled():

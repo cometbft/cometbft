@@ -72,7 +72,6 @@ func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByH
 
 // GetLatestHeight implements v1.BlockServiceServer GetLatestHeight method
 func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest, stream blocksvc.BlockService_GetLatestHeightServer) error {
-
 	// Generate a unique subscriber ID based on client address, if not possible, generate a random ID using UUID
 	// The subscriber needs to be unique across all clients
 	var subscriber string

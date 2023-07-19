@@ -6,16 +6,8 @@ BINDIR=${DIR}/../build/
 NETDIR=${DIR}/../networks/
 
 info() {
-    local message=$1
+    local message=$@
     echo >& 2 "["$(date +%s:%N)"] ${message}"
-}
-
-log() {
-    if [[ $(config verbose) -eq 1 ]]
-    then
-	local message=$1
-	echo >& 2 "["$(date +%s:%N)"] ${message}"
-    fi
 }
 
 function geometric {

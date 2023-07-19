@@ -3,12 +3,13 @@
 DIR=$(dirname "${BASH_SOURCE[0]}")
 source ${DIR}/utils.sh
 
-if [ $# -ne 1 ]; then
-    echo "usage: experiments output.csv"
+if [ $# -lt 1 ]; then
+    echo "usage: experiments output.csv [out_degree]"
     exit 1
 fi
 
 FILE=$1
+DEGREE=$2
 TMPL="custom"
 
 echo "nodes;propagation_rate;sent;seen;completion;total_bandwidth;useful_bandwidth;overhead;redundancy;degree;bandwidth" > ${FILE}
@@ -16,7 +17,7 @@ for r in $(seq 50 50 100);
 do
     for i in $(geometric 4 2 2);
     do
-			${DIR}/tmpl-gen.sh ${i} ${r} > ${NETDIR}/${TMPL}.toml
+			${DIR}/tmpl-gen.sh ${i} ${r} ${DEGREE} > ${NETDIR}/${TMPL}.toml
 			${BINDIR}/runner -f ${NETDIR}/${TMPL}.toml custom > ${TMPDIR}/log
 			sent=$(grep "txs sent" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
 			seen=$(grep "txs seen" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')

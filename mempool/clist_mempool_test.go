@@ -654,28 +654,21 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 	mp, cleanup := newMempoolWithAppAndConfig(proxy.NewRemoteClientCreator(sockPath, "socket", true), cfg)
 	defer cleanup()
 
-	// create N + 1 transactions, with N = the capacity of the cache
-	txs := newUniqueTxs(mp.config.CacheSize)
-	tx0 := kvstore.NewTxFromID(mp.config.CacheSize)
-
 	// add tx0
+	var tx0 = kvstore.NewTxFromID(0)
 	err := mp.CheckTx(tx0, nil, TxInfo{})
 	require.NoError(t, err)
 	err = mp.FlushAppConn()
 	require.NoError(t, err)
 
 	// saturate the cache to remove tx0
-	for _, tx := range txs {
-		err = mp.CheckTx(tx, nil, TxInfo{})
+	for i := 1; i <= mp.config.CacheSize; i++ {
+		err = mp.CheckTx(kvstore.NewTxFromID(i), nil, TxInfo{})
 		require.NoError(t, err)
 	}
 	err = mp.FlushAppConn()
 	require.NoError(t, err)
-	assert.False(t, mp.cache.Has(tx0))
-
-	// update one transaction to make space for tx0 in the mempool
-	err = mp.Update(1, txs[:1], abciResponses(1, abci.CodeTypeOK), nil, nil)
-	require.NoError(t, err)
+	assert.False(t, mp.cache.Has(kvstore.NewTxFromID(0)))
 
 	// add again tx0
 	err = mp.CheckTx(tx0, nil, TxInfo{})
@@ -801,18 +794,14 @@ func doCommit(t require.TestingT, mp Mempool, app abci.Application, txs types.Tx
 	for i, tx := range txs {
 		rfb.Txs[i] = tx
 	}
-	_, err := app.FinalizeBlock(context.Background(), rfb)
-	require.NoError(t, err)
-
+	_, e := app.FinalizeBlock(context.Background(), rfb)
+	require.True(t, e == nil)
 	mp.Lock()
-	defer mp.Unlock()
-
-	err = mp.FlushAppConn()
-	require.NoError(t, err)
-
-	_, err = app.Commit(context.Background(), &abci.RequestCommit{})
-	require.NoError(t, err)
-
-	err = mp.Update(height, txs, abciResponses(txs.Len(), abci.CodeTypeOK), nil, nil)
-	require.NoError(t, err)
+	e = mp.FlushAppConn()
+	require.True(t, e == nil)
+	_, e = app.Commit(context.Background(), &abci.RequestCommit{})
+	require.True(t, e == nil)
+	e = mp.Update(height, txs, abciResponses(txs.Len(), abci.CodeTypeOK), nil, nil)
+	require.True(t, e == nil)
+	mp.Unlock()
 }

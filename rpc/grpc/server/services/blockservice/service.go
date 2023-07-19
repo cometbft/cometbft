@@ -79,7 +79,7 @@ func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByH
 
 	blockMeta := s.store.LoadBlockMeta(height)
 
-	blockIDProto = blockMeta.BlockID.ToProto()
+	blockIDProto := blockMeta.BlockID.ToProto()
 
 	return &blocksvc.GetByHeightResponse{
 		BlockId: &blockIDProto,

@@ -142,8 +142,8 @@ service BlockService {
     // disconnections and automatically reconnect.
     rpc GetLatestHeight(GetLatestHeightRequest) returns (stream GetLatestHeightResponse) {}
 
-    // GetBlockByHeight attempts to retrieve the block at a particular height.
-    rpc GetBlockByHeight(GetBlockByHeightRequest) returns (GetBlockByHeightResponse) {}
+    // GetByHeight attempts to retrieve the block at a particular height.
+    rpc GetByHeight(GetByHeightRequest) returns (GetByHeightResponse) {}
 }
 
 message GetLatestHeightRequest {}
@@ -155,14 +155,16 @@ message GetLatestHeightResponse {
     uint64 height = 1;
 }
 
-message GetBlockByHeightRequest {
+message GetByHeightRequest {
     // The height of the block to get. Set to 0 to return the latest block.
     uint64 height = 1;
 }
 
-message GetBlockByHeightResponse {
+message GetByHeightResponse {
+    // The ID associated with the relevant block.
+    tendermint.types.BlockID block_id = 1;
     // Block data for the requested height.
-    tendermint.types.Block block = 1;
+    tendermint.types.Block block = 2;
 }
 ```
 
@@ -192,18 +194,18 @@ package tendermint.services.block_results.v1;
 // BlockResultsService provides information about the execution results for
 // specific blocks.
 service BlockResultsService {
-    // GetBlockResults attempts to retrieve the execution results associated
-    // with a block of a certain height.
-    rpc GetBlockResults(GetBlockResultsRequest) returns (GetBlockResultsResponse)
+    // GetByHeight attempts to retrieve the execution results associated with a
+    // block of a certain height.
+    rpc GetByHeight(GetByHeightRequest) returns (GetByHeightResponse)
 }
 
-message GetBlockResultsRequest {
+message GetByHeightRequest {
     // The height of the block whose results are to be retrieved. Set to 0 to
     // return the latest block's results.
     uint64 height = 1;
 }
 
-message GetBlockResultsResponse {
+message GetByHeightResponse {
     // The height associated with the block results.
     uint64 height = 1;
 

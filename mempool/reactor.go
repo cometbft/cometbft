@@ -250,5 +250,7 @@ func (memR *Reactor) removeSenders(txKey types.TxKey) {
 	memR.txSendersMtx.Lock()
 	defer memR.txSendersMtx.Unlock()
 
-	delete(memR.txSenders, txKey)
+	if memR.txSenders != nil {
+		delete(memR.txSenders, txKey)
+	}
 }

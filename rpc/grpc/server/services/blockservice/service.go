@@ -40,6 +40,10 @@ func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByH
 	// the request is nil, then use the latest height
 	if req.Height == 0 {
 		height = latestHeight
+	} else if req.Height < 0 {
+		description := fmt.Sprintf("got negative height (%d), please specify a height >= 0", req.Height)
+		err := status.Error(codes.InvalidArgument, description)
+		return nil, err
 	} else {
 		height = req.Height
 	}

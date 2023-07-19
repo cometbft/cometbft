@@ -2,12 +2,13 @@
 
 ## Changelog
 
+- 2023-07-19: Choose callbacks option and mark as accepted (@hvanz)
 - 2023-07-10: Add callback alternative (@hvanz)
 - 2023-06-26: Initial draft (@hvanz)
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -99,6 +100,8 @@ implementation.
   transaction, we could now call it directly from `globalCb`, where responses of
   type `CheckTxType_Recheck` are already being handled.
 
+
+## Alternatives
 ### Communicating that a transaction was removed from the mempool
 
 We have identified two approaches for communicating the removal of a transaction
@@ -136,6 +139,13 @@ either:
 In both cases, the transaction will still be in the cache. So, if the same
 transaction is received again, it will be discarded by the cache, and thus not
 added to the mempool and `txSenders`.
+
+### Decision
+
+We have chosen the second option of using a callback because it reduces the
+chances of concurrent accesses to the list of senders and it removes the
+transaction immediately, keeping the mempool and the list of senders better
+synchoronized.
 
 ## Consequences
 

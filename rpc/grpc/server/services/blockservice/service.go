@@ -89,7 +89,6 @@ func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest,
 		subscriber = fmt.Sprintf("subscriber_%s", id.String())
 	}
 
-	var sub types.Subscription
 	sub, err := s.eventBus.Subscribe(context.Background(), subscriber, types.QueryForEvent(types.EventNewBlock), 1)
 	if err != nil {
 		err := status.Error(codes.Internal, "cannot subscribe to new block events")

@@ -307,14 +307,6 @@ func (blockExec *BlockExecutor) ApplyBlock(
 		} else {
 			blockExec.logger.Debug("set pruning height", "pruned", retainHeight, "retain_height", retainHeight)
 		}
-
-		//blockExec.pruningService.PruneChannel <- PruneMsg{Height: retainHeight, PruningRequester: 0, State: state}
-		// pruned, err := blockExec.pruneBlocks(retainHeight, state)
-		// if err != nil {
-		// 	blockExec.logger.Error("failed to prune blocks", "retain_height", retainHeight, "err", err)
-		// } else {
-		// 	blockExec.logger.Debug("pruned blocks", "pruned", pruned, "retain_height", retainHeight)
-		// }
 	}
 
 	// Events are fired after everything else.

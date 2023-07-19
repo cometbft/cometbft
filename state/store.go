@@ -27,7 +27,7 @@ const (
 
 var (
 	ErrKeyNotFound        = errors.New("key not found")
-	ErrInvalidHeightValue = errors.New("negative height value")
+	ErrInvalidHeightValue = errors.New("invalid height value")
 )
 
 //------------------------------------------------------------------------
@@ -83,10 +83,16 @@ type Store interface {
 	PruneABCIResponses(int64) (uint64, error)
 	// SaveApplicationRetainHeight persists the application retain height from the application
 	SaveApplicationRetainHeight(height int64) error
+	// GetApplicationRetainHeight returns the retain height set by the application
 	GetApplicationRetainHeight() (int64, error)
-	// DataCompanionRetainHeight
+	// SaveDataCompanionRetainHeight saves the retain height set by the data companion
 	SaveDataCompanionRetainHeight(height int64) error
+	// GetDataCompanionRetainHeight returns the retain height set by the data companion
 	GetDataCompanionRetainHeight() (int64, error)
+	// SaveABCIResRetainHeight persists the retain height for ABCI results set by the data companion
+	SaveABCIResRetainHeight(height int64) error
+	// GetABCIResRetainHeight returns the last saved retain height for ABCI results set by the data companion
+	GetABCIResRetainHeight() (int64, error)
 	// Close closes the connection with the database
 	Close() error
 }
@@ -568,6 +574,24 @@ func (store dbStore) SaveDataCompanionRetainHeight(height int64) error {
 }
 func (store dbStore) GetDataCompanionRetainHeight() (int64, error) {
 	buf, err := store.getKey(DataCompanionRetainHeightKey)
+	if err != nil {
+		return 0, err
+	}
+	height := int64FromBytes(buf)
+
+	if height < 0 {
+		return 0, ErrInvalidHeightValue
+	}
+
+	return height, nil
+}
+
+// DataCompanionRetainHeight
+func (store dbStore) SaveABCIResRetainHeight(height int64) error {
+	return store.db.SetSync(ABCIResultsRetainHeightKey, int64ToBytes(height))
+}
+func (store dbStore) GetABCIResRetainHeight() (int64, error) {
+	buf, err := store.getKey(ABCIResultsRetainHeightKey)
 	if err != nil {
 		return 0, err
 	}

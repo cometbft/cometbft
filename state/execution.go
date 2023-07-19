@@ -76,6 +76,7 @@ func NewBlockExecutor(
 		blockStore: blockStore,
 	}
 	res.pruningService = NewPruner(stateStore, blockStore, logger)
+	res.pruningService.Start()
 	for _, option := range options {
 		option(res)
 	}
@@ -299,14 +300,14 @@ func (blockExec *BlockExecutor) ApplyBlock(
 
 	// Prune old heights, if requested by ABCI app.
 	if retainHeight > 0 {
-		go func() {
-			pruned, _, err := blockExec.pruningService.PruneBlocks(retainHeight, AppRequester, state)
-			if err != nil {
-				blockExec.logger.Error("failed to prune blocks", "retain_height", retainHeight, "err", err)
-			} else {
-				blockExec.logger.Debug("pruned blocks", "pruned", pruned, "retain_height", retainHeight)
-			}
-		}()
+
+		retainHeight, err := blockExec.pruningService.SetPruningHeight(RetainHeightInfo{Height: retainHeight, Requester: AppRequester})
+		if err != nil {
+			blockExec.logger.Error("failed to set height", "retainHeight", retainHeight, "err", err)
+		} else {
+			blockExec.logger.Debug("set pruning height", "pruned", retainHeight, "retain_height", retainHeight)
+		}
+
 		//blockExec.pruningService.PruneChannel <- PruneMsg{Height: retainHeight, PruningRequester: 0, State: state}
 		// pruned, err := blockExec.pruneBlocks(retainHeight, state)
 		// if err != nil {

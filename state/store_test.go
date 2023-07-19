@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -260,7 +261,9 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 		}
 		// create new db and state store and set discard abciresponses to false.
 		stateDB = dbm.NewMemDB()
+
 		stateStore = sm.NewStore(stateDB, sm.StoreOptions{DiscardABCIResponses: false})
+
 		height := int64(10)
 		// save the last abci response.
 		err = stateStore.SaveFinalizeBlockResponse(height, response1)
@@ -275,7 +278,13 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 		require.NoError(t, err, responses)
 		require.Equal(t, response1, responses)
 		pruner := sm.NewPruner(stateStore, nil, log.TestingLogger())
-		pruner.PruneABCIResponses(height)
+
+		// pruner.Start()
+		h, err := pruner.SetPruningHeight(sm.RetainHeightInfo{Height: height, Requester: sm.ABCIResRetainHeightRequester})
+		require.Equal(t, h, height)
+		require.NoError(t, err)
+		time.Sleep(time.Second * 10)
+		//pruner.PruneABCIResponses(height)
 
 		// Prune the responses we added (by setting the pruning height to be height + 1)
 		_, err = stateStore.LoadFinalizeBlockResponse(height + 1)

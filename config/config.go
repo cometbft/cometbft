@@ -554,8 +554,6 @@ func (cfg *GRPCConfig) ValidateBasic() error {
 	return nil
 }
 
-// GRPC Version Service configuration
-
 type GRPCVersionServiceConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }

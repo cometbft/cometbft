@@ -5,15 +5,13 @@ import (
 	"net"
 	"strings"
 
-	"github.com/cometbft/cometbft/store"
-	"github.com/cometbft/cometbft/types"
-	"google.golang.org/grpc/reflection"
-
 	"github.com/cometbft/cometbft/libs/log"
 	pbblocksvc "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
 	pbversionsvc "github.com/cometbft/cometbft/proto/tendermint/services/version/v1"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/blockservice"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/versionservice"
+	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/types"
 	"google.golang.org/grpc"
 )
 
@@ -94,7 +92,6 @@ func Serve(listener net.Listener, opts ...Option) error {
 		opt(b)
 	}
 	server := grpc.NewServer(b.grpcOpts...)
-	reflection.Register(server)
 	if b.versionService != nil {
 		pbversionsvc.RegisterVersionServiceServer(server, b.versionService)
 		b.logger.Debug("Registered version service")

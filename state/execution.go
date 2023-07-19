@@ -42,7 +42,8 @@ type BlockExecutor struct {
 
 	logger log.Logger
 
-	metrics *Metrics
+	metrics        *Metrics
+	pruningService *Pruner
 }
 
 type BlockExecutorOption func(executor *BlockExecutor)
@@ -74,7 +75,7 @@ func NewBlockExecutor(
 		metrics:    NopMetrics(),
 		blockStore: blockStore,
 	}
-
+	res.pruningService = NewPruner(stateStore, blockStore, logger)
 	for _, option := range options {
 		option(res)
 	}
@@ -298,12 +299,21 @@ func (blockExec *BlockExecutor) ApplyBlock(
 
 	// Prune old heights, if requested by ABCI app.
 	if retainHeight > 0 {
-		pruned, err := blockExec.pruneBlocks(retainHeight, state)
-		if err != nil {
-			blockExec.logger.Error("failed to prune blocks", "retain_height", retainHeight, "err", err)
-		} else {
-			blockExec.logger.Debug("pruned blocks", "pruned", pruned, "retain_height", retainHeight)
-		}
+		go func() {
+			pruned, _, err := blockExec.pruningService.PruneBlocks(retainHeight, AppRequester, state)
+			if err != nil {
+				blockExec.logger.Error("failed to prune blocks", "retain_height", retainHeight, "err", err)
+			} else {
+				blockExec.logger.Debug("pruned blocks", "pruned", pruned, "retain_height", retainHeight)
+			}
+		}()
+		//blockExec.pruningService.PruneChannel <- PruneMsg{Height: retainHeight, PruningRequester: 0, State: state}
+		// pruned, err := blockExec.pruneBlocks(retainHeight, state)
+		// if err != nil {
+		// 	blockExec.logger.Error("failed to prune blocks", "retain_height", retainHeight, "err", err)
+		// } else {
+		// 	blockExec.logger.Debug("pruned blocks", "pruned", pruned, "retain_height", retainHeight)
+		// }
 	}
 
 	// Events are fired after everything else.

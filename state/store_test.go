@@ -14,6 +14,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/internal/test"
+	"github.com/cometbft/cometbft/libs/log"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
 	sm "github.com/cometbft/cometbft/state"
@@ -242,6 +243,45 @@ func sliceToMap(s []int64) map[int64]bool {
 	return m
 }
 
+func TestFinalizeBlockResponsePruning(t *testing.T) {
+	t.Run("Not persisting responses", func(t *testing.T) {
+		stateDB := dbm.NewMemDB()
+		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+			DiscardABCIResponses: false,
+		})
+		responses, err := stateStore.LoadFinalizeBlockResponse(1)
+		require.Error(t, err)
+		require.Nil(t, responses)
+		// stub the abciresponses.
+		response1 := &abci.ResponseFinalizeBlock{
+			TxResults: []*abci.ExecTxResult{
+				{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
+			},
+		}
+		// create new db and state store and set discard abciresponses to false.
+		stateDB = dbm.NewMemDB()
+		stateStore = sm.NewStore(stateDB, sm.StoreOptions{DiscardABCIResponses: false})
+		height := int64(10)
+		// save the last abci response.
+		err = stateStore.SaveFinalizeBlockResponse(height, response1)
+		require.NoError(t, err)
+		// search for the last finalize block response and check if it has saved.
+		lastResponse, err := stateStore.LoadLastFinalizeBlockResponse(height)
+		require.NoError(t, err)
+		// check to see if the saved response height is the same as the loaded height.
+		assert.Equal(t, lastResponse, response1)
+		// check if the abci response didnt save in the abciresponses.
+		responses, err = stateStore.LoadFinalizeBlockResponse(height)
+		require.NoError(t, err, responses)
+		require.Equal(t, response1, responses)
+		pruner := sm.NewPruner(stateStore, nil, log.TestingLogger())
+		pruner.PruneABCIResponses(height)
+
+		// Prune the responses we added (by setting the pruning height to be height + 1)
+		_, err = stateStore.LoadFinalizeBlockResponse(height + 1)
+		require.Error(t, err)
+	})
+}
 func TestLastFinalizeBlockResponses(t *testing.T) {
 	// create an empty state store.
 	t.Run("Not persisting responses", func(t *testing.T) {

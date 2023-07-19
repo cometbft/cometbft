@@ -51,22 +51,7 @@ func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByH
 	// check if the height requested is not higher
 	// than the latest height in the store
 	if height > latestHeight {
-		st := status.New(codes.InvalidArgument, "invalid height")
-		description := fmt.Sprintf("height requested (%d) is higher than the latest available height (%d)", height, latestHeight)
-		v := &errdetails.BadRequest_FieldViolation{
-			Field:       "height",
-			Description: description,
-		}
-		br := &errdetails.BadRequest{}
-		br.FieldViolations = append(br.FieldViolations, v)
-		st, err := st.WithDetails(br)
-		// if there is an issue adding details just return a simple
-		// error message without details
-		if err != nil {
-			err := status.Error(codes.InvalidArgument, description)
-			return nil, err
-		}
-		return nil, st.Err()
+		return nil, status.Errorf(codes.InvalidArgument, "height requested (%d) is higher than the latest available height (%d)", height, latestHeight)
 	}
 
 	block := s.store.LoadBlock(height)

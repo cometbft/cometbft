@@ -6,13 +6,10 @@ import (
 
 	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
 	blocksvc "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 	"github.com/google/uuid"
-	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 )
 
@@ -72,22 +69,14 @@ func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByH
 
 // GetLatestHeight implements v1.BlockServiceServer GetLatestHeight method
 func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest, stream blocksvc.BlockService_GetLatestHeightServer) error {
-	// Generate a unique subscriber ID based on client address, if not possible, generate a random ID using UUID
+	// Generate a unique subscriber ID using a UUID
 	// The subscriber needs to be unique across all clients
-	var subscriber string
-	ctx := stream.Context()
-	p, ok := peer.FromContext(ctx)
-	if ok {
-		subscriber = fmt.Sprintf("subscriber_%s", p.Addr.String())
-	} else {
-		id, err := uuid.NewUUID()
-		if err != nil {
-			// cannot generate unique id
-			err := status.Error(codes.Internal, "error generating a subscriber id, cannot subscribe to new block events")
-			return err
-		}
-		subscriber = fmt.Sprintf("subscriber_%s", id.String())
+	id, err := uuid.NewUUID()
+	if err != nil {
+		// cannot generate unique id
+		return status.Error(codes.Internal, "error generating a subscriber id, cannot subscribe to new block events")
 	}
+	subscriber := fmt.Sprintf("subscriber_%s", id.String())
 
 	sub, err := s.eventBus.Subscribe(context.Background(), subscriber, types.QueryForEvent(types.EventNewBlock), 1)
 	if err != nil {

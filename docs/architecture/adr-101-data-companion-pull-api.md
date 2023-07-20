@@ -81,20 +81,10 @@ Two parameters are proposed as a necessary part of the pruning API:
   The node will prune blocks to whichever is lower between the pruning service
   and application block retain heights.
 
-  The default value is 0, which indicates that only the application block retain
-  height must be taken into consideration.
-
 - **Pruning service block results retain height**, which influences the height
   to which the node will retain block results.
 
-  The default value is 0, which indicates that all block results will be
-  retained unless the `storage.discard_abci_responses` parameter is enabled, in
-  which case no block results will be stored except those that are necessary to
-  facilitate consensus.
-
-These parameters need to be durable (i.e. stored on disk). Setting either of
-these two values to 0 after they were previously non-zero will effectively
-disable that specific facet of the pruning behaviour.
+These parameters need to be durable (i.e. stored on disk).
 
 ### gRPC API
 
@@ -295,6 +285,33 @@ The following configuration file update is proposed to support the data
 companion API.
 
 ```toml
+[storage]
+
+#
+# Storage pruning configuration relating only to the data companion.
+#
+[storage.pruning.data_companion]
+
+# Whether automatic pruning respects values set by the data companion. Disabled
+# by default. All other parameters in this section are ignored when this is
+# disabled.
+#
+# If disabled, only the application retain height will influence block pruning
+# (but not block results pruning). Only enabling this at a later stage will
+# potentially mean that blocks below the application-set retain height at the
+# time will not be available to the data companion.
+enabled = false
+
+# The initial value for the data companion block retain height if the data
+# companion has not yet explicitly set one. If the data companion has already
+# set a block retain height, this is ignored.
+initial_block_retain_height = 0
+
+# The initial value for the data companion block results retain height if the
+# data companion has not yet explicitly set one. If the data companion has
+# already set a block results retain height, this is ignored.
+initial_block_results_retain_height = 0
+
 #
 # This is the envisaged configuration section for the gRPC API that will be
 # introduced as part of https://github.com/cometbft/cometbft/issues/81

@@ -225,22 +225,22 @@ service PruningService {
     // The lower of this retain height and that set by the application in its
     // Commit response will be used by the node to determine which heights' data
     // can be pruned.
-    rpc SetBlockRetainHeight(SetBlockRetainHeightRequest) returns (SetBlockRetainHeightResponse)
+    rpc SetBlockRetainHeight(SetBlockRetainHeightRequest) returns (SetBlockRetainHeightResponse);
 
     // GetBlockRetainHeight returns information about the retain height
     // parameters used by the node to influence block retention/pruning.
-    rpc GetBlockRetainHeight(GetBlockRetainHeightRequest) returns (GetBlockRetainHeightResponse)
+    rpc GetBlockRetainHeight(GetBlockRetainHeightRequest) returns (GetBlockRetainHeightResponse);
 
     // SetBlockResultsRetainHeightRequest indicates to the node that it can
     // safely prune all block results data up to the specified height.
     //
     // The node will always store the block results for the latest height to
     // help facilitate crash recovery.
-    rpc SetBlockResultsRetainHeight(SetBlockResultsRetainHeightRequest) returns (SetBlockResultsRetainHeightResponse)
+    rpc SetBlockResultsRetainHeight(SetBlockResultsRetainHeightRequest) returns (SetBlockResultsRetainHeightResponse);
 
     // GetBlockResultsRetainHeight returns information about the retain height
     // parameters used by the node to influence block results retention/pruning.
-    rpc GetBlockResultsRetainHeight(GetBlockResultsRetainHeightRequest) returns (GetBlockResultsRetainHeightResponse)
+    rpc GetBlockResultsRetainHeight(GetBlockResultsRetainHeightRequest) returns (GetBlockResultsRetainHeightResponse);
 }
 
 message SetBlockRetainHeightRequest {

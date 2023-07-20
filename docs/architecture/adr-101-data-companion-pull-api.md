@@ -302,22 +302,22 @@ companion API.
 #
 [grpc]
 
-# The host/port on which to expose non-sensitive gRPC endpoints.
+# The host/port on which to expose non-privileged gRPC endpoints.
 laddr = "tcp://localhost:26654"
 
 #
-# Configuration for sensitive gRPC endpoints, which should **never** be exposed
+# Configuration for privileged gRPC endpoints, which should **never** be exposed
 # to the public internet.
 #
-[grpc.sensitive]
-# The host/port on which to expose sensitive gRPC endpoints.
+[grpc.privileged]
+# The host/port on which to expose privileged gRPC endpoints.
 laddr = "tcp://localhost:26655"
 
 #
 # Configuration specifically for the gRPC pruning service, which is considered a
-# sensitive service.
+# privileged service.
 #
-[grpc.sensitive.pruning_service]
+[grpc.privileged.pruning_service]
 
 # Only controls whether the pruning service is accessible via the gRPC API - not
 # whether a previously set pruning service retain height is honoured by the
@@ -340,7 +340,7 @@ interaction between a node and its data companion:
   by the pruning service. This can give operators insight into how the data
   companion is affecting pruning.
 
-Other metrics may be proposed as part of the non-sensitive gRPC API that could
+Other metrics may be proposed as part of the non-privileged gRPC API that could
 assist operators in understanding the health of the interaction with the data
 companion, but only if the data companion is the exclusive user of those APIs.
 

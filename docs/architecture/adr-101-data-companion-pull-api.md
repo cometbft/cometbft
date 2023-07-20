@@ -336,9 +336,10 @@ enabled = false
 The following metrics are proposed to be added to monitor the health of the
 interaction between a node and its data companion:
 
-- `grpc_pruning_service_retain_height` - The current retain height as requested
-  by the pruning service. This can give operators insight into how the data
-  companion is affecting pruning.
+- `pruning_service_block_retain_height` - The current block retain height as
+  requested by the pruning service.
+- `pruning_service_block_results_retain_height` - The current block results
+  retain height as requested by the pruning service.
 
 Other metrics may be proposed as part of the non-privileged gRPC API that could
 assist operators in understanding the health of the interaction with the data

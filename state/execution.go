@@ -88,7 +88,10 @@ func NewBlockExecutor(
 }
 
 func (blockExec *BlockExecutor) StopPruningService() {
-	blockExec.pruningService.Stop()
+	err := blockExec.pruningService.Stop()
+	if err != nil {
+		blockExec.logger.Error(err.Error())
+	}
 }
 
 func (blockExec *BlockExecutor) Store() Store {
@@ -726,22 +729,4 @@ func ExecCommitBlock(
 
 	// ResponseCommit has no error or log
 	return resp.AppHash, nil
-}
-
-func (blockExec *BlockExecutor) pruneBlocks(retainHeight int64, state State) (uint64, error) {
-	base := blockExec.blockStore.Base()
-	if retainHeight <= base {
-		return 0, nil
-	}
-
-	amountPruned, prunedHeaderHeight, err := blockExec.blockStore.PruneBlocks(retainHeight, state)
-	if err != nil {
-		return 0, fmt.Errorf("failed to prune block store: %w", err)
-	}
-
-	err = blockExec.Store().PruneStates(base, retainHeight, prunedHeaderHeight)
-	if err != nil {
-		return 0, fmt.Errorf("failed to prune state store: %w", err)
-	}
-	return amountPruned, nil
 }

@@ -541,7 +541,7 @@ func TestPruningService(t *testing.T) {
 	assert.EqualValues(t, 0, bs.Height())
 	assert.EqualValues(t, 0, bs.Size())
 
-	pruningService := sm.NewPruner(stateStore, bs, log.TestingLogger())
+	pruningService := sm.NewPruner(stateStore, bs, log.TestingLogger(), sm.PrunerSleepTime(time.Second*2))
 
 	_, err = pruningService.SetPruningHeight(sm.RetainHeightInfo{Height: 1, Requester: sm.AppRequester}) //(1, sm.AppRequester, state)
 	require.Error(t, err)
@@ -643,8 +643,10 @@ func TestPruningService(t *testing.T) {
 
 	// Pruning to the current height should work
 	_, err = pruningService.SetPruningHeight(sm.RetainHeightInfo{Height: 1500, Requester: sm.AppRequester})
-	time.Sleep(time.Second * 10)
 	require.NoError(t, err)
+
+	time.Sleep(time.Second * 10)
+
 	assert.Nil(t, bs.LoadBlock(1499))
 	assert.NotNil(t, bs.LoadBlock(1500))
 	assert.Nil(t, bs.LoadBlock(1501))

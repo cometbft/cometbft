@@ -92,8 +92,8 @@ func (_m *Store) GetApplicationRetainHeight() (int64, error) {
 	return r0, r1
 }
 
-// GetDataCompanionRetainHeight provides a mock function with given fields:
-func (_m *Store) GetDataCompanionRetainHeight() (int64, error) {
+// GetCompanionBlockRetainHeight provides a mock function with given fields:
+func (_m *Store) GetCompanionBlockRetainHeight() (int64, error) {
 	ret := _m.Called()
 
 	var r0 int64
@@ -370,8 +370,8 @@ func (_m *Store) SaveApplicationRetainHeight(height int64) error {
 	return r0
 }
 
-// SaveDataCompanionRetainHeight provides a mock function with given fields: height
-func (_m *Store) SaveDataCompanionRetainHeight(height int64) error {
+// SaveCompanionBlockRetainHeight provides a mock function with given fields: height
+func (_m *Store) SaveCompanionBlockRetainHeight(height int64) error {
 	ret := _m.Called(height)
 
 	var r0 error

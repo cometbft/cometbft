@@ -2,7 +2,6 @@ package state
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/cometbft/cometbft/libs/log"
@@ -18,19 +17,27 @@ const (
 )
 
 var (
-	AppRetainHeightKey           = []byte("AppRetainHeightKey")
-	DataCompanionRetainHeightKey = []byte("DCRetainHeightKey")
-	ABCIResultsRetainHeightKey   = []byte("ABCIResRetainHeightKey")
+	AppRetainHeightKey            = []byte("AppRetainHeightKey")
+	CompanionBlockRetainHeightKey = []byte("DCBlockRetainHeightKey")
+	ABCIResultsRetainHeightKey    = []byte("ABCIResRetainHeightKey")
 )
 
+// Pruner is a service that reads the retain heights for blocks, state and ABCI results from the database
+// and prunes the corresponding data based on the minimum retain height set.
+// The service runs periodically (prunerSleepTime - 10s by default) and re-evaluates the retain height.
 type Pruner struct {
 	service.BaseService
 	logger log.Logger
 	// DB to which we save the retain heights
 	bs BlockStore
 	// State store to prune state from
-	stateStore    Store
-	pruningTicker *time.Ticker
+	stateStore      Store
+	prunerSleepTime time.Duration
+}
+type PrunerOption func(*Pruner)
+
+func PrunerSleepTime(t time.Duration) PrunerOption {
+	return func(p *Pruner) { p.prunerSleepTime = t }
 }
 
 type RetainHeightInfo struct {
@@ -38,18 +45,21 @@ type RetainHeightInfo struct {
 	Requester PruningRequester
 }
 
-func NewPruner(stateStore Store, bs BlockStore, logger log.Logger) *Pruner {
+func NewPruner(stateStore Store, bs BlockStore, logger log.Logger, options ...PrunerOption) *Pruner {
 	p := &Pruner{
-		bs:            bs,
-		stateStore:    stateStore,
-		logger:        logger,
-		pruningTicker: time.NewTicker(time.Second * 10),
+		bs:              bs,
+		stateStore:      stateStore,
+		logger:          logger,
+		prunerSleepTime: time.Second * 10,
 	}
-	p.BaseService = *service.NewBaseService(logger, "Prunning service", p)
+	p.BaseService = *service.NewBaseService(logger, "Pruner", p)
+	for _, option := range options {
+		option(p)
+	}
+
 	return p
 }
 
-// If OnStart() returns an error, it's returned by Start()
 func (p *Pruner) OnStart() error {
 	if err := p.BaseService.OnStart(); err != nil {
 		return err
@@ -58,11 +68,7 @@ func (p *Pruner) OnStart() error {
 	return nil
 }
 
-// Stop the service.
-// If it's already stopped, will return an error.
-// OnStop must never error.
 func (p *Pruner) OnStop() {
-	p.pruningTicker.Stop()
 	p.BaseService.OnStop()
 
 }
@@ -96,10 +102,10 @@ func (p *Pruner) SetPruningHeight(retainHeightInfo RetainHeightInfo) (retainHeig
 		err = p.stateStore.SaveApplicationRetainHeight(retainHeightInfo.Height)
 		return retainHeightInfo.Height, err
 	case DataCompanionRequester:
-		currentRetainHeight, err = p.stateStore.GetDataCompanionRetainHeight()
+		currentRetainHeight, err = p.stateStore.GetCompanionBlockRetainHeight()
 		if err != nil {
 			if err == ErrKeyNotFound {
-				err = p.stateStore.SaveDataCompanionRetainHeight(retainHeightInfo.Height)
+				err = p.stateStore.SaveCompanionBlockRetainHeight(retainHeightInfo.Height)
 				return retainHeightInfo.Height, err
 			}
 			return 0, err
@@ -107,7 +113,7 @@ func (p *Pruner) SetPruningHeight(retainHeightInfo RetainHeightInfo) (retainHeig
 		if currentRetainHeight > retainHeightInfo.Height {
 			return currentRetainHeight, errors.New("cannot set a height lower than previously requested - blocks might have already been pruned")
 		}
-		err = p.stateStore.SaveDataCompanionRetainHeight(retainHeightInfo.Height)
+		err = p.stateStore.SaveCompanionBlockRetainHeight(retainHeightInfo.Height)
 		return retainHeightInfo.Height, err
 	case ABCIResRetainHeightRequester:
 		currentRetainHeight, err = p.stateStore.GetABCIResRetainHeight()
@@ -132,11 +138,17 @@ func (p *Pruner) pruningRoutine() {
 	lastABCIResPrunedHeight := int64(0)
 	for {
 		select {
-		case <-p.pruningTicker.C:
+		case <-p.Quit():
+			return
+		default:
 			retainHeight := p.findMinRetainHeight()
 			if retainHeight != lastHeightPruned {
 				pruned, evRetainHeight, err := p.pruneBlocks(retainHeight)
-				p.logger.Info(fmt.Sprintf("Pruned %d, evidence retain height is %d , err %s", pruned, evRetainHeight, err))
+				if err != nil {
+					p.logger.Error("Failed to prune blocks", "err", err)
+				} else {
+					p.logger.Debug("Pruned block(s)", "height", pruned, "evidenceRetainHeight", evRetainHeight)
+				}
 				lastHeightPruned = retainHeight
 			}
 
@@ -144,11 +156,10 @@ func (p *Pruner) pruningRoutine() {
 			if err == nil {
 				if lastABCIResPrunedHeight != ABCIResRetainHeight {
 					pruned, _ := p.stateStore.PruneABCIResponses(ABCIResRetainHeight)
-					p.logger.Info(fmt.Sprintf("Pruned %d abci responses ", pruned))
+					p.logger.Debug("Number of ABCI responses pruned: ", "pruned", pruned)
 				}
 			}
-		case <-p.Quit():
-			return
+			time.Sleep(p.prunerSleepTime)
 		}
 
 	}
@@ -169,7 +180,7 @@ func (p *Pruner) findMinRetainHeight() int64 {
 			return 0
 		}
 	}
-	dcRetainHeight, err := p.stateStore.GetDataCompanionRetainHeight()
+	dcRetainHeight, err := p.stateStore.GetCompanionBlockRetainHeight()
 	if err != nil {
 		if err == ErrKeyNotFound {
 			noDCRetainHeight = true
@@ -204,25 +215,20 @@ func (p *Pruner) pruneBlocks(height int64) (pruned uint64, evRetainHeight int64,
 	var state State
 	state, err = p.stateStore.Load()
 	if err != nil {
-		p.logger.Error("failed to load state, cannot prune")
+		p.logger.Error("Failed to load state, cannot prune")
 		return
 	}
-	p.logger.Info(fmt.Sprintf("Received pruning request for %d. Accepted retain height is : %d", height, height))
+
 	pruned, evRetainHeight, err = p.bs.PruneBlocks(height, state)
 	if err != nil {
-		p.logger.Error(fmt.Sprintf("failed to prune blocks for retain height %d with error: %s", height, err))
+		p.logger.Error("Failed to prune blocks at height", "height", height, "err", err)
 	} else {
-		p.logger.Info("pruned blocks", "pruned", pruned, "retain_height", height)
+		p.logger.Debug("Pruned blocks", "pruned", pruned, "retain_height", height)
 
 	}
 	err = p.stateStore.PruneStates(base, height, evRetainHeight)
 	if err != nil {
-		p.logger.Error(fmt.Sprintf("failed to prune the state store with error: %s ", err))
+		p.logger.Error("Failed to prune the state store", "err", err)
 	}
 	return pruned, evRetainHeight, err
-}
-
-func (p *Pruner) PruneABCIResponses(height int64) (pruned uint64, err error) {
-	pruned, err = p.stateStore.PruneABCIResponses(height)
-	return
 }

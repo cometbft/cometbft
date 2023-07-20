@@ -85,10 +85,10 @@ type Store interface {
 	SaveApplicationRetainHeight(height int64) error
 	// GetApplicationRetainHeight returns the retain height set by the application
 	GetApplicationRetainHeight() (int64, error)
-	// SaveDataCompanionRetainHeight saves the retain height set by the data companion
-	SaveDataCompanionRetainHeight(height int64) error
-	// GetDataCompanionRetainHeight returns the retain height set by the data companion
-	GetDataCompanionRetainHeight() (int64, error)
+	// SaveCompanionBlockRetainHeight saves the retain height set by the data companion
+	SaveCompanionBlockRetainHeight(height int64) error
+	// GetCompanionBlockRetainHeight returns the retain height set by the data companion
+	GetCompanionBlockRetainHeight() (int64, error)
 	// SaveABCIResRetainHeight persists the retain height for ABCI results set by the data companion
 	SaveABCIResRetainHeight(height int64) error
 	// GetABCIResRetainHeight returns the last saved retain height for ABCI results set by the data companion
@@ -579,11 +579,11 @@ func (store dbStore) GetApplicationRetainHeight() (int64, error) {
 }
 
 // DataCompanionRetainHeight
-func (store dbStore) SaveDataCompanionRetainHeight(height int64) error {
-	return store.db.SetSync(DataCompanionRetainHeightKey, int64ToBytes(height))
+func (store dbStore) SaveCompanionBlockRetainHeight(height int64) error {
+	return store.db.SetSync(CompanionBlockRetainHeightKey, int64ToBytes(height))
 }
-func (store dbStore) GetDataCompanionRetainHeight() (int64, error) {
-	buf, err := store.getKey(DataCompanionRetainHeightKey)
+func (store dbStore) GetCompanionBlockRetainHeight() (int64, error) {
+	buf, err := store.getKey(CompanionBlockRetainHeightKey)
 	if err != nil {
 		return 0, err
 	}

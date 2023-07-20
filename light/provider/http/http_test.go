@@ -70,7 +70,9 @@ func TestProvider(t *testing.T) {
 	lb, err = p.LightBlock(context.Background(), lower)
 	require.NoError(t, err)
 	assert.Equal(t, lower, lb.Height)
-
+	// Sleeping because pruning is now asynchrnous and might not yet
+	// have been performed
+	time.Sleep(time.Second * 10)
 	// fetching missing heights (both future and pruned) should return appropriate errors
 	lb, err = p.LightBlock(context.Background(), 1000)
 	require.Error(t, err)

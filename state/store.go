@@ -411,8 +411,8 @@ func (store dbStore) PruneABCIResponses(height int64) (uint64, error) {
 			defer batch.Close()
 		}
 	}
-	batch.WriteSync()
-	return pruned, nil
+	err := batch.WriteSync()
+	return pruned, err
 }
 
 //------------------------------------------------------------------------

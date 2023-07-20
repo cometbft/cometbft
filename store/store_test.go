@@ -522,13 +522,6 @@ func TestLoadBlockPart(t *testing.T) {
 	require.Equal(t, gotPart.(*types.Part), part1,
 		"expecting successful retrieval of previously saved block")
 }
-func genValSet(size int) *types.ValidatorSet {
-	vals := make([]*types.Validator, size)
-	for i := 0; i < size; i++ {
-		vals[i] = types.NewValidator(ed25519.GenPrivKey().PubKey(), 10)
-	}
-	return types.NewValidatorSet(vals)
-}
 
 // This test tests the pruning service and its pruning of the blockstore
 // The state store cannot be pruned here because we do not have proper
@@ -590,12 +583,16 @@ func TestPruningService(t *testing.T) {
 		state.LastValidators = state.Validators
 	}
 
-	stateStore.Save(state)
+	err = stateStore.Save(state)
+	require.NoError(t, err)
 	// Check that basic pruning works
 	_, err = pruningService.SetPruningHeight(sm.RetainHeightInfo{Height: 1200, Requester: sm.AppRequester})
-	pruningService.Start()
 	require.NoError(t, err)
+	err = pruningService.Start()
+	require.NoError(t, err)
+
 	time.Sleep(time.Second * 15)
+
 	assert.EqualValues(t, 1200, bs.Base())
 	assert.EqualValues(t, 1500, bs.Height())
 	assert.EqualValues(t, 301, bs.Size())

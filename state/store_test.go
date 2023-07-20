@@ -293,8 +293,8 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 				{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
 			},
 		}
-		state, bs, callback_f, stateStore := makeStateAndBlockStore()
-		defer callback_f()
+		state, bs, callbackF, stateStore := makeStateAndBlockStore()
+		defer callbackF()
 		height := int64(10)
 		state.LastBlockHeight = height - 1
 
@@ -306,7 +306,8 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 		_, err = stateStore.LoadFinalizeBlockResponse(height - 1)
 		require.NoError(t, err)
 		h, err := pruner.SetPruningHeight(sm.RetainHeightInfo{Height: height, Requester: sm.ABCIResRetainHeightRequester})
-		pruner.Start()
+		err = pruner.Start()
+		require.NoError(t, err)
 		require.Equal(t, h, height)
 		require.NoError(t, err)
 		// Sleep to give time to the pruning service to delete the responses

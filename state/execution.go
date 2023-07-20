@@ -76,12 +76,19 @@ func NewBlockExecutor(
 		blockStore: blockStore,
 	}
 	res.pruningService = NewPruner(stateStore, blockStore, logger)
-	res.pruningService.Start()
+	err := res.pruningService.Start()
+	if err != nil {
+		res.logger.Error(err.Error())
+	}
 	for _, option := range options {
 		option(res)
 	}
 
 	return res
+}
+
+func (blockExec *BlockExecutor) StopPruningService() {
+	blockExec.pruningService.Stop()
 }
 
 func (blockExec *BlockExecutor) Store() Store {

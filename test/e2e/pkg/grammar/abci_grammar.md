@@ -14,15 +14,13 @@ ApplyChunks : ApplyChunk | ApplyChunk ApplyChunks ;
 Recovery :  ConsensusExec ;
 
 ConsensusExec : ConsensusHeights ;
-ConsensusHeights : ConsensusHeight | ConsensusHeight ConsensgiusHeights ;
+ConsensusHeights : ConsensusHeight | ConsensusHeight ConsensusHeights ;
 ConsensusHeight : ConsensusRounds Decide Commit | Decide Commit ;
 ConsensusRounds : ConsensusRound | ConsensusRound ConsensusRounds ;
 ConsensusRound : Proposer | NonProposer ; 
 
-
 Proposer : PrepareProposal | PrepareProposal ProcessProposal ; 
 NonProposer: ProcessProposal ;
-
 
 InitChain : "init_chain" ;
 Decide : "finalize_block" ; 

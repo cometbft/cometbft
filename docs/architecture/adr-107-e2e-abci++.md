@@ -252,6 +252,21 @@ Notice here that the parser can return many errors because the parser returns an
 a grammar production. Usually, the error of interest is the one that has 
 parsed the largest number of tokens. This is why, by default, we are printing only the last error; however, this is also part of the configuration and can be changed. 
 
+**Changing the grammar**
+
+Any modification to the grammar (`test/e2e/pkg/grammar/abci_grammar.md`) requires generating a new parser and lexer. This is done by 
+going to the `test/e2e/` directory and running:
+
+```bash 
+make grammar
+``` 
+Notice here that you need to have `gogll` installed 
+on your machine to run the make successfully. If this is not the case, you can install it with the following command: 
+
+```bash 
+go get github.com/goccmack/gogll/v3
+```  
+
 ### Suporting additional ABCI++ requests
 
 Here we present all the steps we need to do if we want to support other 
@@ -267,7 +282,7 @@ ABCI++ requests in the future:
 Implemented.
 
 To-do list:
-- integrating the generation of parser/lexer into the codebase.
+- adding the CI workflow to check if make grammar is executed. 
 ## Consequences
 
 ### Positive

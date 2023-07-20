@@ -86,6 +86,9 @@ func TestGRPC_Block_GetLatestHeight(t *testing.T) {
 
 	testnet := loadTestnet(t)
 	node := testnet.RandomNode()
+	if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
+		return
+	}
 
 	client, err := node.Client()
 	require.NoError(t, err)

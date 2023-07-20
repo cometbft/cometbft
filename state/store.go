@@ -401,7 +401,17 @@ func (store dbStore) PruneABCIResponses(height int64) (uint64, error) {
 			return pruned, err2
 		}
 		pruned++
+		if pruned%1000 == 0 && pruned > 0 {
+			err := batch.Write()
+			if err != nil {
+				return 0, err
+			}
+			batch.Close()
+			batch = store.db.NewBatch()
+			defer batch.Close()
+		}
 	}
+	batch.WriteSync()
 	return pruned, nil
 }
 

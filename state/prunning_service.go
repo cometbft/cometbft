@@ -29,7 +29,8 @@ type Pruner struct {
 	// DB to which we save the retain heights
 	bs BlockStore
 	// State store to prune state from
-	stateStore Store
+	stateStore    Store
+	pruningTicker *time.Ticker
 }
 
 type RetainHeightInfo struct {
@@ -39,9 +40,10 @@ type RetainHeightInfo struct {
 
 func NewPruner(stateStore Store, bs BlockStore, logger log.Logger) *Pruner {
 	p := &Pruner{
-		bs:         bs,
-		stateStore: stateStore,
-		logger:     logger,
+		bs:            bs,
+		stateStore:    stateStore,
+		logger:        logger,
+		pruningTicker: time.NewTicker(time.Second * 10),
 	}
 	p.BaseService = *service.NewBaseService(logger, "Prunning service", p)
 	return p
@@ -59,8 +61,8 @@ func (p *Pruner) OnStart() error {
 // Stop the service.
 // If it's already stopped, will return an error.
 // OnStop must never error.
-
 func (p *Pruner) OnStop() {
+	p.pruningTicker.Stop()
 	p.BaseService.OnStop()
 
 }
@@ -72,7 +74,8 @@ func (p *Pruner) OnStop() {
 // retain height was already set)
 func (p *Pruner) SetPruningHeight(retainHeightInfo RetainHeightInfo) (retainHeight int64, err error) {
 
-	if retainHeightInfo.Height <= 0 || retainHeightInfo.Height <= p.bs.Base() {
+	// TODO we need to lock retrieval of base and height
+	if retainHeightInfo.Height <= 0 || retainHeightInfo.Height < p.bs.Base() || retainHeightInfo.Height > p.bs.Height() {
 		return 0, ErrInvalidHeightValue
 	}
 
@@ -128,22 +131,26 @@ func (p *Pruner) pruningRoutine() {
 	lastHeightPruned := int64(0)
 	lastABCIResPrunedHeight := int64(0)
 	for {
-		retainHeight := p.findMinRetainHeight()
-		fmt.Println("Min height = ", retainHeight)
-		if retainHeight != lastHeightPruned {
-			_, _, _ = p.pruneBlocks(retainHeight)
-			lastHeightPruned = retainHeight
+		select {
+		case <-p.pruningTicker.C:
+			retainHeight := p.findMinRetainHeight()
+			if retainHeight != lastHeightPruned {
+				pruned, evRetainHeight, err := p.pruneBlocks(retainHeight)
+				p.logger.Info(fmt.Sprintf("Pruned %d, evidence retain height is %d , err %s", pruned, evRetainHeight, err))
+				lastHeightPruned = retainHeight
+			}
+
+			ABCIResRetainHeight, err := p.stateStore.GetABCIResRetainHeight()
+			if err == nil {
+				if lastABCIResPrunedHeight != ABCIResRetainHeight {
+					pruned, _ := p.stateStore.PruneABCIResponses(ABCIResRetainHeight)
+					p.logger.Info(fmt.Sprintf("Pruned %d abci responses ", pruned))
+				}
+			}
+		case <-p.Quit():
+			return
 		}
 
-		ABCIResRetainHeight, err := p.stateStore.GetABCIResRetainHeight()
-		if err != nil {
-			time.Sleep(time.Second * 10)
-		} else {
-			if lastABCIResPrunedHeight != ABCIResRetainHeight {
-				_, _ = p.stateStore.PruneABCIResponses(ABCIResRetainHeight)
-			}
-			time.Sleep(time.Second * 10)
-		}
 	}
 }
 
@@ -194,9 +201,6 @@ func (p *Pruner) pruneBlocks(height int64) (pruned uint64, evRetainHeight int64,
 
 	base := p.bs.Base()
 
-	if base >= height {
-		p.logger.Error(fmt.Sprintf("failed to prune blocks: retain height %d is below or equal to base height %d ", height, base))
-	}
 	var state State
 	state, err = p.stateStore.Load()
 	if err != nil {
@@ -215,7 +219,7 @@ func (p *Pruner) pruneBlocks(height int64) (pruned uint64, evRetainHeight int64,
 	if err != nil {
 		p.logger.Error(fmt.Sprintf("failed to prune the state store with error: %s ", err))
 	}
-	return
+	return pruned, evRetainHeight, err
 }
 
 func (p *Pruner) PruneABCIResponses(height int64) (pruned uint64, err error) {

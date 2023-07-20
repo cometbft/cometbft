@@ -19,6 +19,7 @@ import (
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
 	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -244,8 +245,41 @@ func sliceToMap(s []int64) map[int64]bool {
 	return m
 }
 
+func makeStateAndBlockStore() (sm.State, *store.BlockStore, func(), sm.Store) {
+	config := test.ResetTestRoot("blockchain_reactor_test")
+	blockDB := dbm.NewMemDB()
+	stateDB := dbm.NewMemDB()
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
+	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
+	if err != nil {
+		panic(fmt.Errorf("error constructing state from genesis file: %w", err))
+	}
+	return state, store.NewBlockStore(blockDB), func() { os.RemoveAll(config.RootDir) }, stateStore
+}
+
+func fillStore(t *testing.T, height int64, stateStore sm.Store, bs *store.BlockStore, state sm.State, response1 *abci.ResponseFinalizeBlock) {
+	for h := int64(1); h <= height; h++ {
+		err := stateStore.SaveFinalizeBlockResponse(h, response1)
+		require.NoError(t, err)
+	}
+	// search for the last finalize block response and check if it has saved.
+	lastResponse, err := stateStore.LoadLastFinalizeBlockResponse(height)
+	require.NoError(t, err)
+	// check to see if the saved response height is the same as the loaded height.
+	assert.Equal(t, lastResponse, response1)
+	// check if the abci response didnt save in the abciresponses.
+	responses, err := stateStore.LoadFinalizeBlockResponse(height)
+	require.NoError(t, err, responses)
+	require.Equal(t, response1, responses)
+	b1 := state.MakeBlock(state.LastBlockHeight+1, test.MakeNTxs(state.LastBlockHeight+1, 10), new(types.Commit), nil, nil)
+	partSet, err := b1.MakePartSet(2)
+	require.NoError(t, err)
+	bs.SaveBlock(b1, partSet, &types.Commit{Height: state.LastBlockHeight + 1})
+}
 func TestFinalizeBlockResponsePruning(t *testing.T) {
-	t.Run("Not persisting responses", func(t *testing.T) {
+	t.Run("Persisting responses", func(t *testing.T) {
 		stateDB := dbm.NewMemDB()
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,
@@ -259,36 +293,30 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 				{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
 			},
 		}
-		// create new db and state store and set discard abciresponses to false.
-		stateDB = dbm.NewMemDB()
-
-		stateStore = sm.NewStore(stateDB, sm.StoreOptions{DiscardABCIResponses: false})
-
+		state, bs, callback_f, stateStore := makeStateAndBlockStore()
+		defer callback_f()
 		height := int64(10)
-		// save the last abci response.
-		err = stateStore.SaveFinalizeBlockResponse(height, response1)
-		require.NoError(t, err)
-		// search for the last finalize block response and check if it has saved.
-		lastResponse, err := stateStore.LoadLastFinalizeBlockResponse(height)
-		require.NoError(t, err)
-		// check to see if the saved response height is the same as the loaded height.
-		assert.Equal(t, lastResponse, response1)
-		// check if the abci response didnt save in the abciresponses.
-		responses, err = stateStore.LoadFinalizeBlockResponse(height)
-		require.NoError(t, err, responses)
-		require.Equal(t, response1, responses)
-		pruner := sm.NewPruner(stateStore, nil, log.TestingLogger())
+		state.LastBlockHeight = height - 1
 
-		// pruner.Start()
+		fillStore(t, height, stateStore, bs, state, response1)
+
+		pruner := sm.NewPruner(stateStore, bs, log.TestingLogger())
+
+		// Check that we have written a finalize block result at height 'height - 1'
+		_, err = stateStore.LoadFinalizeBlockResponse(height - 1)
+		require.NoError(t, err)
 		h, err := pruner.SetPruningHeight(sm.RetainHeightInfo{Height: height, Requester: sm.ABCIResRetainHeightRequester})
+		pruner.Start()
 		require.Equal(t, h, height)
 		require.NoError(t, err)
-		time.Sleep(time.Second * 10)
-		//pruner.PruneABCIResponses(height)
+		// Sleep to give time to the pruning service to delete the responses
+		time.Sleep(time.Second * 20)
 
-		// Prune the responses we added (by setting the pruning height to be height + 1)
-		_, err = stateStore.LoadFinalizeBlockResponse(height + 1)
+		// Check that the response at height h - 1 has been deleted
+		_, err = stateStore.LoadFinalizeBlockResponse(height - 1)
 		require.Error(t, err)
+		_, err = stateStore.LoadFinalizeBlockResponse(height)
+		require.NoError(t, err)
 	})
 }
 func TestLastFinalizeBlockResponses(t *testing.T) {

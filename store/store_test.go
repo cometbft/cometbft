@@ -15,6 +15,7 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
@@ -54,8 +55,6 @@ func makeTestExtCommit(height int64, timestamp time.Time) *types.ExtendedCommit 
 
 func makeStateAndBlockStore() (sm.State, *BlockStore, cleanupFunc) {
 	config := test.ResetTestRoot("blockchain_reactor_test")
-	// blockDB := dbm.NewDebugDB("blockDB", dbm.NewMemDB())
-	// stateDB := dbm.NewDebugDB("stateDB", dbm.NewMemDB())
 	blockDB := dbm.NewMemDB()
 	stateDB := dbm.NewMemDB()
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
@@ -523,9 +522,20 @@ func TestLoadBlockPart(t *testing.T) {
 	require.Equal(t, gotPart.(*types.Part), part1,
 		"expecting successful retrieval of previously saved block")
 }
+func genValSet(size int) *types.ValidatorSet {
+	vals := make([]*types.Validator, size)
+	for i := 0; i < size; i++ {
+		vals[i] = types.NewValidator(ed25519.GenPrivKey().PubKey(), 10)
+	}
+	return types.NewValidatorSet(vals)
+}
 
+// This test tests the pruning service and its pruning of the blockstore
+// The state store cannot be pruned here because we do not have proper
+// state stored. The test is expected to pass even though the log should
+// inform about the inability to prune the state store
 func TestPruningService(t *testing.T) {
-	config := test.ResetTestRoot("blockchain_reactor_test")
+	config := test.ResetTestRoot("blockchain_reactor_pruning_test")
 	defer os.RemoveAll(config.RootDir)
 	stateStore := sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
 		DiscardABCIResponses: false,
@@ -539,12 +549,10 @@ func TestPruningService(t *testing.T) {
 	assert.EqualValues(t, 0, bs.Size())
 
 	pruningService := sm.NewPruner(stateStore, bs, log.TestingLogger())
-	pruningService.Start()
 
-	// _, err = pruningService.SetPruningHeight(sm.RetainHeightInfo{Height: 1, Requester: sm.AppRequester}) //(1, sm.AppRequester, state)
-	// require.Error(t, err)
+	_, err = pruningService.SetPruningHeight(sm.RetainHeightInfo{Height: 1, Requester: sm.AppRequester}) //(1, sm.AppRequester, state)
+	require.Error(t, err)
 	_, err = pruningService.SetPruningHeight(sm.RetainHeightInfo{Height: 0, Requester: sm.AppRequester}) //(1, sm.AppRequester, state)
-	//	_, _, err = pruningService.PruneBlocks(0, sm.AppRequester, state)
 	require.Error(t, err)
 
 	// make more than 1000 blocks, to test batch deletions
@@ -566,18 +574,31 @@ func TestPruningService(t *testing.T) {
 	state.ConsensusParams.Evidence.MaxAgeNumBlocks = 400
 	state.ConsensusParams.Evidence.MaxAgeDuration = 1 * time.Second
 
-	// Check that basic pruning works
-	_, err = pruningService.SetPruningHeight(sm.RetainHeightInfo{Height: 1200, Requester: sm.AppRequester}) //(1, sm.AppRequester, state)
-	// pruned, evidenceRetainHeight, err := pruningService.PruneBlocks(1200, sm.AppRequester, state)
+	pk := ed25519.GenPrivKey().PubKey()
 
+	// Generate a bunch of state data.
+	// This is needed because the pruning is expecting to load the state from the database thus
+	// We have to have acceptable values for all fields of the state
+	validator := &types.Validator{Address: cmtrand.Bytes(crypto.AddressSize), VotingPower: 100, PubKey: pk}
+	validatorSet := &types.ValidatorSet{
+		Validators: []*types.Validator{validator},
+		Proposer:   validator,
+	}
+	state.Validators = validatorSet
+	state.NextValidators = validatorSet
+	if state.LastBlockHeight >= 1 {
+		state.LastValidators = state.Validators
+	}
+
+	stateStore.Save(state)
+	// Check that basic pruning works
+	_, err = pruningService.SetPruningHeight(sm.RetainHeightInfo{Height: 1200, Requester: sm.AppRequester})
+	pruningService.Start()
 	require.NoError(t, err)
-	// assert.EqualValues(t, 1199, pruned)
 	time.Sleep(time.Second * 15)
 	assert.EqualValues(t, 1200, bs.Base())
 	assert.EqualValues(t, 1500, bs.Height())
 	assert.EqualValues(t, 301, bs.Size())
-	// assert.EqualValues(t, 1100, evidenceRetainHeight)
-
 	require.NotNil(t, bs.LoadBlock(1200))
 	require.Nil(t, bs.LoadBlock(1199))
 
@@ -596,39 +617,40 @@ func TestPruningService(t *testing.T) {
 	}
 
 	// Pruning below the current base should error
-	// _, _, err = pruningService.PruneBlocks(1199, sm.AppRequester, state)
-	_, err = pruningService.SetPruningHeight(sm.RetainHeightInfo{Height: 1199, Requester: sm.AppRequester}) //(1, sm.AppRequester, state)
+	_, err = pruningService.SetPruningHeight(sm.RetainHeightInfo{Height: 1199, Requester: sm.AppRequester})
 	require.Error(t, err)
 
 	// Pruning to the current base should work
-	// pruned, _, err = pruningService.PruneBlocks(1200, sm.AppRequester, state)
-	// require.NoError(t, err)
-	// assert.EqualValues(t, 0, pruned)
+	_, err = pruningService.SetPruningHeight(sm.RetainHeightInfo{Height: 1200, Requester: sm.AppRequester})
+	require.NoError(t, err)
 
-	// // Pruning again should work
-	// pruned, _, err = pruningService.PruneBlocks(1300, sm.AppRequester, state)
-	// require.NoError(t, err)
-	// assert.EqualValues(t, 100, pruned)
-	// assert.EqualValues(t, 1300, bs.Base())
+	// Pruning again should work
+	_, err = pruningService.SetPruningHeight(sm.RetainHeightInfo{Height: 1300, Requester: sm.AppRequester})
+	require.NoError(t, err)
+	// We need to sleep to give time to the pruning service to wake up and prune.
+	time.Sleep(time.Second * 10)
 
-	// // we should still have the header and the commit
-	// // as they're needed for evidence
-	// require.NotNil(t, bs.LoadBlockMeta(1100))
-	// require.Nil(t, bs.LoadBlockMeta(1099))
-	// require.NotNil(t, bs.LoadBlockCommit(1100))
-	// require.Nil(t, bs.LoadBlockCommit(1099))
+	assert.NoError(t, err)
+	assert.EqualValues(t, 1300, bs.Base())
 
-	// // Pruning beyond the current height should error
-	// _, _, err = pruningService.PruneBlocks(1501, sm.AppRequester, state)
-	// require.Error(t, err)
+	// we should still have the header and the commit
+	// as they're needed for evidence
+	require.NotNil(t, bs.LoadBlockMeta(1100))
+	require.Nil(t, bs.LoadBlockMeta(1099))
+	require.NotNil(t, bs.LoadBlockCommit(1100))
+	require.Nil(t, bs.LoadBlockCommit(1099))
 
-	// // Pruning to the current height should work
-	// pruned, _, err = pruningService.PruneBlocks(1500, sm.AppRequester, state)
-	// require.NoError(t, err)
-	// assert.EqualValues(t, 200, pruned)
-	// assert.Nil(t, bs.LoadBlock(1499))
-	// assert.NotNil(t, bs.LoadBlock(1500))
-	// assert.Nil(t, bs.LoadBlock(1501))
+	// Setting the pruning height beyond the current height should error
+	_, err = pruningService.SetPruningHeight(sm.RetainHeightInfo{Height: 1501, Requester: sm.AppRequester})
+	require.Error(t, err)
+
+	// Pruning to the current height should work
+	_, err = pruningService.SetPruningHeight(sm.RetainHeightInfo{Height: 1500, Requester: sm.AppRequester})
+	time.Sleep(time.Second * 10)
+	require.NoError(t, err)
+	assert.Nil(t, bs.LoadBlock(1499))
+	assert.NotNil(t, bs.LoadBlock(1500))
+	assert.Nil(t, bs.LoadBlock(1501))
 }
 
 func TestPruneBlocks(t *testing.T) {

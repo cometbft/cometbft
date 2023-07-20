@@ -29,4 +29,7 @@ generator:
 runner:
 	go build -o build/runner ./runner
 
-.PHONY: all node docker generator runner 
+grammar:
+	gogll pkg/grammar/abci_grammar.md
+
+.PHONY: all node docker generator runner grammar

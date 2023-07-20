@@ -4,6 +4,7 @@ import (
 	context "context"
 	"fmt"
 
+	"github.com/cometbft/cometbft/libs/log"
 	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
 	blocksvc "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
 	"github.com/cometbft/cometbft/store"
@@ -16,13 +17,16 @@ import (
 type blockServiceServer struct {
 	store    *store.BlockStore
 	eventBus *types.EventBus
+	logger   log.Logger
 }
 
 // New creates a new CometBFT version service server.
-func New(store *store.BlockStore, eventBus *types.EventBus) blocksvc.BlockServiceServer {
+func New(store *store.BlockStore, eventBus *types.EventBus, logger log.Logger) blocksvc.BlockServiceServer {
+	log := logger.With("module", "grpc-block-service")
 	return &blockServiceServer{
 		store,
 		eventBus,
+		log,
 	}
 }
 
@@ -38,8 +42,9 @@ func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByH
 	if req.Height == 0 {
 		height = latestHeight
 	} else if req.Height < 0 {
-		description := fmt.Sprintf("got negative height (%d), please specify a height >= 0", req.Height)
-		return nil, status.Error(codes.InvalidArgument, description)
+		errMsg := fmt.Sprintf("got negative height (%d), please specify a height >= 0", req.Height)
+		s.logger.Error("GetByHeight", "err", errMsg)
+		return nil, status.Error(codes.InvalidArgument, errMsg)
 	} else {
 		height = req.Height
 	}
@@ -47,13 +52,17 @@ func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByH
 	// check if the height requested is not higher
 	// than the latest height in the store
 	if height > latestHeight {
-		return nil, status.Errorf(codes.InvalidArgument, "height requested (%d) is higher than the latest available height (%d)", height, latestHeight)
+		errMsg := fmt.Sprintf("height requested (%d) is higher than the latest available height (%d)", height, latestHeight)
+		s.logger.Error("GetByHeight", "err", errMsg)
+		return nil, status.Errorf(codes.InvalidArgument, errMsg)
 	}
 
 	block := s.store.LoadBlock(height)
 	blockProto, err := block.ToProto()
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "block at height %d not found", height)
+		errMsg := fmt.Sprintf("block at height %d not found", height)
+		s.logger.Error("GetByHeight", "err", errMsg)
+		return nil, status.Errorf(codes.NotFound, errMsg)
 	}
 
 	blockMeta := s.store.LoadBlockMeta(height)
@@ -73,13 +82,17 @@ func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest,
 	id, err := uuid.NewUUID()
 	if err != nil {
 		// cannot generate unique id
-		return status.Error(codes.Internal, "error generating a subscriber id, cannot subscribe to new block events")
+		errMsg := "error generating a subscriber id, cannot subscribe to new block events"
+		s.logger.Error("GetLatestHeight", "err", errMsg)
+		return status.Error(codes.Internal, errMsg)
 	}
 	subscriber := fmt.Sprintf("subscriber_%s", id.String())
 
 	sub, err := s.eventBus.Subscribe(context.Background(), subscriber, types.QueryForEvent(types.EventNewBlock), 1)
 	if err != nil {
-		return status.Error(codes.Internal, "cannot subscribe to new block events")
+		errMsg := "cannot subscribe to new block events"
+		s.logger.Error("GetLatestHeight", "err", errMsg)
+		return status.Error(codes.Internal, errMsg)
 	}
 
 	for {
@@ -88,17 +101,21 @@ func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest,
 			switch eventType := msg.Data().(type) {
 			case types.EventDataNewBlock:
 				if err := stream.Send(&blocksvc.GetLatestHeightResponse{Height: eventType.Block.Height}); err != nil {
+					s.logger.Error("GetLatestHeight", "err", fmt.Sprintf("failed to stream a new block height %d to subscriber %s", eventType.Block.Height, subscriber))
 					return status.Error(codes.Unavailable, "cannot send stream response")
 				}
+				s.logger.Debug("GetLatestHeight", "msg", fmt.Sprintf("streamed new block height %d", eventType.Block.Height))
 			}
 		case <-sub.Canceled():
 			if sub.Err() == cmtpubsub.ErrUnsubscribed {
+				s.logger.Error("GetLatestHeight", "err", fmt.Sprintf("subscriber %s unsubscribed", subscriber))
 				return status.Error(codes.Canceled, "client unsubscribed")
 			}
 		default:
 			continue
 		}
 		if sub.Err() != nil {
+			s.logger.Error("GetLatestHeight", "err", fmt.Sprintf("error in new block subscription for subscriber %s", subscriber))
 			return status.Error(codes.Internal, "error in new block subscription")
 		}
 	}

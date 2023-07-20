@@ -59,9 +59,9 @@ func WithVersionService() Option {
 }
 
 // WithBlockService enables the block service on the CometBFT server.
-func WithBlockService(store *store.BlockStore, eventBus *types.EventBus) Option {
+func WithBlockService(store *store.BlockStore, eventBus *types.EventBus, logger log.Logger) Option {
 	return func(b *serverBuilder) {
-		b.blockService = blockservice.New(store, eventBus)
+		b.blockService = blockservice.New(store, eventBus, logger)
 	}
 }
 

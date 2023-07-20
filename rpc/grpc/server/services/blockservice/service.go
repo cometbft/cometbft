@@ -101,15 +101,22 @@ func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest,
 			switch eventType := msg.Data().(type) {
 			case types.EventDataNewBlock:
 				if err := stream.Send(&blocksvc.GetLatestHeightResponse{Height: eventType.Block.Height}); err != nil {
-					s.logger.Error("GetLatestHeight", "err", fmt.Sprintf("failed to stream a new block height %d to subscriber %s", eventType.Block.Height, subscriber))
+					s.logger.Error("GetLatestHeight", "err", fmt.Sprintf("failed to stream a new block height %d to %s", eventType.Block.Height, subscriber))
 					return status.Error(codes.Unavailable, "cannot send stream response")
 				}
 				s.logger.Debug("GetLatestHeight", "msg", fmt.Sprintf("streamed new block height %d", eventType.Block.Height))
 			}
 		case <-sub.Canceled():
-			if sub.Err() == cmtpubsub.ErrUnsubscribed {
+			switch sub.Err() {
+			case cmtpubsub.ErrUnsubscribed:
 				s.logger.Error("GetLatestHeight", "err", fmt.Sprintf("subscriber %s unsubscribed", subscriber))
 				return status.Error(codes.Canceled, "client unsubscribed")
+			case nil:
+				s.logger.Info("GetLatestHeight", "msg", fmt.Sprintf("subscription for %s canceled without errors", subscriber))
+				return status.Error(codes.Canceled, "subscription canceled without errors")
+			default:
+				s.logger.Info("GetLatestHeight", "msg", fmt.Sprintf("subscription for %s canceled with errors %s", subscriber, sub.Err()))
+				return status.Error(codes.Canceled, "subscription canceled with errors")
 			}
 		default:
 			continue

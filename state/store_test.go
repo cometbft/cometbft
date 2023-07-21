@@ -305,11 +305,10 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 		// Check that we have written a finalize block result at height 'height - 1'
 		_, err = stateStore.LoadFinalizeBlockResponse(height - 1)
 		require.NoError(t, err)
-		h, err := pruner.SetPruningHeight(sm.RetainHeightInfo{Height: height, Requester: sm.ABCIResRetainHeightRequester})
+		err = pruner.SetABCIResRetainHeight(height)
 		require.NoError(t, err)
 		err = pruner.Start()
 		require.NoError(t, err)
-		require.Equal(t, h, height)
 		require.NoError(t, err)
 		// Sleep to give time to the pruning service to delete the responses
 		time.Sleep(time.Second * 20)

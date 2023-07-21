@@ -313,11 +313,11 @@ func (blockExec *BlockExecutor) ApplyBlock(
 	// Prune old heights, if requested by ABCI app.
 	if retainHeight > 0 {
 
-		retainHeight, err := blockExec.pruner.SetPruningHeight(RetainHeightInfo{Height: retainHeight, Requester: AppRequester})
+		err := blockExec.pruner.SetApplicationRetainHeight(retainHeight)
 		if err != nil {
 			blockExec.logger.Error("failed to set height", "retainHeight", retainHeight, "err", err)
 		} else {
-			blockExec.logger.Debug("set pruning height", "pruned", retainHeight, "retain_height", retainHeight)
+			blockExec.logger.Debug("set pruning height", "retain_height", retainHeight)
 		}
 	}
 

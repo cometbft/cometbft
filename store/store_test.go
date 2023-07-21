@@ -543,9 +543,9 @@ func TestPruningService(t *testing.T) {
 
 	pruningService := sm.NewPruner(stateStore, bs, log.TestingLogger(), sm.PrunerSleepTime(time.Second*2))
 
-	_, err = pruningService.SetPruningHeight(sm.RetainHeightInfo{Height: 1, Requester: sm.AppRequester}) //(1, sm.AppRequester, state)
+	err = pruningService.SetApplicationRetainHeight(1)
 	require.Error(t, err)
-	_, err = pruningService.SetPruningHeight(sm.RetainHeightInfo{Height: 0, Requester: sm.AppRequester}) //(1, sm.AppRequester, state)
+	err = pruningService.SetApplicationRetainHeight(0)
 	require.Error(t, err)
 
 	// make more than 1000 blocks, to test batch deletions
@@ -586,7 +586,7 @@ func TestPruningService(t *testing.T) {
 	err = stateStore.Save(state)
 	require.NoError(t, err)
 	// Check that basic pruning works
-	_, err = pruningService.SetPruningHeight(sm.RetainHeightInfo{Height: 1200, Requester: sm.AppRequester})
+	err = pruningService.SetApplicationRetainHeight(1200)
 	require.NoError(t, err)
 	err = pruningService.Start()
 	require.NoError(t, err)
@@ -614,15 +614,15 @@ func TestPruningService(t *testing.T) {
 	}
 
 	// Pruning below the current base should error
-	_, err = pruningService.SetPruningHeight(sm.RetainHeightInfo{Height: 1199, Requester: sm.AppRequester})
+	err = pruningService.SetApplicationRetainHeight(1199)
 	require.Error(t, err)
 
 	// Pruning to the current base should work
-	_, err = pruningService.SetPruningHeight(sm.RetainHeightInfo{Height: 1200, Requester: sm.AppRequester})
+	err = pruningService.SetApplicationRetainHeight(1200)
 	require.NoError(t, err)
 
 	// Pruning again should work
-	_, err = pruningService.SetPruningHeight(sm.RetainHeightInfo{Height: 1300, Requester: sm.AppRequester})
+	err = pruningService.SetApplicationRetainHeight(1300)
 	require.NoError(t, err)
 	// We need to sleep to give time to the pruning service to wake up and prune.
 	time.Sleep(time.Second * 10)
@@ -638,11 +638,11 @@ func TestPruningService(t *testing.T) {
 	require.Nil(t, bs.LoadBlockCommit(1099))
 
 	// Setting the pruning height beyond the current height should error
-	_, err = pruningService.SetPruningHeight(sm.RetainHeightInfo{Height: 1501, Requester: sm.AppRequester})
+	err = pruningService.SetApplicationRetainHeight(1501)
 	require.Error(t, err)
 
 	// Pruning to the current height should work
-	_, err = pruningService.SetPruningHeight(sm.RetainHeightInfo{Height: 1500, Requester: sm.AppRequester})
+	err = pruningService.SetApplicationRetainHeight(1500)
 	require.NoError(t, err)
 
 	time.Sleep(time.Second * 10)

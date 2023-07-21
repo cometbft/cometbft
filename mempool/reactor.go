@@ -164,18 +164,21 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 
 		// Wait until either: a mempool entry is available in the channel, or
 		// the peer was disconnected, or the reactor stopped.
-		select {
-		case <-iter.WaitNext():
-			entry = iter.NextEntry()
-			if entry == nil {
-				// There is no next entry, or the entry we found got removed in the
-				// meantime. Try again.
-				continue
+
+		if entry == nil {
+			select {
+			case <-iter.WaitNext():
+				entry = iter.NextEntry()
+				if entry == nil {
+					// There is no next entry, or the entry we found got removed in the
+					// meantime. Try again.
+					continue
+				}
+			case <-peer.Quit():
+				return
+			case <-memR.Quit():
+				return
 			}
-		case <-peer.Quit():
-			return
-		case <-memR.Quit():
-			return
 		}
 
 		// Make sure the peer is up to date.
@@ -213,6 +216,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 				time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
 				continue
 			}
+			entry = nil
 		}
 	}
 }

@@ -532,7 +532,7 @@ func checkTxsInMempool(t *testing.T, txs types.Txs, reactor *Reactor, _ int) {
 	require.Equal(t, len(txs), reactor.mempool.Size())
 }
 
-func checkNoTxsInMempool(t *testing.T, txs types.Txs, reactor *Reactor, _ int) {
+func checkNoTxsInMempool(t *testing.T, _ types.Txs, reactor *Reactor, _ int) {
 	require.Equal(t, 0, reactor.mempool.Size())
 }
 

@@ -285,6 +285,31 @@ enabled = {{ .GRPC.BlockService.Enabled }}
 [grpc.block_results_service]
 enabled = {{ .GRPC.BlockResultsService.Enabled }}
 
+#
+# Configuration for privileged gRPC endpoints, which should **never** be exposed
+# to the public internet.
+#
+[grpc.privileged]
+# The host/port on which to expose privileged gRPC endpoints.
+laddr = "{{ .GRPC.Privileged.ListenAddress }}"
+
+#
+# Configuration specifically for the gRPC pruning service, which is considered a
+# privileged service.
+#
+[grpc.privileged.pruning_service]
+
+# Only controls whether the pruning service is accessible via the gRPC API - not
+# whether a previously set pruning service retain height is honoured by the
+# node.
+#
+# To disable the influence of previously set pruning service retain height(s) on
+# node pruning, this endpoint should be enabled and the relevant pruning service
+# retain heights should be set to 0.
+#
+# Disabled by default.
+enabled = {{ .GRPC.Privileged.PruningService.Enabled }}
+
 #######################################################
 ###           P2P Configuration Options             ###
 #######################################################

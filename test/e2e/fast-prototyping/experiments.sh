@@ -4,31 +4,37 @@ DIR=$(dirname "${BASH_SOURCE[0]}")
 source ${DIR}/utils.sh
 
 if [ $# -lt 1 ]; then
-    echo "usage: experiments output.csv [out_degree]"
+    echo "usage: experiments output.csv [out_degree] [-none|solo|all]"
+    echo "where -none = (default) no validator, consensus reactor is mocked everywhere."
+    echo "      -solo = validator01 has full power, the rest are full nodes."
+    echo "      -all  = all the nodes are validating with the same power"
     exit 1
 fi
 
 FILE=$1
 DEGREE=$2
+MODE=$3
+
 TMPL="custom"
 
-echo "nodes;propagation_rate;sent;seen;completion;total_bandwidth;useful_bandwidth;overhead;redundancy;degree;bandwidth" > ${FILE}
+echo "nodes;propagation_rate;sent;added;completion;total_mempool_bandwidth;useful_mempool_bandwidth;overhead;redundancy;degree;cpu_load;bandwidth" > ${FILE}
 for r in $(seq 50 50 100);
 do
     for i in $(geometric 4 2 2);
     do
-			${DIR}/tmpl-gen.sh ${i} ${r} ${DEGREE} > ${NETDIR}/${TMPL}.toml
+			${DIR}/tmpl-gen.sh ${i} ${r} ${DEGREE} ${MODE}> ${NETDIR}/${TMPL}.toml
 			${BINDIR}/runner -f ${NETDIR}/${TMPL}.toml custom > ${TMPDIR}/log
 			sent=$(grep "txs sent" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
-			seen=$(grep "txs seen" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
+			added=$(grep "txs added" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
 			completion=$(grep "completion" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
-			totalBandwidth=$(grep "total bandwidth" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
-			usefulBandwidth=$(grep "useful bandwidth" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
+			totalBandwidth=$(grep "total mempool bandwidth" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
+			usefulBandwidth=$(grep "useful mempool bandwidth" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
 			overhead=$(grep "overhead" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
 			redundancy=$(grep "redundancy" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
 			degree=$(grep "degree" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
+			cpu=$(grep "cpu load" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
 			bandwidth=$(grep "bandwidth graph" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
-			echo ${i}";"${r}";"${sent}";"${seen}";"${completion}";"${totalBandwidth}";"${usefulBandwidth}";"${overhead}";"${redundancy}";"${degree}";"${bandwidth} >> ${FILE}
+			echo ${i}";"${r}";"${sent}";"${added}";"${completion}";"${totalBandwidth}";"${usefulBandwidth}";"${overhead}";"${redundancy}";"${degree}";"${cpu}";"${bandwidth} >> ${FILE}
 			${BINDIR}/runner -f ${NETDIR}/${TMPL}.toml cleanup >> /dev/null
 			sleep 1
     done

@@ -116,10 +116,15 @@ func (p *Pruner) SetCompanionRetainHeight(height int64) error {
 		}
 	}
 	currentAppRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
-	if err != nil && err != ErrKeyNotFound {
-		return err
+	var noAppRetainHeight bool
+	if err != nil {
+		if err == ErrKeyNotFound {
+			noAppRetainHeight = true
+		} else {
+			return err
+		}
 	}
-	if currentCompanionRetainHeight > height || currentAppRetainHeight > height {
+	if currentCompanionRetainHeight > height || (!noAppRetainHeight && currentAppRetainHeight > height) {
 		return errors.New("cannot set a height lower than previously requested - blocks might have already been pruned")
 	}
 	err = p.stateStore.SaveCompanionBlockRetainHeight(height)

@@ -88,6 +88,14 @@ func NewBlockExecutor(
 	return res
 }
 
+func (blockExec *BlockExecutor) SetPruningService(p *Pruner) {
+	blockExec.pruner = p
+	err := blockExec.pruner.Start()
+	if err != nil {
+		blockExec.logger.Error(err.Error())
+	}
+}
+
 func (blockExec *BlockExecutor) StopPruningService() {
 	err := blockExec.pruner.Stop()
 	if err != nil {

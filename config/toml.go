@@ -560,4 +560,16 @@ namespace = "{{ .Instrumentation.Namespace }}"
 #
 enabled = {{ .Companion.Enabled }}
 initial_retain_height = {{ .Companion.InitialRetainHeight }}
+
+#######################################################
+###       Data Companion Configuration Options          ###
+#######################################################
+[pruner]
+
+# The pruning mechanism prunes the block and state store and the ABCI results
+# if either the application or an attached data companion have requested so. 
+# The frequency at which the pruning mechanism checks for updates to the desired
+# retain height is defined here (in seconds). By default it is 10s. It cannot be 0.
+frequency = {{ .Pruner.Frequency }}
+
 `

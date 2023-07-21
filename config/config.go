@@ -81,6 +81,7 @@ type Config struct {
 	TxIndex         *TxIndexConfig         `mapstructure:"tx_index"`
 	Instrumentation *InstrumentationConfig `mapstructure:"instrumentation"`
 	Companion       *CompanionConfig       `mapstructure:"datacompanion"`
+	Pruner          *PruningConfig         `mapstructure:"pruner"`
 }
 
 // DefaultConfig returns a default configuration for a CometBFT node
@@ -98,6 +99,7 @@ func DefaultConfig() *Config {
 		TxIndex:         DefaultTxIndexConfig(),
 		Instrumentation: DefaultInstrumentationConfig(),
 		Companion:       DefaultCompanionConfig(),
+		Pruner:          DefaultPruningConfig(),
 	}
 }
 
@@ -116,6 +118,7 @@ func TestConfig() *Config {
 		TxIndex:         TestTxIndexConfig(),
 		Instrumentation: TestInstrumentationConfig(),
 		Companion:       DefaultCompanionConfig(),
+		Pruner:          DefaultPruningConfig(),
 	}
 }
 
@@ -1307,5 +1310,31 @@ func TestCompanionConfig() *CompanionConfig {
 
 // ValidateBasic performs basic validation.
 func (cfg *CompanionConfig) ValidateBasic() error {
+	return nil
+}
+
+//-----------------------------------------------------------------------------
+// PruningConfig
+
+// PruningConfig determines the frequency (in seconds) at which CometBFT checks whether pruning should be done
+// The default value is 10s
+type PruningConfig struct {
+	Frequency int `mapstructure:"frequency"`
+}
+
+// DefaultCompanionConfig returns a default configuration for the data companion
+func DefaultPruningConfig() *PruningConfig {
+	return &PruningConfig{
+		Frequency: 10,
+	}
+}
+
+// TestBlockSyncConfig returns a default configuration for the block sync.
+func TestPruningConfig() *PruningConfig {
+	return DefaultPruningConfig()
+}
+
+// ValidateBasic performs basic validation.
+func (cfg *PruningConfig) ValidateBasic() error {
 	return nil
 }

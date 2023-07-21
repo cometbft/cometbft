@@ -260,6 +260,14 @@ func NewNode(ctx context.Context,
 		blockStore,
 		sm.BlockExecutorWithMetrics(smMetrics),
 	)
+
+	if config.Pruner.Frequency != 10 && config.Pruner.Frequency > 0 {
+		pruner := sm.NewPruner(stateStore, blockStore, logger, sm.PrunerSleepTime(time.Second*time.Duration(config.Pruner.Frequency)))
+		blockExec.SetPruningService(pruner)
+	} else {
+		blockExec.SetPruningService(sm.NewPruner(stateStore, blockStore, logger))
+	}
+
 	// Make BlocksyncReactor. Don't start block sync if we're doing a state sync first.
 	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, logger, bsMetrics)
 	if err != nil {

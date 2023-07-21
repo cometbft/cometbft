@@ -37,6 +37,7 @@ type Config struct {
 	// Experimental
 	ExperimentalCustomReactors        map[string]string `toml:"experimental_custom_reactors"`
 	ExperimentalGossipPropagationRate float32           `toml:"experimental_gossip_propagation_rate"`
+	ExperimentalGossipSendOnce        bool              `toml:"experimental_gossip_send_once"`
 }
 
 // App extracts out the application specific configuration parameters
@@ -56,6 +57,7 @@ func (cfg *Config) App() *app.Config {
 		VoteExtensionSize:                 cfg.VoteExtensionSize,
 		ExperimentalCustomReactors:        cfg.ExperimentalCustomReactors,
 		ExperimentalGossipPropagationRate: cfg.ExperimentalGossipPropagationRate,
+		ExperimentalGossipSendOnce:        cfg.ExperimentalGossipSendOnce,
 	}
 }
 

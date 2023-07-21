@@ -275,6 +275,7 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		"vote_extension_size":                  node.Testnet.VoteExtensionSize,
 		"experimental_custom_reactors":         node.Testnet.ExperimentalCustomReactors,
 		"experimental_gossip_propagation_rate": node.Testnet.ExperimentalGossipPropagationRate,
+		"experimental_gossip_send_once":        node.Testnet.ExperimentalGossipSendOnce,
 	}
 	switch node.ABCIProtocol {
 	case e2e.ProtocolUNIX:

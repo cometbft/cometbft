@@ -93,6 +93,7 @@ type Testnet struct {
 	VoteExtensionsEnableHeight        int64
 	VoteExtensionSize                 uint
 	ExperimentalGossipPropagationRate float32
+	ExperimentalGossipSendOnce        bool
 	ExperimentalCustomReactors        map[string]string
 }
 
@@ -180,6 +181,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		VoteExtensionsEnableHeight:        manifest.VoteExtensionsEnableHeight,
 		VoteExtensionSize:                 manifest.VoteExtensionSize,
 		ExperimentalGossipPropagationRate: manifest.ExperimentalGossipPropagationRate,
+		ExperimentalGossipSendOnce:        manifest.ExperimentalGossipSendOnce,
 		ExperimentalCustomReactors:        manifest.ExperimentalCustomReactors,
 	}
 	if len(manifest.KeyType) != 0 {

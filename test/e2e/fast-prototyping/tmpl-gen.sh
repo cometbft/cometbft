@@ -22,6 +22,8 @@ CUSTOM_CONSENSUS_REACTOR="p2p.mock.reactor"
 CUSTOM_MEMPOOL_REACTOR="experimental.reactors.mempool.gossip"
 INITIAL_HEIGHT=0
 
+SEND_ONCE="false"
+
 if [[ "${MODE}" == "-solo" ]] || [[ "${MODE}" == "-all" ]];
 then
 	  INITIAL_HEIGHT=1
@@ -36,6 +38,7 @@ load_tx_to_send = 100\n\
 load_tx_batch_size = 10\n\
 pex = false\n\
 experimental_gossip_propagation_rate = ${RATE}\n\
+experimental_gossip_send_once = ${SEND_ONCE}\n\
 experimental_custom_reactors = {CONSENSUS = \"${CUSTOM_CONSENSUS_REACTOR}\", MEMPOOL = \"${CUSTOM_MEMPOOL_REACTOR}\"}
 "
 

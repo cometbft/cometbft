@@ -28,21 +28,23 @@ type Reactor struct {
 	txSenders       map[types.TxKey]map[uint16]bool
 	txSendersMtx    cmtsync.RWMutex
 	propagationRate float32
+	sendOnce        bool
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
 // The mempool's channel TxsAvailable will be initialized only when notifyAvailable is true.
-func NewReactor(config *cfg.MempoolConfig, mempool mempool.Mempool, rate float32) *Reactor {
+func NewReactor(config *cfg.MempoolConfig, mempool mempool.Mempool, rate float32, sendOnce bool) *Reactor {
 	memR := &Reactor{
 		config:          config,
 		mempool:         mempool,
 		ids:             newMempoolIDs(),
 		txSenders:       make(map[types.TxKey]map[uint16]bool),
 		propagationRate: rate,
+		sendOnce:        sendOnce,
 	}
 	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
 	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
-	fmt.Println("starting with ", "propagation rate ", memR.propagationRate)
+	fmt.Println("starting with ", "propagation rate ", memR.propagationRate, "send once", memR.sendOnce)
 	return memR
 }
 
@@ -187,6 +189,9 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 				if !success {
 					time.Sleep(mempool.PeerCatchupSleepIntervalMS * time.Millisecond)
 					continue
+				}
+				if memR.sendOnce {
+					memR.addSender(entry.GetTxKey(), peerID)
 				}
 			}
 		}

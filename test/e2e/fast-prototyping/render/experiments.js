@@ -5,7 +5,7 @@ const graphChart = echarts.init(graphElt);
 
 const headersMap = {
     "nodes" : "#nodes",
-    "propagation_rate" : "gossip propagation rate (%)",
+    "propagation_rate" : "propagation rate (%)",
     "sent" : "#sent",
     "added" : "#added (avg)", // average
     "completion" : "completion",

@@ -550,4 +550,14 @@ max_open_connections = {{ .Instrumentation.MaxOpenConnections }}
 
 # Instrumentation namespace
 namespace = "{{ .Instrumentation.Namespace }}"
+
+#######################################################
+###       Data Companion Configuration Options          ###
+#######################################################
+[datacompanion]
+
+# Data Companion is enabled and we take the initial height as the official retain height:
+#
+enabled = {{ .Companion.Enabled }}
+initial_retain_height = {{ .Companion.InitialRetainHeight }}
 `

@@ -56,6 +56,7 @@ func (p *Pruner) OnStart() error {
 }
 
 func (p *Pruner) OnStop() {
+	p.Quit()
 	p.BaseService.OnStop()
 
 }
@@ -67,7 +68,7 @@ func (p *Pruner) OnStop() {
 // If the data companion has already set a retain height to a higher value
 // we also cannot accept the requested height as the blocks might have been pruned
 func (p *Pruner) SetApplicationRetainHeight(height int64) error {
-	if height <= 0 || height <= p.bs.Base() || height > p.bs.Height() {
+	if height <= 0 || height < p.bs.Base() || height > p.bs.Height() {
 		return ErrInvalidHeightValue
 	}
 	currentAppRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
@@ -102,7 +103,7 @@ func (p *Pruner) SetApplicationRetainHeight(height int64) error {
 // If the application has already set a retain height to a higher value
 // we also cannot accept the requested height as the blocks might have been pruned
 func (p *Pruner) SetCompanionRetainHeight(height int64) error {
-	if height <= 0 || height <= p.bs.Base() || height > p.bs.Height() {
+	if height <= 0 || height < p.bs.Base() || height > p.bs.Height() {
 		return ErrInvalidHeightValue
 	}
 	currentCompanionRetainHeight, err := p.stateStore.GetCompanionBlockRetainHeight()
@@ -129,6 +130,9 @@ func (p *Pruner) SetCompanionRetainHeight(height int64) error {
 // If the application has set the DiscardABCIResponses flag to true
 // Nothing will be pruned
 func (p *Pruner) SetABCIResRetainHeight(height int64) error {
+	if height <= 0 || height > p.bs.Height() {
+		return ErrInvalidHeightValue
+	}
 	currentRetainHeight, err := p.stateStore.GetABCIResRetainHeight()
 	if err != nil {
 		if err == ErrKeyNotFound {

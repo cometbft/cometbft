@@ -80,6 +80,7 @@ type Config struct {
 	Storage         *StorageConfig         `mapstructure:"storage"`
 	TxIndex         *TxIndexConfig         `mapstructure:"tx_index"`
 	Instrumentation *InstrumentationConfig `mapstructure:"instrumentation"`
+	Companion       *CompanionConfig       `mapstructure:"datacompanion"`
 }
 
 // DefaultConfig returns a default configuration for a CometBFT node
@@ -96,6 +97,7 @@ func DefaultConfig() *Config {
 		Storage:         DefaultStorageConfig(),
 		TxIndex:         DefaultTxIndexConfig(),
 		Instrumentation: DefaultInstrumentationConfig(),
+		Companion:       DefaultCompanionConfig(),
 	}
 }
 
@@ -113,6 +115,7 @@ func TestConfig() *Config {
 		Storage:         TestStorageConfig(),
 		TxIndex:         TestTxIndexConfig(),
 		Instrumentation: TestInstrumentationConfig(),
+		Companion:       DefaultCompanionConfig(),
 	}
 }
 
@@ -1274,4 +1277,35 @@ func getDefaultMoniker() string {
 		moniker = "anonymous"
 	}
 	return moniker
+}
+
+//-----------------------------------------------------------------------------
+// CompanionConfig
+
+// CompanionConfig configures whether a data companion is enabled and sets the initial desired
+// retain height for the data companion
+
+// If the enabled flag is true, whatever value is set as the InitiaRetainHeight will be taken into consideration
+// e.x. InitiaRetainHeight = 0 and enabled = true => DataCompanionRetainHeight will be 0 and no block pruning will be allowed
+type CompanionConfig struct {
+	Enabled             bool  `mapstructure:"enabled"`
+	InitialRetainHeight int64 `mapstructure:"initial_retain_height"`
+}
+
+// DefaultCompanionConfig returns a default configuration for the data companion
+func DefaultCompanionConfig() *CompanionConfig {
+	return &CompanionConfig{
+		Enabled:             false,
+		InitialRetainHeight: 0,
+	}
+}
+
+// TestBlockSyncConfig returns a default configuration for the block sync.
+func TestCompanionConfig() *CompanionConfig {
+	return DefaultCompanionConfig()
+}
+
+// ValidateBasic performs basic validation.
+func (cfg *CompanionConfig) ValidateBasic() error {
+	return nil
 }

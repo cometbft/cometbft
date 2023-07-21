@@ -378,18 +378,6 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 
 func TestBlockStore_SaveBlockWithExtendedCommit(t *testing.T) {
 	dbTypes := []dbm.BackendType{
-		//   - requires gcc
-		//   - use cleveldb build tag (go build -tags cleveldb)
-		//	 - you should have levelDB installed
-		dbm.CLevelDBBackend,
-		//   - requires gcc
-		//   - use rocksdb build tag (go build -tags rocksdb)
-		//   - you should have rocksDB installed
-		dbm.RocksDBBackend,
-		//   - use badgerdb build tag (go build -tags badgerdb)
-		dbm.BadgerDBBackend,
-		//   - use boltdb build tag (go build -tags boltdb)
-		dbm.BoltDBBackend,
 		dbm.GoLevelDBBackend,
 		dbm.MemDBBackend,
 	}

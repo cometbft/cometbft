@@ -532,6 +532,10 @@ type GRPCConfig struct {
 	// The gRPC block results service provides the block results for a given height
 	// If no height is provided, the block results of the latest height are returned
 	BlockResultsService *GRPCBlockResultsServiceConfig `mapstructure:"block_results_service"`
+
+	// The "privileged" section provides configuration for the gRPC server
+	// dedicated to privileged clients.
+	Privileged *GRPCPrivilegedConfig `mapstructure:"privileged"`
 }
 
 func DefaultGRPCConfig() *GRPCConfig {
@@ -540,6 +544,7 @@ func DefaultGRPCConfig() *GRPCConfig {
 		VersionService:      DefaultGRPCVersionServiceConfig(),
 		BlockService:        DefaultGRPCBlockServiceConfig(),
 		BlockResultsService: DefaultGRPCBlockResultsServiceConfig(),
+		Privileged:          DefaultGRPCPrivilegedConfig(),
 	}
 }
 
@@ -549,6 +554,7 @@ func TestGRPCConfig() *GRPCConfig {
 		VersionService:      TestGRPCVersionServiceConfig(),
 		BlockService:        TestGRPCBlockServiceConfig(),
 		BlockResultsService: DefaultGRPCBlockResultsServiceConfig(),
+		Privileged:          TestGRPCPrivilegedConfig(),
 	}
 }
 
@@ -603,6 +609,52 @@ func DefaultGRPCBlockServiceConfig() *GRPCBlockServiceConfig {
 
 func TestGRPCBlockServiceConfig() *GRPCBlockServiceConfig {
 	return &GRPCBlockServiceConfig{
+		Enabled: true,
+	}
+}
+
+//-----------------------------------------------------------------------------
+// GRPCPrivilegedConfig
+
+// GRPCPrivilegedConfig defines the configuration for the CometBFT gRPC server
+// exposing privileged endpoints.
+
+type GRPCPrivilegedConfig struct {
+	// TCP or Unix socket address for the gRPC server for privileged clients
+	// to listen on. If empty, the gRPC server will be disabled.
+	ListenAddress string `mapstructure:"laddr"`
+
+	// The gRPC pruning service provides control over the depth of block
+	// storage information that the node
+	PruningService *GRPCPruningServiceConfig `mapstructure:"pruning_service"`
+}
+
+func DefaultGRPCPrivilegedConfig() *GRPCPrivilegedConfig {
+	return &GRPCPrivilegedConfig{
+		ListenAddress:  "",
+		PruningService: DefaultGRPCPruningServiceConfig(),
+	}
+}
+
+func TestGRPCPrivilegedConfig() *GRPCPrivilegedConfig {
+	return &GRPCPrivilegedConfig{
+		ListenAddress:  "tcp://127.0.0.1:36671",
+		PruningService: TestGRPCPruningServiceConfig(),
+	}
+}
+
+type GRPCPruningServiceConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+func DefaultGRPCPruningServiceConfig() *GRPCPruningServiceConfig {
+	return &GRPCPruningServiceConfig{
+		Enabled: true,
+	}
+}
+
+func TestGRPCPruningServiceConfig() *GRPCPruningServiceConfig {
+	return &GRPCPruningServiceConfig{
 		Enabled: true,
 	}
 }

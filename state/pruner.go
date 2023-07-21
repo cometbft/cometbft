@@ -64,7 +64,7 @@ func (p *Pruner) OnStop() {
 // SetApplicationRetainHeight sets the application retain height with some
 // basic checks on the requested height.
 // If a higher retain height is already set, we cannot accept the requested height
-// becuase the blocks might have been pruned.
+// because the blocks might have been pruned.
 // If the data companion has already set a retain height to a higher value
 // we also cannot accept the requested height as the blocks might have been pruned
 func (p *Pruner) SetApplicationRetainHeight(height int64) error {
@@ -99,7 +99,7 @@ func (p *Pruner) SetApplicationRetainHeight(height int64) error {
 // SetCompanionRetainHeight sets the application retain height with some
 // basic checks on the requested height.
 // If a higher retain height is already set, we cannot accept the requested height
-// becuase the blocks might have been pruned.
+// because the blocks might have been pruned.
 // If the application has already set a retain height to a higher value
 // we also cannot accept the requested height as the blocks might have been pruned
 func (p *Pruner) SetCompanionRetainHeight(height int64) error {

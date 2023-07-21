@@ -236,6 +236,20 @@ func NewNode(ctx context.Context,
 		return nil, err
 	}
 
+	if config.Companion.Enabled && config.Companion.InitialRetainHeight > 0 {
+		// This will set the data companion retain height into the database
+		// We bypass the sanity checks pruner.SetCompanionBlockRetainHeight.
+		// These checks do not allow a retain height below the current blockstore
+		// height or above the blockstore height  to be set.
+		// But bthis is a retain height that can be set before the chain starts
+		// to indicate potentially that no pruning should be done before
+		// the data companion comes online.
+		err = stateStore.SaveCompanionBlockRetainHeight(config.Companion.InitialRetainHeight)
+		if err != nil {
+			logger.Debug("failed to set initial retain height ", err, "err")
+		}
+	}
+
 	// make block executor for consensus and blocksync reactors to execute blocks
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
@@ -246,7 +260,6 @@ func NewNode(ctx context.Context,
 		blockStore,
 		sm.BlockExecutorWithMetrics(smMetrics),
 	)
-
 	// Make BlocksyncReactor. Don't start block sync if we're doing a state sync first.
 	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, logger, bsMetrics)
 	if err != nil {

@@ -75,9 +75,8 @@ func NewBlockExecutor(
 		metrics:    NopMetrics(),
 		blockStore: blockStore,
 	}
-	// TODO Move pruning service out of block executor into block or state store and pass the pruner sleep time
-	// via config
-	res.pruner = NewPruner(stateStore, blockStore, logger, PrunerSleepTime(time.Second*5))
+
+	res.pruner = NewPruner(stateStore, blockStore, logger)
 	err := res.pruner.Start()
 	if err != nil {
 		res.logger.Error(err.Error())

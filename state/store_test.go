@@ -315,11 +315,13 @@ func TestMinRetainHeight(t *testing.T) {
 	minHeight := pruner.FindMinRetainHeight()
 	require.Equal(t, minHeight, int64(0))
 
-	stateStore.SaveApplicationRetainHeight(10)
+	err := stateStore.SaveApplicationRetainHeight(10)
+	require.NoError(t, err)
 	minHeight = pruner.FindMinRetainHeight()
 	require.Equal(t, minHeight, int64(10))
 
-	stateStore.SaveCompanionBlockRetainHeight(11)
+	err = stateStore.SaveCompanionBlockRetainHeight(11)
+	require.NoError(t, err)
 	minHeight = pruner.FindMinRetainHeight()
 	require.Equal(t, minHeight, int64(10))
 

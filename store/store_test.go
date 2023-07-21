@@ -624,10 +624,16 @@ func TestPruningService(t *testing.T) {
 	// Pruning again should work
 	err = pruningService.SetApplicationRetainHeight(1300)
 	require.NoError(t, err)
+	// We should not be able to set a retain height lower than the currently
+	// existing retain heights
+	err = pruningService.SetCompanionRetainHeight(1200)
+	assert.Error(t, err)
+
+	err = pruningService.SetCompanionRetainHeight(1350)
+	assert.NoError(t, err)
 	// We need to sleep to give time to the pruning service to wake up and prune.
 	time.Sleep(time.Second * 10)
 
-	assert.NoError(t, err)
 	assert.EqualValues(t, 1300, bs.Base())
 
 	// we should still have the header and the commit
@@ -647,7 +653,10 @@ func TestPruningService(t *testing.T) {
 
 	time.Sleep(time.Second * 10)
 
-	assert.Nil(t, bs.LoadBlock(1499))
+	// But we will prune only until 1350 because that was the Companions height
+	// and it is lower
+	assert.Nil(t, bs.LoadBlock(1345))
+	assert.NotNil(t, bs.LoadBlock(1350))
 	assert.NotNil(t, bs.LoadBlock(1500))
 	assert.Nil(t, bs.LoadBlock(1501))
 }

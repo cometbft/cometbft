@@ -59,7 +59,7 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 			node.ID = status.NodeInfo.ID()
 		}
 		if node.PrometheusProxyPort > 0 {
-			logger.Info("start", "msg",
+			logger.Info("Start", "msg",
 				log.NewLazySprintf("Node %v (%v) up on http://%s:%v; with Prometheus on http://%s:%v/metrics",
 					node.Name,
 					node.ID,
@@ -70,18 +70,19 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 				),
 			)
 		} else {
-			logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://%s:%v",
-				node.Name,
-				node.ExternalIP,
-				node.ProxyPort,
-			))
+			logger.Info("Start", "msg",
+				log.NewLazySprintf("Node %v up on http://%s:%v",
+					node.Name,
+					node.ExternalIP,
+					node.ProxyPort,
+				))
 		}
 	}
 
 	networkHeight := testnet.InitialHeight
 
 	if networkHeight == 0 {
-		logger.Info("Initial height is 0")
+		logger.Info("Initial height set to 0; skipping.")
 		return nil
 	}
 

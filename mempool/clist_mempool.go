@@ -321,6 +321,7 @@ func (mem *CListMempool) addTx(entry *Entry) {
 	mem.txsMap.Store(entry.tx.Key(), e)
 	atomic.AddInt64(&mem.txsBytes, int64(len(entry.tx)))
 	mem.metrics.TxSizeBytes.Observe(float64(len(entry.tx)))
+	mem.metrics.AddedTxs.Add(1)
 }
 
 // RemoveTxByKey removes a transaction from the mempool by its TxKey index.

@@ -37,4 +37,8 @@ type Metrics struct {
 	// Number of times transactions were received more than once.
 	//metrics:Number of duplicate transaction reception.
 	AlreadyReceivedTxs metrics.Counter
+
+	// Number of times a transaction is added successfully
+	//metrics:Number of successfully added transaction.
+	AddedTxs metrics.Counter
 }

@@ -147,7 +147,7 @@ func (p *Pruner) pruningRoutine() {
 		case <-p.Quit():
 			return
 		default:
-			retainHeight := p.findMinRetainHeight()
+			retainHeight := p.FindMinRetainHeight()
 			if retainHeight != lastHeightPruned {
 				pruned, evRetainHeight, err := p.pruneBlocks(retainHeight)
 				if err != nil {
@@ -175,10 +175,9 @@ func (p *Pruner) pruningRoutine() {
 // the database will not have values for the corresponding keys.
 // If both retain heights were set, we pick the smaller one
 // If only one is set we return that one
-func (p *Pruner) findMinRetainHeight() int64 {
-	var noAppRetainHeightSet, noDCRetainHeight bool
+func (p *Pruner) FindMinRetainHeight() int64 {
+	var noAppRetainHeightSet bool
 	appRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
-
 	if err != nil {
 		if err == ErrKeyNotFound {
 			noAppRetainHeightSet = true
@@ -189,26 +188,19 @@ func (p *Pruner) findMinRetainHeight() int64 {
 	dcRetainHeight, err := p.stateStore.GetCompanionBlockRetainHeight()
 	if err != nil {
 		if err == ErrKeyNotFound {
-			noDCRetainHeight = true
+			// The Application height was set so we can return that immediately
+			if !noAppRetainHeightSet {
+				return appRetainHeight
+			}
 		} else {
 			return 0
 		}
 	}
-	if !noAppRetainHeightSet && !noDCRetainHeight {
-		if appRetainHeight < dcRetainHeight {
-			return appRetainHeight
-		}
-		return dcRetainHeight
-	}
-
-	if !noAppRetainHeightSet {
+	// If we are here, both heights were set so we are picking the minimum
+	if appRetainHeight < dcRetainHeight {
 		return appRetainHeight
 	}
-	if !noAppRetainHeightSet {
-		return dcRetainHeight
-	}
-
-	return 0
+	return dcRetainHeight
 }
 
 func (p *Pruner) pruneBlocks(height int64) (pruned uint64, evRetainHeight int64, err error) {

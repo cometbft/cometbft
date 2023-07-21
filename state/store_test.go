@@ -260,23 +260,69 @@ func makeStateAndBlockStore() (sm.State, *store.BlockStore, func(), sm.Store) {
 }
 
 func fillStore(t *testing.T, height int64, stateStore sm.Store, bs *store.BlockStore, state sm.State, response1 *abci.ResponseFinalizeBlock) {
-	for h := int64(1); h <= height; h++ {
-		err := stateStore.SaveFinalizeBlockResponse(h, response1)
+	if response1 != nil {
+		for h := int64(1); h <= height; h++ {
+			err := stateStore.SaveFinalizeBlockResponse(h, response1)
+			require.NoError(t, err)
+		}
+		// search for the last finalize block response and check if it has saved.
+		lastResponse, err := stateStore.LoadLastFinalizeBlockResponse(height)
 		require.NoError(t, err)
+		// check to see if the saved response height is the same as the loaded height.
+		assert.Equal(t, lastResponse, response1)
+		// check if the abci response didnt save in the abciresponses.
+		responses, err := stateStore.LoadFinalizeBlockResponse(height)
+		require.NoError(t, err, responses)
+		require.Equal(t, response1, responses)
 	}
-	// search for the last finalize block response and check if it has saved.
-	lastResponse, err := stateStore.LoadLastFinalizeBlockResponse(height)
-	require.NoError(t, err)
-	// check to see if the saved response height is the same as the loaded height.
-	assert.Equal(t, lastResponse, response1)
-	// check if the abci response didnt save in the abciresponses.
-	responses, err := stateStore.LoadFinalizeBlockResponse(height)
-	require.NoError(t, err, responses)
-	require.Equal(t, response1, responses)
 	b1 := state.MakeBlock(state.LastBlockHeight+1, test.MakeNTxs(state.LastBlockHeight+1, 10), new(types.Commit), nil, nil)
 	partSet, err := b1.MakePartSet(2)
 	require.NoError(t, err)
 	bs.SaveBlock(b1, partSet, &types.Commit{Height: state.LastBlockHeight + 1})
+}
+
+func TestSaveRetainHeight(t *testing.T) {
+	state, bs, callbackF, stateStore := makeStateAndBlockStore()
+	defer callbackF()
+	height := int64(10)
+	state.LastBlockHeight = height - 1
+
+	fillStore(t, height, stateStore, bs, state, nil)
+
+	pruner := sm.NewPruner(stateStore, bs, log.TestingLogger())
+
+	// We should not save a height that is 0
+	err := pruner.SetApplicationRetainHeight(0)
+	require.Error(t, err)
+
+	// We should not save a height above the blockstore's height
+	err = pruner.SetApplicationRetainHeight(11)
+	require.Error(t, err)
+
+	err = pruner.SetApplicationRetainHeight(10)
+	require.NoError(t, err)
+
+	err = pruner.SetCompanionRetainHeight(10)
+	require.NoError(t, err)
+
+}
+func TestMinRetainHeight(t *testing.T) {
+	stateDB := dbm.NewMemDB()
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
+	pruner := sm.NewPruner(stateStore, nil, log.TestingLogger())
+	minHeight := pruner.FindMinRetainHeight()
+	require.Equal(t, minHeight, int64(0))
+
+	stateStore.SaveApplicationRetainHeight(10)
+	minHeight = pruner.FindMinRetainHeight()
+	require.Equal(t, minHeight, int64(10))
+
+	stateStore.SaveCompanionBlockRetainHeight(11)
+	minHeight = pruner.FindMinRetainHeight()
+	require.Equal(t, minHeight, int64(10))
+
 }
 func TestFinalizeBlockResponsePruning(t *testing.T) {
 	t.Run("Persisting responses", func(t *testing.T) {

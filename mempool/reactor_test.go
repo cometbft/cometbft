@@ -3,6 +3,7 @@ package mempool
 import (
 	"encoding/hex"
 	"errors"
+	"runtime/debug"
 	"sync"
 	"testing"
 	"time"
@@ -510,7 +511,7 @@ func waitForReactors(t *testing.T, txs types.Txs, reactors []*Reactor, testFunc 
 	timer := time.After(timeout)
 	select {
 	case <-timer:
-		t.Fatal("Timed out waiting for txs")
+		t.Fatal("Timed out waiting for txs ", string(debug.Stack()))
 	case <-done:
 	}
 }

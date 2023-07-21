@@ -191,7 +191,9 @@ func (m Manifest) Save(file string) error {
 
 // LoadManifest loads a testnet manifest from a file.
 func LoadManifest(file string) (Manifest, error) {
-	manifest := Manifest{}
+	manifest := Manifest{
+		InitialHeight: 1, // default initial height
+	}
 	_, err := toml.DecodeFile(file, &manifest)
 	if err != nil {
 		return manifest, fmt.Errorf("failed to load testnet manifest %q: %w", file, err)

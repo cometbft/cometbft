@@ -21,7 +21,11 @@ let headers = []
 let dataset = []
 let graphs = []
 
+let metric = "overhead"
+let index = 0
+
 function plotExperiments(dimension) {
+    metric = dimension
     let symbolSize = 2.5;
     let option = {
         title: {
@@ -37,7 +41,7 @@ function plotExperiments(dimension) {
             name: headersMap['propagation_rate']
         },
         zAxis3D: {
-            name: headersMap[dimension],
+            name: headersMap[metric],
 
         },
         dataset: {
@@ -69,7 +73,9 @@ function plotExperiments(dimension) {
 }
 
 function plotGraph(idx) {
-    let data = graphs[idx];
+    index = idx
+
+    let data = graphs[index];
 
     let max = 0
     let min = Number.MAX_SAFE_INTEGER
@@ -145,7 +151,7 @@ function plotGraph(idx) {
     option = {
 	title: {
 	    text: 'Bandwidth usage',
-	    subtext: "(#nodes = " + dataset[idx]["nodes"] + ", propagation rate = " + dataset[idx]["propagation_rate"] + ")",
+	    subtext: "(#nodes = " + dataset[index]["nodes"] + ", propagation rate = " + dataset[index]["propagation_rate"] + ")",
 	    left: 'center'
 	},
         tooltip: {},
@@ -209,8 +215,9 @@ function displayResults(file) {
                 }
             }
 
-            plotExperiments('overhead', headers)
-            plotGraph(0)
+            plotExperiments(metric, headers)
+
+            plotGraph(index)
 
         }
     );

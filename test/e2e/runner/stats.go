@@ -18,6 +18,7 @@ type Stats struct {
 	bandwidth map[*e2e.Node]map[*e2e.Node]int
 	seen      map[*e2e.Node]int
 	redundant map[*e2e.Node]int
+	cpuLoad   map[*e2e.Node]float32
 }
 
 func Fetch(testnet *e2e.Testnet) (Stats, error) {
@@ -27,6 +28,7 @@ func Fetch(testnet *e2e.Testnet) (Stats, error) {
 	bw := map[*e2e.Node]map[*e2e.Node]int{}
 	seen := map[*e2e.Node]int{}
 	redundant := map[*e2e.Node]int{}
+	cpuLoad := map[*e2e.Node]float32{}
 
 	client, err := api.NewClient(api.Config{
 		Address: "http://localhost:9090",
@@ -40,15 +42,19 @@ func Fetch(testnet *e2e.Testnet) (Stats, error) {
 
 		seen[n] = 0
 
-		if seen[n], err = query(v1api, timeout, "cometbft_mempool_size", n.String(), ""); err != nil {
+		if seen[n], err = queryInt(v1api, timeout, "cometbft_mempool_added_txs", n.String(), ""); err != nil {
 			return Stats{}, err
 		}
 
-		if redundant[n], err = query(v1api, timeout, "cometbft_mempool_already_received_txs", n.String(), ""); err != nil {
+		if redundant[n], err = queryInt(v1api, timeout, "cometbft_mempool_already_received_txs", n.String(), ""); err != nil {
 			return Stats{}, err
 		}
 
-		if peers[n], err = query(v1api, timeout, "cometbft_p2p_peers", n.String(), ""); err != nil {
+		if peers[n], err = queryInt(v1api, timeout, "cometbft_p2p_peers", n.String(), ""); err != nil {
+			return Stats{}, err
+		}
+
+		if cpuLoad[n], err = queryFloat(v1api, timeout, "process_cpu_seconds_total", n.String(), ""); err != nil {
 			return Stats{}, err
 		}
 
@@ -57,12 +63,12 @@ func Fetch(testnet *e2e.Testnet) (Stats, error) {
 			if n == m {
 				continue
 			}
-			if bw[n][m], err = query(v1api, timeout, "cometbft_p2p_peer_receive_bytes_total", n.String(), "chID="+"'"+"0x30"+"', "+"peer_id="+"'"+string(m.ID)+"'"); err != nil {
+			if bw[n][m], err = queryInt(v1api, timeout, "cometbft_p2p_peer_receive_bytes_total", n.String(), "chID="+"'"+"0x30"+"', "+"peer_id="+"'"+string(m.ID)+"'"); err != nil {
 				return Stats{}, err
 			}
 		}
 	}
-	return Stats{peers: peers, bandwidth: bw, seen: seen, redundant: redundant}, err
+	return Stats{peers: peers, bandwidth: bw, seen: seen, redundant: redundant, cpuLoad: cpuLoad}, err
 }
 
 func (t *Stats) Output() string {
@@ -156,8 +162,44 @@ func (t *Stats) Degree(testnet *e2e.Testnet) float32 {
 	return rtotal / float32(len(testnet.Nodes))
 }
 
-func query(v1api v1.API, timeout time.Duration, field string, node string, extra string) (int, error) {
+func (t *Stats) CPULoad(testnet *e2e.Testnet) float32 {
+	count := float32(0)
+	for _, n := range testnet.Nodes {
+		count += t.cpuLoad[n]
+	}
+	return count / float32(len(testnet.Nodes))
+}
 
+func queryInt(v1api v1.API, timeout time.Duration, field string, node string, extra string) (int, error) {
+	if result, err := doQuery(v1api, timeout, field, node, extra); err == nil {
+		if len(result.(model.Vector)) != 0 {
+			return strconv.Atoi(result.(model.Vector)[0].Value.String())
+		} else {
+			return 0, nil
+		}
+	} else {
+		return 0, err
+	}
+
+	return 0, nil
+}
+
+func queryFloat(v1api v1.API, timeout time.Duration, field string, node string, extra string) (float32, error) {
+	if result, err := doQuery(v1api, timeout, field, node, extra); err == nil {
+		if len(result.(model.Vector)) != 0 {
+			if convert, convertErr := strconv.ParseFloat(result.(model.Vector)[0].Value.String(), 32); convertErr == nil {
+				return float32(convert), nil
+			} else {
+				return 0, convertErr
+			}
+		}
+	} else {
+		return 0, err
+	}
+	return 0, nil
+}
+
+func doQuery(v1api v1.API, timeout time.Duration, field string, node string, extra string) (model.Value, error) {
 	if extra != "" {
 		extra = ", " + extra
 	}
@@ -169,13 +211,9 @@ func query(v1api v1.API, timeout time.Duration, field string, node string, extra
 		"}"
 
 	if result, _, err := v1api.Query(context.TODO(), q, time.Now(), v1.WithTimeout(timeout)); err == nil {
-		if len(result.(model.Vector)) != 0 {
-			return strconv.Atoi(result.(model.Vector)[0].Value.String())
-		} else {
-			return 0, nil
-		}
+		return result, nil
 	}
 
-	return 0, fmt.Errorf("Query (" + q + ") has failed")
+	return nil, fmt.Errorf("Query (" + q + ") has failed")
 
 }

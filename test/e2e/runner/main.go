@@ -359,12 +359,13 @@ Does not run any perturbations.
 		Short: "A custom benchmark",
 		Long: `A custom benchmark that returns the following metrics:
     #tws sent : number of transactions sent in total
-    #tws seen : number of transactions seen in total by the nodes (on average)
+    #tws added : number of transactions added successfully  in total a node (on average)
     completion : % nodes receiving all txs
     total bandwidth: sum of all the bandwidth used by at the nodes
     useful bandwidth: #txs * tx_size * #nodes
     overhead: (total bandwidth - useful bandwidth) / (useful bandwidth)
     redundancy: number of duplicates received per tx seen (on average)
+    cpu log: the CPU load as reported under /proc/PID/status (on average, in seconds)
     bandwidth graph: detailed bandwidth usage as a (json) graph
 End after 1 minute, or if some (optional) target is attained.
 Does not run any perturbations.
@@ -439,15 +440,17 @@ Does not run any perturbations.
 			usefulBandwidth := (len(cli.testnet.Nodes) - 1) * int(txsSeen) * cli.testnet.LoadTxSizeBytes // at most (n-1) receivers
 			overhead := math.Max(0, float64(totalBandwidth-usefulBandwidth)/float64(usefulBandwidth))
 			degree := mempoolStats.Degree(cli.testnet)
+			cpuLoad := mempoolStats.CPULoad(cli.testnet)
 
-			logger.Info("#txs sent = " + strconv.Itoa(txs))
-			logger.Info("#txs seen (on avg.) = " + fmt.Sprintf("%v", txsSeen))
+			logger.Info("txs sent = " + strconv.Itoa(txs))
+			logger.Info("txs added (on avg.) = " + fmt.Sprintf("%v", txsSeen))
 			logger.Info("completion (on avg.) = " + fmt.Sprintf("%v", completion))
-			logger.Info("total bandwidth (B) = " + strconv.Itoa(totalBandwidth))
-			logger.Info("useful bandwidth (B) = " + strconv.Itoa(usefulBandwidth))
+			logger.Info("total mempool bandwidth (B) = " + strconv.Itoa(totalBandwidth))
+			logger.Info("useful mempool bandwidth (B) = " + strconv.Itoa(usefulBandwidth))
 			logger.Info("overhead = " + fmt.Sprintf("%v", overhead))
 			logger.Info("redundancy (on avg) = " + fmt.Sprintf("%v", redundancy))
 			logger.Info("degree (on avg) = " + fmt.Sprintf("%v", degree))
+			logger.Info("cpu load (on avg, in s) = " + fmt.Sprintf("%v", cpuLoad))
 
 			if graph, err := json.Marshal(mempoolStats.BandwidthGraph(cli.testnet, true)); err != nil {
 				return err

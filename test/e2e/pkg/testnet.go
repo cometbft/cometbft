@@ -159,7 +159,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		File:                              file,
 		Dir:                               dir,
 		IP:                                ipNet,
-		InitialHeight:                     0,
+		InitialHeight:                     1,
 		InitialState:                      manifest.InitialState,
 		Validators:                        map[*Node]int64{},
 		ValidatorUpdates:                  map[int64]map[*Node]int64{},
@@ -185,7 +185,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
 	}
-	if manifest.InitialHeight > 0 {
+	if manifest.InitialHeight >= 0 {
 		testnet.InitialHeight = manifest.InitialHeight
 	}
 	if testnet.ABCIProtocol == "" {

@@ -1,82 +1,82 @@
-var mainElt = document.getElementById('main');
-var graphElt = document.getElementById('graph');
-var mainChart = echarts.init(mainElt);
-var graphChart = echarts.init(graphElt);
+const mainElt = document.getElementById('main');
+const graphElt = document.getElementById('graph');
+const mainChart = echarts.init(mainElt);
+const graphChart = echarts.init(graphElt);
 
-var headers = []
-var headersMap = {
+const headersMap = {
     "nodes" : "#nodes",
-    "propagation_rate" : "propagation rate (%)",
+    "propagation_rate" : "gossip propagation rate (%)",
     "sent" : "#sent",
-    "seen" : "#seen (avg)",
+    "added" : "#added (avg)", // average
     "completion" : "completion",
-    "total_bandwidth" : "total bw. (KB)",
-    "useful_bandwidth" : "useful bw. (KB)",
+    "total_mempool_bandwidth" : "total mempool bw. (KB)",
+    "useful_mempool_bandwidth" : "useful mempool bw. (KB)",
     "overhead" : "overhead",
-    "redundancy" : "redundancy (avg)",
-    "degree" : "degree (avg)",
+    "redundancy" : "redundancy", // average
+    "degree" : "degree (avg)", // average out+in degree
+    "cpu_load" : "CPU load (avg)", // average cpu load (s)
     "bandwidth" : "bandwidth"
 }
-var dataset = []
-var graphs = []
+let headers = []
+let dataset = []
+let graphs = []
 
 function plotExperiments(dimension) {
-    var symbolSize = 2.5;
-    var option = {}
-    option = {
-	title: {
-	    text: 'Experiments',
-	    subtext: 'e2e - fast prototyping',
-	    left: 'center'
-	},
-	grid3D: {},
-	xAxis3D: {
-	    name: headersMap['nodes']
-	},
-	yAxis3D: {
-	    name: headersMap['propagation_rate']
-	},
-	zAxis3D: {
-	    name: headersMap[dimension],
+    let symbolSize = 2.5;
+    let option = {
+        title: {
+            text: 'Experiments',
+            subtext: 'e2e - fast prototyping',
+            left: 'center'
+        },
+        grid3D: {},
+        xAxis3D: {
+            name: headersMap['nodes']
+        },
+        yAxis3D: {
+            name: headersMap['propagation_rate']
+        },
+        zAxis3D: {
+            name: headersMap[dimension],
 
-	},
-	dataset: {
-	    dimensions: headers,
-	    source: dataset
-	},
-	series: [
-	    {
-		name: 'experiments',
-		type: 'scatter3D',
-		symbolSize: 10,
-		encode: {
-		    x: 'nodes',
-		    y: 'propagation_rate',
-		    z: dimension,
-		    tooltip: [0, 1, 2, 3, 4]
-		}
-	    }
-	]
+        },
+        dataset: {
+            dimensions: headers,
+            source: dataset
+        },
+        series: [
+            {
+                name: 'experiments',
+                type: 'scatter3D',
+                symbolSize: 10,
+                encode: {
+                    x: 'nodes',
+                    y: 'propagation_rate',
+                    z: dimension,
+                    tooltip: [0, 1, 2, 3, 4]
+                }
+            }
+        ]
     };
 
     option && mainChart.setOption(option);
 
     mainChart.on('click', {seriesName: 'experiments'}, function (params) {
-	graphChart.clear();
-	plotGraph(params.dataIndex);
+        graphChart.clear();
+        plotGraph(params.dataIndex);
     });
 
 }
 
 function plotGraph(idx) {
-    var data = graphs[idx];
+    let data = graphs[idx];
 
-    var max = 0
-    var min = Number.MAX_SAFE_INTEGER
+    let max = 0
+    let min = Number.MAX_SAFE_INTEGER
 
-    var option = {}
-    var nodes = [];
-    var edges = [];
+    let option = {}
+    let nodes = [];
+    let edges = [];
 
     $.each(data, function (n, peers) {
         $.each(peers, function (m, bw) {
@@ -85,12 +85,12 @@ function plotGraph(idx) {
         });
     });
 
-    var i = 0;
+    let i = 0;
 
     $.each(data, function (n, peers) {
-        r = Math.floor(Math.min(200,100 + Math.random() * 156));
-        g = Math.floor(Math.min(200, 100 + Math.random() * 156));
-        b = Math.floor(Math.min(200, 100 + Math.random() * 156));
+        let r = Math.floor(Math.min(200, 100 + Math.random() * 156));
+        let g = Math.floor(Math.min(200, 100 + Math.random() * 156));
+        let b = Math.floor(Math.min(200, 100 + Math.random() * 156));
         nodes.push(
             {
                 name: n,
@@ -105,7 +105,7 @@ function plotGraph(idx) {
                 }
             }
         );
-        var j = 0;
+        let j = 0;
         $.each(peers, function (m, bw) {
             if (i != j && bw != 0) {
                 edges.push(
@@ -136,7 +136,7 @@ function plotGraph(idx) {
         i++;
     });
 
-    var datas = [];
+    let datas = [];
     datas.push({
         nodes: nodes,
         edges: edges
@@ -173,41 +173,84 @@ function plotGraph(idx) {
 
 }
 
+function displayResults(file) {
+    jQuery.get(
+        file + '?' + Math.random(), // to invalid cache
+        function parse(csv) {
+            dataset = []
+            graphs = []
+
+            const lines = csv.split("\n");
+            headers = lines[0].split(";");
+            for (i = 1; i < lines.length; i++) {
+                const obj = {};
+                const currentLine = lines[i].split(";");
+                // skip empty lines
+                if (currentLine.length > 1) {
+                    for (j = 0; j < headers.length - 1; j++) {
+                        obj[headers[j]] = currentLine[j];
+                    }
+                    dataset.push(JSON.parse(JSON.stringify(obj)));
+                    const graph = JSON.parse(currentLine[j]);
+                    graphs.push(graph);
+                }
+            }
+
+            const dropdown = document.getElementsByClassName('dropdown-content')[0];
+            dropdown.textContent = '';
+            for (i = 1; i < headers.length; i++) {
+                if (i != 0 && i != 1 && i != headers.length - 1) {
+                    var child = document.createElement('a');
+                    child.setAttribute(
+                        'onClick',
+                        "plotExperiments(\'" + headers[i] + "\')");
+                    child.innerHTML = headersMap[headers[i]];
+                    dropdown.appendChild(child);
+                }
+            }
+
+            plotExperiments('overhead', headers)
+            plotGraph(0)
+
+        }
+    );
+}
+
 jQuery.get(
     'results.csv?'+Math.random(),
-    function (csv) {
-	var lines = csv.split("\n");
-	var results = [];
-	headers=lines[0].split(";");
-	for(var i=1; i<lines.length; i++){
-	    var obj = {};
-	    var currentline=lines[i].split(";");
-	    // skip empty lines
-	    if (currentline.length > 1) {
-		for(var j=0; j<headers.length-1; j++){
-		    obj[headers[j]] = currentline[j];
-		}
-		dataset.push(JSON.parse(JSON.stringify(obj)));
-		var graph = JSON.parse(currentline[j]);
-		graphs.push(graph);
-	    }
-	}
+    function load(csv) {
+        const lines = csv.split("\n");
+        const results = [];
+        const headers = lines[0].split(";");
+        for (i = 1; i < lines.length; i++) {
+            const obj = {};
+            const currentLine = lines[i].split(";");
+            if (currentLine.length > 1) {
+                for (j = 0; j < currentLine.length; j++) {
+                    obj[headers[j]] = currentLine[j];
+                }
+                results.push(obj)
+            }
+        }
 
-	var dropdown = document.getElementsByClassName('dropdown-content')[0];
-	for(var i=1; i<headers.length; i++){
-	    if ( i != 0 && i != 1 && i != headers.length-1 ) {
-		console.log(headers[i]);
-		var child = document.createElement('a');
-		child.setAttribute('onClick',"plotExperiments(\'"+headers[i]+"\')");
-		child.innerHTML = headersMap[headers[i]];
-		dropdown.appendChild(child);
-	    }
-	}
+        const row = document.getElementsByClassName('results-content')[0];
+        const resultHeader = document.createElement('th');
+        resultHeader.setAttribute('class', 'results-header');
+        resultHeader.innerHTML = "Navigate the results:";
+        row.appendChild(resultHeader);
 
-	plotExperiments('overhead')
+        for (i = 0; i < results.length; i++) {
+            const child = document.createElement('td')
+            const button = document.createElement('button');
+            button.setAttribute('onClick', "displayResults(\'" + results[i]["location"] + "\')");
+            button.setAttribute('title', "\'" + results[i]["description"] + "\'");
+            button.setAttribute('class', 'results-button');
+            button.innerHTML = results[i]["name"];
+            child.appendChild(button);
+            row.append(child);
+        }
 
-	plotGraph(0)
-
+        displayResults(results[0]['location']);
 
     }
 );

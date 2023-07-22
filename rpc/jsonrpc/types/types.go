@@ -99,7 +99,7 @@ func (req RPCRequest) String() string {
 }
 
 func MapToRequest(id jsonrpcid, method string, params map[string]interface{}) (RPCRequest, error) {
-	var paramsMap = make(map[string]json.RawMessage, len(params))
+	paramsMap := make(map[string]json.RawMessage, len(params))
 	for name, value := range params {
 		valueJSON, err := cmtjson.Marshal(value)
 		if err != nil {
@@ -117,7 +117,7 @@ func MapToRequest(id jsonrpcid, method string, params map[string]interface{}) (R
 }
 
 func ArrayToRequest(id jsonrpcid, method string, params []interface{}) (RPCRequest, error) {
-	var paramsMap = make([]json.RawMessage, len(params))
+	paramsMap := make([]json.RawMessage, len(params))
 	for i, value := range params {
 		valueJSON, err := cmtjson.Marshal(value)
 		if err != nil {
@@ -248,66 +248,35 @@ func RPCServerError(id jsonrpcid, err error) RPCResponse {
 
 //----------------------------------------
 
-// WSRPCConnection represents a websocket connection.
-type WSRPCConnection interface {
-	// GetRemoteAddr returns a remote address of the connection.
-	GetRemoteAddr() string
-	// WriteRPCResponse writes the response onto connection (BLOCKING).
-	WriteRPCResponse(context.Context, RPCResponse) error
-	// TryWriteRPCResponse tries to write the response onto connection (NON-BLOCKING).
-	TryWriteRPCResponse(RPCResponse) bool
-	// Context returns the connection's context.
-	Context() context.Context
-}
-
 // Context is the first parameter for all functions. It carries a json-rpc
-// request, http request and websocket connection.
+// request and http request.
 //
-// - JSONReq is non-nil when JSONRPC is called over websocket or HTTP.
-// - WSConn is non-nil when we're connected via a websocket.
+// - JSONReq is non-nil when JSONRPC is called over HTTP.
 // - HTTPReq is non-nil when URI or JSONRPC is called over HTTP.
 type Context struct {
 	// json-rpc request
 	JSONReq *RPCRequest
-	// websocket connection
-	WSConn WSRPCConnection
 	// http request
 	HTTPReq *http.Request
 }
 
 // RemoteAddr returns the remote address (usually a string "IP:port").
-// If neither HTTPReq nor WSConn is set, an empty string is returned.
-// HTTP:
-//
-//	http.Request#RemoteAddr
-//
-// WS:
-//
-//	result of GetRemoteAddr
+// If HTTPReq is not set, an empty string is returned.
 func (ctx *Context) RemoteAddr() string {
 	if ctx.HTTPReq != nil {
 		return ctx.HTTPReq.RemoteAddr
-	} else if ctx.WSConn != nil {
-		return ctx.WSConn.GetRemoteAddr()
 	}
 	return ""
 }
 
-// Context returns the request's context.
-// The returned context is always non-nil; it defaults to the background context.
-// HTTP:
+// Context returns the request's context. The returned context is always
+// non-nil; it defaults to the background context.
 //
-//	The context is canceled when the client's connection closes, the request
-//	is canceled (with HTTP/2), or when the ServeHTTP method returns.
-//
-// WS:
-//
-//	The context is canceled when the client's connections closes.
+// The context is canceled when the client's connection closes, the request is
+// canceled (with HTTP/2), or when the ServeHTTP method returns.
 func (ctx *Context) Context() context.Context {
 	if ctx.HTTPReq != nil {
 		return ctx.HTTPReq.Context()
-	} else if ctx.WSConn != nil {
-		return ctx.WSConn.Context()
 	}
 	return context.Background()
 }

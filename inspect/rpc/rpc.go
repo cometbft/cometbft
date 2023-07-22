@@ -51,16 +51,11 @@ func Routes(cfg config.RPCConfig, s state.Store, bs state.BlockStore, txidx txin
 	}
 }
 
-// Handler returns the http.Handler configured for use with an Inspector server. Handler
-// registers the routes on the http.Handler and also registers the websocket handler
-// and the CORS handler if specified by the configuration options.
+// Handler returns the http.Handler configured for use with an Inspector
+// server. Handler registers the routes on the http.Handler and the CORS
+// handler if specified by the configuration options.
 func Handler(rpcConfig *config.RPCConfig, routes core.RoutesMap, logger log.Logger) http.Handler {
 	mux := http.NewServeMux()
-	wmLogger := logger.With("protocol", "websocket")
-	wm := server.NewWebsocketManager(routes,
-		server.ReadLimit(rpcConfig.MaxBodyBytes))
-	wm.SetLogger(wmLogger)
-	mux.HandleFunc("/websocket", wm.WebsocketHandler)
 
 	server.RegisterRPCFuncs(mux, routes, logger)
 	var rootHandler http.Handler = mux

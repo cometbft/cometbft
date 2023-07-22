@@ -86,7 +86,7 @@ func init() {
 		&maxOpenConnections,
 		"max-open-connections",
 		900,
-		"maximum number of simultaneous connections (including WebSocket).")
+		"maximum number of simultaneous connections.")
 	LightCmd.Flags().DurationVar(&trustingPeriod, "trusting-period", 168*time.Hour,
 		"trusting period that headers can be verified within. Should be significantly less than the unbonding period")
 	LightCmd.Flags().Int64Var(&trustedHeight, "height", 1, "Trusted header's height")

@@ -11,11 +11,6 @@ type RoutesMap map[string]*rpc.RPCFunc
 // Routes is a map of available routes.
 func (env *Environment) GetRoutes() RoutesMap {
 	return RoutesMap{
-		// subscribe/unsubscribe are reserved for websocket events.
-		"subscribe":       rpc.NewWSRPCFunc(env.Subscribe, "query"),
-		"unsubscribe":     rpc.NewWSRPCFunc(env.Unsubscribe, "query"),
-		"unsubscribe_all": rpc.NewWSRPCFunc(env.UnsubscribeAll, ""),
-
 		// info AP
 		"health":               rpc.NewRPCFunc(env.Health, ""),
 		"status":               rpc.NewRPCFunc(env.Status, ""),

@@ -13,6 +13,8 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+const maxQueryLength = 512
+
 // Tx allows you to query the transaction results. `nil` could mean the
 // transaction is in the mempool, invalidated, or was not sent in the first
 // place.

@@ -12,11 +12,6 @@ import (
 
 func RPCRoutes(c *lrpc.Client) map[string]*rpcserver.RPCFunc {
 	return map[string]*rpcserver.RPCFunc{
-		// Subscribe/unsubscribe are reserved for websocket events.
-		"subscribe":       rpcserver.NewWSRPCFunc(c.SubscribeWS, "query"),
-		"unsubscribe":     rpcserver.NewWSRPCFunc(c.UnsubscribeWS, "query"),
-		"unsubscribe_all": rpcserver.NewWSRPCFunc(c.UnsubscribeAllWS, ""),
-
 		// info API
 		"health":               rpcserver.NewRPCFunc(makeHealthFunc(c), ""),
 		"status":               rpcserver.NewRPCFunc(makeStatusFunc(c), ""),

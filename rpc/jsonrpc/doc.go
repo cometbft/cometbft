@@ -1,5 +1,4 @@
-// HTTP RPC server supporting calls via uri params, jsonrpc over HTTP, and jsonrpc over
-// websockets
+// HTTP RPC server supporting calls via uri params and jsonrpc over HTTP
 //
 // # Client Requests
 //
@@ -37,12 +36,6 @@
 //
 //	curl --data @data.json http://localhost:8008
 //
-// WebSocket (JSONRPC)
-//
-// All requests are exposed over websocket in the same form as the POST JSONRPC.
-// Websocket connections are available at their own endpoint, typically `/websocket`,
-// though this is configurable when starting the server.
-//
 // # Server Definition
 //
 // Define some types and routes:
@@ -67,8 +60,6 @@
 //
 //	mux := http.NewServeMux()
 //	rpcserver.RegisterRPCFuncs(mux, Routes)
-//	wm := rpcserver.NewWebsocketManager(Routes)
-//	mux.HandleFunc("/websocket", wm.WebsocketHandler)
 //	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 //	listener, err := rpc.Listen("0.0.0.0:8080", rpcserver.Config{})
 //	if err != nil { panic(err) }
@@ -76,7 +67,7 @@
 //
 // Note that unix sockets are supported as well (eg. `/path/to/socket` instead of `0.0.0.0:8008`)
 // Now see all available endpoints by sending a GET request to `0.0.0.0:8008`.
-// Each route is available as a GET request, as a JSONRPCv2 POST request, and via JSONRPCv2 over websockets.
+// Each route is available as a GET request, and as a JSONRPCv2 POST request.
 //
 // # Examples
 //

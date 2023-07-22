@@ -56,9 +56,6 @@ var (
 	defaultNodeKeyPath  = filepath.Join(DefaultConfigDir, DefaultNodeKeyName)
 	defaultAddrBookPath = filepath.Join(DefaultConfigDir, DefaultAddrBookName)
 
-	minSubscriptionBufferSize     = 100
-	defaultSubscriptionBufferSize = 200
-
 	// taken from https://semver.org/
 	semverRegexp = regexp.MustCompile(`^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`)
 )
@@ -327,46 +324,13 @@ type RPCConfig struct {
 	// Activate unsafe RPC commands like /dial_persistent_peers and /unsafe_flush_mempool
 	Unsafe bool `mapstructure:"unsafe"`
 
-	// Maximum number of simultaneous connections (including WebSocket).
+	// Maximum number of simultaneous connections.
 	// If you want to accept a larger number than the default, make sure
 	// you increase your OS limits.
 	// 0 - unlimited.
 	// Should be < {ulimit -Sn} - {MaxNumInboundPeers} - {MaxNumOutboundPeers} - {N of wal, db and other open files}
 	// 1024 - 40 - 10 - 50 = 924 = ~900
 	MaxOpenConnections int `mapstructure:"max_open_connections"`
-
-	// Maximum number of unique clientIDs that can /subscribe
-	// If you're using /broadcast_tx_commit, set to the estimated maximum number
-	// of broadcast_tx_commit calls per block.
-	MaxSubscriptionClients int `mapstructure:"max_subscription_clients"`
-
-	// Maximum number of unique queries a given client can /subscribe to. If
-	// you're using /broadcast_tx_commit, set to the estimated maximum number
-	// of broadcast_tx_commit calls per block.
-	MaxSubscriptionsPerClient int `mapstructure:"max_subscriptions_per_client"`
-
-	// The number of events that can be buffered per subscription before
-	// returning `ErrOutOfCapacity`.
-	SubscriptionBufferSize int `mapstructure:"experimental_subscription_buffer_size"`
-
-	// The maximum number of responses that can be buffered per WebSocket
-	// client. If clients cannot read from the WebSocket endpoint fast enough,
-	// they will be disconnected, so increasing this parameter may reduce the
-	// chances of them being disconnected (but will cause the node to use more
-	// memory).
-	//
-	// Must be at least the same as `SubscriptionBufferSize`, otherwise
-	// connections may be dropped unnecessarily.
-	WebSocketWriteBufferSize int `mapstructure:"experimental_websocket_write_buffer_size"`
-
-	// If a WebSocket client cannot read fast enough, at present we may
-	// silently drop events instead of generating an error or disconnecting the
-	// client.
-	//
-	// Enabling this parameter will cause the WebSocket connection to be closed
-	// instead if it cannot read fast enough, allowing for greater
-	// predictability in subscription behavior.
-	CloseOnSlowClient bool `mapstructure:"experimental_close_on_slow_client"`
 
 	// How long to wait for a tx to be committed during /broadcast_tx_commit
 	// WARNING: Using a value larger than 10s will result in increasing the
@@ -414,11 +378,7 @@ func DefaultRPCConfig() *RPCConfig {
 		Unsafe:             false,
 		MaxOpenConnections: 900,
 
-		MaxSubscriptionClients:    100,
-		MaxSubscriptionsPerClient: 5,
-		SubscriptionBufferSize:    defaultSubscriptionBufferSize,
-		TimeoutBroadcastTxCommit:  10 * time.Second,
-		WebSocketWriteBufferSize:  defaultSubscriptionBufferSize,
+		TimeoutBroadcastTxCommit: 10 * time.Second,
 
 		MaxBodyBytes:   int64(1000000), // 1MB
 		MaxHeaderBytes: 1 << 20,        // same as the net/http default
@@ -441,24 +401,6 @@ func TestRPCConfig() *RPCConfig {
 func (cfg *RPCConfig) ValidateBasic() error {
 	if cfg.MaxOpenConnections < 0 {
 		return errors.New("max_open_connections can't be negative")
-	}
-	if cfg.MaxSubscriptionClients < 0 {
-		return errors.New("max_subscription_clients can't be negative")
-	}
-	if cfg.MaxSubscriptionsPerClient < 0 {
-		return errors.New("max_subscriptions_per_client can't be negative")
-	}
-	if cfg.SubscriptionBufferSize < minSubscriptionBufferSize {
-		return fmt.Errorf(
-			"experimental_subscription_buffer_size must be >= %d",
-			minSubscriptionBufferSize,
-		)
-	}
-	if cfg.WebSocketWriteBufferSize < cfg.SubscriptionBufferSize {
-		return fmt.Errorf(
-			"experimental_websocket_write_buffer_size must be >= experimental_subscription_buffer_size (%d)",
-			cfg.SubscriptionBufferSize,
-		)
 	}
 	if cfg.TimeoutBroadcastTxCommit < 0 {
 		return errors.New("timeout_broadcast_tx_commit can't be negative")

@@ -45,7 +45,7 @@ func TestProvider(t *testing.T) {
 	require.NoError(t, err)
 	chainID := genDoc.ChainID
 
-	c, err := rpchttp.New(rpcAddr, "/websocket")
+	c, err := rpchttp.New(rpcAddr)
 	require.Nil(t, err)
 
 	p := lighthttp.NewWithClient(chainID, c)

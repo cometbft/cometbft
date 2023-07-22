@@ -22,16 +22,6 @@ func makeHTTPHandler(rpcFunc *RPCFunc, logger log.Logger) func(http.ResponseWrit
 	// Always return -1 as there's no ID here.
 	dummyID := types.JSONRPCIntID(-1) // URIClientRequestID
 
-	// Exception for websocket endpoints
-	if rpcFunc.ws {
-		return func(w http.ResponseWriter, r *http.Request) {
-			res := types.RPCMethodNotFoundError(dummyID)
-			if wErr := WriteRPCResponseHTTPError(w, http.StatusNotFound, res); wErr != nil {
-				logger.Error("failed to write response", "err", wErr)
-			}
-		}
-	}
-
 	// All other endpoints
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Debug("HTTP HANDLER", "req", r)

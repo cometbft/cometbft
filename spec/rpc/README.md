@@ -16,8 +16,7 @@ This file defines the JSON-RPC spec of CometBFT. This is meant to be implemented
   | JSON-RPC 2.0 |                             ✅                              |                                ✅                                 |
   | HTTP         |                             ✅                              |                                ✅                                 |
   | HTTPS        |                             ✅                              |                                ❌                                 |
-  | WS           |                             ✅                              |                                ✅                                 |
-  
+
   | Routes                                  | [CometBFT](https://github.com/cometbft/cometbft/) | [Tendermint-Rs](https://github.com/informalsystems/tendermint-rs) |
   |-----------------------------------------|:----------------------------------------------------------:|:-----------------------------------------------------------------:|
   | [Health](#health)                       |                             ✅                              |                                 ✅                                 |

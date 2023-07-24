@@ -403,8 +403,8 @@ func TestReactorTxSendersMultiNodeSleep(t *testing.T) {
 	callCheckTx(t, firstReactor.mempool, txs)
 
 	// Because the peerState is lagging, the firstReactor should keep sleeping and
-	// not broadcast the transactions.
-	time.Sleep(30 * time.Second)
+	// not broadcast the transactions even if it has had plenty of time.
+	time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond * 100)
 	waitForReactors(t, txs, reactors[1:], checkNoTxsInMempool)
 
 	// peerState catches up.
@@ -417,7 +417,7 @@ func TestReactorTxSendersMultiNodeSleep(t *testing.T) {
 	// Now the txs should be propagated.
 	waitForReactors(t, txs, reactors, checkTxsInMempool)
 	// And be in the right order.
-	//This test may be flaky.
+	// This test may be flaky.
 	waitForReactors(t, txs, reactors, checkTxsInOrder)
 }
 

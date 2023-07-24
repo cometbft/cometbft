@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 
 	blocksvc "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
 	"github.com/cometbft/cometbft/types"
@@ -19,7 +20,7 @@ type BlockServiceClient interface {
 	GetBlockByHeight(ctx context.Context, height int64) (*Block, error)
 	// GetLatestHeight provides sends the latest committed block height to the given output
 	// channel as blocks are committed.
-	GetLatestHeight(ctx context.Context, out chan<- int64) error
+	GetLatestHeight(ctx context.Context) (chan int64, chan error)
 }
 
 type blockServiceClient struct {
@@ -62,25 +63,27 @@ func (c *blockServiceClient) GetBlockByHeight(ctx context.Context, height int64)
 }
 
 // GetLatestHeight implements BlockServiceClient GetLatestHeight
-func (c *blockServiceClient) GetLatestHeight(ctx context.Context, ch chan<- int64) error {
+func (c *blockServiceClient) GetLatestHeight(ctx context.Context) (chan int64, chan error) {
+	newHeightCh := make(chan int64)
+	errorCh := make(chan error)
 	req := blocksvc.GetLatestHeightRequest{}
 
-	latestHeight, err := c.client.GetLatestHeight(ctx, &req)
+	latestHeightClient, err := c.client.GetLatestHeight(ctx, &req)
 	if err != nil {
-		return err
+		errorCh <- fmt.Errorf("error getting a stream for the latest height")
 	}
 
-	go func() {
+	go func(client blocksvc.BlockService_GetLatestHeightClient) {
 		for {
-			response, err := latestHeight.Recv()
+			response, err := client.Recv()
 			if err != nil {
+				errorCh <- fmt.Errorf("error receiving the latest height from a stream")
 				break
 			}
-			ch <- response.Height
+			newHeightCh <- response.Height
 		}
-	}()
-	return nil
-
+	}(latestHeightClient)
+	return newHeightCh, errorCh
 }
 
 type disabledBlockServiceClient struct{}
@@ -95,6 +98,6 @@ func (*disabledBlockServiceClient) GetBlockByHeight(context.Context, int64) (*Bl
 }
 
 // GetLatestHeight implements BlockServiceClient GetLatestHeight - disabled client
-func (*disabledBlockServiceClient) GetLatestHeight(context.Context, chan<- int64) error {
+func (*disabledBlockServiceClient) GetLatestHeight(context.Context) (chan int64, chan error) {
 	panic("block service client is disabled")
 }

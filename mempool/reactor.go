@@ -216,8 +216,8 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 				time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
 				continue
 			}
-			entry = nil
 		}
+		entry = nil
 	}
 }
 

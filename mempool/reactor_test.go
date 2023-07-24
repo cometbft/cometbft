@@ -366,7 +366,7 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 }
 
 // Test that:
-// Even if the seder sleeps because the receiver is late, the receiver will eventually
+// Even if the sender sleeps because the receiver is late, the receiver will eventually
 // get the transactions.
 func TestReactorTxSendersMultiNodeSleep(t *testing.T) {
 	config := cfg.TestConfig()

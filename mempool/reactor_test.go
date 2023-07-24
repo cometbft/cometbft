@@ -3,6 +3,7 @@ package mempool
 import (
 	"encoding/hex"
 	"errors"
+	"runtime/debug"
 	"sync"
 	"testing"
 	"time"
@@ -364,6 +365,62 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 	require.Zero(t, len(firstReactor.txSenders))
 }
 
+// Test that:
+// Even if the sender sleeps because the receiver is late, the receiver will eventually
+// get the transactions.
+func TestReactorTxSendersMultiNodeSleep(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.Size = 1000
+	config.Mempool.CacheSize = 1000
+	const N = 3
+	reactors, _ := makeAndConnectReactors(config, N)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				assert.NoError(t, err)
+			}
+		}
+	}()
+	for _, r := range reactors {
+		//The mempool is 2 heights ahead of all peerState
+		r.mempool.height = 3
+		for _, peer := range r.Switch.Peers().List() {
+			peer.Set(types.PeerStateKey, peerState{1})
+		}
+	}
+
+	firstReactor := reactors[0]
+
+	numTxs := config.Mempool.Size
+	txs := newUniqueTxs(numTxs)
+
+	// Initially, there are no transactions (and no senders).
+	for _, r := range reactors {
+		require.Zero(t, len(r.txSenders))
+	}
+
+	// Add transactions to the first reactor.
+	callCheckTx(t, firstReactor.mempool, txs)
+
+	// Because the peerState is lagging, the firstReactor should keep sleeping and
+	// not broadcast the transactions even if it has had plenty of time.
+	time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond * 100)
+	waitForReactors(t, txs, reactors[1:], checkNoTxsInMempool)
+
+	// peerState catches up.
+	for _, r := range reactors {
+		for _, peer := range r.Switch.Peers().List() {
+			peer.Set(types.PeerStateKey, peerState{3})
+		}
+	}
+
+	// Now the txs should be propagated.
+	waitForReactors(t, txs, reactors, checkTxsInMempool)
+	// And be in the right order.
+	// This test may be flaky.
+	waitForReactors(t, txs, reactors, checkTxsInOrder)
+}
+
 // Check that the mempool has exactly the given list of txs and, if it's not the
 // first reactor (reactorIndex == 0), then each tx has a non-empty list of senders.
 func checkTxsInMempoolAndSenders(t *testing.T, r *Reactor, txs types.Txs, reactorIndex int) {
@@ -413,7 +470,7 @@ func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switc
 		mempool, cleanup := newMempoolWithApp(cc)
 		defer cleanup()
 
-		reactors[i] = NewReactor(config.Mempool, mempool) // so we dont start the consensus states
+		reactors[i] = NewReactor(config.Mempool, mempool) // so we don't start the consensus states
 		reactors[i].SetLogger(logger.With("validator", i))
 	}
 
@@ -454,7 +511,7 @@ func waitForReactors(t *testing.T, txs types.Txs, reactors []*Reactor, testFunc 
 	timer := time.After(timeout)
 	select {
 	case <-timer:
-		t.Fatal("Timed out waiting for txs")
+		t.Fatal("Timed out waiting for txs ", string(debug.Stack()))
 	case <-done:
 	}
 }
@@ -474,6 +531,10 @@ func checkTxsInMempool(t *testing.T, txs types.Txs, reactor *Reactor, _ int) {
 	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
 	require.Equal(t, len(txs), len(reapedTxs))
 	require.Equal(t, len(txs), reactor.mempool.Size())
+}
+
+func checkNoTxsInMempool(t *testing.T, _ types.Txs, reactor *Reactor, _ int) {
+	require.Equal(t, 0, reactor.mempool.Size())
 }
 
 // Wait until all txs are in the mempool and check that they are in the same

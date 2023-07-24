@@ -620,7 +620,6 @@ func (store dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet 
 		return err
 	}
 
-	//err = store.db.Set(calcValidatorsKey(height), bz)
 	err = batch.Set(calcValidatorsKey(height), bz)
 	if err != nil {
 		return err
@@ -698,7 +697,6 @@ func (store dbStore) saveConsensusParamsInfo(nextHeight, changeHeight int64, par
 		return err
 	}
 
-	//err = store.db.Set(calcConsensusParamsKey(nextHeight), bz)
 	err = batch.Set(calcConsensusParamsKey(nextHeight), bz)
 	if err != nil {
 		return err

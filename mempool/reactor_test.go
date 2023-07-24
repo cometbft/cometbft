@@ -401,6 +401,8 @@ func TestReactorTxSendersMultiNodeSleep(t *testing.T) {
 
 	// Add transactions to the first reactor.
 	callCheckTx(t, firstReactor.mempool, txs)
+	// Ensure the transactions were added in the right order.
+	waitForReactors(t, txs, reactors[:0], checkTxsInOrder)
 
 	// Because the peerState is lagging, the firstReactor should keep sleeping and
 	// not broadcast the transactions even if it has had plenty of time.

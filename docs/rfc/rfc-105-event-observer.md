@@ -100,6 +100,17 @@ func (cs *State) SetObserver(obs StateObserver) {
 }
 ```
 
+Then, instead of publishing events via the event bus, one would simply do the
+following:
+
+```diff
+-        if err := cs.eventBus.PublishEventNewRoundStep(rs); err != nil {
+-            cs.Logger.Error("failed publishing new round step", "err", err)
+-        }
++        // Notify the observer
++        cs.observer.ConsensusStateNewRoundStep(rs)
+```
+
 ### Fanout Observers
 
 How then does one simulate the same sort of pub/sub functionality that the

@@ -46,12 +46,12 @@ const (
 	ModeLight     Mode = "light"
 	ModeSeed      Mode = "seed"
 
-	ProtocolBuiltin       Protocol = "builtin"
-	ProtocolBuiltinUnsync Protocol = "builtin_unsync"
-	ProtocolFile          Protocol = "file"
-	ProtocolGRPC          Protocol = "grpc"
-	ProtocolTCP           Protocol = "tcp"
-	ProtocolUNIX          Protocol = "unix"
+	ProtocolBuiltin         Protocol = "builtin"
+	ProtocolBuiltinConnSync Protocol = "builtin_connsync"
+	ProtocolFile            Protocol = "file"
+	ProtocolGRPC            Protocol = "grpc"
+	ProtocolTCP             Protocol = "tcp"
+	ProtocolUNIX            Protocol = "unix"
 
 	PerturbationDisconnect Perturbation = "disconnect"
 	PerturbationKill       Perturbation = "kill"
@@ -390,11 +390,11 @@ func (n Node) Validate(testnet Testnet) error {
 		return fmt.Errorf("invalid database setting %q", n.Database)
 	}
 	switch n.ABCIProtocol {
-	case ProtocolBuiltin, ProtocolBuiltinUnsync, ProtocolUNIX, ProtocolTCP, ProtocolGRPC:
+	case ProtocolBuiltin, ProtocolBuiltinConnSync, ProtocolUNIX, ProtocolTCP, ProtocolGRPC:
 	default:
 		return fmt.Errorf("invalid ABCI protocol setting %q", n.ABCIProtocol)
 	}
-	if n.Mode == ModeLight && n.ABCIProtocol != ProtocolBuiltin && n.ABCIProtocol != ProtocolBuiltinUnsync {
+	if n.Mode == ModeLight && n.ABCIProtocol != ProtocolBuiltin && n.ABCIProtocol != ProtocolBuiltinConnSync {
 		return errors.New("light client must use builtin protocol")
 	}
 	switch n.PrivvalProtocol {

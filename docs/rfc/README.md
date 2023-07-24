@@ -47,3 +47,4 @@ relating to Tendermint Core prior to forking, please see
 - [RFC-102: Improve forward compatibility of proto-generated Rust code](./rfc-102-rust-gen-builders.md)
 - [RFC-103: Incoming transactions when node is catching up](./rfc-103-incoming-txs-when-catching-up.md)
 - [RFC-104: Internal messaging using the actor model](./rfc-104-actor-model.md)
+- [RFC-105: Internal signalling using event observers](./rfc-105-event-observer.md)

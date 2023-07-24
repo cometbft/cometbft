@@ -8,15 +8,15 @@ import (
 	"github.com/cosmos/gogoproto/grpc"
 )
 
-// ResultBlock Block data returned by the CometBFT BlockService gRPC API.
-type ResultBlock struct {
+// Block data returned by the CometBFT BlockService gRPC API.
+type Block struct {
 	BlockID types.BlockID `json:"block_id"`
 	Block   *types.Block  `json:"block"`
 }
 
 // BlockServiceClient provides block information
 type BlockServiceClient interface {
-	GetBlockByHeight(ctx context.Context, height int64) (*ResultBlock, error)
+	GetBlockByHeight(ctx context.Context, height int64) (*Block, error)
 	// GetLatestHeight provides sends the latest committed block height to the given output
 	// channel as blocks are committed.
 	GetLatestHeight(ctx context.Context, out chan<- int64) error
@@ -33,7 +33,7 @@ func newBlockServiceClient(conn grpc.ClientConn) BlockServiceClient {
 }
 
 // GetBlockByHeight implements BlockServiceClient GetBlockByHeight
-func (c *blockServiceClient) GetBlockByHeight(ctx context.Context, height int64) (*ResultBlock, error) {
+func (c *blockServiceClient) GetBlockByHeight(ctx context.Context, height int64) (*Block, error) {
 	req := blocksvc.GetByHeightRequest{
 		Height: height,
 	}
@@ -54,7 +54,7 @@ func (c *blockServiceClient) GetBlockByHeight(ctx context.Context, height int64)
 		return nil, err
 	}
 
-	response := ResultBlock{
+	response := Block{
 		BlockID: *blockID,
 		Block:   block,
 	}
@@ -90,7 +90,7 @@ func newDisabledBlockServiceClient() BlockServiceClient {
 }
 
 // GetBlockByHeight implements BlockServiceClient GetBlockByHeight - disabled client
-func (*disabledBlockServiceClient) GetBlockByHeight(context.Context, int64) (*ResultBlock, error) {
+func (*disabledBlockServiceClient) GetBlockByHeight(context.Context, int64) (*Block, error) {
 	panic("block service client is disabled")
 }
 

@@ -32,6 +32,9 @@ func New(store *store.BlockStore, eventBus *types.EventBus, logger log.Logger) b
 
 // GetByHeight implements v1.BlockServiceServer GetByHeight method
 func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByHeightRequest) (*blocksvc.GetByHeightResponse, error) {
+
+	logger := s.logger.With("endpoint", "GetByHeight")
+
 	var height int64
 
 	// retrieve the last height in the store
@@ -42,9 +45,8 @@ func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByH
 	if req.Height == 0 {
 		height = latestHeight
 	} else if req.Height < 0 {
-		errMsg := fmt.Sprintf("got negative height (%d), please specify a height >= 0", req.Height)
-		s.logger.Error("GetByHeight", "err", errMsg)
-		return nil, status.Error(codes.InvalidArgument, errMsg)
+		logger.Error("negative height request", "height", req.Height)
+		return nil, status.Error(codes.InvalidArgument, "Negative height request")
 	} else {
 		height = req.Height
 	}
@@ -52,17 +54,15 @@ func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByH
 	// check if the height requested is not higher
 	// than the latest height in the store
 	if height > latestHeight {
-		errMsg := fmt.Sprintf("height requested (%d) is higher than the latest available height (%d)", height, latestHeight)
-		s.logger.Error("GetByHeight", "err", errMsg)
-		return nil, status.Errorf(codes.InvalidArgument, errMsg)
+		logger.Error("height requested higher than latest height", "requested", height, "latest", latestHeight)
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("height requested %d higher than latest height %d", height, latestHeight))
 	}
 
 	block := s.store.LoadBlock(height)
 	blockProto, err := block.ToProto()
 	if err != nil {
-		errMsg := fmt.Sprintf("block at height %d not found", height)
-		s.logger.Error("GetByHeight", "err", errMsg)
-		return nil, status.Errorf(codes.NotFound, errMsg)
+		logger.Error("block not found", "height", height)
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Block not found for height %d", height))
 	}
 
 	blockMeta := s.store.LoadBlockMeta(height)
@@ -77,22 +77,23 @@ func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByH
 
 // GetLatestHeight implements v1.BlockServiceServer GetLatestHeight method
 func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest, stream blocksvc.BlockService_GetLatestHeightServer) error {
+
+	logger := s.logger.With("endpoint", "GetLatestHeight")
+
 	// Generate a unique subscriber ID using a UUID
 	// The subscriber needs to be unique across all clients
 	id, err := uuid.NewUUID()
 	if err != nil {
 		// cannot generate unique id
-		errMsg := "error generating a subscriber id, cannot subscribe to new block events"
-		s.logger.Error("GetLatestHeight", "err", errMsg)
-		return status.Error(codes.Internal, errMsg)
+		logger.Error("error generating subscriber id", "err", err)
+		return status.Error(codes.Internal, "Error generating subscriber id")
 	}
 	subscriber := id.String()
 
 	sub, err := s.eventBus.Subscribe(context.Background(), subscriber, types.QueryForEvent(types.EventNewBlock), 1)
 	if err != nil {
-		errMsg := "cannot subscribe to new block events"
-		s.logger.Error("GetLatestHeight", "err", errMsg)
-		return status.Error(codes.Internal, errMsg)
+		logger.Error("cannot subscribe to new block events", "err", err)
+		return status.Error(codes.Internal, "Cannot subscribe to new block events")
 	}
 
 	for {
@@ -101,29 +102,29 @@ func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest,
 			switch eventType := msg.Data().(type) {
 			case types.EventDataNewBlock:
 				if err := stream.Send(&blocksvc.GetLatestHeightResponse{Height: eventType.Block.Height}); err != nil {
-					s.logger.Error("Failed to stream new block height", "err", err, "height", eventType.Block.Height, "subscriber", subscriber)
-					return status.Error(codes.Unavailable, "cannot send stream response")
+					logger.Error("failed to stream new block", "err", err, "height", eventType.Block.Height, "subscriber", subscriber)
+					return status.Error(codes.Unavailable, "Cannot send stream response")
 				}
-				s.logger.Debug("GetLatestHeight", "msg", fmt.Sprintf("streamed new block height %d", eventType.Block.Height))
+				logger.Debug("streamed new block", "height", eventType.Block.Height)
 			}
 		case <-sub.Canceled():
 			switch sub.Err() {
 			case cmtpubsub.ErrUnsubscribed:
-				s.logger.Error("Internal subscriber terminated subscription", "subscriber", subscriber)
-				return status.Error(codes.Canceled, "client unsubscribed")
+				logger.Error("subscription terminated", "subscriber", subscriber)
+				return status.Error(codes.Canceled, "Subscription terminated")
 			case nil:
-				s.logger.Info("GetLatestHeight", "msg", fmt.Sprintf("subscription for %s canceled without errors", subscriber))
-				return status.Error(codes.Canceled, "subscription canceled without errors")
+				logger.Info("subscription canceled without errors", "subscriber", subscriber)
+				return status.Error(codes.Canceled, "Subscription canceled without errors")
 			default:
-				s.logger.Info("GetLatestHeight", "msg", fmt.Sprintf("subscription for %s canceled with errors %s", subscriber, sub.Err()))
-				return status.Error(codes.Canceled, "subscription canceled with errors")
+				logger.Info("subscription canceled with errors", "err", sub.Err(), "subscriber", subscriber)
+				return status.Error(codes.Canceled, "Subscription canceled with errors")
 			}
 		default:
 			continue
 		}
 		if sub.Err() != nil {
-			s.logger.Error("GetLatestHeight", "err", fmt.Sprintf("error in new block subscription for subscriber %s", subscriber))
-			return status.Error(codes.Internal, "error in new block subscription")
+			logger.Error("new block subscription error", "err", sub.Err(), "subscriber", subscriber)
+			return status.Error(codes.Internal, "New block subscription error")
 		}
 	}
 }

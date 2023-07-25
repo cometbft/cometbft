@@ -109,7 +109,7 @@ func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest,
 		case <-sub.Canceled():
 			switch sub.Err() {
 			case cmtpubsub.ErrUnsubscribed:
-				s.logger.Error("GetLatestHeight", "err", fmt.Sprintf("subscriber %s unsubscribed", subscriber))
+				s.logger.Error("Internal subscriber terminated subscription", "subscriber", subscriber)
 				return status.Error(codes.Canceled, "client unsubscribed")
 			case nil:
 				s.logger.Info("GetLatestHeight", "msg", fmt.Sprintf("subscription for %s canceled without errors", subscriber))

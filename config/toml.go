@@ -300,7 +300,7 @@ laddr = "{{ .GRPC.Privileged.ListenAddress }}"
 [grpc.privileged.pruning_service]
 
 # Only controls whether the pruning service is accessible via the gRPC API - not
-# whether a previously set pruning service retain height is honoured by the
+# whether a previously set pruning service retain height is honored by the
 # node.
 #
 # To disable the influence of previously set pruning service retain height(s) on

@@ -86,7 +86,7 @@ func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest,
 		s.logger.Error("GetLatestHeight", "err", errMsg)
 		return status.Error(codes.Internal, errMsg)
 	}
-	subscriber := fmt.Sprintf("subscriber_%s", id.String())
+	subscriber := id.String()
 
 	sub, err := s.eventBus.Subscribe(context.Background(), subscriber, types.QueryForEvent(types.EventNewBlock), 1)
 	if err != nil {

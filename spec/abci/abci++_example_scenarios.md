@@ -4,13 +4,13 @@ title: ABCI++ extra
 ---
 # Introduction
 
-In the section [CometBFT's expected behaviour](./abci++_comet_expected_behavior.md#valid-method-call-sequences), 
-we presented the most common behaviour, usually referred to as the good case. 
-However, the grammar specified in the same section is more general and covers more scenarios 
-that an Application designer needs to account for. 
+In the section [CometBFT's expected behaviour](./abci++_comet_expected_behavior.md#valid-method-call-sequences),
+we presented the most common behaviour, usually referred to as the good case.
+However, the grammar specified in the same section is more general and covers more scenarios
+that an Application designer needs to account for.
 
-In this section, we give more information about these possible scenarios. We focus on methods 
-introduced by ABCI++: `PrepareProposal` and `ProcessProposal`. Specifically, we concentrate 
+In this section, we give more information about these possible scenarios. We focus on methods
+introduced by ABCI++: `PrepareProposal` and `ProcessProposal`. Specifically, we concentrate
 on the part of the grammar presented below.  
 
 ```abnf
@@ -21,25 +21,27 @@ proposer            = [prepare-proposal process-proposal]
 non-proposer        = [process-proposal]
 ```
 
-We can see from the grammar that we can have several rounds before deciding a block. The reasons 
+We can see from the grammar that we can have several rounds before deciding a block. The reasons
 why one round may not be enough are:
-* network asynchrony, and
-* a Byzantine process being the proposer. 
 
-If we assume that the consensus algorithm decides on block $X$ in round $r$, in the rounds 
+* network asynchrony, and
+* a Byzantine process being the proposer.
+
+If we assume that the consensus algorithm decides on block $X$ in round $r$, in the rounds
 $r' <= r$, CometBFT can exhibit any of the following behaviours:
 
-1. Call `PrepareProposal` and/or `ProcessProposal` for block $X$. 
+1. Call `PrepareProposal` and/or `ProcessProposal` for block $X$.
 1. Call `PrepareProposal` and/or `ProcessProposal` for block $Y \neq X$.
 1. Does not call `PrepareProposal` and/or `ProcessProposal`.
 
-In the rounds when it is the proposer, CometBFT's `PrepareProposal` call is always followed by the 
-`ProcessProposal` call. The reason is that the process always delivers the proposal to itself, which 
-triggers the `ProcessProposal` call. 
+In the rounds in which the process is the proposer, CometBFT's `PrepareProposal` call is always followed by the
+`ProcessProposal` call. The reason is that the process also broadcasts the proposal to itself, which is locally delivered and triggers the `ProcessProposal` call.
+The proposal processed by `ProcessProposal` is the same as what was returned by any of the preceding `PrepareProposal` invoked for the same height and round.
+While in the absence of restarts there is only one such preceding invocations, if the proposer restarts there could have been one extra invocation to `PrepareProposal` for each restart.
 
-As the number of rounds the consensus algorithm needs to decide in a given run is a priori unknown, the 
-application needs to account for any number of rounds, where each round can exhibit any of these three 
-behaviours. Recall that the application is unaware of the internals of consensus and thus of the rounds. 
+As the number of rounds the consensus algorithm needs to decide in a given run is a priori unknown, the
+application needs to account for any number of rounds, where each round can exhibit any of these three
+behaviours. Recall that the application is unaware of the internals of consensus and thus of the rounds.
 
 # Possible scenarios
 The unknown number of rounds we can have when following the consensus algorithm yields a vast number of 
@@ -125,19 +127,20 @@ some process will propose block $X$ and if $p$ receives $2f+1$ $Precommit$ messa
 value. 
 
 
-## Scenario 3 
+## Scenario 3
 
-$p$ calls `PrepareProposal` and `ProcessProposal` for many values, but decides on a value for which it did 
+$p$ calls `PrepareProposal` and `ProcessProposal` for many values, but decides on a value for which it did
 not call `PrepareProposal` or `ProcessProposal`.
 
-In this scenario, in all rounds before $r$ we can have any round presented in [Scenario 1](#scenario-1) or 
+In this scenario, in all rounds before $r$ we can have any round presented in [Scenario 1](#scenario-1) or
 [Scenario 2](#scenario-2). What is important is that:
-- no proposer proposed block $X$ or if it did, process $p$, due to asynchrony, did not receive it in time, 
+
+* no proposer proposed block $X$ or if it did, process $p$, due to asynchrony, did not receive it in time,
 so it did not call `ProcessProposal`, and
 
-- if $p$ was the proposer it proposed some other value $\neq X$. 
+* if $p$ was the proposer it proposed some other value $\neq X$.
 
-### Round $r$: 
+### Round $r$:
 
 1. **Propose:** A correct process is the proposer in this round, and it proposes block $X$. 
 Due to asynchrony, the proposal message arrives to process $p$ after its $timeoutPropose$
@@ -158,4 +161,3 @@ rounds $0 <= r' <= r$ and that due to network asynchrony or Byzantine proposer, 
 proposal before $timeoutPropose$ expires. As a result, it will enter round $r$ without calling 
 `PrepareProposal` and `ProcessProposal` before it, and as shown in Round $r$ of [Scenario 3](#scenario-3) it 
 will decide in this round. Again without calling any of these two calls.  
-

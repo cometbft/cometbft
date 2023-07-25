@@ -61,7 +61,7 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 	}
 
 	txs := checkTxs(t, reactors[0].mempool, numTxs)
-	waitForReactors(t, txs, reactors, checkTxsInOrder)
+	waitForReactors(t, txs, reactors, checkTxsInMempoolInOrder)
 }
 
 // regression test for https://github.com/tendermint/tendermint/issues/5408
@@ -181,7 +181,7 @@ func TestReactor_MaxTxBytes(t *testing.T) {
 	reqRes, err := reactors[0].mempool.CheckTx(tx1)
 	require.NoError(t, err)
 	require.False(t, reqRes.Response.GetCheckTx().IsErr())
-	waitForReactors(t, []types.Tx{tx1}, reactors, checkTxsInOrder)
+	waitForReactors(t, []types.Tx{tx1}, reactors, checkTxsInMempoolInOrder)
 
 	reactors[0].mempool.Flush()
 	reactors[1].mempool.Flush()
@@ -334,7 +334,7 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 	callCheckTx(t, firstReactor.mempool, txs)
 
 	// Wait for all txs to be in the mempool of each reactor.
-	waitForReactors(t, txs, reactors, checkTxsInMempool)
+	waitForReactors(t, txs, reactors, checkTxsInMempoolInOrder)
 	for i, r := range reactors {
 		checkTxsInMempoolAndSenders(t, r, txs, i)
 	}
@@ -368,7 +368,7 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 // Test that:
 // Even if the sender sleeps because the receiver is late, the receiver will eventually
 // get the transactions.
-func TestReactorTxSendersMultiNodeSleep(t *testing.T) {
+func TestReactorPeerLagging(t *testing.T) {
 	config := cfg.TestConfig()
 	config.Mempool.Size = 1000
 	config.Mempool.CacheSize = 1000
@@ -402,7 +402,7 @@ func TestReactorTxSendersMultiNodeSleep(t *testing.T) {
 	// Add transactions to the first reactor.
 	callCheckTx(t, firstReactor.mempool, txs)
 	// Ensure the transactions were added in the right order.
-	waitForReactors(t, txs, reactors[:0], checkTxsInOrder)
+	waitForReactors(t, txs, reactors[:0], checkTxsInMempoolInOrder)
 
 	// Because the peerState is lagging, the firstReactor should keep sleeping and
 	// not broadcast the transactions even if it has had plenty of time.
@@ -416,11 +416,9 @@ func TestReactorTxSendersMultiNodeSleep(t *testing.T) {
 		}
 	}
 
-	// Now the txs should be propagated.
-	waitForReactors(t, txs, reactors, checkTxsInMempool)
-	// And be in the right order.
+	// Now the txs should be propagated and in the right order.
 	// This test may be flaky.
-	waitForReactors(t, txs, reactors, checkTxsInOrder)
+	waitForReactors(t, txs, reactors, checkTxsInMempoolInOrder)
 }
 
 // Check that the mempool has exactly the given list of txs and, if it's not the
@@ -518,6 +516,10 @@ func waitForReactors(t *testing.T, txs types.Txs, reactors []*Reactor, testFunc 
 	}
 }
 
+func checkNoTxsInMempool(t *testing.T, _ types.Txs, reactor *Reactor, _ int) {
+	require.Equal(t, 0, reactor.mempool.Size())
+}
+
 // Wait until the mempool has a certain number of transactions.
 func waitForNumTxsInMempool(numTxs int, mempool Mempool) {
 	for mempool.Size() < numTxs {
@@ -525,27 +527,15 @@ func waitForNumTxsInMempool(numTxs int, mempool Mempool) {
 	}
 }
 
-// Wait until all txs are in the mempool and check that the number of txs in the
-// mempool is as expected.
-func checkTxsInMempool(t *testing.T, txs types.Txs, reactor *Reactor, _ int) {
-	waitForNumTxsInMempool(len(txs), reactor.mempool)
-
-	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
-	require.Equal(t, len(txs), len(reapedTxs))
-	require.Equal(t, len(txs), reactor.mempool.Size())
-}
-
-func checkNoTxsInMempool(t *testing.T, _ types.Txs, reactor *Reactor, _ int) {
-	require.Equal(t, 0, reactor.mempool.Size())
-}
-
 // Wait until all txs are in the mempool and check that they are in the same
 // order as given.
-func checkTxsInOrder(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex int) {
+func checkTxsInMempoolInOrder(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex int) {
 	waitForNumTxsInMempool(len(txs), reactor.mempool)
 
 	// Check that all transactions in the mempool are in the same order as txs.
 	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
+	require.Equal(t, len(txs), len(reapedTxs))
+	require.Equal(t, len(txs), reactor.mempool.Size())
 	for i, tx := range txs {
 		assert.Equalf(t, tx, reapedTxs[i],
 			"txs at index %d on reactor %d don't match: %v vs %v", i, reactorIndex, tx, reapedTxs[i])

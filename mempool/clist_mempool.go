@@ -224,15 +224,6 @@ func (mem *CListMempool) Flush() {
 	mem.removeAllTxs()
 }
 
-// TxsFront returns the first transaction in the ordered list for peer
-// goroutines to call .NextWait() on.
-// FIXME: leaking implementation details!
-//
-// Safe for concurrent use by multiple goroutines.
-func (mem *CListMempool) TxsFront() *clist.CElement {
-	return mem.txs.Front()
-}
-
 func (mem *CListMempool) NewIterator() Iterator {
 	return &CListIterator{
 		txs:                mem.txs,

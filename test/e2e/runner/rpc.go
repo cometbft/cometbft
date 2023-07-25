@@ -99,7 +99,7 @@ func waitForNode(ctx context.Context, node *e2e.Node, height int64, timeout time
 		case <-timer.C:
 			status, err := client.Status(ctx)
 			if err != nil {
-				// ignore
+				logger.Info("Waiting node "+node.Name, err)
 			} else {
 				node.ID = status.NodeInfo.ID()
 			}

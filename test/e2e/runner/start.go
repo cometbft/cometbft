@@ -53,7 +53,7 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 	}
 	logger.Info("Nodes started.")
 	for _, node := range nodesAtZero {
-		if status, err := waitForNode(ctx, node, 0, 30*time.Second); err != nil {
+		if status, err := waitForNode(ctx, node, 0, 60*time.Second); err != nil {
 			return err
 		} else {
 			node.ID = status.NodeInfo.ID()

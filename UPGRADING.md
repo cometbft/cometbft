@@ -21,6 +21,24 @@ This guide provides instructions for upgrading to specific versions of CometBFT.
 * In the protobuf message `ResponseCheckTx`, fields `sender`, `priority`, and
   `mempool_error`, which were only used by the priority mempool, were removed
   but still kept in the message as "reserved".
+* The `Mempool` interface was modified on the following methods. Note that this
+  interface is meant for internal use only, so you should be aware of these
+  changes only if you happen to call these methods directly.
+  - `CheckTx`'s signature changed from
+    `CheckTx(tx types.Tx, cb func(*abci.ResponseCheckTx), txInfo TxInfo) error`
+    to `CheckTx(tx types.Tx) (abcicli.ReqRes, error)`.
+    - The method used to take a callback function `cb` to be applied to the ABCI
+    `CheckTx` response. Now `CheckTx` returns the ABCI response of type
+    `abcicli.ReqRes`, on which the callback must be applied manually. For
+    example:
+      ```golang
+      reqRes, err := CheckTx(tx)
+      cb(reqRes.Response.GetCheckTx())
+      ```
+    - The second parameter was `txInfo`, which essentially contained information
+    about the sender of the transaction. Now that information is stored in the
+    mempool reactor instead of the data structure, so it is no longer needed in
+    this method.
 
 ### `block_results` RPC endpoint - query result display change (breaking)
 
@@ -140,3 +158,4 @@ please see the [Tendermint Core upgrading instructions][tmupgrade].
 [discussions]: https://github.com/cometbft/cometbft/discussions
 [tmupgrade]: https://github.com/tendermint/tendermint/blob/35581cf54ec436b8c37fabb43fdaa3f48339a170/UPGRADING.md
 [go120]: https://go.dev/blog/go1.20
+[adr-105]: https://github.com/cometbft/cometbft/blob/d266cae2fd91095f16d53883099494d8dfe4b86d/docs/architecture/adr-105-refactor-mempool-senders.md

@@ -42,6 +42,7 @@ This guide provides instructions for upgrading to specific versions of CometBFT.
 
 ### RPC Changes
 
+* The WebSocket (`/websocket`) endpoint has been entirely removed.
 * `block_results` RPC endpoint: When returning a block, all block events are
   displayed within the `finalize_block_events` field. For blocks generated with
   older versions of CometBFT,  that means that block results that appeared as

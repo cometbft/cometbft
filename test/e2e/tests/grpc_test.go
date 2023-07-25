@@ -84,11 +84,17 @@ func TestGRPC_Block_GetByHeight(t *testing.T) {
 
 func TestGRPC_Block_GetLatestHeight(t *testing.T) {
 
+	var node *e2e.Node
 	testnet := loadTestnet(t)
-	node := testnet.RandomNode()
-	if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
-		return
+	// this assumes at least one node is valid for testing
+	// not a light or seed node
+	for _, n := range testnet.ArchiveNodes() {
+		if !n.Stateless() {
+			node = n
+			break
+		}
 	}
+	require.NotNil(t, node)
 
 	client, err := node.Client()
 	require.NoError(t, err)

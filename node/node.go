@@ -240,6 +240,7 @@ func NewNode(ctx context.Context,
 	// make block executor for consensus and blocksync reactors to execute blocks
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
+		indexerService,
 		logger.With("module", "state"),
 		proxyApp.Consensus(),
 		mempool,

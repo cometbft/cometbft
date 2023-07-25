@@ -31,6 +31,8 @@ type TxIndexer interface {
 
 	//Set Logger
 	SetLogger(l log.Logger)
+
+	Prune(retainHeight int64)
 }
 
 // Batch groups together multiple Index operations to be performed at the same time.

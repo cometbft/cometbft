@@ -119,6 +119,10 @@ func (is *IndexerService) OnStart() error {
 	return nil
 }
 
+func (is *IndexerService) PruneBlocks(retainHeight int64) {
+	is.txIdxr.Prune(retainHeight)
+}
+
 // OnStop implements service.Service by unsubscribing from all transactions.
 func (is *IndexerService) OnStop() {
 	if is.eventBus.IsRunning() {

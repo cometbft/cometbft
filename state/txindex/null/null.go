@@ -16,6 +16,10 @@ var _ txindex.TxIndexer = (*TxIndex)(nil)
 // TxIndex acts as a /dev/null.
 type TxIndex struct{}
 
+func (txi *TxIndex) Prune(retainHeight int64) {
+
+}
+
 // Get on a TxIndex is disabled and panics when invoked.
 func (txi *TxIndex) Get(_ []byte) (*abci.TxResult, error) {
 	return nil, errors.New(`indexing is disabled (set 'tx_index = "kv"' in config)`)

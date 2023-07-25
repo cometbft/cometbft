@@ -40,6 +40,17 @@ type TxIndex struct {
 	log log.Logger
 }
 
+func (txi *TxIndex) Prune(retainHeight int64) {
+	ctx := context.Background()
+	results, err := txi.Search(ctx, query.MustCompile(fmt.Sprintf("tx.height < %d", retainHeight)))
+	if err != nil {
+		panic(err)
+	}
+	for _, result := range results {
+		txi.store.Delete(result.Tx)
+	}
+}
+
 // NewTxIndex creates new KV indexer.
 func NewTxIndex(store dbm.DB) *TxIndex {
 	return &TxIndex{

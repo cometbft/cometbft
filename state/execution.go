@@ -13,6 +13,7 @@ import (
 	"github.com/cometbft/cometbft/mempool"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/proxy"
+	"github.com/cometbft/cometbft/state/txindex"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -28,6 +29,8 @@ type BlockExecutor struct {
 
 	// use blockstore for the pruning functions.
 	blockStore BlockStore
+
+	indexerService *txindex.IndexerService
 
 	// execute the app against this
 	proxyApp proxy.AppConnConsensus
@@ -57,6 +60,7 @@ func BlockExecutorWithMetrics(metrics *Metrics) BlockExecutorOption {
 // Call SetEventBus to provide one.
 func NewBlockExecutor(
 	stateStore Store,
+	indexerService *txindex.IndexerService,
 	logger log.Logger,
 	proxyApp proxy.AppConnConsensus,
 	mempool mempool.Mempool,
@@ -65,14 +69,15 @@ func NewBlockExecutor(
 	options ...BlockExecutorOption,
 ) *BlockExecutor {
 	res := &BlockExecutor{
-		store:      stateStore,
-		proxyApp:   proxyApp,
-		eventBus:   types.NopEventBus{},
-		mempool:    mempool,
-		evpool:     evpool,
-		logger:     logger,
-		metrics:    NopMetrics(),
-		blockStore: blockStore,
+		store:          stateStore,
+		indexerService: indexerService,
+		proxyApp:       proxyApp,
+		eventBus:       types.NopEventBus{},
+		mempool:        mempool,
+		evpool:         evpool,
+		logger:         logger,
+		metrics:        NopMetrics(),
+		blockStore:     blockStore,
 	}
 
 	for _, option := range options {
@@ -723,6 +728,8 @@ func (blockExec *BlockExecutor) pruneBlocks(retainHeight int64, state State) (ui
 	if retainHeight <= base {
 		return 0, nil
 	}
+
+	blockExec.indexerService.PruneBlocks(retainHeight)
 
 	amountPruned, prunedHeaderHeight, err := blockExec.blockStore.PruneBlocks(retainHeight, state)
 	if err != nil {

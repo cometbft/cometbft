@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	client2 "github.com/cometbft/cometbft/rpc/grpc/client"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/version"
 	"github.com/stretchr/testify/require"
@@ -105,18 +106,22 @@ func TestGRPC_Block_GetLatestHeight(t *testing.T) {
 	gRPCClient, err := node.GRPCClient(ctx)
 	require.NoError(t, err)
 
-	newHeightChannel, errorChannel := gRPCClient.GetLatestHeight(gCtx)
+	resultCh := make(chan client2.LatestHeightResult)
+	gRPCClient.GetLatestHeight(gCtx, resultCh)
 
 	count := 0
 	for {
 		select {
 		case <-gCtx.Done():
 			require.NoError(t, gCtx.Err())
-		case height := <-newHeightChannel:
-			require.GreaterOrEqual(t, height, status.SyncInfo.EarliestBlockHeight)
-			count++
-		case err := <-errorChannel:
-			require.Error(t, err)
+		case result := <-resultCh:
+			if err != nil {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.GreaterOrEqual(t, result.Height, status.SyncInfo.EarliestBlockHeight)
+				count++
+			}
 		}
 		if count == 10 {
 			cancel()

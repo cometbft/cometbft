@@ -15,12 +15,19 @@ type Block struct {
 	Block   *types.Block  `json:"block"`
 }
 
+// LatestHeightResult type used in GetLatestResult and send to the client
+// via a channel
+type LatestHeightResult struct {
+	Height int64
+	Error  error
+}
+
 // BlockServiceClient provides block information
 type BlockServiceClient interface {
 	GetBlockByHeight(ctx context.Context, height int64) (*Block, error)
 	// GetLatestHeight provides sends the latest committed block height to the given output
 	// channel as blocks are committed.
-	GetLatestHeight(ctx context.Context) (chan int64, chan error)
+	GetLatestHeight(ctx context.Context, resultCh chan<- LatestHeightResult)
 }
 
 type blockServiceClient struct {
@@ -65,31 +72,38 @@ func (c *blockServiceClient) GetBlockByHeight(ctx context.Context, height int64)
 // GetLatestHeight implements BlockServiceClient GetLatestHeight
 // This method provides an out channel (int64) that streams the latest height.
 // The out channel might return non-contiguous heights if the channel becomes full,
-func (c *blockServiceClient) GetLatestHeight(ctx context.Context) (chan int64, chan error) {
-	newHeightCh := make(chan int64)
-	errorCh := make(chan error)
+func (c *blockServiceClient) GetLatestHeight(ctx context.Context, resultCh chan<- LatestHeightResult) {
+
 	req := blocksvc.GetLatestHeightRequest{}
 
 	latestHeightClient, err := c.client.GetLatestHeight(ctx, &req)
 	if err != nil {
-		errorCh <- fmt.Errorf("error getting a stream for the latest height")
+		resultCh <- LatestHeightResult{
+			Height: 0,
+			Error:  fmt.Errorf("error getting a stream for the latest height"),
+		}
 	}
 
 	go func(client blocksvc.BlockService_GetLatestHeightClient) {
 		for {
 			response, err := client.Recv()
 			if err != nil {
-				errorCh <- fmt.Errorf("error receiving the latest height from a stream")
+				resultCh <- LatestHeightResult{
+					Height: 0,
+					Error:  fmt.Errorf("error receiving the latest height from a stream"),
+				}
 				break
 			}
 			select {
-			case newHeightCh <- response.Height:
+			case resultCh <- LatestHeightResult{
+				Height: response.Height,
+				Error:  fmt.Errorf("error receiving the latest height from a stream"),
+			}:
 			default:
 			}
 
 		}
 	}(latestHeightClient)
-	return newHeightCh, errorCh
 }
 
 type disabledBlockServiceClient struct{}
@@ -104,6 +118,6 @@ func (*disabledBlockServiceClient) GetBlockByHeight(context.Context, int64) (*Bl
 }
 
 // GetLatestHeight implements BlockServiceClient GetLatestHeight - disabled client
-func (*disabledBlockServiceClient) GetLatestHeight(context.Context) (chan int64, chan error) {
+func (*disabledBlockServiceClient) GetLatestHeight(context.Context, chan<- LatestHeightResult) {
 	panic("block service client is disabled")
 }

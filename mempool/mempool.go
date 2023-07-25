@@ -229,6 +229,7 @@ type Iterator interface {
 
 	// NextEntry returns the following entry with respect to the last time this
 	// method was called, in the order defined by the mempool implementation. If
-	// the mempool is empty return `null` and if it was not called before, return the first entry.
+	// the mempool is empty return nil and if it was not called before, return
+	// the first entry.
 	NextEntry() *Entry
 }

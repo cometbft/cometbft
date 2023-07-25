@@ -365,9 +365,8 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 	require.Zero(t, len(firstReactor.txSenders))
 }
 
-// Test that:
-// Even if the sender sleeps because the receiver is late, the receiver will eventually
-// get the transactions.
+// Test that, even if the sender sleeps because the receiver is late, the
+// receiver will eventually get the transactions.
 func TestReactorPeerLagging(t *testing.T) {
 	config := cfg.TestConfig()
 	config.Mempool.Size = 1000
@@ -392,7 +391,7 @@ func TestReactorPeerLagging(t *testing.T) {
 	numTxs := config.Mempool.Size
 	txs := newUniqueTxs(numTxs)
 
-	// Update the mempools to set the height ahead of all peers' state.
+	// Update the mempools to set their height ahead of all peers' state.
 	for _, r := range reactors {
 		err := r.mempool.Update(3, types.Txs{}, make([]*abci.ExecTxResult, 0), nil, nil)
 		require.NoError(t, err)

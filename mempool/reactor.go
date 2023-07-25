@@ -162,10 +162,9 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			return
 		}
 
-		// Wait until either: a mempool entry is available in the channel, or
-		// the peer was disconnected, or the reactor stopped.
-
 		if entry == nil {
+			// Wait until either: a mempool entry is available in the channel,
+			// or the peer was disconnected, or the reactor stopped.
 			select {
 			case <-iter.WaitNext():
 				entry = iter.NextEntry()
@@ -217,6 +216,8 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 				continue
 			}
 		}
+
+		// We are done with this entry; set it to nil to fetch the next one.
 		entry = nil
 	}
 }

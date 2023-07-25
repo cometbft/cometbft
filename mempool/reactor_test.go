@@ -382,8 +382,6 @@ func TestReactorTxSendersMultiNodeSleep(t *testing.T) {
 		}
 	}()
 	for _, r := range reactors {
-		//The mempool is 2 heights ahead of all peerState
-		r.mempool.height = 3
 		for _, peer := range r.Switch.Peers().List() {
 			peer.Set(types.PeerStateKey, peerState{1})
 		}
@@ -394,8 +392,10 @@ func TestReactorTxSendersMultiNodeSleep(t *testing.T) {
 	numTxs := config.Mempool.Size
 	txs := newUniqueTxs(numTxs)
 
-	// Initially, there are no transactions (and no senders).
+	// Update the mempools to set the height ahead of all peers' state.
 	for _, r := range reactors {
+		err := r.mempool.Update(3, types.Txs{}, make([]*abci.ExecTxResult, 0), nil, nil)
+		require.NoError(t, err)
 		require.Zero(t, len(r.txSenders))
 	}
 

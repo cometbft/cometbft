@@ -158,4 +158,3 @@ please see the [Tendermint Core upgrading instructions][tmupgrade].
 [discussions]: https://github.com/cometbft/cometbft/discussions
 [tmupgrade]: https://github.com/tendermint/tendermint/blob/35581cf54ec436b8c37fabb43fdaa3f48339a170/UPGRADING.md
 [go120]: https://go.dev/blog/go1.20
-[adr-105]: https://github.com/cometbft/cometbft/blob/d266cae2fd91095f16d53883099494d8dfe4b86d/docs/architecture/adr-105-refactor-mempool-senders.md

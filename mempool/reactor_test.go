@@ -320,18 +320,18 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 			peer.Set(types.PeerStateKey, peerState{1})
 		}
 	}
-	firstReactor := reactors[0]
 
 	numTxs := config.Mempool.Size
 	txs := newUniqueTxs(numTxs)
 
 	// Initially, there are no transactions (and no senders).
 	for _, r := range reactors {
+		require.Zero(t, r.mempool.Size())
 		require.Zero(t, len(r.txSenders))
 	}
 
 	// Add transactions to the first reactor.
-	callCheckTx(t, firstReactor.mempool, txs)
+	callCheckTx(t, reactors[0].mempool, txs)
 
 	// Wait for all txs to be in the mempool of each reactor.
 	waitForReactors(t, txs, reactors, checkTxsInMempoolInOrder)
@@ -341,9 +341,9 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 
 	// Split the transactions in three groups of different sizes.
 	splitIndex := numTxs / 6
-	validTxs := txs[:splitIndex]                 // will be used to update the mempool, as valid txs
-	invalidTxs := txs[splitIndex : 3*splitIndex] // will be used to update the mempool, as invalid txs
-	ignoredTxs := txs[3*splitIndex:]             // will remain in the mempool
+	validTxs := txs[:splitIndex]                 // 1/6 will be used to update the mempool, as valid txs
+	invalidTxs := txs[splitIndex : 3*splitIndex] // 2/6 will be used to update the mempool, as invalid txs
+	ignoredTxs := txs[3*splitIndex:]             // 3/6 will remain in the mempool
 
 	// Update the mempools with a list of valid and invalid transactions.
 	for i, r := range reactors {
@@ -362,7 +362,7 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 	}
 
 	// The first reactor should not receive transactions from other peers.
-	require.Zero(t, len(firstReactor.txSenders))
+	require.Zero(t, len(reactors[0].txSenders))
 }
 
 // Test that, even if the sender sleeps because the receiver is late, the
@@ -386,24 +386,25 @@ func TestReactorPeerLagging(t *testing.T) {
 		}
 	}
 
-	firstReactor := reactors[0]
-
 	numTxs := config.Mempool.Size
 	txs := newUniqueTxs(numTxs)
 
-	// Update the mempools to set their height ahead of all peers' state.
+	// Update the first reactor to set its height ahead of all its peers.
+	err := reactors[0].mempool.Update(3, types.Txs{}, make([]*abci.ExecTxResult, 0), nil, nil)
+	require.NoError(t, err)
+
+	// No reactor has transactions (or senders).
 	for _, r := range reactors {
-		err := r.mempool.Update(3, types.Txs{}, make([]*abci.ExecTxResult, 0), nil, nil)
-		require.NoError(t, err)
+		require.Zero(t, r.mempool.Size())
 		require.Zero(t, len(r.txSenders))
 	}
 
 	// Add transactions to the first reactor.
-	callCheckTx(t, firstReactor.mempool, txs)
+	callCheckTx(t, reactors[0].mempool, txs)
 	// Ensure the transactions were added in the right order.
 	waitForReactors(t, txs, reactors[:0], checkTxsInMempoolInOrder)
 
-	// Because the peerState is lagging, the firstReactor should keep sleeping and
+	// Because the peers are lagging, the first reactor should keep sleeping and
 	// not broadcast the transactions even if it has had plenty of time.
 	time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond * 100)
 	waitForReactors(t, txs, reactors[1:], checkNoTxsInMempool)
@@ -415,7 +416,7 @@ func TestReactorPeerLagging(t *testing.T) {
 		}
 	}
 
-	// Now the txs should be propagated and in the right order.
+	// Now the txs should be propagated and received in the right order.
 	// This test may be flaky.
 	waitForReactors(t, txs, reactors, checkTxsInMempoolInOrder)
 }

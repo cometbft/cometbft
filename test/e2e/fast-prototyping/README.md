@@ -7,7 +7,7 @@ For the impatient
 
     cd path/to/cometbft/
     E2E_DIR=$(pwd)/test/e2e
-    (cd ${E2E_DIR} && make node generator runner docker-fast)
+    (cd ${E2E_DIR} && make node-fast generator runner docker-fast)
     ${E2E_DIR}/fast-prototyping/experiments.sh ${E2E_DIR}/fast-prototyping/render/sample.csv # takes around two minutes
     cp ${E2E_DIR}/fast-prototyping/render/results.csv.tmpl ${E2E_DIR}/fast-prototyping/render/results.csv
     echo "sample;A sample result.;sample.csv" >>  ${E2E_DIR}/fast-prototyping/render/results.csv

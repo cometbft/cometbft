@@ -365,7 +365,7 @@ Does not run any perturbations.
     useful bandwidth: #txs * tx_size * #nodes
     overhead: (total bandwidth - useful bandwidth) / (useful bandwidth)
     redundancy: number of duplicates received per tx seen (on average)
-    cpu log: the CPU load as reported under /proc/PID/status (on average, in seconds)
+    cpu: the CPU load as reported under /proc/PID/status (on average, in seconds)
     bandwidth graph: detailed bandwidth usage as a (json) graph
 End after 1 minute, or if some (optional) target is attained.
 Does not run any perturbations.
@@ -433,6 +433,7 @@ Does not run any perturbations.
 				return err
 			}
 
+			// FIXME should it be json instead?
 			txsSeen := mempoolStats.TxsSeen(cli.testnet)
 			completion := mempoolStats.Completion(cli.testnet, txs)
 			redundancy := mempoolStats.Redundancy(cli.testnet)

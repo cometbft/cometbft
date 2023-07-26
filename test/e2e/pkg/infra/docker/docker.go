@@ -101,7 +101,7 @@ services:
     container_name: {{ .Name }}
     image: {{ .Version }}
 {{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_unsync") }}
-    entrypoint: /entrypoint
+    entrypoint: /usr/bin/entrypoint-builtin
 {{- end }}
     init: true
     ports:

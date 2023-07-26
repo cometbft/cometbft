@@ -22,8 +22,8 @@ for r in $(seq 50 50 100);
 do
     for i in $(geometric 4 2 2);
     do
-			${DIR}/tmpl-gen.sh ${i} ${r} ${DEGREE} ${MODE}> ${NETDIR}/${TMPL}.toml
-			${BINDIR}/runner -f ${NETDIR}/${TMPL}.toml custom > ${TMPDIR}/log
+			${DIR}/tmpl-gen.sh ${i} ${r} ${DEGREE} ${MODE}> ${TMPDIR}/${TMPL}.toml
+			${BINDIR}/runner -f ${TMPDIR}/${TMPL}.toml custom > ${TMPDIR}/log
 			sent=$(grep "txs sent" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
 			added=$(grep "txs added" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
 			completion=$(grep "completion" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')

@@ -1,7 +1,9 @@
 package e2e_test
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -160,41 +162,66 @@ func fetchBlockChain(t *testing.T) []*types.Block {
 	return blocks
 }
 
-// fetchABCIRequestsByNodeName go through the logs and collect all ABCI requests for each node.
-func fetchABCIRequestsByNodeName(t *testing.T) map[string][]*abci.Request {
+// fetchABCIRequests go through the logs and collect all ABCI requests (each slice represents request until the crash happened) for a specific node.
+func fetchABCIRequests(t *testing.T, nodeName string) ([][]*abci.Request, error) {
 	testnet := loadTestnet(t)
-	// Printing the logs of all nodes in the testnet.
-	dir := filepath.Join(testnet.Dir, "docker-compose.yml")
-	out, err := exec.Command("docker-compose", "-f", dir, "logs").Output()
+	logs, err := fetchNodeLogs(testnet, nodeName)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	m := make(map[string][]*abci.Request)
+	reqs := make([][]*abci.Request, 0)
+	i := -1
 	// Parse output line by line.
-	lines := strings.Split(string(out), "\n")
+	lines := strings.Split(string(logs), "\n")
 	for _, line := range lines {
+		if strings.Contains(line, "Application started") {
+			i += 1
+			reqs = append(reqs, make([]*abci.Request, 0))
+			continue
+		}
 		r, err := app.GetABCIRequestFromString(line)
 		require.NoError(t, err)
 		// Ship the lines that does not contain abci request.
 		if r == nil {
 			continue
 		}
-		// Getting node's name.
-		// First string in line is nodeName, however it has prefix for colored output that we
-		// need to skip. I don't know exactly how it looks like but manually I found out that it
-		// ends with 'm'. So I try to find first 'm' and then take everything after as nodeName.
-		parts := strings.Fields(line)
-		partWithNodeName := parts[0]
-		index := 0
-		for i := 0; i < len(partWithNodeName); i++ {
-			if partWithNodeName[i] == 'm' {
-				index = i + 1
-				break
-			}
-		}
-		nodeName := string(partWithNodeName[index:])
-
-		m[nodeName] = append(m[nodeName], r)
+		reqs[i] = append(reqs[i], r)
 	}
-	return m
+	return reqs, nil
+}
+
+func fetchNodeLogs(testnet e2e.Testnet, nodeName string) ([]byte, error) {
+	dir := filepath.Join(testnet.Dir, "docker-compose.yml")
+	c1 := exec.Command("docker-compose", "-f", dir, "logs")
+	c2 := exec.Command("grep", nodeName)
+
+	r, w := io.Pipe()
+	c1.Stdout = w
+	c2.Stdin = r
+
+	var out bytes.Buffer
+	c2.Stdout = &out
+
+	err := c1.Start()
+	if err != nil {
+		return nil, err
+	}
+	err = c2.Start()
+	if err != nil {
+		return nil, err
+	}
+	err = c1.Wait()
+	if err != nil {
+		return nil, err
+	}
+	err = w.Close()
+	if err != nil {
+		return nil, err
+	}
+	err = c2.Wait()
+	if err != nil {
+		return nil, err
+	}
+	return out.Bytes(), nil
+
 }

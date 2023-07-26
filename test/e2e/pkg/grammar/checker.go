@@ -23,14 +23,11 @@ type GrammarChecker struct {
 type Config struct {
 	// Number of errors checker outputs.
 	NumberOfErrorsToShow int
-	// Show full execution.
-	ShowFullExecution bool
 }
 
 func DefaultConfig() *Config {
 	return &Config{
 		NumberOfErrorsToShow: 1,
-		ShowFullExecution:    true,
 	}
 }
 
@@ -54,17 +51,25 @@ func (g *GrammarChecker) isSupportedByGrammar(req *abci.Request) bool {
 	}
 }
 
+// filterRequests returns request supported by grammar and remove the last height.
+func (g *GrammarChecker) filterRequests(reqs []*abci.Request) []*abci.Request {
+	var r []*abci.Request
+	for _, req := range reqs {
+		if g.isSupportedByGrammar(req) {
+			r = append(r, req)
+		}
+	}
+	r, _ = g.filterLastHeight(r)
+	return r
+}
+
 // getRequestTerminal returns a value of a corresponding terminal in the abci grammar for a specific request.
 func (g *GrammarChecker) getRequestTerminal(req *abci.Request) string {
-	if g.isSupportedByGrammar(req) {
-		// req.String() produces an output like this "init_chain:<time:<seconds:-62135596800 > >"
-		// we take just the part before the ":" (init_chain, in previous example) for each request
-		s := req.String()
-		t := strings.Split(s, ":")[0]
-		return t
-	}
-	return ""
-
+	// req.String() produces an output like this "init_chain:<time:<seconds:-62135596800 > >"
+	// we take just the part before the ":" (init_chain, in previous example) for each request
+	s := req.String()
+	t := strings.Split(s, ":")[0]
+	return t
 }
 
 // GetExecutionString returns all requests that grammar understand as string of terminal symbols
@@ -73,9 +78,6 @@ func (g *GrammarChecker) GetExecutionString(reqs []*abci.Request) string {
 	s := ""
 	for _, r := range reqs {
 		t := g.getRequestTerminal(r)
-		if t == "" {
-			continue
-		}
 		// We ensure to have one height per line for readability.
 		if t == "commit" {
 			s += t + "\n"
@@ -87,11 +89,44 @@ func (g *GrammarChecker) GetExecutionString(reqs []*abci.Request) string {
 }
 
 // Verify verifies whether a list of request satisfy abci grammar.
-func (g *GrammarChecker) Verify(reqs []*abci.Request) (bool, error) {
-	var r []*abci.Request
-	r, _ = g.filterLastHeight(reqs)
-	s := g.GetExecutionString(r)
-	return g.VerifyExecution(s)
+func (g *GrammarChecker) Verify(reqs []*abci.Request, isCleanStart bool) (bool, error) {
+	r := g.filterRequests(reqs)
+	execution := g.GetExecutionString(r)
+	_, err := g.VerifySpecific(r, isCleanStart)
+	if err != nil {
+		return false, fmt.Errorf("%v\nExecution:\n%v", err, execution)
+	}
+	_, err = g.VerifyGeneric(execution)
+	if err != nil {
+		return false, fmt.Errorf("%v\nExecution:\n%v", err, execution)
+	}
+	return true, nil
+}
+
+// VerifySpecific checks some specific cases.
+func (g *GrammarChecker) VerifySpecific(reqs []*abci.Request, isCleanStart bool) (bool, error) {
+	firstReq := g.getRequestTerminal(reqs[0])
+	if isCleanStart {
+		if firstReq != "init_chain" {
+			return false, fmt.Errorf("Clean-start starts with %v", firstReq)
+		}
+	} else {
+		if firstReq != "finalize_block" && firstReq != "prepare_proposal" && firstReq != "process_proposal" {
+			return false, fmt.Errorf("Recovery starts with %v", firstReq)
+		}
+	}
+	return true, nil
+}
+
+// VerifyGeneric checks the whole execution by using the gogll generate lexer and parser.
+func (g *GrammarChecker) VerifyGeneric(execution string) (bool, error) {
+	lexer := lexer.New([]rune(execution))
+	_, errs := parser.Parse(lexer)
+	if len(errs) > 0 {
+		err := g.combineParseErrors(execution, errs, g.cfg.NumberOfErrorsToShow)
+		return false, err
+	}
+	return true, nil
 }
 
 // filterLastHeight removes abci calls from the last height if "commit" has not been called.
@@ -106,22 +141,6 @@ func (g *GrammarChecker) filterLastHeight(reqs []*abci.Request) ([]*abci.Request
 		cnt++
 	}
 	return reqs[:pos+1], cnt
-}
-
-// Verify checks if "execution string" respect abci grammar.
-// Only this method is using auto-generated code by gogll.
-func (g *GrammarChecker) VerifyExecution(execution string) (bool, error) {
-	lexer := lexer.New([]rune(execution))
-	_, errs := parser.Parse(lexer)
-	if len(errs) > 0 {
-		err := g.combineParseErrors(execution, errs, g.cfg.NumberOfErrorsToShow)
-		if g.cfg.ShowFullExecution {
-			e := g.addHeightNumbersToTheExecution(execution)
-			err = fmt.Errorf("%v\nFull execution:\n%v", err, e)
-		}
-		return false, err
-	}
-	return true, nil
 }
 
 // combineParseErrors combines all parse errors in one.
@@ -143,13 +162,4 @@ func (g *GrammarChecker) combineParseErrors(execution string, errs []*parser.Err
 		s = fmt.Sprintf("%v%v\n", s, err)
 	}
 	return fmt.Errorf("%v-------------", s)
-}
-
-func (g *GrammarChecker) addHeightNumbersToTheExecution(execution string) string {
-	heights := strings.Split(execution, "\n")
-	s := ""
-	for i, l := range heights {
-		s = fmt.Sprintf("%v%v: %v\n", s, i, l)
-	}
-	return s
 }

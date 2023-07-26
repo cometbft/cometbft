@@ -9,29 +9,35 @@ import (
 )
 
 func TestABCIGrammar(t *testing.T) {
-	m := fetchABCIRequestsByNodeName(t)
 	checker := grammar.NewGrammarChecker(grammar.DefaultConfig())
 	testNode(t, func(t *testing.T, node e2e.Node) {
 		if !node.Testnet.ABCITestsEnabled {
 			return
 		}
-		reqs := m[node.Name]
-		_, err := checker.Verify(reqs)
+		reqs, err := fetchABCIRequests(t, node.Name)
 		if err != nil {
-			t.Error(fmt.Errorf("ABCI grammar verification failed: %w", err))
+			t.Error(fmt.Errorf("Collecting of ABCI requests failed: %w", err))
+		}
+		for i, r := range reqs {
+			_, err := checker.Verify(r, i == 0)
+			if err != nil {
+				t.Error(fmt.Errorf("ABCI grammar verification failed: %w", err))
+			}
 		}
 	})
 }
 
 func TestNodeNameExtracting(t *testing.T) {
-	m := fetchABCIRequestsByNodeName(t)
 	testNode(t, func(t *testing.T, node e2e.Node) {
 		if !node.Testnet.ABCITestsEnabled {
 			return
 		}
-		_, ok := m[node.Name]
-		if !ok {
-			t.Errorf("Node %v is not in map.\n", node.Name)
+		reqs, err := fetchABCIRequests(t, node.Name)
+		if err != nil {
+			t.Error(fmt.Errorf("Collecting of ABCI requests failed: %w", err))
+		}
+		if len(reqs) == 0 {
+			t.Errorf("No ABCI requests on validator %v", node.Name)
 		}
 	})
 }

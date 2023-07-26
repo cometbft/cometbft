@@ -124,8 +124,12 @@ func NewApplication(cfg *Config) (*Application, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+	logger.Info("Application started!")
+
 	return &Application{
-		logger:    log.NewTMLogger(log.NewSyncWriter(os.Stdout)),
+		logger:    logger,
 		state:     state,
 		snapshots: snapshots,
 		cfg:       cfg,

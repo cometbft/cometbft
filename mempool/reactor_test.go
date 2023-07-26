@@ -363,7 +363,62 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 
 	// The first reactor should not receive transactions from other peers.
 	require.Zero(t, len(reactors[0].txSenders))
-	require.Zero(t, len(firstReactor.txSenders))
+}
+
+// Test that, even if the sender sleeps because the receiver is late, the
+// receiver will eventually get the transactions.
+func TestReactorPeerLagging(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.Size = 1000
+	config.Mempool.CacheSize = 1000
+	const N = 3
+	reactors, _ := makeAndConnectReactors(config, N)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				assert.NoError(t, err)
+			}
+		}
+	}()
+	for _, r := range reactors {
+		for _, peer := range r.Switch.Peers().List() {
+			peer.Set(types.PeerStateKey, peerState{1})
+		}
+	}
+
+	numTxs := config.Mempool.Size
+	txs := newUniqueTxs(numTxs)
+
+	// Update the first reactor to set its height ahead of all its peers.
+	err := reactors[0].mempool.Update(3, types.Txs{}, make([]*abci.ExecTxResult, 0), nil, nil)
+	require.NoError(t, err)
+
+	// No reactor has transactions (or senders).
+	for _, r := range reactors {
+		require.Zero(t, r.mempool.Size())
+		require.Zero(t, len(r.txSenders))
+	}
+
+	// Add transactions to the first reactor.
+	callCheckTx(t, reactors[0].mempool, txs)
+	// Ensure the transactions were added in the right order.
+	waitForReactors(t, txs, reactors[:0], checkTxsInMempoolInOrder)
+
+	// Because the peers are lagging, the first reactor should keep sleeping and
+	// not broadcast the transactions even if it has had plenty of time.
+	time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond * 100)
+	waitForReactors(t, txs, reactors[1:], checkNoTxsInMempool)
+
+	// peerState catches up.
+	for _, r := range reactors {
+		for _, peer := range r.Switch.Peers().List() {
+			peer.Set(types.PeerStateKey, peerState{3})
+		}
+	}
+
+	// Now the txs should be propagated and received in the right order.
+	// This test may be flaky.
+	waitForReactors(t, txs, reactors, checkTxsInMempoolInOrder)
 }
 
 // Check that the mempool has exactly the given list of txs and, if it's not the
@@ -459,6 +514,10 @@ func waitForReactors(t *testing.T, txs types.Txs, reactors []*Reactor, testFunc 
 		t.Fatal("Timed out waiting for txs ", string(debug.Stack()))
 	case <-done:
 	}
+}
+
+func checkNoTxsInMempool(t *testing.T, _ types.Txs, reactor *Reactor, _ int) {
+	require.Equal(t, 0, reactor.mempool.Size())
 }
 
 // Wait until the mempool has a certain number of transactions.

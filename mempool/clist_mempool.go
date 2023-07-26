@@ -52,10 +52,12 @@ type CListMempool struct {
 	recheckCursor *clist.CElement // next expected response
 	recheckEnd    *clist.CElement // re-checking stops here
 
-	// Concurrent linked-list of valid txs.
-	// `txsMap`: txKey -> CElement is for quick access to txs.
-	// Transactions in both `txs` and `txsMap` must to be kept in sync.
-	txs    *clist.CList
+	// Concurrent linked-list of valid transactions.
+	// txs must to be kept in sync with txsMap.
+	txs *clist.CList
+
+	// txsMap is for quick access to txs and it must be kept in sync with txs.
+	// txsMap: txKey -> CElement
 	txsMap sync.Map
 
 	// Keep a cache of already-seen txs.

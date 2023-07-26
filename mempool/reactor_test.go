@@ -3,6 +3,7 @@ package mempool
 import (
 	"encoding/hex"
 	"errors"
+	"runtime/debug"
 	"sync"
 	"testing"
 	"time"
@@ -60,7 +61,7 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 	}
 
 	txs := checkTxs(t, reactors[0].mempool, numTxs)
-	waitForReactors(t, txs, reactors, checkTxsInOrder)
+	waitForReactors(t, txs, reactors, checkTxsInMempoolInOrder)
 }
 
 // regression test for https://github.com/tendermint/tendermint/issues/5408
@@ -180,7 +181,7 @@ func TestReactor_MaxTxBytes(t *testing.T) {
 	reqRes, err := reactors[0].mempool.CheckTx(tx1)
 	require.NoError(t, err)
 	require.False(t, reqRes.Response.GetCheckTx().IsErr())
-	waitForReactors(t, []types.Tx{tx1}, reactors, checkTxsInOrder)
+	waitForReactors(t, []types.Tx{tx1}, reactors, checkTxsInMempoolInOrder)
 
 	reactors[0].mempool.Flush()
 	reactors[1].mempool.Flush()
@@ -319,30 +320,30 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 			peer.Set(types.PeerStateKey, peerState{1})
 		}
 	}
-	firstReactor := reactors[0]
 
 	numTxs := config.Mempool.Size
 	txs := newUniqueTxs(numTxs)
 
 	// Initially, there are no transactions (and no senders).
 	for _, r := range reactors {
+		require.Zero(t, r.mempool.Size())
 		require.Zero(t, len(r.txSenders))
 	}
 
 	// Add transactions to the first reactor.
-	callCheckTx(t, firstReactor.mempool, txs)
+	callCheckTx(t, reactors[0].mempool, txs)
 
 	// Wait for all txs to be in the mempool of each reactor.
-	waitForReactors(t, txs, reactors, checkTxsInMempool)
+	waitForReactors(t, txs, reactors, checkTxsInMempoolInOrder)
 	for i, r := range reactors {
 		checkTxsInMempoolAndSenders(t, r, txs, i)
 	}
 
 	// Split the transactions in three groups of different sizes.
 	splitIndex := numTxs / 6
-	validTxs := txs[:splitIndex]                 // will be used to update the mempool, as valid txs
-	invalidTxs := txs[splitIndex : 3*splitIndex] // will be used to update the mempool, as invalid txs
-	ignoredTxs := txs[3*splitIndex:]             // will remain in the mempool
+	validTxs := txs[:splitIndex]                 // 1/6 will be used to update the mempool, as valid txs
+	invalidTxs := txs[splitIndex : 3*splitIndex] // 2/6 will be used to update the mempool, as invalid txs
+	ignoredTxs := txs[3*splitIndex:]             // 3/6 will remain in the mempool
 
 	// Update the mempools with a list of valid and invalid transactions.
 	for i, r := range reactors {
@@ -361,6 +362,7 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 	}
 
 	// The first reactor should not receive transactions from other peers.
+	require.Zero(t, len(reactors[0].txSenders))
 	require.Zero(t, len(firstReactor.txSenders))
 }
 
@@ -413,7 +415,7 @@ func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switc
 		mempool, cleanup := newMempoolWithApp(cc)
 		defer cleanup()
 
-		reactors[i] = NewReactor(config.Mempool, mempool) // so we dont start the consensus states
+		reactors[i] = NewReactor(config.Mempool, mempool) // so we don't start the consensus states
 		reactors[i].SetLogger(logger.With("validator", i))
 	}
 
@@ -454,7 +456,7 @@ func waitForReactors(t *testing.T, txs types.Txs, reactors []*Reactor, testFunc 
 	timer := time.After(timeout)
 	select {
 	case <-timer:
-		t.Fatal("Timed out waiting for txs")
+		t.Fatal("Timed out waiting for txs ", string(debug.Stack()))
 	case <-done:
 	}
 }
@@ -466,23 +468,15 @@ func waitForNumTxsInMempool(numTxs int, mempool Mempool) {
 	}
 }
 
-// Wait until all txs are in the mempool and check that the number of txs in the
-// mempool is as expected.
-func checkTxsInMempool(t *testing.T, txs types.Txs, reactor *Reactor, _ int) {
-	waitForNumTxsInMempool(len(txs), reactor.mempool)
-
-	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
-	require.Equal(t, len(txs), len(reapedTxs))
-	require.Equal(t, len(txs), reactor.mempool.Size())
-}
-
 // Wait until all txs are in the mempool and check that they are in the same
 // order as given.
-func checkTxsInOrder(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex int) {
+func checkTxsInMempoolInOrder(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex int) {
 	waitForNumTxsInMempool(len(txs), reactor.mempool)
 
 	// Check that all transactions in the mempool are in the same order as txs.
 	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
+	require.Equal(t, len(txs), len(reapedTxs))
+	require.Equal(t, len(txs), reactor.mempool.Size())
 	for i, tx := range txs {
 		assert.Equalf(t, tx, reapedTxs[i],
 			"txs at index %d on reactor %d don't match: %v vs %v", i, reactorIndex, tx, reapedTxs[i])

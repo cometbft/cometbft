@@ -306,7 +306,7 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 	config := cfg.TestConfig()
 	config.Mempool.Size = 1000
 	config.Mempool.CacheSize = 1000
-	const N = 3
+	const N = 5
 	reactors, _ := makeAndConnectReactors(config, N)
 	defer func() {
 		for _, r := range reactors {
@@ -371,7 +371,7 @@ func TestReactorPeerLagging(t *testing.T) {
 	config := cfg.TestConfig()
 	config.Mempool.Size = 1000
 	config.Mempool.CacheSize = 1000
-	const N = 3
+	const N = 4
 	reactors, _ := makeAndConnectReactors(config, N)
 	defer func() {
 		for _, r := range reactors {
@@ -402,7 +402,7 @@ func TestReactorPeerLagging(t *testing.T) {
 	// Add transactions to the first reactor.
 	callCheckTx(t, reactors[0].mempool, txs)
 	// Ensure the transactions were added in the right order.
-	waitForReactors(t, txs, reactors[:0], checkTxsInMempoolInOrder)
+	checkTxsInMempoolInOrder(t, txs, reactors[0], 0)
 
 	// Because the peers are lagging, the first reactor should keep sleeping and
 	// not broadcast the transactions even if it has had plenty of time.

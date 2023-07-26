@@ -62,7 +62,7 @@ func run(configFile string) error {
 		if err = startSigner(cfg); err != nil {
 			return err
 		}
-		if cfg.Protocol == "builtin" {
+		if cfg.Protocol == "builtin" || cfg.Protocol == "builtin_connsync" {
 			time.Sleep(1 * time.Second)
 		}
 	}
@@ -71,7 +71,7 @@ func run(configFile string) error {
 	switch cfg.Protocol {
 	case "socket", "grpc":
 		err = startApp(cfg)
-	case "builtin":
+	case "builtin", "builtin_connsync":
 		if cfg.Mode == string(e2e.ModeLight) {
 			err = startLightClient(cfg)
 		} else {
@@ -123,8 +123,14 @@ func startNode(cfg *Config) error {
 		return fmt.Errorf("failed to setup config: %w", err)
 	}
 
-	clientCreator := proxy.NewLocalClientCreator(app)
-	nodeLogger.Info("Using default (synchronized) local client creator")
+	var clientCreator proxy.ClientCreator
+	if cfg.Protocol == string(e2e.ProtocolBuiltinConnSync) {
+		clientCreator = proxy.NewConnSyncLocalClientCreator(app)
+		nodeLogger.Info("Using connection-synchronized local client creator")
+	} else {
+		clientCreator = proxy.NewLocalClientCreator(app)
+		nodeLogger.Info("Using default (synchronized) local client creator")
+	}
 
 	n, err := node.NewNode(context.Background(), cmtcfg,
 		privval.LoadOrGenFilePV(cmtcfg.PrivValidatorKeyFile(), cmtcfg.PrivValidatorStateFile()),

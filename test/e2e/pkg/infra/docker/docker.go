@@ -95,7 +95,7 @@ services:
       e2e: true
     container_name: {{ .Name }}
     image: {{ .Version }}
-{{- if eq .ABCIProtocol "builtin" }}
+{{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_connsync") }}
     entrypoint: /usr/bin/entrypoint-builtin
 {{- end }}
     init: true
@@ -121,7 +121,7 @@ services:
       e2e: true
     container_name: {{ .Name }}_u
     image: {{ $.UpgradeVersion }}
-{{- if eq .ABCIProtocol "builtin" }}
+{{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_connsync") }}
     entrypoint: /usr/bin/entrypoint-builtin
 {{- end }}
     init: true

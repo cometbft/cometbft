@@ -79,13 +79,13 @@ type connSyncLocalClientCreator struct {
 	app types.Application
 }
 
-// NewConnSyncLocalClientCreator returns a [ClientCreator] for the given app,
-// which will be running locally.
+// NewConnSyncLocalClientCreator returns a local [ClientCreator] for the given
+// app.
 //
-// Returned clients are "connection-synchronized", meaning every client created
-// will have its own mutex, allowing interaction across clients to take place
-// in parallel, but every call on a particular client is effectively
-// serialized.
+// Unlike [NewLocalClientCreator], this is a "connection-synchronized" local
+// client creator, meaning each call to NewABCIClient returns an ABCI client
+// that maintains its own mutex over the application (i.e. it is
+// per-"connection" synchronized).
 func NewConnSyncLocalClientCreator(app types.Application) ClientCreator {
 	return &connSyncLocalClientCreator{
 		app: app,
@@ -220,18 +220,32 @@ func (r *remoteClientCreator) newABCIClient() (abcicli.Client, error) {
 // "noop".
 //
 // Otherwise a remote client will be created.
+//
+// Each of "kvstore", "persistent_kvstore" and "e2e" also currently have an
+// "_connsync" variant (i.e. "kvstore_connsync", etc.), which attempts to
+// replicate the same concurrency model as the remote client.
 func DefaultClientCreator(addr, transport, dbDir string) ClientCreator {
 	switch addr {
 	case "kvstore":
 		return NewLocalClientCreator(kvstore.NewInMemoryApplication())
+	case "kvstore_connsync":
+		return NewConnSyncLocalClientCreator(kvstore.NewInMemoryApplication())
 	case "persistent_kvstore":
 		return NewLocalClientCreator(kvstore.NewPersistentApplication(dbDir))
+	case "persistent_kvstore_connsync":
+		return NewConnSyncLocalClientCreator(kvstore.NewPersistentApplication(dbDir))
 	case "e2e":
 		app, err := e2e.NewApplication(e2e.DefaultConfig(dbDir))
 		if err != nil {
 			panic(err)
 		}
 		return NewLocalClientCreator(app)
+	case "e2e_connsync":
+		app, err := e2e.NewApplication(e2e.DefaultConfig(dbDir))
+		if err != nil {
+			panic(err)
+		}
+		return NewConnSyncLocalClientCreator(app)
 	case "noop":
 		return NewLocalClientCreator(types.NewBaseApplication())
 	default:

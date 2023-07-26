@@ -112,7 +112,7 @@ func (mem *CListMempool) getCElement(txKey types.TxKey) (*clist.CElement, bool) 
 	return nil, false
 }
 
-func (mem *CListMempool) InMempool(txKey types.TxKey) bool {
+func (mem *CListMempool) Contains(txKey types.TxKey) bool {
 	_, ok := mem.getCElement(txKey)
 	return ok
 }
@@ -391,7 +391,7 @@ func (mem *CListMempool) resCbFirstTime(
 			}
 
 			// Check transaction not already in the mempool
-			if mem.InMempool(txKey) {
+			if mem.Contains(txKey) {
 				mem.logger.Debug(
 					"transaction already there, not adding it again",
 					"tx", types.Tx(tx).Hash(),

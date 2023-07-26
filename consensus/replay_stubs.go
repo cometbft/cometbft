@@ -46,7 +46,7 @@ func (emptyMempool) TxsAvailable() <-chan struct{}          { return make(chan s
 func (emptyMempool) EnableTxsAvailable()                    {}
 func (emptyMempool) SetTxRemovedCallback(func(types.TxKey)) {}
 func (emptyMempool) TxsBytes() int64                        { return 0 }
-func (emptyMempool) InMempool(types.TxKey) bool             { return false }
+func (emptyMempool) Contains(types.TxKey) bool              { return false }
 
 func (emptyMempool) TxsFront() *clist.CElement    { return nil }
 func (emptyMempool) TxsWaitChan() <-chan struct{} { return nil }

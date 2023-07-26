@@ -22,6 +22,7 @@ const (
 	EventNewEvidence         = "NewEvidence"
 	EventTx                  = "Tx"
 	EventValidatorSetUpdates = "ValidatorSetUpdates"
+	EventRetainHeight        = "RetainHeight"
 
 	// Internal consensus events.
 	// These are used for testing the consensus state machine.
@@ -75,9 +76,10 @@ type EventDataNewBlockHeader struct {
 }
 
 type EventDataNewBlockEvents struct {
-	Height int64        `json:"height"`
-	Events []abci.Event `json:"events"`
-	NumTxs int64        `json:"num_txs,string"` // Number of txs in a block
+	Height       int64        `json:"height"`
+	Events       []abci.Event `json:"events"`
+	NumTxs       int64        `json:"num_txs,string"` // Number of txs in a block
+	RetainHeight int64        `json:"retain_height"`  // TODO consider another place
 }
 
 type EventDataNewEvidence struct {

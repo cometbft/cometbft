@@ -66,6 +66,7 @@ func (is *IndexerService) OnStart() error {
 				eventNewBlockEvents := msg.Data().(types.EventDataNewBlockEvents)
 				height := eventNewBlockEvents.Height
 				numTxs := eventNewBlockEvents.NumTxs
+				retainHeight := eventNewBlockEvents.RetainHeight
 
 				batch := NewBatch(numTxs)
 
@@ -113,14 +114,12 @@ func (is *IndexerService) OnStart() error {
 				} else {
 					is.Logger.Debug("indexed transactions", "height", height, "num_txs", numTxs)
 				}
+
+				is.txIdxr.Prune(retainHeight)
 			}
 		}
 	}()
 	return nil
-}
-
-func (is *IndexerService) PruneBlocks(retainHeight int64) {
-	is.txIdxr.Prune(retainHeight)
 }
 
 // OnStop implements service.Service by unsubscribing from all transactions.

@@ -13,7 +13,6 @@ import (
 	"github.com/cometbft/cometbft/mempool"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/proxy"
-	"github.com/cometbft/cometbft/state/txindex"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -29,8 +28,6 @@ type BlockExecutor struct {
 
 	// use blockstore for the pruning functions.
 	blockStore BlockStore
-
-	indexerService *txindex.IndexerService
 
 	// execute the app against this
 	proxyApp proxy.AppConnConsensus
@@ -60,7 +57,6 @@ func BlockExecutorWithMetrics(metrics *Metrics) BlockExecutorOption {
 // Call SetEventBus to provide one.
 func NewBlockExecutor(
 	stateStore Store,
-	indexerService *txindex.IndexerService,
 	logger log.Logger,
 	proxyApp proxy.AppConnConsensus,
 	mempool mempool.Mempool,
@@ -69,15 +65,14 @@ func NewBlockExecutor(
 	options ...BlockExecutorOption,
 ) *BlockExecutor {
 	res := &BlockExecutor{
-		store:          stateStore,
-		indexerService: indexerService,
-		proxyApp:       proxyApp,
-		eventBus:       types.NopEventBus{},
-		mempool:        mempool,
-		evpool:         evpool,
-		logger:         logger,
-		metrics:        NopMetrics(),
-		blockStore:     blockStore,
+		store:      stateStore,
+		proxyApp:   proxyApp,
+		eventBus:   types.NopEventBus{},
+		mempool:    mempool,
+		evpool:     evpool,
+		logger:     logger,
+		metrics:    NopMetrics(),
+		blockStore: blockStore,
 	}
 
 	for _, option := range options {
@@ -313,7 +308,7 @@ func (blockExec *BlockExecutor) ApplyBlock(
 
 	// Events are fired after everything else.
 	// NOTE: if we crash between Commit and Save, events wont be fired during replay
-	fireEvents(blockExec.logger, blockExec.eventBus, block, blockID, abciResponse, validatorUpdates)
+	fireEvents(blockExec.logger, blockExec.eventBus, block, blockID, abciResponse, validatorUpdates, retainHeight)
 
 	return state, nil
 }
@@ -623,6 +618,7 @@ func fireEvents(
 	blockID types.BlockID,
 	abciResponse *abci.ResponseFinalizeBlock,
 	validatorUpdates []*types.Validator,
+	retainHeight int64,
 ) {
 	if err := eventBus.PublishEventNewBlock(types.EventDataNewBlock{
 		Block:               block,
@@ -639,9 +635,10 @@ func fireEvents(
 	}
 
 	if err := eventBus.PublishEventNewBlockEvents(types.EventDataNewBlockEvents{
-		Height: block.Height,
-		Events: abciResponse.Events,
-		NumTxs: int64(len(block.Txs)),
+		Height:       block.Height,
+		Events:       abciResponse.Events,
+		NumTxs:       int64(len(block.Txs)),
+		RetainHeight: retainHeight,
 	}); err != nil {
 		logger.Error("failed publishing new block events", "err", err)
 	}
@@ -728,8 +725,6 @@ func (blockExec *BlockExecutor) pruneBlocks(retainHeight int64, state State) (ui
 	if retainHeight <= base {
 		return 0, nil
 	}
-
-	blockExec.indexerService.PruneBlocks(retainHeight)
 
 	amountPruned, prunedHeaderHeight, err := blockExec.blockStore.PruneBlocks(retainHeight, state)
 	if err != nil {

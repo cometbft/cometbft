@@ -1295,6 +1295,37 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		return
 	}
 
+	// Determine if the proposed block has a sane, non-nil proof-of-lock.
+	if cs.Proposal.POLRound >= 0 && cs.Proposal.POLRound < cs.Round {
+		// Validate the proof-of-lock using known prevotes.
+		blockID, ok := cs.Votes.Prevotes(cs.Proposal.POLRound).TwoThirdsMajority()
+		if ok && cs.ProposalBlock.HashesTo(blockID.Hash) {
+			// Validate the proof-of-lock round is at least as new as the possible locked round.
+			if cs.Proposal.POLRound >= cs.LockedRound {
+				logger.Debug("prevote step: ProposalBlock POLRound >= LockedRound; prevoting the block")
+				cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header())
+				return
+			}
+
+			// Validate the proposed block is equal to our locked block.
+			if cs.ProposalBlock.HashesTo(cs.LockedBlock.Hash()) {
+				logger.Debug("prevote step: ProposalBlock matches our locked block; prevoting the block")
+				cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header())
+				return
+			}
+
+			// Proof-of-lock is before our locked round.
+			logger.Debug("prevote step: ProposalBlock POLRound < LockedRound; prevoting nil")
+			cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
+			return
+		}
+
+		// Could not validate proof-of-lock +2/3 majority. Prevote nil even if the block is valid.
+		logger.Debug("prevote step: ProposalBlock proof-of-lock not validated; prevoting nil")
+		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
+		return
+	}
+
 	/*
 		Before prevoting on the block received from the proposer for the current round and height,
 		we request the Application, via `ProcessProposal` ABCI call, to confirm that the block is

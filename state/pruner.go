@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
 )
@@ -27,24 +28,34 @@ type Pruner struct {
 	interval   time.Duration
 }
 
-type PrunerOption func(*Pruner)
+type prunerConfig struct {
+	interval time.Duration
+}
+
+func defaultPrunerConfig() *prunerConfig {
+	return &prunerConfig{
+		interval: config.DefaultPruningInterval,
+	}
+}
+
+type PrunerOption func(*prunerConfig)
 
 func PrunerInterval(t time.Duration) PrunerOption {
-	return func(p *Pruner) { p.interval = t }
+	return func(p *prunerConfig) { p.interval = t }
 }
 
 func NewPruner(stateStore Store, bs BlockStore, logger log.Logger, options ...PrunerOption) *Pruner {
+	cfg := defaultPrunerConfig()
+	for _, opt := range options {
+		opt(cfg)
+	}
 	p := &Pruner{
 		bs:         bs,
 		stateStore: stateStore,
 		logger:     logger,
-		interval:   time.Second * 10,
+		interval:   cfg.interval,
 	}
 	p.BaseService = *service.NewBaseService(logger, "Pruner", p)
-	for _, option := range options {
-		option(p)
-	}
-
 	return p
 }
 

@@ -91,8 +91,8 @@ services:
     image: prom/prometheus
     volumes:
     - .:/etc/prometheus/
-    network_mode: "host"
-
+    ports:
+    - 9090:9090
 
 {{- range .Nodes }}
   {{ .Name }}:

@@ -63,16 +63,8 @@ func NewPruner(stateStore Store, bs BlockStore, logger log.Logger, options ...Pr
 }
 
 func (p *Pruner) OnStart() error {
-	if err := p.BaseService.OnStart(); err != nil {
-		return err
-	}
 	go p.pruningRoutine()
 	return nil
-}
-
-func (p *Pruner) OnStop() {
-	p.Quit()
-	p.BaseService.OnStop()
 }
 
 // SetApplicationRetainHeight sets the application retain height with some

@@ -22,7 +22,7 @@ type blockServiceServer struct {
 
 // New creates a new CometBFT version service server.
 func New(store *store.BlockStore, eventBus *types.EventBus, logger log.Logger) blocksvc.BlockServiceServer {
-	log := logger.With("module", "grpc-block-service")
+	log := logger.With("service", "BlockService")
 	return &blockServiceServer{
 		store,
 		eventBus,
@@ -32,7 +32,6 @@ func New(store *store.BlockStore, eventBus *types.EventBus, logger log.Logger) b
 
 // GetByHeight implements v1.BlockServiceServer GetByHeight method
 func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByHeightRequest) (*blocksvc.GetByHeightResponse, error) {
-
 	logger := s.logger.With("endpoint", "GetByHeight")
 
 	var height int64
@@ -77,7 +76,6 @@ func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByH
 
 // GetLatestHeight implements v1.BlockServiceServer GetLatestHeight method
 func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest, stream blocksvc.BlockService_GetLatestHeightServer) error {
-
 	logger := s.logger.With("endpoint", "GetLatestHeight")
 
 	// Generate a unique subscriber ID using a UUID

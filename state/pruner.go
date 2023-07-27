@@ -58,7 +58,6 @@ func (p *Pruner) OnStart() error {
 func (p *Pruner) OnStop() {
 	p.Quit()
 	p.BaseService.OnStop()
-
 }
 
 // SetApplicationRetainHeight sets the application retain height with some
@@ -72,7 +71,6 @@ func (p *Pruner) SetApplicationRetainHeight(height int64) error {
 		return ErrInvalidHeightValue
 	}
 	currentAppRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
-
 	if err != nil {
 		if err == ErrKeyNotFound {
 			currentAppRetainHeight = height
@@ -107,7 +105,6 @@ func (p *Pruner) SetCompanionRetainHeight(height int64) error {
 		return ErrInvalidHeightValue
 	}
 	currentCompanionRetainHeight, err := p.stateStore.GetCompanionBlockRetainHeight()
-
 	if err != nil {
 		if err == ErrKeyNotFound {
 			currentCompanionRetainHeight = height
@@ -235,7 +232,6 @@ func (p *Pruner) pruneBlocks(height int64) (pruned uint64, evRetainHeight int64,
 		p.logger.Error("Failed to prune blocks at height", "height", height, "err", err)
 	} else {
 		p.logger.Debug("Pruned blocks", "pruned", pruned, "retain_height", height)
-
 	}
 	err = p.stateStore.PruneStates(base, height, evRetainHeight)
 	if err != nil {

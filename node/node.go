@@ -238,7 +238,7 @@ func NewNode(ctx context.Context,
 		return nil, err
 	}
 
-	if config.Companion.Enabled && config.Companion.InitialRetainHeight > 0 {
+	if config.Storage.Pruning.DataCompanion.Enabled && config.Storage.Pruning.DataCompanion.InitialBlockRetainHeight > 0 {
 		// This will set the data companion retain height into the database
 		// We bypass the sanity checks pruner.SetCompanionBlockRetainHeight.
 		// These checks do not allow a retain height below the current blockstore
@@ -246,7 +246,7 @@ func NewNode(ctx context.Context,
 		// But bthis is a retain height that can be set before the chain starts
 		// to indicate potentially that no pruning should be done before
 		// the data companion comes online.
-		err = stateStore.SaveCompanionBlockRetainHeight(config.Companion.InitialRetainHeight)
+		err = stateStore.SaveCompanionBlockRetainHeight(config.Storage.Pruning.DataCompanion.InitialBlockRetainHeight)
 		if err != nil {
 			logger.Debug("failed to set initial retain height ", err, "err")
 		}
@@ -263,8 +263,13 @@ func NewNode(ctx context.Context,
 		sm.BlockExecutorWithMetrics(smMetrics),
 	)
 
-	if config.Pruner.Frequency != 10 && config.Pruner.Frequency > 0 {
-		pruner := sm.NewPruner(stateStore, blockStore, logger, sm.PrunerSleepTime(time.Second*time.Duration(config.Pruner.Frequency)))
+	if config.Storage.Pruning.Interval != 10*time.Second && config.Storage.Pruning.Interval > 0 {
+		pruner := sm.NewPruner(
+			stateStore,
+			blockStore,
+			logger,
+			sm.PrunerSleepTime(config.Storage.Pruning.Interval),
+		)
 		blockExec.SetPruningService(pruner)
 	} else {
 		blockExec.SetPruningService(sm.NewPruner(stateStore, blockStore, logger))

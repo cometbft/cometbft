@@ -497,6 +497,36 @@ peer_query_maj23_sleep_duration = "{{ .Consensus.PeerQueryMaj23SleepDuration }}"
 # reindex events in the command-line tool.
 discard_abci_responses = {{ .Storage.DiscardABCIResponses}}
 
+[storage.pruning]
+
+# The time period between automated background pruning operations.
+interval = "{{ .Storage.Pruning.Interval }}"
+
+#
+# Storage pruning configuration relating only to the data companion.
+#
+[storage.pruning.data_companion]
+
+# Whether automatic pruning respects values set by the data companion. Disabled
+# by default. All other parameters in this section are ignored when this is
+# disabled.
+#
+# If disabled, only the application retain height will influence block pruning
+# (but not block results pruning). Only enabling this at a later stage will
+# potentially mean that blocks below the application-set retain height at the
+# time will not be available to the data companion.
+enabled = {{ .Storage.Pruning.DataCompanion.Enabled }}
+
+# The initial value for the data companion block retain height if the data
+# companion has not yet explicitly set one. If the data companion has already
+# set a block retain height, this is ignored.
+initial_block_retain_height = {{ .Storage.Pruning.DataCompanion.InitialBlockRetainHeight }}
+
+# The initial value for the data companion block results retain height if the
+# data companion has not yet explicitly set one. If the data companion has
+# already set a block results retain height, this is ignored.
+initial_block_results_retain_height = {{ .Storage.Pruning.DataCompanion.InitialBlockResultsRetainHeight }}
+
 #######################################################
 ###   Transaction Indexer Configuration Options     ###
 #######################################################
@@ -540,26 +570,4 @@ max_open_connections = {{ .Instrumentation.MaxOpenConnections }}
 
 # Instrumentation namespace
 namespace = "{{ .Instrumentation.Namespace }}"
-
-#######################################################
-###       Data Companion Configuration Options          ###
-#######################################################
-[datacompanion]
-
-# Data Companion is enabled and we take the initial height as the official retain height:
-#
-enabled = {{ .Companion.Enabled }}
-initial_retain_height = {{ .Companion.InitialRetainHeight }}
-
-#######################################################
-###       Data Companion Configuration Options          ###
-#######################################################
-[pruner]
-
-# The pruning mechanism prunes the block and state store and the ABCI results
-# if either the application or an attached data companion have requested so. 
-# The frequency at which the pruning mechanism checks for updates to the desired
-# retain height is defined here (in seconds). By default it is 10s. It cannot be 0.
-frequency = {{ .Pruner.Frequency }}
-
 `

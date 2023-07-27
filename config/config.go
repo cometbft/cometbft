@@ -40,6 +40,8 @@ const (
 
 	DefaultNodeKeyName  = "node_key.json"
 	DefaultAddrBookName = "addrbook.json"
+
+	DefaultPruningInterval = 10 * time.Second
 )
 
 // NOTE: Most of the structs & relevant comments + the
@@ -80,8 +82,6 @@ type Config struct {
 	Storage         *StorageConfig         `mapstructure:"storage"`
 	TxIndex         *TxIndexConfig         `mapstructure:"tx_index"`
 	Instrumentation *InstrumentationConfig `mapstructure:"instrumentation"`
-	Companion       *CompanionConfig       `mapstructure:"datacompanion"`
-	Pruner          *PruningConfig         `mapstructure:"pruner"`
 }
 
 // DefaultConfig returns a default configuration for a CometBFT node
@@ -98,8 +98,6 @@ func DefaultConfig() *Config {
 		Storage:         DefaultStorageConfig(),
 		TxIndex:         DefaultTxIndexConfig(),
 		Instrumentation: DefaultInstrumentationConfig(),
-		Companion:       DefaultCompanionConfig(),
-		Pruner:          DefaultPruningConfig(),
 	}
 }
 
@@ -117,8 +115,6 @@ func TestConfig() *Config {
 		Storage:         TestStorageConfig(),
 		TxIndex:         TestTxIndexConfig(),
 		Instrumentation: TestInstrumentationConfig(),
-		Companion:       DefaultCompanionConfig(),
-		Pruner:          DefaultPruningConfig(),
 	}
 }
 
@@ -158,6 +154,9 @@ func (cfg *Config) ValidateBasic() error {
 	}
 	if err := cfg.Consensus.ValidateBasic(); err != nil {
 		return fmt.Errorf("error in [consensus] section: %w", err)
+	}
+	if err := cfg.Storage.ValidateBasic(); err != nil {
+		return fmt.Errorf("error in [storage] section: %w", err)
 	}
 	if err := cfg.Instrumentation.ValidateBasic(); err != nil {
 		return fmt.Errorf("error in [instrumentation] section: %w", err)
@@ -1136,6 +1135,8 @@ type StorageConfig struct {
 	// required for `/block_results` RPC queries, and to reindex events in the
 	// command-line tool.
 	DiscardABCIResponses bool `mapstructure:"discard_abci_responses"`
+	// Configuration related to storage pruning.
+	Pruning *PruningConfig `mapstructure:"pruning"`
 }
 
 // DefaultStorageConfig returns the default configuration options relating to
@@ -1143,6 +1144,7 @@ type StorageConfig struct {
 func DefaultStorageConfig() *StorageConfig {
 	return &StorageConfig{
 		DiscardABCIResponses: false,
+		Pruning:              DefaultPruningConfig(),
 	}
 }
 
@@ -1151,7 +1153,15 @@ func DefaultStorageConfig() *StorageConfig {
 func TestStorageConfig() *StorageConfig {
 	return &StorageConfig{
 		DiscardABCIResponses: false,
+		Pruning:              TestPruningConfig(),
 	}
+}
+
+func (cfg *StorageConfig) ValidateBasic() error {
+	if err := cfg.Pruning.ValidateBasic(); err != nil {
+		return fmt.Errorf("error in [pruning] section: %w", err)
+	}
+	return nil
 }
 
 // -----------------------------------------------------------------------------
@@ -1274,58 +1284,84 @@ func getDefaultMoniker() string {
 }
 
 //-----------------------------------------------------------------------------
-// CompanionConfig
+// PruningConfig
 
-// CompanionConfig configures whether a data companion is enabled and sets the initial desired
-// retain height for the data companion
-
-// If the enabled flag is true, whatever value is set as the InitiaRetainHeight will be taken into consideration
-// e.x. InitiaRetainHeight = 0 and enabled = true => DataCompanionRetainHeight will be 0 and no block pruning will be allowed
-type CompanionConfig struct {
-	Enabled             bool  `mapstructure:"enabled"`
-	InitialRetainHeight int64 `mapstructure:"initial_retain_height"`
+type PruningConfig struct {
+	// The time period between automated background pruning operations.
+	Interval time.Duration `mapstructure:"period"`
+	// Data companion-related pruning configuration.
+	DataCompanion *DataCompanionPruningConfig `mapstructure:"data_companion"`
 }
 
-// DefaultCompanionConfig returns a default configuration for the data companion
-func DefaultCompanionConfig() *CompanionConfig {
-	return &CompanionConfig{
-		Enabled:             false,
-		InitialRetainHeight: 0,
+func DefaultPruningConfig() *PruningConfig {
+	return &PruningConfig{
+		Interval:      DefaultPruningInterval,
+		DataCompanion: DefaultDataCompanionPruningConfig(),
 	}
 }
 
-// TestBlockSyncConfig returns a default configuration for the block sync.
-func TestCompanionConfig() *CompanionConfig {
-	return DefaultCompanionConfig()
+func TestPruningConfig() *PruningConfig {
+	return &PruningConfig{
+		Interval:      DefaultPruningInterval,
+		DataCompanion: TestDataCompanionPruningConfig(),
+	}
 }
 
-// ValidateBasic performs basic validation.
-func (cfg *CompanionConfig) ValidateBasic() error {
+func (cfg *PruningConfig) ValidateBasic() error {
+	if err := cfg.DataCompanion.ValidateBasic(); err != nil {
+		return fmt.Errorf("error in [data_companion] section: %w", err)
+	}
 	return nil
 }
 
 //-----------------------------------------------------------------------------
-// PruningConfig
+// DataCompanionPruningConfig
 
-// PruningConfig determines the frequency (in seconds) at which CometBFT checks whether pruning should be done
-// The default value is 10s
-type PruningConfig struct {
-	Frequency int `mapstructure:"frequency"`
+type DataCompanionPruningConfig struct {
+	// Whether automatic pruning respects values set by the data companion.
+	// Disabled by default. All other parameters in this section are ignored
+	// when this is disabled.
+	//
+	// If disabled, only the application retain height will influence block
+	// pruning (but not block results pruning). Only enabling this at a later
+	// stage will potentially mean that blocks below the application-set retain
+	// height at the time will not be available to the data companion.
+	Enabled bool `mapstructure:"enabled"`
+	// The initial value for the data companion block retain height if the data
+	// companion has not yet explicitly set one. If the data companion has
+	// already set a block retain height, this is ignored.
+	InitialBlockRetainHeight int64 `mapstructure:"initial_block_retain_height"`
+	// The initial value for the data companion block results retain height if
+	// the data companion has not yet explicitly set one. If the data companion
+	// has already set a block results retain height, this is ignored.
+	InitialBlockResultsRetainHeight int64 `mapstructure:"initial_block_results_retain_height"`
 }
 
-// DefaultCompanionConfig returns a default configuration for the data companion
-func DefaultPruningConfig() *PruningConfig {
-	return &PruningConfig{
-		Frequency: 10,
+func DefaultDataCompanionPruningConfig() *DataCompanionPruningConfig {
+	return &DataCompanionPruningConfig{
+		Enabled:                         false,
+		InitialBlockRetainHeight:        0,
+		InitialBlockResultsRetainHeight: 0,
 	}
 }
 
-// TestBlockSyncConfig returns a default configuration for the block sync.
-func TestPruningConfig() *PruningConfig {
-	return DefaultPruningConfig()
+func TestDataCompanionPruningConfig() *DataCompanionPruningConfig {
+	return &DataCompanionPruningConfig{
+		Enabled:                         false,
+		InitialBlockRetainHeight:        0,
+		InitialBlockResultsRetainHeight: 0,
+	}
 }
 
-// ValidateBasic performs basic validation.
-func (cfg *PruningConfig) ValidateBasic() error {
+func (cfg *DataCompanionPruningConfig) ValidateBasic() error {
+	if !cfg.Enabled {
+		return nil
+	}
+	if cfg.InitialBlockRetainHeight < 0 {
+		return errors.New("initial_block_retain_height cannot be negative")
+	}
+	if cfg.InitialBlockResultsRetainHeight < 0 {
+		return errors.New("initial_block_results_retain_height cannot be negative")
+	}
 	return nil
 }

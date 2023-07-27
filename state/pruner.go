@@ -15,9 +15,10 @@ var (
 	ABCIResultsRetainHeightKey    = []byte("ABCIResRetainHeightKey")
 )
 
-// Pruner is a service that reads the retain heights for blocks, state and ABCI results from the database
-// and prunes the corresponding data based on the minimum retain height set.
-// The service runs periodically (prunerSleepTime - 10s by default) and re-evaluates the retain height.
+// Pruner is a service that reads the retain heights for blocks, state and ABCI
+// results from the database and prunes the corresponding data based on the
+// minimum retain height set. The service sleeps between each run based on the
+// configured pruner interval, and re-evaluates the retain height.
 type Pruner struct {
 	service.BaseService
 	logger log.Logger
@@ -40,6 +41,8 @@ func defaultPrunerConfig() *prunerConfig {
 
 type PrunerOption func(*prunerConfig)
 
+// PrunerInterval allows control over the interval between each run of the
+// pruner.
 func PrunerInterval(t time.Duration) PrunerOption {
 	return func(p *prunerConfig) { p.interval = t }
 }
@@ -74,10 +77,13 @@ func (p *Pruner) OnStop() {
 
 // SetApplicationRetainHeight sets the application retain height with some
 // basic checks on the requested height.
-// If a higher retain height is already set, we cannot accept the requested height
-// because the blocks might have been pruned.
-// If the data companion has already set a retain height to a higher value
-// we also cannot accept the requested height as the blocks might have been pruned
+//
+// If a higher retain height is already set, we cannot accept the requested
+// height because the blocks might have been pruned.
+//
+// If the data companion has already set a retain height to a higher value we
+// also cannot accept the requested height as the blocks might have been
+// pruned.
 func (p *Pruner) SetApplicationRetainHeight(height int64) error {
 	if height <= 0 || height < p.bs.Base() || height > p.bs.Height() {
 		return ErrInvalidHeightValue
@@ -106,12 +112,14 @@ func (p *Pruner) SetApplicationRetainHeight(height int64) error {
 	return err
 }
 
-// SetCompanionRetainHeight sets the application retain height with some
-// basic checks on the requested height.
-// If a higher retain height is already set, we cannot accept the requested height
-// because the blocks might have been pruned.
-// If the application has already set a retain height to a higher value
-// we also cannot accept the requested height as the blocks might have been pruned
+// SetCompanionRetainHeight sets the application retain height with some basic
+// checks on the requested height.
+//
+// If a higher retain height is already set, we cannot accept the requested
+// height because the blocks might have been pruned.
+//
+// If the application has already set a retain height to a higher value we also
+// cannot accept the requested height as the blocks might have been pruned.
 func (p *Pruner) SetCompanionRetainHeight(height int64) error {
 	if height <= 0 || height < p.bs.Base() || height > p.bs.Height() {
 		return ErrInvalidHeightValue
@@ -140,9 +148,10 @@ func (p *Pruner) SetCompanionRetainHeight(height int64) error {
 	return err
 }
 
-// SetABCIResRetainHeight sets the retain height for ABCI responses
-// If the application has set the DiscardABCIResponses flag to true
-// Nothing will be pruned
+// SetABCIResRetainHeight sets the retain height for ABCI responses.
+//
+// If the application has set the DiscardABCIResponses flag to true, nothing
+// will be pruned.
 func (p *Pruner) SetABCIResRetainHeight(height int64) error {
 	if height <= 0 || height > p.bs.Height() {
 		return ErrInvalidHeightValue

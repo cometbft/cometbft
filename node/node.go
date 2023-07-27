@@ -62,6 +62,7 @@ type Node struct {
 	stateStore        sm.Store
 	blockStore        *store.BlockStore // store the blockchain to disk
 	bcReactor         p2p.Reactor       // for block-syncing
+	mempoolReactor    p2p.Reactor       // for gossipping transactions
 	mempool           mempl.Mempool
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
@@ -69,6 +70,7 @@ type Node struct {
 	stateSyncGenesis  sm.State                // provides the genesis state for state sync
 	consensusState    *cs.State               // latest consensus state
 	consensusReactor  *cs.Reactor             // for participating in the consensus
+	pexReactor        *pex.Reactor            // for exchanging peer addresses
 	evidencePool      *evidence.Pool          // tracking evidence
 	proxyApp          proxy.AppConns          // connection to the application
 	rpcListeners      []net.Listener          // rpc servers
@@ -301,17 +303,6 @@ func NewNode(ctx context.Context,
 		return nil, fmt.Errorf("could not create addrbook: %w", err)
 	}
 
-	for _, addr := range splitAndTrimEmpty(config.P2P.BootstrapPeers, ",", " ") {
-		netAddrs, err := p2p.NewNetAddressString(addr)
-		if err != nil {
-			return nil, fmt.Errorf("invalid bootstrap peer address: %w", err)
-		}
-		err = addrBook.AddAddress(netAddrs, netAddrs)
-		if err != nil {
-			return nil, fmt.Errorf("adding bootstrap address to addressbook: %w", err)
-		}
-	}
-
 	// Optionally, start the pex reactor
 	//
 	// TODO:
@@ -324,8 +315,9 @@ func NewNode(ctx context.Context,
 	//
 	// If PEX is on, it should handle dialing the seeds. Otherwise the switch does it.
 	// Note we currently use the addrBook regardless at least for AddOurAddress
+	var pexReactor *pex.Reactor
 	if config.P2P.PexReactor {
-		createPEXReactorAndAddToSwitch(addrBook, config, sw, logger)
+		pexReactor = createPEXReactorAndAddToSwitch(addrBook, config, sw, logger)
 	}
 
 	// Add private IDs to addrbook to block those peers being added
@@ -345,12 +337,14 @@ func NewNode(ctx context.Context,
 		stateStore:       stateStore,
 		blockStore:       blockStore,
 		bcReactor:        bcReactor,
+		mempoolReactor:   mempoolReactor,
 		mempool:          mempool,
 		consensusState:   consensusState,
 		consensusReactor: consensusReactor,
 		stateSyncReactor: stateSyncReactor,
 		stateSync:        stateSync,
 		stateSyncGenesis: state, // Shouldn't be necessary, but need a way to pass the genesis state
+		pexReactor:       pexReactor,
 		evidencePool:     evidencePool,
 		proxyApp:         proxyApp,
 		txIndexer:        txIndexer,
@@ -689,9 +683,34 @@ func (n *Node) Switch() *p2p.Switch {
 	return n.sw
 }
 
+// BlockStore returns the Node's BlockStore.
+func (n *Node) BlockStore() *store.BlockStore {
+	return n.blockStore
+}
+
+// ConsensusReactor returns the Node's ConsensusReactor.
+func (n *Node) ConsensusReactor() *cs.Reactor {
+	return n.consensusReactor
+}
+
+// MempoolReactor returns the Node's mempool reactor.
+func (n *Node) MempoolReactor() p2p.Reactor {
+	return n.mempoolReactor
+}
+
 // Mempool returns the Node's mempool.
 func (n *Node) Mempool() mempl.Mempool {
 	return n.mempool
+}
+
+// PEXReactor returns the Node's PEXReactor. It returns nil if PEX is disabled.
+func (n *Node) PEXReactor() *pex.Reactor {
+	return n.pexReactor
+}
+
+// EvidencePool returns the Node's EvidencePool.
+func (n *Node) EvidencePool() *evidence.Pool {
+	return n.evidencePool
 }
 
 // EventBus returns the Node's EventBus.
@@ -708,6 +727,11 @@ func (n *Node) PrivValidator() types.PrivValidator {
 // GenesisDoc returns the Node's GenesisDoc.
 func (n *Node) GenesisDoc() *types.GenesisDoc {
 	return n.genesisDoc
+}
+
+// ProxyApp returns the Node's AppConns, representing its connections to the ABCI application.
+func (n *Node) ProxyApp() proxy.AppConns {
+	return n.proxyApp
 }
 
 // Config returns the Node's config.

@@ -22,11 +22,10 @@ type blockServiceServer struct {
 
 // New creates a new CometBFT version service server.
 func New(store *store.BlockStore, eventBus *types.EventBus, logger log.Logger) blocksvc.BlockServiceServer {
-	log := logger.With("service", "BlockService")
 	return &blockServiceServer{
-		store,
-		eventBus,
-		log,
+		store:    store,
+		eventBus: eventBus,
+		logger:   logger.With("service", "BlockService"),
 	}
 }
 

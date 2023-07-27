@@ -96,13 +96,6 @@ func (blockExec *BlockExecutor) SetPruningService(p *Pruner) {
 	}
 }
 
-func (blockExec *BlockExecutor) StopPruningService() {
-	err := blockExec.pruner.Stop()
-	if err != nil {
-		blockExec.logger.Error(err.Error())
-	}
-}
-
 func (blockExec *BlockExecutor) Store() Store {
 	return blockExec.store
 }
@@ -126,7 +119,6 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	lastExtCommit *types.ExtendedCommit,
 	proposerAddr []byte,
 ) (*types.Block, error) {
-
 	maxBytes := state.ConsensusParams.Block.MaxBytes
 	emptyMaxBytes := maxBytes == -1
 	if emptyMaxBytes {
@@ -225,7 +217,6 @@ func (blockExec *BlockExecutor) ValidateBlock(state State, block *types.Block) e
 func (blockExec *BlockExecutor) ApplyBlock(
 	state State, blockID types.BlockID, block *types.Block,
 ) (State, error) {
-
 	if err := validateBlock(state, block); err != nil {
 		return state, ErrInvalidBlock(err)
 	}
@@ -535,7 +526,8 @@ func buildExtendedCommitInfo(ec *types.ExtendedCommit, store Store, initialHeigh
 }
 
 func validateValidatorUpdates(abciUpdates []abci.ValidatorUpdate,
-	params types.ValidatorParams) error {
+	params types.ValidatorParams,
+) error {
 	for _, valUpdate := range abciUpdates {
 		if valUpdate.GetPower() < 0 {
 			return fmt.Errorf("voting power can't be negative %v", valUpdate)
@@ -567,7 +559,6 @@ func updateState(
 	abciResponse *abci.ResponseFinalizeBlock,
 	validatorUpdates []*types.Validator,
 ) (State, error) {
-
 	// Copy the valset so we can apply changes from EndBlock
 	// and update s.LastValidators and s.Validators.
 	nValSet := state.NextValidators.Copy()

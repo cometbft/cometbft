@@ -386,8 +386,10 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 	return nil
 }
 
+// PruneABCIResponses attempts to prune all ABCI responses up to, but not
+// including, the given height. On success, returns the height to which ABCI
+// responses were pruned.
 func (store dbStore) PruneABCIResponses(height int64) (uint64, error) {
-
 	if store.DiscardABCIResponses {
 		return 0, errors.New("ABCI responses are discarded, nothing to prune")
 	}
@@ -564,6 +566,7 @@ func (store dbStore) getKey(key []byte) ([]byte, error) {
 func (store dbStore) SaveApplicationRetainHeight(height int64) error {
 	return store.db.SetSync(AppRetainHeightKey, int64ToBytes(height))
 }
+
 func (store dbStore) GetApplicationRetainHeight() (int64, error) {
 	buf, err := store.getKey(AppRetainHeightKey)
 	if err != nil {
@@ -582,6 +585,7 @@ func (store dbStore) GetApplicationRetainHeight() (int64, error) {
 func (store dbStore) SaveCompanionBlockRetainHeight(height int64) error {
 	return store.db.SetSync(CompanionBlockRetainHeightKey, int64ToBytes(height))
 }
+
 func (store dbStore) GetCompanionBlockRetainHeight() (int64, error) {
 	buf, err := store.getKey(CompanionBlockRetainHeightKey)
 	if err != nil {
@@ -600,6 +604,7 @@ func (store dbStore) GetCompanionBlockRetainHeight() (int64, error) {
 func (store dbStore) SaveABCIResRetainHeight(height int64) error {
 	return store.db.SetSync(ABCIResultsRetainHeightKey, int64ToBytes(height))
 }
+
 func (store dbStore) GetABCIResRetainHeight() (int64, error) {
 	buf, err := store.getKey(ABCIResultsRetainHeightKey)
 	if err != nil {

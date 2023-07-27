@@ -23,21 +23,22 @@ type Pruner struct {
 	// DB to which we save the retain heights
 	bs BlockStore
 	// State store to prune state from
-	stateStore      Store
-	prunerSleepTime time.Duration
+	stateStore Store
+	interval   time.Duration
 }
+
 type PrunerOption func(*Pruner)
 
-func PrunerSleepTime(t time.Duration) PrunerOption {
-	return func(p *Pruner) { p.prunerSleepTime = t }
+func PrunerInterval(t time.Duration) PrunerOption {
+	return func(p *Pruner) { p.interval = t }
 }
 
 func NewPruner(stateStore Store, bs BlockStore, logger log.Logger, options ...PrunerOption) *Pruner {
 	p := &Pruner{
-		bs:              bs,
-		stateStore:      stateStore,
-		logger:          logger,
-		prunerSleepTime: time.Second * 10,
+		bs:         bs,
+		stateStore: stateStore,
+		logger:     logger,
+		interval:   time.Second * 10,
 	}
 	p.BaseService = *service.NewBaseService(logger, "Pruner", p)
 	for _, option := range options {
@@ -176,7 +177,7 @@ func (p *Pruner) pruningRoutine() {
 					p.logger.Debug("Number of ABCI responses pruned: ", "pruned", pruned)
 				}
 			}
-			time.Sleep(p.prunerSleepTime)
+			time.Sleep(p.interval)
 		}
 	}
 }

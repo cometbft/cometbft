@@ -268,7 +268,7 @@ func NewNode(ctx context.Context,
 			stateStore,
 			blockStore,
 			logger,
-			sm.PrunerSleepTime(config.Storage.Pruning.Interval),
+			sm.PrunerInterval(config.Storage.Pruning.Interval),
 		)
 		blockExec.SetPruningService(pruner)
 	} else {

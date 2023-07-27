@@ -390,8 +390,6 @@ func TestEventBusPublish(t *testing.T) {
 	require.NoError(t, err)
 	err = eventBus.PublishEventPolka(EventDataRoundState{})
 	require.NoError(t, err)
-	err = eventBus.PublishEventUnlock(EventDataRoundState{})
-	require.NoError(t, err)
 	err = eventBus.PublishEventRelock(EventDataRoundState{})
 	require.NoError(t, err)
 	err = eventBus.PublishEventLock(EventDataRoundState{})
@@ -500,7 +498,6 @@ var events = []string{
 	EventTimeoutPropose,
 	EventCompleteProposal,
 	EventPolka,
-	EventUnlock,
 	EventLock,
 	EventRelock,
 	EventTimeoutWait,
@@ -520,7 +517,6 @@ var queries = []cmtpubsub.Query{
 	EventQueryTimeoutPropose,
 	EventQueryCompleteProposal,
 	EventQueryPolka,
-	EventQueryUnlock,
 	EventQueryLock,
 	EventQueryRelock,
 	EventQueryTimeoutWait,

@@ -24,4 +24,6 @@ type BlockIndexer interface {
 	Search(ctx context.Context, q *query.Query) ([]int64, error)
 
 	SetLogger(l log.Logger)
+
+	Prune(retainHeight int64)
 }

@@ -15,6 +15,9 @@ var _ indexer.BlockIndexer = (*BlockerIndexer)(nil)
 // TxIndex implements a no-op block indexer.
 type BlockerIndexer struct{}
 
+func (idx *BlockerIndexer) Prune(retainHeight int64) {
+}
+
 func (idx *BlockerIndexer) Has(int64) (bool, error) {
 	return false, errors.New(`indexing is disabled (set 'tx_index = "kv"' in config)`)
 }

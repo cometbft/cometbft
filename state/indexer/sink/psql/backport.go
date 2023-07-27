@@ -77,6 +77,11 @@ func (es *EventSink) BlockIndexer() BackportBlockIndexer {
 // delegating indexing operations to an underlying PostgreSQL event sink.
 type BackportBlockIndexer struct{ psql *EventSink }
 
+func (b BackportBlockIndexer) Prune(retainHeight int64) {
+	//TODO implement me
+	panic("implement me")
+}
+
 // Has is implemented to satisfy the BlockIndexer interface, but it is not
 // supported by the psql event sink and reports an error for all inputs.
 func (BackportBlockIndexer) Has(_ int64) (bool, error) {

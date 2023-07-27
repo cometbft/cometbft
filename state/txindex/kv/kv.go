@@ -46,8 +46,26 @@ func (txi *TxIndex) Prune(retainHeight int64) {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println(fmt.Sprintf("Found %d txs to prune\n", len(results)))
+	results2, err := txi.Search(ctx, query.MustCompile("tx.height >= 0"))
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(fmt.Sprintf("Total %d txs to\n", len(results2)))
+	iterator, err := txi.store.Iterator(nil, nil)
+	if err != nil {
+		panic(err)
+	}
+	cnt := 0
+	for ; iterator.Valid(); iterator.Next() {
+		cnt++
+	}
+	fmt.Println(fmt.Sprintf("Total2 %d txs to\n", cnt))
 	for _, result := range results {
-		txi.store.Delete(result.Tx)
+		txi.DeleteResult(result)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -123,6 +141,19 @@ func (txi *TxIndex) AddBatch(b *txindex.Batch) error {
 	return storeBatch.WriteSync()
 }
 
+func (txi *TxIndex) DeleteResult(result *abci.TxResult) {
+	hash := types.Tx(result.Tx).Hash()
+	txi.deleteEvents(result)
+	err := txi.store.Delete(keyForHeight(result))
+	if err != nil {
+		panic(err)
+	}
+	err = txi.store.Delete(hash)
+	if err != nil {
+		panic(err)
+	}
+}
+
 // Index indexes a single transaction using the given list of events. Each key
 // that indexed from the tx's events is a composite of the event type and the
 // respective attribute's key delimited by a "." (eg. "account.number").
@@ -174,6 +205,35 @@ func (txi *TxIndex) Index(result *abci.TxResult) error {
 	}
 
 	return b.WriteSync()
+}
+
+func (txi *TxIndex) deleteEvents(result *abci.TxResult) {
+	for _, event := range result.Result.Events {
+		txi.eventSeq = txi.eventSeq + 1
+		// only index events with a non-empty type
+		if len(event.Type) == 0 {
+			continue
+		}
+
+		for _, attr := range event.Attributes {
+			if len(attr.Key) == 0 {
+				continue
+			}
+
+			// index if `index: true` is set
+			compositeTag := fmt.Sprintf("%s.%s", event.Type, attr.Key)
+			// ensure event does not conflict with a reserved prefix key
+			if compositeTag == types.TxHashKey || compositeTag == types.TxHeightKey {
+				panic(fmt.Errorf("event type and attribute key \"%s\" is reserved; please use a different key", compositeTag))
+			}
+			if attr.GetIndex() {
+				err := txi.store.Delete(keyForEvent(compositeTag, attr.Value, result, txi.eventSeq))
+				if err != nil {
+					panic(err)
+				}
+			}
+		}
+	}
 }
 
 func (txi *TxIndex) indexEvents(result *abci.TxResult, hash []byte, store dbm.Batch) error {

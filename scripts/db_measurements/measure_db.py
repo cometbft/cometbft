@@ -6,6 +6,9 @@ import os
 import signal
 
 
+LOCAL_NET_LOG = os.path.join("scripts", "db_measurements", "local_net.log")
+
+
 def set_project_root():
 	current_file_path = os.path.abspath(__file__)
 	candidate = os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))
@@ -15,14 +18,14 @@ def set_project_root():
 	raise FileNotFoundError("Can't locate project root")
 
 
-async def read_process_output(process, node_started_event):
+async def read_and_handle_process_output(process, handle, *handle_args):
 	while True:
 		line = await process.stdout.readline()
 		if not line:
 			break
 		ln = line.decode().strip()
-		if "Started node" in ln:
-			node_started_event.set()
+		handle(ln, *handle_args)
+		
 
 
 async def clear_n_launch_localnet(node_started_event):
@@ -32,7 +35,14 @@ async def clear_n_launch_localnet(node_started_event):
 	subprocess.run(clear_command, capture_output=True, text=True, check=True)
 	subprocess.run(build_command, capture_output=True, text=True, check=True)
 	process = await asyncio.create_subprocess_exec(*launch_command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
-	asyncio.create_task(read_process_output(process, node_started_event))
+
+	def handle(line, event):
+		if "Started node" in line:
+			event.set()
+		with open(LOCAL_NET_LOG, 'a') as f:
+			f.write(line + "\n")
+
+	asyncio.create_task(read_and_handle_process_output(process, handle, node_started_event))
 
 
 def prettify_du(s):
@@ -85,6 +95,8 @@ async def run():
 
 def main():
 	set_project_root()
+	with open(LOCAL_NET_LOG, 'w'):
+		pass
 	asyncio.run(run())
 
 

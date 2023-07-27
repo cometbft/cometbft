@@ -86,6 +86,24 @@ func (idx *BlockerIndexer) Index(bh types.EventDataNewBlockEvents) error {
 	return batch.WriteSync()
 }
 
+func (idx *BlockerIndexer) Prune(retainHeight int64) {
+	heights, err := idx.Search(context.Background(),
+		query.MustCompile(fmt.Sprintf(`block.height < %d`, retainHeight)))
+	if err != nil {
+		panic(err)
+	}
+	for _, height := range heights {
+		key, err := heightKey(height)
+		if err != nil {
+			panic(err)
+		}
+		err = idx.store.Delete(key)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
 // Search performs a query for block heights that match a given FinalizeBlock
 // event search criteria. The given query can match against zero,
 // one or more block heights. In the case of height queries, i.e. block.height=H,

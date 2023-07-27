@@ -3,6 +3,12 @@
 DIR=$(dirname "${BASH_SOURCE[0]}")
 source ${DIR}/utils.sh
 
+DOCKER_VERSION=$(docker version | grep Version | head -n 1  | awk '{print $2}' | sed s,\\.,,g);
+if [[ ${DOCKER_VERSION} == "" ]] || [ ${DOCKER_VERSION} -lt 2400 ]; then
+	echo "Docker >= 24.0 required";
+	exit 1
+fi
+
 if [ $# -lt 1 ]; then
     echo "usage: experiments output.csv [out_degree] [-none|solo|all]"
     echo "where -none = (default) no validator, consensus reactor is mocked everywhere."

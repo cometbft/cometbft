@@ -88,12 +88,14 @@ func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest,
 	for {
 		select {
 		case msg := <-sub.Out():
-			switch eventType := msg.Data().(type) {
-			case types.EventDataNewBlock:
-				if err := stream.Send(&blocksvc.GetLatestHeightResponse{Height: eventType.Block.Height}); err != nil {
-					logger.Error("Failed to stream new block", "err", err, "height", eventType.Block.Height, "traceID", traceID)
-					return status.Errorf(codes.Unavailable, "Cannot send stream response (see logs for trace ID: %s)", traceID)
-				}
+			height, err := getHeightFromMsg(msg)
+			if err != nil {
+				logger.Error("Failed to extract height from subscription message", "err", err, "traceID", traceID)
+				return status.Errorf(codes.Internal, "Internal server error (see logs for trace ID: %s)", traceID)
+			}
+			if err := stream.Send(&blocksvc.GetLatestHeightResponse{Height: height}); err != nil {
+				logger.Error("Failed to stream new block", "err", err, "height", height, "traceID", traceID)
+				return status.Errorf(codes.Unavailable, "Cannot send stream response (see logs for trace ID: %s)", traceID)
 			}
 		case <-sub.Canceled():
 			switch sub.Err() {
@@ -112,5 +114,14 @@ func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest,
 			logger.Error("New block subscription error", "err", sub.Err(), "traceID", traceID)
 			return status.Errorf(codes.Internal, "New block subscription error (see logs for trace ID: %s)", traceID)
 		}
+	}
+}
+
+func getHeightFromMsg(msg cmtpubsub.Message) (int64, error) {
+	switch eventType := msg.Data().(type) {
+	case types.EventDataNewBlock:
+		return eventType.Block.Height, nil
+	default:
+		return -1, fmt.Errorf("unexpected event type: %v", eventType)
 	}
 }

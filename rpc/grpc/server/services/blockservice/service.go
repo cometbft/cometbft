@@ -32,8 +32,6 @@ func New(store *store.BlockStore, eventBus *types.EventBus, logger log.Logger) b
 
 // GetByHeight implements v1.BlockServiceServer GetByHeight method
 func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByHeightRequest) (*blocksvc.GetByHeightResponse, error) {
-	logger := s.logger.With("endpoint", "GetByHeight")
-
 	var height int64
 
 	// retrieve the last height in the store
@@ -44,7 +42,6 @@ func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByH
 	if req.Height == 0 {
 		height = latestHeight
 	} else if req.Height < 0 {
-		logger.Error("Negative height request", "height", req.Height)
 		return nil, status.Error(codes.InvalidArgument, "Negative height request")
 	} else {
 		height = req.Height
@@ -53,14 +50,12 @@ func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByH
 	// check if the height requested is not higher
 	// than the latest height in the store
 	if height > latestHeight {
-		logger.Error("Height requested higher than latest height", "requested", height, "latest", latestHeight)
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("height requested %d higher than latest height %d", height, latestHeight))
 	}
 
 	block := s.store.LoadBlock(height)
 	blockProto, err := block.ToProto()
 	if err != nil {
-		logger.Error("Block not found", "height", height)
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Block not found for height %d", height))
 	}
 
@@ -103,15 +98,12 @@ func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest,
 					logger.Error("Failed to stream new block", "err", err, "height", eventType.Block.Height, "subscriber", subscriber)
 					return status.Error(codes.Unavailable, "Cannot send stream response")
 				}
-				logger.Debug("Streamed new block", "height", eventType.Block.Height)
 			}
 		case <-sub.Canceled():
 			switch sub.Err() {
 			case cmtpubsub.ErrUnsubscribed:
-				logger.Error("Subscription terminated", "subscriber", subscriber)
 				return status.Error(codes.Canceled, "Subscription terminated")
 			case nil:
-				logger.Info("Subscription canceled without errors", "subscriber", subscriber)
 				return status.Error(codes.Canceled, "Subscription canceled without errors")
 			default:
 				logger.Info("Subscription canceled with errors", "err", sub.Err(), "subscriber", subscriber)

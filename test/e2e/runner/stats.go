@@ -16,9 +16,10 @@ import (
 type Stats struct {
 	peers     map[*e2e.Node]int
 	bandwidth map[*e2e.Node]map[*e2e.Node]int
-	seen      map[*e2e.Node]int
+	added     map[*e2e.Node]int
 	redundant map[*e2e.Node]int
 	cpuLoad   map[*e2e.Node]float32
+	sent      map[*e2e.Node]int
 }
 
 func Fetch(testnet *e2e.Testnet) (Stats, error) {
@@ -29,6 +30,7 @@ func Fetch(testnet *e2e.Testnet) (Stats, error) {
 	seen := map[*e2e.Node]int{}
 	redundant := map[*e2e.Node]int{}
 	cpuLoad := map[*e2e.Node]float32{}
+	sent := map[*e2e.Node]int{}
 
 	client, err := api.NewClient(api.Config{
 		Address: "http://localhost:9090",
@@ -58,6 +60,10 @@ func Fetch(testnet *e2e.Testnet) (Stats, error) {
 			return Stats{}, err
 		}
 
+		if sent[n], err = queryInt(v1api, timeout, "cometbft_gossip_sent_txs", n.String(), ""); err != nil {
+			return Stats{}, err
+		}
+
 		bw[n] = map[*e2e.Node]int{}
 		for _, m := range testnet.Nodes {
 			if n == m {
@@ -68,7 +74,7 @@ func Fetch(testnet *e2e.Testnet) (Stats, error) {
 			}
 		}
 	}
-	return Stats{peers: peers, bandwidth: bw, seen: seen, redundant: redundant, cpuLoad: cpuLoad}, err
+	return Stats{peers: peers, bandwidth: bw, added: seen, redundant: redundant, cpuLoad: cpuLoad, sent: sent}, err
 }
 
 func (t *Stats) Output() string {
@@ -81,7 +87,7 @@ func (t *Stats) Output() string {
 }
 
 func (t *Stats) String() string {
-	return fmt.Sprintf(`bandwidth="%v", seen="%v"`, t.bandwidth, t.seen)
+	return fmt.Sprintf(`bandwidth="%v", added="%v"`, t.bandwidth, t.added)
 }
 
 func (t *Stats) TotalBandwidth(testnet *e2e.Testnet) int {
@@ -94,18 +100,26 @@ func (t *Stats) TotalBandwidth(testnet *e2e.Testnet) int {
 	return total
 }
 
-func (t *Stats) TxsSeen(testnet *e2e.Testnet) float32 {
+func (t *Stats) TxsAdded(testnet *e2e.Testnet) float32 {
 	count := 0
 	for _, n := range testnet.Nodes {
-		count += t.seen[n]
+		count += t.added[n]
 	}
 	return float32(count) / float32(len(testnet.Nodes))
+}
+
+func (t *Stats) txsSent(testnet *e2e.Testnet) float32 {
+	rtotal := float32(0)
+	for _, n := range testnet.Nodes {
+		rtotal += float32(t.sent[n])
+	}
+	return rtotal / float32(len(testnet.Nodes))
 }
 
 func (t *Stats) Completion(testnet *e2e.Testnet, txsSent int) float32 {
 	total := float32(0)
 	for _, n := range testnet.Nodes {
-		total += float32(t.seen[n]) / float32(txsSent)
+		total += float32(t.added[n]) / float32(txsSent)
 	}
 	return float32(100) * (total / float32(len(testnet.Nodes)))
 }
@@ -149,7 +163,7 @@ func (t *Stats) Redundancy(testnet *e2e.Testnet) float32 {
 	stotal := float32(0)
 	for _, n := range testnet.Nodes {
 		rtotal += float32(t.redundant[n])
-		stotal += float32(t.seen[n])
+		stotal += float32(t.added[n])
 	}
 	return rtotal / stotal
 }

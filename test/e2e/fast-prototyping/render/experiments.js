@@ -6,8 +6,9 @@ const graphChart = echarts.init(graphElt);
 const headersMap = {
     "nodes" : "#nodes",
     "propagation_rate" : "propagation rate (%)",
-    "sent" : "#sent",
-    "added" : "#added (avg)", // average
+    "submitted" : "#submitted (total)",
+    "added" : "#added as valid (avg)",
+    "sent" : "#sent (avg)",
     "completion" : "completion",
     "total_mempool_bandwidth" : "total mempool bw. (KB)",
     "useful_mempool_bandwidth" : "useful mempool bw. (KB)",

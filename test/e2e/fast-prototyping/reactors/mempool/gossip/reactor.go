@@ -3,6 +3,7 @@ package gossip
 import (
 	"errors"
 	"github.com/cometbft/cometbft/libs/rand"
+	nm "github.com/cometbft/cometbft/node"
 	"time"
 
 	"fmt"
@@ -29,19 +30,24 @@ type Reactor struct {
 	txSendersMtx    cmtsync.RWMutex
 	propagationRate float32
 	sendOnce        bool
+	consensusMocked bool
+	metrics         *Metrics
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
 // The mempool's channel TxsAvailable will be initialized only when notifyAvailable is true.
-func NewReactor(config *cfg.MempoolConfig, mempool mempool.Mempool, rate float32, sendOnce bool) *Reactor {
+func NewReactor(config *cfg.MempoolConfig, node *nm.Node, ConsensusMocked bool, rate float32, sendOnce bool) *Reactor {
 	memR := &Reactor{
 		config:          config,
-		mempool:         mempool,
+		mempool:         node.Mempool(),
 		ids:             newMempoolIDs(),
 		txSenders:       make(map[types.TxKey]map[uint16]bool),
 		propagationRate: rate,
 		sendOnce:        sendOnce,
+		consensusMocked: ConsensusMocked,
+		metrics:         PrometheusMetrics(node.Config().Instrumentation.Namespace, "chain_id", node.GenesisDoc().ChainID),
 	}
+
 	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
 	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
 	fmt.Println("starting with ", "propagation rate ", memR.propagationRate, "send once", memR.sendOnce)
@@ -180,20 +186,47 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			return
 		}
 
-		if !memR.isSender(entry.GetTxKey(), peerID) {
-			if float32(rand.Intn(101)) <= memR.propagationRate {
-				success := peer.Send(p2p.Envelope{
-					ChannelID: mempool.MempoolChannel,
-					Message:   &protomem.Txs{Txs: [][]byte{entry.GetTx()}},
-				})
-				if !success {
-					time.Sleep(mempool.PeerCatchupSleepIntervalMS * time.Millisecond)
-					continue
-				}
-				if memR.sendOnce {
-					memR.addSender(entry.GetTxKey(), peerID)
-				}
+		// Make sure the peer is up to date.
+		peerState, ok := peer.Get(types.PeerStateKey).(PeerState)
+		if !memR.consensusMocked && !ok {
+			// Peer does not have a state yet. We set it in the consensus reactor, but
+			// when we add peer in Switch, the order we call reactors#AddPeer is
+			// different every time due to us using a map. Sometimes other reactors
+			// will be initialized before the consensus reactor. We should wait a few
+			// milliseconds and retry.
+			time.Sleep(mempool.PeerCatchupSleepIntervalMS * time.Millisecond)
+			continue
+		}
+
+		// If we suspect that the peer is lagging behind, at least by more than
+		// one block, we don't send the transaction immediately. This code
+		// reduces the mempool size and the recheck-tx rate of the receiving
+		// node. See [RFC 103] for an analysis on this optimization.
+		//
+		// [RFC 103]: https://github.com/cometbft/cometbft/pull/735
+		if !memR.consensusMocked && peerState.GetHeight() < entry.Height()-1 {
+			time.Sleep(mempool.PeerCatchupSleepIntervalMS * time.Millisecond)
+			continue
+		}
+
+		// NOTE: Transaction batching was disabled due to
+		// https://github.com/tendermint/tendermint/issues/5796
+
+		if !memR.isSender(entry.GetTxKey(), peerID) && float32(rand.Intn(101)) <= memR.propagationRate {
+			success := peer.Send(p2p.Envelope{
+				ChannelID: mempool.MempoolChannel,
+				Message:   &protomem.Txs{Txs: [][]byte{entry.GetTx()}},
+			})
+			if !success {
+				time.Sleep(mempool.PeerCatchupSleepIntervalMS * time.Millisecond)
+				continue
 			}
+			if memR.sendOnce {
+				memR.addSender(entry.GetTxKey(), peerID)
+			}
+
+			memR.metrics.SentTxs.Add(1)
+
 		}
 	}
 }

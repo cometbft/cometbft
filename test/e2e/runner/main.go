@@ -358,13 +358,14 @@ Does not run any perturbations.
 		Use:   "custom",
 		Short: "A custom benchmark",
 		Long: `A custom benchmark that returns the following metrics:
-    #tws sent : number of transactions sent in total
-    #tws added : number of transactions added successfully  in total a node (on average)
+    #tws submitted : total number of transactions submitted in the system
+    #tws added : number of valid transactions added to the mempool at a node (on average)
+    #txs sent: number of transactions sent over the wire at a node (on average)
     completion : % nodes receiving all txs
     total bandwidth: sum of all the bandwidth used by at the nodes
     useful bandwidth: #txs * tx_size * #nodes
     overhead: (total bandwidth - useful bandwidth) / (useful bandwidth)
-    redundancy: number of duplicates received per tx seen (on average)
+    redundancy: number of duplicates received per tx added (on average)
     cpu: the CPU load as reported under /proc/PID/status (on average, in seconds)
     bandwidth graph: detailed bandwidth usage as a (json) graph
 End after 1 minute, or if some (optional) target is attained.
@@ -434,17 +435,19 @@ Does not run any perturbations.
 			}
 
 			// FIXME should it be json instead?
-			txsSeen := mempoolStats.TxsSeen(cli.testnet)
+			txsAdded := mempoolStats.TxsAdded(cli.testnet)
+			txsSent := mempoolStats.txsSent(cli.testnet)
 			completion := mempoolStats.Completion(cli.testnet, txs)
 			redundancy := mempoolStats.Redundancy(cli.testnet)
 			totalBandwidth := mempoolStats.TotalBandwidth(cli.testnet)
-			usefulBandwidth := (len(cli.testnet.Nodes) - 1) * int(txsSeen) * cli.testnet.LoadTxSizeBytes // at most (n-1) receivers
+			usefulBandwidth := (len(cli.testnet.Nodes) - 1) * int(txsAdded) * cli.testnet.LoadTxSizeBytes // at most (n-1) receivers
 			overhead := math.Max(0, float64(totalBandwidth-usefulBandwidth)/float64(usefulBandwidth))
 			degree := mempoolStats.Degree(cli.testnet)
 			cpuLoad := mempoolStats.CPULoad(cli.testnet)
 
-			logger.Info("txs sent = " + strconv.Itoa(txs))
-			logger.Info("txs added (on avg.) = " + fmt.Sprintf("%v", txsSeen))
+			logger.Info("#txs submitted = " + strconv.Itoa(txs))
+			logger.Info("#txs added (on avg.) = " + fmt.Sprintf("%v", txsAdded))
+			logger.Info("#txs sent (on avg) = " + fmt.Sprintf("%v", txsSent))
 			logger.Info("completion (on avg.) = " + fmt.Sprintf("%v", completion))
 			logger.Info("total mempool bandwidth (B) = " + strconv.Itoa(totalBandwidth))
 			logger.Info("useful mempool bandwidth (B) = " + strconv.Itoa(usefulBandwidth))

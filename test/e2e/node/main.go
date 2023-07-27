@@ -151,9 +151,12 @@ func startNode(cfg *Config) error {
 	// wave custom reactors here (cannot be done by reflexivity)
 	registry := map[string]p2p.Reactor{}
 	registry["p2p.mock.reactor"] = p2pmock.NewReactor()
+	consensus, ok := cfg.ExperimentalCustomReactors["CONSENSUS"]
+	consensusMocked := !ok || consensus == "p2p.mock.reactor"
 	registry["experimental.reactors.mempool.gossip"] = gossip.NewReactor(
 		cmtcfg.Mempool,
-		n.Mempool(),
+		n,
+		consensusMocked,
 		cfg.ExperimentalGossipPropagationRate,
 		cfg.ExperimentalGossipSendOnce)
 

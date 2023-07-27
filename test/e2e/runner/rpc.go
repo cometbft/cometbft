@@ -13,7 +13,7 @@ import (
 )
 
 // waitForHeight waits for the network to reach a certain height (or above),
-// returning the highest height seen. Errors if the network is not making
+// returning the highest height added. Errors if the network is not making
 // progress at all.
 func waitForHeight(ctx context.Context, testnet *e2e.Testnet, height int64) (*types.Block, *types.BlockID, error) {
 	var (

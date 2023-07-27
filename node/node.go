@@ -61,8 +61,9 @@ type Node struct {
 	eventBus          *types.EventBus // pub/sub for services
 	stateStore        sm.Store
 	blockStore        *store.BlockStore // store the blockchain to disk
-	bcReactor         p2p.Reactor       // for block-syncing
-	mempoolReactor    p2p.Reactor       // for gossipping transactions
+	pruner            *sm.Pruner
+	bcReactor         p2p.Reactor // for block-syncing
+	mempoolReactor    p2p.Reactor // for gossipping transactions
 	mempool           mempl.Mempool
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
@@ -252,6 +253,13 @@ func NewNode(ctx context.Context,
 		}
 	}
 
+	pruner := sm.NewPruner(
+		stateStore,
+		blockStore,
+		logger,
+		sm.PrunerInterval(config.Storage.Pruning.Interval),
+	)
+
 	// make block executor for consensus and blocksync reactors to execute blocks
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
@@ -260,20 +268,9 @@ func NewNode(ctx context.Context,
 		mempool,
 		evidencePool,
 		blockStore,
+		sm.BlockExecutorWithPruner(pruner),
 		sm.BlockExecutorWithMetrics(smMetrics),
 	)
-
-	if config.Storage.Pruning.Interval != 10*time.Second && config.Storage.Pruning.Interval > 0 {
-		pruner := sm.NewPruner(
-			stateStore,
-			blockStore,
-			logger,
-			sm.PrunerInterval(config.Storage.Pruning.Interval),
-		)
-		blockExec.SetPruningService(pruner)
-	} else {
-		blockExec.SetPruningService(sm.NewPruner(stateStore, blockStore, logger))
-	}
 
 	// Make BlocksyncReactor. Don't start block sync if we're doing a state sync first.
 	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, logger, bsMetrics)
@@ -362,6 +359,7 @@ func NewNode(ctx context.Context,
 
 		stateStore:       stateStore,
 		blockStore:       blockStore,
+		pruner:           pruner,
 		bcReactor:        bcReactor,
 		mempoolReactor:   mempoolReactor,
 		mempool:          mempool,

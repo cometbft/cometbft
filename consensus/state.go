@@ -1291,17 +1291,17 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 	// If the proposed block has nil proof-of-lock and we have a locked block,
 	// only prevote the proposed block if it matches, otherwise prevote nil.
 	if cs.Proposal.POLRound == -1 && cs.LockedBlock != nil {
+		// If proposed block matches our locked block, prevote it.
 		if cs.ProposalBlock.HashesTo(cs.LockedBlock.Hash()) {
-			// Block matches our locked block, prevote it.
 			logger.Debug("prevote step: novel ProposalBlock matches locked block; prevoting locked block")
 			cs.signAddVote(cmtproto.PrevoteType, cs.LockedBlock.Hash(), cs.LockedBlockParts.Header())
 			return
-		} else {
-			// Block does not match our locked block, do not prevote it.
-			logger.Debug("prevote step: novel ProposalBlock does not match locked block; prevoting nil")
-			cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
-			return
 		}
+
+		// Else, proposed block does not match our locked block, do not prevote it.
+		logger.Debug("prevote step: novel ProposalBlock does not match locked block; prevoting nil")
+		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
+		return
 	}
 
 	// Determine if the proposed block has a sane, non-nil proof-of-lock.

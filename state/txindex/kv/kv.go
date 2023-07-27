@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"math"
 	"math/big"
 	"strconv"
 	"strings"
@@ -46,21 +47,7 @@ func (txi *TxIndex) Prune(retainHeight int64) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(fmt.Sprintf("Found %d txs to prune\n", len(results)))
-	results2, err := txi.Search(ctx, query.MustCompile("tx.height >= 0"))
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(fmt.Sprintf("Total %d txs to\n", len(results2)))
-	iterator, err := txi.store.Iterator(nil, nil)
-	if err != nil {
-		panic(err)
-	}
-	cnt := 0
-	for ; iterator.Valid(); iterator.Next() {
-		cnt++
-	}
-	fmt.Println(fmt.Sprintf("Total2 %d txs to\n", cnt))
+
 	for _, result := range results {
 		txi.DeleteResult(result)
 		if err != nil {
@@ -227,9 +214,17 @@ func (txi *TxIndex) deleteEvents(result *abci.TxResult) {
 				panic(fmt.Errorf("event type and attribute key \"%s\" is reserved; please use a different key", compositeTag))
 			}
 			if attr.GetIndex() {
-				err := txi.store.Delete(keyForEvent(compositeTag, attr.Value, result, txi.eventSeq))
+				zeroKey := keyForEvent(compositeTag, attr.Value, result, 0)
+				endKey := keyForEvent(compositeTag, attr.Value, result, math.MaxInt64)
+				itr, err := txi.store.Iterator(zeroKey, endKey)
 				if err != nil {
 					panic(err)
+				}
+				for ; itr.Valid(); itr.Next() {
+					err := txi.store.Delete(itr.Key())
+					if err != nil {
+						panic(err)
+					}
 				}
 			}
 		}

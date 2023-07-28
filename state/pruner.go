@@ -173,16 +173,7 @@ func (p *Pruner) pruningRoutine() {
 		case <-p.Quit():
 			return
 		default:
-			retainHeight := p.FindMinRetainHeight()
-			if retainHeight != lastHeightPruned {
-				pruned, evRetainHeight, err := p.pruneBlocks(retainHeight)
-				if err != nil {
-					p.logger.Error("Failed to prune blocks", "err", err, "blockRetainHeight", retainHeight)
-				} else if pruned > 0 {
-					p.logger.Info("Pruned blocks", "count", pruned, "evidenceRetainHeight", evRetainHeight)
-				}
-				lastHeightPruned = retainHeight
-			}
+			lastHeightPruned = p.pruneBlocksToRetainHeight(lastHeightPruned)
 
 			abciResRetainHeight, err := p.stateStore.GetABCIResRetainHeight()
 			if err != nil {
@@ -197,6 +188,20 @@ func (p *Pruner) pruningRoutine() {
 			time.Sleep(p.interval)
 		}
 	}
+}
+
+func (p *Pruner) pruneBlocksToRetainHeight(lastHeightPruned int64) int64 {
+	retainHeight := p.FindMinRetainHeight()
+	if retainHeight != lastHeightPruned {
+		pruned, evRetainHeight, err := p.pruneBlocks(retainHeight)
+		if err != nil {
+			p.logger.Error("Failed to prune blocks", "err", err, "blockRetainHeight", retainHeight)
+		} else if pruned > 0 {
+			p.logger.Info("Pruned blocks", "count", pruned, "evidenceRetainHeight", evRetainHeight)
+		}
+		lastHeightPruned = retainHeight
+	}
+	return lastHeightPruned
 }
 
 // If no retain height has been set by the application or the data companion

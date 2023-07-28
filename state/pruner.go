@@ -174,17 +174,7 @@ func (p *Pruner) pruningRoutine() {
 			return
 		default:
 			lastHeightPruned = p.pruneBlocksToRetainHeight(lastHeightPruned)
-
-			abciResRetainHeight, err := p.stateStore.GetABCIResRetainHeight()
-			if err != nil {
-				p.logger.Error("Failed to get ABCI result retain height", "err", err)
-			} else if lastABCIResPrunedHeight != abciResRetainHeight {
-				prunedHeight, err := p.stateStore.PruneABCIResponses(abciResRetainHeight)
-				if err != nil {
-					p.logger.Error("Failed to prune ABCI responses", "err", err, "abciResRetainHeight", abciResRetainHeight)
-				}
-				p.logger.Info("Pruned ABCI responses", "height", prunedHeight)
-			}
+			lastABCIResPrunedHeight = p.pruneABCIResToRetainHeight(lastABCIResPrunedHeight)
 			time.Sleep(p.interval)
 		}
 	}
@@ -202,6 +192,20 @@ func (p *Pruner) pruneBlocksToRetainHeight(lastHeightPruned int64) int64 {
 		lastHeightPruned = retainHeight
 	}
 	return lastHeightPruned
+}
+
+func (p *Pruner) pruneABCIResToRetainHeight(lastABCIResPrunedHeight int64) int64 {
+	abciResRetainHeight, err := p.stateStore.GetABCIResRetainHeight()
+	if err != nil {
+		p.logger.Error("Failed to get ABCI result retain height", "err", err)
+	} else if lastABCIResPrunedHeight != abciResRetainHeight {
+		prunedHeight, err := p.stateStore.PruneABCIResponses(abciResRetainHeight)
+		if err != nil {
+			p.logger.Error("Failed to prune ABCI responses", "err", err, "abciResRetainHeight", abciResRetainHeight)
+		}
+		p.logger.Info("Pruned ABCI responses", "height", prunedHeight)
+	}
+	return lastABCIResPrunedHeight
 }
 
 // If no retain height has been set by the application or the data companion

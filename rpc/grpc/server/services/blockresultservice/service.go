@@ -24,7 +24,7 @@ func New(bs *store.BlockStore, ss sm.Store, logger log.Logger) brs.BlockResultsS
 	return &blockResultsService{
 		stateStore: ss,
 		blockStore: bs,
-		logger: logger.With("service", "BlockResultsService"),
+		logger:     logger.With("service", "BlockResultsService"),
 	}
 }
 

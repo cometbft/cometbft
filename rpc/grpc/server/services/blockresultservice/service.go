@@ -43,7 +43,7 @@ func (s *blockResultsService) GetBlockResults(_ context.Context, req *brs.GetBlo
 	res, err := s.stateStore.LoadFinalizeBlockResponse(height)
 	if err != nil {
 		logger.Error("Error fetching BlockResults", "height", height, "err", err)
-		return nil, status.Errorf(codes.Internal, "Internal server error: cannot fetch BlockResults for height %d", height)
+		return nil, status.Error(codes.Internal, "Internal server error")
 	}
 
 	return &brs.GetBlockResultsResponse{

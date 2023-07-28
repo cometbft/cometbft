@@ -255,7 +255,7 @@ func NewNode(ctx context.Context,
 				// companion comes online.
 				err = stateStore.SaveCompanionBlockRetainHeight(config.Storage.Pruning.DataCompanion.InitialBlockRetainHeight)
 				if err != nil {
-					logger.Debug("failed to set initial retain height ", err, "err")
+					return nil, fmt.Errorf("failed to set initial data companion block retain height: %w", err)
 				}
 			}
 		} else {

@@ -65,6 +65,71 @@ func TestTxIndex(t *testing.T) {
 	assert.True(t, proto.Equal(txResult2, loadedTxResult2))
 }
 
+func TestTxIndex_Prune(t *testing.T) {
+	indexer := NewTxIndex(db.NewMemDB())
+
+	tx := types.Tx("HELLO WORLD")
+	events := []abci.Event{
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: "1", Index: true}}},
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "owner", Value: "/Ivan/", Index: true}}},
+		{Type: "", Attributes: []abci.EventAttribute{{Key: "not_allowed", Value: "Vlad", Index: true}}},
+	}
+	txResult := &abci.TxResult{
+		Height: 1,
+		Index:  0,
+		Tx:     tx,
+		Result: abci.ExecTxResult{
+			Data:   []byte{0},
+			Code:   abci.CodeTypeOK,
+			Log:    "",
+			Events: events,
+		},
+	}
+
+	batch := txindex.NewBatch(1)
+	if err := batch.Add(txResult); err != nil {
+		t.Error(err)
+	}
+	err := indexer.AddBatch(batch)
+	require.NoError(t, err)
+
+	keys1 := getKeys(indexer)
+
+	tx2 := types.Tx("BYE BYE WORLD")
+	txResult2 := &abci.TxResult{
+		Height: 2,
+		Index:  0,
+		Tx:     tx2,
+		Result: abci.ExecTxResult{
+			Data:   []byte{0},
+			Code:   abci.CodeTypeOK,
+			Log:    "",
+			Events: events,
+		},
+	}
+	hash2 := tx2.Hash()
+
+	batch = txindex.NewBatch(1)
+	if err := batch.Add(txResult2); err != nil {
+		t.Error(err)
+	}
+	err = indexer.AddBatch(batch)
+	require.NoError(t, err)
+
+	keys2 := getKeys(indexer)
+	assert.True(t, subslice(keys1, keys2))
+
+	indexer.Prune(2)
+
+	keys3 := getKeys(indexer)
+	assert.True(t, equalSlices(sliceDiff(keys2, keys1), keys3))
+	assert.True(t, emptyIntersection(keys1, keys3))
+
+	loadedTxResult2, err := indexer.Get(hash2)
+	require.NoError(t, err)
+	assert.True(t, proto.Equal(txResult2, loadedTxResult2))
+}
+
 func TestTxSearch(t *testing.T) {
 	indexer := NewTxIndex(db.NewMemDB())
 

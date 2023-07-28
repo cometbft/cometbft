@@ -106,3 +106,68 @@ func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) (bool, error)
 	}
 	return true, nil
 }
+
+func getKeys(indexer *TxIndex) [][]byte {
+	var keys [][]byte
+	itr, err := indexer.store.Iterator(nil, nil)
+	if err != nil {
+		panic(err)
+	}
+	for ; itr.Valid(); itr.Next() {
+		keys = append(keys, itr.Key())
+	}
+	return keys
+}
+
+func equal(x []byte, y []byte) bool {
+	if len(x) != len(y) {
+		return false
+	}
+	for i, elem := range x {
+		if elem != y[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func contains(slice [][]byte, target []byte) bool {
+	for _, element := range slice {
+		if equal(element, target) {
+			return true
+		}
+	}
+	return false
+}
+
+func subslice(smaller [][]byte, bigger [][]byte) bool {
+	for _, elem := range smaller {
+		if !contains(bigger, elem) {
+			return false
+		}
+	}
+	return true
+}
+
+func equalSlices(x [][]byte, y [][]byte) bool {
+	return subslice(x, y) && subslice(y, x)
+}
+
+func emptyIntersection(x [][]byte, y [][]byte) bool {
+	for _, elem := range x {
+		if contains(y, elem) {
+			return false
+		}
+	}
+	return true
+}
+
+func sliceDiff(bigger [][]byte, smaller [][]byte) [][]byte {
+	var diff [][]byte
+	for _, elem := range bigger {
+		if !contains(smaller, elem) {
+			diff = append(diff, elem)
+		}
+	}
+	return diff
+}

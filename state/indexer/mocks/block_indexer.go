@@ -19,6 +19,11 @@ type BlockIndexer struct {
 	mock.Mock
 }
 
+func (_m *BlockIndexer) Prune(retainHeight int64) {
+	//TODO implement me
+	panic("implement me")
+}
+
 // Has provides a mock function with given fields: height
 func (_m *BlockIndexer) Has(height int64) (bool, error) {
 	ret := _m.Called(height)

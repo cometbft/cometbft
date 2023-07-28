@@ -240,29 +240,14 @@ func NewNode(ctx context.Context,
 		return nil, err
 	}
 
-	if _, err := stateStore.GetCompanionBlockRetainHeight(); err != nil {
-		// If the data companion block retain height has not yet been set in
-		// the database
-		if errors.Is(err, sm.ErrKeyNotFound) {
-			if config.Storage.Pruning.DataCompanion.Enabled && config.Storage.Pruning.DataCompanion.InitialBlockRetainHeight > 0 {
-				// This will set the data companion retain height into the
-				// database. We bypass the sanity checks by
-				// pruner.SetCompanionBlockRetainHeight. These checks do not
-				// allow a retain height below the current blockstore height or
-				// above the blockstore height  to be set. But this is a retain
-				// height that can be set before the chain starts to indicate
-				// potentially that no pruning should be done before the data
-				// companion comes online.
-				err = stateStore.SaveCompanionBlockRetainHeight(config.Storage.Pruning.DataCompanion.InitialBlockRetainHeight)
-				if err != nil {
-					return nil, fmt.Errorf("failed to set initial data companion block retain height: %w", err)
-				}
-			}
-		} else {
-			return nil, fmt.Errorf("failed to obtain companion retain height: %w", err)
-		}
+	err = initCompanionBlockRetainHeight(
+		stateStore,
+		config.Storage.Pruning.DataCompanion.Enabled,
+		config.Storage.Pruning.DataCompanion.InitialBlockRetainHeight,
+	)
+	if err != nil {
+		return nil, err
 	}
-
 	pruner := sm.NewPruner(
 		stateStore,
 		blockStore,
@@ -841,4 +826,30 @@ func makeNodeInfo(
 
 	err := nodeInfo.Validate()
 	return nodeInfo, err
+}
+
+func initCompanionBlockRetainHeight(stateStore sm.Store, companionEnabled bool, initialRetainHeight int64) error {
+	if _, err := stateStore.GetCompanionBlockRetainHeight(); err != nil {
+		// If the data companion block retain height has not yet been set in
+		// the database
+		if errors.Is(err, sm.ErrKeyNotFound) {
+			if companionEnabled && initialRetainHeight > 0 {
+				// This will set the data companion retain height into the
+				// database. We bypass the sanity checks by
+				// pruner.SetCompanionBlockRetainHeight. These checks do not
+				// allow a retain height below the current blockstore height or
+				// above the blockstore height  to be set. But this is a retain
+				// height that can be set before the chain starts to indicate
+				// potentially that no pruning should be done before the data
+				// companion comes online.
+				err = stateStore.SaveCompanionBlockRetainHeight(initialRetainHeight)
+				if err != nil {
+					return fmt.Errorf("failed to set initial data companion block retain height: %w", err)
+				}
+			}
+		} else {
+			return fmt.Errorf("failed to obtain companion retain height: %w", err)
+		}
+	}
+	return nil
 }

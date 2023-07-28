@@ -304,8 +304,8 @@ func TestSaveRetainHeight(t *testing.T) {
 
 	err = pruner.SetCompanionRetainHeight(10)
 	require.NoError(t, err)
-
 }
+
 func TestMinRetainHeight(t *testing.T) {
 	stateDB := dbm.NewMemDB()
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
@@ -324,8 +324,8 @@ func TestMinRetainHeight(t *testing.T) {
 	require.NoError(t, err)
 	minHeight = pruner.FindMinRetainHeight()
 	require.Equal(t, minHeight, int64(10))
-
 }
+
 func TestFinalizeBlockResponsePruning(t *testing.T) {
 	t.Run("Persisting responses", func(t *testing.T) {
 		stateDB := dbm.NewMemDB()
@@ -368,6 +368,7 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
 func TestLastFinalizeBlockResponses(t *testing.T) {
 	// create an empty state store.
 	t.Run("Not persisting responses", func(t *testing.T) {

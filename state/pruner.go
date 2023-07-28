@@ -2,6 +2,7 @@ package state
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/cometbft/cometbft/config"
@@ -164,6 +165,7 @@ func (p *Pruner) SetABCIResRetainHeight(height int64) error {
 }
 
 func (p *Pruner) pruningRoutine() {
+	p.logger.Info("Pruner started", "interval", p.interval.String())
 	lastHeightPruned := int64(0)
 	lastABCIResPrunedHeight := int64(0)
 	for {
@@ -175,19 +177,22 @@ func (p *Pruner) pruningRoutine() {
 			if retainHeight != lastHeightPruned {
 				pruned, evRetainHeight, err := p.pruneBlocks(retainHeight)
 				if err != nil {
-					p.logger.Error("Failed to prune blocks", "err", err)
-				} else {
-					p.logger.Debug("Pruned block(s)", "height", pruned, "evidenceRetainHeight", evRetainHeight)
+					p.logger.Error("Failed to prune blocks", "err", err, "blockRetainHeight", retainHeight)
+				} else if pruned > 0 {
+					p.logger.Info("Pruned blocks", "count", pruned, "evidenceRetainHeight", evRetainHeight)
 				}
 				lastHeightPruned = retainHeight
 			}
 
-			ABCIResRetainHeight, err := p.stateStore.GetABCIResRetainHeight()
-			if err == nil {
-				if lastABCIResPrunedHeight != ABCIResRetainHeight {
-					pruned, _ := p.stateStore.PruneABCIResponses(ABCIResRetainHeight)
-					p.logger.Debug("Number of ABCI responses pruned: ", "pruned", pruned)
+			abciResRetainHeight, err := p.stateStore.GetABCIResRetainHeight()
+			if err != nil {
+				p.logger.Error("Failed to get ABCI result retain height", "err", err)
+			} else if lastABCIResPrunedHeight != abciResRetainHeight {
+				prunedHeight, err := p.stateStore.PruneABCIResponses(abciResRetainHeight)
+				if err != nil {
+					p.logger.Error("Failed to prune ABCI responses", "err", err, "abciResRetainHeight", abciResRetainHeight)
 				}
+				p.logger.Info("Pruned ABCI responses", "height", prunedHeight)
 			}
 			time.Sleep(p.interval)
 		}
@@ -226,29 +231,23 @@ func (p *Pruner) FindMinRetainHeight() int64 {
 	return dcRetainHeight
 }
 
-func (p *Pruner) pruneBlocks(height int64) (pruned uint64, evRetainHeight int64, err error) {
+func (p *Pruner) pruneBlocks(height int64) (uint64, int64, error) {
 	if height <= 0 {
 		return 0, 0, errors.New("retain height cannot be less or equal than 0")
 	}
 
 	base := p.bs.Base()
 
-	var state State
-	state, err = p.stateStore.Load()
+	state, err := p.stateStore.Load()
 	if err != nil {
-		p.logger.Error("Failed to load state, cannot prune")
-		return
+		return 0, 0, fmt.Errorf("failed to load state, cannot prune: %w", err)
 	}
-
-	pruned, evRetainHeight, err = p.bs.PruneBlocks(height, state)
+	pruned, evRetainHeight, err := p.bs.PruneBlocks(height, state)
 	if err != nil {
-		p.logger.Error("Failed to prune blocks at height", "height", height, "err", err)
-	} else {
-		p.logger.Debug("Pruned blocks", "pruned", pruned, "retain_height", height)
+		return 0, 0, fmt.Errorf("failed to prune blocks to height %d: %w", height, err)
 	}
-	err = p.stateStore.PruneStates(base, height, evRetainHeight)
-	if err != nil {
-		p.logger.Error("Failed to prune the state store", "err", err)
+	if err := p.stateStore.PruneStates(base, height, evRetainHeight); err != nil {
+		return 0, 0, fmt.Errorf("failed to prune states to height %d: %w", height, err)
 	}
 	return pruned, evRetainHeight, err
 }

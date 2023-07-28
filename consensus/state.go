@@ -1310,7 +1310,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 			return
 		}
 
-		// Else, proposed block does not match our locked block, do not prevote it.
+		// Else, proposed block does not match our locked block, prevote nil.
 		// (lockedBlock_p != v && lockedRound_p != -1) execute line 26
 		logger.Debug("prevote step: novel ProposalBlock does not match locked block; prevoting nil")
 		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})

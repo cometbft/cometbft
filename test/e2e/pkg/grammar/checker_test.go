@@ -71,7 +71,7 @@ func TestVerify(t *testing.T) {
 	for _, test := range tests {
 		checker := NewGrammarChecker(DefaultConfig())
 		execution := strings.Join(test.abciCalls, " ")
-		result, err := checker.VerifyGeneric(execution)
+		result, err := checker.verifyGeneric(execution)
 		if result == test.result {
 			continue
 		}

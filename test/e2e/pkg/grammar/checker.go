@@ -51,7 +51,7 @@ func (g *GrammarChecker) isSupportedByGrammar(req *abci.Request) bool {
 	}
 }
 
-// filterRequests returns request supported by grammar and remove the last height.
+// filterRequests returns requests supported by grammar and remove the last height.
 func (g *GrammarChecker) filterRequests(reqs []*abci.Request) []*abci.Request {
 	var r []*abci.Request
 	for _, req := range reqs {
@@ -63,6 +63,20 @@ func (g *GrammarChecker) filterRequests(reqs []*abci.Request) []*abci.Request {
 	return r
 }
 
+// filterLastHeight removes abci calls from the last height if "commit" has not been called.
+func (g *GrammarChecker) filterLastHeight(reqs []*abci.Request) ([]*abci.Request, int) {
+	pos := len(reqs) - 1
+	r := reqs[pos]
+	cnt := 0
+	// Find the last commit.
+	for g.getRequestTerminal(r) != "commit" && pos >= 0 {
+		pos--
+		r = reqs[pos]
+		cnt++
+	}
+	return reqs[:pos+1], cnt
+}
+
 // getRequestTerminal returns a value of a corresponding terminal in the abci grammar for a specific request.
 func (g *GrammarChecker) getRequestTerminal(req *abci.Request) string {
 	// req.String() produces an output like this "init_chain:<time:<seconds:-62135596800 > >"
@@ -72,9 +86,8 @@ func (g *GrammarChecker) getRequestTerminal(req *abci.Request) string {
 	return t
 }
 
-// GetExecutionString returns all requests that grammar understand as string of terminal symbols
-// in parser readable format.
-func (g *GrammarChecker) GetExecutionString(reqs []*abci.Request) string {
+// GetExecutionString returns a string of terminal symbols in parser readable format.
+func (g *GrammarChecker) getExecutionString(reqs []*abci.Request) string {
 	s := ""
 	for _, r := range reqs {
 		t := g.getRequestTerminal(r)
@@ -91,20 +104,20 @@ func (g *GrammarChecker) GetExecutionString(reqs []*abci.Request) string {
 // Verify verifies whether a list of request satisfy abci grammar.
 func (g *GrammarChecker) Verify(reqs []*abci.Request, isCleanStart bool) (bool, error) {
 	r := g.filterRequests(reqs)
-	execution := g.GetExecutionString(r)
-	_, err := g.VerifySpecific(r, isCleanStart)
+	execution := g.getExecutionString(r)
+	_, err := g.verifySpecific(r, isCleanStart)
 	if err != nil {
 		return false, fmt.Errorf("%v\nExecution:\n%v", err, execution)
 	}
-	_, err = g.VerifyGeneric(execution)
+	_, err = g.verifyGeneric(execution)
 	if err != nil {
 		return false, fmt.Errorf("%v\nExecution:\n%v", err, execution)
 	}
 	return true, nil
 }
 
-// VerifySpecific checks some specific cases.
-func (g *GrammarChecker) VerifySpecific(reqs []*abci.Request, isCleanStart bool) (bool, error) {
+// VerifySpecific do some specific checks.
+func (g *GrammarChecker) verifySpecific(reqs []*abci.Request, isCleanStart bool) (bool, error) {
 	firstReq := g.getRequestTerminal(reqs[0])
 	if isCleanStart {
 		if firstReq != "init_chain" {
@@ -118,8 +131,8 @@ func (g *GrammarChecker) VerifySpecific(reqs []*abci.Request, isCleanStart bool)
 	return true, nil
 }
 
-// VerifyGeneric checks the whole execution by using the gogll generate lexer and parser.
-func (g *GrammarChecker) VerifyGeneric(execution string) (bool, error) {
+// VerifyGeneric checks the whole execution by using the gogll generated lexer and parser.
+func (g *GrammarChecker) verifyGeneric(execution string) (bool, error) {
 	lexer := lexer.New([]rune(execution))
 	_, errs := parser.Parse(lexer)
 	if len(errs) > 0 {
@@ -127,20 +140,6 @@ func (g *GrammarChecker) VerifyGeneric(execution string) (bool, error) {
 		return false, err
 	}
 	return true, nil
-}
-
-// filterLastHeight removes abci calls from the last height if "commit" has not been called.
-func (g *GrammarChecker) filterLastHeight(reqs []*abci.Request) ([]*abci.Request, int) {
-	pos := len(reqs) - 1
-	r := reqs[pos]
-	cnt := 0
-	// Find the last commit.
-	for g.getRequestTerminal(r) != "commit" && pos >= 0 {
-		pos--
-		r = reqs[pos]
-		cnt++
-	}
-	return reqs[:pos+1], cnt
 }
 
 // combineParseErrors combines all parse errors in one.

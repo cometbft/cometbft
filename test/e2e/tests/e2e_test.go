@@ -162,7 +162,8 @@ func fetchBlockChain(t *testing.T) []*types.Block {
 	return blocks
 }
 
-// fetchABCIRequests go through the logs and collect all ABCI requests (each slice represents request until the crash happened) for a specific node.
+// fetchABCIRequests go through the logs of a specific node and collect all ABCI requests (each slice represents requests from beggining until the first crash,
+// and then between two crashes) for a specific node.
 func fetchABCIRequests(t *testing.T, nodeName string) ([][]*abci.Request, error) {
 	testnet := loadTestnet(t)
 	logs, err := fetchNodeLogs(testnet, nodeName)

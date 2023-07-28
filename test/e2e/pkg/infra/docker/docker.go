@@ -87,6 +87,8 @@ networks:
 
 services:
   prometheus:
+    labels:
+      e2e: true
     container_name: prometheus
     image: prom/prometheus
     volumes:

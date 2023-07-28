@@ -460,6 +460,11 @@ func (n *Node) OnStart() error {
 		}
 	}
 
+	// Start background pruning
+	if err := n.pruner.Start(); err != nil {
+		return fmt.Errorf("failed to start background pruning routine: %w", err)
+	}
+
 	return nil
 }
 

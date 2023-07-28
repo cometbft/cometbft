@@ -67,26 +67,6 @@ func makeStateAndBlockStore() (sm.State, *BlockStore, cleanupFunc) {
 	return state, NewBlockStore(blockDB), func() { os.RemoveAll(config.RootDir) }
 }
 
-func makeStateAndBlockStoreSpecificBackend(backendType dbm.BackendType) (sm.State, *BlockStore, cleanupFunc) {
-	config := test.ResetTestRoot("blockchain_reactor_test")
-	blockDB, err := dbm.NewDB("block", backendType, config.DBDir())
-	if err != nil {
-		panic(fmt.Errorf("error creating %s: %w", backendType, err))
-	}
-	stateDB, err := dbm.NewDB("state", backendType, config.DBDir())
-	if err != nil {
-		panic(fmt.Errorf("error creating %s: %w", backendType, err))
-	}
-	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
-		DiscardABCIResponses: false,
-	})
-	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
-	if err != nil {
-		panic(fmt.Errorf("error constructing state from genesis file: %w", err))
-	}
-	return state, NewBlockStore(blockDB), func() { os.RemoveAll(config.RootDir) }
-}
-
 func TestLoadBlockStoreState(t *testing.T) {
 	type blockStoreTest struct {
 		testName string
@@ -369,73 +349,6 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 				"erased the commit in the DB hence we should get back a nil commit")
 		}
 	}
-}
-
-func TestBlockStore_SaveBlockWithExtendedCommit(t *testing.T) {
-	dbTypes := []dbm.BackendType{
-		dbm.GoLevelDBBackend,
-		dbm.MemDBBackend,
-	}
-	NTXs := int64(1000)
-
-	for _, dbType := range dbTypes {
-		state, bs, cleanup := makeStateAndBlockStoreSpecificBackend(dbType)
-		t.Run(fmt.Sprintf("DBType:%s;NTxs:%d", dbType, NTXs),
-			func(t *testing.T) {
-				height := bs.Height() + 1
-				block := state.MakeBlock(height, test.MakeNTxs(height, NTXs), new(types.Commit), nil, state.Validators.GetProposer().Address)
-				validPartSet, err := block.MakePartSet(2)
-				if err != nil {
-					t.Error(err)
-				}
-				seenCommit := makeTestExtCommit(block.Header.Height, cmttime.Now())
-
-				bs.SaveBlockWithExtendedCommit(block, validPartSet, seenCommit)
-				retrievedBlock := bs.LoadBlock(height)
-				require.Equal(t, retrievedBlock.Hash(), block.Hash())
-			})
-
-		cleanup()
-	}
-}
-
-func BenchmarkBlockStore_SaveBlockWithExtendedCommit(b *testing.B) {
-	dbTypes := []dbm.BackendType{
-		//   - requires gcc
-		//   - use cleveldb build tag (go build -tags cleveldb)
-		//	 - you should have levelDB installed
-		dbm.CLevelDBBackend,
-		//   - requires gcc
-		//   - use rocksdb build tag (go build -tags rocksdb)
-		//   - you should have rocksDB installed
-		dbm.RocksDBBackend,
-		//   - use badgerdb build tag (go build -tags badgerdb)
-		dbm.BadgerDBBackend,
-		//   - use boltdb build tag (go build -tags boltdb)
-		dbm.BoltDBBackend,
-		dbm.GoLevelDBBackend,
-		dbm.MemDBBackend,
-	}
-	NTXs := int64(1000)
-
-	for _, dbType := range dbTypes {
-		state, bs, cleanup := makeStateAndBlockStoreSpecificBackend(dbType)
-		b.Run(fmt.Sprintf("DBType:%s;NTxs:%d", dbType, NTXs),
-			func(b *testing.B) {
-				height := bs.Height() + 1
-				block := state.MakeBlock(height, test.MakeNTxs(height, NTXs), new(types.Commit), nil, state.Validators.GetProposer().Address)
-				validPartSet, err := block.MakePartSet(2)
-				if err != nil {
-					b.Error(err)
-				}
-				seenCommit := makeTestExtCommit(block.Header.Height, cmttime.Now())
-
-				bs.SaveBlockWithExtendedCommit(block, validPartSet, seenCommit)
-			})
-
-		cleanup()
-	}
-
 }
 
 // stripExtensions removes all VoteExtension data from an ExtendedCommit. This

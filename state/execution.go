@@ -306,9 +306,7 @@ func (blockExec *BlockExecutor) ApplyBlock(
 	if retainHeight > 0 && blockExec.pruner != nil {
 		err := blockExec.pruner.SetApplicationRetainHeight(retainHeight)
 		if err != nil {
-			blockExec.logger.Error("failed to set height", "retainHeight", retainHeight, "err", err)
-		} else {
-			blockExec.logger.Debug("set pruning height", "retain_height", retainHeight)
+			blockExec.logger.Error("Failed to set application retain height", "retainHeight", retainHeight, "err", err)
 		}
 	}
 

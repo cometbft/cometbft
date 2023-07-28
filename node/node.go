@@ -460,6 +460,9 @@ func (n *Node) OnStop() {
 	n.Logger.Info("Stopping Node")
 
 	// first stop the non-reactor services
+	if err := n.pruner.Stop(); err != nil {
+		n.Logger.Error("Error stopping the pruning service", "err", err)
+	}
 	if err := n.eventBus.Stop(); err != nil {
 		n.Logger.Error("Error closing eventBus", "err", err)
 	}

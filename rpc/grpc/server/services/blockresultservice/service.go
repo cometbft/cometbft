@@ -21,7 +21,11 @@ type blockResultsService struct {
 
 // New creates a new CometBFT block results service server.
 func New(bs *store.BlockStore, ss sm.Store, logger log.Logger) brs.BlockResultsServiceServer {
-	return &blockResultsService{stateStore: ss, blockStore: bs, logger: logger}
+	return &blockResultsService{
+		stateStore: ss,
+		blockStore: bs,
+		logger: logger.With("service", "BlockResultsService"),
+	}
 }
 
 // GetBlockResults returns the block results of the requested height.

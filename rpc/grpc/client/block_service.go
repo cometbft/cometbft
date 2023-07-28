@@ -73,7 +73,6 @@ func (c *blockServiceClient) GetBlockByHeight(ctx context.Context, height int64)
 // This method provides an out channel (int64) that streams the latest height.
 // The out channel might return non-contiguous heights if the channel becomes full,
 func (c *blockServiceClient) GetLatestHeight(ctx context.Context, resultCh chan<- LatestHeightResult) {
-
 	req := blocksvc.GetLatestHeightRequest{}
 
 	latestHeightClient, err := c.client.GetLatestHeight(ctx, &req)

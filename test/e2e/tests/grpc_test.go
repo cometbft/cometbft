@@ -165,8 +165,8 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 				expectedHeight int64
 				request        v1.GetBlockResultsRequest
 			}{
-				{first, v1.GetBlockResultsRequest{Height: first}},
 				{last, v1.GetBlockResultsRequest{}},
+				{first, v1.GetBlockResultsRequest{Height: first}},
 			}
 			errorCases := []struct {
 				request v1.GetBlockResultsRequest

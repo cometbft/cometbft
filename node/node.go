@@ -630,7 +630,7 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 			opts = append(opts, grpcserver.WithBlockService(n.blockStore, n.eventBus, n.Logger))
 		}
 		if n.config.GRPC.BlockResultsService.Enabled {
-			opts = append(opts, grpcserver.WithBlockResultsService(n.blockStore, n.stateStore))
+			opts = append(opts, grpcserver.WithBlockResultsService(n.blockStore, n.stateStore, n.Logger))
 		}
 		go func() {
 			if err := grpcserver.Serve(listener, opts...); err != nil {

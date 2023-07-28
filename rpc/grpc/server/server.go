@@ -8,7 +8,7 @@ import (
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/store"
 
-	v1 "github.com/cometbft/cometbft/proto/tendermint/services/block_results/v1"
+	brs "github.com/cometbft/cometbft/proto/tendermint/services/block_results/v1"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/blockresultservice"
 
 	"google.golang.org/grpc"
@@ -29,7 +29,7 @@ type serverBuilder struct {
 	listener            net.Listener
 	versionService      pbversionsvc.VersionServiceServer
 	blockService        pbblocksvc.BlockServiceServer
-	blockresultsService v1.BlockResultsServiceServer
+	blockresultsService brs.BlockResultsServiceServer
 	logger              log.Logger
 	grpcOpts            []grpc.ServerOption
 }
@@ -72,9 +72,9 @@ func WithBlockService(store *store.BlockStore, eventBus *types.EventBus, logger 
 	}
 }
 
-func WithBlockResultsService(bs *store.BlockStore, ss sm.Store) Option {
+func WithBlockResultsService(bs *store.BlockStore, ss sm.Store, logger log.Logger) Option {
 	return func(b *serverBuilder) {
-		b.blockresultsService = blockresultservice.New(bs, ss)
+		b.blockresultsService = blockresultservice.New(bs, ss, logger)
 	}
 }
 
@@ -114,7 +114,7 @@ func Serve(listener net.Listener, opts ...Option) error {
 		b.logger.Debug("Registered block service")
 	}
 	if b.blockresultsService != nil {
-		v1.RegisterBlockResultsServiceServer(server, b.blockresultsService)
+		brs.RegisterBlockResultsServiceServer(server, b.blockresultsService)
 		b.logger.Debug("Registered block results service")
 	}
 	b.logger.Info("serve", "msg", fmt.Sprintf("Starting gRPC server on %s", listener.Addr()))

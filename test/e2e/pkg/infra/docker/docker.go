@@ -95,6 +95,9 @@ services:
     - .:/etc/prometheus/
     ports:
     - 9090:9090
+    networks:
+      {{ .Name }}:
+        ipv4_address: 10.186.73.254
 
 {{- range .Nodes }}
   {{ .Name }}:

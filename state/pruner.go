@@ -181,7 +181,7 @@ func (p *Pruner) pruningRoutine() {
 }
 
 func (p *Pruner) pruneBlocksToRetainHeight(lastHeightPruned int64) int64 {
-	retainHeight := p.FindMinRetainHeight()
+	retainHeight := p.findMinRetainHeight()
 	if retainHeight != lastHeightPruned {
 		pruned, evRetainHeight, err := p.pruneBlocks(retainHeight)
 		if err != nil {
@@ -217,7 +217,7 @@ func (p *Pruner) pruneABCIResToRetainHeight(lastABCIResPrunedHeight int64) int64
 // the database will not have values for the corresponding keys.
 // If both retain heights were set, we pick the smaller one
 // If only one is set we return that one
-func (p *Pruner) FindMinRetainHeight() int64 {
+func (p *Pruner) findMinRetainHeight() int64 {
 	var noAppRetainHeightSet bool
 	appRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
 	if err != nil {

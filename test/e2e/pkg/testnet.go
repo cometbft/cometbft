@@ -90,6 +90,7 @@ type Testnet struct {
 	FinalizeBlockDelay                time.Duration
 	UpgradeVersion                    string
 	Prometheus                        bool
+	PrometheusIP                      net.IP
 	VoteExtensionsEnableHeight        int64
 	VoteExtensionSize                 uint
 	ExperimentalGossipPropagationRate float32
@@ -339,6 +340,11 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			valUpdate[node] = power
 		}
 		testnet.ValidatorUpdates[int64(height)] = valUpdate
+	}
+
+	// compute Prometheus IP (if enabled)
+	if testnet.Prometheus {
+		testnet.PrometheusIP = newIPGenerator(ipNet).Last()
 	}
 
 	return testnet, testnet.Validate()
@@ -658,4 +664,13 @@ func (g *ipGenerator) Next() net.IP {
 		}
 	}
 	return ip
+}
+
+func (g *ipGenerator) Last() net.IP {
+	ip := g.Next()
+	var ips []net.IP
+	for ip := ip.Mask(g.network.Mask); g.network.Contains(ip); ip = g.Next() {
+		ips = append(ips, ip)
+	}
+	return ips[len(ips)-2] // non-broadcast address
 }

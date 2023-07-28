@@ -86,6 +86,7 @@ networks:
       - subnet: {{ .IP }}
 
 services:
+{{- if .Prometheus }}
   prometheus:
     labels:
       e2e: true
@@ -97,7 +98,9 @@ services:
     - 9090:9090
     networks:
       {{ .Name }}:
-        ipv4_address: 10.186.73.254
+        ipv4_address: {{ .PrometheusIP }}
+{{printf "\n"}}
+{{- end }}
 
 {{- range .Nodes }}
   {{ .Name }}:
@@ -149,7 +152,6 @@ services:
       {{ $.Name }}:
         ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .InternalIP }}
 {{- end }}
-
 {{end}}`)
 	if err != nil {
 		return nil, err

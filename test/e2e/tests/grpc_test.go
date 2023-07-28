@@ -142,11 +142,6 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 			return
 		}
 
-		ctx, ctxCancel := context.WithTimeout(context.Background(), time.Minute)
-		defer ctxCancel()
-		gRPCClient, err := node.GRPCClient(ctx)
-		require.NoError(t, err)
-
 		blocks := fetchBlockChain(t)
 
 		client, err := node.Client()
@@ -156,17 +151,23 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 
 		first := status.SyncInfo.EarliestBlockHeight
 		last := status.SyncInfo.LatestBlockHeight
+		last++
 		if node.RetainBlocks > 0 {
 			first++
 		}
-		
+
+		ctx, ctxCancel := context.WithTimeout(context.Background(), time.Minute)
+		defer ctxCancel()
+		gRPCClient, err := node.GRPCClient(ctx)
+		require.NoError(t, err)
+
 		for _, block := range blocks {
 			successCases := []struct {
 				expectedHeight int64
 				request        v1.GetBlockResultsRequest
 			}{
-				{last, v1.GetBlockResultsRequest{}},
 				{first, v1.GetBlockResultsRequest{Height: first}},
+				{last, v1.GetBlockResultsRequest{}},
 			}
 			errorCases := []struct {
 				request v1.GetBlockResultsRequest

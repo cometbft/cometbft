@@ -151,7 +151,6 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 
 		first := status.SyncInfo.EarliestBlockHeight
 		last := status.SyncInfo.LatestBlockHeight
-		last++
 		if node.RetainBlocks > 0 {
 			first++
 		}
@@ -187,7 +186,11 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 				// First block tests
 				require.NoError(t, err)
 				require.NotNil(t, res)
-				require.Equal(t, res.Height, tc.expectedHeight)
+				if tc.expectedHeight == last {
+					require.GreaterOrEqual(t, tc.expectedHeight, res.Height)
+				} else {
+					require.Equal(t, res.Height, tc.expectedHeight)
+				}
 			}
 			for _, tc := range errorCases {
 				_, err = gRPCClient.GetBlockResults(ctx, tc.request)

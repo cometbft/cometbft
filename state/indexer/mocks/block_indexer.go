@@ -20,8 +20,7 @@ type BlockIndexer struct {
 }
 
 func (_m *BlockIndexer) Prune(retainHeight int64) {
-	//TODO implement me
-	panic("implement me")
+	// Not implemented
 }
 
 // Has provides a mock function with given fields: height

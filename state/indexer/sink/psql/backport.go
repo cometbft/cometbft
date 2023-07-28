@@ -39,8 +39,7 @@ func (es *EventSink) TxIndexer() BackportTxIndexer {
 type BackportTxIndexer struct{ psql *EventSink }
 
 func (b BackportTxIndexer) Prune(retainHeight int64) {
-	//TODO implement me
-	panic("implement me")
+	// Not implemented
 }
 
 // AddBatch indexes a batch of transactions in Postgres, as part of TxIndexer.
@@ -78,8 +77,7 @@ func (es *EventSink) BlockIndexer() BackportBlockIndexer {
 type BackportBlockIndexer struct{ psql *EventSink }
 
 func (b BackportBlockIndexer) Prune(retainHeight int64) {
-	//TODO implement me
-	panic("implement me")
+	// Not implemented
 }
 
 // Has is implemented to satisfy the BlockIndexer interface, but it is not

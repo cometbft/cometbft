@@ -1308,6 +1308,9 @@ func TestPruningConfig() *PruningConfig {
 }
 
 func (cfg *PruningConfig) ValidateBasic() error {
+	if cfg.Interval <= 0 {
+		return errors.New("interval must be > 0")
+	}
 	if err := cfg.DataCompanion.ValidateBasic(); err != nil {
 		return fmt.Errorf("error in [data_companion] section: %w", err)
 	}

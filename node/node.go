@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -239,17 +240,26 @@ func NewNode(ctx context.Context,
 		return nil, err
 	}
 
-	if config.Storage.Pruning.DataCompanion.Enabled && config.Storage.Pruning.DataCompanion.InitialBlockRetainHeight > 0 {
-		// This will set the data companion retain height into the database
-		// We bypass the sanity checks pruner.SetCompanionBlockRetainHeight.
-		// These checks do not allow a retain height below the current blockstore
-		// height or above the blockstore height  to be set.
-		// But bthis is a retain height that can be set before the chain starts
-		// to indicate potentially that no pruning should be done before
-		// the data companion comes online.
-		err = stateStore.SaveCompanionBlockRetainHeight(config.Storage.Pruning.DataCompanion.InitialBlockRetainHeight)
-		if err != nil {
-			logger.Debug("failed to set initial retain height ", err, "err")
+	if _, err := stateStore.GetCompanionBlockRetainHeight(); err != nil {
+		// If the data companion block retain height has not yet been set in
+		// the database
+		if errors.Is(err, sm.ErrKeyNotFound) {
+			if config.Storage.Pruning.DataCompanion.Enabled && config.Storage.Pruning.DataCompanion.InitialBlockRetainHeight > 0 {
+				// This will set the data companion retain height into the
+				// database. We bypass the sanity checks by
+				// pruner.SetCompanionBlockRetainHeight. These checks do not
+				// allow a retain height below the current blockstore height or
+				// above the blockstore height  to be set. But this is a retain
+				// height that can be set before the chain starts to indicate
+				// potentially that no pruning should be done before the data
+				// companion comes online.
+				err = stateStore.SaveCompanionBlockRetainHeight(config.Storage.Pruning.DataCompanion.InitialBlockRetainHeight)
+				if err != nil {
+					logger.Debug("failed to set initial retain height ", err, "err")
+				}
+			}
+		} else {
+			return nil, fmt.Errorf("failed to obtain companion retain height: %w", err)
 		}
 	}
 

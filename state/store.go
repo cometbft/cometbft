@@ -3,7 +3,6 @@ package state
 import (
 	"errors"
 	"fmt"
-
 	"github.com/cosmos/gogoproto/proto"
 
 	dbm "github.com/cometbft/cometbft-db"

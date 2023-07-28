@@ -2,6 +2,7 @@ package blockresultservice
 
 import (
 	"context"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -52,9 +53,9 @@ func (s *blockResultsService) GetBlockResults(_ context.Context, req *brs.GetBlo
 }
 
 func formatProtoToRef[T any](collection []T) []*T {
-	var res []*T
-	for _, item := range collection {
-		res = append(res, &item)
+	res := []*T{}
+	for i := range collection {
+		res = append(res, &collection[i])
 	}
 	return res
 }

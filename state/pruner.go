@@ -197,6 +197,11 @@ func (p *Pruner) pruneBlocksToRetainHeight(lastHeightPruned int64) int64 {
 func (p *Pruner) pruneABCIResToRetainHeight(lastABCIResPrunedHeight int64) int64 {
 	abciResRetainHeight, err := p.stateStore.GetABCIResRetainHeight()
 	if err != nil {
+		// ABCI response retain height has not yet been set - do not log any
+		// errors at this time.
+		if errors.Is(err, ErrKeyNotFound) {
+			return 0
+		}
 		p.logger.Error("Failed to get ABCI result retain height", "err", err)
 	} else if lastABCIResPrunedHeight != abciResRetainHeight {
 		prunedHeight, err := p.stateStore.PruneABCIResponses(abciResRetainHeight)
@@ -216,7 +221,7 @@ func (p *Pruner) FindMinRetainHeight() int64 {
 	var noAppRetainHeightSet bool
 	appRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
 	if err != nil {
-		if err == ErrKeyNotFound {
+		if errors.Is(err, ErrKeyNotFound) {
 			noAppRetainHeightSet = true
 		} else {
 			return 0
@@ -224,7 +229,7 @@ func (p *Pruner) FindMinRetainHeight() int64 {
 	}
 	dcRetainHeight, err := p.stateStore.GetCompanionBlockRetainHeight()
 	if err != nil {
-		if err == ErrKeyNotFound {
+		if errors.Is(err, ErrKeyNotFound) {
 			// The Application height was set so we can return that immediately
 			if !noAppRetainHeightSet {
 				return appRetainHeight

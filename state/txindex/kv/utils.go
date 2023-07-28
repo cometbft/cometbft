@@ -140,7 +140,7 @@ func contains(slice [][]byte, target []byte) bool {
 	return false
 }
 
-func subslice(smaller [][]byte, bigger [][]byte) bool {
+func Subslice(smaller [][]byte, bigger [][]byte) bool {
 	for _, elem := range smaller {
 		if !contains(bigger, elem) {
 			return false
@@ -149,11 +149,11 @@ func subslice(smaller [][]byte, bigger [][]byte) bool {
 	return true
 }
 
-func equalSlices(x [][]byte, y [][]byte) bool {
-	return subslice(x, y) && subslice(y, x)
+func EqualSlices(x [][]byte, y [][]byte) bool {
+	return Subslice(x, y) && Subslice(y, x)
 }
 
-func emptyIntersection(x [][]byte, y [][]byte) bool {
+func EmptyIntersection(x [][]byte, y [][]byte) bool {
 	for _, elem := range x {
 		if contains(y, elem) {
 			return false
@@ -162,7 +162,7 @@ func emptyIntersection(x [][]byte, y [][]byte) bool {
 	return true
 }
 
-func sliceDiff(bigger [][]byte, smaller [][]byte) [][]byte {
+func SliceDiff(bigger [][]byte, smaller [][]byte) [][]byte {
 	var diff [][]byte
 	for _, elem := range bigger {
 		if !contains(smaller, elem) {

@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"strconv"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/google/orderedcode"
 
 	idxutil "github.com/cometbft/cometbft/internal/indexer"
@@ -208,4 +209,44 @@ func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) (bool, error)
 		}
 	}
 	return true, nil
+}
+
+func GetEventsForTesting(height int64) types.EventDataNewBlockEvents {
+	return types.EventDataNewBlockEvents{
+		Height: height,
+		Events: []abci.Event{
+			{
+				Type: "begin_event",
+				Attributes: []abci.EventAttribute{
+					{
+						Key:   "proposer",
+						Value: "FCAA001",
+						Index: true,
+					},
+				},
+			},
+			{
+				Type: "end_event",
+				Attributes: []abci.EventAttribute{
+					{
+						Key:   "foo",
+						Value: "100",
+						Index: true,
+					},
+				},
+			},
+		},
+	}
+}
+
+func GetKeys(indexer *BlockerIndexer) [][]byte {
+	var keys [][]byte
+	itr, err := indexer.store.Iterator(nil, nil)
+	if err != nil {
+		panic(err)
+	}
+	for ; itr.Valid(); itr.Next() {
+		keys = append(keys, itr.Key())
+	}
+	return keys
 }

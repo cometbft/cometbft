@@ -101,6 +101,7 @@ func (idx *BlockerIndexer) Prune(retainHeight int64) {
 		if err != nil {
 			panic(err)
 		}
+		idx.deleteEvents(height)
 	}
 }
 
@@ -624,4 +625,23 @@ func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, hei
 	}
 
 	return nil
+}
+
+func (idx *BlockerIndexer) deleteEvents(height int64) {
+	itr, err := idx.store.Iterator(nil, nil)
+	if err != nil {
+		panic(err)
+	}
+	for ; itr.Valid(); itr.Next() {
+		h, err := parseHeightFromEventKey(itr.Key())
+		if err != nil {
+			continue
+		}
+		if h == height {
+			err := idx.store.Delete(itr.Key())
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
 }

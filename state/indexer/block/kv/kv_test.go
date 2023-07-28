@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/cometbft/cometbft/state/txindex/kv"
 	"github.com/stretchr/testify/require"
 
 	db "github.com/cometbft/cometbft-db"
@@ -14,6 +15,32 @@ import (
 	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
 	"github.com/cometbft/cometbft/types"
 )
+
+func TestBlockerIndexer_Prune(t *testing.T) {
+	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))
+	indexer := blockidxkv.New(store)
+
+	events1 := blockidxkv.GetEventsForTesting(1)
+	events2 := blockidxkv.GetEventsForTesting(2)
+
+	err := indexer.Index(events1)
+	require.NoError(t, err)
+
+	keys1 := blockidxkv.GetKeys(indexer)
+
+	err = indexer.Index(events2)
+	require.NoError(t, err)
+
+	keys2 := blockidxkv.GetKeys(indexer)
+
+	require.True(t, kv.Subslice(keys1, keys2))
+
+	indexer.Prune(2)
+
+	keys3 := blockidxkv.GetKeys(indexer)
+	require.True(t, kv.EqualSlices(kv.SliceDiff(keys2, keys1), keys3))
+	require.True(t, kv.EmptyIntersection(keys1, keys3))
+}
 
 func TestBlockIndexer(t *testing.T) {
 	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))

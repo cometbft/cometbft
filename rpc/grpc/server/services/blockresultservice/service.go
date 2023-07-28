@@ -31,7 +31,6 @@ func (s *blockResultsService) GetBlockResults(_ context.Context, req *brs.GetBlo
 	height := req.Height
 	latestHeight := s.blockStore.Height()
 	if req.Height > latestHeight || req.Height < 0 {
-		logger.Error("Failed to validate height from BlockResults request", "height", height)
 		return nil, status.Error(codes.InvalidArgument, "Invalid request: height must be between 0 and the last effective height.")
 	} else if req.Height == 0 {
 		height = latestHeight

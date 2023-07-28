@@ -281,7 +281,7 @@ enabled = {{ .GRPC.VersionService.Enabled }}
 enabled = {{ .GRPC.BlockService.Enabled }}
 
 # The gRPC block results service returns block results for a given height. If no height
-# is given, it will return the latest height.
+# is given, it will return the block results from the latest height.
 [grpc.block_results_service]
 enabled = {{ .GRPC.BlockResultsService.Enabled }}
 

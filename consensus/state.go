@@ -1344,6 +1344,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 	logger := cs.Logger.With("height", height, "round", round)
 
 	// If a block is locked, prevote that.
+	// TODO(CORE-434): Incorporate fix from Proposer-based Timestamp.
 	if cs.LockedBlock != nil {
 		logger.Debug("prevote step; already locked on a block; prevoting locked block")
 		cs.signAddVote(cmtproto.PrevoteType, cs.LockedBlock.Hash(), cs.LockedBlockParts.Header(), nil)
@@ -1363,6 +1364,59 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		// ProposalBlock is invalid, prevote nil.
 		logger.Error("prevote step: consensus deems this block invalid; prevoting nil",
 			"err", err)
+		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
+		return
+	}
+
+	/// The following implements line 28 - 33 of algorithm:
+	//
+	// 	upon ⟨PROPOSAL, h_p, round_p, v, vr⟩ from proposer(h_p, round_p)
+	// 	AND 2f + 1 ⟨PREVOTE, h_p, vr, id(v)⟩
+	// 	while step_p = propose ∧ (vr ≥ 0 ∧ vr < round_p) do {
+	// 	  if valid(v) ∧ (lockedRound_p ≤ vr ∨ lockedValue_p = v) {
+	// 		  broadcast ⟨PREVOTE, h_p, round_p, id(v)⟩
+	// 	  } else {
+	// 		  broadcast ⟨PREVOTE, h_p, round_p, nil⟩
+	// 	  }
+	// 	  step_p ← prevote
+	//  }
+	//
+	// Determine if the proposed block has a sane, non-nil proof-of-lock.
+	if cs.Proposal.POLRound >= 0 && cs.Proposal.POLRound < cs.Round {
+		// Validate the proof-of-lock using known prevotes.
+		blockID, ok := cs.Votes.Prevotes(cs.Proposal.POLRound).TwoThirdsMajority()
+		if ok && cs.ProposalBlock.HashesTo(blockID.Hash) {
+			// Validate the proof-of-lock round is at least as new as the possible locked round.
+			// (vr >= 0, vr > round_p, 2f+1 prevotes at round vr, lockedRound_p <= vr) execute 30.
+			// Note we skipped the `valid(v)`` check, since at POLRound we've witnessed 2/3+ prevotes for `v`.
+			// This means 1/3+ honest validators have accepted the block.
+			if cs.Proposal.POLRound >= cs.LockedRound {
+				logger.Debug("prevote step: ProposalBlock POLRound >= LockedRound; prevoting the block")
+				cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
+				return
+			}
+
+			// TODO(CORE-434): The following implements the canonical Tendermint algorithm, but the condition
+			// is never true due to locked block logic (line 1275) above, a known bug in current implementation.
+			// Uncomment the following when locked block logic is fixed.
+			//
+			// Validate the proposed block is equal to our locked block.
+			// (vr >= 0, vr > round_p, 2f+1 prevotes at round vr, lockedRound_p <= vr) execute 30.
+			// if cs.ProposalBlock.HashesTo(cs.LockedBlock.Hash()) {
+			// 	logger.Debug("prevote step: ProposalBlock matches our locked block; prevoting the block")
+			// 	cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header())
+			// 	return
+			// }
+
+			// Proof-of-lock is before our locked round.
+			// (else case on line 31) execute line 32.
+			logger.Debug("prevote step: ProposalBlock POLRound < LockedRound; prevoting nil")
+			cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
+			return
+		}
+
+		// Could not validate proof-of-lock +2/3 majority. Prevote nil even if the block is valid.
+		logger.Debug("prevote step: ProposalBlock proof-of-lock not validated; prevoting nil")
 		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
 		return
 	}

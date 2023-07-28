@@ -16,7 +16,7 @@ var _ txindex.TxIndexer = (*TxIndex)(nil)
 // TxIndex acts as a /dev/null.
 type TxIndex struct{}
 
-func (txi *TxIndex) Prune(retainHeight int64) {
+func (txi *TxIndex) Prune(_ int64) {
 
 }
 

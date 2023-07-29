@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -142,8 +143,6 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 			return
 		}
 
-		blocks := fetchBlockChain(t)
-
 		client, err := node.Client()
 		require.NoError(t, err)
 		status, err := client.Status(ctx)
@@ -160,42 +159,34 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 		gRPCClient, err := node.GRPCClient(ctx)
 		require.NoError(t, err)
 
-		for _, block := range blocks {
-			successCases := []struct {
-				expectedHeight int64
-				request        v1.GetBlockResultsRequest
-			}{
-				{first, v1.GetBlockResultsRequest{Height: first}},
-				{last, v1.GetBlockResultsRequest{}},
-			}
-			errorCases := []struct {
-				request v1.GetBlockResultsRequest
-			}{
-				{v1.GetBlockResultsRequest{Height: -1}},
-				{v1.GetBlockResultsRequest{Height: 10000}},
-			}
+		successCases := []struct {
+			expectedHeight int64
+			request        v1.GetBlockResultsRequest
+		}{
+			{first, v1.GetBlockResultsRequest{Height: first}},
+			{last, v1.GetBlockResultsRequest{}},
+		}
+		errorCases := []struct {
+			request v1.GetBlockResultsRequest
+		}{
+			{v1.GetBlockResultsRequest{Height: -1}},
+			{v1.GetBlockResultsRequest{Height: 10000}},
+		}
 
-			if block.Header.Height < first {
-				continue
+		for _, tc := range successCases {
+			res, err := gRPCClient.GetBlockResults(ctx, tc.request)
+			// First block tests
+			require.NoErrorf(t, err, fmt.Sprintf("Unexpected error for GetBlockResults at expected height: %d", tc.expectedHeight))
+			require.NotNil(t, res)
+			if tc.expectedHeight == last {
+				require.GreaterOrEqual(t, res.Height, tc.expectedHeight)
+			} else {
+				require.Equal(t, res.Height, tc.expectedHeight)
 			}
-			if block.Header.Height > last {
-				break
-			}
-			for _, tc := range successCases {
-				res, err := gRPCClient.GetBlockResults(ctx, tc.request)
-				// First block tests
-				require.NoError(t, err)
-				require.NotNil(t, res)
-				if tc.expectedHeight == last {
-					require.GreaterOrEqual(t, res.Height, tc.expectedHeight)
-				} else {
-					require.Equal(t, res.Height, tc.expectedHeight)
-				}
-			}
-			for _, tc := range errorCases {
-				_, err = gRPCClient.GetBlockResults(ctx, tc.request)
-				require.Error(t, err)
-			}
+		}
+		for _, tc := range errorCases {
+			_, err = gRPCClient.GetBlockResults(ctx, tc.request)
+			require.Error(t, err)
 		}
 	})
 }

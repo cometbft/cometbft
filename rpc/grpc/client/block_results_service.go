@@ -31,7 +31,6 @@ type blockResultServiceClient struct {
 }
 
 func (b blockResultServiceClient) GetBlockResults(ctx context.Context, req brs.GetBlockResultsRequest) (*ResultBlockResults, error) {
-	fmt.Sprintf("this is the height: %d", req.Height)
 	res, err := b.client.GetBlockResults(ctx, &brs.GetBlockResultsRequest{Height: req.Height})
 	if err != nil {
 		return nil, fmt.Errorf("error fetching BlockResults for height %d:: %s", req.Height, err.Error())

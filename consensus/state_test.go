@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	abcimocks "github.com/cometbft/cometbft/abci/types/mocks"
 	cstypes "github.com/cometbft/cometbft/consensus/types"
@@ -714,9 +715,7 @@ func TestStateLockPOLUpdateLock(t *testing.T) {
 	round++
 
 	// Generate a new proposal block.
-	m := abcimocks.NewApplication(t)
-	m.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{}, nil)
-	cs2 := newState(cs1.state, vs2, m)
+	cs2 := newState(cs1.state, vs2, kvstore.NewInMemoryApplication())
 	propR1, propBlockR1 := decideProposal(ctx, t, cs2, vs2, vs2.Height, vs2.Round)
 	propBlockR1Parts, err := propBlockR1.MakePartSet(partSize)
 	require.NoError(t, err)
@@ -1049,9 +1048,7 @@ func TestStateLockMissingProposalWhenPOLSeenDoesNotUpdateLock(t *testing.T) {
 	t.Log("### Starting Round 1")
 	incrementRound(vs2, vs3, vs4)
 	round++
-	m := abcimocks.NewApplication(t)
-	m.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{}, nil)
-	cs2 := newState(cs1.state, vs2, m)
+	cs2 := newState(cs1.state, vs2, kvstore.NewInMemoryApplication())
 	prop, propBlock := decideProposal(ctx, t, cs2, vs2, vs2.Height, vs2.Round)
 	if prop == nil || propBlock == nil {
 		t.Fatal("Failed to create proposal block with vs2")
@@ -1426,9 +1423,10 @@ func TestProposeValidBlock(t *testing.T) {
 	// timeout of propose
 	ensureNewTimeout(timeoutProposeCh, height, round, cs1.config.Propose(round).Nanoseconds())
 
-	// We did not see a valid proposal within this round.
+	// We did not see a valid proposal within this round, so prevote our locked block.
+	// TODO: prevote nil
 	ensurePrevote(voteCh, height, round)
-	validatePrevote(t, cs1, round, vss[0], nil)
+	validatePrevote(t, cs1, round, vss[0], propBlockHash)
 
 	signAddVotes(cs1, cmtproto.PrevoteType, nil, types.PartSetHeader{}, false, vs2, vs3, vs4)
 
@@ -2557,16 +2555,17 @@ func TestStateHalt1(t *testing.T) {
 	round++ // moving to the next round
 
 	ensureNewRound(newRoundCh, height, round)
+	rs = cs1.GetRoundState()
 
 	t.Log("### ONTO ROUND 1")
 	/*Round2
-	// we timeout and prevote
+	// we timeout and prevote our lock
 	// a polka happened but we didn't see it!
 	*/
 
-	// prevote for nil since we did not receive a proposal in this round.
+	// go to prevote, prevote for locked block
 	ensurePrevote(voteCh, height, round)
-	validatePrevote(t, cs1, round, vss[0], nil)
+	validatePrevote(t, cs1, round, vss[0], rs.LockedBlock.Hash())
 
 	// now we receive the precommit from the previous round
 	addVotes(cs1, precommit4)

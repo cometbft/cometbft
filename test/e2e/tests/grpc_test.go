@@ -165,8 +165,8 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 				expectedHeight int64
 				request        v1.GetBlockResultsRequest
 			}{
-				{last, v1.GetBlockResultsRequest{}},
 				{first, v1.GetBlockResultsRequest{Height: first}},
+				{last, v1.GetBlockResultsRequest{}},
 			}
 			errorCases := []struct {
 				request v1.GetBlockResultsRequest
@@ -187,7 +187,7 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, res)
 				if tc.expectedHeight == last {
-					require.GreaterOrEqual(t, tc.expectedHeight, res.Height)
+					require.GreaterOrEqual(t, res.Height, tc.expectedHeight)
 				} else {
 					require.Equal(t, res.Height, tc.expectedHeight)
 				}

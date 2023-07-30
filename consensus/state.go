@@ -1282,8 +1282,11 @@ func (cs *State) createProposalBlock(ctx context.Context) (*types.Block, error) 
 
 // Enter: `timeoutPropose` after entering Propose.
 // Enter: proposal block and POL is ready.
-// Prevote for LockedBlock if we're locked, or ProposalBlock if valid.
-// Otherwise vote nil.
+// If we received a valid proposal within this round and we are not locked on a block,
+// we will prevote for block.
+// Otherwise, if we receive a valid proposal that matches the block we are
+// locked on or matches a block that received a POL in a round later than our
+// locked round, prevote for the proposal, otherwise vote nil.
 func (cs *State) enterPrevote(height int64, round int32) {
 	logger := cs.Logger.With("height", height, "round", round)
 
@@ -1313,14 +1316,7 @@ func (cs *State) enterPrevote(height int64, round int32) {
 func (cs *State) defaultDoPrevote(height int64, round int32) {
 	logger := cs.Logger.With("height", height, "round", round)
 
-	// If a block is locked, prevote that.
-	if cs.LockedBlock != nil {
-		logger.Debug("prevote step; already locked on a block; prevoting locked block")
-		cs.signAddVote(cmtproto.PrevoteType, cs.LockedBlock.Hash(), cs.LockedBlockParts.Header())
-		return
-	}
-
-	// If ProposalBlock is nil, prevote nil.
+	// We did not receive a proposal within this round. (and thus executing this from a timeout)
 	if cs.ProposalBlock == nil {
 		logger.Debug("prevote step: ProposalBlock is nil")
 		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
@@ -1337,10 +1333,73 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		return
 	}
 
+	// If the proposed block is the locked block, always prevote the block.
+	if cs.ProposalBlock.HashesTo(cs.LockedBlock.Hash()) {
+		logger.Debug("prevote step: ProposalBlock matches our locked block; prevoting the block")
+		cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header())
+		return
+	}
+
+	// Past this point in the code, we know that the proposal block is not the locked block.
+
+	/// The following implements line 28 - 33 of algorithm:
+	//
+	// 	upon ⟨PROPOSAL, h_p, round_p, v, vr⟩ from proposer(h_p, round_p)
+	// 	AND 2f + 1 ⟨PREVOTE, h_p, vr, id(v)⟩
+	// 	while step_p = propose ∧ (vr ≥ 0 ∧ vr < round_p) do {
+	// 	  if valid(v) ∧ (lockedRound_p ≤ vr ∨ lockedValue_p = v) {
+	// 		  broadcast ⟨PREVOTE, h_p, round_p, id(v)⟩
+	// 	  } else {
+	// 		  broadcast ⟨PREVOTE, h_p, round_p, nil⟩
+	// 	  }
+	// 	  step_p ← prevote
+	//  }
+	//
+	// Determine if the proposed block has a sane, non-nil proof-of-lock.
+	if cs.Proposal.POLRound >= 0 {
+		// Validate the proof-of-lock using known prevotes.
+		blockID, ok := cs.Votes.Prevotes(cs.Proposal.POLRound).TwoThirdsMajority()
+
+		// Could not validate proof-of-lock +2/3 majority.
+		if !ok || !cs.ProposalBlock.HashesTo(blockID.Hash) {
+			logger.Debug("prevote step: ProposalBlock proof-of-lock not validated; prevoting nil")
+			cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
+			return
+		}
+
+		// Validate the proof-of-lock round is at least as new as the possible locked round.
+		// (vr >= 0, vr > round_p, 2f+1 prevotes at round vr, lockedRound_p <= vr) execute 30.
+		// Note we skipped the `valid(v)`` check, since at POLRound we've witnessed 2/3+ prevotes for `v`.
+		// This means 1/3+ honest validators have accepted the block.
+		if cs.Proposal.POLRound >= cs.LockedRound {
+			logger.Debug("prevote step: ProposalBlock POLRound >= LockedRound; prevoting the block")
+			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header())
+			return
+		}
+
+		// Proof-of-lock is before our locked round.
+		// (else case on line 31) execute line 32.
+		logger.Debug("prevote step: ProposalBlock POLRound < LockedRound; prevoting nil")
+		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
+		return
+	}
+
+	// Past this point in the code we know the block has nil proof-of-lock.
+
+	// If a locked block exists at this point, prevote nil since we know:
+	// - The proposed block doesn't match the locked block
+	// - The proposed block doesn't have a proof-of-lock
+	if cs.LockedRound != -1 {
+		logger.Debug("prevote step: ProposalBlock does not match LockedBlock; prevoting nil")
+		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
+		return
+	}
+
 	/*
-		Before prevoting on the block received from the proposer for the current round and height,
-		we request the Application, via `ProcessProposal` ABCI call, to confirm that the block is
-		valid. If the Application does not accept the block, consensus prevotes `nil`.
+		At this point in the code we know that the proposal has nil proof-of-lock and
+		that this validator has no LockedBlock. Therefore we request that the Application,
+		via the `ProcessProposal` ABCI call, confirm that the block is valid.
+		If the Application does not accept the block, consensus prevotes `nil`.
 
 		WARNING: misuse of block rejection by the Application can seriously compromise
 		the liveness properties of consensus.

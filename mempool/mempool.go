@@ -11,7 +11,7 @@ import (
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
-	types "github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (

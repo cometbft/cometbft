@@ -93,6 +93,7 @@ type Testnet struct {
 	PrometheusIP                      net.IP
 	VoteExtensionsEnableHeight        int64
 	VoteExtensionSize                 uint
+	PeerGossipIntraloopSleepDuration  time.Duration
 	PhysicalTimestamps                bool
 	ExperimentalGossipPropagationRate float32
 	ExperimentalGossipSendOnce        bool
@@ -181,6 +182,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		UpgradeVersion:                    manifest.UpgradeVersion,
 		Prometheus:                        manifest.Prometheus,
 		VoteExtensionsEnableHeight:        manifest.VoteExtensionsEnableHeight,
+		PeerGossipIntraloopSleepDuration:  manifest.PeerGossipIntraloopSleepDuration,
 		VoteExtensionSize:                 manifest.VoteExtensionSize,
 		PhysicalTimestamps:                manifest.PhysicalTimestamps,
 		ExperimentalGossipPropagationRate: manifest.ExperimentalGossipPropagationRate,

@@ -13,6 +13,8 @@ For the impatient
     echo "sample;A sample result.;sample.csv" >>  ${E2E_DIR}/fast-prototyping/render/results.csv
     ${E2E_DIR}/fast-prototyping/render.sh
 
+note: If you are running on OSX, you might need to first install `coreutils` beforehand, e.g., by runnng `brew install coreutils`.
+
 ## Injecting a custom reactor
 
 A new reactor should be added under `fast-prototyping/reactors`.

@@ -22,7 +22,7 @@ CUSTOM_CONSENSUS_REACTOR="p2p.mock.reactor"
 CUSTOM_MEMPOOL_REACTOR="experimental.reactors.mempool.gossip"
 INITIAL_HEIGHT=0
 
-SEND_ONCE="true"
+SEND_ONCE="false"
 
 if [[ "${MODE}" == "-solo" ]] || [[ "${MODE}" == "-all" ]];
 then

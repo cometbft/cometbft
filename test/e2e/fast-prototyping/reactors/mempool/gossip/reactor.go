@@ -18,6 +18,11 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+// This is similar to mempool/reactor.go with two additional hooks to change how transactions are disseminated.
+// The first hook (sendOnce) if set send a transaction only once to a peer. The second one (propagationRate)
+// permits to omit some message. To behave line the vanilla version, one should not mock consensus, and set
+// sendOnce=true and propagationRatio=100.
+
 // Reactor handles mempool tx broadcasting amongst peers.
 // It maintains a map from peer ID to counter, to prevent gossiping txs to the
 // peers you received it from.

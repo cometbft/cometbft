@@ -8,6 +8,8 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 )
 
+// copy of mempool/ids.go
+
 type mempoolIDs struct {
 	mtx       cmtsync.RWMutex
 	peerMap   map[p2p.ID]uint16

@@ -23,6 +23,8 @@ MODE=$3
 
 TMPL="custom"
 
+# this generate a csv file
+# the dimensions of each entry in this file are below (nodes and propagation_rate are the x and y axis when rendering)
 echo "nodes;propagation_rate;submitted;added;sent;completion;total_mempool_bandwidth;useful_mempool_bandwidth;overhead;redundancy;degree;cpu_load;latency;bandwidth" > ${FILE}
 for r in $(seq 50 50 100);
 do

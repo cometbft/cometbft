@@ -1065,7 +1065,7 @@ paths:
             Applications MUST interpret "/store" or any path starting with
             "/store/" as a query by key on the underlying store, in which case
             a key SHOULD be specified in `data`.
-          required: true
+          required: false
           schema:
             type: string
             example: '"/store/foo"'
@@ -1075,7 +1075,7 @@ paths:
             Request parameters for the application to interpret analogously to a
             [URI query component](https://www.rfc-editor.org/rfc/rfc3986#section-3.4),
             expressed as hexadecimal-serialized bytes.
-          required: true
+          required: false
           schema:
             type: string
             example: "0x636f6d6574626674"

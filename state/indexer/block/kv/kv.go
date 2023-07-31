@@ -87,12 +87,7 @@ func (idx *BlockerIndexer) Index(bh types.EventDataNewBlockEvents) error {
 }
 
 func (idx *BlockerIndexer) Prune(retainHeight int64) {
-	heights, err := idx.Search(context.Background(),
-		query.MustCompile(fmt.Sprintf(`block.height < %d`, retainHeight)))
-	if err != nil {
-		panic(err)
-	}
-	for _, height := range heights {
+	for height := int64(0); height < retainHeight; height++ {
 		key, err := heightKey(height)
 		if err != nil {
 			panic(err)

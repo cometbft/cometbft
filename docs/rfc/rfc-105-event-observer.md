@@ -113,6 +113,20 @@ following:
 +        cs.observer.ConsensusStateNewRoundStep(rs)
 ```
 
+### Comparing "Subscription" Interfaces
+
+The `EventBus` offers two slightly different subscription mechanisms for events,
+both of which rely on Go channels under the hood for their implementation.
+
+- [`Subscribe`]
+- [`SubscribeUnbuffered`]
+
+The observer pattern proposed in this RFC can facilitate both patterns and more,
+given that one has the option of intervening synchronously in a blocking way
+when the "publisher" calls the observer event handler. Using the proposed
+observer pattern, it is up to either the publisher or the observer to implement
+their own concurrency.
+
 ### Fanout Observers
 
 How then does one simulate the same sort of pub/sub functionality that the
@@ -222,3 +236,5 @@ The drawbacks of the proposed approach include:
 [`Switch`]: https://github.com/cometbft/cometbft/blob/b23ef56f8e6d8a7015a7f816a61f2e53b0b07b0d/p2p/switch.go#L70
 [test-eventbus-access]: https://github.com/cometbft/cometbft/blob/091a1f312e5f2f4b183fab1d57d729a6c478ff1f/consensus/mempool_test.go#L40
 [ADR 101]: https://github.com/cometbft/cometbft/issues/574
+[`Subscribe`]: https://github.com/cometbft/cometbft/blob/a9deb305e51278c25ad92b249caa092d24c5fc29/types/event_bus.go#L75
+[`SubscribeUnbuffered`]: https://github.com/cometbft/cometbft/blob/a9deb305e51278c25ad92b249caa092d24c5fc29/types/event_bus.go#L86

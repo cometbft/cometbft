@@ -31,25 +31,13 @@ func New(store *store.BlockStore, eventBus *types.EventBus, logger log.Logger) b
 
 // GetByHeight implements v1.BlockServiceServer GetByHeight method
 func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByHeightRequest) (*blocksvc.GetByHeightResponse, error) {
-	var height int64
-
-	// retrieve the last height in the store
-	latestHeight := s.store.Height()
-
-	// validate height parameter, if height is 0 or
-	// the request is nil, then use the latest height
-	if req.Height == 0 {
-		height = latestHeight
-	} else if req.Height < 0 {
-		return nil, status.Error(codes.InvalidArgument, "Negative height request")
-	} else {
-		height = req.Height
-	}
-
-	// check if the height requested is not higher
-	// than the latest height in the store
-	if height > latestHeight {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("height requested %d higher than latest height %d", height, latestHeight))
+	height, err := validateOrUpdateBlockHeight(
+		req.Height,
+		s.store.Base(),
+		s.store.Height(),
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	block := s.store.LoadBlock(height)
@@ -115,6 +103,20 @@ func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest,
 			return status.Errorf(codes.Internal, "New block subscription error (see logs for trace ID: %s)", traceID)
 		}
 	}
+}
+
+func validateOrUpdateBlockHeight(height, baseHeight, latestHeight int64) (int64, error) {
+	switch {
+	case height == 0:
+		return latestHeight, nil
+	case height < 0:
+		return -1, status.Error(codes.InvalidArgument, "Height cannot be negative")
+	case height < baseHeight:
+		return -1, status.Errorf(codes.InvalidArgument, "Requested height %d is below base height %d", height, baseHeight)
+	case height > latestHeight:
+		return -1, status.Errorf(codes.InvalidArgument, "Requested height %d is higher than latest height %d", height, latestHeight)
+	}
+	return height, nil
 }
 
 func getHeightFromMsg(msg cmtpubsub.Message) (int64, error) {

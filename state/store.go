@@ -46,7 +46,10 @@ func calcABCIResponsesKey(height int64) []byte {
 
 //----------------------
 
-var lastABCIResponseKey = []byte("lastABCIResponseKey")
+var (
+	lastABCIResponseKey             = []byte("lastABCIResponseKey")
+	lastABCIResponsesPruneHeightKey = []byte("lastABCIResponsesPruneHeight")
+)
 
 //go:generate ../scripts/mockery_generate.sh Store
 
@@ -393,13 +396,21 @@ func (store dbStore) PruneABCIResponses(height int64) (uint64, error) {
 	if store.DiscardABCIResponses {
 		return 0, errors.New("ABCI responses are discarded, nothing to prune")
 	}
+	lastPruneHeight, err := store.getLastABCIResponsesPruneHeight()
+	if err != nil {
+		return 0, fmt.Errorf("failed to look up last ABCI responses prune height: %w", err)
+	}
+	if lastPruneHeight == 0 {
+		lastPruneHeight = 1
+	}
+
 	batch := store.db.NewBatch()
 	defer batch.Close()
 
 	pruned := uint64(0)
 	batchPruned := uint64(0)
 
-	for h := int64(1); h < height; h++ {
+	for h := lastPruneHeight; h < height; h++ {
 		if err := batch.Delete(calcABCIResponsesKey(h)); err != nil {
 			return pruned, fmt.Errorf("failed to delete ABCI responses at height %d: %w", h, err)
 		}
@@ -409,14 +420,18 @@ func (store dbStore) PruneABCIResponses(height int64) (uint64, error) {
 				return pruned, fmt.Errorf("failed to write ABCI responses deletion batch at height %d: %w", h, err)
 			}
 			batch.Close()
+
 			pruned += batchPruned
 			batchPruned = 0
+			if err := store.setLastABCIResponsesPruneHeight(h); err != nil {
+				return pruned, fmt.Errorf("failed to set last ABCI responses prune height: %w", err)
+			}
+
 			batch = store.db.NewBatch()
 			defer batch.Close()
 		}
 	}
-	err := batch.WriteSync()
-	return pruned + batchPruned, err
+	return pruned + batchPruned, batch.WriteSync()
 }
 
 //------------------------------------------------------------------------
@@ -619,6 +634,22 @@ func (store dbStore) GetABCIResRetainHeight() (int64, error) {
 	}
 
 	return height, nil
+}
+
+func (store dbStore) getLastABCIResponsesPruneHeight() (int64, error) {
+	bz, err := store.getValue(lastABCIResponsesPruneHeightKey)
+	if errors.Is(err, ErrKeyNotFound) {
+		return 0, nil
+	}
+	height := int64FromBytes(bz)
+	if height < 0 {
+		return 0, ErrInvalidHeightValue
+	}
+	return height, nil
+}
+
+func (store dbStore) setLastABCIResponsesPruneHeight(height int64) error {
+	return store.db.SetSync(lastABCIResponsesPruneHeightKey, int64ToBytes(height))
 }
 
 //-----------------------------------------------------------------------------

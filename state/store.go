@@ -395,26 +395,28 @@ func (store dbStore) PruneABCIResponses(height int64) (uint64, error) {
 	}
 	batch := store.db.NewBatch()
 	defer batch.Close()
+
 	pruned := uint64(0)
+	batchPruned := uint64(0)
 
 	for h := int64(1); h < height; h++ {
-		err2 := batch.Delete(calcABCIResponsesKey(h))
-		if err2 != nil {
-			return pruned, err2
+		if err := batch.Delete(calcABCIResponsesKey(h)); err != nil {
+			return pruned, fmt.Errorf("failed to delete ABCI responses at height %d: %w", h, err)
 		}
-		pruned++
-		if pruned%1000 == 0 && pruned > 0 {
-			err := batch.Write()
-			if err != nil {
-				return 0, err
+		batchPruned++
+		if batchPruned%1000 == 0 && batchPruned > 0 {
+			if err := batch.Write(); err != nil {
+				return pruned, fmt.Errorf("failed to write ABCI responses deletion batch at height %d: %w", h, err)
 			}
 			batch.Close()
+			pruned += batchPruned
+			batchPruned = 0
 			batch = store.db.NewBatch()
 			defer batch.Close()
 		}
 	}
 	err := batch.WriteSync()
-	return pruned, err
+	return pruned + batchPruned, err
 }
 
 //------------------------------------------------------------------------

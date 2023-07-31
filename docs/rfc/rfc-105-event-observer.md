@@ -174,7 +174,7 @@ One could easily also define an ergonomic observer type that would allow inline
 definition and overriding of only specific event handlers:
 
 ```golang
-type testObserver {
+type testObserver struct {
     newRoundStep   func(EventDataRoundState)
     timeoutPropose func(EventDataRoundState)
     // ...

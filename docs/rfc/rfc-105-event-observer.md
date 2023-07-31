@@ -156,6 +156,33 @@ state.SetObserver(
 )
 ```
 
+One could easily also define an ergonomic observer type that would allow inline
+definition and overriding of only specific event handlers:
+
+```golang
+type testObserver {
+    newRoundStep   func(EventDataRoundState)
+    timeoutPropose func(EventDataRoundState)
+    // ...
+}
+
+func (o *testObserver) ConsensusStateNewRoundStep(ev EventDataRoundState) {
+    if o.newRoundStep != nil {
+        o.newRoundStep(ev)
+    }
+}
+
+// ...
+
+func TestCustomObserver(t *testing.T) {
+    testObs := &testObserver{}
+    testObs.newRoundStep = func(ev EventDataRoundState) {
+        // Custom code here called upon new round step
+    }
+    // ...
+}
+```
+
 ### Event Subscription
 
 The current WebSocket-based event subscription mechanism is envisaged to go away

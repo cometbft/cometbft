@@ -93,12 +93,12 @@ title: Methods
 
 * **Request**:
 
-    | Name   | Type   | Description                                                                                                                                                                                                                                                                            | Field Number |
-    |--------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
-    | data   | bytes  | Raw query bytes. Can be used with or in lieu of Path.                                                                                                                                                                                                                                  | 1            |
-    | path   | string | Path field of the request URI. Can be used with or in lieu of `data`. Apps MUST interpret `/store` as a query by key on the underlying store. The key SHOULD be specified in the `data` field. Apps SHOULD allow queries over specific types like `/accounts/...` or `/votes/...`      | 2            |
-    | height | int64  | The block height for which you want the query (default=0 returns data for the latest committed block). Note that this is the height of the block containing the application's Merkle root hash, which represents the state as it was after committing the block at Height-1            | 3            |
-    | prove  | bool   | Return Merkle proof with response if possible                                                                                                                                                                                                                                          | 4            |
+    | Name   | Type   | Description | Field Number |
+    |--------|--------|-------------|--------------|
+    | data   | bytes  | Raw query bytes. Can be used with or in lieu of `path`. | 1 |
+    | path   | string | Path field of the request URI. Can be used with or in lieu of `data`. Apps MUST interpret `/store` as a query by key on the underlying store. The key SHOULD be specified in `data`. Apps SHOULD allow queries over specific types like `/accounts/...` or `/votes/...`. | 2 |
+    | height | int64  | The block height against which to query (default=0 returns data for the latest committed block). Note that this is the height of the block containing the application's Merkle root hash, which represents the state as it was after committing the block at Height-1. | 3 |
+    | prove  | bool   | Return Merkle proof with response if possible. | 4 |
 
 * **Response**:
 

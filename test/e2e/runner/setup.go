@@ -183,7 +183,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	case e2e.ProtocolGRPC:
 		cfg.ProxyApp = AppAddressTCP
 		cfg.ABCI = "grpc"
-	case e2e.ProtocolBuiltin, e2e.ProtocolBuiltinUnsync:
+	case e2e.ProtocolBuiltin, e2e.ProtocolBuiltinConnSync:
 		cfg.ProxyApp = ""
 		cfg.ABCI = ""
 	default:
@@ -259,21 +259,24 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 // MakeAppConfig generates an ABCI application config for a node.
 func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 	cfg := map[string]interface{}{
-		"chain_id":               node.Testnet.Name,
-		"dir":                    "data/app",
-		"listen":                 AppAddressUNIX,
-		"mode":                   node.Mode,
-		"protocol":               "socket",
-		"persist_interval":       node.PersistInterval,
-		"snapshot_interval":      node.SnapshotInterval,
-		"retain_blocks":          node.RetainBlocks,
-		"key_type":               node.PrivvalKey.Type(),
-		"prepare_proposal_delay": node.Testnet.PrepareProposalDelay,
-		"process_proposal_delay": node.Testnet.ProcessProposalDelay,
-		"check_tx_delay":         node.Testnet.CheckTxDelay,
-		"vote_extension_delay":   node.Testnet.VoteExtensionDelay,
-		"finalize_block_delay":   node.Testnet.FinalizeBlockDelay,
-		"vote_extension_size":    node.Testnet.VoteExtensionSize,
+		"chain_id":                             node.Testnet.Name,
+		"dir":                                  "data/app",
+		"listen":                               AppAddressUNIX,
+		"mode":                                 node.Mode,
+		"protocol":                             "socket",
+		"persist_interval":                     node.PersistInterval,
+		"snapshot_interval":                    node.SnapshotInterval,
+		"retain_blocks":                        node.RetainBlocks,
+		"key_type":                             node.PrivvalKey.Type(),
+		"prepare_proposal_delay":               node.Testnet.PrepareProposalDelay,
+		"process_proposal_delay":               node.Testnet.ProcessProposalDelay,
+		"check_tx_delay":                       node.Testnet.CheckTxDelay,
+		"vote_extension_delay":                 node.Testnet.VoteExtensionDelay,
+		"finalize_block_delay":                 node.Testnet.FinalizeBlockDelay,
+		"vote_extension_size":                  node.Testnet.VoteExtensionSize,
+		"experimental_custom_reactors":         node.Testnet.ExperimentalCustomReactors,
+		"experimental_gossip_propagation_rate": node.Testnet.ExperimentalGossipPropagationRate,
+		"experimental_gossip_send_once":        node.Testnet.ExperimentalGossipSendOnce,
 	}
 	switch node.ABCIProtocol {
 	case e2e.ProtocolUNIX:
@@ -283,7 +286,7 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 	case e2e.ProtocolGRPC:
 		cfg["listen"] = AppAddressTCP
 		cfg["protocol"] = "grpc"
-	case e2e.ProtocolBuiltin, e2e.ProtocolBuiltinUnsync:
+	case e2e.ProtocolBuiltin, e2e.ProtocolBuiltinConnSync:
 		delete(cfg, "listen")
 		cfg["protocol"] = string(node.ABCIProtocol)
 	default:

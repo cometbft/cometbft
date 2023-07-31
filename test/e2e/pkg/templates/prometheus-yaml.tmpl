@@ -5,5 +5,5 @@ scrape_configs:
 {{- range .Nodes }}
   - job_name: '{{ .Name }}'
     static_configs:
-      - targets: ['localhost:{{ .PrometheusProxyPort }}']
+      - targets: ['{{.InternalIP}}:26660']
 {{end}}

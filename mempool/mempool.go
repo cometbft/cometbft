@@ -79,7 +79,7 @@ type Mempool interface {
 	// Contains returns true iff the transaction key is in the mempool.
 	Contains(txKey types.TxKey) bool
 
-	// NewIterator returns an interator for traversing the mempool entries in an
+	// NewIterator returns an iterator for traversing the mempool entries in an
 	// order defined by the implementation. If it gets to the end or the mempool
 	// is empty, it will start from the beginning.
 	NewIterator() Iterator
@@ -223,13 +223,21 @@ func (memE *Entry) Height() int64 {
 	return atomic.LoadInt64(&memE.height)
 }
 
+func (memE *Entry) GetTxKey() types.TxKey {
+	return memE.tx.Key()
+}
+
+func (memE *Entry) GetTx() types.Tx {
+	return memE.tx
+}
+
 type Iterator interface {
 	// WaitNext blocks until the next entry is available.
 	WaitNext() <-chan struct{}
 
 	// NextEntry returns the following entry with respect to the last time this
 	// method was called, in the order defined by the mempool implementation. If
-	// the mempool is empty or if it was not called before, return an arbitrary
-	// first entry.
+	// the mempool is empty return nil and if it was not called before, return
+	// the first entry.
 	NextEntry() *Entry
 }

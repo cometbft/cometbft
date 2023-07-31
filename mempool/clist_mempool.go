@@ -34,7 +34,7 @@ type CListMempool struct {
 
 	// Function set by the reactor to be called when a transaction is removed
 	// from the mempool.
-	removeTxOnReactor func(txKey types.TxKey)
+	removeTxOnReactorCb func(txKey types.TxKey)
 
 	config *config.MempoolConfig
 
@@ -52,10 +52,12 @@ type CListMempool struct {
 	recheckCursor *clist.CElement // next expected response
 	recheckEnd    *clist.CElement // re-checking stops here
 
-	// Concurrent linked-list of valid txs.
-	// `txsMap`: txKey -> CElement is for quick access to txs.
-	// Transactions in both `txs` and `txsMap` must to be kept in sync.
-	txs    *clist.CList
+	// Concurrent linked-list of valid transactions.
+	// txs must to be kept in sync with txsMap.
+	txs *clist.CList
+
+	// txsMap is for quick access to txs and it must be kept in sync with txs.
+	// txsMap: txKey -> CElement
 	txsMap sync.Map
 
 	// Keep a cache of already-seen txs.
@@ -125,7 +127,10 @@ func (mem *CListMempool) forceRemoveFromCache(tx types.Tx) {
 	mem.cache.Remove(tx)
 }
 
-func (mem *CListMempool) removeFromCache(tx types.Tx) {
+// tryRemoveFromCache removes a transaction from the cache in case it can be
+// added to the mempool at a later stage (probably when the transaction becomes
+// valid).
+func (mem *CListMempool) tryRemoveFromCache(tx types.Tx) {
 	if !mem.config.KeepInvalidTxsInCache {
 		mem.forceRemoveFromCache(tx)
 	}
@@ -150,12 +155,14 @@ func (mem *CListMempool) EnableTxsAvailable() {
 }
 
 func (mem *CListMempool) SetTxRemovedCallback(cb func(txKey types.TxKey)) {
-	mem.removeTxOnReactor = cb
+	mem.removeTxOnReactorCb = cb
 }
 
 func (mem *CListMempool) invokeRemoveTxOnReactor(txKey types.TxKey) {
-	if mem.removeTxOnReactor != nil {
-		mem.removeTxOnReactor(txKey)
+	// Note that the callback is nil in the unit tests, where there are no
+	// reactors.
+	if mem.removeTxOnReactorCb != nil {
+		mem.removeTxOnReactorCb(txKey)
 	}
 }
 
@@ -219,15 +226,7 @@ func (mem *CListMempool) Flush() {
 	mem.removeAllTxs()
 }
 
-// TxsFront returns the first transaction in the ordered list for peer
-// goroutines to call .NextWait() on.
-// FIXME: leaking implementation details!
-//
-// Safe for concurrent use by multiple goroutines.
-func (mem *CListMempool) TxsFront() *clist.CElement {
-	return mem.txs.Front()
-}
-
+// NewIterator implements the Mempool interface.
 func (mem *CListMempool) NewIterator() Iterator {
 	return &CListIterator{
 		txs:                mem.txs,
@@ -321,6 +320,7 @@ func (mem *CListMempool) addTx(entry *Entry) {
 	mem.txsMap.Store(entry.tx.Key(), e)
 	atomic.AddInt64(&mem.txsBytes, int64(len(entry.tx)))
 	mem.metrics.TxSizeBytes.Observe(float64(len(entry.tx)))
+	mem.metrics.AddedTxs.Add(1)
 }
 
 // RemoveTxByKey removes a transaction from the mempool by its TxKey index.
@@ -328,7 +328,7 @@ func (mem *CListMempool) addTx(entry *Entry) {
 //   - Update (lock held) if tx was committed
 //   - resCbRecheck (lock not held) if tx was invalidated
 func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
-	// The transaction should be removed in the reactor, even if it cannot be
+	// The transaction should be removed from the reactor, even if it cannot be
 	// found in the mempool.
 	mem.invokeRemoveTxOnReactor(txKey)
 	if elem, ok := mem.getCElement(txKey); ok {
@@ -410,8 +410,7 @@ func (mem *CListMempool) resCbFirstTime(
 			)
 			mem.notifyTxsAvailable()
 		} else {
-			// ignore bad transaction
-			mem.removeFromCache(tx)
+			mem.tryRemoveFromCache(tx)
 			mem.logger.Debug(
 				"rejected invalid transaction",
 				"tx", types.Tx(tx).Hash(),
@@ -475,7 +474,7 @@ func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 			if err := mem.RemoveTxByKey(entry.tx.Key()); err != nil {
 				mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
 			}
-			mem.removeFromCache(tx) // it might be valid later
+			mem.tryRemoveFromCache(tx)
 		}
 		if mem.recheckCursor == mem.recheckEnd {
 			mem.recheckCursor = nil
@@ -574,7 +573,7 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 }
 
 // Lock() must be help by the caller during execution.
-// TODO: always returns nil
+// TODO: this function always returns nil; remove the return value
 func (mem *CListMempool) Update(
 	height int64,
 	txs types.Txs,
@@ -598,7 +597,7 @@ func (mem *CListMempool) Update(
 			// Add valid committed tx to the cache (if missing).
 			_ = mem.addToCache(tx)
 		} else {
-			mem.removeFromCache(tx)
+			mem.tryRemoveFromCache(tx)
 		}
 
 		// Remove committed tx from the mempool.

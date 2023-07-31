@@ -14,6 +14,8 @@ import (
 	"text/template"
 	"time"
 
+	p2p "github.com/cometbft/cometbft/p2p"
+
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
@@ -46,12 +48,12 @@ const (
 	ModeLight     Mode = "light"
 	ModeSeed      Mode = "seed"
 
-	ProtocolBuiltin       Protocol = "builtin"
-	ProtocolBuiltinUnsync Protocol = "builtin_unsync"
-	ProtocolFile          Protocol = "file"
-	ProtocolGRPC          Protocol = "grpc"
-	ProtocolTCP           Protocol = "tcp"
-	ProtocolUNIX          Protocol = "unix"
+	ProtocolBuiltin         Protocol = "builtin"
+	ProtocolBuiltinConnSync Protocol = "builtin_connsync"
+	ProtocolFile            Protocol = "file"
+	ProtocolGRPC            Protocol = "grpc"
+	ProtocolTCP             Protocol = "tcp"
+	ProtocolUNIX            Protocol = "unix"
 
 	PerturbationDisconnect Perturbation = "disconnect"
 	PerturbationKill       Perturbation = "kill"
@@ -65,36 +67,43 @@ const (
 
 // Testnet represents a single testnet.
 type Testnet struct {
-	Name                             string
-	File                             string
-	Dir                              string
-	IP                               *net.IPNet
-	InitialHeight                    int64
-	InitialState                     map[string]string
-	Validators                       map[*Node]int64
-	ValidatorUpdates                 map[int64]map[*Node]int64
-	Nodes                            []*Node
-	KeyType                          string
-	Evidence                         int
-	LoadTxSizeBytes                  int
-	LoadTxBatchSize                  int
-	LoadTxConnections                int
-	ABCIProtocol                     string
-	PrepareProposalDelay             time.Duration
-	ProcessProposalDelay             time.Duration
-	CheckTxDelay                     time.Duration
-	VoteExtensionDelay               time.Duration
-	FinalizeBlockDelay               time.Duration
-	UpgradeVersion                   string
-	Prometheus                       bool
-	VoteExtensionsEnableHeight       int64
-	VoteExtensionSize                uint
-	PeerGossipIntraloopSleepDuration time.Duration
+	Name                              string
+	File                              string
+	Dir                               string
+	IP                                *net.IPNet
+	InitialHeight                     int64
+	InitialState                      map[string]string
+	Validators                        map[*Node]int64
+	ValidatorUpdates                  map[int64]map[*Node]int64
+	Nodes                             []*Node
+	KeyType                           string
+	Evidence                          int
+	LoadTxSizeBytes                   int
+	LoadTxBatchSize                   int
+	LoadTxConnections                 int
+	LoadTxToSend                      int
+	ABCIProtocol                      string
+	PrepareProposalDelay              time.Duration
+	ProcessProposalDelay              time.Duration
+	CheckTxDelay                      time.Duration
+	VoteExtensionDelay                time.Duration
+	FinalizeBlockDelay                time.Duration
+	UpgradeVersion                    string
+	Prometheus                        bool
+	PrometheusIP                      net.IP
+	VoteExtensionsEnableHeight        int64
+	VoteExtensionSize                 uint
+	PeerGossipIntraloopSleepDuration  time.Duration
+	PhysicalTimestamps                bool
+	ExperimentalGossipPropagationRate float32
+	ExperimentalGossipSendOnce        bool
+	ExperimentalCustomReactors        map[string]string
 }
 
 // Node represents a CometBFT node in a testnet.
 type Node struct {
 	Name                string
+	ID                  p2p.ID
 	Version             string
 	Testnet             *Testnet
 	Mode                Mode
@@ -118,6 +127,11 @@ type Node struct {
 	SendNoLoad          bool
 	Prometheus          bool
 	PrometheusProxyPort uint32
+	PropagationRatio    float32
+}
+
+func (n *Node) String() string {
+	return n.Name
 }
 
 // LoadTestnet loads a testnet from a manifest file, using the filename to
@@ -145,35 +159,40 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	testnet := &Testnet{
-		Name:                             filepath.Base(dir),
-		File:                             file,
-		Dir:                              dir,
-		IP:                               ipNet,
-		InitialHeight:                    1,
-		InitialState:                     manifest.InitialState,
-		Validators:                       map[*Node]int64{},
-		ValidatorUpdates:                 map[int64]map[*Node]int64{},
-		Nodes:                            []*Node{},
-		Evidence:                         manifest.Evidence,
-		LoadTxSizeBytes:                  manifest.LoadTxSizeBytes,
-		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
-		LoadTxConnections:                manifest.LoadTxConnections,
-		ABCIProtocol:                     manifest.ABCIProtocol,
-		PrepareProposalDelay:             manifest.PrepareProposalDelay,
-		ProcessProposalDelay:             manifest.ProcessProposalDelay,
-		CheckTxDelay:                     manifest.CheckTxDelay,
-		VoteExtensionDelay:               manifest.VoteExtensionDelay,
-		FinalizeBlockDelay:               manifest.FinalizeBlockDelay,
-		UpgradeVersion:                   manifest.UpgradeVersion,
-		Prometheus:                       manifest.Prometheus,
-		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
-		VoteExtensionSize:                manifest.VoteExtensionSize,
-		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
+		Name:                              filepath.Base(dir),
+		File:                              file,
+		Dir:                               dir,
+		IP:                                ipNet,
+		InitialHeight:                     1,
+		InitialState:                      manifest.InitialState,
+		Validators:                        map[*Node]int64{},
+		ValidatorUpdates:                  map[int64]map[*Node]int64{},
+		Nodes:                             []*Node{},
+		Evidence:                          manifest.Evidence,
+		LoadTxSizeBytes:                   manifest.LoadTxSizeBytes,
+		LoadTxBatchSize:                   manifest.LoadTxBatchSize,
+		LoadTxToSend:                      manifest.LoadTxToSend,
+		LoadTxConnections:                 manifest.LoadTxConnections,
+		ABCIProtocol:                      manifest.ABCIProtocol,
+		PrepareProposalDelay:              manifest.PrepareProposalDelay,
+		ProcessProposalDelay:              manifest.ProcessProposalDelay,
+		CheckTxDelay:                      manifest.CheckTxDelay,
+		VoteExtensionDelay:                manifest.VoteExtensionDelay,
+		FinalizeBlockDelay:                manifest.FinalizeBlockDelay,
+		UpgradeVersion:                    manifest.UpgradeVersion,
+		Prometheus:                        manifest.Prometheus,
+		VoteExtensionsEnableHeight:        manifest.VoteExtensionsEnableHeight,
+		PeerGossipIntraloopSleepDuration:  manifest.PeerGossipIntraloopSleepDuration,
+		VoteExtensionSize:                 manifest.VoteExtensionSize,
+		PhysicalTimestamps:                manifest.PhysicalTimestamps,
+		ExperimentalGossipPropagationRate: manifest.ExperimentalGossipPropagationRate,
+		ExperimentalGossipSendOnce:        manifest.ExperimentalGossipSendOnce,
+		ExperimentalCustomReactors:        manifest.ExperimentalCustomReactors,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
 	}
-	if manifest.InitialHeight > 0 {
+	if manifest.InitialHeight >= 0 {
 		testnet.InitialHeight = manifest.InitialHeight
 	}
 	if testnet.ABCIProtocol == "" {
@@ -327,6 +346,13 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		testnet.ValidatorUpdates[int64(height)] = valUpdate
 	}
 
+	// compute Prometheus IP (if enabled)
+	if testnet.Prometheus {
+		if testnet.PrometheusIP, err = newIPGenerator(ipNet).After(len(testnet.Nodes)); err != nil {
+			return nil, err
+		}
+	}
+
 	return testnet, testnet.Validate()
 }
 
@@ -390,11 +416,11 @@ func (n Node) Validate(testnet Testnet) error {
 		return fmt.Errorf("invalid database setting %q", n.Database)
 	}
 	switch n.ABCIProtocol {
-	case ProtocolBuiltin, ProtocolBuiltinUnsync, ProtocolUNIX, ProtocolTCP, ProtocolGRPC:
+	case ProtocolBuiltin, ProtocolBuiltinConnSync, ProtocolUNIX, ProtocolTCP, ProtocolGRPC:
 	default:
 		return fmt.Errorf("invalid ABCI protocol setting %q", n.ABCIProtocol)
 	}
-	if n.Mode == ModeLight && n.ABCIProtocol != ProtocolBuiltin && n.ABCIProtocol != ProtocolBuiltinUnsync {
+	if n.Mode == ModeLight && n.ABCIProtocol != ProtocolBuiltin && n.ABCIProtocol != ProtocolBuiltinConnSync {
 		return errors.New("light client must use builtin protocol")
 	}
 	switch n.PrivvalProtocol {
@@ -510,7 +536,7 @@ func (t Testnet) WritePrometheusConfig() error {
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(filepath.Join(t.Dir, "prometheus.yaml"), bytes, 0o644) //nolint:gosec
+	err = os.WriteFile(filepath.Join(t.Dir, "prometheus.yml"), bytes, 0o644) //nolint:gosec
 	if err != nil {
 		return err
 	}
@@ -544,6 +570,16 @@ func (n Node) AddressRPC() string {
 // Client returns an RPC client for a node.
 func (n Node) Client() (*rpchttp.HTTP, error) {
 	return rpchttp.New(fmt.Sprintf("http://%s:%v", n.ExternalIP, n.ProxyPort), "/websocket")
+}
+
+// Client returns an RPC client for a node.
+func (n Node) ClientWithTimeout(timeout uint) (*rpchttp.HTTP, error) {
+	return rpchttp.NewWithTimeout(fmt.Sprintf("http://%s:%v", n.ExternalIP, n.ProxyPort), "/websocket", timeout)
+}
+
+// PrometheusClient returns an RPC client for a node.
+func (n Node) PrometheusClient() (*rpchttp.HTTP, error) {
+	return rpchttp.New(fmt.Sprintf("http://%s:%v", n.ExternalIP, n.PrometheusProxyPort), "/")
 }
 
 // Stateless returns true if the node is either a seed node or a light node
@@ -634,4 +670,20 @@ func (g *ipGenerator) Next() net.IP {
 		}
 	}
 	return ip
+}
+
+func (g *ipGenerator) After(skip int) (net.IP, error) {
+	ip := g.Next()
+	i := 0
+	var ret net.IP
+	for ip := ip.Mask(g.network.Mask); g.network.Contains(ip) && i <= skip; ip = g.Next() {
+		ret = ip
+		i++
+	}
+
+	if i <= skip {
+		return nil, fmt.Errorf("not enough network addresses")
+	}
+
+	return ret, nil
 }

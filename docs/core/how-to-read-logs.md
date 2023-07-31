@@ -24,16 +24,13 @@ I[10-04|13:54:27.368] ABCI Replay Blocks                           module=consen
 I[10-04|13:54:27.368] Completed ABCI Handshake - CometBFT and App are synced module=consensus appHeight=90 appHash=E0FBAFBF6FCED8B9786DDFEB1A0D4FA2501BADAD
 ```
 
-After that, we start a few more things like the event switch, reactors,
-and perform UPNP discover in order to detect the IP address.
+After that, we start a few more things like the event switch and reactors.
 
 ```sh
 I[10-04|13:54:27.374] Starting EventSwitch                         module=types impl=EventSwitch
 I[10-04|13:54:27.375] This node is a validator                     module=consensus
 I[10-04|13:54:27.379] Starting Node                                module=main impl=Node
 I[10-04|13:54:27.381] Local listener                               module=p2p ip=:: port=26656
-I[10-04|13:54:27.382] Getting UPNP external address                module=p2p
-I[10-04|13:54:30.386] Could not perform UPNP discover              module=p2p err="write udp4 0.0.0.0:38238->239.255.255.250:1900: i/o timeout"
 I[10-04|13:54:30.386] Starting DefaultListener                     module=p2p impl=Listener(@10.0.2.15:26656)
 I[10-04|13:54:30.387] Starting P2P Switch                          module=p2p impl="P2P Switch"
 I[10-04|13:54:30.387] Starting MempoolReactor                      module=mempool impl=MempoolReactor

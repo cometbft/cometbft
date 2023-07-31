@@ -1,0 +1,104 @@
+initial_height = 1
+prometheus = true
+load_tx_size_bytes = 100
+load_tx_to_send = 100
+load_tx_batch_size = 10
+pex = false
+experimental_gossip_propagation_rate = 100
+experimental_gossip_send_once = false
+experimental_custom_reactors = {CONSENSUS = "", MEMPOOL = "experimental.reactors.mempool.gossip"}
+[node.validator01]
+  persistent_peers = ["validator07","validator06","validator24","validator04","validator28","validator31","validator02","validator20","validator21","validator18"]
+[node.validator02]
+  persistent_peers = ["validator07","validator03","validator12","validator06","validator05","validator09","validator19","validator04","validator08","validator27"]
+  mode = "full"
+[node.validator03]
+  persistent_peers = ["validator01","validator23","validator26","validator31","validator17","validator13","validator09","validator24","validator25","validator27"]
+  mode = "full"
+[node.validator04]
+  persistent_peers = ["validator01","validator13","validator14","validator12","validator02","validator30","validator24","validator17","validator19","validator28"]
+  mode = "full"
+[node.validator05]
+  persistent_peers = ["validator19","validator09","validator26","validator24","validator01","validator03","validator28","validator04","validator32","validator29"]
+  mode = "full"
+[node.validator06]
+  persistent_peers = ["validator16","validator29","validator12","validator15","validator23","validator25","validator21","validator24","validator05","validator06"]
+  mode = "full"
+[node.validator07]
+  persistent_peers = ["validator03","validator04","validator31","validator19","validator32","validator10","validator22","validator11","validator30","validator21"]
+  mode = "full"
+[node.validator08]
+  persistent_peers = ["validator28","validator05","validator08","validator20","validator22","validator25","validator32","validator12","validator03","validator11"]
+  mode = "full"
+[node.validator09]
+  persistent_peers = ["validator19","validator27","validator04","validator21","validator16","validator26","validator32","validator12","validator31","validator08"]
+  mode = "full"
+[node.validator10]
+  persistent_peers = ["validator10","validator07","validator27","validator21","validator08","validator02","validator30","validator03","validator09","validator19"]
+  mode = "full"
+[node.validator11]
+  persistent_peers = ["validator15","validator14","validator12","validator22","validator32","validator03","validator13","validator19","validator10","validator16"]
+  mode = "full"
+[node.validator12]
+  persistent_peers = ["validator18","validator14","validator22","validator21","validator19","validator05","validator08","validator25","validator17","validator13"]
+  mode = "full"
+[node.validator13]
+  persistent_peers = ["validator16","validator17","validator11","validator26","validator06","validator21","validator12","validator10","validator09","validator24"]
+  mode = "full"
+[node.validator14]
+  persistent_peers = ["validator12","validator03","validator02","validator18","validator07","validator08","validator04","validator05","validator27","validator11"]
+  mode = "full"
+[node.validator15]
+  persistent_peers = ["validator02","validator31","validator27","validator20","validator32","validator11","validator28","validator19","validator08","validator25"]
+  mode = "full"
+[node.validator16]
+  persistent_peers = ["validator15","validator06","validator10","validator17","validator19","validator28","validator12","validator16","validator22","validator11"]
+  mode = "full"
+[node.validator17]
+  persistent_peers = ["validator27","validator30","validator06","validator31","validator05","validator08","validator07","validator29","validator09","validator23"]
+  mode = "full"
+[node.validator18]
+  persistent_peers = ["validator13","validator14","validator21","validator17","validator04","validator29","validator09","validator26","validator08","validator24"]
+  mode = "full"
+[node.validator19]
+  persistent_peers = ["validator10","validator15","validator04","validator05","validator09","validator26","validator01","validator11","validator30","validator12"]
+  mode = "full"
+[node.validator20]
+  persistent_peers = ["validator29","validator26","validator12","validator19","validator15","validator31","validator21","validator28","validator14","validator30"]
+  mode = "full"
+[node.validator21]
+  persistent_peers = ["validator13","validator27","validator03","validator30","validator28","validator18","validator12","validator07","validator19","validator23"]
+  mode = "full"
+[node.validator22]
+  persistent_peers = ["validator03","validator17","validator10","validator07","validator18","validator26","validator23","validator22","validator21","validator28"]
+  mode = "full"
+[node.validator23]
+  persistent_peers = ["validator23","validator17","validator14","validator10","validator31","validator21","validator05","validator07","validator26","validator27"]
+  mode = "full"
+[node.validator24]
+  persistent_peers = ["validator02","validator08","validator29","validator05","validator20","validator19","validator09","validator26","validator16","validator25"]
+  mode = "full"
+[node.validator25]
+  persistent_peers = ["validator27","validator15","validator25","validator28","validator01","validator19","validator10","validator02","validator04","validator09"]
+  mode = "full"
+[node.validator26]
+  persistent_peers = ["validator19","validator25","validator06","validator07","validator18","validator27","validator30","validator14","validator11","validator17"]
+  mode = "full"
+[node.validator27]
+  persistent_peers = ["validator15","validator02","validator04","validator20","validator30","validator01","validator24","validator18","validator22","validator28"]
+  mode = "full"
+[node.validator28]
+  persistent_peers = ["validator19","validator20","validator18","validator27","validator17","validator29","validator31","validator21","validator06","validator08"]
+  mode = "full"
+[node.validator29]
+  persistent_peers = ["validator02","validator19","validator08","validator10","validator03","validator31","validator26","validator11","validator09","validator23"]
+  mode = "full"
+[node.validator30]
+  persistent_peers = ["validator10","validator07","validator01","validator18","validator15","validator27","validator30","validator29","validator23","validator03"]
+  mode = "full"
+[node.validator31]
+  persistent_peers = ["validator15","validator23","validator26","validator06","validator11","validator14","validator05","validator31","validator04","validator25"]
+  mode = "full"
+[node.validator32]
+  persistent_peers = ["validator20","validator25","validator08","validator26","validator28","validator14","validator02","validator31","validator21","validator22"]
+  mode = "full"

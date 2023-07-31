@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	p2pmock "github.com/cometbft/cometbft/p2p/mock"
+	"github.com/cometbft/cometbft/test/e2e/fast-prototyping/reactors/mempool/gossip"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -62,7 +64,7 @@ func run(configFile string) error {
 		if err = startSigner(cfg); err != nil {
 			return err
 		}
-		if cfg.Protocol == "builtin" || cfg.Protocol == "builtin_unsync" {
+		if cfg.Protocol == "builtin" || cfg.Protocol == "builtin_connsync" {
 			time.Sleep(1 * time.Second)
 		}
 	}
@@ -71,7 +73,7 @@ func run(configFile string) error {
 	switch cfg.Protocol {
 	case "socket", "grpc":
 		err = startApp(cfg)
-	case "builtin", "builtin_unsync":
+	case "builtin", "builtin_connsync":
 		if cfg.Mode == string(e2e.ModeLight) {
 			err = startLightClient(cfg)
 		} else {
@@ -124,9 +126,9 @@ func startNode(cfg *Config) error {
 	}
 
 	var clientCreator proxy.ClientCreator
-	if cfg.Protocol == string(e2e.ProtocolBuiltinUnsync) {
-		clientCreator = proxy.NewUnsyncLocalClientCreator(app)
-		nodeLogger.Info("Using unsynchronized local client creator")
+	if cfg.Protocol == string(e2e.ProtocolBuiltinConnSync) {
+		clientCreator = proxy.NewConnSyncLocalClientCreator(app)
+		nodeLogger.Info("Using connection-synchronized local client creator")
 	} else {
 		clientCreator = proxy.NewLocalClientCreator(app)
 		nodeLogger.Info("Using default (synchronized) local client creator")
@@ -141,9 +143,34 @@ func startNode(cfg *Config) error {
 		node.DefaultMetricsProvider(cmtcfg.Instrumentation),
 		nodeLogger,
 	)
+
 	if err != nil {
 		return err
 	}
+
+	// weave custom reactors here (cannot be done by reflexivity)
+	registry := map[string]p2p.Reactor{}
+	registry["p2p.mock.reactor"] = p2pmock.NewReactor()
+	consensus, ok := cfg.ExperimentalCustomReactors["CONSENSUS"]
+	consensusMocked := !ok || consensus == "p2p.mock.reactor"
+	registry["experimental.reactors.mempool.gossip"] = gossip.NewReactor(
+		cmtcfg.Mempool,
+		n,
+		consensusMocked,
+		cfg.ExperimentalGossipPropagationRate,
+		cfg.ExperimentalGossipSendOnce)
+
+	customReactors := map[string]p2p.Reactor{}
+	for k, v := range cfg.ExperimentalCustomReactors {
+		mock, ok := registry[v]
+		if ok {
+			customReactors[k] = mock
+			logger.Info("Mocking reactor: ", k, mock)
+		}
+	}
+
+	node.CustomReactors(customReactors)(n)
+
 	return n.Start()
 }
 

@@ -37,7 +37,7 @@ func TestNodeNameExtracting(t *testing.T) {
 			t.Error(fmt.Errorf("Collecting of ABCI requests failed: %w", err))
 		}
 		if len(reqs) == 0 {
-			t.Errorf("No ABCI requests on validator %v", node.Name)
+			t.Errorf("No ABCI requests on node %v", node.Name)
 		}
 	})
 }

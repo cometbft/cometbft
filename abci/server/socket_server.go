@@ -104,7 +104,7 @@ func (s *SocketServer) rmConn(connID int) error {
 
 	conn, ok := s.conns[connID]
 	if !ok {
-		return fmt.Errorf("connection %d does not exist", connID)
+		return ErrConnectionNotExists{connID: connID}
 	}
 
 	delete(s.conns, connID)
@@ -190,7 +190,7 @@ func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, resp
 			if err == io.EOF {
 				closeConn <- err
 			} else {
-				closeConn <- fmt.Errorf("error reading message: %w", err)
+				closeConn <- ErrReadingMessage{err: err}
 			}
 			return
 		}
@@ -301,7 +301,7 @@ func (s *SocketServer) handleRequest(ctx context.Context, req *types.Request) (*
 		}
 		return types.ToResponseVerifyVoteExtension(res), nil
 	default:
-		return nil, fmt.Errorf("unknown request from client: %T", req)
+		return nil, ErrUnknownClientResponse{req: req}
 	}
 }
 
@@ -313,7 +313,7 @@ func (s *SocketServer) handleResponses(closeConn chan error, conn io.Writer, res
 		var res = <-responses
 		err := types.WriteMessage(res, bufWriter)
 		if err != nil {
-			closeConn <- fmt.Errorf("error writing message: %w", err)
+			closeConn <- ErrWritingMessage{err: err}
 			return
 		}
 		if _, ok := res.Value.(*types.Response_Flush); ok {

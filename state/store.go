@@ -57,30 +57,30 @@ var lastABCIResponseKey = []byte("lastABCIResponseKey")
 type Store interface {
 	// LoadFromDBOrGenesisFile loads the most recent state.
 	// If the chain is new it will use the genesis file from the provided genesis file path as the current state.
-	LoadFromDBOrGenesisFile(string) (State, error)
+	LoadFromDBOrGenesisFile(filename string) (State, error)
 	// LoadFromDBOrGenesisDoc loads the most recent state.
 	// If the chain is new it will use the genesis doc as the current state.
-	LoadFromDBOrGenesisDoc(*types.GenesisDoc) (State, error)
+	LoadFromDBOrGenesisDoc(doc *types.GenesisDoc) (State, error)
 	// Load loads the current state of the blockchain
 	Load() (State, error)
 	// LoadValidators loads the validator set at a given height
-	LoadValidators(int64) (*types.ValidatorSet, error)
+	LoadValidators(height int64) (*types.ValidatorSet, error)
 	// LoadFinalizeBlockResponse loads the abciResponse for a given height
-	LoadFinalizeBlockResponse(int64) (*abci.ResponseFinalizeBlock, error)
+	LoadFinalizeBlockResponse(height int64) (*abci.ResponseFinalizeBlock, error)
 	// LoadLastABCIResponse loads the last abciResponse for a given height
-	LoadLastFinalizeBlockResponse(int64) (*abci.ResponseFinalizeBlock, error)
+	LoadLastFinalizeBlockResponse(height int64) (*abci.ResponseFinalizeBlock, error)
 	// LoadConsensusParams loads the consensus params for a given height
-	LoadConsensusParams(int64) (types.ConsensusParams, error)
+	LoadConsensusParams(height int64) (types.ConsensusParams, error)
 	// Save overwrites the previous state with the updated one
-	Save(State) error
+	Save(state State) error
 	// SaveFinalizeBlockResponse saves ABCIResponses for a given height
-	SaveFinalizeBlockResponse(int64, *abci.ResponseFinalizeBlock) error
+	SaveFinalizeBlockResponse(height int64, res *abci.ResponseFinalizeBlock) error
 	// Bootstrap is used for bootstrapping state when not starting from a initial height.
-	Bootstrap(State) error
+	Bootstrap(state State) error
 	// PruneStates takes the height from which to start pruning and which height stop at
-	PruneStates(int64, int64, int64) error
+	PruneStates(fromHeight, toHeight, evidenceThresholdHeight int64) error
 	// PruneABCIResponses will prune all ABCI responses below the given height.
-	PruneABCIResponses(int64) (uint64, error)
+	PruneABCIResponses(height int64) (uint64, error)
 	// SaveApplicationRetainHeight persists the application retain height from the application
 	SaveApplicationRetainHeight(height int64) error
 	// GetApplicationRetainHeight returns the retain height set by the application

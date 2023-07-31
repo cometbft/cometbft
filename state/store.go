@@ -552,7 +552,7 @@ func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.Response
 	return store.db.SetSync(lastABCIResponseKey, bz)
 }
 
-func (store dbStore) getKey(key []byte) ([]byte, error) {
+func (store dbStore) getValue(key []byte) ([]byte, error) {
 	bz, err := store.db.Get(key)
 	if err != nil {
 		return nil, err
@@ -570,7 +570,7 @@ func (store dbStore) SaveApplicationRetainHeight(height int64) error {
 }
 
 func (store dbStore) GetApplicationRetainHeight() (int64, error) {
-	buf, err := store.getKey(AppRetainHeightKey)
+	buf, err := store.getValue(AppRetainHeightKey)
 	if err != nil {
 		return 0, err
 	}
@@ -589,7 +589,7 @@ func (store dbStore) SaveCompanionBlockRetainHeight(height int64) error {
 }
 
 func (store dbStore) GetCompanionBlockRetainHeight() (int64, error) {
-	buf, err := store.getKey(CompanionBlockRetainHeightKey)
+	buf, err := store.getValue(CompanionBlockRetainHeightKey)
 	if err != nil {
 		return 0, err
 	}
@@ -608,7 +608,7 @@ func (store dbStore) SaveABCIResRetainHeight(height int64) error {
 }
 
 func (store dbStore) GetABCIResRetainHeight() (int64, error) {
-	buf, err := store.getKey(ABCIResultsRetainHeightKey)
+	buf, err := store.getValue(ABCIResultsRetainHeightKey)
 	if err != nil {
 		return 0, err
 	}

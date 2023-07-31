@@ -1204,7 +1204,7 @@ curl 'http://127.0.0.1:26657/abci_query?path="/store/foo/key"&data=0x636f6d65746
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"abci_query\",\"params\":{\"path\":\"/store/foo/key\", \"data\":\"636f6d6574626674\", \"height\":\"1\", \"bool\":\"true\"}}"
+curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"abci_query\",\"params\":{\"path\":\"/store/foo/key\", \"data\":\"636f6d6574626674\", \"height\":\"1\", \"prove\":\"true\"}}"
 ```
 
 #### Response

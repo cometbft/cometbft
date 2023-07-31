@@ -49,4 +49,4 @@ A reference is of the form `name;description;location`.
 For instance, `sample;A sample result.;/tmp/sample.csv` indicates that the result called `sample` is stored under `/tmp/sample.csv`.
 The tooltip `A sample result` is displayed when the mouse is over the button attached to the result.
 
-
+The  format of the `.csv` file to be plotted is defined in `experiments.js`.

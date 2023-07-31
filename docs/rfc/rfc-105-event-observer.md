@@ -13,7 +13,9 @@ of the internal interaction between different reactors/services.
 RFC 104 explored and ruled out the possibility of employing a loosely coupled
 model like the [Actor] model. This RFC explores the possibility of a simpler,
 more tightly coupled model with a range of benefits compared to the actor model
-and what is currently implemented.
+and what is currently implemented. It is possible that this would also help
+simplify testing, since the tests in CometBFT are the biggest users (by volume)
+of the current event bus subsystem.
 
 ## Background
 

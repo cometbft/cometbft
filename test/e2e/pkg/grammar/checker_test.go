@@ -88,18 +88,14 @@ func TestVerify(t *testing.T) {
 }
 
 func TestFilterLastHeight(t *testing.T) {
-	reqs := []*abci.Request{
-		&abci.Request{Value: &abci.Request_InitChain{InitChain: &abci.RequestInitChain{}}},
-		&abci.Request{Value: &abci.Request_FinalizeBlock{FinalizeBlock: &abci.RequestFinalizeBlock{}}},
-		&abci.Request{Value: &abci.Request_Commit{Commit: &abci.RequestCommit{}}},
-	}
+	reqs := []*abci.Request{initChain, decide, commit}
 	checker := NewGrammarChecker(DefaultConfig())
 	rr, n := checker.filterLastHeight(reqs)
 	if len(reqs) != len(rr) || n != 0 {
 		t.Errorf("FilterLastHeight filtered %v ABCI calls, expected %v\n", n, 0)
 	}
 
-	reqs = append(reqs, &abci.Request{Value: &abci.Request_FinalizeBlock{FinalizeBlock: &abci.RequestFinalizeBlock{}}})
+	reqs = append(reqs, decide)
 	rrr, n := checker.filterLastHeight(reqs)
 	if len(rr) != len(rrr) || n != 1 {
 		t.Errorf("FilterLastHeight filtered %v ABCI calls, expected %v\n", n, 1)

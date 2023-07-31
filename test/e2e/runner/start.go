@@ -70,7 +70,7 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 				),
 			)
 		} else {
-			logger.Info("Start", "msg",
+			logger.Info("start", "msg",
 				log.NewLazySprintf("Node %v up on http://%s:%v",
 					node.Name,
 					node.ExternalIP,

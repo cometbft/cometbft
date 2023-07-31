@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -24,6 +25,7 @@ import (
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/proxy"
 	rpccore "github.com/cometbft/cometbft/rpc/core"
+	grpcserver "github.com/cometbft/cometbft/rpc/grpc/server"
 	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/state/indexer"
@@ -60,8 +62,9 @@ type Node struct {
 	eventBus          *types.EventBus // pub/sub for services
 	stateStore        sm.Store
 	blockStore        *store.BlockStore // store the blockchain to disk
-	bcReactor         p2p.Reactor       // for block-syncing
-	mempoolReactor    p2p.Reactor       // for gossipping transactions
+	pruner            *sm.Pruner
+	bcReactor         p2p.Reactor // for block-syncing
+	mempoolReactor    p2p.Reactor // for gossipping transactions
 	mempool           mempl.Mempool
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
@@ -237,6 +240,21 @@ func NewNode(ctx context.Context,
 		return nil, err
 	}
 
+	err = initCompanionBlockRetainHeight(
+		stateStore,
+		config.Storage.Pruning.DataCompanion.Enabled,
+		config.Storage.Pruning.DataCompanion.InitialBlockRetainHeight,
+	)
+	if err != nil {
+		return nil, err
+	}
+	pruner := sm.NewPruner(
+		stateStore,
+		blockStore,
+		logger,
+		sm.PrunerInterval(config.Storage.Pruning.Interval),
+	)
+
 	// make block executor for consensus and blocksync reactors to execute blocks
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
@@ -245,6 +263,7 @@ func NewNode(ctx context.Context,
 		mempool,
 		evidencePool,
 		blockStore,
+		sm.BlockExecutorWithPruner(pruner),
 		sm.BlockExecutorWithMetrics(smMetrics),
 	)
 
@@ -335,6 +354,7 @@ func NewNode(ctx context.Context,
 
 		stateStore:       stateStore,
 		blockStore:       blockStore,
+		pruner:           pruner,
 		bcReactor:        bcReactor,
 		mempoolReactor:   mempoolReactor,
 		mempool:          mempool,
@@ -425,6 +445,11 @@ func (n *Node) OnStart() error {
 		}
 	}
 
+	// Start background pruning
+	if err := n.pruner.Start(); err != nil {
+		return fmt.Errorf("failed to start background pruning routine: %w", err)
+	}
+
 	return nil
 }
 
@@ -435,6 +460,9 @@ func (n *Node) OnStop() {
 	n.Logger.Info("Stopping Node")
 
 	// first stop the non-reactor services
+	if err := n.pruner.Stop(); err != nil {
+		n.Logger.Error("Error stopping the pruning service", "err", err)
+	}
 	if err := n.eventBus.Stop(); err != nil {
 		n.Logger.Error("Error closing eventBus", "err", err)
 	}
@@ -614,6 +642,25 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 		listeners[i] = listener
 	}
 
+	if n.config.GRPC.ListenAddress != "" {
+		listener, err := grpcserver.Listen(n.config.GRPC.ListenAddress)
+		if err != nil {
+			return nil, err
+		}
+		opts := []grpcserver.Option{
+			grpcserver.WithLogger(n.Logger),
+		}
+		if n.config.GRPC.VersionService.Enabled {
+			opts = append(opts, grpcserver.WithVersionService())
+		}
+		go func() {
+			if err := grpcserver.Serve(listener, opts...); err != nil {
+				n.Logger.Error("Error starting gRPC server", "err", err)
+			}
+		}()
+		listeners = append(listeners, listener)
+	}
+
 	return listeners, nil
 }
 
@@ -782,4 +829,30 @@ func makeNodeInfo(
 
 	err := nodeInfo.Validate()
 	return nodeInfo, err
+}
+
+func initCompanionBlockRetainHeight(stateStore sm.Store, companionEnabled bool, initialRetainHeight int64) error {
+	if _, err := stateStore.GetCompanionBlockRetainHeight(); err != nil {
+		// If the data companion block retain height has not yet been set in
+		// the database
+		if errors.Is(err, sm.ErrKeyNotFound) {
+			if companionEnabled && initialRetainHeight > 0 {
+				// This will set the data companion retain height into the
+				// database. We bypass the sanity checks by
+				// pruner.SetCompanionBlockRetainHeight. These checks do not
+				// allow a retain height below the current blockstore height or
+				// above the blockstore height  to be set. But this is a retain
+				// height that can be set before the chain starts to indicate
+				// potentially that no pruning should be done before the data
+				// companion comes online.
+				err = stateStore.SaveCompanionBlockRetainHeight(initialRetainHeight)
+				if err != nil {
+					return fmt.Errorf("failed to set initial data companion block retain height: %w", err)
+				}
+			}
+		} else {
+			return fmt.Errorf("failed to obtain companion retain height: %w", err)
+		}
+	}
+	return nil
 }

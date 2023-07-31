@@ -1,6 +1,7 @@
 package state
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 
@@ -22,6 +23,11 @@ const (
 	// https://github.com/tendermint/tendermint/pull/3438
 	// 100000 results in ~ 100ms to get 100 validators (see BenchmarkLoadValidators)
 	valSetCheckpointInterval = 100000
+)
+
+var (
+	ErrKeyNotFound        = errors.New("key not found")
+	ErrInvalidHeightValue = errors.New("invalid height value")
 )
 
 //------------------------------------------------------------------------
@@ -73,6 +79,20 @@ type Store interface {
 	Bootstrap(State) error
 	// PruneStates takes the height from which to start pruning and which height stop at
 	PruneStates(int64, int64, int64) error
+	// PruneABCIResponses will prune all ABCI responses below the given height.
+	PruneABCIResponses(int64) (uint64, error)
+	// SaveApplicationRetainHeight persists the application retain height from the application
+	SaveApplicationRetainHeight(height int64) error
+	// GetApplicationRetainHeight returns the retain height set by the application
+	GetApplicationRetainHeight() (int64, error)
+	// SaveCompanionBlockRetainHeight saves the retain height set by the data companion
+	SaveCompanionBlockRetainHeight(height int64) error
+	// GetCompanionBlockRetainHeight returns the retain height set by the data companion
+	GetCompanionBlockRetainHeight() (int64, error)
+	// SaveABCIResRetainHeight persists the retain height for ABCI results set by the data companion
+	SaveABCIResRetainHeight(height int64) error
+	// GetABCIResRetainHeight returns the last saved retain height for ABCI results set by the data companion
+	GetABCIResRetainHeight() (int64, error)
 	// Close closes the connection with the database
 	Close() error
 }
@@ -366,6 +386,37 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 	return nil
 }
 
+// PruneABCIResponses attempts to prune all ABCI responses up to, but not
+// including, the given height. On success, returns the height to which ABCI
+// responses were pruned.
+func (store dbStore) PruneABCIResponses(height int64) (uint64, error) {
+	if store.DiscardABCIResponses {
+		return 0, errors.New("ABCI responses are discarded, nothing to prune")
+	}
+	batch := store.db.NewBatch()
+	defer batch.Close()
+	pruned := uint64(0)
+
+	for h := int64(1); h < height; h++ {
+		err2 := batch.Delete(calcABCIResponsesKey(h))
+		if err2 != nil {
+			return pruned, err2
+		}
+		pruned++
+		if pruned%1000 == 0 && pruned > 0 {
+			err := batch.Write()
+			if err != nil {
+				return 0, err
+			}
+			batch.Close()
+			batch = store.db.NewBatch()
+			defer batch.Close()
+		}
+	}
+	err := batch.WriteSync()
+	return pruned, err
+}
+
 //------------------------------------------------------------------------
 
 // TxResultsHash returns the root hash of a Merkle tree of
@@ -497,6 +548,75 @@ func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.Response
 	}
 
 	return store.db.SetSync(lastABCIResponseKey, bz)
+}
+
+func (store dbStore) getKey(key []byte) ([]byte, error) {
+	bz, err := store.db.Get(key)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(bz) == 0 {
+		return nil, ErrKeyNotFound
+	}
+	return bz, nil
+}
+
+// ApplicationRetainHeight
+func (store dbStore) SaveApplicationRetainHeight(height int64) error {
+	return store.db.SetSync(AppRetainHeightKey, int64ToBytes(height))
+}
+
+func (store dbStore) GetApplicationRetainHeight() (int64, error) {
+	buf, err := store.getKey(AppRetainHeightKey)
+	if err != nil {
+		return 0, err
+	}
+	height := int64FromBytes(buf)
+
+	if height < 0 {
+		return 0, ErrInvalidHeightValue
+	}
+
+	return height, nil
+}
+
+// DataCompanionRetainHeight
+func (store dbStore) SaveCompanionBlockRetainHeight(height int64) error {
+	return store.db.SetSync(CompanionBlockRetainHeightKey, int64ToBytes(height))
+}
+
+func (store dbStore) GetCompanionBlockRetainHeight() (int64, error) {
+	buf, err := store.getKey(CompanionBlockRetainHeightKey)
+	if err != nil {
+		return 0, err
+	}
+	height := int64FromBytes(buf)
+
+	if height < 0 {
+		return 0, ErrInvalidHeightValue
+	}
+
+	return height, nil
+}
+
+// DataCompanionRetainHeight
+func (store dbStore) SaveABCIResRetainHeight(height int64) error {
+	return store.db.SetSync(ABCIResultsRetainHeightKey, int64ToBytes(height))
+}
+
+func (store dbStore) GetABCIResRetainHeight() (int64, error) {
+	buf, err := store.getKey(ABCIResultsRetainHeightKey)
+	if err != nil {
+		return 0, err
+	}
+	height := int64FromBytes(buf)
+
+	if height < 0 {
+		return 0, ErrInvalidHeightValue
+	}
+
+	return height, nil
 }
 
 //-----------------------------------------------------------------------------
@@ -705,4 +825,16 @@ func responseFinalizeBlockFromLegacy(legacyResp *cmtstate.LegacyABCIResponses) *
 		// NOTE: AppHash is missing in the response but will
 		// be caught and filled in consensus/replay.go
 	}
+}
+
+// ----- Util
+func int64FromBytes(bz []byte) int64 {
+	v, _ := binary.Varint(bz)
+	return v
+}
+
+func int64ToBytes(i int64) []byte {
+	buf := make([]byte, binary.MaxVarintLen64)
+	n := binary.PutVarint(buf, i)
+	return buf[:n]
 }

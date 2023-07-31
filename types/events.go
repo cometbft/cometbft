@@ -22,7 +22,6 @@ const (
 	EventNewEvidence         = "NewEvidence"
 	EventTx                  = "Tx"
 	EventValidatorSetUpdates = "ValidatorSetUpdates"
-	EventRetainHeight        = "RetainHeight"
 
 	// Internal consensus events.
 	// These are used for testing the consensus state machine.

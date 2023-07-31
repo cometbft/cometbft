@@ -215,9 +215,8 @@ func queryInt(v1api v1.API, timeout time.Duration, field string, node string, ex
 	if result, err := doQuery(v1api, timeout, field, node, extra); err == nil {
 		if len(result.(model.Vector)) != 0 {
 			return strconv.Atoi(result.(model.Vector)[0].Value.String())
-		} else {
-			return 0, nil
 		}
+		return 0, nil
 	} else {
 		return 0, err
 	}

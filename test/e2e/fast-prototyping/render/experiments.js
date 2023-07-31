@@ -16,6 +16,7 @@ const headersMap = {
     "redundancy" : "redundancy", // average
     "degree" : "degree (avg)", // average out+in degree
     "cpu_load" : "CPU load (avg)", // average cpu load (s)
+    "latency" : "latency ", // average in #blocks (or seconds if physical)
     "bandwidth" : "bandwidth"
 }
 let headers = []

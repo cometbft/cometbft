@@ -428,13 +428,12 @@ Does not run any perturbations.
 			logger.Info("Second grace period (10s).")
 			time.Sleep(10 * time.Second)
 
-			logger.Info("Fetching stats.")
-			mempoolStats, err := Fetch(cli.testnet)
+			logger.Info("Computing stats.")
+			mempoolStats, err := ComputeStats(cli.testnet)
 			if err != nil {
 				return err
 			}
 
-			// FIXME should it be json instead?
 			txsAdded := mempoolStats.TxsAdded(cli.testnet)
 			txsSent := mempoolStats.txsSent(cli.testnet)
 			completion := mempoolStats.Completion(cli.testnet, txs)
@@ -444,7 +443,9 @@ Does not run any perturbations.
 			overhead := math.Max(0, float64(totalBandwidth-usefulBandwidth)/float64(usefulBandwidth))
 			degree := mempoolStats.Degree(cli.testnet)
 			cpuLoad := mempoolStats.CPULoad(cli.testnet)
+			latency := mempoolStats.Latency()
 
+			// FIXME should it be JSON instead?
 			logger.Info("#txs submitted = " + strconv.Itoa(txs))
 			logger.Info("#txs added (on avg.) = " + fmt.Sprintf("%v", txsAdded))
 			logger.Info("#txs sent (on avg) = " + fmt.Sprintf("%v", txsSent))
@@ -455,6 +456,12 @@ Does not run any perturbations.
 			logger.Info("redundancy (on avg) = " + fmt.Sprintf("%v", redundancy))
 			logger.Info("degree (on avg) = " + fmt.Sprintf("%v", degree))
 			logger.Info("cpu load (on avg, in s) = " + fmt.Sprintf("%v", cpuLoad))
+
+			if !cli.testnet.PhysicalTimestamps {
+				logger.Info("latency (on avg, in #blocks) = " + fmt.Sprintf("%v", latency))
+			} else {
+				logger.Info("latency (on avg, in s) = " + fmt.Sprintf("%v", latency))
+			}
 
 			if graph, err := json.Marshal(mempoolStats.BandwidthGraph(cli.testnet, true)); err != nil {
 				return err
@@ -471,19 +478,13 @@ Does not run any perturbations.
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "stats",
 		Short: "Display some statistics about a run",
-		Long: `Display the following global statistics (as json:
+		Long: `Display the following global statistics:
     graph.bandwidth: mempool bandwidth usage
     graph.peers: #peers of each node
-    mempoool.duplicates: #duplicated txs in the mempool at each node
 		`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			_, err := WaitForAllNodes(context.TODO(), cli.testnet, 0, 5*time.Second)
-			if err != nil {
-				return err
-			}
-
-			mempoolStats, err := Fetch(cli.testnet)
+			mempoolStats, err := ComputeStats(cli.testnet)
 			if err != nil {
 				return err
 			}
@@ -498,14 +499,8 @@ Does not run any perturbations.
 				return err
 			}
 
-			duplicates, err := json.Marshal(mempoolStats.Duplicates(cli.testnet))
-			if err != nil {
-				return err
-			}
-
 			logger.Info("graph.bandwidth = " + fmt.Sprintf("%v", string(graph)))
 			logger.Info("graph.peers = " + fmt.Sprintf("%v", string(peers)))
-			logger.Info("mempool.duplicates = " + fmt.Sprintf("%v", string(duplicates)))
 
 			return nil
 		},

@@ -97,6 +97,9 @@ type Manifest struct {
 	// Defines a minimum size for the vote extensions.
 	VoteExtensionSize uint `toml:"vote_extension_size"`
 
+	// Timestamp transactions using physical time (instead of counting blocks)
+	PhysicalTimestamps bool `toml:"physical_timestamps"`
+
 	// Likeliness to propagate a message
 	ExperimentalGossipPropagationRate float32 `toml:"experimental_gossip_propagation_rate"`
 

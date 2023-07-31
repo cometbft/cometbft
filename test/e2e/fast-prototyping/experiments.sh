@@ -23,10 +23,10 @@ MODE=$3
 
 TMPL="custom"
 
-echo "nodes;propagation_rate;submitted;added;sent;completion;total_mempool_bandwidth;useful_mempool_bandwidth;overhead;redundancy;degree;cpu_load;bandwidth" > ${FILE}
+echo "nodes;propagation_rate;submitted;added;sent;completion;total_mempool_bandwidth;useful_mempool_bandwidth;overhead;redundancy;degree;cpu_load;latency;bandwidth" > ${FILE}
 for r in $(seq 50 50 100);
 do
-    for i in $(geometric 8 2 4);
+    for i in $(geometric 8 2 3);
     do
 			${DIR}/tmpl-gen.sh ${i} ${r} ${DEGREE} ${MODE}> ${TMPDIR}/${TMPL}.toml
 			${BINDIR}/runner -f ${TMPDIR}/${TMPL}.toml custom > ${TMPDIR}/log
@@ -40,8 +40,9 @@ do
 			redundancy=$(grep "redundancy" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
 			degree=$(grep "degree" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
 			cpu=$(grep "cpu load" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
+			latency=$(grep "latency" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
 			bandwidth=$(grep "bandwidth graph" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
-			echo ${i}";"${r}";"${submitted}";"${added}";"${sent}";"${completion}";"${totalBandwidth}";"${usefulBandwidth}";"${overhead}";"${redundancy}";"${degree}";"${cpu}";"${bandwidth} >> ${FILE}
+			echo ${i}";"${r}";"${submitted}";"${added}";"${sent}";"${completion}";"${totalBandwidth}";"${usefulBandwidth}";"${overhead}";"${redundancy}";"${degree}";"${cpu}";"${latency}";"${bandwidth} >> ${FILE}
 			${BINDIR}/runner -f ${NETDIR}/${TMPL}.toml cleanup >> /dev/null
 			sleep 1
     done

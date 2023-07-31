@@ -1,0 +1,3 @@
+name;description;location
+send-once;Send once enabled, 1 validator, 10 out degree.;true.csv
+base;Send once disabled, 1 validator, 10 out degree.;false.csv

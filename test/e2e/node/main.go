@@ -148,7 +148,7 @@ func startNode(cfg *Config) error {
 		return err
 	}
 
-	// wave custom reactors here (cannot be done by reflexivity)
+	// weave custom reactors here (cannot be done by reflexivity)
 	registry := map[string]p2p.Reactor{}
 	registry["p2p.mock.reactor"] = p2pmock.NewReactor()
 	consensus, ok := cfg.ExperimentalCustomReactors["CONSENSUS"]

@@ -35,7 +35,7 @@ type ErrWritingMessage struct {
 }
 
 func (e ErrWritingMessage) Error() string {
-	return fmt.Sprintf("Error writing message %e", e.err)
+	return fmt.Sprintf("Error writing message %s", e.err.Error())
 }
 
 type ErrUnknownClientResponse struct {

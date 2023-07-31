@@ -782,14 +782,14 @@ func stringOrHexToBytes(s string) ([]byte, error) {
 	if len(s) > 2 && strings.ToLower(s[:2]) == "0x" {
 		b, err := hex.DecodeString(s[2:])
 		if err != nil {
-			err = fmt.Errorf("error decoding hex argument: %s", err.Error())
+			err = ErrHexDecoding{err: err}
 			return nil, err
 		}
 		return b, nil
 	}
 
 	if !strings.HasPrefix(s, "\"") || !strings.HasSuffix(s, "\"") {
-		err := fmt.Errorf("invalid string arg: \"%s\". Must be quoted or a \"0x\"-prefixed hex string", s)
+		err := ErrInvalidString{str: s, comment: "Must be quoted or a \"0x\"-prefixed hex string"}
 		return nil, err
 	}
 

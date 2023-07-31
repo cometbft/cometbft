@@ -75,10 +75,9 @@ type EventDataNewBlockHeader struct {
 }
 
 type EventDataNewBlockEvents struct {
-	Height       int64        `json:"height"`
-	Events       []abci.Event `json:"events"`
-	NumTxs       int64        `json:"num_txs,string"` // Number of txs in a block
-	RetainHeight int64        `json:"retain_height"`  // TODO consider another place
+	Height int64        `json:"height"`
+	Events []abci.Event `json:"events"`
+	NumTxs int64        `json:"num_txs,string"` // Number of txs in a block
 }
 
 type EventDataNewEvidence struct {

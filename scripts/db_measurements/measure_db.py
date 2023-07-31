@@ -7,6 +7,7 @@ import signal
 
 
 LOCAL_NET_LOG = os.path.join("scripts", "db_measurements", "local_net.log")
+PAYLOAD_LOG = os.path.join("scripts", "db_measurements", "payload.log")
 
 
 def set_project_root():
@@ -56,9 +57,12 @@ async def measure_du(rate, tx_size):
 	period = 20
 	try:
 		while True:
-			result = subprocess.run(measure_command, capture_output=True, text=True, check=True)
-			pretty_result = prettify_du(result.stdout)
-			print(f"r {rate}; s {tx_size}; T {T}; storage size: {pretty_result}")
+			try:
+				result = subprocess.run(measure_command, capture_output=True, text=True, check=True, timeout=10)
+				pretty_result = prettify_du(result.stdout)
+				print(f"r {rate}; s {tx_size}; T {T}; storage size: {pretty_result}")
+			except:
+				pass
 			await asyncio.sleep(period)
 			T += period
 	except asyncio.CancelledError:
@@ -69,6 +73,13 @@ async def launch_payload(r, s, T):
 	payload_script_path = os.path.join("test", "loadtime", "build", "load")
 	payload_command = [payload_script_path, "-T", str(T), "-r", str(r), "-s", str(s),  "--endpoints", "ws://localhost:26657/websocket"]
 	process = await asyncio.create_subprocess_exec(*payload_command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+
+	def handle(line, *args):
+		print("Payloading")
+		with open(PAYLOAD_LOG, 'a') as f:
+			f.write(line + "\n")
+
+	asyncio.create_task(read_and_handle_process_output(process, handle))
 	await process.wait()
 
 
@@ -96,6 +107,8 @@ async def run():
 def main():
 	set_project_root()
 	with open(LOCAL_NET_LOG, 'w'):
+		pass
+	with open(PAYLOAD_LOG, 'w'):
 		pass
 	asyncio.run(run())
 

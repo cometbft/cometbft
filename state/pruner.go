@@ -8,6 +8,7 @@ import (
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/state/txindex"
 )
 
 var (
@@ -26,8 +27,9 @@ type Pruner struct {
 	// DB to which we save the retain heights
 	bs BlockStore
 	// State store to prune state from
-	stateStore Store
-	interval   time.Duration
+	stateStore     Store
+	indexerService *txindex.IndexerService
+	interval       time.Duration
 }
 
 type prunerConfig struct {
@@ -48,16 +50,23 @@ func PrunerInterval(t time.Duration) PrunerOption {
 	return func(p *prunerConfig) { p.interval = t }
 }
 
-func NewPruner(stateStore Store, bs BlockStore, logger log.Logger, options ...PrunerOption) *Pruner {
+func NewPruner(
+	stateStore Store,
+	bs BlockStore,
+	indexerService *txindex.IndexerService,
+	logger log.Logger,
+	options ...PrunerOption,
+) *Pruner {
 	cfg := defaultPrunerConfig()
 	for _, opt := range options {
 		opt(cfg)
 	}
 	p := &Pruner{
-		bs:         bs,
-		stateStore: stateStore,
-		logger:     logger,
-		interval:   cfg.interval,
+		bs:             bs,
+		stateStore:     stateStore,
+		indexerService: indexerService,
+		logger:         logger,
+		interval:       cfg.interval,
 	}
 	p.BaseService = *service.NewBaseService(logger, "Pruner", p)
 	return p
@@ -175,9 +184,15 @@ func (p *Pruner) pruningRoutine() {
 		default:
 			lastHeightPruned = p.pruneBlocksToRetainHeight(lastHeightPruned)
 			lastABCIResPrunedHeight = p.pruneABCIResToRetainHeight(lastABCIResPrunedHeight)
+			p.pruneIndexesToRetainHeight()
 			time.Sleep(p.interval)
 		}
 	}
+}
+
+func (p *Pruner) pruneIndexesToRetainHeight() {
+	retainHeight := p.findMinRetainHeight()
+	p.indexerService.Prune(retainHeight)
 }
 
 func (p *Pruner) pruneBlocksToRetainHeight(lastHeightPruned int64) int64 {

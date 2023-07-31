@@ -251,6 +251,7 @@ func NewNode(ctx context.Context,
 	pruner := sm.NewPruner(
 		stateStore,
 		blockStore,
+		indexerService,
 		logger,
 		sm.PrunerInterval(config.Storage.Pruning.Interval),
 	)

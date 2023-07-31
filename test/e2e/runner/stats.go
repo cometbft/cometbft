@@ -221,8 +221,6 @@ func queryInt(v1api v1.API, timeout time.Duration, field string, node string, ex
 	} else {
 		return 0, err
 	}
-
-	return 0, nil
 }
 
 func queryFloat(v1api v1.API, timeout time.Duration, field string, node string, extra string) (float32, error) {

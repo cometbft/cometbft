@@ -99,7 +99,7 @@ services:
     - 9090:9090
     networks:
       {{ .Name }}:
-        ipv4_address: {{ .PrometheusIP }}
+        ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .PrometheusIP }}
 {{printf "\n"}}
 {{- end }}
 

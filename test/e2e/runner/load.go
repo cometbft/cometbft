@@ -157,7 +157,7 @@ func loadProcess(ctx context.Context, txCh <-chan payload.Payload, chSuccess cha
 				}
 			}
 		} else {
-			logger.Info("cannot fetch sync info ", "error", err)
+			logger.Info("non-fatal error fetching sync info", "error", err)
 			continue
 		}
 

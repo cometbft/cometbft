@@ -348,7 +348,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 
 	// compute Prometheus IP (if enabled)
 	if testnet.Prometheus {
-		testnet.PrometheusIP = newIPGenerator(ipNet).Last()
+		if testnet.PrometheusIP, err = newIPGenerator(ipNet).After(len(testnet.Nodes)); err != nil {
+			return nil, err
+		}
 	}
 
 	return testnet, testnet.Validate()
@@ -670,11 +672,18 @@ func (g *ipGenerator) Next() net.IP {
 	return ip
 }
 
-func (g *ipGenerator) Last() net.IP {
+func (g *ipGenerator) After(skip int) (net.IP, error) {
 	ip := g.Next()
-	var ips []net.IP
-	for ip := ip.Mask(g.network.Mask); g.network.Contains(ip); ip = g.Next() {
-		ips = append(ips, ip)
+	i := 0
+	var ret net.IP
+	for ip := ip.Mask(g.network.Mask); g.network.Contains(ip) && i <= skip; ip = g.Next() {
+		ret = ip
+		i++
 	}
-	return ips[len(ips)-2] // non-broadcast address
+
+	if i <= skip {
+		return nil, fmt.Errorf("not enough network addresses")
+	}
+
+	return ret, nil
 }

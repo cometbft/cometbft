@@ -21,7 +21,7 @@ import (
 type Reactor struct {
 	p2p.BaseReactor
 	config  *cfg.MempoolConfig
-	mempool *CListMempool
+	mempool Mempool
 	ids     *mempoolIDs
 
 	// `txSenders` maps every received transaction to the set of peer IDs that
@@ -35,7 +35,7 @@ type Reactor struct {
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
-func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool) *Reactor {
+func NewReactor(config *cfg.MempoolConfig, mempool Mempool) *Reactor {
 	memR := &Reactor{
 		config:    config,
 		mempool:   mempool,
@@ -162,20 +162,22 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			return
 		}
 
-		// Wait until either: a mempool entry is available in the channel, or
-		// the peer was disconnected, or the reactor stopped.
-		select {
-		case <-iter.WaitNext():
-			entry = iter.NextEntry()
-			if entry == nil {
-				// There is no next entry, or the entry we found got removed in the
-				// meantime. Try again.
-				continue
+		if entry == nil {
+			// Wait until either: a mempool entry is available in the channel,
+			// or the peer was disconnected, or the reactor stopped.
+			select {
+			case <-iter.WaitNext():
+				entry = iter.NextEntry()
+				if entry == nil {
+					// There is no next entry, or the entry we found got removed in the
+					// meantime. Try again.
+					continue
+				}
+			case <-peer.Quit():
+				return
+			case <-memR.Quit():
+				return
 			}
-		case <-peer.Quit():
-			return
-		case <-memR.Quit():
-			return
 		}
 
 		// Make sure the peer is up to date.
@@ -214,6 +216,9 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 				continue
 			}
 		}
+
+		// We are done with this entry; set it to nil to fetch the next one.
+		entry = nil
 	}
 }
 
@@ -241,5 +246,7 @@ func (memR *Reactor) removeSenders(txKey types.TxKey) {
 	memR.txSendersMtx.Lock()
 	defer memR.txSendersMtx.Unlock()
 
-	delete(memR.txSenders, txKey)
+	if memR.txSenders != nil {
+		delete(memR.txSenders, txKey)
+	}
 }

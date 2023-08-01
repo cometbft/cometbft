@@ -23,7 +23,7 @@ func NewServer(protoAddr, transport string, app types.Application) (service.Serv
 	case "grpc":
 		s = NewGRPCServer(protoAddr, app)
 	default:
-		err = ErrUnknownServerType{serverType: transport}
+		err = ErrUnknownServerType{ServerType: transport}
 	}
 	return s, err
 }

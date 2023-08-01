@@ -7,25 +7,25 @@ import (
 )
 
 type ErrUnknownServerType struct {
-	serverType string
+	ServerType string
 }
 
 func (e ErrUnknownServerType) Error() string {
-	return fmt.Sprintf("Unknown server type %s", e.serverType)
+	return fmt.Sprintf("Unknown server type %s", e.ServerType)
 }
 
 type ErrConnectionNotExists struct {
-	connID int
+	ConnID int
 }
 
 func (e ErrConnectionNotExists) Error() string {
-	return fmt.Sprintf("Connection %d does not exist", e.connID)
+	return fmt.Sprintf("Connection %d does not exist", e.ConnID)
 }
 
 type ErrUnknownClientRequest struct {
-	req *types.Request
+	Req *types.Request
 }
 
 func (e ErrUnknownClientRequest) Error() string {
-	return fmt.Sprintf("Unknown request from client %T", e.req)
+	return fmt.Sprintf("Unknown request from client %T", e.Req)
 }

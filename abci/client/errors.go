@@ -7,18 +7,18 @@ import (
 )
 
 type ErrUnknownAbciTransport struct {
-	transport string
+	Transport string
 }
 
 func (e ErrUnknownAbciTransport) Error() string {
-	return fmt.Sprintf("Unknown abci transport: %s", e.transport)
+	return fmt.Sprintf("Unknown abci transport: %s", e.Transport)
 }
 
 type ErrUnexpectedResponse struct {
-	response types.Response
-	comment  string
+	Response types.Response
+	Comment  string
 }
 
 func (e ErrUnexpectedResponse) Error() string {
-	return fmt.Sprintf("Unexpected response %T. %s", e.response.Value, e.comment)
+	return fmt.Sprintf("Unexpected response %T. %s", e.Response.Value, e.Comment)
 }

@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	br "github.com/cometbft/cometbft/proto/tendermint/services/block_results/v1"
 	client2 "github.com/cometbft/cometbft/rpc/grpc/client"
 
 	"github.com/stretchr/testify/require"
@@ -150,6 +149,8 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 
 		first := status.SyncInfo.EarliestBlockHeight
 		last := status.SyncInfo.LatestBlockHeight
+		negativeHeight := int64(-1)
+		futureHeight := int64(100000)
 		if node.RetainBlocks > 0 {
 			first++
 		}
@@ -161,22 +162,22 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 
 		successCases := []struct {
 			expectedHeight int64
-			request        br.GetBlockResultsRequest
+			requestHeight  *int64
 		}{
-			{first, br.GetBlockResultsRequest{Height: first}},
-			{last, br.GetBlockResultsRequest{}},
+			{first, &first},
+			{last, nil},
 		}
 		errorCases := []struct {
-			request br.GetBlockResultsRequest
+			requestHeight *int64
 		}{
-			{br.GetBlockResultsRequest{Height: -1}},
-			{br.GetBlockResultsRequest{Height: 10000}},
+			{&negativeHeight},
+			{&futureHeight},
 		}
 
 		for _, tc := range successCases {
-			res, err := gRPCClient.GetBlockResults(ctx, tc.request)
+			res, err := gRPCClient.GetBlockResults(ctx, tc.requestHeight)
 			// First block tests
-			require.NoErrorf(t, err, fmt.Sprintf("Unexpected error for GetBlockResults at expected height: %d", tc.expectedHeight))
+			require.NoError(t, err, fmt.Sprintf("Unexpected error for GetBlockResults at expected height: %d", tc.expectedHeight))
 			require.NotNil(t, res)
 			if tc.expectedHeight == last {
 				require.GreaterOrEqual(t, tc.expectedHeight, res.Height)
@@ -185,7 +186,7 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 			}
 		}
 		for _, tc := range errorCases {
-			_, err = gRPCClient.GetBlockResults(ctx, tc.request)
+			_, err = gRPCClient.GetBlockResults(ctx, tc.requestHeight)
 			require.Error(t, err)
 		}
 	})

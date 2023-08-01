@@ -29,7 +29,7 @@ type serverBuilder struct {
 	listener            net.Listener
 	versionService      pbversionsvc.VersionServiceServer
 	blockService        pbblocksvc.BlockServiceServer
-	blockresultsService brs.BlockResultsServiceServer
+	blockResultsService brs.BlockResultsServiceServer
 	logger              log.Logger
 	grpcOpts            []grpc.ServerOption
 }
@@ -74,7 +74,7 @@ func WithBlockService(store *store.BlockStore, eventBus *types.EventBus, logger 
 
 func WithBlockResultsService(bs *store.BlockStore, ss sm.Store, logger log.Logger) Option {
 	return func(b *serverBuilder) {
-		b.blockresultsService = blockresultservice.New(bs, ss, logger)
+		b.blockResultsService = blockresultservice.New(bs, ss, logger)
 	}
 }
 
@@ -113,8 +113,8 @@ func Serve(listener net.Listener, opts ...Option) error {
 		pbblocksvc.RegisterBlockServiceServer(server, b.blockService)
 		b.logger.Debug("Registered block service")
 	}
-	if b.blockresultsService != nil {
-		brs.RegisterBlockResultsServiceServer(server, b.blockresultsService)
+	if b.blockResultsService != nil {
+		brs.RegisterBlockResultsServiceServer(server, b.blockResultsService)
 		b.logger.Debug("Registered block results service")
 	}
 	b.logger.Info("serve", "msg", fmt.Sprintf("Starting gRPC server on %s", listener.Addr()))

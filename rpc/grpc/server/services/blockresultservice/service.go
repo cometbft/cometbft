@@ -2,7 +2,6 @@ package blockresultservice
 
 import (
 	"context"
-	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -36,7 +35,7 @@ func (s *blockResultsService) GetBlockResults(_ context.Context, req *brs.GetBlo
 	height := req.Height
 	ss, err := s.stateStore.Load()
 	if err != nil {
-		logger.Error(fmt.Sprintf("Error loading store", "err", err))
+		logger.Error("Error loading store", "err", err)
 		return nil, status.Error(codes.Internal, "Internal server error")
 	}
 	if req.Height > ss.LastBlockHeight || req.Height < 0 {

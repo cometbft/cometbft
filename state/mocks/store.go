@@ -3,8 +3,9 @@
 package mocks
 
 import (
-	abcitypes "github.com/cometbft/cometbft/abci/types"
 	mock "github.com/stretchr/testify/mock"
+
+	abcitypes "github.com/cometbft/cometbft/abci/types"
 
 	state "github.com/cometbft/cometbft/state"
 

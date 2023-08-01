@@ -126,7 +126,7 @@ func (p *Pruner) SetCompanionRetainHeight(height int64) error {
 		}
 	}
 	currentAppRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
-	var noAppRetainHeight bool
+	noAppRetainHeight := false
 	if err != nil {
 		if err == ErrKeyNotFound {
 			noAppRetainHeight = true
@@ -191,7 +191,7 @@ func (p *Pruner) pruneBlocksToRetainHeight(lastHeightPruned int64) int64 {
 		}
 		// The last height up until which we pruned is the current lowest point of the block store
 		// indicated by Base()
-		lastHeightPruned = p.bs.Base()
+		lastHeightPruned = p.bs.Base() - 1
 	}
 	return lastHeightPruned
 }

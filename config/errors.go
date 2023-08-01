@@ -1,13 +1,7 @@
 package config
 
 import (
-	"errors"
 	"fmt"
-)
-
-var (
-	ErrMaxOpenConnectionsNegative = errors.New("max_open_connections can't be negative")
-	ErrMaxSubscriptionClients     = errors.New("max_subscription_clients can't be negative")
 )
 
 // ErrInSection is returned if validate basic does not pass for any underlying config service.

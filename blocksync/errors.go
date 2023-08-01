@@ -45,5 +45,5 @@ type ErrReactorValidation struct {
 }
 
 func (e ErrReactorValidation) Error() string {
-	return fmt.Sprintf("Reactor validation error %v", e.Err)
+	return fmt.Sprintf("reactor validation error: %v", e.Err)
 }

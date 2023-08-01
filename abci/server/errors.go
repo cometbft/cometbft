@@ -22,22 +22,6 @@ func (e ErrConnectionNotExists) Error() string {
 	return fmt.Sprintf("Connection %d does not exist", e.connID)
 }
 
-type ErrReadingMessage struct {
-	err error
-}
-
-func (e ErrReadingMessage) Error() string {
-	return fmt.Sprintf("Error reading message %e", e.err)
-}
-
-type ErrWritingMessage struct {
-	err error
-}
-
-func (e ErrWritingMessage) Error() string {
-	return fmt.Sprintf("Error writing message %s", e.err.Error())
-}
-
 type ErrUnknownClientResponse struct {
 	req *types.Request
 }

@@ -190,7 +190,7 @@ func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, resp
 			if err == io.EOF {
 				closeConn <- err
 			} else {
-				closeConn <- ErrReadingMessage{err: err}
+				closeConn <- types.ErrReadingMessage{Err: err}
 			}
 			return
 		}
@@ -313,7 +313,7 @@ func (s *SocketServer) handleResponses(closeConn chan error, conn io.Writer, res
 		var res = <-responses
 		err := types.WriteMessage(res, bufWriter)
 		if err != nil {
-			closeConn <- ErrWritingMessage{err: err}
+			closeConn <- types.ErrWritingMessage{Err: err}
 			return
 		}
 		if _, ok := res.Value.(*types.Response_Flush); ok {

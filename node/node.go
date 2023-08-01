@@ -240,6 +240,13 @@ func NewNode(ctx context.Context,
 		return nil, err
 	}
 
+	// Set the initial application retain height to 0 to avoid the data companion pruning blocks
+	// before the application indicates it is ok
+	err = stateStore.SaveApplicationRetainHeight(0)
+	if err != nil {
+		return nil, err
+	}
+
 	err = initCompanionBlockRetainHeight(
 		stateStore,
 		config.Storage.Pruning.DataCompanion.Enabled,

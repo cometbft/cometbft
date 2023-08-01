@@ -7,6 +7,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	pbpruningsvc "github.com/cometbft/cometbft/proto/tendermint/services/pruning/v1"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/pruningservice"
+	sm "github.com/cometbft/cometbft/state"
 	"google.golang.org/grpc"
 )
 
@@ -30,9 +31,9 @@ func newServerBuilder(listener net.Listener) *serverBuilder {
 }
 
 // WithVersionService enables the version service on the CometBFT server.
-func WithPruningService() Option {
+func WithPruningService(pruner *sm.Pruner) Option {
 	return func(b *serverBuilder) {
-		b.pruningService = pruningservice.New()
+		b.pruningService = pruningservice.New(pruner)
 	}
 }
 

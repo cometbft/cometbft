@@ -682,7 +682,7 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 			grpcprivserver.WithLogger(n.Logger),
 		}
 		if n.config.GRPC.Privileged.PruningService.Enabled {
-			opts = append(opts, grpcprivserver.WithPruningService())
+			opts = append(opts, grpcprivserver.WithPruningService(n.pruner))
 		}
 		go func() {
 			if err := grpcprivserver.Serve(listener, opts...); err != nil {

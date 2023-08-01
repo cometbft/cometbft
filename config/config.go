@@ -819,17 +819,17 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 		}
 
 		if len(cfg.RPCServers) < 2 {
-			return errors.New("at least two rpc_servers entries is required")
+			return ErrNotEnoughRpcServers
 		}
 
 		for _, server := range cfg.RPCServers {
 			if len(server) == 0 {
-				return errors.New("found empty rpc_servers entry")
+				return ErrEmptyRpcServerEntry
 			}
 		}
 
 		if cfg.DiscoveryTime != 0 && cfg.DiscoveryTime < 5*time.Second {
-			return errors.New("discovery time must be 0s or greater than five seconds")
+			return ErrInsufficientDiscoveryTime
 		}
 
 		if cfg.TrustPeriod <= 0 {
@@ -850,7 +850,7 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 		}
 
 		if cfg.ChunkRequestTimeout < 5*time.Second {
-			return errors.New("chunk_request_timeout must be at least 5 seconds")
+			return ErrInsufficientChunkRequestTimeout
 		}
 
 		if cfg.ChunkFetchers <= 0 {

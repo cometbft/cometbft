@@ -189,7 +189,9 @@ func (p *Pruner) pruneBlocksToRetainHeight(lastHeightPruned int64) int64 {
 		} else if pruned > 0 {
 			p.logger.Info("Pruned blocks", "count", pruned, "evidenceRetainHeight", evRetainHeight)
 		}
-		lastHeightPruned = retainHeight
+		// The last height up until which we pruned is the current lowest point of the block store
+		// indicated by Base()
+		lastHeightPruned = p.bs.Base()
 	}
 	return lastHeightPruned
 }
@@ -204,11 +206,16 @@ func (p *Pruner) pruneABCIResToRetainHeight(lastABCIResPrunedHeight int64) int64
 		}
 		p.logger.Error("Failed to get ABCI result retain height", "err", err)
 	} else if lastABCIResPrunedHeight != abciResRetainHeight {
-		prunedHeight, err := p.stateStore.PruneABCIResponses(abciResRetainHeight)
+		// lastPrunedHeight is the last height up until which we pruned successfully
+		// In case of an error it will be 0, but then it will also be ignored.
+		numPruned, lastPrunedHeight, err := p.stateStore.PruneABCIResponses(abciResRetainHeight)
 		if err != nil {
 			p.logger.Error("Failed to prune ABCI responses", "err", err, "abciResRetainHeight", abciResRetainHeight)
+		} else {
+			p.logger.Info("Pruned ABCI responses", "height", numPruned)
+			lastABCIResPrunedHeight = lastPrunedHeight
 		}
-		p.logger.Info("Pruned ABCI responses", "height", prunedHeight)
+
 	}
 	return lastABCIResPrunedHeight
 }

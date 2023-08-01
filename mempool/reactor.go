@@ -28,7 +28,7 @@ type Reactor struct {
 	// have sent the transaction to this node. Sender IDs are used during
 	// transaction propagation to avoid sending a transaction to a peer that
 	// already has it.
-	txSenders    map[types.TxKey]map[p2p.ID]struct{}
+	txSenders    map[types.TxKey]map[p2p.ID]bool
 	txSendersMtx cmtsync.Mutex
 }
 
@@ -37,7 +37,7 @@ func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool) *Reactor {
 	memR := &Reactor{
 		config:    config,
 		mempool:   mempool,
-		txSenders: make(map[types.TxKey]map[p2p.ID]struct{}),
+		txSenders: make(map[types.TxKey]map[p2p.ID]bool),
 	}
 	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
 	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
@@ -224,7 +224,7 @@ func (memR *Reactor) isSender(txKey types.TxKey, peerID p2p.ID) bool {
 	defer memR.txSendersMtx.Unlock()
 
 	sendersSet, ok := memR.txSenders[txKey]
-	return ok && sendersSet[peerID] == struct{}{}
+	return ok && sendersSet[peerID]
 }
 
 func (memR *Reactor) addSender(txKey types.TxKey, senderID p2p.ID) bool {
@@ -232,10 +232,10 @@ func (memR *Reactor) addSender(txKey types.TxKey, senderID p2p.ID) bool {
 	defer memR.txSendersMtx.Unlock()
 
 	if sendersSet, ok := memR.txSenders[txKey]; ok {
-		sendersSet[senderID] = struct{}{}
+		sendersSet[senderID] = true
 		return false
 	}
-	memR.txSenders[txKey] = map[p2p.ID]struct{}{senderID: {}}
+	memR.txSenders[txKey] = map[p2p.ID]bool{senderID: true}
 	return true
 }
 

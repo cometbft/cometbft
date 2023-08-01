@@ -157,10 +157,8 @@ func (app *Application) Info(context.Context, *abci.RequestInfo) (*abci.Response
 // Info implements ABCI.
 func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
 
-	var err error
-
 	r := &abci.Request{Value: &abci.Request_InitChain{InitChain: &abci.RequestInitChain{}}}
-	err = app.logABCIRequest(r)
+	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
 	}

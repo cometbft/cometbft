@@ -19,7 +19,7 @@ type ErrInvalidHeight struct {
 }
 
 func (e ErrInvalidHeight) Error() string {
-	return fmt.Sprintf("Invalid height %v. %s", e.Height, e.Reason)
+	return fmt.Sprintf("invalid height %v: %s", e.Height, e.Reason)
 }
 
 // ErrInvalidBase is returned when peer informs of a status with invalid base

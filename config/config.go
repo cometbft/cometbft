@@ -129,25 +129,25 @@ func (cfg *Config) ValidateBasic() error {
 		return err
 	}
 	if err := cfg.RPC.ValidateBasic(); err != nil {
-		return fmt.Errorf("error in [rpc] section: %w", err)
+		return ErrInSection{Section: "rpc", Err: err}
 	}
 	if err := cfg.P2P.ValidateBasic(); err != nil {
-		return fmt.Errorf("error in [p2p] section: %w", err)
+		return ErrInSection{Section: "p2p", Err: err}
 	}
 	if err := cfg.Mempool.ValidateBasic(); err != nil {
-		return fmt.Errorf("error in [mempool] section: %w", err)
+		return ErrInSection{Section: "mempool", Err: err}
 	}
 	if err := cfg.StateSync.ValidateBasic(); err != nil {
-		return fmt.Errorf("error in [statesync] section: %w", err)
+		return ErrInSection{Section: "statesync", Err: err}
 	}
 	if err := cfg.BlockSync.ValidateBasic(); err != nil {
-		return fmt.Errorf("error in [blocksync] section: %w", err)
+		return ErrInSection{Section: "blocksync", Err: err}
 	}
 	if err := cfg.Consensus.ValidateBasic(); err != nil {
-		return fmt.Errorf("error in [consensus] section: %w", err)
+		return ErrInSection{Section: "consensus", Err: err}
 	}
 	if err := cfg.Instrumentation.ValidateBasic(); err != nil {
-		return fmt.Errorf("error in [instrumentation] section: %w", err)
+		return ErrInSection{Section: "instrumentation", Err: err}
 	}
 	return nil
 }

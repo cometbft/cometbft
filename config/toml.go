@@ -296,6 +296,10 @@ laddr = "{{ .GRPC.ListenAddress }}"
 [grpc.version_service]
 enabled = {{ .GRPC.VersionService.Enabled }}
 
+# The gRPC block service returns block information
+[grpc.block_service]
+enabled = {{ .GRPC.BlockService.Enabled }}
+
 #######################################################
 ###           P2P Configuration Options             ###
 #######################################################

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	v1 "github.com/cometbft/cometbft/proto/tendermint/services/block_results/v1"
+	br "github.com/cometbft/cometbft/proto/tendermint/services/block_results/v1"
 	client2 "github.com/cometbft/cometbft/rpc/grpc/client"
 
 	"github.com/stretchr/testify/require"
@@ -161,16 +161,16 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 
 		successCases := []struct {
 			expectedHeight int64
-			request        v1.GetBlockResultsRequest
+			request        br.GetBlockResultsRequest
 		}{
-			{first, v1.GetBlockResultsRequest{Height: first}},
-			{last, v1.GetBlockResultsRequest{}},
+			{first, br.GetBlockResultsRequest{Height: first}},
+			{last, br.GetBlockResultsRequest{}},
 		}
 		errorCases := []struct {
-			request v1.GetBlockResultsRequest
+			request br.GetBlockResultsRequest
 		}{
-			{v1.GetBlockResultsRequest{Height: -1}},
-			{v1.GetBlockResultsRequest{Height: 10000}},
+			{br.GetBlockResultsRequest{Height: -1}},
+			{br.GetBlockResultsRequest{Height: 10000}},
 		}
 
 		for _, tc := range successCases {
@@ -179,7 +179,7 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 			require.NoErrorf(t, err, fmt.Sprintf("Unexpected error for GetBlockResults at expected height: %d", tc.expectedHeight))
 			require.NotNil(t, res)
 			if tc.expectedHeight == last {
-				require.GreaterOrEqual(t, res.Height, tc.expectedHeight)
+				require.GreaterOrEqual(t, tc.expectedHeight, res.Height)
 			} else {
 				require.Equal(t, res.Height, tc.expectedHeight)
 			}

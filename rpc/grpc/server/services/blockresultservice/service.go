@@ -2,6 +2,7 @@ package blockresultservice
 
 import (
 	"context"
+	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -33,12 +34,16 @@ func New(bs *store.BlockStore, ss sm.Store, logger log.Logger) brs.BlockResultsS
 func (s *blockResultsService) GetBlockResults(_ context.Context, req *brs.GetBlockResultsRequest) (*brs.GetBlockResultsResponse, error) {
 	logger := s.logger.With("endpoint", "GetBlockResults")
 	height := req.Height
-	latestHeight := s.blockStore.Height()
-	if req.Height > latestHeight || req.Height < 0 {
+	ss, err := s.stateStore.Load()
+	if err != nil {
+		logger.Error(fmt.Sprintf("Error loading store", "err", err))
+		return nil, status.Error(codes.Internal, "Internal server error")
+	}
+	if req.Height > ss.LastBlockHeight || req.Height < 0 {
 		logger.Error("Error validating GetBlockResults request height")
-		return nil, status.Errorf(codes.InvalidArgument, "Height must be between 0 and the last effective height (%d)", latestHeight)
+		return nil, status.Errorf(codes.InvalidArgument, "Height must be between 0 and the last effective height (%d)", ss.LastBlockHeight)
 	} else if req.Height == 0 {
-		height = latestHeight
+		height = ss.LastBlockHeight
 	}
 
 	res, err := s.stateStore.LoadFinalizeBlockResponse(height)

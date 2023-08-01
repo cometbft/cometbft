@@ -23,15 +23,12 @@ type Reactor struct {
 	p2p.BaseReactor
 	config  *cfg.MempoolConfig
 	mempool *CListMempool
-	ids     *mempoolIDs
 
 	// `txSenders` maps every received transaction to the set of peer IDs that
 	// have sent the transaction to this node. Sender IDs are used during
 	// transaction propagation to avoid sending a transaction to a peer that
-	// already has it. A sender ID is the internal peer ID used in the mempool
-	// to identify the sender, storing two bytes with each transaction instead
-	// of 20 bytes for the types.NodeID.
-	txSenders    map[types.TxKey]map[uint16]bool
+	// already has it.
+	txSenders    map[types.TxKey]map[p2p.ID]bool
 	txSendersMtx cmtsync.Mutex
 }
 
@@ -40,8 +37,7 @@ func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool) *Reactor {
 	memR := &Reactor{
 		config:    config,
 		mempool:   mempool,
-		ids:       newMempoolIDs(),
-		txSenders: make(map[types.TxKey]map[uint16]bool),
+		txSenders: make(map[types.TxKey]map[p2p.ID]bool),
 	}
 	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
 	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
@@ -50,7 +46,6 @@ func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool) *Reactor {
 
 // InitPeer implements Reactor by creating a state for the peer.
 func (memR *Reactor) InitPeer(peer p2p.Peer) p2p.Peer {
-	memR.ids.ReserveForPeer(peer)
 	return peer
 }
 
@@ -99,7 +94,6 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 
 // RemovePeer implements Reactor.
 func (memR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
-	memR.ids.Reclaim(peer)
 	// broadcast routine checks if peer is gone and returns
 }
 
@@ -131,7 +125,7 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 				// removed from mempool but not the cache.
 				reqRes.SetCallback(func(res *abci.Response) {
 					if res.GetCheckTx().Code == abci.CodeTypeOK {
-						memR.addSender(tx.Key(), memR.ids.GetForPeer(e.Src))
+						memR.addSender(tx.Key(), e.Src.ID())
 					}
 				})
 			}
@@ -152,7 +146,6 @@ type PeerState interface {
 
 // Send new mempool txs to peer.
 func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
-	peerID := memR.ids.GetForPeer(peer)
 	var next *clist.CElement
 
 	for {
@@ -203,7 +196,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// NOTE: Transaction batching was disabled due to
 		// https://github.com/tendermint/tendermint/issues/5796
 
-		if !memR.isSender(memTx.tx.Key(), peerID) {
+		if !memR.isSender(memTx.tx.Key(), peer.ID()) {
 			success := peer.Send(p2p.Envelope{
 				ChannelID: MempoolChannel,
 				Message:   &protomem.Txs{Txs: [][]byte{memTx.tx}},
@@ -226,7 +219,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 	}
 }
 
-func (memR *Reactor) isSender(txKey types.TxKey, peerID uint16) bool {
+func (memR *Reactor) isSender(txKey types.TxKey, peerID p2p.ID) bool {
 	memR.txSendersMtx.Lock()
 	defer memR.txSendersMtx.Unlock()
 
@@ -234,7 +227,7 @@ func (memR *Reactor) isSender(txKey types.TxKey, peerID uint16) bool {
 	return ok && sendersSet[peerID]
 }
 
-func (memR *Reactor) addSender(txKey types.TxKey, senderID uint16) bool {
+func (memR *Reactor) addSender(txKey types.TxKey, senderID p2p.ID) bool {
 	memR.txSendersMtx.Lock()
 	defer memR.txSendersMtx.Unlock()
 
@@ -242,7 +235,7 @@ func (memR *Reactor) addSender(txKey types.TxKey, senderID uint16) bool {
 		sendersSet[senderID] = true
 		return false
 	}
-	memR.txSenders[txKey] = map[uint16]bool{senderID: true}
+	memR.txSenders[txKey] = map[p2p.ID]bool{senderID: true}
 	return true
 }
 

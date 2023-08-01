@@ -1,11 +1,9 @@
-package gossip
+package randomSkip
 
 import (
 	"errors"
+	"math/rand"
 	"time"
-
-	"github.com/cometbft/cometbft/libs/rand"
-	nm "github.com/cometbft/cometbft/node"
 
 	"fmt"
 
@@ -13,48 +11,45 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	mempool "github.com/cometbft/cometbft/mempool"
+	"github.com/cometbft/cometbft/mempool"
+	nm "github.com/cometbft/cometbft/node"
 	"github.com/cometbft/cometbft/p2p"
 	protomem "github.com/cometbft/cometbft/proto/tendermint/mempool"
 	"github.com/cometbft/cometbft/types"
 )
 
-// This is similar to mempool/reactor.go with two additional hooks to change how transactions are disseminated.
-// The first hook (sendOnce) if set send a transaction only once to a peer. The second one (propagationRate)
-// permits to omit some message. To behave line the vanilla version, one should not mock consensus, and set
-// sendOnce=true and propagationRatio=100.
+const (
+	skipTxsPercentage = 50
+)
 
 // Reactor handles mempool tx broadcasting amongst peers.
 // It maintains a map from peer ID to counter, to prevent gossiping txs to the
 // peers you received it from.
 type Reactor struct {
 	p2p.BaseReactor
-	config          *cfg.MempoolConfig
-	mempool         mempool.Mempool
-	txSenders       map[types.TxKey]map[p2p.ID]bool
-	txSendersMtx    cmtsync.RWMutex
-	propagationRate float32
-	sendOnce        bool
+	config  *cfg.MempoolConfig
+	mempool mempool.Mempool
+
+	// `txSenders` maps every received transaction to the set of peer IDs that
+	// have sent the transaction to this node. Sender IDs are used during
+	// transaction propagation to avoid sending a transaction to a peer that
+	// already has it.
+	txSenders    map[types.TxKey]map[p2p.ID]bool
+	txSendersMtx cmtsync.Mutex
+
 	consensusMocked bool
-	metrics         *Metrics
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
-// The mempool's channel TxsAvailable will be initialized only when notifyAvailable is true.
-func NewReactor(config *cfg.MempoolConfig, node *nm.Node, ConsensusMocked bool, rate float32, sendOnce bool) *Reactor {
+func NewReactor(config *cfg.MempoolConfig, node *nm.Node, ConsensusMocked bool, _ float32, _ bool) *Reactor {
 	memR := &Reactor{
 		config:          config,
 		mempool:         node.Mempool(),
 		txSenders:       make(map[types.TxKey]map[p2p.ID]bool),
-		propagationRate: rate,
-		sendOnce:        sendOnce,
 		consensusMocked: ConsensusMocked,
-		metrics:         PrometheusMetrics(node.Config().Instrumentation.Namespace, "chain_id", node.GenesisDoc().ChainID),
 	}
-
 	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
 	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
-	fmt.Println("starting with ", "propagation rate ", memR.propagationRate, "send once", memR.sendOnce)
 	return memR
 }
 
@@ -69,6 +64,7 @@ func (memR *Reactor) OnStart() error {
 	if !memR.config.Broadcast {
 		memR.Logger.Info("Tx broadcasting is disabled")
 	}
+
 	return nil
 }
 
@@ -206,20 +202,17 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 				time.Sleep(mempool.PeerCatchupSleepIntervalMS * time.Millisecond)
 				continue
 			}
-			if memR.sendOnce {
-				memR.addSender(entry.GetTxKey(), peer.ID())
-			}
-
-			memR.metrics.SentTxs.Add(1)
-
+			// if memR.sendOnce {
+			// 	memR.addSender(entry.GetTxKey(), peerID)
+			// }
 		}
 	}
 }
 
 func (memR *Reactor) shouldSendTo(txKey types.TxKey, peerID p2p.ID) bool {
 	peerIsSender := memR.isSender(txKey, peerID)
-	prepagate := float32(rand.Intn(101)) <= memR.propagationRate
-	return !peerIsSender && prepagate
+	randomlySkipTx := rand.Intn(100) <= skipTxsPercentage
+	return !peerIsSender && randomlySkipTx
 }
 
 func (memR *Reactor) isSender(txKey types.TxKey, peerID p2p.ID) bool {
@@ -246,5 +239,7 @@ func (memR *Reactor) removeSenders(txKey types.TxKey) {
 	memR.txSendersMtx.Lock()
 	defer memR.txSendersMtx.Unlock()
 
-	delete(memR.txSenders, txKey)
+	if memR.txSenders != nil {
+		delete(memR.txSenders, txKey)
+	}
 }

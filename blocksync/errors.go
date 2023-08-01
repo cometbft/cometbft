@@ -47,3 +47,7 @@ type ErrReactorValidation struct {
 func (e ErrReactorValidation) Error() string {
 	return fmt.Sprintf("reactor validation error: %v", e.Err)
 }
+
+func (e ErrReactorValidation) Unwrap() error {
+	return e.Err
+}

@@ -822,12 +822,12 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 		}
 
 		if len(cfg.RPCServers) < 2 {
-			return ErrNotEnoughRpcServers
+			return ErrNotEnoughRPCServers
 		}
 
 		for _, server := range cfg.RPCServers {
 			if len(server) == 0 {
-				return ErrEmptyRpcServerEntry
+				return ErrEmptyRPCServerEntry
 			}
 		}
 

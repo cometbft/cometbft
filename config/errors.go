@@ -7,10 +7,10 @@ import (
 
 var (
 	// ErrNotEnoughRpcServers is returned if the number of rpc servers is less than two
-	ErrNotEnoughRpcServers = errors.New("at least two rpc_servers entries is required")
+	ErrNotEnoughRPCServers = errors.New("at least two rpc_servers entries is required")
 
 	// ErrEmptyRpcServerEntry is returned when an empty string corresponding to RPC entry is found during validate basic
-	ErrEmptyRpcServerEntry = errors.New("found empty rpc_servers entry")
+	ErrEmptyRPCServerEntry = errors.New("found empty rpc_servers entry")
 
 	// ErrInsufficientDiscoveryTime is returned when snapshot discovery time is less than 5 seconds
 	ErrInsufficientDiscoveryTime = errors.New("discovery time must be at least five seconds")

@@ -41,6 +41,10 @@ const (
 
 	DefaultNodeKeyName  = "node_key.json"
 	DefaultAddrBookName = "addrbook.json"
+
+	v0 = "v0"
+	v1 = "v1"
+	v2 = "v2"
 )
 
 // NOTE: Most of the structs & relevant comments + the
@@ -63,6 +67,8 @@ var (
 
 	// taken from https://semver.org/
 	semverRegexp = regexp.MustCompile(`^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`)
+
+	AllowedBlockSyncConfigVersions = []string{v0}
 )
 
 // Config defines the top level configuration for a CometBFT node
@@ -452,10 +458,7 @@ func (cfg *RPCConfig) ValidateBasic() error {
 		return cmterrors.ErrNegativeField{Field: "max_subscriptions_per_client"}
 	}
 	if cfg.SubscriptionBufferSize < minSubscriptionBufferSize {
-		return fmt.Errorf(
-			"experimental_subscription_buffer_size must be >= %d",
-			minSubscriptionBufferSize,
-		)
+		return ErrSubscriptionBufferSizeInvalid
 	}
 	if cfg.WebSocketWriteBufferSize < cfg.SubscriptionBufferSize {
 		return fmt.Errorf(
@@ -884,12 +887,12 @@ func TestBlockSyncConfig() *BlockSyncConfig {
 // ValidateBasic performs basic validation.
 func (cfg *BlockSyncConfig) ValidateBasic() error {
 	switch cfg.Version {
-	case "v0":
+	case v0:
 		return nil
-	case "v1", "v2":
-		return fmt.Errorf("blocksync version %s has been deprecated. Please use v0 instead", cfg.Version)
+	case v1, v2:
+		return ErrDeprecatedBlocksyncVersion{Version: cfg.Version, Allowed: AllowedBlockSyncConfigVersions}
 	default:
-		return fmt.Errorf("unknown blocksync version %s", cfg.Version)
+		return ErrUnknownBlocksyncVersion{cfg.Version}
 	}
 }
 

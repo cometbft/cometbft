@@ -17,6 +17,8 @@ var (
 
 	// ErrInsufficientChunkRequestTimeout is returned when timeout for re-requesting a chunk is less than 5 seconds
 	ErrInsufficientChunkRequestTimeout = errors.New("chunk_request_timeout must be at least 5 seconds")
+
+	ErrSubscriptionBufferSizeInvalid = fmt.Errorf("experimental_subscription_buffer_size must be >= %d", minSubscriptionBufferSize)
 )
 
 // ErrInSection is returned if validate basic does not pass for any underlying config service.
@@ -31,4 +33,21 @@ func (e ErrInSection) Error() string {
 
 func (e ErrInSection) Unwrap() error {
 	return e.Err
+}
+
+type ErrDeprecatedBlocksyncVersion struct {
+	Version string
+	Allowed []string
+}
+
+func (e ErrDeprecatedBlocksyncVersion) Error() string {
+	return fmt.Sprintf("blocksync version %s has been deprecated. Please use %s instead", e.Version, e.Allowed)
+}
+
+type ErrUnknownBlocksyncVersion struct {
+	Version string
+}
+
+func (e ErrUnknownBlocksyncVersion) Error() string {
+	return fmt.Sprintf("unknown blocksync version %s", e.Version)
 }

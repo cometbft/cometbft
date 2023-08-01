@@ -44,11 +44,6 @@ func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool) *Reactor {
 	return memR
 }
 
-// InitPeer implements Reactor by creating a state for the peer.
-func (memR *Reactor) InitPeer(peer p2p.Peer) p2p.Peer {
-	return peer
-}
-
 // SetLogger sets the Logger on the reactor and the underlying mempool.
 func (memR *Reactor) SetLogger(l log.Logger) {
 	memR.Logger = l
@@ -90,11 +85,6 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 	if memR.config.Broadcast {
 		go memR.broadcastTxRoutine(peer)
 	}
-}
-
-// RemovePeer implements Reactor.
-func (memR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
-	// broadcast routine checks if peer is gone and returns
 }
 
 // Receive implements Reactor.

@@ -37,10 +37,10 @@ type ABCIResponsesPrunedInfo struct {
 // NoopPrunerObserver does nothing.
 type NoopPrunerObserver struct{}
 
-var _ PrunerObserver = (*NoopPrunerObserver)(nil)
+var _ PrunerObserver = NoopPrunerObserver{}
 
 // PrunerPruned implements PrunerObserver.
-func (*NoopPrunerObserver) PrunerPruned(*PrunedInfo) {}
+func (NoopPrunerObserver) PrunerPruned(*PrunedInfo) {}
 
 // PrunerStarted implements PrunerObserver.
-func (*NoopPrunerObserver) PrunerStarted(time.Duration) {}
+func (NoopPrunerObserver) PrunerStarted(time.Duration) {}

@@ -399,14 +399,13 @@ func TestABCIResPruningStandalone(t *testing.T) {
 }
 
 type prunerObserver struct {
-	*sm.NoopPrunerObserver
+	sm.NoopPrunerObserver
 	prunedInfoCh chan *sm.PrunedInfo
 }
 
 func newPrunerObserver(infoChCap int) *prunerObserver {
 	return &prunerObserver{
-		NoopPrunerObserver: &sm.NoopPrunerObserver{},
-		prunedInfoCh:       make(chan *sm.PrunedInfo, infoChCap),
+		prunedInfoCh: make(chan *sm.PrunedInfo, infoChCap),
 	}
 }
 

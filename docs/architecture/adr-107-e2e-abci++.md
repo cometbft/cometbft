@@ -94,8 +94,7 @@ The idea here was to find a library that automatically verifies whether a specif
 **Implementation**
 
 We found the following library - https://github.com/goccmack/gogll. It generates a GLL or LR(1) parser and an FSA-based lexer for any context-free grammar. What we needed to do is to rewrite ABCI++ grammar ([CometBFT's expected behaviour](../../spec/abci/abci%2B%2B_comet_expected_behavior.md#valid-method-call-sequences))
-using the syntax that the library understands. We should emphasise here that both grammars, the original and the new one, represent the expected behaviour
-from the perspective of one node. This is why, later, when we verify if the specific execution respects the grammar, we need to check the logs of each node separately. 
+using the syntax that the library understands. 
 The new grammar is below and can be found inside `test/e2e/pkg/grammar/abci_grammar.md` file.
 
 ```abnf
@@ -130,6 +129,8 @@ PrepareProposal : "prepare_proposal" ;
 ProcessProposal : "process_proposal" ;
  
  ```
+*Important note:* Both grammars, the original and the new one, represent the expected behaviour
+from the perspective of one node from the fresh beginning (`CleanStart`) or after the crash (`Recovery`). This is why, later, when we verify if the specific execution respects the grammar, we need to check each node's logs separately and distinguish the fresh start from recovery. 
 
 If you compare this grammar with the original one, you will notice that, in addition to vote extensions,  
 `Info` is removed. The reason is that, as explained in the section [CometBFT's expected behaviour](../../spec/abci/abci%2B%2B_comet_expected_behavior.md#valid-method-call-sequences), one of the 
@@ -142,14 +143,15 @@ it totally from the new grammar. The Application is still logging the `Info`
 call, but a specific test would need to be written to check whether it happens
 in the right moment. 
 
-The `gogll` library receives the file with the grammar as input, and it generates the corresponding parser and lexer. Specifically, we need to run 
-`gogll pkg/grammar/abci_grammar.md` from `test/e2e/` directory.
+The `gogll` library receives the file with the grammar as input, and it generates the corresponding parser and lexer. The actual command is integrated into `test/e2e/Makefile` and is executed when `make grammar` is invoked. 
 The resulting code is inside the following directories: 
 - `test/e2e/pkg/grammar/lexer`,
 - `test/e2e/pkg/grammar/parser`,
 - `test/e2e/pkg/grammar/sppf`,
 - `test/e2e/pkg/grammar/token`.
 
+
+DO OVDE SAM STIGAO
 Apart from this auto-generated code, we implemented `GrammarChecker` abstraction
 which knows how to use the generated parser and lexer to verify whether a
 specific execution (list of ABCI++ calls logged by the Application while the
@@ -162,33 +164,48 @@ implemented in `test/e2e/tests/abci_test.go` file.
 
 ```go
 func TestABCIGrammar(t *testing.T) {
-	m := fetchABCIRequestsByNodeName(t)
 	checker := grammar.NewGrammarChecker(grammar.DefaultConfig())
 	testNode(t, func(t *testing.T, node e2e.Node) {
 		if !node.Testnet.ABCITestsEnabled {
 			return
 		}
-		reqs := m[node.Name]
-		_, err := checker.Verify(reqs)
+		reqs, err := fetchABCIRequests(t, node.Name)
 		if err != nil {
-			t.Error(fmt.Errorf("ABCI grammar verification failed: %w", err))
+			t.Error(fmt.Errorf("Collecting of ABCI requests failed: %w", err))
+		}
+		for i, r := range reqs {
+			_, err := checker.Verify(r, i == 0)
+			if err != nil {
+				t.Error(fmt.Errorf("ABCI grammar verification failed: %w", err))
+			}
 		}
 	})
 }
 ```
 
-Specifically, the test first fetches all ABCI++ requests and creates a `GrammarChecker` object. Then for each
-node in the testnet, it checks if a specific set of requests, logged by this node, respects the ABCI++ 
-grammar by calling `checker.Verify(reqs)` method. If this method returns an error, the specific execution does not respect the grammar. Again, we do
-this for each node individually because the grammar describes the correct behaviour from the perspective of one node, and this is what the `checker.Verify(reqs)` inspects. The execution is verified only if `ABCITestsEnabled` is set to `true`. In other words, only if ABCI tests are enabled and this is done through the manifest file. Namely, if we want to test whether CometBFT respects ABCI grammar, we would need to enable these test by adding `abci_tests_enabled = true` in the manifest file of a particular testnet (e.g. `networks/ci.toml`).
+Specifically, the test first creates a `GrammarChecker` object. Then for each node in the testnet, it collects all requests logged by this node. Remember here that `fetchABCIRequests()` returns an array of slices(`[]*abci.Request`) where the slice with index 0 corresponds to the `CleanStart` execution, and each additional slice corresponds to the `Recovery` execution after a specific crash. Each node must have one `CleanStart` execution and the same number of `Recovery` executions as the number of crashes that happened on this node. If collecting was successful, the test checks whether each execution respects the ABCI++ 
+grammar by calling `checker.Verify(r, i == 0)` method. The second parameter, `i == 0`, indicates whether the set of requests `r` represents a `CleanStart` or a `Recovery` execution. If `Verify` returns an error, the specific execution does not respect the grammar, and the test will fail. 
+
+The tests are executed only if `ABCITestsEnabled` is set to `true`. This is done through the manifest file. Namely, if we want to test whether CometBFT respects ABCI grammar, we would need to enable these tests by adding `abci_tests_enabled = true` in the manifest file of a particular testnet (e.g. `networks/ci.toml`). This will automatically activate logging on the application side. 
 
 The `Verify()` method is shown below. 
 ```go
-func (g *GrammarChecker) Verify(reqs []*abci.Request) (bool, error) {
-	var r []*abci.Request
-	r, _ = g.filterLastHeight(reqs)
-	s := g.GetExecutionString(r)
-	return g.VerifyExecution(s)
+func (g *GrammarChecker) Verify(reqs []*abci.Request, isCleanStart bool) (bool, error) {
+	r := g.filterRequests(reqs)
+	// This should not happen in our tests.
+	if len(reqs) == 0 {
+		return false, fmt.Errorf("Execution with no ABCI calls.")
+	}
+	execution := g.getExecutionString(r)
+	_, err := g.verifySpecific(r, isCleanStart)
+	if err != nil {
+		return false, fmt.Errorf("%v\nExecution:\n%v", err, g.addHeightNumbersToTheExecution(execution))
+	}
+	_, errs := g.verifyGeneric(execution)
+	if errs != nil {
+		return false, fmt.Errorf("%v\nExecution:\n%v", g.combineErrors(errs, g.cfg.NumberOfErrorsToShow), g.addHeightNumbersToTheExecution(execution))
+	}
+	return true, nil
 }
 ```
 

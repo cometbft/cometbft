@@ -19,6 +19,9 @@ var (
 	ErrInsufficientChunkRequestTimeout = errors.New("chunk_request_timeout must be at least 5 seconds")
 
 	ErrSubscriptionBufferSizeInvalid = fmt.Errorf("experimental_subscription_buffer_size must be >= %d", minSubscriptionBufferSize)
+
+	// ErrUnknownLogFormat is returned if provided log_format is invalid during validate basic
+	ErrUnknownLogFormat = errors.New("unknown log_format (must be 'plain' or 'json')")
 )
 
 // ErrInSection is returned if validate basic does not pass for any underlying config service.

@@ -452,7 +452,7 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 
 		select {
 		case info := <-obs.prunedInfoCh:
-			require.Equal(t, info.ABCIRes.ToHeight, height-1)
+			require.Equal(t, height-1, info.ABCIRes.ToHeight)
 		case <-time.After(5 * time.Second):
 			require.Fail(t, "timed out waiting for pruning run to complete")
 		}

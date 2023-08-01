@@ -12,6 +12,7 @@ var (
 	ErrNilMessage = errors.New("message cannot be nil")
 )
 
+// ErrInvalidBase is returned when peer informs of a status with invalid height
 type ErrInvalidHeight struct {
 	Height int64
 	Reason string
@@ -21,6 +22,7 @@ func (e ErrInvalidHeight) Error() string {
 	return fmt.Sprintf("Invalid height %v. %s", e.Height, e.Reason)
 }
 
+// ErrInvalidBase is returned when peer informs of a status with invalid base
 type ErrInvalidBase struct {
 	Base   int64
 	Reason string

@@ -520,12 +520,16 @@ type GRPCConfig struct {
 	// The gRPC version service provides version information about the node and
 	// the protocols it uses.
 	VersionService *GRPCVersionServiceConfig `mapstructure:"version_service"`
+
+	// The gRPC block service provides block information
+	BlockService *GRPCBlockServiceConfig `mapstructure:"block_service"`
 }
 
 func DefaultGRPCConfig() *GRPCConfig {
 	return &GRPCConfig{
 		ListenAddress:  "",
 		VersionService: DefaultGRPCVersionServiceConfig(),
+		BlockService:   DefaultGRPCBlockServiceConfig(),
 	}
 }
 
@@ -533,6 +537,7 @@ func TestGRPCConfig() *GRPCConfig {
 	return &GRPCConfig{
 		ListenAddress:  "tcp://127.0.0.1:36670",
 		VersionService: TestGRPCVersionServiceConfig(),
+		BlockService:   TestGRPCBlockServiceConfig(),
 	}
 }
 
@@ -561,6 +566,22 @@ func DefaultGRPCVersionServiceConfig() *GRPCVersionServiceConfig {
 
 func TestGRPCVersionServiceConfig() *GRPCVersionServiceConfig {
 	return &GRPCVersionServiceConfig{
+		Enabled: true,
+	}
+}
+
+type GRPCBlockServiceConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+func DefaultGRPCBlockServiceConfig() *GRPCBlockServiceConfig {
+	return &GRPCBlockServiceConfig{
+		Enabled: true,
+	}
+}
+
+func TestGRPCBlockServiceConfig() *GRPCBlockServiceConfig {
+	return &GRPCBlockServiceConfig{
 		Enabled: true,
 	}
 }

@@ -2,7 +2,7 @@
 
 ## Context
 
-We want to test whether CommetBFT respects the ABCI++ grammar. To do this, we need to enhance the e2e tests infrastructure. Specifically, we plan to do three things:
+We want to be able to test whether CommetBFT respects the ABCI++ grammar. To do this, we need to enhance the e2e tests infrastructure. Specifically, we plan to do three things:
 - Log every CometBFT's ABCI++ request during the execution.
 - Parse the logs post-mortem and extract all ABCI++ requests.
 - Check if the set of observed requests respects the ABCI++ grammar.

@@ -843,9 +843,8 @@ func initApplicationRetainHeight(stateStore sm.Store) error {
 	if _, err := stateStore.GetApplicationRetainHeight(); err != nil {
 		if errors.Is(err, sm.ErrKeyNotFound) {
 			return stateStore.SaveApplicationRetainHeight(0)
-		} else {
-			return err
 		}
+		return err
 	}
 	return nil
 }

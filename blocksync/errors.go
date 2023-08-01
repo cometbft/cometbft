@@ -29,7 +29,7 @@ type ErrInvalidBase struct {
 }
 
 func (e ErrInvalidBase) Error() string {
-	return fmt.Sprintf("Invalid base %v. %s", e.Base, e.Reason)
+	return fmt.Sprintf("invalid base %v: %s", e.Base, e.Reason)
 }
 
 type ErrUnknownMessageType struct {

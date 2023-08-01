@@ -172,7 +172,7 @@ func (cli *socketClient) recvResponseRoutine(conn io.Reader) {
 		res := &types.Response{}
 		err := types.ReadMessage(r, res)
 		if err != nil {
-			cli.stopForError(fmt.Errorf("error writing message: %w", err))
+			cli.stopForError(fmt.Errorf("read message: %w", err))
 			return
 		}
 

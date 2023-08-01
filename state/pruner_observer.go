@@ -23,15 +23,15 @@ type PrunedInfo struct {
 // BlocksPrunedInfo provides information about blocks pruned during a single
 // run of the pruner.
 type BlocksPrunedInfo struct {
-	FromHeight int64
-	ToHeight   int64
+	FromHeight int64 // The height from which blocks were pruned (inclusive).
+	ToHeight   int64 // The height to which blocks were pruned (inclusive).
 }
 
 // ABCIResponsesPrunedInfo provides information about ABCI responses pruned
 // during a single run of the pruner.
 type ABCIResponsesPrunedInfo struct {
-	FromHeight int64
-	ToHeight   int64
+	FromHeight int64 // The height from which ABCI responses were pruned (inclusive).
+	ToHeight   int64 // The height to which ABCI responses were pruned (inclusive).
 }
 
 // NoopPrunerObserver does nothing.

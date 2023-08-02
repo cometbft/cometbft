@@ -150,8 +150,6 @@ The resulting code is inside the following directories:
 - `test/e2e/pkg/grammar/sppf`,
 - `test/e2e/pkg/grammar/token`.
 
-
-DO OVDE SAM STIGAO
 Apart from this auto-generated code, we implemented `GrammarChecker` abstraction
 which knows how to use the generated parser and lexer to verify whether a
 specific execution (list of ABCI++ calls logged by the Application while the
@@ -183,10 +181,10 @@ func TestABCIGrammar(t *testing.T) {
 }
 ```
 
-Specifically, the test first creates a `GrammarChecker` object. Then for each node in the testnet, it collects all requests logged by this node. Remember here that `fetchABCIRequests()` returns an array of slices(`[]*abci.Request`) where the slice with index 0 corresponds to the `CleanStart` execution, and each additional slice corresponds to the `Recovery` execution after a specific crash. Each node must have one `CleanStart` execution and the same number of `Recovery` executions as the number of crashes that happened on this node. If collecting was successful, the test checks whether each execution respects the ABCI++ 
-grammar by calling `checker.Verify(r, i == 0)` method. The second parameter, `i == 0`, indicates whether the set of requests `r` represents a `CleanStart` or a `Recovery` execution. If `Verify` returns an error, the specific execution does not respect the grammar, and the test will fail. 
+Specifically, the test first creates a `GrammarChecker` object. Then for each node in the testnet, it collects all requests logged by this node. Remember here that `fetchABCIRequests()` returns an array of slices(`[]*abci.Request`) where the slice with index 0 corresponds to the node's `CleanStart` execution, and each additional slice corresponds to the `Recovery` execution after a specific crash. Each node must have one `CleanStart` execution and the same number of `Recovery` executions as the number of crashes that happened on this node. If collecting was successful, the test checks whether each execution respects the ABCI++ 
+grammar by calling `checker.Verify(r, i == 0)` method. The second parameter (`i == 0`) indicates whether the set of requests `r` represents a `CleanStart` or a `Recovery` execution. If `Verify` returns an error, the specific execution does not respect the grammar, and the test will fail. 
 
-The tests are executed only if `ABCITestsEnabled` is set to `true`. This is done through the manifest file. Namely, if we want to test whether CometBFT respects ABCI grammar, we would need to enable these tests by adding `abci_tests_enabled = true` in the manifest file of a particular testnet (e.g. `networks/ci.toml`). This will automatically activate logging on the application side. 
+The tests are executed only if `ABCITestsEnabled` is set to `true`. This is done through the manifest file. Namely, if we want to test whether CometBFT respects ABCI++ grammar, we would need to enable these tests by adding `abci_tests_enabled = true` in the manifest file of a particular testnet (e.g. `networks/ci.toml`). This will automatically activate logging on the application side. 
 
 The `Verify()` method is shown below. 
 ```go
@@ -209,14 +207,16 @@ func (g *GrammarChecker) Verify(reqs []*abci.Request, isCleanStart bool) (bool, 
 }
 ```
 
-It takes a list of requests and does the following things.
-- Filter the last height. Basically, it removes all ABCI++ requests after the 
-last `Commit`. The function `fetchABCIRequestsByNodeName()` can be called in the middle of the height. As a result, the last height may be incomplete, and 
-the parser may return an error. The simple example here is that the last 
-request fetched via `fetchABCIRequestsByNodeName()` is `Decide`; however, `Commit` happens after 
-`fetchABCIRequestsByNodeName()` was invoked. Consequently, the parser
-will return an error that `Commit` is missing, even though the `Commit` 
-will happen after.  
+The method `Verify()` first calls method `filterRequests()` that is going to remove all the requests from the set that are not supported by the current version of the grammar. In addition, it will filter the last height by removing all ABCI++ requests after the 
+last `Commit`. The function `fetchABCIRequests()` can be called in the middle of the height. As a result, the last height may be incomplete, and 
+classified as invalid even if that is not the reality. The simple example here is that the last 
+request fetched via `fetchABCIRequests()` is `Decide`; however, `Commit` happens after 
+`fetchABCIRequests()` was invoked. Consequently, the execution
+will be considered as faulty because `Commit` is missing, even though the `Commit` 
+will happen after. 
+After filtering the requests `Verify()` checks if the remaining set of requests respect the grammar. It does that by calling two methods: `verifySpecific()` and `verifyGeneric()`. 
+Former should always be called first and is responsible of doing some specific checks that the parser cannot do. For example, at the moment it is checking if 
+
 - Generates an execution string by replacing `abci.Request` with the 
 corresponding terminal from the grammar. This logic is implemented in
 `GetExecutionString()` function. This function receives a list of `abci.Request` and generates a string where every request the grammar covers 

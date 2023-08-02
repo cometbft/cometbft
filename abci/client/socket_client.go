@@ -215,7 +215,7 @@ func (cli *socketClient) didRecvResponse(res *types.Response) error {
 
 	reqres := next.Value.(*ReqRes)
 	if !resMatchesReq(reqres.Request, res) {
-		return ErrUnexpectedResponse{Response: *res, Comment: fmt.Sprintf("Unexpected response to the request %T", reqres.Request.Value)}
+		return ErrUnexpectedResponse{Response: *res, Comment: fmt.Sprintf("unexpected response to the request %T", reqres.Request.Value)}
 	}
 
 	reqres.Response = res

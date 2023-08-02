@@ -2,9 +2,11 @@ package gossip
 
 import (
 	"errors"
+	"time"
+
+	"github.com/cometbft/cometbft/libs/clist"
 	"github.com/cometbft/cometbft/libs/rand"
 	nm "github.com/cometbft/cometbft/node"
-	"time"
 
 	"fmt"
 
@@ -24,8 +26,8 @@ import (
 type Reactor struct {
 	p2p.BaseReactor
 	config          *cfg.MempoolConfig
-	mempool         mempool.Mempool
-	ids             *mempoolIDs
+	mempool         *mempool.CListMempool
+	ids             *mempool.MempoolIDs
 	txSenders       map[types.TxKey]map[uint16]bool
 	txSendersMtx    cmtsync.RWMutex
 	propagationRate float32
@@ -36,11 +38,11 @@ type Reactor struct {
 
 // NewReactor returns a new Reactor with the given config and mempool.
 // The mempool's channel TxsAvailable will be initialized only when notifyAvailable is true.
-func NewReactor(config *cfg.MempoolConfig, node *nm.Node, ConsensusMocked bool, rate float32, sendOnce bool) *Reactor {
+func NewReactor(node *nm.Node, mp *mempool.CListMempool, ConsensusMocked bool, rate float32, sendOnce bool) *Reactor {
 	memR := &Reactor{
-		config:          config,
-		mempool:         node.Mempool(),
-		ids:             newMempoolIDs(),
+		config:          node.Config().Mempool,
+		mempool:         mp,
+		ids:             mempool.NewMempoolIDs(),
 		txSenders:       make(map[types.TxKey]map[uint16]bool),
 		propagationRate: rate,
 		sendOnce:        sendOnce,
@@ -163,27 +165,27 @@ type PeerState interface {
 // Send new mempool txs to peer.
 func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 	peerID := memR.ids.GetForPeer(peer)
-
-	var entry *mempool.Entry
-	iter := memR.mempool.NewIterator()
+	var next *clist.CElement
 
 	for {
+		// In case of both next.NextWaitChan() and peer.Quit() are variable at the same time
 		if !memR.IsRunning() || !peer.IsRunning() {
 			return
 		}
-
-		select {
-		case <-iter.WaitNext():
-			entry = iter.NextEntry()
-			if entry == nil {
-				// There is no next entry, or the entry we found got removed in the
-				// meantime. Try again.
-				continue
+		// This happens because the CElement we were looking at got garbage
+		// collected (removed). That is, .NextWait() returned nil. Go ahead and
+		// start from the beginning.
+		if next == nil {
+			select {
+			case <-memR.mempool.TxsWaitChan(): // Wait until a tx is available
+				if next = memR.mempool.TxsFront(); next == nil {
+					continue
+				}
+			case <-peer.Quit():
+				return
+			case <-memR.Quit():
+				return
 			}
-		case <-peer.Quit():
-			return
-		case <-memR.Quit():
-			return
 		}
 
 		// Make sure the peer is up to date.
@@ -204,7 +206,8 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// node. See [RFC 103] for an analysis on this optimization.
 		//
 		// [RFC 103]: https://github.com/cometbft/cometbft/pull/735
-		if !memR.consensusMocked && peerState.GetHeight() < entry.Height()-1 {
+		memTx := next.Value.(*mempool.MempoolTx)
+		if !memR.consensusMocked && peerState.GetHeight() < memTx.Height()-1 {
 			time.Sleep(mempool.PeerCatchupSleepIntervalMS * time.Millisecond)
 			continue
 		}
@@ -212,21 +215,30 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// NOTE: Transaction batching was disabled due to
 		// https://github.com/tendermint/tendermint/issues/5796
 
-		if !memR.isSender(entry.GetTxKey(), peerID) && float32(rand.Intn(101)) <= memR.propagationRate {
+		if !memR.isSender(memTx.GetTxKey(), peerID) && float32(rand.Intn(101)) <= memR.propagationRate {
 			success := peer.Send(p2p.Envelope{
 				ChannelID: mempool.MempoolChannel,
-				Message:   &protomem.Txs{Txs: [][]byte{entry.GetTx()}},
+				Message:   &protomem.Txs{Txs: [][]byte{memTx.GetTx()}},
 			})
 			if !success {
 				time.Sleep(mempool.PeerCatchupSleepIntervalMS * time.Millisecond)
 				continue
 			}
 			if memR.sendOnce {
-				memR.addSender(entry.GetTxKey(), peerID)
+				memR.addSender(memTx.GetTxKey(), peerID)
 			}
 
 			memR.metrics.SentTxs.Add(1)
 
+			select {
+			case <-next.NextWaitChan():
+				// see the start of the for loop for nil check
+				next = next.Next()
+			case <-peer.Quit():
+				return
+			case <-memR.Quit():
+				return
+			}
 		}
 	}
 }
@@ -255,5 +267,7 @@ func (memR *Reactor) removeSenders(txKey types.TxKey) {
 	memR.txSendersMtx.Lock()
 	defer memR.txSendersMtx.Unlock()
 
-	delete(memR.txSenders, txKey)
+	if memR.txSenders != nil {
+		delete(memR.txSenders, txKey)
+	}
 }

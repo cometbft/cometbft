@@ -13,6 +13,14 @@ type MempoolTx struct {
 	tx        types.Tx // validated by the application
 }
 
+func (memTx *MempoolTx) GetTx() types.Tx {
+	return memTx.tx
+}
+
+func (memTx *MempoolTx) GetTxKey() types.TxKey {
+	return memTx.tx.Key()
+}
+
 // Height returns the height for this transaction
 func (memTx *MempoolTx) Height() int64 {
 	return atomic.LoadInt64(&memTx.height)

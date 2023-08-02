@@ -6,6 +6,7 @@ import (
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/clist"
+	"github.com/cometbft/cometbft/libs/log"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
@@ -47,6 +48,7 @@ func (emptyMempool) EnableTxsAvailable()                    {}
 func (emptyMempool) SetTxRemovedCallback(func(types.TxKey)) {}
 func (emptyMempool) TxsBytes() int64                        { return 0 }
 func (emptyMempool) InMempool(types.TxKey) bool             { return false }
+func (emptyMempool) SetLogger(log.Logger)                   {}
 
 func (emptyMempool) TxsFront() *clist.CElement    { return nil }
 func (emptyMempool) TxsWaitChan() <-chan struct{} { return nil }

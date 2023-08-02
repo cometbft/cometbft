@@ -51,6 +51,6 @@ func (p *Pruner) FindMinRetainHeight() int64 {
 	return p.findMinRetainHeight()
 }
 
-func (p *Pruner) PruneABCIResToRetainHeight(lastABCIResPrunedHeight int64) int64 {
-	return p.pruneABCIResToRetainHeight(lastABCIResPrunedHeight)
+func (p *Pruner) PruneABCIResToRetainHeight(lastRetainHeight int64) int64 {
+	return p.pruneABCIResToRetainHeight(lastRetainHeight)
 }

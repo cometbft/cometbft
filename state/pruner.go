@@ -166,38 +166,39 @@ func (p *Pruner) SetABCIResRetainHeight(height int64) error {
 
 func (p *Pruner) pruningRoutine() {
 	p.logger.Info("Pruner started", "interval", p.interval.String())
-	lastHeightPruned := int64(0)
-	lastABCIResPrunedHeight := int64(0)
+	lastRetainHeight := int64(0)
+	lastABCIResRetainHeight := int64(0)
 	for {
 		select {
 		case <-p.Quit():
 			return
 		default:
-			lastHeightPruned = p.pruneBlocksToRetainHeight(lastHeightPruned)
-			lastABCIResPrunedHeight = p.pruneABCIResToRetainHeight(lastABCIResPrunedHeight)
+			lastRetainHeight = p.pruneBlocksToRetainHeight(lastRetainHeight)
+			lastABCIResRetainHeight = p.pruneABCIResToRetainHeight(lastABCIResRetainHeight)
 			time.Sleep(p.interval)
 		}
 	}
 }
 
-func (p *Pruner) pruneBlocksToRetainHeight(lastHeightPruned int64) int64 {
-	retainHeight := p.findMinRetainHeight()
-	if retainHeight != lastHeightPruned {
-		pruned, evRetainHeight, err := p.pruneBlocks(retainHeight)
-		if err != nil {
-			p.logger.Error("Failed to prune blocks", "err", err, "blockRetainHeight", retainHeight)
-		} else if pruned > 0 {
-			p.logger.Info("Pruned blocks", "count", pruned, "evidenceRetainHeight", evRetainHeight)
-		}
-		// The last height up until which we pruned is the current lowest point of the block store
-		// indicated by Base()
-		lastHeightPruned = p.bs.Base() - 1
+func (p *Pruner) pruneBlocksToRetainHeight(lastRetainHeight int64) int64 {
+	targetRetainHeight := p.findMinRetainHeight()
+	if targetRetainHeight == lastRetainHeight {
+		return lastRetainHeight
 	}
-	return lastHeightPruned
+	pruned, evRetainHeight, err := p.pruneBlocks(targetRetainHeight)
+	// The new retain height is the current lowest point of the block store
+	// indicated by Base()
+	newRetainHeight := p.bs.Base()
+	if err != nil {
+		p.logger.Error("Failed to prune blocks", "err", err, "targetRetainHeight", targetRetainHeight, "newRetainHeight", newRetainHeight)
+	} else if pruned > 0 {
+		p.logger.Info("Pruned blocks", "count", pruned, "evidenceRetainHeight", evRetainHeight, "newRetainHeight", newRetainHeight)
+	}
+	return newRetainHeight
 }
 
-func (p *Pruner) pruneABCIResToRetainHeight(lastABCIResPrunedHeight int64) int64 {
-	abciResRetainHeight, err := p.stateStore.GetABCIResRetainHeight()
+func (p *Pruner) pruneABCIResToRetainHeight(lastRetainHeight int64) int64 {
+	targetRetainHeight, err := p.stateStore.GetABCIResRetainHeight()
 	if err != nil {
 		// ABCI response retain height has not yet been set - do not log any
 		// errors at this time.
@@ -205,22 +206,23 @@ func (p *Pruner) pruneABCIResToRetainHeight(lastABCIResPrunedHeight int64) int64
 			return 0
 		}
 		p.logger.Error("Failed to get ABCI result retain height", "err", err)
-		return lastABCIResPrunedHeight
+		return lastRetainHeight
 	}
 
-	if lastABCIResPrunedHeight == abciResRetainHeight {
-		return lastABCIResPrunedHeight
+	if lastRetainHeight == targetRetainHeight {
+		return lastRetainHeight
 	}
 
-	// lastPrunedHeight is the last height up until which we pruned successfully
-	// In case of an error it will be 0, but then it will also be ignored.
-	numPruned, lastPrunedHeight, err := p.stateStore.PruneABCIResponses(abciResRetainHeight)
+	// newRetainHeight is the height just after that which we have successfully
+	// pruned. In case of an error it will be 0, but then it will also be
+	// ignored.
+	numPruned, newRetainHeight, err := p.stateStore.PruneABCIResponses(targetRetainHeight)
 	if err != nil {
-		p.logger.Error("Failed to prune ABCI responses", "err", err, "abciResRetainHeight", abciResRetainHeight)
-		return lastABCIResPrunedHeight
+		p.logger.Error("Failed to prune ABCI responses", "err", err, "targetRetainHeight", targetRetainHeight)
+		return lastRetainHeight
 	}
 	p.logger.Info("Pruned ABCI responses", "height", numPruned)
-	return lastPrunedHeight
+	return newRetainHeight
 }
 
 // If no retain height has been set by the application or the data companion

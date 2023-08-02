@@ -2,7 +2,6 @@ package state
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -106,10 +105,9 @@ func (p *Pruner) SetApplicationRetainHeight(height int64) error {
 		noCompanionRetainHeight = true
 	}
 	if currentAppRetainHeight > height || (!noCompanionRetainHeight && currentCompanionRetainHeight > height) {
-		return errors.New("cannot set a height lower than previously requested - blocks might have already been pruned")
+		return ErrPrunerCannotLowerRetainHeight
 	}
-	err = p.stateStore.SaveApplicationRetainHeight(height)
-	return err
+	return p.stateStore.SaveApplicationRetainHeight(height)
 }
 
 // SetCompanionRetainHeight sets the application retain height with some basic
@@ -145,10 +143,9 @@ func (p *Pruner) SetCompanionRetainHeight(height int64) error {
 		noAppRetainHeight = true
 	}
 	if currentCompanionRetainHeight > height || (!noAppRetainHeight && currentAppRetainHeight > height) {
-		return errors.New("cannot set a height lower than previously requested - blocks might have already been pruned")
+		return ErrPrunerCannotLowerRetainHeight
 	}
-	err = p.stateStore.SaveCompanionBlockRetainHeight(height)
-	return err
+	return p.stateStore.SaveCompanionBlockRetainHeight(height)
 }
 
 // SetABCIResRetainHeight sets the retain height for ABCI responses.
@@ -172,10 +169,9 @@ func (p *Pruner) SetABCIResRetainHeight(height int64) error {
 		return p.stateStore.SaveABCIResRetainHeight(height)
 	}
 	if currentRetainHeight > height {
-		return errors.New("cannot set a height lower than previously requested - blocks might have already been pruned")
+		return ErrPrunerCannotLowerRetainHeight
 	}
-	err = p.stateStore.SaveABCIResRetainHeight(height)
-	return err
+	return p.stateStore.SaveABCIResRetainHeight(height)
 }
 
 // GetApplicationRetainHeight is a convenience method for accessing the
@@ -289,21 +285,21 @@ func (p *Pruner) findMinRetainHeight() int64 {
 
 func (p *Pruner) pruneBlocks(height int64) (uint64, int64, error) {
 	if height <= 0 {
-		return 0, 0, errors.New("retain height cannot be less or equal than 0")
+		return 0, 0, ErrInvalidRetainHeight
 	}
 
 	base := p.bs.Base()
 
 	state, err := p.stateStore.Load()
 	if err != nil {
-		return 0, 0, fmt.Errorf("failed to load state, cannot prune: %w", err)
+		return 0, 0, ErrPrunerFailedToLoadState{Err: err}
 	}
 	pruned, evRetainHeight, err := p.bs.PruneBlocks(height, state)
 	if err != nil {
-		return 0, 0, fmt.Errorf("failed to prune blocks to height %d: %w", height, err)
+		return 0, 0, ErrFailedToPruneBlocks{Height: height, Err: err}
 	}
 	if err := p.stateStore.PruneStates(base, height, evRetainHeight); err != nil {
-		return 0, 0, fmt.Errorf("failed to prune states to height %d: %w", height, err)
+		return 0, 0, ErrFailedToPruneStates{Height: height, Err: err}
 	}
 	return pruned, evRetainHeight, err
 }

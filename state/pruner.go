@@ -90,7 +90,7 @@ func (p *Pruner) SetApplicationRetainHeight(height int64) error {
 		}
 	}
 	currentCompanionRetainHeight, err := p.stateStore.GetCompanionBlockRetainHeight()
-	var noCompanionRetainHeight bool
+	noCompanionRetainHeight := false
 	if err != nil {
 		if err == ErrKeyNotFound {
 			noCompanionRetainHeight = true
@@ -230,7 +230,7 @@ func (p *Pruner) pruneABCIResToRetainHeight(lastRetainHeight int64) int64 {
 // If both retain heights were set, we pick the smaller one
 // If only one is set we return that one
 func (p *Pruner) findMinRetainHeight() int64 {
-	var noAppRetainHeightSet bool
+	noAppRetainHeightSet := false
 	appRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
 	if err != nil {
 		if errors.Is(err, ErrKeyNotFound) {

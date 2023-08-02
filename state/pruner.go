@@ -83,20 +83,18 @@ func (p *Pruner) SetApplicationRetainHeight(height int64) error {
 	}
 	currentAppRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
 	if err != nil {
-		if err == ErrKeyNotFound {
-			currentAppRetainHeight = height
-		} else {
+		if !errors.Is(err, ErrKeyNotFound) {
 			return err
 		}
+		currentAppRetainHeight = height
 	}
 	currentCompanionRetainHeight, err := p.stateStore.GetCompanionBlockRetainHeight()
 	noCompanionRetainHeight := false
 	if err != nil {
-		if err == ErrKeyNotFound {
-			noCompanionRetainHeight = true
-		} else {
+		if !errors.Is(err, ErrKeyNotFound) {
 			return err
 		}
+		noCompanionRetainHeight = true
 	}
 	if currentAppRetainHeight > height || (!noCompanionRetainHeight && currentCompanionRetainHeight > height) {
 		return errors.New("cannot set a height lower than previously requested - blocks might have already been pruned")
@@ -119,20 +117,18 @@ func (p *Pruner) SetCompanionRetainHeight(height int64) error {
 	}
 	currentCompanionRetainHeight, err := p.stateStore.GetCompanionBlockRetainHeight()
 	if err != nil {
-		if err == ErrKeyNotFound {
-			currentCompanionRetainHeight = height
-		} else {
+		if !errors.Is(err, ErrKeyNotFound) {
 			return err
 		}
+		currentCompanionRetainHeight = height
 	}
 	currentAppRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
 	noAppRetainHeight := false
 	if err != nil {
-		if err == ErrKeyNotFound {
-			noAppRetainHeight = true
-		} else {
+		if !errors.Is(err, ErrKeyNotFound) {
 			return err
 		}
+		noAppRetainHeight = true
 	}
 	if currentCompanionRetainHeight > height || (!noAppRetainHeight && currentAppRetainHeight > height) {
 		return errors.New("cannot set a height lower than previously requested - blocks might have already been pruned")
@@ -151,11 +147,10 @@ func (p *Pruner) SetABCIResRetainHeight(height int64) error {
 	}
 	currentRetainHeight, err := p.stateStore.GetABCIResRetainHeight()
 	if err != nil {
-		if err == ErrKeyNotFound {
-			err = p.stateStore.SaveABCIResRetainHeight(height)
+		if !errors.Is(err, ErrKeyNotFound) {
 			return err
 		}
-		return err
+		return p.stateStore.SaveABCIResRetainHeight(height)
 	}
 	if currentRetainHeight > height {
 		return errors.New("cannot set a height lower than previously requested - blocks might have already been pruned")
@@ -233,21 +228,19 @@ func (p *Pruner) findMinRetainHeight() int64 {
 	noAppRetainHeightSet := false
 	appRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
 	if err != nil {
-		if errors.Is(err, ErrKeyNotFound) {
-			noAppRetainHeightSet = true
-		} else {
+		if !errors.Is(err, ErrKeyNotFound) {
 			return 0
 		}
+		noAppRetainHeightSet = true
 	}
 	dcRetainHeight, err := p.stateStore.GetCompanionBlockRetainHeight()
 	if err != nil {
-		if errors.Is(err, ErrKeyNotFound) {
-			// The Application height was set so we can return that immediately
-			if !noAppRetainHeightSet {
-				return appRetainHeight
-			}
-		} else {
+		if !errors.Is(err, ErrKeyNotFound) {
 			return 0
+		}
+		// The Application height was set so we can return that immediately
+		if !noAppRetainHeightSet {
+			return appRetainHeight
 		}
 	}
 	// If we are here, both heights were set so we are picking the minimum

@@ -2,25 +2,44 @@ package pruningservice
 
 import (
 	context "context"
+	"fmt"
+	"math"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	"github.com/cometbft/cometbft/libs/log"
 	v1 "github.com/cometbft/cometbft/proto/tendermint/services/pruning/v1"
 	sm "github.com/cometbft/cometbft/state"
 )
 
 type pruningServiceServer struct {
 	pruner *sm.Pruner
+	logger log.Logger
 }
 
 // New creates a new CometBFT pruning service server.
-func New(pruner *sm.Pruner) v1.PruningServiceServer {
+func New(pruner *sm.Pruner, logger log.Logger) v1.PruningServiceServer {
 	return &pruningServiceServer{
 		pruner: pruner,
+		logger: logger.With("service", "PruningService"),
 	}
 }
 
 // SetBlockRetainHeight implements v1.PruningServiceServer.
 func (s *pruningServiceServer) SetBlockRetainHeight(_ context.Context, req *v1.SetBlockRetainHeightRequest) (*v1.SetBlockRetainHeightResponse, error) {
-	panic("unimplemented")
+	height := req.Height
+	// Because we can't agree on a single type to represent block height.
+	if height > uint64(math.MaxInt64) {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Invalid height %d", height))
+	}
+	logger := s.logger.With("endpoint", "SetBlockRetainHeight")
+	err := s.pruner.SetCompanionRetainHeight(int64(height))
+	if err != nil {
+		logger.Error("Cannot set block retain height", "err", err)
+		return nil, status.Errorf(codes.Internal, "Failed to set block retain height")
+	}
+	return &v1.SetBlockRetainHeightResponse{}, nil
 }
 
 // GetBlockRetainHeight implements v1.PruningServiceServer.
@@ -29,8 +48,19 @@ func (*pruningServiceServer) GetBlockRetainHeight(context.Context, *v1.GetBlockR
 }
 
 // SetBlockResultsRetainHeight implements v1.PruningServiceServer.
-func (*pruningServiceServer) SetBlockResultsRetainHeight(context.Context, *v1.SetBlockResultsRetainHeightRequest) (*v1.SetBlockResultsRetainHeightResponse, error) {
-	panic("unimplemented")
+func (s *pruningServiceServer) SetBlockResultsRetainHeight(_ context.Context, req *v1.SetBlockResultsRetainHeightRequest) (*v1.SetBlockResultsRetainHeightResponse, error) {
+	height := req.Height
+	// Because we can't agree on a single type to represent block height.
+	if height > uint64(math.MaxInt64) {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Invalid height %d", height))
+	}
+	logger := s.logger.With("endpoint", "SetBlockResultsRetainHeight")
+	err := s.pruner.SetABCIResRetainHeight(int64(height))
+	if err != nil {
+		logger.Error("Cannot set block results retain height", "err", err)
+		return nil, status.Errorf(codes.Internal, "Failed to set block results retain height")
+	}
+	return &v1.SetBlockResultsRetainHeightResponse{}, nil
 }
 
 // GetBlockResultsRetainHeight implements v1.PruningServiceServer.

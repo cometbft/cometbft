@@ -3,6 +3,7 @@ package state
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/cometbft/cometbft/config"
@@ -23,11 +24,14 @@ var (
 type Pruner struct {
 	service.BaseService
 	logger log.Logger
+
+	mtx sync.Mutex
 	// DB to which we save the retain heights
 	bs BlockStore
 	// State store to prune state from
 	stateStore Store
-	interval   time.Duration
+
+	interval time.Duration
 }
 
 type prunerConfig struct {
@@ -78,6 +82,11 @@ func (p *Pruner) OnStart() error {
 // also cannot accept the requested height as the blocks might have been
 // pruned.
 func (p *Pruner) SetApplicationRetainHeight(height int64) error {
+	// Ensure that all requests to set retain heights via the pruner are
+	// serialized.
+	p.mtx.Lock()
+	defer p.mtx.Unlock()
+
 	if height <= 0 || height < p.bs.Base() || height > p.bs.Height() {
 		return ErrInvalidHeightValue
 	}
@@ -112,6 +121,11 @@ func (p *Pruner) SetApplicationRetainHeight(height int64) error {
 // If the application has already set a retain height to a higher value we also
 // cannot accept the requested height as the blocks might have been pruned.
 func (p *Pruner) SetCompanionRetainHeight(height int64) error {
+	// Ensure that all requests to set retain heights via the pruner are
+	// serialized.
+	p.mtx.Lock()
+	defer p.mtx.Unlock()
+
 	if height <= 0 || height < p.bs.Base() || height > p.bs.Height() {
 		return ErrInvalidHeightValue
 	}
@@ -142,6 +156,11 @@ func (p *Pruner) SetCompanionRetainHeight(height int64) error {
 // If the application has set the DiscardABCIResponses flag to true, nothing
 // will be pruned.
 func (p *Pruner) SetABCIResRetainHeight(height int64) error {
+	// Ensure that all requests to set retain heights via the pruner are
+	// serialized.
+	p.mtx.Lock()
+	defer p.mtx.Unlock()
+
 	if height <= 0 || height > p.bs.Height() {
 		return ErrInvalidHeightValue
 	}

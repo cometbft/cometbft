@@ -14,6 +14,7 @@ import (
 	"text/template"
 	"time"
 
+	p2p "github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
@@ -90,11 +91,20 @@ type Testnet struct {
 	VoteExtensionsEnableHeight       int64
 	VoteExtensionSize                uint
 	PeerGossipIntraloopSleepDuration time.Duration
+
+        //Experimental
+	PrometheusIP                      net.IP
+        LoadTxToSend                      int
+        PhysicalTimestamps                bool
+        ExperimentalGossipPropagationRate float32
+        ExperimentalGossipSendOnce        bool
+        ExperimentalCustomReactors        map[string]string
 }
 
 // Node represents a CometBFT node in a testnet.
 type Node struct {
 	Name                string
+	ID                  p2p.ID
 	Version             string
 	Testnet             *Testnet
 	Mode                Mode
@@ -118,6 +128,13 @@ type Node struct {
 	SendNoLoad          bool
 	Prometheus          bool
 	PrometheusProxyPort uint32
+
+	//Experimental
+	PropagationRatio    float32
+}
+
+func (n *Node) String() string {
+ 	return n.Name
 }
 
 // LoadTestnet loads a testnet from a manifest file, using the filename to
@@ -169,11 +186,18 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
 		VoteExtensionSize:                manifest.VoteExtensionSize,
 		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
+
+		//Experimental
+ 		LoadTxToSend:                      manifest.LoadTxToSend,
+ 		PhysicalTimestamps:                manifest.PhysicalTimestamps,
+ 		ExperimentalGossipPropagationRate: manifest.ExperimentalGossipPropagationRate,
+ 		ExperimentalGossipSendOnce:        manifest.ExperimentalGossipSendOnce,
+ 		ExperimentalCustomReactors:        manifest.ExperimentalCustomReactors,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
 	}
-	if manifest.InitialHeight > 0 {
+	if manifest.InitialHeight >= 0 {
 		testnet.InitialHeight = manifest.InitialHeight
 	}
 	if testnet.ABCIProtocol == "" {
@@ -326,6 +350,13 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		}
 		testnet.ValidatorUpdates[int64(height)] = valUpdate
 	}
+
+	// compute Prometheus IP (if enabled)
+ 	if testnet.Prometheus {
+ 		if testnet.PrometheusIP, err = newIPGenerator(ipNet).After(len(testnet.Nodes)); err != nil {
+ 			return nil, err
+ 		}
+ 	}
 
 	return testnet, testnet.Validate()
 }
@@ -510,7 +541,7 @@ func (t Testnet) WritePrometheusConfig() error {
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(filepath.Join(t.Dir, "prometheus.yaml"), bytes, 0o644) //nolint:gosec
+	err = os.WriteFile(filepath.Join(t.Dir, "prometheus.yml"), bytes, 0o644) //nolint:gosec
 	if err != nil {
 		return err
 	}
@@ -544,6 +575,16 @@ func (n Node) AddressRPC() string {
 // Client returns an RPC client for a node.
 func (n Node) Client() (*rpchttp.HTTP, error) {
 	return rpchttp.New(fmt.Sprintf("http://%s:%v", n.ExternalIP, n.ProxyPort), "/websocket")
+}
+
+// Client returns an RPC client for a node.
+func (n Node) ClientWithTimeout(timeout uint) (*rpchttp.HTTP, error) {
+	return rpchttp.NewWithTimeout(fmt.Sprintf("http://%s:%v", n.ExternalIP, n.ProxyPort), "/websocket", timeout)
+}
+
+// PrometheusClient returns an RPC client for a node.
+func (n Node) PrometheusClient() (*rpchttp.HTTP, error) {
+	return rpchttp.New(fmt.Sprintf("http://%s:%v", n.ExternalIP, n.PrometheusProxyPort), "/")
 }
 
 // Stateless returns true if the node is either a seed node or a light node
@@ -634,4 +675,21 @@ func (g *ipGenerator) Next() net.IP {
 		}
 	}
 	return ip
+}
+
+
+func (g *ipGenerator) After(skip int) (net.IP, error) {
+ 	ip := g.Next()
+ 	i := 0
+ 	var ret net.IP
+ 	for ip := ip.Mask(g.network.Mask); g.network.Contains(ip) && i <= skip; ip = g.Next() {
+ 		ret = ip
+ 		i++
+ 	}
+
+ 	if i <= skip {
+ 		return nil, fmt.Errorf("not enough network addresses")
+ 	}
+
+ 	return ret, nil
 }

@@ -6,7 +6,7 @@ load_tx_batch_size = 10
 pex = false
 experimental_gossip_propagation_rate = 100
 experimental_gossip_send_once = false
-experimental_custom_reactors = {CONSENSUS = "", MEMPOOL = "experimental.reactors.mempool.randomSkip"}
+experimental_custom_reactors = {CONSENSUS = "", MEMPOOL = "experimental.reactors.mempool.random_skip"}
 [node.validator01]
   persistent_peers = ["validator07","validator06","validator24","validator04","validator28","validator31","validator02","validator20","validator21","validator18"]
 [node.validator02]

@@ -12,7 +12,7 @@ import (
 
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
 	"github.com/cometbft/cometbft/test/e2e/fast-prototyping/reactors/mempool/gossip"
-	"github.com/cometbft/cometbft/test/e2e/fast-prototyping/reactors/mempool/randomSkip"
+	"github.com/cometbft/cometbft/test/e2e/fast-prototyping/reactors/mempool/random_skip"
 
 	"github.com/spf13/viper"
 
@@ -161,7 +161,7 @@ func startNode(cfg *Config) error {
 		consensusMocked,
 		cfg.ExperimentalGossipPropagationRate,
 		cfg.ExperimentalGossipSendOnce)
-	registry["experimental.reactors.mempool.randomSkip"] = randomSkip.NewReactor(
+	registry["experimental.reactors.mempool.random_skip"] = random_skip.NewReactor(
 		cmtcfg.Mempool,
 		n.Mempool(),
 		consensusMocked)

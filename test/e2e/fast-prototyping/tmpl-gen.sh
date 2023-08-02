@@ -19,7 +19,7 @@ MODE=$4
 VALIDATORS=""
 CUSTOM_CONSENSUS_REACTOR="p2p.mock.reactor"
 # CUSTOM_MEMPOOL_REACTOR="experimental.reactors.mempool.gossip"
-CUSTOM_MEMPOOL_REACTOR="experimental.reactors.mempool.randomSkip"
+CUSTOM_MEMPOOL_REACTOR="experimental.reactors.mempool.random_skip"
 INITIAL_HEIGHT=0
 
 SEND_ONCE="false"

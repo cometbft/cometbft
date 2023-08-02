@@ -1,15 +1,14 @@
-package randomSkip
+package randomskip
 
 import (
 	"errors"
-	"math/rand"
-	"time"
-
 	"fmt"
+	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
@@ -210,7 +209,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 
 func (memR *Reactor) shouldSendTo(txKey types.TxKey, peerID p2p.ID) bool {
 	peerIsSender := memR.isSender(txKey, peerID)
-	randomlySkipTx := rand.Intn(100) <= skipTxsPercentage
+	randomlySkipTx := cmtrand.Intn(100) <= skipTxsPercentage
 	return !peerIsSender && randomlySkipTx
 }
 

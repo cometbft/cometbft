@@ -135,7 +135,7 @@ func (p *Pruner) SetCompanionRetainHeight(height int64) error {
 		}
 	}
 	currentAppRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
-	var noAppRetainHeight bool
+	noAppRetainHeight := false
 	if err != nil {
 		if err == ErrKeyNotFound {
 			noAppRetainHeight = true
@@ -204,7 +204,9 @@ func (p *Pruner) pruneBlocksToRetainHeight(lastHeightPruned int64) int64 {
 		} else if pruned > 0 {
 			p.logger.Info("Pruned blocks", "count", pruned, "evidenceRetainHeight", evRetainHeight)
 		}
-		lastHeightPruned = retainHeight
+		// The last height up until which we pruned is the current lowest point of the block store
+		// indicated by Base()
+		lastHeightPruned = p.bs.Base() - 1
 	}
 	return lastHeightPruned
 }
@@ -218,14 +220,22 @@ func (p *Pruner) pruneABCIResToRetainHeight(lastABCIResPrunedHeight int64) int64
 			return 0
 		}
 		p.logger.Error("Failed to get ABCI result retain height", "err", err)
-	} else if lastABCIResPrunedHeight != abciResRetainHeight {
-		prunedHeight, err := p.stateStore.PruneABCIResponses(abciResRetainHeight)
-		if err != nil {
-			p.logger.Error("Failed to prune ABCI responses", "err", err, "abciResRetainHeight", abciResRetainHeight)
-		}
-		p.logger.Info("Pruned ABCI responses", "height", prunedHeight)
+		return lastABCIResPrunedHeight
 	}
-	return lastABCIResPrunedHeight
+
+	if lastABCIResPrunedHeight == abciResRetainHeight {
+		return lastABCIResPrunedHeight
+	}
+
+	// lastPrunedHeight is the last height up until which we pruned successfully
+	// In case of an error it will be 0, but then it will also be ignored.
+	numPruned, lastPrunedHeight, err := p.stateStore.PruneABCIResponses(abciResRetainHeight)
+	if err != nil {
+		p.logger.Error("Failed to prune ABCI responses", "err", err, "abciResRetainHeight", abciResRetainHeight)
+		return lastABCIResPrunedHeight
+	}
+	p.logger.Info("Pruned ABCI responses", "height", numPruned)
+	return lastPrunedHeight
 }
 
 // If no retain height has been set by the application or the data companion

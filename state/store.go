@@ -46,7 +46,10 @@ func calcABCIResponsesKey(height int64) []byte {
 
 //----------------------
 
-var lastABCIResponseKey = []byte("lastABCIResponseKey")
+var (
+	lastABCIResponseKey             = []byte("lastABCIResponseKey")
+	lastABCIResponsesPruneHeightKey = []byte("lastABCIResponsesPruneHeight")
+)
 
 //go:generate ../scripts/mockery_generate.sh Store
 
@@ -57,30 +60,30 @@ var lastABCIResponseKey = []byte("lastABCIResponseKey")
 type Store interface {
 	// LoadFromDBOrGenesisFile loads the most recent state.
 	// If the chain is new it will use the genesis file from the provided genesis file path as the current state.
-	LoadFromDBOrGenesisFile(string) (State, error)
+	LoadFromDBOrGenesisFile(filename string) (State, error)
 	// LoadFromDBOrGenesisDoc loads the most recent state.
 	// If the chain is new it will use the genesis doc as the current state.
-	LoadFromDBOrGenesisDoc(*types.GenesisDoc) (State, error)
+	LoadFromDBOrGenesisDoc(doc *types.GenesisDoc) (State, error)
 	// Load loads the current state of the blockchain
 	Load() (State, error)
 	// LoadValidators loads the validator set at a given height
-	LoadValidators(int64) (*types.ValidatorSet, error)
+	LoadValidators(height int64) (*types.ValidatorSet, error)
 	// LoadFinalizeBlockResponse loads the abciResponse for a given height
-	LoadFinalizeBlockResponse(int64) (*abci.ResponseFinalizeBlock, error)
+	LoadFinalizeBlockResponse(height int64) (*abci.ResponseFinalizeBlock, error)
 	// LoadLastABCIResponse loads the last abciResponse for a given height
-	LoadLastFinalizeBlockResponse(int64) (*abci.ResponseFinalizeBlock, error)
+	LoadLastFinalizeBlockResponse(height int64) (*abci.ResponseFinalizeBlock, error)
 	// LoadConsensusParams loads the consensus params for a given height
-	LoadConsensusParams(int64) (types.ConsensusParams, error)
+	LoadConsensusParams(height int64) (types.ConsensusParams, error)
 	// Save overwrites the previous state with the updated one
-	Save(State) error
+	Save(state State) error
 	// SaveFinalizeBlockResponse saves ABCIResponses for a given height
-	SaveFinalizeBlockResponse(int64, *abci.ResponseFinalizeBlock) error
+	SaveFinalizeBlockResponse(height int64, res *abci.ResponseFinalizeBlock) error
 	// Bootstrap is used for bootstrapping state when not starting from a initial height.
-	Bootstrap(State) error
+	Bootstrap(state State) error
 	// PruneStates takes the height from which to start pruning and which height stop at
-	PruneStates(int64, int64, int64) error
+	PruneStates(fromHeight, toHeight, evidenceThresholdHeight int64) error
 	// PruneABCIResponses will prune all ABCI responses below the given height.
-	PruneABCIResponses(int64) (uint64, error)
+	PruneABCIResponses(height int64) (int64, int64, error)
 	// SaveApplicationRetainHeight persists the application retain height from the application
 	SaveApplicationRetainHeight(height int64) error
 	// GetApplicationRetainHeight returns the retain height set by the application
@@ -389,32 +392,46 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 // PruneABCIResponses attempts to prune all ABCI responses up to, but not
 // including, the given height. On success, returns the height to which ABCI
 // responses were pruned.
-func (store dbStore) PruneABCIResponses(height int64) (uint64, error) {
+func (store dbStore) PruneABCIResponses(height int64) (int64, int64, error) {
 	if store.DiscardABCIResponses {
-		return 0, errors.New("ABCI responses are discarded, nothing to prune")
+		return 0, 0, errors.New("ABCI responses are discarded, nothing to prune")
 	}
+	lastPruneHeight, err := store.getLastABCIResponsesPruneHeight()
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to look up last ABCI responses prune height: %w", err)
+	}
+	if lastPruneHeight == 0 {
+		lastPruneHeight = 1
+	}
+
 	batch := store.db.NewBatch()
 	defer batch.Close()
-	pruned := uint64(0)
 
-	for h := int64(1); h < height; h++ {
-		err2 := batch.Delete(calcABCIResponsesKey(h))
-		if err2 != nil {
-			return pruned, err2
+	pruned := int64(0)
+	batchPruned := int64(0)
+
+	for h := lastPruneHeight; h < height; h++ {
+		if err := batch.Delete(calcABCIResponsesKey(h)); err != nil {
+			return pruned, lastPruneHeight + pruned, fmt.Errorf("failed to delete ABCI responses at height %d: %w", h, err)
 		}
-		pruned++
-		if pruned%1000 == 0 && pruned > 0 {
-			err := batch.Write()
-			if err != nil {
-				return 0, err
+		batchPruned++
+		if batchPruned%1000 == 0 && batchPruned > 0 {
+			if err := batch.Write(); err != nil {
+				return pruned, lastPruneHeight + pruned, fmt.Errorf("failed to write ABCI responses deletion batch at height %d: %w", h, err)
 			}
 			batch.Close()
+
+			pruned += batchPruned
+			batchPruned = 0
+			if err := store.setLastABCIResponsesPruneHeight(h); err != nil {
+				return pruned, lastPruneHeight + pruned, fmt.Errorf("failed to set last ABCI responses prune height: %w", err)
+			}
+
 			batch = store.db.NewBatch()
 			defer batch.Close()
 		}
 	}
-	err := batch.WriteSync()
-	return pruned, err
+	return pruned + batchPruned, height, batch.WriteSync()
 }
 
 //------------------------------------------------------------------------
@@ -550,7 +567,7 @@ func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.Response
 	return store.db.SetSync(lastABCIResponseKey, bz)
 }
 
-func (store dbStore) getKey(key []byte) ([]byte, error) {
+func (store dbStore) getValue(key []byte) ([]byte, error) {
 	bz, err := store.db.Get(key)
 	if err != nil {
 		return nil, err
@@ -568,7 +585,7 @@ func (store dbStore) SaveApplicationRetainHeight(height int64) error {
 }
 
 func (store dbStore) GetApplicationRetainHeight() (int64, error) {
-	buf, err := store.getKey(AppRetainHeightKey)
+	buf, err := store.getValue(AppRetainHeightKey)
 	if err != nil {
 		return 0, err
 	}
@@ -587,7 +604,7 @@ func (store dbStore) SaveCompanionBlockRetainHeight(height int64) error {
 }
 
 func (store dbStore) GetCompanionBlockRetainHeight() (int64, error) {
-	buf, err := store.getKey(CompanionBlockRetainHeightKey)
+	buf, err := store.getValue(CompanionBlockRetainHeightKey)
 	if err != nil {
 		return 0, err
 	}
@@ -606,7 +623,7 @@ func (store dbStore) SaveABCIResRetainHeight(height int64) error {
 }
 
 func (store dbStore) GetABCIResRetainHeight() (int64, error) {
-	buf, err := store.getKey(ABCIResultsRetainHeightKey)
+	buf, err := store.getValue(ABCIResultsRetainHeightKey)
 	if err != nil {
 		return 0, err
 	}
@@ -617,6 +634,22 @@ func (store dbStore) GetABCIResRetainHeight() (int64, error) {
 	}
 
 	return height, nil
+}
+
+func (store dbStore) getLastABCIResponsesPruneHeight() (int64, error) {
+	bz, err := store.getValue(lastABCIResponsesPruneHeightKey)
+	if errors.Is(err, ErrKeyNotFound) {
+		return 0, nil
+	}
+	height := int64FromBytes(bz)
+	if height < 0 {
+		return 0, ErrInvalidHeightValue
+	}
+	return height, nil
+}
+
+func (store dbStore) setLastABCIResponsesPruneHeight(height int64) error {
+	return store.db.SetSync(lastABCIResponsesPruneHeightKey, int64ToBytes(height))
 }
 
 //-----------------------------------------------------------------------------

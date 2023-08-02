@@ -337,6 +337,79 @@ func TestMinRetainHeight(t *testing.T) {
 	require.Equal(t, minHeight, int64(10))
 }
 
+func TestABCIResPruningStandalone(t *testing.T) {
+	stateDB := dbm.NewMemDB()
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
+
+	responses, err := stateStore.LoadFinalizeBlockResponse(1)
+	require.Error(t, err)
+	require.Nil(t, responses)
+	// stub the abciresponses.
+	response1 := &abci.ResponseFinalizeBlock{
+		TxResults: []*abci.ExecTxResult{
+			{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
+		},
+	}
+	_, bs, callbackF, stateStore := makeStateAndBlockStore()
+	defer callbackF()
+
+	for height := int64(1); height <= 10; height++ {
+		err := stateStore.SaveFinalizeBlockResponse(height, response1)
+		require.NoError(t, err)
+	}
+	pruner := sm.NewPruner(stateStore, bs, log.TestingLogger())
+
+	retainHeight := int64(2)
+	err = stateStore.SaveABCIResRetainHeight(retainHeight)
+	require.NoError(t, err)
+	abciResRetainHeight, err := stateStore.GetABCIResRetainHeight()
+	require.NoError(t, err)
+	require.Equal(t, retainHeight, abciResRetainHeight)
+	pruned := pruner.PruneABCIResToRetainHeight(0)
+	require.Equal(t, retainHeight, pruned)
+
+	_, err = stateStore.LoadFinalizeBlockResponse(1)
+	require.Error(t, err)
+
+	for h := retainHeight; h <= 10; h++ {
+		_, err = stateStore.LoadFinalizeBlockResponse(h)
+		require.NoError(t, err)
+	}
+
+	// This should not have any impact because the retain height is still 2 and we will not prune blocks to 3
+	pruned = pruner.PruneABCIResToRetainHeight(3)
+	require.Equal(t, retainHeight, pruned)
+
+	retainHeight = 3
+	err = stateStore.SaveABCIResRetainHeight(retainHeight)
+	require.NoError(t, err)
+	pruned = pruner.PruneABCIResToRetainHeight(2)
+	require.Equal(t, retainHeight, pruned)
+
+	_, err = stateStore.LoadFinalizeBlockResponse(2)
+	require.Error(t, err)
+	for h := retainHeight; h <= 10; h++ {
+		_, err = stateStore.LoadFinalizeBlockResponse(h)
+		require.NoError(t, err)
+	}
+
+	retainHeight = 10
+	err = stateStore.SaveABCIResRetainHeight(retainHeight)
+	require.NoError(t, err)
+	pruned = pruner.PruneABCIResToRetainHeight(2)
+	require.Equal(t, retainHeight, pruned)
+
+	for h := int64(0); h < 10; h++ {
+		_, err = stateStore.LoadFinalizeBlockResponse(h)
+		require.Error(t, err)
+	}
+	_, err = stateStore.LoadFinalizeBlockResponse(10)
+	require.NoError(t, err)
+
+}
+
 func TestFinalizeBlockResponsePruning(t *testing.T) {
 	t.Run("Persisting responses", func(t *testing.T) {
 		stateDB := dbm.NewMemDB()
@@ -377,6 +450,7 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 		require.Error(t, err)
 		_, err = stateStore.LoadFinalizeBlockResponse(height)
 		require.NoError(t, err)
+
 	})
 }
 

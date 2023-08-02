@@ -50,3 +50,7 @@ func SaveValidatorsInfo(db dbm.DB, height, lastHeightChanged int64, valSet *type
 func (p *Pruner) FindMinRetainHeight() int64 {
 	return p.findMinRetainHeight()
 }
+
+func (p *Pruner) PruneABCIResToRetainHeight(lastABCIResPrunedHeight int64) int64 {
+	return p.pruneABCIResToRetainHeight(lastABCIResPrunedHeight)
+}

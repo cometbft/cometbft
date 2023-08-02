@@ -8,6 +8,9 @@ import (
 	"testing"
 	"time"
 
+	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/state/txindex"
+	"github.com/cometbft/cometbft/state/txindex/mocks"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,7 +56,7 @@ func makeTestExtCommit(height int64, timestamp time.Time) *types.ExtendedCommit 
 	}
 }
 
-func makeStateAndBlockStore() (sm.State, *BlockStore, cleanupFunc) {
+func makeStateAndBlockStoreAndIndexerService() (sm.State, *BlockStore, *txindex.IndexerService, cleanupFunc, sm.Store) {
 	config := test.ResetTestRoot("blockchain_reactor_test")
 	blockDB := dbm.NewMemDB()
 	stateDB := dbm.NewMemDB()
@@ -64,7 +67,17 @@ func makeStateAndBlockStore() (sm.State, *BlockStore, cleanupFunc) {
 	if err != nil {
 		panic(fmt.Errorf("error constructing state from genesis file: %w", err))
 	}
-	return state, NewBlockStore(blockDB), func() { os.RemoveAll(config.RootDir) }
+
+	indexerService, err := mocks.CreateAndStartIndexerService(
+		config,
+		"test",
+		cfg.DefaultDBProvider,
+		log.TestingLogger())
+	if err != nil {
+		panic(fmt.Errorf("error constructing indexer service: %w", err))
+	}
+
+	return state, NewBlockStore(blockDB), indexerService, func() { os.RemoveAll(config.RootDir) }, stateStore
 }
 
 func TestLoadBlockStoreState(t *testing.T) {
@@ -136,7 +149,7 @@ func newInMemoryBlockStore() (*BlockStore, dbm.DB) {
 // TODO: This test should be simplified ...
 
 func TestBlockStoreSaveLoadBlock(t *testing.T) {
-	state, bs, cleanup := makeStateAndBlockStore()
+	state, bs, _, cleanup, _ := makeStateAndBlockStoreAndIndexerService()
 	defer cleanup()
 	require.Equal(t, bs.Base(), int64(0), "initially the base should be zero")
 	require.Equal(t, bs.Height(), int64(0), "initially the height should be zero")
@@ -388,7 +401,7 @@ func TestSaveBlockWithExtendedCommitPanicOnAbsentExtension(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
-			state, bs, cleanup := makeStateAndBlockStore()
+			state, bs, _, cleanup, _ := makeStateAndBlockStoreAndIndexerService()
 			defer cleanup()
 			h := bs.Height() + 1
 			block := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
@@ -429,7 +442,7 @@ func TestLoadBlockExtendedCommit(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
-			state, bs, cleanup := makeStateAndBlockStore()
+			state, bs, _, cleanup, _ := makeStateAndBlockStoreAndIndexerService()
 			defer cleanup()
 			h := bs.Height() + 1
 			block := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
@@ -530,20 +543,22 @@ func TestLoadBlockPart(t *testing.T) {
 func TestPruningService(t *testing.T) {
 	config := test.ResetTestRoot("blockchain_reactor_pruning_test")
 	defer os.RemoveAll(config.RootDir)
-	stateStore := sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
-		DiscardABCIResponses: false,
-	})
-	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
-	require.NoError(t, err)
-	db := dbm.NewMemDB()
-	bs := NewBlockStore(db)
+	//stateStore := sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
+	//	DiscardABCIResponses: false,
+	//})
+	//state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
+	//require.NoError(t, err)
+	//db := dbm.NewMemDB()
+	//bs := NewBlockStore(db)
+	state, bs, is, callbackF, stateStore := makeStateAndBlockStoreAndIndexerService()
+	defer callbackF()
 	assert.EqualValues(t, 0, bs.Base())
 	assert.EqualValues(t, 0, bs.Height())
 	assert.EqualValues(t, 0, bs.Size())
 
-	pruningService := sm.NewPruner(stateStore, bs, log.TestingLogger(), sm.PrunerInterval(time.Second*2))
+	pruningService := sm.NewPruner(stateStore, bs, is, log.TestingLogger(), sm.PrunerInterval(time.Second*2))
 
-	err = pruningService.SetApplicationRetainHeight(1)
+	err := pruningService.SetApplicationRetainHeight(1)
 	require.Error(t, err)
 	err = pruningService.SetApplicationRetainHeight(0)
 	require.Error(t, err)
@@ -826,7 +841,7 @@ func TestLoadBlockMetaByHash(t *testing.T) {
 }
 
 func TestBlockFetchAtHeight(t *testing.T) {
-	state, bs, cleanup := makeStateAndBlockStore()
+	state, bs, _, cleanup, _ := makeStateAndBlockStoreAndIndexerService()
 	defer cleanup()
 	require.Equal(t, bs.Height(), int64(0), "initially the height should be zero")
 	block := state.MakeBlock(bs.Height()+1, nil, new(types.Commit), nil, state.Validators.GetProposer().Address)

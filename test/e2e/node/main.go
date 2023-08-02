@@ -163,10 +163,8 @@ func startNode(cfg *Config) error {
 		cfg.ExperimentalGossipSendOnce)
 	registry["experimental.reactors.mempool.randomSkip"] = randomSkip.NewReactor(
 		cmtcfg.Mempool,
-		n,
-		consensusMocked,
-		cfg.ExperimentalGossipPropagationRate,
-		cfg.ExperimentalGossipSendOnce)
+		n.Mempool(),
+		consensusMocked)
 
 	customReactors := map[string]p2p.Reactor{}
 	for k, v := range cfg.ExperimentalCustomReactors {

@@ -12,7 +12,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/mempool"
-	nm "github.com/cometbft/cometbft/node"
 	"github.com/cometbft/cometbft/p2p"
 	protomem "github.com/cometbft/cometbft/proto/tendermint/mempool"
 	"github.com/cometbft/cometbft/types"
@@ -41,10 +40,10 @@ type Reactor struct {
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
-func NewReactor(config *cfg.MempoolConfig, node *nm.Node, ConsensusMocked bool, _ float32, _ bool) *Reactor {
+func NewReactor(config *cfg.MempoolConfig, mp mempool.Mempool, ConsensusMocked bool) *Reactor {
 	memR := &Reactor{
 		config:          config,
-		mempool:         node.Mempool(),
+		mempool:         mp,
 		txSenders:       make(map[types.TxKey]map[p2p.ID]bool),
 		consensusMocked: ConsensusMocked,
 	}

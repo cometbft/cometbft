@@ -352,14 +352,14 @@ func TestABCIResPruningStandalone(t *testing.T) {
 			{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
 		},
 	}
-	_, bs, callbackF, stateStore := makeStateAndBlockStore()
+	_, bs, is, callbackF, stateStore := makeStateAndBlockStoreAndIndexerService()
 	defer callbackF()
 
 	for height := int64(1); height <= 10; height++ {
 		err := stateStore.SaveFinalizeBlockResponse(height, response1)
 		require.NoError(t, err)
 	}
-	pruner := sm.NewPruner(stateStore, bs, log.TestingLogger())
+	pruner := sm.NewPruner(stateStore, bs, is, log.TestingLogger())
 
 	retainHeight := int64(2)
 	err = stateStore.SaveABCIResRetainHeight(retainHeight)

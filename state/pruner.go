@@ -45,9 +45,9 @@ func defaultPrunerConfig() *prunerConfig {
 
 type PrunerOption func(*prunerConfig)
 
-// PrunerInterval allows control over the interval between each run of the
+// WithPrunerInterval allows control over the interval between each run of the
 // pruner.
-func PrunerInterval(t time.Duration) PrunerOption {
+func WithPrunerInterval(t time.Duration) PrunerOption {
 	return func(p *prunerConfig) { p.interval = t }
 }
 

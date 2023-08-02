@@ -257,7 +257,7 @@ func NewNode(ctx context.Context,
 		stateStore,
 		blockStore,
 		logger,
-		sm.PrunerInterval(config.Storage.Pruning.Interval),
+		sm.WithPrunerInterval(config.Storage.Pruning.Interval),
 	)
 
 	// make block executor for consensus and blocksync reactors to execute blocks

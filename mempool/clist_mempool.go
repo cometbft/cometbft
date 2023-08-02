@@ -322,7 +322,7 @@ func (mem *CListMempool) globalCb(req *abci.Request, res *abci.Response) {
 
 // Called from:
 //   - resCbFirstTime (lock not held) if tx is valid
-func (mem *CListMempool) addTx(memTx *mempoolTx) {
+func (mem *CListMempool) addTx(memTx *MempoolTx) {
 	e := mem.txs.PushBack(memTx)
 	mem.txsMap.Store(memTx.tx.Key(), e)
 	atomic.AddInt64(&mem.txsBytes, int64(len(memTx.tx)))
@@ -341,7 +341,7 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 		mem.txs.Remove(elem)
 		elem.DetachPrev()
 		mem.txsMap.Delete(txKey)
-		tx := elem.Value.(*mempoolTx).tx
+		tx := elem.Value.(*MempoolTx).tx
 		atomic.AddInt64(&mem.txsBytes, int64(-len(tx)))
 		return nil
 	}
@@ -402,7 +402,7 @@ func (mem *CListMempool) resCbFirstTime(
 				return
 			}
 
-			mem.addTx(&mempoolTx{
+			mem.addTx(&MempoolTx{
 				height:    mem.height,
 				gasWanted: r.CheckTx.GasWanted,
 				tx:        tx,
@@ -439,7 +439,7 @@ func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 	switch r := res.Value.(type) {
 	case *abci.Response_CheckTx:
 		tx := req.GetCheckTx().Tx
-		memTx := mem.recheckCursor.Value.(*mempoolTx)
+		memTx := mem.recheckCursor.Value.(*MempoolTx)
 
 		// Search through the remaining list of tx to recheck for a transaction that matches
 		// the one we received from the ABCI application.
@@ -466,7 +466,7 @@ func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 			}
 
 			mem.recheckCursor = mem.recheckCursor.Next()
-			memTx = mem.recheckCursor.Value.(*mempoolTx)
+			memTx = mem.recheckCursor.Value.(*MempoolTx)
 		}
 
 		var postCheckErr error
@@ -535,7 +535,7 @@ func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 	// txs := make([]types.Tx, 0, cmtmath.MinInt(mem.txs.Len(), max/mem.avgTxSize))
 	txs := make([]types.Tx, 0, mem.txs.Len())
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
-		memTx := e.Value.(*mempoolTx)
+		memTx := e.Value.(*MempoolTx)
 
 		txs = append(txs, memTx.tx)
 
@@ -572,7 +572,7 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 
 	txs := make([]types.Tx, 0, cmtmath.MinInt(mem.txs.Len(), max))
 	for e := mem.txs.Front(); e != nil && len(txs) <= max; e = e.Next() {
-		memTx := e.Value.(*mempoolTx)
+		memTx := e.Value.(*MempoolTx)
 		txs = append(txs, memTx.tx)
 	}
 	return txs
@@ -654,7 +654,7 @@ func (mem *CListMempool) recheckTxs() {
 	// Push txs to proxyAppConn
 	// NOTE: globalCb may be called concurrently.
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
-		memTx := e.Value.(*mempoolTx)
+		memTx := e.Value.(*MempoolTx)
 		_, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{
 			Tx:   memTx.tx,
 			Type: abci.CheckTxType_Recheck,

@@ -23,7 +23,7 @@ type Reactor struct {
 	p2p.BaseReactor
 	config  *cfg.MempoolConfig
 	mempool *CListMempool
-	ids     *mempoolIDs
+	ids     *MempoolIDs
 
 	// `txSenders` maps every received transaction to the set of peer IDs that
 	// have sent the transaction to this node. Sender IDs are used during
@@ -40,7 +40,7 @@ func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool) *Reactor {
 	memR := &Reactor{
 		config:    config,
 		mempool:   mempool,
-		ids:       newMempoolIDs(),
+		ids:       NewMempoolIDs(),
 		txSenders: make(map[types.TxKey]map[uint16]bool),
 	}
 	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
@@ -194,7 +194,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// node. See [RFC 103] for an analysis on this optimization.
 		//
 		// [RFC 103]: https://github.com/cometbft/cometbft/pull/735
-		memTx := next.Value.(*mempoolTx)
+		memTx := next.Value.(*MempoolTx)
 		if peerState.GetHeight() < memTx.Height()-1 {
 			time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
 			continue

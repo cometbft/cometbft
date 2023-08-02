@@ -7,7 +7,7 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 )
 
-type mempoolIDs struct {
+type MempoolIDs struct {
 	mtx       cmtsync.RWMutex
 	peerMap   map[p2p.ID]uint16
 	nextID    uint16              // assumes that a node will never have over 65536 active peers
@@ -16,7 +16,7 @@ type mempoolIDs struct {
 
 // Reserve searches for the next unused ID and assigns it to the
 // peer.
-func (ids *mempoolIDs) ReserveForPeer(peer p2p.Peer) {
+func (ids *MempoolIDs) ReserveForPeer(peer p2p.Peer) {
 	ids.mtx.Lock()
 	defer ids.mtx.Unlock()
 
@@ -27,7 +27,7 @@ func (ids *mempoolIDs) ReserveForPeer(peer p2p.Peer) {
 
 // nextPeerID returns the next unused peer ID to use.
 // This assumes that ids's mutex is already locked.
-func (ids *mempoolIDs) nextPeerID() uint16 {
+func (ids *MempoolIDs) nextPeerID() uint16 {
 	if len(ids.activeIDs) == MaxActiveIDs {
 		panic(fmt.Sprintf("node has maximum %d active IDs and wanted to get one more", MaxActiveIDs))
 	}
@@ -43,7 +43,7 @@ func (ids *mempoolIDs) nextPeerID() uint16 {
 }
 
 // Reclaim returns the ID reserved for the peer back to unused pool.
-func (ids *mempoolIDs) Reclaim(peer p2p.Peer) {
+func (ids *MempoolIDs) Reclaim(peer p2p.Peer) {
 	ids.mtx.Lock()
 	defer ids.mtx.Unlock()
 
@@ -55,15 +55,15 @@ func (ids *mempoolIDs) Reclaim(peer p2p.Peer) {
 }
 
 // GetForPeer returns an ID reserved for the peer.
-func (ids *mempoolIDs) GetForPeer(peer p2p.Peer) uint16 {
+func (ids *MempoolIDs) GetForPeer(peer p2p.Peer) uint16 {
 	ids.mtx.RLock()
 	defer ids.mtx.RUnlock()
 
 	return ids.peerMap[peer.ID()]
 }
 
-func newMempoolIDs() *mempoolIDs {
-	return &mempoolIDs{
+func NewMempoolIDs() *MempoolIDs {
+	return &MempoolIDs{
 		peerMap:   make(map[p2p.ID]uint16),
 		activeIDs: map[uint16]struct{}{0: {}},
 		nextID:    1, // reserve unknownPeerID(0) for mempoolReactor.BroadcastTx

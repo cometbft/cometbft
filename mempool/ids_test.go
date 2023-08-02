@@ -9,7 +9,7 @@ import (
 )
 
 func TestMempoolIDsBasic(t *testing.T) {
-	ids := newMempoolIDs()
+	ids := NewMempoolIDs()
 
 	peer := mock.NewPeer(net.IP{127, 0, 0, 1})
 
@@ -28,7 +28,7 @@ func TestMempoolIDsPanicsIfNodeRequestsOvermaxActiveIDs(t *testing.T) {
 	}
 
 	// 0 is already reserved for UnknownPeerID
-	ids := newMempoolIDs()
+	ids := NewMempoolIDs()
 
 	for i := 0; i < MaxActiveIDs-1; i++ {
 		peer := mock.NewPeer(net.IP{127, 0, 0, 1})

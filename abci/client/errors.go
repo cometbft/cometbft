@@ -21,5 +21,5 @@ type ErrUnexpectedResponse struct {
 }
 
 func (e ErrUnexpectedResponse) Error() string {
-	return fmt.Sprintf("Unexpected response %T. %s", e.Response.Value, e.Comment)
+	return fmt.Sprintf("unexpected response %T: %s", e.Response.Value, e.Reason)
 }

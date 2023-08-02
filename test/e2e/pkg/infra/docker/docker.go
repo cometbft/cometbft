@@ -88,7 +88,7 @@ networks:
 
 services:
 {{- if .Prometheus }}
-   prometheus:
+  prometheus:
      labels:
        e2e: true
      container_name: prometheus

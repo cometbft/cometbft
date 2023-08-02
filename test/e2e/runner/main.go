@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/spf13/cobra"
 	"math"
 	"math/rand"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/spf13/cobra"
 
 	"github.com/cometbft/cometbft/libs/log"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -478,7 +479,7 @@ Does not run any perturbations.
 		`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			_, err := WaitForAllNodes(context.TODO(), cli.testnet, 0, 5*time.Second)
+			_, err := waitForAllNodes(context.TODO(), cli.testnet, 0, 5*time.Second)
 			if err != nil {
 				return err
 			}

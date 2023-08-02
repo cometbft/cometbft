@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/conn"
 )
@@ -14,6 +15,7 @@ type Reactor struct {
 func NewReactor() *Reactor {
 	r := &Reactor{}
 	r.BaseReactor = *p2p.NewBaseReactor("Mock-PEX", r)
+	r.SetLogger(log.TestingLogger())
 	return r
 }
 

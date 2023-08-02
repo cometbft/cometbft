@@ -35,29 +35,31 @@ type Config struct {
 	VoteExtensionSize uint `toml:"vote_extension_size"`
 
 	// Experimental
-	ExperimentalCustomReactors        map[string]string `toml:"experimental_custom_reactors"`
-	ExperimentalGossipPropagationRate float32           `toml:"experimental_gossip_propagation_rate"`
-	ExperimentalGossipSendOnce        bool              `toml:"experimental_gossip_send_once"`
+ 	ExperimentalCustomReactors        map[string]string `toml:"experimental_custom_reactors"`
+ 	ExperimentalGossipPropagationRate float32           `toml:"experimental_gossip_propagation_rate"`
+ 	ExperimentalGossipSendOnce        bool `toml:"experimental_gossip_send_once"`
 }
 
 // App extracts out the application specific configuration parameters
 func (cfg *Config) App() *app.Config {
 	return &app.Config{
-		Dir:                               cfg.Dir,
-		SnapshotInterval:                  cfg.SnapshotInterval,
-		RetainBlocks:                      cfg.RetainBlocks,
-		KeyType:                           cfg.KeyType,
-		ValidatorUpdates:                  cfg.ValidatorUpdates,
-		PersistInterval:                   cfg.PersistInterval,
-		PrepareProposalDelay:              cfg.PrepareProposalDelay,
-		ProcessProposalDelay:              cfg.ProcessProposalDelay,
-		CheckTxDelay:                      cfg.CheckTxDelay,
-		FinalizeBlockDelay:                cfg.FinalizeBlockDelay,
-		VoteExtensionDelay:                cfg.VoteExtensionDelay,
-		VoteExtensionSize:                 cfg.VoteExtensionSize,
-		ExperimentalCustomReactors:        cfg.ExperimentalCustomReactors,
-		ExperimentalGossipPropagationRate: cfg.ExperimentalGossipPropagationRate,
-		ExperimentalGossipSendOnce:        cfg.ExperimentalGossipSendOnce,
+		Dir:                  cfg.Dir,
+		SnapshotInterval:     cfg.SnapshotInterval,
+		RetainBlocks:         cfg.RetainBlocks,
+		KeyType:              cfg.KeyType,
+		ValidatorUpdates:     cfg.ValidatorUpdates,
+		PersistInterval:      cfg.PersistInterval,
+		PrepareProposalDelay: cfg.PrepareProposalDelay,
+		ProcessProposalDelay: cfg.ProcessProposalDelay,
+		CheckTxDelay:         cfg.CheckTxDelay,
+		FinalizeBlockDelay:   cfg.FinalizeBlockDelay,
+		VoteExtensionDelay:   cfg.VoteExtensionDelay,
+		VoteExtensionSize:    cfg.VoteExtensionSize,
+
+		//Experimental
+ 		ExperimentalCustomReactors:        cfg.ExperimentalCustomReactors,
+ 		ExperimentalGossipPropagationRate: cfg.ExperimentalGossipPropagationRate,
+ 		ExperimentalGossipSendOnce:        cfg.ExperimentalGossipSendOnce,
 	}
 }
 

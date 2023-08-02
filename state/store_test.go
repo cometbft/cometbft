@@ -6,6 +6,9 @@ import (
 	"testing"
 	"time"
 
+	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/state/txindex"
+	"github.com/cometbft/cometbft/state/txindex/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -245,7 +248,7 @@ func sliceToMap(s []int64) map[int64]bool {
 	return m
 }
 
-func makeStateAndBlockStore() (sm.State, *store.BlockStore, func(), sm.Store) {
+func makeStateAndBlockStoreAndIndexerService() (sm.State, *store.BlockStore, *txindex.IndexerService, func(), sm.Store) {
 	config := test.ResetTestRoot("blockchain_reactor_test")
 	blockDB := dbm.NewMemDB()
 	stateDB := dbm.NewMemDB()
@@ -256,7 +259,17 @@ func makeStateAndBlockStore() (sm.State, *store.BlockStore, func(), sm.Store) {
 	if err != nil {
 		panic(fmt.Errorf("error constructing state from genesis file: %w", err))
 	}
-	return state, store.NewBlockStore(blockDB), func() { os.RemoveAll(config.RootDir) }, stateStore
+
+	indexerService, err := mocks.CreateAndStartIndexerService(
+		config,
+		"test",
+		cfg.DefaultDBProvider,
+		log.TestingLogger())
+	if err != nil {
+		panic(fmt.Errorf("error constructing indexer service: %w", err))
+	}
+
+	return state, store.NewBlockStore(blockDB), indexerService, func() { os.RemoveAll(config.RootDir) }, stateStore
 }
 
 func fillStore(t *testing.T, height int64, stateStore sm.Store, bs *store.BlockStore, state sm.State, response1 *abci.ResponseFinalizeBlock) {
@@ -282,14 +295,14 @@ func fillStore(t *testing.T, height int64, stateStore sm.Store, bs *store.BlockS
 }
 
 func TestSaveRetainHeight(t *testing.T) {
-	state, bs, callbackF, stateStore := makeStateAndBlockStore()
+	state, bs, is, callbackF, stateStore := makeStateAndBlockStoreAndIndexerService()
 	defer callbackF()
 	height := int64(10)
 	state.LastBlockHeight = height - 1
 
 	fillStore(t, height, stateStore, bs, state, nil)
 
-	pruner := sm.NewPruner(stateStore, bs, log.TestingLogger())
+	pruner := sm.NewPruner(stateStore, bs, is, log.TestingLogger())
 
 	// We should not save a height that is 0
 	err := pruner.SetApplicationRetainHeight(0)
@@ -307,11 +320,9 @@ func TestSaveRetainHeight(t *testing.T) {
 }
 
 func TestMinRetainHeight(t *testing.T) {
-	stateDB := dbm.NewMemDB()
-	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
-		DiscardABCIResponses: false,
-	})
-	pruner := sm.NewPruner(stateStore, nil, log.TestingLogger())
+	_, _, is, callbackF, stateStore := makeStateAndBlockStoreAndIndexerService()
+	defer callbackF()
+	pruner := sm.NewPruner(stateStore, nil, is, log.TestingLogger())
 	minHeight := pruner.FindMinRetainHeight()
 	require.Equal(t, minHeight, int64(0))
 
@@ -341,14 +352,14 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 				{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
 			},
 		}
-		state, bs, callbackF, stateStore := makeStateAndBlockStore()
+		state, bs, is, callbackF, stateStore := makeStateAndBlockStoreAndIndexerService()
 		defer callbackF()
 		height := int64(10)
 		state.LastBlockHeight = height - 1
 
 		fillStore(t, height, stateStore, bs, state, response1)
 
-		pruner := sm.NewPruner(stateStore, bs, log.TestingLogger())
+		pruner := sm.NewPruner(stateStore, bs, is, log.TestingLogger())
 
 		// Check that we have written a finalize block result at height 'height - 1'
 		_, err = stateStore.LoadFinalizeBlockResponse(height - 1)

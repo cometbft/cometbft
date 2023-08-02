@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 DIR=$(dirname "${BASH_SOURCE[0]}")
+source ${DIR}/utils.sh
 
 if [ $# -lt 2 ];
 then
@@ -21,7 +22,7 @@ CUSTOM_CONSENSUS_REACTOR="p2p.mock.reactor"
 CUSTOM_MEMPOOL_REACTOR="experimental.reactors.mempool.gossip"
 INITIAL_HEIGHT=0
 
-SEND_ONCE="true"
+SEND_ONCE="false"
 
 if [[ "${MODE}" == "-solo" ]] || [[ "${MODE}" == "-all" ]];
 then

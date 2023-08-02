@@ -40,7 +40,7 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 	for i, n := range nodes {
 		nodeNames[i] = n.Name
 	}
-	return ExecCompose(ctx, p.Testnet.Dir, append([]string{"up", "--detach"}, nodeNames...)...)
+	return ExecCompose(ctx, p.Testnet.Dir, "up", "--detach")
 }
 
 func (p Provider) StopTestnet(ctx context.Context) error {
@@ -88,20 +88,20 @@ networks:
 
 services:
 {{- if .Prometheus }}
-   prometheus:
-     labels:
-       e2e: true
-     container_name: prometheus
-     image: prom/prometheus
-     volumes:
-     - .:/etc/prometheus/
-     ports:
-     - 9090:9090
-     networks:
-       {{ .Name }}:
-         ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .PrometheusIP }}
- {{printf "\n"}}
- {{- end }}
+  prometheus:
+    labels:
+      e2e: true
+    container_name: prometheus
+    image: prom/prometheus
+    volumes:
+    - .:/etc/prometheus/
+    ports:
+    - 9090:9090
+    networks:
+      {{ .Name }}:
+        ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .PrometheusIP }}
+{{printf "\n"}}
+{{- end }}
 
 {{- range .Nodes }}
   {{ .Name }}:
@@ -124,7 +124,6 @@ services:
     - 2346
     volumes:
     - ./{{ .Name }}:/cometbft
-    - ./{{ .Name }}:/tendermint
     networks:
       {{ $.Name }}:
         ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .InternalIP }}
@@ -150,12 +149,10 @@ services:
     - 2346
     volumes:
     - ./{{ .Name }}:/cometbft
-    - ./{{ .Name }}:/tendermint
     networks:
       {{ $.Name }}:
         ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .InternalIP }}
 {{- end }}
-
 {{end}}`)
 	if err != nil {
 		return nil, err
@@ -170,9 +167,10 @@ services:
 
 // ExecCompose runs a Docker Compose command for a testnet.
 func ExecCompose(ctx context.Context, dir string, args ...string) error {
-	return exec.Command(ctx, append(
+	str := append(
 		[]string{"docker", "compose", "-f", filepath.Join(dir, "docker-compose.yml")},
-		args...)...)
+		args...)
+	return exec.Command(ctx, str...)
 }
 
 // ExecCompose runs a Docker Compose command for a testnet and returns the command's output.

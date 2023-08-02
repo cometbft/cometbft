@@ -85,21 +85,24 @@ func waitForNode(ctx context.Context, node *e2e.Node, height int64, timeout time
 	lastChanged := time.Now()
 
 	for {
-		client, err := node.ClientWithTimeout(1)
- 		if err != nil {
- 			logger.Error("Error connecting", err)
- 			continue
- 		}
 
- 		// web socket connection is established
+		client, err := node.ClientWithTimeout(1)
+		if err != nil {
+			logger.Error("Error connecting", err)
+			continue
+		}
+
+		// web socket connection is established
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		case <-timer.C:
 			status, err := client.Status(ctx)
-			if err == nil {
- 				node.ID = status.NodeInfo.ID()
- 			}
+			if err != nil {
+				// ignore
+			} else {
+				node.ID = status.NodeInfo.ID()
+			}
 			switch {
 			case time.Since(lastChanged) > timeout:
 				return nil, fmt.Errorf("timed out waiting for %v to reach height %v", node.Name, height)
@@ -110,14 +113,13 @@ func waitForNode(ctx context.Context, node *e2e.Node, height int64, timeout time
 				curHeight = status.SyncInfo.LatestBlockHeight
 				lastChanged = time.Now()
 			}
-
 			timer.Reset(300 * time.Millisecond)
 		}
 	}
 }
 
-// waitForAllNodes waits for all nodes to become available and catch up to the given block height.
-func waitForAllNodes(ctx context.Context, testnet *e2e.Testnet, height int64, timeout time.Duration) (int64, error) {
+// WaitForAllNodes waits for all nodes to become available and catch up to the given block height.
+func WaitForAllNodes(ctx context.Context, testnet *e2e.Testnet, height int64, timeout time.Duration) (int64, error) {
 	var lastHeight int64
 
 	deadline := time.Now().Add(timeout)

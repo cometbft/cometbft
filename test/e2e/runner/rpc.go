@@ -99,10 +99,9 @@ func waitForNode(ctx context.Context, node *e2e.Node, height int64, timeout time
 		case <-timer.C:
 			status, err := client.Status(ctx)
 			if err != nil {
-				// ignore
-			} else {
-				node.ID = status.NodeInfo.ID()
+				logger.Debug("Error fetching client status", "err", err)
 			}
+			node.ID = status.NodeInfo.ID()
 			switch {
 			case time.Since(lastChanged) > timeout:
 				return nil, fmt.Errorf("timed out waiting for %v to reach height %v", node.Name, height)

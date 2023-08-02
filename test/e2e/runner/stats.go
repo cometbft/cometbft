@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
+	"strconv"
+	"time"
+
 	"github.com/cometbft/cometbft/test/loadtime/payload"
 	"github.com/prometheus/client_golang/api"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
-	"math"
-	"strconv"
-	"time"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
@@ -89,7 +90,7 @@ func ComputeStats(testnet *e2e.Testnet) (Stats, error) {
 func (t *Stats) Output() string {
 	jsn, err := json.Marshal(t)
 	if err != nil {
-		fmt.Errorf("failed to marshal state: %w")
+		fmt.Errorf("failed to marshal state: %w", err)
 		return ""
 	}
 	return string(jsn)
@@ -212,29 +213,29 @@ func (t *Stats) Latency() float64 {
 }
 
 func queryInt(v1api v1.API, timeout time.Duration, field string, node string, extra string) (int, error) {
-	if result, err := doQuery(v1api, timeout, field, node, extra); err == nil {
-		if len(result.(model.Vector)) != 0 {
-			return strconv.Atoi(result.(model.Vector)[0].Value.String())
-		}
-		return 0, nil
-	} else {
+	result, err := doQuery(v1api, timeout, field, node, extra)
+	if err != nil {
 		return 0, err
 	}
+	if len(result.(model.Vector)) == 0 {
+		return 0, nil
+	}
+	return strconv.Atoi(result.(model.Vector)[0].Value.String())
 }
 
 func queryFloat(v1api v1.API, timeout time.Duration, field string, node string, extra string) (float32, error) {
-	if result, err := doQuery(v1api, timeout, field, node, extra); err == nil {
-		if len(result.(model.Vector)) != 0 {
-			if convert, convertErr := strconv.ParseFloat(result.(model.Vector)[0].Value.String(), 32); convertErr == nil {
-				return float32(convert), nil
-			} else {
-				return 0, convertErr
-			}
-		}
-	} else {
+	result, err := doQuery(v1api, timeout, field, node, extra)
+	if err != nil {
 		return 0, err
 	}
-	return 0, nil
+	if len(result.(model.Vector)) == 0 {
+		return 0, nil
+	}
+	convert, err := strconv.ParseFloat(result.(model.Vector)[0].Value.String(), 32)
+	if err != nil {
+		return 0, err
+	}
+	return float32(convert), nil
 }
 
 func doQuery(v1api v1.API, timeout time.Duration, field string, node string, extra string) (model.Value, error) {

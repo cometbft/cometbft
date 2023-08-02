@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"sync"
 	"time"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/cometbft/cometbft/libs/log"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
@@ -144,26 +145,26 @@ func loadProcess(ctx context.Context, txCh <-chan payload.Payload, chSuccess cha
 			}
 		}
 
-		if info, err := client.Status(context.TODO()); err == nil {
-			if !testnet.PhysicalTimestamps {
-				tx.Time = &timestamppb.Timestamp{
-					Seconds: info.SyncInfo.LatestBlockHeight,
-					Nanos:   0}
-			} else {
-				time := cmttime.Canonical(info.SyncInfo.LatestBlockTime)
-				tx.Time = &timestamppb.Timestamp{
-					Seconds: time.Unix(),
-					Nanos:   int32(time.Nanosecond()),
-				}
-			}
-		} else {
+		info, err := client.Status(context.TODO())
+		if err != nil {
 			logger.Info("non-fatal error fetching sync info", "error", err)
 			continue
 		}
+		if !testnet.PhysicalTimestamps {
+			tx.Time = &timestamppb.Timestamp{
+				Seconds: info.SyncInfo.LatestBlockHeight,
+				Nanos:   0}
+		} else {
+			time := cmttime.Canonical(info.SyncInfo.LatestBlockTime)
+			tx.Time = &timestamppb.Timestamp{
+				Seconds: time.Unix(),
+				Nanos:   int32(time.Nanosecond()),
+			}
+		}
 
-		marshalled, _ := payload.NewBytes(&tx)
+		marshaled, _ := payload.NewBytes(&tx)
 
-		if _, err = client.BroadcastTxSync(ctx, marshalled); err != nil {
+		if _, err = client.BroadcastTxSync(ctx, marshaled); err != nil {
 			continue
 		}
 		chSuccess <- s

@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/spf13/cobra"
 	"math"
 	"math/rand"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/spf13/cobra"
 
 	"github.com/cometbft/cometbft/libs/log"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -375,7 +376,11 @@ Does not run any perturbations.
 
 			benchmarkDuration := 120 * time.Second
 
-			defer cli.infp.StopTestnet(context.Background())
+			defer func() {
+				if err := cli.infp.StopTestnet(context.Background()); err != nil {
+					logger.Error("Error stopping testnet", "err", err.Error())
+				}
+			}()
 
 			if err := Cleanup(cli.testnet); err != nil {
 				return err
@@ -421,7 +426,7 @@ Does not run any perturbations.
 				if time.Since(startAt) < benchmarkDuration {
 					return fmt.Errorf("timed out without reason")
 				}
-				return fmt.Errorf("benchamrk ran out of time")
+				return fmt.Errorf("benchmark ran out of time")
 			}
 			logger.Info("Ending benchmark.")
 
@@ -463,13 +468,16 @@ Does not run any perturbations.
 				logger.Info("latency (on avg, in s) = " + fmt.Sprintf("%v", latency))
 			}
 
-			if graph, err := json.Marshal(mempoolStats.BandwidthGraph(cli.testnet, true)); err != nil {
+			graph, err := json.Marshal(mempoolStats.BandwidthGraph(cli.testnet, true))
+			if err != nil {
 				return err
-			} else {
-				logger.Info("bandwidth graph = " + fmt.Sprintf("%v", string(graph)))
 			}
+			logger.Info("bandwidth graph = " + fmt.Sprintf("%v", string(graph)))
 
-			cli.infp.StopTestnet(context.Background())
+			err = cli.infp.StopTestnet(context.Background())
+			if err != nil {
+				return err
+			}
 
 			return Cleanup(cli.testnet)
 		},

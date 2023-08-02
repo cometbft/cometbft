@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	p2pmock "github.com/cometbft/cometbft/p2p/mock"
- 	"github.com/cometbft/cometbft/test/e2e/fast-prototyping/reactors/mempool/gossip"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	p2pmock "github.com/cometbft/cometbft/p2p/mock"
+	"github.com/cometbft/cometbft/test/e2e/fast-prototyping/reactors/mempool/gossip"
 
 	"github.com/spf13/viper"
 
@@ -149,27 +150,26 @@ func startNode(cfg *Config) error {
 	}
 
 	// weave custom reactors here (cannot be done by reflexivity)
- 	registry := map[string]p2p.Reactor{}
- 	registry["p2p.mock.reactor"] = p2pmock.NewReactor()
- 	consensus, ok := cfg.ExperimentalCustomReactors["CONSENSUS"]
- 	consensusMocked := !ok || consensus == "p2p.mock.reactor"
- 	registry["experimental.reactors.mempool.gossip"] = gossip.NewReactor(
- 		cmtcfg.Mempool,
- 		n,
- 		consensusMocked,
- 		cfg.ExperimentalGossipPropagationRate,
- 		cfg.ExperimentalGossipSendOnce)
+	registry := map[string]p2p.Reactor{}
+	registry["p2p.mock.reactor"] = p2pmock.NewReactor()
+	consensus, ok := cfg.ExperimentalCustomReactors["CONSENSUS"]
+	consensusMocked := !ok || consensus == "p2p.mock.reactor"
+	registry["experimental.reactors.mempool.gossip"] = gossip.NewReactor(
+		n,
+		consensusMocked,
+		cfg.ExperimentalGossipPropagationRate,
+		cfg.ExperimentalGossipSendOnce)
 
- 	customReactors := map[string]p2p.Reactor{}
- 	for k, v := range cfg.ExperimentalCustomReactors {
- 		mock, ok := registry[v]
- 		if ok {
- 			customReactors[k] = mock
- 			logger.Info("Mocking reactor: ", k, mock)
- 		}
- 	}
+	customReactors := map[string]p2p.Reactor{}
+	for k, v := range cfg.ExperimentalCustomReactors {
+		mock, ok := registry[v]
+		if ok {
+			customReactors[k] = mock
+			logger.Info("Mocking reactor: ", k, mock)
+		}
+	}
 
- 	node.CustomReactors(customReactors)(n)
+	node.CustomReactors(customReactors)(n)
 
 	return n.Start()
 }

@@ -26,7 +26,7 @@ import (
 type Reactor struct {
 	p2p.BaseReactor
 	config          *cfg.MempoolConfig
-	mempool         *mempool.CListMempool
+	mempool         mempool.Mempool
 	ids             *mempool.MempoolIDs
 	txSenders       map[types.TxKey]map[uint16]bool
 	txSendersMtx    cmtsync.RWMutex
@@ -38,10 +38,10 @@ type Reactor struct {
 
 // NewReactor returns a new Reactor with the given config and mempool.
 // The mempool's channel TxsAvailable will be initialized only when notifyAvailable is true.
-func NewReactor(node *nm.Node, mp *mempool.CListMempool, ConsensusMocked bool, rate float32, sendOnce bool) *Reactor {
+func NewReactor(node *nm.Node, ConsensusMocked bool, rate float32, sendOnce bool) *Reactor {
 	memR := &Reactor{
 		config:          node.Config().Mempool,
-		mempool:         mp,
+		mempool:         node.Mempool(),
 		ids:             mempool.NewMempoolIDs(),
 		txSenders:       make(map[types.TxKey]map[uint16]bool),
 		propagationRate: rate,

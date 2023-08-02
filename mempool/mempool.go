@@ -9,6 +9,8 @@ import (
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/clist"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -104,6 +106,13 @@ type Mempool interface {
 
 	// SizeBytes returns the total size of all txs in the mempool.
 	SizeBytes() int64
+
+	SetLogger(l log.Logger)
+
+	// FIX: This is a hack to access these methods from custom reactors in test/e2e
+	// See https://github.com/cometbft/cometbft/pull/1043
+	TxsFront() *clist.CElement
+	TxsWaitChan() <-chan struct{}
 }
 
 // PreCheckFunc is an optional filter executed before CheckTx and rejects

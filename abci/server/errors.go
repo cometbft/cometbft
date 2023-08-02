@@ -21,7 +21,7 @@ type ErrConnectionNotExists struct {
 }
 
 func (e ErrConnectionNotExists) Error() string {
-	return fmt.Sprintf("Connection %d does not exist", e.ConnID)
+	return fmt.Sprintf("connection %d does not exist", e.ConnID)
 }
 
 type ErrUnknownClientRequest struct {

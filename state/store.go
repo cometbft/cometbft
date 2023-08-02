@@ -398,7 +398,7 @@ func (store dbStore) PruneABCIResponses(targetRetainHeight int64) (int64, int64,
 	}
 	lastRetainHeight, err := store.getLastABCIResponsesRetainHeight()
 	if err != nil {
-		return 0, 0, fmt.Errorf("failed to look up last ABCI responses prune height: %w", err)
+		return 0, 0, fmt.Errorf("failed to look up last ABCI responses retain height: %w", err)
 	}
 	if lastRetainHeight == 0 {
 		lastRetainHeight = 1
@@ -424,7 +424,7 @@ func (store dbStore) PruneABCIResponses(targetRetainHeight int64) (int64, int64,
 			pruned += batchPruned
 			batchPruned = 0
 			if err := store.setLastABCIResponsesRetainHeight(h); err != nil {
-				return pruned, lastRetainHeight + pruned, fmt.Errorf("failed to set last ABCI responses prune height: %w", err)
+				return pruned, lastRetainHeight + pruned, fmt.Errorf("failed to set last ABCI responses retain height: %w", err)
 			}
 
 			batch = store.db.NewBatch()

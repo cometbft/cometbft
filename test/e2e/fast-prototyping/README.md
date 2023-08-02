@@ -33,6 +33,3 @@ You can also specify if 0, 1, or all nodes will be validators.
 Any non-validator is a full node.
 
 The script creates a temporary `custom.toml` manifest file under the `/tmp` folder while running.
-
-
-

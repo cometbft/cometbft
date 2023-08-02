@@ -178,6 +178,24 @@ func (p *Pruner) SetABCIResRetainHeight(height int64) error {
 	return err
 }
 
+// GetApplicationRetainHeight is a convenience method for accessing the
+// GetApplicationRetainHeight method of the underlying state store.
+func (p *Pruner) GetApplicationRetainHeight() (int64, error) {
+	return p.stateStore.GetApplicationRetainHeight()
+}
+
+// GetCompanionBlockRetainHeight is a convenience method for accessing the
+// GetCompanionBlockRetainHeight method of the underlying state store.
+func (p *Pruner) GetCompanionBlockRetainHeight() (int64, error) {
+	return p.stateStore.GetCompanionBlockRetainHeight()
+}
+
+// GetABCIResRetainHeight is a convenience method for accessing the
+// GetABCIResRetainHeight method of the underlying state store.
+func (p *Pruner) GetABCIResRetainHeight() (int64, error) {
+	return p.stateStore.GetABCIResRetainHeight()
+}
+
 func (p *Pruner) pruningRoutine() {
 	p.logger.Info("Pruner started", "interval", p.interval.String())
 	lastRetainHeight := int64(0)

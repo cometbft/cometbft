@@ -29,5 +29,5 @@ type ErrUnknownClientRequest struct {
 }
 
 func (e ErrUnknownClientRequest) Error() string {
-	return fmt.Sprintf("Unknown request from client %T", e.Req)
+	return fmt.Sprintf("unknown request from client: %T", e.Req)
 }

@@ -12,7 +12,7 @@ type ErrUnknownAbciTransport struct {
 }
 
 func (e ErrUnknownAbciTransport) Error() string {
-	return fmt.Sprintf("Unknown abci transport: %s", e.Transport)
+	return fmt.Sprintf("unknown abci transport: %s", e.Transport)
 }
 
 type ErrUnexpectedResponse struct {

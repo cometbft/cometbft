@@ -26,18 +26,18 @@ func TestBlockerIndexer_Prune(t *testing.T) {
 	err := indexer.Index(events1)
 	require.NoError(t, err)
 
-	keys1 := blockidxkv.GetKeys(indexer)
+	keys1 := kv.SliceDiff(blockidxkv.GetKeys(indexer), [][]byte{blockidxkv.LBRetainHeightKey})
 
 	err = indexer.Index(events2)
 	require.NoError(t, err)
 
-	keys2 := blockidxkv.GetKeys(indexer)
+	keys2 := kv.SliceDiff(blockidxkv.GetKeys(indexer), [][]byte{blockidxkv.LBRetainHeightKey})
 
 	require.True(t, kv.Subslice(keys1, keys2))
 
 	indexer.Prune(2)
 
-	keys3 := blockidxkv.GetKeys(indexer)
+	keys3 := kv.SliceDiff(blockidxkv.GetKeys(indexer), [][]byte{blockidxkv.LBRetainHeightKey})
 	require.True(t, kv.EqualSlices(kv.SliceDiff(keys2, keys1), keys3))
 	require.True(t, kv.EmptyIntersection(keys1, keys3))
 }

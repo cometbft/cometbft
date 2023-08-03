@@ -23,6 +23,8 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+var LBRetainHeightKey = []byte("LBRetainHeightKey")
+
 var _ indexer.BlockIndexer = (*BlockerIndexer)(nil)
 
 // BlockerIndexer implements a block indexer, indexing FinalizeBlock
@@ -34,13 +36,40 @@ type BlockerIndexer struct {
 	// Add unique event identifier to use when querying
 	// Matching will be done both on height AND eventSeq
 	eventSeq int64
-	log      log.Logger
+	// Lower bound for the last retained height
+	lbRetainedHeight int64
+	log              log.Logger
 }
 
 func New(store dbm.DB) *BlockerIndexer {
 	return &BlockerIndexer{
-		store: store,
+		store:            store,
+		lbRetainedHeight: getLBRetainHeight(store),
 	}
+}
+
+func getLBRetainHeight(store dbm.DB) int64 {
+	var lbRetainHeight, err = store.Get(LBRetainHeightKey)
+	if err != nil {
+		panic(err)
+	}
+	if LBRetainHeightKey == nil {
+		return 0
+	}
+	return int64FromBytes(lbRetainHeight)
+}
+
+func (idx *BlockerIndexer) setLBRetainHeight(height int64) {
+	if height <= idx.lbRetainedHeight {
+		return
+	}
+
+	idx.lbRetainedHeight = height
+	err := idx.store.Set(LBRetainHeightKey, int64ToBytes(height))
+	if err != nil {
+		panic(err)
+	}
+
 }
 
 func (idx *BlockerIndexer) SetLogger(l log.Logger) {
@@ -87,7 +116,10 @@ func (idx *BlockerIndexer) Index(bh types.EventDataNewBlockEvents) error {
 }
 
 func (idx *BlockerIndexer) Prune(retainHeight int64) {
-	for height := int64(0); height < retainHeight; height++ {
+	if retainHeight < idx.lbRetainedHeight {
+		return
+	}
+	for height := idx.lbRetainedHeight; height < retainHeight; height++ {
 		key, err := heightKey(height)
 		if err != nil {
 			panic(err)
@@ -98,6 +130,7 @@ func (idx *BlockerIndexer) Prune(retainHeight int64) {
 		}
 		idx.deleteEvents(height)
 	}
+	idx.setLBRetainHeight(retainHeight)
 }
 
 // Search performs a query for block heights that match a given FinalizeBlock

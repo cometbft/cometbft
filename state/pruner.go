@@ -31,15 +31,19 @@ type Pruner struct {
 	stateStore Store
 
 	interval time.Duration
+
+	observer PrunerObserver
 }
 
 type prunerConfig struct {
 	interval time.Duration
+	observer PrunerObserver
 }
 
 func defaultPrunerConfig() *prunerConfig {
 	return &prunerConfig{
 		interval: config.DefaultPruningInterval,
+		observer: &NoopPrunerObserver{},
 	}
 }
 
@@ -49,6 +53,10 @@ type PrunerOption func(*prunerConfig)
 // pruner.
 func WithPrunerInterval(t time.Duration) PrunerOption {
 	return func(p *prunerConfig) { p.interval = t }
+}
+
+func WithPrunerObserver(obs PrunerObserver) PrunerOption {
+	return func(p *prunerConfig) { p.observer = obs }
 }
 
 func NewPruner(stateStore Store, bs BlockStore, logger log.Logger, options ...PrunerOption) *Pruner {
@@ -61,9 +69,14 @@ func NewPruner(stateStore Store, bs BlockStore, logger log.Logger, options ...Pr
 		stateStore: stateStore,
 		logger:     logger,
 		interval:   cfg.interval,
+		observer:   cfg.observer,
 	}
 	p.BaseService = *service.NewBaseService(logger, "Pruner", p)
 	return p
+}
+
+func (p *Pruner) SetObserver(obs PrunerObserver) {
+	p.observer = obs
 }
 
 func (p *Pruner) OnStart() error {
@@ -194,6 +207,7 @@ func (p *Pruner) GetABCIResRetainHeight() (int64, error) {
 
 func (p *Pruner) pruningRoutine() {
 	p.logger.Info("Pruner started", "interval", p.interval.String())
+	p.observer.PrunerStarted(p.interval)
 	lastRetainHeight := int64(0)
 	lastABCIResRetainHeight := int64(0)
 	for {
@@ -201,8 +215,20 @@ func (p *Pruner) pruningRoutine() {
 		case <-p.Quit():
 			return
 		default:
-			lastRetainHeight = p.pruneBlocksToRetainHeight(lastRetainHeight)
-			lastABCIResRetainHeight = p.pruneABCIResToRetainHeight(lastABCIResRetainHeight)
+			newRetainHeight := p.pruneBlocksToRetainHeight(lastRetainHeight)
+			newABCIResRetainHeight := p.pruneABCIResToRetainHeight(lastABCIResRetainHeight)
+			p.observer.PrunerPruned(&PrunedInfo{
+				Blocks: &BlocksPrunedInfo{
+					FromHeight: lastRetainHeight,
+					ToHeight:   newRetainHeight - 1,
+				},
+				ABCIRes: &ABCIResponsesPrunedInfo{
+					FromHeight: lastABCIResRetainHeight,
+					ToHeight:   newABCIResRetainHeight - 1,
+				},
+			})
+			lastRetainHeight = newRetainHeight
+			lastABCIResRetainHeight = newABCIResRetainHeight
 			time.Sleep(p.interval)
 		}
 	}

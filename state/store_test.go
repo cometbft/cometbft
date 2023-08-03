@@ -398,6 +398,21 @@ func TestABCIResPruningStandalone(t *testing.T) {
 	require.NoError(t, err)
 }
 
+type prunerObserver struct {
+	sm.NoopPrunerObserver
+	prunedInfoCh chan *sm.PrunedInfo
+}
+
+func newPrunerObserver(infoChCap int) *prunerObserver {
+	return &prunerObserver{
+		prunedInfoCh: make(chan *sm.PrunedInfo, infoChCap),
+	}
+}
+
+func (o *prunerObserver) PrunerPruned(info *sm.PrunedInfo) {
+	o.prunedInfoCh <- info
+}
+
 func TestFinalizeBlockResponsePruning(t *testing.T) {
 	t.Run("Persisting responses", func(t *testing.T) {
 		stateDB := dbm.NewMemDB()
@@ -420,18 +435,27 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 
 		fillStore(t, height, stateStore, bs, state, response1)
 
-		pruner := sm.NewPruner(stateStore, bs, log.TestingLogger())
+		obs := newPrunerObserver(1)
+		pruner := sm.NewPruner(
+			stateStore,
+			bs,
+			log.TestingLogger(),
+			sm.WithPrunerInterval(1*time.Second),
+			sm.WithPrunerObserver(obs),
+		)
 
 		// Check that we have written a finalize block result at height 'height - 1'
 		_, err = stateStore.LoadFinalizeBlockResponse(height - 1)
 		require.NoError(t, err)
-		err = pruner.SetABCIResRetainHeight(height)
-		require.NoError(t, err)
-		err = pruner.Start()
-		require.NoError(t, err)
-		require.NoError(t, err)
-		// Sleep to give time to the pruning service to delete the responses
-		time.Sleep(time.Second * 20)
+		require.NoError(t, pruner.SetABCIResRetainHeight(height))
+		require.NoError(t, pruner.Start())
+
+		select {
+		case info := <-obs.prunedInfoCh:
+			require.Equal(t, height-1, info.ABCIRes.ToHeight)
+		case <-time.After(5 * time.Second):
+			require.Fail(t, "timed out waiting for pruning run to complete")
+		}
 
 		// Check that the response at height h - 1 has been deleted
 		_, err = stateStore.LoadFinalizeBlockResponse(height - 1)

@@ -177,7 +177,8 @@ func TestABCIGrammar(t *testing.T) {
 			t.Error(fmt.Errorf("Collecting of ABCI requests failed: %w", err))
 		}
 		for i, r := range reqs {
-			_, err := checker.Verify(r, i == 0)
+			isCleanStart := i == 0
+			_, err := checker.Verify(r, isCleanStart)
 			if err != nil {
 				t.Error(fmt.Errorf("ABCI grammar verification failed: %w", err))
 			}
@@ -186,10 +187,19 @@ func TestABCIGrammar(t *testing.T) {
 }
 ```
 
-Specifically, the test first creates a `GrammarChecker` object. Then for each node in the testnet, it collects all requests logged by this node. Remember here that `fetchABCIRequests()` returns an array of slices(`[]*abci.Request`) where the slice with index 0 corresponds to the node's `CleanStart` execution, and each additional slice corresponds to the `Recovery` execution after a specific crash. Each node must have one `CleanStart` execution and the same number of `Recovery` executions as the number of crashes that happened on this node. If collecting was successful, the test checks whether each execution respects the ABCI++ 
-grammar by calling `checker.Verify(r, i == 0)` method. The second parameter (`i == 0`) indicates whether the set of requests `r` represents a `CleanStart` or a `Recovery` execution. If `Verify` returns an error, the specific execution does not respect the grammar, and the test will fail. 
+Specifically, the test first creates a `GrammarChecker` object. Then for each node in the testnet, it collects all requests 
+logged by this node. Remember here that `fetchABCIRequests()` returns an array of slices(`[]*abci.Request`) where the slice 
+with index 0 corresponds to the node's `CleanStart` execution, and each additional slice corresponds to the `Recovery` 
+execution after a specific crash. Each node must have one `CleanStart` execution and the same number of `Recovery` executions 
+as the number of crashes that happened on this node. If collecting was successful, the test checks whether each execution 
+respects the ABCI++ 
+grammar by calling `checker.Verify()` method. If `Verify` returns an error, the specific execution does not respect the 
+grammar, and the test will fail. 
 
-The tests are executed only if `ABCITestsEnabled` is set to `true`. This is done through the manifest file. Namely, if we want to test whether CometBFT respects ABCI++ grammar, we would need to enable these tests by adding `abci_tests_enabled = true` in the manifest file of a particular testnet (e.g. `networks/ci.toml`). This will automatically activate logging on the application side. 
+The tests are executed only if `ABCITestsEnabled` is set to `true`. This is done through the manifest file. Namely, if we 
+want to test whether CometBFT respects ABCI++ grammar, we would need to enable these tests by adding `abci_tests_enabled = 
+true` in the manifest file of a particular testnet (e.g. `networks/ci.toml`). This will automatically activate logging on the 
+application side. 
 
 The `Verify()` method is shown below. 
 ```go
@@ -199,85 +209,56 @@ func (g *GrammarChecker) Verify(reqs []*abci.Request, isCleanStart bool) (bool, 
 	if len(reqs) == 0 {
 		return false, fmt.Errorf("Execution with no ABCI calls.")
 	}
+	var errors []*Error
 	execution := g.getExecutionString(r)
-	_, err := g.verifySpecific(r, isCleanStart)
-	if err != nil {
-		return false, fmt.Errorf("%v\nExecution:\n%v", err, g.addHeightNumbersToTheExecution(execution))
+	if isCleanStart {
+		errors = g.verifyCleanStart(execution)
+	} else {
+		errors = g.verifyRecovery(execution)
 	}
-	_, errs := g.verifyGeneric(execution)
-	if errs != nil {
-		return false, fmt.Errorf("%v\nExecution:\n%v", g.combineErrors(errs, g.cfg.NumberOfErrorsToShow), g.addHeightNumbersToTheExecution(execution))
+	if errors == nil {
+		return true, nil
 	}
-	return true, nil
+	return false, fmt.Errorf("%v\nFull execution:\n%v", g.combineErrors(errors, g.cfg.NumberOfErrorsToShow), g.addHeightNumbersToTheExecution(execution))
 }
 ```
 
-The method `Verify()` first calls method `filterRequests()` that is going to remove all the requests from the set that are not supported by the current version of the grammar. In addition, it will filter the last height by removing all ABCI++ requests after the 
-last `Commit`. The function `fetchABCIRequests()` can be called in the middle of the height. As a result, the last height may be incomplete, and 
-classified as invalid even if that is not the reality. The simple example here is that the last 
+It receives a set of ABCI++ requests and a flag saying whether they represent a `CleanStart` execution or not and does the following things:
+- Filter the requests by calling the method `filterRequests()`. This method will remove all the requests from the set that are not supported by the current version of the grammar. In addition, it will filter the last height by removing all ABCI++ requests after the 
+last `Commit`. The function `fetchABCIRequests()` can be called in the middle of the height. As a result, the last height may be incomplete and 
+classified as invalid, even if that is not the reality. The simple example here is that the last 
 request fetched via `fetchABCIRequests()` is `Decide`; however, `Commit` happens after 
 `fetchABCIRequests()` was invoked. Consequently, the execution
 will be considered as faulty because `Commit` is missing, even though the `Commit` 
-will happen after. 
-After filtering the requests `Verify()` checks if the remaining set of requests respect the grammar. It does that by calling two methods: `verifySpecific()` and `verifyGeneric()`. 
-Former should always be called first and is responsible of doing some specific checks that the parser cannot do. For example, at the moment it is checking if 
-
+will happen after.  
 - Generates an execution string by replacing `abci.Request` with the 
 corresponding terminal from the grammar. This logic is implemented in
-`GetExecutionString()` function. This function receives a list of `abci.Request` and generates a string where every request the grammar covers 
-will be replaced with a corresponding terminal. For example, request `r` of type `abci.Request_PrepareProposal` is replaced with the string `prepare_proposal`, the first part of `r`'s string representation. If the grammar does not cover the request, it will be ignored. 
-- Checks if the resulting string with terminals respects the grammar. This 
-logic is implemented inside the `VerifyExecution` function. 
-
-```go
-func (g *GrammarChecker) VerifyExecution(execution string) (bool, error) {
-	lexer := lexer.New([]rune(execution))
-	_, errs := parser.Parse(lexer)
-	if len(errs) > 0 {
-		err := g.combineParseErrors(execution, errs, g.cfg.NumberOfErrorsToShow)
-		if g.cfg.ShowFullExecution {
-			e := g.addHeightNumbersToTheExecution(execution)
-			err = fmt.Errorf("%v\nFull execution:\n%v", err, e)
-		}
-		return false, err
-	}
-	return true, nil
-}
-```
-This function is the only function that uses auto-generated parser and 
-lexer. It returns true if the execution is valid. Otherwise, it returns an 
-error composed of parser errors and some additional information 
-we added. In addition, if the `ShowFullExecution` is set to `true`, it prints the whole execution. An example of an error produced by `VerifyExecution`
-is the following:
+`getExecutionString()` function. This function receives a list of `abci.Request` and generates a string where every request 
+will be replaced with a corresponding terminal. For example, request `r` of type `abci.Request_PrepareProposal` is replaced with the string `prepare_proposal`, the first part of `r`'s string representation. 
+- Checks if the resulting string with terminals respects the grammar by calling the 
+appropriate function (`verifyCleanStart()` or `verifyRecovery()`) depending on the execution type. The implementations of both functions are the same; they just use different parsers and lexers. 
+- Returns true if the execution is valid and an error if that's not the case. An example of an error is below. 
 
 ```
-ABCI grammar verification failed: Parser failed, number of errors is 2
-            ---Error 0---
-            Height: 0
-            ABCI requests: offer_snapshot apply_snapshot_chunk finalize_block commit
-            Unexpected request: offer_snapshot
-            Expected one of: [init_chain,process_proposal,finalize_block,prepare_proposal]
-            -------------
-            Full execution:
+FAIL: TestABCIGrammar/full02 (8.76s)
+        abci_test.go:24: ABCI grammar verification failed: The error: "Invalid clean-start execution: parser was expecting one of [init_chain], got [offer_snapshot] instead." has occured at height 0.
+            
+            Execution:
             0: offer_snapshot apply_snapshot_chunk finalize_block commit
             1: finalize_block commit
             2: finalize_block commit
             3: finalize_block commit
-            4: finalize_block commit
-            5: process_proposal finalize_block commit
 			...
 ```
-The parse error shown above represents an error that happened at height 0. The `ABCI requests` part represents 
-requests observed in this height, while `Unexpected request` and `Expected one of` represent the request which 
-should not happen, and the requests that should have happened instead, respectively. 
-Lastly, after the errors the full execution, one height per line, is printed. This can be turned off with the config flag. 
-Notice here that the parser can return many errors because the parser returns an error at every point at which the parser fails to parse
+The error shown above reports an invalid `CleanStart` execution. Moreover, it says why it is considered invalid (`init_chain` was missing) and the height of the error. Notice here that the height in the case of `CleanStart` execution corresponds to the actual consensus height, while for the `Recovery` execution, height 0 represents the first height after the crash. Lastly, after the error, the full execution, one height per line, is printed. This part may be optional and handled with the config flag, but we left it like this for now. 
+
+*Note:* The `gogll` parser can return many errors because it returns an error at every point at which the parser fails to parse
 a grammar production. Usually, the error of interest is the one that has 
-parsed the largest number of tokens. This is why, by default, we are printing only the last error; however, this is also part of the configuration and can be changed. 
+parsed the largest number of tokens. This is why, by default, we are printing only the last error; however, this can be configured with the `NumberOfErrorsToShow` field of `GrammarChecker`'s config.
 
 **Changing the grammar**
 
-Any modification to the grammar (`test/e2e/pkg/grammar/abci_grammar.md`) requires generating a new parser and lexer. This is done by 
+Any modification to the grammar (`test/e2e/pkg/grammar/clean-start/abci_grammar_clean_start.md` or `test/e2e/pkg/grammar/recovery/abci_grammar_recovery.md`) requires generating a new parser and lexer. This is done by 
 going to the `test/e2e/` directory and running:
 
 ```bash 
@@ -298,7 +279,6 @@ ABCI++ requests in the future:
 - The application needs to log the new request in the same way as we do now.
 - We should include the new request to the grammar and generate a new parser and lexer.  
 - We should add new requests to the list of supported requests. Namely, we should modify the function `isSupportedByGrammar()` in `test/e2e/pkg/grammar/checker.go` to return `true` for the new type of requests.
-
 
 ## Status
 

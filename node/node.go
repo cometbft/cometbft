@@ -258,7 +258,7 @@ func NewNode(ctx context.Context,
 		blockStore,
 		indexerService,
 		logger,
-		sm.PrunerInterval(config.Storage.Pruning.Interval),
+		sm.WithPrunerInterval(config.Storage.Pruning.Interval),
 	)
 
 	// make block executor for consensus and blocksync reactors to execute blocks
@@ -658,6 +658,9 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 		}
 		if n.config.GRPC.VersionService.Enabled {
 			opts = append(opts, grpcserver.WithVersionService())
+		}
+		if n.config.GRPC.BlockService.Enabled {
+			opts = append(opts, grpcserver.WithBlockService(n.blockStore, n.eventBus, n.Logger))
 		}
 		go func() {
 			if err := grpcserver.Serve(listener, opts...); err != nil {

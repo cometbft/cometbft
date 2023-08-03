@@ -367,8 +367,8 @@ func TestABCIResPruningStandalone(t *testing.T) {
 	abciResRetainHeight, err := stateStore.GetABCIResRetainHeight()
 	require.NoError(t, err)
 	require.Equal(t, retainHeight, abciResRetainHeight)
-	pruned := pruner.PruneABCIResToRetainHeight(0)
-	require.Equal(t, retainHeight, pruned)
+	newRetainHeight := pruner.PruneABCIResToRetainHeight(0)
+	require.Equal(t, retainHeight, newRetainHeight)
 
 	_, err = stateStore.LoadFinalizeBlockResponse(1)
 	require.Error(t, err)
@@ -379,14 +379,14 @@ func TestABCIResPruningStandalone(t *testing.T) {
 	}
 
 	// This should not have any impact because the retain height is still 2 and we will not prune blocks to 3
-	pruned = pruner.PruneABCIResToRetainHeight(3)
-	require.Equal(t, retainHeight, pruned)
+	newRetainHeight = pruner.PruneABCIResToRetainHeight(3)
+	require.Equal(t, retainHeight, newRetainHeight)
 
 	retainHeight = 3
 	err = stateStore.SaveABCIResRetainHeight(retainHeight)
 	require.NoError(t, err)
-	pruned = pruner.PruneABCIResToRetainHeight(2)
-	require.Equal(t, retainHeight, pruned)
+	newRetainHeight = pruner.PruneABCIResToRetainHeight(2)
+	require.Equal(t, retainHeight, newRetainHeight)
 
 	_, err = stateStore.LoadFinalizeBlockResponse(2)
 	require.Error(t, err)
@@ -398,8 +398,8 @@ func TestABCIResPruningStandalone(t *testing.T) {
 	retainHeight = 10
 	err = stateStore.SaveABCIResRetainHeight(retainHeight)
 	require.NoError(t, err)
-	pruned = pruner.PruneABCIResToRetainHeight(2)
-	require.Equal(t, retainHeight, pruned)
+	newRetainHeight = pruner.PruneABCIResToRetainHeight(2)
+	require.Equal(t, retainHeight, newRetainHeight)
 
 	for h := int64(0); h < 10; h++ {
 		_, err = stateStore.LoadFinalizeBlockResponse(h)
@@ -407,7 +407,21 @@ func TestABCIResPruningStandalone(t *testing.T) {
 	}
 	_, err = stateStore.LoadFinalizeBlockResponse(10)
 	require.NoError(t, err)
+}
 
+type prunerObserver struct {
+	sm.NoopPrunerObserver
+	prunedInfoCh chan *sm.PrunedInfo
+}
+
+func newPrunerObserver(infoChCap int) *prunerObserver {
+	return &prunerObserver{
+		prunedInfoCh: make(chan *sm.PrunedInfo, infoChCap),
+	}
+}
+
+func (o *prunerObserver) PrunerPruned(info *sm.PrunedInfo) {
+	o.prunedInfoCh <- info
 }
 
 func TestFinalizeBlockResponsePruning(t *testing.T) {
@@ -432,25 +446,34 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 
 		fillStore(t, height, stateStore, bs, state, response1)
 
-		pruner := sm.NewPruner(stateStore, bs, is, log.TestingLogger())
+		obs := newPrunerObserver(1)
+		pruner := sm.NewPruner(
+			stateStore,
+			bs,
+			is,
+			log.TestingLogger(),
+			sm.WithPrunerInterval(1*time.Second),
+			sm.WithPrunerObserver(obs),
+		)
 
 		// Check that we have written a finalize block result at height 'height - 1'
 		_, err = stateStore.LoadFinalizeBlockResponse(height - 1)
 		require.NoError(t, err)
-		err = pruner.SetABCIResRetainHeight(height)
-		require.NoError(t, err)
-		err = pruner.Start()
-		require.NoError(t, err)
-		require.NoError(t, err)
-		// Sleep to give time to the pruning service to delete the responses
-		time.Sleep(time.Second * 20)
+		require.NoError(t, pruner.SetABCIResRetainHeight(height))
+		require.NoError(t, pruner.Start())
+
+		select {
+		case info := <-obs.prunedInfoCh:
+			require.Equal(t, height-1, info.ABCIRes.ToHeight)
+		case <-time.After(5 * time.Second):
+			require.Fail(t, "timed out waiting for pruning run to complete")
+		}
 
 		// Check that the response at height h - 1 has been deleted
 		_, err = stateStore.LoadFinalizeBlockResponse(height - 1)
 		require.Error(t, err)
 		_, err = stateStore.LoadFinalizeBlockResponse(height)
 		require.NoError(t, err)
-
 	})
 }
 

@@ -556,7 +556,13 @@ func TestPruningService(t *testing.T) {
 	assert.EqualValues(t, 0, bs.Height())
 	assert.EqualValues(t, 0, bs.Size())
 
-	pruningService := sm.NewPruner(stateStore, bs, is, log.TestingLogger(), sm.PrunerInterval(time.Second*2))
+	pruningService := sm.NewPruner(
+		stateStore,
+		bs,
+		is,
+		log.TestingLogger(),
+		sm.WithPrunerInterval(time.Second*2),
+	)
 
 	err := pruningService.SetApplicationRetainHeight(1)
 	require.Error(t, err)

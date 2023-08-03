@@ -6,8 +6,12 @@ import (
 	"strings"
 
 	"github.com/cometbft/cometbft/libs/log"
+	pbblocksvc "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
 	pbversionsvc "github.com/cometbft/cometbft/proto/tendermint/services/version/v1"
+	"github.com/cometbft/cometbft/rpc/grpc/server/services/blockservice"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/versionservice"
+	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/types"
 	"google.golang.org/grpc"
 )
 
@@ -18,6 +22,7 @@ type Option func(*serverBuilder)
 type serverBuilder struct {
 	listener       net.Listener
 	versionService pbversionsvc.VersionServiceServer
+	blockService   pbblocksvc.BlockServiceServer
 	logger         log.Logger
 	grpcOpts       []grpc.ServerOption
 }
@@ -53,6 +58,13 @@ func WithVersionService() Option {
 	}
 }
 
+// WithBlockService enables the block service on the CometBFT server.
+func WithBlockService(store *store.BlockStore, eventBus *types.EventBus, logger log.Logger) Option {
+	return func(b *serverBuilder) {
+		b.blockService = blockservice.New(store, eventBus, logger)
+	}
+}
+
 // WithLogger enables logging using the given logger. If not specified, the
 // gRPC server does not log anything.
 func WithLogger(logger log.Logger) Option {
@@ -83,6 +95,10 @@ func Serve(listener net.Listener, opts ...Option) error {
 	if b.versionService != nil {
 		pbversionsvc.RegisterVersionServiceServer(server, b.versionService)
 		b.logger.Debug("Registered version service")
+	}
+	if b.blockService != nil {
+		pbblocksvc.RegisterBlockServiceServer(server, b.blockService)
+		b.logger.Debug("Registered block service")
 	}
 	b.logger.Info("serve", "msg", fmt.Sprintf("Starting gRPC server on %s", listener.Addr()))
 	return server.Serve(b.listener)

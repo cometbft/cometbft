@@ -227,6 +227,10 @@ laddr = ""
 [grpc.version_service]
 enabled = true
 
+# The gRPC block service returns block information
+[grpc.block_service]
+enabled = true
+
 #######################################################
 ###           P2P Configuration Options             ###
 #######################################################

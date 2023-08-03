@@ -6,6 +6,8 @@ import (
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 
+	clist "github.com/cometbft/cometbft/libs/clist"
+
 	log "github.com/cometbft/cometbft/libs/log"
 
 	mempool "github.com/cometbft/cometbft/mempool"
@@ -46,20 +48,6 @@ func (_m *Mempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
 	return r0, r1
 }
 
-// Contains provides a mock function with given fields: txKey
-func (_m *Mempool) Contains(txKey types.TxKey) bool {
-	ret := _m.Called(txKey)
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func(types.TxKey) bool); ok {
-		r0 = rf(txKey)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	return r0
-}
-
 // EnableTxsAvailable provides a mock function with given fields:
 func (_m *Mempool) EnableTxsAvailable() {
 	_m.Called()
@@ -84,25 +72,23 @@ func (_m *Mempool) FlushAppConn() error {
 	return r0
 }
 
-// Lock provides a mock function with given fields:
-func (_m *Mempool) Lock() {
-	_m.Called()
-}
+// InMempool provides a mock function with given fields: txKey
+func (_m *Mempool) InMempool(txKey types.TxKey) bool {
+	ret := _m.Called(txKey)
 
-// NewIterator provides a mock function with given fields:
-func (_m *Mempool) NewIterator() mempool.Iterator {
-	ret := _m.Called()
-
-	var r0 mempool.Iterator
-	if rf, ok := ret.Get(0).(func() mempool.Iterator); ok {
-		r0 = rf()
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(types.TxKey) bool); ok {
+		r0 = rf(txKey)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(mempool.Iterator)
-		}
+		r0 = ret.Get(0).(bool)
 	}
 
 	return r0
+}
+
+// Lock provides a mock function with given fields:
+func (_m *Mempool) Lock() {
+	_m.Called()
 }
 
 // ReapMaxBytesMaxGas provides a mock function with given fields: maxBytes, maxGas
@@ -191,6 +177,38 @@ func (_m *Mempool) SizeBytes() int64 {
 
 // TxsAvailable provides a mock function with given fields:
 func (_m *Mempool) TxsAvailable() <-chan struct{} {
+	ret := _m.Called()
+
+	var r0 <-chan struct{}
+	if rf, ok := ret.Get(0).(func() <-chan struct{}); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(<-chan struct{})
+		}
+	}
+
+	return r0
+}
+
+// TxsFront provides a mock function with given fields:
+func (_m *Mempool) TxsFront() *clist.CElement {
+	ret := _m.Called()
+
+	var r0 *clist.CElement
+	if rf, ok := ret.Get(0).(func() *clist.CElement); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*clist.CElement)
+		}
+	}
+
+	return r0
+}
+
+// TxsWaitChan provides a mock function with given fields:
+func (_m *Mempool) TxsWaitChan() <-chan struct{} {
 	ret := _m.Called()
 
 	var r0 <-chan struct{}

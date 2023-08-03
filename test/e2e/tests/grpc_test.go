@@ -167,20 +167,19 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 
 		successCases := []struct {
 			expectedHeight int64
-			requestHeight  int64
 		}{
-			{first, first},
-			{latestBlockResults.Height, latestBlockResults.Height},
+			{first},
+			{latestBlockResults.Height},
 		}
 		errorCases := []struct {
 			requestHeight int64
 		}{
-			{-1},
-			{100000},
+			{first - 2},
+			{last + 100000},
 		}
 
 		for _, tc := range successCases {
-			res, err := gRPCClient.GetBlockResults(ctx, tc.requestHeight)
+			res, err := gRPCClient.GetBlockResults(ctx, tc.expectedHeight)
 
 			require.NoError(t, err, fmt.Sprintf("Unexpected error for GetBlockResults at expected height: %d", tc.expectedHeight))
 			require.NotNil(t, res)

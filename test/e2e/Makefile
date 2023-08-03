@@ -30,6 +30,7 @@ runner:
 	go build -o build/runner ./runner
 
 grammar:
-	gogll pkg/grammar/abci_grammar.md
+	gogll pkg/grammar/clean-start/abci_grammar_clean_start.md
+	gogll pkg/grammar/recovery/abci_grammar_recovery.md
 
 .PHONY: all node docker generator runner grammar

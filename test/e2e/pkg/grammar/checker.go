@@ -8,8 +8,10 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/lexer"
-	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/parser"
+	clean_start_lexer "github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/lexer"
+	clean_start_parser "github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/parser"
+	recovery_lexer "github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/lexer"
+	recovery_parser "github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/parser"
 )
 
 // GrammarChecker is a checker that can verify whether a specific set of ABCI calls
@@ -54,8 +56,8 @@ func NewGrammarChecker(cfg *Config) *GrammarChecker {
 	}
 }
 
-// isSupportedByGrammar returns true for all requests supported by the current grammar in "/pkg/grammar/abci_grammar.md" file.
-// this method needs to be modified if we add another ABCI call.
+// isSupportedByGrammar returns true for all requests supported by the current grammar ("/pkg/grammar/clean-start/abci_grammar_clean_start.md" and "/pkg/grammar/recovery/abci_grammar_recovery.md").
+// This method needs to be modified if we add another ABCI call.
 func (g *GrammarChecker) isSupportedByGrammar(req *abci.Request) bool {
 	switch req.Value.(type) {
 	case *abci.Request_InitChain, *abci.Request_FinalizeBlock, *abci.Request_Commit,
@@ -120,58 +122,31 @@ func (g *GrammarChecker) getExecutionString(reqs []*abci.Request) string {
 	return s
 }
 
-// Verify verifies whether a list of request satisfy abci grammar.
+// Verify verifies whether a list of request satisfy ABCI grammar.
 func (g *GrammarChecker) Verify(reqs []*abci.Request, isCleanStart bool) (bool, error) {
 	r := g.filterRequests(reqs)
 	// This should not happen in our tests.
 	if len(reqs) == 0 {
 		return false, fmt.Errorf("Execution with no ABCI calls.")
 	}
-	execution := g.getExecutionString(r)
-	_, err := g.verifySpecific(r, isCleanStart)
-	if err != nil {
-		return false, fmt.Errorf("%v\nExecution:\n%v", err, g.addHeightNumbersToTheExecution(execution))
-	}
-	_, errs := g.verifyGeneric(execution)
-	if errs != nil {
-		return false, fmt.Errorf("%v\nExecution:\n%v", g.combineErrors(errs, g.cfg.NumberOfErrorsToShow), g.addHeightNumbersToTheExecution(execution))
-	}
-	return true, nil
-}
-
-// verifySpecific should do all specific checks for catching differencies between clean-start and recovery. This is because verifyGeneric cannot distinguish
-// if it should check whether the specific execution should respect clean-start or recovery, it returns true if any of the two is respected.
-func (g *GrammarChecker) verifySpecific(reqs []*abci.Request, isCleanStart bool) (bool, *Error) {
-	firstReq := g.getRequestTerminal(reqs[0])
-	if isCleanStart {
-		if firstReq != "init_chain" {
-			err := &Error{
-				description: fmt.Sprintf("Clean-start starts with %v", firstReq),
-				height:      0,
-			}
-			return false, err
-		}
-	} else {
-		if firstReq != "finalize_block" && firstReq != "prepare_proposal" && firstReq != "process_proposal" {
-			err := &Error{
-				description: fmt.Sprintf("Recovery starts with %v", firstReq),
-				height:      0,
-			}
-			return false, err
-		}
-	}
-	return true, nil
-}
-
-// verifyGeneric checks the whole execution by using the gogll generated lexer and parser. It does not distinguish between clean-start and recovery. If
-// the execution respect any of the two it will return true.
-func (g *GrammarChecker) verifyGeneric(execution string) (bool, []*Error) {
 	var errors []*Error
-	lexer := lexer.New([]rune(execution))
-	_, errs := parser.Parse(lexer)
-	if len(errs) == 0 {
+	execution := g.getExecutionString(r)
+	if isCleanStart {
+		errors = g.verifyCleanStart(execution)
+	} else {
+		errors = g.verifyRecovery(execution)
+	}
+	if errors == nil {
 		return true, nil
 	}
+	return false, fmt.Errorf("%v\nFull execution:\n%v", g.combineErrors(errors, g.cfg.NumberOfErrorsToShow), g.addHeightNumbersToTheExecution(execution))
+}
+
+// verifyCleanStart verifies if a specific execution is a valid clean-start execution.
+func (g *GrammarChecker) verifyCleanStart(execution string) []*Error {
+	var errors []*Error
+	lexer := clean_start_lexer.New([]rune(execution))
+	_, errs := clean_start_parser.Parse(lexer)
 	for _, err := range errs {
 		exp := []string{}
 		for _, ex := range err.Expected {
@@ -180,12 +155,33 @@ func (g *GrammarChecker) verifyGeneric(execution string) (bool, []*Error) {
 		expectedTokens := strings.Join(exp, ",")
 		unexpectedToken := err.Token.TypeID()
 		e := &Error{
-			description: fmt.Sprintf("Parser was expecting one of [%v], got [%v] instead.", expectedTokens, unexpectedToken),
+			description: fmt.Sprintf("Invalid clean-start execution: parser was expecting one of [%v], got [%v] instead.", expectedTokens, unexpectedToken),
 			height:      err.Line - 1,
 		}
 		errors = append(errors, e)
 	}
-	return false, errors
+	return errors
+}
+
+// verifyRecovery verifies if a specific execution is a valid recovery execution.
+func (g *GrammarChecker) verifyRecovery(execution string) []*Error {
+	var errors []*Error
+	lexer := recovery_lexer.New([]rune(execution))
+	_, errs := recovery_parser.Parse(lexer)
+	for _, err := range errs {
+		exp := []string{}
+		for _, ex := range err.Expected {
+			exp = append(exp, ex)
+		}
+		expectedTokens := strings.Join(exp, ",")
+		unexpectedToken := err.Token.TypeID()
+		e := &Error{
+			description: fmt.Sprintf("Invalid recovery execution: parser was expecting one of [%v], got [%v] instead.", expectedTokens, unexpectedToken),
+			height:      err.Line - 1,
+		}
+		errors = append(errors, e)
+	}
+	return errors
 }
 
 // addHeightNumbersToTheExecution adds height numbers to the execution. This is used just when printing the execution so we can find the height with error more easily.

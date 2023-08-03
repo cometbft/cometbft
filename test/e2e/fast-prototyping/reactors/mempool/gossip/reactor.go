@@ -29,11 +29,13 @@ import (
 // peers you received it from.
 type Reactor struct {
 	p2p.BaseReactor
-	config          *cfg.MempoolConfig
-	mempool         mempool.Mempool
-	ids             *mempoolIDs
-	txSenders       map[types.TxKey]map[uint16]bool
-	txSendersMtx    cmtsync.RWMutex
+	config  *cfg.MempoolConfig
+	mempool mempool.Mempool
+	ids     *mempoolIDs
+
+	txSenders    map[types.TxKey]map[uint16]bool
+	txSendersMtx cmtsync.RWMutex
+
 	propagationRate float32
 	sendOnce        bool
 	consensusMocked bool
@@ -78,11 +80,6 @@ func (memR *Reactor) OnStart() error {
 		memR.Logger.Info("Tx broadcasting is disabled")
 	}
 	return nil
-}
-
-// OnStop stops the reactor by signaling to all spawned goroutines to exit and
-// blocking until they all exit.
-func (memR *Reactor) OnStop() {
 }
 
 // GetChannels implements Reactor by returning the list of channels for this

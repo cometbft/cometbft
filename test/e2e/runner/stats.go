@@ -2,15 +2,15 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"math"
+	"strconv"
+	"time"
+
 	"github.com/cometbft/cometbft/test/loadtime/payload"
 	"github.com/prometheus/client_golang/api"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
-	"math"
-	"strconv"
-	"time"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
@@ -34,7 +34,6 @@ func ComputeStats(testnet *e2e.Testnet) (Stats, error) {
 	redundant := map[*e2e.Node]int{}
 	cpuLoad := map[*e2e.Node]float32{}
 	sent := map[*e2e.Node]int{}
-	latencies := map[float64]int{}
 
 	client, err := api.NewClient(api.Config{
 		Address: "http://localhost:9090",
@@ -79,20 +78,12 @@ func ComputeStats(testnet *e2e.Testnet) (Stats, error) {
 		}
 	}
 
+	var latencies map[float64]int
 	if latencies, err = fetchLatencies(testnet); err != nil {
 		return Stats{}, err
 	}
 
 	return Stats{peers: peers, bandwidth: bw, added: seen, redundant: redundant, cpuLoad: cpuLoad, sent: sent, latencies: latencies}, err
-}
-
-func (t *Stats) Output() string {
-	jsn, err := json.Marshal(t)
-	if err != nil {
-		fmt.Errorf("failed to marshal state: %w")
-		return ""
-	}
-	return string(jsn)
 }
 
 func (t *Stats) String() string {
@@ -212,29 +203,29 @@ func (t *Stats) Latency() float64 {
 }
 
 func queryInt(v1api v1.API, timeout time.Duration, field string, node string, extra string) (int, error) {
-	if result, err := doQuery(v1api, timeout, field, node, extra); err == nil {
-		if len(result.(model.Vector)) != 0 {
-			return strconv.Atoi(result.(model.Vector)[0].Value.String())
-		}
-		return 0, nil
-	} else {
+	result, err := doQuery(v1api, timeout, field, node, extra)
+	if err != nil {
 		return 0, err
 	}
+	if len(result.(model.Vector)) == 0 {
+		return 0, nil
+	}
+	return strconv.Atoi(result.(model.Vector)[0].Value.String())
 }
 
 func queryFloat(v1api v1.API, timeout time.Duration, field string, node string, extra string) (float32, error) {
-	if result, err := doQuery(v1api, timeout, field, node, extra); err == nil {
-		if len(result.(model.Vector)) != 0 {
-			if convert, convertErr := strconv.ParseFloat(result.(model.Vector)[0].Value.String(), 32); convertErr == nil {
-				return float32(convert), nil
-			} else {
-				return 0, convertErr
-			}
-		}
-	} else {
+	result, err := doQuery(v1api, timeout, field, node, extra)
+	if err != nil {
 		return 0, err
 	}
-	return 0, nil
+	if len(result.(model.Vector)) == 0 {
+		return 0, nil
+	}
+	convert, err := strconv.ParseFloat(result.(model.Vector)[0].Value.String(), 32)
+	if err != nil {
+		return 0, err
+	}
+	return float32(convert), nil
 }
 
 func doQuery(v1api v1.API, timeout time.Duration, field string, node string, extra string) (model.Value, error) {
@@ -253,7 +244,6 @@ func doQuery(v1api v1.API, timeout time.Duration, field string, node string, ext
 	}
 
 	return nil, fmt.Errorf("Query (" + q + ") has failed")
-
 }
 
 func fetchLatencies(testnet *e2e.Testnet) (map[float64]int, error) {
@@ -285,7 +275,6 @@ func fetchLatencies(testnet *e2e.Testnet) (map[float64]int, error) {
 		}
 
 		for _, tx := range resp.Block.Txs {
-
 			if payload, err := payload.FromBytes(tx); err == nil {
 
 				start := float64(payload.Time.Seconds)

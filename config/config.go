@@ -41,7 +41,8 @@ const (
 	DefaultNodeKeyName  = "node_key.json"
 	DefaultAddrBookName = "addrbook.json"
 
-	DefaultPruningInterval = 10 * time.Second
+	DefaultPruningInterval        = 10 * time.Second
+	DefaultIndexerPruningInterval = 10 * time.Second
 )
 
 // NOTE: Most of the structs & relevant comments + the

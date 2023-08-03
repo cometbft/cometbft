@@ -27,18 +27,21 @@ type Pruner struct {
 	// DB to which we save the retain heights
 	bs BlockStore
 	// State store to prune state from
-	stateStore     Store
-	indexerService *txindex.IndexerService
-	interval       time.Duration
+	stateStore      Store
+	indexerService  *txindex.IndexerService
+	interval        time.Duration
+	indexerInterval time.Duration
 }
 
 type prunerConfig struct {
-	interval time.Duration
+	interval        time.Duration
+	indexerInterval time.Duration
 }
 
 func defaultPrunerConfig() *prunerConfig {
 	return &prunerConfig{
-		interval: config.DefaultPruningInterval,
+		interval:        config.DefaultPruningInterval,
+		indexerInterval: config.DefaultIndexerPruningInterval,
 	}
 }
 
@@ -62,11 +65,12 @@ func NewPruner(
 		opt(cfg)
 	}
 	p := &Pruner{
-		bs:             bs,
-		stateStore:     stateStore,
-		indexerService: indexerService,
-		logger:         logger,
-		interval:       cfg.interval,
+		bs:              bs,
+		stateStore:      stateStore,
+		indexerService:  indexerService,
+		logger:          logger,
+		interval:        cfg.interval,
+		indexerInterval: cfg.indexerInterval,
 	}
 	p.BaseService = *service.NewBaseService(logger, "Pruner", p)
 	return p
@@ -74,6 +78,7 @@ func NewPruner(
 
 func (p *Pruner) OnStart() error {
 	go p.pruningRoutine()
+	go p.indexerPruningRoutine()
 	return nil
 }
 
@@ -184,8 +189,20 @@ func (p *Pruner) pruningRoutine() {
 		default:
 			lastHeightPruned = p.pruneBlocksToRetainHeight(lastHeightPruned)
 			lastABCIResPrunedHeight = p.pruneABCIResToRetainHeight(lastABCIResPrunedHeight)
-			p.pruneIndexesToRetainHeight()
 			time.Sleep(p.interval)
+		}
+	}
+}
+
+func (p *Pruner) indexerPruningRoutine() {
+	p.logger.Info("Index pruner started", "interval", p.indexerInterval.String())
+	for {
+		select {
+		case <-p.Quit():
+			return
+		default:
+			p.pruneIndexesToRetainHeight()
+			time.Sleep(p.indexerInterval)
 		}
 	}
 }

@@ -29,7 +29,6 @@ func New(bs *store.BlockStore, ss sm.Store, logger log.Logger) brs.BlockResultsS
 }
 
 // GetBlockResults returns the block results of the requested height.
-// If no height is given, the block results for the latest height are returned.
 func (s *blockResultsService) GetBlockResults(_ context.Context, req *brs.GetBlockResultsRequest) (*brs.GetBlockResultsResponse, error) {
 	logger := s.logger.With("endpoint", "GetBlockResults")
 	ss, err := s.stateStore.Load()
@@ -57,8 +56,7 @@ func (s *blockResultsService) GetBlockResults(_ context.Context, req *brs.GetBlo
 	}, nil
 }
 
-// GetBlockResults returns the block results of the requested height.
-// If no height is given, the block results for the latest height are returned.
+// GetLatest BlockResults returns the block results of the last committed height.
 func (s *blockResultsService) GetLatestBlockResults(_ context.Context, _ *brs.GetLatestBlockResultsRequest) (*brs.GetBlockResultsResponse, error) {
 	logger := s.logger.With("endpoint", "GetBlockResults")
 	ss, err := s.stateStore.Load()
@@ -66,16 +64,15 @@ func (s *blockResultsService) GetLatestBlockResults(_ context.Context, _ *brs.Ge
 		logger.Error("Error loading store", "err", err)
 		return nil, status.Error(codes.Internal, "Internal server error")
 	}
-	height := ss.LastBlockHeight
 
-	res, err := s.stateStore.LoadFinalizeBlockResponse(height)
+	res, err := s.stateStore.LoadFinalizeBlockResponse(ss.LastBlockHeight)
 	if err != nil {
-		logger.Error("Error fetching BlockResults", "height", height, "err", err)
+		logger.Error("Error fetching BlockResults", "height", ss.LastBlockHeight, "err", err)
 		return nil, status.Error(codes.Internal, "Internal server error")
 	}
 
 	return &brs.GetBlockResultsResponse{
-		Height:              height,
+		Height:              ss.LastBlockHeight,
 		TxsResults:          res.TxResults,
 		FinalizeBlockEvents: formatProtoToRef(res.Events),
 		ValidatorUpdates:    formatProtoToRef(res.ValidatorUpdates),

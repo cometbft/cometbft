@@ -301,7 +301,7 @@ func (s *SocketServer) handleRequest(ctx context.Context, req *types.Request) (*
 		}
 		return types.ToResponseVerifyVoteExtension(res), nil
 	default:
-		return nil, ErrUnknownClientRequest{Req: req}
+		return nil, ErrUnknownRequest{Request: *req}
 	}
 }
 

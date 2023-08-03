@@ -24,10 +24,10 @@ func (e ErrConnectionNotExists) Error() string {
 	return fmt.Sprintf("connection %d does not exist", e.ConnID)
 }
 
-type ErrUnknownClientRequest struct {
-	Req *types.Request
+type ErrUnknownRequest struct {
+	Request types.Request
 }
 
-func (e ErrUnknownClientRequest) Error() string {
-	return fmt.Sprintf("unknown request from client: %T", e.Req)
+func (e ErrUnknownRequest) Error() string {
+	return fmt.Sprintf("unknown request from client: %T", e.Request)
 }

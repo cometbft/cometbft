@@ -17,7 +17,7 @@ func (e ErrUnknownAbciTransport) Error() string {
 
 type ErrUnexpectedResponse struct {
 	Response types.Response
-	Comment  string
+	Reason   string
 }
 
 func (e ErrUnexpectedResponse) Error() string {

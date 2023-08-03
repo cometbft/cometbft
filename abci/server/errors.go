@@ -15,12 +15,12 @@ func (e ErrUnknownServerType) Error() string {
 	return fmt.Sprintf("unknown server type %s", e.ServerType)
 }
 
-// ErrConnectionNotExists is returned when trying to access non-existent network connection
-type ErrConnectionNotExists struct {
+// ErrConnectionDoesNotExist is returned when trying to access non-existent network connection
+type ErrConnectionDoesNotExist struct {
 	ConnID int
 }
 
-func (e ErrConnectionNotExists) Error() string {
+func (e ErrConnectionDoesNotExist) Error() string {
 	return fmt.Sprintf("connection %d does not exist", e.ConnID)
 }
 

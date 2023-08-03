@@ -104,7 +104,7 @@ func (s *SocketServer) rmConn(connID int) error {
 
 	conn, ok := s.conns[connID]
 	if !ok {
-		return ErrConnectionNotExists{ConnID: connID}
+		return ErrConnectionDoesNotExist{ConnID: connID}
 	}
 
 	delete(s.conns, connID)

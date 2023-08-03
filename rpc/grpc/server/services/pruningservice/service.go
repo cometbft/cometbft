@@ -43,8 +43,22 @@ func (s *pruningServiceServer) SetBlockRetainHeight(_ context.Context, req *v1.S
 }
 
 // GetBlockRetainHeight implements v1.PruningServiceServer.
-func (*pruningServiceServer) GetBlockRetainHeight(context.Context, *v1.GetBlockRetainHeightRequest) (*v1.GetBlockRetainHeightResponse, error) {
-	panic("unimplemented")
+func (s *pruningServiceServer) GetBlockRetainHeight(_ context.Context, req *v1.GetBlockRetainHeightRequest) (*v1.GetBlockRetainHeightResponse, error) {
+	logger := s.logger.With("endpoint", "GetBlockRetainHeight")
+	svcHeight, err := s.pruner.GetCompanionBlockRetainHeight()
+	if err != nil {
+		logger.Error("Cannot get block retain height stored by companion", "err", err)
+		return nil, status.Errorf(codes.Internal, "Failed to get companion block retain height")
+	}
+	appHeight, err := s.pruner.GetApplicationRetainHeight()
+	if err != nil {
+		logger.Error("Cannot get block retain height specified by application", "err", err)
+		return nil, status.Errorf(codes.Internal, "Failed to get app block retain height")
+	}
+	return &v1.GetBlockRetainHeightResponse{
+		PruningServiceRetainHeight: uint64(svcHeight),
+		AppRetainHeight:            uint64(appHeight),
+	}, nil
 }
 
 // SetBlockResultsRetainHeight implements v1.PruningServiceServer.
@@ -64,6 +78,12 @@ func (s *pruningServiceServer) SetBlockResultsRetainHeight(_ context.Context, re
 }
 
 // GetBlockResultsRetainHeight implements v1.PruningServiceServer.
-func (*pruningServiceServer) GetBlockResultsRetainHeight(context.Context, *v1.GetBlockResultsRetainHeightRequest) (*v1.GetBlockResultsRetainHeightResponse, error) {
-	panic("unimplemented")
+func (s *pruningServiceServer) GetBlockResultsRetainHeight(_ context.Context, req *v1.GetBlockResultsRetainHeightRequest) (*v1.GetBlockResultsRetainHeightResponse, error) {
+	logger := s.logger.With("endpoint", "GetBlockResultsRetainHeight")
+	height, err := s.pruner.GetABCIResRetainHeight()
+	if err != nil {
+		logger.Error("Cannot get block results retain height", "err", err)
+		return nil, status.Errorf(codes.Internal, "Failed to get block results retain height")
+	}
+	return &v1.GetBlockResultsRetainHeightResponse{PruningServiceRetainHeight: uint64(height)}, nil
 }

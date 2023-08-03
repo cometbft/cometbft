@@ -162,7 +162,7 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 		latestBlockResults, err := gRPCClient.GetLatestBlockResults(ctx)
 
 		require.GreaterOrEqual(t, last, latestBlockResults.Height)
-		require.NoError(t, err, fmt.Sprintf("Unexpected error for GetLatestBlockResults"))
+		require.NoError(t, err, "Unexpected error for GetLatestBlockResults")
 		require.NotNil(t, latestBlockResults)
 
 		successCases := []struct {

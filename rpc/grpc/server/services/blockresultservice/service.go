@@ -59,9 +59,13 @@ func (s *blockResultsService) GetBlockResults(_ context.Context, req *brs.GetBlo
 
 // GetBlockResults returns the block results of the requested height.
 // If no height is given, the block results for the latest height are returned.
-func (s *blockResultsService) GetLatestBlockResults(_ context.Context, req *brs.GetLatestBlockResultsRequest) (*brs.GetBlockResultsResponse, error) {
+func (s *blockResultsService) GetLatestBlockResults(_ context.Context, _ *brs.GetLatestBlockResultsRequest) (*brs.GetBlockResultsResponse, error) {
 	logger := s.logger.With("endpoint", "GetBlockResults")
 	ss, err := s.stateStore.Load()
+	if err != nil {
+		logger.Error("Error loading store", "err", err)
+		return nil, status.Error(codes.Internal, "Internal server error")
+	}
 	height := ss.LastBlockHeight
 
 	res, err := s.stateStore.LoadFinalizeBlockResponse(height)

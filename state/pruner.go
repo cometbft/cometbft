@@ -80,7 +80,9 @@ func (p *Pruner) SetObserver(obs PrunerObserver) {
 }
 
 func (p *Pruner) OnStart() error {
-	go p.pruningRoutine()
+	go p.pruneBlocksRoutine()
+	go p.pruneABCIResRoutine()
+	p.observer.PrunerStarted(p.interval)
 	return nil
 }
 
@@ -205,30 +207,42 @@ func (p *Pruner) GetABCIResRetainHeight() (int64, error) {
 	return p.stateStore.GetABCIResRetainHeight()
 }
 
-func (p *Pruner) pruningRoutine() {
-	p.logger.Info("Pruner started", "interval", p.interval.String())
-	p.observer.PrunerStarted(p.interval)
-	lastRetainHeight := int64(0)
+func (p *Pruner) pruneABCIResRoutine() {
+	p.logger.Info("Started pruning ABCI results", "interval", p.interval.String())
 	lastABCIResRetainHeight := int64(0)
 	for {
 		select {
 		case <-p.Quit():
 			return
 		default:
-			newRetainHeight := p.pruneBlocksToRetainHeight(lastRetainHeight)
 			newABCIResRetainHeight := p.pruneABCIResToRetainHeight(lastABCIResRetainHeight)
 			p.observer.PrunerPruned(&PrunedInfo{
-				Blocks: &BlocksPrunedInfo{
-					FromHeight: lastRetainHeight,
-					ToHeight:   newRetainHeight - 1,
-				},
 				ABCIRes: &ABCIResponsesPrunedInfo{
 					FromHeight: lastABCIResRetainHeight,
 					ToHeight:   newABCIResRetainHeight - 1,
 				},
 			})
-			lastRetainHeight = newRetainHeight
 			lastABCIResRetainHeight = newABCIResRetainHeight
+			time.Sleep(p.interval)
+		}
+	}
+}
+func (p *Pruner) pruneBlocksRoutine() {
+	p.logger.Info("Pruner started", "interval", p.interval.String())
+	lastRetainHeight := int64(0)
+	for {
+		select {
+		case <-p.Quit():
+			return
+		default:
+			newRetainHeight := p.pruneBlocksToRetainHeight(lastRetainHeight)
+			p.observer.PrunerPruned(&PrunedInfo{
+				Blocks: &BlocksPrunedInfo{
+					FromHeight: lastRetainHeight,
+					ToHeight:   newRetainHeight - 1,
+				},
+			})
+			lastRetainHeight = newRetainHeight
 			time.Sleep(p.interval)
 		}
 	}

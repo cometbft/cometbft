@@ -449,12 +449,19 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, pruner.SetABCIResRetainHeight(height))
 		require.NoError(t, pruner.Start())
-
-		select {
-		case info := <-obs.prunedInfoCh:
-			require.Equal(t, height-1, info.ABCIRes.ToHeight)
-		case <-time.After(5 * time.Second):
-			require.Fail(t, "timed out waiting for pruning run to complete")
+	LOOP:
+		for {
+			select {
+			case info := <-obs.prunedInfoCh:
+				if info.ABCIRes == nil {
+					continue LOOP
+				}
+				require.Equal(t, height-1, info.ABCIRes.ToHeight)
+				t.Log("Done pruning ABCI results ")
+				break LOOP
+			case <-time.After(5 * time.Second):
+				require.Fail(t, "timed out waiting for pruning run to complete")
+			}
 		}
 
 		// Check that the response at height h - 1 has been deleted
@@ -462,7 +469,9 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 		require.Error(t, err)
 		_, err = stateStore.LoadFinalizeBlockResponse(height)
 		require.NoError(t, err)
+
 	})
+
 }
 
 func TestLastFinalizeBlockResponses(t *testing.T) {

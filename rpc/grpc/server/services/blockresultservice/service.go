@@ -37,7 +37,6 @@ func (s *blockResultsService) GetBlockResults(_ context.Context, req *brs.GetBlo
 		return nil, status.Error(codes.Internal, "Internal server error")
 	}
 	if req.Height > ss.LastBlockHeight || req.Height < 0 {
-		logger.Error("Error validating GetBlockResults request height")
 		return nil, status.Errorf(codes.InvalidArgument, "Height must be between 0 and the last effective height (%d)", ss.LastBlockHeight)
 	}
 

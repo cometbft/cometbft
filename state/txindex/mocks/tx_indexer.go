@@ -5,9 +5,8 @@ package mocks
 import (
 	context "context"
 
-	mock "github.com/stretchr/testify/mock"
-
 	log "github.com/cometbft/cometbft/libs/log"
+	mock "github.com/stretchr/testify/mock"
 
 	query "github.com/cometbft/cometbft/libs/pubsub/query"
 

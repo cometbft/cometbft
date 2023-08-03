@@ -356,8 +356,8 @@ func TestABCIResPruningStandalone(t *testing.T) {
 	abciResRetainHeight, err := stateStore.GetABCIResRetainHeight()
 	require.NoError(t, err)
 	require.Equal(t, retainHeight, abciResRetainHeight)
-	pruned := pruner.PruneABCIResToRetainHeight(0)
-	require.Equal(t, retainHeight, pruned)
+	newRetainHeight := pruner.PruneABCIResToRetainHeight(0)
+	require.Equal(t, retainHeight, newRetainHeight)
 
 	_, err = stateStore.LoadFinalizeBlockResponse(1)
 	require.Error(t, err)
@@ -368,14 +368,14 @@ func TestABCIResPruningStandalone(t *testing.T) {
 	}
 
 	// This should not have any impact because the retain height is still 2 and we will not prune blocks to 3
-	pruned = pruner.PruneABCIResToRetainHeight(3)
-	require.Equal(t, retainHeight, pruned)
+	newRetainHeight = pruner.PruneABCIResToRetainHeight(3)
+	require.Equal(t, retainHeight, newRetainHeight)
 
 	retainHeight = 3
 	err = stateStore.SaveABCIResRetainHeight(retainHeight)
 	require.NoError(t, err)
-	pruned = pruner.PruneABCIResToRetainHeight(2)
-	require.Equal(t, retainHeight, pruned)
+	newRetainHeight = pruner.PruneABCIResToRetainHeight(2)
+	require.Equal(t, retainHeight, newRetainHeight)
 
 	_, err = stateStore.LoadFinalizeBlockResponse(2)
 	require.Error(t, err)
@@ -387,8 +387,8 @@ func TestABCIResPruningStandalone(t *testing.T) {
 	retainHeight = 10
 	err = stateStore.SaveABCIResRetainHeight(retainHeight)
 	require.NoError(t, err)
-	pruned = pruner.PruneABCIResToRetainHeight(2)
-	require.Equal(t, retainHeight, pruned)
+	newRetainHeight = pruner.PruneABCIResToRetainHeight(2)
+	require.Equal(t, retainHeight, newRetainHeight)
 
 	for h := int64(0); h < 10; h++ {
 		_, err = stateStore.LoadFinalizeBlockResponse(h)
@@ -396,7 +396,6 @@ func TestABCIResPruningStandalone(t *testing.T) {
 	}
 	_, err = stateStore.LoadFinalizeBlockResponse(10)
 	require.NoError(t, err)
-
 }
 
 func TestFinalizeBlockResponsePruning(t *testing.T) {
@@ -439,7 +438,6 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 		require.Error(t, err)
 		_, err = stateStore.LoadFinalizeBlockResponse(height)
 		require.NoError(t, err)
-
 	})
 }
 

@@ -23,21 +23,34 @@ type BlockResults struct {
 
 // BlockResultsServiceClient provides the block results of a given height (or latest if none provided).
 type BlockResultsServiceClient interface {
-	GetBlockResults(ctx context.Context, height *int64) (*BlockResults, error)
+	GetBlockResults(ctx context.Context, height int64) (*BlockResults, error)
+	GetLatestBlockResults(ctx context.Context) (*BlockResults, error)
 }
 
 type blockResultServiceClient struct {
 	client brs.BlockResultsServiceClient
 }
 
-func (b blockResultServiceClient) GetBlockResults(ctx context.Context, height *int64) (*BlockResults, error) {
-	var requestHeight int64
-	if height != nil {
-		requestHeight = *height
-	}
-	res, err := b.client.GetBlockResults(ctx, &brs.GetBlockResultsRequest{Height: requestHeight})
+func (b blockResultServiceClient) GetBlockResults(ctx context.Context, height int64) (*BlockResults, error) {
+	res, err := b.client.GetBlockResults(ctx, &brs.GetBlockResultsRequest{Height: height})
 	if err != nil {
 		return nil, fmt.Errorf("error fetching BlockResults for height %d:: %s", height, err.Error())
+	}
+
+	return &BlockResults{
+		Height:                res.Height,
+		TxsResults:            res.TxsResults,
+		FinalizeBlockEvents:   res.FinalizeBlockEvents,
+		ValidatorUpdates:      res.ValidatorUpdates,
+		ConsensusParamUpdates: res.ConsensusParamUpdates,
+		AppHash:               res.AppHash,
+	}, nil
+}
+
+func (b blockResultServiceClient) GetLatestBlockResults(ctx context.Context) (*BlockResults, error) {
+	res, err := b.client.GetLatestBlockResults(ctx, &brs.GetLatestBlockResultsRequest{})
+	if err != nil {
+		return nil, fmt.Errorf("error fetching BlockResults for latest height :: %s", err.Error())
 	}
 
 	return &BlockResults{
@@ -62,7 +75,12 @@ func newDisabledBlockResultsServiceClient() BlockResultsServiceClient {
 	return &disabledBlockResultsServiceClient{}
 }
 
-// GetBLockResults implements BlockResultsServiceClient
-func (*disabledBlockResultsServiceClient) GetBlockResults(_ context.Context, _ *int64) (*BlockResults, error) {
+// GetBlockResults implements BlockResultsServiceClient
+func (*disabledBlockResultsServiceClient) GetBlockResults(_ context.Context, _ int64) (*BlockResults, error) {
+	panic("block results service client is disabled")
+}
+
+// GetLatestBlockResults implements BlockResultsServiceClient
+func (*disabledBlockResultsServiceClient) GetLatestBlockResults(_ context.Context) (*BlockResults, error) {
 	panic("block results service client is disabled")
 }

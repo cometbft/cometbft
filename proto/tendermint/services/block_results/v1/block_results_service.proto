@@ -6,9 +6,12 @@ option go_package = "github.com/cometbft/cometbft/proto/tendermint/services/bloc
 import "tendermint/services/block_results/v1/block_results.proto";
 
 /*
-  BlockResultService provides the block results of the given height.
-  If no height is passed, the block results of the latest height are returned.
+  BlockResultService provides the block results of a given or latestheight.
  */
 service BlockResultsService {
+  // GetBlockResults returns the BlockResults of the requested height.
   rpc GetBlockResults(GetBlockResultsRequest) returns (GetBlockResultsResponse);
+
+  // GetLatestBlockResults returns the BlockResults of the latest committed height.
+  rpc GetLatestBlockResults(GetLatestBlockResultsRequest) returns (GetBlockResultsResponse);
 }

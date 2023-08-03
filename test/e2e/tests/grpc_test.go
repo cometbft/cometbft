@@ -149,8 +149,6 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 
 		first := status.SyncInfo.EarliestBlockHeight
 		last := status.SyncInfo.LatestBlockHeight
-		negativeHeight := int64(-1)
-		futureHeight := int64(100000)
 		if node.RetainBlocks > 0 {
 			first++
 		}
@@ -160,30 +158,33 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 		gRPCClient, err := node.GRPCClient(ctx)
 		require.NoError(t, err)
 
+		// GetLatestBlockResults
+		latestBlockResults, err := gRPCClient.GetLatestBlockResults(ctx)
+
+		require.GreaterOrEqual(t, last, latestBlockResults.Height)
+		require.NoError(t, err, fmt.Sprintf("Unexpected error for GetLatestBlockResults"))
+		require.NotNil(t, latestBlockResults)
+
 		successCases := []struct {
 			expectedHeight int64
-			requestHeight  *int64
+			requestHeight  int64
 		}{
-			{first, &first},
-			{last, nil},
+			{first, first},
+			{latestBlockResults.Height, latestBlockResults.Height},
 		}
 		errorCases := []struct {
-			requestHeight *int64
+			requestHeight int64
 		}{
-			{&negativeHeight},
-			{&futureHeight},
+			{-1},
+			{100000},
 		}
 
 		for _, tc := range successCases {
 			res, err := gRPCClient.GetBlockResults(ctx, tc.requestHeight)
-			// First block tests
+
 			require.NoError(t, err, fmt.Sprintf("Unexpected error for GetBlockResults at expected height: %d", tc.expectedHeight))
 			require.NotNil(t, res)
-			if tc.expectedHeight == last {
-				require.GreaterOrEqual(t, tc.expectedHeight, res.Height)
-			} else {
-				require.Equal(t, res.Height, tc.expectedHeight)
-			}
+			require.Equal(t, res.Height, tc.expectedHeight)
 		}
 		for _, tc := range errorCases {
 			_, err = gRPCClient.GetBlockResults(ctx, tc.requestHeight)

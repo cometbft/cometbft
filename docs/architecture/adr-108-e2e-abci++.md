@@ -95,7 +95,7 @@ The idea here was to find a library that automatically verifies whether a specif
 
 We found the following library - https://github.com/goccmack/gogll. It generates a GLL or LR(1) parser and an FSA-based lexer for any context-free grammar. What we needed to do is to rewrite ABCI++ grammar ([CometBFT's expected behaviour](../../spec/abci/abci%2B%2B_comet_expected_behavior.md#valid-method-call-sequences))
 using the syntax that the library understands. 
-The new grammar is below and can be found inside `test/e2e/pkg/grammar/abci_grammar.md` file.
+The new grammar is below.
 
 ```abnf
 
@@ -129,8 +129,6 @@ PrepareProposal : "prepare_proposal" ;
 ProcessProposal : "process_proposal" ;
  
  ```
-*Important note:* Both grammars, the original and the new one, represent the expected behaviour
-from the perspective of one node from the fresh beginning (`CleanStart`) or after the crash (`Recovery`). This is why, later, when we verify if the specific execution respects the grammar, we need to check each node's logs separately and distinguish the fresh start from recovery. 
 
 If you compare this grammar with the original one, you will notice that, in addition to vote extensions,  
 `Info` is removed. The reason is that, as explained in the section [CometBFT's expected behaviour](../../spec/abci/abci%2B%2B_comet_expected_behavior.md#valid-method-call-sequences), one of the 
@@ -143,15 +141,22 @@ it totally from the new grammar. The Application is still logging the `Info`
 call, but a specific test would need to be written to check whether it happens
 in the right moment. 
 
-The `gogll` library receives the file with the grammar as input, and it generates the corresponding parser and lexer. The actual command is integrated into `test/e2e/Makefile` and is executed when `make grammar` is invoked. 
+Moreover, both grammars, the original and the new, represent the node's expected behaviour from the fresh beginning (`CleanStart`) or after the crash (`Recovery`).
+This is why we needed to separate the grammar into two different files (`test/e2e/pkg/grammar/clean-start/abci_grammar_clean_start.md` and `test/e2e/pkg/grammar/recovery/abci_grammar_recovery.md`) and generate two parsers: one for `CleanStart` and one for `Recovery` executions. If we didn't do this, a parser would classify a `CleanStart` execution that happens after the crash as a valid one. This is why later when we verify the execution, we first determine whether a set of requests represent a `CleanStart` or `Recovery` execution and then check its validity by calling an appropriate parser. 
+
+The `gogll` library receives the file with the grammar as input, and it generates the corresponding parser and lexer. The actual commands are integrated into `test/e2e/Makefile` and executed when `make grammar` is invoked. 
 The resulting code is inside the following directories: 
-- `test/e2e/pkg/grammar/lexer`,
-- `test/e2e/pkg/grammar/parser`,
-- `test/e2e/pkg/grammar/sppf`,
-- `test/e2e/pkg/grammar/token`.
+- `test/e2e/pkg/grammar/clean-start/lexer`,
+- `test/e2e/pkg/grammar/clean-start/parser`,
+- `test/e2e/pkg/grammar/clean-start/sppf`,
+- `test/e2e/pkg/grammar/clean-start/token`,
+- `test/e2e/pkg/grammar/recovery/lexer`,
+- `test/e2e/pkg/grammar/recovery/parser`,
+- `test/e2e/pkg/grammar/recoveryt/sppf`,
+- `test/e2e/pkg/grammar/recovery/token`.
 
 Apart from this auto-generated code, we implemented `GrammarChecker` abstraction
-which knows how to use the generated parser and lexer to verify whether a
+which knows how to use the generated parsers and lexers to verify whether a
 specific execution (list of ABCI++ calls logged by the Application while the
 testnet was running) respects the ABCI++ grammar. The implementation and tests 
 for it are inside `test/e2e/pkg/grammar/checker.go` and 

@@ -19,7 +19,8 @@ func TestABCIGrammar(t *testing.T) {
 			t.Error(fmt.Errorf("Collecting of ABCI requests failed: %w", err))
 		}
 		for i, r := range reqs {
-			_, err := checker.Verify(r, i == 0)
+			isCleanStart := i == 0
+			_, err := checker.Verify(r, isCleanStart)
 			if err != nil {
 				t.Error(fmt.Errorf("ABCI grammar verification failed: %w", err))
 			}

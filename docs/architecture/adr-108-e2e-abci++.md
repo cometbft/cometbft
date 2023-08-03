@@ -1,4 +1,4 @@
-# ADR 107: E2E tests for CometBFT's behaviour in respect to ABCI++.
+# ADR 108: E2E tests for CometBFT's behaviour in respect to ABCI++.
 
 ## Context
 

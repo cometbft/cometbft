@@ -88,10 +88,10 @@ function StartRound(round) {
  round_p ← round
  step_p ← propose
  if proposer(h_p, round_p) = p {
-  wait until now_p > decision_p[h_p-1].time // time monotonicity
   if validValue_p != nil {
    proposal ← validValue_p
   } else {
+   wait until now_p > decision_p[h_p-1].time // time monotonicity
    proposal ← getValue()
    proposal.time ← now_p // proposal time
   }

@@ -180,7 +180,18 @@ func NewState(
 
 	// We have no votes, so reconstruct LastCommit from SeenCommit.
 	if state.LastBlockHeight > 0 {
-		cs.reconstructLastCommit(state)
+		// In case of out of band performed statesync, the state store
+		// will have a state but no extended commit (as no block has been downloaded).
+		// If the height at which the vote extensions are enabled is lower
+		// than the height at which we statesync, consensus will panic because
+		// it will try to reconstruct the extended commit here.
+		storeHeight, err := cs.blockExec.Store().GetOfflineStateSyncHeight()
+		if err != nil && err.Error() != "value empty" {
+			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s", err))
+		}
+		if storeHeight == 0 {
+			cs.reconstructLastCommit(state)
+		}
 	}
 
 	cs.updateToState(state)
@@ -567,25 +578,12 @@ func (cs *State) sendInternalMessage(mi msgInfo) {
 func (cs *State) reconstructLastCommit(state sm.State) {
 	extensionsEnabled := state.ConsensusParams.ABCI.VoteExtensionsEnabled(state.LastBlockHeight)
 
-	// In case of out of band performed statesync, the state store
-	// will have a state but no extended commit (as no block has been downloaded).
-	// If the height at which the vote extensions are enabled is lower
-	// than the height at which we statesync, consensus will panic because
-	// it will try to reconstruct the extended commit here.
-	storeHeight, err := cs.blockExec.Store().GetOfflineStateSyncHeight()
-	if err != nil && err.Error() != "value empty" {
-		panic(fmt.Sprintf("failed to retrieve statesynced height from store %s", err))
-	}
-	if !extensionsEnabled || storeHeight > 0 {
+	if !extensionsEnabled {
 		votes, err := cs.votesFromSeenCommit(state)
 		if err != nil {
 			panic(fmt.Sprintf("failed to reconstruct last commit; %s", err))
 		}
 		cs.LastCommit = votes
-		err = cs.blockExec.Store().SetOfflineStateSyncHeight(0)
-		if err != nil {
-			panic("failed to reset the offline state sync height ")
-		}
 		return
 	}
 

@@ -38,4 +38,4 @@ generator:
 runner:
 	go build -o build/runner ./runner
 
-.PHONY: all node docker generator runner 
+.PHONY: all node docker generator runner

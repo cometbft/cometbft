@@ -14,10 +14,10 @@ import (
 	"text/template"
 	"time"
 
-	p2p "github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	p2p "github.com/cometbft/cometbft/p2p"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 
 	_ "embed"
@@ -92,13 +92,13 @@ type Testnet struct {
 	VoteExtensionSize                uint
 	PeerGossipIntraloopSleepDuration time.Duration
 
-        //Experimental
+	//Experimental
 	PrometheusIP                      net.IP
-        LoadTxToSend                      int
-        PhysicalTimestamps                bool
-        ExperimentalGossipPropagationRate float32
-        ExperimentalGossipSendOnce        bool
-        ExperimentalCustomReactors        map[string]string
+	LoadTxToSend                      int
+	PhysicalTimestamps                bool
+	ExperimentalGossipPropagationRate float32
+	ExperimentalGossipSendOnce        bool
+	ExperimentalCustomReactors        map[string]string
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -130,11 +130,11 @@ type Node struct {
 	PrometheusProxyPort uint32
 
 	//Experimental
-	PropagationRatio    float32
+	PropagationRatio float32
 }
 
 func (n *Node) String() string {
- 	return n.Name
+	return n.Name
 }
 
 // LoadTestnet loads a testnet from a manifest file, using the filename to
@@ -188,11 +188,11 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
 
 		//Experimental
- 		LoadTxToSend:                      manifest.LoadTxToSend,
- 		PhysicalTimestamps:                manifest.PhysicalTimestamps,
- 		ExperimentalGossipPropagationRate: manifest.ExperimentalGossipPropagationRate,
- 		ExperimentalGossipSendOnce:        manifest.ExperimentalGossipSendOnce,
- 		ExperimentalCustomReactors:        manifest.ExperimentalCustomReactors,
+		LoadTxToSend:                      manifest.LoadTxToSend,
+		PhysicalTimestamps:                manifest.PhysicalTimestamps,
+		ExperimentalGossipPropagationRate: manifest.ExperimentalGossipPropagationRate,
+		ExperimentalGossipSendOnce:        manifest.ExperimentalGossipSendOnce,
+		ExperimentalCustomReactors:        manifest.ExperimentalCustomReactors,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
@@ -352,11 +352,11 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	// compute Prometheus IP (if enabled)
- 	if testnet.Prometheus {
- 		if testnet.PrometheusIP, err = newIPGenerator(ipNet).After(len(testnet.Nodes)); err != nil {
- 			return nil, err
- 		}
- 	}
+	if testnet.Prometheus {
+		if testnet.PrometheusIP, err = newIPGenerator(ipNet).After(len(testnet.Nodes)); err != nil {
+			return nil, err
+		}
+	}
 
 	return testnet, testnet.Validate()
 }
@@ -677,19 +677,18 @@ func (g *ipGenerator) Next() net.IP {
 	return ip
 }
 
-
 func (g *ipGenerator) After(skip int) (net.IP, error) {
- 	ip := g.Next()
- 	i := 0
- 	var ret net.IP
- 	for ip := ip.Mask(g.network.Mask); g.network.Contains(ip) && i <= skip; ip = g.Next() {
- 		ret = ip
- 		i++
- 	}
+	ip := g.Next()
+	i := 0
+	var ret net.IP
+	for ip := ip.Mask(g.network.Mask); g.network.Contains(ip) && i <= skip; ip = g.Next() {
+		ret = ip
+		i++
+	}
 
- 	if i <= skip {
- 		return nil, fmt.Errorf("not enough network addresses")
- 	}
+	if i <= skip {
+		return nil, fmt.Errorf("not enough network addresses")
+	}
 
- 	return ret, nil
+	return ret, nil
 }

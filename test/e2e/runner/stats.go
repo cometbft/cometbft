@@ -2,13 +2,15 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"math"
+	"strconv"
+	"time"
+
+	"github.com/cometbft/cometbft/test/loadtime/payload"
 	"github.com/prometheus/client_golang/api"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
-	"strconv"
-	"time"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
@@ -20,9 +22,10 @@ type Stats struct {
 	redundant map[*e2e.Node]int
 	cpuLoad   map[*e2e.Node]float32
 	sent      map[*e2e.Node]int
+	latencies map[float64]int
 }
 
-func Fetch(testnet *e2e.Testnet) (Stats, error) {
+func ComputeStats(testnet *e2e.Testnet) (Stats, error) {
 	timeout := 1 * time.Second
 
 	peers := map[*e2e.Node]int{}
@@ -74,16 +77,13 @@ func Fetch(testnet *e2e.Testnet) (Stats, error) {
 			}
 		}
 	}
-	return Stats{peers: peers, bandwidth: bw, added: seen, redundant: redundant, cpuLoad: cpuLoad, sent: sent}, err
-}
 
-func (t *Stats) Output() string {
-	jsn, err := json.Marshal(t)
-	if err != nil {
-		fmt.Errorf("failed to marshal state: %w")
-		return ""
+	var latencies map[float64]int
+	if latencies, err = fetchLatencies(testnet); err != nil {
+		return Stats{}, err
 	}
-	return string(jsn)
+
+	return Stats{peers: peers, bandwidth: bw, added: seen, redundant: redundant, cpuLoad: cpuLoad, sent: sent, latencies: latencies}, err
 }
 
 func (t *Stats) String() string {
@@ -184,33 +184,48 @@ func (t *Stats) CPULoad(testnet *e2e.Testnet) float32 {
 	return count / float32(len(testnet.Nodes))
 }
 
-func queryInt(v1api v1.API, timeout time.Duration, field string, node string, extra string) (int, error) {
-	if result, err := doQuery(v1api, timeout, field, node, extra); err == nil {
-		if len(result.(model.Vector)) != 0 {
-			return strconv.Atoi(result.(model.Vector)[0].Value.String())
-		} else {
-			return 0, nil
+// Latency returns the average latency in sec. (or the number of elapsed blocks when timestamps are logical)
+func (t *Stats) Latency() float64 {
+	sum := float64(0)
+	count := float64(0)
+	for k, v := range t.latencies {
+		for i := 1; i <= v; i++ {
+			sum += k
+			count++
 		}
-	} else {
-		return 0, err
 	}
 
-	return 0, nil
+	if sum == 0 {
+		return 0 // no latency found (by convention)
+	}
+
+	return sum / count
+}
+
+func queryInt(v1api v1.API, timeout time.Duration, field string, node string, extra string) (int, error) {
+	result, err := doQuery(v1api, timeout, field, node, extra)
+	if err != nil {
+		return 0, err
+	}
+	if len(result.(model.Vector)) == 0 {
+		return 0, nil
+	}
+	return strconv.Atoi(result.(model.Vector)[0].Value.String())
 }
 
 func queryFloat(v1api v1.API, timeout time.Duration, field string, node string, extra string) (float32, error) {
-	if result, err := doQuery(v1api, timeout, field, node, extra); err == nil {
-		if len(result.(model.Vector)) != 0 {
-			if convert, convertErr := strconv.ParseFloat(result.(model.Vector)[0].Value.String(), 32); convertErr == nil {
-				return float32(convert), nil
-			} else {
-				return 0, convertErr
-			}
-		}
-	} else {
+	result, err := doQuery(v1api, timeout, field, node, extra)
+	if err != nil {
 		return 0, err
 	}
-	return 0, nil
+	if len(result.(model.Vector)) == 0 {
+		return 0, nil
+	}
+	convert, err := strconv.ParseFloat(result.(model.Vector)[0].Value.String(), 32)
+	if err != nil {
+		return 0, err
+	}
+	return float32(convert), nil
 }
 
 func doQuery(v1api v1.API, timeout time.Duration, field string, node string, extra string) (model.Value, error) {
@@ -229,5 +244,70 @@ func doQuery(v1api v1.API, timeout time.Duration, field string, node string, ext
 	}
 
 	return nil, fmt.Errorf("Query (" + q + ") has failed")
+}
 
+func fetchLatencies(testnet *e2e.Testnet) (map[float64]int, error) {
+	latencies := map[float64]int{}
+
+	archiveNode := testnet.ArchiveNodes()[0]
+	c, err := archiveNode.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	s, err := c.Status(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+
+	to := s.SyncInfo.LatestBlockHeight
+	from := testnet.InitialHeight
+
+	for from < to {
+		resp, err := c.Block(context.TODO(), &from)
+		if err != nil {
+			return nil, err
+		}
+
+		now := float64(resp.Block.Height)
+		if testnet.PhysicalTimestamps {
+			now = float64(resp.Block.Header.Time.UTC().UnixNano())
+		}
+
+		for _, tx := range resp.Block.Txs {
+			if payload, err := payload.FromBytes(tx); err == nil {
+
+				start := float64(payload.Time.Seconds)
+				if testnet.PhysicalTimestamps {
+					start = float64(payload.Time.Nanos) + float64(payload.Time.Seconds)*math.Pow(10, 9)
+				}
+
+				latency := now - start
+
+				if testnet.PhysicalTimestamps {
+					latency = latency / math.Pow(10, 9)
+				}
+
+				if latency < 0 {
+					// should never happen
+					logger.Error("skipping invalid latency: ",
+						"lat", latency,
+						"block", resp.Block.Header.Height)
+					continue
+				}
+
+				if _, found := latencies[latency]; !found {
+					latencies[latency] = 0
+				}
+
+				latencies[latency]++
+
+			} else {
+				return nil, err
+			}
+		}
+		from++
+	}
+
+	return latencies, nil
 }

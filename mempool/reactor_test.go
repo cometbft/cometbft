@@ -3,6 +3,7 @@ package mempool
 import (
 	"encoding/hex"
 	"errors"
+	"runtime/debug"
 	"sync"
 	"testing"
 	"time"
@@ -413,7 +414,7 @@ func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switc
 		mempool, cleanup := newMempoolWithApp(cc)
 		defer cleanup()
 
-		reactors[i] = NewReactor(config.Mempool, mempool) // so we dont start the consensus states
+		reactors[i] = NewReactor(config.Mempool, mempool) // so we don't start the consensus states
 		reactors[i].SetLogger(logger.With("validator", i))
 	}
 
@@ -454,7 +455,7 @@ func waitForReactors(t *testing.T, txs types.Txs, reactors []*Reactor, testFunc 
 	timer := time.After(timeout)
 	select {
 	case <-timer:
-		t.Fatal("Timed out waiting for txs")
+		t.Fatal("Timed out waiting for txs ", string(debug.Stack()))
 	case <-done:
 	}
 }

@@ -53,13 +53,13 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 	}
 	logger.Info("Nodes started.")
 	for _, node := range nodesAtZero {
-		if status, err := waitForNode(ctx, node, 0, 60*time.Second); err != nil {
+		status, err := waitForNode(ctx, node, 0, 60*time.Second)
+		if err != nil {
 			return err
-		} else {
-			node.ID = status.NodeInfo.ID()
 		}
+		node.ID = status.NodeInfo.ID()
 		if node.PrometheusProxyPort > 0 {
-			logger.Info("Start", "msg",
+			logger.Info("start", "msg",
 				log.NewLazySprintf("Node %v (%v) up on http://%s:%v; with Prometheus on http://%s:%v/metrics",
 					node.Name,
 					node.ID,
@@ -70,7 +70,7 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 				),
 			)
 		} else {
-			logger.Info("Start", "msg",
+			logger.Info("start", "msg",
 				log.NewLazySprintf("Node %v up on http://%s:%v",
 					node.Name,
 					node.ExternalIP,

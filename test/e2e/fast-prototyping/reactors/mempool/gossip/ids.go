@@ -1,11 +1,14 @@
-package mempool
+package gossip
 
 import (
 	"fmt"
 
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	mempool "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 )
+
+// copy of mempool/ids.go
 
 type mempoolIDs struct {
 	mtx       cmtsync.RWMutex
@@ -28,8 +31,8 @@ func (ids *mempoolIDs) ReserveForPeer(peer p2p.Peer) {
 // nextPeerID returns the next unused peer ID to use.
 // This assumes that ids's mutex is already locked.
 func (ids *mempoolIDs) nextPeerID() uint16 {
-	if len(ids.activeIDs) == MaxActiveIDs {
-		panic(fmt.Sprintf("node has maximum %d active IDs and wanted to get one more", MaxActiveIDs))
+	if len(ids.activeIDs) == mempool.MaxActiveIDs {
+		panic(fmt.Sprintf("node has maximum %d active IDs and wanted to get one more", mempool.MaxActiveIDs))
 	}
 
 	_, idExists := ids.activeIDs[ids.nextID]

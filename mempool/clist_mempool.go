@@ -52,10 +52,12 @@ type CListMempool struct {
 	recheckCursor *clist.CElement // next expected response
 	recheckEnd    *clist.CElement // re-checking stops here
 
-	// Concurrent linked-list of valid txs.
-	// `txsMap`: txKey -> CElement is for quick access to txs.
-	// Transactions in both `txs` and `txsMap` must to be kept in sync.
-	txs    *clist.CList
+	// Concurrent linked-list of valid transactions.
+	// txs must to be kept in sync with txsMap.
+	txs *clist.CList
+
+	// txsMap is for quick access to txs and it must be kept in sync with txs.
+	// txsMap: txKey -> CElement
 	txsMap sync.Map
 
 	// Keep a cache of already-seen txs.
@@ -327,6 +329,7 @@ func (mem *CListMempool) addTx(memTx *MempoolTx) {
 	mem.txsMap.Store(memTx.tx.Key(), e)
 	atomic.AddInt64(&mem.txsBytes, int64(len(memTx.tx)))
 	mem.metrics.TxSizeBytes.Observe(float64(len(memTx.tx)))
+	mem.metrics.AddedTxs.Add(1)
 }
 
 // RemoveTxByKey removes a transaction from the mempool by its TxKey index.

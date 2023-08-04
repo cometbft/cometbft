@@ -2,13 +2,12 @@ package gossip
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/cometbft/cometbft/libs/clist"
 	"github.com/cometbft/cometbft/libs/rand"
-	nm "github.com/cometbft/cometbft/node"
-
-	"fmt"
+	"github.com/cometbft/cometbft/node"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cfg "github.com/cometbft/cometbft/config"
@@ -20,16 +19,23 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+// This is similar to mempool/reactor.go with two additional hooks to change how transactions are disseminated.
+// The first hook (sendOnce) if set send a transaction only once to a peer. The second one (propagationRate)
+// permits to omit some message. To behave line the vanilla version, one should not mock consensus, and set
+// sendOnce=true and propagationRatio=100.
+
 // Reactor handles mempool tx broadcasting amongst peers.
 // It maintains a map from peer ID to counter, to prevent gossiping txs to the
 // peers you received it from.
 type Reactor struct {
 	p2p.BaseReactor
-	config          *cfg.MempoolConfig
-	mempool         mempool.Mempool
-	ids             *mempool.MempoolIDs
-	txSenders       map[types.TxKey]map[uint16]bool
-	txSendersMtx    cmtsync.RWMutex
+	config  *cfg.MempoolConfig
+	mempool mempool.Mempool
+	ids     *mempoolIDs
+
+	txSenders    map[types.TxKey]map[uint16]bool
+	txSendersMtx cmtsync.RWMutex
+
 	propagationRate float32
 	sendOnce        bool
 	consensusMocked bool
@@ -38,11 +44,11 @@ type Reactor struct {
 
 // NewReactor returns a new Reactor with the given config and mempool.
 // The mempool's channel TxsAvailable will be initialized only when notifyAvailable is true.
-func NewReactor(node *nm.Node, ConsensusMocked bool, rate float32, sendOnce bool) *Reactor {
+func NewReactor(node *node.Node, ConsensusMocked bool, rate float32, sendOnce bool) *Reactor {
 	memR := &Reactor{
 		config:          node.Config().Mempool,
 		mempool:         node.Mempool(),
-		ids:             mempool.NewMempoolIDs(),
+		ids:             newMempoolIDs(),
 		txSenders:       make(map[types.TxKey]map[uint16]bool),
 		propagationRate: rate,
 		sendOnce:        sendOnce,
@@ -74,11 +80,6 @@ func (memR *Reactor) OnStart() error {
 		memR.Logger.Info("Tx broadcasting is disabled")
 	}
 	return nil
-}
-
-// OnStop stops the reactor by signaling to all spawned goroutines to exit and
-// blocking until they all exit.
-func (memR *Reactor) OnStop() {
 }
 
 // GetChannels implements Reactor by returning the list of channels for this
@@ -215,7 +216,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// NOTE: Transaction batching was disabled due to
 		// https://github.com/tendermint/tendermint/issues/5796
 
-		if !memR.isSender(memTx.GetTxKey(), peerID) && float32(rand.Intn(101)) <= memR.propagationRate {
+		if !memR.isSender(memTx.GetTx().Key(), peerID) && float32(rand.Intn(101)) <= memR.propagationRate {
 			success := peer.Send(p2p.Envelope{
 				ChannelID: mempool.MempoolChannel,
 				Message:   &protomem.Txs{Txs: [][]byte{memTx.GetTx()}},
@@ -225,7 +226,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 				continue
 			}
 			if memR.sendOnce {
-				memR.addSender(memTx.GetTxKey(), peerID)
+				memR.addSender(memTx.GetTx().Key(), peerID)
 			}
 
 			memR.metrics.SentTxs.Add(1)

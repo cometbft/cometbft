@@ -72,6 +72,20 @@ func (_m *Mempool) FlushAppConn() error {
 	return r0
 }
 
+// InMempool provides a mock function with given fields: txKey
+func (_m *Mempool) InMempool(txKey types.TxKey) bool {
+	ret := _m.Called(txKey)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(types.TxKey) bool); ok {
+		r0 = rf(txKey)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
 // Lock provides a mock function with given fields:
 func (_m *Mempool) Lock() {
 	_m.Called()

@@ -373,10 +373,13 @@ End after 1 minute, or if some (optional) target is attained.
 Does not run any perturbations.
 		`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			benchmarkDuration := 120 * time.Second
 
-			defer cli.infp.StopTestnet(context.Background())
+			defer func() {
+				if err := cli.infp.StopTestnet(context.Background()); err != nil {
+					logger.Error("Error stopping testnet", "err", err.Error())
+				}
+			}()
 
 			if err := Cleanup(cli.testnet); err != nil {
 				return err
@@ -422,20 +425,19 @@ Does not run any perturbations.
 				if time.Since(startAt) < benchmarkDuration {
 					return fmt.Errorf("timed out without reason")
 				}
-				return fmt.Errorf("benchamrk ran out of time")
+				return fmt.Errorf("benchmark ran out of time")
 			}
 			logger.Info("Ending benchmark.")
 
 			logger.Info("Second grace period (10s).")
 			time.Sleep(10 * time.Second)
 
-			logger.Info("Fetching stats.")
-			mempoolStats, err := Fetch(cli.testnet)
+			logger.Info("Computing stats.")
+			mempoolStats, err := ComputeStats(cli.testnet)
 			if err != nil {
 				return err
 			}
 
-			// FIXME should it be json instead?
 			txsAdded := mempoolStats.TxsAdded(cli.testnet)
 			txsSent := mempoolStats.txsSent(cli.testnet)
 			completion := mempoolStats.Completion(cli.testnet, txs)
@@ -445,7 +447,9 @@ Does not run any perturbations.
 			overhead := math.Max(0, float64(totalBandwidth-usefulBandwidth)/float64(usefulBandwidth))
 			degree := mempoolStats.Degree(cli.testnet)
 			cpuLoad := mempoolStats.CPULoad(cli.testnet)
+			latency := mempoolStats.Latency()
 
+			// FIXME should it be JSON instead?
 			logger.Info("#txs submitted = " + strconv.Itoa(txs))
 			logger.Info("#txs added (on avg.) = " + fmt.Sprintf("%v", txsAdded))
 			logger.Info("#txs sent (on avg) = " + fmt.Sprintf("%v", txsSent))
@@ -457,13 +461,22 @@ Does not run any perturbations.
 			logger.Info("degree (on avg) = " + fmt.Sprintf("%v", degree))
 			logger.Info("cpu load (on avg, in s) = " + fmt.Sprintf("%v", cpuLoad))
 
-			if graph, err := json.Marshal(mempoolStats.BandwidthGraph(cli.testnet, true)); err != nil {
-				return err
+			if !cli.testnet.PhysicalTimestamps {
+				logger.Info("latency (on avg, in #blocks) = " + fmt.Sprintf("%v", latency))
 			} else {
-				logger.Info("bandwidth graph = " + fmt.Sprintf("%v", string(graph)))
+				logger.Info("latency (on avg, in s) = " + fmt.Sprintf("%v", latency))
 			}
 
-			cli.infp.StopTestnet(context.Background())
+			graph, err := json.Marshal(mempoolStats.BandwidthGraph(cli.testnet, true))
+			if err != nil {
+				return err
+			}
+			logger.Info("bandwidth graph = " + fmt.Sprintf("%v", string(graph)))
+
+			err = cli.infp.StopTestnet(context.Background())
+			if err != nil {
+				return err
+			}
 
 			return Cleanup(cli.testnet)
 		},
@@ -472,19 +485,12 @@ Does not run any perturbations.
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "stats",
 		Short: "Display some statistics about a run",
-		Long: `Display the following global statistics (as json:
+		Long: `Display the following global statistics:
     graph.bandwidth: mempool bandwidth usage
     graph.peers: #peers of each node
-    mempoool.duplicates: #duplicated txs in the mempool at each node
 		`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-
-			_, err := waitForAllNodes(context.TODO(), cli.testnet, 0, 5*time.Second)
-			if err != nil {
-				return err
-			}
-
-			mempoolStats, err := Fetch(cli.testnet)
+			mempoolStats, err := ComputeStats(cli.testnet)
 			if err != nil {
 				return err
 			}
@@ -499,14 +505,8 @@ Does not run any perturbations.
 				return err
 			}
 
-			duplicates, err := json.Marshal(mempoolStats.Duplicates(cli.testnet))
-			if err != nil {
-				return err
-			}
-
 			logger.Info("graph.bandwidth = " + fmt.Sprintf("%v", string(graph)))
 			logger.Info("graph.peers = " + fmt.Sprintf("%v", string(peers)))
-			logger.Info("mempool.duplicates = " + fmt.Sprintf("%v", string(duplicates)))
 
 			return nil
 		},

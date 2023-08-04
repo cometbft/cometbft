@@ -52,6 +52,12 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "already_received_txs",
 			Help:      "Number of duplicate transaction reception.",
 		}, labels).With(labelsAndValues...),
+		AddedTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "added_txs",
+			Help:      "Number of successfully added transactions.",
+		}, labels).With(labelsAndValues...),
 	}
 }
 
@@ -63,5 +69,6 @@ func NopMetrics() *Metrics {
 		RejectedTxs:        discard.NewCounter(),
 		RecheckTimes:       discard.NewCounter(),
 		AlreadyReceivedTxs: discard.NewCounter(),
+		AddedTxs:           discard.NewCounter(),
 	}
 }

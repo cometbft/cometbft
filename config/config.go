@@ -528,21 +528,27 @@ type GRPCConfig struct {
 
 	// The gRPC block service provides block information
 	BlockService *GRPCBlockServiceConfig `mapstructure:"block_service"`
+
+	// The gRPC block results service provides the block results for a given height
+	// If no height is provided, the block results of the latest height are returned
+	BlockResultsService *GRPCBlockResultsServiceConfig `mapstructure:"block_results_service"`
 }
 
 func DefaultGRPCConfig() *GRPCConfig {
 	return &GRPCConfig{
-		ListenAddress:  "",
-		VersionService: DefaultGRPCVersionServiceConfig(),
-		BlockService:   DefaultGRPCBlockServiceConfig(),
+		ListenAddress:       "",
+		VersionService:      DefaultGRPCVersionServiceConfig(),
+		BlockService:        DefaultGRPCBlockServiceConfig(),
+		BlockResultsService: DefaultGRPCBlockResultsServiceConfig(),
 	}
 }
 
 func TestGRPCConfig() *GRPCConfig {
 	return &GRPCConfig{
-		ListenAddress:  "tcp://127.0.0.1:36670",
-		VersionService: TestGRPCVersionServiceConfig(),
-		BlockService:   TestGRPCBlockServiceConfig(),
+		ListenAddress:       "tcp://127.0.0.1:36670",
+		VersionService:      TestGRPCVersionServiceConfig(),
+		BlockService:        TestGRPCBlockServiceConfig(),
+		BlockResultsService: DefaultGRPCBlockResultsServiceConfig(),
 	}
 }
 
@@ -563,8 +569,18 @@ type GRPCVersionServiceConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
+type GRPCBlockResultsServiceConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
 func DefaultGRPCVersionServiceConfig() *GRPCVersionServiceConfig {
 	return &GRPCVersionServiceConfig{
+		Enabled: true,
+	}
+}
+
+func DefaultGRPCBlockResultsServiceConfig() *GRPCBlockResultsServiceConfig {
+	return &GRPCBlockResultsServiceConfig{
 		Enabled: true,
 	}
 }

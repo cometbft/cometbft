@@ -2,13 +2,16 @@ package e2e_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	client2 "github.com/cometbft/cometbft/rpc/grpc/client"
+
+	"github.com/stretchr/testify/require"
+
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/version"
-	"github.com/stretchr/testify/require"
 )
 
 func TestGRPC_Version(t *testing.T) {
@@ -131,4 +134,60 @@ func TestGRPC_Block_GetLatestHeight(t *testing.T) {
 			require.Error(t, gCtx.Err())
 		}
 	}
+}
+
+func TestGRPC_GetBlockResults(t *testing.T) {
+	testNode(t, func(t *testing.T, node e2e.Node) {
+		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
+			return
+		}
+
+		client, err := node.Client()
+		require.NoError(t, err)
+		status, err := client.Status(ctx)
+		require.NoError(t, err)
+
+		first := status.SyncInfo.EarliestBlockHeight
+		last := status.SyncInfo.LatestBlockHeight
+		if node.RetainBlocks > 0 {
+			first++
+		}
+
+		ctx, ctxCancel := context.WithTimeout(context.Background(), time.Minute)
+		defer ctxCancel()
+		gRPCClient, err := node.GRPCClient(ctx)
+		require.NoError(t, err)
+
+		// GetLatestBlockResults
+		latestBlockResults, err := gRPCClient.GetLatestBlockResults(ctx)
+
+		require.GreaterOrEqual(t, last, latestBlockResults.Height)
+		require.NoError(t, err, "Unexpected error for GetLatestBlockResults")
+		require.NotNil(t, latestBlockResults)
+
+		successCases := []struct {
+			expectedHeight int64
+		}{
+			{first},
+			{latestBlockResults.Height},
+		}
+		errorCases := []struct {
+			requestHeight int64
+		}{
+			{first - 2},
+			{last + 100000},
+		}
+
+		for _, tc := range successCases {
+			res, err := gRPCClient.GetBlockResults(ctx, tc.expectedHeight)
+
+			require.NoError(t, err, fmt.Sprintf("Unexpected error for GetBlockResults at expected height: %d", tc.expectedHeight))
+			require.NotNil(t, res)
+			require.Equal(t, res.Height, tc.expectedHeight)
+		}
+		for _, tc := range errorCases {
+			_, err = gRPCClient.GetBlockResults(ctx, tc.requestHeight)
+			require.Error(t, err)
+		}
+	})
 }

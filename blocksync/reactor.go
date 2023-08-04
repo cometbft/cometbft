@@ -66,22 +66,18 @@ type Reactor struct {
 
 // NewReactor returns new reactor instance.
 func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
-	blockSync bool, metrics *Metrics,
+	blockSync bool, metrics *Metrics, offlineStateSyncHeight int64,
 ) *Reactor {
 
 	storeHeight := store.Height()
-	var err error
-	if storeHeight == 0 {
+	if offlineStateSyncHeight != 0 {
 		// If state sync was performed offline and the stores were bootstrapped to height H
 		// the state store's lastHeight will be H while blockstore's Height and Base are still 0
 		// 1. This scenario should not lead to a panic in this case, which is indicated by
 		// having a OfflineStateSyncHeight > 0
 		// 2. We need to instruct the blocksync reactor to start fetching blocks from H+1
 		// instead of 0.
-		storeHeight, err = blockExec.Store().GetOfflineStateSyncHeight()
-		if err != nil && err.Error() != "value empty" {
-			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s; expected state store height to be %v", err, state.LastBlockHeight))
-		}
+		storeHeight = offlineStateSyncHeight
 	}
 	if state.LastBlockHeight != storeHeight {
 		panic(fmt.Sprintf("state (%v) and store (%v) height mismatch, stores were left in an inconsistent state", state.LastBlockHeight,

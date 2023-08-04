@@ -359,8 +359,15 @@ func NewNode(ctx context.Context,
 		sm.BlockExecutorWithMetrics(smMetrics),
 	)
 
+	offlineStateSyncHeight := int64(0)
+	if blockStore.Base() == 0 {
+		offlineStateSyncHeight, err = blockExec.Store().GetOfflineStateSyncHeight()
+		if err != nil && err.Error() != "value empty" {
+			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s; expected state store height to be %v", err, state.LastBlockHeight))
+		}
+	}
 	// Make BlocksyncReactor. Don't start block sync if we're doing a state sync first.
-	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, logger, bsMetrics)
+	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, logger, bsMetrics, offlineStateSyncHeight)
 	if err != nil {
 		return nil, fmt.Errorf("could not create blocksync reactor: %w", err)
 	}
@@ -368,8 +375,13 @@ func NewNode(ctx context.Context,
 	// Make ConsensusReactor
 	consensusReactor, consensusState := createConsensusReactor(
 		config, state, blockExec, blockStore, mempool, evidencePool,
-		privValidator, csMetrics, stateSync || blockSync, eventBus, consensusLogger,
+		privValidator, csMetrics, stateSync || blockSync, eventBus, consensusLogger, offlineStateSyncHeight,
 	)
+
+	err = stateStore.SetOfflineStateSyncHeight(0)
+	if err != nil {
+		panic("failed to reset the offline state sync height ")
+	}
 	// Set up state sync reactor, and schedule a sync if requested.
 	// FIXME The way we do phased startups (e.g. replay -> block sync -> consensus) is very messy,
 	// we should clean this whole thing up. See:

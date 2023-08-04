@@ -141,6 +141,9 @@ type State struct {
 
 	// for reporting metrics
 	metrics *Metrics
+
+	// offline state sync height indicating to which height the node synced offline
+	offlineStateSyncHeight int64
 }
 
 // StateOption sets an optional parameter on the State.
@@ -185,16 +188,8 @@ func NewState(
 		// If the height at which the vote extensions are enabled is lower
 		// than the height at which we statesync, consensus will panic because
 		// it will try to reconstruct the extended commit here.
-		storeHeight, err := cs.blockExec.Store().GetOfflineStateSyncHeight()
-		if err != nil && err.Error() != "value empty" {
-			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s", err))
-		}
-		if storeHeight != 0 {
+		if cs.offlineStateSyncHeight != 0 {
 			cs.reconstructSeenCommit(state)
-			err = cs.blockExec.Store().SetOfflineStateSyncHeight(0)
-			if err != nil {
-				panic("failed to reset the offline state sync height ")
-			}
 		} else {
 			cs.reconstructLastCommit(state)
 		}
@@ -227,6 +222,12 @@ func (cs *State) SetEventBus(b *types.EventBus) {
 // StateMetrics sets the metrics.
 func StateMetrics(metrics *Metrics) StateOption {
 	return func(cs *State) { cs.metrics = metrics }
+}
+
+// OfflineStateSyncHeight indicates the height at which the node
+// statesync offline - before booting sets the metrics.
+func OfflineStateSyncHeight(height int64) StateOption {
+	return func(cs *State) { cs.offlineStateSyncHeight = height }
 }
 
 // String returns a string.

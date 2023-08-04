@@ -370,11 +370,6 @@ func NewNode(ctx context.Context,
 		config, state, blockExec, blockStore, mempool, evidencePool,
 		privValidator, csMetrics, stateSync || blockSync, eventBus, consensusLogger,
 	)
-
-	err = stateStore.SetOfflineStateSyncHeight(0)
-	if err != nil {
-		panic("failed to reset the offline state sync height ")
-	}
 	// Set up state sync reactor, and schedule a sync if requested.
 	// FIXME The way we do phased startups (e.g. replay -> block sync -> consensus) is very messy,
 	// we should clean this whole thing up. See:

@@ -189,7 +189,13 @@ func NewState(
 		if err != nil && err.Error() != "value empty" {
 			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s", err))
 		}
-		if storeHeight == 0 {
+		if storeHeight != 0 {
+			cs.reconstructSeenCommit(state)
+			err = cs.blockExec.Store().SetOfflineStateSyncHeight(0)
+			if err != nil {
+				panic("failed to reset the offline state sync height ")
+			}
+		} else {
 			cs.reconstructLastCommit(state)
 		}
 	}
@@ -571,6 +577,18 @@ func (cs *State) sendInternalMessage(mi msgInfo) {
 	}
 }
 
+// ReconstructSeenCommit reconstructs the seen commit
+// This function is meant to be called only after statesync
+// that was performed offline as to avoid interfering with vote
+// extensions.
+func (cs *State) reconstructSeenCommit(state sm.State) {
+	votes, err := cs.votesFromSeenCommit(state)
+	if err != nil {
+		panic(fmt.Sprintf("failed to reconstruct last commit; %s", err))
+	}
+	cs.LastCommit = votes
+}
+
 // Reconstruct the LastCommit from either SeenCommit or the ExtendedCommit. SeenCommit
 // and ExtendedCommit are saved along with the block. If VoteExtensions are required
 // the method will panic on an absent ExtendedCommit or an ExtendedCommit without
@@ -586,7 +604,6 @@ func (cs *State) reconstructLastCommit(state sm.State) {
 		cs.LastCommit = votes
 		return
 	}
-
 	votes, err := cs.votesFromExtendedCommit(state)
 	if err != nil {
 		panic(fmt.Sprintf("failed to reconstruct last extended commit; %s", err))

@@ -1435,7 +1435,6 @@ func (cs *State) enterPrevoteWait(height int64, round int32) {
 // Enter: `timeoutPrecommit` after any +2/3 precommits.
 // Enter: +2/3 precomits for block or nil.
 // Lock & precommit the ProposalBlock if we have enough prevotes for it (a POL in this round)
-// else, unlock an existing lock and precommit nil if +2/3 of prevotes were nil,
 // else, precommit nil otherwise.
 func (cs *State) enterPrecommit(height int64, round int32) {
 	logger := cs.Logger.With("height", height, "round", round)
@@ -1482,21 +1481,9 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 		panic(fmt.Sprintf("this POLRound should be %v but got %v", round, polRound))
 	}
 
-	// +2/3 prevoted nil. Unlock and precommit nil.
-	if len(blockID.Hash) == 0 {
-		if cs.LockedBlock == nil {
-			logger.Debug("precommit step; +2/3 prevoted for nil")
-		} else {
-			logger.Debug("precommit step; +2/3 prevoted for nil; unlocking")
-			cs.LockedRound = -1
-			cs.LockedBlock = nil
-			cs.LockedBlockParts = nil
-
-			if err := cs.eventBus.PublishEventUnlock(cs.RoundStateEvent()); err != nil {
-				logger.Error("failed publishing event unlock", "err", err)
-			}
-		}
-
+	// +2/3 prevoted nil. Precommit nil.
+	if blockID.IsNil() {
+		logger.Debug("precommit step; +2/3 prevoted for nil")
 		cs.signAddVote(cmtproto.PrecommitType, nil, types.PartSetHeader{}, nil)
 		return
 	}
@@ -1516,7 +1503,9 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 		return
 	}
 
-	// If +2/3 prevoted for proposal block, stage and precommit it
+	// If greater than 2/3 of the voting power on the network prevoted for
+	// the proposed block, update our locked block to this block and issue a
+	// precommit vote for it.
 	if cs.ProposalBlock.HashesTo(blockID.Hash) {
 		logger.Debug("precommit step; +2/3 prevoted proposal block; locking", "hash", blockID.Hash)
 
@@ -1538,21 +1527,12 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 	}
 
 	// There was a polka in this round for a block we don't have.
-	// Fetch that block, unlock, and precommit nil.
-	// The +2/3 prevotes for this round is the POL for our unlock.
+	// Fetch that block, and precommit nil.
 	logger.Debug("precommit step; +2/3 prevotes for a block we do not have; voting nil", "block_id", blockID)
-
-	cs.LockedRound = -1
-	cs.LockedBlock = nil
-	cs.LockedBlockParts = nil
 
 	if !cs.ProposalBlockParts.HasHeader(blockID.PartSetHeader) {
 		cs.ProposalBlock = nil
 		cs.ProposalBlockParts = types.NewPartSetFromHeader(blockID.PartSetHeader)
-	}
-
-	if err := cs.eventBus.PublishEventUnlock(cs.RoundStateEvent()); err != nil {
-		logger.Error("failed publishing event unlock", "err", err)
 	}
 
 	cs.signAddVote(cmtproto.PrecommitType, nil, types.PartSetHeader{}, nil)
@@ -1662,7 +1642,7 @@ func (cs *State) tryFinalizeCommit(height int64) {
 	}
 
 	blockID, ok := cs.Votes.Precommits(cs.CommitRound).TwoThirdsMajority()
-	if !ok || len(blockID.Hash) == 0 {
+	if !ok || blockID.IsNil() {
 		logger.Error("failed attempt to finalize commit; there was no +2/3 majority or +2/3 was for nil")
 		return
 	}
@@ -2020,7 +2000,7 @@ func (cs *State) handleCompleteProposal(blockHeight int64) {
 	// Update Valid* if we can.
 	prevotes := cs.Votes.Prevotes(cs.Round)
 	blockID, hasTwoThirds := prevotes.TwoThirdsMajority()
-	if hasTwoThirds && !blockID.IsZero() && (cs.ValidRound < cs.Round) {
+	if hasTwoThirds && !blockID.IsNil() && (cs.ValidRound < cs.Round) {
 		if cs.ProposalBlock.HashesTo(blockID.Hash) {
 			cs.Logger.Debug(
 				"updating valid block to new proposal block",
@@ -2173,7 +2153,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 		}
 		// Verify VoteExtension if precommit and not nil
 		// https://github.com/tendermint/tendermint/issues/8487
-		if vote.Type == cmtproto.PrecommitType && !vote.BlockID.IsZero() &&
+		if vote.Type == cmtproto.PrecommitType && !vote.BlockID.IsNil() &&
 			!bytes.Equal(vote.ValidatorAddress, myAddr) { // Skip the VerifyVoteExtension call if the vote was issued by this validator.
 
 			// The core fields of the vote message were already validated in the
@@ -2230,33 +2210,13 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 		prevotes := cs.Votes.Prevotes(vote.Round)
 		cs.Logger.Debug("added vote to prevote", "vote", vote, "prevotes", prevotes.StringShort())
 
-		// If +2/3 prevotes for a block or nil for *any* round:
-		if blockID, ok := prevotes.TwoThirdsMajority(); ok {
-			// There was a polka!
-			// If we're locked but this is a recent polka, unlock.
-			// If it matches our ProposalBlock, update the ValidBlock
-
-			// Unlock if `cs.LockedRound < vote.Round <= cs.Round`
-			// NOTE: If vote.Round > cs.Round, we'll deal with it when we get to vote.Round
-			if (cs.LockedBlock != nil) &&
-				(cs.LockedRound < vote.Round) &&
-				(vote.Round <= cs.Round) &&
-				!cs.LockedBlock.HashesTo(blockID.Hash) {
-
-				cs.Logger.Debug("unlocking because of POL", "locked_round", cs.LockedRound, "pol_round", vote.Round)
-
-				cs.LockedRound = -1
-				cs.LockedBlock = nil
-				cs.LockedBlockParts = nil
-
-				if err := cs.eventBus.PublishEventUnlock(cs.RoundStateEvent()); err != nil {
-					return added, err
-				}
-			}
+		// Check to see if >2/3 of the voting power on the network voted for any non-nil block.
+		if blockID, ok := prevotes.TwoThirdsMajority(); ok && !blockID.IsNil() {
+			// Greater than 2/3 of the voting power on the network voted for some
+			// non-nil block
 
 			// Update Valid* if we can.
-			// NOTE: our proposal block may be nil or not what received a polka..
-			if len(blockID.Hash) != 0 && (cs.ValidRound < vote.Round) && (vote.Round == cs.Round) {
+			if cs.ValidRound < vote.Round && vote.Round == cs.Round {
 				if cs.ProposalBlock.HashesTo(blockID.Hash) {
 					cs.Logger.Debug("updating valid block because of POL", "valid_round", cs.ValidRound, "pol_round", vote.Round)
 					cs.ValidRound = vote.Round
@@ -2292,7 +2252,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 
 		case cs.Round == vote.Round && cstypes.RoundStepPrevote <= cs.Step: // current round
 			blockID, ok := prevotes.TwoThirdsMajority()
-			if ok && (cs.isProposalComplete() || len(blockID.Hash) == 0) {
+			if ok && (cs.isProposalComplete() || blockID.IsNil()) {
 				cs.enterPrecommit(height, vote.Round)
 			} else if prevotes.HasTwoThirdsAny() {
 				cs.enterPrevoteWait(height, vote.Round)
@@ -2320,7 +2280,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 			cs.enterNewRound(height, vote.Round)
 			cs.enterPrecommit(height, vote.Round)
 
-			if len(blockID.Hash) != 0 {
+			if !blockID.IsNil() {
 				cs.enterCommit(height, vote.Round)
 				if cs.config.SkipTimeoutCommit && precommits.HasAll() {
 					cs.enterNewRound(cs.Height, 0)
@@ -2371,7 +2331,7 @@ func (cs *State) signVote(
 	}
 
 	extEnabled := cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(vote.Height)
-	if msgType == cmtproto.PrecommitType && !vote.BlockID.IsZero() {
+	if msgType == cmtproto.PrecommitType && !vote.BlockID.IsNil() {
 		// if the signedMessage type is for a non-nil precommit, add
 		// VoteExtension
 		if extEnabled {
@@ -2443,7 +2403,7 @@ func (cs *State) signAddVote(
 	}
 	hasExt := len(vote.ExtensionSignature) > 0
 	extEnabled := cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(vote.Height)
-	if vote.Type == cmtproto.PrecommitType && !vote.BlockID.IsZero() && hasExt != extEnabled {
+	if vote.Type == cmtproto.PrecommitType && !vote.BlockID.IsNil() && hasExt != extEnabled {
 		panic(fmt.Errorf("vote extension absence/presence does not match extensions enabled %t!=%t, height %d, type %v",
 			hasExt, extEnabled, vote.Height, vote.Type))
 	}

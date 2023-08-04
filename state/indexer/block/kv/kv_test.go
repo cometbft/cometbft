@@ -464,3 +464,21 @@ func TestBigInt(t *testing.T) {
 		})
 	}
 }
+
+func TestKeyArray(t *testing.T) {
+	key1 := []byte("a")
+	key2 := []byte("ab")
+	key3 := []byte("abacabadabacaba")
+
+	var keyArray []byte
+	keyArray = blockidxkv.AppendToKeyArray(keyArray, key1)
+	keyArray = blockidxkv.AppendToKeyArray(keyArray, key2)
+	keyArray = blockidxkv.AppendToKeyArray(keyArray, key3)
+
+	keys := blockidxkv.GetKeysFromKeyArray(keyArray)
+
+	require.Equal(t, len(keys), 3)
+	require.Equal(t, keys[0], key1)
+	require.Equal(t, keys[1], key2)
+	require.Equal(t, keys[2], key3)
+}

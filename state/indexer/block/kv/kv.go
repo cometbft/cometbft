@@ -48,6 +48,10 @@ func New(store dbm.DB) *BlockerIndexer {
 	}
 }
 
+func getEventsForHeightKey(height int64) []byte {
+	return []byte(fmt.Sprintf("eventsForHeightKey%d", height))
+}
+
 func getLBRetainHeight(store dbm.DB) int64 {
 	var lbRetainHeight, err = store.Get(LBRetainHeightKey)
 	if err != nil {
@@ -620,6 +624,7 @@ func (idx *BlockerIndexer) match(
 
 func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, height int64) error {
 	heightBz := int64ToBytes(height)
+	var keyArray []byte
 
 	for _, event := range events {
 		idx.eventSeq = idx.eventSeq + 1
@@ -648,28 +653,35 @@ func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, hei
 				if err := batch.Set(key, heightBz); err != nil {
 					return err
 				}
+				keyArray = AppendToKeyArray(keyArray, key)
 			}
 		}
+	}
+	if err := batch.Set(getEventsForHeightKey(height), keyArray); err != nil {
+		return err
 	}
 
 	return nil
 }
 
 func (idx *BlockerIndexer) deleteEvents(height int64) {
-	itr, err := idx.store.Iterator(nil, nil)
+	eventsKey := getEventsForHeightKey(height)
+	keyArray, err := idx.store.Get(eventsKey)
 	if err != nil {
 		panic(err)
 	}
-	for ; itr.Valid(); itr.Next() {
-		h, err := parseHeightFromEventKey(itr.Key())
+	if keyArray == nil {
+		return
+	}
+	keys := GetKeysFromKeyArray(keyArray)
+	for _, key := range keys {
+		err := idx.store.Delete(key)
 		if err != nil {
-			continue
+			panic(err)
 		}
-		if h == height {
-			err := idx.store.Delete(itr.Key())
-			if err != nil {
-				panic(err)
-			}
-		}
+	}
+	err = idx.store.Delete(eventsKey)
+	if err != nil {
+		panic(err)
 	}
 }

@@ -250,3 +250,21 @@ func GetKeys(indexer *BlockerIndexer) [][]byte {
 	}
 	return keys
 }
+
+func AppendToKeyArray(keyArray []byte, newKey []byte) []byte {
+	keyLenBuffer := make([]byte, 8)
+	binary.BigEndian.PutUint64(keyLenBuffer, uint64(len(newKey)))
+	var withLength = append(keyLenBuffer, newKey...)
+	return append(keyArray, withLength...)
+}
+
+func GetKeysFromKeyArray(keyArray []byte) [][]byte {
+	lastLenKeyPairPosition := 0
+	var keys [][]byte
+	for lastLenKeyPairPosition < len(keyArray) {
+		length := int(binary.BigEndian.Uint64(keyArray[lastLenKeyPairPosition : lastLenKeyPairPosition+8]))
+		keys = append(keys, keyArray[lastLenKeyPairPosition+8:lastLenKeyPairPosition+8+length])
+		lastLenKeyPairPosition = lastLenKeyPairPosition + 8 + length
+	}
+	return keys
+}

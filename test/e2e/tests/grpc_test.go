@@ -107,58 +107,35 @@ func TestGRPC_Block_GetLatest(t *testing.T) {
 			require.NoError(t, err)
 			// We can be off by at most one block, depending on how quickly the
 			// latest block request was executed.
-			require.True(t, result.Height == block.Block.Height || result.Height == block.Block.Height-1)
+			require.True(t, result.Height == block.Block.Height || result.Height == block.Block.Height+1)
 		}
 	})
 }
 
 func TestGRPC_Block_GetLatestHeight(t *testing.T) {
-	var node *e2e.Node
-	testnet := loadTestnet(t)
-	// this assumes at least one node is valid for testing
-	// not a light or seed node
-	for _, n := range testnet.ArchiveNodes() {
-		if !n.Stateless() {
-			node = n
-			break
-		}
-	}
-	require.NotNil(t, node)
+	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
 
-	client, err := node.Client()
-	require.NoError(t, err)
-	status, err := client.Status(ctx)
-	require.NoError(t, err)
+		client, err := node.Client()
+		require.NoError(t, err)
+		status, err := client.Status(ctx)
+		require.NoError(t, err)
 
-	gCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	gRPCClient, err := node.GRPCClient(ctx)
-	require.NoError(t, err)
+		gRPCClient, err := node.GRPCClient(ctx)
+		require.NoError(t, err)
 
-	resultCh := make(chan grpcclient.LatestHeightResult)
-	require.NoError(t, gRPCClient.GetLatestHeight(gCtx, resultCh))
+		resultCh := make(chan grpcclient.LatestHeightResult)
+		require.NoError(t, gRPCClient.GetLatestHeight(ctx, resultCh))
 
-	count := 0
-	for {
 		select {
-		case <-gCtx.Done():
-			require.NoError(t, gCtx.Err())
+		case <-ctx.Done():
+			require.Fail(t, "did not expect context to be canceled")
 		case result := <-resultCh:
-			if err != nil {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-				require.GreaterOrEqual(t, result.Height, status.SyncInfo.EarliestBlockHeight)
-				count++
-			}
+			require.NoError(t, result.Error)
+			require.True(t, result.Height == status.SyncInfo.LatestBlockHeight || result.Height == status.SyncInfo.LatestBlockHeight+1)
 		}
-		if count == 10 {
-			cancel()
-			return
-		}
-		if gCtx.Err() != nil {
-			require.Error(t, gCtx.Err())
-		}
-	}
+	})
 }
 
 func TestGRPC_GetBlockResults(t *testing.T) {

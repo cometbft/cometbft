@@ -597,11 +597,7 @@ func (cs *State) reconstructLastCommit(state sm.State) {
 	extensionsEnabled := state.ConsensusParams.ABCI.VoteExtensionsEnabled(state.LastBlockHeight)
 
 	if !extensionsEnabled {
-		votes, err := cs.votesFromSeenCommit(state)
-		if err != nil {
-			panic(fmt.Sprintf("failed to reconstruct last commit; %s", err))
-		}
-		cs.LastCommit = votes
+		cs.reconstructSeenCommit(state)
 		return
 	}
 	votes, err := cs.votesFromExtendedCommit(state)

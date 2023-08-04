@@ -120,6 +120,94 @@ func (m *GetByHeightResponse) GetBlock() *types.Block {
 	return nil
 }
 
+type GetLatestRequest struct {
+}
+
+func (m *GetLatestRequest) Reset()         { *m = GetLatestRequest{} }
+func (m *GetLatestRequest) String() string { return proto.CompactTextString(m) }
+func (*GetLatestRequest) ProtoMessage()    {}
+func (*GetLatestRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d48acf20d1015667, []int{2}
+}
+func (m *GetLatestRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetLatestRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetLatestRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetLatestRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetLatestRequest.Merge(m, src)
+}
+func (m *GetLatestRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetLatestRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetLatestRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetLatestRequest proto.InternalMessageInfo
+
+type GetLatestResponse struct {
+	BlockId *types.BlockID `protobuf:"bytes,1,opt,name=block_id,json=blockId,proto3" json:"block_id,omitempty"`
+	Block   *types.Block   `protobuf:"bytes,2,opt,name=block,proto3" json:"block,omitempty"`
+}
+
+func (m *GetLatestResponse) Reset()         { *m = GetLatestResponse{} }
+func (m *GetLatestResponse) String() string { return proto.CompactTextString(m) }
+func (*GetLatestResponse) ProtoMessage()    {}
+func (*GetLatestResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d48acf20d1015667, []int{3}
+}
+func (m *GetLatestResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetLatestResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetLatestResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetLatestResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetLatestResponse.Merge(m, src)
+}
+func (m *GetLatestResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetLatestResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetLatestResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetLatestResponse proto.InternalMessageInfo
+
+func (m *GetLatestResponse) GetBlockId() *types.BlockID {
+	if m != nil {
+		return m.BlockId
+	}
+	return nil
+}
+
+func (m *GetLatestResponse) GetBlock() *types.Block {
+	if m != nil {
+		return m.Block
+	}
+	return nil
+}
+
 // GetLatestHeightRequest - empty message since no parameter is required
 type GetLatestHeightRequest struct {
 }
@@ -128,7 +216,7 @@ func (m *GetLatestHeightRequest) Reset()         { *m = GetLatestHeightRequest{}
 func (m *GetLatestHeightRequest) String() string { return proto.CompactTextString(m) }
 func (*GetLatestHeightRequest) ProtoMessage()    {}
 func (*GetLatestHeightRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d48acf20d1015667, []int{2}
+	return fileDescriptor_d48acf20d1015667, []int{4}
 }
 func (m *GetLatestHeightRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -168,7 +256,7 @@ func (m *GetLatestHeightResponse) Reset()         { *m = GetLatestHeightResponse
 func (m *GetLatestHeightResponse) String() string { return proto.CompactTextString(m) }
 func (*GetLatestHeightResponse) ProtoMessage()    {}
 func (*GetLatestHeightResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d48acf20d1015667, []int{3}
+	return fileDescriptor_d48acf20d1015667, []int{5}
 }
 func (m *GetLatestHeightResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -207,6 +295,8 @@ func (m *GetLatestHeightResponse) GetHeight() int64 {
 func init() {
 	proto.RegisterType((*GetByHeightRequest)(nil), "tendermint.services.block.v1.GetByHeightRequest")
 	proto.RegisterType((*GetByHeightResponse)(nil), "tendermint.services.block.v1.GetByHeightResponse")
+	proto.RegisterType((*GetLatestRequest)(nil), "tendermint.services.block.v1.GetLatestRequest")
+	proto.RegisterType((*GetLatestResponse)(nil), "tendermint.services.block.v1.GetLatestResponse")
 	proto.RegisterType((*GetLatestHeightRequest)(nil), "tendermint.services.block.v1.GetLatestHeightRequest")
 	proto.RegisterType((*GetLatestHeightResponse)(nil), "tendermint.services.block.v1.GetLatestHeightResponse")
 }
@@ -216,7 +306,7 @@ func init() {
 }
 
 var fileDescriptor_d48acf20d1015667 = []byte{
-	// 274 bytes of a gzipped FileDescriptorProto
+	// 290 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xd2, 0x28, 0x49, 0xcd, 0x4b,
 	0x49, 0x2d, 0xca, 0xcd, 0xcc, 0x2b, 0xd1, 0x2f, 0x4e, 0x2d, 0x2a, 0xcb, 0x4c, 0x4e, 0x2d, 0xd6,
 	0x4f, 0xca, 0xc9, 0x4f, 0xce, 0xd6, 0x2f, 0x33, 0x84, 0x30, 0xf4, 0x0a, 0x8a, 0xf2, 0x4b, 0xf2,
@@ -227,13 +317,14 @@ var fileDescriptor_d48acf20d1015667 = []byte{
 	0x10, 0x94, 0xa7, 0x54, 0xc5, 0x25, 0x8c, 0xa2, 0xba, 0xb8, 0x20, 0x3f, 0xaf, 0x38, 0x55, 0xc8,
 	0x84, 0x8b, 0x03, 0x6c, 0x63, 0x7c, 0x66, 0x0a, 0x58, 0x03, 0xb7, 0x91, 0xa4, 0x1e, 0x92, 0x8b,
 	0x21, 0xf6, 0x39, 0x81, 0x54, 0x78, 0xba, 0x04, 0xb1, 0x83, 0x95, 0x7a, 0xa6, 0x08, 0xe9, 0x72,
-	0xb1, 0x82, 0x99, 0x12, 0x4c, 0x60, 0x2d, 0xe2, 0x38, 0xb4, 0x04, 0x41, 0x54, 0x29, 0x49, 0x70,
-	0x89, 0xb9, 0xa7, 0x96, 0xf8, 0x24, 0x96, 0xa4, 0x16, 0x97, 0xa0, 0xb8, 0x56, 0xc9, 0x90, 0x4b,
-	0x1c, 0x43, 0x06, 0xea, 0x32, 0x1c, 0x1e, 0x71, 0x8a, 0x3c, 0xf1, 0x48, 0x8e, 0xf1, 0xc2, 0x23,
-	0x39, 0xc6, 0x07, 0x8f, 0xe4, 0x18, 0x27, 0x3c, 0x96, 0x63, 0xb8, 0xf0, 0x58, 0x8e, 0xe1, 0xc6,
-	0x63, 0x39, 0x86, 0x28, 0xfb, 0xf4, 0xcc, 0x92, 0x8c, 0xd2, 0x24, 0xbd, 0xe4, 0xfc, 0x5c, 0xfd,
-	0xe4, 0xfc, 0xdc, 0xd4, 0x92, 0xa4, 0xb4, 0x12, 0x04, 0x03, 0x1c, 0x68, 0xfa, 0xf8, 0xe2, 0x2d,
-	0x89, 0x0d, 0xac, 0xc6, 0x18, 0x10, 0x00, 0x00, 0xff, 0xff, 0xb2, 0xf1, 0x4b, 0x36, 0xde, 0x01,
+	0xb1, 0x82, 0x99, 0x12, 0x4c, 0x60, 0x2d, 0xe2, 0x38, 0xb4, 0x04, 0x41, 0x54, 0x29, 0x09, 0x71,
+	0x09, 0xb8, 0xa7, 0x96, 0xf8, 0x24, 0x96, 0xa4, 0x16, 0xc3, 0xdc, 0xa9, 0x54, 0xc1, 0x25, 0x88,
+	0x24, 0x46, 0x4f, 0xd7, 0x48, 0x70, 0x89, 0xc1, 0x6d, 0x46, 0x09, 0x3b, 0x25, 0x43, 0x2e, 0x71,
+	0x0c, 0x19, 0xa8, 0xcb, 0x70, 0x04, 0xab, 0x53, 0xe4, 0x89, 0x47, 0x72, 0x8c, 0x17, 0x1e, 0xc9,
+	0x31, 0x3e, 0x78, 0x24, 0xc7, 0x38, 0xe1, 0xb1, 0x1c, 0xc3, 0x85, 0xc7, 0x72, 0x0c, 0x37, 0x1e,
+	0xcb, 0x31, 0x44, 0xd9, 0xa7, 0x67, 0x96, 0x64, 0x94, 0x26, 0xe9, 0x25, 0xe7, 0xe7, 0xea, 0x27,
+	0xe7, 0xe7, 0xa6, 0x96, 0x24, 0xa5, 0x95, 0x20, 0x18, 0xe0, 0x28, 0xd4, 0xc7, 0x97, 0x8a, 0x92,
+	0xd8, 0xc0, 0x6a, 0x8c, 0x01, 0x01, 0x00, 0x00, 0xff, 0xff, 0x20, 0x07, 0x95, 0x47, 0x6c, 0x02,
 	0x00, 0x00,
 }
 
@@ -281,6 +372,76 @@ func (m *GetByHeightResponse) MarshalTo(dAtA []byte) (int, error) {
 }
 
 func (m *GetByHeightResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Block != nil {
+		{
+			size, err := m.Block.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintBlock(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.BlockId != nil {
+		{
+			size, err := m.BlockId.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintBlock(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetLatestRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetLatestRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetLatestRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *GetLatestResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetLatestResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetLatestResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -387,6 +548,32 @@ func (m *GetByHeightRequest) Size() (n int) {
 }
 
 func (m *GetByHeightResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.BlockId != nil {
+		l = m.BlockId.Size()
+		n += 1 + l + sovBlock(uint64(l))
+	}
+	if m.Block != nil {
+		l = m.Block.Size()
+		n += 1 + l + sovBlock(uint64(l))
+	}
+	return n
+}
+
+func (m *GetLatestRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *GetLatestResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -526,6 +713,178 @@ func (m *GetByHeightResponse) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: GetByHeightResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlockId", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowBlock
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthBlock
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBlock
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.BlockId == nil {
+				m.BlockId = &types.BlockID{}
+			}
+			if err := m.BlockId.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Block", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowBlock
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthBlock
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBlock
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Block == nil {
+				m.Block = &types.Block{}
+			}
+			if err := m.Block.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipBlock(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthBlock
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetLatestRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowBlock
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetLatestRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetLatestRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipBlock(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthBlock
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetLatestResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowBlock
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetLatestResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetLatestResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

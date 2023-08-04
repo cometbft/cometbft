@@ -96,6 +96,7 @@ func TestGRPC_Block_GetLatest(t *testing.T) {
 		require.NoError(t, err)
 
 		resultCh := make(chan grpcclient.LatestHeightResult)
+		defer close(resultCh)
 		require.NoError(t, gclient.GetLatestHeight(ctx, resultCh))
 
 		select {
@@ -126,6 +127,7 @@ func TestGRPC_Block_GetLatestHeight(t *testing.T) {
 		require.NoError(t, err)
 
 		resultCh := make(chan grpcclient.LatestHeightResult)
+		defer close(resultCh)
 		require.NoError(t, gRPCClient.GetLatestHeight(ctx, resultCh))
 
 		select {

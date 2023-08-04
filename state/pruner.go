@@ -226,7 +226,7 @@ func (p *Pruner) pruneABCIResRoutine() {
 	}
 }
 func (p *Pruner) pruneBlocksRoutine() {
-	p.logger.Info("Pruner started", "interval", p.interval.String())
+	p.logger.Info("Started pruning blocks", "interval", p.interval.String())
 	lastRetainHeight := int64(0)
 	for {
 		select {
@@ -285,7 +285,9 @@ func (p *Pruner) pruneABCIResToRetainHeight(lastRetainHeight int64) int64 {
 		p.logger.Error("Failed to prune ABCI responses", "err", err, "targetRetainHeight", targetRetainHeight)
 		return lastRetainHeight
 	}
-	p.logger.Info("Pruned ABCI responses", "height", numPruned)
+	if numPruned > 0 {
+		p.logger.Info("Pruned ABCI responses", "heights", numPruned, "newRetainHeight", newRetainHeight)
+	}
 	return newRetainHeight
 }
 

@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	db "github.com/cometbft/cometbft-db"
-	dbm "github.com/cometbft/cometbft-db"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
@@ -46,11 +45,11 @@ func TestBlockerIndexer_Prune(t *testing.T) {
 	require.True(t, kv.EmptyIntersection(keys1, keys3))
 }
 
-func BenchmarkBlockerIndexer_Prune(b *testing.B) {
+func BenchmarkBlockerIndexer_Prune(_ *testing.B) {
 	config := test.ResetTestRoot("block_indexer")
 	defer func() { os.RemoveAll(config.RootDir) }()
 
-	store, err := dbm.NewDB("block", dbm.GoLevelDBBackend, config.DBDir())
+	store, err := db.NewDB("block", db.GoLevelDBBackend, config.DBDir())
 	if err != nil {
 		panic(err)
 	}

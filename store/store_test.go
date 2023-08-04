@@ -525,17 +525,22 @@ func TestLoadBlockPart(t *testing.T) {
 
 type prunerObserver struct {
 	sm.NoopPrunerObserver
-	prunedInfoCh chan *sm.PrunedInfo
+	prunedABCIResInfoCh   chan *sm.ABCIResponsesPrunedInfo
+	prunedBlocksResInfoCh chan *sm.BlocksPrunedInfo
 }
 
 func newPrunerObserver(infoChCap int) *prunerObserver {
 	return &prunerObserver{
-		prunedInfoCh: make(chan *sm.PrunedInfo, infoChCap),
+		prunedABCIResInfoCh:   make(chan *sm.ABCIResponsesPrunedInfo, infoChCap),
+		prunedBlocksResInfoCh: make(chan *sm.BlocksPrunedInfo, infoChCap),
 	}
 }
 
-func (o *prunerObserver) PrunerPruned(info *sm.PrunedInfo) {
-	o.prunedInfoCh <- info
+func (o *prunerObserver) PrunerPrunedABCIRes(info *sm.ABCIResponsesPrunedInfo) {
+	o.prunedABCIResInfoCh <- info
+}
+func (o *prunerObserver) PrunerPrunedBlocks(info *sm.BlocksPrunedInfo) {
+	o.prunedBlocksResInfoCh <- info
 }
 
 // This test tests the pruning service and its pruning of the blockstore
@@ -614,37 +619,30 @@ func TestPruningService(t *testing.T) {
 	err = pruner.Start()
 	require.NoError(t, err)
 
-PRUNER_LOOP:
-	for {
-		select {
-		case info := <-obs.prunedInfoCh:
-			if info.Blocks == nil {
-				continue
-			}
-			assert.EqualValues(t, 1200, bs.Base())
-			assert.EqualValues(t, 1500, bs.Height())
-			assert.EqualValues(t, 301, bs.Size())
-			require.NotNil(t, bs.LoadBlock(1200))
-			require.Nil(t, bs.LoadBlock(1199))
-			// The header and commit for heights 1100 onwards
-			// need to remain to verify evidence
-			require.NotNil(t, bs.LoadBlockMeta(1100))
-			require.Nil(t, bs.LoadBlockMeta(1099))
-			require.NotNil(t, bs.LoadBlockCommit(1100))
-			require.Nil(t, bs.LoadBlockCommit(1099))
-			for i := int64(1); i < 1200; i++ {
-				require.Nil(t, bs.LoadBlock(i))
-			}
-			for i := int64(1200); i <= 1500; i++ {
-				require.NotNil(t, bs.LoadBlock(i))
-			}
-			t.Log("Done pruning blocks until height 1200")
-			break PRUNER_LOOP
-
-		case <-time.After(5 * time.Second):
-			require.Fail(t, "timed out waiting for pruning run to complete")
-
+	select {
+	case <-obs.prunedBlocksResInfoCh:
+		assert.EqualValues(t, 1200, bs.Base())
+		assert.EqualValues(t, 1500, bs.Height())
+		assert.EqualValues(t, 301, bs.Size())
+		require.NotNil(t, bs.LoadBlock(1200))
+		require.Nil(t, bs.LoadBlock(1199))
+		// The header and commit for heights 1100 onwards
+		// need to remain to verify evidence
+		require.NotNil(t, bs.LoadBlockMeta(1100))
+		require.Nil(t, bs.LoadBlockMeta(1099))
+		require.NotNil(t, bs.LoadBlockCommit(1100))
+		require.Nil(t, bs.LoadBlockCommit(1099))
+		for i := int64(1); i < 1200; i++ {
+			require.Nil(t, bs.LoadBlock(i))
 		}
+		for i := int64(1200); i <= 1500; i++ {
+			require.NotNil(t, bs.LoadBlock(i))
+		}
+		t.Log("Done pruning blocks until height 1200")
+
+	case <-time.After(5 * time.Second):
+		require.Fail(t, "timed out waiting for pruning run to complete")
+
 	}
 
 	// Pruning below the current base should error
@@ -666,28 +664,19 @@ PRUNER_LOOP:
 	err = pruner.SetCompanionRetainHeight(1350)
 	assert.NoError(t, err)
 
-LOOP2:
-	for {
-		select {
-		case info := <-obs.prunedInfoCh:
-			if info.Blocks == nil {
-				continue LOOP2
-			}
-			assert.EqualValues(t, 1300, bs.Base())
+	select {
+	case <-obs.prunedBlocksResInfoCh:
+		assert.EqualValues(t, 1300, bs.Base())
 
-			// we should still have the header and the commit
-			// as they're needed for evidence
-			require.NotNil(t, bs.LoadBlockMeta(1100))
-			require.Nil(t, bs.LoadBlockMeta(1099))
-			require.NotNil(t, bs.LoadBlockCommit(1100))
-			require.Nil(t, bs.LoadBlockCommit(1099))
-			t.Log("Done pruning up until 1300")
-			break LOOP2
-
-		case <-time.After(5 * time.Second):
-			require.Fail(t, "timed out waiting for pruning run to complete")
-		}
-
+		// we should still have the header and the commit
+		// as they're needed for evidence
+		require.NotNil(t, bs.LoadBlockMeta(1100))
+		require.Nil(t, bs.LoadBlockMeta(1099))
+		require.NotNil(t, bs.LoadBlockCommit(1100))
+		require.Nil(t, bs.LoadBlockCommit(1099))
+		t.Log("Done pruning up until 1300")
+	case <-time.After(5 * time.Second):
+		require.Fail(t, "timed out waiting for pruning run to complete")
 	}
 	// Setting the pruning height beyond the current height should error
 	err = pruner.SetApplicationRetainHeight(1501)
@@ -697,25 +686,18 @@ LOOP2:
 	err = pruner.SetApplicationRetainHeight(1500)
 	require.NoError(t, err)
 
-LOOP3:
-	for {
-		select {
-		case info := <-obs.prunedInfoCh:
-			// But we will prune only until 1350 because that was the Companions height
-			// and it is lower
-			if info.Blocks == nil {
-				continue LOOP3
-			}
-			assert.Nil(t, bs.LoadBlock(1345))
-			assert.NotNil(t, bs.LoadBlock(1350))
-			assert.NotNil(t, bs.LoadBlock(1500))
-			assert.Nil(t, bs.LoadBlock(1501))
-			t.Log("Done pruning blocks until 1500")
-			break LOOP3
+	select {
+	case <-obs.prunedBlocksResInfoCh:
+		// But we will prune only until 1350 because that was the Companions height
+		// and it is lower
+		assert.Nil(t, bs.LoadBlock(1345))
+		assert.NotNil(t, bs.LoadBlock(1350))
+		assert.NotNil(t, bs.LoadBlock(1500))
+		assert.Nil(t, bs.LoadBlock(1501))
+		t.Log("Done pruning blocks until 1500")
 
-		case <-time.After(5 * time.Second):
-			require.Fail(t, "timed out waiting for pruning run to complete")
-		}
+	case <-time.After(5 * time.Second):
+		require.Fail(t, "timed out waiting for pruning run to complete")
 	}
 
 }

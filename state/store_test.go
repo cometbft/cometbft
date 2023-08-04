@@ -400,17 +400,22 @@ func TestABCIResPruningStandalone(t *testing.T) {
 
 type prunerObserver struct {
 	sm.NoopPrunerObserver
-	prunedInfoCh chan *sm.PrunedInfo
+	prunedABCIResInfoCh   chan *sm.ABCIResponsesPrunedInfo
+	prunedBlocksResInfoCh chan *sm.BlocksPrunedInfo
 }
 
 func newPrunerObserver(infoChCap int) *prunerObserver {
 	return &prunerObserver{
-		prunedInfoCh: make(chan *sm.PrunedInfo, infoChCap),
+		prunedABCIResInfoCh:   make(chan *sm.ABCIResponsesPrunedInfo, infoChCap),
+		prunedBlocksResInfoCh: make(chan *sm.BlocksPrunedInfo, infoChCap),
 	}
 }
 
-func (o *prunerObserver) PrunerPruned(info *sm.PrunedInfo) {
-	o.prunedInfoCh <- info
+func (o *prunerObserver) PrunerPrunedABCIRes(info *sm.ABCIResponsesPrunedInfo) {
+	o.prunedABCIResInfoCh <- info
+}
+func (o *prunerObserver) PrunerPrunedBlocks(info *sm.BlocksPrunedInfo) {
+	o.prunedBlocksResInfoCh <- info
 }
 
 func TestFinalizeBlockResponsePruning(t *testing.T) {
@@ -449,19 +454,13 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, pruner.SetABCIResRetainHeight(height))
 		require.NoError(t, pruner.Start())
-	LOOP:
-		for {
-			select {
-			case info := <-obs.prunedInfoCh:
-				if info.ABCIRes == nil {
-					continue LOOP
-				}
-				require.Equal(t, height-1, info.ABCIRes.ToHeight)
-				t.Log("Done pruning ABCI results ")
-				break LOOP
-			case <-time.After(5 * time.Second):
-				require.Fail(t, "timed out waiting for pruning run to complete")
-			}
+
+		select {
+		case info := <-obs.prunedABCIResInfoCh:
+			require.Equal(t, height-1, info.ToHeight)
+			t.Log("Done pruning ABCI results ")
+		case <-time.After(5 * time.Second):
+			require.Fail(t, "timed out waiting for pruning run to complete")
 		}
 
 		// Check that the response at height h - 1 has been deleted

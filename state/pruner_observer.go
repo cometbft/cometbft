@@ -10,14 +10,10 @@ type PrunerObserver interface {
 	// PrunerStarted is called when the pruner's background pruning routine has
 	// been started.
 	PrunerStarted(interval time.Duration)
-	// PrunerPruned is called after each successful pruning operation.
-	PrunerPruned(prunedInfo *PrunedInfo)
-}
-
-// PrunedInfo provides information about a single run of the pruner.
-type PrunedInfo struct {
-	Blocks  *BlocksPrunedInfo
-	ABCIRes *ABCIResponsesPrunedInfo
+	// PrunerPrunedABCIRes is called after each successful pruning of ABCI results.
+	PrunerPrunedABCIRes(prunedInfo *ABCIResponsesPrunedInfo)
+	// PrunerPrunedBlocks is called after each successful pruning of blocks.
+	PrunerPrunedBlocks(prunedInfo *BlocksPrunedInfo)
 }
 
 // BlocksPrunedInfo provides information about blocks pruned during a single
@@ -39,8 +35,11 @@ type NoopPrunerObserver struct{}
 
 var _ PrunerObserver = NoopPrunerObserver{}
 
-// PrunerPruned implements PrunerObserver.
-func (NoopPrunerObserver) PrunerPruned(*PrunedInfo) {}
+// PrunerPrunedABCIRes implements PrunerObserver.
+func (NoopPrunerObserver) PrunerPrunedABCIRes(*ABCIResponsesPrunedInfo) {}
+
+// PrunerPrunedBlocks implements PrunerObserver.
+func (NoopPrunerObserver) PrunerPrunedBlocks(*BlocksPrunedInfo) {}
 
 // PrunerStarted implements PrunerObserver.
 func (NoopPrunerObserver) PrunerStarted(time.Duration) {}

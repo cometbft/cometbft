@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	"encoding/binary"
 	"sync/atomic"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abciserver "github.com/cometbft/cometbft/abci/server"
@@ -13,8 +15,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/proxy"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func BenchmarkReap(b *testing.B) {
@@ -28,8 +28,7 @@ func BenchmarkReap(b *testing.B) {
 	size := 10000
 	for i := 0; i < size; i++ {
 		tx := kvstore.NewTxFromID(i)
-		binary.BigEndian.PutUint64(tx, uint64(i))
-		if err := mp.CheckTx(tx, nil, TxInfo{}); err != nil {
+		if _, err := mp.CheckTx(tx); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -53,7 +52,7 @@ func BenchmarkCheckTx(b *testing.B) {
 		tx := kvstore.NewTxFromID(i)
 		b.StartTimer()
 
-		if err := mp.CheckTx(tx, nil, TxInfo{}); err != nil {
+		if _, err := mp.CheckTx(tx); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -76,7 +75,7 @@ func BenchmarkParallelCheckTx(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			tx := kvstore.NewTxFromID(int(next()))
-			if err := mp.CheckTx(tx, nil, TxInfo{}); err != nil {
+			if _, err := mp.CheckTx(tx); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -92,7 +91,7 @@ func BenchmarkCheckDuplicateTx(b *testing.B) {
 	mp.config.Size = 2
 
 	tx := kvstore.NewTxFromID(1)
-	if err := mp.CheckTx(tx, nil, TxInfo{}); err != nil {
+	if _, err := mp.CheckTx(tx); err != nil {
 		b.Fatal(err)
 	}
 	e := mp.FlushAppConn()
@@ -100,7 +99,7 @@ func BenchmarkCheckDuplicateTx(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if err := mp.CheckTx(tx, nil, TxInfo{}); err == nil {
+		if _, err := mp.CheckTx(tx); err == nil {
 			b.Fatal("tx should be duplicate")
 		}
 	}
@@ -132,7 +131,7 @@ func BenchmarkUpdateRemoteClient(b *testing.B) {
 
 		tx := kvstore.NewTxFromID(i)
 
-		e := mp.CheckTx(tx, nil, TxInfo{})
+		_, e := mp.CheckTx(tx)
 		require.True(b, e == nil)
 
 		e = mp.FlushAppConn()

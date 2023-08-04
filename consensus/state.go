@@ -175,7 +175,9 @@ func NewState(
 		evsw:             cmtevents.NewEventSwitch(),
 		metrics:          NopMetrics(),
 	}
-
+	for _, option := range options {
+		option(cs)
+	}
 	// set function defaults (may be overwritten before calling Start)
 	cs.decideProposal = cs.defaultDecideProposal
 	cs.doPrevote = cs.defaultDoPrevote
@@ -200,9 +202,6 @@ func NewState(
 	// NOTE: we do not call scheduleRound0 yet, we do that upon Start()
 
 	cs.BaseService = *service.NewBaseService(nil, "State", cs)
-	for _, option := range options {
-		option(cs)
-	}
 
 	return cs
 }

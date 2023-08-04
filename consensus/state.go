@@ -578,7 +578,7 @@ func (cs *State) sendInternalMessage(mi msgInfo) {
 }
 
 // ReconstructSeenCommit reconstructs the seen commit
-// This function is meant to be called only after statesync
+// This function is meant to be called after statesync
 // that was performed offline as to avoid interfering with vote
 // extensions.
 func (cs *State) reconstructSeenCommit(state sm.State) {

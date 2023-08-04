@@ -536,6 +536,21 @@ func TestLoadBlockPart(t *testing.T) {
 		"expecting successful retrieval of previously saved block")
 }
 
+type prunerObserver struct {
+	sm.NoopPrunerObserver
+	prunedInfoCh chan *sm.PrunedInfo
+}
+
+func newPrunerObserver(infoChCap int) *prunerObserver {
+	return &prunerObserver{
+		prunedInfoCh: make(chan *sm.PrunedInfo, infoChCap),
+	}
+}
+
+func (o *prunerObserver) PrunerPruned(info *sm.PrunedInfo) {
+	o.prunedInfoCh <- info
+}
+
 // This test tests the pruning service and its pruning of the blockstore
 // The state store cannot be pruned here because we do not have proper
 // state stored. The test is expected to pass even though the log should
@@ -556,17 +571,20 @@ func TestPruningService(t *testing.T) {
 	assert.EqualValues(t, 0, bs.Height())
 	assert.EqualValues(t, 0, bs.Size())
 
-	pruningService := sm.NewPruner(
+	obs := newPrunerObserver(1)
+
+	pruner := sm.NewPruner(
 		stateStore,
 		bs,
 		is,
 		log.TestingLogger(),
-		sm.WithPrunerInterval(time.Second*2),
+		sm.WithPrunerInterval(time.Second*1),
+		sm.WithPrunerObserver(obs),
 	)
 
-	err := pruningService.SetApplicationRetainHeight(1)
+	err := pruner.SetApplicationRetainHeight(1)
 	require.Error(t, err)
-	err = pruningService.SetApplicationRetainHeight(0)
+	err = pruner.SetApplicationRetainHeight(0)
 	require.Error(t, err)
 
 	// make more than 1000 blocks, to test batch deletions
@@ -607,79 +625,115 @@ func TestPruningService(t *testing.T) {
 	err = stateStore.Save(state)
 	require.NoError(t, err)
 	// Check that basic pruning works
-	err = pruningService.SetApplicationRetainHeight(1200)
+	err = pruner.SetApplicationRetainHeight(1200)
 	require.NoError(t, err)
-	err = pruningService.Start()
+	err = pruner.Start()
 	require.NoError(t, err)
 
-	time.Sleep(time.Second * 15)
+PRUNER_LOOP:
+	for {
+		select {
+		case info := <-obs.prunedInfoCh:
+			if info.Blocks == nil {
+				continue
+			}
+			assert.EqualValues(t, 1200, bs.Base())
+			assert.EqualValues(t, 1500, bs.Height())
+			assert.EqualValues(t, 301, bs.Size())
+			require.NotNil(t, bs.LoadBlock(1200))
+			require.Nil(t, bs.LoadBlock(1199))
+			// The header and commit for heights 1100 onwards
+			// need to remain to verify evidence
+			require.NotNil(t, bs.LoadBlockMeta(1100))
+			require.Nil(t, bs.LoadBlockMeta(1099))
+			require.NotNil(t, bs.LoadBlockCommit(1100))
+			require.Nil(t, bs.LoadBlockCommit(1099))
+			for i := int64(1); i < 1200; i++ {
+				require.Nil(t, bs.LoadBlock(i))
+			}
+			for i := int64(1200); i <= 1500; i++ {
+				require.NotNil(t, bs.LoadBlock(i))
+			}
+			t.Log("Done pruning blocks until height 1200")
+			break PRUNER_LOOP
 
-	assert.EqualValues(t, 1200, bs.Base())
-	assert.EqualValues(t, 1500, bs.Height())
-	assert.EqualValues(t, 301, bs.Size())
-	require.NotNil(t, bs.LoadBlock(1200))
-	require.Nil(t, bs.LoadBlock(1199))
+		case <-time.After(5 * time.Second):
+			require.Fail(t, "timed out waiting for pruning run to complete")
 
-	// The header and commit for heights 1100 onwards
-	// need to remain to verify evidence
-	require.NotNil(t, bs.LoadBlockMeta(1100))
-	require.Nil(t, bs.LoadBlockMeta(1099))
-	require.NotNil(t, bs.LoadBlockCommit(1100))
-	require.Nil(t, bs.LoadBlockCommit(1099))
-
-	for i := int64(1); i < 1200; i++ {
-		require.Nil(t, bs.LoadBlock(i))
-	}
-	for i := int64(1200); i <= 1500; i++ {
-		require.NotNil(t, bs.LoadBlock(i))
+		}
 	}
 
 	// Pruning below the current base should error
-	err = pruningService.SetApplicationRetainHeight(1199)
+	err = pruner.SetApplicationRetainHeight(1199)
 	require.Error(t, err)
 
 	// Pruning to the current base should work
-	err = pruningService.SetApplicationRetainHeight(1200)
+	err = pruner.SetApplicationRetainHeight(1200)
 	require.NoError(t, err)
 
 	// Pruning again should work
-	err = pruningService.SetApplicationRetainHeight(1300)
+	err = pruner.SetApplicationRetainHeight(1300)
 	require.NoError(t, err)
 	// We should not be able to set a retain height lower than the currently
 	// existing retain heights
-	err = pruningService.SetCompanionRetainHeight(1200)
+	err = pruner.SetCompanionRetainHeight(1200)
 	assert.Error(t, err)
 
-	err = pruningService.SetCompanionRetainHeight(1350)
+	err = pruner.SetCompanionRetainHeight(1350)
 	assert.NoError(t, err)
-	// We need to sleep to give time to the pruning service to wake up and prune.
-	time.Sleep(time.Second * 10)
 
-	assert.EqualValues(t, 1300, bs.Base())
+LOOP2:
+	for {
+		select {
+		case info := <-obs.prunedInfoCh:
+			if info.Blocks == nil {
+				continue LOOP2
+			}
+			assert.EqualValues(t, 1300, bs.Base())
 
-	// we should still have the header and the commit
-	// as they're needed for evidence
-	require.NotNil(t, bs.LoadBlockMeta(1100))
-	require.Nil(t, bs.LoadBlockMeta(1099))
-	require.NotNil(t, bs.LoadBlockCommit(1100))
-	require.Nil(t, bs.LoadBlockCommit(1099))
+			// we should still have the header and the commit
+			// as they're needed for evidence
+			require.NotNil(t, bs.LoadBlockMeta(1100))
+			require.Nil(t, bs.LoadBlockMeta(1099))
+			require.NotNil(t, bs.LoadBlockCommit(1100))
+			require.Nil(t, bs.LoadBlockCommit(1099))
+			t.Log("Done pruning up until 1300")
+			break LOOP2
 
+		case <-time.After(5 * time.Second):
+			require.Fail(t, "timed out waiting for pruning run to complete")
+		}
+
+	}
 	// Setting the pruning height beyond the current height should error
-	err = pruningService.SetApplicationRetainHeight(1501)
+	err = pruner.SetApplicationRetainHeight(1501)
 	require.Error(t, err)
 
 	// Pruning to the current height should work
-	err = pruningService.SetApplicationRetainHeight(1500)
+	err = pruner.SetApplicationRetainHeight(1500)
 	require.NoError(t, err)
 
-	time.Sleep(time.Second * 10)
+LOOP3:
+	for {
+		select {
+		case info := <-obs.prunedInfoCh:
+			// But we will prune only until 1350 because that was the Companions height
+			// and it is lower
+			if info.Blocks == nil {
+				continue LOOP3
+			}
+			assert.Nil(t, bs.LoadBlock(1345))
+			assert.NotNil(t, bs.LoadBlock(1350))
+			assert.NotNil(t, bs.LoadBlock(1500))
+			assert.Nil(t, bs.LoadBlock(1501))
+			t.Log("Done pruning blocks until 1500")
+			break LOOP3
 
-	// But we will prune only until 1350 because that was the Companions height
-	// and it is lower
-	assert.Nil(t, bs.LoadBlock(1345))
-	assert.NotNil(t, bs.LoadBlock(1350))
-	assert.NotNil(t, bs.LoadBlock(1500))
-	assert.Nil(t, bs.LoadBlock(1501))
+		case <-time.After(5 * time.Second):
+			require.Fail(t, "timed out waiting for pruning run to complete")
+		}
+	}
+
 }
 
 func TestPruneBlocks(t *testing.T) {

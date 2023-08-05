@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/version"
 	"github.com/stretchr/testify/require"
@@ -92,12 +91,12 @@ func TestGRPC_Block_GetLatest(t *testing.T) {
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()
+
 		gclient, err := node.GRPCClient(ctx)
 		require.NoError(t, err)
 
-		resultCh := make(chan grpcclient.LatestHeightResult)
-		defer close(resultCh)
-		require.NoError(t, gclient.GetLatestHeight(ctx, resultCh))
+		resultCh, err := gclient.GetLatestHeight(ctx)
+		require.NoError(t, err)
 
 		select {
 		case <-ctx.Done():
@@ -123,12 +122,11 @@ func TestGRPC_Block_GetLatestHeight(t *testing.T) {
 		status, err := client.Status(ctx)
 		require.NoError(t, err)
 
-		gRPCClient, err := node.GRPCClient(ctx)
+		gclient, err := node.GRPCClient(ctx)
 		require.NoError(t, err)
 
-		resultCh := make(chan grpcclient.LatestHeightResult)
-		defer close(resultCh)
-		require.NoError(t, gRPCClient.GetLatestHeight(ctx, resultCh))
+		resultCh, err := gclient.GetLatestHeight(ctx)
+		require.NoError(t, err)
 
 		select {
 		case <-ctx.Done():

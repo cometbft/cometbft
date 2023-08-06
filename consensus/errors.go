@@ -26,17 +26,17 @@ var (
 )
 
 type ErrMsgToProto struct {
-	Message string
-	Err     error
+	MessageName string
+	Err         error
 }
 
 func NewErrMsgToProto[T any](msg T, err error) ErrMsgToProto {
-	message := reflect.TypeOf(msg).Name()
-	return ErrMsgToProto{Message: message, Err: err}
+	messageName := reflect.TypeOf(msg).Name()
+	return ErrMsgToProto{MessageName: messageName, Err: err}
 }
 
 func (e ErrMsgToProto) Error() string {
-	return fmt.Sprintf("%s msg to proto error: %s", e.Message, e.Err.Error())
+	return fmt.Sprintf("%s msg to proto error: %s", e.MessageName, e.Err.Error())
 }
 
 func (e ErrMsgToProto) Unwrap() error {

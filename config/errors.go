@@ -7,7 +7,7 @@ import (
 
 var (
 	// ErrNotEnoughRpcServers is returned if the number of rpc servers is less than two
-	ErrNotEnoughRPCServers = errors.New("at least two rpc_servers entries is required")
+	ErrNotEnoughRPCServers = errors.New("at least two rpc_servers entries are required")
 
 	// ErrEmptyRpcServerEntry is returned when an empty string corresponding to RPC entry is found during validate basic
 	ErrEmptyRPCServerEntry = errors.New("found empty rpc_servers entry")

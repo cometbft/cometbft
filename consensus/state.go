@@ -31,16 +31,6 @@ import (
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
-// Consensus sentinel errors
-var (
-	ErrInvalidProposalSignature   = errors.New("error invalid proposal signature")
-	ErrInvalidProposalPOLRound    = errors.New("error invalid proposal POL round")
-	ErrAddingVote                 = errors.New("error adding vote")
-	ErrSignatureFoundInPastBlocks = errors.New("found signature from the same key")
-
-	errPubKeyIsNotSet = errors.New("pubkey is not set. Look for \"Can't get private validator pubkey\" errors")
-)
-
 var msgQueueSize = 1000
 
 // msgs from the reactor which may update the state
@@ -593,7 +583,7 @@ func (cs *State) votesFromExtendedCommit(state sm.State) (*types.VoteSet, error)
 	}
 	vs := ec.ToExtendedVoteSet(state.ChainID, state.LastValidators)
 	if !vs.HasTwoThirdsMajority() {
-		return nil, errors.New("extended commit does not have +2/3 majority")
+		return nil, ErrCommitQuorumNotMet
 	}
 	return vs, nil
 }
@@ -612,7 +602,7 @@ func (cs *State) votesFromSeenCommit(state sm.State) (*types.VoteSet, error) {
 	}
 	vs := commit.ToVoteSet(state.ChainID, state.LastValidators)
 	if !vs.HasTwoThirdsMajority() {
-		return nil, errors.New("commit does not have +2/3 majority")
+		return nil, ErrCommitQuorumNotMet
 	}
 	return vs, nil
 }
@@ -1246,7 +1236,7 @@ func (cs *State) isProposalComplete() bool {
 // CONTRACT: cs.privValidator is not nil.
 func (cs *State) createProposalBlock(ctx context.Context) (*types.Block, error) {
 	if cs.privValidator == nil {
-		return nil, errors.New("entered createProposalBlock with privValidator being nil")
+		return nil, ErrNilPrivValidator
 	}
 
 	// TODO(sergio): wouldn't it be easier if CreateProposalBlock accepted cs.LastCommit directly?
@@ -1262,7 +1252,7 @@ func (cs *State) createProposalBlock(ctx context.Context) (*types.Block, error) 
 		lastExtCommit = cs.LastCommit.MakeExtendedCommit(cs.state.ConsensusParams.ABCI)
 
 	default: // This shouldn't happen.
-		return nil, errors.New("propose step; cannot propose anything without commit for the previous block")
+		return nil, ErrProposalWithoutPreviousCommit
 	}
 
 	if cs.privValidatorPubKey == nil {

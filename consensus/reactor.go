@@ -1051,11 +1051,6 @@ func ReactorMetrics(metrics *Metrics) ReactorOption {
 
 //-----------------------------------------------------------------------------
 
-var (
-	ErrPeerStateHeightRegression = errors.New("error peer state height regression")
-	ErrPeerStateInvalidStartTime = errors.New("error peer state invalid startTime")
-)
-
 // PeerState contains the known state of a peer, including its connection and
 // threadsafe access to its PeerRoundState.
 // NOTE: THIS GETS DUMPED WITH rpc/core/consensus.go.

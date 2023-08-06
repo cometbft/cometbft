@@ -1,7 +1,6 @@
 package consensus
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/cosmos/gogoproto/proto"
@@ -20,7 +19,7 @@ import (
 // TODO: This needs to be removed, but WALToProto depends on this.
 func MsgToProto(msg Message) (proto.Message, error) {
 	if msg == nil {
-		return nil, errors.New("consensus: message is nil")
+		return nil, ErrNilMessage
 	}
 	var pb proto.Message
 
@@ -62,7 +61,7 @@ func MsgToProto(msg Message) (proto.Message, error) {
 	case *BlockPartMessage:
 		parts, err := msg.Part.ToProto()
 		if err != nil {
-			return nil, fmt.Errorf("msg to proto error: %w", err)
+			return nil, NewErrMsgToProto(*msg.Part, err)
 		}
 		pb = &cmtcons.BlockPart{
 			Height: msg.Height,
@@ -127,7 +126,7 @@ func MsgToProto(msg Message) (proto.Message, error) {
 // MsgFromProto takes a consensus proto message and returns the native go type
 func MsgFromProto(p proto.Message) (Message, error) {
 	if p == nil {
-		return nil, errors.New("consensus: nil message")
+		return nil, ErrNilMessage
 	}
 	var pb Message
 
@@ -148,7 +147,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 	case *cmtcons.NewValidBlock:
 		pbPartSetHeader, err := types.PartSetHeaderFromProto(&msg.BlockPartSetHeader)
 		if err != nil {
-			return nil, fmt.Errorf("parts to proto error: %w", err)
+			return nil, NewErrMsgToProto(msg.BlockPartSetHeader, err)
 		}
 
 		pbBits := new(bits.BitArray)
@@ -164,7 +163,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 	case *cmtcons.Proposal:
 		pbP, err := types.ProposalFromProto(&msg.Proposal)
 		if err != nil {
-			return nil, fmt.Errorf("proposal msg to proto error: %w", err)
+			return nil, NewErrMsgToProto(msg.Proposal, err)
 		}
 
 		pb = &ProposalMessage{
@@ -181,7 +180,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 	case *cmtcons.BlockPart:
 		parts, err := types.PartFromProto(&msg.Part)
 		if err != nil {
-			return nil, fmt.Errorf("blockpart msg to proto error: %w", err)
+			return nil, NewErrMsgToProto(msg.Part, err)
 		}
 		pb = &BlockPartMessage{
 			Height: msg.Height,
@@ -193,7 +192,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 		// call below.
 		vote, err := types.VoteFromProto(msg.Vote)
 		if err != nil {
-			return nil, fmt.Errorf("vote msg to proto error: %w", err)
+			return nil, NewErrMsgToProto(*msg.Vote, err)
 		}
 
 		pb = &VoteMessage{
@@ -215,7 +214,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 	case *cmtcons.VoteSetMaj23:
 		bi, err := types.BlockIDFromProto(&msg.BlockID)
 		if err != nil {
-			return nil, fmt.Errorf("voteSetMaj23 msg to proto error: %w", err)
+			return nil, NewErrMsgToProto(cmtcons.VoteSetMaj23{}, err)
 		}
 		pb = &VoteSetMaj23Message{
 			Height:  msg.Height,
@@ -226,7 +225,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 	case *cmtcons.VoteSetBits:
 		bi, err := types.BlockIDFromProto(&msg.BlockID)
 		if err != nil {
-			return nil, fmt.Errorf("voteSetBits msg to proto error: %w", err)
+			return nil, NewErrMsgToProto(cmtcons.VoteSetBits{}, err)
 		}
 		bits := new(bits.BitArray)
 		bits.FromProto(&msg.Votes)
@@ -310,7 +309,7 @@ func WALToProto(msg WALMessage) (*cmtcons.WALMessage, error) {
 // WALFromProto takes a proto wal message and return a consensus walMessage and error
 func WALFromProto(msg *cmtcons.WALMessage) (WALMessage, error) {
 	if msg == nil {
-		return nil, errors.New("nil WAL message")
+		return nil, ErrNilMessage
 	}
 	var pb WALMessage
 

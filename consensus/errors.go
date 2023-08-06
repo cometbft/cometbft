@@ -30,8 +30,8 @@ type ErrMsgToProto struct {
 	Err     error
 }
 
-func NewErrMsgToProto[T any](typ T, err error) ErrMsgToProto {
-	message := reflect.TypeOf(typ).Name()
+func NewErrMsgToProto[T any](msg T, err error) ErrMsgToProto {
+	message := reflect.TypeOf(msg).Name()
 	return ErrMsgToProto{Message: message, Err: err}
 }
 

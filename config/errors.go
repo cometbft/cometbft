@@ -10,8 +10,8 @@ var (
 	ErrNotEnoughRPCServers             = errors.New("at least two rpc_servers entries are required")
 	ErrInsufficientDiscoveryTime       = errors.New("snapshot discovery time must be at least five seconds")
 	ErrInsufficientChunkRequestTimeout = errors.New("timeout for re-requesting a chunk (chunk_request_timeout) is less than 5 seconds")
-	ErrSubscriptionBufferSizeInvalid   = fmt.Errorf("experimental_subscription_buffer_size must be >= %d", minSubscriptionBufferSize)
 	ErrUnknownLogFormat                = errors.New("unknown log_format (must be 'plain' or 'json')")
+	ErrSubscriptionBufferSizeInvalid   = fmt.Errorf("experimental_subscription_buffer_size must be >= %d", minSubscriptionBufferSize)
 )
 
 // ErrInSection is returned if validate basic does not pass for any underlying config service.

@@ -6,22 +6,13 @@ import (
 )
 
 var (
-	// ErrNotEnoughRpcServers is returned if the number of rpc servers is less than two
-	ErrNotEnoughRPCServers = errors.New("at least two rpc_servers entries are required")
-
 	// ErrEmptyRpcServerEntry is returned when an empty string corresponding to RPC entry is found during validate basic
-	ErrEmptyRPCServerEntry = errors.New("found empty rpc_servers entry")
-
-	// ErrInsufficientDiscoveryTime is returned when snapshot discovery time is less than 5 seconds
-	ErrInsufficientDiscoveryTime = errors.New("discovery time must be at least five seconds")
-
-	// ErrInsufficientChunkRequestTimeout is returned when timeout for re-requesting a chunk is less than 5 seconds
-	ErrInsufficientChunkRequestTimeout = errors.New("chunk_request_timeout must be at least 5 seconds")
-
-	ErrSubscriptionBufferSizeInvalid = fmt.Errorf("experimental_subscription_buffer_size must be >= %d", minSubscriptionBufferSize)
-
-	// ErrUnknownLogFormat is returned if provided log_format is invalid during validate basic
-	ErrUnknownLogFormat = errors.New("unknown log_format (must be 'plain' or 'json')")
+	ErrEmptyRPCServerEntry             = errors.New("found empty rpc_servers entry")
+	ErrNotEnoughRPCServers             = errors.New("at least two rpc_servers entries are required")
+	ErrInsufficientDiscoveryTime       = errors.New("snapshot discovery time must be at least five seconds")
+	ErrInsufficientChunkRequestTimeout = errors.New("timeout for re-requesting a chunk (chunk_request_timeout) is less than 5 seconds")
+	ErrSubscriptionBufferSizeInvalid   = fmt.Errorf("experimental_subscription_buffer_size must be >= %d", minSubscriptionBufferSize)
+	ErrUnknownLogFormat                = errors.New("unknown log_format (must be 'plain' or 'json')")
 )
 
 // ErrInSection is returned if validate basic does not pass for any underlying config service.

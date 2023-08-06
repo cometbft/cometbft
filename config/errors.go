@@ -6,7 +6,6 @@ import (
 )
 
 var (
-	// ErrEmptyRpcServerEntry is returned when an empty string corresponding to RPC entry is found during validate basic
 	ErrEmptyRPCServerEntry             = errors.New("found empty rpc_servers entry")
 	ErrNotEnoughRPCServers             = errors.New("at least two rpc_servers entries are required")
 	ErrInsufficientDiscoveryTime       = errors.New("snapshot discovery time must be at least five seconds")

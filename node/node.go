@@ -488,6 +488,11 @@ func (n *Node) OnStop() {
 			n.Logger.Error("problem closing statestore", "err", err)
 		}
 	}
+	if n.evidencePool != nil {
+		if err := n.EvidencePool().Close(); err != nil {
+			n.Logger.Error("problem closing evidenceStore", "err", err)
+		}
+	}
 }
 
 // ConfigureRPC makes sure RPC has all the objects it needs to operate.

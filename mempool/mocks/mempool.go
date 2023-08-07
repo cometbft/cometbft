@@ -3,7 +3,9 @@
 package mocks
 
 import (
+	abcicli "github.com/cometbft/cometbft/abci/client"
 	abcitypes "github.com/cometbft/cometbft/abci/types"
+
 	mempool "github.com/cometbft/cometbft/mempool"
 
 	mock "github.com/stretchr/testify/mock"
@@ -16,18 +18,30 @@ type Mempool struct {
 	mock.Mock
 }
 
-// CheckTx provides a mock function with given fields: tx, callback, txInfo
-func (_m *Mempool) CheckTx(tx types.Tx, callback func(*abcitypes.ResponseCheckTx), txInfo mempool.TxInfo) error {
-	ret := _m.Called(tx, callback, txInfo)
+// CheckTx provides a mock function with given fields: tx
+func (_m *Mempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
+	ret := _m.Called(tx)
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(types.Tx, func(*abcitypes.ResponseCheckTx), mempool.TxInfo) error); ok {
-		r0 = rf(tx, callback, txInfo)
+	var r0 *abcicli.ReqRes
+	var r1 error
+	if rf, ok := ret.Get(0).(func(types.Tx) (*abcicli.ReqRes, error)); ok {
+		return rf(tx)
+	}
+	if rf, ok := ret.Get(0).(func(types.Tx) *abcicli.ReqRes); ok {
+		r0 = rf(tx)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*abcicli.ReqRes)
+		}
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func(types.Tx) error); ok {
+		r1 = rf(tx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // EnableTxsAvailable provides a mock function with given fields:
@@ -105,6 +119,11 @@ func (_m *Mempool) RemoveTxByKey(txKey types.TxKey) error {
 	return r0
 }
 
+// SetTxRemovedCallback provides a mock function with given fields: cb
+func (_m *Mempool) SetTxRemovedCallback(cb func(types.TxKey)) {
+	_m.Called(cb)
+}
+
 // Size provides a mock function with given fields:
 func (_m *Mempool) Size() int {
 	ret := _m.Called()
@@ -168,13 +187,12 @@ func (_m *Mempool) Update(blockHeight int64, blockTxs types.Txs, deliverTxRespon
 	return r0
 }
 
-type mockConstructorTestingTNewMempool interface {
+// NewMempool creates a new instance of Mempool. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMempool(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewMempool creates a new instance of Mempool. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewMempool(t mockConstructorTestingTNewMempool) *Mempool {
+}) *Mempool {
 	mock := &Mempool{}
 	mock.Mock.Test(t)
 

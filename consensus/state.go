@@ -1405,7 +1405,6 @@ func (cs *State) enterPrevoteWait(height int64, round int32) {
 // Enter: `timeoutPrecommit` after any +2/3 precommits.
 // Enter: +2/3 precomits for block or nil.
 // Lock & precommit the ProposalBlock if we have enough prevotes for it (a POL in this round)
-// else, unlock an existing lock and precommit nil if +2/3 of prevotes were nil,
 // else, precommit nil otherwise.
 func (cs *State) enterPrecommit(height int64, round int32) {
 	logger := cs.Logger.With("height", height, "round", round)
@@ -1452,21 +1451,9 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 		panic(fmt.Sprintf("this POLRound should be %v but got %v", round, polRound))
 	}
 
-	// +2/3 prevoted nil. Unlock and precommit nil.
-	if len(blockID.Hash) == 0 {
-		if cs.LockedBlock == nil {
-			logger.Debug("precommit step; +2/3 prevoted for nil")
-		} else {
-			logger.Debug("precommit step; +2/3 prevoted for nil; unlocking")
-			cs.LockedRound = -1
-			cs.LockedBlock = nil
-			cs.LockedBlockParts = nil
-
-			if err := cs.eventBus.PublishEventUnlock(cs.RoundStateEvent()); err != nil {
-				logger.Error("failed publishing event unlock", "err", err)
-			}
-		}
-
+	// +2/3 prevoted nil. Precommit nil.
+	if blockID.IsNil() {
+		logger.Debug("precommit step; +2/3 prevoted for nil")
 		cs.signAddVote(cmtproto.PrecommitType, nil, types.PartSetHeader{})
 		return
 	}
@@ -1486,7 +1473,9 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 		return
 	}
 
-	// If +2/3 prevoted for proposal block, stage and precommit it
+	// If greater than 2/3 of the voting power on the network prevoted for
+	// the proposed block, update our locked block to this block and issue a
+	// precommit vote for it.
 	if cs.ProposalBlock.HashesTo(blockID.Hash) {
 		logger.Debug("precommit step; +2/3 prevoted proposal block; locking", "hash", blockID.Hash)
 
@@ -1508,21 +1497,12 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 	}
 
 	// There was a polka in this round for a block we don't have.
-	// Fetch that block, unlock, and precommit nil.
-	// The +2/3 prevotes for this round is the POL for our unlock.
+	// Fetch that block, and precommit nil.
 	logger.Debug("precommit step; +2/3 prevotes for a block we do not have; voting nil", "block_id", blockID)
-
-	cs.LockedRound = -1
-	cs.LockedBlock = nil
-	cs.LockedBlockParts = nil
 
 	if !cs.ProposalBlockParts.HasHeader(blockID.PartSetHeader) {
 		cs.ProposalBlock = nil
 		cs.ProposalBlockParts = types.NewPartSetFromHeader(blockID.PartSetHeader)
-	}
-
-	if err := cs.eventBus.PublishEventUnlock(cs.RoundStateEvent()); err != nil {
-		logger.Error("failed publishing event unlock", "err", err)
 	}
 
 	cs.signAddVote(cmtproto.PrecommitType, nil, types.PartSetHeader{})
@@ -1632,7 +1612,7 @@ func (cs *State) tryFinalizeCommit(height int64) {
 	}
 
 	blockID, ok := cs.Votes.Precommits(cs.CommitRound).TwoThirdsMajority()
-	if !ok || len(blockID.Hash) == 0 {
+	if !ok || blockID.IsNil() {
 		logger.Error("failed attempt to finalize commit; there was no +2/3 majority or +2/3 was for nil")
 		return
 	}
@@ -1940,10 +1920,21 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 	}
 
 	cs.metrics.BlockGossipPartsReceived.With("matches_current", "true").Add(1)
+	if !added {
+		// NOTE: we are disregarding possible duplicates above where heights dont match or we're not expecting block parts yet
+		// but between the matches_current = true and false, we have all the info.
+		cs.metrics.DuplicateBlockPart.Add(1)
+	} else {
+		cs.evsw.FireEvent(types.EventProposalBlockPart, msg)
+	}
 
-	if cs.ProposalBlockParts.ByteSize() > cs.state.ConsensusParams.Block.MaxBytes {
+	maxBytes := cs.state.ConsensusParams.Block.MaxBytes
+	if maxBytes == -1 {
+		maxBytes = int64(types.MaxBlockSizeBytes)
+	}
+	if cs.ProposalBlockParts.ByteSize() > maxBytes {
 		return added, fmt.Errorf("total size of proposal block parts exceeds maximum block bytes (%d > %d)",
-			cs.ProposalBlockParts.ByteSize(), cs.state.ConsensusParams.Block.MaxBytes,
+			cs.ProposalBlockParts.ByteSize(), maxBytes,
 		)
 	}
 	if added && cs.ProposalBlockParts.IsComplete() {
@@ -1979,7 +1970,7 @@ func (cs *State) handleCompleteProposal(blockHeight int64) {
 	// Update Valid* if we can.
 	prevotes := cs.Votes.Prevotes(cs.Round)
 	blockID, hasTwoThirds := prevotes.TwoThirdsMajority()
-	if hasTwoThirds && !blockID.IsZero() && (cs.ValidRound < cs.Round) {
+	if hasTwoThirds && !blockID.IsNil() && (cs.ValidRound < cs.Round) {
 		if cs.ProposalBlock.HashesTo(blockID.Hash) {
 			cs.Logger.Debug(
 				"updating valid block to new proposal block",
@@ -2013,6 +2004,8 @@ func (cs *State) handleCompleteProposal(blockHeight int64) {
 // Attempt to add the vote. if its a duplicate signature, dupeout the validator
 func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 	added, err := cs.addVote(vote, peerID)
+
+	// NOTE: some of these errors are swallowed here
 	if err != nil {
 		// If the vote height is off, we'll just ignore it,
 		// But if it's a conflicting sig, add it to the cs.evpool.
@@ -2044,9 +2037,9 @@ func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 
 			return added, err
 		} else if errors.Is(err, types.ErrVoteNonDeterministicSignature) {
-			cs.Logger.Debug("vote has non-deterministic signature", "err", err)
+			cs.Logger.Info("vote has non-deterministic signature", "err", err)
 		} else if errors.Is(err, types.ErrInvalidVoteExtension) {
-			cs.Logger.Debug("vote has invalid extension")
+			cs.Logger.Info("vote has invalid extension")
 		} else {
 			// Either
 			// 1) bad peer OR
@@ -2082,12 +2075,16 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 		if cs.Step != cstypes.RoundStepNewHeight {
 			// Late precommit at prior height is ignored
 			cs.Logger.Debug("precommit vote came in after commit timeout and has been ignored", "vote", vote)
-			return
+			return added, err
 		}
 
 		added, err = cs.LastCommit.AddVote(vote)
 		if !added {
-			return
+			// If the vote wasnt added but there's no error, its a duplicate vote
+			if err == nil {
+				cs.metrics.DuplicateVote.Add(1)
+			}
+			return added, err
 		}
 
 		cs.Logger.Debug("added vote to last precommits", "last_commit", cs.LastCommit.StringShort())
@@ -2104,14 +2101,14 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 			cs.enterNewRound(cs.Height, 0)
 		}
 
-		return
+		return added, err
 	}
 
 	// Height mismatch is ignored.
 	// Not necessarily a bad peer, but not favorable behavior.
 	if vote.Height != cs.Height {
 		cs.Logger.Debug("vote ignored and not added", "vote_height", vote.Height, "cs_height", cs.Height, "peer", peerID)
-		return
+		return added, err
 	}
 
 	// Check to see if the chain is configured to extend votes.
@@ -2127,7 +2124,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 		}
 		// Verify VoteExtension if precommit and not nil
 		// https://github.com/tendermint/tendermint/issues/8487
-		if vote.Type == cmtproto.PrecommitType && !vote.BlockID.IsZero() &&
+		if vote.Type == cmtproto.PrecommitType && !vote.BlockID.IsNil() &&
 			!bytes.Equal(vote.ValidatorAddress, myAddr) { // Skip the VerifyVoteExtension call if the vote was issued by this validator.
 
 			// The core fields of the vote message were already validated in the
@@ -2161,7 +2158,12 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 	added, err = cs.Votes.AddVote(vote, peerID, extEnabled)
 	if !added {
 		// Either duplicate, or error upon cs.Votes.AddByIndex()
-		return
+
+		// If the vote wasnt added but there's no error, its a duplicate vote
+		if err == nil {
+			cs.metrics.DuplicateVote.Add(1)
+		}
+		return added, err
 	}
 	if vote.Round == cs.Round {
 		vals := cs.state.Validators
@@ -2179,33 +2181,13 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 		prevotes := cs.Votes.Prevotes(vote.Round)
 		cs.Logger.Debug("added vote to prevote", "vote", vote, "prevotes", prevotes.StringShort())
 
-		// If +2/3 prevotes for a block or nil for *any* round:
-		if blockID, ok := prevotes.TwoThirdsMajority(); ok {
-			// There was a polka!
-			// If we're locked but this is a recent polka, unlock.
-			// If it matches our ProposalBlock, update the ValidBlock
-
-			// Unlock if `cs.LockedRound < vote.Round <= cs.Round`
-			// NOTE: If vote.Round > cs.Round, we'll deal with it when we get to vote.Round
-			if (cs.LockedBlock != nil) &&
-				(cs.LockedRound < vote.Round) &&
-				(vote.Round <= cs.Round) &&
-				!cs.LockedBlock.HashesTo(blockID.Hash) {
-
-				cs.Logger.Debug("unlocking because of POL", "locked_round", cs.LockedRound, "pol_round", vote.Round)
-
-				cs.LockedRound = -1
-				cs.LockedBlock = nil
-				cs.LockedBlockParts = nil
-
-				if err := cs.eventBus.PublishEventUnlock(cs.RoundStateEvent()); err != nil {
-					return added, err
-				}
-			}
+		// Check to see if >2/3 of the voting power on the network voted for any non-nil block.
+		if blockID, ok := prevotes.TwoThirdsMajority(); ok && !blockID.IsNil() {
+			// Greater than 2/3 of the voting power on the network voted for some
+			// non-nil block
 
 			// Update Valid* if we can.
-			// NOTE: our proposal block may be nil or not what received a polka..
-			if len(blockID.Hash) != 0 && (cs.ValidRound < vote.Round) && (vote.Round == cs.Round) {
+			if cs.ValidRound < vote.Round && vote.Round == cs.Round {
 				if cs.ProposalBlock.HashesTo(blockID.Hash) {
 					cs.Logger.Debug("updating valid block because of POL", "valid_round", cs.ValidRound, "pol_round", vote.Round)
 					cs.ValidRound = vote.Round
@@ -2241,7 +2223,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 
 		case cs.Round == vote.Round && cstypes.RoundStepPrevote <= cs.Step: // current round
 			blockID, ok := prevotes.TwoThirdsMajority()
-			if ok && (cs.isProposalComplete() || len(blockID.Hash) == 0) {
+			if ok && (cs.isProposalComplete() || blockID.IsNil()) {
 				cs.enterPrecommit(height, vote.Round)
 			} else if prevotes.HasTwoThirdsAny() {
 				cs.enterPrevoteWait(height, vote.Round)
@@ -2269,7 +2251,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 			cs.enterNewRound(height, vote.Round)
 			cs.enterPrecommit(height, vote.Round)
 
-			if len(blockID.Hash) != 0 {
+			if !blockID.IsNil() {
 				cs.enterCommit(height, vote.Round)
 				if cs.config.SkipTimeoutCommit && precommits.HasAll() {
 					cs.enterNewRound(cs.Height, 0)
@@ -2319,7 +2301,7 @@ func (cs *State) signVote(
 	}
 
 	extEnabled := cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(vote.Height)
-	if msgType == cmtproto.PrecommitType && !vote.BlockID.IsZero() {
+	if msgType == cmtproto.PrecommitType && !vote.BlockID.IsNil() {
 		// if the signedMessage type is for a non-nil precommit, add
 		// VoteExtension
 		if extEnabled {
@@ -2389,7 +2371,7 @@ func (cs *State) signAddVote(
 	}
 	hasExt := len(vote.ExtensionSignature) > 0
 	extEnabled := cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(vote.Height)
-	if vote.Type == cmtproto.PrecommitType && !vote.BlockID.IsZero() && hasExt != extEnabled {
+	if vote.Type == cmtproto.PrecommitType && !vote.BlockID.IsNil() && hasExt != extEnabled {
 		panic(fmt.Errorf("vote extension absence/presence does not match extensions enabled %t!=%t, height %d, type %v",
 			hasExt, extEnabled, vote.Height, vote.Type))
 	}

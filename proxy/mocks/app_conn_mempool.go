@@ -102,13 +102,12 @@ func (_m *AppConnMempool) SetResponseCallback(_a0 abcicli.Callback) {
 	_m.Called(_a0)
 }
 
-type mockConstructorTestingTNewAppConnMempool interface {
+// NewAppConnMempool creates a new instance of AppConnMempool. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewAppConnMempool(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewAppConnMempool creates a new instance of AppConnMempool. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewAppConnMempool(t mockConstructorTestingTNewAppConnMempool) *AppConnMempool {
+}) *AppConnMempool {
 	mock := &AppConnMempool{}
 	mock.Mock.Test(t)
 

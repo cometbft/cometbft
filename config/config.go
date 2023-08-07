@@ -518,16 +518,8 @@ type P2PConfig struct { //nolint: maligned
 	// We only use these if we can’t connect to peers in the addrbook
 	Seeds string `mapstructure:"seeds"`
 
-	// Comma separated list of peers to be added to the peer store
-	// on startup. Either BootstrapPeers or PersistentPeers are
-	// needed for peer discovery
-	BootstrapPeers string `mapstructure:"bootstrap_peers"`
-
 	// Comma separated list of nodes to keep persistent connections to
 	PersistentPeers string `mapstructure:"persistent_peers"`
-
-	// UPNP port forwarding
-	UPNP bool `mapstructure:"upnp"`
 
 	// Path to address book
 	AddrBook string `mapstructure:"addr_book_file"`
@@ -593,7 +585,6 @@ func DefaultP2PConfig() *P2PConfig {
 	return &P2PConfig{
 		ListenAddress:                "tcp://0.0.0.0:26656",
 		ExternalAddress:              "",
-		UPNP:                         false,
 		AddrBook:                     defaultAddrBookPath,
 		AddrBookStrict:               true,
 		MaxNumInboundPeers:           40,
@@ -935,8 +926,9 @@ type ConsensusConfig struct {
 	CreateEmptyBlocksInterval time.Duration `mapstructure:"create_empty_blocks_interval"`
 
 	// Reactor sleep duration parameters
-	PeerGossipSleepDuration     time.Duration `mapstructure:"peer_gossip_sleep_duration"`
-	PeerQueryMaj23SleepDuration time.Duration `mapstructure:"peer_query_maj23_sleep_duration"`
+	PeerGossipSleepDuration          time.Duration `mapstructure:"peer_gossip_sleep_duration"`
+	PeerQueryMaj23SleepDuration      time.Duration `mapstructure:"peer_query_maj23_sleep_duration"`
+	PeerGossipIntraloopSleepDuration time.Duration `mapstructure:"peer_gossip_intraloop_sleep_duration"` // upper bound on randomly selected values
 
 	DoubleSignCheckHeight int64 `mapstructure:"double_sign_check_height"`
 }
@@ -944,20 +936,21 @@ type ConsensusConfig struct {
 // DefaultConsensusConfig returns a default configuration for the consensus service
 func DefaultConsensusConfig() *ConsensusConfig {
 	return &ConsensusConfig{
-		WalPath:                     filepath.Join(DefaultDataDir, "cs.wal", "wal"),
-		TimeoutPropose:              3000 * time.Millisecond,
-		TimeoutProposeDelta:         500 * time.Millisecond,
-		TimeoutPrevote:              1000 * time.Millisecond,
-		TimeoutPrevoteDelta:         500 * time.Millisecond,
-		TimeoutPrecommit:            1000 * time.Millisecond,
-		TimeoutPrecommitDelta:       500 * time.Millisecond,
-		TimeoutCommit:               1000 * time.Millisecond,
-		SkipTimeoutCommit:           false,
-		CreateEmptyBlocks:           true,
-		CreateEmptyBlocksInterval:   0 * time.Second,
-		PeerGossipSleepDuration:     100 * time.Millisecond,
-		PeerQueryMaj23SleepDuration: 2000 * time.Millisecond,
-		DoubleSignCheckHeight:       int64(0),
+		WalPath:                          filepath.Join(DefaultDataDir, "cs.wal", "wal"),
+		TimeoutPropose:                   3000 * time.Millisecond,
+		TimeoutProposeDelta:              500 * time.Millisecond,
+		TimeoutPrevote:                   1000 * time.Millisecond,
+		TimeoutPrevoteDelta:              500 * time.Millisecond,
+		TimeoutPrecommit:                 1000 * time.Millisecond,
+		TimeoutPrecommitDelta:            500 * time.Millisecond,
+		TimeoutCommit:                    1000 * time.Millisecond,
+		SkipTimeoutCommit:                false,
+		CreateEmptyBlocks:                true,
+		CreateEmptyBlocksInterval:        0 * time.Second,
+		PeerGossipSleepDuration:          100 * time.Millisecond,
+		PeerQueryMaj23SleepDuration:      2000 * time.Millisecond,
+		PeerGossipIntraloopSleepDuration: 0 * time.Second,
+		DoubleSignCheckHeight:            int64(0),
 	}
 }
 

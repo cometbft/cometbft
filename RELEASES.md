@@ -160,7 +160,7 @@ backport branch (see above). Otherwise:
 1. Start from the backport branch (e.g. `v0.38.x`).
 2. Run the integration tests and the E2E nightlies
    (which can be triggered from the GitHub UI;
-   e.g., <https://github.com/cometbft/cometbft/actions/workflows/e2e-nightly-37x.yml>).
+   e.g., <https://github.com/cometbft/cometbft/actions/workflows/e2e-manual.yml>).
 3. Prepare the pre-release documentation:
    * Build the changelog with [unclog] _without_ doing an unclog release, and
      commit the built changelog. This ensures that all changelog entries appear
@@ -177,7 +177,7 @@ backport branch (see above). Otherwise:
 5. Open a PR with these changes against the backport branch.
 6. Once these changes have landed on the backport branch, be sure to pull them back down locally.
 7. Once you have the changes locally, create the new tag, specifying a name and a tag "message":
-   `git tag -a v0.38.0-rc1 -m "Release Candidate v0.38.0-rc1`
+   `git tag -a v0.38.0-rc1 -s -m "Release Candidate v0.38.0-rc1`
 8. Push the tag back up to origin:
    `git push origin v0.38.0-rc1`
    Now the tag should be available on the repo's releases page.
@@ -207,7 +207,7 @@ Before performing these steps, be sure the
 4. Open a PR with these changes against the backport branch.
 5. Once these changes are on the backport branch, push a tag with prepared release details.
    This will trigger the actual release `v0.38.0`.
-   * `git tag -a v0.38.0 -m 'Release v0.38.0'`
+   * `git tag -a v0.38.0 -s -m 'Release v0.38.0'`
    * `git push origin v0.38.0`
 6. Make sure that `main` is updated with the latest `CHANGELOG.md`, `CHANGELOG_PENDING.md`, and `UPGRADING.md`.
 
@@ -235,7 +235,7 @@ To create a patch release:
      releases, and only field additions are valid patch changes.)
 4. Open a PR with these changes that will land them back on `v0.38.x`
 5. Once this change has landed on the backport branch, make sure to pull it locally, then push a tag.
-   * `git tag -a v0.38.1 -m 'Release v0.38.1'`
+   * `git tag -a v0.38.1 -s -m 'Release v0.38.1'`
    * `git push origin v0.38.1`
 6. Create a pull request back to main with the CHANGELOG & version changes from the latest release.
    * Remove all `R:patch` labels from the pull requests that were included in the release.
@@ -357,8 +357,7 @@ Experiments are run with multiple sizes to determine their impact and, for compa
 The testnet consists of 175 validators, 20 non-validator full-nodes, and 5 seed nodes.
 All 195 full-nodes begin by dialing a subset of the seed nodes to discover peers.
 Once all full-nodes are started, a 5 minute period is waited before starting an experiment.
-For each experiment, the load generators issue requests at a constant rate during 150 seconds, then wait for 60 seconds allow the system to quiesce, then repeat the load generation; the load generation step is repeated 5 times for each experiment.
-A wide set of metrics is captured during the whole experiment but, unless abnormalities are observed, the first and last 30 seconds of each 150 load generation step are discarded; the remainder 90 seconds are used in computing aggregated metrics.
+For each experiment, the load generators issue requests at a constant rate during 150 seconds, then wait for 5 minutes to allow the system to quiesce, then repeat the load generation; the load generation step is repeated 5 times for each experiment.
 
 #### Network Partition Testnet
 

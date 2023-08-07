@@ -23,7 +23,7 @@ receives a request, it logs it.
 
 The rationale behind this part of the implementation was to log the request concisely and use the existing structures as much as possible. 
 
-Whenever an ABCI request is made, the application will create `abci.Request` (`abci` stands for `"github.com/cometbft/cometbft/abci/types"`) and log it.  The example is below.  
+Whenever an ABCI++ request is made, the application will create `abci.Request` (`abci` stands for `"github.com/cometbft/cometbft/abci/types"`) and log it.  The example is below.  
 
 ```go
 func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
@@ -39,7 +39,7 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 ```
 Notice here that we create an empty `abci.RequestInitChain` object while we can also use the one passed to the `InitChain` function. The reason behind this is that, at the moment, we do not need specific fields of the request; we just need to be able to extract the information about the request type. For this, an empty object of a particular type is enough. 
 
-The `app.logABCIRequest(r)` function is a new function implemented in the same file (`test/e2e/app/app.go`). If the `ABCIRequestsLoggingEnabled` flag is set to `true`, set automatically when ABCI tests are enabled, it logs received requests. The full implementation is the following: 
+The `app.logABCIRequest(r)` function is a new function implemented in the same file (`test/e2e/app/app.go`). If the `ABCIRequestsLoggingEnabled` flag is set to `true`, set automatically when ABCI++ tests are enabled, it logs received requests. The full implementation is the following: 
 
 ```go
 func (app *Application) logABCIRequest(req *abci.Request) error {
@@ -84,7 +84,7 @@ We need a code that will take the logs from all nodes and collect the ABCI++ req
 This logic is implemented inside the `fetchABCIRequests(t *testing.T, nodeName string)` function that resides in `test/e2e/tests/e2e_test.go` file. This function does three things:
 - Takes the output of a specific node in the testnet from the moment we launched the testnet until the function is called. The node name is passed as a function parameter. It uses the `docker-compose logs` and `grep nodeName` commands. 
 - Parses the logs line by line and extracts the  `abci.Request`, if one exists. The request is received by forwarding each line to the `app.GetABCIRequestFromString(req)` method.
-- Returns the array of slices where each slice contains the set of `abci.Request`s logged on that node. Every time the crash happens, a new array element (new slice `[]*abci.Request`) will be created. We know a crash has happened because we log "Application started" every time the application starts. Specifically, we added this log inside `NewApplication()` function in `test/e2e/app/app.go` file. In the end, the function will return just one slice if the node did not experience any crashes and $n+1$ slices if there were crashes, $n$ being the number of crashes. The benefit of logging the requests in the previously described way is that now we can use `[]*abci.Request` to store ABCI++ requests of any type.
+- Returns the array of slices where each slice contains the set of `abci.Request`s logged on that node. Every time the crash happens, a new array element (new slice `[]*abci.Request`) will be created. We know a crash has happened because we log "Application started" every time the application starts. Specifically, we added this log inside `NewApplication()` function in `test/e2e/app/app.go` file. In the end, `fetchABCIRequests()` will return just one slice if the node did not experience any crashes and $n+1$ slices if there were crashes, $n$ being the number of crashes. The benefit of logging the requests in the previously described way is that now we can use `[]*abci.Request` to store ABCI++ requests of any type.
 
  
 
@@ -243,7 +243,7 @@ appropriate function (`verifyCleanStart()` or `verifyRecovery()`) depending on t
 FAIL: TestABCIGrammar/full02 (8.76s)
         abci_test.go:24: ABCI grammar verification failed: The error: "Invalid clean-start execution: parser was expecting one of [init_chain], got [offer_snapshot] instead." has occured at height 0.
             
-            Execution:
+            Full execution:
             0: offer_snapshot apply_snapshot_chunk finalize_block commit
             1: finalize_block commit
             2: finalize_block commit

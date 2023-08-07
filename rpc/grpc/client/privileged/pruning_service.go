@@ -77,21 +77,21 @@ func newDisabledPruningServiceClient() PruningServiceClient {
 }
 
 // SetBlockRetainHeight implements PruningServiceClient.
-func (*disabledPruningServiceClient) SetBlockRetainHeight(ctx context.Context, height uint64) error {
+func (*disabledPruningServiceClient) SetBlockRetainHeight(_ context.Context, height uint64) error {
 	panic("pruning service client is disabled")
 }
 
 // GetBlockRetainHeight implements PruningServiceClient.
-func (*disabledPruningServiceClient) GetBlockRetainHeight(ctx context.Context) (RetainHeights, error) {
+func (*disabledPruningServiceClient) GetBlockRetainHeight(_ context.Context) (RetainHeights, error) {
 	panic("pruning service client is disabled")
 }
 
 // SetBlockResultsRetainHeight implements PruningServiceClient.
-func (*disabledPruningServiceClient) SetBlockResultsRetainHeight(ctx context.Context, height uint64) error {
+func (*disabledPruningServiceClient) SetBlockResultsRetainHeight(_ context.Context, height uint64) error {
 	panic("pruning service client is disabled")
 }
 
 // GetBlockResultsRetainHeight implements PruningServiceClient.
-func (*disabledPruningServiceClient) GetBlockResultsRetainHeight(ctx context.Context) (uint64, error) {
+func (*disabledPruningServiceClient) GetBlockResultsRetainHeight(_ context.Context) (uint64, error) {
 	panic("pruning service client is disabled")
 }

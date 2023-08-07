@@ -43,7 +43,7 @@ func (s *pruningServiceServer) SetBlockRetainHeight(_ context.Context, req *v1.S
 }
 
 // GetBlockRetainHeight implements v1.PruningServiceServer.
-func (s *pruningServiceServer) GetBlockRetainHeight(_ context.Context, req *v1.GetBlockRetainHeightRequest) (*v1.GetBlockRetainHeightResponse, error) {
+func (s *pruningServiceServer) GetBlockRetainHeight(_ context.Context, _ *v1.GetBlockRetainHeightRequest) (*v1.GetBlockRetainHeightResponse, error) {
 	logger := s.logger.With("endpoint", "GetBlockRetainHeight")
 	svcHeight, err := s.pruner.GetCompanionBlockRetainHeight()
 	if err != nil {

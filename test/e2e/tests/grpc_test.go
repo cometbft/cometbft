@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	client2 "github.com/cometbft/cometbft/rpc/grpc/client"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/version"
 	"github.com/stretchr/testify/require"
@@ -99,52 +98,57 @@ func TestGRPC_Block_GetByHeight(t *testing.T) {
 	})
 }
 
-func TestGRPC_Block_GetLatestHeight(t *testing.T) {
-
-	var node *e2e.Node
-	testnet := loadTestnet(t)
-	// this assumes at least one node is valid for testing
-	// not a light or seed node
-	for _, n := range testnet.ArchiveNodes() {
-		if !n.Stateless() {
-			node = n
-			break
-		}
-	}
-	require.NotNil(t, node)
-
-	client, err := node.Client()
-	require.NoError(t, err)
-	status, err := client.Status(ctx)
-	require.NoError(t, err)
-
-	gCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	gRPCClient, err := node.GRPCClient(ctx)
-	require.NoError(t, err)
-
-	resultCh := make(chan client2.LatestHeightResult)
-	gRPCClient.GetLatestHeight(gCtx, resultCh)
-
-	count := 0
-	for {
-		select {
-		case <-gCtx.Done():
-			require.NoError(t, gCtx.Err())
-		case result := <-resultCh:
-			if err != nil {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-				require.GreaterOrEqual(t, result.Height, status.SyncInfo.EarliestBlockHeight)
-				count++
-			}
-		}
-		if count == 10 {
-			cancel()
+func TestGRPC_Block_GetLatest(t *testing.T) {
+	testFullNodesOrValidators(t, 1, func(t *testing.T, node e2e.Node) {
+		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
 			return
 		}
-		if gCtx.Err() != nil {
-			require.Error(t, gCtx.Err())
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+
+		gclient, err := node.GRPCClient(ctx)
+		require.NoError(t, err)
+
+		resultCh, err := gclient.GetLatestHeight(ctx)
+		require.NoError(t, err)
+
+		select {
+		case <-ctx.Done():
+			require.Fail(t, "did not expect context to be canceled")
+		case result := <-resultCh:
+			require.NoError(t, result.Error)
+			block, err := gclient.GetLatestBlock(ctx)
+			require.NoError(t, err)
+			// We can be off by at most one block, depending on how quickly the
+			// latest block request was executed.
+			require.True(t, result.Height == block.Block.Height || result.Height == block.Block.Height+1)
 		}
-	}
+	})
+}
+
+func TestGRPC_Block_GetLatestHeight(t *testing.T) {
+	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+
+		client, err := node.Client()
+		require.NoError(t, err)
+		status, err := client.Status(ctx)
+		require.NoError(t, err)
+
+		gclient, err := node.GRPCClient(ctx)
+		require.NoError(t, err)
+
+		resultCh, err := gclient.GetLatestHeight(ctx)
+		require.NoError(t, err)
+
+		select {
+		case <-ctx.Done():
+			require.Fail(t, "did not expect context to be canceled")
+		case result := <-resultCh:
+			require.NoError(t, result.Error)
+			require.True(t, result.Height == status.SyncInfo.LatestBlockHeight || result.Height == status.SyncInfo.LatestBlockHeight+1)
+		}
+	})
 }

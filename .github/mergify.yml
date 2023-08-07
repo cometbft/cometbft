@@ -1,22 +1,4 @@
-queue_rules:
-  - name: default
-    conditions:
-      - base=main
-      - label=automerge
-
 pull_request_rules:
-  - name: Automerge to main
-    conditions:
-      - base=main
-      - label=automerge
-    actions:
-      queue:
-        method: squash
-        name: default
-        commit_message_template: |
-          {{ title }} (#{{ number }})
-
-          {{ body }}
   - name: backport patches to v0.38.x branch
     conditions:
       - base=main

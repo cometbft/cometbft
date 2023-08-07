@@ -1,0 +1,1 @@
+- `[consensus]` \#1175 remove logic to unlock block on +2/3 prevote for nil ([cometbft/cometbft\#1175](https://github.com/cometbft/cometbft/pull/1175))

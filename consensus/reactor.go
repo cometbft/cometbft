@@ -1592,10 +1592,10 @@ type NewRoundStepMessage struct {
 // ValidateBasic performs basic validation.
 func (m *NewRoundStepMessage) ValidateBasic() error {
 	if m.Height < 0 {
-		return errors.New("negative Height")
+		return cmterrors.ErrNegativeField{Field: "Height"}
 	}
 	if m.Round < 0 {
-		return errors.New("negative Round")
+		return cmterrors.ErrNegativeField{Field: "Round"}
 	}
 	if !m.Step.IsValid() {
 		return errors.New("invalid Step")
@@ -1709,10 +1709,10 @@ type ProposalPOLMessage struct {
 // ValidateBasic performs basic validation.
 func (m *ProposalPOLMessage) ValidateBasic() error {
 	if m.Height < 0 {
-		return errors.New("negative Height")
+		return cmterrors.ErrNegativeField{Field: "Height"}
 	}
 	if m.ProposalPOLRound < 0 {
-		return errors.New("negative ProposalPOLRound")
+		return cmterrors.ErrNegativeField{Field: "ProposalPOLRound"}
 	}
 	if m.ProposalPOL.Size() == 0 {
 		return cmterrors.ErrRequiredField{Field: "ProposalPOL"}
@@ -1740,10 +1740,10 @@ type BlockPartMessage struct {
 // ValidateBasic performs basic validation.
 func (m *BlockPartMessage) ValidateBasic() error {
 	if m.Height < 0 {
-		return errors.New("negative Height")
+		return cmterrors.ErrNegativeField{Field: "Height"}
 	}
 	if m.Round < 0 {
-		return errors.New("negative Round")
+		return cmterrors.ErrNegativeField{Field: "Round"}
 	}
 	if err := m.Part.ValidateBasic(); err != nil {
 		return fmt.Errorf("wrong Part: %v", err)
@@ -1786,16 +1786,16 @@ type HasVoteMessage struct {
 // ValidateBasic performs basic validation.
 func (m *HasVoteMessage) ValidateBasic() error {
 	if m.Height < 0 {
-		return errors.New("negative Height")
+		return cmterrors.ErrNegativeField{Field: "Height"}
 	}
 	if m.Round < 0 {
-		return errors.New("negative Round")
+		return cmterrors.ErrNegativeField{Field: "Round"}
 	}
 	if !types.IsVoteTypeValid(m.Type) {
 		return errors.New("invalid Type")
 	}
 	if m.Index < 0 {
-		return errors.New("negative Index")
+		return cmterrors.ErrNegativeField{Field: "Index"}
 	}
 	return nil
 }
@@ -1818,10 +1818,10 @@ type VoteSetMaj23Message struct {
 // ValidateBasic performs basic validation.
 func (m *VoteSetMaj23Message) ValidateBasic() error {
 	if m.Height < 0 {
-		return errors.New("negative Height")
+		return cmterrors.ErrNegativeField{Field: "Height"}
 	}
 	if m.Round < 0 {
-		return errors.New("negative Round")
+		return cmterrors.ErrNegativeField{Field: "Round"}
 	}
 	if !types.IsVoteTypeValid(m.Type) {
 		return errors.New("invalid Type")
@@ -1851,7 +1851,7 @@ type VoteSetBitsMessage struct {
 // ValidateBasic performs basic validation.
 func (m *VoteSetBitsMessage) ValidateBasic() error {
 	if m.Height < 0 {
-		return errors.New("negative Height")
+		return cmterrors.ErrNegativeField{Field: "Height"}
 	}
 	if !types.IsVoteTypeValid(m.Type) {
 		return errors.New("invalid Type")
@@ -1886,10 +1886,10 @@ func (m *HasProposalBlockPartMessage) ValidateBasic() error {
 		return errors.New("invalid Height (< 1)")
 	}
 	if m.Round < 0 {
-		return errors.New("negative Round")
+		return cmterrors.ErrNegativeField{Field: "Round"}
 	}
 	if m.Index < 0 {
-		return errors.New("negative Index")
+		return cmterrors.ErrNegativeField{Field: "Index"}
 	}
 	return nil
 }

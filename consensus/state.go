@@ -228,6 +228,7 @@ func StateMetrics(metrics *Metrics) StateOption {
 func OfflineStateSyncHeight(height int64) StateOption {
 	return func(cs *State) { cs.offlineStateSyncHeight = height }
 }
+
 // String returns a string.
 func (cs *State) String() string {
 	// better not to access shared variables

@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	cmterrors "github.com/cometbft/cometbft/types/errors"
+
 	cstypes "github.com/cometbft/cometbft/consensus/types"
 	"github.com/cometbft/cometbft/libs/bits"
 	cmtevents "github.com/cometbft/cometbft/libs/events"
@@ -1650,16 +1652,16 @@ type NewValidBlockMessage struct {
 // ValidateBasic performs basic validation.
 func (m *NewValidBlockMessage) ValidateBasic() error {
 	if m.Height < 0 {
-		return errors.New("negative Height")
+		return cmterrors.ErrNegativeField{Field: "Height"}
 	}
 	if m.Round < 0 {
-		return errors.New("negative Round")
+		return cmterrors.ErrNegativeField{Field: "Round"}
 	}
 	if err := m.BlockPartSetHeader.ValidateBasic(); err != nil {
 		return fmt.Errorf("wrong BlockPartSetHeader: %v", err)
 	}
 	if m.BlockParts.Size() == 0 {
-		return errors.New("empty blockParts")
+		return cmterrors.ErrRequiredField{Field: "blockParts"}
 	}
 	if m.BlockParts.Size() != int(m.BlockPartSetHeader.Total) {
 		return fmt.Errorf("blockParts bit array size %d not equal to BlockPartSetHeader.Total %d",
@@ -1713,7 +1715,7 @@ func (m *ProposalPOLMessage) ValidateBasic() error {
 		return errors.New("negative ProposalPOLRound")
 	}
 	if m.ProposalPOL.Size() == 0 {
-		return errors.New("empty ProposalPOL bit array")
+		return cmterrors.ErrRequiredField{Field: "ProposalPOL"}
 	}
 	if m.ProposalPOL.Size() > types.MaxVotesCount {
 		return fmt.Errorf("proposalPOL bit array is too big: %d, max: %d", m.ProposalPOL.Size(), types.MaxVotesCount)

@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"errors"
+	"fmt"
 )
 
 var (
@@ -19,6 +20,25 @@ var (
 	ErrInvalidProposalPOLRound    = errors.New("error invalid proposal POL round")
 	ErrAddingVote                 = errors.New("error adding vote")
 	ErrSignatureFoundInPastBlocks = errors.New("found signature from the same key")
-
-	errPubKeyIsNotSet = errors.New("pubkey is not set. Look for \"Can't get private validator pubkey\" errors")
+	errPubKeyIsNotSet             = errors.New("pubkey is not set. Look for \"Can't get private validator pubkey\" errors")
 )
+
+type ErrConsensusMessageNotRecognized struct {
+	Message any
+}
+
+func (e ErrConsensusMessageNotRecognized) Error() string {
+	return fmt.Sprintf("consensus: message not recognized: %T", e.Message)
+}
+
+type ErrDenyMessageOverflow struct {
+	Err error
+}
+
+func (e ErrDenyMessageOverflow) Error() string {
+	return fmt.Sprintf("denying message due to possible overflow: %s", e.Err.Error())
+}
+
+func (e ErrDenyMessageOverflow) Unwrap() error {
+	return e.Err
+}

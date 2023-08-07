@@ -118,7 +118,7 @@ func MsgToProto(msg Message) (proto.Message, error) {
 		pb = vsb
 
 	default:
-		return nil, fmt.Errorf("consensus: message not recognized: %T", msg)
+		return nil, ErrConsensusMessageNotRecognized{msg}
 	}
 
 	return pb, nil
@@ -136,7 +136,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 		rs, err := cmtmath.SafeConvertUint8(int64(msg.Step))
 		// deny message based on possible overflow
 		if err != nil {
-			return nil, fmt.Errorf("denying message due to possible overflow: %w", err)
+			return nil, ErrDenyMessageOverflow{err}
 		}
 		pb = &NewRoundStepMessage{
 			Height:                msg.Height,
@@ -239,7 +239,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 			Votes:   bits,
 		}
 	default:
-		return nil, fmt.Errorf("consensus: message not recognized: %T", msg)
+		return nil, ErrConsensusMessageNotRecognized{msg}
 	}
 
 	if err := pb.ValidateBasic(); err != nil {
@@ -339,7 +339,7 @@ func WALFromProto(msg *cmtcons.WALMessage) (WALMessage, error) {
 		tis, err := cmtmath.SafeConvertUint8(int64(msg.TimeoutInfo.Step))
 		// deny message based on possible overflow
 		if err != nil {
-			return nil, fmt.Errorf("denying message due to possible overflow: %w", err)
+			return nil, ErrDenyMessageOverflow{err}
 		}
 		pb = timeoutInfo{
 			Duration: msg.TimeoutInfo.Duration,

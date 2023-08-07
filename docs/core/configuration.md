@@ -452,6 +452,36 @@ peer_query_maj23_sleep_duration = "2s"
 # reindex events in the command-line tool.
 discard_abci_responses = false
 
+[storage.pruning]
+
+# The time period between automated background pruning operations.
+interval = "10s"
+
+#
+# Storage pruning configuration relating only to the data companion.
+#
+[storage.pruning.data_companion]
+
+# Whether automatic pruning respects values set by the data companion. Disabled
+# by default. All other parameters in this section are ignored when this is
+# disabled.
+#
+# If disabled, only the application retain height will influence block pruning
+# (but not block results pruning). Only enabling this at a later stage will
+# potentially mean that blocks below the application-set retain height at the
+# time will not be available to the data companion.
+enabled = false
+
+# The initial value for the data companion block retain height if the data
+# companion has not yet explicitly set one. If the data companion has already
+# set a block retain height, this is ignored.
+initial_block_retain_height = 0
+
+# The initial value for the data companion block results retain height if the
+# data companion has not yet explicitly set one. If the data companion has
+# already set a block results retain height, this is ignored.
+initial_block_results_retain_height = 0
+
 #######################################################
 ###   Transaction Indexer Configuration Options     ###
 #######################################################

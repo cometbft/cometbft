@@ -69,8 +69,13 @@ func TestBlock_Range(t *testing.T) {
 
 		case node.RetainBlocks > 0 && int64(node.RetainBlocks) < (last-node.Testnet.InitialHeight+1):
 			// Delta handles race conditions in reading first/last heights.
-			assert.InDelta(t, node.RetainBlocks, last-first+1, 1,
+			// The pruning mechanism is now asynchronous and might have been woken up yet to complete the pruning
+			// So we have no guarantees that all the blocks will have been pruned by the time we check
+			// Thus we allow for some flexibility in the difference between the expected retain blocks number
+			// and the actual retain blocks (which should be greater)
+			assert.InDelta(t, node.RetainBlocks, last-first+1, 10,
 				"node not pruning expected blocks")
+			assert.GreaterOrEqual(t, uint64(last-first+1), node.RetainBlocks, "node pruned more blocks than it should")
 
 		default:
 			assert.Equal(t, node.Testnet.InitialHeight, first,

@@ -675,6 +675,7 @@ func TestStateLockPOLUpdateLock(t *testing.T) {
 		cs1 creates a proposal for block B.
 		Send a prevote for B from each of the validators to cs1.
 		Send a precommit for nil from all of the validators to cs1.
+
 		This ensures that cs1 will lock on B in this round but not precommit it.
 	*/
 	t.Log("### Starting Round 0")
@@ -708,6 +709,7 @@ func TestStateLockPOLUpdateLock(t *testing.T) {
 		Create a block, D and send a proposal for it to cs1
 		Send a prevote for D from each of the validators to cs1.
 		Send a precommit for nil from all of the validtors to cs1.
+
 		Check that cs1 is now locked on the new block, D and no longer on the old block.
 	*/
 	t.Log("### Starting Round 1")
@@ -772,6 +774,7 @@ func TestStateLockPOLRelock(t *testing.T) {
 		cs1 creates a proposal for block B.
 		Send a prevote for B from each of the validators to cs1.
 		Send a precommit for nil from all of the validators to cs1.
+
 		This ensures that cs1 will lock on B in this round but not precommit it.
 	*/
 	t.Log("### Starting Round 0")
@@ -788,7 +791,6 @@ func TestStateLockPOLRelock(t *testing.T) {
 	ensurePrevote(voteCh, height, round)
 
 	signAddVotes(cs1, cmtproto.PrevoteType, theBlockHash, theBlockParts.Header(), false, vs2, vs3, vs4)
-
 	// check that the validator generates a Lock event.
 	ensureLock(lockCh, height, round)
 
@@ -807,6 +809,7 @@ func TestStateLockPOLRelock(t *testing.T) {
 		Create a proposal for block B, the same block from round 1.
 		Send a prevote for B from each of the validators to cs1.
 		Send a precommit for nil from all of the validtors to cs1.
+
 		Check that cs1 updates its 'locked round' value to the current round.
 	*/
 	t.Log("### Starting Round 1")
@@ -854,7 +857,6 @@ func TestStateLockPOLRelock(t *testing.T) {
 func TestStateLockPOLDoesNotUnlock(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
 	/*
 		All of the assertions in this test occur on the `cs1` validator.
 		The test sends signed votes from the other validators to cs1 and
@@ -930,6 +932,7 @@ func TestStateLockPOLDoesNotUnlock(t *testing.T) {
 	prop, propBlock := decideProposal(ctx, t, cs1, vs2, vs2.Height, vs2.Round)
 	propBlockParts, err := propBlock.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)
+
 	if err := cs1.SetProposalAndBlock(prop, propBlock, propBlockParts, ""); err != nil {
 		t.Fatal(err)
 	}
@@ -954,7 +957,6 @@ func TestStateLockPOLDoesNotUnlock(t *testing.T) {
 
 	signAddVotes(cs1, cmtproto.PrecommitType, nil, types.PartSetHeader{}, true, vs2, vs3, vs4)
 	ensureNewTimeout(timeoutWaitCh, height, round, cs1.config.Precommit(round).Nanoseconds())
-
 	/*
 		Round 2:
 		The validator cs1 saw >2/3 precommits for nil in the previous round.
@@ -967,6 +969,7 @@ func TestStateLockPOLDoesNotUnlock(t *testing.T) {
 	prop, propBlock = decideProposal(ctx, t, cs1, vs3, vs3.Height, vs3.Round)
 	propBlockParts, err = propBlock.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)
+
 	if err := cs1.SetProposalAndBlock(prop, propBlock, propBlockParts, ""); err != nil {
 		t.Fatal(err)
 	}
@@ -1406,7 +1409,8 @@ func TestProposeValidBlock(t *testing.T) {
 	signAddVotes(cs1, cmtproto.PrevoteType, propBlockHash, bps.Header(), false, vs2, vs3, vs4)
 
 	ensurePrecommit(voteCh, height, round)
-	// we should have precommitted
+	// we should have precommitted the proposed block in this round.
+
 	validatePrecommit(t, cs1, round, round, vss[0], propBlockHash, propBlockHash)
 
 	signAddVotes(cs1, cmtproto.PrecommitType, nil, types.PartSetHeader{}, true, vs2, vs3, vs4)
@@ -1417,8 +1421,7 @@ func TestProposeValidBlock(t *testing.T) {
 	round++ // moving to the next round
 
 	ensureNewRound(newRoundCh, height, round)
-
-	t.Log("### ONTO ROUND 2")
+	t.Log("### ONTO ROUND 1")
 
 	// timeout of propose
 	ensureNewTimeout(timeoutProposeCh, height, round, cs1.config.Propose(round).Nanoseconds())
@@ -1440,7 +1443,7 @@ func TestProposeValidBlock(t *testing.T) {
 
 	signAddVotes(cs1, cmtproto.PrecommitType, nil, types.PartSetHeader{}, true, vs2, vs3, vs4)
 
-	round += 2 // moving to the next round
+	round += 2 // increment by multiple rounds
 
 	ensureNewRound(newRoundCh, height, round)
 	t.Log("### ONTO ROUND 3")
@@ -1450,8 +1453,6 @@ func TestProposeValidBlock(t *testing.T) {
 	round++ // moving to the next round
 
 	ensureNewRound(newRoundCh, height, round)
-
-	t.Log("### ONTO ROUND 4")
 
 	ensureNewProposal(proposalCh, height, round)
 

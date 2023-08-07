@@ -1597,7 +1597,7 @@ func (cs *State) enterCommit(height int64, commitRound int32) {
 	}()
 
 	blockID, ok := cs.Votes.Precommits(commitRound).TwoThirdsMajority()
-	if !ok {
+	if !ok || blockID.IsNil() {
 		panic("RunActionCommit() expects +2/3 precommits")
 	}
 

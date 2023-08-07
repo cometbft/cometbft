@@ -224,7 +224,7 @@ func (blockExec *BlockExecutor) ApplyBlock(
 		return state, 0, err
 	}
 	if len(validatorUpdates) > 0 {
-		blockExec.logger.Debug("updates to validators", "updates", types.ValidatorListString(validatorUpdates))
+		blockExec.logger.Info("updates to validators", "updates", types.ValidatorListString(validatorUpdates))
 		blockExec.metrics.ValidatorSetUpdates.Add(1)
 	}
 	if abciResponses.EndBlock.ConsensusParamUpdates != nil {

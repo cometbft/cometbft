@@ -14,9 +14,9 @@ import (
 
 type Option func(*clientBuilder)
 
-// PrivilegedClient defines the full client interface for interacting with
+// Client defines the full client interface for interacting with
 // a CometBFT node via the privileged gRPC server.
-type PrivilegedClient interface {
+type Client interface {
 	PruningServiceClient
 }
 
@@ -83,7 +83,7 @@ func WithGRPCDialOption(opt ggrpc.DialOption) Option {
 // To connect to a gRPC server with TLS, use the WithGRPCDialOption option with
 // the appropriate gRPC credentials configuration. See
 // https://pkg.go.dev/google.golang.org/grpc#WithTransportCredentials
-func New(ctx context.Context, addr string, opts ...Option) (PrivilegedClient, error) {
+func New(ctx context.Context, addr string, opts ...Option) (Client, error) {
 	builder := newClientBuilder()
 	for _, opt := range opts {
 		opt(builder)

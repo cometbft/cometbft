@@ -121,7 +121,7 @@ func (bs *BlockStore) LoadBlock(height int64) *types.Block {
 
 	block, err := types.BlockFromProto(pbb)
 	if err != nil {
-		panic(fmt.Errorf("error from proto block: %w", err))
+		panic(cmterrors.NewErrMsgFromProto(pbb, err))
 	}
 
 	return block
@@ -193,7 +193,7 @@ func (bs *BlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 
 	blockMeta, err := types.BlockMetaFromProto(pbbm)
 	if err != nil {
-		panic(fmt.Errorf("error from proto blockMeta: %w", err))
+		panic(cmterrors.NewErrMsgFromProto(pbbm, err))
 	}
 
 	return blockMeta

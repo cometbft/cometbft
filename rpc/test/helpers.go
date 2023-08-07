@@ -99,6 +99,9 @@ func createConfig() *cfg.Config {
 	c.RPC.ListenAddress = rpc
 	c.RPC.CORSAllowedOrigins = []string{"https://cometbft.com/"}
 	c.RPC.GRPCListenAddress = grpc
+	// Set pruning interval to a value lower than the default for some of the
+	// tests that rely on pruning to occur quickly
+	c.Storage.Pruning.Interval = 100 * time.Millisecond
 	return c
 }
 

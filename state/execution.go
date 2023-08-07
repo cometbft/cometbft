@@ -25,6 +25,8 @@ type BlockExecutor struct {
 	// save state, validators, consensus params, abci responses here
 	store Store
 
+	pruner *Pruner
+
 	// execute the app against this
 	proxyApp proxy.AppConnConsensus
 
@@ -42,6 +44,12 @@ type BlockExecutor struct {
 }
 
 type BlockExecutorOption func(executor *BlockExecutor)
+
+func BlockExecutorWithPruner(pruner *Pruner) BlockExecutorOption {
+	return func(blockExec *BlockExecutor) {
+		blockExec.pruner = pruner
+	}
+}
 
 func BlockExecutorWithMetrics(metrics *Metrics) BlockExecutorOption {
 	return func(blockExec *BlockExecutor) {
@@ -98,7 +106,6 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	commit *types.Commit,
 	proposerAddr []byte,
 ) (*types.Block, error) {
-
 	maxBytes := state.ConsensusParams.Block.MaxBytes
 	maxGas := state.ConsensusParams.Block.MaxGas
 
@@ -450,7 +457,8 @@ func extendedCommitInfo(c abci.CommitInfo) abci.ExtendedCommitInfo {
 }
 
 func validateValidatorUpdates(abciUpdates []abci.ValidatorUpdate,
-	params types.ValidatorParams) error {
+	params types.ValidatorParams,
+) error {
 	for _, valUpdate := range abciUpdates {
 		if valUpdate.GetPower() < 0 {
 			return fmt.Errorf("voting power can't be negative %v", valUpdate)
@@ -482,7 +490,6 @@ func updateState(
 	abciResponses *cmtstate.ABCIResponses,
 	validatorUpdates []*types.Validator,
 ) (State, error) {
-
 	// Copy the valset so we can apply changes from EndBlock
 	// and update s.LastValidators and s.Validators.
 	nValSet := state.NextValidators.Copy()
@@ -625,3 +632,25 @@ func ExecCommitBlock(
 	// ResponseCommit has no error or log, just data
 	return res.Data, nil
 }
+
+
+/* TODO Check whether this exists elsewhere
+func (blockExec *BlockExecutor) pruneBlocks(retainHeight int64, state State) (uint64, error) {
+	base := blockExec.blockStore.Base()
+	if retainHeight <= base {
+		return 0, nil
+	}
+
+	amountPruned, prunedHeaderHeight, err := blockExec.blockStore.PruneBlocks(retainHeight, state)
+	if err != nil {
+		return 0, fmt.Errorf("failed to prune block store: %w", err)
+	}
+
+	err = blockExec.Store().PruneStates(base, retainHeight, prunedHeaderHeight)
+	if err != nil {
+		return 0, fmt.Errorf("failed to prune state store: %w", err)
+	}
+	return amountPruned, nil
+}
+
+*/

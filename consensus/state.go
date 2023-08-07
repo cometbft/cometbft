@@ -228,7 +228,6 @@ func StateMetrics(metrics *Metrics) StateOption {
 func OfflineStateSyncHeight(height int64) StateOption {
 	return func(cs *State) { cs.offlineStateSyncHeight = height }
 }
-
 // String returns a string.
 func (cs *State) String() string {
 	// better not to access shared variables
@@ -595,7 +594,6 @@ func (cs *State) reconstructSeenCommit(state sm.State) {
 // extension data.
 func (cs *State) reconstructLastCommit(state sm.State) {
 	extensionsEnabled := state.ConsensusParams.ABCI.VoteExtensionsEnabled(state.LastBlockHeight)
-
 	if !extensionsEnabled {
 		cs.reconstructSeenCommit(state)
 		return

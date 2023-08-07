@@ -1362,7 +1362,9 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 	/*
 		22: upon <PROPOSAL, h_p, round_p, v, −1> from proposer(h_p, round_p) while step_p = propose do
 		23: if valid(v) && (lockedRound_p = −1 || lockedValue_p = v) then
-		24: broadcast <PREVOTE, h_p, round_p, id(v)>
+		24:   broadcast <PREVOTE, h_p, round_p, id(v)>
+		25: else
+		26:   broadcast <PREVOTE, h_p, round_p, nil>
 
 		Here, cs.Proposal.POLRound corresponds to the -1 in the above algorithm rule.
 		This means that the proposer is producing a new proposal that has not previously
@@ -1379,17 +1381,22 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 			return
 		}
 		if cs.ProposalBlock.HashesTo(cs.LockedBlock.Hash()) {
-			logger.Debug("prevote step: ProposalBlock is valid and matches our locked block; prevoting the proposal")
+			logger.Debug("prevote step: ProposalBlock is valid (POLRound is -1) and matches our locked block; prevoting the proposal")
 			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header())
 			return
 		}
+		logger.Debug("prevote step: ProposalBlock is valid (POLRound is -1), but doesn't match our locked block; prevoting nil")
+		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
+		return
 	}
 
 	/*
 		28: upon <PROPOSAL, h_p, round_p, v, v_r> from proposer(h_p, round_p) AND 2f + 1 <PREVOTE, h_p, v_r, id(v)> while
 		step_p = propose && (v_r ≥ 0 && v_r < round_p) do
 		29: if valid(v) && (lockedRound_p ≤ v_r || lockedValue_p = v) then
-		30: broadcast <PREVOTE, h_p, round_p, id(v)>
+		30:   broadcast <PREVOTE, h_p, round_p, id(v)>
+		31: else
+		32:   broadcast <PREVOTE, h_p, round_p, id(v)>
 
 		This rule is a bit confusing but breaks down as follows:
 
@@ -1403,6 +1410,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		missed the proposal in round 'v_r'.
 	*/
 	blockID, ok := cs.Votes.Prevotes(cs.Proposal.POLRound).TwoThirdsMajority()
+	ok = ok && !blockID.IsNil()
 	if ok && cs.ProposalBlock.HashesTo(blockID.Hash) && cs.Proposal.POLRound >= 0 && cs.Proposal.POLRound < cs.Round {
 		if cs.LockedRound <= cs.Proposal.POLRound {
 			logger.Debug("prevote step: ProposalBlock is valid and received a 2/3" +

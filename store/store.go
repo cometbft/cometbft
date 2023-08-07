@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 	"github.com/cosmos/gogoproto/proto"
 
 	dbm "github.com/cometbft/cometbft-db"
@@ -236,7 +237,7 @@ func (bs *BlockStore) LoadBlockCommit(height int64) *types.Commit {
 	}
 	commit, err := types.CommitFromProto(pbc)
 	if err != nil {
-		panic(fmt.Errorf("converting commit to proto: %w", err))
+		panic(cmterrors.NewErrMsgToProto(pbc, err))
 	}
 	return commit
 }
@@ -498,7 +499,7 @@ func (bs *BlockStore) saveBlockToBatch(block *types.Block, blockParts *types.Par
 func (bs *BlockStore) saveBlockPart(height int64, index int, part *types.Part) {
 	pbp, err := part.ToProto()
 	if err != nil {
-		panic(fmt.Errorf("unable to make part into proto: %w", err))
+		panic(cmterrors.NewErrMsgToProto(*part, err))
 	}
 	partBytes := mustEncode(pbp)
 	if err := bs.db.Set(calcBlockPartKey(height, index), partBytes); err != nil {

@@ -3,6 +3,7 @@ package consensus
 import (
 	"fmt"
 
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 	"github.com/cosmos/gogoproto/proto"
 
 	cstypes "github.com/cometbft/cometbft/consensus/types"
@@ -61,7 +62,7 @@ func MsgToProto(msg Message) (proto.Message, error) {
 	case *BlockPartMessage:
 		parts, err := msg.Part.ToProto()
 		if err != nil {
-			return nil, NewErrMsgToProto(*msg.Part, err)
+			return nil, cmterrors.NewErrMsgToProto(*msg.Part, err)
 		}
 		pb = &cmtcons.BlockPart{
 			Height: msg.Height,
@@ -147,7 +148,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 	case *cmtcons.NewValidBlock:
 		pbPartSetHeader, err := types.PartSetHeaderFromProto(&msg.BlockPartSetHeader)
 		if err != nil {
-			return nil, NewErrMsgToProto(msg.BlockPartSetHeader, err)
+			return nil, cmterrors.NewErrMsgToProto(msg.BlockPartSetHeader, err)
 		}
 
 		pbBits := new(bits.BitArray)
@@ -163,7 +164,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 	case *cmtcons.Proposal:
 		pbP, err := types.ProposalFromProto(&msg.Proposal)
 		if err != nil {
-			return nil, NewErrMsgToProto(msg.Proposal, err)
+			return nil, cmterrors.NewErrMsgToProto(msg.Proposal, err)
 		}
 
 		pb = &ProposalMessage{
@@ -180,7 +181,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 	case *cmtcons.BlockPart:
 		parts, err := types.PartFromProto(&msg.Part)
 		if err != nil {
-			return nil, NewErrMsgToProto(msg.Part, err)
+			return nil, cmterrors.NewErrMsgToProto(msg.Part, err)
 		}
 		pb = &BlockPartMessage{
 			Height: msg.Height,
@@ -192,7 +193,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 		// call below.
 		vote, err := types.VoteFromProto(msg.Vote)
 		if err != nil {
-			return nil, NewErrMsgToProto(*msg.Vote, err)
+			return nil, cmterrors.NewErrMsgToProto(*msg.Vote, err)
 		}
 
 		pb = &VoteMessage{
@@ -214,7 +215,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 	case *cmtcons.VoteSetMaj23:
 		bi, err := types.BlockIDFromProto(&msg.BlockID)
 		if err != nil {
-			return nil, NewErrMsgToProto(cmtcons.VoteSetMaj23{}, err)
+			return nil, cmterrors.NewErrMsgToProto(cmtcons.VoteSetMaj23{}, err)
 		}
 		pb = &VoteSetMaj23Message{
 			Height:  msg.Height,
@@ -225,7 +226,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 	case *cmtcons.VoteSetBits:
 		bi, err := types.BlockIDFromProto(&msg.BlockID)
 		if err != nil {
-			return nil, NewErrMsgToProto(cmtcons.VoteSetBits{}, err)
+			return nil, cmterrors.NewErrMsgToProto(cmtcons.VoteSetBits{}, err)
 		}
 		bits := new(bits.BitArray)
 		bits.FromProto(&msg.Votes)

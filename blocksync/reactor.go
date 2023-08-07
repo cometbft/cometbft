@@ -70,7 +70,7 @@ func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockS
 ) *Reactor {
 
 	storeHeight := store.Height()
-	if offlineStateSyncHeight != 0 {
+	if storeHeight == 0 {
 		// If state sync was performed offline and the stores were bootstrapped to height H
 		// the state store's lastHeight will be H while blockstore's Height and Base are still 0
 		// 1. This scenario should not lead to a panic in this case, which is indicated by

@@ -362,7 +362,7 @@ func NewNode(ctx context.Context,
 	)
 
 	offlineStateSyncHeight := int64(0)
-	if blockStore.Base() == 0 {
+	if blockStore.Height() == 0 {
 		offlineStateSyncHeight, err = blockExec.Store().GetOfflineStateSyncHeight()
 		if err != nil && err.Error() != "value empty" {
 			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s; expected state store height to be %v", err, state.LastBlockHeight))

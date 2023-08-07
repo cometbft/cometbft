@@ -96,6 +96,20 @@ func TestSplitAndTrimEmpty(t *testing.T) {
 	}
 }
 
+func TestCompanionInitialHeightSetup(t *testing.T) {
+	config := test.ResetTestRoot("companion_initial_height")
+	defer os.RemoveAll(config.RootDir)
+	config.Storage.Pruning.DataCompanion.Enabled = true
+	config.Storage.Pruning.DataCompanion.InitialBlockRetainHeight = 1
+	// create & start node
+	n, err := DefaultNewNode(config, log.TestingLogger())
+	require.NoError(t, err)
+
+	companionRetainHeight, err := n.stateStore.GetCompanionBlockRetainHeight()
+	require.NoError(t, err)
+	require.Equal(t, companionRetainHeight, int64(1))
+}
+
 func TestNodeDelayedStart(t *testing.T) {
 	config := test.ResetTestRoot("node_delayed_start_test")
 	defer os.RemoveAll(config.RootDir)

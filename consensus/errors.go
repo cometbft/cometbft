@@ -31,7 +31,14 @@ type ErrMsgToProto struct {
 }
 
 func NewErrMsgToProto[T any](msg T, err error) ErrMsgToProto {
-	messageName := reflect.TypeOf(msg).Name()
+	t := reflect.TypeOf(msg)
+
+	// if msg provided is a pointer, get the underlying value
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	messageName := t.Name()
 	return ErrMsgToProto{MessageName: messageName, Err: err}
 }
 

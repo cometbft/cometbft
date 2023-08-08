@@ -250,7 +250,7 @@ FAIL: TestABCIGrammar/full02 (8.76s)
             3: finalize_block commit
 			...
 ```
-The error shown above reports an invalid `CleanStart` execution. Moreover, it says why it is considered invalid (`init_chain` was missing) and the height of the error. Notice here that the height in the case of `CleanStart` execution corresponds to the actual consensus height, while for the `Recovery` execution, height 0 represents the first height after the crash. Lastly, after the error, the full execution, one height per line, is printed. This part may be optional and handled with the config flag, but we left it like this for now. 
+The error shown above reports an invalid `CleanStart` execution. Moreover, it says why it is considered invalid (`init_chain` was missing) and the height of the error. Notice here that the height in the case of `CleanStart` execution corresponds to the actual consensus height, while for the `Recovery` execution, height 0 represents the first height after the crash. Lastly, after the error, the full execution, one height per line, is printed. This part may be optional and handled with a config flag, but we left it like this for now. 
 
 *Note:* The `gogll` parser can return many errors because it returns an error at every point at which the parser fails to parse
 a grammar production. Usually, the error of interest is the one that has 

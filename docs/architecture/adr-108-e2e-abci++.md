@@ -204,10 +204,13 @@ application side.
 The `Verify()` method is shown below. 
 ```go
 func (g *GrammarChecker) Verify(reqs []*abci.Request, isCleanStart bool) (bool, error) {
-	r := g.filterRequests(reqs)
-	// This should not happen in our tests.
 	if len(reqs) == 0 {
 		return false, fmt.Errorf("execution with no ABCI calls.")
+	}
+	r := g.filterRequests(reqs)
+	// Check if the execution is incomplete.
+	if len(r) == 0 {
+		return true, nil
 	}
 	var errors []*Error
 	execution := g.getExecutionString(r)
@@ -224,13 +227,14 @@ func (g *GrammarChecker) Verify(reqs []*abci.Request, isCleanStart bool) (bool, 
 ```
 
 It receives a set of ABCI++ requests and a flag saying whether they represent a `CleanStart` execution or not and does the following things:
+- Checks if the execution is an empty execution. 
 - Filter the requests by calling the method `filterRequests()`. This method will remove all the requests from the set that are not supported by the current version of the grammar. In addition, it will filter the last height by removing all ABCI++ requests after the 
 last `Commit`. The function `fetchABCIRequests()` can be called in the middle of the height. As a result, the last height may be incomplete and 
 classified as invalid, even if that is not the reality. The simple example here is that the last 
 request fetched via `fetchABCIRequests()` is `Decide`; however, `Commit` happens after 
 `fetchABCIRequests()` was invoked. Consequently, the execution
 will be considered as faulty because `Commit` is missing, even though the `Commit` 
-will happen after.  
+will happen after. This is why if the execution consists of only one incomplete height and function `filterRequests()` returns an empty set of requests, the `Verify()` method considers this execution as valid and returns `true`. 
 - Generates an execution string by replacing `abci.Request` with the 
 corresponding terminal from the grammar. This logic is implemented in
 `getExecutionString()` function. This function receives a list of `abci.Request` and generates a string where every request 

@@ -13,7 +13,7 @@ ApplyChunks : ApplyChunk | ApplyChunk ApplyChunks ;
 
 ConsensusExec : ConsensusHeights ;
 ConsensusHeights : ConsensusHeight | ConsensusHeight ConsensusHeights ;
-ConsensusHeight : ConsensusRounds Decide Commit | Decide Commit ;
+ConsensusHeight : ConsensusRounds FinalizeBlock Commit | FinalizeBlock Commit ;
 ConsensusRounds : ConsensusRound | ConsensusRound ConsensusRounds ;
 ConsensusRound : Proposer | NonProposer ; 
 
@@ -21,7 +21,7 @@ Proposer : PrepareProposal | PrepareProposal ProcessProposal ;
 NonProposer: ProcessProposal ;
 
 InitChain : "init_chain" ;
-Decide : "finalize_block" ; 
+FinalizeBlock : "finalize_block" ; 
 Commit : "commit" ;
 OfferSnapshot : "offer_snapshot" ;
 ApplyChunk : "apply_snapshot_chunk" ; 

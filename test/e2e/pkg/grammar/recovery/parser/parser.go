@@ -84,10 +84,10 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			} else {
 				p.parseError(slot.ConsensusExec0R0, p.cI, followSets[symbols.NT_ConsensusExec])
 			}
-		case slot.ConsensusHeight0R0: // ConsensusHeight : ∙ConsensusRounds Decide Commit
+		case slot.ConsensusHeight0R0: // ConsensusHeight : ∙ConsensusRounds FinalizeBlock Commit
 
 			p.call(slot.ConsensusHeight0R1, cU, p.cI)
-		case slot.ConsensusHeight0R1: // ConsensusHeight : ConsensusRounds ∙Decide Commit
+		case slot.ConsensusHeight0R1: // ConsensusHeight : ConsensusRounds ∙FinalizeBlock Commit
 
 			if !p.testSelect(slot.ConsensusHeight0R1) {
 				p.parseError(slot.ConsensusHeight0R1, p.cI, first[slot.ConsensusHeight0R1])
@@ -95,7 +95,7 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			}
 
 			p.call(slot.ConsensusHeight0R2, cU, p.cI)
-		case slot.ConsensusHeight0R2: // ConsensusHeight : ConsensusRounds Decide ∙Commit
+		case slot.ConsensusHeight0R2: // ConsensusHeight : ConsensusRounds FinalizeBlock ∙Commit
 
 			if !p.testSelect(slot.ConsensusHeight0R2) {
 				p.parseError(slot.ConsensusHeight0R2, p.cI, first[slot.ConsensusHeight0R2])
@@ -103,17 +103,17 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			}
 
 			p.call(slot.ConsensusHeight0R3, cU, p.cI)
-		case slot.ConsensusHeight0R3: // ConsensusHeight : ConsensusRounds Decide Commit ∙
+		case slot.ConsensusHeight0R3: // ConsensusHeight : ConsensusRounds FinalizeBlock Commit ∙
 
 			if p.follow(symbols.NT_ConsensusHeight) {
 				p.rtn(symbols.NT_ConsensusHeight, cU, p.cI)
 			} else {
 				p.parseError(slot.ConsensusHeight0R0, p.cI, followSets[symbols.NT_ConsensusHeight])
 			}
-		case slot.ConsensusHeight1R0: // ConsensusHeight : ∙Decide Commit
+		case slot.ConsensusHeight1R0: // ConsensusHeight : ∙FinalizeBlock Commit
 
 			p.call(slot.ConsensusHeight1R1, cU, p.cI)
-		case slot.ConsensusHeight1R1: // ConsensusHeight : Decide ∙Commit
+		case slot.ConsensusHeight1R1: // ConsensusHeight : FinalizeBlock ∙Commit
 
 			if !p.testSelect(slot.ConsensusHeight1R1) {
 				p.parseError(slot.ConsensusHeight1R1, p.cI, first[slot.ConsensusHeight1R1])
@@ -121,7 +121,7 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			}
 
 			p.call(slot.ConsensusHeight1R2, cU, p.cI)
-		case slot.ConsensusHeight1R2: // ConsensusHeight : Decide Commit ∙
+		case slot.ConsensusHeight1R2: // ConsensusHeight : FinalizeBlock Commit ∙
 
 			if p.follow(symbols.NT_ConsensusHeight) {
 				p.rtn(symbols.NT_ConsensusHeight, cU, p.cI)
@@ -204,14 +204,14 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			} else {
 				p.parseError(slot.ConsensusRounds1R0, p.cI, followSets[symbols.NT_ConsensusRounds])
 			}
-		case slot.Decide0R0: // Decide : ∙finalize_block
+		case slot.FinalizeBlock0R0: // FinalizeBlock : ∙finalize_block
 
-			p.bsrSet.Add(slot.Decide0R1, cU, p.cI, p.cI+1)
+			p.bsrSet.Add(slot.FinalizeBlock0R1, cU, p.cI, p.cI+1)
 			p.cI++
-			if p.follow(symbols.NT_Decide) {
-				p.rtn(symbols.NT_Decide, cU, p.cI)
+			if p.follow(symbols.NT_FinalizeBlock) {
+				p.rtn(symbols.NT_FinalizeBlock, cU, p.cI)
 			} else {
-				p.parseError(slot.Decide0R0, p.cI, followSets[symbols.NT_Decide])
+				p.parseError(slot.FinalizeBlock0R0, p.cI, followSets[symbols.NT_FinalizeBlock])
 			}
 		case slot.NonProposer0R0: // NonProposer : ∙ProcessProposal
 
@@ -556,35 +556,35 @@ var first = []map[token.Type]string{
 	{
 		token.EOF: "$",
 	},
-	// ConsensusHeight : ∙ConsensusRounds Decide Commit
+	// ConsensusHeight : ∙ConsensusRounds FinalizeBlock Commit
 	{
 		token.T_2: "prepare_proposal",
 		token.T_3: "process_proposal",
 	},
-	// ConsensusHeight : ConsensusRounds ∙Decide Commit
+	// ConsensusHeight : ConsensusRounds ∙FinalizeBlock Commit
 	{
 		token.T_1: "finalize_block",
 	},
-	// ConsensusHeight : ConsensusRounds Decide ∙Commit
+	// ConsensusHeight : ConsensusRounds FinalizeBlock ∙Commit
 	{
 		token.T_0: "commit",
 	},
-	// ConsensusHeight : ConsensusRounds Decide Commit ∙
+	// ConsensusHeight : ConsensusRounds FinalizeBlock Commit ∙
 	{
 		token.EOF: "$",
 		token.T_1: "finalize_block",
 		token.T_2: "prepare_proposal",
 		token.T_3: "process_proposal",
 	},
-	// ConsensusHeight : ∙Decide Commit
+	// ConsensusHeight : ∙FinalizeBlock Commit
 	{
 		token.T_1: "finalize_block",
 	},
-	// ConsensusHeight : Decide ∙Commit
+	// ConsensusHeight : FinalizeBlock ∙Commit
 	{
 		token.T_0: "commit",
 	},
-	// ConsensusHeight : Decide Commit ∙
+	// ConsensusHeight : FinalizeBlock Commit ∙
 	{
 		token.EOF: "$",
 		token.T_1: "finalize_block",
@@ -660,11 +660,11 @@ var first = []map[token.Type]string{
 	{
 		token.T_1: "finalize_block",
 	},
-	// Decide : ∙finalize_block
+	// FinalizeBlock : ∙finalize_block
 	{
 		token.T_1: "finalize_block",
 	},
-	// Decide : finalize_block ∙
+	// FinalizeBlock : finalize_block ∙
 	{
 		token.T_0: "commit",
 	},
@@ -777,7 +777,7 @@ var followSets = []map[token.Type]string{
 	{
 		token.T_1: "finalize_block",
 	},
-	// Decide
+	// FinalizeBlock
 	{
 		token.T_0: "commit",
 	},

@@ -28,7 +28,7 @@ const(
 	NT_ConsensusHeights 
 	NT_ConsensusRound 
 	NT_ConsensusRounds 
-	NT_Decide 
+	NT_FinalizeBlock 
 	NT_InitChain 
 	NT_NonProposer 
 	NT_OfferSnapshot 
@@ -128,7 +128,7 @@ var ntToString = []string {
 	"ConsensusHeights", /* NT_ConsensusHeights */
 	"ConsensusRound", /* NT_ConsensusRound */
 	"ConsensusRounds", /* NT_ConsensusRounds */
-	"Decide", /* NT_Decide */
+	"FinalizeBlock", /* NT_FinalizeBlock */
 	"InitChain", /* NT_InitChain */
 	"NonProposer", /* NT_NonProposer */
 	"OfferSnapshot", /* NT_OfferSnapshot */
@@ -162,7 +162,7 @@ var stringNT = map[string]NT{
 	"ConsensusHeights":NT_ConsensusHeights,
 	"ConsensusRound":NT_ConsensusRound,
 	"ConsensusRounds":NT_ConsensusRounds,
-	"Decide":NT_Decide,
+	"FinalizeBlock":NT_FinalizeBlock,
 	"InitChain":NT_InitChain,
 	"NonProposer":NT_NonProposer,
 	"OfferSnapshot":NT_OfferSnapshot,

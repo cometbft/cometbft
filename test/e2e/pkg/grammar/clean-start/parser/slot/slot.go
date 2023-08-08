@@ -51,8 +51,8 @@ const(
 	ConsensusRounds1R0
 	ConsensusRounds1R1
 	ConsensusRounds1R2
-	Decide0R0
-	Decide0R1
+	FinalizeBlock0R0
+	FinalizeBlock0R1
 	InitChain0R0
 	InitChain0R1
 	NonProposer0R0
@@ -321,7 +321,7 @@ var slots = map[Label]*Slot{
 		symbols.NT_ConsensusHeight, 0, 0, 
 		symbols.Symbols{  
 			symbols.NT_ConsensusRounds, 
-			symbols.NT_Decide, 
+			symbols.NT_FinalizeBlock, 
 			symbols.NT_Commit,
 		}, 
 		ConsensusHeight0R0, 
@@ -330,7 +330,7 @@ var slots = map[Label]*Slot{
 		symbols.NT_ConsensusHeight, 0, 1, 
 		symbols.Symbols{  
 			symbols.NT_ConsensusRounds, 
-			symbols.NT_Decide, 
+			symbols.NT_FinalizeBlock, 
 			symbols.NT_Commit,
 		}, 
 		ConsensusHeight0R1, 
@@ -339,7 +339,7 @@ var slots = map[Label]*Slot{
 		symbols.NT_ConsensusHeight, 0, 2, 
 		symbols.Symbols{  
 			symbols.NT_ConsensusRounds, 
-			symbols.NT_Decide, 
+			symbols.NT_FinalizeBlock, 
 			symbols.NT_Commit,
 		}, 
 		ConsensusHeight0R2, 
@@ -348,7 +348,7 @@ var slots = map[Label]*Slot{
 		symbols.NT_ConsensusHeight, 0, 3, 
 		symbols.Symbols{  
 			symbols.NT_ConsensusRounds, 
-			symbols.NT_Decide, 
+			symbols.NT_FinalizeBlock, 
 			symbols.NT_Commit,
 		}, 
 		ConsensusHeight0R3, 
@@ -356,7 +356,7 @@ var slots = map[Label]*Slot{
 	ConsensusHeight1R0: {
 		symbols.NT_ConsensusHeight, 1, 0, 
 		symbols.Symbols{  
-			symbols.NT_Decide, 
+			symbols.NT_FinalizeBlock, 
 			symbols.NT_Commit,
 		}, 
 		ConsensusHeight1R0, 
@@ -364,7 +364,7 @@ var slots = map[Label]*Slot{
 	ConsensusHeight1R1: {
 		symbols.NT_ConsensusHeight, 1, 1, 
 		symbols.Symbols{  
-			symbols.NT_Decide, 
+			symbols.NT_FinalizeBlock, 
 			symbols.NT_Commit,
 		}, 
 		ConsensusHeight1R1, 
@@ -372,7 +372,7 @@ var slots = map[Label]*Slot{
 	ConsensusHeight1R2: {
 		symbols.NT_ConsensusHeight, 1, 2, 
 		symbols.Symbols{  
-			symbols.NT_Decide, 
+			symbols.NT_FinalizeBlock, 
 			symbols.NT_Commit,
 		}, 
 		ConsensusHeight1R2, 
@@ -481,19 +481,19 @@ var slots = map[Label]*Slot{
 		}, 
 		ConsensusRounds1R2, 
 	},
-	Decide0R0: {
-		symbols.NT_Decide, 0, 0, 
+	FinalizeBlock0R0: {
+		symbols.NT_FinalizeBlock, 0, 0, 
 		symbols.Symbols{  
 			symbols.T_2,
 		}, 
-		Decide0R0, 
+		FinalizeBlock0R0, 
 	},
-	Decide0R1: {
-		symbols.NT_Decide, 0, 1, 
+	FinalizeBlock0R1: {
+		symbols.NT_FinalizeBlock, 0, 1, 
 		symbols.Symbols{  
 			symbols.T_2,
 		}, 
-		Decide0R1, 
+		FinalizeBlock0R1, 
 	},
 	InitChain0R0: {
 		symbols.NT_InitChain, 0, 0, 
@@ -797,8 +797,8 @@ var slotIndex = map[Index]Label {
 	Index{ symbols.NT_ConsensusRounds,1,0 }: ConsensusRounds1R0,
 	Index{ symbols.NT_ConsensusRounds,1,1 }: ConsensusRounds1R1,
 	Index{ symbols.NT_ConsensusRounds,1,2 }: ConsensusRounds1R2,
-	Index{ symbols.NT_Decide,0,0 }: Decide0R0,
-	Index{ symbols.NT_Decide,0,1 }: Decide0R1,
+	Index{ symbols.NT_FinalizeBlock,0,0 }: FinalizeBlock0R0,
+	Index{ symbols.NT_FinalizeBlock,0,1 }: FinalizeBlock0R1,
 	Index{ symbols.NT_InitChain,0,0 }: InitChain0R0,
 	Index{ symbols.NT_InitChain,0,1 }: InitChain0R1,
 	Index{ symbols.NT_NonProposer,0,0 }: NonProposer0R0,
@@ -852,7 +852,7 @@ var alternates = map[symbols.NT][]Label{
 	symbols.NT_Proposer:[]Label{ Proposer0R0,Proposer1R0 },
 	symbols.NT_NonProposer:[]Label{ NonProposer0R0 },
 	symbols.NT_InitChain:[]Label{ InitChain0R0 },
-	symbols.NT_Decide:[]Label{ Decide0R0 },
+	symbols.NT_FinalizeBlock:[]Label{ FinalizeBlock0R0 },
 	symbols.NT_Commit:[]Label{ Commit0R0 },
 	symbols.NT_OfferSnapshot:[]Label{ OfferSnapshot0R0 },
 	symbols.NT_ApplyChunk:[]Label{ ApplyChunk0R0 },

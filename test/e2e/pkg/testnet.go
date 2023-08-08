@@ -20,6 +20,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
+	grpcprivileged "github.com/cometbft/cometbft/rpc/grpc/client/privileged"
 
 	_ "embed"
 )
@@ -557,6 +558,15 @@ func (n Node) GRPCClient(ctx context.Context) (grpcclient.Client, error) {
 		ctx,
 		fmt.Sprintf("127.0.0.1:%v", n.GRPCProxyPort),
 		grpcclient.WithInsecure(),
+	)
+}
+
+// GRPCClient creates a gRPC client for the node.
+func (n Node) GRPCPrivilegedClient(ctx context.Context) (grpcprivileged.Client, error) {
+	return grpcprivileged.New(
+		ctx,
+		fmt.Sprintf("127.0.0.1:%v", n.GRPCProxyPort),
+		grpcprivileged.WithInsecure(),
 	)
 }
 

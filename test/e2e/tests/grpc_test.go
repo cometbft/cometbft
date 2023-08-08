@@ -193,3 +193,48 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 		}
 	})
 }
+
+func TestGRPC_BlockRetainHeight(t *testing.T) {
+	testNode(t, func(t *testing.T, node e2e.Node) {
+		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
+			return
+		}
+
+		ctx, ctxCancel := context.WithTimeout(context.Background(), time.Minute)
+		defer ctxCancel()
+		grpcClient, err := node.GRPCPrivilegedClient(ctx)
+		require.NoError(t, err)
+
+		err = grpcClient.SetBlockRetainHeight(ctx, 3)
+
+		require.NoError(t, err, "Unexpected error for SetBlockRetainHeight")
+
+		res, err := grpcClient.GetBlockRetainHeight(ctx)
+
+		require.NoError(t, err, "Unexpected error for GetBlockRetainHeight")
+		require.NotNil(t, res)
+		require.Equal(t, res.PruningService, 3)
+	})
+}
+
+func TestGRPC_BlockResultsRetainHeight(t *testing.T) {
+	testNode(t, func(t *testing.T, node e2e.Node) {
+		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
+			return
+		}
+
+		ctx, ctxCancel := context.WithTimeout(context.Background(), time.Minute)
+		defer ctxCancel()
+		grpcClient, err := node.GRPCPrivilegedClient(ctx)
+		require.NoError(t, err)
+
+		err = grpcClient.SetBlockResultsRetainHeight(ctx, 3)
+
+		require.NoError(t, err, "Unexpected error for SetBlockResultsRetainHeight")
+
+		height, err := grpcClient.GetBlockResultsRetainHeight(ctx)
+
+		require.NoError(t, err, "Unexpected error for GetBlockRetainHeight")
+		require.Equal(t, height, 3)
+	})
+}

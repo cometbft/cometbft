@@ -167,15 +167,7 @@ func (blockExec *BlockExecutor) ApplyBlock(
 		return state, 0, err
 	}
 	if len(validatorUpdates) > 0 {
-<<<<<<< HEAD
 		blockExec.logger.Debug("updates to validators", "updates", types.ValidatorListString(validatorUpdates))
-=======
-		blockExec.logger.Info("updates to validators", "updates", types.ValidatorListString(validatorUpdates))
-		blockExec.metrics.ValidatorSetUpdates.Add(1)
-	}
-	if abciResponse.ConsensusParamUpdates != nil {
-		blockExec.metrics.ConsensusParamUpdates.Add(1)
->>>>>>> cf230821c (Log proposer's address when correctly accepting a proposal (#1079))
 	}
 
 	// Update the state with the block and responses.

@@ -207,7 +207,7 @@ func (g *GrammarChecker) Verify(reqs []*abci.Request, isCleanStart bool) (bool, 
 	r := g.filterRequests(reqs)
 	// This should not happen in our tests.
 	if len(reqs) == 0 {
-		return false, fmt.Errorf("Execution with no ABCI calls.")
+		return false, fmt.Errorf("execution with no ABCI calls.")
 	}
 	var errors []*Error
 	execution := g.getExecutionString(r)

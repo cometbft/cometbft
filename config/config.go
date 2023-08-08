@@ -618,10 +618,9 @@ func TestGRPCBlockServiceConfig() *GRPCBlockServiceConfig {
 
 // GRPCPrivilegedConfig defines the configuration for the CometBFT gRPC server
 // exposing privileged endpoints.
-
 type GRPCPrivilegedConfig struct {
 	// TCP or Unix socket address for the gRPC server for privileged clients
-	// to listen on. If empty, the gRPC server will be disabled.
+	// to listen on. If empty, the privileged gRPC server will be disabled.
 	ListenAddress string `mapstructure:"laddr"`
 
 	// The gRPC pruning service provides control over the depth of block

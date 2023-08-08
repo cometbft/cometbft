@@ -1,5 +1,15 @@
 # ADR 108: E2E tests for CometBFT's behaviour in respect to ABCI++.
 
+## Table of contents
+
+- [Context](#context)
+- [Decision](#decision)
+	- [ABCI++ requests logging](#1-abci-requests-logging)
+	- [Parsing the logs](#2-parsing-the-logs)
+	- [ABCI++ grammar checker](#3-abci-grammar-checker)
+	- [Supporing additional ABCI++ requests](#suporting-additional-abci-requests)
+- [Status](#status)
+
 ## Context
 
 We want to be able to test whether CommetBFT respects the ABCI++ grammar. To do this, we need to enhance the e2e tests infrastructure. Specifically, we plan to do three things:

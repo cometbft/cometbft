@@ -1396,7 +1396,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		29: if valid(v) && (lockedRound_p ≤ v_r || lockedValue_p = v) then
 		30:   broadcast <PREVOTE, h_p, round_p, id(v)>
 		31: else
-		32:   broadcast <PREVOTE, h_p, round_p, id(v)>
+		32:   broadcast <PREVOTE, h_p, round_p, nil>
 
 		This rule is a bit confusing but breaks down as follows:
 

@@ -1616,16 +1616,25 @@ func (m *NewRoundStepMessage) ValidateBasic() error {
 // ValidateHeight validates the height given the chain's initial height.
 func (m *NewRoundStepMessage) ValidateHeight(initialHeight int64) error {
 	if m.Height < initialHeight {
-		return fmt.Errorf("invalid Height %v (lower than initial height %v)",
-			m.Height, initialHeight)
+		return cmterrors.ErrInvalidField{
+			Field:  "Height",
+			Reason: fmt.Sprintf("%v should be lower than initial height %v", m.Height, initialHeight),
+		}
+
 	}
+
 	if m.Height == initialHeight && m.LastCommitRound != -1 {
-		return fmt.Errorf("invalid LastCommitRound %v (must be -1 for initial height %v)",
-			m.LastCommitRound, initialHeight)
+		return cmterrors.ErrInvalidField{
+			Field:  "LastCommitRound",
+			Reason: fmt.Sprintf("%v must be -1 for initial height %v", m.LastCommitRound, initialHeight),
+		}
 	}
+
 	if m.Height > initialHeight && m.LastCommitRound < 0 {
-		return fmt.Errorf("LastCommitRound can only be negative for initial height %v",
-			initialHeight)
+		return cmterrors.ErrInvalidField{
+			Field:  "LastCommitRound",
+			Reason: fmt.Sprintf("can only be negative for initial height %v", initialHeight),
+		}
 	}
 	return nil
 }
@@ -1658,7 +1667,7 @@ func (m *NewValidBlockMessage) ValidateBasic() error {
 		return cmterrors.ErrNegativeField{Field: "Round"}
 	}
 	if err := m.BlockPartSetHeader.ValidateBasic(); err != nil {
-		return fmt.Errorf("wrong BlockPartSetHeader: %v", err)
+		return cmterrors.ErrWrongField{Field: "BlockPartSetHeader", Err: err}
 	}
 	if m.BlockParts.Size() == 0 {
 		return cmterrors.ErrRequiredField{Field: "blockParts"}
@@ -1746,7 +1755,7 @@ func (m *BlockPartMessage) ValidateBasic() error {
 		return cmterrors.ErrNegativeField{Field: "Round"}
 	}
 	if err := m.Part.ValidateBasic(); err != nil {
-		return fmt.Errorf("wrong Part: %v", err)
+		return cmterrors.ErrWrongField{Field: "Part", Err: err}
 	}
 	return nil
 }
@@ -1827,7 +1836,7 @@ func (m *VoteSetMaj23Message) ValidateBasic() error {
 		return errors.New("invalid Type")
 	}
 	if err := m.BlockID.ValidateBasic(); err != nil {
-		return fmt.Errorf("wrong BlockID: %v", err)
+		return cmterrors.ErrWrongField{Field: "BlockID", Err: err}
 	}
 	return nil
 }
@@ -1854,10 +1863,10 @@ func (m *VoteSetBitsMessage) ValidateBasic() error {
 		return cmterrors.ErrNegativeField{Field: "Height"}
 	}
 	if !types.IsVoteTypeValid(m.Type) {
-		return errors.New("invalid Type")
+		return cmterrors.ErrInvalidField{Field: "Type"}
 	}
 	if err := m.BlockID.ValidateBasic(); err != nil {
-		return fmt.Errorf("wrong BlockID: %v", err)
+		return cmterrors.ErrWrongField{Field: "BlockID", Err: err}
 	}
 	// NOTE: Votes.Size() can be zero if the node does not have any
 	if m.Votes.Size() > types.MaxVotesCount {

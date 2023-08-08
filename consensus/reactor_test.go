@@ -37,6 +37,7 @@ import (
 	statemocks "github.com/cometbft/cometbft/state/mocks"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
 
 //----------------------------------------------
@@ -865,8 +866,8 @@ func TestNewValidBlockMessageValidateBasic(t *testing.T) {
 		expErr     string
 	}{
 		{func(msg *NewValidBlockMessage) {}, ""},
-		{func(msg *NewValidBlockMessage) { msg.Height = -1 }, "negative Height"},
-		{func(msg *NewValidBlockMessage) { msg.Round = -1 }, "negative Round"},
+		{func(msg *NewValidBlockMessage) { msg.Height = -1 }, cmterrors.ErrNegativeField{Field: "Height"}.Error()},
+		{func(msg *NewValidBlockMessage) { msg.Round = -1 }, cmterrors.ErrNegativeField{Field: "Round"}.Error()},
 		{
 			func(msg *NewValidBlockMessage) { msg.BlockPartSetHeader.Total = 2 },
 			"blockParts bit array size 1 not equal to BlockPartSetHeader.Total 2",
@@ -876,7 +877,7 @@ func TestNewValidBlockMessageValidateBasic(t *testing.T) {
 				msg.BlockPartSetHeader.Total = 0
 				msg.BlockParts = bits.NewBitArray(0)
 			},
-			"empty blockParts",
+			cmterrors.ErrRequiredField{Field: "blockParts"}.Error(),
 		},
 		{
 			func(msg *NewValidBlockMessage) { msg.BlockParts = bits.NewBitArray(int(types.MaxBlockPartsCount) + 1) },

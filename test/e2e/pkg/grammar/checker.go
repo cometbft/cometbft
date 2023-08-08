@@ -124,10 +124,13 @@ func (g *GrammarChecker) getExecutionString(reqs []*abci.Request) string {
 
 // Verify verifies whether a list of request satisfy ABCI grammar.
 func (g *GrammarChecker) Verify(reqs []*abci.Request, isCleanStart bool) (bool, error) {
-	r := g.filterRequests(reqs)
-	// This should not happen in our tests.
 	if len(reqs) == 0 {
 		return false, fmt.Errorf("execution with no ABCI calls.")
+	}
+	r := g.filterRequests(reqs)
+	// Check if the execution is incomplete.
+	if len(r) == 0 {
+		return true, nil
 	}
 	var errors []*Error
 	execution := g.getExecutionString(r)

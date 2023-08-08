@@ -70,7 +70,7 @@ func GetABCIRequestString(req *abci.Request) (string, error) {
 }
 ```
 
-*Note:* At the moment, we are not compressing the marshalled request before converting it to `base64` `string` because we are logging the empty requests that take at most 24B. However, if we decide to log the actual requests in the future, we might want to compress them. Based on a few tests, we observed that the size of a request can go up to 7KB.  
+*Note:* At the moment, we are not compressing the marshalled request before converting it to `base64` `string` because we are logging the empty requests that take at most 24 bytes. However, if we decide to log the actual requests in the future, we might want to compress them. Based on a few tests, we observed that the size of a request can go up to 7KB.  
 
 If in the future we want to log another ABCI++ request type, we just need to do the same thing: 
 create a corresponding `abci.Request` and log it via 

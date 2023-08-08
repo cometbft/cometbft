@@ -16,7 +16,7 @@ func TestABCIGrammar(t *testing.T) {
 		}
 		reqs, err := fetchABCIRequests(t, node.Name)
 		if err != nil {
-			t.Error(fmt.Errorf("Collecting of ABCI requests failed: %w", err))
+			t.Error(fmt.Errorf("collecting of ABCI requests failed: %w", err))
 		}
 		for i, r := range reqs {
 			isCleanStart := i == 0

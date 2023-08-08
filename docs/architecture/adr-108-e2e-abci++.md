@@ -1,5 +1,9 @@
 # ADR 108: E2E tests for CometBFT's behaviour in respect to ABCI++.
 
+## Changelog
+- 2023-08-08: Initial version (@nenadmilosevic95)
+
+
 ## Context
 
 We want to be able to test whether CommetBFT respects the ABCI++ grammar. To do this, we need to enhance the e2e tests infrastructure. Specifically, we plan to do three things:

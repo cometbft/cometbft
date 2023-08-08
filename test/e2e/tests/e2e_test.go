@@ -62,6 +62,43 @@ func testNode(t *testing.T, testFunc func(*testing.T, e2e.Node)) {
 	}
 }
 
+// Similar to testNode, except only runs the given test on full nodes or
+// validators. Also only runs the test on the given maximum number of nodes.
+//
+// If maxNodes is set to 0 or below, all full nodes and validators will be
+// tested.
+func testFullNodesOrValidators(t *testing.T, maxNodes int, testFunc func(*testing.T, e2e.Node)) {
+	t.Helper()
+
+	testnet := loadTestnet(t)
+	nodes := testnet.Nodes
+
+	if name := os.Getenv("E2E_NODE"); name != "" {
+		node := testnet.LookupNode(name)
+		require.NotNil(t, node, "node %q not found in testnet %q", name, testnet.Name)
+		nodes = []*e2e.Node{node}
+	}
+
+	nodeCount := 0
+	for _, node := range nodes {
+		if node.Stateless() {
+			continue
+		}
+
+		if node.Mode == e2e.ModeFull || node.Mode == e2e.ModeValidator {
+			node := *node
+			t.Run(node.Name, func(t *testing.T) {
+				t.Parallel()
+				testFunc(t, node)
+			})
+			nodeCount++
+			if maxNodes > 0 && nodeCount >= maxNodes {
+				break
+			}
+		}
+	}
+}
+
 // loadTestnet loads the testnet based on the E2E_MANIFEST envvar.
 func loadTestnet(t *testing.T) e2e.Testnet {
 	t.Helper()

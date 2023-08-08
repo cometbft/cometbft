@@ -9,10 +9,11 @@ import (
 	"fmt"
 	"net"
 
-	cmtnet "github.com/cometbft/cometbft/libs/net"
 	"github.com/cosmos/gogoproto/grpc"
 	ggrpc "google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	cmtnet "github.com/cometbft/cometbft/libs/net"
 )
 
 type Option func(*clientBuilder)
@@ -22,22 +23,25 @@ type Option func(*clientBuilder)
 type Client interface {
 	VersionServiceClient
 	BlockServiceClient
+	BlockResultsServiceClient
 }
 
 type clientBuilder struct {
 	dialerFunc func(context.Context, string) (net.Conn, error)
 	grpcOpts   []ggrpc.DialOption
 
-	versionServiceEnabled bool
-	blockServiceEnabled   bool
+	versionServiceEnabled      bool
+	blockServiceEnabled        bool
+	blockResultsServiceEnabled bool
 }
 
 func newClientBuilder() *clientBuilder {
 	return &clientBuilder{
-		dialerFunc:            defaultDialerFunc,
-		grpcOpts:              make([]ggrpc.DialOption, 0),
-		versionServiceEnabled: true,
-		blockServiceEnabled:   true,
+		dialerFunc:                 defaultDialerFunc,
+		grpcOpts:                   make([]ggrpc.DialOption, 0),
+		versionServiceEnabled:      true,
+		blockServiceEnabled:        true,
+		blockResultsServiceEnabled: true,
 	}
 }
 
@@ -50,6 +54,7 @@ type client struct {
 
 	VersionServiceClient
 	BlockServiceClient
+	BlockResultsServiceClient
 }
 
 // WithInsecure disables transport security for the underlying client
@@ -117,10 +122,15 @@ func New(ctx context.Context, addr string, opts ...Option) (Client, error) {
 	if builder.blockServiceEnabled {
 		blockServiceClient = newBlockServiceClient(conn)
 	}
+	blockResultServiceClient := newDisabledBlockResultsServiceClient()
+	if builder.blockResultsServiceEnabled {
+		blockResultServiceClient = newBlockResultsServiceClient(conn)
+	}
 	client := &client{
-		conn:                 conn,
-		VersionServiceClient: versionServiceClient,
-		BlockServiceClient:   blockServiceClient,
+		conn:                      conn,
+		VersionServiceClient:      versionServiceClient,
+		BlockServiceClient:        blockServiceClient,
+		BlockResultsServiceClient: blockResultServiceClient,
 	}
 	return client, nil
 }

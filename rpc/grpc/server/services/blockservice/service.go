@@ -8,6 +8,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
 	blocksvc "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
+	ptypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 	"google.golang.org/grpc/codes"
@@ -31,29 +32,67 @@ func New(store *store.BlockStore, eventBus *types.EventBus, logger log.Logger) b
 
 // GetByHeight implements v1.BlockServiceServer GetByHeight method
 func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByHeightRequest) (*blocksvc.GetByHeightResponse, error) {
-	height, err := validateOrUpdateBlockHeight(
-		req.Height,
-		s.store.Base(),
-		s.store.Height(),
-	)
+	logger := s.logger.With("endpoint", "GetByHeight")
+	if err := validateBlockHeight(req.Height, s.store.Base(), s.store.Height()); err != nil {
+		return nil, err
+	}
+
+	blockID, block, err := s.getBlock(req.Height, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	block := s.store.LoadBlock(height)
-	blockProto, err := block.ToProto()
+	return &blocksvc.GetByHeightResponse{
+		BlockId: blockID,
+		Block:   block,
+	}, nil
+}
+
+// GetLatest implements v1.BlockServiceServer.
+func (s *blockServiceServer) GetLatest(context.Context, *blocksvc.GetLatestRequest) (*blocksvc.GetLatestResponse, error) {
+	logger := s.logger.With("endpoint", "GetLatest")
+
+	latestHeight := s.store.Height()
+	if latestHeight < 1 {
+		return nil, status.Error(codes.NotFound, "No block data yet")
+	}
+
+	blockID, block, err := s.getBlock(latestHeight, logger)
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Block not found for height %d", height))
+		return nil, err
+	}
+
+	return &blocksvc.GetLatestResponse{
+		BlockId: blockID,
+		Block:   block,
+	}, nil
+}
+
+func (s *blockServiceServer) getBlock(height int64, logger log.Logger) (*ptypes.BlockID, *ptypes.Block, error) {
+	traceID, err := rpctrace.New()
+	if err != nil {
+		logger.Error("Error generating RPC trace ID", "err", err)
+		return nil, nil, status.Error(codes.Internal, "Internal server error - see logs for details")
+	}
+
+	block := s.store.LoadBlock(height)
+	if block == nil {
+		return nil, nil, status.Errorf(codes.NotFound, fmt.Sprintf("Block not found for height %d", height))
+	}
+	bp, err := block.ToProto()
+	if err != nil {
+		logger.Error("Error attempting to convert block to its Protobuf representation", "err", err, "traceID", traceID)
+		return nil, nil, status.Errorf(codes.Internal, fmt.Sprintf("Failed to load block from store (see logs for trace ID: %s)", traceID))
 	}
 
 	blockMeta := s.store.LoadBlockMeta(height)
+	if blockMeta == nil {
+		logger.Error("Failed to load block meta when block was successfully loaded", "height", height)
+		return nil, nil, status.Error(codes.Internal, "Internal server error - see logs for details")
+	}
 
 	blockIDProto := blockMeta.BlockID.ToProto()
-
-	return &blocksvc.GetByHeightResponse{
-		BlockId: &blockIDProto,
-		Block:   blockProto,
-	}, nil
+	return &blockIDProto, bp, nil
 }
 
 // GetLatestHeight implements v1.BlockServiceServer GetLatestHeight method
@@ -105,18 +144,16 @@ func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest,
 	}
 }
 
-func validateOrUpdateBlockHeight(height, baseHeight, latestHeight int64) (int64, error) {
+func validateBlockHeight(height, baseHeight, latestHeight int64) error {
 	switch {
-	case height == 0:
-		return latestHeight, nil
-	case height < 0:
-		return -1, status.Error(codes.InvalidArgument, "Height cannot be negative")
+	case height <= 0:
+		return status.Error(codes.InvalidArgument, "Height cannot be zero or negative")
 	case height < baseHeight:
-		return -1, status.Errorf(codes.InvalidArgument, "Requested height %d is below base height %d", height, baseHeight)
+		return status.Errorf(codes.InvalidArgument, "Requested height %d is below base height %d", height, baseHeight)
 	case height > latestHeight:
-		return -1, status.Errorf(codes.InvalidArgument, "Requested height %d is higher than latest height %d", height, latestHeight)
+		return status.Errorf(codes.InvalidArgument, "Requested height %d is higher than latest height %d", height, latestHeight)
 	}
-	return height, nil
+	return nil
 }
 
 func getHeightFromMsg(msg cmtpubsub.Message) (int64, error) {

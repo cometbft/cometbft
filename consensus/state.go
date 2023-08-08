@@ -28,6 +28,7 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
@@ -973,7 +974,7 @@ func (cs *State) handleTimeout(ti timeoutInfo, rs cstypes.RoundState) {
 		cs.enterNewRound(ti.Height, ti.Round+1)
 
 	default:
-		panic(fmt.Sprintf("invalid timeout step: %v", ti.Step))
+		panic(cmterrors.ErrInvalidField{Field: "timeout_step"})
 	}
 }
 

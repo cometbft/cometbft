@@ -1,7 +1,6 @@
 package consensus
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"sync"
@@ -1598,7 +1597,7 @@ func (m *NewRoundStepMessage) ValidateBasic() error {
 		return cmterrors.ErrNegativeField{Field: "Round"}
 	}
 	if !m.Step.IsValid() {
-		return errors.New("invalid Step")
+		return cmterrors.ErrInvalidField{Field: "Step"}
 	}
 
 	// NOTE: SecondsSinceStartTime may be negative
@@ -1607,7 +1606,7 @@ func (m *NewRoundStepMessage) ValidateBasic() error {
 	// since it can be specified in genesis. The reactor will have to validate this via
 	// ValidateHeight().
 	if m.LastCommitRound < -1 {
-		return errors.New("invalid LastCommitRound (cannot be < -1)")
+		return cmterrors.ErrInvalidField{Field: "LastCommitRound", Reason: "cannot be < -1"}
 	}
 
 	return nil
@@ -1801,7 +1800,7 @@ func (m *HasVoteMessage) ValidateBasic() error {
 		return cmterrors.ErrNegativeField{Field: "Round"}
 	}
 	if !types.IsVoteTypeValid(m.Type) {
-		return errors.New("invalid Type")
+		return cmterrors.ErrInvalidField{Field: "Type"}
 	}
 	if m.Index < 0 {
 		return cmterrors.ErrNegativeField{Field: "Index"}
@@ -1833,7 +1832,7 @@ func (m *VoteSetMaj23Message) ValidateBasic() error {
 		return cmterrors.ErrNegativeField{Field: "Round"}
 	}
 	if !types.IsVoteTypeValid(m.Type) {
-		return errors.New("invalid Type")
+		return cmterrors.ErrInvalidField{Field: "Type"}
 	}
 	if err := m.BlockID.ValidateBasic(); err != nil {
 		return cmterrors.ErrWrongField{Field: "BlockID", Err: err}
@@ -1892,7 +1891,7 @@ type HasProposalBlockPartMessage struct {
 // ValidateBasic performs basic validation.
 func (m *HasProposalBlockPartMessage) ValidateBasic() error {
 	if m.Height < 1 {
-		return errors.New("invalid Height (< 1)")
+		return cmterrors.ErrInvalidField{Field: "Height", Reason: "( < 1 )"}
 	}
 	if m.Round < 0 {
 		return cmterrors.ErrNegativeField{Field: "Round"}

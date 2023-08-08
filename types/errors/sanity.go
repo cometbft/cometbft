@@ -13,7 +13,7 @@ type (
 		Field string
 	}
 
-	// ErrInvalidField is returned every time any field does not pass some validity check
+	// ErrInvalidField is returned every time a value does not pass a validity check
 	ErrInvalidField struct {
 		Field  string
 		Reason string

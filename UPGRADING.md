@@ -13,6 +13,13 @@ This guide provides instructions for upgrading to specific versions of CometBFT.
 * Config fields `TTLDuration` and `TTLNumBlocks`, which were only used by the priority
   mempool, have been removed.
 
+### Consensus Changes
+
+* Removed the `consensus.State.ReplayFile` and `consensus.RunReplayFile`
+  methods, as these were exclusively used by the `replay` and `replay-console`
+  subcommands, which were also removed
+  ([\#1170](https://github.com/cometbft/cometbft/pull/1170))
+
 ### Mempool Changes
 
 * The priority mempool (what was referred in the code as version `v1`) has been
@@ -40,8 +47,14 @@ This guide provides instructions for upgrading to specific versions of CometBFT.
     mempool reactor instead of the data structure, so it is no longer needed in
     this method.
 
+### Command Line Subcommands
+
+* Removed the `replay` and `replay-console` subcommands
+  ([\#1170](https://github.com/cometbft/cometbft/pull/1170))
+
 ### RPC Changes
 
+### `block_results` RPC endpoint - query result display change (breaking)
 * The WebSocket (`/websocket`) endpoint has been entirely removed.
 * `block_results` RPC endpoint: When returning a block, all block events are
   displayed within the `finalize_block_events` field. For blocks generated with

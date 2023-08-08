@@ -90,7 +90,7 @@ func TestBlock(t *testing.T) {
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
 	requireConnect(t, rpcConfig.ListenAddress, 20)
-	cli, err := httpclient.New(rpcConfig.ListenAddress, "/websocket")
+	cli, err := httpclient.New(rpcConfig.ListenAddress)
 	require.NoError(t, err)
 	resultBlock, err := cli.Block(context.Background(), &testHeight)
 	require.NoError(t, err)
@@ -142,7 +142,7 @@ func TestTxSearch(t *testing.T) {
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
 	requireConnect(t, rpcConfig.ListenAddress, 20)
-	cli, err := httpclient.New(rpcConfig.ListenAddress, "/websocket")
+	cli, err := httpclient.New(rpcConfig.ListenAddress)
 	require.NoError(t, err)
 
 	page := 1
@@ -190,7 +190,7 @@ func TestTx(t *testing.T) {
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
 	requireConnect(t, rpcConfig.ListenAddress, 20)
-	cli, err := httpclient.New(rpcConfig.ListenAddress, "/websocket")
+	cli, err := httpclient.New(rpcConfig.ListenAddress)
 	require.NoError(t, err)
 
 	res, err := cli.Tx(context.Background(), testHash, false)
@@ -239,7 +239,7 @@ func TestConsensusParams(t *testing.T) {
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
 	requireConnect(t, rpcConfig.ListenAddress, 20)
-	cli, err := httpclient.New(rpcConfig.ListenAddress, "/websocket")
+	cli, err := httpclient.New(rpcConfig.ListenAddress)
 	require.NoError(t, err)
 	params, err := cli.ConsensusParams(context.Background(), &testHeight)
 	require.NoError(t, err)
@@ -289,7 +289,7 @@ func TestBlockResults(t *testing.T) {
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
 	requireConnect(t, rpcConfig.ListenAddress, 20)
-	cli, err := httpclient.New(rpcConfig.ListenAddress, "/websocket")
+	cli, err := httpclient.New(rpcConfig.ListenAddress)
 	require.NoError(t, err)
 	res, err := cli.BlockResults(context.Background(), &testHeight)
 	require.NoError(t, err)
@@ -336,7 +336,7 @@ func TestCommit(t *testing.T) {
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
 	requireConnect(t, rpcConfig.ListenAddress, 20)
-	cli, err := httpclient.New(rpcConfig.ListenAddress, "/websocket")
+	cli, err := httpclient.New(rpcConfig.ListenAddress)
 	require.NoError(t, err)
 	res, err := cli.Commit(context.Background(), &testHeight)
 	require.NoError(t, err)
@@ -389,7 +389,7 @@ func TestBlockByHash(t *testing.T) {
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
 	requireConnect(t, rpcConfig.ListenAddress, 20)
-	cli, err := httpclient.New(rpcConfig.ListenAddress, "/websocket")
+	cli, err := httpclient.New(rpcConfig.ListenAddress)
 	require.NoError(t, err)
 	res, err := cli.BlockByHash(context.Background(), testHash)
 	require.NoError(t, err)
@@ -441,7 +441,7 @@ func TestBlockchain(t *testing.T) {
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
 	requireConnect(t, rpcConfig.ListenAddress, 20)
-	cli, err := httpclient.New(rpcConfig.ListenAddress, "/websocket")
+	cli, err := httpclient.New(rpcConfig.ListenAddress)
 	require.NoError(t, err)
 	res, err := cli.BlockchainInfo(context.Background(), 0, 100)
 	require.NoError(t, err)
@@ -493,7 +493,7 @@ func TestValidators(t *testing.T) {
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
 	requireConnect(t, rpcConfig.ListenAddress, 20)
-	cli, err := httpclient.New(rpcConfig.ListenAddress, "/websocket")
+	cli, err := httpclient.New(rpcConfig.ListenAddress)
 	require.NoError(t, err)
 
 	testPage := 1
@@ -553,7 +553,7 @@ func TestBlockSearch(t *testing.T) {
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
 	requireConnect(t, rpcConfig.ListenAddress, 20)
-	cli, err := httpclient.New(rpcConfig.ListenAddress, "/websocket")
+	cli, err := httpclient.New(rpcConfig.ListenAddress)
 	require.NoError(t, err)
 
 	testPage := 1

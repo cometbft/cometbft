@@ -115,7 +115,7 @@ type State struct {
 	statsMsgQueue chan msgInfo
 
 	// we use eventBus to trigger msg broadcasts in the reactor,
-	// and to notify external subscribers, eg. through a websocket
+	// and to notify external subscribers
 	eventBus *types.EventBus
 
 	// a Write-Ahead Log ensures we can recover from any kind of crash
@@ -2024,7 +2024,6 @@ func (cs *State) handleCompleteProposal(blockHeight int64) {
 // Attempt to add the vote. if its a duplicate signature, dupeout the validator
 func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 	added, err := cs.addVote(vote, peerID)
-
 	// NOTE: some of these errors are swallowed here
 	if err != nil {
 		// If the vote height is off, we'll just ignore it,

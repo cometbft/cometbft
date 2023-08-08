@@ -24,17 +24,13 @@ import (
 	"context"
 
 	"github.com/cometbft/cometbft/libs/bytes"
-	"github.com/cometbft/cometbft/libs/service"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cometbft/cometbft/types"
 )
 
-// Client wraps most important rpc calls a client would make if you want to
-// listen for events, test if it also implements events.EventSwitch.
+// Client wraps most important RPC calls a client would make.
 type Client interface {
-	service.Service
 	ABCIClient
-	EventsClient
 	HistoryClient
 	NetworkClient
 	SignClient
@@ -113,23 +109,6 @@ type NetworkClient interface {
 	ConsensusState(context.Context) (*ctypes.ResultConsensusState, error)
 	ConsensusParams(ctx context.Context, height *int64) (*ctypes.ResultConsensusParams, error)
 	Health(context.Context) (*ctypes.ResultHealth, error)
-}
-
-// EventsClient is reactive, you can subscribe to any message, given the proper
-// string. see cometbft/types/events.go
-type EventsClient interface {
-	// Subscribe subscribes given subscriber to query. Returns a channel with
-	// cap=1 onto which events are published. An error is returned if it fails to
-	// subscribe. outCapacity can be used optionally to set capacity for the
-	// channel. Channel is never closed to prevent accidental reads.
-	//
-	// ctx cannot be used to unsubscribe. To unsubscribe, use either Unsubscribe
-	// or UnsubscribeAll.
-	Subscribe(ctx context.Context, subscriber, query string, outCapacity ...int) (out <-chan ctypes.ResultEvent, err error)
-	// Unsubscribe unsubscribes given subscriber from query.
-	Unsubscribe(ctx context.Context, subscriber, query string) error
-	// UnsubscribeAll unsubscribes given subscriber from all the queries.
-	UnsubscribeAll(ctx context.Context, subscriber string) error
 }
 
 // MempoolClient shows us data about current mempool state.

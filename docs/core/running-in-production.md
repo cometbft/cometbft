@@ -62,13 +62,13 @@ If your `consensus.wal` is corrupted, see [below](#wal-corruption).
 
 ### Mempool WAL
 
-The `mempool.wal` logs all incoming txs before running CheckTx, but is
-otherwise not used in any programmatic way. It's just a kind of manual
-safe guard. Note the mempool provides no durability guarantees - a tx sent to one or many nodes
+The `mempool.wal` logs all incoming txs before running CheckTx, but is otherwise
+not used in any programmatic way. It's just a kind of manual safe guard. Note
+the mempool provides no durability guarantees - a tx sent to one or many nodes
 may never make it into the blockchain if those nodes crash before being able to
-propose it. Clients must monitor their txs by subscribing over websockets,
-polling for them, or using `/broadcast_tx_commit`. In the worst case, txs can be
-resent from the mempool WAL manually.
+propose it. Clients must monitor their txs by polling for them, or using
+`/broadcast_tx_commit`. In the worst case, txs can be resent from the mempool
+WAL manually.
 
 For the above reasons, the `mempool.wal` is disabled by default. To enable, set
 `mempool.wal_dir` to where you want the WAL to be located (e.g.

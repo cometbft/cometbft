@@ -2,11 +2,8 @@ package client
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
-
-	"github.com/cometbft/cometbft/types"
 )
 
 // Waiter is informed of current height, decided whether to quit early
@@ -50,34 +47,4 @@ func WaitForHeight(c StatusClient, h int64, waiter Waiter) error {
 	}
 
 	return nil
-}
-
-// WaitForOneEvent subscribes to a websocket event for the given
-// event time and returns upon receiving it one time, or
-// when the timeout duration has expired.
-//
-// This handles subscribing and unsubscribing under the hood
-func WaitForOneEvent(c EventsClient, evtTyp string, timeout time.Duration) (types.TMEventData, error) {
-	const subscriber = "helpers"
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	// register for the next event of this type
-	eventCh, err := c.Subscribe(ctx, subscriber, types.QueryForEvent(evtTyp).String())
-	if err != nil {
-		return nil, fmt.Errorf("failed to subscribe: %w", err)
-	}
-	// make sure to unregister after the test is over
-	defer func() {
-		if deferErr := c.UnsubscribeAll(ctx, subscriber); deferErr != nil {
-			panic(deferErr)
-		}
-	}()
-
-	select {
-	case event := <-eventCh:
-		return event.Data, nil
-	case <-ctx.Done():
-		return nil, errors.New("timed out waiting for event")
-	}
 }

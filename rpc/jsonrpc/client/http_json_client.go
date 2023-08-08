@@ -18,8 +18,6 @@ import (
 const (
 	protoHTTP  = "http"
 	protoHTTPS = "https"
-	protoWSS   = "wss"
-	protoWS    = "ws"
 	protoTCP   = "tcp"
 	protoUNIX  = "unix"
 )
@@ -61,7 +59,7 @@ func newParsedURL(remoteAddr string) (*parsedURL, error) {
 func (u *parsedURL) SetDefaultSchemeHTTP() {
 	// protocol to use for http operations, to support both http and https
 	switch u.Scheme {
-	case protoHTTP, protoHTTPS, protoWS, protoWSS:
+	case protoHTTP, protoHTTPS:
 		// known protocols not changed
 	default:
 		// default to http for unknown protocols (ex. tcp)
@@ -136,8 +134,10 @@ var _ HTTPClient = (*Client)(nil)
 
 // Both Client and RequestBatch can facilitate calls to the JSON
 // RPC endpoint.
-var _ Caller = (*Client)(nil)
-var _ Caller = (*RequestBatch)(nil)
+var (
+	_ Caller = (*Client)(nil)
+	_ Caller = (*RequestBatch)(nil)
+)
 
 var _ fmt.Stringer = (*Client)(nil)
 

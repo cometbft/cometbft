@@ -34,8 +34,6 @@ const (
 	unixSocket = "/tmp/rpc_test.sock"
 	unixAddr   = "unix://" + unixSocket
 
-	websocketEndpoint = "/websocket/endpoint"
-
 	testVal = "acbd"
 )
 
@@ -64,7 +62,6 @@ type ResultEchoWithDefault struct {
 // Define some routes
 var Routes = map[string]*server.RPCFunc{
 	"echo":            server.NewRPCFunc(EchoResult, "arg"),
-	"echo_ws":         server.NewWSRPCFunc(EchoWSResult, "arg"),
 	"echo_bytes":      server.NewRPCFunc(EchoBytesResult, "arg"),
 	"echo_data_bytes": server.NewRPCFunc(EchoDataBytesResult, "arg"),
 	"echo_int":        server.NewRPCFunc(EchoIntResult, "arg"),
@@ -72,10 +69,6 @@ var Routes = map[string]*server.RPCFunc{
 }
 
 func EchoResult(_ *types.Context, v string) (*ResultEcho, error) {
-	return &ResultEcho{v}, nil
-}
-
-func EchoWSResult(_ *types.Context, v string) (*ResultEcho, error) {
 	return &ResultEcho{v}, nil
 }
 
@@ -134,9 +127,6 @@ func setup() {
 	tcpLogger := logger.With("socket", "tcp")
 	mux := http.NewServeMux()
 	server.RegisterRPCFuncs(mux, Routes, tcpLogger)
-	wm := server.NewWebsocketManager(Routes, server.ReadWait(5*time.Second), server.PingPeriod(1*time.Second))
-	wm.SetLogger(tcpLogger)
-	mux.HandleFunc(websocketEndpoint, wm.WebsocketHandler)
 	config := server.DefaultConfig()
 	listener1, err := server.Listen(tcpAddr, config.MaxOpenConnections)
 	if err != nil {
@@ -151,9 +141,6 @@ func setup() {
 	unixLogger := logger.With("socket", "unix")
 	mux2 := http.NewServeMux()
 	server.RegisterRPCFuncs(mux2, Routes, unixLogger)
-	wm = server.NewWebsocketManager(Routes)
-	wm.SetLogger(unixLogger)
-	mux2.HandleFunc(websocketEndpoint, wm.WebsocketHandler)
 	listener2, err := server.Listen(unixAddr, config.MaxOpenConnections)
 	if err != nil {
 		panic(err)
@@ -255,60 +242,6 @@ func testWithHTTPClient(t *testing.T, cl client.HTTPClient) {
 	assert.Equal(t, got6, val6)
 }
 
-func echoViaWS(cl *client.WSClient, val string) (string, error) {
-	params := map[string]interface{}{
-		"arg": val,
-	}
-	err := cl.Call(context.Background(), "echo", params)
-	if err != nil {
-		return "", err
-	}
-
-	msg := <-cl.ResponsesCh
-	if msg.Error != nil {
-		return "", err
-	}
-	result := new(ResultEcho)
-	err = json.Unmarshal(msg.Result, result)
-	if err != nil {
-		return "", nil
-	}
-	return result.Value, nil
-}
-
-func echoBytesViaWS(cl *client.WSClient, bytes []byte) ([]byte, error) {
-	params := map[string]interface{}{
-		"arg": bytes,
-	}
-	err := cl.Call(context.Background(), "echo_bytes", params)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	msg := <-cl.ResponsesCh
-	if msg.Error != nil {
-		return []byte{}, msg.Error
-	}
-	result := new(ResultEchoBytes)
-	err = json.Unmarshal(msg.Result, result)
-	if err != nil {
-		return []byte{}, nil
-	}
-	return result.Value, nil
-}
-
-func testWithWSClient(t *testing.T, cl *client.WSClient) {
-	val := testVal
-	got, err := echoViaWS(cl, val)
-	require.Nil(t, err)
-	assert.Equal(t, got, val)
-
-	val2 := randBytes(t)
-	got2, err := echoBytesViaWS(cl, val2)
-	require.Nil(t, err)
-	assert.Equal(t, got2, val2)
-}
-
 //-------------
 
 func TestServersAndClientsBasic(t *testing.T) {
@@ -323,16 +256,6 @@ func TestServersAndClientsBasic(t *testing.T) {
 		require.Nil(t, err)
 		fmt.Printf("=== testing server on %s using JSONRPC client", addr)
 		testWithHTTPClient(t, cl2)
-
-		cl3, err := client.NewWS(addr, websocketEndpoint)
-		require.Nil(t, err)
-		cl3.SetLogger(log.TestingLogger())
-		err = cl3.Start()
-		require.Nil(t, err)
-		fmt.Printf("=== testing server on %s using WS client", addr)
-		testWithWSClient(t, cl3)
-		err = cl3.Stop()
-		require.NoError(t, err)
 	}
 }
 
@@ -354,81 +277,6 @@ func TestQuotedStringArg(t *testing.T) {
 	got, err := echoViaHTTP(cl, val)
 	require.Nil(t, err)
 	assert.Equal(t, got, val)
-}
-
-func TestWSNewWSRPCFunc(t *testing.T) {
-	cl, err := client.NewWS(tcpAddr, websocketEndpoint)
-	require.Nil(t, err)
-	cl.SetLogger(log.TestingLogger())
-	err = cl.Start()
-	require.Nil(t, err)
-	t.Cleanup(func() {
-		if err := cl.Stop(); err != nil {
-			t.Error(err)
-		}
-	})
-
-	val := testVal
-	params := map[string]interface{}{
-		"arg": val,
-	}
-	err = cl.Call(context.Background(), "echo_ws", params)
-	require.Nil(t, err)
-
-	msg := <-cl.ResponsesCh
-	if msg.Error != nil {
-		t.Fatal(err)
-	}
-	result := new(ResultEcho)
-	err = json.Unmarshal(msg.Result, result)
-	require.Nil(t, err)
-	got := result.Value
-	assert.Equal(t, got, val)
-}
-
-func TestWSHandlesArrayParams(t *testing.T) {
-	cl, err := client.NewWS(tcpAddr, websocketEndpoint)
-	require.Nil(t, err)
-	cl.SetLogger(log.TestingLogger())
-	err = cl.Start()
-	require.Nil(t, err)
-	t.Cleanup(func() {
-		if err := cl.Stop(); err != nil {
-			t.Error(err)
-		}
-	})
-
-	val := testVal
-	params := []interface{}{val}
-	err = cl.CallWithArrayParams(context.Background(), "echo_ws", params)
-	require.Nil(t, err)
-
-	msg := <-cl.ResponsesCh
-	if msg.Error != nil {
-		t.Fatalf("%+v", err)
-	}
-	result := new(ResultEcho)
-	err = json.Unmarshal(msg.Result, result)
-	require.Nil(t, err)
-	got := result.Value
-	assert.Equal(t, got, val)
-}
-
-// TestWSClientPingPong checks that a client & server exchange pings
-// & pongs so connection stays alive.
-func TestWSClientPingPong(t *testing.T) {
-	cl, err := client.NewWS(tcpAddr, websocketEndpoint)
-	require.Nil(t, err)
-	cl.SetLogger(log.TestingLogger())
-	err = cl.Start()
-	require.Nil(t, err)
-	t.Cleanup(func() {
-		if err := cl.Stop(); err != nil {
-			t.Error(err)
-		}
-	})
-
-	time.Sleep(6 * time.Second)
 }
 
 func TestJSONRPCCaching(t *testing.T) {

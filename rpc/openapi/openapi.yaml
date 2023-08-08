@@ -9,7 +9,6 @@ info:
 
     * URI over HTTP
     * JSONRPC over HTTP
-    * JSONRPC over websockets
 
     ## Configuration
 
@@ -50,18 +49,6 @@ info:
 
         curl --header "Content-Type: application/json" --request POST --data '{"method": "block", "params": ["5"], "id": 1}' localhost:26657
 
-    ## JSONRPC/websockets
-
-    JSONRPC requests can be also made via websocket.
-    The websocket endpoint is at `/websocket`, e.g. `localhost:26657/websocket`.
-    Asynchronous RPC functions like event `subscribe` and `unsubscribe` are
-    only available via websockets.
-
-    For example using the [websocat](https://github.com/vi/websocat) tool, you can subscribe for 'NewBlock` events
-    with the following command:
-
-        echo '{ "jsonrpc": "2.0","method": "subscribe","id": 0,"params": {"query": "tm.event='"'NewBlock'"'"} }' | websocat -n -t ws://127.0.0.1:26657/websocket
-
   version: "main"
   license:
     name: Apache 2.0
@@ -90,12 +77,9 @@ paths:
         - Tx
       operationId: broadcast_tx_sync
       description: |
-        If you want to be sure that the transaction is included in a block, you can
-        subscribe for the result using JSONRPC via a websocket. See
-        https://docs.cometbft.com/main/core/subscription.html
-        If you haven't received anything after a couple of blocks, resend it. If the
-        same happens again, send it to some other node. A few reasons why it could
-        happen:
+        If you do not see the transaction included in any block after a few
+        blocks, resend it. If the same happens again, send it to some other
+        node. A few reasons why it could happen:
 
         1. malicious node can drop or pretend it had committed your tx
         2. malicious proposer (not necessary the one you're communicating with) can
@@ -134,12 +118,9 @@ paths:
         - Tx
       operationId: broadcast_tx_async
       description: |
-        If you want to be sure that the transaction is included in a block, you can
-        subscribe for the result using JSONRPC via a websocket. See
-        https://docs.cometbft.com/main/core/subscription.html
-        If you haven't received anything after a couple of blocks, resend it. If the
-        same happens again, send it to some other node. A few reasons why it could
-        happen:
+        If you do not see the transaction included in any block after a few
+        blocks, resend it. If the same happens again, send it to some other
+        node. A few reasons why it could happen:
 
         1. malicious node can drop or pretend it had committed your tx
         2. malicious proposer (not necessary the one you're communicating with) can
@@ -179,9 +160,7 @@ paths:
       operationId: broadcast_tx_commit
       description: |
         IMPORTANT: use only for testing and development. In production, use
-        BroadcastTxSync or BroadcastTxAsync. You can subscribe for the transaction
-        result using JSONRPC via a websocket. See
-        https://docs.cometbft.com/main/core/subscription.html
+        BroadcastTxSync or BroadcastTxAsync.
 
         CONTRACT: only returns error if mempool.CheckTx() errs or if we timeout
         waiting for tx to commit.
@@ -872,8 +851,6 @@ paths:
       summary: Search for transactions
       description: |
         Search for transactions w/ their results.
-
-        See /subscribe for the query syntax.
       operationId: tx_search
       parameters:
         - in: query
@@ -935,8 +912,6 @@ paths:
       summary: Search for blocks by BeginBlock and EndBlock events
       description: |
         Search for blocks by BeginBlock and EndBlock events.
-
-        See /subscribe for the query syntax.
       operationId: block_search
       parameters:
         - in: query

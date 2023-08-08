@@ -122,50 +122,13 @@ cors_allowed_headers = ["Origin", "Accept", "Content-Type", "X-Requested-With", 
 # Activate unsafe RPC commands like /dial_seeds and /unsafe_flush_mempool
 unsafe = false
 
-# Maximum number of simultaneous connections (including WebSocket).
+# Maximum number of simultaneous connections.
 # If you want to accept a larger number than the default, make sure
 # you increase your OS limits.
 # 0 - unlimited.
 # Should be < {ulimit -Sn} - {MaxNumInboundPeers} - {MaxNumOutboundPeers} - {N of wal, db and other open files}
 # 1024 - 40 - 10 - 50 = 924 = ~900
 max_open_connections = 900
-
-# Maximum number of unique clientIDs that can /subscribe
-# If you're using /broadcast_tx_commit, set to the estimated maximum number
-# of broadcast_tx_commit calls per block.
-max_subscription_clients = 100
-
-# Maximum number of unique queries a given client can /subscribe to
-# If you're using /broadcast_tx_commit, set to the estimated maximum number
-# of broadcast_tx_commit calls per block.
-max_subscriptions_per_client = 5
-
-# Experimental parameter to specify the maximum number of events a node will
-# buffer, per subscription, before returning an error and closing the
-# subscription. Must be set to at least 100, but higher values will accommodate
-# higher event throughput rates (and will use more memory).
-experimental_subscription_buffer_size = 200
-
-# Experimental parameter to specify the maximum number of RPC responses that
-# can be buffered per WebSocket client. If clients cannot read from the
-# WebSocket endpoint fast enough, they will be disconnected, so increasing this
-# parameter may reduce the chances of them being disconnected (but will cause
-# the node to use more memory).
-#
-# Must be at least the same as "experimental_subscription_buffer_size",
-# otherwise connections could be dropped unnecessarily. This value should
-# ideally be somewhat higher than "experimental_subscription_buffer_size" to
-# accommodate non-subscription-related RPC responses.
-experimental_websocket_write_buffer_size = 200
-
-# If a WebSocket client cannot read fast enough, at present we may
-# silently drop events instead of generating an error or disconnecting the
-# client.
-#
-# Enabling this experimental parameter will cause the WebSocket connection to
-# be closed instead if it cannot read fast enough, allowing for greater
-# predictability in subscription behavior.
-experimental_close_on_slow_client = false
 
 # How long to wait for a tx to be committed during /broadcast_tx_commit.
 # WARNING: Using a value larger than 10s will result in increasing the

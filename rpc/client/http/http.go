@@ -2,17 +2,10 @@ package http
 
 import (
 	"context"
-	"errors"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/cometbft/cometbft/libs/bytes"
-	cmtjson "github.com/cometbft/cometbft/libs/json"
-	"github.com/cometbft/cometbft/libs/log"
-	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
-	"github.com/cometbft/cometbft/libs/service"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	jsonrpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
@@ -21,17 +14,11 @@ import (
 
 /*
 HTTP is a Client implementation that communicates with a CometBFT node over
-JSON RPC and WebSockets.
+JSON RPC.
 
 This is the main implementation you probably want to use in production code.
 There are other implementations when calling the CometBFT node in-process
 (Local), or when you want to mock out the server for test code (mock).
-
-You can subscribe for any event published by CometBFT using Subscribe method.
-Note delivery is best-effort. If you don't read events fast enough or network is
-slow, CometBFT might cancel the subscription. The client will attempt to
-resubscribe (you don't need to do anything). It will keep trying every second
-indefinitely until successful.
 
 Request batching is available for JSON RPC requests over HTTP, which conforms to
 the JSON RPC specification (https://www.jsonrpc.org/specification#batch). See
@@ -39,7 +26,7 @@ the example for more details.
 
 Example:
 
-	c, err := New("http://192.168.1.10:26657", "/websocket")
+	c, err := New("http://192.168.1.10:26657")
 	if err != nil {
 		// handle error
 	}
@@ -63,7 +50,6 @@ type HTTP struct {
 	rpc    *jsonrpcclient.Client
 
 	*baseRPCClient
-	*WSEvents
 }
 
 // BatchHTTP provides the same interface as `HTTP`, but allows for batching of
@@ -107,30 +93,29 @@ var (
 //-----------------------------------------------------------------------------
 // HTTP
 
-// New takes a remote endpoint in the form <protocol>://<host>:<port> and
-// the websocket path (which always seems to be "/websocket")
-// An error is returned on invalid remote. The function panics when remote is nil.
-func New(remote, wsEndpoint string) (*HTTP, error) {
+// New takes a remote endpoint in the form <protocol>://<host>:<port>. An error
+// is returned on invalid remote. The function panics when remote is nil.
+func New(remote string) (*HTTP, error) {
 	httpClient, err := jsonrpcclient.DefaultHTTPClient(remote)
 	if err != nil {
 		return nil, err
 	}
-	return NewWithClient(remote, wsEndpoint, httpClient)
+	return NewWithClient(remote, httpClient)
 }
 
 // Create timeout enabled http client
-func NewWithTimeout(remote, wsEndpoint string, timeout uint) (*HTTP, error) {
+func NewWithTimeout(remote string, timeout uint) (*HTTP, error) {
 	httpClient, err := jsonrpcclient.DefaultHTTPClient(remote)
 	if err != nil {
 		return nil, err
 	}
 	httpClient.Timeout = time.Duration(timeout) * time.Second
-	return NewWithClient(remote, wsEndpoint, httpClient)
+	return NewWithClient(remote, httpClient)
 }
 
 // NewWithClient allows for setting a custom http client (See New).
 // An error is returned on invalid remote. The function panics when remote is nil.
-func NewWithClient(remote, wsEndpoint string, client *http.Client) (*HTTP, error) {
+func NewWithClient(remote string, client *http.Client) (*HTTP, error) {
 	if client == nil {
 		panic("nil http.Client provided")
 	}
@@ -140,27 +125,16 @@ func NewWithClient(remote, wsEndpoint string, client *http.Client) (*HTTP, error
 		return nil, err
 	}
 
-	wsEvents, err := newWSEvents(remote, wsEndpoint)
-	if err != nil {
-		return nil, err
-	}
-
 	httpClient := &HTTP{
 		rpc:           rc,
 		remote:        remote,
 		baseRPCClient: &baseRPCClient{caller: rc},
-		WSEvents:      wsEvents,
 	}
 
 	return httpClient, nil
 }
 
 var _ rpcclient.Client = (*HTTP)(nil)
-
-// SetLogger sets a logger.
-func (c *HTTP) SetLogger(l log.Logger) {
-	c.WSEvents.SetLogger(l)
-}
 
 // Remote returns the remote network address in a string form.
 func (c *HTTP) Remote() string {
@@ -589,202 +563,4 @@ func (c *baseRPCClient) BroadcastEvidence(
 		return nil, err
 	}
 	return result, nil
-}
-
-//-----------------------------------------------------------------------------
-// WSEvents
-
-var errNotRunning = errors.New("client is not running. Use .Start() method to start")
-
-// WSEvents is a wrapper around WSClient, which implements EventsClient.
-type WSEvents struct {
-	service.BaseService
-	remote   string
-	endpoint string
-	ws       *jsonrpcclient.WSClient
-
-	mtx           cmtsync.RWMutex
-	subscriptions map[string]chan ctypes.ResultEvent // query -> chan
-}
-
-func newWSEvents(remote, endpoint string) (*WSEvents, error) {
-	w := &WSEvents{
-		endpoint:      endpoint,
-		remote:        remote,
-		subscriptions: make(map[string]chan ctypes.ResultEvent),
-	}
-	w.BaseService = *service.NewBaseService(nil, "WSEvents", w)
-
-	var err error
-	w.ws, err = jsonrpcclient.NewWS(w.remote, w.endpoint, jsonrpcclient.OnReconnect(func() {
-		// resubscribe immediately
-		w.redoSubscriptionsAfter(0 * time.Second)
-	}))
-	if err != nil {
-		return nil, err
-	}
-	w.ws.SetLogger(w.Logger)
-
-	return w, nil
-}
-
-// OnStart implements service.Service by starting WSClient and event loop.
-func (w *WSEvents) OnStart() error {
-	if err := w.ws.Start(); err != nil {
-		return err
-	}
-
-	go w.eventListener()
-
-	return nil
-}
-
-// OnStop implements service.Service by stopping WSClient.
-func (w *WSEvents) OnStop() {
-	if err := w.ws.Stop(); err != nil {
-		w.Logger.Error("Can't stop ws client", "err", err)
-	}
-}
-
-// Subscribe implements EventsClient by using WSClient to subscribe given
-// subscriber to query. By default, returns a channel with cap=1. Error is
-// returned if it fails to subscribe.
-//
-// Channel is never closed to prevent clients from seeing an erroneous event.
-//
-// It returns an error if WSEvents is not running.
-func (w *WSEvents) Subscribe(ctx context.Context, _, query string,
-	outCapacity ...int,
-) (out <-chan ctypes.ResultEvent, err error) {
-	if !w.IsRunning() {
-		return nil, errNotRunning
-	}
-
-	if err := w.ws.Subscribe(ctx, query); err != nil {
-		return nil, err
-	}
-
-	outCap := 1
-	if len(outCapacity) > 0 {
-		outCap = outCapacity[0]
-	}
-
-	outc := make(chan ctypes.ResultEvent, outCap)
-	w.mtx.Lock()
-	// subscriber param is ignored because CometBFT will override it with
-	// remote IP anyway.
-	w.subscriptions[query] = outc
-	w.mtx.Unlock()
-
-	return outc, nil
-}
-
-// Unsubscribe implements EventsClient by using WSClient to unsubscribe given
-// subscriber from query.
-//
-// It returns an error if WSEvents is not running.
-func (w *WSEvents) Unsubscribe(ctx context.Context, _, query string) error {
-	if !w.IsRunning() {
-		return errNotRunning
-	}
-
-	if err := w.ws.Unsubscribe(ctx, query); err != nil {
-		return err
-	}
-
-	w.mtx.Lock()
-	_, ok := w.subscriptions[query]
-	if ok {
-		delete(w.subscriptions, query)
-	}
-	w.mtx.Unlock()
-
-	return nil
-}
-
-// UnsubscribeAll implements EventsClient by using WSClient to unsubscribe
-// given subscriber from all the queries.
-//
-// It returns an error if WSEvents is not running.
-func (w *WSEvents) UnsubscribeAll(ctx context.Context, _ string) error {
-	if !w.IsRunning() {
-		return errNotRunning
-	}
-
-	if err := w.ws.UnsubscribeAll(ctx); err != nil {
-		return err
-	}
-
-	w.mtx.Lock()
-	w.subscriptions = make(map[string]chan ctypes.ResultEvent)
-	w.mtx.Unlock()
-
-	return nil
-}
-
-// After being reconnected, it is necessary to redo subscription to server
-// otherwise no data will be automatically received.
-func (w *WSEvents) redoSubscriptionsAfter(d time.Duration) {
-	time.Sleep(d)
-
-	w.mtx.RLock()
-	defer w.mtx.RUnlock()
-	for q := range w.subscriptions {
-		err := w.ws.Subscribe(context.Background(), q)
-		if err != nil {
-			w.Logger.Error("Failed to resubscribe", "err", err)
-		}
-	}
-}
-
-func isErrAlreadySubscribed(err error) bool {
-	return strings.Contains(err.Error(), cmtpubsub.ErrAlreadySubscribed.Error())
-}
-
-func (w *WSEvents) eventListener() {
-	for {
-		select {
-		case resp, ok := <-w.ws.ResponsesCh:
-			if !ok {
-				return
-			}
-
-			if resp.Error != nil {
-				w.Logger.Error("WS error", "err", resp.Error.Error())
-				// Error can be ErrAlreadySubscribed or max client (subscriptions per
-				// client) reached or CometBFT exited.
-				// We can ignore ErrAlreadySubscribed, but need to retry in other
-				// cases.
-				if !isErrAlreadySubscribed(resp.Error) {
-					// Resubscribe after 1 second to give CometBFT time to restart (if
-					// crashed).
-					w.redoSubscriptionsAfter(1 * time.Second)
-				}
-				continue
-			}
-
-			result := new(ctypes.ResultEvent)
-			err := cmtjson.Unmarshal(resp.Result, result)
-			if err != nil {
-				w.Logger.Error("failed to unmarshal response", "err", err)
-				continue
-			}
-
-			w.mtx.RLock()
-			if out, ok := w.subscriptions[result.Query]; ok {
-				if cap(out) == 0 {
-					out <- *result
-				} else {
-					select {
-					case out <- *result:
-					default:
-						w.Logger.Error("wanted to publish ResultEvent, but out channel is full", "result", result, "query", result.Query)
-					}
-				}
-			}
-			w.mtx.RUnlock()
-		case <-w.Quit():
-			return
-		}
-	}
 }

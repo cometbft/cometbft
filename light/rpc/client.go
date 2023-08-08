@@ -14,7 +14,6 @@ import (
 	service "github.com/cometbft/cometbft/libs/service"
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
-	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	"github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 )
@@ -99,21 +98,6 @@ func NewClient(next rpcclient.Client, lc LightClient, opts ...Option) *Client {
 	return c
 }
 
-func (c *Client) OnStart() error {
-	if !c.next.IsRunning() {
-		return c.next.Start()
-	}
-	return nil
-}
-
-func (c *Client) OnStop() {
-	if c.next.IsRunning() {
-		if err := c.next.Stop(); err != nil {
-			c.Logger.Error("Error stopping on next", "err", err)
-		}
-	}
-}
-
 func (c *Client) Status(ctx context.Context) (*ctypes.ResultStatus, error) {
 	return c.next.Status(ctx)
 }
@@ -129,8 +113,8 @@ func (c *Client) ABCIQuery(ctx context.Context, path string, data cmtbytes.HexBy
 
 // ABCIQueryWithOptions returns an error if opts.Prove is false.
 func (c *Client) ABCIQueryWithOptions(ctx context.Context, path string, data cmtbytes.HexBytes,
-	opts rpcclient.ABCIQueryOptions) (*ctypes.ResultABCIQuery, error) {
-
+	opts rpcclient.ABCIQueryOptions,
+) (*ctypes.ResultABCIQuery, error) {
 	// always request the proof
 	opts.Prove = true
 
@@ -517,7 +501,6 @@ func (c *Client) Validators(
 	height *int64,
 	pagePtr, perPagePtr *int,
 ) (*ctypes.ResultValidators, error) {
-
 	// Update the light client if we're behind and retrieve the light block at the
 	// requested height or at the latest height if no height is provided.
 	l, err := c.updateLightClientIfNeededTo(ctx, height)
@@ -539,24 +522,12 @@ func (c *Client) Validators(
 		BlockHeight: l.Height,
 		Validators:  v,
 		Count:       len(v),
-		Total:       totalCount}, nil
+		Total:       totalCount,
+	}, nil
 }
 
 func (c *Client) BroadcastEvidence(ctx context.Context, ev types.Evidence) (*ctypes.ResultBroadcastEvidence, error) {
 	return c.next.BroadcastEvidence(ctx, ev)
-}
-
-func (c *Client) Subscribe(ctx context.Context, subscriber, query string,
-	outCapacity ...int) (out <-chan ctypes.ResultEvent, err error) {
-	return c.next.Subscribe(ctx, subscriber, query, outCapacity...)
-}
-
-func (c *Client) Unsubscribe(ctx context.Context, subscriber, query string) error {
-	return c.next.Unsubscribe(ctx, subscriber, query)
-}
-
-func (c *Client) UnsubscribeAll(ctx context.Context, subscriber string) error {
-	return c.next.UnsubscribeAll(ctx, subscriber)
 }
 
 func (c *Client) updateLightClientIfNeededTo(ctx context.Context, height *int64) (*types.LightBlock, error) {
@@ -577,55 +548,6 @@ func (c *Client) updateLightClientIfNeededTo(ctx context.Context, height *int64)
 
 func (c *Client) RegisterOpDecoder(typ string, dec merkle.OpDecoder) {
 	c.prt.RegisterOpDecoder(typ, dec)
-}
-
-// SubscribeWS subscribes for events using the given query and remote address as
-// a subscriber, but does not verify responses (UNSAFE)!
-// TODO: verify data
-func (c *Client) SubscribeWS(ctx *rpctypes.Context, query string) (*ctypes.ResultSubscribe, error) {
-	out, err := c.next.Subscribe(context.Background(), ctx.RemoteAddr(), query)
-	if err != nil {
-		return nil, err
-	}
-
-	go func() {
-		for {
-			select {
-			case resultEvent := <-out:
-				// We should have a switch here that performs a validation
-				// depending on the event's type.
-				ctx.WSConn.TryWriteRPCResponse(
-					rpctypes.NewRPCSuccessResponse(
-						rpctypes.JSONRPCStringID(fmt.Sprintf("%v#event", ctx.JSONReq.ID)),
-						resultEvent,
-					))
-			case <-c.Quit():
-				return
-			}
-		}
-	}()
-
-	return &ctypes.ResultSubscribe{}, nil
-}
-
-// UnsubscribeWS calls original client's Unsubscribe using remote address as a
-// subscriber.
-func (c *Client) UnsubscribeWS(ctx *rpctypes.Context, query string) (*ctypes.ResultUnsubscribe, error) {
-	err := c.next.Unsubscribe(context.Background(), ctx.RemoteAddr(), query)
-	if err != nil {
-		return nil, err
-	}
-	return &ctypes.ResultUnsubscribe{}, nil
-}
-
-// UnsubscribeAllWS calls original client's UnsubscribeAll using remote address
-// as a subscriber.
-func (c *Client) UnsubscribeAllWS(ctx *rpctypes.Context) (*ctypes.ResultUnsubscribe, error) {
-	err := c.next.UnsubscribeAll(context.Background(), ctx.RemoteAddr())
-	if err != nil {
-		return nil, err
-	}
-	return &ctypes.ResultUnsubscribe{}, nil
 }
 
 // XXX: Copied from rpc/core/env.go

@@ -14,7 +14,6 @@ This section dives into the internals of the CometBFT's implementation.
 - [Running in Production](./running-in-production.md)
 - [Metrics](./metrics.md)
 - [Validators](./validators.md)
-- [Subscribing to events](./subscription.md)
 - [Block Structure](./block-structure.md)
 - [RPC](./rpc.md)
 - [Block Sync](./block-sync.md)

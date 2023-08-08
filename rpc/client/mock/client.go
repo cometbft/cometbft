@@ -33,7 +33,6 @@ type Client struct {
 	client.SignClient
 	client.HistoryClient
 	client.StatusClient
-	client.EventsClient
 	client.EvidenceClient
 	client.MempoolClient
 	service.Service

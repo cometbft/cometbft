@@ -10,9 +10,9 @@ import (
 )
 
 // RegisterRPCFuncs adds a route for each function in the funcMap, as well as
-// general jsonrpc and websocket handlers for all functions. "result" is the
-// interface on which the result objects are registered, and is popualted with
-// every RPCResponse
+// general jsonrpc handlers for all functions. "result" is the interface on
+// which the result objects are registered, and is populated with every
+// RPCResponse
 func RegisterRPCFuncs(mux *http.ServeMux, funcMap map[string]*RPCFunc, logger log.Logger) {
 	// HTTP endpoints
 	for funcName, rpcFunc := range funcMap {
@@ -41,13 +41,6 @@ func Cacheable(noCacheDefArgs ...string) Option {
 	}
 }
 
-// Ws enables WebSocket communication.
-func Ws() Option {
-	return func(r *RPCFunc) {
-		r.ws = true
-	}
-}
-
 // RPCFunc contains the introspected type information for a function
 type RPCFunc struct {
 	f              reflect.Value          // underlying rpc function
@@ -55,19 +48,12 @@ type RPCFunc struct {
 	returns        []reflect.Type         // type of each return arg
 	argNames       []string               // name of each argument
 	cacheable      bool                   // enable cache control
-	ws             bool                   // enable websocket communication
 	noCacheDefArgs map[string]interface{} // a lookup table of args that, if not supplied or are set to default values, cause us to not cache
 }
 
 // NewRPCFunc wraps a function for introspection.
 // f is the function, args are comma separated argument names
 func NewRPCFunc(f interface{}, args string, options ...Option) *RPCFunc {
-	return newRPCFunc(f, args, options...)
-}
-
-// NewWSRPCFunc wraps a function for introspection and use in the websockets.
-func NewWSRPCFunc(f interface{}, args string, options ...Option) *RPCFunc {
-	options = append(options, Ws())
 	return newRPCFunc(f, args, options...)
 }
 

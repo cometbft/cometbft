@@ -30,8 +30,8 @@ var defaultTestTime = time.Date(2018, 10, 10, 8, 20, 13, 695936996, time.UTC)
 
 func newEvidence(t *testing.T, val *privval.FilePV,
 	vote *types.Vote, vote2 *types.Vote,
-	chainID string) *types.DuplicateVoteEvidence {
-
+	chainID string,
+) *types.DuplicateVoteEvidence {
 	var err error
 
 	v := vote.ToProto()
@@ -123,6 +123,12 @@ func TestBroadcastEvidence_DuplicateVoteEvidence(t *testing.T) {
 	)
 
 	for i, c := range GetClients() {
+		// We need to wait until we have passed height 0, and we only need to
+		// do this check with the first client
+		if i == 0 {
+			require.NoError(t, client.WaitForHeight(c, 1, nil))
+		}
+
 		correct, fakes := makeEvidences(t, pv, chainID)
 		t.Logf("client %d", i)
 

@@ -1048,13 +1048,21 @@ func (n *Node) OnStop() {
 		}
 	}
 	if n.blockStore != nil {
+		n.Logger.Info("Closing blockstore")
 		if err := n.blockStore.Close(); err != nil {
 			n.Logger.Error("problem closing blockstore", "err", err)
 		}
 	}
 	if n.stateStore != nil {
+		n.Logger.Info("Closing statestore")
 		if err := n.stateStore.Close(); err != nil {
 			n.Logger.Error("problem closing statestore", "err", err)
+		}
+	}
+	if n.evidencePool != nil {
+		n.Logger.Info("Closing evidencestore")
+		if err := n.EvidencePool().Close(); err != nil {
+			n.Logger.Error("problem closing evidencestore", "err", err)
 		}
 	}
 }

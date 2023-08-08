@@ -112,7 +112,7 @@ Recovery :  ConsensusExec ;
 
 ConsensusExec : ConsensusHeights ;
 ConsensusHeights : ConsensusHeight | ConsensusHeight ConsensusHeights ;
-ConsensusHeight : ConsensusRounds Decide Commit | Decide Commit ;
+ConsensusHeight : ConsensusRounds FinalizeBlock Commit | FinalizeBlock Commit ;
 ConsensusRounds : ConsensusRound | ConsensusRound ConsensusRounds ;
 ConsensusRound : Proposer | NonProposer ; 
 
@@ -121,7 +121,7 @@ NonProposer: ProcessProposal ;
 
 
 InitChain : "init_chain" ;
-Decide : "finalize_block" ; 
+FinalizeBlock : "finalize_block" ; 
 Commit : "commit" ;
 OfferSnapshot : "offer_snapshot" ;
 ApplyChunk : "apply_snapshot_chunk" ; 
@@ -231,7 +231,7 @@ It receives a set of ABCI++ requests and a flag saying whether they represent a 
 - Filter the requests by calling the method `filterRequests()`. This method will remove all the requests from the set that are not supported by the current version of the grammar. In addition, it will filter the last height by removing all ABCI++ requests after the 
 last `Commit`. The function `fetchABCIRequests()` can be called in the middle of the height. As a result, the last height may be incomplete and 
 classified as invalid, even if that is not the reality. The simple example here is that the last 
-request fetched via `fetchABCIRequests()` is `Decide`; however, `Commit` happens after 
+request fetched via `fetchABCIRequests()` is `FinalizeBlock`; however, `Commit` happens after 
 `fetchABCIRequests()` was invoked. Consequently, the execution
 will be considered as faulty because `Commit` is missing, even though the `Commit` 
 will happen after. This is why if the execution consists of only one incomplete height and function `filterRequests()` returns an empty set of requests, the `Verify()` method considers this execution as valid and returns `true`. 

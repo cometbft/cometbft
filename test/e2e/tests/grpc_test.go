@@ -205,15 +205,20 @@ func TestGRPC_BlockRetainHeight(t *testing.T) {
 		grpcClient, err := node.GRPCPrivilegedClient(ctx)
 		require.NoError(t, err)
 
-		err = grpcClient.SetBlockRetainHeight(ctx, 3)
+		client, err := node.Client()
+		require.NoError(t, err)
+		status, err := client.Status(ctx)
+		require.NoError(t, err)
 
+		err = grpcClient.SetBlockRetainHeight(ctx, uint64(status.SyncInfo.LatestBlockHeight-1))
+		t.Log(err)
 		require.NoError(t, err, "Unexpected error for SetBlockRetainHeight")
 
 		res, err := grpcClient.GetBlockRetainHeight(ctx)
 
 		require.NoError(t, err, "Unexpected error for GetBlockRetainHeight")
 		require.NotNil(t, res)
-		require.Equal(t, res.PruningService, 3)
+		require.Equal(t, res.PruningService, uint64(uint64(status.SyncInfo.LatestBlockHeight-1)))
 	})
 }
 
@@ -227,14 +232,18 @@ func TestGRPC_BlockResultsRetainHeight(t *testing.T) {
 		defer ctxCancel()
 		grpcClient, err := node.GRPCPrivilegedClient(ctx)
 		require.NoError(t, err)
+		client, err := node.Client()
+		require.NoError(t, err)
+		status, err := client.Status(ctx)
+		require.NoError(t, err)
 
-		err = grpcClient.SetBlockResultsRetainHeight(ctx, 3)
+		err = grpcClient.SetBlockResultsRetainHeight(ctx, uint64(status.SyncInfo.LatestBlockHeight)-1)
 
 		require.NoError(t, err, "Unexpected error for SetBlockResultsRetainHeight")
 
 		height, err := grpcClient.GetBlockResultsRetainHeight(ctx)
 
 		require.NoError(t, err, "Unexpected error for GetBlockRetainHeight")
-		require.Equal(t, height, 3)
+		require.Equal(t, height, uint64(status.SyncInfo.LatestBlockHeight)-1)
 	})
 }

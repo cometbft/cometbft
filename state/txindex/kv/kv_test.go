@@ -119,7 +119,7 @@ func TestTxIndex_Prune(t *testing.T) {
 	keys2 := getKeys(indexer)
 	assert.True(t, Subslice(keys1, keys2))
 
-	indexer.Prune(2)
+	indexer.Prune(0, 2)
 
 	keys3 := getKeys(indexer)
 	assert.True(t, EqualSlices(SliceDiff(keys2, keys1), keys3))

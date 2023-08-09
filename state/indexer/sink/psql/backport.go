@@ -38,7 +38,7 @@ func (es *EventSink) TxIndexer() BackportTxIndexer {
 // indexing operations to an underlying PostgreSQL event sink.
 type BackportTxIndexer struct{ psql *EventSink }
 
-func (b BackportTxIndexer) Prune(_ int64) {
+func (b BackportTxIndexer) Prune(_ int64, _ int64) {
 	// Not implemented
 }
 
@@ -76,7 +76,7 @@ func (es *EventSink) BlockIndexer() BackportBlockIndexer {
 // delegating indexing operations to an underlying PostgreSQL event sink.
 type BackportBlockIndexer struct{ psql *EventSink }
 
-func (b BackportBlockIndexer) Prune(_ int64) {
+func (b BackportBlockIndexer) Prune(_ int64, _ int64) {
 	// Not implemented
 }
 

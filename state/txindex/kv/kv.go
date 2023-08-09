@@ -41,9 +41,10 @@ type TxIndex struct {
 	log log.Logger
 }
 
-func (txi *TxIndex) Prune(retainHeight int64) {
+func (txi *TxIndex) Prune(lastRetainHeight int64, retainHeight int64) {
 	ctx := context.Background()
-	results, err := txi.Search(ctx, query.MustCompile(fmt.Sprintf("tx.height < %d", retainHeight)))
+	results, err := txi.Search(ctx, query.MustCompile(
+		fmt.Sprintf("tx.height < %d AND tx.height >= %d", retainHeight, lastRetainHeight)))
 	if err != nil {
 		panic(err)
 	}

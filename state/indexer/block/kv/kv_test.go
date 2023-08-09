@@ -29,18 +29,18 @@ func TestBlockerIndexer_Prune(t *testing.T) {
 	err := indexer.Index(events1)
 	require.NoError(t, err)
 
-	keys1 := kv.SliceDiff(blockidxkv.GetKeys(indexer), [][]byte{blockidxkv.LBRetainHeightKey})
+	keys1 := blockidxkv.GetKeys(indexer)
 
 	err = indexer.Index(events2)
 	require.NoError(t, err)
 
-	keys2 := kv.SliceDiff(blockidxkv.GetKeys(indexer), [][]byte{blockidxkv.LBRetainHeightKey})
+	keys2 := blockidxkv.GetKeys(indexer)
 
 	require.True(t, kv.Subslice(keys1, keys2))
 
-	indexer.Prune(2)
+	indexer.Prune(0, 2)
 
-	keys3 := kv.SliceDiff(blockidxkv.GetKeys(indexer), [][]byte{blockidxkv.LBRetainHeightKey})
+	keys3 := blockidxkv.GetKeys(indexer)
 	require.True(t, kv.EqualSlices(kv.SliceDiff(keys2, keys1), keys3))
 	require.True(t, kv.EmptyIntersection(keys1, keys3))
 }
@@ -67,7 +67,7 @@ func BenchmarkBlockerIndexer_Prune(_ *testing.B) {
 	startTime := time.Now()
 
 	for h := 1; h <= maxHeight; h++ {
-		indexer.Prune(int64(h))
+		indexer.Prune(int64(h-1), int64(h))
 	}
 	fmt.Println(time.Since(startTime))
 }

@@ -16,6 +16,14 @@ type Store struct {
 	mock.Mock
 }
 
+func (_m *Store) SaveIndexerRetainHeight(height int64) error {
+	return nil
+}
+
+func (_m *Store) GetIndexerRetainHeight() (int64, error) {
+	return 0, nil
+}
+
 // Bootstrap provides a mock function with given fields: _a0
 func (_m *Store) Bootstrap(_a0 state.State) error {
 	ret := _m.Called(_a0)

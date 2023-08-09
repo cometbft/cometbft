@@ -19,7 +19,7 @@ type BlockIndexer struct {
 	mock.Mock
 }
 
-func (_m *BlockIndexer) Prune(retainHeight int64) {
+func (_m *BlockIndexer) Prune(_ int64, _ int64) {
 	// Not implemented
 }
 

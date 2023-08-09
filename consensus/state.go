@@ -1370,7 +1370,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 
 		// Before prevoting on the block received from the proposer for the current round and height,
 		// we request the Application, via `ProcessProposal` ABCI call, to confirm that the block is
-		// valid. If the Application does not accept the block, consensus prevotes `nil`.
+		// valid. If the Application does not accept the block, consensus prevotes nil.
 		//
 		// WARNING: misuse of block rejection by the Application can seriously compromise
 		// the liveness properties of consensus.
@@ -1412,13 +1412,14 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 
 		First note that 'valid(v)' in line 29 states that we should request the
 		application to validate the proposal. We know that the proposal was
-		prevoted by a +2/3 majority, so it must be valid. Therefore we don't
-		need to query the application again.
+		prevoted by a +2/3 majority, so it must have been prevoted and validated
+		at least by one correct node. Therefore it must be valid and in the
+		following cases we don't need to query the application again.
 
 		If we see a proposal in the current round for value 'v' that lists its valid round as 'v_r'
 		AND this validator saw a 2/3 majority of the voting power prevote for 'v' in round 'v_r' (line 28),
 		then we will issue a prevote for 'v' in this round (line 30) if 'v' either matches our locked value OR
-		'v_r' is a round greater than or equal to our current locked round (line 29). 
+		'v_r' is a round greater than or equal to our current locked round (line 29).
 		Otherwise we prevote nil (line 32).
 
 		Note that 'v_r' can be a round greater than to our current locked round if a 2/3 majority of

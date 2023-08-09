@@ -52,6 +52,8 @@ numbering our ADRs from 100 onwards.
 
 ### Implemented
 
+- [ADR-108: E2E tests for CometBFT's behaviour in respect to ABCI++.](./adr-108-e2e-abci++.md)
+
 ### Deprecated
 
 ### Rejected

@@ -21,7 +21,7 @@ type RawPayload struct {
 	Rate        uint64                 `protobuf:"varint,2,opt,name=rate,proto3" json:"rate,omitempty"`
 	Size        uint64                 `protobuf:"varint,3,opt,name=size,proto3" json:"size,omitempty"`
 	Time        *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=time,proto3" json:"time,omitempty"`
-	Id          []byte                 `protobuf:"bytes,5,opt,name=id,proto3" json:"id,omitempty"`
+	Id          []byte                 `protobuf:"bytes,5,opt,name=id,proto3" json:"id,omitempty"` //nolint: revive, stylecheck // var-naming: struct field Id should be ID; but this name comes from protobuf.
 	Padding     []byte                 `protobuf:"bytes,6,opt,name=padding,proto3" json:"padding,omitempty"`
 }
 

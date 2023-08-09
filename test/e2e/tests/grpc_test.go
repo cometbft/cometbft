@@ -218,7 +218,7 @@ func TestGRPC_BlockRetainHeight(t *testing.T) {
 
 		require.NoError(t, err, "Unexpected error for GetBlockRetainHeight")
 		require.NotNil(t, res)
-		require.Equal(t, res.PruningService, uint64(uint64(status.SyncInfo.LatestBlockHeight-1)))
+		require.Equal(t, res.PruningService, uint64(status.SyncInfo.LatestBlockHeight-1))
 	})
 }
 

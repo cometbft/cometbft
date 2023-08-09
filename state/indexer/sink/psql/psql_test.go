@@ -212,7 +212,7 @@ func TestIndexing(t *testing.T) {
 			}
 		})
 
-		service := txindex.NewIndexerService(indexer.TxIndexer(), indexer.BlockIndexer(), eventBus, true)
+		service := txindex.NewIndexerService(indexer.TxIndexer(), indexer.BlockIndexer(), nil, eventBus, true)
 		service.SetLogger(tmlog.TestingLogger())
 		err = service.Start()
 		require.NoError(t, err)

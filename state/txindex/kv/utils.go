@@ -107,7 +107,7 @@ func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) (bool, error)
 	return true, nil
 }
 
-func getKeys(indexer *TxIndex) [][]byte {
+func GetKeys(indexer *TxIndex) [][]byte {
 	var keys [][]byte
 	itr, err := indexer.store.Iterator(nil, nil)
 	if err != nil {
@@ -160,6 +160,16 @@ func EmptyIntersection(x [][]byte, y [][]byte) bool {
 		}
 	}
 	return true
+}
+
+func Intersection(x [][]byte, y [][]byte) [][]byte {
+	var intersection [][]byte
+	for _, elem := range x {
+		if contains(y, elem) {
+			intersection = append(intersection, elem)
+		}
+	}
+	return intersection
 }
 
 func SliceDiff(bigger [][]byte, smaller [][]byte) [][]byte {

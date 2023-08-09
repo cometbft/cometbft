@@ -2,7 +2,10 @@ package txindex
 
 import (
 	"context"
+	"encoding/binary"
+	"errors"
 
+	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/types"
@@ -14,6 +17,14 @@ const (
 	subscriber = "IndexerService"
 )
 
+var (
+	LastIndexerRetainHeightKey = []byte("lastIndexerRetainHeight")
+	IndexerRetainHeightKey     = []byte("indexerRetainHeight")
+
+	ErrKeyNotFound        = errors.New("key not found")
+	ErrInvalidHeightValue = errors.New("invalid height value")
+)
+
 // IndexerService connects event bus, transaction and block indexers together in
 // order to index transactions and blocks coming from the event bus.
 type IndexerService struct {
@@ -21,6 +32,7 @@ type IndexerService struct {
 
 	txIdxr           TxIndexer
 	blockIdxr        indexer.BlockIndexer
+	indexerStore     dbm.DB
 	eventBus         *types.EventBus
 	terminateOnError bool
 }
@@ -29,11 +41,17 @@ type IndexerService struct {
 func NewIndexerService(
 	txIdxr TxIndexer,
 	blockIdxr indexer.BlockIndexer,
+	indexerStore dbm.DB,
 	eventBus *types.EventBus,
 	terminateOnError bool,
 ) *IndexerService {
 
-	is := &IndexerService{txIdxr: txIdxr, blockIdxr: blockIdxr, eventBus: eventBus, terminateOnError: terminateOnError}
+	is := &IndexerService{
+		txIdxr:           txIdxr,
+		blockIdxr:        blockIdxr,
+		indexerStore:     indexerStore,
+		eventBus:         eventBus,
+		terminateOnError: terminateOnError}
 	is.BaseService = *service.NewBaseService(nil, "IndexerService", is)
 	return is
 }
@@ -119,9 +137,65 @@ func (is *IndexerService) OnStart() error {
 	return nil
 }
 
-func (is *IndexerService) Prune(lastRetainHeight int64, retainHeight int64) {
+func (is *IndexerService) Prune(retainHeight int64) {
+	lastRetainHeight, err := is.getLastIndexerRetainHeight()
+	if err != nil {
+		panic(err)
+	}
+	if retainHeight <= lastRetainHeight {
+		return
+	}
 	is.txIdxr.Prune(lastRetainHeight, retainHeight)
 	is.blockIdxr.Prune(lastRetainHeight, retainHeight)
+	is.setLastIndexerRetainHeight(retainHeight)
+}
+
+func (is *IndexerService) SaveIndexerRetainHeight(height int64) error {
+	return is.indexerStore.SetSync(IndexerRetainHeightKey, int64ToBytes(height))
+}
+
+func (is *IndexerService) GetIndexerRetainHeight() (int64, error) {
+	buf, err := is.getValue(IndexerRetainHeightKey)
+	if err != nil {
+		return 0, err
+	}
+	height := int64FromBytes(buf)
+
+	if height < 0 {
+		return 0, ErrInvalidHeightValue
+	}
+
+	return height, nil
+}
+
+func (is *IndexerService) getLastIndexerRetainHeight() (int64, error) {
+	bz, err := is.getValue(LastIndexerRetainHeightKey)
+	if errors.Is(err, ErrKeyNotFound) {
+		return 0, nil
+	}
+	height := int64FromBytes(bz)
+	if height < 0 {
+		return 0, ErrInvalidHeightValue
+	}
+	return height, nil
+}
+
+func (is *IndexerService) setLastIndexerRetainHeight(height int64) {
+	if err := is.indexerStore.SetSync(LastIndexerRetainHeightKey, int64ToBytes(height)); err != nil {
+		panic(err)
+	}
+}
+
+func (is *IndexerService) getValue(key []byte) ([]byte, error) {
+	bz, err := is.indexerStore.Get(key)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(bz) == 0 {
+		return nil, ErrKeyNotFound
+	}
+	return bz, nil
 }
 
 // OnStop implements service.Service by unsubscribing from all transactions.
@@ -129,4 +203,16 @@ func (is *IndexerService) OnStop() {
 	if is.eventBus.IsRunning() {
 		_ = is.eventBus.UnsubscribeAll(context.Background(), subscriber)
 	}
+}
+
+// ----- Util
+func int64FromBytes(bz []byte) int64 {
+	v, _ := binary.Varint(bz)
+	return v
+}
+
+func int64ToBytes(i int64) []byte {
+	buf := make([]byte, binary.MaxVarintLen64)
+	n := binary.PutVarint(buf, i)
+	return buf[:n]
 }

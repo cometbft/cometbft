@@ -93,7 +93,7 @@ func TestTxIndex_Prune(t *testing.T) {
 	err := indexer.AddBatch(batch)
 	require.NoError(t, err)
 
-	keys1 := getKeys(indexer)
+	keys1 := GetKeys(indexer)
 
 	tx2 := types.Tx("BYE BYE WORLD")
 	txResult2 := &abci.TxResult{
@@ -116,12 +116,12 @@ func TestTxIndex_Prune(t *testing.T) {
 	err = indexer.AddBatch(batch)
 	require.NoError(t, err)
 
-	keys2 := getKeys(indexer)
+	keys2 := GetKeys(indexer)
 	assert.True(t, Subslice(keys1, keys2))
 
 	indexer.Prune(0, 2)
 
-	keys3 := getKeys(indexer)
+	keys3 := GetKeys(indexer)
 	assert.True(t, EqualSlices(SliceDiff(keys2, keys1), keys3))
 	assert.True(t, EmptyIntersection(keys1, keys3))
 

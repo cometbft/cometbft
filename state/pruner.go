@@ -11,18 +11,11 @@ import (
 	"github.com/cometbft/cometbft/state/txindex"
 )
 
-type Label int
-
 var (
 	AppRetainHeightKey            = []byte("AppRetainHeightKey")
 	CompanionBlockRetainHeightKey = []byte("DCBlockRetainHeightKey")
 	ABCIResultsRetainHeightKey    = []byte("ABCIResRetainHeightKey")
 	IndexerRetainHeightKey        = []byte("IndexerRetainHeightKey")
-)
-
-const (
-	BlockStoreLabel Label = iota
-	IndexStoreLabel
 )
 
 // Pruner is a service that reads the retain heights for blocks, state and ABCI
@@ -276,20 +269,28 @@ func (p *Pruner) pruneIndexesRoutine() {
 }
 
 func (p *Pruner) pruneIndexesToRetainHeight(lastRetainHeight int64) int64 {
-	retainHeight := p.findMinRetainHeight(IndexStoreLabel)
-	if lastRetainHeight >= retainHeight {
+	targetRetainHeight, err := p.indexerService.GetIndexerRetainHeight()
+	if err != nil {
+		// Indexer retain height has not yet been set - do not log any
+		// errors at this time.
+		if errors.Is(err, ErrKeyNotFound) {
+			return 0
+		}
+		p.logger.Error("Failed to get Indexer retain height", "err", err)
 		return lastRetainHeight
 	}
-	p.indexerService.Prune(lastRetainHeight, retainHeight)
-	err := p.stateStore.SaveIndexerRetainHeight(retainHeight)
-	if err != nil {
-		panic(err)
+
+	if lastRetainHeight >= targetRetainHeight {
+		return lastRetainHeight
 	}
-	return retainHeight
+
+	p.indexerService.Prune(targetRetainHeight)
+
+	return targetRetainHeight
 }
 
 func (p *Pruner) pruneBlocksToRetainHeight(lastRetainHeight int64) int64 {
-	targetRetainHeight := p.findMinRetainHeight(BlockStoreLabel)
+	targetRetainHeight := p.findMinRetainHeight()
 	if targetRetainHeight == lastRetainHeight {
 		return lastRetainHeight
 	}
@@ -339,7 +340,7 @@ func (p *Pruner) pruneABCIResToRetainHeight(lastRetainHeight int64) int64 {
 // the database will not have values for the corresponding keys.
 // If both retain heights were set, we pick the smaller one
 // If only one is set we return that one
-func (p *Pruner) findMinRetainHeight(label Label) int64 {
+func (p *Pruner) findMinRetainHeight() int64 {
 	noAppRetainHeightSet := false
 	appRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
 	if err != nil {
@@ -348,17 +349,7 @@ func (p *Pruner) findMinRetainHeight(label Label) int64 {
 		}
 		noAppRetainHeightSet = true
 	}
-
-	var dcRetainHeight int64
-	switch label {
-	case BlockStoreLabel:
-		dcRetainHeight, err = p.stateStore.GetCompanionBlockRetainHeight()
-	case IndexStoreLabel:
-		dcRetainHeight, err = p.stateStore.GetIndexerRetainHeight()
-	default:
-		panic("Should call the function with either BlockStoreLabel or IndexStoreLabel")
-	}
-
+	dcRetainHeight, err := p.stateStore.GetCompanionBlockRetainHeight()
 	if err != nil {
 		if !errors.Is(err, ErrKeyNotFound) {
 			return 0

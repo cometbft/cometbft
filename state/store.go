@@ -96,10 +96,6 @@ type Store interface {
 	SaveABCIResRetainHeight(height int64) error
 	// GetABCIResRetainHeight returns the last saved retain height for ABCI results set by the data companion
 	GetABCIResRetainHeight() (int64, error)
-	// SaveIndexerRetainHeight persists the retain height for IndexerService
-	SaveIndexerRetainHeight(height int64) error
-	// GetIndexerRetainHeight returns the last saved retain height for IndexerService
-	GetIndexerRetainHeight() (int64, error)
 	// Close closes the connection with the database
 	Close() error
 }
@@ -628,24 +624,6 @@ func (store dbStore) SaveABCIResRetainHeight(height int64) error {
 
 func (store dbStore) GetABCIResRetainHeight() (int64, error) {
 	buf, err := store.getValue(ABCIResultsRetainHeightKey)
-	if err != nil {
-		return 0, err
-	}
-	height := int64FromBytes(buf)
-
-	if height < 0 {
-		return 0, ErrInvalidHeightValue
-	}
-
-	return height, nil
-}
-
-func (store dbStore) SaveIndexerRetainHeight(height int64) error {
-	return store.db.SetSync(IndexerRetainHeightKey, int64ToBytes(height))
-}
-
-func (store dbStore) GetIndexerRetainHeight() (int64, error) {
-	buf, err := store.getValue(IndexerRetainHeightKey)
 	if err != nil {
 		return 0, err
 	}

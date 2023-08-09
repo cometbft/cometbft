@@ -1,9 +1,11 @@
 package txindex_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
+	"github.com/cometbft/cometbft/state/indexer"
 	"github.com/stretchr/testify/require"
 
 	db "github.com/cometbft/cometbft-db"
@@ -17,6 +19,99 @@ import (
 )
 
 func TestIndexerServiceIndexesBlocks(t *testing.T) {
+	_, txIndexer, blockIndexer, eventBus := createTestSetup(t)
+
+	height := int64(1)
+
+	events, txResult1, txResult2 := getEventsAndResults(t, height)
+	// publish block with events
+	err := eventBus.PublishEventNewBlockEvents(events)
+	require.NoError(t, err)
+
+	err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult1})
+	require.NoError(t, err)
+
+	err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult2})
+	require.NoError(t, err)
+
+	time.Sleep(100 * time.Millisecond)
+
+	res, err := txIndexer.Get(types.Tx(fmt.Sprintf("foo%d", height)).Hash())
+	require.NoError(t, err)
+	require.Equal(t, txResult1, res)
+
+	ok, err := blockIndexer.Has(height)
+	require.NoError(t, err)
+	require.True(t, ok)
+
+	res, err = txIndexer.Get(types.Tx(fmt.Sprintf("bar%d", height)).Hash())
+	require.NoError(t, err)
+	require.Equal(t, txResult2, res)
+}
+
+func TestIndexerService_Prune(t *testing.T) {
+	service, txIndexer, _, eventBus := createTestSetup(t)
+
+	var keys [][][]byte
+
+	for height := int64(1); height <= 4; height++ {
+		events, txResult1, txResult2 := getEventsAndResults(t, height)
+		//publish block with events
+		err := eventBus.PublishEventNewBlockEvents(events)
+		require.NoError(t, err)
+
+		err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult1})
+		require.NoError(t, err)
+
+		err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult2})
+		require.NoError(t, err)
+
+		time.Sleep(100 * time.Millisecond)
+		keys = append(keys, kv.GetKeys(txIndexer))
+	}
+
+	service.Prune(2)
+
+	metaKeys := [][]byte{txindex.LastIndexerRetainHeightKey, txindex.IndexerRetainHeightKey}
+
+	keysAfterPrune2 := kv.SliceDiff(kv.GetKeys(txIndexer), metaKeys)
+	require.True(t, kv.EqualSlices(keysAfterPrune2, kv.SliceDiff(keys[3], keys[0])))
+
+	err := service.SaveIndexerRetainHeight(int64(4))
+	require.NoError(t, err)
+
+	actual, err := service.GetIndexerRetainHeight()
+	require.NoError(t, err)
+
+	require.Equal(t, int64(4), actual)
+
+	service.Prune(4)
+
+	keysAfterPrune4 := kv.SliceDiff(kv.GetKeys(txIndexer), metaKeys)
+	require.True(t, kv.EqualSlices(keysAfterPrune4, kv.SliceDiff(keys[3], keys[2])))
+
+	events, txResult1, txResult2 := getEventsAndResults(t, 1)
+	//publish block with events
+	err = eventBus.PublishEventNewBlockEvents(events)
+	require.NoError(t, err)
+
+	err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult1})
+	require.NoError(t, err)
+
+	err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult2})
+	require.NoError(t, err)
+
+	time.Sleep(100 * time.Millisecond)
+
+	keys14 := kv.GetKeys(txIndexer)
+
+	service.Prune(4)
+	keysSecondPrune4 := kv.GetKeys(txIndexer)
+
+	require.Equal(t, keys14, keysSecondPrune4)
+}
+
+func createTestSetup(t *testing.T) (*txindex.IndexerService, *kv.TxIndex, indexer.BlockIndexer, *types.EventBus) {
 	// event bus
 	eventBus := types.NewEventBus()
 	eventBus.SetLogger(log.TestingLogger())
@@ -33,7 +128,7 @@ func TestIndexerServiceIndexesBlocks(t *testing.T) {
 	txIndexer := kv.NewTxIndex(store)
 	blockIndexer := blockidxkv.New(db.NewPrefixDB(store, []byte("block_events")))
 
-	service := txindex.NewIndexerService(txIndexer, blockIndexer, eventBus, false)
+	service := txindex.NewIndexerService(txIndexer, blockIndexer, store, eventBus, false)
 	service.SetLogger(log.TestingLogger())
 	err = service.Start()
 	require.NoError(t, err)
@@ -42,10 +137,12 @@ func TestIndexerServiceIndexesBlocks(t *testing.T) {
 			t.Error(err)
 		}
 	})
+	return service, txIndexer, blockIndexer, eventBus
+}
 
-	// publish block with events
-	err = eventBus.PublishEventNewBlockEvents(types.EventDataNewBlockEvents{
-		Height: 1,
+func getEventsAndResults(t *testing.T, height int64) (types.EventDataNewBlockEvents, *abci.TxResult, *abci.TxResult) {
+	events := types.EventDataNewBlockEvents{
+		Height: height,
 		Events: []abci.Event{
 			{
 				Type: "begin_event",
@@ -59,36 +156,18 @@ func TestIndexerServiceIndexesBlocks(t *testing.T) {
 			},
 		},
 		NumTxs: int64(2),
-	})
-	require.NoError(t, err)
+	}
 	txResult1 := &abci.TxResult{
-		Height: 1,
+		Height: height,
 		Index:  uint32(0),
-		Tx:     types.Tx("foo"),
+		Tx:     types.Tx(fmt.Sprintf("foo%d", height)),
 		Result: abci.ExecTxResult{Code: 0},
 	}
-	err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult1})
-	require.NoError(t, err)
 	txResult2 := &abci.TxResult{
-		Height: 1,
+		Height: height,
 		Index:  uint32(1),
-		Tx:     types.Tx("bar"),
+		Tx:     types.Tx(fmt.Sprintf("bar%d", height)),
 		Result: abci.ExecTxResult{Code: 0},
 	}
-	err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult2})
-	require.NoError(t, err)
-
-	time.Sleep(100 * time.Millisecond)
-
-	res, err := txIndexer.Get(types.Tx("foo").Hash())
-	require.NoError(t, err)
-	require.Equal(t, txResult1, res)
-
-	ok, err := blockIndexer.Has(1)
-	require.NoError(t, err)
-	require.True(t, ok)
-
-	res, err = txIndexer.Get(types.Tx("bar").Hash())
-	require.NoError(t, err)
-	require.Equal(t, txResult2, res)
+	return events, txResult1, txResult2
 }

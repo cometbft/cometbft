@@ -30,7 +30,7 @@ import (
 const (
 	appVersion                 = 1
 	voteExtensionKey    string = "extensionSum"
-	voteExtensionMaxLen int64  = 1024 * 1024 * 128 //TODO: should be smaller.
+	voteExtensionMaxLen int64  = 1024 * 1024 * 128 // TODO: should be smaller.
 	voteExtensionMaxVal int64  = 128
 	prefixReservedKey   string = "reservedTxKey_"
 	suffixChainID       string = "ChainID"
@@ -102,13 +102,13 @@ type Config struct {
 	// Vote extension padding size, to simulate different vote extension sizes.
 	VoteExtensionSize uint `toml:"vote_extension_size"`
 
-	//Experimental
+	// Experimental
 	// Inject custom reactors (see node/main.go#startNode for a list of possibilities)
- 	ExperimentalCustomReactors map[string]string `toml:"experimental_custom_reactors"`
+	ExperimentalCustomReactors map[string]string `toml:"experimental_custom_reactors"`
 
- 	// Experimental gossip "propagation rate" and "send once" features
- 	ExperimentalGossipPropagationRate float32 `toml:"experimental_gossip_propagation_rate"`
- 	ExperimentalGossipSendOnce        bool    `toml:"experimental_gossip_send_once"`
+	// Experimental gossip "propagation rate" and "send once" features
+	ExperimentalGossipPropagationRate float32 `toml:"experimental_gossip_propagation_rate"`
+	ExperimentalGossipSendOnce        bool    `toml:"experimental_gossip_send_once"`
 }
 
 func DefaultConfig(dir string) *Config {

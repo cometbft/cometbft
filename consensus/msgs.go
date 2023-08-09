@@ -62,7 +62,7 @@ func MsgToProto(msg Message) (proto.Message, error) {
 	case *BlockPartMessage:
 		parts, err := msg.Part.ToProto()
 		if err != nil {
-			return nil, cmterrors.NewErrMsgToProto(*msg.Part, err)
+			return nil, cmterrors.ErrMsgToProto{MessageName: "Part", Err: err}
 		}
 		pb = &cmtcons.BlockPart{
 			Height: msg.Height,
@@ -148,7 +148,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 	case *cmtcons.NewValidBlock:
 		pbPartSetHeader, err := types.PartSetHeaderFromProto(&msg.BlockPartSetHeader)
 		if err != nil {
-			return nil, cmterrors.NewErrMsgToProto(msg.BlockPartSetHeader, err)
+			return nil, cmterrors.ErrMsgToProto{MessageName: "BlockPartSetHeader", Err: err}
 		}
 
 		pbBits := new(bits.BitArray)
@@ -164,7 +164,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 	case *cmtcons.Proposal:
 		pbP, err := types.ProposalFromProto(&msg.Proposal)
 		if err != nil {
-			return nil, cmterrors.NewErrMsgToProto(msg.Proposal, err)
+			return nil, cmterrors.ErrMsgToProto{MessageName: "Proposal", Err: err}
 		}
 
 		pb = &ProposalMessage{
@@ -181,7 +181,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 	case *cmtcons.BlockPart:
 		parts, err := types.PartFromProto(&msg.Part)
 		if err != nil {
-			return nil, cmterrors.NewErrMsgToProto(msg.Part, err)
+			return nil, cmterrors.ErrMsgToProto{MessageName: "Part", Err: err}
 		}
 		pb = &BlockPartMessage{
 			Height: msg.Height,
@@ -193,7 +193,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 		// call below.
 		vote, err := types.VoteFromProto(msg.Vote)
 		if err != nil {
-			return nil, cmterrors.NewErrMsgToProto(*msg.Vote, err)
+			return nil, cmterrors.ErrMsgToProto{MessageName: "Vote", Err: err}
 		}
 
 		pb = &VoteMessage{
@@ -215,7 +215,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 	case *cmtcons.VoteSetMaj23:
 		bi, err := types.BlockIDFromProto(&msg.BlockID)
 		if err != nil {
-			return nil, cmterrors.NewErrMsgToProto(cmtcons.VoteSetMaj23{}, err)
+			return nil, cmterrors.ErrMsgToProto{MessageName: "VoteSetMaj23", Err: err}
 		}
 		pb = &VoteSetMaj23Message{
 			Height:  msg.Height,
@@ -226,7 +226,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 	case *cmtcons.VoteSetBits:
 		bi, err := types.BlockIDFromProto(&msg.BlockID)
 		if err != nil {
-			return nil, cmterrors.NewErrMsgToProto(cmtcons.VoteSetBits{}, err)
+			return nil, cmterrors.ErrMsgToProto{MessageName: "VoteSetBits", Err: err}
 		}
 		bits := new(bits.BitArray)
 		bits.FromProto(&msg.Votes)
@@ -328,7 +328,7 @@ func WALFromProto(msg *cmtcons.WALMessage) (WALMessage, error) {
 		}
 		walMsg, err := MsgFromProto(um)
 		if err != nil {
-			return nil, cmterrors.ErrMsgFromProto{MessageName: "msg_info", Err: err}
+			return nil, cmterrors.ErrMsgFromProto{MessageName: "MsgInfo", Err: err}
 		}
 		pb = msgInfo{
 			Msg:    walMsg,

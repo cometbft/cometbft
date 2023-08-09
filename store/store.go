@@ -121,7 +121,7 @@ func (bs *BlockStore) LoadBlock(height int64) *types.Block {
 
 	block, err := types.BlockFromProto(pbb)
 	if err != nil {
-		panic(cmterrors.ErrMsgFromProto{MessageName: "block", Err: err})
+		panic(cmterrors.ErrMsgFromProto{MessageName: "Block", Err: err})
 	}
 
 	return block
@@ -193,7 +193,7 @@ func (bs *BlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 
 	blockMeta, err := types.BlockMetaFromProto(pbbm)
 	if err != nil {
-		panic(cmterrors.ErrMsgFromProto{MessageName: "block_metadata", Err: err})
+		panic(cmterrors.ErrMsgFromProto{MessageName: "BlockMetadata", Err: err})
 	}
 
 	return blockMeta
@@ -237,7 +237,7 @@ func (bs *BlockStore) LoadBlockCommit(height int64) *types.Commit {
 	}
 	commit, err := types.CommitFromProto(pbc)
 	if err != nil {
-		panic(cmterrors.NewErrMsgToProto(pbc, err))
+		panic(cmterrors.ErrMsgToProto{MessageName: "Commit", Err: err})
 	}
 	return commit
 }
@@ -499,7 +499,7 @@ func (bs *BlockStore) saveBlockToBatch(block *types.Block, blockParts *types.Par
 func (bs *BlockStore) saveBlockPart(height int64, index int, part *types.Part) {
 	pbp, err := part.ToProto()
 	if err != nil {
-		panic(cmterrors.NewErrMsgToProto(*part, err))
+		panic(cmterrors.ErrMsgToProto{MessageName: "Part", Err: err})
 	}
 	partBytes := mustEncode(pbp)
 	if err := bs.db.Set(calcBlockPartKey(height, index), partBytes); err != nil {

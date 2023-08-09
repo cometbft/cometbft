@@ -47,7 +47,7 @@ func (s *dbs) SaveLightBlock(lb *types.LightBlock) error {
 
 	lbpb, err := lb.ToProto()
 	if err != nil {
-		return cmterrors.NewErrMsgToProto(lb, err)
+		return cmterrors.ErrMsgToProto{MessageName: "LightBlock", Err: err}
 	}
 
 	lbBz, err := lbpb.Marshal()

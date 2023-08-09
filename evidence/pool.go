@@ -296,7 +296,7 @@ func (evpool *Pool) isPending(evidence types.Evidence) bool {
 func (evpool *Pool) addPendingEvidence(ev types.Evidence) error {
 	evpb, err := types.EvidenceToProto(ev)
 	if err != nil {
-		return cmterrors.NewErrMsgToProto(ev, err)
+		return cmterrors.ErrMsgToProto{MessageName: "Evidence", Err: err}
 	}
 
 	evBytes, err := evpb.Marshal()

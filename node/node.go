@@ -140,7 +140,7 @@ func StateProvider(stateProvider statesync.StateProvider) Option {
 // store are empty at the time the function is called.
 //
 // If the block store is not empty, the function returns an error.
-func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBProvider, height uint64, appHash []byte) error {
+func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBProvider, height uint64, appHash []byte) (err error) {
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 	if ctx == nil {
 		ctx = context.Background()
@@ -163,10 +163,25 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 		return fmt.Errorf("blockstore not empty, trying to initialize non empty state")
 	}
 
+	defer func() {
+		if derr := blockStore.Close(); derr != nil {
+			logger.Error("Failed to close blockstore", "err", derr)
+			// Set the return value
+			err = derr
+		}
+	}()
+
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
 	})
 
+	defer func() {
+		if derr := stateStore.Close(); derr != nil {
+			logger.Error("Failed to close statestore", "err", derr)
+			// Set the return value
+			err = derr
+		}
+	}()
 	state, err := stateStore.Load()
 	if err != nil {
 		return err
@@ -202,10 +217,10 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	} else {
 		if !bytes.Equal(appHash, state.AppHash) {
 			if err := blockStore.Close(); err != nil {
-				logger.Error("failed to close blockstore")
+				logger.Error("failed to close blockstore: %w", err)
 			}
 			if err := stateStore.Close(); err != nil {
-				logger.Error("failed to close statestore")
+				logger.Error("failed to close statestore: %w", err)
 			}
 			return fmt.Errorf("the app hash returned by the light client does not match the provided appHash, expected %X, got %X", state.AppHash, appHash)
 		}
@@ -216,8 +231,8 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 		return err
 	}
 
-	if err := stateStore.Bootstrap(state); err != nil {
-		return err
+	if err = stateStore.Bootstrap(state); err != nil {
+		return
 	}
 
 	err = blockStore.SaveSeenCommit(state.LastBlockHeight, commit)
@@ -231,15 +246,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	// needs to manually delete the state and blockstores and rerun the bootstrapping process.
 	err = stateStore.SetOfflineStateSyncHeight(state.LastBlockHeight)
 	if err != nil {
-		return fmt.Errorf("failed to set synced height")
-	}
-	if err = blockStore.Close(); err != nil {
-		logger.Error("failed to close blockstore")
-	}
-	var err2 error
-	if err2 = stateStore.Close(); err2 != nil {
-		logger.Error("failed to close statestore")
-		return err2
+		return fmt.Errorf("failed to set synced height: %w", err)
 	}
 
 	return err

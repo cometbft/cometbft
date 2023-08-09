@@ -23,7 +23,7 @@ func TestIndexerServiceIndexesBlocks(t *testing.T) {
 
 	height := int64(1)
 
-	events, txResult1, txResult2 := getEventsAndResults(t, height)
+	events, txResult1, txResult2 := getEventsAndResults(height)
 	// publish block with events
 	err := eventBus.PublishEventNewBlockEvents(events)
 	require.NoError(t, err)
@@ -55,7 +55,7 @@ func TestIndexerService_Prune(t *testing.T) {
 	var keys [][][]byte
 
 	for height := int64(1); height <= 4; height++ {
-		events, txResult1, txResult2 := getEventsAndResults(t, height)
+		events, txResult1, txResult2 := getEventsAndResults(height)
 		//publish block with events
 		err := eventBus.PublishEventNewBlockEvents(events)
 		require.NoError(t, err)
@@ -90,7 +90,7 @@ func TestIndexerService_Prune(t *testing.T) {
 	keysAfterPrune4 := kv.SliceDiff(kv.GetKeys(txIndexer), metaKeys)
 	require.True(t, kv.EqualSlices(keysAfterPrune4, kv.SliceDiff(keys[3], keys[2])))
 
-	events, txResult1, txResult2 := getEventsAndResults(t, 1)
+	events, txResult1, txResult2 := getEventsAndResults(1)
 	//publish block with events
 	err = eventBus.PublishEventNewBlockEvents(events)
 	require.NoError(t, err)
@@ -140,7 +140,7 @@ func createTestSetup(t *testing.T) (*txindex.IndexerService, *kv.TxIndex, indexe
 	return service, txIndexer, blockIndexer, eventBus
 }
 
-func getEventsAndResults(t *testing.T, height int64) (types.EventDataNewBlockEvents, *abci.TxResult, *abci.TxResult) {
+func getEventsAndResults(height int64) (types.EventDataNewBlockEvents, *abci.TxResult, *abci.TxResult) {
 	events := types.EventDataNewBlockEvents{
 		Height: height,
 		Events: []abci.Event{

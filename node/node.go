@@ -232,7 +232,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	}
 
 	if err = stateStore.Bootstrap(state); err != nil {
-		return
+		return err
 	}
 
 	err = blockStore.SaveSeenCommit(state.LastBlockHeight, commit)

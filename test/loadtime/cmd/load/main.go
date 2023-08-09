@@ -64,7 +64,7 @@ func (f *ClientFactory) NewClient(cfg loadtest.Config) (loadtest.Client, error) 
 }
 
 func (c *TxGenerator) GenerateTx() ([]byte, error) {
-	return payload.NewBytes(&payload.Payload{
+	return payload.NewBytes(&payload.RawPayload{
 		Connections: c.conns,
 		Rate:        c.rate,
 		Size:        c.size,

@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/cometbft/cometbft/libs/log"
@@ -14,7 +15,6 @@ import (
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/test/loadtime/payload"
 	cmttime "github.com/cometbft/cometbft/types/time"
-	"github.com/google/uuid"
 )
 
 const workerPoolSize = 16
@@ -32,8 +32,8 @@ func Load(ctx context.Context, testnet *e2e.Testnet) (int, error) {
 	started := time.Now()
 	u := [16]byte(uuid.New()) // generate run ID on startup
 
-	txCh := make(chan payload.Payload)
-	go loadGenerate(ctx, txCh, testnet, u[:])
+	payloadCh := make(chan payload.RawPayload)
+	go loadGenerate(ctx, payloadCh, testnet, u[:])
 
 	for _, n := range testnet.Nodes {
 		if n.SendNoLoad {
@@ -41,7 +41,7 @@ func Load(ctx context.Context, testnet *e2e.Testnet) (int, error) {
 		}
 
 		for w := 0; w < testnet.LoadTxConnections; w++ {
-			go loadProcess(ctx, txCh, chSuccess, n, testnet)
+			go loadProcess(ctx, payloadCh, chSuccess, n, testnet)
 		}
 	}
 
@@ -72,14 +72,14 @@ func Load(ctx context.Context, testnet *e2e.Testnet) (int, error) {
 }
 
 // loadGenerate generates jobs until the context is canceled or the target is attained
-func loadGenerate(ctx context.Context, txCh chan<- payload.Payload, testnet *e2e.Testnet, id []byte) {
+func loadGenerate(ctx context.Context, payloadCh chan<- payload.RawPayload, testnet *e2e.Testnet, id []byte) {
 	t := time.NewTimer(0)
 	defer t.Stop()
 	for {
 		select {
 		case <-t.C:
 		case <-ctx.Done():
-			close(txCh)
+			close(payloadCh)
 			return
 		}
 		t.Reset(time.Second)
@@ -89,7 +89,7 @@ func loadGenerate(ctx context.Context, txCh chan<- payload.Payload, testnet *e2e
 		// the next batch is set to be sent out, then the context is canceled so that
 		// the current batch is halted, allowing the next batch to begin.
 		tctx, cf := context.WithTimeout(ctx, time.Second)
-		createTxBatch(tctx, txCh, testnet, id)
+		createTxBatch(tctx, payloadCh, testnet, id)
 		cf()
 	}
 }
@@ -97,7 +97,7 @@ func loadGenerate(ctx context.Context, txCh chan<- payload.Payload, testnet *e2e
 // createTxBatch creates new transactions and sends them into the txCh. createTxBatch
 // returns when either a full batch has been sent to the txCh or the context
 // is canceled.
-func createTxBatch(ctx context.Context, txCh chan<- payload.Payload, testnet *e2e.Testnet, id []byte) {
+func createTxBatch(ctx context.Context, payloadCh chan<- payload.RawPayload, testnet *e2e.Testnet, id []byte) {
 	wg := &sync.WaitGroup{}
 	genCh := make(chan struct{})
 	for i := 0; i < workerPoolSize; i++ {
@@ -105,14 +105,14 @@ func createTxBatch(ctx context.Context, txCh chan<- payload.Payload, testnet *e2
 		go func() {
 			defer wg.Done()
 			for range genCh {
-				tx := payload.Payload{
+				p := payload.RawPayload{
 					Id:          id,
 					Size:        uint64(testnet.LoadTxSizeBytes),
 					Rate:        uint64(testnet.LoadTxBatchSize),
 					Connections: uint64(testnet.LoadTxConnections),
 				}
 				select {
-				case txCh <- tx:
+				case payloadCh <- p:
 				case <-ctx.Done():
 					return
 				}
@@ -131,12 +131,11 @@ func createTxBatch(ctx context.Context, txCh chan<- payload.Payload, testnet *e2
 }
 
 // loadProcess loops over txCh, sending each transaction to the corresponding client.
-func loadProcess(ctx context.Context, txCh <-chan payload.Payload, chSuccess chan<- struct{}, n *e2e.Node, testnet *e2e.Testnet) {
+func loadProcess(ctx context.Context, payloadCh <-chan payload.RawPayload, chSuccess chan<- struct{}, n *e2e.Node, testnet *e2e.Testnet) {
 	var client *rpchttp.HTTP
 	var err error
 	s := struct{}{}
-	i := 0
-	for tx := range txCh {
+	for p := range payloadCh {
 		if client == nil {
 			client, err = n.Client()
 			if err != nil {
@@ -151,24 +150,22 @@ func loadProcess(ctx context.Context, txCh <-chan payload.Payload, chSuccess cha
 			continue
 		}
 		if !testnet.PhysicalTimestamps {
-			tx.Time = &timestamppb.Timestamp{
+			p.Time = &timestamppb.Timestamp{
 				Seconds: info.SyncInfo.LatestBlockHeight,
 				Nanos:   0,
 			}
 		} else {
 			time := cmttime.Canonical(info.SyncInfo.LatestBlockTime)
-			tx.Time = &timestamppb.Timestamp{
+			p.Time = &timestamppb.Timestamp{
 				Seconds: time.Unix(),
 				Nanos:   int32(time.Nanosecond()),
 			}
 		}
 
-		marshaled, _ := payload.NewBytes(&tx)
-
-		if _, err = client.BroadcastTxSync(ctx, marshaled); err != nil {
+		tx, _ := payload.NewBytes(&p)
+		if _, err = client.BroadcastTxSync(ctx, tx); err != nil {
 			continue
 		}
 		chSuccess <- s
-		i++
 	}
 }

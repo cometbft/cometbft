@@ -410,7 +410,7 @@ func (dec *WALDecoder) Decode() (*TimedWALMessage, error) {
 
 	walMsg, err := WALFromProto(res.Msg)
 	if err != nil {
-		return nil, DataCorruptionError{cmterrors.NewErrMsgFromProto(res.Msg, err)}
+		return nil, DataCorruptionError{cmterrors.ErrMsgFromProto{MessageName: "wal_message", Err: err}}
 	}
 	tMsgWal := &TimedWALMessage{
 		Time: res.Time,

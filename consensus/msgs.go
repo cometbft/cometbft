@@ -328,7 +328,7 @@ func WALFromProto(msg *cmtcons.WALMessage) (WALMessage, error) {
 		}
 		walMsg, err := MsgFromProto(um)
 		if err != nil {
-			return nil, cmterrors.NewErrMsgFromProto(cmtcons.WALMessage_MsgInfo{}, err)
+			return nil, cmterrors.ErrMsgFromProto{MessageName: "msg_info", Err: err}
 		}
 		pb = msgInfo{
 			Msg:    walMsg,

@@ -35,18 +35,6 @@ type ErrMsgFromProto struct {
 	Err         error
 }
 
-func NewErrMsgFromProto[T any](proto T, err error) ErrMsgFromProto {
-	t := reflect.TypeOf(proto)
-
-	// if proto provided is a pointer, get the underlying value
-	if t.Kind() == reflect.Ptr {
-		t = t.Elem()
-	}
-
-	messageName := t.Name()
-	return ErrMsgFromProto{MessageName: messageName, Err: err}
-}
-
 func (e ErrMsgFromProto) Error() string {
 	return fmt.Sprintf("%s msg from proto error: %s", e.MessageName, e.Err.Error())
 }

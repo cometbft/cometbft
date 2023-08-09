@@ -20,7 +20,7 @@ var (
 	ErrInvalidProposalPOLRound    = errors.New("error invalid proposal POL round")
 	ErrAddingVote                 = errors.New("error adding vote")
 	ErrSignatureFoundInPastBlocks = errors.New("found signature from the same key")
-	errPubKeyIsNotSet             = errors.New("pubkey is not set. Look for \"Can't get private validator pubkey\" errors")
+	ErrPubKeyIsNotSet             = errors.New("pubkey is not set. Look for \"Can't get private validator pubkey\" errors")
 )
 
 type ErrConsensusMessageNotRecognized struct {

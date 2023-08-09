@@ -1362,39 +1362,41 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		different value.
 	*/
 	if cs.Proposal.POLRound == -1 {
+		if cs.LockedRound == -1 {
+			// Before prevoting on the block received from the proposer for the current round and height,
+			// we request the Application, via `ProcessProposal` ABCI call, to confirm that the block is
+			// valid. If the Application does not accept the block, consensus prevotes nil.
+			//
+			// WARNING: misuse of block rejection by the Application can seriously compromise
+			// the liveness properties of consensus.
+			// Please see `PrepareProosal`-`ProcessProposal` coherence and determinism properties
+			// in the ABCI++ specification.
+			isAppValid, err := cs.blockExec.ProcessProposal(cs.ProposalBlock, cs.state)
+			if err != nil {
+				panic(fmt.Sprintf(
+					"state machine returned an error (%v) when calling ProcessProposal", err,
+				))
+			}
+			cs.metrics.MarkProposalProcessed(isAppValid)
+
+			if !isAppValid {
+				logger.Error("prevote step: state machine rejected a proposed block; this should not happen:"+
+					"the proposer may be misbehaving; prevoting nil", "err", err)
+				cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
+				return
+			}
+
+			logger.Debug("prevote step: ProposalBlock is valid and there is no locked block; prevoting the proposal")
+			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header())
+			return
+		}
+
 		if cs.ProposalBlock.HashesTo(cs.LockedBlock.Hash()) {
 			logger.Debug("prevote step: ProposalBlock is valid (POLRound is -1) and matches our locked block; prevoting the proposal")
 			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header())
 			return
 		}
 
-		// Before prevoting on the block received from the proposer for the current round and height,
-		// we request the Application, via `ProcessProposal` ABCI call, to confirm that the block is
-		// valid. If the Application does not accept the block, consensus prevotes nil.
-		//
-		// WARNING: misuse of block rejection by the Application can seriously compromise
-		// the liveness properties of consensus.
-		// Please see `PrepareProosal`-`ProcessProposal` coherence and determinism properties
-		// in the ABCI++ specification.
-		isAppValid, err := cs.blockExec.ProcessProposal(cs.ProposalBlock, cs.state)
-		if err != nil {
-			panic(fmt.Sprintf(
-				"state machine returned an error (%v) when calling ProcessProposal", err,
-			))
-		}
-		cs.metrics.MarkProposalProcessed(isAppValid)
-
-		if !isAppValid {
-			logger.Error("prevote step: state machine rejected a proposed block; this should not happen:"+
-				"the proposer may be misbehaving; prevoting nil", "err", err)
-			cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
-			return
-		}
-		if cs.LockedRound == -1 {
-			logger.Debug("prevote step: ProposalBlock is valid and there is no locked block; prevoting the proposal")
-			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header())
-			return
-		}
 		logger.Debug("prevote step: ProposalBlock is valid (POLRound is -1), but doesn't match our locked block; prevoting nil")
 		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
 		return

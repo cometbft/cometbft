@@ -338,11 +338,7 @@ laddr = "tcp://localhost:26655"
 
 # Only controls whether the pruning service is accessible via the gRPC API - not
 # whether a previously set pruning service retain height is honoured by the
-# node.
-#
-# To disable the influence of previously set pruning service retain height(s) on
-# node pruning, this endpoint should be enabled and the relevant pruning service
-# retain heights should be set to 0.
+# node. That is controlled by settings in the [storage.pruning] section.
 #
 # Disabled by default.
 enabled = false

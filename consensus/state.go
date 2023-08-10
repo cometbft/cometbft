@@ -1548,25 +1548,26 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 		return
 	}
 
-	// At this point, +2/3 prevoted for a particular block.
-
-	// If we're already locked on that block, precommit it, and update the LockedRound
-	if cs.LockedBlock.HashesTo(blockID.Hash) {
-		logger.Debug("precommit step; +2/3 prevoted locked block; relocking")
-		cs.LockedRound = round
-
-		if err := cs.eventBus.PublishEventRelock(cs.RoundStateEvent()); err != nil {
-			logger.Error("failed publishing event relock", "err", err)
-		}
-
-		cs.signAddVote(cmtproto.PrecommitType, blockID.Hash, blockID.PartSetHeader)
-		return
-	}
-
+	// Lines 36-43
 	// If greater than 2/3 of the voting power on the network prevoted for
 	// the proposed block, update our locked block to this block and issue a
 	// precommit vote for it.
 	if cs.ProposalBlock.HashesTo(blockID.Hash) {
+		cs.LockedRound = round
+
+		// If we're already locked on that block, precommit it, and update the LockedRound
+		if cs.LockedBlock.HashesTo(blockID.Hash) {
+			logger.Debug("precommit step; +2/3 prevoted locked block; relocking")
+
+			if err := cs.eventBus.PublishEventRelock(cs.RoundStateEvent()); err != nil {
+				logger.Error("failed publishing event relock", "err", err)
+			}
+
+			cs.signAddVote(cmtproto.PrecommitType, blockID.Hash, blockID.PartSetHeader)
+			return
+
+		}
+
 		logger.Debug("precommit step; +2/3 prevoted proposal block; locking", "hash", blockID.Hash)
 
 		// Validate the block.
@@ -1574,7 +1575,6 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 			panic(fmt.Sprintf("precommit step; +2/3 prevoted for an invalid block: %v", err))
 		}
 
-		cs.LockedRound = round
 		cs.LockedBlock = cs.ProposalBlock
 		cs.LockedBlockParts = cs.ProposalBlockParts
 

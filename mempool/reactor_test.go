@@ -143,17 +143,16 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 	// create random transactions
 	txs := NewRandomTxs(numTxs, 20)
 
-	const peerID0 = 0
-	const peerID1 = 1
 	// the second peer sends all the transactions to the first peer
+	secondNodeID := reactors[1].Switch.NodeInfo().ID()
 	for _, tx := range txs {
-		reactors[0].addSender(tx.Key(), peerID1)
-		_, err := reactors[peerID0].mempool.CheckTx(tx)
+		reactors[0].addSender(tx.Key(), secondNodeID)
+		_, err := reactors[0].mempool.CheckTx(tx)
 		require.NoError(t, err)
 	}
 
 	// the second peer should not receive any transaction
-	ensureNoTxs(t, reactors[peerID1], 100*time.Millisecond)
+	ensureNoTxs(t, reactors[1], 100*time.Millisecond)
 }
 
 func TestReactor_MaxTxBytes(t *testing.T) {
@@ -281,19 +280,19 @@ func TestReactorTxSendersLocal(t *testing.T) {
 
 	tx1 := kvstore.NewTxFromID(1)
 	tx2 := kvstore.NewTxFromID(2)
-	require.False(t, reactor.isSender(types.Tx(tx1).Key(), 1))
+	require.False(t, reactor.isSender(types.Tx(tx1).Key(), "peer1"))
 
-	reactor.addSender(types.Tx(tx1).Key(), 1)
-	reactor.addSender(types.Tx(tx1).Key(), 2)
-	reactor.addSender(types.Tx(tx2).Key(), 1)
-	require.True(t, reactor.isSender(types.Tx(tx1).Key(), 1))
-	require.True(t, reactor.isSender(types.Tx(tx1).Key(), 2))
-	require.True(t, reactor.isSender(types.Tx(tx2).Key(), 1))
+	reactor.addSender(types.Tx(tx1).Key(), "peer1")
+	reactor.addSender(types.Tx(tx1).Key(), "peer2")
+	reactor.addSender(types.Tx(tx2).Key(), "peer1")
+	require.True(t, reactor.isSender(types.Tx(tx1).Key(), "peer1"))
+	require.True(t, reactor.isSender(types.Tx(tx1).Key(), "peer2"))
+	require.True(t, reactor.isSender(types.Tx(tx2).Key(), "peer1"))
 
 	reactor.removeSenders(types.Tx(tx1).Key())
-	require.False(t, reactor.isSender(types.Tx(tx1).Key(), 1))
-	require.False(t, reactor.isSender(types.Tx(tx1).Key(), 2))
-	require.True(t, reactor.isSender(types.Tx(tx2).Key(), 1))
+	require.False(t, reactor.isSender(types.Tx(tx1).Key(), "peer1"))
+	require.False(t, reactor.isSender(types.Tx(tx1).Key(), "peer2"))
+	require.True(t, reactor.isSender(types.Tx(tx2).Key(), "peer1"))
 }
 
 // Test that:

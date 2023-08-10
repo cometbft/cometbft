@@ -1362,7 +1362,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		application-valid, that is, it was validated by the application at least
 		by one correct node in a previous step:
 		- when the proposal matches our non-nil valid block AND we're not locked on a block, and
-		- when the proposal matches our locked block.
+		- when the proposal matches our non-nil locked block.
 		In these cases we do not need to query the application to validate the
 		proposal.
 	*/

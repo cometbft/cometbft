@@ -353,6 +353,12 @@ interaction between a node and its data companion:
   requested by the pruning service.
 - `pruning_service_block_results_retain_height` - The current block results
   retain height as requested by the pruning service.
+- `application_block_retain_height` - The current block retain height as set by
+  the application.
+- `block_store_base_height` - The actual base height of the block store, which
+  is influenced by the application and pruning service block retain heights.
+- `abci_results_base_height` - The actual base height of stored block results,
+  which is influenced by the pruning service block results retain height.
 
 Other metrics may be proposed as part of the non-privileged gRPC API that could
 assist operators in understanding the health of the interaction with the data

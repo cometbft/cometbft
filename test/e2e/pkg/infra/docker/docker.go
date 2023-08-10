@@ -46,6 +46,32 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 func (p Provider) StopTestnet(ctx context.Context) error {
 	return ExecCompose(ctx, p.Testnet.Dir, "down")
 }
+<<<<<<< HEAD
+=======
+
+func (p Provider) Disconnect(ctx context.Context, name string, _ string) error {
+	return Exec(ctx, "network", "disconnect", p.Testnet.Name+"_"+p.Testnet.Name, name)
+}
+
+func (p Provider) Reconnect(ctx context.Context, name string, _ string) error {
+	return Exec(ctx, "network", "connect", p.Testnet.Name+"_"+p.Testnet.Name, name)
+}
+
+func (p Provider) CheckUpgraded(ctx context.Context, node *e2e.Node) (string, bool, error) {
+	testnet := node.Testnet
+	out, err := ExecComposeOutput(ctx, testnet.Dir, "ps", "-q", node.Name)
+	if err != nil {
+		return "", false, err
+	}
+	name := node.Name
+	upgraded := false
+	if len(out) == 0 {
+		name = name + "_u"
+		upgraded = true
+	}
+	return name, upgraded, nil
+}
+>>>>>>> 69843bed0 (ADR-101: implement gRPC `PruningService` (#1154))
 
 // dockerComposeBytes generates a Docker Compose config file for a testnet and returns the
 // file as bytes to be written out to disk.
@@ -81,6 +107,7 @@ services:
     - {{ if .RPCProxyPort }}{{ .RPCProxyPort }}:{{ end }}26657
     - {{ if .GRPCLegacyPort }}{{ .GRPCLegacyPort }}:{{ end }}26669
     - {{ if .GRPCProxyPort }}{{ .GRPCProxyPort }}:{{ end }}26670
+    - {{ if .GRPCPrivilegedProxyPort }}{{ .GRPCPrivilegedProxyPort }}:{{ end }}26671
 {{- if .PrometheusProxyPort }}
     - {{ .PrometheusProxyPort }}:26660
 {{- end }}

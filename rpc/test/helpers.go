@@ -86,11 +86,16 @@ func randPort() int {
 	return port
 }
 
+<<<<<<< HEAD
 func makeAddrs() (string, string, string, string) {
 	return fmt.Sprintf("tcp://127.0.0.1:%d", randPort()),
 		fmt.Sprintf("tcp://127.0.0.1:%d", randPort()),
 		fmt.Sprintf("tcp://127.0.0.1:%d", randPort()),
 		fmt.Sprintf("tcp://127.0.0.1:%d", randPort())
+=======
+func makeAddr() string {
+	return fmt.Sprintf("tcp://127.0.0.1:%d", randPort())
+>>>>>>> 69843bed0 (ADR-101: implement gRPC `PruningService` (#1154))
 }
 
 func createConfig() *cfg.Config {
@@ -98,13 +103,22 @@ func createConfig() *cfg.Config {
 	c := test.ResetTestRoot(pathname)
 
 	// and we use random ports to run in parallel
+<<<<<<< HEAD
 	tm, rpc, grpcLegacy, grpc := makeAddrs()
 	c.P2P.ListenAddress = tm
 	c.RPC.ListenAddress = rpc
 	c.RPC.CORSAllowedOrigins = []string{"https://cometbft.com/"}
 	c.RPC.GRPCListenAddress = grpcLegacy
 	c.GRPC.ListenAddress = grpc
+=======
+	c.P2P.ListenAddress = makeAddr()
+	c.RPC.ListenAddress = makeAddr()
+	c.RPC.CORSAllowedOrigins = []string{"https://cometbft.com/"}
+	c.GRPC.ListenAddress = makeAddr()
+>>>>>>> 69843bed0 (ADR-101: implement gRPC `PruningService` (#1154))
 	c.GRPC.VersionService.Enabled = true
+	c.GRPC.Privileged.ListenAddress = makeAddr()
+	c.GRPC.Privileged.PruningService.Enabled = true
 	// Set pruning interval to a value lower than the default for some of the
 	// tests that rely on pruning to occur quickly
 	c.Storage.Pruning.Interval = 100 * time.Millisecond

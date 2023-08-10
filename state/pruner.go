@@ -206,10 +206,11 @@ func (p *Pruner) SetABCIResRetainHeight(height int64) error {
 	if currentRetainHeight > height {
 		return ErrPrunerCannotLowerRetainHeight
 	}
-	if err = p.stateStore.SaveABCIResRetainHeight(height); err == nil {
-		p.metrics.PruningServiceBlockResultsRetainHeight.Set(float64(height))
+	if err := p.stateStore.SaveABCIResRetainHeight(height); err != nil {
+		return err
 	}
-	return err
+	p.metrics.PruningServiceBlockResultsRetainHeight.Set(float64(height))
+	return nil
 }
 
 // GetApplicationRetainHeight is a convenience method for accessing the

@@ -1352,20 +1352,31 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 
 		If the application deems the proposal as valid AND we're not locked on a
 		block OR the proposal matches our locked block (line 23), we prevote the
-		proposal (line 24). Note that when the proposal matches our locked
-		block, we do not need to query the application to validate the proposal,
-		because we know it was validated by at least by one correct node the
-		moment we locked it.
+		proposal (line 24).
 
 		Otherwise, we have already locked on a value that is different from the
 		proposed value, so we prevote nil (line 26), because we are locked on a
 		different value.
+
+		Note that there are two cases on which we know that the proposal is
+		application-valid, that is, it was validated by the application at least
+		by one correct node in a previous step:
+		- when the proposal matches our non-nil valid block AND we're not locked on a block, and
+		- when the proposal matches our locked block.
+		In these cases we do not need to query the application to validate the
+		proposal.
 	*/
 	if cs.Proposal.POLRound == -1 {
 		if cs.LockedRound == -1 {
-			// Before prevoting on the block received from the proposer for the current round and height,
-			// we request the Application, via `ProcessProposal` ABCI call, to confirm that the block is
-			// valid. If the Application does not accept the block, consensus prevotes nil.
+			if cs.ValidRound != -1 && cs.ProposalBlock.HashesTo(cs.ValidBlock.Hash()) {
+				logger.Debug("prevote step: ProposalBlock matches our valid block; prevoting the proposal")
+				cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header())
+				return
+			}
+
+			// We request the Application, via a `ProcessProposal` ABCI call, to
+			// confirm that the block is valid. If the application does not
+			// accept the block, consensus prevotes nil.
 			//
 			// WARNING: misuse of block rejection by the Application can seriously compromise
 			// the liveness properties of consensus.

@@ -46,6 +46,12 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "pruning_service_block_results_retain_height",
 			Help:      "PruningServiceBlockResultsRetainHeight is the accepted block results retain height set by the data companion",
 		}, labels).With(labelsAndValues...),
+		ApplicationBlockRetainHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "application_block_retain_height",
+			Help:      "ApplicationBlockRetainHeight is the accepted block retain height set by the application",
+		}, labels).With(labelsAndValues...),
 	}
 }
 
@@ -56,5 +62,6 @@ func NopMetrics() *Metrics {
 		ValidatorSetUpdates:                    discard.NewCounter(),
 		PruningServiceBlockRetainHeight:        discard.NewGauge(),
 		PruningServiceBlockResultsRetainHeight: discard.NewGauge(),
+		ApplicationBlockRetainHeight:           discard.NewGauge(),
 	}
 }

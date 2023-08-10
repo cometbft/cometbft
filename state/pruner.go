@@ -134,7 +134,11 @@ func (p *Pruner) SetApplicationRetainHeight(height int64) error {
 		return ErrPrunerCannotLowerRetainHeight
 	}
 
-	return p.stateStore.SaveApplicationRetainHeight(height)
+	err = p.stateStore.SaveApplicationRetainHeight(height)
+	if err == nil {
+		p.metrics.ApplicationBlockRetainHeight.Set(float64(height))
+	}
+	return err
 }
 
 // SetCompanionRetainHeight sets the application retain height with some basic

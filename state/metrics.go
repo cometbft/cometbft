@@ -34,4 +34,8 @@ type Metrics struct {
 	// PruningServiceBlockResultsRetainHeight is the accepted block results
 	// retain height set by the data companion
 	PruningServiceBlockResultsRetainHeight metrics.Gauge
+
+	// ApplicationBlockRetainHeight is the accepted block
+	// retain height set by the application
+	ApplicationBlockRetainHeight metrics.Gauge
 }

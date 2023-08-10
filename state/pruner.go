@@ -33,17 +33,21 @@ type Pruner struct {
 	interval time.Duration
 
 	observer PrunerObserver
+
+	metrics *Metrics
 }
 
 type prunerConfig struct {
 	interval time.Duration
 	observer PrunerObserver
+	metrics  *Metrics
 }
 
 func defaultPrunerConfig() *prunerConfig {
 	return &prunerConfig{
 		interval: config.DefaultPruningInterval,
 		observer: &NoopPrunerObserver{},
+		metrics:  NopMetrics(),
 	}
 }
 
@@ -59,6 +63,12 @@ func WithPrunerObserver(obs PrunerObserver) PrunerOption {
 	return func(p *prunerConfig) { p.observer = obs }
 }
 
+func WithPrunerMetrics(metrics *Metrics) PrunerOption {
+	return func(p *prunerConfig) {
+		p.metrics = metrics
+	}
+}
+
 func NewPruner(stateStore Store, bs BlockStore, logger log.Logger, options ...PrunerOption) *Pruner {
 	cfg := defaultPrunerConfig()
 	for _, opt := range options {
@@ -70,6 +80,7 @@ func NewPruner(stateStore Store, bs BlockStore, logger log.Logger, options ...Pr
 		logger:     logger,
 		interval:   cfg.interval,
 		observer:   cfg.observer,
+		metrics:    cfg.metrics,
 	}
 	p.BaseService = *service.NewBaseService(logger, "Pruner", p)
 	return p
@@ -122,6 +133,7 @@ func (p *Pruner) SetApplicationRetainHeight(height int64) error {
 	if currentAppRetainHeight > height || (!noCompanionRetainHeight && currentCompanionRetainHeight > height) {
 		return ErrPrunerCannotLowerRetainHeight
 	}
+
 	return p.stateStore.SaveApplicationRetainHeight(height)
 }
 
@@ -160,7 +172,11 @@ func (p *Pruner) SetCompanionRetainHeight(height int64) error {
 	if currentCompanionRetainHeight > height || (!noAppRetainHeight && currentAppRetainHeight > height) {
 		return ErrPrunerCannotLowerRetainHeight
 	}
-	return p.stateStore.SaveCompanionBlockRetainHeight(height)
+	err = p.stateStore.SaveCompanionBlockRetainHeight(height)
+	if err == nil {
+		p.metrics.PruningServiceBlockRetainHeight.Set(float64(height))
+	}
+	return err
 }
 
 // SetABCIResRetainHeight sets the retain height for ABCI responses.
@@ -186,7 +202,11 @@ func (p *Pruner) SetABCIResRetainHeight(height int64) error {
 	if currentRetainHeight > height {
 		return ErrPrunerCannotLowerRetainHeight
 	}
-	return p.stateStore.SaveABCIResRetainHeight(height)
+	err = p.stateStore.SaveABCIResRetainHeight(height)
+	if err == nil {
+		p.metrics.PruningServiceBlockResultsRetainHeight.Set(float64(height))
+	}
+	return err
 }
 
 // GetApplicationRetainHeight is a convenience method for accessing the

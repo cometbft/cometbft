@@ -52,6 +52,18 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "application_block_retain_height",
 			Help:      "ApplicationBlockRetainHeight is the accepted block retain height set by the application",
 		}, labels).With(labelsAndValues...),
+		BlockStoreBaseHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "block_store_base_height",
+			Help:      "BlockStoreBaseHeight shows the first height at which a block is available",
+		}, labels).With(labelsAndValues...),
+		ABCIResultsBaseHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "abciresults_base_height",
+			Help:      "ABCIResultsBaseHeight shows the first height at which abci results are available",
+		}, labels).With(labelsAndValues...),
 	}
 }
 
@@ -63,5 +75,7 @@ func NopMetrics() *Metrics {
 		PruningServiceBlockRetainHeight:        discard.NewGauge(),
 		PruningServiceBlockResultsRetainHeight: discard.NewGauge(),
 		ApplicationBlockRetainHeight:           discard.NewGauge(),
+		BlockStoreBaseHeight:                   discard.NewGauge(),
+		ABCIResultsBaseHeight:                  discard.NewGauge(),
 	}
 }

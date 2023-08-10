@@ -38,4 +38,12 @@ type Metrics struct {
 	// ApplicationBlockRetainHeight is the accepted block
 	// retain height set by the application
 	ApplicationBlockRetainHeight metrics.Gauge
+
+	// BlockStoreBaseHeight shows the first height at which
+	// a block is available
+	BlockStoreBaseHeight metrics.Gauge
+
+	// ABCIResultsBaseHeight shows the first height at which
+	// abci results are available
+	ABCIResultsBaseHeight metrics.Gauge
 }

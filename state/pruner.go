@@ -280,6 +280,7 @@ func (p *Pruner) pruneBlocksToRetainHeight(lastRetainHeight int64) int64 {
 	if err != nil {
 		p.logger.Error("Failed to prune blocks", "err", err, "targetRetainHeight", targetRetainHeight, "newRetainHeight", newRetainHeight)
 	} else if pruned > 0 {
+		p.metrics.BlockStoreBaseHeight.Set(float64(newRetainHeight))
 		p.logger.Info("Pruned blocks", "count", pruned, "evidenceRetainHeight", evRetainHeight, "newRetainHeight", newRetainHeight)
 	}
 	return newRetainHeight
@@ -311,6 +312,7 @@ func (p *Pruner) pruneABCIResToRetainHeight(lastRetainHeight int64) int64 {
 	}
 	if numPruned > 0 {
 		p.logger.Info("Pruned ABCI responses", "heights", numPruned, "newRetainHeight", newRetainHeight)
+		p.metrics.ABCIResultsBaseHeight.Set(float64(newRetainHeight))
 	}
 	return newRetainHeight
 }

@@ -107,7 +107,7 @@ func (p *Pruner) OnStart() error {
 // also cannot accept the requested height as the blocks might have been
 // pruned.
 func (p *Pruner) SetApplicationRetainHeight(height int64) error {
-	// Ensure that all requests to set retain heights via the pruner are
+	// Ensure that all requests to set retain heights via the application are
 	// serialized.
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
@@ -176,8 +176,7 @@ func (p *Pruner) SetCompanionRetainHeight(height int64) error {
 	if currentCompanionRetainHeight > height || (!noAppRetainHeight && currentAppRetainHeight > height) {
 		return ErrPrunerCannotLowerRetainHeight
 	}
-	err = p.stateStore.SaveCompanionBlockRetainHeight(height)
-	if err == nil {
+	if err = p.stateStore.SaveCompanionBlockRetainHeight(height); err == nil {
 		p.metrics.PruningServiceBlockRetainHeight.Set(float64(height))
 	}
 	return err
@@ -206,8 +205,7 @@ func (p *Pruner) SetABCIResRetainHeight(height int64) error {
 	if currentRetainHeight > height {
 		return ErrPrunerCannotLowerRetainHeight
 	}
-	err = p.stateStore.SaveABCIResRetainHeight(height)
-	if err == nil {
+	if err = p.stateStore.SaveABCIResRetainHeight(height); err == nil {
 		p.metrics.PruningServiceBlockResultsRetainHeight.Set(float64(height))
 	}
 	return err

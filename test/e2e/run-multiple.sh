@@ -28,8 +28,8 @@ for MANIFEST in "$@"; do
 		echo "==> Dumping container logs for $MANIFEST..."
 		./build/runner -f "$MANIFEST" logs
 
-		echo "==> Cleaning up failed testnet $MANIFEST..."
-		./build/runner -f "$MANIFEST" cleanup
+	#	echo "==> Cleaning up failed testnet $MANIFEST..."
+	#	./build/runner -f "$MANIFEST" cleanup
 
 		FAILED+=("$MANIFEST")
 	fi

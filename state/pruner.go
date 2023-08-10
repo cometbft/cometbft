@@ -134,11 +134,11 @@ func (p *Pruner) SetApplicationRetainHeight(height int64) error {
 		return ErrPrunerCannotLowerRetainHeight
 	}
 
-	err = p.stateStore.SaveApplicationRetainHeight(height)
-	if err == nil {
-		p.metrics.ApplicationBlockRetainHeight.Set(float64(height))
+	if err := p.stateStore.SaveApplicationRetainHeight(height); err != nil {
+		return err
 	}
-	return err
+	p.metrics.ApplicationBlockRetainHeight.Set(float64(height))
+	return nil
 }
 
 // SetCompanionRetainHeight sets the application retain height with some basic
@@ -176,10 +176,11 @@ func (p *Pruner) SetCompanionRetainHeight(height int64) error {
 	if currentCompanionRetainHeight > height || (!noAppRetainHeight && currentAppRetainHeight > height) {
 		return ErrPrunerCannotLowerRetainHeight
 	}
-	if err = p.stateStore.SaveCompanionBlockRetainHeight(height); err == nil {
-		p.metrics.PruningServiceBlockRetainHeight.Set(float64(height))
+	if err := p.stateStore.SaveCompanionBlockRetainHeight(height); err != nil {
+		return err
 	}
-	return err
+	p.metrics.PruningServiceBlockRetainHeight.Set(float64(height))
+	return nil
 }
 
 // SetABCIResRetainHeight sets the retain height for ABCI responses.

@@ -34,13 +34,48 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "validator_set_updates",
 			Help:      "ValidatorSetUpdates is the total number of times the application has udated the validator set since process start.",
 		}, labels).With(labelsAndValues...),
+		PruningServiceBlockRetainHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "pruning_service_block_retain_height",
+			Help:      "PruningServiceBlockRetainHeight is the accepted block retain height set by the data companion",
+		}, labels).With(labelsAndValues...),
+		PruningServiceBlockResultsRetainHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "pruning_service_block_results_retain_height",
+			Help:      "PruningServiceBlockResultsRetainHeight is the accepted block results retain height set by the data companion",
+		}, labels).With(labelsAndValues...),
+		ApplicationBlockRetainHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "application_block_retain_height",
+			Help:      "ApplicationBlockRetainHeight is the accepted block retain height set by the application",
+		}, labels).With(labelsAndValues...),
+		BlockStoreBaseHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "block_store_base_height",
+			Help:      "BlockStoreBaseHeight shows the first height at which a block is available",
+		}, labels).With(labelsAndValues...),
+		ABCIResultsBaseHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "abciresults_base_height",
+			Help:      "ABCIResultsBaseHeight shows the first height at which abci results are available",
+		}, labels).With(labelsAndValues...),
 	}
 }
 
 func NopMetrics() *Metrics {
 	return &Metrics{
-		BlockProcessingTime:   discard.NewHistogram(),
-		ConsensusParamUpdates: discard.NewCounter(),
-		ValidatorSetUpdates:   discard.NewCounter(),
+		BlockProcessingTime:                    discard.NewHistogram(),
+		ConsensusParamUpdates:                  discard.NewCounter(),
+		ValidatorSetUpdates:                    discard.NewCounter(),
+		PruningServiceBlockRetainHeight:        discard.NewGauge(),
+		PruningServiceBlockResultsRetainHeight: discard.NewGauge(),
+		ApplicationBlockRetainHeight:           discard.NewGauge(),
+		BlockStoreBaseHeight:                   discard.NewGauge(),
+		ABCIResultsBaseHeight:                  discard.NewGauge(),
 	}
 }

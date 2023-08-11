@@ -1348,7 +1348,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 
 	// We did not receive a proposal within this round. (and thus executing this from a timeout)
 	if cs.ProposalBlock == nil {
-		logger.Debug("prevote step: ProposalBlock is nil")
+		logger.Debug("prevote step: ProposalBlock is nil; prevoting nil")
 		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
 		return
 	}
@@ -1364,57 +1364,73 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 	}
 
 	/*
-		Before prevoting on the block received from the proposer for the current round and height,
-		we request the Application, via `ProcessProposal` ABCI call, to confirm that the block is
-		valid. If the Application does not accept the block, consensus prevotes `nil`.
-
-		WARNING: misuse of block rejection by the Application can seriously compromise
-		the liveness properties of consensus.
-		Please see `PrepareProosal`-`ProcessProposal` coherence and determinism properties
-		in the ABCI++ specification.
-	*/
-	isAppValid, err := cs.blockExec.ProcessProposal(cs.ProposalBlock, cs.state)
-	if err != nil {
-		panic(fmt.Sprintf(
-			"state machine returned an error (%v) when calling ProcessProposal", err,
-		))
-	}
-	cs.metrics.MarkProposalProcessed(isAppValid)
-
-	// Vote nil if the Application rejected the block
-	if !isAppValid {
-		logger.Error("prevote step: state machine rejected a proposed block; this should not happen:"+
-			"the proposer may be misbehaving; prevoting nil", "err", err)
-		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
-		return
-	}
-
-	/*
 		22: upon <PROPOSAL, h_p, round_p, v, −1> from proposer(h_p, round_p) while step_p = propose do
 		23: if valid(v) && (lockedRound_p = −1 || lockedValue_p = v) then
 		24:   broadcast <PREVOTE, h_p, round_p, id(v)>
 		25: else
 		26:   broadcast <PREVOTE, h_p, round_p, nil>
 
-		Here, cs.Proposal.POLRound corresponds to the -1 in the above algorithm rule.
+		Here, cs.Proposal.POLRound corresponds to the -1 in the rule of the pseude-code (line 22).
 		This means that the proposer is producing a new proposal that has not previously
 		seen a 2/3 majority by the network.
 
-		If we have already locked on a different value that is different from the proposed value,
-		we prevote nil since we are locked on a different value. Otherwise, if we're not locked on a block
-		or the proposal matches our locked block, we prevote the proposal.
+		If the application deems the proposal as valid AND we're not locked on a
+		block OR the proposal matches our locked block (line 23), we prevote the
+		proposal (line 24).
+
+		Otherwise, we have already locked on a value that is different from the
+		proposed value, so we prevote nil (line 26).
+
+		Note that there are two cases on which we know that the proposal is
+		application-valid, that is, it was validated by the application at least
+		by one correct node in a previous step:
+		- when the proposal matches our non-nil valid block AND we're not locked on a block, and
+		- when the proposal matches our non-nil locked block.
+		In these cases we do not need to query the application to validate the
+		proposal.
 	*/
 	if cs.Proposal.POLRound == -1 {
 		if cs.LockedRound == -1 {
+			if cs.ValidRound != -1 && cs.ProposalBlock.HashesTo(cs.ValidBlock.Hash()) {
+				logger.Debug("prevote step: ProposalBlock matches our valid block; prevoting the proposal")
+				cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
+				return
+			}
+
+			// We request the Application, via a `ProcessProposal` ABCI call, to
+			// confirm that the block is valid. If the application does not
+			// accept the block, consensus prevotes nil.
+			//
+			// WARNING: misuse of block rejection by the Application can seriously compromise
+			// the liveness properties of consensus.
+			// Please see `PrepareProosal`-`ProcessProposal` coherence and determinism properties
+			// in the ABCI++ specification.
+			isAppValid, err := cs.blockExec.ProcessProposal(cs.ProposalBlock, cs.state)
+			if err != nil {
+				panic(fmt.Sprintf(
+					"state machine returned an error (%v) when calling ProcessProposal", err,
+				))
+			}
+			cs.metrics.MarkProposalProcessed(isAppValid)
+
+			if !isAppValid {
+				logger.Error("prevote step: state machine rejected a proposed block; this should not happen:"+
+					"the proposer may be misbehaving; prevoting nil", "err", err)
+				cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
+				return
+			}
+
 			logger.Debug("prevote step: ProposalBlock is valid and there is no locked block; prevoting the proposal")
 			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
 			return
 		}
+
 		if cs.ProposalBlock.HashesTo(cs.LockedBlock.Hash()) {
 			logger.Debug("prevote step: ProposalBlock is valid (POLRound is -1) and matches our locked block; prevoting the proposal")
 			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
 			return
 		}
+
 		logger.Debug("prevote step: ProposalBlock is valid (POLRound is -1), but doesn't match our locked block; prevoting nil")
 		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
 		return
@@ -1430,12 +1446,19 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 
 		This rule is a bit confusing but breaks down as follows:
 
-		If we see a proposal in the current round for value 'v' that lists its valid round as 'v_r'
-		AND this validator saw a 2/3 majority of the voting power prevote 'v' in round 'v_r', then we will
-		issue a prevote for 'v' in this round if 'v' is valid and either matches our locked value OR
-		'v_r' is a round greater than or equal to our current locked round.
+		First note that 'valid(v)' in line 29 states that we should request the
+		application to validate the proposal. We know that the proposal was
+		prevoted by a +2/3 majority, so it must have been prevoted and validated
+		at least by one correct node. Therefore it must be valid and in the
+		following cases we don't need to query the application again.
 
-		'v_r' can be a round greater than to our current locked round if a 2/3 majority of
+		If we see a proposal in the current round for value 'v' that lists its valid round as 'v_r'
+		AND this validator saw a 2/3 majority of the voting power prevote for 'v' in round 'v_r' (line 28),
+		then we will issue a prevote for 'v' in this round (line 30) if 'v' either matches our locked value OR
+		'v_r' is a round greater than or equal to our current locked round (line 29).
+		Otherwise we prevote nil (line 32).
+
+		Note that 'v_r' can be a round greater than to our current locked round if a 2/3 majority of
 		the network prevoted a value in round 'v_r' but we did not lock on it, possibly because we
 		missed the proposal in round 'v_r'.
 	*/

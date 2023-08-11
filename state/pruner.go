@@ -139,6 +139,7 @@ func (p *Pruner) SetApplicationRetainHeight(height int64) error {
 	p.metrics.ApplicationBlockRetainHeight.Set(float64(height))
 	return nil
 }
+
 func (p *Pruner) checkHeightBound(height int64) bool {
 	if height <= 0 || height < p.bs.Base() || height > p.bs.Height() {
 		return false

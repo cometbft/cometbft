@@ -26,4 +26,24 @@ type Metrics struct {
 	// updated the validator set since process start.
 	//metrics:Number of validator set updates returned by the application since process start.
 	ValidatorSetUpdates metrics.Counter
+
+	// PruningServiceBlockRetainHeight is the accepted block
+	// retain height set by the data companion
+	PruningServiceBlockRetainHeight metrics.Gauge
+
+	// PruningServiceBlockResultsRetainHeight is the accepted block results
+	// retain height set by the data companion
+	PruningServiceBlockResultsRetainHeight metrics.Gauge
+
+	// ApplicationBlockRetainHeight is the accepted block
+	// retain height set by the application
+	ApplicationBlockRetainHeight metrics.Gauge
+
+	// BlockStoreBaseHeight shows the first height at which
+	// a block is available
+	BlockStoreBaseHeight metrics.Gauge
+
+	// ABCIResultsBaseHeight shows the first height at which
+	// abci results are available
+	ABCIResultsBaseHeight metrics.Gauge
 }

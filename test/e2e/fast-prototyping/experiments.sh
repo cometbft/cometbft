@@ -47,7 +47,7 @@ do
 	cpu=$(grep "cpu load" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
 	latency=$(grep "latency" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
 	bandwidth=$(grep "bandwidth graph" ${TMPDIR}/log | awk -F= '{print $2}' | sed -r 's/\s+//g')
-	echo ${i}";"${r}";"${submitted}";"${added}";"${sent}";"${completion}";"${totalBandwidth}";"${usefulBandwidth}";"${overhead}";"${redundancy}";"${degree}";"${cpu}";"${bandwidth} >> ${FILE}
+	echo ${i}";"${r}";"${submitted}";"${added}";"${sent}";"${completion}";"${totalBandwidth}";"${usefulBandwidth}";"${overhead}";"${redundancy}";"${degree}";"${cpu}";"${latency}";"${bandwidth} >> ${FILE}
 	${BINDIR}/runner -f ${NETDIR}/${TMPL}.toml cleanup >> /dev/null
 	sleep 1
     done

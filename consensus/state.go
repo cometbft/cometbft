@@ -1355,8 +1355,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		proposal (line 24).
 
 		Otherwise, we have already locked on a value that is different from the
-		proposed value, so we prevote nil (line 26), because we are locked on a
-		different value.
+		proposed value, so we prevote nil (line 26).
 
 		Note that there are two cases on which we know that the proposal is
 		application-valid, that is, it was validated by the application at least

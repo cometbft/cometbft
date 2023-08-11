@@ -112,7 +112,7 @@ func (p *Pruner) SetApplicationRetainHeight(height int64) error {
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
 
-	if height <= 0 || height < p.bs.Base() || height > p.bs.Height() {
+	if !p.checkHeightBound(height) {
 		return ErrInvalidHeightValue
 	}
 	currentAppRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
@@ -133,12 +133,17 @@ func (p *Pruner) SetApplicationRetainHeight(height int64) error {
 	if currentAppRetainHeight > height || (!noCompanionRetainHeight && currentCompanionRetainHeight > height) {
 		return ErrPrunerCannotLowerRetainHeight
 	}
-
 	if err := p.stateStore.SaveApplicationRetainHeight(height); err != nil {
 		return err
 	}
 	p.metrics.ApplicationBlockRetainHeight.Set(float64(height))
 	return nil
+}
+func (p *Pruner) checkHeightBound(height int64) bool {
+	if height <= 0 || height < p.bs.Base() || height > p.bs.Height() {
+		return false
+	}
+	return true
 }
 
 // SetCompanionRetainHeight sets the application retain height with some basic
@@ -155,7 +160,7 @@ func (p *Pruner) SetCompanionRetainHeight(height int64) error {
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
 
-	if height <= 0 || height < p.bs.Base() || height > p.bs.Height() {
+	if !p.checkHeightBound(height) {
 		return ErrInvalidHeightValue
 	}
 	currentCompanionRetainHeight, err := p.stateStore.GetCompanionBlockRetainHeight()

@@ -290,30 +290,30 @@ func (_m *Store) LoadValidators(height int64) (*types.ValidatorSet, error) {
 	return r0, r1
 }
 
-// PruneABCIResponses provides a mock function with given fields: height
-func (_m *Store) PruneABCIResponses(height int64) (int64, int64, error) {
-	ret := _m.Called(height)
+// PruneABCIResponses provides a mock function with given fields: targetRetainHeight
+func (_m *Store) PruneABCIResponses(targetRetainHeight int64) (int64, int64, error) {
+	ret := _m.Called(targetRetainHeight)
 
 	var r0 int64
 	var r1 int64
 	var r2 error
 	if rf, ok := ret.Get(0).(func(int64) (int64, int64, error)); ok {
-		return rf(height)
+		return rf(targetRetainHeight)
 	}
 	if rf, ok := ret.Get(0).(func(int64) int64); ok {
-		r0 = rf(height)
+		r0 = rf(targetRetainHeight)
 	} else {
 		r0 = ret.Get(0).(int64)
 	}
 
 	if rf, ok := ret.Get(1).(func(int64) int64); ok {
-		r1 = rf(height)
+		r1 = rf(targetRetainHeight)
 	} else {
 		r1 = ret.Get(1).(int64)
 	}
 
 	if rf, ok := ret.Get(2).(func(int64) error); ok {
-		r2 = rf(height)
+		r2 = rf(targetRetainHeight)
 	} else {
 		r2 = ret.Error(2)
 	}

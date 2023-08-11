@@ -34,17 +34,20 @@ type Pruner struct {
 	indexerService *txindex.IndexerService
 	interval       time.Duration
 	observer       PrunerObserver
+	metrics        *Metrics
 }
 
 type prunerConfig struct {
 	interval time.Duration
 	observer PrunerObserver
+	metrics  *Metrics
 }
 
 func defaultPrunerConfig() *prunerConfig {
 	return &prunerConfig{
 		interval: config.DefaultPruningInterval,
 		observer: &NoopPrunerObserver{},
+		metrics:  NopMetrics(),
 	}
 }
 
@@ -58,6 +61,12 @@ func WithPrunerInterval(t time.Duration) PrunerOption {
 
 func WithPrunerObserver(obs PrunerObserver) PrunerOption {
 	return func(p *prunerConfig) { p.observer = obs }
+}
+
+func WithPrunerMetrics(metrics *Metrics) PrunerOption {
+	return func(p *prunerConfig) {
+		p.metrics = metrics
+	}
 }
 
 func NewPruner(
@@ -78,6 +87,7 @@ func NewPruner(
 		logger:         logger,
 		interval:       cfg.interval,
 		observer:       cfg.observer,
+		metrics:        cfg.metrics,
 	}
 	p.BaseService = *service.NewBaseService(logger, "Pruner", p)
 	return p
@@ -105,12 +115,12 @@ func (p *Pruner) OnStart() error {
 // also cannot accept the requested height as the blocks might have been
 // pruned.
 func (p *Pruner) SetApplicationRetainHeight(height int64) error {
-	// Ensure that all requests to set retain heights via the pruner are
+	// Ensure that all requests to set retain heights via the application are
 	// serialized.
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
 
-	if height <= 0 || height < p.bs.Base() || height > p.bs.Height() {
+	if !p.checkHeightBound(height) {
 		return ErrInvalidHeightValue
 	}
 	currentAppRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
@@ -131,7 +141,18 @@ func (p *Pruner) SetApplicationRetainHeight(height int64) error {
 	if currentAppRetainHeight > height || (!noCompanionRetainHeight && currentCompanionRetainHeight > height) {
 		return ErrPrunerCannotLowerRetainHeight
 	}
-	return p.stateStore.SaveApplicationRetainHeight(height)
+	if err := p.stateStore.SaveApplicationRetainHeight(height); err != nil {
+		return err
+	}
+	p.metrics.ApplicationBlockRetainHeight.Set(float64(height))
+	return nil
+}
+
+func (p *Pruner) checkHeightBound(height int64) bool {
+	if height <= 0 || height < p.bs.Base() || height > p.bs.Height() {
+		return false
+	}
+	return true
 }
 
 // SetCompanionRetainHeight sets the application retain height with some basic
@@ -148,7 +169,7 @@ func (p *Pruner) SetCompanionRetainHeight(height int64) error {
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
 
-	if height <= 0 || height < p.bs.Base() || height > p.bs.Height() {
+	if !p.checkHeightBound(height) {
 		return ErrInvalidHeightValue
 	}
 	currentCompanionRetainHeight, err := p.stateStore.GetCompanionBlockRetainHeight()
@@ -169,7 +190,11 @@ func (p *Pruner) SetCompanionRetainHeight(height int64) error {
 	if currentCompanionRetainHeight > height || (!noAppRetainHeight && currentAppRetainHeight > height) {
 		return ErrPrunerCannotLowerRetainHeight
 	}
-	return p.stateStore.SaveCompanionBlockRetainHeight(height)
+	if err := p.stateStore.SaveCompanionBlockRetainHeight(height); err != nil {
+		return err
+	}
+	p.metrics.PruningServiceBlockRetainHeight.Set(float64(height))
+	return nil
 }
 
 // SetABCIResRetainHeight sets the retain height for ABCI responses.
@@ -195,7 +220,11 @@ func (p *Pruner) SetABCIResRetainHeight(height int64) error {
 	if currentRetainHeight > height {
 		return ErrPrunerCannotLowerRetainHeight
 	}
-	return p.stateStore.SaveABCIResRetainHeight(height)
+	if err := p.stateStore.SaveABCIResRetainHeight(height); err != nil {
+		return err
+	}
+	p.metrics.PruningServiceBlockResultsRetainHeight.Set(float64(height))
+	return nil
 }
 
 // GetApplicationRetainHeight is a convenience method for accessing the
@@ -300,6 +329,7 @@ func (p *Pruner) pruneBlocksToRetainHeight(lastRetainHeight int64) int64 {
 	if err != nil {
 		p.logger.Error("Failed to prune blocks", "err", err, "targetRetainHeight", targetRetainHeight, "newRetainHeight", newRetainHeight)
 	} else if pruned > 0 {
+		p.metrics.BlockStoreBaseHeight.Set(float64(newRetainHeight))
 		p.logger.Info("Pruned blocks", "count", pruned, "evidenceRetainHeight", evRetainHeight, "newRetainHeight", newRetainHeight)
 	}
 	return newRetainHeight
@@ -331,6 +361,7 @@ func (p *Pruner) pruneABCIResToRetainHeight(lastRetainHeight int64) int64 {
 	}
 	if numPruned > 0 {
 		p.logger.Info("Pruned ABCI responses", "heights", numPruned, "newRetainHeight", newRetainHeight)
+		p.metrics.ABCIResultsBaseHeight.Set(float64(newRetainHeight))
 	}
 	return newRetainHeight
 }

@@ -1555,7 +1555,7 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 	if cs.ProposalBlock.HashesTo(blockID.Hash) {
 		cs.LockedRound = round
 
-		// If we're already locked on that block, precommit it, and update the LockedRound
+		// If we're already locked on that block, precommit it, and update the LockedRound (above)
 		if cs.LockedBlock.HashesTo(blockID.Hash) {
 			logger.Debug("precommit step; +2/3 prevoted locked block; relocking")
 

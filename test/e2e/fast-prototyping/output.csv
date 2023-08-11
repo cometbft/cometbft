@@ -1,0 +1,4 @@
+nodes;propagation_rate;submitted;added;sent;completion;total_mempool_bandwidth;useful_mempool_bandwidth;overhead;redundancy;degree;cpu_load;bandwidth
+8;50;;;;;;;;;;;
+16;50;;;;;;;;;;;
+32;50;;;;;;;;;;;

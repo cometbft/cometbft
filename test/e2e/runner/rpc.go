@@ -13,7 +13,7 @@ import (
 )
 
 // waitForHeight waits for the network to reach a certain height (or above),
-// returning the highest height seen. Errors if the network is not making
+// returning the highest height added. Errors if the network is not making
 // progress at all.
 func waitForHeight(ctx context.Context, testnet *e2e.Testnet, height int64) (*types.Block, *types.BlockID, error) {
 	var (
@@ -72,27 +72,36 @@ func waitForHeight(ctx context.Context, testnet *e2e.Testnet, height int64) (*ty
 			}
 			timer.Reset(1 * time.Second)
 		}
-
 	}
 }
 
 // waitForNode waits for a node to become available and catch up to the given block height.
 func waitForNode(ctx context.Context, node *e2e.Node, height int64, timeout time.Duration) (*rpctypes.ResultStatus, error) {
-	client, err := node.Client()
-	if err != nil {
-		return nil, err
-	}
-
 	timer := time.NewTimer(0)
 	defer timer.Stop()
+
 	var curHeight int64
 	lastChanged := time.Now()
+
 	for {
+
+		client, err := node.ClientWithTimeout(1)
+		if err != nil {
+			logger.Error("Error connecting", err)
+			continue
+		}
+
+		// web socket connection is established
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		case <-timer.C:
 			status, err := client.Status(ctx)
+			if err != nil {
+				logger.Debug("Error fetching client status", "err", err)
+			} else {
+				node.ID = status.NodeInfo.ID()
+			}
 			switch {
 			case time.Since(lastChanged) > timeout:
 				return nil, fmt.Errorf("timed out waiting for %v to reach height %v", node.Name, height)

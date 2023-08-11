@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"math/rand"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -19,7 +22,7 @@ import (
 
 const randomSeed = 2308084734268
 
-var logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+var logger = log.NewTracingLogger(log.NewTMLogger(log.NewSyncWriter(os.Stdout)))
 
 func main() {
 	NewCLI().Run()
@@ -120,7 +123,7 @@ func NewCLI() *CLI {
 			ctx, loadCancel := context.WithCancel(context.Background())
 			defer loadCancel()
 			go func() {
-				err := Load(ctx, cli.testnet)
+				_, err := Load(ctx, cli.testnet)
 				if err != nil {
 					logger.Error(fmt.Sprintf("Transaction load failed: %v", err.Error()))
 				}
@@ -234,7 +237,8 @@ func NewCLI() *CLI {
 		Use:   "load",
 		Short: "Generates transaction load until the command is canceled",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			return Load(context.Background(), cli.testnet)
+			_, e := Load(context.Background(), cli.testnet)
+			return e
 		},
 	})
 
@@ -302,7 +306,7 @@ func NewCLI() *CLI {
 	Min Block Interval
 	Max Block Interval
 over a 100 block sampling period.
-		
+
 Does not run any perturbations.
 		`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -317,7 +321,7 @@ Does not run any perturbations.
 			ctx, loadCancel := context.WithCancel(cmd.Context())
 			defer loadCancel()
 			go func() {
-				err := Load(ctx, cli.testnet)
+				_, err := Load(ctx, cli.testnet)
 				if err != nil {
 					logger.Error(fmt.Sprintf("Transaction load errored: %v", err.Error()))
 				}
@@ -342,7 +346,169 @@ Does not run any perturbations.
 				return err
 			}
 
+			err := cli.infp.StopTestnet(context.Background())
+			if err != nil {
+				return err
+			}
+
 			return Cleanup(cli.testnet)
+		},
+	})
+
+	cli.root.AddCommand(&cobra.Command{
+		Use:   "custom",
+		Short: "A custom benchmark",
+		Long: `A custom benchmark that returns the following metrics:
+    #tws submitted : total number of transactions submitted in the system
+    #tws added : number of valid transactions added to the mempool at a node (on average)
+    #txs sent: number of transactions sent over the wire at a node (on average)
+    completion : % nodes receiving all txs
+    total bandwidth: sum of all the bandwidth used by at the nodes
+    useful bandwidth: #txs * tx_size * #nodes
+    overhead: (total bandwidth - useful bandwidth) / (useful bandwidth)
+    redundancy: number of duplicates received per tx added (on average)
+    cpu: the CPU load as reported under /proc/PID/status (on average, in seconds)
+    bandwidth graph: detailed bandwidth usage as a (json) graph
+End after 1 minute, or if some (optional) target is attained.
+Does not run any perturbations.
+		`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			benchmarkDuration := 120 * time.Second
+
+			defer func() {
+				if err := cli.infp.StopTestnet(context.Background()); err != nil {
+					logger.Error("Error stopping testnet", "err", err.Error())
+				}
+			}()
+
+			if err := Cleanup(cli.testnet); err != nil {
+				return err
+			}
+
+			if err := Setup(cli.testnet, cli.infp); err != nil {
+				return err
+			}
+
+			if err := Start(cmd.Context(), cli.testnet, cli.infp); err != nil {
+				return err
+			}
+
+			logger.Info("First grace period (10s)")
+			time.Sleep(10 * time.Second)
+
+			logger.Info("Starting custom benchmark.")
+
+			startAt := time.Now()
+			timer := time.NewTimer(benchmarkDuration)
+			defer timer.Stop()
+
+			ctx, loadCancel := context.WithCancel(cmd.Context())
+			defer loadCancel()
+			chLoadResult := make(chan int)
+
+			txs := 0
+
+			go func() {
+				res, err := Load(ctx, cli.testnet)
+				if err != nil {
+					logger.Error(fmt.Sprintf("Transaction load errored: %v", err.Error()))
+					loadCancel()
+				}
+				chLoadResult <- res
+			}()
+
+			select {
+			case txs = <-chLoadResult:
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-timer.C:
+				if time.Since(startAt) < benchmarkDuration {
+					return fmt.Errorf("timed out without reason")
+				}
+				return fmt.Errorf("benchmark ran out of time")
+			}
+			logger.Info("Ending benchmark.")
+
+			logger.Info("Second grace period (10s).")
+			time.Sleep(10 * time.Second)
+
+			logger.Info("Computing stats.")
+			mempoolStats, err := ComputeStats(cli.testnet)
+			if err != nil {
+				return err
+			}
+
+			txsAdded := mempoolStats.TxsAdded(cli.testnet)
+			txsSent := mempoolStats.txsSent(cli.testnet)
+			completion := mempoolStats.Completion(cli.testnet, txs)
+			redundancy := mempoolStats.Redundancy(cli.testnet)
+			totalBandwidth := mempoolStats.TotalBandwidth(cli.testnet)
+			usefulBandwidth := (len(cli.testnet.Nodes) - 1) * int(txsAdded) * cli.testnet.LoadTxSizeBytes // at most (n-1) receivers
+			overhead := math.Max(0, float64(totalBandwidth-usefulBandwidth)/float64(usefulBandwidth))
+			degree := mempoolStats.Degree(cli.testnet)
+			cpuLoad := mempoolStats.CPULoad(cli.testnet)
+			latency := mempoolStats.Latency()
+
+			// FIXME should it be JSON instead?
+			logger.Info("#txs submitted = " + strconv.Itoa(txs))
+			logger.Info("#txs added (on avg.) = " + fmt.Sprintf("%v", txsAdded))
+			logger.Info("#txs sent (on avg) = " + fmt.Sprintf("%v", txsSent))
+			logger.Info("completion (on avg.) = " + fmt.Sprintf("%v", completion))
+			logger.Info("total mempool bandwidth (B) = " + strconv.Itoa(totalBandwidth))
+			logger.Info("useful mempool bandwidth (B) = " + strconv.Itoa(usefulBandwidth))
+			logger.Info("overhead = " + fmt.Sprintf("%v", overhead))
+			logger.Info("redundancy (on avg) = " + fmt.Sprintf("%v", redundancy))
+			logger.Info("degree (on avg) = " + fmt.Sprintf("%v", degree))
+			logger.Info("cpu load (on avg, in s) = " + fmt.Sprintf("%v", cpuLoad))
+
+			if !cli.testnet.PhysicalTimestamps {
+				logger.Info("latency (on avg, in #blocks) = " + fmt.Sprintf("%v", latency))
+			} else {
+				logger.Info("latency (on avg, in s) = " + fmt.Sprintf("%v", latency))
+			}
+
+			graph, err := json.Marshal(mempoolStats.BandwidthGraph(cli.testnet, true))
+			if err != nil {
+				return err
+			}
+			logger.Info("bandwidth graph = " + fmt.Sprintf("%v", string(graph)))
+
+			err = cli.infp.StopTestnet(context.Background())
+			if err != nil {
+				return err
+			}
+
+			return Cleanup(cli.testnet)
+		},
+	})
+
+	cli.root.AddCommand(&cobra.Command{
+		Use:   "stats",
+		Short: "Display some statistics about a run",
+		Long: `Display the following global statistics:
+    graph.bandwidth: mempool bandwidth usage
+    graph.peers: #peers of each node
+		`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			mempoolStats, err := ComputeStats(cli.testnet)
+			if err != nil {
+				return err
+			}
+
+			graph, err := json.Marshal(mempoolStats.BandwidthGraph(cli.testnet, false))
+			if err != nil {
+				return err
+			}
+
+			peers, err := json.Marshal(mempoolStats.Peers(cli.testnet))
+			if err != nil {
+				return err
+			}
+
+			logger.Info("graph.bandwidth = " + fmt.Sprintf("%v", string(graph)))
+			logger.Info("graph.peers = " + fmt.Sprintf("%v", string(peers)))
+
+			return nil
 		},
 	})
 

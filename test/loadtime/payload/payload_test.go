@@ -27,7 +27,7 @@ func TestRoundTrip(t *testing.T) {
 		testRate  = 4
 	)
 	testID := [16]byte(uuid.New())
-	b, err := payload.NewBytes(&payload.Payload{
+	b, err := payload.NewBytes(&payload.RawPayload{
 		Size:        payloadSizeTarget,
 		Connections: testConns,
 		Rate:        testRate,

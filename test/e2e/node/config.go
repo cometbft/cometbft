@@ -33,6 +33,11 @@ type Config struct {
 	VoteExtensionDelay   time.Duration `toml:"vote_extension_delay"`
 
 	VoteExtensionSize uint `toml:"vote_extension_size"`
+
+	// Experimental
+	ExperimentalCustomReactors        map[string]string `toml:"experimental_custom_reactors"`
+	ExperimentalGossipPropagationRate float32           `toml:"experimental_gossip_propagation_rate"`
+	ExperimentalGossipSendOnce        bool              `toml:"experimental_gossip_send_once"`
 }
 
 // App extracts out the application specific configuration parameters
@@ -50,6 +55,11 @@ func (cfg *Config) App() *app.Config {
 		FinalizeBlockDelay:   cfg.FinalizeBlockDelay,
 		VoteExtensionDelay:   cfg.VoteExtensionDelay,
 		VoteExtensionSize:    cfg.VoteExtensionSize,
+
+		//Experimental
+		ExperimentalCustomReactors:        cfg.ExperimentalCustomReactors,
+		ExperimentalGossipPropagationRate: cfg.ExperimentalGossipPropagationRate,
+		ExperimentalGossipSendOnce:        cfg.ExperimentalGossipSendOnce,
 	}
 }
 

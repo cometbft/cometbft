@@ -1,19 +1,28 @@
-package mempool
+package gossip
 
 import (
 	"errors"
 	"fmt"
 	"time"
 
+	"github.com/cometbft/cometbft/libs/clist"
+	"github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/node"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	cfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/libs/clist"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	mempool "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	protomem "github.com/cometbft/cometbft/proto/tendermint/mempool"
 	"github.com/cometbft/cometbft/types"
 )
+
+// This is similar to mempool/reactor.go with two additional hooks to change how transactions are disseminated.
+// The first hook (sendOnce) if set send a transaction only once to a peer. The second one (propagationRate)
+// permits to omit some message. To behave line the vanilla version, one should not mock consensus, and set
+// sendOnce=true and propagationRatio=100.
 
 // Reactor handles mempool tx broadcasting amongst peers.
 // It maintains a map from peer ID to counter, to prevent gossiping txs to the
@@ -21,29 +30,35 @@ import (
 type Reactor struct {
 	p2p.BaseReactor
 	config  *cfg.MempoolConfig
-	mempool *CListMempool
+	mempool mempool.Mempool
 	ids     *mempoolIDs
 
-	// `txSenders` maps every received transaction to the set of peer IDs that
-	// have sent the transaction to this node. Sender IDs are used during
-	// transaction propagation to avoid sending a transaction to a peer that
-	// already has it. A sender ID is the internal peer ID used in the mempool
-	// to identify the sender, storing two bytes with each transaction instead
-	// of 20 bytes for the types.NodeID.
 	txSenders    map[types.TxKey]map[uint16]bool
-	txSendersMtx cmtsync.Mutex
+	txSendersMtx cmtsync.RWMutex
+
+	propagationRate float32
+	sendOnce        bool
+	consensusMocked bool
+	metrics         *Metrics
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
-func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool) *Reactor {
+// The mempool's channel TxsAvailable will be initialized only when notifyAvailable is true.
+func NewReactor(node *node.Node, ConsensusMocked bool, rate float32, sendOnce bool) *Reactor {
 	memR := &Reactor{
-		config:    config,
-		mempool:   mempool,
-		ids:       newMempoolIDs(),
-		txSenders: make(map[types.TxKey]map[uint16]bool),
+		config:          node.Config().Mempool,
+		mempool:         node.Mempool(),
+		ids:             newMempoolIDs(),
+		txSenders:       make(map[types.TxKey]map[uint16]bool),
+		propagationRate: rate,
+		sendOnce:        sendOnce,
+		consensusMocked: ConsensusMocked,
+		metrics:         PrometheusMetrics(node.Config().Instrumentation.Namespace, "chain_id", node.GenesisDoc().ChainID),
 	}
+
 	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
 	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
+	fmt.Println("starting with ", "propagation rate ", memR.propagationRate, "send once", memR.sendOnce)
 	return memR
 }
 
@@ -64,7 +79,6 @@ func (memR *Reactor) OnStart() error {
 	if !memR.config.Broadcast {
 		memR.Logger.Info("Tx broadcasting is disabled")
 	}
-
 	return nil
 }
 
@@ -80,7 +94,7 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 
 	return []*p2p.ChannelDescriptor{
 		{
-			ID:                  MempoolChannel,
+			ID:                  mempool.MempoolChannel,
 			Priority:            5,
 			RecvMessageCapacity: batchMsg.Size(),
 			MessageType:         &protomem.Message{},
@@ -117,7 +131,7 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 		for _, txBytes := range protoTxs {
 			tx := types.Tx(txBytes)
 			reqRes, err := memR.mempool.CheckTx(tx)
-			if errors.Is(err, ErrTxInCache) {
+			if errors.Is(err, mempool.ErrTxInCache) {
 				memR.Logger.Debug("Tx already exists in cache", "tx", tx.String())
 			} else if err != nil {
 				memR.Logger.Info("Could not check tx", "tx", tx.String(), "err", err)
@@ -177,13 +191,13 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 
 		// Make sure the peer is up to date.
 		peerState, ok := peer.Get(types.PeerStateKey).(PeerState)
-		if !ok {
+		if !memR.consensusMocked && !ok {
 			// Peer does not have a state yet. We set it in the consensus reactor, but
 			// when we add peer in Switch, the order we call reactors#AddPeer is
 			// different every time due to us using a map. Sometimes other reactors
 			// will be initialized before the consensus reactor. We should wait a few
 			// milliseconds and retry.
-			time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
+			time.Sleep(mempool.PeerCatchupSleepIntervalMS * time.Millisecond)
 			continue
 		}
 
@@ -193,34 +207,39 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// node. See [RFC 103] for an analysis on this optimization.
 		//
 		// [RFC 103]: https://github.com/cometbft/cometbft/pull/735
-		memTx := next.Value.(*MempoolTx)
-		if peerState.GetHeight() < memTx.Height()-1 {
-			time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
+		memTx := next.Value.(*mempool.MempoolTx)
+		if !memR.consensusMocked && peerState.GetHeight() < memTx.Height()-1 {
+			time.Sleep(mempool.PeerCatchupSleepIntervalMS * time.Millisecond)
 			continue
 		}
 
 		// NOTE: Transaction batching was disabled due to
 		// https://github.com/tendermint/tendermint/issues/5796
 
-		if !memR.isSender(memTx.tx.Key(), peerID) {
+		if !memR.isSender(memTx.GetTx().Key(), peerID) && float32(rand.Intn(101)) <= memR.propagationRate {
 			success := peer.Send(p2p.Envelope{
-				ChannelID: MempoolChannel,
-				Message:   &protomem.Txs{Txs: [][]byte{memTx.tx}},
+				ChannelID: mempool.MempoolChannel,
+				Message:   &protomem.Txs{Txs: [][]byte{memTx.GetTx()}},
 			})
 			if !success {
-				time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
+				time.Sleep(mempool.PeerCatchupSleepIntervalMS * time.Millisecond)
 				continue
 			}
-		}
+			if memR.sendOnce {
+				memR.addSender(memTx.GetTx().Key(), peerID)
+			}
 
-		select {
-		case <-next.NextWaitChan():
-			// see the start of the for loop for nil check
-			next = next.Next()
-		case <-peer.Quit():
-			return
-		case <-memR.Quit():
-			return
+			memR.metrics.SentTxs.Add(1)
+
+			select {
+			case <-next.NextWaitChan():
+				// see the start of the for loop for nil check
+				next = next.Next()
+			case <-peer.Quit():
+				return
+			case <-memR.Quit():
+				return
+			}
 		}
 	}
 }

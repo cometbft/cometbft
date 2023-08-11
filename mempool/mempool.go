@@ -3,12 +3,13 @@ package mempool
 import (
 	"crypto/sha256"
 	"errors"
-	"math"
-
 	"fmt"
+	"math"
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/clist"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -74,6 +75,9 @@ type Mempool interface {
 		newPostFn PostCheckFunc,
 	) error
 
+	// InMempool returns true iff the transaction key is in the mempool.
+	InMempool(txKey types.TxKey) bool
+
 	// FlushAppConn flushes the mempool connection to ensure async callback calls
 	// are done, e.g. from CheckTx.
 	//
@@ -104,6 +108,14 @@ type Mempool interface {
 
 	// SizeBytes returns the total size of all txs in the mempool.
 	SizeBytes() int64
+
+	// SetLogger sets the logger for the mempool.
+	SetLogger(l log.Logger)
+
+	// FIX: This is a hack to access these methods from custom reactors in test/e2e
+	// See https://github.com/cometbft/cometbft/pull/1043
+	TxsFront() *clist.CElement
+	TxsWaitChan() <-chan struct{}
 }
 
 // PreCheckFunc is an optional filter executed before CheckTx and rejects

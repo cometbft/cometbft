@@ -32,7 +32,7 @@ func (m *mockBlockStore) LoadBlock(i int64) *types.Block {
 func TestGenerateReport(t *testing.T) {
 	t1 := time.Now()
 	u := [16]byte(uuid.New())
-	b1, err := payload.NewBytes(&payload.Payload{
+	b1, err := payload.NewBytes(&payload.RawPayload{
 		Id:   u[:],
 		Time: timestamppb.New(t1.Add(-10 * time.Second)),
 		Size: 1024,
@@ -40,7 +40,7 @@ func TestGenerateReport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("generating payload %s", err)
 	}
-	b2, err := payload.NewBytes(&payload.Payload{
+	b2, err := payload.NewBytes(&payload.RawPayload{
 		Id:   u[:],
 		Time: timestamppb.New(t1.Add(-4 * time.Second)),
 		Size: 1024,
@@ -48,7 +48,7 @@ func TestGenerateReport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("generating payload %s", err)
 	}
-	b3, err := payload.NewBytes(&payload.Payload{
+	b3, err := payload.NewBytes(&payload.RawPayload{
 		Id:   u[:],
 		Time: timestamppb.New(t1.Add(2 * time.Second)),
 		Size: 1024,

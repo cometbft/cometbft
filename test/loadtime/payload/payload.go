@@ -11,13 +11,24 @@ import (
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const keyPrefix = "a="
-const maxPayloadSize = 4 * 1024 * 1024
+const (
+	keyPrefix      = "a="
+	maxPayloadSize = 4 * 1024 * 1024
+)
+
+type RawPayload struct {
+	Connections uint64                 `protobuf:"varint,1,opt,name=connections,proto3" json:"connections,omitempty"`
+	Rate        uint64                 `protobuf:"varint,2,opt,name=rate,proto3" json:"rate,omitempty"`
+	Size        uint64                 `protobuf:"varint,3,opt,name=size,proto3" json:"size,omitempty"`
+	Time        *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=time,proto3" json:"time,omitempty"`
+	Id          []byte                 `protobuf:"bytes,5,opt,name=id,proto3" json:"id,omitempty"` //nolint: revive, stylecheck // var-naming: struct field Id should be ID; but this name comes from protobuf.
+	Padding     []byte                 `protobuf:"bytes,6,opt,name=padding,proto3" json:"padding,omitempty"`
+}
 
 // NewBytes generates a new payload and returns the encoded representation of
 // the payload as a slice of bytes. NewBytes uses the fields on the Options
 // to create the payload.
-func NewBytes(p *Payload) ([]byte, error) {
+func NewBytes(p *RawPayload) ([]byte, error) {
 	p.Padding = make([]byte, 1)
 	if p.Time == nil {
 		p.Time = timestamppb.Now()
@@ -40,7 +51,14 @@ func NewBytes(p *Payload) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	b, err := proto.Marshal(p)
+	b, err := proto.Marshal(&Payload{
+		Connections: p.Connections,
+		Rate:        p.Rate,
+		Size:        p.Size,
+		Time:        p.Time,
+		Id:          p.Id,
+		Padding:     p.Padding,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +93,7 @@ func FromBytes(b []byte) (*Payload, error) {
 // MaxUnpaddedSize returns the maximum size that a payload may be if no padding
 // is included.
 func MaxUnpaddedSize() (int, error) {
-	p := &Payload{
+	p := &RawPayload{
 		Time:        timestamppb.Now(),
 		Connections: math.MaxUint64,
 		Rate:        math.MaxUint64,
@@ -88,11 +106,18 @@ func MaxUnpaddedSize() (int, error) {
 // CalculateUnpaddedSize calculates the size of the passed in payload for the
 // purpose of determining how much padding to add to add to reach the target size.
 // CalculateUnpaddedSize returns an error if the payload Padding field is longer than 1.
-func CalculateUnpaddedSize(p *Payload) (int, error) {
+func CalculateUnpaddedSize(p *RawPayload) (int, error) {
 	if len(p.Padding) != 1 {
 		return 0, fmt.Errorf("expected length of padding to be 1, received %d", len(p.Padding))
 	}
-	b, err := proto.Marshal(p)
+	b, err := proto.Marshal(&Payload{
+		Connections: p.Connections,
+		Rate:        p.Rate,
+		Size:        p.Size,
+		Time:        p.Time,
+		Id:          p.Id,
+		Padding:     p.Padding,
+	})
 	if err != nil {
 		return 0, err
 	}

@@ -117,13 +117,15 @@ func TestTxIndex_Prune(t *testing.T) {
 	require.NoError(t, err)
 
 	keys2 := GetKeys(indexer)
-	assert.True(t, Subslice(keys1, keys2))
+	assert.True(t, subslice(keys1, keys2))
 
-	indexer.Prune(0, 2)
+	retainedHeight, err := indexer.Prune(0, 2)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), retainedHeight)
 
 	keys3 := GetKeys(indexer)
-	assert.True(t, EqualSlices(SliceDiff(keys2, keys1), keys3))
-	assert.True(t, EmptyIntersection(keys1, keys3))
+	assert.True(t, equalSlices(sliceDiff(keys2, keys1), keys3))
+	assert.True(t, emptyIntersection(keys1, keys3))
 
 	loadedTxResult2, err := indexer.Get(hash2)
 	require.NoError(t, err)
@@ -782,3 +784,56 @@ func BenchmarkTxIndex500(b *testing.B)   { benchmarkTxIndex(500, b) }
 func BenchmarkTxIndex1000(b *testing.B)  { benchmarkTxIndex(1000, b) }
 func BenchmarkTxIndex2000(b *testing.B)  { benchmarkTxIndex(2000, b) }
 func BenchmarkTxIndex10000(b *testing.B) { benchmarkTxIndex(10000, b) }
+
+func equal(x []byte, y []byte) bool {
+	if len(x) != len(y) {
+		return false
+	}
+	for i, elem := range x {
+		if elem != y[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func contains(slice [][]byte, target []byte) bool {
+	for _, element := range slice {
+		if equal(element, target) {
+			return true
+		}
+	}
+	return false
+}
+
+func subslice(smaller [][]byte, bigger [][]byte) bool {
+	for _, elem := range smaller {
+		if !contains(bigger, elem) {
+			return false
+		}
+	}
+	return true
+}
+
+func equalSlices(x [][]byte, y [][]byte) bool {
+	return subslice(x, y) && subslice(y, x)
+}
+
+func emptyIntersection(x [][]byte, y [][]byte) bool {
+	for _, elem := range x {
+		if contains(y, elem) {
+			return false
+		}
+	}
+	return true
+}
+
+func sliceDiff(bigger [][]byte, smaller [][]byte) [][]byte {
+	var diff [][]byte
+	for _, elem := range bigger {
+		if !contains(smaller, elem) {
+			diff = append(diff, elem)
+		}
+	}
+	return diff
+}

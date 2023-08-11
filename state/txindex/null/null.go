@@ -16,8 +16,8 @@ var _ txindex.TxIndexer = (*TxIndex)(nil)
 // TxIndex acts as a /dev/null.
 type TxIndex struct{}
 
-func (txi *TxIndex) Prune(_ int64, _ int64) {
-
+func (txi *TxIndex) Prune(_ int64, _ int64) (int64, error) {
+	return 0, nil
 }
 
 // Get on a TxIndex is disabled and panics when invoked.

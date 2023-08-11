@@ -6,7 +6,6 @@ import (
 	"math/big"
 	"strconv"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/google/orderedcode"
 
 	idxutil "github.com/cometbft/cometbft/internal/indexer"
@@ -211,54 +210,14 @@ func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) (bool, error)
 	return true, nil
 }
 
-func GetEventsForTesting(height int64) types.EventDataNewBlockEvents {
-	return types.EventDataNewBlockEvents{
-		Height: height,
-		Events: []abci.Event{
-			{
-				Type: "begin_event",
-				Attributes: []abci.EventAttribute{
-					{
-						Key:   "proposer",
-						Value: "FCAA001",
-						Index: true,
-					},
-				},
-			},
-			{
-				Type: "end_event",
-				Attributes: []abci.EventAttribute{
-					{
-						Key:   "foo",
-						Value: "100",
-						Index: true,
-					},
-				},
-			},
-		},
-	}
-}
-
-func GetKeys(indexer *BlockerIndexer) [][]byte {
-	var keys [][]byte
-	itr, err := indexer.store.Iterator(nil, nil)
-	if err != nil {
-		panic(err)
-	}
-	for ; itr.Valid(); itr.Next() {
-		keys = append(keys, itr.Key())
-	}
-	return keys
-}
-
-func AppendToKeyArray(keyArray []byte, newKey []byte) []byte {
+func appendToKeyArray(keyArray []byte, newKey []byte) []byte {
 	keyLenBuffer := make([]byte, 8)
 	binary.BigEndian.PutUint64(keyLenBuffer, uint64(len(newKey)))
 	var withLength = append(keyLenBuffer, newKey...)
 	return append(keyArray, withLength...)
 }
 
-func GetKeysFromKeyArray(keyArray []byte) [][]byte {
+func getKeysFromKeyArray(keyArray []byte) [][]byte {
 	lastLenKeyPairPosition := 0
 	var keys [][]byte
 	for lastLenKeyPairPosition < len(keyArray) {

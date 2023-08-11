@@ -1,4 +1,4 @@
-package kv_test
+package kv
 
 import (
 	"context"
@@ -8,56 +8,61 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/internal/test"
-	"github.com/cometbft/cometbft/state/txindex/kv"
 	"github.com/stretchr/testify/require"
 
 	db "github.com/cometbft/cometbft-db"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
-	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
 	"github.com/cometbft/cometbft/types"
 )
 
 func TestBlockerIndexer_Prune(t *testing.T) {
 	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))
-	indexer := blockidxkv.New(store)
+	indexer := New(store)
 
-	events1 := blockidxkv.GetEventsForTesting(1)
-	events2 := blockidxkv.GetEventsForTesting(2)
+	events1 := getEventsForTesting(1)
+	events2 := getEventsForTesting(2)
 
 	err := indexer.Index(events1)
 	require.NoError(t, err)
 
-	keys1 := blockidxkv.GetKeys(indexer)
+	keys1 := getKeys(indexer)
 
 	err = indexer.Index(events2)
 	require.NoError(t, err)
 
-	keys2 := blockidxkv.GetKeys(indexer)
+	keys2 := getKeys(indexer)
 
-	require.True(t, kv.Subslice(keys1, keys2))
+	require.True(t, subslice(keys1, keys2))
 
-	indexer.Prune(0, 2)
+	retainedHeight, err := indexer.Prune(0, 2)
+	require.NoError(t, err)
+	require.Equal(t, int64(2), retainedHeight)
 
-	keys3 := blockidxkv.GetKeys(indexer)
-	require.True(t, kv.EqualSlices(kv.SliceDiff(keys2, keys1), keys3))
-	require.True(t, kv.EmptyIntersection(keys1, keys3))
+	keys3 := getKeys(indexer)
+	require.True(t, equalSlices(sliceDiff(keys2, keys1), keys3))
+	require.True(t, emptyIntersection(keys1, keys3))
 }
 
 func BenchmarkBlockerIndexer_Prune(_ *testing.B) {
 	config := test.ResetTestRoot("block_indexer")
-	defer func() { os.RemoveAll(config.RootDir) }()
+	defer func() {
+		err := os.RemoveAll(config.RootDir)
+		if err != nil {
+			panic(err)
+		}
+	}()
 
 	store, err := db.NewDB("block", db.GoLevelDBBackend, config.DBDir())
 	if err != nil {
 		panic(err)
 	}
-	indexer := blockidxkv.New(store)
+	indexer := New(store)
 
 	maxHeight := 10000
 	for h := 1; h < maxHeight; h++ {
-		event := blockidxkv.GetEventsForTesting(int64(h))
+		event := getEventsForTesting(int64(h))
 		err := indexer.Index(event)
 		if err != nil {
 			panic(err)
@@ -67,14 +72,14 @@ func BenchmarkBlockerIndexer_Prune(_ *testing.B) {
 	startTime := time.Now()
 
 	for h := 1; h <= maxHeight; h++ {
-		indexer.Prune(int64(h-1), int64(h))
+		_, _ = indexer.Prune(int64(h-1), int64(h))
 	}
 	fmt.Println(time.Since(startTime))
 }
 
 func TestBlockIndexer(t *testing.T) {
 	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))
-	indexer := blockidxkv.New(store)
+	indexer := New(store)
 
 	require.NoError(t, indexer.Index(types.EventDataNewBlockEvents{
 		Height: 1,
@@ -201,7 +206,7 @@ func TestBlockIndexer(t *testing.T) {
 
 func TestBlockIndexerMulti(t *testing.T) {
 	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))
-	indexer := blockidxkv.New(store)
+	indexer := New(store)
 
 	require.NoError(t, indexer.Index(types.EventDataNewBlockEvents{
 		Height: 1,
@@ -365,7 +370,7 @@ func TestBigInt(t *testing.T) {
 	bigFloatLower := bigInt + ".1"
 	bigIntSmaller := "9999999999999999999"
 	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))
-	indexer := blockidxkv.New(store)
+	indexer := New(store)
 
 	require.NoError(t, indexer.Index(types.EventDataNewBlockEvents{
 		Height: 1,
@@ -501,14 +506,107 @@ func TestKeyArray(t *testing.T) {
 	key3 := []byte("abacabadabacaba")
 
 	var keyArray []byte
-	keyArray = blockidxkv.AppendToKeyArray(keyArray, key1)
-	keyArray = blockidxkv.AppendToKeyArray(keyArray, key2)
-	keyArray = blockidxkv.AppendToKeyArray(keyArray, key3)
+	keyArray = appendToKeyArray(keyArray, key1)
+	keyArray = appendToKeyArray(keyArray, key2)
+	keyArray = appendToKeyArray(keyArray, key3)
 
-	keys := blockidxkv.GetKeysFromKeyArray(keyArray)
+	keys := getKeysFromKeyArray(keyArray)
 
 	require.Equal(t, len(keys), 3)
 	require.Equal(t, keys[0], key1)
 	require.Equal(t, keys[1], key2)
 	require.Equal(t, keys[2], key3)
+}
+
+func getEventsForTesting(height int64) types.EventDataNewBlockEvents {
+	return types.EventDataNewBlockEvents{
+		Height: height,
+		Events: []abci.Event{
+			{
+				Type: "begin_event",
+				Attributes: []abci.EventAttribute{
+					{
+						Key:   "proposer",
+						Value: "FCAA001",
+						Index: true,
+					},
+				},
+			},
+			{
+				Type: "end_event",
+				Attributes: []abci.EventAttribute{
+					{
+						Key:   "foo",
+						Value: "100",
+						Index: true,
+					},
+				},
+			},
+		},
+	}
+}
+
+func getKeys(indexer *BlockerIndexer) [][]byte {
+	var keys [][]byte
+	itr, err := indexer.store.Iterator(nil, nil)
+	if err != nil {
+		panic(err)
+	}
+	for ; itr.Valid(); itr.Next() {
+		keys = append(keys, itr.Key())
+	}
+	return keys
+}
+
+func equal(x []byte, y []byte) bool {
+	if len(x) != len(y) {
+		return false
+	}
+	for i, elem := range x {
+		if elem != y[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func contains(slice [][]byte, target []byte) bool {
+	for _, element := range slice {
+		if equal(element, target) {
+			return true
+		}
+	}
+	return false
+}
+
+func subslice(smaller [][]byte, bigger [][]byte) bool {
+	for _, elem := range smaller {
+		if !contains(bigger, elem) {
+			return false
+		}
+	}
+	return true
+}
+
+func equalSlices(x [][]byte, y [][]byte) bool {
+	return subslice(x, y) && subslice(y, x)
+}
+
+func emptyIntersection(x [][]byte, y [][]byte) bool {
+	for _, elem := range x {
+		if contains(y, elem) {
+			return false
+		}
+	}
+	return true
+}
+
+func sliceDiff(bigger [][]byte, smaller [][]byte) [][]byte {
+	var diff [][]byte
+	for _, elem := range bigger {
+		if !contains(smaller, elem) {
+			diff = append(diff, elem)
+		}
+	}
+	return diff
 }

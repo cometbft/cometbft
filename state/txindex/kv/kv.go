@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -41,20 +42,29 @@ type TxIndex struct {
 	log log.Logger
 }
 
-func (txi *TxIndex) Prune(lastRetainHeight int64, retainHeight int64) {
+func (txi *TxIndex) Prune(lastRetainHeight int64, retainHeight int64) (int64, error) {
+	// Returns the last retained height
 	ctx := context.Background()
 	results, err := txi.Search(ctx, query.MustCompile(
 		fmt.Sprintf("tx.height < %d AND tx.height >= %d", retainHeight, lastRetainHeight)))
 	if err != nil {
 		panic(err)
 	}
+	if len(results) == 0 {
+		return lastRetainHeight, nil
+	}
 
+	sort.Sort(TxResultByHeight(results))
 	for _, result := range results {
-		txi.DeleteResult(result)
+		err := txi.deleteResult(result)
 		if err != nil {
-			panic(err)
+			// If we crashed in the middle of pruning the height,
+			// we assume this height is retained
+			return result.Height, err
 		}
 	}
+	maxHeightPruned := results[len(results)-1].Height
+	return maxHeightPruned + 1, err
 }
 
 // NewTxIndex creates new KV indexer.
@@ -129,17 +139,18 @@ func (txi *TxIndex) AddBatch(b *txindex.Batch) error {
 	return storeBatch.WriteSync()
 }
 
-func (txi *TxIndex) DeleteResult(result *abci.TxResult) {
+func (txi *TxIndex) deleteResult(result *abci.TxResult) error {
 	hash := types.Tx(result.Tx).Hash()
 	txi.deleteEvents(result)
 	err := txi.store.Delete(keyForHeight(result))
 	if err != nil {
-		panic(err)
+		return err
 	}
 	err = txi.store.Delete(hash)
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
 // Index indexes a single transaction using the given list of events. Each key

@@ -18,8 +18,9 @@ const (
 )
 
 var (
-	LastIndexerRetainHeightKey = []byte("lastIndexerRetainHeight")
-	IndexerRetainHeightKey     = []byte("indexerRetainHeight")
+	LastTxIndexerRetainHeightKey    = []byte("lastTxIndexerRetainHeight")
+	LastBlockIndexerRetainHeightKey = []byte("lastBlockIndexerRetainHeight")
+	IndexerRetainHeightKey          = []byte("indexerRetainHeight")
 
 	ErrKeyNotFound        = errors.New("key not found")
 	ErrInvalidHeightValue = errors.New("invalid height value")
@@ -138,24 +139,46 @@ func (is *IndexerService) OnStart() error {
 }
 
 func (is *IndexerService) Prune(retainHeight int64) {
-	lastRetainHeight, err := is.getLastIndexerRetainHeight()
+	lastTxIndexerRetainHeight, err := is.getLastTxIndexerRetainHeight()
 	if err != nil {
 		panic(err)
 	}
-	if retainHeight <= lastRetainHeight {
+
+	lastBlockIndexerRetainHeight, err := is.getLastBlockIndexerRetainHeight()
+	if err != nil {
+		panic(err)
+	}
+
+	if retainHeight <= lastTxIndexerRetainHeight && retainHeight <= lastBlockIndexerRetainHeight {
 		return
 	}
-	is.txIdxr.Prune(lastRetainHeight, retainHeight)
-	is.blockIdxr.Prune(lastRetainHeight, retainHeight)
-	is.setLastIndexerRetainHeight(retainHeight)
+
+	txPrunedHeight, err := is.txIdxr.Prune(lastTxIndexerRetainHeight, retainHeight)
+	is.setLastTxIndexerRetainHeight(txPrunedHeight)
+	if err != nil {
+		panic(err)
+	}
+
+	blockPrunedHeight, err := is.blockIdxr.Prune(lastBlockIndexerRetainHeight, retainHeight)
+	is.setLastBlockIndexerRetainHeight(blockPrunedHeight)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (is *IndexerService) SaveIndexerRetainHeight(height int64) error {
+	currentValue, err := is.GetIndexerRetainHeight()
+	if err != nil && !errors.Is(err, ErrKeyNotFound) {
+		return err
+	}
+	if height <= currentValue {
+		return nil
+	}
 	return is.indexerStore.SetSync(IndexerRetainHeightKey, int64ToBytes(height))
 }
 
 func (is *IndexerService) GetIndexerRetainHeight() (int64, error) {
-	buf, err := is.getValue(IndexerRetainHeightKey)
+	buf, err := is.indexerStore.Get(IndexerRetainHeightKey)
 	if err != nil {
 		return 0, err
 	}
@@ -168,8 +191,8 @@ func (is *IndexerService) GetIndexerRetainHeight() (int64, error) {
 	return height, nil
 }
 
-func (is *IndexerService) getLastIndexerRetainHeight() (int64, error) {
-	bz, err := is.getValue(LastIndexerRetainHeightKey)
+func (is *IndexerService) getLastTxIndexerRetainHeight() (int64, error) {
+	bz, err := is.indexerStore.Get(LastTxIndexerRetainHeightKey)
 	if errors.Is(err, ErrKeyNotFound) {
 		return 0, nil
 	}
@@ -180,22 +203,42 @@ func (is *IndexerService) getLastIndexerRetainHeight() (int64, error) {
 	return height, nil
 }
 
-func (is *IndexerService) setLastIndexerRetainHeight(height int64) {
-	if err := is.indexerStore.SetSync(LastIndexerRetainHeightKey, int64ToBytes(height)); err != nil {
+func (is *IndexerService) setLastTxIndexerRetainHeight(height int64) {
+	currentHeight, err := is.getLastTxIndexerRetainHeight()
+	if err != nil && !errors.Is(err, ErrKeyNotFound) {
+		panic(err)
+	}
+	if height < currentHeight {
+		return
+	}
+	if err := is.indexerStore.SetSync(LastTxIndexerRetainHeightKey, int64ToBytes(height)); err != nil {
 		panic(err)
 	}
 }
 
-func (is *IndexerService) getValue(key []byte) ([]byte, error) {
-	bz, err := is.indexerStore.Get(key)
-	if err != nil {
-		return nil, err
+func (is *IndexerService) getLastBlockIndexerRetainHeight() (int64, error) {
+	bz, err := is.indexerStore.Get(LastBlockIndexerRetainHeightKey)
+	if errors.Is(err, ErrKeyNotFound) {
+		return 0, nil
 	}
+	height := int64FromBytes(bz)
+	if height < 0 {
+		return 0, ErrInvalidHeightValue
+	}
+	return height, nil
+}
 
-	if len(bz) == 0 {
-		return nil, ErrKeyNotFound
+func (is *IndexerService) setLastBlockIndexerRetainHeight(height int64) {
+	currentHeight, err := is.getLastBlockIndexerRetainHeight()
+	if err != nil && !errors.Is(err, ErrKeyNotFound) {
+		panic(err)
 	}
-	return bz, nil
+	if height < currentHeight {
+		return
+	}
+	if err := is.indexerStore.SetSync(LastBlockIndexerRetainHeightKey, int64ToBytes(height)); err != nil {
+		panic(err)
+	}
 }
 
 // OnStop implements service.Service by unsubscribing from all transactions.

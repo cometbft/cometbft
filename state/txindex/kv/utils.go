@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	idxutil "github.com/cometbft/cometbft/internal/indexer"
 	cmtsyntax "github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/state/indexer"
@@ -107,8 +108,10 @@ func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) (bool, error)
 	return true, nil
 }
 
+// GetKeys is used for testing purposes only
 func GetKeys(indexer *TxIndex) [][]byte {
 	var keys [][]byte
+
 	itr, err := indexer.store.Iterator(nil, nil)
 	if err != nil {
 		panic(err)
@@ -119,65 +122,8 @@ func GetKeys(indexer *TxIndex) [][]byte {
 	return keys
 }
 
-func equal(x []byte, y []byte) bool {
-	if len(x) != len(y) {
-		return false
-	}
-	for i, elem := range x {
-		if elem != y[i] {
-			return false
-		}
-	}
-	return true
-}
+type TxResultByHeight []*abci.TxResult
 
-func contains(slice [][]byte, target []byte) bool {
-	for _, element := range slice {
-		if equal(element, target) {
-			return true
-		}
-	}
-	return false
-}
-
-func Subslice(smaller [][]byte, bigger [][]byte) bool {
-	for _, elem := range smaller {
-		if !contains(bigger, elem) {
-			return false
-		}
-	}
-	return true
-}
-
-func EqualSlices(x [][]byte, y [][]byte) bool {
-	return Subslice(x, y) && Subslice(y, x)
-}
-
-func EmptyIntersection(x [][]byte, y [][]byte) bool {
-	for _, elem := range x {
-		if contains(y, elem) {
-			return false
-		}
-	}
-	return true
-}
-
-func Intersection(x [][]byte, y [][]byte) [][]byte {
-	var intersection [][]byte
-	for _, elem := range x {
-		if contains(y, elem) {
-			intersection = append(intersection, elem)
-		}
-	}
-	return intersection
-}
-
-func SliceDiff(bigger [][]byte, smaller [][]byte) [][]byte {
-	var diff [][]byte
-	for _, elem := range bigger {
-		if !contains(smaller, elem) {
-			diff = append(diff, elem)
-		}
-	}
-	return diff
-}
+func (a TxResultByHeight) Len() int           { return len(a) }
+func (a TxResultByHeight) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a TxResultByHeight) Less(i, j int) bool { return a[i].Height < a[j].Height }

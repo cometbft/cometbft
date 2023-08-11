@@ -90,18 +90,23 @@ func (idx *BlockerIndexer) Index(bh types.EventDataNewBlockEvents) error {
 	return batch.WriteSync()
 }
 
-func (idx *BlockerIndexer) Prune(lastRetainHeight int64, retainHeight int64) {
+func (idx *BlockerIndexer) Prune(lastRetainHeight int64, retainHeight int64) (int64, error) {
 	for height := lastRetainHeight; height < retainHeight; height++ {
+		// If we fail to delete the height fully,
+		// We consider it to be retained
 		key, err := heightKey(height)
 		if err != nil {
-			panic(err)
+			return height, err
 		}
 		err = idx.store.Delete(key)
 		if err != nil {
-			panic(err)
+			return height, err
 		}
-		idx.deleteEvents(height)
+		if err = idx.deleteEvents(height); err != nil {
+			return height, err
+		}
 	}
+	return retainHeight, nil
 }
 
 // Search performs a query for block heights that match a given FinalizeBlock
@@ -620,7 +625,7 @@ func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, hei
 				if err := batch.Set(key, heightBz); err != nil {
 					return err
 				}
-				keyArray = AppendToKeyArray(keyArray, key)
+				keyArray = appendToKeyArray(keyArray, key)
 			}
 		}
 	}
@@ -628,24 +633,25 @@ func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, hei
 	return err
 }
 
-func (idx *BlockerIndexer) deleteEvents(height int64) {
+func (idx *BlockerIndexer) deleteEvents(height int64) error {
 	eventsKey := getEventsForHeightKey(height)
 	keyArray, err := idx.store.Get(eventsKey)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	if keyArray == nil {
-		return
+		return nil
 	}
-	keys := GetKeysFromKeyArray(keyArray)
+	keys := getKeysFromKeyArray(keyArray)
 	for _, key := range keys {
 		err := idx.store.Delete(key)
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
 	err = idx.store.Delete(eventsKey)
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }

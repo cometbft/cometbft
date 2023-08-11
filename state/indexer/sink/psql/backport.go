@@ -38,8 +38,9 @@ func (es *EventSink) TxIndexer() BackportTxIndexer {
 // indexing operations to an underlying PostgreSQL event sink.
 type BackportTxIndexer struct{ psql *EventSink }
 
-func (b BackportTxIndexer) Prune(_ int64, _ int64) {
+func (b BackportTxIndexer) Prune(_ int64, _ int64) (int64, error) {
 	// Not implemented
+	return 0, nil
 }
 
 // AddBatch indexes a batch of transactions in Postgres, as part of TxIndexer.
@@ -76,8 +77,9 @@ func (es *EventSink) BlockIndexer() BackportBlockIndexer {
 // delegating indexing operations to an underlying PostgreSQL event sink.
 type BackportBlockIndexer struct{ psql *EventSink }
 
-func (b BackportBlockIndexer) Prune(_ int64, _ int64) {
+func (b BackportBlockIndexer) Prune(_ int64, _ int64) (int64, error) {
 	// Not implemented
+	return 0, nil
 }
 
 // Has is implemented to satisfy the BlockIndexer interface, but it is not

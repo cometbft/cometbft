@@ -72,10 +72,14 @@ func TestIndexerService_Prune(t *testing.T) {
 
 	service.Prune(2)
 
-	metaKeys := [][]byte{txindex.LastIndexerRetainHeightKey, txindex.IndexerRetainHeightKey}
+	metaKeys := [][]byte{
+		txindex.LastBlockIndexerRetainHeightKey,
+		txindex.LastTxIndexerRetainHeightKey,
+		txindex.IndexerRetainHeightKey,
+	}
 
-	keysAfterPrune2 := kv.SliceDiff(kv.GetKeys(txIndexer), metaKeys)
-	require.True(t, kv.EqualSlices(keysAfterPrune2, kv.SliceDiff(keys[3], keys[0])))
+	keysAfterPrune2 := sliceDiff(kv.GetKeys(txIndexer), metaKeys)
+	require.True(t, equalSlices(keysAfterPrune2, sliceDiff(keys[3], keys[0])))
 
 	err := service.SaveIndexerRetainHeight(int64(4))
 	require.NoError(t, err)
@@ -87,8 +91,8 @@ func TestIndexerService_Prune(t *testing.T) {
 
 	service.Prune(4)
 
-	keysAfterPrune4 := kv.SliceDiff(kv.GetKeys(txIndexer), metaKeys)
-	require.True(t, kv.EqualSlices(keysAfterPrune4, kv.SliceDiff(keys[3], keys[2])))
+	keysAfterPrune4 := sliceDiff(kv.GetKeys(txIndexer), metaKeys)
+	require.Equal(t, keysAfterPrune4, sliceDiff(keys[3], keys[2]))
 
 	events, txResult1, txResult2 := getEventsAndResults(1)
 	//publish block with events
@@ -170,4 +174,48 @@ func getEventsAndResults(height int64) (types.EventDataNewBlockEvents, *abci.TxR
 		Result: abci.ExecTxResult{Code: 0},
 	}
 	return events, txResult1, txResult2
+}
+
+func equal(x []byte, y []byte) bool {
+	if len(x) != len(y) {
+		return false
+	}
+	for i, elem := range x {
+		if elem != y[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func contains(slice [][]byte, target []byte) bool {
+	for _, element := range slice {
+		if equal(element, target) {
+			return true
+		}
+	}
+	return false
+}
+
+func subslice(smaller [][]byte, bigger [][]byte) bool {
+	for _, elem := range smaller {
+		if !contains(bigger, elem) {
+			return false
+		}
+	}
+	return true
+}
+
+func equalSlices(x [][]byte, y [][]byte) bool {
+	return subslice(x, y) && subslice(y, x)
+}
+
+func sliceDiff(bigger [][]byte, smaller [][]byte) [][]byte {
+	var diff [][]byte
+	for _, elem := range bigger {
+		if !contains(smaller, elem) {
+			diff = append(diff, elem)
+		}
+	}
+	return diff
 }

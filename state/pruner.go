@@ -243,7 +243,6 @@ func (p *Pruner) pruneBlocksRoutine() {
 			return
 		default:
 			newRetainHeight := p.pruneBlocksToRetainHeight(lastRetainHeight)
-
 			p.observer.PrunerPrunedBlocks(&BlocksPrunedInfo{
 				FromHeight: lastRetainHeight,
 				ToHeight:   newRetainHeight - 1,

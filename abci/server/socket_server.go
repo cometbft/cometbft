@@ -104,7 +104,7 @@ func (s *SocketServer) rmConn(connID int) error {
 
 	conn, ok := s.conns[connID]
 	if !ok {
-		return fmt.Errorf("connection %d does not exist", connID)
+		return ErrConnectionDoesNotExist{ConnID: connID}
 	}
 
 	delete(s.conns, connID)
@@ -301,7 +301,7 @@ func (s *SocketServer) handleRequest(ctx context.Context, req *types.Request) (*
 		}
 		return types.ToResponseVerifyVoteExtension(res), nil
 	default:
-		return nil, fmt.Errorf("unknown request from client: %T", req)
+		return nil, ErrUnknownRequest{Request: *req}
 	}
 }
 

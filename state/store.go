@@ -394,7 +394,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 // pruned and the new retain height.
 func (store dbStore) PruneABCIResponses(targetRetainHeight int64) (int64, int64, error) {
 	if store.DiscardABCIResponses {
-		return 0, 0, errors.New("ABCI responses are discarded, nothing to prune")
+		return 0, 0, nil
 	}
 	lastRetainHeight, err := store.getLastABCIResponsesRetainHeight()
 	if err != nil {

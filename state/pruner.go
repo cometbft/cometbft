@@ -287,7 +287,7 @@ func (p *Pruner) pruneBlocksToRetainHeight(lastRetainHeight int64) int64 {
 		p.logger.Error("Failed to prune blocks", "err", err, "targetRetainHeight", targetRetainHeight, "newRetainHeight", newRetainHeight)
 	} else if pruned > 0 {
 		p.metrics.BlockStoreBaseHeight.Set(float64(newRetainHeight))
-		p.logger.Info("Pruned blocks", "count", pruned, "evidenceRetainHeight", evRetainHeight, "newRetainHeight", newRetainHeight)
+		p.logger.Debug("Pruned blocks", "count", pruned, "evidenceRetainHeight", evRetainHeight, "newRetainHeight", newRetainHeight)
 	}
 	return newRetainHeight
 }
@@ -332,6 +332,7 @@ func (p *Pruner) findMinRetainHeight() int64 {
 	appRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
 	if err != nil {
 		if !errors.Is(err, ErrKeyNotFound) {
+			p.logger.Error("unexpected error fetching application retain height: ", err)
 			return 0
 		}
 		noAppRetainHeightSet = true

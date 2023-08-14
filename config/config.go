@@ -1376,7 +1376,7 @@ func getDefaultMoniker() string {
 
 type PruningConfig struct {
 	// The time period between automated background pruning operations.
-	Interval time.Duration `mapstructure:"period"`
+	Interval time.Duration `mapstructure:"interval"`
 	// Data companion-related pruning configuration.
 	DataCompanion *DataCompanionPruningConfig `mapstructure:"data_companion"`
 }

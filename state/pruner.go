@@ -332,7 +332,7 @@ func (p *Pruner) findMinRetainHeight() int64 {
 	appRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
 	if err != nil {
 		if !errors.Is(err, ErrKeyNotFound) {
-			p.logger.Error("unexpected error fetching application retain height: ", err)
+			p.logger.Error("Unexpected error fetching application retain height", "err", err)
 			return 0
 		}
 		noAppRetainHeightSet = true

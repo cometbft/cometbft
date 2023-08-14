@@ -47,7 +47,7 @@ Verify that you have the latest version of Go installed (refer to the [official 
 
 ```bash
 $ go version
-go version go1.20.1 darwin/amd64
+go version go1.21.0 darwin/amd64
 ```
 
 ## 1.2 Creating a new Go project
@@ -95,7 +95,7 @@ The go.mod file should look similar to:
 ```go
 module github.com/me/example
 
-go 1.20
+go 1.21
 
 require (
     github.com/cometbft/cometbft v0.38.0
@@ -373,7 +373,7 @@ func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.R
 
 Transactions are not guaranteed to be valid when they are delivered to an application, even if they were valid when they were proposed.
 
-This can happen if the application state is used to determine transaction validity. 
+This can happen if the application state is used to determine transaction validity.
 The application state may have changed between the initial execution of `CheckTx` and the transaction delivery in `FinalizeBlock` in a way that rendered the transaction no longer valid.
 
 **Note** that `FinalizeBlock` cannot yet commit the Badger transaction we were building during the block execution.
@@ -524,7 +524,7 @@ func main() {
     config := cfg.DefaultConfig()
     config.SetRoot(homeDir)
     viper.SetConfigFile(fmt.Sprintf("%s/%s", homeDir, "config/config.toml"))
-    
+
     if err := viper.ReadInConfig(); err != nil {
         log.Fatalf("Reading config: %v", err)
     }
@@ -536,7 +536,7 @@ func main() {
     }
     dbPath := filepath.Join(homeDir, "badger")
     db, err := badger.Open(badger.DefaultOptions(dbPath))
-    
+
     if err != nil {
         log.Fatalf("Opening database: %v", err)
     }
@@ -564,7 +564,7 @@ func main() {
     if err != nil {
         log.Fatalf("failed to parse log level: %v", err)
     }
-    
+
     node, err := nm.NewNode(
         config,
         pv,
@@ -579,7 +579,7 @@ func main() {
     if err != nil {
         log.Fatalf("Creating node: %v", err)
     }
-    
+
     node.Start()
     defer func() {
         node.Stop()

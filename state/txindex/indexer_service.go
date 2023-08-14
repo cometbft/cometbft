@@ -208,7 +208,7 @@ func (is *IndexerService) setLastTxIndexerRetainHeight(height int64) {
 	if err != nil && !errors.Is(err, ErrKeyNotFound) {
 		panic(err)
 	}
-	if height < currentHeight {
+	if height <= currentHeight {
 		return
 	}
 	if err := is.indexerStore.SetSync(LastTxIndexerRetainHeightKey, int64ToBytes(height)); err != nil {

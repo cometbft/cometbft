@@ -6,7 +6,8 @@
 
 ## Context
 
-We want to be able to test whether CommetBFT respects the ABCI++ grammar. To do this, we need to enhance the e2e tests infrastructure. Specifically, we plan to do three things:
+ABCI++ defines the interface between the application and CometBFT. A part of the specification is the ABCI++ grammar that describes the sequences of calls that the application can expect from CometBFT.
+In order to demonstrate that CometBFT behaves as expected from the viewpoint of the application, we need to test whether CometBFT respects this ABCI++ grammar. To do this, we need to enhance the e2e tests infrastructure. Specifically, we plan to do three things:
 - Log every CometBFT's ABCI++ request during the execution.
 - Parse the logs post-mortem and extract all ABCI++ requests.
 - Check if the set of observed requests respects the ABCI++ grammar.

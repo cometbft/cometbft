@@ -108,8 +108,7 @@ func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) (bool, error)
 	return true, nil
 }
 
-// GetKeys is used for testing purposes only
-func GetKeys(indexer *TxIndex) [][]byte {
+func getKeys(indexer *TxIndex) [][]byte {
 	var keys [][]byte
 
 	itr, err := indexer.store.Iterator(nil, nil)

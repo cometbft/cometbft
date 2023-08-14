@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -785,21 +786,9 @@ func BenchmarkTxIndex1000(b *testing.B)  { benchmarkTxIndex(1000, b) }
 func BenchmarkTxIndex2000(b *testing.B)  { benchmarkTxIndex(2000, b) }
 func BenchmarkTxIndex10000(b *testing.B) { benchmarkTxIndex(10000, b) }
 
-func equal(x []byte, y []byte) bool {
-	if len(x) != len(y) {
-		return false
-	}
-	for i, elem := range x {
-		if elem != y[i] {
-			return false
-		}
-	}
-	return true
-}
-
 func contains(slice [][]byte, target []byte) bool {
 	for _, element := range slice {
-		if equal(element, target) {
+		if bytes.Equal(element, target) {
 			return true
 		}
 	}

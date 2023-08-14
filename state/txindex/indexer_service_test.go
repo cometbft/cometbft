@@ -1,6 +1,7 @@
 package txindex_test
 
 import (
+	"bytes"
 	"fmt"
 	"testing"
 	"time"
@@ -176,21 +177,9 @@ func getEventsAndResults(height int64) (types.EventDataNewBlockEvents, *abci.TxR
 	return events, txResult1, txResult2
 }
 
-func equal(x []byte, y []byte) bool {
-	if len(x) != len(y) {
-		return false
-	}
-	for i, elem := range x {
-		if elem != y[i] {
-			return false
-		}
-	}
-	return true
-}
-
 func contains(slice [][]byte, target []byte) bool {
 	for _, element := range slice {
-		if equal(element, target) {
+		if bytes.Equal(element, target) {
 			return true
 		}
 	}

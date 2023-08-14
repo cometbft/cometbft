@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -558,21 +559,9 @@ func getKeys(indexer *BlockerIndexer) [][]byte {
 	return keys
 }
 
-func equal(x []byte, y []byte) bool {
-	if len(x) != len(y) {
-		return false
-	}
-	for i, elem := range x {
-		if elem != y[i] {
-			return false
-		}
-	}
-	return true
-}
-
 func contains(slice [][]byte, target []byte) bool {
 	for _, element := range slice {
-		if equal(element, target) {
+		if bytes.Equal(element, target) {
 			return true
 		}
 	}

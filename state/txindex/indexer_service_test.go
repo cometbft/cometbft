@@ -8,6 +8,7 @@ import (
 
 	"github.com/cometbft/cometbft/state/indexer"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/slices"
 
 	db "github.com/cometbft/cometbft-db"
 
@@ -79,8 +80,8 @@ func TestIndexerService_Prune(t *testing.T) {
 		txindex.IndexerRetainHeightKey,
 	}
 
-	keysAfterPrune2 := sliceDiff(kv.GetKeys(txIndexer), metaKeys)
-	require.True(t, equalSlices(keysAfterPrune2, sliceDiff(keys[3], keys[0])))
+	keysAfterPrune2 := setDiff(kv.GetKeys(txIndexer), metaKeys)
+	require.True(t, isEqualSets(keysAfterPrune2, setDiff(keys[3], keys[0])))
 
 	err := service.SaveIndexerRetainHeight(int64(4))
 	require.NoError(t, err)
@@ -92,8 +93,8 @@ func TestIndexerService_Prune(t *testing.T) {
 
 	service.Prune(4)
 
-	keysAfterPrune4 := sliceDiff(kv.GetKeys(txIndexer), metaKeys)
-	require.Equal(t, keysAfterPrune4, sliceDiff(keys[3], keys[2]))
+	keysAfterPrune4 := setDiff(kv.GetKeys(txIndexer), metaKeys)
+	require.Equal(t, keysAfterPrune4, setDiff(keys[3], keys[2]))
 
 	events, txResult1, txResult2 := getEventsAndResults(1)
 	//publish block with events
@@ -177,32 +178,27 @@ func getEventsAndResults(height int64) (types.EventDataNewBlockEvents, *abci.TxR
 	return events, txResult1, txResult2
 }
 
-func contains(slice [][]byte, target []byte) bool {
-	for _, element := range slice {
-		if bytes.Equal(element, target) {
-			return true
-		}
-	}
-	return false
-}
-
-func subslice(smaller [][]byte, bigger [][]byte) bool {
+func isSubset(smaller [][]byte, bigger [][]byte) bool {
 	for _, elem := range smaller {
-		if !contains(bigger, elem) {
+		if !slices.ContainsFunc(bigger, func(i []byte) bool {
+			return bytes.Equal(i, elem)
+		}) {
 			return false
 		}
 	}
 	return true
 }
 
-func equalSlices(x [][]byte, y [][]byte) bool {
-	return subslice(x, y) && subslice(y, x)
+func isEqualSets(x [][]byte, y [][]byte) bool {
+	return isSubset(x, y) && isSubset(y, x)
 }
 
-func sliceDiff(bigger [][]byte, smaller [][]byte) [][]byte {
+func setDiff(bigger [][]byte, smaller [][]byte) [][]byte {
 	var diff [][]byte
 	for _, elem := range bigger {
-		if !contains(smaller, elem) {
+		if !slices.ContainsFunc(smaller, func(i []byte) bool {
+			return bytes.Equal(i, elem)
+		}) {
 			diff = append(diff, elem)
 		}
 	}

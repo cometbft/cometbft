@@ -10,6 +10,7 @@ import (
 
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/slices"
 
 	db "github.com/cometbft/cometbft-db"
 
@@ -35,14 +36,14 @@ func TestBlockerIndexer_Prune(t *testing.T) {
 
 	keys2 := getKeys(indexer)
 
-	require.True(t, subslice(keys1, keys2))
+	require.True(t, isSubset(keys1, keys2))
 
 	retainedHeight, err := indexer.Prune(0, 2)
 	require.NoError(t, err)
 	require.Equal(t, int64(2), retainedHeight)
 
 	keys3 := getKeys(indexer)
-	require.True(t, equalSlices(sliceDiff(keys2, keys1), keys3))
+	require.True(t, isEqualSets(setDiff(keys2, keys1), keys3))
 	require.True(t, emptyIntersection(keys1, keys3))
 }
 
@@ -559,41 +560,38 @@ func getKeys(indexer *BlockerIndexer) [][]byte {
 	return keys
 }
 
-func contains(slice [][]byte, target []byte) bool {
-	for _, element := range slice {
-		if bytes.Equal(element, target) {
-			return true
-		}
-	}
-	return false
-}
-
-func subslice(smaller [][]byte, bigger [][]byte) bool {
+func isSubset(smaller [][]byte, bigger [][]byte) bool {
 	for _, elem := range smaller {
-		if !contains(bigger, elem) {
+		if !slices.ContainsFunc(bigger, func(i []byte) bool {
+			return bytes.Equal(i, elem)
+		}) {
 			return false
 		}
 	}
 	return true
 }
 
-func equalSlices(x [][]byte, y [][]byte) bool {
-	return subslice(x, y) && subslice(y, x)
+func isEqualSets(x [][]byte, y [][]byte) bool {
+	return isSubset(x, y) && isSubset(y, x)
 }
 
 func emptyIntersection(x [][]byte, y [][]byte) bool {
 	for _, elem := range x {
-		if contains(y, elem) {
+		if slices.ContainsFunc(y, func(i []byte) bool {
+			return bytes.Equal(i, elem)
+		}) {
 			return false
 		}
 	}
 	return true
 }
 
-func sliceDiff(bigger [][]byte, smaller [][]byte) [][]byte {
+func setDiff(bigger [][]byte, smaller [][]byte) [][]byte {
 	var diff [][]byte
 	for _, elem := range bigger {
-		if !contains(smaller, elem) {
+		if !slices.ContainsFunc(smaller, func(i []byte) bool {
+			return bytes.Equal(i, elem)
+		}) {
 			diff = append(diff, elem)
 		}
 	}

@@ -103,7 +103,10 @@ func (idx *BlockerIndexer) Prune(lastRetainHeight int64, retainHeight int64) (in
 			return height, err
 		}
 		if err = idx.deleteEvents(height); err != nil {
-			return height, err
+              if !errors.Is(err, ErrKeyNotFound) {
+     			return height, err
+     	       } 
+     	        continue
 		}
 	}
 	return retainHeight, nil

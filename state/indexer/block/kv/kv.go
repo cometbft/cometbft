@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/cometbft/cometbft/state/txindex"
 	"github.com/google/orderedcode"
 
 	dbm "github.com/cometbft/cometbft-db"
@@ -103,10 +104,9 @@ func (idx *BlockerIndexer) Prune(lastRetainHeight int64, retainHeight int64) (in
 			return height, err
 		}
 		if err = idx.deleteEvents(height); err != nil {
-              if !errors.Is(err, ErrKeyNotFound) {
-     			return height, err
-     	       } 
-     	        continue
+			if !errors.Is(err, txindex.ErrKeyNotFound) {
+				return height, err
+			}
 		}
 	}
 	return retainHeight, nil

@@ -340,6 +340,7 @@ func (p *Pruner) findMinRetainHeight() int64 {
 	dcRetainHeight, err := p.stateStore.GetCompanionBlockRetainHeight()
 	if err != nil {
 		if !errors.Is(err, ErrKeyNotFound) {
+			p.logger.Error("Unexpected error fetching data companion retain height", "err", err)
 			return 0
 		}
 		// The Application height was set so we can return that immediately

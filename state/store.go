@@ -370,7 +370,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 		pruned++
 
 		// avoid batches growing too large by flushing to database regularly
-		if pruned%1000 == 0 && pruned > 0 {
+		if pruned >= 1000 {
 			err := batch.Write()
 			if err != nil {
 				return err
@@ -415,7 +415,7 @@ func (store dbStore) PruneABCIResponses(targetRetainHeight int64) (int64, int64,
 			return pruned, lastRetainHeight + pruned, fmt.Errorf("failed to delete ABCI responses at height %d: %w", h, err)
 		}
 		batchPruned++
-		if batchPruned%1000 == 0 && batchPruned > 0 {
+		if batchPruned >= 1000 {
 			if err := batch.Write(); err != nil {
 				return pruned, lastRetainHeight + pruned, fmt.Errorf("failed to write ABCI responses deletion batch at height %d: %w", h, err)
 			}

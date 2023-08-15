@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cometbft/cometbft/state/txindex"
 	"github.com/google/orderedcode"
 
 	dbm "github.com/cometbft/cometbft-db"
@@ -24,7 +23,10 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-var _ indexer.BlockIndexer = (*BlockerIndexer)(nil)
+var (
+	LastBlockIndexerRetainHeightKey = []byte("LastBlockIndexerRetainHeightKey")
+	ErrInvalidHeightValue           = errors.New("invalid height value")
+)
 
 // BlockerIndexer implements a block indexer, indexing FinalizeBlock
 // events with an underlying KV store. Block events are indexed by their height,
@@ -91,25 +93,63 @@ func (idx *BlockerIndexer) Index(bh types.EventDataNewBlockEvents) error {
 	return batch.WriteSync()
 }
 
-func (idx *BlockerIndexer) Prune(lastRetainHeight int64, retainHeight int64) (int64, error) {
+func (idx *BlockerIndexer) Prune(retainHeight int64) (int64, int64, error) {
+	lastRetainHeight, err := idx.getLastBlockIndexerRetainHeight()
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to look up last block indexer retain height: %w", err)
+	}
+	if lastRetainHeight == 0 {
+		lastRetainHeight = 1
+	}
 	for height := lastRetainHeight; height < retainHeight; height++ {
 		// If we fail to delete the height fully,
 		// We consider it to be retained
 		key, err := heightKey(height)
 		if err != nil {
-			return height, err
+			err2 := idx.setLastBlockIndexerRetainHeight(height)
+			if err2 != nil {
+				return height - lastRetainHeight, height, fmt.Errorf("error setting last retain height '%v' while handling handling heightKey error '%v'", err2, err)
+			}
+			return height - lastRetainHeight, height, err
 		}
 		err = idx.store.Delete(key)
 		if err != nil {
-			return height, err
+			err2 := idx.setLastBlockIndexerRetainHeight(height)
+			if err2 != nil {
+				return height - lastRetainHeight, height, fmt.Errorf("error setting last retain height '%v' while handling handling key deletion error '%v'", err2, err)
+			}
+			return height - lastRetainHeight, height, err
 		}
 		if err = idx.deleteEvents(height); err != nil {
-			if !errors.Is(err, txindex.ErrKeyNotFound) {
-				return height, err
+			err2 := idx.setLastBlockIndexerRetainHeight(height)
+			if err2 != nil {
+				return height, height - lastRetainHeight, fmt.Errorf("error setting last retain height '%v' while handling handling event deletion error '%v'", err2, err)
 			}
+			return height - lastRetainHeight, height, err
 		}
 	}
-	return retainHeight, nil
+
+	err = idx.setLastBlockIndexerRetainHeight(retainHeight)
+	return retainHeight - lastRetainHeight, retainHeight, err
+}
+
+func (idx *BlockerIndexer) setLastBlockIndexerRetainHeight(height int64) error {
+	return idx.store.SetSync(LastBlockIndexerRetainHeightKey, int64ToBytes(height))
+}
+
+func (idx *BlockerIndexer) getLastBlockIndexerRetainHeight() (int64, error) {
+	bz, err := idx.store.Get(LastBlockIndexerRetainHeightKey)
+	if err != nil {
+		return 0, err
+	}
+	if bz == nil {
+		return 0, nil
+	}
+	height := int64FromBytes(bz)
+	if height < 0 {
+		return 0, ErrInvalidHeightValue
+	}
+	return height, nil
 }
 
 // Search performs a query for block heights that match a given FinalizeBlock

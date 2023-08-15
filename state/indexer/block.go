@@ -25,5 +25,5 @@ type BlockIndexer interface {
 
 	SetLogger(l log.Logger)
 
-	Prune(lastRetainHeight int64, retainHeight int64) (int64, error)
+	Prune(retainHeight int64) (int64, int64, error)
 }

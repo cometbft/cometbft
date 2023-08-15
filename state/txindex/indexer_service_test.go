@@ -1,16 +1,13 @@
 package txindex_test
 
 import (
-	"bytes"
 	"fmt"
 	"testing"
 	"time"
 
+	db "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/state/indexer"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/slices"
-
-	db "github.com/cometbft/cometbft-db"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
@@ -51,72 +48,6 @@ func TestIndexerServiceIndexesBlocks(t *testing.T) {
 	require.Equal(t, txResult2, res)
 }
 
-func TestIndexerService_Prune(t *testing.T) {
-	service, txIndexer, _, eventBus := createTestSetup(t)
-
-	var keys [][][]byte
-
-	for height := int64(1); height <= 4; height++ {
-		events, txResult1, txResult2 := getEventsAndResults(height)
-		//publish block with events
-		err := eventBus.PublishEventNewBlockEvents(events)
-		require.NoError(t, err)
-
-		err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult1})
-		require.NoError(t, err)
-
-		err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult2})
-		require.NoError(t, err)
-
-		time.Sleep(100 * time.Millisecond)
-		keys = append(keys, kv.GetKeys(txIndexer))
-	}
-
-	service.Prune(2)
-
-	metaKeys := [][]byte{
-		txindex.LastBlockIndexerRetainHeightKey,
-		txindex.LastTxIndexerRetainHeightKey,
-		txindex.IndexerRetainHeightKey,
-	}
-
-	keysAfterPrune2 := setDiff(kv.GetKeys(txIndexer), metaKeys)
-	require.True(t, isEqualSets(keysAfterPrune2, setDiff(keys[3], keys[0])))
-
-	err := service.SaveIndexerRetainHeight(int64(4))
-	require.NoError(t, err)
-
-	actual, err := service.GetIndexerRetainHeight()
-	require.NoError(t, err)
-
-	require.Equal(t, int64(4), actual)
-
-	service.Prune(4)
-
-	keysAfterPrune4 := setDiff(kv.GetKeys(txIndexer), metaKeys)
-	require.Equal(t, keysAfterPrune4, setDiff(keys[3], keys[2]))
-
-	events, txResult1, txResult2 := getEventsAndResults(1)
-	//publish block with events
-	err = eventBus.PublishEventNewBlockEvents(events)
-	require.NoError(t, err)
-
-	err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult1})
-	require.NoError(t, err)
-
-	err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult2})
-	require.NoError(t, err)
-
-	time.Sleep(100 * time.Millisecond)
-
-	keys14 := kv.GetKeys(txIndexer)
-
-	service.Prune(4)
-	keysSecondPrune4 := kv.GetKeys(txIndexer)
-
-	require.Equal(t, keys14, keysSecondPrune4)
-}
-
 func createTestSetup(t *testing.T) (*txindex.IndexerService, *kv.TxIndex, indexer.BlockIndexer, *types.EventBus) {
 	// event bus
 	eventBus := types.NewEventBus()
@@ -134,7 +65,7 @@ func createTestSetup(t *testing.T) (*txindex.IndexerService, *kv.TxIndex, indexe
 	txIndexer := kv.NewTxIndex(store)
 	blockIndexer := blockidxkv.New(db.NewPrefixDB(store, []byte("block_events")))
 
-	service := txindex.NewIndexerService(txIndexer, blockIndexer, store, eventBus, false)
+	service := txindex.NewIndexerService(txIndexer, blockIndexer, eventBus, false)
 	service.SetLogger(log.TestingLogger())
 	err = service.Start()
 	require.NoError(t, err)
@@ -176,31 +107,4 @@ func getEventsAndResults(height int64) (types.EventDataNewBlockEvents, *abci.TxR
 		Result: abci.ExecTxResult{Code: 0},
 	}
 	return events, txResult1, txResult2
-}
-
-func isSubset(smaller [][]byte, bigger [][]byte) bool {
-	for _, elem := range smaller {
-		if !slices.ContainsFunc(bigger, func(i []byte) bool {
-			return bytes.Equal(i, elem)
-		}) {
-			return false
-		}
-	}
-	return true
-}
-
-func isEqualSets(x [][]byte, y [][]byte) bool {
-	return isSubset(x, y) && isSubset(y, x)
-}
-
-func setDiff(bigger [][]byte, smaller [][]byte) [][]byte {
-	var diff [][]byte
-	for _, elem := range bigger {
-		if !slices.ContainsFunc(smaller, func(i []byte) bool {
-			return bytes.Equal(i, elem)
-		}) {
-			diff = append(diff, elem)
-		}
-	}
-	return diff
 }

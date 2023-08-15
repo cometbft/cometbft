@@ -7,6 +7,8 @@ import (
 	"os"
 	"testing"
 
+	sm "github.com/cometbft/cometbft/state"
+	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -70,6 +72,12 @@ func TestTxIndex(t *testing.T) {
 func TestTxIndex_Prune(t *testing.T) {
 	indexer := NewTxIndex(db.NewMemDB())
 
+	metaKeys := [][]byte{
+		LastTxIndexerRetainHeightKey,
+		blockidxkv.LastBlockIndexerRetainHeightKey,
+		sm.IndexerRetainHeightKey,
+	}
+
 	tx := types.Tx("HELLO WORLD")
 	events := []abci.Event{
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: "1", Index: true}}},
@@ -121,12 +129,13 @@ func TestTxIndex_Prune(t *testing.T) {
 	keys2 := GetKeys(indexer)
 	assert.True(t, isSubset(keys1, keys2))
 
-	retainedHeight, err := indexer.Prune(0, 2)
+	numPruned, retainedHeight, err := indexer.Prune(2)
 	assert.NoError(t, err)
+	assert.Equal(t, int64(1), numPruned)
 	assert.Equal(t, int64(2), retainedHeight)
 
 	keys3 := GetKeys(indexer)
-	assert.True(t, isEqualSets(setDiff(keys2, keys1), keys3))
+	assert.True(t, isEqualSets(setDiff(keys2, keys1), setDiff(keys3, metaKeys)))
 	assert.True(t, emptyIntersection(keys1, keys3))
 
 	loadedTxResult2, err := indexer.Get(hash2)

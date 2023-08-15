@@ -15,8 +15,8 @@ var _ indexer.BlockIndexer = (*BlockerIndexer)(nil)
 // TxIndex implements a no-op block indexer.
 type BlockerIndexer struct{}
 
-func (idx *BlockerIndexer) Prune(_ int64, _ int64) (int64, error) {
-	return 0, nil
+func (idx *BlockerIndexer) Prune(_ int64) (int64, int64, error) {
+	return 0, 0, nil
 }
 
 func (idx *BlockerIndexer) Has(int64) (bool, error) {

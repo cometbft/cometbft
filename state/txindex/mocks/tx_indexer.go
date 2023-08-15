@@ -20,8 +20,8 @@ type TxIndexer struct {
 	mock.Mock
 }
 
-func (_m *TxIndexer) Prune(_ int64, _ int64) (int64, error) {
-	return 0, nil
+func (_m *TxIndexer) Prune(retainHeight int64) (int64, int64, error) {
+	return 0, 0, nil
 }
 
 // AddBatch provides a mock function with given fields: b

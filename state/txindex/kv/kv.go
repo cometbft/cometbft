@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math"
 	"math/big"
@@ -12,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/state"
 
 	"github.com/cosmos/gogoproto/proto"
 
@@ -31,7 +33,9 @@ const (
 	eventSeqSeparator = "$es$"
 )
 
-var _ txindex.TxIndexer = (*TxIndex)(nil)
+var (
+	LastTxIndexerRetainHeightKey = []byte("LastTxIndexerRetainHeightKey")
+)
 
 // TxIndex is the simplest possible indexer, backed by key-value storage (levelDB).
 type TxIndex struct {
@@ -42,8 +46,16 @@ type TxIndex struct {
 	log log.Logger
 }
 
-func (txi *TxIndex) Prune(lastRetainHeight int64, retainHeight int64) (int64, error) {
+func (txi *TxIndex) Prune(retainHeight int64) (int64, int64, error) {
 	// Returns the last retained height
+	lastRetainHeight, err := txi.getLastTxIndexerRetainHeight()
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to look up last block indexer retain height: %w", err)
+	}
+	if lastRetainHeight == 0 {
+		lastRetainHeight = 1
+	}
+
 	ctx := context.Background()
 	results, err := txi.Search(ctx, query.MustCompile(
 		fmt.Sprintf("tx.height < %d AND tx.height >= %d", retainHeight, lastRetainHeight)))
@@ -51,7 +63,7 @@ func (txi *TxIndex) Prune(lastRetainHeight int64, retainHeight int64) (int64, er
 		panic(err)
 	}
 	if len(results) == 0 {
-		return lastRetainHeight, nil
+		return 0, lastRetainHeight, nil
 	}
 
 	sort.Sort(TxResultByHeight(results))
@@ -60,11 +72,33 @@ func (txi *TxIndex) Prune(lastRetainHeight int64, retainHeight int64) (int64, er
 		if err != nil {
 			// If we crashed in the middle of pruning the height,
 			// we assume this height is retained
-			return result.Height, err
+			err2 := txi.setLastTxIndexerRetainHeight(result.Height)
+			if err2 != nil {
+				return result.Height - lastRetainHeight, result.Height, fmt.Errorf("error setting last retain height '%v' while handling handling result deletion error '%v'", err2, err)
+			}
+			return result.Height - lastRetainHeight, result.Height, err
 		}
 	}
 	maxHeightPruned := results[len(results)-1].Height
-	return maxHeightPruned + 1, err
+	newRetainedHeight := maxHeightPruned + 1
+	err = txi.setLastTxIndexerRetainHeight(newRetainedHeight)
+	return newRetainedHeight - lastRetainHeight, newRetainedHeight, err
+}
+
+func (txi *TxIndex) setLastTxIndexerRetainHeight(height int64) error {
+	return txi.store.SetSync(LastTxIndexerRetainHeightKey, int64ToBytes(height))
+}
+
+func (txi *TxIndex) getLastTxIndexerRetainHeight() (int64, error) {
+	bz, err := txi.store.Get(LastTxIndexerRetainHeightKey)
+	if errors.Is(err, state.ErrKeyNotFound) {
+		return 0, nil
+	}
+	height := int64FromBytes(bz)
+	if height < 0 {
+		return 0, state.ErrInvalidHeightValue
+	}
+	return height, nil
 }
 
 // NewTxIndex creates new KV indexer.

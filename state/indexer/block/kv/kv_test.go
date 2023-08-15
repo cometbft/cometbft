@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/internal/test"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/state/txindex/kv"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
 
@@ -26,6 +28,12 @@ func TestBlockerIndexer_Prune(t *testing.T) {
 	events1 := getEventsForTesting(1)
 	events2 := getEventsForTesting(2)
 
+	metaKeys := [][]byte{
+		kv.LastTxIndexerRetainHeightKey,
+		LastBlockIndexerRetainHeightKey,
+		sm.IndexerRetainHeightKey,
+	}
+
 	err := indexer.Index(events1)
 	require.NoError(t, err)
 
@@ -38,12 +46,13 @@ func TestBlockerIndexer_Prune(t *testing.T) {
 
 	require.True(t, isSubset(keys1, keys2))
 
-	retainedHeight, err := indexer.Prune(0, 2)
+	numPruned, retainedHeight, err := indexer.Prune(2)
 	require.NoError(t, err)
+	require.Equal(t, int64(1), numPruned)
 	require.Equal(t, int64(2), retainedHeight)
 
 	keys3 := getKeys(indexer)
-	require.True(t, isEqualSets(setDiff(keys2, keys1), keys3))
+	require.True(t, isEqualSets(setDiff(keys2, keys1), setDiff(keys3, metaKeys)))
 	require.True(t, emptyIntersection(keys1, keys3))
 }
 
@@ -74,7 +83,7 @@ func BenchmarkBlockerIndexer_Prune(_ *testing.B) {
 	startTime := time.Now()
 
 	for h := 1; h <= maxHeight; h++ {
-		_, _ = indexer.Prune(int64(h-1), int64(h))
+		_, _, _ = indexer.Prune(int64(h))
 	}
 	fmt.Println(time.Since(startTime))
 }

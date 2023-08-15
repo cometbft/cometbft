@@ -19,9 +19,9 @@ type BlockIndexer struct {
 	mock.Mock
 }
 
-func (_m *BlockIndexer) Prune(lastRetainHeight int64, retainHeight int64) (int64, error) {
+func (_m *BlockIndexer) Prune(retainHeight int64) (int64, int64, error) {
 	// Not implemented
-	return 0, nil
+	return 0, 0, nil
 }
 
 // Has provides a mock function with given fields: height

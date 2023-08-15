@@ -461,7 +461,7 @@ the consensus algorithm will use it as proposal and will not call `RequestPrepar
 When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the proposer (possibly _p_ = _q_):
 
 1. _p_ sets up timer `ProposeTimeout`.
-2. If _p_ is the proposer, _p_ executes steps 1-6 in [PrepareProposal](#prepareproposal).
+2. If _p_ is the proposer, _p_ executes steps 1-5 in [PrepareProposal](#prepareproposal).
 3. Upon reception of Proposal message (which contains the header) for round _r_, height _h_ from
    _q_, _p_ verifies the block header.
 4. Upon reception of Proposal message, along with all the block parts, for round _r_, height _h_
@@ -481,7 +481,6 @@ When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the prop
     3. If _p_ is a validator and the returned value is
          * `ACCEPT`: _p_ prevotes on this proposal for round _r_, height _h_.
          * `REJECT`: _p_ prevotes `nil`.
-         *
 
 ### ExtendVote
 

@@ -34,7 +34,6 @@ const (
 	EventRelock            = "Relock"
 	EventTimeoutPropose    = "TimeoutPropose"
 	EventTimeoutWait       = "TimeoutWait"
-	EventUnlock            = "Unlock"
 	EventValidBlock        = "ValidBlock"
 	EventVote              = "Vote"
 	EventProposalBlockPart = "ProposalBlockPart"
@@ -160,7 +159,6 @@ var (
 	EventQueryTimeoutPropose      = QueryForEvent(EventTimeoutPropose)
 	EventQueryTimeoutWait         = QueryForEvent(EventTimeoutWait)
 	EventQueryTx                  = QueryForEvent(EventTx)
-	EventQueryUnlock              = QueryForEvent(EventUnlock)
 	EventQueryValidatorSetUpdates = QueryForEvent(EventValidatorSetUpdates)
 	EventQueryValidBlock          = QueryForEvent(EventValidBlock)
 	EventQueryVote                = QueryForEvent(EventVote)

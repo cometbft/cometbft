@@ -4,6 +4,10 @@ This guide provides instructions for upgrading to specific versions of CometBFT.
 
 ## Unreleased
 
+### Building CometBFT
+
+The minimum Go version has been bumped to [v1.21][go121].
+
 ### Config Changes
 
 * The field `Version` in the mempool section has been removed. The priority
@@ -170,3 +174,4 @@ please see the [Tendermint Core upgrading instructions][tmupgrade].
 [discussions]: https://github.com/cometbft/cometbft/discussions
 [tmupgrade]: https://github.com/tendermint/tendermint/blob/35581cf54ec436b8c37fabb43fdaa3f48339a170/UPGRADING.md
 [go120]: https://go.dev/blog/go1.20
+[go121]: https://go.dev/blog/go1.21

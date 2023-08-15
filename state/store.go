@@ -398,7 +398,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 // pruned and the new retain height.
 func (store dbStore) PruneABCIResponses(targetRetainHeight int64) (int64, int64, error) {
 	if store.DiscardABCIResponses {
-		return 0, 0, errors.New("ABCI responses are discarded, nothing to prune")
+		return 0, 0, nil
 	}
 	lastRetainHeight, err := store.getLastABCIResponsesRetainHeight()
 	if err != nil {
@@ -419,7 +419,7 @@ func (store dbStore) PruneABCIResponses(targetRetainHeight int64) (int64, int64,
 			return pruned, lastRetainHeight + pruned, fmt.Errorf("failed to delete ABCI responses at height %d: %w", h, err)
 		}
 		batchPruned++
-		if batchPruned%1000 == 0 && batchPruned > 0 {
+		if batchPruned >= 1000 {
 			if err := batch.Write(); err != nil {
 				return pruned, lastRetainHeight + pruned, fmt.Errorf("failed to write ABCI responses deletion batch at height %d: %w", h, err)
 			}

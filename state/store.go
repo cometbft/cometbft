@@ -370,7 +370,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 		pruned++
 
 		// avoid batches growing too large by flushing to database regularly
-		if pruned >= 1000 {
+		if pruned%1000 == 0 && pruned > 0 {
 			err := batch.Write()
 			if err != nil {
 				return err

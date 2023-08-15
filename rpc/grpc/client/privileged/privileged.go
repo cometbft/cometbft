@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/cosmos/gogoproto/grpc"
 	ggrpc "google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -18,6 +17,9 @@ type Option func(*clientBuilder)
 // a CometBFT node via the privileged gRPC server.
 type Client interface {
 	PruningServiceClient
+
+	// Close the connection to the server. Any subsequent requests will fail.
+	Close() error
 }
 
 type clientBuilder struct {
@@ -40,9 +42,14 @@ func defaultDialerFunc(ctx context.Context, addr string) (net.Conn, error) {
 }
 
 type client struct {
-	conn grpc.ClientConn
+	conn *ggrpc.ClientConn
 
 	PruningServiceClient
+}
+
+// Close implements Client.
+func (c *client) Close() error {
+	return c.conn.Close()
 }
 
 // WithInsecure disables transport security for the underlying client
@@ -96,9 +103,8 @@ func New(ctx context.Context, addr string, opts ...Option) (Client, error) {
 	if builder.pruningServiceEnabled {
 		pruningServiceClient = newPruningServiceClient(conn)
 	}
-	client := &client{
+	return &client{
 		conn:                 conn,
 		PruningServiceClient: pruningServiceClient,
-	}
-	return client, nil
+	}, nil
 }

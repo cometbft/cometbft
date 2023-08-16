@@ -33,6 +33,10 @@ type TxIndexer interface {
 	SetLogger(l log.Logger)
 
 	Prune(retainHeight int64) (int64, int64, error)
+
+	GetTxIndexerRetainHeight() (int64, error)
+
+	SetTxIndexerRetainHeight(retainHeight int64) error
 }
 
 // Batch groups together multiple Index operations to be performed at the same time.

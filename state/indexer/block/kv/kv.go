@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/cometbft/cometbft/state"
 	"github.com/google/orderedcode"
 
 	dbm "github.com/cometbft/cometbft-db"
@@ -25,6 +26,7 @@ import (
 
 var (
 	LastBlockIndexerRetainHeightKey = []byte("LastBlockIndexerRetainHeightKey")
+	BlockIndexerRetainHeightKey     = []byte("BlockIndexerRetainHeightKey")
 	ErrInvalidHeightValue           = errors.New("invalid height value")
 )
 
@@ -89,8 +91,21 @@ func (idx *BlockerIndexer) Index(bh types.EventDataNewBlockEvents) error {
 	if err := idx.indexEvents(batch, bh.Events, height); err != nil {
 		return fmt.Errorf("failed to index FinalizeBlock events: %w", err)
 	}
+	err = batch.WriteSync()
+	return err
+}
 
-	return batch.WriteSync()
+func getKeys(indexer BlockerIndexer) [][]byte {
+	var keys [][]byte
+
+	itr, err := indexer.store.Iterator(nil, nil)
+	if err != nil {
+		panic(err)
+	}
+	for ; itr.Valid(); itr.Next() {
+		keys = append(keys, itr.Key())
+	}
+	return keys
 }
 
 func (idx *BlockerIndexer) Prune(retainHeight int64) (int64, int64, error) {
@@ -131,6 +146,27 @@ func (idx *BlockerIndexer) Prune(retainHeight int64) (int64, int64, error) {
 
 	err = idx.setLastBlockIndexerRetainHeight(retainHeight)
 	return retainHeight - lastRetainHeight, retainHeight, err
+}
+
+func (idx *BlockerIndexer) SetBlockIndexerRetainHeight(retainHeight int64) error {
+	return idx.store.SetSync(BlockIndexerRetainHeightKey, int64ToBytes(retainHeight))
+}
+
+func (idx *BlockerIndexer) GetBlockIndexerRetainHeight() (int64, error) {
+	buf, err := idx.store.Get(BlockIndexerRetainHeightKey)
+	if err != nil {
+		return 0, err
+	}
+	if buf == nil {
+		return 0, state.ErrKeyNotFound
+	}
+	height := int64FromBytes(buf)
+
+	if height < 0 {
+		return 0, state.ErrInvalidHeightValue
+	}
+
+	return height, nil
 }
 
 func (idx *BlockerIndexer) setLastBlockIndexerRetainHeight(height int64) error {
@@ -693,8 +729,5 @@ func (idx *BlockerIndexer) deleteEvents(height int64) error {
 		}
 	}
 	err = idx.store.Delete(eventsKey)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }

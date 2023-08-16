@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"os"
 	"testing"
-	"time"
 
 	db "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/state/indexer"
 	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
 	"github.com/cometbft/cometbft/state/txindex/kv"
 	"github.com/cometbft/cometbft/store"
@@ -21,74 +19,129 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-func TestPruneIndexesToRetainHeight(t *testing.T) {
-	pruner, txIndexer, _, eventBus := createTestSetup(t)
+func TestPruneBlockIndexerToRetainHeight(t *testing.T) {
+	pruner, _, blockIndexer, _ := createTestSetup(t)
 
 	var keys [][][]byte
 
 	for height := int64(1); height <= 4; height++ {
-		events, txResult1, txResult2 := getEventsAndResults(height)
-		//publish block with events
-		err := eventBus.PublishEventNewBlockEvents(events)
+		events, _, _ := getEventsAndResults(height)
+		err := blockIndexer.Index(events)
 		require.NoError(t, err)
-
-		err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult1})
-		require.NoError(t, err)
-
-		err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult2})
-		require.NoError(t, err)
-
-		time.Sleep(100 * time.Millisecond)
-		keys = append(keys, kv.GetKeys(txIndexer))
+		keys = append(keys, blockidxkv.GetKeys(blockIndexer))
 	}
+	err := pruner.SetBlockIndexerRetainHeight(2)
+	require.NoError(t, err)
+	actual, err := pruner.GetBlockIndexerRetainHeight()
+	require.NoError(t, err)
+	require.Equal(t, int64(2), actual)
 
-	pruner.PruneIndexesToRetainHeight(2)
+	newRetainHeight := pruner.PruneBlockIndexerToRetainHeight(0)
+	require.Equal(t, int64(2), newRetainHeight)
 
 	metaKeys := [][]byte{
 		kv.LastTxIndexerRetainHeightKey,
 		blockidxkv.LastBlockIndexerRetainHeightKey,
-		sm.IndexerRetainHeightKey,
+		kv.TxIndexerRetainHeightKey,
+		blockidxkv.BlockIndexerRetainHeightKey,
+	}
+
+	keysAfterPrune2 := setDiff(blockidxkv.GetKeys(blockIndexer), metaKeys)
+	require.True(t, isEqualSets(keysAfterPrune2, setDiff(keys[3], keys[0])))
+
+	err = pruner.SetBlockIndexerRetainHeight(int64(4))
+	require.NoError(t, err)
+	actual, err = pruner.GetBlockIndexerRetainHeight()
+	require.NoError(t, err)
+	require.Equal(t, int64(4), actual)
+
+	pruner.PruneBlockIndexerToRetainHeight(2)
+
+	keysAfterPrune4 := setDiff(blockidxkv.GetKeys(blockIndexer), metaKeys)
+	require.Equal(t, keysAfterPrune4, setDiff(keys[3], keys[2]))
+
+	events, _, _ := getEventsAndResults(1)
+
+	err = blockIndexer.Index(events)
+	require.NoError(t, err)
+
+	keys14 := blockidxkv.GetKeys(blockIndexer)
+
+	pruner.PruneBlockIndexerToRetainHeight(4)
+	keysSecondPrune4 := blockidxkv.GetKeys(blockIndexer)
+
+	require.Equal(t, keys14, keysSecondPrune4)
+}
+
+func TestPruneTxIndexerToRetainHeight(t *testing.T) {
+	pruner, txIndexer, _, _ := createTestSetup(t)
+
+	var keys [][][]byte
+
+	for height := int64(1); height <= 4; height++ {
+		_, txResult1, txResult2 := getEventsAndResults(height)
+		err := txIndexer.Index(txResult1)
+		require.NoError(t, err)
+		err = txIndexer.Index(txResult2)
+		require.NoError(t, err)
+		keys = append(keys, kv.GetKeys(txIndexer))
+	}
+
+	err := pruner.SetTxIndexerRetainHeight(2)
+	require.NoError(t, err)
+	actual, err := pruner.GetTxIndexerRetainHeight()
+	require.NoError(t, err)
+	require.Equal(t, int64(2), actual)
+
+	newRetainHeight := pruner.PruneTxIndexerToRetainHeight(0)
+	require.Equal(t, int64(2), newRetainHeight)
+
+	metaKeys := [][]byte{
+		kv.LastTxIndexerRetainHeightKey,
+		blockidxkv.LastBlockIndexerRetainHeightKey,
+		kv.TxIndexerRetainHeightKey,
+		blockidxkv.BlockIndexerRetainHeightKey,
 	}
 
 	keysAfterPrune2 := setDiff(kv.GetKeys(txIndexer), metaKeys)
 	require.True(t, isEqualSets(keysAfterPrune2, setDiff(keys[3], keys[0])))
 
-	err := pruner.SetIndexerRetainHeight(int64(4))
+	err = pruner.SetTxIndexerRetainHeight(int64(4))
 	require.NoError(t, err)
 
-	actual, err := pruner.GetIndexerRetainHeight()
+	actual, err = pruner.GetTxIndexerRetainHeight()
 	require.NoError(t, err)
 
 	require.Equal(t, int64(4), actual)
 
-	pruner.PruneIndexesToRetainHeight(4)
+	pruner.PruneTxIndexerToRetainHeight(2)
 
 	keysAfterPrune4 := setDiff(kv.GetKeys(txIndexer), metaKeys)
 	require.Equal(t, keysAfterPrune4, setDiff(keys[3], keys[2]))
 
-	events, txResult1, txResult2 := getEventsAndResults(1)
-	//publish block with events
-	err = eventBus.PublishEventNewBlockEvents(events)
-	require.NoError(t, err)
+	_, txResult1, txResult2 := getEventsAndResults(1)
 
-	err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult1})
+	err = txIndexer.Index(txResult1)
 	require.NoError(t, err)
-
-	err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult2})
+	err = txIndexer.Index(txResult2)
 	require.NoError(t, err)
-
-	time.Sleep(100 * time.Millisecond)
 
 	keys14 := kv.GetKeys(txIndexer)
 
-	pruner.PruneIndexesToRetainHeight(4)
+	pruner.PruneTxIndexerToRetainHeight(4)
 	keysSecondPrune4 := kv.GetKeys(txIndexer)
 
 	require.Equal(t, keys14, keysSecondPrune4)
 }
 
-func createTestSetup(t *testing.T) (*sm.Pruner, *kv.TxIndex, indexer.BlockIndexer, *types.EventBus) {
+func createTestSetup(t *testing.T) (*sm.Pruner, *kv.TxIndex, blockidxkv.BlockerIndexer, *types.EventBus) {
 	config := test.ResetTestRoot("pruner_test")
+	t.Cleanup(func() {
+		err := os.RemoveAll(config.RootDir)
+		if err != nil {
+			t.Error(err)
+		}
+	})
 	// event bus
 	eventBus := types.NewEventBus()
 	eventBus.SetLogger(log.TestingLogger())
@@ -118,7 +171,7 @@ func createTestSetup(t *testing.T) (*sm.Pruner, *kv.TxIndex, indexer.BlockIndexe
 	bs := store.NewBlockStore(blockDB)
 	pruner := sm.NewPruner(stateStore, bs, blockIndexer, txIndexer, log.TestingLogger())
 
-	return pruner, txIndexer, blockIndexer, eventBus
+	return pruner, txIndexer, *blockIndexer, eventBus
 }
 
 func getEventsAndResults(height int64) (types.EventDataNewBlockEvents, *abci.TxResult, *abci.TxResult) {

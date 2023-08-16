@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/internal/test"
-	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/state/txindex/kv"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
@@ -31,18 +30,19 @@ func TestBlockerIndexer_Prune(t *testing.T) {
 	metaKeys := [][]byte{
 		kv.LastTxIndexerRetainHeightKey,
 		LastBlockIndexerRetainHeightKey,
-		sm.IndexerRetainHeightKey,
+		kv.TxIndexerRetainHeightKey,
+		BlockIndexerRetainHeightKey,
 	}
 
 	err := indexer.Index(events1)
 	require.NoError(t, err)
 
-	keys1 := getKeys(indexer)
+	keys1 := getKeys(*indexer)
 
 	err = indexer.Index(events2)
 	require.NoError(t, err)
 
-	keys2 := getKeys(indexer)
+	keys2 := getKeys(*indexer)
 
 	require.True(t, isSubset(keys1, keys2))
 
@@ -51,7 +51,7 @@ func TestBlockerIndexer_Prune(t *testing.T) {
 	require.Equal(t, int64(1), numPruned)
 	require.Equal(t, int64(2), retainedHeight)
 
-	keys3 := getKeys(indexer)
+	keys3 := getKeys(*indexer)
 	require.True(t, isEqualSets(setDiff(keys2, keys1), setDiff(keys3, metaKeys)))
 	require.True(t, emptyIntersection(keys1, keys3))
 }
@@ -555,18 +555,6 @@ func getEventsForTesting(height int64) types.EventDataNewBlockEvents {
 			},
 		},
 	}
-}
-
-func getKeys(indexer *BlockerIndexer) [][]byte {
-	var keys [][]byte
-	itr, err := indexer.store.Iterator(nil, nil)
-	if err != nil {
-		panic(err)
-	}
-	for ; itr.Valid(); itr.Next() {
-		keys = append(keys, itr.Key())
-	}
-	return keys
 }
 
 func isSubset(smaller [][]byte, bigger [][]byte) bool {

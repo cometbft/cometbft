@@ -16,6 +16,14 @@ var _ txindex.TxIndexer = (*TxIndex)(nil)
 // TxIndex acts as a /dev/null.
 type TxIndex struct{}
 
+func (txi *TxIndex) SetTxIndexerRetainHeight(_ int64) error {
+	return nil
+}
+
+func (txi *TxIndex) GetTxIndexerRetainHeight() (int64, error) {
+	return 0, nil
+}
+
 func (txi *TxIndex) Prune(_ int64) (int64, int64, error) {
 	return 0, 0, nil
 }

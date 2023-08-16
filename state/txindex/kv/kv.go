@@ -35,6 +35,7 @@ const (
 
 var (
 	LastTxIndexerRetainHeightKey = []byte("LastTxIndexerRetainHeightKey")
+	TxIndexerRetainHeightKey     = []byte("TxIndexerRetainHeightKey")
 )
 
 // TxIndex is the simplest possible indexer, backed by key-value storage (levelDB).
@@ -83,6 +84,27 @@ func (txi *TxIndex) Prune(retainHeight int64) (int64, int64, error) {
 	newRetainedHeight := maxHeightPruned + 1
 	err = txi.setLastTxIndexerRetainHeight(newRetainedHeight)
 	return newRetainedHeight - lastRetainHeight, newRetainedHeight, err
+}
+
+func (txi *TxIndex) SetTxIndexerRetainHeight(retainHeight int64) error {
+	return txi.store.SetSync(TxIndexerRetainHeightKey, int64ToBytes(retainHeight))
+}
+
+func (txi *TxIndex) GetTxIndexerRetainHeight() (int64, error) {
+	buf, err := txi.store.Get(TxIndexerRetainHeightKey)
+	if err != nil {
+		return 0, err
+	}
+	if buf == nil {
+		return 0, state.ErrKeyNotFound
+	}
+	height := int64FromBytes(buf)
+
+	if height < 0 {
+		return 0, state.ErrInvalidHeightValue
+	}
+
+	return height, nil
 }
 
 func (txi *TxIndex) setLastTxIndexerRetainHeight(height int64) error {

@@ -19,6 +19,14 @@ type BlockIndexer struct {
 	mock.Mock
 }
 
+func (_m *BlockIndexer) SetBlockIndexerRetainHeight(_ int64) error {
+	return nil
+}
+
+func (_m *BlockIndexer) GetBlockIndexerRetainHeight() (int64, error) {
+	return 0, nil
+}
+
 func (_m *BlockIndexer) Prune(retainHeight int64) (int64, int64, error) {
 	// Not implemented
 	return 0, 0, nil

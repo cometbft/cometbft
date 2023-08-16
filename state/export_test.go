@@ -55,6 +55,10 @@ func (p *Pruner) PruneABCIResToRetainHeight(lastRetainHeight int64) int64 {
 	return p.pruneABCIResToRetainHeight(lastRetainHeight)
 }
 
-func (p *Pruner) PruneIndexesToRetainHeight(lastRetainHeight int64) int64 {
-	return p.pruneIndexesToRetainHeight(lastRetainHeight)
+func (p *Pruner) PruneTxIndexerToRetainHeight(lastRetainHeight int64) int64 {
+	return p.pruneTxIndexerToRetainHeight(lastRetainHeight)
+}
+
+func (p *Pruner) PruneBlockIndexerToRetainHeight(lastRetainHeight int64) int64 {
+	return p.pruneBlockIndexerToRetainHeight(lastRetainHeight)
 }

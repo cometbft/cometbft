@@ -7,7 +7,6 @@ import (
 	"os"
 	"testing"
 
-	sm "github.com/cometbft/cometbft/state"
 	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/assert"
@@ -75,7 +74,8 @@ func TestTxIndex_Prune(t *testing.T) {
 	metaKeys := [][]byte{
 		LastTxIndexerRetainHeightKey,
 		blockidxkv.LastBlockIndexerRetainHeightKey,
-		sm.IndexerRetainHeightKey,
+		TxIndexerRetainHeightKey,
+		blockidxkv.BlockIndexerRetainHeightKey,
 	}
 
 	tx := types.Tx("HELLO WORLD")

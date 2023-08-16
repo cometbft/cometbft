@@ -16,7 +16,6 @@ var (
 	AppRetainHeightKey            = []byte("AppRetainHeightKey")
 	CompanionBlockRetainHeightKey = []byte("DCBlockRetainHeightKey")
 	ABCIResultsRetainHeightKey    = []byte("ABCIResRetainHeightKey")
-	IndexerRetainHeightKey        = []byte("IndexerRetainHeightKey")
 )
 
 // Pruner is a service that reads the retain heights for blocks, state and ABCI
@@ -231,27 +230,52 @@ func (p *Pruner) SetABCIResRetainHeight(height int64) error {
 	return nil
 }
 
-func (p *Pruner) SetIndexerRetainHeight(height int64) error {
+func (p *Pruner) SetTxIndexerRetainHeight(height int64) error {
 	// Ensure that all requests to set retain heights via the application are
 	// serialized.
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
-
 	if height <= 0 {
 		return ErrInvalidHeightValue
 	}
 
-	currentRetainHeight, err := p.stateStore.GetIndexerRetainHeight()
+	currentRetainHeight, err := p.txIndexer.GetTxIndexerRetainHeight()
 	if err != nil {
 		if !errors.Is(err, ErrKeyNotFound) {
 			return err
 		}
-		return p.stateStore.SaveIndexerRetainHeight(height)
+		return p.txIndexer.SetTxIndexerRetainHeight(height)
 	}
 	if currentRetainHeight > height {
 		return ErrPrunerCannotLowerRetainHeight
 	}
-	if err := p.stateStore.SaveIndexerRetainHeight(height); err != nil {
+	if err := p.txIndexer.SetTxIndexerRetainHeight(height); err != nil {
+		return err
+	}
+	// TODO call metrics
+	return nil
+}
+
+func (p *Pruner) SetBlockIndexerRetainHeight(height int64) error {
+	// Ensure that all requests to set retain heights via the application are
+	// serialized.
+	p.mtx.Lock()
+	defer p.mtx.Unlock()
+	if height <= 0 {
+		return ErrInvalidHeightValue
+	}
+
+	currentRetainHeight, err := p.blockIndexer.GetBlockIndexerRetainHeight()
+	if err != nil {
+		if !errors.Is(err, ErrKeyNotFound) {
+			return err
+		}
+		return p.blockIndexer.SetBlockIndexerRetainHeight(height)
+	}
+	if currentRetainHeight > height {
+		return ErrPrunerCannotLowerRetainHeight
+	}
+	if err := p.blockIndexer.SetBlockIndexerRetainHeight(height); err != nil {
 		return err
 	}
 	// TODO call metrics
@@ -276,10 +300,16 @@ func (p *Pruner) GetABCIResRetainHeight() (int64, error) {
 	return p.stateStore.GetABCIResRetainHeight()
 }
 
-// GetIndexerRetainHeight is a convenience method for accessing the
-// GetIndexerRetainHeight method of the underlying state store.
-func (p *Pruner) GetIndexerRetainHeight() (int64, error) {
-	return p.stateStore.GetIndexerRetainHeight()
+// GetTxIndexerRetainHeight is a convenience method for accessing the
+// GetTxIndexerRetainHeight method of the underlying indexer
+func (p *Pruner) GetTxIndexerRetainHeight() (int64, error) {
+	return p.txIndexer.GetTxIndexerRetainHeight()
+}
+
+// GetBlockIndexerRetainHeight is a convenience method for accessing the
+// GetBlockIndexerRetainHeight method of the underlying state store.
+func (p *Pruner) GetBlockIndexerRetainHeight() (int64, error) {
+	return p.blockIndexer.GetBlockIndexerRetainHeight()
 }
 
 func (p *Pruner) pruneABCIResRoutine() {
@@ -322,21 +352,49 @@ func (p *Pruner) pruneBlocksRoutine() {
 
 func (p *Pruner) pruneIndexesRoutine() {
 	p.logger.Info("Index pruner started", "interval", p.interval.String())
-	lastRetainHeight := int64(0)
+	lastTxIndexerRetainHeight := int64(0)
+	lastBlockIndexerRetainHeight := int64(0)
 	for {
 		select {
 		case <-p.Quit():
 			return
 		default:
-			lastRetainHeight = p.pruneIndexesToRetainHeight(lastRetainHeight)
+			lastTxIndexerRetainHeight = p.pruneTxIndexerToRetainHeight(lastTxIndexerRetainHeight)
+			lastBlockIndexerRetainHeight = p.pruneBlockIndexerToRetainHeight(lastBlockIndexerRetainHeight)
 			// TODO call observer
 			time.Sleep(p.interval)
 		}
 	}
 }
 
-func (p *Pruner) pruneIndexesToRetainHeight(lastRetainHeight int64) int64 {
-	targetRetainHeight, err := p.GetIndexerRetainHeight()
+func (p *Pruner) pruneTxIndexerToRetainHeight(lastRetainHeight int64) int64 {
+	targetRetainHeight, err := p.GetTxIndexerRetainHeight()
+	if err != nil {
+		// Indexer retain height has not yet been set - do not log any
+		// errors at this time.
+		if errors.Is(err, ErrKeyNotFound) {
+			return 0
+		}
+		p.logger.Error("Failed to get Indexer retain height", "err", err)
+		return lastRetainHeight
+	}
+
+	if lastRetainHeight >= targetRetainHeight {
+		return lastRetainHeight
+	}
+
+	numPrunedTxIndexer, newTxIndexerRetainHeight, err := p.txIndexer.Prune(targetRetainHeight)
+	if err != nil {
+		p.logger.Error("Failed to prune tx indexer", "err", err, "targetRetainHeight", targetRetainHeight, "newTxIndexerRetainHeight", newTxIndexerRetainHeight)
+	} else if numPrunedTxIndexer > 0 {
+		// TODO call metrics
+		p.logger.Info("Pruned tx indexer", "count", numPrunedTxIndexer, "newTxIndexerRetainHeight", newTxIndexerRetainHeight)
+	}
+	return newTxIndexerRetainHeight
+}
+
+func (p *Pruner) pruneBlockIndexerToRetainHeight(lastRetainHeight int64) int64 {
+	targetRetainHeight, err := p.GetBlockIndexerRetainHeight()
 	if err != nil {
 		// Indexer retain height has not yet been set - do not log any
 		// errors at this time.
@@ -358,16 +416,7 @@ func (p *Pruner) pruneIndexesToRetainHeight(lastRetainHeight int64) int64 {
 		// TODO call metrics
 		p.logger.Info("Pruned block indexer", "count", numPrunedBlockIndexer, "newBlockIndexerRetainHeight", newBlockIndexerRetainHeight)
 	}
-
-	numPrunedTxIndexer, newTxIndexerRetainHeight, err := p.txIndexer.Prune(targetRetainHeight)
-	if err != nil {
-		p.logger.Error("Failed to prune tx indexer", "err", err, "targetRetainHeight", targetRetainHeight, "newTxIndexerRetainHeight", newTxIndexerRetainHeight)
-	} else if numPrunedBlockIndexer > 0 {
-		// TODO call metrics
-		p.logger.Info("Pruned tx indexer", "count", numPrunedTxIndexer, "newTxIndexerRetainHeight", newTxIndexerRetainHeight)
-	}
-
-	return min(newBlockIndexerRetainHeight, newTxIndexerRetainHeight)
+	return newBlockIndexerRetainHeight
 }
 
 func (p *Pruner) pruneBlocksToRetainHeight(lastRetainHeight int64) int64 {

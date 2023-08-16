@@ -20,6 +20,14 @@ type TxIndexer struct {
 	mock.Mock
 }
 
+func (_m *TxIndexer) GetTxIndexerRetainHeight() (int64, error) {
+	return 0, nil
+}
+
+func (_m *TxIndexer) SetTxIndexerRetainHeight(retainHeight int64) error {
+	return nil
+}
+
 func (_m *TxIndexer) Prune(retainHeight int64) (int64, int64, error) {
 	return 0, 0, nil
 }

@@ -38,6 +38,14 @@ func (es *EventSink) TxIndexer() BackportTxIndexer {
 // indexing operations to an underlying PostgreSQL event sink.
 type BackportTxIndexer struct{ psql *EventSink }
 
+func (b BackportTxIndexer) GetTxIndexerRetainHeight() (int64, error) {
+	return 0, nil
+}
+
+func (b BackportTxIndexer) SetTxIndexerRetainHeight(_ int64) error {
+	return nil
+}
+
 func (b BackportTxIndexer) Prune(_ int64) (int64, int64, error) {
 	// Not implemented
 	return 0, 0, nil
@@ -76,6 +84,14 @@ func (es *EventSink) BlockIndexer() BackportBlockIndexer {
 // BackportBlockIndexer implements the indexer.BlockIndexer interface by
 // delegating indexing operations to an underlying PostgreSQL event sink.
 type BackportBlockIndexer struct{ psql *EventSink }
+
+func (b BackportBlockIndexer) SetBlockIndexerRetainHeight(_ int64) error {
+	return nil
+}
+
+func (b BackportBlockIndexer) GetBlockIndexerRetainHeight() (int64, error) {
+	return 0, nil
+}
 
 func (b BackportBlockIndexer) Prune(_ int64) (int64, int64, error) {
 	// Not implemented

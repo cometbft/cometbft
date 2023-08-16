@@ -1,4 +1,4 @@
-# ADR 108: E2E tests for CometBFT's behaviour in respect to ABCI++.
+# ADR 108: E2E tests for CometBFT's behaviour in respect to ABCI 1.0.
 
 ## Changelog
 - 2023-08-08: Initial version (@nenadmilosevic95)

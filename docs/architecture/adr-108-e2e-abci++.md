@@ -295,6 +295,8 @@ Implemented.
 
 To-do list:
 - adding the CI workflow to check if make grammar is executed. 
+- extend this ADR (and implementation) to support ABCI 2.0 (i.e., ABCI calls related to vote extensions)
+- in the future, we might consider whether the logging (actually, tracing) should be done on the e2e application side, or on CometBFT side, so this infra can be reused for MBT-like activities)
 ## Consequences
 
 ### Positive

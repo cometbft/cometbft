@@ -235,6 +235,17 @@ Different log levels should target different groups of users. At present, only
 - **Info** and **Error**: Should primarily target operators and application
   developers.
 
+### Sensitive information
+
+It should go without saying, but sensitive information (passwords/tokens,
+private keys, etc.) should **never** be logged. If one needs to inspect such
+information while debugging, rather use a [debugger][delve] or even a
+_temporary_ `fmt.Printf` statement.
+
+The logging infrastructure in CometBFT does not automatically scrub such
+sensitive information from the logs, so it is up to developers to ensure that
+they do not log such information.
+
 ### Log messages
 
 Log messages should always be tailored to the intended target audience. Unlike
@@ -583,4 +594,5 @@ in the [OpenAPI file](./rpc/openapi/openapi.yaml)**.
 [go-git-commit-style]: https://tip.golang.org/doc/contribute.html#commit_messages
 [go-testing]: https://golang.org/pkg/testing/
 [Fuzz tests]: https://en.wikipedia.org/wiki/Fuzzing
+[delve]: https://github.com/go-delve/delve
 [log-lazy]: https://github.com/cometbft/cometbft/blob/main/libs/log/lazy.go

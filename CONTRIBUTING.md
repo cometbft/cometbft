@@ -260,8 +260,8 @@ temporary copy of the specific value you want to output and logging that
 temporary value. Also keep in mind potential data races when doing so.
 
 Finally, **use expensive operations like `fmt.Sprintf` sparingly**, as this can
-have a meaningful performance impact on a running production system. Consider
-and example where one may call `fmt.Sprintf` when logging something at **debug**
+have a meaningful performance impact on a running production system. Consider an
+example where one may call `fmt.Sprintf` when logging something at **debug**
 level: even though an operator has configured their system to only log at
 **info** level and above, the expensive `fmt.Sprintf` calls will still take
 place, potentially slowing the system down. In such instances, consider printing

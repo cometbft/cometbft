@@ -144,7 +144,7 @@ This is not true in other cases, but since the Application does
 not know why the `Info` is called, we removed 
 it totally from the new grammar. The Application is still logging the `Info` 
 call, but a specific test would need to be written to check whether it happens
-in the right moment. 
+at the right moment. 
 
 Moreover, both grammars, the original and the new, represent the node's expected behaviour from the fresh beginning (`CleanStart`) or after a crash (`Recovery`).
 This is why we needed to separate the grammar into two different files (`test/e2e/pkg/grammar/clean-start/abci_grammar_clean_start.md` and `test/e2e/pkg/grammar/recovery/abci_grammar_recovery.md`) and generate two parsers: one for `CleanStart` and one for `Recovery` executions. If we didn't do this, a parser would classify a `CleanStart` execution that happens after the crash as a valid one. This is why later when we verify the execution, we first determine whether a set of requests represent a `CleanStart` or `Recovery` execution and then check its validity by calling an appropriate parser. 

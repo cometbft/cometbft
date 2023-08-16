@@ -10,7 +10,8 @@ To build it:
 - Have an updated docker installed
 - From the CometBFT clone, build
    ```bash
-   cd /test/e2e
+   E2E_DIR=$(pwd)/test/e2e
+   cd ${E2E_DIR}
    make node-fast generator runner docker-fast
    ```
   

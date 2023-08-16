@@ -35,6 +35,7 @@ therefore they have links to it and refer to CometBFT as "Tendermint" or "Tender
 
 ### Implemented
 
+<<<<<<< HEAD
 - [ADR-001: Logging](./adr-001-logging.md)
 - [ADR-002: Event-Subscription](./adr-002-event-subscription.md)
 - [ADR-003: ABCI-APP-RPC](./adr-003-abci-app-rpc.md)
@@ -84,6 +85,9 @@ therefore they have links to it and refer to CometBFT as "Tendermint" or "Tender
 - [ADR-075: RPC Event Subscription Interface](./adr-075-rpc-subscription.md)
 - [ADR-079: Ed25519 Verification](./adr-079-ed25519-verification.md)
 - [ADR-081: Protocol Buffers Management](./adr-081-protobuf-mgmt.md)
+=======
+- [ADR-108: E2E tests for CometBFT's behaviour in respect to ABCI 1.0.](./adr-108-e2e-abci++.md)
+>>>>>>> a85b5f0f1 (ADR 108: ADR for extending E2E infrastructure so that we can check CometBFT's behaviour with respect to ABCI++ grammar. (#902))
 
 ### Deprecated
 

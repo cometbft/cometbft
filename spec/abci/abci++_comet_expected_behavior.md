@@ -58,7 +58,7 @@ success-sync        = offer-snapshot 1*apply-chunk
 recovery            = info consensus-exec
 
 consensus-exec      = (inf)consensus-height
-consensus-height    = *consensus-round decide commit
+consensus-height    = *consensus-round finalize-block commit
 consensus-round     = proposer / non-proposer
 
 proposer            = [prepare-proposal [process-proposal]]
@@ -71,9 +71,15 @@ apply-chunk         = %s"<ApplySnapshotChunk>"
 info                = %s"<Info>"
 prepare-proposal    = %s"<PrepareProposal>"
 process-proposal    = %s"<ProcessProposal>"
+<<<<<<< HEAD
 begin-block         = %s"<BeginBlock>"
 deliver-txs         = %s"<DeliverTx>"
 end-block           = %s"<EndBlock>"
+=======
+extend-vote         = %s"<ExtendVote>"
+got-vote            = %s"<VerifyVoteExtension>"
+finalize-block      = %s"<FinalizeBlock>"
+>>>>>>> a85b5f0f1 (ADR 108: ADR for extending E2E infrastructure so that we can check CometBFT's behaviour with respect to ABCI++ grammar. (#902))
 commit              = %s"<Commit>"
 ```
 <!-- 
@@ -158,7 +164,7 @@ Let us now examine the grammar line by line, providing further details.
   rounds, this means the process is replaying an already decided value (catch-up mode).
 
 >```abnf
->consensus-height    = *consensus-round decide commit
+>consensus-height    = *consensus-round finalize-block commit
 >consensus-round     = proposer / non-proposer
 >```
 
@@ -212,9 +218,15 @@ Let us now examine the grammar line by line, providing further details.
 >info                = %s"<Info>"
 >prepare-proposal    = %s"<PrepareProposal>"
 >process-proposal    = %s"<ProcessProposal>"
+<<<<<<< HEAD
 >begin-block         = %s"<BeginBlock>" 
 >deliver-txs         = %s"<DeliverTx>"
 >end-block           = %s"<EndBlock>"
+=======
+>extend-vote         = %s"<ExtendVote>"
+>got-vote            = %s"<VerifyVoteExtension>"
+>finalize-block      = %s"<FinalizeBlock>"
+>>>>>>> a85b5f0f1 (ADR 108: ADR for extending E2E infrastructure so that we can check CometBFT's behaviour with respect to ABCI++ grammar. (#902))
 >commit              = %s"<Commit>"
 >```
 

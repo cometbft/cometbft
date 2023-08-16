@@ -293,7 +293,7 @@ logger.Info("Committed block", "block", fmt.Sprintf("%v", block))
 
 // Just as bad as the info-level message above because the (expensive)
 // fmt.Sprintf is always called, regardless of the operator's configured log
-// level.
+// level, potentially creating a meaningful performance hit.
 logger.Debug("Committed block", "block", fmt.Sprintf("%v", block))
 ```
 

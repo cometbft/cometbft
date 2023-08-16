@@ -6,7 +6,7 @@
 
 ## Context
 
-ABCI 1.0 defines the interface between the application and CometBFT. A part of the specification is the ABCI 1.0 grammar that describes the sequences of calls that the application can expect from CometBFT.
+ABCI 1.0 defines the interface between the application and CometBFT. A part of the specification is the [ABCI 1.0 grammar](../../spec/abci/abci%2B%2B_comet_expected_behavior) that describes the sequences of calls that the application can expect from CometBFT.
 In order to demonstrate that CometBFT behaves as expected from the viewpoint of the application, we need to test whether CometBFT respects this ABCI 1.0 grammar. To do this, we need to enhance the e2e tests infrastructure. Specifically, we plan to do three things:
 - Log every CometBFT's ABCI 1.0 request during the execution.
 - Parse the logs post-mortem and extract all ABCI 1.0 requests.
@@ -98,7 +98,7 @@ The idea here was to find a library that automatically verifies whether a specif
 
 **Implementation**
 
-We found the following library - https://github.com/goccmack/gogll. It generates a GLL or LR(1) parser and an FSA-based lexer for any context-free grammar. What we needed to do is to rewrite ABCI 1.0 grammar ([CometBFT's expected behaviour](../../spec/abci/abci%2B%2B_comet_expected_behavior.md#valid-method-call-sequences))
+We found the following library - https://github.com/goccmack/gogll. It generates a GLL or LR(1) parser and an FSA-based lexer for any context-free grammar. What we needed to do is to rewrite [ABCI 1.0 grammar](../../spec/abci/abci%2B%2B_comet_expected_behavior.md#valid-method-call-sequences)
 using the syntax that the library understands. 
 The new grammar is below.
 

@@ -12,6 +12,18 @@ type (
 	ErrRequiredField struct {
 		Field string
 	}
+
+	// ErrInvalidField is returned every time a value does not pass a validity check
+	ErrInvalidField struct {
+		Field  string
+		Reason string
+	}
+
+	// ErrWrongField is returned every time a value does not pass a validaty check, accompanied with error
+	ErrWrongField struct {
+		Field string
+		Err   error
+	}
 )
 
 func (e ErrNegativeField) Error() string {
@@ -20,4 +32,12 @@ func (e ErrNegativeField) Error() string {
 
 func (e ErrRequiredField) Error() string {
 	return fmt.Sprintf("%s is required", e.Field)
+}
+
+func (e ErrInvalidField) Error() string {
+	return fmt.Sprintf("invalid field %s %s", e.Field, e.Reason)
+}
+
+func (e ErrWrongField) Error() string {
+	return fmt.Sprintf("wrong %s: %v", e.Field, e.Err)
 }

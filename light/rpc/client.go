@@ -17,6 +17,7 @@ import (
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	"github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
 
 var errNegOrZeroHeight = errors.New("negative or zero height")
@@ -145,7 +146,7 @@ func (c *Client) ABCIQueryWithOptions(ctx context.Context, path string, data cmt
 		return nil, fmt.Errorf("err response code: %v", resp.Code)
 	}
 	if len(resp.Key) == 0 {
-		return nil, errors.New("empty key")
+		return nil, cmterrors.ErrRequiredField{Field: "key"}
 	}
 	if resp.ProofOps == nil || len(resp.ProofOps.Ops) == 0 {
 		return nil, errors.New("no proof ops")

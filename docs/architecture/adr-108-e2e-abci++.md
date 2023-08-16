@@ -279,6 +279,7 @@ on your machine to run the make successfully. If this is not the case, you can i
 ```bash 
 go get github.com/goccmack/gogll/v3
 ```  
+Make sure you commit any changes to the auto-generated code together with the changes to the grammar.
 
 ### Suporting additional ABCI++ requests
 

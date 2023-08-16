@@ -285,7 +285,7 @@ logger.Error("Failed to execute important operation", "err", err)
 ```golang
 // Message starts with a lowercase letter, and will probably be called very
 // frequently, effectively spamming operators.
-logger.Debug("connected to peer", "peerID", peerID)
+logger.Info("connected to peer", "peerID", peerID)
 
 // Potentially prints huge quantities of data (unnecessary) in a single message,
 // and at info level, spamming operators.

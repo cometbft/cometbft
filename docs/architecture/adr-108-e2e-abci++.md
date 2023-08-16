@@ -15,7 +15,7 @@ In order to demonstrate that CometBFT behaves as expected from the viewpoint of 
 
 Issue: [353](https://github.com/cometbft/cometbft/issues/353).
 
-Current version does not support vote extensions. However, this is the next step. 
+Current version, ABCI 1.0, does not support vote extensions (ABCI 2.0). However, this is the next step. 
 
 
 ## Decision

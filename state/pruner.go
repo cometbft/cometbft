@@ -330,11 +330,10 @@ func (p *Pruner) findMinRetainHeight() int64 {
 		// The Application height was set so we can return that immediately
 		if !noAppRetainHeightSet {
 			return appRetainHeight
-		} else {
-			// No retain height is set so return 0
-			// This should not happen as the app retain height should always be set
-			return 0
 		}
+		// No retain height is set so return 0
+		// This should not happen as the app retain height should always be set
+		return 0
 	}
 	// If we are here, both heights were set so we are picking the minimum
 	if appRetainHeight < dcRetainHeight {

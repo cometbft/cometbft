@@ -669,6 +669,7 @@ func TestStateLockPOLUpdateLock(t *testing.T) {
 	addr := pv1.Address()
 	voteCh := subscribeToVoter(cs1, addr)
 	lockCh := subscribe(cs1.eventBus, types.EventQueryLock)
+	relockCh := subscribe(cs1.eventBus, types.EventQueryRelock)
 	newRoundCh := subscribe(cs1.eventBus, types.EventQueryNewRound)
 
 	/*
@@ -741,7 +742,8 @@ func TestStateLockPOLUpdateLock(t *testing.T) {
 	signAddVotes(cs1, cmtproto.PrevoteType, propBlockR1Hash, propBlockR1Parts.Header(), false, vs2, vs3, vs4)
 
 	// Check that we lock on a new block.
-	ensureLock(lockCh, height, round)
+	// NOTE: this is now handled as a re-locking.
+	ensureRelock(relockCh, height, round)
 
 	ensurePrecommit(voteCh, height, round)
 

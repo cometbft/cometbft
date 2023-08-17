@@ -114,19 +114,19 @@ func (c *pruningServiceClient) GetBlockResultsRetainHeight(ctx context.Context) 
 
 type disabledPruningServiceClient struct{}
 
-func (c *disabledPruningServiceClient) SetTxIndexerRetainHeight(ctx context.Context, height uint64) error {
+func (c *disabledPruningServiceClient) SetTxIndexerRetainHeight(_ context.Context, _ uint64) error {
 	panic("pruning service client is disabled")
 }
 
-func (c *disabledPruningServiceClient) GetTxIndexerRetainHeight(ctx context.Context) (RetainHeight, error) {
+func (c *disabledPruningServiceClient) GetTxIndexerRetainHeight(_ context.Context) (RetainHeight, error) {
 	panic("pruning service client is disabled")
 }
 
-func (c *disabledPruningServiceClient) SetBlockIndexerRetainHeight(ctx context.Context, height uint64) error {
+func (c *disabledPruningServiceClient) SetBlockIndexerRetainHeight(_ context.Context, _ uint64) error {
 	panic("pruning service client is disabled")
 }
 
-func (c *disabledPruningServiceClient) GetBlockIndexerRetainHeight(ctx context.Context) (RetainHeight, error) {
+func (c *disabledPruningServiceClient) GetBlockIndexerRetainHeight(_ context.Context) (RetainHeight, error) {
 	panic("pruning service client is disabled")
 }
 

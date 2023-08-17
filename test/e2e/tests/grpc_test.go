@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	coretypes "github.com/cometbft/cometbft/rpc/core/types"
+	"github.com/cometbft/cometbft/rpc/grpc/client/privileged"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/version"
 	"github.com/stretchr/testify/require"
@@ -199,24 +201,32 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 	})
 }
 
+func getGRPCClient(t *testing.T, node e2e.Node) (privileged.Client, *coretypes.ResultStatus) {
+	ctx, ctxCancel := context.WithTimeout(context.Background(), time.Minute)
+	grpcClient, err := node.GRPCPrivilegedClient(ctx)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		ctxCancel()
+		err := grpcClient.Close()
+		if err != nil {
+			t.Error(err)
+		}
+	})
+
+	client, err := node.Client()
+	require.NoError(t, err)
+	status, err := client.Status(ctx)
+	require.NoError(t, err)
+	return grpcClient, status
+}
+
 func TestGRPC_BlockRetainHeight(t *testing.T) {
 	testNode(t, func(t *testing.T, node e2e.Node) {
 		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
 			return
 		}
-
-		ctx, ctxCancel := context.WithTimeout(context.Background(), time.Minute)
-		defer ctxCancel()
-		grpcClient, err := node.GRPCPrivilegedClient(ctx)
-		require.NoError(t, err)
-		defer grpcClient.Close()
-
-		client, err := node.Client()
-		require.NoError(t, err)
-		status, err := client.Status(ctx)
-		require.NoError(t, err)
-
-		err = grpcClient.SetBlockRetainHeight(ctx, uint64(status.SyncInfo.LatestBlockHeight-1))
+		grpcClient, status := getGRPCClient(t, node)
+		err := grpcClient.SetBlockRetainHeight(ctx, uint64(status.SyncInfo.LatestBlockHeight-1))
 		t.Log(err)
 		require.NoError(t, err, "Unexpected error for SetBlockRetainHeight")
 
@@ -234,18 +244,9 @@ func TestGRPC_BlockIndexerRetainHeight(t *testing.T) {
 			return
 		}
 
-		ctx, ctxCancel := context.WithTimeout(context.Background(), time.Minute)
-		defer ctxCancel()
-		grpcClient, err := node.GRPCPrivilegedClient(ctx)
-		require.NoError(t, err)
-		defer grpcClient.Close()
+		grpcClient, status := getGRPCClient(t, node)
 
-		client, err := node.Client()
-		require.NoError(t, err)
-		status, err := client.Status(ctx)
-		require.NoError(t, err)
-
-		err = grpcClient.SetBlockIndexerRetainHeight(ctx, uint64(status.SyncInfo.LatestBlockHeight-1))
+		err := grpcClient.SetBlockIndexerRetainHeight(ctx, uint64(status.SyncInfo.LatestBlockHeight-1))
 		t.Log(err)
 		require.NoError(t, err, "Unexpected error for SetBlockIndexerRetainHeight")
 
@@ -263,18 +264,9 @@ func TestGRPC_TxIndexerRetainHeight(t *testing.T) {
 			return
 		}
 
-		ctx, ctxCancel := context.WithTimeout(context.Background(), time.Minute)
-		defer ctxCancel()
-		grpcClient, err := node.GRPCPrivilegedClient(ctx)
-		require.NoError(t, err)
-		defer grpcClient.Close()
+		grpcClient, status := getGRPCClient(t, node)
 
-		client, err := node.Client()
-		require.NoError(t, err)
-		status, err := client.Status(ctx)
-		require.NoError(t, err)
-
-		err = grpcClient.SetTxIndexerRetainHeight(ctx, uint64(status.SyncInfo.LatestBlockHeight-1))
+		err := grpcClient.SetTxIndexerRetainHeight(ctx, uint64(status.SyncInfo.LatestBlockHeight-1))
 		t.Log(err)
 		require.NoError(t, err, "Unexpected error for SetTxIndexerRetainHeight")
 

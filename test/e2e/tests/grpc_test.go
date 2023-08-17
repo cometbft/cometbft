@@ -228,6 +228,64 @@ func TestGRPC_BlockRetainHeight(t *testing.T) {
 	})
 }
 
+func TestGRPC_BlockIndexerRetainHeight(t *testing.T) {
+	testNode(t, func(t *testing.T, node e2e.Node) {
+		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
+			return
+		}
+
+		ctx, ctxCancel := context.WithTimeout(context.Background(), time.Minute)
+		defer ctxCancel()
+		grpcClient, err := node.GRPCPrivilegedClient(ctx)
+		require.NoError(t, err)
+		defer grpcClient.Close()
+
+		client, err := node.Client()
+		require.NoError(t, err)
+		status, err := client.Status(ctx)
+		require.NoError(t, err)
+
+		err = grpcClient.SetBlockIndexerRetainHeight(ctx, uint64(status.SyncInfo.LatestBlockHeight-1))
+		t.Log(err)
+		require.NoError(t, err, "Unexpected error for SetBlockIndexerRetainHeight")
+
+		res, err := grpcClient.GetBlockIndexerRetainHeight(ctx)
+
+		require.NoError(t, err, "Unexpected error for GetBlockIndexerRetainHeight")
+		require.NotNil(t, res)
+		require.Equal(t, res.Height, uint64(status.SyncInfo.LatestBlockHeight-1))
+	})
+}
+
+func TestGRPC_TxIndexerRetainHeight(t *testing.T) {
+	testNode(t, func(t *testing.T, node e2e.Node) {
+		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
+			return
+		}
+
+		ctx, ctxCancel := context.WithTimeout(context.Background(), time.Minute)
+		defer ctxCancel()
+		grpcClient, err := node.GRPCPrivilegedClient(ctx)
+		require.NoError(t, err)
+		defer grpcClient.Close()
+
+		client, err := node.Client()
+		require.NoError(t, err)
+		status, err := client.Status(ctx)
+		require.NoError(t, err)
+
+		err = grpcClient.SetTxIndexerRetainHeight(ctx, uint64(status.SyncInfo.LatestBlockHeight-1))
+		t.Log(err)
+		require.NoError(t, err, "Unexpected error for SetTxIndexerRetainHeight")
+
+		res, err := grpcClient.GetTxIndexerRetainHeight(ctx)
+
+		require.NoError(t, err, "Unexpected error for GetTxIndexerRetainHeight")
+		require.NotNil(t, res)
+		require.Equal(t, res.Height, uint64(status.SyncInfo.LatestBlockHeight-1))
+	})
+}
+
 func TestGRPC_BlockResultsRetainHeight(t *testing.T) {
 	testNode(t, func(t *testing.T, node e2e.Node) {
 		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {

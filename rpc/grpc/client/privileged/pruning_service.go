@@ -16,15 +16,57 @@ type RetainHeights struct {
 	PruningService uint64
 }
 
+type RetainHeight struct {
+	Height uint64
+}
+
 type PruningServiceClient interface {
 	SetBlockRetainHeight(ctx context.Context, height uint64) error
 	GetBlockRetainHeight(ctx context.Context) (RetainHeights, error)
 	SetBlockResultsRetainHeight(ctx context.Context, height uint64) error
 	GetBlockResultsRetainHeight(ctx context.Context) (uint64, error)
+	SetBlockIndexerRetainHeight(ctx context.Context, height uint64) error
+	GetBlockIndexerRetainHeight(ctx context.Context) (RetainHeight, error)
+	SetTxIndexerRetainHeight(ctx context.Context, height uint64) error
+	GetTxIndexerRetainHeight(ctx context.Context) (RetainHeight, error)
 }
 
 type pruningServiceClient struct {
 	inner v1.PruningServiceClient
+}
+
+func (c *pruningServiceClient) SetTxIndexerRetainHeight(ctx context.Context, height uint64) error {
+	_, err := c.inner.SetTxIndexerRetainHeight(ctx, &v1.SetTxIndexerRetainHeightRequest{
+		Height: height,
+	})
+	return err
+}
+
+func (c *pruningServiceClient) GetTxIndexerRetainHeight(ctx context.Context) (RetainHeight, error) {
+	res, err := c.inner.GetTxIndexerRetainHeight(ctx, &v1.GetTxIndexerRetainHeightRequest{})
+	if err != nil {
+		return RetainHeight{}, err
+	}
+	return RetainHeight{
+		Height: res.Height,
+	}, nil
+}
+
+func (c *pruningServiceClient) SetBlockIndexerRetainHeight(ctx context.Context, height uint64) error {
+	_, err := c.inner.SetBlockIndexerRetainHeight(ctx, &v1.SetBlockIndexerRetainHeightRequest{
+		Height: height,
+	})
+	return err
+}
+
+func (c *pruningServiceClient) GetBlockIndexerRetainHeight(ctx context.Context) (RetainHeight, error) {
+	res, err := c.inner.GetBlockIndexerRetainHeight(ctx, &v1.GetBlockIndexerRetainHeightRequest{})
+	if err != nil {
+		return RetainHeight{}, err
+	}
+	return RetainHeight{
+		Height: res.Height,
+	}, nil
 }
 
 func newPruningServiceClient(conn grpc.ClientConn) PruningServiceClient {
@@ -71,6 +113,22 @@ func (c *pruningServiceClient) GetBlockResultsRetainHeight(ctx context.Context) 
 }
 
 type disabledPruningServiceClient struct{}
+
+func (c *disabledPruningServiceClient) SetTxIndexerRetainHeight(ctx context.Context, height uint64) error {
+	panic("pruning service client is disabled")
+}
+
+func (c *disabledPruningServiceClient) GetTxIndexerRetainHeight(ctx context.Context) (RetainHeight, error) {
+	panic("pruning service client is disabled")
+}
+
+func (c *disabledPruningServiceClient) SetBlockIndexerRetainHeight(ctx context.Context, height uint64) error {
+	panic("pruning service client is disabled")
+}
+
+func (c *disabledPruningServiceClient) GetBlockIndexerRetainHeight(ctx context.Context) (RetainHeight, error) {
+	panic("pruning service client is disabled")
+}
 
 func newDisabledPruningServiceClient() PruningServiceClient {
 	return &disabledPruningServiceClient{}

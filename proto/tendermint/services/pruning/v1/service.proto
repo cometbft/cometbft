@@ -1,8 +1,10 @@
 syntax = "proto3";
 
-package tendermint.services.pruning.v1;
+package v1;
 
-import "tendermint/services/pruning/v1/pruning.proto";
+import "proto/tendermint/services/pruning/v1/pruning.proto";
+
+option go_package = "github.com/cometbft/cometbft/proto/tendermint/services/pruning/v1";
 
 // PruningService provides privileged access to specialized pruning
 // functionality on the CometBFT node to help control node storage.
@@ -29,4 +31,20 @@ service PruningService {
     // GetBlockResultsRetainHeight returns information about the retain height
     // parameters used by the node to influence block results retention/pruning.
     rpc GetBlockResultsRetainHeight(GetBlockResultsRetainHeightRequest) returns (GetBlockResultsRetainHeightResponse);
+
+    // SetBlockIndexerRetainHeightRequest indicates to the node that it can
+    // safely prune all block indexes data up to the specified height.
+    rpc SetBlockIndexerRetainHeight(SetBlockIndexerRetainHeightRequest) returns (SetBlockIndexerRetainHeightResponse);
+
+    // GetBlockIndexerRetainHeight returns information about the retain height
+    // parameters used by the node to influence block indexing pruning.
+    rpc GetBlockIndexerRetainHeight(GetBlockIndexerRetainHeightRequest) returns (GetBlockIndexerRetainHeightResponse);
+
+    // SetTxIndexerRetainHeightRequest indicates to the node that it can
+    // safely prune all tx indexes data up to the specified height.
+    rpc SetTxIndexerRetainHeight(SetTxIndexerRetainHeightRequest) returns (SetTxIndexerRetainHeightResponse);
+
+    // GetTxIndexerRetainHeight returns information about the retain height
+    // parameters used by the node to influence tx indexing pruning.
+    rpc GetTxIndexerRetainHeight(GetTxIndexerRetainHeightRequest) returns (GetTxIndexerRetainHeightResponse);
 }

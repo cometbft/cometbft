@@ -71,6 +71,84 @@ func (s *pruningServiceServer) GetBlockRetainHeight(_ context.Context, _ *v1.Get
 	}, nil
 }
 
+// SetBlockIndexerRetainHeight implements v1.PruningServiceServer.
+func (s *pruningServiceServer) SetBlockIndexerRetainHeight(_ context.Context, req *v1.SetBlockIndexerRetainHeightRequest) (*v1.SetBlockIndexerRetainHeightResponse, error) {
+	height := req.Height
+
+	if height > uint64(math.MaxInt64) {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Invalid height %d", height))
+	}
+	logger := s.logger.With("endpoint", "SetBlockIndexerRetainHeight")
+	traceID, err := rpctrace.New()
+	if err != nil {
+		logger.Error("Error generating RPC trace ID", "err", err)
+		return nil, status.Error(codes.Internal, "Internal server error - see logs for details")
+	}
+	if err := s.pruner.SetBlockIndexerRetainHeight(int64(height)); err != nil {
+		logger.Error("Cannot set block indexer retain height", "err", err, "traceID", traceID)
+		return nil, status.Error(codes.Internal, "Failed to set block indexer retain height")
+	}
+	return &v1.SetBlockIndexerRetainHeightResponse{}, nil
+}
+
+// GetBlockIndexerRetainHeight implements v1.PruningServiceServer.
+func (s *pruningServiceServer) GetBlockIndexerRetainHeight(_ context.Context, _ *v1.GetBlockIndexerRetainHeightRequest) (*v1.GetBlockIndexerRetainHeightResponse, error) {
+	logger := s.logger.With("endpoint", "GetBlockIndexerRetainHeight")
+	traceID, err := rpctrace.New()
+	if err != nil {
+		logger.Error("Error generating RPC trace ID", "err", err)
+		return nil, status.Error(codes.Internal, "Internal server error - see logs for details")
+	}
+	height, err := s.pruner.GetBlockIndexerRetainHeight()
+	if err != nil {
+		logger.Error("Cannot get block indexer retain height", "err", err, "traceID", traceID)
+		return nil, status.Error(codes.Internal, "Failed to get block indexer retain height")
+	}
+
+	return &v1.GetBlockIndexerRetainHeightResponse{
+		Height: uint64(height),
+	}, nil
+}
+
+// SetTxIndexerRetainHeight implements v1.PruningServiceServer.
+func (s *pruningServiceServer) SetTxIndexerRetainHeight(_ context.Context, req *v1.SetTxIndexerRetainHeightRequest) (*v1.SetTxIndexerRetainHeightResponse, error) {
+	height := req.Height
+
+	if height > uint64(math.MaxInt64) {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Invalid height %d", height))
+	}
+	logger := s.logger.With("endpoint", "SetTxIndexerRetainHeight")
+	traceID, err := rpctrace.New()
+	if err != nil {
+		logger.Error("Error generating RPC trace ID", "err", err)
+		return nil, status.Error(codes.Internal, "Internal server error - see logs for details")
+	}
+	if err := s.pruner.SetTxIndexerRetainHeight(int64(height)); err != nil {
+		logger.Error("Cannot set tx indexer retain height", "err", err, "traceID", traceID)
+		return nil, status.Error(codes.Internal, "Failed to set tx indexer retain height")
+	}
+	return &v1.SetTxIndexerRetainHeightResponse{}, nil
+}
+
+// GetTxIndexerRetainHeight implements v1.PruningServiceServer.
+func (s *pruningServiceServer) GetTxIndexerRetainHeight(_ context.Context, _ *v1.GetTxIndexerRetainHeightRequest) (*v1.GetTxIndexerRetainHeightResponse, error) {
+	logger := s.logger.With("endpoint", "GetTxIndexerRetainHeight")
+	traceID, err := rpctrace.New()
+	if err != nil {
+		logger.Error("Error generating RPC trace ID", "err", err)
+		return nil, status.Error(codes.Internal, "Internal server error - see logs for details")
+	}
+	height, err := s.pruner.GetTxIndexerRetainHeight()
+	if err != nil {
+		logger.Error("Cannot get tx indexer retain height", "err", err, "traceID", traceID)
+		return nil, status.Error(codes.Internal, "Failed to get tx indexer retain height")
+	}
+
+	return &v1.GetTxIndexerRetainHeightResponse{
+		Height: uint64(height),
+	}, nil
+}
+
 // SetBlockResultsRetainHeight implements v1.PruningServiceServer.
 func (s *pruningServiceServer) SetBlockResultsRetainHeight(_ context.Context, req *v1.SetBlockResultsRetainHeightRequest) (*v1.SetBlockResultsRetainHeightResponse, error) {
 	height := req.Height

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package v1;
 
-import "proto/tendermint/services/pruning/v1/pruning.proto";
+import "tendermint/services/pruning/v1/pruning.proto";
 
 option go_package = "github.com/cometbft/cometbft/proto/tendermint/services/pruning/v1";
 

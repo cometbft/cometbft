@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package v1;
+package tendermint.services.pruning.v1;
 
 option go_package = "github.com/cometbft/cometbft/proto/tendermint/services/pruning/v1";
 

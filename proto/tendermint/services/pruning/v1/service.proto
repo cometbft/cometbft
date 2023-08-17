@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package v1;
+package tendermint.services.pruning.v1;
 
 import "tendermint/services/pruning/v1/pruning.proto";
 

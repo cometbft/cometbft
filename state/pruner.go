@@ -8,6 +8,7 @@ import (
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
+	"github.com/oasisprotocol/curve25519-voi/curve"
 )
 
 var (
@@ -115,23 +116,15 @@ func (p *Pruner) SetApplicationRetainHeight(height int64) error {
 	if !p.checkHeightBound(height) {
 		return ErrInvalidHeightValue
 	}
-	currentAppRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
-	if err != nil {
-		if !errors.Is(err, ErrKeyNotFound) {
-			return err
-		}
-		currentAppRetainHeight = height
-	}
-	currentCompanionRetainHeight, err := p.stateStore.GetCompanionBlockRetainHeight()
-	noCompanionRetainHeight := false
-	if err != nil {
-		if !errors.Is(err, ErrKeyNotFound) {
-			return err
-		}
-		noCompanionRetainHeight = true
-	}
-	if currentAppRetainHeight > height || (!noCompanionRetainHeight && currentCompanionRetainHeight > height) {
+	currentMinRetainHeight := p.findMinRetainHeight()
+	if height < currentMinRetainHeight {
 		return ErrPrunerCannotLowerRetainHeight
+	}
+	_, err := p.stateStore.GetApplicationRetainHeight()
+	if err != nil {
+		if !errors.Is(err, ErrKeyNotFound) {
+			return err
+		}
 	}
 	if err := p.stateStore.SaveApplicationRetainHeight(height); err != nil {
 		return err
@@ -152,9 +145,6 @@ func (p *Pruner) checkHeightBound(height int64) bool {
 //
 // If a higher retain height is already set, we cannot accept the requested
 // height because the blocks might have been pruned.
-//
-// If the application has already set a retain height to a higher value we also
-// cannot accept the requested height as the blocks might have been pruned.
 func (p *Pruner) SetCompanionRetainHeight(height int64) error {
 	// Ensure that all requests to set retain heights via the pruner are
 	// serialized.
@@ -164,23 +154,16 @@ func (p *Pruner) SetCompanionRetainHeight(height int64) error {
 	if !p.checkHeightBound(height) {
 		return ErrInvalidHeightValue
 	}
-	currentCompanionRetainHeight, err := p.stateStore.GetCompanionBlockRetainHeight()
-	if err != nil {
-		if !errors.Is(err, ErrKeyNotFound) {
-			return err
-		}
-		currentCompanionRetainHeight = height
-	}
-	currentAppRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
-	noAppRetainHeight := false
-	if err != nil {
-		if !errors.Is(err, ErrKeyNotFound) {
-			return err
-		}
-		noAppRetainHeight = true
-	}
-	if currentCompanionRetainHeight > height || (!noAppRetainHeight && currentAppRetainHeight > height) {
+	currentMinHeight := p.findMinRetainHeight()
+
+	if height < currentMinHeight {
 		return ErrPrunerCannotLowerRetainHeight
+	}
+	_, err := p.stateStore.GetCompanionBlockRetainHeight()
+	if err != nil {
+		if !errors.Is(err, ErrKeyNotFound) {
+			return err
+		}
 	}
 	if err := p.stateStore.SaveCompanionBlockRetainHeight(height); err != nil {
 		return err
@@ -327,6 +310,8 @@ func (p *Pruner) pruneABCIResToRetainHeight(lastRetainHeight int64) int64 {
 // the database will not have values for the corresponding keys.
 // If both retain heights were set, we pick the smaller one
 // If only one is set we return that one
+// Note that the application retain height is set on startup to 0 to prevent
+// a data companion to prune the data before the application signals it is ok to.
 func (p *Pruner) findMinRetainHeight() int64 {
 	noAppRetainHeightSet := false
 	appRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
@@ -346,6 +331,10 @@ func (p *Pruner) findMinRetainHeight() int64 {
 		// The Application height was set so we can return that immediately
 		if !noAppRetainHeightSet {
 			return appRetainHeight
+		} else {
+			// No retain height is set so return 0
+			// This should not happen as the app retain height should always be set
+			return 0
 		}
 	}
 	// If we are here, both heights were set so we are picking the minimum

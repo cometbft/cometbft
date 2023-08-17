@@ -51,6 +51,7 @@ x * TestStateLockPOLDoesNotUnlock 4 vals, one precommits, other 3 polka nil at
 next round, so we precommit nil but maintain lock
 x * TestStateLockMissingProposalWhenPOLSeenDoesNotUpdateLock - 4 vals, 1 misses proposal but sees POL.
 x * TestStateLockMissingProposalWhenPOLSeenDoesNotUnlock - 4 vals, 1 misses proposal but sees POL.
+x * TestStateLockMissingProposalWhenPOLForLockedBlock - 4 vals, 1 misses proposal but sees POL for locked block.
 x * TestStateLockPOLSafety1 - 4 vals. We shouldn't change lock based on polka at earlier round
 x * TestStateLockPOLSafety2 - 4 vals. After unlocking, we shouldn't relock based on polka at earlier round
 x * TestStatePrevotePOLFromPreviousRound 4 vals, prevote a proposal if a POL was seen for it in a previous round.
@@ -1245,6 +1246,83 @@ func TestStateLockMissingProposalWhenPOLSeenDoesNotUpdateLock(t *testing.T) {
 
 	ensurePrecommit(voteCh, height, round)
 	validatePrecommit(t, cs1, round, 0, vss[0], nil, firstBlockHash)
+}
+
+// TestStateLockMissingProposalWhenPOLForLockedBlock tests that observing
+// a two thirds majority for a block that matches the validator's locked block
+// causes a validator to upate its lock round and Precommit for the locked block.
+func TestStateLockMissingProposalWhenPOLForLockedBlock(t *testing.T) {
+	cs1, vss := randState(4)
+	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
+	height, round := cs1.Height, cs1.Round
+
+	timeoutWaitCh := subscribe(cs1.eventBus, types.EventQueryTimeoutWait)
+	proposalCh := subscribe(cs1.eventBus, types.EventQueryCompleteProposal)
+	pv1, err := cs1.privValidator.GetPubKey()
+	require.NoError(t, err)
+	addr := pv1.Address()
+	voteCh := subscribeToVoter(cs1, addr)
+	newRoundCh := subscribe(cs1.eventBus, types.EventQueryNewRound)
+
+	/*
+		Round 0:
+		cs1 creates a proposal for block B.
+		Send a prevote for B from each of the validators to cs1.
+		Send a precommit for nil from all of the validators to cs1.
+
+		This ensures that cs1 will lock on B in this round but not precommit it.
+	*/
+	t.Log("### Starting Round 0")
+	startTestRound(cs1, height, round)
+
+	ensureNewRound(newRoundCh, height, round)
+	ensureNewProposal(proposalCh, height, round)
+	rs := cs1.GetRoundState()
+	firstBlockHash := rs.ProposalBlock.Hash()
+	firstBlockParts := rs.ProposalBlockParts.Header()
+
+	ensurePrevote(voteCh, height, round) // prevote
+
+	signAddVotes(cs1, cmtproto.PrevoteType, firstBlockHash, firstBlockParts, false, vs2, vs3, vs4)
+
+	ensurePrecommit(voteCh, height, round) // our precommit
+	// the proposed block should now be locked and our precommit added
+	validatePrecommit(t, cs1, round, round, vss[0], firstBlockHash, firstBlockHash)
+
+	// add precommits from the rest
+	signAddVotes(cs1, cmtproto.PrecommitType, nil, types.PartSetHeader{}, true, vs2, vs3, vs4)
+
+	// timeout to new round
+	ensureNewTimeout(timeoutWaitCh, height, round, cs1.config.Precommit(round).Nanoseconds())
+
+	/*
+		Round 1:
+		The same block B is re-proposed, but it is not sent to cs1.
+		Send a prevote for B from each of the validators to cs1.
+
+		Check that cs1 maintain its locked block and updates the locked round to 1.
+	*/
+	t.Log("### Starting Round 1")
+	incrementRound(vs2, vs3, vs4)
+	round++
+
+	ensureNewRound(newRoundCh, height, round)
+
+	// prevote for nil since the proposal was not seen (although it matches the locked block)
+	ensurePrevote(voteCh, height, round)
+	validatePrevote(t, cs1, round, vss[0], nil)
+
+	// now lets add prevotes from everyone else for the locked block
+	signAddVotes(cs1, cmtproto.PrevoteType, firstBlockHash, firstBlockParts, false, vs2, vs3, vs4)
+
+	ensurePrecommit(voteCh, height, round)
+	// the validator precommits the block and updates its locked round
+	validatePrecommit(t, cs1, round, 1, vss[0], firstBlockHash, firstBlockHash)
+
+	// NOTE: the last behavior is inconsistent with Tendermint consensus pseudo-code.
+	// In the pseudo-code, if a process does not receive the proposal (and block) for
+	// the current round, it cannot Precommit the proposed block ID, even thought it
+	// sees a POL for that block that matches the locked value (block).
 }
 
 // TestStateLockDoesNotLockOnOldProposal tests that observing

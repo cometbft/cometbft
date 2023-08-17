@@ -59,13 +59,15 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 		}
 	}
 
-	txs := checkTxs(t, reactors[0].mempool, numTxs, UnknownPeerID)
-	waitForTxsOnReactors(t, txs, reactors)
+	txs := checkTxs(t, reactors[0].mempool, numTxs)
+	waitForReactors(t, txs, reactors, checkTxsInOrder)
 }
 
-// regression test for https://github.com/cometbft/cometbft/issues/5408
+// regression test for https://github.com/tendermint/tendermint/issues/5408
 func TestReactorConcurrency(t *testing.T) {
 	config := cfg.TestConfig()
+	config.Mempool.Size = 5000
+	config.Mempool.CacheSize = 5000
 	const N = 2
 	reactors, _ := makeAndConnectReactors(config, N)
 	defer func() {
@@ -89,24 +91,20 @@ func TestReactorConcurrency(t *testing.T) {
 
 		// 1. submit a bunch of txs
 		// 2. update the whole mempool
-		txs := checkTxs(t, reactors[0].mempool, numTxs, UnknownPeerID)
+		txs := checkTxs(t, reactors[0].mempool, numTxs)
 		go func() {
 			defer wg.Done()
 
 			reactors[0].mempool.Lock()
 			defer reactors[0].mempool.Unlock()
 
-			txResponses := make([]*abci.ExecTxResult, len(txs))
-			for i := range txs {
-				txResponses[i] = &abci.ExecTxResult{Code: 0}
-			}
-			err := reactors[0].mempool.Update(1, txs, txResponses, nil, nil)
+			err := reactors[0].mempool.Update(1, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
 			assert.NoError(t, err)
 		}()
 
 		// 1. submit a bunch of txs
 		// 2. update none
-		_ = checkTxs(t, reactors[1].mempool, numTxs, UnknownPeerID)
+		_ = checkTxs(t, reactors[1].mempool, numTxs)
 		go func() {
 			defer wg.Done()
 
@@ -142,9 +140,19 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 		}
 	}
 
-	const peerID = 1
-	checkTxs(t, reactors[0].mempool, numTxs, peerID)
-	ensureNoTxs(t, reactors[peerID], 100*time.Millisecond)
+	// create random transactions
+	txs := NewRandomTxs(numTxs, 20)
+
+	// the second peer sends all the transactions to the first peer
+	secondNodeID := reactors[1].Switch.NodeInfo().ID()
+	for _, tx := range txs {
+		reactors[0].addSender(tx.Key(), secondNodeID)
+		_, err := reactors[0].mempool.CheckTx(tx)
+		require.NoError(t, err)
+	}
+
+	// the second peer should not receive any transaction
+	ensureNoTxs(t, reactors[1], 100*time.Millisecond)
 }
 
 func TestReactor_MaxTxBytes(t *testing.T) {
@@ -168,11 +176,10 @@ func TestReactor_MaxTxBytes(t *testing.T) {
 	// Broadcast a tx, which has the max size
 	// => ensure it's received by the second reactor.
 	tx1 := kvstore.NewRandomTx(config.Mempool.MaxTxBytes)
-	err := reactors[0].mempool.CheckTx(tx1, func(resp *abci.ResponseCheckTx) {
-		require.False(t, resp.IsErr())
-	}, TxInfo{SenderID: UnknownPeerID})
+	reqRes, err := reactors[0].mempool.CheckTx(tx1)
 	require.NoError(t, err)
-	waitForTxsOnReactors(t, []types.Tx{tx1}, reactors)
+	require.False(t, reqRes.Response.GetCheckTx().IsErr())
+	waitForReactors(t, []types.Tx{tx1}, reactors, checkTxsInOrder)
 
 	reactors[0].mempool.Flush()
 	reactors[1].mempool.Flush()
@@ -180,10 +187,9 @@ func TestReactor_MaxTxBytes(t *testing.T) {
 	// Broadcast a tx, which is beyond the max size
 	// => ensure it's not sent
 	tx2 := kvstore.NewRandomTx(config.Mempool.MaxTxBytes + 1)
-	err = reactors[0].mempool.CheckTx(tx2, func(resp *abci.ResponseCheckTx) {
-		require.False(t, resp.IsErr())
-	}, TxInfo{SenderID: UnknownPeerID})
+	reqRes, err = reactors[0].mempool.CheckTx(tx2)
 	require.Error(t, err)
+	require.Nil(t, reqRes)
 }
 
 func TestBroadcastTxForPeerStopsWhenPeerStops(t *testing.T) {
@@ -259,6 +265,130 @@ func TestDontExhaustMaxActiveIDs(t *testing.T) {
 	}
 }
 
+func TestReactorTxSendersLocal(t *testing.T) {
+	config := cfg.TestConfig()
+	const N = 1
+	reactors, _ := makeAndConnectReactors(config, N)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				assert.NoError(t, err)
+			}
+		}
+	}()
+	reactor := reactors[0]
+
+	tx1 := kvstore.NewTxFromID(1)
+	tx2 := kvstore.NewTxFromID(2)
+	require.False(t, reactor.isSender(types.Tx(tx1).Key(), "peer1"))
+
+	reactor.addSender(types.Tx(tx1).Key(), "peer1")
+	reactor.addSender(types.Tx(tx1).Key(), "peer2")
+	reactor.addSender(types.Tx(tx2).Key(), "peer1")
+	require.True(t, reactor.isSender(types.Tx(tx1).Key(), "peer1"))
+	require.True(t, reactor.isSender(types.Tx(tx1).Key(), "peer2"))
+	require.True(t, reactor.isSender(types.Tx(tx2).Key(), "peer1"))
+
+	reactor.removeSenders(types.Tx(tx1).Key())
+	require.False(t, reactor.isSender(types.Tx(tx1).Key(), "peer1"))
+	require.False(t, reactor.isSender(types.Tx(tx1).Key(), "peer2"))
+	require.True(t, reactor.isSender(types.Tx(tx2).Key(), "peer1"))
+}
+
+// Test that:
+// - If a transaction came from a peer AND if the transaction is added to the
+// mempool, it must have a non-empty list of senders in the reactor.
+// - If a transaction is removed from the mempool, it must also be removed from
+// the list of senders in the reactor.
+func TestReactorTxSendersMultiNode(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.Size = 1000
+	config.Mempool.CacheSize = 1000
+	const N = 3
+	reactors, _ := makeAndConnectReactors(config, N)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				assert.NoError(t, err)
+			}
+		}
+	}()
+	for _, r := range reactors {
+		for _, peer := range r.Switch.Peers().List() {
+			peer.Set(types.PeerStateKey, peerState{1})
+		}
+	}
+	firstReactor := reactors[0]
+
+	numTxs := config.Mempool.Size
+	txs := newUniqueTxs(numTxs)
+
+	// Initially, there are no transactions (and no senders).
+	for _, r := range reactors {
+		require.Zero(t, len(r.txSenders))
+	}
+
+	// Add transactions to the first reactor.
+	callCheckTx(t, firstReactor.mempool, txs)
+
+	// Wait for all txs to be in the mempool of each reactor.
+	waitForReactors(t, txs, reactors, checkTxsInMempool)
+	for i, r := range reactors {
+		checkTxsInMempoolAndSenders(t, r, txs, i)
+	}
+
+	// Split the transactions in three groups of different sizes.
+	splitIndex := numTxs / 6
+	validTxs := txs[:splitIndex]                 // will be used to update the mempool, as valid txs
+	invalidTxs := txs[splitIndex : 3*splitIndex] // will be used to update the mempool, as invalid txs
+	ignoredTxs := txs[3*splitIndex:]             // will remain in the mempool
+
+	// Update the mempools with a list of valid and invalid transactions.
+	for i, r := range reactors {
+		updateMempool(t, r.mempool, validTxs, invalidTxs)
+
+		// Txs included in a block should have been removed from the mempool and
+		// have no senders.
+		for _, tx := range append(validTxs, invalidTxs...) {
+			require.False(t, r.mempool.InMempool(tx.Key()))
+			_, hasSenders := r.txSenders[tx.Key()]
+			require.False(t, hasSenders)
+		}
+
+		// Ignored txs should still be in the mempool.
+		checkTxsInMempoolAndSenders(t, r, ignoredTxs, i)
+	}
+
+	// The first reactor should not receive transactions from other peers.
+	require.Zero(t, len(firstReactor.txSenders))
+}
+
+// Check that the mempool has exactly the given list of txs and, if it's not the
+// first reactor (reactorIndex == 0), then each tx has a non-empty list of senders.
+func checkTxsInMempoolAndSenders(t *testing.T, r *Reactor, txs types.Txs, reactorIndex int) {
+	r.txSendersMtx.Lock()
+	defer r.txSendersMtx.Unlock()
+
+	require.Equal(t, len(txs), r.mempool.Size())
+	if reactorIndex == 0 {
+		require.Zero(t, len(r.txSenders))
+	} else {
+		require.Equal(t, len(txs), len(r.txSenders))
+	}
+
+	// Each transaction is in the mempool and, if it's not the first reactor, it
+	// has a non-empty list of senders.
+	for _, tx := range txs {
+		assert.True(t, r.mempool.InMempool(tx.Key()))
+		senders, hasSenders := r.txSenders[tx.Key()]
+		if reactorIndex == 0 {
+			require.False(t, hasSenders)
+		} else {
+			require.True(t, hasSenders && len(senders) > 0)
+		}
+	}
+}
+
 // mempoolLogger is a TestingLogger which uses a different
 // color for each validator ("validator" key must exist).
 func mempoolLogger() log.Logger {
@@ -294,14 +424,23 @@ func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switc
 	return reactors, switches
 }
 
-func waitForTxsOnReactors(t *testing.T, txs types.Txs, reactors []*Reactor) {
-	// wait for the txs in all mempools
+func newUniqueTxs(n int) types.Txs {
+	txs := make(types.Txs, n)
+	for i := 0; i < n; i++ {
+		txs[i] = kvstore.NewTxFromID(i)
+	}
+	return txs
+}
+
+// Wait for all reactors to finish applying a testing function to a list of
+// transactions.
+func waitForReactors(t *testing.T, txs types.Txs, reactors []*Reactor, testFunc func(*testing.T, types.Txs, *Reactor, int)) {
 	wg := new(sync.WaitGroup)
 	for i, reactor := range reactors {
 		wg.Add(1)
 		go func(r *Reactor, reactorIndex int) {
 			defer wg.Done()
-			waitForTxsOnReactor(t, txs, r, reactorIndex)
+			testFunc(t, txs, r, reactorIndex)
 		}(reactor, i)
 	}
 
@@ -319,17 +458,48 @@ func waitForTxsOnReactors(t *testing.T, txs types.Txs, reactors []*Reactor) {
 	}
 }
 
-func waitForTxsOnReactor(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex int) {
-	mempool := reactor.mempool
-	for mempool.Size() < len(txs) {
+// Wait until the mempool has a certain number of transactions.
+func waitForNumTxsInMempool(numTxs int, mempool Mempool) {
+	for mempool.Size() < numTxs {
 		time.Sleep(time.Millisecond * 100)
 	}
+}
 
-	reapedTxs := mempool.ReapMaxTxs(len(txs))
+// Wait until all txs are in the mempool and check that the number of txs in the
+// mempool is as expected.
+func checkTxsInMempool(t *testing.T, txs types.Txs, reactor *Reactor, _ int) {
+	waitForNumTxsInMempool(len(txs), reactor.mempool)
+
+	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
+	require.Equal(t, len(txs), len(reapedTxs))
+	require.Equal(t, len(txs), reactor.mempool.Size())
+}
+
+// Wait until all txs are in the mempool and check that they are in the same
+// order as given.
+func checkTxsInOrder(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex int) {
+	waitForNumTxsInMempool(len(txs), reactor.mempool)
+
+	// Check that all transactions in the mempool are in the same order as txs.
+	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
 	for i, tx := range txs {
 		assert.Equalf(t, tx, reapedTxs[i],
 			"txs at index %d on reactor %d don't match: %v vs %v", i, reactorIndex, tx, reapedTxs[i])
 	}
+}
+
+func updateMempool(t *testing.T, mp Mempool, validTxs types.Txs, invalidTxs types.Txs) {
+	allTxs := append(validTxs, invalidTxs...)
+
+	validTxResponses := abciResponses(len(validTxs), abci.CodeTypeOK)
+	invalidTxResponses := abciResponses(len(invalidTxs), 1)
+	allResponses := append(validTxResponses, invalidTxResponses...)
+
+	mp.Lock()
+	err := mp.Update(1, allTxs, allResponses, nil, nil)
+	mp.Unlock()
+
+	require.NoError(t, err)
 }
 
 // ensure no txs on reactor after some timeout

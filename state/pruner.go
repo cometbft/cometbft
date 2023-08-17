@@ -8,7 +8,6 @@ import (
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
-	"github.com/oasisprotocol/curve25519-voi/curve"
 )
 
 var (

@@ -237,6 +237,7 @@ func (p *Pruner) pruneABCIResRoutine() {
 		}
 	}
 }
+
 func (p *Pruner) pruneBlocksRoutine() {
 	p.logger.Info("Started pruning blocks", "interval", p.interval.String())
 	lastRetainHeight := int64(0)
@@ -327,7 +328,8 @@ func (p *Pruner) findMinRetainHeight() int64 {
 			p.logger.Error("Unexpected error fetching data companion retain height", "err", err)
 			return 0
 		}
-		// The Application height was set so we can return that immediately
+		// The Data Companion retain height was not set (err = ErrKeyNotFound) and
+		// the Application retain height was set, so we can return that immediately
 		if !noAppRetainHeightSet {
 			return appRetainHeight
 		}

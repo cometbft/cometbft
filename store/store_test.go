@@ -539,6 +539,7 @@ func newPrunerObserver(infoChCap int) *prunerObserver {
 func (o *prunerObserver) PrunerPrunedABCIRes(info *sm.ABCIResponsesPrunedInfo) {
 	o.prunedABCIResInfoCh <- info
 }
+
 func (o *prunerObserver) PrunerPrunedBlocks(info *sm.BlocksPrunedInfo) {
 	o.prunedBlocksResInfoCh <- info
 }
@@ -571,9 +572,9 @@ func TestPruningService(t *testing.T) {
 		sm.WithPrunerObserver(obs),
 	)
 
-	err = pruner.SetApplicationRetainHeight(1)
+	err = pruner.SetApplicationBlockRetainHeight(1)
 	require.Error(t, err)
-	err = pruner.SetApplicationRetainHeight(0)
+	err = pruner.SetApplicationBlockRetainHeight(0)
 	require.Error(t, err)
 
 	// make more than 1000 blocks, to test batch deletions
@@ -614,7 +615,7 @@ func TestPruningService(t *testing.T) {
 	err = stateStore.Save(state)
 	require.NoError(t, err)
 	// Check that basic pruning works
-	err = pruner.SetApplicationRetainHeight(1200)
+	err = pruner.SetApplicationBlockRetainHeight(1200)
 	require.NoError(t, err)
 	err = pruner.Start()
 	require.NoError(t, err)
@@ -646,15 +647,15 @@ func TestPruningService(t *testing.T) {
 	}
 
 	// Pruning below the current base should error
-	err = pruner.SetApplicationRetainHeight(1199)
+	err = pruner.SetApplicationBlockRetainHeight(1199)
 	require.Error(t, err)
 
 	// Pruning to the current base should work
-	err = pruner.SetApplicationRetainHeight(1200)
+	err = pruner.SetApplicationBlockRetainHeight(1200)
 	require.NoError(t, err)
 
 	// Pruning again should work
-	err = pruner.SetApplicationRetainHeight(1300)
+	err = pruner.SetApplicationBlockRetainHeight(1300)
 	require.NoError(t, err)
 	// We should not be able to set a retain height lower than the currently
 	// existing retain heights
@@ -679,11 +680,11 @@ func TestPruningService(t *testing.T) {
 		require.Fail(t, "timed out waiting for pruning run to complete")
 	}
 	// Setting the pruning height beyond the current height should error
-	err = pruner.SetApplicationRetainHeight(1501)
+	err = pruner.SetApplicationBlockRetainHeight(1501)
 	require.Error(t, err)
 
 	// Pruning to the current height should work
-	err = pruner.SetApplicationRetainHeight(1500)
+	err = pruner.SetApplicationBlockRetainHeight(1500)
 	require.NoError(t, err)
 
 	select {
@@ -699,7 +700,6 @@ func TestPruningService(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		require.Fail(t, "timed out waiting for pruning run to complete")
 	}
-
 }
 
 func TestPruneBlocks(t *testing.T) {

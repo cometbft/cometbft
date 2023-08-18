@@ -120,8 +120,8 @@ func (p *Pruner) OnStart() error {
 	return nil
 }
 
-// SetApplicationRetainHeight sets the application retain height with some
-// basic checks on the requested height.
+// SetApplicationBlockRetainHeight sets the application block retain height
+// with some basic checks on the requested height.
 //
 // If a higher retain height is already set, we cannot accept the requested
 // height because the blocks might have been pruned.
@@ -129,7 +129,7 @@ func (p *Pruner) OnStart() error {
 // If the data companion has already set a retain height to a higher value we
 // also cannot accept the requested height as the blocks might have been
 // pruned.
-func (p *Pruner) SetApplicationRetainHeight(height int64) error {
+func (p *Pruner) SetApplicationBlockRetainHeight(height int64) error {
 	// Ensure that all requests to set retain heights via the application are
 	// serialized.
 	p.mtx.Lock()

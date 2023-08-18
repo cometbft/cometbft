@@ -292,14 +292,14 @@ func TestSaveRetainHeight(t *testing.T) {
 	pruner := sm.NewPruner(stateStore, bs, log.TestingLogger())
 
 	// We should not save a height that is 0
-	err := pruner.SetApplicationRetainHeight(0)
+	err := pruner.SetApplicationBlockRetainHeight(0)
 	require.Error(t, err)
 
 	// We should not save a height above the blockstore's height
-	err = pruner.SetApplicationRetainHeight(11)
+	err = pruner.SetApplicationBlockRetainHeight(11)
 	require.Error(t, err)
 
-	err = pruner.SetApplicationRetainHeight(10)
+	err = pruner.SetApplicationBlockRetainHeight(10)
 	require.NoError(t, err)
 
 	err = pruner.SetCompanionRetainHeight(10)
@@ -414,6 +414,7 @@ func newPrunerObserver(infoChCap int) *prunerObserver {
 func (o *prunerObserver) PrunerPrunedABCIRes(info *sm.ABCIResponsesPrunedInfo) {
 	o.prunedABCIResInfoCh <- info
 }
+
 func (o *prunerObserver) PrunerPrunedBlocks(info *sm.BlocksPrunedInfo) {
 	o.prunedBlocksResInfoCh <- info
 }
@@ -468,9 +469,7 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 		require.Error(t, err)
 		_, err = stateStore.LoadFinalizeBlockResponse(height)
 		require.NoError(t, err)
-
 	})
-
 }
 
 func TestLastFinalizeBlockResponses(t *testing.T) {

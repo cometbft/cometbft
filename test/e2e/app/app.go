@@ -140,8 +140,7 @@ func NewApplication(cfg *Config) (*Application, error) {
 func (app *Application) Info(context.Context, *abci.RequestInfo) (*abci.ResponseInfo, error) {
 
 	r := &abci.Request{Value: &abci.Request_Info{Info: &abci.RequestInfo{}}}
-	err := app.logABCIRequest(r)
-	if err != nil {
+	if err := app.logABCIRequest(r); err != nil {
 		return nil, err
 	}
 

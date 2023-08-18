@@ -467,6 +467,7 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 			log.TestingLogger(),
 			sm.WithPrunerInterval(1*time.Second),
 			sm.WithPrunerObserver(obs),
+			sm.WithPrunerCompanionEnabled(),
 		)
 
 		// Check that we have written a finalize block result at height 'height - 1'

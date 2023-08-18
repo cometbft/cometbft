@@ -111,7 +111,11 @@ func (p *Pruner) SetObserver(obs PrunerObserver) {
 
 func (p *Pruner) OnStart() error {
 	go p.pruneBlocksRoutine()
-	go p.pruneABCIResRoutine()
+	// We only care about pruning ABCI results if the data companion has been
+	// enabled.
+	if p.dcEnabled {
+		go p.pruneABCIResRoutine()
+	}
 	p.observer.PrunerStarted(p.interval)
 	return nil
 }

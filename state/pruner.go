@@ -163,9 +163,6 @@ func (p *Pruner) heightWithinBounds(height int64) bool {
 //
 // If a higher retain height is already set, we cannot accept the requested
 // height because the blocks might have been pruned.
-//
-// If the application has already set a retain height to a higher value we also
-// cannot accept the requested height as the blocks might have been pruned.
 func (p *Pruner) SetCompanionBlockRetainHeight(height int64) error {
 	// Ensure that all requests to set retain heights via the pruner are
 	// serialized.
@@ -182,15 +179,7 @@ func (p *Pruner) SetCompanionBlockRetainHeight(height int64) error {
 		}
 		curCompanionRetainHeight = height
 	}
-	curAppRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
-	appRetainHeightSet := true
-	if err != nil {
-		if !errors.Is(err, ErrKeyNotFound) {
-			return err
-		}
-		appRetainHeightSet = false
-	}
-	if curCompanionRetainHeight > height || (appRetainHeightSet && curAppRetainHeight > height) {
+	if height < curCompanionRetainHeight {
 		return ErrPrunerCannotLowerRetainHeight
 	}
 	if err := p.stateStore.SaveCompanionBlockRetainHeight(height); err != nil {

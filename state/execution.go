@@ -203,6 +203,24 @@ func (blockExec *BlockExecutor) ApplyBlock(
 		return state, 0, ErrProxyAppConn(err)
 	}
 
+<<<<<<< HEAD
+=======
+	blockExec.logger.Info(
+		"finalized block",
+		"height", block.Height,
+		"num_txs_res", len(abciResponse.TxResults),
+		"num_val_updates", len(abciResponse.ValidatorUpdates),
+		"block_app_hash", fmt.Sprintf("%X", abciResponse.AppHash),
+	)
+
+	// Assert that the application correctly returned tx results for each of the transactions provided in the block
+	if len(block.Data.Txs) != len(abciResponse.TxResults) {
+		return state, fmt.Errorf("expected tx results length to match size of transactions in block. Expected %d, got %d", len(block.Data.Txs), len(abciResponse.TxResults))
+	}
+
+	blockExec.logger.Info("executed block", "height", block.Height, "app_hash", fmt.Sprintf("%X", abciResponse.AppHash))
+
+>>>>>>> f1514b834 (chore: log `app_hash` as hex (#1264))
 	fail.Fail() // XXX
 
 	// Save the results before we commit.
@@ -615,8 +633,20 @@ func ExecCommitBlock(
 		return nil, err
 	}
 
+<<<<<<< HEAD
 	// Commit block, get hash back
 	res, err := appConnConsensus.CommitSync()
+=======
+	// Assert that the application correctly returned tx results for each of the transactions provided in the block
+	if len(block.Data.Txs) != len(resp.TxResults) {
+		return nil, fmt.Errorf("expected tx results length to match size of transactions in block. Expected %d, got %d", len(block.Data.Txs), len(resp.TxResults))
+	}
+
+	logger.Info("executed block", "height", block.Height, "app_hash", fmt.Sprintf("%X", resp.AppHash))
+
+	// Commit block
+	_, err = appConnConsensus.Commit(context.TODO())
+>>>>>>> f1514b834 (chore: log `app_hash` as hex (#1264))
 	if err != nil {
 		logger.Error("client error during proxyAppConn.CommitSync", "err", res)
 		return nil, err

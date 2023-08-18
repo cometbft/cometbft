@@ -871,9 +871,9 @@ func makeNodeInfo(
 	return nodeInfo, err
 }
 
-// Set the initial application retain height to 0 to avoid the data companion pruning blocks
-// before the application indicates it is ok
-// We set this to 0 only if the retain height was not set before by the application
+// Set the initial application retain height to 0 to avoid the data companion
+// pruning blocks before the application indicates it is OK. We set this to 0
+// only if the retain height was not set before by the application.
 func initApplicationRetainHeight(stateStore sm.Store) error {
 	if _, err := stateStore.GetApplicationRetainHeight(); err != nil {
 		if errors.Is(err, sm.ErrKeyNotFound) {

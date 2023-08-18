@@ -25,6 +25,10 @@ type Pruner struct {
 	logger log.Logger
 
 	mtx sync.Mutex
+	// Must the pruner respect the retain heights set by the data companion?
+	dcEnabled                      bool
+	dcInitBlockRetainHeight        int64
+	dcInitBlockResultsRetainHeight int64
 	// DB to which we save the retain heights
 	bs BlockStore
 	// State store to prune state from
@@ -38,20 +42,36 @@ type Pruner struct {
 }
 
 type prunerConfig struct {
-	interval time.Duration
-	observer PrunerObserver
-	metrics  *Metrics
+	dcEnabled                      bool
+	dcInitBlockRetainHeight        int64
+	dcInitBlockResultsRetainHeight int64
+	interval                       time.Duration
+	observer                       PrunerObserver
+	metrics                        *Metrics
 }
 
 func defaultPrunerConfig() *prunerConfig {
 	return &prunerConfig{
-		interval: config.DefaultPruningInterval,
-		observer: &NoopPrunerObserver{},
-		metrics:  NopMetrics(),
+		dcEnabled: false,
+		interval:  config.DefaultPruningInterval,
+		observer:  &NoopPrunerObserver{},
+		metrics:   NopMetrics(),
 	}
 }
 
 type PrunerOption func(*prunerConfig)
+
+// WithPrunerCompanionEnabled indicates to the pruner that it must respect the
+// retain heights set by the data companion. By default, if this option is not
+// supplied, the pruner will ignore any retain heights set by the data
+// companion.
+func WithPrunerCompanionEnabled(initBlockRetainHeight, initBlockResultsRetainHeight int64) PrunerOption {
+	return func(p *prunerConfig) {
+		p.dcEnabled = true
+		p.dcInitBlockRetainHeight = initBlockRetainHeight
+		p.dcInitBlockResultsRetainHeight = initBlockResultsRetainHeight
+	}
+}
 
 // WithPrunerInterval allows control over the interval between each run of the
 // pruner.
@@ -75,12 +95,15 @@ func NewPruner(stateStore Store, bs BlockStore, logger log.Logger, options ...Pr
 		opt(cfg)
 	}
 	p := &Pruner{
-		bs:         bs,
-		stateStore: stateStore,
-		logger:     logger,
-		interval:   cfg.interval,
-		observer:   cfg.observer,
-		metrics:    cfg.metrics,
+		dcEnabled:                      cfg.dcEnabled,
+		dcInitBlockRetainHeight:        cfg.dcInitBlockRetainHeight,
+		dcInitBlockResultsRetainHeight: cfg.dcInitBlockResultsRetainHeight,
+		bs:                             bs,
+		stateStore:                     stateStore,
+		logger:                         logger,
+		interval:                       cfg.interval,
+		observer:                       cfg.observer,
+		metrics:                        cfg.metrics,
 	}
 	p.BaseService = *service.NewBaseService(logger, "Pruner", p)
 	return p
@@ -324,19 +347,21 @@ func (p *Pruner) pruneABCIResToRetainHeight(lastRetainHeight int64) int64 {
 	return newRetainHeight
 }
 
-// If no retain height has been set by the application or the data companion
-// the database will not have values for the corresponding keys.
-// If both retain heights were set, we pick the smaller one
-// If only one is set we return that one
 func (p *Pruner) findMinRetainHeight() int64 {
-	appRetainHeightSet := true
 	appRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
 	if err != nil {
 		if !errors.Is(err, ErrKeyNotFound) {
 			p.logger.Error("Unexpected error fetching application retain height", "err", err)
 			return 0
 		}
-		appRetainHeightSet = false
+		// If no application retain height has been set yet, we assume we need
+		// to keep all blocks until the application tells us otherwise.
+		appRetainHeight = 0
+	}
+	// We only care about the companion retain height if pruning is configured
+	// to respect the companion's retain height.
+	if !p.dcEnabled {
+		return appRetainHeight
 	}
 	dcRetainHeight, err := p.stateStore.GetCompanionBlockRetainHeight()
 	if err != nil {
@@ -344,12 +369,13 @@ func (p *Pruner) findMinRetainHeight() int64 {
 			p.logger.Error("Unexpected error fetching data companion retain height", "err", err)
 			return 0
 		}
-		// The Application height was set so we can return that immediately
-		if appRetainHeightSet {
-			return appRetainHeight
-		}
+		// We have no companion retain height set, but it is enabled, therefore
+		// we cannot discard anything lower than the companion's configured
+		// initial retain height.
+		dcRetainHeight = p.dcInitBlockRetainHeight
 	}
-	// If we are here, both heights were set so we are picking the minimum
+	// If we are here, both heights were set and the companion is enabled, so
+	// we pick the minimum.
 	if appRetainHeight < dcRetainHeight {
 		return appRetainHeight
 	}

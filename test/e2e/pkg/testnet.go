@@ -117,6 +117,7 @@ type Node struct {
 	PersistInterval         uint64
 	SnapshotInterval        uint64
 	RetainBlocks            uint64
+	EnableCompanionPruning  bool
 	Seeds                   []*Node
 	PersistentPeers         []*Node
 	Perturbations           []Perturbation
@@ -234,6 +235,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			PersistInterval:         1,
 			SnapshotInterval:        nodeManifest.SnapshotInterval,
 			RetainBlocks:            nodeManifest.RetainBlocks,
+			EnableCompanionPruning:  nodeManifest.EnableCompanionPruning,
 			Perturbations:           []Perturbation{},
 			SendNoLoad:              nodeManifest.SendNoLoad,
 			Prometheus:              testnet.Prometheus,

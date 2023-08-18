@@ -12,11 +12,7 @@ import (
 )
 
 func TestGRPC_Version(t *testing.T) {
-	testNode(t, func(t *testing.T, node e2e.Node) {
-		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
-			return
-		}
-
+	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
 		ctx, ctxCancel := context.WithTimeout(context.Background(), time.Minute)
 		defer ctxCancel()
 		client, err := node.GRPCClient(ctx)
@@ -34,11 +30,7 @@ func TestGRPC_Version(t *testing.T) {
 }
 
 func TestGRPC_Block_GetByHeight(t *testing.T) {
-	testNode(t, func(t *testing.T, node e2e.Node) {
-		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
-			return
-		}
-
+	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
 		blocks := fetchBlockChain(t)
 
 		client, err := node.Client()
@@ -143,11 +135,7 @@ func TestGRPC_Block_GetLatestHeight(t *testing.T) {
 }
 
 func TestGRPC_GetBlockResults(t *testing.T) {
-	testNode(t, func(t *testing.T, node e2e.Node) {
-		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
-			return
-		}
-
+	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
 		client, err := node.Client()
 		require.NoError(t, err)
 		status, err := client.Status(ctx)
@@ -200,8 +188,8 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 }
 
 func TestGRPC_BlockRetainHeight(t *testing.T) {
-	testNode(t, func(t *testing.T, node e2e.Node) {
-		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
+	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
+		if !node.EnableCompanionPruning {
 			return
 		}
 
@@ -227,8 +215,8 @@ func TestGRPC_BlockRetainHeight(t *testing.T) {
 }
 
 func TestGRPC_BlockResultsRetainHeight(t *testing.T) {
-	testNode(t, func(t *testing.T, node e2e.Node) {
-		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
+	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
+		if !node.EnableCompanionPruning {
 			return
 		}
 

@@ -48,9 +48,10 @@ var (
 		2 * int(e2e.EvidenceAgeHeight),
 		4 * int(e2e.EvidenceAgeHeight),
 	}
-	evidence          = uniformChoice{0, 1, 10}
-	abciDelays        = uniformChoice{"none", "small", "large"}
-	nodePerturbations = probSetChoice{
+	nodeEnableCompanionPruning = uniformChoice{true, false}
+	evidence                   = uniformChoice{0, 1, 10}
+	abciDelays                 = uniformChoice{"none", "small", "large"}
+	nodePerturbations          = probSetChoice{
 		"disconnect": 0.1,
 		"pause":      0.1,
 		"kill":       0.1,
@@ -62,7 +63,7 @@ var (
 	}
 	voteExtensionEnableHeightOffset = uniformChoice{int64(0), int64(10), int64(100)}
 	voteExtensionEnabled            = uniformChoice{true, false}
-	voteExtensionSize               = uniformChoice{uint(128), uint(512), uint(2048), uint(8192)} //TODO: define the right values depending on experiment results.
+	voteExtensionSize               = uniformChoice{uint(128), uint(512), uint(2048), uint(8192)} // TODO: define the right values depending on experiment results.
 )
 
 type generateConfig struct {
@@ -286,17 +287,18 @@ func generateNode(
 	r *rand.Rand, mode e2e.Mode, startAt int64, forceArchive bool,
 ) *e2e.ManifestNode {
 	node := e2e.ManifestNode{
-		Version:          nodeVersions.Choose(r).(string),
-		Mode:             string(mode),
-		StartAt:          startAt,
-		Database:         nodeDatabases.Choose(r).(string),
-		PrivvalProtocol:  nodePrivvalProtocols.Choose(r).(string),
-		BlockSyncVersion: nodeBlockSyncs.Choose(r).(string),
-		StateSync:        nodeStateSyncs.Choose(r).(bool) && startAt > 0,
-		PersistInterval:  ptrUint64(uint64(nodePersistIntervals.Choose(r).(int))),
-		SnapshotInterval: uint64(nodeSnapshotIntervals.Choose(r).(int)),
-		RetainBlocks:     uint64(nodeRetainBlocks.Choose(r).(int)),
-		Perturb:          nodePerturbations.Choose(r),
+		Version:                nodeVersions.Choose(r).(string),
+		Mode:                   string(mode),
+		StartAt:                startAt,
+		Database:               nodeDatabases.Choose(r).(string),
+		PrivvalProtocol:        nodePrivvalProtocols.Choose(r).(string),
+		BlockSyncVersion:       nodeBlockSyncs.Choose(r).(string),
+		StateSync:              nodeStateSyncs.Choose(r).(bool) && startAt > 0,
+		PersistInterval:        ptrUint64(uint64(nodePersistIntervals.Choose(r).(int))),
+		SnapshotInterval:       uint64(nodeSnapshotIntervals.Choose(r).(int)),
+		RetainBlocks:           uint64(nodeRetainBlocks.Choose(r).(int)),
+		EnableCompanionPruning: false,
+		Perturb:                nodePerturbations.Choose(r),
 	}
 
 	// If this node is forced to be an archive node, retain all blocks and
@@ -325,6 +327,12 @@ func generateNode(
 		if node.RetainBlocks < node.SnapshotInterval {
 			node.RetainBlocks = node.SnapshotInterval
 		}
+	}
+
+	// Only randomly enable data companion-related pruning on 50% of the full
+	// nodes and validators.
+	if mode == e2e.ModeFull || mode == e2e.ModeValidator {
+		node.EnableCompanionPruning = nodeEnableCompanionPruning.Choose(r).(bool)
 	}
 
 	return &node

@@ -231,8 +231,7 @@ func (p *Pruner) SetABCIResRetainHeight(height int64) error {
 }
 
 func (p *Pruner) SetTxIndexerRetainHeight(height int64) error {
-	// Ensure that all requests to set retain heights via the application are
-	// serialized.
+	// Ensure that all requests to set retain heights are serialized.
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
 	if height <= 0 {

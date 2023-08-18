@@ -905,22 +905,25 @@ func initApplicationRetainHeight(stateStore sm.Store) error {
 	return nil
 }
 
-// Sets the data companion retain heights if one of two possible conditions is met:
+// Sets the data companion retain heights if one of two possible conditions is
+// met:
 // 1. One or more of the retain heights has not yet been set.
 // 2. One or more of the retain heights is currently 0.
 func initCompanionRetainHeights(stateStore sm.Store, initBlockRH, initBlockResultsRH int64) error {
-	if curBlockRH, err := stateStore.GetCompanionBlockRetainHeight(); err != nil || curBlockRH == 0 {
-		if !errors.Is(err, sm.ErrKeyNotFound) {
-			return fmt.Errorf("failed to obtain companion block retain height: %w", err)
-		}
+	curBlockRH, err := stateStore.GetCompanionBlockRetainHeight()
+	if err != nil && !errors.Is(err, sm.ErrKeyNotFound) {
+		return fmt.Errorf("failed to obtain companion block retain height: %w", err)
+	}
+	if curBlockRH == 0 {
 		if err := stateStore.SaveCompanionBlockRetainHeight(initBlockRH); err != nil {
 			return fmt.Errorf("failed to set initial data companion block retain height: %w", err)
 		}
 	}
-	if curBlockResultsRH, err := stateStore.GetABCIResRetainHeight(); err != nil || curBlockResultsRH == 0 {
-		if !errors.Is(err, sm.ErrKeyNotFound) {
-			return fmt.Errorf("failed to obtain companion block results retain height: %w", err)
-		}
+	curBlockResultsRH, err := stateStore.GetABCIResRetainHeight()
+	if err != nil && !errors.Is(err, sm.ErrKeyNotFound) {
+		return fmt.Errorf("failed to obtain companion block results retain height: %w", err)
+	}
+	if curBlockResultsRH == 0 {
 		if err := stateStore.SaveABCIResRetainHeight(initBlockResultsRH); err != nil {
 			return fmt.Errorf("failed to set initial data companion block results retain height: %w", err)
 		}

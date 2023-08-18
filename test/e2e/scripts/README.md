@@ -1,4 +1,6 @@
-# Random network topology generator
+# E2E Testing-Related Scripts
+
+## Random network topology generator
 
 Generate a topology and a manifest:
 ```

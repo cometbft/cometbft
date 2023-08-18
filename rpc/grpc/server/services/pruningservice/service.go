@@ -42,7 +42,7 @@ func (s *pruningServiceServer) SetBlockRetainHeight(_ context.Context, req *v1.S
 	}
 	if err := s.pruner.SetCompanionBlockRetainHeight(int64(height)); err != nil {
 		logger.Error("Cannot set block retain height", "err", err, "traceID", traceID)
-		return nil, status.Error(codes.Internal, "Failed to set block retain height")
+		return nil, status.Errorf(codes.Internal, "Failed to set block retain height (see logs for trace ID: %s)", traceID)
 	}
 	return &v1.SetBlockRetainHeightResponse{}, nil
 }
@@ -58,12 +58,12 @@ func (s *pruningServiceServer) GetBlockRetainHeight(_ context.Context, _ *v1.Get
 	svcHeight, err := s.pruner.GetCompanionBlockRetainHeight()
 	if err != nil {
 		logger.Error("Cannot get block retain height stored by companion", "err", err, "traceID", traceID)
-		return nil, status.Error(codes.Internal, "Failed to get companion block retain height")
+		return nil, status.Errorf(codes.Internal, "Failed to get companion block retain height (see logs for trace ID: %s)", traceID)
 	}
 	appHeight, err := s.pruner.GetApplicationRetainHeight()
 	if err != nil {
 		logger.Error("Cannot get block retain height specified by application", "err", err, "traceID", traceID)
-		return nil, status.Error(codes.Internal, "Failed to get app block retain height")
+		return nil, status.Errorf(codes.Internal, "Failed to get app block retain height (see logs for trace ID: %s)", traceID)
 	}
 	return &v1.GetBlockRetainHeightResponse{
 		PruningServiceRetainHeight: uint64(svcHeight),
@@ -86,7 +86,7 @@ func (s *pruningServiceServer) SetBlockResultsRetainHeight(_ context.Context, re
 	}
 	if err := s.pruner.SetABCIResRetainHeight(int64(height)); err != nil {
 		logger.Error("Cannot set block results retain height", "err", err, "traceID", traceID)
-		return nil, status.Error(codes.Internal, "Failed to set block results retain height")
+		return nil, status.Errorf(codes.Internal, "Failed to set block results retain height (see logs for trace ID: %s)", traceID)
 	}
 	return &v1.SetBlockResultsRetainHeightResponse{}, nil
 }
@@ -102,7 +102,7 @@ func (s *pruningServiceServer) GetBlockResultsRetainHeight(_ context.Context, _ 
 	height, err := s.pruner.GetABCIResRetainHeight()
 	if err != nil {
 		logger.Error("Cannot get block results retain height", "err", err, "traceID", traceID)
-		return nil, status.Errorf(codes.Internal, "Failed to get block results retain height")
+		return nil, status.Errorf(codes.Internal, "Failed to get block results retain height (see logs for trace ID: %s)", traceID)
 	}
 	return &v1.GetBlockResultsRetainHeightResponse{PruningServiceRetainHeight: uint64(height)}, nil
 }

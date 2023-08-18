@@ -135,7 +135,7 @@ func (p *Pruner) SetApplicationBlockRetainHeight(height int64) error {
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
 
-	if !p.checkHeightBound(height) {
+	if !p.heightWithinBounds(height) {
 		return ErrInvalidHeightValue
 	}
 	currentAppRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
@@ -163,7 +163,7 @@ func (p *Pruner) SetApplicationBlockRetainHeight(height int64) error {
 	return nil
 }
 
-func (p *Pruner) checkHeightBound(height int64) bool {
+func (p *Pruner) heightWithinBounds(height int64) bool {
 	if height <= 0 || height < p.bs.Base() || height > p.bs.Height() {
 		return false
 	}
@@ -184,7 +184,7 @@ func (p *Pruner) SetCompanionBlockRetainHeight(height int64) error {
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
 
-	if !p.checkHeightBound(height) {
+	if !p.heightWithinBounds(height) {
 		return ErrInvalidHeightValue
 	}
 	currentCompanionRetainHeight, err := p.stateStore.GetCompanionBlockRetainHeight()

@@ -164,7 +164,7 @@ func (p *Pruner) SetApplicationBlockRetainHeight(height int64) error {
 }
 
 func (p *Pruner) heightWithinBounds(height int64) bool {
-	if height <= 0 || height < p.bs.Base() || height > p.bs.Height() {
+	if height < p.bs.Base() || height > p.bs.Height() {
 		return false
 	}
 	return true

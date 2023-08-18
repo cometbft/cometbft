@@ -110,11 +110,11 @@ func (p *Pruner) SetObserver(obs PrunerObserver) {
 }
 
 func (p *Pruner) OnStart() error {
-	go p.pruneBlocksRoutine()
+	go p.pruneBlocks()
 	// We only care about pruning ABCI results if the data companion has been
 	// enabled.
 	if p.dcEnabled {
-		go p.pruneABCIResRoutine()
+		go p.pruneABCIResponses()
 	}
 	p.observer.PrunerStarted(p.interval)
 	return nil
@@ -228,8 +228,8 @@ func (p *Pruner) GetABCIResRetainHeight() (int64, error) {
 	return p.stateStore.GetABCIResRetainHeight()
 }
 
-func (p *Pruner) pruneABCIResRoutine() {
-	p.logger.Info("Started pruning ABCI results", "interval", p.interval.String())
+func (p *Pruner) pruneABCIResponses() {
+	p.logger.Info("Started pruning ABCI responses", "interval", p.interval.String())
 	lastRetainHeight := int64(0)
 	for {
 		select {
@@ -247,7 +247,7 @@ func (p *Pruner) pruneABCIResRoutine() {
 	}
 }
 
-func (p *Pruner) pruneBlocksRoutine() {
+func (p *Pruner) pruneBlocks() {
 	p.logger.Info("Started pruning blocks", "interval", p.interval.String())
 	lastRetainHeight := int64(0)
 	for {
@@ -271,7 +271,7 @@ func (p *Pruner) pruneBlocksToRetainHeight(lastRetainHeight int64) int64 {
 	if targetRetainHeight == lastRetainHeight {
 		return lastRetainHeight
 	}
-	pruned, evRetainHeight, err := p.pruneBlocks(targetRetainHeight)
+	pruned, evRetainHeight, err := p.pruneBlocksToHeight(targetRetainHeight)
 	// The new retain height is the current lowest point of the block store
 	// indicated by Base()
 	newRetainHeight := p.bs.Base()
@@ -287,7 +287,7 @@ func (p *Pruner) pruneBlocksToRetainHeight(lastRetainHeight int64) int64 {
 func (p *Pruner) pruneABCIResToRetainHeight(lastRetainHeight int64) int64 {
 	targetRetainHeight, err := p.stateStore.GetABCIResRetainHeight()
 	if err != nil {
-		p.logger.Error("Failed to get ABCI result retain height", "err", err)
+		p.logger.Error("Failed to get ABCI response retain height", "err", err)
 		if errors.Is(err, ErrKeyNotFound) {
 			return 0
 		}
@@ -337,7 +337,7 @@ func (p *Pruner) findMinBlockRetainHeight() int64 {
 	return dcRetainHeight
 }
 
-func (p *Pruner) pruneBlocks(height int64) (uint64, int64, error) {
+func (p *Pruner) pruneBlocksToHeight(height int64) (uint64, int64, error) {
 	if height <= 0 {
 		return 0, 0, ErrInvalidRetainHeight
 	}

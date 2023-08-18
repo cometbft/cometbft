@@ -299,7 +299,7 @@ func (p *Pruner) pruneBlocksRoutine() {
 }
 
 func (p *Pruner) pruneBlocksToRetainHeight(lastRetainHeight int64) int64 {
-	targetRetainHeight := p.findMinRetainHeight()
+	targetRetainHeight := p.findMinBlockRetainHeight()
 	if targetRetainHeight == lastRetainHeight {
 		return lastRetainHeight
 	}
@@ -347,7 +347,7 @@ func (p *Pruner) pruneABCIResToRetainHeight(lastRetainHeight int64) int64 {
 	return newRetainHeight
 }
 
-func (p *Pruner) findMinRetainHeight() int64 {
+func (p *Pruner) findMinBlockRetainHeight() int64 {
 	appRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
 	if err != nil {
 		if !errors.Is(err, ErrKeyNotFound) {

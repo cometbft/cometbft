@@ -304,7 +304,12 @@ func TestSaveRetainHeight(t *testing.T) {
 	err := initStateStoreRetainHeights(stateStore, 0, 0, 0)
 	require.NoError(t, err)
 
-	pruner := sm.NewPruner(stateStore, bs, log.TestingLogger())
+	pruner := sm.NewPruner(
+		stateStore,
+		bs,
+		log.TestingLogger(),
+		sm.WithPrunerCompanionEnabled(),
+	)
 
 	// We should not save a height that is 0
 	err = pruner.SetApplicationBlockRetainHeight(0)
@@ -328,19 +333,25 @@ func TestMinRetainHeight(t *testing.T) {
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
-	pruner := sm.NewPruner(stateStore, nil, log.TestingLogger())
+	require.NoError(t, initStateStoreRetainHeights(stateStore, 0, 0, 0))
+	pruner := sm.NewPruner(
+		stateStore,
+		nil,
+		log.TestingLogger(),
+		sm.WithPrunerCompanionEnabled(),
+	)
 	minHeight := pruner.FindMinRetainHeight()
-	require.Equal(t, minHeight, int64(0))
+	require.Equal(t, int64(0), minHeight)
 
 	err := stateStore.SaveApplicationRetainHeight(10)
 	require.NoError(t, err)
 	minHeight = pruner.FindMinRetainHeight()
-	require.Equal(t, minHeight, int64(10))
+	require.Equal(t, int64(0), minHeight)
 
 	err = stateStore.SaveCompanionBlockRetainHeight(11)
 	require.NoError(t, err)
 	minHeight = pruner.FindMinRetainHeight()
-	require.Equal(t, minHeight, int64(10))
+	require.Equal(t, int64(10), minHeight)
 }
 
 func TestABCIResPruningStandalone(t *testing.T) {

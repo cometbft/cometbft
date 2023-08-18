@@ -872,6 +872,11 @@ func createPruner(
 		return nil, err
 	}
 
+	prunerOpts := []sm.PrunerOption{
+		sm.WithPrunerInterval(config.Storage.Pruning.Interval),
+		sm.WithPrunerMetrics(metrics),
+	}
+
 	if config.Storage.Pruning.DataCompanion.Enabled {
 		err := initCompanionRetainHeights(
 			stateStore,
@@ -881,14 +886,9 @@ func createPruner(
 		if err != nil {
 			return nil, err
 		}
-	}
-	prunerOpts := []sm.PrunerOption{
-		sm.WithPrunerInterval(config.Storage.Pruning.Interval),
-		sm.WithPrunerMetrics(metrics),
-	}
-	if config.Storage.Pruning.DataCompanion.Enabled {
 		prunerOpts = append(prunerOpts, sm.WithPrunerCompanionEnabled())
 	}
+
 	return sm.NewPruner(stateStore, blockStore, logger, prunerOpts...), nil
 }
 

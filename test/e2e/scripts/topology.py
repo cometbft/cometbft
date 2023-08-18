@@ -1,7 +1,7 @@
-import json
 import random
 import sys
 
+import graph
 from plot import plot_topology
 
 
@@ -74,25 +74,13 @@ def gen(num_nodes: int, min_peers_per_node: int, max_peers_per_node: int) -> tup
     # convert sets to sorted lists
     peers_list = [(n, sorted(list(ps))) for n, ps in peers.items()]
     
+    # if it's not fully connected, try again
+    if not graph.is_connected(dict(peers_list)):
+        return gen(num_nodes, min_peers_per_node, max_peers_per_node)
+    
     peers_hash = str(abs(hash(repr(peers_list))))[:10]
     
     return dict(peers_list), num_connections, peers_hash
-
-
-def write_to_json(peers: dict[int, list[int]], file_name: str):
-    peers_json = json.dumps(peers)
-    with open(file_name, "w") as file:
-        file.write(peers_json)
-
-
-def from_file(path) -> dict[int, list[int]]:
-    with open(path, "r") as file:
-        peers = dict(json.load(file))
-        
-        # convert keys from string to int (json keys cannot be integers)
-        peers = dict([(int(k), list(v)) for k,v in peers.items()])
-        
-        return peers
 
 
 def gen_dump_plot(num_nodes: int, min_peers: int, max_peers: int):
@@ -102,7 +90,7 @@ def gen_dump_plot(num_nodes: int, min_peers: int, max_peers: int):
     print(f"# num connections per node: {[len(v) for _,v in peers.items()]}")
     
     # dump to file
-    write_to_json(peers, f"topology_{peers_hash}.json")
+    graph.write_to_json(peers, f"topology_{peers_hash}.json")
 
     # plot
     title = f"num_nodes={num_nodes}, min_peers={min_peers}, max_peers={max_peers}"

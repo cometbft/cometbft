@@ -26,9 +26,7 @@ type Pruner struct {
 
 	mtx sync.Mutex
 	// Must the pruner respect the retain heights set by the data companion?
-	dcEnabled                      bool
-	dcInitBlockRetainHeight        int64
-	dcInitBlockResultsRetainHeight int64
+	dcEnabled bool
 	// DB to which we save the retain heights
 	bs BlockStore
 	// State store to prune state from
@@ -42,12 +40,10 @@ type Pruner struct {
 }
 
 type prunerConfig struct {
-	dcEnabled                      bool
-	dcInitBlockRetainHeight        int64
-	dcInitBlockResultsRetainHeight int64
-	interval                       time.Duration
-	observer                       PrunerObserver
-	metrics                        *Metrics
+	dcEnabled bool
+	interval  time.Duration
+	observer  PrunerObserver
+	metrics   *Metrics
 }
 
 func defaultPrunerConfig() *prunerConfig {
@@ -65,11 +61,9 @@ type PrunerOption func(*prunerConfig)
 // retain heights set by the data companion. By default, if this option is not
 // supplied, the pruner will ignore any retain heights set by the data
 // companion.
-func WithPrunerCompanionEnabled(initBlockRetainHeight, initBlockResultsRetainHeight int64) PrunerOption {
+func WithPrunerCompanionEnabled() PrunerOption {
 	return func(p *prunerConfig) {
 		p.dcEnabled = true
-		p.dcInitBlockRetainHeight = initBlockRetainHeight
-		p.dcInitBlockResultsRetainHeight = initBlockResultsRetainHeight
 	}
 }
 
@@ -89,21 +83,23 @@ func WithPrunerMetrics(metrics *Metrics) PrunerOption {
 	}
 }
 
+// NewPruner creates a service that controls background pruning of node data.
+//
+// Assumes that the initial application and data companion retain heights have
+// already been configured in the state store.
 func NewPruner(stateStore Store, bs BlockStore, logger log.Logger, options ...PrunerOption) *Pruner {
 	cfg := defaultPrunerConfig()
 	for _, opt := range options {
 		opt(cfg)
 	}
 	p := &Pruner{
-		dcEnabled:                      cfg.dcEnabled,
-		dcInitBlockRetainHeight:        cfg.dcInitBlockRetainHeight,
-		dcInitBlockResultsRetainHeight: cfg.dcInitBlockResultsRetainHeight,
-		bs:                             bs,
-		stateStore:                     stateStore,
-		logger:                         logger,
-		interval:                       cfg.interval,
-		observer:                       cfg.observer,
-		metrics:                        cfg.metrics,
+		dcEnabled:  cfg.dcEnabled,
+		bs:         bs,
+		stateStore: stateStore,
+		logger:     logger,
+		interval:   cfg.interval,
+		observer:   cfg.observer,
+		metrics:    cfg.metrics,
 	}
 	p.BaseService = *service.NewBaseService(logger, "Pruner", p)
 	return p
@@ -136,10 +132,7 @@ func (p *Pruner) SetApplicationBlockRetainHeight(height int64) error {
 	}
 	curRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
 	if err != nil {
-		if !errors.Is(err, ErrKeyNotFound) {
-			return err
-		}
-		curRetainHeight = height
+		return ErrPrunerFailedToGetRetainHeight{Err: err}
 	}
 	if height < curRetainHeight {
 		return ErrPrunerCannotLowerRetainHeight
@@ -174,10 +167,7 @@ func (p *Pruner) SetCompanionBlockRetainHeight(height int64) error {
 	}
 	curRetainHeight, err := p.stateStore.GetCompanionBlockRetainHeight()
 	if err != nil {
-		if !errors.Is(err, ErrKeyNotFound) {
-			return err
-		}
-		curRetainHeight = height
+		return ErrPrunerFailedToGetRetainHeight{Err: err}
 	}
 	if height < curRetainHeight {
 		return ErrPrunerCannotLowerRetainHeight
@@ -204,10 +194,7 @@ func (p *Pruner) SetABCIResRetainHeight(height int64) error {
 	}
 	curRetainHeight, err := p.stateStore.GetABCIResRetainHeight()
 	if err != nil {
-		if !errors.Is(err, ErrKeyNotFound) {
-			return err
-		}
-		curRetainHeight = height
+		return ErrPrunerFailedToGetRetainHeight{Err: err}
 	}
 	if height < curRetainHeight {
 		return ErrPrunerCannotLowerRetainHeight
@@ -296,12 +283,10 @@ func (p *Pruner) pruneBlocksToRetainHeight(lastRetainHeight int64) int64 {
 func (p *Pruner) pruneABCIResToRetainHeight(lastRetainHeight int64) int64 {
 	targetRetainHeight, err := p.stateStore.GetABCIResRetainHeight()
 	if err != nil {
-		// ABCI response retain height has not yet been set - do not log any
-		// errors at this time.
+		p.logger.Error("Failed to get ABCI result retain height", "err", err)
 		if errors.Is(err, ErrKeyNotFound) {
 			return 0
 		}
-		p.logger.Error("Failed to get ABCI result retain height", "err", err)
 		return lastRetainHeight
 	}
 
@@ -327,13 +312,8 @@ func (p *Pruner) pruneABCIResToRetainHeight(lastRetainHeight int64) int64 {
 func (p *Pruner) findMinBlockRetainHeight() int64 {
 	appRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
 	if err != nil {
-		if !errors.Is(err, ErrKeyNotFound) {
-			p.logger.Error("Unexpected error fetching application retain height", "err", err)
-			return 0
-		}
-		// If no application retain height has been set yet, we assume we need
-		// to keep all blocks until the application tells us otherwise.
-		appRetainHeight = 0
+		p.logger.Error("Unexpected error fetching application retain height", "err", err)
+		return 0
 	}
 	// We only care about the companion retain height if pruning is configured
 	// to respect the companion's retain height.
@@ -342,14 +322,8 @@ func (p *Pruner) findMinBlockRetainHeight() int64 {
 	}
 	dcRetainHeight, err := p.stateStore.GetCompanionBlockRetainHeight()
 	if err != nil {
-		if !errors.Is(err, ErrKeyNotFound) {
-			p.logger.Error("Unexpected error fetching data companion retain height", "err", err)
-			return 0
-		}
-		// We have no companion retain height set, but it is enabled, therefore
-		// we cannot discard anything lower than the companion's configured
-		// initial retain height.
-		dcRetainHeight = p.dcInitBlockRetainHeight
+		p.logger.Error("Unexpected error fetching data companion retain height", "err", err)
+		return 0
 	}
 	// If we are here, both heights were set and the companion is enabled, so
 	// we pick the minimum.

@@ -254,13 +254,14 @@ func NewNode(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	pruner := sm.NewPruner(
-		stateStore,
-		blockStore,
-		logger,
+	prunerOpts := []sm.PrunerOption{
 		sm.WithPrunerInterval(config.Storage.Pruning.Interval),
 		sm.WithPrunerMetrics(smMetrics),
-	)
+	}
+	if config.Storage.Pruning.DataCompanion.Enabled {
+		prunerOpts = append(prunerOpts, sm.WithPrunerCompanionEnabled())
+	}
+	pruner := sm.NewPruner(stateStore, blockStore, logger, prunerOpts...)
 
 	// make block executor for consensus and blocksync reactors to execute blocks
 	blockExec := sm.NewBlockExecutor(

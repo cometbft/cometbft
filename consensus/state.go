@@ -1555,7 +1555,6 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 
 			cs.signAddVote(cmtproto.PrecommitType, blockID.Hash, blockID.PartSetHeader)
 			return
-
 		}
 
 		logger.Debug("precommit step; +2/3 prevoted proposal block; locking", "hash", blockID.Hash)

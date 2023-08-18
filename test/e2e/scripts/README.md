@@ -2,11 +2,13 @@
 
 ## Random network topology generator
 
-Generate a topology and a manifest:
+> Requires Python 3.11 or higher, and the libraries `networkx` and `matplotlib`.
+
+Generate a totally random, fully connected network topology and its associated manifest file:
 ```
 python3 scripts/gen_manifest.py <num_nodes> <min_peers> <max_peers>
 ```
-This will generate a json file with the generated topology and a manifest file.
+This will generate a json file with the generated topology and the manifest file.
 
 Generate a manifest from an existing topology file:
 ```

@@ -1,22 +1,18 @@
 import sys
 import networkx as nx
 import matplotlib.pyplot as plt
-import topology
 
-def plot_topology(peers: dict[int, list[int]], title=""):
+import graph
+
+
+def plot_topology(nodes_edges: dict[int, list[int]], title=""):
     # Create a directed graphs.
-    G = nx.DiGraph()
-
-    # Connect the graph.
-    color_map = []
-    for id, ps in peers.items():
-        G.add_node(id)
-        for peer_id in ps:
-            G.add_edge(id, peer_id)
+    G = graph.to_NxGraph(nodes_edges)
 
     # Create the list of colors for each node.
+    color_map = []
     for gnode in G:
-        for id, ps in peers.items():
+        for id, _ in nodes_edges.items():
             if id == gnode:
                 color_map.append('lightblue')
 
@@ -45,8 +41,8 @@ def plot_topology(peers: dict[int, list[int]], title=""):
 
 
 def plot_from_file(path):
-    peers = topology.from_file(path)
-    plot_topology(peers, title = f"num_nodes={len(peers)}")
+    nodes_edges = graph.from_file(path)
+    plot_topology(nodes_edges, title = f"num_nodes={len(nodes_edges)}")
 
 
 if __name__ == "__main__":

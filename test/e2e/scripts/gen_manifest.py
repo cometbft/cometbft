@@ -1,6 +1,8 @@
 import sys
 import topology
 from string import Template
+
+import graph
 from plot import plot_topology
 
 
@@ -44,8 +46,8 @@ if __name__ == "__main__":
     if len(sys.argv) == 2:
         # read the only argument as the path to a json file with the topology
         topology_json_path = str(sys.argv[1])
-        peers = topology.from_file(topology_json_path)
-        manifest_file_path = topology_json_path.removesuffix(".json") + ".toml"
+        peers = graph.from_file(topology_json_path)
+        manifest_path = topology_json_path.removesuffix(".json") + ".toml"
         plot_title = f"num_nodes={len(peers)}"
 
     elif len(sys.argv) == 4:
@@ -56,11 +58,11 @@ if __name__ == "__main__":
 
         # generate topology
         peers, num_connections, peers_hash = topology.gen(num_nodes, min_peers, max_peers)
-        topology_file_path = f"topology_{peers_hash}.json"
-        topology.write_to_json(peers, topology_file_path)
-        print(f"generated {topology_file_path}")
+        topology_path = f"topology_{peers_hash}.json"
+        graph.write_to_json(peers, topology_path)
+        print(f"generated {topology_path}")
 
-        manifest_file_path = f"testnet_{peers_hash}.toml"
+        manifest_path = f"testnet_{peers_hash}.toml"
         plot_title = f"num_nodes={num_nodes}, min_peers={min_peers}, max_peers={max_peers}"
 
     else:
@@ -68,9 +70,9 @@ if __name__ == "__main__":
         exit(1)
 
     # generate manifest file
-    with open(manifest_file_path, "w") as file:
+    with open(manifest_path, "w") as file:
         file.write(to_manifest_string(peers))
-        print(f"generated {manifest_file_path}")
+        print(f"generated {manifest_path}")
 
     # visualize topology
     plot_topology(peers, plot_title)

@@ -225,14 +225,14 @@ func (p *Pruner) SetABCIResRetainHeight(height int64) error {
 	if height <= 0 || height > p.bs.Height() {
 		return ErrInvalidHeightValue
 	}
-	currentRetainHeight, err := p.stateStore.GetABCIResRetainHeight()
+	curRetainHeight, err := p.stateStore.GetABCIResRetainHeight()
 	if err != nil {
 		if !errors.Is(err, ErrKeyNotFound) {
 			return err
 		}
 		return p.stateStore.SaveABCIResRetainHeight(height)
 	}
-	if currentRetainHeight > height {
+	if curRetainHeight > height {
 		return ErrPrunerCannotLowerRetainHeight
 	}
 	if err := p.stateStore.SaveABCIResRetainHeight(height); err != nil {

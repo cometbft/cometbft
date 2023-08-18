@@ -170,15 +170,15 @@ func (p *Pruner) checkHeightBound(height int64) bool {
 	return true
 }
 
-// SetCompanionRetainHeight sets the application retain height with some basic
-// checks on the requested height.
+// SetCompanionBlockRetainHeight sets the application block retain height with
+// some basic checks on the requested height.
 //
 // If a higher retain height is already set, we cannot accept the requested
 // height because the blocks might have been pruned.
 //
 // If the application has already set a retain height to a higher value we also
 // cannot accept the requested height as the blocks might have been pruned.
-func (p *Pruner) SetCompanionRetainHeight(height int64) error {
+func (p *Pruner) SetCompanionBlockRetainHeight(height int64) error {
 	// Ensure that all requests to set retain heights via the pruner are
 	// serialized.
 	p.mtx.Lock()

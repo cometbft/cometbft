@@ -659,10 +659,10 @@ func TestPruningService(t *testing.T) {
 	require.NoError(t, err)
 	// We should not be able to set a retain height lower than the currently
 	// existing retain heights
-	err = pruner.SetCompanionRetainHeight(1200)
+	err = pruner.SetCompanionBlockRetainHeight(1200)
 	assert.Error(t, err)
 
-	err = pruner.SetCompanionRetainHeight(1350)
+	err = pruner.SetCompanionBlockRetainHeight(1350)
 	assert.NoError(t, err)
 
 	select {

@@ -40,7 +40,7 @@ func (s *pruningServiceServer) SetBlockRetainHeight(_ context.Context, req *v1.S
 		logger.Error("Error generating RPC trace ID", "err", err)
 		return nil, status.Error(codes.Internal, "Internal server error - see logs for details")
 	}
-	if err := s.pruner.SetCompanionRetainHeight(int64(height)); err != nil {
+	if err := s.pruner.SetCompanionBlockRetainHeight(int64(height)); err != nil {
 		logger.Error("Cannot set block retain height", "err", err, "traceID", traceID)
 		return nil, status.Error(codes.Internal, "Failed to set block retain height")
 	}

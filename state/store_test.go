@@ -302,7 +302,7 @@ func TestSaveRetainHeight(t *testing.T) {
 	err = pruner.SetApplicationBlockRetainHeight(10)
 	require.NoError(t, err)
 
-	err = pruner.SetCompanionRetainHeight(10)
+	err = pruner.SetCompanionBlockRetainHeight(10)
 	require.NoError(t, err)
 }
 

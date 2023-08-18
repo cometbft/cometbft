@@ -217,12 +217,10 @@ func TestGRPC_BlockRetainHeight(t *testing.T) {
 		require.NoError(t, err)
 
 		err = grpcClient.SetBlockRetainHeight(ctx, uint64(status.SyncInfo.LatestBlockHeight-1))
-		t.Log(err)
-		require.NoError(t, err, "Unexpected error for SetBlockRetainHeight")
+		require.NoError(t, err)
 
 		res, err := grpcClient.GetBlockRetainHeight(ctx)
-
-		require.NoError(t, err, "Unexpected error for GetBlockRetainHeight")
+		require.NoError(t, err)
 		require.NotNil(t, res)
 		require.Equal(t, res.PruningService, uint64(status.SyncInfo.LatestBlockHeight-1))
 	})

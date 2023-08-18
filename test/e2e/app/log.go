@@ -18,8 +18,7 @@ func GetABCIRequestString(req *abci.Request) (string, error) {
 		return "", err
 	}
 	reqStr := base64.StdEncoding.EncodeToString(b)
-	s := ABCI_REQ + reqStr + ABCI_REQ
-	return s, nil
+	return ABCI_REQ + reqStr + ABCI_REQ, nil
 }
 
 // GetABCIRequestFromString parse string and try to get a string of a Request created by GetRequestString.

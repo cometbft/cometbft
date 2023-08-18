@@ -241,29 +241,16 @@ func NewNode(ctx context.Context,
 		return nil, err
 	}
 
-	err = initApplicationRetainHeight(stateStore)
+	pruner, err := createPruner(
+		config,
+		stateStore,
+		blockStore,
+		smMetrics,
+		logger.With("module", "state"),
+	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create pruner: %w", err)
 	}
-
-	if config.Storage.Pruning.DataCompanion.Enabled {
-		err = initCompanionRetainHeights(
-			stateStore,
-			config.Storage.Pruning.DataCompanion.InitialBlockRetainHeight,
-			config.Storage.Pruning.DataCompanion.InitialBlockResultsRetainHeight,
-		)
-		if err != nil {
-			return nil, err
-		}
-	}
-	prunerOpts := []sm.PrunerOption{
-		sm.WithPrunerInterval(config.Storage.Pruning.Interval),
-		sm.WithPrunerMetrics(smMetrics),
-	}
-	if config.Storage.Pruning.DataCompanion.Enabled {
-		prunerOpts = append(prunerOpts, sm.WithPrunerCompanionEnabled())
-	}
-	pruner := sm.NewPruner(stateStore, blockStore, logger, prunerOpts...)
 
 	// make block executor for consensus and blocksync reactors to execute blocks
 	blockExec := sm.NewBlockExecutor(
@@ -872,6 +859,37 @@ func makeNodeInfo(
 
 	err := nodeInfo.Validate()
 	return nodeInfo, err
+}
+
+func createPruner(
+	config *cfg.Config,
+	stateStore sm.Store,
+	blockStore *store.BlockStore,
+	metrics *sm.Metrics,
+	logger log.Logger,
+) (*sm.Pruner, error) {
+	if err := initApplicationRetainHeight(stateStore); err != nil {
+		return nil, err
+	}
+
+	if config.Storage.Pruning.DataCompanion.Enabled {
+		err := initCompanionRetainHeights(
+			stateStore,
+			config.Storage.Pruning.DataCompanion.InitialBlockRetainHeight,
+			config.Storage.Pruning.DataCompanion.InitialBlockResultsRetainHeight,
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+	prunerOpts := []sm.PrunerOption{
+		sm.WithPrunerInterval(config.Storage.Pruning.Interval),
+		sm.WithPrunerMetrics(metrics),
+	}
+	if config.Storage.Pruning.DataCompanion.Enabled {
+		prunerOpts = append(prunerOpts, sm.WithPrunerCompanionEnabled())
+	}
+	return sm.NewPruner(stateStore, blockStore, logger, prunerOpts...), nil
 }
 
 // Set the initial application retain height to 0 to avoid the data companion

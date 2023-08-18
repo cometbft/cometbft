@@ -226,18 +226,18 @@ func (p *Pruner) GetABCIResRetainHeight() (int64, error) {
 
 func (p *Pruner) pruneABCIResRoutine() {
 	p.logger.Info("Started pruning ABCI results", "interval", p.interval.String())
-	lastABCIResRetainHeight := int64(0)
+	lastRetainHeight := int64(0)
 	for {
 		select {
 		case <-p.Quit():
 			return
 		default:
-			newABCIResRetainHeight := p.pruneABCIResToRetainHeight(lastABCIResRetainHeight)
+			newRetainHeight := p.pruneABCIResToRetainHeight(lastRetainHeight)
 			p.observer.PrunerPrunedABCIRes(&ABCIResponsesPrunedInfo{
-				FromHeight: lastABCIResRetainHeight,
-				ToHeight:   newABCIResRetainHeight - 1,
+				FromHeight: lastRetainHeight,
+				ToHeight:   newRetainHeight - 1,
 			})
-			lastABCIResRetainHeight = newABCIResRetainHeight
+			lastRetainHeight = newRetainHeight
 			time.Sleep(p.interval)
 		}
 	}

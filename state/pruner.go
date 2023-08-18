@@ -222,7 +222,7 @@ func (p *Pruner) SetABCIResRetainHeight(height int64) error {
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
 
-	if height <= 0 || height > p.bs.Height() {
+	if !p.heightWithinBounds(height) {
 		return ErrInvalidHeightValue
 	}
 	curRetainHeight, err := p.stateStore.GetABCIResRetainHeight()

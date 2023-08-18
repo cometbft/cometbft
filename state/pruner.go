@@ -132,7 +132,7 @@ func (p *Pruner) SetApplicationBlockRetainHeight(height int64) error {
 	}
 	curRetainHeight, err := p.stateStore.GetApplicationRetainHeight()
 	if err != nil {
-		return ErrPrunerFailedToGetRetainHeight{Err: err}
+		return ErrPrunerFailedToGetRetainHeight{Which: "application block", Err: err}
 	}
 	if height < curRetainHeight {
 		return ErrPrunerCannotLowerRetainHeight
@@ -167,7 +167,7 @@ func (p *Pruner) SetCompanionBlockRetainHeight(height int64) error {
 	}
 	curRetainHeight, err := p.stateStore.GetCompanionBlockRetainHeight()
 	if err != nil {
-		return ErrPrunerFailedToGetRetainHeight{Err: err}
+		return ErrPrunerFailedToGetRetainHeight{Which: "companion block", Err: err}
 	}
 	if height < curRetainHeight {
 		return ErrPrunerCannotLowerRetainHeight
@@ -194,7 +194,7 @@ func (p *Pruner) SetABCIResRetainHeight(height int64) error {
 	}
 	curRetainHeight, err := p.stateStore.GetABCIResRetainHeight()
 	if err != nil {
-		return ErrPrunerFailedToGetRetainHeight{Err: err}
+		return ErrPrunerFailedToGetRetainHeight{Which: "ABCI results", Err: err}
 	}
 	if height < curRetainHeight {
 		return ErrPrunerCannotLowerRetainHeight

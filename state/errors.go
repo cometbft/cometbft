@@ -53,7 +53,8 @@ type (
 	}
 
 	ErrPrunerFailedToGetRetainHeight struct {
-		Err error
+		Which string
+		Err   error
 	}
 
 	ErrPrunerFailedToLoadState struct {
@@ -122,7 +123,7 @@ func (e ErrNoABCIResponsesForHeight) Error() string {
 }
 
 func (e ErrPrunerFailedToGetRetainHeight) Error() string {
-	return fmt.Sprintf("pruner failed to get existing retain height: %s", e.Err.Error())
+	return fmt.Sprintf("pruner failed to get existing %s retain height: %s", e.Which, e.Err.Error())
 }
 
 func (e ErrPrunerFailedToGetRetainHeight) Unwrap() error {

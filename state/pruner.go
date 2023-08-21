@@ -119,12 +119,6 @@ func (p *Pruner) SetApplicationRetainHeight(height int64) error {
 	if height < currentMinRetainHeight {
 		return ErrPrunerCannotLowerRetainHeight
 	}
-	_, err := p.stateStore.GetApplicationRetainHeight()
-	if err != nil {
-		if !errors.Is(err, ErrKeyNotFound) {
-			return err
-		}
-	}
 	if err := p.stateStore.SaveApplicationRetainHeight(height); err != nil {
 		return err
 	}
@@ -157,12 +151,6 @@ func (p *Pruner) SetCompanionRetainHeight(height int64) error {
 
 	if height < currentMinHeight {
 		return ErrPrunerCannotLowerRetainHeight
-	}
-	_, err := p.stateStore.GetCompanionBlockRetainHeight()
-	if err != nil {
-		if !errors.Is(err, ErrKeyNotFound) {
-			return err
-		}
 	}
 	if err := p.stateStore.SaveCompanionBlockRetainHeight(height); err != nil {
 		return err

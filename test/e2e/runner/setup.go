@@ -163,14 +163,33 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg := config.DefaultConfig()
 	cfg.Moniker = node.Name
 	cfg.ProxyApp = AppAddressTCP
+
 	cfg.RPC.ListenAddress = "tcp://0.0.0.0:26657"
 	cfg.RPC.PprofListenAddress = ":6060"
+	cfg.RPC.PprofListenAddress = ":6060"
+
+	// cfg.GRPC.ListenAddress = "tcp://0.0.0.0:26670"
+	// cfg.GRPC.VersionService.Enabled = true
+	// cfg.GRPC.BlockService.Enabled = true
+	// cfg.GRPC.BlockResultsService.Enabled = true
+
 	cfg.P2P.ExternalAddress = fmt.Sprintf("tcp://%v", node.AddressP2P(false))
 	cfg.P2P.AddrBookStrict = false
+
 	cfg.DBBackend = node.Database
 	cfg.StateSync.DiscoveryTime = 5 * time.Second
 	cfg.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToNonPersistentPeers)
 	cfg.Mempool.ExperimentalMaxGossipConnectionsToPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToPersistentPeers)
+
+	// Assume that full nodes and validators will have a data companion
+	// attached, which will need access to the privileged gRPC endpoint.
+	if (node.Mode == e2e.ModeValidator || node.Mode == e2e.ModeFull) && node.EnableCompanionPruning {
+		cfg.Storage.Pruning.DataCompanion.Enabled = true
+		cfg.Storage.Pruning.DataCompanion.InitialBlockRetainHeight = 0
+		cfg.Storage.Pruning.DataCompanion.InitialBlockResultsRetainHeight = 0
+		// cfg.GRPC.Privileged.ListenAddress = "tcp://0.0.0.0:26671"
+		// cfg.GRPC.Privileged.PruningService.Enabled = true
+	}
 
 	switch node.ABCIProtocol {
 	case e2e.ProtocolUNIX:

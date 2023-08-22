@@ -448,6 +448,7 @@ func newPrunerObserver(infoChCap int) *prunerObserver {
 func (o *prunerObserver) PrunerPrunedABCIRes(info *sm.ABCIResponsesPrunedInfo) {
 	o.prunedABCIResInfoCh <- info
 }
+
 func (o *prunerObserver) PrunerPrunedBlocks(info *sm.BlocksPrunedInfo) {
 	o.prunedBlocksResInfoCh <- info
 }
@@ -470,6 +471,9 @@ func TestPruningService(t *testing.T) {
 	assert.EqualValues(t, 0, bs.Height())
 	assert.EqualValues(t, 0, bs.Size())
 
+	err = initStateStoreRetainHeights(stateStore, 0, 0, 0)
+	require.NoError(t, err)
+
 	obs := newPrunerObserver(1)
 
 	pruner := sm.NewPruner(
@@ -478,12 +482,13 @@ func TestPruningService(t *testing.T) {
 		log.TestingLogger(),
 		sm.WithPrunerInterval(time.Second*1),
 		sm.WithPrunerObserver(obs),
+		sm.WithPrunerCompanionEnabled(),
 	)
 
-	err = pruner.SetApplicationRetainHeight(1)
+	err = pruner.SetApplicationBlockRetainHeight(1)
 	require.Error(t, err)
-	err = pruner.SetApplicationRetainHeight(0)
-	require.Error(t, err)
+	err = pruner.SetApplicationBlockRetainHeight(0)
+	require.NoError(t, err)
 
 	// make more than 1000 blocks, to test batch deletions
 	for h := int64(1); h <= 1500; h++ {
@@ -523,13 +528,17 @@ func TestPruningService(t *testing.T) {
 	err = stateStore.Save(state)
 	require.NoError(t, err)
 	// Check that basic pruning works
-	err = pruner.SetApplicationRetainHeight(1200)
+	err = pruner.SetApplicationBlockRetainHeight(1200)
+	require.NoError(t, err)
+	err = pruner.SetCompanionBlockRetainHeight(1200)
 	require.NoError(t, err)
 	err = pruner.Start()
 	require.NoError(t, err)
 
 	select {
-	case <-obs.prunedBlocksResInfoCh:
+	case info := <-obs.prunedBlocksResInfoCh:
+		assert.EqualValues(t, 0, info.FromHeight)
+		assert.EqualValues(t, 1199, info.ToHeight)
 		assert.EqualValues(t, 1200, bs.Base())
 		assert.EqualValues(t, 1500, bs.Height())
 		assert.EqualValues(t, 301, bs.Size())
@@ -555,22 +564,18 @@ func TestPruningService(t *testing.T) {
 	}
 
 	// Pruning below the current base should error
-	err = pruner.SetApplicationRetainHeight(1199)
+	err = pruner.SetApplicationBlockRetainHeight(1199)
 	require.Error(t, err)
 
 	// Pruning to the current base should work
-	err = pruner.SetApplicationRetainHeight(1200)
+	err = pruner.SetApplicationBlockRetainHeight(1200)
 	require.NoError(t, err)
 
 	// Pruning again should work
-	err = pruner.SetApplicationRetainHeight(1300)
+	err = pruner.SetApplicationBlockRetainHeight(1300)
 	require.NoError(t, err)
-	// We should not be able to set a retain height lower than the currently
-	// existing retain heights
-	err = pruner.SetCompanionRetainHeight(1200)
-	assert.Error(t, err)
 
-	err = pruner.SetCompanionRetainHeight(1350)
+	err = pruner.SetCompanionBlockRetainHeight(1350)
 	assert.NoError(t, err)
 
 	select {
@@ -588,19 +593,19 @@ func TestPruningService(t *testing.T) {
 		require.Fail(t, "timed out waiting for pruning run to complete")
 	}
 	// Setting the pruning height beyond the current height should error
-	err = pruner.SetApplicationRetainHeight(1501)
+	err = pruner.SetApplicationBlockRetainHeight(1501)
 	require.Error(t, err)
 
 	// Pruning to the current height should work
-	err = pruner.SetApplicationRetainHeight(1500)
+	err = pruner.SetApplicationBlockRetainHeight(1500)
 	require.NoError(t, err)
 
 	select {
 	case <-obs.prunedBlocksResInfoCh:
 		// But we will prune only until 1350 because that was the Companions height
 		// and it is lower
-		assert.Nil(t, bs.LoadBlock(1345))
-		assert.NotNil(t, bs.LoadBlock(1350))
+		assert.Nil(t, bs.LoadBlock(1349))
+		assert.NotNil(t, bs.LoadBlock(1350), fmt.Sprintf("expected block at height 1350 to be there, but it was not; block store base height = %d", bs.Base()))
 		assert.NotNil(t, bs.LoadBlock(1500))
 		assert.Nil(t, bs.LoadBlock(1501))
 		t.Log("Done pruning blocks until 1500")
@@ -608,7 +613,6 @@ func TestPruningService(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		require.Fail(t, "timed out waiting for pruning run to complete")
 	}
-
 }
 
 func TestPruneBlocks(t *testing.T) {
@@ -821,4 +825,17 @@ func newBlock(hdr types.Header, lastCommit *types.Commit) *types.Block {
 		Header:     hdr,
 		LastCommit: lastCommit,
 	}
+}
+
+func initStateStoreRetainHeights(stateStore sm.Store, appBlockRH, dcBlockRH, dcBlockResultsRH int64) error {
+	if err := stateStore.SaveApplicationRetainHeight(appBlockRH); err != nil {
+		return fmt.Errorf("failed to set initial application block retain height: %w", err)
+	}
+	if err := stateStore.SaveCompanionBlockRetainHeight(dcBlockRH); err != nil {
+		return fmt.Errorf("failed to set initial companion block retain height: %w", err)
+	}
+	if err := stateStore.SaveABCIResRetainHeight(dcBlockResultsRH); err != nil {
+		return fmt.Errorf("failed to set initial ABCI results retain height: %w", err)
+	}
+	return nil
 }

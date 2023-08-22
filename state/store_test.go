@@ -246,9 +246,22 @@ func makeStateAndBlockStore() (sm.State, *store.BlockStore, func(), sm.Store) {
 	})
 	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
 	if err != nil {
-		panic(fmt.Errorf("error constructing state from genesis file: %w", err))
+		panic(fmt.Sprintf("error constructing state from genesis file: %s", err.Error()))
 	}
 	return state, store.NewBlockStore(blockDB), func() { os.RemoveAll(config.RootDir) }, stateStore
+}
+
+func initStateStoreRetainHeights(stateStore sm.Store, appBlockRH, dcBlockRH, dcBlockResultsRH int64) error {
+	if err := stateStore.SaveApplicationRetainHeight(appBlockRH); err != nil {
+		return fmt.Errorf("failed to set initial application block retain height: %w", err)
+	}
+	if err := stateStore.SaveCompanionBlockRetainHeight(dcBlockRH); err != nil {
+		return fmt.Errorf("failed to set initial companion block retain height: %w", err)
+	}
+	if err := stateStore.SaveABCIResRetainHeight(dcBlockResultsRH); err != nil {
+		return fmt.Errorf("failed to set initial ABCI results retain height: %w", err)
+	}
+	return nil
 }
 
 func fillStore(t *testing.T, height int64, stateStore sm.Store, bs *store.BlockStore, state sm.State, response1 *cmtstate.ABCIResponses) {
@@ -280,21 +293,30 @@ func TestSaveRetainHeight(t *testing.T) {
 	state.LastBlockHeight = height - 1
 
 	fillStore(t, height, stateStore, bs, state, nil)
-
-	pruner := sm.NewPruner(stateStore, bs, log.TestingLogger())
-
-	// We should not save a height that is 0
-	err := pruner.SetApplicationRetainHeight(0)
-	require.Error(t, err)
-
-	// We should not save a height above the blockstore's height
-	err = pruner.SetApplicationRetainHeight(11)
-	require.Error(t, err)
-
-	err = pruner.SetApplicationRetainHeight(10)
+	err := initStateStoreRetainHeights(stateStore, 0, 0, 0)
 	require.NoError(t, err)
 
-	err = pruner.SetCompanionRetainHeight(10)
+	pruner := sm.NewPruner(
+		stateStore,
+		bs,
+		log.TestingLogger(),
+		sm.WithPrunerCompanionEnabled(),
+	)
+
+	// We should not save a height that is 0
+	err = pruner.SetApplicationBlockRetainHeight(0)
+	require.Error(t, err)
+
+	// We should not save a height above the block store's height.
+	err = pruner.SetApplicationBlockRetainHeight(11)
+	require.Error(t, err)
+
+	// We should allow saving a retain height equal to the block store's
+	// height.
+	err = pruner.SetApplicationBlockRetainHeight(10)
+	require.NoError(t, err)
+
+	err = pruner.SetCompanionBlockRetainHeight(10)
 	require.NoError(t, err)
 }
 
@@ -303,19 +325,25 @@ func TestMinRetainHeight(t *testing.T) {
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
-	pruner := sm.NewPruner(stateStore, nil, log.TestingLogger())
+	require.NoError(t, initStateStoreRetainHeights(stateStore, 0, 0, 0))
+	pruner := sm.NewPruner(
+		stateStore,
+		nil,
+		log.TestingLogger(),
+		sm.WithPrunerCompanionEnabled(),
+	)
 	minHeight := pruner.FindMinRetainHeight()
-	require.Equal(t, minHeight, int64(0))
+	require.Equal(t, int64(0), minHeight)
 
 	err := stateStore.SaveApplicationRetainHeight(10)
 	require.NoError(t, err)
 	minHeight = pruner.FindMinRetainHeight()
-	require.Equal(t, minHeight, int64(10))
+	require.Equal(t, int64(0), minHeight)
 
 	err = stateStore.SaveCompanionBlockRetainHeight(11)
 	require.NoError(t, err)
 	minHeight = pruner.FindMinRetainHeight()
-	require.Equal(t, minHeight, int64(10))
+	require.Equal(t, int64(10), minHeight)
 }
 
 func TestABCIResPruningStandalone(t *testing.T) {
@@ -406,6 +434,7 @@ func newPrunerObserver(infoChCap int) *prunerObserver {
 func (o *prunerObserver) PrunerPrunedABCIRes(info *sm.ABCIResponsesPrunedInfo) {
 	o.prunedABCIResInfoCh <- info
 }
+
 func (o *prunerObserver) PrunerPrunedBlocks(info *sm.BlocksPrunedInfo) {
 	o.prunedBlocksResInfoCh <- info
 }
@@ -432,6 +461,8 @@ func TestLastABCIResponses(t *testing.T) {
 		state.LastBlockHeight = height - 1
 
 		fillStore(t, height, stateStore, bs, state, response1)
+		err = initStateStoreRetainHeights(stateStore, 0, 0, 0)
+		require.NoError(t, err)
 
 		obs := newPrunerObserver(1)
 		pruner := sm.NewPruner(
@@ -440,6 +471,7 @@ func TestLastABCIResponses(t *testing.T) {
 			log.TestingLogger(),
 			sm.WithPrunerInterval(1*time.Second),
 			sm.WithPrunerObserver(obs),
+			sm.WithPrunerCompanionEnabled(),
 		)
 
 		// Check that we have written a finalize block result at height 'height - 1'
@@ -461,9 +493,7 @@ func TestLastABCIResponses(t *testing.T) {
 		require.Error(t, err)
 		_, err = stateStore.LoadABCIResponses(height)
 		require.NoError(t, err)
-
 	})
-
 }
 
 func TestLastFinalizeBlockResponses(t *testing.T) {

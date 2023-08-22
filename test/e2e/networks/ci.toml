@@ -53,6 +53,7 @@ database = "badgerdb"
 privval_protocol = "unix"
 persist_interval = 3
 retain_blocks = 10
+enable_companion_pruning = true
 perturb = ["kill"]
 
 [node.validator04]
@@ -75,6 +76,7 @@ mode = "full"
 block_sync = "v0"
 persistent_peers = ["validator01", "validator02", "validator03", "validator04", "validator05"]
 retain_blocks = 10
+enable_companion_pruning = true
 perturb = ["restart"]
 
 [node.full02]

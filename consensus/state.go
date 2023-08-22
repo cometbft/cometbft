@@ -1722,20 +1722,19 @@ func (cs *State) finalizeCommit(height int64) {
 	fail.Fail() // XXX
 
 	if retainHeight > 0 && cs.blockExec.Pruner() != nil {
-		err := cs.blockExec.Pruner().SetApplicationRetainHeight(retainHeight)
+		err := cs.blockExec.Pruner().SetApplicationBlockRetainHeight(retainHeight)
 		if err != nil {
 			logger.Error("failed to prune blocks", "retain_height", retainHeight, "err", err)
 		} else {
 			logger.Error("Failed to set application retain height", "retainHeight", retainHeight, "err", err)
 		}
 	}
+
 	// Prune old heights, if requested by ABCI app.
-	if retainHeight > 0 {
-		pruned, err := cs.pruneBlocks(retainHeight)
+	if retainHeight > 0 && blockExec.pruner != nil {
+		err := blockExec.pruner.SetApplicationBlockRetainHeight(retainHeight)
 		if err != nil {
-			logger.Error("failed to prune blocks", "retain_height", retainHeight, "err", err)
-		} else {
-			logger.Debug("pruned blocks", "pruned", pruned, "retain_height", retainHeight)
+			blockExec.logger.Error("Failed to set application block retain height", "retainHeight", retainHeight, "err", err)
 		}
 	}
 

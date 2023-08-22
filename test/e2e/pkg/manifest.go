@@ -154,6 +154,10 @@ type ManifestNode struct {
 	// SnapshotInterval.
 	RetainBlocks uint64 `toml:"retain_blocks"`
 
+	// EnableCompanionPruning specifies whether or not storage pruning on the
+	// node should take a data companion into account.
+	EnableCompanionPruning bool `toml:"enable_companion_pruning"`
+
 	// Perturb lists perturbations to apply to the node after it has been
 	// started and synced with the network:
 	//

@@ -14,11 +14,7 @@ import (
 )
 
 func TestGRPC_Version(t *testing.T) {
-	testNode(t, func(t *testing.T, node e2e.Node) {
-		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
-			return
-		}
-
+	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
 		ctx, ctxCancel := context.WithTimeout(context.Background(), time.Minute)
 		defer ctxCancel()
 		client, err := node.GRPCClient(ctx)
@@ -49,11 +45,7 @@ func TestLegacyGRPC_Ping(t *testing.T) {
 }
 
 func TestGRPC_Block_GetByHeight(t *testing.T) {
-	testNode(t, func(t *testing.T, node e2e.Node) {
-		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
-			return
-		}
-
+	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
 		blocks := fetchBlockChain(t)
 
 		client, err := node.Client()
@@ -155,11 +147,7 @@ func TestGRPC_Block_GetLatestHeight(t *testing.T) {
 }
 
 func TestGRPC_GetBlockResults(t *testing.T) {
-	testNode(t, func(t *testing.T, node e2e.Node) {
-		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
-			return
-		}
-
+	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
 		client, err := node.Client()
 		require.NoError(t, err)
 		status, err := client.Status(ctx)
@@ -211,8 +199,8 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 }
 
 func TestGRPC_BlockRetainHeight(t *testing.T) {
-	testNode(t, func(t *testing.T, node e2e.Node) {
-		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
+	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
+		if !node.EnableCompanionPruning {
 			return
 		}
 
@@ -227,20 +215,18 @@ func TestGRPC_BlockRetainHeight(t *testing.T) {
 		require.NoError(t, err)
 
 		err = grpcClient.SetBlockRetainHeight(ctx, uint64(status.SyncInfo.LatestBlockHeight-1))
-		t.Log(err)
-		require.NoError(t, err, "Unexpected error for SetBlockRetainHeight")
+		require.NoError(t, err)
 
 		res, err := grpcClient.GetBlockRetainHeight(ctx)
-
-		require.NoError(t, err, "Unexpected error for GetBlockRetainHeight")
+		require.NoError(t, err)
 		require.NotNil(t, res)
 		require.Equal(t, res.PruningService, uint64(status.SyncInfo.LatestBlockHeight-1))
 	})
 }
 
 func TestGRPC_BlockResultsRetainHeight(t *testing.T) {
-	testNode(t, func(t *testing.T, node e2e.Node) {
-		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
+	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
+		if !node.EnableCompanionPruning {
 			return
 		}
 

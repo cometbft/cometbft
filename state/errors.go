@@ -52,6 +52,11 @@ type (
 		Height int64
 	}
 
+	ErrPrunerFailedToGetRetainHeight struct {
+		Which string
+		Err   error
+	}
+
 	ErrPrunerFailedToLoadState struct {
 		Err error
 	}
@@ -115,6 +120,14 @@ func (e ErrNoConsensusParamsForHeight) Error() string {
 
 func (e ErrNoABCIResponsesForHeight) Error() string {
 	return fmt.Sprintf("could not find results for height #%d", e.Height)
+}
+
+func (e ErrPrunerFailedToGetRetainHeight) Error() string {
+	return fmt.Sprintf("pruner failed to get existing %s retain height: %s", e.Which, e.Err.Error())
+}
+
+func (e ErrPrunerFailedToGetRetainHeight) Unwrap() error {
+	return e.Err
 }
 
 func (e ErrPrunerFailedToLoadState) Error() string {

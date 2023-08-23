@@ -38,8 +38,8 @@ generator:
 runner:
 	go build -o build/runner ./runner
 
-grammar:
+grammar-gen:
 	gogll pkg/grammar/clean-start/abci_grammar_clean_start.md
 	gogll pkg/grammar/recovery/abci_grammar_recovery.md
 
-.PHONY: all node docker generator runner grammar
+.PHONY: all node docker generator runner grammar-gen

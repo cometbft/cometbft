@@ -711,9 +711,9 @@ func (c *MConnection) Status() ConnectionStatus {
 		status.Channels[i] = ChannelStatus{
 			ID:                channel.desc.ID,
 			SendQueueCapacity: cap(channel.sendQueue),
-			SendQueueSize:     int(atomic.LoadInt32(&channel.sendQueueSize)),
+			SendQueueSize:     int(atomic.LoadInt32(&c.channels[i].sendQueueSize)),
 			Priority:          channel.desc.Priority,
-			RecentlySent:      atomic.LoadInt64(&channel.recentlySent),
+			RecentlySent:      atomic.LoadInt64(&c.channels[i].recentlySent),
 		}
 	}
 	return status

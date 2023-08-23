@@ -186,7 +186,7 @@ func fetchABCIRequests(t *testing.T, nodeName string) ([][]*abci.Request, error)
 		if r == nil {
 			continue
 		}
-		reqs[i] = append(reqs[i], r)
+		reqs[len(reqs)-1] = append(reqs[len(reqs)-1], r)
 	}
 	return reqs, nil
 }

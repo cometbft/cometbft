@@ -15,15 +15,11 @@ func TestABCIGrammar(t *testing.T) {
 			return
 		}
 		reqs, err := fetchABCIRequests(t, node.Name)
-		if err != nil {
-			t.Error(fmt.Errorf("collecting of ABCI requests failed: %w", err))
-		}
+		require.NoError(t, err)
 		for i, r := range reqs {
 			isCleanStart := i == 0
 			_, err := checker.Verify(r, isCleanStart)
-			if err != nil {
-				t.Error(fmt.Errorf("ABCI grammar verification failed: %w", err))
-			}
+			require.NoError(t, err)
 		}
 	})
 }

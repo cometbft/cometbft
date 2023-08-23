@@ -53,7 +53,7 @@ success-sync        = offer-snapshot 1*apply-chunk
 recovery            = info consensus-exec
 
 consensus-exec      = (inf)consensus-height
-consensus-height    = *consensus-round decide commit
+consensus-height    = *consensus-round finalize-block commit
 consensus-round     = proposer / non-proposer
 
 proposer            = *got-vote [prepare-proposal [process-proposal]] [extend]
@@ -68,7 +68,7 @@ prepare-proposal    = %s"<PrepareProposal>"
 process-proposal    = %s"<ProcessProposal>"
 extend-vote         = %s"<ExtendVote>"
 got-vote            = %s"<VerifyVoteExtension>"
-decide              = %s"<FinalizeBlock>"
+finalize-block      = %s"<FinalizeBlock>"
 commit              = %s"<Commit>"
 ```
 
@@ -152,7 +152,7 @@ Let us now examine the grammar line by line, providing further details.
   rounds, this means the process is replaying an already decided value (catch-up mode).
 
 >```abnf
->consensus-height    = *consensus-round decide commit
+>consensus-height    = *consensus-round finalize-block commit
 >consensus-round     = proposer / non-proposer
 >```
 
@@ -202,7 +202,7 @@ Let us now examine the grammar line by line, providing further details.
 >process-proposal    = %s"<ProcessProposal>"
 >extend-vote         = %s"<ExtendVote>"
 >got-vote            = %s"<VerifyVoteExtension>"
->decide              = %s"<FinalizeBlock>"
+>finalize-block      = %s"<FinalizeBlock>"
 >commit              = %s"<Commit>"
 >```
 

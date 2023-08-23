@@ -19,9 +19,7 @@ func TestABCIGrammar(t *testing.T) {
 		for i, r := range reqs {
 			isCleanStart := i == 0
 			_, err := checker.Verify(r, isCleanStart)
-			if err != nil {
-				t.Error(fmt.Errorf("ABCI grammar verification failed: %w", err))
-			}
+			require.NoError(t, err)
 		}
 	})
 }

@@ -6,6 +6,7 @@ import (
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/test/e2e/pkg/grammar"
+	"github.com/stretchr/testify/require"
 )
 
 func TestABCIGrammar(t *testing.T) {

@@ -1,9 +1,7 @@
 package e2e_test
 
 import (
-	"bytes"
 	"context"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -171,12 +169,13 @@ func fetchABCIRequests(t *testing.T, nodeName string) ([][]*abci.Request, error)
 		return nil, err
 	}
 	reqs := make([][]*abci.Request, 0)
-	i := -1
 	// Parse output line by line.
 	lines := strings.Split(string(logs), "\n")
 	for _, line := range lines {
+		if !strings.Contains(line, nodeName) {
+			continue
+		}
 		if strings.Contains(line, "Application started") {
-			i += 1
 			reqs = append(reqs, make([]*abci.Request, 0))
 			continue
 		}
@@ -193,36 +192,5 @@ func fetchABCIRequests(t *testing.T, nodeName string) ([][]*abci.Request, error)
 
 func fetchNodeLogs(testnet e2e.Testnet, nodeName string) ([]byte, error) {
 	dir := filepath.Join(testnet.Dir, "docker-compose.yml")
-	c1 := exec.Command("docker-compose", "-f", dir, "logs")
-	c2 := exec.Command("grep", nodeName)
-
-	r, w := io.Pipe()
-	c1.Stdout = w
-	c2.Stdin = r
-
-	var out bytes.Buffer
-	c2.Stdout = &out
-
-	err := c1.Start()
-	if err != nil {
-		return nil, err
-	}
-	err = c2.Start()
-	if err != nil {
-		return nil, err
-	}
-	err = c1.Wait()
-	if err != nil {
-		return nil, err
-	}
-	err = w.Close()
-	if err != nil {
-		return nil, err
-	}
-	err = c2.Wait()
-	if err != nil {
-		return nil, err
-	}
-	return out.Bytes(), nil
-
+	return exec.Command("docker-compose", "-f", dir, "logs").Output()
 }

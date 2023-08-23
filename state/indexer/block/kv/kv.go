@@ -148,11 +148,11 @@ func (idx *BlockerIndexer) Prune(retainHeight int64) (int64, int64, error) {
 	return retainHeight - lastRetainHeight, retainHeight, err
 }
 
-func (idx *BlockerIndexer) SetBlockIndexerRetainHeight(retainHeight int64) error {
+func (idx *BlockerIndexer) SetRetainHeight(retainHeight int64) error {
 	return idx.store.SetSync(BlockIndexerRetainHeightKey, int64ToBytes(retainHeight))
 }
 
-func (idx *BlockerIndexer) GetBlockIndexerRetainHeight() (int64, error) {
+func (idx *BlockerIndexer) GetRetainHeight() (int64, error) {
 	buf, err := idx.store.Get(BlockIndexerRetainHeightKey)
 	if err != nil {
 		return 0, err

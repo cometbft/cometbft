@@ -1,2 +1,2 @@
-- `[state/indexer]` Add pruning for the tx_index.db. 
+- `[state/indexer]` Add transaction and block index pruning
   ([\#1176](https://github.com/cometbft/cometbft/pull/1176))

@@ -20,11 +20,11 @@ type TxIndexer struct {
 	mock.Mock
 }
 
-func (_m *TxIndexer) GetTxIndexerRetainHeight() (int64, error) {
+func (_m *TxIndexer) GetRetainHeight() (int64, error) {
 	return 0, nil
 }
 
-func (_m *TxIndexer) SetTxIndexerRetainHeight(retainHeight int64) error {
+func (_m *TxIndexer) SetRetainHeight(retainHeight int64) error {
 	return nil
 }
 

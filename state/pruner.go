@@ -239,17 +239,17 @@ func (p *Pruner) SetTxIndexerRetainHeight(height int64) error {
 		return ErrInvalidHeightValue
 	}
 
-	currentRetainHeight, err := p.txIndexer.GetTxIndexerRetainHeight()
+	currentRetainHeight, err := p.txIndexer.GetRetainHeight()
 	if err != nil {
 		if !errors.Is(err, ErrKeyNotFound) {
 			return err
 		}
-		return p.txIndexer.SetTxIndexerRetainHeight(height)
+		return p.txIndexer.SetRetainHeight(height)
 	}
 	if currentRetainHeight > height {
 		return ErrPrunerCannotLowerRetainHeight
 	}
-	if err := p.txIndexer.SetTxIndexerRetainHeight(height); err != nil {
+	if err := p.txIndexer.SetRetainHeight(height); err != nil {
 		return err
 	}
 	// TODO call metrics
@@ -265,17 +265,17 @@ func (p *Pruner) SetBlockIndexerRetainHeight(height int64) error {
 		return ErrInvalidHeightValue
 	}
 
-	currentRetainHeight, err := p.blockIndexer.GetBlockIndexerRetainHeight()
+	currentRetainHeight, err := p.blockIndexer.GetRetainHeight()
 	if err != nil {
 		if !errors.Is(err, ErrKeyNotFound) {
 			return err
 		}
-		return p.blockIndexer.SetBlockIndexerRetainHeight(height)
+		return p.blockIndexer.SetRetainHeight(height)
 	}
 	if currentRetainHeight > height {
 		return ErrPrunerCannotLowerRetainHeight
 	}
-	if err := p.blockIndexer.SetBlockIndexerRetainHeight(height); err != nil {
+	if err := p.blockIndexer.SetRetainHeight(height); err != nil {
 		return err
 	}
 	// TODO call metrics
@@ -303,13 +303,13 @@ func (p *Pruner) GetABCIResRetainHeight() (int64, error) {
 // GetTxIndexerRetainHeight is a convenience method for accessing the
 // GetTxIndexerRetainHeight method of the underlying indexer
 func (p *Pruner) GetTxIndexerRetainHeight() (int64, error) {
-	return p.txIndexer.GetTxIndexerRetainHeight()
+	return p.txIndexer.GetRetainHeight()
 }
 
 // GetBlockIndexerRetainHeight is a convenience method for accessing the
 // GetBlockIndexerRetainHeight method of the underlying state store.
 func (p *Pruner) GetBlockIndexerRetainHeight() (int64, error) {
-	return p.blockIndexer.GetBlockIndexerRetainHeight()
+	return p.blockIndexer.GetRetainHeight()
 }
 
 func (p *Pruner) pruneABCIResRoutine() {

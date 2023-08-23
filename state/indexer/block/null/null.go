@@ -15,11 +15,11 @@ var _ indexer.BlockIndexer = (*BlockerIndexer)(nil)
 // TxIndex implements a no-op block indexer.
 type BlockerIndexer struct{}
 
-func (idx *BlockerIndexer) SetBlockIndexerRetainHeight(_ int64) error {
+func (idx *BlockerIndexer) SetRetainHeight(_ int64) error {
 	return nil
 }
 
-func (idx *BlockerIndexer) GetBlockIndexerRetainHeight() (int64, error) {
+func (idx *BlockerIndexer) GetRetainHeight() (int64, error) {
 	return 0, nil
 }
 

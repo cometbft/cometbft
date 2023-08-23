@@ -86,11 +86,11 @@ func (txi *TxIndex) Prune(retainHeight int64) (int64, int64, error) {
 	return newRetainedHeight - lastRetainHeight, newRetainedHeight, err
 }
 
-func (txi *TxIndex) SetTxIndexerRetainHeight(retainHeight int64) error {
+func (txi *TxIndex) SetRetainHeight(retainHeight int64) error {
 	return txi.store.SetSync(TxIndexerRetainHeightKey, int64ToBytes(retainHeight))
 }
 
-func (txi *TxIndex) GetTxIndexerRetainHeight() (int64, error) {
+func (txi *TxIndex) GetRetainHeight() (int64, error) {
 	buf, err := txi.store.Get(TxIndexerRetainHeightKey)
 	if err != nil {
 		return 0, err

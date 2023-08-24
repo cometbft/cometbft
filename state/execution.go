@@ -248,7 +248,7 @@ func (blockExec *BlockExecutor) ApplyBlock(
 		return state, fmt.Errorf("expected tx results length to match size of transactions in block. Expected %d, got %d", len(block.Data.Txs), len(abciResponse.TxResults))
 	}
 
-	blockExec.logger.Info("executed block", "height", block.Height, "app_hash", abciResponse.AppHash)
+	blockExec.logger.Info("executed block", "height", block.Height, "app_hash", fmt.Sprintf("%X", abciResponse.AppHash))
 
 	fail.Fail() // XXX
 
@@ -304,9 +304,9 @@ func (blockExec *BlockExecutor) ApplyBlock(
 
 	// Prune old heights, if requested by ABCI app.
 	if retainHeight > 0 && blockExec.pruner != nil {
-		err := blockExec.pruner.SetApplicationRetainHeight(retainHeight)
+		err := blockExec.pruner.SetApplicationBlockRetainHeight(retainHeight)
 		if err != nil {
-			blockExec.logger.Error("Failed to set application retain height", "retainHeight", retainHeight, "err", err)
+			blockExec.logger.Error("Failed to set application block retain height", "retainHeight", retainHeight, "err", err)
 		}
 	}
 
@@ -709,7 +709,7 @@ func ExecCommitBlock(
 		return nil, fmt.Errorf("expected tx results length to match size of transactions in block. Expected %d, got %d", len(block.Data.Txs), len(resp.TxResults))
 	}
 
-	logger.Info("executed block", "height", block.Height, "app_hash", resp.AppHash)
+	logger.Info("executed block", "height", block.Height, "app_hash", fmt.Sprintf("%X", resp.AppHash))
 
 	// Commit block
 	_, err = appConnConsensus.Commit(context.TODO())

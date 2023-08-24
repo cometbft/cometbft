@@ -110,7 +110,7 @@ func (c *disabledPruningServiceClient) SetTxIndexerRetainHeight(_ context.Contex
 	panic("pruning service client is disabled")
 }
 
-func (c *disabledPruningServiceClient) GetTxIndexerRetainHeight(ctx context.Context) (uint64, error) {
+func (c *disabledPruningServiceClient) GetTxIndexerRetainHeight(_ context.Context) (uint64, error) {
 	panic("pruning service client is disabled")
 }
 
@@ -118,7 +118,7 @@ func (c *disabledPruningServiceClient) SetBlockIndexerRetainHeight(_ context.Con
 	panic("pruning service client is disabled")
 }
 
-func (c *disabledPruningServiceClient) GetBlockIndexerRetainHeight(ctx context.Context) (uint64, error) {
+func (c *disabledPruningServiceClient) GetBlockIndexerRetainHeight(_ context.Context) (uint64, error) {
 	panic("pruning service client is disabled")
 }
 

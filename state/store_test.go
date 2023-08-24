@@ -314,17 +314,7 @@ func TestSaveRetainHeight(t *testing.T) {
 
 	pruner := sm.NewPruner(stateStore, bs, blockIndexer, txIndexer, log.TestingLogger())
 
-	// We should not save a height that is 0
-	err := pruner.SetApplicationBlockRetainHeight(0)
-	require.Error(t, err)
-
-	// We should not save a height above the blockstore's height
-	err = pruner.SetApplicationBlockRetainHeight(11)
-	require.Error(t, err)
-
-	err = pruner.SetApplicationBlockRetainHeight(10)
-
-	err = initStateStoreRetainHeights(stateStore, 0, 0, 0)
+	err := initStateStoreRetainHeights(stateStore, 0, 0, 0)
 	require.NoError(t, err)
 
 	// We should not save a height that is 0

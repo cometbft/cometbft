@@ -250,7 +250,7 @@ func TestGRPC_BlockIndexerRetainHeight(t *testing.T) {
 
 		require.NoError(t, err, "Unexpected error for GetBlockIndexerRetainHeight")
 		require.NotNil(t, res)
-		require.Equal(t, res.Height, uint64(status.SyncInfo.LatestBlockHeight-1))
+		require.Equal(t, res, uint64(status.SyncInfo.LatestBlockHeight-1))
 	})
 }
 
@@ -270,7 +270,7 @@ func TestGRPC_TxIndexerRetainHeight(t *testing.T) {
 
 		require.NoError(t, err, "Unexpected error for GetTxIndexerRetainHeight")
 		require.NotNil(t, res)
-		require.Equal(t, res.Height, uint64(status.SyncInfo.LatestBlockHeight-1))
+		require.Equal(t, res, uint64(status.SyncInfo.LatestBlockHeight-1))
 	})
 }
 

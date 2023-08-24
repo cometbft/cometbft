@@ -61,7 +61,7 @@ func NewPruningServiceClient(cc grpc.ClientConnInterface) PruningServiceClient {
 
 func (c *pruningServiceClient) SetBlockRetainHeight(ctx context.Context, in *SetBlockRetainHeightRequest, opts ...grpc.CallOption) (*SetBlockRetainHeightResponse, error) {
 	out := new(SetBlockRetainHeightResponse)
-	err := c.cc.Invoke(ctx, "/v1.PruningService/SetBlockRetainHeight", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/tendermint.services.pruning.v1.PruningService/SetBlockRetainHeight", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (c *pruningServiceClient) SetBlockRetainHeight(ctx context.Context, in *Set
 
 func (c *pruningServiceClient) GetBlockRetainHeight(ctx context.Context, in *GetBlockRetainHeightRequest, opts ...grpc.CallOption) (*GetBlockRetainHeightResponse, error) {
 	out := new(GetBlockRetainHeightResponse)
-	err := c.cc.Invoke(ctx, "/v1.PruningService/GetBlockRetainHeight", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/tendermint.services.pruning.v1.PruningService/GetBlockRetainHeight", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (c *pruningServiceClient) GetBlockRetainHeight(ctx context.Context, in *Get
 
 func (c *pruningServiceClient) SetBlockResultsRetainHeight(ctx context.Context, in *SetBlockResultsRetainHeightRequest, opts ...grpc.CallOption) (*SetBlockResultsRetainHeightResponse, error) {
 	out := new(SetBlockResultsRetainHeightResponse)
-	err := c.cc.Invoke(ctx, "/v1.PruningService/SetBlockResultsRetainHeight", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/tendermint.services.pruning.v1.PruningService/SetBlockResultsRetainHeight", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (c *pruningServiceClient) SetBlockResultsRetainHeight(ctx context.Context, 
 
 func (c *pruningServiceClient) GetBlockResultsRetainHeight(ctx context.Context, in *GetBlockResultsRetainHeightRequest, opts ...grpc.CallOption) (*GetBlockResultsRetainHeightResponse, error) {
 	out := new(GetBlockResultsRetainHeightResponse)
-	err := c.cc.Invoke(ctx, "/v1.PruningService/GetBlockResultsRetainHeight", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/tendermint.services.pruning.v1.PruningService/GetBlockResultsRetainHeight", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (c *pruningServiceClient) GetBlockResultsRetainHeight(ctx context.Context, 
 
 func (c *pruningServiceClient) SetBlockIndexerRetainHeight(ctx context.Context, in *SetBlockIndexerRetainHeightRequest, opts ...grpc.CallOption) (*SetBlockIndexerRetainHeightResponse, error) {
 	out := new(SetBlockIndexerRetainHeightResponse)
-	err := c.cc.Invoke(ctx, "/v1.PruningService/SetBlockIndexerRetainHeight", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/tendermint.services.pruning.v1.PruningService/SetBlockIndexerRetainHeight", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func (c *pruningServiceClient) SetBlockIndexerRetainHeight(ctx context.Context, 
 
 func (c *pruningServiceClient) GetBlockIndexerRetainHeight(ctx context.Context, in *GetBlockIndexerRetainHeightRequest, opts ...grpc.CallOption) (*GetBlockIndexerRetainHeightResponse, error) {
 	out := new(GetBlockIndexerRetainHeightResponse)
-	err := c.cc.Invoke(ctx, "/v1.PruningService/GetBlockIndexerRetainHeight", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/tendermint.services.pruning.v1.PruningService/GetBlockIndexerRetainHeight", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func (c *pruningServiceClient) GetBlockIndexerRetainHeight(ctx context.Context, 
 
 func (c *pruningServiceClient) SetTxIndexerRetainHeight(ctx context.Context, in *SetTxIndexerRetainHeightRequest, opts ...grpc.CallOption) (*SetTxIndexerRetainHeightResponse, error) {
 	out := new(SetTxIndexerRetainHeightResponse)
-	err := c.cc.Invoke(ctx, "/v1.PruningService/SetTxIndexerRetainHeight", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/tendermint.services.pruning.v1.PruningService/SetTxIndexerRetainHeight", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func (c *pruningServiceClient) SetTxIndexerRetainHeight(ctx context.Context, in 
 
 func (c *pruningServiceClient) GetTxIndexerRetainHeight(ctx context.Context, in *GetTxIndexerRetainHeightRequest, opts ...grpc.CallOption) (*GetTxIndexerRetainHeightResponse, error) {
 	out := new(GetTxIndexerRetainHeightResponse)
-	err := c.cc.Invoke(ctx, "/v1.PruningService/GetTxIndexerRetainHeight", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/tendermint.services.pruning.v1.PruningService/GetTxIndexerRetainHeight", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +219,7 @@ func _PruningService_SetBlockRetainHeight_Handler(srv interface{}, ctx context.C
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/v1.PruningService/SetBlockRetainHeight",
+		FullMethod: "/tendermint.services.pruning.v1.PruningService/SetBlockRetainHeight",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(PruningServiceServer).SetBlockRetainHeight(ctx, req.(*SetBlockRetainHeightRequest))
@@ -237,7 +237,7 @@ func _PruningService_GetBlockRetainHeight_Handler(srv interface{}, ctx context.C
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/v1.PruningService/GetBlockRetainHeight",
+		FullMethod: "/tendermint.services.pruning.v1.PruningService/GetBlockRetainHeight",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(PruningServiceServer).GetBlockRetainHeight(ctx, req.(*GetBlockRetainHeightRequest))
@@ -255,7 +255,7 @@ func _PruningService_SetBlockResultsRetainHeight_Handler(srv interface{}, ctx co
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/v1.PruningService/SetBlockResultsRetainHeight",
+		FullMethod: "/tendermint.services.pruning.v1.PruningService/SetBlockResultsRetainHeight",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(PruningServiceServer).SetBlockResultsRetainHeight(ctx, req.(*SetBlockResultsRetainHeightRequest))
@@ -273,7 +273,7 @@ func _PruningService_GetBlockResultsRetainHeight_Handler(srv interface{}, ctx co
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/v1.PruningService/GetBlockResultsRetainHeight",
+		FullMethod: "/tendermint.services.pruning.v1.PruningService/GetBlockResultsRetainHeight",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(PruningServiceServer).GetBlockResultsRetainHeight(ctx, req.(*GetBlockResultsRetainHeightRequest))
@@ -291,7 +291,7 @@ func _PruningService_SetBlockIndexerRetainHeight_Handler(srv interface{}, ctx co
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/v1.PruningService/SetBlockIndexerRetainHeight",
+		FullMethod: "/tendermint.services.pruning.v1.PruningService/SetBlockIndexerRetainHeight",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(PruningServiceServer).SetBlockIndexerRetainHeight(ctx, req.(*SetBlockIndexerRetainHeightRequest))
@@ -309,7 +309,7 @@ func _PruningService_GetBlockIndexerRetainHeight_Handler(srv interface{}, ctx co
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/v1.PruningService/GetBlockIndexerRetainHeight",
+		FullMethod: "/tendermint.services.pruning.v1.PruningService/GetBlockIndexerRetainHeight",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(PruningServiceServer).GetBlockIndexerRetainHeight(ctx, req.(*GetBlockIndexerRetainHeightRequest))
@@ -327,7 +327,7 @@ func _PruningService_SetTxIndexerRetainHeight_Handler(srv interface{}, ctx conte
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/v1.PruningService/SetTxIndexerRetainHeight",
+		FullMethod: "/tendermint.services.pruning.v1.PruningService/SetTxIndexerRetainHeight",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(PruningServiceServer).SetTxIndexerRetainHeight(ctx, req.(*SetTxIndexerRetainHeightRequest))
@@ -345,7 +345,7 @@ func _PruningService_GetTxIndexerRetainHeight_Handler(srv interface{}, ctx conte
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/v1.PruningService/GetTxIndexerRetainHeight",
+		FullMethod: "/tendermint.services.pruning.v1.PruningService/GetTxIndexerRetainHeight",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(PruningServiceServer).GetTxIndexerRetainHeight(ctx, req.(*GetTxIndexerRetainHeightRequest))
@@ -357,7 +357,7 @@ func _PruningService_GetTxIndexerRetainHeight_Handler(srv interface{}, ctx conte
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var PruningService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "v1.PruningService",
+	ServiceName: "tendermint.services.pruning.v1.PruningService",
 	HandlerType: (*PruningServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

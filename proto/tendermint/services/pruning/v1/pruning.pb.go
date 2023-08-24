@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.25.0-devel
 // 	protoc        v3.14.0
-// source: proto/tendermint/services/pruning/v1/pruning.proto
+// source: tendermint/services/pruning/v1/pruning.proto
 
 package v1
 
@@ -31,7 +31,7 @@ type SetBlockRetainHeightRequest struct {
 func (x *SetBlockRetainHeightRequest) Reset() {
 	*x = SetBlockRetainHeightRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[0]
+		mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -44,7 +44,7 @@ func (x *SetBlockRetainHeightRequest) String() string {
 func (*SetBlockRetainHeightRequest) ProtoMessage() {}
 
 func (x *SetBlockRetainHeightRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[0]
+	mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -57,7 +57,7 @@ func (x *SetBlockRetainHeightRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetBlockRetainHeightRequest.ProtoReflect.Descriptor instead.
 func (*SetBlockRetainHeightRequest) Descriptor() ([]byte, []int) {
-	return file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{0}
+	return file_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *SetBlockRetainHeightRequest) GetHeight() uint64 {
@@ -76,7 +76,7 @@ type SetBlockRetainHeightResponse struct {
 func (x *SetBlockRetainHeightResponse) Reset() {
 	*x = SetBlockRetainHeightResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[1]
+		mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -89,7 +89,7 @@ func (x *SetBlockRetainHeightResponse) String() string {
 func (*SetBlockRetainHeightResponse) ProtoMessage() {}
 
 func (x *SetBlockRetainHeightResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[1]
+	mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -102,7 +102,7 @@ func (x *SetBlockRetainHeightResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetBlockRetainHeightResponse.ProtoReflect.Descriptor instead.
 func (*SetBlockRetainHeightResponse) Descriptor() ([]byte, []int) {
-	return file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{1}
+	return file_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{1}
 }
 
 type GetBlockRetainHeightRequest struct {
@@ -114,7 +114,7 @@ type GetBlockRetainHeightRequest struct {
 func (x *GetBlockRetainHeightRequest) Reset() {
 	*x = GetBlockRetainHeightRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[2]
+		mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -127,7 +127,7 @@ func (x *GetBlockRetainHeightRequest) String() string {
 func (*GetBlockRetainHeightRequest) ProtoMessage() {}
 
 func (x *GetBlockRetainHeightRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[2]
+	mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -140,7 +140,7 @@ func (x *GetBlockRetainHeightRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetBlockRetainHeightRequest.ProtoReflect.Descriptor instead.
 func (*GetBlockRetainHeightRequest) Descriptor() ([]byte, []int) {
-	return file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{2}
+	return file_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{2}
 }
 
 type GetBlockRetainHeightResponse struct {
@@ -158,7 +158,7 @@ type GetBlockRetainHeightResponse struct {
 func (x *GetBlockRetainHeightResponse) Reset() {
 	*x = GetBlockRetainHeightResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[3]
+		mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -171,7 +171,7 @@ func (x *GetBlockRetainHeightResponse) String() string {
 func (*GetBlockRetainHeightResponse) ProtoMessage() {}
 
 func (x *GetBlockRetainHeightResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[3]
+	mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -184,7 +184,7 @@ func (x *GetBlockRetainHeightResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetBlockRetainHeightResponse.ProtoReflect.Descriptor instead.
 func (*GetBlockRetainHeightResponse) Descriptor() ([]byte, []int) {
-	return file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{3}
+	return file_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetBlockRetainHeightResponse) GetAppRetainHeight() uint64 {
@@ -212,7 +212,7 @@ type SetBlockResultsRetainHeightRequest struct {
 func (x *SetBlockResultsRetainHeightRequest) Reset() {
 	*x = SetBlockResultsRetainHeightRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[4]
+		mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -225,7 +225,7 @@ func (x *SetBlockResultsRetainHeightRequest) String() string {
 func (*SetBlockResultsRetainHeightRequest) ProtoMessage() {}
 
 func (x *SetBlockResultsRetainHeightRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[4]
+	mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -238,7 +238,7 @@ func (x *SetBlockResultsRetainHeightRequest) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use SetBlockResultsRetainHeightRequest.ProtoReflect.Descriptor instead.
 func (*SetBlockResultsRetainHeightRequest) Descriptor() ([]byte, []int) {
-	return file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{4}
+	return file_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *SetBlockResultsRetainHeightRequest) GetHeight() uint64 {
@@ -257,7 +257,7 @@ type SetBlockResultsRetainHeightResponse struct {
 func (x *SetBlockResultsRetainHeightResponse) Reset() {
 	*x = SetBlockResultsRetainHeightResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[5]
+		mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -270,7 +270,7 @@ func (x *SetBlockResultsRetainHeightResponse) String() string {
 func (*SetBlockResultsRetainHeightResponse) ProtoMessage() {}
 
 func (x *SetBlockResultsRetainHeightResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[5]
+	mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -283,7 +283,7 @@ func (x *SetBlockResultsRetainHeightResponse) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use SetBlockResultsRetainHeightResponse.ProtoReflect.Descriptor instead.
 func (*SetBlockResultsRetainHeightResponse) Descriptor() ([]byte, []int) {
-	return file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{5}
+	return file_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{5}
 }
 
 type GetBlockResultsRetainHeightRequest struct {
@@ -295,7 +295,7 @@ type GetBlockResultsRetainHeightRequest struct {
 func (x *GetBlockResultsRetainHeightRequest) Reset() {
 	*x = GetBlockResultsRetainHeightRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[6]
+		mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -308,7 +308,7 @@ func (x *GetBlockResultsRetainHeightRequest) String() string {
 func (*GetBlockResultsRetainHeightRequest) ProtoMessage() {}
 
 func (x *GetBlockResultsRetainHeightRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[6]
+	mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -321,7 +321,7 @@ func (x *GetBlockResultsRetainHeightRequest) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use GetBlockResultsRetainHeightRequest.ProtoReflect.Descriptor instead.
 func (*GetBlockResultsRetainHeightRequest) Descriptor() ([]byte, []int) {
-	return file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{6}
+	return file_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{6}
 }
 
 type GetBlockResultsRetainHeightResponse struct {
@@ -337,7 +337,7 @@ type GetBlockResultsRetainHeightResponse struct {
 func (x *GetBlockResultsRetainHeightResponse) Reset() {
 	*x = GetBlockResultsRetainHeightResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[7]
+		mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -350,7 +350,7 @@ func (x *GetBlockResultsRetainHeightResponse) String() string {
 func (*GetBlockResultsRetainHeightResponse) ProtoMessage() {}
 
 func (x *GetBlockResultsRetainHeightResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[7]
+	mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -363,7 +363,7 @@ func (x *GetBlockResultsRetainHeightResponse) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use GetBlockResultsRetainHeightResponse.ProtoReflect.Descriptor instead.
 func (*GetBlockResultsRetainHeightResponse) Descriptor() ([]byte, []int) {
-	return file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{7}
+	return file_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GetBlockResultsRetainHeightResponse) GetPruningServiceRetainHeight() uint64 {
@@ -384,7 +384,7 @@ type SetBlockIndexerRetainHeightRequest struct {
 func (x *SetBlockIndexerRetainHeightRequest) Reset() {
 	*x = SetBlockIndexerRetainHeightRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[8]
+		mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -397,7 +397,7 @@ func (x *SetBlockIndexerRetainHeightRequest) String() string {
 func (*SetBlockIndexerRetainHeightRequest) ProtoMessage() {}
 
 func (x *SetBlockIndexerRetainHeightRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[8]
+	mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -410,7 +410,7 @@ func (x *SetBlockIndexerRetainHeightRequest) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use SetBlockIndexerRetainHeightRequest.ProtoReflect.Descriptor instead.
 func (*SetBlockIndexerRetainHeightRequest) Descriptor() ([]byte, []int) {
-	return file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{8}
+	return file_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *SetBlockIndexerRetainHeightRequest) GetHeight() uint64 {
@@ -429,7 +429,7 @@ type SetBlockIndexerRetainHeightResponse struct {
 func (x *SetBlockIndexerRetainHeightResponse) Reset() {
 	*x = SetBlockIndexerRetainHeightResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[9]
+		mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -442,7 +442,7 @@ func (x *SetBlockIndexerRetainHeightResponse) String() string {
 func (*SetBlockIndexerRetainHeightResponse) ProtoMessage() {}
 
 func (x *SetBlockIndexerRetainHeightResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[9]
+	mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -455,7 +455,7 @@ func (x *SetBlockIndexerRetainHeightResponse) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use SetBlockIndexerRetainHeightResponse.ProtoReflect.Descriptor instead.
 func (*SetBlockIndexerRetainHeightResponse) Descriptor() ([]byte, []int) {
-	return file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{9}
+	return file_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{9}
 }
 
 type GetBlockIndexerRetainHeightRequest struct {
@@ -467,7 +467,7 @@ type GetBlockIndexerRetainHeightRequest struct {
 func (x *GetBlockIndexerRetainHeightRequest) Reset() {
 	*x = GetBlockIndexerRetainHeightRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[10]
+		mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -480,7 +480,7 @@ func (x *GetBlockIndexerRetainHeightRequest) String() string {
 func (*GetBlockIndexerRetainHeightRequest) ProtoMessage() {}
 
 func (x *GetBlockIndexerRetainHeightRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[10]
+	mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -493,7 +493,7 @@ func (x *GetBlockIndexerRetainHeightRequest) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use GetBlockIndexerRetainHeightRequest.ProtoReflect.Descriptor instead.
 func (*GetBlockIndexerRetainHeightRequest) Descriptor() ([]byte, []int) {
-	return file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{10}
+	return file_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{10}
 }
 
 type GetBlockIndexerRetainHeightResponse struct {
@@ -508,7 +508,7 @@ type GetBlockIndexerRetainHeightResponse struct {
 func (x *GetBlockIndexerRetainHeightResponse) Reset() {
 	*x = GetBlockIndexerRetainHeightResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[11]
+		mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -521,7 +521,7 @@ func (x *GetBlockIndexerRetainHeightResponse) String() string {
 func (*GetBlockIndexerRetainHeightResponse) ProtoMessage() {}
 
 func (x *GetBlockIndexerRetainHeightResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[11]
+	mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -534,7 +534,7 @@ func (x *GetBlockIndexerRetainHeightResponse) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use GetBlockIndexerRetainHeightResponse.ProtoReflect.Descriptor instead.
 func (*GetBlockIndexerRetainHeightResponse) Descriptor() ([]byte, []int) {
-	return file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{11}
+	return file_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GetBlockIndexerRetainHeightResponse) GetHeight() uint64 {
@@ -555,7 +555,7 @@ type SetTxIndexerRetainHeightRequest struct {
 func (x *SetTxIndexerRetainHeightRequest) Reset() {
 	*x = SetTxIndexerRetainHeightRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[12]
+		mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -568,7 +568,7 @@ func (x *SetTxIndexerRetainHeightRequest) String() string {
 func (*SetTxIndexerRetainHeightRequest) ProtoMessage() {}
 
 func (x *SetTxIndexerRetainHeightRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[12]
+	mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -581,7 +581,7 @@ func (x *SetTxIndexerRetainHeightRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetTxIndexerRetainHeightRequest.ProtoReflect.Descriptor instead.
 func (*SetTxIndexerRetainHeightRequest) Descriptor() ([]byte, []int) {
-	return file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{12}
+	return file_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *SetTxIndexerRetainHeightRequest) GetHeight() uint64 {
@@ -600,7 +600,7 @@ type SetTxIndexerRetainHeightResponse struct {
 func (x *SetTxIndexerRetainHeightResponse) Reset() {
 	*x = SetTxIndexerRetainHeightResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[13]
+		mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -613,7 +613,7 @@ func (x *SetTxIndexerRetainHeightResponse) String() string {
 func (*SetTxIndexerRetainHeightResponse) ProtoMessage() {}
 
 func (x *SetTxIndexerRetainHeightResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[13]
+	mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -626,7 +626,7 @@ func (x *SetTxIndexerRetainHeightResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetTxIndexerRetainHeightResponse.ProtoReflect.Descriptor instead.
 func (*SetTxIndexerRetainHeightResponse) Descriptor() ([]byte, []int) {
-	return file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{13}
+	return file_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{13}
 }
 
 type GetTxIndexerRetainHeightRequest struct {
@@ -638,7 +638,7 @@ type GetTxIndexerRetainHeightRequest struct {
 func (x *GetTxIndexerRetainHeightRequest) Reset() {
 	*x = GetTxIndexerRetainHeightRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[14]
+		mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -651,7 +651,7 @@ func (x *GetTxIndexerRetainHeightRequest) String() string {
 func (*GetTxIndexerRetainHeightRequest) ProtoMessage() {}
 
 func (x *GetTxIndexerRetainHeightRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[14]
+	mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -664,7 +664,7 @@ func (x *GetTxIndexerRetainHeightRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTxIndexerRetainHeightRequest.ProtoReflect.Descriptor instead.
 func (*GetTxIndexerRetainHeightRequest) Descriptor() ([]byte, []int) {
-	return file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{14}
+	return file_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{14}
 }
 
 type GetTxIndexerRetainHeightResponse struct {
@@ -679,7 +679,7 @@ type GetTxIndexerRetainHeightResponse struct {
 func (x *GetTxIndexerRetainHeightResponse) Reset() {
 	*x = GetTxIndexerRetainHeightResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[15]
+		mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -692,7 +692,7 @@ func (x *GetTxIndexerRetainHeightResponse) String() string {
 func (*GetTxIndexerRetainHeightResponse) ProtoMessage() {}
 
 func (x *GetTxIndexerRetainHeightResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[15]
+	mi := &file_tendermint_services_pruning_v1_pruning_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -705,7 +705,7 @@ func (x *GetTxIndexerRetainHeightResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTxIndexerRetainHeightResponse.ProtoReflect.Descriptor instead.
 func (*GetTxIndexerRetainHeightResponse) Descriptor() ([]byte, []int) {
-	return file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{15}
+	return file_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *GetTxIndexerRetainHeightResponse) GetHeight() uint64 {
@@ -715,92 +715,91 @@ func (x *GetTxIndexerRetainHeightResponse) GetHeight() uint64 {
 	return 0
 }
 
-var File_proto_tendermint_services_pruning_v1_pruning_proto protoreflect.FileDescriptor
+var File_tendermint_services_pruning_v1_pruning_proto protoreflect.FileDescriptor
 
-var file_proto_tendermint_services_pruning_v1_pruning_proto_rawDesc = []byte{
-	0x0a, 0x32, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x74, 0x65, 0x6e, 0x64, 0x65, 0x72, 0x6d, 0x69,
-	0x6e, 0x74, 0x2f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x73, 0x2f, 0x70, 0x72, 0x75, 0x6e,
-	0x69, 0x6e, 0x67, 0x2f, 0x76, 0x31, 0x2f, 0x70, 0x72, 0x75, 0x6e, 0x69, 0x6e, 0x67, 0x2e, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x12, 0x1e, 0x74, 0x65, 0x6e, 0x64, 0x65, 0x72, 0x6d, 0x69, 0x6e, 0x74,
-	0x2e, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x73, 0x2e, 0x70, 0x72, 0x75, 0x6e, 0x69, 0x6e,
-	0x67, 0x2e, 0x76, 0x31, 0x22, 0x35, 0x0a, 0x1b, 0x53, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b,
-	0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x04, 0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x22, 0x1e, 0x0a, 0x1c, 0x53,
-	0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69,
-	0x67, 0x68, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1d, 0x0a, 0x1b, 0x47,
-	0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69,
-	0x67, 0x68, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x8d, 0x01, 0x0a, 0x1c, 0x47,
-	0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69,
-	0x67, 0x68, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x2a, 0x0a, 0x11, 0x61,
-	0x70, 0x70, 0x5f, 0x72, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x5f, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0f, 0x61, 0x70, 0x70, 0x52, 0x65, 0x74, 0x61, 0x69,
-	0x6e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x12, 0x41, 0x0a, 0x1d, 0x70, 0x72, 0x75, 0x6e, 0x69,
-	0x6e, 0x67, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x5f, 0x72, 0x65, 0x74, 0x61, 0x69,
-	0x6e, 0x5f, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x1a,
-	0x70, 0x72, 0x75, 0x6e, 0x69, 0x6e, 0x67, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65,
-	0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x22, 0x3c, 0x0a, 0x22, 0x53, 0x65,
-	0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x52, 0x65, 0x74,
-	0x61, 0x69, 0x6e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04,
-	0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x22, 0x25, 0x0a, 0x23, 0x53, 0x65, 0x74, 0x42,
-	0x6c, 0x6f, 0x63, 0x6b, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x52, 0x65, 0x74, 0x61, 0x69,
-	0x6e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
-	0x24, 0x0a, 0x22, 0x47, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x52, 0x65, 0x73, 0x75, 0x6c,
+var file_tendermint_services_pruning_v1_pruning_proto_rawDesc = []byte{
+	0x0a, 0x2c, 0x74, 0x65, 0x6e, 0x64, 0x65, 0x72, 0x6d, 0x69, 0x6e, 0x74, 0x2f, 0x73, 0x65, 0x72,
+	0x76, 0x69, 0x63, 0x65, 0x73, 0x2f, 0x70, 0x72, 0x75, 0x6e, 0x69, 0x6e, 0x67, 0x2f, 0x76, 0x31,
+	0x2f, 0x70, 0x72, 0x75, 0x6e, 0x69, 0x6e, 0x67, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x1e,
+	0x74, 0x65, 0x6e, 0x64, 0x65, 0x72, 0x6d, 0x69, 0x6e, 0x74, 0x2e, 0x73, 0x65, 0x72, 0x76, 0x69,
+	0x63, 0x65, 0x73, 0x2e, 0x70, 0x72, 0x75, 0x6e, 0x69, 0x6e, 0x67, 0x2e, 0x76, 0x31, 0x22, 0x35,
+	0x0a, 0x1b, 0x53, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e,
+	0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x16, 0x0a,
+	0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x68,
+	0x65, 0x69, 0x67, 0x68, 0x74, 0x22, 0x1e, 0x0a, 0x1c, 0x53, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63,
+	0x6b, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1d, 0x0a, 0x1b, 0x47, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63,
+	0x6b, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x22, 0x8d, 0x01, 0x0a, 0x1c, 0x47, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63,
+	0x6b, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x2a, 0x0a, 0x11, 0x61, 0x70, 0x70, 0x5f, 0x72, 0x65, 0x74,
+	0x61, 0x69, 0x6e, 0x5f, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04,
+	0x52, 0x0f, 0x61, 0x70, 0x70, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69, 0x67, 0x68,
+	0x74, 0x12, 0x41, 0x0a, 0x1d, 0x70, 0x72, 0x75, 0x6e, 0x69, 0x6e, 0x67, 0x5f, 0x73, 0x65, 0x72,
+	0x76, 0x69, 0x63, 0x65, 0x5f, 0x72, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x5f, 0x68, 0x65, 0x69, 0x67,
+	0x68, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x1a, 0x70, 0x72, 0x75, 0x6e, 0x69, 0x6e,
+	0x67, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65,
+	0x69, 0x67, 0x68, 0x74, 0x22, 0x3c, 0x0a, 0x22, 0x53, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b,
+	0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69,
+	0x67, 0x68, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x65,
+	0x69, 0x67, 0x68, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x68, 0x65, 0x69, 0x67,
+	0x68, 0x74, 0x22, 0x25, 0x0a, 0x23, 0x53, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x52, 0x65,
+	0x73, 0x75, 0x6c, 0x74, 0x73, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69, 0x67, 0x68,
+	0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x24, 0x0a, 0x22, 0x47, 0x65, 0x74,
+	0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x52, 0x65, 0x74, 0x61,
+	0x69, 0x6e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22,
+	0x68, 0x0a, 0x23, 0x47, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x52, 0x65, 0x73, 0x75, 0x6c,
 	0x74, 0x73, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x68, 0x0a, 0x23, 0x47, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63,
-	0x6b, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65,
-	0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x41, 0x0a, 0x1d,
-	0x70, 0x72, 0x75, 0x6e, 0x69, 0x6e, 0x67, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x5f,
-	0x72, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x5f, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x04, 0x52, 0x1a, 0x70, 0x72, 0x75, 0x6e, 0x69, 0x6e, 0x67, 0x53, 0x65, 0x72, 0x76,
-	0x69, 0x63, 0x65, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x22,
-	0x3c, 0x0a, 0x22, 0x53, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x49, 0x6e, 0x64, 0x65, 0x78,
-	0x65, 0x72, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18,
-	0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x22, 0x25, 0x0a,
-	0x23, 0x53, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72,
-	0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x24, 0x0a, 0x22, 0x47, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b,
-	0x49, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69,
-	0x67, 0x68, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x3d, 0x0a, 0x23, 0x47, 0x65,
-	0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x52, 0x65, 0x74,
-	0x61, 0x69, 0x6e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x04, 0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x22, 0x39, 0x0a, 0x1f, 0x53, 0x65, 0x74,
-	0x54, 0x78, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48,
-	0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x16, 0x0a, 0x06,
-	0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x68, 0x65,
-	0x69, 0x67, 0x68, 0x74, 0x22, 0x22, 0x0a, 0x20, 0x53, 0x65, 0x74, 0x54, 0x78, 0x49, 0x6e, 0x64,
-	0x65, 0x78, 0x65, 0x72, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x21, 0x0a, 0x1f, 0x47, 0x65, 0x74, 0x54,
-	0x78, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65,
-	0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x3a, 0x0a, 0x20, 0x47,
-	0x65, 0x74, 0x54, 0x78, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x52, 0x65, 0x74, 0x61, 0x69,
-	0x6e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x41, 0x0a, 0x1d, 0x70, 0x72, 0x75, 0x6e, 0x69, 0x6e,
+	0x67, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x5f, 0x72, 0x65, 0x74, 0x61, 0x69, 0x6e,
+	0x5f, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x1a, 0x70,
+	0x72, 0x75, 0x6e, 0x69, 0x6e, 0x67, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x52, 0x65, 0x74,
+	0x61, 0x69, 0x6e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x22, 0x3c, 0x0a, 0x22, 0x53, 0x65, 0x74,
+	0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x52, 0x65, 0x74, 0x61,
+	0x69, 0x6e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12,
 	0x16, 0x0a, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52,
-	0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x42, 0x43, 0x5a, 0x41, 0x67, 0x69, 0x74, 0x68, 0x75,
-	0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x63, 0x6f, 0x6d, 0x65, 0x74, 0x62, 0x66, 0x74, 0x2f, 0x63,
-	0x6f, 0x6d, 0x65, 0x74, 0x62, 0x66, 0x74, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x74, 0x65,
-	0x6e, 0x64, 0x65, 0x72, 0x6d, 0x69, 0x6e, 0x74, 0x2f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65,
-	0x73, 0x2f, 0x70, 0x72, 0x75, 0x6e, 0x69, 0x6e, 0x67, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x33,
+	0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x22, 0x25, 0x0a, 0x23, 0x53, 0x65, 0x74, 0x42, 0x6c,
+	0x6f, 0x63, 0x6b, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e,
+	0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x24,
+	0x0a, 0x22, 0x47, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x65,
+	0x72, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x22, 0x3d, 0x0a, 0x23, 0x47, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b,
+	0x49, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69,
+	0x67, 0x68, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x68,
+	0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x68, 0x65, 0x69,
+	0x67, 0x68, 0x74, 0x22, 0x39, 0x0a, 0x1f, 0x53, 0x65, 0x74, 0x54, 0x78, 0x49, 0x6e, 0x64, 0x65,
+	0x78, 0x65, 0x72, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x22, 0x22,
+	0x0a, 0x20, 0x53, 0x65, 0x74, 0x54, 0x78, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x52, 0x65,
+	0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x22, 0x21, 0x0a, 0x1f, 0x47, 0x65, 0x74, 0x54, 0x78, 0x49, 0x6e, 0x64, 0x65, 0x78,
+	0x65, 0x72, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x3a, 0x0a, 0x20, 0x47, 0x65, 0x74, 0x54, 0x78, 0x49, 0x6e,
+	0x64, 0x65, 0x78, 0x65, 0x72, 0x52, 0x65, 0x74, 0x61, 0x69, 0x6e, 0x48, 0x65, 0x69, 0x67, 0x68,
+	0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x69,
+	0x67, 0x68, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68,
+	0x74, 0x42, 0x43, 0x5a, 0x41, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f,
+	0x63, 0x6f, 0x6d, 0x65, 0x74, 0x62, 0x66, 0x74, 0x2f, 0x63, 0x6f, 0x6d, 0x65, 0x74, 0x62, 0x66,
+	0x74, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x74, 0x65, 0x6e, 0x64, 0x65, 0x72, 0x6d, 0x69,
+	0x6e, 0x74, 0x2f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x73, 0x2f, 0x70, 0x72, 0x75, 0x6e,
+	0x69, 0x6e, 0x67, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
-	file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescOnce sync.Once
-	file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescData = file_proto_tendermint_services_pruning_v1_pruning_proto_rawDesc
+	file_tendermint_services_pruning_v1_pruning_proto_rawDescOnce sync.Once
+	file_tendermint_services_pruning_v1_pruning_proto_rawDescData = file_tendermint_services_pruning_v1_pruning_proto_rawDesc
 )
 
-func file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP() []byte {
-	file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescOnce.Do(func() {
-		file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescData = protoimpl.X.CompressGZIP(file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescData)
+func file_tendermint_services_pruning_v1_pruning_proto_rawDescGZIP() []byte {
+	file_tendermint_services_pruning_v1_pruning_proto_rawDescOnce.Do(func() {
+		file_tendermint_services_pruning_v1_pruning_proto_rawDescData = protoimpl.X.CompressGZIP(file_tendermint_services_pruning_v1_pruning_proto_rawDescData)
 	})
-	return file_proto_tendermint_services_pruning_v1_pruning_proto_rawDescData
+	return file_tendermint_services_pruning_v1_pruning_proto_rawDescData
 }
 
-var file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
-var file_proto_tendermint_services_pruning_v1_pruning_proto_goTypes = []interface{}{
+var file_tendermint_services_pruning_v1_pruning_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_tendermint_services_pruning_v1_pruning_proto_goTypes = []interface{}{
 	(*SetBlockRetainHeightRequest)(nil),         // 0: tendermint.services.pruning.v1.SetBlockRetainHeightRequest
 	(*SetBlockRetainHeightResponse)(nil),        // 1: tendermint.services.pruning.v1.SetBlockRetainHeightResponse
 	(*GetBlockRetainHeightRequest)(nil),         // 2: tendermint.services.pruning.v1.GetBlockRetainHeightRequest
@@ -818,7 +817,7 @@ var file_proto_tendermint_services_pruning_v1_pruning_proto_goTypes = []interfac
 	(*GetTxIndexerRetainHeightRequest)(nil),     // 14: tendermint.services.pruning.v1.GetTxIndexerRetainHeightRequest
 	(*GetTxIndexerRetainHeightResponse)(nil),    // 15: tendermint.services.pruning.v1.GetTxIndexerRetainHeightResponse
 }
-var file_proto_tendermint_services_pruning_v1_pruning_proto_depIdxs = []int32{
+var file_tendermint_services_pruning_v1_pruning_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
 	0, // [0:0] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -826,13 +825,13 @@ var file_proto_tendermint_services_pruning_v1_pruning_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_proto_tendermint_services_pruning_v1_pruning_proto_init() }
-func file_proto_tendermint_services_pruning_v1_pruning_proto_init() {
-	if File_proto_tendermint_services_pruning_v1_pruning_proto != nil {
+func init() { file_tendermint_services_pruning_v1_pruning_proto_init() }
+func file_tendermint_services_pruning_v1_pruning_proto_init() {
+	if File_tendermint_services_pruning_v1_pruning_proto != nil {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_tendermint_services_pruning_v1_pruning_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SetBlockRetainHeightRequest); i {
 			case 0:
 				return &v.state
@@ -844,7 +843,7 @@ func file_proto_tendermint_services_pruning_v1_pruning_proto_init() {
 				return nil
 			}
 		}
-		file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_tendermint_services_pruning_v1_pruning_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SetBlockRetainHeightResponse); i {
 			case 0:
 				return &v.state
@@ -856,7 +855,7 @@ func file_proto_tendermint_services_pruning_v1_pruning_proto_init() {
 				return nil
 			}
 		}
-		file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_tendermint_services_pruning_v1_pruning_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetBlockRetainHeightRequest); i {
 			case 0:
 				return &v.state
@@ -868,7 +867,7 @@ func file_proto_tendermint_services_pruning_v1_pruning_proto_init() {
 				return nil
 			}
 		}
-		file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_tendermint_services_pruning_v1_pruning_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetBlockRetainHeightResponse); i {
 			case 0:
 				return &v.state
@@ -880,7 +879,7 @@ func file_proto_tendermint_services_pruning_v1_pruning_proto_init() {
 				return nil
 			}
 		}
-		file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_tendermint_services_pruning_v1_pruning_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SetBlockResultsRetainHeightRequest); i {
 			case 0:
 				return &v.state
@@ -892,7 +891,7 @@ func file_proto_tendermint_services_pruning_v1_pruning_proto_init() {
 				return nil
 			}
 		}
-		file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+		file_tendermint_services_pruning_v1_pruning_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SetBlockResultsRetainHeightResponse); i {
 			case 0:
 				return &v.state
@@ -904,7 +903,7 @@ func file_proto_tendermint_services_pruning_v1_pruning_proto_init() {
 				return nil
 			}
 		}
-		file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+		file_tendermint_services_pruning_v1_pruning_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetBlockResultsRetainHeightRequest); i {
 			case 0:
 				return &v.state
@@ -916,7 +915,7 @@ func file_proto_tendermint_services_pruning_v1_pruning_proto_init() {
 				return nil
 			}
 		}
-		file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+		file_tendermint_services_pruning_v1_pruning_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetBlockResultsRetainHeightResponse); i {
 			case 0:
 				return &v.state
@@ -928,7 +927,7 @@ func file_proto_tendermint_services_pruning_v1_pruning_proto_init() {
 				return nil
 			}
 		}
-		file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+		file_tendermint_services_pruning_v1_pruning_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SetBlockIndexerRetainHeightRequest); i {
 			case 0:
 				return &v.state
@@ -940,7 +939,7 @@ func file_proto_tendermint_services_pruning_v1_pruning_proto_init() {
 				return nil
 			}
 		}
-		file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+		file_tendermint_services_pruning_v1_pruning_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SetBlockIndexerRetainHeightResponse); i {
 			case 0:
 				return &v.state
@@ -952,7 +951,7 @@ func file_proto_tendermint_services_pruning_v1_pruning_proto_init() {
 				return nil
 			}
 		}
-		file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+		file_tendermint_services_pruning_v1_pruning_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetBlockIndexerRetainHeightRequest); i {
 			case 0:
 				return &v.state
@@ -964,7 +963,7 @@ func file_proto_tendermint_services_pruning_v1_pruning_proto_init() {
 				return nil
 			}
 		}
-		file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+		file_tendermint_services_pruning_v1_pruning_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetBlockIndexerRetainHeightResponse); i {
 			case 0:
 				return &v.state
@@ -976,7 +975,7 @@ func file_proto_tendermint_services_pruning_v1_pruning_proto_init() {
 				return nil
 			}
 		}
-		file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+		file_tendermint_services_pruning_v1_pruning_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SetTxIndexerRetainHeightRequest); i {
 			case 0:
 				return &v.state
@@ -988,7 +987,7 @@ func file_proto_tendermint_services_pruning_v1_pruning_proto_init() {
 				return nil
 			}
 		}
-		file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+		file_tendermint_services_pruning_v1_pruning_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SetTxIndexerRetainHeightResponse); i {
 			case 0:
 				return &v.state
@@ -1000,7 +999,7 @@ func file_proto_tendermint_services_pruning_v1_pruning_proto_init() {
 				return nil
 			}
 		}
-		file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+		file_tendermint_services_pruning_v1_pruning_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetTxIndexerRetainHeightRequest); i {
 			case 0:
 				return &v.state
@@ -1012,7 +1011,7 @@ func file_proto_tendermint_services_pruning_v1_pruning_proto_init() {
 				return nil
 			}
 		}
-		file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
+		file_tendermint_services_pruning_v1_pruning_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetTxIndexerRetainHeightResponse); i {
 			case 0:
 				return &v.state
@@ -1029,18 +1028,18 @@ func file_proto_tendermint_services_pruning_v1_pruning_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_proto_tendermint_services_pruning_v1_pruning_proto_rawDesc,
+			RawDescriptor: file_tendermint_services_pruning_v1_pruning_proto_rawDesc,
 			NumEnums:      0,
 			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_proto_tendermint_services_pruning_v1_pruning_proto_goTypes,
-		DependencyIndexes: file_proto_tendermint_services_pruning_v1_pruning_proto_depIdxs,
-		MessageInfos:      file_proto_tendermint_services_pruning_v1_pruning_proto_msgTypes,
+		GoTypes:           file_tendermint_services_pruning_v1_pruning_proto_goTypes,
+		DependencyIndexes: file_tendermint_services_pruning_v1_pruning_proto_depIdxs,
+		MessageInfos:      file_tendermint_services_pruning_v1_pruning_proto_msgTypes,
 	}.Build()
-	File_proto_tendermint_services_pruning_v1_pruning_proto = out.File
-	file_proto_tendermint_services_pruning_v1_pruning_proto_rawDesc = nil
-	file_proto_tendermint_services_pruning_v1_pruning_proto_goTypes = nil
-	file_proto_tendermint_services_pruning_v1_pruning_proto_depIdxs = nil
+	File_tendermint_services_pruning_v1_pruning_proto = out.File
+	file_tendermint_services_pruning_v1_pruning_proto_rawDesc = nil
+	file_tendermint_services_pruning_v1_pruning_proto_goTypes = nil
+	file_tendermint_services_pruning_v1_pruning_proto_depIdxs = nil
 }

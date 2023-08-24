@@ -394,5 +394,5 @@ var PruningService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/tendermint/services/pruning/v1/service.proto",
+	Metadata: "tendermint/services/pruning/v1/service.proto",
 }

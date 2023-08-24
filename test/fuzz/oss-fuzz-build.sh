@@ -1,6 +1,6 @@
 #!/bin/bash
 # This script is invoked by OSS-Fuzz to run fuzz tests against CometBFT.
-# See https://github.com/google/oss-fuzz/blob/master/projects/tendermint/build.sh
+# See https://github.com/google/oss-fuzz/blob/master/projects/cometbft/build.sh
 set -euo pipefail
 
 export FUZZ_ROOT="github.com/cometbft/cometbft"

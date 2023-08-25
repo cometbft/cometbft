@@ -740,8 +740,10 @@ func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, hei
 			}
 		}
 	}
-	err := batch.Set(getEventsForHeightKey(height), keyArray)
-	return err
+	if keyArray != nil {
+		return batch.Set(getEventsForHeightKey(height), keyArray)
+	}
+	return nil
 }
 
 func (idx *BlockerIndexer) deleteEvents(height int64, batch dbm.Batch) error {

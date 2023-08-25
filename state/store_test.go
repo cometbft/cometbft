@@ -335,14 +335,16 @@ func TestSaveRetainHeight(t *testing.T) {
 func TestMinRetainHeight(t *testing.T) {
 	_, bs, txIndexer, blockIndexer, callbackF, stateStore := makeStateAndBlockStoreAndIndexers()
 	defer callbackF()
-	pruner := sm.NewPruner(stateStore, bs, blockIndexer, txIndexer, log.TestingLogger())
+	pruner := sm.NewPruner(stateStore, bs, blockIndexer, txIndexer, log.TestingLogger(), sm.WithPrunerCompanionEnabled())
+
+	require.NoError(t, initStateStoreRetainHeights(stateStore, 0, 0, 0))
 	minHeight := pruner.FindMinRetainHeight()
 	require.Equal(t, int64(0), minHeight)
 
 	err := stateStore.SaveApplicationRetainHeight(10)
 	require.NoError(t, err)
 	minHeight = pruner.FindMinRetainHeight()
-	require.Equal(t, int64(10), minHeight)
+	require.Equal(t, int64(0), minHeight)
 
 	err = stateStore.SaveCompanionBlockRetainHeight(11)
 	require.NoError(t, err)

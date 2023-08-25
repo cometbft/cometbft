@@ -126,6 +126,7 @@ func (p *Pruner) OnStart() error {
 	// enabled.
 	if p.dcEnabled {
 		go p.pruneABCIResponses()
+		go p.pruneIndexesRoutine()
 	}
 	p.observer.PrunerStarted(p.interval)
 	return nil

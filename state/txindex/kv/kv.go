@@ -49,7 +49,7 @@ type TxIndex struct {
 
 func (txi *TxIndex) Prune(retainHeight int64) (int64, int64, error) {
 	// Returns the last retained height
-	lastRetainHeight, err := txi.getLastTxIndexerRetainHeight()
+	lastRetainHeight, err := txi.getIndexerRetainHeight()
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to look up last block indexer retain height: %w", err)
 	}
@@ -67,22 +67,41 @@ func (txi *TxIndex) Prune(retainHeight int64) (int64, int64, error) {
 		return 0, lastRetainHeight, nil
 	}
 
+	batch := txi.store.NewBatch()
+	defer func(batch dbm.Batch) {
+		err := batch.Close()
+		if err != nil {
+			txi.log.Error(fmt.Sprintf("Error when closing pruning batch: %v", err))
+		}
+	}(batch)
+
 	sort.Sort(TxResultByHeight(results))
 	for _, result := range results {
-		err := txi.deleteResult(result)
-		if err != nil {
+		errDeleteResult := txi.deleteResult(result, batch)
+		if errDeleteResult != nil {
 			// If we crashed in the middle of pruning the height,
 			// we assume this height is retained
-			err2 := txi.setLastTxIndexerRetainHeight(result.Height)
-			if err2 != nil {
-				return result.Height - lastRetainHeight, result.Height, fmt.Errorf("error setting last retain height '%v' while handling handling result deletion error '%v'", err2, err)
+			errSetLastRetainHeight := txi.setIndexerRetainHeight(result.Height, batch)
+			if errSetLastRetainHeight != nil {
+				return 0, lastRetainHeight, fmt.Errorf("error setting last retain height '%v' while handling result deletion error '%v'", errSetLastRetainHeight, errDeleteResult)
 			}
-			return result.Height - lastRetainHeight, result.Height, err
+			errWriteBatch := batch.WriteSync()
+			if errWriteBatch != nil {
+				return 0, lastRetainHeight, fmt.Errorf("error writing batch '%v' while handling result deletion error '%v'", errWriteBatch, errDeleteResult)
+			}
+			return result.Height - lastRetainHeight, result.Height, errDeleteResult
 		}
 	}
 	maxHeightPruned := results[len(results)-1].Height
 	newRetainedHeight := maxHeightPruned + 1
-	err = txi.setLastTxIndexerRetainHeight(newRetainedHeight)
+	err = txi.setIndexerRetainHeight(newRetainedHeight, batch)
+	if err != nil {
+		return 0, lastRetainHeight, err
+	}
+	err = batch.WriteSync()
+	if err != nil {
+		return 0, lastRetainHeight, err
+	}
 	return newRetainedHeight - lastRetainHeight, newRetainedHeight, err
 }
 
@@ -107,11 +126,11 @@ func (txi *TxIndex) GetRetainHeight() (int64, error) {
 	return height, nil
 }
 
-func (txi *TxIndex) setLastTxIndexerRetainHeight(height int64) error {
-	return txi.store.SetSync(LastTxIndexerRetainHeightKey, int64ToBytes(height))
+func (txi *TxIndex) setIndexerRetainHeight(height int64, batch dbm.Batch) error {
+	return batch.Set(LastTxIndexerRetainHeightKey, int64ToBytes(height))
 }
 
-func (txi *TxIndex) getLastTxIndexerRetainHeight() (int64, error) {
+func (txi *TxIndex) getIndexerRetainHeight() (int64, error) {
 	bz, err := txi.store.Get(LastTxIndexerRetainHeightKey)
 	if errors.Is(err, state.ErrKeyNotFound) {
 		return 0, nil
@@ -195,14 +214,17 @@ func (txi *TxIndex) AddBatch(b *txindex.Batch) error {
 	return storeBatch.WriteSync()
 }
 
-func (txi *TxIndex) deleteResult(result *abci.TxResult) error {
+func (txi *TxIndex) deleteResult(result *abci.TxResult, batch dbm.Batch) error {
 	hash := types.Tx(result.Tx).Hash()
-	txi.deleteEvents(result)
-	err := txi.store.Delete(keyForHeight(result))
+	err := txi.deleteEvents(result, batch)
 	if err != nil {
 		return err
 	}
-	err = txi.store.Delete(hash)
+	err = batch.Delete(keyForHeight(result))
+	if err != nil {
+		return err
+	}
+	err = batch.Delete(hash)
 	if err != nil {
 		return err
 	}
@@ -262,10 +284,9 @@ func (txi *TxIndex) Index(result *abci.TxResult) error {
 	return b.WriteSync()
 }
 
-func (txi *TxIndex) deleteEvents(result *abci.TxResult) {
+func (txi *TxIndex) deleteEvents(result *abci.TxResult, batch dbm.Batch) error {
 	for _, event := range result.Result.Events {
-		txi.eventSeq = txi.eventSeq + 1
-		// only index events with a non-empty type
+		// only delete events with a non-empty type
 		if len(event.Type) == 0 {
 			continue
 		}
@@ -275,28 +296,24 @@ func (txi *TxIndex) deleteEvents(result *abci.TxResult) {
 				continue
 			}
 
-			// index if `index: true` is set
 			compositeTag := fmt.Sprintf("%s.%s", event.Type, attr.Key)
-			// ensure event does not conflict with a reserved prefix key
-			if compositeTag == types.TxHashKey || compositeTag == types.TxHeightKey {
-				panic(fmt.Errorf("event type and attribute key \"%s\" is reserved; please use a different key", compositeTag))
-			}
 			if attr.GetIndex() {
 				zeroKey := keyForEvent(compositeTag, attr.Value, result, 0)
 				endKey := keyForEvent(compositeTag, attr.Value, result, math.MaxInt64)
 				itr, err := txi.store.Iterator(zeroKey, endKey)
 				if err != nil {
-					panic(err)
+					return err
 				}
 				for ; itr.Valid(); itr.Next() {
-					err := txi.store.Delete(itr.Key())
+					err := batch.Delete(itr.Key())
 					if err != nil {
-						panic(err)
+						return err
 					}
 				}
 			}
 		}
 	}
+	return nil
 }
 
 func (txi *TxIndex) indexEvents(result *abci.TxResult, hash []byte, store dbm.Batch) error {

@@ -51,6 +51,10 @@ type (
 	ErrNoABCIResponsesForHeight struct {
 		Height int64
 	}
+
+	ErrCannotLoadState struct {
+		Err error
+	}
 )
 
 func (e ErrUnknownBlock) Error() string {
@@ -101,6 +105,14 @@ func (e ErrNoConsensusParamsForHeight) Error() string {
 
 func (e ErrNoABCIResponsesForHeight) Error() string {
 	return fmt.Sprintf("could not find results for height #%d", e.Height)
+}
+
+func (e ErrCannotLoadState) Error() string {
+	return fmt.Sprintf("cannot load state: %v", e.Err)
+}
+
+func (e ErrCannotLoadState) Unwrap() error {
+	return e.Err
 }
 
 var ErrFinalizeBlockResponsesNotPersisted = errors.New("node is not persisting finalize block responses")

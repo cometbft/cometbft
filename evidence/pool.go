@@ -56,7 +56,7 @@ type Pool struct {
 func NewPool(evidenceDB dbm.DB, stateDB sm.Store, blockStore BlockStore) (*Pool, error) {
 	state, err := stateDB.Load()
 	if err != nil {
-		return nil, fmt.Errorf("cannot load state: %w", err)
+		return nil, sm.ErrCannotLoadState{Err: err}
 	}
 
 	pool := &Pool{

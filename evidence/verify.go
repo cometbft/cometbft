@@ -26,7 +26,7 @@ func (evpool *Pool) verify(evidence types.Evidence) error {
 	// verify the time of the evidence
 	blockMeta := evpool.blockStore.LoadBlockMeta(evidence.Height())
 	if blockMeta == nil {
-		return fmt.Errorf("don't have header #%d", evidence.Height())
+		return ErrNoHeaderAtHeight{Height: height}
 	}
 	evTime := blockMeta.Header.Time
 	if evidence.Time() != evTime {
@@ -93,7 +93,7 @@ func (evpool *Pool) verify(evidence types.Evidence) error {
 		}
 		return nil
 	default:
-		return fmt.Errorf("unrecognized evidence type: %T", evidence)
+		return ErrUnrecognizedEvidenceType{Evidence: evidence}
 	}
 }
 
@@ -139,8 +139,7 @@ func VerifyLightClientAttack(
 
 	// Assert the correct amount of voting power of the validator set
 	if evTotal, valsTotal := e.TotalVotingPower, commonVals.TotalVotingPower(); evTotal != valsTotal {
-		return fmt.Errorf("total voting power from the evidence and our validator set does not match (%d != %d)",
-			evTotal, valsTotal)
+		return ErrVotingPowerDoesNotMatch{TrustedVotingPower: valsTotal, EvidenceVotingPower: evTotal}
 	}
 
 	// check in the case of a forward lunatic attack that monotonically increasing time has been violated
@@ -167,7 +166,7 @@ func VerifyLightClientAttack(
 func VerifyDuplicateVote(e *types.DuplicateVoteEvidence, chainID string, valSet *types.ValidatorSet) error {
 	_, val := valSet.GetByAddress(e.VoteA.ValidatorAddress)
 	if val == nil {
-		return fmt.Errorf("address %X was not a validator at height %d", e.VoteA.ValidatorAddress, e.Height())
+		return ErrAddressNotValidatorAtHeight{Address: e.VoteA.ValidatorAddress, Height: e.Height()}
 	}
 	pubKey := val.PubKey
 
@@ -182,10 +181,7 @@ func VerifyDuplicateVote(e *types.DuplicateVoteEvidence, chainID string, valSet 
 
 	// Address must be the same
 	if !bytes.Equal(e.VoteA.ValidatorAddress, e.VoteB.ValidatorAddress) {
-		return fmt.Errorf("validator addresses do not match: %X vs %X",
-			e.VoteA.ValidatorAddress,
-			e.VoteB.ValidatorAddress,
-		)
+		return ErrValidatorAddressesDoNotMatch{ValidatorA: e.VoteA.ValidatorAddress, ValidatorB: e.VoteB.ValidatorAddress}
 	}
 
 	// BlockIDs must be different
@@ -205,12 +201,10 @@ func VerifyDuplicateVote(e *types.DuplicateVoteEvidence, chainID string, valSet 
 
 	// validator voting power and total voting power must match
 	if val.VotingPower != e.ValidatorPower {
-		return fmt.Errorf("validator power from evidence and our validator set does not match (%d != %d)",
-			e.ValidatorPower, val.VotingPower)
+		return ErrVotingPowerDoesNotMatch{TrustedVotingPower: val.VotingPower, EvidenceVotingPower: e.ValidatorPower}
 	}
 	if valSet.TotalVotingPower() != e.TotalVotingPower {
-		return fmt.Errorf("total voting power from the evidence and our validator set does not match (%d != %d)",
-			e.TotalVotingPower, valSet.TotalVotingPower())
+		return ErrVotingPowerDoesNotMatch{TrustedVotingPower: valSet.TotalVotingPower(), EvidenceVotingPower: e.TotalVotingPower}
 	}
 
 	va := e.VoteA.ToProto()
@@ -234,8 +228,7 @@ func validateABCIEvidence(
 	trustedHeader *types.SignedHeader,
 ) error {
 	if evTotal, valsTotal := ev.TotalVotingPower, commonVals.TotalVotingPower(); evTotal != valsTotal {
-		return fmt.Errorf("total voting power from the evidence and our validator set does not match (%d != %d)",
-			evTotal, valsTotal)
+		return ErrVotingPowerDoesNotMatch{TrustedVotingPower: valsTotal, EvidenceVotingPower: evTotal}
 	}
 
 	// Find out what type of attack this was and thus extract the malicious
@@ -278,11 +271,11 @@ func validateABCIEvidence(
 func getSignedHeader(blockStore BlockStore, height int64) (*types.SignedHeader, error) {
 	blockMeta := blockStore.LoadBlockMeta(height)
 	if blockMeta == nil {
-		return nil, fmt.Errorf("don't have header at height #%d", height)
+		return nil, ErrNoHeaderAtHeight{Height: height}
 	}
 	commit := blockStore.LoadBlockCommit(height)
 	if commit == nil {
-		return nil, fmt.Errorf("don't have commit at height #%d", height)
+		return nil, ErrNoCommitAtHeight{Height: height}
 	}
 	return &types.SignedHeader{
 		Header: &blockMeta.Header,

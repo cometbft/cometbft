@@ -1,10 +1,16 @@
 package evidence
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/types"
+)
+
+var (
+	ErrEvidenceAlreadyCommitted = errors.New("evidence was already committed")
+	ErrDuplicateEvidence        = errors.New("duplicate evidence")
 )
 
 type (

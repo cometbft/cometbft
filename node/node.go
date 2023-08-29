@@ -163,7 +163,7 @@ func NewNode(ctx context.Context,
 		return nil, fmt.Errorf("error in genesis doc: %w", err)
 	}
 
-	state, err := loadStateFromDbOrGenesisDoc(stateStore, stateDB, genDoc)
+	state, err := loadStateFromDBOrGenesisDoc(stateStore, stateDB, genDoc)
 	if err != nil {
 		return nil, err
 	}

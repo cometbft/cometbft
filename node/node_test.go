@@ -497,15 +497,15 @@ func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 	require.NoError(t, err)
 
 	// Ensure the genesis doc hash is saved to db
-	stateDb, err := cfg.DefaultDBProvider(&cfg.DBContext{ID: "state", Config: config})
+	stateDB, err := cfg.DefaultDBProvider(&cfg.DBContext{ID: "state", Config: config})
 	require.NoError(t, err)
 
-	genDocHash, err := stateDb.Get(genesisDocHashKey)
+	genDocHash, err := stateDB.Get(genesisDocHashKey)
 	require.NoError(t, err)
 	require.NotNil(t, genDocHash, "genesis doc hash should be saved in db")
 	require.Len(t, genDocHash, tmhash.Size)
 
-	err = stateDb.Close()
+	err = stateDB.Close()
 	require.NoError(t, err)
 
 	// Modify the genesis file chain ID to get a different hash

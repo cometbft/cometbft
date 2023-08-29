@@ -30,19 +30,19 @@ func (evpool *Pool) verify(evidence types.Evidence) error {
 	}
 	evTime := blockMeta.Header.Time
 	if evidence.Time() != evTime {
-		return fmt.Errorf("evidence has a different time to the block it is associated with (%v != %v)",
-			evidence.Time(), evTime)
+		return ErrInvalidEvidence{fmt.Errorf("evidence has a different time to the block it is associated with (%v != %v)",
+			evidence.Time(), evTime)}
 	}
 
 	// checking if evidence is expired calculated using the block evidence time and height
 	if IsEvidenceExpired(height, state.LastBlockTime, evidence.Height(), evTime, evidenceParams) {
-		return fmt.Errorf(
+		return ErrInvalidEvidence{fmt.Errorf(
 			"evidence from height %d (created at: %v) is too old; min height is %d and evidence can not be older than %v",
 			evidence.Height(),
 			evTime,
 			height-evidenceParams.MaxAgeNumBlocks,
 			state.LastBlockTime.Add(evidenceParams.MaxAgeDuration),
-		)
+		)}
 	}
 
 	// apply the evidence-specific verification logic
@@ -79,9 +79,9 @@ func (evpool *Pool) verify(evidence types.Evidence) error {
 					return err
 				}
 				if trustedHeader.Time.Before(ev.ConflictingBlock.Time) {
-					return fmt.Errorf("latest block time (%v) is before conflicting block time (%v)",
+					return ErrConflictingBlock{fmt.Errorf("latest block time (%v) is before conflicting block time (%v)",
 						trustedHeader.Time, ev.ConflictingBlock.Time,
-					)
+					)}
 				}
 			}
 		}
@@ -122,19 +122,19 @@ func VerifyLightClientAttack(
 	if commonHeader.Height != e.ConflictingBlock.Height {
 		err := commonVals.VerifyCommitLightTrusting(trustedHeader.ChainID, e.ConflictingBlock.Commit, light.DefaultTrustLevel)
 		if err != nil {
-			return fmt.Errorf("skipping verification of conflicting block failed: %w", err)
+			return ErrConflictingBlock{fmt.Errorf("skipping verification of conflicting block failed: %w", err)}
 		}
 
 		// In the case of equivocation and amnesia we expect all header hashes to be correctly derived
 	} else if e.ConflictingHeaderIsInvalid(trustedHeader.Header) {
-		return errors.New("common height is the same as conflicting block height so expected the conflicting" +
-			" block to be correctly derived yet it wasn't")
+		return ErrConflictingBlock{errors.New("common height is the same as conflicting block height so expected the conflicting" +
+			" block to be correctly derived yet it wasn't")}
 	}
 
 	// Verify that the 2/3+ commits from the conflicting validator set were for the conflicting header
 	if err := e.ConflictingBlock.ValidatorSet.VerifyCommitLight(trustedHeader.ChainID, e.ConflictingBlock.Commit.BlockID,
 		e.ConflictingBlock.Height, e.ConflictingBlock.Commit); err != nil {
-		return fmt.Errorf("invalid commit from conflicting block: %w", err)
+		return ErrConflictingBlock{fmt.Errorf("invalid commit from conflicting block: %w", err)}
 	}
 
 	// Assert the correct amount of voting power of the validator set
@@ -144,14 +144,14 @@ func VerifyLightClientAttack(
 
 	// check in the case of a forward lunatic attack that monotonically increasing time has been violated
 	if e.ConflictingBlock.Height > trustedHeader.Height && e.ConflictingBlock.Time.After(trustedHeader.Time) {
-		return fmt.Errorf("conflicting block doesn't violate monotonically increasing time (%v is after %v)",
+		return ErrConflictingBlock{fmt.Errorf("conflicting block doesn't violate monotonically increasing time (%v is after %v)",
 			e.ConflictingBlock.Time, trustedHeader.Time,
-		)
+		)}
 
 		// In all other cases check that the hashes of the conflicting header and the trusted header are different
 	} else if bytes.Equal(trustedHeader.Hash(), e.ConflictingBlock.Hash()) {
-		return fmt.Errorf("trusted header hash matches the evidence's conflicting header hash: %X",
-			trustedHeader.Hash())
+		return ErrConflictingBlock{fmt.Errorf("trusted header hash matches the evidence's conflicting header hash: %X",
+			trustedHeader.Hash())}
 	}
 
 	return validateABCIEvidence(e, commonVals, trustedHeader)
@@ -174,9 +174,7 @@ func VerifyDuplicateVote(e *types.DuplicateVoteEvidence, chainID string, valSet 
 	if e.VoteA.Height != e.VoteB.Height ||
 		e.VoteA.Round != e.VoteB.Round ||
 		e.VoteA.Type != e.VoteB.Type {
-		return fmt.Errorf("h/r/s does not match: %d/%d/%v vs %d/%d/%v",
-			e.VoteA.Height, e.VoteA.Round, e.VoteA.Type,
-			e.VoteB.Height, e.VoteB.Round, e.VoteB.Type)
+		return ErrDuplicateEvidenceHRTMismatch{*e.VoteA, *e.VoteB}
 	}
 
 	// Address must be the same
@@ -186,17 +184,14 @@ func VerifyDuplicateVote(e *types.DuplicateVoteEvidence, chainID string, valSet 
 
 	// BlockIDs must be different
 	if e.VoteA.BlockID.Equals(e.VoteB.BlockID) {
-		return fmt.Errorf(
-			"block IDs are the same (%v) - not a real duplicate vote",
-			e.VoteA.BlockID,
-		)
+		return ErrSameBlockIDs{e.VoteA.BlockID}
 	}
 
 	// pubkey must match address (this should already be true, sanity check)
 	addr := e.VoteA.ValidatorAddress
 	if !bytes.Equal(pubKey.Address(), addr) {
-		return fmt.Errorf("address (%X) doesn't match pubkey (%v - %X)",
-			addr, pubKey, pubKey.Address())
+		return ErrInvalidEvidenceValidators{fmt.Errorf("address (%X) doesn't match pubkey (%v - %X)",
+			addr, pubKey, pubKey.Address())}
 	}
 
 	// validator voting power and total voting power must match
@@ -239,29 +234,29 @@ func validateABCIEvidence(
 	// Ensure this matches the validators that are listed in the evidence. They
 	// should be ordered based on power.
 	if validators == nil && ev.ByzantineValidators != nil {
-		return fmt.Errorf(
+		return ErrInvalidEvidenceValidators{fmt.Errorf(
 			"expected nil validators from an amnesia light client attack but got %d",
 			len(ev.ByzantineValidators),
-		)
+		)}
 	}
 
 	if exp, got := len(validators), len(ev.ByzantineValidators); exp != got {
-		return fmt.Errorf("expected %d byzantine validators from evidence but got %d", exp, got)
+		return ErrInvalidEvidenceValidators{fmt.Errorf("expected %d byzantine validators from evidence but got %d", exp, got)}
 	}
 
 	for idx, val := range validators {
 		if !bytes.Equal(ev.ByzantineValidators[idx].Address, val.Address) {
-			return fmt.Errorf(
+			return ErrInvalidEvidenceValidators{fmt.Errorf(
 				"evidence contained an unexpected byzantine validator address; expected: %v, got: %v",
 				val.Address, ev.ByzantineValidators[idx].Address,
-			)
+			)}
 		}
 
 		if ev.ByzantineValidators[idx].VotingPower != val.VotingPower {
-			return fmt.Errorf(
+			return ErrInvalidEvidenceValidators{fmt.Errorf(
 				"evidence contained unexpected byzantine validator power; expected %d, got %d",
 				val.VotingPower, ev.ByzantineValidators[idx].VotingPower,
-			)
+			)}
 		}
 	}
 

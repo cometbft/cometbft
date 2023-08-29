@@ -42,6 +42,30 @@ type (
 		ValidatorA bytes.HexBytes
 		ValidatorB bytes.HexBytes
 	}
+
+	// ErrSameBlockIDs is returned if a duplicate vote evidence has votes from the same block id (should be different)
+	ErrSameBlockIDs struct {
+		BlockID types.BlockID
+	}
+
+	// ErrInvalidEvidenceValidators is returned when evidence validation spots an error related to validator set
+	ErrInvalidEvidenceValidators struct {
+		ValError error
+	}
+
+	ErrConflictingBlock struct {
+		ConflictingBlockError error
+	}
+
+	ErrInvalidEvidence struct {
+		EvidenceError error
+	}
+
+	// ErrDuplicateEvidenceHRTMismatch is returned when double sign evidence's votes are not from the same height, round or type.
+	ErrDuplicateEvidenceHRTMismatch struct {
+		VoteA types.Vote
+		VoteB types.Vote
+	}
 )
 
 // func (e ) Error() string {
@@ -73,4 +97,34 @@ func (e ErrValidatorAddressesDoNotMatch) Error() string {
 		e.ValidatorA,
 		e.ValidatorB,
 	)
+}
+
+func (e ErrSameBlockIDs) Error() string {
+	return fmt.Sprintf(
+		"block IDs are the same (%v) - not a real duplicate vote",
+		e.BlockID,
+	)
+}
+
+func (e ErrInvalidEvidenceValidators) Error() string {
+	return fmt.Sprintf("invalid evidence validators: %v", e.ValError)
+}
+
+func (e ErrInvalidEvidenceValidators) Unwrap() error {
+	return e.ValError
+}
+
+func (e ErrConflictingBlock) Error() string {
+	return fmt.Sprintf("conflicting block error: %v", e.ConflictingBlockError)
+}
+
+func (e ErrInvalidEvidence) Error() string {
+	return fmt.Sprintf("evidence error: %v", e.EvidenceError)
+}
+
+func (e ErrDuplicateEvidenceHRTMismatch) Error() string {
+	return fmt.Sprintf("h/r/t does not match: %d/%d/%v vs %d/%d/%v",
+		e.VoteA.Height, e.VoteA.Round, e.VoteA.Type,
+		e.VoteB.Height, e.VoteB.Round, e.VoteB.Type)
+
 }

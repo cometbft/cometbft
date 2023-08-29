@@ -68,10 +68,6 @@ type (
 	}
 )
 
-// func (e ) Error() string {
-// 	return fmt.Sprintf("",)
-// }
-
 func (e ErrNoHeaderAtHeight) Error() string {
 	return fmt.Sprintf("don't have header at height #%d", e.Height)
 }

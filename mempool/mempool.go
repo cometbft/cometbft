@@ -72,7 +72,7 @@ type Mempool interface {
 		deliverTxResponses []*abci.ExecTxResult,
 		newPreFn PreCheckFunc,
 		newPostFn PostCheckFunc,
-	) error
+	)
 
 	// FlushAppConn flushes the mempool connection to ensure async callback calls
 	// are done, e.g. from CheckTx.

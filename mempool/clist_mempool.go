@@ -579,14 +579,13 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 }
 
 // Lock() must be help by the caller during execution.
-// TODO: this function always returns nil; remove the return value
 func (mem *CListMempool) Update(
 	height int64,
 	txs types.Txs,
 	txResults []*abci.ExecTxResult,
 	preCheck PreCheckFunc,
 	postCheck PostCheckFunc,
-) error {
+) {
 	// Set height
 	mem.height = height
 	mem.notifiedTxsAvailable = false
@@ -639,8 +638,6 @@ func (mem *CListMempool) Update(
 
 	// Update metrics
 	mem.metrics.Size.Set(float64(mem.Size()))
-
-	return nil
 }
 
 func (mem *CListMempool) recheckTxs() {

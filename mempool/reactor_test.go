@@ -98,8 +98,7 @@ func TestReactorConcurrency(t *testing.T) {
 			reactors[0].mempool.Lock()
 			defer reactors[0].mempool.Unlock()
 
-			err := reactors[0].mempool.Update(1, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
-			assert.NoError(t, err)
+			reactors[0].mempool.Update(1, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
 		}()
 
 		// 1. submit a bunch of txs
@@ -110,8 +109,7 @@ func TestReactorConcurrency(t *testing.T) {
 
 			reactors[1].mempool.Lock()
 			defer reactors[1].mempool.Unlock()
-			err := reactors[1].mempool.Update(1, []types.Tx{}, make([]*abci.ExecTxResult, 0), nil, nil)
-			assert.NoError(t, err)
+			reactors[1].mempool.Update(1, []types.Tx{}, make([]*abci.ExecTxResult, 0), nil, nil)
 		}()
 
 		// 1. flush the mempool
@@ -496,10 +494,8 @@ func updateMempool(t *testing.T, mp Mempool, validTxs types.Txs, invalidTxs type
 	allResponses := append(validTxResponses, invalidTxResponses...)
 
 	mp.Lock()
-	err := mp.Update(1, allTxs, allResponses, nil, nil)
+	mp.Update(1, allTxs, allResponses, nil, nil)
 	mp.Unlock()
-
-	require.NoError(t, err)
 }
 
 // ensure no txs on reactor after some timeout

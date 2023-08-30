@@ -75,8 +75,7 @@ func TestCacheAfterUpdate(t *testing.T) {
 			tx := kvstore.NewTx(fmt.Sprintf("%d", v), "value")
 			updateTxs = append(updateTxs, tx)
 		}
-		err := mp.Update(int64(tcIndex), updateTxs, abciResponses(len(updateTxs), abci.CodeTypeOK), nil, nil)
-		require.NoError(t, err)
+		mp.Update(int64(tcIndex), updateTxs, abciResponses(len(updateTxs), abci.CodeTypeOK), nil, nil)
 
 		for _, v := range tc.reAddIndices {
 			tx := kvstore.NewTx(fmt.Sprintf("%d", v), "value")

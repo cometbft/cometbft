@@ -174,17 +174,14 @@ func (_m *Mempool) Unlock() {
 }
 
 // Update provides a mock function with given fields: blockHeight, blockTxs, deliverTxResponses, newPreFn, newPostFn
-func (_m *Mempool) Update(blockHeight int64, blockTxs types.Txs, deliverTxResponses []*abcitypes.ExecTxResult, newPreFn mempool.PreCheckFunc, newPostFn mempool.PostCheckFunc) error {
+func (_m *Mempool) Update(blockHeight int64, blockTxs types.Txs, deliverTxResponses []*abcitypes.ExecTxResult, newPreFn mempool.PreCheckFunc, newPostFn mempool.PostCheckFunc) {
 	ret := _m.Called(blockHeight, blockTxs, deliverTxResponses, newPreFn, newPostFn)
 
-	var r0 error
 	if rf, ok := ret.Get(0).(func(int64, types.Txs, []*abcitypes.ExecTxResult, mempool.PreCheckFunc, mempool.PostCheckFunc) error); ok {
-		r0 = rf(blockHeight, blockTxs, deliverTxResponses, newPreFn, newPostFn)
+		rf(blockHeight, blockTxs, deliverTxResponses, newPreFn, newPostFn)
 	} else {
-		r0 = ret.Error(0)
+		ret.Error(0)
 	}
-
-	return r0
 }
 
 // NewMempool creates a new instance of Mempool. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

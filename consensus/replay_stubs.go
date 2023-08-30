@@ -37,8 +37,7 @@ func (emptyMempool) Update(
 	[]*abci.ExecTxResult,
 	mempl.PreCheckFunc,
 	mempl.PostCheckFunc,
-) error {
-	return nil
+) {
 }
 func (emptyMempool) Flush()                                 {}
 func (emptyMempool) FlushAppConn() error                    { return nil }

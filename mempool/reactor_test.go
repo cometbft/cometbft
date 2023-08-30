@@ -343,7 +343,7 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 
 	// Update the mempools with a list of valid and invalid transactions.
 	for i, r := range reactors {
-		updateMempool(t, r.mempool, validTxs, invalidTxs)
+		updateMempool(r.mempool, validTxs, invalidTxs)
 
 		// Txs included in a block should have been removed from the mempool and
 		// have no senders.
@@ -486,7 +486,7 @@ func checkTxsInOrder(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex
 	}
 }
 
-func updateMempool(t *testing.T, mp Mempool, validTxs types.Txs, invalidTxs types.Txs) {
+func updateMempool(mp Mempool, validTxs types.Txs, invalidTxs types.Txs) {
 	allTxs := append(validTxs, invalidTxs...)
 
 	validTxResponses := abciResponses(len(validTxs), abci.CodeTypeOK)

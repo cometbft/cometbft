@@ -21,7 +21,7 @@ security issues.
 ### IMPROVEMENTS
 
 - `[mempool]` Remove redundant error return in `(*Mempool).Update`
-  ([\#654](https://github.com/cometbft/cometbft/issues/654))
+  ([\#1288](https://github.com/cometbft/cometbft/pull/1288)
 - `[rpc]` Remove response data from response failure logs in order
 to prevent large quantities of log data from being produced
 ([\#654](https://github.com/cometbft/cometbft/issues/654))

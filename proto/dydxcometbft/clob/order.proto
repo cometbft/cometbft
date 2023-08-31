@@ -1,0 +1,184 @@
+syntax = "proto3";
+package dydxcometbft.clob;
+
+import "gogoproto/gogo.proto";
+import "dydxcometbft/subaccounts/subaccount.proto";
+
+option go_package = "github.com/cometbft/cometbft/proto/dydxcometbft/clob";
+
+// OrderId refers to a single order belonging to a Subaccount.
+message OrderId {
+  // The subaccount ID that opened this order.
+  // Note that this field has `gogoproto.nullable = false` so that it is
+  // generated as a value instead of a pointer. This is because the `OrderId`
+  // proto is used as a key within maps, and map comparisons will compare
+  // pointers for equality (when the desired behavior is to compare the values).
+  dydxcometbft.subaccounts.SubaccountId subaccount_id = 1
+      [ (gogoproto.nullable) = false ];
+
+  // The client ID of this order, unique with respect to the specific
+  // sub account (I.E., the same subaccount can't have two orders with
+  // the same ClientId).
+  fixed32 client_id = 2;
+
+  // order_flags represent order flags for the order. This field is invalid if
+  // it's greater than 127 (larger than one byte). Each bit in the first byte
+  // represents a different flag. Currently only two flags are supported.
+  //
+  // Starting from the bit after the most MSB (note that the MSB is used in
+  // proto varint encoding, and therefore cannot be used): Bit 1 is set if this
+  // order is a Long-Term order (0x40, or 64 as a uint8). Bit 2 is set if this
+  // order is a Conditional order (0x20, or 32 as a uint8).
+  //
+  // If neither bit is set, the order is assumed to be a Short-Term order.
+  //
+  // If both bits are set or bits other than the 2nd and 3rd are set, the order
+  // ID is invalid.
+  uint32 order_flags = 3;
+
+  // ID of the CLOB the order is created for.
+  uint32 clob_pair_id = 4;
+}
+
+// OrdersFilledDuringLatestBlock represents a list of `OrderIds` that were
+// filled by any non-zero amount in the latest block.
+message OrdersFilledDuringLatestBlock {
+  // A list of unique order_ids that were filled by any non-zero amount in the
+  // latest block.
+  repeated OrderId order_ids = 1 [ (gogoproto.nullable) = false ];
+}
+
+// PotentiallyPrunableOrders represents a list of orders that may be prunable
+// from state at a future block height.
+message PotentiallyPrunableOrders {
+  // A list of unique order_ids that may potentially be pruned from state at a
+  // future block height.
+  repeated OrderId order_ids = 1 [ (gogoproto.nullable) = false ];
+}
+
+// OrderFillState represents the fill amount of an order according to on-chain
+// state. This proto includes both the current on-chain fill amount of the
+// order, as well as the block at which this information can be pruned from
+// state.
+message OrderFillState {
+  // The current fillAmount of the order according to on-chain state.
+  uint64 fill_amount = 1;
+  // The block height at which the fillAmount state for this order can be
+  // pruned.
+  uint32 prunable_block_height = 2;
+}
+
+// StatefulOrderTimeSliceValue represents the type of the value of the
+// `StatefulOrdersTimeSlice` in state. The `StatefulOrdersTimeSlice`
+// in state consists of key/value pairs where the keys are UTF-8-encoded
+// `RFC3339NANO` timestamp strings with right-padded zeroes and no
+// time zone info, and the values are of type `StatefulOrderTimeSliceValue`.
+// This `StatefulOrdersTimeSlice` in state is used for managing stateful
+// order expiration.
+message StatefulOrderTimeSliceValue {
+  // A unique list of order_ids that expire at this timestamp, sorted in
+  // ascending order by block height and transaction index of each stateful
+  // order.
+  repeated OrderId order_ids = 1 [ (gogoproto.nullable) = false ];
+}
+
+// StatefulOrderPlacement represents the placement of a stateful order in
+// state. It stores the stateful order itself and the `BlockHeight` and
+// `TransactionIndex` at which the order was placed.
+message StatefulOrderPlacement {
+  Order order = 1 [ (gogoproto.nullable) = false ];
+
+  // The block height at which the order was placed.
+  // Used for ordering by time priority when the chain is restarted.
+  uint32 block_height = 2;
+
+  // The index at which this transaction appeared in the
+  // `MsgProposedMatchOrders` message. Used for ordering by time priority when
+  // the chain is restarted.
+  uint32 transaction_index = 3;
+}
+
+// Order represents a single order belonging to a `Subaccount`
+// for a particular `ClobPair`.
+message Order {
+  // The unique ID of this order. Meant to be unique across all orders.
+  OrderId order_id = 1 [ (gogoproto.nullable) = false ];
+
+  // Represents the side of the orderbook the order will be placed on.
+  // Note that Side.SIDE_UNSPECIFIED is an invalid order and cannot be
+  // placed on the orderbook.
+  enum Side {
+    // Default value. This value is invalid and unused.
+    SIDE_UNSPECIFIED = 0;
+    // SIDE_BUY is used to represent a BUY order.
+    SIDE_BUY = 1;
+    // SIDE_SELL is used to represent a SELL order.
+    SIDE_SELL = 2;
+  }
+
+  Side side = 2;
+
+  // The size of this order in base quantums. Must be a multiple of
+  // `ClobPair.StepBaseQuantums` and above `ClobPair.MinOrderBaseQuantums`
+  // (where `ClobPair.Id = orderId.ClobPairId`).
+  uint64 quantums = 3;
+
+  // The price level that this order will be placed at on the orderbook,
+  // in subticks. Must be a multiple of ClobPair.SubticksPerTick
+  // (where `ClobPair.Id = orderId.ClobPairId`).
+  uint64 subticks = 4;
+
+  // Information about when the order expires.
+  oneof good_til_oneof {
+    // The last block this order can be executed at (after which it will be
+    // unfillable). Used only for Short-Term orders. If this value is non-zero
+    // then the order is assumed to be a Short-Term order.
+    uint32 good_til_block = 5;
+
+    // good_til_block_time represents the unix timestamp (in seconds) at which a
+    // stateful order will be considered expired. The
+    // good_til_block_time is always evaluated against the previous block's
+    // `BlockTime` instead of the block in which the order is committed. If this
+    // value is non-zero then the order is assumed to be a stateful or
+    // conditional order.
+    fixed32 good_til_block_time = 6;
+  }
+
+  // TimeInForce indicates how long an order will remain active before it
+  // is executed or expires.
+  enum TimeInForce {
+    // TIME_IN_FORCE_UNSPECIFIED represents the default behavior where an
+    // order will first match with existing orders on the book, and any
+    // remaining size will be added to the book as a maker order.
+    TIME_IN_FORCE_UNSPECIFIED = 0;
+    // TIME_IN_FORCE_IOC enforces that an order only be matched with
+    // maker orders on the book. If the order has remaining size after
+    // matching with existing orders on the book, the remaining size
+    // is not placed on the book.
+    TIME_IN_FORCE_IOC = 1;
+    // TIME_IN_FORCE_POST_ONLY enforces that an order only be placed
+    // on the book as a maker order. Note this means that validators will cancel
+    // any newly-placed post only orders that would cross with other maker
+    // orders.
+    TIME_IN_FORCE_POST_ONLY = 2;
+    // TIME_IN_FORCE_FILL_OR_KILL enforces that an order will either be filled
+    // completely and immediately by maker orders on the book or canceled if the
+    // entire amount can‘t be matched.
+    TIME_IN_FORCE_FILL_OR_KILL = 3;
+  }
+
+  // The time in force of this order.
+  TimeInForce time_in_force = 7;
+
+  // Enforces that the order can only reduce the size of an existing position.
+  // If a ReduceOnly order would change the side of the existing position,
+  // its size is reduced to that of the remaining size of the position.
+  // If existing orders on the book with ReduceOnly
+  // would already close the position, the least aggressive (out-of-the-money)
+  // ReduceOnly orders are resized and canceled first.
+  bool reduce_only = 8;
+
+  // Set of bit flags set arbitrarily by clients and ignored by the protocol.
+  // Used by indexer to infer information about a placed order.
+  uint32 client_metadata = 9;
+}

@@ -191,9 +191,21 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 		return fmt.Errorf("state not empty, trying to initialize non empty state")
 	}
 
-	genState, _, err := LoadStateFromDBOrGenesisDocProvider(stateDB, DefaultGenesisDocProviderFunc(config))
+	genDoc, err := DefaultGenesisDocProviderFunc(config)()
 	if err != nil {
+		logger.Error("error getting the genesis doc provider")
 		return err
+	}
+
+	err = genDoc.ValidateAndComplete()
+	if err != nil {
+		logger.Error("error in genesis doc: %w", err)
+		return err
+	}
+
+	genState, err := loadStateFromDBOrGenesisDoc(stateStore, stateDB, genDoc)
+	if err != nil {
+		logger.Error("failed to retrieve the genesis state")
 	}
 
 	stateProvider, err := statesync.NewLightClientStateProvider(

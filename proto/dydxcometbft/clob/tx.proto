@@ -1,0 +1,35 @@
+syntax = "proto3";
+package dydxcometbft.clob;
+
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+import "dydxcometbft/clob/order.proto";
+import "dydxcometbft/clob/matches.proto";
+
+// this line is used by starport scaffolding # proto/tx/import
+
+option go_package = "github.com/cometbft/cometbft/proto/dydxcometbft/clob";
+
+// dYdX fork: This file is trimmed down to not include the service component since it requires the
+// `option (cosmos.msg.v1.service) = true;` tag.
+
+// MsgPlaceOrder is a request type used for placing orders.
+message MsgPlaceOrder { Order order = 1 [ (gogoproto.nullable) = false ]; }
+
+// MsgCancelOrder is a request type used for canceling orders.
+message MsgCancelOrder {
+  OrderId order_id = 1 [ (gogoproto.nullable) = false ];
+  // Information about when the order cancellation expires.
+  oneof good_til_oneof {
+    // The last block this order cancellation can be executed at.
+    // Used only for Short-Term orders and must be zero for stateful orders.
+    uint32 good_til_block = 2;
+
+    // good_til_block_time represents the unix timestamp (in seconds) at which a
+    // stateful order cancellation will be considered expired. The
+    // good_til_block_time is always evaluated against the previous block's
+    // `BlockTime` instead of the block in which the order is committed.
+    // This value must be zero for Short-Term orders.
+    fixed32 good_til_block_time = 3;
+  }
+}

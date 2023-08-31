@@ -190,54 +190,6 @@ func (_m *Store) LoadFinalizeBlockResponse(height int64) (*abcitypes.ResponseFin
 	return r0, r1
 }
 
-// LoadFromDBOrGenesisDoc provides a mock function with given fields: doc
-func (_m *Store) LoadFromDBOrGenesisDoc(doc *types.GenesisDoc) (state.State, error) {
-	ret := _m.Called(doc)
-
-	var r0 state.State
-	var r1 error
-	if rf, ok := ret.Get(0).(func(*types.GenesisDoc) (state.State, error)); ok {
-		return rf(doc)
-	}
-	if rf, ok := ret.Get(0).(func(*types.GenesisDoc) state.State); ok {
-		r0 = rf(doc)
-	} else {
-		r0 = ret.Get(0).(state.State)
-	}
-
-	if rf, ok := ret.Get(1).(func(*types.GenesisDoc) error); ok {
-		r1 = rf(doc)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// LoadFromDBOrGenesisFile provides a mock function with given fields: filename
-func (_m *Store) LoadFromDBOrGenesisFile(filename string) (state.State, error) {
-	ret := _m.Called(filename)
-
-	var r0 state.State
-	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (state.State, error)); ok {
-		return rf(filename)
-	}
-	if rf, ok := ret.Get(0).(func(string) state.State); ok {
-		r0 = rf(filename)
-	} else {
-		r0 = ret.Get(0).(state.State)
-	}
-
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(filename)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // LoadLastFinalizeBlockResponse provides a mock function with given fields: height
 func (_m *Store) LoadLastFinalizeBlockResponse(height int64) (*abcitypes.ResponseFinalizeBlock, error) {
 	ret := _m.Called(height)

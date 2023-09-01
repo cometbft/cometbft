@@ -218,7 +218,7 @@ func NewNode(ctx context.Context,
 		// what happened during block replay).
 		state, err = stateStore.Load()
 		if err != nil {
-			return nil, fmt.Errorf("cannot load state: %w", err)
+			return nil, sm.ErrCannotLoadState{Err: err}
 		}
 	}
 

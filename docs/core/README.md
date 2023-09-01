@@ -17,6 +17,7 @@ This section dives into the internals of the CometBFT's implementation.
 - [Subscribing to events](./subscription.md)
 - [Block Structure](./block-structure.md)
 - [RPC](./rpc.md)
+- [gRPC[ (./grpc.md)
 - [Block Sync](./block-sync.md)
 - [State Sync](./state-sync.md)
 - [Mempool](./mempool.md)

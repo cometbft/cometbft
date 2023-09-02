@@ -55,15 +55,13 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,
 		})
-		state, err := sm.MakeGenesisState(genDoc)
-		require.NoError(t, err)
-		require.NoError(t, stateStore.Save(state))
+		state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
 		thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
 		defer os.RemoveAll(thisConfig.RootDir)
 		ensureDir(path.Dir(thisConfig.Consensus.WalFile()), 0o700) // dir for wal
 		app := appFunc()
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
-		_, err = app.InitChain(context.Background(), &abci.RequestInitChain{Validators: vals})
+		_, err := app.InitChain(context.Background(), &abci.RequestInitChain{Validators: vals})
 		require.NoError(t, err)
 
 		blockDB := dbm.NewMemDB()

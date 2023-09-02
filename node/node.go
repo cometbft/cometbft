@@ -287,17 +287,7 @@ func NewNode(ctx context.Context,
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
 	})
 
-	genDoc, err := genesisDocProvider()
-	if err != nil {
-		return nil, err
-	}
-
-	err = genDoc.ValidateAndComplete()
-	if err != nil {
-		return nil, fmt.Errorf("error in genesis doc: %w", err)
-	}
-
-	state, err := loadStateFromDBOrGenesisDoc(stateStore, stateDB, genDoc)
+	state, genDoc, err := LoadStateFromDBOrGenesisDocProvider(stateDB, genesisDocProvider)
 	if err != nil {
 		return nil, err
 	}
@@ -360,7 +350,7 @@ func NewNode(ctx context.Context,
 		// what happened during block replay).
 		state, err = stateStore.Load()
 		if err != nil {
-			return nil, fmt.Errorf("cannot load state: %w", err)
+			return nil, sm.ErrCannotLoadState{Err: err}
 		}
 	}
 

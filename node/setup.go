@@ -532,60 +532,54 @@ func startStateSync(
 
 //------------------------------------------------------------------------------
 
+// var genesisDocKey = []byte("genesisDoc")
 var genesisDocHashKey = []byte("genesisDocHash")
 
-// loadStateFromDBOrGenesisDoc attempts to load the state from the
+// LoadStateFromDBOrGenesisDocProvider attempts to load the state from the
 // database, or creates one using the given genesisDocProvider. On success this also
 // returns the genesis doc loaded through the given provider.
-func loadStateFromDBOrGenesisDoc(
-	stateStore sm.Store,
+func LoadStateFromDBOrGenesisDocProvider(
 	stateDB dbm.DB,
-	genDoc *types.GenesisDoc,
-) (sm.State, error) {
-	// 1. Verify genesisDoc hash in db if exists
+	genesisDocProvider GenesisDocProvider,
+) (sm.State, *types.GenesisDoc, error) {
+	// Get genesis doc hash
 	genDocHash, err := stateDB.Get(genesisDocHashKey)
 	if err != nil {
-		return sm.State{}, err
+		return sm.State{}, nil, fmt.Errorf("error retrieving genesis doc hash: %w", err)
+	}
+	genDoc, err := genesisDocProvider()
+	if err != nil {
+		return sm.State{}, nil, err
+	}
+
+	if err := genDoc.ValidateAndComplete(); err != nil {
+		return sm.State{}, nil, fmt.Errorf("error in genesis doc: %w", err)
 	}
 
 	genDocBytes, err := cmtjson.Marshal(genDoc)
 	if err != nil {
-		return sm.State{}, fmt.Errorf("failed to save genesis doc hash due to marshaling error: %w", err)
+		return sm.State{}, nil, fmt.Errorf("failed to save genesis doc hash due to marshaling error: %w", err)
 	}
 
 	incomingGenDocHash := tmhash.Sum(genDocBytes)
-	if len(genDocHash) != 0 && !bytes.Equal(genDocHash, incomingGenDocHash) {
-		return sm.State{}, fmt.Errorf("genesis doc hash in db does not match loaded genesis doc")
+	if len(genDocHash) == 0 {
+		// Save the genDoc hash in the store if it doesn't already exist for future verification
+		if err := stateDB.SetSync(genesisDocHashKey, incomingGenDocHash); err != nil {
+			return sm.State{}, nil, fmt.Errorf("failed to save genesis doc hash to db: %w", err)
+		}
+	} else {
+		if !bytes.Equal(genDocHash, incomingGenDocHash) {
+			return sm.State{}, nil, fmt.Errorf("genesis doc hash in db does not match loaded genesis doc")
+		}
 	}
-
-	// 2. Attempt to load state form the database
-	state, err := stateStore.Load()
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
+	state, err := stateStore.LoadFromDBOrGenesisDoc(genDoc)
 	if err != nil {
-		return sm.State{}, err
+		return sm.State{}, nil, err
 	}
-
-	if state.IsEmpty() {
-		// 3. If it's not there, derive it from the genesis doc
-		state, err = sm.MakeGenesisState(genDoc)
-		if err != nil {
-			return sm.State{}, err
-		}
-
-		// 4. save the gensis document to the state store so
-		// its fetchable by other callers.
-		if err := stateStore.Save(state); err != nil {
-			return sm.State{}, err
-		}
-
-		// 5. Save the genDoc hash in the store if it doesn't already exist for future verification
-		if len(genDocHash) == 0 {
-			if err := stateDB.SetSync(genesisDocHashKey, incomingGenDocHash); err != nil {
-				return sm.State{}, fmt.Errorf("failed to save genesis doc hash to db: %w", err)
-			}
-		}
-	}
-
-	return state, nil
+	return state, genDoc, nil
 }
 
 func createAndStartPrivValidatorSocketClient(

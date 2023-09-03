@@ -529,7 +529,7 @@ func startStateSync(
 
 //------------------------------------------------------------------------------
 
-// var genesisDocKey = []byte("genesisDoc")
+var genesisDocKey = []byte("genesisDoc")
 var genesisDocHashKey = []byte("genesisDocHash")
 
 // LoadStateFromDBOrGenesisDocProvider attempts to load the state from the

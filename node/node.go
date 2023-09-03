@@ -160,6 +160,18 @@ func NewNode(ctx context.Context,
 		return nil, err
 	}
 
+	genesisDocInDB, err := stateDB.Has(genesisDocKey)
+	if err != nil {
+		return nil, err
+	}
+	if genesisDocInDB {
+		err = stateDB.Delete(genesisDocKey)
+		if err != nil {
+			return nil, err
+		}
+		logger.Info("WARNING: deleting genesis file from database, the databse stores a hash of the original genesis file now")
+	}
+
 	csMetrics, p2pMetrics, memplMetrics, smMetrics, abciMetrics, bsMetrics, ssMetrics := metricsProvider(genDoc.ChainID)
 
 	// Create the proxyApp and establish connections to the ABCI app (consensus, mempool, query).

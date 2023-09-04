@@ -60,6 +60,7 @@ func DefaultGenesisDocProviderFunc(config *cfg.Config) GenesisDocProvider {
 	return func() (ChecksummedGenesisDoc, error) {
 		// FIXME: find a way to stream the file incrementally,
 		// for the JSON	parser and the checksum computation.
+		// https://github.com/cometbft/cometbft/issues/1302
 		jsonBlob, err := os.ReadFile(config.GenesisFile())
 		if err != nil {
 			return ChecksummedGenesisDoc{}, fmt.Errorf("couldn't read GenesisDoc file: %w", err)

@@ -52,22 +52,19 @@ type ChecksummedGenesisDoc struct {
 // GenesisDocProvider returns a GenesisDoc together with its SHA256 checksum.
 // It allows the GenesisDoc to be pulled from sources other than the
 // filesystem, for instance from a distributed key-value store cluster.
-// An optional checksum to verify the JSON document content against can be
-// passed as the parameter.
-type GenesisDocProvider func(expectedChecksum []byte) (ChecksummedGenesisDoc, error)
+type GenesisDocProvider func() (ChecksummedGenesisDoc, error)
 
 // DefaultGenesisDocProviderFunc returns a GenesisDocProvider that loads
 // the GenesisDoc from the config.GenesisFile() on the filesystem.
 func DefaultGenesisDocProviderFunc(config *cfg.Config) GenesisDocProvider {
-	return func(expectedChecksum []byte) (ChecksummedGenesisDoc, error) {
+	return func() (ChecksummedGenesisDoc, error) {
+		// FIXME: find a way to stream the file incrementally,
+		// for the JSON	parser and the checksum computation.
 		jsonBlob, err := os.ReadFile(config.GenesisFile())
 		if err != nil {
 			return ChecksummedGenesisDoc{}, fmt.Errorf("couldn't read GenesisDoc file: %w", err)
 		}
 		incomingChecksum := tmhash.Sum(jsonBlob)
-		if len(expectedChecksum) != 0 && !bytes.Equal(expectedChecksum, incomingChecksum) {
-			return ChecksummedGenesisDoc{}, fmt.Errorf("expected genesis doc hash does not match loaded genesis doc")
-		}
 		genDoc, err := types.GenesisDocFromJSON(jsonBlob)
 		if err != nil {
 			return ChecksummedGenesisDoc{}, err
@@ -565,7 +562,7 @@ func LoadStateFromDBOrGenesisDocProvider(
 	if err != nil {
 		return sm.State{}, nil, fmt.Errorf("error retrieving genesis doc hash: %w", err)
 	}
-	csGenDoc, err := genesisDocProvider(genDocHash)
+	csGenDoc, err := genesisDocProvider()
 	if err != nil {
 		return sm.State{}, nil, err
 	}

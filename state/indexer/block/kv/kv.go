@@ -48,10 +48,6 @@ func New(store dbm.DB) *BlockerIndexer {
 	}
 }
 
-func getEventsForHeightKey(height int64) []byte {
-	return []byte(fmt.Sprintf("eventsForHeightKey%d", height))
-}
-
 func (idx *BlockerIndexer) SetLogger(l log.Logger) {
 	idx.log = l
 }
@@ -125,6 +121,11 @@ func (idx *BlockerIndexer) Prune(retainHeight int64) (int64, int64, error) {
 		}
 	}(batch)
 
+	eventKeys, err := idx.getEventKeys()
+	if err != nil {
+		return 0, lastRetainHeight, err
+	}
+
 	for height := lastRetainHeight; height < retainHeight; height++ {
 		// If we fail to delete the height fully,
 		// We consider it to be retained
@@ -154,7 +155,7 @@ func (idx *BlockerIndexer) Prune(retainHeight int64) (int64, int64, error) {
 			return height - lastRetainHeight, height, errHeightKey
 		}
 
-		errDeleteEvents := idx.deleteEvents(height, batch)
+		errDeleteEvents := idx.deleteEvents(height, batch, eventKeys)
 		if errDeleteEvents != nil {
 			errSetLastRetainHeight := idx.setLastRetainHeight(height, batch)
 			if errSetLastRetainHeight != nil {
@@ -707,7 +708,6 @@ func (idx *BlockerIndexer) match(
 
 func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, height int64) error {
 	heightBz := int64ToBytes(height)
-	var keyArray []byte
 
 	for _, event := range events {
 		idx.eventSeq = idx.eventSeq + 1
@@ -736,32 +736,22 @@ func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, hei
 				if err := batch.Set(key, heightBz); err != nil {
 					return err
 				}
-				keyArray = appendToKeyArray(keyArray, key)
 			}
 		}
-	}
-	if keyArray != nil {
-		return batch.Set(getEventsForHeightKey(height), keyArray)
 	}
 	return nil
 }
 
-func (idx *BlockerIndexer) deleteEvents(height int64, batch dbm.Batch) error {
-	eventsKey := getEventsForHeightKey(height)
-	keyArray, err := idx.store.Get(eventsKey)
-	if err != nil {
-		return err
-	}
-	if keyArray == nil {
+func (idx *BlockerIndexer) deleteEvents(height int64, batch dbm.Batch, eventKeys map[int64][][]byte) error {
+	keys, exists := eventKeys[height]
+	if !exists {
 		return nil
 	}
-	keys := getKeysFromKeyArray(keyArray)
 	for _, key := range keys {
 		err := batch.Delete(key)
 		if err != nil {
 			return err
 		}
 	}
-	err = batch.Delete(eventsKey)
-	return err
+	return nil
 }

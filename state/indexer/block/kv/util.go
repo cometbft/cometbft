@@ -51,6 +51,30 @@ func heightKey(height int64) ([]byte, error) {
 	)
 }
 
+func (idx *BlockerIndexer) getEventKeys() (map[int64][][]byte, error) {
+	itr, err := idx.store.Iterator(nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resultMap := make(map[int64][][]byte)
+
+	for ; itr.Valid(); itr.Next() {
+		height, err := parseHeightFromEventKey(itr.Key())
+		if err != nil {
+			continue
+		}
+
+		slc, exists := resultMap[height]
+		if !exists {
+			resultMap[height] = make([][]byte, 0)
+		}
+
+		resultMap[height] = append(slc, itr.Key())
+	}
+	return resultMap, nil
+}
+
 func eventKey(compositeKey, eventValue string, height int64, eventSeq int64) ([]byte, error) {
 	return orderedcode.Append(
 		nil,

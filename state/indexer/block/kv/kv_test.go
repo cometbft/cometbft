@@ -529,6 +529,40 @@ func TestKeyArray(t *testing.T) {
 	require.Equal(t, keys[2], key3)
 }
 
+func TestGetEventKeys(t *testing.T) {
+	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))
+	indexer := New(store)
+
+	events1 := getEventsForTesting(1)
+
+	err := indexer.Index(events1)
+	require.NoError(t, err)
+
+	keys1, err := indexer.getEventKeys()
+	require.NoError(t, err)
+
+	require.Equal(t, 1, len(keys1))
+	height1EventKeys, exists := keys1[1]
+	require.True(t, exists)
+	require.Equal(t, 2, len(height1EventKeys))
+	value, err := parseValueFromEventKey(height1EventKeys[0])
+	require.NoError(t, err)
+	require.True(t, value == events1.Events[0].Attributes[0].Value || value == events1.Events[1].Attributes[0].Value)
+
+	events2 := getEventsForTesting(2)
+
+	err = indexer.Index(events2)
+	require.NoError(t, err)
+
+	keys2, err := indexer.getEventKeys()
+	require.NoError(t, err)
+
+	require.Equal(t, 2, len(keys2))
+	height2EventKeys, exists := keys2[2]
+	require.True(t, exists)
+	require.Equal(t, 2, len(height2EventKeys))
+}
+
 func getEventsForTesting(height int64) types.EventDataNewBlockEvents {
 	return types.EventDataNewBlockEvents{
 		Height: height,

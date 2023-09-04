@@ -45,6 +45,8 @@ test/e2e/build
 test/e2e/networks/*/
 test/logs
 test/p2p/data/
+tools/goleveldb_perf/.ipynb_checkpoints
+tools/goleveldb_perf/measurements
 vendor
 test/fuzz/**/corpus
 test/fuzz/**/crashers

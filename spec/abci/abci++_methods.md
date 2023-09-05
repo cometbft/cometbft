@@ -346,7 +346,7 @@ title: Methods
     can be spoofed by adversaries, so applications should employ additional verification schemes
     to avoid denial-of-service attacks. The verified `AppHash` is automatically checked against
     the restored application at the end of snapshot restoration.
-    * For more information, see the `Snapshot` data type or the [state sync section](../p2p/messages/state-sync.md).
+    * For more information, see the `Snapshot` data type or the [state sync section](../p2p/legacy-docs/messages/state-sync.md).
 
 ### ApplySnapshotChunk
 
@@ -390,7 +390,7 @@ title: Methods
     peers are available), it will reject the snapshot and try a different one via `OfferSnapshot`.
     The application should be prepared to reset and accept it or abort as appropriate.
 
-## New methods introduced in ABCI++
+## New methods introduced in ABCI 2.0
 
 ### PrepareProposal
 
@@ -479,8 +479,7 @@ and _p_'s _validValue_ is `nil`:
    returns from the call.
 3. The Application uses the information received (transactions, commit info, misbehavior, time) to
     (potentially) modify the proposal.
-    * the Application MAY fully execute the block and produce a candidate state &mdash; immediate
-      execution
+    * the Application MAY fully execute the block and produce a candidate state (immediate execution)
     * the Application can manipulate transactions:
         * leave transactions untouched
         * add new transactions (not present initially) to the proposal
@@ -524,10 +523,12 @@ the consensus algorithm will use it as proposal and will not call `RequestPrepar
         * The Application may fully execute the block as though it was handling the calls to `BeginBlock-DeliverTx-EndBlock`.
         * However, any resulting state changes must be kept as _candidate state_,
           and the Application should be ready to discard it in case another block is decided.
-    * `RequestProcessProposal` is also called at the proposer of a round. The reason for this is to
-      inform the Application of the block header's hash, which cannot be done at `PrepareProposal`
-      time. In this case, the call to `RequestProcessProposal` occurs right after the call to
-      `RequestPrepareProposal`.
+    * `RequestProcessProposal` is also called at the proposer of a round.
+      Normally the call to `RequestProcessProposal` occurs right after the call to `RequestPrepareProposal` and
+      `RequestProcessProposal` matches the block produced based on `ResponsePrepareProposal` (i.e.,
+      `RequestPrepareProposal.txs` equals `RequestProcessProposal.txs`).
+      However, no such guarantee is made since, in the presence of failures, `RequestProcessProposal` may match
+      `ResponsePrepareProposal` from an earlier invocation or `ProcessProposal` may not be invoked at all.
     * The height and time values match the values from the header of the proposed block.
     * If `ResponseProcessProposal.status` is `REJECT`, consensus assumes the proposal received
       is not valid.
@@ -863,7 +864,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
     | metadata | bytes  | Arbitrary application metadata, for example chunk hashes or other verification data.                                                                                              | 5            |
 
 * **Usage**:
-    * Used for state sync snapshots, see the [state sync section](../p2p/messages/state-sync.md) for details.
+    * Used for state sync snapshots, see the [state sync section](../p2p/legacy-docs/messages/state-sync.md) for details.
     * A snapshot is considered identical across nodes only if _all_ fields are equal (including
     `Metadata`). Chunks may be retrieved from all nodes that have the same snapshot.
     * When sent across the network, a snapshot message can be at most 4 MB.

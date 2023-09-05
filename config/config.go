@@ -73,7 +73,7 @@ type Config struct {
 	Mempool   *MempoolConfig   `mapstructure:"mempool"`
 	StateSync *StateSyncConfig `mapstructure:"statesync"`
 	BlockSync *BlockSyncConfig `mapstructure:"blocksync"`
-	//TODO(williambanfield): remove this field once v0.37 is released.
+	// TODO(williambanfield): remove this field once v0.37 is released.
 	// https://github.com/tendermint/tendermint/issues/9279
 	DeprecatedFastSyncConfig map[interface{}]interface{} `mapstructure:"fastsync"`
 	Consensus                *ConsensusConfig            `mapstructure:"consensus"`
@@ -174,6 +174,9 @@ func (cfg *Config) CheckDeprecated() []string {
 	if cfg.BaseConfig.DeprecatedFastSyncMode != nil {
 		warnings = append(warnings, "fast_sync key detected. This key has been renamed to block_sync. The value of this deprecated key will be disregarded.")
 	}
+	if cfg.P2P.UPNP != nil {
+		warnings = append(warnings, "unused and deprecated upnp field detected in P2P config.")
+	}
 	return warnings
 }
 
@@ -202,7 +205,7 @@ type BaseConfig struct { //nolint: maligned
 	// Deprecated: BlockSync will be enabled unconditionally in the next major release.
 	BlockSyncMode bool `mapstructure:"block_sync"`
 
-	//TODO(williambanfield): remove this field once v0.37 is released.
+	// TODO(williambanfield): remove this field once v0.37 is released.
 	// https://github.com/tendermint/tendermint/issues/9279
 	DeprecatedFastSyncMode interface{} `mapstructure:"fast_sync"`
 
@@ -561,8 +564,8 @@ type P2PConfig struct { //nolint: maligned
 	// Comma separated list of nodes to keep persistent connections to
 	PersistentPeers string `mapstructure:"persistent_peers"`
 
-	// UPNP port forwarding
-	UPNP bool `mapstructure:"upnp"`
+	// Deprecated and unused.
+	UPNP interface{} `mapstructure:"upnp"`
 
 	// Path to address book
 	AddrBook string `mapstructure:"addr_book_file"`
@@ -628,7 +631,6 @@ func DefaultP2PConfig() *P2PConfig {
 	return &P2PConfig{
 		ListenAddress:                "tcp://0.0.0.0:26656",
 		ExternalAddress:              "",
-		UPNP:                         false,
 		AddrBook:                     defaultAddrBookPath,
 		AddrBookStrict:               true,
 		MaxNumInboundPeers:           40,

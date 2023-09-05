@@ -44,7 +44,7 @@ Application design should consider _any_ of these possible sequences.
 
 The following grammar, written in case-sensitive Augmented Backus–Naur form (ABNF, specified
 in [IETF rfc7405](https://datatracker.ietf.org/doc/html/rfc7405)), specifies all possible
-sequences of calls to ABCI++, taken by a correct process, across all heights from the genesis block,
+sequences of calls to ABCI++, taken by a **correct process**, across all heights from the genesis block,
 including recovery runs, from the point of view of the Application.
 
 ```abnf
@@ -61,7 +61,7 @@ consensus-exec      = (inf)consensus-height
 consensus-height    = *consensus-round decide commit
 consensus-round     = proposer / non-proposer
 
-proposer            = [prepare-proposal process-proposal]
+proposer            = [prepare-proposal [process-proposal]]
 non-proposer        = [process-proposal]
 decide              = begin-block  *deliver-txs end-block
 
@@ -136,7 +136,8 @@ Let us now examine the grammar line by line, providing further details.
 >```
 
 * In recovery mode, CometBFT first calls `Info` to know from which height it needs to replay decisions
-  to the Application. After this, CometBFT enters nomal consensus execution.
+  to the Application. After this, CometBFT enters consensus execution, first in replay mode and then
+  in normal mode.
 
 >```abnf
 >recovery            = info consensus-exec
@@ -161,9 +162,18 @@ Let us now examine the grammar line by line, providing further details.
 >consensus-round     = proposer / non-proposer
 >```
 
-* For every round, if the local process is the proposer of the current round, CometBFT calls `PrepareProposal`, followed by `ProcessProposal`. 
-These two always come together because they reflect the same proposal that the process
-also delivers to itself. 
+* For every round, if the local process is the proposer of the current round, CometBFT calls `PrepareProposal`.
+  A successful execution of `PrepareProposal` implies in a proposal block being (i)signed and (ii)stored
+  (e.g., in stable storage).
+
+  A crash during this step will direct how the node proceeds the next time it is executed, for the same round, after restarted.
+  If it crashed before (i), then, during the recovery, `PrepareProposal` will execute as if for the first time.
+  Following a crash between (i) and (ii) and in (the likely) case `PrepareProposal` produces a different block,
+  the signing of this block will fail, which means that the new block will not be stored or broadcast.
+  If the crash happened after (ii), then signing fails but nothing happens to the stored block.
+  
+  If a block was stored, it is sent to all validators, including the proposer.
+  Receiving a proposal block triggers `ProcessProposal` with such a block.
 
   <!-- 
 
@@ -174,7 +184,7 @@ also delivers to itself.
   -->
 
 >```abnf
->proposer            = [prepare-proposal process-proposal] 
+>proposer            = [prepare-proposal [process-proposal]]
 >```
 
 * Also for every round, if the local process is _not_ the proposer of the current round, CometBFT

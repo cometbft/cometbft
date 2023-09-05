@@ -160,17 +160,15 @@ func NewNode(ctx context.Context,
 		return nil, err
 	}
 
-	genesisDocInDB, err := stateDB.Has(genesisDocKey)
+	// The key will be deleted if it existed.
+	// Not checking whether the key is there in case the genesis file was larger than
+	// the max size of a value (in rocksDB for example), which would cause the check
+	// to fail and prevent the node from booting.
+	err = stateDB.Delete(genesisDocKey)
 	if err != nil {
-		return nil, err
+		logger.Error("Failed to delete genesis doc from DB ", err)
 	}
-	if genesisDocInDB {
-		err = stateDB.Delete(genesisDocKey)
-		if err != nil {
-			return nil, err
-		}
-		logger.Info("WARNING: deleting genesis file from database, the databse stores a hash of the original genesis file now")
-	}
+	logger.Info("WARNING: deleting genesis file from database, the databse stores a hash of the original genesis file now")
 
 	csMetrics, p2pMetrics, memplMetrics, smMetrics, abciMetrics, bsMetrics, ssMetrics := metricsProvider(genDoc.ChainID)
 

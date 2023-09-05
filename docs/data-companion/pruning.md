@@ -1,11 +1,16 @@
 ---
-order: 3
+order: 1
+parent:
+    title: Pruning
+    order: 3
 ---
 
 # Pruning data from CometBFT using a Data Companion
 
-In this document, the pruning logic for CometBFT is explained in a more detail. It explains different use cases and
-where the pruning can be "influenced" by the data companion but the pruning logic on the node might also be influenced
-or controlled by the application.
+CometBFT employs a sophisticated pruning logic to eliminate unnecessary data and reduce storage requirements. This
+comprehensive document offers a detailed explanation of how CometBFT's pruning logic works.
 
+It covers various use cases where the data companion can influence the pruning process and explains how the application
+can control the pruning logic on the node. Our aim is to provide you with a thorough understanding of the intricate
+workings of CometBFT's pruning system.
 

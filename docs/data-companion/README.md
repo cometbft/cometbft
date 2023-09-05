@@ -1,7 +1,8 @@
 ---
 order: false
 parent:
-    order: 1
+    title: Data Companion
+    order: 7
 ---
 
 # Guides

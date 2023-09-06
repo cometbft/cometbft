@@ -87,8 +87,7 @@ func (idx *BlockerIndexer) Index(bh types.EventDataNewBlockEvents) error {
 	if err := idx.indexEvents(batch, bh.Events, height); err != nil {
 		return fmt.Errorf("failed to index FinalizeBlock events: %w", err)
 	}
-	err = batch.WriteSync()
-	return err
+	return batch.WriteSync()
 }
 
 func getKeys(indexer BlockerIndexer) [][]byte {
@@ -105,6 +104,11 @@ func getKeys(indexer BlockerIndexer) [][]byte {
 }
 
 func (idx *BlockerIndexer) Prune(retainHeight int64) (int64, int64, error) {
+	// Returns numPruned, newRetainHeight, err
+	// numPruned: the number of heights pruned or 0 in case of error. E.x. if heights {1, 3, 7} were pruned and there was no error, numPruned == 3
+	// newRetainHeight: new retain height after pruning or lastRetainHeight in case of error
+	// err: error
+
 	lastRetainHeight, err := idx.getLastRetainHeight()
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to look up last block indexer retain height: %w", err)
@@ -120,17 +124,46 @@ func (idx *BlockerIndexer) Prune(retainHeight int64) (int64, int64, error) {
 			idx.log.Error(fmt.Sprintf("Error when closing pruning batch: %v", err))
 		}
 	}(batch)
+	flush := func(batch dbm.Batch) error {
+		err := batch.WriteSync()
+		if err != nil {
+			return fmt.Errorf("failed to flush pruning batch %w", err)
+		}
+		err = batch.Close()
+		if err != nil {
+			idx.log.Error(fmt.Sprintf("Error when closing pruning batch: %v", err))
+		}
+		return nil
+	}
 
 	itr, err := idx.store.Iterator(nil, nil)
 	if err != nil {
 		return 0, lastRetainHeight, err
 	}
+	deleted := 0
+	affectedHeights := make(map[int64]struct{})
 	for ; itr.Valid(); itr.Next() {
 		if keyBelongsToHeightRange(itr.Key(), lastRetainHeight, retainHeight) {
 			err := batch.Delete(itr.Key())
 			if err != nil {
 				return 0, lastRetainHeight, err
 			}
+			height := getHeightFromKey(itr.Key())
+			affectedHeights[height] = struct{}{}
+			deleted++
+		}
+		if deleted%1000 == 0 && deleted != 0 {
+			err = flush(batch)
+			if err != nil {
+				return 0, lastRetainHeight, err
+			}
+			batch = idx.store.NewBatch()
+			defer func(batch dbm.Batch) {
+				err := batch.Close()
+				if err != nil {
+					idx.log.Error(fmt.Sprintf("Error when closing pruning batch: %v", err))
+				}
+			}(batch)
 		}
 	}
 
@@ -143,7 +176,7 @@ func (idx *BlockerIndexer) Prune(retainHeight int64) (int64, int64, error) {
 		return 0, lastRetainHeight, errWriteBatch
 	}
 
-	return retainHeight - lastRetainHeight, retainHeight, err
+	return int64(len(affectedHeights)), retainHeight, err
 }
 
 func (idx *BlockerIndexer) SetRetainHeight(retainHeight int64) error {

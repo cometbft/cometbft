@@ -75,6 +75,27 @@ func keyBelongsToHeightRange(key []byte, left, right int64) bool {
 	return false
 }
 
+func getHeightFromKey(key []byte) int64 {
+	// Must be called with either heightKey or eventKey
+	eventHeight, err := parseHeightFromEventKey(key)
+	if err == nil {
+		return eventHeight
+	}
+
+	var (
+		blockHeightKeyPrefix string
+		possibleHeight       int64
+	)
+	remaining, err := orderedcode.Parse(string(key), &blockHeightKeyPrefix, &possibleHeight)
+	if err != nil {
+		panic(err)
+	}
+	if len(remaining) == 0 && blockHeightKeyPrefix == types.BlockHeightKey {
+		return possibleHeight
+	}
+	panic(fmt.Errorf("key must be either heightKey or eventKey"))
+}
+
 func eventKey(compositeKey, eventValue string, height int64, eventSeq int64) ([]byte, error) {
 	return orderedcode.Append(
 		nil,

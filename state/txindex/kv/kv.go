@@ -48,7 +48,11 @@ type TxIndex struct {
 }
 
 func (txi *TxIndex) Prune(retainHeight int64) (int64, int64, error) {
-	// Returns the last retained height
+	// Returns numPruned, newRetainHeight, err
+	// numPruned: the number of heights pruned. E.x. if heights {1, 3, 7} were pruned, numPruned == 3
+	// newRetainHeight: new retain height after pruning
+	// err: error
+
 	lastRetainHeight, err := txi.getIndexerRetainHeight()
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to look up last block indexer retain height: %w", err)
@@ -74,9 +78,25 @@ func (txi *TxIndex) Prune(retainHeight int64) (int64, int64, error) {
 			txi.log.Error(fmt.Sprintf("Error when closing pruning batch: %v", err))
 		}
 	}(batch)
+	pruned := uint64(0)
+	flush := func(batch dbm.Batch) error {
+		err := batch.WriteSync()
+		if err != nil {
+			return fmt.Errorf("failed to flush pruning batch %w", err)
+		}
+		err = batch.Close()
+		if err != nil {
+			txi.log.Error(fmt.Sprintf("Error when closing pruning batch: %v", err))
+		}
+		return nil
+	}
 
 	sort.Sort(TxResultByHeight(results))
-	for _, result := range results {
+	numHeightsBatchPruned := int64(0)                     // number of heights pruned if counting batched
+	currentBatchRetainedHeight := results[0].Height       // height retained if counting batched
+	numHeightsPersistentlyPruned := int64(0)              // number of heights pruned persistently
+	currentPersistentlyRetainedHeight := lastRetainHeight // height retained persistently
+	for i, result := range results {
 		errDeleteResult := txi.deleteResult(result, batch)
 		if errDeleteResult != nil {
 			// If we crashed in the middle of pruning the height,
@@ -91,18 +111,35 @@ func (txi *TxIndex) Prune(retainHeight int64) (int64, int64, error) {
 			}
 			return result.Height - lastRetainHeight, result.Height, errDeleteResult
 		}
+		if i == len(results)-1 || results[i+1].Height > result.Height {
+			numHeightsBatchPruned++
+			currentBatchRetainedHeight = result.Height + 1
+		}
+		// flush every 1000 blocks to avoid batches becoming too large
+		if pruned%1000 == 0 && pruned > 0 {
+			err := flush(batch)
+			if err != nil {
+				return numHeightsPersistentlyPruned, currentPersistentlyRetainedHeight, err
+			}
+			numHeightsPersistentlyPruned = numHeightsBatchPruned
+			currentPersistentlyRetainedHeight = currentBatchRetainedHeight
+			batch = txi.store.NewBatch()
+			defer func(batch dbm.Batch) {
+				err := batch.Close()
+				if err != nil {
+					txi.log.Error(fmt.Sprintf("Error when closing pruning batch: %v", err))
+				}
+			}(batch)
+		}
 	}
-	maxHeightPruned := results[len(results)-1].Height
-	newRetainedHeight := maxHeightPruned + 1
-	err = txi.setIndexerRetainHeight(newRetainedHeight, batch)
+
+	err = flush(batch)
 	if err != nil {
-		return 0, lastRetainHeight, err
+		return numHeightsPersistentlyPruned, currentPersistentlyRetainedHeight, err
 	}
-	err = batch.WriteSync()
-	if err != nil {
-		return 0, lastRetainHeight, err
-	}
-	return newRetainedHeight - lastRetainHeight, newRetainedHeight, err
+	numHeightsPersistentlyPruned = numHeightsBatchPruned
+	currentPersistentlyRetainedHeight = currentBatchRetainedHeight
+	return numHeightsPersistentlyPruned, currentPersistentlyRetainedHeight, nil
 }
 
 func (txi *TxIndex) SetRetainHeight(retainHeight int64) error {

@@ -121,51 +121,16 @@ func (idx *BlockerIndexer) Prune(retainHeight int64) (int64, int64, error) {
 		}
 	}(batch)
 
-	eventKeys, err := idx.getEventKeys()
+	itr, err := idx.store.Iterator(nil, nil)
 	if err != nil {
 		return 0, lastRetainHeight, err
 	}
-
-	for height := lastRetainHeight; height < retainHeight; height++ {
-		// If we fail to delete the height fully,
-		// We consider it to be retained
-		key, errHeightKey := heightKey(height)
-		if errHeightKey != nil {
-			errSetLastRetainHeight := idx.setLastRetainHeight(height, batch)
-			if errSetLastRetainHeight != nil {
-				return 0, lastRetainHeight, fmt.Errorf("error setting last retain height '%v' while handling handling heightKey error '%v'", errSetLastRetainHeight, errHeightKey)
+	for ; itr.Valid(); itr.Next() {
+		if keyBelongsToHeightRange(itr.Key(), lastRetainHeight, retainHeight) {
+			err := batch.Delete(itr.Key())
+			if err != nil {
+				return 0, lastRetainHeight, err
 			}
-			errWriteBatch := batch.WriteSync()
-			if errWriteBatch != nil {
-				return 0, lastRetainHeight, fmt.Errorf("error writing batch '%v' while handling heightKey error '%v'", errWriteBatch, errHeightKey)
-			}
-			return height - lastRetainHeight, height, errHeightKey
-		}
-
-		errKeyDeletion := batch.Delete(key)
-		if errKeyDeletion != nil {
-			errSetLastRetainHeight := idx.setLastRetainHeight(height, batch)
-			if errSetLastRetainHeight != nil {
-				return 0, lastRetainHeight, fmt.Errorf("error setting last retain height '%v' while handling handling key deletion error '%v'", errSetLastRetainHeight, errKeyDeletion)
-			}
-			errWriteBatch := batch.WriteSync()
-			if errWriteBatch != nil {
-				return 0, lastRetainHeight, fmt.Errorf("error writing batch '%v' while handling key deletion error '%v'", errWriteBatch, errKeyDeletion)
-			}
-			return height - lastRetainHeight, height, errHeightKey
-		}
-
-		errDeleteEvents := idx.deleteEvents(height, batch, eventKeys)
-		if errDeleteEvents != nil {
-			errSetLastRetainHeight := idx.setLastRetainHeight(height, batch)
-			if errSetLastRetainHeight != nil {
-				return 0, lastRetainHeight, fmt.Errorf("error setting last retain height '%v' while handling events deletion error '%v'", errSetLastRetainHeight, errDeleteEvents)
-			}
-			errWriteBatch := batch.WriteSync()
-			if errWriteBatch != nil {
-				return 0, lastRetainHeight, fmt.Errorf("error writing batch '%v' while handling events deletion error '%v'", errWriteBatch, errDeleteEvents)
-			}
-			return height - lastRetainHeight, height, errHeightKey
 		}
 	}
 
@@ -737,20 +702,6 @@ func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, hei
 					return err
 				}
 			}
-		}
-	}
-	return nil
-}
-
-func (idx *BlockerIndexer) deleteEvents(height int64, batch dbm.Batch, eventKeys map[int64][][]byte) error {
-	keys, exists := eventKeys[height]
-	if !exists {
-		return nil
-	}
-	for _, key := range keys {
-		err := batch.Delete(key)
-		if err != nil {
-			return err
 		}
 	}
 	return nil

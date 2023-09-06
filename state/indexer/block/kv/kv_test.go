@@ -529,38 +529,36 @@ func TestKeyArray(t *testing.T) {
 	require.Equal(t, keys[2], key3)
 }
 
-func TestGetEventKeys(t *testing.T) {
-	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))
-	indexer := New(store)
+func TestKeyBelongsToHeightRange(t *testing.T) {
+	height := int64(7)
 
-	events1 := getEventsForTesting(1)
+	events := getEventsForTesting(height)
+	for _, event := range events.Events {
+		for _, attr := range event.Attributes {
+			compositeKey := fmt.Sprintf("%s.%s", event.Type, attr.Key)
+			if attr.GetIndex() {
+				key, err := eventKey(compositeKey, attr.Value, height, 0)
+				require.NoError(t, err)
+				require.True(t, keyBelongsToHeightRange(key, 0, 10))
+				require.True(t, keyBelongsToHeightRange(key, 7, 8))
+				require.False(t, keyBelongsToHeightRange(key, 0, 2))
+				require.False(t, keyBelongsToHeightRange(key, 0, 7))
+			}
+		}
+	}
 
-	err := indexer.Index(events1)
+	blockHeightKey, err := heightKey(height)
 	require.NoError(t, err)
+	require.True(t, keyBelongsToHeightRange(blockHeightKey, 0, 10))
+	require.True(t, keyBelongsToHeightRange(blockHeightKey, 7, 8))
+	require.False(t, keyBelongsToHeightRange(blockHeightKey, 0, 2))
+	require.False(t, keyBelongsToHeightRange(blockHeightKey, 0, 7))
 
-	keys1, err := indexer.getEventKeys()
-	require.NoError(t, err)
-
-	require.Equal(t, 1, len(keys1))
-	height1EventKeys, exists := keys1[1]
-	require.True(t, exists)
-	require.Equal(t, 2, len(height1EventKeys))
-	value, err := parseValueFromEventKey(height1EventKeys[0])
-	require.NoError(t, err)
-	require.True(t, value == events1.Events[0].Attributes[0].Value || value == events1.Events[1].Attributes[0].Value)
-
-	events2 := getEventsForTesting(2)
-
-	err = indexer.Index(events2)
-	require.NoError(t, err)
-
-	keys2, err := indexer.getEventKeys()
-	require.NoError(t, err)
-
-	require.Equal(t, 2, len(keys2))
-	height2EventKeys, exists := keys2[2]
-	require.True(t, exists)
-	require.Equal(t, 2, len(height2EventKeys))
+	randomKey := []byte{12, 13, 3, 228}
+	require.False(t, keyBelongsToHeightRange(randomKey, 0, 10))
+	require.False(t, keyBelongsToHeightRange(randomKey, 7, 8))
+	require.False(t, keyBelongsToHeightRange(randomKey, 0, 2))
+	require.False(t, keyBelongsToHeightRange(randomKey, 0, 7))
 }
 
 func getEventsForTesting(height int64) types.EventDataNewBlockEvents {

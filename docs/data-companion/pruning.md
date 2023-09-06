@@ -40,15 +40,14 @@ Here is an example code:
 ```
 
 import (
-    ...
-    "github.com/cometbft/cometbft/rpc/grpc/client"
     "github.com/cometbft/cometbft/rpc/grpc/client/privileged"
 )
 
 ctx := context.Background()
 
-// Privileged ServiceClient
-conn, err := privileged.New(ctx, cfg.GRPCClient.ListenAddressPrivileged, privileged.WithPruningServiceEnabled(true), privileged.WithInsecure())
+// Privileged Service Client
+addr := "0.0.0.0:26091"
+conn, err := privileged.New(ctx, addr, privileged.WithInsecure())
 if err != nil {
     // Do something with the error
 }
@@ -57,7 +56,6 @@ err := conn.SetBlockRetainHeight(ctx, height)
 if err != nil {
     // Do something with the error
 }
-
 ```
 
 > NOTE: If you try to set the `Block Retain Height` to a value that is lower to what is currently stored in the node, an error will
@@ -67,13 +65,12 @@ If you need to check what is the current value for the `Block Retain Height` you
 
 Here's an example:
 ```
-retainHeight, err := conn.GetBlockRetainHeight(f.context)
+retainHeight, err := conn.GetBlockRetainHeight(ctx)
 if err != nil {
     // Do something with the error
 } else {
-    // Do something witht the `retainHeight` value
+    // Do something with the `retainHeight` value
 }
-
 ```
 
 ### Block Results Retain Height
@@ -87,22 +84,21 @@ Here is an example code:
 ```
 
 import (
-...
-"github.com/cometbft/cometbft/rpc/grpc/client"
-"github.com/cometbft/cometbft/rpc/grpc/client/privileged"
+    "github.com/cometbft/cometbft/rpc/grpc/client/privileged"
 )
 
 ctx := context.Background()
 
-// Privileged ServiceClient
-conn, err := privileged.New(ctx, cfg.GRPCClient.ListenAddressPrivileged, privileged.WithPruningServiceEnabled(true), privileged.WithInsecure())
+// Privileged Service Client
+addr := "0.0.0.0:26091"
+conn, err := privileged.New(ctx, addr, privileged.WithInsecure())
 if err != nil {
-// Do something with the error
+    // Do something with the error
 }
 
 err := conn.SetBlockResultsRetainHeight(ctx, height)
 if err != nil {
-// Do something with the error
+    // Do something with the error
 }
 
 ```
@@ -116,9 +112,9 @@ Here's an example:
 ```
 retainHeight, err := conn.GetBlockResultsRetainHeight(f.context)
 if err != nil {
-// Do something with the error
+    // Do something with the error
 } else {
-// Do something witht the `retainHeight` value
+    // Do something with the `retainHeight` value
 }
 
 ```

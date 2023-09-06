@@ -137,6 +137,62 @@ In the `[grpc.privileged.pruning_service]` section, ensure the value `enabled` i
 enabled = true
 ```
 
+## Fetching data
+
+CometBFT has recently introduced additional services to facilitate data retrieval via the gRPC endpoint services.
+These new services, namely 'block' and 'block results', offer a more efficient and faster means of fetching data.
+While the RPC endpoint is still a viable option, gRPC will be the preferred choice going forward.
+
+### Fetching `Block` data
+
+In order to retrieve `block` data using the gRPC block service, you have to ensure the gRPC endpoint and the service is
+enabled as described in the section above.
+
+Once the service is enabled, you can use the Golang client provided by CometBFT to invoke the method that retrieves a
+block by height.
+
+Here is an example code:
+```
+import (
+     "github.com/cometbft/cometbft/rpc/grpc/client"
+)
+
+ctx := context.Background()
+
+// Service Client
+addr := "0.0.0.0:26090"
+conn, err := client.New(ctx, addr, client.WithInsecure())
+if err != nil {
+    // Do something with the error
+}
+
+block, err := conn.GetBlockByHeight(ctx, height)
+if err != nil {
+    // Do something with the error
+} else {
+    // Do something with the `block`
+}
+
+```
+
+### Fetching `Block Results` data
+
+To fetch `block results` you can use a similar code as the previous one but just invoking the methods to get block results
+```
+blockResults, err := conn.GetBlockResults(ctx, height)
+if err != nil {
+    // Do something with the error
+} else {
+    // Do something with the `blockResults`
+}
+
+```
+
+### Stream for the latest height
+
+
+[TODO]
+
 ## Storing the fetched data
 
 In the Data Companion workflow, the second step involves saving the data retrieved from a blockchain onto an external

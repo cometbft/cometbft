@@ -175,9 +175,68 @@ if err != nil {
 
 ```
 
-### Stream for the latest height
+### Latest height stream
 
-[TODO]
+There is a new way to subscribe to a stream of new blocks with the Block service. Previously, you could connect and
+subscribe to new block events using websockets through the RPC service.
+
+However, with the gRPC service streaming capabilities, it is now possible to watch for new blocks using gRPC. To receive
+the latest height from the stream, you need to call the method that returns the receive-only channel and then watch for
+messages that come through the channel. The message structure is a `LatestHeightResult`.
+
+```
+// LatestHeightResult type used in GetLatestResult and send to the client
+// via a channel
+type LatestHeightResult struct {
+    Height int64
+    Error  error
+}
+```
+
+Once you get a message, you can check the `Height` field for the latest height (assuming the `Error` field is nil)
+
+Here's an example:
+```
+import (
+"github.com/cometbft/cometbft/rpc/grpc/client"
+)
+
+ctx := context.Background()
+
+// Service Client
+addr := "0.0.0.0:26090"
+conn, err := client.New(ctx, addr, client.WithInsecure())
+if err != nil {
+    // Do something with the error
+}
+
+stream, err := conn.GetLatestHeight(ctx)
+if err != nil {
+    // Do something with the error
+}
+
+for {
+    select {
+    case <- ctx.Done():
+        return
+    case latestHeight, ok := <-stream:
+        if ok {
+            if latestHeight.Error != nil {
+                // Do something with error
+            } else {
+                // Do something with latestHeight.Height
+            }
+        } else {
+            return
+        }
+    }
+}
+```
+
+The ability to monitor new blocks is truly intriguing as it unlocks avenues for creating dynamic pipelines and ingesting
+services via the producer-consumer pattern. For instance, upon receiving a notification about a fresh block, one can
+activate a method to retrieve block data and save it in a database. Subsequently, the node can be configured to retain
+a specific height, allowing for pruning of the data.
 
 ## Storing the fetched data
 

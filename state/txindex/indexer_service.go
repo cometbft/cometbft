@@ -37,7 +37,8 @@ func NewIndexerService(
 		txIdxr:           txIdxr,
 		blockIdxr:        blockIdxr,
 		eventBus:         eventBus,
-		terminateOnError: terminateOnError}
+		terminateOnError: terminateOnError,
+	}
 	is.BaseService = *service.NewBaseService(nil, "IndexerService", is)
 	return is
 }

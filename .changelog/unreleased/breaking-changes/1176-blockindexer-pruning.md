@@ -1,0 +1,2 @@
+- `[state/indexer/block]` BlockIndexer now has additional method `Prune(retainHeight int64) (int64, int64, error)` ([\#1176](https://github.com/cometbft/cometbft/pull/1176))
+- `[state/txindex]` TxIndexer now has additional method `Prune(retainHeight int64) (int64, int64, error)` ([\#1176](https://github.com/cometbft/cometbft/pull/1176))

@@ -118,20 +118,22 @@ func (idx *BlockerIndexer) Prune(retainHeight int64) (int64, int64, error) {
 	}
 
 	batch := idx.store.NewBatch()
-	defer func(batch dbm.Batch) {
+	closeBatch := func(batch dbm.Batch) {
 		err := batch.Close()
 		if err != nil {
-			idx.log.Error(fmt.Sprintf("Error when closing pruning batch: %v", err))
+			idx.log.Error(fmt.Sprintf("Error when closing block indexer pruning batch: %v", err))
 		}
-	}(batch)
+	}
+	defer closeBatch(batch)
+
 	flush := func(batch dbm.Batch) error {
 		err := batch.WriteSync()
 		if err != nil {
-			return fmt.Errorf("failed to flush pruning batch %w", err)
+			return fmt.Errorf("failed to flush block indexer pruning batch %w", err)
 		}
 		err = batch.Close()
 		if err != nil {
-			idx.log.Error(fmt.Sprintf("Error when closing pruning batch: %v", err))
+			idx.log.Error(fmt.Sprintf("Error when closing block indexer pruning batch: %v", err))
 		}
 		return nil
 	}
@@ -158,12 +160,7 @@ func (idx *BlockerIndexer) Prune(retainHeight int64) (int64, int64, error) {
 				return 0, lastRetainHeight, err
 			}
 			batch = idx.store.NewBatch()
-			defer func(batch dbm.Batch) {
-				err := batch.Close()
-				if err != nil {
-					idx.log.Error(fmt.Sprintf("Error when closing pruning batch: %v", err))
-				}
-			}(batch)
+			defer closeBatch(batch)
 		}
 	}
 

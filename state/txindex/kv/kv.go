@@ -72,21 +72,22 @@ func (txi *TxIndex) Prune(retainHeight int64) (int64, int64, error) {
 	}
 
 	batch := txi.store.NewBatch()
-	defer func(batch dbm.Batch) {
+	closeBatch := func(batch dbm.Batch) {
 		err := batch.Close()
 		if err != nil {
-			txi.log.Error(fmt.Sprintf("Error when closing pruning batch: %v", err))
+			txi.log.Error(fmt.Sprintf("Error when closing tx indexer pruning batch: %v", err))
 		}
-	}(batch)
+	}
+	defer closeBatch(batch)
 	pruned := uint64(0)
 	flush := func(batch dbm.Batch) error {
 		err := batch.WriteSync()
 		if err != nil {
-			return fmt.Errorf("failed to flush pruning batch %w", err)
+			return fmt.Errorf("failed to flush tx indexer pruning batch %w", err)
 		}
 		err = batch.Close()
 		if err != nil {
-			txi.log.Error(fmt.Sprintf("Error when closing pruning batch: %v", err))
+			txi.log.Error(fmt.Sprintf("Error when closing tx indexer pruning batch: %v", err))
 		}
 		return nil
 	}
@@ -103,11 +104,11 @@ func (txi *TxIndex) Prune(retainHeight int64) (int64, int64, error) {
 			// we assume this height is retained
 			errSetLastRetainHeight := txi.setIndexerRetainHeight(result.Height, batch)
 			if errSetLastRetainHeight != nil {
-				return 0, lastRetainHeight, fmt.Errorf("error setting last retain height '%v' while handling result deletion error '%v'", errSetLastRetainHeight, errDeleteResult)
+				return 0, lastRetainHeight, fmt.Errorf("error setting last retain height '%v' while handling result deletion error '%v' for tx indexer", errSetLastRetainHeight, errDeleteResult)
 			}
 			errWriteBatch := batch.WriteSync()
 			if errWriteBatch != nil {
-				return 0, lastRetainHeight, fmt.Errorf("error writing batch '%v' while handling result deletion error '%v'", errWriteBatch, errDeleteResult)
+				return 0, lastRetainHeight, fmt.Errorf("error writing tx indexer batch '%v' while handling result deletion error '%v'", errWriteBatch, errDeleteResult)
 			}
 			return result.Height - lastRetainHeight, result.Height, errDeleteResult
 		}
@@ -124,12 +125,7 @@ func (txi *TxIndex) Prune(retainHeight int64) (int64, int64, error) {
 			numHeightsPersistentlyPruned = numHeightsBatchPruned
 			currentPersistentlyRetainedHeight = currentBatchRetainedHeight
 			batch = txi.store.NewBatch()
-			defer func(batch dbm.Batch) {
-				err := batch.Close()
-				if err != nil {
-					txi.log.Error(fmt.Sprintf("Error when closing pruning batch: %v", err))
-				}
-			}(batch)
+			defer closeBatch(batch)
 		}
 	}
 

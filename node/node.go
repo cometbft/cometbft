@@ -168,7 +168,7 @@ func NewNode(ctx context.Context,
 	if err != nil {
 		logger.Error("Failed to delete genesis doc from DB ", err)
 	}
-	logger.Info("WARNING: deleting genesis file from database, the databse stores a hash of the original genesis file now")
+	logger.Info("WARNING: deleting genesis file from database, the database stores a hash of the original genesis file now")
 
 	csMetrics, p2pMetrics, memplMetrics, smMetrics, abciMetrics, bsMetrics, ssMetrics := metricsProvider(genDoc.ChainID)
 

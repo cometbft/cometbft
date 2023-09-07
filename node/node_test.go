@@ -18,9 +18,12 @@ import (
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/evidence"
 	"github.com/cometbft/cometbft/internal/test"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtos "github.com/cometbft/cometbft/libs/os"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
@@ -309,7 +312,7 @@ func TestCreateProposalBlock(t *testing.T) {
 	txLength := 100
 	for i := 0; i <= int(maxBytes)/txLength; i++ {
 		tx := cmtrand.Bytes(txLength)
-		err := mempool.CheckTx(tx, nil, mempl.TxInfo{})
+		_, err := mempool.CheckTx(tx)
 		assert.NoError(t, err)
 	}
 
@@ -387,7 +390,7 @@ func TestMaxProposalBlockSize(t *testing.T) {
 	// fill the mempool with one txs just below the maximum size
 	txLength := int(types.MaxDataBytesNoEvidence(maxBytes, 1))
 	tx := cmtrand.Bytes(txLength - 4) // to account for the varint
-	err = mempool.CheckTx(tx, nil, mempl.TxInfo{})
+	_, err = mempool.CheckTx(tx)
 	assert.NoError(t, err)
 
 	blockExec := sm.NewBlockExecutor(
@@ -463,6 +466,73 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 	channels := n.NodeInfo().(p2p.DefaultNodeInfo).Channels
 	assert.Contains(t, channels, mempl.MempoolChannel)
 	assert.Contains(t, channels, cr.Channels[0].ID)
+}
+
+func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
+	config := test.ResetTestRoot("node_new_node_genesis_hash")
+	defer os.RemoveAll(config.RootDir)
+
+	// Use goleveldb so we can reuse the same db for the second NewNode()
+	config.DBBackend = string(dbm.GoLevelDBBackend)
+
+	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
+	require.NoError(t, err)
+
+	n, err := NewNode(
+		context.Background(),
+		config,
+		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
+		nodeKey,
+		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
+		DefaultGenesisDocProviderFunc(config),
+		cfg.DefaultDBProvider,
+		DefaultMetricsProvider(config.Instrumentation),
+		log.TestingLogger(),
+	)
+	require.NoError(t, err)
+
+	// Start and stop to close the db for later reading
+	err = n.Start()
+	require.NoError(t, err)
+
+	err = n.Stop()
+	require.NoError(t, err)
+
+	// Ensure the genesis doc hash is saved to db
+	stateDB, err := cfg.DefaultDBProvider(&cfg.DBContext{ID: "state", Config: config})
+	require.NoError(t, err)
+
+	genDocHash, err := stateDB.Get(genesisDocHashKey)
+	require.NoError(t, err)
+	require.NotNil(t, genDocHash, "genesis doc hash should be saved in db")
+	require.Len(t, genDocHash, tmhash.Size)
+
+	err = stateDB.Close()
+	require.NoError(t, err)
+
+	// Modify the genesis file chain ID to get a different hash
+	genBytes := cmtos.MustReadFile(config.GenesisFile())
+	var genesisDoc types.GenesisDoc
+	err = cmtjson.Unmarshal(genBytes, &genesisDoc)
+	require.NoError(t, err)
+
+	genesisDoc.ChainID = "different-chain-id"
+	err = genesisDoc.SaveAs(config.GenesisFile())
+	require.NoError(t, err)
+
+	_, err = NewNode(
+		context.Background(),
+		config,
+		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
+		nodeKey,
+		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
+		DefaultGenesisDocProviderFunc(config),
+		cfg.DefaultDBProvider,
+		DefaultMetricsProvider(config.Instrumentation),
+		log.TestingLogger(),
+	)
+	require.Error(t, err, "NewNode should error when genesisDoc is changed")
+	require.Equal(t, "genesis doc hash in db does not match loaded genesis doc", err.Error())
 }
 
 func state(nVals int, height int64) (sm.State, dbm.DB, []types.PrivValidator) {

@@ -27,6 +27,6 @@ func FuzzMempool(f *testing.F) {
 	mp := mempool.NewCListMempool(cfg, conn, 0)
 
 	f.Fuzz(func(t *testing.T, data []byte) {
-		_ = mp.CheckTx(data, nil, mempool.TxInfo{})
+		_, _ = mp.CheckTx(data)
 	})
 }

@@ -37,6 +37,7 @@ import (
 	statemocks "github.com/cometbft/cometbft/state/mocks"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
 
 //----------------------------------------------
@@ -232,11 +233,11 @@ func TestReactorCreatesBlockWhenEmptyBlocksFalse(t *testing.T) {
 	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
 
 	// send a tx
-	if err := assertMempool(css[3].txNotifier).CheckTx(kvstore.NewTxFromID(1), func(resp *abci.ResponseCheckTx) {
-		require.False(t, resp.IsErr())
-	}, mempl.TxInfo{}); err != nil {
+	reqRes, err := assertMempool(css[3].txNotifier).CheckTx(kvstore.NewTxFromID(1))
+	if err != nil {
 		t.Error(err)
 	}
+	require.False(t, reqRes.Response.GetCheckTx().IsErr())
 
 	// wait till everyone makes the first new block
 	timeoutWaitGroup(N, func(j int) {
@@ -669,11 +670,9 @@ func waitForAndValidateBlock(
 
 		// optionally add transactions for the next block
 		for _, tx := range txs {
-			err := assertMempool(css[j].txNotifier).CheckTx(tx, func(resp *abci.ResponseCheckTx) {
-				require.False(t, resp.IsErr())
-				fmt.Println(resp)
-			}, mempl.TxInfo{})
+			reqRes, err := assertMempool(css[j].txNotifier).CheckTx(tx)
 			require.NoError(t, err)
+			require.False(t, reqRes.Response.GetCheckTx().IsErr())
 		}
 	})
 }
@@ -867,8 +866,8 @@ func TestNewValidBlockMessageValidateBasic(t *testing.T) {
 		expErr     string
 	}{
 		{func(msg *NewValidBlockMessage) {}, ""},
-		{func(msg *NewValidBlockMessage) { msg.Height = -1 }, "negative Height"},
-		{func(msg *NewValidBlockMessage) { msg.Round = -1 }, "negative Round"},
+		{func(msg *NewValidBlockMessage) { msg.Height = -1 }, cmterrors.ErrNegativeField{Field: "Height"}.Error()},
+		{func(msg *NewValidBlockMessage) { msg.Round = -1 }, cmterrors.ErrNegativeField{Field: "Round"}.Error()},
 		{
 			func(msg *NewValidBlockMessage) { msg.BlockPartSetHeader.Total = 2 },
 			"blockParts bit array size 1 not equal to BlockPartSetHeader.Total 2",
@@ -878,7 +877,7 @@ func TestNewValidBlockMessageValidateBasic(t *testing.T) {
 				msg.BlockPartSetHeader.Total = 0
 				msg.BlockParts = bits.NewBitArray(0)
 			},
-			"empty blockParts",
+			cmterrors.ErrRequiredField{Field: "blockParts"}.Error(),
 		},
 		{
 			func(msg *NewValidBlockMessage) { msg.BlockParts = bits.NewBitArray(int(types.MaxBlockPartsCount) + 1) },
@@ -913,9 +912,9 @@ func TestProposalPOLMessageValidateBasic(t *testing.T) {
 		expErr     string
 	}{
 		{func(msg *ProposalPOLMessage) {}, ""},
-		{func(msg *ProposalPOLMessage) { msg.Height = -1 }, "negative Height"},
-		{func(msg *ProposalPOLMessage) { msg.ProposalPOLRound = -1 }, "negative ProposalPOLRound"},
-		{func(msg *ProposalPOLMessage) { msg.ProposalPOL = bits.NewBitArray(0) }, "empty ProposalPOL bit array"},
+		{func(msg *ProposalPOLMessage) { msg.Height = -1 }, cmterrors.ErrNegativeField{Field: "Height"}.Error()},
+		{func(msg *ProposalPOLMessage) { msg.ProposalPOLRound = -1 }, cmterrors.ErrNegativeField{Field: "ProposalPOLRound"}.Error()},
+		{func(msg *ProposalPOLMessage) { msg.ProposalPOL = bits.NewBitArray(0) }, cmterrors.ErrRequiredField{Field: "ProposalPOL"}.Error()},
 		{
 			func(msg *ProposalPOLMessage) { msg.ProposalPOL = bits.NewBitArray(types.MaxVotesCount + 1) },
 			"proposalPOL bit array is too big: 10001, max: 10000",
@@ -1061,8 +1060,8 @@ func TestVoteSetBitsMessageValidateBasic(t *testing.T) {
 		expErr     string
 	}{
 		{func(msg *VoteSetBitsMessage) {}, ""},
-		{func(msg *VoteSetBitsMessage) { msg.Height = -1 }, "negative Height"},
-		{func(msg *VoteSetBitsMessage) { msg.Type = 0x03 }, "invalid Type"},
+		{func(msg *VoteSetBitsMessage) { msg.Height = -1 }, cmterrors.ErrNegativeField{Field: "Height"}.Error()},
+		{func(msg *VoteSetBitsMessage) { msg.Type = 0x03 }, cmterrors.ErrInvalidField{Field: "Type"}.Error()},
 		{func(msg *VoteSetBitsMessage) {
 			msg.BlockID = types.BlockID{
 				Hash: bytes.HexBytes{},

@@ -44,9 +44,10 @@ type Node struct {
 	service.BaseService
 
 	// config
-	config        *cfg.Config
-	genesisDoc    *types.GenesisDoc   // initial validator set
-	privValidator types.PrivValidator // local node's validator key
+	config             *cfg.Config
+	genesisTime        *time.Time
+	genesisDocProvider GenesisDocProvider
+	privValidator      types.PrivValidator // local node's validator key
 
 	// network
 	transport   *p2p.MultiplexTransport
@@ -159,6 +160,16 @@ func NewNode(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
+
+	// The key will be deleted if it existed.
+	// Not checking whether the key is there in case the genesis file was larger than
+	// the max size of a value (in rocksDB for example), which would cause the check
+	// to fail and prevent the node from booting.
+	err = stateDB.Delete(genesisDocKey)
+	if err != nil {
+		logger.Error("Failed to delete genesis doc from DB ", err)
+	}
+	logger.Info("WARNING: deleting genesis file from database, the database stores a hash of the original genesis file now")
 
 	csMetrics, p2pMetrics, memplMetrics, smMetrics, abciMetrics, bsMetrics, ssMetrics := metricsProvider(genDoc.ChainID)
 
@@ -323,9 +334,10 @@ func NewNode(ctx context.Context,
 	addrBook.AddPrivateIDs(splitAndTrimEmpty(config.P2P.PrivatePeerIDs, ",", " "))
 
 	node := &Node{
-		config:        config,
-		genesisDoc:    genDoc,
-		privValidator: privValidator,
+		config:             config,
+		genesisTime:        &genDoc.GenesisTime,
+		genesisDocProvider: genesisDocProvider,
+		privValidator:      privValidator,
 
 		transport: transport,
 		sw:        sw,
@@ -363,7 +375,7 @@ func NewNode(ctx context.Context,
 // OnStart starts the Node. It implements service.Service.
 func (n *Node) OnStart() error {
 	now := cmttime.Now()
-	genTime := n.genesisDoc.GenesisTime
+	genTime := n.genesisTime
 	if genTime.After(now) {
 		n.Logger.Info("Genesis time is in the future. Sleeping until then...", "genTime", genTime)
 		time.Sleep(genTime.Sub(now))
@@ -504,6 +516,11 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 	if pubKey == nil || err != nil {
 		return nil, fmt.Errorf("can't get pubkey: %w", err)
 	}
+
+	genDoc, err := n.genesisDocProvider()
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve the genesis file: %w", err)
+	}
 	rpcCoreEnv := rpccore.Environment{
 		ProxyAppQuery:   n.proxyApp.Query(),
 		ProxyAppMempool: n.proxyApp.Mempool(),
@@ -516,7 +533,7 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 		P2PTransport:   n,
 		PubKey:         pubKey,
 
-		GenDoc:           n.genesisDoc,
+		GenDoc:           genDoc.GenesisDoc,
 		TxIndexer:        n.txIndexer,
 		BlockIndexer:     n.blockIndexer,
 		ConsensusReactor: n.consensusReactor,
@@ -711,7 +728,11 @@ func (n *Node) PrivValidator() types.PrivValidator {
 
 // GenesisDoc returns the Node's GenesisDoc.
 func (n *Node) GenesisDoc() *types.GenesisDoc {
-	return n.genesisDoc
+	genDoc, err := n.genesisDocProvider()
+	if err != nil {
+		return nil
+	}
+	return genDoc.GenesisDoc
 }
 
 // ProxyApp returns the Node's AppConns, representing its connections to the ABCI application.

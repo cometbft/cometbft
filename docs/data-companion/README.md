@@ -8,5 +8,5 @@ parent:
 # Guides
 
 - [Introduction](./intro.md)
-- [Creating a Data Companion for CometBFT](./getting-started.md)
-- [Pruning data using a data companion](./pruning.md)
+- [Quick Start - Creating a Data Companion for CometBFT](./quick-start.md)
+- [Pruning - Using a Data Companion to influence data pruning on a CometBFT node](./pruning.md)

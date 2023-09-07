@@ -557,6 +557,7 @@ var genesisDocHashKey = []byte("genesisDocHash")
 func LoadStateFromDBOrGenesisDocProvider(
 	stateDB dbm.DB,
 	genesisDocProvider GenesisDocProvider,
+	storeConfig *cfg.StorageConfig,
 ) (sm.State, *types.GenesisDoc, error) {
 	// Get genesis doc hash
 	genDocHash, err := stateDB.Get(genesisDocHashKey)
@@ -582,6 +583,13 @@ func LoadStateFromDBOrGenesisDocProvider(
 			return sm.State{}, nil, fmt.Errorf("genesis doc hash in db does not match loaded genesis doc")
 		}
 	}
+
+	// Validate that existing or recently saved genesis file hash matches optional --genesis_hash passed by operator
+	recentGenDoc, err := stateDB.Get(genesisDocHashKey)
+	if len(storeConfig.GenesisHash) != 0 && !bytes.Equal(recentGenDoc, storeConfig.GenesisHash) {
+		return sm.State{}, nil, fmt.Errorf("genesis doc hash in db does not match passed --genesis_hash value")
+	}
+
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})

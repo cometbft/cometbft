@@ -313,10 +313,27 @@ func (blockExec *BlockExecutor) ApplyBlock(
 	return state, nil
 }
 
-func (blockExec *BlockExecutor) ExtendVote(ctx context.Context, vote *types.Vote) ([]byte, error) {
+func (blockExec *BlockExecutor) ExtendVote(
+	ctx context.Context,
+	vote *types.Vote,
+	block *types.Block,
+	state State,
+) ([]byte, error) {
+	if !block.HashesTo(vote.BlockID.Hash) {
+		panic(fmt.Sprintf("vote's hash does not match the block it is referring to %X!=%X", block.Hash(), vote.BlockID.Hash))
+	}
+	if vote.Height != block.Height {
+		panic(fmt.Sprintf("vote's and block's heights do not match %d!=%d", block.Height, vote.Height))
+	}
 	req := abci.RequestExtendVote{
-		Hash:   vote.BlockID.Hash,
-		Height: vote.Height,
+		Hash:               vote.BlockID.Hash,
+		Height:             vote.Height,
+		Time:               block.Time,
+		Txs:                block.Txs.ToSliceOfBytes(),
+		ProposedLastCommit: buildLastCommitInfo(block, blockExec.store, state.InitialHeight),
+		Misbehavior:        block.Evidence.Evidence.ToABCI(),
+		NextValidatorsHash: block.NextValidatorsHash,
+		ProposerAddress:    block.ProposerAddress,
 	}
 
 	resp, err := blockExec.proxyApp.ExtendVote(ctx, &req)

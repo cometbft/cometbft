@@ -1512,7 +1512,7 @@ func TestExtendVoteCalledWhenEnabled(t *testing.T) {
 			ensureNewRound(newRoundCh, height, round)
 			ensureNewProposal(proposalCh, height, round)
 
-			m.AssertNotCalled(t, "ExtendVote", mock.Anything, mock.Anything)
+			m.AssertNotCalled(t, "ExtendVote", mock.Anything)
 
 			rs := cs1.GetRoundState()
 
@@ -1527,14 +1527,8 @@ func TestExtendVoteCalledWhenEnabled(t *testing.T) {
 
 			if testCase.enabled {
 				m.AssertCalled(t, "ExtendVote", context.TODO(), &abci.RequestExtendVote{
-					Height:             height,
-					Hash:               blockID.Hash,
-					Time:               rs.ProposalBlock.Time,
-					Txs:                rs.ProposalBlock.Txs.ToSliceOfBytes(),
-					ProposedLastCommit: abci.CommitInfo{},
-					Misbehavior:        rs.ProposalBlock.Evidence.Evidence.ToABCI(),
-					NextValidatorsHash: rs.ProposalBlock.NextValidatorsHash,
-					ProposerAddress:    rs.ProposalBlock.ProposerAddress,
+					Height: height,
+					Hash:   blockID.Hash,
 				})
 			} else {
 				m.AssertNotCalled(t, "ExtendVote", mock.Anything, mock.Anything)
@@ -1605,14 +1599,8 @@ func TestVerifyVoteExtensionNotCalledOnAbsentPrecommit(t *testing.T) {
 	ensurePrecommit(voteCh, height, round)
 
 	m.AssertCalled(t, "ExtendVote", context.TODO(), &abci.RequestExtendVote{
-		Height:             height,
-		Hash:               blockID.Hash,
-		Time:               rs.ProposalBlock.Time,
-		Txs:                rs.ProposalBlock.Txs.ToSliceOfBytes(),
-		ProposedLastCommit: abci.CommitInfo{},
-		Misbehavior:        rs.ProposalBlock.Evidence.Evidence.ToABCI(),
-		NextValidatorsHash: rs.ProposalBlock.NextValidatorsHash,
-		ProposerAddress:    rs.ProposalBlock.ProposerAddress,
+		Height: height,
+		Hash:   blockID.Hash,
 	})
 
 	signAddVotes(cs1, cmtproto.PrecommitType, blockID.Hash, blockID.PartSetHeader, true, vss[2:]...)

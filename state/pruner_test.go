@@ -1,7 +1,7 @@
 package state_test
 
 import (
-	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -10,6 +10,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/pubsub/query"
 	sm "github.com/cometbft/cometbft/state"
 	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
 	"github.com/cometbft/cometbft/state/txindex/kv"
@@ -22,13 +23,10 @@ import (
 func TestPruneBlockIndexerToRetainHeight(t *testing.T) {
 	pruner, _, blockIndexer, _ := createTestSetup(t)
 
-	var keys [][][]byte
-
 	for height := int64(1); height <= 4; height++ {
 		events, _, _ := getEventsAndResults(height)
 		err := blockIndexer.Index(events)
 		require.NoError(t, err)
-		keys = append(keys, blockidxkv.GetKeys(blockIndexer))
 	}
 	err := pruner.SetBlockIndexerRetainHeight(2)
 	require.NoError(t, err)
@@ -36,18 +34,16 @@ func TestPruneBlockIndexerToRetainHeight(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(2), actual)
 
+	heights, err := blockIndexer.Search(context.Background(), query.MustCompile("block.height <= 2"))
+	require.NoError(t, err)
+	require.Equal(t, heights, []int64{1, 2})
+
 	newRetainHeight := pruner.PruneBlockIndexerToRetainHeight(0)
 	require.Equal(t, int64(2), newRetainHeight)
 
-	metaKeys := [][]byte{
-		kv.LastTxIndexerRetainHeightKey,
-		blockidxkv.LastBlockIndexerRetainHeightKey,
-		kv.TxIndexerRetainHeightKey,
-		blockidxkv.BlockIndexerRetainHeightKey,
-	}
-
-	keysAfterPrune2 := setDiff(blockidxkv.GetKeys(blockIndexer), metaKeys)
-	require.True(t, isEqualSets(keysAfterPrune2, setDiff(keys[3], keys[0])))
+	heights, err = blockIndexer.Search(context.Background(), query.MustCompile("block.height <= 2"))
+	require.NoError(t, err)
+	require.Equal(t, heights, []int64{2})
 
 	err = pruner.SetBlockIndexerRetainHeight(int64(4))
 	require.NoError(t, err)
@@ -55,28 +51,34 @@ func TestPruneBlockIndexerToRetainHeight(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(4), actual)
 
+	heights, err = blockIndexer.Search(context.Background(), query.MustCompile("block.height <= 4"))
+	require.NoError(t, err)
+	require.Equal(t, heights, []int64{2, 3, 4})
+
 	pruner.PruneBlockIndexerToRetainHeight(2)
 
-	keysAfterPrune4 := setDiff(blockidxkv.GetKeys(blockIndexer), metaKeys)
-	require.Equal(t, keysAfterPrune4, setDiff(keys[3], keys[2]))
+	heights, err = blockIndexer.Search(context.Background(), query.MustCompile("block.height <= 4"))
+	require.NoError(t, err)
+	require.Equal(t, heights, []int64{4})
 
 	events, _, _ := getEventsAndResults(1)
 
 	err = blockIndexer.Index(events)
 	require.NoError(t, err)
 
-	keys14 := blockidxkv.GetKeys(blockIndexer)
+	heights, err = blockIndexer.Search(context.Background(), query.MustCompile("block.height <= 4"))
+	require.NoError(t, err)
+	require.Equal(t, heights, []int64{1, 4})
 
 	pruner.PruneBlockIndexerToRetainHeight(4)
-	keysSecondPrune4 := blockidxkv.GetKeys(blockIndexer)
 
-	require.Equal(t, keys14, keysSecondPrune4)
+	heights, err = blockIndexer.Search(context.Background(), query.MustCompile("block.height <= 4"))
+	require.NoError(t, err)
+	require.Equal(t, heights, []int64{1, 4})
 }
 
 func TestPruneTxIndexerToRetainHeight(t *testing.T) {
 	pruner, txIndexer, _, _ := createTestSetup(t)
-
-	var keys [][][]byte
 
 	for height := int64(1); height <= 4; height++ {
 		_, txResult1, txResult2 := getEventsAndResults(height)
@@ -84,7 +86,6 @@ func TestPruneTxIndexerToRetainHeight(t *testing.T) {
 		require.NoError(t, err)
 		err = txIndexer.Index(txResult2)
 		require.NoError(t, err)
-		keys = append(keys, kv.GetKeys(txIndexer))
 	}
 
 	err := pruner.SetTxIndexerRetainHeight(2)
@@ -93,45 +94,59 @@ func TestPruneTxIndexerToRetainHeight(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(2), actual)
 
+	results, err := txIndexer.Search(context.Background(), query.MustCompile("tx.height < 2"))
+	require.NoError(t, err)
+	require.True(t, containsAllTxs(results, []string{"foo1", "bar1"}))
+
 	newRetainHeight := pruner.PruneTxIndexerToRetainHeight(0)
 	require.Equal(t, int64(2), newRetainHeight)
 
-	metaKeys := [][]byte{
-		kv.LastTxIndexerRetainHeightKey,
-		blockidxkv.LastBlockIndexerRetainHeightKey,
-		kv.TxIndexerRetainHeightKey,
-		blockidxkv.BlockIndexerRetainHeightKey,
-	}
-
-	keysAfterPrune2 := setDiff(kv.GetKeys(txIndexer), metaKeys)
-	require.True(t, isEqualSets(keysAfterPrune2, setDiff(keys[3], keys[0])))
+	results, err = txIndexer.Search(context.Background(), query.MustCompile("tx.height < 2"))
+	require.NoError(t, err)
+	require.Equal(t, 0, len(results))
 
 	err = pruner.SetTxIndexerRetainHeight(int64(4))
 	require.NoError(t, err)
-
 	actual, err = pruner.GetTxIndexerRetainHeight()
 	require.NoError(t, err)
-
 	require.Equal(t, int64(4), actual)
+
+	results, err = txIndexer.Search(context.Background(), query.MustCompile("tx.height < 4"))
+	require.NoError(t, err)
+	require.True(t, containsAllTxs(results, []string{"foo2", "bar2", "foo3", "bar3"}))
 
 	pruner.PruneTxIndexerToRetainHeight(2)
 
-	keysAfterPrune4 := setDiff(kv.GetKeys(txIndexer), metaKeys)
-	require.Equal(t, keysAfterPrune4, setDiff(keys[3], keys[2]))
+	results, err = txIndexer.Search(context.Background(), query.MustCompile("tx.height < 4"))
+	require.NoError(t, err)
+	require.Equal(t, 0, len(results))
 
 	_, txResult1, txResult2 := getEventsAndResults(1)
-
 	err = txIndexer.Index(txResult1)
 	require.NoError(t, err)
 	err = txIndexer.Index(txResult2)
 	require.NoError(t, err)
 
-	keys14 := kv.GetKeys(txIndexer)
+	results, err = txIndexer.Search(context.Background(), query.MustCompile("tx.height <= 4"))
+	require.NoError(t, err)
+	require.True(t, containsAllTxs(results, []string{"foo1", "bar1", "foo4", "bar4"}))
 
 	pruner.PruneTxIndexerToRetainHeight(4)
-	keysSecondPrune4 := kv.GetKeys(txIndexer)
 
-	require.Equal(t, keys14, keysSecondPrune4)
+	results, err = txIndexer.Search(context.Background(), query.MustCompile("tx.height <= 4"))
+	require.NoError(t, err)
+	require.True(t, containsAllTxs(results, []string{"foo1", "bar1", "foo4", "bar4"}))
+}
+
+func containsAllTxs(results []*abci.TxResult, txs []string) bool {
+	for _, tx := range txs {
+		if !slices.ContainsFunc(results, func(result *abci.TxResult) bool {
+			return string(result.Tx) == tx
+		}) {
+			return false
+		}
+	}
+	return true
 }
 
 func createTestSetup(t *testing.T) (*sm.Pruner, *kv.TxIndex, blockidxkv.BlockerIndexer, *types.EventBus) {
@@ -204,31 +219,4 @@ func getEventsAndResults(height int64) (types.EventDataNewBlockEvents, *abci.TxR
 		Result: abci.ExecTxResult{Code: 0},
 	}
 	return events, txResult1, txResult2
-}
-
-func isSubset(smaller [][]byte, bigger [][]byte) bool {
-	for _, elem := range smaller {
-		if !slices.ContainsFunc(bigger, func(i []byte) bool {
-			return bytes.Equal(i, elem)
-		}) {
-			return false
-		}
-	}
-	return true
-}
-
-func isEqualSets(x [][]byte, y [][]byte) bool {
-	return isSubset(x, y) && isSubset(y, x)
-}
-
-func setDiff(bigger [][]byte, smaller [][]byte) [][]byte {
-	var diff [][]byte
-	for _, elem := range bigger {
-		if !slices.ContainsFunc(smaller, func(i []byte) bool {
-			return bytes.Equal(i, elem)
-		}) {
-			diff = append(diff, elem)
-		}
-	}
-	return diff
 }

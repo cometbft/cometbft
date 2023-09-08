@@ -8,7 +8,7 @@ parent:
 # Introduction
 
 In [ADR-101](https://github.com/cometbft/cometbft/blob/thane/adr-084-data-companion-pull-api/docs/architecture/adr-101-data-companion-pull-api.md),
-it was proposed that a Data Companion be introduced as a solution to enable external applications to have an impact on the
+it was proposed that a Data Companion API be introduced as a solution to enable external applications to have an impact on the
 pruning of data on a node. The Data Companion works by leveraging the newly introduced gRPC APIs to control the [pruning](./pruning.md)
 process on the node.
 

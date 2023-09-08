@@ -55,3 +55,11 @@ func (p *Pruner) FindMinRetainHeight() int64 {
 func (p *Pruner) PruneABCIResToRetainHeight(lastRetainHeight int64) int64 {
 	return p.pruneABCIResToRetainHeight(lastRetainHeight)
 }
+
+func (p *Pruner) PruneTxIndexerToRetainHeight(lastRetainHeight int64) int64 {
+	return p.pruneTxIndexerToRetainHeight(lastRetainHeight)
+}
+
+func (p *Pruner) PruneBlockIndexerToRetainHeight(lastRetainHeight int64) int64 {
+	return p.pruneBlockIndexerToRetainHeight(lastRetainHeight)
+}

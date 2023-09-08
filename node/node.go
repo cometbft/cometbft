@@ -156,10 +156,6 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	}
 	blockStore, stateDB, err := initDBs(config, dbProvider)
 
-	if err != nil {
-		return err
-	}
-
 	defer func() {
 		if derr := blockStore.Close(); derr != nil {
 			logger.Error("Failed to close blockstore", "err", derr)
@@ -167,6 +163,10 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 			err = derr
 		}
 	}()
+
+	if err != nil {
+		return err
+	}
 
 	if !blockStore.IsEmpty() {
 		return fmt.Errorf("blockstore not empty, trying to initialize non empty state")

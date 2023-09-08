@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/cometbft/cometbft/state"
 	"github.com/google/orderedcode"
 
 	dbm "github.com/cometbft/cometbft-db"
@@ -23,7 +24,11 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-var _ indexer.BlockIndexer = (*BlockerIndexer)(nil)
+var (
+	LastBlockIndexerRetainHeightKey = []byte("LastBlockIndexerRetainHeightKey")
+	BlockIndexerRetainHeightKey     = []byte("BlockIndexerRetainHeightKey")
+	ErrInvalidHeightValue           = errors.New("invalid height value")
+)
 
 // BlockerIndexer implements a block indexer, indexing FinalizeBlock
 // events with an underlying KV store. Block events are indexed by their height,
@@ -82,8 +87,133 @@ func (idx *BlockerIndexer) Index(bh types.EventDataNewBlockEvents) error {
 	if err := idx.indexEvents(batch, bh.Events, height); err != nil {
 		return fmt.Errorf("failed to index FinalizeBlock events: %w", err)
 	}
-
 	return batch.WriteSync()
+}
+
+func getKeys(indexer BlockerIndexer) [][]byte {
+	var keys [][]byte
+
+	itr, err := indexer.store.Iterator(nil, nil)
+	if err != nil {
+		panic(err)
+	}
+	for ; itr.Valid(); itr.Next() {
+		keys = append(keys, itr.Key())
+	}
+	return keys
+}
+
+func (idx *BlockerIndexer) Prune(retainHeight int64) (int64, int64, error) {
+	// Returns numPruned, newRetainHeight, err
+	// numPruned: the number of heights pruned or 0 in case of error. E.x. if heights {1, 3, 7} were pruned and there was no error, numPruned == 3
+	// newRetainHeight: new retain height after pruning or lastRetainHeight in case of error
+	// err: error
+
+	lastRetainHeight, err := idx.getLastRetainHeight()
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to look up last block indexer retain height: %w", err)
+	}
+	if lastRetainHeight == 0 {
+		lastRetainHeight = 1
+	}
+
+	batch := idx.store.NewBatch()
+	closeBatch := func(batch dbm.Batch) {
+		err := batch.Close()
+		if err != nil {
+			idx.log.Error(fmt.Sprintf("Error when closing block indexer pruning batch: %v", err))
+		}
+	}
+	defer closeBatch(batch)
+
+	flush := func(batch dbm.Batch) error {
+		err := batch.WriteSync()
+		if err != nil {
+			return fmt.Errorf("failed to flush block indexer pruning batch %w", err)
+		}
+		err = batch.Close()
+		if err != nil {
+			idx.log.Error(fmt.Sprintf("Error when closing block indexer pruning batch: %v", err))
+		}
+		return nil
+	}
+
+	itr, err := idx.store.Iterator(nil, nil)
+	if err != nil {
+		return 0, lastRetainHeight, err
+	}
+	deleted := 0
+	affectedHeights := make(map[int64]struct{})
+	for ; itr.Valid(); itr.Next() {
+		if keyBelongsToHeightRange(itr.Key(), lastRetainHeight, retainHeight) {
+			err := batch.Delete(itr.Key())
+			if err != nil {
+				return 0, lastRetainHeight, err
+			}
+			height := getHeightFromKey(itr.Key())
+			affectedHeights[height] = struct{}{}
+			deleted++
+		}
+		if deleted%1000 == 0 && deleted != 0 {
+			err = flush(batch)
+			if err != nil {
+				return 0, lastRetainHeight, err
+			}
+			batch = idx.store.NewBatch()
+			defer closeBatch(batch)
+		}
+	}
+
+	errSetLastRetainHeight := idx.setLastRetainHeight(retainHeight, batch)
+	if errSetLastRetainHeight != nil {
+		return 0, lastRetainHeight, errSetLastRetainHeight
+	}
+	errWriteBatch := batch.WriteSync()
+	if errWriteBatch != nil {
+		return 0, lastRetainHeight, errWriteBatch
+	}
+
+	return int64(len(affectedHeights)), retainHeight, err
+}
+
+func (idx *BlockerIndexer) SetRetainHeight(retainHeight int64) error {
+	return idx.store.SetSync(BlockIndexerRetainHeightKey, int64ToBytes(retainHeight))
+}
+
+func (idx *BlockerIndexer) GetRetainHeight() (int64, error) {
+	buf, err := idx.store.Get(BlockIndexerRetainHeightKey)
+	if err != nil {
+		return 0, err
+	}
+	if buf == nil {
+		return 0, state.ErrKeyNotFound
+	}
+	height := int64FromBytes(buf)
+
+	if height < 0 {
+		return 0, state.ErrInvalidHeightValue
+	}
+
+	return height, nil
+}
+
+func (idx *BlockerIndexer) setLastRetainHeight(height int64, batch dbm.Batch) error {
+	return batch.Set(LastBlockIndexerRetainHeightKey, int64ToBytes(height))
+}
+
+func (idx *BlockerIndexer) getLastRetainHeight() (int64, error) {
+	bz, err := idx.store.Get(LastBlockIndexerRetainHeightKey)
+	if err != nil {
+		return 0, err
+	}
+	if bz == nil {
+		return 0, nil
+	}
+	height := int64FromBytes(bz)
+	if height < 0 {
+		return 0, ErrInvalidHeightValue
+	}
+	return height, nil
 }
 
 // Search performs a query for block heights that match a given FinalizeBlock
@@ -604,6 +734,5 @@ func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, hei
 			}
 		}
 	}
-
 	return nil
 }

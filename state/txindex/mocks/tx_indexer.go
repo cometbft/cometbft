@@ -20,6 +20,18 @@ type TxIndexer struct {
 	mock.Mock
 }
 
+func (_m *TxIndexer) GetRetainHeight() (int64, error) {
+	return 0, nil
+}
+
+func (_m *TxIndexer) SetRetainHeight(retainHeight int64) error {
+	return nil
+}
+
+func (_m *TxIndexer) Prune(retainHeight int64) (int64, int64, error) {
+	return 0, 0, nil
+}
+
 // AddBatch provides a mock function with given fields: b
 func (_m *TxIndexer) AddBatch(b *txindex.Batch) error {
 	ret := _m.Called(b)

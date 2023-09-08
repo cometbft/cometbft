@@ -140,6 +140,9 @@ type State struct {
 
 	// for reporting metrics
 	metrics *Metrics
+
+	// offline state sync height indicating to which height the node synced offline
+	offlineStateSyncHeight int64
 }
 
 // StateOption sets an optional parameter on the State.
@@ -171,7 +174,9 @@ func NewState(
 		evsw:             cmtevents.NewEventSwitch(),
 		metrics:          NopMetrics(),
 	}
-
+	for _, option := range options {
+		option(cs)
+	}
 	// set function defaults (may be overwritten before calling Start)
 	cs.decideProposal = cs.defaultDecideProposal
 	cs.doPrevote = cs.defaultDoPrevote
@@ -179,7 +184,16 @@ func NewState(
 
 	// We have no votes, so reconstruct LastCommit from SeenCommit.
 	if state.LastBlockHeight > 0 {
-		cs.reconstructLastCommit(state)
+		// In case of out of band performed statesync, the state store
+		// will have a state but no extended commit (as no block has been downloaded).
+		// If the height at which the vote extensions are enabled is lower
+		// than the height at which we statesync, consensus will panic because
+		// it will try to reconstruct the extended commit here.
+		if cs.offlineStateSyncHeight != 0 {
+			cs.reconstructSeenCommit(state)
+		} else {
+			cs.reconstructLastCommit(state)
+		}
 	}
 
 	cs.updateToState(state)
@@ -187,9 +201,6 @@ func NewState(
 	// NOTE: we do not call scheduleRound0 yet, we do that upon Start()
 
 	cs.BaseService = *service.NewBaseService(nil, "State", cs)
-	for _, option := range options {
-		option(cs)
-	}
 
 	return cs
 }
@@ -209,6 +220,12 @@ func (cs *State) SetEventBus(b *types.EventBus) {
 // StateMetrics sets the metrics.
 func StateMetrics(metrics *Metrics) StateOption {
 	return func(cs *State) { cs.metrics = metrics }
+}
+
+// OfflineStateSyncHeight indicates the height at which the node
+// statesync offline - before booting sets the metrics.
+func OfflineStateSyncHeight(height int64) StateOption {
+	return func(cs *State) { cs.offlineStateSyncHeight = height }
 }
 
 // String returns a string.

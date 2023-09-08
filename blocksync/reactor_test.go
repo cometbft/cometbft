@@ -145,7 +145,7 @@ func newReactor(
 		blockStore.SaveBlock(thisBlock, thisParts, lastCommit)
 	}
 
-	bcReactor := NewReactor(state.Copy(), blockExec, blockStore, fastSync)
+	bcReactor := NewReactor(state.Copy(), blockExec, blockStore, fastSync, 0)
 	bcReactor.SetLogger(logger.With("module", "blockchain"))
 
 	return ReactorPair{bcReactor, proxyApp}

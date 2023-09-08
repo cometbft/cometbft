@@ -303,3 +303,8 @@ func TestLastABCIResponses(t *testing.T) {
 		assert.Equal(t, sm.ErrABCIResponsesNotPersisted, err)
 	})
 }
+func TestIntConversion(t *testing.T) {
+	x := int64(10)
+	b := sm.Int64ToBytes(x)
+	require.Equal(t, x, sm.Int64FromBytes(b))
+}

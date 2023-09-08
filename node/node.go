@@ -21,12 +21,13 @@ import (
 	cs "github.com/cometbft/cometbft/consensus"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/evidence"
+	"github.com/cometbft/cometbft/light"
 
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
 	"github.com/cometbft/cometbft/libs/service"
-	"github.com/cometbft/cometbft/light"
+
 	mempl "github.com/cometbft/cometbft/mempool"
 	mempoolv0 "github.com/cometbft/cometbft/mempool/v0"
 	mempoolv1 "github.com/cometbft/cometbft/mempool/v1" //nolint:staticcheck // SA1019 Priority mempool deprecated but still supported in this release.
@@ -186,6 +187,124 @@ func StateProvider(stateProvider statesync.StateProvider) Option {
 	return func(n *Node) {
 		n.stateSyncProvider = stateProvider
 	}
+}
+
+// BootstrapState synchronizes the stores with the application after state sync
+// has been performed offline. It is expected that the block store and state
+// store are empty at the time the function is called.
+//
+// If the block store is not empty, the function returns an error.
+func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBProvider, height uint64, appHash []byte) (err error) {
+	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	if config == nil {
+		logger.Info("no config provided, using default configuration")
+		config = cfg.DefaultConfig()
+	}
+
+	if dbProvider == nil {
+		dbProvider = cfg.DefaultDBProvider
+	}
+	blockStore, stateDB, err := initDBs(config, dbProvider)
+
+	defer func() {
+		if derr := blockStore.Close(); derr != nil {
+			logger.Error("Failed to close blockstore", "err", derr)
+			// Set the return value
+			err = derr
+		}
+	}()
+
+	if err != nil {
+		return err
+	}
+
+	if !blockStore.IsEmpty() {
+		return fmt.Errorf("blockstore not empty, trying to initialize non empty state")
+	}
+
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
+	})
+
+	defer func() {
+		if derr := stateStore.Close(); derr != nil {
+			logger.Error("Failed to close statestore", "err", derr)
+			// Set the return value
+			err = derr
+		}
+	}()
+	state, err := stateStore.Load()
+	if err != nil {
+		return err
+	}
+
+	if !state.IsEmpty() {
+		return fmt.Errorf("state not empty, trying to initialize non empty state")
+	}
+
+	genState, _, err := LoadStateFromDBOrGenesisDocProvider(stateDB, DefaultGenesisDocProviderFunc(config))
+	if err != nil {
+		return err
+	}
+
+	stateProvider, err := statesync.NewLightClientStateProvider(
+		ctx,
+		genState.ChainID, genState.Version, genState.InitialHeight,
+		config.StateSync.RPCServers, light.TrustOptions{
+			Period: config.StateSync.TrustPeriod,
+			Height: config.StateSync.TrustHeight,
+			Hash:   config.StateSync.TrustHashBytes(),
+		}, logger.With("module", "light"))
+	if err != nil {
+		return fmt.Errorf("failed to set up light client state provider: %w", err)
+	}
+
+	state, err = stateProvider.State(ctx, height)
+	if err != nil {
+		return err
+	}
+	if appHash == nil {
+		logger.Info("warning: cannot verify appHash. Verification will happen when node boots up!")
+	} else {
+		if !bytes.Equal(appHash, state.AppHash) {
+			if err := blockStore.Close(); err != nil {
+				logger.Error("failed to close blockstore: %w", err)
+			}
+			if err := stateStore.Close(); err != nil {
+				logger.Error("failed to close statestore: %w", err)
+			}
+			return fmt.Errorf("the app hash returned by the light client does not match the provided appHash, expected %X, got %X", state.AppHash, appHash)
+		}
+	}
+
+	commit, err := stateProvider.Commit(ctx, height)
+	if err != nil {
+		return err
+	}
+
+	if err = stateStore.Bootstrap(state); err != nil {
+		return err
+	}
+
+	err = blockStore.SaveSeenCommit(state.LastBlockHeight, commit)
+	if err != nil {
+		return err
+	}
+
+	// Once the stores are bootstrapped, we need to set the height at which the node has finished
+	// statesyncing. This will allow the blocksync reactor to fetch blocks at a proper height.
+	// In case this operation fails, it is equivalent to a failure in  online state sync where the operator
+	// needs to manually delete the state and blockstores and rerun the bootstrapping process.
+	err = stateStore.SetOfflineStateSyncHeight(state.LastBlockHeight)
+	if err != nil {
+		return fmt.Errorf("failed to set synced height: %w", err)
+	}
+
+	return err
 }
 
 //------------------------------------------------------------------------------
@@ -830,9 +949,16 @@ func NewNodeWithContext(ctx context.Context,
 		evidencePool,
 		sm.BlockExecutorWithMetrics(smMetrics),
 	)
+	offlineStateSyncHeight := int64(0)
+	if blockStore.Height() == 0 {
+		offlineStateSyncHeight, err = blockExec.Store().GetOfflineStateSyncHeight()
+		if err != nil && err.Error() != "value empty" {
+			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s; expected state store height to be %v", err, state.LastBlockHeight))
+		}
+	}
 
 	// Make BlockchainReactor. Don't start block sync if we're doing a state sync first.
-	bcReactor, err := createBlockchainReactor(config, state, blockExec, blockStore, blockSync && !stateSync, logger)
+	bcReactor, err := createBlockchainReactor(config, state, blockExec, blockStore, blockSync && !stateSync, logger, offlineStateSyncHeight)
 	if err != nil {
 		return nil, fmt.Errorf("could not create blockchain reactor: %w", err)
 	}
@@ -846,9 +972,13 @@ func NewNodeWithContext(ctx context.Context,
 	}
 	consensusReactor, consensusState := createConsensusReactor(
 		config, state, blockExec, blockStore, mempool, evidencePool,
-		privValidator, csMetrics, stateSync || blockSync, eventBus, consensusLogger,
+		privValidator, csMetrics, stateSync || blockSync, eventBus, consensusLogger, offlineStateSyncHeight,
 	)
 
+	err = stateStore.SetOfflineStateSyncHeight(0)
+	if err != nil {
+		panic(fmt.Sprintf("failed to reset the offline state sync height %s", err))
+	}
 	// Set up state sync reactor, and schedule a sync if requested.
 	// FIXME The way we do phased startups (e.g. replay -> block sync -> consensus) is very messy,
 	// we should clean this whole thing up. See:

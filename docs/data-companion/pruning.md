@@ -13,7 +13,7 @@ This document covers use cases where the data companion can influence the prunin
 can influence the pruning logic on the node.
 
 CometBFT provides a privileged gRPC endpoint for the pruning service. This privileged endpoint is distinct from the
-regular gRPC endpoint and require separate configuration and activation. These "privileged" services
+regular gRPC endpoint and requires separate configuration and activation. These "privileged" services
 have the ability to manipulate the storage on the node. Therefore, only operators who have privileged access
 to the server should be allowed to use them.
 

@@ -1,6 +1,7 @@
 package state
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 
@@ -41,6 +42,7 @@ func calcABCIResponsesKey(height int64) []byte {
 //----------------------
 
 var lastABCIResponseKey = []byte("lastABCIResponseKey")
+var offlineStateSyncHeight = []byte("offlineStateSyncHeightKey")
 
 //go:generate ../scripts/mockery_generate.sh Store
 
@@ -73,6 +75,10 @@ type Store interface {
 	Bootstrap(State) error
 	// PruneStates takes the height from which to start pruning and which height stop at
 	PruneStates(int64, int64, int64) error
+	// Saves the height at which the store is bootstrapped after out of band statesync
+	SetOfflineStateSyncHeight(height int64) error
+	// Gets the height at which the store is bootstrapped after out of band statesync
+	GetOfflineStateSyncHeight() (int64, error)
 	// Close closes the connection with the database
 	Close() error
 }
@@ -93,6 +99,14 @@ type StoreOptions struct {
 }
 
 var _ Store = (*dbStore)(nil)
+
+func IsEmpty(store dbStore) (bool, error) {
+	state, err := store.Load()
+	if err != nil {
+		return false, err
+	}
+	return state.IsEmpty(), nil
+}
 
 // NewStore creates the dbStore of the state pkg.
 func NewStore(db dbm.DB, options StoreOptions) Store {
@@ -683,6 +697,34 @@ func (store dbStore) saveConsensusParamsInfo(nextHeight, changeHeight int64, par
 	return nil
 }
 
+func (store dbStore) SetOfflineStateSyncHeight(height int64) error {
+	err := store.db.SetSync(offlineStateSyncHeight, int64ToBytes(height))
+	if err != nil {
+		return err
+	}
+	return nil
+
+}
+
+// Gets the height at which the store is bootstrapped after out of band statesync
+func (store dbStore) GetOfflineStateSyncHeight() (int64, error) {
+
+	buf, err := store.db.Get(offlineStateSyncHeight)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(buf) == 0 {
+		return 0, errors.New("value empty")
+	}
+
+	height := int64FromBytes(buf)
+	if height < 0 {
+		return 0, errors.New("invalid value for height: height cannot be negative")
+	}
+	return height, nil
+}
+
 func (store dbStore) Close() error {
 	return store.db.Close()
 }
@@ -705,4 +747,15 @@ func responseFinalizeBlockFromLegacy(legacyResp *cmtstate.LegacyABCIResponses) *
 		// NOTE: AppHash is missing in the response but will
 		// be caught and filled in consensus/replay.go
 	}
+}
+
+func int64FromBytes(bz []byte) int64 {
+	v, _ := binary.Varint(bz)
+	return v
+}
+
+func int64ToBytes(i int64) []byte {
+	buf := make([]byte, binary.MaxVarintLen64)
+	n := binary.PutVarint(buf, i)
+	return buf[:n]
 }

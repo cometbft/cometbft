@@ -111,8 +111,8 @@ The pruning service uses the "block retain height" parameter to specify the heig
 preserve blocks. It is important to note that this parameter differs from the application block retain height, which
 the application sets in response to ABCI commit messages.
 
-> NOTE: In order to set the block retain height on the node, you have to enable the privileged services endpoint and the block service in the
-configuration as described in section above.
+> NOTE: In order to set the block retain height on the node, you have to enable the privileged services endpoint and the
+pruning service in the configuration as described in section above.
 
 Once the services are enabled, you can use the Golang client provided by CometBFT to invoke the method that sets the block retain height.
 
@@ -173,7 +173,7 @@ The "block results retain height" pruning parameter determines the height up to 
 By retaining block results to a certain height, the node can efficiently manage its storage and optimize its performance.
 
 > NOTE: In order to set the block results retain height on the node, you have to enable the privileged services endpoint and the
-block results service in the configuration as described in the section above.
+pruning service in the configuration as described in the section above.
 
 Once the services are enabled, you can use the Golang client provided by CometBFT to invoke the method that sets the block results retain height.
 
@@ -207,7 +207,7 @@ If you need to check what is the current value for the `Block Results Retain Hei
 
 Here's an example:
 ```
-retainHeight, err := conn.GetBlockResultsRetainHeight(f.context)
+retainHeight, err := conn.GetBlockResultsRetainHeight(ctx)
 if err != nil {
     // Do something with the error
 } else {
@@ -233,3 +233,104 @@ results pruned the value should be set to `false` (default)
 discard_abci_responses = false
 ```
 
+## Pruning Block Indexed Data
+
+The "block indexer retain height" pruning parameter determines the height up to which the node will keep block indexed data.
+
+> NOTE: In order to set the block indexer retain height on the node, you have to enable the privileged services endpoint and the
+pruning service in the configuration as described in the section above.
+
+Once the services are enabled, you can use the Golang client provided by CometBFT to invoke the method that sets the block
+indexer retain height.
+
+Here is an example code:
+```
+
+import (
+"github.com/cometbft/cometbft/rpc/grpc/client/privileged"
+)
+
+ctx := context.Background()
+
+// Privileged Service Client
+addr := "0.0.0.0:26091"
+conn, err := privileged.New(ctx, addr, privileged.WithInsecure())
+if err != nil {
+    // Do something with the error
+}
+
+err := conn.SetBlockIndexerRetainHeight(ctx, height)
+if err != nil {
+    // Do something with the error
+}
+
+```
+
+> NOTE: If you try to set the `Block Indexer Retain Height` to a value that is lower to what is currently stored in the node, an error will
+be returned informing that.
+
+If you need to check what is the current value for the `Block Indexer Retain Height` you can use another method.
+
+Here's an example:
+```
+retainHeight, err := conn.GetBlockIndexerRetainHeight(ctx)
+if err != nil {
+    // Do something with the error
+} else {
+    // Do something with the `retainHeight` value
+}
+
+```
+
+## Pruning Transaction Indexed Data
+
+The "tx indexer retain height" pruning parameter determines the height up to which the node will keep transaction indexed data.
+
+> NOTE: In order to set the tx indexer retain height on the node, you have to enable the privileged services endpoint and the
+pruning service in the configuration as described in the section above.
+
+Once the services are enabled, you can use the Golang client provided by CometBFT to invoke the method that sets the tx
+indexer retain height.
+
+Here is an example code:
+```
+
+import (
+"github.com/cometbft/cometbft/rpc/grpc/client/privileged"
+)
+
+ctx := context.Background()
+
+// Privileged Service Client
+addr := "0.0.0.0:26091"
+conn, err := privileged.New(ctx, addr, privileged.WithInsecure())
+if err != nil {
+    // Do something with the error
+}
+
+err := conn.SetTxIndexerRetainHeight(ctx, height)
+if err != nil {
+    // Do something with the error
+}
+
+```
+
+> NOTE: If you try to set the `Tx Indexer Retain Height` to a value that is lower to what is currently stored in the node, an error will
+be returned informing that.
+
+If you need to check what is the current value for the `Tx Indexer Retain Height` you can use another method.
+
+Here's an example:
+```
+retainHeight, err := conn.GetTxIndexerRetainHeight(ctx)
+if err != nil {
+    // Do something with the error
+} else {
+    // Do something with the `retainHeight` value
+}
+
+```
+
+Utilizing the pruning service can unlock remarkable benefits for your node. Whether used with a Data Companion service
+or as a standalone solution, it can greatly enhance the pruning mechanism on your node, leading to significant cost
+savings in node operation.

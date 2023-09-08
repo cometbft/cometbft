@@ -331,6 +331,8 @@ if err != nil {
 
 ```
 
+## Conclusion
+
 Utilizing the pruning service can unlock remarkable benefits for your node. Whether used with a Data Companion service
 or as a standalone solution, it can greatly enhance the pruning mechanism on your node, leading to significant cost
 savings in node operation.

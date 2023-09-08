@@ -159,9 +159,6 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	if err != nil {
 		return err
 	}
-	if !blockStore.IsEmpty() {
-		return fmt.Errorf("blockstore not empty, trying to initialize non empty state")
-	}
 
 	defer func() {
 		if derr := blockStore.Close(); derr != nil {
@@ -170,6 +167,10 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 			err = derr
 		}
 	}()
+
+	if !blockStore.IsEmpty() {
+		return fmt.Errorf("blockstore not empty, trying to initialize non empty state")
+	}
 
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,

@@ -65,7 +65,7 @@ func (txi *TxIndex) Prune(retainHeight int64) (int64, int64, error) {
 	results, err := txi.Search(ctx, query.MustCompile(
 		fmt.Sprintf("tx.height < %d AND tx.height >= %d", retainHeight, lastRetainHeight)))
 	if err != nil {
-		panic(err)
+		return 0, lastRetainHeight, err
 	}
 	if len(results) == 0 {
 		return 0, lastRetainHeight, nil

@@ -3,9 +3,9 @@ package node
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"net"
+	"os"
 	"strings"
 	"time"
 
@@ -18,10 +18,10 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	cs "github.com/cometbft/cometbft/consensus"
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/evidence"
 	"github.com/cometbft/cometbft/statesync"
 
-	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
 	mempl "github.com/cometbft/cometbft/mempool"
@@ -42,16 +42,35 @@ import (
 
 const readHeaderTimeout = 10 * time.Second
 
-// GenesisDocProvider returns a GenesisDoc.
+// ChecksummedGenesisDoc combines a GenesisDoc together with its
+// SHA256 checksum.
+type ChecksummedGenesisDoc struct {
+	GenesisDoc     *types.GenesisDoc
+	Sha256Checksum []byte
+}
+
+// GenesisDocProvider returns a GenesisDoc together with its SHA256 checksum.
 // It allows the GenesisDoc to be pulled from sources other than the
 // filesystem, for instance from a distributed key-value store cluster.
-type GenesisDocProvider func() (*types.GenesisDoc, error)
+type GenesisDocProvider func() (ChecksummedGenesisDoc, error)
 
 // DefaultGenesisDocProviderFunc returns a GenesisDocProvider that loads
 // the GenesisDoc from the config.GenesisFile() on the filesystem.
 func DefaultGenesisDocProviderFunc(config *cfg.Config) GenesisDocProvider {
-	return func() (*types.GenesisDoc, error) {
-		return types.GenesisDocFromFile(config.GenesisFile())
+	return func() (ChecksummedGenesisDoc, error) {
+		// FIXME: find a way to stream the file incrementally,
+		// for the JSON	parser and the checksum computation.
+		// https://github.com/cometbft/cometbft/issues/1302
+		jsonBlob, err := os.ReadFile(config.GenesisFile())
+		if err != nil {
+			return ChecksummedGenesisDoc{}, fmt.Errorf("couldn't read GenesisDoc file: %w", err)
+		}
+		incomingChecksum := tmhash.Sum(jsonBlob)
+		genDoc, err := types.GenesisDocFromJSON(jsonBlob)
+		if err != nil {
+			return ChecksummedGenesisDoc{}, err
+		}
+		return ChecksummedGenesisDoc{GenesisDoc: genDoc, Sha256Checksum: incomingChecksum}, nil
 	}
 }
 
@@ -529,7 +548,8 @@ func startStateSync(
 
 //------------------------------------------------------------------------------
 
-var genesisDocKey = []byte("genesisDoc")
+// var genesisDocKey = []byte("genesisDoc")
+var genesisDocHashKey = []byte("genesisDocHash")
 
 // LoadStateFromDBOrGenesisDocProvider attempts to load the state from the
 // database, or creates one using the given genesisDocProvider. On success this also
@@ -538,58 +558,38 @@ func LoadStateFromDBOrGenesisDocProvider(
 	stateDB dbm.DB,
 	genesisDocProvider GenesisDocProvider,
 ) (sm.State, *types.GenesisDoc, error) {
-	// Get genesis doc
-	genDoc, err := loadGenesisDoc(stateDB)
+	// Get genesis doc hash
+	genDocHash, err := stateDB.Get(genesisDocHashKey)
 	if err != nil {
-		genDoc, err = genesisDocProvider()
-		if err != nil {
-			return sm.State{}, nil, err
-		}
+		return sm.State{}, nil, fmt.Errorf("error retrieving genesis doc hash: %w", err)
+	}
+	csGenDoc, err := genesisDocProvider()
+	if err != nil {
+		return sm.State{}, nil, err
+	}
 
-		err = genDoc.ValidateAndComplete()
-		if err != nil {
-			return sm.State{}, nil, fmt.Errorf("error in genesis doc: %w", err)
+	if err := csGenDoc.GenesisDoc.ValidateAndComplete(); err != nil {
+		return sm.State{}, nil, fmt.Errorf("error in genesis doc: %w", err)
+	}
+
+	if len(genDocHash) == 0 {
+		// Save the genDoc hash in the store if it doesn't already exist for future verification
+		if err := stateDB.SetSync(genesisDocHashKey, csGenDoc.Sha256Checksum); err != nil {
+			return sm.State{}, nil, fmt.Errorf("failed to save genesis doc hash to db: %w", err)
 		}
-		// save genesis doc to prevent a certain class of user errors (e.g. when it
-		// was changed, accidentally or not). Also good for audit trail.
-		if err := saveGenesisDoc(stateDB, genDoc); err != nil {
-			return sm.State{}, nil, err
+	} else {
+		if !bytes.Equal(genDocHash, csGenDoc.Sha256Checksum) {
+			return sm.State{}, nil, fmt.Errorf("genesis doc hash in db does not match loaded genesis doc")
 		}
 	}
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
-	state, err := stateStore.LoadFromDBOrGenesisDoc(genDoc)
+	state, err := stateStore.LoadFromDBOrGenesisDoc(csGenDoc.GenesisDoc)
 	if err != nil {
 		return sm.State{}, nil, err
 	}
-	return state, genDoc, nil
-}
-
-// panics if failed to unmarshal bytes
-func loadGenesisDoc(db dbm.DB) (*types.GenesisDoc, error) {
-	b, err := db.Get(genesisDocKey)
-	if err != nil {
-		panic(err)
-	}
-	if len(b) == 0 {
-		return nil, errors.New("genesis doc not found")
-	}
-	var genDoc *types.GenesisDoc
-	err = cmtjson.Unmarshal(b, &genDoc)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to load genesis doc due to unmarshaling error: %v (bytes: %X)", err, b))
-	}
-	return genDoc, nil
-}
-
-// panics if failed to marshal the given genesis document
-func saveGenesisDoc(db dbm.DB, genDoc *types.GenesisDoc) error {
-	b, err := cmtjson.Marshal(genDoc)
-	if err != nil {
-		return fmt.Errorf("failed to save genesis doc due to marshaling error: %w", err)
-	}
-	return db.SetSync(genesisDocKey, b)
+	return state, csGenDoc.GenesisDoc, nil
 }
 
 func createAndStartPrivValidatorSocketClient(

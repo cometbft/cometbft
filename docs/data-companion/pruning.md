@@ -1,29 +1,70 @@
 ---
 order: 1
 parent:
-    title: Pruning
+    title: Pruning Service
     order: 3
 ---
 
-# Using a Data Companion to influence data pruning on a CometBFT node
+# Pruning data via the pruning service
 
 CometBFT employs a sophisticated pruning logic to eliminate unnecessary data and reduce storage requirements.
 
-This document covers use cases where the data companion can influence the pruning process and explains how the data companion
-can influence the pruning logic on the node.
+This document covers use cases where the pruning process on a CometBFT node can be influenced via the Data Companion
+pruning service API.
 
 CometBFT provides a privileged gRPC endpoint for the pruning service. This privileged endpoint is distinct from the
-regular gRPC endpoint and require separate configuration and activation. These "privileged" services
-have the ability to manipulate the storage on the node. Therefore, only operators who have privileged access
-to the server should be allowed to use them.
+non-privileged (regular) gRPC endpoint and require separate configuration and activation. These "privileged" services
+have the ability to manipulate the storage on the node.
+
+Therefore, **only operators who have privileged access to the server should be allowed to use them**.
+
+## Privileged Services configuration
+
+CometBFT provides "privileged" services which are not intended to be exposed to the public-facing Internet.
+
+The privileged services offered by CometBFT can modify the data stored in the node, and hence, it's essential to keep
+them off by default to avoid any unintended modifications.
+
+However, when required, these services can be activated to set and retrieve a retained height, which can influence
+the pruning mechanism on the node.
+
+To be able to use the privileged gRPC services, it should be enabled through CometBFT's configuration.
+
+The first step is to set the address for the privileged service, for example:
+```
+#
+# Configuration for privileged gRPC endpoints, which should **never** be exposed
+# to the public internet.
+#
+[grpc.privileged]
+# The host/port on which to expose privileged gRPC endpoints.
+laddr = "tcp://0.0.0.0:26091"
+```
+
+In the `[grpc.privileged.pruning_service]` section, ensure the value `enabled` is set to `true`
+
+```
+#
+# Configuration specifically for the gRPC pruning service, which is considered a
+# privileged service.
+#
+[grpc.privileged.pruning_service]
+
+# Only controls whether the pruning service is accessible via the gRPC API - not
+# whether a previously set pruning service retain height is honored by the
+# node. See the [storage.pruning] section for control over pruning.
+#
+# Disabled by default.
+enabled = true
+```
 
 ## Pruning configuration
 
-You need to ensure that the pruning for data companion is enabled in the configuration to allow the data companion
-influence the node pruning mechanism.
+Ensure that the data companion pruning is enabled in the configuration to allow the data companion to influence the
+node pruning mechanism.
 
-In order to do that, please ensure that in the `[storage.pruning.data_companion]` section of the CometBFT's configuration
-file, the property `enabled` is set to `true`:
+In the `[storage.pruning.data_companion]` section of the CometBFT's configuration
+file, the property `enabled` should be set to `true`:
 
 ```
 [storage.pruning.data_companion]
@@ -56,24 +97,22 @@ initial_block_retain_height = 0
 initial_block_results_retain_height = 10
 ```
 
-## Retain Height parameter
+## Retain Height
 
-The pruning API uses two crucial parameters that allow for efficient data storage management. The "block retain height"
-pruning parameter specifies the height to which the node will preserve blocks. It is important to note that this
-parameter differs from the application block retain height, which the application sets in response to ABCI commit messages.
+One important concept that can affect the pruning of nodes is the `retain height`. The retain height determines the specific
+height from which the data can be safely deleted from the node's storage. By considering the retain height,
+nodes can effectively manage their storage usage and ensure that they are only retaining the data that is necessary for
+their operations. This is important because storage space is a finite resource and nodes with limited storage space may
+struggle to keep up with the growth of the blockchain.
 
-The node will preserve blocks up to the lowest value between the data companion retain height and the application block retain height.
+## Pruning Blocks
 
-The "block results retain height" pruning parameter is the second crucial aspect of the pruning API.
-This parameter determines the height up to which the node will keep block results. By retaining block results to a
-certain height, the node can efficiently manage its storage and optimize its performance.
+The pruning service uses the "block retain height" parameter to specify the height to which the node will
+preserve blocks. It is important to note that this parameter differs from the application block retain height, which
+the application sets in response to ABCI commit messages.
 
-With these two parameters, the pruning service ensures that the node efficiently manages its data storage.
-
-### Block Retain Height
-
-In order to set the block retain height on the node, you have to enable the privileged services endpoint and the block service in the
-configuration as described in the `Privileged Services` section of the [Creating a Data Companion for CometBFT](./quick-start.md).
+> NOTE: In order to set the block retain height on the node, you have to enable the privileged services endpoint and the block service in the
+configuration as described in section above.
 
 Once the services are enabled, you can use the Golang client provided by CometBFT to invoke the method that sets the block retain height.
 
@@ -99,10 +138,7 @@ if err != nil {
 }
 ```
 
-> NOTE: If you try to set the `Block Retain Height` to a value that is lower to what is currently stored in the node, an error will
-be returned informing that.
-
-If you need to check what is the current value for the `Block Retain Height` you can use another service.
+If you need to check what is the current value for the `Block Retain Height` you can use another method.
 
 Here's an example:
 ```
@@ -110,14 +146,34 @@ retainHeight, err := conn.GetBlockRetainHeight(ctx)
 if err != nil {
     // Do something with the error
 } else {
-    // Do something with the `retainHeight` value
+    // Do something with
+    // `retainHeight.App`
+    // `retainHeight.PruningService`
 }
 ```
 
-### Block Results Retain Height
+Retaining data is crucial to data management, and the application has complete control over the application retain height.
+The operator can monitor the application retain height with `GetBlockRetainHeight`, which returns a `RetainHeights`
+structure with both the block retain height and the application retain height (as shown in the code above).
 
-In order to set the block results retain height on the node, you have to enable the privileged services endpoint and the block results service in the
-configuration as described in the `Privileged Services` section of the [Creating a Data Companion for CometBFT](./quick-start.md).
+It's worth noting that at any given point in time, the node will only accept the lowest retained height.
+If you try to set the `Block Retain Height` to a value that is lower to what is currently stored in the node, an error will
+be returned informing that.
+
+By default, both the application retain height and the data companion retain height are set to zero. This is done to prevent
+either one of them from prematurely pruning the data while the other has not indicated that it's okay to do so.
+
+In essence, the node will preserve blocks up to the lowest value between data companion block retain height and the application
+block retain height. This way, data can be reliably preserved and maintained for the necessary amount of time, ensuring
+that it is not lost or prematurely deleted.
+
+## Pruning Block Results
+
+The "block results retain height" pruning parameter determines the height up to which the node will keep block results.
+By retaining block results to a certain height, the node can efficiently manage its storage and optimize its performance.
+
+> NOTE: In order to set the block results retain height on the node, you have to enable the privileged services endpoint and the
+block results service in the configuration as described in the section above.
 
 Once the services are enabled, you can use the Golang client provided by CometBFT to invoke the method that sets the block results retain height.
 
@@ -147,7 +203,7 @@ if err != nil {
 > NOTE: If you try to set the `Block Results Retain Height` to a value that is lower to what is currently stored in the node, an error will
 be returned informing that.
 
-If you need to check what is the current value for the `Block Results Retain Height` you can use another service.
+If you need to check what is the current value for the `Block Results Retain Height` you can use another method.
 
 Here's an example:
 ```
@@ -159,3 +215,21 @@ if err != nil {
 }
 
 ```
+
+> NOTE: Please note that if the `discard_abci_responses` in the `[storage]` section of the configuration file is set to `true`, then
+block results are **not stored** on the node and the `Block Results Retain Height` will be ignored. In order to have block
+results pruned the value should be set to `false` (default)
+
+```
+#######################################################
+###         Storage Configuration Options           ###
+#######################################################
+[storage]
+
+# Set to true to discard ABCI responses from the state store, which can save a
+# considerable amount of disk space. Set to false to ensure ABCI responses are
+# persisted. ABCI responses are required for /block_results RPC queries, and to
+# reindex events in the command-line tool.
+discard_abci_responses = false
+```
+

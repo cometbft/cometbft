@@ -1328,8 +1328,13 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 
 	// If ProposalBlock is nil, prevote nil.
 	if cs.ProposalBlock == nil {
+<<<<<<< HEAD
 		logger.Debug("prevote step: ProposalBlock is nil")
 		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
+=======
+		logger.Debug("prevote step: ProposalBlock is nil; prevoting nil")
+		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
+>>>>>>> 843d5fef3 (Provide relevant block data in `ExtendVote` (#1270))
 		return
 	}
 
@@ -1339,7 +1344,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		// ProposalBlock is invalid, prevote nil.
 		logger.Error("prevote step: consensus deems this block invalid; prevoting nil",
 			"err", err)
-		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
+		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
 		return
 	}
 
@@ -1353,6 +1358,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		Please see `PrepareProosal`-`ProcessProposal` coherence and determinism properties
 		in the ABCI++ specification.
 	*/
+<<<<<<< HEAD
 	isAppValid, err := cs.blockExec.ProcessProposal(cs.ProposalBlock, cs.state)
 	if err != nil {
 		panic(fmt.Sprintf(
@@ -1374,6 +1380,100 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 	// and the proposal block parts are validated as they are received (against the merkle hash in the proposal)
 	logger.Debug("prevote step: ProposalBlock is valid")
 	cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header())
+=======
+	if cs.Proposal.POLRound == -1 {
+		if cs.LockedRound == -1 {
+			if cs.ValidRound != -1 && cs.ProposalBlock.HashesTo(cs.ValidBlock.Hash()) {
+				logger.Debug("prevote step: ProposalBlock matches our valid block; prevoting the proposal")
+				cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
+				return
+			}
+
+			// We request the Application, via a `ProcessProposal` ABCI call, to
+			// confirm that the block is valid. If the application does not
+			// accept the block, consensus prevotes nil.
+			//
+			// WARNING: misuse of block rejection by the Application can seriously compromise
+			// the liveness properties of consensus.
+			// Please see `PrepareProosal`-`ProcessProposal` coherence and determinism properties
+			// in the ABCI++ specification.
+			isAppValid, err := cs.blockExec.ProcessProposal(cs.ProposalBlock, cs.state)
+			if err != nil {
+				panic(fmt.Sprintf(
+					"state machine returned an error (%v) when calling ProcessProposal", err,
+				))
+			}
+			cs.metrics.MarkProposalProcessed(isAppValid)
+
+			if !isAppValid {
+				logger.Error("prevote step: state machine rejected a proposed block; this should not happen:"+
+					"the proposer may be misbehaving; prevoting nil", "err", err)
+				cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
+				return
+			}
+
+			logger.Debug("prevote step: ProposalBlock is valid and there is no locked block; prevoting the proposal")
+			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
+			return
+		}
+
+		if cs.ProposalBlock.HashesTo(cs.LockedBlock.Hash()) {
+			logger.Debug("prevote step: ProposalBlock is valid (POLRound is -1) and matches our locked block; prevoting the proposal")
+			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
+			return
+		}
+
+		logger.Debug("prevote step: ProposalBlock is valid (POLRound is -1), but doesn't match our locked block; prevoting nil")
+		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
+		return
+	}
+
+	/*
+		28: upon <PROPOSAL, h_p, round_p, v, v_r> from proposer(h_p, round_p) AND 2f + 1 <PREVOTE, h_p, v_r, id(v)> while
+		step_p = propose && (v_r ≥ 0 && v_r < round_p) do
+		29: if valid(v) && (lockedRound_p ≤ v_r || lockedValue_p = v) then
+		30:   broadcast <PREVOTE, h_p, round_p, id(v)>
+		31: else
+		32:   broadcast <PREVOTE, h_p, round_p, nil>
+
+		This rule is a bit confusing but breaks down as follows:
+
+		First note that 'valid(v)' in line 29 states that we should request the
+		application to validate the proposal. We know that the proposal was
+		prevoted by a +2/3 majority, so it must have been prevoted and validated
+		at least by one correct node. Therefore it must be valid and in the
+		following cases we don't need to query the application again.
+
+		If we see a proposal in the current round for value 'v' that lists its valid round as 'v_r'
+		AND this validator saw a 2/3 majority of the voting power prevote for 'v' in round 'v_r' (line 28),
+		then we will issue a prevote for 'v' in this round (line 30) if 'v' either matches our locked value OR
+		'v_r' is a round greater than or equal to our current locked round (line 29).
+		Otherwise we prevote nil (line 32).
+
+		Note that 'v_r' can be a round greater than to our current locked round if a 2/3 majority of
+		the network prevoted a value in round 'v_r' but we did not lock on it, possibly because we
+		missed the proposal in round 'v_r'.
+	*/
+	blockID, ok := cs.Votes.Prevotes(cs.Proposal.POLRound).TwoThirdsMajority()
+	ok = ok && !blockID.IsNil()
+	if ok && cs.ProposalBlock.HashesTo(blockID.Hash) && cs.Proposal.POLRound >= 0 && cs.Proposal.POLRound < cs.Round {
+		if cs.LockedRound <= cs.Proposal.POLRound {
+			logger.Debug("prevote step: ProposalBlock is valid and received a 2/3" +
+				"majority in a round later than the locked round; prevoting the proposal")
+			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
+			return
+		}
+		if cs.ProposalBlock.HashesTo(cs.LockedBlock.Hash()) {
+			logger.Debug("prevote step: ProposalBlock is valid and matches our locked block; prevoting the proposal")
+			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
+			return
+		}
+	}
+
+	logger.Debug("prevote step: ProposalBlock is valid but was not our locked block or" +
+		"did not receive a more recent majority; prevoting nil")
+	cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
+>>>>>>> 843d5fef3 (Provide relevant block data in `ExtendVote` (#1270))
 }
 
 // Enter: any +2/3 prevotes at next round.
@@ -1443,7 +1543,7 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 			logger.Debug("precommit step; no +2/3 prevotes during enterPrecommit; precommitting nil")
 		}
 
-		cs.signAddVote(cmtproto.PrecommitType, nil, types.PartSetHeader{})
+		cs.signAddVote(cmtproto.PrecommitType, nil, types.PartSetHeader{}, nil)
 		return
 	}
 
@@ -1458,6 +1558,7 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 		panic(fmt.Sprintf("this POLRound should be %v but got %v", round, polRound))
 	}
 
+<<<<<<< HEAD
 	// +2/3 prevoted nil. Unlock and precommit nil.
 	if len(blockID.Hash) == 0 {
 		if cs.LockedBlock == nil {
@@ -1474,6 +1575,12 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 		}
 
 		cs.signAddVote(cmtproto.PrecommitType, nil, types.PartSetHeader{})
+=======
+	// +2/3 prevoted nil. Precommit nil.
+	if blockID.IsNil() {
+		logger.Debug("precommit step; +2/3 prevoted for nil")
+		cs.signAddVote(cmtproto.PrecommitType, nil, types.PartSetHeader{}, nil)
+>>>>>>> 843d5fef3 (Provide relevant block data in `ExtendVote` (#1270))
 		return
 	}
 
@@ -1488,7 +1595,7 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 			logger.Error("failed publishing event relock", "err", err)
 		}
 
-		cs.signAddVote(cmtproto.PrecommitType, blockID.Hash, blockID.PartSetHeader)
+		cs.signAddVote(cmtproto.PrecommitType, blockID.Hash, blockID.PartSetHeader, cs.LockedBlock)
 		return
 	}
 
@@ -1509,7 +1616,7 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 			logger.Error("failed publishing event lock", "err", err)
 		}
 
-		cs.signAddVote(cmtproto.PrecommitType, blockID.Hash, blockID.PartSetHeader)
+		cs.signAddVote(cmtproto.PrecommitType, blockID.Hash, blockID.PartSetHeader, cs.ProposalBlock)
 		return
 	}
 
@@ -1527,11 +1634,15 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 		cs.ProposalBlockParts = types.NewPartSetFromHeader(blockID.PartSetHeader)
 	}
 
+<<<<<<< HEAD
 	if err := cs.eventBus.PublishEventUnlock(cs.RoundStateEvent()); err != nil {
 		logger.Error("failed publishing event unlock", "err", err)
 	}
 
 	cs.signAddVote(cmtproto.PrecommitType, nil, types.PartSetHeader{})
+=======
+	cs.signAddVote(cmtproto.PrecommitType, nil, types.PartSetHeader{}, nil)
+>>>>>>> 843d5fef3 (Provide relevant block data in `ExtendVote` (#1270))
 }
 
 // Enter: any +2/3 precommits for next round.
@@ -2320,6 +2431,7 @@ func (cs *State) signVote(
 	msgType cmtproto.SignedMsgType,
 	hash []byte,
 	header types.PartSetHeader,
+	block *types.Block,
 ) (*types.Vote, error) {
 	// Flush the WAL. Otherwise, we may not recompute the same vote to sign,
 	// and the privValidator will refuse to sign anything.
@@ -2349,7 +2461,7 @@ func (cs *State) signVote(
 		// if the signedMessage type is for a non-nil precommit, add
 		// VoteExtension
 		if extEnabled {
-			ext, err := cs.blockExec.ExtendVote(context.TODO(), vote)
+			ext, err := cs.blockExec.ExtendVote(context.TODO(), vote, block, cs.state)
 			if err != nil {
 				return nil, err
 			}
@@ -2387,10 +2499,12 @@ func (cs *State) voteTime() time.Time {
 }
 
 // sign the vote and publish on internalMsgQueue
+// block information is only used to extend votes (precommit only); should be nil in all other cases
 func (cs *State) signAddVote(
 	msgType cmtproto.SignedMsgType,
 	hash []byte,
 	header types.PartSetHeader,
+	block *types.Block,
 ) {
 	if cs.privValidator == nil { // the node does not have a key
 		return
@@ -2408,7 +2522,7 @@ func (cs *State) signAddVote(
 	}
 
 	// TODO: pass pubKey to signVote
-	vote, err := cs.signVote(msgType, hash, header)
+	vote, err := cs.signVote(msgType, hash, header, block)
 	if err != nil {
 		cs.Logger.Error("failed signing vote", "height", cs.Height, "round", cs.Round, "vote", vote, "err", err)
 		return

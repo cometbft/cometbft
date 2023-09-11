@@ -284,9 +284,6 @@ func (_m *Store) SaveFinalizeBlockResponse(_a0 int64, _a1 *abcitypes.ResponseFin
 	return r0
 }
 
-<<<<<<< HEAD
-type mockConstructorTestingTNewStore interface {
-=======
 // SetOfflineStateSyncHeight provides a mock function with given fields: height
 func (_m *Store) SetOfflineStateSyncHeight(height int64) error {
 	ret := _m.Called(height)
@@ -301,10 +298,7 @@ func (_m *Store) SetOfflineStateSyncHeight(height int64) error {
 	return r0
 }
 
-// NewStore creates a new instance of Store. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-// The first argument is typically a *testing.T value.
-func NewStore(t interface {
->>>>>>> 49127d27e (node/state:bootstrap state api (#1057))
+type mockConstructorTestingTNewStore interface {
 	mock.TestingT
 	Cleanup(func())
 }

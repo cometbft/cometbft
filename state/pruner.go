@@ -126,6 +126,7 @@ func (p *Pruner) OnStart() error {
 	// enabled.
 	if p.dcEnabled {
 		go p.pruneABCIResponses()
+		go p.pruneIndexesRoutine()
 	}
 	p.observer.PrunerStarted(p.interval)
 	return nil
@@ -222,24 +223,25 @@ func (p *Pruner) SetABCIResRetainHeight(height int64) error {
 }
 
 func (p *Pruner) SetTxIndexerRetainHeight(height int64) error {
-	// Ensure that all requests to set retain heights are serialized.
+	// Ensure that all requests to set retain heights via the application are
+	// serialized.
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
 	if height <= 0 {
 		return ErrInvalidHeightValue
 	}
 
-	currentRetainHeight, err := p.txIndexer.GetTxIndexerRetainHeight()
+	currentRetainHeight, err := p.txIndexer.GetRetainHeight()
 	if err != nil {
 		if !errors.Is(err, ErrKeyNotFound) {
 			return err
 		}
-		return p.txIndexer.SetTxIndexerRetainHeight(height)
+		return p.txIndexer.SetRetainHeight(height)
 	}
 	if currentRetainHeight > height {
 		return ErrPrunerCannotLowerRetainHeight
 	}
-	if err := p.txIndexer.SetTxIndexerRetainHeight(height); err != nil {
+	if err := p.txIndexer.SetRetainHeight(height); err != nil {
 		return err
 	}
 	// TODO call metrics
@@ -247,24 +249,25 @@ func (p *Pruner) SetTxIndexerRetainHeight(height int64) error {
 }
 
 func (p *Pruner) SetBlockIndexerRetainHeight(height int64) error {
-	// Ensure that all requests to set retain heights are serialized.
+	// Ensure that all requests to set retain heights via the application are
+	// serialized.
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
 	if height <= 0 {
 		return ErrInvalidHeightValue
 	}
 
-	currentRetainHeight, err := p.blockIndexer.GetBlockIndexerRetainHeight()
+	currentRetainHeight, err := p.blockIndexer.GetRetainHeight()
 	if err != nil {
 		if !errors.Is(err, ErrKeyNotFound) {
 			return err
 		}
-		return p.blockIndexer.SetBlockIndexerRetainHeight(height)
+		return p.blockIndexer.SetRetainHeight(height)
 	}
 	if currentRetainHeight > height {
 		return ErrPrunerCannotLowerRetainHeight
 	}
-	if err := p.blockIndexer.SetBlockIndexerRetainHeight(height); err != nil {
+	if err := p.blockIndexer.SetRetainHeight(height); err != nil {
 		return err
 	}
 	// TODO call metrics
@@ -292,13 +295,13 @@ func (p *Pruner) GetABCIResRetainHeight() (int64, error) {
 // GetTxIndexerRetainHeight is a convenience method for accessing the
 // GetTxIndexerRetainHeight method of the underlying indexer
 func (p *Pruner) GetTxIndexerRetainHeight() (int64, error) {
-	return p.txIndexer.GetTxIndexerRetainHeight()
+	return p.txIndexer.GetRetainHeight()
 }
 
 // GetBlockIndexerRetainHeight is a convenience method for accessing the
 // GetBlockIndexerRetainHeight method of the underlying state store.
 func (p *Pruner) GetBlockIndexerRetainHeight() (int64, error) {
-	return p.blockIndexer.GetBlockIndexerRetainHeight()
+	return p.blockIndexer.GetRetainHeight()
 }
 
 func (p *Pruner) pruneABCIResponses() {
@@ -377,7 +380,7 @@ func (p *Pruner) pruneTxIndexerToRetainHeight(lastRetainHeight int64) int64 {
 		p.logger.Error("Failed to prune tx indexer", "err", err, "targetRetainHeight", targetRetainHeight, "newTxIndexerRetainHeight", newTxIndexerRetainHeight)
 	} else if numPrunedTxIndexer > 0 {
 		// TODO call metrics
-		p.logger.Info("Pruned tx indexer", "count", numPrunedTxIndexer, "newTxIndexerRetainHeight", newTxIndexerRetainHeight)
+		p.logger.Debug("Pruned tx indexer", "count", numPrunedTxIndexer, "newTxIndexerRetainHeight", newTxIndexerRetainHeight)
 	}
 	return newTxIndexerRetainHeight
 }
@@ -403,7 +406,7 @@ func (p *Pruner) pruneBlockIndexerToRetainHeight(lastRetainHeight int64) int64 {
 		p.logger.Error("Failed to prune block indexer", "err", err, "targetRetainHeight", targetRetainHeight, "newBlockIndexerRetainHeight", newBlockIndexerRetainHeight)
 	} else if numPrunedBlockIndexer > 0 {
 		// TODO call metrics
-		p.logger.Info("Pruned block indexer", "count", numPrunedBlockIndexer, "newBlockIndexerRetainHeight", newBlockIndexerRetainHeight)
+		p.logger.Debug("Pruned block indexer", "count", numPrunedBlockIndexer, "newBlockIndexerRetainHeight", newBlockIndexerRetainHeight)
 	}
 	return newBlockIndexerRetainHeight
 }

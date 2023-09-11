@@ -60,7 +60,7 @@ func makeStateAndBlockStoreAndIndexers() (sm.State, *BlockStore, txindex.TxIndex
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
-	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
+	state, err := sm.MakeGenesisStateFromFile(config.GenesisFile())
 	if err != nil {
 		panic(fmt.Errorf("error constructing state from genesis file: %w", err))
 	}
@@ -460,10 +460,7 @@ func TestLoadBlockExtendedCommit(t *testing.T) {
 func TestLoadBaseMeta(t *testing.T) {
 	config := test.ResetTestRoot("blockchain_reactor_test")
 	defer os.RemoveAll(config.RootDir)
-	stateStore := sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
-		DiscardABCIResponses: false,
-	})
-	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
+	state, err := sm.MakeGenesisStateFromFile(config.GenesisFile())
 	require.NoError(t, err)
 	bs := NewBlockStore(dbm.NewMemDB())
 
@@ -711,10 +708,7 @@ func TestPruningService(t *testing.T) {
 func TestPruneBlocks(t *testing.T) {
 	config := test.ResetTestRoot("blockchain_reactor_test")
 	defer os.RemoveAll(config.RootDir)
-	stateStore := sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
-		DiscardABCIResponses: false,
-	})
-	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
+	state, err := sm.MakeGenesisStateFromFile(config.GenesisFile())
 	require.NoError(t, err)
 	db := dbm.NewMemDB()
 	bs := NewBlockStore(db)
@@ -853,10 +847,7 @@ func TestLoadBlockMeta(t *testing.T) {
 func TestLoadBlockMetaByHash(t *testing.T) {
 	config := test.ResetTestRoot("blockchain_reactor_test")
 	defer os.RemoveAll(config.RootDir)
-	stateStore := sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
-		DiscardABCIResponses: false,
-	})
-	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
+	state, err := sm.MakeGenesisStateFromFile(config.GenesisFile())
 	require.NoError(t, err)
 	bs := NewBlockStore(dbm.NewMemDB())
 

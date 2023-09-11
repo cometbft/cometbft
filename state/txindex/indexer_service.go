@@ -32,6 +32,7 @@ func NewIndexerService(
 	eventBus *types.EventBus,
 	terminateOnError bool,
 ) *IndexerService {
+
 	is := &IndexerService{
 		txIdxr:           txIdxr,
 		blockIdxr:        blockIdxr,

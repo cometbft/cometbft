@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/internal/test"
+	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
 	"github.com/cometbft/cometbft/state/txindex/kv"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
@@ -22,27 +23,27 @@ import (
 
 func TestBlockerIndexer_Prune(t *testing.T) {
 	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))
-	indexer := New(store)
+	indexer := blockidxkv.New(store)
 
 	events1 := getEventsForTesting(1)
 	events2 := getEventsForTesting(2)
 
 	metaKeys := [][]byte{
 		kv.LastTxIndexerRetainHeightKey,
-		LastBlockIndexerRetainHeightKey,
+		blockidxkv.LastBlockIndexerRetainHeightKey,
 		kv.TxIndexerRetainHeightKey,
-		BlockIndexerRetainHeightKey,
+		blockidxkv.BlockIndexerRetainHeightKey,
 	}
 
 	err := indexer.Index(events1)
 	require.NoError(t, err)
 
-	keys1 := getKeys(*indexer)
+	keys1 := blockidxkv.GetKeys(*indexer)
 
 	err = indexer.Index(events2)
 	require.NoError(t, err)
 
-	keys2 := getKeys(*indexer)
+	keys2 := blockidxkv.GetKeys(*indexer)
 
 	require.True(t, isSubset(keys1, keys2))
 
@@ -51,7 +52,7 @@ func TestBlockerIndexer_Prune(t *testing.T) {
 	require.Equal(t, int64(1), numPruned)
 	require.Equal(t, int64(2), retainedHeight)
 
-	keys3 := getKeys(*indexer)
+	keys3 := blockidxkv.GetKeys(*indexer)
 	require.True(t, isEqualSets(setDiff(keys2, keys1), setDiff(keys3, metaKeys)))
 	require.True(t, emptyIntersection(keys1, keys3))
 }
@@ -69,7 +70,7 @@ func BenchmarkBlockerIndexer_Prune(_ *testing.B) {
 	if err != nil {
 		panic(err)
 	}
-	indexer := New(store)
+	indexer := blockidxkv.New(store)
 
 	maxHeight := 10000
 	for h := 1; h < maxHeight; h++ {
@@ -509,24 +510,6 @@ func TestBigInt(t *testing.T) {
 			require.Equal(t, tc.results, results)
 		})
 	}
-}
-
-func TestKeyArray(t *testing.T) {
-	key1 := []byte("a")
-	key2 := []byte("ab")
-	key3 := []byte("abacabadabacaba")
-
-	var keyArray []byte
-	keyArray = appendToKeyArray(keyArray, key1)
-	keyArray = appendToKeyArray(keyArray, key2)
-	keyArray = appendToKeyArray(keyArray, key3)
-
-	keys := getKeysFromKeyArray(keyArray)
-
-	require.Equal(t, len(keys), 3)
-	require.Equal(t, keys[0], key1)
-	require.Equal(t, keys[1], key2)
-	require.Equal(t, keys[2], key3)
 }
 
 func getEventsForTesting(height int64) types.EventDataNewBlockEvents {

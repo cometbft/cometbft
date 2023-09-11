@@ -159,7 +159,17 @@ func NewNode(ctx context.Context,
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
 	})
 
-	state, genDoc, err := LoadStateFromDBOrGenesisDocProvider(stateDB, genesisDocProvider)
+	genDoc, err := genesisDocProvider()
+	if err != nil {
+		return nil, err
+	}
+
+	err = genDoc.ValidateAndComplete()
+	if err != nil {
+		return nil, fmt.Errorf("error in genesis doc: %w", err)
+	}
+
+	state, err := loadStateFromDBOrGenesisDoc(stateStore, stateDB, genDoc)
 	if err != nil {
 		return nil, err
 	}
@@ -243,8 +253,8 @@ func NewNode(ctx context.Context,
 
 	pruner, err := createPruner(
 		config,
-		blockIndexer,
 		txIndexer,
+		blockIndexer,
 		stateStore,
 		blockStore,
 		smMetrics,
@@ -865,8 +875,8 @@ func makeNodeInfo(
 
 func createPruner(
 	config *cfg.Config,
-	blockIndexer indexer.BlockIndexer,
 	txIndexer txindex.TxIndexer,
+	blockIndexer indexer.BlockIndexer,
 	stateStore sm.Store,
 	blockStore *store.BlockStore,
 	metrics *sm.Metrics,

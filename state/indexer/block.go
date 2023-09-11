@@ -27,7 +27,7 @@ type BlockIndexer interface {
 
 	Prune(retainHeight int64) (int64, int64, error)
 
-	SetBlockIndexerRetainHeight(retainHeight int64) error
+	SetRetainHeight(retainHeight int64) error
 
-	GetBlockIndexerRetainHeight() (int64, error)
+	GetRetainHeight() (int64, error)
 }

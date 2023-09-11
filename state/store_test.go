@@ -65,7 +65,7 @@ func BenchmarkLoadValidators(b *testing.B) {
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
-	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
+	state, err := sm.MakeGenesisStateFromFile(config.GenesisFile())
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -256,7 +256,7 @@ func makeStateAndBlockStoreAndIndexers() (sm.State, *store.BlockStore, txindex.T
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
-	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
+	state, err := sm.MakeGenesisStateFromFile(config.GenesisFile())
 	if err != nil {
 		panic(fmt.Sprintf("error constructing state from genesis file: %s", err.Error()))
 	}
@@ -311,9 +311,7 @@ func TestSaveRetainHeight(t *testing.T) {
 	state.LastBlockHeight = height - 1
 
 	fillStore(t, height, stateStore, bs, state, nil)
-
 	pruner := sm.NewPruner(stateStore, bs, blockIndexer, txIndexer, log.TestingLogger())
-
 	err := initStateStoreRetainHeights(stateStore, 0, 0, 0)
 	require.NoError(t, err)
 
@@ -337,7 +335,8 @@ func TestSaveRetainHeight(t *testing.T) {
 func TestMinRetainHeight(t *testing.T) {
 	_, bs, txIndexer, blockIndexer, callbackF, stateStore := makeStateAndBlockStoreAndIndexers()
 	defer callbackF()
-	pruner := sm.NewPruner(stateStore, bs, blockIndexer, txIndexer, log.TestingLogger())
+	pruner := sm.NewPruner(stateStore, bs, blockIndexer, txIndexer, log.TestingLogger(), sm.WithPrunerCompanionEnabled())
+
 	require.NoError(t, initStateStoreRetainHeights(stateStore, 0, 0, 0))
 	minHeight := pruner.FindMinRetainHeight()
 	require.Equal(t, int64(0), minHeight)

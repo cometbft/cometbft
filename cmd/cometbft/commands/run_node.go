@@ -1,15 +1,10 @@
 package commands
 
 import (
-	"bytes"
-	"crypto/sha256"
 	"fmt"
-	"io"
-	"os"
 
 	"github.com/spf13/cobra"
 
-	cfg "github.com/cometbft/cometbft/config"
 	cmtos "github.com/cometbft/cometbft/libs/os"
 	nm "github.com/cometbft/cometbft/node"
 )
@@ -125,31 +120,4 @@ func NewRunNodeCmd(nodeProvider nm.Provider) *cobra.Command {
 
 	AddNodeFlags(cmd)
 	return cmd
-}
-
-func checkGenesisHash(config *cfg.Config) error {
-	if len(genesisHash) == 0 || config.Genesis == "" {
-		return nil
-	}
-
-	// Calculate SHA-256 hash of the genesis file.
-	f, err := os.Open(config.GenesisFile())
-	if err != nil {
-		return fmt.Errorf("can't open genesis file: %w", err)
-	}
-	defer f.Close()
-	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
-		return fmt.Errorf("error when hashing genesis file: %w", err)
-	}
-	actualHash := h.Sum(nil)
-
-	// Compare with the flag.
-	if !bytes.Equal(genesisHash, actualHash) {
-		return fmt.Errorf(
-			"--genesis_hash=%X does not match %s hash: %X",
-			genesisHash, config.GenesisFile(), actualHash)
-	}
-
-	return nil
 }

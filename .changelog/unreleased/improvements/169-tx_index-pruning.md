@@ -1,2 +1,2 @@
-- `[state/indexer]` Add background mechanism for pruning the block and transaction indexes
+- `[state/indexer]` Add transaction and block index pruning
   ([\#1176](https://github.com/cometbft/cometbft/pull/1176))

@@ -285,11 +285,12 @@ func NewNode(ctx context.Context,
 	// Not checking whether the key is there in case the genesis file was larger than
 	// the max size of a value (in rocksDB for example), which would cause the check
 	// to fail and prevent the node from booting.
+	logger.Info("WARNING: deleting genesis file from database, the database stores a hash of the original genesis file now")
+
 	err = stateDB.Delete(genesisDocKey)
 	if err != nil {
 		logger.Error("Failed to delete genesis doc from DB ", err)
 	}
-	logger.Info("WARNING: deleting genesis file from database, the database stores a hash of the original genesis file now")
 
 	csMetrics, p2pMetrics, memplMetrics, smMetrics, abciMetrics, bsMetrics, ssMetrics := metricsProvider(genDoc.ChainID)
 

@@ -275,10 +275,11 @@ func createBlocksyncReactor(config *cfg.Config,
 	blockSync bool,
 	logger log.Logger,
 	metrics *blocksync.Metrics,
+	offlineStateSyncHeight int64,
 ) (bcReactor p2p.Reactor, err error) {
 	switch config.BlockSync.Version {
 	case "v0":
-		bcReactor = blocksync.NewReactor(state.Copy(), blockExec, blockStore, blockSync, metrics)
+		bcReactor = blocksync.NewReactor(state.Copy(), blockExec, blockStore, blockSync, metrics, offlineStateSyncHeight)
 	case "v1", "v2":
 		return nil, fmt.Errorf("block sync version %s has been deprecated. Please use v0", config.BlockSync.Version)
 	default:
@@ -300,6 +301,7 @@ func createConsensusReactor(config *cfg.Config,
 	waitSync bool,
 	eventBus *types.EventBus,
 	consensusLogger log.Logger,
+	offlineStateSyncHeight int64,
 ) (*cs.Reactor, *cs.State) {
 	consensusState := cs.NewState(
 		config.Consensus,
@@ -309,6 +311,7 @@ func createConsensusReactor(config *cfg.Config,
 		mempool,
 		evidencePool,
 		cs.StateMetrics(csMetrics),
+		cs.OfflineStateSyncHeight(offlineStateSyncHeight),
 	)
 	consensusState.SetLogger(consensusLogger)
 	if privValidator != nil {

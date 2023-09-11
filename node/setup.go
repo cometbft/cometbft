@@ -572,13 +572,13 @@ func LoadStateFromDBOrGenesisDocProvider(
 		return sm.State{}, nil, err
 	}
 
-	if err := csGenDoc.GenesisDoc.ValidateAndComplete(); err != nil {
+	if err = csGenDoc.GenesisDoc.ValidateAndComplete(); err != nil {
 		return sm.State{}, nil, fmt.Errorf("error in genesis doc: %w", err)
 	}
 
 	if len(genDocHash) == 0 {
 		// Save the genDoc hash in the store if it doesn't already exist for future verification
-		if err := stateDB.SetSync(genesisDocHashKey, csGenDoc.Sha256Checksum); err != nil {
+		if err = stateDB.SetSync(genesisDocHashKey, csGenDoc.Sha256Checksum); err != nil {
 			return sm.State{}, nil, fmt.Errorf("failed to save genesis doc hash to db: %w", err)
 		}
 	} else {
@@ -589,6 +589,9 @@ func LoadStateFromDBOrGenesisDocProvider(
 
 	// Validate that existing or recently saved genesis file hash matches optional --genesis_hash passed by operator
 	recentGenDoc, err := stateDB.Get(genesisDocHashKey)
+	if err != nil {
+		return sm.State{}, nil, fmt.Errorf("error retrieving genesis doc hash: %w", err)
+	}
 	if len(storeConfig.GenesisHash) != 0 && !bytes.Equal(recentGenDoc, storeConfig.GenesisHash) {
 		return sm.State{}, nil, fmt.Errorf("genesis doc hash in db does not match passed --genesis_hash value")
 	}

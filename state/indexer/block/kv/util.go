@@ -256,10 +256,3 @@ func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) (bool, error)
 	}
 	return true, nil
 }
-
-func appendToKeyArray(keyArray []byte, newKey []byte) []byte {
-	keyLenBuffer := make([]byte, 8)
-	binary.BigEndian.PutUint64(keyLenBuffer, uint64(len(newKey)))
-	var withLength = append(keyLenBuffer, newKey...)
-	return append(keyArray, withLength...)
-}

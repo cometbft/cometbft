@@ -703,7 +703,6 @@ func (idx *BlockerIndexer) match(
 
 func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, height int64) error {
 	heightBz := int64ToBytes(height)
-	var keyArray []byte
 
 	for _, event := range events {
 		idx.eventSeq = idx.eventSeq + 1
@@ -732,7 +731,6 @@ func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, hei
 				if err := batch.Set(key, heightBz); err != nil {
 					return err
 				}
-				keyArray = appendToKeyArray(keyArray, key)
 			}
 		}
 	}

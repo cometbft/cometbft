@@ -120,7 +120,6 @@ func (p *Pruner) SetObserver(obs PrunerObserver) {
 }
 
 func (p *Pruner) OnStart() error {
-	go p.pruneIndexesRoutine()
 	go p.pruneBlocks()
 	// We only care about pruning ABCI results if the data companion has been
 	// enabled.

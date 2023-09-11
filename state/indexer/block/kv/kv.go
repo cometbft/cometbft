@@ -48,10 +48,6 @@ func New(store dbm.DB) *BlockerIndexer {
 	}
 }
 
-func getEventsForHeightKey(height int64) []byte {
-	return []byte(fmt.Sprintf("eventsForHeightKey%d", height))
-}
-
 func (idx *BlockerIndexer) SetLogger(l log.Logger) {
 	idx.log = l
 }

@@ -1,4 +1,4 @@
-package kv
+package kv_test
 
 import (
 	"bytes"
@@ -91,7 +91,7 @@ func BenchmarkBlockerIndexer_Prune(_ *testing.B) {
 
 func TestBlockIndexer(t *testing.T) {
 	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))
-	indexer := New(store)
+	indexer := blockidxkv.New(store)
 
 	require.NoError(t, indexer.Index(types.EventDataNewBlockEvents{
 		Height: 1,
@@ -218,7 +218,7 @@ func TestBlockIndexer(t *testing.T) {
 
 func TestBlockIndexerMulti(t *testing.T) {
 	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))
-	indexer := New(store)
+	indexer := blockidxkv.New(store)
 
 	require.NoError(t, indexer.Index(types.EventDataNewBlockEvents{
 		Height: 1,
@@ -382,7 +382,7 @@ func TestBigInt(t *testing.T) {
 	bigFloatLower := bigInt + ".1"
 	bigIntSmaller := "9999999999999999999"
 	store := db.NewPrefixDB(db.NewMemDB(), []byte("block_events"))
-	indexer := New(store)
+	indexer := blockidxkv.New(store)
 
 	require.NoError(t, indexer.Index(types.EventDataNewBlockEvents{
 		Height: 1,

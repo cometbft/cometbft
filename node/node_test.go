@@ -538,7 +538,7 @@ func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 	require.Equal(t, "genesis doc hash in db does not match loaded genesis doc", err.Error())
 }
 
-func TestNodeeGenesisHashFlagMismatch(t *testing.T) {
+func TestNodeGenesisHashFlagMismatch(t *testing.T) {
 	config := test.ResetTestRoot("node_new_node_genesis_hash_flag_mismatch")
 	defer os.RemoveAll(config.RootDir)
 

@@ -35,6 +35,14 @@ type Metrics struct {
 	// retain height set by the data companion
 	PruningServiceBlockResultsRetainHeight metrics.Gauge
 
+	// PruningServiceTxIndexerRetainHeight is the accepted transactions indices
+	// retain height set by the data companion
+	PruningServiceTxIndexerRetainHeight metrics.Gauge
+
+	// PruningServiceBlockIndexerRetainHeight is the accepted blocks indices
+	// retain height set by the data companion
+	PruningServiceBlockIndexerRetainHeight metrics.Gauge
+
 	// ApplicationBlockRetainHeight is the accepted block
 	// retain height set by the application
 	ApplicationBlockRetainHeight metrics.Gauge

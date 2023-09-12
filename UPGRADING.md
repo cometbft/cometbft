@@ -2,7 +2,7 @@
 
 This guide provides instructions for upgrading to specific versions of CometBFT.
 
-## Unreleased
+## v0.38.0
 
 ### Building CometBFT
 

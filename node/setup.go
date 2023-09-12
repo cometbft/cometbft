@@ -593,6 +593,7 @@ func LoadStateFromDBOrGenesisDocProvider(
 		return sm.State{}, nil, fmt.Errorf("error retrieving genesis doc hash: %w", err)
 	}
 	if len(storeConfig.GenesisHash) != 0 && !bytes.Equal(recentGenDoc, storeConfig.GenesisHash) {
+                err = stateDB.Delete(genesisDocHashKey)
 		return sm.State{}, nil, fmt.Errorf("genesis doc hash in db does not match passed --genesis_hash value")
 	}
 

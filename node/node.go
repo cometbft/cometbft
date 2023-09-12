@@ -298,6 +298,17 @@ func NewNodeWithContext(ctx context.Context,
 		return nil, err
 	}
 
+	// The key will be deleted if it existed.
+	// Not checking whether the key is there in case the genesis file was larger than
+	// the max size of a value (in rocksDB for example), which would cause the check
+	// to fail and prevent the node from booting.
+	logger.Info("WARNING: deleting genesis file from database if present, the database stores a hash of the original genesis file now")
+
+	err = stateDB.Delete(genesisDocKey)
+	if err != nil {
+		logger.Error("Failed to delete genesis doc from DB ", err)
+	}
+
 	csMetrics, p2pMetrics, memplMetrics, smMetrics, abciMetrics, bsMetrics, ssMetrics := metricsProvider(genDoc.ChainID)
 
 	// Create the proxyApp and establish connections to the ABCI app (consensus, mempool, query).

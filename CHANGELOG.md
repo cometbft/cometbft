@@ -95,7 +95,8 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
   `ExecTxResult` ([\#855](https://github.com/cometbft/cometbft/issues/855)).
 - `[consensus]` Avoid recursive call after rename to (*PeerState).MarshalJSON
   ([\#863](https://github.com/cometbft/cometbft/pull/863))
-- `[mempool/clist_mempool]` \#890 Prevent a transaction to appear twice in the mempool  (@otrack)
+- `[mempool/clist_mempool]` Prevent a transaction to appear twice in the mempool
+  ([\#890](https://github.com/cometbft/cometbft/pull/890): @otrack)
 - `[docker]` Ensure Docker image uses consistent version of Go.
   ([\#9462](https://github.com/tendermint/tendermint/pull/9462))
 - `[abci-cli]` Fix broken abci-cli help command.

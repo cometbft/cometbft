@@ -2,7 +2,7 @@
 
 ## v0.38.0
 
-* September 12, 2023*
+*September 12, 2023*
 
 This release includes the second part of ABCI++, called ABCI 2.0.
 ABCI 2.0 introduces ABCI methods `ExtendVote` and `VerifyVoteExtension`.

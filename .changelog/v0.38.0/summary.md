@@ -2,7 +2,7 @@
 
 This release includes the second part of ABCI++, called ABCI 2.0.
 ABCI 2.0 introduces ABCI methods `ExtendVote` and `VerifyVoteExtension`.
-These new metthods allow the application to add data (opaque to CometBFT),
+These new methods allow the application to add data (opaque to CometBFT),
 called _vote extensions_ to precommit votes sent by validators.
 These vote extensions are made available to the proposer(s) of the next height.
 Additionally, ABCI 2.0 coalesces `BeginBlock`, `DeliverTx`, and `EndBlock`

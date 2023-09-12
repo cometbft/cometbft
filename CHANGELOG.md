@@ -29,6 +29,9 @@ See the [specification](./spec/abci/) for more details on ABCI 2.0.
 - `[state/kvindexer]` Remove the function type from the event key stored in the database. This should be breaking only
 for people who forked CometBFT and interact directly with the indexers kvstore.
   ([\#774](https://github.com/cometbft/cometbft/pull/774))
+- `[rpc]` Removed `begin_block_events` and `end_block_events` from `BlockResultsResponse`.
+  The events are merged into one field called `finalize_block_events`.
+  ([\#9427](https://github.com/tendermint/tendermint/issues/9427))
 - `[pubsub]` Added support for big integers and big floats in the pubsub event query system.
   Breaking changes: function `Number` in package `libs/pubsub/query/syntax` changed its return value.
   ([\#797](https://github.com/cometbft/cometbft/pull/797))

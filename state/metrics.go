@@ -54,4 +54,12 @@ type Metrics struct {
 	// ABCIResultsBaseHeight shows the first height at which
 	// abci results are available
 	ABCIResultsBaseHeight metrics.Gauge
+
+	// TxIndexerBaseHeight shows the first height at which
+	// tx indices are available
+	TxIndexerBaseHeight metrics.Gauge
+
+	// BlockIndexerBaseHeight shows the first height at which
+	// block indices are available
+	BlockIndexerBaseHeight metrics.Gauge
 }

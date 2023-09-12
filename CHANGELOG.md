@@ -1,17 +1,31 @@
 # CHANGELOG
 
-## Unreleased
+## v0.38.0
+
+* September 12, 2023*
+
+This release includes the second part of ABCI++, called ABCI 2.0.
+ABCI 2.0 introduces ABCI methods `ExtendVote` and `VerifyVoteExtension`.
+These new metthods allow the application to add data (opaque to CometBFT),
+called _vote extensions_ to precommit votes sent by validators.
+These vote extensions are made available to the proposer(s) of the next height.
+Additionally, ABCI 2.0 coalesces `BeginBlock`, `DeliverTx`, and `EndBlock`
+into one method, `FinalizeBlock`, whose `Request*` and `Response*`
+data structures contain the sum of all data previously contained
+in the respective `Request*` and `Response*` data structures in
+`BeginBlock`, `DeliverTx`, and `EndBlock`.
+See the [specification](./spec/abci/) for more details on ABCI 2.0.
 
 ### BREAKING CHANGES
 
 - The `TMHOME` environment variable was renamed to `CMTHOME`, and all environment variables starting with `TM_` are instead prefixed with `CMT_`
   ([\#211](https://github.com/cometbft/cometbft/issues/211))
-- `[protobuf]` Remove fields `sender`, `priority`, and `mempool_error` from
-  `ResponseCheckTx`. ([\#260](https://github.com/cometbft/cometbft/issues/260))
 - `[mempool]` Remove priority mempool.
   ([\#260](https://github.com/cometbft/cometbft/issues/260))
 - `[config]` Remove `Version` field from `MempoolConfig`.
   ([\#260](https://github.com/cometbft/cometbft/issues/260))
+- `[protobuf]` Remove fields `sender`, `priority`, and `mempool_error` from
+  `ResponseCheckTx`. ([\#260](https://github.com/cometbft/cometbft/issues/260))
 - Bump minimum Go version to 1.20
   ([\#385](https://github.com/cometbft/cometbft/issues/385))
 - `[crypto/merkle]` Do not allow verification of Merkle Proofs against empty trees (`nil` root). `Proof.ComputeRootHash` now panics when it encounters an error, but `Proof.Verify` does not panic
@@ -19,10 +33,10 @@
 - `[state/kvindexer]` Remove the function type from the event key stored in the database. This should be breaking only
 for people who forked CometBFT and interact directly with the indexers kvstore.
   ([\#774](https://github.com/cometbft/cometbft/pull/774))
-- `[kvindexer]` Added support for big integers and big floats in the kvindexer.
+- `[pubsub]` Added support for big integers and big floats in the pubsub event query system.
   Breaking changes: function `Number` in package `libs/pubsub/query/syntax` changed its return value.
   ([\#797](https://github.com/cometbft/cometbft/pull/797))
-- `[pubsub]` Added support for big integers and big floats in the pubsub event query system.
+- `[kvindexer]` Added support for big integers and big floats in the kvindexer.
   Breaking changes: function `Number` in package `libs/pubsub/query/syntax` changed its return value.
   ([\#797](https://github.com/cometbft/cometbft/pull/797))
 - `[mempool]` Application can now set `ConsensusParams.Block.MaxBytes` to -1
@@ -34,9 +48,18 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
   returned in `ResponsePrepareProposal.txs` does not exceed `RequestPrepareProposal.max_tx_bytes`,
   otherwise CometBFT will panic.
   ([\#980](https://github.com/cometbft/cometbft/issues/980))
+- `[node/state]` Add Go API to bootstrap block store and state store to a height. Make sure block sync starts syncing from bootstrapped height.
+  ([\#1057](https://github.com/tendermint/tendermint/pull/#1057)) (@yihuang)
+- `[state/store]` Added Go functions to save height at which offline state sync is performed.
+  ([\#1057](https://github.com/tendermint/tendermint/pull/#1057)) (@jmalicevic)
+- `[p2p]` Remove UPnP functionality
+  ([\#1113](https://github.com/cometbft/cometbft/issues/1113))
 - `[node]` Removed `ConsensusState()` accessor from `Node`
   struct - all access to consensus state should go via the reactor
   ([\#1120](https://github.com/cometbft/cometbft/pull/1120))
+- `[state]` Signature of `ExtendVote` changed in `BlockExecutor`.
+  It now includes the block whose precommit will be extended, an the state object.
+  ([\#1270](https://github.com/cometbft/cometbft/pull/1270))
 - `[state]` Move pruneBlocks from node/state to state/execution.
   ([\#6541](https://github.com/tendermint/tendermint/pull/6541))
 - `[abci]` Move `app_hash` parameter from `Commit` to `FinalizeBlock`
@@ -48,11 +71,11 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
   ([\#9625](https://github.com/tendermint/tendermint/pull/9625))
 - `[rpc]` Remove global environment and replace with constructor
   ([\#9655](https://github.com/tendermint/tendermint/pull/9655))
+- `[node]` Move DBContext and DBProvider from the node package to the config
+  package. ([\#9655](https://github.com/tendermint/tendermint/pull/9655))
 - `[inspect]` Add a new `inspect` command for introspecting
   the state and block store of a crashed tendermint node.
   ([\#9655](https://github.com/tendermint/tendermint/pull/9655))
-- `[node]` Move DBContext and DBProvider from the node package to the config
-  package. ([\#9655](https://github.com/tendermint/tendermint/pull/9655))
 - `[metrics]` Move state-syncing and block-syncing metrics to
   their respective packages. Move labels from block_syncing
   -> blocksync_syncing and state_syncing -> statesync_syncing
@@ -98,10 +121,18 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
 
 ### FEATURES
 
+- `[node/state]` Add Go API to bootstrap block store and state store to a height
+  ([\#1057](https://github.com/tendermint/tendermint/pull/#1057)) (@yihuang)
+- `[proxy]` Introduce `NewConnSyncLocalClientCreator`, which allows local ABCI
+  clients to have the same concurrency model as remote clients (i.e. one mutex
+  per client "connection", for each of the four ABCI "connections").
+  ([tendermint/tendermint\#9830](https://github.com/tendermint/tendermint/pull/9830)
+  and [\#1145](https://github.com/cometbft/cometbft/pull/1145))
 - `[proxy]` Introduce `NewUnsyncLocalClientCreator`, which allows local ABCI
   clients to have the same concurrency model as remote clients (i.e. one
   mutex per client "connection", for each of the four ABCI "connections").
   ([\#9830](https://github.com/tendermint/tendermint/pull/9830))
+- `[abci]` New ABCI methods `VerifyVoteExtension` and `ExtendVote` allow validators to validate the vote extension data attached to a pre-commit message and allow applications to let their validators do more than just validate within consensus ([\#9836](https://github.com/tendermint/tendermint/pull/9836))
 
 ### IMPROVEMENTS
 
@@ -126,6 +157,9 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
   It also allows the application to have visibility on all transactions in the
   mempool at `PrepareProposal` time.
   ([\#980](https://github.com/cometbft/cometbft/pull/980))
+- `[node]` Close evidence.db OnStop ([cometbft/cometbft\#1210](https://github.com/cometbft/cometbft/pull/1210): @chillyvee)
+- `[state]` Make logging `block_app_hash` and `app_hash` consistent by logging them both as hex.
+  ([\#1264](https://github.com/cometbft/cometbft/pull/1264))
 - `[crypto/merkle]` Improve HashAlternatives performance
   ([\#6443](https://github.com/tendermint/tendermint/pull/6443))
 - `[p2p/pex]` Improve addrBook.hash performance

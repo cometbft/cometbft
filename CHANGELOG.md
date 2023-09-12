@@ -18,16 +18,12 @@ See the [specification](./spec/abci/) for more details on ABCI 2.0.
 
 ### BREAKING CHANGES
 
-- The `TMHOME` environment variable was renamed to `CMTHOME`, and all environment variables starting with `TM_` are instead prefixed with `CMT_`
-  ([\#211](https://github.com/cometbft/cometbft/issues/211))
 - `[mempool]` Remove priority mempool.
   ([\#260](https://github.com/cometbft/cometbft/issues/260))
 - `[config]` Remove `Version` field from `MempoolConfig`.
   ([\#260](https://github.com/cometbft/cometbft/issues/260))
 - `[protobuf]` Remove fields `sender`, `priority`, and `mempool_error` from
   `ResponseCheckTx`. ([\#260](https://github.com/cometbft/cometbft/issues/260))
-- Bump minimum Go version to 1.20
-  ([\#385](https://github.com/cometbft/cometbft/issues/385))
 - `[crypto/merkle]` Do not allow verification of Merkle Proofs against empty trees (`nil` root). `Proof.ComputeRootHash` now panics when it encounters an error, but `Proof.Verify` does not panic
   ([\#558](https://github.com/cometbft/cometbft/issues/558))
 - `[state/kvindexer]` Remove the function type from the event key stored in the database. This should be breaking only
@@ -83,13 +79,6 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
 
 ### BUG FIXES
 
-- `[consensus]` Fixed a busy loop that happened when sending of a block part failed by sleeping in case of error.
-  ([\#4](https://github.com/informalsystems/tendermint/pull/4))
-- `[consensus]` Short-term fix for the case when `needProofBlock` cannot find
-  previous block meta by defaulting to the creation of a new proof block.
-  Special thanks to the [Vega.xyz](https://vega.xyz/) team, and in particular to
-  Zohar (@ze97286), for reporting the problem and working with us to get to a
-  fix. ([\#386](https://github.com/cometbft/cometbft/pull/386))
 - `[kvindexer]` Forward porting the fixes done to the kvindexer in 0.37 in PR \#77
   ([\#423](https://github.com/cometbft/cometbft/pull/423))
 - `[consensus]` Unexpected error conditions in `ApplyBlock` are non-recoverable, so ignoring the error and carrying on is a bug. We replaced a `return` that disregarded the error by a `panic`.
@@ -136,10 +125,6 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
 
 ### IMPROVEMENTS
 
-- `[e2e]` Add functionality for uncoordinated (minor) upgrades
-  ([\#56](https://github.com/tendermint/tendermint/pull/56))
-- `[tools/tm-signer-harness]` Remove the folder as it is unused
-  ([\#136](https://github.com/cometbft/cometbft/issues/136))
 - `[blocksync]` Generate new metrics during BlockSync
   ([\#543](https://github.com/cometbft/cometbft/pull/543))
 - `[jsonrpc/client]` Improve the error message for client errors stemming from
@@ -168,8 +153,6 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
   ([\#6513](https://github.com/tendermint/tendermint/pull/6513))
 - `[pubsub]` Performance improvements for the event query API
   ([\#7319](https://github.com/tendermint/tendermint/pull/7319))
-- `[rpc]` Enable caching of RPC responses
-  ([\#9650](https://github.com/tendermint/tendermint/pull/9650))
 
 ## v0.37.0
 

@@ -6,6 +6,7 @@ Prometheus data source.
 ## Requirements
 
 - `jq`
+- `curl`
 - Grafana server
     - To install Grafana, see https://grafana.com/docs/grafana/latest/setup-grafana/installation/
         - On MacOS, install with `brew install grafana`, and start the server

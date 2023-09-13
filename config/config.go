@@ -1079,7 +1079,7 @@ type StorageConfig struct {
 func DefaultStorageConfig() *StorageConfig {
 	return &StorageConfig{
 		DiscardABCIResponses: false,
-		GenesisHash:          make([]byte, 0),
+		GenesisHash:          make([]byte, 0, 64),
 	}
 }
 
@@ -1088,7 +1088,7 @@ func DefaultStorageConfig() *StorageConfig {
 func TestStorageConfig() *StorageConfig {
 	return &StorageConfig{
 		DiscardABCIResponses: false,
-		GenesisHash:          make([]byte, 0),
+		GenesisHash:          make([]byte, 0, 64),
 	}
 }
 

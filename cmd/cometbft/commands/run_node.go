@@ -89,7 +89,7 @@ func NewRunNodeCmd(nodeProvider nm.Provider) *cobra.Command {
 		Aliases: []string{"node", "run"},
 		Short:   "Run the CometBFT node",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(genesisHash) != 0 {
+			if len(genesisHash) == 64 {
 				config.Storage.GenesisHash = genesisHash
 			}
 

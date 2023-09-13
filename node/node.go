@@ -192,7 +192,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 		return fmt.Errorf("state not empty, trying to initialize non empty state")
 	}
 
-	genState, _, err := LoadStateFromDBOrGenesisDocProvider(stateDB, DefaultGenesisDocProviderFunc(config), config.Storage)
+	genState, _, err := LoadStateFromDBOrGenesisDocProvider(stateDB, DefaultGenesisDocProviderFunc(config), config.Storage.GenesisHash)
 	if err != nil {
 		return err
 	}
@@ -276,7 +276,7 @@ func NewNode(ctx context.Context,
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
 	})
 
-	state, genDoc, err := LoadStateFromDBOrGenesisDocProvider(stateDB, genesisDocProvider, config.Storage)
+	state, genDoc, err := LoadStateFromDBOrGenesisDocProvider(stateDB, genesisDocProvider, config.Storage.GenesisHash)
 	if err != nil {
 		return nil, err
 	}

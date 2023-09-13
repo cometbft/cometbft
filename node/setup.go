@@ -589,7 +589,9 @@ func LoadStateFromDBOrGenesisDocProvider(
 
 	// Validate that existing or recently saved genesis file hash matches optional --genesis_hash passed by operator
 	if len(operatorGenesisHash) != 0 && !bytes.Equal(csGenDoc.Sha256Checksum, operatorGenesisHash) {
-		stateDB.DeleteSync(genesisDocHashKey)
+		if err = stateDB.DeleteSync(genesisDocHashKey); err != nil {
+			return sm.State{}, nil, fmt.Errorf("failed to delete genesis doc hash from db: %w", err)
+		}
 		return sm.State{}, nil, fmt.Errorf("genesis doc hash in db does not match passed --genesis_hash value")
 	}
 

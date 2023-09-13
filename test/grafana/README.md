@@ -1,7 +1,7 @@
 # Set up a Grafana dashboard
 
-These are the instructions to set up a Grafana dashboard connected to a
-Prometheus data source.
+These are the instructions to set up a Grafana server and dashboard connected to
+a Prometheus server.
 
 ## Requirements
 
@@ -28,9 +28,12 @@ with Grafana via its HTTP API.
 
 ## Create a data source
 
-To define a Grafana data source connected to your Prometheus server, run:
+To create a Grafana data source connected to your Prometheus server, run:
 
     ./datasource.sh <source-name> <source-url>
+
+where `<source-name>` is a unique name for the data source and `<source-url>` is
+the URL of your Prometheus server.
 
 For example:
 
@@ -38,9 +41,9 @@ For example:
 
 You can also [create a data source via the web interface](https://grafana.com/docs/grafana/latest/administration/data-source-management/).
 
-## Import the predefined dashboard
+## Import predefined dashboard
 
-The predefined dashboard is in `data/dashboards/comet_template.json`. 
+A predefined dashboard is located in `data/dashboards/comet_template.json`. 
 
 To import it, run:
 

@@ -12,6 +12,8 @@ var _ Client = (*committingClient)(nil)
 // case of malicious tx or query). It only makes sense for publicly exposed
 // methods like CheckTx (/broadcast_tx_* RPC endpoint) or Query (/abci_query
 // RPC endpoint), but defers are used everywhere for the sake of consistency.
+//
+// NOTE: Keep in sync with changes to local_client.
 type committingClient struct {
 	service.BaseService
 
@@ -383,5 +385,7 @@ func (app *committingClient) ApplySnapshotChunkSync(
 func (app *committingClient) callback(req *types.Request, res *types.Response) *ReqRes {
 	// Never blocked
 	app.Callback(req, res)
-	return newLocalReqRes(req, res)
+	rr := newLocalReqRes(req, res)
+	rr.callbackInvoked = true
+	return rr
 }

@@ -31,7 +31,7 @@ func setupTestCase(t *testing.T) (func(t *testing.T), dbm.DB, sm.State) {
 		DiscardABCIResponses: false,
 	})
 	require.NoError(t, err)
-	state, err := sm.MakeGenesisStateFromFile(config.GenesisFile())
+	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
 	assert.NoError(t, err, "expected no error on LoadStateFromDBOrGenesisFile")
 	err = stateStore.Save(state)
 	require.NoError(t, err)

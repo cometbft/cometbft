@@ -932,9 +932,9 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
   /block_search:
     get:
-      summary: Search for blocks by BeginBlock and EndBlock events
+      summary: Search for blocks by FinalizeBlock events
       description: |
-        Search for blocks by BeginBlock and EndBlock events.
+        Search for blocks by FinalizeBlock events.
 
         See /subscribe for the query syntax.
       operationId: block_search
@@ -1580,21 +1580,7 @@ components:
                   codespace:
                     type: string
                     example: "ibc"
-            begin_block_events:
-              type: array
-              nullable: true
-              items:
-                type: object
-                properties:
-                  type:
-                    type: string
-                    example: "app"
-                  attributes:
-                    type: array
-                    nullable: false
-                    items:
-                      $ref: "#/components/schemas/Event"
-            end_block_events:
+            finalize_block_events:
               type: array
               nullable: true
               items:

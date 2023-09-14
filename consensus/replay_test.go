@@ -70,10 +70,10 @@ func startNewStateAndWaitForBlock(
 	t *testing.T,
 	consensusReplayConfig *cfg.Config,
 	blockDB dbm.DB,
+	stateStore sm.Store,
 ) {
 	logger := log.TestingLogger()
-	state, err := sm.MakeGenesisStateFromFile(consensusReplayConfig.GenesisFile())
-	require.NoError(t, err)
+	state, _ := stateStore.LoadFromDBOrGenesisFile(consensusReplayConfig.GenesisFile())
 	privValidator := loadPrivValidator(consensusReplayConfig)
 	cs := newStateWithConfigAndBlockStore(
 		consensusReplayConfig,
@@ -87,7 +87,7 @@ func startNewStateAndWaitForBlock(
 	bytes, _ := os.ReadFile(cs.config.WalFile())
 	t.Logf("====== WAL: \n\r%X\n", bytes)
 
-	err = cs.Start()
+	err := cs.Start()
 	require.NoError(t, err)
 	defer func() {
 		if err := cs.Stop(); err != nil {
@@ -175,6 +175,9 @@ LOOP:
 		logger := log.NewNopLogger()
 		blockDB := dbm.NewMemDB()
 		stateDB := blockDB
+		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+			DiscardABCIResponses: false,
+		})
 		state, err := sm.MakeGenesisStateFromFile(consensusReplayConfig.GenesisFile())
 		require.NoError(t, err)
 		privValidator := loadPrivValidator(consensusReplayConfig)
@@ -215,7 +218,7 @@ LOOP:
 			t.Logf("WAL panicked: %v", err)
 
 			// make sure we can make blocks after a crash
-			startNewStateAndWaitForBlock(t, consensusReplayConfig, blockDB)
+			startNewStateAndWaitForBlock(t, consensusReplayConfig, blockDB, stateStore)
 
 			// stop consensus state and transactions sender (initFn)
 			cs.Stop() //nolint:errcheck // Logging this error causes failure

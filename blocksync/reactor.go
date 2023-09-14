@@ -37,7 +37,7 @@ type consensusReactor interface {
 
 type mempoolReactor interface {
 	// for when we finish doing block sync or state sync
-	EnableIncomingTxs()
+	EnableInOutTxs()
 }
 
 type peerError struct {
@@ -73,7 +73,6 @@ type Reactor struct {
 func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
 	blockSync bool, metrics *Metrics, offlineStateSyncHeight int64,
 ) *Reactor {
-
 	storeHeight := store.Height()
 	if storeHeight == 0 {
 		// If state sync was performed offline and the stores were bootstrapped to height H
@@ -396,7 +395,7 @@ FOR_LOOP:
 					bcR.Logger.Error("Error stopping pool", "err", err)
 				}
 				if memR, ok := bcR.Switch.Reactor("MEMPOOL").(mempoolReactor); ok {
-					memR.EnableIncomingTxs()
+					memR.EnableInOutTxs()
 				}
 				if conR, ok := bcR.Switch.Reactor("CONSENSUS").(consensusReactor); ok {
 					conR.SwitchToConsensus(state, blocksSynced > 0 || stateSynced)

@@ -56,10 +56,10 @@ func (memR *Reactor) SetLogger(l log.Logger) {
 
 // OnStart implements p2p.BaseReactor.
 func (memR *Reactor) OnStart() error {
+	memR.Logger.Info("Reactor starts", "waitSync", memR.WaitSync())
 	if !memR.config.Broadcast {
 		memR.Logger.Info("Tx broadcasting is disabled")
 	}
-
 	return nil
 }
 
@@ -86,9 +86,10 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 // AddPeer implements Reactor.
 // It starts a broadcast routine ensuring all txs are forwarded to the given peer.
 func (memR *Reactor) AddPeer(peer p2p.Peer) {
-	if memR.config.Broadcast {
-		go memR.broadcastTxRoutine(peer)
+	if !memR.config.Broadcast || memR.WaitSync() {
+		return
 	}
+	go memR.broadcastTxRoutine(peer)
 }
 
 // Receive implements Reactor.
@@ -138,9 +139,15 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 	// broadcasting happens from go routines per peer
 }
 
-func (memR *Reactor) EnableIncomingTxs() {
-	memR.Logger.Info("enable incoming transactions")
+func (memR *Reactor) EnableInOutTxs() {
+	memR.Logger.Info("enabling inbound and outbound transactions")
 	memR.waitSync.Store(false)
+
+	if memR.config.Broadcast {
+		for _, peer := range memR.Switch.Peers().List() {
+			go memR.broadcastTxRoutine(peer)
+		}
+	}
 }
 
 func (memR *Reactor) WaitSync() bool {
@@ -161,13 +168,6 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		if !memR.IsRunning() || !peer.IsRunning() {
 			return
 		}
-
-		// Wait a bit to send messages if the node is still catching up.
-		if memR.WaitSync() {
-			time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
-			continue
-		}
-
 		// This happens because the CElement we were looking at got garbage
 		// collected (removed). That is, .NextWait() returned nil. Go ahead and
 		// start from the beginning.

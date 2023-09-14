@@ -1071,7 +1071,10 @@ type StorageConfig struct {
 	// command-line tool.
 	DiscardABCIResponses bool `mapstructure:"discard_abci_responses"`
 
-	GenesisHash []byte `mapstructure:"genesis_hash"`
+	// Hex representation of the hash of the genesis file.
+	// This is set when an operator provides a hash via the command line.
+	// It is used to verify the hash of the actual genesis file.
+	GenesisHash string `mapstructure:"genesis_hash"`
 }
 
 // DefaultStorageConfig returns the default configuration options relating to
@@ -1079,7 +1082,7 @@ type StorageConfig struct {
 func DefaultStorageConfig() *StorageConfig {
 	return &StorageConfig{
 		DiscardABCIResponses: false,
-		GenesisHash:          make([]byte, 0, 64),
+		GenesisHash:          "",
 	}
 }
 
@@ -1088,7 +1091,7 @@ func DefaultStorageConfig() *StorageConfig {
 func TestStorageConfig() *StorageConfig {
 	return &StorageConfig{
 		DiscardABCIResponses: false,
-		GenesisHash:          make([]byte, 0, 64),
+		GenesisHash:          "",
 	}
 }
 

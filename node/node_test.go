@@ -3,9 +3,9 @@ package node
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
+	"encoding/hex"
+
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"os"
@@ -476,7 +476,6 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 func TestNodeNewNodeDeleteGenesisFileFromDB(t *testing.T) {
 	config := test.ResetTestRoot("node_new_node_delete_genesis_from_db")
 	defer os.RemoveAll(config.RootDir)
-	fmt.Println(config.RootDir)
 	// Use goleveldb so we can reuse the same db for the second NewNode()
 	config.DBBackend = string(dbm.GoLevelDBBackend)
 	// Ensure the genesis doc hash is saved to db
@@ -594,6 +593,35 @@ func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 	require.Equal(t, "genesis doc hash in db does not match loaded genesis doc", err.Error())
 }
 
+func TestNodeGenesisHashFlagMatch(t *testing.T) {
+	config := test.ResetTestRoot("node_new_node_genesis_hash_flag_match")
+	defer os.RemoveAll(config.RootDir)
+
+	config.DBBackend = string(dbm.GoLevelDBBackend)
+	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
+	require.NoError(t, err)
+	// Get correct hash of correct genesis file
+	jsonBlob, err := os.ReadFile(config.GenesisFile())
+	require.NoError(t, err)
+
+	incomingChecksum := tmhash.Sum(jsonBlob)
+	// Set genesis flag value to incorrect hash
+	config.Storage.GenesisHash = hex.EncodeToString(incomingChecksum)
+	_, err = NewNode(
+		context.Background(),
+		config,
+		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
+		nodeKey,
+		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
+		DefaultGenesisDocProviderFunc(config),
+		cfg.DefaultDBProvider,
+		DefaultMetricsProvider(config.Instrumentation),
+		log.TestingLogger(),
+	)
+	require.NoError(t, err)
+
+}
+
 func TestNodeGenesisHashFlagMismatch(t *testing.T) {
 	config := test.ResetTestRoot("node_new_node_genesis_hash_flag_mismatch")
 	defer os.RemoveAll(config.RootDir)
@@ -605,16 +633,12 @@ func TestNodeGenesisHashFlagMismatch(t *testing.T) {
 	require.NoError(t, err)
 
 	// Generate hash of wrong file
-	f, err := os.Open(config.PrivValidatorKeyFile())
+	f, err := os.ReadFile(config.PrivValidatorKeyFile())
 	require.NoError(t, err)
-	defer f.Close()
-	h := sha256.New()
-	_, err = io.Copy(h, f)
-	require.NoError(t, err)
-	flagHash := h.Sum(nil)
+	flagHash := tmhash.Sum(f)
 
 	// Set genesis flag value to incorrect hash
-	config.Storage.GenesisHash = flagHash
+	config.Storage.GenesisHash = hex.EncodeToString(flagHash)
 
 	_, err = NewNode(
 		context.Background(),
@@ -629,14 +653,10 @@ func TestNodeGenesisHashFlagMismatch(t *testing.T) {
 	)
 	require.Error(t, err)
 
-	// Get correct hash of correct genesis file
-	f, err = os.Open(config.GenesisFile())
+	f, err = os.ReadFile(config.GenesisFile())
 	require.NoError(t, err)
-	defer f.Close()
-	h = sha256.New()
-	_, err = io.Copy(h, f)
-	require.NoError(t, err)
-	genHash := h.Sum(nil)
+
+	genHash := tmhash.Sum(f)
 
 	genHashMismatch := bytes.Equal(genHash, flagHash)
 	require.False(t, genHashMismatch)

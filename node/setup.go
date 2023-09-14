@@ -3,6 +3,7 @@ package node
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"fmt"
 	"net"
 	"os"
@@ -560,7 +561,7 @@ var genesisDocHashKey = []byte("genesisDocHash")
 func LoadStateFromDBOrGenesisDocProvider(
 	stateDB dbm.DB,
 	genesisDocProvider GenesisDocProvider,
-	operatorGenesisHash []byte,
+	operatorGenesisHashHex string,
 ) (sm.State, *types.GenesisDoc, error) {
 	// Get genesis doc hash
 	genDocHash, err := stateDB.Get(genesisDocHashKey)
@@ -577,8 +578,14 @@ func LoadStateFromDBOrGenesisDocProvider(
 	}
 
 	// Validate that existing or recently saved genesis file hash matches optional --genesis_hash passed by operator
-	if len(operatorGenesisHash) != 0 && !bytes.Equal(csGenDoc.Sha256Checksum, operatorGenesisHash) {
-		return sm.State{}, nil, fmt.Errorf("genesis doc hash in db does not match passed --genesis_hash value")
+	if operatorGenesisHashHex != "" {
+		decodedOperatorGenesisHash, err := hex.DecodeString(operatorGenesisHashHex)
+		if err != nil {
+			return sm.State{}, nil, fmt.Errorf("genesis hash provided by operator cannot be decoded")
+		}
+		if !bytes.Equal(csGenDoc.Sha256Checksum, decodedOperatorGenesisHash) {
+			return sm.State{}, nil, fmt.Errorf("genesis doc hash in db does not match passed --genesis_hash value")
+		}
 	}
 
 	if len(genDocHash) == 0 {

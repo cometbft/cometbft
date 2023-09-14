@@ -57,7 +57,8 @@ type peers interface {
 	Peers() p2p.IPeerSet
 }
 
-type consensusReactor interface {
+// A reactor that transitions from block sync or state sync to consensus mode.
+type syncReactor interface {
 	WaitSync() bool
 }
 
@@ -74,7 +75,8 @@ type Environment struct {
 	BlockStore       sm.BlockStore
 	EvidencePool     sm.EvidencePool
 	ConsensusState   Consensus
-	ConsensusReactor consensusReactor
+	ConsensusReactor syncReactor
+	MempoolReactor   syncReactor
 	P2PPeers         peers
 	P2PTransport     transport
 

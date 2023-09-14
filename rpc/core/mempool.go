@@ -19,7 +19,7 @@ import (
 // CheckTx nor transaction results.
 // More: https://docs.cometbft.com/main/rpc/#/Tx/broadcast_tx_async
 func (env *Environment) BroadcastTxAsync(_ *rpctypes.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
-	if env.ConsensusReactor.WaitSync() {
+	if env.MempoolReactor.WaitSync() {
 		return nil, errors.New("endpoint is closed because node is catching up")
 	}
 	_, err := env.Mempool.CheckTx(tx)
@@ -33,7 +33,7 @@ func (env *Environment) BroadcastTxAsync(_ *rpctypes.Context, tx types.Tx) (*cty
 // the transaction result.
 // More: https://docs.cometbft.com/main/rpc/#/Tx/broadcast_tx_sync
 func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
-	if env.ConsensusReactor.WaitSync() {
+	if env.MempoolReactor.WaitSync() {
 		return nil, errors.New("endpoint is closed because node is catching up")
 	}
 
@@ -65,7 +65,7 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 // BroadcastTxCommit returns with the responses from CheckTx and ExecTxResult.
 // More: https://docs.cometbft.com/main/rpc/#/Tx/broadcast_tx_commit
 func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*ctypes.ResultBroadcastTxCommit, error) {
-	if env.ConsensusReactor.WaitSync() {
+	if env.MempoolReactor.WaitSync() {
 		return nil, errors.New("endpoint is closed because node is catching up")
 	}
 

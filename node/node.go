@@ -64,7 +64,7 @@ type Node struct {
 	stateStore        sm.Store
 	blockStore        *store.BlockStore // store the blockchain to disk
 	bcReactor         p2p.Reactor       // for block-syncing
-	mempoolReactor    p2p.Reactor       // for gossipping transactions
+	mempoolReactor    *mempl.Reactor    // for gossipping transactions
 	mempool           mempl.Mempool
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
@@ -664,6 +664,7 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 		TxIndexer:        n.txIndexer,
 		BlockIndexer:     n.blockIndexer,
 		ConsensusReactor: n.consensusReactor,
+		MempoolReactor:   n.mempoolReactor,
 		EventBus:         n.eventBus,
 		Mempool:          n.mempool,
 

@@ -576,6 +576,11 @@ func LoadStateFromDBOrGenesisDocProvider(
 		return sm.State{}, nil, fmt.Errorf("error in genesis doc: %w", err)
 	}
 
+	// Validate that existing or recently saved genesis file hash matches optional --genesis_hash passed by operator
+	if len(operatorGenesisHash) != 0 && !bytes.Equal(csGenDoc.Sha256Checksum, operatorGenesisHash) {
+		return sm.State{}, nil, fmt.Errorf("genesis doc hash in db does not match passed --genesis_hash value")
+	}
+
 	if len(genDocHash) == 0 {
 		// Save the genDoc hash in the store if it doesn't already exist for future verification
 		if err = stateDB.SetSync(genesisDocHashKey, csGenDoc.Sha256Checksum); err != nil {
@@ -585,14 +590,6 @@ func LoadStateFromDBOrGenesisDocProvider(
 		if !bytes.Equal(genDocHash, csGenDoc.Sha256Checksum) {
 			return sm.State{}, nil, fmt.Errorf("genesis doc hash in db does not match loaded genesis doc")
 		}
-	}
-
-	// Validate that existing or recently saved genesis file hash matches optional --genesis_hash passed by operator
-	if len(operatorGenesisHash) != 0 && !bytes.Equal(csGenDoc.Sha256Checksum, operatorGenesisHash) {
-		if err = stateDB.DeleteSync(genesisDocHashKey); err != nil {
-			return sm.State{}, nil, fmt.Errorf("failed to delete genesis doc hash from db: %w", err)
-		}
-		return sm.State{}, nil, fmt.Errorf("genesis doc hash in db does not match passed --genesis_hash value")
 	}
 
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{

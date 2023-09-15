@@ -57,7 +57,9 @@ func (memR *Reactor) SetLogger(l log.Logger) {
 
 // OnStart implements p2p.BaseReactor.
 func (memR *Reactor) OnStart() error {
-	memR.Logger.Info("Reactor starts", "waitSync", memR.WaitSync())
+	if memR.WaitSync() {
+		memR.Logger.Info("Starting reactor in sync mode: tx propagation will start once sync completes")
+	}
 	if !memR.config.Broadcast {
 		memR.Logger.Info("Tx broadcasting is disabled")
 	}

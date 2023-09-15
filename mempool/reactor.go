@@ -102,7 +102,7 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 	switch msg := e.Message.(type) {
 	case *protomem.Txs:
 		if memR.WaitSync() {
-			memR.Logger.Debug("ignore message received during syncing", "msg", msg)
+			memR.Logger.Debug("Ignored message received while syncing", "msg", msg)
 			return
 		}
 

@@ -43,6 +43,7 @@ test/e2e/build
 test/e2e/data/
 test/e2e/networks/*/
 test/logs
+test/p2p/data/
 vendor
 test/fuzz/**/corpus
 test/fuzz/**/crashers

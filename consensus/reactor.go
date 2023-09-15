@@ -44,7 +44,7 @@ type Reactor struct {
 
 	conS *State
 
-	waitSync *atomic.Bool
+	waitSync atomic.Bool
 	eventBus *types.EventBus
 
 	rs    *cstypes.RoundState
@@ -57,15 +57,16 @@ type ReactorOption func(*Reactor)
 
 // NewReactor returns a new Reactor with the given consensusState.
 func NewReactor(consensusState *State, waitSync bool, options ...ReactorOption) *Reactor {
-	ws := &atomic.Bool{}
-	ws.Store(waitSync)
 	conR := &Reactor{
 		conS:     consensusState,
-		waitSync: ws,
+		waitSync: atomic.Bool{},
 		rs:       consensusState.GetRoundState(),
 		Metrics:  NopMetrics(),
 	}
 	conR.BaseReactor = *p2p.NewBaseReactor("Consensus", conR)
+	if waitSync {
+		conR.waitSync.Store(true)
+	}
 
 	for _, option := range options {
 		option(conR)
@@ -1626,7 +1627,6 @@ func (m *NewRoundStepMessage) ValidateHeight(initialHeight int64) error {
 			Field:  "Height",
 			Reason: fmt.Sprintf("%v should be lower than initial height %v", m.Height, initialHeight),
 		}
-
 	}
 
 	if m.Height == initialHeight && m.LastCommitRound != -1 {

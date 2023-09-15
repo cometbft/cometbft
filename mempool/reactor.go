@@ -23,7 +23,7 @@ type Reactor struct {
 	p2p.BaseReactor
 	config   *cfg.MempoolConfig
 	mempool  *CListMempool
-	waitSync *atomic.Bool
+	waitSync atomic.Bool
 
 	// `txSenders` maps every received transaction to the set of peer IDs that
 	// have sent the transaction to this node. Sender IDs are used during
@@ -35,15 +35,16 @@ type Reactor struct {
 
 // NewReactor returns a new Reactor with the given config and mempool.
 func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool, waitSync bool) *Reactor {
-	ws := &atomic.Bool{}
-	ws.Store(waitSync)
 	memR := &Reactor{
 		config:    config,
 		mempool:   mempool,
-		waitSync:  ws,
+		waitSync:  atomic.Bool{},
 		txSenders: make(map[types.TxKey]map[p2p.ID]bool),
 	}
 	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
+	if waitSync {
+		memR.waitSync.Store(true)
+	}
 	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
 	return memR
 }

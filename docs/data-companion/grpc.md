@@ -9,7 +9,7 @@ parent:
 # Fetching data from the node
 
 One of the most important steps to create a Data Companion service is to extract the necessary data from the node.
-Fortunately, CometBFT provides gRPC endpoints that allows you to fetch the data, such as `version`, `block` and
+Fortunately, CometBFT provides gRPC endpoints that allow you to fetch the data, such as `version`, `block` and
 `block results`.
 
 This documentation aims to provide a detailed explanation of CometBFT's gRPC services that can be used to retrieve

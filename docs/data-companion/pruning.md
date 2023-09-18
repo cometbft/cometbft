@@ -156,7 +156,7 @@ Retaining data is crucial to data management, and the application has complete c
 The operator can monitor the application retain height with `GetBlockRetainHeight`, which returns a `RetainHeights`
 structure with both the block retain height and the application retain height (as shown in the code above).
 
-It's worth noting that at any given point in time, the node will only accept the lowest retained height.
+It's worth noting that at any given point in time, the node will only accept the lowest retain height.
 If you try to set the `Block Retain Height` to a value that is lower to what is currently stored in the node, an error will
 be returned informing that.
 

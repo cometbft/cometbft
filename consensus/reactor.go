@@ -47,8 +47,8 @@ type Reactor struct {
 	waitSync atomic.Bool
 	eventBus *types.EventBus
 
-	rs    *cstypes.RoundState
 	rsMtx cmtsync.Mutex
+	rs    *cstypes.RoundState
 
 	Metrics *Metrics
 }

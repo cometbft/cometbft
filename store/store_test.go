@@ -460,7 +460,10 @@ func TestLoadBlockExtendedCommit(t *testing.T) {
 func TestLoadBaseMeta(t *testing.T) {
 	config := test.ResetTestRoot("blockchain_reactor_test")
 	defer os.RemoveAll(config.RootDir)
-	state, err := sm.MakeGenesisStateFromFile(config.GenesisFile())
+	stateStore := sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
+	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
 	require.NoError(t, err)
 	bs := NewBlockStore(dbm.NewMemDB())
 
@@ -708,7 +711,10 @@ func TestPruningService(t *testing.T) {
 func TestPruneBlocks(t *testing.T) {
 	config := test.ResetTestRoot("blockchain_reactor_test")
 	defer os.RemoveAll(config.RootDir)
-	state, err := sm.MakeGenesisStateFromFile(config.GenesisFile())
+	stateStore := sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
+	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
 	require.NoError(t, err)
 	db := dbm.NewMemDB()
 	bs := NewBlockStore(db)
@@ -847,7 +853,10 @@ func TestLoadBlockMeta(t *testing.T) {
 func TestLoadBlockMetaByHash(t *testing.T) {
 	config := test.ResetTestRoot("blockchain_reactor_test")
 	defer os.RemoveAll(config.RootDir)
-	state, err := sm.MakeGenesisStateFromFile(config.GenesisFile())
+	stateStore := sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
+	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
 	require.NoError(t, err)
 	bs := NewBlockStore(dbm.NewMemDB())
 

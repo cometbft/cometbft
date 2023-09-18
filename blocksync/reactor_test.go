@@ -77,9 +77,13 @@ func newReactor(
 	}
 
 	blockDB := dbm.NewMemDB()
+	stateDB := dbm.NewMemDB()
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
 	blockStore := store.NewBlockStore(blockDB)
 
-	state, err := sm.MakeGenesisState(genDoc)
+	state, err := stateStore.LoadFromDBOrGenesisDoc(genDoc)
 	if err != nil {
 		panic(fmt.Errorf("error constructing state from genesis file: %w", err))
 	}
@@ -101,7 +105,7 @@ func newReactor(
 	// pool.height is determined from the store.
 	fastSync := true
 	db := dbm.NewMemDB()
-	stateStore := sm.NewStore(db, sm.StoreOptions{
+	stateStore = sm.NewStore(db, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
 	blockExec := sm.NewBlockExecutor(stateStore, log.TestingLogger(), proxyApp.Consensus(),
@@ -158,7 +162,7 @@ func newReactor(
 		blockStore.SaveBlockWithExtendedCommit(thisBlock, thisParts, seenExtCommit)
 	}
 
-	bcReactor := NewReactor(state.Copy(), blockExec, blockStore, fastSync, NopMetrics())
+	bcReactor := NewReactor(state.Copy(), blockExec, blockStore, fastSync, NopMetrics(), 0)
 	bcReactor.SetLogger(logger.With("module", "blocksync"))
 
 	return ReactorPair{bcReactor, proxyApp}

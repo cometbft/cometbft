@@ -161,7 +161,7 @@ func WithMetrics(metrics *Metrics) SwitchOption {
 
 // AddReactor adds the given reactor to the switch.
 // NOTE: Not goroutine safe.
-func (sw *Switch) AddReactor(name string, reactor Reactor) {
+func (sw *Switch) AddReactor(name string, reactor Reactor) Reactor {
 	for _, chDesc := range reactor.GetChannels() {
 		chID := chDesc.ID
 		// No two reactors can share the same channel.
@@ -174,6 +174,7 @@ func (sw *Switch) AddReactor(name string, reactor Reactor) {
 	}
 	sw.reactors[name] = reactor
 	reactor.SetSwitch(sw)
+	return reactor
 }
 
 // RemoveReactor removes the given Reactor from the Switch.

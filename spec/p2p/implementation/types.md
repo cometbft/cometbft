@@ -231,9 +231,3 @@ Go documentation of `Metric` type:
 > // See cometbft/docs/architecture/adr-006-trust-metric.md for details
 
 Not imported by any other CometBFT source file.
-
-## Package `p2p.upnp`
-
-This package implementation was taken from "taipei-torrent".
-
-It is used by the `probe-upnp` command of the CometBFT binary.

@@ -205,26 +205,16 @@ pprof_laddr = ""
 # Address to listen for incoming connections
 laddr = "tcp://0.0.0.0:26656"
 
-# Address to advertise to peers for them to dial
-# If empty, will use the same port as the laddr,
-# and will introspect on the listener or use UPnP
-# to figure out the address. ip and port are required
-# example: 159.89.10.97:26656
+# Address to advertise to peers for them to dial. If empty, will use the same
+# port as the laddr, and will introspect on the listener to figure out the
+# address. IP and port are required. Example: 159.89.10.97:26656
 external_address = ""
 
 # Comma separated list of seed nodes to connect to
 seeds = ""
 
-# Comma separated list of peers to be added to the peer store
-# on startup. Either bootstrap_peers or persistent_peers is
-# needed for peer discovery
-bootstrap_peers = ""
-
 # Comma separated list of nodes to keep persistent connections to
 persistent_peers = ""
-
-# UPNP port forwarding
-upnp = false
 
 # Path to address book
 addr_book_file = "config/addrbook.json"
@@ -298,7 +288,6 @@ broadcast = true
 # wal_dir (default: "") configures the location of the Write Ahead Log
 # (WAL) for the mempool. The WAL is disabled by default. To enable, set
 # wal_dir to where you want the WAL to be written (e.g.
-# "data/mempool.wal").
 # "data/mempool.wal").
 wal_dir = ""
 
@@ -529,14 +518,14 @@ matter what is `timeout_commit`.
 
 Here's a brief summary of the timeouts:
 
-- `timeout_propose` = how long we wait for a proposal block before prevoting nil
-- `timeout_propose_delta` = how much  `timeout_propose` increases with each round
-- `timeout_prevote` = how long we wait after receiving +2/3 prevotes for
+- `timeout_propose` = how long a validator should wait for a proposal block before prevoting nil
+- `timeout_propose_delta` = how much `timeout_propose` increases with each round
+- `timeout_prevote` = how long a validator should wait after receiving +2/3 prevotes for
   anything (ie. not a single block or nil)
 - `timeout_prevote_delta` = how much the `timeout_prevote` increases with each round
-- `timeout_precommit` = how long we wait after receiving +2/3 precommits for
+- `timeout_precommit` = how long a validator should wait after receiving +2/3 precommits for
   anything (ie. not a single block or nil)
 - `timeout_precommit_delta` = how much the `timeout_precommit` increases with each round
-- `timeout_commit` = how long we wait after committing a block, before starting
+- `timeout_commit` = how long a validator should wait after committing a block, before starting
   on the new height (this gives us a chance to receive some more precommits,
   even though we already have +2/3)

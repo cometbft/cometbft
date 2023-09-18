@@ -882,7 +882,7 @@ paths:
           required: true
           schema:
             type: string
-            example: "tx.height=1000"
+            example: '"tx.height=1000"'
         - in: query
           name: prove
           description: Include proofs of the transactions inclusion in the block
@@ -932,9 +932,9 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
   /block_search:
     get:
-      summary: Search for blocks by BeginBlock and EndBlock events
+      summary: Search for blocks by FinalizeBlock events
       description: |
-        Search for blocks by BeginBlock and EndBlock events.
+        Search for blocks by FinalizeBlock events.
 
         See /subscribe for the query syntax.
       operationId: block_search
@@ -945,7 +945,7 @@ paths:
           required: true
           schema:
             type: string
-            example: "block.height > 1000 AND valset.changed > 0"
+            example: '"block.height > 1000 AND valset.changed > 0"'
         - in: query
           name: page
           description: "Page number (1-based)"
@@ -1061,7 +1061,7 @@ paths:
           required: true
           schema:
             type: string
-            example: "/a/b/c"
+            example: '"/a/b/c"'
         - in: query
           name: data
           description: Data
@@ -1580,21 +1580,7 @@ components:
                   codespace:
                     type: string
                     example: "ibc"
-            begin_block_events:
-              type: array
-              nullable: true
-              items:
-                type: object
-                properties:
-                  type:
-                    type: string
-                    example: "app"
-                  attributes:
-                    type: array
-                    nullable: false
-                    items:
-                      $ref: "#/components/schemas/Event"
-            end_block_events:
+            finalize_block_events:
               type: array
               nullable: true
               items:

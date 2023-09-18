@@ -13,7 +13,7 @@ This document covers use cases where the pruning process on a CometBFT node can 
 pruning service API.
 
 CometBFT provides a privileged gRPC endpoint for the pruning service. This privileged endpoint is distinct from the
-non-privileged (regular) gRPC endpoint and require separate configuration and activation. These "privileged" services
+non-privileged (regular) gRPC endpoint and requires separate configuration and activation. These "privileged" services
 have the ability to manipulate the storage on the node.
 
 Therefore, **only operators who have privileged access to the server should be allowed to use them**.

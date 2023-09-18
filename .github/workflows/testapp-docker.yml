@@ -51,7 +51,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Publish to Docker Hub
-        uses: docker/build-push-action@v4.2.1
+        uses: docker/build-push-action@v5.0.0
         with:
           context: .
           file: ./test/e2e/docker/Dockerfile

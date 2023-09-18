@@ -133,7 +133,7 @@ One of the advantages of the new streaming service is that it allows you to opt 
 This way, the gRPC endpoint will not have to transfer entire blocks to keep you updated. Instead, you can fetch the
 blocks at the desired pace through the `GetBlockByHeight` method.
 
-To receive  the latest height from the stream, you need to call the method that returns the receive-only channel and then
+To receive the latest height from the stream, you need to call the method that returns the receive-only channel and then
 watch for messages that come through the channel. The message sent on the channel is a `LatestHeightResult` struct.
 
 ```

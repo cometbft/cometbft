@@ -2,8 +2,8 @@
 
 . "$(dirname "$0")/config.sh"
 
-DATASOUCE_NAME=${1:-"PrometheusLocal"}
-DATASOUCE_URL=${2:-"http://localhost:9090"}
+DATASOURCE_NAME=${1:-"PrometheusLocal"}
+DATASOURCE_URL=${2:-"http://localhost:9090"}
 
 datasource_list() {
     echo Data sources:
@@ -24,11 +24,12 @@ datasource_delete() {
 }
 
 DATASOURCE_TEMPLATE_PATH="data/datasources/prometheus_template.json"
-DATASOUCE_JSON=$(jq -c \
-    --arg name "$DATASOUCE_NAME" \
-    --arg url "$DATASOUCE_URL" \
+DATASOURCE_JSON=$(jq -c \
+    --arg name "$DATASOURCE_NAME" \
+    --arg url "$DATASOURCE_URL" \
     '.name = $name | .url = $url' \
     $DATASOURCE_TEMPLATE_PATH)
-datasource_create "$DATASOUCE_JSON"
+echo $DATASOUCE_JSON
+datasource_create "$DATASOURCE_JSON"
 
-# datasource_list 
+# datasource_list

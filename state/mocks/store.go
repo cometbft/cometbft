@@ -116,6 +116,30 @@ func (_m *Store) GetCompanionBlockRetainHeight() (int64, error) {
 	return r0, r1
 }
 
+// GetOfflineStateSyncHeight provides a mock function with given fields:
+func (_m *Store) GetOfflineStateSyncHeight() (int64, error) {
+	ret := _m.Called()
+
+	var r0 int64
+	var r1 error
+	if rf, ok := ret.Get(0).(func() (int64, error)); ok {
+		return rf()
+	}
+	if rf, ok := ret.Get(0).(func() int64); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Load provides a mock function with given fields:
 func (_m *Store) Load() (state.State, error) {
 	ret := _m.Called()
@@ -183,6 +207,54 @@ func (_m *Store) LoadFinalizeBlockResponse(height int64) (*abcitypes.ResponseFin
 
 	if rf, ok := ret.Get(1).(func(int64) error); ok {
 		r1 = rf(height)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// LoadFromDBOrGenesisDoc provides a mock function with given fields: _a0
+func (_m *Store) LoadFromDBOrGenesisDoc(_a0 *types.GenesisDoc) (state.State, error) {
+	ret := _m.Called(_a0)
+
+	var r0 state.State
+	var r1 error
+	if rf, ok := ret.Get(0).(func(*types.GenesisDoc) (state.State, error)); ok {
+		return rf(_a0)
+	}
+	if rf, ok := ret.Get(0).(func(*types.GenesisDoc) state.State); ok {
+		r0 = rf(_a0)
+	} else {
+		r0 = ret.Get(0).(state.State)
+	}
+
+	if rf, ok := ret.Get(1).(func(*types.GenesisDoc) error); ok {
+		r1 = rf(_a0)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// LoadFromDBOrGenesisFile provides a mock function with given fields: _a0
+func (_m *Store) LoadFromDBOrGenesisFile(_a0 string) (state.State, error) {
+	ret := _m.Called(_a0)
+
+	var r0 state.State
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) (state.State, error)); ok {
+		return rf(_a0)
+	}
+	if rf, ok := ret.Get(0).(func(string) state.State); ok {
+		r0 = rf(_a0)
+	} else {
+		r0 = ret.Get(0).(state.State)
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(_a0)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -350,6 +422,20 @@ func (_m *Store) SaveFinalizeBlockResponse(height int64, res *abcitypes.Response
 	var r0 error
 	if rf, ok := ret.Get(0).(func(int64, *abcitypes.ResponseFinalizeBlock) error); ok {
 		r0 = rf(height, res)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// SetOfflineStateSyncHeight provides a mock function with given fields: height
+func (_m *Store) SetOfflineStateSyncHeight(height int64) error {
+	ret := _m.Called(height)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(int64) error); ok {
+		r0 = rf(height)
 	} else {
 		r0 = ret.Error(0)
 	}

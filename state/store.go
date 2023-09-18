@@ -49,6 +49,7 @@ func calcABCIResponsesKey(height int64) []byte {
 var (
 	lastABCIResponseKey              = []byte("lastABCIResponseKey")
 	lastABCIResponsesRetainHeightKey = []byte("lastABCIResponsesRetainHeight")
+	offlineStateSyncHeight           = []byte("offlineStateSyncHeightKey")
 )
 
 //go:generate ../scripts/mockery_generate.sh Store
@@ -58,6 +59,12 @@ var (
 // It is used to retrieve current state and save and load ABCI responses,
 // validators and consensus parameters
 type Store interface {
+	// LoadFromDBOrGenesisFile loads the most recent state.
+	// If the chain is new it will use the genesis file from the provided genesis file path as the current state.
+	LoadFromDBOrGenesisFile(string) (State, error)
+	// LoadFromDBOrGenesisDoc loads the most recent state.
+	// If the chain is new it will use the genesis doc as the current state.
+	LoadFromDBOrGenesisDoc(*types.GenesisDoc) (State, error)
 	// Load loads the current state of the blockchain
 	Load() (State, error)
 	// LoadValidators loads the validator set at a given height
@@ -90,6 +97,10 @@ type Store interface {
 	SaveABCIResRetainHeight(height int64) error
 	// GetABCIResRetainHeight returns the last saved retain height for ABCI results set by the data companion
 	GetABCIResRetainHeight() (int64, error)
+	// Saves the height at which the store is bootstrapped after out of band statesync
+	SetOfflineStateSyncHeight(height int64) error
+	// Gets the height at which the store is bootstrapped after out of band statesync
+	GetOfflineStateSyncHeight() (int64, error)
 	// Close closes the connection with the database
 	Close() error
 }
@@ -110,6 +121,14 @@ type StoreOptions struct {
 }
 
 var _ Store = (*dbStore)(nil)
+
+func IsEmpty(store dbStore) (bool, error) {
+	state, err := store.Load()
+	if err != nil {
+		return false, err
+	}
+	return state.IsEmpty(), nil
+}
 
 // NewStore creates the dbStore of the state pkg.
 func NewStore(db dbm.DB, options StoreOptions) Store {
@@ -828,6 +847,32 @@ func (store dbStore) saveConsensusParamsInfo(nextHeight, changeHeight int64, par
 	}
 
 	return nil
+}
+
+func (store dbStore) SetOfflineStateSyncHeight(height int64) error {
+	err := store.db.SetSync(offlineStateSyncHeight, int64ToBytes(height))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Gets the height at which the store is bootstrapped after out of band statesync
+func (store dbStore) GetOfflineStateSyncHeight() (int64, error) {
+	buf, err := store.db.Get(offlineStateSyncHeight)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(buf) == 0 {
+		return 0, errors.New("value empty")
+	}
+
+	height := int64FromBytes(buf)
+	if height < 0 {
+		return 0, errors.New("invalid value for height: height cannot be negative")
+	}
+	return height, nil
 }
 
 func (store dbStore) Close() error {

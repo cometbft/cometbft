@@ -28,7 +28,7 @@ them off by default to avoid any unintended modifications.
 However, when required, these services can be activated to set and retrieve a retained height, which can influence
 the pruning mechanism on the node.
 
-To be able to use the privileged gRPC services, it should be enabled through CometBFT's configuration.
+To be able to use the privileged gRPC services, they should be enabled through CometBFT's configuration.
 
 The first step is to set the address for the privileged service, for example:
 ```

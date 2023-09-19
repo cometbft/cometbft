@@ -92,7 +92,7 @@ abci-cli kvstore
 
 In another terminal, we can start CometBFT. You should already have the
 CometBFT binary installed. If not, follow the steps from
-[here](../introduction/install.md). If you have never run CometBFT
+[here](../guides/install.md). If you have never run CometBFT
 before, use:
 
 ```sh

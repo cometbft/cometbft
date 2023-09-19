@@ -1,3 +1,7 @@
+---
+order: 1
+---
+
 # Implementation of the p2p layer
 
 This section documents the implementation of the peer-to-peer (p2p)

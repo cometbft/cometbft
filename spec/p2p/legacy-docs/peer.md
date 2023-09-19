@@ -1,3 +1,7 @@
+---
+order: 1
+---
+
 # Peers
 
 This document explains how CometBFT Peers are identified and how they connect to one another.

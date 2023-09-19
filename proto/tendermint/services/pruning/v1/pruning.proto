@@ -32,3 +32,27 @@ message GetBlockResultsRetainHeightResponse {
     // companion) specifically for block results.
     uint64 pruning_service_retain_height = 1;
 }
+
+message SetTxIndexerRetainHeightRequest {
+    uint64 height = 1;
+}
+
+message SetTxIndexerRetainHeightResponse {}
+
+message GetTxIndexerRetainHeightRequest {}
+
+message GetTxIndexerRetainHeightResponse {
+    uint64 height = 1;
+}
+
+message SetBlockIndexerRetainHeightRequest {
+    uint64 height = 1;
+}
+
+message SetBlockIndexerRetainHeightResponse {}
+
+message GetBlockIndexerRetainHeightRequest {}
+
+message GetBlockIndexerRetainHeightResponse {
+    uint64 height = 1;
+}

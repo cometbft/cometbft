@@ -65,7 +65,7 @@ The first time a new blockchain is started, CometBFT calls `InitChain`. From the
 state. During the execution of an instance of consensus, which decides the block for a given
 height, and before method `FinalizeBlock` is called, methods `PrepareProposal`, `ProcessProposal`,
 `ExtendVote`, and `VerifyVoteExtension` may be called several times. See
-[CometBFT's expected behavior](abci++_comet_expected_behavior.md) for details on the possible
+[CometBFT's expected behavior](./abci++_comet_expected_behavior.md) for details on the possible
 call sequences of these methods.
 
 - [**InitChain:**](./abci++_methods.md#initchain) This method initializes the blockchain.

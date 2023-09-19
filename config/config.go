@@ -1072,8 +1072,11 @@ type StorageConfig struct {
 	DiscardABCIResponses bool `mapstructure:"discard_abci_responses"`
 
 	// Hex representation of the hash of the genesis file.
-	// This is set when an operator provides a hash via the command line.
+	// This is an optional parameter set when an operator provides
+	// a hash via the command line.
 	// It is used to verify the hash of the actual genesis file.
+	// Note that if the provided has does not match the hash of the genesis file
+	// the node will report an error and not boot.
 	GenesisHash string `mapstructure:"genesis_hash"`
 }
 

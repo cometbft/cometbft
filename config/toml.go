@@ -469,7 +469,7 @@ discard_abci_responses = {{ .Storage.DiscardABCIResponses}}
 
 
 # Hash of the Genesis file (as hex string), passed to CometBFT via the command line. 
-# If this hash mismatches the hash that COmetBFT computes on the genesis file,
+# If this hash mismatches the hash that CometBFT computes on the genesis file,
 # the node is not able to boot.
 genesis_hash = "{{ .Storage.GenesisHash }}"
 

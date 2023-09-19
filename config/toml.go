@@ -467,6 +467,12 @@ peer_query_maj23_sleep_duration = "{{ .Consensus.PeerQueryMaj23SleepDuration }}"
 # reindex events in the command-line tool.
 discard_abci_responses = {{ .Storage.DiscardABCIResponses}}
 
+
+# Hash of the Genesis file (as hex string), passed to CometBFT via the command line. 
+# If this hash mismatches the hash that CometBFT computes on the genesis file,
+# the node is not able to boot.
+genesis_hash = "{{ .Storage.GenesisHash }}"
+
 #######################################################
 ###   Transaction Indexer Configuration Options     ###
 #######################################################

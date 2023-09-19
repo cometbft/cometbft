@@ -1228,6 +1228,14 @@ type StorageConfig struct {
 	DiscardABCIResponses bool `mapstructure:"discard_abci_responses"`
 	// Configuration related to storage pruning.
 	Pruning *PruningConfig `mapstructure:"pruning"`
+
+	// Hex representation of the hash of the genesis file.
+	// This is an optional parameter set when an operator provides
+	// a hash via the command line.
+	// It is used to verify the hash of the actual genesis file.
+	// Note that if the provided has does not match the hash of the genesis file
+	// the node will report an error and not boot.
+	GenesisHash string `mapstructure:"genesis_hash"`
 }
 
 // DefaultStorageConfig returns the default configuration options relating to
@@ -1236,6 +1244,7 @@ func DefaultStorageConfig() *StorageConfig {
 	return &StorageConfig{
 		DiscardABCIResponses: false,
 		Pruning:              DefaultPruningConfig(),
+		GenesisHash:          "",
 	}
 }
 
@@ -1245,6 +1254,7 @@ func TestStorageConfig() *StorageConfig {
 	return &StorageConfig{
 		DiscardABCIResponses: false,
 		Pruning:              TestPruningConfig(),
+		GenesisHash:          "",
 	}
 }
 

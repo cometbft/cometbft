@@ -1,7 +1,10 @@
 package node
 
 import (
+	"bytes"
 	"context"
+	"encoding/hex"
+
 	"fmt"
 	"net"
 	"net/http"
@@ -487,7 +490,6 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 func TestNodeNewNodeDeleteGenesisFileFromDB(t *testing.T) {
 	config := test.ResetTestRoot("node_new_node_delete_genesis_from_db")
 	defer os.RemoveAll(config.RootDir)
-	fmt.Println(config.RootDir)
 	// Use goleveldb so we can reuse the same db for the second NewNode()
 	config.DBBackend = string(dbm.GoLevelDBBackend)
 	// Ensure the genesis doc hash is saved to db
@@ -603,6 +605,75 @@ func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 	)
 	require.Error(t, err, "NewNode should error when genesisDoc is changed")
 	require.Equal(t, "genesis doc hash in db does not match loaded genesis doc", err.Error())
+}
+
+func TestNodeGenesisHashFlagMatch(t *testing.T) {
+	config := test.ResetTestRoot("node_new_node_genesis_hash_flag_match")
+	defer os.RemoveAll(config.RootDir)
+
+	config.DBBackend = string(dbm.GoLevelDBBackend)
+	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
+	require.NoError(t, err)
+	// Get correct hash of correct genesis file
+	jsonBlob, err := os.ReadFile(config.GenesisFile())
+	require.NoError(t, err)
+
+	incomingChecksum := tmhash.Sum(jsonBlob)
+	// Set genesis flag value to incorrect hash
+	config.Storage.GenesisHash = hex.EncodeToString(incomingChecksum)
+	_, err = NewNode(
+		context.Background(),
+		config,
+		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
+		nodeKey,
+		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
+		DefaultGenesisDocProviderFunc(config),
+		cfg.DefaultDBProvider,
+		DefaultMetricsProvider(config.Instrumentation),
+		log.TestingLogger(),
+	)
+	require.NoError(t, err)
+
+}
+
+func TestNodeGenesisHashFlagMismatch(t *testing.T) {
+	config := test.ResetTestRoot("node_new_node_genesis_hash_flag_mismatch")
+	defer os.RemoveAll(config.RootDir)
+
+	// Use goleveldb so we can reuse the same db for the second NewNode()
+	config.DBBackend = string(dbm.GoLevelDBBackend)
+
+	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
+	require.NoError(t, err)
+
+	// Generate hash of wrong file
+	f, err := os.ReadFile(config.PrivValidatorKeyFile())
+	require.NoError(t, err)
+	flagHash := tmhash.Sum(f)
+
+	// Set genesis flag value to incorrect hash
+	config.Storage.GenesisHash = hex.EncodeToString(flagHash)
+
+	_, err = NewNode(
+		context.Background(),
+		config,
+		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
+		nodeKey,
+		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
+		DefaultGenesisDocProviderFunc(config),
+		cfg.DefaultDBProvider,
+		DefaultMetricsProvider(config.Instrumentation),
+		log.TestingLogger(),
+	)
+	require.Error(t, err)
+
+	f, err = os.ReadFile(config.GenesisFile())
+	require.NoError(t, err)
+
+	genHash := tmhash.Sum(f)
+
+	genHashMismatch := bytes.Equal(genHash, flagHash)
+	require.False(t, genHashMismatch)
 }
 
 func state(nVals int, height int64) (sm.State, dbm.DB, []types.PrivValidator) {

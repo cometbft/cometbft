@@ -30,22 +30,26 @@ func init() {
 }
 
 var fileDescriptor_eae74ac291bdaa31 = []byte{
-	// 230 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xd2, 0x29, 0x49, 0xcd, 0x4b,
-	0x49, 0x2d, 0xca, 0xcd, 0xcc, 0x2b, 0xd1, 0x2f, 0x4e, 0x2d, 0x2a, 0xcb, 0x4c, 0x4e, 0x2d, 0xd6,
-	0x2f, 0x28, 0x2a, 0xcd, 0xcb, 0xcc, 0x4b, 0xd7, 0x2f, 0x33, 0x84, 0x89, 0xe9, 0x15, 0x14, 0xe5,
-	0x97, 0xe4, 0x0b, 0xc9, 0x21, 0x54, 0xeb, 0xc1, 0x54, 0xeb, 0x41, 0x55, 0xeb, 0x95, 0x19, 0x4a,
-	0x11, 0x32, 0x0d, 0xa6, 0x14, 0x6c, 0x9a, 0x51, 0x17, 0x2b, 0x17, 0x5f, 0x00, 0x44, 0x24, 0x18,
-	0xa2, 0x58, 0x68, 0x22, 0x23, 0x97, 0x48, 0x70, 0x6a, 0x89, 0x53, 0x4e, 0x7e, 0x72, 0x76, 0x50,
-	0x6a, 0x49, 0x62, 0x66, 0x9e, 0x47, 0x6a, 0x66, 0x7a, 0x46, 0x89, 0x90, 0xb5, 0x1e, 0x7e, 0xab,
-	0xf5, 0xb0, 0xe9, 0x0a, 0x4a, 0x2d, 0x2c, 0x4d, 0x2d, 0x2e, 0x91, 0xb2, 0x21, 0x4f, 0x73, 0x71,
-	0x41, 0x7e, 0x5e, 0x31, 0xc4, 0x4d, 0xee, 0x64, 0xb9, 0xc9, 0x9d, 0x12, 0x37, 0xb9, 0xe3, 0x73,
-	0xd3, 0x32, 0x46, 0x2e, 0x69, 0x84, 0xa3, 0x8b, 0x4b, 0x73, 0x4a, 0x8a, 0x51, 0x9c, 0xe6, 0x44,
-	0xbc, 0x8f, 0x31, 0x34, 0xc3, 0x5c, 0xe8, 0x4c, 0x91, 0x19, 0x48, 0x0e, 0x75, 0xa7, 0xc4, 0xa1,
-	0xee, 0x54, 0x70, 0xa8, 0x3b, 0x61, 0x87, 0x3a, 0x49, 0x9c, 0x78, 0x24, 0xc7, 0x78, 0xe1, 0x91,
-	0x1c, 0xe3, 0x83, 0x47, 0x72, 0x8c, 0x13, 0x1e, 0xcb, 0x31, 0x5c, 0x78, 0x2c, 0xc7, 0x70, 0xe3,
-	0xb1, 0x1c, 0x43, 0x12, 0x1b, 0x38, 0xb5, 0x1a, 0x03, 0x02, 0x00, 0x00, 0xff, 0xff, 0xfe, 0xb4,
-	0xc4, 0x07, 0x2b, 0x03, 0x00, 0x00,
+	// 300 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0xd4, 0x31, 0x4e, 0xc3, 0x30,
+	0x14, 0x06, 0xe0, 0x7a, 0x61, 0xf0, 0xc0, 0x10, 0x31, 0x54, 0x45, 0xf2, 0x09, 0x90, 0xa3, 0xc2,
+	0x08, 0x12, 0x28, 0x1d, 0x1e, 0x6c, 0xa8, 0xe1, 0x02, 0xd0, 0x3e, 0x15, 0x8b, 0xe2, 0x04, 0xdb,
+	0x89, 0x7a, 0x0c, 0xd8, 0x61, 0xe5, 0x2c, 0x8c, 0x1d, 0x19, 0x51, 0x72, 0x11, 0xa4, 0x06, 0xab,
+	0xa9, 0x88, 0x92, 0xc8, 0xee, 0xfa, 0xf4, 0xbf, 0x3f, 0x5f, 0xa2, 0xa7, 0xd0, 0x13, 0x83, 0x72,
+	0x8e, 0xea, 0x59, 0x48, 0x13, 0x6a, 0x54, 0xb9, 0x98, 0xa1, 0x0e, 0x53, 0x95, 0x49, 0x21, 0x17,
+	0x61, 0x3e, 0xb6, 0x33, 0x9e, 0xaa, 0xc4, 0x24, 0x01, 0xdb, 0xa6, 0xb9, 0x4d, 0xf3, 0xbf, 0x34,
+	0xcf, 0xc7, 0xa3, 0xae, 0x36, 0x1b, 0xdd, 0xb4, 0x9d, 0xbe, 0x53, 0x7a, 0x78, 0x5b, 0x4d, 0xe2,
+	0x2a, 0x1c, 0xbc, 0x11, 0x7a, 0x14, 0xa3, 0x89, 0x96, 0xc9, 0xec, 0x69, 0x8a, 0xe6, 0x5e, 0xc8,
+	0x6b, 0x14, 0x8b, 0x47, 0x13, 0x9c, 0xf3, 0xf6, 0x47, 0xf3, 0xa6, 0xad, 0x29, 0xbe, 0x64, 0xa8,
+	0xcd, 0xe8, 0xc2, 0x6d, 0x59, 0xa7, 0x89, 0xd4, 0x95, 0x09, 0x9c, 0x4c, 0xe0, 0x63, 0x82, 0x36,
+	0xd3, 0x27, 0xa1, 0xc7, 0x5b, 0xb4, 0xce, 0x96, 0x46, 0xef, 0xd0, 0xa2, 0xfe, 0x6f, 0xfc, 0x6f,
+	0xd9, 0x0a, 0x27, 0x5e, 0x1d, 0x35, 0x28, 0xf8, 0x40, 0x61, 0x0f, 0x50, 0xe8, 0x01, 0xfd, 0x20,
+	0x74, 0x18, 0xa3, 0xb9, 0x5b, 0xdd, 0xc8, 0x39, 0xae, 0x50, 0xed, 0x28, 0x2f, 0x7b, 0x7c, 0x8a,
+	0xc6, 0x4d, 0x4b, 0xbc, 0x72, 0x2f, 0xa8, 0xf9, 0xc0, 0xd9, 0x07, 0xbe, 0x3e, 0xe8, 0xf2, 0xd5,
+	0x2f, 0xb2, 0x89, 0xd8, 0xfb, 0x22, 0x5b, 0x94, 0x13, 0xaf, 0x8e, 0x86, 0x8b, 0x74, 0x82, 0xc2,
+	0x1e, 0xa0, 0xd0, 0x0d, 0x8d, 0x86, 0x5f, 0x05, 0x23, 0xeb, 0x82, 0x91, 0x9f, 0x82, 0x91, 0xd7,
+	0x92, 0x0d, 0xd6, 0x25, 0x1b, 0x7c, 0x97, 0x6c, 0xf0, 0x70, 0xb0, 0xf9, 0x7f, 0x9e, 0xfd, 0x06,
+	0x00, 0x00, 0xff, 0xff, 0xc3, 0x60, 0x40, 0x4e, 0xbd, 0x05, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -79,6 +83,18 @@ type PruningServiceClient interface {
 	// GetBlockResultsRetainHeight returns information about the retain height
 	// parameters used by the node to influence block results retention/pruning.
 	GetBlockResultsRetainHeight(ctx context.Context, in *GetBlockResultsRetainHeightRequest, opts ...grpc.CallOption) (*GetBlockResultsRetainHeightResponse, error)
+	// SetTxIndexerRetainHeightRequest indicates to the node that it can safely
+	// prune all tx indices up to the specified retain height.
+	SetTxIndexerRetainHeight(ctx context.Context, in *SetTxIndexerRetainHeightRequest, opts ...grpc.CallOption) (*SetTxIndexerRetainHeightResponse, error)
+	// GetTxIndexerRetainHeight returns information about the retain height
+	// parameters used by the node to influence TxIndexer pruning
+	GetTxIndexerRetainHeight(ctx context.Context, in *GetTxIndexerRetainHeightRequest, opts ...grpc.CallOption) (*GetTxIndexerRetainHeightResponse, error)
+	// SetBlockIndexerRetainHeightRequest indicates to the node that it can safely
+	// prune all block indices up to the specified retain height.
+	SetBlockIndexerRetainHeight(ctx context.Context, in *SetBlockIndexerRetainHeightRequest, opts ...grpc.CallOption) (*SetBlockIndexerRetainHeightResponse, error)
+	// GetBlockIndexerRetainHeight returns information about the retain height
+	// parameters used by the node to influence BlockIndexer pruning
+	GetBlockIndexerRetainHeight(ctx context.Context, in *GetBlockIndexerRetainHeightRequest, opts ...grpc.CallOption) (*GetBlockIndexerRetainHeightResponse, error)
 }
 
 type pruningServiceClient struct {
@@ -125,6 +141,42 @@ func (c *pruningServiceClient) GetBlockResultsRetainHeight(ctx context.Context, 
 	return out, nil
 }
 
+func (c *pruningServiceClient) SetTxIndexerRetainHeight(ctx context.Context, in *SetTxIndexerRetainHeightRequest, opts ...grpc.CallOption) (*SetTxIndexerRetainHeightResponse, error) {
+	out := new(SetTxIndexerRetainHeightResponse)
+	err := c.cc.Invoke(ctx, "/tendermint.services.pruning.v1.PruningService/SetTxIndexerRetainHeight", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *pruningServiceClient) GetTxIndexerRetainHeight(ctx context.Context, in *GetTxIndexerRetainHeightRequest, opts ...grpc.CallOption) (*GetTxIndexerRetainHeightResponse, error) {
+	out := new(GetTxIndexerRetainHeightResponse)
+	err := c.cc.Invoke(ctx, "/tendermint.services.pruning.v1.PruningService/GetTxIndexerRetainHeight", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *pruningServiceClient) SetBlockIndexerRetainHeight(ctx context.Context, in *SetBlockIndexerRetainHeightRequest, opts ...grpc.CallOption) (*SetBlockIndexerRetainHeightResponse, error) {
+	out := new(SetBlockIndexerRetainHeightResponse)
+	err := c.cc.Invoke(ctx, "/tendermint.services.pruning.v1.PruningService/SetBlockIndexerRetainHeight", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *pruningServiceClient) GetBlockIndexerRetainHeight(ctx context.Context, in *GetBlockIndexerRetainHeightRequest, opts ...grpc.CallOption) (*GetBlockIndexerRetainHeightResponse, error) {
+	out := new(GetBlockIndexerRetainHeightResponse)
+	err := c.cc.Invoke(ctx, "/tendermint.services.pruning.v1.PruningService/GetBlockIndexerRetainHeight", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PruningServiceServer is the server API for PruningService service.
 type PruningServiceServer interface {
 	// SetBlockRetainHeightRequest indicates to the node that it can safely
@@ -146,6 +198,18 @@ type PruningServiceServer interface {
 	// GetBlockResultsRetainHeight returns information about the retain height
 	// parameters used by the node to influence block results retention/pruning.
 	GetBlockResultsRetainHeight(context.Context, *GetBlockResultsRetainHeightRequest) (*GetBlockResultsRetainHeightResponse, error)
+	// SetTxIndexerRetainHeightRequest indicates to the node that it can safely
+	// prune all tx indices up to the specified retain height.
+	SetTxIndexerRetainHeight(context.Context, *SetTxIndexerRetainHeightRequest) (*SetTxIndexerRetainHeightResponse, error)
+	// GetTxIndexerRetainHeight returns information about the retain height
+	// parameters used by the node to influence TxIndexer pruning
+	GetTxIndexerRetainHeight(context.Context, *GetTxIndexerRetainHeightRequest) (*GetTxIndexerRetainHeightResponse, error)
+	// SetBlockIndexerRetainHeightRequest indicates to the node that it can safely
+	// prune all block indices up to the specified retain height.
+	SetBlockIndexerRetainHeight(context.Context, *SetBlockIndexerRetainHeightRequest) (*SetBlockIndexerRetainHeightResponse, error)
+	// GetBlockIndexerRetainHeight returns information about the retain height
+	// parameters used by the node to influence BlockIndexer pruning
+	GetBlockIndexerRetainHeight(context.Context, *GetBlockIndexerRetainHeightRequest) (*GetBlockIndexerRetainHeightResponse, error)
 }
 
 // UnimplementedPruningServiceServer can be embedded to have forward compatible implementations.
@@ -163,6 +227,18 @@ func (*UnimplementedPruningServiceServer) SetBlockResultsRetainHeight(ctx contex
 }
 func (*UnimplementedPruningServiceServer) GetBlockResultsRetainHeight(ctx context.Context, req *GetBlockResultsRetainHeightRequest) (*GetBlockResultsRetainHeightResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBlockResultsRetainHeight not implemented")
+}
+func (*UnimplementedPruningServiceServer) SetTxIndexerRetainHeight(ctx context.Context, req *SetTxIndexerRetainHeightRequest) (*SetTxIndexerRetainHeightResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetTxIndexerRetainHeight not implemented")
+}
+func (*UnimplementedPruningServiceServer) GetTxIndexerRetainHeight(ctx context.Context, req *GetTxIndexerRetainHeightRequest) (*GetTxIndexerRetainHeightResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTxIndexerRetainHeight not implemented")
+}
+func (*UnimplementedPruningServiceServer) SetBlockIndexerRetainHeight(ctx context.Context, req *SetBlockIndexerRetainHeightRequest) (*SetBlockIndexerRetainHeightResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetBlockIndexerRetainHeight not implemented")
+}
+func (*UnimplementedPruningServiceServer) GetBlockIndexerRetainHeight(ctx context.Context, req *GetBlockIndexerRetainHeightRequest) (*GetBlockIndexerRetainHeightResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBlockIndexerRetainHeight not implemented")
 }
 
 func RegisterPruningServiceServer(s grpc1.Server, srv PruningServiceServer) {
@@ -241,6 +317,78 @@ func _PruningService_GetBlockResultsRetainHeight_Handler(srv interface{}, ctx co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PruningService_SetTxIndexerRetainHeight_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetTxIndexerRetainHeightRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PruningServiceServer).SetTxIndexerRetainHeight(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/tendermint.services.pruning.v1.PruningService/SetTxIndexerRetainHeight",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PruningServiceServer).SetTxIndexerRetainHeight(ctx, req.(*SetTxIndexerRetainHeightRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PruningService_GetTxIndexerRetainHeight_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTxIndexerRetainHeightRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PruningServiceServer).GetTxIndexerRetainHeight(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/tendermint.services.pruning.v1.PruningService/GetTxIndexerRetainHeight",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PruningServiceServer).GetTxIndexerRetainHeight(ctx, req.(*GetTxIndexerRetainHeightRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PruningService_SetBlockIndexerRetainHeight_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetBlockIndexerRetainHeightRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PruningServiceServer).SetBlockIndexerRetainHeight(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/tendermint.services.pruning.v1.PruningService/SetBlockIndexerRetainHeight",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PruningServiceServer).SetBlockIndexerRetainHeight(ctx, req.(*SetBlockIndexerRetainHeightRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PruningService_GetBlockIndexerRetainHeight_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBlockIndexerRetainHeightRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PruningServiceServer).GetBlockIndexerRetainHeight(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/tendermint.services.pruning.v1.PruningService/GetBlockIndexerRetainHeight",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PruningServiceServer).GetBlockIndexerRetainHeight(ctx, req.(*GetBlockIndexerRetainHeightRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _PruningService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "tendermint.services.pruning.v1.PruningService",
 	HandlerType: (*PruningServiceServer)(nil),
@@ -260,6 +408,22 @@ var _PruningService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetBlockResultsRetainHeight",
 			Handler:    _PruningService_GetBlockResultsRetainHeight_Handler,
+		},
+		{
+			MethodName: "SetTxIndexerRetainHeight",
+			Handler:    _PruningService_SetTxIndexerRetainHeight_Handler,
+		},
+		{
+			MethodName: "GetTxIndexerRetainHeight",
+			Handler:    _PruningService_GetTxIndexerRetainHeight_Handler,
+		},
+		{
+			MethodName: "SetBlockIndexerRetainHeight",
+			Handler:    _PruningService_SetBlockIndexerRetainHeight_Handler,
+		},
+		{
+			MethodName: "GetBlockIndexerRetainHeight",
+			Handler:    _PruningService_GetBlockIndexerRetainHeight_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

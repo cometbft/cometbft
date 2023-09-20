@@ -3,6 +3,7 @@ package mempool
 import (
 	"errors"
 	"fmt"
+	"math"
 	"sync/atomic"
 	"time"
 
@@ -21,9 +22,10 @@ import (
 // peers you received it from.
 type Reactor struct {
 	p2p.BaseReactor
-	config   *cfg.MempoolConfig
-	mempool  *CListMempool
-	waitSync atomic.Bool
+	config           *cfg.MempoolConfig
+	mempool          *CListMempool
+	unstartedPeersCh chan *p2p.Peer
+	waitSync         atomic.Bool
 
 	// `txSenders` maps every received transaction to the set of peer IDs that
 	// have sent the transaction to this node. Sender IDs are used during
@@ -36,10 +38,11 @@ type Reactor struct {
 // NewReactor returns a new Reactor with the given config and mempool.
 func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool, waitSync bool) *Reactor {
 	memR := &Reactor{
-		config:    config,
-		mempool:   mempool,
-		waitSync:  atomic.Bool{},
-		txSenders: make(map[types.TxKey]map[p2p.ID]bool),
+		config:           config,
+		mempool:          mempool,
+		unstartedPeersCh: make(chan *p2p.Peer, math.MaxUint16), // TODO: choose a more reasonable channel size
+		waitSync:         atomic.Bool{},
+		txSenders:        make(map[types.TxKey]map[p2p.ID]bool),
 	}
 	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
 	if waitSync {
@@ -59,9 +62,8 @@ func (memR *Reactor) SetLogger(l log.Logger) {
 func (memR *Reactor) OnStart() error {
 	if memR.WaitSync() {
 		memR.Logger.Info("Starting reactor in sync mode: tx propagation will start once sync completes")
-	}
-	if !memR.config.Broadcast {
-		memR.Logger.Info("Tx broadcasting is disabled")
+	} else {
+		go memR.startBroadcast()
 	}
 	return nil
 }
@@ -86,13 +88,48 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 	}
 }
 
-// AddPeer implements Reactor.
-// It starts a broadcast routine ensuring all txs are forwarded to the given peer.
+// AddPeer implements Reactor. It adds the peer to a queue of unstarted peers.
+// Once waitSync is false (either in OnStart or in EnableInOutTxs), the peers in
+// the queue will be processed and start broadcasting.
 func (memR *Reactor) AddPeer(peer p2p.Peer) {
-	if !memR.config.Broadcast || memR.WaitSync() {
+	if !memR.config.Broadcast {
 		return
 	}
-	go memR.broadcastTxRoutine(peer)
+	memR.unstartedPeersCh <- &peer
+}
+
+// EnableInOutTxs sets the flag waitSync to false to signal that sync mode has
+// finished and to enable transaction propagation. This function will enable
+// transaction propagation only the first time it is called. We assume that once
+// the node has left sync mode, it's not possible to go back to that mode.
+func (memR *Reactor) EnableInOutTxs() {
+	// If waitSync is not true, it means that incoming and outgoing txs are
+	// already enabled, then return immediately; otherwise, set it to false and
+	// enable txs.
+	if !memR.waitSync.CompareAndSwap(true, false) {
+		return
+	}
+	memR.Logger.Info("Inbound transactions enabled")
+	go memR.startBroadcast()
+}
+
+// startBroadcast waits for peers for which we haven't started communicating and
+// starts a broadcast routine for each of them.
+func (memR *Reactor) startBroadcast() {
+	if !memR.config.Broadcast {
+		memR.Logger.Info("Tx broadcasting is disabled")
+		return
+	}
+	memR.Logger.Info("Outbound transactions enabled")
+	for {
+		peer := <-memR.unstartedPeersCh
+		go memR.broadcastTxRoutine(*peer)
+	}
+}
+
+// WaitSync returns true iff the node is still waiting for sync mode to finish.
+func (memR *Reactor) WaitSync() bool {
+	return memR.waitSync.Load()
 }
 
 // Receive implements Reactor.
@@ -140,21 +177,6 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 	}
 
 	// broadcasting happens from go routines per peer
-}
-
-func (memR *Reactor) EnableInOutTxs() {
-	memR.Logger.Info("enabling inbound and outbound transactions")
-	memR.waitSync.Store(false)
-
-	if memR.config.Broadcast {
-		for _, peer := range memR.Switch.Peers().List() {
-			go memR.broadcastTxRoutine(peer)
-		}
-	}
-}
-
-func (memR *Reactor) WaitSync() bool {
-	return memR.waitSync.Load()
 }
 
 // PeerState describes the state of a peer.

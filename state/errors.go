@@ -70,6 +70,10 @@ type (
 		Height int64
 		Err    error
 	}
+
+	ErrCannotLoadState struct {
+		Err error
+	}
 )
 
 func (e ErrUnknownBlock) Error() string {
@@ -159,3 +163,11 @@ var (
 	ErrPrunerCannotLowerRetainHeight      = errors.New("cannot set a height lower than previously requested - heights might have already been pruned")
 	ErrInvalidRetainHeight                = errors.New("retain height cannot be less or equal than 0")
 )
+
+func (e ErrCannotLoadState) Error() string {
+	return fmt.Sprintf("cannot load state: %v", e.Err)
+}
+
+func (e ErrCannotLoadState) Unwrap() error {
+	return e.Err
+}

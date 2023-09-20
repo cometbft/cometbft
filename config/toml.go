@@ -557,6 +557,12 @@ initial_block_retain_height = {{ .Storage.Pruning.DataCompanion.InitialBlockReta
 # already set a block results retain height, this is ignored.
 initial_block_results_retain_height = {{ .Storage.Pruning.DataCompanion.InitialBlockResultsRetainHeight }}
 
+
+# Hash of the Genesis file (as hex string), passed to CometBFT via the command line. 
+# If this hash mismatches the hash that CometBFT computes on the genesis file,
+# the node is not able to boot.
+genesis_hash = "{{ .Storage.GenesisHash }}"
+
 #######################################################
 ###   Transaction Indexer Configuration Options     ###
 #######################################################

@@ -1,3 +1,7 @@
+---
+order: 2
+---
+
 # Reactor API
 
 A component has to implement the [`p2p.Reactor` interface][reactor-interface]
@@ -226,5 +230,5 @@ Two important observations regarding the implementation of the `Receive` method:
    In other words, while `Receive` does not return, other messages from the
    same sender are not delivered to any reactor.
 
-[reactor-interface]: ../../../p2p/base_reactor.go
+[reactor-interface]: https://github.com/cometbft/cometbft/blob/v0.38.x/p2p/base_reactor.go
 [quint-repo]: https://github.com/informalsystems/quint

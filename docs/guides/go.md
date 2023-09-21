@@ -696,6 +696,4 @@ echo cm9ja3M=" | base64 -d
 
 ## Outro
 
-I hope everything went smoothly and your first, but hopefully not the last,
-CometBFT application is up and running. If not, please [open an issue on
-Github](https://github.com/cometbft/cometbft/issues/new/choose).
+Hope you could run everything smoothly. If you have any difficulties running through this tutorial, reach out to us via [discord](https://discord.com/invite/cosmosnetwork) or open a new [issue](https://github.com/cometbft/cometbft/issues/new/choose) on Github.

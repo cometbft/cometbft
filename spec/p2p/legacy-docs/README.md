@@ -12,5 +12,5 @@ in more recent documents, and some implementation details might be outdated
 - [Messages](./messages)
 - [Config](./config.md)
 - [Connection](./connection.md)
-- [Node](./node.md)
+- [Peer Discovery](./node.md)
 - [Peer](./peer.md)

@@ -1,7 +1,3 @@
----
-order: 3
----
-
 # Proposer-Based Time - Part II
 
 ## Updated Consensus Algorithm

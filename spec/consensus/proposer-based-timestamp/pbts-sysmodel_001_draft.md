@@ -1,7 +1,3 @@
----
-order: 2
----
-
 # Proposer-Based Time - Part I
 
 ## System Model

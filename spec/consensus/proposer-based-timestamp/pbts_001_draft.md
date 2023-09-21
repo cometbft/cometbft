@@ -1,7 +1,3 @@
----
-order: 1
----
-
 # Proposer-Based Time
 
 ## Current BFTTime

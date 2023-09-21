@@ -183,7 +183,7 @@ func createTestSetup(t *testing.T) (*sm.Pruner, *kv.TxIndex, blockidxkv.BlockerI
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
-	bs := store.NewBlockStore(blockDB)
+	bs := store.NewBlockStore(blockDB, store.BlockStoreOptions{Metrics: store.NopMetrics()})
 	pruner := sm.NewPruner(stateStore, bs, blockIndexer, txIndexer, log.TestingLogger())
 
 	return pruner, txIndexer, *blockIndexer, eventBus

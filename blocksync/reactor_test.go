@@ -81,7 +81,7 @@ func newReactor(
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
-	blockStore := store.NewBlockStore(blockDB)
+	blockStore := store.NewBlockStore(blockDB, store.BlockStoreOptions{Metrics: store.NopMetrics()})
 
 	state, err := stateStore.LoadFromDBOrGenesisDoc(genDoc)
 	if err != nil {

@@ -304,7 +304,7 @@ func TestCreateProposalBlock(t *testing.T) {
 
 	// Make EvidencePool
 	evidenceDB := dbm.NewMemDB()
-	blockStore := store.NewBlockStore(dbm.NewMemDB())
+	blockStore := store.NewBlockStore(dbm.NewMemDB(), store.BlockStoreOptions{Metrics: store.NopMetrics()})
 	evidencePool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 	require.NoError(t, err)
 	evidencePool.SetLogger(logger)
@@ -402,7 +402,7 @@ func TestMaxProposalBlockSize(t *testing.T) {
 		mempl.WithPreCheck(sm.TxPreCheck(state)),
 		mempl.WithPostCheck(sm.TxPostCheck(state)))
 
-	blockStore := store.NewBlockStore(dbm.NewMemDB())
+	blockStore := store.NewBlockStore(dbm.NewMemDB(), store.BlockStoreOptions{Metrics: store.NopMetrics()})
 
 	// fill the mempool with one txs just below the maximum size
 	txLength := int(types.MaxDataBytesNoEvidence(maxBytes, 1))

@@ -4,10 +4,12 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/cosmos/gogoproto/proto"
 
 	dbm "github.com/cometbft/cometbft-db"
+	"github.com/go-kit/kit/metrics"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
@@ -109,6 +111,8 @@ type Store interface {
 type dbStore struct {
 	db dbm.DB
 
+	metrics *Metrics
+
 	StoreOptions
 }
 
@@ -118,6 +122,10 @@ type StoreOptions struct {
 	// the store will maintain only the response object from the latest
 	// height.
 	DiscardABCIResponses bool
+
+	// Metrics defines the metrics collector to use for the state store.
+	// if none is specified then a NopMetrics collector is used.
+	Metrics *Metrics
 }
 
 var _ Store = (*dbStore)(nil)
@@ -132,12 +140,21 @@ func IsEmpty(store dbStore) (bool, error) {
 
 // NewStore creates the dbStore of the state pkg.
 func NewStore(db dbm.DB, options StoreOptions) Store {
-	return dbStore{db, options}
+	m := NopMetrics()
+	if options.Metrics != nil {
+		m = options.Metrics
+	}
+	return dbStore{
+		db:           db,
+		metrics:      m,
+		StoreOptions: options,
+	}
 }
 
 // LoadStateFromDBOrGenesisFile loads the most recent state from the database,
 // or creates a new one from the given genesisFilePath.
 func (store dbStore) LoadFromDBOrGenesisFile(genesisFilePath string) (State, error) {
+	defer addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "load_from_db_or_genesis_file"))()
 	state, err := store.Load()
 	if err != nil {
 		return State{}, err
@@ -156,6 +173,7 @@ func (store dbStore) LoadFromDBOrGenesisFile(genesisFilePath string) (State, err
 // LoadStateFromDBOrGenesisDoc loads the most recent state from the database,
 // or creates a new one from the given genesisDoc.
 func (store dbStore) LoadFromDBOrGenesisDoc(genesisDoc *types.GenesisDoc) (State, error) {
+	defer addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "load_from_db_or_genesis_doc"))()
 	state, err := store.Load()
 	if err != nil {
 		return State{}, err
@@ -174,6 +192,7 @@ func (store dbStore) LoadFromDBOrGenesisDoc(genesisDoc *types.GenesisDoc) (State
 
 // LoadState loads the State from the database.
 func (store dbStore) Load() (State, error) {
+	defer addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "load"))()
 	return store.loadState(stateKey)
 }
 
@@ -205,6 +224,7 @@ func (store dbStore) loadState(key []byte) (state State, err error) {
 // Save persists the State, the ValidatorsInfo, and the ConsensusParamsInfo to the database.
 // This flushes the writes (e.g. calls SetSync).
 func (store dbStore) Save(state State) error {
+	defer addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "save"))()
 	return store.save(state, stateKey)
 }
 
@@ -240,6 +260,7 @@ func (store dbStore) save(state State, key []byte) error {
 // BootstrapState saves a new state, used e.g. by state sync when starting from non-zero height.
 func (store dbStore) Bootstrap(state State) error {
 	height := state.LastBlockHeight + 1
+	defer addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "bootstrap"))()
 	if height == 1 {
 		height = state.InitialHeight
 	}
@@ -275,6 +296,7 @@ func (store dbStore) Bootstrap(state State) error {
 // This will cause some old states to be left behind when doing incremental partial prunes,
 // specifically older checkpoints and LastHeightChanged targets.
 func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight int64) error {
+	defer addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "prune_states"))()
 	if from <= 0 || to <= 0 {
 		return fmt.Errorf("from height %v and to height %v must be greater than 0", from, to)
 	}
@@ -406,6 +428,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 // including, the given height. On success, returns the number of heights
 // pruned and the new retain height.
 func (store dbStore) PruneABCIResponses(targetRetainHeight int64) (int64, int64, error) {
+	defer addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "prune_abci_responses"))()
 	if store.DiscardABCIResponses {
 		return 0, 0, nil
 	}
@@ -461,6 +484,7 @@ func TxResultsHash(txResults []*abci.ExecTxResult) []byte {
 // database. If the node has D set to true, ErrABCIResponsesNotPersisted
 // is persisted. If not found, ErrNoABCIResponsesForHeight is returned.
 func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.ResponseFinalizeBlock, error) {
+	defer addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "load_abci_responses"))()
 	if store.DiscardABCIResponses {
 		return nil, ErrFinalizeBlockResponsesNotPersisted
 	}
@@ -503,6 +527,7 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.ResponseFina
 // This method is used for recovering in the case that we called the Commit ABCI
 // method on the application but crashed before persisting the results.
 func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.ResponseFinalizeBlock, error) {
+	defer addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "load_last_abci_response"))()
 	bz, err := store.db.Get(lastABCIResponseKey)
 	if err != nil {
 		return nil, err
@@ -545,6 +570,7 @@ func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.Response
 //
 // CONTRACT: height must be monotonically increasing every time this is called.
 func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.ResponseFinalizeBlock) error {
+	defer addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "save_abci_responses"))()
 	var dtxs []*abci.ExecTxResult
 	// strip nil values,
 	for _, tx := range resp.TxResults {
@@ -670,6 +696,7 @@ func (store dbStore) setLastABCIResponsesRetainHeight(height int64) error {
 // LoadValidators loads the ValidatorSet for a given height.
 // Returns ErrNoValSetForHeight if the validator set can't be found for this height.
 func (store dbStore) LoadValidators(height int64) (*types.ValidatorSet, error) {
+	defer addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "load_validators"))()
 	valInfo, err := loadValidatorsInfo(store.db, height)
 	if err != nil {
 		return nil, ErrNoValSetForHeight{height}
@@ -778,6 +805,7 @@ func (store dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet 
 
 // LoadConsensusParams loads the ConsensusParams for a given height.
 func (store dbStore) LoadConsensusParams(height int64) (types.ConsensusParams, error) {
+	defer addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "load_consensus_params"))()
 	var (
 		empty   = types.ConsensusParams{}
 		emptypb = cmtproto.ConsensusParams{}
@@ -909,4 +937,13 @@ func int64ToBytes(i int64) []byte {
 	buf := make([]byte, binary.MaxVarintLen64)
 	n := binary.PutVarint(buf, i)
 	return buf[:n]
+}
+
+// addTimeSample returns a function that, when called, adds an observation to m.
+// The observation added to m is the number of seconds ellapsed since addTimeSample
+// was initially called. addTimeSample is meant to be called in a defer to calculate
+// the amount of time a function takes to complete.
+func addTimeSample(m metrics.Histogram) func() {
+	start := time.Now()
+	return func() { m.Observe(time.Since(start).Seconds()) }
 }

@@ -3,7 +3,9 @@ package store
 import (
 	"errors"
 	"fmt"
+	"github.com/go-kit/kit/metrics"
 	"strconv"
+	"time"
 
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 	"github.com/cosmos/gogoproto/proto"
@@ -36,7 +38,8 @@ The store can be assumed to contain all contiguous blocks between base and heigh
 // deserializing loaded data, indicating probable corruption on disk.
 */
 type BlockStore struct {
-	db dbm.DB
+	db      dbm.DB
+	metrics *Metrics
 
 	// mtx guards access to the struct fields listed below it. We rely on the database to enforce
 	// fine-grained concurrency control for its data, and thus this mutex does not apply to
@@ -48,14 +51,23 @@ type BlockStore struct {
 	height int64
 }
 
+type BlockStoreOptions struct {
+	Metrics *Metrics
+}
+
 // NewBlockStore returns a new BlockStore with the given DB,
 // initialized to the last height that was committed to the DB.
-func NewBlockStore(db dbm.DB) *BlockStore {
+func NewBlockStore(db dbm.DB, o BlockStoreOptions) *BlockStore {
 	bs := LoadBlockStoreState(db)
+	m := NopMetrics()
+	if o.Metrics != nil {
+		m = o.Metrics
+	}
 	return &BlockStore{
-		base:   bs.Base,
-		height: bs.Height,
-		db:     db,
+		metrics: m,
+		base:    bs.Base,
+		height:  bs.Height,
+		db:      db,
 	}
 }
 
@@ -102,6 +114,7 @@ func (bs *BlockStore) LoadBaseMeta() *types.BlockMeta {
 // LoadBlock returns the block with the given height.
 // If no block is found for that height, it returns nil.
 func (bs *BlockStore) LoadBlock(height int64) *types.Block {
+	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_block"))()
 	blockMeta := bs.LoadBlockMeta(height)
 	if blockMeta == nil {
 		return nil
@@ -137,6 +150,7 @@ func (bs *BlockStore) LoadBlock(height int64) *types.Block {
 // If no block is found for that hash, it returns nil.
 // Panics if it fails to parse height associated with the given hash.
 func (bs *BlockStore) LoadBlockByHash(hash []byte) *types.Block {
+	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_block_by_hash"))()
 	bz, err := bs.db.Get(calcBlockHashKey(hash))
 	if err != nil {
 		panic(err)
@@ -157,6 +171,7 @@ func (bs *BlockStore) LoadBlockByHash(hash []byte) *types.Block {
 // from the block at the given height.
 // If no part is found for the given height and index, it returns nil.
 func (bs *BlockStore) LoadBlockPart(height int64, index int) *types.Part {
+	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_block_part"))()
 	pbpart := new(cmtproto.Part)
 
 	bz, err := bs.db.Get(calcBlockPartKey(height, index))
@@ -182,6 +197,7 @@ func (bs *BlockStore) LoadBlockPart(height int64, index int) *types.Part {
 // LoadBlockMeta returns the BlockMeta for the given height.
 // If no block is found for the given height, it returns nil.
 func (bs *BlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
+	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_block_meta"))()
 	pbbm := new(cmtproto.BlockMeta)
 	bz, err := bs.db.Get(calcBlockMetaKey(height))
 	if err != nil {
@@ -208,6 +224,7 @@ func (bs *BlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 // LoadBlockMetaByHash returns the blockmeta who's header corresponds to the given
 // hash. If none is found, returns nil.
 func (bs *BlockStore) LoadBlockMetaByHash(hash []byte) *types.BlockMeta {
+	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_block_meta_by_hash"))()
 	bz, err := bs.db.Get(calcBlockHashKey(hash))
 	if err != nil {
 		panic(err)
@@ -229,6 +246,7 @@ func (bs *BlockStore) LoadBlockMetaByHash(hash []byte) *types.BlockMeta {
 // and it comes from the block.LastCommit for `height+1`.
 // If no commit is found for the given height, it returns nil.
 func (bs *BlockStore) LoadBlockCommit(height int64) *types.Commit {
+	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_block_commit"))()
 	pbc := new(cmtproto.Commit)
 	bz, err := bs.db.Get(calcBlockCommitKey(height))
 	if err != nil {
@@ -252,6 +270,7 @@ func (bs *BlockStore) LoadBlockCommit(height int64) *types.Commit {
 // The extended commit is not guaranteed to contain the same +2/3 precommits data
 // as the commit in the block.
 func (bs *BlockStore) LoadBlockExtendedCommit(height int64) *types.ExtendedCommit {
+	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_seen_ext_commit"))()
 	pbec := new(cmtproto.ExtendedCommit)
 	bz, err := bs.db.Get(calcExtCommitKey(height))
 	if err != nil {
@@ -275,6 +294,7 @@ func (bs *BlockStore) LoadBlockExtendedCommit(height int64) *types.ExtendedCommi
 // This is useful when we've seen a commit, but there has not yet been
 // a new block at `height + 1` that includes this commit in its block.LastCommit.
 func (bs *BlockStore) LoadSeenCommit(height int64) *types.Commit {
+	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_seen_commit"))()
 	pbc := new(cmtproto.Commit)
 	bz, err := bs.db.Get(calcSeenCommitKey(height))
 	if err != nil {
@@ -299,6 +319,7 @@ func (bs *BlockStore) LoadSeenCommit(height int64) *types.Commit {
 // number of blocks pruned and the evidence retain height - the height at which
 // data needed to prove evidence must not be removed.
 func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, error) {
+	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "prune_blocks"))()
 	if height <= 0 {
 		return 0, -1, fmt.Errorf("height must be greater than 0")
 	}
@@ -399,6 +420,7 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 //	we need this to reload the precommits to catch-up nodes to the
 //	most recent height.  Otherwise they'd stall at H-1.
 func (bs *BlockStore) SaveBlock(block *types.Block, blockParts *types.PartSet, seenCommit *types.Commit) {
+	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "save_block"))()
 	if block == nil {
 		panic("BlockStore can only save a non-nil block")
 	}
@@ -416,6 +438,7 @@ func (bs *BlockStore) SaveBlock(block *types.Block, blockParts *types.PartSet, s
 // height. This allows the vote extension data to be persisted for all blocks
 // that are saved.
 func (bs *BlockStore) SaveBlockWithExtendedCommit(block *types.Block, blockParts *types.PartSet, seenExtendedCommit *types.ExtendedCommit) {
+	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "save_seen_ext_commit"))()
 	if block == nil {
 		panic("BlockStore can only save a non-nil block")
 	}
@@ -438,6 +461,7 @@ func (bs *BlockStore) SaveBlockWithExtendedCommit(block *types.Block, blockParts
 }
 
 func (bs *BlockStore) saveBlockToBatch(block *types.Block, blockParts *types.PartSet, seenCommit *types.Commit) error {
+	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "save_seen_commit"))()
 	if block == nil {
 		panic("BlockStore can only save a non-nil block")
 	}
@@ -661,4 +685,11 @@ func (bs *BlockStore) DeleteLatestBlock() error {
 		return fmt.Errorf("failed to delete height %v: %w", targetHeight, err)
 	}
 	return nil
+}
+
+func addTimeSample(h metrics.Histogram) func() {
+	start := time.Now()
+	return func() {
+		h.Observe(time.Since(start).Seconds())
+	}
 }

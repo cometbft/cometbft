@@ -21,9 +21,11 @@ import (
 // peers you received it from.
 type Reactor struct {
 	p2p.BaseReactor
-	config   *cfg.MempoolConfig
-	mempool  *CListMempool
-	waitSync atomic.Bool
+	config  *cfg.MempoolConfig
+	mempool *CListMempool
+
+	waitSync   atomic.Bool
+	waitSyncCh chan struct{}
 
 	// `txSenders` maps every received transaction to the set of peer IDs that
 	// have sent the transaction to this node. Sender IDs are used during
@@ -44,6 +46,7 @@ func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool, waitSync bool)
 	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
 	if waitSync {
 		memR.waitSync.Store(true)
+		memR.waitSyncCh = make(chan struct{})
 	}
 	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
 	return memR
@@ -89,7 +92,7 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 // AddPeer implements Reactor.
 // It starts a broadcast routine ensuring all txs are forwarded to the given peer.
 func (memR *Reactor) AddPeer(peer p2p.Peer) {
-	if !memR.config.Broadcast || memR.WaitSync() {
+	if !memR.config.Broadcast {
 		return
 	}
 	go memR.broadcastTxRoutine(peer)
@@ -144,12 +147,13 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 
 func (memR *Reactor) EnableInOutTxs() {
 	memR.Logger.Info("enabling inbound and outbound transactions")
-	memR.waitSync.Store(false)
+	if !memR.waitSync.CompareAndSwap(true, false) {
+		return
+	}
 
+	// Releases all the blocked broadcastTxRoutine instances.
 	if memR.config.Broadcast {
-		for _, peer := range memR.Switch.Peers().List() {
-			go memR.broadcastTxRoutine(peer)
-		}
+		close(memR.waitSyncCh)
 	}
 }
 
@@ -165,6 +169,16 @@ type PeerState interface {
 // Send new mempool txs to peer.
 func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 	var next *clist.CElement
+
+	// If the node is catching up, don't start this routine immediately.
+	if memR.WaitSync() {
+		select {
+		case <-memR.waitSyncCh:
+			// EnableInOutTxs() has set WaitSync() to false.
+		case <-memR.Quit():
+			return
+		}
+	}
 
 	for {
 		// In case of both next.NextWaitChan() and peer.Quit() are variable at the same time

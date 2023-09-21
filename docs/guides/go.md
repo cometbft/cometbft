@@ -109,7 +109,6 @@ go get
 go build
 ```
 
-
 ## 1.3 Writing a CometBFT application
 
 CometBFT communicates with the application through the Application
@@ -457,15 +456,28 @@ In the following code, the application simply returns the unmodified group of tr
 
 ```go
 func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abcitypes.RequestPrepareProposal) (*abcitypes.ResponsePrepareProposal, error) {
+  totalBytes := int64(0)
+  txs := make([]byte, 0)
+
+  for _, tx := range proposal.Txs {
+    totalBytes += int64(len(tx))
+    txs = append(txs, tx...)
+
+      if totalBytes > int64(proposal.MaxTxBytes) {
+        break
+      }
+    }
+
     return &abcitypes.ResponsePrepareProposal{Txs: proposal.Txs}, nil
 }
 ```
 
-Once a proposed block is received by a node, the proposal is passed to the application to give
-its blessing before voting to accept the proposal.
+Once a proposed block is received by a node, the proposal is passed to the application to determine its validity before voting to accept the proposal.
 
-This mechanism may be used for different reasons, for example to deal with blocks manipulated
-by malicious nodes, in which case the block should not be considered valid.
+This code snippet iterates through the proposed transactions and calculates the `total bytes`. If the `total bytes` exceeds the `MaxTxBytes` specified in the `RequestPrepareProposal` struct, the loop breaks and the transactions processed so far are returned.
+
+Note: It is the responsibility of the application to ensure that the `total bytes` of transactions returned does not exceed the `RequestPrepareProposal.max_tx_bytes` limit.
+
 The following code simply accepts all proposals:
 
 ```go

@@ -11,6 +11,6 @@ in more recent documents, and some implementation details might be outdated
 
 - [Messages](./messages)
 - [Config](./config.md)
-- [Connection](./connection.md)
+- [P2P Multiplex Connection](./connection.md)
 - [Peer Discovery](./node.md)
 - [Peers](./peer.md)

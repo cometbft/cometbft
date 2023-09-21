@@ -13,4 +13,4 @@ in more recent documents, and some implementation details might be outdated
 - [Config](./config.md)
 - [Connection](./connection.md)
 - [Peer Discovery](./node.md)
-- [Peer](./peer.md)
+- [Peers](./peer.md)

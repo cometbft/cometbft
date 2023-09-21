@@ -20,7 +20,7 @@ Specification of the consensus protocol implemented in CometBFT.
   creates a block proposal for consensus
 - [Light Client Protocol](./light-client) - A protocol for light weight consensus
   verification and syncing to the latest state
-- [Signing](./signing.md) - Rules for cryptographic signatures
+- [Validator Signing](./signing.md) - Rules for cryptographic signatures
   produced by validators.
 - [Write Ahead Log](./wal.md) - Write ahead log used by the
   consensus state machine to recover from crashes.

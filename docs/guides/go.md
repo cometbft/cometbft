@@ -379,11 +379,8 @@ This can happen if the application state is used to determine transaction validi
 
 Other methods, such as `Query`, rely on a consistent view of the application's state, the application should only update its state by committing the Badger transactions when the full block has been delivered and the `Commit` method is invoked.
 
-
-The `Commit` method tells the application to make permanent the effects of
-the application transactions.
-Let's update the method to terminate the pending Badger transaction and
-persist the resulting state:
+The `Commit` method tells the application to make permanent the effects of the application transactions.
+Let's update the method to terminate the pending Badger transaction and persist the resulting state:
 
 ```go
 func (app KVStoreApplication) Commit(_ context.Context, commit *abcitypes.RequestCommit) (*abcitypes.ResponseCommit, error) {

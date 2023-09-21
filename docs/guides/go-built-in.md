@@ -93,12 +93,12 @@ After running the above commands you will see two generated files, `go.mod` and 
 The go.mod file should look similar to:
 
 ```go
-module github.com/me/example
+module kvstore
 
-go 1.21
+go 1.21.1
 
 require (
-    github.com/cometbft/cometbft v0.38.0
+github.com/cometbft/cometbft v0.38.0
 )
 ```
 

@@ -25,7 +25,7 @@ type Reactor struct {
 	mempool *CListMempool
 
 	waitSync   atomic.Bool
-	waitSyncCh chan struct{}
+	waitSyncCh chan struct{} // for signaling when to start receiving and sending txs
 
 	// `txSenders` maps every received transaction to the set of peer IDs that
 	// have sent the transaction to this node. Sender IDs are used during

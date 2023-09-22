@@ -753,7 +753,11 @@ OUTER_LOOP:
 			if veEnabled {
 				ec = conR.conS.blockStore.LoadBlockExtendedCommit(prs.Height)
 			} else {
-				ec = conR.conS.blockStore.LoadBlockCommit(prs.Height).WrappedExtendedCommit()
+				c := conR.conS.blockStore.LoadBlockCommit(prs.Height)
+				if c == nil {
+					continue
+				}
+				ec = c.WrappedExtendedCommit()
 			}
 			if ec == nil {
 				continue

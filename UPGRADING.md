@@ -2,7 +2,7 @@
 
 This guide provides instructions for upgrading to specific versions of CometBFT.
 
-## Unreleased
+## v0.38.0
 
 This release introduces state machine-breaking changes, as well as substantial changes
 on the ABCI interface and indexing. It therefore requires a

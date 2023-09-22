@@ -1,8 +1,10 @@
-# Allowing Non-Determinism in `ProcessProposal` (a.k.a. addressing #1174)
+# RFC 105: Allowing Non-Determinism in `ProcessProposal`
 
-## Context
+## Changelog
 
-### Introduction
+- 2023-09-22: First version, draft coming from knowledge base (@sergio-mena)
+
+## Abstract
 
 The new methods `PrepareProposal` and `ProcessProposal` offered by ABCI 1.0
 are a powerful tool that enables new use cases for applications,
@@ -19,6 +21,8 @@ they are simple to understand and relatively easy to check whether an applicatio
 
 However, there may be applications that are unable to fulfill those requirements.
 In this document we discuss such applications and propose weaker requirements that may be fulfilled instead.
+
+## Background
 
 ### Consensus Properties
 
@@ -119,10 +123,12 @@ The easiest (and thus canonical) way to ensure these requirements is to make sur
 that `PrepareProposal` only prepares blocks $v$ that satisfy (mathematical) function $valid(v, s)$,
 including the validation performed by correct processes in `ProcessProposal`.
 However, `PrepareProposal` and `ProcessProposal` MAY also use other input in their
-implementation and CometBFT will still guarantee consensus termination, __as long as
-these implementations still ensure the requirements__.
+implementation and CometBFT will still guarantee consensus termination, _as long as
+these implementations still ensure the requirements_.
 
-## Breaking Determinism/Coherence Requirements
+## Discussion
+
+### Breaking Determinism/Coherence Requirements
 
 This document is dealing with the case when an application cannot guarantee
 the coherence and/or determinism requirements as stated in the ABCI 1.0 specification.
@@ -157,9 +163,9 @@ can still fulfill?
 With this new set of requirements, can we still keep the reasoning on termination modular?
 Is this set of weaker requirements still strong enough to guarantee consensus _termination_?
 
-## Solution Proposed
+### Solution Proposed
 
-### Modified Consensus _validity_
+#### Modified Consensus _validity_
 
 Function $valid(v, s)$, as explained above, exclusively depends on its inputs
 (a block, and the blockchain state at the previous height: $s_{h-1}$).
@@ -180,7 +186,7 @@ Consensus _validity_ property is then modified as follows:
 - _weak validity_: function $valid(v, s_{h-1}, x_p)$ has returned _true_ at least once
   by a correct process for the decided block $v$.
 
-### Eventual Requirements
+#### Eventual Requirements
 
 We now relax the relevant ABCI 1.0 requirements in the following way.
 
@@ -204,7 +210,7 @@ and having clocks synchronized is the mechanism ensuring eventual acceptance of 
 Finally, it is worth noting that _weak validity_ requires just one correct processes while requirement 3b
 refers to all correct processes.
 
-### Modifications to the Consensus Algorithm
+#### Modifications to the Consensus Algorithm
 
 The Tendermint algorithm as described in the [arXiv paper][arxiv],
 and as implemented in CometBFT up to version `v0.38.0`,
@@ -241,7 +247,7 @@ Notice we have kept the original `valid(v)` notation, but it stands for the more
 These algorithmic modifications have also been made to CometBFT (on branch `main`)
 as part of issues [#1171][1171], and [#1230][1230].
 
-## On crash recovery
+### On Crash-Recovery
 
 Applications that opt for eventual coherence because their `ProcessProposal` implementation can be non-deterministic,
 may encounter an additional problem for recovering nodes.
@@ -278,6 +284,14 @@ to guarantee the consensus _termination_ property for applications that fulfill 
 In this document, we have not tackled the problem of applications
 that cannot fulfill coherence and determinism properties that refer to vote extensions in the ABCI 2.0 specification.
 We leave this as future work.
+
+## References
+
+* [ABCI 1.0 specification][abci-spec]
+* [Tendermint algorithm][arxiv]
+* [Issue #1171][1171]
+* [Issue #1230][1230]
+* [Issue #1035][1035]
 
 [abci-spec]: https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_app_requirements.md#formal-requirements
 [arxiv]: https://arxiv.org/abs/1807.04938

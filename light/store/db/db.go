@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	dbm "github.com/cometbft/cometbft-db"
-	cmterrors "github.com/cometbft/cometbft/types/errors"
 
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/light/store"
@@ -47,7 +46,7 @@ func (s *dbs) SaveLightBlock(lb *types.LightBlock) error {
 
 	lbpb, err := lb.ToProto()
 	if err != nil {
-		return cmterrors.ErrMsgToProto{MessageName: "LightBlock", Err: err}
+		return fmt.Errorf("unable to convert light block to protobuf: %w", err)
 	}
 
 	lbBz, err := lbpb.Marshal()

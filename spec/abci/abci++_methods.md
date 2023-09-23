@@ -299,7 +299,7 @@ title: Methods
     peers are available), it will reject the snapshot and try a different one via `OfferSnapshot`.
     The application should be prepared to reset and accept it or abort as appropriate.
 
-## New methods introduced in ABCI 2.0
+## New methods introduced in ABCI++
 
 ### PrepareProposal
 
@@ -394,7 +394,8 @@ and _p_'s _validValue_ is `nil`:
    returns from the call.
 3. The Application uses the information received (transactions, commit info, misbehavior, time) to
     (potentially) modify the proposal.
-    * the Application MAY fully execute the block and produce a candidate state (immediate execution)
+    * the Application MAY fully execute the block and produce a candidate state &mdash; immediate
+      execution
     * the Application can manipulate transactions:
         * leave transactions untouched
         * add new transactions (not present initially) to the proposal
@@ -439,12 +440,10 @@ the consensus algorithm will use it as proposal and will not call `RequestPrepar
          `RequestFinalizeBlock`.
         * However, any resulting state changes must be kept as _candidate state_,
           and the Application should be ready to discard it in case another block is decided.
-    * `RequestProcessProposal` is also called at the proposer of a round.
-      Normally the call to `RequestProcessProposal` occurs right after the call to `RequestPrepareProposal` and
-      `RequestProcessProposal` matches the block produced based on `ResponsePrepareProposal` (i.e.,
-      `RequestPrepareProposal.txs` equals `RequestProcessProposal.txs`).
-      However, no such guarantee is made since, in the presence of failures, `RequestProcessProposal` may match
-      `ResponsePrepareProposal` from an earlier invocation or `ProcessProposal` may not be invoked at all.
+    * `RequestProcessProposal` is also called at the proposer of a round. The reason for this is to
+      inform the Application of the block header's hash, which cannot be done at `PrepareProposal`
+      time. In this case, the call to `RequestProcessProposal` occurs right after the call to
+      `RequestPrepareProposal`.
     * The height and time values match the values from the header of the proposed block.
     * If `ResponseProcessProposal.status` is `REJECT`, consensus assumes the proposal received
       is not valid.
@@ -461,7 +460,7 @@ the consensus algorithm will use it as proposal and will not call `RequestPrepar
 When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the proposer (possibly _p_ = _q_):
 
 1. _p_ sets up timer `ProposeTimeout`.
-2. If _p_ is the proposer, _p_ executes steps 1-5 in [PrepareProposal](#prepareproposal).
+2. If _p_ is the proposer, _p_ executes steps 1-6 in [PrepareProposal](#prepareproposal).
 3. Upon reception of Proposal message (which contains the header) for round _r_, height _h_ from
    _q_, _p_ verifies the block header.
 4. Upon reception of Proposal message, along with all the block parts, for round _r_, height _h_
@@ -481,6 +480,7 @@ When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the prop
     3. If _p_ is a validator and the returned value is
          * `ACCEPT`: _p_ prevotes on this proposal for round _r_, height _h_.
          * `REJECT`: _p_ prevotes `nil`.
+         *
 
 ### ExtendVote
 
@@ -488,29 +488,23 @@ When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the prop
 
 * **Request**:
 
-    | Name                 | Type                                            | Description                                                                               | Field Number |
-    |----------------------|-------------------------------------------------|-------------------------------------------------------------------------------------------|--------------|
-    | hash                 | bytes                                           | The header hash of the proposed block that the vote extension is to refer to.             | 1            |
-    | height               | int64                                           | Height of the proposed block (for sanity check).                                          | 2            |
-    | time                 | [google.protobuf.Timestamp][protobuf-timestamp] | Timestamp of the proposed block (that the extension is to refer to).                      | 3            |
-    | txs                  | repeated bytes                                  | List of transactions of the block that the extension is to refer to.                      | 4            |
-    | proposed_last_commit | [CommitInfo](#commitinfo)                       | Info about the last proposed block's last commit.                                         | 5            |
-    | misbehavior          | repeated [Misbehavior](#misbehavior)            | List of information about validators that misbehaved contained in the proposed block.     | 6            |
-    | next_validators_hash | bytes                                           | Merkle root of the next validator set contained in the proposed block.                    | 7            |
-    | proposer_address     | bytes                                           | [Address](../core/data_structures.md#address) of the validator that created the proposal. | 8            |
+    | Name   | Type  | Description                                                                   | Field Number |
+    |--------|-------|-------------------------------------------------------------------------------|--------------|
+    | hash   | bytes | The header hash of the proposed block that the vote extension is to refer to. | 1            |
+    | height | int64 | Height of the proposed block (for sanity check).                              | 2            |
 
 * **Response**:
 
     | Name              | Type  | Description                                             | Field Number |
     |-------------------|-------|---------------------------------------------------------|--------------|
-    | vote_extension    | bytes | Information signed by by CometBFT. Can have 0 length.   | 1            |
+    | vote_extension    | bytes | Information signed by by CometBFT. Can have 0 length. | 1            |
 
 * **Usage**:
     * `ResponseExtendVote.vote_extension` is application-generated information that will be signed
       by CometBFT and attached to the Precommit message.
     * The Application may choose to use an empty vote extension (0 length).
-    * The contents of `RequestExtendVote` correspond to the proposed block on which the consensus algorithm
-      will send the Precommit message.
+    * `RequestExtendVote.hash` corresponds to the hash of a proposed block that was made available
+      to the Application in a previous call to `ProcessProposal` for the current height.
     * `ResponseExtendVote.vote_extension` will only be attached to a non-`nil` Precommit message. If the consensus algorithm is to
       precommit `nil`, it will not call `RequestExtendVote`.
     * The Application logic that creates the extension can be non-deterministic.
@@ -525,7 +519,7 @@ When a validator _p_ is in consensus state _prevote_ of round _r_, height _h_, i
 then _p_ locks _v_  and sends a Precommit message in the following way
 
 1. _p_ sets _lockedValue_ and _validValue_ to _v_, and sets _lockedRound_ and _validRound_ to _r_
-2. _p_'s CometBFT calls `RequestExtendVote` with _v_ (`RequestExtendVote`). The call is synchronous.
+2. _p_'s CometBFT calls `RequestExtendVote` with _id(v)_ (`RequestExtendVote.hash`). The call is synchronous.
 3. The Application returns an array of bytes, `ResponseExtendVote.extension`, which is not interpreted by the consensus algorithm.
 4. _p_ sets `ResponseExtendVote.extension` as the value of the `extension` field of type
    [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension),

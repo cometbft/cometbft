@@ -52,7 +52,7 @@ func MakeHeader(t *testing.T, h *types.Header) *types.Header {
 	if h.Height == 0 {
 		h.Height = 1
 	}
-	if h.LastBlockID.IsNil() {
+	if h.LastBlockID.IsZero() {
 		h.LastBlockID = MakeBlockID()
 	}
 	if h.ChainID == "" {

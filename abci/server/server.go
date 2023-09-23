@@ -8,6 +8,8 @@ It contains two server implementation:
 package server
 
 import (
+	"fmt"
+
 	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/service"
 )
@@ -23,7 +25,7 @@ func NewServer(protoAddr, transport string, app types.Application) (service.Serv
 	case "grpc":
 		s = NewGRPCServer(protoAddr, app)
 	default:
-		err = ErrUnknownServerType{ServerType: transport}
+		err = fmt.Errorf("unknown server type %s", transport)
 	}
 	return s, err
 }

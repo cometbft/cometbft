@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 
-	cmterrors "github.com/cometbft/cometbft/types/errors"
 	"github.com/cosmos/gogoproto/proto"
 
 	dbm "github.com/cometbft/cometbft-db"
@@ -57,12 +56,6 @@ func NewBlockStore(db dbm.DB) *BlockStore {
 		height: bs.Height,
 		db:     db,
 	}
-}
-
-func (bs *BlockStore) IsEmpty() bool {
-	bs.mtx.RLock()
-	defer bs.mtx.RUnlock()
-	return bs.base == bs.height && bs.base == 0
 }
 
 // Base returns the first known contiguous block height, or 0 for empty block stores.
@@ -127,7 +120,7 @@ func (bs *BlockStore) LoadBlock(height int64) *types.Block {
 
 	block, err := types.BlockFromProto(pbb)
 	if err != nil {
-		panic(cmterrors.ErrMsgFromProto{MessageName: "Block", Err: err})
+		panic(fmt.Errorf("error from proto block: %w", err))
 	}
 
 	return block
@@ -199,7 +192,7 @@ func (bs *BlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 
 	blockMeta, err := types.BlockMetaFromProto(pbbm)
 	if err != nil {
-		panic(cmterrors.ErrMsgFromProto{MessageName: "BlockMetadata", Err: err})
+		panic(fmt.Errorf("error from proto blockMeta: %w", err))
 	}
 
 	return blockMeta
@@ -243,7 +236,7 @@ func (bs *BlockStore) LoadBlockCommit(height int64) *types.Commit {
 	}
 	commit, err := types.CommitFromProto(pbc)
 	if err != nil {
-		panic(cmterrors.ErrMsgToProto{MessageName: "Commit", Err: err})
+		panic(fmt.Errorf("converting commit to proto: %w", err))
 	}
 	return commit
 }
@@ -505,7 +498,7 @@ func (bs *BlockStore) saveBlockToBatch(block *types.Block, blockParts *types.Par
 func (bs *BlockStore) saveBlockPart(height int64, index int, part *types.Part) {
 	pbp, err := part.ToProto()
 	if err != nil {
-		panic(cmterrors.ErrMsgToProto{MessageName: "Part", Err: err})
+		panic(fmt.Errorf("unable to make part into proto: %w", err))
 	}
 	partBytes := mustEncode(pbp)
 	if err := bs.db.Set(calcBlockPartKey(height, index), partBytes); err != nil {

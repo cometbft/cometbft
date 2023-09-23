@@ -7,12 +7,11 @@ import (
 
 	"fmt"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCacheRemove(t *testing.T) {
@@ -65,9 +64,10 @@ func TestCacheAfterUpdate(t *testing.T) {
 	for tcIndex, tc := range tests {
 		for i := 0; i < tc.numTxsToCreate; i++ {
 			tx := kvstore.NewTx(fmt.Sprintf("%d", i), "value")
-			reqRes, err := mp.CheckTx(tx)
+			err := mp.CheckTx(tx, func(resp *abci.ResponseCheckTx) {
+				require.False(t, resp.IsErr())
+			}, TxInfo{})
 			require.NoError(t, err)
-			require.False(t, reqRes.Response.GetCheckTx().IsErr())
 		}
 
 		updateTxs := []types.Tx{}
@@ -80,10 +80,9 @@ func TestCacheAfterUpdate(t *testing.T) {
 
 		for _, v := range tc.reAddIndices {
 			tx := kvstore.NewTx(fmt.Sprintf("%d", v), "value")
-			reqRes, err := mp.CheckTx(tx)
-			if err == nil {
-				require.False(t, reqRes.Response.GetCheckTx().IsErr())
-			}
+			_ = mp.CheckTx(tx, func(resp *abci.ResponseCheckTx) {
+				require.False(t, resp.IsErr())
+			}, TxInfo{})
 		}
 
 		cache := mp.cache.(*LRUTxCache)

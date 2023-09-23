@@ -1,12 +1,10 @@
 package node
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -17,7 +15,6 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	cs "github.com/cometbft/cometbft/consensus"
 	"github.com/cometbft/cometbft/evidence"
-	"github.com/cometbft/cometbft/light"
 
 	"github.com/cometbft/cometbft/libs/log"
 	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
@@ -64,7 +61,6 @@ type Node struct {
 	stateStore        sm.Store
 	blockStore        *store.BlockStore // store the blockchain to disk
 	bcReactor         p2p.Reactor       // for block-syncing
-	mempoolReactor    p2p.Reactor       // for gossipping transactions
 	mempool           mempl.Mempool
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
@@ -72,7 +68,6 @@ type Node struct {
 	stateSyncGenesis  sm.State                // provides the genesis state for state sync
 	consensusState    *cs.State               // latest consensus state
 	consensusReactor  *cs.Reactor             // for participating in the consensus
-	pexReactor        *pex.Reactor            // for exchanging peer addresses
 	evidencePool      *evidence.Pool          // tracking evidence
 	proxyApp          proxy.AppConns          // connection to the application
 	rpcListeners      []net.Listener          // rpc servers
@@ -135,124 +130,6 @@ func StateProvider(stateProvider statesync.StateProvider) Option {
 	}
 }
 
-// BootstrapState synchronizes the stores with the application after state sync
-// has been performed offline. It is expected that the block store and state
-// store are empty at the time the function is called.
-//
-// If the block store is not empty, the function returns an error.
-func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBProvider, height uint64, appHash []byte) (err error) {
-	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	if config == nil {
-		logger.Info("no config provided, using default configuration")
-		config = cfg.DefaultConfig()
-	}
-
-	if dbProvider == nil {
-		dbProvider = cfg.DefaultDBProvider
-	}
-	blockStore, stateDB, err := initDBs(config, dbProvider)
-
-	defer func() {
-		if derr := blockStore.Close(); derr != nil {
-			logger.Error("Failed to close blockstore", "err", derr)
-			// Set the return value
-			err = derr
-		}
-	}()
-
-	if err != nil {
-		return err
-	}
-
-	if !blockStore.IsEmpty() {
-		return fmt.Errorf("blockstore not empty, trying to initialize non empty state")
-	}
-
-	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
-		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
-	})
-
-	defer func() {
-		if derr := stateStore.Close(); derr != nil {
-			logger.Error("Failed to close statestore", "err", derr)
-			// Set the return value
-			err = derr
-		}
-	}()
-	state, err := stateStore.Load()
-	if err != nil {
-		return err
-	}
-
-	if !state.IsEmpty() {
-		return fmt.Errorf("state not empty, trying to initialize non empty state")
-	}
-
-	genState, _, err := LoadStateFromDBOrGenesisDocProvider(stateDB, DefaultGenesisDocProviderFunc(config))
-	if err != nil {
-		return err
-	}
-
-	stateProvider, err := statesync.NewLightClientStateProvider(
-		ctx,
-		genState.ChainID, genState.Version, genState.InitialHeight,
-		config.StateSync.RPCServers, light.TrustOptions{
-			Period: config.StateSync.TrustPeriod,
-			Height: config.StateSync.TrustHeight,
-			Hash:   config.StateSync.TrustHashBytes(),
-		}, logger.With("module", "light"))
-	if err != nil {
-		return fmt.Errorf("failed to set up light client state provider: %w", err)
-	}
-
-	state, err = stateProvider.State(ctx, height)
-	if err != nil {
-		return err
-	}
-	if appHash == nil {
-		logger.Info("warning: cannot verify appHash. Verification will happen when node boots up!")
-	} else {
-		if !bytes.Equal(appHash, state.AppHash) {
-			if err := blockStore.Close(); err != nil {
-				logger.Error("failed to close blockstore: %w", err)
-			}
-			if err := stateStore.Close(); err != nil {
-				logger.Error("failed to close statestore: %w", err)
-			}
-			return fmt.Errorf("the app hash returned by the light client does not match the provided appHash, expected %X, got %X", state.AppHash, appHash)
-		}
-	}
-
-	commit, err := stateProvider.Commit(ctx, height)
-	if err != nil {
-		return err
-	}
-
-	if err = stateStore.Bootstrap(state); err != nil {
-		return err
-	}
-
-	err = blockStore.SaveSeenCommit(state.LastBlockHeight, commit)
-	if err != nil {
-		return err
-	}
-
-	// Once the stores are bootstrapped, we need to set the height at which the node has finished
-	// statesyncing. This will allow the blocksync reactor to fetch blocks at a proper height.
-	// In case this operation fails, it is equivalent to a failure in  online state sync where the operator
-	// needs to manually delete the state and blockstores and rerun the bootstrapping process.
-	err = stateStore.SetOfflineStateSyncHeight(state.LastBlockHeight)
-	if err != nil {
-		return fmt.Errorf("failed to set synced height: %w", err)
-	}
-
-	return err
-}
-
 //------------------------------------------------------------------------------
 
 // NewNode returns a new, ready to go, CometBFT Node.
@@ -279,17 +156,6 @@ func NewNode(ctx context.Context,
 	state, genDoc, err := LoadStateFromDBOrGenesisDocProvider(stateDB, genesisDocProvider)
 	if err != nil {
 		return nil, err
-	}
-
-	// The key will be deleted if it existed.
-	// Not checking whether the key is there in case the genesis file was larger than
-	// the max size of a value (in rocksDB for example), which would cause the check
-	// to fail and prevent the node from booting.
-	logger.Info("WARNING: deleting genesis file from database if present, the database stores a hash of the original genesis file now")
-
-	err = stateDB.Delete(genesisDocKey)
-	if err != nil {
-		logger.Error("Failed to delete genesis doc from DB ", err)
 	}
 
 	csMetrics, p2pMetrics, memplMetrics, smMetrics, abciMetrics, bsMetrics, ssMetrics := metricsProvider(genDoc.ChainID)
@@ -350,7 +216,7 @@ func NewNode(ctx context.Context,
 		// what happened during block replay).
 		state, err = stateStore.Load()
 		if err != nil {
-			return nil, sm.ErrCannotLoadState{Err: err}
+			return nil, fmt.Errorf("cannot load state: %w", err)
 		}
 	}
 
@@ -380,15 +246,8 @@ func NewNode(ctx context.Context,
 		sm.BlockExecutorWithMetrics(smMetrics),
 	)
 
-	offlineStateSyncHeight := int64(0)
-	if blockStore.Height() == 0 {
-		offlineStateSyncHeight, err = blockExec.Store().GetOfflineStateSyncHeight()
-		if err != nil && err.Error() != "value empty" {
-			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s; expected state store height to be %v", err, state.LastBlockHeight))
-		}
-	}
 	// Make BlocksyncReactor. Don't start block sync if we're doing a state sync first.
-	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, logger, bsMetrics, offlineStateSyncHeight)
+	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, logger, bsMetrics)
 	if err != nil {
 		return nil, fmt.Errorf("could not create blocksync reactor: %w", err)
 	}
@@ -396,13 +255,9 @@ func NewNode(ctx context.Context,
 	// Make ConsensusReactor
 	consensusReactor, consensusState := createConsensusReactor(
 		config, state, blockExec, blockStore, mempool, evidencePool,
-		privValidator, csMetrics, stateSync || blockSync, eventBus, consensusLogger, offlineStateSyncHeight,
+		privValidator, csMetrics, stateSync || blockSync, eventBus, consensusLogger,
 	)
 
-	err = stateStore.SetOfflineStateSyncHeight(0)
-	if err != nil {
-		panic(fmt.Sprintf("failed to reset the offline state sync height %s", err))
-	}
 	// Set up state sync reactor, and schedule a sync if requested.
 	// FIXME The way we do phased startups (e.g. replay -> block sync -> consensus) is very messy,
 	// we should clean this whole thing up. See:
@@ -445,6 +300,17 @@ func NewNode(ctx context.Context,
 		return nil, fmt.Errorf("could not create addrbook: %w", err)
 	}
 
+	for _, addr := range splitAndTrimEmpty(config.P2P.BootstrapPeers, ",", " ") {
+		netAddrs, err := p2p.NewNetAddressString(addr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid bootstrap peer address: %w", err)
+		}
+		err = addrBook.AddAddress(netAddrs, netAddrs)
+		if err != nil {
+			return nil, fmt.Errorf("adding bootstrap address to addressbook: %w", err)
+		}
+	}
+
 	// Optionally, start the pex reactor
 	//
 	// TODO:
@@ -457,9 +323,8 @@ func NewNode(ctx context.Context,
 	//
 	// If PEX is on, it should handle dialing the seeds. Otherwise the switch does it.
 	// Note we currently use the addrBook regardless at least for AddOurAddress
-	var pexReactor *pex.Reactor
 	if config.P2P.PexReactor {
-		pexReactor = createPEXReactorAndAddToSwitch(addrBook, config, sw, logger)
+		createPEXReactorAndAddToSwitch(addrBook, config, sw, logger)
 	}
 
 	// Add private IDs to addrbook to block those peers being added
@@ -479,14 +344,12 @@ func NewNode(ctx context.Context,
 		stateStore:       stateStore,
 		blockStore:       blockStore,
 		bcReactor:        bcReactor,
-		mempoolReactor:   mempoolReactor,
 		mempool:          mempool,
 		consensusState:   consensusState,
 		consensusReactor: consensusReactor,
 		stateSyncReactor: stateSyncReactor,
 		stateSync:        stateSync,
 		stateSyncGenesis: state, // Shouldn't be necessary, but need a way to pass the genesis state
-		pexReactor:       pexReactor,
 		evidencePool:     evidencePool,
 		proxyApp:         proxyApp,
 		txIndexer:        txIndexer,
@@ -622,21 +485,13 @@ func (n *Node) OnStop() {
 		}
 	}
 	if n.blockStore != nil {
-		n.Logger.Info("Closing blockstore")
 		if err := n.blockStore.Close(); err != nil {
 			n.Logger.Error("problem closing blockstore", "err", err)
 		}
 	}
 	if n.stateStore != nil {
-		n.Logger.Info("Closing statestore")
 		if err := n.stateStore.Close(); err != nil {
 			n.Logger.Error("problem closing statestore", "err", err)
-		}
-	}
-	if n.evidencePool != nil {
-		n.Logger.Info("Closing evidencestore")
-		if err := n.EvidencePool().Close(); err != nil {
-			n.Logger.Error("problem closing evidencestore", "err", err)
 		}
 	}
 }
@@ -811,34 +666,9 @@ func (n *Node) Switch() *p2p.Switch {
 	return n.sw
 }
 
-// BlockStore returns the Node's BlockStore.
-func (n *Node) BlockStore() *store.BlockStore {
-	return n.blockStore
-}
-
-// ConsensusReactor returns the Node's ConsensusReactor.
-func (n *Node) ConsensusReactor() *cs.Reactor {
-	return n.consensusReactor
-}
-
-// MempoolReactor returns the Node's mempool reactor.
-func (n *Node) MempoolReactor() p2p.Reactor {
-	return n.mempoolReactor
-}
-
 // Mempool returns the Node's mempool.
 func (n *Node) Mempool() mempl.Mempool {
 	return n.mempool
-}
-
-// PEXReactor returns the Node's PEXReactor. It returns nil if PEX is disabled.
-func (n *Node) PEXReactor() *pex.Reactor {
-	return n.pexReactor
-}
-
-// EvidencePool returns the Node's EvidencePool.
-func (n *Node) EvidencePool() *evidence.Pool {
-	return n.evidencePool
 }
 
 // EventBus returns the Node's EventBus.
@@ -855,11 +685,6 @@ func (n *Node) PrivValidator() types.PrivValidator {
 // GenesisDoc returns the Node's GenesisDoc.
 func (n *Node) GenesisDoc() *types.GenesisDoc {
 	return n.genesisDoc
-}
-
-// ProxyApp returns the Node's AppConns, representing its connections to the ABCI application.
-func (n *Node) ProxyApp() proxy.AppConns {
-	return n.proxyApp
 }
 
 // Config returns the Node's config.

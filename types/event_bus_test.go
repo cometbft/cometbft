@@ -351,7 +351,7 @@ func TestEventBusPublish(t *testing.T) {
 		}
 	})
 
-	const numEventsExpected = 14
+	const numEventsExpected = 15
 
 	sub, err := eventBus.Subscribe(context.Background(), "test", cmtquery.All, numEventsExpected)
 	require.NoError(t, err)
@@ -389,6 +389,8 @@ func TestEventBusPublish(t *testing.T) {
 	err = eventBus.PublishEventCompleteProposal(EventDataCompleteProposal{})
 	require.NoError(t, err)
 	err = eventBus.PublishEventPolka(EventDataRoundState{})
+	require.NoError(t, err)
+	err = eventBus.PublishEventUnlock(EventDataRoundState{})
 	require.NoError(t, err)
 	err = eventBus.PublishEventRelock(EventDataRoundState{})
 	require.NoError(t, err)
@@ -498,6 +500,7 @@ var events = []string{
 	EventTimeoutPropose,
 	EventCompleteProposal,
 	EventPolka,
+	EventUnlock,
 	EventLock,
 	EventRelock,
 	EventTimeoutWait,
@@ -517,6 +520,7 @@ var queries = []cmtpubsub.Query{
 	EventQueryTimeoutPropose,
 	EventQueryCompleteProposal,
 	EventQueryPolka,
+	EventQueryUnlock,
 	EventQueryLock,
 	EventQueryRelock,
 	EventQueryTimeoutWait,

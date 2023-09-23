@@ -242,7 +242,7 @@ func (blockExec *BlockExecutor) ApplyBlock(
 		return state, fmt.Errorf("expected tx results length to match size of transactions in block. Expected %d, got %d", len(block.Data.Txs), len(abciResponse.TxResults))
 	}
 
-	blockExec.logger.Info("executed block", "height", block.Height, "app_hash", fmt.Sprintf("%X", abciResponse.AppHash))
+	blockExec.logger.Info("executed block", "height", block.Height, "app_hash", abciResponse.AppHash)
 
 	fail.Fail() // XXX
 
@@ -264,7 +264,7 @@ func (blockExec *BlockExecutor) ApplyBlock(
 		return state, err
 	}
 	if len(validatorUpdates) > 0 {
-		blockExec.logger.Info("updates to validators", "updates", types.ValidatorListString(validatorUpdates))
+		blockExec.logger.Debug("updates to validators", "updates", types.ValidatorListString(validatorUpdates))
 		blockExec.metrics.ValidatorSetUpdates.Add(1)
 	}
 	if abciResponse.ConsensusParamUpdates != nil {
@@ -313,27 +313,10 @@ func (blockExec *BlockExecutor) ApplyBlock(
 	return state, nil
 }
 
-func (blockExec *BlockExecutor) ExtendVote(
-	ctx context.Context,
-	vote *types.Vote,
-	block *types.Block,
-	state State,
-) ([]byte, error) {
-	if !block.HashesTo(vote.BlockID.Hash) {
-		panic(fmt.Sprintf("vote's hash does not match the block it is referring to %X!=%X", block.Hash(), vote.BlockID.Hash))
-	}
-	if vote.Height != block.Height {
-		panic(fmt.Sprintf("vote's and block's heights do not match %d!=%d", block.Height, vote.Height))
-	}
+func (blockExec *BlockExecutor) ExtendVote(ctx context.Context, vote *types.Vote) ([]byte, error) {
 	req := abci.RequestExtendVote{
-		Hash:               vote.BlockID.Hash,
-		Height:             vote.Height,
-		Time:               block.Time,
-		Txs:                block.Txs.ToSliceOfBytes(),
-		ProposedLastCommit: buildLastCommitInfo(block, blockExec.store, state.InitialHeight),
-		Misbehavior:        block.Evidence.Evidence.ToABCI(),
-		NextValidatorsHash: block.NextValidatorsHash,
-		ProposerAddress:    block.ProposerAddress,
+		Hash:   vote.BlockID.Hash,
+		Height: vote.Height,
 	}
 
 	resp, err := blockExec.proxyApp.ExtendVote(ctx, &req)
@@ -722,7 +705,7 @@ func ExecCommitBlock(
 		return nil, fmt.Errorf("expected tx results length to match size of transactions in block. Expected %d, got %d", len(block.Data.Txs), len(resp.TxResults))
 	}
 
-	logger.Info("executed block", "height", block.Height, "app_hash", fmt.Sprintf("%X", resp.AppHash))
+	logger.Info("executed block", "height", block.Height, "app_hash", resp.AppHash)
 
 	// Commit block
 	_, err = appConnConsensus.Commit(context.TODO())

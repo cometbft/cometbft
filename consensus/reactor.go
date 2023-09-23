@@ -1,12 +1,11 @@
 package consensus
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"sync"
 	"time"
-
-	cmterrors "github.com/cometbft/cometbft/types/errors"
 
 	cstypes "github.com/cometbft/cometbft/consensus/types"
 	"github.com/cometbft/cometbft/libs/bits"
@@ -796,11 +795,7 @@ OUTER_LOOP:
 			if veEnabled {
 				ec = conR.conS.blockStore.LoadBlockExtendedCommit(prs.Height)
 			} else {
-				c := conR.conS.blockStore.LoadBlockCommit(prs.Height)
-				if c == nil {
-					continue
-				}
-				ec = c.WrappedExtendedCommit()
+				ec = conR.conS.blockStore.LoadBlockCommit(prs.Height).WrappedExtendedCommit()
 			}
 			if ec == nil {
 				continue
@@ -1055,6 +1050,11 @@ func ReactorMetrics(metrics *Metrics) ReactorOption {
 }
 
 //-----------------------------------------------------------------------------
+
+var (
+	ErrPeerStateHeightRegression = errors.New("error peer state height regression")
+	ErrPeerStateInvalidStartTime = errors.New("error peer state invalid startTime")
+)
 
 // PeerState contains the known state of a peer, including its connection and
 // threadsafe access to its PeerRoundState.
@@ -1595,13 +1595,13 @@ type NewRoundStepMessage struct {
 // ValidateBasic performs basic validation.
 func (m *NewRoundStepMessage) ValidateBasic() error {
 	if m.Height < 0 {
-		return cmterrors.ErrNegativeField{Field: "Height"}
+		return errors.New("negative Height")
 	}
 	if m.Round < 0 {
-		return cmterrors.ErrNegativeField{Field: "Round"}
+		return errors.New("negative Round")
 	}
 	if !m.Step.IsValid() {
-		return cmterrors.ErrInvalidField{Field: "Step"}
+		return errors.New("invalid Step")
 	}
 
 	// NOTE: SecondsSinceStartTime may be negative
@@ -1610,7 +1610,7 @@ func (m *NewRoundStepMessage) ValidateBasic() error {
 	// since it can be specified in genesis. The reactor will have to validate this via
 	// ValidateHeight().
 	if m.LastCommitRound < -1 {
-		return cmterrors.ErrInvalidField{Field: "LastCommitRound", Reason: "cannot be < -1"}
+		return errors.New("invalid LastCommitRound (cannot be < -1)")
 	}
 
 	return nil
@@ -1619,25 +1619,16 @@ func (m *NewRoundStepMessage) ValidateBasic() error {
 // ValidateHeight validates the height given the chain's initial height.
 func (m *NewRoundStepMessage) ValidateHeight(initialHeight int64) error {
 	if m.Height < initialHeight {
-		return cmterrors.ErrInvalidField{
-			Field:  "Height",
-			Reason: fmt.Sprintf("%v should be lower than initial height %v", m.Height, initialHeight),
-		}
-
+		return fmt.Errorf("invalid Height %v (lower than initial height %v)",
+			m.Height, initialHeight)
 	}
-
 	if m.Height == initialHeight && m.LastCommitRound != -1 {
-		return cmterrors.ErrInvalidField{
-			Field:  "LastCommitRound",
-			Reason: fmt.Sprintf("%v must be -1 for initial height %v", m.LastCommitRound, initialHeight),
-		}
+		return fmt.Errorf("invalid LastCommitRound %v (must be -1 for initial height %v)",
+			m.LastCommitRound, initialHeight)
 	}
-
 	if m.Height > initialHeight && m.LastCommitRound < 0 {
-		return cmterrors.ErrInvalidField{
-			Field:  "LastCommitRound",
-			Reason: fmt.Sprintf("can only be negative for initial height %v", initialHeight),
-		}
+		return fmt.Errorf("LastCommitRound can only be negative for initial height %v",
+			initialHeight)
 	}
 	return nil
 }
@@ -1664,16 +1655,16 @@ type NewValidBlockMessage struct {
 // ValidateBasic performs basic validation.
 func (m *NewValidBlockMessage) ValidateBasic() error {
 	if m.Height < 0 {
-		return cmterrors.ErrNegativeField{Field: "Height"}
+		return errors.New("negative Height")
 	}
 	if m.Round < 0 {
-		return cmterrors.ErrNegativeField{Field: "Round"}
+		return errors.New("negative Round")
 	}
 	if err := m.BlockPartSetHeader.ValidateBasic(); err != nil {
-		return cmterrors.ErrWrongField{Field: "BlockPartSetHeader", Err: err}
+		return fmt.Errorf("wrong BlockPartSetHeader: %v", err)
 	}
 	if m.BlockParts.Size() == 0 {
-		return cmterrors.ErrRequiredField{Field: "blockParts"}
+		return errors.New("empty blockParts")
 	}
 	if m.BlockParts.Size() != int(m.BlockPartSetHeader.Total) {
 		return fmt.Errorf("blockParts bit array size %d not equal to BlockPartSetHeader.Total %d",
@@ -1721,13 +1712,13 @@ type ProposalPOLMessage struct {
 // ValidateBasic performs basic validation.
 func (m *ProposalPOLMessage) ValidateBasic() error {
 	if m.Height < 0 {
-		return cmterrors.ErrNegativeField{Field: "Height"}
+		return errors.New("negative Height")
 	}
 	if m.ProposalPOLRound < 0 {
-		return cmterrors.ErrNegativeField{Field: "ProposalPOLRound"}
+		return errors.New("negative ProposalPOLRound")
 	}
 	if m.ProposalPOL.Size() == 0 {
-		return cmterrors.ErrRequiredField{Field: "ProposalPOL"}
+		return errors.New("empty ProposalPOL bit array")
 	}
 	if m.ProposalPOL.Size() > types.MaxVotesCount {
 		return fmt.Errorf("proposalPOL bit array is too big: %d, max: %d", m.ProposalPOL.Size(), types.MaxVotesCount)
@@ -1752,13 +1743,13 @@ type BlockPartMessage struct {
 // ValidateBasic performs basic validation.
 func (m *BlockPartMessage) ValidateBasic() error {
 	if m.Height < 0 {
-		return cmterrors.ErrNegativeField{Field: "Height"}
+		return errors.New("negative Height")
 	}
 	if m.Round < 0 {
-		return cmterrors.ErrNegativeField{Field: "Round"}
+		return errors.New("negative Round")
 	}
 	if err := m.Part.ValidateBasic(); err != nil {
-		return cmterrors.ErrWrongField{Field: "Part", Err: err}
+		return fmt.Errorf("wrong Part: %v", err)
 	}
 	return nil
 }
@@ -1798,16 +1789,16 @@ type HasVoteMessage struct {
 // ValidateBasic performs basic validation.
 func (m *HasVoteMessage) ValidateBasic() error {
 	if m.Height < 0 {
-		return cmterrors.ErrNegativeField{Field: "Height"}
+		return errors.New("negative Height")
 	}
 	if m.Round < 0 {
-		return cmterrors.ErrNegativeField{Field: "Round"}
+		return errors.New("negative Round")
 	}
 	if !types.IsVoteTypeValid(m.Type) {
-		return cmterrors.ErrInvalidField{Field: "Type"}
+		return errors.New("invalid Type")
 	}
 	if m.Index < 0 {
-		return cmterrors.ErrNegativeField{Field: "Index"}
+		return errors.New("negative Index")
 	}
 	return nil
 }
@@ -1830,16 +1821,16 @@ type VoteSetMaj23Message struct {
 // ValidateBasic performs basic validation.
 func (m *VoteSetMaj23Message) ValidateBasic() error {
 	if m.Height < 0 {
-		return cmterrors.ErrNegativeField{Field: "Height"}
+		return errors.New("negative Height")
 	}
 	if m.Round < 0 {
-		return cmterrors.ErrNegativeField{Field: "Round"}
+		return errors.New("negative Round")
 	}
 	if !types.IsVoteTypeValid(m.Type) {
-		return cmterrors.ErrInvalidField{Field: "Type"}
+		return errors.New("invalid Type")
 	}
 	if err := m.BlockID.ValidateBasic(); err != nil {
-		return cmterrors.ErrWrongField{Field: "BlockID", Err: err}
+		return fmt.Errorf("wrong BlockID: %v", err)
 	}
 	return nil
 }
@@ -1863,13 +1854,13 @@ type VoteSetBitsMessage struct {
 // ValidateBasic performs basic validation.
 func (m *VoteSetBitsMessage) ValidateBasic() error {
 	if m.Height < 0 {
-		return cmterrors.ErrNegativeField{Field: "Height"}
+		return errors.New("negative Height")
 	}
 	if !types.IsVoteTypeValid(m.Type) {
-		return cmterrors.ErrInvalidField{Field: "Type"}
+		return errors.New("invalid Type")
 	}
 	if err := m.BlockID.ValidateBasic(); err != nil {
-		return cmterrors.ErrWrongField{Field: "BlockID", Err: err}
+		return fmt.Errorf("wrong BlockID: %v", err)
 	}
 	// NOTE: Votes.Size() can be zero if the node does not have any
 	if m.Votes.Size() > types.MaxVotesCount {
@@ -1895,13 +1886,13 @@ type HasProposalBlockPartMessage struct {
 // ValidateBasic performs basic validation.
 func (m *HasProposalBlockPartMessage) ValidateBasic() error {
 	if m.Height < 1 {
-		return cmterrors.ErrInvalidField{Field: "Height", Reason: "( < 1 )"}
+		return errors.New("invalid Height (< 1)")
 	}
 	if m.Round < 0 {
-		return cmterrors.ErrNegativeField{Field: "Round"}
+		return errors.New("negative Round")
 	}
 	if m.Index < 0 {
-		return cmterrors.ErrNegativeField{Field: "Index"}
+		return errors.New("negative Index")
 	}
 	return nil
 }

@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	cmterrors "github.com/cometbft/cometbft/types/errors"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -186,7 +188,7 @@ func TestValidateBlockCommit(t *testing.T) {
 			}
 			block := makeBlock(state, height, wrongHeightCommit)
 			err := blockExec.ValidateBlock(state, block)
-			_, isErrInvalidCommitHeight := err.(types.ErrInvalidCommitHeight)
+			_, isErrInvalidCommitHeight := err.(cmterrors.ErrInvalidCommitHeight)
 			require.True(t, isErrInvalidCommitHeight, "expected ErrInvalidCommitHeight at height %d but got: %v", height, err)
 
 			/*
@@ -194,7 +196,7 @@ func TestValidateBlockCommit(t *testing.T) {
 			*/
 			block = makeBlock(state, height, wrongSigsCommit)
 			err = blockExec.ValidateBlock(state, block)
-			_, isErrInvalidCommitSignatures := err.(types.ErrInvalidCommitSignatures)
+			_, isErrInvalidCommitSignatures := err.(cmterrors.ErrInvalidCommitSignatures)
 			require.True(t, isErrInvalidCommitSignatures,
 				"expected ErrInvalidCommitSignatures at height %d, but got: %v",
 				height,

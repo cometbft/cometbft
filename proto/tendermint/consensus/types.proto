@@ -86,15 +86,15 @@ message VoteSetBits {
 
 message Message {
   oneof sum {
-    NewRoundStep               new_round_step          = 1;
-    NewValidBlock              new_valid_block         = 2;
-    Proposal                   proposal                = 3;
-    ProposalPOL                proposal_pol            = 4;
-    BlockPart                  block_part              = 5;
-    Vote                       vote                    = 6;
-    HasVote                    has_vote                = 7;
-    VoteSetMaj23               vote_set_maj23          = 8;
-    VoteSetBits                vote_set_bits           = 9;
-    HasProposalBlockPart       has_proposal_block_part = 10;
+    NewRoundStep         new_round_step          = 1;
+    NewValidBlock        new_valid_block         = 2;
+    Proposal             proposal                = 3;
+    ProposalPOL          proposal_pol            = 4;
+    BlockPart            block_part              = 5;
+    Vote                 vote                    = 6;
+    HasVote              has_vote                = 7;
+    VoteSetMaj23         vote_set_maj23          = 8;
+    VoteSetBits          vote_set_bits           = 9;
+    HasProposalBlockPart has_proposal_block_part = 10;
   }
 }

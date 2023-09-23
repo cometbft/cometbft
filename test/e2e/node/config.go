@@ -1,13 +1,12 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/BurntSushi/toml"
-
 	"github.com/cometbft/cometbft/test/e2e/app"
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
 
 // Config is the application configuration.
@@ -74,9 +73,9 @@ func LoadConfig(file string) (*Config, error) {
 func (cfg Config) Validate() error {
 	switch {
 	case cfg.ChainID == "":
-		return errors.New("chain_id parameter is required")
-	case cfg.Listen == "" && cfg.Protocol != "builtin" && cfg.Protocol != "builtin_unsync":
-		return errors.New("listen parameter is required")
+		return cmterrors.ErrRequiredField{Field: "chain_id"}
+	case cfg.Listen == "" && cfg.Protocol != "builtin" && cfg.Protocol != "builtin_connsync":
+		return cmterrors.ErrRequiredField{Field: "listen"}
 	default:
 		return nil
 	}

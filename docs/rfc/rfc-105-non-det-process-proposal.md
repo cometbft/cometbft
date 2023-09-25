@@ -47,7 +47,7 @@ In the version of ABCI (v0.17.0) that existed before ABCI 1.0 and 2.0 (a.k.a. AB
 the implementation of function $valid(v, s)$ was totally internal to CometBFT.
 Technically, the application's part of the state $s$ was not considered by function $valid(v, s)$.
 Thus, the application had no direct say on the validity of a block,
-although it could (and still can) indirectly influence the contents of blocks via the (best-effort) ABCI method `CheckTx`.
+although it could (and still can) indirectly influence the contents of blocks via the (best-effort) ABCI method `CheckTx` (by rejecting transactions, so that they are not included in blocks produced by correct proposers).
 
 With the evolution of ABCI to ABCI 1.0 and 2.0, CometBFT's implementation of
 function $valid(v, s)$ has now two components:
@@ -67,7 +67,7 @@ With the new structure of the implementation of function $valid(v, s)$:
 However, the new structure of the implementation of function $valid(v, s)$
 may affect consensus _termination_, as some implementations of `ProcessProposal` might reject values
 that CometBFT's internal validity checks would otherwise accept.
-In short, $valid(v, s)$ is possibly more restrictive now.
+In short, $valid(v, s)$ is more restrictive with ABCI++.
 
 This document focuses on how consensus _termination_ is affected
 by the new structure of function $valid(v, s)$,

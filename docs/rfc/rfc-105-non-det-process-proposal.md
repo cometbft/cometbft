@@ -2,7 +2,8 @@
 
 ## Changelog
 
-- 2023-09-22: First version, draft coming from knowledge base (@sergio-mena)
+- 2023-07-27: Initial proposal as a GitHub issue ([#1174][1174]) (@BrendanChou)
+- 2023-09-22: First version of this text, draft coming from knowledge base (@sergio-mena)
 
 ## Abstract
 
@@ -290,6 +291,7 @@ We leave this as future work.
 * [ABCI 1.0 specification][abci-spec]
 * [Tendermint algorithm][arxiv]
 * [Issue #1171][1171]
+* [Issue #1174][1174]
 * [Issue #1230][1230]
 * [Issue #1035][1035]
 

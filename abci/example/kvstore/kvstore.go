@@ -57,6 +57,7 @@ func NewApplication(db dbm.DB) *Application {
 		logger:             log.NewNopLogger(),
 		state:              loadState(db),
 		valAddrToPubKeyMap: make(map[string]cryptoproto.PublicKey),
+		RetainBlocks:       5,
 	}
 }
 

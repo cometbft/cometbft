@@ -221,6 +221,7 @@ and as implemented in CometBFT up to version `v0.38.0`,
 cannot guarantee consensus _termination_ for applications
 that just fulfill requirement 3b (eventual coherence), but do not fulfill requirements 3, 4, and 5.
 
+For the sake of simplicity, and without loss of generality, we assume all validators have equal voting power.
 We need the following modifications (in terms of the algorithm as described in page 6 of the arXiv paper):
 
 - remove the evaluation of `valid(v)` in lines 29, 36 and 50 (i.e. replace `valid(v)` by `true`)
@@ -250,6 +251,20 @@ We need the following modifications (in terms of the algorithm as described in p
 Notice we have kept the original `valid(v)` notation, but it stands for the more general $valid(v, s, x_p)$.
 These algorithmic modifications have also been made to CometBFT (on branch `main`)
 as part of issues [#1171][1171], and [#1230][1230].
+
+#### Going further in the modifications
+
+The previous section describes the modifications to the algorithm we made to CometBFT.
+However, we can go further in theory: these modifications are sufficient but not necessary.
+The minimal necessary condition for the Tendermint algorithm to ensure consensus _weak validity_
+(as mentioned [here][valid-further1] and [here][valid-further2]) while skipping `valid(v)`
+is having received valid prevote messages for the proposed block from $f + 1$ validators.
+These prevotes don't even need to belong to the same round, although they need to be for the current height.
+We decided not to go this far in the modifications to CometBFT for two reasons:
+
+* It is uncertain what practical advantages it would bring.
+* It would require new custom data structures to keep track of prevotes for a block across rounds,
+  adding complexity to our implementation.
 
 ### On Crash-Recovery
 
@@ -285,8 +300,12 @@ but can fulfill the new one.
 Finally, we explained how to modify the Tendermint consensus algorithm, implemented in CometBFT,
 to guarantee the consensus _termination_ property for applications that fulfill the new property.
 
-In this document, we have not tackled the problem of applications
-that cannot fulfill coherence and determinism properties that refer to vote extensions in the ABCI 2.0 specification.
+In this document, we have not formally proven that the changes we made to the algorithm,
+combined with an application fulfilling weak validity, guarantee consensus properties
+replacing _validity_ by _weak validity_. We plan to do this as an extension to this RFC.
+
+Additionally, we have not tackled the problem of applications that cannot fulfill coherence and determinism properties
+that refer to vote extensions in the ABCI 2.0 specification.
 We leave this as future work.
 
 ## References
@@ -297,9 +316,12 @@ We leave this as future work.
 * [Issue #1174][1174]
 * [Issue #1230][1230]
 * [Issue #1035][1035]
+* Going further in removing `valid(v)` check: [first comment][valid-further1], [second comment][valid-further2]
 
 [abci-spec]: https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_app_requirements.md#formal-requirements
 [arxiv]: https://arxiv.org/abs/1807.04938
 [1171]: https://github.com/cometbft/cometbft/issues/1171
 [1230]: https://github.com/cometbft/cometbft/issues/1230
 [1035]: https://github.com/cometbft/cometbft/issues/1035
+[valid-further1]: https://github.com/cometbft/cometbft/issues/1230#issuecomment-1671233308
+[valid-further2]: https://github.com/cometbft/cometbft/pull/1391#pullrequestreview-1641521760

@@ -50,7 +50,8 @@ type TxMempool struct {
 	txsAvailable         chan struct{} // one value sent per height when mempool is not empty
 	preCheck             mempool.PreCheckFunc
 	postCheck            mempool.PostCheckFunc
-	height               int64 // the latest height passed to Update
+	height               int64     // the latest height passed to Update
+	lastPurgeTime        time.Time // the last time we attempted to purge transactions via the TTL
 
 	txs        *clist.CList // valid transactions (passed CheckTx)
 	txByKey    map[types.TxKey]*clist.CElement
@@ -722,6 +723,17 @@ func (txmp *TxMempool) canAddTx(wtx *WrappedTx) error {
 	return nil
 }
 
+// CheckToPurgeExpiredTxs checks if there has been adequate time since the last time
+// the txpool looped through all transactions and if so, performs a purge of any transaction
+// that has expired according to the TTLDuration. This is thread safe.
+func (txmp *TxMempool) CheckToPurgeExpiredTxs() {
+	txmp.mtx.Lock()
+	defer txmp.mtx.Unlock()
+	if txmp.config.TTLDuration > 0 && time.Since(txmp.lastPurgeTime) > txmp.config.TTLDuration {
+		txmp.purgeExpiredTxs(txmp.height)
+	}
+}
+
 // purgeExpiredTxs removes all transactions from the mempool that have exceeded
 // their respective height or time-based limits as of the given blockHeight.
 // Transactions removed by this operation are not removed from the cache.
@@ -751,6 +763,8 @@ func (txmp *TxMempool) purgeExpiredTxs(blockHeight int64) {
 		}
 		cur = next
 	}
+
+	txmp.lastPurgeTime = now
 }
 
 func (txmp *TxMempool) notifyTxsAvailable() {

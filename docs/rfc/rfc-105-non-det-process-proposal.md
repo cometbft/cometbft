@@ -48,7 +48,8 @@ In the version of ABCI (v0.17.0) that existed before ABCI 1.0 and 2.0 (a.k.a. AB
 the implementation of function $valid(v, s)$ was totally internal to CometBFT.
 Technically, the application's part of the state $s$ was not considered by function $valid(v, s)$.
 Thus, the application had no direct say on the validity of a block,
-although it could (and still can) indirectly influence the contents of blocks via the (best-effort) ABCI method `CheckTx` (by rejecting transactions, so that they are not included in blocks produced by correct proposers).
+although it could (and still can) indirectly influence the contents of blocks via the (best-effort) ABCI method `CheckTx`
+(by rejecting transactions, so that they are not included in blocks produced by correct proposers).
 
 With the evolution of ABCI to ABCI 1.0 and 2.0, CometBFT's implementation of
 function $valid(v, s)$ has now two components:
@@ -145,6 +146,8 @@ Another example is when `ProcessProposal` needs to read the system clock in orde
 In principle, if an application's implementation of `PrepareProposal` and `ProcessProposal`
 is not able to fulfill coherence and determinism requirements,
 CometBFT cannot guarantee consensus _termination_ in all runs of the system.
+For instance, think of an application whose implementation of `ProcessProposal`
+always rejects values, which violates coherence.
 
 > ⚠️ Warning ⚠️ 
 

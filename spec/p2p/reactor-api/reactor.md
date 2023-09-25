@@ -106,7 +106,7 @@ documented in the companion [API for Reactors](./p2p-api.md#switch-api) document
 
 ## Service interface
 
-A reactor must implement the [`Service`](../../../libs/service/service.go) interface,
+A reactor must implement the [`Service`](https://github.com/cometbft/cometbft/blob/v0.38.x/libs/service/service.go) interface,
 in particular, a startup `OnStart()` and a shutdown `OnStop()` methods:
 
 ```abnf

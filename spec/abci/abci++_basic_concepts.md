@@ -7,7 +7,7 @@ title: Overview and basic concepts
 
 - [Overview and basic concepts](#overview-and-basic-concepts)
   - [ABCI++ vs. ABCI](#abci-vs-abci)
-  - [Method overview](#method-overview)
+  - [Methods overview](#methods-overview)
     - [Consensus/block execution methods](#consensusblock-execution-methods)
     - [Mempool methods](#mempool-methods)
     - [Info methods](#info-methods)
@@ -24,7 +24,7 @@ title: Overview and basic concepts
 
 # Overview and basic concepts
 
-## ABCI 2.0 vs. ABCI
+## ABCI 2.0 vs. ABCI {#abci-vs-abci}
 
 [&#8593; Back to Outline](#outline)
 
@@ -52,7 +52,6 @@ Furthermore, ABCI 2.0 coalesces {`BeginBlock`, [`DeliverTx`], `EndBlock`} into `
 simplified, efficient way to deliver a decided block to the Application.
 
 ## Methods overview
-
 
 [&#8593; Back to Outline](#outline)
 

@@ -207,6 +207,107 @@ When updating dependencies, please only update the particular dependencies you
 need. Instead of running `go get -u=patch`, which will update anything, specify
 exactly the dependency you want to update.
 
+## Logging
+
+Operators, consensus engine and application developers all need information from
+the system while it is running. One avenue through which they get that
+information is via the logs. Whenever making contributions, please think
+carefully about what each of those groups of users would want to know about the
+operation of the system and try to adhere to the following guidelines as far as
+reasonably possible.
+
+### To log, or not to log
+
+Whether or not to log something at all should take into consideration how
+frequently the log message will appear. Users hate being spammed by large
+quantities of useless log messages. If you anticipate that a particular log
+message will occur frequently (e.g. a few times per minute), try to find ways to
+either eliminate that message or reduce its frequency (e.g. only logging every
+Nth message, or a summary message every minute or hour).
+
+### Log levels
+
+Different log levels should target different groups of users. At present, only
+**Debug**, **Info** and **Error** levels are supported.
+
+- **Debug**: Should primarily target consensus engine developers (i.e. core team
+  members and developers working on CometBFT forks).
+- **Info** and **Error**: Should primarily target operators and application
+  developers.
+
+### Sensitive information
+
+It should go without saying, but sensitive information (passwords/tokens,
+private keys, etc.) should **never** be logged. If one needs to inspect such
+information while debugging, rather use a [debugger][delve] or even a
+_temporary_ `fmt.Printf` statement.
+
+The logging infrastructure in CometBFT does not automatically scrub such
+sensitive information from the logs, so it is up to developers to ensure that
+they do not log such information.
+
+### Log messages
+
+Log messages should always be tailored to the intended target audience. Unlike
+Go errors, **log messages must have the first letter of the message
+capitalized**. Only _errors_ in Go should start with a lowercase letter because
+they may end up being chained/embedded, but log messages are not chained in this
+same way.
+
+### Logging parameters
+
+In general, log messages should contain the **bare minimum** amount of
+information for those messages to be actionable by the target audience. So
+instead of dumping large quantities of raw data into the logs (e.g. RPC
+responses, transactions, block data), include lightweight references to the data
+that users can go look up via the RPC, CLI tools, etc. if they are genuinely
+interested in the details.
+
+When outputting variables, also keep in mind **concurrency concerns** of doing
+so. If outputting a pointer, understand that the value associated with that
+pointer at the time of calling the log function may differ to its value at the
+time it is finally serialized into the log message. Perhaps consider creating a
+temporary copy of the specific value you want to output and logging that
+temporary value. Also keep in mind potential data races when doing so.
+
+Finally, **use expensive operations like `fmt.Sprintf` sparingly**, as this can
+have a meaningful performance impact on a running production system. Consider an
+example where one may call `fmt.Sprintf` when logging something at **debug**
+level: even though an operator has configured their system to only log at
+**info** level and above, the expensive `fmt.Sprintf` calls will still take
+place, potentially slowing the system down. In such instances, consider printing
+values [lazily][log-lazy].
+
+### Examples of good log messages
+
+```golang
+// Operators generally wouldn't care whether an internal construct, like module
+// construction, has executed successfully.
+logger.Debug("Starting reactor", "module", "consensus")
+
+logger.Info("Committed block", "height", height, "appHash", appHash)
+
+// Include information about the error.
+logger.Error("Failed to execute important operation", "err", err)
+```
+
+### Examples of bad log messages
+
+```golang
+// Message starts with a lowercase letter, and will probably be called very
+// frequently, effectively spamming operators.
+logger.Info("connected to peer", "peerID", peerID)
+
+// Potentially prints huge quantities of data (unnecessary) in a single message,
+// and at info level, spamming operators.
+logger.Info("Committed block", "block", fmt.Sprintf("%v", block))
+
+// Just as bad as the info-level message above because the (expensive)
+// fmt.Sprintf is always called, regardless of the operator's configured log
+// level, potentially creating a meaningful performance hit.
+logger.Debug("Committed block", "block", fmt.Sprintf("%v", block))
+```
+
 ## Protobuf
 
 We use [Protocol Buffers] along with [`gogoproto`] to generate code for use
@@ -493,3 +594,5 @@ in the [OpenAPI file](./rpc/openapi/openapi.yaml)**.
 [go-git-commit-style]: https://tip.golang.org/doc/contribute.html#commit_messages
 [go-testing]: https://golang.org/pkg/testing/
 [Fuzz tests]: https://en.wikipedia.org/wiki/Fuzzing
+[delve]: https://github.com/go-delve/delve
+[log-lazy]: https://github.com/cometbft/cometbft/blob/main/libs/log/lazy.go

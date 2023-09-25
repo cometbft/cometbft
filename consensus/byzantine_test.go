@@ -145,9 +145,9 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		// allow first height to happen normally so that byzantine validator is no longer proposer
 		if height == prevoteHeight {
 			bcs.Logger.Info("Sending two votes")
-			prevote1, err := bcs.signVote(cmtproto.PrevoteType, bcs.ProposalBlock.Hash(), bcs.ProposalBlockParts.Header())
+			prevote1, err := bcs.signVote(cmtproto.PrevoteType, bcs.ProposalBlock.Hash(), bcs.ProposalBlockParts.Header(), nil)
 			require.NoError(t, err)
-			prevote2, err := bcs.signVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
+			prevote2, err := bcs.signVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
 			require.NoError(t, err)
 			peerList := reactors[byzantineNode].Switch.Peers().List()
 			bcs.Logger.Info("Getting peer list", "peers", peerList)
@@ -205,7 +205,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		if lazyProposer.privValidatorPubKey == nil {
 			// If this node is a validator & proposer in the current round, it will
 			// miss the opportunity to create a block.
-			lazyProposer.Logger.Error(fmt.Sprintf("enterPropose: %v", errPubKeyIsNotSet))
+			lazyProposer.Logger.Error(fmt.Sprintf("enterPropose: %v", ErrPubKeyIsNotSet))
 			return
 		}
 		proposerAddr := lazyProposer.privValidatorPubKey.Address()
@@ -336,11 +336,10 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 			// NOTE: Now, test validators are MockPV, which by default doesn't
 			// do any safety checks.
 			css[i].privValidator.(types.MockPV).DisableChecks()
-			css[i].decideProposal = func(j int32) func(int64, int32) {
-				return func(height int64, round int32) {
-					byzantineDecideProposalFunc(ctx, t, height, round, css[j], switches[j])
-				}
-			}(int32(i))
+			j := i
+			css[i].decideProposal = func(height int64, round int32) {
+				byzantineDecideProposalFunc(ctx, t, height, round, css[j], switches[j])
+			}
 			// We are setting the prevote function to do nothing because the prevoting
 			// and precommitting are done alongside the proposal.
 			css[i].doPrevote = func(height int64, round int32) {}
@@ -541,8 +540,8 @@ func sendProposalAndParts(
 
 	// votes
 	cs.mtx.Lock()
-	prevote, _ := cs.signVote(cmtproto.PrevoteType, blockHash, parts.Header())
-	precommit, _ := cs.signVote(cmtproto.PrecommitType, blockHash, parts.Header())
+	prevote, _ := cs.signVote(cmtproto.PrevoteType, blockHash, parts.Header(), nil)
+	precommit, _ := cs.signVote(cmtproto.PrecommitType, blockHash, parts.Header(), nil)
 	cs.mtx.Unlock()
 	peer.Send(p2p.Envelope{
 		ChannelID: VoteChannel,

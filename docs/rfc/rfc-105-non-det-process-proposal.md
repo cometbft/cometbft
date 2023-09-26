@@ -321,6 +321,7 @@ We leave this as future work.
 [abci-spec]: https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_app_requirements.md#formal-requirements
 [arxiv]: https://arxiv.org/abs/1807.04938
 [1171]: https://github.com/cometbft/cometbft/issues/1171
+[1174]: https://github.com/cometbft/cometbft/issues/1174
 [1230]: https://github.com/cometbft/cometbft/issues/1230
 [1035]: https://github.com/cometbft/cometbft/issues/1035
 [valid-further1]: https://github.com/cometbft/cometbft/issues/1230#issuecomment-1671233308

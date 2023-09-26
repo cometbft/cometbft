@@ -2,6 +2,11 @@
 
 This guide provides instructions for upgrading to specific versions of CometBFT.
 
+## v0.34.29
+
+It is recommended that CometBFT be built with Go v1.20+ since v1.19 is no longer
+supported.
+
 ## v0.34.28
 
 For users explicitly making use of the Go APIs provided in the `crypto/merkle`

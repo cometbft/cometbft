@@ -707,12 +707,13 @@ func (c *MConnection) Status() ConnectionStatus {
 	status.RecvMonitor = c.recvMonitor.Status()
 	status.Channels = make([]ChannelStatus, len(c.channels))
 	for i, channel := range c.channels {
+		channel := channel
 		status.Channels[i] = ChannelStatus{
 			ID:                channel.desc.ID,
 			SendQueueCapacity: cap(channel.sendQueue),
-			SendQueueSize:     int(atomic.LoadInt32(&channel.sendQueueSize)), //nolint:gosec
+			SendQueueSize:     int(atomic.LoadInt32(&channel.sendQueueSize)),
 			Priority:          channel.desc.Priority,
-			RecentlySent:      atomic.LoadInt64(&channel.recentlySent), //nolint:gosec
+			RecentlySent:      atomic.LoadInt64(&channel.recentlySent),
 		}
 	}
 	return status

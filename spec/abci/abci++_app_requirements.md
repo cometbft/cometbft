@@ -598,15 +598,15 @@ These are the current consensus parameters (as of v0.37.x):
 The maximum size of a complete Protobuf encoded block.
 This is enforced by the consensus algorithm.
 
+This implies a maximum transaction size that is this `MaxBytes`, less the expected size of
+the header, the validator set, and any included evidence in the block.
+
 The Application should be aware that honest validators _may_ produce and
 broadcast blocks with up the configured `MaxBytes` size.
 As a result, the consensus
 [timeout parameters](../../docs/core/configuration.md#consensus-timeouts-explained)
 adopted by nodes should be configured so that to account for the worst-case
 latency for the delivery of a full block with `MaxBytes` size to all validators.
-
-This implies a maximum transaction size that is this `MaxBytes`, less the expected size of
-the header, the validator set, and any included evidence in the block.
 
 If the Application wants full control over the size of blocks,
 it can do so by enforcing a byte limit set up at the Application level.

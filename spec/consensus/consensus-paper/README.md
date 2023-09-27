@@ -1,11 +1,15 @@
+---
+order: 1
+---
+
 # Consensus Paper
 
 The repository contains the specification (and the proofs) of the Tendermint
 consensus protocol, adopted in CometBFT.
 
-## How to install Latex on Mac OS
+## How to install Latex on MacOS
 
-MacTex is Latex distribution for Mac OS. You can download it [here](http://www.tug.org/mactex/mactex-download.html).
+MacTex is Latex distribution for MacOS. You can download it [here](http://www.tug.org/mactex/mactex-download.html).
 
 Popular IDE for Latex-based projects is TexStudio. It can be downloaded
 [here](https://www.texstudio.org/).

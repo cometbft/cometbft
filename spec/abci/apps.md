@@ -302,7 +302,7 @@ This implies a maximum transaction size that is this `MaxBytes`, less the expect
 the header, the validator set, and any included evidence in the block.
 
 The Application should be aware that honest validators _may_ produce and
-broadcast blocks with up the configured `MaxBytes` size.
+broadcast blocks with up to the configured `MaxBytes` size.
 As a result, the consensus
 [timeout parameters](../../docs/core/configuration.md#consensus-timeouts-explained)
 adopted by nodes should be configured so as to account for the worst-case

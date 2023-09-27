@@ -623,7 +623,7 @@ If the Application sets value -1, consensus will:
 Must have `MaxBytes == -1` OR `0 < MaxBytes <= 100 MB`.
 
 > Bear in mind that the default value for the `BlockParams.MaxBytes` consensus
-> parameter considers as valid blocks with size up to 21 MB.
+> parameter accepts as valid blocks with size up to 21 MB.
 > If the Application's use case does not need blocks of that size,
 > or if the impact (specially on bandwidth consumption and block latency)
 > of propagating blocks of that size was not evaluated,

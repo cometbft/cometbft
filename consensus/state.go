@@ -1980,7 +1980,7 @@ func (cs *State) defaultSetProposal(proposal *types.Proposal) error {
 	if maxBytes > -1 {
 		maxBytes = int64(types.MaxBlockSizeBytes)
 	}
-	if int64(proposal.BlockID.PartSetHeader.Total*types.BlockPartSizeBytes) > maxBytes {
+	if int64(proposal.BlockID.PartSetHeader.Total) > (maxBytes-1)/int64(types.BlockPartSizeBytes)+1 {
 		return ErrProposalTooManyParts
 	}
 

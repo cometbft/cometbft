@@ -188,7 +188,7 @@ This section explains how the tests were carried out for reproducibility purpose
 7. On a different shell,
     * run `make runload LOAD_CONNECTIONS=X LOAD_TX_RATE=Y LOAD_TOTAL_TIME=Z`
     * `X` and `Y` should reflect a load below the saturation point (see, e.g.,
-      [this paragraph](./TMCoreBFT-QA-34.md#finding-the-saturation-point) for further info)
+      [this paragraph](./TMCore-QA-34.md#finding-the-saturation-point) for further info)
     * `Z` (in seconds) should be big enough to keep running throughout the test, until we manually stop it in step 9.
       In principle, a good value for `Z` is `7200` (2 hours)
 8. Run `make rotate` to start the script that creates the ephemeral nodes, and kills them when they are caught up.

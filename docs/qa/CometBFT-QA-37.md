@@ -19,7 +19,7 @@ As in other iterations of our QA process, we have used a 200-node network as tes
 ### Saturation point
 
 As in previous iterations, in our QA experiments, the system is subjected to a load slightly under a saturation point.
-The method to identify the saturation point is explained [here](CometBFT-QA-34.md#finding-the-saturation-point) and its application to the baseline is described [here](TMCore-QA-37.md#finding-the-saturation-point).
+The method to identify the saturation point is explained [here](TMCore-QA-34.md#finding-the-saturation-point) and its application to the baseline is described [here](TMCore-QA-37.md#finding-the-saturation-point).
 We use the same saturation point, that is, `c`, the number of connections created by the load runner process to the target node, is 2 and `r`, the rate or number of transactions issued per second, is 200.
 
 ## Examining latencies

@@ -117,6 +117,16 @@ func TestPartValidateBasic(t *testing.T) {
 	}{
 		{"Good Part", func(pt *Part) {}, false},
 		{"Too big part", func(pt *Part) { pt.Bytes = make([]byte, BlockPartSizeBytes+1) }, true},
+		{"Good small last part", func(pt *Part) {
+			pt.Bytes = make([]byte, BlockPartSizeBytes-1)
+			pt.Proof.Total = 2
+			pt.Proof.Index = 1
+		}, false},
+		{"Too small inner part", func(pt *Part) {
+			pt.Bytes = make([]byte, BlockPartSizeBytes-1)
+			pt.Proof.Total = 2
+			pt.Proof.Index = 0
+		}, true},
 		{"Too big proof", func(pt *Part) {
 			pt.Proof = merkle.Proof{
 				Total:    1,

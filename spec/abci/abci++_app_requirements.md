@@ -622,6 +622,11 @@ If the Application sets value -1, consensus will:
 
 Must have `MaxBytes == -1` OR `0 < MaxBytes <= 100 MB`.
 
+> Bear in mind that the default value for the `BlockParams.MaxBytes` consensus
+> parameter considers that blocks of size up to 21 MB are valid.
+> If the Application's use case does not need blocks of that size, it is
+> strongly recommended to wind down this default value.
+
 ##### BlockParams.MaxGas
 
 The maximum of the sum of `GasWanted` that will be allowed in a proposed block.

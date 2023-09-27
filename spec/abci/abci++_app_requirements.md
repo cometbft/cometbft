@@ -605,7 +605,7 @@ The Application should be aware that honest validators _may_ produce and
 broadcast blocks with up the configured `MaxBytes` size.
 As a result, the consensus
 [timeout parameters](../../docs/core/configuration.md#consensus-timeouts-explained)
-adopted by nodes should be configured so that to account for the worst-case
+adopted by nodes should be configured so as to account for the worst-case
 latency for the delivery of a full block with `MaxBytes` size to all validators.
 
 If the Application wants full control over the size of blocks,

@@ -129,7 +129,7 @@ func TestPartValidateBasic(t *testing.T) {
 		}, true},
 		{"Too big proof", func(pt *Part) {
 			pt.Proof = merkle.Proof{
-				Total:    1,
+				Total:    2,
 				Index:    1,
 				LeafHash: make([]byte, 1024*1024),
 			}

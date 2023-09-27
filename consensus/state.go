@@ -1975,6 +1975,15 @@ func (cs *State) defaultSetProposal(proposal *types.Proposal) error {
 		return ErrInvalidProposalSignature
 	}
 
+	// Validate the proposed block size, derived from its PartSetHeader
+	maxBytes := cs.state.ConsensusParams.Block.MaxBytes
+	if maxBytes > -1 {
+		maxBytes = int64(types.MaxBlockSizeBytes)
+	}
+	if int64(proposal.BlockID.PartSetHeader.Total*types.BlockPartSizeBytes) > maxBytes {
+		return ErrProposalTooManyParts
+	}
+
 	proposal.Signature = p.Signature
 	cs.Proposal = proposal
 	// We don't update cs.ProposalBlockParts if it is already set.

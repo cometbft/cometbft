@@ -18,7 +18,8 @@ import (
 var (
 	ErrPartSetUnexpectedIndex = errors.New("error part set unexpected index")
 	ErrPartSetInvalidProof    = errors.New("error part set invalid proof")
-	ErrPartUnexpectedSize     = errors.New("error inner part with invalid size")
+	ErrPartTooBig             = errors.New("error part size too big")
+	ErrPartInvalidSize        = errors.New("error inner part with invalid size")
 )
 
 type Part struct {
@@ -30,12 +31,11 @@ type Part struct {
 // ValidateBasic performs basic validation.
 func (part *Part) ValidateBasic() error {
 	if len(part.Bytes) > int(BlockPartSizeBytes) {
-		return fmt.Errorf("too big: %d bytes, max: %d", len(part.Bytes), BlockPartSizeBytes)
+		return ErrPartTooBig
 	}
 	// All parts except the last one should have the same constant size.
-	if part.Proof.Index < part.Proof.Total-1 &&
-		len(part.Bytes) != int(BlockPartSizeBytes) {
-		return ErrPartUnexpectedSize
+	if int64(part.Index) < part.Proof.Total-1 && len(part.Bytes) != int(BlockPartSizeBytes) {
+		return ErrPartInvalidSize
 	}
 	if err := part.Proof.ValidateBasic(); err != nil {
 		return fmt.Errorf("wrong Proof: %w", err)

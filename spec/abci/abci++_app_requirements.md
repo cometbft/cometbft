@@ -585,9 +585,6 @@ This is enforced by the consensus algorithm.
 This implies a maximum transaction size that is this `MaxBytes`, less the expected size of
 the header, the validator set, and any included evidence in the block.
 
-<<<<<<< HEAD
-Must have `0 < MaxBytes < 100 MB`.
-=======
 The Application should be aware that honest validators _may_ produce and
 broadcast blocks with up to the configured `MaxBytes` size.
 As a result, the consensus
@@ -595,20 +592,7 @@ As a result, the consensus
 adopted by nodes should be configured so as to account for the worst-case
 latency for the delivery of a full block with `MaxBytes` size to all validators.
 
-If the Application wants full control over the size of blocks,
-it can do so by enforcing a byte limit set up at the Application level.
-This Application-internal limit is used by `PrepareProposal` to bound the total size
-of transactions it returns, and by `ProcessProposal` to reject any received block
-whose total transaction size is bigger than the enforced limit.
-In such case, the Application MAY set `MaxBytes` to -1.
-
-If the Application sets value -1, consensus will:
-
-- consider that the actual value to enforce is 100 MB
-- will provide *all* transactions in the mempool in calls to `PrepareProposal`
-
-Must have `MaxBytes == -1` OR `0 < MaxBytes <= 100 MB`.
->>>>>>> 80648c45a (doc: improve documentation of BlockParams.MaxBytes (#1405))
+Must have `0 < MaxBytes <= 100 MB`.
 
 > Bear in mind that the default value for the `BlockParams.MaxBytes` consensus
 > parameter accepts as valid blocks with size up to 21 MB.

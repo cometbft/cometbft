@@ -12,6 +12,8 @@ An HTTP Get request to the root RPC endpoint shows a list of available endpoints
 curl 'localhost:26657'
 ```
 
+FIXME: update this list
+
 > Response:
 
 ```plain

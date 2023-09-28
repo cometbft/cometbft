@@ -582,7 +582,7 @@ These are the current consensus parameters (as of v0.37.x):
 The maximum size of a complete Protobuf encoded block.
 This is enforced by the consensus algorithm.
 
-This implies a maximum transaction size that is this `MaxBytes`, less the expected size of
+This implies a maximum transaction size that is `MaxBytes`, less the expected size of
 the header, the validator set, and any included evidence in the block.
 
 The Application should be aware that honest validators _may_ produce and

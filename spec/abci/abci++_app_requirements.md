@@ -598,8 +598,15 @@ These are the current consensus parameters (as of v0.37.x):
 The maximum size of a complete Protobuf encoded block.
 This is enforced by the consensus algorithm.
 
-This implies a maximum transaction size that is this `MaxBytes`, less the expected size of
+This implies a maximum transaction size that is `MaxBytes`, less the expected size of
 the header, the validator set, and any included evidence in the block.
+
+The Application should be aware that honest validators _may_ produce and
+broadcast blocks with up to the configured `MaxBytes` size.
+As a result, the consensus
+[timeout parameters](../../docs/core/configuration.md#consensus-timeouts-explained)
+adopted by nodes should be configured so as to account for the worst-case
+latency for the delivery of a full block with `MaxBytes` size to all validators.
 
 If the Application wants full control over the size of blocks,
 it can do so by enforcing a byte limit set up at the Application level.
@@ -614,6 +621,13 @@ If the Application sets value -1, consensus will:
 - will provide *all* transactions in the mempool in calls to `PrepareProposal`
 
 Must have `MaxBytes == -1` OR `0 < MaxBytes <= 100 MB`.
+
+> Bear in mind that the default value for the `BlockParams.MaxBytes` consensus
+> parameter accepts as valid blocks with size up to 21 MB.
+> If the Application's use case does not need blocks of that size,
+> or if the impact (specially on bandwidth consumption and block latency)
+> of propagating blocks of that size was not evaluated,
+> it is strongly recommended to wind down this default value.
 
 ##### BlockParams.MaxGas
 

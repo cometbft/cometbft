@@ -13,9 +13,9 @@ Accepted
 
 ## Context
 
-See the [context for ADR-100][adr-100-context].
+See the [context for the Data Companion Push API (ADR-100)][adr-100-context].
 
-The primary novelty introduced in this ADR is effectively just a new gRPC API
+The primary novelty introduced in this ADR is effectively a new gRPC API
 that allows an external application to influence which data the node prunes.
 Otherwise, existing and planned RPC interfaces (such as the planned gRPC
 interface) in addition to this pruning API should, in theory, deliver the same
@@ -76,7 +76,7 @@ Two parameters are proposed as a necessary part of the pruning API:
 - **Pruning service block retain height**, which influences the height to which
   the node will retain blocks. This is different to the **application block
   retain height**, which is set by the application in its response to each ABCI
-  `commit` message.
+  `Commit` message.
 
   The node will prune blocks to whichever is lower between the pruning service
   and application block retain heights.
@@ -186,7 +186,7 @@ package tendermint.services.block_results.v1;
 service BlockResultsService {
     // GetByHeight attempts to retrieve the execution results associated with a
     // block of a certain height.
-    rpc GetByHeight(GetByHeightRequest) returns (GetByHeightResponse)
+    rpc GetByHeight(GetByHeightRequest) returns (GetByHeightResponse) {}
 }
 
 message GetByHeightRequest {

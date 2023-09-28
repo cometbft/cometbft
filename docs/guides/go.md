@@ -694,7 +694,7 @@ The request returns a `json` object with a `key` and `value` field set.
 
 ```json
 ...
-    "key": "dGVuZGVybWludA==",
+    "key": "Y29tZXRiZnQ=",
     "value": "cm9ja3M=",
 ...
 ```

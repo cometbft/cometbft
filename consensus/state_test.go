@@ -312,7 +312,7 @@ func TestStateOversizedBlock(t *testing.T) {
 
 			maxBlockParts := maxBytes / int64(types.BlockPartSizeBytes)
 			if maxBytes > maxBlockParts*int64(types.BlockPartSizeBytes) {
-				maxBlockParts += 1
+				maxBlockParts++
 			}
 			numBlockParts := int64(propBlockParts.Total())
 

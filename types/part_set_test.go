@@ -86,6 +86,22 @@ func TestWrongProof(t *testing.T) {
 	if added || err == nil {
 		t.Errorf("expected to fail adding a part with bad bytes.")
 	}
+
+	// Test adding a part with wrong proof index.
+	part = partSet.GetPart(2)
+	part.Proof.Index = 1
+	added, err = partSet2.AddPart(part)
+	if added || err == nil {
+		t.Errorf("expected to fail adding a part with bad proof index.")
+	}
+
+	// Test adding a part with wrong proof total.
+	part = partSet.GetPart(3)
+	part.Proof.Total = int64(partSet.Total() - 1)
+	added, err = partSet2.AddPart(part)
+	if added || err == nil {
+		t.Errorf("expected to fail adding a part with bad proof total.")
+	}
 }
 
 func TestPartSetHeaderValidateBasic(t *testing.T) {

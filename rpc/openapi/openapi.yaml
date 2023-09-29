@@ -38,17 +38,40 @@ info:
     Arguments which expect strings or byte arrays may be passed as quoted
     strings, like `"abc"` or as `0x`-prefixed strings, like `0x616263`.
 
+    ## Versions
+
+    CometBFT RPC API is versioned to clearly communicate the supported features.
+    Currently CometBFT only one RPC API version, v1.0.
+    In the future, as versions become deprecated and unsupported, this will be clearly
+    marked in the following table.
+
+    | Version | Status     |
+    | ------- | ---------- |
+    | v1      | Supported  | 
+
+    The client communicates the version to be used by specifying it as a prefix to the method being invoked.
+    For backwards compatibility reasons, if no version is specified, then version v1 is assumed.
+    For example, 
+
+         localhost:26657/block
+
+    and
+
+         localhost:26657/v1/block
+
+    both refer to version v1 of the same method ("`block`").
+
     ## URI/HTTP
 
     A REST like interface.
 
-        curl localhost:26657/block?height=5
+        curl localhost:26657/v1/block?height=5
 
     ## JSONRPC/HTTP
 
     JSONRPC requests can be POST'd to the root RPC endpoint via HTTP.
 
-        curl --header "Content-Type: application/json" --request POST --data '{"method": "block", "params": ["5"], "id": 1}' localhost:26657
+        curl --header "Content-Type: application/json" --request POST --data '{"method": "v1/block", "params": ["5"], "id": 1}' localhost:26657
 
     ## JSONRPC/websockets
 
@@ -60,7 +83,8 @@ info:
     For example using the [websocat](https://github.com/vi/websocat) tool, you can subscribe for 'NewBlock` events
     with the following command:
 
-        echo '{ "jsonrpc": "2.0","method": "subscribe","id": 0,"params": {"query": "tm.event='"'NewBlock'"'"} }' | websocat -n -t ws://127.0.0.1:26657/websocket
+        echo '{ "jsonrpc": "2.0","method": "v1/subscribe","id": 0,"params": {"query": "tm.event='"'NewBlock'"'"} }' | websocat -n -t ws://127.0.0.1:26657/websocket
+
 
   version: "main"
   license:

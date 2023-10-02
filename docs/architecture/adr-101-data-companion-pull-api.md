@@ -278,11 +278,11 @@ message GetBlockResultsRetainHeightResponse {
 ##### Indexer pruning service
 
 This gRPC service can be used to instruct CometBFT to prune the transaction and
-block index events. 
+block events indexed by CometBFT. 
 
 To support this, the above described pruning service is extended as follows:
 
-```
+```protobuf
 
 // PruningService provides privileged access to specialized pruning
 // functionality on the CometBFT node to help control node storage.

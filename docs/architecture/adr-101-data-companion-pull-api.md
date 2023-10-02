@@ -275,13 +275,72 @@ message GetBlockResultsRetainHeightResponse {
 }
 ```
 
+##### Indexer pruning service
+
+This gRPC service can be used to instruct CometBFT to prune the transaction and
+block index events. 
+
+To support this, the above described pruning service is extended as follows:
+
+```
+
+// PruningService provides privileged access to specialized pruning
+// functionality on the CometBFT node to help control node storage.
+service PruningService {
+
+
+    // SetTxIndexerRetainHeightRequest indicates to the node that it can safely
+    // prune all tx indices up to the specified retain height.
+    rpc SetTxIndexerRetainHeight(SetTxIndexerRetainHeightRequest) returns (SetTxIndexerRetainHeightResponse);
+
+    // GetTxIndexerRetainHeight returns information about the retain height
+    // parameters used by the node to influence TxIndexer pruning
+    rpc GetTxIndexerRetainHeight(GetTxIndexerRetainHeightRequest) returns (GetTxIndexerRetainHeightResponse);
+
+    // SetBlockIndexerRetainHeightRequest indicates to the node that it can safely
+    // prune all block indices up to the specified retain height.
+    rpc SetBlockIndexerRetainHeight(SetBlockIndexerRetainHeightRequest) returns (SetBlockIndexerRetainHeightResponse);
+
+    // GetBlockIndexerRetainHeight returns information about the retain height
+    // parameters used by the node to influence BlockIndexer pruning
+    rpc GetBlockIndexerRetainHeight(GetBlockIndexerRetainHeightRequest) returns (GetBlockIndexerRetainHeightResponse);
+
+
+}
+
+message SetTxIndexerRetainHeightRequest {
+    uint64 height = 1;
+}
+
+message SetTxIndexerRetainHeightResponse {}
+
+message GetTxIndexerRetainHeightRequest {}
+
+message GetTxIndexerRetainHeightResponse {
+    uint64 height = 1;
+}
+
+message SetBlockIndexerRetainHeightRequest {
+    uint64 height = 1;
+}
+
+message SetBlockIndexerRetainHeightResponse {}
+
+message GetBlockIndexerRetainHeightRequest {}
+
+message GetBlockIndexerRetainHeightResponse {
+    uint64 height = 1;
+}
+
+```
+
 With this API design, it is technically possible for an integrator to attach
 multiple data companions to the node, but only one of their retain heights will
 be considered by the node.
 
 ### Configuration
 
-The following configuration file update is proposed to support the data
+The following configuration file (`config.toml`) update is proposed to support the data
 companion API.
 
 ```toml
@@ -359,6 +418,14 @@ interaction between a node and its data companion:
   is influenced by the application and pruning service block retain heights.
 - `abci_results_base_height` - The actual base height of stored block results,
   which is influenced by the pruning service block results retain height.
+- `block_indexer_retain_height` -  The current block indexer retain height 
+   requested by the pruning service.
+- `tx_indexer_retain_height` -  The current tx indexer retain height 
+  requested by the pruning service.
+- `block_indexer_base_height` -  The minimum height at which we have block events 
+   (should demonstrate the effects of pruning the block indexer)
+- `tx_indexer_base_height`  - The minimum height at which we have transaction events 
+   (should demonstrate the effects of pruning the tx indexer)
 
 Other metrics may be proposed as part of the non-privileged gRPC API that could
 assist operators in understanding the health of the interaction with the data

@@ -461,6 +461,7 @@ companion, but only if the data companion is the exclusive user of those APIs.
 
 - [ADR 100 - Data Companion Push API][adr-100]
 - [\#81 - rpc: Add gRPC support][\#81]
+- [Documentation on current implementation of ADR][dc-docs]
 
 [adr-100-context]: ./adr-100-data-companion-push-api.md#context
 [adr-100]: ./adr-100-data-companion-push-api.md
@@ -468,3 +469,4 @@ companion, but only if the data companion is the exclusive user of those APIs.
 [adr-100-alt]: ./adr-100-data-companion-push-api.md#alternative-approaches
 [\#81]: https://github.com/cometbft/cometbft/issues/81
 [abci-commit]: ../../spec/abci/abci++_methods.md#commit
+[dc-docs]: https://github.com/cometbft/cometbft/tree/main/docs/data-companion

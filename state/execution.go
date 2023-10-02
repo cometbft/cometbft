@@ -29,6 +29,8 @@ type BlockExecutor struct {
 	// use blockstore for the pruning functions.
 	blockStore BlockStore
 
+	pruner *Pruner
+
 	// execute the app against this
 	proxyApp proxy.AppConnConsensus
 
@@ -46,6 +48,12 @@ type BlockExecutor struct {
 }
 
 type BlockExecutorOption func(executor *BlockExecutor)
+
+func BlockExecutorWithPruner(pruner *Pruner) BlockExecutorOption {
+	return func(blockExec *BlockExecutor) {
+		blockExec.pruner = pruner
+	}
+}
 
 func BlockExecutorWithMetrics(metrics *Metrics) BlockExecutorOption {
 	return func(blockExec *BlockExecutor) {
@@ -105,7 +113,6 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	lastExtCommit *types.ExtendedCommit,
 	proposerAddr []byte,
 ) (*types.Block, error) {
-
 	maxBytes := state.ConsensusParams.Block.MaxBytes
 	emptyMaxBytes := maxBytes == -1
 	if emptyMaxBytes {
@@ -204,7 +211,6 @@ func (blockExec *BlockExecutor) ValidateBlock(state State, block *types.Block) e
 func (blockExec *BlockExecutor) ApplyBlock(
 	state State, blockID types.BlockID, block *types.Block,
 ) (State, error) {
-
 	if err := validateBlock(state, block); err != nil {
 		return state, ErrInvalidBlock(err)
 	}
@@ -242,7 +248,7 @@ func (blockExec *BlockExecutor) ApplyBlock(
 		return state, fmt.Errorf("expected tx results length to match size of transactions in block. Expected %d, got %d", len(block.Data.Txs), len(abciResponse.TxResults))
 	}
 
-	blockExec.logger.Info("executed block", "height", block.Height, "app_hash", abciResponse.AppHash)
+	blockExec.logger.Info("executed block", "height", block.Height, "app_hash", fmt.Sprintf("%X", abciResponse.AppHash))
 
 	fail.Fail() // XXX
 
@@ -297,12 +303,10 @@ func (blockExec *BlockExecutor) ApplyBlock(
 	fail.Fail() // XXX
 
 	// Prune old heights, if requested by ABCI app.
-	if retainHeight > 0 {
-		pruned, err := blockExec.pruneBlocks(retainHeight, state)
+	if retainHeight > 0 && blockExec.pruner != nil {
+		err := blockExec.pruner.SetApplicationBlockRetainHeight(retainHeight)
 		if err != nil {
-			blockExec.logger.Error("failed to prune blocks", "retain_height", retainHeight, "err", err)
-		} else {
-			blockExec.logger.Debug("pruned blocks", "pruned", pruned, "retain_height", retainHeight)
+			blockExec.logger.Error("Failed to set application block retain height", "retainHeight", retainHeight, "err", err)
 		}
 	}
 
@@ -313,10 +317,27 @@ func (blockExec *BlockExecutor) ApplyBlock(
 	return state, nil
 }
 
-func (blockExec *BlockExecutor) ExtendVote(ctx context.Context, vote *types.Vote) ([]byte, error) {
+func (blockExec *BlockExecutor) ExtendVote(
+	ctx context.Context,
+	vote *types.Vote,
+	block *types.Block,
+	state State,
+) ([]byte, error) {
+	if !block.HashesTo(vote.BlockID.Hash) {
+		panic(fmt.Sprintf("vote's hash does not match the block it is referring to %X!=%X", block.Hash(), vote.BlockID.Hash))
+	}
+	if vote.Height != block.Height {
+		panic(fmt.Sprintf("vote's and block's heights do not match %d!=%d", block.Height, vote.Height))
+	}
 	req := abci.RequestExtendVote{
-		Hash:   vote.BlockID.Hash,
-		Height: vote.Height,
+		Hash:               vote.BlockID.Hash,
+		Height:             vote.Height,
+		Time:               block.Time,
+		Txs:                block.Txs.ToSliceOfBytes(),
+		ProposedLastCommit: buildLastCommitInfo(block, blockExec.store, state.InitialHeight),
+		Misbehavior:        block.Evidence.Evidence.ToABCI(),
+		NextValidatorsHash: block.NextValidatorsHash,
+		ProposerAddress:    block.ProposerAddress,
 	}
 
 	resp, err := blockExec.proxyApp.ExtendVote(ctx, &req)
@@ -513,7 +534,8 @@ func buildExtendedCommitInfo(ec *types.ExtendedCommit, store Store, initialHeigh
 }
 
 func validateValidatorUpdates(abciUpdates []abci.ValidatorUpdate,
-	params types.ValidatorParams) error {
+	params types.ValidatorParams,
+) error {
 	for _, valUpdate := range abciUpdates {
 		if valUpdate.GetPower() < 0 {
 			return fmt.Errorf("voting power can't be negative %v", valUpdate)
@@ -545,7 +567,6 @@ func updateState(
 	abciResponse *abci.ResponseFinalizeBlock,
 	validatorUpdates []*types.Validator,
 ) (State, error) {
-
 	// Copy the valset so we can apply changes from EndBlock
 	// and update s.LastValidators and s.Validators.
 	nValSet := state.NextValidators.Copy()
@@ -705,7 +726,7 @@ func ExecCommitBlock(
 		return nil, fmt.Errorf("expected tx results length to match size of transactions in block. Expected %d, got %d", len(block.Data.Txs), len(resp.TxResults))
 	}
 
-	logger.Info("executed block", "height", block.Height, "app_hash", resp.AppHash)
+	logger.Info("executed block", "height", block.Height, "app_hash", fmt.Sprintf("%X", resp.AppHash))
 
 	// Commit block
 	_, err = appConnConsensus.Commit(context.TODO())
@@ -716,22 +737,4 @@ func ExecCommitBlock(
 
 	// ResponseCommit has no error or log
 	return resp.AppHash, nil
-}
-
-func (blockExec *BlockExecutor) pruneBlocks(retainHeight int64, state State) (uint64, error) {
-	base := blockExec.blockStore.Base()
-	if retainHeight <= base {
-		return 0, nil
-	}
-
-	amountPruned, prunedHeaderHeight, err := blockExec.blockStore.PruneBlocks(retainHeight, state)
-	if err != nil {
-		return 0, fmt.Errorf("failed to prune block store: %w", err)
-	}
-
-	err = blockExec.Store().PruneStates(base, retainHeight, prunedHeaderHeight)
-	if err != nil {
-		return 0, fmt.Errorf("failed to prune state store: %w", err)
-	}
-	return amountPruned, nil
 }

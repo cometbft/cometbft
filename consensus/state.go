@@ -28,17 +28,8 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 	cmttime "github.com/cometbft/cometbft/types/time"
-)
-
-// Consensus sentinel errors
-var (
-	ErrInvalidProposalSignature   = errors.New("error invalid proposal signature")
-	ErrInvalidProposalPOLRound    = errors.New("error invalid proposal POL round")
-	ErrAddingVote                 = errors.New("error adding vote")
-	ErrSignatureFoundInPastBlocks = errors.New("found signature from the same key")
-
-	errPubKeyIsNotSet = errors.New("pubkey is not set. Look for \"Can't get private validator pubkey\" errors")
 )
 
 var msgQueueSize = 1000
@@ -141,6 +132,9 @@ type State struct {
 
 	// for reporting metrics
 	metrics *Metrics
+
+	// offline state sync height indicating to which height the node synced offline
+	offlineStateSyncHeight int64
 }
 
 // StateOption sets an optional parameter on the State.
@@ -172,7 +166,9 @@ func NewState(
 		evsw:             cmtevents.NewEventSwitch(),
 		metrics:          NopMetrics(),
 	}
-
+	for _, option := range options {
+		option(cs)
+	}
 	// set function defaults (may be overwritten before calling Start)
 	cs.decideProposal = cs.defaultDecideProposal
 	cs.doPrevote = cs.defaultDoPrevote
@@ -180,7 +176,16 @@ func NewState(
 
 	// We have no votes, so reconstruct LastCommit from SeenCommit.
 	if state.LastBlockHeight > 0 {
-		cs.reconstructLastCommit(state)
+		// In case of out of band performed statesync, the state store
+		// will have a state but no extended commit (as no block has been downloaded).
+		// If the height at which the vote extensions are enabled is lower
+		// than the height at which we statesync, consensus will panic because
+		// it will try to reconstruct the extended commit here.
+		if cs.offlineStateSyncHeight != 0 {
+			cs.reconstructSeenCommit(state)
+		} else {
+			cs.reconstructLastCommit(state)
+		}
 	}
 
 	cs.updateToState(state)
@@ -188,9 +193,6 @@ func NewState(
 	// NOTE: we do not call scheduleRound0 yet, we do that upon Start()
 
 	cs.BaseService = *service.NewBaseService(nil, "State", cs)
-	for _, option := range options {
-		option(cs)
-	}
 
 	return cs
 }
@@ -210,6 +212,12 @@ func (cs *State) SetEventBus(b *types.EventBus) {
 // StateMetrics sets the metrics.
 func StateMetrics(metrics *Metrics) StateOption {
 	return func(cs *State) { cs.metrics = metrics }
+}
+
+// OfflineStateSyncHeight indicates the height at which the node
+// statesync offline - before booting sets the metrics.
+func OfflineStateSyncHeight(height int64) StateOption {
+	return func(cs *State) { cs.offlineStateSyncHeight = height }
 }
 
 // String returns a string.
@@ -560,6 +568,18 @@ func (cs *State) sendInternalMessage(mi msgInfo) {
 	}
 }
 
+// ReconstructSeenCommit reconstructs the seen commit
+// This function is meant to be called after statesync
+// that was performed offline as to avoid interfering with vote
+// extensions.
+func (cs *State) reconstructSeenCommit(state sm.State) {
+	votes, err := cs.votesFromSeenCommit(state)
+	if err != nil {
+		panic(fmt.Sprintf("failed to reconstruct last commit; %s", err))
+	}
+	cs.LastCommit = votes
+}
+
 // Reconstruct the LastCommit from either SeenCommit or the ExtendedCommit. SeenCommit
 // and ExtendedCommit are saved along with the block. If VoteExtensions are required
 // the method will panic on an absent ExtendedCommit or an ExtendedCommit without
@@ -567,14 +587,9 @@ func (cs *State) sendInternalMessage(mi msgInfo) {
 func (cs *State) reconstructLastCommit(state sm.State) {
 	extensionsEnabled := state.ConsensusParams.ABCI.VoteExtensionsEnabled(state.LastBlockHeight)
 	if !extensionsEnabled {
-		votes, err := cs.votesFromSeenCommit(state)
-		if err != nil {
-			panic(fmt.Sprintf("failed to reconstruct last commit; %s", err))
-		}
-		cs.LastCommit = votes
+		cs.reconstructSeenCommit(state)
 		return
 	}
-
 	votes, err := cs.votesFromExtendedCommit(state)
 	if err != nil {
 		panic(fmt.Sprintf("failed to reconstruct last extended commit; %s", err))
@@ -593,7 +608,7 @@ func (cs *State) votesFromExtendedCommit(state sm.State) (*types.VoteSet, error)
 	}
 	vs := ec.ToExtendedVoteSet(state.ChainID, state.LastValidators)
 	if !vs.HasTwoThirdsMajority() {
-		return nil, errors.New("extended commit does not have +2/3 majority")
+		return nil, ErrCommitQuorumNotMet
 	}
 	return vs, nil
 }
@@ -612,7 +627,7 @@ func (cs *State) votesFromSeenCommit(state sm.State) (*types.VoteSet, error) {
 	}
 	vs := commit.ToVoteSet(state.ChainID, state.LastValidators)
 	if !vs.HasTwoThirdsMajority() {
-		return nil, errors.New("commit does not have +2/3 majority")
+		return nil, ErrCommitQuorumNotMet
 	}
 	return vs, nil
 }
@@ -983,7 +998,7 @@ func (cs *State) handleTimeout(ti timeoutInfo, rs cstypes.RoundState) {
 		cs.enterNewRound(ti.Height, ti.Round+1)
 
 	default:
-		panic(fmt.Sprintf("invalid timeout step: %v", ti.Step))
+		panic(cmterrors.ErrInvalidField{Field: "timeout_step"})
 	}
 }
 
@@ -1151,7 +1166,7 @@ func (cs *State) enterPropose(height int64, round int32) {
 	if cs.privValidatorPubKey == nil {
 		// If this node is a validator & proposer in the current round, it will
 		// miss the opportunity to create a block.
-		logger.Error("propose step; empty priv validator public key", "err", errPubKeyIsNotSet)
+		logger.Error("propose step; empty priv validator public key", "err", ErrPubKeyIsNotSet)
 		return
 	}
 
@@ -1252,7 +1267,7 @@ func (cs *State) isProposalComplete() bool {
 // CONTRACT: cs.privValidator is not nil.
 func (cs *State) createProposalBlock(ctx context.Context) (*types.Block, error) {
 	if cs.privValidator == nil {
-		return nil, errors.New("entered createProposalBlock with privValidator being nil")
+		return nil, ErrNilPrivValidator
 	}
 
 	// TODO(sergio): wouldn't it be easier if CreateProposalBlock accepted cs.LastCommit directly?
@@ -1268,13 +1283,13 @@ func (cs *State) createProposalBlock(ctx context.Context) (*types.Block, error) 
 		lastExtCommit = cs.LastCommit.MakeExtendedCommit(cs.state.ConsensusParams.ABCI)
 
 	default: // This shouldn't happen.
-		return nil, errors.New("propose step; cannot propose anything without commit for the previous block")
+		return nil, ErrProposalWithoutPreviousCommit
 	}
 
 	if cs.privValidatorPubKey == nil {
 		// If this node is a validator & proposer in the current round, it will
 		// miss the opportunity to create a block.
-		return nil, fmt.Errorf("propose step; empty priv validator public key, error: %w", errPubKeyIsNotSet)
+		return nil, fmt.Errorf("propose step; empty priv validator public key, error: %w", ErrPubKeyIsNotSet)
 	}
 
 	proposerAddr := cs.privValidatorPubKey.Address()
@@ -1324,8 +1339,8 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 
 	// We did not receive a proposal within this round. (and thus executing this from a timeout)
 	if cs.ProposalBlock == nil {
-		logger.Debug("prevote step: ProposalBlock is nil")
-		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
+		logger.Debug("prevote step: ProposalBlock is nil; prevoting nil")
+		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
 		return
 	}
 
@@ -1335,33 +1350,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		// ProposalBlock is invalid, prevote nil.
 		logger.Error("prevote step: consensus deems this block invalid; prevoting nil",
 			"err", err)
-		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
-		return
-	}
-
-	/*
-		Before prevoting on the block received from the proposer for the current round and height,
-		we request the Application, via `ProcessProposal` ABCI call, to confirm that the block is
-		valid. If the Application does not accept the block, consensus prevotes `nil`.
-
-		WARNING: misuse of block rejection by the Application can seriously compromise
-		the liveness properties of consensus.
-		Please see `PrepareProosal`-`ProcessProposal` coherence and determinism properties
-		in the ABCI++ specification.
-	*/
-	isAppValid, err := cs.blockExec.ProcessProposal(cs.ProposalBlock, cs.state)
-	if err != nil {
-		panic(fmt.Sprintf(
-			"state machine returned an error (%v) when calling ProcessProposal", err,
-		))
-	}
-	cs.metrics.MarkProposalProcessed(isAppValid)
-
-	// Vote nil if the Application rejected the block
-	if !isAppValid {
-		logger.Error("prevote step: state machine rejected a proposed block; this should not happen:"+
-			"the proposer may be misbehaving; prevoting nil", "err", err)
-		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
+		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
 		return
 	}
 
@@ -1372,27 +1361,69 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		25: else
 		26:   broadcast <PREVOTE, h_p, round_p, nil>
 
-		Here, cs.Proposal.POLRound corresponds to the -1 in the above algorithm rule.
+		Here, cs.Proposal.POLRound corresponds to the -1 in the rule of the pseude-code (line 22).
 		This means that the proposer is producing a new proposal that has not previously
 		seen a 2/3 majority by the network.
 
-		If we have already locked on a different value that is different from the proposed value,
-		we prevote nil since we are locked on a different value. Otherwise, if we're not locked on a block
-		or the proposal matches our locked block, we prevote the proposal.
+		If the application deems the proposal as valid AND we're not locked on a
+		block OR the proposal matches our locked block (line 23), we prevote the
+		proposal (line 24).
+
+		Otherwise, we have already locked on a value that is different from the
+		proposed value, so we prevote nil (line 26).
+
+		Note that there are two cases on which we know that the proposal is
+		application-valid, that is, it was validated by the application at least
+		by one correct node in a previous step:
+		- when the proposal matches our non-nil valid block AND we're not locked on a block, and
+		- when the proposal matches our non-nil locked block.
+		In these cases we do not need to query the application to validate the
+		proposal.
 	*/
 	if cs.Proposal.POLRound == -1 {
 		if cs.LockedRound == -1 {
+			if cs.ValidRound != -1 && cs.ProposalBlock.HashesTo(cs.ValidBlock.Hash()) {
+				logger.Debug("prevote step: ProposalBlock matches our valid block; prevoting the proposal")
+				cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
+				return
+			}
+
+			// We request the Application, via a `ProcessProposal` ABCI call, to
+			// confirm that the block is valid. If the application does not
+			// accept the block, consensus prevotes nil.
+			//
+			// WARNING: misuse of block rejection by the Application can seriously compromise
+			// the liveness properties of consensus.
+			// Please see `PrepareProosal`-`ProcessProposal` coherence and determinism properties
+			// in the ABCI++ specification.
+			isAppValid, err := cs.blockExec.ProcessProposal(cs.ProposalBlock, cs.state)
+			if err != nil {
+				panic(fmt.Sprintf(
+					"state machine returned an error (%v) when calling ProcessProposal", err,
+				))
+			}
+			cs.metrics.MarkProposalProcessed(isAppValid)
+
+			if !isAppValid {
+				logger.Error("prevote step: state machine rejected a proposed block; this should not happen:"+
+					"the proposer may be misbehaving; prevoting nil", "err", err)
+				cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
+				return
+			}
+
 			logger.Debug("prevote step: ProposalBlock is valid and there is no locked block; prevoting the proposal")
-			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header())
+			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
 			return
 		}
+
 		if cs.ProposalBlock.HashesTo(cs.LockedBlock.Hash()) {
 			logger.Debug("prevote step: ProposalBlock is valid (POLRound is -1) and matches our locked block; prevoting the proposal")
-			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header())
+			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
 			return
 		}
+
 		logger.Debug("prevote step: ProposalBlock is valid (POLRound is -1), but doesn't match our locked block; prevoting nil")
-		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
+		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
 		return
 	}
 
@@ -1406,12 +1437,19 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 
 		This rule is a bit confusing but breaks down as follows:
 
-		If we see a proposal in the current round for value 'v' that lists its valid round as 'v_r'
-		AND this validator saw a 2/3 majority of the voting power prevote 'v' in round 'v_r', then we will
-		issue a prevote for 'v' in this round if 'v' is valid and either matches our locked value OR
-		'v_r' is a round greater than or equal to our current locked round.
+		First note that 'valid(v)' in line 29 states that we should request the
+		application to validate the proposal. We know that the proposal was
+		prevoted by a +2/3 majority, so it must have been prevoted and validated
+		at least by one correct node. Therefore it must be valid and in the
+		following cases we don't need to query the application again.
 
-		'v_r' can be a round greater than to our current locked round if a 2/3 majority of
+		If we see a proposal in the current round for value 'v' that lists its valid round as 'v_r'
+		AND this validator saw a 2/3 majority of the voting power prevote for 'v' in round 'v_r' (line 28),
+		then we will issue a prevote for 'v' in this round (line 30) if 'v' either matches our locked value OR
+		'v_r' is a round greater than or equal to our current locked round (line 29).
+		Otherwise we prevote nil (line 32).
+
+		Note that 'v_r' can be a round greater than to our current locked round if a 2/3 majority of
 		the network prevoted a value in round 'v_r' but we did not lock on it, possibly because we
 		missed the proposal in round 'v_r'.
 	*/
@@ -1421,19 +1459,19 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		if cs.LockedRound <= cs.Proposal.POLRound {
 			logger.Debug("prevote step: ProposalBlock is valid and received a 2/3" +
 				"majority in a round later than the locked round; prevoting the proposal")
-			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header())
+			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
 			return
 		}
 		if cs.ProposalBlock.HashesTo(cs.LockedBlock.Hash()) {
 			logger.Debug("prevote step: ProposalBlock is valid and matches our locked block; prevoting the proposal")
-			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header())
+			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
 			return
 		}
 	}
 
 	logger.Debug("prevote step: ProposalBlock is valid but was not our locked block or" +
 		"did not receive a more recent majority; prevoting nil")
-	cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{})
+	cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
 }
 
 // Enter: any +2/3 prevotes at next round.
@@ -1502,7 +1540,7 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 			logger.Debug("precommit step; no +2/3 prevotes during enterPrecommit; precommitting nil")
 		}
 
-		cs.signAddVote(cmtproto.PrecommitType, nil, types.PartSetHeader{})
+		cs.signAddVote(cmtproto.PrecommitType, nil, types.PartSetHeader{}, nil)
 		return
 	}
 
@@ -1520,7 +1558,7 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 	// +2/3 prevoted nil. Precommit nil.
 	if blockID.IsNil() {
 		logger.Debug("precommit step; +2/3 prevoted for nil")
-		cs.signAddVote(cmtproto.PrecommitType, nil, types.PartSetHeader{})
+		cs.signAddVote(cmtproto.PrecommitType, nil, types.PartSetHeader{}, nil)
 		return
 	}
 
@@ -1535,7 +1573,7 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 			logger.Error("failed publishing event relock", "err", err)
 		}
 
-		cs.signAddVote(cmtproto.PrecommitType, blockID.Hash, blockID.PartSetHeader)
+		cs.signAddVote(cmtproto.PrecommitType, blockID.Hash, blockID.PartSetHeader, cs.LockedBlock)
 		return
 	}
 
@@ -1558,7 +1596,7 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 			logger.Error("failed publishing event lock", "err", err)
 		}
 
-		cs.signAddVote(cmtproto.PrecommitType, blockID.Hash, blockID.PartSetHeader)
+		cs.signAddVote(cmtproto.PrecommitType, blockID.Hash, blockID.PartSetHeader, cs.ProposalBlock)
 		return
 	}
 
@@ -1571,7 +1609,7 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 		cs.ProposalBlockParts = types.NewPartSetFromHeader(blockID.PartSetHeader)
 	}
 
-	cs.signAddVote(cmtproto.PrecommitType, nil, types.PartSetHeader{})
+	cs.signAddVote(cmtproto.PrecommitType, nil, types.PartSetHeader{}, nil)
 }
 
 // Enter: any +2/3 precommits for next round.
@@ -1847,7 +1885,7 @@ func (cs *State) recordMetrics(height int64, block *types.Block) {
 		if cs.privValidator != nil {
 			if cs.privValidatorPubKey == nil {
 				// Metrics won't be updated, but it's not critical.
-				cs.Logger.Error(fmt.Sprintf("recordMetrics: %v", errPubKeyIsNotSet))
+				cs.Logger.Error(fmt.Sprintf("recordMetrics: %v", ErrPubKeyIsNotSet))
 			} else {
 				address = cs.privValidatorPubKey.Address()
 			}
@@ -2071,7 +2109,6 @@ func (cs *State) handleCompleteProposal(blockHeight int64) {
 // Attempt to add the vote. if its a duplicate signature, dupeout the validator
 func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 	added, err := cs.addVote(vote, peerID)
-
 	// NOTE: some of these errors are swallowed here
 	if err != nil {
 		// If the vote height is off, we'll just ignore it,
@@ -2080,7 +2117,7 @@ func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 		//nolint: gocritic
 		if voteErr, ok := err.(*types.ErrVoteConflictingVotes); ok {
 			if cs.privValidatorPubKey == nil {
-				return false, errPubKeyIsNotSet
+				return false, ErrPubKeyIsNotSet
 			}
 
 			if bytes.Equal(vote.ValidatorAddress, cs.privValidatorPubKey.Address()) {
@@ -2343,6 +2380,7 @@ func (cs *State) signVote(
 	msgType cmtproto.SignedMsgType,
 	hash []byte,
 	header types.PartSetHeader,
+	block *types.Block,
 ) (*types.Vote, error) {
 	// Flush the WAL. Otherwise, we may not recompute the same vote to sign,
 	// and the privValidator will refuse to sign anything.
@@ -2351,7 +2389,7 @@ func (cs *State) signVote(
 	}
 
 	if cs.privValidatorPubKey == nil {
-		return nil, errPubKeyIsNotSet
+		return nil, ErrPubKeyIsNotSet
 	}
 
 	addr := cs.privValidatorPubKey.Address()
@@ -2372,7 +2410,7 @@ func (cs *State) signVote(
 		// if the signedMessage type is for a non-nil precommit, add
 		// VoteExtension
 		if extEnabled {
-			ext, err := cs.blockExec.ExtendVote(context.TODO(), vote)
+			ext, err := cs.blockExec.ExtendVote(context.TODO(), vote, block, cs.state)
 			if err != nil {
 				return nil, err
 			}
@@ -2410,10 +2448,12 @@ func (cs *State) voteTime() time.Time {
 }
 
 // sign the vote and publish on internalMsgQueue
+// block information is only used to extend votes (precommit only); should be nil in all other cases
 func (cs *State) signAddVote(
 	msgType cmtproto.SignedMsgType,
 	hash []byte,
 	header types.PartSetHeader,
+	block *types.Block,
 ) {
 	if cs.privValidator == nil { // the node does not have a key
 		return
@@ -2421,7 +2461,7 @@ func (cs *State) signAddVote(
 
 	if cs.privValidatorPubKey == nil {
 		// Vote won't be signed, but it's not critical.
-		cs.Logger.Error(fmt.Sprintf("signAddVote: %v", errPubKeyIsNotSet))
+		cs.Logger.Error(fmt.Sprintf("signAddVote: %v", ErrPubKeyIsNotSet))
 		return
 	}
 
@@ -2431,7 +2471,7 @@ func (cs *State) signAddVote(
 	}
 
 	// TODO: pass pubKey to signVote
-	vote, err := cs.signVote(msgType, hash, header)
+	vote, err := cs.signVote(msgType, hash, header, block)
 	if err != nil {
 		cs.Logger.Error("failed signing vote", "height", cs.Height, "round", cs.Round, "vote", vote, "err", err)
 		return

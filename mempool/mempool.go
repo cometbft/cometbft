@@ -3,8 +3,6 @@ package mempool
 import (
 	"crypto/sha256"
 	"errors"
-	"math"
-
 	"fmt"
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
@@ -17,12 +15,6 @@ const (
 
 	// PeerCatchupSleepIntervalMS defines how much time to sleep if a peer is behind
 	PeerCatchupSleepIntervalMS = 100
-
-	// UnknownPeerID is the peer ID to use when running CheckTx when there is
-	// no peer (e.g. RPC)
-	UnknownPeerID uint16 = 0
-
-	MaxActiveIDs = math.MaxUint16
 )
 
 //go:generate ../scripts/mockery_generate.sh Mempool

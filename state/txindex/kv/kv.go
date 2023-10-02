@@ -4,12 +4,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"math"
 	"math/big"
+	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/state"
 
 	"github.com/cosmos/gogoproto/proto"
 
@@ -29,7 +33,10 @@ const (
 	eventSeqSeparator = "$es$"
 )
 
-var _ txindex.TxIndexer = (*TxIndex)(nil)
+var (
+	LastTxIndexerRetainHeightKey = []byte("LastTxIndexerRetainHeightKey")
+	TxIndexerRetainHeightKey     = []byte("TxIndexerRetainHeightKey")
+)
 
 // TxIndex is the simplest possible indexer, backed by key-value storage (levelDB).
 type TxIndex struct {
@@ -38,6 +45,134 @@ type TxIndex struct {
 	eventSeq int64
 
 	log log.Logger
+}
+
+func (txi *TxIndex) Prune(retainHeight int64) (int64, int64, error) {
+	// Returns numPruned, newRetainHeight, err
+	// numPruned: the number of heights pruned. E.x. if heights {1, 3, 7} were pruned, numPruned == 3
+	// newRetainHeight: new retain height after pruning
+	// err: error
+
+	lastRetainHeight, err := txi.getIndexerRetainHeight()
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to look up last block indexer retain height: %w", err)
+	}
+	if lastRetainHeight == 0 {
+		lastRetainHeight = 1
+	}
+
+	ctx := context.Background()
+	results, err := txi.Search(ctx, query.MustCompile(
+		fmt.Sprintf("tx.height < %d AND tx.height >= %d", retainHeight, lastRetainHeight)))
+	if err != nil {
+		return 0, lastRetainHeight, err
+	}
+	if len(results) == 0 {
+		return 0, lastRetainHeight, nil
+	}
+
+	batch := txi.store.NewBatch()
+	closeBatch := func(batch dbm.Batch) {
+		err := batch.Close()
+		if err != nil {
+			txi.log.Error(fmt.Sprintf("Error when closing tx indexer pruning batch: %v", err))
+		}
+	}
+	defer closeBatch(batch)
+	pruned := uint64(0)
+	flush := func(batch dbm.Batch) error {
+		err := batch.WriteSync()
+		if err != nil {
+			return fmt.Errorf("failed to flush tx indexer pruning batch %w", err)
+		}
+		err = batch.Close()
+		if err != nil {
+			txi.log.Error(fmt.Sprintf("Error when closing tx indexer pruning batch: %v", err))
+		}
+		return nil
+	}
+
+	sort.Sort(TxResultByHeight(results))
+	numHeightsBatchPruned := int64(0)                     // number of heights pruned if counting batched
+	currentBatchRetainedHeight := results[0].Height       // height retained if counting batched
+	numHeightsPersistentlyPruned := int64(0)              // number of heights pruned persistently
+	currentPersistentlyRetainedHeight := lastRetainHeight // height retained persistently
+	for i, result := range results {
+		errDeleteResult := txi.deleteResult(result, batch)
+		if errDeleteResult != nil {
+			// If we crashed in the middle of pruning the height,
+			// we assume this height is retained
+			errSetLastRetainHeight := txi.setIndexerRetainHeight(result.Height, batch)
+			if errSetLastRetainHeight != nil {
+				return 0, lastRetainHeight, fmt.Errorf("error setting last retain height '%v' while handling result deletion error '%v' for tx indexer", errSetLastRetainHeight, errDeleteResult)
+			}
+			errWriteBatch := batch.WriteSync()
+			if errWriteBatch != nil {
+				return 0, lastRetainHeight, fmt.Errorf("error writing tx indexer batch '%v' while handling result deletion error '%v'", errWriteBatch, errDeleteResult)
+			}
+			return result.Height - lastRetainHeight, result.Height, errDeleteResult
+		}
+		if i == len(results)-1 || results[i+1].Height > result.Height {
+			numHeightsBatchPruned++
+			currentBatchRetainedHeight = result.Height + 1
+		}
+		// flush every 1000 blocks to avoid batches becoming too large
+		if pruned%1000 == 0 && pruned > 0 {
+			err := flush(batch)
+			if err != nil {
+				return numHeightsPersistentlyPruned, currentPersistentlyRetainedHeight, err
+			}
+			numHeightsPersistentlyPruned = numHeightsBatchPruned
+			currentPersistentlyRetainedHeight = currentBatchRetainedHeight
+			batch = txi.store.NewBatch()
+			defer closeBatch(batch)
+		}
+	}
+
+	err = flush(batch)
+	if err != nil {
+		return numHeightsPersistentlyPruned, currentPersistentlyRetainedHeight, err
+	}
+	numHeightsPersistentlyPruned = numHeightsBatchPruned
+	currentPersistentlyRetainedHeight = currentBatchRetainedHeight
+	return numHeightsPersistentlyPruned, currentPersistentlyRetainedHeight, nil
+}
+
+func (txi *TxIndex) SetRetainHeight(retainHeight int64) error {
+	return txi.store.SetSync(TxIndexerRetainHeightKey, int64ToBytes(retainHeight))
+}
+
+func (txi *TxIndex) GetRetainHeight() (int64, error) {
+	buf, err := txi.store.Get(TxIndexerRetainHeightKey)
+	if err != nil {
+		return 0, err
+	}
+	if buf == nil {
+		return 0, state.ErrKeyNotFound
+	}
+	height := int64FromBytes(buf)
+
+	if height < 0 {
+		return 0, state.ErrInvalidHeightValue
+	}
+
+	return height, nil
+}
+
+func (txi *TxIndex) setIndexerRetainHeight(height int64, batch dbm.Batch) error {
+	return batch.Set(LastTxIndexerRetainHeightKey, int64ToBytes(height))
+}
+
+func (txi *TxIndex) getIndexerRetainHeight() (int64, error) {
+	bz, err := txi.store.Get(LastTxIndexerRetainHeightKey)
+	if errors.Is(err, state.ErrKeyNotFound) {
+		return 0, nil
+	}
+	height := int64FromBytes(bz)
+	if height < 0 {
+		return 0, state.ErrInvalidHeightValue
+	}
+	return height, nil
 }
 
 // NewTxIndex creates new KV indexer.
@@ -112,6 +247,23 @@ func (txi *TxIndex) AddBatch(b *txindex.Batch) error {
 	return storeBatch.WriteSync()
 }
 
+func (txi *TxIndex) deleteResult(result *abci.TxResult, batch dbm.Batch) error {
+	hash := types.Tx(result.Tx).Hash()
+	err := txi.deleteEvents(result, batch)
+	if err != nil {
+		return err
+	}
+	err = batch.Delete(keyForHeight(result))
+	if err != nil {
+		return err
+	}
+	err = batch.Delete(hash)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Index indexes a single transaction using the given list of events. Each key
 // that indexed from the tx's events is a composite of the event type and the
 // respective attribute's key delimited by a "." (eg. "account.number").
@@ -163,6 +315,38 @@ func (txi *TxIndex) Index(result *abci.TxResult) error {
 	}
 
 	return b.WriteSync()
+}
+
+func (txi *TxIndex) deleteEvents(result *abci.TxResult, batch dbm.Batch) error {
+	for _, event := range result.Result.Events {
+		// only delete events with a non-empty type
+		if len(event.Type) == 0 {
+			continue
+		}
+
+		for _, attr := range event.Attributes {
+			if len(attr.Key) == 0 {
+				continue
+			}
+
+			compositeTag := fmt.Sprintf("%s.%s", event.Type, attr.Key)
+			if attr.GetIndex() {
+				zeroKey := keyForEvent(compositeTag, attr.Value, result, 0)
+				endKey := keyForEvent(compositeTag, attr.Value, result, math.MaxInt64)
+				itr, err := txi.store.Iterator(zeroKey, endKey)
+				if err != nil {
+					return err
+				}
+				for ; itr.Valid(); itr.Next() {
+					err := batch.Delete(itr.Key())
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func (txi *TxIndex) indexEvents(result *abci.TxResult, hash []byte, store dbm.Batch) error {

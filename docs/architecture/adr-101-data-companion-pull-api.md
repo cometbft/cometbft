@@ -461,7 +461,7 @@ companion, but only if the data companion is the exclusive user of those APIs.
 
 - [ADR 100 - Data Companion Push API][adr-100]
 - [\#81 - rpc: Add gRPC support][\#81]
-- [Documentation on current implementation of ADR][dc-docs]
+- [Documentation on current implementation of ADR-101][dc-docs]
 
 [adr-100-context]: ./adr-100-data-companion-push-api.md#context
 [adr-100]: ./adr-100-data-companion-push-api.md

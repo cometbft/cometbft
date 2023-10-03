@@ -87,12 +87,10 @@ func (g *GrammarChecker) filterLastHeight(reqs []*abci.Request) ([]*abci.Request
 		return nil, 0
 	}
 	pos := len(reqs) - 1
-	r := reqs[pos]
 	cnt := 0
 	// Find the last commit.
-	for g.getRequestTerminal(r) != "commit" && pos > 0 {
+	for pos > 0 && g.getRequestTerminal(reqs[pos]) != "commit" {
 		pos--
-		r = reqs[pos]
 		cnt++
 	}
 	return reqs[:pos+1], cnt

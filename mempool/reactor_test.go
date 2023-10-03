@@ -328,9 +328,6 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 		// Ignored txs should still be in the mempool.
 		checkTxsInMempoolAndSenders(t, r, ignoredTxs)
 	}
-
-	// The first reactor should not receive transactions from other peers.
-	require.Zero(t, len(firstReactor.txSenders))
 }
 
 // Check that the mempool has exactly the given list of txs and

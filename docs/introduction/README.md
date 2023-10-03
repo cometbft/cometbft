@@ -1,5 +1,5 @@
 ---
-order: false
+order: 1
 parent:
   title: Introduction
   order: 1

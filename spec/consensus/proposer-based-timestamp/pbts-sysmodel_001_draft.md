@@ -12,7 +12,7 @@ Every correct validator `V` maintains a synchronized clock `C_V` that ensures:
 
 #### **[PBTS-CLOCK-PRECISION.0]**
 
-There exists a system parameter `PRECISION` such that for any two correct validators `V` and `W`, and at any real-time `t`,  
+There exists a system parameter `PRECISION` such that for any two correct validators `V` and `W`, and at any real-time `t`,
 `|C_V(t) - C_W(t)| < PRECISION`
 
 
@@ -53,7 +53,7 @@ A proposer proposes a pair `(v,t)` of consensus value `v` and time `t`.
 
 [Time-Validity] If a correct validator decides on `t` then `t` is "OK" (we will formalize this below), even if up to `2f` validators are faulty.
 
-However, the properties of Tendermint consensus algorithm are of more interest with respect to the blocks, that is, what is written into a block and when. We therefore, in the following, will give the safety and liveness properties from this block-centric viewpoint.  
+However, the properties of Tendermint consensus algorithm are of more interest with respect to the blocks, that is, what is written into a block and when. We therefore, in the following, will give the safety and liveness properties from this block-centric viewpoint.
 For this, observe that the time `t` decided at consensus height `k` will be written in the block of height `k+1`, and will be supported by `2f + 1` `PRECOMMIT` messages of the same consensus round `r`. The time written in the block, we will denote by `b.time` (to distinguish it from the term `bfttime` used for median-based time). For this, it is important to have the following consensus algorithm property:
 
 #### **[PBTS-INV-TIME-AGR.0]**

@@ -58,7 +58,7 @@ We assume that the field `proposal` in the `PROPOSE` message is a pair `(v, time
 
 In the reception step at node `p` at local time `now_p`, upon receiving a message `m`:
 
-- **if** the message `m` is of type `PROPOSE` and satisfies `now_p - PRECISION <  m.time < now_p + PRECISION + MSGDELAY`, then mark the message as `timely`.  
+- **if** the message `m` is of type `PROPOSE` and satisfies `now_p - PRECISION <  m.time < now_p + PRECISION + MSGDELAY`, then mark the message as `timely`.
 (`PRECISION` and `MSGDELAY` being system parameters, see [below](#safety-and-liveness))
 
 > after the presentation in the dev session, we realized that different semantics for the reception step is closer aligned to the implementation. Instead of dropping propose messages, we keep all of them, and mark timely ones.
@@ -82,7 +82,7 @@ function StartRound(round) {
  step_p ← propose
  if proposer(h_p, round_p) = p {
 
- 
+
   if validValue_p != nil {
 
    proposal ← validValue_p
@@ -92,7 +92,7 @@ function StartRound(round) {
   }
    broadcast ⟨PROPOSAL, h_p, round_p, proposal, validRound_p⟩
  } else {
-  schedule OnTimeoutPropose(h_p,round_p) to 
+  schedule OnTimeoutPropose(h_p,round_p) to
    be executed after timeoutPropose(round_p)
  }
 }
@@ -111,14 +111,14 @@ function StartRound(round) {
   wait until now_p > block time of block h_p - 1
   if validValue_p != nil {
    // add "now_p"
-   proposal ← (validValue_p, now_p) 
+   proposal ← (validValue_p, now_p)
   } else {
    // add "now_p"
-   proposal ← (getValue(), now_p) 
+   proposal ← (getValue(), now_p)
   }
   broadcast ⟨PROPOSAL, h_p, round_p, proposal, validRound_p⟩
  } else {
-  schedule OnTimeoutPropose(h_p,round_p) to 
+  schedule OnTimeoutPropose(h_p,round_p) to
    be executed after timeoutPropose(round_p)
  }
 }
@@ -140,12 +140,12 @@ function StartRound(round) {
 <td>
 
 ```go
-upon timely(⟨PROPOSAL, h_p, round_p, v, vr⟩) 
+upon timely(⟨PROPOSAL, h_p, round_p, v, vr⟩)
  from proposer(h_p, round_p)
- AND 2f + 1 ⟨PREVOTE, h_p, vr, id(v)⟩ 
+ AND 2f + 1 ⟨PREVOTE, h_p, vr, id(v)⟩
 while step_p = propose ∧ (vr ≥ 0 ∧ vr < round_p) do {
  if valid(v) ∧ (lockedRound_p ≤ vr ∨ lockedValue_p = v) {
-  
+
   broadcast ⟨PREVOTE, h_p, round_p, id(v)⟩
  } else {
   broadcast ⟨PREVOTE, hp, round_p, nil⟩
@@ -158,9 +158,9 @@ while step_p = propose ∧ (vr ≥ 0 ∧ vr < round_p) do {
 <td>
 
 ```go
-upon timely(⟨PROPOSAL, h_p, round_p, (v, tprop), vr⟩) 
- from proposer(h_p, round_p) 
- AND 2f + 1 ⟨PREVOTE, h_p, vr, id(v, tvote)⟩ 
+upon timely(⟨PROPOSAL, h_p, round_p, (v, tprop), vr⟩)
+ from proposer(h_p, round_p)
+ AND 2f + 1 ⟨PREVOTE, h_p, vr, id(v, tvote)⟩
  while step_p = propose ∧ (vr ≥ 0 ∧ vr < round_p) do {
   if valid(v) ∧ (lockedRound_p ≤ vr ∨ lockedValue_p = v) {
    // send hash of v and tprop in PREVOTE message
@@ -187,15 +187,15 @@ upon timely(⟨PROPOSAL, h_p, round_p, (v, tprop), vr⟩)
 <td>
 
 ```go
-upon ⟨PROPOSAL, h_p, r, v, ∗⟩ from proposer(h_p, r) 
- AND 2f + 1 ⟨PRECOMMIT, h_p, r, id(v)⟩ 
+upon ⟨PROPOSAL, h_p, r, v, ∗⟩ from proposer(h_p, r)
+ AND 2f + 1 ⟨PRECOMMIT, h_p, r, id(v)⟩
  while decisionp[h_p] = nil do {
   if valid(v) {
 
    decision_p [h_p] = v
    h_p ← h_p + 1
-   reset lockedRound_p , lockedValue_p, validRound_p and 
-    validValue_p to initial values and empty message log 
+   reset lockedRound_p , lockedValue_p, validRound_p and
+    validValue_p to initial values and empty message log
    StartRound(0)
   }
  }
@@ -206,15 +206,15 @@ upon ⟨PROPOSAL, h_p, r, v, ∗⟩ from proposer(h_p, r)
 <td>
 
 ```go
-upon ⟨PROPOSAL, h_p, r, (v,t), ∗⟩ from proposer(h_p, r) 
+upon ⟨PROPOSAL, h_p, r, (v,t), ∗⟩ from proposer(h_p, r)
  AND 2f + 1 ⟨PRECOMMIT, h_p, r, id(v,t)⟩
  while decisionp[h_p] = nil do {
   if valid(v) {
    // decide on time too
-   decision_p [h_p] = (v,t) 
+   decision_p [h_p] = (v,t)
    h_p ← h_p + 1
-   reset lockedRound_p , lockedValue_p, validRound_p and 
-    validValue_p to initial values and empty message log 
+   reset lockedRound_p , lockedValue_p, validRound_p and
+    validValue_p to initial values and empty message log
    StartRound(0)
   }
  }

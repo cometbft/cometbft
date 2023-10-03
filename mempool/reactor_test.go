@@ -333,29 +333,21 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 	require.Zero(t, len(firstReactor.txSenders))
 }
 
-// Check that the mempool has exactly the given list of txs and, if it's not the
-// first reactor (reactorIndex == 0), then each tx has a non-empty list of senders.
+// Check that the mempool has exactly the given list of txs and
+// each tx has a non-empty list of senders.
 func checkTxsInMempoolAndSenders(t *testing.T, r *Reactor, txs types.Txs, reactorIndex int) {
 	r.txSendersMtx.Lock()
 	defer r.txSendersMtx.Unlock()
 
 	require.Equal(t, len(txs), r.mempool.Size())
-	if reactorIndex == 0 {
-		require.Zero(t, len(r.txSenders))
-	} else {
-		require.Equal(t, len(txs), len(r.txSenders))
-	}
+	require.Equal(t, len(txs), len(r.txSenders))
 
-	// Each transaction is in the mempool and, if it's not the first reactor, it
+	// Each transaction is in the mempool and it
 	// has a non-empty list of senders.
 	for _, tx := range txs {
 		assert.True(t, r.mempool.InMempool(tx.Key()))
 		senders, hasSenders := r.txSenders[tx.Key()]
-		if reactorIndex == 0 {
-			require.False(t, hasSenders)
-		} else {
-			require.True(t, hasSenders && len(senders) > 0)
-		}
+		require.True(t, hasSenders && len(senders) > 0)
 	}
 }
 
@@ -382,7 +374,7 @@ func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switc
 		mempool, cleanup := newMempoolWithApp(cc)
 		defer cleanup()
 
-		reactors[i] = NewReactor(config.Mempool, mempool) // so we dont start the consensus states
+		reactors[i] = NewReactor(config.Mempool, mempool) // so we don't start the consensus states
 		reactors[i].SetLogger(logger.With("validator", i))
 	}
 

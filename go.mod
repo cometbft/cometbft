@@ -21,11 +21,11 @@ require (
 	github.com/ory/dockertest v3.3.5+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/pointlander/peg v1.0.1
-	github.com/prometheus/client_golang v1.16.0
-	github.com/prometheus/client_model v0.4.0
+	github.com/prometheus/client_golang v1.17.0
+	github.com/prometheus/client_model v0.4.1-0.20230718164431-9a2bf3000d16
 	github.com/prometheus/common v0.44.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
-	github.com/rs/cors v1.10.0
+	github.com/rs/cors v1.10.1
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/snikch/goodman v0.0.0-20171125024755-10e37e294daa
 	github.com/spf13/cobra v1.7.0
@@ -51,7 +51,7 @@ require (
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/google/uuid v1.3.1
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
-	github.com/vektra/mockery/v2 v2.34.0
+	github.com/vektra/mockery/v2 v2.34.2
 	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb
 	golang.org/x/sync v0.3.0
 	gonum.org/v1/gonum v0.14.0
@@ -230,7 +230,7 @@ require (
 	github.com/pointlander/compress v1.1.1-0.20190518213731-ff44bd196cc3 // indirect
 	github.com/pointlander/jetset v1.0.1-0.20190518214125-eee7eff80bd4 // indirect
 	github.com/polyfloyd/go-errorlint v1.4.4 // indirect
-	github.com/prometheus/procfs v0.10.1 // indirect
+	github.com/prometheus/procfs v0.11.1 // indirect
 	github.com/quasilyte/go-ruleguard v0.4.0 // indirect
 	github.com/quasilyte/gogrep v0.5.0 // indirect
 	github.com/quasilyte/regex/syntax v0.0.0-20210819130434-b3f0c404a727 // indirect

@@ -40,34 +40,22 @@ info:
 
     ## Versions
 
-    From CometBFT v0.39.0 on, the RPC API has been versioned;
-    the RPC API of CometBFT versions earlier to v0.39.x have been named v0.3 and the
-    version of CometBFT v0.39.0 has been named v1.
+    Up to CometBFT v0.38.x the RPC API version was v0.
+    In CometBFT v0.39.0, the RPC API version has changed to v1.
+    v0 and v1 provide exactly the same functionalities and behavior, the only difference
+    being that in v1, the prefix `v1` is appended to the methods' name.
 
-    The following table documents the support status of RPC API versions in CometBFT versions.
-
-    | RPC Version | CometBFT Version | Status    |
-    | :-------:   | :-------:        | :---:     |
-    | v0.3        | v0.34.x          | Supported |
-    |             | v0.37.x          | Supported |
-    |             | v0.38.x          | Supported |
-    | v0.3        | v0.39.x          | Supported |
-    | v1          | v1               | Supported |
-
-    In version v0.3, methods are accessed without specifying a version.
-    From version v1 on, clients communicate the version to be used by specifying it as a prefix 
-    to the method being invoked.
+    For backwards compatibility reasons, CometBFT v0.39.x also supports the RPC API v0,
+    but it is recommended that all users migrate to v1 as v0 might be deprecated in the future.
     For example, when targeting a CometBFT v0.39.x node
 
          localhost:26657/block
 
-    invokes the 0.3 API and
+    invokes the v0 API and
 
          localhost:26657/v1/block
 
     invokes the v1 version of method `block`.
-
-    In practice, v0.3 and v1 have the same methods.
 
     ## URI/HTTP
 

@@ -182,6 +182,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg.StateSync.DiscoveryTime = 5 * time.Second
 	cfg.BlockSync.Version = node.BlockSyncVersion
 	cfg.Consensus.PeerGossipIntraloopSleepDuration = node.Testnet.PeerGossipIntraloopSleepDuration
+	cfg.LogLevel = node.Testnet.LogLevel
 
 	// Assume that full nodes and validators will have a data companion
 	// attached, which will need access to the privileged gRPC endpoint.
@@ -266,7 +267,9 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		}
 		cfg.P2P.PersistentPeers += peer.AddressP2P(true)
 	}
-
+	if node.Testnet.FloodSkipRate > 0 {
+		cfg.Mempool.FloodSkipRate = node.Testnet.FloodSkipRate
+	}
 	if node.Prometheus {
 		cfg.Instrumentation.Prometheus = true
 	}

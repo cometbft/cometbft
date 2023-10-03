@@ -425,10 +425,10 @@ max_tx_bytes = {{ .Mempool.MaxTxBytes }}
 # XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
 max_batch_bytes = {{ .Mempool.MaxBatchBytes }}
 
-// Skip Rate (default: 0) Rate at which to skip forwarding a transaction.
-// A rate of 0 <= X <= 100 means that, for every transaction in the mempool
-// and every connection to a peer, the transaction with be sent in the connection
-// with probability X.
+# Skip Rate (default: 0) Rate at which to skip forwarding a transaction.
+# A rate of 0 <= X <= 100 means that, for every transaction in the mempool
+# and every connection to a peer, the transaction with be sent in the connection
+# with probability X.
 flood_skip_rate = {{ .Mempool.FloodSkipRate }}
 
 #######################################################

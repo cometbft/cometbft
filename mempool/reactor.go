@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"errors"
+	"math/rand"
 	"time"
 
 	"fmt"
@@ -187,14 +188,17 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// https://github.com/tendermint/tendermint/issues/5796
 
 		if !memR.isSender(memTx.tx.Key(), peer.ID()) {
-			success := peer.Send(p2p.Envelope{
-				ChannelID: MempoolChannel,
-				Message:   &protomem.Txs{Txs: [][]byte{memTx.tx}},
-			})
-			if !success {
-				time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
-				continue
+			if int8(rand.Intn(101)) >= memR.config.FloodSkipRate {
+				success := peer.Send(p2p.Envelope{
+					ChannelID: MempoolChannel,
+					Message:   &protomem.Txs{Txs: [][]byte{memTx.tx}},
+				})
+				if !success {
+					time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
+					continue
+				}
 			}
+			memR.addSender(memTx.tx.Key(), peer.ID())
 		}
 
 		select {

@@ -93,11 +93,14 @@ type Manifest struct {
 	// Defaults to false (disabled).
 	Prometheus bool `toml:"prometheus"`
 
+	// LogLevel sets the log level on all nodes.
+	LogLevel string `toml:"log_level"`
 	// Defines a minimum size for the vote extensions.
 	VoteExtensionSize uint `toml:"vote_extension_size"`
 
 	// Upper bound of sleep duration then gossipping votes and block parts
 	PeerGossipIntraloopSleepDuration time.Duration `toml:"peer_gossip_intraloop_sleep_duration"`
+	FloodSkipRate                    int8          `toml:"flood_skip_rate"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

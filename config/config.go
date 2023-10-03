@@ -840,6 +840,9 @@ type MempoolConfig struct {
 	// the $CMTHOME env variable or --home cmd flag rather than overriding this
 	// struct field.
 	RootDir string `mapstructure:"home"`
+
+	//Rate at which to skip forwarding a transaction.
+	FloodSkipRate int8 `mapstructure:"flood_skip_rate"`
 	// Recheck (default: true) defines whether CometBFT should recheck the
 	// validity for all remaining transaction in the mempool after a block.
 	// Since a block affects the application state, some transactions in the
@@ -881,9 +884,10 @@ type MempoolConfig struct {
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool
 func DefaultMempoolConfig() *MempoolConfig {
 	return &MempoolConfig{
-		Recheck:   true,
-		Broadcast: true,
-		WalPath:   "",
+		FloodSkipRate: 0,
+		Recheck:       true,
+		Broadcast:     true,
+		WalPath:       "",
 		// Each signature verification takes .5ms, Size reduced until we implement
 		// ABCI Recheck
 		Size:        5000,

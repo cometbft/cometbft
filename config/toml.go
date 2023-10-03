@@ -379,6 +379,7 @@ dial_timeout = "{{ .P2P.DialTimeout }}"
 ###          Mempool Configuration Options          ###
 #######################################################
 [mempool]
+flood_skip_rate = "{{ .Mempool.FloodSkipRate }}"
 
 # recheck (default: true) defines whether CometBFT should recheck the
 # validity for all remaining transaction in the mempool after a block.

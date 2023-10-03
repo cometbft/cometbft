@@ -15,6 +15,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
@@ -93,6 +94,7 @@ type Testnet struct {
 	VoteExtensionsEnableHeight       int64
 	VoteExtensionSize                uint
 	PeerGossipIntraloopSleepDuration time.Duration
+	FloodSkipRate                    int8
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -176,6 +178,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
 		VoteExtensionSize:                manifest.VoteExtensionSize,
 		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
+		FloodSkipRate:                    manifest.FloodSkipRate,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
@@ -197,6 +200,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 	if testnet.LoadTxSizeBytes == 0 {
 		testnet.LoadTxSizeBytes = defaultTxSizeBytes
+	}
+	if testnet.LogLevel == "" {
+		testnet.LogLevel = config.DefaultLogLevel
 	}
 
 	for _, name := range sortNodeNames(manifest) {

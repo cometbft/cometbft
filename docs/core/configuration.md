@@ -512,16 +512,10 @@ timeout_commit = "1s"
 Note that in a successful round, the only timeout that we absolutely wait no
 matter what is `timeout_commit`.
 Here's a brief summary of the timeouts:
-<<<<<<< HEAD
-- `timeout_propose` = how long we wait for a proposal block before prevoting nil
-- `timeout_propose_delta` = how much  `timeout_propose` increases with each round
-- `timeout_prevote` = how long we wait after receiving +2/3 prevotes for
-=======
 
 - `timeout_propose` = how long a validator should wait for a proposal block before prevoting nil
 - `timeout_propose_delta` = how much `timeout_propose` increases with each round
 - `timeout_prevote` = how long a validator should wait after receiving +2/3 prevotes for
->>>>>>> 3d1c36d1e (update language (#1263))
   anything (ie. not a single block or nil)
 - `timeout_prevote_delta` = how much the `timeout_prevote` increases with each round
 - `timeout_precommit` = how long a validator should wait after receiving +2/3 precommits for

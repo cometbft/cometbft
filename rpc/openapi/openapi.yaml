@@ -278,7 +278,7 @@ paths:
         - Info
       operationId: health
       description: |
-        Get node health status. 
+        Get node health status.
         Returns empty result (200 OK) on success, no response - in case of an error.
       responses:
         "200":

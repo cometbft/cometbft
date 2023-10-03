@@ -379,7 +379,6 @@ dial_timeout = "{{ .P2P.DialTimeout }}"
 ###          Mempool Configuration Options          ###
 #######################################################
 [mempool]
-flood_skip_rate = "{{ .Mempool.FloodSkipRate }}"
 
 # recheck (default: true) defines whether CometBFT should recheck the
 # validity for all remaining transaction in the mempool after a block.
@@ -425,6 +424,12 @@ max_tx_bytes = {{ .Mempool.MaxTxBytes }}
 # Including space needed by encoding (one varint per transaction).
 # XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
 max_batch_bytes = {{ .Mempool.MaxBatchBytes }}
+
+// Skip Rate (default: 0) Rate at which to skip forwarding a transaction.
+// A rate of 0 <= X <= 100 means that, for every transaction in the mempool
+// and every connection to a peer, the transaction with be sent in the connection
+// with probability X.
+flood_skip_rate = {{ .Mempool.FloodSkipRate }}
 
 #######################################################
 ###         State Sync Configuration Options        ###

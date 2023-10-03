@@ -841,7 +841,10 @@ type MempoolConfig struct {
 	// struct field.
 	RootDir string `mapstructure:"home"`
 
-	//Rate at which to skip forwarding a transaction.
+	// Skip Rate (default: 0) Rate at which to skip forwarding a transaction.
+	// A rate of 0 <= X <= 100 means that, for every transaction in the mempool
+	// and every connection to a peer, the transaction with be sent in the connection
+	// with probability X.
 	FloodSkipRate int8 `mapstructure:"flood_skip_rate"`
 	// Recheck (default: true) defines whether CometBFT should recheck the
 	// validity for all remaining transaction in the mempool after a block.

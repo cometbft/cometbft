@@ -91,10 +91,12 @@ type Testnet struct {
 	FinalizeBlockDelay               time.Duration
 	UpgradeVersion                   string
 	Prometheus                       bool
+	LogLevel                         string
 	VoteExtensionsEnableHeight       int64
 	VoteExtensionSize                uint
 	PeerGossipIntraloopSleepDuration time.Duration
-	FloodSkipRate                    int8
+
+	FloodSkipRate int8
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -175,6 +177,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		FinalizeBlockDelay:               manifest.FinalizeBlockDelay,
 		UpgradeVersion:                   manifest.UpgradeVersion,
 		Prometheus:                       manifest.Prometheus,
+		LogLevel:                         manifest.LogLevel,
 		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
 		VoteExtensionSize:                manifest.VoteExtensionSize,
 		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,

@@ -189,7 +189,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// https://github.com/tendermint/tendermint/issues/5796
 
 		if !memR.isSender(memTx.tx.Key(), peer.ID()) {
-			randomNumber, err := rand.Int(rand.Reader, big.NewInt(101))
+			randomNumber, err := rand.Int(rand.Reader, big.NewInt(100))
 			if err != nil {
 				panic(err)
 			}

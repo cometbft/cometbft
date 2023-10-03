@@ -44,7 +44,7 @@ type Error struct {
 
 // String returns string representation of an error.
 func (e *Error) String() string {
-	s := fmt.Sprintf("The error: \"%v\" has occured at height %v.", e.description, e.height)
+	s := fmt.Sprintf("The error: %q has occurred at height %v.", e.description, e.height)
 	return s
 }
 

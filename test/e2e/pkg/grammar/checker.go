@@ -14,6 +14,8 @@ import (
 	recovery_parser "github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/parser"
 )
 
+const COMMIT = "commit"
+
 // GrammarChecker is a checker that can verify whether a specific set of ABCI calls
 // respects the ABCI grammar.
 type GrammarChecker struct {
@@ -90,7 +92,7 @@ func (g *GrammarChecker) filterLastHeight(reqs []*abci.Request) ([]*abci.Request
 	pos := len(reqs) - 1
 	cnt := 0
 	// Find the last commit.
-	for pos > 0 && g.getRequestTerminal(reqs[pos]) != "commit" {
+	for pos > 0 && g.getRequestTerminal(reqs[pos]) != COMMIT {
 		pos--
 		cnt++
 	}
@@ -112,7 +114,7 @@ func (g *GrammarChecker) getExecutionString(reqs []*abci.Request) string {
 	for _, r := range reqs {
 		t := g.getRequestTerminal(r)
 		// We ensure to have one height per line for readability.
-		if t == "commit" {
+		if t == COMMIT {
 			s += t + "\n"
 		} else {
 			s += t + " "

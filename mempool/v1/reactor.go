@@ -269,6 +269,10 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			if !success {
 				time.Sleep(mempool.PeerCatchupSleepIntervalMS * time.Millisecond)
 				continue
+			} else {
+				// record that we have sent the peer the transaction
+				// to avoid doing it a second time
+				memTx.SetPeer(peerID)
 			}
 		}
 

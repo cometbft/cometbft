@@ -28,6 +28,7 @@ const (
 	// Default is v0.
 	MempoolV0 = "v0"
 	MempoolV1 = "v1"
+	MempoolV2 = "v2"
 )
 
 // NOTE: Most of the structs & relevant comments + the
@@ -687,6 +688,7 @@ type MempoolConfig struct {
 	// Mempool version to use:
 	//  1) "v0" - (default) FIFO mempool.
 	//  2) "v1" - prioritized mempool.
+	//  3) "v2" - content addressable transaction pool
 	Version string `mapstructure:"version"`
 	// RootDir is the root directory for all data. This should be configured via
 	// the $CMTHOME env variable or --home cmd flag rather than overriding this
@@ -749,7 +751,7 @@ type MempoolConfig struct {
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool
 func DefaultMempoolConfig() *MempoolConfig {
 	return &MempoolConfig{
-		Version:   MempoolV0,
+		Version:   MempoolV2,
 		Recheck:   true,
 		Broadcast: true,
 		WalPath:   "",

@@ -37,6 +37,14 @@ type Metrics struct {
 	// CheckTx.
 	EvictedTxs metrics.Counter
 
+	AlreadySeenTxs metrics.Counter
+
+	RequestedTxs metrics.Counter
+
+	SuccessfulTxs metrics.Counter
+
+	RerequestedTxs metrics.Counter
+
 	// Number of times transactions are rechecked in the mempool.
 	RecheckTimes metrics.Counter
 }
@@ -91,6 +99,34 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Subsystem: MetricsSubsystem,
 			Name:      "recheck_times",
 			Help:      "Number of times transactions are rechecked in the mempool.",
+		}, labels).With(labelsAndValues...),
+
+		AlreadySeenTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "already_seen_txs",
+			Help:      "Number of previously encountered txs.",
+		}, labels).With(labelsAndValues...),
+
+		RequestedTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "requested_txs",
+			Help:      "Number of requested txs.",
+		}, labels).With(labelsAndValues...),
+
+		SuccessfulTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "successful_txs",
+			Help:      "Number of successful txs.",
+		}, labels).With(labelsAndValues...),
+
+		RerequestedTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "rerequested_txs",
+			Help:      "Number of re-requested txs.",
 		}, labels).With(labelsAndValues...),
 	}
 }

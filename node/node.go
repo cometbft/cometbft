@@ -30,6 +30,7 @@ import (
 	"github.com/tendermint/tendermint/libs/service"
 	"github.com/tendermint/tendermint/light"
 	mempl "github.com/tendermint/tendermint/mempool"
+	mempoolv2 "github.com/tendermint/tendermint/mempool/cat"
 	mempoolv0 "github.com/tendermint/tendermint/mempool/v0"
 	mempoolv1 "github.com/tendermint/tendermint/mempool/v1"
 	"github.com/tendermint/tendermint/p2p"
@@ -375,7 +376,37 @@ func createMempoolAndMempoolReactor(
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
 ) (mempl.Mempool, p2p.Reactor) {
+	logger = logger.With("module", "mempool")
+
 	switch config.Mempool.Version {
+	case cfg.MempoolV2:
+		mp := mempoolv2.NewTxPool(
+			logger,
+			config.Mempool,
+			proxyApp.Mempool(),
+			state.LastBlockHeight,
+			mempoolv2.WithMetrics(memplMetrics),
+			mempoolv2.WithPreCheck(sm.TxPreCheck(state)),
+			mempoolv2.WithPostCheck(sm.TxPostCheck(state)),
+		)
+
+		reactor, err := mempoolv2.NewReactor(
+			mp,
+			&mempoolv2.ReactorOptions{
+				ListenOnly: !config.Mempool.Broadcast,
+				MaxTxSize:  config.Mempool.MaxTxBytes,
+			},
+		)
+		if err != nil {
+			// TODO: find a more polite way of handling this error
+			panic(err)
+		}
+		if config.Consensus.WaitForTxs() {
+			mp.EnableTxsAvailable()
+		}
+		reactor.SetLogger(logger)
+
+		return mp, reactor
 	case cfg.MempoolV1:
 		mp := mempoolv1.NewTxMempool(
 			logger,
@@ -394,7 +425,7 @@ func createMempoolAndMempoolReactor(
 		if config.Consensus.WaitForTxs() {
 			mp.EnableTxsAvailable()
 		}
-
+		reactor.SetLogger(logger)
 		return mp, reactor
 
 	case cfg.MempoolV0:
@@ -1392,6 +1423,10 @@ func makeNodeInfo(
 			TxIndex:    txIndexerStatus,
 			RPCAddress: config.RPC.ListenAddress,
 		},
+	}
+
+	if config.Mempool.Version == cfg.MempoolV2 {
+		nodeInfo.Channels = append(nodeInfo.Channels, mempoolv2.MempoolStateChannel)
 	}
 
 	if config.P2P.PexReactor {

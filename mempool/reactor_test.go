@@ -303,8 +303,8 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 
 	// Wait for all txs to be in the mempool of each reactor.
 	waitForReactors(t, txs, reactors, checkTxsInMempool)
-	for i, r := range reactors {
-		checkTxsInMempoolAndSenders(t, r, txs, i)
+	for _, r := range reactors {
+		checkTxsInMempoolAndSenders(t, r, txs)
 	}
 
 	// Split the transactions in three groups of different sizes.
@@ -314,7 +314,7 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 	ignoredTxs := txs[3*splitIndex:]             // will remain in the mempool
 
 	// Update the mempools with a list of valid and invalid transactions.
-	for i, r := range reactors {
+	for _, r := range reactors {
 		updateMempool(t, r.mempool, validTxs, invalidTxs)
 
 		// Txs included in a block should have been removed from the mempool and
@@ -326,7 +326,7 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 		}
 
 		// Ignored txs should still be in the mempool.
-		checkTxsInMempoolAndSenders(t, r, ignoredTxs, i)
+		checkTxsInMempoolAndSenders(t, r, ignoredTxs)
 	}
 
 	// The first reactor should not receive transactions from other peers.
@@ -335,7 +335,7 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 
 // Check that the mempool has exactly the given list of txs and
 // each tx has a non-empty list of senders.
-func checkTxsInMempoolAndSenders(t *testing.T, r *Reactor, txs types.Txs, reactorIndex int) {
+func checkTxsInMempoolAndSenders(t *testing.T, r *Reactor, txs types.Txs) {
 	r.txSendersMtx.Lock()
 	defer r.txSendersMtx.Unlock()
 

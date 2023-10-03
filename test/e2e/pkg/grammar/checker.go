@@ -81,7 +81,8 @@ func (g *GrammarChecker) filterRequests(reqs []*abci.Request) []*abci.Request {
 	return r
 }
 
-// filterLastHeight removes ABCI requests from the last height if "commit" has not been called.
+// filterLastHeight removes ABCI requests from the last height if "commit" has not been called
+// and returns the tuple (remaining(non-filtered) requests, # of filtered requests).
 func (g *GrammarChecker) filterLastHeight(reqs []*abci.Request) ([]*abci.Request, int) {
 	if len(reqs) == 0 {
 		return nil, 0

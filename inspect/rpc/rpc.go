@@ -24,6 +24,8 @@ type Server struct {
 	Config  *config.RPCConfig
 }
 
+const v1Prefix = "v1/"
+
 // Routes returns the set of routes used by the Inspector server.
 func Routes(cfg config.RPCConfig, s state.Store, bs state.BlockStore, txidx txindex.TxIndexer, blkidx indexer.BlockIndexer, logger log.Logger) core.RoutesMap { //nolint: lll
 	env := &core.Environment{
@@ -35,8 +37,7 @@ func Routes(cfg config.RPCConfig, s state.Store, bs state.BlockStore, txidx txin
 		ConsensusReactor: waitSyncCheckerImpl{},
 		Logger:           logger,
 	}
-	return core.RoutesMap{
-		//v0
+	v0map := core.RoutesMap{
 		"blockchain":       server.NewRPCFunc(env.BlockchainInfo, "minHeight,maxHeight"),
 		"consensus_params": server.NewRPCFunc(env.ConsensusParams, "height"),
 		"block":            server.NewRPCFunc(env.Block, "height"),
@@ -49,21 +50,13 @@ func Routes(cfg config.RPCConfig, s state.Store, bs state.BlockStore, txidx txin
 		"tx":               server.NewRPCFunc(env.Tx, "hash,prove"),
 		"tx_search":        server.NewRPCFunc(env.TxSearch, "query,prove,page,per_page,order_by"),
 		"block_search":     server.NewRPCFunc(env.BlockSearch, "query,page,per_page,order_by"),
-
-		//v1
-		"v1/blockchain":       server.NewRPCFunc(env.BlockchainInfo, "minHeight,maxHeight"),
-		"v1/consensus_params": server.NewRPCFunc(env.ConsensusParams, "height"),
-		"v1/block":            server.NewRPCFunc(env.Block, "height"),
-		"v1/block_by_hash":    server.NewRPCFunc(env.BlockByHash, "hash"),
-		"v1/block_results":    server.NewRPCFunc(env.BlockResults, "height"),
-		"v1/commit":           server.NewRPCFunc(env.Commit, "height"),
-		"v1/header":           server.NewRPCFunc(env.Header, "height"),
-		"v1/header_by_hash":   server.NewRPCFunc(env.HeaderByHash, "hash"),
-		"v1/validators":       server.NewRPCFunc(env.Validators, "height,page,per_page"),
-		"v1/tx":               server.NewRPCFunc(env.Tx, "hash,prove"),
-		"v1/tx_search":        server.NewRPCFunc(env.TxSearch, "query,prove,page,per_page,order_by"),
-		"v1/block_search":     server.NewRPCFunc(env.BlockSearch, "query,page,per_page,order_by"),
 	}
+
+	v1map := v0map
+	for k, v := range v0map {
+		v1map[v1Prefix+k] = v
+	}
+	return v1map
 }
 
 // Handler returns the http.Handler configured for use with an Inspector server. Handler

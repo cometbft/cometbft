@@ -10,8 +10,10 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+const v1Prefix = "v1/"
+
 func RPCRoutes(c *lrpc.Client) map[string]*rpcserver.RPCFunc {
-	return map[string]*rpcserver.RPCFunc{
+	v0map := map[string]*rpcserver.RPCFunc{
 		// Subscribe/unsubscribe are reserved for websocket events.
 		"subscribe":       rpcserver.NewWSRPCFunc(c.SubscribeWS, "query"),
 		"unsubscribe":     rpcserver.NewWSRPCFunc(c.UnsubscribeWS, "query"),
@@ -52,6 +54,13 @@ func RPCRoutes(c *lrpc.Client) map[string]*rpcserver.RPCFunc {
 		// evidence API
 		"broadcast_evidence": rpcserver.NewRPCFunc(makeBroadcastEvidenceFunc(c), "evidence"),
 	}
+
+	v1map := v0map
+	for k, v := range v0map {
+		v1map[v1Prefix+k] = v
+	}
+
+	return v1map
 }
 
 type rpcHealthFunc func(ctx *rpctypes.Context) (*ctypes.ResultHealth, error)

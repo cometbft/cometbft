@@ -36,6 +36,7 @@ func Routes(cfg config.RPCConfig, s state.Store, bs state.BlockStore, txidx txin
 		Logger:           logger,
 	}
 	return core.RoutesMap{
+		//v0
 		"blockchain":       server.NewRPCFunc(env.BlockchainInfo, "minHeight,maxHeight"),
 		"consensus_params": server.NewRPCFunc(env.ConsensusParams, "height"),
 		"block":            server.NewRPCFunc(env.Block, "height"),
@@ -48,6 +49,20 @@ func Routes(cfg config.RPCConfig, s state.Store, bs state.BlockStore, txidx txin
 		"tx":               server.NewRPCFunc(env.Tx, "hash,prove"),
 		"tx_search":        server.NewRPCFunc(env.TxSearch, "query,prove,page,per_page,order_by"),
 		"block_search":     server.NewRPCFunc(env.BlockSearch, "query,page,per_page,order_by"),
+
+		//v1
+		"v1/blockchain":       server.NewRPCFunc(env.BlockchainInfo, "minHeight,maxHeight"),
+		"v1/consensus_params": server.NewRPCFunc(env.ConsensusParams, "height"),
+		"v1/block":            server.NewRPCFunc(env.Block, "height"),
+		"v1/block_by_hash":    server.NewRPCFunc(env.BlockByHash, "hash"),
+		"v1/block_results":    server.NewRPCFunc(env.BlockResults, "height"),
+		"v1/commit":           server.NewRPCFunc(env.Commit, "height"),
+		"v1/header":           server.NewRPCFunc(env.Header, "height"),
+		"v1/header_by_hash":   server.NewRPCFunc(env.HeaderByHash, "hash"),
+		"v1/validators":       server.NewRPCFunc(env.Validators, "height,page,per_page"),
+		"v1/tx":               server.NewRPCFunc(env.Tx, "hash,prove"),
+		"v1/tx_search":        server.NewRPCFunc(env.TxSearch, "query,prove,page,per_page,order_by"),
+		"v1/block_search":     server.NewRPCFunc(env.BlockSearch, "query,page,per_page,order_by"),
 	}
 }
 

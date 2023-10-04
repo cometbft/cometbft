@@ -105,7 +105,6 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	lastExtCommit *types.ExtendedCommit,
 	proposerAddr []byte,
 ) (*types.Block, error) {
-
 	maxBytes := state.ConsensusParams.Block.MaxBytes
 	emptyMaxBytes := maxBytes == -1
 	if emptyMaxBytes {
@@ -126,12 +125,16 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	txs := blockExec.mempool.ReapMaxBytesMaxGas(maxReapBytes, maxGas)
 	commit := lastExtCommit.ToCommit()
 	block := state.MakeBlock(height, txs, commit, evidence, proposerAddr)
+	valSet, err := blockExec.store.LoadValidators(lastExtCommit.Height)
+	if err != nil {
+		panic(fmt.Errorf("failed to load validator set at height %d, initial height %d: %w", lastExtCommit.Height, state.InitialHeight, err))
+	}
 	rpp, err := blockExec.proxyApp.PrepareProposal(
 		ctx,
 		&abci.RequestPrepareProposal{
 			MaxTxBytes:         maxDataBytes,
 			Txs:                block.Txs.ToSliceOfBytes(),
-			LocalLastCommit:    buildExtendedCommitInfo(lastExtCommit, blockExec.store, state.InitialHeight, state.ConsensusParams.ABCI),
+			LocalLastCommit:    BuildExtendedCommitInfo(lastExtCommit, valSet, state.InitialHeight, state.ConsensusParams.ABCI),
 			Misbehavior:        block.Evidence.Evidence.ToABCI(),
 			Height:             block.Height,
 			Time:               block.Time,
@@ -204,7 +207,6 @@ func (blockExec *BlockExecutor) ValidateBlock(state State, block *types.Block) e
 func (blockExec *BlockExecutor) ApplyBlock(
 	state State, blockID types.BlockID, block *types.Block,
 ) (State, error) {
-
 	if err := validateBlock(state, block); err != nil {
 		return state, ErrInvalidBlock(err)
 	}
@@ -460,7 +462,7 @@ func buildLastCommitInfo(block *types.Block, store Store, initialHeight int64) a
 	}
 }
 
-// buildExtendedCommitInfo populates an ABCI extended commit from the
+// BuildExtendedCommitInfo populates an ABCI extended commit from the
 // corresponding CometBFT extended commit ec, using the stored validator set
 // from ec.  It requires ec to include the original precommit votes along with
 // the vote extensions from the last commit.
@@ -469,15 +471,10 @@ func buildLastCommitInfo(block *types.Block, store Store, initialHeight int64) a
 // data, it returns an empty record.
 //
 // Assumes that the commit signatures are sorted according to validator index.
-func buildExtendedCommitInfo(ec *types.ExtendedCommit, store Store, initialHeight int64, ap types.ABCIParams) abci.ExtendedCommitInfo {
+func BuildExtendedCommitInfo(ec *types.ExtendedCommit, valSet *types.ValidatorSet, initialHeight int64, ap types.ABCIParams) abci.ExtendedCommitInfo {
 	if ec.Height < initialHeight {
 		// There are no extended commits for heights below the initial height.
 		return abci.ExtendedCommitInfo{}
-	}
-
-	valSet, err := store.LoadValidators(ec.Height)
-	if err != nil {
-		panic(fmt.Errorf("failed to load validator set at height %d, initial height %d: %w", ec.Height, initialHeight, err))
 	}
 
 	var (
@@ -530,7 +527,8 @@ func buildExtendedCommitInfo(ec *types.ExtendedCommit, store Store, initialHeigh
 }
 
 func validateValidatorUpdates(abciUpdates []abci.ValidatorUpdate,
-	params types.ValidatorParams) error {
+	params types.ValidatorParams,
+) error {
 	for _, valUpdate := range abciUpdates {
 		if valUpdate.GetPower() < 0 {
 			return fmt.Errorf("voting power can't be negative %v", valUpdate)
@@ -562,7 +560,6 @@ func updateState(
 	abciResponse *abci.ResponseFinalizeBlock,
 	validatorUpdates []*types.Validator,
 ) (State, error) {
-
 	// Copy the valset so we can apply changes from EndBlock
 	// and update s.LastValidators and s.Validators.
 	nValSet := state.NextValidators.Copy()

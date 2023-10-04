@@ -15,8 +15,8 @@ import (
 func ExampleHTTP_simple() {
 	// Start a CometBFT node (and kvstore) in the background to test against
 	app := kvstore.NewInMemoryApplication()
-	node := rpctest.StartTendermint(app, rpctest.SuppressStdout, rpctest.RecreateConfig)
-	defer rpctest.StopTendermint(node)
+	node := rpctest.StartCometBFT(app, rpctest.SuppressStdout, rpctest.RecreateConfig)
+	defer rpctest.StopCometBFT(node)
 
 	// Create our RPC client
 	rpcAddr := rpctest.GetConfig().RPC.ListenAddress
@@ -68,7 +68,7 @@ func ExampleHTTP_simple() {
 func ExampleHTTP_batching() {
 	// Start a CometBFT node (and kvstore) in the background to test against
 	app := kvstore.NewInMemoryApplication()
-	node := rpctest.StartTendermint(app, rpctest.SuppressStdout, rpctest.RecreateConfig)
+	node := rpctest.StartCometBFT(app, rpctest.SuppressStdout, rpctest.RecreateConfig)
 
 	// Create our RPC client
 	rpcAddr := rpctest.GetConfig().RPC.ListenAddress
@@ -77,7 +77,7 @@ func ExampleHTTP_batching() {
 		log.Fatal(err)
 	}
 
-	defer rpctest.StopTendermint(node)
+	defer rpctest.StopCometBFT(node)
 
 	// Create our two transactions
 	k1 := []byte("firstName")

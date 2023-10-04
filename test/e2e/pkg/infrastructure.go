@@ -42,6 +42,7 @@ type InstanceData struct {
 	IPAddress    net.IP `json:"ip_address"`
 	ExtIPAddress net.IP `json:"ext_ip_address"`
 	Port         uint32 `json:"port"`
+	GRPCPort     uint32 `json:"grpc_port"`
 }
 
 func sortNodeNames(m Manifest) []string {
@@ -77,6 +78,7 @@ func NewDockerInfrastructureData(m Manifest) (InfrastructureData, error) {
 			IPAddress:    ipGen.Next(),
 			ExtIPAddress: localHostIP,
 			Port:         portGen.Next(),
+			GRPCPort:     portGen.Next(),
 		}
 
 	}

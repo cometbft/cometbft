@@ -86,8 +86,9 @@ func randPort() int {
 	return port
 }
 
-func makeAddrs() (string, string, string) {
+func makeAddrs() (string, string, string, string) {
 	return fmt.Sprintf("tcp://127.0.0.1:%d", randPort()),
+		fmt.Sprintf("tcp://127.0.0.1:%d", randPort()),
 		fmt.Sprintf("tcp://127.0.0.1:%d", randPort()),
 		fmt.Sprintf("tcp://127.0.0.1:%d", randPort())
 }
@@ -97,11 +98,11 @@ func createConfig() *cfg.Config {
 	c := test.ResetTestRoot(pathname)
 
 	// and we use random ports to run in parallel
-	tm, rpc, grpc := makeAddrs()
+	tm, rpc, grpc_legacy, grpc := makeAddrs()
 	c.P2P.ListenAddress = tm
 	c.RPC.ListenAddress = rpc
 	c.RPC.CORSAllowedOrigins = []string{"https://cometbft.com/"}
-	c.RPC.GRPCListenAddress = grpc
+	c.RPC.GRPCListenAddress = grpc_legacy
 	c.GRPC.ListenAddress = grpc
 	c.GRPC.VersionService.Enabled = true
 	return c

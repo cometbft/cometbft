@@ -28,6 +28,11 @@ type Mempool interface {
 	// its validity and whether it should be added to the mempool.
 	CheckTx(tx types.Tx) (*abcicli.ReqRes, error)
 
+	// From RPC endpoint
+	CheckNewTx(tx types.Tx) (*abcicli.ReqRes, error)
+
+	InvokeNewTxReceivedOnReactor(txKey types.TxKey)
+
 	// RemoveTxByKey removes a transaction, identified by its key,
 	// from the mempool.
 	RemoveTxByKey(txKey types.TxKey) error

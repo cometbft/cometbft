@@ -37,4 +37,20 @@ type Metrics struct {
 	// Number of times transactions were received more than once.
 	//metrics:Number of duplicate transaction reception.
 	AlreadyReceivedTxs metrics.Counter
+
+	// RequestedTxs defines the number of times that the node requested a
+	// tx to a peer
+	//metrics:Number of requested transactions (WantTx messages).
+	RequestedTxs metrics.Counter
+
+	// RerequestedTxs defines the number of times that a requested tx
+	// never received a response in time and a new request was made.
+	//metrics:Number of re-requested transactions.
+	RerequestedTxs metrics.Counter
+
+	// NoPeerForTx counts the number of times the reactor exhaust the list of
+	// peers looking for a transaction for which it has received a SeenTx
+	// message.
+	//metrics:Number of times we cannot find a peer for a tx.
+	NoPeerForTx metrics.Counter
 }

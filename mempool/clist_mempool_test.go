@@ -3,12 +3,11 @@ package mempool
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 	mrand "math/rand"
 	"os"
 	"testing"
 	"time"
-
-	"fmt"
 
 	"github.com/cosmos/gogoproto/proto"
 	gogotypes "github.com/cosmos/gogoproto/types"
@@ -138,7 +137,7 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 
 	// Ensure gas calculation behaves as expected
 	checkTxs(t, mp, 1)
-	tx0 := mp.TxsFront().Value.(*mempoolTx)
+	tx0 := mp.TxsFront().Value.(*MempoolTx)
 	require.Equal(t, tx0.gasWanted, int64(1), "transactions gas was set incorrectly")
 	// ensure each tx is 20 bytes long
 	require.Equal(t, len(tx0.tx), 20, "Tx is longer than 20 bytes")
@@ -351,7 +350,7 @@ func TestMempool_KeepInvalidTxsInCache(t *testing.T) {
 		binary.BigEndian.PutUint64(a, 0)
 
 		// remove a from the cache to test (2)
-		mp.cache.Remove(a)
+		mp.cache.Remove(types.Tx(a).Key())
 
 		_, err := mp.CheckTx(a)
 		require.NoError(t, err)
@@ -661,7 +660,7 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 	defer cleanup()
 
 	// add tx0
-	var tx0 = kvstore.NewTxFromID(0)
+	tx0 := types.Tx(kvstore.NewTxFromID(0))
 	_, err := mp.CheckTx(tx0)
 	require.NoError(t, err)
 	err = mp.FlushAppConn()
@@ -674,7 +673,7 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 	}
 	err = mp.FlushAppConn()
 	require.NoError(t, err)
-	assert.False(t, mp.cache.Has(kvstore.NewTxFromID(0)))
+	assert.False(t, mp.cache.Has(tx0.Key()))
 
 	// add again tx0
 	_, err = mp.CheckTx(tx0)
@@ -685,7 +684,7 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 	// tx0 should appear only once in mp.txs
 	found := 0
 	for e := mp.txs.Front(); e != nil; e = e.Next() {
-		if types.Tx.Key(e.Value.(*mempoolTx).tx) == types.Tx.Key(tx0) {
+		if types.Tx.Key(e.Value.(*MempoolTx).tx) == types.Tx.Key(tx0) {
 			found++
 		}
 	}

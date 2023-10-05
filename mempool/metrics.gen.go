@@ -52,6 +52,24 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "already_received_txs",
 			Help:      "Number of duplicate transaction reception.",
 		}, labels).With(labelsAndValues...),
+		RequestedTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "requested_txs",
+			Help:      "Number of requested transactions (WantTx messages).",
+		}, labels).With(labelsAndValues...),
+		RerequestedTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "rerequested_txs",
+			Help:      "Number of re-requested transactions.",
+		}, labels).With(labelsAndValues...),
+		NoPeerForTx: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "no_peer_for_tx",
+			Help:      "Number of times we cannot find a peer for a tx.",
+		}, labels).With(labelsAndValues...),
 	}
 }
 
@@ -63,5 +81,8 @@ func NopMetrics() *Metrics {
 		RejectedTxs:        discard.NewCounter(),
 		RecheckTimes:       discard.NewCounter(),
 		AlreadyReceivedTxs: discard.NewCounter(),
+		RequestedTxs:       discard.NewCounter(),
+		RerequestedTxs:     discard.NewCounter(),
+		NoPeerForTx:        discard.NewCounter(),
 	}
 }

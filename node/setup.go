@@ -21,6 +21,8 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/evidence"
+	"github.com/cometbft/cometbft/mempool/cat"
+
 	"github.com/cometbft/cometbft/statesync"
 
 	"github.com/cometbft/cometbft/libs/log"
@@ -246,7 +248,7 @@ func createMempoolAndMempoolReactor(
 	state sm.State,
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
-) (mempl.Mempool, p2p.Reactor) {
+) (mempl.Mempool, p2p.Reactor, error) {
 	logger = logger.With("module", "mempool")
 	mp := mempl.NewCListMempool(
 		config.Mempool,
@@ -259,16 +261,23 @@ func createMempoolAndMempoolReactor(
 
 	mp.SetLogger(logger)
 
-	reactor := mempl.NewReactor(
-		config.Mempool,
-		mp,
-	)
 	if config.Consensus.WaitForTxs() {
 		mp.EnableTxsAvailable()
 	}
-	reactor.SetLogger(logger)
 
-	return mp, reactor
+	var reactor p2p.Reactor
+	switch config.Mempool.Reactor {
+	case "cat":
+		logger.Info("Using the CAT mempool reactor")
+		reactor = cat.NewReactor(config.Mempool, mp, logger)
+	case "v0", "":
+		logger.Info("Using the default mempool reactor")
+		reactor = mempl.NewReactor(config.Mempool, mp, logger)
+	default:
+		return nil, nil, fmt.Errorf("unknown mempool reactor \"%s\"", config.Mempool.Reactor)
+	}
+
+	return mp, reactor, nil
 }
 
 func createEvidenceReactor(config *cfg.Config, dbProvider cfg.DBProvider,
@@ -552,8 +561,10 @@ func startStateSync(
 
 //------------------------------------------------------------------------------
 
-var genesisDocKey = []byte("genesisDoc")
-var genesisDocHashKey = []byte("genesisDocHash")
+var (
+	genesisDocKey     = []byte("genesisDoc")
+	genesisDocHashKey = []byte("genesisDocHash")
+)
 
 // LoadStateFromDBOrGenesisDocProvider attempts to load the state from the
 // database, or creates one using the given genesisDocProvider. On success this also

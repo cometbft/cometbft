@@ -39,6 +39,19 @@ func (tx Tx) String() string {
 	return fmt.Sprintf("Tx{%X}", []byte(tx))
 }
 
+func (key TxKey) String() string {
+	return fmt.Sprintf("TxKey{%X}", key[:])
+}
+
+func TxKeyFromBytes(bytes []byte) (TxKey, error) {
+	if len(bytes) != TxKeySize {
+		return TxKey{}, fmt.Errorf("incorrect tx key size. Expected %d bytes, got %d", TxKeySize, len(bytes))
+	}
+	var key TxKey
+	copy(key[:], bytes)
+	return key, nil
+}
+
 // Txs is a slice of Tx.
 type Txs []Tx
 
@@ -156,7 +169,6 @@ func (tp TxProof) Validate(dataHash []byte) error {
 }
 
 func (tp TxProof) ToProto() cmtproto.TxProof {
-
 	pbProof := tp.Proof.ToProto()
 
 	pbtp := cmtproto.TxProof{
@@ -167,8 +179,8 @@ func (tp TxProof) ToProto() cmtproto.TxProof {
 
 	return pbtp
 }
-func TxProofFromProto(pb cmtproto.TxProof) (TxProof, error) {
 
+func TxProofFromProto(pb cmtproto.TxProof) (TxProof, error) {
 	pbProof, err := merkle.ProofFromProto(pb.Proof)
 	if err != nil {
 		return TxProof{}, err

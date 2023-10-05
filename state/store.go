@@ -44,11 +44,11 @@ func calcABCIResponsesKey(height int64) []byte {
 	return []byte(fmt.Sprintf("abciResponsesKey:%v", height))
 }
 
-//----------------------
+// ----------------------
 var (
 	lastABCIResponseKey              = []byte("lastABCIResponseKey")
 	lastABCIResponsesRetainHeightKey = []byte("lastABCIResponsesRetainHeight")
-	offlineStateSyncHeight = []byte("offlineStateSyncHeightKey")
+	offlineStateSyncHeight           = []byte("offlineStateSyncHeightKey")
 )
 
 //go:generate ../scripts/mockery_generate.sh Store
@@ -591,11 +591,12 @@ func (store dbStore) getValue(key []byte) ([]byte, error) {
 	return bz, nil
 }
 
-// ApplicationRetainHeight
+// SaveApplicationRetainHeight saves the desired applicationRetainHeight
 func (store dbStore) SaveApplicationRetainHeight(height int64) error {
 	return store.db.SetSync(AppRetainHeightKey, int64ToBytes(height))
 }
 
+// GetApplicationRetainHeight retrieves the application  retain height
 func (store dbStore) GetApplicationRetainHeight() (int64, error) {
 	buf, err := store.getValue(AppRetainHeightKey)
 	if err != nil {

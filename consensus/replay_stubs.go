@@ -3,6 +3,7 @@ package consensus
 import (
 	"context"
 
+	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/clist"
 	mempl "github.com/cometbft/cometbft/mempool"
@@ -20,9 +21,15 @@ func (emptyMempool) Lock()            {}
 func (emptyMempool) Unlock()          {}
 func (emptyMempool) Size() int        { return 0 }
 func (emptyMempool) SizeBytes() int64 { return 0 }
-func (emptyMempool) CheckTx(types.Tx, func(*abci.ResponseCheckTx), mempl.TxInfo) error {
-	return nil
+func (emptyMempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
+	return nil, nil
 }
+
+func (emptyMempool) CheckNewTx(types.Tx) (*abcicli.ReqRes, error) {
+	return nil, nil
+}
+
+func (emptyMempool) InvokeNewTxReceivedOnReactor(types.TxKey) {}
 
 func (txmp emptyMempool) RemoveTxByKey(types.TxKey) error {
 	return nil

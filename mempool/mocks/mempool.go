@@ -16,9 +16,54 @@ type Mempool struct {
 	mock.Mock
 }
 
+<<<<<<< HEAD
 // CheckTx provides a mock function with given fields: tx, callback, txInfo
 func (_m *Mempool) CheckTx(tx types.Tx, callback func(*abcitypes.ResponseCheckTx), txInfo mempool.TxInfo) error {
 	ret := _m.Called(tx, callback, txInfo)
+=======
+// CheckNewTx provides a mock function with given fields: tx
+func (_m *Mempool) CheckNewTx(tx types.Tx) (*abcicli.ReqRes, error) {
+	ret := _m.Called(tx)
+
+	var r0 *abcicli.ReqRes
+	var r1 error
+	if rf, ok := ret.Get(0).(func(types.Tx) (*abcicli.ReqRes, error)); ok {
+		return rf(tx)
+	}
+	if rf, ok := ret.Get(0).(func(types.Tx) *abcicli.ReqRes); ok {
+		r0 = rf(tx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*abcicli.ReqRes)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(types.Tx) error); ok {
+		r1 = rf(tx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// CheckTx provides a mock function with given fields: tx
+func (_m *Mempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
+	ret := _m.Called(tx)
+
+	var r0 *abcicli.ReqRes
+	var r1 error
+	if rf, ok := ret.Get(0).(func(types.Tx) (*abcicli.ReqRes, error)); ok {
+		return rf(tx)
+	}
+	if rf, ok := ret.Get(0).(func(types.Tx) *abcicli.ReqRes); ok {
+		r0 = rf(tx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*abcicli.ReqRes)
+		}
+	}
+>>>>>>> 094c67101 (Add CAT mempool reactor)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(types.Tx, func(*abcitypes.ResponseCheckTx), mempool.TxInfo) error); ok {
@@ -52,6 +97,11 @@ func (_m *Mempool) FlushAppConn() error {
 	}
 
 	return r0
+}
+
+// InvokeNewTxReceivedOnReactor provides a mock function with given fields: txKey
+func (_m *Mempool) InvokeNewTxReceivedOnReactor(txKey types.TxKey) {
+	_m.Called(txKey)
 }
 
 // Lock provides a mock function with given fields:

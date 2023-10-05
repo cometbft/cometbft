@@ -561,6 +561,7 @@ func (n Node) GRPCClient(ctx context.Context) (grpcclient.Client, error) {
 
 // GRPCLegacyClient creates a legacy gRPC client for the node.
 func (n Node) GRPCLegacyClient() (legacy_grpc.BroadcastAPIClient, error) {
+	//nolint:staticcheck // SA1019: core_grpc.StartGRPCClient is deprecated: A new gRPC API will be introduced after v0.38.
 	return legacy_grpc.StartGRPCClient(fmt.Sprintf("127.0.0.1:%v", n.GRPCLegacyPort)), nil
 }
 

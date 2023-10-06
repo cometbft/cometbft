@@ -110,8 +110,9 @@ func TestMempoolProgressInHigherRound(t *testing.T) {
 func deliverTxsRange(t *testing.T, cs *State, start, end int) {
 	// Deliver some txs.
 	for i := start; i < end; i++ {
-		_, err := assertMempool(cs.txNotifier).CheckTx(kvstore.NewTx(fmt.Sprintf("%d", i), "true"))
+		reqRes, err := assertMempool(cs.txNotifier).CheckTx(kvstore.NewTx(fmt.Sprintf("%d", i), "true"))
 		require.NoError(t, err)
+		require.False(t, reqRes.Response.GetCheckTx().IsErr())
 	}
 }
 

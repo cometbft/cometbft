@@ -12,6 +12,13 @@ message Vote {
   cometbft.types.v3.Vote vote = 1;
 }
 
+// HasProposalBlockPart is sent to indicate that a particular proposal block part has been received.
+message HasProposalBlockPart {
+  int64 height = 1;
+  int32 round  = 2;
+  int32 index  = 3;
+}
+
 message Message {
   oneof sum {
     v1.NewRoundStep  new_round_step  = 1;
@@ -23,5 +30,6 @@ message Message {
     v1.HasVote       has_vote        = 7;
     v1.VoteSetMaj23  vote_set_maj23  = 8;
     v1.VoteSetBits   vote_set_bits   = 9;
+    HasProposalBlockPart has_proposal_block_part = 10;
   }
 }

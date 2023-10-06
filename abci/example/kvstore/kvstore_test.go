@@ -33,7 +33,7 @@ func TestKVStoreKV(t *testing.T) {
 }
 
 func testKVStore(ctx context.Context, t *testing.T, app types.Application, tx []byte, key, value string) {
-	checkTxResp, err := app.CheckTx(ctx, &types.RequestCheckTx{Tx: tx})
+	checkTxResp, err := app.CheckTx(ctx, &types.RequestCheckTx{Tx: tx, Type: types.CHECK_TX_TYPE_CHECK})
 	require.NoError(t, err)
 	require.Equal(t, uint32(0), checkTxResp.Code)
 
@@ -83,7 +83,7 @@ func TestPersistentKVStoreEmptyTX(t *testing.T) {
 
 	kvstore := NewPersistentApplication(t.TempDir())
 	tx := []byte("")
-	reqCheck := types.RequestCheckTx{Tx: tx}
+	reqCheck := types.RequestCheckTx{Tx: tx, Type: types.CHECK_TX_TYPE_CHECK}
 	resCheck, err := kvstore.CheckTx(ctx, &reqCheck)
 	require.NoError(t, err)
 	require.Equal(t, resCheck.Code, CodeTypeInvalidTxFormat)
@@ -224,7 +224,10 @@ func TestCheckTx(t *testing.T) {
 	}
 
 	for idx, tc := range testCases {
-		resp, err := kvstore.CheckTx(ctx, &types.RequestCheckTx{Tx: tc.tx})
+		resp, err := kvstore.CheckTx(ctx, &types.RequestCheckTx{
+			Tx:   tc.tx,
+			Type: types.CHECK_TX_TYPE_CHECK,
+		})
 		require.NoError(t, err, idx)
 		fmt.Println(string(tc.tx))
 		require.Equal(t, tc.expCode, resp.Code, idx)

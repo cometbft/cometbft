@@ -5,7 +5,7 @@ import (
 
 	"github.com/cosmos/gogoproto/grpc"
 
-	v1 "github.com/cometbft/cometbft/proto/tendermint/services/version/v1"
+	v1 "github.com/cometbft/cometbft/api/cometbft/services/version/v1"
 )
 
 // Version provides version information about a particular CometBFT node.

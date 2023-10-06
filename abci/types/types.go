@@ -12,95 +12,107 @@ import (
 	v4 "github.com/cometbft/cometbft/api/cometbft/abci/v4"
 )
 
-type Request = v4.Request
-type RequestEcho = v1.RequestEcho
-type RequestFlush = v1.RequestFlush
-type RequestInfo = v2.RequestInfo
-type RequestInitChain = v3.RequestInitChain
-type RequestQuery = v1.RequestQuery
-type RequestCheckTx = v4.RequestCheckTx
-type RequestCommit = v1.RequestCommit
-type RequestListSnapshots = v1.RequestListSnapshots
-type RequestOfferSnapshot = v1.RequestOfferSnapshot
-type RequestLoadSnapshotChunk = v1.RequestLoadSnapshotChunk
-type RequestApplySnapshotChunk = v1.RequestApplySnapshotChunk
-type RequestPrepareProposal = v4.RequestPrepareProposal
-type RequestProcessProposal = v4.RequestProcessProposal
-type RequestExtendVote = v3.RequestExtendVote
-type RequestVerifyVoteExtension = v3.RequestVerifyVoteExtension
-type RequestFinalizeBlock = v4.RequestFinalizeBlock
+type (
+	Request                    = v4.Request
+	RequestEcho                = v1.RequestEcho
+	RequestFlush               = v1.RequestFlush
+	RequestInfo                = v2.RequestInfo
+	RequestInitChain           = v3.RequestInitChain
+	RequestQuery               = v1.RequestQuery
+	RequestCheckTx             = v4.RequestCheckTx
+	RequestCommit              = v1.RequestCommit
+	RequestListSnapshots       = v1.RequestListSnapshots
+	RequestOfferSnapshot       = v1.RequestOfferSnapshot
+	RequestLoadSnapshotChunk   = v1.RequestLoadSnapshotChunk
+	RequestApplySnapshotChunk  = v1.RequestApplySnapshotChunk
+	RequestPrepareProposal     = v4.RequestPrepareProposal
+	RequestProcessProposal     = v4.RequestProcessProposal
+	RequestExtendVote          = v4.RequestExtendVote
+	RequestVerifyVoteExtension = v3.RequestVerifyVoteExtension
+	RequestFinalizeBlock       = v4.RequestFinalizeBlock
+)
 
 // Discriminated Request variants are defined in the latest proto package.
-type Request_Echo = v4.Request_Echo
-type Request_Flush = v4.Request_Flush
-type Request_Info = v4.Request_Info
-type Request_InitChain = v4.Request_InitChain
-type Request_Query = v4.Request_Query
-type Request_CheckTx = v4.Request_CheckTx
-type Request_Commit = v4.Request_Commit
-type Request_ListSnapshots = v4.Request_ListSnapshots
-type Request_OfferSnapshot = v4.Request_OfferSnapshot
-type Request_LoadSnapshotChunk = v4.Request_LoadSnapshotChunk
-type Request_ApplySnapshotChunk = v4.Request_ApplySnapshotChunk
-type Request_PrepareProposal = v4.Request_PrepareProposal
-type Request_ProcessProposal = v4.Request_ProcessProposal
-type Request_ExtendVote = v4.Request_ExtendVote
-type Request_VerifyVoteExtension = v4.Request_VerifyVoteExtension
-type Request_FinalizeBlock = v4.Request_FinalizeBlock
+type (
+	Request_Echo                = v4.Request_Echo
+	Request_Flush               = v4.Request_Flush
+	Request_Info                = v4.Request_Info
+	Request_InitChain           = v4.Request_InitChain
+	Request_Query               = v4.Request_Query
+	Request_CheckTx             = v4.Request_CheckTx
+	Request_Commit              = v4.Request_Commit
+	Request_ListSnapshots       = v4.Request_ListSnapshots
+	Request_OfferSnapshot       = v4.Request_OfferSnapshot
+	Request_LoadSnapshotChunk   = v4.Request_LoadSnapshotChunk
+	Request_ApplySnapshotChunk  = v4.Request_ApplySnapshotChunk
+	Request_PrepareProposal     = v4.Request_PrepareProposal
+	Request_ProcessProposal     = v4.Request_ProcessProposal
+	Request_ExtendVote          = v4.Request_ExtendVote
+	Request_VerifyVoteExtension = v4.Request_VerifyVoteExtension
+	Request_FinalizeBlock       = v4.Request_FinalizeBlock
+)
 
-type Response = v4.Response
-type ResponseException = v1.ResponseException
-type ResponseEcho = v1.ResponseEcho
-type ResponseFlush = v1.ResponseFlush
-type ResponseInfo = v1.ResponseInfo
-type ResponseInitChain = v3.ResponseInitChain
-type ResponseQuery = v1.ResponseQuery
-type ResponseCheckTx = v3.ResponseCheckTx
-type ResponseCommit = v3.ResponseCommit
-type ResponseListSnapshots = v1.ResponseListSnapshots
-type ResponseOfferSnapshot = v4.ResponseOfferSnapshot
-type ResponseLoadSnapshotChunk = v1.ResponseLoadSnapshotChunk
-type ResponseApplySnapshotChunk = v4.ResponseApplySnapshotChunk
-type ResponsePrepareProposal = v2.ResponsePrepareProposal
-type ResponseProcessProposal = v4.ResponseProcessProposal
-type ResponseExtendVote = v3.ResponseExtendVote
-type ResponseVerifyVoteExtension = v4.ResponseVerifyVoteExtension
-type ResponseFinalizeBlock = v3.ResponseFinalizeBlock
+type (
+	Response                    = v4.Response
+	ResponseException           = v1.ResponseException
+	ResponseEcho                = v1.ResponseEcho
+	ResponseFlush               = v1.ResponseFlush
+	ResponseInfo                = v1.ResponseInfo
+	ResponseInitChain           = v3.ResponseInitChain
+	ResponseQuery               = v1.ResponseQuery
+	ResponseCheckTx             = v3.ResponseCheckTx
+	ResponseCommit              = v3.ResponseCommit
+	ResponseListSnapshots       = v1.ResponseListSnapshots
+	ResponseOfferSnapshot       = v4.ResponseOfferSnapshot
+	ResponseLoadSnapshotChunk   = v1.ResponseLoadSnapshotChunk
+	ResponseApplySnapshotChunk  = v4.ResponseApplySnapshotChunk
+	ResponsePrepareProposal     = v2.ResponsePrepareProposal
+	ResponseProcessProposal     = v4.ResponseProcessProposal
+	ResponseExtendVote          = v3.ResponseExtendVote
+	ResponseVerifyVoteExtension = v4.ResponseVerifyVoteExtension
+	ResponseFinalizeBlock       = v3.ResponseFinalizeBlock
+)
 
 // Discriminated Response variants are defined in the latest proto package.
-type Response_Exception = v4.Response_Exception
-type Response_Echo = v4.Response_Echo
-type Response_Flush = v4.Response_Flush
-type Response_Info = v4.Response_Info
-type Response_InitChain = v4.Response_InitChain
-type Response_Query = v4.Response_Query
-type Response_CheckTx = v4.Response_CheckTx
-type Response_Commit = v4.Response_Commit
-type Response_ListSnapshots = v4.Response_ListSnapshots
-type Response_OfferSnapshot = v4.Response_OfferSnapshot
-type Response_LoadSnapshotChunk = v4.Response_LoadSnapshotChunk
-type Response_ApplySnapshotChunk = v4.Response_ApplySnapshotChunk
-type Response_PrepareProposal = v4.Response_PrepareProposal
-type Response_ProcessProposal = v4.Response_ProcessProposal
-type Response_ExtendVote = v4.Response_ExtendVote
-type Response_VerifyVoteExtension = v4.Response_VerifyVoteExtension
-type Response_FinalizeBlock = v4.Response_FinalizeBlock
+type (
+	Response_Exception           = v4.Response_Exception
+	Response_Echo                = v4.Response_Echo
+	Response_Flush               = v4.Response_Flush
+	Response_Info                = v4.Response_Info
+	Response_InitChain           = v4.Response_InitChain
+	Response_Query               = v4.Response_Query
+	Response_CheckTx             = v4.Response_CheckTx
+	Response_Commit              = v4.Response_Commit
+	Response_ListSnapshots       = v4.Response_ListSnapshots
+	Response_OfferSnapshot       = v4.Response_OfferSnapshot
+	Response_LoadSnapshotChunk   = v4.Response_LoadSnapshotChunk
+	Response_ApplySnapshotChunk  = v4.Response_ApplySnapshotChunk
+	Response_PrepareProposal     = v4.Response_PrepareProposal
+	Response_ProcessProposal     = v4.Response_ProcessProposal
+	Response_ExtendVote          = v4.Response_ExtendVote
+	Response_VerifyVoteExtension = v4.Response_VerifyVoteExtension
+	Response_FinalizeBlock       = v4.Response_FinalizeBlock
+)
 
-type CommitInfo = v3.CommitInfo
-type ExecTxResult = v3.ExecTxResult
-type ExtendedCommitInfo = v3.ExtendedCommitInfo
-type ExtendedVoteInfo = v3.ExtendedVoteInfo
-type Event = v2.Event
-type EventAttribute = v2.EventAttribute
-type Misbehavior = v4.Misbehavior
-type Snapshot = v1.Snapshot
-type TxResult = v3.TxResult
-type Validator = v1.Validator
-type ValidatorUpdate = v1.ValidatorUpdate
-type VoteInfo = v3.VoteInfo
+type (
+	CommitInfo         = v3.CommitInfo
+	ExecTxResult       = v3.ExecTxResult
+	ExtendedCommitInfo = v3.ExtendedCommitInfo
+	ExtendedVoteInfo   = v3.ExtendedVoteInfo
+	Event              = v2.Event
+	EventAttribute     = v2.EventAttribute
+	Misbehavior        = v4.Misbehavior
+	Snapshot           = v1.Snapshot
+	TxResult           = v3.TxResult
+	Validator          = v1.Validator
+	ValidatorUpdate    = v1.ValidatorUpdate
+	VoteInfo           = v3.VoteInfo
+)
 
-type ABCIClient = v4.ABCIClient
-type ABCIServer = v4.ABCIServer
+type (
+	ABCIClient = v4.ABCIClient
+	ABCIServer = v4.ABCIServer
+)
 
 func NewABCIClient(cc grpc.ClientConn) ABCIClient {
 	return v4.NewABCIClient(cc)
@@ -178,10 +190,12 @@ type jsonRoundTripper interface {
 	json.Unmarshaler
 }
 
-var _ jsonRoundTripper = (*ResponseCommit)(nil)
-var _ jsonRoundTripper = (*ResponseQuery)(nil)
-var _ jsonRoundTripper = (*ExecTxResult)(nil)
-var _ jsonRoundTripper = (*ResponseCheckTx)(nil)
+var (
+	_ jsonRoundTripper = (*ResponseCommit)(nil)
+	_ jsonRoundTripper = (*ResponseQuery)(nil)
+	_ jsonRoundTripper = (*ExecTxResult)(nil)
+	_ jsonRoundTripper = (*ResponseCheckTx)(nil)
+)
 
 var _ jsonRoundTripper = (*EventAttribute)(nil)
 

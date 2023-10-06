@@ -101,10 +101,18 @@ message RequestProcessProposal {
 
 // Extends a vote with application-injected data
 message RequestExtendVote {
-  // the hash of the block  that this vote may be referring to
+  // the hash of the block that this vote may be referring to
   bytes hash = 1;
   // the height of the extended vote
   int64 height = 2;
+  // info of the block that this vote may be referring to
+  google.protobuf.Timestamp time                 = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  repeated bytes            txs                  = 4;
+  CommitInfo                proposed_last_commit = 5 [(gogoproto.nullable) = false];
+  repeated v2.Misbehavior   misbehavior          = 6 [(gogoproto.nullable) = false];
+  bytes                     next_validators_hash = 7;
+  // address of the public key of the original proposer of the block.
+  bytes proposer_address = 8;
 }
 
 // Verify the vote extension
@@ -207,7 +215,7 @@ message ResponseFinalizeBlock {
   repeated v2.Event events = 1
       [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
   // the result of executing each transaction including the events
-  // the particular transction emitted. This should match the order
+  // the particular transaction emitted. This should match the order
   // of the transactions delivered in the block itself
   repeated ExecTxResult tx_results = 2;
   // a list of updates to the validator set. These will reflect the validator set at current height + 2.

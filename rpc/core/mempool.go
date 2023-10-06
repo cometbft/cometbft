@@ -173,7 +173,7 @@ func (env *Environment) NumUnconfirmedTxs(*rpctypes.Context) (*ctypes.ResultUnco
 // be added to the mempool either.
 // More: https://docs.cometbft.com/main/rpc/#/Tx/check_tx
 func (env *Environment) CheckTx(_ *rpctypes.Context, tx types.Tx) (*ctypes.ResultCheckTx, error) {
-	res, err := env.ProxyAppMempool.CheckTx(context.TODO(), &abci.RequestCheckTx{Tx: tx})
+	res, err := env.ProxyAppMempool.CheckTx(context.TODO(), &abci.RequestCheckTx{Tx: tx, Type: abci.CHECK_TX_TYPE_CHECK})
 	if err != nil {
 		return nil, err
 	}

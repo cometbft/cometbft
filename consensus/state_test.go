@@ -739,7 +739,7 @@ func TestStateLockPOLUpdateLock(t *testing.T) {
 	validatePrevote(t, cs1, round, vss[0], nil)
 
 	// Add prevotes from the remainder of the validators for the new locked block.
-	signAddVotes(cs1, cmtproto.PrevoteType, propBlockR1Hash, propBlockR1Parts.Header(), false, vs2, vs3, vs4)
+	signAddVotes(cs1, types.PrevoteType, propBlockR1Hash, propBlockR1Parts.Header(), false, vs2, vs3, vs4)
 
 	// Check that we lock on a new block.
 	ensureLock(lockCh, height, round)
@@ -790,7 +790,7 @@ func TestStateLockPOLRelock(t *testing.T) {
 
 	ensurePrevote(voteCh, height, round)
 
-	signAddVotes(cs1, cmtproto.PrevoteType, theBlockHash, theBlockParts.Header(), false, vs2, vs3, vs4)
+	signAddVotes(cs1, types.PrevoteType, theBlockHash, theBlockParts.Header(), false, vs2, vs3, vs4)
 	// check that the validator generates a Lock event.
 	ensureLock(lockCh, height, round)
 
@@ -799,7 +799,7 @@ func TestStateLockPOLRelock(t *testing.T) {
 	validatePrecommit(t, cs1, round, round, vss[0], theBlockHash, theBlockHash)
 
 	// add precommits from the rest of the validators.
-	signAddVotes(cs1, cmtproto.PrecommitType, nil, types.PartSetHeader{}, true, vs2, vs3, vs4)
+	signAddVotes(cs1, types.PrecommitType, nil, types.PartSetHeader{}, true, vs2, vs3, vs4)
 
 	// timeout to new round.
 	ensureNewTimeout(timeoutWaitCh, height, round, cs1.config.Precommit(round).Nanoseconds())
@@ -883,7 +883,7 @@ func TestStateLockPrevoteNilWhenLockedAndMissProposal(t *testing.T) {
 
 	ensurePrevote(voteCh, height, round)
 
-	signAddVotes(cs1, cmtproto.PrevoteType, theBlockHash, theBlockParts.Header(), false, vs2, vs3, vs4)
+	signAddVotes(cs1, types.PrevoteType, theBlockHash, theBlockParts.Header(), false, vs2, vs3, vs4)
 
 	// check that the validator generates a Lock event.
 	ensureLock(lockCh, height, round)
@@ -893,7 +893,7 @@ func TestStateLockPrevoteNilWhenLockedAndMissProposal(t *testing.T) {
 	validatePrecommit(t, cs1, round, round, vss[0], theBlockHash, theBlockHash)
 
 	// add precommits from the rest of the validators.
-	signAddVotes(cs1, cmtproto.PrecommitType, nil, types.PartSetHeader{}, true, vs2, vs3, vs4)
+	signAddVotes(cs1, types.PrecommitType, nil, types.PartSetHeader{}, true, vs2, vs3, vs4)
 
 	// timeout to new round.
 	ensureNewTimeout(timeoutWaitCh, height, round, cs1.config.Precommit(round).Nanoseconds())
@@ -917,7 +917,7 @@ func TestStateLockPrevoteNilWhenLockedAndMissProposal(t *testing.T) {
 	validatePrevote(t, cs1, round, vss[0], nil)
 
 	// Add prevotes from the remainder of the validators nil.
-	signAddVotes(cs1, cmtproto.PrevoteType, nil, types.PartSetHeader{}, false, vs2, vs3, vs4)
+	signAddVotes(cs1, types.PrevoteType, nil, types.PartSetHeader{}, false, vs2, vs3, vs4)
 	ensurePrecommit(voteCh, height, round)
 	// We should now be locked on the same block but with an updated locked round.
 	validatePrecommit(t, cs1, round, 0, vss[0], nil, theBlockHash)
@@ -968,7 +968,7 @@ func TestStateLockPrevoteNilWhenLockedAndDifferentProposal(t *testing.T) {
 
 	ensurePrevote(voteCh, height, round)
 
-	signAddVotes(cs1, cmtproto.PrevoteType, theBlockHash, theBlockParts.Header(), false, vs2, vs3, vs4)
+	signAddVotes(cs1, types.PrevoteType, theBlockHash, theBlockParts.Header(), false, vs2, vs3, vs4)
 
 	// check that the validator generates a Lock event.
 	ensureLock(lockCh, height, round)
@@ -978,7 +978,7 @@ func TestStateLockPrevoteNilWhenLockedAndDifferentProposal(t *testing.T) {
 	validatePrecommit(t, cs1, round, round, vss[0], theBlockHash, theBlockHash)
 
 	// add precommits from the rest of the validators.
-	signAddVotes(cs1, cmtproto.PrecommitType, nil, types.PartSetHeader{}, true, vs2, vs3, vs4)
+	signAddVotes(cs1, types.PrecommitType, nil, types.PartSetHeader{}, true, vs2, vs3, vs4)
 
 	// timeout to new round.
 	ensureNewTimeout(timeoutWaitCh, height, round, cs1.config.Precommit(round).Nanoseconds())
@@ -1014,7 +1014,7 @@ func TestStateLockPrevoteNilWhenLockedAndDifferentProposal(t *testing.T) {
 	validatePrevote(t, cs1, round, vss[0], nil)
 
 	// Add prevotes from the remainder of the validators for nil.
-	signAddVotes(cs1, cmtproto.PrevoteType, nil, types.PartSetHeader{}, false, vs2, vs3, vs4)
+	signAddVotes(cs1, types.PrevoteType, nil, types.PartSetHeader{}, false, vs2, vs3, vs4)
 
 	// We should now be locked on the same block but prevote nil.
 	ensurePrecommit(voteCh, height, round)
@@ -1127,7 +1127,7 @@ func TestStateLockPOLDoesNotUnlock(t *testing.T) {
 	// verify that we haven't update our locked block since the first round
 	validatePrecommit(t, cs1, round, 0, vss[0], nil, theBlockHash)
 
-	signAddVotes(cs1, cmtproto.PrecommitType, nil, types.PartSetHeader{}, true, vs2, vs3, vs4)
+	signAddVotes(cs1, types.PrecommitType, nil, types.PartSetHeader{}, true, vs2, vs3, vs4)
 	ensureNewTimeout(timeoutWaitCh, height, round, cs1.config.Precommit(round).Nanoseconds())
 	/*
 		Round 2:
@@ -1155,7 +1155,7 @@ func TestStateLockPOLDoesNotUnlock(t *testing.T) {
 	ensurePrevote(voteCh, height, round)
 	validatePrevote(t, cs1, round, vss[0], nil)
 
-	signAddVotes(cs1, cmtproto.PrevoteType, nil, types.PartSetHeader{}, false, vs2, vs3, vs4)
+	signAddVotes(cs1, types.PrevoteType, nil, types.PartSetHeader{}, false, vs2, vs3, vs4)
 
 	ensurePrecommit(voteCh, height, round)
 
@@ -1362,13 +1362,13 @@ func TestStateLockDoesNotLockOnOldProposal(t *testing.T) {
 
 	ensurePrevote(voteCh, height, round)
 
-	signAddVotes(cs1, cmtproto.PrevoteType, nil, types.PartSetHeader{}, false, vs2, vs3, vs4)
+	signAddVotes(cs1, types.PrevoteType, nil, types.PartSetHeader{}, false, vs2, vs3, vs4)
 
 	// The proposed block should not have been locked.
 	ensurePrecommit(voteCh, height, round)
 	validatePrecommit(t, cs1, round, -1, vss[0], nil, nil)
 
-	signAddVotes(cs1, cmtproto.PrecommitType, nil, types.PartSetHeader{}, true, vs2, vs3, vs4)
+	signAddVotes(cs1, types.PrecommitType, nil, types.PartSetHeader{}, true, vs2, vs3, vs4)
 
 	incrementRound(vs2, vs3, vs4)
 
@@ -1659,7 +1659,7 @@ func TestStatePrevotePOLFromPreviousRound(t *testing.T) {
 
 	ensurePrevote(voteCh, height, round)
 
-	signAddVotes(cs1, cmtproto.PrevoteType, theBlockHash, theBlockParts, false, vs2, vs3, vs4)
+	signAddVotes(cs1, types.PrevoteType, theBlockHash, theBlockParts, false, vs2, vs3, vs4)
 
 	// check that the validator generates a Lock event.
 	ensureLock(lockCh, height, round)
@@ -1669,7 +1669,7 @@ func TestStatePrevotePOLFromPreviousRound(t *testing.T) {
 	validatePrecommit(t, cs1, round, round, vss[0], theBlockHash, theBlockHash)
 
 	// add precommits from the rest of the validators.
-	signAddVotes(cs1, cmtproto.PrecommitType, nil, types.PartSetHeader{}, true, vs2, vs3, vs4)
+	signAddVotes(cs1, types.PrecommitType, nil, types.PartSetHeader{}, true, vs2, vs3, vs4)
 
 	// timeout to new round.
 	ensureNewTimeout(timeoutWaitCh, height, round, cs1.config.Precommit(round).Nanoseconds())
@@ -1699,12 +1699,12 @@ func TestStatePrevotePOLFromPreviousRound(t *testing.T) {
 
 	ensureNewRound(newRoundCh, height, round)
 
-	signAddVotes(cs1, cmtproto.PrevoteType, propBlockR1Hash, propBlockR1Parts.Header(), false, vs2, vs3, vs4)
+	signAddVotes(cs1, types.PrevoteType, propBlockR1Hash, propBlockR1Parts.Header(), false, vs2, vs3, vs4)
 
 	ensurePrevote(voteCh, height, round)
 	validatePrevote(t, cs1, round, vss[0], nil)
 
-	signAddVotes(cs1, cmtproto.PrecommitType, nil, types.PartSetHeader{}, true, vs2, vs3, vs4)
+	signAddVotes(cs1, types.PrecommitType, nil, types.PartSetHeader{}, true, vs2, vs3, vs4)
 
 	ensurePrecommit(voteCh, height, round)
 
@@ -1748,7 +1748,7 @@ func TestStatePrevotePOLFromPreviousRound(t *testing.T) {
 	ensurePrevote(voteCh, height, round)
 	validatePrevote(t, cs1, round, vss[0], propBlockR1Hash)
 
-	signAddVotes(cs1, cmtproto.PrevoteType, nil, types.PartSetHeader{}, false, vs2, vs3, vs4)
+	signAddVotes(cs1, types.PrevoteType, nil, types.PartSetHeader{}, false, vs2, vs3, vs4)
 
 	// cs1 did not receive a POL within this round, so it should remain locked
 	// on the block from round 0.

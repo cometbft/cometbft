@@ -8,11 +8,20 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 )
 
-var _ p2p.Wrapper = &Vote{}
+var (
+	_ p2p.Wrapper = &Vote{}
+	_ p2p.Wrapper = &HasProposalBlockPart{}
+)
 
 func (m *Vote) Wrap() proto.Message {
 	cm := &Message{}
 	cm.Sum = &Message_Vote{Vote: m}
+	return cm
+}
+
+func (m *HasProposalBlockPart) Wrap() proto.Message {
+	cm := &Message{}
+	cm.Sum = &Message_HasProposalBlockPart{HasProposalBlockPart: m}
 	return cm
 }
 
@@ -40,6 +49,9 @@ func (m *Message) Unwrap() (proto.Message, error) {
 
 	case *Message_HasVote:
 		return m.GetHasVote(), nil
+
+	case *Message_HasProposalBlockPart:
+		return m.GetHasProposalBlockPart(), nil
 
 	case *Message_VoteSetMaj23:
 		return m.GetVoteSetMaj23(), nil

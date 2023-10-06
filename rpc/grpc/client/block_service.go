@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	blocksvc "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	blocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v1"
+	cmtproto1 "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtproto3 "github.com/cometbft/cometbft/api/cometbft/types/v3"
 	"github.com/cometbft/cometbft/types"
 	"github.com/cosmos/gogoproto/grpc"
 )
@@ -16,7 +17,7 @@ type Block struct {
 	Block   *types.Block   `json:"block"`
 }
 
-func blockFromProto(pblockID *cmtproto.BlockID, pblock *cmtproto.Block) (*Block, error) {
+func blockFromProto(pblockID *cmtproto1.BlockID, pblock *cmtproto3.Block) (*Block, error) {
 	blockID, err := types.BlockIDFromProto(pblockID)
 	if err != nil {
 		return nil, err

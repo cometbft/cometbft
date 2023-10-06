@@ -10,7 +10,7 @@ import (
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/store"
 
-	brs "github.com/cometbft/cometbft/proto/tendermint/services/block_results/v1"
+	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v1"
 )
 
 type blockResultsService struct {

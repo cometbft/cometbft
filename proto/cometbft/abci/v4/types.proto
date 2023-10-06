@@ -23,7 +23,7 @@ service ABCI {
   rpc ApplySnapshotChunk(v1.RequestApplySnapshotChunk) returns (ResponseApplySnapshotChunk);
   rpc PrepareProposal(RequestPrepareProposal) returns (v2.ResponsePrepareProposal);
   rpc ProcessProposal(RequestProcessProposal) returns (ResponseProcessProposal);
-  rpc ExtendVote(v3.RequestExtendVote) returns (v3.ResponseExtendVote);
+  rpc ExtendVote(RequestExtendVote) returns (v3.ResponseExtendVote);
   rpc VerifyVoteExtension(v3.RequestVerifyVoteExtension) returns (ResponseVerifyVoteExtension);
   rpc FinalizeBlock(RequestFinalizeBlock) returns (v3.ResponseFinalizeBlock);
 }
@@ -46,7 +46,7 @@ message Request {
     v1.RequestApplySnapshotChunk apply_snapshot_chunk = 15;
     RequestPrepareProposal prepare_proposal = 16;
     RequestProcessProposal process_proposal = 17;
-    v3.RequestExtendVote extend_vote = 18;
+    RequestExtendVote extend_vote = 18;
     v3.RequestVerifyVoteExtension verify_vote_extension = 19;
     RequestFinalizeBlock finalize_block = 20;
   }
@@ -102,6 +102,22 @@ message RequestProcessProposal {
     (gogoproto.stdtime) = true
   ];
   bytes next_validators_hash = 7;
+  // address of the public key of the original proposer of the block.
+  bytes proposer_address = 8;
+}
+
+// Extends a vote with application-injected data
+message RequestExtendVote {
+  // the hash of the block that this vote may be referring to
+  bytes hash = 1;
+  // the height of the extended vote
+  int64 height = 2;
+  // info of the block that this vote may be referring to
+  google.protobuf.Timestamp time                 = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  repeated bytes            txs                  = 4;
+  v3.CommitInfo             proposed_last_commit = 5 [(gogoproto.nullable) = false];
+  repeated Misbehavior      misbehavior          = 6 [(gogoproto.nullable) = false];
+  bytes                     next_validators_hash = 7;
   // address of the public key of the original proposer of the block.
   bytes proposer_address = 8;
 }

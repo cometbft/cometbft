@@ -51,7 +51,9 @@ func TestHangingAsyncCalls(t *testing.T) {
 	resp := make(chan error, 1)
 	go func() {
 		// Call CheckTx
-		reqres, err := c.CheckTxAsync(context.Background(), &types.RequestCheckTx{})
+		reqres, err := c.CheckTxAsync(context.Background(), &types.RequestCheckTx{
+			Type: types.CHECK_TX_TYPE_CHECK,
+		})
 		require.NoError(t, err)
 		// wait 50 ms for all events to travel socket, but
 		// no response yet from server
@@ -176,7 +178,9 @@ func TestCallbackInvokedWhenSetLate(t *testing.T) {
 		wg: wg,
 	}
 	_, c := setupClientServer(t, app)
-	reqRes, err := c.CheckTxAsync(ctx, &types.RequestCheckTx{})
+	reqRes, err := c.CheckTxAsync(ctx, &types.RequestCheckTx{
+		Type: types.CHECK_TX_TYPE_CHECK,
+	})
 	require.NoError(t, err)
 
 	done := make(chan struct{})
@@ -217,7 +221,9 @@ func TestCallbackInvokedWhenSetEarly(t *testing.T) {
 		wg: wg,
 	}
 	_, c := setupClientServer(t, app)
-	reqRes, err := c.CheckTxAsync(ctx, &types.RequestCheckTx{})
+	reqRes, err := c.CheckTxAsync(ctx, &types.RequestCheckTx{
+		Type: types.CHECK_TX_TYPE_CHECK,
+	})
 	require.NoError(t, err)
 
 	done := make(chan struct{})

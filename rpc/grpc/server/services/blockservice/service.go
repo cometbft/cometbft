@@ -4,11 +4,12 @@ import (
 	context "context"
 	"fmt"
 
+	blocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v1"
+	ptypes1 "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	ptypes3 "github.com/cometbft/cometbft/api/cometbft/types/v3"
 	"github.com/cometbft/cometbft/internal/rpctrace"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
-	blocksvc "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
-	ptypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 	"google.golang.org/grpc/codes"
@@ -68,7 +69,7 @@ func (s *blockServiceServer) GetLatest(context.Context, *blocksvc.GetLatestReque
 	}, nil
 }
 
-func (s *blockServiceServer) getBlock(height int64, logger log.Logger) (*ptypes.BlockID, *ptypes.Block, error) {
+func (s *blockServiceServer) getBlock(height int64, logger log.Logger) (*ptypes1.BlockID, *ptypes3.Block, error) {
 	traceID, err := rpctrace.New()
 	if err != nil {
 		logger.Error("Error generating RPC trace ID", "err", err)

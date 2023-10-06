@@ -15,12 +15,13 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+// TODO: This needs to be removed, but WALToProto depends on this.
 // Takes a consensus message type and returns the proto defined consensus message,
 // wrapped in the discriminating Message container.
 func MsgToWrappedProto(msg Message) (cmtcons.Message, error) {
 	pb := cmtcons.Message{}
 	if msg == nil {
-		return nil, ErrNilMessage
+		return pb, ErrNilMessage
 	}
 
 	switch msg := msg.(type) {
@@ -61,7 +62,7 @@ func MsgToWrappedProto(msg Message) (cmtcons.Message, error) {
 	case *BlockPartMessage:
 		parts, err := msg.Part.ToProto()
 		if err != nil {
-			return nil, cmterrors.ErrMsgToProto{MessageName: "Part", Err: err}
+			return pb, cmterrors.ErrMsgToProto{MessageName: "Part", Err: err}
 		}
 		pb.Sum = &cmtcons.Message_BlockPart{BlockPart: &cmtcons.BlockPart{
 			Height: msg.Height,
@@ -84,11 +85,11 @@ func MsgToWrappedProto(msg Message) (cmtcons.Message, error) {
 		}}
 
 	case *HasProposalBlockPartMessage:
-		pb = &cmtcons.HasProposalBlockPart{
+		pb.Sum = &cmtcons.Message_HasProposalBlockPart{HasProposalBlockPart: &cmtcons.HasProposalBlockPart{
 			Height: msg.Height,
 			Round:  msg.Round,
 			Index:  msg.Index,
-		}
+		}}
 
 	case *VoteSetMaj23Message:
 		bi := msg.BlockID.ToProto()
@@ -117,7 +118,7 @@ func MsgToWrappedProto(msg Message) (cmtcons.Message, error) {
 		pb.Sum = &cmtcons.Message_VoteSetBits{VoteSetBits: vsb}
 
 	default:
-		return nil, ErrConsensusMessageNotRecognized{msg}
+		return pb, ErrConsensusMessageNotRecognized{msg}
 	}
 
 	return pb, nil

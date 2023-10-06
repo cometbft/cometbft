@@ -1,0 +1,25 @@
+syntax = "proto3";
+package cometbft.services.block_results.v1;
+
+import "cometbft/abci/v1/types.proto";
+import "cometbft/abci/v2/types.proto";
+import "cometbft/abci/v3/types.proto";
+import "cometbft/types/v3/params.proto";
+
+option go_package = "github.com/cometbft/cometbft/proto/cometbft/services/block_results/v1";
+
+message GetBlockResultsRequest {
+  int64 height = 1;
+}
+
+message GetLatestBlockResultsRequest {
+}
+
+message GetBlockResultsResponse {
+  int64    height                                                  = 1;
+  repeated cometbft.abci.v3.ExecTxResult txs_results                = 2;
+  repeated cometbft.abci.v2.Event finalize_block_events             = 3;
+  repeated cometbft.abci.v1.ValidatorUpdate validator_updates       = 4;
+  cometbft.types.v3.ConsensusParams         consensus_param_updates = 5;
+  bytes                                    app_hash                = 6;
+}

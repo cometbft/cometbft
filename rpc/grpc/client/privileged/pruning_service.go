@@ -5,7 +5,7 @@ import (
 
 	"github.com/cosmos/gogoproto/grpc"
 
-	v1 "github.com/cometbft/cometbft/proto/tendermint/services/pruning/v1"
+	v1 "github.com/cometbft/cometbft/api/cometbft/services/pruning/v1"
 )
 
 // RetainHeights provides information on which block height limits have been

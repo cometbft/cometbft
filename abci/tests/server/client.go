@@ -95,7 +95,7 @@ func ProcessProposal(ctx context.Context, client abcicli.Client, txBytes [][]byt
 }
 
 func CheckTx(ctx context.Context, client abcicli.Client, txBytes []byte, codeExp uint32, dataExp []byte) error {
-	res, _ := client.CheckTx(ctx, &types.RequestCheckTx{Tx: txBytes})
+	res, _ := client.CheckTx(ctx, &types.RequestCheckTx{Tx: txBytes, Type: types.CHECK_TX_TYPE_CHECK})
 	code, data, log := res.Code, res.Data, res.Log
 	if code != codeExp {
 		fmt.Println("Failed test: CheckTx")

@@ -273,7 +273,7 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 	// Add 4 transactions to the mempool by calling the mempool's `CheckTx` on each of them.
 	txs := []types.Tx{[]byte{0x01}, []byte{0x02}, []byte{0x03}, []byte{0x04}}
 	for _, tx := range txs {
-		reqRes := abciclient.NewReqRes(abci.ToRequestCheckTx(&abci.RequestCheckTx{Tx: tx}))
+		reqRes := abciclient.NewReqRes(abci.ToRequestCheckTx(&abci.RequestCheckTx{Tx: tx, Type: abci.CHECK_TX_TYPE_CHECK}))
 		reqRes.Response = abci.ToResponseCheckTx(&abci.ResponseCheckTx{Code: abci.CodeTypeOK})
 
 		mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes, nil)
@@ -296,10 +296,10 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 	// Previous versions of this code panicked when the ABCI application missed
 	// a recheck-tx request.
 	resp := &abci.ResponseCheckTx{Code: abci.CodeTypeOK}
-	req := &abci.RequestCheckTx{Tx: txs[1]}
+	req := &abci.RequestCheckTx{Tx: txs[1], Type: abci.CHECK_TX_TYPE_CHECK}
 	callback(abci.ToRequestCheckTx(req), abci.ToResponseCheckTx(resp))
 
-	req = &abci.RequestCheckTx{Tx: txs[3]}
+	req = &abci.RequestCheckTx{Tx: txs[3], Type: abci.CHECK_TX_TYPE_CHECK}
 	callback(abci.ToRequestCheckTx(req), abci.ToResponseCheckTx(resp))
 	mockClient.AssertExpectations(t)
 }

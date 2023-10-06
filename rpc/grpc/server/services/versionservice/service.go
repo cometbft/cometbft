@@ -3,7 +3,7 @@ package versionservice
 import (
 	context "context"
 
-	v1 "github.com/cometbft/cometbft/proto/tendermint/services/version/v1"
+	v1 "github.com/cometbft/cometbft/api/cometbft/services/version/v1"
 	"github.com/cometbft/cometbft/version"
 )
 

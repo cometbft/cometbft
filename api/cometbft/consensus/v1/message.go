@@ -8,22 +8,22 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 )
 
-var _ p2p.Wrapper = &VoteSetBits{}
-var _ p2p.Wrapper = &VoteSetMaj23{}
-var _ p2p.Wrapper = &Vote{}
-var _ p2p.Wrapper = &ProposalPOL{}
-var _ p2p.Wrapper = &Proposal{}
-var _ p2p.Wrapper = &NewValidBlock{}
-var _ p2p.Wrapper = &NewRoundStep{}
-var _ p2p.Wrapper = &HasVote{}
-var _ p2p.Wrapper = &HasProposalBlockPart{}
-var _ p2p.Wrapper = &BlockPart{}
+var (
+	_ p2p.Wrapper = &VoteSetBits{}
+	_ p2p.Wrapper = &VoteSetMaj23{}
+	_ p2p.Wrapper = &Vote{}
+	_ p2p.Wrapper = &ProposalPOL{}
+	_ p2p.Wrapper = &Proposal{}
+	_ p2p.Wrapper = &NewValidBlock{}
+	_ p2p.Wrapper = &NewRoundStep{}
+	_ p2p.Wrapper = &HasVote{}
+	_ p2p.Wrapper = &BlockPart{}
+)
 
 func (m *VoteSetBits) Wrap() proto.Message {
 	cm := &Message{}
 	cm.Sum = &Message_VoteSetBits{VoteSetBits: m}
 	return cm
-
 }
 
 func (m *VoteSetMaj23) Wrap() proto.Message {
@@ -35,12 +35,6 @@ func (m *VoteSetMaj23) Wrap() proto.Message {
 func (m *HasVote) Wrap() proto.Message {
 	cm := &Message{}
 	cm.Sum = &Message_HasVote{HasVote: m}
-	return cm
-}
-
-func (m *HasProposalBlockPart) Wrap() proto.Message {
-	cm := &Message{}
-	cm.Sum = &Message_HasProposalBlockPart{HasProposalBlockPart: m}
 	return cm
 }
 
@@ -104,9 +98,6 @@ func (m *Message) Unwrap() (proto.Message, error) {
 
 	case *Message_HasVote:
 		return m.GetHasVote(), nil
-
-	case *Message_HasProposalBlockPart:
-		return m.GetHasProposalBlockPart(), nil
 
 	case *Message_VoteSetMaj23:
 		return m.GetVoteSetMaj23(), nil

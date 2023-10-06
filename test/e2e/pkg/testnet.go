@@ -23,6 +23,7 @@ import (
 
 	_ "embed"
 
+	legacy_grpc "github.com/cometbft/cometbft/rpc/grpc"
 	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
 )
 
@@ -101,6 +102,7 @@ type Node struct {
 	IP                  net.IP
 	RPCProxyPort        uint32
 	GRPCProxyPort       uint32
+	GRPCLegacyPort      uint32
 	StartAt             int64
 	BlockSync           string
 	StateSync           bool
@@ -204,6 +206,7 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 			IP:               ind.IPAddress,
 			RPCProxyPort:     proxyPortGen.Next(),
 			GRPCProxyPort:    proxyPortGen.Next(),
+			GRPCLegacyPort:   proxyPortGen.Next(),
 			Mode:             ModeValidator,
 			Database:         "goleveldb",
 			ABCIProtocol:     Protocol(testnet.ABCIProtocol),
@@ -544,6 +547,11 @@ func (n Node) GRPCClient(ctx context.Context) (grpcclient.Client, error) {
 		fmt.Sprintf("127.0.0.1:%v", n.GRPCProxyPort),
 		grpcclient.WithInsecure(),
 	)
+}
+
+// GRPCLegacyClient creates a legacy gRPC client for the node.
+func (n Node) GRPCLegacyClient() (legacy_grpc.BroadcastAPIClient, error) {
+	return legacy_grpc.StartGRPCClient(fmt.Sprintf("127.0.0.1:%v", n.GRPCLegacyPort)), nil
 }
 
 // Stateless returns true if the node is either a seed node or a light node

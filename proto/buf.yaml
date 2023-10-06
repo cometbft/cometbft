@@ -10,7 +10,6 @@ lint:
     - ENUM_VALUE_PREFIX
     - ENUM_ZERO_VALUE_SUFFIX
     - FILE_LOWER_SNAKE_CASE
-    - UNARY_RPC
   ignore_only:
     ENUM_VALUE_PREFIX:
       - tendermint

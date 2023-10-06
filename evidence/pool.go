@@ -2,12 +2,12 @@ package evidence
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 	"github.com/cosmos/gogoproto/proto"
 	gogotypes "github.com/cosmos/gogoproto/types"
 
@@ -55,7 +55,7 @@ type Pool struct {
 func NewPool(evidenceDB dbm.DB, stateDB sm.Store, blockStore BlockStore) (*Pool, error) {
 	state, err := stateDB.Load()
 	if err != nil {
-		return nil, fmt.Errorf("cannot load state: %w", err)
+		return nil, sm.ErrCannotLoadState{Err: err}
 	}
 
 	pool := &Pool{
@@ -200,7 +200,7 @@ func (evpool *Pool) CheckEvidence(evList types.EvidenceList) error {
 		if isLightEv || !evpool.isPending(ev) {
 			// check that the evidence isn't already committed
 			if evpool.isCommitted(ev) {
-				return &types.ErrInvalidEvidence{Evidence: ev, Reason: errors.New("evidence was already committed")}
+				return &types.ErrInvalidEvidence{Evidence: ev, Reason: ErrEvidenceAlreadyCommitted}
 			}
 
 			err := evpool.verify(ev)
@@ -221,7 +221,7 @@ func (evpool *Pool) CheckEvidence(evList types.EvidenceList) error {
 		hashes[idx] = ev.Hash()
 		for i := idx - 1; i >= 0; i-- {
 			if bytes.Equal(hashes[i], hashes[idx]) {
-				return &types.ErrInvalidEvidence{Evidence: ev, Reason: errors.New("duplicate evidence")}
+				return &types.ErrInvalidEvidence{Evidence: ev, Reason: ErrDuplicateEvidence}
 			}
 		}
 	}
@@ -295,7 +295,7 @@ func (evpool *Pool) isPending(evidence types.Evidence) bool {
 func (evpool *Pool) addPendingEvidence(ev types.Evidence) error {
 	evpb, err := types.EvidenceToProto(ev)
 	if err != nil {
-		return fmt.Errorf("unable to convert to proto, err: %w", err)
+		return cmterrors.ErrMsgToProto{MessageName: "Evidence", Err: err}
 	}
 
 	evBytes, err := evpb.Marshal()

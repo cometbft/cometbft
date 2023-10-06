@@ -1,9 +1,9 @@
 package consensus
 
 import (
-	"errors"
 	"fmt"
 
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 	"github.com/cosmos/gogoproto/proto"
 
 	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus"
@@ -20,7 +20,7 @@ import (
 func MsgToWrappedProto(msg Message) (cmtcons.Message, error) {
 	pb := cmtcons.Message{}
 	if msg == nil {
-		return pb, errors.New("consensus: message is nil")
+		return nil, ErrNilMessage
 	}
 
 	switch msg := msg.(type) {
@@ -61,7 +61,7 @@ func MsgToWrappedProto(msg Message) (cmtcons.Message, error) {
 	case *BlockPartMessage:
 		parts, err := msg.Part.ToProto()
 		if err != nil {
-			return pb, fmt.Errorf("msg to proto error: %w", err)
+			return nil, cmterrors.ErrMsgToProto{MessageName: "Part", Err: err}
 		}
 		pb.Sum = &cmtcons.Message_BlockPart{BlockPart: &cmtcons.BlockPart{
 			Height: msg.Height,
@@ -82,6 +82,13 @@ func MsgToWrappedProto(msg Message) (cmtcons.Message, error) {
 			Type:   msg.Type,
 			Index:  msg.Index,
 		}}
+
+	case *HasProposalBlockPartMessage:
+		pb = &cmtcons.HasProposalBlockPart{
+			Height: msg.Height,
+			Round:  msg.Round,
+			Index:  msg.Index,
+		}
 
 	case *VoteSetMaj23Message:
 		bi := msg.BlockID.ToProto()
@@ -110,7 +117,7 @@ func MsgToWrappedProto(msg Message) (cmtcons.Message, error) {
 		pb.Sum = &cmtcons.Message_VoteSetBits{VoteSetBits: vsb}
 
 	default:
-		return pb, fmt.Errorf("consensus: message not recognized: %T", msg)
+		return nil, ErrConsensusMessageNotRecognized{msg}
 	}
 
 	return pb, nil
@@ -119,7 +126,7 @@ func MsgToWrappedProto(msg Message) (cmtcons.Message, error) {
 // MsgFromProto takes a consensus proto message and returns the native go type
 func MsgFromProto(p proto.Message) (Message, error) {
 	if p == nil {
-		return nil, errors.New("consensus: nil message")
+		return nil, ErrNilMessage
 	}
 	var pb Message
 
@@ -128,7 +135,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 		rs, err := cmtmath.SafeConvertUint8(int64(msg.Step))
 		// deny message based on possible overflow
 		if err != nil {
-			return nil, fmt.Errorf("denying message due to possible overflow: %w", err)
+			return nil, ErrDenyMessageOverflow{err}
 		}
 		pb = &NewRoundStepMessage{
 			Height:                msg.Height,
@@ -140,7 +147,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 	case *cmtcons.NewValidBlock:
 		pbPartSetHeader, err := types.PartSetHeaderFromProto(&msg.BlockPartSetHeader)
 		if err != nil {
-			return nil, fmt.Errorf("parts to proto error: %w", err)
+			return nil, cmterrors.ErrMsgToProto{MessageName: "BlockPartSetHeader", Err: err}
 		}
 
 		pbBits := new(bits.BitArray)
@@ -156,7 +163,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 	case *cmtcons.Proposal:
 		pbP, err := types.ProposalFromProto(&msg.Proposal)
 		if err != nil {
-			return nil, fmt.Errorf("proposal msg to proto error: %w", err)
+			return nil, cmterrors.ErrMsgToProto{MessageName: "Proposal", Err: err}
 		}
 
 		pb = &ProposalMessage{
@@ -173,7 +180,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 	case *cmtcons.BlockPart:
 		parts, err := types.PartFromProto(&msg.Part)
 		if err != nil {
-			return nil, fmt.Errorf("blockpart msg to proto error: %w", err)
+			return nil, cmterrors.ErrMsgToProto{MessageName: "Part", Err: err}
 		}
 		pb = &BlockPartMessage{
 			Height: msg.Height,
@@ -185,7 +192,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 		// call below.
 		vote, err := types.VoteFromProto(msg.Vote)
 		if err != nil {
-			return nil, fmt.Errorf("vote msg to proto error: %w", err)
+			return nil, cmterrors.ErrMsgToProto{MessageName: "Vote", Err: err}
 		}
 
 		pb = &VoteMessage{
@@ -198,10 +205,16 @@ func MsgFromProto(p proto.Message) (Message, error) {
 			Type:   msg.Type,
 			Index:  msg.Index,
 		}
+	case *cmtcons.HasProposalBlockPart:
+		pb = &HasProposalBlockPartMessage{
+			Height: msg.Height,
+			Round:  msg.Round,
+			Index:  msg.Index,
+		}
 	case *cmtcons.VoteSetMaj23:
 		bi, err := types.BlockIDFromProto(&msg.BlockID)
 		if err != nil {
-			return nil, fmt.Errorf("voteSetMaj23 msg to proto error: %w", err)
+			return nil, cmterrors.ErrMsgToProto{MessageName: "VoteSetMaj23", Err: err}
 		}
 		pb = &VoteSetMaj23Message{
 			Height:  msg.Height,
@@ -212,7 +225,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 	case *cmtcons.VoteSetBits:
 		bi, err := types.BlockIDFromProto(&msg.BlockID)
 		if err != nil {
-			return nil, fmt.Errorf("voteSetBits msg to proto error: %w", err)
+			return nil, cmterrors.ErrMsgToProto{MessageName: "VoteSetBits", Err: err}
 		}
 		bits := new(bits.BitArray)
 		bits.FromProto(&msg.Votes)
@@ -225,7 +238,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 			Votes:   bits,
 		}
 	default:
-		return nil, fmt.Errorf("consensus: message not recognized: %T", msg)
+		return nil, ErrConsensusMessageNotRecognized{msg}
 	}
 
 	if err := pb.ValidateBasic(); err != nil {
@@ -292,7 +305,7 @@ func WALToProto(msg WALMessage) (*cmtcons.WALMessage, error) {
 // WALFromProto takes a proto wal message and return a consensus walMessage and error
 func WALFromProto(msg *cmtcons.WALMessage) (WALMessage, error) {
 	if msg == nil {
-		return nil, errors.New("nil WAL message")
+		return nil, ErrNilMessage
 	}
 	var pb WALMessage
 
@@ -310,7 +323,7 @@ func WALFromProto(msg *cmtcons.WALMessage) (WALMessage, error) {
 		}
 		walMsg, err := MsgFromProto(um)
 		if err != nil {
-			return nil, fmt.Errorf("msgInfo from proto error: %w", err)
+			return nil, cmterrors.ErrMsgFromProto{MessageName: "MsgInfo", Err: err}
 		}
 		pb = msgInfo{
 			Msg:    walMsg,
@@ -321,7 +334,7 @@ func WALFromProto(msg *cmtcons.WALMessage) (WALMessage, error) {
 		tis, err := cmtmath.SafeConvertUint8(int64(msg.TimeoutInfo.Step))
 		// deny message based on possible overflow
 		if err != nil {
-			return nil, fmt.Errorf("denying message due to possible overflow: %w", err)
+			return nil, ErrDenyMessageOverflow{err}
 		}
 		pb = timeoutInfo{
 			Duration: msg.TimeoutInfo.Duration,

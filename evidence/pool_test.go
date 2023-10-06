@@ -213,7 +213,7 @@ func TestEvidencePoolUpdate(t *testing.T) {
 	// b) If we try to check this evidence again it should fail because it has already been committed
 	err = pool.CheckEvidence(types.EvidenceList{ev})
 	if assert.Error(t, err) {
-		assert.Equal(t, "evidence was already committed", err.(*types.ErrInvalidEvidence).Reason.Error())
+		assert.Equal(t, evidence.ErrEvidenceAlreadyCommitted.Error(), err.(*types.ErrInvalidEvidence).Reason.Error())
 	}
 }
 
@@ -238,7 +238,7 @@ func TestVerifyDuplicatedEvidenceFails(t *testing.T) {
 	require.NoError(t, err)
 	err = pool.CheckEvidence(types.EvidenceList{ev, ev})
 	if assert.Error(t, err) {
-		assert.Equal(t, "duplicate evidence", err.(*types.ErrInvalidEvidence).Reason.Error())
+		assert.Equal(t, evidence.ErrDuplicateEvidence.Error(), err.(*types.ErrInvalidEvidence).Reason.Error())
 	}
 }
 

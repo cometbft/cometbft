@@ -39,6 +39,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 		11: {makeParams(1, 0, 2, 0, []string{}, 0), false},
 		// test invalid pubkey type provided
 		12: {makeParams(1, 0, 2, 0, []string{"potatoes make good pubkeys"}, 0), false},
+		13: {makeParams(-1, 0, 2, 0, valEd25519, 0), true},
+		14: {makeParams(-2, 0, 2, 0, valEd25519, 0), false},
 	}
 	for i, tc := range testCases {
 		if tc.valid {

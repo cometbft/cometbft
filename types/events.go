@@ -26,17 +26,17 @@ const (
 	// Internal consensus events.
 	// These are used for testing the consensus state machine.
 	// They can also be used to build real-time consensus visualizers.
-	EventCompleteProposal = "CompleteProposal"
-	EventLock             = "Lock"
-	EventNewRound         = "NewRound"
-	EventNewRoundStep     = "NewRoundStep"
-	EventPolka            = "Polka"
-	EventRelock           = "Relock"
-	EventTimeoutPropose   = "TimeoutPropose"
-	EventTimeoutWait      = "TimeoutWait"
-	EventUnlock           = "Unlock"
-	EventValidBlock       = "ValidBlock"
-	EventVote             = "Vote"
+	EventCompleteProposal  = "CompleteProposal"
+	EventLock              = "Lock"
+	EventNewRound          = "NewRound"
+	EventNewRoundStep      = "NewRoundStep"
+	EventPolka             = "Polka"
+	EventRelock            = "Relock"
+	EventTimeoutPropose    = "TimeoutPropose"
+	EventTimeoutWait       = "TimeoutWait"
+	EventValidBlock        = "ValidBlock"
+	EventVote              = "Vote"
+	EventProposalBlockPart = "ProposalBlockPart"
 )
 
 // ENCODING / DECODING
@@ -159,7 +159,6 @@ var (
 	EventQueryTimeoutPropose      = QueryForEvent(EventTimeoutPropose)
 	EventQueryTimeoutWait         = QueryForEvent(EventTimeoutWait)
 	EventQueryTx                  = QueryForEvent(EventTx)
-	EventQueryUnlock              = QueryForEvent(EventUnlock)
 	EventQueryValidatorSetUpdates = QueryForEvent(EventValidatorSetUpdates)
 	EventQueryValidBlock          = QueryForEvent(EventValidBlock)
 	EventQueryVote                = QueryForEvent(EventVote)

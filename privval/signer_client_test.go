@@ -14,6 +14,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/types"
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
 
 type signerTestCase struct {
@@ -432,6 +433,6 @@ func TestSignerUnexpectedResponse(t *testing.T) {
 		want := &types.Vote{Timestamp: ts, Type: types.PrecommitType}
 
 		e := tc.signerClient.SignVote(tc.chainID, want.ToProto())
-		assert.EqualError(t, e, "empty response")
+		assert.ErrorIs(t, e, cmterrors.ErrRequiredField{Field: "response"})
 	}
 }

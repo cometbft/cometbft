@@ -4,8 +4,8 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"math"
 
+	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/types"
 )
@@ -15,12 +15,6 @@ const (
 
 	// PeerCatchupSleepIntervalMS defines how much time to sleep if a peer is behind
 	PeerCatchupSleepIntervalMS = 100
-
-	// UnknownPeerID is the peer ID to use when running CheckTx when there is
-	// no peer (e.g. RPC)
-	UnknownPeerID uint16 = 0
-
-	MaxActiveIDs = math.MaxUint16
 )
 
 //go:generate ../scripts/mockery_generate.sh Mempool
@@ -32,7 +26,7 @@ const (
 type Mempool interface {
 	// CheckTx executes a new transaction against the application to determine
 	// its validity and whether it should be added to the mempool.
-	CheckTx(tx types.Tx, callback func(*abci.ResponseCheckTx), txInfo TxInfo) error
+	CheckTx(tx types.Tx) (*abcicli.ReqRes, error)
 
 	// RemoveTxByKey removes a transaction, identified by its key,
 	// from the mempool.
@@ -92,6 +86,10 @@ type Mempool interface {
 	// EnableTxsAvailable initializes the TxsAvailable channel, ensuring it will
 	// trigger once every height when transactions are available.
 	EnableTxsAvailable()
+
+	// Set a callback function to be called when a transaction is removed from
+	// the mempool.
+	SetTxRemovedCallback(cb func(types.TxKey))
 
 	// Size returns the number of transactions in the mempool.
 	Size() int

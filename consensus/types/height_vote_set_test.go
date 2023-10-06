@@ -4,13 +4,14 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/test"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
-	"github.com/stretchr/testify/require"
 )
 
 var config *cfg.Config // NOTE: must be reset for each _test.go file

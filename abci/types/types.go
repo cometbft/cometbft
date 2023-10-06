@@ -185,9 +185,9 @@ var _ jsonRoundTripper = (*ResponseCheckTx)(nil)
 
 var _ jsonRoundTripper = (*EventAttribute)(nil)
 
-// deterministicExecTxResult constructs a copy of response that omits
+// constructs a copy of response that omits
 // non-deterministic fields. The input response is not modified.
-func deterministicExecTxResult(response *ExecTxResult) *ExecTxResult {
+func DeterministicExecTxResult(response *ExecTxResult) *ExecTxResult {
 	return &ExecTxResult{
 		Code:      response.Code,
 		Data:      response.Data,
@@ -203,7 +203,7 @@ func deterministicExecTxResult(response *ExecTxResult) *ExecTxResult {
 func MarshalTxResults(r []*ExecTxResult) ([][]byte, error) {
 	s := make([][]byte, len(r))
 	for i, e := range r {
-		d := deterministicExecTxResult(e)
+		d := DeterministicExecTxResult(e)
 		b, err := d.Marshal()
 		if err != nil {
 			return nil, err

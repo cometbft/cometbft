@@ -44,7 +44,7 @@ title: Methods
     | version             | string | The application software semantic version           | 2            |
     | app_version         | uint64 | The application protocol version                    | 3            |
     | last_block_height   | int64  | Latest height for which the app persisted its state | 4            |
-    | last_block_app_hash | bytes  | Latest AppHash returned by `Commit`                 | 5            |
+    | last_block_app_hash | bytes  | Latest AppHash returned by `FinalizeBlock`          | 5            |
 
 * **Usage**:
     * Return information about the application state.
@@ -93,12 +93,12 @@ title: Methods
 
 * **Request**:
 
-    | Name   | Type   | Description                                                                                                                                                                                                                                                                            | Field Number |
-    |--------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
-    | data   | bytes  | Raw query bytes. Can be used with or in lieu of Path.                                                                                                                                                                                                                                  | 1            |
-    | path   | string | Path field of the request URI. Can be used with or in lieu of `data`. Apps MUST interpret `/store` as a query by key on the underlying store. The key SHOULD be specified in the `data` field. Apps SHOULD allow queries over specific types like `/accounts/...` or `/votes/...`      | 2            |
-    | height | int64  | The block height for which you want the query (default=0 returns data for the latest committed block). Note that this is the height of the block containing the application's Merkle root hash, which represents the state as it was after committing the block at Height-1            | 3            |
-    | prove  | bool   | Return Merkle proof with response if possible                                                                                                                                                                                                                                          | 4            |
+    | Name   | Type   | Description | Field Number |
+    |--------|--------|-------------|--------------|
+    | data   | bytes  | Request parameters for the application to interpret analogously to a [URI query component](https://www.rfc-editor.org/rfc/rfc3986#section-3.4). Can be used with or in lieu of `path`. | 1 |
+    | path   | string | A request path for the application to interpret analogously to a [URI path component](https://www.rfc-editor.org/rfc/rfc3986#section-3.3) in e.g. routing. Can be used with or in lieu of `data`. Applications MUST interpret "/store" or any path starting with "/store/" as a query by key on the underlying store, in which case a key SHOULD be specified in `data`. Applications SHOULD allow queries over specific types like `/accounts/...` or `/votes/...`. | 2 |
+    | height | int64  | The block height against which to query (default=0 returns data for the latest committed block). Note that this is the height of the block containing the application's Merkle root hash, which represents the state as it was after committing the block at Height-1. | 3 |
+    | prove  | bool   | Return Merkle proof with response if possible. | 4 |
 
 * **Response**:
 
@@ -255,7 +255,7 @@ title: Methods
     can be spoofed by adversaries, so applications should employ additional verification schemes
     to avoid denial-of-service attacks. The verified `AppHash` is automatically checked against
     the restored application at the end of snapshot restoration.
-    * For more information, see the `Snapshot` data type or the [state sync section](../p2p/messages/state-sync.md).
+    * For more information, see the `Snapshot` data type or the [state sync section](../p2p/legacy-docs/messages/state-sync.md).
 
 ### ApplySnapshotChunk
 
@@ -299,7 +299,7 @@ title: Methods
     peers are available), it will reject the snapshot and try a different one via `OfferSnapshot`.
     The application should be prepared to reset and accept it or abort as appropriate.
 
-## New methods introduced in ABCI++
+## New methods introduced in ABCI 2.0
 
 ### PrepareProposal
 
@@ -355,12 +355,16 @@ title: Methods
             traceability, it is its responsibility's to support it. For instance, the Application
             could attach to a transformed transaction a list with the hashes of the transactions it
             derives from.
-    * CometBFT MAY include a list of transactions in `RequestPrepareProposal.txs` whose total
-      size in bytes exceeds `RequestPrepareProposal.max_tx_bytes`.
+    * The Application MAY configure CometBFT to include a list of transactions in `RequestPrepareProposal.txs`
+      whose total size in bytes exceeds `RequestPrepareProposal.max_tx_bytes`.
+      If the Application sets `ConsensusParams.Block.MaxBytes` to -1, CometBFT
+      will include _all_ transactions currently in the mempool in `RequestPrepareProposal.txs`,
+      which may not fit in `RequestPrepareProposal.max_tx_bytes`.
       Therefore, if the size of `RequestPrepareProposal.txs` is greater than
       `RequestPrepareProposal.max_tx_bytes`, the Application MUST remove transactions to ensure
       that the `RequestPrepareProposal.max_tx_bytes` limit is respected by those transactions
-      returned in `ResponsePrepareProposal.txs` .
+      returned in `ResponsePrepareProposal.txs`.
+      This is specified in [Requirement 2](./abci%2B%2B_app_requirements.md).
     * As a result of executing the prepared proposal, the Application may produce block events or transaction events.
       The Application must keep those events until a block is decided and then pass them on to CometBFT via
       `ResponseFinalizeBlock`.
@@ -390,8 +394,7 @@ and _p_'s _validValue_ is `nil`:
    returns from the call.
 3. The Application uses the information received (transactions, commit info, misbehavior, time) to
     (potentially) modify the proposal.
-    * the Application MAY fully execute the block and produce a candidate state &mdash; immediate
-      execution
+    * the Application MAY fully execute the block and produce a candidate state (immediate execution)
     * the Application can manipulate transactions:
         * leave transactions untouched
         * add new transactions (not present initially) to the proposal
@@ -436,10 +439,12 @@ the consensus algorithm will use it as proposal and will not call `RequestPrepar
          `RequestFinalizeBlock`.
         * However, any resulting state changes must be kept as _candidate state_,
           and the Application should be ready to discard it in case another block is decided.
-    * `RequestProcessProposal` is also called at the proposer of a round. The reason for this is to
-      inform the Application of the block header's hash, which cannot be done at `PrepareProposal`
-      time. In this case, the call to `RequestProcessProposal` occurs right after the call to
-      `RequestPrepareProposal`.
+    * `RequestProcessProposal` is also called at the proposer of a round.
+      Normally the call to `RequestProcessProposal` occurs right after the call to `RequestPrepareProposal` and
+      `RequestProcessProposal` matches the block produced based on `ResponsePrepareProposal` (i.e.,
+      `RequestPrepareProposal.txs` equals `RequestProcessProposal.txs`).
+      However, no such guarantee is made since, in the presence of failures, `RequestProcessProposal` may match
+      `ResponsePrepareProposal` from an earlier invocation or `ProcessProposal` may not be invoked at all.
     * The height and time values match the values from the header of the proposed block.
     * If `ResponseProcessProposal.status` is `REJECT`, consensus assumes the proposal received
       is not valid.
@@ -456,7 +461,7 @@ the consensus algorithm will use it as proposal and will not call `RequestPrepar
 When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the proposer (possibly _p_ = _q_):
 
 1. _p_ sets up timer `ProposeTimeout`.
-2. If _p_ is the proposer, _p_ executes steps 1-6 in [PrepareProposal](#prepareproposal).
+2. If _p_ is the proposer, _p_ executes steps 1-5 in [PrepareProposal](#prepareproposal).
 3. Upon reception of Proposal message (which contains the header) for round _r_, height _h_ from
    _q_, _p_ verifies the block header.
 4. Upon reception of Proposal message, along with all the block parts, for round _r_, height _h_
@@ -476,7 +481,6 @@ When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the prop
     3. If _p_ is a validator and the returned value is
          * `ACCEPT`: _p_ prevotes on this proposal for round _r_, height _h_.
          * `REJECT`: _p_ prevotes `nil`.
-         *
 
 ### ExtendVote
 
@@ -484,23 +488,29 @@ When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the prop
 
 * **Request**:
 
-    | Name   | Type  | Description                                                                   | Field Number |
-    |--------|-------|-------------------------------------------------------------------------------|--------------|
-    | hash   | bytes | The header hash of the proposed block that the vote extension is to refer to. | 1            |
-    | height | int64 | Height of the proposed block (for sanity check).                              | 2            |
+    | Name                 | Type                                            | Description                                                                               | Field Number |
+    |----------------------|-------------------------------------------------|-------------------------------------------------------------------------------------------|--------------|
+    | hash                 | bytes                                           | The header hash of the proposed block that the vote extension is to refer to.             | 1            |
+    | height               | int64                                           | Height of the proposed block (for sanity check).                                          | 2            |
+    | time                 | [google.protobuf.Timestamp][protobuf-timestamp] | Timestamp of the proposed block (that the extension is to refer to).                      | 3            |
+    | txs                  | repeated bytes                                  | List of transactions of the block that the extension is to refer to.                      | 4            |
+    | proposed_last_commit | [CommitInfo](#commitinfo)                       | Info about the last proposed block's last commit.                                         | 5            |
+    | misbehavior          | repeated [Misbehavior](#misbehavior)            | List of information about validators that misbehaved contained in the proposed block.     | 6            |
+    | next_validators_hash | bytes                                           | Merkle root of the next validator set contained in the proposed block.                    | 7            |
+    | proposer_address     | bytes                                           | [Address](../core/data_structures.md#address) of the validator that created the proposal. | 8            |
 
 * **Response**:
 
     | Name              | Type  | Description                                             | Field Number |
     |-------------------|-------|---------------------------------------------------------|--------------|
-    | vote_extension    | bytes | Information signed by by CometBFT. Can have 0 length. | 1            |
+    | vote_extension    | bytes | Information signed by by CometBFT. Can have 0 length.   | 1            |
 
 * **Usage**:
     * `ResponseExtendVote.vote_extension` is application-generated information that will be signed
       by CometBFT and attached to the Precommit message.
     * The Application may choose to use an empty vote extension (0 length).
-    * `RequestExtendVote.hash` corresponds to the hash of a proposed block that was made available
-      to the Application in a previous call to `ProcessProposal` for the current height.
+    * The contents of `RequestExtendVote` correspond to the proposed block on which the consensus algorithm
+      will send the Precommit message.
     * `ResponseExtendVote.vote_extension` will only be attached to a non-`nil` Precommit message. If the consensus algorithm is to
       precommit `nil`, it will not call `RequestExtendVote`.
     * The Application logic that creates the extension can be non-deterministic.
@@ -515,7 +525,7 @@ When a validator _p_ is in consensus state _prevote_ of round _r_, height _h_, i
 then _p_ locks _v_  and sends a Precommit message in the following way
 
 1. _p_ sets _lockedValue_ and _validValue_ to _v_, and sets _lockedRound_ and _validRound_ to _r_
-2. _p_'s CometBFT calls `RequestExtendVote` with _id(v)_ (`RequestExtendVote.hash`). The call is synchronous.
+2. _p_'s CometBFT calls `RequestExtendVote` with _v_ (`RequestExtendVote`). The call is synchronous.
 3. The Application returns an array of bytes, `ResponseExtendVote.extension`, which is not interpreted by the consensus algorithm.
 4. _p_ sets `ResponseExtendVote.extension` as the value of the `extension` field of type
    [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension),
@@ -775,7 +785,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
     | metadata | bytes  | Arbitrary application metadata, for example chunk hashes or other verification data.                                                                                              | 5            |
 
 * **Usage**:
-    * Used for state sync snapshots, see the [state sync section](../p2p/messages/state-sync.md) for details.
+    * Used for state sync snapshots, see the [state sync section](../p2p/legacy-docs/messages/state-sync.md) for details.
     * A snapshot is considered identical across nodes only if _all_ fields are equal (including
     `Metadata`). Chunks may be retrieved from all nodes that have the same snapshot.
     * When sent across the network, a snapshot message can be at most 4 MB.

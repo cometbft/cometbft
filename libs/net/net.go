@@ -1,6 +1,7 @@
 package net
 
 import (
+	"context"
 	"net"
 	"strings"
 )
@@ -11,6 +12,14 @@ func Connect(protoAddr string) (net.Conn, error) {
 	proto, address := ProtocolAndAddress(protoAddr)
 	conn, err := net.Dial(proto, address)
 	return conn, err
+}
+
+// ConnectContext dials the given address and returns a net.Conn, similarly to
+// Connect, but honors the given context.
+func ConnectContext(ctx context.Context, protoAddr string) (net.Conn, error) {
+	proto, addr := ProtocolAndAddress(protoAddr)
+	var d net.Dialer
+	return d.DialContext(ctx, proto, addr)
 }
 
 // ProtocolAndAddress splits an address into the protocol and address components.

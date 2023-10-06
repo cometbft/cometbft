@@ -521,13 +521,6 @@ func ensureNoNewRoundStep(stepCh <-chan cmtpubsub.Message) {
 		"We should be stuck waiting, not receiving NewRoundStep event")
 }
 
-func ensureNoNewUnlock(unlockCh <-chan cmtpubsub.Message) {
-	ensureNoNewEvent(
-		unlockCh,
-		ensureTimeout,
-		"We should be stuck waiting, not receiving Unlock event")
-}
-
 func ensureNoNewTimeout(stepCh <-chan cmtpubsub.Message, timeout int64) {
 	timeoutDuration := time.Duration(timeout*10) * time.Nanosecond
 	ensureNoNewEvent(
@@ -640,9 +633,14 @@ func ensureNewBlockHeader(blockCh <-chan cmtpubsub.Message, height int64, blockH
 	}
 }
 
-func ensureNewUnlock(unlockCh <-chan cmtpubsub.Message, height int64, round int32) {
-	ensureNewEvent(unlockCh, height, round, ensureTimeout,
-		"Timeout expired while waiting for NewUnlock event")
+func ensureLock(lockCh <-chan cmtpubsub.Message, height int64, round int32) {
+	ensureNewEvent(lockCh, height, round, ensureTimeout,
+		"Timeout expired while waiting for LockValue event")
+}
+
+func ensureRelock(relockCh <-chan cmtpubsub.Message, height int64, round int32) {
+	ensureNewEvent(relockCh, height, round, ensureTimeout,
+		"Timeout expired while waiting for RelockValue event")
 }
 
 func ensureProposal(proposalCh <-chan cmtpubsub.Message, height int64, round int32, propID types.BlockID) {

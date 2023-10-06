@@ -10,6 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fortytw2/leaktest"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/inspect"
@@ -20,9 +24,6 @@ import (
 	statemocks "github.com/cometbft/cometbft/state/mocks"
 	txindexmocks "github.com/cometbft/cometbft/state/txindex/mocks"
 	"github.com/cometbft/cometbft/types"
-	"github.com/fortytw2/leaktest"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 )
 
 func TestInspectConstructor(t *testing.T) {

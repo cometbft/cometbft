@@ -1057,21 +1057,31 @@ paths:
       parameters:
         - in: query
           name: path
-          description: Path to the data ("/a/b/c")
-          required: true
+          description: |
+            A request path for the application to interpret analogously to a
+            [URI path component](https://www.rfc-editor.org/rfc/rfc3986#section-3.3)
+            in e.g. routing.
+
+            Applications MUST interpret "/store" or any path starting with
+            "/store/" as a query by key on the underlying store, in which case
+            a key SHOULD be specified in `data`.
+          required: false
           schema:
             type: string
-            example: '"/a/b/c"'
+            example: '"/store/foo"'
         - in: query
           name: data
-          description: Data
-          required: true
+          description: |
+            Request parameters for the application to interpret analogously to a
+            [URI query component](https://www.rfc-editor.org/rfc/rfc3986#section-3.4),
+            expressed as hexadecimal-serialized bytes.
+          required: false
           schema:
             type: string
-            example: "IHAVENOIDEA"
+            example: "0x636f6d6574626674"
         - in: query
           name: height
-          description: Height (0 means latest)
+          description: The block height against which to query (0 means latest)
           required: false
           schema:
             type: integer
@@ -1079,7 +1089,7 @@ paths:
             default: 0
         - in: query
           name: prove
-          description: Include proofs of the transactions inclusion in the block
+          description: Return Merkle proof with response if possible
           required: false
           schema:
             type: boolean
@@ -2794,10 +2804,10 @@ components:
       properties:
         key:
           type: string
-          example: "YWN0aW9u"
+          example: "action"
         value:
           type: string
-          example: "c2VuZA=="
+          example: "send"
         index:
           type: boolean
           example: false

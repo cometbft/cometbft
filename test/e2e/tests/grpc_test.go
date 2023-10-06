@@ -34,17 +34,12 @@ func TestGRPC_Version(t *testing.T) {
 	})
 }
 
-<<<<<<< HEAD
 func TestLegacyGRPC_Ping(t *testing.T) {
-=======
-func TestGRPC_Block_GetByHeight(t *testing.T) {
->>>>>>> 84e2e01e6 (Add gRPC block service (#1142))
 	testNode(t, func(t *testing.T, node e2e.Node) {
 		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
 			return
 		}
 
-<<<<<<< HEAD
 		client, err := node.GRPCLegacyClient()
 		require.NoError(t, err)
 
@@ -52,7 +47,13 @@ func TestGRPC_Block_GetByHeight(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
-=======
+
+func TestGRPC_Block_GetByHeight(t *testing.T) {
+	testNode(t, func(t *testing.T, node e2e.Node) {
+		if node.Mode != e2e.ModeFull && node.Mode != e2e.ModeValidator {
+			return
+		}
+
 		blocks := fetchBlockChain(t)
 
 		client, err := node.Client()
@@ -147,4 +148,3 @@ func TestGRPC_Block_GetLatestHeight(t *testing.T) {
 		}
 	}
 }
->>>>>>> 84e2e01e6 (Add gRPC block service (#1142))

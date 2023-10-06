@@ -38,7 +38,7 @@ version = "0.38.0"
 proxy_app = "tcp://127.0.0.1:26658"
 
 # A custom human readable name for this node
-moniker = "thinkpad"
+moniker = "anonymous"
 
 # Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb
 # * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
@@ -144,20 +144,14 @@ unsafe = false
 # 1024 - 40 - 10 - 50 = 924 = ~900
 max_open_connections = 900
 
-# Maximum number of unique clientIDs that can /subscribe.
+# Maximum number of unique clientIDs that can /subscribe
 # If you're using /broadcast_tx_commit, set to the estimated maximum number
 # of broadcast_tx_commit calls per block.
 max_subscription_clients = 100
 
-<<<<<<< HEAD
 # Maximum number of unique queries a given client can /subscribe to
 # If you're using GRPC (or Local RPC client) and /broadcast_tx_commit, set to
 # the estimated # maximum number of broadcast_tx_commit calls per block.
-=======
-# Maximum number of unique queries a given client can /subscribe to.
-# If you're using /broadcast_tx_commit, set to the estimated maximum number
-# of broadcast_tx_commit calls per block.
->>>>>>> 84e2e01e6 (Add gRPC block service (#1142))
 max_subscriptions_per_client = 5
 
 # Experimental parameter to specify the maximum number of events a node will
@@ -458,7 +452,6 @@ create_empty_blocks_interval = "0s"
 
 # Reactor sleep duration parameters
 peer_gossip_sleep_duration = "100ms"
-peer_gossip_intraloop_sleep_duration = "0s"
 peer_query_maj23_sleep_duration = "2s"
 
 #######################################################
@@ -553,15 +546,16 @@ timeout_commit = "1s"
 Note that in a successful round, the only timeout that we absolutely wait no
 matter what is `timeout_commit`.
 Here's a brief summary of the timeouts:
-- `timeout_propose` = how long we wait for a proposal block before prevoting nil
-- `timeout_propose_delta` = how much  `timeout_propose` increases with each round
-- `timeout_prevote` = how long we wait after receiving +2/3 prevotes for
+
+- `timeout_propose` = how long a validator should wait for a proposal block before prevoting nil
+- `timeout_propose_delta` = how much `timeout_propose` increases with each round
+- `timeout_prevote` = how long a validator should wait after receiving +2/3 prevotes for
   anything (ie. not a single block or nil)
 - `timeout_prevote_delta` = how much the `timeout_prevote` increases with each round
-- `timeout_precommit` = how long we wait after receiving +2/3 precommits for
+- `timeout_precommit` = how long a validator should wait after receiving +2/3 precommits for
   anything (ie. not a single block or nil)
 - `timeout_precommit_delta` = how much the `timeout_precommit` increases with each round
-- `timeout_commit` = how long we wait after committing a block, before starting
+- `timeout_commit` = how long a validator should wait after committing a block, before starting
   on the new height (this gives us a chance to receive some more precommits,
   even though we already have +2/3)
 

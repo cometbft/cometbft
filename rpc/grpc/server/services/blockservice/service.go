@@ -124,7 +124,7 @@ func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest,
 				logger.Error("Failed to stream new block", "err", err, "height", height, "traceID", traceID)
 				return status.Errorf(codes.Unavailable, "Cannot send stream response (see logs for trace ID: %s)", traceID)
 			}
-		case <-sub.Canceled():
+		case <-sub.Cancelled():
 			switch sub.Err() {
 			case cmtpubsub.ErrUnsubscribed:
 				return status.Error(codes.Canceled, "Subscription terminated")

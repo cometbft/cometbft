@@ -7,11 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-<<<<<<< HEAD
-=======
-	"regexp"
 	"strings"
->>>>>>> 65a88b9f8 (grpc: Add base gRPC server with version service (#818))
 	"time"
 )
 
@@ -73,8 +69,8 @@ type Config struct {
 	BaseConfig `mapstructure:",squash"`
 
 	// Options for services
-<<<<<<< HEAD
 	RPC       *RPCConfig       `mapstructure:"rpc"`
+	GRPC      *GRPCConfig      `mapstructure:"grpc"`
 	P2P       *P2PConfig       `mapstructure:"p2p"`
 	Mempool   *MempoolConfig   `mapstructure:"mempool"`
 	StateSync *StateSyncConfig `mapstructure:"statesync"`
@@ -86,18 +82,6 @@ type Config struct {
 	Storage                  *StorageConfig              `mapstructure:"storage"`
 	TxIndex                  *TxIndexConfig              `mapstructure:"tx_index"`
 	Instrumentation          *InstrumentationConfig      `mapstructure:"instrumentation"`
-=======
-	RPC             *RPCConfig             `mapstructure:"rpc"`
-	GRPC            *GRPCConfig            `mapstructure:"grpc"`
-	P2P             *P2PConfig             `mapstructure:"p2p"`
-	Mempool         *MempoolConfig         `mapstructure:"mempool"`
-	StateSync       *StateSyncConfig       `mapstructure:"statesync"`
-	BlockSync       *BlockSyncConfig       `mapstructure:"blocksync"`
-	Consensus       *ConsensusConfig       `mapstructure:"consensus"`
-	Storage         *StorageConfig         `mapstructure:"storage"`
-	TxIndex         *TxIndexConfig         `mapstructure:"tx_index"`
-	Instrumentation *InstrumentationConfig `mapstructure:"instrumentation"`
->>>>>>> 65a88b9f8 (grpc: Add base gRPC server with version service (#818))
 }
 
 // DefaultConfig returns a default configuration for a CometBFT node

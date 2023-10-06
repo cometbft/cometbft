@@ -1,11 +1,8 @@
 package e2e
 
 import (
-<<<<<<< HEAD
 	"bytes"
-=======
 	"context"
->>>>>>> 65a88b9f8 (grpc: Add base gRPC server with version service (#818))
 	"errors"
 	"fmt"
 	"io"
@@ -23,12 +20,10 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
-<<<<<<< HEAD
 
 	_ "embed"
-=======
+
 	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
->>>>>>> 65a88b9f8 (grpc: Add base gRPC server with version service (#818))
 )
 
 const (

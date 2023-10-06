@@ -35,11 +35,8 @@ import (
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
 	rpccore "github.com/cometbft/cometbft/rpc/core"
-<<<<<<< HEAD
 	grpccore "github.com/cometbft/cometbft/rpc/grpc"
-=======
 	grpcserver "github.com/cometbft/cometbft/rpc/grpc/server"
->>>>>>> 65a88b9f8 (grpc: Add base gRPC server with version service (#818))
 	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/state/indexer"
@@ -1213,7 +1210,6 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 		listeners[i] = listener
 	}
 
-<<<<<<< HEAD
 	// we expose a simplified api over grpc for convenience to app devs
 	grpcListenAddr := n.config.RPC.GRPCListenAddress
 	if grpcListenAddr != "" {
@@ -1234,7 +1230,12 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 		}
 		go func() {
 			if err := grpccore.StartGRPCServer(listener); err != nil {
-=======
+				n.Logger.Error("Error starting gRPC server", "err", err)
+			}
+		}()
+		listeners = append(listeners, listener)
+	}
+
 	if n.config.GRPC.ListenAddress != "" {
 		listener, err := grpcserver.Listen(n.config.GRPC.ListenAddress)
 		if err != nil {
@@ -1248,15 +1249,10 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 		}
 		go func() {
 			if err := grpcserver.Serve(listener, opts...); err != nil {
->>>>>>> 65a88b9f8 (grpc: Add base gRPC server with version service (#818))
 				n.Logger.Error("Error starting gRPC server", "err", err)
 			}
 		}()
 		listeners = append(listeners, listener)
-<<<<<<< HEAD
-
-=======
->>>>>>> 65a88b9f8 (grpc: Add base gRPC server with version service (#818))
 	}
 
 	return listeners, nil

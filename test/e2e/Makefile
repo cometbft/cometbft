@@ -4,6 +4,8 @@ include ../../common.mk
 
 all: docker generator runner
 
+fast: docker-fast generator runner
+
 docker:
 	@echo "Building E2E Docker image"
 	@docker build \
@@ -38,4 +40,4 @@ generator:
 runner:
 	go build -o build/runner ./runner
 
-.PHONY: all node docker generator runner 
+.PHONY: all fast node docker generator runner 

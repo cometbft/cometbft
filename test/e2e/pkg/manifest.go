@@ -98,6 +98,9 @@ type Manifest struct {
 
 	// Upper bound of sleep duration then gossipping votes and block parts
 	PeerGossipIntraloopSleepDuration time.Duration `toml:"peer_gossip_intraloop_sleep_duration"`
+
+	// MempoolReactor determines which reactor to use for the mempool.
+	MempoolReactor string `toml:"mempool_reactor"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

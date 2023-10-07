@@ -266,6 +266,9 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		}
 		cfg.P2P.PersistentPeers += peer.AddressP2P(true)
 	}
+	if node.Testnet.MempoolReactor != "" {
+		cfg.Mempool.Reactor = node.Testnet.MempoolReactor
+	}
 
 	if node.Prometheus {
 		cfg.Instrumentation.Prometheus = true

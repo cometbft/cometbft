@@ -129,7 +129,7 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 
 // RemovePeer implements Reactor. For all current outbound requests to this
 // peer it will find a new peer to rerequest the same transactions.
-func (memR *Reactor) RemovePeer(peer p2p.Peer, reason interface{}) {
+func (memR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
 	memR.peerIDs.Delete(peer.ID())
 	// remove and rerequest all pending outbound requests to that peer since we know
 	// we won't receive any responses from them.

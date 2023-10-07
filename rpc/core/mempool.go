@@ -19,10 +19,16 @@ import (
 // CheckTx nor transaction results.
 // More: https://docs.cometbft.com/main/rpc/#/Tx/broadcast_tx_async
 func (env *Environment) BroadcastTxAsync(_ *rpctypes.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
-	_, err := env.Mempool.CheckTx(tx)
+	reqRes, err := env.Mempool.CheckNewTx(tx)
 	if err != nil {
 		return nil, err
 	}
+	reqRes.SetCallback(func(res *abci.Response) {
+		resp := reqRes.Response.GetCheckTx()
+		if resp.Code == abci.CodeTypeOK {
+			env.Mempool.InvokeNewTxReceivedOnReactor(tx.Key())
+		}
+	})
 	return &ctypes.ResultBroadcastTx{Hash: tx.Hash()}, nil
 }
 
@@ -31,15 +37,16 @@ func (env *Environment) BroadcastTxAsync(_ *rpctypes.Context, tx types.Tx) (*cty
 // More: https://docs.cometbft.com/main/rpc/#/Tx/broadcast_tx_sync
 func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
 	resCh := make(chan *abci.ResponseCheckTx, 1)
-	reqRes, err := env.Mempool.CheckTx(tx)
+	reqRes, err := env.Mempool.CheckNewTx(tx)
 	if err != nil {
 		return nil, err
 	}
 	reqRes.SetCallback(func(res *abci.Response) {
-		select {
-		case <-ctx.Context().Done():
-		case resCh <- reqRes.Response.GetCheckTx():
+		resp := reqRes.Response.GetCheckTx()
+		if resp.Code == abci.CodeTypeOK {
+			env.Mempool.InvokeNewTxReceivedOnReactor(tx.Key())
 		}
+		resCh <- resp
 	})
 	select {
 	case <-ctx.Context().Done():
@@ -84,16 +91,17 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 
 	// Broadcast tx and wait for CheckTx result
 	checkTxResCh := make(chan *abci.ResponseCheckTx, 1)
-	reqRes, err := env.Mempool.CheckTx(tx)
+	reqRes, err := env.Mempool.CheckNewTx(tx)
 	if err != nil {
 		env.Logger.Error("Error on broadcastTxCommit", "err", err)
 		return nil, fmt.Errorf("error on broadcastTxCommit: %v", err)
 	}
 	reqRes.SetCallback(func(res *abci.Response) {
-		select {
-		case <-ctx.Context().Done():
-		case checkTxResCh <- reqRes.Response.GetCheckTx():
+		resp := reqRes.Response.GetCheckTx()
+		if resp.Code == abci.CodeTypeOK {
+			env.Mempool.InvokeNewTxReceivedOnReactor(tx.Key())
 		}
+		checkTxResCh <- resp
 	})
 	select {
 	case <-ctx.Context().Done():

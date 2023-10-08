@@ -276,7 +276,9 @@ pprof_laddr = "{{ .RPC.PprofListenAddress }}"
 [grpc]
 
 # TCP or UNIX socket address for the RPC server to listen on. If not specified,
-# the gRPC server will be disabled.
+# the gRPC server will be disabled. Note that this address MUST be different than 
+# the GRPC.ListenAddress within the RPC configuration. The listener at that endpoint
+# does not support the below mentioned services, and vice versa.
 laddr = "{{ .GRPC.ListenAddress }}"
 
 #

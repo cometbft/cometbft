@@ -457,7 +457,7 @@ func (o *prunerObserver) PrunerPrunedBlocks(info *sm.BlocksPrunedInfo) {
 // state stored. The test is expected to pass even though the log should
 // inform about the inability to prune the state store
 func TestPruningService(t *testing.T) {
-	config := test.ResetTestRoot("blockchain_reactor_pruning_test")
+	config := cfg.ResetTestRoot("blockchain_reactor_pruning_test")
 	defer os.RemoveAll(config.RootDir)
 	stateStore := sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
 		DiscardABCIResponses: false,
@@ -490,8 +490,8 @@ func TestPruningService(t *testing.T) {
 		block := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
 		partSet, err := block.MakePartSet(2)
 		require.NoError(t, err)
-		seenCommit := makeTestExtCommit(h, cmttime.Now())
-		bs.SaveBlockWithExtendedCommit(block, partSet, seenCommit)
+		seenCommit := makeTestCommit(h, cmttime.Now())
+		bs.SaveBlock(block, partSet, seenCommit)
 	}
 
 	assert.EqualValues(t, 1, bs.Base())
@@ -537,9 +537,9 @@ func TestPruningService(t *testing.T) {
 		require.Nil(t, bs.LoadBlock(1199))
 		// The header and commit for heights 1100 onwards
 		// need to remain to verify evidence
-		require.NotNil(t, bs.LoadBlockMeta(1100))
+		require.Nil(t, bs.LoadBlockMeta(1100))
 		require.Nil(t, bs.LoadBlockMeta(1099))
-		require.NotNil(t, bs.LoadBlockCommit(1100))
+		require.Nil(t, bs.LoadBlockCommit(1100))
 		require.Nil(t, bs.LoadBlockCommit(1099))
 		for i := int64(1); i < 1200; i++ {
 			require.Nil(t, bs.LoadBlock(i))
@@ -579,9 +579,9 @@ func TestPruningService(t *testing.T) {
 
 		// we should still have the header and the commit
 		// as they're needed for evidence
-		require.NotNil(t, bs.LoadBlockMeta(1100))
+		require.Nil(t, bs.LoadBlockMeta(1100))
 		require.Nil(t, bs.LoadBlockMeta(1099))
-		require.NotNil(t, bs.LoadBlockCommit(1100))
+		require.Nil(t, bs.LoadBlockCommit(1100))
 		require.Nil(t, bs.LoadBlockCommit(1099))
 		t.Log("Done pruning up until 1300")
 	case <-time.After(5 * time.Second):

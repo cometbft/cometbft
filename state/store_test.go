@@ -10,11 +10,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
@@ -240,7 +240,7 @@ func sliceToMap(s []int64) map[int64]bool {
 }
 
 func makeStateAndBlockStore() (sm.State, *store.BlockStore, func(), sm.Store) {
-	config := test.ResetTestRoot("blockchain_reactor_test")
+	config := cfg.ResetTestRoot("blockchain_reactor_test")
 	blockDB := dbm.NewMemDB()
 	stateDB := dbm.NewMemDB()
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
@@ -253,19 +253,19 @@ func makeStateAndBlockStore() (sm.State, *store.BlockStore, func(), sm.Store) {
 	return state, store.NewBlockStore(blockDB), func() { os.RemoveAll(config.RootDir) }, stateStore
 }
 
-func fillStore(t *testing.T, height int64, stateStore sm.Store, bs *store.BlockStore, state sm.State, response1 *abci.ResponseFinalizeBlock) {
+func fillStore(t *testing.T, height int64, stateStore sm.Store, bs *store.BlockStore, state sm.State, response1 *cmtstate.ABCIResponses) {
 	if response1 != nil {
 		for h := int64(1); h <= height; h++ {
-			err := stateStore.SaveFinalizeBlockResponse(h, response1)
+			err := stateStore.SaveABCIResponses(h, response1)
 			require.NoError(t, err)
 		}
 		// search for the last finalize block response and check if it has saved.
-		lastResponse, err := stateStore.LoadLastFinalizeBlockResponse(height)
+		lastResponse, err := stateStore.LoadLastABCIResponse(height)
 		require.NoError(t, err)
 		// check to see if the saved response height is the same as the loaded height.
 		assert.Equal(t, lastResponse, response1)
 		// check if the abci response didnt save in the abciresponses.
-		responses, err := stateStore.LoadFinalizeBlockResponse(height)
+		responses, err := stateStore.LoadABCIResponses(height)
 		require.NoError(t, err, responses)
 		require.Equal(t, response1, responses)
 	}
@@ -326,12 +326,12 @@ func TestABCIResPruningStandalone(t *testing.T) {
 		DiscardABCIResponses: false,
 	})
 
-	responses, err := stateStore.LoadFinalizeBlockResponse(1)
+	responses, err := stateStore.LoadABCIResponses(1)
 	require.Error(t, err)
 	require.Nil(t, responses)
 	// stub the abciresponses.
-	response1 := &abci.ResponseFinalizeBlock{
-		TxResults: []*abci.ExecTxResult{
+	response1 := &cmtstate.ABCIResponses{
+		DeliverTxs: []*abci.ResponseDeliverTx{
 			{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
 		},
 	}
@@ -339,7 +339,7 @@ func TestABCIResPruningStandalone(t *testing.T) {
 	defer callbackF()
 
 	for height := int64(1); height <= 10; height++ {
-		err := stateStore.SaveFinalizeBlockResponse(height, response1)
+		err := stateStore.SaveABCIResponses(height, response1)
 		require.NoError(t, err)
 	}
 	pruner := sm.NewPruner(stateStore, bs, log.TestingLogger())
@@ -353,11 +353,11 @@ func TestABCIResPruningStandalone(t *testing.T) {
 	newRetainHeight := pruner.PruneABCIResToRetainHeight(0)
 	require.Equal(t, retainHeight, newRetainHeight)
 
-	_, err = stateStore.LoadFinalizeBlockResponse(1)
+	_, err = stateStore.LoadABCIResponses(1)
 	require.Error(t, err)
 
 	for h := retainHeight; h <= 10; h++ {
-		_, err = stateStore.LoadFinalizeBlockResponse(h)
+		_, err = stateStore.LoadABCIResponses(h)
 		require.NoError(t, err)
 	}
 
@@ -371,10 +371,10 @@ func TestABCIResPruningStandalone(t *testing.T) {
 	newRetainHeight = pruner.PruneABCIResToRetainHeight(2)
 	require.Equal(t, retainHeight, newRetainHeight)
 
-	_, err = stateStore.LoadFinalizeBlockResponse(2)
+	_, err = stateStore.LoadABCIResponses(2)
 	require.Error(t, err)
 	for h := retainHeight; h <= 10; h++ {
-		_, err = stateStore.LoadFinalizeBlockResponse(h)
+		_, err = stateStore.LoadABCIResponses(h)
 		require.NoError(t, err)
 	}
 
@@ -385,10 +385,10 @@ func TestABCIResPruningStandalone(t *testing.T) {
 	require.Equal(t, retainHeight, newRetainHeight)
 
 	for h := int64(0); h < 10; h++ {
-		_, err = stateStore.LoadFinalizeBlockResponse(h)
+		_, err = stateStore.LoadABCIResponses(h)
 		require.Error(t, err)
 	}
-	_, err = stateStore.LoadFinalizeBlockResponse(10)
+	_, err = stateStore.LoadABCIResponses(10)
 	require.NoError(t, err)
 }
 
@@ -418,12 +418,13 @@ func TestLastABCIResponses(t *testing.T) {
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,
 		})
-		responses, err := stateStore.LoadFinalizeBlockResponse(1)
+		responses, err := stateStore.LoadABCIResponses(1)
 		require.Error(t, err)
 		require.Nil(t, responses)
+
 		// stub the abciresponses.
-		response1 := &abci.ResponseFinalizeBlock{
-			TxResults: []*abci.ExecTxResult{
+		response1 := &cmtstate.ABCIResponses{
+			DeliverTxs: []*abci.ResponseDeliverTx{
 				{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
 			},
 		}
@@ -444,7 +445,7 @@ func TestLastABCIResponses(t *testing.T) {
 		)
 
 		// Check that we have written a finalize block result at height 'height - 1'
-		_, err = stateStore.LoadFinalizeBlockResponse(height - 1)
+		_, err = stateStore.LoadABCIResponses(height - 1)
 		require.NoError(t, err)
 		require.NoError(t, pruner.SetABCIResRetainHeight(height))
 		require.NoError(t, pruner.Start())
@@ -458,9 +459,9 @@ func TestLastABCIResponses(t *testing.T) {
 		}
 
 		// Check that the response at height h - 1 has been deleted
-		_, err = stateStore.LoadFinalizeBlockResponse(height - 1)
+		_, err = stateStore.LoadABCIResponses(height - 1)
 		require.Error(t, err)
-		_, err = stateStore.LoadFinalizeBlockResponse(height)
+		_, err = stateStore.LoadABCIResponses(height)
 		require.NoError(t, err)
 
 	})

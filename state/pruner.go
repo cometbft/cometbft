@@ -249,14 +249,14 @@ func (p *Pruner) pruneBlocksToRetainHeight(lastRetainHeight int64) int64 {
 	if targetRetainHeight == lastRetainHeight {
 		return lastRetainHeight
 	}
-	pruned, evRetainHeight, err := p.pruneBlocks(targetRetainHeight)
+	pruned, err := p.pruneBlocks(targetRetainHeight)
 	// The new retain height is the current lowest point of the block store
 	// indicated by Base()
 	newRetainHeight := p.bs.Base()
 	if err != nil {
 		p.logger.Error("Failed to prune blocks", "err", err, "targetRetainHeight", targetRetainHeight, "newRetainHeight", newRetainHeight)
 	} else if pruned > 0 {
-		p.logger.Info("Pruned blocks", "count", pruned, "evidenceRetainHeight", evRetainHeight, "newRetainHeight", newRetainHeight)
+		p.logger.Info("Pruned blocks", "count", pruned, "newRetainHeight", newRetainHeight)
 	}
 	return newRetainHeight
 }
@@ -321,23 +321,23 @@ func (p *Pruner) findMinRetainHeight() int64 {
 	return dcRetainHeight
 }
 
-func (p *Pruner) pruneBlocks(height int64) (uint64, int64, error) {
+func (p *Pruner) pruneBlocks(height int64) (uint64, error) {
 	if height <= 0 {
-		return 0, 0, ErrInvalidRetainHeight
+		return 0, ErrInvalidRetainHeight
 	}
 
 	base := p.bs.Base()
 
-	state, err := p.stateStore.Load()
+	// state, err := p.stateStore.Load()
+	// if err != nil {
+	// 	return 0, 0, ErrPrunerFailedToLoadState{Err: err}
+	// }
+	pruned, err := p.bs.PruneBlocks(height)
 	if err != nil {
-		return 0, 0, ErrPrunerFailedToLoadState{Err: err}
+		return 0, ErrFailedToPruneBlocks{Height: height, Err: err}
 	}
-	pruned, evRetainHeight, err := p.bs.PruneBlocks(height, state)
-	if err != nil {
-		return 0, 0, ErrFailedToPruneBlocks{Height: height, Err: err}
+	if err := p.stateStore.PruneStates(base, height); err != nil {
+		return 0, ErrFailedToPruneStates{Height: height, Err: err}
 	}
-	if err := p.stateStore.PruneStates(base, height, evRetainHeight); err != nil {
-		return 0, 0, ErrFailedToPruneStates{Height: height, Err: err}
-	}
-	return pruned, evRetainHeight, err
+	return pruned, err
 }

@@ -97,7 +97,7 @@ func TestSplitAndTrimEmpty(t *testing.T) {
 }
 
 func TestCompanionInitialHeightSetup(t *testing.T) {
-	config := test.ResetTestRoot("companion_initial_height")
+	config := cfg.ResetTestRoot("companion_initial_height")
 	defer os.RemoveAll(config.RootDir)
 	config.Storage.Pruning.DataCompanion.Enabled = true
 	config.Storage.Pruning.DataCompanion.InitialBlockRetainHeight = 1

@@ -81,7 +81,7 @@ type Store interface {
 	// Bootstrap is used for bootstrapping state when not starting from a initial height.
 	Bootstrap(state State) error
 	// PruneStates takes the height from which to start pruning and which height stop at
-	PruneStates(fromHeight, toHeight, evidenceThresholdHeight int64) error
+	PruneStates(fromHeight int64, toHeight int64) error
 	// PruneABCIResponses will prune all ABCI responses below the given height.
 	PruneABCIResponses(targetRetainHeight int64) (int64, int64, error)
 	// SaveApplicationRetainHeight persists the application retain height from the application
@@ -813,4 +813,16 @@ func (store dbStore) saveConsensusParamsInfo(nextHeight, changeHeight int64, par
 
 func (store dbStore) Close() error {
 	return store.db.Close()
+}
+
+// ----- Util
+func int64FromBytes(bz []byte) int64 {
+	v, _ := binary.Varint(bz)
+	return v
+}
+
+func int64ToBytes(i int64) []byte {
+	buf := make([]byte, binary.MaxVarintLen64)
+	n := binary.PutVarint(buf, i)
+	return buf[:n]
 }

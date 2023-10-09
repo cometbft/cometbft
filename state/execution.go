@@ -88,6 +88,10 @@ func (blockExec *BlockExecutor) Store() Store {
 	return blockExec.store
 }
 
+func (blockExec *BlockExecutor) Pruner() *Pruner {
+	return blockExec.pruner
+}
+
 // SetEventBus - sets the event bus for publishing block related events.
 // If not called, it defaults to types.NopEventBus.
 func (blockExec *BlockExecutor) SetEventBus(eventBus types.BlockEventPublisher) {
@@ -632,7 +636,6 @@ func ExecCommitBlock(
 	// ResponseCommit has no error or log, just data
 	return res.Data, nil
 }
-
 
 /* TODO Check whether this exists elsewhere
 func (blockExec *BlockExecutor) pruneBlocks(retainHeight int64, state State) (uint64, error) {

@@ -91,9 +91,8 @@ func TestFilterLastHeight(t *testing.T) {
 	reqs := []*abci.Request{initChain, finalizeBlock, commit}
 	checker := NewGrammarChecker(DefaultConfig())
 	rr, n := checker.filterLastHeight(reqs)
-	if len(reqs) != len(rr) || n != 0 {
-		t.Errorf("FilterLastHeight filtered %v ABCI calls, expected %v\n", n, 0)
-	}
+	require.Equal(t, len(reqs),len(rr), "FilterLastHeight check failed with filtered ABCI calls")
+	require.Zero(t, n, "Check failed with filtered ABCI calls")
 
 	reqs = append(reqs, finalizeBlock)
 	rrr, n := checker.filterLastHeight(reqs)

@@ -581,7 +581,7 @@ func (br *ByzantineReactor) AddPeer(peer p2p.Peer) {
 
 	// Send our state to peer.
 	// If we're syncing, broadcast a RoundStepMessage later upon SwitchToConsensus().
-	if !br.reactor.waitSync {
+	if !br.reactor.WaitSync() {
 		br.reactor.sendNewRoundStepMessage(peer)
 	}
 }

@@ -67,8 +67,8 @@ type Node struct {
 	stateStore        sm.Store
 	blockStore        *store.BlockStore // store the blockchain to disk
 	pruner            *sm.Pruner
-  bcReactor         p2p.Reactor       // for block-syncing
-	mempoolReactor    *mempl.Reactor    // for gossipping transactions
+	bcReactor         p2p.Reactor    // for block-syncing
+	mempoolReactor    *mempl.Reactor // for gossipping transactions
 	mempool           mempl.Mempool
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots

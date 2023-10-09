@@ -264,14 +264,14 @@ func (c *baseRPCClient) BroadcastTxAsync(
 	ctx context.Context,
 	tx types.Tx,
 ) (*ctypes.ResultBroadcastTx, error) {
-	return c.broadcastTX(ctx, "broadcast_tx_async", tx)
+	return c.broadcastTX(ctx, "v1/broadcast_tx_async", tx)
 }
 
 func (c *baseRPCClient) BroadcastTxSync(
 	ctx context.Context,
 	tx types.Tx,
 ) (*ctypes.ResultBroadcastTx, error) {
-	return c.broadcastTX(ctx, "broadcast_tx_sync", tx)
+	return c.broadcastTX(ctx, "v1/broadcast_tx_sync", tx)
 }
 
 func (c *baseRPCClient) broadcastTX(

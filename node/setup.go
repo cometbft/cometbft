@@ -244,9 +244,10 @@ func createMempoolAndMempoolReactor(
 	config *cfg.Config,
 	proxyApp proxy.AppConns,
 	state sm.State,
+	waitSync bool,
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
-) (mempl.Mempool, p2p.Reactor) {
+) (mempl.Mempool, *mempl.Reactor) {
 	logger = logger.With("module", "mempool")
 	mp := mempl.NewCListMempool(
 		config.Mempool,
@@ -262,6 +263,7 @@ func createMempoolAndMempoolReactor(
 	reactor := mempl.NewReactor(
 		config.Mempool,
 		mp,
+		waitSync,
 	)
 	if config.Consensus.WaitForTxs() {
 		mp.EnableTxsAvailable()

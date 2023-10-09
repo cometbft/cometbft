@@ -55,7 +55,10 @@ func (env *Environment) GetRoutes() RoutesMap {
 		"broadcast_evidence": rpc.NewRPCFunc(env.BroadcastEvidence, "evidence"),
 	}
 
-	v1map := v0map
+	v1map := make(map[string]*rpc.RPCFunc)
+	for k, v := range v0map {
+		v1map[k] = v
+	}
 	for k, v := range v0map {
 		v1map[v1Prefix+k] = v
 	}

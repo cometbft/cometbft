@@ -52,7 +52,12 @@ func Routes(cfg config.RPCConfig, s state.Store, bs state.BlockStore, txidx txin
 		"block_search":     server.NewRPCFunc(env.BlockSearch, "query,page,per_page,order_by"),
 	}
 
-	v1map := v0map
+	v1map := make(map[string]*server.RPCFunc)
+
+	for k, v := range v0map {
+		v1map[k] = v
+	}
+
 	for k, v := range v0map {
 		v1map[v1Prefix+k] = v
 	}

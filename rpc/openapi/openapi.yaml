@@ -40,22 +40,19 @@ info:
 
     ## Versions
 
-    Up to CometBFT v0.38.x the RPC API version was v0.
-    In CometBFT v0.39.0, the RPC API version has changed to v1.
-    v0 and v1 provide exactly the same functionalities and behavior, the only difference
-    being that in v1, the prefix `v1` is appended to the methods' name.
+    Up to CometBFT v0.38.x the RPC API version followed CometBFT's version, even if there was
+    no actual change in the API.
+    In CometBFT v0.39.0, the RPC API version has changed to v1 and from then on its version
+    will be increased independently from CometBFT's.
 
-    For backwards compatibility reasons, CometBFT v0.39.x also supports the RPC API v0,
-    but it is recommended that all users migrate to v1 as v0 might be deprecated in the future.
-    For example, when targeting a CometBFT v0.39.x node
+    Also, from CometBFT v0.39.0, the methods' names are prefixed with the RPC version.
+    For example, to invoke the `block` method, one should use `localhost:26657/v1/block`
+    as endpoint.
 
-         localhost:26657/block
-
-    invokes the v0 API and
-
-         localhost:26657/v1/block
-
-    invokes the v1 version of method `block`.
+    For backwards compatibility, CometBFT v0.39.x will also supports invoking the methods
+    without the `v1` prefix, for example, `localhost:26657/block`, returning the exact same response.
+    However, the support for unprefixed methods will be dropped in future releases and all users are
+    encouraged to migrate as soon as possible.
 
     ## URI/HTTP
 

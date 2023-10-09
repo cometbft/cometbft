@@ -54,8 +54,10 @@ func RPCRoutes(c *lrpc.Client) map[string]*rpcserver.RPCFunc {
 		// evidence API
 		"broadcast_evidence": rpcserver.NewRPCFunc(makeBroadcastEvidenceFunc(c), "evidence"),
 	}
-
-	v1map := v0map
+	v1map := make(map[string]*rpcserver.RPCFunc)
+	for k, v := range v0map {
+		v1map[k] = v
+	}
 	for k, v := range v0map {
 		v1map[v1Prefix+k] = v
 	}

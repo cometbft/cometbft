@@ -1,6 +1,8 @@
 import sys
 import networkx as nx
 import matplotlib.pyplot as plt
+from pyvis.network import Network
+
 
 import graph
 
@@ -38,6 +40,12 @@ def plot_topology(nodes_edges: dict[int, list[int]], title=""):
     plt.title(title)
     plt.axis('off')
     plt.show()
+
+    nt = Network('1080', '1080')
+    nt.from_nx(G)
+    nt.toggle_physics(True)
+    nt.show_buttons(filter_=['physics'])
+    nt.show('nx.html', notebook=False)
 
 
 def plot_from_file(path):

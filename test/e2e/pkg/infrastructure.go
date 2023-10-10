@@ -39,9 +39,11 @@ type InfrastructureData struct {
 // InstanceData contains the relevant information for a machine instance backing
 // one of the nodes in the testnet.
 type InstanceData struct {
-	IPAddress    net.IP `json:"ip_address"`
-	ExtIPAddress net.IP `json:"ext_ip_address"`
-	Port         uint32 `json:"port"`
+	IPAddress      net.IP `json:"ip_address"`
+	ExtIPAddress   net.IP `json:"ext_ip_address"`
+	Port           uint32 `json:"port"`
+	GRPCPort       uint32 `json:"grpc_port"`
+	GRPCLegacyPort uint32 `json:"grpc_legacy_port"`
 }
 
 func sortNodeNames(m Manifest) []string {
@@ -74,9 +76,11 @@ func NewDockerInfrastructureData(m Manifest) (InfrastructureData, error) {
 	localHostIP := net.ParseIP("127.0.0.1")
 	for _, name := range sortNodeNames(m) {
 		ifd.Instances[name] = InstanceData{
-			IPAddress:    ipGen.Next(),
-			ExtIPAddress: localHostIP,
-			Port:         portGen.Next(),
+			IPAddress:      ipGen.Next(),
+			ExtIPAddress:   localHostIP,
+			Port:           portGen.Next(),
+			GRPCPort:       portGen.Next(),
+			GRPCLegacyPort: portGen.Next(),
 		}
 
 	}

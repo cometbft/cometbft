@@ -40,14 +40,14 @@ func NewValueOp(key []byte, proof *Proof) ValueOp {
 
 func ValueOpDecoder(pop cmtcrypto.ProofOp) (ProofOperator, error) {
 	if pop.Type != ProofOpValue {
-		return nil, &InvalidProofError{
+		return nil, &ErrInvalidProof{
 			Err: fmt.Errorf("unexpected ProofOp.Type; got %v, want %v", pop.Type, ProofOpValue),
 		}
 	}
 	var pbop cmtcrypto.ValueOp // a bit strange as we'll discard this, but it works.
 	err := pbop.Unmarshal(pop.Data)
 	if err != nil {
-		return nil, &InvalidProofError{
+		return nil, &ErrInvalidProof{
 			Err: fmt.Errorf("decoding ProofOp.Data into ValueOp: %w", err),
 		}
 	}
@@ -99,7 +99,7 @@ func (op ValueOp) Run(args [][]byte) ([][]byte, error) {
 	kvhash := leafHash(bz.Bytes())
 
 	if !bytes.Equal(kvhash, op.Proof.LeafHash) {
-		return nil, &InvalidHashError{
+		return nil, &ErrInvalidHash{
 			Err: fmt.Errorf("leaf %x, want %x", kvhash, op.Proof.LeafHash),
 		}
 	}

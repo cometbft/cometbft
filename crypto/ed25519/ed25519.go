@@ -20,12 +20,14 @@ var (
 	ErrInvalidSignature = errors.New("ed25519: invalid signature")
 )
 
-// InvalidKeyLenError describes an error resulting from an passing in a
+// ErrInvalidKeyLen describes an error resulting from an passing in a
 // key with an invalid key in the call to [BatchVerifier.Add].
-type InvalidKeyLenError struct{ got, want int }
+type ErrInvalidKeyLen struct {
+	Got, Want int
+}
 
-func (e *InvalidKeyLenError) Error() string {
-	return fmt.Sprintf("ed25519: invalid key length: got %d, want %d", e.got, e.want)
+func (e *ErrInvalidKeyLen) Error() string {
+	return fmt.Sprintf("ed25519: invalid key length: got %d, want %d", e.Got, e.Want)
 }
 
 var (
@@ -221,7 +223,7 @@ func (b *BatchVerifier) Add(key crypto.PubKey, msg, signature []byte) error {
 	pkBytes := pkEd.Bytes()
 
 	if l := len(pkBytes); l != PubKeySize {
-		return &InvalidKeyLenError{got: l, want: PubKeySize}
+		return &ErrInvalidKeyLen{Got: l, Want: PubKeySize}
 	}
 
 	// check that the signature is the correct length

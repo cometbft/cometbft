@@ -40,7 +40,7 @@ func (privKey PrivKey) Bytes() []byte {
 // Sign produces a signature on the provided message.
 func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 	if privKey.kp == nil {
-		return nil, &InvalidKeyError{
+		return nil, &ErrInvalidKey{
 			Err: fmt.Errorf("sr25519: uninitialized private key"),
 		}
 	}
@@ -49,14 +49,14 @@ func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 
 	sig, err := privKey.kp.Sign(crypto.CReader(), st)
 	if err != nil {
-		return nil, &InvalidSignatureError{
+		return nil, &ErrInvalidSignature{
 			Err: fmt.Errorf("sr25519: failed to sign message: %w", err),
 		}
 	}
 
 	sigBytes, err := sig.MarshalBinary()
 	if err != nil {
-		return nil, &InvalidSignatureError{
+		return nil, &ErrInvalidSignature{
 			Err: fmt.Errorf("sr25519: failed to serialize signature: %w", err),
 		}
 	}
@@ -110,7 +110,7 @@ func (privKey *PrivKey) UnmarshalJSON(data []byte) error {
 
 	var b []byte
 	if err := json.Unmarshal(data, &b); err != nil {
-		return &InvalidKeyError{
+		return &ErrInvalidKey{
 			Err: fmt.Errorf("sr25519: failed to deserialize JSON: %w", err),
 		}
 	}

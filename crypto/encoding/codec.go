@@ -10,23 +10,25 @@ import (
 	pc "github.com/cometbft/cometbft/proto/tendermint/crypto"
 )
 
-// UnsupportedKeyError describes an error resulting from the use of an
+// ErrUnsupportedKey describes an error resulting from the use of an
 // unsupported key in [PubKeyToProto] or [PubKeyFromProto].
-type UnsupportedKeyError struct{ key any }
+type ErrUnsupportedKey struct {
+	Key any
+}
 
-func (e *UnsupportedKeyError) Error() string {
-	return fmt.Sprintf("encoding: unsupported key %v", e.key)
+func (e *ErrUnsupportedKey) Error() string {
+	return fmt.Sprintf("encoding: unsupported key %v", e.Key)
 }
 
 // InvalidKeyLen describes an error resulting from the use of a key with
 // an invalid length in [PubKeyFromProto].
-type InvalidKeyLenError struct {
-	key       any
-	got, want int
+type ErrInvalidKeyLen struct {
+	Key       any
+	Got, Want int
 }
 
-func (e *InvalidKeyLenError) Error() string {
-	return fmt.Sprintf("encoding: invalid key length for %v, got %d, want %d", e.key, e.got, e.want)
+func (e *ErrInvalidKeyLen) Error() string {
+	return fmt.Sprintf("encoding: invalid key length for %v, got %d, want %d", e.Key, e.Got, e.Want)
 }
 
 func init() {
@@ -52,7 +54,7 @@ func PubKeyToProto(k crypto.PubKey) (pc.PublicKey, error) {
 			},
 		}
 	default:
-		return kp, &UnsupportedKeyError{key: k}
+		return kp, &ErrUnsupportedKey{Key: k}
 	}
 	return kp, nil
 }
@@ -62,10 +64,10 @@ func PubKeyFromProto(k pc.PublicKey) (crypto.PubKey, error) {
 	switch k := k.Sum.(type) {
 	case *pc.PublicKey_Ed25519:
 		if len(k.Ed25519) != ed25519.PubKeySize {
-			return nil, &InvalidKeyLenError{
-				key:  k,
-				got:  len(k.Ed25519),
-				want: ed25519.PubKeySize,
+			return nil, &ErrInvalidKeyLen{
+				Key:  k,
+				Got:  len(k.Ed25519),
+				Want: ed25519.PubKeySize,
 			}
 		}
 		pk := make(ed25519.PubKey, ed25519.PubKeySize)
@@ -73,16 +75,16 @@ func PubKeyFromProto(k pc.PublicKey) (crypto.PubKey, error) {
 		return pk, nil
 	case *pc.PublicKey_Secp256K1:
 		if len(k.Secp256K1) != secp256k1.PubKeySize {
-			return nil, &InvalidKeyLenError{
-				key:  k,
-				got:  len(k.Secp256K1),
-				want: secp256k1.PubKeySize,
+			return nil, &ErrInvalidKeyLen{
+				Key:  k,
+				Got:  len(k.Secp256K1),
+				Want: secp256k1.PubKeySize,
 			}
 		}
 		pk := make(secp256k1.PubKey, secp256k1.PubKeySize)
 		copy(pk, k.Secp256K1)
 		return pk, nil
 	default:
-		return nil, &UnsupportedKeyError{key: k}
+		return nil, &ErrUnsupportedKey{Key: k}
 	}
 }

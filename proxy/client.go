@@ -166,6 +166,46 @@ func (c *consensusSyncLocalClientCreator) NewABCISnapshotClient() (abcicli.Clien
 	return abcicli.NewUnsyncLocalClient(c.app), nil
 }
 
+//-----------------------------------------------------------------------------
+// most advanced local client creator with a more complex concurrency model
+// than the other local client creators - all concurrency is assumed to be
+// handled by the application
+
+type unsyncLocalClientCreator struct {
+	app types.Application
+}
+
+// NewUnsyncLocalClientCreator returns a [ClientCreator] that is fully
+// unsynchronized, meaning that all synchronization must be handled by the
+// application. This is an advanced type of client creator, and requires
+// special care on the application side to ensure that consensus concurrency is
+// not violated.
+func NewUnsyncLocalClientCreator(app types.Application) ClientCreator {
+	return &unsyncLocalClientCreator{
+		app: app,
+	}
+}
+
+// NewABCIConsensusClient implements ClientCreator.
+func (c *unsyncLocalClientCreator) NewABCIConsensusClient() (abcicli.Client, error) {
+	return abcicli.NewUnsyncLocalClient(c.app), nil
+}
+
+// NewABCIMempoolClient implements ClientCreator.
+func (c *unsyncLocalClientCreator) NewABCIMempoolClient() (abcicli.Client, error) {
+	return abcicli.NewUnsyncLocalClient(c.app), nil
+}
+
+// NewABCIQueryClient implements ClientCreator.
+func (c *unsyncLocalClientCreator) NewABCIQueryClient() (abcicli.Client, error) {
+	return abcicli.NewUnsyncLocalClient(c.app), nil
+}
+
+// NewABCISnapshotClient implements ClientCreator.
+func (c *unsyncLocalClientCreator) NewABCISnapshotClient() (abcicli.Client, error) {
+	return abcicli.NewUnsyncLocalClient(c.app), nil
+}
+
 //---------------------------------------------------------------
 // remote proxy opens new connections to an external app process
 
@@ -230,10 +270,14 @@ func DefaultClientCreator(addr, transport, dbDir string) ClientCreator {
 		return NewLocalClientCreator(kvstore.NewInMemoryApplication())
 	case "kvstore_connsync":
 		return NewConnSyncLocalClientCreator(kvstore.NewInMemoryApplication())
+	case "kvstore_unsync":
+		return NewUnsyncLocalClientCreator(kvstore.NewInMemoryApplication())
 	case "persistent_kvstore":
 		return NewLocalClientCreator(kvstore.NewPersistentApplication(dbDir))
 	case "persistent_kvstore_connsync":
 		return NewConnSyncLocalClientCreator(kvstore.NewPersistentApplication(dbDir))
+	case "persistent_kvstore_unsync":
+		return NewUnsyncLocalClientCreator(kvstore.NewPersistentApplication(dbDir))
 	case "e2e":
 		app, err := e2e.NewApplication(e2e.DefaultConfig(dbDir))
 		if err != nil {
@@ -246,6 +290,12 @@ func DefaultClientCreator(addr, transport, dbDir string) ClientCreator {
 			panic(err)
 		}
 		return NewConnSyncLocalClientCreator(app)
+	case "e2e_unsync":
+		app, err := e2e.NewApplication(e2e.DefaultConfig(dbDir))
+		if err != nil {
+			panic(err)
+		}
+		return NewUnsyncLocalClientCreator(app)
 	case "noop":
 		return NewLocalClientCreator(types.NewBaseApplication())
 	default:

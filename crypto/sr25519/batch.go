@@ -19,11 +19,11 @@ type ErrInvalidKey struct {
 	Err error
 }
 
-func (e *ErrInvalidKey) Error() string {
+func (e ErrInvalidKey) Error() string {
 	return fmt.Sprintf("sr25519: invalid public key: %v", e.Err)
 }
 
-func (e *ErrInvalidKey) Unwrap() error {
+func (e ErrInvalidKey) Unwrap() error {
 	return e.Err
 }
 
@@ -33,11 +33,13 @@ type ErrInvalidSignature struct {
 	Err error
 }
 
-func (e *ErrInvalidSignature) Error() string {
+func (e ErrInvalidSignature) Error() string {
 	return fmt.Sprintf("sr25519: invalid signature: %v", e.Err)
 }
 
-func (e *ErrInvalidSignature) Unwrap() error { return e.Err }
+func (e ErrInvalidSignature) Unwrap() error {
+	return e.Err
+}
 
 // BatchVerifier implements batch verification for sr25519.
 type BatchVerifier struct {
@@ -51,17 +53,17 @@ func NewBatchVerifier() crypto.BatchVerifier {
 func (b *BatchVerifier) Add(key crypto.PubKey, msg, signature []byte) error {
 	pk, ok := key.(PubKey)
 	if !ok {
-		return &ErrInvalidKey{Err: errors.New("sr25519: pubkey is not sr25519")}
+		return ErrInvalidKey{Err: errors.New("sr25519: pubkey is not sr25519")}
 	}
 
 	var srpk sr25519.PublicKey
 	if err := srpk.UnmarshalBinary(pk); err != nil {
-		return &ErrInvalidKey{Err: err}
+		return ErrInvalidKey{Err: err}
 	}
 
 	var sig sr25519.Signature
 	if err := sig.UnmarshalBinary(signature); err != nil {
-		return &ErrInvalidSignature{Err: err}
+		return ErrInvalidSignature{Err: err}
 	}
 
 	st := signingCtx.NewTranscriptBytes(msg)

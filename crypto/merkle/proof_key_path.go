@@ -86,7 +86,7 @@ type ErrInvalidKey struct {
 	Err error
 }
 
-func (e *ErrInvalidKey) Error() string {
+func (e ErrInvalidKey) Error() string {
 	return fmt.Sprintf("merkle: invalid key error: %v", e.Err)
 }
 
@@ -94,7 +94,7 @@ func (e *ErrInvalidKey) Error() string {
 // Each key must use a known encoding.
 func KeyPathToKeys(path string) (keys [][]byte, err error) {
 	if path == "" || path[0] != '/' {
-		return nil, &ErrInvalidKey{
+		return nil, ErrInvalidKey{
 			Err: errors.New("key path string must start with a forward slash '/'"),
 		}
 	}
@@ -105,7 +105,7 @@ func KeyPathToKeys(path string) (keys [][]byte, err error) {
 			hexPart := part[2:]
 			key, err := hex.DecodeString(hexPart)
 			if err != nil {
-				return nil, &ErrInvalidKey{
+				return nil, ErrInvalidKey{
 					Err: fmt.Errorf("decoding hex-encoded part #%d: /%s: %w", i, part, err),
 				}
 			}
@@ -113,7 +113,7 @@ func KeyPathToKeys(path string) (keys [][]byte, err error) {
 		} else {
 			key, err := url.PathUnescape(part)
 			if err != nil {
-				return nil, &ErrInvalidKey{
+				return nil, ErrInvalidKey{
 					Err: fmt.Errorf("decoding url-encoded part #%d: /%s: %w", i, part, err),
 				}
 			}

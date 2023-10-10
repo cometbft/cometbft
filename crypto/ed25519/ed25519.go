@@ -26,7 +26,7 @@ type ErrInvalidKeyLen struct {
 	Got, Want int
 }
 
-func (e *ErrInvalidKeyLen) Error() string {
+func (e ErrInvalidKeyLen) Error() string {
 	return fmt.Sprintf("ed25519: invalid key length: got %d, want %d", e.Got, e.Want)
 }
 
@@ -223,7 +223,7 @@ func (b *BatchVerifier) Add(key crypto.PubKey, msg, signature []byte) error {
 	pkBytes := pkEd.Bytes()
 
 	if l := len(pkBytes); l != PubKeySize {
-		return &ErrInvalidKeyLen{Got: l, Want: PubKeySize}
+		return ErrInvalidKeyLen{Got: l, Want: PubKeySize}
 	}
 
 	// check that the signature is the correct length

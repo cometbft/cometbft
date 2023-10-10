@@ -22,11 +22,11 @@ type ErrInvalidHash struct {
 	Err error
 }
 
-func (e *ErrInvalidHash) Error() string {
+func (e ErrInvalidHash) Error() string {
 	return fmt.Sprintf("merkle: invalid hash: %s", e.Err)
 }
 
-func (e *ErrInvalidHash) Unwrap() error {
+func (e ErrInvalidHash) Unwrap() error {
 	return e.Err
 }
 
@@ -34,11 +34,11 @@ type ErrInvalidProof struct {
 	Err error
 }
 
-func (e *ErrInvalidProof) Error() string {
+func (e ErrInvalidProof) Error() string {
 	return fmt.Sprintf("merkle: invalid proof: %s", e.Err)
 }
 
-func (e *ErrInvalidProof) Unwrap() error {
+func (e ErrInvalidProof) Unwrap() error {
 	return e.Err
 }
 
@@ -77,34 +77,34 @@ func ProofsFromByteSlices(items [][]byte) (rootHash []byte, proofs []*Proof) {
 // Check sp.Index/sp.Total manually if needed
 func (sp *Proof) Verify(rootHash []byte, leaf []byte) error {
 	if rootHash == nil {
-		return &ErrInvalidHash{
+		return ErrInvalidHash{
 			Err: errors.New("nil root"),
 		}
 	}
 	if sp.Total < 0 {
-		return &ErrInvalidProof{
+		return ErrInvalidProof{
 			Err: errors.New("negative proof total"),
 		}
 	}
 	if sp.Index < 0 {
-		return &ErrInvalidProof{
+		return ErrInvalidProof{
 			Err: errors.New("negative proof index"),
 		}
 	}
 	leafHash := leafHash(leaf)
 	if !bytes.Equal(sp.LeafHash, leafHash) {
-		return &ErrInvalidHash{
+		return ErrInvalidHash{
 			Err: fmt.Errorf("leaf %x, want %x", sp.LeafHash, leafHash),
 		}
 	}
 	computedHash, err := sp.computeRootHash()
 	if err != nil {
-		return &ErrInvalidHash{
+		return ErrInvalidHash{
 			Err: fmt.Errorf("compute root hash: %w", err),
 		}
 	}
 	if !bytes.Equal(computedHash, rootHash) {
-		return &ErrInvalidHash{
+		return ErrInvalidHash{
 			Err: fmt.Errorf("root %x, want %x", computedHash, rootHash),
 		}
 	}
@@ -141,17 +141,17 @@ func (sp *Proof) StringIndented(indent string) string {
 // and it expects at most MaxAunts elements in Aunts.
 func (sp *Proof) ValidateBasic() error {
 	if sp.Total < 0 {
-		return &ErrInvalidProof{
+		return ErrInvalidProof{
 			Err: errors.New("negative proof total"),
 		}
 	}
 	if sp.Index < 0 {
-		return &ErrInvalidProof{
+		return ErrInvalidProof{
 			Err: errors.New("negative proof index"),
 		}
 	}
 	if len(sp.LeafHash) != tmhash.Size {
-		return &ErrInvalidHash{
+		return ErrInvalidHash{
 			Err: fmt.Errorf("leaf length %d, want %d", len(sp.LeafHash), tmhash.Size),
 		}
 	}
@@ -160,7 +160,7 @@ func (sp *Proof) ValidateBasic() error {
 	}
 	for i, auntHash := range sp.Aunts {
 		if len(auntHash) != tmhash.Size {
-			return &ErrInvalidHash{
+			return ErrInvalidHash{
 				Err: fmt.Errorf("aunt#%d hash length %d, want %d", i, len(auntHash), tmhash.Size),
 			}
 		}
@@ -184,7 +184,7 @@ func (sp *Proof) ToProto() *cmtcrypto.Proof {
 
 func ProofFromProto(pb *cmtcrypto.Proof) (*Proof, error) {
 	if pb == nil {
-		return nil, &ErrInvalidProof{Err: errors.New("nil proof")}
+		return nil, ErrInvalidProof{Err: errors.New("nil proof")}
 	}
 
 	sp := new(Proof)

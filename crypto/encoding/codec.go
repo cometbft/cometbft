@@ -16,7 +16,7 @@ type ErrUnsupportedKey struct {
 	Key any
 }
 
-func (e *ErrUnsupportedKey) Error() string {
+func (e ErrUnsupportedKey) Error() string {
 	return fmt.Sprintf("encoding: unsupported key %v", e.Key)
 }
 
@@ -27,7 +27,7 @@ type ErrInvalidKeyLen struct {
 	Got, Want int
 }
 
-func (e *ErrInvalidKeyLen) Error() string {
+func (e ErrInvalidKeyLen) Error() string {
 	return fmt.Sprintf("encoding: invalid key length for %v, got %d, want %d", e.Key, e.Got, e.Want)
 }
 
@@ -54,7 +54,7 @@ func PubKeyToProto(k crypto.PubKey) (pc.PublicKey, error) {
 			},
 		}
 	default:
-		return kp, &ErrUnsupportedKey{Key: k}
+		return kp, ErrUnsupportedKey{Key: k}
 	}
 	return kp, nil
 }
@@ -64,7 +64,7 @@ func PubKeyFromProto(k pc.PublicKey) (crypto.PubKey, error) {
 	switch k := k.Sum.(type) {
 	case *pc.PublicKey_Ed25519:
 		if len(k.Ed25519) != ed25519.PubKeySize {
-			return nil, &ErrInvalidKeyLen{
+			return nil, ErrInvalidKeyLen{
 				Key:  k,
 				Got:  len(k.Ed25519),
 				Want: ed25519.PubKeySize,
@@ -75,7 +75,7 @@ func PubKeyFromProto(k pc.PublicKey) (crypto.PubKey, error) {
 		return pk, nil
 	case *pc.PublicKey_Secp256K1:
 		if len(k.Secp256K1) != secp256k1.PubKeySize {
-			return nil, &ErrInvalidKeyLen{
+			return nil, ErrInvalidKeyLen{
 				Key:  k,
 				Got:  len(k.Secp256K1),
 				Want: secp256k1.PubKeySize,
@@ -85,6 +85,6 @@ func PubKeyFromProto(k pc.PublicKey) (crypto.PubKey, error) {
 		copy(pk, k.Secp256K1)
 		return pk, nil
 	default:
-		return nil, &ErrUnsupportedKey{Key: k}
+		return nil, ErrUnsupportedKey{Key: k}
 	}
 }

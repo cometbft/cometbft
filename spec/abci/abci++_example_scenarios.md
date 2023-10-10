@@ -14,7 +14,7 @@ introduced by ABCI++: `PrepareProposal` and `ProcessProposal`. Specifically, we 
 on the part of the grammar presented below.  
 
 ```abnf
-consensus-height    = *consensus-round decide commit
+consensus-height    = *consensus-round finalize-block commit
 consensus-round     = proposer / non-proposer
 
 proposer            = [prepare-proposal process-proposal]

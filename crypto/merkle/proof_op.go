@@ -38,10 +38,10 @@ func (poz ProofOperators) VerifyValue(root []byte, keypath string, value []byte)
 	return poz.Verify(root, keypath, [][]byte{value})
 }
 
-func (poz ProofOperators) Verify(root []byte, keypath string, args [][]byte) (err error) {
+func (poz ProofOperators) Verify(root []byte, keypath string, args [][]byte) error {
 	keys, err := KeyPathToKeys(keypath)
 	if err != nil {
-		return
+		return err
 	}
 
 	for i, op := range poz {
@@ -62,7 +62,7 @@ func (poz ProofOperators) Verify(root []byte, keypath string, args [][]byte) (er
 		}
 		args, err = op.Run(args)
 		if err != nil {
-			return
+			return err
 		}
 	}
 	if !bytes.Equal(root, args[0]) {

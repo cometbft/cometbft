@@ -261,6 +261,38 @@ tls_key_file = "{{ .RPC.TLSKeyFile }}"
 pprof_laddr = "{{ .RPC.PprofListenAddress }}"
 
 #######################################################
+###       gRPC Server Configuration Options         ###
+#######################################################
+
+#
+# Note that the gRPC server is exposed unauthenticated. It is critical that
+# this server not be exposed directly to the public internet. If this service
+# must be accessed via the public internet, please ensure that appropriate
+# precautions are taken (e.g. fronting with a reverse proxy like nginx with TLS
+# termination and authentication, using DDoS protection services like
+# CloudFlare, etc.).
+#
+
+[grpc]
+
+# TCP or UNIX socket address for the RPC server to listen on. If not specified,
+# the gRPC server will be disabled. Note that this address MUST be different than 
+# the GRPC.ListenAddress within the RPC configuration. The listener at that endpoint
+# does not support the below mentioned services, and vice versa.
+laddr = "{{ .GRPC.ListenAddress }}"
+
+#
+# Each gRPC service can be turned on/off, and in some cases configured,
+# individually. If the gRPC server is not enabled, all individual services'
+# configurations are ignored.
+#
+
+# The gRPC version service provides version information about the node and the
+# protocols it uses.
+[grpc.version_service]
+enabled = {{ .GRPC.VersionService.Enabled }}
+
+#######################################################
 ###           P2P Configuration Options             ###
 #######################################################
 [p2p]

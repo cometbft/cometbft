@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -20,6 +21,9 @@ import (
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 
 	_ "embed"
+
+	legacy_grpc "github.com/cometbft/cometbft/rpc/grpc"
+	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
 )
 
 const (
@@ -100,7 +104,9 @@ type Node struct {
 	NodeKey             crypto.PrivKey
 	InternalIP          net.IP
 	ExternalIP          net.IP
-	ProxyPort           uint32
+	RPCProxyPort        uint32
+	GRPCProxyPort       uint32
+	GRPCLegacyPort      uint32
 	StartAt             int64
 	BlockSyncVersion    string
 	StateSync           bool
@@ -211,7 +217,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			NodeKey:          keyGen.Generate("ed25519"),
 			InternalIP:       ind.IPAddress,
 			ExternalIP:       extIP,
-			ProxyPort:        ind.Port,
+			RPCProxyPort:     ind.Port,
+			GRPCProxyPort:    ind.GRPCPort,
+			GRPCLegacyPort:   ind.GRPCLegacyPort,
 			Mode:             ModeValidator,
 			Database:         "goleveldb",
 			ABCIProtocol:     Protocol(testnet.ABCIProtocol),
@@ -356,18 +364,18 @@ func (n Node) Validate(testnet Testnet) error {
 	if !testnet.IP.Contains(n.InternalIP) {
 		return fmt.Errorf("node IP %v is not in testnet network %v", n.InternalIP, testnet.IP)
 	}
-	if n.ProxyPort == n.PrometheusProxyPort {
-		return fmt.Errorf("node local port %v used also for Prometheus local port", n.ProxyPort)
+	if n.RPCProxyPort == n.PrometheusProxyPort {
+		return fmt.Errorf("node local port %v used also for Prometheus local port", n.RPCProxyPort)
 	}
-	if n.ProxyPort > 0 && n.ProxyPort <= 1024 {
-		return fmt.Errorf("local port %v must be >1024", n.ProxyPort)
+	if n.RPCProxyPort > 0 && n.RPCProxyPort <= 1024 {
+		return fmt.Errorf("local port %v must be >1024", n.RPCProxyPort)
 	}
 	if n.PrometheusProxyPort > 0 && n.PrometheusProxyPort <= 1024 {
 		return fmt.Errorf("local port %v must be >1024", n.PrometheusProxyPort)
 	}
 	for _, peer := range testnet.Nodes {
-		if peer.Name != n.Name && peer.ProxyPort == n.ProxyPort && peer.ExternalIP.Equal(n.ExternalIP) {
-			return fmt.Errorf("peer %q also has local port %v", peer.Name, n.ProxyPort)
+		if peer.Name != n.Name && peer.RPCProxyPort == n.RPCProxyPort {
+			return fmt.Errorf("peer %q also has local port %v", peer.Name, n.RPCProxyPort)
 		}
 		if n.PrometheusProxyPort > 0 {
 			if peer.Name != n.Name && peer.PrometheusProxyPort == n.PrometheusProxyPort {
@@ -537,9 +545,24 @@ func (n Node) AddressRPC() string {
 	return fmt.Sprintf("%v:26657", ip)
 }
 
-// Client returns an RPC client for a node.
+// Client returns an RPC client for the node.
 func (n Node) Client() (*rpchttp.HTTP, error) {
-	return rpchttp.New(fmt.Sprintf("http://%s:%v", n.ExternalIP, n.ProxyPort), "/websocket")
+	return rpchttp.New(fmt.Sprintf("http://127.0.0.1:%v", n.RPCProxyPort), "/websocket")
+}
+
+// GRPCClient creates a gRPC client for the node.
+func (n Node) GRPCClient(ctx context.Context) (grpcclient.Client, error) {
+	return grpcclient.New(
+		ctx,
+		fmt.Sprintf("127.0.0.1:%v", n.GRPCProxyPort),
+		grpcclient.WithInsecure(),
+	)
+}
+
+// GRPCLegacyClient creates a legacy gRPC client for the node.
+func (n Node) GRPCLegacyClient() (legacy_grpc.BroadcastAPIClient, error) {
+	//nolint:staticcheck // SA1019: core_grpc.StartGRPCClient is deprecated: A new gRPC API will be introduced after v0.38.
+	return legacy_grpc.StartGRPCClient(fmt.Sprintf("127.0.0.1:%v", n.GRPCLegacyPort)), nil
 }
 
 // Stateless returns true if the node is either a seed node or a light node

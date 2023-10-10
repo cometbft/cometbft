@@ -167,6 +167,9 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg.Moniker = node.Name
 	cfg.ProxyApp = AppAddressTCP
 	cfg.RPC.ListenAddress = "tcp://0.0.0.0:26657"
+	cfg.RPC.GRPCListenAddress = "tcp://0.0.0.0:26669"
+	cfg.GRPC.ListenAddress = "tcp://0.0.0.0:26670"
+	cfg.GRPC.VersionService.Enabled = true
 	cfg.RPC.PprofListenAddress = ":6060"
 	cfg.P2P.ExternalAddress = fmt.Sprintf("tcp://%v", node.AddressP2P(false))
 	cfg.P2P.AddrBookStrict = false

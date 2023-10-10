@@ -24,8 +24,6 @@ type Server struct {
 	Config  *config.RPCConfig
 }
 
-const v1Prefix = "v1/"
-
 // Routes returns the set of routes used by the Inspector server.
 func Routes(cfg config.RPCConfig, s state.Store, bs state.BlockStore, txidx txindex.TxIndexer, blkidx indexer.BlockIndexer, logger log.Logger) core.RoutesMap { //nolint: lll
 	env := &core.Environment{
@@ -37,7 +35,7 @@ func Routes(cfg config.RPCConfig, s state.Store, bs state.BlockStore, txidx txin
 		ConsensusReactor: waitSyncCheckerImpl{},
 		Logger:           logger,
 	}
-	v0map := core.RoutesMap{
+	return core.RoutesMap{
 		"blockchain":       server.NewRPCFunc(env.BlockchainInfo, "minHeight,maxHeight"),
 		"consensus_params": server.NewRPCFunc(env.ConsensusParams, "height"),
 		"block":            server.NewRPCFunc(env.Block, "height"),
@@ -51,17 +49,6 @@ func Routes(cfg config.RPCConfig, s state.Store, bs state.BlockStore, txidx txin
 		"tx_search":        server.NewRPCFunc(env.TxSearch, "query,prove,page,per_page,order_by"),
 		"block_search":     server.NewRPCFunc(env.BlockSearch, "query,page,per_page,order_by"),
 	}
-
-	v1map := make(map[string]*server.RPCFunc)
-
-	for k, v := range v0map {
-		v1map[k] = v
-	}
-
-	for k, v := range v0map {
-		v1map[v1Prefix+k] = v
-	}
-	return v1map
 }
 
 // Handler returns the http.Handler configured for use with an Inspector server. Handler

@@ -8,11 +8,9 @@ import (
 
 type RoutesMap map[string]*rpc.RPCFunc
 
-const v1Prefix = "v1/"
-
 // Routes is a map of available routes.
 func (env *Environment) GetRoutes() RoutesMap {
-	v0map := RoutesMap{
+	return RoutesMap{
 		// subscribe/unsubscribe are reserved for websocket events.
 		"subscribe":       rpc.NewWSRPCFunc(env.Subscribe, "query"),
 		"unsubscribe":     rpc.NewWSRPCFunc(env.Unsubscribe, "query"),
@@ -54,28 +52,12 @@ func (env *Environment) GetRoutes() RoutesMap {
 		// evidence API
 		"broadcast_evidence": rpc.NewRPCFunc(env.BroadcastEvidence, "evidence"),
 	}
-
-	v1map := make(map[string]*rpc.RPCFunc)
-	for k, v := range v0map {
-		v1map[k] = v
-	}
-	for k, v := range v0map {
-		v1map[v1Prefix+k] = v
-	}
-
-	return v1map
 }
 
 // AddUnsafeRoutes adds unsafe routes.
 func (env *Environment) AddUnsafeRoutes(routes RoutesMap) {
 	// control API
-	// v0
 	routes["dial_seeds"] = rpc.NewRPCFunc(env.UnsafeDialSeeds, "seeds")
 	routes["dial_peers"] = rpc.NewRPCFunc(env.UnsafeDialPeers, "peers,persistent,unconditional,private")
 	routes["unsafe_flush_mempool"] = rpc.NewRPCFunc(env.UnsafeFlushMempool, "")
-
-	// v1
-	routes[v1Prefix+"dial_seeds"] = rpc.NewRPCFunc(env.UnsafeDialSeeds, "seeds")
-	routes[v1Prefix+"dial_peers"] = rpc.NewRPCFunc(env.UnsafeDialPeers, "peers,persistent,unconditional,private")
-	routes[v1Prefix+"unsafe_flush_mempool"] = rpc.NewRPCFunc(env.UnsafeFlushMempool, "")
 }

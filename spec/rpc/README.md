@@ -71,7 +71,7 @@ curl http://127.0.0.1:26657/v1/health
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"v1/health\"}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"health\"}"
 ```
 
 #### Response
@@ -103,7 +103,7 @@ curl http://127.0.0.1:26657/v1/status
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"v1/status\"}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"status\"}"
 ```
 
 #### Response
@@ -172,7 +172,7 @@ curl http://127.0.0.1:26657/v1/net_info
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"v1/net_info\"}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"net_info\"}"
 ```
 
 #### Response
@@ -219,7 +219,7 @@ curl http://127.0.0.1:26657/v1/blockchain?minHeight=1&maxHeight=2
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"v1/blockchain\",\"params\":{\"minHeight\":\"1\", \"maxHeight\":\"2\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"blockchain\",\"params\":{\"minHeight\":\"1\", \"maxHeight\":\"2\"}}"
 ```
 
 #### Response
@@ -293,7 +293,7 @@ curl http://127.0.0.1:26657/v1/block?height=1
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"v1/block\",\"params\":{\"height\":\"1\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"block\",\"params\":{\"height\":\"1\"}}"
 ```
 
 #### Response
@@ -406,7 +406,7 @@ curl http://127.0.0.1:26657/v1/block_by_hash?hash=0xD70952032620CC4E2737EB8AC379
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"v1/block_by_hash\",\"params\":{\"hash\":\"0xD70952032620CC4E2737EB8AC379806359D8E0B17B0488F627997A0B043ABDED\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"block_by_hash\",\"params\":{\"hash\":\"0xD70952032620CC4E2737EB8AC379806359D8E0B17B0488F627997A0B043ABDED\"}}"
 ```
 
 #### Response
@@ -522,7 +522,7 @@ curl  http://127.0.0.1:26657/v1/block_results?height=1
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"v1/block_results\",\"params\":{\"height\":\"1\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"block_results\",\"params\":{\"height\":\"1\"}}"
 ```
 
 #### Response
@@ -629,7 +629,7 @@ curl  http://127.0.0.1:26657/v1/commit?height=1
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"v1/commit\",\"params\":{\"height\":\"1\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"commit\",\"params\":{\"height\":\"1\"}}"
 ```
 
 #### Response
@@ -709,7 +709,7 @@ curl  http://127.0.0.1:26657/v1/validators
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"v1/validators\",\"params\":{\"height\":\"1\", \"page\":\"1\", \"per_page\":\"20\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"validators\",\"params\":{\"height\":\"1\", \"page\":\"1\", \"per_page\":\"20\"}}"
 ```
 
 #### Response
@@ -753,7 +753,7 @@ curl  http://127.0.0.1:26657/v1/genesis
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"v1/genesis\"}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"genesis\"}"
 ```
 
 #### Response
@@ -820,7 +820,7 @@ curl  http://127.0.0.1:26657/v1/genesis_chunked?chunk=0
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"v1/genesis_chunked\",\"params\":{\"chunk\":0}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"genesis_chunked\",\"params\":{\"chunk\":0}}"
 ```
 
 #### Response
@@ -856,7 +856,7 @@ curl  http://127.0.0.1:26657/v1/consensus_params
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"v1/consensus_params\"}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"consensus_params\"}"
 ```
 
 #### Response
@@ -905,7 +905,7 @@ curl  http://127.0.0.1:26657/v1/unconfirmed_txs
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"v1/unconfirmed_txs\, \"params\":{\"limit\":\"20\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"unconfirmed_txs\, \"params\":{\"limit\":\"20\"}}"
 ```
 
 #### Response
@@ -944,7 +944,7 @@ curl  http://127.0.0.1:26657/v1/num_unconfirmed_txs
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"v1/num_unconfirmed_txs\"}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"num_unconfirmed_txs\"}"
 ```
 
 #### Response
@@ -979,7 +979,7 @@ curl  http://127.0.0.1:26657/v1/num_unconfirmed_txs
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"v1/num_unconfirmed_txs\"}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"num_unconfirmed_txs\"}"
 ```
 
 #### Response
@@ -1030,7 +1030,7 @@ curl  http://127.0.0.1:26657/v1/broadcast_tx_sync?tx=encoded_tx
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"v1/broadcast_tx_sync\",\"params\":{\"tx\":\"a/encoded_tx/c\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"broadcast_tx_sync\",\"params\":{\"tx\":\"a/encoded_tx/c\"}}"
 ```
 
 #### Response
@@ -1069,7 +1069,7 @@ curl  http://127.0.0.1:26657/v1/broadcast_tx_async?tx=encoded_tx
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"v1/broadcast_tx_async\",\"params\":{\"tx\":\"a/encoded_tx/c\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"broadcast_tx_async\",\"params\":{\"tx\":\"a/encoded_tx/c\"}}"
 ```
 
 #### Response
@@ -1108,7 +1108,7 @@ curl  http://127.0.0.1:26657/v1/check_tx?tx=encoded_tx
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"v1/check_tx\",\"params\":{\"tx\":\"a/encoded_tx/c\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"check_tx\",\"params\":{\"tx\":\"a/encoded_tx/c\"}}"
 ```
 
 #### Response
@@ -1163,7 +1163,7 @@ curl  http://127.0.0.1:26657/v1/abci_info
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"v1/abci_info\"}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"abci_info\"}"
 ```
 
 #### Response
@@ -1204,7 +1204,7 @@ curl 'http://127.0.0.1:26657/v1/abci_query?path="/store/foo/key"&data=0x636f6d65
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"v1/abci_query\",\"params\":{\"path\":\"/store/foo/key\", \"data\":\"636f6d6574626674\", \"height\":\"1\", \"prove\":\"true\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"abci_query\",\"params\":{\"path\":\"/store/foo/key\", \"data\":\"636f6d6574626674\", \"height\":\"1\", \"prove\":\"true\"}}"
 ```
 
 #### Response
@@ -1249,7 +1249,7 @@ curl http://localhost:26657/v1/broadcast_evidence?evidence=JSON_EVIDENCE_encoded
 #### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"v1/broadcast_evidence\",\"params\":{\"evidence\":\"JSON_EVIDENCE_encoded\"}}"
+curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"broadcast_evidence\",\"params\":{\"evidence\":\"JSON_EVIDENCE_encoded\"}}"
 ```
 
 #### Response

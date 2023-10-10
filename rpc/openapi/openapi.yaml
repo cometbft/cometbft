@@ -43,15 +43,15 @@ info:
     Up to CometBFT v0.38.x the RPC API version followed CometBFT's version, even if there was
     no actual change in the API.
     In CometBFT v0.39.0, the RPC API version has changed to v1 and from then on its version
-    will be increased independently from CometBFT's.
+    will be independent CometBFT's.
 
-    Also, from CometBFT v0.39.0, the methods' names are prefixed with the RPC version.
+    Also, from CometBFT v0.39.0, the URL used will be suffixed with the RPC version.
     For example, to invoke the `block` method, one should use `localhost:26657/v1/block`
     as endpoint.
 
     For backwards compatibility, CometBFT v0.39.x will also supports invoking the methods
-    without the `v1` prefix, for example, `localhost:26657/block`, returning the exact same response.
-    However, the support for unprefixed methods will be dropped in future releases and all users are
+    without the `v1` suffix, for example, `localhost:26657/block`, returning the exact same response.
+    However, the support for unsuffixed methods will be dropped in future releases and all users are
     encouraged to migrate as soon as possible.
 
     ## URI/HTTP
@@ -64,7 +64,7 @@ info:
 
     JSONRPC requests can be POST'd to the root RPC endpoint via HTTP.
 
-        curl --header "Content-Type: application/json" --request POST --data '{"method": "v1/block", "params": ["5"], "id": 1}' localhost:26657
+        curl --header "Content-Type: application/json" --request POST --data '{"method": "block", "params": ["5"], "id": 1}' localhost:26657/v1
 
     ## JSONRPC/websockets
 
@@ -76,7 +76,7 @@ info:
     For example using the [websocat](https://github.com/vi/websocat) tool, you can subscribe for 'NewBlock` events
     with the following command:
 
-        echo '{ "jsonrpc": "2.0","method": "v1/subscribe","id": 0,"params": {"query": "tm.event='"'NewBlock'"'"} }' | websocat -n -t ws://127.0.0.1:26657/websocket
+        echo '{ "jsonrpc": "2.0","method": "subscribe","id": 0,"params": {"query": "tm.event='"'NewBlock'"'"} }' | websocat -n -t ws://127.0.0.1:26657/v1/websocket
 
   version: "v1"
   license:

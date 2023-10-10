@@ -19,8 +19,13 @@ func RegisterRPCFuncs(mux *http.ServeMux, funcMap map[string]*RPCFunc, logger lo
 		mux.HandleFunc("/"+funcName, makeHTTPHandler(rpcFunc, logger))
 	}
 
+	for funcName, rpcFunc := range funcMap {
+		mux.HandleFunc("/v1/"+funcName, makeHTTPHandler(rpcFunc, logger))
+	}
+
 	// JSONRPC endpoints
 	mux.HandleFunc("/", handleInvalidJSONRPCPaths(makeJSONRPCHandler(funcMap, logger)))
+	mux.HandleFunc("/v1/", handleInvalidJSONRPCPaths(makeJSONRPCHandler(funcMap, logger)))
 }
 
 type Option func(*RPCFunc)

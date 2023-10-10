@@ -529,19 +529,19 @@ func (c *WSClient) readRoutine() {
 // defined.
 func (c *WSClient) Subscribe(ctx context.Context, query string) error {
 	params := map[string]interface{}{"query": query}
-	return c.Call(ctx, "v1/subscribe", params)
+	return c.Call(ctx, "subscribe", params)
 }
 
 // Unsubscribe from a query. Note the server must have a "unsubscribe" route
 // defined.
 func (c *WSClient) Unsubscribe(ctx context.Context, query string) error {
 	params := map[string]interface{}{"query": query}
-	return c.Call(ctx, "v1/unsubscribe", params)
+	return c.Call(ctx, "unsubscribe", params)
 }
 
 // UnsubscribeAll from all. Note the server must have a "unsubscribe_all" route
 // defined.
 func (c *WSClient) UnsubscribeAll(ctx context.Context) error {
 	params := map[string]interface{}{}
-	return c.Call(ctx, "v1/unsubscribe_all", params)
+	return c.Call(ctx, "unsubscribe_all", params)
 }

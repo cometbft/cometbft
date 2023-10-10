@@ -269,7 +269,7 @@ func TestNilPubkey(t *testing.T) {
 
 	_, err := MakeSecretConnection(barConn, barPrvKey)
 	require.Error(t, err)
-	assert.Equal(t, "toproto: key type <nil> is not supported", err.Error())
+	assert.Equal(t, "encoding: unsupported key <nil>", err.Error())
 }
 
 func TestNonEd25519Pubkey(t *testing.T) {
@@ -283,7 +283,7 @@ func TestNonEd25519Pubkey(t *testing.T) {
 
 	_, err := MakeSecretConnection(barConn, barPrvKey)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "is not supported")
+	assert.Contains(t, err.Error(), "unsupported key")
 }
 
 func writeLots(t *testing.T, wg *sync.WaitGroup, conn io.Writer, txt string, n int) {

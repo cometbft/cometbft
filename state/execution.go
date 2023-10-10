@@ -166,12 +166,16 @@ func (blockExec *BlockExecutor) ProcessProposal(
 	block *types.Block,
 	state State,
 ) (bool, error) {
+	lastValSet, err := blockExec.store.LoadValidators(block.LastCommit.Height)
+	if err != nil {
+		return false, fmt.Errorf("failed to load validator set at height %d, initial height %d: %w", block.LastCommit.Height, state.InitialHeight, err)
+	}
 	resp, err := blockExec.proxyApp.ProcessProposal(context.TODO(), &abci.RequestProcessProposal{
 		Hash:               block.Header.Hash(),
 		Height:             block.Header.Height,
 		Time:               block.Header.Time,
 		Txs:                block.Data.Txs.ToSliceOfBytes(),
-		ProposedLastCommit: buildLastCommitInfo(block, blockExec.store, state.InitialHeight),
+		ProposedLastCommit: BuildLastCommitInfo(block, lastValSet, state.InitialHeight),
 		Misbehavior:        block.Evidence.Evidence.ToABCI(),
 		ProposerAddress:    block.ProposerAddress,
 		NextValidatorsHash: block.NextValidatorsHash,
@@ -211,7 +215,12 @@ func (blockExec *BlockExecutor) ApplyBlock(
 		return state, ErrInvalidBlock(err)
 	}
 
-	commitInfo := buildLastCommitInfo(block, blockExec.store, state.InitialHeight)
+	lastValSet, err := blockExec.store.LoadValidators(block.LastCommit.Height)
+	if err != nil {
+		panic(fmt.Errorf("failed to load validator set at height %d, initial height %d: %w", block.LastCommit.Height, state.InitialHeight, err))
+	}
+
+	commitInfo := BuildLastCommitInfo(block, lastValSet, state.InitialHeight)
 
 	startTime := time.Now().UnixNano()
 	abciResponse, err := blockExec.proxyApp.FinalizeBlock(context.TODO(), &abci.RequestFinalizeBlock{
@@ -327,12 +336,17 @@ func (blockExec *BlockExecutor) ExtendVote(
 	if vote.Height != block.Height {
 		panic(fmt.Sprintf("vote's and block's heights do not match %d!=%d", block.Height, vote.Height))
 	}
+
+	lastValSet, err := blockExec.store.LoadValidators(block.LastCommit.Height)
+	if err != nil {
+		panic(fmt.Errorf("failed to load validator set at height %d, initial height %d: %w", block.LastCommit.Height, state.InitialHeight, err))
+	}
 	req := abci.RequestExtendVote{
 		Hash:               vote.BlockID.Hash,
 		Height:             vote.Height,
 		Time:               block.Time,
 		Txs:                block.Txs.ToSliceOfBytes(),
-		ProposedLastCommit: buildLastCommitInfo(block, blockExec.store, state.InitialHeight),
+		ProposedLastCommit: BuildLastCommitInfo(block, lastValSet, state.InitialHeight),
 		Misbehavior:        block.Evidence.Evidence.ToABCI(),
 		NextValidatorsHash: block.NextValidatorsHash,
 		ProposerAddress:    block.ProposerAddress,
@@ -421,16 +435,11 @@ func (blockExec *BlockExecutor) Commit(
 //---------------------------------------------------------
 // Helper functions for executing blocks and updating state
 
-func buildLastCommitInfo(block *types.Block, store Store, initialHeight int64) abci.CommitInfo {
+func BuildLastCommitInfo(block *types.Block, lastValSet *types.ValidatorSet, initialHeight int64) abci.CommitInfo {
 	if block.Height == initialHeight {
 		// there is no last commit for the initial height.
 		// return an empty value.
 		return abci.CommitInfo{}
-	}
-
-	lastValSet, err := store.LoadValidators(block.Height - 1)
-	if err != nil {
-		panic(fmt.Errorf("failed to load validator set at height %d: %w", block.Height-1, err))
 	}
 
 	var (
@@ -697,7 +706,11 @@ func ExecCommitBlock(
 	store Store,
 	initialHeight int64,
 ) ([]byte, error) {
-	commitInfo := buildLastCommitInfo(block, store, initialHeight)
+	lastValSet, err := store.LoadValidators(block.LastCommit.Height)
+	if err != nil {
+		panic(fmt.Errorf("failed to load validator set at height %d, initial height %d: %w", block.LastCommit.Height, initialHeight, err))
+	}
+	commitInfo := BuildLastCommitInfo(block, lastValSet, initialHeight)
 
 	resp, err := appConnConsensus.FinalizeBlock(context.TODO(), &abci.RequestFinalizeBlock{
 		Hash:               block.Hash(),

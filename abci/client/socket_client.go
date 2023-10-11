@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/abci/types"
-	cmtnet "github.com/cometbft/cometbft/libs/net"
+	cmtnet "github.com/cometbft/cometbft/internal/net"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/libs/timer"
 )

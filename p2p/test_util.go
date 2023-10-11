@@ -7,8 +7,8 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	cmtnet "github.com/cometbft/cometbft/internal/net"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtnet "github.com/cometbft/cometbft/libs/net"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 
 	"github.com/cometbft/cometbft/config"

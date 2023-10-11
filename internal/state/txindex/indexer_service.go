@@ -3,8 +3,8 @@ package txindex
 import (
 	"context"
 
+	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/internal/state/indexer"
-	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/types"
 )
 

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/internal/protoio"
-	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/internal/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	privvalproto "github.com/cometbft/cometbft/proto/tendermint/privval"
 )

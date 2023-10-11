@@ -16,7 +16,7 @@ import (
 	"github.com/cometbft/cometbft/abci/server"
 	"github.com/cometbft/cometbft/abci/types"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/internal/service"
 )
 
 func TestCalls(t *testing.T) {

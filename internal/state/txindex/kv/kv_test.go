@@ -17,8 +17,8 @@ import (
 	db "github.com/cometbft/cometbft-db"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/internal/pubsub/query"
 	"github.com/cometbft/cometbft/internal/state/txindex"
-	"github.com/cometbft/cometbft/libs/pubsub/query"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/types"
 )

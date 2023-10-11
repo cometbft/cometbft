@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
+	"github.com/cometbft/cometbft/internal/pubsub/query/syntax"
 )
 
 // All is a query that matches all events.
@@ -234,7 +234,6 @@ func parseNumber(s string) (*big.Float, error) {
 	}
 	f, _, err := big.ParseFloat(extractNum.FindString(s), 10, uint(intVal.BitLen()), big.ToNearestEven)
 	return f, err
-
 }
 
 // A map of operator ⇒ argtype ⇒ match-constructor.

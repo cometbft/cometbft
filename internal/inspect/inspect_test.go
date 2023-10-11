@@ -17,11 +17,11 @@ import (
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/inspect"
+	"github.com/cometbft/cometbft/internal/pubsub/query"
 	indexermocks "github.com/cometbft/cometbft/internal/state/indexer/mocks"
 	statemocks "github.com/cometbft/cometbft/internal/state/mocks"
 	txindexmocks "github.com/cometbft/cometbft/internal/state/txindex/mocks"
 	"github.com/cometbft/cometbft/internal/test"
-	"github.com/cometbft/cometbft/libs/pubsub/query"
 	httpclient "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cometbft/cometbft/types"
 )

@@ -9,8 +9,8 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	idxutil "github.com/cometbft/cometbft/internal/indexer"
+	cmtsyntax "github.com/cometbft/cometbft/internal/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/internal/state/indexer"
-	cmtsyntax "github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/types"
 )
 

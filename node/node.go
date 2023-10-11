@@ -20,6 +20,7 @@ import (
 	"github.com/cometbft/cometbft/internal/evidence"
 	"github.com/cometbft/cometbft/light"
 
+	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/state/indexer"
 	"github.com/cometbft/cometbft/internal/state/txindex"
@@ -27,7 +28,6 @@ import (
 	"github.com/cometbft/cometbft/internal/statesync"
 	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
 	"github.com/cometbft/cometbft/libs/service"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"

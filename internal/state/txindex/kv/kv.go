@@ -21,10 +21,10 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	idxutil "github.com/cometbft/cometbft/internal/indexer"
+	"github.com/cometbft/cometbft/internal/pubsub/query"
+	"github.com/cometbft/cometbft/internal/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/internal/state/indexer"
 	"github.com/cometbft/cometbft/internal/state/txindex"
-	"github.com/cometbft/cometbft/libs/pubsub/query"
-	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/types"
 )
 

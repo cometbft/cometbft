@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/cometbft/cometbft/abci/types"
+	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
 	"github.com/cometbft/cometbft/libs/service"
 )
 

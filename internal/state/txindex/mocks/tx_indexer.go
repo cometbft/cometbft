@@ -9,7 +9,7 @@ import (
 
 	log "github.com/cometbft/cometbft/libs/log"
 
-	query "github.com/cometbft/cometbft/libs/pubsub/query"
+	query "github.com/cometbft/cometbft/internal/pubsub/query"
 
 	txindex "github.com/cometbft/cometbft/internal/state/txindex"
 

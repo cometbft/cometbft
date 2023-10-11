@@ -12,8 +12,8 @@ import (
 
 	"github.com/cometbft/cometbft/libs/log"
 
-	"github.com/cometbft/cometbft/libs/pubsub"
-	"github.com/cometbft/cometbft/libs/pubsub/query"
+	"github.com/cometbft/cometbft/internal/pubsub"
+	"github.com/cometbft/cometbft/internal/pubsub/query"
 )
 
 const (
@@ -482,8 +482,10 @@ func benchmarkNClientsOneQuery(n int, b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		err = s.PublishWithEvents(ctx, "Gamora", map[string][]string{"abci.Account.Owner": {"Ivan"},
-			"abci.Invoices.Number": {"1"}})
+		err = s.PublishWithEvents(ctx, "Gamora", map[string][]string{
+			"abci.Account.Owner":   {"Ivan"},
+			"abci.Invoices.Number": {"1"},
+		})
 		require.NoError(b, err)
 	}
 }

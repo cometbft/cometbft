@@ -35,8 +35,7 @@ const (
 // It maintains a map from peer ID to counter, to prevent gossiping txs to the
 // peers you received it from.
 type Reactor struct {
-	p2p.BaseReactor
-	config   *cfg.MempoolConfig
+	mempool.MempoolBaseReactor
 	mempool  *mempool.CListMempool
 	peerIDs  sync.Map          // set of connected peers
 	requests *requestScheduler // to track requested transactions
@@ -46,14 +45,13 @@ type Reactor struct {
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
-func NewReactor(config *cfg.MempoolConfig, mp *mempool.CListMempool, logger log.Logger) *Reactor {
+func NewReactor(config *cfg.MempoolConfig, mp *mempool.CListMempool, waitSync bool, logger log.Logger) *Reactor {
 	memR := &Reactor{
-		config:         config,
 		mempool:        mp,
 		requests:       newRequestScheduler(defaultGossipDelay, defaultGlobalRequestTimeout),
 		seenByPeersSet: NewSeenTxSet(),
 	}
-	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
+	memR.MempoolBaseReactor = *mempool.NewMempoolBaseReactor(config, waitSync)
 	memR.SetLogger(logger)
 	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) {
 		memR.seenByPeersSet.RemoveKey(txKey)
@@ -81,7 +79,7 @@ func (memR *Reactor) SetLogger(l log.Logger) {
 
 // OnStart implements p2p.BaseReactor.
 func (memR *Reactor) OnStart() error {
-	if !memR.config.Broadcast {
+	if !memR.Config.Broadcast {
 		memR.Logger.Info("Tx broadcasting is disabled")
 	}
 	return nil
@@ -96,7 +94,7 @@ func (memR *Reactor) OnStop() {
 // GetChannels implements Reactor by returning the list of channels for this
 // reactor.
 func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
-	largestTx := make([]byte, memR.config.MaxTxBytes)
+	largestTx := make([]byte, memR.Config.MaxTxBytes)
 	batchMsg := protomem.Message{
 		Sum: &protomem.Message_Txs{
 			Txs: &protomem.Txs{Txs: [][]byte{largestTx}},
@@ -251,7 +249,7 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 }
 
 func (memR *Reactor) sendRequestedTx(txKey types.TxKey, peer p2p.Peer) {
-	if !memR.config.Broadcast {
+	if !memR.Config.Broadcast {
 		return
 	}
 
@@ -283,7 +281,7 @@ type PeerState interface {
 // broadcastSeenTx broadcasts a SeenTx message to all peers unless we
 // know they have already seen the transaction
 func (memR *Reactor) broadcastSeenTx(txKey types.TxKey) {
-	if !memR.config.Broadcast {
+	if !memR.Config.Broadcast {
 		return
 	}
 
@@ -331,7 +329,7 @@ func (memR *Reactor) broadcastSeenTx(txKey types.TxKey) {
 // broadcastNewTx broadcast new transaction to all peers unless we are already
 // sure they have seen the tx.
 func (memR *Reactor) broadcastNewTx(memTx *mempool.MempoolTx) {
-	if !memR.config.Broadcast {
+	if !memR.Config.Broadcast {
 		return
 	}
 
@@ -378,7 +376,7 @@ func (memR *Reactor) broadcastNewTx(memTx *mempool.MempoolTx) {
 // requestTx requests a transaction from a peer and tracks it,
 // requesting it from another peer if the first peer does not respond.
 func (memR *Reactor) requestTx(txKey types.TxKey, peerID p2p.ID) {
-	if !memR.config.Broadcast {
+	if !memR.Config.Broadcast {
 		return
 	}
 

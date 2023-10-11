@@ -20,7 +20,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/sr25519"
-	"github.com/cometbft/cometbft/libs/async"
+	"github.com/cometbft/cometbft/internal/async"
 	cmtos "github.com/cometbft/cometbft/libs/os"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 )

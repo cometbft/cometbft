@@ -1,7 +1,7 @@
 package core
 
 import (
-	cm "github.com/cometbft/cometbft/consensus"
+	cm "github.com/cometbft/cometbft/internal/consensus"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"

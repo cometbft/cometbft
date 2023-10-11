@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-kit/kit/metrics"
 
-	cstypes "github.com/cometbft/cometbft/consensus/types"
+	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
@@ -93,7 +93,7 @@ type Metrics struct {
 	// FullPrevoteDelay is the interval in seconds between the proposal
 	// timestamp and the timestamp of the latest prevote in a round where 100%
 	// of the voting power on the network issued prevotes.
-	//metrics:Interval in seconds between the proposal timestamp and the timestamp of the latest prevote in a round where all validators voted.
+	// metrics:Interval in seconds between the proposal timestamp and the timestamp of the latest prevote in a round where all validators voted.
 	FullPrevoteDelay metrics.Gauge `metrics_labels:"proposer_address"`
 
 	// VoteExtensionReceiveCount is the number of vote extensions received by this

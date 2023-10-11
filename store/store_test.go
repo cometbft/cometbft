@@ -557,13 +557,6 @@ func (o *prunerObserver) PrunerPrunedBlocks(info *sm.BlocksPrunedInfo) {
 func TestPruningService(t *testing.T) {
 	config := test.ResetTestRoot("blockchain_reactor_pruning_test")
 	defer os.RemoveAll(config.RootDir)
-	stateStore := sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
-		DiscardABCIResponses: false,
-	})
-	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
-	require.NoError(t, err)
-	db := dbm.NewMemDB()
-	bs := NewBlockStore(db)
 	state, bs, txIndexer, blockIndexer, cleanup, stateStore := makeStateAndBlockStoreAndIndexers()
 	defer cleanup()
 	assert.EqualValues(t, 0, bs.Base())

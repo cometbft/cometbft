@@ -108,6 +108,9 @@ if err != nil {
 
 ```
 
+Note that if the legacy gRPC service in `rpc/grpc/api.go` is enabled, it should
+use a different URL than the gRPC service described in this document.
+
 ## Fetching **Block Results** data
 
 To fetch `block results` you can use a similar code as the previous one but just invoking the method to that retrieves

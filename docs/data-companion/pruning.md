@@ -12,6 +12,14 @@ CometBFT employs a sophisticated pruning logic to eliminate unnecessary data and
 This document covers use cases where the pruning process on a CometBFT node can be influenced via the Data Companion
 pruning service API.
 
+The pruning process runs asynchronously in the background based on the retain
+heights set either by the application or via the Data Companion API. Before the
+Data Companion API was introduced, that is, before v0.38, pruning could be
+triggered only by the application at some height, and CometBFT would not advance
+to the next height until the blocks were pruned. Now, the application just need
+to set the desired retain heights, and then consensus and pruning run in
+parallel. 
+
 CometBFT provides a privileged gRPC endpoint for the pruning service. This privileged endpoint is distinct from the
 non-privileged (regular) gRPC endpoint and requires separate configuration and activation. These "privileged" services
 have the ability to manipulate the storage on the node.

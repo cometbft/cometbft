@@ -30,6 +30,7 @@ import (
 	rpccore "github.com/cometbft/cometbft/rpc/core"
 	grpccore "github.com/cometbft/cometbft/rpc/grpc"
 	grpcserver "github.com/cometbft/cometbft/rpc/grpc/server"
+	grpcprivserver "github.com/cometbft/cometbft/rpc/grpc/server/privileged"
 	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/state/indexer"
@@ -853,6 +854,25 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 		go func() {
 			if err := grpcserver.Serve(listener, opts...); err != nil {
 				n.Logger.Error("Error starting gRPC server", "err", err)
+			}
+		}()
+		listeners = append(listeners, listener)
+	}
+
+	if n.config.GRPC.Privileged.ListenAddress != "" {
+		listener, err := grpcserver.Listen(n.config.GRPC.Privileged.ListenAddress)
+		if err != nil {
+			return nil, err
+		}
+		opts := []grpcprivserver.Option{
+			grpcprivserver.WithLogger(n.Logger),
+		}
+		if n.config.GRPC.Privileged.PruningService.Enabled {
+			opts = append(opts, grpcprivserver.WithPruningService(n.pruner, n.Logger))
+		}
+		go func() {
+			if err := grpcprivserver.Serve(listener, opts...); err != nil {
+				n.Logger.Error("Error starting privileged gRPC server", "err", err)
 			}
 		}()
 		listeners = append(listeners, listener)

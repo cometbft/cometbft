@@ -24,6 +24,7 @@ import (
 
 	legacy_grpc "github.com/cometbft/cometbft/rpc/grpc"
 	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
+	grpcprivileged "github.com/cometbft/cometbft/rpc/grpc/client/privileged"
 )
 
 const (
@@ -96,32 +97,33 @@ type Testnet struct {
 
 // Node represents a CometBFT node in a testnet.
 type Node struct {
-	Name                string
-	Version             string
-	Testnet             *Testnet
-	Mode                Mode
-	PrivvalKey          crypto.PrivKey
-	NodeKey             crypto.PrivKey
-	InternalIP          net.IP
-	ExternalIP          net.IP
-	RPCProxyPort        uint32
-	GRPCProxyPort       uint32
-	GRPCLegacyPort      uint32
-	StartAt             int64
-	BlockSyncVersion    string
-	StateSync           bool
-	Database            string
-	ABCIProtocol        Protocol
-	PrivvalProtocol     Protocol
-	PersistInterval     uint64
-	SnapshotInterval    uint64
-	RetainBlocks        uint64
-	Seeds               []*Node
-	PersistentPeers     []*Node
-	Perturbations       []Perturbation
-	SendNoLoad          bool
-	Prometheus          bool
-	PrometheusProxyPort uint32
+	Name                    string
+	Version                 string
+	Testnet                 *Testnet
+	Mode                    Mode
+	PrivvalKey              crypto.PrivKey
+	NodeKey                 crypto.PrivKey
+	InternalIP              net.IP
+	ExternalIP              net.IP
+	RPCProxyPort            uint32
+	GRPCProxyPort           uint32
+	GRPCLegacyPort          uint32
+	GRPCPrivilegedProxyPort uint32
+	StartAt                 int64
+	BlockSyncVersion        string
+	StateSync               bool
+	Database                string
+	ABCIProtocol            Protocol
+	PrivvalProtocol         Protocol
+	PersistInterval         uint64
+	SnapshotInterval        uint64
+	RetainBlocks            uint64
+	Seeds                   []*Node
+	PersistentPeers         []*Node
+	Perturbations           []Perturbation
+	SendNoLoad              bool
+	Prometheus              bool
+	PrometheusProxyPort     uint32
 }
 
 // LoadTestnet loads a testnet from a manifest file, using the filename to
@@ -210,29 +212,30 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		}
 
 		node := &Node{
-			Name:             name,
-			Version:          v,
-			Testnet:          testnet,
-			PrivvalKey:       keyGen.Generate(manifest.KeyType),
-			NodeKey:          keyGen.Generate("ed25519"),
-			InternalIP:       ind.IPAddress,
-			ExternalIP:       extIP,
-			RPCProxyPort:     ind.Port,
-			GRPCProxyPort:    ind.GRPCPort,
-			GRPCLegacyPort:   ind.GRPCLegacyPort,
-			Mode:             ModeValidator,
-			Database:         "goleveldb",
-			ABCIProtocol:     Protocol(testnet.ABCIProtocol),
-			PrivvalProtocol:  ProtocolFile,
-			StartAt:          nodeManifest.StartAt,
-			BlockSyncVersion: nodeManifest.BlockSyncVersion,
-			StateSync:        nodeManifest.StateSync,
-			PersistInterval:  1,
-			SnapshotInterval: nodeManifest.SnapshotInterval,
-			RetainBlocks:     nodeManifest.RetainBlocks,
-			Perturbations:    []Perturbation{},
-			SendNoLoad:       nodeManifest.SendNoLoad,
-			Prometheus:       testnet.Prometheus,
+			Name:                    name,
+			Version:                 v,
+			Testnet:                 testnet,
+			PrivvalKey:              keyGen.Generate(manifest.KeyType),
+			NodeKey:                 keyGen.Generate("ed25519"),
+			InternalIP:              ind.IPAddress,
+			ExternalIP:              extIP,
+			RPCProxyPort:            ind.Port,
+			GRPCProxyPort:           ind.GRPCPort,
+			GRPCLegacyPort:          ind.GRPCLegacyPort,
+			GRPCPrivilegedProxyPort: ind.GRPCPrivilegedPort,
+			Mode:                    ModeValidator,
+			Database:                "goleveldb",
+			ABCIProtocol:            Protocol(testnet.ABCIProtocol),
+			PrivvalProtocol:         ProtocolFile,
+			StartAt:                 nodeManifest.StartAt,
+			BlockSyncVersion:        nodeManifest.BlockSyncVersion,
+			StateSync:               nodeManifest.StateSync,
+			PersistInterval:         1,
+			SnapshotInterval:        nodeManifest.SnapshotInterval,
+			RetainBlocks:            nodeManifest.RetainBlocks,
+			Perturbations:           []Perturbation{},
+			SendNoLoad:              nodeManifest.SendNoLoad,
+			Prometheus:              testnet.Prometheus,
 		}
 		if node.StartAt == testnet.InitialHeight {
 			node.StartAt = 0 // normalize to 0 for initial nodes, since code expects this
@@ -563,6 +566,15 @@ func (n Node) GRPCClient(ctx context.Context) (grpcclient.Client, error) {
 func (n Node) GRPCLegacyClient() (legacy_grpc.BroadcastAPIClient, error) {
 	//nolint:staticcheck // SA1019: core_grpc.StartGRPCClient is deprecated: A new gRPC API will be introduced after v0.38.
 	return legacy_grpc.StartGRPCClient(fmt.Sprintf("127.0.0.1:%v", n.GRPCLegacyPort)), nil
+}
+
+// GRPCClient creates a gRPC client for the node.
+func (n Node) GRPCPrivilegedClient(ctx context.Context) (grpcprivileged.Client, error) {
+	return grpcprivileged.New(
+		ctx,
+		fmt.Sprintf("127.0.0.1:%v", n.GRPCPrivilegedProxyPort),
+		grpcprivileged.WithInsecure(),
+	)
 }
 
 // Stateless returns true if the node is either a seed node or a light node

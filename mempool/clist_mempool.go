@@ -657,8 +657,21 @@ func (mem *CListMempool) Update(
 			mem.rejectedTxsCache.Push(tx.Key())
 		}
 
-		// Remove committed tx from the mempool, if it's there.
-		mem.RemoveTxByKey(txKey)
+		// Remove committed tx from the mempool.
+		//
+		// Note an evil proposer can drop valid txs!
+		// Mempool before:
+		//   100 -> 101 -> 102
+		// Block, proposed by an evil proposer:
+		//   101 -> 102
+		// Mempool after:
+		//   100
+		// https://github.com/tendermint/tendermint/issues/3322.
+		if err := mem.RemoveTxByKey(tx.Key()); err != nil {
+			mem.logger.Debug("Committed transaction not in local mempool (not an error)",
+				"key", tx.Key(),
+				"error", err.Error())
+		}
 	}
 
 	// Either recheck non-committed txs to see if they became invalid

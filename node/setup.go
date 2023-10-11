@@ -246,9 +246,10 @@ func createMempoolAndMempoolReactor(
 	config *cfg.Config,
 	proxyApp proxy.AppConns,
 	state sm.State,
+	waitSync bool,
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
-) (mempl.Mempool, p2p.Reactor, error) {
+) (mempl.Mempool, *mempl.MempoolBaseReactor, error) {
 	logger = logger.With("module", "mempool")
 	mp := mempl.NewCListMempool(
 		config.Mempool,
@@ -259,20 +260,18 @@ func createMempoolAndMempoolReactor(
 		mempl.WithPostCheck(sm.TxPostCheck(state)),
 	)
 
-	mp.SetLogger(logger)
-
 	if config.Consensus.WaitForTxs() {
 		mp.EnableTxsAvailable()
 	}
 
-	var reactor p2p.Reactor
+	var reactor *mempl.MempoolBaseReactor
 	switch config.Mempool.Reactor {
 	case "cat":
 		logger.Info("Using the CAT mempool reactor")
-		reactor = cat.NewReactor(config.Mempool, mp, logger)
-	case "v0", "flood", "push", "":
+		reactor = &cat.NewReactor(config.Mempool, mp, waitSync, logger).MempoolBaseReactor
+	case "v0", "flood":
 		logger.Info("Using the default mempool reactor")
-		reactor = mempl.NewReactor(config.Mempool, mp, logger)
+		reactor = &mempl.NewReactor(config.Mempool, mp, waitSync, logger).MempoolBaseReactor
 	default:
 		return nil, nil, fmt.Errorf("unknown mempool reactor \"%s\"", config.Mempool.Reactor)
 	}

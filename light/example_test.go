@@ -151,11 +151,11 @@ func ExampleClient_VerifyLightBlockAtHeight() {
 func TestMain(m *testing.M) {
 	// start a CometBFT node (and kvstore) in the background to test against
 	app := kvstore.NewInMemoryApplication()
-	node := rpctest.StartTendermint(app, rpctest.SuppressStdout)
+	node := rpctest.StartCometBFT(app, rpctest.SuppressStdout)
 
 	code := m.Run()
 
 	// and shut down proper at the end
-	rpctest.StopTendermint(node)
+	rpctest.StopCometBFT(node)
 	os.Exit(code)
 }

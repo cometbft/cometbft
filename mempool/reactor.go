@@ -3,6 +3,7 @@ package mempool
 import (
 	"errors"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -15,12 +16,51 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+type MempoolReactor interface {
+	WaitSync() bool
+	EnableInOutTxs()
+}
+
+type MempoolBaseReactor struct {
+	p2p.BaseReactor
+	Config *cfg.MempoolConfig
+
+	waitSync   atomic.Bool
+	waitSyncCh chan struct{} // for signaling when to start receiving and sending txs
+}
+
+func NewMempoolBaseReactor(config *cfg.MempoolConfig, waitSync bool) *MempoolBaseReactor {
+	baseR := &MempoolBaseReactor{Config: config}
+	if waitSync {
+		baseR.waitSync.Store(true)
+		baseR.waitSyncCh = make(chan struct{})
+	}
+	baseR.BaseReactor = *p2p.NewBaseReactor("Mempool", baseR)
+	return baseR
+}
+
+func (memR *MempoolBaseReactor) EnableInOutTxs() {
+	memR.Logger.Info("enabling inbound and outbound transactions")
+	if !memR.waitSync.CompareAndSwap(true, false) {
+		return
+	}
+
+	// Releases all the blocked broadcastTxRoutine instances.
+	if memR.Config.Broadcast {
+		close(memR.waitSyncCh)
+	}
+}
+
+func (memR *MempoolBaseReactor) WaitSync() bool {
+	return memR.waitSync.Load()
+}
+
 // Reactor handles mempool tx broadcasting amongst peers.
 // It maintains a map from peer ID to counter, to prevent gossiping txs to the
 // peers you received it from.
 type Reactor struct {
 	p2p.BaseReactor
-	config  *cfg.MempoolConfig
+	MempoolBaseReactor
 	mempool *CListMempool
 
 	// `txSenders` maps every received transaction to the set of peer IDs that
@@ -32,13 +72,16 @@ type Reactor struct {
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
-func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool, logger log.Logger) *Reactor {
+func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool, waitSync bool, logger log.Logger) *Reactor {
 	memR := &Reactor{
-		config:    config,
 		mempool:   mempool,
 		txSenders: make(map[types.TxKey]map[p2p.ID]bool),
 	}
-	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
+	memR.MempoolBaseReactor = *NewMempoolBaseReactor(config, waitSync)
+	if waitSync {
+		memR.waitSync.Store(true)
+		memR.waitSyncCh = make(chan struct{})
+	}
 	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
 	memR.SetLogger(logger)
 	return memR
@@ -52,17 +95,19 @@ func (memR *Reactor) SetLogger(l log.Logger) {
 
 // OnStart implements p2p.BaseReactor.
 func (memR *Reactor) OnStart() error {
-	if !memR.config.Broadcast {
+	if memR.WaitSync() {
+		memR.Logger.Info("Starting reactor in sync mode: tx propagation will start once sync completes")
+	}
+	if !memR.Config.Broadcast {
 		memR.Logger.Info("Tx broadcasting is disabled")
 	}
-
 	return nil
 }
 
 // GetChannels implements Reactor by returning the list of channels for this
 // reactor.
 func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
-	largestTx := make([]byte, memR.config.MaxTxBytes)
+	largestTx := make([]byte, memR.Config.MaxTxBytes)
 	batchMsg := protomem.Message{
 		Sum: &protomem.Message_Txs{
 			Txs: &protomem.Txs{Txs: [][]byte{largestTx}},
@@ -82,7 +127,7 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 // AddPeer implements Reactor.
 // It starts a broadcast routine ensuring all txs are forwarded to the given peer.
 func (memR *Reactor) AddPeer(peer p2p.Peer) {
-	if memR.config.Broadcast {
+	if memR.Config.Broadcast {
 		go memR.broadcastTxRoutine(peer)
 	}
 }
@@ -93,6 +138,11 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 	memR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 	switch msg := e.Message.(type) {
 	case *protomem.Txs:
+		if memR.WaitSync() {
+			memR.Logger.Debug("Ignored message received while syncing", "msg", msg)
+			return
+		}
+
 		protoTxs := msg.GetTxs()
 		if len(protoTxs) == 0 {
 			memR.Logger.Error("received empty txs from peer", "src", e.Src)
@@ -137,6 +187,16 @@ type PeerState interface {
 // Send new mempool txs to peer.
 func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 	var next *clist.CElement
+
+	// If the node is catching up, don't start this routine immediately.
+	if memR.WaitSync() {
+		select {
+		case <-memR.waitSyncCh:
+			// EnableInOutTxs() has set WaitSync() to false.
+		case <-memR.Quit():
+			return
+		}
+	}
 
 	for {
 		// In case of both next.NextWaitChan() and peer.Quit() are variable at the same time
@@ -186,10 +246,11 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// NOTE: Transaction batching was disabled due to
 		// https://github.com/tendermint/tendermint/issues/5796
 
-		if !memR.isSender(memTx.tx.Key(), peer.ID()) {
+		tx := memTx.GetTx()
+		if !memR.isSender(tx.Key(), peer.ID()) {
 			success := peer.Send(p2p.Envelope{
 				ChannelID: MempoolChannel,
-				Message:   &protomem.Txs{Txs: [][]byte{memTx.tx}},
+				Message:   &protomem.Txs{Txs: [][]byte{tx}},
 			})
 			if !success {
 				time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)

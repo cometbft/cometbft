@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+
 	"github.com/cometbft/cometbft/test/e2e/app"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 )

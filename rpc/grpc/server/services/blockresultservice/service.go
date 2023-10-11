@@ -6,8 +6,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/libs/log"
-	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/store"
 
 	brs "github.com/cometbft/cometbft/proto/tendermint/services/block_results/v1"

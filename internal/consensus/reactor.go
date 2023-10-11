@@ -10,6 +10,7 @@ import (
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
+	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/libs/bits"
 	cmtevents "github.com/cometbft/cometbft/libs/events"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
@@ -19,7 +20,6 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )

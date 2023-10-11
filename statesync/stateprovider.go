@@ -8,6 +8,7 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 
+	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/light"
@@ -17,7 +18,6 @@ import (
 	lightdb "github.com/cometbft/cometbft/light/store/db"
 	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
-	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
 )

@@ -8,13 +8,13 @@ import (
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/inspect/rpc"
+	"github.com/cometbft/cometbft/internal/state"
+	"github.com/cometbft/cometbft/internal/state/indexer"
+	"github.com/cometbft/cometbft/internal/state/indexer/block"
+	"github.com/cometbft/cometbft/internal/state/txindex"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtstrings "github.com/cometbft/cometbft/libs/strings"
 	rpccore "github.com/cometbft/cometbft/rpc/core"
-	"github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/state/indexer"
-	"github.com/cometbft/cometbft/state/indexer/block"
-	"github.com/cometbft/cometbft/state/txindex"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 

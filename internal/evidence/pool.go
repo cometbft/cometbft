@@ -7,16 +7,17 @@ import (
 	"sync/atomic"
 	"time"
 
-	cmterrors "github.com/cometbft/cometbft/types/errors"
 	"github.com/cosmos/gogoproto/proto"
 	gogotypes "github.com/cosmos/gogoproto/types"
 
+	cmterrors "github.com/cometbft/cometbft/types/errors"
+
 	dbm "github.com/cometbft/cometbft-db"
 
+	sm "github.com/cometbft/cometbft/internal/state"
 	clist "github.com/cometbft/cometbft/libs/clist"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 )
 

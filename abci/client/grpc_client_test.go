@@ -14,9 +14,10 @@ import (
 
 	"golang.org/x/net/context"
 
+	"google.golang.org/grpc/credentials/insecure"
+
 	"github.com/cometbft/cometbft/libs/log"
 	cmtnet "github.com/cometbft/cometbft/libs/net"
-	"google.golang.org/grpc/credentials/insecure"
 
 	abciserver "github.com/cometbft/cometbft/abci/server"
 	"github.com/cometbft/cometbft/abci/types"

@@ -5,7 +5,7 @@ import (
 	"net"
 	"strings"
 
-	sm "github.com/cometbft/cometbft/state"
+	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/store"
 
 	brs "github.com/cometbft/cometbft/proto/tendermint/services/block_results/v1"

@@ -24,6 +24,8 @@ import (
 	"github.com/cometbft/cometbft/abci/types/mocks"
 	cfg "github.com/cometbft/cometbft/config"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
+	sm "github.com/cometbft/cometbft/internal/state"
+	smmocks "github.com/cometbft/cometbft/internal/state/mocks"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
@@ -31,8 +33,6 @@ import (
 	"github.com/cometbft/cometbft/privval"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/proxy"
-	sm "github.com/cometbft/cometbft/state"
-	smmocks "github.com/cometbft/cometbft/state/mocks"
 	"github.com/cometbft/cometbft/types"
 )
 

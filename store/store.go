@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"strconv"
 
-	cmterrors "github.com/cometbft/cometbft/types/errors"
 	"github.com/cosmos/gogoproto/proto"
+
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 
 	dbm "github.com/cometbft/cometbft-db"
 
 	"github.com/cometbft/cometbft/internal/evidence"
+	sm "github.com/cometbft/cometbft/internal/state"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	cmtstore "github.com/cometbft/cometbft/proto/tendermint/store"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 )
 

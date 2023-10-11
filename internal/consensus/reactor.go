@@ -11,8 +11,8 @@ import (
 
 	"github.com/cometbft/cometbft/internal/bits"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
+	cmtevents "github.com/cometbft/cometbft/internal/events"
 	sm "github.com/cometbft/cometbft/internal/state"
-	cmtevents "github.com/cometbft/cometbft/libs/events"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"

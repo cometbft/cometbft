@@ -13,7 +13,7 @@ import (
 
 	"github.com/cometbft/cometbft/internal/evidence"
 	sm "github.com/cometbft/cometbft/internal/state"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	cmtstore "github.com/cometbft/cometbft/proto/tendermint/store"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"

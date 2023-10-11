@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"reflect"
 
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 )
 
-var (
-	// typeRegistry contains globally registered types for JSON encoding/decoding.
-	typeRegistry = newTypes()
-)
+// typeRegistry contains globally registered types for JSON encoding/decoding.
+var typeRegistry = newTypes()
 
 // RegisterType registers a type for Amino-compatible interface encoding in the global type
 // registry. These types will be encoded with a type wrapper `{"type":"<type>","value":<value>}`

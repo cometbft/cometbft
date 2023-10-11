@@ -39,7 +39,7 @@ import (
 	"fmt"
 
 	"github.com/cometbft/cometbft/internal/service"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 )
 
 type operation int

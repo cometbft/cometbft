@@ -9,8 +9,8 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 
 	sm "github.com/cometbft/cometbft/internal/state"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/light"
 	lightprovider "github.com/cometbft/cometbft/light/provider"
 	lighthttp "github.com/cometbft/cometbft/light/provider/http"

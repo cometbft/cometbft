@@ -18,9 +18,9 @@ import (
 	flow "github.com/cometbft/cometbft/internal/flowrate"
 	"github.com/cometbft/cometbft/internal/protoio"
 	"github.com/cometbft/cometbft/internal/service"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/libs/timer"
 	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
 )

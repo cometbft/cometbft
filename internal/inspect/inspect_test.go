@@ -16,7 +16,7 @@ import (
 
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/inspect"
+	"github.com/cometbft/cometbft/internal/inspect"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 	httpclient "github.com/cometbft/cometbft/rpc/client/http"

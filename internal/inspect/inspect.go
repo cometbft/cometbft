@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/inspect/rpc"
+	"github.com/cometbft/cometbft/internal/inspect/rpc"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtstrings "github.com/cometbft/cometbft/libs/strings"
 	rpccore "github.com/cometbft/cometbft/rpc/core"

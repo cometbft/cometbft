@@ -25,7 +25,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/internal/async"
-	"github.com/cometbft/cometbft/libs/protoio"
+	"github.com/cometbft/cometbft/internal/protoio"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
 )

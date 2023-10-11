@@ -59,7 +59,6 @@ func (memR *MempoolBaseReactor) WaitSync() bool {
 // It maintains a map from peer ID to counter, to prevent gossiping txs to the
 // peers you received it from.
 type Reactor struct {
-	p2p.BaseReactor
 	MempoolBaseReactor
 	mempool *CListMempool
 

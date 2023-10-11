@@ -269,7 +269,7 @@ func createMempoolAndMempoolReactor(
 	case "cat":
 		logger.Info("Using the CAT mempool reactor")
 		reactor = &cat.NewReactor(config.Mempool, mp, waitSync, logger).MempoolBaseReactor
-	case "v0", "flood":
+	case "v0", "flood", "":
 		logger.Info("Using the default mempool reactor")
 		reactor = &mempl.NewReactor(config.Mempool, mp, waitSync, logger).MempoolBaseReactor
 	default:

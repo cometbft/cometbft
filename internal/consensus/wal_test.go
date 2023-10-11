@@ -14,8 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/crypto/merkle"
+	"github.com/cometbft/cometbft/internal/autofile"
 	"github.com/cometbft/cometbft/internal/consensus/types"
-	"github.com/cometbft/cometbft/libs/autofile"
 	"github.com/cometbft/cometbft/libs/log"
 	cmttypes "github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"

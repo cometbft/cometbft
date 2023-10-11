@@ -7,8 +7,8 @@ import (
 
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 
+	"github.com/cometbft/cometbft/internal/bits"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
-	"github.com/cometbft/cometbft/libs/bits"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/p2p"
 	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"

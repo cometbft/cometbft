@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cometbft/cometbft/libs/bits"
+	"github.com/cometbft/cometbft/internal/bits"
 	"github.com/cometbft/cometbft/types"
 )
 

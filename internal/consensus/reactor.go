@@ -9,9 +9,9 @@ import (
 
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 
+	"github.com/cometbft/cometbft/internal/bits"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
 	sm "github.com/cometbft/cometbft/internal/state"
-	"github.com/cometbft/cometbft/libs/bits"
 	cmtevents "github.com/cometbft/cometbft/libs/events"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"

@@ -24,3 +24,9 @@ in a more efficient way.
 
 The [gRPC services](./grpc.md) document provides practical information and insights that will guide you through the
 process of using these services in order to create a Data Companion service.
+
+Note that this version of CometBFT (v0.38) has a gRPC endpoint to broadcast
+transactions (`BroadcastTx`). We encourage users to use the new gRPC service
+instead of this legacy endpoint. In case you need to use the legacy endpoint, it
+should have a different URL than the gRPC services described in this
+documentation.

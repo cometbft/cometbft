@@ -276,7 +276,7 @@ pprof_laddr = "{{ .RPC.PprofListenAddress }}"
 [grpc]
 
 # TCP or UNIX socket address for the RPC server to listen on. If not specified,
-# the gRPC server will be disabled. Note that this address MUST be different than 
+# the gRPC server will be disabled. Note that this address MUST be different than
 # the GRPC.ListenAddress within the RPC configuration. The listener at that endpoint
 # does not support the below mentioned services, and vice versa.
 laddr = "{{ .GRPC.ListenAddress }}"
@@ -291,6 +291,15 @@ laddr = "{{ .GRPC.ListenAddress }}"
 # protocols it uses.
 [grpc.version_service]
 enabled = {{ .GRPC.VersionService.Enabled }}
+
+# The gRPC block service returns block information
+[grpc.block_service]
+enabled = {{ .GRPC.BlockService.Enabled }}
+
+# The gRPC block results service returns block results for a given height. If no height
+# is given, it will return the block results from the latest height.
+[grpc.block_results_service]
+enabled = {{ .GRPC.BlockResultsService.Enabled }}
 
 #######################################################
 ###           P2P Configuration Options             ###

@@ -9,10 +9,11 @@ import (
 	"fmt"
 	"net"
 
-	cmtnet "github.com/cometbft/cometbft/libs/net"
 	"github.com/cosmos/gogoproto/grpc"
 	ggrpc "google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	cmtnet "github.com/cometbft/cometbft/libs/net"
 )
 
 type Option func(*clientBuilder)
@@ -21,20 +22,26 @@ type Option func(*clientBuilder)
 // node via gRPC.
 type Client interface {
 	VersionServiceClient
+	BlockServiceClient
+	BlockResultsServiceClient
 }
 
 type clientBuilder struct {
 	dialerFunc func(context.Context, string) (net.Conn, error)
 	grpcOpts   []ggrpc.DialOption
 
-	versionServiceEnabled bool
+	versionServiceEnabled      bool
+	blockServiceEnabled        bool
+	blockResultsServiceEnabled bool
 }
 
 func newClientBuilder() *clientBuilder {
 	return &clientBuilder{
-		dialerFunc:            defaultDialerFunc,
-		grpcOpts:              make([]ggrpc.DialOption, 0),
-		versionServiceEnabled: true,
+		dialerFunc:                 defaultDialerFunc,
+		grpcOpts:                   make([]ggrpc.DialOption, 0),
+		versionServiceEnabled:      true,
+		blockServiceEnabled:        true,
+		blockResultsServiceEnabled: true,
 	}
 }
 
@@ -46,6 +53,8 @@ type client struct {
 	conn grpc.ClientConn
 
 	VersionServiceClient
+	BlockServiceClient
+	BlockResultsServiceClient
 }
 
 // WithInsecure disables transport security for the underlying client
@@ -65,6 +74,17 @@ func WithInsecure() Option {
 func WithVersionServiceEnabled(enabled bool) Option {
 	return func(b *clientBuilder) {
 		b.versionServiceEnabled = enabled
+	}
+}
+
+// WithBlockServiceEnabled allows control of whether or not to create a
+// client for interacting with the block service of a CometBFT node.
+//
+// If disabled and the client attempts to access the block service API, the
+// client will panic.
+func WithBlockServiceEnabled(enabled bool) Option {
+	return func(b *clientBuilder) {
+		b.blockServiceEnabled = enabled
 	}
 }
 
@@ -98,9 +118,19 @@ func New(ctx context.Context, addr string, opts ...Option) (Client, error) {
 	if builder.versionServiceEnabled {
 		versionServiceClient = newVersionServiceClient(conn)
 	}
+	blockServiceClient := newDisabledBlockServiceClient()
+	if builder.blockServiceEnabled {
+		blockServiceClient = newBlockServiceClient(conn)
+	}
+	blockResultServiceClient := newDisabledBlockResultsServiceClient()
+	if builder.blockResultsServiceEnabled {
+		blockResultServiceClient = newBlockResultsServiceClient(conn)
+	}
 	client := &client{
-		conn:                 conn,
-		VersionServiceClient: versionServiceClient,
+		conn:                      conn,
+		VersionServiceClient:      versionServiceClient,
+		BlockServiceClient:        blockServiceClient,
+		BlockResultsServiceClient: blockResultServiceClient,
 	}
 	return client, nil
 }

@@ -222,7 +222,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			RPCProxyPort:            ind.Port,
 			GRPCProxyPort:           ind.GRPCPort,
 			GRPCLegacyPort:          ind.GRPCLegacyPort,
-			GRPCPrivilegedProxyPort: proxyPortGen.Next(), // FIXME: broken
+			GRPCPrivilegedProxyPort: ind.GRPCPrivilegedPort,
 			Mode:                    ModeValidator,
 			Database:                "goleveldb",
 			ABCIProtocol:            Protocol(testnet.ABCIProtocol),

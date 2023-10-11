@@ -13,8 +13,8 @@ import (
 	"github.com/cometbft/cometbft/internal/state/indexer/block"
 	"github.com/cometbft/cometbft/internal/state/txindex"
 	"github.com/cometbft/cometbft/internal/store"
+	cmtstrings "github.com/cometbft/cometbft/internal/strings"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtstrings "github.com/cometbft/cometbft/libs/strings"
 	rpccore "github.com/cometbft/cometbft/rpc/core"
 	"github.com/cometbft/cometbft/types"
 

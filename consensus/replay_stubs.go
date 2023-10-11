@@ -86,6 +86,11 @@ func (mock *mockProxyApp) DeliverTx(req abci.RequestDeliverTx) abci.ResponseDeli
 	return *r
 }
 
+func (mock *mockProxyApp) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
+	mock.txCount = 0
+	return *mock.abciResponses.BeginBlock
+}
+
 func (mock *mockProxyApp) EndBlock(req abci.RequestEndBlock) abci.ResponseEndBlock {
 	mock.txCount = 0
 	return *mock.abciResponses.EndBlock

@@ -10,8 +10,8 @@ import (
 
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/state"
+	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/os"
-	"github.com/cometbft/cometbft/store"
 )
 
 var removeBlock = false

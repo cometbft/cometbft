@@ -14,10 +14,10 @@ import (
 	sm "github.com/cometbft/cometbft/internal/state"
 	blockidxkv "github.com/cometbft/cometbft/internal/state/indexer/block/kv"
 	"github.com/cometbft/cometbft/internal/state/txindex/kv"
+	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
-	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 )
 

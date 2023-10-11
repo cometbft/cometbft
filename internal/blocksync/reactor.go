@@ -6,10 +6,10 @@ import (
 	"time"
 
 	sm "github.com/cometbft/cometbft/internal/state"
+	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	bcproto "github.com/cometbft/cometbft/proto/tendermint/blocksync"
-	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 )
 

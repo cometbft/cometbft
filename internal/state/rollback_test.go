@@ -13,9 +13,9 @@ import (
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/state/mocks"
+	"github.com/cometbft/cometbft/internal/store"
 	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
 	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
-	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
 )

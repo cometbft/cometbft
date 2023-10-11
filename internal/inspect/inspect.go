@@ -12,10 +12,10 @@ import (
 	"github.com/cometbft/cometbft/internal/state/indexer"
 	"github.com/cometbft/cometbft/internal/state/indexer/block"
 	"github.com/cometbft/cometbft/internal/state/txindex"
+	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtstrings "github.com/cometbft/cometbft/libs/strings"
 	rpccore "github.com/cometbft/cometbft/rpc/core"
-	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 
 	"golang.org/x/sync/errgroup"

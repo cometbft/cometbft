@@ -24,6 +24,7 @@ import (
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
 	sm "github.com/cometbft/cometbft/internal/state"
 	statemocks "github.com/cometbft/cometbft/internal/state/mocks"
+	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/bits"
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/json"
@@ -35,7 +36,6 @@ import (
 	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/proxy"
-	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 )

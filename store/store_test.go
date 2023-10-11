@@ -15,7 +15,9 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/internal/test"
+	"github.com/cometbft/cometbft/libs/log"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	cmtstore "github.com/cometbft/cometbft/proto/tendermint/store"
 	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
@@ -53,8 +55,6 @@ func makeTestExtCommit(height int64, timestamp time.Time) *types.ExtendedCommit 
 
 func makeStateAndBlockStore() (sm.State, *BlockStore, cleanupFunc) {
 	config := test.ResetTestRoot("blockchain_reactor_test")
-	// blockDB := dbm.NewDebugDB("blockDB", dbm.NewMemDB())
-	// stateDB := dbm.NewDebugDB("stateDB", dbm.NewMemDB())
 	blockDB := dbm.NewMemDB()
 	stateDB := dbm.NewMemDB()
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
@@ -521,6 +521,185 @@ func TestLoadBlockPart(t *testing.T) {
 	require.Nil(t, res, "a properly saved block should return a proper block")
 	require.Equal(t, gotPart.(*types.Part), part1,
 		"expecting successful retrieval of previously saved block")
+}
+
+type prunerObserver struct {
+	sm.NoopPrunerObserver
+	prunedABCIResInfoCh   chan *sm.ABCIResponsesPrunedInfo
+	prunedBlocksResInfoCh chan *sm.BlocksPrunedInfo
+}
+
+func newPrunerObserver(infoChCap int) *prunerObserver {
+	return &prunerObserver{
+		prunedABCIResInfoCh:   make(chan *sm.ABCIResponsesPrunedInfo, infoChCap),
+		prunedBlocksResInfoCh: make(chan *sm.BlocksPrunedInfo, infoChCap),
+	}
+}
+
+func (o *prunerObserver) PrunerPrunedABCIRes(info *sm.ABCIResponsesPrunedInfo) {
+	o.prunedABCIResInfoCh <- info
+}
+func (o *prunerObserver) PrunerPrunedBlocks(info *sm.BlocksPrunedInfo) {
+	o.prunedBlocksResInfoCh <- info
+}
+
+// This test tests the pruning service and its pruning of the blockstore
+// The state store cannot be pruned here because we do not have proper
+// state stored. The test is expected to pass even though the log should
+// inform about the inability to prune the state store
+func TestPruningService(t *testing.T) {
+	config := test.ResetTestRoot("blockchain_reactor_pruning_test")
+	defer os.RemoveAll(config.RootDir)
+	stateStore := sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
+	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
+	require.NoError(t, err)
+	db := dbm.NewMemDB()
+	bs := NewBlockStore(db)
+	assert.EqualValues(t, 0, bs.Base())
+	assert.EqualValues(t, 0, bs.Height())
+	assert.EqualValues(t, 0, bs.Size())
+
+	obs := newPrunerObserver(1)
+
+	pruner := sm.NewPruner(
+		stateStore,
+		bs,
+		log.TestingLogger(),
+		sm.WithPrunerInterval(time.Second*1),
+		sm.WithPrunerObserver(obs),
+	)
+
+	err = pruner.SetApplicationRetainHeight(1)
+	require.Error(t, err)
+	err = pruner.SetApplicationRetainHeight(0)
+	require.Error(t, err)
+
+	// make more than 1000 blocks, to test batch deletions
+	for h := int64(1); h <= 1500; h++ {
+		block := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
+		partSet, err := block.MakePartSet(2)
+		require.NoError(t, err)
+		seenCommit := makeTestExtCommit(h, cmttime.Now())
+		bs.SaveBlockWithExtendedCommit(block, partSet, seenCommit)
+	}
+
+	assert.EqualValues(t, 1, bs.Base())
+	assert.EqualValues(t, 1500, bs.Height())
+	assert.EqualValues(t, 1500, bs.Size())
+
+	state.LastBlockTime = time.Date(2020, 1, 1, 1, 0, 0, 0, time.UTC)
+	state.LastBlockHeight = 1500
+
+	state.ConsensusParams.Evidence.MaxAgeNumBlocks = 400
+	state.ConsensusParams.Evidence.MaxAgeDuration = 1 * time.Second
+
+	pk := ed25519.GenPrivKey().PubKey()
+
+	// Generate a bunch of state data.
+	// This is needed because the pruning is expecting to load the state from the database thus
+	// We have to have acceptable values for all fields of the state
+	validator := &types.Validator{Address: cmtrand.Bytes(crypto.AddressSize), VotingPower: 100, PubKey: pk}
+	validatorSet := &types.ValidatorSet{
+		Validators: []*types.Validator{validator},
+		Proposer:   validator,
+	}
+	state.Validators = validatorSet
+	state.NextValidators = validatorSet
+	if state.LastBlockHeight >= 1 {
+		state.LastValidators = state.Validators
+	}
+
+	err = stateStore.Save(state)
+	require.NoError(t, err)
+	// Check that basic pruning works
+	err = pruner.SetApplicationRetainHeight(1200)
+	require.NoError(t, err)
+	err = pruner.Start()
+	require.NoError(t, err)
+
+	select {
+	case <-obs.prunedBlocksResInfoCh:
+		assert.EqualValues(t, 1200, bs.Base())
+		assert.EqualValues(t, 1500, bs.Height())
+		assert.EqualValues(t, 301, bs.Size())
+		require.NotNil(t, bs.LoadBlock(1200))
+		require.Nil(t, bs.LoadBlock(1199))
+		// The header and commit for heights 1100 onwards
+		// need to remain to verify evidence
+		require.NotNil(t, bs.LoadBlockMeta(1100))
+		require.Nil(t, bs.LoadBlockMeta(1099))
+		require.NotNil(t, bs.LoadBlockCommit(1100))
+		require.Nil(t, bs.LoadBlockCommit(1099))
+		for i := int64(1); i < 1200; i++ {
+			require.Nil(t, bs.LoadBlock(i))
+		}
+		for i := int64(1200); i <= 1500; i++ {
+			require.NotNil(t, bs.LoadBlock(i))
+		}
+		t.Log("Done pruning blocks until height 1200")
+
+	case <-time.After(5 * time.Second):
+		require.Fail(t, "timed out waiting for pruning run to complete")
+
+	}
+
+	// Pruning below the current base should error
+	err = pruner.SetApplicationRetainHeight(1199)
+	require.Error(t, err)
+
+	// Pruning to the current base should work
+	err = pruner.SetApplicationRetainHeight(1200)
+	require.NoError(t, err)
+
+	// Pruning again should work
+	err = pruner.SetApplicationRetainHeight(1300)
+	require.NoError(t, err)
+	// We should not be able to set a retain height lower than the currently
+	// existing retain heights
+	err = pruner.SetCompanionRetainHeight(1200)
+	assert.Error(t, err)
+
+	err = pruner.SetCompanionRetainHeight(1350)
+	assert.NoError(t, err)
+
+	select {
+	case <-obs.prunedBlocksResInfoCh:
+		assert.EqualValues(t, 1300, bs.Base())
+
+		// we should still have the header and the commit
+		// as they're needed for evidence
+		require.NotNil(t, bs.LoadBlockMeta(1100))
+		require.Nil(t, bs.LoadBlockMeta(1099))
+		require.NotNil(t, bs.LoadBlockCommit(1100))
+		require.Nil(t, bs.LoadBlockCommit(1099))
+		t.Log("Done pruning up until 1300")
+	case <-time.After(5 * time.Second):
+		require.Fail(t, "timed out waiting for pruning run to complete")
+	}
+	// Setting the pruning height beyond the current height should error
+	err = pruner.SetApplicationRetainHeight(1501)
+	require.Error(t, err)
+
+	// Pruning to the current height should work
+	err = pruner.SetApplicationRetainHeight(1500)
+	require.NoError(t, err)
+
+	select {
+	case <-obs.prunedBlocksResInfoCh:
+		// But we will prune only until 1350 because that was the Companions height
+		// and it is lower
+		assert.Nil(t, bs.LoadBlock(1345))
+		assert.NotNil(t, bs.LoadBlock(1350))
+		assert.NotNil(t, bs.LoadBlock(1500))
+		assert.Nil(t, bs.LoadBlock(1501))
+		t.Log("Done pruning blocks until 1500")
+
+	case <-time.After(5 * time.Second):
+		require.Fail(t, "timed out waiting for pruning run to complete")
+	}
+
 }
 
 func TestPruneBlocks(t *testing.T) {

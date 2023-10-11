@@ -21,7 +21,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/sr25519"
 	"github.com/cometbft/cometbft/internal/async"
-	cmtos "github.com/cometbft/cometbft/libs/os"
+	cmtos "github.com/cometbft/cometbft/internal/os"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 )
 

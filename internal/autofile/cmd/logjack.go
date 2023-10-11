@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	auto "github.com/cometbft/cometbft/internal/autofile"
-	cmtos "github.com/cometbft/cometbft/libs/os"
+	cmtos "github.com/cometbft/cometbft/internal/os"
 )
 
 const (

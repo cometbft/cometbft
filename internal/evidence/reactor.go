@@ -6,7 +6,7 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	clist "github.com/cometbft/cometbft/libs/clist"
+	clist "github.com/cometbft/cometbft/internal/clist"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 
@@ -168,7 +168,6 @@ func (evR Reactor) prepareEvidenceMessage(
 	peer p2p.Peer,
 	ev types.Evidence,
 ) (evis []types.Evidence) {
-
 	// make sure the peer is up to date
 	evHeight := ev.Height()
 	peerState, ok := peer.Get(types.PeerStateKey).(PeerState)

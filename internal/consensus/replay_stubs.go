@@ -5,7 +5,7 @@ import (
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/libs/clist"
+	"github.com/cometbft/cometbft/internal/clist"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"

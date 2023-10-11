@@ -14,8 +14,8 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 
+	clist "github.com/cometbft/cometbft/internal/clist"
 	sm "github.com/cometbft/cometbft/internal/state"
-	clist "github.com/cometbft/cometbft/libs/clist"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"

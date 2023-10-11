@@ -8,7 +8,7 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/libs/clist"
+	"github.com/cometbft/cometbft/internal/clist"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p"

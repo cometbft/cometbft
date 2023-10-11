@@ -10,7 +10,7 @@ import (
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/libs/clist"
+	"github.com/cometbft/cometbft/internal/clist"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"

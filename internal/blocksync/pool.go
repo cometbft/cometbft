@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	flow "github.com/cometbft/cometbft/libs/flowrate"
+	flow "github.com/cometbft/cometbft/internal/flowrate"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"

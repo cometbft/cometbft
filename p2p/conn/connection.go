@@ -15,7 +15,7 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/cometbft/cometbft/config"
-	flow "github.com/cometbft/cometbft/libs/flowrate"
+	flow "github.com/cometbft/cometbft/internal/flowrate"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/libs/protoio"

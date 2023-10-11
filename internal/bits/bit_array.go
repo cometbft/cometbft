@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	cmtprotobits "github.com/cometbft/cometbft/proto/tendermint/libs/bits"
 )
 

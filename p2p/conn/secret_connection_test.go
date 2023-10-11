@@ -22,7 +22,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/sr25519"
 	"github.com/cometbft/cometbft/internal/async"
 	cmtos "github.com/cometbft/cometbft/internal/os"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 )
 
 // Run go test -update from within this module

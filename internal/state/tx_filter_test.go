@@ -9,8 +9,8 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	sm "github.com/cometbft/cometbft/internal/state"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/types"
 )
 

@@ -10,7 +10,7 @@ import (
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/cmap"
-	"github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p/conn"
 )
@@ -113,7 +113,6 @@ func NewSwitch(
 	transport Transport,
 	options ...SwitchOption,
 ) *Switch {
-
 	sw := &Switch{
 		config:               cfg,
 		reactors:             make(map[string]Reactor),

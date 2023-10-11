@@ -16,8 +16,8 @@ import (
 
 	bc "github.com/cometbft/cometbft/blocksync"
 	cfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/evidence"
 	cs "github.com/cometbft/cometbft/internal/consensus"
+	"github.com/cometbft/cometbft/internal/evidence"
 	"github.com/cometbft/cometbft/light"
 
 	"github.com/cometbft/cometbft/libs/log"

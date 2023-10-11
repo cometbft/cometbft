@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
-
 	"fmt"
 	"net"
 	"net/http"
@@ -22,7 +21,7 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	"github.com/cometbft/cometbft/evidence"
+	"github.com/cometbft/cometbft/internal/evidence"
 	"github.com/cometbft/cometbft/internal/test"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
@@ -540,6 +539,7 @@ func TestNodeNewNodeDeleteGenesisFileFromDB(t *testing.T) {
 	err = stateDB.Close()
 	require.NoError(t, err)
 }
+
 func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 	config := test.ResetTestRoot("node_new_node_genesis_hash")
 	defer os.RemoveAll(config.RootDir)
@@ -633,7 +633,6 @@ func TestNodeGenesisHashFlagMatch(t *testing.T) {
 		log.TestingLogger(),
 	)
 	require.NoError(t, err)
-
 }
 
 func TestNodeGenesisHashFlagMismatch(t *testing.T) {

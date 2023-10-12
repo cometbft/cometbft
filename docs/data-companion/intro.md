@@ -25,8 +25,8 @@ in a more efficient way.
 The [gRPC services](./grpc.md) document provides practical information and insights that will guide you through the
 process of using these services in order to create a Data Companion service.
 
-Note that this version of CometBFT (v0.38) has a gRPC service
+Note that this version of CometBFT (v0.38) already includes a gRPC service
 (`rpc/grpc/api.go`) that is considerd legacy code and will be removed in future
 releases. We encourage users to use the new gRPC service instead. In case you
-need to use the legacy endpoints, they should have a different URL than the gRPC
+need to use the legacy gRPC endpoints, make sure that they have a different URL than the gRPC
 services described in this document.

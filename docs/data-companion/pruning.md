@@ -18,7 +18,7 @@ Data Companion pruning service API. Before the Data Companion API was
 introduced, that is, in v0.38 and earlier versions, pruning could be triggered
 only by the application at some height, and CometBFT would not advance to the
 next height until the blocks were pruned. The pruning service was therefore
-synchronous. In this experimental version of v0.38.x, the application just need
+synchronous. In this experimental version of v0.38.x, the application just needs
 to set the desired retain heights, and the pruning service runs in parallel with
 consensus.
 

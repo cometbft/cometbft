@@ -8,7 +8,7 @@ parent:
 # Introduction
 
 A proposal was made in
-[ADR-101](https://github.com/cometbft/cometbft/blob/thane/adr-084-data-companion-pull-api/docs/architecture/adr-101-data-companion-pull-api.md)
+[ADR-101](https://github.com/cometbft/cometbft/blob/6f2590df767be4c1824f1cc4070a647c417e6e75/docs/architecture/adr-101-data-companion-pull-api.md)
 to introduce new gRPC endpoints that can be used by an external application to fetch data from the node and to control
 which data is pruned by the node.
 
@@ -26,7 +26,6 @@ The [gRPC services](./grpc.md) document provides practical information and insig
 process of using these services in order to create a Data Companion service.
 
 Note that this version of CometBFT (v0.38) already includes a gRPC service
-(`rpc/grpc/api.go`) that is considerd legacy code and will be removed in future
-releases. We encourage users to use the new gRPC service instead. In case you
-need to use the legacy gRPC endpoints, make sure that they have a different URL than the gRPC
-services described in this document.
+(`rpc/grpc/api.go`) that is considered legacy code and will be removed in future
+releases. In case you need to use the legacy gRPC endpoints, make sure that they
+have a different URL than the gRPC services described in this document.

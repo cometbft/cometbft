@@ -35,8 +35,9 @@ const (
 // It maintains a map from peer ID to counter, to prevent gossiping txs to the
 // peers you received it from.
 type Reactor struct {
-	mempool.MempoolBaseReactor
-	mempool  *mempool.CListMempool
+	mempool.BaseSyncReactor
+	mempool *mempool.CListMempool
+
 	peerIDs  sync.Map          // set of connected peers
 	requests *requestScheduler // to track requested transactions
 
@@ -51,7 +52,7 @@ func NewReactor(config *cfg.MempoolConfig, mp *mempool.CListMempool, waitSync bo
 		requests:       newRequestScheduler(defaultGossipDelay, defaultGlobalRequestTimeout),
 		seenByPeersSet: NewSeenTxSet(),
 	}
-	memR.MempoolBaseReactor = *mempool.NewMempoolBaseReactor(config, waitSync)
+	memR.BaseSyncReactor = *mempool.NewBaseSyncReactor(config, waitSync)
 	memR.SetLogger(logger)
 	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) {
 		memR.seenByPeersSet.RemoveKey(txKey)

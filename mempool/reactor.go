@@ -3,7 +3,6 @@ package mempool
 import (
 	"errors"
 	"fmt"
-	"sync/atomic"
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -16,50 +15,11 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-type MempoolReactor interface {
-	WaitSync() bool
-	EnableInOutTxs()
-}
-
-type MempoolBaseReactor struct {
-	p2p.BaseReactor
-	Config *cfg.MempoolConfig
-
-	waitSync   atomic.Bool
-	waitSyncCh chan struct{} // for signaling when to start receiving and sending txs
-}
-
-func NewMempoolBaseReactor(config *cfg.MempoolConfig, waitSync bool) *MempoolBaseReactor {
-	baseR := &MempoolBaseReactor{Config: config}
-	if waitSync {
-		baseR.waitSync.Store(true)
-		baseR.waitSyncCh = make(chan struct{})
-	}
-	baseR.BaseReactor = *p2p.NewBaseReactor("Mempool", baseR)
-	return baseR
-}
-
-func (memR *MempoolBaseReactor) EnableInOutTxs() {
-	memR.Logger.Info("enabling inbound and outbound transactions")
-	if !memR.waitSync.CompareAndSwap(true, false) {
-		return
-	}
-
-	// Releases all the blocked broadcastTxRoutine instances.
-	if memR.Config.Broadcast {
-		close(memR.waitSyncCh)
-	}
-}
-
-func (memR *MempoolBaseReactor) WaitSync() bool {
-	return memR.waitSync.Load()
-}
-
 // Reactor handles mempool tx broadcasting amongst peers.
 // It maintains a map from peer ID to counter, to prevent gossiping txs to the
 // peers you received it from.
 type Reactor struct {
-	MempoolBaseReactor
+	BaseSyncReactor
 	mempool *CListMempool
 
 	// `txSenders` maps every received transaction to the set of peer IDs that
@@ -76,11 +36,7 @@ func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool, waitSync bool,
 		mempool:   mempool,
 		txSenders: make(map[types.TxKey]map[p2p.ID]bool),
 	}
-	memR.MempoolBaseReactor = *NewMempoolBaseReactor(config, waitSync)
-	if waitSync {
-		memR.waitSync.Store(true)
-		memR.waitSyncCh = make(chan struct{})
-	}
+	memR.BaseSyncReactor = *NewBaseSyncReactor(config, waitSync)
 	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
 	memR.SetLogger(logger)
 	return memR

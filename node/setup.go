@@ -249,7 +249,7 @@ func createMempoolAndMempoolReactor(
 	waitSync bool,
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
-) (mempl.Mempool, *mempl.MempoolBaseReactor, error) {
+) (mempl.Mempool, mempl.SyncReactor, error) {
 	logger = logger.With("module", "mempool")
 	mp := mempl.NewCListMempool(
 		config.Mempool,
@@ -264,14 +264,14 @@ func createMempoolAndMempoolReactor(
 		mp.EnableTxsAvailable()
 	}
 
-	var reactor *mempl.MempoolBaseReactor
+	var reactor mempl.SyncReactor
 	switch config.Mempool.Reactor {
 	case "cat":
 		logger.Info("Using the CAT mempool reactor")
-		reactor = &cat.NewReactor(config.Mempool, mp, waitSync, logger).MempoolBaseReactor
+		reactor = cat.NewReactor(config.Mempool, mp, waitSync, logger)
 	case "v0", "flood", "":
 		logger.Info("Using the default mempool reactor")
-		reactor = &mempl.NewReactor(config.Mempool, mp, waitSync, logger).MempoolBaseReactor
+		reactor = mempl.NewReactor(config.Mempool, mp, waitSync, logger)
 	default:
 		return nil, nil, fmt.Errorf("unknown mempool reactor \"%s\"", config.Mempool.Reactor)
 	}

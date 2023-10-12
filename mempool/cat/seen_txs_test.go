@@ -40,7 +40,7 @@ func TestSeenTxSet(t *testing.T) {
 	require.Equal(t, peer1, *seenSet.Pop(tx3Key))
 }
 
-func TestSeenTxSetConcurrency(t *testing.T) {
+func TestSeenTxSetConcurrency(_ *testing.T) {
 	seenSet := NewSeenTxSet()
 
 	const (

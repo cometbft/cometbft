@@ -2,9 +2,9 @@ package mempool
 
 import (
 	"errors"
-	"time"
-
 	"fmt"
+	"sync/atomic"
+	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cfg "github.com/cometbft/cometbft/config"
@@ -24,6 +24,9 @@ type Reactor struct {
 	config  *cfg.MempoolConfig
 	mempool *CListMempool
 
+	waitSync   atomic.Bool
+	waitSyncCh chan struct{} // for signaling when to start receiving and sending txs
+
 	// `txSenders` maps every received transaction to the set of peer IDs that
 	// have sent the transaction to this node. Sender IDs are used during
 	// transaction propagation to avoid sending a transaction to a peer that
@@ -33,13 +36,18 @@ type Reactor struct {
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
-func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool) *Reactor {
+func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool, waitSync bool) *Reactor {
 	memR := &Reactor{
 		config:    config,
 		mempool:   mempool,
+		waitSync:  atomic.Bool{},
 		txSenders: make(map[types.TxKey]map[p2p.ID]bool),
 	}
 	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
+	if waitSync {
+		memR.waitSync.Store(true)
+		memR.waitSyncCh = make(chan struct{})
+	}
 	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
 	return memR
 }
@@ -52,10 +60,12 @@ func (memR *Reactor) SetLogger(l log.Logger) {
 
 // OnStart implements p2p.BaseReactor.
 func (memR *Reactor) OnStart() error {
+	if memR.WaitSync() {
+		memR.Logger.Info("Starting reactor in sync mode: tx propagation will start once sync completes")
+	}
 	if !memR.config.Broadcast {
 		memR.Logger.Info("Tx broadcasting is disabled")
 	}
-
 	return nil
 }
 
@@ -93,6 +103,11 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 	memR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 	switch msg := e.Message.(type) {
 	case *protomem.Txs:
+		if memR.WaitSync() {
+			memR.Logger.Debug("Ignored message received while syncing", "msg", msg)
+			return
+		}
+
 		protoTxs := msg.GetTxs()
 		if len(protoTxs) == 0 {
 			memR.Logger.Error("received empty txs from peer", "src", e.Src)
@@ -129,6 +144,22 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 	// broadcasting happens from go routines per peer
 }
 
+func (memR *Reactor) EnableInOutTxs() {
+	memR.Logger.Info("enabling inbound and outbound transactions")
+	if !memR.waitSync.CompareAndSwap(true, false) {
+		return
+	}
+
+	// Releases all the blocked broadcastTxRoutine instances.
+	if memR.config.Broadcast {
+		close(memR.waitSyncCh)
+	}
+}
+
+func (memR *Reactor) WaitSync() bool {
+	return memR.waitSync.Load()
+}
+
 // PeerState describes the state of a peer.
 type PeerState interface {
 	GetHeight() int64
@@ -137,6 +168,16 @@ type PeerState interface {
 // Send new mempool txs to peer.
 func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 	var next *clist.CElement
+
+	// If the node is catching up, don't start this routine immediately.
+	if memR.WaitSync() {
+		select {
+		case <-memR.waitSyncCh:
+			// EnableInOutTxs() has set WaitSync() to false.
+		case <-memR.Quit():
+			return
+		}
+	}
 
 	for {
 		// In case of both next.NextWaitChan() and peer.Quit() are variable at the same time

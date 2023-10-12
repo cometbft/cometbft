@@ -17,7 +17,6 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/p2p/mock"
 	memproto "github.com/cometbft/cometbft/proto/tendermint/mempool"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
@@ -236,35 +235,6 @@ func TestBroadcastTxForPeerStopsWhenReactorStops(t *testing.T) {
 	leaktest.CheckTimeout(t, 10*time.Second)()
 }
 
-// TODO: This test tests that we don't panic and are able to generate new
-// PeerIDs for each peer we add. It seems as though we should be able to test
-// this in a much more direct way.
-// https://github.com/cometbft/cometbft/issues/9639
-func TestDontExhaustMaxActiveIDs(t *testing.T) {
-	config := cfg.TestConfig()
-	const N = 1
-	reactors, _ := makeAndConnectReactors(config, N)
-	defer func() {
-		for _, r := range reactors {
-			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
-			}
-		}
-	}()
-	reactor := reactors[0]
-
-	for i := 0; i < MaxActiveIDs+1; i++ {
-		peer := mock.NewPeer(nil)
-		reactor.Receive(p2p.Envelope{
-			ChannelID: MempoolChannel,
-			Src:       peer,
-			Message:   &memproto.Message{}, // This uses the wrong message type on purpose to stop the peer as in an error state in the reactor.
-		},
-		)
-		reactor.AddPeer(peer)
-	}
-}
-
 func TestReactorTxSendersLocal(t *testing.T) {
 	config := cfg.TestConfig()
 	const N = 1
@@ -412,14 +382,13 @@ func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switc
 		mempool, cleanup := newMempoolWithApp(cc)
 		defer cleanup()
 
-		reactors[i] = NewReactor(config.Mempool, mempool) // so we dont start the consensus states
+		reactors[i] = NewReactor(config.Mempool, mempool, false) // so we dont start the consensus states
 		reactors[i].SetLogger(logger.With("validator", i))
 	}
 
 	switches := p2p.MakeConnectedSwitches(config.P2P, n, func(i int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("MEMPOOL", reactors[i])
 		return s
-
 	}, p2p.Connect2Switches)
 	return reactors, switches
 }

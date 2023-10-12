@@ -13,7 +13,7 @@ import (
 func TestBlock_Header(t *testing.T) {
 	blocks := fetchBlockChain(t)
 	testNode(t, func(t *testing.T, node e2e.Node) {
-		if node.Mode == e2e.ModeSeed {
+		if node.Mode == e2e.ModeSeed || node.EnableCompanionPruning {
 			return
 		}
 

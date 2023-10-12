@@ -45,10 +45,12 @@ The minimum Go version has been bumped to [v1.21][go121].
 
 ### RPC API
 
-* The RPC API version is now reflected on the endpoint.
+* The RPC API is now versioned.
   Although invoking methods without specifying the version is still supported for now,
-  support will be dropped in future releases and users are urged to use the new format.
-  For example, instead of `curl localhost:26657/block?height=5` use `curl localhost:26657/v1/block?height=5`
+  support will be dropped in future releases and users are urged to use the versioned
+  approach.
+  For example, instead of `curl localhost:26657/block?height=5`, use
+  `curl localhost:26657/v1/block?height=5`.
 
 ## v0.38.0
 

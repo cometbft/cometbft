@@ -243,6 +243,7 @@ func (p *Pruner) SetTxIndexerRetainHeight(height int64) error {
 	if err := p.txIndexer.SetRetainHeight(height); err != nil {
 		return err
 	}
+
 	p.metrics.PruningServiceTxIndexerRetainHeight.Set(float64(height))
 	return nil
 }
@@ -269,7 +270,9 @@ func (p *Pruner) SetBlockIndexerRetainHeight(height int64) error {
 	if err := p.blockIndexer.SetRetainHeight(height); err != nil {
 		return err
 	}
+
 	p.metrics.PruningServiceBlockIndexerRetainHeight.Set(float64(height))
+
 	return nil
 }
 

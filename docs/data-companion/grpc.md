@@ -45,6 +45,9 @@ Add the address for the non-privileged (regular) services, for example:
 laddr = "tcp://0.0.0.0:26090"
 ```
 
+If the legacy gRPC service in `rpc/grpc/api.go` is enabled, make sure that the
+URL it uses is different from the one set here.
+
 The non-privileged gRPC endpoint is **enabled by default**. Each individual service exposed in this endpoint can be disabled
 or enabled individually. For example, to enable the `Version` service, in the `[grpc.version_service]` section, ensure
 that the `enabled` property is set to `true`:
@@ -107,9 +110,6 @@ if err != nil {
 }
 
 ```
-
-Note that if the legacy gRPC service in `rpc/grpc/api.go` is enabled, it should
-use a different URL than the gRPC service described in this document.
 
 ## Fetching **Block Results** data
 

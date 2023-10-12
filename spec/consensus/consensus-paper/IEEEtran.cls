@@ -268,7 +268,7 @@
 \newtoks\@IEEEtrantmptoksA
 
 % we use \CLASSOPTIONpt so that we can ID the point size (even for 9pt docs)
-% as well as LaTeX's \@ptsize to retain some compatability with some
+% as well as LaTeX's \@ptsize to retain some compatibility with some
 % external packages
 \def\@ptsize{0}
 % LaTeX does not support 9pt, so we set \@ptsize to 0 - same as that of 10pt
@@ -2728,7 +2728,7 @@ $$\@ignoretrue}
 \@IEEEgrabfirstoken#1\relax\relax\noindent
 % \@IEEEgrabfirstoken has the first token, the rest are discarded
 % n = number
-% g = glue (any other char in catagory 12)
+% g = glue (any other char in category 12)
 % c = letter
 % e = \end
 % u = undefined
@@ -2878,7 +2878,7 @@ in the IEEEeqnarray column specifications.}%
 \toks0={##}%
 % make preamble advance col counter if this environment needs this
 \if@advanceIEEEeqncolcnt\@IEEEappendtoksA{\global\advance\@IEEEeqncolcnt by 1\relax}\fi
-% insert the column defintion into the preamble, being careful not to expand
+% insert the column definition into the preamble, being careful not to expand
 % the column definition
 \@IEEEappendtoksA{\tabskip=\@IEEEBPcurglue}%
 \@IEEEappendNOEXPANDtoksA{\begingroup\csname @IEEEeqnarraycolPRE}%
@@ -4289,7 +4289,7 @@ between column types.}%
 % floating point values
 \@IEEEtrantmpdimenB=0.005\@IEEEtrantmpdimenA%
 \multiply\@IEEEtrantmpdimenB by \@IEEEtrantmpcountA%
-% \@IEEEPARstartfont is globaly set to the calculated font of the big letter
+% \@IEEEPARstartfont is globally set to the calculated font of the big letter
 % We need to carry this out of the local calculation area to to create the
 % big letter.
 \global\font\@IEEEPARstartfont\@IEEEPARstartFONTNAME\space at \@IEEEtrantmpdimenB%

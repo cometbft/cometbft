@@ -33,6 +33,7 @@ func TestGRPC_Version(t *testing.T) {
 
 func TestGRPC_Block_GetByHeight(t *testing.T) {
 	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
+		blocks := fetchBlockChain(t)
 
 		client, err := node.Client()
 		require.NoError(t, err)
@@ -42,7 +43,7 @@ func TestGRPC_Block_GetByHeight(t *testing.T) {
 		first := status.SyncInfo.EarliestBlockHeight
 		last := status.SyncInfo.LatestBlockHeight
 		if node.RetainBlocks > 0 {
-			first += int64(node.RetainBlocks) - 1 // avoid race conditions with block pruning
+			first++ // avoid race conditions with block pruning
 		}
 
 		ctx, ctxCancel := context.WithTimeout(context.Background(), time.Minute)
@@ -51,22 +52,30 @@ func TestGRPC_Block_GetByHeight(t *testing.T) {
 		require.NoError(t, err)
 		defer gRPCClient.Close()
 
-		// Get first block
-		firstBlock, err := gRPCClient.GetBlockByHeight(ctx, first)
+		for _, block := range blocks {
+			if block.Header.Height < first {
+				continue
+			}
+			if block.Header.Height > last {
+				break
+			}
 
-		// First block tests
-		require.NoError(t, err)
-		require.NotNil(t, firstBlock.BlockID)
-		require.Equal(t, firstBlock.Block.Height, first)
+			// Get first block
+			firstBlock, err := gRPCClient.GetBlockByHeight(ctx, first)
 
-		// Get last block
-		lastBlock, err := gRPCClient.GetBlockByHeight(ctx, last)
+			// First block tests
+			require.NoError(t, err)
+			require.NotNil(t, firstBlock.BlockID)
+			require.Equal(t, firstBlock.Block.Height, first)
 
-		// Last block tests
-		require.NoError(t, err)
-		require.NotNil(t, lastBlock.BlockID)
-		require.Equal(t, lastBlock.Block.Height, last)
+			// Get last block
+			lastBlock, err := gRPCClient.GetBlockByHeight(ctx, last)
 
+			// Last block tests
+			require.NoError(t, err)
+			require.NotNil(t, lastBlock.BlockID)
+			require.Equal(t, lastBlock.Block.Height, last)
+		}
 	})
 }
 

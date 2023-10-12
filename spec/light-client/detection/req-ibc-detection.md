@@ -17,7 +17,7 @@ In the following, I distilled what I considered relevant from
 | IBC Term | Cosmos Spec Term | Comment |
 |----------|-------------------------| --------|
 | `CommitmentRoot` | AppState | app hash |
-| `ConsensusState` | Lightblock | not all fields are there. NextValidator is definitly needed |
+| `ConsensusState` | Lightblock | not all fields are there. NextValidator is definitely needed |
 | `ClientState` | latest light block + configuration parameters (e.g., trusting period + `frozenHeight` |  NextValidators missing; what is `proofSpecs`?|
 | `frozenHeight` | height of fork | set when a fork is detected |
 | "would-have-been-fooled" | light node fork detection | light node may submit proof of fork to IBC component to halt it |

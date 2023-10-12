@@ -35,6 +35,14 @@ type Metrics struct {
 	// retain height set by the data companion
 	PruningServiceBlockResultsRetainHeight metrics.Gauge
 
+	// PruningServiceTxIndexerRetainHeight is the accepted transactions indices
+	// retain height set by the data companion
+	PruningServiceTxIndexerRetainHeight metrics.Gauge
+
+	// PruningServiceBlockIndexerRetainHeight is the accepted blocks indices
+	// retain height set by the data companion
+	PruningServiceBlockIndexerRetainHeight metrics.Gauge
+
 	// ApplicationBlockRetainHeight is the accepted block
 	// retain height set by the application
 	ApplicationBlockRetainHeight metrics.Gauge
@@ -46,4 +54,12 @@ type Metrics struct {
 	// ABCIResultsBaseHeight shows the first height at which
 	// abci results are available
 	ABCIResultsBaseHeight metrics.Gauge
+
+	// TxIndexerBaseHeight shows the first height at which
+	// tx indices are available
+	TxIndexerBaseHeight metrics.Gauge
+
+	// BlockIndexerBaseHeight shows the first height at which
+	// block indices are available
+	BlockIndexerBaseHeight metrics.Gauge
 }

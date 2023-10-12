@@ -46,6 +46,18 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "pruning_service_block_results_retain_height",
 			Help:      "PruningServiceBlockResultsRetainHeight is the accepted block results retain height set by the data companion",
 		}, labels).With(labelsAndValues...),
+		PruningServiceTxIndexerRetainHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "pruning_service_tx_indexer_retain_height",
+			Help:      "PruningServiceTxIndexerRetainHeight is the accepted transactions indices retain height set by the data companion",
+		}, labels).With(labelsAndValues...),
+		PruningServiceBlockIndexerRetainHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "pruning_service_block_indexer_retain_height",
+			Help:      "PruningServiceBlockIndexerRetainHeight is the accepted blocks indices retain height set by the data companion",
+		}, labels).With(labelsAndValues...),
 		ApplicationBlockRetainHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -64,6 +76,18 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "abciresults_base_height",
 			Help:      "ABCIResultsBaseHeight shows the first height at which abci results are available",
 		}, labels).With(labelsAndValues...),
+		TxIndexerBaseHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "tx_indexer_base_height",
+			Help:      "TxIndexerBaseHeight shows the first height at which tx indices are available",
+		}, labels).With(labelsAndValues...),
+		BlockIndexerBaseHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "block_indexer_base_height",
+			Help:      "BlockIndexerBaseHeight shows the first height at which block indices are available",
+		}, labels).With(labelsAndValues...),
 	}
 }
 
@@ -74,8 +98,12 @@ func NopMetrics() *Metrics {
 		ValidatorSetUpdates:                    discard.NewCounter(),
 		PruningServiceBlockRetainHeight:        discard.NewGauge(),
 		PruningServiceBlockResultsRetainHeight: discard.NewGauge(),
+		PruningServiceTxIndexerRetainHeight:    discard.NewGauge(),
+		PruningServiceBlockIndexerRetainHeight: discard.NewGauge(),
 		ApplicationBlockRetainHeight:           discard.NewGauge(),
 		BlockStoreBaseHeight:                   discard.NewGauge(),
 		ABCIResultsBaseHeight:                  discard.NewGauge(),
+		TxIndexerBaseHeight:                    discard.NewGauge(),
+		BlockIndexerBaseHeight:                 discard.NewGauge(),
 	}
 }

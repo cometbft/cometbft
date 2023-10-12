@@ -8,6 +8,10 @@ import (
 	"testing"
 	"time"
 
+	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/state/indexer"
+	"github.com/cometbft/cometbft/state/indexer/block"
+	"github.com/cometbft/cometbft/state/txindex"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,10 +30,6 @@ import (
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
 )
-
-// A cleanupFunc cleans up any config / test files created for a particular
-// test.
-type cleanupFunc func()
 
 // make an extended commit with a single vote containing just the height and a
 // timestamp
@@ -53,7 +53,7 @@ func makeTestExtCommit(height int64, timestamp time.Time) *types.ExtendedCommit 
 	}
 }
 
-func makeStateAndBlockStore() (sm.State, *BlockStore, cleanupFunc) {
+func makeStateAndBlockStoreAndIndexers() (sm.State, *BlockStore, txindex.TxIndexer, indexer.BlockIndexer, func(), sm.Store) {
 	config := test.ResetTestRoot("blockchain_reactor_test")
 	blockDB := dbm.NewMemDB()
 	stateDB := dbm.NewMemDB()
@@ -64,7 +64,13 @@ func makeStateAndBlockStore() (sm.State, *BlockStore, cleanupFunc) {
 	if err != nil {
 		panic(fmt.Errorf("error constructing state from genesis file: %w", err))
 	}
-	return state, NewBlockStore(blockDB), func() { os.RemoveAll(config.RootDir) }
+
+	txIndexer, blockIndexer, err := block.IndexerFromConfig(config, cfg.DefaultDBProvider, "test")
+	if err != nil {
+		panic(err)
+	}
+
+	return state, NewBlockStore(blockDB), txIndexer, blockIndexer, func() { os.RemoveAll(config.RootDir) }, stateStore
 }
 
 func TestLoadBlockStoreState(t *testing.T) {
@@ -136,7 +142,7 @@ func newInMemoryBlockStore() (*BlockStore, dbm.DB) {
 // TODO: This test should be simplified ...
 
 func TestBlockStoreSaveLoadBlock(t *testing.T) {
-	state, bs, cleanup := makeStateAndBlockStore()
+	state, bs, _, _, cleanup, _ := makeStateAndBlockStoreAndIndexers()
 	defer cleanup()
 	require.Equal(t, bs.Base(), int64(0), "initially the base should be zero")
 	require.Equal(t, bs.Height(), int64(0), "initially the height should be zero")
@@ -388,7 +394,7 @@ func TestSaveBlockWithExtendedCommitPanicOnAbsentExtension(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
-			state, bs, cleanup := makeStateAndBlockStore()
+			state, bs, _, _, cleanup, _ := makeStateAndBlockStoreAndIndexers()
 			defer cleanup()
 			h := bs.Height() + 1
 			block := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
@@ -429,7 +435,7 @@ func TestLoadBlockExtendedCommit(t *testing.T) {
 		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
-			state, bs, cleanup := makeStateAndBlockStore()
+			state, bs, _, _, cleanup, _ := makeStateAndBlockStoreAndIndexers()
 			defer cleanup()
 			h := bs.Height() + 1
 			block := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
@@ -551,18 +557,13 @@ func (o *prunerObserver) PrunerPrunedBlocks(info *sm.BlocksPrunedInfo) {
 func TestPruningService(t *testing.T) {
 	config := test.ResetTestRoot("blockchain_reactor_pruning_test")
 	defer os.RemoveAll(config.RootDir)
-	stateStore := sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
-		DiscardABCIResponses: false,
-	})
-	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
-	require.NoError(t, err)
-	db := dbm.NewMemDB()
-	bs := NewBlockStore(db)
+	state, bs, txIndexer, blockIndexer, cleanup, stateStore := makeStateAndBlockStoreAndIndexers()
+	defer cleanup()
 	assert.EqualValues(t, 0, bs.Base())
 	assert.EqualValues(t, 0, bs.Height())
 	assert.EqualValues(t, 0, bs.Size())
 
-	err = initStateStoreRetainHeights(stateStore, 0, 0, 0)
+	err := initStateStoreRetainHeights(stateStore, 0, 0, 0)
 	require.NoError(t, err)
 
 	obs := newPrunerObserver(1)
@@ -570,6 +571,8 @@ func TestPruningService(t *testing.T) {
 	pruner := sm.NewPruner(
 		stateStore,
 		bs,
+		blockIndexer,
+		txIndexer,
 		log.TestingLogger(),
 		sm.WithPrunerInterval(time.Second*1),
 		sm.WithPrunerObserver(obs),
@@ -651,7 +654,6 @@ func TestPruningService(t *testing.T) {
 
 	case <-time.After(5 * time.Second):
 		require.Fail(t, "timed out waiting for pruning run to complete")
-
 	}
 
 	// Pruning below the current base should error
@@ -871,7 +873,7 @@ func TestLoadBlockMetaByHash(t *testing.T) {
 }
 
 func TestBlockFetchAtHeight(t *testing.T) {
-	state, bs, cleanup := makeStateAndBlockStore()
+	state, bs, _, _, cleanup, _ := makeStateAndBlockStoreAndIndexers()
 	defer cleanup()
 	require.Equal(t, bs.Height(), int64(0), "initially the height should be zero")
 	block := state.MakeBlock(bs.Height()+1, nil, new(types.Commit), nil, state.Validators.GetProposer().Address)

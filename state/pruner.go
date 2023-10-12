@@ -8,6 +8,8 @@ import (
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/state/indexer"
+	"github.com/cometbft/cometbft/state/txindex"
 )
 
 var (
@@ -30,13 +32,12 @@ type Pruner struct {
 	// DB to which we save the retain heights
 	bs BlockStore
 	// State store to prune state from
-	stateStore Store
-
-	interval time.Duration
-
-	observer PrunerObserver
-
-	metrics *Metrics
+	stateStore   Store
+	blockIndexer indexer.BlockIndexer
+	txIndexer    txindex.TxIndexer
+	interval     time.Duration
+	observer     PrunerObserver
+	metrics      *Metrics
 }
 
 type prunerConfig struct {
@@ -87,19 +88,28 @@ func WithPrunerMetrics(metrics *Metrics) PrunerOption {
 //
 // Assumes that the initial application and data companion retain heights have
 // already been configured in the state store.
-func NewPruner(stateStore Store, bs BlockStore, logger log.Logger, options ...PrunerOption) *Pruner {
+func NewPruner(
+	stateStore Store,
+	bs BlockStore,
+	blockIndexer indexer.BlockIndexer,
+	txIndexer txindex.TxIndexer,
+	logger log.Logger,
+	options ...PrunerOption,
+) *Pruner {
 	cfg := defaultPrunerConfig()
 	for _, opt := range options {
 		opt(cfg)
 	}
 	p := &Pruner{
-		dcEnabled:  cfg.dcEnabled,
-		bs:         bs,
-		stateStore: stateStore,
-		logger:     logger,
-		interval:   cfg.interval,
-		observer:   cfg.observer,
-		metrics:    cfg.metrics,
+		bs:           bs,
+		txIndexer:    txIndexer,
+		blockIndexer: blockIndexer,
+		stateStore:   stateStore,
+		logger:       logger,
+		interval:     cfg.interval,
+		observer:     cfg.observer,
+		metrics:      cfg.metrics,
+		dcEnabled:    cfg.dcEnabled,
 	}
 	p.BaseService = *service.NewBaseService(logger, "Pruner", p)
 	return p
@@ -115,6 +125,7 @@ func (p *Pruner) OnStart() error {
 	// enabled.
 	if p.dcEnabled {
 		go p.pruneABCIResponses()
+		go p.pruneIndexesRoutine()
 	}
 	p.observer.PrunerStarted(p.interval)
 	return nil
@@ -210,6 +221,61 @@ func (p *Pruner) SetABCIResRetainHeight(height int64) error {
 	return nil
 }
 
+func (p *Pruner) SetTxIndexerRetainHeight(height int64) error {
+	// Ensure that all requests to set retain heights via the application are
+	// serialized.
+	p.mtx.Lock()
+	defer p.mtx.Unlock()
+	if height <= 0 {
+		return ErrInvalidHeightValue
+	}
+
+	currentRetainHeight, err := p.txIndexer.GetRetainHeight()
+	if err != nil {
+		if !errors.Is(err, ErrKeyNotFound) {
+			return err
+		}
+		return p.txIndexer.SetRetainHeight(height)
+	}
+	if currentRetainHeight > height {
+		return ErrPrunerCannotLowerRetainHeight
+	}
+	if err := p.txIndexer.SetRetainHeight(height); err != nil {
+		return err
+	}
+
+	p.metrics.PruningServiceTxIndexerRetainHeight.Set(float64(height))
+	return nil
+}
+
+func (p *Pruner) SetBlockIndexerRetainHeight(height int64) error {
+	// Ensure that all requests to set retain heights via the application are
+	// serialized.
+	p.mtx.Lock()
+	defer p.mtx.Unlock()
+	if height <= 0 {
+		return ErrInvalidHeightValue
+	}
+
+	currentRetainHeight, err := p.blockIndexer.GetRetainHeight()
+	if err != nil {
+		if !errors.Is(err, ErrKeyNotFound) {
+			return err
+		}
+		return p.blockIndexer.SetRetainHeight(height)
+	}
+	if currentRetainHeight > height {
+		return ErrPrunerCannotLowerRetainHeight
+	}
+	if err := p.blockIndexer.SetRetainHeight(height); err != nil {
+		return err
+	}
+
+	p.metrics.PruningServiceBlockIndexerRetainHeight.Set(float64(height))
+
+	return nil
+}
+
 // GetApplicationRetainHeight is a convenience method for accessing the
 // GetApplicationRetainHeight method of the underlying state store.
 func (p *Pruner) GetApplicationRetainHeight() (int64, error) {
@@ -226,6 +292,18 @@ func (p *Pruner) GetCompanionBlockRetainHeight() (int64, error) {
 // GetABCIResRetainHeight method of the underlying state store.
 func (p *Pruner) GetABCIResRetainHeight() (int64, error) {
 	return p.stateStore.GetABCIResRetainHeight()
+}
+
+// GetTxIndexerRetainHeight is a convenience method for accessing the
+// GetTxIndexerRetainHeight method of the underlying indexer
+func (p *Pruner) GetTxIndexerRetainHeight() (int64, error) {
+	return p.txIndexer.GetRetainHeight()
+}
+
+// GetBlockIndexerRetainHeight is a convenience method for accessing the
+// GetBlockIndexerRetainHeight method of the underlying state store.
+func (p *Pruner) GetBlockIndexerRetainHeight() (int64, error) {
+	return p.blockIndexer.GetRetainHeight()
 }
 
 func (p *Pruner) pruneABCIResponses() {
@@ -264,6 +342,75 @@ func (p *Pruner) pruneBlocks() {
 			time.Sleep(p.interval)
 		}
 	}
+}
+
+func (p *Pruner) pruneIndexesRoutine() {
+	p.logger.Info("Index pruner started", "interval", p.interval.String())
+	lastTxIndexerRetainHeight := int64(0)
+	lastBlockIndexerRetainHeight := int64(0)
+	for {
+		select {
+		case <-p.Quit():
+			return
+		default:
+			lastTxIndexerRetainHeight = p.pruneTxIndexerToRetainHeight(lastTxIndexerRetainHeight)
+			lastBlockIndexerRetainHeight = p.pruneBlockIndexerToRetainHeight(lastBlockIndexerRetainHeight)
+			// TODO call observer
+			time.Sleep(p.interval)
+		}
+	}
+}
+
+func (p *Pruner) pruneTxIndexerToRetainHeight(lastRetainHeight int64) int64 {
+	targetRetainHeight, err := p.GetTxIndexerRetainHeight()
+	if err != nil {
+		// Indexer retain height has not yet been set - do not log any
+		// errors at this time.
+		if errors.Is(err, ErrKeyNotFound) {
+			return 0
+		}
+		p.logger.Error("Failed to get Indexer retain height", "err", err)
+		return lastRetainHeight
+	}
+
+	if lastRetainHeight >= targetRetainHeight {
+		return lastRetainHeight
+	}
+
+	numPrunedTxIndexer, newTxIndexerRetainHeight, err := p.txIndexer.Prune(targetRetainHeight)
+	if err != nil {
+		p.logger.Error("Failed to prune tx indexer", "err", err, "targetRetainHeight", targetRetainHeight, "newTxIndexerRetainHeight", newTxIndexerRetainHeight)
+	} else if numPrunedTxIndexer > 0 {
+		p.metrics.TxIndexerBaseHeight.Set(float64(newTxIndexerRetainHeight))
+		p.logger.Debug("Pruned tx indexer", "count", numPrunedTxIndexer, "newTxIndexerRetainHeight", newTxIndexerRetainHeight)
+	}
+	return newTxIndexerRetainHeight
+}
+
+func (p *Pruner) pruneBlockIndexerToRetainHeight(lastRetainHeight int64) int64 {
+	targetRetainHeight, err := p.GetBlockIndexerRetainHeight()
+	if err != nil {
+		// Indexer retain height has not yet been set - do not log any
+		// errors at this time.
+		if errors.Is(err, ErrKeyNotFound) {
+			return 0
+		}
+		p.logger.Error("Failed to get Indexer retain height", "err", err)
+		return lastRetainHeight
+	}
+
+	if lastRetainHeight >= targetRetainHeight {
+		return lastRetainHeight
+	}
+
+	numPrunedBlockIndexer, newBlockIndexerRetainHeight, err := p.blockIndexer.Prune(targetRetainHeight)
+	if err != nil {
+		p.logger.Error("Failed to prune block indexer", "err", err, "targetRetainHeight", targetRetainHeight, "newBlockIndexerRetainHeight", newBlockIndexerRetainHeight)
+	} else if numPrunedBlockIndexer > 0 {
+		p.metrics.BlockIndexerBaseHeight.Set(float64(newBlockIndexerRetainHeight))
+		p.logger.Debug("Pruned block indexer", "count", numPrunedBlockIndexer, "newBlockIndexerRetainHeight", newBlockIndexerRetainHeight)
+	}
+	return newBlockIndexerRetainHeight
 }
 
 func (p *Pruner) pruneBlocksToRetainHeight(lastRetainHeight int64) int64 {

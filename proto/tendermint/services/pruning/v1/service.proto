@@ -29,4 +29,20 @@ service PruningService {
     // GetBlockResultsRetainHeight returns information about the retain height
     // parameters used by the node to influence block results retention/pruning.
     rpc GetBlockResultsRetainHeight(GetBlockResultsRetainHeightRequest) returns (GetBlockResultsRetainHeightResponse);
+
+    // SetTxIndexerRetainHeightRequest indicates to the node that it can safely
+    // prune all tx indices up to the specified retain height.
+    rpc SetTxIndexerRetainHeight(SetTxIndexerRetainHeightRequest) returns (SetTxIndexerRetainHeightResponse);
+
+    // GetTxIndexerRetainHeight returns information about the retain height
+    // parameters used by the node to influence TxIndexer pruning
+    rpc GetTxIndexerRetainHeight(GetTxIndexerRetainHeightRequest) returns (GetTxIndexerRetainHeightResponse);
+
+    // SetBlockIndexerRetainHeightRequest indicates to the node that it can safely
+    // prune all block indices up to the specified retain height.
+    rpc SetBlockIndexerRetainHeight(SetBlockIndexerRetainHeightRequest) returns (SetBlockIndexerRetainHeightResponse);
+
+    // GetBlockIndexerRetainHeight returns information about the retain height
+    // parameters used by the node to influence BlockIndexer pruning
+    rpc GetBlockIndexerRetainHeight(GetBlockIndexerRetainHeightRequest) returns (GetBlockIndexerRetainHeightResponse);
 }

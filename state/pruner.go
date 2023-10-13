@@ -312,10 +312,12 @@ func (p *Pruner) pruneABCIResponses() {
 			return
 		default:
 			newRetainHeight := p.pruneABCIResToRetainHeight(lastRetainHeight)
-			p.observer.PrunerPrunedABCIRes(&ABCIResponsesPrunedInfo{
-				FromHeight: lastRetainHeight,
-				ToHeight:   newRetainHeight - 1,
-			})
+			if newRetainHeight != lastRetainHeight {
+				p.observer.PrunerPrunedABCIRes(&ABCIResponsesPrunedInfo{
+					FromHeight: lastRetainHeight,
+					ToHeight:   newRetainHeight - 1,
+				})
+			}
 			lastRetainHeight = newRetainHeight
 			time.Sleep(p.interval)
 		}
@@ -331,10 +333,12 @@ func (p *Pruner) pruneBlocks() {
 			return
 		default:
 			newRetainHeight := p.pruneBlocksToRetainHeight(lastRetainHeight)
-			p.observer.PrunerPrunedBlocks(&BlocksPrunedInfo{
-				FromHeight: lastRetainHeight,
-				ToHeight:   newRetainHeight - 1,
-			})
+			if newRetainHeight != lastRetainHeight {
+				p.observer.PrunerPrunedBlocks(&BlocksPrunedInfo{
+					FromHeight: lastRetainHeight,
+					ToHeight:   newRetainHeight - 1,
+				})
+			}
 			lastRetainHeight = newRetainHeight
 			time.Sleep(p.interval)
 		}

@@ -15,11 +15,11 @@ import (
     "sort"
     "strings"
 
-    "github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/lexer"
-    "github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/parser/slot"
-    "github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/parser/symbols"
-    "github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/sppf"
-    "github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/token"
+    "github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/grammar-auto/lexer"
+    "github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/grammar-auto/parser/slot"
+    "github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/grammar-auto/parser/symbols"
+    "github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/grammar-auto/sppf"
+    "github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/grammar-auto/token"
 )
 
 type bsr interface {

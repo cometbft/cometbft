@@ -8,10 +8,10 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	clean_start_lexer "github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/lexer"
-	clean_start_parser "github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/parser"
-	recovery_lexer "github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/lexer"
-	recovery_parser "github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/parser"
+	clean_start_lexer "github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/grammar-auto/lexer"
+	clean_start_parser "github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/grammar-auto/parser"
+	recovery_lexer "github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/grammar-auto/lexer"
+	recovery_parser "github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/grammar-auto/parser"
 )
 
 const COMMIT = "commit"

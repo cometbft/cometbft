@@ -39,7 +39,7 @@ runner:
 	go build -o build/runner ./runner
 
 grammar-gen:
-	gogll pkg/grammar/clean-start/abci_grammar_clean_start.md
-	gogll pkg/grammar/recovery/abci_grammar_recovery.md
+	go run github.com/goccmack/gogll/v3@latest -o pkg/grammar/clean-start/grammar-auto pkg/grammar/clean-start/abci_grammar_clean_start.md
+	go run github.com/goccmack/gogll/v3@latest -o pkg/grammar/recovery/grammar-auto pkg/grammar/recovery/abci_grammar_recovery.md 
 
 .PHONY: all node docker generator runner grammar-gen

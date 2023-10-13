@@ -15,11 +15,11 @@ import (
     "sort"
     "strings"
 
-    "github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/lexer"
-    "github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/parser/slot"
-    "github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/parser/symbols"
-    "github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/sppf"
-    "github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/token"
+    "github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/grammar-auto/lexer"
+    "github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/grammar-auto/parser/slot"
+    "github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/grammar-auto/parser/symbols"
+    "github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/grammar-auto/sppf"
+    "github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/grammar-auto/token"
 )
 
 type bsr interface {

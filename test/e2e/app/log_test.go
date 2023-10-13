@@ -1,10 +1,10 @@
 package app
 
 import (
-	"reflect"
 	"testing"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/stretchr/testify/require"
 )
 
 // Tests for logging each type of requests.
@@ -27,16 +27,9 @@ func TestLogging(t *testing.T) {
 	}
 	for _, r := range reqs {
 		s, err := GetABCIRequestString(r)
-		if err != nil {
-			t.Error(err)
-		}
+		require.NoError(t, err)
 		rr, err := GetABCIRequestFromString(s)
-		if err != nil {
-			t.Error(err)
-		}
-		if !reflect.DeepEqual(r, rr) {
-			t.Errorf("Logging unsuccessful: got %v expected %v\n", rr, r)
-		}
-
+		require.NoError(t, err)
+		require.Equal(t, r, rr)
 	}
 }

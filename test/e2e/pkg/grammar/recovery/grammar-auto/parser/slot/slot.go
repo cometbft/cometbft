@@ -6,27 +6,13 @@ import(
 	"bytes"
 	"fmt"
 	
-	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/parser/symbols"
+	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/grammar-auto/parser/symbols"
 )
 
 type Label int
 
 const(
-	ApplyChunk0R0 Label = iota
-	ApplyChunk0R1
-	ApplyChunks0R0
-	ApplyChunks0R1
-	ApplyChunks1R0
-	ApplyChunks1R1
-	ApplyChunks1R2
-	CleanStart0R0
-	CleanStart0R1
-	CleanStart0R2
-	CleanStart0R3
-	CleanStart1R0
-	CleanStart1R1
-	CleanStart1R2
-	Commit0R0
+	Commit0R0 Label = iota
 	Commit0R1
 	ConsensusExec0R0
 	ConsensusExec0R1
@@ -53,12 +39,8 @@ const(
 	ConsensusRounds1R2
 	FinalizeBlock0R0
 	FinalizeBlock0R1
-	InitChain0R0
-	InitChain0R1
 	NonProposer0R0
 	NonProposer0R1
-	OfferSnapshot0R0
-	OfferSnapshot0R1
 	PrepareProposal0R0
 	PrepareProposal0R1
 	ProcessProposal0R0
@@ -68,26 +50,10 @@ const(
 	Proposer1R0
 	Proposer1R1
 	Proposer1R2
+	Recovery0R0
+	Recovery0R1
 	Start0R0
 	Start0R1
-	StateSync0R0
-	StateSync0R1
-	StateSync0R2
-	StateSync1R0
-	StateSync1R1
-	StateSyncAttempt0R0
-	StateSyncAttempt0R1
-	StateSyncAttempt0R2
-	StateSyncAttempt1R0
-	StateSyncAttempt1R1
-	StateSyncAttempts0R0
-	StateSyncAttempts0R1
-	StateSyncAttempts1R0
-	StateSyncAttempts1R1
-	StateSyncAttempts1R2
-	SuccessSync0R0
-	SuccessSync0R1
-	SuccessSync0R2
 )
 
 type Slot struct {
@@ -177,129 +143,17 @@ func (s *Slot) String() string {
 }
 
 var slots = map[Label]*Slot{ 
-	ApplyChunk0R0: {
-		symbols.NT_ApplyChunk, 0, 0, 
-		symbols.Symbols{  
-			symbols.T_0,
-		}, 
-		ApplyChunk0R0, 
-	},
-	ApplyChunk0R1: {
-		symbols.NT_ApplyChunk, 0, 1, 
-		symbols.Symbols{  
-			symbols.T_0,
-		}, 
-		ApplyChunk0R1, 
-	},
-	ApplyChunks0R0: {
-		symbols.NT_ApplyChunks, 0, 0, 
-		symbols.Symbols{  
-			symbols.NT_ApplyChunk,
-		}, 
-		ApplyChunks0R0, 
-	},
-	ApplyChunks0R1: {
-		symbols.NT_ApplyChunks, 0, 1, 
-		symbols.Symbols{  
-			symbols.NT_ApplyChunk,
-		}, 
-		ApplyChunks0R1, 
-	},
-	ApplyChunks1R0: {
-		symbols.NT_ApplyChunks, 1, 0, 
-		symbols.Symbols{  
-			symbols.NT_ApplyChunk, 
-			symbols.NT_ApplyChunks,
-		}, 
-		ApplyChunks1R0, 
-	},
-	ApplyChunks1R1: {
-		symbols.NT_ApplyChunks, 1, 1, 
-		symbols.Symbols{  
-			symbols.NT_ApplyChunk, 
-			symbols.NT_ApplyChunks,
-		}, 
-		ApplyChunks1R1, 
-	},
-	ApplyChunks1R2: {
-		symbols.NT_ApplyChunks, 1, 2, 
-		symbols.Symbols{  
-			symbols.NT_ApplyChunk, 
-			symbols.NT_ApplyChunks,
-		}, 
-		ApplyChunks1R2, 
-	},
-	CleanStart0R0: {
-		symbols.NT_CleanStart, 0, 0, 
-		symbols.Symbols{  
-			symbols.NT_InitChain, 
-			symbols.NT_StateSync, 
-			symbols.NT_ConsensusExec,
-		}, 
-		CleanStart0R0, 
-	},
-	CleanStart0R1: {
-		symbols.NT_CleanStart, 0, 1, 
-		symbols.Symbols{  
-			symbols.NT_InitChain, 
-			symbols.NT_StateSync, 
-			symbols.NT_ConsensusExec,
-		}, 
-		CleanStart0R1, 
-	},
-	CleanStart0R2: {
-		symbols.NT_CleanStart, 0, 2, 
-		symbols.Symbols{  
-			symbols.NT_InitChain, 
-			symbols.NT_StateSync, 
-			symbols.NT_ConsensusExec,
-		}, 
-		CleanStart0R2, 
-	},
-	CleanStart0R3: {
-		symbols.NT_CleanStart, 0, 3, 
-		symbols.Symbols{  
-			symbols.NT_InitChain, 
-			symbols.NT_StateSync, 
-			symbols.NT_ConsensusExec,
-		}, 
-		CleanStart0R3, 
-	},
-	CleanStart1R0: {
-		symbols.NT_CleanStart, 1, 0, 
-		symbols.Symbols{  
-			symbols.NT_InitChain, 
-			symbols.NT_ConsensusExec,
-		}, 
-		CleanStart1R0, 
-	},
-	CleanStart1R1: {
-		symbols.NT_CleanStart, 1, 1, 
-		symbols.Symbols{  
-			symbols.NT_InitChain, 
-			symbols.NT_ConsensusExec,
-		}, 
-		CleanStart1R1, 
-	},
-	CleanStart1R2: {
-		symbols.NT_CleanStart, 1, 2, 
-		symbols.Symbols{  
-			symbols.NT_InitChain, 
-			symbols.NT_ConsensusExec,
-		}, 
-		CleanStart1R2, 
-	},
 	Commit0R0: {
 		symbols.NT_Commit, 0, 0, 
 		symbols.Symbols{  
-			symbols.T_1,
+			symbols.T_0,
 		}, 
 		Commit0R0, 
 	},
 	Commit0R1: {
 		symbols.NT_Commit, 0, 1, 
 		symbols.Symbols{  
-			symbols.T_1,
+			symbols.T_0,
 		}, 
 		Commit0R1, 
 	},
@@ -484,30 +338,16 @@ var slots = map[Label]*Slot{
 	FinalizeBlock0R0: {
 		symbols.NT_FinalizeBlock, 0, 0, 
 		symbols.Symbols{  
-			symbols.T_2,
+			symbols.T_1,
 		}, 
 		FinalizeBlock0R0, 
 	},
 	FinalizeBlock0R1: {
 		symbols.NT_FinalizeBlock, 0, 1, 
 		symbols.Symbols{  
-			symbols.T_2,
+			symbols.T_1,
 		}, 
 		FinalizeBlock0R1, 
-	},
-	InitChain0R0: {
-		symbols.NT_InitChain, 0, 0, 
-		symbols.Symbols{  
-			symbols.T_3,
-		}, 
-		InitChain0R0, 
-	},
-	InitChain0R1: {
-		symbols.NT_InitChain, 0, 1, 
-		symbols.Symbols{  
-			symbols.T_3,
-		}, 
-		InitChain0R1, 
 	},
 	NonProposer0R0: {
 		symbols.NT_NonProposer, 0, 0, 
@@ -523,45 +363,31 @@ var slots = map[Label]*Slot{
 		}, 
 		NonProposer0R1, 
 	},
-	OfferSnapshot0R0: {
-		symbols.NT_OfferSnapshot, 0, 0, 
-		symbols.Symbols{  
-			symbols.T_4,
-		}, 
-		OfferSnapshot0R0, 
-	},
-	OfferSnapshot0R1: {
-		symbols.NT_OfferSnapshot, 0, 1, 
-		symbols.Symbols{  
-			symbols.T_4,
-		}, 
-		OfferSnapshot0R1, 
-	},
 	PrepareProposal0R0: {
 		symbols.NT_PrepareProposal, 0, 0, 
 		symbols.Symbols{  
-			symbols.T_5,
+			symbols.T_2,
 		}, 
 		PrepareProposal0R0, 
 	},
 	PrepareProposal0R1: {
 		symbols.NT_PrepareProposal, 0, 1, 
 		symbols.Symbols{  
-			symbols.T_5,
+			symbols.T_2,
 		}, 
 		PrepareProposal0R1, 
 	},
 	ProcessProposal0R0: {
 		symbols.NT_ProcessProposal, 0, 0, 
 		symbols.Symbols{  
-			symbols.T_6,
+			symbols.T_3,
 		}, 
 		ProcessProposal0R0, 
 	},
 	ProcessProposal0R1: {
 		symbols.NT_ProcessProposal, 0, 1, 
 		symbols.Symbols{  
-			symbols.T_6,
+			symbols.T_3,
 		}, 
 		ProcessProposal0R1, 
 	},
@@ -603,175 +429,37 @@ var slots = map[Label]*Slot{
 		}, 
 		Proposer1R2, 
 	},
+	Recovery0R0: {
+		symbols.NT_Recovery, 0, 0, 
+		symbols.Symbols{  
+			symbols.NT_ConsensusExec,
+		}, 
+		Recovery0R0, 
+	},
+	Recovery0R1: {
+		symbols.NT_Recovery, 0, 1, 
+		symbols.Symbols{  
+			symbols.NT_ConsensusExec,
+		}, 
+		Recovery0R1, 
+	},
 	Start0R0: {
 		symbols.NT_Start, 0, 0, 
 		symbols.Symbols{  
-			symbols.NT_CleanStart,
+			symbols.NT_Recovery,
 		}, 
 		Start0R0, 
 	},
 	Start0R1: {
 		symbols.NT_Start, 0, 1, 
 		symbols.Symbols{  
-			symbols.NT_CleanStart,
+			symbols.NT_Recovery,
 		}, 
 		Start0R1, 
-	},
-	StateSync0R0: {
-		symbols.NT_StateSync, 0, 0, 
-		symbols.Symbols{  
-			symbols.NT_StateSyncAttempts, 
-			symbols.NT_SuccessSync,
-		}, 
-		StateSync0R0, 
-	},
-	StateSync0R1: {
-		symbols.NT_StateSync, 0, 1, 
-		symbols.Symbols{  
-			symbols.NT_StateSyncAttempts, 
-			symbols.NT_SuccessSync,
-		}, 
-		StateSync0R1, 
-	},
-	StateSync0R2: {
-		symbols.NT_StateSync, 0, 2, 
-		symbols.Symbols{  
-			symbols.NT_StateSyncAttempts, 
-			symbols.NT_SuccessSync,
-		}, 
-		StateSync0R2, 
-	},
-	StateSync1R0: {
-		symbols.NT_StateSync, 1, 0, 
-		symbols.Symbols{  
-			symbols.NT_SuccessSync,
-		}, 
-		StateSync1R0, 
-	},
-	StateSync1R1: {
-		symbols.NT_StateSync, 1, 1, 
-		symbols.Symbols{  
-			symbols.NT_SuccessSync,
-		}, 
-		StateSync1R1, 
-	},
-	StateSyncAttempt0R0: {
-		symbols.NT_StateSyncAttempt, 0, 0, 
-		symbols.Symbols{  
-			symbols.NT_OfferSnapshot, 
-			symbols.NT_ApplyChunks,
-		}, 
-		StateSyncAttempt0R0, 
-	},
-	StateSyncAttempt0R1: {
-		symbols.NT_StateSyncAttempt, 0, 1, 
-		symbols.Symbols{  
-			symbols.NT_OfferSnapshot, 
-			symbols.NT_ApplyChunks,
-		}, 
-		StateSyncAttempt0R1, 
-	},
-	StateSyncAttempt0R2: {
-		symbols.NT_StateSyncAttempt, 0, 2, 
-		symbols.Symbols{  
-			symbols.NT_OfferSnapshot, 
-			symbols.NT_ApplyChunks,
-		}, 
-		StateSyncAttempt0R2, 
-	},
-	StateSyncAttempt1R0: {
-		symbols.NT_StateSyncAttempt, 1, 0, 
-		symbols.Symbols{  
-			symbols.NT_OfferSnapshot,
-		}, 
-		StateSyncAttempt1R0, 
-	},
-	StateSyncAttempt1R1: {
-		symbols.NT_StateSyncAttempt, 1, 1, 
-		symbols.Symbols{  
-			symbols.NT_OfferSnapshot,
-		}, 
-		StateSyncAttempt1R1, 
-	},
-	StateSyncAttempts0R0: {
-		symbols.NT_StateSyncAttempts, 0, 0, 
-		symbols.Symbols{  
-			symbols.NT_StateSyncAttempt,
-		}, 
-		StateSyncAttempts0R0, 
-	},
-	StateSyncAttempts0R1: {
-		symbols.NT_StateSyncAttempts, 0, 1, 
-		symbols.Symbols{  
-			symbols.NT_StateSyncAttempt,
-		}, 
-		StateSyncAttempts0R1, 
-	},
-	StateSyncAttempts1R0: {
-		symbols.NT_StateSyncAttempts, 1, 0, 
-		symbols.Symbols{  
-			symbols.NT_StateSyncAttempt, 
-			symbols.NT_StateSyncAttempts,
-		}, 
-		StateSyncAttempts1R0, 
-	},
-	StateSyncAttempts1R1: {
-		symbols.NT_StateSyncAttempts, 1, 1, 
-		symbols.Symbols{  
-			symbols.NT_StateSyncAttempt, 
-			symbols.NT_StateSyncAttempts,
-		}, 
-		StateSyncAttempts1R1, 
-	},
-	StateSyncAttempts1R2: {
-		symbols.NT_StateSyncAttempts, 1, 2, 
-		symbols.Symbols{  
-			symbols.NT_StateSyncAttempt, 
-			symbols.NT_StateSyncAttempts,
-		}, 
-		StateSyncAttempts1R2, 
-	},
-	SuccessSync0R0: {
-		symbols.NT_SuccessSync, 0, 0, 
-		symbols.Symbols{  
-			symbols.NT_OfferSnapshot, 
-			symbols.NT_ApplyChunks,
-		}, 
-		SuccessSync0R0, 
-	},
-	SuccessSync0R1: {
-		symbols.NT_SuccessSync, 0, 1, 
-		symbols.Symbols{  
-			symbols.NT_OfferSnapshot, 
-			symbols.NT_ApplyChunks,
-		}, 
-		SuccessSync0R1, 
-	},
-	SuccessSync0R2: {
-		symbols.NT_SuccessSync, 0, 2, 
-		symbols.Symbols{  
-			symbols.NT_OfferSnapshot, 
-			symbols.NT_ApplyChunks,
-		}, 
-		SuccessSync0R2, 
 	},
 }
 
 var slotIndex = map[Index]Label { 
-	Index{ symbols.NT_ApplyChunk,0,0 }: ApplyChunk0R0,
-	Index{ symbols.NT_ApplyChunk,0,1 }: ApplyChunk0R1,
-	Index{ symbols.NT_ApplyChunks,0,0 }: ApplyChunks0R0,
-	Index{ symbols.NT_ApplyChunks,0,1 }: ApplyChunks0R1,
-	Index{ symbols.NT_ApplyChunks,1,0 }: ApplyChunks1R0,
-	Index{ symbols.NT_ApplyChunks,1,1 }: ApplyChunks1R1,
-	Index{ symbols.NT_ApplyChunks,1,2 }: ApplyChunks1R2,
-	Index{ symbols.NT_CleanStart,0,0 }: CleanStart0R0,
-	Index{ symbols.NT_CleanStart,0,1 }: CleanStart0R1,
-	Index{ symbols.NT_CleanStart,0,2 }: CleanStart0R2,
-	Index{ symbols.NT_CleanStart,0,3 }: CleanStart0R3,
-	Index{ symbols.NT_CleanStart,1,0 }: CleanStart1R0,
-	Index{ symbols.NT_CleanStart,1,1 }: CleanStart1R1,
-	Index{ symbols.NT_CleanStart,1,2 }: CleanStart1R2,
 	Index{ symbols.NT_Commit,0,0 }: Commit0R0,
 	Index{ symbols.NT_Commit,0,1 }: Commit0R1,
 	Index{ symbols.NT_ConsensusExec,0,0 }: ConsensusExec0R0,
@@ -799,12 +487,8 @@ var slotIndex = map[Index]Label {
 	Index{ symbols.NT_ConsensusRounds,1,2 }: ConsensusRounds1R2,
 	Index{ symbols.NT_FinalizeBlock,0,0 }: FinalizeBlock0R0,
 	Index{ symbols.NT_FinalizeBlock,0,1 }: FinalizeBlock0R1,
-	Index{ symbols.NT_InitChain,0,0 }: InitChain0R0,
-	Index{ symbols.NT_InitChain,0,1 }: InitChain0R1,
 	Index{ symbols.NT_NonProposer,0,0 }: NonProposer0R0,
 	Index{ symbols.NT_NonProposer,0,1 }: NonProposer0R1,
-	Index{ symbols.NT_OfferSnapshot,0,0 }: OfferSnapshot0R0,
-	Index{ symbols.NT_OfferSnapshot,0,1 }: OfferSnapshot0R1,
 	Index{ symbols.NT_PrepareProposal,0,0 }: PrepareProposal0R0,
 	Index{ symbols.NT_PrepareProposal,0,1 }: PrepareProposal0R1,
 	Index{ symbols.NT_ProcessProposal,0,0 }: ProcessProposal0R0,
@@ -814,36 +498,15 @@ var slotIndex = map[Index]Label {
 	Index{ symbols.NT_Proposer,1,0 }: Proposer1R0,
 	Index{ symbols.NT_Proposer,1,1 }: Proposer1R1,
 	Index{ symbols.NT_Proposer,1,2 }: Proposer1R2,
+	Index{ symbols.NT_Recovery,0,0 }: Recovery0R0,
+	Index{ symbols.NT_Recovery,0,1 }: Recovery0R1,
 	Index{ symbols.NT_Start,0,0 }: Start0R0,
 	Index{ symbols.NT_Start,0,1 }: Start0R1,
-	Index{ symbols.NT_StateSync,0,0 }: StateSync0R0,
-	Index{ symbols.NT_StateSync,0,1 }: StateSync0R1,
-	Index{ symbols.NT_StateSync,0,2 }: StateSync0R2,
-	Index{ symbols.NT_StateSync,1,0 }: StateSync1R0,
-	Index{ symbols.NT_StateSync,1,1 }: StateSync1R1,
-	Index{ symbols.NT_StateSyncAttempt,0,0 }: StateSyncAttempt0R0,
-	Index{ symbols.NT_StateSyncAttempt,0,1 }: StateSyncAttempt0R1,
-	Index{ symbols.NT_StateSyncAttempt,0,2 }: StateSyncAttempt0R2,
-	Index{ symbols.NT_StateSyncAttempt,1,0 }: StateSyncAttempt1R0,
-	Index{ symbols.NT_StateSyncAttempt,1,1 }: StateSyncAttempt1R1,
-	Index{ symbols.NT_StateSyncAttempts,0,0 }: StateSyncAttempts0R0,
-	Index{ symbols.NT_StateSyncAttempts,0,1 }: StateSyncAttempts0R1,
-	Index{ symbols.NT_StateSyncAttempts,1,0 }: StateSyncAttempts1R0,
-	Index{ symbols.NT_StateSyncAttempts,1,1 }: StateSyncAttempts1R1,
-	Index{ symbols.NT_StateSyncAttempts,1,2 }: StateSyncAttempts1R2,
-	Index{ symbols.NT_SuccessSync,0,0 }: SuccessSync0R0,
-	Index{ symbols.NT_SuccessSync,0,1 }: SuccessSync0R1,
-	Index{ symbols.NT_SuccessSync,0,2 }: SuccessSync0R2,
 }
 
 var alternates = map[symbols.NT][]Label{ 
 	symbols.NT_Start:[]Label{ Start0R0 },
-	symbols.NT_CleanStart:[]Label{ CleanStart0R0,CleanStart1R0 },
-	symbols.NT_StateSync:[]Label{ StateSync0R0,StateSync1R0 },
-	symbols.NT_StateSyncAttempts:[]Label{ StateSyncAttempts0R0,StateSyncAttempts1R0 },
-	symbols.NT_StateSyncAttempt:[]Label{ StateSyncAttempt0R0,StateSyncAttempt1R0 },
-	symbols.NT_SuccessSync:[]Label{ SuccessSync0R0 },
-	symbols.NT_ApplyChunks:[]Label{ ApplyChunks0R0,ApplyChunks1R0 },
+	symbols.NT_Recovery:[]Label{ Recovery0R0 },
 	symbols.NT_ConsensusExec:[]Label{ ConsensusExec0R0 },
 	symbols.NT_ConsensusHeights:[]Label{ ConsensusHeights0R0,ConsensusHeights1R0 },
 	symbols.NT_ConsensusHeight:[]Label{ ConsensusHeight0R0,ConsensusHeight1R0 },
@@ -851,11 +514,8 @@ var alternates = map[symbols.NT][]Label{
 	symbols.NT_ConsensusRound:[]Label{ ConsensusRound0R0,ConsensusRound1R0 },
 	symbols.NT_Proposer:[]Label{ Proposer0R0,Proposer1R0 },
 	symbols.NT_NonProposer:[]Label{ NonProposer0R0 },
-	symbols.NT_InitChain:[]Label{ InitChain0R0 },
 	symbols.NT_FinalizeBlock:[]Label{ FinalizeBlock0R0 },
 	symbols.NT_Commit:[]Label{ Commit0R0 },
-	symbols.NT_OfferSnapshot:[]Label{ OfferSnapshot0R0 },
-	symbols.NT_ApplyChunk:[]Label{ ApplyChunk0R0 },
 	symbols.NT_PrepareProposal:[]Label{ PrepareProposal0R0 },
 	symbols.NT_ProcessProposal:[]Label{ ProcessProposal0R0 },
 }

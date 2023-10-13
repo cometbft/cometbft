@@ -14,7 +14,7 @@ import (
 	"bytes"
 	"github.com/goccmack/goutil/ioutil"
 
-	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/parser/symbols"
+	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/grammar-auto/parser/symbols"
 )
 
 type Node interface {

@@ -1,7 +1,6 @@
 package e2e_test
 
 import (
-	"fmt"
 	"testing"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -31,11 +30,7 @@ func TestNodeNameExtracting(t *testing.T) {
 			return
 		}
 		reqs, err := fetchABCIRequests(t, node.Name)
-		if err != nil {
-			t.Error(fmt.Errorf("Collecting of ABCI requests failed: %w", err))
-		}
-		if len(reqs) == 0 {
-			t.Errorf("No ABCI requests on node %v", node.Name)
-		}
+		require.NoError(t, err)
+		require.NotZero(t, len(reqs))
 	})
 }

@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/cosmos/gogoproto/grpc"
 	ggrpc "google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -24,6 +23,9 @@ type Client interface {
 	VersionServiceClient
 	BlockServiceClient
 	BlockResultsServiceClient
+
+	// Close the connection to the server. Any subsequent requests will fail.
+	Close() error
 }
 
 type clientBuilder struct {
@@ -50,11 +52,16 @@ func defaultDialerFunc(ctx context.Context, addr string) (net.Conn, error) {
 }
 
 type client struct {
-	conn grpc.ClientConn
+	conn *ggrpc.ClientConn
 
 	VersionServiceClient
 	BlockServiceClient
 	BlockResultsServiceClient
+}
+
+// Close implements Client.
+func (c *client) Close() error {
+	return c.conn.Close()
 }
 
 // WithInsecure disables transport security for the underlying client
@@ -126,11 +133,10 @@ func New(ctx context.Context, addr string, opts ...Option) (Client, error) {
 	if builder.blockResultsServiceEnabled {
 		blockResultServiceClient = newBlockResultsServiceClient(conn)
 	}
-	client := &client{
+	return &client{
 		conn:                      conn,
 		VersionServiceClient:      versionServiceClient,
 		BlockServiceClient:        blockServiceClient,
 		BlockResultsServiceClient: blockResultServiceClient,
-	}
-	return client, nil
+	}, nil
 }

@@ -22,6 +22,13 @@ synchronous. In this experimental version of v0.38.x, the application just needs
 to set the desired retain heights, and the pruning service runs in parallel with
 consensus.
 
+The interval for the background pruning operations can be set in the configuration file in the `[storage]` section within
+the `[storage.pruning]` configuration. The default interval is `10s` (10 seconds).
+```
+# The time period between automated background pruning operations.
+interval = "10s"
+```
+
 CometBFT provides a privileged gRPC endpoint for the pruning service. This privileged endpoint is distinct from the
 non-privileged (regular) gRPC endpoint and requires separate configuration and activation. These "privileged" services
 have the ability to manipulate the storage on the node.

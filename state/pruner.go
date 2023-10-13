@@ -243,7 +243,8 @@ func (p *Pruner) SetTxIndexerRetainHeight(height int64) error {
 	if err := p.txIndexer.SetRetainHeight(height); err != nil {
 		return err
 	}
-	// TODO call metrics
+
+	p.metrics.PruningServiceTxIndexerRetainHeight.Set(float64(height))
 	return nil
 }
 
@@ -269,7 +270,9 @@ func (p *Pruner) SetBlockIndexerRetainHeight(height int64) error {
 	if err := p.blockIndexer.SetRetainHeight(height); err != nil {
 		return err
 	}
-	// TODO call metrics
+
+	p.metrics.PruningServiceBlockIndexerRetainHeight.Set(float64(height))
+
 	return nil
 }
 
@@ -312,10 +315,12 @@ func (p *Pruner) pruneABCIResponses() {
 			return
 		default:
 			newRetainHeight := p.pruneABCIResToRetainHeight(lastRetainHeight)
-			p.observer.PrunerPrunedABCIRes(&ABCIResponsesPrunedInfo{
-				FromHeight: lastRetainHeight,
-				ToHeight:   newRetainHeight - 1,
-			})
+			if newRetainHeight != lastRetainHeight {
+				p.observer.PrunerPrunedABCIRes(&ABCIResponsesPrunedInfo{
+					FromHeight: lastRetainHeight,
+					ToHeight:   newRetainHeight - 1,
+				})
+			}
 			lastRetainHeight = newRetainHeight
 			time.Sleep(p.interval)
 		}
@@ -331,10 +336,12 @@ func (p *Pruner) pruneBlocks() {
 			return
 		default:
 			newRetainHeight := p.pruneBlocksToRetainHeight(lastRetainHeight)
-			p.observer.PrunerPrunedBlocks(&BlocksPrunedInfo{
-				FromHeight: lastRetainHeight,
-				ToHeight:   newRetainHeight - 1,
-			})
+			if newRetainHeight != lastRetainHeight {
+				p.observer.PrunerPrunedBlocks(&BlocksPrunedInfo{
+					FromHeight: lastRetainHeight,
+					ToHeight:   newRetainHeight - 1,
+				})
+			}
 			lastRetainHeight = newRetainHeight
 			time.Sleep(p.interval)
 		}
@@ -378,7 +385,7 @@ func (p *Pruner) pruneTxIndexerToRetainHeight(lastRetainHeight int64) int64 {
 	if err != nil {
 		p.logger.Error("Failed to prune tx indexer", "err", err, "targetRetainHeight", targetRetainHeight, "newTxIndexerRetainHeight", newTxIndexerRetainHeight)
 	} else if numPrunedTxIndexer > 0 {
-		// TODO call metrics
+		p.metrics.TxIndexerBaseHeight.Set(float64(newTxIndexerRetainHeight))
 		p.logger.Debug("Pruned tx indexer", "count", numPrunedTxIndexer, "newTxIndexerRetainHeight", newTxIndexerRetainHeight)
 	}
 	return newTxIndexerRetainHeight
@@ -404,7 +411,7 @@ func (p *Pruner) pruneBlockIndexerToRetainHeight(lastRetainHeight int64) int64 {
 	if err != nil {
 		p.logger.Error("Failed to prune block indexer", "err", err, "targetRetainHeight", targetRetainHeight, "newBlockIndexerRetainHeight", newBlockIndexerRetainHeight)
 	} else if numPrunedBlockIndexer > 0 {
-		// TODO call metrics
+		p.metrics.BlockIndexerBaseHeight.Set(float64(newBlockIndexerRetainHeight))
 		p.logger.Debug("Pruned block indexer", "count", numPrunedBlockIndexer, "newBlockIndexerRetainHeight", newBlockIndexerRetainHeight)
 	}
 	return newBlockIndexerRetainHeight

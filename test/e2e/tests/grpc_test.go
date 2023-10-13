@@ -21,6 +21,7 @@ func TestGRPC_Version(t *testing.T) {
 		defer ctxCancel()
 		client, err := node.GRPCClient(ctx)
 		require.NoError(t, err)
+		defer client.Close()
 
 		res, err := client.GetVersion(ctx)
 		require.NoError(t, err)
@@ -65,6 +66,7 @@ func TestGRPC_Block_GetByHeight(t *testing.T) {
 		defer ctxCancel()
 		gRPCClient, err := node.GRPCClient(ctx)
 		require.NoError(t, err)
+		defer gRPCClient.Close()
 
 		for _, block := range blocks {
 			if block.Header.Height < first {
@@ -104,6 +106,7 @@ func TestGRPC_Block_GetLatest(t *testing.T) {
 
 		gclient, err := node.GRPCClient(ctx)
 		require.NoError(t, err)
+		defer gclient.Close()
 
 		resultCh, err := gclient.GetLatestHeight(ctx)
 		require.NoError(t, err)
@@ -134,6 +137,7 @@ func TestGRPC_Block_GetLatestHeight(t *testing.T) {
 
 		gclient, err := node.GRPCClient(ctx)
 		require.NoError(t, err)
+		defer gclient.Close()
 
 		resultCh, err := gclient.GetLatestHeight(ctx)
 		require.NoError(t, err)
@@ -165,6 +169,7 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 		defer ctxCancel()
 		gRPCClient, err := node.GRPCClient(ctx)
 		require.NoError(t, err)
+		defer gRPCClient.Close()
 
 		// GetLatestBlockResults
 		latestBlockResults, err := gRPCClient.GetLatestBlockResults(ctx)
@@ -206,8 +211,10 @@ func TestGRPC_BlockRetainHeight(t *testing.T) {
 			return
 		}
 
+
 		grpcClient, status, cleanup := getGRPCPrivilegedClientForTesting(t, node)
 		defer cleanup()
+
 
 		err := grpcClient.SetBlockRetainHeight(ctx, uint64(status.SyncInfo.LatestBlockHeight-1))
 		require.NoError(t, err)
@@ -229,10 +236,10 @@ func TestGRPC_BlockResultsRetainHeight(t *testing.T) {
 		defer cleanup()
 
 		err := grpcClient.SetBlockResultsRetainHeight(ctx, uint64(status.SyncInfo.LatestBlockHeight)-1)
+
 		require.NoError(t, err, "Unexpected error for SetBlockResultsRetainHeight")
 
 		height, err := grpcClient.GetBlockResultsRetainHeight(ctx)
-
 		require.NoError(t, err, "Unexpected error for GetBlockRetainHeight")
 		require.Equal(t, height, uint64(status.SyncInfo.LatestBlockHeight)-1)
 	})

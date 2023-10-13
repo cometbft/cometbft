@@ -18,6 +18,47 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+// mempoolTx is an entry in the clist
+type mempoolTx struct {
+	tx        types.Tx // validated by the application
+	height    int64    // height that this tx had been validated in
+	gasWanted int64    // amount of gas this tx states it will require
+}
+
+// Height returns the height for this transaction
+func (memTx *mempoolTx) Height() int64 {
+	return atomic.LoadInt64(&memTx.height)
+}
+
+func (memTx *mempoolTx) Tx() types.Tx {
+	return memTx.tx
+}
+
+// CElement wrapper
+type CListEntry struct {
+	elem *clist.CElement
+}
+
+func (e *CListEntry) Tx() types.Tx {
+	return e.elem.Value.(*mempoolTx).tx
+}
+
+func (e *CListEntry) Height() int64 {
+	return e.elem.Value.(*mempoolTx).Height()
+}
+
+func (e *CListEntry) GasWanted() int64 {
+	return e.elem.Value.(*mempoolTx).gasWanted
+}
+
+func (e *CListEntry) NextWaitChan() <-chan struct{} {
+	return e.elem.NextWaitChan()
+}
+
+func (e *CListEntry) Next() *CListEntry {
+	return &CListEntry{e.elem.Next()}
+}
+
 // CListMempool is an ordered in-memory pool for transactions before they are
 // proposed in a consensus round. Transaction validity is checked using the
 // CheckTx abci message before the transaction is added to the pool. The
@@ -113,24 +154,16 @@ func NewCListMempool(
 	return mp
 }
 
-func (mem *CListMempool) GetCElement(txKey types.TxKey) (*clist.CElement, bool) {
-	if e, ok := mem.txsMap.Load(txKey); ok {
-		return e.(*clist.CElement), true
+func (mem *CListMempool) GetEntry(txKey types.TxKey) *CListEntry {
+	if elem, ok := mem.txsMap.Load(txKey); ok {
+		return &CListEntry{elem.(*clist.CElement)}
 	}
-	return nil, false
-}
-
-func (mem *CListMempool) GetEntry(txKey types.TxKey) *MempoolTx { // TODO: follow the same design as GetCElement and allow nil elements?
-	elem, _ := mem.GetCElement(txKey)
-	if elem == nil {
-		return nil
-	}
-	return elem.Value.(*MempoolTx)
+	return nil
 }
 
 func (mem *CListMempool) InMempool(txKey types.TxKey) bool {
-	_, ok := mem.GetCElement(txKey)
-	return ok
+	elem := mem.GetEntry(txKey)
+	return elem != nil
 }
 
 func (mem *CListMempool) addToCache(txKey types.TxKey) bool {
@@ -260,8 +293,8 @@ func (mem *CListMempool) Height() int64 {
 // FIXME: leaking implementation details!
 //
 // Safe for concurrent use by multiple goroutines.
-func (mem *CListMempool) TxsFront() *clist.CElement {
-	return mem.txs.Front()
+func (mem *CListMempool) TxsFront() *CListEntry {
+	return &CListEntry{mem.txs.Front()}
 }
 
 // TxsWaitChan returns a channel to wait on transactions. It will be closed
@@ -369,7 +402,7 @@ func (mem *CListMempool) globalCb(req *abci.Request, res *abci.Response) {
 
 // Called from:
 //   - resCbFirstTime (lock not held) if tx is valid
-func (mem *CListMempool) addTx(memTx *MempoolTx) {
+func (mem *CListMempool) addTx(memTx *mempoolTx) {
 	e := mem.txs.PushBack(memTx)
 	mem.txsMap.Store(memTx.tx.Key(), e)
 	atomic.AddInt64(&mem.txsBytes, int64(len(memTx.tx)))
@@ -384,12 +417,11 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 	// The transaction should be removed from the reactor, even if it cannot be
 	// found in the mempool.
 	mem.invokeRemoveTxOnReactor(txKey)
-	if elem, ok := mem.GetCElement(txKey); ok {
-		mem.txs.Remove(elem)
-		elem.DetachPrev()
+	if entry := mem.GetEntry(txKey); entry != nil {
+		mem.txs.Remove(entry.elem)
+		entry.elem.DetachPrev()
 		mem.txsMap.Delete(txKey)
-		tx := elem.Value.(*MempoolTx).tx
-		atomic.AddInt64(&mem.txsBytes, int64(-len(tx)))
+		atomic.AddInt64(&mem.txsBytes, int64(-len(entry.Tx())))
 		return nil
 	}
 	return errors.New("transaction not found in mempool")
@@ -449,7 +481,7 @@ func (mem *CListMempool) resCbFirstTime(
 				return
 			}
 
-			mem.addTx(&MempoolTx{
+			mem.addTx(&mempoolTx{
 				height:    mem.height,
 				gasWanted: r.CheckTx.GasWanted,
 				tx:        tx,
@@ -487,7 +519,7 @@ func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 	switch r := res.Value.(type) {
 	case *abci.Response_CheckTx:
 		tx := types.Tx(req.GetCheckTx().Tx)
-		memTx := mem.recheckCursor.Value.(*MempoolTx)
+		memTx := mem.recheckCursor.Value.(*mempoolTx)
 
 		// Search through the remaining list of tx to recheck for a transaction that matches
 		// the one we received from the ABCI application.
@@ -514,7 +546,7 @@ func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 			}
 
 			mem.recheckCursor = mem.recheckCursor.Next()
-			memTx = mem.recheckCursor.Value.(*MempoolTx)
+			memTx = mem.recheckCursor.Value.(*mempoolTx)
 		}
 
 		var postCheckErr error
@@ -584,7 +616,7 @@ func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 	// txs := make([]types.Tx, 0, cmtmath.MinInt(mem.txs.Len(), max/mem.avgTxSize))
 	txs := make([]types.Tx, 0, mem.txs.Len())
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
-		memTx := e.Value.(*MempoolTx)
+		memTx := e.Value.(*mempoolTx)
 
 		txs = append(txs, memTx.tx)
 
@@ -621,7 +653,7 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 
 	txs := make([]types.Tx, 0, cmtmath.MinInt(mem.txs.Len(), max))
 	for e := mem.txs.Front(); e != nil && len(txs) <= max; e = e.Next() {
-		memTx := e.Value.(*MempoolTx)
+		memTx := e.Value.(*mempoolTx)
 		txs = append(txs, memTx.tx)
 	}
 	return txs
@@ -705,7 +737,7 @@ func (mem *CListMempool) recheckTxs() {
 	// Push txs to proxyAppConn
 	// NOTE: globalCb may be called concurrently.
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
-		memTx := e.Value.(*MempoolTx)
+		memTx := e.Value.(*mempoolTx)
 		_, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{
 			Tx:   memTx.tx,
 			Type: abci.CheckTxType_Recheck,

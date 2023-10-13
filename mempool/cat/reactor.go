@@ -60,8 +60,8 @@ func NewReactor(config *cfg.MempoolConfig, mp *mempool.CListMempool, waitSync bo
 	memR.mempool.SetNewTxReceivedCallback(func(txKey types.TxKey) {
 		// If we don't find the tx in the mempool, probably it is because it was
 		// invalid, so don't broadcast.
-		if memTx := memR.mempool.GetEntry(txKey); memTx != nil {
-			go memR.broadcastNewTx(memTx)
+		if entry := memR.mempool.GetEntry(txKey); entry != nil {
+			go memR.broadcastNewTx(entry)
 		}
 	})
 	return memR
@@ -254,11 +254,11 @@ func (memR *Reactor) sendRequestedTx(txKey types.TxKey, peer p2p.Peer) {
 		return
 	}
 
-	if memTx := memR.mempool.GetEntry(txKey); memTx != nil {
+	if entry := memR.mempool.GetEntry(txKey); entry != nil {
 		memR.Logger.Debug("sending a tx in response to a want msg", "peer", peer.ID())
 		txsMsg := p2p.Envelope{
 			ChannelID: mempool.MempoolChannel,
-			Message:   &protomem.Txs{Txs: [][]byte{memTx.GetTx()}},
+			Message:   &protomem.Txs{Txs: [][]byte{entry.Tx()}},
 		}
 		if peer.Send(txsMsg) {
 			memR.markPeerHasTx(peer.ID(), txKey)
@@ -329,12 +329,12 @@ func (memR *Reactor) broadcastSeenTx(txKey types.TxKey) {
 
 // broadcastNewTx broadcast new transaction to all peers unless we are already
 // sure they have seen the tx.
-func (memR *Reactor) broadcastNewTx(memTx *mempool.MempoolTx) {
+func (memR *Reactor) broadcastNewTx(entry *mempool.CListEntry) {
 	if !memR.Config.Broadcast {
 		return
 	}
 
-	tx := memTx.GetTx()
+	tx := entry.Tx()
 	txKey := tx.Key()
 	memR.Logger.Debug("Broadcasting new transaction...", "tx", txKey.String())
 
@@ -352,7 +352,7 @@ func (memR *Reactor) broadcastNewTx(memTx *mempool.MempoolTx) {
 			// make sure peer isn't too far behind. This can happen
 			// if the peer is blocksyncing still and catching up
 			// in which case we just skip sending the transaction
-			if peerState.GetHeight() < memTx.Height()-peerHeightDiff {
+			if peerState.GetHeight() < entry.Height()-peerHeightDiff {
 				memR.Logger.Debug("Peer is too far behind us, don't send new tx")
 				return true
 			}

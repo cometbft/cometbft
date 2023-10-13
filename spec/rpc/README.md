@@ -802,7 +802,7 @@ curl -X POST https://localhost:26657/v1 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"meth
 
 ### GenesisChunked
 
-Get the genesis document in a chunks to support easily transfering larger documents.
+Get the genesis document in a chunks to support easily transferring larger documents.
 
 #### Parameters
 

@@ -1100,7 +1100,7 @@ from the genesis file and light client RPC servers. It also calls `Info` to veri
   current height's block header
 
 Once the state machine has been restored and CometBFT has gathered this additional
-information, it transitions to consensus. As of ABCI 2.0, CometBFT ensures the neccessary conditions
+information, it transitions to consensus. As of ABCI 2.0, CometBFT ensures the necessary conditions
 to switch are met [RFC-100](./../../docs/rfc/rfc-100-abci-vote-extension-propag.md#base-implementation-persist-and-propagate-extended-commit-history).
 From the application's point of view, these operations are transparent, unless the application has just upgraded to ABCI 2.0. 
 In that case, the application needs to be properly configured and aware of certain constraints in terms of when

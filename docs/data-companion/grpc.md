@@ -40,13 +40,11 @@ In the `[gRPC]` section of the configuration:
 Add the address for the non-privileged (regular) services, for example:
 
 ```
-# TCP or UNIX socket address for the RPC server to listen on. If not specified,
-# the gRPC server will be disabled.
 laddr = "tcp://0.0.0.0:26090"
 ```
 
-If the legacy gRPC service in `rpc/grpc/api.go` is enabled, make sure that the
-URL it uses is different from the one set here.
+> Note that this address MUST be different from the `grpc_laddr` within the `[rpc]` configuration section. The listener
+at that endpoint does not support the new gRPC services (Block, BlockResults, etc.), and vice versa.
 
 The non-privileged gRPC endpoint is **enabled by default**. Each individual service exposed in this endpoint can be disabled
 or enabled individually. For example, to enable the `Version` service, in the `[grpc.version_service]` section, ensure

@@ -211,10 +211,8 @@ func TestGRPC_BlockRetainHeight(t *testing.T) {
 			return
 		}
 
-
 		grpcClient, status, cleanup := getGRPCPrivilegedClientForTesting(t, node)
 		defer cleanup()
-
 
 		err := grpcClient.SetBlockRetainHeight(ctx, uint64(status.SyncInfo.LatestBlockHeight-1))
 		require.NoError(t, err)

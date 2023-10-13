@@ -25,7 +25,6 @@ type mempoolTx struct {
 	gasWanted int64    // amount of gas this tx states it will require
 }
 
-// Height returns the height for this transaction
 func (memTx *mempoolTx) Height() int64 {
 	return atomic.LoadInt64(&memTx.height)
 }
@@ -37,6 +36,10 @@ func (memTx *mempoolTx) Tx() types.Tx {
 // CElement wrapper
 type CListEntry struct {
 	elem *clist.CElement
+}
+
+func (e *CListEntry) IsEmpty() bool {
+	return e == nil || e.elem == nil
 }
 
 func (e *CListEntry) Tx() types.Tx {

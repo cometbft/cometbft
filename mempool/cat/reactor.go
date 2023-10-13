@@ -60,7 +60,7 @@ func NewReactor(config *cfg.MempoolConfig, mp *mempool.CListMempool, waitSync bo
 	memR.mempool.SetNewTxReceivedCallback(func(txKey types.TxKey) {
 		// If we don't find the tx in the mempool, probably it is because it was
 		// invalid, so don't broadcast.
-		if entry := memR.mempool.GetEntry(txKey); entry != nil {
+		if entry := memR.mempool.GetEntry(txKey); !entry.IsEmpty() {
 			go memR.broadcastNewTx(entry)
 		}
 	})

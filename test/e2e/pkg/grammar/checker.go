@@ -103,9 +103,11 @@ func (g *GrammarChecker) filterLastHeight(reqs []*abci.Request) ([]*abci.Request
 func (g *GrammarChecker) getRequestTerminal(req *abci.Request) string {
 	// req.String() produces an output like this "init_chain:<time:<seconds:-62135596800 > >"
 	// we take just the part before the ":" (init_chain, in previous example) for each request
-	s := req.String()
-	t := strings.Split(s, ":")[0]
-	return t
+	parts := strings.Split(req.String(), ":")
+	if len(parts) >= 2 && len(parts[0]) > 0 {
+		return parts[0]
+	}
+	panic(fmt.Errorf("abci.Request doesn't have the expected string format: %v", req.String()))
 }
 
 // getExecutionString returns a string of terminal symbols in parser readable format.

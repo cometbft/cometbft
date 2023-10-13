@@ -3,7 +3,6 @@ package cat
 import (
 	"errors"
 	"fmt"
-	"math/rand"
 	"sync"
 	"time"
 
@@ -20,7 +19,7 @@ import (
 const (
 	// default duration to wait before considering a peer non-responsive
 	// and searching for the tx from a new peer
-	defaultGossipDelay = 200 * time.Millisecond
+	defaultGossipDelay = 1000 * time.Millisecond
 
 	// Content Addressable Tx Pool gossips state based messages (SeenTx and WantTx) on a separate channel
 	// for cross compatibility
@@ -292,10 +291,6 @@ func (memR *Reactor) broadcastSeenTx(txKey types.TxKey) {
 		ChannelID: MempoolStateChannel,
 		Message:   &protomem.SeenTx{TxKey: txKey[:]},
 	}
-
-	// Add jitter to when the node broadcasts it's seen txs to stagger when nodes
-	// in the network broadcast their seenTx messages.
-	time.Sleep(time.Duration(rand.Intn(10)*10) * time.Millisecond) //nolint:gosec //BUG? Why stagger? So small
 
 	memR.peerIDs.Range(func(key, _ interface{}) bool {
 		peerID := key.(p2p.ID)

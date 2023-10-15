@@ -12,8 +12,86 @@ type ClientCreator struct {
 	mock.Mock
 }
 
-// NewABCIClient provides a mock function with given fields:
-func (_m *ClientCreator) NewABCIClient() (abcicli.Client, error) {
+// NewABCIConsensusClient provides a mock function with given fields:
+func (_m *ClientCreator) NewABCIConsensusClient() (abcicli.Client, error) {
+	ret := _m.Called()
+
+	var r0 abcicli.Client
+	var r1 error
+	if rf, ok := ret.Get(0).(func() (abcicli.Client, error)); ok {
+		return rf()
+	}
+	if rf, ok := ret.Get(0).(func() abcicli.Client); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(abcicli.Client)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// NewABCIMempoolClient provides a mock function with given fields:
+func (_m *ClientCreator) NewABCIMempoolClient() (abcicli.Client, error) {
+	ret := _m.Called()
+
+	var r0 abcicli.Client
+	var r1 error
+	if rf, ok := ret.Get(0).(func() (abcicli.Client, error)); ok {
+		return rf()
+	}
+	if rf, ok := ret.Get(0).(func() abcicli.Client); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(abcicli.Client)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// NewABCIQueryClient provides a mock function with given fields:
+func (_m *ClientCreator) NewABCIQueryClient() (abcicli.Client, error) {
+	ret := _m.Called()
+
+	var r0 abcicli.Client
+	var r1 error
+	if rf, ok := ret.Get(0).(func() (abcicli.Client, error)); ok {
+		return rf()
+	}
+	if rf, ok := ret.Get(0).(func() abcicli.Client); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(abcicli.Client)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// NewABCISnapshotClient provides a mock function with given fields:
+func (_m *ClientCreator) NewABCISnapshotClient() (abcicli.Client, error) {
 	ret := _m.Called()
 
 	var r0 abcicli.Client

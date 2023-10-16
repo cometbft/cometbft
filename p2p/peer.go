@@ -8,9 +8,9 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	"github.com/cometbft/cometbft/libs/cmap"
+	"github.com/cometbft/cometbft/internal/cmap"
+	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/libs/service"
 
 	cmtconn "github.com/cometbft/cometbft/p2p/conn"
 )
@@ -66,7 +66,6 @@ func newPeerConn(
 	conn net.Conn,
 	socketAddr *NetAddress,
 ) peerConn {
-
 	return peerConn{
 		outbound:   outbound,
 		persistent: persistent,
@@ -396,7 +395,6 @@ func createMConnection(
 	onPeerError func(Peer, interface{}),
 	config cmtconn.MConnConfig,
 ) *cmtconn.MConnection {
-
 	onReceive := func(chID byte, msgBytes []byte) {
 		reactor := reactorsByCh[chID]
 		if reactor == nil {

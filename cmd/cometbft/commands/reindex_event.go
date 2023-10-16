@@ -11,13 +11,13 @@ import (
 
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cmtcfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/libs/progressbar"
-	"github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/state/indexer"
-	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
-	"github.com/cometbft/cometbft/state/indexer/sink/psql"
-	"github.com/cometbft/cometbft/state/txindex"
-	"github.com/cometbft/cometbft/state/txindex/kv"
+	"github.com/cometbft/cometbft/internal/progressbar"
+	"github.com/cometbft/cometbft/internal/state"
+	"github.com/cometbft/cometbft/internal/state/indexer"
+	blockidxkv "github.com/cometbft/cometbft/internal/state/indexer/block/kv"
+	"github.com/cometbft/cometbft/internal/state/indexer/sink/psql"
+	"github.com/cometbft/cometbft/internal/state/txindex"
+	"github.com/cometbft/cometbft/internal/state/txindex/kv"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -37,9 +37,9 @@ var ReIndexEventCmd = &cobra.Command{
 	Short:   "reindex events to the event store backends",
 	Long: `
 reindex-event is an offline tooling to re-index block and tx events to the eventsinks,
-you can run this command when the event store backend dropped/disconnected or you want to 
-replace the backend. The default start-height is 0, meaning the tooling will start 
-reindex from the base block height(inclusive); and the default end-height is 0, meaning 
+you can run this command when the event store backend dropped/disconnected or you want to
+replace the backend. The default start-height is 0, meaning the tooling will start
+reindex from the base block height(inclusive); and the default end-height is 0, meaning
 the tooling will reindex until the latest block height(inclusive). User can omit
 either or both arguments.
 

@@ -18,9 +18,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
 
 	client "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 	server "github.com/cometbft/cometbft/rpc/jsonrpc/server"

@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cometbft/cometbft/libs/cmap"
+	"github.com/cometbft/cometbft/internal/cmap"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	"github.com/cometbft/cometbft/internal/service"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
-	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/conn"
 	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"

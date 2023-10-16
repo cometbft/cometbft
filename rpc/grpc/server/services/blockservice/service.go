@@ -4,15 +4,16 @@ import (
 	context "context"
 	"fmt"
 
-	"github.com/cometbft/cometbft/internal/rpctrace"
-	"github.com/cometbft/cometbft/libs/log"
-	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
-	blocksvc "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
-	ptypes "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/cometbft/cometbft/store"
-	"github.com/cometbft/cometbft/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
+	"github.com/cometbft/cometbft/internal/rpctrace"
+	"github.com/cometbft/cometbft/internal/store"
+	"github.com/cometbft/cometbft/libs/log"
+	blocksvc "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
+	ptypes "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 type blockServiceServer struct {

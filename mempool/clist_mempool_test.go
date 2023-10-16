@@ -3,12 +3,11 @@ package mempool
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 	mrand "math/rand"
 	"os"
 	"testing"
 	"time"
-
-	"fmt"
 
 	"github.com/cosmos/gogoproto/proto"
 	gogotypes "github.com/cosmos/gogoproto/types"
@@ -22,10 +21,10 @@ import (
 	abciserver "github.com/cometbft/cometbft/abci/server"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
-	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 )
@@ -661,7 +660,7 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 	defer cleanup()
 
 	// add tx0
-	var tx0 = kvstore.NewTxFromID(0)
+	tx0 := kvstore.NewTxFromID(0)
 	_, err := mp.CheckTx(tx0)
 	require.NoError(t, err)
 	err = mp.FlushAppConn()

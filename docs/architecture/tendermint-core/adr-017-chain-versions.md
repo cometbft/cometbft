@@ -93,7 +93,7 @@ ChainDescription = <ChainID>/x/<Height>/<ForkDescription>
 Where
 
 - ChainID is the ChainID from the previous ChainDescription (ie. its hash)
-- `x` denotes that a change occured
-- `Height` is the height the change occured
+- `x` denotes that a change occurred
+- `Height` is the height the change occurred
 - ForkDescription has the same form as ChainDescription but for the fork
 - this allows forks to specify new versions for tendermint or the app, as well as arbitrary changes to the state or validator set

@@ -12,7 +12,7 @@
 
 With the release of Tendermint 1.0 we will adopt [semantic versioning](https://semver.org). One major implication is a guarantee that we will not make backwards-incompatible changes until Tendermint 2.0 (except in pre-release versions). In order to provide this guarantee for our Go API, we must clearly define which of our APIs are public, and what changes are considered backwards-compatible.
 
-Currently, we list packages that we consider public in our [README](https://github.com/tendermint/tendermint#versioning), but since we are still at version 0.x we do not provide any backwards compatiblity guarantees at all.
+Currently, we list packages that we consider public in our [README](https://github.com/tendermint/tendermint#versioning), but since we are still at version 0.x we do not provide any backwards compatibility guarantees at all.
 
 ### Glossary
 
@@ -54,7 +54,7 @@ When preparing our public API for 1.0, we should keep these principles in mind:
 
 - Limit the number of public APIs that we start out with - we can always add new APIs later, but we can't change or remove APIs once they're made public.
 
-- Before an API is made public, do a thorough review of the API to make sure it covers any future needs, can accomodate expected changes, and follows good API design practices.
+- Before an API is made public, do a thorough review of the API to make sure it covers any future needs, can accommodate expected changes, and follows good API design practices.
 
 The following is the minimum set of public APIs that will be included in 1.0, in some form:
 
@@ -130,7 +130,7 @@ In Go, [almost all API changes are backwards-incompatible](https://blog.golang.o
 
 - Widening a numeric type as long as it is a named type (e.g. `type Number int32` can change to `int64`, but not `int8` or `uint32`).
 
-Note that public APIs can expose private types (e.g. via an exported variable, field, or function/method return value), in which case the exported fields and methods on these private types are also part of the public API and covered by its backwards compatiblity guarantees. In general, private types should never be accessible via public APIs unless wrapped in an exported interface.
+Note that public APIs can expose private types (e.g. via an exported variable, field, or function/method return value), in which case the exported fields and methods on these private types are also part of the public API and covered by its backwards compatibility guarantees. In general, private types should never be accessible via public APIs unless wrapped in an exported interface.
 
 Also note that if we accept, return, export, or embed types from a dependency, we assume the backwards compatibility responsibility for that dependency, and must make sure any dependency upgrades comply with the above constraints.
 

@@ -27,7 +27,7 @@ The two points above have been implemented; the `config.js` has a Google Analyti
 
 ## Consequences
 
-Because of the organizational seperation between Tendermint & Cosmos, there is a challenge of "what goes where" for certain aspects of documentation.
+Because of the organizational separation between Tendermint & Cosmos, there is a challenge of "what goes where" for certain aspects of documentation.
 
 ### Positive
 

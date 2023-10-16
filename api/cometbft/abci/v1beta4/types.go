@@ -1,4 +1,4 @@
-package v4
+package v1beta4
 
 // IsAccepted returns true if Code is ACCEPT
 func (r ResponseProcessProposal) IsAccepted() bool {

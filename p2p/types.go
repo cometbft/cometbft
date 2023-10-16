@@ -3,12 +3,14 @@ package p2p
 import (
 	"github.com/cosmos/gogoproto/proto"
 
-	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
+	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1beta1"
 	"github.com/cometbft/cometbft/p2p/conn"
 )
 
-type ChannelDescriptor = conn.ChannelDescriptor
-type ConnectionStatus = conn.ConnectionStatus
+type (
+	ChannelDescriptor = conn.ChannelDescriptor
+	ConnectionStatus  = conn.ConnectionStatus
+)
 
 // Envelope contains a message with sender routing info.
 type Envelope struct {

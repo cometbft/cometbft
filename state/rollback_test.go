@@ -10,7 +10,7 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state"
-	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
+	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1beta1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/state"

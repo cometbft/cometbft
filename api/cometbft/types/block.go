@@ -1,9 +1,11 @@
 package types
 
 import (
-	v1 "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	v3 "github.com/cometbft/cometbft/api/cometbft/types/v3"
+	v1beta1 "github.com/cometbft/cometbft/api/cometbft/types/v1beta1"
+	v1beta3 "github.com/cometbft/cometbft/api/cometbft/types/v1beta3"
 )
 
-type Block = v3.Block
-type Data = v1.Data
+type (
+	Block = v1beta3.Block
+	Data  = v1beta1.Data
+)

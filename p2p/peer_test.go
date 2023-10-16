@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	p2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
+	p2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1beta1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/bytes"
@@ -122,7 +122,6 @@ func testOutboundPeerConn(
 	persistent bool,
 	ourNodePrivKey crypto.PrivKey,
 ) (peerConn, error) {
-
 	var pc peerConn
 	conn, err := testDial(addr, config)
 	if err != nil {

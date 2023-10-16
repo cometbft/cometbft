@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	p2pproto "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
+	p2pproto "github.com/cometbft/cometbft/api/cometbft/p2p/v1beta1"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/log"

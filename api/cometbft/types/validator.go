@@ -1,16 +1,18 @@
 package types
 
 import (
-	v1 "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	v1beta1 "github.com/cometbft/cometbft/api/cometbft/types/v1beta1"
 )
 
-type BlockIDFlag = v1.BlockIDFlag
-type SimpleValidator = v1.SimpleValidator
-type ValidatorSet = v1.ValidatorSet
+type (
+	BlockIDFlag     = v1beta1.BlockIDFlag
+	SimpleValidator = v1beta1.SimpleValidator
+	ValidatorSet    = v1beta1.ValidatorSet
+)
 
 const (
-	BlockIDFlagUnknown BlockIDFlag = v1.BlockIDFlagUnknown
-	BlockIDFlagAbsent  BlockIDFlag = v1.BlockIDFlagAbsent
-	BlockIDFlagCommit  BlockIDFlag = v1.BlockIDFlagCommit
-	BlockIDFlagNil     BlockIDFlag = v1.BlockIDFlagNil
+	BlockIDFlagUnknown BlockIDFlag = v1beta1.BlockIDFlagUnknown
+	BlockIDFlagAbsent  BlockIDFlag = v1beta1.BlockIDFlagAbsent
+	BlockIDFlagCommit  BlockIDFlag = v1beta1.BlockIDFlagCommit
+	BlockIDFlagNil     BlockIDFlag = v1beta1.BlockIDFlagNil
 )

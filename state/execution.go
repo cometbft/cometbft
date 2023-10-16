@@ -166,9 +166,9 @@ func (blockExec *BlockExecutor) ProcessProposal(
 	block *types.Block,
 	state State,
 ) (bool, error) {
-	lastValSet, err := blockExec.store.LoadValidators(block.LastCommit.Height)
+	lastValSet, err := blockExec.store.LoadValidators(block.Height)
 	if err != nil {
-		return false, fmt.Errorf("failed to load validator set at height %d, initial height %d: %w", block.LastCommit.Height, state.InitialHeight, err)
+		return false, fmt.Errorf("failed to load validator set at height %d, initial height %d: %w", block.Height, state.InitialHeight, err)
 	}
 	resp, err := blockExec.proxyApp.ProcessProposal(context.TODO(), &abci.RequestProcessProposal{
 		Hash:               block.Header.Hash(),
@@ -215,9 +215,9 @@ func (blockExec *BlockExecutor) ApplyBlock(
 		return state, ErrInvalidBlock(err)
 	}
 
-	lastValSet, err := blockExec.store.LoadValidators(block.LastCommit.Height)
+	lastValSet, err := blockExec.store.LoadValidators(block.Height)
 	if err != nil {
-		panic(fmt.Errorf("failed to load validator set at height %d, initial height %d: %w", block.LastCommit.Height, state.InitialHeight, err))
+		panic(fmt.Errorf("failed to load validator set at height %d, initial height %d: %w", block.Height, state.InitialHeight, err))
 	}
 
 	commitInfo := BuildLastCommitInfo(block, lastValSet, state.InitialHeight)
@@ -337,9 +337,9 @@ func (blockExec *BlockExecutor) ExtendVote(
 		panic(fmt.Sprintf("vote's and block's heights do not match %d!=%d", block.Height, vote.Height))
 	}
 
-	lastValSet, err := blockExec.store.LoadValidators(block.LastCommit.Height)
+	lastValSet, err := blockExec.store.LoadValidators(block.Height)
 	if err != nil {
-		panic(fmt.Errorf("failed to load validator set at height %d, initial height %d: %w", block.LastCommit.Height, state.InitialHeight, err))
+		panic(fmt.Errorf("failed to load validator set at height %d, initial height %d: %w", block.Height, state.InitialHeight, err))
 	}
 	req := abci.RequestExtendVote{
 		Hash:               vote.BlockID.Hash,
@@ -706,9 +706,9 @@ func ExecCommitBlock(
 	store Store,
 	initialHeight int64,
 ) ([]byte, error) {
-	lastValSet, err := store.LoadValidators(block.LastCommit.Height)
+	lastValSet, err := store.LoadValidators(block.Height)
 	if err != nil {
-		panic(fmt.Errorf("failed to load validator set at height %d, initial height %d: %w", block.LastCommit.Height, initialHeight, err))
+		panic(fmt.Errorf("failed to load validator set at height %d, initial height %d: %w", block.Height, initialHeight, err))
 	}
 	commitInfo := BuildLastCommitInfo(block, lastValSet, initialHeight)
 

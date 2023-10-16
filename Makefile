@@ -233,6 +233,7 @@ lint:
 	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
 	@$(MAKE) -C ./test/e2e/ lint
 	@$(MAKE) -C ./test/e2e/app/ lint
+	@$(MAKE) -C ./test/loadtime/ lint
 .PHONY: lint
 
 vulncheck:

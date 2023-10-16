@@ -26,6 +26,7 @@ jobs:
           - ''
           - 'test/e2e'
           - 'test/e2e/app'
+          - 'test/loadtime'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v4

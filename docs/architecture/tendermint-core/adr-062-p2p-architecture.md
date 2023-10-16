@@ -61,7 +61,7 @@ Transports must satisfy the following requirements:
 
 * Be connection-oriented, and support both listening for inbound connections and making outbound connections using endpoint addresses.
 
-* Support sending binary messages with distinct channel IDs (although channels and channel IDs are a higher-level application protocol concept explained in the Router section, they are threaded through the transport layer as well for backwards compatibilty with the existing MConnection protocol).
+* Support sending binary messages with distinct channel IDs (although channels and channel IDs are a higher-level application protocol concept explained in the Router section, they are threaded through the transport layer as well for backwards compatibility with the existing MConnection protocol).
 
 * Exchange the MConnection `NodeInfo` and public key via a node handshake, and possibly encrypt or sign the traffic as appropriate.
 

@@ -36,16 +36,16 @@ func TestNewProvider(t *testing.T) {
 func TestProvider(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	app.RetainBlocks = 10
-	node := rpctest.StartCometBFT(app)
-
-	cfg := rpctest.GetConfig()
-	defer os.RemoveAll(cfg.RootDir)
-	rpcAddr := cfg.RPC.ListenAddress
-	genDoc, err := types.GenesisDocFromFile(cfg.GenesisFile())
-	require.NoError(t, err)
-	chainID := genDoc.ChainID
-
 	for _, ep := range []string{"/websocket", "/v1/websocket"} {
+		node := rpctest.StartCometBFT(app)
+
+		cfg := rpctest.GetConfig()
+		defer os.RemoveAll(cfg.RootDir)
+		rpcAddr := cfg.RPC.ListenAddress
+		genDoc, err := types.GenesisDocFromFile(cfg.GenesisFile())
+		require.NoError(t, err)
+		chainID := genDoc.ChainID
+
 		c, err := rpchttp.New(rpcAddr, ep)
 		require.Nil(t, err)
 

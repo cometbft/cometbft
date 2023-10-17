@@ -235,8 +235,9 @@ func writeListOfEndpoints(w http.ResponseWriter, r *http.Request, funcMap map[st
 	buf.WriteString("<br>Available endpoints:<br>")
 
 	for _, name := range noArgNames {
+		// FIXME: The link should have the version as well. Where can we get it from the request?
 		link := fmt.Sprintf("//%s/%s", r.Host, name)
-		buf.WriteString(fmt.Sprintf("<a href=\"%s\">%s</a></br>", link, link))
+		buf.WriteString(fmt.Sprintf("<a href=\"%s\">%s</a><br>", link, link))
 	}
 
 	buf.WriteString("<br>Endpoints that require arguments:<br>")

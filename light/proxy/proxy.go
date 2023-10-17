@@ -104,6 +104,7 @@ func (p *Proxy) listen() (net.Listener, *http.ServeMux, error) {
 	)
 	wm.SetLogger(wmLogger)
 	mux.HandleFunc("/websocket", wm.WebsocketHandler)
+	mux.HandleFunc("/v1/websocket", wm.WebsocketHandler)
 
 	// 3) Start a client.
 	if !p.Client.IsRunning() {

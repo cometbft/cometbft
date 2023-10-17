@@ -45,108 +45,51 @@ func TestProvider(t *testing.T) {
 	require.NoError(t, err)
 	chainID := genDoc.ChainID
 
-	c, err := rpchttp.New(rpcAddr, "/websocket")
-	require.Nil(t, err)
+	for _, ep := range []string{"/websocket", "/v1/websocket"} {
+		c, err := rpchttp.New(rpcAddr, ep)
+		require.Nil(t, err)
 
-	p := lighthttp.NewWithClient(chainID, c)
-	require.NoError(t, err)
-	require.NotNil(t, p)
+		p := lighthttp.NewWithClient(chainID, c)
+		require.NoError(t, err)
+		require.NotNil(t, p)
 
-	// let it produce some blocks
-	err = rpcclient.WaitForHeight(c, 10, nil)
-	require.NoError(t, err)
+		// let it produce some blocks
+		err = rpcclient.WaitForHeight(c, 10, nil)
+		require.NoError(t, err)
 
-	// let's get the highest block
-	lb, err := p.LightBlock(context.Background(), 0)
-	require.NoError(t, err)
-	require.NotNil(t, lb)
-	assert.True(t, lb.Height < 1000)
+		// let's get the highest block
+		lb, err := p.LightBlock(context.Background(), 0)
+		require.NoError(t, err)
+		require.NotNil(t, lb)
+		assert.True(t, lb.Height < 1000)
 
-	// let's check this is valid somehow
-	assert.Nil(t, lb.ValidateBasic(chainID))
+		// let's check this is valid somehow
+		assert.Nil(t, lb.ValidateBasic(chainID))
 
-	// historical queries now work :)
-	lower := lb.Height - 3
-	lb, err = p.LightBlock(context.Background(), lower)
-	require.NoError(t, err)
-	assert.Equal(t, lower, lb.Height)
+		// historical queries now work :)
+		lower := lb.Height - 3
+		lb, err = p.LightBlock(context.Background(), lower)
+		require.NoError(t, err)
+		assert.Equal(t, lower, lb.Height)
 
-	// fetching missing heights (both future and pruned) should return appropriate errors
-	lb, err = p.LightBlock(context.Background(), 1000)
-	require.Error(t, err)
-	require.Nil(t, lb)
-	assert.Equal(t, provider.ErrHeightTooHigh, err)
+		// fetching missing heights (both future and pruned) should return appropriate errors
+		lb, err = p.LightBlock(context.Background(), 1000)
+		require.Error(t, err)
+		require.Nil(t, lb)
+		assert.Equal(t, provider.ErrHeightTooHigh, err)
 
-	_, err = p.LightBlock(context.Background(), 1)
-	require.Error(t, err)
-	require.Nil(t, lb)
-	assert.Equal(t, provider.ErrLightBlockNotFound, err)
+		_, err = p.LightBlock(context.Background(), 1)
+		require.Error(t, err)
+		require.Nil(t, lb)
+		assert.Equal(t, provider.ErrLightBlockNotFound, err)
 
-	// stop the full node and check that a no response error is returned
-	rpctest.StopCometBFT(node)
-	time.Sleep(10 * time.Second)
-	lb, err = p.LightBlock(context.Background(), lower+2)
-	// we should see a connection refused
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "connection refused")
-	require.Nil(t, lb)
-}
-
-func TestProviderV1(t *testing.T) {
-	app := kvstore.NewInMemoryApplication()
-	app.RetainBlocks = 10
-	node := rpctest.StartCometBFT(app)
-
-	cfg := rpctest.GetConfig()
-	defer os.RemoveAll(cfg.RootDir)
-	rpcAddr := cfg.RPC.ListenAddress
-	genDoc, err := types.GenesisDocFromFile(cfg.GenesisFile())
-	require.NoError(t, err)
-	chainID := genDoc.ChainID
-
-	c, err := rpchttp.New(rpcAddr, "/v1/websocket")
-	require.Nil(t, err)
-
-	p := lighthttp.NewWithClient(chainID, c)
-	require.NoError(t, err)
-	require.NotNil(t, p)
-
-	// let it produce some blocks
-	err = rpcclient.WaitForHeight(c, 10, nil)
-	require.NoError(t, err)
-
-	// let's get the highest block
-	lb, err := p.LightBlock(context.Background(), 0)
-	require.NoError(t, err)
-	require.NotNil(t, lb)
-	assert.True(t, lb.Height < 1000)
-
-	// let's check this is valid somehow
-	assert.Nil(t, lb.ValidateBasic(chainID))
-
-	// historical queries now work :)
-	lower := lb.Height - 3
-	lb, err = p.LightBlock(context.Background(), lower)
-	require.NoError(t, err)
-	assert.Equal(t, lower, lb.Height)
-
-	// fetching missing heights (both future and pruned) should return appropriate errors
-	lb, err = p.LightBlock(context.Background(), 1000)
-	require.Error(t, err)
-	require.Nil(t, lb)
-	assert.Equal(t, provider.ErrHeightTooHigh, err)
-
-	_, err = p.LightBlock(context.Background(), 1)
-	require.Error(t, err)
-	require.Nil(t, lb)
-	assert.Equal(t, provider.ErrLightBlockNotFound, err)
-
-	// stop the full node and check that a no response error is returned
-	rpctest.StopCometBFT(node)
-	time.Sleep(10 * time.Second)
-	lb, err = p.LightBlock(context.Background(), lower+2)
-	// we should see a connection refused
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "connection refused")
-	require.Nil(t, lb)
+		// stop the full node and check that a no response error is returned
+		rpctest.StopCometBFT(node)
+		time.Sleep(10 * time.Second)
+		lb, err = p.LightBlock(context.Background(), lower+2)
+		// we should see a connection refused
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "connection refused")
+		require.Nil(t, lb)
+	}
 }

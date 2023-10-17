@@ -209,7 +209,7 @@ func (g *GrammarChecker) combineErrors(errors []*Error, n int) error {
 		if i == n {
 			break
 		}
-		s = fmt.Sprintf("%v%v\n", s, e)
+		s += e.String() + "\n"
 	}
 	return fmt.Errorf("%v", s)
 }

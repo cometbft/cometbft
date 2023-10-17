@@ -104,10 +104,10 @@ func (g *GrammarChecker) getRequestTerminal(req *abci.Request) string {
 	// req.String() produces an output like this "init_chain:<time:<seconds:-62135596800 > >"
 	// we take just the part before the ":" (init_chain, in previous example) for each request
 	parts := strings.Split(req.String(), ":")
-	if len(parts) >= 2 && len(parts[0]) > 0 {
-		return parts[0]
+	if len(parts) < 2 || len(parts[0]) == 0 {
+		panic(fmt.Errorf("abci.Request doesn't have the expected string format: %v", req.String()))
 	}
-	panic(fmt.Errorf("abci.Request doesn't have the expected string format: %v", req.String()))
+	return parts[0]
 }
 
 // getExecutionString returns a string of terminal symbols in parser readable format.
@@ -209,7 +209,7 @@ func (g *GrammarChecker) combineErrors(errors []*Error, n int) error {
 		if i == n {
 			break
 		}
-		s = fmt.Sprintf("%v%v\n", s, e)
+		s += e.String() + "\n"
 	}
 	return fmt.Errorf("%v", s)
 }

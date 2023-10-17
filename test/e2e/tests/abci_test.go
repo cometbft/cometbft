@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestABCIGrammar(t *testing.T) {
+func TestCheckABCIGrammar(t *testing.T) {
 	checker := grammar.NewGrammarChecker(grammar.DefaultConfig())
 	testNode(t, func(t *testing.T, node e2e.Node) {
 		if !node.Testnet.ABCITestsEnabled {

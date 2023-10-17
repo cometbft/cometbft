@@ -65,6 +65,12 @@ type Metrics struct {
 	// Number of blockparts transmitted by peer.
 	BlockParts metrics.Counter
 
+	// Number of times we received a duplicate block part
+	DuplicateBlockPart metrics.Counter
+
+	// Number of times we received a duplicate vote
+	DuplicateVote metrics.Counter
+
 	// Histogram of step duration.
 	StepDuration metrics.Histogram
 	stepStart    time.Time

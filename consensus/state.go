@@ -1887,6 +1887,11 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 	}
 
 	cs.metrics.BlockGossipPartsReceived.With("matches_current", "true").Add(1)
+	if !added {
+		// NOTE: we are disregarding possible duplicates above where heights dont match or we're not expecting block parts yet
+		// but between the matches_current = true and false, we have all the info.
+		cs.metrics.DuplicateBlockPart.Add(1)
+	}
 
 	if cs.ProposalBlockParts.ByteSize() > cs.state.ConsensusParams.Block.MaxBytes {
 		return added, fmt.Errorf("total size of proposal block parts exceeds maximum block bytes (%d > %d)",
@@ -2026,6 +2031,10 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 
 		added, err = cs.LastCommit.AddVote(vote)
 		if !added {
+			// If the vote wasnt added but there's no error, its a duplicate vote
+			if err == nil {
+				cs.metrics.DuplicateVote.Add(1)
+			}
 			return
 		}
 
@@ -2057,6 +2066,10 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 	added, err = cs.Votes.AddVote(vote, peerID)
 	if !added {
 		// Either duplicate, or error upon cs.Votes.AddByIndex()
+		// If the vote wasnt added but there's no error, its a duplicate vote
+		if err == nil {
+			cs.metrics.DuplicateVote.Add(1)
+		}
 		return
 	}
 

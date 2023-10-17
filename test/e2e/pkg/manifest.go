@@ -93,6 +93,12 @@ type Manifest struct {
 	// Defaults to false (disabled).
 	Prometheus bool `toml:"prometheus"`
 
+	// Set true to enable the peer-exchange reactor on all nodes.
+	PexReactor bool `toml:"pex"`
+
+	// LogLevel sets the log level on all nodes.
+	LogLevel string `toml:"log_level"`
+
 	// Defines a minimum size for the vote extensions.
 	VoteExtensionSize uint `toml:"vote_extension_size"`
 

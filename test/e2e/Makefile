@@ -42,4 +42,4 @@ lint:
 	@echo "--> Running linter for E2E"
 	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
 
-.PHONY: all node docker generator runner lint
+.PHONY: all node docker docker-debug docker-fast node-fast generator runner lint

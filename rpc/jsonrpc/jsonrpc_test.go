@@ -29,8 +29,7 @@ import (
 
 // Client and Server should work over tcp or unix sockets
 const (
-	tcpAddr   = "tcp://127.0.0.1:47768"
-	tcpAddrV1 = "tcp://127.0.0.1:47768/v1"
+	tcpAddr = "tcp://127.0.0.1:47768"
 
 	unixSocket = "/tmp/rpc_test.sock"
 	unixAddr   = "unix://" + unixSocket
@@ -315,7 +314,7 @@ func testWithWSClient(t *testing.T, cl *client.WSClient) {
 //-------------
 
 func TestServersAndClientsBasic(t *testing.T) {
-	serverAddrs := [...]string{tcpAddr, tcpAddrV1, unixAddr}
+	serverAddrs := [...]string{tcpAddr, unixAddr}
 	for _, addr := range serverAddrs {
 		cl1, err := client.NewURI(addr)
 		require.Nil(t, err)
@@ -339,6 +338,31 @@ func TestServersAndClientsBasic(t *testing.T) {
 	}
 }
 
+func TestServersAndClientsBasicV1(t *testing.T) {
+	serverAddrs := [...]string{tcpAddr, unixAddr}
+	for _, addr := range serverAddrs {
+		cl1, err := client.NewURI(addr)
+		require.Nil(t, err)
+		fmt.Printf("=== testing server on %s using URI client", addr)
+		testWithHTTPClient(t, cl1)
+
+		cl2, err := client.New(addr)
+		require.Nil(t, err)
+		fmt.Printf("=== testing server on %s using JSONRPC client", addr)
+		testWithHTTPClient(t, cl2)
+
+		cl3, err := client.NewWS(addr, "/v1"+websocketEndpoint)
+		require.Nil(t, err)
+		cl3.SetLogger(log.TestingLogger())
+		err = cl3.Start()
+		require.Nil(t, err)
+		fmt.Printf("=== testing server on %s using WS client", addr)
+		testWithWSClient(t, cl3)
+		err = cl3.Stop()
+		require.NoError(t, err)
+	}
+}
+
 func TestHexStringArg(t *testing.T) {
 	cl, err := client.NewURI(tcpAddr)
 	require.Nil(t, err)
@@ -349,28 +373,8 @@ func TestHexStringArg(t *testing.T) {
 	assert.Equal(t, got, val)
 }
 
-func TestHexStringArgV1(t *testing.T) {
-	cl, err := client.NewURI(tcpAddrV1)
-	require.Nil(t, err)
-	// should NOT be handled as hex
-	val := "0xabc"
-	got, err := echoViaHTTP(cl, val)
-	require.Nil(t, err)
-	assert.Equal(t, got, val)
-}
-
 func TestQuotedStringArg(t *testing.T) {
 	cl, err := client.NewURI(tcpAddr)
-	require.Nil(t, err)
-	// should NOT be unquoted
-	val := "\"abc\""
-	got, err := echoViaHTTP(cl, val)
-	require.Nil(t, err)
-	assert.Equal(t, got, val)
-}
-
-func TestQuotedStringArgV1(t *testing.T) {
-	cl, err := client.NewURI(tcpAddrV1)
 	require.Nil(t, err)
 	// should NOT be unquoted
 	val := "\"abc\""
@@ -410,7 +414,7 @@ func TestWSNewWSRPCFunc(t *testing.T) {
 }
 
 func TestWSNewWSRPCFuncV1(t *testing.T) {
-	cl, err := client.NewWS(tcpAddrV1, websocketEndpoint)
+	cl, err := client.NewWS(tcpAddr, "/v1"+websocketEndpoint)
 	require.Nil(t, err)
 	cl.SetLogger(log.TestingLogger())
 	err = cl.Start()
@@ -468,7 +472,7 @@ func TestWSHandlesArrayParams(t *testing.T) {
 }
 
 func TestWSHandlesArrayParamsV1(t *testing.T) {
-	cl, err := client.NewWS(tcpAddrV1, websocketEndpoint)
+	cl, err := client.NewWS(tcpAddr, "/v1"+websocketEndpoint)
 	require.Nil(t, err)
 	cl.SetLogger(log.TestingLogger())
 	err = cl.Start()
@@ -513,7 +517,7 @@ func TestWSClientPingPong(t *testing.T) {
 }
 
 func TestWSClientPingPongV1(t *testing.T) {
-	cl, err := client.NewWS(tcpAddrV1, websocketEndpoint)
+	cl, err := client.NewWS(tcpAddr, "/v1"+websocketEndpoint)
 	require.Nil(t, err)
 	cl.SetLogger(log.TestingLogger())
 	err = cl.Start()
@@ -553,32 +557,6 @@ func TestJSONRPCCaching(t *testing.T) {
 	assert.Equal(t, "public, max-age=86400", res2.Header.Get("Cache-control"))
 }
 
-func TestJSONRPCCachingV1(t *testing.T) {
-	httpAddr := strings.Replace(tcpAddrV1, "tcp://", "http://", 1)
-	cl, err := client.DefaultHTTPClient(httpAddr)
-	require.NoError(t, err)
-
-	// Not supplying the arg should result in not caching
-	params := make(map[string]interface{})
-	req, err := types.MapToRequest(types.JSONRPCIntID(1000), "echo_default", params)
-	require.NoError(t, err)
-
-	res1, err := rawJSONRPCRequest(t, cl, httpAddr, req)
-	defer func() { _ = res1.Body.Close() }()
-	require.NoError(t, err)
-	assert.Equal(t, "", res1.Header.Get("Cache-control"))
-
-	// Supplying the arg should result in caching
-	params["arg"] = cmtrand.Intn(10000)
-	req, err = types.MapToRequest(types.JSONRPCIntID(1001), "echo_default", params)
-	require.NoError(t, err)
-
-	res2, err := rawJSONRPCRequest(t, cl, httpAddr, req)
-	defer func() { _ = res2.Body.Close() }()
-	require.NoError(t, err)
-	assert.Equal(t, "public, max-age=86400", res2.Header.Get("Cache-control"))
-}
-
 func rawJSONRPCRequest(t *testing.T, cl *http.Client, url string, req interface{}) (*http.Response, error) {
 	reqBytes, err := json.Marshal(req)
 	require.NoError(t, err)
@@ -594,26 +572,6 @@ func rawJSONRPCRequest(t *testing.T, cl *http.Client, url string, req interface{
 
 func TestURICaching(t *testing.T) {
 	httpAddr := strings.Replace(tcpAddr, "tcp://", "http://", 1)
-	cl, err := client.DefaultHTTPClient(httpAddr)
-	require.NoError(t, err)
-
-	// Not supplying the arg should result in not caching
-	args := url.Values{}
-	res1, err := rawURIRequest(t, cl, httpAddr+"/echo_default", args)
-	defer func() { _ = res1.Body.Close() }()
-	require.NoError(t, err)
-	assert.Equal(t, "", res1.Header.Get("Cache-control"))
-
-	// Supplying the arg should result in caching
-	args.Set("arg", fmt.Sprintf("%d", cmtrand.Intn(10000)))
-	res2, err := rawURIRequest(t, cl, httpAddr+"/echo_default", args)
-	defer func() { _ = res2.Body.Close() }()
-	require.NoError(t, err)
-	assert.Equal(t, "public, max-age=86400", res2.Header.Get("Cache-control"))
-}
-
-func TestURICachingV1(t *testing.T) {
-	httpAddr := strings.Replace(tcpAddrV1, "tcp://", "http://", 1)
 	cl, err := client.DefaultHTTPClient(httpAddr)
 	require.NoError(t, err)
 

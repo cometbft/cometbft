@@ -196,7 +196,7 @@ func rpcClient(server string) (*rpchttp.HTTP, error) {
 	if !strings.Contains(server, "://") {
 		server = "http://" + server
 	}
-	c, err := rpchttp.New(server, "/websocket")
+	c, err := rpchttp.New(server, "/v1/websocket")
 	if err != nil {
 		return nil, err
 	}

@@ -437,7 +437,9 @@ func buildLastCommitInfoFromStore(block *types.Block, store Store, initialHeight
 	return BuildLastCommitInfo(block, lastValSet, initialHeight)
 }
 
-// Like
+// BuildLastCommitInfo builds a CommitInfo from the given block and validator set.
+// If you want to load the validator set from the store instead of providing it,
+// use buildLastCommitInfoFromStore.
 func BuildLastCommitInfo(block *types.Block, lastValSet *types.ValidatorSet, initialHeight int64) abci.CommitInfo {
 	if block.Height == initialHeight {
 		// there is no last commit for the initial height.
@@ -497,6 +499,9 @@ func buildExtendedCommitInfoFromStore(ec *types.ExtendedCommit, store Store, ini
 	return BuildExtendedCommitInfo(ec, valSet, initialHeight, ap)
 }
 
+// BuildExtendedCommitInfo builds an ExtendedCommitInfo from the given block and validator set.
+// If you want to load the validator set from the store instead of providing it,
+// use buildExtendedCommitInfoFromStore.
 func BuildExtendedCommitInfo(ec *types.ExtendedCommit, valSet *types.ValidatorSet, initialHeight int64, ap types.ABCIParams) abci.ExtendedCommitInfo {
 	if ec.Height < initialHeight {
 		// There are no extended commits for heights below the initial height.

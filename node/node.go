@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -194,7 +195,7 @@ func StateProvider(stateProvider statesync.StateProvider) Option {
 // store are empty at the time the function is called.
 //
 // If the block store is not empty, the function returns an error.
-func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBProvider, height uint64, appHash []byte) (err error) {
+func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider DBProvider, height uint64, appHash []byte) (err error) {
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 	if ctx == nil {
 		ctx = context.Background()
@@ -206,7 +207,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	}
 
 	if dbProvider == nil {
-		dbProvider = cfg.DefaultDBProvider
+		dbProvider = DefaultDBProvider
 	}
 	blockStore, stateDB, err := initDBs(config, dbProvider)
 
@@ -567,10 +568,11 @@ func createBlockchainReactor(config *cfg.Config,
 	blockStore *store.BlockStore,
 	blockSync bool,
 	logger log.Logger,
+	offlineStateSyncHeight int64,
 ) (bcReactor p2p.Reactor, err error) {
 	switch config.BlockSync.Version {
 	case "v0":
-		bcReactor = bc.NewReactor(state.Copy(), blockExec, blockStore, blockSync)
+		bcReactor = bc.NewReactor(state.Copy(), blockExec, blockStore, blockSync, offlineStateSyncHeight)
 	case "v1", "v2":
 		return nil, fmt.Errorf("block sync version %s has been deprecated. Please use v0", config.BlockSync.Version)
 	default:
@@ -972,7 +974,7 @@ func NewNodeWithContext(ctx context.Context,
 	}
 	consensusReactor, consensusState := createConsensusReactor(
 		config, state, blockExec, blockStore, mempool, evidencePool,
-		privValidator, csMetrics, stateSync || blockSync, eventBus, consensusLogger, offlineStateSyncHeight,
+		privValidator, csMetrics, stateSync || blockSync, eventBus, consensusLogger,
 	)
 
 	err = stateStore.SetOfflineStateSyncHeight(0)

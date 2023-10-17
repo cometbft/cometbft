@@ -189,11 +189,9 @@ func NewState(
 		// If the height at which the vote extensions are enabled is lower
 		// than the height at which we statesync, consensus will panic because
 		// it will try to reconstruct the extended commit here.
-		if cs.offlineStateSyncHeight != 0 {
-			cs.reconstructSeenCommit(state)
-		} else {
-			cs.reconstructLastCommit(state)
-		}
+
+		cs.reconstructLastCommit(state)
+
 	}
 
 	cs.updateToState(state)

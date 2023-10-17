@@ -27,14 +27,14 @@ func GetABCIRequestFromString(s string) (*abci.Request, error) {
 		return nil, nil
 	}
 	parts := strings.Split(s, ABCI_REQ)
-	if len(parts) != 3 {
+	if len(parts) != 3 || len(parts[1]) == 0 {
 		return nil, fmt.Errorf("String %v passed to GetRequestFromString does not have a good format!\n", s)
 	}
 	req := &abci.Request{}
 	reqStr := parts[1]
 	b, err := base64.StdEncoding.DecodeString(reqStr)
 	if err != nil {
-		return nil, fmt.Errorf("String %v cannot be decoded to bytes.\n Error: %v\n ", s, err.Error())
+		return nil, err
 	}
 	err = proto.Unmarshal(b, req)
 	if err != nil {

@@ -208,7 +208,6 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		if v == "" {
 			v = localVersion
 		}
-		//abciCalls := loadAbciCalls(testnet.Dir)
 
 		node := &Node{
 			Name:             name,

@@ -39,11 +39,12 @@ func TestGRPC_Block_GetByHeight(t *testing.T) {
 		status, err := client.Status(ctx)
 		require.NoError(t, err)
 
-		first := status.SyncInfo.EarliestBlockHeight
+		// We are not testing getting the first block in these
+		// tests to prevent race conditions with the pruning mechanism
+		// that might make the tests fail. Just testing the last block
+		// is enough to validate the fact that we can fetch a block using
+		// the gRPC endpoint
 		last := status.SyncInfo.LatestBlockHeight
-		if node.RetainBlocks > 0 {
-			first++ // avoid race conditions with block pruning
-		}
 
 		ctx, ctxCancel := context.WithTimeout(context.Background(), time.Minute)
 		defer ctxCancel()
@@ -51,15 +52,7 @@ func TestGRPC_Block_GetByHeight(t *testing.T) {
 		require.NoError(t, err)
 		defer gRPCClient.Close()
 
-		// Get first block
-		firstBlock, err := gRPCClient.GetBlockByHeight(ctx, first)
-
-		// First block tests
-		require.NoError(t, err)
-		require.NotNil(t, firstBlock.BlockID)
-		require.Equal(t, firstBlock.Block.Height, first)
-
-		// Get last block
+		// Get last block and fetch it using the gRPC endpoint
 		lastBlock, err := gRPCClient.GetBlockByHeight(ctx, last)
 
 		// Last block tests

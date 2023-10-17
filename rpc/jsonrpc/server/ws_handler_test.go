@@ -48,7 +48,7 @@ func TestWebsocketManagerHandlerV1(t *testing.T) {
 
 	// check upgrader works
 	d := websocket.Dialer{}
-	c, dialResp, err := d.Dial("ws://"+s.Listener.Addr().String()+"/websocket", nil)
+	c, dialResp, err := d.Dial("ws://"+s.Listener.Addr().String()+"/v1/websocket", nil)
 	require.NoError(t, err)
 
 	if got, want := dialResp.StatusCode, http.StatusSwitchingProtocols; got != want {

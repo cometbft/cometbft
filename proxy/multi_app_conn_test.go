@@ -26,7 +26,10 @@ func TestAppConns_Start_Stop(t *testing.T) {
 	clientMock.On("Stop").Return(nil).Times(4)
 	clientMock.On("Quit").Return(quitCh).Times(4)
 
-	clientCreatorMock.On("NewABCIClient").Return(clientMock, nil).Times(4)
+	clientCreatorMock.On("NewABCIQueryClient").Return(clientMock, nil).Times(4)
+	clientCreatorMock.On("NewABCIMempoolClient").Return(clientMock, nil).Times(4)
+	clientCreatorMock.On("NewABCISnapshotClient").Return(clientMock, nil).Times(4)
+	clientCreatorMock.On("NewABCIConsensusClient").Return(clientMock, nil).Times(4)
 
 	appConns := NewAppConns(clientCreatorMock, NopMetrics())
 
@@ -66,7 +69,10 @@ func TestAppConns_Failure(t *testing.T) {
 	clientMock.On("Quit").Return(recvQuitCh)
 	clientMock.On("Error").Return(errors.New("EOF")).Once()
 
-	clientCreatorMock.On("NewABCIClient").Return(clientMock, nil)
+	clientCreatorMock.On("NewABCIQueryClient").Return(clientMock, nil)
+	clientCreatorMock.On("NewABCIMempoolClient").Return(clientMock, nil)
+	clientCreatorMock.On("NewABCISnapshotClient").Return(clientMock, nil)
+	clientCreatorMock.On("NewABCIConsensusClient").Return(clientMock, nil)
 
 	appConns := NewAppConns(clientCreatorMock, NopMetrics())
 

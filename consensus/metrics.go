@@ -219,6 +219,18 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "block_parts",
 			Help:      "Number of blockparts transmitted by peer.",
 		}, append(labels, "peer_id")).With(labelsAndValues...),
+		DuplicateBlockPart: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "duplicate_block_part",
+			Help:      "Number of times we received a duplicate block part",
+		}, labels).With(labelsAndValues...),
+		DuplicateVote: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "duplicate_vote",
+			Help:      "Number of times we received a duplicate vote",
+		}, labels).With(labelsAndValues...),
 		BlockGossipPartsReceived: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -278,6 +290,8 @@ func NopMetrics() *Metrics {
 		FastSyncing:               discard.NewGauge(),
 		StateSyncing:              discard.NewGauge(),
 		BlockParts:                discard.NewCounter(),
+		DuplicateBlockPart:        discard.NewCounter(),
+		DuplicateVote:             discard.NewCounter(),
 		BlockGossipPartsReceived:  discard.NewCounter(),
 		QuorumPrevoteMessageDelay: discard.NewGauge(),
 		FullPrevoteMessageDelay:   discard.NewGauge(),

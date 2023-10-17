@@ -474,7 +474,7 @@ func BuildLastCommitInfo(block *types.Block, lastValSet *types.ValidatorSet, ini
 	}
 }
 
-// BuildExtendedCommitInfo populates an ABCI extended commit from the
+// buildExtendedCommitInfoFromStore populates an ABCI extended commit from the
 // corresponding CometBFT extended commit ec, using the stored validator set
 // from ec.  It requires ec to include the original precommit votes along with
 // the vote extensions from the last commit.

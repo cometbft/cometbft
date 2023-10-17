@@ -137,7 +137,7 @@ func setup() {
 	wm := server.NewWebsocketManager(Routes, server.ReadWait(5*time.Second), server.PingPeriod(1*time.Second))
 	wm.SetLogger(tcpLogger)
 	mux.HandleFunc(websocketEndpoint, wm.WebsocketHandler)
-	mux.HandleFunc("/v1/"+websocketEndpoint, wm.WebsocketHandler)
+	mux.HandleFunc("/v1"+websocketEndpoint, wm.WebsocketHandler)
 	config := server.DefaultConfig()
 	listener1, err := server.Listen(tcpAddr, config.MaxOpenConnections)
 	if err != nil {
@@ -155,7 +155,7 @@ func setup() {
 	wm = server.NewWebsocketManager(Routes)
 	wm.SetLogger(unixLogger)
 	mux2.HandleFunc(websocketEndpoint, wm.WebsocketHandler)
-	mux2.HandleFunc("/v1/"+websocketEndpoint, wm.WebsocketHandler)
+	mux2.HandleFunc("/v1"+websocketEndpoint, wm.WebsocketHandler)
 	listener2, err := server.Listen(unixAddr, config.MaxOpenConnections)
 	if err != nil {
 		panic(err)

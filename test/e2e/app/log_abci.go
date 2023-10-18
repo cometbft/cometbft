@@ -28,7 +28,7 @@ func GetABCIRequestFromString(s string) (*abci.Request, error) {
 	}
 	parts := strings.Split(s, ABCI_REQ)
 	if len(parts) != 3 || len(parts[1]) == 0 {
-		return nil, fmt.Errorf("String %v passed to GetRequestFromString does not have a good format!\n", s)
+		return nil, fmt.Errorf("String %q passed to GetRequestFromString does not have a good format!\n", s)
 	}
 	req := &abci.Request{}
 	reqStr := parts[1]

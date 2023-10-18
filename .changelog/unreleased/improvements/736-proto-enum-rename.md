@@ -1,7 +1,8 @@
-- `[proto]` Add the `abci/v4` versioned proto package with naming changes
+- `[proto]` Add the `abci/v1beta4` versioned proto package with naming changes
   for enum types to suit the
   [buf guidelines](https://buf.build/docs/best-practices/style-guide/#enums):
-  ([\#736](https://github.com/cometbft/cometbft/issues/736)):
+  ([\#736](https://github.com/cometbft/cometbft/issues/736), amended in
+  [\#1504](https://github.com/cometbft/cometbft/issues/1504)):
   * `CheckTxType` values renamed with the `CHECK_TX_TYPE_` prefix.
   * `MisbehaviorType` values renamed with the `MISBEHAVIOR_TYPE_` prefix.
   * `Result` enum in `ResponseOfferSnapshot` renamed to package level

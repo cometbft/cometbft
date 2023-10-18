@@ -6,7 +6,7 @@ Both `clean-start` and `recovery` folders have the same structure. They contain 
 `abci_grammar_clean_start.md` and `abci_grammar_recovery.md`, respectively. In addition, they have a subdirectory, 
 `grammar-auto`, where the auto-generated code is stored. Namely, running `make grammar-gen` from the `e2e` directory will 
 invoke the `gogll` program that will use `abci_grammar_clean_start.md` and `abci_grammar_recovery.md` grammars as 
-input and produce lexer and parser for them. All the code `gogll` generates, is stored in the respected `grammar-auto` folder. 
+input and produce lexer and parser for them. All the code `gogll` generates, is stored in the mentioned `grammar-auto` folder. 
 
 `checker.go` and `checker_test.go` files contain the logic of the `GrammarChecker` abstraction and its tests. The 
 `GrammarChecker` abstraction is used to check whether a specific set of `abci.Requests` respects the 

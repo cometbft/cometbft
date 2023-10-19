@@ -32,8 +32,8 @@ require (
 	github.com/spf13/viper v1.17.0
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/crypto v0.14.0
-	golang.org/x/net v0.16.0
-	google.golang.org/grpc v1.58.2
+	golang.org/x/net v0.17.0
+	google.golang.org/grpc v1.58.3
 )
 
 require (
@@ -51,7 +51,7 @@ require (
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/google/uuid v1.3.1
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
-	github.com/vektra/mockery/v2 v2.35.3
+	github.com/vektra/mockery/v2 v2.35.4
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 	golang.org/x/sync v0.4.0
 	gonum.org/v1/gonum v0.14.0

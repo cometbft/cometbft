@@ -7,6 +7,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/Workiva/go-datastructures/threadsafe/err"
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
@@ -379,6 +380,15 @@ func (mem *CListMempool) resCbFirstTime(
 		var postCheckErr error
 		if mem.postCheck != nil {
 			postCheckErr = mem.postCheck(tx, r.CheckTx)
+
+			if postCheckErr != nil {
+				// Inform why tx isn't inserted into the mempool
+				r.CheckTx = &abci.ResponseCheckTx{
+					Code:      CodeTypePostCheckFailed,
+					Codespace: Codespace,
+					Log:       err.Error(),
+				}
+			}
 		}
 		txKey := types.Tx(tx).Key()
 		if (r.CheckTx.Code == abci.CodeTypeOK) && postCheckErr == nil {
@@ -387,6 +397,14 @@ func (mem *CListMempool) resCbFirstTime(
 			if err := mem.isFull(len(tx)); err != nil {
 				mem.forceRemoveFromCache(tx) // mempool might have space later
 				mem.logger.Error(err.Error())
+
+				// Inform why tx isn't inserted into the mempool
+				r.CheckTx = &abci.ResponseCheckTx{
+					Code:      CodeTypeMempoolIsFull,
+					Codespace: Codespace,
+					Log:       err.Error(),
+				}
+
 				return
 			}
 
@@ -399,6 +417,13 @@ func (mem *CListMempool) resCbFirstTime(
 					"height", mem.height,
 					"total", mem.Size(),
 				)
+
+				// Inform why tx isn't inserted into the mempool
+				r.CheckTx = &abci.ResponseCheckTx{
+					Code:      CodeTypeTxAlreadyInMempool,
+					Codespace: Codespace,
+					Log:       "transaction already in mempool",
+				}
 				return
 			}
 

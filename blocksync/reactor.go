@@ -60,8 +60,7 @@ type Reactor struct {
 	errorsCh   <-chan peerError
 }
 
-// NewReactor returns new reactor instance.
-func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
+func NewReactorWithOfflineStateSync(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
 	blockSync bool, offlineStateSyncHeight int64) *Reactor {
 
 	if state.LastBlockHeight != store.Height() {
@@ -105,6 +104,14 @@ func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockS
 	}
 	bcR.BaseReactor = *p2p.NewBaseReactor("Reactor", bcR)
 	return bcR
+}
+
+// NewReactor returns new reactor instance.
+func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
+	blockSync bool) *Reactor {
+
+	return NewReactorWithOfflineStateSync(state, blockExec, store, blockSync, 0)
+
 }
 
 // SetLogger implements service.Service by setting the logger on reactor and pool.

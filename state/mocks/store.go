@@ -44,27 +44,6 @@ func (_m *Store) Close() error {
 	return r0
 }
 
-// GetOfflineStateSyncHeight provides a mock function with given fields:
-func (_m *Store) GetOfflineStateSyncHeight() (int64, error) {
-	ret := _m.Called()
-
-	var r0 int64
-	if rf, ok := ret.Get(0).(func() int64); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(int64)
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // Load provides a mock function with given fields:
 func (_m *Store) Load() (state.State, error) {
 	ret := _m.Called()
@@ -253,20 +232,6 @@ func (_m *Store) SaveABCIResponses(_a0 int64, _a1 *tendermintstate.ABCIResponses
 	var r0 error
 	if rf, ok := ret.Get(0).(func(int64, *tendermintstate.ABCIResponses) error); ok {
 		r0 = rf(_a0, _a1)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// SetOfflineStateSyncHeight provides a mock function with given fields: height
-func (_m *Store) SetOfflineStateSyncHeight(height int64) error {
-	ret := _m.Called(height)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(int64) error); ok {
-		r0 = rf(height)
 	} else {
 		r0 = ret.Error(0)
 	}

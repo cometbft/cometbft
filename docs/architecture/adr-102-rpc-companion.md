@@ -26,8 +26,8 @@ makes it possible to serve the data in a more scalable way.
 
 ## Alternative Approaches
 
-The Data Companion Pull API concept (ADR-101) is a new concept. It's expected that over time once this architecture is
-well understood and is well established, it's expected that users will create their own implementation to cater to their
+The Data Companion Pull API concept (ADR-101) is a new concept. It's expected that as this architecture becomes
+well understood and well established, users will create their own implementation to cater to their
 own use cases. The RPC Companion API is the first implementation of a Data Companion Pull API that can also serve as an example for
 other implementations.
 

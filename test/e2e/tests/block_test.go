@@ -83,6 +83,7 @@ func TestBlock_Range(t *testing.T) {
 			assert.Equal(t, node.Testnet.InitialHeight, first,
 				"node's first block should be network's initial height")
 		}
+
 		for h := first; h <= last; h++ {
 			resp, err := client.Block(ctx, &(h))
 			if err != nil && node.RetainBlocks > 0 && h == first {

@@ -52,7 +52,7 @@ The **RPC Companion** solution shall:
 its own storage (database)
 2. Provide a storage ([Database](#database)) that can persist the data using a [database schema](#database-schema) that
 can store information that was fetched from the full node in a structured and normalized manner.
-3. Do not enforce any breaking changes to the existing RPC.
+3. Not force breaking changes to the existing RPC.
 4. Ensure the responses returned by the [RPC Companion v1 endpoint](#rpc-endpoint) is wire compatible with the existing CometBFT JSONRPC endpoint.
 5. Implement tests to verify backwards compatibility.
 6. Be able to handle multiple concurrent requests and return idempotent responses.

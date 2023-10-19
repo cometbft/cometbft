@@ -13,7 +13,7 @@ Accepted | Rejected | Deprecated | Superseded by
 This ADR proposes an architecture of an ***RPC Companion*** solution, an instance of the proposed [ADR-101 Data Companion Pull API](https://github.com/cometbft/cometbft/pull/82).
 
 This solution can run as a sidecar which is a separate process that runs concurrently with the full node, but the RPC Companion is optional meaning that the full node will still provide RPC services that can be queried directly if operators don't want to run
-a RPC Companion service.
+an RPC Companion service.
 
 This ADR provides a reference implementation of a system that can be used to offload queryable data from a CometBFT
 full node to a database and offer a service exposing the same JSONRPC methods on a endpoint as the regular JSONRPC methods of a CometBFT node endpoint,

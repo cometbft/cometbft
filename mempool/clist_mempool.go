@@ -386,7 +386,7 @@ func (mem *CListMempool) resCbFirstTime(
 				r.CheckTx = &abci.ResponseCheckTx{
 					Code:      CodeTypePostCheckFailed,
 					Codespace: Codespace,
-					Log:       err.Error(),
+					Log:       postCheckErr.Error(),
 				}
 			}
 		}

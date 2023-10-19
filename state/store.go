@@ -77,10 +77,10 @@ type Store interface {
 	PruneStates(int64, int64) error
 	// Close closes the connection with the database
 	Close() error
-	// Saves the height at which the store is bootstrapped after out of band statesync
-	SetOfflineStateSyncHeight(height int64) error
-	// Gets the height at which the store is bootstrapped after out of band statesync
-	GetOfflineStateSyncHeight() (int64, error)
+	// // Saves the height at which the store is bootstrapped after out of band statesync
+	// SetOfflineStateSyncHeight(height int64) error
+	// // Gets the height at which the store is bootstrapped after out of band statesync
+	// GetOfflineStateSyncHeight() (int64, error)
 }
 
 // dbStore wraps a db (github.com/cometbft/cometbft-db)
@@ -672,7 +672,19 @@ func (store dbStore) saveConsensusParamsInfo(nextHeight, changeHeight int64, par
 	return nil
 }
 
-func (store dbStore) SetOfflineStateSyncHeight(height int64) error {
+/* Custom struct to handle offlien state sync
+   Contains reference to a store so that it can access the DB
+*/
+
+type BootstrapStore struct {
+	db dbm.DB
+}
+
+func NewBootstrapStore(db dbm.DB) BootstrapStore {
+	return BootstrapStore{db}
+}
+
+func (store BootstrapStore) SetOfflineStateSyncHeight(height int64) error {
 	err := store.db.SetSync(offlineStateSyncHeight, int64ToBytes(height))
 	if err != nil {
 		return err
@@ -682,7 +694,7 @@ func (store dbStore) SetOfflineStateSyncHeight(height int64) error {
 }
 
 // Gets the height at which the store is bootstrapped after out of band statesync
-func (store dbStore) GetOfflineStateSyncHeight() (int64, error) {
+func (store BootstrapStore) GetOfflineStateSyncHeight() (int64, error) {
 
 	buf, err := store.db.Get(offlineStateSyncHeight)
 	if err != nil {

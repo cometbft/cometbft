@@ -296,11 +296,12 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider DBProvid
 		return err
 	}
 
+	bootstrapStore := sm.NewBootstrapStore(stateDB)
 	// Once the stores are bootstrapped, we need to set the height at which the node has finished
 	// statesyncing. This will allow the blocksync reactor to fetch blocks at a proper height.
 	// In case this operation fails, it is equivalent to a failure in  online state sync where the operator
 	// needs to manually delete the state and blockstores and rerun the bootstrapping process.
-	err = stateStore.SetOfflineStateSyncHeight(state.LastBlockHeight)
+	err = bootstrapStore.SetOfflineStateSyncHeight(state.LastBlockHeight)
 	if err != nil {
 		return fmt.Errorf("failed to set synced height: %w", err)
 	}
@@ -839,7 +840,6 @@ func NewNode(config *cfg.Config,
 		metricsProvider, logger, options...)
 }
 
-// NewNodeWithContext is cancellable version of NewNode.
 func NewNodeWithContext(ctx context.Context,
 	config *cfg.Config,
 	privValidator types.PrivValidator,
@@ -851,6 +851,7 @@ func NewNodeWithContext(ctx context.Context,
 	logger log.Logger,
 	options ...Option,
 ) (*Node, error) {
+
 	blockStore, stateDB, err := initDBs(config, dbProvider)
 	if err != nil {
 		return nil, err
@@ -952,8 +953,10 @@ func NewNodeWithContext(ctx context.Context,
 		sm.BlockExecutorWithMetrics(smMetrics),
 	)
 	offlineStateSyncHeight := int64(0)
+
+	bootstrapStore := sm.NewBootstrapStore(stateDB)
 	if blockStore.Height() == 0 {
-		offlineStateSyncHeight, err = blockExec.Store().GetOfflineStateSyncHeight()
+		offlineStateSyncHeight, err = bootstrapStore.GetOfflineStateSyncHeight()
 		if err != nil && err.Error() != "value empty" {
 			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s; expected state store height to be %v", err, state.LastBlockHeight))
 		}
@@ -976,11 +979,11 @@ func NewNodeWithContext(ctx context.Context,
 		config, state, blockExec, blockStore, mempool, evidencePool,
 		privValidator, csMetrics, stateSync || blockSync, eventBus, consensusLogger,
 	)
-
-	err = stateStore.SetOfflineStateSyncHeight(0)
+	err = bootstrapStore.SetOfflineStateSyncHeight(0)
 	if err != nil {
 		panic(fmt.Sprintf("failed to reset the offline state sync height %s", err))
 	}
+
 	// Set up state sync reactor, and schedule a sync if requested.
 	// FIXME The way we do phased startups (e.g. replay -> block sync -> consensus) is very messy,
 	// we should clean this whole thing up. See:

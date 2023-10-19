@@ -180,7 +180,7 @@ the [RPC server instance](#rpc-instance) scalability
 Also, using a relational database will also provide more flexibility when implementing a future RPC Companion `/v2` endpoint that can return data
 in different forms and database indexes might also be leveraged in order to boost the query responses performance.
 
-The data needs to be available both for the Ingest Service (writes) and the RPC server instance (reads) and these service might be running from different machines so an embedded database
+The data needs to be available both for the Ingest Service (writes) and the RPC server instance (reads) and these services might be running from different machines so an embedded database
 is not recommended in this case since accessing the data remotely might not be optimal for an embedded key-value database. Also
 since the RPC might have many server instances (or processes) running that will need to retrieve data concurrently it is recommended to use
 a well-known robust database engine that can support such a load.

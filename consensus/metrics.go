@@ -71,12 +71,6 @@ type Metrics struct {
 	// Number of times we received a duplicate vote
 	DuplicateVote metrics.Counter
 
-	// Amount of redundant tx byte sent
-	RedundantTxBytesSent metrics.Counter
-
-	// Amount of redundant tx byte received
-	RedundantTxBytesReceived metrics.Counter
-
 	// Histogram of step duration.
 	StepDuration metrics.Histogram
 	stepStart    time.Time
@@ -236,18 +230,6 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Subsystem: MetricsSubsystem,
 			Name:      "duplicate_vote",
 			Help:      "Number of times we received a duplicate vote",
-		}, labels).With(labelsAndValues...),
-		RedundantTxBytesSent: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
-			Namespace: namespace,
-			Subsystem: MetricsSubsystem,
-			Name:      "redundant_tx_bytes_sent",
-			Help:      "",
-		}, labels).With(labelsAndValues...),
-		RedundantTxBytesReceived: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
-			Namespace: namespace,
-			Subsystem: MetricsSubsystem,
-			Name:      "redundant_tx_bytes_received",
-			Help:      "",
 		}, labels).With(labelsAndValues...),
 		BlockGossipPartsReceived: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,

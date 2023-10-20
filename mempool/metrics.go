@@ -39,6 +39,12 @@ type Metrics struct {
 
 	// Number of times transactions are rechecked in the mempool.
 	RecheckTimes metrics.Counter
+
+	// Amount of redundant tx byte sent
+	RedundantTxBytesSent metrics.Counter
+
+	// Amount of redundant tx byte received
+	RedundantTxBytesReceived metrics.Counter
 }
 
 // PrometheusMetrics returns Metrics build using Prometheus client library.
@@ -63,6 +69,20 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "tx_size_bytes",
 			Help:      "Transaction sizes in bytes.",
 			Buckets:   stdprometheus.ExponentialBuckets(1, 3, 17),
+		}, labels).With(labelsAndValues...),
+
+		RedundantTxBytesSent: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "redundant_tx_bytes_sent",
+			Help:      "",
+		}, labels).With(labelsAndValues...),
+
+		RedundantTxBytesReceived: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "redundant_tx_bytes_received",
+			Help:      "",
 		}, labels).With(labelsAndValues...),
 
 		FailedTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{

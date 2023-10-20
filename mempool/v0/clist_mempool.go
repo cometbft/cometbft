@@ -393,6 +393,7 @@ func (mem *CListMempool) resCbFirstTime(
 
 			// Check transaction not already in the mempool
 			if e, ok := mem.txsMap.Load(types.Tx(tx).Key()); ok {
+				mem.metrics.RedundantTxBytesReceived.Add(float64(len(tx)))
 				memTx := e.(*clist.CElement).Value.(*mempoolTx)
 				memTx.senders.LoadOrStore(peerID, true)
 				mem.logger.Debug(

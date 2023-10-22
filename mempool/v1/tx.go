@@ -15,15 +15,26 @@ type WrappedTx struct {
 	height    int64       // height when this transaction was initially checked (for expiry)
 	timestamp time.Time   // time when transaction was entered (for TTL)
 
-	mtx       sync.Mutex
-	gasWanted int64           // app: gas required to execute this transaction
-	priority  int64           // app: priority value for this transaction
-	sender    string          // app: assigned sender label
-	peers     map[uint16]bool // peer IDs who have sent us this transaction
+	mtx                sync.Mutex
+	gasWanted          int64           // app: gas required to execute this transaction
+	priority           int64           // app: priority value for this transaction
+	sender             string          // app: assigned sender label
+	peers              map[uint16]bool // peer IDs who have sent us this transaction
+	alreadySentToPeers map[uint16]bool
 }
 
 // Size reports the size of the raw transaction in bytes.
 func (w *WrappedTx) Size() int64 { return int64(len(w.tx)) }
+
+func (w *WrappedTx) SetAlreadSentToPeers(id uint16) {
+	w.mtx.Lock()
+	defer w.mtx.Unlock()
+	if w.alreadySentToPeers == nil {
+		w.alreadySentToPeers = map[uint16]bool{id: true}
+	} else {
+		w.alreadySentToPeers[id] = true
+	}
+}
 
 // SetPeer adds the specified peer ID as a sender of w.
 func (w *WrappedTx) SetPeer(id uint16) {
@@ -34,6 +45,14 @@ func (w *WrappedTx) SetPeer(id uint16) {
 	} else {
 		w.peers[id] = true
 	}
+}
+
+func (w *WrappedTx) HasSentToPeer(id uint16) bool {
+	w.mtx.Lock()
+	defer w.mtx.Unlock()
+
+	_, ok := w.alreadySentToPeers[id]
+	return ok
 }
 
 // HasPeer reports whether the specified peer ID is a sender of w.

@@ -242,6 +242,7 @@ func (mem *CListMempool) CheckTx(
 		// (eg. after committing a block, txs are removed from mempool but not cache),
 		// so we only record the sender for txs still in the mempool.
 		if e, ok := mem.txsMap.Load(tx.Key()); ok {
+			mem.metrics.RedundantTxBytesReceived.Add(float64(len(tx)))
 			memTx := e.(*clist.CElement).Value.(*mempoolTx)
 			memTx.senders.LoadOrStore(txInfo.SenderID, true)
 			// TODO: consider punishing peer for dups,
@@ -685,6 +686,8 @@ type mempoolTx struct {
 	// ids of peers who've sent us this tx (as a map for quick lookups).
 	// senders: PeerID -> bool
 	senders sync.Map
+
+	sentToPeers sync.Map
 }
 
 // Height returns the height for this transaction

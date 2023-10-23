@@ -29,7 +29,7 @@ type Client interface {
 	Error() error
 	// TODO: remove as this is not implemented
 	Flush(context.Context) error
-	Echo(context.Context, string) (*types.ResponseEcho, error)
+	Echo(context.Context, string) (*types.EchoResponse, error)
 
 	// FIXME: All other operations are run synchronously and rely
 	// on the caller to dictate concurrency (i.e. run a go routine),
@@ -37,7 +37,7 @@ type Client interface {
 	// for the v0 mempool. We should explore refactoring the
 	// mempool to remove this vestige behavior.
 	SetResponseCallback(Callback)
-	CheckTxAsync(context.Context, *types.RequestCheckTx) (*ReqRes, error)
+	CheckTxAsync(context.Context, *types.CheckTxRequest) (*ReqRes, error)
 }
 
 //----------------------------------------

@@ -60,7 +60,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		ensureDir(path.Dir(thisConfig.Consensus.WalFile()), 0o700) // dir for wal
 		app := appFunc()
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
-		_, err := app.InitChain(context.Background(), &abci.RequestInitChain{Validators: vals})
+		_, err := app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
 		require.NoError(t, err)
 
 		blockDB := dbm.NewMemDB()

@@ -137,61 +137,61 @@ func NewKVStoreApplication() *KVStoreApplication {
     return &KVStoreApplication{}
 }
 
-func (app *KVStoreApplication) Info(_ context.Context, info *abcitypes.RequestInfo) (*abcitypes.ResponseInfo, error) {
-    return &abcitypes.ResponseInfo{}, nil
+func (app *KVStoreApplication) Info(_ context.Context, info *abcitypes.InfoRequest) (*abcitypes.InfoResponse, error) {
+    return &abcitypes.InfoResponse{}, nil
 }
 
-func (app *KVStoreApplication) Query(_ context.Context, req *abcitypes.RequestQuery) (*abcitypes.ResponseQuery, error) {
-    return &abcitypes.ResponseQuery{}, nil
+func (app *KVStoreApplication) Query(_ context.Context, req *abcitypes.QueryRequest) (*abcitypes.QueryResponse, error) {
+    return &abcitypes.QueryResponse{}, nil
 }
 
-func (app *KVStoreApplication) CheckTx(_ context.Context, check *abcitypes.RequestCheckTx) (*abcitypes.ResponseCheckTx, error) {
-    return &abcitypes.ResponseCheckTx{Code: code}, nil
+func (app *KVStoreApplication) CheckTx(_ context.Context, check *abcitypes.CheckTxRequest) (*abcitypes.CheckTxResponse, error) {
+    return &abcitypes.CheckTxResponse{Code: code}, nil
 }
 
-func (app *KVStoreApplication) InitChain(_ context.Context, chain *abcitypes.RequestInitChain) (*abcitypes.ResponseInitChain, error) {
-    return &abcitypes.ResponseInitChain{}, nil
+func (app *KVStoreApplication) InitChain(_ context.Context, chain *abcitypes.InitChainRequest) (*abcitypes.InitChainResponse, error) {
+    return &abcitypes.InitChainResponse{}, nil
 }
 
-func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abcitypes.RequestPrepareProposal) (*abcitypes.ResponsePrepareProposal, error) {
-    return &abcitypes.ResponsePrepareProposal{}, nil
+func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abcitypes.PrepareProposalRequest) (*abcitypes.PrepareProposalResponse, error) {
+    return &abcitypes.PrepareProposalResponse{}, nil
 }
 
-func (app *KVStoreApplication) ProcessProposal(_ context.Context, proposal *abcitypes.RequestProcessProposal) (*abcitypes.ResponseProcessProposal, error) {
-    return &abcitypes.ResponseProcessProposal{}, nil
+func (app *KVStoreApplication) ProcessProposal(_ context.Context, proposal *abcitypes.ProcessProposalRequest) (*abcitypes.ProcessProposalResponse, error) {
+    return &abcitypes.ProcessProposalResponse{}, nil
 }
 
-func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.RequestFinalizeBlock) (*abcitypes.ResponseFinalizeBlock, error) {
-    return &abcitypes.ResponseFinalizeBlock{}, nil
+func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.FinalizeBlockRequest) (*abcitypes.FinalizeBlockResponse, error) {
+    return &abcitypes.FinalizeBlockResponse{}, nil
 }
 
-func (app KVStoreApplication) Commit(_ context.Context, commit *abcitypes.RequestCommit) (*abcitypes.ResponseCommit, error) {
-    return &abcitypes.ResponseCommit{}, nil
+func (app KVStoreApplication) Commit(_ context.Context, commit *abcitypes.CommitRequest) (*abcitypes.CommitResponse, error) {
+    return &abcitypes.CommitResponse{}, nil
 }
 
-func (app *KVStoreApplication) ListSnapshots(_ context.Context, snapshots *abcitypes.RequestListSnapshots) (*abcitypes.ResponseListSnapshots, error) {
-    return &abcitypes.ResponseListSnapshots{}, nil
+func (app *KVStoreApplication) ListSnapshots(_ context.Context, snapshots *abcitypes.ListSnapshotsRequest) (*abcitypes.ListSnapshotsResponse, error) {
+    return &abcitypes.ListSnapshotsResponse{}, nil
 }
 
-func (app *KVStoreApplication) OfferSnapshot(_ context.Context, snapshot *abcitypes.RequestOfferSnapshot) (*abcitypes.ResponseOfferSnapshot, error) {
-    return &abcitypes.ResponseOfferSnapshot{}, nil
+func (app *KVStoreApplication) OfferSnapshot(_ context.Context, snapshot *abcitypes.OfferSnapshotRequest) (*abcitypes.OfferSnapshotResponse, error) {
+    return &abcitypes.OfferSnapshotResponse{}, nil
 }
 
-func (app *KVStoreApplication) LoadSnapshotChunk(_ context.Context, chunk *abcitypes.RequestLoadSnapshotChunk) (*abcitypes.ResponseLoadSnapshotChunk, error) {
-    return &abcitypes.ResponseLoadSnapshotChunk{}, nil
+func (app *KVStoreApplication) LoadSnapshotChunk(_ context.Context, chunk *abcitypes.LoadSnapshotChunkRequest) (*abcitypes.LoadSnapshotChunkResponse, error) {
+    return &abcitypes.LoadSnapshotChunkResponse{}, nil
 }
 
-func (app *KVStoreApplication) ApplySnapshotChunk(_ context.Context, chunk *abcitypes.RequestApplySnapshotChunk) (*abcitypes.ResponseApplySnapshotChunk, error) {
+func (app *KVStoreApplication) ApplySnapshotChunk(_ context.Context, chunk *abcitypes.ApplySnapshotChunkRequest) (*abcitypes.ApplySnapshotChunkResponse, error) {
 
-    return &abcitypes.ResponseApplySnapshotChunk{Result: abcitypes.ResponseApplySnapshotChunk_ACCEPT}, nil
+    return &abcitypes.ApplySnapshotChunkResponse{Result: abcitypes.ApplySnapshotChunkResponse_ACCEPT}, nil
 }
 
-func (app KVStoreApplication) ExtendVote(_ context.Context, extend *abcitypes.RequestExtendVote) (*abcitypes.ResponseExtendVote, error) {
-    return &abcitypes.ResponseExtendVote{}, nil
+func (app KVStoreApplication) ExtendVote(_ context.Context, extend *abcitypes.ExtendVoteRequest) (*abcitypes.ExtendVoteResponse, error) {
+    return &abcitypes.ExtendVoteResponse{}, nil
 }
 
-func (app *KVStoreApplication) VerifyVoteExtension(_ context.Context, verify *abcitypes.RequestVerifyVoteExtension) (*abcitypes.ResponseVerifyVoteExtension, error) {
-    return &abcitypes.ResponseVerifyVoteExtension{}, nil
+func (app *KVStoreApplication) VerifyVoteExtension(_ context.Context, verify *abcitypes.VerifyVoteExtensionRequest) (*abcitypes.VerifyVoteExtensionResponse, error) {
+    return &abcitypes.VerifyVoteExtensionResponse{}, nil
 }
 ```
 
@@ -288,9 +288,9 @@ func (app *KVStoreApplication) isValid(tx []byte) uint32 {
 Now you can rewrite the `CheckTx` method to use the helper function:
 
 ```go
-func (app *KVStoreApplication) CheckTx(_ context.Context, check *abcitypes.RequestCheckTx) (*abcitypes.ResponseCheckTx, error) {
+func (app *KVStoreApplication) CheckTx(_ context.Context, check *abcitypes.CheckTxRequest) (*abcitypes.CheckTxResponse, error) {
     code := app.isValid(check.Tx)
-    return &abcitypes.ResponseCheckTx{Code: code}, nil
+    return &abcitypes.CheckTxResponse{Code: code}, nil
 }
 ```
 
@@ -342,7 +342,7 @@ Next, let's modify `FinalizeBlock` to add the `key` and `value` to the database 
 Note that we check the validity of the transaction _again_ during `FinalizeBlock`.
 
 ```go
-func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.RequestFinalizeBlock) (*abcitypes.ResponseFinalizeBlock, error) {
+func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.FinalizeBlockRequest) (*abcitypes.FinalizeBlockResponse, error) {
     var txs = make([]*abcitypes.ExecTxResult, len(req.Txs))
 
     app.onGoingBlock = app.db.NewTransaction(true)
@@ -364,7 +364,7 @@ func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.R
         }
     }
 
-    return &abcitypes.ResponseFinalizeBlock{
+    return &abcitypes.FinalizeBlockResponse{
         TxResults:        txs,
     }, nil
 }
@@ -382,8 +382,8 @@ The `Commit` method tells the application to make permanent the effects of the a
 Let's update the method to terminate the pending Badger transaction and persist the resulting state:
 
 ```go
-func (app KVStoreApplication) Commit(_ context.Context, commit *abcitypes.RequestCommit) (*abcitypes.ResponseCommit, error) {
-    return &abcitypes.ResponseCommit{}, app.onGoingBlock.Commit()
+func (app KVStoreApplication) Commit(_ context.Context, commit *abcitypes.CommitRequest) (*abcitypes.CommitResponse, error) {
+    return &abcitypes.CommitResponse{}, app.onGoingBlock.Commit()
 }
 ```
 
@@ -410,8 +410,8 @@ When a client tries to read some information from the `kvstore`, the request wil
 handled in the `Query` method. To do this, let's rewrite the `Query` method in `app.go`:
 
 ```go
-func (app *KVStoreApplication) Query(_ context.Context, req *abcitypes.RequestQuery) (*abcitypes.ResponseQuery, error) {
-    resp := abcitypes.ResponseQuery{Key: req.Data}
+func (app *KVStoreApplication) Query(_ context.Context, req *abcitypes.QueryRequest) (*abcitypes.QueryResponse, error) {
+    resp := abcitypes.QueryResponse{Key: req.Data}
 
     dbErr := app.db.View(func(txn *badger.Txn) error {
         item, err := txn.Get(req.Data)
@@ -455,7 +455,7 @@ execution of the block once accepted.
 In the following code, the application simply returns the unmodified group of transactions:
 
 ```go
-func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abcitypes.RequestPrepareProposal) (*abcitypes.ResponsePrepareProposal, error) {
+func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abcitypes.PrepareProposalRequest) (*abcitypes.PrepareProposalResponse, error) {
   totalBytes := int64(0)
   txs := make([]byte, 0)
 
@@ -468,7 +468,7 @@ func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abci
       }
     }
 
-    return &abcitypes.ResponsePrepareProposal{Txs: proposal.Txs}, nil
+    return &abcitypes.PrepareProposalResponse{Txs: proposal.Txs}, nil
 }
 ```
 
@@ -484,8 +484,8 @@ by malicious nodes, in which case the block should not be considered valid.
 The following code simply accepts all proposals:
 
 ```go
-func (app *KVStoreApplication) ProcessProposal(_ context.Context, proposal *abcitypes.RequestProcessProposal) (*abcitypes.ResponseProcessProposal, error) {
-    return &abcitypes.ResponseProcessProposal{Status: abcitypes.PROCESS_PROPOSAL_STATUS_ACCEPT}, nil
+func (app *KVStoreApplication) ProcessProposal(_ context.Context, proposal *abcitypes.ProcessProposalRequest) (*abcitypes.ProcessProposalResponse, error) {
+    return &abcitypes.ProcessProposalResponse{Status: abcitypes.PROCESS_PROPOSAL_STATUS_ACCEPT}, nil
 }
 ```
 

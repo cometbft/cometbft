@@ -14,22 +14,22 @@ import (
 
 type (
 	Request                    = v1beta4.Request
-	RequestEcho                = v1beta1.RequestEcho
-	RequestFlush               = v1beta1.RequestFlush
-	RequestInfo                = v1beta2.RequestInfo
-	RequestInitChain           = v1beta3.RequestInitChain
-	RequestQuery               = v1beta1.RequestQuery
-	RequestCheckTx             = v1beta4.RequestCheckTx
-	RequestCommit              = v1beta1.RequestCommit
-	RequestListSnapshots       = v1beta1.RequestListSnapshots
-	RequestOfferSnapshot       = v1beta1.RequestOfferSnapshot
-	RequestLoadSnapshotChunk   = v1beta1.RequestLoadSnapshotChunk
-	RequestApplySnapshotChunk  = v1beta1.RequestApplySnapshotChunk
-	RequestPrepareProposal     = v1beta4.RequestPrepareProposal
-	RequestProcessProposal     = v1beta4.RequestProcessProposal
-	RequestExtendVote          = v1beta4.RequestExtendVote
-	RequestVerifyVoteExtension = v1beta3.RequestVerifyVoteExtension
-	RequestFinalizeBlock       = v1beta4.RequestFinalizeBlock
+	EchoRequest                = v1beta4.EchoRequest
+	FlushRequest               = v1beta4.FlushRequest
+	InfoRequest                = v1beta4.InfoRequest
+	InitChainRequest           = v1beta4.InitChainRequest
+	QueryRequest               = v1beta4.QueryRequest
+	CheckTxRequest             = v1beta4.CheckTxRequest
+	CommitRequest              = v1beta4.CommitRequest
+	ListSnapshotsRequest       = v1beta4.ListSnapshotsRequest
+	OfferSnapshotRequest       = v1beta4.OfferSnapshotRequest
+	LoadSnapshotChunkRequest   = v1beta4.LoadSnapshotChunkRequest
+	ApplySnapshotChunkRequest  = v1beta4.ApplySnapshotChunkRequest
+	PrepareProposalRequest     = v1beta4.PrepareProposalRequest
+	ProcessProposalRequest     = v1beta4.ProcessProposalRequest
+	ExtendVoteRequest          = v1beta4.ExtendVoteRequest
+	VerifyVoteExtensionRequest = v1beta4.VerifyVoteExtensionRequest
+	FinalizeBlockRequest       = v1beta4.FinalizeBlockRequest
 )
 
 // Discriminated Request variants are defined in the latest proto package.
@@ -54,23 +54,23 @@ type (
 
 type (
 	Response                    = v1beta4.Response
-	ResponseException           = v1beta1.ResponseException
-	ResponseEcho                = v1beta1.ResponseEcho
-	ResponseFlush               = v1beta1.ResponseFlush
-	ResponseInfo                = v1beta1.ResponseInfo
-	ResponseInitChain           = v1beta3.ResponseInitChain
-	ResponseQuery               = v1beta1.ResponseQuery
-	ResponseCheckTx             = v1beta3.ResponseCheckTx
-	ResponseCommit              = v1beta3.ResponseCommit
-	ResponseListSnapshots       = v1beta1.ResponseListSnapshots
-	ResponseOfferSnapshot       = v1beta4.ResponseOfferSnapshot
-	ResponseLoadSnapshotChunk   = v1beta1.ResponseLoadSnapshotChunk
-	ResponseApplySnapshotChunk  = v1beta4.ResponseApplySnapshotChunk
-	ResponsePrepareProposal     = v1beta2.ResponsePrepareProposal
-	ResponseProcessProposal     = v1beta4.ResponseProcessProposal
-	ResponseExtendVote          = v1beta3.ResponseExtendVote
-	ResponseVerifyVoteExtension = v1beta4.ResponseVerifyVoteExtension
-	ResponseFinalizeBlock       = v1beta3.ResponseFinalizeBlock
+	ExceptionResponse           = v1beta4.ExceptionResponse
+	EchoResponse                = v1beta4.EchoResponse
+	FlushResponse               = v1beta4.FlushResponse
+	InfoResponse                = v1beta4.InfoResponse
+	InitChainResponse           = v1beta4.InitChainResponse
+	QueryResponse               = v1beta4.QueryResponse
+	CheckTxResponse             = v1beta4.CheckTxResponse
+	CommitResponse              = v1beta4.CommitResponse
+	ListSnapshotsResponse       = v1beta4.ListSnapshotsResponse
+	OfferSnapshotResponse       = v1beta4.OfferSnapshotResponse
+	LoadSnapshotChunkResponse   = v1beta4.LoadSnapshotChunkResponse
+	ApplySnapshotChunkResponse  = v1beta4.ApplySnapshotChunkResponse
+	PrepareProposalResponse     = v1beta4.PrepareProposalResponse
+	ProcessProposalResponse     = v1beta4.ProcessProposalResponse
+	ExtendVoteResponse          = v1beta4.ExtendVoteResponse
+	VerifyVoteExtensionResponse = v1beta4.VerifyVoteExtensionResponse
+	FinalizeBlockResponse       = v1beta4.FinalizeBlockResponse
 )
 
 // Discriminated Response variants are defined in the latest proto package.
@@ -110,16 +110,16 @@ type (
 )
 
 type (
-	ABCIClient = v1beta4.ABCIClient
-	ABCIServer = v1beta4.ABCIServer
+	ABCIServiceClient = v1beta4.ABCIServiceClient
+	ABCIServiceServer = v1beta4.ABCIServiceServer
 )
 
-func NewABCIClient(cc grpc.ClientConn) ABCIClient {
-	return v1beta4.NewABCIClient(cc)
+func NewABCIClient(cc grpc.ClientConn) ABCIServiceClient {
+	return v1beta4.NewABCIServiceClient(cc)
 }
 
-func RegisterABCIServer(s grpc.Server, srv ABCIServer) {
-	v1beta4.RegisterABCIServer(s, srv)
+func RegisterABCIServer(s grpc.Server, srv ABCIServiceServer) {
+	v1beta4.RegisterABCIServiceServer(s, srv)
 }
 
 type CheckTxType = v1beta4.CheckTxType
@@ -191,10 +191,10 @@ type jsonRoundTripper interface {
 }
 
 var (
-	_ jsonRoundTripper = (*ResponseCommit)(nil)
-	_ jsonRoundTripper = (*ResponseQuery)(nil)
+	_ jsonRoundTripper = (*CommitResponse)(nil)
+	_ jsonRoundTripper = (*QueryResponse)(nil)
 	_ jsonRoundTripper = (*ExecTxResult)(nil)
-	_ jsonRoundTripper = (*ResponseCheckTx)(nil)
+	_ jsonRoundTripper = (*CheckTxResponse)(nil)
 )
 
 var _ jsonRoundTripper = (*EventAttribute)(nil)

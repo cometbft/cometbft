@@ -170,9 +170,9 @@ func genValSet(size int) *types.ValidatorSet {
 func makeHeaderPartsResponsesValPubKeyChange(
 	state sm.State,
 	pubkey crypto.PubKey,
-) (types.Header, types.BlockID, *abci.ResponseFinalizeBlock) {
+) (types.Header, types.BlockID, *abci.FinalizeBlockResponse) {
 	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
-	abciResponses := &abci.ResponseFinalizeBlock{}
+	abciResponses := &abci.FinalizeBlockResponse{}
 	// If the pubkey is new, remove the old and add the new.
 	_, val := state.NextValidators.GetByIndex(0)
 	if !bytes.Equal(pubkey.Bytes(), val.PubKey.Bytes()) {
@@ -188,9 +188,9 @@ func makeHeaderPartsResponsesValPubKeyChange(
 func makeHeaderPartsResponsesValPowerChange(
 	state sm.State,
 	power int64,
-) (types.Header, types.BlockID, *abci.ResponseFinalizeBlock) {
+) (types.Header, types.BlockID, *abci.FinalizeBlockResponse) {
 	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
-	abciResponses := &abci.ResponseFinalizeBlock{}
+	abciResponses := &abci.FinalizeBlockResponse{}
 
 	// If the pubkey is new, remove the old and add the new.
 	_, val := state.NextValidators.GetByIndex(0)
@@ -206,9 +206,9 @@ func makeHeaderPartsResponsesValPowerChange(
 func makeHeaderPartsResponsesParams(
 	state sm.State,
 	params cmtproto.ConsensusParams,
-) (types.Header, types.BlockID, *abci.ResponseFinalizeBlock) {
+) (types.Header, types.BlockID, *abci.FinalizeBlockResponse) {
 	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
-	abciResponses := &abci.ResponseFinalizeBlock{
+	abciResponses := &abci.FinalizeBlockResponse{
 		ConsensusParamUpdates: &params,
 	}
 	return block.Header, types.BlockID{Hash: block.Hash(), PartSetHeader: types.PartSetHeader{}}, abciResponses
@@ -245,7 +245,7 @@ type testApp struct {
 
 var _ abci.Application = (*testApp)(nil)
 
-func (app *testApp) FinalizeBlock(_ context.Context, req *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
+func (app *testApp) FinalizeBlock(_ context.Context, req *abci.FinalizeBlockRequest) (*abci.FinalizeBlockResponse, error) {
 	app.CommitVotes = req.DecidedLastCommit.Votes
 	app.Misbehavior = req.Misbehavior
 	app.LastTime = req.Time
@@ -256,7 +256,7 @@ func (app *testApp) FinalizeBlock(_ context.Context, req *abci.RequestFinalizeBl
 		}
 	}
 
-	return &abci.ResponseFinalizeBlock{
+	return &abci.FinalizeBlockResponse{
 		ValidatorUpdates: app.ValidatorUpdates,
 		ConsensusParamUpdates: &cmtproto.ConsensusParams{
 			Version: &cmtproto.VersionParams{
@@ -268,14 +268,14 @@ func (app *testApp) FinalizeBlock(_ context.Context, req *abci.RequestFinalizeBl
 	}, nil
 }
 
-func (app *testApp) Commit(_ context.Context, _ *abci.RequestCommit) (*abci.ResponseCommit, error) {
-	return &abci.ResponseCommit{RetainHeight: 1}, nil
+func (app *testApp) Commit(_ context.Context, _ *abci.CommitRequest) (*abci.CommitResponse, error) {
+	return &abci.CommitResponse{RetainHeight: 1}, nil
 }
 
 func (app *testApp) PrepareProposal(
 	_ context.Context,
-	req *abci.RequestPrepareProposal,
-) (*abci.ResponsePrepareProposal, error) {
+	req *abci.PrepareProposalRequest,
+) (*abci.PrepareProposalResponse, error) {
 	txs := make([][]byte, 0, len(req.Txs))
 	var totalBytes int64
 	for _, tx := range req.Txs {
@@ -288,17 +288,17 @@ func (app *testApp) PrepareProposal(
 		}
 		txs = append(txs, tx)
 	}
-	return &abci.ResponsePrepareProposal{Txs: txs}, nil
+	return &abci.PrepareProposalResponse{Txs: txs}, nil
 }
 
 func (app *testApp) ProcessProposal(
 	_ context.Context,
-	req *abci.RequestProcessProposal,
-) (*abci.ResponseProcessProposal, error) {
+	req *abci.ProcessProposalRequest,
+) (*abci.ProcessProposalResponse, error) {
 	for _, tx := range req.Txs {
 		if len(tx) == 0 {
-			return &abci.ResponseProcessProposal{Status: abci.PROCESS_PROPOSAL_STATUS_REJECT}, nil
+			return &abci.ProcessProposalResponse{Status: abci.PROCESS_PROPOSAL_STATUS_REJECT}, nil
 		}
 	}
-	return &abci.ResponseProcessProposal{Status: abci.PROCESS_PROPOSAL_STATUS_ACCEPT}, nil
+	return &abci.ProcessProposalResponse{Status: abci.PROCESS_PROPOSAL_STATUS_ACCEPT}, nil
 }

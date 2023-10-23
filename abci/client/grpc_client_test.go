@@ -58,7 +58,7 @@ func TestGRPC(t *testing.T) {
 		// Send request
 		response, err := client.CheckTx(
 			context.Background(),
-			&types.RequestCheckTx{
+			&types.CheckTxRequest{
 				Tx:   []byte("test"),
 				Type: types.CHECK_TX_TYPE_CHECK,
 			})

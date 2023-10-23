@@ -326,7 +326,7 @@ message EventAttribute {
 Example:
 
 ```go
- abci.ResponseFinalizeBlock{
+ abci.FinalizeBlockResponse{
   // ...
  Events: []abci.Event{
   {

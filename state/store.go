@@ -70,15 +70,15 @@ type Store interface {
 	// LoadValidators loads the validator set at a given height
 	LoadValidators(height int64) (*types.ValidatorSet, error)
 	// LoadFinalizeBlockResponse loads the abciResponse for a given height
-	LoadFinalizeBlockResponse(height int64) (*abci.ResponseFinalizeBlock, error)
+	LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error)
 	// LoadLastABCIResponse loads the last abciResponse for a given height
-	LoadLastFinalizeBlockResponse(height int64) (*abci.ResponseFinalizeBlock, error)
+	LoadLastFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error)
 	// LoadConsensusParams loads the consensus params for a given height
 	LoadConsensusParams(height int64) (types.ConsensusParams, error)
 	// Save overwrites the previous state with the updated one
 	Save(state State) error
 	// SaveFinalizeBlockResponse saves ABCIResponses for a given height
-	SaveFinalizeBlockResponse(height int64, res *abci.ResponseFinalizeBlock) error
+	SaveFinalizeBlockResponse(height int64, res *abci.FinalizeBlockResponse) error
 	// Bootstrap is used for bootstrapping state when not starting from a initial height.
 	Bootstrap(state State) error
 	// PruneStates takes the height from which to start pruning and which height stop at
@@ -460,7 +460,7 @@ func TxResultsHash(txResults []*abci.ExecTxResult) []byte {
 // LoadFinalizeBlockResponse loads the DiscardABCIResponses for the given height from the
 // database. If the node has D set to true, ErrABCIResponsesNotPersisted
 // is persisted. If not found, ErrNoABCIResponsesForHeight is returned.
-func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.ResponseFinalizeBlock, error) {
+func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error) {
 	if store.DiscardABCIResponses {
 		return nil, ErrFinalizeBlockResponsesNotPersisted
 	}
@@ -473,7 +473,7 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.ResponseFina
 		return nil, ErrNoABCIResponsesForHeight{height}
 	}
 
-	resp := new(abci.ResponseFinalizeBlock)
+	resp := new(abci.FinalizeBlockResponse)
 	err = resp.Unmarshal(buf)
 	if err != nil {
 		// The data might be of the legacy ABCI response type, so
@@ -502,7 +502,7 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.ResponseFina
 //
 // This method is used for recovering in the case that we called the Commit ABCI
 // method on the application but crashed before persisting the results.
-func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.ResponseFinalizeBlock, error) {
+func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error) {
 	bz, err := store.db.Get(lastABCIResponseKey)
 	if err != nil {
 		return nil, err
@@ -544,7 +544,7 @@ func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.Response
 // Merkle proofs.
 //
 // CONTRACT: height must be monotonically increasing every time this is called.
-func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.ResponseFinalizeBlock) error {
+func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.FinalizeBlockResponse) error {
 	var dtxs []*abci.ExecTxResult
 	// strip nil values,
 	for _, tx := range resp.TxResults {
@@ -888,8 +888,8 @@ func min(a int64, b int64) int64 {
 
 // responseFinalizeBlockFromLegacy is a convenience function that takes the old abci responses and morphs
 // it to the finalize block response. Note that the app hash is missing
-func responseFinalizeBlockFromLegacy(legacyResp *cmtstate.LegacyABCIResponses) *abci.ResponseFinalizeBlock {
-	return &abci.ResponseFinalizeBlock{
+func responseFinalizeBlockFromLegacy(legacyResp *cmtstate.LegacyABCIResponses) *abci.FinalizeBlockResponse {
+	return &abci.FinalizeBlockResponse{
 		TxResults:             legacyResp.DeliverTxs,
 		ValidatorUpdates:      legacyResp.EndBlock.ValidatorUpdates,
 		ConsensusParamUpdates: legacyResp.EndBlock.ConsensusParamUpdates,

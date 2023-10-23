@@ -516,7 +516,7 @@ func cmdInfo(cmd *cobra.Command, args []string) error {
 	if len(args) == 1 {
 		version = args[0]
 	}
-	res, err := client.Info(cmd.Context(), &types.RequestInfo{Version: version})
+	res, err := client.Info(cmd.Context(), &types.InfoRequest{Version: version})
 	if err != nil {
 		return err
 	}
@@ -545,7 +545,7 @@ func cmdFinalizeBlock(cmd *cobra.Command, args []string) error {
 		}
 		txs[i] = txBytes
 	}
-	res, err := client.FinalizeBlock(cmd.Context(), &types.RequestFinalizeBlock{Txs: txs})
+	res, err := client.FinalizeBlock(cmd.Context(), &types.FinalizeBlockRequest{Txs: txs})
 	if err != nil {
 		return err
 	}
@@ -578,7 +578,7 @@ func cmdCheckTx(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	res, err := client.CheckTx(cmd.Context(), &types.RequestCheckTx{
+	res, err := client.CheckTx(cmd.Context(), &types.CheckTxRequest{
 		Tx:   txBytes,
 		Type: types.CHECK_TX_TYPE_CHECK,
 	})
@@ -596,7 +596,7 @@ func cmdCheckTx(cmd *cobra.Command, args []string) error {
 
 // Get application Merkle root hash
 func cmdCommit(cmd *cobra.Command, args []string) error {
-	_, err := client.Commit(cmd.Context(), &types.RequestCommit{})
+	_, err := client.Commit(cmd.Context(), &types.CommitRequest{})
 	if err != nil {
 		return err
 	}
@@ -619,7 +619,7 @@ func cmdQuery(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	resQuery, err := client.Query(cmd.Context(), &types.RequestQuery{
+	resQuery, err := client.Query(cmd.Context(), &types.QueryRequest{
 		Data:   queryBytes,
 		Path:   flagPath,
 		Height: int64(flagHeight),
@@ -653,7 +653,7 @@ func cmdPrepareProposal(cmd *cobra.Command, args []string) error {
 		txsBytesArray[i] = txBytes
 	}
 
-	res, err := client.PrepareProposal(cmd.Context(), &types.RequestPrepareProposal{
+	res, err := client.PrepareProposal(cmd.Context(), &types.PrepareProposalRequest{
 		Txs: txsBytesArray,
 		// kvstore has to have this parameter in order not to reject a tx as the default value is 0
 		MaxTxBytes: 65536,
@@ -684,7 +684,7 @@ func cmdProcessProposal(cmd *cobra.Command, args []string) error {
 		txsBytesArray[i] = txBytes
 	}
 
-	res, err := client.ProcessProposal(cmd.Context(), &types.RequestProcessProposal{
+	res, err := client.ProcessProposal(cmd.Context(), &types.ProcessProposalRequest{
 		Txs: txsBytesArray,
 	})
 	if err != nil {

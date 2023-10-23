@@ -368,7 +368,7 @@ func TestProcessProposal(t *testing.T) {
 
 	logger := log.NewNopLogger()
 	app := &abcimocks.Application{}
-	app.On("ProcessProposal", mock.Anything, mock.Anything).Return(&abci.ResponseProcessProposal{Status: abci.PROCESS_PROPOSAL_STATUS_ACCEPT}, nil)
+	app.On("ProcessProposal", mock.Anything, mock.Anything).Return(&abci.ProcessProposalResponse{Status: abci.PROCESS_PROPOSAL_STATUS_ACCEPT}, nil)
 
 	cc := proxy.NewLocalClientCreator(app)
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
@@ -424,7 +424,7 @@ func TestProcessProposal(t *testing.T) {
 
 	block1.Txs = txs
 
-	expectedRpp := &abci.RequestProcessProposal{
+	expectedRpp := &abci.ProcessProposalRequest{
 		Txs:         block1.Txs.ToSliceOfBytes(),
 		Hash:        block1.Hash(),
 		Height:      block1.Header.Height,
@@ -769,7 +769,7 @@ func TestPrepareProposalTxsAllIncluded(t *testing.T) {
 	mp.On("ReapMaxBytesMaxGas", mock.Anything, mock.Anything).Return(txs[2:])
 
 	app := &abcimocks.Application{}
-	app.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{
+	app.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.PrepareProposalResponse{
 		Txs: txs.ToSliceOfBytes(),
 	}, nil)
 	cc := proxy.NewLocalClientCreator(app)
@@ -823,7 +823,7 @@ func TestPrepareProposalReorderTxs(t *testing.T) {
 	txs = append(txs[len(txs)/2:], txs[:len(txs)/2]...)
 
 	app := &abcimocks.Application{}
-	app.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{
+	app.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.PrepareProposalResponse{
 		Txs: txs.ToSliceOfBytes(),
 	}, nil)
 
@@ -879,7 +879,7 @@ func TestPrepareProposalErrorOnTooManyTxs(t *testing.T) {
 	mp.On("ReapMaxBytesMaxGas", mock.Anything, mock.Anything).Return(txs)
 
 	app := &abcimocks.Application{}
-	app.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{
+	app.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.PrepareProposalResponse{
 		Txs: txs.ToSliceOfBytes(),
 	}, nil)
 
@@ -1004,7 +1004,7 @@ func TestCreateProposalAbsentVoteExtensions(t *testing.T) {
 
 			app := abcimocks.NewApplication(t)
 			if !testCase.expectPanic {
-				app.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{}, nil)
+				app.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.PrepareProposalResponse{}, nil)
 			}
 			cc := proxy.NewLocalClientCreator(app)
 			proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())

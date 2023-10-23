@@ -68,7 +68,7 @@ func TestBlockchainInfo(t *testing.T) {
 }
 
 func TestBlockResults(t *testing.T) {
-	results := &abci.ResponseFinalizeBlock{
+	results := &abci.FinalizeBlockResponse{
 		TxResults: []*abci.ExecTxResult{
 			{Code: 0, Data: []byte{0x01}, Log: "ok"},
 			{Code: 0, Data: []byte{0x02}, Log: "ok"},

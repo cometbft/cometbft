@@ -27,9 +27,7 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-var (
-	ctx = context.Background()
-)
+var ctx = context.Background()
 
 func getHTTPClient() *rpchttp.HTTP {
 	rpcAddr := rpctest.GetConfig().RPC.ListenAddress
@@ -376,7 +374,7 @@ func TestBroadcastTxCommit(t *testing.T) {
 func TestUnconfirmedTxs(t *testing.T) {
 	_, _, tx := MakeTxKV()
 
-	ch := make(chan *abci.ResponseCheckTx, 1)
+	ch := make(chan *abci.CheckTxResponse, 1)
 	mempool := node.Mempool()
 	reqRes, err := mempool.CheckTx(tx)
 	require.NoError(t, err)
@@ -407,7 +405,7 @@ func TestUnconfirmedTxs(t *testing.T) {
 func TestNumUnconfirmedTxs(t *testing.T) {
 	_, _, tx := MakeTxKV()
 
-	ch := make(chan *abci.ResponseCheckTx, 1)
+	ch := make(chan *abci.CheckTxResponse, 1)
 	mempool := node.Mempool()
 	reqRes, err := mempool.CheckTx(tx)
 	require.NoError(t, err)
@@ -540,8 +538,8 @@ func TestBlockSearch(t *testing.T) {
 
 	// otherwise it is 0
 	require.Equal(t, blockCount, 0)
-
 }
+
 func TestTxSearch(t *testing.T) {
 	c := getHTTPClient()
 

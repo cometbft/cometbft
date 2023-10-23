@@ -45,11 +45,11 @@ func TestReactor_Receive_ChunkRequest(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			// Mock ABCI connection to return local snapshots
 			conn := &proxymocks.AppConnSnapshot{}
-			conn.On("LoadSnapshotChunk", mock.Anything, &abci.RequestLoadSnapshotChunk{
+			conn.On("LoadSnapshotChunk", mock.Anything, &abci.LoadSnapshotChunkRequest{
 				Height: tc.request.Height,
 				Format: tc.request.Format,
 				Chunk:  tc.request.Index,
-			}).Return(&abci.ResponseLoadSnapshotChunk{Chunk: tc.chunk}, nil)
+			}).Return(&abci.LoadSnapshotChunkResponse{Chunk: tc.chunk}, nil)
 
 			// Mock peer to store response, if found
 			peer := &p2pmocks.Peer{}
@@ -137,7 +137,7 @@ func TestReactor_Receive_SnapshotsRequest(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			// Mock ABCI connection to return local snapshots
 			conn := &proxymocks.AppConnSnapshot{}
-			conn.On("ListSnapshots", mock.Anything, &abci.RequestListSnapshots{}).Return(&abci.ResponseListSnapshots{
+			conn.On("ListSnapshots", mock.Anything, &abci.ListSnapshotsRequest{}).Return(&abci.ListSnapshotsResponse{
 				Snapshots: tc.snapshots,
 			}, nil)
 

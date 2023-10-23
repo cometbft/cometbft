@@ -107,7 +107,7 @@ func TestFinalizeBlockResponsesSaveLoad1(t *testing.T) {
 	// Build mock responses.
 	block := makeBlock(state, 2, new(types.Commit))
 
-	abciResponses := new(abci.ResponseFinalizeBlock)
+	abciResponses := new(abci.FinalizeBlockResponse)
 	dtxs := make([]*abci.ExecTxResult, 2)
 	abciResponses.TxResults = dtxs
 
@@ -191,7 +191,7 @@ func TestFinalizeBlockResponsesSaveLoad2(t *testing.T) {
 	// Add all cases.
 	for i, tc := range cases {
 		h := int64(i + 1) // last block height, one below what we save
-		responses := &abci.ResponseFinalizeBlock{
+		responses := &abci.FinalizeBlockResponse{
 			TxResults: tc.added,
 			AppHash:   []byte(fmt.Sprintf("%d", h)),
 		}
@@ -205,7 +205,7 @@ func TestFinalizeBlockResponsesSaveLoad2(t *testing.T) {
 		res, err := stateStore.LoadFinalizeBlockResponse(h)
 		if assert.NoError(err, "%d", i) {
 			t.Log(res)
-			responses := &abci.ResponseFinalizeBlock{
+			responses := &abci.FinalizeBlockResponse{
 				TxResults: tc.expected,
 				AppHash:   []byte(fmt.Sprintf("%d", h)),
 			}
@@ -454,7 +454,7 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 	bps, err := block.MakePartSet(testPartSize)
 	require.NoError(t, err)
 	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
-	abciResponses := &abci.ResponseFinalizeBlock{}
+	abciResponses := &abci.FinalizeBlockResponse{}
 	validatorUpdates, err := types.PB2TM.ValidatorUpdates(abciResponses.ValidatorUpdates)
 	require.NoError(t, err)
 	updatedState, err := sm.UpdateState(state, blockID, &block.Header, abciResponses, validatorUpdates)
@@ -568,7 +568,7 @@ func TestProposerPriorityProposerAlternates(t *testing.T) {
 	require.NoError(t, err)
 	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 	// no updates:
-	abciResponses := &abci.ResponseFinalizeBlock{}
+	abciResponses := &abci.FinalizeBlockResponse{}
 	validatorUpdates, err := types.PB2TM.ValidatorUpdates(abciResponses.ValidatorUpdates)
 	require.NoError(t, err)
 
@@ -668,7 +668,7 @@ func TestProposerPriorityProposerAlternates(t *testing.T) {
 	// no changes in voting power and both validators have same voting power
 	// -> proposers should alternate:
 	oldState := updatedState3
-	abciResponses = &abci.ResponseFinalizeBlock{}
+	abciResponses = &abci.FinalizeBlockResponse{}
 	validatorUpdates, err = types.PB2TM.ValidatorUpdates(abciResponses.ValidatorUpdates)
 	require.NoError(t, err)
 
@@ -681,7 +681,7 @@ func TestProposerPriorityProposerAlternates(t *testing.T) {
 
 	for i := 0; i < 1000; i++ {
 		// no validator updates:
-		abciResponses := &abci.ResponseFinalizeBlock{}
+		abciResponses := &abci.FinalizeBlockResponse{}
 		validatorUpdates, err = types.PB2TM.ValidatorUpdates(abciResponses.ValidatorUpdates)
 		require.NoError(t, err)
 
@@ -736,7 +736,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 	oldState := state
 	for i := 0; i < 10; i++ {
 		// no updates:
-		abciResponses := &abci.ResponseFinalizeBlock{}
+		abciResponses := &abci.FinalizeBlockResponse{}
 		validatorUpdates, err := types.PB2TM.ValidatorUpdates(abciResponses.ValidatorUpdates)
 		require.NoError(t, err)
 
@@ -767,7 +767,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 	firstAddedVal := abci.ValidatorUpdate{PubKey: fvp, Power: firstAddedValVotingPower}
 	validatorUpdates, err := types.PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{firstAddedVal})
 	assert.NoError(t, err)
-	abciResponses := &abci.ResponseFinalizeBlock{
+	abciResponses := &abci.FinalizeBlockResponse{
 		ValidatorUpdates: []abci.ValidatorUpdate{firstAddedVal},
 	}
 	block := makeBlock(oldState, oldState.LastBlockHeight+1, new(types.Commit))
@@ -782,7 +782,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 	lastState := updatedState
 	for i := 0; i < 200; i++ {
 		// no updates:
-		abciResponses := &abci.ResponseFinalizeBlock{}
+		abciResponses := &abci.FinalizeBlockResponse{}
 		validatorUpdates, err := types.PB2TM.ValidatorUpdates(abciResponses.ValidatorUpdates)
 		require.NoError(t, err)
 
@@ -819,7 +819,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 		validatorUpdates, err := types.PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{addedVal})
 		assert.NoError(t, err)
 
-		abciResponses := &abci.ResponseFinalizeBlock{
+		abciResponses := &abci.FinalizeBlockResponse{
 			ValidatorUpdates: []abci.ValidatorUpdate{addedVal},
 		}
 		block := makeBlock(oldState, oldState.LastBlockHeight+1, new(types.Commit))
@@ -836,7 +836,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 	gp, err := cryptoenc.PubKeyToProto(genesisPubKey)
 	require.NoError(t, err)
 	removeGenesisVal := abci.ValidatorUpdate{PubKey: gp, Power: 0}
-	abciResponses = &abci.ResponseFinalizeBlock{
+	abciResponses = &abci.FinalizeBlockResponse{
 		ValidatorUpdates: []abci.ValidatorUpdate{removeGenesisVal},
 	}
 
@@ -860,7 +860,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 	count := 0
 	isProposerUnchanged := true
 	for isProposerUnchanged {
-		abciResponses := &abci.ResponseFinalizeBlock{}
+		abciResponses := &abci.FinalizeBlockResponse{}
 		validatorUpdates, err = types.PB2TM.ValidatorUpdates(abciResponses.ValidatorUpdates)
 		require.NoError(t, err)
 		block = makeBlock(curState, curState.LastBlockHeight+1, new(types.Commit))
@@ -885,7 +885,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 	proposers := make([]*types.Validator, numVals)
 	for i := 0; i < 100; i++ {
 		// no updates:
-		abciResponses := &abci.ResponseFinalizeBlock{}
+		abciResponses := &abci.FinalizeBlockResponse{}
 		validatorUpdates, err := types.PB2TM.ValidatorUpdates(abciResponses.ValidatorUpdates)
 		require.NoError(t, err)
 

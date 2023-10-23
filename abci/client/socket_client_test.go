@@ -51,7 +51,7 @@ func TestHangingAsyncCalls(t *testing.T) {
 	resp := make(chan error, 1)
 	go func() {
 		// Call CheckTx
-		reqres, err := c.CheckTxAsync(context.Background(), &types.RequestCheckTx{
+		reqres, err := c.CheckTxAsync(context.Background(), &types.CheckTxRequest{
 			Type: types.CHECK_TX_TYPE_CHECK,
 		})
 		require.NoError(t, err)
@@ -106,7 +106,7 @@ func TestBulk(t *testing.T) {
 	require.NoError(t, err)
 
 	// Construct request
-	rfb := &types.RequestFinalizeBlock{Txs: make([][]byte, numTxs)}
+	rfb := &types.FinalizeBlockRequest{Txs: make([][]byte, numTxs)}
 	for counter := 0; counter < numTxs; counter++ {
 		rfb.Txs[counter] = []byte("test")
 	}
@@ -159,9 +159,9 @@ type slowApp struct {
 	types.BaseApplication
 }
 
-func (slowApp) CheckTx(context.Context, *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
+func (slowApp) CheckTx(context.Context, *types.CheckTxRequest) (*types.CheckTxResponse, error) {
 	time.Sleep(time.Second)
-	return &types.ResponseCheckTx{}, nil
+	return &types.CheckTxResponse{}, nil
 }
 
 // TestCallbackInvokedWhenSetLaet ensures that the callback is invoked when
@@ -178,7 +178,7 @@ func TestCallbackInvokedWhenSetLate(t *testing.T) {
 		wg: wg,
 	}
 	_, c := setupClientServer(t, app)
-	reqRes, err := c.CheckTxAsync(ctx, &types.RequestCheckTx{
+	reqRes, err := c.CheckTxAsync(ctx, &types.CheckTxRequest{
 		Type: types.CHECK_TX_TYPE_CHECK,
 	})
 	require.NoError(t, err)
@@ -204,7 +204,7 @@ type blockedABCIApplication struct {
 	types.BaseApplication
 }
 
-func (b blockedABCIApplication) CheckTxAsync(ctx context.Context, r *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
+func (b blockedABCIApplication) CheckTxAsync(ctx context.Context, r *types.CheckTxRequest) (*types.CheckTxResponse, error) {
 	b.wg.Wait()
 	return b.BaseApplication.CheckTx(ctx, r)
 }
@@ -221,7 +221,7 @@ func TestCallbackInvokedWhenSetEarly(t *testing.T) {
 		wg: wg,
 	}
 	_, c := setupClientServer(t, app)
-	reqRes, err := c.CheckTxAsync(ctx, &types.RequestCheckTx{
+	reqRes, err := c.CheckTxAsync(ctx, &types.CheckTxRequest{
 		Type: types.CHECK_TX_TYPE_CHECK,
 	})
 	require.NoError(t, err)

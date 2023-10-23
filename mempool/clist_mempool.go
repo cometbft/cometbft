@@ -284,7 +284,7 @@ func (mem *CListMempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
 		return nil, ErrTxInCache
 	}
 
-	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{
+	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.CheckTxRequest{
 		Tx:   tx,
 		Type: abci.CHECK_TX_TYPE_CHECK,
 	})
@@ -663,7 +663,7 @@ func (mem *CListMempool) recheckTxs() {
 	// NOTE: globalCb may be called concurrently.
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
 		memTx := e.Value.(*mempoolTx)
-		_, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{
+		_, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.CheckTxRequest{
 			Tx:   memTx.tx,
 			Type: abci.CHECK_TX_TYPE_RECHECK,
 		})

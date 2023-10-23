@@ -43,13 +43,13 @@ func IDAddressString(id ID, protocolHostPort string) string {
 func NewNetAddress(id ID, addr net.Addr) *NetAddress {
 	tcpAddr, ok := addr.(*net.TCPAddr)
 	if !ok {
-		if flag.Lookup("test.v") == nil { // normal run
-			panic(fmt.Sprintf("Only TCPAddrs are supported. Got: %v", addr))
-		} else { // in testing
+		if flag.Lookup("test.v") != nil { // in testing
 			netAddr := NewNetAddressIPPort(net.IP("127.0.0.1"), 0)
 			netAddr.ID = id
 			return netAddr
 		}
+		// normal run
+		panic(fmt.Sprintf("Only TCPAddrs are supported. Got: %v", addr))
 	}
 
 	if err := validateID(id); err != nil {
@@ -361,20 +361,20 @@ var (
 	rfc6052     = net.IPNet{IP: net.ParseIP("64:FF9B::"), Mask: net.CIDRMask(96, 128)}
 	rfc6145     = net.IPNet{IP: net.ParseIP("::FFFF:0:0:0"), Mask: net.CIDRMask(96, 128)}
 	zero4       = net.IPNet{IP: net.ParseIP("0.0.0.0"), Mask: net.CIDRMask(8, 32)}
-)
 
-// onionCatNet defines the IPv6 address block used to support Tor.
-// bitcoind encodes a .onion address as a 16 byte number by decoding the
-// address prior to the .onion (i.e. the key hash) base32 into a ten
-// byte number. It then stores the first 6 bytes of the address as
-// 0xfd, 0x87, 0xd8, 0x7e, 0xeb, 0x43.
-//
-// This is the same range used by OnionCat, which is part part of the
-// RFC4193 unique local IPv6 range.
-//
-// In summary the format is:
-// { magic 6 bytes, 10 bytes base32 decode of key hash }
-var onionCatNet = ipNet("fd87:d87e:eb43::", 48, 128)
+	// onionCatNet defines the IPv6 address block used to support Tor.
+	// bitcoind encodes a .onion address as a 16 byte number by decoding the
+	// address prior to the .onion (i.e. the key hash) base32 into a ten
+	// byte number. It then stores the first 6 bytes of the address as
+	// 0xfd, 0x87, 0xd8, 0x7e, 0xeb, 0x43.
+	//
+	// This is the same range used by OnionCat, which is part part of the
+	// RFC4193 unique local IPv6 range.
+	//
+	// In summary the format is:
+	// { magic 6 bytes, 10 bytes base32 decode of key hash }
+	onionCatNet = ipNet("fd87:d87e:eb43::", 48, 128)
+)
 
 // ipNet returns a net.IPNet struct given the passed IP address string, number
 // of one bits to include at the start of the mask, and the total number of bits

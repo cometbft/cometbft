@@ -194,10 +194,10 @@ func (g *GrammarChecker) verifyRecovery(execution string) []*Error {
 func (g *GrammarChecker) addHeightNumbersToTheExecution(execution string) string {
 	heights := strings.Split(execution, "\n")
 	s := ""
+	// assert that last element of heights == "" (if with error) 
+	heights = heights[:len(heights)-1] // Remove last element
 	for i, l := range heights {
-		if l != "" {
-			s = fmt.Sprintf("%v%v: %v\n", s, i, l)
-		}
+		s = fmt.Sprintf("%v%v: %v\n", s, i, l)
 	}
 	return s
 }

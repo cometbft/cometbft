@@ -1,3 +1,4 @@
+//nolint:goconst
 package main_test
 
 import (

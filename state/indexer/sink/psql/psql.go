@@ -1,5 +1,7 @@
-// Package psql implements an event sink backed by a PostgreSQL database.
+//nolint:goconst
 package psql
+
+// Package psql implements an event sink backed by a PostgreSQL database.
 
 import (
 	"context"

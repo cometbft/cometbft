@@ -13,6 +13,8 @@ import (
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 )
 
+const tmpStr = "/tmp/"
+
 func TestWriteFileAtomic(t *testing.T) {
 	var (
 		data             = []byte(cmtrand.Str(cmtrand.Intn(2048)))
@@ -67,7 +69,7 @@ func TestWriteFileAtomicDuplicateFile(t *testing.T) {
 	atomicWriteFileRand = defaultSeed
 	firstFileRand := randWriteFileSuffix()
 	atomicWriteFileRand = defaultSeed
-	fname := "/tmp/" + atomicWriteFilePrefix + firstFileRand
+	fname := tmpStr + atomicWriteFilePrefix + firstFileRand
 	f, err := os.OpenFile(fname, atomicWriteFileFlag, 0777)
 	defer os.Remove(fname)
 	// Defer here, in case there is a panic in WriteFileAtomic.
@@ -92,7 +94,7 @@ func TestWriteFileAtomicDuplicateFile(t *testing.T) {
 	atomicWriteFileRand = defaultSeed
 	_ = randWriteFileSuffix()
 	secondFileRand := randWriteFileSuffix()
-	_, err = os.Stat("/tmp/" + atomicWriteFilePrefix + secondFileRand)
+	_, err = os.Stat(tmpStr + atomicWriteFilePrefix + secondFileRand)
 	require.True(t, os.IsNotExist(err), "Intermittent atomic write file not deleted")
 }
 
@@ -111,7 +113,7 @@ func TestWriteFileAtomicManyDuplicates(t *testing.T) {
 	atomicWriteFileRand = defaultSeed
 	for i := 0; i < atomicWriteFileMaxNumConflicts+2; i++ {
 		fileRand := randWriteFileSuffix()
-		fname := "/tmp/" + atomicWriteFilePrefix + fileRand
+		fname := tmpStr + atomicWriteFilePrefix + fileRand
 		f, err := os.OpenFile(fname, atomicWriteFileFlag, 0777)
 		require.Nil(t, err)
 		_, err = f.WriteString(fmt.Sprintf(testString, i))
@@ -129,7 +131,7 @@ func TestWriteFileAtomicManyDuplicates(t *testing.T) {
 	atomicWriteFileRand = defaultSeed
 	for i := 0; i < atomicWriteFileMaxNumConflicts+2; i++ {
 		fileRand := randWriteFileSuffix()
-		fname := "/tmp/" + atomicWriteFilePrefix + fileRand
+		fname := tmpStr + atomicWriteFilePrefix + fileRand
 		firstAtomicFileBytes, err := os.ReadFile(fname)
 		require.Nil(t, err, "Error reading first atomic file")
 		require.Equal(t, []byte(fmt.Sprintf(testString, i)), firstAtomicFileBytes,

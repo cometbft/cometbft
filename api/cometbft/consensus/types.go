@@ -2,8 +2,8 @@
 package consensus
 
 import (
-	v1beta1 "github.com/cometbft/cometbft/api/cometbft/consensus/v1beta1"
-	v1beta2 "github.com/cometbft/cometbft/api/cometbft/consensus/v1beta2"
+	"github.com/cometbft/cometbft/api/cometbft/consensus/v1beta1"
+	"github.com/cometbft/cometbft/api/cometbft/consensus/v1beta2"
 )
 
 type (

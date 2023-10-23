@@ -2,8 +2,8 @@
 package blocksync
 
 import (
-	v1beta1 "github.com/cometbft/cometbft/api/cometbft/blocksync/v1beta1"
-	v1beta2 "github.com/cometbft/cometbft/api/cometbft/blocksync/v1beta2"
+	"github.com/cometbft/cometbft/api/cometbft/blocksync/v1beta1"
+	"github.com/cometbft/cometbft/api/cometbft/blocksync/v1beta2"
 )
 
 type (

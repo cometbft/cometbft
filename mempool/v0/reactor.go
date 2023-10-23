@@ -268,6 +268,15 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			if !success {
 				time.Sleep(mempool.PeerCatchupSleepIntervalMS * time.Millisecond)
 				continue
+			} else {
+				// check if this message has been sent to the peer
+				if _, ok := memTx.sentToPeers.Load(peerID); ok {
+					memR.mempool.metrics.RedundantTxBytesSent.Add(float64(len(memTx.tx)))
+				} else {
+					// marked already sent to this peer
+					memTx.sentToPeers.Store(peerID, true)
+				}
+
 			}
 		}
 

@@ -77,7 +77,8 @@ type VoteSet struct {
 // NewVoteSet instantiates all fields of a new vote set. This constructor requires
 // that no vote extension data be present on the votes that are added to the set.
 func NewVoteSet(chainID string, height int64, round int32,
-	signedMsgType SignedMsgType, valSet *ValidatorSet) *VoteSet {
+	signedMsgType SignedMsgType, valSet *ValidatorSet,
+) *VoteSet {
 	if height == 0 {
 		panic("Cannot make VoteSet for height == 0, doesn't make sense.")
 	}
@@ -100,7 +101,8 @@ func NewVoteSet(chainID string, height int64, round int32,
 // The VoteSet constructed with NewExtendedVoteSet verifies the vote extension
 // data for every vote added to the set.
 func NewExtendedVoteSet(chainID string, height int64, round int32,
-	signedMsgType SignedMsgType, valSet *ValidatorSet) *VoteSet {
+	signedMsgType SignedMsgType, valSet *ValidatorSet,
+) *VoteSet {
 	vs := NewVoteSet(chainID, height, round, signedMsgType, valSet)
 	vs.extensionsEnabled = true
 	return vs
@@ -264,9 +266,8 @@ func (voteSet *VoteSet) addVerifiedVote(
 	if existing := voteSet.votes[valIndex]; existing != nil {
 		if existing.BlockID.Equals(vote.BlockID) {
 			panic("addVerifiedVote does not expect duplicate votes")
-		} else {
-			conflicting = existing
 		}
+		conflicting = existing
 		// Replace vote if blockKey matches voteSet.maj23.
 		if voteSet.maj23 != nil && voteSet.maj23.Key() == blockKey {
 			voteSet.votes[valIndex] = vote

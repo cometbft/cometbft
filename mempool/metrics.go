@@ -118,11 +118,13 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 // NopMetrics returns no-op Metrics.
 func NopMetrics() *Metrics {
 	return &Metrics{
-		Size:         discard.NewGauge(),
-		TxSizeBytes:  discard.NewHistogram(),
-		FailedTxs:    discard.NewCounter(),
-		RejectedTxs:  discard.NewCounter(),
-		EvictedTxs:   discard.NewCounter(),
-		RecheckTimes: discard.NewCounter(),
+		Size:                     discard.NewGauge(),
+		TxSizeBytes:              discard.NewHistogram(),
+		FailedTxs:                discard.NewCounter(),
+		RejectedTxs:              discard.NewCounter(),
+		EvictedTxs:               discard.NewCounter(),
+		RecheckTimes:             discard.NewCounter(),
+		RedundantTxBytesSent:     discard.NewCounter(),
+		RedundantTxBytesReceived: discard.NewCounter(),
 	}
 }

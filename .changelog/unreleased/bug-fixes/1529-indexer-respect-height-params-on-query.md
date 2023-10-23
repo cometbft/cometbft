@@ -1,0 +1,1 @@
+- `[state/indexer]` Respect both height params while quering for events

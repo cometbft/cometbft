@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state"
-	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
+	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1beta1"
 	"github.com/cometbft/cometbft/version"
 )
 

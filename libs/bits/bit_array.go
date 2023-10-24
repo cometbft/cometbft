@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	cmtprotobits "github.com/cometbft/cometbft/api/cometbft/libs/bits/v1"
+	cmtprotobits "github.com/cometbft/cometbft/api/cometbft/libs/bits/v1beta1"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 )

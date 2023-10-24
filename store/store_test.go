@@ -18,8 +18,8 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 
-	cmtstore "github.com/cometbft/cometbft/api/cometbft/store/v1"
-	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
+	cmtstore "github.com/cometbft/cometbft/api/cometbft/store/v1beta1"
+	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1beta1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/internal/test"

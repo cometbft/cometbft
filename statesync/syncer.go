@@ -8,7 +8,7 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
+	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1beta1"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
@@ -73,7 +73,6 @@ func newSyncer(
 	stateProvider StateProvider,
 	tempDir string,
 ) *syncer {
-
 	return &syncer{
 		logger:        logger,
 		stateProvider: stateProvider,

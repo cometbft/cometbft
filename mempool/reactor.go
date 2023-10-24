@@ -6,7 +6,7 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	protomem "github.com/cometbft/cometbft/api/cometbft/mempool/v1"
+	protomem "github.com/cometbft/cometbft/api/cometbft/mempool/v1beta1"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/clist"
 	"github.com/cometbft/cometbft/libs/log"

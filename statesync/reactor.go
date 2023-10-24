@@ -7,7 +7,7 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
+	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1beta1"
 	"github.com/cometbft/cometbft/config"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p"

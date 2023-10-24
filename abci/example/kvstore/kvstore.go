@@ -13,7 +13,7 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 
 	"github.com/cometbft/cometbft/abci/types"
-	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
+	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1beta1"
 	cryptoencoding "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/version"

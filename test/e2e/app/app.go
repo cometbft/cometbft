@@ -18,7 +18,7 @@ import (
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
-	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
+	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1beta1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
@@ -30,7 +30,7 @@ import (
 const (
 	appVersion                 = 1
 	voteExtensionKey    string = "extensionSum"
-	voteExtensionMaxLen int64  = 1024 * 1024 * 128 //TODO: should be smaller.
+	voteExtensionMaxLen int64  = 1024 * 1024 * 128 // TODO: should be smaller.
 	voteExtensionMaxVal int64  = 128
 	prefixReservedKey   string = "reservedTxKey_"
 	suffixChainID       string = "ChainID"
@@ -460,11 +460,11 @@ func (app *Application) ExtendVote(_ context.Context, req *abci.RequestExtendVot
 		extLen = len(ext)
 	} else {
 		ext = make([]byte, 8)
-		if num, err := rand.Int(rand.Reader, big.NewInt(voteExtensionMaxVal)); err != nil {
+		num, err := rand.Int(rand.Reader, big.NewInt(voteExtensionMaxVal))
+		if err != nil {
 			panic(fmt.Errorf("could not extend vote. Len:%d", len(ext)))
-		} else {
-			extLen = binary.PutVarint(ext, num.Int64())
 		}
+		extLen = binary.PutVarint(ext, num.Int64())
 	}
 
 	app.logger.Info("generated vote extension", "height", appHeight, "vote_extension", fmt.Sprintf("%x", ext[:4]), "len", extLen)

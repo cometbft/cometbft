@@ -4,9 +4,9 @@ import (
 	context "context"
 	"fmt"
 
-	blocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v1"
-	ptypes1 "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	ptypes3 "github.com/cometbft/cometbft/api/cometbft/types/v3"
+	blocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v1beta1"
+	ptypes1 "github.com/cometbft/cometbft/api/cometbft/types/v1beta1"
+	ptypes3 "github.com/cometbft/cometbft/api/cometbft/types/v1beta3"
 	"github.com/cometbft/cometbft/internal/rpctrace"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"

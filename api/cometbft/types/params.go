@@ -1,15 +1,17 @@
 package types
 
 import (
-	v1 "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	v2 "github.com/cometbft/cometbft/api/cometbft/types/v2"
-	v3 "github.com/cometbft/cometbft/api/cometbft/types/v3"
+	"github.com/cometbft/cometbft/api/cometbft/types/v1beta1"
+	"github.com/cometbft/cometbft/api/cometbft/types/v1beta2"
+	"github.com/cometbft/cometbft/api/cometbft/types/v1beta3"
 )
 
-type ABCIParams = v3.ABCIParams
-type ConsensusParams = v3.ConsensusParams
-type BlockParams = v2.BlockParams
-type EvidenceParams = v1.EvidenceParams
-type HashedParams = v1.HashedParams
-type ValidatorParams = v1.ValidatorParams
-type VersionParams = v1.VersionParams
+type (
+	ABCIParams      = v1beta3.ABCIParams
+	ConsensusParams = v1beta3.ConsensusParams
+	BlockParams     = v1beta2.BlockParams
+	EvidenceParams  = v1beta1.EvidenceParams
+	HashedParams    = v1beta1.HashedParams
+	ValidatorParams = v1beta1.ValidatorParams
+	VersionParams   = v1beta1.VersionParams
+)

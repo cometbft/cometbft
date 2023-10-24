@@ -10,7 +10,7 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 
-	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
+	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1beta1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"

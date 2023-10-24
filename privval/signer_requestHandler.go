@@ -3,7 +3,7 @@ package privval
 import (
 	"fmt"
 
-	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
+	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1beta1"
 	pvproto "github.com/cometbft/cometbft/api/cometbft/privval"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 	"github.com/cometbft/cometbft/crypto"
@@ -26,7 +26,9 @@ func DefaultValidationRequestHandler(
 		if r.PubKeyRequest.GetChainId() != chainID {
 			res = mustWrapMsg(&pvproto.PubKeyResponse{
 				PubKey: cryptoproto.PublicKey{}, Error: &pvproto.RemoteSignerError{
-					Code: 0, Description: "unable to provide pubkey"}})
+					Code: 0, Description: "unable to provide pubkey",
+				},
+			})
 			return res, fmt.Errorf("want chainID: %s, got chainID: %s", r.PubKeyRequest.GetChainId(), chainID)
 		}
 
@@ -42,7 +44,8 @@ func DefaultValidationRequestHandler(
 
 		if err != nil {
 			res = mustWrapMsg(&pvproto.PubKeyResponse{
-				PubKey: cryptoproto.PublicKey{}, Error: &pvproto.RemoteSignerError{Code: 0, Description: err.Error()}})
+				PubKey: cryptoproto.PublicKey{}, Error: &pvproto.RemoteSignerError{Code: 0, Description: err.Error()},
+			})
 		} else {
 			res = mustWrapMsg(&pvproto.PubKeyResponse{PubKey: pk, Error: nil})
 		}
@@ -51,7 +54,9 @@ func DefaultValidationRequestHandler(
 		if r.SignVoteRequest.ChainId != chainID {
 			res = mustWrapMsg(&pvproto.SignedVoteResponse{
 				Vote: cmtproto.Vote{}, Error: &pvproto.RemoteSignerError{
-					Code: 0, Description: "unable to sign vote"}})
+					Code: 0, Description: "unable to sign vote",
+				},
+			})
 			return res, fmt.Errorf("want chainID: %s, got chainID: %s", r.SignVoteRequest.GetChainId(), chainID)
 		}
 
@@ -60,7 +65,8 @@ func DefaultValidationRequestHandler(
 		err = privVal.SignVote(chainID, vote)
 		if err != nil {
 			res = mustWrapMsg(&pvproto.SignedVoteResponse{
-				Vote: cmtproto.Vote{}, Error: &pvproto.RemoteSignerError{Code: 0, Description: err.Error()}})
+				Vote: cmtproto.Vote{}, Error: &pvproto.RemoteSignerError{Code: 0, Description: err.Error()},
+			})
 		} else {
 			res = mustWrapMsg(&pvproto.SignedVoteResponse{Vote: *vote, Error: nil})
 		}
@@ -70,7 +76,9 @@ func DefaultValidationRequestHandler(
 			res = mustWrapMsg(&pvproto.SignedProposalResponse{
 				Proposal: cmtproto.Proposal{}, Error: &pvproto.RemoteSignerError{
 					Code:        0,
-					Description: "unable to sign proposal"}})
+					Description: "unable to sign proposal",
+				},
+			})
 			return res, fmt.Errorf("want chainID: %s, got chainID: %s", r.SignProposalRequest.GetChainId(), chainID)
 		}
 
@@ -79,7 +87,8 @@ func DefaultValidationRequestHandler(
 		err = privVal.SignProposal(chainID, proposal)
 		if err != nil {
 			res = mustWrapMsg(&pvproto.SignedProposalResponse{
-				Proposal: cmtproto.Proposal{}, Error: &pvproto.RemoteSignerError{Code: 0, Description: err.Error()}})
+				Proposal: cmtproto.Proposal{}, Error: &pvproto.RemoteSignerError{Code: 0, Description: err.Error()},
+			})
 		} else {
 			res = mustWrapMsg(&pvproto.SignedProposalResponse{Proposal: *proposal, Error: nil})
 		}

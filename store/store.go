@@ -10,7 +10,7 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 
-	cmtstore "github.com/cometbft/cometbft/api/cometbft/store/v1"
+	cmtstore "github.com/cometbft/cometbft/api/cometbft/store/v1beta1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 	"github.com/cometbft/cometbft/evidence"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"

@@ -2,14 +2,18 @@
 package types
 
 import (
-	v1 "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	v3 "github.com/cometbft/cometbft/api/cometbft/types/v3"
+	"github.com/cometbft/cometbft/api/cometbft/types/v1beta1"
+	"github.com/cometbft/cometbft/api/cometbft/types/v1beta3"
 )
 
-type DuplicateVoteEvidence = v3.DuplicateVoteEvidence
-type Evidence = v3.Evidence
-type EvidenceList = v3.EvidenceList
-type LightClientAttackEvidence = v1.LightClientAttackEvidence
+type (
+	DuplicateVoteEvidence     = v1beta3.DuplicateVoteEvidence
+	Evidence                  = v1beta3.Evidence
+	EvidenceList              = v1beta3.EvidenceList
+	LightClientAttackEvidence = v1beta1.LightClientAttackEvidence
+)
 
-type Evidence_DuplicateVoteEvidence = v3.Evidence_DuplicateVoteEvidence
-type Evidence_LightClientAttackEvidence = v3.Evidence_LightClientAttackEvidence
+type (
+	Evidence_DuplicateVoteEvidence     = v1beta3.Evidence_DuplicateVoteEvidence
+	Evidence_LightClientAttackEvidence = v1beta3.Evidence_LightClientAttackEvidence
+)

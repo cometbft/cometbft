@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	blocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v1"
-	cmtproto1 "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	cmtproto3 "github.com/cometbft/cometbft/api/cometbft/types/v3"
+	blocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v1beta1"
+	cmtproto1 "github.com/cometbft/cometbft/api/cometbft/types/v1beta1"
+	cmtproto3 "github.com/cometbft/cometbft/api/cometbft/types/v1beta3"
 	"github.com/cometbft/cometbft/types"
 	"github.com/cosmos/gogoproto/grpc"
 )

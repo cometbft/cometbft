@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
+	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1beta1"
 	"github.com/cometbft/cometbft/libs/cmap"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"

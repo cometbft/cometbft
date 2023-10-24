@@ -16,7 +16,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	abcimocks "github.com/cometbft/cometbft/abci/types/mocks"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
-	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
+	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1beta1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
@@ -295,7 +295,8 @@ func TestFinalizeBlockMisbehavior(t *testing.T) {
 						BlockIDFlag:      types.BlockIDFlagNil,
 						ValidatorAddress: crypto.AddressHash([]byte("validator_address")),
 						Timestamp:        defaultEvidenceTime,
-						Signature:        crypto.CRandBytes(types.MaxSignatureSize)}},
+						Signature:        crypto.CRandBytes(types.MaxSignatureSize),
+					}},
 				},
 			},
 			ValidatorSet: state.Validators,

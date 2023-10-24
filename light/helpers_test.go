@@ -3,7 +3,7 @@ package light_test
 import (
 	"time"
 
-	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
+	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1beta1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/tmhash"
@@ -98,8 +98,8 @@ func (pkz privKeys) signHeader(header *types.Header, valSet *types.ValidatorSet,
 }
 
 func makeVote(header *types.Header, valset *types.ValidatorSet,
-	key crypto.PrivKey, blockID types.BlockID) *types.Vote {
-
+	key crypto.PrivKey, blockID types.BlockID,
+) *types.Vote {
 	addr := key.PubKey().Address()
 	idx, _ := valset.GetByAddress(addr)
 	vote := &types.Vote{
@@ -132,8 +132,8 @@ func makeVote(header *types.Header, valset *types.ValidatorSet,
 }
 
 func genHeader(chainID string, height int64, bTime time.Time, txs types.Txs,
-	valset, nextValset *types.ValidatorSet, appHash, consHash, resHash []byte) *types.Header {
-
+	valset, nextValset *types.ValidatorSet, appHash, consHash, resHash []byte,
+) *types.Header {
 	return &types.Header{
 		Version: cmtversion.Consensus{Block: version.BlockProtocol, App: 0},
 		ChainID: chainID,
@@ -153,8 +153,8 @@ func genHeader(chainID string, height int64, bTime time.Time, txs types.Txs,
 
 // GenSignedHeader calls genHeader and signHeader and combines them into a SignedHeader.
 func (pkz privKeys) GenSignedHeader(chainID string, height int64, bTime time.Time, txs types.Txs,
-	valset, nextValset *types.ValidatorSet, appHash, consHash, resHash []byte, first, last int) *types.SignedHeader {
-
+	valset, nextValset *types.ValidatorSet, appHash, consHash, resHash []byte, first, last int,
+) *types.SignedHeader {
 	header := genHeader(chainID, height, bTime, txs, valset, nextValset, appHash, consHash, resHash)
 	return &types.SignedHeader{
 		Header: header,
@@ -165,8 +165,8 @@ func (pkz privKeys) GenSignedHeader(chainID string, height int64, bTime time.Tim
 // GenSignedHeaderLastBlockID calls genHeader and signHeader and combines them into a SignedHeader.
 func (pkz privKeys) GenSignedHeaderLastBlockID(chainID string, height int64, bTime time.Time, txs types.Txs,
 	valset, nextValset *types.ValidatorSet, appHash, consHash, resHash []byte, first, last int,
-	lastBlockID types.BlockID) *types.SignedHeader {
-
+	lastBlockID types.BlockID,
+) *types.SignedHeader {
 	header := genHeader(chainID, height, bTime, txs, valset, nextValset, appHash, consHash, resHash)
 	header.LastBlockID = lastBlockID
 	return &types.SignedHeader{
@@ -191,8 +191,8 @@ func genMockNodeWithKeys(
 	bTime time.Time) (
 	map[int64]*types.SignedHeader,
 	map[int64]*types.ValidatorSet,
-	map[int64]privKeys) {
-
+	map[int64]privKeys,
+) {
 	var (
 		headers         = make(map[int64]*types.SignedHeader, blockSize)
 		valset          = make(map[int64]*types.ValidatorSet, blockSize+1)
@@ -245,7 +245,8 @@ func genMockNode(
 	bTime time.Time) (
 	string,
 	map[int64]*types.SignedHeader,
-	map[int64]*types.ValidatorSet) {
+	map[int64]*types.ValidatorSet,
+) {
 	headers, valset, _ := genMockNodeWithKeys(chainID, blockSize, valSize, valVariation, bTime)
 	return chainID, headers, valset
 }

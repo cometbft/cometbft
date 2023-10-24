@@ -8,7 +8,7 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/require"
 
-	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
+	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1beta1"
 	privproto "github.com/cometbft/cometbft/api/cometbft/privval"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 	"github.com/cometbft/cometbft/crypto"
@@ -34,7 +34,6 @@ func exampleVote() *types.Vote {
 }
 
 func exampleProposal() *types.Proposal {
-
 	return &types.Proposal{
 		Type:      types.SignedMsgType(1),
 		Height:    3,

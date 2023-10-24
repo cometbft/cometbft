@@ -1,15 +1,17 @@
 package state
 
 import (
-	v1 "github.com/cometbft/cometbft/api/cometbft/state/v1"
-	v3 "github.com/cometbft/cometbft/api/cometbft/state/v3"
+	"github.com/cometbft/cometbft/api/cometbft/state/v1beta1"
+	"github.com/cometbft/cometbft/api/cometbft/state/v1beta3"
 )
 
-type ABCIResponsesInfo = v3.ABCIResponsesInfo
-type ConsensusParamsInfo = v3.ConsensusParamsInfo
-type LegacyABCIResponses = v3.LegacyABCIResponses
-type ResponseBeginBlock = v3.ResponseBeginBlock
-type ResponseEndBlock = v3.ResponseEndBlock
-type State = v3.State
-type ValidatorsInfo = v1.ValidatorsInfo
-type Version = v1.Version
+type (
+	ABCIResponsesInfo   = v1beta3.ABCIResponsesInfo
+	ConsensusParamsInfo = v1beta3.ConsensusParamsInfo
+	LegacyABCIResponses = v1beta3.LegacyABCIResponses
+	ResponseBeginBlock  = v1beta3.ResponseBeginBlock
+	ResponseEndBlock    = v1beta3.ResponseEndBlock
+	State               = v1beta3.State
+	ValidatorsInfo      = v1beta1.ValidatorsInfo
+	Version             = v1beta1.Version
+)

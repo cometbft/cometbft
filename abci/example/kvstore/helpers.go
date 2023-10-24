@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/cometbft/cometbft/abci/types"
-	pbcrypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
+	pbcrypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1beta1"
 	cryptoencoding "github.com/cometbft/cometbft/crypto/encoding"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 )

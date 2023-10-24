@@ -34,10 +34,10 @@ func TestNewProvider(t *testing.T) {
 }
 
 func TestProvider(t *testing.T) {
-	app := kvstore.NewInMemoryApplication()
-	app.RetainBlocks = 10
 	for _, ep := range []string{"/websocket", "/v1/websocket"} {
-		node := rpctest.StartCometBFT(app)
+		app := kvstore.NewInMemoryApplication()
+		app.RetainBlocks = 10
+		node := rpctest.StartCometBFT(app, rpctest.RecreateConfig)
 
 		cfg := rpctest.GetConfig()
 		defer os.RemoveAll(cfg.RootDir)
@@ -91,5 +91,7 @@ func TestProvider(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "connection refused")
 		require.Nil(t, lb)
+
+		time.Sleep(30 * time.Second)
 	}
 }

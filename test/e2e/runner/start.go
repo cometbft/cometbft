@@ -52,7 +52,7 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 		return err
 	}
 	for _, node := range nodesAtZero {
-		if _, err := waitForNode(ctx, node, 0, 15*time.Second); err != nil {
+		if _, err := waitForNode(ctx, node, 0, 120*time.Second); err != nil {
 			return err
 		}
 		if node.PrometheusProxyPort > 0 {

@@ -876,6 +876,10 @@ type MempoolConfig struct {
 	// Including space needed by encoding (one varint per transaction).
 	// XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
 	MaxBatchBytes int `mapstructure:"max_batch_bytes"`
+	// Only broadcast txs to up to this many peers.
+	// If we are connected to more than this number of peers, only send txs to
+	// the first MaxPeers of them. If one of those peers goes offline, activate another peer.
+	MaxPeers int `mapstructure:"max_peers"`
 }
 
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool
@@ -890,6 +894,7 @@ func DefaultMempoolConfig() *MempoolConfig {
 		MaxTxsBytes: 1024 * 1024 * 1024, // 1GB
 		CacheSize:   10000,
 		MaxTxBytes:  1024 * 1024, // 1MB
+		MaxPeers:    10,
 	}
 }
 
@@ -924,6 +929,9 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 	}
 	if cfg.MaxTxBytes < 0 {
 		return cmterrors.ErrNegativeField{Field: "max_tx_bytes"}
+	}
+	if cfg.MaxPeers < 0 {
+		return cmterrors.ErrNegativeField{Field: "max_peers"}
 	}
 	return nil
 }

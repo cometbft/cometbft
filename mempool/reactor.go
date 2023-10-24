@@ -3,6 +3,7 @@ package mempool
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -33,6 +34,9 @@ type Reactor struct {
 	// already has it.
 	txSenders    map[types.TxKey]map[p2p.ID]bool
 	txSendersMtx cmtsync.Mutex
+
+	mtx            sync.Mutex
+	numActivePeers int
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
@@ -93,6 +97,7 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 // It starts a broadcast routine ensuring all txs are forwarded to the given peer.
 func (memR *Reactor) AddPeer(peer p2p.Peer) {
 	if memR.config.Broadcast {
+
 		go memR.broadcastTxRoutine(peer)
 	}
 }
@@ -165,9 +170,36 @@ type PeerState interface {
 	GetHeight() int64
 }
 
+func (memR *Reactor) CheckActivatePeer() bool {
+	maxPeers := memR.config.MaxPeers
+
+	memR.mtx.Lock()
+	defer memR.mtx.Unlock()
+
+	if memR.numActivePeers < maxPeers {
+		memR.numActivePeers += 1
+		return true
+	}
+	return false
+}
+
+func (memR *Reactor) DeactivePeer() {
+	memR.mtx.Lock()
+	defer memR.mtx.Unlock()
+	memR.numActivePeers -= 1
+}
+
 // Send new mempool txs to peer.
 func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 	var next *clist.CElement
+
+	var active bool
+
+	defer func() {
+		if active {
+			memR.DeactivePeer()
+		}
+	}()
 
 	// If the node is catching up, don't start this routine immediately.
 	if memR.WaitSync() {
@@ -184,6 +216,16 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		if !memR.IsRunning() || !peer.IsRunning() {
 			return
 		}
+
+		// check if we should activate the peer
+		if !active && memR.CheckActivatePeer() {
+			active = true
+		} else {
+			time.Sleep(time.Second)
+			continue
+
+		}
+
 		// This happens because the CElement we were looking at got garbage
 		// collected (removed). That is, .NextWait() returned nil. Go ahead and
 		// start from the beginning.

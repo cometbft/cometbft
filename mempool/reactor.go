@@ -217,13 +217,14 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			return
 		}
 
-		// check if we should activate the peer
-		if !active && memR.CheckActivatePeer() {
-			active = true
-		} else {
-			time.Sleep(time.Second)
-			continue
-
+		if !active {
+			// check if we should activate the peer
+			if memR.CheckActivatePeer() {
+				active = true
+			} else {
+				time.Sleep(time.Second)
+				continue
+			}
 		}
 
 		// This happens because the CElement we were looking at got garbage

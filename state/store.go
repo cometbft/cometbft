@@ -77,10 +77,6 @@ type Store interface {
 	PruneStates(int64, int64) error
 	// Close closes the connection with the database
 	Close() error
-	// // Saves the height at which the store is bootstrapped after out of band statesync
-	// SetOfflineStateSyncHeight(height int64) error
-	// // Gets the height at which the store is bootstrapped after out of band statesync
-	// GetOfflineStateSyncHeight() (int64, error)
 }
 
 // dbStore wraps a db (github.com/cometbft/cometbft-db)

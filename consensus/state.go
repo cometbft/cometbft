@@ -189,9 +189,7 @@ func NewState(
 		// If the height at which the vote extensions are enabled is lower
 		// than the height at which we statesync, consensus will panic because
 		// it will try to reconstruct the extended commit here.
-
 		cs.reconstructLastCommit(state)
-
 	}
 
 	cs.updateToState(state)

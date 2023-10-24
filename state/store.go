@@ -672,7 +672,7 @@ func (store dbStore) saveConsensusParamsInfo(nextHeight, changeHeight int64, par
 	return nil
 }
 
-/* Custom struct to handle offlien state sync
+/* Custom struct to handle offline state sync
    Contains reference to a store so that it can access the DB
 */
 

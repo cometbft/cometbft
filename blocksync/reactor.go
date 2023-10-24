@@ -63,11 +63,6 @@ type Reactor struct {
 func NewReactorWithOfflineStateSync(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
 	blockSync bool, offlineStateSyncHeight int64) *Reactor {
 
-	if state.LastBlockHeight != store.Height() {
-		panic(fmt.Sprintf("state (%v) and store (%v) height mismatch", state.LastBlockHeight,
-			store.Height()))
-	}
-
 	storeHeight := store.Height()
 	if storeHeight == 0 {
 		// If state sync was performed offline and the stores were bootstrapped to height H

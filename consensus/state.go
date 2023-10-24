@@ -140,9 +140,6 @@ type State struct {
 
 	// for reporting metrics
 	metrics *Metrics
-
-	// offline state sync height indicating to which height the node synced offline
-	offlineStateSyncHeight int64
 }
 
 // StateOption sets an optional parameter on the State.
@@ -216,12 +213,6 @@ func (cs *State) SetEventBus(b *types.EventBus) {
 // StateMetrics sets the metrics.
 func StateMetrics(metrics *Metrics) StateOption {
 	return func(cs *State) { cs.metrics = metrics }
-}
-
-// OfflineStateSyncHeight indicates the height at which the node
-// statesync offline - before booting sets the metrics.
-func OfflineStateSyncHeight(height int64) StateOption {
-	return func(cs *State) { cs.offlineStateSyncHeight = height }
 }
 
 // String returns a string.

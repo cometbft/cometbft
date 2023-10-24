@@ -227,7 +227,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider DBProvid
 		return fmt.Errorf("blockstore not empty, trying to initialize non empty state")
 	}
 
-	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+	stateStore := sm.NewBootstrapStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
 	})
 
@@ -296,12 +296,11 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider DBProvid
 		return err
 	}
 
-	bootstrapStore := sm.NewBootstrapStore(stateDB)
 	// Once the stores are bootstrapped, we need to set the height at which the node has finished
 	// statesyncing. This will allow the blocksync reactor to fetch blocks at a proper height.
 	// In case this operation fails, it is equivalent to a failure in  online state sync where the operator
 	// needs to manually delete the state and blockstores and rerun the bootstrapping process.
-	err = bootstrapStore.SetOfflineStateSyncHeight(state.LastBlockHeight)
+	err = stateStore.SetOfflineStateSyncHeight(state.LastBlockHeight)
 	if err != nil {
 		return fmt.Errorf("failed to set synced height: %w", err)
 	}
@@ -857,7 +856,7 @@ func NewNodeWithContext(ctx context.Context,
 		return nil, err
 	}
 
-	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+	stateStore := sm.NewBootstrapStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
 	})
 
@@ -953,15 +952,12 @@ func NewNodeWithContext(ctx context.Context,
 		sm.BlockExecutorWithMetrics(smMetrics),
 	)
 	offlineStateSyncHeight := int64(0)
-
-	bootstrapStore := sm.NewBootstrapStore(stateDB)
 	if blockStore.Height() == 0 {
-		offlineStateSyncHeight, err = bootstrapStore.GetOfflineStateSyncHeight()
+		offlineStateSyncHeight, err = stateStore.GetOfflineStateSyncHeight()
 		if err != nil && err.Error() != "value empty" {
 			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s; expected state store height to be %v", err, state.LastBlockHeight))
 		}
 	}
-
 	// Make BlockchainReactor. Don't start block sync if we're doing a state sync first.
 	bcReactor, err := createBlockchainReactor(config, state, blockExec, blockStore, blockSync && !stateSync, logger, offlineStateSyncHeight)
 	if err != nil {
@@ -979,7 +975,7 @@ func NewNodeWithContext(ctx context.Context,
 		config, state, blockExec, blockStore, mempool, evidencePool,
 		privValidator, csMetrics, stateSync || blockSync, eventBus, consensusLogger,
 	)
-	err = bootstrapStore.SetOfflineStateSyncHeight(0)
+	err = stateStore.SetOfflineStateSyncHeight(0)
 	if err != nil {
 		panic(fmt.Sprintf("failed to reset the offline state sync height %s", err))
 	}

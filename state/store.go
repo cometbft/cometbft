@@ -677,11 +677,16 @@ func (store dbStore) saveConsensusParamsInfo(nextHeight, changeHeight int64, par
 */
 
 type BootstrapStore struct {
-	db dbm.DB
+	dbStore
 }
 
-func NewBootstrapStore(db dbm.DB) BootstrapStore {
-	return BootstrapStore{db}
+func NewBootstrapStore(db dbm.DB, options StoreOptions) BootstrapStore {
+	return BootstrapStore{
+		dbStore{
+			db:           db,
+			StoreOptions: options,
+		},
+	}
 }
 
 func (store BootstrapStore) SetOfflineStateSyncHeight(height int64) error {

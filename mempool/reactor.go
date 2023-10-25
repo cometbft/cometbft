@@ -53,7 +53,7 @@ func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool, waitSync bool)
 		memR.waitSyncCh = make(chan struct{})
 	}
 	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
-	memR.sem = semaphore.NewWeighted(int64(memR.config.MaxPeers))
+	memR.sem = semaphore.NewWeighted(int64(memR.config.MaxOutboundPeers))
 
 	return memR
 }
@@ -175,7 +175,7 @@ type PeerState interface {
 func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 	var next *clist.CElement
 
-	if memR.config.MaxPeers > 0 {
+	if memR.config.MaxOutboundPeers > 0 {
 
 		if err := memR.sem.Acquire(context.TODO(), 1); err != nil {
 			memR.Logger.Error("Failed to acquire semaphore: %v", err)

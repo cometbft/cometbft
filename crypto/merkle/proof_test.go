@@ -146,19 +146,19 @@ func TestProofValidateBasic(t *testing.T) {
 		errStr        string
 	}{
 		{"Good", func(sp *Proof) {}, ""},
-		{"Negative Total", func(sp *Proof) { sp.Total = -1 }, "negative Total"},
-		{"Negative Index", func(sp *Proof) { sp.Index = -1 }, "negative Index"},
+		{"Negative Total", func(sp *Proof) { sp.Total = -1 }, "negative proof total"},
+		{"Negative Index", func(sp *Proof) { sp.Index = -1 }, "negative proof index"},
 		{
 			"Invalid LeafHash", func(sp *Proof) { sp.LeafHash = make([]byte, 10) },
-			"expected LeafHash size to be 32, got 10",
+			"leaf length 10, want 32",
 		},
 		{
 			"Too many Aunts", func(sp *Proof) { sp.Aunts = make([][]byte, MaxAunts+1) },
-			"expected no more than 100 aunts, got 101",
+			"maximum aunts length, 100, exceeded",
 		},
 		{
 			"Invalid Aunt", func(sp *Proof) { sp.Aunts[0] = make([]byte, 10) },
-			"expected Aunts#0 size to be 32, got 10",
+			"aunt#0 hash length 10, want 32",
 		},
 	}
 

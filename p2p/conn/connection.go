@@ -15,6 +15,7 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1beta1"
+	"github.com/cometbft/cometbft/config"
 	flow "github.com/cometbft/cometbft/libs/flowrate"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
@@ -136,6 +137,10 @@ type MConnConfig struct {
 
 	// Maximum wait time for pongs
 	PongTimeout time.Duration `mapstructure:"pong_timeout"`
+
+	// Fuzz connection
+	TestFuzz       bool                   `mapstructure:"test_fuzz"`
+	TestFuzzConfig *config.FuzzConnConfig `mapstructure:"test_fuzz_config"`
 }
 
 // DefaultMConnConfig returns the default config.

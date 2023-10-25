@@ -6,7 +6,7 @@ import "cometbft/abci/v1beta2/types.proto";
 import "cometbft/abci/v1beta3/types.proto";
 import "cometbft/types/v1beta3/params.proto";
 
-option go_package = "github.com/cometbft/cometbft/proto/cometbft/services/block_results/v1beta1";
+option go_package = "github.com/cometbft/cometbft/api/cometbft/services/block_results/v1beta1";
 
 message GetBlockResultsRequest {
   int64 height = 1;

@@ -16,7 +16,7 @@ message GetLatestBlockResultsRequest {}
 
 message GetBlockResultsResponse {
   int64 height = 1;
-  repeated cometbft.abci.v1beta3.ExecTxResult txs_results = 2;
+  repeated cometbft.abci.v1beta3.ExecTxResult tx_results = 2;
   repeated cometbft.abci.v1beta2.Event finalize_block_events = 3;
   repeated cometbft.abci.v1beta1.ValidatorUpdate validator_updates = 4;
   cometbft.types.v1beta3.ConsensusParams consensus_param_updates = 5;
@@ -25,7 +25,7 @@ message GetBlockResultsResponse {
 
 message GetLatestBlockResultsResponse {
   int64 height = 1;
-  repeated cometbft.abci.v1beta3.ExecTxResult txs_results = 2;
+  repeated cometbft.abci.v1beta3.ExecTxResult tx_results = 2;
   repeated cometbft.abci.v1beta2.Event finalize_block_events = 3;
   repeated cometbft.abci.v1beta1.ValidatorUpdate validator_updates = 4;
   cometbft.types.v1beta3.ConsensusParams consensus_param_updates = 5;

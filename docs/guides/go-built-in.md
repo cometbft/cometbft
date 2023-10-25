@@ -329,14 +329,14 @@ application via `FinalizeBlock`.
 This method is responsible for executing the block and returning a response to the consensus engine.
 Providing a single `FinalizeBlock` method to signal the finalization of a block simplifies the ABCI interface and increases flexibility in the execution pipeline.
 
-The `FinalizeBlock` method executes the block, including any necessary transaction processing and state updates, and returns a `ResponseFinalizeBlock` object which contains any necessary information about the executed block.
+The `FinalizeBlock` method executes the block, including any necessary transaction processing and state updates, and returns a `FinalizeBlockResponse` object which contains any necessary information about the executed block.
 
 **Note:** `FinalizeBlock` only prepares the update to be made and does not change the state of the application. The state change is actually committed in a later stage i.e. in `commit` phase.
 
 Note that, to implement these calls in our application we're going to make use of Badger's transaction mechanism. We will always refer to these as Badger transactions, not to confuse them with the transactions included in the blocks delivered by CometBFT, the _application transactions_.
 
 First, let's create a new Badger transaction during `FinalizeBlock`. All application transactions in the current block will be executed within this Badger transaction.
-Next, let's modify `FinalizeBlock` to add the `key` and `value` to the Badger transaction every time our application processes a new application transaction from the list received through `RequestFinalizeBlock`.
+Next, let's modify `FinalizeBlock` to add the `key` and `value` to the Badger transaction every time our application processes a new application transaction from the list received through `FinalizeBlockRequest`.
 
 Note that we check the validity of the transaction _again_ during `FinalizeBlock`.
 
@@ -454,7 +454,7 @@ included in blocks, it groups some of these transactions and then gives the appl
 to modify the group by invoking `PrepareProposal`.
 
 The application is free to modify the group before returning from the call, as long as the resulting set
-does not use more bytes than `RequestPrepareProposal.max_tx_bytes`
+does not use more bytes than `PrepareProposalRequest.max_tx_bytes`
 For example, the application may reorder, add, or even remove transactions from the group to improve the
 execution of the block once accepted.
 In the following code, the application simply returns the unmodified group of transactions:
@@ -477,9 +477,9 @@ In the following code, the application simply returns the unmodified group of tr
  }
  ```
 
- This code snippet iterates through the proposed transactions and calculates the `total bytes`. If the `total bytes` exceeds the `MaxTxBytes` specified in the `RequestPrepareProposal` struct, the loop breaks and the transactions processed so far are returned.
+ This code snippet iterates through the proposed transactions and calculates the `total bytes`. If the `total bytes` exceeds the `MaxTxBytes` specified in the `PrepareProposalRequest` struct, the loop breaks and the transactions processed so far are returned.
 
- Note: It is the responsibility of the application to ensure that the `total bytes` of transactions returned does not exceed the `RequestPrepareProposal.max_tx_bytes` limit.
+ Note: It is the responsibility of the application to ensure that the `total bytes` of transactions returned does not exceed the `PrepareProposalRequest.max_tx_bytes` limit.
 
  Once a proposed block is received by a node, the proposal is passed to the application to give
  its blessing before voting to accept the proposal.

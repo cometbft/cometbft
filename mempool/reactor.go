@@ -1,9 +1,9 @@
 package mempool
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -15,6 +15,7 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	protomem "github.com/cometbft/cometbft/proto/tendermint/mempool"
 	"github.com/cometbft/cometbft/types"
+	"golang.org/x/sync/semaphore"
 )
 
 // Reactor handles mempool tx broadcasting amongst peers.
@@ -35,8 +36,7 @@ type Reactor struct {
 	txSenders    map[types.TxKey]map[p2p.ID]bool
 	txSendersMtx cmtsync.Mutex
 
-	mtx            sync.Mutex
-	numActivePeers int
+	sem *semaphore.Weighted
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
@@ -53,6 +53,8 @@ func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool, waitSync bool)
 		memR.waitSyncCh = make(chan struct{})
 	}
 	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
+	memR.sem = semaphore.NewWeighted(int64(memR.config.MaxOutboundPeers))
+
 	return memR
 }
 
@@ -169,36 +171,9 @@ type PeerState interface {
 	GetHeight() int64
 }
 
-func (memR *Reactor) CheckActivatePeer() bool {
-	maxPeers := memR.config.MaxOutboundPeers
-
-	memR.mtx.Lock()
-	defer memR.mtx.Unlock()
-
-	if memR.numActivePeers < maxPeers {
-		memR.numActivePeers += 1
-		return true
-	}
-	return false
-}
-
-func (memR *Reactor) DeactivePeer() {
-	memR.mtx.Lock()
-	defer memR.mtx.Unlock()
-	memR.numActivePeers -= 1
-}
-
 // Send new mempool txs to peer.
 func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 	var next *clist.CElement
-
-	var active bool
-
-	defer func() {
-		if active {
-			memR.DeactivePeer()
-		}
-	}()
 
 	// If the node is catching up, don't start this routine immediately.
 	if memR.WaitSync() {
@@ -210,20 +185,18 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		}
 	}
 
+	if memR.config.MaxOutboundPeers > 0 {
+		if err := memR.sem.Acquire(context.TODO(), 1); err != nil {
+			memR.Logger.Error("Failed to acquire semaphore: %v", err)
+			return
+		}
+		defer memR.sem.Release(1)
+	}
+
 	for {
 		// In case of both next.NextWaitChan() and peer.Quit() are variable at the same time
 		if !memR.IsRunning() || !peer.IsRunning() {
 			return
-		}
-
-		if !active {
-			// check if we should activate the peer
-			if memR.CheckActivatePeer() {
-				active = true
-			} else {
-				time.Sleep(time.Second)
-				continue
-			}
 		}
 
 		// This happens because the CElement we were looking at got garbage

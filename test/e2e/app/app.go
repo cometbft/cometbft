@@ -460,11 +460,11 @@ func (app *Application) ExtendVote(_ context.Context, req *abci.RequestExtendVot
 		extLen = len(ext)
 	} else {
 		ext = make([]byte, 8)
-		if num, err := rand.Int(rand.Reader, big.NewInt(voteExtensionMaxVal)); err != nil {
+		num, err := rand.Int(rand.Reader, big.NewInt(voteExtensionMaxVal))
+		if err != nil {
 			panic(fmt.Errorf("could not extend vote. Len:%d", len(ext)))
-		} else {
-			extLen = binary.PutVarint(ext, num.Int64())
 		}
+		extLen = binary.PutVarint(ext, num.Int64())
 	}
 
 	app.logger.Info("generated vote extension", "height", appHeight, "vote_extension", fmt.Sprintf("%x", ext[:4]), "len", extLen)

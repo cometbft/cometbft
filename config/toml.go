@@ -425,6 +425,11 @@ max_tx_bytes = {{ .Mempool.MaxTxBytes }}
 # XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
 max_batch_bytes = {{ .Mempool.MaxBatchBytes }}
 
+# Only broadcast txs to up to this many peers.
+# If we are connected to more than this number of peers, only send txs to
+# the first MaxOutboundPeers of them. If one of those peers goes offline, activate another peer.
+max_outbound_peers = {{ .Mempool.MaxOutboundPeers }}
+
 #######################################################
 ###         State Sync Configuration Options        ###
 #######################################################

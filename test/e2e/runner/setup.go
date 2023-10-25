@@ -271,6 +271,10 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		cfg.Instrumentation.Prometheus = true
 	}
 
+	if node.MempoolMaxOutboundPeers > 0 {
+		cfg.Mempool.MaxOutboundPeers = node.MempoolMaxOutboundPeers
+	}
+
 	return cfg, nil
 }
 

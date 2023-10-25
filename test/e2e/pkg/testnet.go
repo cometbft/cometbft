@@ -93,6 +93,7 @@ type Testnet struct {
 	VoteExtensionsEnableHeight       int64
 	VoteExtensionSize                uint
 	PeerGossipIntraloopSleepDuration time.Duration
+	MempoolMaxOutboundPeers          int
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -124,6 +125,7 @@ type Node struct {
 	SendNoLoad              bool
 	Prometheus              bool
 	PrometheusProxyPort     uint32
+	MempoolMaxOutboundPeers int
 }
 
 // LoadTestnet loads a testnet from a manifest file, using the filename to
@@ -176,6 +178,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
 		VoteExtensionSize:                manifest.VoteExtensionSize,
 		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
+		MempoolMaxOutboundPeers:          manifest.MempoolMaxOutboundPeers,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
@@ -266,6 +269,11 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		}
 		for _, p := range nodeManifest.Perturb {
 			node.Perturbations = append(node.Perturbations, Perturbation(p))
+		}
+		if manifest.MempoolMaxOutboundPeers > 0 {
+			node.MempoolMaxOutboundPeers = manifest.MempoolMaxOutboundPeers
+		} else if nodeManifest.MempoolMaxOutboundPeers > 0 {
+			node.MempoolMaxOutboundPeers = nodeManifest.MempoolMaxOutboundPeers
 		}
 		testnet.Nodes = append(testnet.Nodes, node)
 	}

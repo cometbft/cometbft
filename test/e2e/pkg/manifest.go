@@ -98,6 +98,9 @@ type Manifest struct {
 
 	// Upper bound of sleep duration then gossipping votes and block parts
 	PeerGossipIntraloopSleepDuration time.Duration `toml:"peer_gossip_intraloop_sleep_duration"`
+
+	// Only broadcast txs to up to this many peers.
+	MempoolMaxOutboundPeers int `toml:"mempool_max_outbound_peers"`
 }
 
 // ManifestNode represents a node in a testnet manifest.
@@ -178,6 +181,10 @@ type ManifestNode struct {
 	// It defaults to false so unless the configured, the node will
 	// receive load.
 	SendNoLoad bool `toml:"send_no_load"`
+
+	// Only broadcast txs to up to this many peers.
+	// If this configuration is set at the network level, this value will be ignored.
+	MempoolMaxOutboundPeers int `toml:"mempool_max_outbound_peers"`
 }
 
 // Save saves the testnet manifest to a file.

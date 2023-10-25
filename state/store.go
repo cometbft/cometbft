@@ -486,7 +486,7 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBloc
 					changed: %v\n`, err))
 		}
 		// The state store contains the old format. Migrate to
-		// the new ResponseFinalizeBlock format. Note that the
+		// the new FinalizeBlockResponse format. Note that the
 		// new struct expects the AppHash which we don't have.
 		return responseFinalizeBlockFromLegacy(legacyResp), nil
 	}
@@ -525,9 +525,9 @@ func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.Finalize
 	}
 
 	// It is possible if this is called directly after an upgrade that
-	// ResponseFinalizeBlock is nil. In which case we use the legacy
+	// FinalizeBlockResponse is nil. In which case we use the legacy
 	// ABCI responses
-	if info.ResponseFinalizeBlock == nil {
+	if info.FinalizeBlock == nil {
 		// sanity check
 		if info.LegacyAbciResponses == nil {
 			panic("state store contains last abci response but it is empty")
@@ -535,10 +535,10 @@ func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.Finalize
 		return responseFinalizeBlockFromLegacy(info.LegacyAbciResponses), nil
 	}
 
-	return info.ResponseFinalizeBlock, nil
+	return info.FinalizeBlock, nil
 }
 
-// SaveFinalizeBlockResponse persists the ResponseFinalizeBlock to the database.
+// SaveFinalizeBlockResponse persists the FinalizeBlockResponse to the database.
 // This is useful in case we crash after app.Commit and before s.Save().
 // Responses are indexed by height so they can also be loaded later to produce
 // Merkle proofs.
@@ -569,8 +569,8 @@ func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.Finalize
 	// We always save the last ABCI response for crash recovery.
 	// This overwrites the previous saved ABCI Response.
 	response := &cmtstate.ABCIResponsesInfo{
-		ResponseFinalizeBlock: resp,
-		Height:                height,
+		FinalizeBlock: resp,
+		Height:        height,
 	}
 	bz, err := response.Marshal()
 	if err != nil {

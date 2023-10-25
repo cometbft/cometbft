@@ -878,8 +878,8 @@ type MempoolConfig struct {
 	MaxBatchBytes int `mapstructure:"max_batch_bytes"`
 	// Only broadcast txs to up to this many peers.
 	// If we are connected to more than this number of peers, only send txs to
-	// the first MaxPeers of them. If one of those peers goes offline, activate another peer.
-	MaxPeers int `mapstructure:"max_peers"`
+	// the first MaxOutboundPeers of them. If one of those peers goes offline, activate another peer.
+	MaxOutboundPeers int `mapstructure:"max_outbound_peers"`
 }
 
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool
@@ -890,11 +890,11 @@ func DefaultMempoolConfig() *MempoolConfig {
 		WalPath:   "",
 		// Each signature verification takes .5ms, Size reduced until we implement
 		// ABCI Recheck
-		Size:        5000,
-		MaxTxsBytes: 1024 * 1024 * 1024, // 1GB
-		CacheSize:   10000,
-		MaxTxBytes:  1024 * 1024, // 1MB
-		MaxPeers:    10,
+		Size:             5000,
+		MaxTxsBytes:      1024 * 1024 * 1024, // 1GB
+		CacheSize:        10000,
+		MaxTxBytes:       1024 * 1024, // 1MB
+		MaxOutboundPeers: 10,
 	}
 }
 
@@ -930,7 +930,7 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 	if cfg.MaxTxBytes < 0 {
 		return cmterrors.ErrNegativeField{Field: "max_tx_bytes"}
 	}
-	if cfg.MaxPeers < 0 {
+	if cfg.MaxOutboundPeers < 0 {
 		return cmterrors.ErrNegativeField{Field: "max_peers"}
 	}
 	return nil

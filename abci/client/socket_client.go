@@ -85,7 +85,7 @@ func (cli *socketClient) OnStart() error {
 		cli.conn = conn
 
 		go cli.sendRequestsRoutine(conn)
-		go cli.recvRoutineResponse(conn)
+		go cli.recvResponseRoutine(conn)
 
 		return nil
 	}
@@ -162,7 +162,7 @@ func (cli *socketClient) sendRequestsRoutine(conn io.Writer) {
 	}
 }
 
-func (cli *socketClient) recvRoutineResponse(conn io.Reader) {
+func (cli *socketClient) recvResponseRoutine(conn io.Reader) {
 	r := bufio.NewReader(conn)
 	for {
 		if !cli.IsRunning() {

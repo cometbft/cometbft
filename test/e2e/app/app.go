@@ -450,28 +450,7 @@ func (app *Application) ExtendVote(_ context.Context, req *abci.RequestExtendVot
 		time.Sleep(app.cfg.VoteExtensionDelay)
 	}
 
-<<<<<<< HEAD
 	app.logger.Info("generated vote extension", "num", num, "ext", fmt.Sprintf("%x", ext[:extLen]), "height", appHeight)
-=======
-	var ext []byte
-	var extLen int
-	if app.cfg.VoteExtensionSize != 0 {
-		ext = make([]byte, app.cfg.VoteExtensionSize)
-		if _, err := rand.Read(ext); err != nil {
-			panic(fmt.Errorf("could not extend vote. Len:%d", len(ext)))
-		}
-		extLen = len(ext)
-	} else {
-		ext = make([]byte, 8)
-		num, err := rand.Int(rand.Reader, big.NewInt(voteExtensionMaxVal))
-		if err != nil {
-			panic(fmt.Errorf("could not extend vote. Len:%d", len(ext)))
-		}
-		extLen = binary.PutVarint(ext, num.Int64())
-	}
-
-	app.logger.Info("generated vote extension", "height", appHeight, "vote_extension", fmt.Sprintf("%x", ext[:4]), "len", extLen)
->>>>>>> 822b27767 (Fix linting on `main` (#1531))
 	return &abci.ResponseExtendVote{
 		VoteExtension: ext[:extLen],
 	}, nil

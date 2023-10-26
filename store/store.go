@@ -54,6 +54,12 @@ func NewBlockStore(db dbm.DB) *BlockStore {
 	}
 }
 
+func (bs *BlockStore) IsEmpty() bool {
+	bs.mtx.RLock()
+	defer bs.mtx.RUnlock()
+	return bs.base == bs.height && bs.base == 0
+}
+
 // Base returns the first known contiguous block height, or 0 for empty block stores.
 func (bs *BlockStore) Base() int64 {
 	bs.mtx.RLock()

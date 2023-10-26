@@ -105,7 +105,7 @@ The main motivation is the reduction of the storage footprint.
 
 Events indexed with previous CometBFT or Tendermint Core versions, will still be transparently processed.
 There is no need to re-index the events. This function field is not exposed to queries, and was not
-visible to users. However, if you forked CometBFT and changed the indexer code directly to accomodate for this,
+visible to users. However, if you forked CometBFT and changed the indexer code directly to accommodate for this,
 this will impact your code.
 
 ## v0.37.0

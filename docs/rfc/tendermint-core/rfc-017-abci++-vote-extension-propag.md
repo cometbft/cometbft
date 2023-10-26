@@ -525,7 +525,7 @@ The changes to the blocksync reactor are more substantial:
 The two main drawbacks of this base implementation are:
 
 - the increased size taken by the block store, in particular with big extensions
-- the increased bandwith taken by the new format of `BlockResponse`
+- the increased bandwidth taken by the new format of `BlockResponse`
 
 #### Possible Optimization: Pruning the Extended Commit History
 

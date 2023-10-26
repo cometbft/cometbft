@@ -30,7 +30,6 @@ issues:
   exclude-rules:
     - path: _test\.go
       linters:
-        - goconst
         - gosec
     - path: \.pb\.go
       linters:
@@ -45,6 +44,8 @@ linters-settings:
     max-blank-identifiers: 3
   golint:
     min-confidence: 0
+  goconst:
+    ignore-tests: true
   maligned:
     suggest-new: true
   misspell:

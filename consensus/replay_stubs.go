@@ -64,7 +64,7 @@ func newMockProxyApp(finalizeBlockResponse *abci.FinalizeBlockResponse) proxy.Ap
 	clientCreator := proxy.NewLocalClientCreator(&mockProxyApp{
 		finalizeBlockResponse: finalizeBlockResponse,
 	})
-	cli, _ := clientCreator.NewABCIClient()
+	cli, _ := clientCreator.NewABCIConsensusClient()
 	err := cli.Start()
 	if err != nil {
 		panic(err)

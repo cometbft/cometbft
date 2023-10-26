@@ -157,7 +157,7 @@ system outside of the process logs. When a test network stalls or fails
 developers should be able to quickly and easily get a sense of the state of
 the network and all nodes.
 
-Improvements in persuit of this goal, include functionality that would help
+Improvements in pursuit of this goal, include functionality that would help
 node operators in production environments by improving the quality and utility
 of the logging messages and other reported metrics, but also provide some
 tools to collect and aggregate this data for developers in the context of test

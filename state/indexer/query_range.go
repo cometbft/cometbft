@@ -88,21 +88,12 @@ func LookForRangesWithHeight(conditions []query.Condition) (queryRange QueryRang
 	queryRange = make(QueryRanges)
 	for i, c := range conditions {
 		if IsRangeOperation(c.Op) {
-<<<<<<< HEAD
+			heightKey := c.CompositeKey == types.BlockHeightKey || c.CompositeKey == types.TxHeightKey
 			r, ok := queryRange[c.CompositeKey]
 			if !ok {
 				r = QueryRange{Key: c.CompositeKey}
 				if c.CompositeKey == types.BlockHeightKey || c.CompositeKey == types.TxHeightKey {
 					heightRange = QueryRange{Key: c.CompositeKey}
-					heightKey = true
-=======
-			heightKey := c.Tag == types.BlockHeightKey || c.Tag == types.TxHeightKey
-			r, ok := queryRange[c.Tag]
-			if !ok {
-				r = QueryRange{Key: c.Tag}
-				if c.Tag == types.BlockHeightKey || c.Tag == types.TxHeightKey {
-					heightRange = QueryRange{Key: c.Tag}
->>>>>>> 95aca040f (indexer-respect-height-params-on-query (#1529))
 				}
 			}
 

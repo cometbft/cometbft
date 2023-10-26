@@ -322,8 +322,6 @@ func TestTxSearchEventMatch(t *testing.T) {
 		})
 	}
 }
-<<<<<<< HEAD
-=======
 
 func TestTxSearchEventMatchByHeight(t *testing.T) {
 
@@ -388,7 +386,7 @@ func TestTxSearchEventMatchByHeight(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.q, func(t *testing.T) {
-			results, err := indexer.Search(ctx, query.MustCompile(tc.q))
+			results, err := indexer.Search(ctx, query.MustParse(tc.q))
 			assert.NoError(t, err)
 
 			assert.Len(t, results, tc.resultsLength)
@@ -407,7 +405,6 @@ func TestTxSearchEventMatchByHeight(t *testing.T) {
 	}
 }
 
->>>>>>> 95aca040f (indexer-respect-height-params-on-query (#1529))
 func TestTxSearchWithCancelation(t *testing.T) {
 	indexer := NewTxIndex(db.NewMemDB())
 

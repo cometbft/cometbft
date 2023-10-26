@@ -26,7 +26,7 @@ reexamine our use of panics, and largely where panics happen in the
 code base.
 
 There are still some situations where panics are acceptable and
-desireable, but it's important that Tendermint, as a project, comes to
+desirable, but it's important that Tendermint, as a project, comes to
 consensus--perhaps in the text of this document--on the situations
 where it is acceptable to panic.
 
@@ -42,7 +42,7 @@ where it is acceptable to panic.
 
 #### Initialization
 
-It is unambiguously safe (and desireable) to panic in `init()`
+It is unambiguously safe (and desirable) to panic in `init()`
 functions in response to any kind of error. These errors are caught by
 tests, and occur early enough in process initialization that they
 won't cause unexpected runtime crashes.

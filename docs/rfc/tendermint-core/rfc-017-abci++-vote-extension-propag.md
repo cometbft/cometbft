@@ -509,7 +509,7 @@ This solution requires a few changes to the consensus reactor:
 - upon saving the block for a given height in the block store at decision time, save the
   corresponding extended commit as well
 - in the catch-up mechanism, when a node realizes that another peer is more than 2 heights
-  behind, it uses the extended commit (rather than the canoncial commit as done previously) to
+  behind, it uses the extended commit (rather than the canonical commit as done previously) to
   reconstruct the precommit votes with their corresponding extensions
 
 The changes to the blocksync reactor are more substantial:

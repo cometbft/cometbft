@@ -171,7 +171,9 @@ func NewState(
 		evsw:             cmtevents.NewEventSwitch(),
 		metrics:          NopMetrics(),
 	}
-
+	for _, option := range options {
+		option(cs)
+	}
 	// set function defaults (may be overwritten before calling Start)
 	cs.decideProposal = cs.defaultDecideProposal
 	cs.doPrevote = cs.defaultDoPrevote
@@ -179,6 +181,11 @@ func NewState(
 
 	// We have no votes, so reconstruct LastCommit from SeenCommit.
 	if state.LastBlockHeight > 0 {
+		// In case of out of band performed statesync, the state store
+		// will have a state but no extended commit (as no block has been downloaded).
+		// If the height at which the vote extensions are enabled is lower
+		// than the height at which we statesync, consensus will panic because
+		// it will try to reconstruct the extended commit here.
 		cs.reconstructLastCommit(state)
 	}
 
@@ -187,9 +194,6 @@ func NewState(
 	// NOTE: we do not call scheduleRound0 yet, we do that upon Start()
 
 	cs.BaseService = *service.NewBaseService(nil, "State", cs)
-	for _, option := range options {
-		option(cs)
-	}
 
 	return cs
 }

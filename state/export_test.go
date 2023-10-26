@@ -45,3 +45,11 @@ func SaveValidatorsInfo(db dbm.DB, height, lastHeightChanged int64, valSet *type
 	stateStore := dbStore{db, StoreOptions{DiscardABCIResponses: false}}
 	return stateStore.saveValidatorsInfo(height, lastHeightChanged, valSet)
 }
+
+func Int64ToBytes(val int64) []byte {
+	return int64ToBytes(val)
+}
+
+func Int64FromBytes(val []byte) int64 {
+	return int64FromBytes(val)
+}

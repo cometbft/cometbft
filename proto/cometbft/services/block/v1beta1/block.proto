@@ -4,7 +4,7 @@ package cometbft.services.block.v1beta1;
 import "cometbft/types/v1beta1/types.proto";
 import "cometbft/types/v1beta3/block.proto";
 
-option go_package = "github.com/cometbft/cometbft/proto/cometbft/services/block/v1beta1";
+option go_package = "github.com/cometbft/cometbft/api/cometbft/services/block/v1beta1";
 
 message GetByHeightRequest {
   // The height of the block requested. If set to 0, the latest height will be returned.

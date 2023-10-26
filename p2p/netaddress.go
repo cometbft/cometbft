@@ -43,13 +43,13 @@ func IDAddressString(id ID, protocolHostPort string) string {
 func NewNetAddress(id ID, addr net.Addr) *NetAddress {
 	tcpAddr, ok := addr.(*net.TCPAddr)
 	if !ok {
-		if flag.Lookup("test.v") != nil { // in testing
-			netAddr := NewNetAddressIPPort(net.IP("127.0.0.1"), 0)
-			netAddr.ID = id
-			return netAddr
+		if flag.Lookup("test.v") == nil { // normal run
+			panic(fmt.Sprintf("Only TCPAddrs are supported. Got: %v", addr))
 		}
-		// normal run
-		panic(fmt.Sprintf("Only TCPAddrs are supported. Got: %v", addr))
+		// in testing
+		netAddr := NewNetAddressIPPort(net.IP("127.0.0.1"), 0)
+		netAddr.ID = id
+		return netAddr
 	}
 
 	if err := validateID(id); err != nil {

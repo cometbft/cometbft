@@ -130,8 +130,8 @@ func (c *Client) ABCIQuery(ctx context.Context, path string, data cmtbytes.HexBy
 
 // ABCIQueryWithOptions returns an error if opts.Prove is false.
 func (c *Client) ABCIQueryWithOptions(ctx context.Context, path string, data cmtbytes.HexBytes,
-	opts rpcclient.ABCIQueryOptions) (*ctypes.ResultABCIQuery, error) {
-
+	opts rpcclient.ABCIQueryOptions,
+) (*ctypes.ResultABCIQuery, error) {
 	// always request the proof
 	opts.Prove = true
 
@@ -411,7 +411,7 @@ func (c *Client) BlockResults(ctx context.Context, height *int64) (*ctypes.Resul
 	}
 
 	// Build a Merkle tree out of the above 3 binary slices.
-	rH := state.TxResultsHash(res.TxsResults)
+	rH := state.TxResultsHash(res.TxResults)
 
 	// Verify block results.
 	if !bytes.Equal(rH, trustedBlock.LastResultsHash) {
@@ -518,7 +518,6 @@ func (c *Client) Validators(
 	height *int64,
 	pagePtr, perPagePtr *int,
 ) (*ctypes.ResultValidators, error) {
-
 	// Update the light client if we're behind and retrieve the light block at the
 	// requested height or at the latest height if no height is provided.
 	l, err := c.updateLightClientIfNeededTo(ctx, height)
@@ -540,7 +539,8 @@ func (c *Client) Validators(
 		BlockHeight: l.Height,
 		Validators:  v,
 		Count:       len(v),
-		Total:       totalCount}, nil
+		Total:       totalCount,
+	}, nil
 }
 
 func (c *Client) BroadcastEvidence(ctx context.Context, ev types.Evidence) (*ctypes.ResultBroadcastEvidence, error) {
@@ -548,7 +548,8 @@ func (c *Client) BroadcastEvidence(ctx context.Context, ev types.Evidence) (*cty
 }
 
 func (c *Client) Subscribe(ctx context.Context, subscriber, query string,
-	outCapacity ...int) (out <-chan ctypes.ResultEvent, err error) {
+	outCapacity ...int,
+) (out <-chan ctypes.ResultEvent, err error) {
 	return c.next.Subscribe(ctx, subscriber, query, outCapacity...)
 }
 

@@ -294,7 +294,7 @@ func TestBlockResults(t *testing.T) {
 	require.NoError(t, err)
 	res, err := cli.BlockResults(context.Background(), &testHeight)
 	require.NoError(t, err)
-	require.Equal(t, res.TxsResults[0].GasUsed, testGasUsed)
+	require.Equal(t, res.TxResults[0].GasUsed, testGasUsed)
 
 	cancel()
 	wg.Wait()

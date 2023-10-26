@@ -97,7 +97,7 @@ func TestBlockResults(t *testing.T) {
 		{101, true, nil},
 		{100, false, &ctypes.ResultBlockResults{
 			Height:                100,
-			TxsResults:            results.TxResults,
+			TxResults:             results.TxResults,
 			FinalizeBlockEvents:   results.Events,
 			ValidatorUpdates:      results.ValidatorUpdates,
 			ConsensusParamUpdates: results.ConsensusParamUpdates,

@@ -53,7 +53,7 @@ type ResultCommit struct {
 // ABCI results from a block
 type ResultBlockResults struct {
 	Height                int64                     `json:"height"`
-	TxsResults            []*abci.ExecTxResult      `json:"txs_results"`
+	TxResults             []*abci.ExecTxResult      `json:"txs_results"`
 	FinalizeBlockEvents   []abci.Event              `json:"finalize_block_events"`
 	ValidatorUpdates      []abci.ValidatorUpdate    `json:"validator_updates"`
 	ConsensusParamUpdates *cmtproto.ConsensusParams `json:"consensus_param_updates"`

@@ -439,7 +439,7 @@ func Sequential-Supervisor (initdata LCInitData) (Error) {
 - Implementation remark
     - infinite loop unless a light client attack is detected
     - In typical implementations (e.g., the one in Rust),
-   there are mutliple input actions:
+   there are multiple input actions:
       `VerifytoLatest`, `LatestTrusted`, and `GetStatus`. The
       information can be easily obtained from the lightstore, so that
       we do not treat these requests explicitly here but just consider
@@ -580,7 +580,7 @@ func VerifyAndDetect (lightStore LightStore, targetHeight Height)
     }
 
     // get the lightblock with maximum height smaller than targetHeight
-    // would typically be the heighest, if we always move forward
+    // would typically be the heights, if we always move forward
     root_of_trust, r2 = lightStore.LatestPrevious(targetHeight);
 
     if r2 = false {

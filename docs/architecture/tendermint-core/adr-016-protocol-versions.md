@@ -18,7 +18,7 @@
 - 03-08-2018: Updates from discussion with Jae:
   - ProtocolVersion contains Block/AppVersion, not Current/Next
   - signal upgrades to Tendermint using EndBlock fields
-  - dont restrict peer compatibilty by version to simplify syncing old nodes
+  - dont restrict peer compatibility by version to simplify syncing old nodes
 - 28-07-2018: Updates from review
   - split into two ADRs - one for protocol, one for chains
   - include signalling for upgrades in header
@@ -268,12 +268,12 @@ help old peers, possibly on older versions, sync the blockchain.
 We might be tempted to say that we only connect to peers with the same
 AppVersion and BlockVersion (since these define the consensus critical
 computations), and a select list of P2PVersions (ie. those compatible with
-ours), but then we'd need to make accomodations for connecting to peers with the
+ours), but then we'd need to make accommodations for connecting to peers with the
 right Block/AppVersion for the height they're on.
 
 For now, we will connect to peers with any version and restrict compatibility
 solely based on the ChainID. We leave more restrictive rules on peer
-compatibiltiy to a future proposal.
+compatibility to a future proposal.
 
 ### Future Changes
 

@@ -191,7 +191,7 @@ on the corresponding plot, shown above.
 
 ### Peers
 
-The following plots show how many peers a node had throughtout the experiment.
+The following plots show how many peers a node had throughout the experiment.
 
 The thick red dashed line represents the moving average over a sliding window of 20 seconds.
 

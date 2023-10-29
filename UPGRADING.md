@@ -52,6 +52,15 @@ The minimum Go version has been bumped to [v1.21][go121].
   For example, instead of `curl localhost:26657/block?height=5`, use
   `curl localhost:26657/v1/block?height=5`.
 
+* The `/websocket` endpoint path is no longer configurable in the client or
+  server. Creating an RPC client now takes the form:
+
+  ```golang
+  // The WebSocket endpoint in the following example is assumed to be available
+  // at http://localhost:26657/v1/websocket
+  rpcClient, err := client.New("http://localhost:26657/v1")
+  ```
+
 ## v0.38.0
 
 This release introduces state machine-breaking changes, as well as substantial changes

@@ -465,12 +465,12 @@ However, that could have already be done by just disconnecting or by dropping it
 
 #### *Decisions*
 
-The uncertainties are higher in the case of banning based on the *freqeuncy* of the failures. This option has therefore been **dismissed**. 
+The uncertainties are higher in the case of banning based on the *frequency* of the failures. This option has therefore been **dismissed**. 
 
 As for the banning based on the return code from the application, due to the lack of strong use cases and potential unwanted side-effects,
 it will not be implemented at the moment of writing the final version of this RFC (March 2023). 
 
-An alternative is being proposed at the moment due to feedback we recieved when debugging the Gaia issue mentioned above. Namely,
+An alternative is being proposed at the moment due to feedback we received when debugging the Gaia issue mentioned above. Namely,
 they found that having these peers banned or even a log message about this failure would have significantly shortened the debugging
 time. 
 
@@ -480,7 +480,7 @@ that it sent a transaction that failed `CheckTx`. But this should not be sent on
 (we mentioned the valid reasons for `CheckTx` to failures). We would indeed require adding a special code and/or the `neverValidTx` flag
 to `ResponseCheckTx`, and logging this warning only if the application sets these parameters.
 
-This would facilitate debugging and pinpointing the problem for operators of the nodes recieving these warnings.
+This would facilitate debugging and pinpointing the problem for operators of the nodes receiving these warnings.
 
 Then, once we progress with the p2p specification and understand all possible implications of banning, actual peer banning can be implemented. 
 
@@ -499,7 +499,7 @@ Banning based on IP should be sufficient as the secret connection handshake prev
 
 *Backwards compatibility*
 
-Otehr than avoiding relying solely on the response code values, there are no immediate concerns in terms of backwards compatiblity.
+Other than avoiding relying solely on the response code values, there are no immediate concerns in terms of backwards compatibility.
 
 ### References
 

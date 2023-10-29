@@ -8,6 +8,3 @@
     independent evolution with backward compatibility.
   * `ABCIClient` renamed to `ABCIServiceClient`.
   * `ABCIServer` renamed to `ABCIServiceServer`.
-- `[proto]`Give the `BlockResultsService` method `GetLatestBlockResults`
-  its unique response type named `GetLatestBlockResultsResponse`
-  ([\#1533](https://github.com/cometbft/cometbft/pull/1533)).

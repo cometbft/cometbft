@@ -55,3 +55,13 @@ non-idempotent "get latest block data" API for a data companion
 progress of the chain) has never been discussed or demonstrated.
 If this was only a "nice to throw in" idea, perhaps it's better to remove
 these methods until the need for them becomes apparent.
+
+## Proposed actions
+
+* Remove the following gRPC methods:
+  - `GetLatest` from `BlockService`;
+  - `GetLatestBlockResults` from `BlockResultsService`.
+* Change the documentation for the `GetByHeight` and `GetBlockResults` methods
+  to not treat the height parameter of 0 as a special case.
+* Revise the specifications in ADR-101 to remove the special treatment of
+  the height value 0.

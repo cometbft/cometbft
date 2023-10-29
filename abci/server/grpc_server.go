@@ -67,10 +67,10 @@ type gRPCApplication struct {
 	types.Application
 }
 
-func (app *gRPCApplication) Echo(_ context.Context, req *types.RequestEcho) (*types.ResponseEcho, error) {
-	return &types.ResponseEcho{Message: req.Message}, nil
+func (app *gRPCApplication) Echo(_ context.Context, req *types.EchoRequest) (*types.EchoResponse, error) {
+	return &types.EchoResponse{Message: req.Message}, nil
 }
 
-func (app *gRPCApplication) Flush(context.Context, *types.RequestFlush) (*types.ResponseFlush, error) {
-	return &types.ResponseFlush{}, nil
+func (app *gRPCApplication) Flush(context.Context, *types.FlushRequest) (*types.FlushResponse, error) {
+	return &types.FlushResponse{}, nil
 }

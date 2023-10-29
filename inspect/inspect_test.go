@@ -259,7 +259,7 @@ func TestBlockResults(t *testing.T) {
 	stateStoreMock := &statemocks.Store{}
 	stateStoreMock.On("Close").Return(nil)
 	//	cmtstate "github.com/cometbft/cometbft/api/cometbft/state"
-	stateStoreMock.On("LoadFinalizeBlockResponse", testHeight).Return(&abcitypes.ResponseFinalizeBlock{
+	stateStoreMock.On("LoadFinalizeBlockResponse", testHeight).Return(&abcitypes.FinalizeBlockResponse{
 		TxResults: []*abcitypes.ExecTxResult{
 			{
 				GasUsed: testGasUsed,
@@ -294,7 +294,7 @@ func TestBlockResults(t *testing.T) {
 	require.NoError(t, err)
 	res, err := cli.BlockResults(context.Background(), &testHeight)
 	require.NoError(t, err)
-	require.Equal(t, res.TxsResults[0].GasUsed, testGasUsed)
+	require.Equal(t, res.TxResults[0].GasUsed, testGasUsed)
 
 	cancel()
 	wg.Wait()

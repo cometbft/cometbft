@@ -14,7 +14,7 @@ import (
 
 type BlockResults struct {
 	Height                int64                     `json:"height"`
-	TxsResults            []*abci.ExecTxResult      `json:"txs_results"`
+	TxResults             []*abci.ExecTxResult      `json:"txs_results"`
 	FinalizeBlockEvents   []*abci.Event             `json:"finalize_block_events"`
 	ValidatorUpdates      []*abci.ValidatorUpdate   `json:"validator_updates"`
 	ConsensusParamUpdates *cmtproto.ConsensusParams `json:"consensus_param_updates"`
@@ -39,7 +39,7 @@ func (b blockResultServiceClient) GetBlockResults(ctx context.Context, height in
 
 	return &BlockResults{
 		Height:                res.Height,
-		TxsResults:            res.TxsResults,
+		TxResults:             res.TxResults,
 		FinalizeBlockEvents:   res.FinalizeBlockEvents,
 		ValidatorUpdates:      res.ValidatorUpdates,
 		ConsensusParamUpdates: res.ConsensusParamUpdates,
@@ -55,7 +55,7 @@ func (b blockResultServiceClient) GetLatestBlockResults(ctx context.Context) (*B
 
 	return &BlockResults{
 		Height:                res.Height,
-		TxsResults:            res.TxsResults,
+		TxResults:             res.TxResults,
 		FinalizeBlockEvents:   res.FinalizeBlockEvents,
 		ValidatorUpdates:      res.ValidatorUpdates,
 		ConsensusParamUpdates: res.ConsensusParamUpdates,

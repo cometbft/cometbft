@@ -48,7 +48,7 @@ func (s *blockResultsService) GetBlockResults(_ context.Context, req *brs.GetBlo
 
 	return &brs.GetBlockResultsResponse{
 		Height:              req.Height,
-		TxsResults:          res.TxResults,
+		TxResults:           res.TxResults,
 		FinalizeBlockEvents: formatProtoToRef(res.Events),
 		ValidatorUpdates:    formatProtoToRef(res.ValidatorUpdates),
 		AppHash:             res.AppHash,
@@ -56,7 +56,7 @@ func (s *blockResultsService) GetBlockResults(_ context.Context, req *brs.GetBlo
 }
 
 // GetLatest BlockResults returns the block results of the last committed height.
-func (s *blockResultsService) GetLatestBlockResults(_ context.Context, _ *brs.GetLatestBlockResultsRequest) (*brs.GetBlockResultsResponse, error) {
+func (s *blockResultsService) GetLatestBlockResults(_ context.Context, _ *brs.GetLatestBlockResultsRequest) (*brs.GetLatestBlockResultsResponse, error) {
 	logger := s.logger.With("endpoint", "GetBlockResults")
 	ss, err := s.stateStore.Load()
 	if err != nil {
@@ -70,9 +70,9 @@ func (s *blockResultsService) GetLatestBlockResults(_ context.Context, _ *brs.Ge
 		return nil, status.Error(codes.Internal, "Internal server error")
 	}
 
-	return &brs.GetBlockResultsResponse{
+	return &brs.GetLatestBlockResultsResponse{
 		Height:              ss.LastBlockHeight,
-		TxsResults:          res.TxResults,
+		TxResults:           res.TxResults,
 		FinalizeBlockEvents: formatProtoToRef(res.Events),
 		ValidatorUpdates:    formatProtoToRef(res.ValidatorUpdates),
 		AppHash:             res.AppHash,

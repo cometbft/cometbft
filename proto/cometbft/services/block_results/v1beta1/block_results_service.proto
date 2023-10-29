@@ -13,5 +13,5 @@ service BlockResultsService {
   rpc GetBlockResults(GetBlockResultsRequest) returns (GetBlockResultsResponse);
 
   // GetLatestBlockResults returns the BlockResults of the latest committed height.
-  rpc GetLatestBlockResults(GetLatestBlockResultsRequest) returns (GetBlockResultsResponse);
+  rpc GetLatestBlockResults(GetLatestBlockResultsRequest) returns (GetLatestBlockResultsResponse);
 }

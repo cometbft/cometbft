@@ -6,10 +6,7 @@ breaking:
     - FILE
 lint:
   use:
-    - BASIC
-    - ENUM_VALUE_PREFIX
-    - ENUM_ZERO_VALUE_SUFFIX
-    - FILE_LOWER_SNAKE_CASE
+    - DEFAULT
   ignore_only:
     ENUM_VALUE_PREFIX:
       - tendermint
@@ -21,4 +18,33 @@ lint:
       - cometbft/abci/v1beta1
       - cometbft/abci/v1beta2
       - cometbft/abci/v1beta3
+    PACKAGE_VERSION_SUFFIX:
+      - tendermint
+      - cometbft/abci/v1beta1
+      - cometbft/abci/v1beta2
+      - cometbft/abci/v1beta3
+    RPC_REQUEST_RESPONSE_UNIQUE:
+      - tendermint
+      - cometbft/abci/v1beta1
+      - cometbft/abci/v1beta2
+      - cometbft/abci/v1beta3
+      - cometbft/rpc/grpc
+    RPC_REQUEST_STANDARD_NAME:
+      - tendermint
+      - cometbft/abci/v1beta1
+      - cometbft/abci/v1beta2
+      - cometbft/abci/v1beta3
+      - cometbft/rpc/grpc
+    RPC_RESPONSE_STANDARD_NAME:
+      - tendermint
+      - cometbft/abci/v1beta1
+      - cometbft/abci/v1beta2
+      - cometbft/abci/v1beta3
+      - cometbft/rpc/grpc
+    SERVICE_SUFFIX:
+      - tendermint
+      - cometbft/abci/v1beta1
+      - cometbft/abci/v1beta2
+      - cometbft/abci/v1beta3
+      - cometbft/rpc/grpc
   enum_zero_value_suffix: _UNKNOWN

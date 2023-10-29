@@ -194,7 +194,7 @@ func (env *Environment) BlockResults(_ *rpctypes.Context, heightPtr *int64) (*ct
 
 	return &ctypes.ResultBlockResults{
 		Height:                height,
-		TxsResults:            results.TxResults,
+		TxResults:             results.TxResults,
 		FinalizeBlockEvents:   results.Events,
 		ValidatorUpdates:      results.ValidatorUpdates,
 		ConsensusParamUpdates: results.ConsensusParamUpdates,

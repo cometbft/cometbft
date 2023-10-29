@@ -1,0 +1,14 @@
+syntax = "proto3";
+package cometbft.state.v1beta4;
+
+import "cometbft/abci/v1beta4/types.proto";
+import "cometbft/state/v1beta3/types.proto";
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/state/v1beta4";
+
+message ABCIResponsesInfo {
+  // Retains the responses of the legacy ABCI calls during block processing.
+  v1beta3.LegacyABCIResponses legacy_abci_responses = 1;
+  int64 height = 2;
+  cometbft.abci.v1beta4.FinalizeBlockResponse finalize_block = 3;
+}

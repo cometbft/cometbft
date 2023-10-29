@@ -37,7 +37,7 @@ func RandVals(cnt int) []types.ValidatorUpdate {
 // which allows tests to pass and is fine as long as you
 // don't make any tx that modify the validator state
 func InitKVStore(ctx context.Context, app *Application) error {
-	_, err := app.InitChain(ctx, &types.RequestInitChain{
+	_, err := app.InitChain(ctx, &types.InitChainRequest{
 		Validators: RandVals(1),
 	})
 	return err

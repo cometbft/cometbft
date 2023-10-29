@@ -220,19 +220,18 @@ to undergo any changes in their implementation.
 As for the new methods:
 
 * `PrepareProposal` must create a list of [transactions](./abci++_methods.md#prepareproposal)
-  by copying over the transaction list passed in `RequestPrepareProposal.txs`, in the same order.
-  
+  by copying over the transaction list passed in `PrepareProposalRequest.txs`, in the same order.
   The Application must check whether the size of all transactions exceeds the byte limit
-  (`RequestPrepareProposal.max_tx_bytes`). If so, the Application must remove transactions at the
+  (`PrepareProposalRequest.max_tx_bytes`). If so, the Application must remove transactions at the
   end of the list until the total byte size is at or below the limit.
-* `ProcessProposal` must set `ResponseProcessProposal.status` to _accept_ and return.
-* `ExtendVote` is to set `ResponseExtendVote.extension` to an empty byte array and return.
-* `VerifyVoteExtension` must set `ResponseVerifyVoteExtension.accept` to _true_ if the extension is
+* `ProcessProposal` must set `ProcessProposalResponse.status` to _accept_ and return.
+* `ExtendVote` is to set `ExtendVoteResponse.extension` to an empty byte array and return.
+* `VerifyVoteExtension` must set `VerifyVoteExtensionResponse.accept` to _true_ if the extension is
   an empty byte array and _false_ otherwise, then return.
 * `FinalizeBlock` is to coalesce the implementation of methods `BeginBlock`, `DeliverTx`, and
   `EndBlock`. Legacy applications looking to reuse old code that implemented `DeliverTx` should
   wrap the legacy `DeliverTx` logic in a loop that executes one transaction iteration per
-  transaction in `RequestFinalizeBlock.tx`.
+  transaction in `FinalizeBlockRequest.tx`.
 
 Finally, `Commit`, which is kept in ABCI++, no longer returns the `AppHash`. It is now up to
 `FinalizeBlock` to do so. Thus, a slight refactoring of the old `Commit` implementation will be

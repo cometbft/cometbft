@@ -53,7 +53,7 @@ type ResultCommit struct {
 // ABCI results from a block
 type ResultBlockResults struct {
 	Height                int64                     `json:"height"`
-	TxsResults            []*abci.ExecTxResult      `json:"txs_results"`
+	TxResults             []*abci.ExecTxResult      `json:"txs_results"`
 	FinalizeBlockEvents   []abci.Event              `json:"finalize_block_events"`
 	ValidatorUpdates      []abci.ValidatorUpdate    `json:"validator_updates"`
 	ConsensusParamUpdates *cmtproto.ConsensusParams `json:"consensus_param_updates"`
@@ -63,8 +63,8 @@ type ResultBlockResults struct {
 // NewResultCommit is a helper to initialize the ResultCommit with
 // the embedded struct
 func NewResultCommit(header *types.Header, commit *types.Commit,
-	canonical bool) *ResultCommit {
-
+	canonical bool,
+) *ResultCommit {
 	return &ResultCommit{
 		SignedHeader: types.SignedHeader{
 			Header: header,
@@ -183,15 +183,15 @@ type ResultBroadcastTx struct {
 
 // CheckTx and ExecTx results
 type ResultBroadcastTxCommit struct {
-	CheckTx  abci.ResponseCheckTx `json:"check_tx"`
+	CheckTx  abci.CheckTxResponse `json:"check_tx"`
 	TxResult abci.ExecTxResult    `json:"tx_result"`
 	Hash     bytes.HexBytes       `json:"hash"`
 	Height   int64                `json:"height"`
 }
 
-// ResultCheckTx wraps abci.ResponseCheckTx.
+// ResultCheckTx wraps abci.CheckTxResponse.
 type ResultCheckTx struct {
-	abci.ResponseCheckTx
+	abci.CheckTxResponse
 }
 
 // Result of querying for a tx
@@ -226,12 +226,12 @@ type ResultUnconfirmedTxs struct {
 
 // Info abci msg
 type ResultABCIInfo struct {
-	Response abci.ResponseInfo `json:"response"`
+	Response abci.InfoResponse `json:"response"`
 }
 
 // Query abci msg
 type ResultABCIQuery struct {
-	Response abci.ResponseQuery `json:"response"`
+	Response abci.QueryResponse `json:"response"`
 }
 
 // Result of broadcasting evidence

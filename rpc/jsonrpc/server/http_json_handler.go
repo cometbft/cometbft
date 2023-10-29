@@ -132,7 +132,7 @@ func handleInvalidJSONRPCPaths(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Since the pattern "/" matches all paths not matched by other registered patterns,
 		//  we check whether the path is indeed "/", otherwise return a 404 error
-		if r.URL.Path != "/" {
+		if r.URL.Path != "/" && r.URL.Path != "/v1" && r.URL.Path != "/v1/" {
 			http.NotFound(w, r)
 			return
 		}
@@ -237,7 +237,7 @@ func writeListOfEndpoints(w http.ResponseWriter, r *http.Request, funcMap map[st
 	for _, name := range noArgNames {
 		// FIXME: The link should have the version as well. Where can we get it from the request?
 		link := fmt.Sprintf("//%s/%s", r.Host, name)
-		buf.WriteString(fmt.Sprintf("<a href=\"%s\">%s</a><br>", link, link))
+		buf.WriteString(fmt.Sprintf("<a href=\"%s\">%s</a><br>", link, name))
 	}
 
 	buf.WriteString("<br>Endpoints that require arguments:<br>")

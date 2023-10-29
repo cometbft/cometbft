@@ -17,9 +17,6 @@ func RegisterRPCFuncs(mux *http.ServeMux, funcMap map[string]*RPCFunc, logger lo
 	// HTTP endpoints
 	for funcName, rpcFunc := range funcMap {
 		mux.HandleFunc("/"+funcName, makeHTTPHandler(rpcFunc, logger))
-	}
-
-	for funcName, rpcFunc := range funcMap {
 		mux.HandleFunc("/v1/"+funcName, makeHTTPHandler(rpcFunc, logger))
 	}
 

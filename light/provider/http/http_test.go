@@ -34,7 +34,7 @@ func TestNewProvider(t *testing.T) {
 }
 
 func TestProvider(t *testing.T) {
-	for _, ep := range []string{"/websocket", "/v1/websocket"} {
+	for _, path := range []string{"", "/", "/v1", "/v1/"} {
 		app := kvstore.NewInMemoryApplication()
 		app.RetainBlocks = 10
 		node := rpctest.StartCometBFT(app, rpctest.RecreateConfig)
@@ -46,7 +46,7 @@ func TestProvider(t *testing.T) {
 		require.NoError(t, err)
 		chainID := genDoc.ChainID
 
-		c, err := rpchttp.New(rpcAddr, ep)
+		c, err := rpchttp.New(rpcAddr + path)
 		require.Nil(t, err)
 
 		p := lighthttp.NewWithClient(chainID, c)

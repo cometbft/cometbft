@@ -553,7 +553,7 @@ func (n Node) AddressRPC() string {
 
 // Client returns an RPC client for the node.
 func (n Node) Client() (*rpchttp.HTTP, error) {
-	return rpchttp.New(fmt.Sprintf("http://%s:%v/v1", n.ExternalIP, n.RPCProxyPort), "/websocket")
+	return rpchttp.New(fmt.Sprintf("http://%s:%v/v1", n.ExternalIP, n.RPCProxyPort))
 }
 
 // GRPCClient creates a gRPC client for the node.

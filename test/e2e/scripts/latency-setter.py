@@ -17,7 +17,7 @@ if len(sys.argv) < 3:
     usage()
 
 if sys.argv[1] == 'unset':
-    command = 'sudo tc qdisc del dev ' + sys.argv[2] + ' root'
+    command = 'tc qdisc del dev ' + sys.argv[2] + ' root'
     os.system(command)
     exit()
 
@@ -61,15 +61,15 @@ for l in lats[1:]:
 
 print '# Setting rules for interface', iface, 'in zone', myzone, 'with IP', myip
 
-command = 'sudo tc qdisc del dev ' + iface + ' root'
+command = 'tc qdisc del dev ' + iface + ' root'
 os.system(command)
-command = 'sudo tc qdisc add dev ' + iface + ' root handle 1: htb default 10'
+command = 'tc qdisc add dev ' + iface + ' root handle 1: htb default 10'
 os.system(command)
-command = 'sudo tc class add dev ' + iface + ' parent 1: classid 1:1 htb rate 1gbit'
+command = 'tc class add dev ' + iface + ' parent 1: classid 1:1 htb rate 1gbit'
 os.system(command)
-command = 'sudo tc class add dev ' + iface + ' parent 1:1 classid 1:10 htb rate 1gbit'
+command = 'tc class add dev ' + iface + ' parent 1:1 classid 1:10 htb rate 1gbit'
 os.system(command)
-command = 'sudo tc qdisc add dev ' + iface + ' parent 1:10 handle 10: sfq perturb 10'
+command = 'tc qdisc add dev ' + iface + ' parent 1:10 handle 10: sfq perturb 10'
 os.system(command)
 
 nextHandle = 11
@@ -82,16 +82,16 @@ for az in azs[1:]:
             continue
         delta = .05 * lat
         print '# Setting latency to', lat, 'ms for zone', az
-        command = 'sudo tc class add dev ' + iface + ' parent 1:1 classid 1:' + str(nextHandle) + ' htb rate 1gbit'
+        command = 'tc class add dev ' + iface + ' parent 1:1 classid 1:' + str(nextHandle) + ' htb rate 1gbit'
         os.system(command)
-        command = 'sudo tc qdisc add dev ' + iface + ' parent 1:' + str(nextHandle) + ' handle ' + str(
+        command = 'tc qdisc add dev ' + iface + ' parent 1:' + str(nextHandle) + ' handle ' + str(
             nextHandle) + ': netem delay ' + str(lat) + 'ms ' + str(delta) + 'ms distribution normal'
         os.system(command)
         for item in ipData:
             if item['Zone'] == az:
                 ip = item['IP']
                 print '\t# Latency from', myip, 'to', ip, 'set to', lat, '+/-', delta
-                command = 'sudo tc filter add dev ' + iface + ' protocol ip parent 1: prio 1 u32 match ip dst ' + ip + '/32 flowid 1:' + str(
+                command = 'tc filter add dev ' + iface + ' protocol ip parent 1: prio 1 u32 match ip dst ' + ip + '/32 flowid 1:' + str(
                     nextHandle)
                 os.system(command)
         nextHandle += 1

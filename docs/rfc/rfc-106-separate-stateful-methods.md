@@ -44,7 +44,7 @@ highlight the different use cases and semantics for the respective methods.
 `GetByHeight` (with a valid height) returns the same data for the same input
 and so the responses can be cached at the client side, while the response
 of `GetLatest` varies with time. It's also easy to erroneously use 0 as the
-actual requested height in workflows using `GetHeight` and process the result
+actual requested height in workflows using `GetByHeight` and process the result
 to some ill effects down the road, rather than be stopped by a timely failure.
 
 For these reasons, it seems better to cleanly separate the two use cases and

@@ -3,6 +3,7 @@ package e2e
 import (
 	"bytes"
 	"context"
+	"encoding/csv"
 	"errors"
 	"fmt"
 	"io"
@@ -124,6 +125,7 @@ type Node struct {
 	SendNoLoad              bool
 	Prometheus              bool
 	PrometheusProxyPort     uint32
+	Zone                    uint32
 }
 
 // LoadTestnet loads a testnet from a manifest file, using the filename to
@@ -239,6 +241,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			Perturbations:           []Perturbation{},
 			SendNoLoad:              nodeManifest.SendNoLoad,
 			Prometheus:              testnet.Prometheus,
+			Zone:                    nodeManifest.Zone,
 		}
 		if node.StartAt == testnet.InitialHeight {
 			node.StartAt = 0 // normalize to 0 for initial nodes, since code expects this
@@ -351,12 +354,46 @@ func (t Testnet) Validate() error {
 	if len(t.Nodes) == 0 {
 		return errors.New("network has no nodes")
 	}
+	if err := t.validateZones(t.Nodes); err != nil {
+		return err
+	}
 	for _, node := range t.Nodes {
 		if err := node.Validate(t); err != nil {
 			return fmt.Errorf("invalid node %q: %w", node.Name, err)
 		}
 	}
 	return nil
+}
+
+func (t Testnet) validateZones(nodes []*Node) error {
+	dir := strings.TrimSuffix(t.Dir, t.Name)
+	zoneLatencies, err := loadLatencies(filepath.Join(dir, "aws-latencies.csv"))
+	if err != nil {
+		fmt.Printf("csv error %v\n", err)
+	}
+
+	// get list of zone ids
+	zones := make([]uint32, len(zoneLatencies))
+	for zone := range zoneLatencies {
+		zones = append(zones, zone)
+	}
+
+	// check that node's zone ids are valid
+	for _, node := range nodes {
+		if !nodeHasValidZone(node, zones) {
+			return fmt.Errorf("invalid zone for node %s (zones %v)", node.Name, zones)
+		}
+	}
+	return nil
+}
+
+func nodeHasValidZone(node *Node, zones []uint32) bool {
+	for _, z := range zones {
+		if node.Zone == z {
+			return true
+		}
+	}
+	return false
 }
 
 // Validate validates a node.
@@ -662,4 +699,53 @@ func (g *ipGenerator) Next() net.IP {
 		}
 	}
 	return ip
+}
+
+func loadLatencies(filePath string) (map[uint32][]uint32, error) {
+	records, err := readCsvFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+	zoneLatencies := make(map[uint32][]uint32, len(records))
+	for _, r := range records {
+		zoneId, err := strconv.ParseUint(r[0], 10, 32)
+		if err != nil {
+			return nil, ErrParsingStringToInt{r[0], err}
+		}
+		zoneLatencies[uint32(zoneId)] = make([]uint32, len(r)-1)
+		for i, l := range r[1:] {
+			lat, err := strconv.ParseUint(l, 10, 32)
+			if err != nil {
+				return nil, ErrParsingStringToInt{l, err}
+			}
+			zoneLatencies[uint32(zoneId)][i] = uint32(lat)
+		}
+	}
+	return zoneLatencies, nil
+}
+
+type ErrParsingStringToInt struct {
+	ZoneId string
+	Err    error
+}
+
+func (e ErrParsingStringToInt) Error() string {
+	return fmt.Sprintf("invalid zone id (%s): %v", e.ZoneId, e.Err)
+}
+
+func readCsvFile(filePath string) ([][]string, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	csvReader := csv.NewReader(f)
+	csvReader.Comment = '#'
+	records, err := csvReader.ReadAll()
+	if err != nil {
+		return nil, err
+	}
+
+	return records, nil
 }

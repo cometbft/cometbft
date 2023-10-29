@@ -178,6 +178,9 @@ type ManifestNode struct {
 	// It defaults to false so unless the configured, the node will
 	// receive load.
 	SendNoLoad bool `toml:"send_no_load"`
+
+	// Geographical zone ID for simulating latencies.
+	Zone uint32 `toml:"zone"`
 }
 
 // Save saves the testnet manifest to a file.

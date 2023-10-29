@@ -26,12 +26,22 @@ func (p *Provider) Setup() error {
 	if err != nil {
 		return err
 	}
-	//nolint: gosec
-	// G306: Expect WriteFile permissions to be 0600 or less
+	//nolint: gosec // G306: Expect WriteFile permissions to be 0600 or less
 	err = os.WriteFile(filepath.Join(p.Testnet.Dir, "docker-compose.yml"), compose, 0o644)
 	if err != nil {
 		return err
 	}
+
+	zonesTable, err := zonesTableBytes(p.Testnet.Nodes)
+	if err != nil {
+		return err
+	}
+	//nolint: gosec // G306: Expect WriteFile permissions to be 0600 or less
+	err = os.WriteFile(filepath.Join(p.Testnet.Dir, "zones.csv"), zonesTable, 0o644)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -68,6 +78,24 @@ func (p Provider) CheckUpgraded(ctx context.Context, node *e2e.Node) (string, bo
 		upgraded = true
 	}
 	return name, upgraded, nil
+}
+
+func zonesTableBytes(nodes []*e2e.Node) ([]byte, error) {
+	tmpl, err := template.New("docker-compose").Parse(`Node,IP,Zone
+{{- range . }}
+{{- if .Zone }}
+{{ .Name }},{{ .InternalIP }},{{ .Zone }}
+{{- end }}
+{{- end }}`)
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, nodes)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 // dockerComposeBytes generates a Docker Compose config file for a testnet and returns the

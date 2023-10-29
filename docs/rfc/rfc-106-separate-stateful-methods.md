@@ -2,7 +2,7 @@
 
 ## Changelog
 
-- 2023-10-27: Initial revision
+- 2023-10-27: Initial revision (@mzabaluev)
 
 ## Abstract
 

@@ -98,7 +98,8 @@ func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
 
 	// Execute script in the container.
 	if err := Exec(ctx, "exec", "--privileged", node.Name,
-		container_dir+"latency-setter.py", container_dir+"zones.csv", container_dir+"aws-latencies.csv", "eth0"); err != nil {
+		container_dir+"latency-setter.py", "set",
+		container_dir+"zones.csv", container_dir+"aws-latencies.csv", "eth0"); err != nil {
 		return err
 	}
 	return nil

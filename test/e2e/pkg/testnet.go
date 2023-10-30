@@ -7,10 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"math/rand"
 	"net"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"text/template"
@@ -42,6 +44,7 @@ type (
 	Mode         string
 	Protocol     string
 	Perturbation string
+	ZoneID       string
 )
 
 const (
@@ -125,7 +128,7 @@ type Node struct {
 	SendNoLoad              bool
 	Prometheus              bool
 	PrometheusProxyPort     uint32
-	Zone                    uint32
+	Zone                    ZoneID
 }
 
 // LoadTestnet loads a testnet from a manifest file, using the filename to
@@ -241,7 +244,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			Perturbations:           []Perturbation{},
 			SendNoLoad:              nodeManifest.SendNoLoad,
 			Prometheus:              testnet.Prometheus,
-			Zone:                    nodeManifest.Zone,
+			Zone:                    ZoneID(nodeManifest.Zone),
 		}
 		if node.StartAt == testnet.InitialHeight {
 			node.StartAt = 0 // normalize to 0 for initial nodes, since code expects this
@@ -367,33 +370,31 @@ func (t Testnet) Validate() error {
 
 func (t Testnet) validateZones(nodes []*Node) error {
 	dir := strings.TrimSuffix(t.Dir, t.Name)
-	zoneLatencies, err := loadLatencies(filepath.Join(dir, "aws-latencies.csv"))
-	if err != nil {
-		fmt.Printf("csv error %v\n", err)
+	filePath := filepath.Join(dir, "aws-latencies.csv")
+	zoneMatrix, err := loadZoneLatenciesMatrix(filePath)
+	fileNotFoundErr := errors.Is(err, fs.ErrNotExist)
+	if !fileNotFoundErr && err != nil {
+		return err
 	}
 
-	// get list of zone ids
-	zones := make([]uint32, len(zoneLatencies))
-	for zone := range zoneLatencies {
+	// Get list of zone ids.
+	zones := make([]ZoneID, len(zoneMatrix))
+	for zone := range zoneMatrix {
 		zones = append(zones, zone)
 	}
 
-	// check that node's zone ids are valid
+	// Check that the zone ids of all nodes are valid when matrix file exists.
 	for _, node := range nodes {
-		if !nodeHasValidZone(node, zones) {
-			return fmt.Errorf("invalid zone for node %s (zones %v)", node.Name, zones)
+		if node.Zone != "" && fileNotFoundErr {
+			return fmt.Errorf("node %s has zone %s but zone-latencies matrix file was not found in %s",
+				node.Name, string(node.Zone), filePath)
+		}
+		if !slices.Contains(zones, node.Zone) {
+			return fmt.Errorf("invalid zone %s for node %s", string(node.Zone), node.Name)
 		}
 	}
-	return nil
-}
 
-func nodeHasValidZone(node *Node, zones []uint32) bool {
-	for _, z := range zones {
-		if node.Zone == z {
-			return true
-		}
-	}
-	return false
+	return nil
 }
 
 // Validate validates a node.
@@ -701,27 +702,24 @@ func (g *ipGenerator) Next() net.IP {
 	return ip
 }
 
-func loadLatencies(filePath string) (map[uint32][]uint32, error) {
+func loadZoneLatenciesMatrix(filePath string) (map[ZoneID][]uint32, error) {
 	records, err := readCsvFile(filePath)
 	if err != nil {
 		return nil, err
 	}
-	zoneLatencies := make(map[uint32][]uint32, len(records))
+	matrix := make(map[ZoneID][]uint32, len(records))
 	for _, r := range records {
-		zoneId, err := strconv.ParseUint(r[0], 10, 32)
-		if err != nil {
-			return nil, ErrParsingStringToInt{r[0], err}
-		}
-		zoneLatencies[uint32(zoneId)] = make([]uint32, len(r)-1)
+		zoneId := ZoneID(r[0])
+		matrix[zoneId] = make([]uint32, len(r)-1)
 		for i, l := range r[1:] {
 			lat, err := strconv.ParseUint(l, 10, 32)
 			if err != nil {
 				return nil, ErrParsingStringToInt{l, err}
 			}
-			zoneLatencies[uint32(zoneId)][i] = uint32(lat)
+			matrix[zoneId][i] = uint32(lat)
 		}
 	}
-	return zoneLatencies, nil
+	return matrix, nil
 }
 
 type ErrParsingStringToInt struct {

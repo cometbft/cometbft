@@ -84,19 +84,13 @@ func (p Provider) CheckUpgraded(ctx context.Context, node *e2e.Node) (string, bo
 func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
 	container_dir := "/scripts/"
 
-	// Copy script that sets latency and data files to container.
-	scriptFiles := []string{
-		filepath.Join(p.Testnet.Dir+"/../../scripts", "latency-setter.py"),
-		filepath.Join(p.Testnet.Dir, "zones.csv"),
-		filepath.Join(p.Testnet.Dir+"/../../scripts", "aws-latencies.csv"),
-	}
-	for _, path := range scriptFiles {
-		if err := Exec(ctx, "cp", path, node.Name+":"+container_dir); err != nil {
-			return err
-		}
+	// Copy zone file used by the script that sets latency.
+	zonesFile := filepath.Join(p.Testnet.Dir, "zones.csv")
+	if err := Exec(ctx, "cp", zonesFile, node.Name+":"+container_dir); err != nil {
+		return err
 	}
 
-	// Execute script in the container.
+	// Execute lateny setter script in the container.
 	if err := ExecVerbose(ctx, "exec", "--privileged", node.Name,
 		container_dir+"latency-setter.py", "set",
 		container_dir+"zones.csv", container_dir+"aws-latencies.csv", "eth0"); err != nil {

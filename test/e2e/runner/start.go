@@ -55,8 +55,10 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 		if _, err := waitForNode(ctx, node, 0, 15*time.Second); err != nil {
 			return err
 		}
-		if err := p.SetLatency(ctx, node); err != nil {
-			return err
+		if node.ZoneIsSet() {
+			if err := p.SetLatency(ctx, node); err != nil {
+				return err
+			}
 		}
 		if node.PrometheusProxyPort > 0 {
 			logger.Info("start", "msg",
@@ -130,8 +132,10 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 		if err != nil {
 			return err
 		}
-		if err := p.SetLatency(ctx, node); err != nil {
-			return err
+		if node.ZoneIsSet() {
+			if err := p.SetLatency(ctx, node); err != nil {
+				return err
+			}
 		}
 		logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://%s:%v at height %v",
 			node.Name, node.ExternalIP, node.RPCProxyPort, status.SyncInfo.LatestBlockHeight))

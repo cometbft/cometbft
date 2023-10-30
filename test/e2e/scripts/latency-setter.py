@@ -11,7 +11,7 @@ import netifaces as nif
 def usage():
     print('Usage: \t', sys.argv[0], 'set ip-list latency-list iface-name')
     print('\tOR:\t', sys.argv[0], 'unset iface-name')
-    exit()
+    exit(1)
 
 if len(sys.argv) < 3:
     usage()

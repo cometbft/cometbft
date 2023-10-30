@@ -88,7 +88,7 @@ func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
 	scriptFiles := []string{
 		filepath.Join(p.Testnet.Dir+"/../../scripts", "latency-setter.py"),
 		filepath.Join(p.Testnet.Dir, "zones.csv"),
-		filepath.Join("networks", "aws-latencies.csv"),
+		filepath.Join(p.Testnet.Dir+"/../../scripts", "aws-latencies.csv"),
 	}
 	for _, path := range scriptFiles {
 		if err := Exec(ctx, "cp", path, node.Name+":"+container_dir); err != nil {

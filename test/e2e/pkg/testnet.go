@@ -369,8 +369,7 @@ func (t Testnet) Validate() error {
 }
 
 func (t Testnet) validateZones(nodes []*Node) error {
-	dir := strings.TrimSuffix(t.Dir, t.Name)
-	filePath := filepath.Join(dir, "aws-latencies.csv")
+	filePath := filepath.Join(t.Dir, "../../scripts/aws-latencies.csv")
 	zoneMatrix, err := loadZoneLatenciesMatrix(filePath)
 	fileNotFoundErr := errors.Is(err, fs.ErrNotExist)
 	if !fileNotFoundErr && err != nil {

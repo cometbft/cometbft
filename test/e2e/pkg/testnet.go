@@ -711,6 +711,7 @@ func loadZoneLatenciesMatrix(filePath string) (map[ZoneID][]uint32, error) {
 	if err != nil {
 		return nil, err
 	}
+	records = records[1:] // Ignore first headers line
 	matrix := make(map[ZoneID][]uint32, len(records))
 	for _, r := range records {
 		zoneId := ZoneID(r[0])

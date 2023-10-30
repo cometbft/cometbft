@@ -47,8 +47,9 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 	return execAnsible(ctx, p.Testnet.Dir, playbookFile, nodeIPs)
 }
 
+// Currently unsuported.
 func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
-	return nil
+	return fmt.Errorf("SetLatency() currently unsuported for Digital Ocean")
 }
 
 func (p Provider) StopTestnet(ctx context.Context) error {

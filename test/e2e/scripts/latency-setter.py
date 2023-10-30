@@ -42,12 +42,14 @@ with open(sys.argv[3], 'r') as f:
     lats = list(list(rec) for rec in csv.reader(f, delimiter=',')) #reads csv into a list of lists
 
 myzone = ''
+mynode = ''
 for item in ipData:
     if item['IP'] == myip:
         myzone = item['Zone']
+        mynode = item['Node']
 
 if myzone == '':
-    print('IP', myip, 'not in IP file')
+    print(f'# No zone configured for node {myip}')
     exit()
 
 azs = lats[0]
@@ -59,9 +61,9 @@ for l in lats[1:]:
         if value != 0:
             tlats[key] = value
 
-print('# Setting rules for interface', iface, 'in zone', myzone, 'with IP', myip)
+#print('# Setting rules for interface', iface, 'in zone', myzone, 'with IP', myip)
 
-command = 'tc qdisc del dev ' + iface + ' root'
+command = 'tc qdisc del dev ' + iface + ' root 2> /dev/null'
 os.system(command)
 command = 'tc qdisc add dev ' + iface + ' root handle 1: htb default 10'
 os.system(command)
@@ -88,7 +90,8 @@ for az in azs[1:]:
         for item in ipData:
             if item['Zone'] == az:
                 ip = item['IP']
-                print(f'# Configuring latency from {myip} ({myzone}) to {ip} ({az}) set to {lat}ms +/- {delta}ms')
+                node = item['Node']
+                print(f'# Configured latency from {mynode}/{myip} ({myzone}) to {node}/{ip} ({az}): {lat:.2f}ms +/- {delta:.2f}ms')
                 command = 'tc filter add dev ' + iface + ' protocol ip parent 1: prio 1 u32 match ip dst ' + ip + '/32 flowid 1:' + str(
                     nextHandle)
                 os.system(command)

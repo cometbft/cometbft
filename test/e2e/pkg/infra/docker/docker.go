@@ -97,7 +97,7 @@ func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
 	}
 
 	// Execute script in the container.
-	if err := Exec(ctx, "exec", "--privileged", node.Name,
+	if err := ExecVerbose(ctx, "exec", "--privileged", node.Name,
 		container_dir+"latency-setter.py", "set",
 		container_dir+"zones.csv", container_dir+"aws-latencies.csv", "eth0"); err != nil {
 		return err
@@ -235,4 +235,9 @@ func ExecComposeVerbose(ctx context.Context, dir string, args ...string) error {
 // Exec runs a Docker command.
 func Exec(ctx context.Context, args ...string) error {
 	return exec.Command(ctx, append([]string{"docker"}, args...)...)
+}
+
+// Exec runs a Docker command while displaying its output.
+func ExecVerbose(ctx context.Context, args ...string) error {
+	return exec.CommandVerbose(ctx, append([]string{"docker"}, args...)...)
 }

@@ -32,16 +32,7 @@ func (p *Provider) Setup() error {
 		return err
 	}
 
-	// Generate file with table mapping IP addresses to geographical zone for latencies.
-	zonesTable, err := zonesTableBytes(p.Testnet.Nodes)
-	if err != nil {
-		return err
-	}
-	//nolint: gosec // G306: Expect WriteFile permissions to be 0600 or less
-	err = os.WriteFile(filepath.Join(p.Testnet.Dir, "zones.csv"), zonesTable, 0o644)
-	if err != nil {
-		return err
-	}
+	infra.GenerateIPZonesTable(p.Testnet.Nodes, filepath.Join(p.Testnet.Dir, "zones.csv"))
 
 	return nil
 }
@@ -182,24 +173,6 @@ services:
 	}
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, testnet)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-func zonesTableBytes(nodes []*e2e.Node) ([]byte, error) {
-	tmpl, err := template.New("zones").Parse(`Node,IP,Zone
-{{- range . }}
-{{- if .Zone }}
-{{ .Name }},{{ .InternalIP }},{{ .Zone }}
-{{- end }}
-{{- end }}`)
-	if err != nil {
-		return nil, err
-	}
-	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, nodes)
 	if err != nil {
 		return nil, err
 	}

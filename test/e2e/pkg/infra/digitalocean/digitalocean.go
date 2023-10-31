@@ -20,8 +20,13 @@ type Provider struct {
 	infra.ProviderData
 }
 
-// Noop currently. Setup is performed externally to the e2e test tool.
+// Setup files for setting latency in nodes.
 func (p *Provider) Setup() error {
+	err := infra.GenerateIPZonesTable(p.Testnet.Nodes, filepath.Join(p.Testnet.Dir, "zones.csv"))
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -47,9 +52,36 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 	return execAnsible(ctx, p.Testnet.Dir, playbookFile, nodeIPs)
 }
 
-// Currently unsupported.
-func (p Provider) SetLatency(_ context.Context, _ *e2e.Node) error {
-	return fmt.Errorf("SetLatency() currently unsupported for Digital Ocean")
+// Execute latency setter script in the node.
+func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
+	// Directory in the node with the latency files.
+	remoteDir := "/cometbft/test/e2e/latency/"
+
+	playbook := basePlaybook
+
+	// Add task to copy ip-zones file to the node.
+	copyTask := fmt.Sprintf(`    ansible.builtin.copy:
+	src: %s
+	dest: %s`,
+		filepath.Join(p.Testnet.Dir, "zones.csv"),
+		remoteDir)
+	playbook = ansibleAddTask(playbook, "copy zones file to node", copyTask)
+
+	// Add task to execute latency setter script in the node.
+	cmd := fmt.Sprintf("%s set %s %s eth0",
+		filepath.Join(remoteDir, "latency-setter.py"),
+		filepath.Join(p.Testnet.Dir, "zones.csv"),
+		filepath.Join(remoteDir, "aws-latencies.csv"),
+	)
+	runTask := ansibleAddShellTasks(basePlaybook, "set latency", cmd)
+	playbook = ansibleAddTask(playbook, "execute latency setter script", runTask)
+
+	// Execute playbook
+	playbookFile := getNextPlaybookFilename()
+	if err := p.writePlaybook(playbookFile, playbook); err != nil {
+		return err
+	}
+	return execAnsible(ctx, p.Testnet.Dir, playbookFile, []string{string(node.ExternalIP)})
 }
 
 func (p Provider) StopTestnet(ctx context.Context) error {

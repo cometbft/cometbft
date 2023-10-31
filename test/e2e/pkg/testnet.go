@@ -384,12 +384,16 @@ func (t Testnet) validateZones(nodes []*Node) error {
 
 	// Check that the zone ids of all nodes are valid when matrix file exists.
 	for _, node := range nodes {
-		if node.Zone != "" && fileNotFoundErr {
-			return fmt.Errorf("node %s has zone %s but zone-latencies matrix file was not found in %s",
+		if !node.ZoneIsSet() {
+			continue
+		}
+		if fileNotFoundErr {
+			return fmt.Errorf("node %s has zone set to %s but zone-latencies matrix file was not found in %s",
 				node.Name, string(node.Zone), filePath)
 		}
 		if !slices.Contains(zones, node.Zone) {
-			return fmt.Errorf("invalid zone %s for node %s", string(node.Zone), node.Name)
+			return fmt.Errorf("invalid zone %s for node %s, not present in zone-latencies matrix file %s",
+				string(node.Zone), node.Name, filepath)
 		}
 	}
 

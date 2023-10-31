@@ -48,7 +48,7 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 }
 
 // Currently unsuported.
-func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
+func (p Provider) SetLatency(_ context.Context, _ *e2e.Node) error {
 	return fmt.Errorf("SetLatency() currently unsuported for Digital Ocean")
 }
 

@@ -714,26 +714,26 @@ func loadZoneLatenciesMatrix(filePath string) (map[ZoneID][]uint32, error) {
 	records = records[1:] // Ignore first headers line
 	matrix := make(map[ZoneID][]uint32, len(records))
 	for _, r := range records {
-		zoneId := ZoneID(r[0])
-		matrix[zoneId] = make([]uint32, len(r)-1)
+		zoneID := ZoneID(r[0])
+		matrix[zoneID] = make([]uint32, len(r)-1)
 		for i, l := range r[1:] {
 			lat, err := strconv.ParseUint(l, 10, 32)
 			if err != nil {
 				return nil, ErrParsingStringToInt{l, err}
 			}
-			matrix[zoneId][i] = uint32(lat)
+			matrix[zoneID][i] = uint32(lat)
 		}
 	}
 	return matrix, nil
 }
 
 type ErrParsingStringToInt struct {
-	ZoneId string
+	ZoneID string
 	Err    error
 }
 
 func (e ErrParsingStringToInt) Error() string {
-	return fmt.Sprintf("invalid zone id (%s): %v", e.ZoneId, e.Err)
+	return fmt.Sprintf("invalid zone id (%s): %v", e.ZoneID, e.Err)
 }
 
 func readCsvFile(filePath string) ([][]string, error) {

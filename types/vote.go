@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1beta1"
+	"github.com/cometbft/cometbft/p2p"
 	"time"
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
@@ -435,3 +437,7 @@ func SignAndCheckVote(
 
 	return true, nil
 }
+
+var (
+	_ p2p.Wrapper = &cmtcons.Vote{}
+)

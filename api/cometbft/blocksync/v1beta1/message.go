@@ -4,16 +4,6 @@ import (
 	"fmt"
 
 	"github.com/cosmos/gogoproto/proto"
-
-	"github.com/cometbft/cometbft/p2p"
-)
-
-var (
-	_ p2p.Wrapper = &StatusRequest{}
-	_ p2p.Wrapper = &StatusResponse{}
-	_ p2p.Wrapper = &NoBlockResponse{}
-	_ p2p.Wrapper = &BlockResponse{}
-	_ p2p.Wrapper = &BlockRequest{}
 )
 
 const (

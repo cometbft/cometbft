@@ -4,15 +4,6 @@ import (
 	"fmt"
 
 	"github.com/cosmos/gogoproto/proto"
-
-	"github.com/cometbft/cometbft/p2p"
-)
-
-var (
-	_ p2p.Wrapper = &ChunkRequest{}
-	_ p2p.Wrapper = &ChunkResponse{}
-	_ p2p.Wrapper = &SnapshotsRequest{}
-	_ p2p.Wrapper = &SnapshotsResponse{}
 )
 
 func (m *SnapshotsResponse) Wrap() proto.Message {

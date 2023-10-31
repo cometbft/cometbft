@@ -4,20 +4,6 @@ import (
 	"fmt"
 
 	"github.com/cosmos/gogoproto/proto"
-
-	"github.com/cometbft/cometbft/p2p"
-)
-
-var (
-	_ p2p.Wrapper = &VoteSetBits{}
-	_ p2p.Wrapper = &VoteSetMaj23{}
-	_ p2p.Wrapper = &Vote{}
-	_ p2p.Wrapper = &ProposalPOL{}
-	_ p2p.Wrapper = &Proposal{}
-	_ p2p.Wrapper = &NewValidBlock{}
-	_ p2p.Wrapper = &NewRoundStep{}
-	_ p2p.Wrapper = &HasVote{}
-	_ p2p.Wrapper = &BlockPart{}
 )
 
 func (m *VoteSetBits) Wrap() proto.Message {

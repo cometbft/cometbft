@@ -3,8 +3,10 @@ package core
 import (
 	"errors"
 	"fmt"
+	"github.com/cometbft/cometbft/p2p"
 	"sort"
 
+	bsproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v1beta2"
 	"github.com/cometbft/cometbft/libs/bytes"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
@@ -264,3 +266,5 @@ func (env *Environment) BlockSearch(
 
 	return &ctypes.ResultBlockSearch{Blocks: apiResults, TotalCount: totalCount}, nil
 }
+
+var _ p2p.Wrapper = &bsproto.BlockResponse{}

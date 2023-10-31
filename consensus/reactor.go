@@ -1913,3 +1913,15 @@ func (m *HasProposalBlockPartMessage) ValidateBasic() error {
 func (m *HasProposalBlockPartMessage) String() string {
 	return fmt.Sprintf("[HasProposalBlockPart PI:%v HR:{%v/%02d}]", m.Index, m.Height, m.Round)
 }
+
+var (
+	_ p2p.Wrapper = &cmtcons.BlockPart{}
+	_ p2p.Wrapper = &cmtcons.HasVote{}
+	_ p2p.Wrapper = &cmtcons.HasProposalBlockPart{}
+	_ p2p.Wrapper = &cmtcons.NewRoundStep{}
+	_ p2p.Wrapper = &cmtcons.NewValidBlock{}
+	_ p2p.Wrapper = &cmtcons.Proposal{}
+	_ p2p.Wrapper = &cmtcons.ProposalPOL{}
+	_ p2p.Wrapper = &cmtcons.VoteSetBits{}
+	_ p2p.Wrapper = &cmtcons.VoteSetMaj23{}
+)

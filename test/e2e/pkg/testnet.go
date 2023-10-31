@@ -369,8 +369,8 @@ func (t Testnet) Validate() error {
 }
 
 func (t Testnet) validateZones(nodes []*Node) error {
-	filePath := filepath.Join(t.Dir, "../../latency/aws-latencies.csv")
-	zoneMatrix, err := loadZoneLatenciesMatrix(filePath)
+	latencyFile := filepath.Join(t.Dir, "../../latency/aws-latencies.csv")
+	zoneMatrix, err := loadZoneLatenciesMatrix(latencyFile)
 	fileNotFoundErr := errors.Is(err, fs.ErrNotExist)
 	if !fileNotFoundErr && err != nil {
 		return err
@@ -389,11 +389,11 @@ func (t Testnet) validateZones(nodes []*Node) error {
 		}
 		if fileNotFoundErr {
 			return fmt.Errorf("node %s has zone set to %s but zone-latencies matrix file was not found in %s",
-				node.Name, string(node.Zone), filePath)
+				node.Name, string(node.Zone), latencyFile)
 		}
 		if !slices.Contains(zones, node.Zone) {
 			return fmt.Errorf("invalid zone %s for node %s, not present in zone-latencies matrix file %s",
-				string(node.Zone), node.Name, filepath)
+				string(node.Zone), node.Name, latencyFile)
 		}
 	}
 

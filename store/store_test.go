@@ -635,8 +635,12 @@ func TestPruningService(t *testing.T) {
 		assert.EqualValues(t, 1200, bs.Base())
 		assert.EqualValues(t, 1500, bs.Height())
 		assert.EqualValues(t, 301, bs.Size())
-		require.NotNil(t, bs.LoadBlockMeta(1200))
-		require.Nil(t, bs.LoadBlockMeta(1199))
+		block, meta := bs.LoadBlock(1200)
+		require.NotNil(t, block)
+		require.NotNil(t, meta)
+		block, meta = bs.LoadBlock(1199)
+		require.Nil(t, block)
+		require.Nil(t, meta)
 		// The header and commit for heights 1100 onwards
 		// need to remain to verify evidence
 		require.NotNil(t, bs.LoadBlockMeta(1100))
@@ -644,10 +648,14 @@ func TestPruningService(t *testing.T) {
 		require.NotNil(t, bs.LoadBlockCommit(1100))
 		require.Nil(t, bs.LoadBlockCommit(1099))
 		for i := int64(1); i < 1200; i++ {
-			require.Nil(t, bs.LoadBlockMeta(i))
+			block, meta = bs.LoadBlock(i)
+			require.Nil(t, block)
+			require.Nil(t, meta)
 		}
 		for i := int64(1200); i <= 1500; i++ {
-			require.NotNil(t, bs.LoadBlockMeta(i))
+			block, meta = bs.LoadBlock(i)
+			require.NotNil(t, block)
+			require.NotNil(t, meta)
 		}
 		t.Log("Done pruning blocks until height 1200")
 
@@ -696,10 +704,18 @@ func TestPruningService(t *testing.T) {
 	case <-obs.prunedBlocksResInfoCh:
 		// But we will prune only until 1350 because that was the Companions height
 		// and it is lower
-		assert.Nil(t, bs.LoadBlockMeta(1349))
-		assert.NotNil(t, bs.LoadBlockMeta(1350), fmt.Sprintf("expected block at height 1350 to be there, but it was not; block store base height = %d", bs.Base()))
-		assert.NotNil(t, bs.LoadBlockMeta(1500))
-		assert.Nil(t, bs.LoadBlockMeta(1501))
+		block, meta := bs.LoadBlock(1349)
+		assert.Nil(t, block)
+		assert.Nil(t, meta)
+		block, meta = bs.LoadBlock(1350)
+		assert.NotNil(t, block, fmt.Sprintf("expected block at height 1350 to be there, but it was not; block store base height = %d", bs.Base()))
+		assert.NotNil(t, meta)
+		block, meta = bs.LoadBlock(1500)
+		assert.NotNil(t, block)
+		assert.NotNil(t, meta)
+		block, meta = bs.LoadBlock(1501)
+		assert.Nil(t, block)
+		assert.Nil(t, meta)
 		t.Log("Done pruning blocks until 1500")
 
 	case <-time.After(5 * time.Second):
@@ -756,8 +772,12 @@ func TestPruneBlocks(t *testing.T) {
 	assert.EqualValues(t, 301, bs.Size())
 	assert.EqualValues(t, 1100, evidenceRetainHeight)
 
-	require.NotNil(t, bs.LoadBlockMeta(1200))
-	require.Nil(t, bs.LoadBlockMeta(1199))
+	block, meta := bs.LoadBlock(1200)
+	require.NotNil(t, block)
+	require.NotNil(t, meta)
+	block, meta = bs.LoadBlock(1199)
+	require.Nil(t, block)
+	require.Nil(t, meta)
 
 	// The header and commit for heights 1100 onwards
 	// need to remain to verify evidence
@@ -767,10 +787,14 @@ func TestPruneBlocks(t *testing.T) {
 	require.Nil(t, bs.LoadBlockCommit(1099))
 
 	for i := int64(1); i < 1200; i++ {
-		require.Nil(t, bs.LoadBlockMeta(i))
+		block, meta = bs.LoadBlock(i)
+		require.Nil(t, block)
+		require.Nil(t, meta)
 	}
 	for i := int64(1200); i <= 1500; i++ {
-		require.NotNil(t, bs.LoadBlockMeta(i))
+		block, meta = bs.LoadBlock(i)
+		require.NotNil(t, block)
+		require.NotNil(t, meta)
 	}
 
 	// Pruning below the current base should error
@@ -803,9 +827,15 @@ func TestPruneBlocks(t *testing.T) {
 	pruned, _, err = bs.PruneBlocks(1500, state)
 	require.NoError(t, err)
 	assert.EqualValues(t, 200, pruned)
-	assert.Nil(t, bs.LoadBlockMeta(1499))
-	assert.NotNil(t, bs.LoadBlockMeta(1500))
-	assert.Nil(t, bs.LoadBlockMeta(1501))
+	block, meta = bs.LoadBlock(1499)
+	assert.Nil(t, block)
+	assert.Nil(t, meta)
+	block, meta = bs.LoadBlock(1500)
+	assert.NotNil(t, block)
+	assert.NotNil(t, meta)
+	block, meta = bs.LoadBlock(1501)
+	assert.Nil(t, block)
+	assert.Nil(t, meta)
 }
 
 func TestLoadBlockMeta(t *testing.T) {

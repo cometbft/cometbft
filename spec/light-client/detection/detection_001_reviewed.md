@@ -678,7 +678,7 @@ func CreateEvidenceForPeer(peer PeerID, root LightBlock, trace LightStore)
         auxLS, result := VerifyToTarget(peer, common, trace[i].Header.Height)
   
         if result != ResultSuccess {
-            // something went wrong; peer did not provide a verifyable block
+            // something went wrong; peer did not provide a verifiable block
             return (nil, nil, nil, FaultyPeer)
         }
         else {

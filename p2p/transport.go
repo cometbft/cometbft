@@ -218,6 +218,11 @@ func (mt *MultiplexTransport) Dial(
 		return nil, err
 	}
 
+	if mt.mConfig.TestFuzz {
+		// so we have time to do peer handshakes and get set up.
+		c = FuzzConnAfterFromConfig(c, 10*time.Second, mt.mConfig.TestFuzzConfig)
+	}
+
 	// TODO(xla): Evaluate if we should apply filters if we explicitly dial.
 	if err := mt.filterConn(c); err != nil {
 		return nil, err

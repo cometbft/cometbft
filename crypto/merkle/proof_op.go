@@ -8,6 +8,8 @@ import (
 	cmtcrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 )
 
+var ErrKeyPathNotConsumed = errors.New("merkle: keypath not consumed")
+
 //----------------------------------------
 // ProofOp gets converted to an instance of ProofOperator:
 
@@ -36,34 +38,40 @@ func (poz ProofOperators) VerifyValue(root []byte, keypath string, value []byte)
 	return poz.Verify(root, keypath, [][]byte{value})
 }
 
-func (poz ProofOperators) Verify(root []byte, keypath string, args [][]byte) (err error) {
+func (poz ProofOperators) Verify(root []byte, keypath string, args [][]byte) error {
 	keys, err := KeyPathToKeys(keypath)
 	if err != nil {
-		return
+		return err
 	}
 
 	for i, op := range poz {
 		key := op.GetKey()
 		if len(key) != 0 {
 			if len(keys) == 0 {
-				return fmt.Errorf("key path has insufficient # of parts: expected no more keys but got %+v", string(key))
+				return ErrInvalidKey{
+					Err: fmt.Errorf("key path has insufficient # of parts: expected no more keys but got %+v", string(key)),
+				}
 			}
 			lastKey := keys[len(keys)-1]
 			if !bytes.Equal(lastKey, key) {
-				return fmt.Errorf("key mismatch on operation #%d: expected %+v but got %+v", i, string(lastKey), string(key))
+				return ErrInvalidKey{
+					Err: fmt.Errorf("key mismatch on operation #%d: expected %+v but got %+v", i, string(lastKey), string(key)),
+				}
 			}
 			keys = keys[:len(keys)-1]
 		}
 		args, err = op.Run(args)
 		if err != nil {
-			return
+			return err
 		}
 	}
 	if !bytes.Equal(root, args[0]) {
-		return fmt.Errorf("calculated root hash is invalid: expected %X but got %X", root, args[0])
+		return ErrInvalidHash{
+			Err: fmt.Errorf("root %x, want %x", args[0], root),
+		}
 	}
 	if len(keys) != 0 {
-		return errors.New("keypath not consumed all")
+		return ErrKeyPathNotConsumed
 	}
 	return nil
 }
@@ -94,7 +102,9 @@ func (prt *ProofRuntime) RegisterOpDecoder(typ string, dec OpDecoder) {
 func (prt *ProofRuntime) Decode(pop cmtcrypto.ProofOp) (ProofOperator, error) {
 	decoder := prt.decoders[pop.Type]
 	if decoder == nil {
-		return nil, fmt.Errorf("unrecognized proof type %v", pop.Type)
+		return nil, ErrInvalidProof{
+			Err: fmt.Errorf("unrecognized proof type %v", pop.Type),
+		}
 	}
 	return decoder(pop)
 }
@@ -104,7 +114,9 @@ func (prt *ProofRuntime) DecodeProof(proof *cmtcrypto.ProofOps) (ProofOperators,
 	for _, pop := range proof.Ops {
 		operator, err := prt.Decode(pop)
 		if err != nil {
-			return nil, fmt.Errorf("decoding a proof operator: %w", err)
+			return nil, ErrInvalidProof{
+				Err: fmt.Errorf("decoding a proof operator: %w", err),
+			}
 		}
 		poz = append(poz, operator)
 	}
@@ -124,7 +136,9 @@ func (prt *ProofRuntime) VerifyAbsence(proof *cmtcrypto.ProofOps, root []byte, k
 func (prt *ProofRuntime) Verify(proof *cmtcrypto.ProofOps, root []byte, keypath string, args [][]byte) (err error) {
 	poz, err := prt.DecodeProof(proof)
 	if err != nil {
-		return fmt.Errorf("decoding proof: %w", err)
+		return ErrInvalidProof{
+			Err: fmt.Errorf("decoding proof: %w", err),
+		}
 	}
 	return poz.Verify(root, keypath, args)
 }

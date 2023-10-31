@@ -47,10 +47,13 @@ numbering our ADRs from 100 onwards.
 
 ### Accepted
 
+- [ADR-101: Data companion pull API](./adr-101-data-companion-pull-api.md)
 - [ADR-104: State sync from local snapshot](./adr-104-out-of-band-state-sync.md)
 - [ADR-107: Rename protobuf versions of 0.x releases to pre-v1 betas](./adr-107-betaize-proto-versions.md)
 
 ### Implemented
+
+- [ADR-108: E2E tests for CometBFT's behaviour in respect to ABCI 1.0.](./adr-108-e2e-abci++.md)
 
 ### Deprecated
 

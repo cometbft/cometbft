@@ -12,7 +12,7 @@ var mempool mempl.Mempool
 func init() {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
-	appConnMem, _ := cc.NewABCIClient()
+	appConnMem, _ := cc.NewABCIMempoolClient()
 	err := appConnMem.Start()
 	if err != nil {
 		panic(err)

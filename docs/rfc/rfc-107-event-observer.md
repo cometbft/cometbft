@@ -1,4 +1,4 @@
-# RFC 105: Internal Signalling Using Event Observers
+# RFC 107: Internal Signalling Using Event Observers
 
 ## Changelog
 

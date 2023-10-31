@@ -60,7 +60,7 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 				log.NewLazySprintf("Node %v up on http://%s:%v; with Prometheus on http://%s:%v/metrics",
 					node.Name,
 					node.ExternalIP,
-					node.ProxyPort,
+					node.RPCProxyPort,
 					node.ExternalIP,
 					node.PrometheusProxyPort,
 				),
@@ -69,7 +69,7 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 			logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://%s:%v",
 				node.Name,
 				node.ExternalIP,
-				node.ProxyPort,
+				node.RPCProxyPort,
 			))
 		}
 	}
@@ -128,7 +128,7 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 			return err
 		}
 		logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://%s:%v at height %v",
-			node.Name, node.ExternalIP, node.ProxyPort, status.SyncInfo.LatestBlockHeight))
+			node.Name, node.ExternalIP, node.RPCProxyPort, status.SyncInfo.LatestBlockHeight))
 	}
 
 	return nil

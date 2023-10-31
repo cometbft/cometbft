@@ -10,6 +10,27 @@ import (
 	pc "github.com/cometbft/cometbft/proto/tendermint/crypto"
 )
 
+// ErrUnsupportedKey describes an error resulting from the use of an
+// unsupported key in [PubKeyToProto] or [PubKeyFromProto].
+type ErrUnsupportedKey struct {
+	Key any
+}
+
+func (e ErrUnsupportedKey) Error() string {
+	return fmt.Sprintf("encoding: unsupported key %v", e.Key)
+}
+
+// InvalidKeyLen describes an error resulting from the use of a key with
+// an invalid length in [PubKeyFromProto].
+type ErrInvalidKeyLen struct {
+	Key       any
+	Got, Want int
+}
+
+func (e ErrInvalidKeyLen) Error() string {
+	return fmt.Sprintf("encoding: invalid key length for %v, got %d, want %d", e.Key, e.Got, e.Want)
+}
+
 func init() {
 	json.RegisterType((*pc.PublicKey)(nil), "tendermint.crypto.PublicKey")
 	json.RegisterType((*pc.PublicKey_Ed25519)(nil), "tendermint.crypto.PublicKey_Ed25519")
@@ -33,7 +54,7 @@ func PubKeyToProto(k crypto.PubKey) (pc.PublicKey, error) {
 			},
 		}
 	default:
-		return kp, fmt.Errorf("toproto: key type %v is not supported", k)
+		return kp, ErrUnsupportedKey{Key: k}
 	}
 	return kp, nil
 }
@@ -43,21 +64,27 @@ func PubKeyFromProto(k pc.PublicKey) (crypto.PubKey, error) {
 	switch k := k.Sum.(type) {
 	case *pc.PublicKey_Ed25519:
 		if len(k.Ed25519) != ed25519.PubKeySize {
-			return nil, fmt.Errorf("invalid size for PubKeyEd25519. Got %d, expected %d",
-				len(k.Ed25519), ed25519.PubKeySize)
+			return nil, ErrInvalidKeyLen{
+				Key:  k,
+				Got:  len(k.Ed25519),
+				Want: ed25519.PubKeySize,
+			}
 		}
 		pk := make(ed25519.PubKey, ed25519.PubKeySize)
 		copy(pk, k.Ed25519)
 		return pk, nil
 	case *pc.PublicKey_Secp256K1:
 		if len(k.Secp256K1) != secp256k1.PubKeySize {
-			return nil, fmt.Errorf("invalid size for PubKeySecp256k1. Got %d, expected %d",
-				len(k.Secp256K1), secp256k1.PubKeySize)
+			return nil, ErrInvalidKeyLen{
+				Key:  k,
+				Got:  len(k.Secp256K1),
+				Want: secp256k1.PubKeySize,
+			}
 		}
 		pk := make(secp256k1.PubKey, secp256k1.PubKeySize)
 		copy(pk, k.Secp256K1)
 		return pk, nil
 	default:
-		return nil, fmt.Errorf("fromproto: key type %v is not supported", k)
+		return nil, ErrUnsupportedKey{Key: k}
 	}
 }

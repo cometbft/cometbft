@@ -9,6 +9,7 @@ import (
 // Provider defines an API for manipulating the infrastructure of a
 // specific set of testnet infrastructure.
 type Provider interface {
+
 	// Setup generates any necessary configuration for the infrastructure
 	// provider during testnet setup.
 	Setup() error
@@ -18,7 +19,7 @@ type Provider interface {
 	// If no nodes are passed, start the whole network
 	StartNodes(context.Context, ...*e2e.Node) error
 
-	// Set a simulated latency for a node.
+	// Set emulated latencies from a node to other nodes.
 	SetLatency(context.Context, *e2e.Node) error
 
 	// Stops the whole network

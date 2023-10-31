@@ -1,17 +1,20 @@
 package consensus
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"sync"
+	"sync/atomic"
 	"time"
+
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 
 	cstypes "github.com/cometbft/cometbft/consensus/types"
 	"github.com/cometbft/cometbft/libs/bits"
 	cmtevents "github.com/cometbft/cometbft/libs/events"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p"
 	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"
@@ -41,26 +44,29 @@ type Reactor struct {
 
 	conS *State
 
-	mtx      cmtsync.RWMutex
-	waitSync bool
+	waitSync atomic.Bool
 	eventBus *types.EventBus
-	rs       *cstypes.RoundState
+
+	rsMtx cmtsync.Mutex
+	rs    *cstypes.RoundState
 
 	Metrics *Metrics
 }
 
 type ReactorOption func(*Reactor)
 
-// NewReactor returns a new Reactor with the given
-// consensusState.
+// NewReactor returns a new Reactor with the given consensusState.
 func NewReactor(consensusState *State, waitSync bool, options ...ReactorOption) *Reactor {
 	conR := &Reactor{
 		conS:     consensusState,
-		waitSync: waitSync,
+		waitSync: atomic.Bool{},
 		rs:       consensusState.GetRoundState(),
 		Metrics:  NopMetrics(),
 	}
 	conR.BaseReactor = *p2p.NewBaseReactor("Consensus", conR)
+	if waitSync {
+		conR.waitSync.Store(true)
+	}
 
 	for _, option := range options {
 		option(conR)
@@ -72,7 +78,9 @@ func NewReactor(consensusState *State, waitSync bool, options ...ReactorOption) 
 // OnStart implements BaseService by subscribing to events, which later will be
 // broadcasted to other peers and starting state if we're not in block sync.
 func (conR *Reactor) OnStart() error {
-	conR.Logger.Info("Reactor ", "waitSync", conR.WaitSync())
+	if conR.WaitSync() {
+		conR.Logger.Info("Starting reactor in sync mode: consensus protocols will start once sync completes")
+	}
 
 	// start routine that computes peer statistics for evaluating peer quality
 	go conR.peerStatsRoutine()
@@ -102,11 +110,12 @@ func (conR *Reactor) OnStop() {
 	}
 }
 
-// SwitchToConsensus switches from block_sync mode to consensus mode.
-// It resets the state, turns off block_sync, and starts the consensus state-machine
+// SwitchToConsensus switches from block sync or state sync mode to consensus
+// mode.
 func (conR *Reactor) SwitchToConsensus(state sm.State, skipWAL bool) {
 	conR.Logger.Info("SwitchToConsensus")
 
+	// reset the state
 	func() {
 		// We need to lock, as we are not entering consensus state from State's `handleMsg` or `handleTimeout`
 		conR.conS.mtx.Lock()
@@ -121,13 +130,14 @@ func (conR *Reactor) SwitchToConsensus(state sm.State, skipWAL bool) {
 		conR.conS.updateToState(state)
 	}()
 
-	conR.mtx.Lock()
-	conR.waitSync = false
-	conR.mtx.Unlock()
+	// stop waiting for syncing to finish
+	conR.waitSync.Store(false)
 
 	if skipWAL {
 		conR.conS.doWALCatchup = false
 	}
+
+	// start the consensus protocol
 	err := conR.conS.Start()
 	if err != nil {
 		panic(fmt.Sprintf(`Failed to start consensus state: %v
@@ -271,6 +281,8 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 			ps.ApplyNewValidBlockMessage(msg)
 		case *HasVoteMessage:
 			ps.ApplyHasVoteMessage(msg)
+		case *HasProposalBlockPartMessage:
+			ps.ApplyHasProposalBlockPartMessage(msg)
 		case *VoteSetMaj23Message:
 			cs := conR.conS
 			cs.mtx.Lock()
@@ -398,9 +410,7 @@ func (conR *Reactor) SetEventBus(b *types.EventBus) {
 
 // WaitSync returns whether the consensus reactor is waiting for state/block sync.
 func (conR *Reactor) WaitSync() bool {
-	conR.mtx.RLock()
-	defer conR.mtx.RUnlock()
-	return conR.waitSync
+	return conR.waitSync.Load()
 }
 
 //--------------------------------------
@@ -414,21 +424,28 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 		func(data cmtevents.EventData) {
 			conR.broadcastNewRoundStepMessage(data.(*cstypes.RoundState))
 		}); err != nil {
-		conR.Logger.Error("Error adding listener for events", "err", err)
+		conR.Logger.Error("Error adding listener for events (NewRoundStep)", "err", err)
 	}
 
 	if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventValidBlock,
 		func(data cmtevents.EventData) {
 			conR.broadcastNewValidBlockMessage(data.(*cstypes.RoundState))
 		}); err != nil {
-		conR.Logger.Error("Error adding listener for events", "err", err)
+		conR.Logger.Error("Error adding listener for events (ValidBlock)", "err", err)
 	}
 
 	if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventVote,
 		func(data cmtevents.EventData) {
 			conR.broadcastHasVoteMessage(data.(*types.Vote))
 		}); err != nil {
-		conR.Logger.Error("Error adding listener for events", "err", err)
+		conR.Logger.Error("Error adding listener for events (Vote)", "err", err)
+	}
+
+	if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventProposalBlockPart,
+		func(data cmtevents.EventData) {
+			conR.broadcastHasProposalBlockPartMessage(data.(*BlockPartMessage))
+		}); err != nil {
+		conR.Logger.Error("Error adding listener for events (ProposalBlockPart)", "err", err)
 	}
 }
 
@@ -496,6 +513,19 @@ func (conR *Reactor) broadcastHasVoteMessage(vote *types.Vote) {
 	*/
 }
 
+// Broadcasts HasProposalBlockPartMessage to peers that care.
+func (conR *Reactor) broadcastHasProposalBlockPartMessage(partMsg *BlockPartMessage) {
+	msg := &cmtcons.HasProposalBlockPart{
+		Height: partMsg.Height,
+		Round:  partMsg.Round,
+		Index:  int32(partMsg.Part.Index),
+	}
+	conR.Switch.Broadcast(p2p.Envelope{
+		ChannelID: StateChannel,
+		Message:   msg,
+	})
+}
+
 func makeRoundStepMessage(rs *cstypes.RoundState) (nrsMsg *cmtcons.NewRoundStep) {
 	nrsMsg = &cmtcons.NewRoundStep{
 		Height:                rs.Height,
@@ -524,15 +554,15 @@ func (conR *Reactor) updateRoundStateRoutine() {
 			return
 		}
 		rs := conR.conS.GetRoundState()
-		conR.mtx.Lock()
+		conR.rsMtx.Lock()
 		conR.rs = rs
-		conR.mtx.Unlock()
+		conR.rsMtx.Unlock()
 	}
 }
 
 func (conR *Reactor) getRoundState() *cstypes.RoundState {
-	conR.mtx.RLock()
-	defer conR.mtx.RUnlock()
+	conR.rsMtx.Lock()
+	defer conR.rsMtx.Unlock()
 	return conR.rs
 }
 
@@ -545,6 +575,15 @@ OUTER_LOOP:
 		if !peer.IsRunning() || !conR.IsRunning() {
 			return
 		}
+
+		// sleep random amount to give reactor a chance to receive HasProposalBlockPart messages
+		// so we can reduce the amount of redundant block parts we send
+		if conR.conS.config.PeerGossipIntraloopSleepDuration > 0 {
+			// the config sets an upper bound for how long we sleep.
+			randDuration := cmtrand.Int63n(int64(conR.conS.config.PeerGossipIntraloopSleepDuration))
+			time.Sleep(time.Duration(randDuration))
+		}
+
 		rs := conR.getRoundState()
 		prs := ps.GetRoundState()
 
@@ -703,10 +742,20 @@ func (conR *Reactor) gossipVotesRoutine(peer p2p.Peer, ps *PeerState) {
 
 OUTER_LOOP:
 	for {
+
 		// Manage disconnects from self or peer.
 		if !peer.IsRunning() || !conR.IsRunning() {
 			return
 		}
+
+		// sleep random amount to give reactor a chance to receive HasVote messages
+		// so we can reduce the amount of redundant votes we send
+		if conR.conS.config.PeerGossipIntraloopSleepDuration > 0 {
+			// the config sets an upper bound for how long we sleep.
+			randDuration := cmtrand.Int63n(int64(conR.conS.config.PeerGossipIntraloopSleepDuration))
+			time.Sleep(time.Duration(randDuration))
+		}
+
 		rs := conR.getRoundState()
 		prs := ps.GetRoundState()
 
@@ -753,7 +802,11 @@ OUTER_LOOP:
 			if veEnabled {
 				ec = conR.conS.blockStore.LoadBlockExtendedCommit(prs.Height)
 			} else {
-				ec = conR.conS.blockStore.LoadBlockCommit(prs.Height).WrappedExtendedCommit()
+				c := conR.conS.blockStore.LoadBlockCommit(prs.Height)
+				if c == nil {
+					continue
+				}
+				ec = c.WrappedExtendedCommit()
 			}
 			if ec == nil {
 				continue
@@ -1009,11 +1062,6 @@ func ReactorMetrics(metrics *Metrics) ReactorOption {
 
 //-----------------------------------------------------------------------------
 
-var (
-	ErrPeerStateHeightRegression = errors.New("error peer state height regression")
-	ErrPeerStateInvalidStartTime = errors.New("error peer state invalid startTime")
-)
-
 // PeerState contains the known state of a peer, including its connection and
 // threadsafe access to its PeerRoundState.
 // NOTE: THIS GETS DUMPED WITH rpc/core/consensus.go.
@@ -1130,6 +1178,17 @@ func (ps *PeerState) InitProposalBlockParts(partSetHeader types.PartSetHeader) {
 func (ps *PeerState) SetHasProposalBlockPart(height int64, round int32, index int) {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
+
+	ps.setHasProposalBlockPart(height, round, index)
+}
+
+func (ps *PeerState) setHasProposalBlockPart(height int64, round int32, index int) {
+	ps.logger.Debug("setHasProposalBlockPart",
+		"peerH/R",
+		log.NewLazySprintf("%d/%d", ps.PRS.Height, ps.PRS.Round),
+		"H/R",
+		log.NewLazySprintf("%d/%d", height, round),
+		"index", index)
 
 	if ps.PRS.Height != height || ps.PRS.Round != round {
 		return
@@ -1453,6 +1512,18 @@ func (ps *PeerState) ApplyHasVoteMessage(msg *HasVoteMessage) {
 	ps.setHasVote(msg.Height, msg.Round, msg.Type, msg.Index)
 }
 
+// ApplyHasProposalBlockPartMessage updates the peer state for the new block part.
+func (ps *PeerState) ApplyHasProposalBlockPartMessage(msg *HasProposalBlockPartMessage) {
+	ps.mtx.Lock()
+	defer ps.mtx.Unlock()
+
+	if ps.PRS.Height != msg.Height {
+		return
+	}
+
+	ps.setHasProposalBlockPart(msg.Height, msg.Round, int(msg.Index))
+}
+
 // ApplyVoteSetBitsMessage updates the peer state for the bit-array of votes
 // it claims to have for the corresponding BlockID.
 // `ourVotes` is a BitArray of votes we have for msg.BlockID
@@ -1510,6 +1581,7 @@ func init() {
 	cmtjson.RegisterType(&BlockPartMessage{}, "tendermint/BlockPart")
 	cmtjson.RegisterType(&VoteMessage{}, "tendermint/Vote")
 	cmtjson.RegisterType(&HasVoteMessage{}, "tendermint/HasVote")
+	cmtjson.RegisterType(&HasProposalBlockPartMessage{}, "tendermint/HasProposalBlockPart")
 	cmtjson.RegisterType(&VoteSetMaj23Message{}, "tendermint/VoteSetMaj23")
 	cmtjson.RegisterType(&VoteSetBitsMessage{}, "tendermint/VoteSetBits")
 }
@@ -1529,13 +1601,13 @@ type NewRoundStepMessage struct {
 // ValidateBasic performs basic validation.
 func (m *NewRoundStepMessage) ValidateBasic() error {
 	if m.Height < 0 {
-		return errors.New("negative Height")
+		return cmterrors.ErrNegativeField{Field: "Height"}
 	}
 	if m.Round < 0 {
-		return errors.New("negative Round")
+		return cmterrors.ErrNegativeField{Field: "Round"}
 	}
 	if !m.Step.IsValid() {
-		return errors.New("invalid Step")
+		return cmterrors.ErrInvalidField{Field: "Step"}
 	}
 
 	// NOTE: SecondsSinceStartTime may be negative
@@ -1544,7 +1616,7 @@ func (m *NewRoundStepMessage) ValidateBasic() error {
 	// since it can be specified in genesis. The reactor will have to validate this via
 	// ValidateHeight().
 	if m.LastCommitRound < -1 {
-		return errors.New("invalid LastCommitRound (cannot be < -1)")
+		return cmterrors.ErrInvalidField{Field: "LastCommitRound", Reason: "cannot be < -1"}
 	}
 
 	return nil
@@ -1553,16 +1625,24 @@ func (m *NewRoundStepMessage) ValidateBasic() error {
 // ValidateHeight validates the height given the chain's initial height.
 func (m *NewRoundStepMessage) ValidateHeight(initialHeight int64) error {
 	if m.Height < initialHeight {
-		return fmt.Errorf("invalid Height %v (lower than initial height %v)",
-			m.Height, initialHeight)
+		return cmterrors.ErrInvalidField{
+			Field:  "Height",
+			Reason: fmt.Sprintf("%v should be lower than initial height %v", m.Height, initialHeight),
+		}
 	}
+
 	if m.Height == initialHeight && m.LastCommitRound != -1 {
-		return fmt.Errorf("invalid LastCommitRound %v (must be -1 for initial height %v)",
-			m.LastCommitRound, initialHeight)
+		return cmterrors.ErrInvalidField{
+			Field:  "LastCommitRound",
+			Reason: fmt.Sprintf("%v must be -1 for initial height %v", m.LastCommitRound, initialHeight),
+		}
 	}
+
 	if m.Height > initialHeight && m.LastCommitRound < 0 {
-		return fmt.Errorf("LastCommitRound can only be negative for initial height %v",
-			initialHeight)
+		return cmterrors.ErrInvalidField{
+			Field:  "LastCommitRound",
+			Reason: fmt.Sprintf("can only be negative for initial height %v", initialHeight),
+		}
 	}
 	return nil
 }
@@ -1589,16 +1669,16 @@ type NewValidBlockMessage struct {
 // ValidateBasic performs basic validation.
 func (m *NewValidBlockMessage) ValidateBasic() error {
 	if m.Height < 0 {
-		return errors.New("negative Height")
+		return cmterrors.ErrNegativeField{Field: "Height"}
 	}
 	if m.Round < 0 {
-		return errors.New("negative Round")
+		return cmterrors.ErrNegativeField{Field: "Round"}
 	}
 	if err := m.BlockPartSetHeader.ValidateBasic(); err != nil {
-		return fmt.Errorf("wrong BlockPartSetHeader: %v", err)
+		return cmterrors.ErrWrongField{Field: "BlockPartSetHeader", Err: err}
 	}
 	if m.BlockParts.Size() == 0 {
-		return errors.New("empty blockParts")
+		return cmterrors.ErrRequiredField{Field: "blockParts"}
 	}
 	if m.BlockParts.Size() != int(m.BlockPartSetHeader.Total) {
 		return fmt.Errorf("blockParts bit array size %d not equal to BlockPartSetHeader.Total %d",
@@ -1646,13 +1726,13 @@ type ProposalPOLMessage struct {
 // ValidateBasic performs basic validation.
 func (m *ProposalPOLMessage) ValidateBasic() error {
 	if m.Height < 0 {
-		return errors.New("negative Height")
+		return cmterrors.ErrNegativeField{Field: "Height"}
 	}
 	if m.ProposalPOLRound < 0 {
-		return errors.New("negative ProposalPOLRound")
+		return cmterrors.ErrNegativeField{Field: "ProposalPOLRound"}
 	}
 	if m.ProposalPOL.Size() == 0 {
-		return errors.New("empty ProposalPOL bit array")
+		return cmterrors.ErrRequiredField{Field: "ProposalPOL"}
 	}
 	if m.ProposalPOL.Size() > types.MaxVotesCount {
 		return fmt.Errorf("proposalPOL bit array is too big: %d, max: %d", m.ProposalPOL.Size(), types.MaxVotesCount)
@@ -1677,13 +1757,13 @@ type BlockPartMessage struct {
 // ValidateBasic performs basic validation.
 func (m *BlockPartMessage) ValidateBasic() error {
 	if m.Height < 0 {
-		return errors.New("negative Height")
+		return cmterrors.ErrNegativeField{Field: "Height"}
 	}
 	if m.Round < 0 {
-		return errors.New("negative Round")
+		return cmterrors.ErrNegativeField{Field: "Round"}
 	}
 	if err := m.Part.ValidateBasic(); err != nil {
-		return fmt.Errorf("wrong Part: %v", err)
+		return cmterrors.ErrWrongField{Field: "Part", Err: err}
 	}
 	return nil
 }
@@ -1723,16 +1803,16 @@ type HasVoteMessage struct {
 // ValidateBasic performs basic validation.
 func (m *HasVoteMessage) ValidateBasic() error {
 	if m.Height < 0 {
-		return errors.New("negative Height")
+		return cmterrors.ErrNegativeField{Field: "Height"}
 	}
 	if m.Round < 0 {
-		return errors.New("negative Round")
+		return cmterrors.ErrNegativeField{Field: "Round"}
 	}
 	if !types.IsVoteTypeValid(m.Type) {
-		return errors.New("invalid Type")
+		return cmterrors.ErrInvalidField{Field: "Type"}
 	}
 	if m.Index < 0 {
-		return errors.New("negative Index")
+		return cmterrors.ErrNegativeField{Field: "Index"}
 	}
 	return nil
 }
@@ -1755,16 +1835,16 @@ type VoteSetMaj23Message struct {
 // ValidateBasic performs basic validation.
 func (m *VoteSetMaj23Message) ValidateBasic() error {
 	if m.Height < 0 {
-		return errors.New("negative Height")
+		return cmterrors.ErrNegativeField{Field: "Height"}
 	}
 	if m.Round < 0 {
-		return errors.New("negative Round")
+		return cmterrors.ErrNegativeField{Field: "Round"}
 	}
 	if !types.IsVoteTypeValid(m.Type) {
-		return errors.New("invalid Type")
+		return cmterrors.ErrInvalidField{Field: "Type"}
 	}
 	if err := m.BlockID.ValidateBasic(); err != nil {
-		return fmt.Errorf("wrong BlockID: %v", err)
+		return cmterrors.ErrWrongField{Field: "BlockID", Err: err}
 	}
 	return nil
 }
@@ -1788,13 +1868,13 @@ type VoteSetBitsMessage struct {
 // ValidateBasic performs basic validation.
 func (m *VoteSetBitsMessage) ValidateBasic() error {
 	if m.Height < 0 {
-		return errors.New("negative Height")
+		return cmterrors.ErrNegativeField{Field: "Height"}
 	}
 	if !types.IsVoteTypeValid(m.Type) {
-		return errors.New("invalid Type")
+		return cmterrors.ErrInvalidField{Field: "Type"}
 	}
 	if err := m.BlockID.ValidateBasic(); err != nil {
-		return fmt.Errorf("wrong BlockID: %v", err)
+		return cmterrors.ErrWrongField{Field: "BlockID", Err: err}
 	}
 	// NOTE: Votes.Size() can be zero if the node does not have any
 	if m.Votes.Size() > types.MaxVotesCount {
@@ -1809,3 +1889,29 @@ func (m *VoteSetBitsMessage) String() string {
 }
 
 //-------------------------------------
+
+// HasProposalBlockPartMessage is sent to indicate that a particular block part has been received.
+type HasProposalBlockPartMessage struct {
+	Height int64
+	Round  int32
+	Index  int32
+}
+
+// ValidateBasic performs basic validation.
+func (m *HasProposalBlockPartMessage) ValidateBasic() error {
+	if m.Height < 1 {
+		return cmterrors.ErrInvalidField{Field: "Height", Reason: "( < 1 )"}
+	}
+	if m.Round < 0 {
+		return cmterrors.ErrNegativeField{Field: "Round"}
+	}
+	if m.Index < 0 {
+		return cmterrors.ErrNegativeField{Field: "Index"}
+	}
+	return nil
+}
+
+// String returns a string representation.
+func (m *HasProposalBlockPartMessage) String() string {
+	return fmt.Sprintf("[HasProposalBlockPart PI:%v HR:{%v/%02d}]", m.Index, m.Height, m.Round)
+}

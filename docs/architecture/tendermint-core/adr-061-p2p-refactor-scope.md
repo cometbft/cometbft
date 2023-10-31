@@ -6,7 +6,7 @@
 
 ## Context
 
-The `p2p` package responsible for peer-to-peer networking is rather old and has a number of weaknesses, including tight coupling, leaky abstractions, lack of tests, DoS vulnerabilites, poor performance, custom protocols, and incorrect behavior. A refactor has been discussed for several years ([#2067](https://github.com/tendermint/tendermint/issues/2067)).
+The `p2p` package responsible for peer-to-peer networking is rather old and has a number of weaknesses, including tight coupling, leaky abstractions, lack of tests, DoS vulnerabilities, poor performance, custom protocols, and incorrect behavior. A refactor has been discussed for several years ([#2067](https://github.com/tendermint/tendermint/issues/2067)).
 
 Informal Systems are also building a Rust implementation of Tendermint, [Tendermint-rs](https://github.com/informalsystems/tendermint-rs), and plan to implement P2P networking support over the next year. As part of this work, they have requested adopting e.g. [QUIC](https://datatracker.ietf.org/doc/draft-ietf-quic-transport/) as a transport protocol instead of implementing the custom application-level `MConnection` stream multiplexing protocol that Tendermint currently uses.
 
@@ -72,7 +72,7 @@ This phase covers speculative, wide-reaching proposals that are poorly defined a
 
 * Adopt LibP2P. [#3696](https://github.com/tendermint/tendermint/issues/3696)
 * Allow cross-reactor communication, possibly without channels.
-* Dynamic channel advertisment, as reactors are enabled/disabled. [#4394](https://github.com/tendermint/tendermint/issues/4394) [#1148](https://github.com/tendermint/tendermint/issues/1148)
+* Dynamic channel advertisement, as reactors are enabled/disabled. [#4394](https://github.com/tendermint/tendermint/issues/4394) [#1148](https://github.com/tendermint/tendermint/issues/1148)
 * Pubsub-style networking topology and pattern.
 * Support multiple chain IDs in the same network.
 

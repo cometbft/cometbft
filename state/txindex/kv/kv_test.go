@@ -1,14 +1,17 @@
 package kv
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
 	"testing"
 
+	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/slices"
 
 	db "github.com/cometbft/cometbft-db"
 
@@ -59,6 +62,81 @@ func TestTxIndex(t *testing.T) {
 
 	err = indexer.Index(txResult2)
 	require.NoError(t, err)
+
+	loadedTxResult2, err := indexer.Get(hash2)
+	require.NoError(t, err)
+	assert.True(t, proto.Equal(txResult2, loadedTxResult2))
+}
+
+func TestTxIndex_Prune(t *testing.T) {
+	indexer := NewTxIndex(db.NewMemDB())
+
+	metaKeys := [][]byte{
+		LastTxIndexerRetainHeightKey,
+		blockidxkv.LastBlockIndexerRetainHeightKey,
+		TxIndexerRetainHeightKey,
+		blockidxkv.BlockIndexerRetainHeightKey,
+	}
+
+	tx := types.Tx("HELLO WORLD")
+	events := []abci.Event{
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: "1", Index: true}}},
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "owner", Value: "/Ivan/", Index: true}}},
+		{Type: "", Attributes: []abci.EventAttribute{{Key: "not_allowed", Value: "Vlad", Index: true}}},
+	}
+	txResult := &abci.TxResult{
+		Height: 1,
+		Index:  0,
+		Tx:     tx,
+		Result: abci.ExecTxResult{
+			Data:   []byte{0},
+			Code:   abci.CodeTypeOK,
+			Log:    "",
+			Events: events,
+		},
+	}
+
+	batch := txindex.NewBatch(1)
+	if err := batch.Add(txResult); err != nil {
+		t.Error(err)
+	}
+	err := indexer.AddBatch(batch)
+	require.NoError(t, err)
+
+	keys1 := GetKeys(indexer)
+
+	tx2 := types.Tx("BYE BYE WORLD")
+	txResult2 := &abci.TxResult{
+		Height: 2,
+		Index:  0,
+		Tx:     tx2,
+		Result: abci.ExecTxResult{
+			Data:   []byte{0},
+			Code:   abci.CodeTypeOK,
+			Log:    "",
+			Events: events,
+		},
+	}
+	hash2 := tx2.Hash()
+
+	batch = txindex.NewBatch(1)
+	if err := batch.Add(txResult2); err != nil {
+		t.Error(err)
+	}
+	err = indexer.AddBatch(batch)
+	require.NoError(t, err)
+
+	keys2 := GetKeys(indexer)
+	assert.True(t, isSubset(keys1, keys2))
+
+	numPruned, retainedHeight, err := indexer.Prune(2)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), numPruned)
+	assert.Equal(t, int64(2), retainedHeight)
+
+	keys3 := GetKeys(indexer)
+	assert.True(t, isEqualSets(setDiff(keys2, keys1), setDiff(keys3, metaKeys)))
+	assert.True(t, emptyIntersection(keys1, keys3))
 
 	loadedTxResult2, err := indexer.Get(hash2)
 	require.NoError(t, err)
@@ -241,6 +319,88 @@ func TestTxSearchEventMatch(t *testing.T) {
 			if tc.resultsLength > 0 {
 				for _, txr := range results {
 					assert.True(t, proto.Equal(txResult, txr))
+				}
+			}
+		})
+	}
+}
+
+func TestTxSearchEventMatchByHeight(t *testing.T) {
+
+	indexer := NewTxIndex(db.NewMemDB())
+
+	txResult := txResultWithEvents([]abci.Event{
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: "1", Index: true}, {Key: "owner", Value: "Ana", Index: true}}},
+	})
+
+	err := indexer.Index(txResult)
+	require.NoError(t, err)
+
+	txResult10 := txResultWithEvents([]abci.Event{
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: "1", Index: true}, {Key: "owner", Value: "/Ivan/.test", Index: true}}},
+	})
+	txResult10.Tx = types.Tx("HELLO WORLD 10")
+	txResult10.Height = 10
+
+	err = indexer.Index(txResult10)
+	require.NoError(t, err)
+
+	testCases := map[string]struct {
+		q             string
+		resultsLength int
+	}{
+		"Return all events from a height 1": {
+			q:             "tx.height = 1",
+			resultsLength: 1,
+		},
+		"Return all events from a height 10": {
+			q:             "tx.height = 10",
+			resultsLength: 1,
+		},
+		"Return all events from a height 5": {
+			q:             "tx.height = 5",
+			resultsLength: 0,
+		},
+		"Return all events from a height in [2; 5]": {
+			q:             "tx.height >= 2 AND tx.height <= 5",
+			resultsLength: 0,
+		},
+		"Return all events from a height in [1; 5]": {
+			q:             "tx.height >= 1 AND tx.height <= 5",
+			resultsLength: 1,
+		},
+		"Return all events from a height in [1; 10]": {
+			q:             "tx.height >= 1 AND tx.height <= 10",
+			resultsLength: 2,
+		},
+		"Return all events from a height in [1; 5] by account.number": {
+			q:             "tx.height >= 1 AND tx.height <= 5 AND account.number=1",
+			resultsLength: 1,
+		},
+		"Return all events from a height in [1; 10] by account.number 2": {
+			q:             "tx.height >= 1 AND tx.height <= 10 AND account.number=1",
+			resultsLength: 2,
+		},
+	}
+
+	ctx := context.Background()
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.q, func(t *testing.T) {
+			results, err := indexer.Search(ctx, query.MustCompile(tc.q))
+			assert.NoError(t, err)
+
+			assert.Len(t, results, tc.resultsLength)
+			if tc.resultsLength > 0 {
+				for _, txr := range results {
+					if txr.Height == 1 {
+						assert.True(t, proto.Equal(txResult, txr))
+					} else if txr.Height == 10 {
+						assert.True(t, proto.Equal(txResult10, txr))
+					} else {
+						assert.True(t, false)
+					}
 				}
 			}
 		})
@@ -717,3 +877,41 @@ func BenchmarkTxIndex500(b *testing.B)   { benchmarkTxIndex(500, b) }
 func BenchmarkTxIndex1000(b *testing.B)  { benchmarkTxIndex(1000, b) }
 func BenchmarkTxIndex2000(b *testing.B)  { benchmarkTxIndex(2000, b) }
 func BenchmarkTxIndex10000(b *testing.B) { benchmarkTxIndex(10000, b) }
+
+func isSubset(smaller [][]byte, bigger [][]byte) bool {
+	for _, elem := range smaller {
+		if !slices.ContainsFunc(bigger, func(i []byte) bool {
+			return bytes.Equal(i, elem)
+		}) {
+			return false
+		}
+	}
+	return true
+}
+
+func isEqualSets(x [][]byte, y [][]byte) bool {
+	return isSubset(x, y) && isSubset(y, x)
+}
+
+func emptyIntersection(x [][]byte, y [][]byte) bool {
+	for _, elem := range x {
+		if slices.ContainsFunc(y, func(i []byte) bool {
+			return bytes.Equal(i, elem)
+		}) {
+			return false
+		}
+	}
+	return true
+}
+
+func setDiff(bigger [][]byte, smaller [][]byte) [][]byte {
+	var diff [][]byte
+	for _, elem := range bigger {
+		if !slices.ContainsFunc(smaller, func(i []byte) bool {
+			return bytes.Equal(i, elem)
+		}) {
+			diff = append(diff, elem)
+		}
+	}
+	return diff
+}

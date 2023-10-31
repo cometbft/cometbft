@@ -42,12 +42,15 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 	}
 	return ExecCompose(ctx, p.Testnet.Dir, append([]string{"up", "-d"}, nodeNames...)...)
 }
+
 func (p Provider) StopTestnet(ctx context.Context) error {
 	return ExecCompose(ctx, p.Testnet.Dir, "down")
 }
+
 func (p Provider) Disconnect(ctx context.Context, name string, _ string) error {
 	return Exec(ctx, "network", "disconnect", p.Testnet.Name+"_"+p.Testnet.Name, name)
 }
+
 func (p Provider) Reconnect(ctx context.Context, name string, _ string) error {
 	return Exec(ctx, "network", "connect", p.Testnet.Name+"_"+p.Testnet.Name, name)
 }
@@ -92,13 +95,15 @@ services:
       e2e: true
     container_name: {{ .Name }}
     image: {{ .Version }}
-{{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_unsync") }}
+{{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_connsync") }}
     entrypoint: /usr/bin/entrypoint-builtin
 {{- end }}
     init: true
     ports:
     - 26656
-    - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657
+    - {{ if .RPCProxyPort }}{{ .RPCProxyPort }}:{{ end }}26657
+    - {{ if .GRPCProxyPort }}{{ .GRPCProxyPort }}:{{ end }}26670
+    - {{ if .GRPCPrivilegedProxyPort }}{{ .GRPCPrivilegedProxyPort }}:{{ end }}26671
 {{- if .PrometheusProxyPort }}
     - {{ .PrometheusProxyPort }}:26660
 {{- end }}
@@ -118,13 +123,15 @@ services:
       e2e: true
     container_name: {{ .Name }}_u
     image: {{ $.UpgradeVersion }}
-{{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_unsync") }}
+{{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_connsync") }}
     entrypoint: /usr/bin/entrypoint-builtin
 {{- end }}
     init: true
     ports:
     - 26656
-    - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657
+    - {{ if .RPCProxyPort }}{{ .RPCProxyPort }}:{{ end }}26657
+    - {{ if .GRPCProxyPort }}{{ .GRPCProxyPort }}:{{ end }}26670
+    - {{ if .GRPCPrivilegedProxyPort }}{{ .GRPCPrivilegedProxyPort }}:{{ end }}26671
 {{- if .PrometheusProxyPort }}
     - {{ .PrometheusProxyPort }}:26660
 {{- end }}

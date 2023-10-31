@@ -15,6 +15,7 @@ import (
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
 
 // Evidence represents any provable malicious activity by a validator.
@@ -125,7 +126,7 @@ func (dve *DuplicateVoteEvidence) Time() time.Time {
 // ValidateBasic performs basic validation.
 func (dve *DuplicateVoteEvidence) ValidateBasic() error {
 	if dve == nil {
-		return errors.New("empty duplicate vote evidence")
+		return cmterrors.ErrRequiredField{Field: "duplicate_vote_evidence"}
 	}
 
 	if dve.VoteA == nil || dve.VoteB == nil {
@@ -205,7 +206,7 @@ func DuplicateVoteEvidenceFromProto(pb *cmtproto.DuplicateVoteEvidence) (*Duplic
 // a light client such that a full node can verify, propose and commit the evidence on-chain for
 // punishment of the malicious validators. There are three forms of attacks: Lunatic, Equivocation
 // and Amnesia. These attacks are exhaustive. You can find a more detailed overview of this at
-// cometbft/docs/architecture/adr-047-handling-evidence-from-light-client.md
+// cometbft/docs/architecture/tendermint-core/adr-047-handling-evidence-from-light-client.md
 type LightClientAttackEvidence struct {
 	ConflictingBlock *LightBlock
 	CommonHeight     int64
@@ -413,7 +414,7 @@ func (l *LightClientAttackEvidence) ToProto() (*cmtproto.LightClientAttackEviden
 // LightClientAttackEvidenceFromProto decodes protobuf
 func LightClientAttackEvidenceFromProto(lpb *cmtproto.LightClientAttackEvidence) (*LightClientAttackEvidence, error) {
 	if lpb == nil {
-		return nil, errors.New("empty light client attack evidence")
+		return nil, cmterrors.ErrRequiredField{Field: "light_client_attack_evidence"}
 	}
 
 	conflictingBlock, err := LightBlockFromProto(lpb.ConflictingBlock)

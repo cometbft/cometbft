@@ -36,7 +36,7 @@ func TestNewProvider(t *testing.T) {
 func TestProvider(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	app.RetainBlocks = 10
-	node := rpctest.StartTendermint(app)
+	node := rpctest.StartCometBFT(app)
 
 	cfg := rpctest.GetConfig()
 	defer os.RemoveAll(cfg.RootDir)
@@ -83,7 +83,7 @@ func TestProvider(t *testing.T) {
 	assert.Equal(t, provider.ErrLightBlockNotFound, err)
 
 	// stop the full node and check that a no response error is returned
-	rpctest.StopTendermint(node)
+	rpctest.StopCometBFT(node)
 	time.Sleep(10 * time.Second)
 	lb, err = p.LightBlock(context.Background(), lower+2)
 	// we should see a connection refused

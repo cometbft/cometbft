@@ -27,5 +27,12 @@ func Test(testnet *e2e.Testnet, ifd *e2e.InfrastructureData) error {
 		return err
 	}
 
-	return exec.CommandVerbose(context.Background(), "go", "test", "-count", "1", "./tests/...")
+	cmd := []string{"go", "test", "-count", "1"}
+	verbose := os.Getenv("VERBOSE")
+	if verbose == "1" {
+		cmd = append(cmd, "-v")
+	}
+	cmd = append(cmd, "./tests/...")
+
+	return exec.CommandVerbose(context.Background(), cmd...)
 }

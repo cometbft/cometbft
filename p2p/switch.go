@@ -39,6 +39,8 @@ func MConnConfig(cfg *config.P2PConfig) conn.MConnConfig {
 	mConfig.SendRate = cfg.SendRate
 	mConfig.RecvRate = cfg.RecvRate
 	mConfig.MaxPacketMsgPayloadSize = cfg.MaxPacketMsgPayloadSize
+	mConfig.TestFuzz = cfg.TestFuzz
+	mConfig.TestFuzzConfig = cfg.TestFuzzConfig
 	return mConfig
 }
 
@@ -161,7 +163,7 @@ func WithMetrics(metrics *Metrics) SwitchOption {
 
 // AddReactor adds the given reactor to the switch.
 // NOTE: Not goroutine safe.
-func (sw *Switch) AddReactor(name string, reactor Reactor) {
+func (sw *Switch) AddReactor(name string, reactor Reactor) Reactor {
 	for _, chDesc := range reactor.GetChannels() {
 		chID := chDesc.ID
 		// No two reactors can share the same channel.
@@ -174,6 +176,7 @@ func (sw *Switch) AddReactor(name string, reactor Reactor) {
 	}
 	sw.reactors[name] = reactor
 	reactor.SetSwitch(sw)
+	return reactor
 }
 
 // RemoveReactor removes the given Reactor from the Switch.

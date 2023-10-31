@@ -12,7 +12,7 @@ var mempool mempl.Mempool
 func init() {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
-	appConnMem, _ := cc.NewABCIClient()
+	appConnMem, _ := cc.NewABCIMempoolClient()
 	err := appConnMem.Start()
 	if err != nil {
 		panic(err)
@@ -24,7 +24,7 @@ func init() {
 }
 
 func Fuzz(data []byte) int {
-	err := mempool.CheckTx(data, nil, mempl.TxInfo{})
+	_, err := mempool.CheckTx(data)
 	if err != nil {
 		return 0
 	}

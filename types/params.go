@@ -143,8 +143,12 @@ func IsValidPubkeyType(params ValidatorParams, pubkeyType string) bool {
 // Validate validates the ConsensusParams to ensure all values are within their
 // allowed limits, and returns an error if they are not.
 func (params ConsensusParams) ValidateBasic() error {
-	if params.Block.MaxBytes <= 0 {
-		return fmt.Errorf("block.MaxBytes must be greater than 0. Got %d",
+	if params.Block.MaxBytes == 0 {
+		return fmt.Errorf("block.MaxBytes cannot be 0")
+	}
+	if params.Block.MaxBytes < -1 {
+		return fmt.Errorf("block.MaxBytes must be -1 or greater than 0. Got %d",
+
 			params.Block.MaxBytes)
 	}
 	if params.Block.MaxBytes > MaxBlockSizeBytes {
@@ -167,7 +171,11 @@ func (params ConsensusParams) ValidateBasic() error {
 			params.Evidence.MaxAgeDuration)
 	}
 
-	if params.Evidence.MaxBytes > params.Block.MaxBytes {
+	maxBytes := params.Block.MaxBytes
+	if maxBytes == -1 {
+		maxBytes = int64(MaxBlockSizeBytes)
+	}
+	if params.Evidence.MaxBytes > maxBytes {
 		return fmt.Errorf("evidence.MaxBytesEvidence is greater than upper bound, %d > %d",
 			params.Evidence.MaxBytes, params.Block.MaxBytes)
 	}

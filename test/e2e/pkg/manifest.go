@@ -62,15 +62,15 @@ type Manifest struct {
 	VoteExtensionsEnableHeight int64 `toml:"vote_extensions_enable_height"`
 
 	// ABCIProtocol specifies the protocol used to communicate with the ABCI
-	// application: "unix", "tcp", "grpc", "builtin" or "builtin_unsync".
+	// application: "unix", "tcp", "grpc", "builtin" or "builtin_connsync".
 	//
 	// Defaults to "builtin". "builtin" will build a complete CometBFT node
 	// into the application and launch it instead of launching a separate
 	// CometBFT process.
 	//
-	// "builtin_unsync" is basically the same as "builtin", except that it uses
-	// an "unsynchronized" local client creator, which attempts to replicate the
-	// same concurrency model locally as the socket client.
+	// "builtin_connsync" is basically the same as "builtin", except that it
+	// uses a "connection-synchronized" local client creator, which attempts to
+	// replicate the same concurrency model locally as the socket client.
 	ABCIProtocol string `toml:"abci_protocol"`
 
 	// Add artificial delays to each of the main ABCI calls to mimic computation time
@@ -95,6 +95,9 @@ type Manifest struct {
 
 	// Defines a minimum size for the vote extensions.
 	VoteExtensionSize uint `toml:"vote_extension_size"`
+
+	// Upper bound of sleep duration then gossipping votes and block parts
+	PeerGossipIntraloopSleepDuration time.Duration `toml:"peer_gossip_intraloop_sleep_duration"`
 }
 
 // ManifestNode represents a node in a testnet manifest.
@@ -157,6 +160,10 @@ type ManifestNode struct {
 	// 0, which retains all blocks. Must be greater that PersistInterval,
 	// SnapshotInterval and EvidenceAgeHeight.
 	RetainBlocks uint64 `toml:"retain_blocks"`
+
+	// EnableCompanionPruning specifies whether or not storage pruning on the
+	// node should take a data companion into account.
+	EnableCompanionPruning bool `toml:"enable_companion_pruning"`
 
 	// Perturb lists perturbations to apply to the node after it has been
 	// started and synced with the network:

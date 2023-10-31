@@ -802,7 +802,7 @@ curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\
 
 ### GenesisChunked
 
-Get the genesis document in a chunks to support easily transfering larger documents.
+Get the genesis document in a chunks to support easily transferring larger documents.
 
 #### Parameters
 
@@ -1188,23 +1188,23 @@ Query the application for some information.
 
 #### Parameters
 
-- `path (string)`: Path to the data. This is defined by the application.
-- `data (string)`: The data requested
-- `height (integer)`: Height at which the data is being requested for.
-- `prove (bool)`: Include proofs of the transactions inclusion in the block
+- `path (string)`: A request path for the application to interpret analogously to a [URI path component](https://www.rfc-editor.org/rfc/rfc3986#section-3.3) in e.g. routing.
+- `data (string)`: Request parameters for the application to interpret analogously to a [URI query component](https://www.rfc-editor.org/rfc/rfc3986#section-3.4), expressed as hexadecimal-serialized bytes.
+- `height (integer)`: The block height against which to query.
+- `prove (bool)`: Return Merkle proof with response if possible.
 
 #### Request
 
 ##### HTTP
 
 ```sh
-curl  http://127.0.0.1:26657/abci_query?path="a/b/c"=IHAVENOIDEA&height=1&prove=true
+curl 'http://127.0.0.1:26657/abci_query?path="/store/foo/key"&data=0x636f6d6574626674&height=1&prove=true'
 ```
 
 ##### JSONRPC
 
 ```sh
-curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"abci_query\",\"params\":{\"path\":\"a/b/c\", \"height\":\"1\", \"bool\":\"true\"}}"
+curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"abci_query\",\"params\":{\"path\":\"/store/foo/key\", \"data\":\"636f6d6574626674\", \"height\":\"1\", \"prove\":\"true\"}}"
 ```
 
 #### Response
@@ -1217,8 +1217,8 @@ curl -X POST https://localhost:26657 -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\
       "log": "exists",
       "height": "0",
       "proof": "010114FED0DAD959F36091AD761C922ABA3CBF1D8349990101020103011406AA2262E2F448242DF2C2607C3CDC705313EE3B0001149D16177BC71E445476174622EA559715C293740C",
-      "value": "61626364",
-      "key": "61626364",
+      "key": "Y29tZXRiZnQ=",
+      "value": "cm9ja3M=",
       "index": "-1",
       "code": "0"
     }

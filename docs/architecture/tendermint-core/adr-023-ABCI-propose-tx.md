@@ -47,7 +47,7 @@ explained in greater detail below.
 ### Solution 1: App state-based Plasma chain
 
 In this work around, the app maintains a `PlasmaStore` with a corresponding
-`Keeper`. The PlasmaStore is responsible for maintaing a second, separate
+`Keeper`. The PlasmaStore is responsible for maintaining a second, separate
 blockchain that complies with the MVP specification, including `deposit`
 blocks and other "internal" transactions. These "virtual" blocks are then broadcasted
 to the Root Chain.
@@ -59,7 +59,7 @@ potentially non-deterministic, as this should not even be done in
 `Begin/EndBlock`, which may, as a result, break consensus guarantees.
 
 Additinoally, this has serious implications for "watchers" - independent third parties,
-or even an auxilliary blockchain, responsible for ensuring that blocks recorded
+or even an auxiliary blockchain, responsible for ensuring that blocks recorded
 on the Root Chain are consistent with the Plasma chain's. Since, in this case,
 the Plasma chain is inconsistent with the canonical one maintained by Tendermint
 Core, it seems that there exists no compact means of verifying the legitimacy of

@@ -52,7 +52,7 @@ application snapshots obtained _out-of-band_ by operators, available to the
 node _locally_.
 Applications dump snapshots into an exportable format, which can be then obtained
 by the operators and placed on the syncing node. The node can then sync locally 
-without transfering snapshots via the network.
+without transferring snapshots via the network.
 The goal is to provide an alternative to the mechanism currently adopted by
 state sync, discovering and fetching application snapshots from peers in the
 network, in order to address the above mentioned limitations, while preserving
@@ -259,7 +259,7 @@ In order to dump a snapshot, an application needs to retrieve all the chunks sto
 
 #### CometBFT state bootstrap
 
-In addition to managing snapshots, it is neccessary to bootstrap (setup) the state and block store of CometBFT before starting up the node.
+In addition to managing snapshots, it is necessary to bootstrap (setup) the state and block store of CometBFT before starting up the node.
 Upon a successful start, CometBFT performs block sync and consensus. 
 At the moment of writing this ADR, there is no command line in CometBFT that supports this, but an [issue][state-bootstrap]
 has been opened to address this.

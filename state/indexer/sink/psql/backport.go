@@ -38,6 +38,19 @@ func (es *EventSink) TxIndexer() BackportTxIndexer {
 // indexing operations to an underlying PostgreSQL event sink.
 type BackportTxIndexer struct{ psql *EventSink }
 
+func (b BackportTxIndexer) GetRetainHeight() (int64, error) {
+	return 0, nil
+}
+
+func (b BackportTxIndexer) SetRetainHeight(_ int64) error {
+	return nil
+}
+
+func (b BackportTxIndexer) Prune(_ int64) (int64, int64, error) {
+	// Not implemented
+	return 0, 0, nil
+}
+
 // AddBatch indexes a batch of transactions in Postgres, as part of TxIndexer.
 func (b BackportTxIndexer) AddBatch(batch *txindex.Batch) error {
 	return b.psql.IndexTxEvents(batch.Ops)
@@ -71,6 +84,19 @@ func (es *EventSink) BlockIndexer() BackportBlockIndexer {
 // BackportBlockIndexer implements the indexer.BlockIndexer interface by
 // delegating indexing operations to an underlying PostgreSQL event sink.
 type BackportBlockIndexer struct{ psql *EventSink }
+
+func (b BackportBlockIndexer) SetRetainHeight(_ int64) error {
+	return nil
+}
+
+func (b BackportBlockIndexer) GetRetainHeight() (int64, error) {
+	return 0, nil
+}
+
+func (b BackportBlockIndexer) Prune(_ int64) (int64, int64, error) {
+	// Not implemented
+	return 0, 0, nil
+}
 
 // Has is implemented to satisfy the BlockIndexer interface, but it is not
 // supported by the psql event sink and reports an error for all inputs.

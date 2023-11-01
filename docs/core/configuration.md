@@ -38,7 +38,7 @@ version = "0.39.0"
 proxy_app = "tcp://127.0.0.1:26658"
 
 # A custom human readable name for this node
-moniker = "anonymous"
+moniker = "thinkpad"
 
 # Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb
 # * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
@@ -65,7 +65,7 @@ db_backend = "goleveldb"
 db_dir = "data"
 
 # Output level for logging, including package level options
-log_level = "main:info,state:info,statesync:info,*:error"
+log_level = "info"
 
 # Output format: 'plain' (colored text) or 'json'
 log_format = "plain"
@@ -130,12 +130,12 @@ unsafe = false
 # 1024 - 40 - 10 - 50 = 924 = ~900
 max_open_connections = 900
 
-# Maximum number of unique clientIDs that can /subscribe
+# Maximum number of unique clientIDs that can /subscribe.
 # If you're using /broadcast_tx_commit, set to the estimated maximum number
 # of broadcast_tx_commit calls per block.
 max_subscription_clients = 100
 
-# Maximum number of unique queries a given client can /subscribe to
+# Maximum number of unique queries a given client can /subscribe to.
 # If you're using /broadcast_tx_commit, set to the estimated maximum number
 # of broadcast_tx_commit calls per block.
 max_subscriptions_per_client = 5
@@ -196,6 +196,40 @@ tls_key_file = ""
 
 # pprof listen address (https://golang.org/pkg/net/http/pprof)
 pprof_laddr = ""
+
+#######################################################
+###       gRPC Server Configuration Options         ###
+#######################################################
+
+#
+# Note that the gRPC server is exposed unauthenticated. It is critical that
+# this server not be exposed directly to the public internet. If this service
+# must be accessed via the public internet, please ensure that appropriate
+# precautions are taken (e.g. fronting with a reverse proxy like nginx with TLS
+# termination and authentication, using DDoS protection services like
+# CloudFlare, etc.).
+#
+
+[grpc]
+
+# TCP or UNIX socket address for the RPC server to listen on. If not specified,
+# the gRPC server will be disabled.
+laddr = ""
+
+#
+# Each gRPC service can be turned on/off, and in some cases configured,
+# individually. If the gRPC server is not enabled, all individual services'
+# configurations are ignored.
+#
+
+# The gRPC version service provides version information about the node and the
+# protocols it uses.
+[grpc.version_service]
+enabled = true
+
+# The gRPC block service returns block information
+[grpc.block_service]
+enabled = true
 
 #######################################################
 ###           P2P Configuration Options             ###
@@ -404,6 +438,7 @@ create_empty_blocks_interval = "0s"
 
 # Reactor sleep duration parameters
 peer_gossip_sleep_duration = "100ms"
+peer_gossip_intraloop_sleep_duration = "0s"
 peer_query_maj23_sleep_duration = "2s"
 
 #######################################################
@@ -416,6 +451,36 @@ peer_query_maj23_sleep_duration = "2s"
 # persisted. ABCI responses are required for /block_results RPC queries, and to
 # reindex events in the command-line tool.
 discard_abci_responses = false
+
+[storage.pruning]
+
+# The time period between automated background pruning operations.
+interval = "10s"
+
+#
+# Storage pruning configuration relating only to the data companion.
+#
+[storage.pruning.data_companion]
+
+# Whether automatic pruning respects values set by the data companion. Disabled
+# by default. All other parameters in this section are ignored when this is
+# disabled.
+#
+# If disabled, only the application retain height will influence block pruning
+# (but not block results pruning). Only enabling this at a later stage will
+# potentially mean that blocks below the application-set retain height at the
+# time will not be available to the data companion.
+enabled = false
+
+# The initial value for the data companion block retain height if the data
+# companion has not yet explicitly set one. If the data companion has already
+# set a block retain height, this is ignored.
+initial_block_retain_height = 0
+
+# The initial value for the data companion block results retain height if the
+# data companion has not yet explicitly set one. If the data companion has
+# already set a block results retain height, this is ignored.
+initial_block_results_retain_height = 0
 
 #######################################################
 ###   Transaction Indexer Configuration Options     ###
@@ -518,14 +583,14 @@ matter what is `timeout_commit`.
 
 Here's a brief summary of the timeouts:
 
-- `timeout_propose` = how long we wait for a proposal block before prevoting nil
-- `timeout_propose_delta` = how much  `timeout_propose` increases with each round
-- `timeout_prevote` = how long we wait after receiving +2/3 prevotes for
+- `timeout_propose` = how long a validator should wait for a proposal block before prevoting nil
+- `timeout_propose_delta` = how much `timeout_propose` increases with each round
+- `timeout_prevote` = how long a validator should wait after receiving +2/3 prevotes for
   anything (ie. not a single block or nil)
 - `timeout_prevote_delta` = how much the `timeout_prevote` increases with each round
-- `timeout_precommit` = how long we wait after receiving +2/3 precommits for
+- `timeout_precommit` = how long a validator should wait after receiving +2/3 precommits for
   anything (ie. not a single block or nil)
 - `timeout_precommit_delta` = how much the `timeout_precommit` increases with each round
-- `timeout_commit` = how long we wait after committing a block, before starting
+- `timeout_commit` = how long a validator should wait after committing a block, before starting
   on the new height (this gives us a chance to receive some more precommits,
   even though we already have +2/3)

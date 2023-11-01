@@ -197,11 +197,11 @@ func fetchBlockChain(t *testing.T) []*types.Block {
 	return blocks
 }
 
-// fetchABCIRequests go through the logs of a specific node and collect all ABCI requests (each slice represents requests from beggining until the first crash,
+// fetchABCIRequests go through the logs of a specific node and collect all ABCI requests (each slice represents requests from beginning until the first crash,
 // and then between two crashes) for a specific node.
 func fetchABCIRequests(t *testing.T, nodeName string) ([][]*abci.Request, error) {
 	testnet := loadTestnet(t)
-	logs, err := fetchNodeLogs(testnet, nodeName)
+	logs, err := fetchNodeLogs(testnet)
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +227,7 @@ func fetchABCIRequests(t *testing.T, nodeName string) ([][]*abci.Request, error)
 	return reqs, nil
 }
 
-func fetchNodeLogs(testnet e2e.Testnet, nodeName string) ([]byte, error) {
+func fetchNodeLogs(testnet e2e.Testnet) ([]byte, error) {
 	dir := filepath.Join(testnet.Dir, "docker-compose.yml")
 	return exec.Command("docker-compose", "-f", dir, "logs").Output()
 }

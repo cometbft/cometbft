@@ -36,6 +36,10 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
 
+## [v0.34.27-alpha.agoric.2]
+
+* Merge `tendermint/tendermint` v0.34.27.
+
 ## [v0.34.23-alpha.agoric.2]
 
 * Agoric/agoric-sdk\#6945 Cherrypick fix for informalsystems/tendermint#4.

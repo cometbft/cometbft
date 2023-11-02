@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"reflect"
 	"sort"
+	"strings"
 
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
@@ -72,7 +73,8 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 				)
 				continue
 			}
-			if len(r.URL.Path) > 1 {
+			trimmedPath := strings.Trim(r.URL.Path, "/")
+			if trimmedPath != "" && trimmedPath != "v1" {
 				responses = append(
 					responses,
 					types.RPCInvalidRequestError(request.ID, fmt.Errorf("path %s is invalid", r.URL.Path)),
@@ -130,9 +132,8 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 
 func handleInvalidJSONRPCPaths(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Since the pattern "/" matches all paths not matched by other registered patterns,
-		//  we check whether the path is indeed "/", otherwise return a 404 error
-		if r.URL.Path != "/" {
+		trimmedPath := strings.Trim(r.URL.Path, "/")
+		if trimmedPath != "" && trimmedPath != "v1" {
 			http.NotFound(w, r)
 			return
 		}
@@ -235,8 +236,9 @@ func writeListOfEndpoints(w http.ResponseWriter, r *http.Request, funcMap map[st
 	buf.WriteString("<br>Available endpoints:<br>")
 
 	for _, name := range noArgNames {
+		// FIXME: The link should have the version as well. Where can we get it from the request?
 		link := fmt.Sprintf("//%s/%s", r.Host, name)
-		buf.WriteString(fmt.Sprintf("<a href=\"%s\">%s</a></br>", link, link))
+		buf.WriteString(fmt.Sprintf("<a href=\"%s\">%s</a><br>", link, name))
 	}
 
 	buf.WriteString("<br>Endpoints that require arguments:<br>")

@@ -20,6 +20,12 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "size",
 			Help:      "Number of uncommitted transactions in the mempool.",
 		}, labels).With(labelsAndValues...),
+		SizeBytes: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "size_bytes",
+			Help:      "Total size of the mempool in bytes.",
+		}, labels).With(labelsAndValues...),
 		TxSizeBytes: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -57,11 +63,21 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 
 func NopMetrics() *Metrics {
 	return &Metrics{
+<<<<<<< HEAD
 		Size:         discard.NewGauge(),
 		TxSizeBytes:  discard.NewHistogram(),
 		FailedTxs:    discard.NewCounter(),
 		RejectedTxs:  discard.NewCounter(),
 		EvictedTxs:   discard.NewCounter(),
 		RecheckTimes: discard.NewCounter(),
+=======
+		Size:               discard.NewGauge(),
+		SizeBytes:          discard.NewGauge(),
+		TxSizeBytes:        discard.NewHistogram(),
+		FailedTxs:          discard.NewCounter(),
+		RejectedTxs:        discard.NewCounter(),
+		RecheckTimes:       discard.NewCounter(),
+		AlreadyReceivedTxs: discard.NewCounter(),
+>>>>>>> b50bca37c (mempool: Add metric size of pool in bytes (#1512))
 	}
 }

@@ -22,7 +22,7 @@ type Provider struct {
 
 // Setup files for setting latency in nodes.
 func (p *Provider) Setup() error {
-	err := infra.GenerateIPZonesTable(p.Testnet.Nodes, filepath.Join(p.Testnet.Dir, "zones.csv"))
+	err := infra.GenerateIPZonesTable(p.Testnet.Nodes, p.IPZonesFilePath())
 	if err != nil {
 		return err
 	}
@@ -54,23 +54,21 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 
 // Execute latency setter script in the node.
 func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
-	// Directory in the node with the latency files.
+	// Directory in the node containing all latency files.
 	remoteDir := "/cometbft/test/e2e/latency/"
 
 	playbook := basePlaybook
 
-	// Add task to copy ip-zones file to the node.
+	// Add task to playbook to copy ip-zones file to the node.
 	copyTask := fmt.Sprintf(`    ansible.builtin.copy:
-	src: %s
-	dest: %s`,
-		filepath.Join(p.Testnet.Dir, "zones.csv"),
-		remoteDir)
+	  src: %s
+	  dest: %s`, p.IPZonesFilePath(), remoteDir)
 	playbook = ansibleAddTask(playbook, "copy zones file to node", copyTask)
 
-	// Add task to execute latency setter script in the node.
+	// Add task to playbook to execute latency setter script in the node.
 	cmd := fmt.Sprintf("%s set %s %s eth0",
 		filepath.Join(remoteDir, "latency-setter.py"),
-		filepath.Join(p.Testnet.Dir, "zones.csv"),
+		filepath.Join(p.Testnet.Dir, filepath.Base(p.IPZonesFilePath())),
 		filepath.Join(remoteDir, "aws-latencies.csv"),
 	)
 	runTask := ansibleAddShellTasks(basePlaybook, "set latency", cmd)

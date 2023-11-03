@@ -2,6 +2,7 @@ package infra
 
 import (
 	"context"
+	"path/filepath"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
@@ -9,7 +10,6 @@ import (
 // Provider defines an API for manipulating the infrastructure of a
 // specific set of testnet infrastructure.
 type Provider interface {
-
 	// Setup generates any necessary configuration for the infrastructure
 	// provider during testnet setup.
 	Setup() error
@@ -44,7 +44,12 @@ type ProviderData struct {
 	InfrastructureData e2e.InfrastructureData
 }
 
-// Returns the the provider's infrastructure data
+// Return the provider's infrastructure data.
 func (pd ProviderData) GetInfrastructureData() *e2e.InfrastructureData {
 	return &pd.InfrastructureData
+}
+
+// Return the path to the file with the mapping from IP addresses to zones.
+func (pd ProviderData) IPZonesFilePath() string {
+	return filepath.Join(pd.Testnet.Dir, "zones.csv")
 }

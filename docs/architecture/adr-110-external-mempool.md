@@ -1,4 +1,4 @@
-# ADR 110: Mempool client
+# ADR 110: External mempool
 
 ## Changelog
 

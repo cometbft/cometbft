@@ -19,8 +19,16 @@ type Metrics struct {
 	// Size of the mempool.
 	Size metrics.Gauge
 
+<<<<<<< HEAD
 	// Histogram of transaction sizes, in bytes.
 	TxSizeBytes metrics.Histogram
+=======
+	// Total size of the mempool in bytes.
+	SizeBytes metrics.Gauge
+
+	// Histogram of transaction sizes in bytes.
+	TxSizeBytes metrics.Histogram `metrics_buckettype:"exp" metrics_bucketsizes:"1,3,7"`
+>>>>>>> b50bca37c (mempool: Add metric size of pool in bytes (#1512))
 
 	// Number of failed transactions.
 	FailedTxs metrics.Counter

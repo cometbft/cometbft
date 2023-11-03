@@ -68,7 +68,7 @@ func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
 	// Add task to playbook to execute latency setter script in the node.
 	cmd := fmt.Sprintf("%s set %s %s eth0",
 		filepath.Join(remoteDir, "latency-setter.py"),
-		filepath.Join(p.Testnet.Dir, filepath.Base(p.IPZonesFilePath())),
+		filepath.Join(remoteDir, filepath.Base(p.IPZonesFilePath())),
 		filepath.Join(remoteDir, "aws-latencies.csv"),
 	)
 	runTask := ansibleAddShellTasks(basePlaybook, "set latency", cmd)

@@ -314,7 +314,7 @@ func (mem *CListMempool) globalCb(req *abci.Request, res *abci.Response) {
 
 		// update metrics
 		mem.metrics.Size.Set(float64(mem.Size()))
-		mem.metrics.SizeBytes.Set(float64(mem.txsBytes))
+		mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
 
 	default:
 		// ignore other messages
@@ -640,7 +640,7 @@ func (mem *CListMempool) Update(
 
 	// Update metrics
 	mem.metrics.Size.Set(float64(mem.Size()))
-	mem.metrics.SizeBytes.Set(float64(mem.txsBytes))
+	mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
 
 	return nil
 }

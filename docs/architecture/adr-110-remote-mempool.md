@@ -246,10 +246,6 @@ message FetchRequest {
     // Fetch as many transactions as possible that cumulatively take up at most
     // this number of bytes.
     int64 max_bytes = 1;
-
-    // Fetch as many transactions as possible that cumulatively use at most this
-    // gas quantity.
-    int64 max_gas = 2;
 }
 
 message FetchResponse {
@@ -277,10 +273,18 @@ message TxsAvailableResponse {
 }
 ```
 
-**NOTE**: The terminology used in the gRPC interface is different to that used
-in the [`Mempool`] interface. The term "reap" technically implies removal from
-the mempool, but the [`Mempool`] interface incorrectly uses this term to imply
-fetching a batch of transactions.
+**Notes**:
+
+- The terminology used in the gRPC interface is different to that used in the
+  [`Mempool`] interface. The term "reap" technically implies removal from the
+  mempool, but the [`Mempool`] interface incorrectly uses this term to imply
+  fetching a batch of transactions.
+
+- The gRPC interface purposefully does not facilitate limiting fetched
+  transactions by gas in an effort to separate consensus- and
+  application-related concerns (as per [RFC 011]). Should remote mempool
+  developers want to limit returned transactions by gas, this should be
+  implemented as part of the configuration of the remote mempool.
 
 ### Impact and properties
 
@@ -353,3 +357,4 @@ considered for backporting to the `v0.38.x-experimental` branch.
 [\#1112]: https://github.com/cometbft/cometbft/discussions/1112
 [\#1117]: https://github.com/cometbft/cometbft/issues/1117
 [`Mempool`]: ../../mempool/mempool.go
+[RFC 011]: ../rfc/tendermint-core/rfc-011-delete-gas.md

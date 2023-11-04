@@ -1,7 +1,9 @@
-# ADR 110: External mempool
+# ADR 110: Remote mempool
 
 ## Changelog
 
+- 2023-11-04: Renamed ADR to "Remote mempool" instead of "External mempool" to
+  align with gRPC service definition (@thanethomson)
 - 2023-11-03: First draft (@thanethomson)
 
 ## Status

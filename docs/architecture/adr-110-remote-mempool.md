@@ -25,6 +25,12 @@ whereby Comet can interact with an **external mempool**. This involves
 implementing a mempool variant in Comet which is effectively just a client for
 an external mempool process or set of processes.
 
+This approach changes the way that validators obtain transactions, and implies
+that full nodes are not necessary as sentries for receiving transactions (in
+fact, in this model, full nodes are not intended to interact with the mempool at
+all). DDoS mitigation mechanisms, however, are left to those who implement
+remote mempools.
+
 ## Alternative Approaches
 
 The current alternatives considered are:
@@ -47,11 +53,8 @@ The current alternatives considered are:
 
 ## Decision
 
-TBD
-
-> This section records the decision that was made.
-> It is best to record as much info as possible from the discussion that happened.
-> This aids in not having to go back to the Pull Request to get the needed information.
+Implement an optional mempool client in Comet that can connect to a remote
+mempool instance/cluster.
 
 ## Detailed Design
 
@@ -59,12 +62,12 @@ TBD
 
 #### Single-process mempool
 
-The simplest possible architecture for a Comet full node or validator with an
-external mempool is as follows.
+The simplest possible architecture for a Comet validator with an external
+mempool is as follows.
 
 ```mermaid
 flowchart LR
-    comet[Comet Node]
+    comet[Comet Validator]
     app[Application]
     mempool[Mempool]
     user[User]
@@ -88,7 +91,7 @@ In this flow:
 3. Transactions that the application deems valid are then sent to the mempool by
    the application, e.g. through some form of RPC mechanism. The mempool is then
    expected to propagate these transactions to the rest of the network.
-4. During `PrepareProposal`, a Comet node will reap transactions from the
+4. During `PrepareProposal`, a Comet validator will reap transactions from the
    mempool by way of an RPC call.
 
 Additionally, when transactions are received by the local mempool instance from
@@ -98,12 +101,12 @@ currently functions).
 
 #### Scalable mempool
 
-The recommended high-level architecture for a modular Comet full node or
-validator with an externalized, scalable mempool, is as follows.
+The recommended high-level architecture for a modular Comet validator with an
+externalized, scalable mempool, is as follows.
 
 ```mermaid
 flowchart LR
-    comet[Comet Node]
+    comet[Comet Validator]
     app[Application]
     mempoolrouter[Mempool Router]
     mempool1[Mempool Instance 1]
@@ -154,7 +157,8 @@ type = "remote"
 #
 # A remote mempool is only usable by a validator node. Turning on the remote
 # mempool for a full node will simply disable any mempool-related functionality
-# on that full node.
+# on that full node, and the full node will not interact with any mempool at
+# all.
 #
 [mempool.remote]
 # The base URL for the gRPC interface to the remote mempool.

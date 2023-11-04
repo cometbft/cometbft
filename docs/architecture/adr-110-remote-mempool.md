@@ -244,7 +244,8 @@ service RemoteMempoolService {
 
 message FetchRequest {
     // Fetch as many transactions as possible that cumulatively take up at most
-    // this number of bytes.
+    // this number of bytes. Setting this value to -1 implies no limit (this
+    // implies that the remote mempool is fully in control of this value).
     int64 max_bytes = 1;
 }
 
@@ -266,6 +267,9 @@ message ReapResponse {}
 
 message TxsAvailableRequest {}
 
+// TxsAvailableResponse is to be sent once upon initiation of the TxsAvailable
+// request, as well as once for each new height, iff new transactions are
+// available to be fetched by the consensus engine.
 message TxsAvailableResponse {
     // Supplied for informational purposes to the consensus engine to indicate
     // the height seen by the mempool during the last call to Reap.

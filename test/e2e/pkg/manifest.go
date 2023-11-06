@@ -98,6 +98,9 @@ type Manifest struct {
 
 	// Upper bound of sleep duration then gossipping votes and block parts
 	PeerGossipIntraloopSleepDuration time.Duration `toml:"peer_gossip_intraloop_sleep_duration"`
+
+	// Maximum number of peers to gossip transactions
+	ExperimentalMaxUsedOutboundPeers uint `toml:"experimental_max_used_outbound_peers"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

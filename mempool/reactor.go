@@ -36,7 +36,7 @@ type Reactor struct {
 	txSenders    map[types.TxKey]map[p2p.ID]bool
 	txSendersMtx cmtsync.Mutex
 
-	sem *semaphore.Weighted
+	activeConnectionsSemaphore *semaphore.Weighted
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
@@ -53,7 +53,7 @@ func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool, waitSync bool)
 		memR.waitSyncCh = make(chan struct{})
 	}
 	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
-	memR.sem = semaphore.NewWeighted(int64(memR.config.ExperimentalMaxUsedOutboundPeers))
+	memR.activeConnectionsSemaphore = semaphore.NewWeighted(int64(memR.config.ExperimentalMaxUsedOutboundPeers))
 
 	return memR
 }
@@ -101,11 +101,11 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 	if memR.config.Broadcast {
 		go func() {
 			if memR.config.ExperimentalMaxUsedOutboundPeers > 0 {
-				if err := memR.sem.Acquire(context.TODO(), 1); err != nil {
+				if err := memR.activeConnectionsSemaphore.Acquire(context.TODO(), 1); err != nil {
 					memR.Logger.Error("Failed to acquire semaphore: %v", err)
 					return
 				}
-				defer memR.sem.Release(1)
+				defer memR.activeConnectionsSemaphore.Release(1)
 			}
 			memR.broadcastTxRoutine(peer)
 		}()

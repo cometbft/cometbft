@@ -36,9 +36,17 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
 
-## [v0.34.23-alpha.agoric.2]
+## [v0.34.23-alpha.agoric.4]
+
+* Lower default `BlockParams.MaxBytes` to 5MB to mitigate asa-2023-002 
+
+## [v0.34.23-alpha.agoric.3]
 
 * Agoric/agoric-sdk\#6945 Cherrypick fix for informalsystems/tendermint#4.
+
+## [v0.34.23-alpha.agoric.2]
+
+* Adapt to new callback tracking. See tendermint/tendermint#8331
 
 ## [v0.34.23-alpha.agoric.1]
 

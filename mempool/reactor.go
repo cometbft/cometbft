@@ -97,14 +97,13 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 
 // AddPeer implements Reactor.
 // It starts a broadcast routine ensuring all txs are forwarded to the given peer.
-func (memR *Reactor) AddPeer(peer p2p.Peer) error {
-	var bcastError error
+func (memR *Reactor) AddPeer(peer p2p.Peer) {
 	if memR.config.Broadcast {
 		go func() {
 			if memR.config.ExperimentalMaxUsedOutboundPeers > 0 {
 				if err := memR.sem.Acquire(context.TODO(), 1); err != nil {
 					memR.Logger.Error("Failed to acquire semaphore: %v", err)
-					bcastError = err
+					return
 				} else {
 					defer memR.sem.Release(1)
 				}
@@ -112,7 +111,6 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) error {
 			memR.broadcastTxRoutine(peer)
 		}()
 	}
-	return bcastError
 }
 
 // Receive implements Reactor.

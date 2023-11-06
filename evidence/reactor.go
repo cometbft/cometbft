@@ -64,9 +64,8 @@ func (evR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 }
 
 // AddPeer implements Reactor.
-func (evR *Reactor) AddPeer(peer p2p.Peer) error {
+func (evR *Reactor) AddPeer(peer p2p.Peer) {
 	go evR.broadcastEvidenceRoutine(peer)
-	return nil
 }
 
 // Receive implements Reactor.

@@ -32,7 +32,7 @@ type Reactor interface {
 
 	// AddPeer is called by the switch after the peer is added and successfully
 	// started. Use it to start goroutines communicating with the peer.
-	AddPeer(peer Peer) error
+	AddPeer(peer Peer)
 
 	// RemovePeer is called by the switch when the peer is stopped (due to error
 	// or other reason).

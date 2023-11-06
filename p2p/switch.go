@@ -854,10 +854,7 @@ func (sw *Switch) addPeer(p Peer) error {
 
 	// Start all the reactor protocols on the peer.
 	for _, reactor := range sw.reactors {
-		if err = reactor.AddPeer(p); err != nil {
-			sw.Logger.Error("error adding peer to reactor", "reactor", reactor, "peer", p, "error", err)
-			return err
-		}
+		reactor.AddPeer(p)
 	}
 
 	sw.Logger.Debug("Added peer", "peer", p)

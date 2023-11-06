@@ -34,7 +34,7 @@ func DefaultConsensusParams() *cmtproto.ConsensusParams {
 // DefaultBlockParams returns a default BlockParams.
 func DefaultBlockParams() cmtproto.BlockParams {
 	return cmtproto.BlockParams{
-		MaxBytes:   22020096, // 21MB
+		MaxBytes:   5 * 1024 * 1024, // 5MB
 		MaxGas:     -1,
 		TimeIotaMs: 1000, // 1s
 	}

@@ -104,9 +104,8 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 				if err := memR.sem.Acquire(context.TODO(), 1); err != nil {
 					memR.Logger.Error("Failed to acquire semaphore: %v", err)
 					return
-				} else {
-					defer memR.sem.Release(1)
 				}
+				defer memR.sem.Release(1)
 			}
 			memR.broadcastTxRoutine(peer)
 		}()

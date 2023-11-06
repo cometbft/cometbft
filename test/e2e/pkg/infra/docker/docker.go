@@ -46,9 +46,11 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 func (p Provider) StopTestnet(ctx context.Context) error {
 	return ExecCompose(ctx, p.Testnet.Dir, "down")
 }
+
 func (p Provider) Disconnect(ctx context.Context, name string, _ string) error {
 	return Exec(ctx, "network", "disconnect", p.Testnet.Name+"_"+p.Testnet.Name, name)
 }
+
 func (p Provider) Reconnect(ctx context.Context, name string, _ string) error {
 	return Exec(ctx, "network", "connect", p.Testnet.Name+"_"+p.Testnet.Name, name)
 }
@@ -99,7 +101,9 @@ services:
     init: true
     ports:
     - 26656
-    - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657
+    - {{ if .RPCProxyPort }}{{ .RPCProxyPort }}:{{ end }}26657
+    - {{ if .GRPCProxyPort }}{{ .GRPCProxyPort }}:{{ end }}26670
+    - {{ if .GRPCPrivilegedProxyPort }}{{ .GRPCPrivilegedProxyPort }}:{{ end }}26671
 {{- if .PrometheusProxyPort }}
     - {{ .PrometheusProxyPort }}:26660
 {{- end }}
@@ -125,7 +129,9 @@ services:
     init: true
     ports:
     - 26656
-    - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657
+    - {{ if .RPCProxyPort }}{{ .RPCProxyPort }}:{{ end }}26657
+    - {{ if .GRPCProxyPort }}{{ .GRPCProxyPort }}:{{ end }}26670
+    - {{ if .GRPCPrivilegedProxyPort }}{{ .GRPCPrivilegedProxyPort }}:{{ end }}26671
 {{- if .PrometheusProxyPort }}
     - {{ .PrometheusProxyPort }}:26660
 {{- end }}

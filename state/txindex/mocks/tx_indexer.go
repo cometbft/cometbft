@@ -60,6 +60,30 @@ func (_m *TxIndexer) Get(hash []byte) (*types.TxResult, error) {
 	return r0, r1
 }
 
+// GetRetainHeight provides a mock function with given fields:
+func (_m *TxIndexer) GetRetainHeight() (int64, error) {
+	ret := _m.Called()
+
+	var r0 int64
+	var r1 error
+	if rf, ok := ret.Get(0).(func() (int64, error)); ok {
+		return rf()
+	}
+	if rf, ok := ret.Get(0).(func() int64); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Index provides a mock function with given fields: result
 func (_m *TxIndexer) Index(result *types.TxResult) error {
 	ret := _m.Called(result)
@@ -72,6 +96,37 @@ func (_m *TxIndexer) Index(result *types.TxResult) error {
 	}
 
 	return r0
+}
+
+// Prune provides a mock function with given fields: retainHeight
+func (_m *TxIndexer) Prune(retainHeight int64) (int64, int64, error) {
+	ret := _m.Called(retainHeight)
+
+	var r0 int64
+	var r1 int64
+	var r2 error
+	if rf, ok := ret.Get(0).(func(int64) (int64, int64, error)); ok {
+		return rf(retainHeight)
+	}
+	if rf, ok := ret.Get(0).(func(int64) int64); ok {
+		r0 = rf(retainHeight)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+
+	if rf, ok := ret.Get(1).(func(int64) int64); ok {
+		r1 = rf(retainHeight)
+	} else {
+		r1 = ret.Get(1).(int64)
+	}
+
+	if rf, ok := ret.Get(2).(func(int64) error); ok {
+		r2 = rf(retainHeight)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
 }
 
 // Search provides a mock function with given fields: ctx, q
@@ -103,6 +158,20 @@ func (_m *TxIndexer) Search(ctx context.Context, q *query.Query) ([]*types.TxRes
 // SetLogger provides a mock function with given fields: l
 func (_m *TxIndexer) SetLogger(l log.Logger) {
 	_m.Called(l)
+}
+
+// SetRetainHeight provides a mock function with given fields: retainHeight
+func (_m *TxIndexer) SetRetainHeight(retainHeight int64) error {
+	ret := _m.Called(retainHeight)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(int64) error); ok {
+		r0 = rf(retainHeight)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // NewTxIndexer creates a new instance of TxIndexer. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

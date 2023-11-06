@@ -14,11 +14,11 @@ import (
 	recovery_parser "github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/grammar-auto/parser"
 )
 
-const COMMIT = "commit"
+const Commit = "commit"
 
-// GrammarChecker is a checker that can verify whether a specific set of ABCI calls
+// Checker is a checker that can verify whether a specific set of ABCI calls
 // respects the ABCI grammar.
-type GrammarChecker struct {
+type Checker struct {
 	logger log.Logger
 	cfg    *Config
 }
@@ -51,8 +51,8 @@ func (e *Error) String() string {
 }
 
 // NewGrammarChecker returns a grammar checker object.
-func NewGrammarChecker(cfg *Config) *GrammarChecker {
-	return &GrammarChecker{
+func NewGrammarChecker(cfg *Config) *Checker {
+	return &Checker{
 		cfg:    cfg,
 		logger: log.NewTMLogger(log.NewSyncWriter(os.Stdout)),
 	}
@@ -60,7 +60,7 @@ func NewGrammarChecker(cfg *Config) *GrammarChecker {
 
 // isSupportedByGrammar returns true for all requests supported by the current grammar ("/pkg/grammar/clean-start/abci_grammar_clean_start.md" and "/pkg/grammar/recovery/abci_grammar_recovery.md").
 // This method needs to be modified if we add another ABCI call.
-func (g *GrammarChecker) isSupportedByGrammar(req *abci.Request) bool {
+func (g *Checker) isSupportedByGrammar(req *abci.Request) bool {
 	switch req.Value.(type) {
 	case *abci.Request_InitChain, *abci.Request_FinalizeBlock, *abci.Request_Commit,
 		*abci.Request_OfferSnapshot, *abci.Request_ApplySnapshotChunk, *abci.Request_PrepareProposal,
@@ -72,7 +72,7 @@ func (g *GrammarChecker) isSupportedByGrammar(req *abci.Request) bool {
 }
 
 // filterRequests returns requests supported by grammar and remove the last height.
-func (g *GrammarChecker) filterRequests(reqs []*abci.Request) []*abci.Request {
+func (g *Checker) filterRequests(reqs []*abci.Request) []*abci.Request {
 	var r []*abci.Request
 	for _, req := range reqs {
 		if g.isSupportedByGrammar(req) {
@@ -85,14 +85,14 @@ func (g *GrammarChecker) filterRequests(reqs []*abci.Request) []*abci.Request {
 
 // filterLastHeight removes ABCI requests from the last height if "commit" has not been called
 // and returns the tuple (remaining(non-filtered) requests, # of filtered requests).
-func (g *GrammarChecker) filterLastHeight(reqs []*abci.Request) ([]*abci.Request, int) {
+func (g *Checker) filterLastHeight(reqs []*abci.Request) ([]*abci.Request, int) {
 	if len(reqs) == 0 {
 		return nil, 0
 	}
 	pos := len(reqs) - 1
 	cnt := 0
 	// Find the last commit.
-	for pos > 0 && g.getRequestTerminal(reqs[pos]) != COMMIT {
+	for pos > 0 && g.getRequestTerminal(reqs[pos]) != Commit {
 		pos--
 		cnt++
 	}
@@ -100,7 +100,7 @@ func (g *GrammarChecker) filterLastHeight(reqs []*abci.Request) ([]*abci.Request
 }
 
 // getRequestTerminal returns a value of a corresponding terminal in the ABCI grammar for a specific request.
-func (g *GrammarChecker) getRequestTerminal(req *abci.Request) string {
+func (g *Checker) getRequestTerminal(req *abci.Request) string {
 	// req.String() produces an output like this "init_chain:<time:<seconds:-62135596800 > >"
 	// we take just the part before the ":" (init_chain, in previous example) for each request
 	parts := strings.Split(req.String(), ":")
@@ -111,12 +111,12 @@ func (g *GrammarChecker) getRequestTerminal(req *abci.Request) string {
 }
 
 // getExecutionString returns a string of terminal symbols in parser readable format.
-func (g *GrammarChecker) getExecutionString(reqs []*abci.Request) string {
+func (g *Checker) getExecutionString(reqs []*abci.Request) string {
 	s := ""
 	for _, r := range reqs {
 		t := g.getRequestTerminal(r)
 		// We ensure to have one height per line for readability.
-		if t == COMMIT {
+		if t == Commit {
 			s += t + "\n"
 		} else {
 			s += t + " "
@@ -126,9 +126,9 @@ func (g *GrammarChecker) getExecutionString(reqs []*abci.Request) string {
 }
 
 // Verify verifies whether a list of request satisfy ABCI grammar.
-func (g *GrammarChecker) Verify(reqs []*abci.Request, isCleanStart bool) (bool, error) {
+func (g *Checker) Verify(reqs []*abci.Request, isCleanStart bool) (bool, error) {
 	if len(reqs) == 0 {
-		return false, fmt.Errorf("execution with no ABCI calls.")
+		return false, fmt.Errorf("execution with no ABCI calls")
 	}
 	r := g.filterRequests(reqs)
 	// Check if the execution is incomplete.
@@ -149,8 +149,8 @@ func (g *GrammarChecker) Verify(reqs []*abci.Request, isCleanStart bool) (bool, 
 }
 
 // verifyCleanStart verifies if a specific execution is a valid clean-start execution.
-func (g *GrammarChecker) verifyCleanStart(execution string) []*Error {
-	var errors []*Error
+func (g *Checker) verifyCleanStart(execution string) []*Error {
+	errors := make([]*Error, 0)
 	lexer := clean_start_lexer.New([]rune(execution))
 	_, errs := clean_start_parser.Parse(lexer)
 	for _, err := range errs {
@@ -170,8 +170,8 @@ func (g *GrammarChecker) verifyCleanStart(execution string) []*Error {
 }
 
 // verifyRecovery verifies if a specific execution is a valid recovery execution.
-func (g *GrammarChecker) verifyRecovery(execution string) []*Error {
-	var errors []*Error
+func (g *Checker) verifyRecovery(execution string) []*Error {
+	errors := make([]*Error, 0)
 	lexer := recovery_lexer.New([]rune(execution))
 	_, errs := recovery_parser.Parse(lexer)
 	for _, err := range errs {
@@ -191,7 +191,7 @@ func (g *GrammarChecker) verifyRecovery(execution string) []*Error {
 }
 
 // addHeightNumbersToTheExecution adds height numbers to the execution. This is used just when printing the execution so we can find the height with error more easily.
-func (g *GrammarChecker) addHeightNumbersToTheExecution(execution string) string {
+func (g *Checker) addHeightNumbersToTheExecution(execution string) string {
 	heights := strings.Split(execution, "\n")
 	s := ""
 	for i, l := range heights {
@@ -204,7 +204,7 @@ func (g *GrammarChecker) addHeightNumbersToTheExecution(execution string) string
 }
 
 // combineErrors combines at most n errors in one.
-func (g *GrammarChecker) combineErrors(errors []*Error, n int) error {
+func (g *Checker) combineErrors(errors []*Error, n int) error {
 	s := ""
 	for i, e := range errors {
 		if i == n {

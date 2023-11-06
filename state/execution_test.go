@@ -295,7 +295,8 @@ func TestFinalizeBlockMisbehavior(t *testing.T) {
 						BlockIDFlag:      types.BlockIDFlagNil,
 						ValidatorAddress: crypto.AddressHash([]byte("validator_address")),
 						Timestamp:        defaultEvidenceTime,
-						Signature:        crypto.CRandBytes(types.MaxSignatureSize)}},
+						Signature:        crypto.CRandBytes(types.MaxSignatureSize),
+					}},
 				},
 			},
 			ValidatorSet: state.Validators,
@@ -933,7 +934,10 @@ func TestPrepareProposalErrorOnPrepareProposalError(t *testing.T) {
 	cm.On("PrepareProposal", mock.Anything, mock.Anything).Return(nil, errors.New("an injected error")).Once()
 	cm.On("Stop").Return(nil)
 	cc := &pmocks.ClientCreator{}
-	cc.On("NewABCIClient").Return(cm, nil)
+	cc.On("NewABCIQueryClient").Return(cm, nil)
+	cc.On("NewABCIMempoolClient").Return(cm, nil)
+	cc.On("NewABCISnapshotClient").Return(cm, nil)
+	cc.On("NewABCIConsensusClient").Return(cm, nil)
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
 	require.NoError(t, err)

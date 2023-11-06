@@ -19,9 +19,9 @@ var (
 )
 
 const (
-	CLEAN_START = true
-	PASS        = true
-	FAIL        = false
+	CleanStart = true
+	Pass       = true
+	Fail       = false
 )
 
 func TestVerify(t *testing.T) {
@@ -34,43 +34,43 @@ func TestVerify(t *testing.T) {
 		// start = clean-start
 		// clean-start = init-chain consensus-exec
 		// consensus-height = finalizeBlock commit
-		{"empty-block-1", []*abci.Request{initChain, finalizeBlock, commit}, CLEAN_START, PASS},
-		{"consensus-exec-missing", []*abci.Request{initChain}, CLEAN_START, FAIL},
-		{"finalize-block-missing-1", []*abci.Request{initChain, commit}, CLEAN_START, FAIL},
-		{"commit-missing-1", []*abci.Request{initChain, finalizeBlock}, CLEAN_START, FAIL},
+		{"empty-block-1", []*abci.Request{initChain, finalizeBlock, commit}, CleanStart, Pass},
+		{"consensus-exec-missing", []*abci.Request{initChain}, CleanStart, Fail},
+		{"finalize-block-missing-1", []*abci.Request{initChain, commit}, CleanStart, Fail},
+		{"commit-missing-1", []*abci.Request{initChain, finalizeBlock}, CleanStart, Fail},
 		// consensus-height = *consensus-round finalizeBlock commit
-		{"proposer-round-1", []*abci.Request{initChain, prepareProposal, processProposal, finalizeBlock, commit}, CLEAN_START, PASS},
-		{"proposer-round-2", []*abci.Request{initChain, prepareProposal, finalizeBlock, commit}, CLEAN_START, PASS},
-		{"non-proposer-round-1", []*abci.Request{initChain, processProposal, finalizeBlock, commit}, CLEAN_START, PASS},
-		{"multiple-rounds-1", []*abci.Request{initChain, prepareProposal, processProposal, processProposal, prepareProposal, processProposal, processProposal, processProposal, finalizeBlock, commit}, CLEAN_START, PASS},
+		{"proposer-round-1", []*abci.Request{initChain, prepareProposal, processProposal, finalizeBlock, commit}, CleanStart, Pass},
+		{"proposer-round-2", []*abci.Request{initChain, prepareProposal, finalizeBlock, commit}, CleanStart, Pass},
+		{"non-proposer-round-1", []*abci.Request{initChain, processProposal, finalizeBlock, commit}, CleanStart, Pass},
+		{"multiple-rounds-1", []*abci.Request{initChain, prepareProposal, processProposal, processProposal, prepareProposal, processProposal, processProposal, processProposal, finalizeBlock, commit}, CleanStart, Pass},
 
 		// clean-start = init-chain state-sync consensus-exec
 		// state-sync = success-sync
-		{"one-apply-chunk-1", []*abci.Request{initChain, offerSnapshot, applyChunk, finalizeBlock, commit}, CLEAN_START, PASS},
-		{"multiple-apply-chunks-1", []*abci.Request{initChain, offerSnapshot, applyChunk, applyChunk, finalizeBlock, commit}, CLEAN_START, PASS},
-		{"offer-snapshot-missing-1", []*abci.Request{initChain, applyChunk, finalizeBlock, commit}, CLEAN_START, FAIL},
-		{"apply-chunk-missing", []*abci.Request{initChain, offerSnapshot, finalizeBlock, commit}, CLEAN_START, FAIL},
+		{"one-apply-chunk-1", []*abci.Request{initChain, offerSnapshot, applyChunk, finalizeBlock, commit}, CleanStart, Pass},
+		{"multiple-apply-chunks-1", []*abci.Request{initChain, offerSnapshot, applyChunk, applyChunk, finalizeBlock, commit}, CleanStart, Pass},
+		{"offer-snapshot-missing-1", []*abci.Request{initChain, applyChunk, finalizeBlock, commit}, CleanStart, Fail},
+		{"apply-chunk-missing", []*abci.Request{initChain, offerSnapshot, finalizeBlock, commit}, CleanStart, Fail},
 		// state-sync = *state-sync-attempt success-sync
-		{"one-apply-chunk-2", []*abci.Request{initChain, offerSnapshot, applyChunk, offerSnapshot, applyChunk, finalizeBlock, commit}, CLEAN_START, PASS},
-		{"mutliple-apply-chunks-2", []*abci.Request{initChain, offerSnapshot, applyChunk, applyChunk, applyChunk, offerSnapshot, applyChunk, finalizeBlock, commit}, CLEAN_START, PASS},
-		{"offer-snapshot-missing-2", []*abci.Request{initChain, applyChunk, offerSnapshot, applyChunk, finalizeBlock, commit}, CLEAN_START, FAIL},
-		{"no-apply-chunk", []*abci.Request{initChain, offerSnapshot, offerSnapshot, applyChunk, finalizeBlock, commit}, CLEAN_START, PASS},
+		{"one-apply-chunk-2", []*abci.Request{initChain, offerSnapshot, applyChunk, offerSnapshot, applyChunk, finalizeBlock, commit}, CleanStart, Pass},
+		{"multiple-apply-chunks-2", []*abci.Request{initChain, offerSnapshot, applyChunk, applyChunk, applyChunk, offerSnapshot, applyChunk, finalizeBlock, commit}, CleanStart, Pass},
+		{"offer-snapshot-missing-2", []*abci.Request{initChain, applyChunk, offerSnapshot, applyChunk, finalizeBlock, commit}, CleanStart, Fail},
+		{"no-apply-chunk", []*abci.Request{initChain, offerSnapshot, offerSnapshot, applyChunk, finalizeBlock, commit}, CleanStart, Pass},
 
 		// start = recovery
 		// recovery = consensus-exec
 		// consensus-height = finalizeBlock commit
-		{"empty-block-2", []*abci.Request{finalizeBlock, commit}, !CLEAN_START, PASS},
-		{"finalize-block-missing-2", []*abci.Request{commit}, !CLEAN_START, FAIL},
-		{"commit-missing-2", []*abci.Request{finalizeBlock}, !CLEAN_START, FAIL},
+		{"empty-block-2", []*abci.Request{finalizeBlock, commit}, !CleanStart, Pass},
+		{"finalize-block-missing-2", []*abci.Request{commit}, !CleanStart, Fail},
+		{"commit-missing-2", []*abci.Request{finalizeBlock}, !CleanStart, Fail},
 		// consensus-height = *consensus-round finalizeBlock commit
-		{"proposer-round-3", []*abci.Request{prepareProposal, processProposal, finalizeBlock, commit}, !CLEAN_START, PASS},
-		{"proposer-round-4", []*abci.Request{prepareProposal, finalizeBlock, commit}, !CLEAN_START, PASS},
-		{"non-proposer-round-2", []*abci.Request{processProposal, finalizeBlock, commit}, !CLEAN_START, PASS},
-		{"multiple-rounds-2", []*abci.Request{prepareProposal, processProposal, processProposal, prepareProposal, processProposal, processProposal, processProposal, finalizeBlock, commit}, !CLEAN_START, PASS},
+		{"proposer-round-3", []*abci.Request{prepareProposal, processProposal, finalizeBlock, commit}, !CleanStart, Pass},
+		{"proposer-round-4", []*abci.Request{prepareProposal, finalizeBlock, commit}, !CleanStart, Pass},
+		{"non-proposer-round-2", []*abci.Request{processProposal, finalizeBlock, commit}, !CleanStart, Pass},
+		{"multiple-rounds-2", []*abci.Request{prepareProposal, processProposal, processProposal, prepareProposal, processProposal, processProposal, processProposal, finalizeBlock, commit}, !CleanStart, Pass},
 
 		// corner cases
-		{"empty execution", nil, CLEAN_START, FAIL},
-		{"empty execution", nil, !CLEAN_START, FAIL},
+		{"empty execution", nil, CleanStart, Fail},
+		{"empty execution", nil, !CleanStart, Fail},
 	}
 
 	for _, test := range tests {
@@ -80,7 +80,7 @@ func TestVerify(t *testing.T) {
 			continue
 		}
 		if err == nil {
-			err = fmt.Errorf("Grammar parsed an incorrect execution: %v\n", checker.getExecutionString(test.abciCalls))
+			err = fmt.Errorf("grammar parsed an incorrect execution: %v", checker.getExecutionString(test.abciCalls))
 		}
 		t.Errorf("Test %v returned %v, expected %v\n%v\n", test.name, result, test.result, err)
 	}

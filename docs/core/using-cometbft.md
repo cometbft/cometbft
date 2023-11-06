@@ -92,8 +92,8 @@ definition](https://github.com/cometbft/cometbft/blob/main/types/genesis.go)).
   "initial_height": "0",
   "consensus_params": {
     "block": {
-      "max_bytes": "22020096",
-      "max_gas": "-1",
+      "max_bytes": "4194304",
+      "max_gas": "10000000",
     },
     "evidence": {
       "max_age_num_blocks": "100000",

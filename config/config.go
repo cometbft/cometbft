@@ -894,7 +894,7 @@ func DefaultMempoolConfig() *MempoolConfig {
 		MaxTxsBytes:                      1024 * 1024 * 1024, // 1GB
 		CacheSize:                        10000,
 		MaxTxBytes:                       1024 * 1024, // 1MB
-		ExperimentalMaxUsedOutboundPeers: 10,
+		ExperimentalMaxUsedOutboundPeers: 0,
 	}
 }
 

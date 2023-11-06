@@ -142,7 +142,7 @@ func (g *Checker) Verify(reqs []*abci.Request, isCleanStart bool) (bool, error) 
 	} else {
 		errors = g.verifyRecovery(execution)
 	}
-	if errors == nil {
+	if len(errors) == 0 {
 		return true, nil
 	}
 	return false, fmt.Errorf("%v\nFull execution:\n%v", g.combineErrors(errors, g.cfg.NumberOfErrorsToShow), g.addHeightNumbersToTheExecution(execution))

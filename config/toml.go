@@ -427,8 +427,8 @@ max_batch_bytes = {{ .Mempool.MaxBatchBytes }}
 
 # Only broadcast txs to up to this many peers.
 # If we are connected to more than this number of peers, only send txs to
-# the first MaxOutboundPeers of them. If one of those peers goes offline, activate another peer.
-max_outbound_peers = {{ .Mempool.MaxOutboundPeers }}
+# the first ExperimentalMaxOutboundPeers of them. If one of those peers goes offline, activate another peer.
+experimental_max_used_outbound_peers = {{ .Mempool.ExperimentalMaxUsedOutboundPeers }}
 
 #######################################################
 ###         State Sync Configuration Options        ###

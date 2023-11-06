@@ -53,7 +53,7 @@ func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool, waitSync bool)
 		memR.waitSyncCh = make(chan struct{})
 	}
 	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
-	memR.sem = semaphore.NewWeighted(int64(memR.config.MaxOutboundPeers))
+	memR.sem = semaphore.NewWeighted(int64(memR.config.ExperimentalMaxUsedOutboundPeers))
 
 	return memR
 }
@@ -97,10 +97,22 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 
 // AddPeer implements Reactor.
 // It starts a broadcast routine ensuring all txs are forwarded to the given peer.
-func (memR *Reactor) AddPeer(peer p2p.Peer) {
+func (memR *Reactor) AddPeer(peer p2p.Peer) error {
+	var bcastError error
 	if memR.config.Broadcast {
-		go memR.broadcastTxRoutine(peer)
+		go func() {
+			if memR.config.ExperimentalMaxUsedOutboundPeers > 0 {
+				if err := memR.sem.Acquire(context.TODO(), 1); err != nil {
+					memR.Logger.Error("Failed to acquire semaphore: %v", err)
+					bcastError = err
+				} else {
+					defer memR.sem.Release(1)
+				}
+			}
+			memR.broadcastTxRoutine(peer)
+		}()
 	}
+	return bcastError
 }
 
 // Receive implements Reactor.
@@ -183,14 +195,6 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		case <-memR.Quit():
 			return
 		}
-	}
-
-	if memR.config.MaxOutboundPeers > 0 {
-		if err := memR.sem.Acquire(context.TODO(), 1); err != nil {
-			memR.Logger.Error("Failed to acquire semaphore: %v", err)
-			return
-		}
-		defer memR.sem.Release(1)
 	}
 
 	for {

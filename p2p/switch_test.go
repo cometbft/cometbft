@@ -65,7 +65,7 @@ func (tr *TestReactor) GetChannels() []*conn.ChannelDescriptor {
 	return tr.channels
 }
 
-func (tr *TestReactor) AddPeer(Peer) {}
+func (tr *TestReactor) AddPeer(Peer) error { return nil }
 
 func (tr *TestReactor) RemovePeer(Peer, interface{}) {}
 

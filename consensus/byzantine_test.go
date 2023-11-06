@@ -570,9 +570,9 @@ func NewByzantineReactor(conR *Reactor) *ByzantineReactor {
 
 func (br *ByzantineReactor) SetSwitch(s *p2p.Switch)               { br.reactor.SetSwitch(s) }
 func (br *ByzantineReactor) GetChannels() []*p2p.ChannelDescriptor { return br.reactor.GetChannels() }
-func (br *ByzantineReactor) AddPeer(peer p2p.Peer) {
+func (br *ByzantineReactor) AddPeer(peer p2p.Peer) error {
 	if !br.reactor.IsRunning() {
-		return
+		return nil
 	}
 
 	// Create peerState for peer
@@ -584,6 +584,8 @@ func (br *ByzantineReactor) AddPeer(peer p2p.Peer) {
 	if !br.reactor.WaitSync() {
 		br.reactor.sendNewRoundStepMessage(peer)
 	}
+
+	return nil
 }
 
 func (br *ByzantineReactor) RemovePeer(peer p2p.Peer, reason interface{}) {

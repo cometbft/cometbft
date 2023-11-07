@@ -3,12 +3,11 @@ package mempool
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 	mrand "math/rand"
 	"os"
 	"testing"
 	"time"
-
-	"fmt"
 
 	"github.com/cosmos/gogoproto/proto"
 	gogotypes "github.com/cosmos/gogoproto/types"
@@ -66,7 +65,7 @@ func newMempoolWithApp(cc proxy.ClientCreator) (*CListMempool, cleanupFunc) {
 }
 
 func newMempoolWithAppAndConfig(cc proxy.ClientCreator, cfg *config.Config) (*CListMempool, cleanupFunc) {
-	appConnMem, _ := cc.NewABCIClient()
+	appConnMem, _ := cc.NewABCIMempoolClient()
 	appConnMem.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "mempool"))
 	err := appConnMem.Start()
 	if err != nil {
@@ -409,7 +408,7 @@ func TestSerialReap(t *testing.T) {
 	mp, cleanup := newMempoolWithApp(cc)
 	defer cleanup()
 
-	appConnCon, _ := cc.NewABCIClient()
+	appConnCon, _ := cc.NewABCIConsensusClient()
 	appConnCon.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "consensus"))
 	err := appConnCon.Start()
 	require.Nil(t, err)
@@ -614,7 +613,7 @@ func TestMempoolTxsBytes(t *testing.T) {
 	require.NoError(t, err)
 	assert.EqualValues(t, 10, mp.SizeBytes())
 
-	appConnCon, _ := cc.NewABCIClient()
+	appConnCon, _ := cc.NewABCIConsensusClient()
 	appConnCon.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "consensus"))
 	err = appConnCon.Start()
 	require.Nil(t, err)
@@ -661,7 +660,7 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 	defer cleanup()
 
 	// add tx0
-	var tx0 = kvstore.NewTxFromID(0)
+	tx0 := kvstore.NewTxFromID(0)
 	_, err := mp.CheckTx(tx0)
 	require.NoError(t, err)
 	err = mp.FlushAppConn()

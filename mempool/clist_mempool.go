@@ -3,7 +3,6 @@ package mempool
 import (
 	"bytes"
 	"context"
-	"errors"
 	"sync"
 	"sync/atomic"
 
@@ -210,7 +209,12 @@ func (mem *CListMempool) SizeBytes() int64 {
 
 // Lock() must be help by the caller during execution.
 func (mem *CListMempool) FlushAppConn() error {
-	return mem.proxyAppConn.Flush(context.TODO())
+	err := mem.proxyAppConn.Flush(context.TODO())
+	if err != nil {
+		return ErrFlushAppConn{Err: err}
+	}
+
+	return nil
 }
 
 // XXX: Unsafe! Calling Flush may leave mempool in inconsistent state.
@@ -264,15 +268,13 @@ func (mem *CListMempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
 
 	if mem.preCheck != nil {
 		if err := mem.preCheck(tx); err != nil {
-			return nil, ErrPreCheck{
-				Reason: err,
-			}
+			return nil, ErrPreCheck{Err: err}
 		}
 	}
 
 	// NOTE: proxyAppConn may error if tx buffer is full
 	if err := mem.proxyAppConn.Error(); err != nil {
-		return nil, err
+		return nil, ErrAppConnMempool{Err: err}
 	}
 
 	if added := mem.addToCache(tx); !added {
@@ -286,7 +288,7 @@ func (mem *CListMempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
 	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{Tx: tx})
 	if err != nil {
 		mem.logger.Error("RequestCheckTx", "err", err)
-		return nil, err
+		return nil, ErrCheckTxAsync{Err: err}
 	}
 
 	return reqRes, nil
@@ -314,6 +316,7 @@ func (mem *CListMempool) globalCb(req *abci.Request, res *abci.Response) {
 
 		// update metrics
 		mem.metrics.Size.Set(float64(mem.Size()))
+		mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
 
 	default:
 		// ignore other messages
@@ -345,7 +348,7 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 		atomic.AddInt64(&mem.txsBytes, int64(-len(tx)))
 		return nil
 	}
-	return errors.New("transaction not found in mempool")
+	return ErrTxNotFound
 }
 
 func (mem *CListMempool) isFull(txSize int) error {
@@ -639,6 +642,7 @@ func (mem *CListMempool) Update(
 
 	// Update metrics
 	mem.metrics.Size.Set(float64(mem.Size()))
+	mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
 
 	return nil
 }

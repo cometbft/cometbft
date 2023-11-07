@@ -9,7 +9,7 @@ const (
 	ABCIVersion = ABCISemVer
 	// P2PProtocol versions all p2p behavior and msgs.
 	// This includes proposer selection.
-	P2PProtocol uint64 = 8
+	P2PProtocol uint64 = 9
 
 	// BlockProtocol versions all block data structures and processing.
 	// This includes validity of blocks and state updates.

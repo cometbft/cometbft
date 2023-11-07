@@ -425,9 +425,12 @@ max_tx_bytes = {{ .Mempool.MaxTxBytes }}
 # XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
 max_batch_bytes = {{ .Mempool.MaxBatchBytes }}
 
-# Only broadcast txs to up to this many peers.
+# Experimental parameter to limit broadcast of txs to up to this many peers
 # If we are connected to more than this number of peers, only send txs to
-# the first ExperimentalMaxOutboundPeers of them. If one of those peers goes offline, activate another peer.
+# the first ExperimentalMaxOutboundPeers of them.; if one of those peers goes
+# offline, activate another peer.
+# Value disables the feature by not limiting the number of active connections.
+# If you enable this feature, a value of 10 is recommended.
 experimental_max_used_outbound_peers = {{ .Mempool.ExperimentalMaxUsedOutboundPeers }}
 
 #######################################################

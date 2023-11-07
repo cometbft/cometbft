@@ -876,12 +876,14 @@ type MempoolConfig struct {
 	// Including space needed by encoding (one varint per transaction).
 	// XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
 	MaxBatchBytes int `mapstructure:"max_batch_bytes"`
-	// Experimental parameter to limit broadcast of txs to up to this many peers
-	// If we are connected to more than this number of peers, only send txs to
-	// the first ExperimentalMaxOutboundPeers of them. If one of those peers goes
-	// offline, activate another peer.
-	// Value 0 disables the feature by not limiting the number of active connections.
-	// If you enable this feature, a value of 10 is recommended based on experimental performance results.
+	// Experimental parameter to limit broadcast of txs to up to this many peers.
+	// If we are connected to more than this number of peers, only send txs to the first
+	// ExperimentalMaxUsedOutboundPeers of them. If one of those peers disconnects, activate another
+	// peer.
+	// If set to 0, this feature is disabled, that is, the number of active connections is not
+	// bounded.
+	// If enabled, a value of 10 is recommended based on experimental performance results using the
+	// default P2P configuration.
 	ExperimentalMaxUsedOutboundPeers int `mapstructure:"experimental_max_used_outbound_peers"`
 }
 

@@ -63,21 +63,12 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 
 func NopMetrics() *Metrics {
 	return &Metrics{
-<<<<<<< HEAD
 		Size:         discard.NewGauge(),
+		SizeBytes:    discard.NewGauge(),
 		TxSizeBytes:  discard.NewHistogram(),
 		FailedTxs:    discard.NewCounter(),
 		RejectedTxs:  discard.NewCounter(),
 		EvictedTxs:   discard.NewCounter(),
 		RecheckTimes: discard.NewCounter(),
-=======
-		Size:               discard.NewGauge(),
-		SizeBytes:          discard.NewGauge(),
-		TxSizeBytes:        discard.NewHistogram(),
-		FailedTxs:          discard.NewCounter(),
-		RejectedTxs:        discard.NewCounter(),
-		RecheckTimes:       discard.NewCounter(),
-		AlreadyReceivedTxs: discard.NewCounter(),
->>>>>>> b50bca37c (mempool: Add metric size of pool in bytes (#1512))
 	}
 }

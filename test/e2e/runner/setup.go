@@ -266,7 +266,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		}
 		cfg.P2P.PersistentPeers += peer.AddressP2P(true)
 	}
-	if !node.Testnet.PexReactor {
+	if node.Testnet.DisablePexReactor {
 		cfg.P2P.PexReactor = false
 	}
 

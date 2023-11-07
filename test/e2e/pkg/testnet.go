@@ -77,7 +77,7 @@ type Testnet struct {
 	Validators                       map[*Node]int64
 	ValidatorUpdates                 map[int64]map[*Node]int64
 	Nodes                            []*Node
-	PexReactor                       bool
+	DisablePexReactor                bool
 	KeyType                          string
 	Evidence                         int
 	LoadTxSizeBytes                  int
@@ -162,7 +162,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		Validators:                       map[*Node]int64{},
 		ValidatorUpdates:                 map[int64]map[*Node]int64{},
 		Nodes:                            []*Node{},
-		PexReactor:                       manifest.PexReactor,
+		DisablePexReactor:                manifest.DisablePexReactor,
 		Evidence:                         manifest.Evidence,
 		LoadTxSizeBytes:                  manifest.LoadTxSizeBytes,
 		LoadTxBatchSize:                  manifest.LoadTxBatchSize,

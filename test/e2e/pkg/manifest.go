@@ -98,6 +98,10 @@ type Manifest struct {
 
 	// Upper bound of sleep duration then gossipping votes and block parts
 	PeerGossipIntraloopSleepDuration time.Duration `toml:"peer_gossip_intraloop_sleep_duration"`
+
+	// Enable or disable e2e tests for CometBFT's expected behavior with respect
+	// to ABCI.
+	ABCITestsEnabled bool `toml:"abci_tests_enabled"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

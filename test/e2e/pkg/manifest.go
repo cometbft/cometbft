@@ -48,6 +48,9 @@ type Manifest struct {
 	// Nodes specifies the network nodes. At least one node must be given.
 	Nodes map[string]*ManifestNode `toml:"node"`
 
+	// Disable the peer-exchange reactor on all nodes.
+	DisablePexReactor bool `toml:"disable_pex"`
+
 	// KeyType sets the curve that will be used by validators.
 	// Options are ed25519 & secp256k1
 	KeyType string `toml:"key_type"`

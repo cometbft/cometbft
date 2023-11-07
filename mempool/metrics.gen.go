@@ -58,24 +58,24 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "already_received_txs",
 			Help:      "Number of duplicate transaction reception.",
 		}, labels).With(labelsAndValues...),
-		ExperimentalOutboundPeers: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+		ExperimentalActiveOutboundConnections: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
-			Name:      "experimental_outbound_peers",
-			Help:      "Experimental Number of connections being actively used for gossiping transactions outbound.",
+			Name:      "experimental_active_outbound_connections",
+			Help:      "Number of connections being actively used for gossiping transactions (experimental feature).",
 		}, labels).With(labelsAndValues...),
 	}
 }
 
 func NopMetrics() *Metrics {
 	return &Metrics{
-		Size:                      discard.NewGauge(),
-		SizeBytes:                 discard.NewGauge(),
-		TxSizeBytes:               discard.NewHistogram(),
-		FailedTxs:                 discard.NewCounter(),
-		RejectedTxs:               discard.NewCounter(),
-		RecheckTimes:              discard.NewCounter(),
-		AlreadyReceivedTxs:        discard.NewCounter(),
-		ExperimentalOutboundPeers: discard.NewCounter(),
+		Size:                                  discard.NewGauge(),
+		SizeBytes:                             discard.NewGauge(),
+		TxSizeBytes:                           discard.NewHistogram(),
+		FailedTxs:                             discard.NewCounter(),
+		RejectedTxs:                           discard.NewCounter(),
+		RecheckTimes:                          discard.NewCounter(),
+		AlreadyReceivedTxs:                    discard.NewCounter(),
+		ExperimentalActiveOutboundConnections: discard.NewGauge(),
 	}
 }

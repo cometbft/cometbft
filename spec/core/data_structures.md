@@ -156,7 +156,7 @@ The `BlockID` contains two distinct Merkle roots of the block. The `BlockID` inc
 | Hash          | slice of bytes (`[]byte`)       | MerkleRoot of all the fields in the header (ie. `MerkleRoot(header)`.                                                                                            | hash must be of length 32                                              |
 | PartSetHeader | [PartSetHeader](#partsetheader) | Used for secure gossiping of the block during consensus, is the MerkleRoot of the complete serialized block cut into parts (ie. `MerkleRoot(MakeParts(block))`). | Must adhere to the validation rules of [PartSetHeader](#partsetheader) |
 
-See [MerkleRoot](./encoding.md#MerkleRoot) for details.
+See [MerkleRoot](./encoding.md#merkleroot) for details.
 
 ## PartSetHeader
 
@@ -225,7 +225,7 @@ to reconstruct the vote set given the validator set.
 | Signature        | [Signature](#signature)     | Signature corresponding to the validators participation in consensus.                                                                             | The length of the signature must be > 0 and < than  64            |
 
 NOTE: `ValidatorAddress` and `Timestamp` fields may be removed in the future
-(see [ADR-25](https://github.com/cometbft/cometbft/blob/v0.38.x/docs/architecture/adr-025-commit.md)).
+(see [ADR-25](https://github.com/cometbft/cometbft/blob/v0.38.x/docs/architecture/tendermint-core/adr-025-commit.md)).
 
 ## ExtendedCommitSig
 
@@ -394,7 +394,7 @@ in the same round of the same height. Votes are lexicographically sorted on `Blo
 `LightClientAttackEvidence` is a generalized evidence that captures all forms of known attacks on
 a light client such that a full node can verify, propose and commit the evidence on-chain for
 punishment of the malicious validators. There are three forms of attacks: Lunatic, Equivocation
-and Amnesia. These attacks are exhaustive. You can find a more detailed overview of this [here](../light-client/accountability#the_misbehavior_of_faulty_validators)
+and Amnesia. These attacks are exhaustive. You can find a more detailed overview of this [here](../light-client/accountability#the-misbehavior-of-faulty-validators)
 
 | Name                 | Type                               | Description                                                          | Validation                                                       |
 |----------------------|------------------------------------|----------------------------------------------------------------------|------------------------------------------------------------------|
@@ -476,7 +476,7 @@ func SumTruncated(bz []byte) []byte {
 | Name               | Type                                                                                                                               | Description                                                                                                                                                                                                                                                                    | Field Number |
 |--------------------|------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
 | max_age_num_blocks | int64                                                                                                                              | Max age of evidence, in blocks.                                                                                                                                                                                                                                                | 1            |
-| max_age_duration   | [google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Duration) | Max age of evidence, in time. It should correspond with an app's "unbonding period" or other similar mechanism for handling [Nothing-At-Stake attacks](https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed). | 2            |
+| max_age_duration   | [google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Duration) | Max age of evidence, in time. It should correspond with an app's "unbonding period" or other similar mechanism for handling [Nothing-At-Stake attacks](https://vitalik.ca/general/2017/12/31/pos_faq.html#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed). | 2            |
 | max_bytes          | int64                                                                                                                              | maximum size in bytes of total evidence allowed to be entered into a block                                                                                                                                                                                                     | 3            |
 
 ### ValidatorParams

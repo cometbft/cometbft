@@ -7,7 +7,7 @@ title: Overview and basic concepts
 
 - [Overview and basic concepts](#overview-and-basic-concepts)
   - [ABCI++ vs. ABCI](#abci-vs-abci)
-  - [Method overview](#method-overview)
+  - [Methods overview](#methods-overview)
     - [Consensus/block execution methods](#consensusblock-execution-methods)
     - [Mempool methods](#mempool-methods)
     - [Info methods](#info-methods)
@@ -24,7 +24,7 @@ title: Overview and basic concepts
 
 # Overview and basic concepts
 
-## ABCI 2.0 vs. ABCI
+## ABCI 2.0 vs. ABCI {#abci-vs-abci}
 
 [&#8593; Back to Outline](#outline)
 
@@ -53,7 +53,6 @@ simplified, efficient way to deliver a decided block to the Application.
 
 ## Methods overview
 
-
 [&#8593; Back to Outline](#outline)
 
 Methods can be classified into four categories: *consensus*, *mempool*, *info*, and *state-sync*.
@@ -65,7 +64,7 @@ The first time a new blockchain is started, CometBFT calls `InitChain`. From the
 state. During the execution of an instance of consensus, which decides the block for a given
 height, and before method `FinalizeBlock` is called, methods `PrepareProposal`, `ProcessProposal`,
 `ExtendVote`, and `VerifyVoteExtension` may be called several times. See
-[CometBFT's expected behavior](abci++_comet_expected_behavior.md) for details on the possible
+[CometBFT's expected behavior](./abci++_comet_expected_behavior.md) for details on the possible
 call sequences of these methods.
 
 - [**InitChain:**](./abci++_methods.md#initchain) This method initializes the blockchain.

@@ -67,7 +67,7 @@ This section explains how the tests were carried out for reproducibility purpose
     and check the graph for the `cometbft_consensus_height` metric. All nodes
     should be increasing their heights.
 
-    * You can find the Prometheus node's IP address in `ansible/hosts` under section `[prometheus]`. 
+    * You can find the Prometheus node's IP address in `ansible/hosts` under section `[prometheus]`.
     * The following URL will display the metrics `cometbft_consensus_height` and `cometbft_mempool_size`:
 
       ```
@@ -79,7 +79,7 @@ This section explains how the tests were carried out for reproducibility purpose
         * Run `make loadrunners-init`. This will copy the loader scripts to the
           `testnet-load-runner` node and install the load tool.
         * Find the IP address of the `testnet-load-runner` node in
-          `ansible/hosts` under section `[loadrunners]`. 
+          `ansible/hosts` under section `[loadrunners]`.
         * `ssh` into `testnet-load-runner`.
           * Edit the script `/root/200-node-loadscript.sh` in the load runner
             node to provide the IP address of a full node (for example,
@@ -119,7 +119,7 @@ The CometBFT team should improve it at every iteration to increase the amount of
 
 1. Unzip the blockstore into a directory
 2. To identify saturation points
-   1. Extract the latency report for all the experiments. 
+   1. Extract the latency report for all the experiments.
        * Run these commands from the directory containing the `blockstore.db` folder.
        * It is advisable to adjust the hash in the `go run` command to the latest possible.
        * ```bash
@@ -141,9 +141,9 @@ The CometBFT team should improve it at every iteration to increase the amount of
     4. Generate file `report_tabbed.txt` by showing the contents `report01.txt`, `report02.txt`, `report04.txt` side by side
         * This effectively creates a table where rows are a particular tx rate and columns are a particular number of websocket connections.
         * Combine the column files into a single table file:
-           * Replace tabs by spaces in all column files. For example, 
+           * Replace tabs by spaces in all column files. For example,
              `sed -i.bak 's/\t/    /g' results/report1.txt`.
-        * Merge the new column files into one: 
+        * Merge the new column files into one:
            `paste results/report1.txt results/report2.txt results/report4.txt | column -s $'\t' -t > report_tabbed.txt`
 
 3. To generate a latency vs throughput plot, extract the data as a CSV
@@ -156,8 +156,8 @@ The CometBFT team should improve it at every iteration to increase the amount of
     This script generates a series of plots per experiment and configuration that may
     help with visualizing Latency vs Throughput variation.
 
-[`latency_throughput.py`]: ../../scripts/qa/reporting/README.md#Latency-vs-Throughput-Plotting
-[`latency_plotter.py`]: ../../scripts/qa/reporting/README.md#Latency-vs-Throughput-Plotting-version-2
+[`latency_throughput.py`]: https://github.com/cometbft/cometbft/tree/v0.38.x/scripts/qa/reporting#latency-vs-throughput-plotting
+[`latency_plotter.py`]: https://github.com/cometbft/cometbft/tree/v0.38.x/scripts/qa/reporting#latency-vs-throughput-plotting-version-2
 
 #### Extracting Prometheus Metrics
 
@@ -168,7 +168,7 @@ The CometBFT team should improve it at every iteration to increase the amount of
 4. Identify the time window you want to plot in your graphs.
 5. Execute the [`prometheus_plotter.py`] script for the time window.
 
-[`prometheus_plotter.py`]: ../../scripts/qa/reporting/README.md#prometheus-metrics
+[`prometheus_plotter.py`]: https://github.com/cometbft/cometbft/tree/v0.38.x/scripts/qa/reporting#prometheus-metrics
 
 ## Rotating Node Testnet
 
@@ -188,7 +188,7 @@ This section explains how the tests were carried out for reproducibility purpose
 7. On a different shell,
     * run `make runload LOAD_CONNECTIONS=X LOAD_TX_RATE=Y LOAD_TOTAL_TIME=Z`
     * `X` and `Y` should reflect a load below the saturation point (see, e.g.,
-      [this paragraph](CometBFT-QA-34.md#finding-the-saturation-point) for further info)
+      [this paragraph](./TMCore-QA-34.md#finding-the-saturation-point) for further info)
     * `Z` (in seconds) should be big enough to keep running throughout the test, until we manually stop it in step 9.
       In principle, a good value for `Z` is `7200` (2 hours)
 8. Run `make rotate` to start the script that creates the ephemeral nodes, and kills them when they are caught up.
@@ -242,9 +242,9 @@ This section explains how the tests were carried out for reproducibility purpose
         * `make restart`
     2. Run the test
         * `make runload`
-          This will repeat the tests `ITERATIONS` times every time it is invoked. 
-    3. Collect your data 
-        * `make retrieve-data` 
+          This will repeat the tests `ITERATIONS` times every time it is invoked.
+    3. Collect your data
+        * `make retrieve-data`
           Gathers all relevant data from the testnet into the orchestrating machine, inside folder `experiments`.
           Two subfolders are created, one blockstore DB for a CometBFT validator and one for the Prometheus DB data.
         * Verify that the data was collected without errors with `zip -T` on the `prometheus.zip` file and (one of) the `blockstore.db.zip` file(s).

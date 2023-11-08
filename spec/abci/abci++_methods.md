@@ -616,7 +616,7 @@ message for round _r_, height _h_ from validator _q_ (_q_ &ne; _p_):
 
     | Name                    | Type                                                        | Description                                                                      | Field Number |
     |-------------------------|-------------------------------------------------------------|----------------------------------------------------------------------------------|--------------|
-    | events                  | repeated [Event](abci++_basic_concepts.md#events)           | Type & Key-Value events for indexing                                             | 1            |
+    | events                  | repeated [Event](./abci++_basic_concepts.md#events)           | Type & Key-Value events for indexing                                             | 1            |
     | tx_results              | repeated [ExecTxResult](#exectxresult)                      | List of structures containing the data resulting from executing the transactions | 2            |
     | validator_updates       | repeated [ValidatorUpdate](#validatorupdate)                | Changes to validator set (set voting power to 0 to remove).                      | 3            |
     | consensus_param_updates | [ConsensusParams](#consensusparams)                         | Changes to gas, size, and other consensus-related parameters.                    | 4            |
@@ -702,7 +702,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
 * **Usage**:
     * Validator identified by address
-    * Used as part of VoteInfo within `CommitInfo` (used in `ProcessProposal` and `FinalizeBlock`), 
+    * Used as part of VoteInfo within `CommitInfo` (used in `ProcessProposal` and `FinalizeBlock`),
       and `ExtendedCommitInfo` (used in `PrepareProposal`).
     * Does not include PubKey to avoid sending potentially large quantum pubkeys
     over the ABCI
@@ -711,10 +711,10 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
 * **Fields**:
 
-    | Name    | Type                                             | Description                   | Field Number |
-    |---------|--------------------------------------------------|-------------------------------|--------------|
-    | pub_key | [Public Key](../core/data_structures.md#pub_key) | Public key of the validator   | 1            |
-    | power   | int64                                            | Voting power of the validator | 2            |
+    | Name    | Type                                               | Description                   | Field Number |
+    |---------|----------------------------------------------------|-------------------------------|--------------|
+    | pub_key | [Public Key](../core/data_structures.md#validator) | Public key of the validator   | 1            |
+    | power   | int64                                              | Voting power of the validator | 2            |
 
 * **Usage**:
     * Validator identified by PubKey
@@ -851,7 +851,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
     | info       | string                                                      | Additional information. **May be non-deterministic.**                 | 4            |
     | gas_wanted | int64                                                       | Amount of gas requested for transaction.                              | 5            |
     | gas_used   | int64                                                       | Amount of gas consumed by transaction.                                | 6            |
-    | events     | repeated [Event](abci++_basic_concepts.md#events)           | Type & Key-Value events for indexing transactions (e.g. by account).  | 7            |
+    | events     | repeated [Event](./abci++_basic_concepts.md#events)           | Type & Key-Value events for indexing transactions (e.g. by account).  | 7            |
     | codespace  | string                                                      | Namespace for the `code`.                                             | 8            |
 
 ### ProposalStatus

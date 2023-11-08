@@ -179,7 +179,7 @@ In order to prevent this, when a new validator is added, its initial priority is
 
 where P is the total voting power of the set including V.
 
-Curent implementation uses the penalty factor of 1.125 because it provides a small punishment that is efficient to calculate. See [here](https://github.com/tendermint/tendermint/pull/2785#discussion_r235038971) for more details.
+Current implementation uses the penalty factor of 1.125 because it provides a small punishment that is efficient to calculate. See [here](https://github.com/tendermint/tendermint/pull/2785#discussion_r235038971) for more details.
 
 If we consider the validator set where p3 has just been added:
 

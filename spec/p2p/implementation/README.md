@@ -1,3 +1,8 @@
+---
+order: 1
+title: Implementation
+---
+
 # Implementation of the p2p layer
 
 This section documents the implementation of the peer-to-peer (p2p)

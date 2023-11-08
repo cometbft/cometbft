@@ -94,38 +94,40 @@ type Testnet struct {
 	VoteExtensionsEnableHeight       int64
 	VoteExtensionSize                uint
 	PeerGossipIntraloopSleepDuration time.Duration
+	ExperimentalMaxUsedOutboundPeers uint
 	ABCITestsEnabled                 bool
 }
 
 // Node represents a CometBFT node in a testnet.
 type Node struct {
-	Name                    string
-	Version                 string
-	Testnet                 *Testnet
-	Mode                    Mode
-	PrivvalKey              crypto.PrivKey
-	NodeKey                 crypto.PrivKey
-	InternalIP              net.IP
-	ExternalIP              net.IP
-	RPCProxyPort            uint32
-	GRPCProxyPort           uint32
-	GRPCPrivilegedProxyPort uint32
-	StartAt                 int64
-	BlockSyncVersion        string
-	StateSync               bool
-	Database                string
-	ABCIProtocol            Protocol
-	PrivvalProtocol         Protocol
-	PersistInterval         uint64
-	SnapshotInterval        uint64
-	RetainBlocks            uint64
-	EnableCompanionPruning  bool
-	Seeds                   []*Node
-	PersistentPeers         []*Node
-	Perturbations           []Perturbation
-	SendNoLoad              bool
-	Prometheus              bool
-	PrometheusProxyPort     uint32
+	Name                         string
+	Version                      string
+	Testnet                      *Testnet
+	Mode                         Mode
+	PrivvalKey                   crypto.PrivKey
+	NodeKey                      crypto.PrivKey
+	InternalIP                   net.IP
+	ExternalIP                   net.IP
+	RPCProxyPort                 uint32
+	GRPCProxyPort                uint32
+	GRPCPrivilegedProxyPort      uint32
+	StartAt                      int64
+	BlockSyncVersion             string
+	StateSync                    bool
+	Database                     string
+	ABCIProtocol                 Protocol
+	PrivvalProtocol              Protocol
+	PersistInterval              uint64
+	SnapshotInterval             uint64
+	RetainBlocks                 uint64
+	EnableCompanionPruning       bool
+	Seeds                        []*Node
+	PersistentPeers              []*Node
+	Perturbations                []Perturbation
+	SendNoLoad                   bool
+	Prometheus                   bool
+	PrometheusProxyPort          uint32
+	ExperimentalMaxOutboundPeers uint16
 }
 
 // LoadTestnet loads a testnet from a manifest file, using the filename to
@@ -179,6 +181,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
 		VoteExtensionSize:                manifest.VoteExtensionSize,
 		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
+		ExperimentalMaxUsedOutboundPeers: manifest.ExperimentalMaxUsedOutboundPeers,
 		ABCITestsEnabled:                 manifest.ABCITestsEnabled,
 	}
 	if len(manifest.KeyType) != 0 {

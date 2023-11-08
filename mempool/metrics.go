@@ -40,4 +40,8 @@ type Metrics struct {
 	// Number of times transactions were received more than once.
 	//metrics:Number of duplicate transaction reception.
 	AlreadyReceivedTxs metrics.Counter
+
+	// Number of connections being actively used for gossiping transactions
+	// (experimental feature).
+	ActiveOutboundConnections metrics.Gauge
 }

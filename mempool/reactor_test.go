@@ -337,7 +337,7 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 // transactions.
 func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 	config := cfg.TestConfig()
-	config.Mempool.ExperimentalMaxUsedOutboundPeers = 1
+	config.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = 1
 	reactors, _ := makeAndConnectReactors(config, 4)
 	defer func() {
 		for _, r := range reactors {

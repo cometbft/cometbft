@@ -17,10 +17,10 @@ what will happen during a block height _h_ in these frequent, benign conditions:
 * Consensus will decide in round 0, for height _h_;
 * `PrepareProposal` will be called exactly once at the proposer process of round 0, height _h_;
 * `ProcessProposal` will be called exactly once at all processes, and
-  will return _accept_ in its `Response*`;
+  will return _accept_ in its `ProcessProposalResponse`;
 * `ExtendVote` will be called exactly once at all processes;
 * `VerifyVoteExtension` will be called exactly _n-1_ times at each validator process, where _n_ is
-  the number of validators, and will always return _accept_ in its `Response*`;
+  the number of validators, and will always return _accept_ in its `VerifyVoteExtensionResponse`;
 * `FinalizeBlock` will be called exactly once at all processes, conveying the same prepared
   block that all calls to `PrepareProposal` and `ProcessProposal` had previously reported for
   height _h_; and

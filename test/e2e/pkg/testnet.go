@@ -95,6 +95,7 @@ type Testnet struct {
 	VoteExtensionSize                uint
 	PeerGossipIntraloopSleepDuration time.Duration
 	ExperimentalMaxUsedOutboundPeers uint
+	ABCITestsEnabled                 bool
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -181,6 +182,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		VoteExtensionSize:                manifest.VoteExtensionSize,
 		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
 		ExperimentalMaxUsedOutboundPeers: manifest.ExperimentalMaxUsedOutboundPeers,
+		ABCITestsEnabled:                 manifest.ABCITestsEnabled,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType

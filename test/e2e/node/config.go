@@ -32,23 +32,26 @@ type Config struct {
 	VoteExtensionDelay   time.Duration `toml:"vote_extension_delay"`
 
 	VoteExtensionSize uint `toml:"vote_extension_size"`
+
+	ABCIRequestsLoggingEnabled bool `toml:"abci_requests_logging_enabled"`
 }
 
 // App extracts out the application specific configuration parameters
 func (cfg *Config) App() *app.Config {
 	return &app.Config{
-		Dir:                  cfg.Dir,
-		SnapshotInterval:     cfg.SnapshotInterval,
-		RetainBlocks:         cfg.RetainBlocks,
-		KeyType:              cfg.KeyType,
-		ValidatorUpdates:     cfg.ValidatorUpdates,
-		PersistInterval:      cfg.PersistInterval,
-		PrepareProposalDelay: cfg.PrepareProposalDelay,
-		ProcessProposalDelay: cfg.ProcessProposalDelay,
-		CheckTxDelay:         cfg.CheckTxDelay,
-		FinalizeBlockDelay:   cfg.FinalizeBlockDelay,
-		VoteExtensionDelay:   cfg.VoteExtensionDelay,
-		VoteExtensionSize:    cfg.VoteExtensionSize,
+		Dir:                        cfg.Dir,
+		SnapshotInterval:           cfg.SnapshotInterval,
+		RetainBlocks:               cfg.RetainBlocks,
+		KeyType:                    cfg.KeyType,
+		ValidatorUpdates:           cfg.ValidatorUpdates,
+		PersistInterval:            cfg.PersistInterval,
+		PrepareProposalDelay:       cfg.PrepareProposalDelay,
+		ProcessProposalDelay:       cfg.ProcessProposalDelay,
+		CheckTxDelay:               cfg.CheckTxDelay,
+		FinalizeBlockDelay:         cfg.FinalizeBlockDelay,
+		VoteExtensionDelay:         cfg.VoteExtensionDelay,
+		VoteExtensionSize:          cfg.VoteExtensionSize,
+		ABCIRequestsLoggingEnabled: cfg.ABCIRequestsLoggingEnabled,
 	}
 }
 

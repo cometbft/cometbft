@@ -65,57 +65,63 @@ const (
 
 // Testnet represents a single testnet.
 type Testnet struct {
-	Name                       string
-	File                       string
-	Dir                        string
-	IP                         *net.IPNet
-	InitialHeight              int64
-	InitialState               map[string]string
-	Validators                 map[*Node]int64
-	ValidatorUpdates           map[int64]map[*Node]int64
-	Nodes                      []*Node
-	KeyType                    string
-	Evidence                   int
-	LoadTxSizeBytes            int
-	LoadTxBatchSize            int
-	LoadTxConnections          int
-	ABCIProtocol               string
-	PrepareProposalDelay       time.Duration
-	ProcessProposalDelay       time.Duration
-	CheckTxDelay               time.Duration
-	VoteExtensionDelay         time.Duration
-	FinalizeBlockDelay         time.Duration
-	UpgradeVersion             string
-	Prometheus                 bool
-	VoteExtensionsEnableHeight int64
+	Name                             string
+	File                             string
+	Dir                              string
+	IP                               *net.IPNet
+	InitialHeight                    int64
+	InitialState                     map[string]string
+	Validators                       map[*Node]int64
+	ValidatorUpdates                 map[int64]map[*Node]int64
+	Nodes                            []*Node
+	KeyType                          string
+	Evidence                         int
+	LoadTxSizeBytes                  int
+	LoadTxBatchSize                  int
+	LoadTxConnections                int
+	ABCIProtocol                     string
+	PrepareProposalDelay             time.Duration
+	ProcessProposalDelay             time.Duration
+	CheckTxDelay                     time.Duration
+	VoteExtensionDelay               time.Duration
+	FinalizeBlockDelay               time.Duration
+	UpgradeVersion                   string
+	Prometheus                       bool
+	VoteExtensionsEnableHeight       int64
+	ExperimentalMaxUsedOutboundPeers uint
 }
 
 // Node represents a CometBFT node in a testnet.
 type Node struct {
-	Name                string
-	Version             string
-	Testnet             *Testnet
-	Mode                Mode
-	PrivvalKey          crypto.PrivKey
-	NodeKey             crypto.PrivKey
-	InternalIP          net.IP
-	ExternalIP          net.IP
-	ProxyPort           uint32
-	StartAt             int64
-	BlockSyncVersion    string
-	StateSync           bool
-	Database            string
-	ABCIProtocol        Protocol
-	PrivvalProtocol     Protocol
-	PersistInterval     uint64
-	SnapshotInterval    uint64
-	RetainBlocks        uint64
-	Seeds               []*Node
-	PersistentPeers     []*Node
-	Perturbations       []Perturbation
-	SendNoLoad          bool
-	Prometheus          bool
-	PrometheusProxyPort uint32
+	Name                         string
+	Version                      string
+	Testnet                      *Testnet
+	Mode                         Mode
+	PrivvalKey                   crypto.PrivKey
+	NodeKey                      crypto.PrivKey
+	InternalIP                   net.IP
+	ExternalIP                   net.IP
+	RPCProxyPort                 uint32
+	GRPCProxyPort                uint32
+	GRPCLegacyPort               uint32
+	GRPCPrivilegedProxyPort      uint32
+	StartAt                      int64
+	BlockSyncVersion             string
+	StateSync                    bool
+	Database                     string
+	ABCIProtocol                 Protocol
+	PrivvalProtocol              Protocol
+	PersistInterval              uint64
+	SnapshotInterval             uint64
+	RetainBlocks                 uint64
+	EnableCompanionPruning       bool
+	Seeds                        []*Node
+	PersistentPeers              []*Node
+	Perturbations                []Perturbation
+	SendNoLoad                   bool
+	Prometheus                   bool
+	PrometheusProxyPort          uint32
+	ExperimentalMaxOutboundPeers uint16
 }
 
 // LoadTestnet loads a testnet from a manifest file, using the filename to
@@ -143,28 +149,29 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	testnet := &Testnet{
-		Name:                       filepath.Base(dir),
-		File:                       file,
-		Dir:                        dir,
-		IP:                         ipNet,
-		InitialHeight:              1,
-		InitialState:               manifest.InitialState,
-		Validators:                 map[*Node]int64{},
-		ValidatorUpdates:           map[int64]map[*Node]int64{},
-		Nodes:                      []*Node{},
-		Evidence:                   manifest.Evidence,
-		LoadTxSizeBytes:            manifest.LoadTxSizeBytes,
-		LoadTxBatchSize:            manifest.LoadTxBatchSize,
-		LoadTxConnections:          manifest.LoadTxConnections,
-		ABCIProtocol:               manifest.ABCIProtocol,
-		PrepareProposalDelay:       manifest.PrepareProposalDelay,
-		ProcessProposalDelay:       manifest.ProcessProposalDelay,
-		CheckTxDelay:               manifest.CheckTxDelay,
-		VoteExtensionDelay:         manifest.VoteExtensionDelay,
-		FinalizeBlockDelay:         manifest.FinalizeBlockDelay,
-		UpgradeVersion:             manifest.UpgradeVersion,
-		Prometheus:                 manifest.Prometheus,
-		VoteExtensionsEnableHeight: manifest.VoteExtensionsEnableHeight,
+		Name:                             filepath.Base(dir),
+		File:                             file,
+		Dir:                              dir,
+		IP:                               ipNet,
+		InitialHeight:                    1,
+		InitialState:                     manifest.InitialState,
+		Validators:                       map[*Node]int64{},
+		ValidatorUpdates:                 map[int64]map[*Node]int64{},
+		Nodes:                            []*Node{},
+		Evidence:                         manifest.Evidence,
+		LoadTxSizeBytes:                  manifest.LoadTxSizeBytes,
+		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
+		LoadTxConnections:                manifest.LoadTxConnections,
+		ABCIProtocol:                     manifest.ABCIProtocol,
+		PrepareProposalDelay:             manifest.PrepareProposalDelay,
+		ProcessProposalDelay:             manifest.ProcessProposalDelay,
+		CheckTxDelay:                     manifest.CheckTxDelay,
+		VoteExtensionDelay:               manifest.VoteExtensionDelay,
+		FinalizeBlockDelay:               manifest.FinalizeBlockDelay,
+		UpgradeVersion:                   manifest.UpgradeVersion,
+		Prometheus:                       manifest.Prometheus,
+		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
+		ExperimentalMaxUsedOutboundPeers: manifest.ExperimentalMaxUsedOutboundPeers,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType

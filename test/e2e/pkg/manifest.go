@@ -92,6 +92,9 @@ type Manifest struct {
 	// Enable or disable Prometheus metrics on all nodes.
 	// Defaults to false (disabled).
 	Prometheus bool `toml:"prometheus"`
+
+	// Maximum number of peers to gossip transactions
+	ExperimentalMaxUsedOutboundPeers uint `toml:"experimental_max_used_outbound_peers"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

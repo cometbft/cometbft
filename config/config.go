@@ -734,6 +734,15 @@ type MempoolConfig struct {
 	// Including space needed by encoding (one varint per transaction).
 	// XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
 	MaxBatchBytes int `mapstructure:"max_batch_bytes"`
+	// Experimental parameter to limit broadcast of txs to up to this many peers.
+	// If we are connected to more than this number of peers, only send txs to the first
+	// ExperimentalMaxUsedOutboundPeers of them. If one of those peers disconnects, activate another
+	// peer.
+	// If set to 0, this feature is disabled, that is, the number of active connections is not
+	// bounded.
+	// If enabled, a value of 10 is recommended based on experimental performance results using the
+	// default P2P configuration.
+	ExperimentalMaxUsedOutboundPeers int `mapstructure:"experimental_max_used_outbound_peers"`
 }
 
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool
@@ -744,10 +753,11 @@ func DefaultMempoolConfig() *MempoolConfig {
 		WalPath:   "",
 		// Each signature verification takes .5ms, Size reduced until we implement
 		// ABCI Recheck
-		Size:        5000,
-		MaxTxsBytes: 1024 * 1024 * 1024, // 1GB
-		CacheSize:   10000,
-		MaxTxBytes:  1024 * 1024, // 1MB
+		Size:                             5000,
+		MaxTxsBytes:                      1024 * 1024 * 1024, // 1GB
+		CacheSize:                        10000,
+		MaxTxBytes:                       1024 * 1024, // 1MB
+		ExperimentalMaxUsedOutboundPeers: 0,
 	}
 }
 
@@ -782,6 +792,9 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 	}
 	if cfg.MaxTxBytes < 0 {
 		return errors.New("max_tx_bytes can't be negative")
+	}
+	if cfg.ExperimentalMaxUsedOutboundPeers < 0 {
+		return cmterrors.ErrNegativeField{Field: "experimental_max_used_outbound_peers"}
 	}
 	return nil
 }

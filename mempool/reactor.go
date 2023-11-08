@@ -100,18 +100,18 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 func (memR *Reactor) AddPeer(peer p2p.Peer) {
 	if memR.config.Broadcast {
 		go func() {
-			if memR.config.ExperimentalMaxUsedOutboundPeers > 0 {
+			//Persistent peers do not count towards this limit.
+			if !peer.IsPersistent() && memR.config.ExperimentalMaxUsedOutboundPeers > 0 {
 				// Around (MaxOutboundPeers-ExperimentalMaxUsedOutboundPeers) goroutines will be
 				// blocked here waiting for more peers disconnect and free some slots for running.
 				if err := memR.activeConnectionsSemaphore.Acquire(context.TODO(), 1); err != nil {
 					memR.Logger.Error("Failed to acquire semaphore: %v", err)
 					return
 				}
+				defer memR.activeConnectionsSemaphore.Release(1)
+
 				memR.mempool.metrics.ActiveOutboundConnections.Add(1)
-				defer func() {
-					memR.activeConnectionsSemaphore.Release(1)
-					memR.mempool.metrics.ActiveOutboundConnections.Add(-1)
-				}()
+				defer memR.mempool.metrics.ActiveOutboundConnections.Add(-1)
 			}
 			memR.broadcastTxRoutine(peer)
 		}()

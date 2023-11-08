@@ -429,6 +429,7 @@ max_batch_bytes = {{ .Mempool.MaxBatchBytes }}
 # If we are connected to more than this number of peers, only send txs to
 # the first ExperimentalMaxOutboundPeers of them. If one of those peers goes
 # offline, activate another peer.
+# Persistent peers do not count towards this limit.
 # Value 0 disables the feature by not limiting the number of active connections.
 # If you enable this feature, a value of 10 is recommended based on experimental performance results.
 experimental_max_used_outbound_peers = {{ .Mempool.ExperimentalMaxUsedOutboundPeers }}

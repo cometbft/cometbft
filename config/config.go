@@ -880,6 +880,7 @@ type MempoolConfig struct {
 	// If we are connected to more than this number of peers, only send txs to the first
 	// ExperimentalMaxUsedOutboundPeers of them. If one of those peers disconnects, activate another
 	// peer.
+	// Persistent peers do not count towards this limit.
 	// If set to 0, this feature is disabled, that is, the number of active connections is not
 	// bounded.
 	// If enabled, a value of 10 is recommended based on experimental performance results using the

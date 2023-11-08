@@ -48,6 +48,9 @@ type Manifest struct {
 	// Nodes specifies the network nodes. At least one node must be given.
 	Nodes map[string]*ManifestNode `toml:"node"`
 
+	// Disable the peer-exchange reactor on all nodes.
+	DisablePexReactor bool `toml:"disable_pex"`
+
 	// KeyType sets the curve that will be used by validators.
 	// Options are ed25519 & secp256k1
 	KeyType string `toml:"key_type"`
@@ -107,6 +110,10 @@ type Manifest struct {
 
 	// MempoolReactor determines which reactor to use for the mempool.
 	MempoolReactor string `toml:"mempool_reactor"`
+
+	// Enable or disable e2e tests for CometBFT's expected behavior with respect
+	// to ABCI.
+	ABCITestsEnabled bool `toml:"abci_tests_enabled"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

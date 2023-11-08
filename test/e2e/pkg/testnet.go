@@ -78,6 +78,7 @@ type Testnet struct {
 	Validators                       map[*Node]int64
 	ValidatorUpdates                 map[int64]map[*Node]int64
 	Nodes                            []*Node
+	DisablePexReactor                bool
 	KeyType                          string
 	Evidence                         int
 	LoadTxSizeBytes                  int
@@ -97,6 +98,7 @@ type Testnet struct {
 	VoteExtensionSize                uint
 	PeerGossipIntraloopSleepDuration time.Duration
 	MempoolReactor                   string
+	ABCITestsEnabled                 bool
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -165,6 +167,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		Validators:                       map[*Node]int64{},
 		ValidatorUpdates:                 map[int64]map[*Node]int64{},
 		Nodes:                            []*Node{},
+		DisablePexReactor:                manifest.DisablePexReactor,
 		Evidence:                         manifest.Evidence,
 		LoadTxSizeBytes:                  manifest.LoadTxSizeBytes,
 		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
@@ -183,6 +186,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		VoteExtensionSize:                manifest.VoteExtensionSize,
 		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
 		MempoolReactor:                   manifest.MempoolReactor,
+		ABCITestsEnabled:                 manifest.ABCITestsEnabled,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
@@ -563,7 +567,7 @@ func (n Node) AddressRPC() string {
 
 // Client returns an RPC client for the node.
 func (n Node) Client() (*rpchttp.HTTP, error) {
-	return rpchttp.New(fmt.Sprintf("http://%s:%v", n.ExternalIP, n.RPCProxyPort), "/websocket")
+	return rpchttp.New(fmt.Sprintf("http://%s:%v/v1", n.ExternalIP, n.RPCProxyPort))
 }
 
 // GRPCClient creates a gRPC client for the node.

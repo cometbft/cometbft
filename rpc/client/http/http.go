@@ -39,7 +39,7 @@ the example for more details.
 
 Example:
 
-	c, err := New("http://192.168.1.10:26657", "/websocket")
+	c, err := New("http://192.168.1.10:26657/v1")
 	if err != nil {
 		// handle error
 	}
@@ -107,30 +107,29 @@ var (
 //-----------------------------------------------------------------------------
 // HTTP
 
-// New takes a remote endpoint in the form <protocol>://<host>:<port> and
-// the websocket path (which always seems to be "/websocket")
-// An error is returned on invalid remote. The function panics when remote is nil.
-func New(remote, wsEndpoint string) (*HTTP, error) {
+// New takes a remote endpoint in the form <protocol>://<host>:<port>. An error
+// is returned on invalid remote. The function panics when remote is nil.
+func New(remote string) (*HTTP, error) {
 	httpClient, err := jsonrpcclient.DefaultHTTPClient(remote)
 	if err != nil {
 		return nil, err
 	}
-	return NewWithClient(remote, wsEndpoint, httpClient)
+	return NewWithClient(remote, httpClient)
 }
 
 // Create timeout enabled http client
-func NewWithTimeout(remote, wsEndpoint string, timeout uint) (*HTTP, error) {
+func NewWithTimeout(remote string, timeout uint) (*HTTP, error) {
 	httpClient, err := jsonrpcclient.DefaultHTTPClient(remote)
 	if err != nil {
 		return nil, err
 	}
 	httpClient.Timeout = time.Duration(timeout) * time.Second
-	return NewWithClient(remote, wsEndpoint, httpClient)
+	return NewWithClient(remote, httpClient)
 }
 
-// NewWithClient allows for setting a custom http client (See New).
-// An error is returned on invalid remote. The function panics when remote is nil.
-func NewWithClient(remote, wsEndpoint string, client *http.Client) (*HTTP, error) {
+// NewWithClient allows for setting a custom http client (See New). An error is
+// returned on invalid remote. The function panics when remote is nil.
+func NewWithClient(remote string, client *http.Client) (*HTTP, error) {
 	if client == nil {
 		panic("nil http.Client provided")
 	}
@@ -140,7 +139,7 @@ func NewWithClient(remote, wsEndpoint string, client *http.Client) (*HTTP, error
 		return nil, err
 	}
 
-	wsEvents, err := newWSEvents(remote, wsEndpoint)
+	wsEvents, err := newWSEvents(remote, "/websocket")
 	if err != nil {
 		return nil, err
 	}

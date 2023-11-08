@@ -42,7 +42,7 @@ type Metrics struct {
 	AlreadyReceivedTxs metrics.Counter
 
 	// Number of connections being actively used for gossiping transactions
-	// excluding peristent peers.
+	// excluding persistent peers.
 	// (experimental feature).
 	ActiveOutboundConnections metrics.Gauge
 }

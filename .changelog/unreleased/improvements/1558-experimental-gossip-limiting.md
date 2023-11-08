@@ -1,3 +1,4 @@
 - `[mempool]` Only gossip transactions to a subset of the connected peers,
 of size `experimental_max_used_outbound_peers`, not counting persistent peers.
   ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
+  ([\#1584](https://github.com/cometbft/cometbft/pull/1584))

@@ -62,7 +62,7 @@ func RegisterTopic(name string) EventPublisher
 type EventPublisher func (context.Context, types.EventData, []abci.Event)
 ```
 
-This would give the components control to the information they want to expose and keep all relevant logic within that package. It accomodates more to a dynamic system where services can switch on and off. Each component would also receive access to the logger and metrics system for introspection and debuggability.
+This would give the components control to the information they want to expose and keep all relevant logic within that package. It accommodates more to a dynamic system where services can switch on and off. Each component would also receive access to the logger and metrics system for introspection and debuggability.
 
 #### IPC Rubric
 
@@ -70,7 +70,7 @@ I'd like to aim to reach a state where we as a team have either an implicit or e
 
 Principally, I think we should look to change our language away from what the actual transport is and more towards what it's being used for and to whom. We call it a peer to peer layer and not the underlying tcp connection. In the same way, we should look to split RPC into an operator interface (RPC Internal), a public interface (RPC External) and a bidirectional ABCI.
 
-### Seperation of consumers and suppliers
+### Separation of consumers and suppliers
 
 When a service such as blocksync is turned on, it automatically begins requesting blocks to verify and apply them as it also tries to serve them to other peers catching up. We should look to distinguish these two aspects: supplying of information and consuming of information in many of these components. More concretely, I'd suggest:
 

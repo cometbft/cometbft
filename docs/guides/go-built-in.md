@@ -40,14 +40,13 @@ guarantees as two processes would be communicating via established binary protoc
 CometBFT will not have access to application's state.
 If that is the way you wish to proceed, use the [Creating an application in Go](./go.md) guide instead of this one.
 
-
 ## 1.1 Installing Go
 
 Verify that you have the latest version of Go installed (refer to the [official guide for installing Go](https://golang.org/doc/install)):
 
 ```bash
 $ go version
-go version go1.21.0 darwin/amd64
+go version go1.21.1 darwin/amd64
 ```
 
 ## 1.2 Creating a new Go project
@@ -93,12 +92,12 @@ After running the above commands you will see two generated files, `go.mod` and 
 The go.mod file should look similar to:
 
 ```go
-module github.com/me/example
+module kvstore
 
-go 1.21
+go 1.21.1
 
 require (
-    github.com/cometbft/cometbft v0.38.0
+github.com/cometbft/cometbft v0.38.0
 )
 ```
 
@@ -115,7 +114,7 @@ go build
 CometBFT communicates with the application through the Application
 BlockChain Interface (ABCI). The messages exchanged through the interface are
 defined in the ABCI [protobuf
-file](https://github.com/cometbft/cometbft/blob/v0.37.x/proto/tendermint/abci/types.proto).
+file](https://github.com/cometbft/cometbft/blob/v0.38.x/proto/tendermint/abci/types.proto).
 
 We begin by creating the basic scaffolding for an ABCI application by
 creating a new type, `KVStoreApplication`, which implements the
@@ -380,7 +379,6 @@ The application state may have changed between the initial execution of `CheckTx
 
 Other methods, such as `Query`, rely on a consistent view of the application's state, the application should only update its state by committing the Badger transactions when the full block has been delivered and the Commit method is invoked.
 
-
 The `Commit` method tells the application to make permanent the effects of
 the application transactions.
 Let's update the method to terminate the pending Badger transaction and
@@ -462,16 +460,33 @@ execution of the block once accepted.
 In the following code, the application simply returns the unmodified group of transactions:
 
 ```go
-func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abcitypes.RequestPrepareProposal) (*abcitypes.ResponsePrepareProposal, error) {
-    return &abcitypes.ResponsePrepareProposal{Txs: proposal.Txs}, nil
-}
-```
+ func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abcitypes.RequestPrepareProposal) (*abcitypes.ResponsePrepareProposal, error) {
+   totalBytes := int64(0)
+   txs := make([]byte, 0)
 
-Once a proposed block is received by a node, the proposal is passed to the application to give
-its blessing before voting to accept the proposal.
+   for _, tx := range proposal.Txs {
+     totalBytes += int64(len(tx))
+     txs = append(txs, tx...)
 
-This mechanism may be used for different reasons, for example to deal with blocks manipulated
-by malicious nodes, in which case the block should not be considered valid.
+       if totalBytes > int64(proposal.MaxTxBytes) {
+         break
+       }
+     }
+
+     return &abcitypes.ResponsePrepareProposal{Txs: proposal.Txs}, nil
+ }
+ ```
+
+ This code snippet iterates through the proposed transactions and calculates the `total bytes`. If the `total bytes` exceeds the `MaxTxBytes` specified in the `RequestPrepareProposal` struct, the loop breaks and the transactions processed so far are returned.
+
+ Note: It is the responsibility of the application to ensure that the `total bytes` of transactions returned does not exceed the `RequestPrepareProposal.max_tx_bytes` limit.
+
+ Once a proposed block is received by a node, the proposal is passed to the application to give
+ its blessing before voting to accept the proposal.
+
+ This mechanism may be used for different reasons, for example to deal with blocks manipulated
+ by malicious nodes, in which case the block should not be considered valid.
+
 The following code simply accepts all proposals:
 
 ```go
@@ -692,7 +707,7 @@ signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
 Our application is almost ready to run, but first we'll need to populate the CometBFT configuration files.
 The following command will create a `cometbft-home` directory in your project and add a basic set of configuration files in `cometbft-home/config/`.
-For more information on what these files contain see [the configuration documentation](https://github.com/cometbft/cometbft/blob/v0.37.x/docs/core/configuration.md).
+For more information on what these files contain see [the configuration documentation](https://github.com/cometbft/cometbft/blob/v0.38.x/docs/core/configuration.md).
 
 From the root of your project, run:
 
@@ -749,7 +764,6 @@ The blocks, as you can see from the `num_valid_txs=0` part, are empty, but let's
 Let's try submitting a transaction to our new application.
 Open another terminal window and run the following curl command:
 
-
 ```bash
 curl -s 'localhost:26657/broadcast_tx_commit?tx="cometbft=rocks"'
 ```
@@ -769,7 +783,7 @@ The request returns a `json` object with a `key` and `value` field set.
 
 ```json
 ...
-    "key": "dGVuZGVybWludA==",
+    "key": "Y29tZXRiZnQ=",
     "value": "cm9ja3M=",
 ...
 ```
@@ -786,6 +800,4 @@ echo cm9ja3M=" | base64 -d
 
 ## Outro
 
-I hope everything went smoothly and your first, but hopefully not the last,
-CometBFT application is up and running. If not, please [open an issue on
-Github](https://github.com/cometbft/cometbft/issues/new/choose).
+Hope you could run everything smoothly. If you have any difficulties running through this tutorial, reach out to us via [discord](https://discord.com/invite/cosmosnetwork) or open a new [issue](https://github.com/cometbft/cometbft/issues/new/choose) on Github.

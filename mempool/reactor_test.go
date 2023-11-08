@@ -17,7 +17,6 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/p2p/mock"
 	memproto "github.com/cometbft/cometbft/proto/tendermint/mempool"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
@@ -236,35 +235,6 @@ func TestBroadcastTxForPeerStopsWhenReactorStops(t *testing.T) {
 	leaktest.CheckTimeout(t, 10*time.Second)()
 }
 
-// TODO: This test tests that we don't panic and are able to generate new
-// PeerIDs for each peer we add. It seems as though we should be able to test
-// this in a much more direct way.
-// https://github.com/cometbft/cometbft/issues/9639
-func TestDontExhaustMaxActiveIDs(t *testing.T) {
-	config := cfg.TestConfig()
-	const N = 1
-	reactors, _ := makeAndConnectReactors(config, N)
-	defer func() {
-		for _, r := range reactors {
-			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
-			}
-		}
-	}()
-	reactor := reactors[0]
-
-	for i := 0; i < MaxActiveIDs+1; i++ {
-		peer := mock.NewPeer(nil)
-		reactor.Receive(p2p.Envelope{
-			ChannelID: MempoolChannel,
-			Src:       peer,
-			Message:   &memproto.Message{}, // This uses the wrong message type on purpose to stop the peer as in an error state in the reactor.
-		},
-		)
-		reactor.AddPeer(peer)
-	}
-}
-
 func TestReactorTxSendersLocal(t *testing.T) {
 	config := cfg.TestConfig()
 	const N = 1
@@ -363,6 +333,45 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 	require.Zero(t, len(firstReactor.txSenders))
 }
 
+// Test the experimental feature that limits the number of outgoing connections for gossiping
+// transactions.
+func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.ExperimentalMaxUsedOutboundPeers = 1
+	reactors, _ := makeAndConnectReactors(config, 4)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				assert.NoError(t, err)
+			}
+		}
+	}()
+	for _, r := range reactors {
+		for _, peer := range r.Switch.Peers().List() {
+			peer.Set(types.PeerStateKey, peerState{1})
+		}
+	}
+
+	// Add a bunch transactions to the first reactor.
+	txs := newUniqueTxs(100)
+	callCheckTx(t, reactors[0].mempool, txs)
+
+	// Wait for all txs to be in the mempool of the second reactor; the third and fourth reactor
+	// should not receive any tx.
+	checkTxsInMempool(t, txs, reactors[1], 0)
+	require.Zero(t, reactors[2].mempool.Size())
+	require.Zero(t, reactors[3].mempool.Size())
+
+	// In the first reactor, disconnect the second reactor; the third reactor should become active.
+	firstPeer := reactors[0].Switch.Peers().List()[0]
+	reactors[0].Switch.StopPeerGracefully(firstPeer)
+
+	// Now the third reactor should receive the transactions; the fourth reactor's mempool should
+	// still be empty.
+	checkTxsInMempool(t, txs, reactors[2], 0)
+	require.Zero(t, reactors[3].mempool.Size())
+}
+
 // Check that the mempool has exactly the given list of txs and, if it's not the
 // first reactor (reactorIndex == 0), then each tx has a non-empty list of senders.
 func checkTxsInMempoolAndSenders(t *testing.T, r *Reactor, txs types.Txs, reactorIndex int) {
@@ -412,14 +421,13 @@ func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switc
 		mempool, cleanup := newMempoolWithApp(cc)
 		defer cleanup()
 
-		reactors[i] = NewReactor(config.Mempool, mempool) // so we dont start the consensus states
+		reactors[i] = NewReactor(config.Mempool, mempool, false) // so we dont start the consensus states
 		reactors[i].SetLogger(logger.With("validator", i))
 	}
 
 	switches := p2p.MakeConnectedSwitches(config.P2P, n, func(i int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("MEMPOOL", reactors[i])
 		return s
-
 	}, p2p.Connect2Switches)
 	return reactors, switches
 }

@@ -1,10 +1,13 @@
 package node
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -15,6 +18,7 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	cs "github.com/cometbft/cometbft/consensus"
 	"github.com/cometbft/cometbft/evidence"
+	"github.com/cometbft/cometbft/light"
 
 	"github.com/cometbft/cometbft/libs/log"
 	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
@@ -24,6 +28,8 @@ import (
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/proxy"
 	rpccore "github.com/cometbft/cometbft/rpc/core"
+	grpcserver "github.com/cometbft/cometbft/rpc/grpc/server"
+	grpcprivserver "github.com/cometbft/cometbft/rpc/grpc/server/privileged"
 	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/state/indexer"
@@ -60,8 +66,9 @@ type Node struct {
 	eventBus          *types.EventBus // pub/sub for services
 	stateStore        sm.Store
 	blockStore        *store.BlockStore // store the blockchain to disk
-	bcReactor         p2p.Reactor       // for block-syncing
-	mempoolReactor    p2p.Reactor       // for gossipping transactions
+	pruner            *sm.Pruner
+	bcReactor         p2p.Reactor    // for block-syncing
+	mempoolReactor    *mempl.Reactor // for gossipping transactions
 	mempool           mempl.Mempool
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
@@ -132,6 +139,124 @@ func StateProvider(stateProvider statesync.StateProvider) Option {
 	}
 }
 
+// BootstrapState synchronizes the stores with the application after state sync
+// has been performed offline. It is expected that the block store and state
+// store are empty at the time the function is called.
+//
+// If the block store is not empty, the function returns an error.
+func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBProvider, height uint64, appHash []byte) (err error) {
+	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	if config == nil {
+		logger.Info("no config provided, using default configuration")
+		config = cfg.DefaultConfig()
+	}
+
+	if dbProvider == nil {
+		dbProvider = cfg.DefaultDBProvider
+	}
+	blockStore, stateDB, err := initDBs(config, dbProvider)
+
+	defer func() {
+		if derr := blockStore.Close(); derr != nil {
+			logger.Error("Failed to close blockstore", "err", derr)
+			// Set the return value
+			err = derr
+		}
+	}()
+
+	if err != nil {
+		return err
+	}
+
+	if !blockStore.IsEmpty() {
+		return fmt.Errorf("blockstore not empty, trying to initialize non empty state")
+	}
+
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
+	})
+
+	defer func() {
+		if derr := stateStore.Close(); derr != nil {
+			logger.Error("Failed to close statestore", "err", derr)
+			// Set the return value
+			err = derr
+		}
+	}()
+	state, err := stateStore.Load()
+	if err != nil {
+		return err
+	}
+
+	if !state.IsEmpty() {
+		return fmt.Errorf("state not empty, trying to initialize non empty state")
+	}
+
+	genState, _, err := LoadStateFromDBOrGenesisDocProvider(stateDB, DefaultGenesisDocProviderFunc(config), config.Storage.GenesisHash)
+	if err != nil {
+		return err
+	}
+
+	stateProvider, err := statesync.NewLightClientStateProvider(
+		ctx,
+		genState.ChainID, genState.Version, genState.InitialHeight,
+		config.StateSync.RPCServers, light.TrustOptions{
+			Period: config.StateSync.TrustPeriod,
+			Height: config.StateSync.TrustHeight,
+			Hash:   config.StateSync.TrustHashBytes(),
+		}, logger.With("module", "light"))
+	if err != nil {
+		return fmt.Errorf("failed to set up light client state provider: %w", err)
+	}
+
+	state, err = stateProvider.State(ctx, height)
+	if err != nil {
+		return err
+	}
+	if appHash == nil {
+		logger.Info("warning: cannot verify appHash. Verification will happen when node boots up!")
+	} else {
+		if !bytes.Equal(appHash, state.AppHash) {
+			if err := blockStore.Close(); err != nil {
+				logger.Error("failed to close blockstore: %w", err)
+			}
+			if err := stateStore.Close(); err != nil {
+				logger.Error("failed to close statestore: %w", err)
+			}
+			return fmt.Errorf("the app hash returned by the light client does not match the provided appHash, expected %X, got %X", state.AppHash, appHash)
+		}
+	}
+
+	commit, err := stateProvider.Commit(ctx, height)
+	if err != nil {
+		return err
+	}
+
+	if err = stateStore.Bootstrap(state); err != nil {
+		return err
+	}
+
+	err = blockStore.SaveSeenCommit(state.LastBlockHeight, commit)
+	if err != nil {
+		return err
+	}
+
+	// Once the stores are bootstrapped, we need to set the height at which the node has finished
+	// statesyncing. This will allow the blocksync reactor to fetch blocks at a proper height.
+	// In case this operation fails, it is equivalent to a failure in  online state sync where the operator
+	// needs to manually delete the state and blockstores and rerun the bootstrapping process.
+	err = stateStore.SetOfflineStateSyncHeight(state.LastBlockHeight)
+	if err != nil {
+		return fmt.Errorf("failed to set synced height: %w", err)
+	}
+
+	return err
+}
+
 //------------------------------------------------------------------------------
 
 // NewNode returns a new, ready to go, CometBFT Node.
@@ -155,9 +280,20 @@ func NewNode(ctx context.Context,
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
 	})
 
-	state, genDoc, err := LoadStateFromDBOrGenesisDocProvider(stateDB, genesisDocProvider)
+	state, genDoc, err := LoadStateFromDBOrGenesisDocProvider(stateDB, genesisDocProvider, config.Storage.GenesisHash)
 	if err != nil {
 		return nil, err
+	}
+
+	// The key will be deleted if it existed.
+	// Not checking whether the key is there in case the genesis file was larger than
+	// the max size of a value (in rocksDB for example), which would cause the check
+	// to fail and prevent the node from booting.
+	logger.Info("WARNING: deleting genesis file from database if present, the database stores a hash of the original genesis file now")
+
+	err = stateDB.Delete(genesisDocKey)
+	if err != nil {
+		logger.Error("Failed to delete genesis doc from DB ", err)
 	}
 
 	csMetrics, p2pMetrics, memplMetrics, smMetrics, abciMetrics, bsMetrics, ssMetrics := metricsProvider(genDoc.ChainID)
@@ -225,16 +361,30 @@ func NewNode(ctx context.Context,
 	// Determine whether we should do block sync. This must happen after the handshake, since the
 	// app may modify the validator set, specifying ourself as the only validator.
 	blockSync := !onlyValidatorIsUs(state, pubKey)
+	waitSync := stateSync || blockSync
 
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
 
 	// Make MempoolReactor
-	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, memplMetrics, logger)
+	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, waitSync, memplMetrics, logger)
 
 	// Make Evidence Reactor
 	evidenceReactor, evidencePool, err := createEvidenceReactor(config, dbProvider, stateStore, blockStore, logger)
 	if err != nil {
 		return nil, err
+	}
+
+	pruner, err := createPruner(
+		config,
+		txIndexer,
+		blockIndexer,
+		stateStore,
+		blockStore,
+		smMetrics,
+		logger.With("module", "state"),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create pruner: %w", err)
 	}
 
 	// make block executor for consensus and blocksync reactors to execute blocks
@@ -245,11 +395,19 @@ func NewNode(ctx context.Context,
 		mempool,
 		evidencePool,
 		blockStore,
+		sm.BlockExecutorWithPruner(pruner),
 		sm.BlockExecutorWithMetrics(smMetrics),
 	)
 
+	offlineStateSyncHeight := int64(0)
+	if blockStore.Height() == 0 {
+		offlineStateSyncHeight, err = blockExec.Store().GetOfflineStateSyncHeight()
+		if err != nil && err.Error() != "value empty" {
+			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s; expected state store height to be %v", err, state.LastBlockHeight))
+		}
+	}
 	// Make BlocksyncReactor. Don't start block sync if we're doing a state sync first.
-	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, logger, bsMetrics)
+	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, logger, bsMetrics, offlineStateSyncHeight)
 	if err != nil {
 		return nil, fmt.Errorf("could not create blocksync reactor: %w", err)
 	}
@@ -257,9 +415,13 @@ func NewNode(ctx context.Context,
 	// Make ConsensusReactor
 	consensusReactor, consensusState := createConsensusReactor(
 		config, state, blockExec, blockStore, mempool, evidencePool,
-		privValidator, csMetrics, stateSync || blockSync, eventBus, consensusLogger,
+		privValidator, csMetrics, waitSync, eventBus, consensusLogger, offlineStateSyncHeight,
 	)
 
+	err = stateStore.SetOfflineStateSyncHeight(0)
+	if err != nil {
+		panic(fmt.Sprintf("failed to reset the offline state sync height %s", err))
+	}
 	// Set up state sync reactor, and schedule a sync if requested.
 	// FIXME The way we do phased startups (e.g. replay -> block sync -> consensus) is very messy,
 	// we should clean this whole thing up. See:
@@ -335,6 +497,7 @@ func NewNode(ctx context.Context,
 
 		stateStore:       stateStore,
 		blockStore:       blockStore,
+		pruner:           pruner,
 		bcReactor:        bcReactor,
 		mempoolReactor:   mempoolReactor,
 		mempool:          mempool,
@@ -425,6 +588,11 @@ func (n *Node) OnStart() error {
 		}
 	}
 
+	// Start background pruning
+	if err := n.pruner.Start(); err != nil {
+		return fmt.Errorf("failed to start background pruning routine: %w", err)
+	}
+
 	return nil
 }
 
@@ -435,6 +603,9 @@ func (n *Node) OnStop() {
 	n.Logger.Info("Stopping Node")
 
 	// first stop the non-reactor services
+	if err := n.pruner.Stop(); err != nil {
+		n.Logger.Error("Error stopping the pruning service", "err", err)
+	}
 	if err := n.eventBus.Stop(); err != nil {
 		n.Logger.Error("Error closing eventBus", "err", err)
 	}
@@ -520,6 +691,7 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 		TxIndexer:        n.txIndexer,
 		BlockIndexer:     n.blockIndexer,
 		ConsensusReactor: n.consensusReactor,
+		MempoolReactor:   n.mempoolReactor,
 		EventBus:         n.eventBus,
 		Mempool:          n.mempool,
 
@@ -575,6 +747,7 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 		)
 		wm.SetLogger(wmLogger)
 		mux.HandleFunc("/websocket", wm.WebsocketHandler)
+		mux.HandleFunc("/v1/websocket", wm.WebsocketHandler)
 		rpcserver.RegisterRPCFuncs(mux, routes, rpcLogger)
 		listener, err := rpcserver.Listen(
 			listenAddr,
@@ -620,6 +793,50 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 		}
 
 		listeners[i] = listener
+	}
+
+	if n.config.GRPC.ListenAddress != "" {
+		listener, err := grpcserver.Listen(n.config.GRPC.ListenAddress)
+		if err != nil {
+			return nil, err
+		}
+		opts := []grpcserver.Option{
+			grpcserver.WithLogger(n.Logger),
+		}
+		if n.config.GRPC.VersionService.Enabled {
+			opts = append(opts, grpcserver.WithVersionService())
+		}
+		if n.config.GRPC.BlockService.Enabled {
+			opts = append(opts, grpcserver.WithBlockService(n.blockStore, n.eventBus, n.Logger))
+		}
+		if n.config.GRPC.BlockResultsService.Enabled {
+			opts = append(opts, grpcserver.WithBlockResultsService(n.blockStore, n.stateStore, n.Logger))
+		}
+		go func() {
+			if err := grpcserver.Serve(listener, opts...); err != nil {
+				n.Logger.Error("Error starting gRPC server", "err", err)
+			}
+		}()
+		listeners = append(listeners, listener)
+	}
+
+	if n.config.GRPC.Privileged.ListenAddress != "" {
+		listener, err := grpcserver.Listen(n.config.GRPC.Privileged.ListenAddress)
+		if err != nil {
+			return nil, err
+		}
+		opts := []grpcprivserver.Option{
+			grpcprivserver.WithLogger(n.Logger),
+		}
+		if n.config.GRPC.Privileged.PruningService.Enabled {
+			opts = append(opts, grpcprivserver.WithPruningService(n.pruner, n.Logger))
+		}
+		go func() {
+			if err := grpcprivserver.Serve(listener, opts...); err != nil {
+				n.Logger.Error("Error starting privileged gRPC server", "err", err)
+			}
+		}()
+		listeners = append(listeners, listener)
 	}
 
 	return listeners, nil
@@ -790,4 +1007,76 @@ func makeNodeInfo(
 
 	err := nodeInfo.Validate()
 	return nodeInfo, err
+}
+
+func createPruner(
+	config *cfg.Config,
+	txIndexer txindex.TxIndexer,
+	blockIndexer indexer.BlockIndexer,
+	stateStore sm.Store,
+	blockStore *store.BlockStore,
+	metrics *sm.Metrics,
+	logger log.Logger,
+) (*sm.Pruner, error) {
+	if err := initApplicationRetainHeight(stateStore); err != nil {
+		return nil, err
+	}
+
+	prunerOpts := []sm.PrunerOption{
+		sm.WithPrunerInterval(config.Storage.Pruning.Interval),
+		sm.WithPrunerMetrics(metrics),
+	}
+
+	if config.Storage.Pruning.DataCompanion.Enabled {
+		err := initCompanionRetainHeights(
+			stateStore,
+			config.Storage.Pruning.DataCompanion.InitialBlockRetainHeight,
+			config.Storage.Pruning.DataCompanion.InitialBlockResultsRetainHeight,
+		)
+		if err != nil {
+			return nil, err
+		}
+		prunerOpts = append(prunerOpts, sm.WithPrunerCompanionEnabled())
+	}
+
+	return sm.NewPruner(stateStore, blockStore, blockIndexer, txIndexer, logger, prunerOpts...), nil
+}
+
+// Set the initial application retain height to 0 to avoid the data companion
+// pruning blocks before the application indicates it is OK. We set this to 0
+// only if the retain height was not set before by the application.
+func initApplicationRetainHeight(stateStore sm.Store) error {
+	if _, err := stateStore.GetApplicationRetainHeight(); err != nil {
+		if errors.Is(err, sm.ErrKeyNotFound) {
+			return stateStore.SaveApplicationRetainHeight(0)
+		}
+		return err
+	}
+	return nil
+}
+
+// Sets the data companion retain heights if one of two possible conditions is
+// met:
+// 1. One or more of the retain heights has not yet been set.
+// 2. One or more of the retain heights is currently 0.
+func initCompanionRetainHeights(stateStore sm.Store, initBlockRH, initBlockResultsRH int64) error {
+	curBlockRH, err := stateStore.GetCompanionBlockRetainHeight()
+	if err != nil && !errors.Is(err, sm.ErrKeyNotFound) {
+		return fmt.Errorf("failed to obtain companion block retain height: %w", err)
+	}
+	if curBlockRH == 0 {
+		if err := stateStore.SaveCompanionBlockRetainHeight(initBlockRH); err != nil {
+			return fmt.Errorf("failed to set initial data companion block retain height: %w", err)
+		}
+	}
+	curBlockResultsRH, err := stateStore.GetABCIResRetainHeight()
+	if err != nil && !errors.Is(err, sm.ErrKeyNotFound) {
+		return fmt.Errorf("failed to obtain companion block results retain height: %w", err)
+	}
+	if curBlockResultsRH == 0 {
+		if err := stateStore.SaveABCIResRetainHeight(initBlockResultsRH); err != nil {
+			return fmt.Errorf("failed to set initial data companion block results retain height: %w", err)
+		}
+	}
+	return nil
 }

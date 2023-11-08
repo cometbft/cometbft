@@ -3,6 +3,7 @@ package node
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"fmt"
 	"net"
 	"os"
@@ -243,9 +244,10 @@ func createMempoolAndMempoolReactor(
 	config *cfg.Config,
 	proxyApp proxy.AppConns,
 	state sm.State,
+	waitSync bool,
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
-) (mempl.Mempool, p2p.Reactor) {
+) (mempl.Mempool, *mempl.Reactor) {
 	logger = logger.With("module", "mempool")
 	mp := mempl.NewCListMempool(
 		config.Mempool,
@@ -261,6 +263,7 @@ func createMempoolAndMempoolReactor(
 	reactor := mempl.NewReactor(
 		config.Mempool,
 		mp,
+		waitSync,
 	)
 	if config.Consensus.WaitForTxs() {
 		mp.EnableTxsAvailable()
@@ -294,10 +297,11 @@ func createBlocksyncReactor(config *cfg.Config,
 	blockSync bool,
 	logger log.Logger,
 	metrics *blocksync.Metrics,
+	offlineStateSyncHeight int64,
 ) (bcReactor p2p.Reactor, err error) {
 	switch config.BlockSync.Version {
 	case "v0":
-		bcReactor = blocksync.NewReactor(state.Copy(), blockExec, blockStore, blockSync, metrics)
+		bcReactor = blocksync.NewReactor(state.Copy(), blockExec, blockStore, blockSync, metrics, offlineStateSyncHeight)
 	case "v1", "v2":
 		return nil, fmt.Errorf("block sync version %s has been deprecated. Please use v0", config.BlockSync.Version)
 	default:
@@ -319,6 +323,7 @@ func createConsensusReactor(config *cfg.Config,
 	waitSync bool,
 	eventBus *types.EventBus,
 	consensusLogger log.Logger,
+	offlineStateSyncHeight int64,
 ) (*cs.Reactor, *cs.State) {
 	consensusState := cs.NewState(
 		config.Consensus,
@@ -328,6 +333,7 @@ func createConsensusReactor(config *cfg.Config,
 		mempool,
 		evidencePool,
 		cs.StateMetrics(csMetrics),
+		cs.OfflineStateSyncHeight(offlineStateSyncHeight),
 	)
 	consensusState.SetLogger(consensusLogger)
 	if privValidator != nil {
@@ -548,7 +554,7 @@ func startStateSync(
 
 //------------------------------------------------------------------------------
 
-// var genesisDocKey = []byte("genesisDoc")
+var genesisDocKey = []byte("genesisDoc")
 var genesisDocHashKey = []byte("genesisDocHash")
 
 // LoadStateFromDBOrGenesisDocProvider attempts to load the state from the
@@ -557,6 +563,7 @@ var genesisDocHashKey = []byte("genesisDocHash")
 func LoadStateFromDBOrGenesisDocProvider(
 	stateDB dbm.DB,
 	genesisDocProvider GenesisDocProvider,
+	operatorGenesisHashHex string,
 ) (sm.State, *types.GenesisDoc, error) {
 	// Get genesis doc hash
 	genDocHash, err := stateDB.Get(genesisDocHashKey)
@@ -568,13 +575,24 @@ func LoadStateFromDBOrGenesisDocProvider(
 		return sm.State{}, nil, err
 	}
 
-	if err := csGenDoc.GenesisDoc.ValidateAndComplete(); err != nil {
+	if err = csGenDoc.GenesisDoc.ValidateAndComplete(); err != nil {
 		return sm.State{}, nil, fmt.Errorf("error in genesis doc: %w", err)
+	}
+
+	// Validate that existing or recently saved genesis file hash matches optional --genesis_hash passed by operator
+	if operatorGenesisHashHex != "" {
+		decodedOperatorGenesisHash, err := hex.DecodeString(operatorGenesisHashHex)
+		if err != nil {
+			return sm.State{}, nil, fmt.Errorf("genesis hash provided by operator cannot be decoded")
+		}
+		if !bytes.Equal(csGenDoc.Sha256Checksum, decodedOperatorGenesisHash) {
+			return sm.State{}, nil, fmt.Errorf("genesis doc hash in db does not match passed --genesis_hash value")
+		}
 	}
 
 	if len(genDocHash) == 0 {
 		// Save the genDoc hash in the store if it doesn't already exist for future verification
-		if err := stateDB.SetSync(genesisDocHashKey, csGenDoc.Sha256Checksum); err != nil {
+		if err = stateDB.SetSync(genesisDocHashKey, csGenDoc.Sha256Checksum); err != nil {
 			return sm.State{}, nil, fmt.Errorf("failed to save genesis doc hash to db: %w", err)
 		}
 	} else {
@@ -582,6 +600,7 @@ func LoadStateFromDBOrGenesisDocProvider(
 			return sm.State{}, nil, fmt.Errorf("genesis doc hash in db does not match loaded genesis doc")
 		}
 	}
+
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})

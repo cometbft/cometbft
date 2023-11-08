@@ -51,6 +51,7 @@ x * TestStateLockPOLDoesNotUnlock 4 vals, one precommits, other 3 polka nil at
 next round, so we precommit nil but maintain lock
 x * TestStateLockMissingProposalWhenPOLSeenDoesNotUpdateLock - 4 vals, 1 misses proposal but sees POL.
 x * TestStateLockMissingProposalWhenPOLSeenDoesNotUnlock - 4 vals, 1 misses proposal but sees POL.
+  * TestStateLockMissingProposalWhenPOLForLockedBlock - 4 vals, 1 misses proposal but sees POL for locked block.
 x * TestStateLockPOLSafety1 - 4 vals. We shouldn't change lock based on polka at earlier round
 x * TestStateLockPOLSafety2 - 4 vals. After unlocking, we shouldn't relock based on polka at earlier round
 x * TestStatePrevotePOLFromPreviousRound 4 vals, prevote a proposal if a POL was seen for it in a previous round.
@@ -1247,6 +1248,86 @@ func TestStateLockMissingProposalWhenPOLSeenDoesNotUpdateLock(t *testing.T) {
 	validatePrecommit(t, cs1, round, 0, vss[0], nil, firstBlockHash)
 }
 
+// TestStateLockMissingProposalWhenPOLForLockedBlock tests that observing
+// a two thirds majority for a block that matches the validator's locked block
+// causes a validator to upate its lock round and Precommit the locked block.
+func TestStateLockMissingProposalWhenPOLForLockedBlock(t *testing.T) {
+	cs1, vss := randState(4)
+	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
+	height, round := cs1.Height, cs1.Round
+
+	timeoutWaitCh := subscribe(cs1.eventBus, types.EventQueryTimeoutWait)
+	proposalCh := subscribe(cs1.eventBus, types.EventQueryCompleteProposal)
+	pv1, err := cs1.privValidator.GetPubKey()
+	require.NoError(t, err)
+	addr := pv1.Address()
+	voteCh := subscribeToVoter(cs1, addr)
+	newRoundCh := subscribe(cs1.eventBus, types.EventQueryNewRound)
+
+	/*
+		Round 0:
+		cs1 creates a proposal for block B.
+		Send a prevote for B from each of the validators to cs1.
+		Send a precommit for nil from all of the validators to cs1.
+
+		This ensures that cs1 will lock on B in this round but not commit it.
+	*/
+	t.Log("### Starting Round 0")
+	startTestRound(cs1, height, round)
+
+	ensureNewRound(newRoundCh, height, round)
+	ensureNewProposal(proposalCh, height, round)
+	rs := cs1.GetRoundState()
+	blockHash := rs.ProposalBlock.Hash()
+	blockParts := rs.ProposalBlockParts.Header()
+
+	ensurePrevote(voteCh, height, round) // prevote
+
+	signAddVotes(cs1, cmtproto.PrevoteType, blockHash, blockParts, false, vs2, vs3, vs4)
+
+	ensurePrecommit(voteCh, height, round) // our precommit
+	// the proposed block should now be locked and our precommit added
+	validatePrecommit(t, cs1, round, round, vss[0], blockHash, blockHash)
+
+	// add precommits from the rest
+	signAddVotes(cs1, cmtproto.PrecommitType, nil, types.PartSetHeader{}, true, vs2, vs3, vs4)
+
+	// timeout to new round
+	ensureNewTimeout(timeoutWaitCh, height, round, cs1.config.Precommit(round).Nanoseconds())
+
+	/*
+		Round 1:
+		The same block B is re-proposed, but it is not sent to cs1.
+		Send a prevote for B from each of the validators to cs1.
+
+		Check that cs1 precommits B, since B matches its locked value.
+		Check that cs1 maintains its lock on block B but updates its locked round.
+	*/
+	t.Log("### Starting Round 1")
+	incrementRound(vs2, vs3, vs4)
+	round++
+
+	ensureNewRound(newRoundCh, height, round)
+
+	// prevote for nil since the proposal was not seen (although it matches the locked block)
+	ensurePrevote(voteCh, height, round)
+	validatePrevote(t, cs1, round, vss[0], nil)
+
+	// now lets add prevotes from everyone else for the locked block
+	signAddVotes(cs1, cmtproto.PrevoteType, blockHash, blockParts, false, vs2, vs3, vs4)
+
+	ensurePrecommit(voteCh, height, round)
+
+	// the validator precommits the block, because it matches its locked block,
+	// maintains the same locked block and updates its locked round
+	validatePrecommit(t, cs1, round, 1, vss[0], blockHash, blockHash)
+
+	// NOTE: this behavior is inconsistent with Tendermint consensus pseudo-code.
+	// In the pseudo-code, if a process does not receive the proposal (and block) for
+	// the current round, it cannot Precommit the proposed block ID, even thought it
+	// sees a POL for that block that matches the locked value (block).
+}
+
 // TestStateLockDoesNotLockOnOldProposal tests that observing
 // a two thirds majority for a block does not cause a validator to lock on the
 // block if a proposal was not seen for that block in the current round, but
@@ -1988,7 +2069,7 @@ func TestExtendVoteCalledWhenEnabled(t *testing.T) {
 			ensureNewRound(newRoundCh, height, round)
 			ensureNewProposal(proposalCh, height, round)
 
-			m.AssertNotCalled(t, "ExtendVote", mock.Anything)
+			m.AssertNotCalled(t, "ExtendVote", mock.Anything, mock.Anything)
 
 			rs := cs1.GetRoundState()
 
@@ -2003,8 +2084,14 @@ func TestExtendVoteCalledWhenEnabled(t *testing.T) {
 
 			if testCase.enabled {
 				m.AssertCalled(t, "ExtendVote", context.TODO(), &abci.RequestExtendVote{
-					Height: height,
-					Hash:   blockID.Hash,
+					Height:             height,
+					Hash:               blockID.Hash,
+					Time:               rs.ProposalBlock.Time,
+					Txs:                rs.ProposalBlock.Txs.ToSliceOfBytes(),
+					ProposedLastCommit: abci.CommitInfo{},
+					Misbehavior:        rs.ProposalBlock.Evidence.Evidence.ToABCI(),
+					NextValidatorsHash: rs.ProposalBlock.NextValidatorsHash,
+					ProposerAddress:    rs.ProposalBlock.ProposerAddress,
 				})
 			} else {
 				m.AssertNotCalled(t, "ExtendVote", mock.Anything, mock.Anything)
@@ -2075,8 +2162,14 @@ func TestVerifyVoteExtensionNotCalledOnAbsentPrecommit(t *testing.T) {
 	ensurePrecommit(voteCh, height, round)
 
 	m.AssertCalled(t, "ExtendVote", context.TODO(), &abci.RequestExtendVote{
-		Height: height,
-		Hash:   blockID.Hash,
+		Height:             height,
+		Hash:               blockID.Hash,
+		Time:               rs.ProposalBlock.Time,
+		Txs:                rs.ProposalBlock.Txs.ToSliceOfBytes(),
+		ProposedLastCommit: abci.CommitInfo{},
+		Misbehavior:        rs.ProposalBlock.Evidence.Evidence.ToABCI(),
+		NextValidatorsHash: rs.ProposalBlock.NextValidatorsHash,
+		ProposerAddress:    rs.ProposalBlock.ProposerAddress,
 	})
 
 	signAddVotes(cs1, cmtproto.PrecommitType, blockID.Hash, blockID.PartSetHeader, true, vss[2:]...)

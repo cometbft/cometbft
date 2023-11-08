@@ -684,7 +684,7 @@ remain valid, but we need to add a new condition.
 - The node is still at a height *h < h<sub>e</sub>*.
 
 We have taken the changes required by the base implementation,
-initially decribed in section
+initially described in section
 [Base Implementation](#base-implementation-persist-and-propagate-extended-commit-history),
 and adapted them so that
 they support upgrading to ABCI 2.0 in the terms described earlier in this section:

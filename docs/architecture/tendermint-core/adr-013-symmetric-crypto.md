@@ -24,7 +24,7 @@ We currently construct a random nonce, and encrypt the data with it.
 The returned value is `nonce || encrypted data`.
 The limitation of this is that does not provide a way to identify
 which algorithm was used in encryption.
-Consequently decryption with multiple algoritms is sub-optimal.
+Consequently decryption with multiple algorithms is sub-optimal.
 (You have to try them all)
 
 ## Decision

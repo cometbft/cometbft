@@ -39,6 +39,8 @@ func MConnConfig(cfg *config.P2PConfig) conn.MConnConfig {
 	mConfig.SendRate = cfg.SendRate
 	mConfig.RecvRate = cfg.RecvRate
 	mConfig.MaxPacketMsgPayloadSize = cfg.MaxPacketMsgPayloadSize
+	mConfig.TestFuzz = cfg.TestFuzz
+	mConfig.TestFuzzConfig = cfg.TestFuzzConfig
 	return mConfig
 }
 

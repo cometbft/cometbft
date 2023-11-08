@@ -93,12 +93,12 @@ title: Methods
 
 * **Request**:
 
-    | Name   | Type   | Description                                                                                                                                                                                                                                                                            | Field Number |
-    |--------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
-    | data   | bytes  | Raw query bytes. Can be used with or in lieu of Path.                                                                                                                                                                                                                                  | 1            |
-    | path   | string | Path field of the request URI. Can be used with or in lieu of `data`. Apps MUST interpret `/store` as a query by key on the underlying store. The key SHOULD be specified in the `data` field. Apps SHOULD allow queries over specific types like `/accounts/...` or `/votes/...`      | 2            |
-    | height | int64  | The block height for which you want the query (default=0 returns data for the latest committed block). Note that this is the height of the block containing the application's Merkle root hash, which represents the state as it was after committing the block at Height-1            | 3            |
-    | prove  | bool   | Return Merkle proof with response if possible                                                                                                                                                                                                                                          | 4            |
+    | Name   | Type   | Description | Field Number |
+    |--------|--------|-------------|--------------|
+    | data   | bytes  | Request parameters for the application to interpret analogously to a [URI query component](https://www.rfc-editor.org/rfc/rfc3986#section-3.4). Can be used with or in lieu of `path`. | 1 |
+    | path   | string | A request path for the application to interpret analogously to a [URI path component](https://www.rfc-editor.org/rfc/rfc3986#section-3.3) in e.g. routing. Can be used with or in lieu of `data`. Applications MUST interpret "/store" or any path starting with "/store/" as a query by key on the underlying store, in which case a key SHOULD be specified in `data`. Applications SHOULD allow queries over specific types like `/accounts/...` or `/votes/...`. | 2 |
+    | height | int64  | The block height against which to query (default=0 returns data for the latest committed block). Note that this is the height of the block containing the application's Merkle root hash, which represents the state as it was after committing the block at Height-1. | 3 |
+    | prove  | bool   | Return Merkle proof with response if possible. | 4 |
 
 * **Response**:
 
@@ -488,23 +488,29 @@ When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the prop
 
 * **Request**:
 
-    | Name   | Type  | Description                                                                   | Field Number |
-    |--------|-------|-------------------------------------------------------------------------------|--------------|
-    | hash   | bytes | The header hash of the proposed block that the vote extension is to refer to. | 1            |
-    | height | int64 | Height of the proposed block (for sanity check).                              | 2            |
+    | Name                 | Type                                            | Description                                                                               | Field Number |
+    |----------------------|-------------------------------------------------|-------------------------------------------------------------------------------------------|--------------|
+    | hash                 | bytes                                           | The header hash of the proposed block that the vote extension is to refer to.             | 1            |
+    | height               | int64                                           | Height of the proposed block (for sanity check).                                          | 2            |
+    | time                 | [google.protobuf.Timestamp][protobuf-timestamp] | Timestamp of the proposed block (that the extension is to refer to).                      | 3            |
+    | txs                  | repeated bytes                                  | List of transactions of the block that the extension is to refer to.                      | 4            |
+    | proposed_last_commit | [CommitInfo](#commitinfo)                       | Info about the last proposed block's last commit.                                         | 5            |
+    | misbehavior          | repeated [Misbehavior](#misbehavior)            | List of information about validators that misbehaved contained in the proposed block.     | 6            |
+    | next_validators_hash | bytes                                           | Merkle root of the next validator set contained in the proposed block.                    | 7            |
+    | proposer_address     | bytes                                           | [Address](../core/data_structures.md#address) of the validator that created the proposal. | 8            |
 
 * **Response**:
 
     | Name              | Type  | Description                                             | Field Number |
     |-------------------|-------|---------------------------------------------------------|--------------|
-    | vote_extension    | bytes | Information signed by by CometBFT. Can have 0 length. | 1            |
+    | vote_extension    | bytes | Information signed by by CometBFT. Can have 0 length.   | 1            |
 
 * **Usage**:
     * `ResponseExtendVote.vote_extension` is application-generated information that will be signed
       by CometBFT and attached to the Precommit message.
     * The Application may choose to use an empty vote extension (0 length).
-    * `RequestExtendVote.hash` corresponds to the hash of a proposed block that was made available
-      to the Application in a previous call to `ProcessProposal` for the current height.
+    * The contents of `RequestExtendVote` correspond to the proposed block on which the consensus algorithm
+      will send the Precommit message.
     * `ResponseExtendVote.vote_extension` will only be attached to a non-`nil` Precommit message. If the consensus algorithm is to
       precommit `nil`, it will not call `RequestExtendVote`.
     * The Application logic that creates the extension can be non-deterministic.
@@ -519,7 +525,7 @@ When a validator _p_ is in consensus state _prevote_ of round _r_, height _h_, i
 then _p_ locks _v_  and sends a Precommit message in the following way
 
 1. _p_ sets _lockedValue_ and _validValue_ to _v_, and sets _lockedRound_ and _validRound_ to _r_
-2. _p_'s CometBFT calls `RequestExtendVote` with _id(v)_ (`RequestExtendVote.hash`). The call is synchronous.
+2. _p_'s CometBFT calls `RequestExtendVote` with _v_ (`RequestExtendVote`). The call is synchronous.
 3. The Application returns an array of bytes, `ResponseExtendVote.extension`, which is not interpreted by the consensus algorithm.
 4. _p_ sets `ResponseExtendVote.extension` as the value of the `extension` field of type
    [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension),

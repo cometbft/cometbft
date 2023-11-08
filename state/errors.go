@@ -52,6 +52,25 @@ type (
 		Height int64
 	}
 
+	ErrPrunerFailedToGetRetainHeight struct {
+		Which string
+		Err   error
+	}
+
+	ErrPrunerFailedToLoadState struct {
+		Err error
+	}
+
+	ErrFailedToPruneBlocks struct {
+		Height int64
+		Err    error
+	}
+
+	ErrFailedToPruneStates struct {
+		Height int64
+		Err    error
+	}
+
 	ErrCannotLoadState struct {
 		Err error
 	}
@@ -107,6 +126,44 @@ func (e ErrNoABCIResponsesForHeight) Error() string {
 	return fmt.Sprintf("could not find results for height #%d", e.Height)
 }
 
+func (e ErrPrunerFailedToGetRetainHeight) Error() string {
+	return fmt.Sprintf("pruner failed to get existing %s retain height: %s", e.Which, e.Err.Error())
+}
+
+func (e ErrPrunerFailedToGetRetainHeight) Unwrap() error {
+	return e.Err
+}
+
+func (e ErrPrunerFailedToLoadState) Error() string {
+	return fmt.Sprintf("failed to load state, cannot prune: %s", e.Err.Error())
+}
+
+func (e ErrPrunerFailedToLoadState) Unwrap() error {
+	return e.Err
+}
+
+func (e ErrFailedToPruneBlocks) Error() string {
+	return fmt.Sprintf("failed to prune blocks to height %d: %s", e.Height, e.Err.Error())
+}
+
+func (e ErrFailedToPruneBlocks) Unwrap() error {
+	return e.Err
+}
+
+func (e ErrFailedToPruneStates) Error() string {
+	return fmt.Sprintf("failed to prune states to height %d: %s", e.Height, e.Err.Error())
+}
+
+func (e ErrFailedToPruneStates) Unwrap() error {
+	return e.Err
+}
+
+var (
+	ErrFinalizeBlockResponsesNotPersisted = errors.New("node is not persisting finalize block responses")
+	ErrPrunerCannotLowerRetainHeight      = errors.New("cannot set a height lower than previously requested - heights might have already been pruned")
+	ErrInvalidRetainHeight                = errors.New("retain height cannot be less or equal than 0")
+)
+
 func (e ErrCannotLoadState) Error() string {
 	return fmt.Sprintf("cannot load state: %v", e.Err)
 }
@@ -114,5 +171,3 @@ func (e ErrCannotLoadState) Error() string {
 func (e ErrCannotLoadState) Unwrap() error {
 	return e.Err
 }
-
-var ErrFinalizeBlockResponsesNotPersisted = errors.New("node is not persisting finalize block responses")

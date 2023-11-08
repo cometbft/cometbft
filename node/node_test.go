@@ -1,7 +1,10 @@
 package node
 
 import (
+	"bytes"
 	"context"
+	"encoding/hex"
+
 	"fmt"
 	"net"
 	"net/http"
@@ -97,6 +100,20 @@ func TestSplitAndTrimEmpty(t *testing.T) {
 	for _, tc := range testCases {
 		assert.Equal(t, tc.expected, splitAndTrimEmpty(tc.s, tc.sep, tc.cutset), "%s", tc.s)
 	}
+}
+
+func TestCompanionInitialHeightSetup(t *testing.T) {
+	config := test.ResetTestRoot("companion_initial_height")
+	defer os.RemoveAll(config.RootDir)
+	config.Storage.Pruning.DataCompanion.Enabled = true
+	config.Storage.Pruning.DataCompanion.InitialBlockRetainHeight = 1
+	// create & start node
+	n, err := DefaultNewNode(config, log.TestingLogger())
+	require.NoError(t, err)
+
+	companionRetainHeight, err := n.stateStore.GetCompanionBlockRetainHeight()
+	require.NoError(t, err)
+	require.Equal(t, companionRetainHeight, int64(1))
 }
 
 func TestNodeDelayedStart(t *testing.T) {
@@ -468,6 +485,61 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 	assert.Contains(t, channels, cr.Channels[0].ID)
 }
 
+// Simple test to confirm that an existing genesis file will be deleted from the DB
+// TODO Confirm that the deletion of a very big file does not crash the machine
+func TestNodeNewNodeDeleteGenesisFileFromDB(t *testing.T) {
+	config := test.ResetTestRoot("node_new_node_delete_genesis_from_db")
+	defer os.RemoveAll(config.RootDir)
+	// Use goleveldb so we can reuse the same db for the second NewNode()
+	config.DBBackend = string(dbm.GoLevelDBBackend)
+	// Ensure the genesis doc hash is saved to db
+	stateDB, err := cfg.DefaultDBProvider(&cfg.DBContext{ID: "state", Config: config})
+	require.NoError(t, err)
+
+	err = stateDB.SetSync(genesisDocKey, []byte("genFile"))
+	require.NoError(t, err)
+
+	genDocFromDB, err := stateDB.Get(genesisDocKey)
+	require.NoError(t, err)
+	require.Equal(t, genDocFromDB, []byte("genFile"))
+
+	stateDB.Close()
+	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
+	require.NoError(t, err)
+
+	n, err := NewNode(
+		context.Background(),
+		config,
+		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
+		nodeKey,
+		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
+		DefaultGenesisDocProviderFunc(config),
+		cfg.DefaultDBProvider,
+		DefaultMetricsProvider(config.Instrumentation),
+		log.TestingLogger(),
+	)
+	require.NoError(t, err)
+
+	_, err = stateDB.Get(genesisDocKey)
+	require.Error(t, err)
+
+	// Start and stop to close the db for later reading
+	err = n.Start()
+	require.NoError(t, err)
+
+	err = n.Stop()
+	require.NoError(t, err)
+
+	stateDB, err = cfg.DefaultDBProvider(&cfg.DBContext{ID: "state", Config: config})
+	require.NoError(t, err)
+	genDocHash, err := stateDB.Get(genesisDocHashKey)
+	require.NoError(t, err)
+	require.NotNil(t, genDocHash, "genesis doc hash should be saved in db")
+	require.Len(t, genDocHash, tmhash.Size)
+
+	err = stateDB.Close()
+	require.NoError(t, err)
+}
 func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 	config := test.ResetTestRoot("node_new_node_genesis_hash")
 	defer os.RemoveAll(config.RootDir)
@@ -533,6 +605,75 @@ func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 	)
 	require.Error(t, err, "NewNode should error when genesisDoc is changed")
 	require.Equal(t, "genesis doc hash in db does not match loaded genesis doc", err.Error())
+}
+
+func TestNodeGenesisHashFlagMatch(t *testing.T) {
+	config := test.ResetTestRoot("node_new_node_genesis_hash_flag_match")
+	defer os.RemoveAll(config.RootDir)
+
+	config.DBBackend = string(dbm.GoLevelDBBackend)
+	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
+	require.NoError(t, err)
+	// Get correct hash of correct genesis file
+	jsonBlob, err := os.ReadFile(config.GenesisFile())
+	require.NoError(t, err)
+
+	incomingChecksum := tmhash.Sum(jsonBlob)
+	// Set genesis flag value to incorrect hash
+	config.Storage.GenesisHash = hex.EncodeToString(incomingChecksum)
+	_, err = NewNode(
+		context.Background(),
+		config,
+		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
+		nodeKey,
+		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
+		DefaultGenesisDocProviderFunc(config),
+		cfg.DefaultDBProvider,
+		DefaultMetricsProvider(config.Instrumentation),
+		log.TestingLogger(),
+	)
+	require.NoError(t, err)
+
+}
+
+func TestNodeGenesisHashFlagMismatch(t *testing.T) {
+	config := test.ResetTestRoot("node_new_node_genesis_hash_flag_mismatch")
+	defer os.RemoveAll(config.RootDir)
+
+	// Use goleveldb so we can reuse the same db for the second NewNode()
+	config.DBBackend = string(dbm.GoLevelDBBackend)
+
+	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
+	require.NoError(t, err)
+
+	// Generate hash of wrong file
+	f, err := os.ReadFile(config.PrivValidatorKeyFile())
+	require.NoError(t, err)
+	flagHash := tmhash.Sum(f)
+
+	// Set genesis flag value to incorrect hash
+	config.Storage.GenesisHash = hex.EncodeToString(flagHash)
+
+	_, err = NewNode(
+		context.Background(),
+		config,
+		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
+		nodeKey,
+		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
+		DefaultGenesisDocProviderFunc(config),
+		cfg.DefaultDBProvider,
+		DefaultMetricsProvider(config.Instrumentation),
+		log.TestingLogger(),
+	)
+	require.Error(t, err)
+
+	f, err = os.ReadFile(config.GenesisFile())
+	require.NoError(t, err)
+
+	genHash := tmhash.Sum(f)
+
+	genHashMismatch := bytes.Equal(genHash, flagHash)
+	require.False(t, genHashMismatch)
 }
 
 func state(nVals int, height int64) (sm.State, dbm.DB, []types.PrivValidator) {

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	cmterrors "github.com/cometbft/cometbft/types/errors"
@@ -41,6 +42,8 @@ const (
 
 	DefaultNodeKeyName  = "node_key.json"
 	DefaultAddrBookName = "addrbook.json"
+
+	DefaultPruningInterval = 10 * time.Second
 
 	v0 = "v0"
 	v1 = "v1"
@@ -76,6 +79,7 @@ type Config struct {
 
 	// Options for services
 	RPC             *RPCConfig             `mapstructure:"rpc"`
+	GRPC            *GRPCConfig            `mapstructure:"grpc"`
 	P2P             *P2PConfig             `mapstructure:"p2p"`
 	Mempool         *MempoolConfig         `mapstructure:"mempool"`
 	StateSync       *StateSyncConfig       `mapstructure:"statesync"`
@@ -91,6 +95,7 @@ func DefaultConfig() *Config {
 	return &Config{
 		BaseConfig:      DefaultBaseConfig(),
 		RPC:             DefaultRPCConfig(),
+		GRPC:            DefaultGRPCConfig(),
 		P2P:             DefaultP2PConfig(),
 		Mempool:         DefaultMempoolConfig(),
 		StateSync:       DefaultStateSyncConfig(),
@@ -107,6 +112,7 @@ func TestConfig() *Config {
 	return &Config{
 		BaseConfig:      TestBaseConfig(),
 		RPC:             TestRPCConfig(),
+		GRPC:            TestGRPCConfig(),
 		P2P:             TestP2PConfig(),
 		Mempool:         TestMempoolConfig(),
 		StateSync:       TestStateSyncConfig(),
@@ -137,6 +143,9 @@ func (cfg *Config) ValidateBasic() error {
 	if err := cfg.RPC.ValidateBasic(); err != nil {
 		return ErrInSection{Section: "rpc", Err: err}
 	}
+	if err := cfg.GRPC.ValidateBasic(); err != nil {
+		return fmt.Errorf("error in [grpc] section: %w", err)
+	}
 	if err := cfg.P2P.ValidateBasic(); err != nil {
 		return ErrInSection{Section: "p2p", Err: err}
 	}
@@ -151,6 +160,9 @@ func (cfg *Config) ValidateBasic() error {
 	}
 	if err := cfg.Consensus.ValidateBasic(); err != nil {
 		return ErrInSection{Section: "consensus", Err: err}
+	}
+	if err := cfg.Storage.ValidateBasic(); err != nil {
+		return fmt.Errorf("error in [storage] section: %w", err)
 	}
 	if err := cfg.Instrumentation.ValidateBasic(); err != nil {
 		return ErrInSection{Section: "instrumentation", Err: err}
@@ -450,7 +462,6 @@ func (cfg *RPCConfig) ValidateBasic() error {
 	}
 	if cfg.MaxSubscriptionClients < 0 {
 		return cmterrors.ErrNegativeField{Field: "max_subscription_clients"}
-
 	}
 	if cfg.MaxSubscriptionsPerClient < 0 {
 		return cmterrors.ErrNegativeField{Field: "max_subscriptions_per_client"}
@@ -503,6 +514,151 @@ func (cfg RPCConfig) CertFile() string {
 
 func (cfg RPCConfig) IsTLSEnabled() bool {
 	return cfg.TLSCertFile != "" && cfg.TLSKeyFile != ""
+}
+
+//-----------------------------------------------------------------------------
+// GRPCConfig
+
+// GRPCConfig defines the configuration for the CometBFT gRPC server.
+type GRPCConfig struct {
+	// TCP or Unix socket address for the gRPC server to listen on. If empty,
+	// the gRPC server will be disabled.
+	ListenAddress string `mapstructure:"laddr"`
+
+	// The gRPC version service provides version information about the node and
+	// the protocols it uses.
+	VersionService *GRPCVersionServiceConfig `mapstructure:"version_service"`
+
+	// The gRPC block service provides block information
+	BlockService *GRPCBlockServiceConfig `mapstructure:"block_service"`
+
+	// The gRPC block results service provides the block results for a given height
+	// If no height is provided, the block results of the latest height are returned
+	BlockResultsService *GRPCBlockResultsServiceConfig `mapstructure:"block_results_service"`
+
+	// The "privileged" section provides configuration for the gRPC server
+	// dedicated to privileged clients.
+	Privileged *GRPCPrivilegedConfig `mapstructure:"privileged"`
+}
+
+func DefaultGRPCConfig() *GRPCConfig {
+	return &GRPCConfig{
+		ListenAddress:       "",
+		VersionService:      DefaultGRPCVersionServiceConfig(),
+		BlockService:        DefaultGRPCBlockServiceConfig(),
+		BlockResultsService: DefaultGRPCBlockResultsServiceConfig(),
+		Privileged:          DefaultGRPCPrivilegedConfig(),
+	}
+}
+
+func TestGRPCConfig() *GRPCConfig {
+	return &GRPCConfig{
+		ListenAddress:       "tcp://127.0.0.1:36670",
+		VersionService:      TestGRPCVersionServiceConfig(),
+		BlockService:        TestGRPCBlockServiceConfig(),
+		BlockResultsService: DefaultGRPCBlockResultsServiceConfig(),
+		Privileged:          TestGRPCPrivilegedConfig(),
+	}
+}
+
+func (cfg *GRPCConfig) ValidateBasic() error {
+	if len(cfg.ListenAddress) > 0 {
+		addrParts := strings.SplitN(cfg.ListenAddress, "://", 2)
+		if len(addrParts) != 2 {
+			return fmt.Errorf(
+				"invalid listening address %s (use fully formed addresses, including the tcp:// or unix:// prefix)",
+				cfg.ListenAddress,
+			)
+		}
+	}
+	return nil
+}
+
+type GRPCVersionServiceConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+type GRPCBlockResultsServiceConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+func DefaultGRPCVersionServiceConfig() *GRPCVersionServiceConfig {
+	return &GRPCVersionServiceConfig{
+		Enabled: true,
+	}
+}
+
+func DefaultGRPCBlockResultsServiceConfig() *GRPCBlockResultsServiceConfig {
+	return &GRPCBlockResultsServiceConfig{
+		Enabled: true,
+	}
+}
+
+func TestGRPCVersionServiceConfig() *GRPCVersionServiceConfig {
+	return &GRPCVersionServiceConfig{
+		Enabled: true,
+	}
+}
+
+type GRPCBlockServiceConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+func DefaultGRPCBlockServiceConfig() *GRPCBlockServiceConfig {
+	return &GRPCBlockServiceConfig{
+		Enabled: true,
+	}
+}
+
+func TestGRPCBlockServiceConfig() *GRPCBlockServiceConfig {
+	return &GRPCBlockServiceConfig{
+		Enabled: true,
+	}
+}
+
+//-----------------------------------------------------------------------------
+// GRPCPrivilegedConfig
+
+// GRPCPrivilegedConfig defines the configuration for the CometBFT gRPC server
+// exposing privileged endpoints.
+type GRPCPrivilegedConfig struct {
+	// TCP or Unix socket address for the gRPC server for privileged clients
+	// to listen on. If empty, the privileged gRPC server will be disabled.
+	ListenAddress string `mapstructure:"laddr"`
+
+	// The gRPC pruning service provides control over the depth of block
+	// storage information that the node
+	PruningService *GRPCPruningServiceConfig `mapstructure:"pruning_service"`
+}
+
+func DefaultGRPCPrivilegedConfig() *GRPCPrivilegedConfig {
+	return &GRPCPrivilegedConfig{
+		ListenAddress:  "",
+		PruningService: DefaultGRPCPruningServiceConfig(),
+	}
+}
+
+func TestGRPCPrivilegedConfig() *GRPCPrivilegedConfig {
+	return &GRPCPrivilegedConfig{
+		ListenAddress:  "tcp://127.0.0.1:36671",
+		PruningService: TestGRPCPruningServiceConfig(),
+	}
+}
+
+type GRPCPruningServiceConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+func DefaultGRPCPruningServiceConfig() *GRPCPruningServiceConfig {
+	return &GRPCPruningServiceConfig{
+		Enabled: false,
+	}
+}
+
+func TestGRPCPruningServiceConfig() *GRPCPruningServiceConfig {
+	return &GRPCPruningServiceConfig{
+		Enabled: true,
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -579,7 +735,7 @@ type P2PConfig struct { //nolint: maligned
 	// Testing params.
 	// Force dial to fail
 	TestDialFail bool `mapstructure:"test_dial_fail"`
-	// FUzz connection
+	// Fuzz connection
 	TestFuzz       bool            `mapstructure:"test_fuzz"`
 	TestFuzzConfig *FuzzConnConfig `mapstructure:"test_fuzz_config"`
 }
@@ -720,6 +876,15 @@ type MempoolConfig struct {
 	// Including space needed by encoding (one varint per transaction).
 	// XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
 	MaxBatchBytes int `mapstructure:"max_batch_bytes"`
+	// Experimental parameter to limit broadcast of txs to up to this many peers.
+	// If we are connected to more than this number of peers, only send txs to the first
+	// ExperimentalMaxUsedOutboundPeers of them. If one of those peers disconnects, activate another
+	// peer.
+	// If set to 0, this feature is disabled, that is, the number of active connections is not
+	// bounded.
+	// If enabled, a value of 10 is recommended based on experimental performance results using the
+	// default P2P configuration.
+	ExperimentalMaxUsedOutboundPeers int `mapstructure:"experimental_max_used_outbound_peers"`
 }
 
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool
@@ -730,10 +895,11 @@ func DefaultMempoolConfig() *MempoolConfig {
 		WalPath:   "",
 		// Each signature verification takes .5ms, Size reduced until we implement
 		// ABCI Recheck
-		Size:        5000,
-		MaxTxsBytes: 1024 * 1024 * 1024, // 1GB
-		CacheSize:   10000,
-		MaxTxBytes:  1024 * 1024, // 1MB
+		Size:                             5000,
+		MaxTxsBytes:                      1024 * 1024 * 1024, // 1GB
+		CacheSize:                        10000,
+		MaxTxBytes:                       1024 * 1024, // 1MB
+		ExperimentalMaxUsedOutboundPeers: 0,
 	}
 }
 
@@ -768,6 +934,9 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 	}
 	if cfg.MaxTxBytes < 0 {
 		return cmterrors.ErrNegativeField{Field: "max_tx_bytes"}
+	}
+	if cfg.ExperimentalMaxUsedOutboundPeers < 0 {
+		return cmterrors.ErrNegativeField{Field: "experimental_max_used_outbound_peers"}
 	}
 	return nil
 }
@@ -1070,6 +1239,16 @@ type StorageConfig struct {
 	// required for `/block_results` RPC queries, and to reindex events in the
 	// command-line tool.
 	DiscardABCIResponses bool `mapstructure:"discard_abci_responses"`
+	// Configuration related to storage pruning.
+	Pruning *PruningConfig `mapstructure:"pruning"`
+
+	// Hex representation of the hash of the genesis file.
+	// This is an optional parameter set when an operator provides
+	// a hash via the command line.
+	// It is used to verify the hash of the actual genesis file.
+	// Note that if the provided has does not match the hash of the genesis file
+	// the node will report an error and not boot.
+	GenesisHash string `mapstructure:"genesis_hash"`
 }
 
 // DefaultStorageConfig returns the default configuration options relating to
@@ -1077,6 +1256,8 @@ type StorageConfig struct {
 func DefaultStorageConfig() *StorageConfig {
 	return &StorageConfig{
 		DiscardABCIResponses: false,
+		Pruning:              DefaultPruningConfig(),
+		GenesisHash:          "",
 	}
 }
 
@@ -1085,7 +1266,16 @@ func DefaultStorageConfig() *StorageConfig {
 func TestStorageConfig() *StorageConfig {
 	return &StorageConfig{
 		DiscardABCIResponses: false,
+		Pruning:              TestPruningConfig(),
+		GenesisHash:          "",
 	}
+}
+
+func (cfg *StorageConfig) ValidateBasic() error {
+	if err := cfg.Pruning.ValidateBasic(); err != nil {
+		return fmt.Errorf("error in [pruning] section: %w", err)
+	}
+	return nil
 }
 
 // -----------------------------------------------------------------------------
@@ -1205,4 +1395,90 @@ func getDefaultMoniker() string {
 		moniker = "anonymous"
 	}
 	return moniker
+}
+
+//-----------------------------------------------------------------------------
+// PruningConfig
+
+type PruningConfig struct {
+	// The time period between automated background pruning operations.
+	Interval time.Duration `mapstructure:"interval"`
+	// Data companion-related pruning configuration.
+	DataCompanion *DataCompanionPruningConfig `mapstructure:"data_companion"`
+}
+
+func DefaultPruningConfig() *PruningConfig {
+	return &PruningConfig{
+		Interval:      DefaultPruningInterval,
+		DataCompanion: DefaultDataCompanionPruningConfig(),
+	}
+}
+
+func TestPruningConfig() *PruningConfig {
+	return &PruningConfig{
+		Interval:      DefaultPruningInterval,
+		DataCompanion: TestDataCompanionPruningConfig(),
+	}
+}
+
+func (cfg *PruningConfig) ValidateBasic() error {
+	if cfg.Interval <= 0 {
+		return errors.New("interval must be > 0")
+	}
+	if err := cfg.DataCompanion.ValidateBasic(); err != nil {
+		return fmt.Errorf("error in [data_companion] section: %w", err)
+	}
+	return nil
+}
+
+//-----------------------------------------------------------------------------
+// DataCompanionPruningConfig
+
+type DataCompanionPruningConfig struct {
+	// Whether automatic pruning respects values set by the data companion.
+	// Disabled by default. All other parameters in this section are ignored
+	// when this is disabled.
+	//
+	// If disabled, only the application retain height will influence block
+	// pruning (but not block results pruning). Only enabling this at a later
+	// stage will potentially mean that blocks below the application-set retain
+	// height at the time will not be available to the data companion.
+	Enabled bool `mapstructure:"enabled"`
+	// The initial value for the data companion block retain height if the data
+	// companion has not yet explicitly set one. If the data companion has
+	// already set a block retain height, this is ignored.
+	InitialBlockRetainHeight int64 `mapstructure:"initial_block_retain_height"`
+	// The initial value for the data companion block results retain height if
+	// the data companion has not yet explicitly set one. If the data companion
+	// has already set a block results retain height, this is ignored.
+	InitialBlockResultsRetainHeight int64 `mapstructure:"initial_block_results_retain_height"`
+}
+
+func DefaultDataCompanionPruningConfig() *DataCompanionPruningConfig {
+	return &DataCompanionPruningConfig{
+		Enabled:                         false,
+		InitialBlockRetainHeight:        0,
+		InitialBlockResultsRetainHeight: 0,
+	}
+}
+
+func TestDataCompanionPruningConfig() *DataCompanionPruningConfig {
+	return &DataCompanionPruningConfig{
+		Enabled:                         false,
+		InitialBlockRetainHeight:        0,
+		InitialBlockResultsRetainHeight: 0,
+	}
+}
+
+func (cfg *DataCompanionPruningConfig) ValidateBasic() error {
+	if !cfg.Enabled {
+		return nil
+	}
+	if cfg.InitialBlockRetainHeight < 0 {
+		return errors.New("initial_block_retain_height cannot be negative")
+	}
+	if cfg.InitialBlockResultsRetainHeight < 0 {
+		return errors.New("initial_block_results_retain_height cannot be negative")
+	}
+	return nil
 }

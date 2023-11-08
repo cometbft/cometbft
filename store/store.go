@@ -59,6 +59,12 @@ func NewBlockStore(db dbm.DB) *BlockStore {
 	}
 }
 
+func (bs *BlockStore) IsEmpty() bool {
+	bs.mtx.RLock()
+	defer bs.mtx.RUnlock()
+	return bs.base == bs.height && bs.base == 0
+}
+
 // Base returns the first known contiguous block height, or 0 for empty block stores.
 func (bs *BlockStore) Base() int64 {
 	bs.mtx.RLock()
@@ -95,10 +101,10 @@ func (bs *BlockStore) LoadBaseMeta() *types.BlockMeta {
 
 // LoadBlock returns the block with the given height.
 // If no block is found for that height, it returns nil.
-func (bs *BlockStore) LoadBlock(height int64) *types.Block {
+func (bs *BlockStore) LoadBlock(height int64) (*types.Block, *types.BlockMeta) {
 	blockMeta := bs.LoadBlockMeta(height)
 	if blockMeta == nil {
-		return nil
+		return nil, nil
 	}
 
 	pbb := new(cmtproto.Block)
@@ -108,7 +114,7 @@ func (bs *BlockStore) LoadBlock(height int64) *types.Block {
 		// If the part is missing (e.g. since it has been deleted after we
 		// loaded the block meta) we consider the whole block to be missing.
 		if part == nil {
-			return nil
+			return nil, nil
 		}
 		buf = append(buf, part.Bytes...)
 	}
@@ -124,19 +130,19 @@ func (bs *BlockStore) LoadBlock(height int64) *types.Block {
 		panic(cmterrors.ErrMsgFromProto{MessageName: "Block", Err: err})
 	}
 
-	return block
+	return block, blockMeta
 }
 
 // LoadBlockByHash returns the block with the given hash.
 // If no block is found for that hash, it returns nil.
 // Panics if it fails to parse height associated with the given hash.
-func (bs *BlockStore) LoadBlockByHash(hash []byte) *types.Block {
+func (bs *BlockStore) LoadBlockByHash(hash []byte) (*types.Block, *types.BlockMeta) {
 	bz, err := bs.db.Get(calcBlockHashKey(hash))
 	if err != nil {
 		panic(err)
 	}
 	if len(bz) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	s := string(bz)
@@ -289,7 +295,9 @@ func (bs *BlockStore) LoadSeenCommit(height int64) *types.Commit {
 	return commit
 }
 
-// PruneBlocks removes block up to (but not including) a height. It returns number of blocks pruned and the evidence retain height - the height at which data needed to prove evidence must not be removed.
+// PruneBlocks removes block up to (but not including) a height. It returns the
+// number of blocks pruned and the evidence retain height - the height at which
+// data needed to prove evidence must not be removed.
 func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, error) {
 	if height <= 0 {
 		return 0, -1, fmt.Errorf("height must be greater than 0")

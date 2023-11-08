@@ -162,7 +162,7 @@ func newReactor(
 		blockStore.SaveBlockWithExtendedCommit(thisBlock, thisParts, seenExtCommit)
 	}
 
-	bcReactor := NewReactor(state.Copy(), blockExec, blockStore, fastSync, NopMetrics())
+	bcReactor := NewReactor(state.Copy(), blockExec, blockStore, fastSync, NopMetrics(), 0)
 	bcReactor.SetLogger(logger.With("module", "blocksync"))
 
 	return ReactorPair{bcReactor, proxyApp}
@@ -215,7 +215,7 @@ func TestNoBlockResponse(t *testing.T) {
 	assert.Equal(t, maxBlockHeight, reactorPairs[0].reactor.store.Height())
 
 	for _, tt := range tests {
-		block := reactorPairs[1].reactor.store.LoadBlock(tt.height)
+		block, _ := reactorPairs[1].reactor.store.LoadBlock(tt.height)
 		if tt.existent {
 			assert.True(t, block != nil)
 		} else {

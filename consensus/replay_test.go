@@ -554,7 +554,8 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	chain := []*types.Block{}
 	extCommits := []*types.ExtendedCommit{}
 	for i := 1; i <= nBlocks; i++ {
-		chain = append(chain, css[0].blockStore.LoadBlock(int64(i)))
+		block, _ := css[0].blockStore.LoadBlock(int64(i))
+		chain = append(chain, block)
 		extCommits = append(extCommits, css[0].blockStore.LoadBlockExtendedCommit(int64(i)))
 	}
 	return config, chain, extCommits, genesisState
@@ -879,6 +880,9 @@ func buildTMStateFromChain(
 			require.NoError(t, stateStore.SaveFinalizeBlockResponse(lastHeight, response))
 			return true
 		})).Return(nil)
+		dummyStateStore.On("GetApplicationRetainHeight", mock.Anything).Return(int64(0), nil)
+		dummyStateStore.On("GetCompanionBlockRetainHeight", mock.Anything).Return(int64(0), nil)
+		dummyStateStore.On("GetABCIResRetainHeight", mock.Anything).Return(int64(0), nil)
 
 		// apply the final block to a state copy so we can
 		// get the right next appHash but keep the state back
@@ -1180,13 +1184,17 @@ func newMockBlockStore(t *testing.T, config *cfg.Config, params types.ConsensusP
 	}
 }
 
-func (bs *mockBlockStore) Height() int64                       { return int64(len(bs.chain)) }
-func (bs *mockBlockStore) Base() int64                         { return bs.base }
-func (bs *mockBlockStore) Size() int64                         { return bs.Height() - bs.Base() + 1 }
-func (bs *mockBlockStore) LoadBaseMeta() *types.BlockMeta      { return bs.LoadBlockMeta(bs.base) }
-func (bs *mockBlockStore) LoadBlock(height int64) *types.Block { return bs.chain[height-1] }
-func (bs *mockBlockStore) LoadBlockByHash([]byte) *types.Block {
-	return bs.chain[int64(len(bs.chain))-1]
+func (bs *mockBlockStore) Height() int64                  { return int64(len(bs.chain)) }
+func (bs *mockBlockStore) Base() int64                    { return bs.base }
+func (bs *mockBlockStore) Size() int64                    { return bs.Height() - bs.Base() + 1 }
+func (bs *mockBlockStore) LoadBaseMeta() *types.BlockMeta { return bs.LoadBlockMeta(bs.base) }
+func (bs *mockBlockStore) LoadBlock(height int64) (*types.Block, *types.BlockMeta) {
+	return bs.chain[height-1], bs.LoadBlockMeta(height)
+}
+
+func (bs *mockBlockStore) LoadBlockByHash([]byte) (*types.Block, *types.BlockMeta) {
+	height := int64(len(bs.chain))
+	return bs.chain[height-1], bs.LoadBlockMeta(height)
 }
 func (bs *mockBlockStore) LoadBlockMetaByHash([]byte) *types.BlockMeta { return nil }
 func (bs *mockBlockStore) LoadBlockMeta(height int64) *types.BlockMeta {

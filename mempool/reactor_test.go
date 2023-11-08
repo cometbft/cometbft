@@ -338,7 +338,7 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 	config := cfg.TestConfig()
 	config.Mempool.ExperimentalMaxUsedOutboundPeers = 1
-	reactors, _ := makeAndConnectReactors(config, 3)
+	reactors, _ := makeAndConnectReactors(config, 4)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -356,17 +356,20 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 	txs := newUniqueTxs(100)
 	callCheckTx(t, reactors[0].mempool, txs)
 
-	// Wait for all txs to be in the mempool of the second reactor; the third reactor should not
-	// receive any tx.
+	// Wait for all txs to be in the mempool of the second reactor; the third and fourth reactor
+	// should not receive any tx.
 	checkTxsInMempool(t, txs, reactors[1], 0)
 	require.Zero(t, reactors[2].mempool.Size())
+	require.Zero(t, reactors[3].mempool.Size())
 
 	// In the first reactor, disconnect the second reactor; the third reactor should become active.
 	firstPeer := reactors[0].Switch.Peers().List()[0]
 	reactors[0].Switch.StopPeerGracefully(firstPeer)
 
-	// Now the third reactor should receive the transactions.
+	// Now the third reactor should receive the transactions; the fourth reactor's mempool should
+	// still be empty.
 	checkTxsInMempool(t, txs, reactors[2], 0)
+	require.Zero(t, reactors[3].mempool.Size())
 }
 
 // Check that the mempool has exactly the given list of txs and, if it's not the

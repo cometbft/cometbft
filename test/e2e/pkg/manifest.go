@@ -108,8 +108,8 @@ type Manifest struct {
 	// Upper bound of sleep duration then gossipping votes and block parts
 	PeerGossipIntraloopSleepDuration time.Duration `toml:"peer_gossip_intraloop_sleep_duration"`
 
-	// MempoolReactor determines which reactor to use for the mempool.
-	MempoolReactor string `toml:"mempool_reactor"`
+	// GossipProtocol determines which gossip protocol to use for the mempool of all nodes.
+	GossipProtocol string `toml:"gossip_protocol"`
 
 	// Enable or disable e2e tests for CometBFT's expected behavior with respect
 	// to ABCI.

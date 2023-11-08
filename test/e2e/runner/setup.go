@@ -268,8 +268,8 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		}
 		cfg.P2P.PersistentPeers += peer.AddressP2P(true)
 	}
-	if node.Testnet.MempoolReactor != "" {
-		cfg.Mempool.Reactor = node.Testnet.MempoolReactor
+	if node.Testnet.GossipProtocol != "" {
+		cfg.Mempool.GossipProtocol = node.Testnet.GossipProtocol
 	}
 	if node.Testnet.DisablePexReactor {
 		cfg.P2P.PexReactor = false

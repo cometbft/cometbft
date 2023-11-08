@@ -97,7 +97,7 @@ type Testnet struct {
 	VoteExtensionsEnableHeight       int64
 	VoteExtensionSize                uint
 	PeerGossipIntraloopSleepDuration time.Duration
-	MempoolReactor                   string
+	GossipProtocol                   string
 	ABCITestsEnabled                 bool
 }
 
@@ -185,7 +185,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
 		VoteExtensionSize:                manifest.VoteExtensionSize,
 		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
-		MempoolReactor:                   manifest.MempoolReactor,
+		GossipProtocol:                   manifest.GossipProtocol,
 		ABCITestsEnabled:                 manifest.ABCITestsEnabled,
 	}
 	if len(manifest.KeyType) != 0 {

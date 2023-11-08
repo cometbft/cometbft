@@ -265,15 +265,15 @@ func createMempoolAndMempoolReactor(
 	}
 
 	var reactor mempl.SyncReactor
-	switch config.Mempool.Reactor {
+	switch config.Mempool.GossipProtocol {
 	case "cat":
-		logger.Info("Using the CAT mempool reactor")
+		logger.Info("Using the CAT gossip protocol")
 		reactor = cat.NewReactor(config.Mempool, mp, waitSync, logger)
 	case "v0", "flood", "":
-		logger.Info("Using the default mempool reactor")
+		logger.Info("Using the (default) flooding gossip protocol")
 		reactor = mempl.NewReactor(config.Mempool, mp, waitSync, logger)
 	default:
-		return nil, nil, fmt.Errorf("unknown mempool reactor \"%s\"", config.Mempool.Reactor)
+		return nil, nil, fmt.Errorf("unknown gossip protocol \"%s\"", config.Mempool.GossipProtocol)
 	}
 
 	return mp, reactor, nil

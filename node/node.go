@@ -1001,7 +1001,7 @@ func makeNodeInfo(
 		nodeInfo.Channels = append(nodeInfo.Channels, pex.PexChannel)
 	}
 
-	if config.Mempool.Reactor == "cat" {
+	if config.Mempool.GossipProtocol == "cat" {
 		nodeInfo.Channels = append(nodeInfo.Channels, cat.MempoolStateChannel)
 	}
 

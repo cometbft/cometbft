@@ -1,6 +1,7 @@
 package mempool
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync/atomic"
@@ -14,6 +15,7 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	protomem "github.com/cometbft/cometbft/proto/tendermint/mempool"
 	"github.com/cometbft/cometbft/types"
+	"golang.org/x/sync/semaphore"
 )
 
 // Reactor handles mempool tx broadcasting amongst peers.
@@ -33,6 +35,8 @@ type Reactor struct {
 	// already has it.
 	txSenders    map[types.TxKey]map[p2p.ID]bool
 	txSendersMtx cmtsync.Mutex
+
+	activeConnectionsSemaphore *semaphore.Weighted
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
@@ -49,6 +53,8 @@ func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool, waitSync bool)
 		memR.waitSyncCh = make(chan struct{})
 	}
 	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
+	memR.activeConnectionsSemaphore = semaphore.NewWeighted(int64(memR.config.ExperimentalMaxUsedOutboundPeers))
+
 	return memR
 }
 
@@ -93,7 +99,22 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 // It starts a broadcast routine ensuring all txs are forwarded to the given peer.
 func (memR *Reactor) AddPeer(peer p2p.Peer) {
 	if memR.config.Broadcast {
-		go memR.broadcastTxRoutine(peer)
+		go func() {
+			if memR.config.ExperimentalMaxUsedOutboundPeers > 0 {
+				// Around (MaxOutboundPeers-ExperimentalMaxUsedOutboundPeers) goroutines will be
+				// blocked here waiting for more peers disconnect and free some slots for running.
+				if err := memR.activeConnectionsSemaphore.Acquire(context.TODO(), 1); err != nil {
+					memR.Logger.Error("Failed to acquire semaphore: %v", err)
+					return
+				}
+				memR.mempool.metrics.ActiveOutboundConnections.Add(1)
+				defer func() {
+					memR.activeConnectionsSemaphore.Release(1)
+					memR.mempool.metrics.ActiveOutboundConnections.Add(-1)
+				}()
+			}
+			memR.broadcastTxRoutine(peer)
+		}()
 	}
 }
 
@@ -184,6 +205,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		if !memR.IsRunning() || !peer.IsRunning() {
 			return
 		}
+
 		// This happens because the CElement we were looking at got garbage
 		// collected (removed). That is, .NextWait() returned nil. Go ahead and
 		// start from the beginning.

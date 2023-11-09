@@ -93,8 +93,9 @@ type Manifest struct {
 	// Defaults to false (disabled).
 	Prometheus bool `toml:"prometheus"`
 
-	// Maximum number of peers to gossip transactions
-	ExperimentalMaxUsedOutboundPeers uint `toml:"experimental_max_used_outbound_peers"`
+	// Maximum number of peers to which the node gossip transactions
+	ExperimentalMaxGossipConnectionsToPersistentPeers    uint `toml:"experimental_max_gossip_connections_to_persistent_peers"`
+	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint `toml:"experimental_max_gossip_connections_to_non_persistent_peers"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

@@ -24,7 +24,11 @@ type Reactor struct {
 	mempool *CListMempool
 	ids     *mempoolIDs
 
-	activeConnectionsSemaphore *semaphore.Weighted
+	// Semaphores to keep track of how many connections to peers are active for broadcasting
+	// transactions. Each semaphore has a capacity that puts an upper bound on the number of
+	// connections for different groups of peers.
+	activePersistentPeersSemaphore    *semaphore.Weighted
+	activeNonPersistentPeersSemaphore *semaphore.Weighted
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
@@ -35,7 +39,8 @@ func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool) *Reactor {
 		ids:     newMempoolIDs(),
 	}
 	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
-	memR.activeConnectionsSemaphore = semaphore.NewWeighted(int64(memR.config.ExperimentalMaxUsedOutboundPeers))
+	memR.activePersistentPeersSemaphore = semaphore.NewWeighted(int64(memR.config.ExperimentalMaxGossipConnectionsToPersistentPeers))
+	memR.activeNonPersistentPeersSemaphore = semaphore.NewWeighted(int64(memR.config.ExperimentalMaxGossipConnectionsToNonPersistentPeers))
 
 	return memR
 }
@@ -85,19 +90,34 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 func (memR *Reactor) AddPeer(peer p2p.Peer) {
 	if memR.config.Broadcast {
 		go func() {
-			if memR.config.ExperimentalMaxUsedOutboundPeers > 0 {
-				// Around (MaxOutboundPeers-ExperimentalMaxUsedOutboundPeers) goroutines will be
-				// blocked here waiting for more peers disconnect and free some slots for running.
-				if err := memR.activeConnectionsSemaphore.Acquire(context.TODO(), 1); err != nil {
-					memR.Logger.Error("Failed to acquire semaphore: %v", err)
-					return
+			// Always forward transactions to unconditional peers.
+			if !memR.Switch.IsPeerUnconditional(peer.ID()) {
+				if peer.IsPersistent() && memR.config.ExperimentalMaxGossipConnectionsToPersistentPeers > 0 {
+					// Block sending transactions to peer until one of the connections become
+					// available in the semaphore.
+					if err := memR.activePersistentPeersSemaphore.Acquire(context.TODO(), 1); err != nil {
+						memR.Logger.Error("Failed to acquire semaphore: %v", err)
+						return
+					}
+					// Release semaphore to allow other peer to start sending transactions.
+					defer memR.activePersistentPeersSemaphore.Release(1)
+					defer memR.mempool.metrics.ActiveOutboundConnections.Add(-1)
 				}
-				memR.mempool.metrics.ActiveOutboundConnections.Add(1)
-				defer func() {
-					memR.activeConnectionsSemaphore.Release(1)
-					memR.mempool.metrics.ActiveOutboundConnections.Add(-1)
-				}()
+
+				if !peer.IsPersistent() && memR.config.ExperimentalMaxGossipConnectionsToNonPersistentPeers > 0 {
+					// Block sending transactions to peer until one of the connections become
+					// available in the semaphore.
+					if err := memR.activeNonPersistentPeersSemaphore.Acquire(context.TODO(), 1); err != nil {
+						memR.Logger.Error("Failed to acquire semaphore: %v", err)
+						return
+					}
+					// Release semaphore to allow other peer to start sending transactions.
+					defer memR.activeNonPersistentPeersSemaphore.Release(1)
+					defer memR.mempool.metrics.ActiveOutboundConnections.Add(-1)
+				}
 			}
+
+			memR.mempool.metrics.ActiveOutboundConnections.Add(1)
 			memR.broadcastTxRoutine(peer)
 		}()
 	}

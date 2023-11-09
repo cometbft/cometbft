@@ -299,7 +299,9 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 	// Now the third reactor should start receiving transactions from the first reactor; the fourth
 	// reactor's mempool should still be empty.
 	checkTxsInMempool(t, txs, reactors[2], 0)
-	require.Zero(t, reactors[3].mempool.Size())
+	for _, r := range reactors[3:] {
+		require.Zero(t, r.mempool.Size())
+	}
 }
 
 // Check that the mempool has exactly the given list of txs and, if it's not the

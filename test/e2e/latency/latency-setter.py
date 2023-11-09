@@ -8,91 +8,99 @@ import os
 import sys
 import netifaces as nif
 
+
 def usage():
-    print('Usage: \t', sys.argv[0], 'set ip-list latency-list iface-name')
-    print('\tOR:\t', sys.argv[0], 'unset iface-name')
+    print("Usage:")
+    print(f"\t{sys.argv[0]} set ip-zones-csv latency-matrix-csv interface-name")
+    print("or")
+    print(f"\t{sys.argv[0]} unset interface-name")
     exit(1)
 
-if len(sys.argv) < 3:
-    usage()
 
-if sys.argv[1] == 'unset':
-    command = 'tc qdisc del dev ' + sys.argv[2] + ' root'
-    os.system(command)
-    exit()
+def unset_latency(iface):
+    os.system(f"tc qdisc del dev {iface} root")
 
-if sys.argv[1] != 'set':
-    usage()
 
-#reads IP/Zone file
-ips = open(sys.argv[2], 'r')
-ipD = csv.DictReader(ips)
-ipData = []
+def read_ip_zones_file(path):
+    """ The first line of the file should contain the column names, corresponding to: node-name, ip,
+    and zone. """
+    with open(path, "r") as ips:
+        return list(csv.DictReader(ips))
 
-for r in ipD:
-    ipData.append(r)
 
-#gets my address
-iface = sys.argv[4]
-myip = nif.ifaddresses(iface)[nif.AF_INET][0]['addr']
+def read_latency_matrix_file(path):
+    with open(path, "r") as f:
+        lines = list(list(rec) for rec in csv.reader(f, delimiter=","))
+        all_zones = lines[0][1:] # discard first element of the first line (value "from/to")
+        zone_latencies = lines[1:] # each line is a zone name, followed by the latencies to other nodes
 
-#reads latency file
-with open(sys.argv[3], 'r') as f:
-    reader = csv.reader(f)
-    lats = list(list(rec) for rec in csv.reader(f, delimiter=',')) #reads csv into a list of lists
+        # Convert lines of comma-separated values to dictionary from pairs of zones to latencies.
+        latencies = {}
+        for ls in zone_latencies:
+            source_zone = ls[0]
+            for i, dest_zone in enumerate(all_zones):
+                value = float(ls[i+1])
+                if value != 0:
+                    latencies[(source_zone,dest_zone)] = value
+        
+        return all_zones, latencies
 
-myzone = ''
-mynode = ''
-for item in ipData:
-    if item['IP'] == myip:
-        myzone = item['Zone']
-        mynode = item['Node']
 
-if myzone == '':
-    print(f'# No zone configured for node {myip}')
-    exit()
+def set_latency(ips_path, latencies_path, iface):
+    ip_zones = read_ip_zones_file(ips_path)
+    all_zones, latencies = read_latency_matrix_file(latencies_path)
 
-azs = lats[0]
-tlats = {}
-for l in lats[1:]:
-    for i in range(1, len(azs)):
-        key = (l[0], azs[i])
-        value = float(l[i])
-        if value != 0:
-            tlats[key] = value
+    # Get my IP address
+    try:
+        myip = nif.ifaddresses(iface)[nif.AF_INET][0]["addr"]
+    except ValueError:
+        print(f"IP address not found for {iface}")
+        exit(1)
 
-#print('# Setting rules for interface', iface, 'in zone', myzone, 'with IP', myip)
+    # Get my zone and node name
+    myzone, mynode = next(((e["Zone"], e["Node"]) for e in ip_zones if e["IP"] == myip), (None, None))
+    if not myzone:
+        print(f"No zone configured for node {myip}")
+        exit(1)
 
-command = 'tc qdisc del dev ' + iface + ' root 2> /dev/null'
-os.system(command)
-command = 'tc qdisc add dev ' + iface + ' root handle 1: htb default 10'
-os.system(command)
-command = 'tc class add dev ' + iface + ' parent 1: classid 1:1 htb rate 1gbit 2> /dev/null'
-os.system(command)
-command = 'tc class add dev ' + iface + ' parent 1:1 classid 1:10 htb rate 1gbit 2> /dev/null'
-os.system(command)
-command = 'tc qdisc add dev ' + iface + ' parent 1:10 handle 10: sfq perturb 10'
-os.system(command)
+    # print(f"# Setting rules for interface {iface} in zone {myzone} with IP {myip}")
 
-nextHandle = 11
-for az in azs[1:]:
-    lat = tlats.get((myzone, az))
-    if lat == None:
-        continue
-    if lat > 0:#az != myzone:
-        lat = tlats.get((myzone, az))
+    # TODO: explain the following commands
+    os.system(f"tc qdisc del dev {iface} root 2> /dev/null")
+    os.system(f"tc qdisc add dev {iface} root handle 1: htb default 10")
+    os.system(f"tc class add dev {iface} parent 1: classid 1:1 htb rate 1gbit 2> /dev/null")
+    os.system(f"tc class add dev {iface} parent 1:1 classid 1:10 htb rate 1gbit 2> /dev/null")
+    os.system(f"tc qdisc add dev {iface} parent 1:10 handle 10: sfq perturb 10")
+
+    handle = 11 # why this initial number?
+    for zone in all_zones:
+        lat = latencies.get((myzone,zone))
+        if not lat or lat <= 0:
+            continue
+        
         delta = .05 * lat
-        command = 'tc class add dev ' + iface + ' parent 1:1 classid 1:' + str(nextHandle) + ' htb rate 1gbit 2> /dev/null'
-        os.system(command)
-        command = 'tc qdisc add dev ' + iface + ' parent 1:' + str(nextHandle) + ' handle ' + str(
-            nextHandle) + ': netem delay ' + str(lat) + 'ms ' + str(delta) + 'ms distribution normal'
-        os.system(command)
-        for item in ipData:
-            if item['Zone'] == az:
-                ip = item['IP']
-                node = item['Node']
-                print(f'# Configured latency from {mynode}/{myip} ({myzone}) to {node}/{ip} ({az}): {lat:.2f}ms +/- {delta:.2f}ms')
-                command = 'tc filter add dev ' + iface + ' protocol ip parent 1: prio 1 u32 match ip dst ' + ip + '/32 flowid 1:' + str(
-                    nextHandle)
-                os.system(command)
-        nextHandle += 1
+        
+        # TODO: explain the following commands
+        os.system(f"tc class add dev {iface} parent 1:1 classid 1:{handle} htb rate 1gbit 2> /dev/null")
+        os.system(f"tc qdisc add dev {iface} parent 1:{handle} handle {handle}: netem delay {lat:.2f}ms {delta:.2f}ms distribution normal")
+
+        for item in ip_zones:
+            if item["Zone"] == zone:
+                ip = item["IP"]
+                node = item["Node"]
+                print(f"# Setting latency from {mynode}/{myip} ({myzone}) to {node}/{ip} ({zone}): {lat:.2f}ms +/- {delta:.2f}ms")
+                os.system(f"tc filter add dev {iface} protocol ip parent 1: prio 1 u32 match ip dst {ip}/32 flowid 1:{handle}")
+        
+        handle += 1
+
+
+if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        usage()
+
+    if sys.argv[1] == "unset" and sys.argv[2]:
+        unset_latency(sys.argv[2])
+    elif sys.argv[1] == "set" and sys.argv[2] and sys.argv[3] and sys.argv[4]:
+        set_latency(sys.argv[2], sys.argv[3], sys.argv[4])
+    else:
+        usage()

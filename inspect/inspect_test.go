@@ -67,8 +67,7 @@ func TestBlock(t *testing.T) {
 	blockStoreMock := &statemocks.BlockStore{}
 	blockStoreMock.On("Height").Return(testHeight)
 	blockStoreMock.On("Base").Return(int64(0))
-	blockStoreMock.On("LoadBlockMeta", testHeight).Return(&types.BlockMeta{})
-	blockStoreMock.On("LoadBlock", testHeight).Return(testBlock)
+	blockStoreMock.On("LoadBlock", testHeight).Return(testBlock, &types.BlockMeta{})
 	blockStoreMock.On("Close").Return(nil)
 
 	txIndexerMock := &txindexmocks.TxIndexer{}
@@ -361,7 +360,7 @@ func TestBlockByHash(t *testing.T) {
 	stateStoreMock.On("Close").Return(nil)
 	blockStoreMock := &statemocks.BlockStore{}
 	blockStoreMock.On("Close").Return(nil)
-	blockStoreMock.On("LoadBlockMeta", testHeight).Return(&types.BlockMeta{
+	blockStoreMock.On("LoadBlockByHash", testHash).Return(testBlock, &types.BlockMeta{
 		BlockID: types.BlockID{
 			Hash: testHash,
 		},
@@ -369,7 +368,6 @@ func TestBlockByHash(t *testing.T) {
 			Height: testHeight,
 		},
 	}, nil)
-	blockStoreMock.On("LoadBlockByHash", testHash).Return(testBlock, nil)
 	txIndexerMock := &txindexmocks.TxIndexer{}
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	rpcConfig := config.TestRPCConfig()
@@ -527,12 +525,11 @@ func TestBlockSearch(t *testing.T) {
 		Header: types.Header{
 			Height: testHeight,
 		},
-	}, nil)
-	blockStoreMock.On("LoadBlockMeta", testHeight).Return(&types.BlockMeta{
+	}, &types.BlockMeta{
 		BlockID: types.BlockID{
 			Hash: testBlockHash,
 		},
-	})
+	}, nil)
 	blkIdxMock.On("Search", mock.Anything,
 		mock.MatchedBy(func(q *query.Query) bool { return testQuery == q.String() })).
 		Return([]int64{testHeight}, nil)

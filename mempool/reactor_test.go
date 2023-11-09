@@ -334,10 +334,13 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 }
 
 // Test the experimental feature that limits the number of outgoing connections for gossiping
-// transactions.
+// transactions (only non-persistent peers).
+// Note: in this test we know which gossip connections are active or not because of how the p2p
+// functions are currently implemented, which affects the order in which peers are added to the
+// mempool reactor.
 func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 	config := cfg.TestConfig()
-	config.Mempool.ExperimentalMaxUsedOutboundPeers = 1
+	config.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = 1
 	reactors, _ := makeAndConnectReactors(config, 4)
 	defer func() {
 		for _, r := range reactors {
@@ -356,20 +359,23 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 	txs := newUniqueTxs(100)
 	callCheckTx(t, reactors[0].mempool, txs)
 
-	// Wait for all txs to be in the mempool of the second reactor; the third and fourth reactor
-	// should not receive any tx.
+	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
+	// receive any tx. (The second reactor only sends transactions to the first reactor.)
 	checkTxsInMempool(t, txs, reactors[1], 0)
-	require.Zero(t, reactors[2].mempool.Size())
-	require.Zero(t, reactors[3].mempool.Size())
+	for _, r := range reactors[2:] {
+		require.Zero(t, r.mempool.Size())
+	}
 
-	// In the first reactor, disconnect the second reactor; the third reactor should become active.
+	// Disconnect the second reactor from the first reactor.
 	firstPeer := reactors[0].Switch.Peers().List()[0]
 	reactors[0].Switch.StopPeerGracefully(firstPeer)
 
-	// Now the third reactor should receive the transactions; the fourth reactor's mempool should
-	// still be empty.
+	// Now the third reactor should start receiving transactions from the first reactor; the fourth
+	// reactor's mempool should still be empty.
 	checkTxsInMempool(t, txs, reactors[2], 0)
-	require.Zero(t, reactors[3].mempool.Size())
+	for _, r := range reactors[3:] {
+		require.Zero(t, r.mempool.Size())
+	}
 }
 
 // Check that the mempool has exactly the given list of txs and, if it's not the

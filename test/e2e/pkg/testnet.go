@@ -723,7 +723,7 @@ func loadZoneLatenciesMatrix(filePath string) (map[ZoneID][]uint32, error) {
 		for i, l := range r[1:] {
 			lat, err := strconv.ParseUint(l, 10, 32)
 			if err != nil {
-				return nil, ErrInvalidZoneId{l, err}
+				return nil, ErrInvalidZoneID{l, err}
 			}
 			matrix[zoneID][i] = uint32(lat)
 		}
@@ -731,12 +731,12 @@ func loadZoneLatenciesMatrix(filePath string) (map[ZoneID][]uint32, error) {
 	return matrix, nil
 }
 
-type ErrInvalidZoneId struct {
+type ErrInvalidZoneID struct {
 	ZoneID string
 	Err    error
 }
 
-func (e ErrInvalidZoneId) Error() string {
+func (e ErrInvalidZoneID) Error() string {
 	return fmt.Sprintf("invalid zone id (%s): %v", e.ZoneID, e.Err)
 }
 

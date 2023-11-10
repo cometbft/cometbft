@@ -3,9 +3,8 @@ package mempool
 import (
 	"crypto/rand"
 	"crypto/sha256"
-	"testing"
-
 	"fmt"
+	"testing"
 
 	"github.com/stretchr/testify/require"
 
@@ -16,18 +15,18 @@ import (
 )
 
 func TestCacheRemove(t *testing.T) {
-	cache := NewLRUTxCache(100)
+	cache := NewLRUTxCache[types.TxKey](100)
 	numTxs := 10
 
-	txs := make([][]byte, numTxs)
+	txs := make([]types.TxKey, numTxs)
 	for i := 0; i < numTxs; i++ {
 		// probability of collision is 2**-256
 		txBytes := make([]byte, 32)
 		_, err := rand.Read(txBytes)
 		require.NoError(t, err)
 
-		txs[i] = txBytes
-		cache.Push(txBytes)
+		txs[i] = types.Tx(txBytes).Key()
+		cache.Push(txs[i])
 
 		// make sure its added to both the linked list and the map
 		require.Equal(t, i+1, len(cache.cacheMap))
@@ -86,7 +85,7 @@ func TestCacheAfterUpdate(t *testing.T) {
 			}
 		}
 
-		cache := mp.cache.(*LRUTxCache)
+		cache := mp.cache.(*LRUTxCache[types.TxKey])
 		node := cache.GetList().Front()
 		counter := 0
 		for node != nil {

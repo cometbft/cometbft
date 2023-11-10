@@ -840,6 +840,11 @@ type MempoolConfig struct {
 	// the $CMTHOME env variable or --home cmd flag rather than overriding this
 	// struct field.
 	RootDir string `mapstructure:"home"`
+		// Gossip protocol used by the mempool to disseminate transactions.
+	// Valid options:
+	// - "" (default): 'push'-type flooding protocol
+	// - "cat": 'push-pull'-type protocol for Content-Addressable Transactions
+	GossipProtocol string `mapstructure:"gossip_protocol"`
 	// Recheck (default: true) defines whether CometBFT should recheck the
 	// validity for all remaining transaction in the mempool after a block.
 	// Since a block affects the application state, some transactions in the

@@ -247,7 +247,6 @@ func TestDontExhaustMaxActiveIDs(t *testing.T) {
 	}()
 	reactor := reactors[0]
 
-<<<<<<< HEAD
 	for i := 0; i < MaxActiveIDs+1; i++ {
 		peer := mock.NewPeer(nil)
 		reactor.Receive(p2p.Envelope{
@@ -257,206 +256,17 @@ func TestDontExhaustMaxActiveIDs(t *testing.T) {
 		},
 		)
 		reactor.AddPeer(peer)
-||||||| parent of cf55cff1da (Experimental - Reduce # of connections effectively used to gossip transactions out (#1558))
-	tx1 := kvstore.NewTxFromID(1)
-	tx2 := kvstore.NewTxFromID(2)
-	require.False(t, reactor.isSender(types.Tx(tx1).Key(), "peer1"))
-
-	reactor.addSender(types.Tx(tx1).Key(), "peer1")
-	reactor.addSender(types.Tx(tx1).Key(), "peer2")
-	reactor.addSender(types.Tx(tx2).Key(), "peer1")
-	require.True(t, reactor.isSender(types.Tx(tx1).Key(), "peer1"))
-	require.True(t, reactor.isSender(types.Tx(tx1).Key(), "peer2"))
-	require.True(t, reactor.isSender(types.Tx(tx2).Key(), "peer1"))
-
-	reactor.removeSenders(types.Tx(tx1).Key())
-	require.False(t, reactor.isSender(types.Tx(tx1).Key(), "peer1"))
-	require.False(t, reactor.isSender(types.Tx(tx1).Key(), "peer2"))
-	require.True(t, reactor.isSender(types.Tx(tx2).Key(), "peer1"))
-}
-
-// Test that:
-// - If a transaction came from a peer AND if the transaction is added to the
-// mempool, it must have a non-empty list of senders in the reactor.
-// - If a transaction is removed from the mempool, it must also be removed from
-// the list of senders in the reactor.
-func TestReactorTxSendersMultiNode(t *testing.T) {
-	config := cfg.TestConfig()
-	config.Mempool.Size = 1000
-	config.Mempool.CacheSize = 1000
-	const N = 3
-	reactors, _ := makeAndConnectReactors(config, N)
-	defer func() {
-		for _, r := range reactors {
-			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
-			}
-		}
-	}()
-	for _, r := range reactors {
-		for _, peer := range r.Switch.Peers().List() {
-			peer.Set(types.PeerStateKey, peerState{1})
-		}
 	}
-	firstReactor := reactors[0]
-
-	numTxs := config.Mempool.Size
-	txs := newUniqueTxs(numTxs)
-
-	// Initially, there are no transactions (and no senders).
-	for _, r := range reactors {
-		require.Zero(t, len(r.txSenders))
-	}
-
-	// Add transactions to the first reactor.
-	callCheckTx(t, firstReactor.mempool, txs)
-
-	// Wait for all txs to be in the mempool of each reactor.
-	waitForReactors(t, txs, reactors, checkTxsInMempool)
-	for i, r := range reactors {
-		checkTxsInMempoolAndSenders(t, r, txs, i)
-	}
-
-	// Split the transactions in three groups of different sizes.
-	splitIndex := numTxs / 6
-	validTxs := txs[:splitIndex]                 // will be used to update the mempool, as valid txs
-	invalidTxs := txs[splitIndex : 3*splitIndex] // will be used to update the mempool, as invalid txs
-	ignoredTxs := txs[3*splitIndex:]             // will remain in the mempool
-
-	// Update the mempools with a list of valid and invalid transactions.
-	for i, r := range reactors {
-		updateMempool(t, r.mempool, validTxs, invalidTxs)
-
-		// Txs included in a block should have been removed from the mempool and
-		// have no senders.
-		for _, tx := range append(validTxs, invalidTxs...) {
-			require.False(t, r.mempool.InMempool(tx.Key()))
-			_, hasSenders := r.txSenders[tx.Key()]
-			require.False(t, hasSenders)
-		}
-
-		// Ignored txs should still be in the mempool.
-		checkTxsInMempoolAndSenders(t, r, ignoredTxs, i)
-	}
-
-	// The first reactor should not receive transactions from other peers.
-	require.Zero(t, len(firstReactor.txSenders))
-}
-
-// Check that the mempool has exactly the given list of txs and, if it's not the
-// first reactor (reactorIndex == 0), then each tx has a non-empty list of senders.
-func checkTxsInMempoolAndSenders(t *testing.T, r *Reactor, txs types.Txs, reactorIndex int) {
-	r.txSendersMtx.Lock()
-	defer r.txSendersMtx.Unlock()
-
-	require.Equal(t, len(txs), r.mempool.Size())
-	if reactorIndex == 0 {
-		require.Zero(t, len(r.txSenders))
-	} else {
-		require.Equal(t, len(txs), len(r.txSenders))
-	}
-
-	// Each transaction is in the mempool and, if it's not the first reactor, it
-	// has a non-empty list of senders.
-	for _, tx := range txs {
-		assert.True(t, r.mempool.InMempool(tx.Key()))
-		senders, hasSenders := r.txSenders[tx.Key()]
-		if reactorIndex == 0 {
-			require.False(t, hasSenders)
-		} else {
-			require.True(t, hasSenders && len(senders) > 0)
-		}
-=======
-	tx1 := kvstore.NewTxFromID(1)
-	tx2 := kvstore.NewTxFromID(2)
-	require.False(t, reactor.isSender(types.Tx(tx1).Key(), "peer1"))
-
-	reactor.addSender(types.Tx(tx1).Key(), "peer1")
-	reactor.addSender(types.Tx(tx1).Key(), "peer2")
-	reactor.addSender(types.Tx(tx2).Key(), "peer1")
-	require.True(t, reactor.isSender(types.Tx(tx1).Key(), "peer1"))
-	require.True(t, reactor.isSender(types.Tx(tx1).Key(), "peer2"))
-	require.True(t, reactor.isSender(types.Tx(tx2).Key(), "peer1"))
-
-	reactor.removeSenders(types.Tx(tx1).Key())
-	require.False(t, reactor.isSender(types.Tx(tx1).Key(), "peer1"))
-	require.False(t, reactor.isSender(types.Tx(tx1).Key(), "peer2"))
-	require.True(t, reactor.isSender(types.Tx(tx2).Key(), "peer1"))
-}
-
-// Test that:
-// - If a transaction came from a peer AND if the transaction is added to the
-// mempool, it must have a non-empty list of senders in the reactor.
-// - If a transaction is removed from the mempool, it must also be removed from
-// the list of senders in the reactor.
-func TestReactorTxSendersMultiNode(t *testing.T) {
-	config := cfg.TestConfig()
-	config.Mempool.Size = 1000
-	config.Mempool.CacheSize = 1000
-	const N = 3
-	reactors, _ := makeAndConnectReactors(config, N)
-	defer func() {
-		for _, r := range reactors {
-			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
-			}
-		}
-	}()
-	for _, r := range reactors {
-		for _, peer := range r.Switch.Peers().List() {
-			peer.Set(types.PeerStateKey, peerState{1})
-		}
-	}
-	firstReactor := reactors[0]
-
-	numTxs := config.Mempool.Size
-	txs := newUniqueTxs(numTxs)
-
-	// Initially, there are no transactions (and no senders).
-	for _, r := range reactors {
-		require.Zero(t, len(r.txSenders))
-	}
-
-	// Add transactions to the first reactor.
-	callCheckTx(t, firstReactor.mempool, txs)
-
-	// Wait for all txs to be in the mempool of each reactor.
-	waitForReactors(t, txs, reactors, checkTxsInMempool)
-	for i, r := range reactors {
-		checkTxsInMempoolAndSenders(t, r, txs, i)
-	}
-
-	// Split the transactions in three groups of different sizes.
-	splitIndex := numTxs / 6
-	validTxs := txs[:splitIndex]                 // will be used to update the mempool, as valid txs
-	invalidTxs := txs[splitIndex : 3*splitIndex] // will be used to update the mempool, as invalid txs
-	ignoredTxs := txs[3*splitIndex:]             // will remain in the mempool
-
-	// Update the mempools with a list of valid and invalid transactions.
-	for i, r := range reactors {
-		updateMempool(t, r.mempool, validTxs, invalidTxs)
-
-		// Txs included in a block should have been removed from the mempool and
-		// have no senders.
-		for _, tx := range append(validTxs, invalidTxs...) {
-			require.False(t, r.mempool.InMempool(tx.Key()))
-			_, hasSenders := r.txSenders[tx.Key()]
-			require.False(t, hasSenders)
-		}
-
-		// Ignored txs should still be in the mempool.
-		checkTxsInMempoolAndSenders(t, r, ignoredTxs, i)
-	}
-
-	// The first reactor should not receive transactions from other peers.
-	require.Zero(t, len(firstReactor.txSenders))
 }
 
 // Test the experimental feature that limits the number of outgoing connections for gossiping
-// transactions.
+// transactions (only non-persistent peers).
+// Note: in this test we know which gossip connections are active or not because of how the p2p
+// functions are currently implemented, which affects the order in which peers are added to the
+// mempool reactor.
 func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 	config := cfg.TestConfig()
-	config.Mempool.ExperimentalMaxUsedOutboundPeers = 1
+	config.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = 1
 	reactors, _ := makeAndConnectReactors(config, 4)
 	defer func() {
 		for _, r := range reactors {
@@ -475,18 +285,19 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 	txs := newUniqueTxs(100)
 	callCheckTx(t, reactors[0].mempool, txs)
 
-	// Wait for all txs to be in the mempool of the second reactor; the third and fourth reactor
-	// should not receive any tx.
+	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
+	// receive any tx. (The second reactor only sends transactions to the first reactor.)
 	checkTxsInMempool(t, txs, reactors[1], 0)
-	require.Zero(t, reactors[2].mempool.Size())
-	require.Zero(t, reactors[3].mempool.Size())
+	for _, r := range reactors[2:] {
+		require.Zero(t, r.mempool.Size())
+	}
 
-	// In the first reactor, disconnect the second reactor; the third reactor should become active.
+	// Disconnect the second reactor from the first reactor.
 	firstPeer := reactors[0].Switch.Peers().List()[0]
 	reactors[0].Switch.StopPeerGracefully(firstPeer)
 
-	// Now the third reactor should receive the transactions; the fourth reactor's mempool should
-	// still be empty.
+	// Now the third reactor should start receiving transactions from the first reactor; the fourth
+	// reactor's mempool should still be empty.
 	checkTxsInMempool(t, txs, reactors[2], 0)
 	require.Zero(t, reactors[3].mempool.Size())
 }
@@ -514,7 +325,6 @@ func checkTxsInMempoolAndSenders(t *testing.T, r *Reactor, txs types.Txs, reacto
 		} else {
 			require.True(t, hasSenders && len(senders) > 0)
 		}
->>>>>>> cf55cff1da (Experimental - Reduce # of connections effectively used to gossip transactions out (#1558))
 	}
 }
 

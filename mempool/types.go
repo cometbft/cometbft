@@ -2,10 +2,10 @@ package mempool
 
 import (
 	memprotos "github.com/cometbft/cometbft/api/cometbft/mempool/v1beta1"
-	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/types"
 )
 
 var (
-	_ p2p.Wrapper   = &memprotos.Txs{}
-	_ p2p.Unwrapper = &memprotos.Message{}
+	_ types.Wrapper   = &memprotos.Txs{}
+	_ types.Unwrapper = &memprotos.Message{}
 )

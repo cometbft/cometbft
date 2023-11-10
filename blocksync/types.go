@@ -2,13 +2,13 @@ package blocksync
 
 import (
 	cmtbs "github.com/cometbft/cometbft/api/cometbft/blocksync"
-	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/types"
 )
 
 var (
-	_ p2p.Wrapper = &cmtbs.StatusRequest{}
-	_ p2p.Wrapper = &cmtbs.StatusResponse{}
-	_ p2p.Wrapper = &cmtbs.NoBlockResponse{}
-	_ p2p.Wrapper = &cmtbs.BlockResponse{}
-	_ p2p.Wrapper = &cmtbs.BlockRequest{}
+	_ types.Wrapper = &cmtbs.StatusRequest{}
+	_ types.Wrapper = &cmtbs.StatusResponse{}
+	_ types.Wrapper = &cmtbs.NoBlockResponse{}
+	_ types.Wrapper = &cmtbs.BlockResponse{}
+	_ types.Wrapper = &cmtbs.BlockRequest{}
 )

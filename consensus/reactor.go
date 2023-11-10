@@ -1915,13 +1915,13 @@ func (m *HasProposalBlockPartMessage) String() string {
 }
 
 var (
-	_ p2p.Wrapper = &cmtcons.BlockPart{}
-	_ p2p.Wrapper = &cmtcons.HasVote{}
-	_ p2p.Wrapper = &cmtcons.HasProposalBlockPart{}
-	_ p2p.Wrapper = &cmtcons.NewRoundStep{}
-	_ p2p.Wrapper = &cmtcons.NewValidBlock{}
-	_ p2p.Wrapper = &cmtcons.Proposal{}
-	_ p2p.Wrapper = &cmtcons.ProposalPOL{}
-	_ p2p.Wrapper = &cmtcons.VoteSetBits{}
-	_ p2p.Wrapper = &cmtcons.VoteSetMaj23{}
+	_ types.Wrapper = &cmtcons.BlockPart{}
+	_ types.Wrapper = &cmtcons.HasVote{}
+	_ types.Wrapper = &cmtcons.HasProposalBlockPart{}
+	_ types.Wrapper = &cmtcons.NewRoundStep{}
+	_ types.Wrapper = &cmtcons.NewValidBlock{}
+	_ types.Wrapper = &cmtcons.Proposal{}
+	_ types.Wrapper = &cmtcons.ProposalPOL{}
+	_ types.Wrapper = &cmtcons.VoteSetBits{}
+	_ types.Wrapper = &cmtcons.VoteSetMaj23{}
 )

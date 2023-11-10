@@ -3,7 +3,6 @@ package core
 import (
 	"errors"
 	"fmt"
-	"github.com/cometbft/cometbft/p2p"
 	"sort"
 
 	bsproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v1beta2"
@@ -267,4 +266,4 @@ func (env *Environment) BlockSearch(
 	return &ctypes.ResultBlockSearch{Blocks: apiResults, TotalCount: totalCount}, nil
 }
 
-var _ p2p.Wrapper = &bsproto.BlockResponse{}
+var _ types.Wrapper = &bsproto.BlockResponse{}

@@ -9,7 +9,7 @@ import (
 
 	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1beta1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1beta3"
-	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/types"
 )
 
 func TestValidateMsg(t *testing.T) {
@@ -113,7 +113,7 @@ func TestStateSyncVectors(t *testing.T) {
 
 	for _, tc := range testCases {
 		tc := tc
-		w := tc.msg.(p2p.Wrapper).Wrap()
+		w := tc.msg.(types.Wrapper).Wrap()
 		bz, err := proto.Marshal(w)
 		require.NoError(t, err)
 

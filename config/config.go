@@ -799,10 +799,10 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 		return errors.New("max_tx_bytes can't be negative")
 	}
 	if cfg.ExperimentalMaxGossipConnectionsToPersistentPeers < 0 {
-		return cmterrors.ErrNegativeField{Field: "experimental_max_gossip_connections_to_persistent_peers"}
+		return errors.New("experimental_max_gossip_connections_to_persistent_peers can't be negative")
 	}
 	if cfg.ExperimentalMaxGossipConnectionsToNonPersistentPeers < 0 {
-		return cmterrors.ErrNegativeField{Field: "experimental_max_gossip_connections_to_non_persistent_peers"}
+		return errors.New("experimental_max_gossip_connections_to_non_persistent_peers can't be negative")
 	}
 	return nil
 }

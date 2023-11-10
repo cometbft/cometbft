@@ -88,8 +88,6 @@ type Testnet struct {
 	UpgradeVersion                                       string
 	Prometheus                                           bool
 	VoteExtensionsEnableHeight                           int64
-	VoteExtensionSize                                    uint
-	PeerGossipIntraloopSleepDuration                     time.Duration
 	ExperimentalMaxGossipConnectionsToPersistentPeers    uint
 	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint
 }

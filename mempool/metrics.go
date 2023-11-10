@@ -41,6 +41,10 @@ type Metrics struct {
 	//metrics:Number of duplicate transaction reception.
 	AlreadyReceivedTxs metrics.Counter
 
+	// Number of connections being actively used for gossiping transactions
+	// (experimental feature).
+	ActiveOutboundConnections metrics.Gauge
+
 	// RequestedTxs defines the number of times that the node requested a
 	// tx to a peer
 	//metrics:Number of requested transactions (WantTx messages).

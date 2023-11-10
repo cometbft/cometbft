@@ -58,6 +58,12 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "already_received_txs",
 			Help:      "Number of duplicate transaction reception.",
 		}, labels).With(labelsAndValues...),
+		ActiveOutboundConnections: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "active_outbound_connections",
+			Help:      "Number of connections being actively used for gossiping transactions (experimental feature).",
+		}, labels).With(labelsAndValues...),
 		RequestedTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -81,15 +87,16 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 
 func NopMetrics() *Metrics {
 	return &Metrics{
-		Size:               discard.NewGauge(),
-		SizeBytes:          discard.NewGauge(),
-		TxSizeBytes:        discard.NewHistogram(),
-		FailedTxs:          discard.NewCounter(),
-		RejectedTxs:        discard.NewCounter(),
-		RecheckTimes:       discard.NewCounter(),
-		AlreadyReceivedTxs: discard.NewCounter(),
-		RequestedTxs:       discard.NewCounter(),
-		RerequestedTxs:     discard.NewCounter(),
-		NoPeerForTx:        discard.NewCounter(),
+		Size:                      discard.NewGauge(),
+		SizeBytes:                 discard.NewGauge(),
+		TxSizeBytes:               discard.NewHistogram(),
+		FailedTxs:                 discard.NewCounter(),
+		RejectedTxs:               discard.NewCounter(),
+		RecheckTimes:              discard.NewCounter(),
+		AlreadyReceivedTxs:        discard.NewCounter(),
+		ActiveOutboundConnections: discard.NewGauge(),
+		RequestedTxs:              discard.NewCounter(),
+		RerequestedTxs:            discard.NewCounter(),
+		NoPeerForTx:               discard.NewCounter(),
 	}
 }

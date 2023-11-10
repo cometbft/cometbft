@@ -586,7 +586,7 @@ func main() {
         nodeKey,
         proxy.NewLocalClientCreator(app),
         nm.DefaultGenesisDocProviderFunc(config),
-        nm.DefaultDBProvider,
+        cfg.DefaultDBProvider,
         nm.DefaultMetricsProvider(config.Instrumentation),
         logger
     )

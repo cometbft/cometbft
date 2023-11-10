@@ -478,6 +478,25 @@ func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abci
 Once a proposed block is received by a node, the proposal is passed to the application to give
 its blessing before voting to accept the proposal.
 
+<<<<<<< HEAD
+=======
+       if totalBytes > int64(proposal.MaxTxBytes) {
+         break
+       }
+     }
+
+     return &abcitypes.ResponsePrepareProposal{Txs: proposal.Txs}, nil
+ }
+```
+
+This code snippet iterates through the proposed transactions and calculates the `total bytes`. If the `total bytes` exceeds the `MaxTxBytes` specified in the `RequestPrepareProposal` struct, the loop breaks and the transactions processed so far are returned.
+
+Note: It is the responsibility of the application to ensure that the `total bytes` of transactions returned does not exceed the `RequestPrepareProposal.max_tx_bytes` limit.
+
+Once a proposed block is received by a node, the proposal is passed to the application to give
+its blessing before voting to accept the proposal.
+
+>>>>>>> 404b0948e (fix: docs: default db provider moved from node to config (#1588))
 This mechanism may be used for different reasons, for example to deal with blocks manipulated
 by malicious nodes, in which case the block should not be considered valid.
 
@@ -581,7 +600,7 @@ func main() {
         nodeKey,
         proxy.NewLocalClientCreator(app),
         nm.DefaultGenesisDocProviderFunc(config),
-        nm.DefaultDBProvider,
+        cfg.DefaultDBProvider,
         nm.DefaultMetricsProvider(config.Instrumentation),
         logger,
     )
@@ -671,7 +690,7 @@ node, err := nm.NewNode(
     nodeKey,
     proxy.NewLocalClientCreator(app),
     nm.DefaultGenesisDocProviderFunc(config),
-    nm.DefaultDBProvider,
+    cfg.DefaultDBProvider,
     nm.DefaultMetricsProvider(config.Instrumentation),
     logger)
 
@@ -742,7 +761,7 @@ I[2023-04-25|09:08:50.085] service start                                module=a
 ...
 ```
 
-More importantly, the application using CometBFT is producing blocks  🎉🎉 and you can see this reflected in the log output in lines like this:
+More importantly, the application using CometBFT is producing blocks 🎉🎉 and you can see this reflected in the log output in lines like this:
 
 ```bash
 I[2023-04-25|09:08:52.147] received proposal                            module=consensus proposal="Proposal{2/0 (F518444C0E348270436A73FD0F0B9DFEA758286BEB29482F1E3BEA75330E825C:1:C73D3D1273F2, -1) AD19AE292A45 @ 2023-04-25T12:08:52.143393Z}"

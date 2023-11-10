@@ -287,7 +287,7 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 
 	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
 	// receive any tx. (The second reactor only sends transactions to the first reactor.)
-	checkTxsInMempool(t, txs, reactors[1], 0)
+	waitForTxsOnReactor(t, txs, reactors[1], 0)
 	for _, r := range reactors[2:] {
 		require.Zero(t, r.mempool.Size())
 	}
@@ -298,35 +298,9 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 
 	// Now the third reactor should start receiving transactions from the first reactor; the fourth
 	// reactor's mempool should still be empty.
-	checkTxsInMempool(t, txs, reactors[2], 0)
+	waitForTxsOnReactor(t, txs, reactors[2], 0)
 	for _, r := range reactors[3:] {
 		require.Zero(t, r.mempool.Size())
-	}
-}
-
-// Check that the mempool has exactly the given list of txs and, if it's not the
-// first reactor (reactorIndex == 0), then each tx has a non-empty list of senders.
-func checkTxsInMempoolAndSenders(t *testing.T, r *Reactor, txs types.Txs, reactorIndex int) {
-	r.txSendersMtx.Lock()
-	defer r.txSendersMtx.Unlock()
-
-	require.Equal(t, len(txs), r.mempool.Size())
-	if reactorIndex == 0 {
-		require.Zero(t, len(r.txSenders))
-	} else {
-		require.Equal(t, len(txs), len(r.txSenders))
-	}
-
-	// Each transaction is in the mempool and, if it's not the first reactor, it
-	// has a non-empty list of senders.
-	for _, tx := range txs {
-		assert.True(t, r.mempool.InMempool(tx.Key()))
-		senders, hasSenders := r.txSenders[tx.Key()]
-		if reactorIndex == 0 {
-			require.False(t, hasSenders)
-		} else {
-			require.True(t, hasSenders && len(senders) > 0)
-		}
 	}
 }
 
@@ -363,6 +337,14 @@ func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switc
 
 	}, p2p.Connect2Switches)
 	return reactors, switches
+}
+
+func newUniqueTxs(n int) types.Txs {
+	txs := make(types.Txs, n)
+	for i := 0; i < n; i++ {
+		txs[i] = kvstore.NewTxFromID(i)
+	}
+	return txs
 }
 
 func waitForTxsOnReactors(t *testing.T, txs types.Txs, reactors []*Reactor) {

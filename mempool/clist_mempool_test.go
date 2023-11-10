@@ -96,6 +96,21 @@ func ensureFire(t *testing.T, ch <-chan struct{}, timeoutMS int) {
 	}
 }
 
+func callCheckTx(t *testing.T, mp Mempool, txs types.Txs) {
+	txInfo := TxInfo{SenderID: 0}
+	for i, tx := range txs {
+		if err := mp.CheckTx(tx, nil, txInfo); err != nil {
+			// Skip invalid txs.
+			// TestMempoolFilters will fail otherwise. It asserts a number of txs
+			// returned.
+			if IsPreCheckError(err) {
+				continue
+			}
+			t.Fatalf("CheckTx failed: %v while checking #%d tx", err, i)
+		}
+	}
+}
+
 func checkTxs(t *testing.T, mp Mempool, count int, peerID uint16) types.Txs {
 	txs := make(types.Txs, count)
 	txInfo := TxInfo{SenderID: peerID}

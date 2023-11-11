@@ -140,7 +140,7 @@ func IsValidPubkeyType(params ValidatorParams, pubkeyType string) bool {
 	return false
 }
 
-// Validate validates the ConsensusParams to ensure all values are within their
+// ValidateBasic validates the ConsensusParams to ensure all values are within their
 // allowed limits, and returns an error if they are not.
 func (params ConsensusParams) ValidateBasic() error {
 	if params.Block.MaxBytes == 0 {

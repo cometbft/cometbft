@@ -96,7 +96,7 @@ func NewWS(remoteAddr, endpoint string, options ...func(*WSClient)) (*WSClient, 
 		parsedURL.Scheme = protoWS
 	}
 
-	dialFn, err := makeHTTPDialer(remoteAddr)
+	dialFn, err := MakeHTTPDialer(remoteAddr)
 	if err != nil {
 		return nil, err
 	}

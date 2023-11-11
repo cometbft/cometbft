@@ -15,6 +15,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
@@ -91,9 +92,12 @@ type Testnet struct {
 	FinalizeBlockDelay               time.Duration
 	UpgradeVersion                   string
 	Prometheus                       bool
+	PexReactor                       bool
+	LogLevel                         string
 	VoteExtensionsEnableHeight       int64
 	VoteExtensionSize                uint
 	PeerGossipIntraloopSleepDuration time.Duration
+	GossipProtocol                   string
 	ExperimentalMaxUsedOutboundPeers uint
 	ABCITestsEnabled                 bool
 }
@@ -178,9 +182,12 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		FinalizeBlockDelay:               manifest.FinalizeBlockDelay,
 		UpgradeVersion:                   manifest.UpgradeVersion,
 		Prometheus:                       manifest.Prometheus,
+		PexReactor:                       manifest.PexReactor,
+		LogLevel:                         manifest.LogLevel,
 		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
 		VoteExtensionSize:                manifest.VoteExtensionSize,
 		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
+		GossipProtocol:                   manifest.GossipProtocol,
 		ExperimentalMaxUsedOutboundPeers: manifest.ExperimentalMaxUsedOutboundPeers,
 		ABCITestsEnabled:                 manifest.ABCITestsEnabled,
 	}
@@ -204,6 +211,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 	if testnet.LoadTxSizeBytes == 0 {
 		testnet.LoadTxSizeBytes = defaultTxSizeBytes
+	}
+	if testnet.LogLevel == "" {
+		testnet.LogLevel = config.DefaultLogLevel
 	}
 
 	for _, name := range sortNodeNames(manifest) {

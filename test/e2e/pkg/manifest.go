@@ -96,11 +96,20 @@ type Manifest struct {
 	// Defaults to false (disabled).
 	Prometheus bool `toml:"prometheus"`
 
+	// Set true to enable the peer-exchange reactor on all nodes.
+	PexReactor bool `toml:"pex"`
+
+	// LogLevel sets the log level on all nodes.
+	LogLevel string `toml:"log_level"`
+	
 	// Defines a minimum size for the vote extensions.
 	VoteExtensionSize uint `toml:"vote_extension_size"`
 
 	// Upper bound of sleep duration then gossipping votes and block parts
 	PeerGossipIntraloopSleepDuration time.Duration `toml:"peer_gossip_intraloop_sleep_duration"`
+
+	// GossipProtocol determines which gossip protocol to use for the mempool of all nodes.
+	GossipProtocol string `toml:"gossip_protocol"`
 
 	// Maximum number of peers to gossip transactions
 	ExperimentalMaxUsedOutboundPeers uint `toml:"experimental_max_used_outbound_peers"`

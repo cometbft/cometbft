@@ -319,6 +319,7 @@ func (mem *CListMempool) reqResCb(
 
 		// update metrics
 		mem.metrics.Size.Set(float64(mem.Size()))
+		mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
 
 		// passed in by the caller of CheckTx, eg. the RPC
 		if externalCb != nil {
@@ -657,6 +658,7 @@ func (mem *CListMempool) Update(
 
 	// Update metrics
 	mem.metrics.Size.Set(float64(mem.Size()))
+	mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
 
 	return nil
 }

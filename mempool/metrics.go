@@ -19,6 +19,9 @@ type Metrics struct {
 	// Size of the mempool.
 	Size metrics.Gauge
 
+	// Total size of the mempool in bytes.
+	SizeBytes metrics.Gauge
+
 	// Histogram of transaction sizes, in bytes.
 	TxSizeBytes metrics.Histogram
 
@@ -99,6 +102,7 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 func NopMetrics() *Metrics {
 	return &Metrics{
 		Size:         discard.NewGauge(),
+		SizeBytes:    discard.NewGauge(),
 		TxSizeBytes:  discard.NewHistogram(),
 		FailedTxs:    discard.NewCounter(),
 		RejectedTxs:  discard.NewCounter(),

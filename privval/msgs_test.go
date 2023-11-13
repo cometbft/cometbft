@@ -9,12 +9,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1beta1"
-	privproto "github.com/cometbft/cometbft/api/cometbft/privval"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/crypto/tmhash"
+	privproto "github.com/cometbft/cometbft/privval/proto"
 	"github.com/cometbft/cometbft/types"
 )
 

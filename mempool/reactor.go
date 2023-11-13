@@ -1,6 +1,7 @@
 package mempool
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync/atomic"
@@ -14,6 +15,7 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	protomem "github.com/cometbft/cometbft/proto/tendermint/mempool"
 	"github.com/cometbft/cometbft/types"
+	"golang.org/x/sync/semaphore"
 )
 
 // Reactor handles mempool tx broadcasting amongst peers.
@@ -33,6 +35,12 @@ type Reactor struct {
 	// already has it.
 	txSenders    map[types.TxKey]map[p2p.ID]bool
 	txSendersMtx cmtsync.Mutex
+
+	// Semaphores to keep track of how many connections to peers are active for broadcasting
+	// transactions. Each semaphore has a capacity that puts an upper bound on the number of
+	// connections for different groups of peers.
+	activePersistentPeersSemaphore    *semaphore.Weighted
+	activeNonPersistentPeersSemaphore *semaphore.Weighted
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
@@ -49,6 +57,9 @@ func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool, waitSync bool)
 		memR.waitSyncCh = make(chan struct{})
 	}
 	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
+	memR.activePersistentPeersSemaphore = semaphore.NewWeighted(int64(memR.config.ExperimentalMaxGossipConnectionsToPersistentPeers))
+	memR.activeNonPersistentPeersSemaphore = semaphore.NewWeighted(int64(memR.config.ExperimentalMaxGossipConnectionsToNonPersistentPeers))
+
 	return memR
 }
 
@@ -93,7 +104,37 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 // It starts a broadcast routine ensuring all txs are forwarded to the given peer.
 func (memR *Reactor) AddPeer(peer p2p.Peer) {
 	if memR.config.Broadcast {
-		go memR.broadcastTxRoutine(peer)
+		go func() {
+			// Always forward transactions to unconditional peers.
+			if !memR.Switch.IsPeerUnconditional(peer.ID()) {
+				if peer.IsPersistent() && memR.config.ExperimentalMaxGossipConnectionsToPersistentPeers > 0 {
+					// Block sending transactions to peer until one of the connections become
+					// available in the semaphore.
+					if err := memR.activePersistentPeersSemaphore.Acquire(context.TODO(), 1); err != nil {
+						memR.Logger.Error("Failed to acquire semaphore: %v", err)
+						return
+					}
+					// Release semaphore to allow other peer to start sending transactions.
+					defer memR.activePersistentPeersSemaphore.Release(1)
+					defer memR.mempool.metrics.ActiveOutboundConnections.Add(-1)
+				}
+
+				if !peer.IsPersistent() && memR.config.ExperimentalMaxGossipConnectionsToNonPersistentPeers > 0 {
+					// Block sending transactions to peer until one of the connections become
+					// available in the semaphore.
+					if err := memR.activeNonPersistentPeersSemaphore.Acquire(context.TODO(), 1); err != nil {
+						memR.Logger.Error("Failed to acquire semaphore: %v", err)
+						return
+					}
+					// Release semaphore to allow other peer to start sending transactions.
+					defer memR.activeNonPersistentPeersSemaphore.Release(1)
+					defer memR.mempool.metrics.ActiveOutboundConnections.Add(-1)
+				}
+			}
+
+			memR.mempool.metrics.ActiveOutboundConnections.Add(1)
+			memR.broadcastTxRoutine(peer)
+		}()
 	}
 }
 
@@ -184,6 +225,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		if !memR.IsRunning() || !peer.IsRunning() {
 			return
 		}
+
 		// This happens because the CElement we were looking at got garbage
 		// collected (removed). That is, .NextWait() returned nil. Go ahead and
 		// start from the beginning.

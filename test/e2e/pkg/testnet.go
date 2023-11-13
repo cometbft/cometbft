@@ -68,31 +68,35 @@ const (
 
 // Testnet represents a single testnet.
 type Testnet struct {
-	Name                             string
-	File                             string
-	Dir                              string
-	IP                               *net.IPNet
-	InitialHeight                    int64
-	InitialState                     map[string]string
-	Validators                       map[*Node]int64
-	ValidatorUpdates                 map[int64]map[*Node]int64
-	Nodes                            []*Node
-	KeyType                          string
-	Evidence                         int
-	LoadTxSizeBytes                  int
-	LoadTxBatchSize                  int
-	LoadTxConnections                int
-	ABCIProtocol                     string
-	PrepareProposalDelay             time.Duration
-	ProcessProposalDelay             time.Duration
-	CheckTxDelay                     time.Duration
-	VoteExtensionDelay               time.Duration
-	FinalizeBlockDelay               time.Duration
-	UpgradeVersion                   string
-	Prometheus                       bool
-	VoteExtensionsEnableHeight       int64
-	VoteExtensionSize                uint
-	PeerGossipIntraloopSleepDuration time.Duration
+	Name                                                 string
+	File                                                 string
+	Dir                                                  string
+	IP                                                   *net.IPNet
+	InitialHeight                                        int64
+	InitialState                                         map[string]string
+	Validators                                           map[*Node]int64
+	ValidatorUpdates                                     map[int64]map[*Node]int64
+	Nodes                                                []*Node
+	DisablePexReactor                                    bool
+	KeyType                                              string
+	Evidence                                             int
+	LoadTxSizeBytes                                      int
+	LoadTxBatchSize                                      int
+	LoadTxConnections                                    int
+	ABCIProtocol                                         string
+	PrepareProposalDelay                                 time.Duration
+	ProcessProposalDelay                                 time.Duration
+	CheckTxDelay                                         time.Duration
+	VoteExtensionDelay                                   time.Duration
+	FinalizeBlockDelay                                   time.Duration
+	UpgradeVersion                                       string
+	Prometheus                                           bool
+	VoteExtensionsEnableHeight                           int64
+	VoteExtensionSize                                    uint
+	PeerGossipIntraloopSleepDuration                     time.Duration
+	ExperimentalMaxGossipConnectionsToPersistentPeers    uint
+	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint
+	ABCITestsEnabled                                     bool
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -161,6 +165,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		Validators:                       map[*Node]int64{},
 		ValidatorUpdates:                 map[int64]map[*Node]int64{},
 		Nodes:                            []*Node{},
+		DisablePexReactor:                manifest.DisablePexReactor,
 		Evidence:                         manifest.Evidence,
 		LoadTxSizeBytes:                  manifest.LoadTxSizeBytes,
 		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
@@ -176,6 +181,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
 		VoteExtensionSize:                manifest.VoteExtensionSize,
 		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
+		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
+		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
+		ABCITestsEnabled: manifest.ABCITestsEnabled,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType

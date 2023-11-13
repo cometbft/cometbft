@@ -52,7 +52,7 @@ var (
 	offlineStateSyncHeight           = []byte("offlineStateSyncHeightKey")
 )
 
-//go:generate ../scripts/mockery_generate.sh Store
+//go:generate ../../scripts/mockery_generate.sh Store
 
 // Store defines the state store interface
 //

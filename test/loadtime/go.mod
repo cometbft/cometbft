@@ -2,6 +2,8 @@ module github.com/cometbft/cometbft/test/loadtime
 
 go 1.21.3
 
+toolchain go1.21.4
+
 require (
 	github.com/cometbft/cometbft v0.38.0
 	github.com/cometbft/cometbft-db v0.7.0

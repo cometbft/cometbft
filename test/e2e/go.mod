@@ -2,6 +2,8 @@ module github.com/cometbft/cometbft/test/e2e
 
 go 1.21.3
 
+toolchain go1.21.4
+
 require (
 	github.com/BurntSushi/toml v1.3.2
 	github.com/Masterminds/semver/v3 v3.2.1

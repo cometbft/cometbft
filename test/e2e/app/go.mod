@@ -2,6 +2,8 @@ module github.com/cometbft/cometbft/test/e2e/app
 
 go 1.21.3
 
+toolchain go1.21.4
+
 require (
 	github.com/cometbft/cometbft v0.38.0
 	github.com/cosmos/gogoproto v1.4.11

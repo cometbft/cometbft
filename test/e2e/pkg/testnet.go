@@ -94,34 +94,30 @@ type Testnet struct {
 
 // Node represents a CometBFT node in a testnet.
 type Node struct {
-	Name                    string
-	Version                 string
-	Testnet                 *Testnet
-	Mode                    Mode
-	PrivvalKey              crypto.PrivKey
-	NodeKey                 crypto.PrivKey
-	InternalIP              net.IP
-	ExternalIP              net.IP
-	RPCProxyPort            uint32
-	GRPCProxyPort           uint32
-	GRPCLegacyPort          uint32
-	GRPCPrivilegedProxyPort uint32
-	StartAt                 int64
-	BlockSyncVersion        string
-	StateSync               bool
-	Database                string
-	ABCIProtocol            Protocol
-	PrivvalProtocol         Protocol
-	PersistInterval         uint64
-	SnapshotInterval        uint64
-	RetainBlocks            uint64
-	EnableCompanionPruning  bool
-	Seeds                   []*Node
-	PersistentPeers         []*Node
-	Perturbations           []Perturbation
-	SendNoLoad              bool
-	Prometheus              bool
-	PrometheusProxyPort     uint32
+	Name                string
+	Version             string
+	Testnet             *Testnet
+	Mode                Mode
+	PrivvalKey          crypto.PrivKey
+	NodeKey             crypto.PrivKey
+	InternalIP          net.IP
+	ExternalIP          net.IP
+	ProxyPort           uint32
+	StartAt             int64
+	BlockSyncVersion    string
+	StateSync           bool
+	Database            string
+	ABCIProtocol        Protocol
+	PrivvalProtocol     Protocol
+	PersistInterval     uint64
+	SnapshotInterval    uint64
+	RetainBlocks        uint64
+	Seeds               []*Node
+	PersistentPeers     []*Node
+	Perturbations       []Perturbation
+	SendNoLoad          bool
+	Prometheus          bool
+	PrometheusProxyPort uint32
 }
 
 // LoadTestnet loads a testnet from a manifest file, using the filename to

@@ -278,14 +278,14 @@ Note that some methods (`Query`, `FinalizeBlock`) return non-deterministic data 
 of `Info` and `Log` fields. The `Log` is intended for the literal output from the Application's
 logger, while the `Info` is any additional info that should be returned. These are the only fields
 that are not included in block header computations, so we don't need agreement
-on them. All other fields in the `Response*` must be strictly deterministic.
+on them. All other fields in the `*Response` must be strictly deterministic.
 
 ## Events
 
 [&#8593; Back to Outline](#outline)
 
 Method `FinalizeBlock` includes an `events` field at the top level in its
-`Response*`, and one `events` field per transaction included in the block.
+`FinalizeBlockResponse`, and one `events` field per transaction included in the block.
 Applications may respond to this ABCI 2.0 method with an event list for each executed
 transaction, and a general event list for the block itself.
 Events allow applications to associate metadata with transactions and blocks.
@@ -298,7 +298,8 @@ execution. `Event` values can be used to index transactions and blocks according
 happened during their execution.
 
 Each event has a `type` which is meant to categorize the event for a particular
-`Response*` or `Tx`. A `Response*` or `Tx` may contain multiple events with duplicate
+`FinalizeBlockResponse` or `Tx`. A `FinalizeBlockResponse` or `Tx` may contain
+multiple events with duplicate
 `type` values, where each distinct entry is meant to categorize attributes for a
 particular event. Every key and value in an event's attributes must be UTF-8
 encoded strings along with the event type itself.
@@ -387,7 +388,7 @@ enum EvidenceType {
 
 [&#8593; Back to Outline](#outline)
 
-The `Query` and `CheckTx` methods include a `Code` field in their `Response*`.
+The `Query` and `CheckTx` methods include a `Code` field in their `*Response`.
 Field `Code` is meant to contain an application-specific response code.
 A response code of `0` indicates no error.  Any other response code
 indicates to CometBFT that an error occurred.

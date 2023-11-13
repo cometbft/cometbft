@@ -147,7 +147,7 @@ The following change to the `config.toml` file is envisaged:
 # The type of mempool for this CometBFT node to use.
 #
 # Valid types of mempools supported by CometBFT:
-# - ""       : Default clist mempool with flooding gossip protocol
+# - "local"       : Default clist mempool with flooding gossip protocol
 # - "remote" : Remote mempool in a separate process
 type = "remote"
 

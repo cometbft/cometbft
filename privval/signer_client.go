@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 	"github.com/cometbft/cometbft/crypto"
 	pvproto "github.com/cometbft/cometbft/privval/proto"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
+	cmtproto "github.com/cometbft/cometbft/types/proto"
 
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/types"

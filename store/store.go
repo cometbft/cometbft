@@ -11,11 +11,11 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 
 	cmtstore "github.com/cometbft/cometbft/api/cometbft/store/v1beta1"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 	"github.com/cometbft/cometbft/evidence"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
+	cmtproto "github.com/cometbft/cometbft/types/proto"
 )
 
 /*

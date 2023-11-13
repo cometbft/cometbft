@@ -457,35 +457,20 @@ The application is free to modify the group before returning from the call, as l
 does not use more bytes than `RequestPrepareProposal.max_tx_bytes`
 For example, the application may reorder, add, or even remove transactions from the group to improve the
 execution of the block once accepted.
+
 In the following code, the application simply returns the unmodified group of transactions:
 
 ```go
- func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abcitypes.RequestPrepareProposal) (*abcitypes.ResponsePrepareProposal, error) {
-   totalBytes := int64(0)
-   txs := make([]byte, 0)
+func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abcitypes.RequestPrepareProposal) (*abcitypes.ResponsePrepareProposal, error) {
+    return &abcitypes.ResponsePrepareProposal{Txs: proposal.Txs}, nil
+}
+```
 
-   for _, tx := range proposal.Txs {
-     totalBytes += int64(len(tx))
-     txs = append(txs, tx...)
+Once a proposed block is received by a node, the proposal is passed to the application to give
+its blessing before voting to accept the proposal.
 
-       if totalBytes > int64(proposal.MaxTxBytes) {
-         break
-       }
-     }
-
-     return &abcitypes.ResponsePrepareProposal{Txs: proposal.Txs}, nil
- }
- ```
-
- This code snippet iterates through the proposed transactions and calculates the `total bytes`. If the `total bytes` exceeds the `MaxTxBytes` specified in the `RequestPrepareProposal` struct, the loop breaks and the transactions processed so far are returned.
-
- Note: It is the responsibility of the application to ensure that the `total bytes` of transactions returned does not exceed the `RequestPrepareProposal.max_tx_bytes` limit.
-
- Once a proposed block is received by a node, the proposal is passed to the application to give
- its blessing before voting to accept the proposal.
-
- This mechanism may be used for different reasons, for example to deal with blocks manipulated
- by malicious nodes, in which case the block should not be considered valid.
+This mechanism may be used for different reasons, for example to deal with blocks manipulated
+by malicious nodes, in which case the block should not be considered valid.
 
 The following code simply accepts all proposals:
 

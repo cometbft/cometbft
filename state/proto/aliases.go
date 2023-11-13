@@ -1,4 +1,4 @@
-package state
+package proto
 
 import (
 	"github.com/cometbft/cometbft/api/cometbft/state/v1beta1"

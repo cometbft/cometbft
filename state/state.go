@@ -9,8 +9,8 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	cmtstate "github.com/cometbft/cometbft/api/cometbft/state"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1beta1"
+	cmtstate "github.com/cometbft/cometbft/state/proto"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"

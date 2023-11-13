@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"time"
 
-	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync"
+	bcproto "github.com/cometbft/cometbft/blocksync/proto"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	sm "github.com/cometbft/cometbft/state"

@@ -65,29 +65,31 @@ const (
 
 // Testnet represents a single testnet.
 type Testnet struct {
-	Name                       string
-	File                       string
-	Dir                        string
-	IP                         *net.IPNet
-	InitialHeight              int64
-	InitialState               map[string]string
-	Validators                 map[*Node]int64
-	ValidatorUpdates           map[int64]map[*Node]int64
-	Nodes                      []*Node
-	KeyType                    string
-	Evidence                   int
-	LoadTxSizeBytes            int
-	LoadTxBatchSize            int
-	LoadTxConnections          int
-	ABCIProtocol               string
-	PrepareProposalDelay       time.Duration
-	ProcessProposalDelay       time.Duration
-	CheckTxDelay               time.Duration
-	VoteExtensionDelay         time.Duration
-	FinalizeBlockDelay         time.Duration
-	UpgradeVersion             string
-	Prometheus                 bool
-	VoteExtensionsEnableHeight int64
+	Name                                                 string
+	File                                                 string
+	Dir                                                  string
+	IP                                                   *net.IPNet
+	InitialHeight                                        int64
+	InitialState                                         map[string]string
+	Validators                                           map[*Node]int64
+	ValidatorUpdates                                     map[int64]map[*Node]int64
+	Nodes                                                []*Node
+	KeyType                                              string
+	Evidence                                             int
+	LoadTxSizeBytes                                      int
+	LoadTxBatchSize                                      int
+	LoadTxConnections                                    int
+	ABCIProtocol                                         string
+	PrepareProposalDelay                                 time.Duration
+	ProcessProposalDelay                                 time.Duration
+	CheckTxDelay                                         time.Duration
+	VoteExtensionDelay                                   time.Duration
+	FinalizeBlockDelay                                   time.Duration
+	UpgradeVersion                                       string
+	Prometheus                                           bool
+	VoteExtensionsEnableHeight                           int64
+	ExperimentalMaxGossipConnectionsToPersistentPeers    uint
+	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -165,6 +167,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		UpgradeVersion:             manifest.UpgradeVersion,
 		Prometheus:                 manifest.Prometheus,
 		VoteExtensionsEnableHeight: manifest.VoteExtensionsEnableHeight,
+		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
+		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType

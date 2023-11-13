@@ -263,6 +263,9 @@ message TxsAvailableRequest {}
 // TxsAvailableResponse is to be sent once upon initiation of the TxsAvailable
 // request, as well as once for each new height, iff new transactions are
 // available to be fetched by the consensus engine.
+//
+// If a TxsAvailableResponse is sent more than once per height, the consensus
+// engine is expected to ignore the extra messages.
 message TxsAvailableResponse {
     // Supplied for informational purposes to the consensus engine to indicate
     // the height seen by the mempool during the last call to Remove.

@@ -787,7 +787,7 @@ The response contains a `base64` encoded representation of the data we submitted
 To get the original value out of this data, we can use the `base64` command line utility:
 
 ```bash
-echo cm9ja3M=" | base64 -d
+echo "cm9ja3M=" | base64 -d
 ```
 
 ## Outro

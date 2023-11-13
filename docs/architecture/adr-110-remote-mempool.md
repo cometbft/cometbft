@@ -96,10 +96,10 @@ In this flow:
 4. During `PrepareProposal`, a Comet validator will reap transactions from the
    mempool by way of an RPC call.
 
-Additionally, when transactions are received by the local mempool instance from
-foreign mempool instances, it is expected that the local mempool instance will
+Additionally, when transactions are received by a remote mempool instance from
+foreign remote mempool instances, it is expected that the mempool instance will
 send the transaction to the application for validation (similar to how `CheckTx`
-currently functions).
+currently functions) prior to inclusion.
 
 #### Scalable mempool
 

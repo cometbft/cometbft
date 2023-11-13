@@ -482,7 +482,8 @@ func (app *KVStoreApplication) ProcessProposal(_ context.Context, proposal *abci
 
 ## 1.4 Starting an application and a CometBFT instance in the same process
 
-Now that we have the basic functionality of our application in place, let's put it all together inside of our main.go file.
+Now that we have the basic functionality of our application in place, let's put
+it all together inside of our `main.go` file.
 
 Change the contents of your `main.go` file to the following.
 

@@ -1,6 +1,6 @@
 module github.com/cometbft/cometbft/test/e2e
 
-go 1.21.3
+go 1.21
 
 require (
 	github.com/BurntSushi/toml v1.3.2

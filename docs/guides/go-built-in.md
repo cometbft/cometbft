@@ -476,6 +476,8 @@ func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abci
 
 Once a proposed block is received by a node, the proposal is passed to the application to give
 its blessing before voting to accept the proposal.
+
+This mechanism may be used for different reasons, for example to deal with blocks manipulated
 by malicious nodes, in which case the block should not be considered valid.
 
 The following code simply accepts all proposals:

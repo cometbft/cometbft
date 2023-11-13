@@ -352,8 +352,9 @@ considered for backporting to the `v0.38.x-experimental` branch.
 
 - Application developers would need to potentially build their own mempools,
   which involves a substantial amount of effort.
-- Application-specific remote mempools would currently need to implement their
-  own gossip mechanism (until an interface such as [\#1112] is available).
+- In some cases, application-specific remote mempools would currently need to
+  implement their own gossip mechanism (until an interface such as [\#1112] is
+  available).
 
 [\#1112]: https://github.com/cometbft/cometbft/discussions/1112
 [\#1117]: https://github.com/cometbft/cometbft/issues/1117

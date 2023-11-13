@@ -572,7 +572,7 @@ func main() {
         nm.DefaultGenesisDocProviderFunc(config),
         cfg.DefaultDBProvider,
         nm.DefaultMetricsProvider(config.Instrumentation),
-        logger
+        logger,
     )
 
     if err != nil {
@@ -662,7 +662,7 @@ node, err := nm.NewNode(
     nm.DefaultGenesisDocProviderFunc(config),
     cfg.DefaultDBProvider,
     nm.DefaultMetricsProvider(config.Instrumentation),
-logger)
+    logger)
 
 if err != nil {
     log.Fatalf("Creating node: %v", err)

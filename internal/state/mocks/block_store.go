@@ -88,10 +88,14 @@ func (_m *BlockStore) LoadBaseMeta() *types.BlockMeta {
 }
 
 // LoadBlock provides a mock function with given fields: height
-func (_m *BlockStore) LoadBlock(height int64) *types.Block {
+func (_m *BlockStore) LoadBlock(height int64) (*types.Block, *types.BlockMeta) {
 	ret := _m.Called(height)
 
 	var r0 *types.Block
+	var r1 *types.BlockMeta
+	if rf, ok := ret.Get(0).(func(int64) (*types.Block, *types.BlockMeta)); ok {
+		return rf(height)
+	}
 	if rf, ok := ret.Get(0).(func(int64) *types.Block); ok {
 		r0 = rf(height)
 	} else {
@@ -100,14 +104,26 @@ func (_m *BlockStore) LoadBlock(height int64) *types.Block {
 		}
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func(int64) *types.BlockMeta); ok {
+		r1 = rf(height)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*types.BlockMeta)
+		}
+	}
+
+	return r0, r1
 }
 
 // LoadBlockByHash provides a mock function with given fields: hash
-func (_m *BlockStore) LoadBlockByHash(hash []byte) *types.Block {
+func (_m *BlockStore) LoadBlockByHash(hash []byte) (*types.Block, *types.BlockMeta) {
 	ret := _m.Called(hash)
 
 	var r0 *types.Block
+	var r1 *types.BlockMeta
+	if rf, ok := ret.Get(0).(func([]byte) (*types.Block, *types.BlockMeta)); ok {
+		return rf(hash)
+	}
 	if rf, ok := ret.Get(0).(func([]byte) *types.Block); ok {
 		r0 = rf(hash)
 	} else {
@@ -116,7 +132,15 @@ func (_m *BlockStore) LoadBlockByHash(hash []byte) *types.Block {
 		}
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func([]byte) *types.BlockMeta); ok {
+		r1 = rf(hash)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*types.BlockMeta)
+		}
+	}
+
+	return r0, r1
 }
 
 // LoadBlockCommit provides a mock function with given fields: height

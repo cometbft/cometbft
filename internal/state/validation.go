@@ -34,7 +34,7 @@ func validateBlock(state State, block *types.Block) error {
 	}
 	if state.LastBlockHeight == 0 && block.Height != state.InitialHeight {
 		return fmt.Errorf("wrong Block.Header.Height. Expected %v for initial block, got %v",
-			block.Height, state.InitialHeight)
+			state.InitialHeight, block.Height)
 	}
 	if state.LastBlockHeight > 0 && block.Height != state.LastBlockHeight+1 {
 		return fmt.Errorf("wrong Block.Header.Height. Expected %v, got %v",

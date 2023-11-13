@@ -48,3 +48,5 @@ relating to Tendermint Core prior to forking, please see
 - [RFC-103: Incoming transactions when node is catching up](./rfc-103-incoming-txs-when-catching-up.md)
 - [RFC-104: Internal messaging using the actor model](./rfc-104-actor-model.md)
 - [RFC-105: Allowing Non-Determinism in `ProcessProposal`](./rfc-105-non-det-process-proposal.md)
+- [RFC-106: Separation of non-idempotent methods in data companion API](./rfc-106-separate-stateful-methods.md)
+- [RFC-107: Internal signalling using event observers](./rfc-107-event-observer.md)

@@ -151,7 +151,7 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 	// check there are no blocks at various heights
 	noBlockHeights := []int64{0, -1, 100, 1000, 2}
 	for i, height := range noBlockHeights {
-		if g := bs.LoadBlock(height); g != nil {
+		if g, _ := bs.LoadBlock(height); g != nil {
 			t.Errorf("#%d: height(%d) got a block; want nil", i, height)
 		}
 	}
@@ -295,8 +295,7 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 				err := db.Set(calcBlockMetaKey(tuple.block.Height), []byte("block-bogus"))
 				require.NoError(t, err)
 			}
-			bBlock := bs.LoadBlock(tuple.block.Height)
-			bBlockMeta := bs.LoadBlockMeta(tuple.block.Height)
+			bBlock, bBlockMeta := bs.LoadBlock(tuple.block.Height)
 
 			if tuple.eraseSeenCommitInDB {
 				err := db.Delete(calcSeenCommitKey(tuple.block.Height))
@@ -637,8 +636,12 @@ func TestPruningService(t *testing.T) {
 		assert.EqualValues(t, 1200, bs.Base())
 		assert.EqualValues(t, 1500, bs.Height())
 		assert.EqualValues(t, 301, bs.Size())
-		require.NotNil(t, bs.LoadBlock(1200))
-		require.Nil(t, bs.LoadBlock(1199))
+		block, meta := bs.LoadBlock(1200)
+		require.NotNil(t, block)
+		require.NotNil(t, meta)
+		block, meta = bs.LoadBlock(1199)
+		require.Nil(t, block)
+		require.Nil(t, meta)
 		// The header and commit for heights 1100 onwards
 		// need to remain to verify evidence
 		require.NotNil(t, bs.LoadBlockMeta(1100))
@@ -646,10 +649,14 @@ func TestPruningService(t *testing.T) {
 		require.NotNil(t, bs.LoadBlockCommit(1100))
 		require.Nil(t, bs.LoadBlockCommit(1099))
 		for i := int64(1); i < 1200; i++ {
-			require.Nil(t, bs.LoadBlock(i))
+			block, meta = bs.LoadBlock(i)
+			require.Nil(t, block)
+			require.Nil(t, meta)
 		}
 		for i := int64(1200); i <= 1500; i++ {
-			require.NotNil(t, bs.LoadBlock(i))
+			block, meta = bs.LoadBlock(i)
+			require.NotNil(t, block)
+			require.NotNil(t, meta)
 		}
 		t.Log("Done pruning blocks until height 1200")
 
@@ -698,10 +705,18 @@ func TestPruningService(t *testing.T) {
 	case <-obs.prunedBlocksResInfoCh:
 		// But we will prune only until 1350 because that was the Companions height
 		// and it is lower
-		assert.Nil(t, bs.LoadBlock(1349))
-		assert.NotNil(t, bs.LoadBlock(1350), fmt.Sprintf("expected block at height 1350 to be there, but it was not; block store base height = %d", bs.Base()))
-		assert.NotNil(t, bs.LoadBlock(1500))
-		assert.Nil(t, bs.LoadBlock(1501))
+		block, meta := bs.LoadBlock(1349)
+		assert.Nil(t, block)
+		assert.Nil(t, meta)
+		block, meta = bs.LoadBlock(1350)
+		assert.NotNil(t, block, fmt.Sprintf("expected block at height 1350 to be there, but it was not; block store base height = %d", bs.Base()))
+		assert.NotNil(t, meta)
+		block, meta = bs.LoadBlock(1500)
+		assert.NotNil(t, block)
+		assert.NotNil(t, meta)
+		block, meta = bs.LoadBlock(1501)
+		assert.Nil(t, block)
+		assert.Nil(t, meta)
 		t.Log("Done pruning blocks until 1500")
 
 	case <-time.After(5 * time.Second):
@@ -758,8 +773,12 @@ func TestPruneBlocks(t *testing.T) {
 	assert.EqualValues(t, 301, bs.Size())
 	assert.EqualValues(t, 1100, evidenceRetainHeight)
 
-	require.NotNil(t, bs.LoadBlock(1200))
-	require.Nil(t, bs.LoadBlock(1199))
+	block, meta := bs.LoadBlock(1200)
+	require.NotNil(t, block)
+	require.NotNil(t, meta)
+	block, meta = bs.LoadBlock(1199)
+	require.Nil(t, block)
+	require.Nil(t, meta)
 
 	// The header and commit for heights 1100 onwards
 	// need to remain to verify evidence
@@ -769,10 +788,14 @@ func TestPruneBlocks(t *testing.T) {
 	require.Nil(t, bs.LoadBlockCommit(1099))
 
 	for i := int64(1); i < 1200; i++ {
-		require.Nil(t, bs.LoadBlock(i))
+		block, meta = bs.LoadBlock(i)
+		require.Nil(t, block)
+		require.Nil(t, meta)
 	}
 	for i := int64(1200); i <= 1500; i++ {
-		require.NotNil(t, bs.LoadBlock(i))
+		block, meta = bs.LoadBlock(i)
+		require.NotNil(t, block)
+		require.NotNil(t, meta)
 	}
 
 	// Pruning below the current base should error
@@ -805,9 +828,15 @@ func TestPruneBlocks(t *testing.T) {
 	pruned, _, err = bs.PruneBlocks(1500, state)
 	require.NoError(t, err)
 	assert.EqualValues(t, 200, pruned)
-	assert.Nil(t, bs.LoadBlock(1499))
-	assert.NotNil(t, bs.LoadBlock(1500))
-	assert.Nil(t, bs.LoadBlock(1501))
+	block, meta = bs.LoadBlock(1499)
+	assert.Nil(t, block)
+	assert.Nil(t, meta)
+	block, meta = bs.LoadBlock(1500)
+	assert.NotNil(t, block)
+	assert.NotNil(t, meta)
+	block, meta = bs.LoadBlock(1501)
+	assert.Nil(t, block)
+	assert.Nil(t, meta)
 }
 
 func TestLoadBlockMeta(t *testing.T) {
@@ -885,7 +914,7 @@ func TestBlockFetchAtHeight(t *testing.T) {
 	bs.SaveBlockWithExtendedCommit(block, partSet, seenCommit)
 	require.Equal(t, bs.Height(), block.Header.Height, "expecting the new height to be changed")
 
-	blockAtHeight := bs.LoadBlock(bs.Height())
+	blockAtHeight, _ := bs.LoadBlock(bs.Height())
 	b1, err := block.ToProto()
 	require.NoError(t, err)
 	b2, err := blockAtHeight.ToProto()
@@ -896,9 +925,9 @@ func TestBlockFetchAtHeight(t *testing.T) {
 	require.Equal(t, block.Hash(), blockAtHeight.Hash(),
 		"expecting a successful load of the last saved block")
 
-	blockAtHeightPlus1 := bs.LoadBlock(bs.Height() + 1)
+	blockAtHeightPlus1, _ := bs.LoadBlock(bs.Height() + 1)
 	require.Nil(t, blockAtHeightPlus1, "expecting an unsuccessful load of Height()+1")
-	blockAtHeightPlus2 := bs.LoadBlock(bs.Height() + 2)
+	blockAtHeightPlus2, _ := bs.LoadBlock(bs.Height() + 2)
 	require.Nil(t, blockAtHeightPlus2, "expecting an unsuccessful load of Height()+2")
 }
 

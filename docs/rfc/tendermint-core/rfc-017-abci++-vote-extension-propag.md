@@ -509,7 +509,7 @@ This solution requires a few changes to the consensus reactor:
 - upon saving the block for a given height in the block store at decision time, save the
   corresponding extended commit as well
 - in the catch-up mechanism, when a node realizes that another peer is more than 2 heights
-  behind, it uses the extended commit (rather than the canoncial commit as done previously) to
+  behind, it uses the extended commit (rather than the canonical commit as done previously) to
   reconstruct the precommit votes with their corresponding extensions
 
 The changes to the blocksync reactor are more substantial:
@@ -525,7 +525,7 @@ The changes to the blocksync reactor are more substantial:
 The two main drawbacks of this base implementation are:
 
 - the increased size taken by the block store, in particular with big extensions
-- the increased bandwith taken by the new format of `BlockResponse`
+- the increased bandwidth taken by the new format of `BlockResponse`
 
 #### Possible Optimization: Pruning the Extended Commit History
 

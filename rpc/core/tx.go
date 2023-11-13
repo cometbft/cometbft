@@ -34,7 +34,7 @@ func (env *Environment) Tx(_ *rpctypes.Context, hash []byte, prove bool) (*ctype
 
 	var proof types.TxProof
 	if prove {
-		block := env.BlockStore.LoadBlock(r.Height)
+		block, _ := env.BlockStore.LoadBlock(r.Height)
 		proof = block.Data.Txs.Proof(int(r.Index))
 	}
 
@@ -113,7 +113,7 @@ func (env *Environment) TxSearch(
 
 		var proof types.TxProof
 		if prove {
-			block := env.BlockStore.LoadBlock(r.Height)
+			block, _ := env.BlockStore.LoadBlock(r.Height)
 			proof = block.Data.Txs.Proof(int(r.Index))
 		}
 

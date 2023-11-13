@@ -32,7 +32,7 @@ require (
 	github.com/spf13/viper v1.17.0
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/crypto v0.15.0
-	golang.org/x/net v0.17.0
+	golang.org/x/net v0.18.0
 	google.golang.org/grpc v1.59.0
 )
 

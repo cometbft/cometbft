@@ -2,6 +2,7 @@
 
 ## Changelog
 
+- 2023-11-13: Marked as rejected in favour of ADR 111 (@thanethomson)
 - 2023-11-13: Updated with feedback (@thanethomson)
 - 2023-11-04: Renamed ADR to "Remote mempool" instead of "External mempool" to
   align with gRPC service definition (@thanethomson)
@@ -9,7 +10,7 @@
 
 ## Status
 
-Accepted | Rejected | Deprecated | Superseded by
+Rejected in favour of ADR 111
 
 ## Context
 
@@ -54,8 +55,7 @@ The current alternatives considered are:
 
 ## Decision
 
-Implement an optional mempool client in Comet that can connect to a remote
-mempool instance/cluster.
+N/A
 
 ## Detailed Design
 

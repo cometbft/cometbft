@@ -90,6 +90,18 @@ func insertEvents(dbtx *sql.Tx, blockID, txID uint32, evts []abci.Event) error {
 		txIDArg = txID
 	}
 
+	const (
+		insertEventQuery = `
+ 			INSERT INTO ` + tableEvents + ` (block_id, tx_id, type)
+ 			VALUES ($1, $2, $3)
+ 			RETURNING rowid;
+ 		`
+		insertAttributeQuery = `
+ 			INSERT INTO ` + tableAttributes + ` (event_id, key, composite_key, value)
+ 			VALUES ($1, $2, $3, $4);
+ 		`
+	)
+
 	// Add each event to the events table, and retrieve its row ID to use when
 	// adding any attributes the event provides.
 	for _, evt := range evts {
@@ -98,10 +110,7 @@ func insertEvents(dbtx *sql.Tx, blockID, txID uint32, evts []abci.Event) error {
 			continue
 		}
 
-		eid, err := queryWithID(dbtx, `
-INSERT INTO `+tableEvents+` (block_id, tx_id, type) VALUES ($1, $2, $3)
-  RETURNING rowid;
-`, blockID, txIDArg, evt.Type)
+		eid, err := queryWithID(dbtx, insertEventQuery, blockID, txIDArg, evt.Type)
 		if err != nil {
 			return err
 		}
@@ -112,10 +121,7 @@ INSERT INTO `+tableEvents+` (block_id, tx_id, type) VALUES ($1, $2, $3)
 				continue
 			}
 			compositeKey := evt.Type + "." + string(attr.Key)
-			if _, err := dbtx.Exec(`
-INSERT INTO `+tableAttributes+` (event_id, key, composite_key, value)
-  VALUES ($1, $2, $3, $4);
-`, eid, attr.Key, compositeKey, attr.Value); err != nil {
+			if _, err := dbtx.Exec(insertAttributeQuery, eid, attr.Key, compositeKey, attr.Value); err != nil {
 				return err
 			}
 		}

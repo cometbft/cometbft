@@ -2,6 +2,7 @@
 
 ## Changelog
 
+- 2023-11-13: Updated with feedback (@thanethomson)
 - 2023-11-04: Renamed ADR to "Remote mempool" instead of "External mempool" to
   align with gRPC service definition (@thanethomson)
 - 2023-11-03: First draft (@thanethomson)
@@ -90,7 +91,8 @@ In this flow:
    to how `CheckTx` currently works.
 3. Transactions that the application deems valid are then sent to the mempool by
    the application, e.g. through some form of RPC mechanism. The mempool is then
-   expected to propagate these transactions to the rest of the network.
+   expected to propagate these transactions to the rest of the network using its
+   own communication layer, independent of the CometBFT P2P layer.
 4. During `PrepareProposal`, a Comet validator will reap transactions from the
    mempool by way of an RPC call.
 
@@ -147,7 +149,7 @@ The following change to the `config.toml` file is envisaged:
 # The type of mempool for this CometBFT node to use.
 #
 # Valid types of mempools supported by CometBFT:
-# - "local"       : Default clist mempool with flooding gossip protocol
+# - "local"  : Default clist mempool with flooding gossip protocol
 # - "remote" : Remote mempool in a separate process
 type = "remote"
 

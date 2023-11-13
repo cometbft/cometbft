@@ -6,8 +6,8 @@ import (
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 	"github.com/cosmos/gogoproto/proto"
 
-	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
+	cmtcons "github.com/cometbft/cometbft/consensus/proto"
 	cstypes "github.com/cometbft/cometbft/consensus/types"
 	"github.com/cometbft/cometbft/libs/bits"
 	cmtmath "github.com/cometbft/cometbft/libs/math"

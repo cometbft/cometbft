@@ -1,5 +1,5 @@
 //nolint:revive,stylecheck
-package consensus
+package proto
 
 import (
 	"github.com/cometbft/cometbft/api/cometbft/consensus/v1beta1"

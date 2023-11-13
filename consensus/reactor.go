@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus"
+	cmtcons "github.com/cometbft/cometbft/consensus/proto"
 	cstypes "github.com/cometbft/cometbft/consensus/types"
 	"github.com/cometbft/cometbft/libs/bits"
 	cmtevents "github.com/cometbft/cometbft/libs/events"

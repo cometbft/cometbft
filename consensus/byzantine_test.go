@@ -23,7 +23,7 @@ import (
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/proxy"
 
-	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus"
+	cmtcons "github.com/cometbft/cometbft/consensus/proto"
 	"github.com/cometbft/cometbft/p2p"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/store"

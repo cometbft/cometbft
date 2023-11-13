@@ -166,21 +166,12 @@ type = "remote"
 # The base URL for the gRPC interface to the remote mempool.
 url = "http://localhost:28880"
 
-# The timeout for fetching transaction data during PrepareProposal. Exceeding
-# this timeout will result in a panic.
-timeout_fetch = "5s"
-
 # The timeout for reaping (removing) transaction data after a block has been
-# committed. Exceeding this timeout will result in a panic.
+# committed.
 timeout_reap = "1s"
 
 # The timeout for initiating the TxsAvailable call.
 timeout_txs_available = "1s"
-
-# The maximum number of times to retry calling the TxsAvailable streaming
-# endpoint if it fails. Exceeding this number of retries (e.g. if the connection
-# to the remote mempool is down) will result in a panic.
-txs_available_retries = 3
 ```
 
 ### RPC API
@@ -326,10 +317,10 @@ when enabled it will have the following impacts/properties:
 
 - When a CometBFT-based validator starts up with `mempool.type` set to `remote`,
   it will expect to be able to connect to the remote mempool. If it cannot, it
-  will panic.
+  will log an error and continue retrying to connect.
 
 - When a validator attempts to call any of the `Fetch` or `Reap` methods and the
-  call fails for whatever reason, it will panic.
+  call fails for whatever reason, it will log an error.
 
 - It must be kept in mind that transactions will persist in the mempool between
   CometBFT node restarts. This implies a different set of assumptions as

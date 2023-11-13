@@ -211,11 +211,11 @@ service RemoteMempoolService {
     // is a proposer.
     rpc Fetch(FetchRequest) returns (FetchResponse);
 
-    // Reap takes a set of transaction keys and removes the corresponding
+    // Remove takes a set of transaction keys and removes the corresponding
     // transactions from the mempool.
     //
     // This will only be called after the block is committed by consensus.
-    rpc Reap(ReapRequest) returns (ReapResponse);
+    rpc Remove(RemoveRequest) returns (RemoveResponse);
 
     // TxsAvailable streams notifications back to the client that new
     // transactions are available in the mempool.
@@ -225,7 +225,7 @@ service RemoteMempoolService {
     // cases:
     //
     // 1. Once for each newly encountered height (as supplied to the mempool via
-    //    the Reap request).
+    //    the Remove request).
     //
     // 2. Upon initiation of the TxsAvailable call. This caters for instances
     //    where the consensus engine may have failed and restarted.
@@ -247,7 +247,7 @@ message FetchResponse {
     repeated bytes txs = 1;
 }
 
-message ReapRequest {
+message RemoveRequest {
     // The current height of the chain.
     uint64 height = 1;
 
@@ -256,7 +256,7 @@ message ReapRequest {
     repeated bytes tx_ids = 2;
 }
 
-message ReapResponse {}
+message RemoveResponse {}
 
 message TxsAvailableRequest {}
 
@@ -265,7 +265,7 @@ message TxsAvailableRequest {}
 // available to be fetched by the consensus engine.
 message TxsAvailableResponse {
     // Supplied for informational purposes to the consensus engine to indicate
-    // the height seen by the mempool during the last call to Reap.
+    // the height seen by the mempool during the last call to Remove.
     uint64 last_reap_height = 1;
 }
 ```
@@ -275,7 +275,8 @@ message TxsAvailableResponse {
 - The terminology used in the gRPC interface is different to that used in the
   [`Mempool`] interface. The term "reap" technically implies removal from the
   mempool, but the [`Mempool`] interface incorrectly uses this term to imply
-  fetching a batch of transactions.
+  fetching a batch of transactions. The combination of `Fetch` and `Remove` can
+  be thought of as a "reap" operation.
 
 - The gRPC interface purposefully does not facilitate limiting fetched
   transactions by gas in an effort to separate consensus- and
@@ -319,8 +320,8 @@ when enabled it will have the following impacts/properties:
   it will expect to be able to connect to the remote mempool. If it cannot, it
   will log an error and continue retrying to connect.
 
-- When a validator attempts to call any of the `Fetch` or `Reap` methods and the
-  call fails for whatever reason, it will log an error.
+- When a validator attempts to call any of the `Fetch` or `Remove` methods and
+  the call fails for whatever reason, it will log an error.
 
 - It must be kept in mind that transactions will persist in the mempool between
   CometBFT node restarts. This implies a different set of assumptions as

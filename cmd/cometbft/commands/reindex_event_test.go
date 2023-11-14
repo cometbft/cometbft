@@ -135,9 +135,9 @@ func TestReIndexEvent(t *testing.T) {
 	mockBlockStore.
 		On("Base").Return(base).
 		On("Height").Return(height).
-		On("LoadBlock", base).Return(nil).Once().
-		On("LoadBlock", base).Return(&types.Block{Data: types.Data{Txs: types.Txs{make(types.Tx, 1)}}}).
-		On("LoadBlock", height).Return(&types.Block{Data: types.Data{Txs: types.Txs{make(types.Tx, 1)}}})
+		On("LoadBlock", base).Return(nil, nil).Once().
+		On("LoadBlock", base).Return(&types.Block{Data: types.Data{Txs: types.Txs{make(types.Tx, 1)}}}, &types.BlockMeta{}).
+		On("LoadBlock", height).Return(&types.Block{Data: types.Data{Txs: types.Txs{make(types.Tx, 1)}}}, &types.BlockMeta{})
 
 	abciResp := &abcitypes.FinalizeBlockResponse{
 		TxResults: []*abcitypes.ExecTxResult{

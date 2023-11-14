@@ -214,7 +214,7 @@ func TestNoBlockResponse(t *testing.T) {
 	assert.Equal(t, maxBlockHeight, reactorPairs[0].reactor.store.Height())
 
 	for _, tt := range tests {
-		block := reactorPairs[1].reactor.store.LoadBlock(tt.height)
+		block, _ := reactorPairs[1].reactor.store.LoadBlock(tt.height)
 		if tt.existent {
 			assert.True(t, block != nil)
 		} else {

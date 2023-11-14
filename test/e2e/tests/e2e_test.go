@@ -3,14 +3,18 @@ package e2e_test
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
+	"github.com/cometbft/cometbft/test/e2e/app"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/types"
 )
@@ -191,4 +195,39 @@ func fetchBlockChain(t *testing.T) []*types.Block {
 	blocksCache[testnet.Name] = blocks
 
 	return blocks
+}
+
+// fetchABCIRequests go through the logs of a specific node and collect all ABCI requests (each slice represents requests from beginning until the first crash,
+// and then between two crashes) for a specific node.
+func fetchABCIRequests(t *testing.T, nodeName string) ([][]*abci.Request, error) {
+	testnet := loadTestnet(t)
+	logs, err := fetchNodeLogs(testnet)
+	if err != nil {
+		return nil, err
+	}
+	reqs := make([][]*abci.Request, 0)
+	// Parse output line by line.
+	lines := strings.Split(string(logs), "\n")
+	for _, line := range lines {
+		if !strings.Contains(line, nodeName) {
+			continue
+		}
+		if strings.Contains(line, "Application started") {
+			reqs = append(reqs, make([]*abci.Request, 0))
+			continue
+		}
+		r, err := app.GetABCIRequestFromString(line)
+		require.NoError(t, err)
+		// Ship the lines that does not contain abci request.
+		if r == nil {
+			continue
+		}
+		reqs[len(reqs)-1] = append(reqs[len(reqs)-1], r)
+	}
+	return reqs, nil
+}
+
+func fetchNodeLogs(testnet e2e.Testnet) ([]byte, error) {
+	dir := filepath.Join(testnet.Dir, "docker-compose.yml")
+	return exec.Command("docker-compose", "-f", dir, "logs").Output()
 }

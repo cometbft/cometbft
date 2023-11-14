@@ -376,7 +376,7 @@ func (b *RequestBatch) Call(
 
 //-------------------------------------------------------------
 
-// MakeHTTPDialer overwrite the http.Client.Dial so we can do http over tcp or unix.
+// MakeHTTPDialer creates an HTTP client dialer based on the given URL.
 func MakeHTTPDialer(remoteAddr string) (func(string, string) (net.Conn, error), error) {
 	u, err := newParsedURL(remoteAddr)
 	if err != nil {

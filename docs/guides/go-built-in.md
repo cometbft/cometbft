@@ -101,14 +101,6 @@ github.com/cometbft/cometbft v0.38.0
 )
 ```
 
-XXX: CometBFT `v0.38.0` uses a slightly outdated `gogoproto` library, which
-may fail to compile with newer Go versions. To avoid any compilation errors,
-upgrade `gogoproto` manually:
-
-```bash
-go get github.com/cosmos/gogoproto@v1.4.11
-```
-
 As you write the kvstore application, you can rebuild the binary by
 pulling any new dependencies and recompiling it.
 

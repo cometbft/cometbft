@@ -17,7 +17,7 @@ func isTypedNil(o any) bool {
 	}
 }
 
-// Returns true if it has zero length.
+// isEmpty returns true if it has zero length.
 func isEmpty(o any) bool {
 	rv := reflect.ValueOf(o)
 	switch rv.Kind() {

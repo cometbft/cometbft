@@ -192,7 +192,7 @@ func (vals *ValidatorSet) incrementProposerPriority() *Validator {
 	return mostest
 }
 
-// Should not be called on an empty validator set.
+// computeAvgProposerPriority should not be called on an empty validator set.
 func (vals *ValidatorSet) computeAvgProposerPriority() int64 {
 	n := int64(len(vals.Validators))
 	sum := big.NewInt(0)
@@ -208,7 +208,8 @@ func (vals *ValidatorSet) computeAvgProposerPriority() int64 {
 	panic(fmt.Sprintf("Cannot represent avg ProposerPriority as an int64 %v", avg))
 }
 
-// Compute the difference between the max and min ProposerPriority of that set.
+// computeMaxMinPriorityDiff computes the difference between the max and min
+// ProposerPriority of that set.
 func computeMaxMinPriorityDiff(vals *ValidatorSet) int64 {
 	if vals.IsNilOrEmpty() {
 		panic("empty validator set")
@@ -248,7 +249,7 @@ func (vals *ValidatorSet) shiftByAvgProposerPriority() {
 	}
 }
 
-// Makes a copy of the validator list.
+// validatorListCopy makes a copy of the validator list.
 func validatorListCopy(valsList []*Validator) []*Validator {
 	if valsList == nil {
 		return nil
@@ -309,7 +310,7 @@ func (vals *ValidatorSet) Size() int {
 	return len(vals.Validators)
 }
 
-// Forces recalculation of the set's total voting power.
+// updateTotalVotingPower forces recalculation of the set's total voting power.
 // Panics if total voting power is bigger than MaxTotalVotingPower.
 func (vals *ValidatorSet) updateTotalVotingPower() {
 	sum := int64(0)
@@ -397,7 +398,8 @@ func (vals *ValidatorSet) Iterate(fn func(index int, val *Validator) bool) {
 	}
 }
 
-// Checks changes against duplicates, splits the changes in updates and
+// processChanges checks changes against duplicates,
+// splits the changes in updates and
 // removals, sorts them by address.
 //
 // Returns:
@@ -570,7 +572,8 @@ func (vals *ValidatorSet) applyUpdates(updates []*Validator) {
 	vals.Validators = merged[:i]
 }
 
-// Checks that the validators to be removed are part of the validator set.
+// verifyRemovals checks that the validators to be removed are part of the
+// validator set.
 // No changes are made to the validator set 'vals'.
 func verifyRemovals(deletes []*Validator, vals *ValidatorSet) (votingPower int64, err error) {
 	removedVotingPower := int64(0)
@@ -588,7 +591,8 @@ func verifyRemovals(deletes []*Validator, vals *ValidatorSet) (votingPower int64
 	return removedVotingPower, nil
 }
 
-// Removes the validators specified in 'deletes' from validator set 'vals'.
+// applyRemovals removes the validators specified in 'deletes' from validator
+// set 'vals'.
 // Should not fail as verification has been done before.
 // Expects vals to be sorted by address (done by applyUpdates).
 func (vals *ValidatorSet) applyRemovals(deletes []*Validator) {
@@ -617,7 +621,8 @@ func (vals *ValidatorSet) applyRemovals(deletes []*Validator) {
 	vals.Validators = merged[:i]
 }
 
-// Main function used by UpdateWithChangeSet() and NewValidatorSet().
+// updateWithChangeSet is the main function used by UpdateWithChangeSet(
+// ) and NewValidatorSet().
 // If 'allowDeletes' is false then delete operations (identified by validators with voting power 0)
 // are not allowed and will trigger an error if present in 'changes'.
 // The 'allowDeletes' flag is set to false by NewValidatorSet() and to true by UpdateWithChangeSet().

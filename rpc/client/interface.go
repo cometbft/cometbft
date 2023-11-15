@@ -23,8 +23,8 @@ implementation.
 import (
 	"context"
 
+	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/libs/bytes"
-	"github.com/cometbft/cometbft/libs/service"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cometbft/cometbft/types"
 )

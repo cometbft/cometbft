@@ -6,7 +6,7 @@ import (
 	"strings"
 	"text/template"
 
-	cmtos "github.com/cometbft/cometbft/libs/os"
+	cmtos "github.com/cometbft/cometbft/internal/os"
 )
 
 // DefaultDirPerm is the default permissions used when creating directories.
@@ -572,7 +572,7 @@ initial_block_retain_height = {{ .Storage.Pruning.DataCompanion.InitialBlockReta
 initial_block_results_retain_height = {{ .Storage.Pruning.DataCompanion.InitialBlockResultsRetainHeight }}
 
 
-# Hash of the Genesis file (as hex string), passed to CometBFT via the command line. 
+# Hash of the Genesis file (as hex string), passed to CometBFT via the command line.
 # If this hash mismatches the hash that CometBFT computes on the genesis file,
 # the node is not able to boot.
 genesis_hash = "{{ .Storage.GenesisHash }}"

@@ -124,7 +124,7 @@ func TestRollbackHard(t *testing.T) {
 	currState := state.State{
 		Version: cmtstate.Version{
 			Consensus: block.Header.Version,
-			Software:  version.TMCoreSemVer,
+			Software:  version.CMTSemVer,
 		},
 		LastBlockHeight:                  block.Height,
 		LastBlockTime:                    block.Time,
@@ -181,7 +181,7 @@ func TestRollbackHard(t *testing.T) {
 	nextState := state.State{
 		Version: cmtstate.Version{
 			Consensus: block.Header.Version,
-			Software:  version.TMCoreSemVer,
+			Software:  version.CMTSemVer,
 		},
 		LastBlockHeight:                  nextBlock.Height,
 		LastBlockTime:                    nextBlock.Time,
@@ -251,7 +251,7 @@ func setupStateStore(t *testing.T, height int64) state.Store {
 				Block: version.BlockProtocol,
 				App:   10,
 			},
-			Software: version.TMCoreSemVer,
+			Software: version.CMTSemVer,
 		},
 		ChainID:                          "test-chain",
 		InitialHeight:                    10,

@@ -67,8 +67,7 @@ func TestBlock(t *testing.T) {
 	blockStoreMock := &statemocks.BlockStore{}
 	blockStoreMock.On("Height").Return(testHeight)
 	blockStoreMock.On("Base").Return(int64(0))
-	blockStoreMock.On("LoadBlockMeta", testHeight).Return(&types.BlockMeta{})
-	blockStoreMock.On("LoadBlock", testHeight).Return(testBlock)
+	blockStoreMock.On("LoadBlock", testHeight).Return(testBlock, &types.BlockMeta{})
 	blockStoreMock.On("Close").Return(nil)
 
 	txIndexerMock := &txindexmocks.TxIndexer{}
@@ -91,7 +90,7 @@ func TestBlock(t *testing.T) {
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
 	requireConnect(t, rpcConfig.ListenAddress, 20)
-	cli, err := httpclient.New(rpcConfig.ListenAddress, "/websocket")
+	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 	resultBlock, err := cli.Block(context.Background(), &testHeight)
 	require.NoError(t, err)
@@ -143,7 +142,7 @@ func TestTxSearch(t *testing.T) {
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
 	requireConnect(t, rpcConfig.ListenAddress, 20)
-	cli, err := httpclient.New(rpcConfig.ListenAddress, "/websocket")
+	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 
 	page := 1
@@ -191,7 +190,7 @@ func TestTx(t *testing.T) {
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
 	requireConnect(t, rpcConfig.ListenAddress, 20)
-	cli, err := httpclient.New(rpcConfig.ListenAddress, "/websocket")
+	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 
 	res, err := cli.Tx(context.Background(), testHash, false)
@@ -240,7 +239,7 @@ func TestConsensusParams(t *testing.T) {
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
 	requireConnect(t, rpcConfig.ListenAddress, 20)
-	cli, err := httpclient.New(rpcConfig.ListenAddress, "/websocket")
+	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 	params, err := cli.ConsensusParams(context.Background(), &testHeight)
 	require.NoError(t, err)
@@ -290,7 +289,7 @@ func TestBlockResults(t *testing.T) {
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
 	requireConnect(t, rpcConfig.ListenAddress, 20)
-	cli, err := httpclient.New(rpcConfig.ListenAddress, "/websocket")
+	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 	res, err := cli.BlockResults(context.Background(), &testHeight)
 	require.NoError(t, err)
@@ -337,7 +336,7 @@ func TestCommit(t *testing.T) {
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
 	requireConnect(t, rpcConfig.ListenAddress, 20)
-	cli, err := httpclient.New(rpcConfig.ListenAddress, "/websocket")
+	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 	res, err := cli.Commit(context.Background(), &testHeight)
 	require.NoError(t, err)
@@ -361,7 +360,7 @@ func TestBlockByHash(t *testing.T) {
 	stateStoreMock.On("Close").Return(nil)
 	blockStoreMock := &statemocks.BlockStore{}
 	blockStoreMock.On("Close").Return(nil)
-	blockStoreMock.On("LoadBlockMeta", testHeight).Return(&types.BlockMeta{
+	blockStoreMock.On("LoadBlockByHash", testHash).Return(testBlock, &types.BlockMeta{
 		BlockID: types.BlockID{
 			Hash: testHash,
 		},
@@ -369,7 +368,6 @@ func TestBlockByHash(t *testing.T) {
 			Height: testHeight,
 		},
 	}, nil)
-	blockStoreMock.On("LoadBlockByHash", testHash).Return(testBlock, nil)
 	txIndexerMock := &txindexmocks.TxIndexer{}
 	blkIdxMock := &indexermocks.BlockIndexer{}
 	rpcConfig := config.TestRPCConfig()
@@ -390,7 +388,7 @@ func TestBlockByHash(t *testing.T) {
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
 	requireConnect(t, rpcConfig.ListenAddress, 20)
-	cli, err := httpclient.New(rpcConfig.ListenAddress, "/websocket")
+	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 	res, err := cli.BlockByHash(context.Background(), testHash)
 	require.NoError(t, err)
@@ -442,7 +440,7 @@ func TestBlockchain(t *testing.T) {
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
 	requireConnect(t, rpcConfig.ListenAddress, 20)
-	cli, err := httpclient.New(rpcConfig.ListenAddress, "/websocket")
+	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 	res, err := cli.BlockchainInfo(context.Background(), 0, 100)
 	require.NoError(t, err)
@@ -494,7 +492,7 @@ func TestValidators(t *testing.T) {
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
 	requireConnect(t, rpcConfig.ListenAddress, 20)
-	cli, err := httpclient.New(rpcConfig.ListenAddress, "/websocket")
+	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 
 	testPage := 1
@@ -527,12 +525,11 @@ func TestBlockSearch(t *testing.T) {
 		Header: types.Header{
 			Height: testHeight,
 		},
-	}, nil)
-	blockStoreMock.On("LoadBlockMeta", testHeight).Return(&types.BlockMeta{
+	}, &types.BlockMeta{
 		BlockID: types.BlockID{
 			Hash: testBlockHash,
 		},
-	})
+	}, nil)
 	blkIdxMock.On("Search", mock.Anything,
 		mock.MatchedBy(func(q *query.Query) bool { return testQuery == q.String() })).
 		Return([]int64{testHeight}, nil)
@@ -554,7 +551,7 @@ func TestBlockSearch(t *testing.T) {
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
 	requireConnect(t, rpcConfig.ListenAddress, 20)
-	cli, err := httpclient.New(rpcConfig.ListenAddress, "/websocket")
+	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 
 	testPage := 1

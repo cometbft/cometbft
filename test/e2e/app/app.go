@@ -101,6 +101,9 @@ type Config struct {
 
 	// Vote extension padding size, to simulate different vote extension sizes.
 	VoteExtensionSize uint `toml:"vote_extension_size"`
+
+	// Flag for enabling and disabling logging of ABCI requests.
+	ABCIRequestsLoggingEnabled bool `toml:"abci_requests_logging_enabled"`
 }
 
 func DefaultConfig(dir string) *Config {
@@ -121,8 +124,12 @@ func NewApplication(cfg *Config) (*Application, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+	logger.Info("Application started!")
+
 	return &Application{
-		logger:    log.NewTMLogger(log.NewSyncWriter(os.Stdout)),
+		logger:    logger,
 		state:     state,
 		snapshots: snapshots,
 		cfg:       cfg,
@@ -131,6 +138,11 @@ func NewApplication(cfg *Config) (*Application, error) {
 
 // Info implements ABCI.
 func (app *Application) Info(context.Context, *abci.InfoRequest) (*abci.InfoResponse, error) {
+	r := &abci.Request{Value: &abci.Request_Info{Info: &abci.InfoRequest{}}}
+	if err := app.logABCIRequest(r); err != nil {
+		return nil, err
+	}
+
 	height, hash := app.state.Info()
 	return &abci.InfoResponse{
 		Version:          version.ABCIVersion,
@@ -142,7 +154,12 @@ func (app *Application) Info(context.Context, *abci.InfoRequest) (*abci.InfoResp
 
 // Info implements ABCI.
 func (app *Application) InitChain(_ context.Context, req *abci.InitChainRequest) (*abci.InitChainResponse, error) {
-	var err error
+	r := &abci.Request{Value: &abci.Request_InitChain{InitChain: &abci.InitChainRequest{}}}
+	err := app.logABCIRequest(r)
+	if err != nil {
+		return nil, err
+	}
+
 	app.state.initialHeight = uint64(req.InitialHeight)
 	if len(req.AppStateBytes) > 0 {
 		err = app.state.Import(0, req.AppStateBytes)
@@ -176,6 +193,12 @@ func (app *Application) InitChain(_ context.Context, req *abci.InitChainRequest)
 
 // CheckTx implements ABCI.
 func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*abci.CheckTxResponse, error) {
+	r := &abci.Request{Value: &abci.Request_CheckTx{CheckTx: &abci.CheckTxRequest{}}}
+	err := app.logABCIRequest(r)
+	if err != nil {
+		return nil, err
+	}
+
 	key, _, err := parseTx(req.Tx)
 	if err != nil || key == prefixReservedKey {
 		return &abci.CheckTxResponse{
@@ -193,6 +216,12 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 
 // FinalizeBlock implements ABCI.
 func (app *Application) FinalizeBlock(_ context.Context, req *abci.FinalizeBlockRequest) (*abci.FinalizeBlockResponse, error) {
+	r := &abci.Request{Value: &abci.Request_FinalizeBlock{FinalizeBlock: &abci.FinalizeBlockRequest{}}}
+	err := app.logABCIRequest(r)
+	if err != nil {
+		return nil, err
+	}
+
 	txs := make([]*abci.ExecTxResult, len(req.Txs))
 
 	for i, tx := range req.Txs {
@@ -241,6 +270,12 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.FinalizeBlock
 
 // Commit implements ABCI.
 func (app *Application) Commit(_ context.Context, _ *abci.CommitRequest) (*abci.CommitResponse, error) {
+	r := &abci.Request{Value: &abci.Request_Commit{Commit: &abci.CommitRequest{}}}
+	err := app.logABCIRequest(r)
+	if err != nil {
+		return nil, err
+	}
+
 	height, err := app.state.Commit()
 	if err != nil {
 		panic(err)
@@ -267,6 +302,12 @@ func (app *Application) Commit(_ context.Context, _ *abci.CommitRequest) (*abci.
 
 // Query implements ABCI.
 func (app *Application) Query(_ context.Context, req *abci.QueryRequest) (*abci.QueryResponse, error) {
+	r := &abci.Request{Value: &abci.Request_Query{Query: &abci.QueryRequest{}}}
+	err := app.logABCIRequest(r)
+	if err != nil {
+		return nil, err
+	}
+
 	value, height := app.state.Query(string(req.Data))
 	return &abci.QueryResponse{
 		Height: int64(height),
@@ -277,6 +318,12 @@ func (app *Application) Query(_ context.Context, req *abci.QueryRequest) (*abci.
 
 // ListSnapshots implements ABCI.
 func (app *Application) ListSnapshots(context.Context, *abci.ListSnapshotsRequest) (*abci.ListSnapshotsResponse, error) {
+	r := &abci.Request{Value: &abci.Request_ListSnapshots{ListSnapshots: &abci.ListSnapshotsRequest{}}}
+	err := app.logABCIRequest(r)
+	if err != nil {
+		return nil, err
+	}
+
 	snapshots, err := app.snapshots.List()
 	if err != nil {
 		panic(err)
@@ -286,6 +333,12 @@ func (app *Application) ListSnapshots(context.Context, *abci.ListSnapshotsReques
 
 // LoadSnapshotChunk implements ABCI.
 func (app *Application) LoadSnapshotChunk(_ context.Context, req *abci.LoadSnapshotChunkRequest) (*abci.LoadSnapshotChunkResponse, error) {
+	r := &abci.Request{Value: &abci.Request_LoadSnapshotChunk{LoadSnapshotChunk: &abci.LoadSnapshotChunkRequest{}}}
+	err := app.logABCIRequest(r)
+	if err != nil {
+		return nil, err
+	}
+
 	chunk, err := app.snapshots.LoadChunk(req.Height, req.Format, req.Chunk)
 	if err != nil {
 		panic(err)
@@ -295,6 +348,12 @@ func (app *Application) LoadSnapshotChunk(_ context.Context, req *abci.LoadSnaps
 
 // OfferSnapshot implements ABCI.
 func (app *Application) OfferSnapshot(_ context.Context, req *abci.OfferSnapshotRequest) (*abci.OfferSnapshotResponse, error) {
+	r := &abci.Request{Value: &abci.Request_OfferSnapshot{OfferSnapshot: &abci.OfferSnapshotRequest{}}}
+	err := app.logABCIRequest(r)
+	if err != nil {
+		return nil, err
+	}
+
 	if app.restoreSnapshot != nil {
 		panic("A snapshot is already being restored")
 	}
@@ -305,6 +364,12 @@ func (app *Application) OfferSnapshot(_ context.Context, req *abci.OfferSnapshot
 
 // ApplySnapshotChunk implements ABCI.
 func (app *Application) ApplySnapshotChunk(_ context.Context, req *abci.ApplySnapshotChunkRequest) (*abci.ApplySnapshotChunkResponse, error) {
+	r := &abci.Request{Value: &abci.Request_ApplySnapshotChunk{ApplySnapshotChunk: &abci.ApplySnapshotChunkRequest{}}}
+	err := app.logABCIRequest(r)
+	if err != nil {
+		return nil, err
+	}
+
 	if app.restoreSnapshot == nil {
 		panic("No restore in progress")
 	}
@@ -347,6 +412,12 @@ func (app *Application) ApplySnapshotChunk(_ context.Context, req *abci.ApplySna
 func (app *Application) PrepareProposal(
 	_ context.Context, req *abci.PrepareProposalRequest,
 ) (*abci.PrepareProposalResponse, error) {
+	r := &abci.Request{Value: &abci.Request_PrepareProposal{PrepareProposal: &abci.PrepareProposalRequest{}}}
+	err := app.logABCIRequest(r)
+	if err != nil {
+		return nil, err
+	}
+
 	_, areExtensionsEnabled := app.checkHeightAndExtensions(true, req.Height, "PrepareProposal")
 
 	txs := make([][]byte, 0, len(req.Txs)+1)
@@ -405,6 +476,12 @@ func (app *Application) PrepareProposal(
 // NOTE It is up to real Applications to effect punitive behavior in the cases ProcessProposal
 // returns PROCESS_PROPOSAL_STATUS_REJECT, as it is evidence of misbehavior.
 func (app *Application) ProcessProposal(_ context.Context, req *abci.ProcessProposalRequest) (*abci.ProcessProposalResponse, error) {
+	r := &abci.Request{Value: &abci.Request_ProcessProposal{ProcessProposal: &abci.ProcessProposalRequest{}}}
+	err := app.logABCIRequest(r)
+	if err != nil {
+		return nil, err
+	}
+
 	_, areExtensionsEnabled := app.checkHeightAndExtensions(true, req.Height, "ProcessProposal")
 
 	for _, tx := range req.Txs {
@@ -592,6 +669,19 @@ func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, 
 		}
 	}
 	return valUpdates, nil
+}
+
+// logAbciRequest log the request using the app's logger.
+func (app *Application) logABCIRequest(req *abci.Request) error {
+	if !app.cfg.ABCIRequestsLoggingEnabled {
+		return nil
+	}
+	s, err := GetABCIRequestString(req)
+	if err != nil {
+		return err
+	}
+	app.logger.Info(s)
+	return nil
 }
 
 // parseTx parses a tx in 'key=value' format into a key and value.

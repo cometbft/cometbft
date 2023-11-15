@@ -39,7 +39,7 @@ func New(chainID, remote string) (provider.Provider, error) {
 		remote = "http://" + remote
 	}
 
-	httpClient, err := rpchttp.NewWithTimeout(remote, "/websocket", timeout)
+	httpClient, err := rpchttp.NewWithTimeout(remote, timeout)
 	if err != nil {
 		return nil, err
 	}

@@ -13,7 +13,6 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 	cfg "github.com/cometbft/cometbft/config"
 	cstypes "github.com/cometbft/cometbft/consensus/types"
 	"github.com/cometbft/cometbft/crypto"
@@ -29,6 +28,7 @@ import (
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
+	cmtproto "github.com/cometbft/cometbft/types/proto"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 

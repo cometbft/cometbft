@@ -257,7 +257,7 @@ func TestBlockResults(t *testing.T) {
 	testGasUsed := int64(100)
 	stateStoreMock := &statemocks.Store{}
 	stateStoreMock.On("Close").Return(nil)
-	//	cmtstate "github.com/cometbft/cometbft/api/cometbft/state"
+	//	cmtstate "github.com/cometbft/cometbft/state/proto"
 	stateStoreMock.On("LoadFinalizeBlockResponse", testHeight).Return(&abcitypes.FinalizeBlockResponse{
 		TxResults: []*abcitypes.ExecTxResult{
 			{

@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	cmtstate "github.com/cometbft/cometbft/api/cometbft/state"
 	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1beta1"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1beta1"
 	"github.com/cometbft/cometbft/config"
@@ -21,6 +20,7 @@ import (
 	"github.com/cometbft/cometbft/proxy"
 	proxymocks "github.com/cometbft/cometbft/proxy/mocks"
 	sm "github.com/cometbft/cometbft/state"
+	cmtstate "github.com/cometbft/cometbft/state/proto"
 	"github.com/cometbft/cometbft/statesync/mocks"
 	"github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"

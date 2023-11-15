@@ -10,11 +10,11 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	cmtstate "github.com/cometbft/cometbft/api/cometbft/state"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtos "github.com/cometbft/cometbft/libs/os"
+	cmtstate "github.com/cometbft/cometbft/state/proto"
 	"github.com/cometbft/cometbft/types"
+	cmtproto "github.com/cometbft/cometbft/types/proto"
 )
 
 const (

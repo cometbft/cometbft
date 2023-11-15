@@ -17,6 +17,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/mock"
+	"github.com/cometbft/cometbft/types"
 )
 
 var cfg *config.P2PConfig
@@ -694,7 +695,7 @@ func TestPexVectors(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 
-		w := tc.msg.(p2p.Wrapper).Wrap()
+		w := tc.msg.(types.Wrapper).Wrap()
 		bz, err := proto.Marshal(w)
 		require.NoError(t, err)
 

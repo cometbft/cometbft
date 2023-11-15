@@ -16,13 +16,13 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	cmtstate "github.com/cometbft/cometbft/api/cometbft/state"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	sm "github.com/cometbft/cometbft/state"
+	cmtstate "github.com/cometbft/cometbft/state/proto"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 )

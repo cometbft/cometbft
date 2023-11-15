@@ -9,10 +9,10 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/light/store"
 	"github.com/cometbft/cometbft/types"
+	cmtproto "github.com/cometbft/cometbft/types/proto"
 )
 
 var sizeKey = []byte("size")

@@ -5,7 +5,7 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	pvproto "github.com/cometbft/cometbft/api/cometbft/privval"
+	pvproto "github.com/cometbft/cometbft/privval/proto"
 )
 
 // TODO: Add ChainIDRequest

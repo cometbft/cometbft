@@ -22,7 +22,6 @@ import (
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/abci/types/mocks"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
 	cfg "github.com/cometbft/cometbft/config"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/internal/test"
@@ -34,6 +33,7 @@ import (
 	sm "github.com/cometbft/cometbft/state"
 	smmocks "github.com/cometbft/cometbft/state/mocks"
 	"github.com/cometbft/cometbft/types"
+	cmtproto "github.com/cometbft/cometbft/types/proto"
 )
 
 func TestMain(m *testing.M) {

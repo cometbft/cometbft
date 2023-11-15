@@ -1,5 +1,5 @@
 //nolint:revive,stylecheck
-package privval
+package proto
 
 import (
 	"github.com/cometbft/cometbft/api/cometbft/privval/v1beta1"

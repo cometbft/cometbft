@@ -1,5 +1,5 @@
 //nolint:revive,stylecheck
-package blocksync
+package proto
 
 import (
 	"github.com/cometbft/cometbft/api/cometbft/blocksync/v1beta1"

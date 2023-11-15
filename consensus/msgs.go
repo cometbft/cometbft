@@ -6,13 +6,13 @@ import (
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 	"github.com/cosmos/gogoproto/proto"
 
-	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
+	cmtcons "github.com/cometbft/cometbft/consensus/proto"
 	cstypes "github.com/cometbft/cometbft/consensus/types"
 	"github.com/cometbft/cometbft/libs/bits"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
+	cmtproto "github.com/cometbft/cometbft/types/proto"
 )
 
 // TODO: This needs to be removed, but WALToProto depends on this.

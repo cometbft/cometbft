@@ -11,6 +11,7 @@ import (
 	"github.com/cometbft/cometbft/libs/cmap"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/types"
 
 	cmtconn "github.com/cometbft/cometbft/p2p/conn"
 )
@@ -66,7 +67,6 @@ func newPeerConn(
 	conn net.Conn,
 	socketAddr *NetAddress,
 ) peerConn {
-
 	return peerConn{
 		outbound:   outbound,
 		persistent: persistent,
@@ -274,7 +274,7 @@ func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bo
 		return false
 	}
 	metricLabelValue := p.mlc.ValueToMetricLabel(msg)
-	if w, ok := msg.(Wrapper); ok {
+	if w, ok := msg.(types.Wrapper); ok {
 		msg = w.Wrap()
 	}
 	msgBytes, err := proto.Marshal(msg)
@@ -396,7 +396,6 @@ func createMConnection(
 	onPeerError func(Peer, interface{}),
 	config cmtconn.MConnConfig,
 ) *cmtconn.MConnection {
-
 	onReceive := func(chID byte, msgBytes []byte) {
 		reactor := reactorsByCh[chID]
 		if reactor == nil {
@@ -414,7 +413,7 @@ func createMConnection(
 			"peer_id", string(p.ID()),
 			"chID", fmt.Sprintf("%#x", chID),
 		}
-		if w, ok := msg.(Unwrapper); ok {
+		if w, ok := msg.(types.Unwrapper); ok {
 			msg, err = w.Unwrap()
 			if err != nil {
 				panic(fmt.Errorf("unwrapping message: %s", err))

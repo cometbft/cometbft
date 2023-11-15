@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"time"
 
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types"
+	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1beta1"
+
 	"github.com/cometbft/cometbft/crypto"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/protoio"
+	cmtproto "github.com/cometbft/cometbft/types/proto"
 )
 
 const (
@@ -435,3 +437,5 @@ func SignAndCheckVote(
 
 	return true, nil
 }
+
+var _ Wrapper = &cmtcons.Vote{}

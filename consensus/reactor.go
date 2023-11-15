@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus"
+	cmtcons "github.com/cometbft/cometbft/consensus/proto"
 	cstypes "github.com/cometbft/cometbft/consensus/types"
 	"github.com/cometbft/cometbft/libs/bits"
 	cmtevents "github.com/cometbft/cometbft/libs/events"
@@ -1913,3 +1913,15 @@ func (m *HasProposalBlockPartMessage) ValidateBasic() error {
 func (m *HasProposalBlockPartMessage) String() string {
 	return fmt.Sprintf("[HasProposalBlockPart PI:%v HR:{%v/%02d}]", m.Index, m.Height, m.Round)
 }
+
+var (
+	_ types.Wrapper = &cmtcons.BlockPart{}
+	_ types.Wrapper = &cmtcons.HasVote{}
+	_ types.Wrapper = &cmtcons.HasProposalBlockPart{}
+	_ types.Wrapper = &cmtcons.NewRoundStep{}
+	_ types.Wrapper = &cmtcons.NewValidBlock{}
+	_ types.Wrapper = &cmtcons.Proposal{}
+	_ types.Wrapper = &cmtcons.ProposalPOL{}
+	_ types.Wrapper = &cmtcons.VoteSetBits{}
+	_ types.Wrapper = &cmtcons.VoteSetMaj23{}
+)

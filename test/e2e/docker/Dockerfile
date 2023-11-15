@@ -12,6 +12,7 @@ WORKDIR /src/cometbft
 
 # Fetch dependencies separately (for layer caching)
 COPY go.mod go.sum ./
+COPY api/go.mod api/go.sum api/
 RUN go mod download
 
 # Build CometBFT and install into /usr/bin/cometbft

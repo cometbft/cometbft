@@ -12,8 +12,6 @@ Accepted | Rejected | Deprecated | Superseded by
 
 ### In the Beginning...
 
-Since inception, Tendermint Core and later on CometBFT have featured a mempool
-as an internal piece of its architecture.
 It is well understood that a dissemination mechanism
 (sometimes using _Reliable Broadcast_ [\[HT94\]][HT94] but not necessarily),
 is needed in a distributed system implementing State-Machine Replication (SMR).
@@ -21,7 +19,8 @@ This is also the case in blockchains.
 Early designs such as Bitcoin or Ethereum include an _internal_ component,
 responsible for dissemination, called mempool.
 Tendermint Core chose to follow the same design given the success
-of those early blockchains.
+of those early blockchains and, since inception, Tendermint Core and later CometBFT have featured a mempool as an internal piece of its architecture.
+
 
 However, the design of ABCI clearly dividing the application logic (i.e., the appchain)
 and the consensus logic that provides SMR semantics to the app is a unique innovation in Cosmos
@@ -36,21 +35,21 @@ becomes more indirect, and thus more complex and hard to understand and operate.
 ### ABCI++ Improvements and Remaining Shortcomings
 
 Before the release of ABCI++, `CheckTx` was the main mechanism the app had at its disposal to influence
-what made it to the mempool, and very indirectly what transactions got ultimately proposed in a block.
-Since ABCI 1.0 (the first part of ABCI++, shipped in `v0.37.x`), the application now has
-a say in what is proposed with `PrepareProposal` and `ProcessProposal`.
+what transactions made it to the mempool, and very indirectly what transactions got ultimately proposed in a block.
+Since ABCI 1.0 (the first part of ABCI++, shipped in `v0.37.x`), the application has
+a more direct say in what is proposed through `PrepareProposal` and `ProcessProposal`.
 
-This has greatly improved the ability for appchains to influence the contents of proposed block.
-Further, it has enabled many new use cases for appchains. However some issues remain with
+This has greatly improved the ability for appchains to influence the contents of the proposed block.
+Further, ABCI++ has enabled many new use cases for appchains. However some issues remain with
 the current model:
 
-* We are using the same p2p network for disseminating transactions and consensus-related messages.
+* We are using the same P2P network for disseminating transactions and consensus-related messages.
 * Many mempool parameters are configured on a per-node basis by node operators,
   allowing the possibility of inconsistent mempool configuration across the network
   with potentially serious scalability effects
   (even causing unacceptable performance degradation in some extreme cases).
-* The mempool is using a basic (robust but suboptimal) flood algorithm
-  * the CometBFT team are working on improving it as one of our current priorities,
+* The current mempool implementation uses a basic (robust but sub-optimal) flood algorithm
+  * the CometBFT team is working on improving it as one of our current priorities,
     but any improvement we come up with must address the needs of a vast spectrum of applications,
     as well as be heavily scaled-tested in various scenarios
     (in an attempt to cover the applications' wide spectrum)
@@ -58,7 +57,7 @@ the current model:
     would reduce the search space as its designers can devise it with just their application's
     needs in mind.
 * The interaction with the application is still somewhat convoluted:
-  * the app has to decide what logic to implement in `CheckTx`,
+  * the application has to decide what logic to implement in `CheckTx`,
     what to do with the transaction list coming in `RequestPrepareProposal`,
     whether it wants to maintain an app-side mempool (more on this below), and whether or not
     to combine the transactions in the app-side mempool with those coming in `RequestPrepareProposal`
@@ -77,26 +76,25 @@ and briefly discussed in the last bullet point above (see [SDK app-mempool][sdk-
 In the app-mempool design in Cosmos SDK `v0.47.x`
 an unconfirmed transaction must be both in CometBFT's mempool for dissemination and
 in the app's mempool so the application can decide how to manage the mempool.
-The many advantages of this approach are beyond question. However it has some implications:
+There is no doubt that this approach has numerous advantages. However, it also has some implications that need to be considered:
 
 * Having every transaction both in CometBFT and in the application is suboptimal in terms of memory.
   Additonally, the app developer has to be careful
-  that the contents of both mempools does not diverge over time
+  that the contents of both mempools do not diverge over time
   (hence the crucial role `re-CheckTx` plays post-ABCI++).
 * The main reason for a transaction needing to be in CometBFT's mempool is
   because the design in Cosmos SDK `v0.47.x` does not consider an application
   that has its own means of disseminating transactions.
   It reuses the peer to peer network underneath CometBFT reactors.
-* So, if an app has an ad-hoc design of how to disseminate transactions,
-  there is no point in having transactions in CometBFT's mempool.
+* There is no point in having transactions in CometBFT's mempool if an application implements an ad-hoc design for disseminating transactions.
 
 This proposal targets this kind of applications:
-those that have an ad-hoc (and likely more efficient) mechanism for transaction dissemination.
+those that have an ad-hoc mechanism for transaction dissemination that better meets the application requirements.
 We propose to introduce a `nil` mempool which will effectively act as a stubbed object
 internally:
 
 * it will reject any transaction being locally submitted or gossipped by a peer
-* when it is time to _reap_ (as it is currently called) the mempool the answer will always be empty
+* when a _reap_ (as it is currently called) is executed in the mempool, an empty answer will always be returned
 * the application running on the proposer validator will add transactions it received
   using the appchains's own mechanism via `PrepareProposal`.
 
@@ -107,8 +105,8 @@ These are the alternatives known to date:
 1. Keep the current model. Useful for basic apps, but clearly suboptimal for applications
    with their own mechanism to disseminate transactions and particular performance requirements.
 2. Provide more efficient general-purpose mempool implementations.
-   This is an ongoing effort, but will take some time (and R&D effort) to come up with
-   advanced mechanisms -- likely highly configurable -- which then will have to be thoroughly tested.
+   This is an ongoing effort (e.g., [CAT mempool](https://github.com/cometbft/cometbft/pull/1472)), but will take some time (and R&D effort) to come up with
+   advanced mechanisms -- likely highly configurable and thus complex -- which then will have to be thoroughly tested.
 3. A similar approach to this one ([ADR110][adr-110]) whereby the application-specific
    mechanism directly interacts with CometBFT via a newly defined gRPC interface.
 
@@ -144,7 +142,7 @@ The `nil` Mempool implements the `Mempool` interface in a very simple manner:
 * `Size() int` returns 0
 * `SizeBytes() int64` returns 0
 
-Upon startup, the `nil` mempool reactor will advertise no channels to the peer to peer layer.
+Upon startup, the `nil` mempool reactor will advertise no channels to the peer-to-peer layer.
 
 ### Configuration
 
@@ -155,12 +153,12 @@ We propose the following changes to the `config.toml` file:
 # The type of mempool for this CometBFT node to use.
 #
 # Valid types of mempools supported by CometBFT:
-# - "flood" : clist mempool with flooding gossip protocol (default)
-# - "nil"   : nil-mempool (app needs an alternative tx dissemination mechanism)
+# - "local" : clist mempool with flooding gossip protocol (default)
+# - "nil"   : nil-mempool (app has implemented an alternative tx dissemination mechanism)
 type = "nil"
 ```
 
-The config validation logic will be modified to add a new rule that rejects a configuration file if:
+The config validation logic will be modified to add a new rule that rejects a configuration file if all of these conditions are met:
 
 * the mempool is set to `nil`
 * `create_empty_blocks`, in `consensus` section, is set to `false`.
@@ -213,9 +211,7 @@ so using the `nil` mempool renders CometBFT's operation useless.
     to their application.
   - Back-pressure mechanisms to prevent malicious users from abusing the transaction
     dissemination mechanism.
-- In this approach, CometBFT's peer-to-peer layer does not need to deal with transaction gossipping,
-  and its resources can be used by other reactors such as consensus, evidence,
-  block-sync, or state-sync.
+- In this approach, CometBFT's peer-to-peer layer is relieved from managing transaction gossip, freeing up its resources for other reactors such as consensus, evidence, block-sync, or state-sync.
 - There is no risk for the operators of a network to provide inconsistent configurations
   for some mempool-related parameters. Some of those misconfigurations are known to have caused
   serious performance issues in CometBFT's peer to peer network.

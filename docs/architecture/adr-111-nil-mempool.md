@@ -10,6 +10,15 @@ Accepted | Rejected | Deprecated | Superseded by
 
 ## Context
 
+### Summary
+
+The current mempool built into CometBFT implements a robust yet somewhat inefficient transaction gossip mechanism.
+While the CometBFT team is currently working on more efficient general-purpose transaction gossiping mechanisms,
+some users have expressed their desire to manage both the mempool and the transaction dissemination mechanism
+outside CometBFT (typically at the application level).
+
+This ADR proposes a fairly simple way for CometBFT to fulfill this use case without moving away from our current architecture.
+
 ### In the Beginning...
 
 It is well understood that a dissemination mechanism

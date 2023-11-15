@@ -1,7 +1,6 @@
 package v0
 
 import (
-	"crypto/rand"
 	"encoding/binary"
 	"fmt"
 	mrand "math/rand"
@@ -96,16 +95,27 @@ func ensureFire(t *testing.T, ch <-chan struct{}, timeoutMS int) {
 	}
 }
 
+func callCheckTx(t *testing.T, mp mempool.Mempool, txs types.Txs) {
+	txInfo := mempool.TxInfo{SenderID: 0}
+	for i, tx := range txs {
+		if err := mp.CheckTx(tx, nil, txInfo); err != nil {
+			// Skip invalid txs.
+			// TestMempoolFilters will fail otherwise. It asserts a number of txs
+			// returned.
+			if mempool.IsPreCheckError(err) {
+				continue
+			}
+			t.Fatalf("CheckTx failed: %v while checking #%d tx", err, i)
+		}
+	}
+}
+
 func checkTxs(t *testing.T, mp mempool.Mempool, count int, peerID uint16) types.Txs {
 	txs := make(types.Txs, count)
 	txInfo := mempool.TxInfo{SenderID: peerID}
 	for i := 0; i < count; i++ {
-		txBytes := make([]byte, 20)
+		txBytes := kvstore.NewRandomTx(20)
 		txs[i] = txBytes
-		_, err := rand.Read(txBytes)
-		if err != nil {
-			t.Error(err)
-		}
 		if err := mp.CheckTx(txBytes, nil, txInfo); err != nil {
 			// Skip invalid txs.
 			// TestMempoolFilters will fail otherwise. It asserts a number of txs

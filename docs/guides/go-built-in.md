@@ -380,7 +380,7 @@ func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.R
 
 Transactions are not guaranteed to be valid when they are delivered to an application, even if they were valid when they were proposed.
 
-This can happen if the application state is used to determine transaction validity. 
+This can happen if the application state is used to determine transaction validity.
 The application state may have changed between the initial execution of `CheckTx` and the transaction delivery in `FinalizeBlock` in a way that rendered the transaction no longer valid.
 
 **Note** that `FinalizeBlock` cannot yet commit the Badger transaction we were building during the block execution.
@@ -469,31 +469,6 @@ execution of the block once accepted.
 In the following code, the application simply returns the unmodified group of transactions:
 
 ```go
-<<<<<<< HEAD
- func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abcitypes.RequestPrepareProposal) (*abcitypes.ResponsePrepareProposal, error) {
-   totalBytes := int64(0)
-   txs := make([]byte, 0)
-
-   for _, tx := range proposal.Txs {
-     totalBytes += int64(len(tx))
-     txs = append(txs, tx...)
-
-       if totalBytes > int64(proposal.MaxTxBytes) {
-         break
-       }
-     }
-
-     return &abcitypes.ResponsePrepareProposal{Txs: proposal.Txs}, nil
- }
- ```
-
- This code snippet iterates through the proposed transactions and calculates the `total bytes`. If the `total bytes` exceeds the `MaxTxBytes` specified in the `RequestPrepareProposal` struct, the loop breaks and the transactions processed so far are returned.
-
- Note: It is the responsibility of the application to ensure that the `total bytes` of transactions returned does not exceed the `RequestPrepareProposal.max_tx_bytes` limit.
-
- Once a proposed block is received by a node, the proposal is passed to the application to give
- its blessing before voting to accept the proposal.
-=======
 func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abcitypes.RequestPrepareProposal) (*abcitypes.ResponsePrepareProposal, error) {
     return &abcitypes.ResponsePrepareProposal{Txs: proposal.Txs}, nil
 }
@@ -501,10 +476,9 @@ func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abci
 
 Once a proposed block is received by a node, the proposal is passed to the application to give
 its blessing before voting to accept the proposal.
->>>>>>> a05b73ee7 (docs: various improvements (#1603))
 
- This mechanism may be used for different reasons, for example to deal with blocks manipulated
- by malicious nodes, in which case the block should not be considered valid.
+This mechanism may be used for different reasons, for example to deal with blocks manipulated
+by malicious nodes, in which case the block should not be considered valid.
 
 The following code simply accepts all proposals:
 
@@ -559,7 +533,7 @@ func main() {
     config := cfg.DefaultConfig()
     config.SetRoot(homeDir)
     viper.SetConfigFile(fmt.Sprintf("%s/%s", homeDir, "config/config.toml"))
-    
+
     if err := viper.ReadInConfig(); err != nil {
         log.Fatalf("Reading config: %v", err)
     }
@@ -571,7 +545,7 @@ func main() {
     }
     dbPath := filepath.Join(homeDir, "badger")
     db, err := badger.Open(badger.DefaultOptions(dbPath))
-    
+
     if err != nil {
         log.Fatalf("Opening database: %v", err)
     }
@@ -599,7 +573,7 @@ func main() {
     if err != nil {
         log.Fatalf("failed to parse log level: %v", err)
     }
-    
+
     node, err := nm.NewNode(
         config,
         pv,
@@ -614,7 +588,7 @@ func main() {
     if err != nil {
         log.Fatalf("Creating node: %v", err)
     }
-    
+
     node.Start()
     defer func() {
         node.Stop()

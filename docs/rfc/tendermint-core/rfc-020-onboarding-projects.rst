@@ -173,7 +173,7 @@ Implement more Expressive ABCI Applications
 Tendermint maintains two very simple ABCI applications (a KV application used
 for basic testing, and slightly more advanced test application used in the
 end-to-end tests). Writing an application would provide a new engineer with
-useful experiences using Tendermint that mirrors the expierence of downstream
+useful experiences using Tendermint that mirrors the experience of downstream
 users.
 
 This is more of an exploratory project, but could include providing common
@@ -212,7 +212,7 @@ actionable, most users largely ignore the logging or run at very low
 verbosity. While the log statements in the code do describe useful events,
 taken as a whole the system is not particularly tractable, and particularly at
 the Debug level, not useful. One solution to this problem is to identify log
-messages that might be (e.g. increment a counter for certian kinds of errors)
+messages that might be (e.g. increment a counter for certain kinds of errors)
 
 One approach might be to look at various logging statements, particularly
 debug statements or errors that are logged but not returned, and see if

@@ -20,8 +20,8 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/internal/protoio"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/libs/protoio"
 	cryptoproto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/version"
@@ -30,7 +30,7 @@ import (
 const (
 	appVersion                 = 1
 	voteExtensionKey    string = "extensionSum"
-	voteExtensionMaxLen int64  = 1024 * 1024 * 128 //TODO: should be smaller.
+	voteExtensionMaxLen int64  = 1024 * 1024 * 128 // TODO: should be smaller.
 	voteExtensionMaxVal int64  = 128
 	prefixReservedKey   string = "reservedTxKey_"
 	suffixChainID       string = "ChainID"

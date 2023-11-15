@@ -13,7 +13,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 
 	cfg "github.com/cometbft/cometbft/config"
-	cmtnet "github.com/cometbft/cometbft/libs/net"
+	cmtnet "github.com/cometbft/cometbft/internal/net"
 	nm "github.com/cometbft/cometbft/node"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"

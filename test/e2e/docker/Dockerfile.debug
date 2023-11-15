@@ -12,10 +12,6 @@ RUN go install github.com/go-delve/delve/cmd/dlv@latest
 ENV COMETBFT_BUILD_OPTIONS badgerdb,boltdb,cleveldb,rocksdb,nostrip
 WORKDIR /src/cometbft
 
-# Fetch dependencies separately (for layer caching)
-COPY go.mod go.sum ./
-RUN go mod download
-
 # Build CometBFT and install into /usr/bin/cometbft
 COPY . .
 RUN echo $COMETBFT_BUILD_OPTION && make build && cp build/cometbft /usr/bin/cometbft

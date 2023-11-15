@@ -79,7 +79,7 @@ in the app's mempool so the application can decide how to manage the mempool.
 There is no doubt that this approach has numerous advantages. However, it also has some implications that need to be considered:
 
 * Having every transaction both in CometBFT and in the application is suboptimal in terms of memory.
-  Additonally, the app developer has to be careful
+  Additionally, the app developer has to be careful
   that the contents of both mempools do not diverge over time
   (hence the crucial role `re-CheckTx` plays post-ABCI++).
 * The main reason for a transaction needing to be in CometBFT's mempool is

@@ -233,8 +233,32 @@ have to be carried out.
 Backporting to `v0.34.x` does not make sense as this version predates the release of `ABCI 1.0`,
 so using the `nil` mempool renders CometBFT's operation useless.
 
->TODO: Need to add a small section here explaining the dilemma between a Consensus Param and a
->      `config.toml` field.
+### Config parameter _vs._ application-enforced parameter
+
+In the current proposal, the parameter selecting the mempool is in `config.toml`.
+However, it is not a clear-cut decision. These are the alternatives we see:
+
+* *Mempool selected in `config.toml` (our current design)*.
+  This is the way the mempool has always been selected in Tendermint Core and CometBFT,
+  in those versions where there were more than one mempool to choose from.
+  As the configuration is in `config.toml`, it is up to the node operators to configure their
+  nodes consistently, via social consensus. However this cannot be guaranteed.
+  A network with an inconsistent choice of mempool at different nodes might result in
+  hard-to-diagnose, undesirable side effects.
+* *Mempool selected as a network-wide parameter*.
+  A way to prevent any inconsistency when selecting the mempool is to move the configuration out of `config.toml`
+  and have it as a network-wide application-enforced parameter, implemented in the same way as Consensus Params.
+  The Cosmos community may not be ready for such a rigid, radical change,
+  even if it eliminates the risk of operators shooting themselves in the foot.
+  Hence we went currently favor the previous alternative.
+* *Mempool selected as a network-wide parameter, but allowing override*.
+  A third option, half way between the previous two, is to have the mempool selection
+  as a network-wide parameter, but with a special value called _local-config_ that still
+  allows an appchain to decide to leave it up to operators to configure it in `config.toml`.
+
+Ultimately, the "config parameter _vs._ application-enforced parameter" discussion
+is a more general one that is applicable to other parameters not related to mempool selection.
+In that sense, it is out of the scope of this ADR.
 
 ## Consequences
 

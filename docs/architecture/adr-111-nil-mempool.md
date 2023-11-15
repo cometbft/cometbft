@@ -3,6 +3,7 @@
 ## Changelog
 
 - 2023-11-07: First version (@sergio-mena)
+- 2023-11-15: Addressed PR comments (@sergio-mena)
 
 ## Status
 
@@ -114,10 +115,17 @@ These are the alternatives known to date:
 1. Keep the current model. Useful for basic apps, but clearly suboptimal for applications
    with their own mechanism to disseminate transactions and particular performance requirements.
 2. Provide more efficient general-purpose mempool implementations.
-   This is an ongoing effort (e.g., [CAT mempool](https://github.com/cometbft/cometbft/pull/1472)), but will take some time (and R&D effort) to come up with
+   This is an ongoing effort (e.g., [CAT mempool][cat-mempool]), but will take some time, and R&D effort, to come up with
    advanced mechanisms -- likely highly configurable and thus complex -- which then will have to be thoroughly tested.
 3. A similar approach to this one ([ADR110][adr-110]) whereby the application-specific
    mechanism directly interacts with CometBFT via a newly defined gRPC interface.
+4. Partially adopting this ADR. There are several possibilities:
+    * Use the current mempool, disable transaction broadcast in `config.toml`, and accept transactions from users via `BroadcastTX*` RPC methods.
+      Positive: avoids transaction gossiping; app can reuse the mempool existing in ComeBFT.
+      Negative: requires clients to know the validators' RPC endpoints (potential security issues).
+    * Transaction broadcast is disabled in `config.toml`, and have the application always reject transactions in `CheckTx`.
+      Positive: effectively disables the mempool; does not require modifications to Comet (may be used in `v0.37.x` and `v0.38.x`).
+      Negative: requires apps to disseminate txs themselves; the setup for this is less straightforward than this ADR's proposal.
 
 ## Decision
 
@@ -126,7 +134,7 @@ TBD
 ## Detailed Design
 
 What this ADR proposes can already be achieved with an unmodified CometBFT since `v0.37.x`,
-albeit with a complex, poor UX.
+albeit with a complex, poor UX (see the last alternative in section [Alternative Approaches](#alternative-approaches)).
 This core of this proposal is to make some internal changes so it is clear an simple for app developers,
 thus improving the UX.
 
@@ -167,10 +175,30 @@ We propose the following changes to the `config.toml` file:
 type = "nil"
 ```
 
-The config validation logic will be modified to add a new rule that rejects a configuration file if all of these conditions are met:
+The config validation logic will be modified to add a new rule that rejects a configuration file
+if all of these conditions are met:
 
 * the mempool is set to `nil`
 * `create_empty_blocks`, in `consensus` section, is set to `false`.
+
+The reason for this extra validity rule is that the `nil`-mempool, as proposed here,
+does not support the "do not create empty blocks" functionality.
+Here are some considerations on this:
+
+* The "do not create empty blocks" functionality
+  * entangles the consensus and mempool reactors
+  * is hardly used in production by real appchains (to the best of CometBFT team's knowledge)
+  * its current implementation for the built-in mempool has undesired side-effects
+    * app hashes currently refer to the previous block,
+    * and thus it interferes with query provability.
+* If needed in the future, this can be supported by extending ABCI,
+  but we will first need to see a real need for this before committing to changing ABCI
+  (which has other, higher-impact changes waiting to be prioritized).
+
+### RPC Calls
+
+There are no changes needed in the code dealing with RPC. Those RPC paths that call methods of the `Mempool` interface,
+will simply be calling the new implementation.
 
 ### Impacted Workflows
 
@@ -184,7 +212,7 @@ The config validation logic will be modified to add a new rule that rejects a co
 * *Consensus waiting for transactions to become available*. `TxsAvailable()` returns a closed channel,
   so consensus doesn't block (potentially producing empty blocks).
   At any rate, a configuration with the `nil` mempool and `create_empty_blocks` set to `false`
-  will be rejected at the first place.
+  will be rejected in the first place.
 * *A new block is decided*.
   * When `Update` is called, nothing is done (no decided transaction is removed).
   * Locking and unlocking the mempool has no effect.
@@ -239,6 +267,7 @@ so using the `nil` mempool renders CometBFT's operation useless.
   This is a considerable endeavor, and more basic appchains may consider it is not worth the hassle.
 
 
-[sdk-app-mempool]: [https://docs.cosmos.network/v0.47/build/building-apps/app-mempool]
-[adr-110]: [https://github.com/cometbft/cometbft/pull/1565]
-[HT94]: [https://dl.acm.org/doi/book/10.5555/866693]
+[sdk-app-mempool]: https://docs.cosmos.network/v0.47/build/building-apps/app-mempool
+[adr-110]: https://github.com/cometbft/cometbft/pull/1565
+[HT94]: https://dl.acm.org/doi/book/10.5555/866693
+[cat-mempool]: https://github.com/cometbft/cometbft/pull/1472

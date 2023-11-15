@@ -378,7 +378,8 @@ func (b *RequestBatch) Call(
 
 //-------------------------------------------------------------
 
-func makeHTTPDialer(remoteAddr string) (func(string, string) (net.Conn, error), error) {
+// MakeHTTPDialer creates an HTTP client dialer based on the given URL.
+func MakeHTTPDialer(remoteAddr string) (func(string, string) (net.Conn, error), error) {
 	u, err := newParsedURL(remoteAddr)
 	if err != nil {
 		return nil, err
@@ -404,7 +405,7 @@ func makeHTTPDialer(remoteAddr string) (func(string, string) (net.Conn, error), 
 // remoteAddr should be fully featured (eg. with tcp:// or unix://).
 // An error will be returned in case of invalid remoteAddr.
 func DefaultHTTPClient(remoteAddr string) (*http.Client, error) {
-	dialFn, err := makeHTTPDialer(remoteAddr)
+	dialFn, err := MakeHTTPDialer(remoteAddr)
 	if err != nil {
 		return nil, err
 	}

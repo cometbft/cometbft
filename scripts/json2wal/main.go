@@ -14,7 +14,7 @@ import (
 	"os"
 	"strings"
 
-	cs "github.com/cometbft/cometbft/consensus"
+	cs "github.com/cometbft/cometbft/internal/consensus"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/types"
 )

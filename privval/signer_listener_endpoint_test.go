@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	cmtnet "github.com/cometbft/cometbft/internal/net"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtnet "github.com/cometbft/cometbft/libs/net"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -188,7 +188,6 @@ func getMockEndpoints(
 	addr string,
 	socketDialer SocketDialer,
 ) (*SignerListenerEndpoint, *SignerDialerEndpoint) {
-
 	var (
 		logger           = log.TestingLogger()
 		endpointIsOpenCh = make(chan struct{})

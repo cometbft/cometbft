@@ -13,10 +13,10 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	"github.com/cometbft/cometbft/libs/bits"
+	"github.com/cometbft/cometbft/internal/bits"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/cometbft/cometbft/version"
@@ -1009,9 +1009,7 @@ func CommitFromProto(cp *cmtproto.Commit) (*Commit, error) {
 		return nil, errors.New("nil Commit")
 	}
 
-	var (
-		commit = new(Commit)
-	)
+	commit := new(Commit)
 
 	bi, err := BlockIDFromProto(&cp.BlockID)
 	if err != nil {
@@ -1277,7 +1275,6 @@ func ExtendedCommitFromProto(ecp *cmtproto.ExtendedCommit) (*ExtendedCommit, err
 
 // Data contains the set of transactions included in the block
 type Data struct {
-
 	// Txs that will be applied by state @ block.Height+1.
 	// NOTE: not all txs here are valid.  We're just agreeing on the order first.
 	// This means that block.AppHash does not include these txs.

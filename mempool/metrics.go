@@ -64,6 +64,13 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Help:      "Size of the mempool (number of uncommitted transactions).",
 		}, labels).With(labelsAndValues...),
 
+		SizeBytes: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "size_bytes",
+			Help:      "Total size of the mempool in bytes.",
+		}, labels).With(labelsAndValues...),
+
 		TxSizeBytes: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,

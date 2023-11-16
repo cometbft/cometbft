@@ -101,7 +101,7 @@ type Manifest struct {
 
 	// LogLevel sets the log level on all nodes.
 	LogLevel string `toml:"log_level"`
-	
+
 	// Defines a minimum size for the vote extensions.
 	VoteExtensionSize uint `toml:"vote_extension_size"`
 
@@ -110,9 +110,10 @@ type Manifest struct {
 
 	// GossipProtocol determines which gossip protocol to use for the mempool of all nodes.
 	GossipProtocol string `toml:"gossip_protocol"`
+	// Maximum number of peers to which the node gossip transactions
+	ExperimentalMaxGossipConnectionsToPersistentPeers    uint `toml:"experimental_max_gossip_connections_to_persistent_peers"`
+	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint `toml:"experimental_max_gossip_connections_to_non_persistent_peers"`
 
-	// Maximum number of peers to gossip transactions
-	ExperimentalMaxUsedOutboundPeers uint `toml:"experimental_max_used_outbound_peers"`
 	// Enable or disable e2e tests for CometBFT's expected behavior with respect
 	// to ABCI.
 	ABCITestsEnabled bool `toml:"abci_tests_enabled"`

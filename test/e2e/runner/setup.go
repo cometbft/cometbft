@@ -182,9 +182,10 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg.StateSync.DiscoveryTime = 5 * time.Second
 	cfg.BlockSync.Version = node.BlockSyncVersion
 	cfg.Consensus.PeerGossipIntraloopSleepDuration = node.Testnet.PeerGossipIntraloopSleepDuration
-	cfg.Mempool.ExperimentalMaxUsedOutboundPeers = int(node.Testnet.ExperimentalMaxUsedOutboundPeers)
 	cfg.P2P.PexReactor = node.Testnet.PexReactor
 	cfg.LogLevel = node.Testnet.LogLevel
+	cfg.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToNonPersistentPeers)
+	cfg.Mempool.ExperimentalMaxGossipConnectionsToPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToPersistentPeers)
 
 	// Assume that full nodes and validators will have a data companion
 	// attached, which will need access to the privileged gRPC endpoint.

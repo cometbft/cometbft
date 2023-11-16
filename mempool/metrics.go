@@ -42,6 +42,10 @@ type Metrics struct {
 
 	// Number of times transactions are rechecked in the mempool.
 	RecheckTimes metrics.Counter
+
+	// Number of connections being actively used for gossiping transactions
+	// (experimental feature).
+	ActiveOutboundConnections metrics.Gauge
 }
 
 // PrometheusMetrics returns Metrics build using Prometheus client library.
@@ -95,18 +99,26 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "recheck_times",
 			Help:      "Number of times transactions are rechecked in the mempool.",
 		}, labels).With(labelsAndValues...),
+
+		ActiveOutboundConnections: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "active_outbound_connections",
+			Help:      "Number of connections being actively used for gossiping transactions (experimental feature).",
+		}, labels).With(labelsAndValues...),
 	}
 }
 
 // NopMetrics returns no-op Metrics.
 func NopMetrics() *Metrics {
 	return &Metrics{
-		Size:         discard.NewGauge(),
-		SizeBytes:    discard.NewGauge(),
-		TxSizeBytes:  discard.NewHistogram(),
-		FailedTxs:    discard.NewCounter(),
-		RejectedTxs:  discard.NewCounter(),
-		EvictedTxs:   discard.NewCounter(),
-		RecheckTimes: discard.NewCounter(),
+		Size:                      discard.NewGauge(),
+		SizeBytes:                 discard.NewGauge(),
+		TxSizeBytes:               discard.NewHistogram(),
+		FailedTxs:                 discard.NewCounter(),
+		RejectedTxs:               discard.NewCounter(),
+		EvictedTxs:                discard.NewCounter(),
+		RecheckTimes:              discard.NewCounter(),
+		ActiveOutboundConnections: discard.NewGauge(),
 	}
 }

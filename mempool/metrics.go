@@ -42,6 +42,10 @@ type Metrics struct {
 
 	// Number of times transactions are rechecked in the mempool.
 	RecheckTimes metrics.Counter
+
+	// Number of connections being actively used for gossiping transactions
+	// (experimental feature).
+	ActiveOutboundConnections metrics.Gauge
 }
 
 // PrometheusMetrics returns Metrics build using Prometheus client library.

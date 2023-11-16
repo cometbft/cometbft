@@ -1,5 +1,35 @@
 # CHANGELOG
 
+## v0.38.1
+
+*November 17, 2023*
+
+This release contains, among other things, an opt-in, experimental feature to
+help reduce the bandwidth consumption associated with the mempool's transaction
+gossip.
+
+### BUG FIXES
+
+- `[state/indexer]` Respect both height params while querying for events
+   ([\#1529](https://github.com/cometbft/cometbft/pull/1529))
+
+### FEATURES
+
+- `[metrics]` Add metric for mempool size in bytes `SizeBytes`.
+  ([\#1512](https://github.com/cometbft/cometbft/pull/1512))
+
+### IMPROVEMENTS
+
+- `[mempool]` Add experimental feature to limit the number of persistent peers and non-persistent
+  peers to which the node gossip transactions.
+  ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
+  ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
+- `[config]` Add mempool parameters `experimental_max_gossip_connections_to_persistent_peers` and
+  `experimental_max_gossip_connections_to_non_persistent_peers` for limiting the number of peers to
+  which the node gossip transactions. 
+  ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
+  ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
+
 ## v0.38.0
 
 *September 12, 2023*
@@ -32,10 +62,10 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
 - `[rpc]` Removed `begin_block_events` and `end_block_events` from `BlockResultsResponse`.
   The events are merged into one field called `finalize_block_events`.
   ([\#9427](https://github.com/tendermint/tendermint/issues/9427))
-- `[pubsub]` Added support for big integers and big floats in the pubsub event query system.
+- `[kvindexer]` Added support for big integers and big floats in the kvindexer.
   Breaking changes: function `Number` in package `libs/pubsub/query/syntax` changed its return value.
   ([\#797](https://github.com/cometbft/cometbft/pull/797))
-- `[kvindexer]` Added support for big integers and big floats in the kvindexer.
+- `[pubsub]` Added support for big integers and big floats in the pubsub event query system.
   Breaking changes: function `Number` in package `libs/pubsub/query/syntax` changed its return value.
   ([\#797](https://github.com/cometbft/cometbft/pull/797))
 - `[mempool]` Application can now set `ConsensusParams.Block.MaxBytes` to -1

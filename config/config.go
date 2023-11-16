@@ -762,6 +762,7 @@ type MempoolConfig struct {
 	// XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
 	MaxBatchBytes int `mapstructure:"max_batch_bytes"`
 	// Experimental parameters to limit gossiping txs to up to the specified number of peers.
+	// This feature is only available for the default mempool (version config set to "v0").
 	// We use two independent upper values for persistent peers and for non-persistent peers.
 	// Unconditional peers are not affected by this feature.
 	// If we are connected to more than the specified number of persistent peers, only send txs to

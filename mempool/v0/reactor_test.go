@@ -321,7 +321,7 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 
 	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
 	// receive any tx. (The second reactor only sends transactions to the first reactor.)
-	waitForTxsOnReactor(t, txs, reactors[1], 0)
+	checkTxsInMempool(t, txs, reactors[1], 0)
 	for _, r := range reactors[2:] {
 		require.Zero(t, r.mempool.Size())
 	}
@@ -332,7 +332,7 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 
 	// Now the third reactor should start receiving transactions from the first reactor; the fourth
 	// reactor's mempool should still be empty.
-	waitForTxsOnReactor(t, txs, reactors[2], 0)
+	checkTxsInMempool(t, txs, reactors[2], 0)
 	for _, r := range reactors[3:] {
 		require.Zero(t, r.mempool.Size())
 	}
@@ -388,7 +388,7 @@ func waitForTxsOnReactors(t *testing.T, txs types.Txs, reactors []*Reactor) {
 		wg.Add(1)
 		go func(r *Reactor, reactorIndex int) {
 			defer wg.Done()
-			waitForTxsOnReactor(t, txs, r, reactorIndex)
+			checkTxsInOrder(t, txs, r, reactorIndex)
 		}(reactor, i)
 	}
 
@@ -406,13 +406,30 @@ func waitForTxsOnReactors(t *testing.T, txs types.Txs, reactors []*Reactor) {
 	}
 }
 
-func waitForTxsOnReactor(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex int) {
-	mempool := reactor.mempool
-	for mempool.Size() < len(txs) {
+// Wait until the mempool has a certain number of transactions.
+func waitForNumTxsInMempool(numTxs int, reactor *Reactor) {
+	for reactor.mempool.Size() < numTxs {
 		time.Sleep(time.Millisecond * 100)
 	}
+}
 
-	reapedTxs := mempool.ReapMaxTxs(len(txs))
+// Wait until all txs are in the mempool and check that the number of txs in the
+// mempool is as expected.
+func checkTxsInMempool(t *testing.T, txs types.Txs, reactor *Reactor, _ int) {
+	waitForNumTxsInMempool(len(txs), reactor)
+
+	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
+	require.Equal(t, len(txs), len(reapedTxs))
+	require.Equal(t, len(txs), reactor.mempool.Size())
+}
+
+// Wait until all txs are in the mempool and check that they are in the same
+// order as given.
+func checkTxsInOrder(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex int) {
+	waitForNumTxsInMempool(len(txs), reactor)
+
+	// Check that all transactions in the mempool are in the same order as txs.
+	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
 	for i, tx := range txs {
 		assert.Equalf(t, tx, reapedTxs[i],
 			"txs at index %d on reactor %d don't match: %v vs %v", i, reactorIndex, tx, reapedTxs[i])

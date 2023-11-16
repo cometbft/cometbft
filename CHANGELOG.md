@@ -1,5 +1,37 @@
 # CHANGELOG
 
+## v0.34.30
+
+*November 17, 2023*
+
+This release contains, among other things, an opt-in, experimental feature to
+help reduce the bandwidth consumption associated with the mempool's transaction
+gossip.
+
+### BUILD
+
+- Bump Go version used to v1.20 since v1.19 has reached EOL
+  ([\#1351](https://github.com/cometbft/cometbft/pull/1351))
+
+### FEATURES
+
+- `[metrics]` Add metric for mempool size in bytes `SizeBytes`.
+  ([\#1512](https://github.com/cometbft/cometbft/pull/1512))
+
+### IMPROVEMENTS
+
+- `[node]` Make handshake cancelable ([cometbft/cometbft\#857](https://github.com/cometbft/cometbft/pull/857))
+- `[node]` Close evidence.db OnStop ([cometbft/cometbft\#1210](https://github.com/cometbft/cometbft/pull/1210): @chillyvee)
+- `[mempool]` Add experimental feature to limit the number of persistent peers and non-persistent
+  peers to which the node gossip transactions (only for "v0" mempool).
+  ([\#1558](https://github.com/cometbft/cometbft/pull/1558),
+  ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
+- `[config]` Add mempool parameters `experimental_max_gossip_connections_to_persistent_peers` and
+  `experimental_max_gossip_connections_to_non_persistent_peers` for limiting the number of peers to
+  which the node gossip transactions. 
+  ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
+  ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
+
 ## v0.34.29
 
 *June 14, 2023*
@@ -9,12 +41,12 @@ security issues.
 
 ### BUG FIXES
 
-- `[state/kvindex]` Querying event attributes that are bigger than int64 is now
-  enabled. ([\#771](https://github.com/cometbft/cometbft/pull/771))
 - `[pubsub]` Pubsub queries are now able to parse big integers (larger than
   int64). Very big floats are also properly parsed into very big integers
   instead of being truncated to int64.
   ([\#771](https://github.com/cometbft/cometbft/pull/771))
+- `[state/kvindex]` Querying event attributes that are bigger than int64 is now
+  enabled. ([\#771](https://github.com/cometbft/cometbft/pull/771))
 
 ### IMPROVEMENTS
 

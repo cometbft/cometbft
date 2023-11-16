@@ -182,6 +182,8 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg.DBBackend = node.Database
 	cfg.StateSync.DiscoveryTime = 5 * time.Second
 	cfg.BlockSync.Version = node.BlockSyncVersion
+	cfg.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToNonPersistentPeers)
+	cfg.Mempool.ExperimentalMaxGossipConnectionsToPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToPersistentPeers)
 
 	// Assume that full nodes and validators will have a data companion
 	// attached, which will need access to the privileged gRPC endpoint.

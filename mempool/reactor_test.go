@@ -434,8 +434,8 @@ func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
 	}
 
 	// Disconnect the second reactor from the third reactor.
-	pCon_1_2 := reactors[1].Switch.Peers().List()[1]
-	reactors[1].Switch.StopPeerGracefully(pCon_1_2)
+	pCon1_2 := reactors[1].Switch.Peers().List()[1]
+	reactors[1].Switch.StopPeerGracefully(pCon1_2)
 
 	// Add a bunch transactions to the first reactor.
 	txs := newUniqueTxs(100)
@@ -449,8 +449,8 @@ func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
 	}
 
 	// Disconnect the second reactor from the first reactor.
-	pCon_0_1 := reactors[0].Switch.Peers().List()[0]
-	reactors[0].Switch.StopPeerGracefully(pCon_0_1)
+	pCon0_1 := reactors[0].Switch.Peers().List()[0]
+	reactors[0].Switch.StopPeerGracefully(pCon0_1)
 
 	// Now the third reactor should start receiving transactions from the first reactor and
 	// the fourth reactor from the second

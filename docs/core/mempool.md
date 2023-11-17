@@ -4,7 +4,19 @@ order: 12
 
 # Mempool
 
-## Transaction ordering
+CometBFT currently supports two types of mempools:
+
+- "flood" : concurrent linked list mempool with flooding gossip protocol
+  (default)
+- "nop"   : nop-mempool (short for no operation; the ABCI app is
+  responsible for storing, disseminating and proposing txs)
+
+## 1. Flood
+
+The first implementation, which stores transactions in a concurrent linked list
+and gossips them to all connected peers.
+
+### Transaction ordering
 
 Currently, there's no ordering of transactions other than the order they've
 arrived (via RPC or from other nodes).
@@ -46,3 +58,9 @@ order/nonce/sequence number, the application can reject transactions that are
 out of order. So if a node receives `tx3`, then `tx1`, it can reject `tx3` and then
 accept `tx1`. The sender can then retry sending `tx3`, which should probably be
 rejected until the node has seen `tx2`.
+
+## 2. Nop
+
+This essentially disables all mempool related functionality in CometBFT. The
+ABCI application becomes responsible for storing, disseminating and proposing
+transactions. The concrete design is up to the ABCI developers.

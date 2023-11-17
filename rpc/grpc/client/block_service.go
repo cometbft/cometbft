@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/cosmos/gogoproto/grpc"
+
 	blocksvc "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
-	"github.com/cosmos/gogoproto/grpc"
 )
 
 // Block data returned by the CometBFT BlockService gRPC API.

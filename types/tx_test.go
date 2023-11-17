@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	ctest "github.com/cometbft/cometbft/libs/test"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
@@ -123,9 +123,8 @@ func testTxProofUnchangable(t *testing.T) {
 	}
 }
 
-// This makes sure that the proof doesn't deserialize into something valid.
+// assertBadProof makes sure that the proof doesn't deserialize into something valid.
 func assertBadProof(t *testing.T, root []byte, bad []byte, good TxProof) {
-
 	var (
 		proof   TxProof
 		pbProof cmtproto.TxProof

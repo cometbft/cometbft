@@ -44,6 +44,7 @@ numbering our ADRs from 100 onwards.
 
 - [ADR-103: Protobuf definition versioning](./adr-103-proto-versioning.md)
 - [ADR-105: Refactor list of senders in mempool](./adr-105-refactor-mempool-senders.md)
+- [ADR-109: Reduce CometBFT Go API Surface Area](./adr-109-reduce-go-api-surface.md)
 - [ADR-111: Nil Mempool](./adr-111-nil-mempool.md)
 
 ### Accepted
@@ -61,3 +62,4 @@ numbering our ADRs from 100 onwards.
 ### Rejected
 
 - [ADR-100: Data companion push API](./adr-100-data-companion-push-api.md)
+- [ADR-110: Remote mempool](./adr-110-remote-mempool.md)

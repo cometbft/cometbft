@@ -11,7 +11,7 @@ import (
 	"net/url"
 	"strings"
 
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
@@ -136,8 +136,10 @@ var _ HTTPClient = (*Client)(nil)
 
 // Both Client and RequestBatch can facilitate calls to the JSON
 // RPC endpoint.
-var _ Caller = (*Client)(nil)
-var _ Caller = (*RequestBatch)(nil)
+var (
+	_ Caller = (*Client)(nil)
+	_ Caller = (*RequestBatch)(nil)
+)
 
 var _ fmt.Stringer = (*Client)(nil)
 
@@ -376,7 +378,8 @@ func (b *RequestBatch) Call(
 
 //-------------------------------------------------------------
 
-func makeHTTPDialer(remoteAddr string) (func(string, string) (net.Conn, error), error) {
+// MakeHTTPDialer creates an HTTP client dialer based on the given URL.
+func MakeHTTPDialer(remoteAddr string) (func(string, string) (net.Conn, error), error) {
 	u, err := newParsedURL(remoteAddr)
 	if err != nil {
 		return nil, err
@@ -402,7 +405,7 @@ func makeHTTPDialer(remoteAddr string) (func(string, string) (net.Conn, error), 
 // remoteAddr should be fully featured (eg. with tcp:// or unix://).
 // An error will be returned in case of invalid remoteAddr.
 func DefaultHTTPClient(remoteAddr string) (*http.Client, error) {
-	dialFn, err := makeHTTPDialer(remoteAddr)
+	dialFn, err := MakeHTTPDialer(remoteAddr)
 	if err != nil {
 		return nil, err
 	}

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/cometbft/cometbft/libs/bits"
+	"github.com/cometbft/cometbft/internal/bits"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
@@ -111,7 +111,7 @@ func (voteSet *VoteSet) ChainID() string {
 	return voteSet.chainID
 }
 
-// Implements VoteSetReader.
+// GetHeight implements VoteSetReader.
 func (voteSet *VoteSet) GetHeight() int64 {
 	if voteSet == nil {
 		return 0
@@ -119,7 +119,7 @@ func (voteSet *VoteSet) GetHeight() int64 {
 	return voteSet.height
 }
 
-// Implements VoteSetReader.
+// GetRound implements VoteSetReader.
 func (voteSet *VoteSet) GetRound() int32 {
 	if voteSet == nil {
 		return -1
@@ -127,7 +127,7 @@ func (voteSet *VoteSet) GetRound() int32 {
 	return voteSet.round
 }
 
-// Implements VoteSetReader.
+// Type implements VoteSetReader.
 func (voteSet *VoteSet) Type() byte {
 	if voteSet == nil {
 		return 0x00
@@ -135,7 +135,7 @@ func (voteSet *VoteSet) Type() byte {
 	return byte(voteSet.signedMsgType)
 }
 
-// Implements VoteSetReader.
+// Size implements VoteSetReader.
 func (voteSet *VoteSet) Size() int {
 	if voteSet == nil {
 		return 0
@@ -143,7 +143,7 @@ func (voteSet *VoteSet) Size() int {
 	return voteSet.valSet.Size()
 }
 
-// Returns added=true if vote is valid and new.
+// AddVote returns added=true if vote is valid and new.
 // Otherwise returns err=ErrVote[
 //
 //	UnexpectedStep | InvalidIndex | InvalidAddress |
@@ -241,7 +241,7 @@ func (voteSet *VoteSet) addVote(vote *Vote) (added bool, err error) {
 	return added, nil
 }
 
-// Returns (vote, true) if vote exists for valIndex and blockKey.
+// getVote returns (vote, true) if vote exists for valIndex and blockKey.
 func (voteSet *VoteSet) getVote(valIndex int32, blockKey string) (vote *Vote, ok bool) {
 	if existing := voteSet.votes[valIndex]; existing != nil && existing.BlockID.Key() == blockKey {
 		return existing, true
@@ -252,7 +252,7 @@ func (voteSet *VoteSet) getVote(valIndex int32, blockKey string) (vote *Vote, ok
 	return nil, false
 }
 
-// Assumes signature is valid.
+// addVerifiedVote assumes signature is valid.
 // If conflicting vote exists, returns it.
 func (voteSet *VoteSet) addVerifiedVote(
 	vote *Vote,
@@ -366,7 +366,7 @@ func (voteSet *VoteSet) SetPeerMaj23(peerID P2PID, blockID BlockID) error {
 	return nil
 }
 
-// Implements VoteSetReader.
+// BitArray implements VoteSetReader.
 func (voteSet *VoteSet) BitArray() *bits.BitArray {
 	if voteSet == nil {
 		return nil
@@ -436,7 +436,7 @@ func (voteSet *VoteSet) HasTwoThirdsMajority() bool {
 	return voteSet.maj23 != nil
 }
 
-// Implements VoteSetReader.
+// IsCommit implements VoteSetReader.
 func (voteSet *VoteSet) IsCommit() bool {
 	if voteSet == nil {
 		return false
@@ -529,7 +529,7 @@ func (voteSet *VoteSet) StringIndented(indent string) string {
 		indent)
 }
 
-// Marshal the VoteSet to JSON. Same as String(), just in JSON,
+// MarshalJSON marshals the VoteSet to JSON. Same as String(), just in JSON,
 // and without the height/round/signedMsgType (since its already included in the votes).
 func (voteSet *VoteSet) MarshalJSON() ([]byte, error) {
 	voteSet.mtx.Lock()
@@ -550,7 +550,7 @@ type VoteSetJSON struct {
 	PeerMaj23s    map[P2PID]BlockID `json:"peer_maj_23s"`
 }
 
-// Return the bit-array of votes including
+// BitArrayString returns the bit-array of votes including
 // the fraction of power that has voted like:
 // "BA{29:xx__x__x_x___x__x_______xxx__} 856/1304 = 0.66"
 func (voteSet *VoteSet) BitArrayString() string {
@@ -565,7 +565,7 @@ func (voteSet *VoteSet) bitArrayString() string {
 	return fmt.Sprintf("%s %d/%d = %.2f", bAString, voted, total, fracVoted)
 }
 
-// Returns a list of votes compressed to more readable strings.
+// VoteStrings returns a list of votes compressed to more readable strings.
 func (voteSet *VoteSet) VoteStrings() []string {
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
@@ -617,7 +617,7 @@ func (voteSet *VoteSet) LogString() string {
 	return fmt.Sprintf("Votes:%d/%d(%.3f)", voted, total, frac)
 }
 
-// return the power voted, the total, and the fraction
+// sumTotalFrac returns the power voted, the total, and the fraction
 func (voteSet *VoteSet) sumTotalFrac() (int64, int64, float64) {
 	voted, total := voteSet.sum, voteSet.valSet.TotalVotingPower()
 	fracVoted := float64(voted) / float64(total)

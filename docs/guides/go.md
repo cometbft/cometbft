@@ -101,10 +101,18 @@ github.com/cometbft/cometbft v0.38.0
 )
 ```
 
+XXX: CometBFT `v0.38.0` uses a slightly outdated `gogoproto` library, which
+may fail to compile with newer Go versions. To avoid any compilation errors,
+upgrade `gogoproto` manually:
+
+```bash
+go get github.com/cosmos/gogoproto@v1.4.11
+```
+
 As you write the kvstore application, you can rebuild the binary by
 pulling any new dependencies and recompiling it.
 
-```sh
+```bash
 go get
 go build
 ```
@@ -449,34 +457,20 @@ included in blocks, it groups some of these transactions and then gives the appl
 to modify the group by invoking `PrepareProposal`.
 
 The application is free to modify the group before returning from the call, as long as the resulting set
-does not use more bytes than `RequestPrepareProposal.max_tx_bytes'
+does not use more bytes than `RequestPrepareProposal.max_tx_bytes`.
 For example, the application may reorder, add, or even remove transactions from the group to improve the
 execution of the block once accepted.
+
 In the following code, the application simply returns the unmodified group of transactions:
 
 ```go
 func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abcitypes.RequestPrepareProposal) (*abcitypes.ResponsePrepareProposal, error) {
-  totalBytes := int64(0)
-  txs := make([]byte, 0)
-
-  for _, tx := range proposal.Txs {
-    totalBytes += int64(len(tx))
-    txs = append(txs, tx...)
-
-      if totalBytes > int64(proposal.MaxTxBytes) {
-        break
-      }
-    }
-
     return &abcitypes.ResponsePrepareProposal{Txs: proposal.Txs}, nil
 }
 ```
 
-This code snippet iterates through the proposed transactions and calculates the `total bytes`. If the `total bytes` exceeds the `MaxTxBytes` specified in the `RequestPrepareProposal` struct, the loop breaks and the transactions processed so far are returned.
-
-Note: It is the responsibility of the application to ensure that the `total bytes` of transactions returned does not exceed the `RequestPrepareProposal.max_tx_bytes` limit.
-
-Once a proposed block is received by a node, the proposal is passed to the application to determine its validity before voting to accept the proposal.
+Once a proposed block is received by a node, the proposal is passed to the
+application to determine its validity before voting to accept the proposal.
 
 This mechanism may be used for different reasons, for example to deal with blocks manipulated
 by malicious nodes, in which case the block should not be considered valid.
@@ -491,7 +485,8 @@ func (app *KVStoreApplication) ProcessProposal(_ context.Context, proposal *abci
 
 ## 1.4 Starting an application and a CometBFT instance
 
-Now that we have the basic functionality of our application in place, let's put it all together inside of our `main.go` file.
+Now that we have the basic functionality of our application in place, let's put
+it all together inside of our `main.go` file.
 
 Change the contents of your `main.go` file to the following.
 
@@ -706,7 +701,7 @@ The response contains a `base64` encoded representation of the data we submitted
 To get the original value out of this data, we can use the `base64` command line utility:
 
 ```bash
-echo cm9ja3M=" | base64 -d
+echo "cm9ja3M=" | base64 -d
 ```
 
 ## Outro

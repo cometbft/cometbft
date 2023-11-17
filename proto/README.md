@@ -36,11 +36,11 @@ releases is on each respective release branch. Each respective release's
 Protobuf definitions are also, for convenience, published to a corresponding
 branch in the `tendermint/tendermint` Buf repository.
 
-| CometBFT version | Canonical Protobufs                 | Buf registry                      |
-|------------------|-------------------------------------|-----------------------------------|
-| v0.38.x          | [Protobuf definitions][v038-protos] | [Buf repository branch][v038-buf] |
-| v0.37.x          | [Protobuf definitions][v037-protos] | [Buf repository branch][v037-buf] |
-| v0.34.x          | [Protobuf definitions][v034-protos] | [Buf repository branch][v034-buf] |
+| CometBFT version | Canonical Protobufs                         | Buf registry                              |
+|------------------|---------------------------------------------|-------------------------------------------|
+| v0.38.x          | [v0.38.x Protobuf definitions][v038-protos] | [Buf repository v0.38.x branch][v038-buf] |
+| v0.37.x          | [v0.37.x Protobuf definitions][v037-protos] | [Buf repository v0.37.x branch][v037-buf] |
+| v0.34.x          | [v0.34.x Protobuf definitions][v034-protos] | [Buf repository v0.34.x branch][v034-buf] |
 
 [protobuf]: https://protobuf.dev/
 [CometBFT]: https://github.com/cometbft/cometbft

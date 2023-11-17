@@ -444,7 +444,7 @@ func createSwitch(config *cfg.Config,
 		p2p.SwitchPeerFilters(peerFilters...),
 	)
 	sw.SetLogger(p2pLogger)
-	if mempoolReactor != nil {
+	if config.Mempool.Type != cfg.MempoolTypeNop {
 		sw.AddReactor("MEMPOOL", mempoolReactor)
 	}
 	sw.AddReactor("BLOCKSYNC", bcReactor)

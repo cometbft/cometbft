@@ -1,7 +1,7 @@
 <!-- NB: Ensure that all hyperlinks in this doc are absolute URLs, not relative
 ones, as this doc gets published to the Buf registry and relative URLs will fail
 to resolve. -->
-# CometBFT v0.38.x Protocol Buffers Definitions
+# CometBFT v0.37.x Protocol Buffers Definitions
 
 This is the set of [Protobuf][protobuf] definitions of types used by various
 parts of [CometBFT]:

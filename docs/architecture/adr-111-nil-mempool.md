@@ -1,9 +1,10 @@
-# ADR 111: `nil` Mempool
+# ADR 111: `nop` Mempool
 
 ## Changelog
 
 - 2023-11-07: First version (@sergio-mena)
 - 2023-11-15: Addressed PR comments (@sergio-mena)
+- 2023-11-17: Rename `nil` to `nop` (@melekes)
 
 ## Status
 
@@ -100,7 +101,7 @@ There is no doubt that this approach has numerous advantages. However, it also h
 
 This proposal targets this kind of applications:
 those that have an ad-hoc mechanism for transaction dissemination that better meets the application requirements.
-We propose to introduce a `nil` mempool which will effectively act as a stubbed object
+We propose to introduce a `nop` (short for no operation) mempool which will effectively act as a stubbed object
 internally:
 
 * it will reject any transaction being locally submitted or gossipped by a peer
@@ -138,11 +139,11 @@ albeit with a complex, poor UX (see the last alternative in section [Alternative
 The core of this proposal is to make some internal changes so it is clear an simple for app developers,
 thus improving the UX.
 
-#### `nil` Mempool
+#### `nop` Mempool
 
-We propose a new mempool implementation, called `nil` Mempool, that effectively disables all mempool functionality
+We propose a new mempool implementation, called `nop` Mempool, that effectively disables all mempool functionality
 within CometBFT.
-The `nil` Mempool implements the `Mempool` interface in a very simple manner:
+The `nop` Mempool implements the `Mempool` interface in a very simple manner:
 
 *	`CheckTx(tx types.Tx) (*abcicli.ReqRes, error)`: returns `nil, ErrNotAllowed`
 *	`RemoveTxByKey(txKey types.TxKey) error`: returns `ErrNotFound`
@@ -159,7 +160,7 @@ The `nil` Mempool implements the `Mempool` interface in a very simple manner:
 * `Size() int` returns 0
 * `SizeBytes() int64` returns 0
 
-Upon startup, the `nil` mempool reactor will advertise no channels to the peer-to-peer layer.
+Upon startup, the `nop` mempool reactor will advertise no channels to the peer-to-peer layer.
 
 ### Configuration
 
@@ -170,18 +171,18 @@ We propose the following changes to the `config.toml` file:
 # The type of mempool for this CometBFT node to use.
 #
 # Valid types of mempools supported by CometBFT:
-# - "local" : clist mempool with flooding gossip protocol (default)
-# - "nil"   : nil-mempool (app has implemented an alternative tx dissemination mechanism)
-type = "nil"
+# - "flood" : clist mempool with flooding gossip protocol (default)
+# - "nop"   : nop-mempool (app has implemented an alternative tx dissemination mechanism)
+type = "nop"
 ```
 
 The config validation logic will be modified to add a new rule that rejects a configuration file
 if all of these conditions are met:
 
-* the mempool is set to `nil`
+* the mempool is set to `nop`
 * `create_empty_blocks`, in `consensus` section, is set to `false`.
 
-The reason for this extra validity rule is that the `nil`-mempool, as proposed here,
+The reason for this extra validity rule is that the `nop`-mempool, as proposed here,
 does not support the "do not create empty blocks" functionality.
 Here are some considerations on this:
 
@@ -211,7 +212,7 @@ will simply be calling the new implementation.
   `RequestPrepareProposal` will thus contain no transactions.
 * *Consensus waiting for transactions to become available*. `TxsAvailable()` returns a closed channel,
   so consensus doesn't block (potentially producing empty blocks).
-  At any rate, a configuration with the `nil` mempool and `create_empty_blocks` set to `false`
+  At any rate, a configuration with the `nop` mempool and `create_empty_blocks` set to `false`
   will be rejected in the first place.
 * *A new block is decided*.
   * When `Update` is called, nothing is done (no decided transaction is removed).
@@ -231,7 +232,7 @@ of backporting to `v0.38.x` and `v0.37.x`, a careful risk/benefit evaluation wil
 have to be carried out.
 
 Backporting to `v0.34.x` does not make sense as this version predates the release of `ABCI 1.0`,
-so using the `nil` mempool renders CometBFT's operation useless.
+so using the `nop` mempool renders CometBFT's operation useless.
 
 ### Config parameter _vs._ application-enforced parameter
 

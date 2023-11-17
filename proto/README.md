@@ -1,7 +1,7 @@
 <!-- NB: Ensure that all hyperlinks in this doc are absolute URLs, not relative
 ones, as this doc gets published to the Buf registry and relative URLs will fail
 to resolve. -->
-# CometBFT v0.38.x Protocol Buffers Definitions
+# CometBFT v0.34.x Protocol Buffers Definitions
 
 This is the set of [Protobuf][protobuf] definitions of types used by various
 parts of [CometBFT]:
@@ -22,25 +22,9 @@ registry][buf] for integrators' convenience.
 
 ## Why does CometBFT use `tendermint` Protobuf definitions?
 
-<<<<<<< HEAD
-1. Make an issue with the proposed change. Within in the issue members from both
-   the CometBFT and tendermint-rs team will leave comments. If there is not
-   consensus on the change an [RFC](../docs/rfc/README.md) may be requested.
-   1. Submission of an RFC as a pull request should be made to facilitate
-      further discussion.
-   2. Merge the RFC.
-2. Make the necessary changes to the `.proto` file(s), [core data
-   structures](../spec/core/data_structures.md) and/or [ABCI
-   protocol](../spec/abci/apps.md).
-3. Open issues within CometBFT and Tendermint-rs repos. This is used to notify
-   the teams that a change occurred in the spec.
-   1. Tag the issue with a spec version label. This will notify the team the
-      changed has been made on master but has not entered a release.
-=======
 This is as a result of CometBFT being a fork of [Tendermint Core][tmcore] and
 wanting to provide integrators with as painless a way as possible of
 transitioning from Tendermint Core to CometBFT.
->>>>>>> ee99bf534 (proto: Update README (#1648))
 
 As of CometBFT v1, however, the project will transition to using and providing a
 `cometbft` package of Protobuf definitions (see [\#1330]).

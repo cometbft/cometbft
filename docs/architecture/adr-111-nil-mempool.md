@@ -204,7 +204,7 @@ will simply be calling the new implementation.
 ### Impacted Workflows
 
 * *Submitting a transaction*. Users are not to submit transactions via CometBFT's RPC.
-  `BroadcastTx*` RPC methods will fail.
+  `BroadcastTx*` RPC methods will fail with a reasonable error and the 501 status code.
   The application running on a full node must offer an interface for users to submit new transactions.
   It could also be a distinct node (or set of nodes) in the network.
   These considerations are exclusively the application's concern in this approach.

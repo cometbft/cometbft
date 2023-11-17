@@ -287,10 +287,16 @@ In that sense, it is out of the scope of this ADR.
 
 ### Negative
 
-- With the `nil` mempool, it is up to the application to provide users with a way
+- With the `nop` mempool, it is up to the application to provide users with a way
   to submit transactions and deliver those transactions to validators.
   This is a considerable endeavor, and more basic appchains may consider it is not worth the hassle.
-
+- There is a risk of wasting resources by those nodes that have a misconfigured
+  mempool (bandwidth, CPU, memory, etc). If there are TXs submitted (incorrectly)
+  via CometBFT's RPC, but those TXs are never submitted (correctly via an
+  app-specific interface) to the App. As those TXs risk being there until the node
+  is stopped. Moreover, those TXs will be replied & proposed every single block.
+  App developers will need to keep this in mind and panic on `CheckTx` or
+  `PrepareProposal` with non-empty list of transactions.
 
 [sdk-app-mempool]: https://docs.cosmos.network/v0.47/build/building-apps/app-mempool
 [adr-110]: https://github.com/cometbft/cometbft/pull/1565

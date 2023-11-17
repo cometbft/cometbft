@@ -297,7 +297,11 @@ In that sense, it is out of the scope of this ADR.
   is stopped. Moreover, those TXs will be replied & proposed every single block.
   App developers will need to keep this in mind and panic on `CheckTx` or
   `PrepareProposal` with non-empty list of transactions.
-
+- Optimizing block proposals by only including transaction IDs (e.g. TX hashes) is more difficult.
+  The ABCI app could do it by submitting TX hashes (rather than TXs themselves)
+  in `PrepareProposal`, and then having a mechanism for pulling TXs from the
+  network upon `FinalizeBlock`.
+  
 [sdk-app-mempool]: https://docs.cosmos.network/v0.47/build/building-apps/app-mempool
 [adr-110]: https://github.com/cometbft/cometbft/pull/1565
 [HT94]: https://dl.acm.org/doi/book/10.5555/866693

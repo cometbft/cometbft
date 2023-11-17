@@ -44,7 +44,7 @@ branch in the `tendermint/tendermint` Buf repository.
 
 [protobuf]: https://protobuf.dev/
 [CometBFT]: https://github.com/cometbft/cometbft
-[abci]: https://github.com/cometbft/cometbft/tree/main/spec/abci
+[abci]: https://github.com/cometbft/cometbft/tree/v0.37.x/spec/abci
 [buf]: https://buf.build/tendermint/tendermint
 [tmcore]: https://github.com/tendermint/tendermint
 [\#1330]: https://github.com/cometbft/cometbft/issues/1330

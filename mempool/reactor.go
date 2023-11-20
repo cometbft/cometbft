@@ -110,11 +110,12 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 			// Always forward transactions to unconditional peers.
 			if !memR.Switch.IsPeerUnconditional(peer.ID()) {
 				for peer.IsRunning() {
-					ctxTimeout, _ := context.WithTimeout(ctxParent, 30*time.Second)
+					ctxTimeout, cancel := context.WithTimeout(ctxParent, 30*time.Second)
 					if peer.IsPersistent() && memR.config.ExperimentalMaxGossipConnectionsToPersistentPeers > 0 {
 						// Block sending transactions to peer until one of the connections become
 						// available in the semaphore.
 						if err := memR.activePersistentPeersSemaphore.Acquire(ctxTimeout, 1); err != nil {
+							cancel()
 							select {
 							case <-ctxParent.Done():
 								return
@@ -131,6 +132,7 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 						// Block sending transactions to peer until one of the connections become
 						// available in the semaphore.
 						if err := memR.activeNonPersistentPeersSemaphore.Acquire(ctxTimeout, 1); err != nil {
+							cancel()
 							select {
 							case <-ctxParent.Done():
 								return
@@ -142,6 +144,7 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 						defer memR.activeNonPersistentPeersSemaphore.Release(1)
 						defer memR.mempool.metrics.ActiveOutboundConnections.Add(-1)
 					}
+					cancel()
 				}
 			}
 

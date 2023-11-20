@@ -109,7 +109,7 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 		go func() {
 			// Always forward transactions to unconditional peers.
 			if !memR.Switch.IsPeerUnconditional(peer.ID()) {
-				var peerSemaphore *semaphore.Weighted = nil
+				var peerSemaphore *semaphore.Weighted
 
 				if peer.IsPersistent() && memR.config.ExperimentalMaxGossipConnectionsToPersistentPeers > 0 {
 					peerSemaphore = memR.activePersistentPeersSemaphore

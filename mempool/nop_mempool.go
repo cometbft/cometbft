@@ -22,18 +22,18 @@ var ErrNotAllowed = errors.New("not allowed with `nop` mempool")
 var _ Mempool = &NopMempool{}
 
 // CheckTx always returns ErrNotAllowed.
-func (*NopMempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
+func (*NopMempool) CheckTx(types.Tx) (*abcicli.ReqRes, error) {
 	return nil, ErrNotAllowed
 }
 
 // RemoveTxByKey always returns ErrNotAllowed.
-func (*NopMempool) RemoveTxByKey(txKey types.TxKey) error { return ErrNotAllowed }
+func (*NopMempool) RemoveTxByKey(types.TxKey) error { return ErrNotAllowed }
 
 // ReapMaxBytesMaxGas always returns nil.
-func (*NopMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs { return nil }
+func (*NopMempool) ReapMaxBytesMaxGas(int64, int64) types.Txs { return nil }
 
 // ReapMaxTxs always returns nil.
-func (*NopMempool) ReapMaxTxs(max int) types.Txs { return nil }
+func (*NopMempool) ReapMaxTxs(int) types.Txs { return nil }
 
 // Lock does nothing.
 func (*NopMempool) Lock() {}
@@ -69,7 +69,7 @@ func (*NopMempool) TxsAvailable() <-chan struct{} {
 func (*NopMempool) EnableTxsAvailable() {}
 
 // SetTxRemovedCallback does nothing.
-func (*NopMempool) SetTxRemovedCallback(cb func(txKey types.TxKey)) {}
+func (*NopMempool) SetTxRemovedCallback(func(txKey types.TxKey)) {}
 
 // Size always returns 0.
 func (*NopMempool) Size() int { return 0 }
@@ -98,16 +98,16 @@ func (*NopMempoolReactor) WaitSync() bool { return false }
 func (*NopMempoolReactor) GetChannels() []*p2p.ChannelDescriptor { return nil }
 
 // AddPeer does nothing.
-func (*NopMempoolReactor) AddPeer(peer p2p.Peer) {}
+func (*NopMempoolReactor) AddPeer(p2p.Peer) {}
 
 // InitPeer always returns nil.
-func (*NopMempoolReactor) InitPeer(peer p2p.Peer) p2p.Peer { return nil }
+func (*NopMempoolReactor) InitPeer(p2p.Peer) p2p.Peer { return nil }
 
 // RemovePeer does nothing.
-func (*NopMempoolReactor) RemovePeer(peer p2p.Peer, reason interface{}) {}
+func (*NopMempoolReactor) RemovePeer(p2p.Peer, interface{}) {}
 
 // Receive does nothing.
 func (*NopMempoolReactor) Receive(p2p.Envelope) {}
 
 // SetSwitch does nothing.
-func (*NopMempoolReactor) SetSwitch(sw *p2p.Switch) {}
+func (*NopMempoolReactor) SetSwitch(*p2p.Switch) {}

@@ -1,6 +1,9 @@
 package kvstore
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/tendermint/tendermint/abci/types"
 	cmtrand "github.com/tendermint/tendermint/libs/rand"
 )
@@ -33,4 +36,28 @@ func InitKVStore(app *PersistentKVStoreApplication) {
 	app.InitChain(types.RequestInitChain{
 		Validators: RandVals(1),
 	})
+}
+
+// Create a new transaction
+func NewTx(key, value string) []byte {
+	return []byte(strings.Join([]string{key, value}, "="))
+}
+
+func NewRandomTx(size int) []byte {
+	if size < 4 {
+		panic("random tx size must be greater than 3")
+	}
+	return NewTx(cmtrand.Str(2), cmtrand.Str(size-3))
+}
+
+func NewRandomTxs(n int) [][]byte {
+	txs := make([][]byte, n)
+	for i := 0; i < n; i++ {
+		txs[i] = NewRandomTx(10)
+	}
+	return txs
+}
+
+func NewTxFromID(i int) []byte {
+	return []byte(fmt.Sprintf("%d=%d", i, i))
 }

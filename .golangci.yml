@@ -1,3 +1,7 @@
+run:
+  skip-files:
+    - "libs/pubsub/query/query.peg.go"
+
 linters:
   enable:
     - asciicheck
@@ -10,13 +14,13 @@ linters:
     - goconst
     - gofmt
     - goimports
-    - revive
+    #- revive
     - gosec
     - gosimple
     - govet
     - ineffassign
     - misspell
-    - nakedret
+    #- nakedret
     - nolintlint
     - prealloc
     - staticcheck
@@ -31,6 +35,13 @@ issues:
     - path: _test\.go
       linters:
         - gosec
+        - staticcheck
+        - nolintlint
+    - path: test/fuzz/
+      linters:
+        - gosec
+        - nolintlint
+        - staticcheck
   max-same-issues: 50
 
 linters-settings:
@@ -40,7 +51,69 @@ linters-settings:
     min-confidence: 0
   maligned:
     suggest-new: true
-
-run:
-  skip-files:
-    - libs/pubsub/query/query.peg.go
+  goconst:
+    ignore-tests: true
+  depguard:
+    rules:
+      main:
+        files:
+          - $all
+          - "!$test"
+        allow:
+          - $gostd
+          - github.com/tendermint
+          - github.com/cometbft
+          - github.com/cosmos
+          - github.com/gogo
+          - github.com/Workiva/go-datastructures
+          - github.com/ChainSafe/go-schnorrkel
+          - github.com/creachadair/taskgroup
+          - github.com/gtank/merlin
+          - github.com/btcsuite/btcd/btcec/v2
+          - github.com/BurntSushi/toml
+          - github.com/go-git/go-git/v5
+          - github.com/go-kit
+          - github.com/go-logfmt/logfmt
+          - github.com/gofrs/uuid
+          - github.com/google
+          - github.com/gorilla/websocket
+          - github.com/informalsystems/tm-load-test/pkg/loadtest
+          - github.com/lib/pq
+          - github.com/libp2p/go-buffer-pool
+          - github.com/Masterminds/semver/v3
+          - github.com/minio/highwayhash
+          - github.com/oasisprotocol/curve25519-voi
+          - github.com/pkg/errors
+          - github.com/prometheus
+          - github.com/rcrowley/go-metrics
+          - github.com/rs/cors
+          - github.com/snikch/goodman
+          - github.com/spf13
+          - github.com/stretchr/testify/require
+          - github.com/syndtr/goleveldb
+      test:
+        files:
+          - "$test"
+        allow:
+          - $gostd
+          - github.com/cosmos
+          - github.com/tendermint
+          - github.com/cometbft
+          - github.com/gogo
+          - github.com/Workiva/go-datastructures
+          - github.com/ChainSafe/go-schnorrkel
+          - github.com/creachadair/taskgroup
+          - github.com/gtank/merlin
+          - github.com/adlio/schema
+          - github.com/btcsuite/btcd
+          - github.com/fortytw2/leaktest
+          - github.com/go-kit
+          - github.com/google/uuid
+          - github.com/gorilla/websocket
+          - github.com/lib/pq
+          - github.com/oasisprotocol/curve25519-voi/primitives/merlin
+          - github.com/ory/dockertest
+          - github.com/pkg/errors
+          - github.com/prometheus/client_golang/prometheus/promhttp
+          - github.com/spf13
+          - github.com/stretchr/testify

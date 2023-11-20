@@ -16,13 +16,12 @@ CometBFT serves blockchain applications.
 
 More formally, CometBFT performs Byzantine Fault Tolerant (BFT)
 State Machine Replication (SMR) for arbitrary deterministic, finite state machines.
-For more background, see [What is CometBFT?](introduction/what-is-cometbft.md).
+For more background, see [What is CometBFT?](introduction/README.md#what-is-cometbft).
 
-To get started quickly with an example application, see the
-[quick start guide](introduction/quick-start.md).
+To get started quickly with an example application, see the [quick start guide](guides/quick-start.md).
 
 To upgrade from Tendermint Core v0.34.x to CometBFT v0.34.x, please see our
-[upgrading instructions](./introduction/upgrading-from-tm.md).
+[upgrading instructions](./guides/upgrading-from-tm.md).
 
 To learn about application development on CometBFT, see the
 [Application Blockchain Interface](https://github.com/cometbft/cometbft/tree/v0.34.x/spec/abci).

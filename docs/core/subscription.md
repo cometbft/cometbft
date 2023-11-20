@@ -14,8 +14,10 @@ To connect to a node via websocket from the CLI, you can use a tool such as
 [wscat](https://github.com/websockets/wscat) and run:
 
 ```sh
-wscat ws://127.0.0.1:26657/websocket
+wscat -c ws://127.0.0.1:26657/websocket
 ```
+
+NOTE: If your node's RPC endpoint is TLS-enabled, utilize the scheme `wss` instead of `ws`.
 
 You can subscribe to any of the events above by calling the `subscribe` RPC
 method via Websocket along with a valid query.
@@ -37,6 +39,20 @@ more information on query syntax and other options.
 You can also use tags, given you had included them into DeliverTx
 response, to query transaction results. See [Indexing
 transactions](./indexing-transactions.md) for details.
+
+
+## Query parameter and event type restrictions
+
+While CometBFT imposes no restrictions on the application with regards to the type of 
+the event output, there are several restrictions when it comes to querying 
+events whose attribute values are numeric. 
+
+- Queries cannot include negative numbers
+- If floating points are compared to integers, they are converted to an integer
+- Floating point to floating point comparison leads to a loss of precision for very big floating point numbers
+(e.g., `10000000000000000000.0` is treated the same as `10000000000000000000.6`) 
+- When floating points do get converted to integers, they are always rounded down.
+This has been done to preserve the behaviour present before introducing the support for BigInts in the query parameters. 
 
 ## ValidatorSetUpdates
 

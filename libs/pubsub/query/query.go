@@ -11,6 +11,7 @@ package query
 
 import (
 	"fmt"
+	"math/big"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -151,16 +152,17 @@ func (q *Query) Conditions() ([]Condition, error) {
 
 				conditions = append(conditions, Condition{eventAttr, op, value})
 			} else {
-				value, err := strconv.ParseInt(number, 10, 64)
-				if err != nil {
-					err = fmt.Errorf(
-						"got %v while trying to parse %s as int64 (should never happen if the grammar is correct)",
-						err, number,
+				valueBig := new(big.Int)
+				_, ok := valueBig.SetString(number, 10)
+				if !ok {
+					err := fmt.Errorf(
+						"problem parsing %s as bigint (should never happen if the grammar is correct)",
+						number,
 					)
 					return nil, err
 				}
+				conditions = append(conditions, Condition{eventAttr, op, valueBig})
 
-				conditions = append(conditions, Condition{eventAttr, op, value})
 			}
 
 		case ruletime:
@@ -298,11 +300,12 @@ func (q *Query) Matches(events map[string][]string) (bool, error) {
 					return false, nil
 				}
 			} else {
-				value, err := strconv.ParseInt(number, 10, 64)
-				if err != nil {
-					err = fmt.Errorf(
-						"got %v while trying to parse %s as int64 (should never happen if the grammar is correct)",
-						err, number,
+				value := new(big.Int)
+				_, ok := value.SetString(number, 10)
+				if !ok {
+					err := fmt.Errorf(
+						"problem parsing %s as bigInt (should never happen if the grammar is correct)",
+						number,
 					)
 					return false, err
 				}
@@ -451,42 +454,58 @@ func matchValue(value string, op Operator, operand reflect.Value) (bool, error) 
 			return v == operandFloat64, nil
 		}
 
-	case reflect.Int64:
-		var v int64
+	case reflect.Pointer:
 
-		operandInt := operand.Interface().(int64)
-		filteredValue := numRegex.FindString(value)
+		switch operand.Interface().(type) {
+		case *big.Int:
+			filteredValue := numRegex.FindString(value)
+			operandVal := operand.Interface().(*big.Int)
+			v := new(big.Int)
+			if strings.ContainsAny(filteredValue, ".") {
+				// We do this just to check whether the string can be parsed as a float
+				_, err := strconv.ParseFloat(filteredValue, 64)
+				if err != nil {
+					err = fmt.Errorf(
+						"got %v while trying to parse %s as float64 (should never happen if the grammar is correct)",
+						err, filteredValue,
+					)
+					return false, err
+				}
 
-		// if value looks like float, we try to parse it as float
-		if strings.ContainsAny(filteredValue, ".") {
-			v1, err := strconv.ParseFloat(filteredValue, 64)
-			if err != nil {
-				return false, fmt.Errorf("failed to convert value %v from event attribute to float64: %w", filteredValue, err)
+				// If yes, we get the int part of the  string.
+				// We could simply cast the float to an int and use that to create a big int but
+				// if it is a number bigger than int64, it will not be parsed properly.
+				// If we use bigFloat and convert that to a string, the values will be rounded which
+				// is not what we want either.
+				// Here we are simulating the behavior that int64(floatValue). This was the default behavior
+				// before introducing BigInts and we do not want to break the logic in minor releases.
+				_, ok := v.SetString(strings.Split(filteredValue, ".")[0], 10)
+				if !ok {
+					return false, fmt.Errorf("failed to convert value %s from float to big int", filteredValue)
+				}
+			} else {
+				// try our best to convert value from tags to big int
+				_, ok := v.SetString(filteredValue, 10)
+				if !ok {
+					return false, fmt.Errorf("failed to convert value %v from event attribute to big int", filteredValue)
+				}
+
+			}
+			cmpRes := operandVal.Cmp(v)
+			switch op {
+			case OpLessEqual:
+				return cmpRes == 0 || cmpRes == 1, nil
+			case OpGreaterEqual:
+				return cmpRes == 0 || cmpRes == -1, nil
+			case OpLess:
+				return cmpRes == 1, nil
+			case OpGreater:
+				return cmpRes == -1, nil
+			case OpEqual:
+				return cmpRes == 0, nil
 			}
 
-			v = int64(v1)
-		} else {
-			var err error
-			// try our best to convert value from tags to int64
-			v, err = strconv.ParseInt(filteredValue, 10, 64)
-			if err != nil {
-				return false, fmt.Errorf("failed to convert value %v from event attribute to int64: %w", filteredValue, err)
-			}
 		}
-
-		switch op {
-		case OpLessEqual:
-			return v <= operandInt, nil
-		case OpGreaterEqual:
-			return v >= operandInt, nil
-		case OpLess:
-			return v < operandInt, nil
-		case OpGreater:
-			return v > operandInt, nil
-		case OpEqual:
-			return v == operandInt, nil
-		}
-
 	case reflect.String:
 		switch op {
 		case OpEqual:

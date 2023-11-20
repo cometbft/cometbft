@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
 
@@ -349,7 +350,7 @@ func lookForHash(conditions []query.Condition) (hash []byte, ok bool, err error)
 func lookForHeight(conditions []query.Condition) (height int64, heightIdx int) {
 	for i, c := range conditions {
 		if c.CompositeKey == types.TxHeightKey && c.Op == query.OpEqual {
-			return c.Operand.(int64), i
+			return c.Operand.(*big.Int).Int64(), i
 		}
 	}
 	return 0, -1
@@ -551,9 +552,11 @@ LOOP:
 			continue
 		}
 
-		if _, ok := qr.AnyBound().(int64); ok {
-			v, err := strconv.ParseInt(extractValueFromKey(it.Key()), 10, 64)
-			if err != nil {
+		if _, ok := qr.AnyBound().(*big.Int); ok {
+			v := new(big.Int)
+			eventValue := extractValueFromKey(it.Key())
+			v, ok := v.SetString(eventValue, 10)
+			if !ok {
 				continue LOOP
 			}
 
@@ -693,15 +696,15 @@ func startKey(fields ...interface{}) []byte {
 	return b.Bytes()
 }
 
-func checkBounds(ranges indexer.QueryRange, v int64) bool {
+func checkBounds(ranges indexer.QueryRange, v *big.Int) bool {
 	include := true
 	lowerBound := ranges.LowerBoundValue()
 	upperBound := ranges.UpperBoundValue()
-	if lowerBound != nil && v < lowerBound.(int64) {
+	if lowerBound != nil && v.Cmp(lowerBound.(*big.Int)) == -1 {
 		include = false
 	}
 
-	if upperBound != nil && v > upperBound.(int64) {
+	if upperBound != nil && v.Cmp(upperBound.(*big.Int)) == 1 {
 		include = false
 	}
 

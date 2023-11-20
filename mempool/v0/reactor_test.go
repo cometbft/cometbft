@@ -319,6 +319,51 @@ func TestLegacyReactorReceiveBasic(t *testing.T) {
 	})
 }
 
+// Test the experimental feature that limits the number of outgoing connections for gossiping
+// transactions (only non-persistent peers).
+// Note: in this test we know which gossip connections are active or not because of how the p2p
+// functions are currently implemented, which affects the order in which peers are added to the
+// mempool reactor.
+func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = 1
+	reactors := makeAndConnectReactors(config, 4)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				assert.NoError(t, err)
+			}
+		}
+	}()
+	for _, r := range reactors {
+		for _, peer := range r.Switch.Peers().List() {
+			peer.Set(types.PeerStateKey, peerState{1})
+		}
+	}
+
+	// Add a bunch transactions to the first reactor.
+	txs := newUniqueTxs(100)
+	callCheckTx(t, reactors[0].mempool, txs)
+
+	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
+	// receive any tx. (The second reactor only sends transactions to the first reactor.)
+	checkTxsInMempool(t, txs, reactors[1], 0)
+	for _, r := range reactors[2:] {
+		require.Zero(t, r.mempool.Size())
+	}
+
+	// Disconnect the second reactor from the first reactor.
+	firstPeer := reactors[0].Switch.Peers().List()[0]
+	reactors[0].Switch.StopPeerGracefully(firstPeer)
+
+	// Now the third reactor should start receiving transactions from the first reactor; the fourth
+	// reactor's mempool should still be empty.
+	checkTxsInMempool(t, txs, reactors[2], 0)
+	for _, r := range reactors[3:] {
+		require.Zero(t, r.mempool.Size())
+	}
+}
+
 // mempoolLogger is a TestingLogger which uses a different
 // color for each validator ("validator" key must exist).
 func mempoolLogger() log.Logger {
@@ -349,9 +394,16 @@ func makeAndConnectReactors(config *cfg.Config, n int) []*Reactor {
 	p2p.MakeConnectedSwitches(config.P2P, n, func(i int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("MEMPOOL", reactors[i])
 		return s
-
 	}, p2p.Connect2Switches)
 	return reactors
+}
+
+func newUniqueTxs(n int) types.Txs {
+	txs := make(types.Txs, n)
+	for i := 0; i < n; i++ {
+		txs[i] = kvstore.NewTxFromID(i)
+	}
+	return txs
 }
 
 func waitForTxsOnReactors(t *testing.T, txs types.Txs, reactors []*Reactor) {
@@ -361,7 +413,7 @@ func waitForTxsOnReactors(t *testing.T, txs types.Txs, reactors []*Reactor) {
 		wg.Add(1)
 		go func(r *Reactor, reactorIndex int) {
 			defer wg.Done()
-			waitForTxsOnReactor(t, txs, r, reactorIndex)
+			checkTxsInOrder(t, txs, r, reactorIndex)
 		}(reactor, i)
 	}
 
@@ -379,13 +431,30 @@ func waitForTxsOnReactors(t *testing.T, txs types.Txs, reactors []*Reactor) {
 	}
 }
 
-func waitForTxsOnReactor(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex int) {
-	mempool := reactor.mempool
-	for mempool.Size() < len(txs) {
+// Wait until the mempool has a certain number of transactions.
+func waitForNumTxsInMempool(numTxs int, reactor *Reactor) {
+	for reactor.mempool.Size() < numTxs {
 		time.Sleep(time.Millisecond * 100)
 	}
+}
 
-	reapedTxs := mempool.ReapMaxTxs(len(txs))
+// Wait until all txs are in the mempool and check that the number of txs in the
+// mempool is as expected.
+func checkTxsInMempool(t *testing.T, txs types.Txs, reactor *Reactor, _ int) {
+	waitForNumTxsInMempool(len(txs), reactor)
+
+	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
+	require.Equal(t, len(txs), len(reapedTxs))
+	require.Equal(t, len(txs), reactor.mempool.Size())
+}
+
+// Wait until all txs are in the mempool and check that they are in the same
+// order as given.
+func checkTxsInOrder(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex int) {
+	waitForNumTxsInMempool(len(txs), reactor)
+
+	// Check that all transactions in the mempool are in the same order as txs.
+	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
 	for i, tx := range txs {
 		assert.Equalf(t, tx, reapedTxs[i],
 			"txs at index %d on reactor %d don't match: %v vs %v", i, reactorIndex, tx, reapedTxs[i])

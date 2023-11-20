@@ -241,8 +241,6 @@ func onlyValidatorIsUs(state sm.State, pubKey crypto.PubKey) bool {
 }
 
 // createMempoolAndMempoolReactor creates a mempool and a mempool reactor based on the config.
-//
-// NOTE: The mempool reactor is `nil` if the mempool type is `nop`.
 func createMempoolAndMempoolReactor(
 	config *cfg.Config,
 	proxyApp proxy.AppConns,
@@ -275,6 +273,8 @@ func createMempoolAndMempoolReactor(
 
 		return mp, reactor
 	case cfg.MempoolTypeNop:
+		// Strictly speaking, there's no need to have a `mempl.NopMempoolReactor`, but
+		// adding it leads to a cleaner code.
 		return &mempl.NopMempool{}, mempl.NewNopMempoolReactor()
 	default:
 		panic(fmt.Sprintf("unknown mempool type: %q", config.Mempool.Type))

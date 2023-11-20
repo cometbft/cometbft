@@ -1,1 +1,1 @@
-- `[mempool]` Add `nop` mempool as a way to completely disable CometBFT's mempool ([\#1643](https://github.com/cometbft/cometbft/pull/1643))
+- `[mempool]` Add `nop` mempool ([\#1643](https://github.com/cometbft/cometbft/pull/1643))

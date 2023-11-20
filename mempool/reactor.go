@@ -109,30 +109,23 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 		go func() {
 			// Always forward transactions to unconditional peers.
 			if !memR.Switch.IsPeerUnconditional(peer.ID()) {
-				for peer.IsRunning() {
-					ctxTimeout, cancel := context.WithTimeout(ctxParent, 30*time.Second)
-					if peer.IsPersistent() && memR.config.ExperimentalMaxGossipConnectionsToPersistentPeers > 0 {
-						// Block sending transactions to peer until one of the connections become
-						// available in the semaphore.
-						if err := memR.activePersistentPeersSemaphore.Acquire(ctxTimeout, 1); err != nil {
-							cancel()
-							select {
-							case <-ctxParent.Done():
-								return
-							case <-ctxTimeout.Done():
-								continue
-							}
-						}
-						// Release semaphore to allow other peer to start sending transactions.
-						defer memR.activePersistentPeersSemaphore.Release(1)
-						defer memR.mempool.metrics.ActiveOutboundConnections.Add(-1)
-					}
+				var peerSemaphore *semaphore.Weighted = nil
 
-					if !peer.IsPersistent() && memR.config.ExperimentalMaxGossipConnectionsToNonPersistentPeers > 0 {
+				if peer.IsPersistent() && memR.config.ExperimentalMaxGossipConnectionsToPersistentPeers > 0 {
+					peerSemaphore = memR.activePersistentPeersSemaphore
+				} else if !peer.IsPersistent() && memR.config.ExperimentalMaxGossipConnectionsToNonPersistentPeers > 0 {
+					peerSemaphore = memR.activeNonPersistentPeersSemaphore
+				}
+
+				if peerSemaphore != nil {
+					for peer.IsRunning() {
+						ctxTimeout, cancel := context.WithTimeout(ctxParent, 30*time.Second)
 						// Block sending transactions to peer until one of the connections become
 						// available in the semaphore.
-						if err := memR.activeNonPersistentPeersSemaphore.Acquire(ctxTimeout, 1); err != nil {
-							cancel()
+						err := peerSemaphore.Acquire(ctxTimeout, 1)
+						cancel()
+
+						if err != nil {
 							select {
 							case <-ctxParent.Done():
 								return
@@ -140,15 +133,16 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 								continue
 							}
 						}
+
 						// Release semaphore to allow other peer to start sending transactions.
-						defer memR.activeNonPersistentPeersSemaphore.Release(1)
-						defer memR.mempool.metrics.ActiveOutboundConnections.Add(-1)
+						defer peerSemaphore.Release(1)
+						break
 					}
-					cancel()
 				}
 			}
 
 			memR.mempool.metrics.ActiveOutboundConnections.Add(1)
+			defer memR.mempool.metrics.ActiveOutboundConnections.Add(-1)
 			memR.broadcastTxRoutine(peer)
 		}()
 	}

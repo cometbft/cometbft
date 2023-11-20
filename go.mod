@@ -48,7 +48,7 @@ require (
 	github.com/cosmos/gogoproto v1.4.11
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
-	github.com/vektra/mockery/v2 v2.36.1
+	github.com/vektra/mockery/v2 v2.37.1
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	golang.org/x/sync v0.5.0
 )

@@ -4,11 +4,14 @@
 
 - 2023-11-07: First version (@sergio-mena)
 - 2023-11-15: Addressed PR comments (@sergio-mena)
-- 2023-11-17: Rename `nil` to `nop` (@melekes)
+- 2023-11-17: Renamed `nil` to `nop` (@melekes)
+- 2023-11-20: Mentioned that the app could reuse p2p network in the future (@melekes)
 
 ## Status
 
 Accepted
+
+[Tracking issue](https://github.com/cometbft/cometbft/issues/1666)
 
 ## Context
 
@@ -101,6 +104,13 @@ There is no doubt that this approach has numerous advantages. However, it also h
 
 This proposal targets this kind of applications:
 those that have an ad-hoc mechanism for transaction dissemination that better meets the application requirements.
+
+The ABCI application could reuse the P2P network once this is exposed via ABCI.
+But this will take some time as it needs to be implemented, and has a dependency
+on bi-directional ABCI, which is also quite substantial. See
+[1](https://github.com/cometbft/cometbft/discussions/1112) and
+[2](https://github.com/cometbft/cometbft/discussions/494) discussions.
+
 We propose to introduce a `nop` (short for no operation) mempool which will effectively act as a stubbed object
 internally:
 

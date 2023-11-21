@@ -43,11 +43,11 @@ func (*NopMempool) Unlock() {}
 
 // Update does nothing.
 func (*NopMempool) Update(
-	height int64,
-	txs types.Txs,
-	txResults []*abci.ExecTxResult,
-	preCheck PreCheckFunc,
-	postCheck PostCheckFunc,
+	int64,
+	types.Txs,
+	[]*abci.ExecTxResult,
+	PreCheckFunc,
+	PostCheckFunc,
 ) error {
 	return nil
 }

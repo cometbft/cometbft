@@ -7,11 +7,11 @@ import (
 	"io"
 
 	"github.com/cometbft/cometbft/crypto/merkle"
-	"github.com/cometbft/cometbft/libs/bits"
+	"github.com/cometbft/cometbft/internal/bits"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	cmtproto "github.com/cometbft/cometbft/types/proto"
 )
 

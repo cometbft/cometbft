@@ -13,8 +13,8 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/rpc/client"
 	rpctest "github.com/cometbft/cometbft/rpc/test"
@@ -29,8 +29,8 @@ var defaultTestTime = time.Date(2018, 10, 10, 8, 20, 13, 695936996, time.UTC)
 
 func newEvidence(t *testing.T, val *privval.FilePV,
 	vote *types.Vote, vote2 *types.Vote,
-	chainID string) *types.DuplicateVoteEvidence {
-
+	chainID string,
+) *types.DuplicateVoteEvidence {
 	var err error
 
 	v := vote.ToProto()

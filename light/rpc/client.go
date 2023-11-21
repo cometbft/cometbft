@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/crypto/merkle"
+	service "github.com/cometbft/cometbft/internal/service"
+	"github.com/cometbft/cometbft/internal/state"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	service "github.com/cometbft/cometbft/libs/service"
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
-	"github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 )

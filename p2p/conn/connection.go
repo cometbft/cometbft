@@ -16,13 +16,13 @@ import (
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1beta1"
 	"github.com/cometbft/cometbft/config"
-	flow "github.com/cometbft/cometbft/libs/flowrate"
+	flow "github.com/cometbft/cometbft/internal/flowrate"
+	"github.com/cometbft/cometbft/internal/protoio"
+	"github.com/cometbft/cometbft/internal/service"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	"github.com/cometbft/cometbft/internal/timer"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	"github.com/cometbft/cometbft/libs/protoio"
-	"github.com/cometbft/cometbft/libs/service"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	"github.com/cometbft/cometbft/libs/timer"
 )
 
 const (

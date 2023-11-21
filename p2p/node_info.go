@@ -7,8 +7,8 @@ import (
 	"reflect"
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1beta1"
+	cmtstrings "github.com/cometbft/cometbft/internal/strings"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
-	cmtstrings "github.com/cometbft/cometbft/libs/strings"
 	"github.com/cometbft/cometbft/version"
 )
 

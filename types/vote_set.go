@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/cometbft/cometbft/libs/bits"
+	"github.com/cometbft/cometbft/internal/bits"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 const (

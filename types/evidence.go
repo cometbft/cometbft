@@ -12,8 +12,8 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 	cmtproto "github.com/cometbft/cometbft/types/proto"
 )

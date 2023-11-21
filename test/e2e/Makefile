@@ -38,8 +38,12 @@ generator:
 runner:
 	go build -o build/runner ./runner
 
+lint:
+	@echo "--> Running linter for E2E"
+	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
+
 grammar-gen:
 	go run github.com/goccmack/gogll/v3@latest -o pkg/grammar/clean-start/grammar-auto pkg/grammar/clean-start/abci_grammar_clean_start.md
-	go run github.com/goccmack/gogll/v3@latest -o pkg/grammar/recovery/grammar-auto pkg/grammar/recovery/abci_grammar_recovery.md 
+	go run github.com/goccmack/gogll/v3@latest -o pkg/grammar/recovery/grammar-auto pkg/grammar/recovery/abci_grammar_recovery.md
 
-.PHONY: all node docker generator runner grammar-gen
+.PHONY: all node docker docker-debug docker-fast node-fast generator runner lint grammar-gen

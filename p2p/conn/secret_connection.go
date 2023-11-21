@@ -25,9 +25,9 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/libs/async"
-	"github.com/cometbft/cometbft/libs/protoio"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/internal/async"
+	"github.com/cometbft/cometbft/internal/protoio"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 )
 
 // 4 + 1024 == 1028 total frame size

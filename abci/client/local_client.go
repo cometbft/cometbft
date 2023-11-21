@@ -4,8 +4,8 @@ import (
 	"context"
 
 	types "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/libs/service"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/internal/service"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 )
 
 // NOTE: use defer to unlock mutex because Application might panic (e.g., in

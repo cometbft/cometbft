@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	"github.com/cometbft/cometbft/libs/async"
+	"github.com/cometbft/cometbft/internal/async"
 	sc "github.com/cometbft/cometbft/p2p/conn"
 )
 

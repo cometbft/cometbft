@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	"github.com/cometbft/cometbft/libs/protoio"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/internal/protoio"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtproto "github.com/cometbft/cometbft/types/proto"
 )
 

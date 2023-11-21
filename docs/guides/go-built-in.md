@@ -101,10 +101,18 @@ github.com/cometbft/cometbft v0.38.0
 )
 ```
 
+XXX: CometBFT `v0.38.0` uses a slightly outdated `gogoproto` library, which
+may fail to compile with newer Go versions. To avoid any compilation errors,
+upgrade `gogoproto` manually:
+
+```bash
+go get github.com/cosmos/gogoproto@v1.4.11
+```
+
 As you write the kvstore application, you can rebuild the binary by
 pulling any new dependencies and recompiling it.
 
-```sh
+```bash
 go get
 go build
 ```
@@ -142,7 +150,7 @@ func (app *KVStoreApplication) Info(_ context.Context, info *abcitypes.InfoReque
 }
 
 func (app *KVStoreApplication) Query(_ context.Context, req *abcitypes.QueryRequest) (*abcitypes.QueryResponse, error) {
-    return &abcitypes.QueryResponse{}
+    return &abcitypes.QueryResponse{}, nil
 }
 
 func (app *KVStoreApplication) CheckTx(_ context.Context, check *abcitypes.CheckTxRequest) (*abcitypes.CheckTxResponse, error) {
@@ -457,29 +465,14 @@ The application is free to modify the group before returning from the call, as l
 does not use more bytes than `PrepareProposalRequest.max_tx_bytes`
 For example, the application may reorder, add, or even remove transactions from the group to improve the
 execution of the block once accepted.
+
 In the following code, the application simply returns the unmodified group of transactions:
 
 ```go
- func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abcitypes.PrepareProposalRequest) (*abcitypes.PrepareProposalResponse, error) {
-   totalBytes := int64(0)
-   txs := make([]byte, 0)
-
-   for _, tx := range proposal.Txs {
-     totalBytes += int64(len(tx))
-     txs = append(txs, tx...)
-
-       if totalBytes > int64(proposal.MaxTxBytes) {
-         break
-       }
-     }
-
-     return &abcitypes.PrepareProposalResponse{Txs: proposal.Txs}, nil
- }
+func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abcitypes.PrepareProposalRequest) (*abcitypes.PrepareProposalResponse, error) {
+    return &abcitypes.PrepareProposalResponse{Txs: proposal.Txs}, nil
+}
 ```
-
-This code snippet iterates through the proposed transactions and calculates the `total bytes`. If the `total bytes` exceeds the `MaxTxBytes` specified in the `PrepareProposalRequest` struct, the loop breaks and the transactions processed so far are returned.
-
-Note: It is the responsibility of the application to ensure that the `total bytes` of transactions returned does not exceed the `PrepareProposalRequest.max_tx_bytes` limit.
 
 Once a proposed block is received by a node, the proposal is passed to the application to give
 its blessing before voting to accept the proposal.
@@ -497,7 +490,8 @@ func (app *KVStoreApplication) ProcessProposal(_ context.Context, proposal *abci
 
 ## 1.4 Starting an application and a CometBFT instance in the same process
 
-Now that we have the basic functionality of our application in place, let's put it all together inside of our main.go file.
+Now that we have the basic functionality of our application in place, let's put
+it all together inside of our `main.go` file.
 
 Change the contents of your `main.go` file to the following.
 
@@ -588,7 +582,7 @@ func main() {
         nm.DefaultGenesisDocProviderFunc(config),
         cfg.DefaultDBProvider,
         nm.DefaultMetricsProvider(config.Instrumentation),
-        logger
+        logger,
     )
 
     if err != nil {
@@ -678,7 +672,7 @@ node, err := nm.NewNode(
     nm.DefaultGenesisDocProviderFunc(config),
     cfg.DefaultDBProvider,
     nm.DefaultMetricsProvider(config.Instrumentation),
-logger)
+    logger)
 
 if err != nil {
     log.Fatalf("Creating node: %v", err)
@@ -795,7 +789,7 @@ The response contains a `base64` encoded representation of the data we submitted
 To get the original value out of this data, we can use the `base64` command line utility:
 
 ```bash
-echo cm9ja3M=" | base64 -d
+echo "cm9ja3M=" | base64 -d
 ```
 
 ## Outro

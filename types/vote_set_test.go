@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/crypto"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
@@ -117,7 +117,6 @@ func TestVoteSet_AddVote_Bad(t *testing.T) {
 			t.Errorf("expected VoteSet.Add to fail, wrong type")
 		}
 	}
-
 }
 
 func TestVoteSet_2_3Majority(t *testing.T) {

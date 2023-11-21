@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cometbft/cometbft/internal/protoio"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
-	"github.com/cometbft/cometbft/libs/protoio"
 	cmtproto "github.com/cometbft/cometbft/types/proto"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )

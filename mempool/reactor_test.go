@@ -362,7 +362,7 @@ func TestMempoolParallelCheckTx(t *testing.T) {
 
 	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
 	// receive any tx. (The second reactor only sends transactions to the first reactor.)
-	checkTxsInOrder(t, txs, reactors[1], 0)
+	checkTxsInOrder(t, txs, reactors[0], 0)
 }
 
 // Test the experimental feature that limits the number of outgoing connections for gossiping

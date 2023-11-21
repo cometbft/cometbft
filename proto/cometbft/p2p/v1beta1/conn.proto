@@ -4,7 +4,7 @@ package cometbft.p2p.v1beta1;
 option go_package = "github.com/cometbft/cometbft/api/cometbft/p2p/v1beta1";
 
 import "gogoproto/gogo.proto";
-import "cometbft/crypto/v1beta1/keys.proto";
+import "cometbft/crypto/v1/keys.proto";
 
 message PacketPing {}
 
@@ -25,6 +25,6 @@ message Packet {
 }
 
 message AuthSigMessage {
-  cometbft.crypto.v1beta1.PublicKey pub_key = 1 [(gogoproto.nullable) = false];
+  cometbft.crypto.v1.PublicKey pub_key = 1 [(gogoproto.nullable) = false];
   bytes                        sig     = 2;
 }

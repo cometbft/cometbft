@@ -1,15 +1,14 @@
 syntax = "proto3";
-package cometbft.abci.v1beta4;
+package cometbft.abci.v1;
 
-import "cometbft/abci/v1beta1/types.proto";
-import "cometbft/abci/v1beta2/types.proto";
-import "cometbft/abci/v1beta3/types.proto";
+import "cometbft/crypto/v1/keys.proto";
 import "cometbft/crypto/v1/proof.proto";
-import "cometbft/types/v1beta3/params.proto";
+import "cometbft/types/v1/params.proto";
+import "cometbft/types/v1/validator.proto";
 import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/cometbft/cometbft/api/cometbft/abci/v1beta4";
+option go_package = "github.com/cometbft/cometbft/api/cometbft/abci/v1";
 
 //----------------------------------------
 // Request types
@@ -54,11 +53,11 @@ message InitChainRequest {
     (gogoproto.nullable) = false,
     (gogoproto.stdtime)  = true
   ];
-  string                                 chain_id         = 2;
-  cometbft.types.v1beta3.ConsensusParams consensus_params = 3;
-  repeated v1beta1.ValidatorUpdate validators             = 4 [(gogoproto.nullable) = false];
-  bytes                            app_state_bytes        = 5;
-  int64                            initial_height         = 6;
+  string                            chain_id         = 2;
+  cometbft.types.v1.ConsensusParams consensus_params = 3;
+  repeated ValidatorUpdate          validators       = 4 [(gogoproto.nullable) = false];
+  bytes                             app_state_bytes  = 5;
+  int64                             initial_height   = 6;
 }
 
 message QueryRequest {
@@ -94,8 +93,8 @@ message ListSnapshotsRequest {}
 
 // Request offering a snapshot to the application
 message OfferSnapshotRequest {
-  v1beta1.Snapshot snapshot = 1;  // snapshot offered by peers
-  bytes            app_hash = 2;  // light client-verified app hash for snapshot height
+  Snapshot snapshot = 1;  // snapshot offered by peers
+  bytes    app_hash = 2;  // light client-verified app hash for snapshot height
 }
 
 // Request to load a snapshot chunk
@@ -117,11 +116,11 @@ message PrepareProposalRequest {
   int64 max_tx_bytes = 1;
   // txs is an array of transactions that will be included in a block,
   // sent to the app for possible modifications.
-  repeated bytes             txs               = 2;
-  v1beta3.ExtendedCommitInfo local_last_commit = 3 [(gogoproto.nullable) = false];
-  repeated Misbehavior       misbehavior       = 4 [(gogoproto.nullable) = false];
-  int64                      height            = 5;
-  google.protobuf.Timestamp  time              = 6 [
+  repeated bytes            txs               = 2;
+  ExtendedCommitInfo        local_last_commit = 3 [(gogoproto.nullable) = false];
+  repeated Misbehavior      misbehavior       = 4 [(gogoproto.nullable) = false];
+  int64                     height            = 5;
+  google.protobuf.Timestamp time              = 6 [
     (gogoproto.nullable) = false,
     (gogoproto.stdtime)  = true
   ];
@@ -132,7 +131,7 @@ message PrepareProposalRequest {
 
 message ProcessProposalRequest {
   repeated bytes       txs                  = 1;
-  v1beta3.CommitInfo   proposed_last_commit = 2 [(gogoproto.nullable) = false];
+  CommitInfo           proposed_last_commit = 2 [(gogoproto.nullable) = false];
   repeated Misbehavior misbehavior          = 3 [(gogoproto.nullable) = false];
   // Merkle root hash of the fields of the proposed block.
   bytes                     hash   = 4;
@@ -158,7 +157,7 @@ message ExtendVoteRequest {
     (gogoproto.stdtime)  = true
   ];
   repeated bytes       txs                  = 4;
-  v1beta3.CommitInfo   proposed_last_commit = 5 [(gogoproto.nullable) = false];
+  CommitInfo           proposed_last_commit = 5 [(gogoproto.nullable) = false];
   repeated Misbehavior misbehavior          = 6 [(gogoproto.nullable) = false];
   bytes                next_validators_hash = 7;
   // address of the public key of the original proposer of the block.
@@ -177,7 +176,7 @@ message VerifyVoteExtensionRequest {
 
 message FinalizeBlockRequest {
   repeated bytes       txs                 = 1;
-  v1beta3.CommitInfo   decided_last_commit = 2 [(gogoproto.nullable) = false];
+  CommitInfo           decided_last_commit = 2 [(gogoproto.nullable) = false];
   repeated Misbehavior misbehavior         = 3 [(gogoproto.nullable) = false];
   // Merkle root hash of the fields of the decided block.
   bytes                     hash   = 4;
@@ -239,9 +238,9 @@ message InfoResponse {
 }
 
 message InitChainResponse {
-  cometbft.types.v1beta3.ConsensusParams consensus_params = 1;
-  repeated v1beta1.ValidatorUpdate validators             = 2 [(gogoproto.nullable) = false];
-  bytes                            app_hash               = 3;
+  cometbft.types.v1.ConsensusParams consensus_params = 1;
+  repeated ValidatorUpdate          validators       = 2 [(gogoproto.nullable) = false];
+  bytes                             app_hash         = 3;
 }
 
 message QueryResponse {
@@ -258,13 +257,13 @@ message QueryResponse {
 }
 
 message CheckTxResponse {
-  uint32   code                 = 1;
-  bytes    data                 = 2;
-  string   log                  = 3;  // nondeterministic
-  string   info                 = 4;  // nondeterministic
-  int64    gas_wanted           = 5 [json_name = "gas_wanted"];
-  int64    gas_used             = 6 [json_name = "gas_used"];
-  repeated v1beta2.Event events = 7 [
+  uint32         code       = 1;
+  bytes          data       = 2;
+  string         log        = 3;  // nondeterministic
+  string         info       = 4;  // nondeterministic
+  int64          gas_wanted = 5 [json_name = "gas_wanted"];
+  int64          gas_used   = 6 [json_name = "gas_used"];
+  repeated Event events     = 7 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag)  = "events,omitempty"
   ];
@@ -282,7 +281,7 @@ message CommitResponse {
 }
 
 message ListSnapshotsResponse {
-  repeated v1beta1.Snapshot snapshots = 1;
+  repeated Snapshot snapshots = 1;
 }
 
 message OfferSnapshotResponse {
@@ -359,18 +358,18 @@ enum VerifyVoteExtensionStatus {
 
 message FinalizeBlockResponse {
   // set of block events emmitted as part of executing the block
-  repeated v1beta2.Event events = 1 [
+  repeated Event events = 1 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag)  = "events,omitempty"
   ];
   // the result of executing each transaction including the events
   // the particular transaction emitted. This should match the order
   // of the transactions delivered in the block itself
-  repeated v1beta3.ExecTxResult tx_results = 2;
+  repeated ExecTxResult tx_results = 2;
   // a list of updates to the validator set. These will reflect the validator set at current height + 2.
-  repeated v1beta1.ValidatorUpdate validator_updates = 3 [(gogoproto.nullable) = false];
+  repeated ValidatorUpdate validator_updates = 3 [(gogoproto.nullable) = false];
   // updates to the consensus params, if any.
-  cometbft.types.v1beta3.ConsensusParams consensus_param_updates = 4;
+  cometbft.types.v1.ConsensusParams consensus_param_updates = 4;
   // app_hash is the hash of the applications' state which is used to confirm
   // that execution of the transactions was deterministic.
   // It is up to the application to decide which algorithm to use.
@@ -378,7 +377,92 @@ message FinalizeBlockResponse {
 }
 
 //----------------------------------------
+// Misc.
+
+message CommitInfo {
+  int32             round = 1;
+  repeated VoteInfo votes = 2 [(gogoproto.nullable) = false];
+}
+
+// ExtendedCommitInfo is similar to CommitInfo except that it is only used in
+// the PrepareProposal request such that Tendermint can provide vote extensions
+// to the application.
+message ExtendedCommitInfo {
+  // The round at which the block proposer decided in the previous height.
+  int32 round = 1;
+  // List of validators' addresses in the last validator set with their voting
+  // information, including vote extensions.
+  repeated ExtendedVoteInfo votes = 2 [(gogoproto.nullable) = false];
+}
+
+// Event allows application developers to attach additional information to
+// ResponseFinalizeBlock and ResponseCheckTx.
+// Up to 0.37, this could also be used in ResponseBeginBlock, ResponseEndBlock,
+// and ResponseDeliverTx.
+// Later, transactions may be queried using these events.
+message Event {
+  string                  type       = 1;
+  repeated EventAttribute attributes = 2 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag)  = "attributes,omitempty"
+  ];
+}
+
+// EventAttribute is a single key-value pair, associated with an event.
+message EventAttribute {
+  string key   = 1;
+  string value = 2;
+  bool   index = 3;  // nondeterministic
+}
+
+// ExecTxResult contains results of executing one individual transaction.
+//
+// * Its structure is equivalent to #ResponseDeliverTx which will be deprecated/deleted
+message ExecTxResult {
+  uint32         code       = 1;
+  bytes          data       = 2;
+  string         log        = 3;  // nondeterministic
+  string         info       = 4;  // nondeterministic
+  int64          gas_wanted = 5 [json_name = "gas_wanted"];
+  int64          gas_used   = 6 [json_name = "gas_used"];
+  repeated Event events     = 7
+      [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];  // nondeterministic
+  string codespace = 8;
+}
+
+//----------------------------------------
 // Blockchain Types
+
+message Validator {
+  bytes address = 1;  // The first 20 bytes of SHA256(public key)
+  // PubKey pub_key = 2 [(gogoproto.nullable)=false];
+  int64 power = 3;  // The voting power
+}
+
+message ValidatorUpdate {
+  cometbft.crypto.v1.PublicKey pub_key = 1 [(gogoproto.nullable) = false];
+  int64                        power   = 2;
+}
+
+message VoteInfo {
+  Validator                     validator     = 1 [(gogoproto.nullable) = false];
+  cometbft.types.v1.BlockIDFlag block_id_flag = 3;
+
+  reserved 2;  // signed_last_block
+}
+
+message ExtendedVoteInfo {
+  // The validator that sent the vote.
+  Validator validator = 1 [(gogoproto.nullable) = false];
+  // Non-deterministic extension provided by the sending validator's application.
+  bytes vote_extension = 3;
+  // Vote extension signature created by CometBFT
+  bytes extension_signature = 4;
+  // block_id_flag indicates whether the validator voted for a block, nil, or did not vote at all
+  cometbft.types.v1.BlockIDFlag block_id_flag = 5;
+
+  reserved 2;  // signed_last_block
+}
 
 enum MisbehaviorType {
   option (gogoproto.goproto_enum_prefix) = false;
@@ -391,7 +475,7 @@ enum MisbehaviorType {
 message Misbehavior {
   MisbehaviorType type = 1;
   // The offending validator
-  v1beta1.Validator validator = 2 [(gogoproto.nullable) = false];
+  Validator validator = 2 [(gogoproto.nullable) = false];
   // The height when the offense occurred
   int64 height = 3;
   // The corresponding time where the offense occurred
@@ -403,4 +487,15 @@ message Misbehavior {
   // not store historical validators.
   // https://github.com/tendermint/tendermint/issues/4581
   int64 total_voting_power = 5;
+}
+
+//----------------------------------------
+// State Sync Types
+
+message Snapshot {
+  uint64 height   = 1;  // The height at which the snapshot was taken
+  uint32 format   = 2;  // The application-specific snapshot format
+  uint32 chunks   = 3;  // Number of chunks in the snapshot
+  bytes  hash     = 4;  // Arbitrary snapshot hash, equal only if identical
+  bytes  metadata = 5;  // Arbitrary application metadata
 }

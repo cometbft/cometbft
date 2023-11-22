@@ -1,7 +1,7 @@
 syntax = "proto3";
-package cometbft.p2p.v1beta1;
+package cometbft.p2p.v1;
 
-option go_package = "github.com/cometbft/cometbft/api/cometbft/p2p/v1beta1";
+option go_package = "github.com/cometbft/cometbft/api/cometbft/p2p/v1";
 
 import "gogoproto/gogo.proto";
 

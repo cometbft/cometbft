@@ -25,7 +25,7 @@ func TestGRPC_Version(t *testing.T) {
 		res, err := client.GetVersion(ctx)
 		require.NoError(t, err)
 
-		require.Equal(t, version.TMCoreSemVer, res.Node)
+		require.Equal(t, version.CMTSemVer, res.Node)
 		require.Equal(t, version.ABCIVersion, res.ABCI)
 		require.Equal(t, version.P2PProtocol, res.P2P)
 		require.Equal(t, version.BlockProtocol, res.Block)

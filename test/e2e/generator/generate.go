@@ -412,7 +412,7 @@ func gitRepoLatestReleaseVersion(gitRepoDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return findLatestReleaseTag(version.TMCoreSemVer, tags)
+	return findLatestReleaseTag(version.CMTSemVer, tags)
 }
 
 func findLatestReleaseTag(baseVer string, tags []string) (string, error) {

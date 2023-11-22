@@ -13,7 +13,7 @@ CometBFT currently supports two types of mempools: `flood` and `nop`.
 ## 1. Flood
 
 The `flood` mempool stores transactions in a concurrent linked list. When a new
-transaction is received, it first checks there's a space for it (`size` and
+transaction is received, it first checks if there's a space for it (`size` and
 `max_txs_bytes` config options) and that it's not too big (`max_tx_bytes` config
 option). Then, it checks if this transaction has already been seen before by using
 an LRU cache (`cache_size` regulates the cache's size). If all checks pass and
@@ -84,7 +84,7 @@ rejected until the node has seen `tx2`.
 ## 2. Nop
 
 `nop` (short for no operation) mempool is used when the ABCI application developer wants to
-build their own mempool. When `type=nop`, transactions are not stored anywhere
+build their own mempool. When `type = "nop"`, transactions are not stored anywhere
 and are not gossiped to other peers using the P2P network.
 
 Submitting a transaction via the existing RPC methods (`BroadcastTxSync`,

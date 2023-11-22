@@ -148,7 +148,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	dir := strings.TrimSuffix(file, filepath.Ext(file))
 
 	keyGen := newKeyGenerator(randomSeed)
-	proxyPortGen := newPortGenerator(proxyPortFirst)
+	proxyPortGen := newPortGenerator(proxyPortFirst) //Must go away! We must use ifd
 	prometheusProxyPortGen := newPortGenerator(prometheusProxyPortFirst)
 	_, ipNet, err := net.ParseCIDR(ifd.Network)
 	if err != nil {
@@ -230,7 +230,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			NodeKey:                 keyGen.Generate("ed25519"),
 			InternalIP:              ind.IPAddress,
 			ExternalIP:              extIP,
-			RPCProxyPort:            proxyPortGen.Next(),
+			RPCProxyPort:            ind.Port,
 			GRPCProxyPort:           proxyPortGen.Next(),
 			GRPCPrivilegedProxyPort: proxyPortGen.Next(),
 			Mode:                    ModeValidator,

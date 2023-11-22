@@ -28,8 +28,6 @@ In order to mitigate this, several changes are proposed:
    along similar lines to that proposed in [ADR 060]. This involves moving these
    packages under the `/internal/` path in the repository, making those packages
    only accessible to the CometBFT codebase.
-3. Turn certain public packages into their own Go modules, allowing them to be
-   versioned independently of the rest of the CometBFT codebase.
 
 ## Alternative Approaches
 
@@ -191,16 +189,6 @@ remain publicly exported. All other packages in CometBFT should be moved under
 | `state`        | IBC Go                   | ❌ | Only uses `TxResultsHash` type to check hash equivalence in test |
 | `types`        | Cosmos SDK, IBC Go, Gaia | ✅ | |
 | `version`      | Cosmos SDK, IBC Go       | ✅ | |
-
-### Modularization
-
-The following packages are to have their own `go.mod` files defined, turning
-them into Go modules in their own right. This reduces pollution of the core
-CometBFT `go.mod` file with non-core dependencies, and reduces the Go API
-surface area of the core codebase.
-
-- `test/loadtime` - The `loadtime` tool, used in testing and QA
-- `test/e2e` - The CometBFT end-to-end testing framework
 
 ## Consequences
 

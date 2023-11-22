@@ -250,7 +250,8 @@ func createMempoolAndMempoolReactor(
 	logger log.Logger,
 ) (mempl.Mempool, waitSyncP2PReactor) {
 	switch config.Mempool.Type {
-	case cfg.MempoolTypeFlood:
+	// allow empty string for backward compatibility
+	case cfg.MempoolTypeFlood, "":
 		logger = logger.With("module", "mempool")
 		mp := mempl.NewCListMempool(
 			config.Mempool,

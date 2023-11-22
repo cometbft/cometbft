@@ -5,7 +5,7 @@ option go_package = "github.com/cometbft/cometbft/api/cometbft/consensus/v1beta1
 
 import "gogoproto/gogo.proto";
 import "cometbft/types/v1beta1/types.proto";
-import "cometbft/libs/bits/v1beta1/types.proto";
+import "cometbft/libs/bits/v1/types.proto";
 
 // NewRoundStep is sent for every step taken in the ConsensusState.
 // For every height/round/step transition
@@ -21,11 +21,11 @@ message NewRoundStep {
 // i.e., there is a Proposal for block B and 2/3+ prevotes for the block B in the round r.
 // In case the block is also committed, then IsCommit flag is set to true.
 message NewValidBlock {
-  int64                           height                = 1;
-  int32                           round                 = 2;
+  int64                                height                = 1;
+  int32                                round                 = 2;
   cometbft.types.v1beta1.PartSetHeader block_part_set_header = 3 [(gogoproto.nullable) = false];
-  cometbft.libs.bits.v1beta1.BitArray  block_parts           = 4;
-  bool                            is_commit             = 5;
+  cometbft.libs.bits.v1.BitArray       block_parts           = 4;
+  bool                                 is_commit             = 5;
 }
 
 // Proposal is sent when a new block is proposed.
@@ -37,13 +37,13 @@ message Proposal {
 message ProposalPOL {
   int64                          height             = 1;
   int32                          proposal_pol_round = 2;
-  cometbft.libs.bits.v1beta1.BitArray proposal_pol       = 3 [(gogoproto.nullable) = false];
+  cometbft.libs.bits.v1.BitArray proposal_pol       = 3 [(gogoproto.nullable) = false];
 }
 
 // BlockPart is sent when gossipping a piece of the proposed block.
 message BlockPart {
-  int64                  height = 1;
-  int32                  round  = 2;
+  int64                       height = 1;
+  int32                       round  = 2;
   cometbft.types.v1beta1.Part part   = 3 [(gogoproto.nullable) = false];
 }
 
@@ -54,27 +54,27 @@ message Vote {
 
 // HasVote is sent to indicate that a particular vote has been received.
 message HasVote {
-  int64                           height = 1;
-  int32                           round  = 2;
+  int64                                height = 1;
+  int32                                round  = 2;
   cometbft.types.v1beta1.SignedMsgType type   = 3;
-  int32                           index  = 4;
+  int32                                index  = 4;
 }
 
 // VoteSetMaj23 is sent to indicate that a given BlockID has seen +2/3 votes.
 message VoteSetMaj23 {
-  int64                           height   = 1;
-  int32                           round    = 2;
+  int64                                height   = 1;
+  int32                                round    = 2;
   cometbft.types.v1beta1.SignedMsgType type     = 3;
   cometbft.types.v1beta1.BlockID       block_id = 4 [(gogoproto.customname) = "BlockID", (gogoproto.nullable) = false];
 }
 
 // VoteSetBits is sent to communicate the bit-array of votes seen for the BlockID.
 message VoteSetBits {
-  int64                           height   = 1;
-  int32                           round    = 2;
+  int64                                height   = 1;
+  int32                                round    = 2;
   cometbft.types.v1beta1.SignedMsgType type     = 3;
   cometbft.types.v1beta1.BlockID       block_id = 4 [(gogoproto.customname) = "BlockID", (gogoproto.nullable) = false];
-  cometbft.libs.bits.v1beta1.BitArray  votes    = 5 [(gogoproto.nullable) = false];
+  cometbft.libs.bits.v1.BitArray       votes    = 5 [(gogoproto.nullable) = false];
 }
 
 message Message {

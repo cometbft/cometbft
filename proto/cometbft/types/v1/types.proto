@@ -3,6 +3,7 @@ package cometbft.types.v1;
 
 option go_package = "github.com/cometbft/cometbft/api/cometbft/types/v1";
 
+import "cometbft/crypto/v1/proof.proto";
 import "cometbft/types/v1/validator.proto";
 import "cometbft/version/v1/types.proto";
 
@@ -26,6 +27,12 @@ enum SignedMsgType {
 message PartSetHeader {
   uint32 total = 1;
   bytes  hash  = 2;
+}
+
+message Part {
+  uint32                   index = 1;
+  bytes                    bytes = 2;
+  cometbft.crypto.v1.Proof proof = 3 [(gogoproto.nullable) = false];
 }
 
 message BlockID {
@@ -130,6 +137,17 @@ message ExtendedCommitSig {
   bytes extension = 5;
   // Vote extension signature
   bytes extension_signature = 6;
+}
+
+message Proposal {
+  SignedMsgType             type      = 1;
+  int64                     height    = 2;
+  int32                     round     = 3;
+  int32                     pol_round = 4;
+  BlockID                   block_id  = 5 [(gogoproto.customname) = "BlockID", (gogoproto.nullable) = false];
+  google.protobuf.Timestamp timestamp = 6
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  bytes signature = 7;
 }
 
 message SignedHeader {

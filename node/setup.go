@@ -248,7 +248,7 @@ func createMempoolAndMempoolReactor(
 	waitSync bool,
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
-) (mempl.Mempool, mempoolReactor) {
+) (mempl.Mempool, waitSyncP2PReactor) {
 	switch config.Mempool.Type {
 	case cfg.MempoolTypeFlood:
 		logger = logger.With("module", "mempool")

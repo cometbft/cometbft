@@ -62,5 +62,3 @@ proto/spec/**/*.pb.go
 *.dvi
 # Python virtual environments
 .venv
-go.work
-go.work.sum

@@ -19,14 +19,6 @@ jobs:
     name: golangci-lint
     runs-on: ubuntu-latest
     timeout-minutes: 8
-    strategy:
-      matrix:
-        # One entry per distinct Go module/submodule.
-        workdir:
-          - ''
-          - 'test/e2e'
-          - 'test/e2e/app'
-          - 'test/loadtime'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v4
@@ -36,12 +28,11 @@ jobs:
         with:
           PATTERNS: |
             **/**.go
-            **/go.mod
-            **/go.sum
+            go.mod
+            go.sum
       - uses: golangci/golangci-lint-action@v3
         with:
           version: latest
           args: --timeout 10m
           github-token: ${{ secrets.github_token }}
-          working-directory: ${{ matrix.workdir }}
         if: env.GIT_DIFF

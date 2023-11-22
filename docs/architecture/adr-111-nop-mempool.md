@@ -157,7 +157,7 @@ within CometBFT.
 The `nop` Mempool implements the `Mempool` interface in a very simple manner:
 
 *	`CheckTx(tx types.Tx) (*abcicli.ReqRes, error)`: returns `nil, ErrNotAllowed`
-*	`RemoveTxByKey(txKey types.TxKey) error`: returns `ErrNotFound`
+*	`RemoveTxByKey(txKey types.TxKey) error`: returns `ErrNotAllowed`
 * `ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs`: returns `nil`
 * `ReapMaxTxs(max int) types.Txs`: returns `nil`
 *	`Lock()`: does nothing
@@ -165,7 +165,7 @@ The `nop` Mempool implements the `Mempool` interface in a very simple manner:
 *	`Update(...) error`: returns `nil`
 * `FlushAppConn() error`: returns `nil`
 *	`Flush()`: does nothing
-* `TxsAvailable() <-chan struct{}`: returns a closed channel
+* `TxsAvailable() <-chan struct{}`: returns `nil`
 * `EnableTxsAvailable()`: does nothing
 * `SetTxRemovedCallback(cb func(types.TxKey))`: does nothing
 * `Size() int` returns 0

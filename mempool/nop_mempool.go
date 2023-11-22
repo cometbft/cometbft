@@ -58,11 +58,9 @@ func (*NopMempool) FlushAppConn() error { return nil }
 // Flush does nothing.
 func (*NopMempool) Flush() {}
 
-// TxsAvailable always returns a closed channel.
+// TxsAvailable always returns nil.
 func (*NopMempool) TxsAvailable() <-chan struct{} {
-	txsAvailable := make(chan struct{}, 1)
-	close(txsAvailable)
-	return txsAvailable
+	return nil
 }
 
 // EnableTxsAvailable does nothing.

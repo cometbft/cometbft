@@ -34,5 +34,5 @@ func TestNopMempool_Basic(t *testing.T) {
 	assert.NoError(t, err)
 
 	txsAvailable := mem.TxsAvailable()
-	assert.NotNil(t, txsAvailable)
+	assert.Nil(t, txsAvailable)
 }

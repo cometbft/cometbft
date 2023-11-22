@@ -237,6 +237,16 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.FinalizeBlock
 		txs[i] = &abci.ExecTxResult{Code: kvstore.CodeTypeOK}
 	}
 
+	for _, ev := range req.Misbehavior {
+		app.logger.Info("Misbehavior. Slashing validator",
+			"validator_address", ev.GetValidator().Address,
+			"type", ev.GetType(),
+			"height", ev.GetHeight(),
+			"time", ev.GetTime(),
+			"total_voting_power", ev.GetTotalVotingPower(),
+		)
+	}
+
 	valUpdates, err := app.validatorUpdates(uint64(req.Height))
 	if err != nil {
 		panic(err)

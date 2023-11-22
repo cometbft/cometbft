@@ -16,10 +16,10 @@ func TestNopMempool_Basic(t *testing.T) {
 	assert.Equal(t, int64(0), mem.SizeBytes())
 
 	_, err := mem.CheckTx(tx)
-	assert.Equal(t, ErrNotAllowed, err)
+	assert.Equal(t, errNotAllowed, err)
 
 	err = mem.RemoveTxByKey(tx.Key())
-	assert.Equal(t, ErrNotAllowed, err)
+	assert.Equal(t, errNotAllowed, err)
 
 	txs := mem.ReapMaxBytesMaxGas(0, 0)
 	assert.Nil(t, txs)

@@ -16,18 +16,18 @@ import (
 // See [ADR-111](../docs/architecture/adr-111-nop-mempool.md).
 type NopMempool struct{}
 
-// ErrNotAllowed indicates that the operation is not allowed with `nop` mempool.
-var ErrNotAllowed = errors.New("not allowed with `nop` mempool")
+// errNotAllowed indicates that the operation is not allowed with `nop` mempool.
+var errNotAllowed = errors.New("not allowed with `nop` mempool")
 
 var _ Mempool = &NopMempool{}
 
-// CheckTx always returns ErrNotAllowed.
+// CheckTx always returns an error.
 func (*NopMempool) CheckTx(types.Tx) (*abcicli.ReqRes, error) {
-	return nil, ErrNotAllowed
+	return nil, errNotAllowed
 }
 
-// RemoveTxByKey always returns ErrNotAllowed.
-func (*NopMempool) RemoveTxByKey(types.TxKey) error { return ErrNotAllowed }
+// RemoveTxByKey always returns an error.
+func (*NopMempool) RemoveTxByKey(types.TxKey) error { return errNotAllowed }
 
 // ReapMaxBytesMaxGas always returns nil.
 func (*NopMempool) ReapMaxBytesMaxGas(int64, int64) types.Txs { return nil }

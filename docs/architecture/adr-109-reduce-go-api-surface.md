@@ -6,7 +6,7 @@
 
 ## Status
 
-Accepted
+Accepted ([\#1484])
 
 ## Context
 
@@ -204,6 +204,7 @@ remain publicly exported. All other packages in CometBFT should be moved under
   can be moved back out of the `internal` directory in subsequent minor
   releases.
 
+[\#1484]: https://github.com/cometbft/cometbft/issues/1484
 [ADR 060]: ./tendermint-core/adr-060-go-api-stability.md
 [Cosmos SDK]: https://github.com/cosmos/cosmos-sdk/
 [Cosmos Hub]: https://github.com/cosmos/gaia

@@ -1,10 +1,10 @@
 syntax = "proto3";
-package cometbft.services.block.v1beta1;
+package cometbft.services.block.v1;
 
-import "cometbft/types/v1beta1/types.proto";
-import "cometbft/types/v1beta3/block.proto";
+import "cometbft/types/v1/types.proto";
+import "cometbft/types/v1/block.proto";
 
-option go_package = "github.com/cometbft/cometbft/api/cometbft/services/block/v1beta1";
+option go_package = "github.com/cometbft/cometbft/api/cometbft/services/block/v1";
 
 message GetByHeightRequest {
   // The height of the block requested. If set to 0, the latest height will be returned.
@@ -12,15 +12,15 @@ message GetByHeightRequest {
 }
 
 message GetByHeightResponse {
-  cometbft.types.v1beta1.BlockID block_id = 1;
-  cometbft.types.v1beta3.Block   block    = 2;
+  cometbft.types.v1.BlockID block_id = 1;
+  cometbft.types.v1.Block   block    = 2;
 }
 
 message GetLatestRequest {}
 
 message GetLatestResponse {
-  cometbft.types.v1beta1.BlockID block_id = 1;
-  cometbft.types.v1beta3.Block   block    = 2;
+  cometbft.types.v1.BlockID block_id = 1;
+  cometbft.types.v1.Block   block    = 2;
 }
 
 // GetLatestHeightRequest - empty message since no parameter is required

@@ -29,9 +29,29 @@ Note the context/background should be written in the present tense.
 
 ## Table of Contents
 
+<<<<<<< HEAD
 The ADRs listed below are prior to the fork from
 [Tendermint Core repository](https://github.com/tendermint/tendermint/),
 therefore they have links to it and refer to CometBFT as "Tendermint" or "Tendermint Core".
+=======
+The following ADRs are exclusively relevant to CometBFT. For historical ADRs
+relevant to Tendermint Core as well, please see [this list](./tendermint-core/).
+To distinguish CometBFT ADRs from historical ones from Tendermint Core, we start
+numbering our ADRs from 100 onwards.
+
+### Proposed
+
+- [ADR-103: Protobuf definition versioning](./adr-103-proto-versioning.md)
+- [ADR-105: Refactor list of senders in mempool](./adr-105-refactor-mempool-senders.md)
+- [ADR-109: Reduce CometBFT Go API Surface Area](./adr-109-reduce-go-api-surface.md)
+
+### Accepted
+
+- [ADR-101: Data companion pull API](./adr-101-data-companion-pull-api.md)
+- [ADR-104: State sync from local snapshot](./adr-104-out-of-band-state-sync.md)
+- [ADR-107: Rename protobuf versions of 0.x releases to pre-v1 betas](./adr-107-betaize-proto-versions.md)
+- [ADR-111: `nop` Mempool](./adr-111-nop-mempool.md)
+>>>>>>> bc835036a (mempool: add `nop` mempool (#1643))
 
 ### Implemented
 

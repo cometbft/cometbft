@@ -285,6 +285,16 @@ dial_timeout = "3s"
 #######################################################
 [mempool]
 
+# The type of mempool for this node to use.
+#
+#  Possible types:
+#  - "flood" : concurrent linked list mempool with flooding gossip protocol
+#  (default)
+#  - "nop"   : nop-mempool (short for no operation; the ABCI app is responsible
+#  for storing, disseminating and proposing txs). "create_empty_blocks=false" is
+#  not supported.
+type = "flood"
+
 # Recheck (default: true) defines whether CometBFT should recheck the
 # validity for all remaining transaction in the mempool after a block.
 # Since a block affects the application state, some transactions in the
@@ -478,6 +488,7 @@ namespace = "cometbft"
  ```
 
 ## Empty blocks VS no empty blocks
+
 ### create_empty_blocks = true
 
 If `create_empty_blocks` is set to `true` in your config, blocks will be created ~ every second (with default consensus parameters). You can regulate the delay between blocks by changing the `timeout_commit`. E.g. `timeout_commit = "10s"` should result in ~ 10 second blocks.
@@ -491,6 +502,7 @@ Note after the block H, CometBFT creates something we call a "proof block" (only
 Plus, if you set `create_empty_blocks_interval` to something other than the default (`0`), CometBFT will be creating empty blocks even in the absence of transactions every `create_empty_blocks_interval.` For instance, with `create_empty_blocks = false` and `create_empty_blocks_interval = "30s"`, CometBFT will only create blocks if there are transactions, or after waiting 30 seconds without receiving any transactions.
 
 ## Consensus timeouts explained
+
 There's a variety of information about timeouts in [Running in
 production](./running-in-production.md#configuration-parameters).
 You can also find more detailed explanation in the paper describing
@@ -509,6 +521,7 @@ timeout_precommit = "1s"
 timeout_precommit_delta = "500ms"
 timeout_commit = "1s"
 ```
+
 Note that in a successful round, the only timeout that we absolutely wait no
 matter what is `timeout_commit`.
 Here's a brief summary of the timeouts:

@@ -48,6 +48,9 @@ const (
 	v0 = "v0"
 	v1 = "v1"
 	v2 = "v2"
+
+	MempoolTypeFlood = "flood"
+	MempoolTypeNop   = "nop"
 )
 
 // NOTE: Most of the structs & relevant comments + the
@@ -166,6 +169,9 @@ func (cfg *Config) ValidateBasic() error {
 	}
 	if err := cfg.Instrumentation.ValidateBasic(); err != nil {
 		return ErrInSection{Section: "instrumentation", Err: err}
+	}
+	if !cfg.Consensus.CreateEmptyBlocks && cfg.Mempool.Type == MempoolTypeNop {
+		return fmt.Errorf("`nop` mempool does not support create_empty_blocks = false")
 	}
 	return nil
 }
@@ -836,6 +842,15 @@ func DefaultFuzzConnConfig() *FuzzConnConfig {
 // implementation (previously called v0), and a prioritized mempool (v1), which
 // was removed (see https://github.com/cometbft/cometbft/issues/260).
 type MempoolConfig struct {
+	// The type of mempool for this node to use.
+	//
+	//  Possible types:
+	//  - "flood" : concurrent linked list mempool with flooding gossip protocol
+	//  (default)
+	//  - "nop"   : nop-mempool (short for no operation; the ABCI app is
+	//  responsible for storing, disseminating and proposing txs).
+	//  "create_empty_blocks=false" is not supported.
+	Type string `mapstructure:"type"`
 	// RootDir is the root directory for all data. This should be configured via
 	// the $CMTHOME env variable or --home cmd flag rather than overriding this
 	// struct field.
@@ -894,6 +909,7 @@ type MempoolConfig struct {
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool
 func DefaultMempoolConfig() *MempoolConfig {
 	return &MempoolConfig{
+		Type:      MempoolTypeFlood,
 		Recheck:   true,
 		Broadcast: true,
 		WalPath:   "",
@@ -928,6 +944,12 @@ func (cfg *MempoolConfig) WalEnabled() bool {
 // ValidateBasic performs basic validation (checking param bounds, etc.) and
 // returns an error if any check fails.
 func (cfg *MempoolConfig) ValidateBasic() error {
+	switch cfg.Type {
+	case MempoolTypeFlood, MempoolTypeNop:
+	case "": // allow empty string to be backwards compatible
+	default:
+		return fmt.Errorf("unknown mempool type: %q", cfg.Type)
+	}
 	if cfg.Size < 0 {
 		return cmterrors.ErrNegativeField{Field: "size"}
 	}

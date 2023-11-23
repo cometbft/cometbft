@@ -103,14 +103,12 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 // AddPeer implements Reactor.
 // It starts a broadcast routine ensuring all txs are forwarded to the given peer.
 func (memR *Reactor) AddPeer(peer p2p.Peer) {
-	ctxParent := context.TODO() // This context should come from the caller.
-
 	if memR.config.Broadcast {
 		go func() {
 			// Always forward transactions to unconditional peers.
 			if !memR.Switch.IsPeerUnconditional(peer.ID()) {
+				// Depending on the type of peer, we choose a semaphore to limit the gossiping peers.
 				var peerSemaphore *semaphore.Weighted
-
 				if peer.IsPersistent() && memR.config.ExperimentalMaxGossipConnectionsToPersistentPeers > 0 {
 					peerSemaphore = memR.activePersistentPeersSemaphore
 				} else if !peer.IsPersistent() && memR.config.ExperimentalMaxGossipConnectionsToNonPersistentPeers > 0 {
@@ -119,22 +117,15 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 
 				if peerSemaphore != nil {
 					for peer.IsRunning() {
-						ctxTimeout, cancel := context.WithTimeout(ctxParent, 30*time.Second)
+						// Block on the semaphore until a slot is available to start gossiping with this peer.
+						// Do not block indefinitely, in case the peer is disconnected before gossiping starts.
+						ctxTimeout, cancel := context.WithTimeout(context.TODO(), 30*time.Second)
 						// Block sending transactions to peer until one of the connections become
 						// available in the semaphore.
 						err := peerSemaphore.Acquire(ctxTimeout, 1)
 						cancel()
 
 						if err != nil {
-							/*
-								TODO: Should check for ctxParent being done, once it is passed by the caller.
-								select {
-									case <-ctxParent.Done():
-										return
-									case <-ctxTimeout.Done():
-										continue
-									}
-							*/
 							continue
 						}
 

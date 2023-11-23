@@ -7,7 +7,7 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/require"
 
-	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1beta1"
+	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1beta3"
 	"github.com/cometbft/cometbft/types"
 )

@@ -4,9 +4,9 @@ import (
 	"reflect"
 	"testing"
 
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	cmtproto "github.com/cometbft/cometbft/types/proto"
 )
 
 func TestCanonicalizeBlockID(t *testing.T) {

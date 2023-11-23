@@ -8,11 +8,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1beta1"
+	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
+	privvalproto "github.com/cometbft/cometbft/api/cometbft/privval/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	privvalproto "github.com/cometbft/cometbft/privval/proto"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 )

@@ -21,6 +21,7 @@ import (
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cfg "github.com/cometbft/cometbft/config"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
 	cmtos "github.com/cometbft/cometbft/internal/os"
@@ -36,7 +37,6 @@ import (
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
-	cmtproto "github.com/cometbft/cometbft/types/proto"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 

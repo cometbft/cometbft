@@ -6,6 +6,7 @@
 - 2023-11-15: Addressed PR comments (@sergio-mena)
 - 2023-11-17: Renamed `nil` to `nop` (@melekes)
 - 2023-11-20: Mentioned that the app could reuse p2p network in the future (@melekes)
+- 2023-11-22: Adapt ADR to implementation (@melekes)
 
 ## Status
 
@@ -157,7 +158,7 @@ within CometBFT.
 The `nop` Mempool implements the `Mempool` interface in a very simple manner:
 
 *	`CheckTx(tx types.Tx) (*abcicli.ReqRes, error)`: returns `nil, ErrNotAllowed`
-*	`RemoveTxByKey(txKey types.TxKey) error`: returns `ErrNotFound`
+*	`RemoveTxByKey(txKey types.TxKey) error`: returns `ErrNotAllowed`
 * `ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs`: returns `nil`
 * `ReapMaxTxs(max int) types.Txs`: returns `nil`
 *	`Lock()`: does nothing
@@ -165,7 +166,7 @@ The `nop` Mempool implements the `Mempool` interface in a very simple manner:
 *	`Update(...) error`: returns `nil`
 * `FlushAppConn() error`: returns `nil`
 *	`Flush()`: does nothing
-* `TxsAvailable() <-chan struct{}`: returns a closed channel
+* `TxsAvailable() <-chan struct{}`: returns `nil`
 * `EnableTxsAvailable()`: does nothing
 * `SetTxRemovedCallback(cb func(types.TxKey))`: does nothing
 * `Size() int` returns 0
@@ -221,13 +222,16 @@ will simply be calling the new implementation.
   These considerations are exclusively the application's concern in this approach.
 * *Time to propose a block*. The consensus reactor will call `ReapMaxBytesMaxGas` which will return a `nil` slice.
   `RequestPrepareProposal` will thus contain no transactions.
-* *Consensus waiting for transactions to become available*. `TxsAvailable()` returns a closed channel,
-  so consensus doesn't block (potentially producing empty blocks).
+* *Consensus waiting for transactions to become available*. `TxsAvailable()` returns `nil`. 
+  `cs.handleTxsAvailable()` won't ever be executed.
   At any rate, a configuration with the `nop` mempool and `create_empty_blocks` set to `false`
   will be rejected in the first place.
 * *A new block is decided*.
   * When `Update` is called, nothing is done (no decided transaction is removed).
   * Locking and unlocking the mempool has no effect.
+* *ABCI mempool's connection*
+  CometBFT will still open a "mempool" connection, even though it won't be used.
+  This is to avoid doing lots of breaking changes.
 
 ### Impact on Current Release Plans
 
@@ -255,8 +259,9 @@ However, it is not a clear-cut decision. These are the alternatives we see:
   in those versions where there were more than one mempool to choose from.
   As the configuration is in `config.toml`, it is up to the node operators to configure their
   nodes consistently, via social consensus. However this cannot be guaranteed.
-  A network with an inconsistent choice of mempool at different nodes might result in
-  hard-to-diagnose, undesirable side effects.
+  A network with an inconsistent choice of mempool at different nodes might
+  result in undesirable side effects, such as peers disconnecting from nodes
+  that sent them messages via the mempool channel.
 * *Mempool selected as a network-wide parameter*.
   A way to prevent any inconsistency when selecting the mempool is to move the configuration out of `config.toml`
   and have it as a network-wide application-enforced parameter, implemented in the same way as Consensus Params.

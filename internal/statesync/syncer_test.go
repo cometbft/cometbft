@@ -55,7 +55,7 @@ func TestSyncer_SyncAny(t *testing.T) {
 				Block: version.BlockProtocol,
 				App:   testAppVersion,
 			},
-			Software: version.TMCoreSemVer,
+			Software: version.CMTSemVer,
 		},
 
 		LastBlockHeight: 1,

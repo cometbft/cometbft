@@ -208,11 +208,11 @@ func doHandshake(
 func logNodeStartupInfo(state sm.State, pubKey crypto.PubKey, logger, consensusLogger log.Logger) {
 	// Log the version info.
 	logger.Info("Version info",
-		"tendermint_version", version.TMCoreSemVer,
+		"tendermint_version", version.CMTSemVer,
 		"abci", version.ABCISemVer,
 		"block", version.BlockProtocol,
 		"p2p", version.P2PProtocol,
-		"commit_hash", version.TMGitCommitHash,
+		"commit_hash", version.CMTGitCommitHash,
 	)
 
 	// If the state and software differ in block version, at least log it.

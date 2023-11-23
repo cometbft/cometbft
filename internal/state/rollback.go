@@ -84,7 +84,7 @@ func Rollback(bs BlockStore, ss Store, removeBlock bool) (int64, []byte, error) 
 				Block: version.BlockProtocol,
 				App:   previousParams.Version.App,
 			},
-			Software: version.TMCoreSemVer,
+			Software: version.CMTSemVer,
 		},
 		// immutable fields
 		ChainID:       invalidState.ChainID,

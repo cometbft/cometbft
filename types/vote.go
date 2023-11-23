@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1beta1"
+	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"

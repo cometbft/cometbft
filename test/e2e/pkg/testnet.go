@@ -230,7 +230,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			NodeKey:                 keyGen.Generate("ed25519"),
 			InternalIP:              ind.IPAddress,
 			ExternalIP:              extIP,
-			RPCProxyPort:            ind.Port,
+			RPCProxyPort:            ind.RPCPort,
 			GRPCProxyPort:           ind.GRPCPort,
 			GRPCPrivilegedProxyPort: ind.PrivilegedGRPCPort,
 			Mode:                    ModeValidator,

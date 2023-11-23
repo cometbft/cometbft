@@ -41,7 +41,7 @@ type InfrastructureData struct {
 type InstanceData struct {
 	IPAddress          net.IP `json:"ip_address"`
 	ExtIPAddress       net.IP `json:"ext_ip_address"`
-	Port               uint32 `json:"port"`
+	RPCPort            uint32 `json:"rpc_port"`
 	GRPCPort           uint32 `json:"grpc_port"`
 	PrivilegedGRPCPort uint32 `json:"privileged_grpc_port"`
 }
@@ -78,7 +78,7 @@ func NewDockerInfrastructureData(m Manifest) (InfrastructureData, error) {
 		ifd.Instances[name] = InstanceData{
 			IPAddress:          ipGen.Next(),
 			ExtIPAddress:       localHostIP,
-			Port:               portGen.Next(),
+			RPCPort:            portGen.Next(),
 			GRPCPort:           portGen.Next(),
 			PrivilegedGRPCPort: portGen.Next(),
 		}

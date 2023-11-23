@@ -64,14 +64,8 @@ type Node struct {
 	eventBus          *types.EventBus // pub/sub for services
 	stateStore        sm.Store
 	blockStore        *store.BlockStore // store the blockchain to disk
-<<<<<<< HEAD
 	bcReactor         p2p.Reactor       // for block-syncing
 	mempoolReactor    p2p.Reactor       // for gossipping transactions
-=======
-	pruner            *sm.Pruner
-	bcReactor         p2p.Reactor        // for block-syncing
-	mempoolReactor    waitSyncP2PReactor // for gossipping transactions
->>>>>>> bc835036a (mempool: add `nop` mempool (#1643))
 	mempool           mempl.Mempool
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
@@ -88,12 +82,6 @@ type Node struct {
 	indexerService    *txindex.IndexerService
 	prometheusSrv     *http.Server
 	pprofSrv          *http.Server
-}
-
-type waitSyncP2PReactor interface {
-	p2p.Reactor
-	// required by RPC service
-	WaitSync() bool
 }
 
 // Option sets a parameter for the node.
@@ -378,12 +366,7 @@ func NewNodeWithContext(ctx context.Context,
 
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
 
-<<<<<<< HEAD
-	// Make MempoolReactor
 	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, memplMetrics, logger)
-=======
-	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, waitSync, memplMetrics, logger)
->>>>>>> bc835036a (mempool: add `nop` mempool (#1643))
 
 	evidenceReactor, evidencePool, err := createEvidenceReactor(config, dbProvider, stateStore, blockStore, logger)
 	if err != nil {

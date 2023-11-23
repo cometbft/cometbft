@@ -227,28 +227,7 @@ func createMempoolAndMempoolReactor(
 	state sm.State,
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
-<<<<<<< HEAD
 ) (mempl.Mempool, p2p.Reactor) {
-	logger = logger.With("module", "mempool")
-	mp := mempl.NewCListMempool(
-		config.Mempool,
-		proxyApp.Mempool(),
-		state.LastBlockHeight,
-		mempl.WithMetrics(memplMetrics),
-		mempl.WithPreCheck(sm.TxPreCheck(state)),
-		mempl.WithPostCheck(sm.TxPostCheck(state)),
-	)
-
-	mp.SetLogger(logger)
-
-	reactor := mempl.NewReactor(
-		config.Mempool,
-		mp,
-	)
-	if config.Consensus.WaitForTxs() {
-		mp.EnableTxsAvailable()
-=======
-) (mempl.Mempool, waitSyncP2PReactor) {
 	switch config.Mempool.Type {
 	// allow empty string for backward compatibility
 	case cfg.MempoolTypeFlood, "":
@@ -265,7 +244,6 @@ func createMempoolAndMempoolReactor(
 		reactor := mempl.NewReactor(
 			config.Mempool,
 			mp,
-			waitSync,
 		)
 		if config.Consensus.WaitForTxs() {
 			mp.EnableTxsAvailable()
@@ -279,7 +257,6 @@ func createMempoolAndMempoolReactor(
 		return &mempl.NopMempool{}, mempl.NewNopMempoolReactor()
 	default:
 		panic(fmt.Sprintf("unknown mempool type: %q", config.Mempool.Type))
->>>>>>> bc835036a (mempool: add `nop` mempool (#1643))
 	}
 }
 

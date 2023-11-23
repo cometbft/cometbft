@@ -334,9 +334,6 @@ dial_timeout = "{{ .P2P.DialTimeout }}"
 #######################################################
 [mempool]
 
-<<<<<<< HEAD
-# Recheck (default: true) defines whether CometBFT should recheck the
-=======
 # The type of mempool for this node to use.
 #
 #  Possible types:
@@ -347,8 +344,7 @@ dial_timeout = "{{ .P2P.DialTimeout }}"
 #  not supported.
 type = "flood"
 
-# recheck (default: true) defines whether CometBFT should recheck the
->>>>>>> bc835036a (mempool: add `nop` mempool (#1643))
+# Recheck (default: true) defines whether CometBFT should recheck the
 # validity for all remaining transaction in the mempool after a block.
 # Since a block affects the application state, some transactions in the
 # mempool may become invalid. If this does not apply to your application,

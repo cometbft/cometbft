@@ -39,18 +39,9 @@ const (
 
 	DefaultNodeKeyName  = "node_key.json"
 	DefaultAddrBookName = "addrbook.json"
-<<<<<<< HEAD
-=======
-
-	DefaultPruningInterval = 10 * time.Second
-
-	v0 = "v0"
-	v1 = "v1"
-	v2 = "v2"
 
 	MempoolTypeFlood = "flood"
 	MempoolTypeNop   = "nop"
->>>>>>> bc835036a (mempool: add `nop` mempool (#1643))
 )
 
 // NOTE: Most of the structs & relevant comments + the

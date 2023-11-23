@@ -494,52 +494,62 @@ func createMempoolAndMempoolReactor(
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
 ) (mempl.Mempool, p2p.Reactor) {
-	switch config.Mempool.Version {
-	case cfg.MempoolV1:
-		mp := mempoolv1.NewTxMempool(
-			logger,
-			config.Mempool,
-			proxyApp.Mempool(),
-			state.LastBlockHeight,
-			mempoolv1.WithMetrics(memplMetrics),
-			mempoolv1.WithPreCheck(sm.TxPreCheck(state)),
-			mempoolv1.WithPostCheck(sm.TxPostCheck(state)),
-		)
+	switch config.Mempool.Type {
+	// allow empty string for backward compatibility
+	case cfg.MempoolTypeFlood, "":
+		switch config.Mempool.Version {
+		case cfg.MempoolV1:
+			mp := mempoolv1.NewTxMempool(
+				logger,
+				config.Mempool,
+				proxyApp.Mempool(),
+				state.LastBlockHeight,
+				mempoolv1.WithMetrics(memplMetrics),
+				mempoolv1.WithPreCheck(sm.TxPreCheck(state)),
+				mempoolv1.WithPostCheck(sm.TxPostCheck(state)),
+			)
 
-		reactor := mempoolv1.NewReactor(
-			config.Mempool,
-			mp,
-		)
-		if config.Consensus.WaitForTxs() {
-			mp.EnableTxsAvailable()
+			reactor := mempoolv1.NewReactor(
+				config.Mempool,
+				mp,
+			)
+			if config.Consensus.WaitForTxs() {
+				mp.EnableTxsAvailable()
+			}
+
+			return mp, reactor
+
+		case cfg.MempoolV0:
+			mp := mempoolv0.NewCListMempool(
+				config.Mempool,
+				proxyApp.Mempool(),
+				state.LastBlockHeight,
+				mempoolv0.WithMetrics(memplMetrics),
+				mempoolv0.WithPreCheck(sm.TxPreCheck(state)),
+				mempoolv0.WithPostCheck(sm.TxPostCheck(state)),
+			)
+
+			mp.SetLogger(logger)
+
+			reactor := mempoolv0.NewReactor(
+				config.Mempool,
+				mp,
+			)
+			if config.Consensus.WaitForTxs() {
+				mp.EnableTxsAvailable()
+			}
+
+			return mp, reactor
+
+		default:
+			return nil, nil
 		}
-
-		return mp, reactor
-
-	case cfg.MempoolV0:
-		mp := mempoolv0.NewCListMempool(
-			config.Mempool,
-			proxyApp.Mempool(),
-			state.LastBlockHeight,
-			mempoolv0.WithMetrics(memplMetrics),
-			mempoolv0.WithPreCheck(sm.TxPreCheck(state)),
-			mempoolv0.WithPostCheck(sm.TxPostCheck(state)),
-		)
-
-		mp.SetLogger(logger)
-
-		reactor := mempoolv0.NewReactor(
-			config.Mempool,
-			mp,
-		)
-		if config.Consensus.WaitForTxs() {
-			mp.EnableTxsAvailable()
-		}
-
-		return mp, reactor
-
+	case cfg.MempoolTypeNop:
+		// Strictly speaking, there's no need to have a `mempl.NopMempoolReactor`, but
+		// adding it leads to a cleaner code.
+		return &mempl.NopMempool{}, mempl.NewNopMempoolReactor()
 	default:
-		return nil, nil
+		panic(fmt.Sprintf("unknown mempool type: %q", config.Mempool.Type))
 	}
 }
 
@@ -705,7 +715,9 @@ func createSwitch(config *cfg.Config,
 		p2p.SwitchPeerFilters(peerFilters...),
 	)
 	sw.SetLogger(p2pLogger)
-	sw.AddReactor("MEMPOOL", mempoolReactor)
+	if config.Mempool.Type != cfg.MempoolTypeNop {
+		sw.AddReactor("MEMPOOL", mempoolReactor)
+	}
 	sw.AddReactor("BLOCKCHAIN", bcReactor)
 	sw.AddReactor("CONSENSUS", consensusReactor)
 	sw.AddReactor("EVIDENCE", evidenceReactor)
@@ -933,11 +945,10 @@ func NewNodeWithContext(ctx context.Context,
 
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
 
-	// Make MempoolReactor
 	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, memplMetrics, logger)
 
-	// Make Evidence Reactor
 	evidenceReactor, evidencePool, err := createEvidenceReactor(config, dbProvider, stateDB, blockStore, logger)
+
 	if err != nil {
 		return nil, err
 	}
@@ -971,6 +982,7 @@ func NewNodeWithContext(ctx context.Context,
 	} else if blockSync {
 		csMetrics.BlockSyncing.Set(1)
 	}
+
 	consensusReactor, consensusState := createConsensusReactor(
 		config, state, blockExec, blockStore, mempool, evidencePool,
 		privValidator, csMetrics, stateSync || blockSync, eventBus, consensusLogger,
@@ -997,10 +1009,8 @@ func NewNodeWithContext(ctx context.Context,
 		return nil, err
 	}
 
-	// Setup Transport.
 	transport, peerFilters := createTransport(config, nodeInfo, nodeKey, proxyApp)
 
-	// Setup Switch.
 	p2pLogger := logger.With("module", "p2p")
 	sw := createSwitch(
 		config, transport, p2pMetrics, peerFilters, mempoolReactor, bcReactor,

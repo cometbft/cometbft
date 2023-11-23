@@ -3,9 +3,8 @@ package mempool
 import (
 	"errors"
 
-	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/service"
+	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
 )
@@ -22,8 +21,8 @@ var errNotAllowed = errors.New("not allowed with `nop` mempool")
 var _ Mempool = &NopMempool{}
 
 // CheckTx always returns an error.
-func (*NopMempool) CheckTx(types.Tx) (*abcicli.ReqRes, error) {
-	return nil, errNotAllowed
+func (*NopMempool) CheckTx(types.Tx, func(*abci.Response), TxInfo) error {
+	return errNotAllowed
 }
 
 // RemoveTxByKey always returns an error.
@@ -45,7 +44,7 @@ func (*NopMempool) Unlock() {}
 func (*NopMempool) Update(
 	int64,
 	types.Txs,
-	[]*abci.ExecTxResult,
+	[]*abci.ResponseDeliverTx,
 	PreCheckFunc,
 	PostCheckFunc,
 ) error {
@@ -105,7 +104,7 @@ func (*NopMempoolReactor) InitPeer(p2p.Peer) p2p.Peer { return nil }
 func (*NopMempoolReactor) RemovePeer(p2p.Peer, interface{}) {}
 
 // Receive does nothing.
-func (*NopMempoolReactor) Receive(p2p.Envelope) {}
+func (*NopMempoolReactor) ReceiveEnvelope(p2p.Envelope) {}
 
 // SetSwitch does nothing.
 func (*NopMempoolReactor) SetSwitch(*p2p.Switch) {}

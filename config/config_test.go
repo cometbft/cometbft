@@ -40,7 +40,7 @@ func TestConfigValidateBasic(t *testing.T) {
 	cfg.Consensus.TimeoutPropose = 3 * time.Second
 
 	cfg.Consensus.CreateEmptyBlocks = false
-	cfg.Mempool.Type = config.MempoolTypeNop
+	cfg.Mempool.Type = MempoolTypeNop
 	assert.Error(t, cfg.ValidateBasic())
 }
 

@@ -24,34 +24,13 @@ const (
 	// DefaultLogLevel defines a default log level as INFO.
 	DefaultLogLevel = "info"
 
-<<<<<<< HEAD
 	// Mempool versions. V1 is prioritized mempool (deprecated), v0 is regular mempool.
 	// Default is v0.
 	MempoolV0 = "v0"
 	MempoolV1 = "v1"
-=======
-	DefaultCometDir  = ".cometbft"
-	DefaultConfigDir = "config"
-	DefaultDataDir   = "data"
-
-	DefaultConfigFileName  = "config.toml"
-	DefaultGenesisJSONName = "genesis.json"
-
-	DefaultPrivValKeyName   = "priv_validator_key.json"
-	DefaultPrivValStateName = "priv_validator_state.json"
-
-	DefaultNodeKeyName  = "node_key.json"
-	DefaultAddrBookName = "addrbook.json"
-
-	DefaultPruningInterval = 10 * time.Second
-
-	v0 = "v0"
-	v1 = "v1"
-	v2 = "v2"
 
 	MempoolTypeFlood = "flood"
 	MempoolTypeNop   = "nop"
->>>>>>> bc835036a (mempool: add `nop` mempool (#1643))
 )
 
 // NOTE: Most of the structs & relevant comments + the
@@ -744,12 +723,11 @@ func DefaultFuzzConnConfig() *FuzzConnConfig {
 
 // MempoolConfig defines the configuration options for the CometBFT mempool
 type MempoolConfig struct {
-<<<<<<< HEAD
 	// Mempool version to use:
 	//  1) "v0" - (default) FIFO mempool.
 	//  2) "v1" - prioritized mempool (deprecated; will be removed in the next release).
 	Version string `mapstructure:"version"`
-=======
+
 	// The type of mempool for this node to use.
 	//
 	//  Possible types:
@@ -759,7 +737,7 @@ type MempoolConfig struct {
 	//  responsible for storing, disseminating and proposing txs).
 	//  "create_empty_blocks=false" is not supported.
 	Type string `mapstructure:"type"`
->>>>>>> bc835036a (mempool: add `nop` mempool (#1643))
+
 	// RootDir is the root directory for all data. This should be configured via
 	// the $CMTHOME env variable or --home cmd flag rather than overriding this
 	// struct field.
@@ -841,11 +819,8 @@ type MempoolConfig struct {
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool
 func DefaultMempoolConfig() *MempoolConfig {
 	return &MempoolConfig{
-<<<<<<< HEAD
-		Version:   MempoolV0,
-=======
 		Type:      MempoolTypeFlood,
->>>>>>> bc835036a (mempool: add `nop` mempool (#1643))
+		Version:   MempoolV0,
 		Recheck:   true,
 		Broadcast: true,
 		WalPath:   "",

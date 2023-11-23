@@ -430,6 +430,16 @@ message ExecTxResult {
   string codespace = 8;
 }
 
+// TxResult contains results of executing the transaction.
+//
+// One usage is indexing transaction results.
+message TxResult {
+  int64        height = 1;
+  uint32       index  = 2;
+  bytes        tx     = 3;
+  ExecTxResult result = 4 [(gogoproto.nullable) = false];
+}
+
 //----------------------------------------
 // Blockchain Types
 

@@ -39,6 +39,18 @@ message ResponseEndBlock {
       [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
 }
 
+// ValidatorsInfo represents the latest validator set, or the last height it changed
+message ValidatorsInfo {
+  cometbft.types.v1.ValidatorSet validator_set       = 1;
+  int64                          last_height_changed = 2;
+}
+
+// ConsensusParamsInfo represents the latest consensus params, or the last height it changed
+message ConsensusParamsInfo {
+  cometbft.types.v1.ConsensusParams consensus_params    = 1 [(gogoproto.nullable) = false];
+  int64                             last_height_changed = 2;
+}
+
 message ABCIResponsesInfo {
   // Retains the responses of the legacy ABCI calls during block processing.
   LegacyABCIResponses                    legacy_abci_responses = 1;

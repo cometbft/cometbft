@@ -159,3 +159,17 @@ message LightBlock {
   SignedHeader signed_header = 1;
   ValidatorSet validator_set = 2;
 }
+
+message BlockMeta {
+  BlockID block_id   = 1 [(gogoproto.customname) = "BlockID", (gogoproto.nullable) = false];
+  int64   block_size = 2;
+  Header  header     = 3 [(gogoproto.nullable) = false];
+  int64   num_txs    = 4;
+}
+
+// TxProof represents a Merkle proof of the presence of a transaction in the Merkle tree.
+message TxProof {
+  bytes                    root_hash = 1;
+  bytes                    data      = 2;
+  cometbft.crypto.v1.Proof proof     = 3;
+}

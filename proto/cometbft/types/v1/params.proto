@@ -70,6 +70,14 @@ message VersionParams {
   uint64 app = 1;
 }
 
+// HashedParams is a subset of ConsensusParams.
+//
+// It is hashed into the Header.ConsensusHash.
+message HashedParams {
+  int64 block_max_bytes = 1;
+  int64 block_max_gas   = 2;
+}
+
 // ABCIParams configure functionality specific to the Application Blockchain Interface.
 message ABCIParams {
   // vote_extensions_enable_height configures the first height during which

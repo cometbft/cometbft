@@ -880,10 +880,10 @@ type MempoolConfig struct {
 	// We use two independent upper values for persistent and non-persistent peers.
 	// Unconditional peers are not affected by this feature.
 	// If we are connected to more than the specified number of persistent peers, only send txs to
-	// `ExperimentalMaxGossipConnectionsToPersistentPeers` of them. If one of those
+	// ExperimentalMaxGossipConnectionsToPersistentPeers of them. If one of those
 	// persistent peers disconnects, activate another persistent peer.
 	// Similarly for non-persistent peers, with an upper limit of
-	// `ExperimentalMaxGossipConnectionsToNonPersistentPeers`.
+	// ExperimentalMaxGossipConnectionsToNonPersistentPeers.
 	// If set to 0, the feature is disabled for the corresponding group of peers, that is, the
 	// number of active connections to that group of peers is not bounded.
 	// For non-persistent peers, if enabled, a value of 10 is recommended based on experimental

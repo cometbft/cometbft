@@ -126,12 +126,16 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 						cancel()
 
 						if err != nil {
-							select {
-							case <-ctxParent.Done():
-								return
-							case <-ctxTimeout.Done():
-								continue
-							}
+							/*
+								TODO: Should check for ctxParent being done, once it is passed by the caller.
+								select {
+									case <-ctxParent.Done():
+										return
+									case <-ctxTimeout.Done():
+										continue
+									}
+							*/
+							continue
 						}
 
 						// Release semaphore to allow other peer to start sending transactions.

@@ -14,11 +14,15 @@ the block itself is never stored.
 
 Each event contains a type and a list of attributes, which are key-value pairs
 denoting something about what happened during the method's execution. For more
+<<<<<<< HEAD
 details on `Events`, see the
 
 [ABCI](../spec/abci/abci++_basic_concepts.md#events)
 
 documentation.
+=======
+details on `Events`, see the [ABCI][abci-events] documentation.
+>>>>>>> 96abadac1 (docs: various small improvements (part 2) (#1683))
 
 An `Event` has a composite key associated with it. A `compositeKey` is
 constructed by its type and key separated by a dot.
@@ -284,4 +288,10 @@ Users can use anything as an event value. However, if the event attribute value 
 - Event values are converted to big floats (from the `big/math` package). The precision of the floating point number is set to the bit length
 of the integer it is supposed to represent, so that there is no loss of information due to insufficient precision. This was not present before CometBFT v0.38.x and all float values were ignored.
 - As of CometBFT v0.38.x, queries can contain floating point numbers as well.
+<<<<<<< HEAD
 - Note that comparing to floats can be imprecise with a high number of decimals.
+=======
+- Note that comparing to floats can be imprecise with a high number of decimals. 
+
+[abci-events]: https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_basic_concepts.md#events
+>>>>>>> 96abadac1 (docs: various small improvements (part 2) (#1683))

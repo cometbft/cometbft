@@ -130,7 +130,7 @@ cometbft node
 ```
 
 By default, CometBFT will try to connect to an ABCI application on
-`127.0.0.1:26658`. If you have the `kvstore` ABCI app installed, run it in
+`tcp://127.0.0.1:26658`. If you have the `kvstore` ABCI app installed, run it in
 another window. If you don't, kill CometBFT and run an in-process version of
 the `kvstore` app:
 
@@ -139,8 +139,8 @@ cometbft node --proxy_app=kvstore
 ```
 
 After a few seconds, you should see blocks start streaming in. Note that blocks
-are produced regularly, even if there are no transactions. See _No Empty
-Blocks_, below, to modify this setting.
+are produced regularly, even if there are no transactions. See [No Empty
+Blocks](#no-empty-blocks), below, to modify this setting.
 
 CometBFT supports in-process versions of the `counter`, `kvstore`, and `noop`
 apps that ship as examples with `abci-cli`. It's easy to compile your app

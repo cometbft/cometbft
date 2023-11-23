@@ -5,8 +5,8 @@ import (
 	"net"
 	"strings"
 
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/store"
+	sm "github.com/cometbft/cometbft/internal/state"
+	"github.com/cometbft/cometbft/internal/store"
 
 	brs "github.com/cometbft/cometbft/proto/tendermint/services/block_results/v1"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/blockresultservice"

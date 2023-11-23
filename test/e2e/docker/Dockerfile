@@ -16,10 +16,6 @@ COPY test/e2e/latency/latency-setter.py /scripts/
 ENV COMETBFT_BUILD_OPTIONS badgerdb,boltdb,cleveldb,rocksdb
 WORKDIR /src/cometbft
 
-# Fetch dependencies separately (for layer caching)
-COPY go.mod go.sum ./
-RUN go mod download
-
 # Build CometBFT and install into /usr/bin/cometbft
 COPY . .
 RUN make build && cp build/cometbft /usr/bin/cometbft

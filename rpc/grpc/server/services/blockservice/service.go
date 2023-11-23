@@ -4,15 +4,16 @@ import (
 	context "context"
 	"fmt"
 
-	"github.com/cometbft/cometbft/internal/rpctrace"
-	"github.com/cometbft/cometbft/libs/log"
-	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
-	blocksvc "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
-	ptypes "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/cometbft/cometbft/store"
-	"github.com/cometbft/cometbft/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
+	"github.com/cometbft/cometbft/internal/rpctrace"
+	"github.com/cometbft/cometbft/internal/store"
+	"github.com/cometbft/cometbft/libs/log"
+	blocksvc "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
+	ptypes "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
 )
 
 type blockServiceServer struct {
@@ -75,7 +76,7 @@ func (s *blockServiceServer) getBlock(height int64, logger log.Logger) (*ptypes.
 		return nil, nil, status.Error(codes.Internal, "Internal server error - see logs for details")
 	}
 
-	block := s.store.LoadBlock(height)
+	block, blockMeta := s.store.LoadBlock(height)
 	if block == nil {
 		return nil, nil, status.Errorf(codes.NotFound, fmt.Sprintf("Block not found for height %d", height))
 	}
@@ -85,7 +86,6 @@ func (s *blockServiceServer) getBlock(height int64, logger log.Logger) (*ptypes.
 		return nil, nil, status.Errorf(codes.Internal, fmt.Sprintf("Failed to load block from store (see logs for trace ID: %s)", traceID))
 	}
 
-	blockMeta := s.store.LoadBlockMeta(height)
 	if blockMeta == nil {
 		logger.Error("Failed to load block meta when block was successfully loaded", "height", height)
 		return nil, nil, status.Error(codes.Internal, "Internal server error - see logs for details")

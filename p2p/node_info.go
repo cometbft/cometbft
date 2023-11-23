@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"reflect"
 
+	cmtstrings "github.com/cometbft/cometbft/internal/strings"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
-	cmtstrings "github.com/cometbft/cometbft/libs/strings"
 	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
 	"github.com/cometbft/cometbft/version"
 )
@@ -120,7 +120,6 @@ func (info DefaultNodeInfo) ID() ID {
 // url-encoding), and we just need to be careful with how we handle that in our
 // clients. (e.g. off by default).
 func (info DefaultNodeInfo) Validate() error {
-
 	// ID is already validated.
 
 	// Validate ListenAddr.
@@ -228,7 +227,6 @@ func (info DefaultNodeInfo) HasChannel(chID byte) bool {
 }
 
 func (info DefaultNodeInfo) ToProto() *tmp2p.DefaultNodeInfo {
-
 	dni := new(tmp2p.DefaultNodeInfo)
 	dni.ProtocolVersion = tmp2p.ProtocolVersion{
 		P2P:   info.ProtocolVersion.P2P,

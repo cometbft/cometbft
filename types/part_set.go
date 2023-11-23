@@ -7,11 +7,11 @@ import (
 	"io"
 
 	"github.com/cometbft/cometbft/crypto/merkle"
-	"github.com/cometbft/cometbft/libs/bits"
+	"github.com/cometbft/cometbft/internal/bits"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
@@ -133,7 +133,7 @@ func (psh *PartSetHeader) ToProto() cmtproto.PartSetHeader {
 	}
 }
 
-// FromProto sets a protobuf PartSetHeader to the given pointer
+// PartSetHeaderFromProto sets a protobuf PartSetHeader to the given pointer
 func PartSetHeaderFromProto(ppsh *cmtproto.PartSetHeader) (*PartSetHeader, error) {
 	if ppsh == nil {
 		return nil, errors.New("nil PartSetHeader")
@@ -166,7 +166,7 @@ type PartSet struct {
 	byteSize int64
 }
 
-// Returns an immutable, full PartSet from the data bytes.
+// NewPartSetFromData returns an immutable, full PartSet from the data bytes.
 // The data bytes are split into "partSize" chunks, and merkle tree computed.
 // CONTRACT: partSize is greater than zero.
 func NewPartSetFromData(data []byte, partSize uint32) *PartSet {
@@ -199,7 +199,7 @@ func NewPartSetFromData(data []byte, partSize uint32) *PartSet {
 	}
 }
 
-// Returns an empty PartSet ready to be populated.
+// NewPartSetFromHeader returns an empty PartSet ready to be populated.
 func NewPartSetFromHeader(header PartSetHeader) *PartSet {
 	return &PartSet{
 		total:         header.Total,

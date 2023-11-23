@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cometbft/cometbft/internal/protoio"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
-	"github.com/cometbft/cometbft/libs/protoio"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
@@ -135,7 +135,7 @@ func (p *Proposal) ToProto() *cmtproto.Proposal {
 	return pb
 }
 
-// FromProto sets a protobuf Proposal to the given pointer.
+// ProposalFromProto sets a protobuf Proposal to the given pointer.
 // It returns an error if the proposal is invalid.
 func ProposalFromProto(pp *cmtproto.Proposal) (*Proposal, error) {
 	if pp == nil {

@@ -12,7 +12,7 @@ import (
 	"io"
 	"os"
 
-	cs "github.com/cometbft/cometbft/consensus"
+	cs "github.com/cometbft/cometbft/internal/consensus"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 )
 

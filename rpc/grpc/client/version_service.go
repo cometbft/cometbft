@@ -5,7 +5,7 @@ import (
 
 	"github.com/cosmos/gogoproto/grpc"
 
-	"github.com/cometbft/cometbft/api/cometbft/services/version/v1beta1"
+	pbsvc "github.com/cometbft/cometbft/api/cometbft/services/version/v1"
 )
 
 // Version provides version information about a particular CometBFT node.
@@ -22,18 +22,18 @@ type VersionServiceClient interface {
 }
 
 type versionServiceClient struct {
-	client v1beta1.VersionServiceClient
+	client pbsvc.VersionServiceClient
 }
 
 func newVersionServiceClient(conn grpc.ClientConn) VersionServiceClient {
 	return &versionServiceClient{
-		client: v1beta1.NewVersionServiceClient(conn),
+		client: pbsvc.NewVersionServiceClient(conn),
 	}
 }
 
 // GetVersion implements VersionServiceClient
 func (c *versionServiceClient) GetVersion(ctx context.Context) (*Version, error) {
-	res, err := c.client.GetVersion(ctx, &v1beta1.GetVersionRequest{})
+	res, err := c.client.GetVersion(ctx, &pbsvc.GetVersionRequest{})
 	if err != nil {
 		return nil, err
 	}

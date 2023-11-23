@@ -8,7 +8,7 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	protomem "github.com/cometbft/cometbft/api/cometbft/mempool/v1beta1"
+	protomem "github.com/cometbft/cometbft/api/cometbft/mempool/v1"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/clist"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"

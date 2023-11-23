@@ -9,8 +9,8 @@ import (
 
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 
+	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
 	"github.com/cometbft/cometbft/internal/bits"
-	cmtcons "github.com/cometbft/cometbft/internal/consensus/proto"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
 	cmtevents "github.com/cometbft/cometbft/internal/events"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"

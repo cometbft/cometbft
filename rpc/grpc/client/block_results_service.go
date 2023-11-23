@@ -5,11 +5,11 @@ import (
 	"fmt"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1beta3"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 
 	"github.com/cosmos/gogoproto/grpc"
 
-	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v1beta1"
+	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v1"
 )
 
 type BlockResults struct {

@@ -3,9 +3,9 @@ package privval
 import (
 	"io"
 
+	privvalproto "github.com/cometbft/cometbft/api/cometbft/privval/v1"
 	"github.com/cometbft/cometbft/internal/service"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
-	privvalproto "github.com/cometbft/cometbft/privval/proto"
 	"github.com/cometbft/cometbft/types"
 )
 

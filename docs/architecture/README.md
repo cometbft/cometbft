@@ -42,6 +42,13 @@ numbering our ADRs from 100 onwards.
 
 ### Proposed
 
+<<<<<<< HEAD
+=======
+- [ADR-103: Protobuf definition versioning](./adr-103-proto-versioning.md)
+- [ADR-105: Refactor list of senders in mempool](./adr-105-refactor-mempool-senders.md)
+- [ADR-109: Reduce CometBFT Go API Surface Area](./adr-109-reduce-go-api-surface.md)
+
+>>>>>>> bc835036a (mempool: add `nop` mempool (#1643))
 ### Accepted
 
 ### Implemented

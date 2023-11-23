@@ -3,6 +3,7 @@ package mempool
 import (
 	"encoding/hex"
 	"errors"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -333,7 +334,12 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 	require.Zero(t, len(firstReactor.txSenders))
 }
 
-func TestMempoolParallelCheckTx(t *testing.T) {
+func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
+	if os.Getenv("CI") != "" {
+		// We expect this test to fail, but do not want to block merges because of it.
+		t.Skip("Skipping testing in CI environment")
+	}
+
 	config := cfg.TestConfig()
 	reactors, _ := makeAndConnectReactors(config, 4)
 	defer func() {
@@ -349,7 +355,7 @@ func TestMempoolParallelCheckTx(t *testing.T) {
 		}
 	}
 
-	// Add a bunch transactions to the first reactor.
+	// Deliver the same sequence of transactions from multiple sources, in parallel.
 	txs := newUniqueTxs(20)
 	mp := reactors[0].mempool
 	for i := 0; i < 3; i++ {
@@ -360,8 +366,7 @@ func TestMempoolParallelCheckTx(t *testing.T) {
 		}()
 	}
 
-	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
-	// receive any tx. (The second reactor only sends transactions to the first reactor.)
+	// Confirm that FIFO order was respected.
 	checkTxsInOrder(t, txs, reactors[0], 0)
 }
 

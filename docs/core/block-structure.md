@@ -10,14 +10,10 @@ accessible via various RPC endpoints, mainly `/block?height=` to get the full
 block, as well as `/blockchain?minHeight=_&maxHeight=_` to get a list of
 headers. But what exactly is stored in these blocks?
 
-<<<<<<< HEAD
-The [specification](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/core/data_structures.md) contains a detailed description of each component - that's the best place to get started.
-=======
 The [specification][data_structures] contains a detailed description of each
 component - that's the best place to get started.
->>>>>>> 96abadac1 (docs: various small improvements (part 2) (#1683))
 
 To dig deeper, check out the [types package documentation][types].
 
-[data_structures]: https://github.com/cometbft/cometbft/blob/main/spec/core/data_structures.md
+[data_structures]: https://github.com/cometbft/cometbft/blob/v0.38.x/spec/core/data_structures.md
 [types]: https://pkg.go.dev/github.com/cometbft/cometbft/types

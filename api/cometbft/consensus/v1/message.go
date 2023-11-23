@@ -1,4 +1,4 @@
-package v1beta2
+package v1
 
 import (
 	"fmt"
@@ -6,9 +6,57 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 )
 
+func (m *VoteSetBits) Wrap() proto.Message {
+	cm := &Message{}
+	cm.Sum = &Message_VoteSetBits{VoteSetBits: m}
+	return cm
+}
+
+func (m *VoteSetMaj23) Wrap() proto.Message {
+	cm := &Message{}
+	cm.Sum = &Message_VoteSetMaj23{VoteSetMaj23: m}
+	return cm
+}
+
+func (m *HasVote) Wrap() proto.Message {
+	cm := &Message{}
+	cm.Sum = &Message_HasVote{HasVote: m}
+	return cm
+}
+
 func (m *Vote) Wrap() proto.Message {
 	cm := &Message{}
 	cm.Sum = &Message_Vote{Vote: m}
+	return cm
+}
+
+func (m *BlockPart) Wrap() proto.Message {
+	cm := &Message{}
+	cm.Sum = &Message_BlockPart{BlockPart: m}
+	return cm
+}
+
+func (m *ProposalPOL) Wrap() proto.Message {
+	cm := &Message{}
+	cm.Sum = &Message_ProposalPol{ProposalPol: m}
+	return cm
+}
+
+func (m *Proposal) Wrap() proto.Message {
+	cm := &Message{}
+	cm.Sum = &Message_Proposal{Proposal: m}
+	return cm
+}
+
+func (m *NewValidBlock) Wrap() proto.Message {
+	cm := &Message{}
+	cm.Sum = &Message_NewValidBlock{NewValidBlock: m}
+	return cm
+}
+
+func (m *NewRoundStep) Wrap() proto.Message {
+	cm := &Message{}
+	cm.Sum = &Message_NewRoundStep{NewRoundStep: m}
 	return cm
 }
 

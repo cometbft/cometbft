@@ -1,4 +1,4 @@
-package v1beta2
+package v1
 
 import (
 	"fmt"
@@ -11,9 +11,33 @@ const (
 	BlockResponseMessageFieldKeySize = 1
 )
 
+func (m *BlockRequest) Wrap() proto.Message {
+	bm := &Message{}
+	bm.Sum = &Message_BlockRequest{BlockRequest: m}
+	return bm
+}
+
 func (m *BlockResponse) Wrap() proto.Message {
 	bm := &Message{}
 	bm.Sum = &Message_BlockResponse{BlockResponse: m}
+	return bm
+}
+
+func (m *NoBlockResponse) Wrap() proto.Message {
+	bm := &Message{}
+	bm.Sum = &Message_NoBlockResponse{NoBlockResponse: m}
+	return bm
+}
+
+func (m *StatusRequest) Wrap() proto.Message {
+	bm := &Message{}
+	bm.Sum = &Message_StatusRequest{StatusRequest: m}
+	return bm
+}
+
+func (m *StatusResponse) Wrap() proto.Message {
+	bm := &Message{}
+	bm.Sum = &Message_StatusResponse{StatusResponse: m}
 	return bm
 }
 

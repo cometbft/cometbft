@@ -1,4 +1,4 @@
-package v1beta4
+package v1
 
 import (
 	"bytes"
@@ -49,6 +49,16 @@ func (r VerifyVoteExtensionResponse) IsStatusUnknown() bool {
 	return r.Status == VERIFY_VOTE_EXTENSION_STATUS_UNKNOWN
 }
 
+// IsOK returns true if Code is OK.
+func (r ExecTxResult) IsOK() bool {
+	return r.Code == CodeTypeOK
+}
+
+// IsErr returns true if Code is something other than OK.
+func (r ExecTxResult) IsErr() bool {
+	return r.Code != CodeTypeOK
+}
+
 //---------------------------------------------------------------------------
 // override JSON marshaling so we emit defaults (ie. disable omitempty)
 
@@ -86,6 +96,26 @@ func (r *CommitResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (r *CommitResponse) UnmarshalJSON(b []byte) error {
+	reader := bytes.NewBuffer(b)
+	return jsonpbUnmarshaller.Unmarshal(reader, r)
+}
+
+func (r *EventAttribute) MarshalJSON() ([]byte, error) {
+	s, err := jsonpbMarshaller.MarshalToString(r)
+	return []byte(s), err
+}
+
+func (r *EventAttribute) UnmarshalJSON(b []byte) error {
+	reader := bytes.NewBuffer(b)
+	return jsonpbUnmarshaller.Unmarshal(reader, r)
+}
+
+func (r *ExecTxResult) MarshalJSON() ([]byte, error) {
+	s, err := jsonpbMarshaller.MarshalToString(r)
+	return []byte(s), err
+}
+
+func (r *ExecTxResult) UnmarshalJSON(b []byte) error {
 	reader := bytes.NewBuffer(b)
 	return jsonpbUnmarshaller.Unmarshal(reader, r)
 }

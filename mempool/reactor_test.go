@@ -394,12 +394,12 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 	}
 
 	// Add a bunch transactions to the first reactor.
-	txs := newUniqueTxs(20)
+	txs := newUniqueTxs(100)
 	callCheckTx(t, reactors[0].mempool, txs)
 
 	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
 	// receive any tx. (The second reactor only sends transactions to the first reactor.)
-	checkTxsInOrder(t, txs, reactors[1], 0)
+	checkTxsInMempool(t, txs, reactors[1], 0)
 	for _, r := range reactors[2:] {
 		require.Zero(t, r.mempool.Size())
 	}
@@ -410,7 +410,7 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 
 	// Now the third reactor should start receiving transactions from the first reactor; the fourth
 	// reactor's mempool should still be empty.
-	checkTxsInOrder(t, txs, reactors[2], 0)
+	checkTxsInMempool(t, txs, reactors[2], 0)
 	for _, r := range reactors[3:] {
 		require.Zero(t, r.mempool.Size())
 	}

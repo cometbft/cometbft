@@ -2,18 +2,17 @@ package mempool
 
 import (
 	"fmt"
-	"testing"
-
 	"sync/atomic"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abciserver "github.com/cometbft/cometbft/abci/server"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/proxy"
 )
 
@@ -103,7 +102,6 @@ func BenchmarkCheckDuplicateTx(b *testing.B) {
 			b.Fatal("tx should be duplicate")
 		}
 	}
-
 }
 
 func BenchmarkUpdateRemoteClient(b *testing.B) {
@@ -139,9 +137,8 @@ func BenchmarkUpdateRemoteClient(b *testing.B) {
 
 		require.True(b, mp.Size() == 1)
 
-		var txs = mp.ReapMaxTxs(mp.Size())
+		txs := mp.ReapMaxTxs(mp.Size())
 		doCommit(b, mp, app, txs, int64(i))
 		assert.True(b, true)
 	}
-
 }

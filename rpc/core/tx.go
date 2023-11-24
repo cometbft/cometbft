@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"sort"
 
+	cmtquery "github.com/cometbft/cometbft/internal/pubsub/query"
+	"github.com/cometbft/cometbft/internal/state/txindex/null"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
-	"github.com/cometbft/cometbft/state/txindex/null"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -34,7 +34,7 @@ func (env *Environment) Tx(_ *rpctypes.Context, hash []byte, prove bool) (*ctype
 
 	var proof types.TxProof
 	if prove {
-		block := env.BlockStore.LoadBlock(r.Height)
+		block, _ := env.BlockStore.LoadBlock(r.Height)
 		proof = block.Data.Txs.Proof(int(r.Index))
 	}
 
@@ -113,7 +113,7 @@ func (env *Environment) TxSearch(
 
 		var proof types.TxProof
 		if prove {
-			block := env.BlockStore.LoadBlock(r.Height)
+			block, _ := env.BlockStore.LoadBlock(r.Height)
 			proof = block.Data.Txs.Proof(int(r.Index))
 		}
 

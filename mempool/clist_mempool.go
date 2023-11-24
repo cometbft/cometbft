@@ -3,17 +3,16 @@ package mempool
 import (
 	"bytes"
 	"context"
-	"errors"
 	"sync"
 	"sync/atomic"
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/libs/clist"
+	"github.com/cometbft/cometbft/internal/clist"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 )
@@ -210,7 +209,12 @@ func (mem *CListMempool) SizeBytes() int64 {
 
 // Lock() must be help by the caller during execution.
 func (mem *CListMempool) FlushAppConn() error {
-	return mem.proxyAppConn.Flush(context.TODO())
+	err := mem.proxyAppConn.Flush(context.TODO())
+	if err != nil {
+		return ErrFlushAppConn{Err: err}
+	}
+
+	return nil
 }
 
 // XXX: Unsafe! Calling Flush may leave mempool in inconsistent state.
@@ -246,8 +250,10 @@ func (mem *CListMempool) TxsWaitChan() <-chan struct{} {
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
 	mem.updateMtx.RLock()
+	mem.logger.Debug("Locked updateMtx for read", "tx", tx)
 	// use defer to unlock mutex because application (*local client*) might panic
 	defer mem.updateMtx.RUnlock()
+	defer mem.logger.Debug("Released updateMtx for read", "tx", tx)
 
 	txSize := len(tx)
 
@@ -264,29 +270,29 @@ func (mem *CListMempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
 
 	if mem.preCheck != nil {
 		if err := mem.preCheck(tx); err != nil {
-			return nil, ErrPreCheck{
-				Reason: err,
-			}
+			return nil, ErrPreCheck{Err: err}
 		}
 	}
 
 	// NOTE: proxyAppConn may error if tx buffer is full
 	if err := mem.proxyAppConn.Error(); err != nil {
-		return nil, err
+		return nil, ErrAppConnMempool{Err: err}
 	}
 
 	if added := mem.addToCache(tx); !added {
+		mem.logger.Debug("Not cached", "tx", tx)
 		mem.metrics.AlreadyReceivedTxs.Add(1)
 		// TODO: consider punishing peer for dups,
 		// its non-trivial since invalid txs can become valid,
 		// but they can spam the same tx with little cost to them atm.
 		return nil, ErrTxInCache
 	}
+	mem.logger.Debug("Cached", "tx", tx)
 
 	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{Tx: tx})
 	if err != nil {
 		mem.logger.Error("RequestCheckTx", "err", err)
-		return nil, err
+		return nil, ErrCheckTxAsync{Err: err}
 	}
 
 	return reqRes, nil
@@ -314,6 +320,7 @@ func (mem *CListMempool) globalCb(req *abci.Request, res *abci.Response) {
 
 		// update metrics
 		mem.metrics.Size.Set(float64(mem.Size()))
+		mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
 
 	default:
 		// ignore other messages
@@ -327,6 +334,7 @@ func (mem *CListMempool) addTx(memTx *mempoolTx) {
 	mem.txsMap.Store(memTx.tx.Key(), e)
 	atomic.AddInt64(&mem.txsBytes, int64(len(memTx.tx)))
 	mem.metrics.TxSizeBytes.Observe(float64(len(memTx.tx)))
+	mem.logger.Debug("Clisted", "tx", memTx.tx)
 }
 
 // RemoveTxByKey removes a transaction from the mempool by its TxKey index.
@@ -345,7 +353,7 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 		atomic.AddInt64(&mem.txsBytes, int64(-len(tx)))
 		return nil
 	}
-	return errors.New("transaction not found in mempool")
+	return ErrTxNotFound
 }
 
 func (mem *CListMempool) isFull(txSize int) error {
@@ -639,6 +647,7 @@ func (mem *CListMempool) Update(
 
 	// Update metrics
 	mem.metrics.Size.Set(float64(mem.Size()))
+	mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
 
 	return nil
 }

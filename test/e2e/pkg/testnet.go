@@ -68,31 +68,35 @@ const (
 
 // Testnet represents a single testnet.
 type Testnet struct {
-	Name                             string
-	File                             string
-	Dir                              string
-	IP                               *net.IPNet
-	InitialHeight                    int64
-	InitialState                     map[string]string
-	Validators                       map[*Node]int64
-	ValidatorUpdates                 map[int64]map[*Node]int64
-	Nodes                            []*Node
-	KeyType                          string
-	Evidence                         int
-	LoadTxSizeBytes                  int
-	LoadTxBatchSize                  int
-	LoadTxConnections                int
-	ABCIProtocol                     string
-	PrepareProposalDelay             time.Duration
-	ProcessProposalDelay             time.Duration
-	CheckTxDelay                     time.Duration
-	VoteExtensionDelay               time.Duration
-	FinalizeBlockDelay               time.Duration
-	UpgradeVersion                   string
-	Prometheus                       bool
-	VoteExtensionsEnableHeight       int64
-	VoteExtensionSize                uint
-	PeerGossipIntraloopSleepDuration time.Duration
+	Name                                                 string
+	File                                                 string
+	Dir                                                  string
+	IP                                                   *net.IPNet
+	InitialHeight                                        int64
+	InitialState                                         map[string]string
+	Validators                                           map[*Node]int64
+	ValidatorUpdates                                     map[int64]map[*Node]int64
+	Nodes                                                []*Node
+	DisablePexReactor                                    bool
+	KeyType                                              string
+	Evidence                                             int
+	LoadTxSizeBytes                                      int
+	LoadTxBatchSize                                      int
+	LoadTxConnections                                    int
+	ABCIProtocol                                         string
+	PrepareProposalDelay                                 time.Duration
+	ProcessProposalDelay                                 time.Duration
+	CheckTxDelay                                         time.Duration
+	VoteExtensionDelay                                   time.Duration
+	FinalizeBlockDelay                                   time.Duration
+	UpgradeVersion                                       string
+	Prometheus                                           bool
+	VoteExtensionsEnableHeight                           int64
+	VoteExtensionSize                                    uint
+	PeerGossipIntraloopSleepDuration                     time.Duration
+	ExperimentalMaxGossipConnectionsToPersistentPeers    uint
+	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint
+	ABCITestsEnabled                                     bool
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -144,7 +148,6 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	dir := strings.TrimSuffix(file, filepath.Ext(file))
 
 	keyGen := newKeyGenerator(randomSeed)
-	proxyPortGen := newPortGenerator(proxyPortFirst)
 	prometheusProxyPortGen := newPortGenerator(prometheusProxyPortFirst)
 	_, ipNet, err := net.ParseCIDR(ifd.Network)
 	if err != nil {
@@ -161,6 +164,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		Validators:                       map[*Node]int64{},
 		ValidatorUpdates:                 map[int64]map[*Node]int64{},
 		Nodes:                            []*Node{},
+		DisablePexReactor:                manifest.DisablePexReactor,
 		Evidence:                         manifest.Evidence,
 		LoadTxSizeBytes:                  manifest.LoadTxSizeBytes,
 		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
@@ -176,6 +180,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
 		VoteExtensionSize:                manifest.VoteExtensionSize,
 		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
+		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
+		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
+		ABCITestsEnabled: manifest.ABCITestsEnabled,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
@@ -222,9 +229,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			NodeKey:                 keyGen.Generate("ed25519"),
 			InternalIP:              ind.IPAddress,
 			ExternalIP:              extIP,
-			RPCProxyPort:            proxyPortGen.Next(),
-			GRPCProxyPort:           proxyPortGen.Next(),
-			GRPCPrivilegedProxyPort: proxyPortGen.Next(),
+			RPCProxyPort:            ind.RPCPort,
+			GRPCProxyPort:           ind.GRPCPort,
+			GRPCPrivilegedProxyPort: ind.PrivilegedGRPCPort,
 			Mode:                    ModeValidator,
 			Database:                "goleveldb",
 			ABCIProtocol:            Protocol(testnet.ABCIProtocol),
@@ -553,7 +560,7 @@ func (n Node) AddressRPC() string {
 
 // Client returns an RPC client for the node.
 func (n Node) Client() (*rpchttp.HTTP, error) {
-	return rpchttp.New(fmt.Sprintf("http://%s:%v", n.ExternalIP, n.RPCProxyPort), "/websocket")
+	return rpchttp.New(fmt.Sprintf("http://%s:%v/v1", n.ExternalIP, n.RPCProxyPort))
 }
 
 // GRPCClient creates a gRPC client for the node.

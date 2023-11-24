@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/cometbft/cometbft/abci/types"
+	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
+	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
-	"github.com/cometbft/cometbft/libs/service"
 )
 
 const defaultCapacity = 0
@@ -81,7 +81,7 @@ func (b *EventBus) Subscribe(
 	return b.pubsub.Subscribe(ctx, subscriber, query, outCapacity...)
 }
 
-// This method can be used for a local consensus explorer and synchronous
+// SubscribeUnbuffered can be used for a local consensus explorer and synchronous
 // testing. Do not use for for public facing / untrusted subscriptions!
 func (b *EventBus) SubscribeUnbuffered(
 	ctx context.Context,

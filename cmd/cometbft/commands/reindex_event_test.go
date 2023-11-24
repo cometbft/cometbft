@@ -13,10 +13,10 @@ import (
 
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cmtcfg "github.com/cometbft/cometbft/config"
+	blockmocks "github.com/cometbft/cometbft/internal/state/indexer/mocks"
+	"github.com/cometbft/cometbft/internal/state/mocks"
+	txmocks "github.com/cometbft/cometbft/internal/state/txindex/mocks"
 	"github.com/cometbft/cometbft/internal/test"
-	blockmocks "github.com/cometbft/cometbft/state/indexer/mocks"
-	"github.com/cometbft/cometbft/state/mocks"
-	txmocks "github.com/cometbft/cometbft/state/txindex/mocks"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -135,9 +135,9 @@ func TestReIndexEvent(t *testing.T) {
 	mockBlockStore.
 		On("Base").Return(base).
 		On("Height").Return(height).
-		On("LoadBlock", base).Return(nil).Once().
-		On("LoadBlock", base).Return(&types.Block{Data: types.Data{Txs: types.Txs{make(types.Tx, 1)}}}).
-		On("LoadBlock", height).Return(&types.Block{Data: types.Data{Txs: types.Txs{make(types.Tx, 1)}}})
+		On("LoadBlock", base).Return(nil, nil).Once().
+		On("LoadBlock", base).Return(&types.Block{Data: types.Data{Txs: types.Txs{make(types.Tx, 1)}}}, &types.BlockMeta{}).
+		On("LoadBlock", height).Return(&types.Block{Data: types.Data{Txs: types.Txs{make(types.Tx, 1)}}}, &types.BlockMeta{})
 
 	abciResp := &abcitypes.ResponseFinalizeBlock{
 		TxResults: []*abcitypes.ExecTxResult{

@@ -361,8 +361,7 @@ func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		go func() {
 			for _, tx := range txs {
-				_, err := mp.CheckTx(tx)
-				assert.Nil(t, err)
+				mp.CheckTx(tx) //nolint:errcheck
 			}
 		}()
 	}

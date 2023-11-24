@@ -356,7 +356,7 @@ func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
 	}
 
 	// Deliver the same sequence of transactions from multiple sources, in parallel.
-	txs := newUniqueTxs(20)
+	txs := newUniqueTxs(200)
 	mp := reactors[0].mempool
 	for i := 0; i < 3; i++ {
 		go func() {

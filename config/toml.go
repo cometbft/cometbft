@@ -401,12 +401,8 @@ ttl-duration = "{{ .Mempool.TTLDuration }}"
 ttl-num-blocks = {{ .Mempool.TTLNumBlocks }}
 
 # Experimental parameters to limit gossiping txs to up to the specified number of peers.
-<<<<<<< HEAD
 # This feature is only available for the default mempool (version config set to "v0").
-# We use two independent upper values for persistent peers and for non-persistent peers.
-=======
 # We use two independent upper values for persistent and non-persistent peers.
->>>>>>> 2679498c9 (Do not block indefinitely on the semaphore (#1654))
 # Unconditional peers are not affected by this feature.
 # If we are connected to more than the specified number of persistent peers, only send txs to
 # ExperimentalMaxGossipConnectionsToPersistentPeers of them. If one of those

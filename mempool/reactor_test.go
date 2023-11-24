@@ -336,8 +336,7 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 
 func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
 	if os.Getenv("CI") != "" {
-		// We expect this test to fail, but do not want to block merges because of it.
-		t.Skip("Skipping testing in CI environment")
+		t.Skip("FIFO is not supposed to be guaranteed and this this is just used to evidence one of the cases where it does not happen. Hence we skip this test during CI.")
 	}
 
 	config := cfg.TestConfig()

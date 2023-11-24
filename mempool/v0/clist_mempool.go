@@ -207,8 +207,10 @@ func (mem *CListMempool) CheckTx(
 ) error {
 
 	mem.updateMtx.RLock()
+	mem.logger.Debug("Locked updateMtx for read", "tx", tx)
 	// use defer to unlock mutex because application (*local client*) might panic
 	defer mem.updateMtx.RUnlock()
+	defer mem.logger.Debug("Released updateMtx for read", "tx", tx)
 
 	txSize := len(tx)
 
@@ -236,6 +238,7 @@ func (mem *CListMempool) CheckTx(
 		return err
 	}
 
+<<<<<<< HEAD:mempool/v0/clist_mempool.go
 	if !mem.cache.Push(tx) { // if the transaction already exists in the cache
 		// Record a new sender for a tx we've already seen.
 		// Note it's possible a tx is still in the cache but no longer in the mempool
@@ -249,7 +252,17 @@ func (mem *CListMempool) CheckTx(
 			// but they can spam the same tx with little cost to them atm.
 		}
 		return mempool.ErrTxInCache
+=======
+	if added := mem.addToCache(tx); !added {
+		mem.logger.Debug("Not cached", "tx", tx)
+		mem.metrics.AlreadyReceivedTxs.Add(1)
+		// TODO: consider punishing peer for dups,
+		// its non-trivial since invalid txs can become valid,
+		// but they can spam the same tx with little cost to them atm.
+		return nil, ErrTxInCache
+>>>>>>> 949305b8c (Adds tests that check for FIFO ordering being broken by gossip (#1628)):mempool/clist_mempool.go
 	}
+	mem.logger.Debug("Cached", "tx", tx)
 
 	reqRes := mem.proxyAppConn.CheckTxAsync(abci.RequestCheckTx{Tx: tx})
 	reqRes.SetCallback(mem.reqResCb(tx, txInfo.SenderID, txInfo.SenderP2PID, cb))
@@ -319,6 +332,7 @@ func (mem *CListMempool) addTx(memTx *mempoolTx) {
 	mem.txsMap.Store(memTx.tx.Key(), e)
 	atomic.AddInt64(&mem.txsBytes, int64(len(memTx.tx)))
 	mem.metrics.TxSizeBytes.Observe(float64(len(memTx.tx)))
+	mem.logger.Debug("Clisted", "tx", memTx.tx)
 }
 
 // Called from:

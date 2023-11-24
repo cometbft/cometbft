@@ -127,6 +127,40 @@ func Connect2Switches(switches []*Switch, i, j int) {
 	<-doneCh
 }
 
+// ConnectStartSwitches will connect switches c and j via net.Pipe().
+func ConnectStarSwitches(c int) func([]*Switch, int, int) {
+	// Blocks until a connection is established.
+	// NOTE: caller ensures i and j is within bounds.
+	return func(switches []*Switch, i, j int) {
+		if i != c {
+			return
+		}
+
+		switchI := switches[i]
+		switchJ := switches[j]
+
+		c1, c2 := conn.NetPipe()
+
+		doneCh := make(chan struct{})
+		go func() {
+			err := switchI.addPeerWithConnection(c1)
+			if err != nil {
+				panic(err)
+			}
+			doneCh <- struct{}{}
+		}()
+		go func() {
+			err := switchJ.addPeerWithConnection(c2)
+			if err != nil {
+				panic(err)
+			}
+			doneCh <- struct{}{}
+		}()
+		<-doneCh
+		<-doneCh
+	}
+}
+
 func (sw *Switch) addPeerWithConnection(conn net.Conn) error {
 	pc, err := testInboundPeerConn(conn, sw.config, sw.nodeKey.PrivKey)
 	if err != nil {

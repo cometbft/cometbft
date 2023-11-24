@@ -779,13 +779,18 @@ type MempoolConfig struct {
 	// XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
 	MaxBatchBytes int `mapstructure:"max_batch_bytes"`
 	// Experimental parameters to limit gossiping txs to up to the specified number of peers.
+<<<<<<< HEAD
 	// This feature is only available for the default mempool (version config set to "v0").
 	// We use two independent upper values for persistent peers and for non-persistent peers.
+=======
+	// We use two independent upper values for persistent and non-persistent peers.
+>>>>>>> 2679498c9 (Do not block indefinitely on the semaphore (#1654))
 	// Unconditional peers are not affected by this feature.
 	// If we are connected to more than the specified number of persistent peers, only send txs to
-	// the first ExperimentalMaxGossipConnectionsToPersistentPeers of them. If one of those
-	// persistent peers disconnects, activate another persistent peer. Similarly for non-persistent
-	// peers, with an upper limit of ExperimentalMaxGossipConnectionsToNonPersistentPeers.
+	// ExperimentalMaxGossipConnectionsToPersistentPeers of them. If one of those
+	// persistent peers disconnects, activate another persistent peer.
+	// Similarly for non-persistent peers, with an upper limit of
+	// ExperimentalMaxGossipConnectionsToNonPersistentPeers.
 	// If set to 0, the feature is disabled for the corresponding group of peers, that is, the
 	// number of active connections to that group of peers is not bounded.
 	// For non-persistent peers, if enabled, a value of 10 is recommended based on experimental

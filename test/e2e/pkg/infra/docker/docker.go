@@ -32,7 +32,7 @@ func (p *Provider) Setup() error {
 		return err
 	}
 
-	err = infra.GenerateIPZonesTable(p.Testnet.Nodes, p.IPZonesFilePath())
+	err = infra.GenerateIPZonesTable(p.Testnet.Nodes, p.IPZonesFilePath(), true)
 	if err != nil {
 		return err
 	}

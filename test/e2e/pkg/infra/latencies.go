@@ -2,16 +2,16 @@ package infra
 
 import (
 	"bytes"
-	"html/template"
 	"os"
+	"text/template"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
 // Generate file with table mapping IP addresses to geographical zone for latencies.
-func GenerateIPZonesTable(nodes []*e2e.Node, zonesPath string) error {
+func GenerateIPZonesTable(nodes []*e2e.Node, zonesPath string, useInternalIP bool) error {
 	// Generate file with table mapping IP addresses to geographical zone for latencies.
-	zonesTable, err := zonesTableBytes(nodes)
+	zonesTable, err := zonesTableBytes(nodes, useInternalIP)
 	if err != nil {
 		return err
 	}
@@ -23,18 +23,24 @@ func GenerateIPZonesTable(nodes []*e2e.Node, zonesPath string) error {
 	return nil
 }
 
-func zonesTableBytes(nodes []*e2e.Node) ([]byte, error) {
+func zonesTableBytes(nodes []*e2e.Node, useInternalIP bool) ([]byte, error) {
 	tmpl, err := template.New("zones").Parse(`Node,IP,Zone
-{{- range . }}
+{{- range .Nodes }}
 {{- if .Zone }}
-{{ .Name }},{{ .InternalIP }},{{ .Zone }}
+{{ .Name }},{{ if $.UseInternalIP }}{{ .InternalIP }}{{ else }}{{ .ExternalIP }}{{ end }},{{ .Zone }}
 {{- end }}
 {{- end }}`)
 	if err != nil {
 		return nil, err
 	}
 	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, nodes)
+	err = tmpl.Execute(&buf, struct {
+		Nodes         []*e2e.Node
+		UseInternalIP bool
+	}{
+		Nodes:         nodes,
+		UseInternalIP: useInternalIP,
+	})
 	if err != nil {
 		return nil, err
 	}

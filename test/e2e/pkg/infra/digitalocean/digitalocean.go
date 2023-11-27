@@ -22,7 +22,7 @@ type Provider struct {
 
 // Setup files for setting latency in nodes.
 func (p *Provider) Setup() error {
-	err := infra.GenerateIPZonesTable(p.Testnet.Nodes, p.IPZonesFilePath())
+	err := infra.GenerateIPZonesTable(p.Testnet.Nodes, p.IPZonesFilePath(), false)
 	if err != nil {
 		return err
 	}

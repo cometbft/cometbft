@@ -4,10 +4,13 @@
 
 *November 27, 2023*
 
-This release provides the **nop** mempool for applications that want to build their own mempool.
-Using this mempool effectively disables all mempool functionality in CometBFT, including transaction dissemination and the `broadcast_tx_*` endpoints.
+This release provides the **nop** mempool for applications that want to build
+their own mempool. Using this mempool effectively disables all mempool
+functionality in CometBFT, including transaction dissemination and the
+`broadcast_tx_*` endpoints.
 
-Also fixes a small bug in the mempool for an experimental feature.
+Also fixes a small bug in the mempool for an experimental feature, and reverts
+the change from v0.37.3 that bumped the minimum Go version to v1.21.
 
 ### BUG FIXES
 
@@ -84,14 +87,14 @@ security issues.
 
 ### BUG FIXES
 
-- `[state/kvindex]` Querying event attributes that are bigger than int64 is now
-  enabled. We are not supporting reading floats from the db into the indexer
-  nor parsing them into BigFloats to not introduce breaking changes in minor
-  releases. ([\#771](https://github.com/cometbft/cometbft/pull/771))
 - `[pubsub]` Pubsub queries are now able to parse big integers (larger than
   int64). Very big floats are also properly parsed into very big integers
   instead of being truncated to int64.
   ([\#771](https://github.com/cometbft/cometbft/pull/771))
+- `[state/kvindex]` Querying event attributes that are bigger than int64 is now
+  enabled. We are not supporting reading floats from the db into the indexer
+  nor parsing them into BigFloats to not introduce breaking changes in minor
+  releases. ([\#771](https://github.com/cometbft/cometbft/pull/771))
 
 ### IMPROVEMENTS
 

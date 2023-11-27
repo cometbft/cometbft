@@ -57,3 +57,10 @@ transitioning from Tendermint Core to CometBFT.
 
 As of CometBFT v1, however, the project will transition to using and providing a
 `cometbft` package of Protobuf definitions (see [\#1330]).
+
+[protobuf]: https://protobuf.dev/
+[CometBFT]: https://github.com/cometbft/cometbft
+[abci]: https://github.com/cometbft/cometbft/tree/main/spec/abci
+[buf]: https://buf.build/tendermint/tendermint
+[tmcore]: https://github.com/tendermint/tendermint
+[\#1330]: https://github.com/cometbft/cometbft/issues/1330

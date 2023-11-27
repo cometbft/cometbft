@@ -5,4 +5,5 @@ their own mempool. Using this mempool effectively disables all mempool
 functionality in CometBFT, including transaction dissemination and the
 `broadcast_tx_*` endpoints.
 
-Also fixes a small bug in the mempool for an experimental feature.
+Also fixes a small bug in the mempool for an experimental feature, and reverts
+the change from v0.37.3 that bumped the minimum Go version to v1.21.

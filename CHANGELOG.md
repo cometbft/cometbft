@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## v0.34.31
+
+*November 27, 2023*
+
+Fixes a small bug in the mempool for an experimental feature.
+
+### BUG FIXES
+
+- `[mempool]` Avoid infinite wait in transaction sending routine when
+  using experimental parameters to limiting transaction gossiping to peers
+  ([\#1654](https://github.com/cometbft/cometbft/pull/1654))
+
 ## v0.34.30
 
 *November 17, 2023*
@@ -41,12 +53,12 @@ security issues.
 
 ### BUG FIXES
 
+- `[state/kvindex]` Querying event attributes that are bigger than int64 is now
+  enabled. ([\#771](https://github.com/cometbft/cometbft/pull/771))
 - `[pubsub]` Pubsub queries are now able to parse big integers (larger than
   int64). Very big floats are also properly parsed into very big integers
   instead of being truncated to int64.
   ([\#771](https://github.com/cometbft/cometbft/pull/771))
-- `[state/kvindex]` Querying event attributes that are bigger than int64 is now
-  enabled. ([\#771](https://github.com/cometbft/cometbft/pull/771))
 
 ### IMPROVEMENTS
 

@@ -402,7 +402,7 @@ func TestBlockStore_SaveBlockWithExtendedCommit(t *testing.T) {
 				seenCommit := makeTestExtCommit(block.Header.Height, cmttime.Now())
 
 				bs.SaveBlockWithExtendedCommit(block, validPartSet, seenCommit)
-				retrievedBlock := bs.LoadBlock(height)
+				retrievedBlock, _ := bs.LoadBlock(height)
 				require.Equal(t, retrievedBlock.Hash(), block.Hash())
 			})
 

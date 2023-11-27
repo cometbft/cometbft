@@ -19,6 +19,10 @@ type AppConnSnapshot struct {
 func (_m *AppConnSnapshot) ApplySnapshotChunk(_a0 context.Context, _a1 *types.RequestApplySnapshotChunk) (*types.ResponseApplySnapshotChunk, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for ApplySnapshotChunk")
+	}
+
 	var r0 *types.ResponseApplySnapshotChunk
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestApplySnapshotChunk) (*types.ResponseApplySnapshotChunk, error)); ok {
@@ -45,6 +49,10 @@ func (_m *AppConnSnapshot) ApplySnapshotChunk(_a0 context.Context, _a1 *types.Re
 func (_m *AppConnSnapshot) Error() error {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for Error")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
 		r0 = rf()
@@ -58,6 +66,10 @@ func (_m *AppConnSnapshot) Error() error {
 // ListSnapshots provides a mock function with given fields: _a0, _a1
 func (_m *AppConnSnapshot) ListSnapshots(_a0 context.Context, _a1 *types.RequestListSnapshots) (*types.ResponseListSnapshots, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListSnapshots")
+	}
 
 	var r0 *types.ResponseListSnapshots
 	var r1 error
@@ -85,6 +97,10 @@ func (_m *AppConnSnapshot) ListSnapshots(_a0 context.Context, _a1 *types.Request
 func (_m *AppConnSnapshot) LoadSnapshotChunk(_a0 context.Context, _a1 *types.RequestLoadSnapshotChunk) (*types.ResponseLoadSnapshotChunk, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for LoadSnapshotChunk")
+	}
+
 	var r0 *types.ResponseLoadSnapshotChunk
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestLoadSnapshotChunk) (*types.ResponseLoadSnapshotChunk, error)); ok {
@@ -110,6 +126,10 @@ func (_m *AppConnSnapshot) LoadSnapshotChunk(_a0 context.Context, _a1 *types.Req
 // OfferSnapshot provides a mock function with given fields: _a0, _a1
 func (_m *AppConnSnapshot) OfferSnapshot(_a0 context.Context, _a1 *types.RequestOfferSnapshot) (*types.ResponseOfferSnapshot, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for OfferSnapshot")
+	}
 
 	var r0 *types.ResponseOfferSnapshot
 	var r1 error

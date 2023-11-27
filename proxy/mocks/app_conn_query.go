@@ -19,6 +19,10 @@ type AppConnQuery struct {
 func (_m *AppConnQuery) Echo(_a0 context.Context, _a1 string) (*types.ResponseEcho, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for Echo")
+	}
+
 	var r0 *types.ResponseEcho
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string) (*types.ResponseEcho, error)); ok {
@@ -45,6 +49,10 @@ func (_m *AppConnQuery) Echo(_a0 context.Context, _a1 string) (*types.ResponseEc
 func (_m *AppConnQuery) Error() error {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for Error")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
 		r0 = rf()
@@ -58,6 +66,10 @@ func (_m *AppConnQuery) Error() error {
 // Info provides a mock function with given fields: _a0, _a1
 func (_m *AppConnQuery) Info(_a0 context.Context, _a1 *types.RequestInfo) (*types.ResponseInfo, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Info")
+	}
 
 	var r0 *types.ResponseInfo
 	var r1 error
@@ -84,6 +96,10 @@ func (_m *AppConnQuery) Info(_a0 context.Context, _a1 *types.RequestInfo) (*type
 // Query provides a mock function with given fields: _a0, _a1
 func (_m *AppConnQuery) Query(_a0 context.Context, _a1 *types.RequestQuery) (*types.ResponseQuery, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Query")
+	}
 
 	var r0 *types.ResponseQuery
 	var r1 error

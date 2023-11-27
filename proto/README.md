@@ -29,23 +29,23 @@ target versions of the protocols as they have evolved between CometBFT releases.
 By the 1.0.0 release, the entire set of Protobuf definitions used by CometBFT
 is published in packages suffixed with `.v1`. Earlier revisions of the
 definitions, where they differed, are provided alongside in `.v1beta`_N_
-packages, corresponding to 0.x releases as follows:
+packages. The correspondence between package suffixes and releases is as follows:
 
-| Domain          | 0.34      | 0.37      | 0.38      |
-|-----------------|-----------|-----------|-----------|
-| `abci`          | `v1beta1` | `v1beta2` | `v1beta3` |
-| `blocksync`     |           | `v1beta1` | `v1`      |
-| `consensus`     | `v1beta1` | same      | same      |
-| `crypto`        | `v1`      | same      | same      |
-| `libs/bits`     | `v1`      | same      | same      |
-| `mempool`       | `v1`      | same      | same      |
-| `p2p`           | `v1`      | same      | same      |
-| `privval`       | `v1beta1` | same      | `v1`      |
-| `rpc/grpc`[^1]  | `v1beta1` | `v1beta2` | `v1beta3` |
-| `state`         | `v1beta1` | `v1beta2` | `v1beta3` |
-| `statesync`     | `v1`      | same      | same      |
-| `types`         | `v1beta1` | `v1beta2` | `v1`      |
-| `version`       | `v1`      | same      | same      |
+| Domain          | 0.34      | 0.37      | 0.38      | 1.0  |
+|-----------------|-----------|-----------|-----------|------|
+| `abci`          | `v1beta1` | `v1beta2` | `v1beta3` | `v1` |
+| `blocksync`     |           | `v1beta1` | `v1`      | same |
+| `consensus`     | `v1beta1` | same      | same      | `v1` |
+| `crypto`        | `v1`      | same      | same      | same |
+| `libs/bits`     | `v1`      | same      | same      | same |
+| `mempool`       | `v1`      | same      | same      | same |
+| `p2p`           | `v1`      | same      | same      | same |
+| `privval`       | `v1beta1` | same      | `v1`      | same |
+| `rpc/grpc`[^1]  | `v1beta1` | `v1beta2` | `v1beta3` |      |
+| `state`         | `v1beta1` | `v1beta2` | `v1beta3` | `v1` |
+| `statesync`     | `v1`      | same      | same      | same |
+| `types`         | `v1beta1` | `v1beta2` | `v1`      | same |
+| `version`       | `v1`      | same      | same      | same |
 
 [^1]: Retired in 1.0
 

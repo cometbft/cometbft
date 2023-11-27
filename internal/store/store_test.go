@@ -19,8 +19,8 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 
-	cmtstore "github.com/cometbft/cometbft/api/cometbft/store/v1beta1"
-	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1beta1"
+	cmtstore "github.com/cometbft/cometbft/api/cometbft/store/v1"
+	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"

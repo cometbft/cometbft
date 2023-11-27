@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"reflect"
 
-	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1beta1"
+	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	cmtstrings "github.com/cometbft/cometbft/internal/strings"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/version"

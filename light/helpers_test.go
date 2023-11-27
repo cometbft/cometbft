@@ -3,7 +3,7 @@ package light_test
 import (
 	"time"
 
-	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1beta1"
+	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/tmhash"

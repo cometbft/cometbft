@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
+	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
 	cfg "github.com/cometbft/cometbft/config"
-	cmtcons "github.com/cometbft/cometbft/internal/consensus/proto"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/log"

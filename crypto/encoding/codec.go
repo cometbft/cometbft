@@ -3,7 +3,7 @@ package encoding
 import (
 	"fmt"
 
-	pc "github.com/cometbft/cometbft/api/cometbft/crypto/v1beta1"
+	pc "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"

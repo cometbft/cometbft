@@ -8,8 +8,8 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 
+	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	sm "github.com/cometbft/cometbft/internal/state"
-	cmtstate "github.com/cometbft/cometbft/internal/state/proto"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"

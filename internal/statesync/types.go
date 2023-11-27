@@ -1,7 +1,7 @@
 package statesync
 
 import (
-	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1beta1"
+	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
 	"github.com/cometbft/cometbft/types"
 )
 

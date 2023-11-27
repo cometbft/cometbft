@@ -5,8 +5,8 @@ option go_package = "github.com/cometbft/cometbft/api/cometbft/types/v1beta1";
 
 import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
-import "cometbft/crypto/v1beta1/proof.proto";
-import "cometbft/version/v1beta1/types.proto";
+import "cometbft/crypto/v1/proof.proto";
+import "cometbft/version/v1/types.proto";
 import "cometbft/types/v1beta1/validator.proto";
 
 // SignedMsgType is a type of signed message in the consensus.
@@ -32,7 +32,7 @@ message PartSetHeader {
 message Part {
   uint32                   index = 1;
   bytes                    bytes = 2;
-  cometbft.crypto.v1beta1.Proof proof = 3 [(gogoproto.nullable) = false];
+  cometbft.crypto.v1.Proof proof = 3 [(gogoproto.nullable) = false];
 }
 
 // BlockID
@@ -46,7 +46,7 @@ message BlockID {
 // Header defines the structure of a block header.
 message Header {
   // basic block info
-  cometbft.version.v1beta1.Consensus version  = 1 [(gogoproto.nullable) = false];
+  cometbft.version.v1.Consensus version  = 1 [(gogoproto.nullable) = false];
   string                        chain_id = 2 [(gogoproto.customname) = "ChainID"];
   int64                         height   = 3;
   google.protobuf.Timestamp     time     = 4 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
@@ -127,7 +127,7 @@ message SignedHeader {
 }
 
 message LightBlock {
-  SignedHeader                   signed_header = 1;
+  SignedHeader                        signed_header = 1;
   cometbft.types.v1beta1.ValidatorSet validator_set = 2;
 }
 
@@ -142,5 +142,5 @@ message BlockMeta {
 message TxProof {
   bytes                    root_hash = 1;
   bytes                    data      = 2;
-  cometbft.crypto.v1beta1.Proof proof     = 3;
+  cometbft.crypto.v1.Proof proof     = 3;
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1beta1"
+	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/p2p"
 	p2pmocks "github.com/cometbft/cometbft/p2p/mocks"

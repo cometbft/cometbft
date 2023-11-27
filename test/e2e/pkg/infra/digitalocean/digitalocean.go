@@ -74,7 +74,6 @@ func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
 		filepath.Join(remoteDir, "aws-latencies.csv"),
 	)
 	playbook = ansibleAddShellTasks(playbook, "execute latency setter script", cmd)
-	playbook = ansibleAddTask(playbook, "execute latency setter script", runTask)
 
 	// Execute playbook
 	playbookFile := getNextPlaybookFilename()

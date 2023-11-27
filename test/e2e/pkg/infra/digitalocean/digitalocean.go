@@ -57,13 +57,15 @@ func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
 	// Directory in the node containing all latency files.
 	remoteDir := "/cometbft/test/e2e/latency/"
 
-	playbook := basePlaybook
+	playbook := "- name: e2e custom playbook\n" +
+		"  hosts: all\n" +
+		"  gather_facts: yes\n" +
+		"  tasks:\n"
 
-	// Add task to playbook to copy ip-zones file to the node.
-	copyTask := fmt.Sprintf(`    ansible.builtin.copy:
-	  src: %s
-	  dest: %s`, p.IPZonesFilePath(), remoteDir)
-	playbook = ansibleAddTask(playbook, "copy zones file to node", copyTask)
+	// Add tasks to playbook to copy the necessary files to the node.
+	playbook = ansibleAddCopyTask(playbook, "copy zones file to node", p.IPZonesFilePath(), remoteDir)
+	playbook = ansibleAddCopyTask(playbook, "copy matrix file to node", "latency/aws-latencies.csv", remoteDir)
+	playbook = ansibleAddCopyTask(playbook, "copy script file to node", "latency/latency-setter.py", remoteDir)
 
 	// Add task to playbook to execute latency setter script in the node.
 	cmd := fmt.Sprintf("%s set %s %s eth0",
@@ -71,7 +73,7 @@ func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
 		filepath.Join(remoteDir, filepath.Base(p.IPZonesFilePath())),
 		filepath.Join(remoteDir, "aws-latencies.csv"),
 	)
-	runTask := ansibleAddShellTasks(basePlaybook, "set latency", cmd)
+	playbook = ansibleAddShellTasks(playbook, "execute latency setter script", cmd)
 	playbook = ansibleAddTask(playbook, "execute latency setter script", runTask)
 
 	// Execute playbook
@@ -79,7 +81,7 @@ func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
 	if err := p.writePlaybook(playbookFile, playbook); err != nil {
 		return err
 	}
-	return execAnsible(ctx, p.Testnet.Dir, playbookFile, []string{string(node.ExternalIP)})
+	return execAnsible(ctx, p.Testnet.Dir, playbookFile, []string{node.ExternalIP.String()})
 }
 
 func (p Provider) StopTestnet(ctx context.Context) error {
@@ -139,7 +141,15 @@ const basePlaybook = `- name: e2e custom playbook
 `
 
 func ansibleAddTask(playbook, name, contents string) string {
-	return playbook + "  - name: " + name + "\n" + contents
+	return playbook + "  - name: " + name + "\n" + contents + "\n"
+}
+
+func ansibleAddCopyTask(playbook, name, src, dest string) string {
+	copyTask := fmt.Sprintf("    ansible.builtin.copy:\n"+
+		"      src: %s\n"+
+		"      dest: %s\n",
+		src, dest)
+	return ansibleAddTask(playbook, name, copyTask)
 }
 
 func ansibleAddSystemdTask(playbook string, starting bool) string {

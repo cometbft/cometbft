@@ -58,9 +58,24 @@ transitioning from Tendermint Core to CometBFT.
 As of CometBFT v1, however, the project will transition to using and providing a
 `cometbft` package of Protobuf definitions (see [\#1330]).
 
+Protobuf definitions for each respective release are also, for convenience,
+published to a corresponding branch in the `tendermint/tendermint` Buf repository.
+
+| CometBFT version | Canonical Protobufs                         | Buf registry                              |
+|------------------|---------------------------------------------|-------------------------------------------|
+| v0.38.x          | [v0.38.x Protobuf definitions][v038-protos] | [Buf repository v0.38.x branch][v038-buf] |
+| v0.37.x          | [v0.37.x Protobuf definitions][v037-protos] | [Buf repository v0.37.x branch][v037-buf] |
+| v0.34.x          | [v0.34.x Protobuf definitions][v034-protos] | [Buf repository v0.34.x branch][v034-buf] |
+
 [protobuf]: https://protobuf.dev/
 [CometBFT]: https://github.com/cometbft/cometbft
 [abci]: https://github.com/cometbft/cometbft/tree/main/spec/abci
 [buf]: https://buf.build/tendermint/tendermint
 [tmcore]: https://github.com/tendermint/tendermint
 [\#1330]: https://github.com/cometbft/cometbft/issues/1330
+[v034-protos]: https://github.com/cometbft/cometbft/tree/v0.34.x/proto
+[v034-buf]: https://buf.build/tendermint/tendermint/docs/v0.34.x
+[v037-protos]: https://github.com/cometbft/cometbft/tree/v0.37.x/proto
+[v037-buf]: https://buf.build/tendermint/tendermint/docs/v0.37.x
+[v038-protos]: https://github.com/cometbft/cometbft/tree/v0.38.x/proto
+[v038-buf]: https://buf.build/tendermint/tendermint/docs/v0.38.x

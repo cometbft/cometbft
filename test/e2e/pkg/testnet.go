@@ -101,6 +101,7 @@ type Testnet struct {
 	ExperimentalMaxGossipConnectionsToPersistentPeers    uint
 	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint
 	ABCITestsEnabled                                     bool
+	DefaultZone                                          string
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -188,6 +189,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
 		ABCITestsEnabled: manifest.ABCITestsEnabled,
+		DefaultZone:      manifest.DefaultZone,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
@@ -280,6 +282,12 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		for _, p := range nodeManifest.Perturb {
 			node.Perturbations = append(node.Perturbations, Perturbation(p))
 		}
+		if nodeManifest.Zone != "" {
+			node.Zone = ZoneID(nodeManifest.Zone)
+		} else if testnet.DefaultZone != "" {
+			node.Zone = ZoneID(testnet.DefaultZone)
+		}
+
 		testnet.Nodes = append(testnet.Nodes, node)
 	}
 
@@ -383,15 +391,17 @@ func (t Testnet) validateZones(nodes []*Node) error {
 		return err
 	}
 
-	// Get list of zone ids.
+	// Get list of zone ids in matrix.
 	zones := make([]ZoneID, len(zoneMatrix))
 	for zone := range zoneMatrix {
 		zones = append(zones, zone)
 	}
 
-	// Check that the zone ids of all nodes are valid when matrix file exists.
+	// Check that the zone ids of all nodes are valid when the matrix file exists.
+	nodesWithoutZone := make([]string, 0, len(nodes))
 	for _, node := range nodes {
 		if !node.ZoneIsSet() {
+			nodesWithoutZone = append(nodesWithoutZone, node.Name)
 			continue
 		}
 		if fileNotFoundErr {
@@ -402,6 +412,11 @@ func (t Testnet) validateZones(nodes []*Node) error {
 			return fmt.Errorf("invalid zone %s for node %s, not present in zone-latencies matrix file %s",
 				string(node.Zone), node.Name, latencyFile)
 		}
+	}
+
+	// Either all nodes have a zone or none have.
+	if len(nodesWithoutZone) > 0 && len(nodesWithoutZone) != len(nodes) {
+		return fmt.Errorf("the following nodes do not have a zone assigned (while other nodes have): %v", strings.Join(nodesWithoutZone, ", "))
 	}
 
 	return nil

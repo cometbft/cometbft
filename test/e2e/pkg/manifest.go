@@ -109,6 +109,10 @@ type Manifest struct {
 	// Enable or disable e2e tests for CometBFT's expected behavior with respect
 	// to ABCI.
 	ABCITestsEnabled bool `toml:"abci_tests_enabled"`
+
+	// Default geographical zone ID for simulating latencies, assigned to nodes that don't have a
+	// specific zone assigned.
+	DefaultZone string `toml:"default_zone"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

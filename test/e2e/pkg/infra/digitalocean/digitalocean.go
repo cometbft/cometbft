@@ -55,17 +55,14 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 // Execute latency setter script in the node.
 func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
 	// Directory in the node containing all latency files.
-	remoteDir := "/cometbft/test/e2e/latency/"
+	remoteDir := "/root/cometbft/test/e2e/latency/"
 
 	playbook := "- name: e2e custom playbook\n" +
 		"  hosts: all\n" +
-		"  gather_facts: yes\n" +
 		"  tasks:\n"
 
 	// Add tasks to playbook to copy the necessary files to the node.
-	playbook = ansibleAddCopyTask(playbook, "copy zones file to node", p.IPZonesFilePath(), remoteDir)
-	playbook = ansibleAddCopyTask(playbook, "copy matrix file to node", "latency/aws-latencies.csv", remoteDir)
-	playbook = ansibleAddCopyTask(playbook, "copy script file to node", "latency/latency-setter.py", remoteDir)
+	playbook = ansibleAddCopyTask(playbook, "copy zones file to node", filepath.Base(p.IPZonesFilePath()), remoteDir)
 
 	// Add task to playbook to execute latency setter script in the node.
 	cmd := fmt.Sprintf("%s set %s %s eth0",

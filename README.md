@@ -144,7 +144,7 @@ Currently supported versions include:
 - [Terra](https://www.terra.money/)
 - [Celestia](https://celestia.org/)
 - [Anoma](https://anoma.network/)
-- [Vocdoni](https://docs.vocdoni.io/)
+- [Vocdoni](https://developer.vocdoni.io/)
 
 ### Research
 

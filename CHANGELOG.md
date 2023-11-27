@@ -1,66 +1,69 @@
 # CHANGELOG
 
-## Unreleased
+## v0.38.2
 
-### BREAKING CHANGES
+*November 27, 2023*
 
-- `[crypto/merkle]` The public `Proof.ComputeRootHash` function has been deleted.
-   ([\#558](https://github.com/cometbft/cometbft/issues/558))
-- `[rpc/grpc]` Remove the deprecated gRPC broadcast API
-  ([\#650](https://github.com/cometbft/cometbft/issues/650))
-- `[consensus]` `Handshaker.Handshake` now requires `context.Context` ([cometbft/cometbft\#857](https://github.com/cometbft/cometbft/pull/857))
-- `[node]` `NewNode` now requires `context.Context` as the first parameter ([cometbft/cometbft\#857](https://github.com/cometbft/cometbft/pull/857))
-`[mempool]` Change the signature of `CheckTx` in the `Mempool` interface to
-`CheckTx(tx types.Tx) (*abcicli.ReqRes, error)`. Also, add new method
-`SetTxRemovedCallback`.
-([\#1010](https://github.com/cometbft/cometbft/issues/1010))
-- `[mempool]` Remove `mempoolIDs` for internally storing peer ids as `p2p.ID`
-  instead of `uint16`.
-  ([\#1146](https://github.com/cometbft/cometbft/pull/1146))
-- `[cmd]` Remove `replay` and `replay-console` subcommands
-  and corresponding consensus file replay code, such as
-  `consensus.RunReplayFile`, and `consensus.State.ReplayFile`
-  ([\#1170](https://github.com/cometbft/cometbft/pull/1170))
-- `[node]` Change the signature of `GenesisDocProvider` to
-  return the checksum of JSON content alongside the parsed genesis data
-  ([\#1287](https://github.com/cometbft/cometbft/issues/1287)).
+This release provides the **nop** mempool for applications that want to build their own mempool.
+Using this mempool effectively disables all mempool functionality in CometBFT, including transaction dissemination and the `broadcast_tx_*` endpoints.
+
+Also fixes a small bug in the mempool for an experimental feature.
 
 ### BUG FIXES
 
-- `[consensus]` \#1203 consensus now prevotes `nil` when the proposed value
-  does not match the value the local validator has locked on
-  ([\#1203](https://github.com/cometbft/cometbft/pull/1203))
-- `[consensus]` \#1175 remove logic to unlock block on +2/3 prevote for nil
-  ([\#1175](https://github.com/cometbft/cometbft/pull/1175): @BrendanChou)
+- `[mempool]` Avoid infinite wait in transaction sending routine when
+  using experimental parameters to limiting transaction gossiping to peers
+  ([\#1654](https://github.com/cometbft/cometbft/pull/1654))
+
+### FEATURES
+
+- `[mempool]` Add `nop` mempool ([\#1643](https://github.com/cometbft/cometbft/pull/1643))
+
+  If you want to use it, change mempool's `type` to `nop`:
+
+  ```toml
+  [mempool]
+
+  # The type of mempool for this node to use.
+  #
+  # Possible types:
+  # - "flood" : concurrent linked list mempool with flooding gossip protocol
+  # (default)
+  # - "nop"   : nop-mempool (short for no operation; the ABCI app is responsible
+  # for storing, disseminating and proposing txs). "create_empty_blocks=false"
+  # is not supported.
+  type = "nop"
+  ```
+
+## v0.38.1
+
+*November 17, 2023*
+
+This release contains, among other things, an opt-in, experimental feature to
+help reduce the bandwidth consumption associated with the mempool's transaction
+gossip.
+
+### BUG FIXES
+
+- `[state/indexer]` Respect both height params while querying for events
+   ([\#1529](https://github.com/cometbft/cometbft/pull/1529))
+
+### FEATURES
+
+- `[metrics]` Add metric for mempool size in bytes `SizeBytes`.
+  ([\#1512](https://github.com/cometbft/cometbft/pull/1512))
 
 ### IMPROVEMENTS
 
-- `[mempool]` Add a metric (a counter) to measure whether a tx was received more than once.
-  ([\#634](https://github.com/cometbft/cometbft/pull/634))
-- `[consensus]` New metrics (counters) to track duplicate votes and block parts.
-  ([\#896](https://github.com/cometbft/cometbft/pull/896))
-- `[consensus]` Optimize vote and block part gossip with new message `HasProposalBlockPartMessage`,
-  which is similar to `HasVoteMessage`; and random sleep in the loop broadcasting those messages.
-  The sleep can be configured with new config `peer_gossip_intraloop_sleep_duration`, which is set to 0
-  by default as this is experimental.
-  Our scale tests show substantial bandwidth improvement with a value of 50 ms.
-  ([\#904](https://github.com/cometbft/cometbft/pull/904))
-- Update Apalache type annotations in the light client spec ([#955](https://github.com/cometbft/cometbft/pull/955))
-- `[node]` Remove genesis persistence in state db, replaced by a hash
-  ([cometbft/cometbft\#1017](https://github.com/cometbft/cometbft/pull/1017),
-  [cometbft/cometbft\#1295](https://github.com/cometbft/cometbft/pull/1295))
-- `[consensus]` Log vote validation failures at info level
-  ([\#1022](https://github.com/cometbft/cometbft/pull/1022))
-- `[consensus]` When prevoting, avoid calling PropocessProposal when we know the
-  proposal was already validated by correct nodes.
-  ([\#1230](https://github.com/cometbft/cometbft/pull/1230))
-- `[node]` On upgrade, after [\#1296](https://github.com/cometbft/cometbft/pull/1296), delete the genesis file existing in the DB.
-  ([cometbft/cometbft\#1297](https://github.com/cometbft/cometbft/pull/1297)
-
-### MINIMUM GO VERSION
-
-- Bump minimum Go version to v1.21
-  ([\#1244](https://github.com/cometbft/cometbft/pull/1244))
+- `[mempool]` Add experimental feature to limit the number of persistent peers and non-persistent
+  peers to which the node gossip transactions.
+  ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
+  ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
+- `[config]` Add mempool parameters `experimental_max_gossip_connections_to_persistent_peers` and
+  `experimental_max_gossip_connections_to_non_persistent_peers` for limiting the number of peers to
+  which the node gossip transactions. 
+  ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
+  ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
 
 ## v0.38.0
 
@@ -219,6 +222,84 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
   ([\#6513](https://github.com/tendermint/tendermint/pull/6513))
 - `[pubsub]` Performance improvements for the event query API
   ([\#7319](https://github.com/tendermint/tendermint/pull/7319))
+
+## v0.37.4
+
+*November 27, 2023*
+
+This release provides the **nop** mempool for applications that want to build
+their own mempool. Using this mempool effectively disables all mempool
+functionality in CometBFT, including transaction dissemination and the
+`broadcast_tx_*` endpoints.
+
+Also fixes a small bug in the mempool for an experimental feature, and reverts
+the change from v0.37.3 that bumped the minimum Go version to v1.21.
+
+### BUG FIXES
+
+- `[mempool]` Avoid infinite wait in transaction sending routine when
+  using experimental parameters to limiting transaction gossiping to peers
+  ([\#1654](https://github.com/cometbft/cometbft/pull/1654))
+
+### FEATURES
+
+- `[mempool]` Add `nop` mempool ([\#1643](https://github.com/cometbft/cometbft/pull/1643))
+
+  If you want to use it, change mempool's `type` to `nop`:
+
+  ```toml
+  [mempool]
+
+  # The type of mempool for this node to use.
+  #
+  # Possible types:
+  # - "flood" : concurrent linked list mempool with flooding gossip protocol
+  # (default)
+  # - "nop"   : nop-mempool (short for no operation; the ABCI app is responsible
+  # for storing, disseminating and proposing txs). "create_empty_blocks=false"
+  # is not supported.
+  type = "nop"
+  ```
+
+## v0.37.3
+
+*November 17, 2023*
+
+This release contains, among other things, an opt-in, experimental feature to
+help reduce the bandwidth consumption associated with the mempool's transaction
+gossip.
+
+### BREAKING CHANGES
+
+- `[p2p]` Remove unused UPnP functionality
+  ([\#1113](https://github.com/cometbft/cometbft/issues/1113))
+
+### BUG FIXES
+
+- `[state/indexer]` Respect both height params while querying for events
+   ([\#1529](https://github.com/cometbft/cometbft/pull/1529))
+
+### FEATURES
+
+- `[node/state]` Add Go API to bootstrap block store and state store to a height
+  ([\#1057](https://github.com/tendermint/tendermint/pull/#1057)) (@yihuang)
+- `[metrics]` Add metric for mempool size in bytes `SizeBytes`.
+  ([\#1512](https://github.com/cometbft/cometbft/pull/1512))
+
+### IMPROVEMENTS
+
+- `[crypto/sr25519]` Upgrade to go-schnorrkel@v1.0.0 ([\#475](https://github.com/cometbft/cometbft/issues/475))
+- `[node]` Make handshake cancelable ([cometbft/cometbft\#857](https://github.com/cometbft/cometbft/pull/857))
+- `[node]` Close evidence.db OnStop ([cometbft/cometbft\#1210](https://github.com/cometbft/cometbft/pull/1210): @chillyvee)
+- `[mempool]` Add experimental feature to limit the number of persistent peers and non-persistent
+  peers to which the node gossip transactions (only for "v0" mempool).
+  ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
+  ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
+- `[config]` Add mempool parameters `experimental_max_gossip_connections_to_persistent_peers` and
+  `experimental_max_gossip_connections_to_non_persistent_peers` for limiting the number of peers to
+  which the node gossip transactions. 
+  ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
+  ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
 
 ## v0.37.2
 
@@ -429,6 +510,50 @@ See below for more details.
   ([\#9650](https://github.com/tendermint/tendermint/pull/9650))
 - `[consensus]` Save peer LastCommit correctly to achieve 50% reduction in gossiped precommits.
   ([\#9760](https://github.com/tendermint/tendermint/pull/9760))
+
+## v0.34.31
+
+*November 27, 2023*
+
+Fixes a small bug in the mempool for an experimental feature.
+
+### BUG FIXES
+
+- `[mempool]` Avoid infinite wait in transaction sending routine when
+  using experimental parameters to limiting transaction gossiping to peers
+  ([\#1654](https://github.com/cometbft/cometbft/pull/1654))
+
+## v0.34.30
+
+*November 17, 2023*
+
+This release contains, among other things, an opt-in, experimental feature to
+help reduce the bandwidth consumption associated with the mempool's transaction
+gossip.
+
+### BUILD
+
+- Bump Go version used to v1.20 since v1.19 has reached EOL
+  ([\#1351](https://github.com/cometbft/cometbft/pull/1351))
+
+### FEATURES
+
+- `[metrics]` Add metric for mempool size in bytes `SizeBytes`.
+  ([\#1512](https://github.com/cometbft/cometbft/pull/1512))
+
+### IMPROVEMENTS
+
+- `[node]` Make handshake cancelable ([cometbft/cometbft\#857](https://github.com/cometbft/cometbft/pull/857))
+- `[node]` Close evidence.db OnStop ([cometbft/cometbft\#1210](https://github.com/cometbft/cometbft/pull/1210): @chillyvee)
+- `[mempool]` Add experimental feature to limit the number of persistent peers and non-persistent
+  peers to which the node gossip transactions (only for "v0" mempool).
+  ([\#1558](https://github.com/cometbft/cometbft/pull/1558),
+  ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
+- `[config]` Add mempool parameters `experimental_max_gossip_connections_to_persistent_peers` and
+  `experimental_max_gossip_connections_to_non_persistent_peers` for limiting the number of peers to
+  which the node gossip transactions. 
+  ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
+  ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
 
 ## v0.34.29
 

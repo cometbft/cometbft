@@ -12,8 +12,8 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
@@ -251,7 +251,8 @@ func (l *LightClientAttackEvidence) Bytes() []byte {
 // the malicious validators were and returns them. This is used both for forming the ByzantineValidators
 // field and for validating that it is correct. Validators are ordered based on validator power
 func (l *LightClientAttackEvidence) GetByzantineValidators(commonVals *ValidatorSet,
-	trusted *SignedHeader) []*Validator {
+	trusted *SignedHeader,
+) []*Validator {
 	var validators []*Validator
 	// First check if the header is invalid. This means that it is a lunatic attack and therefore we take the
 	// validators who are in the commonVals and voted for the lunatic header
@@ -308,7 +309,6 @@ func (l *LightClientAttackEvidence) ConflictingHeaderIsInvalid(trustedHeader *He
 		!bytes.Equal(trustedHeader.ConsensusHash, l.ConflictingBlock.ConsensusHash) ||
 		!bytes.Equal(trustedHeader.AppHash, l.ConflictingBlock.AppHash) ||
 		!bytes.Equal(trustedHeader.LastResultsHash, l.ConflictingBlock.LastResultsHash)
-
 }
 
 // Hash returns the hash of the header and the commonHeight. This is designed to cause hash collisions
@@ -338,10 +338,10 @@ func (l *LightClientAttackEvidence) Height() int64 {
 // String returns a string representation of LightClientAttackEvidence
 func (l *LightClientAttackEvidence) String() string {
 	return fmt.Sprintf(`LightClientAttackEvidence{
-		ConflictingBlock: %v, 
-		CommonHeight: %d, 
-		ByzatineValidators: %v, 
-		TotalVotingPower: %d, 
+		ConflictingBlock: %v,
+		CommonHeight: %d,
+		ByzatineValidators: %v,
+		TotalVotingPower: %d,
 		Timestamp: %v}#%X`,
 		l.ConflictingBlock.String(), l.CommonHeight, l.ByzantineValidators,
 		l.TotalVotingPower, l.Timestamp, l.Hash())
@@ -583,15 +583,18 @@ func (err *ErrEvidenceOverflow) Error() string {
 
 // unstable - use only for testing
 
-// assumes the round to be 0 and the validator index to be 0
+// NewMockDuplicateVoteEvidence assumes the round to be 0 and the validator
+// index to be 0
 func NewMockDuplicateVoteEvidence(height int64, time time.Time, chainID string) (*DuplicateVoteEvidence, error) {
 	val := NewMockPV()
 	return NewMockDuplicateVoteEvidenceWithValidator(height, time, val, chainID)
 }
 
-// assumes voting power to be 10 and validator to be the only one in the set
+// NewMockDuplicateVoteEvidenceWithValidator assumes voting power to be 10
+// and validator to be the only one in the set
 func NewMockDuplicateVoteEvidenceWithValidator(height int64, time time.Time,
-	pv PrivValidator, chainID string) (*DuplicateVoteEvidence, error) {
+	pv PrivValidator, chainID string,
+) (*DuplicateVoteEvidence, error) {
 	pubKey, err := pv.GetPubKey()
 	if err != nil {
 		return nil, err
@@ -615,7 +618,8 @@ func NewMockDuplicateVoteEvidenceWithValidator(height int64, time time.Time,
 }
 
 func makeMockVote(height int64, round, index int32, addr Address,
-	blockID BlockID, time time.Time) *Vote {
+	blockID BlockID, time time.Time,
+) *Vote {
 	return &Vote{
 		Type:             cmtproto.SignedMsgType(2),
 		Height:           height,

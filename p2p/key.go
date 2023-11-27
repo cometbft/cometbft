@@ -8,8 +8,8 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	cmtos "github.com/cometbft/cometbft/internal/os"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
-	cmtos "github.com/cometbft/cometbft/libs/os"
 )
 
 // ID is a hex-encoded crypto.Address
@@ -88,7 +88,7 @@ func (nodeKey *NodeKey) SaveAs(filePath string) error {
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(filePath, jsonBytes, 0600)
+	err = os.WriteFile(filePath, jsonBytes, 0o600)
 	if err != nil {
 		return err
 	}

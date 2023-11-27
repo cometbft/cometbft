@@ -48,6 +48,9 @@ type Manifest struct {
 	// Nodes specifies the network nodes. At least one node must be given.
 	Nodes map[string]*ManifestNode `toml:"node"`
 
+	// Disable the peer-exchange reactor on all nodes.
+	DisablePexReactor bool `toml:"disable_pex"`
+
 	// KeyType sets the curve that will be used by validators.
 	// Options are ed25519 & secp256k1
 	KeyType string `toml:"key_type"`
@@ -98,6 +101,14 @@ type Manifest struct {
 
 	// Upper bound of sleep duration then gossipping votes and block parts
 	PeerGossipIntraloopSleepDuration time.Duration `toml:"peer_gossip_intraloop_sleep_duration"`
+
+	// Maximum number of peers to which the node gossips transactions
+	ExperimentalMaxGossipConnectionsToPersistentPeers    uint `toml:"experimental_max_gossip_connections_to_persistent_peers"`
+	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint `toml:"experimental_max_gossip_connections_to_non_persistent_peers"`
+
+	// Enable or disable e2e tests for CometBFT's expected behavior with respect
+	// to ABCI.
+	ABCITestsEnabled bool `toml:"abci_tests_enabled"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

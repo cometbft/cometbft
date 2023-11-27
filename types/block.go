@@ -13,10 +13,10 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	"github.com/cometbft/cometbft/libs/bits"
+	"github.com/cometbft/cometbft/internal/bits"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/cometbft/cometbft/version"
@@ -237,7 +237,7 @@ func (b *Block) ToProto() (*cmtproto.Block, error) {
 	return pb, nil
 }
 
-// FromProto sets a protobuf Block to the given pointer.
+// BlockFromProto sets a protobuf Block to the given pointer.
 // It returns an error if the block is invalid.
 func BlockFromProto(bp *cmtproto.Block) (*Block, error) {
 	if bp == nil {
@@ -536,7 +536,7 @@ func (h *Header) ToProto() *cmtproto.Header {
 	}
 }
 
-// FromProto sets a protobuf Header to the given pointer.
+// HeaderFromProto sets a protobuf Header to the given pointer.
 // It returns an error if the header is invalid.
 func HeaderFromProto(ph *cmtproto.Header) (Header, error) {
 	if ph == nil {
@@ -613,7 +613,7 @@ func NewCommitSigAbsent() CommitSig {
 	}
 }
 
-// CommitSig returns a string representation of CommitSig.
+// String returns a string representation of CommitSig.
 //
 // 1. first 6 bytes of signature
 // 2. first 6 bytes of validator address
@@ -760,7 +760,7 @@ func (ecs ExtendedCommitSig) ValidateBasic() error {
 	return nil
 }
 
-// EnsureExtensions validates that a vote extensions signature is present for
+// EnsureExtension validates that a vote extensions signature is present for
 // this ExtendedCommitSig.
 func (ecs ExtendedCommitSig) EnsureExtension(extEnabled bool) error {
 	if extEnabled {
@@ -1002,16 +1002,14 @@ func (commit *Commit) ToProto() *cmtproto.Commit {
 	return c
 }
 
-// FromProto sets a protobuf Commit to the given pointer.
+// CommitFromProto sets a protobuf Commit to the given pointer.
 // It returns an error if the commit is invalid.
 func CommitFromProto(cp *cmtproto.Commit) (*Commit, error) {
 	if cp == nil {
 		return nil, errors.New("nil Commit")
 	}
 
-	var (
-		commit = new(Commit)
-	)
+	commit := new(Commit)
 
 	bi, err := BlockIDFromProto(&cp.BlockID)
 	if err != nil {
@@ -1277,7 +1275,6 @@ func ExtendedCommitFromProto(ecp *cmtproto.ExtendedCommit) (*ExtendedCommit, err
 
 // Data contains the set of transactions included in the block
 type Data struct {
-
 	// Txs that will be applied by state @ block.Height+1.
 	// NOTE: not all txs here are valid.  We're just agreeing on the order first.
 	// This means that block.AppHash does not include these txs.
@@ -1517,7 +1514,7 @@ func (blockID *BlockID) ToProto() cmtproto.BlockID {
 	}
 }
 
-// FromProto sets a protobuf BlockID to the given pointer.
+// BlockIDFromProto sets a protobuf BlockID to the given pointer.
 // It returns an error if the block id is invalid.
 func BlockIDFromProto(bID *cmtproto.BlockID) (*BlockID, error) {
 	if bID == nil {

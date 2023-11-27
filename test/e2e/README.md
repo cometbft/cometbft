@@ -68,7 +68,7 @@ generator. For example:
 # the CometBFT version in the current local code (as specified in
 # ../../version/version.go).
 #
-# In the example below, if the local version.TMCoreSemVer value is "v0.34.24",
+# In the example below, if the local version value is "v0.34.24",
 # for example, and the latest official release is v0.34.23, then 1/3rd of the
 # network will run v0.34.23 and the remaining 2/3rds will run the E2E node built
 # from the local code.

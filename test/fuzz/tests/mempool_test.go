@@ -8,7 +8,7 @@ import (
 	abciclient "github.com/cometbft/cometbft/abci/client"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	"github.com/cometbft/cometbft/config"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	mempool "github.com/cometbft/cometbft/mempool"
 )
 

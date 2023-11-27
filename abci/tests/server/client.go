@@ -8,7 +8,7 @@ import (
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	"github.com/cometbft/cometbft/abci/types"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 )
 
 func InitChain(ctx context.Context, client abcicli.Client) error {

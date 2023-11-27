@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 )
 
 func TestLoadOrGenNodeKey(t *testing.T) {
@@ -60,7 +60,6 @@ func padBytes(bz []byte, targetBytes int) []byte {
 }
 
 func TestPoWTarget(t *testing.T) {
-
 	targetBytes := 20
 	cases := []struct {
 		difficulty uint

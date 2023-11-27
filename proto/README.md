@@ -24,7 +24,7 @@ The Protobuf files are organized under two domains: `cometbft` and `tendermint`.
 The `cometbft.*` packages use version suffixes to let application developers
 target versions of the protocols as they have evolved between CometBFT releases.
 
-## Which CometBFT release does each package belongs to?
+## Which CometBFT release does each package belong to?
 
 By the 1.0.0 release, the entire set of Protobuf definitions used by CometBFT
 is published in packages suffixed with `.v1`. Earlier revisions of the

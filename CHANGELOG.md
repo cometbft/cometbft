@@ -223,8 +223,6 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
 - `[pubsub]` Performance improvements for the event query API
   ([\#7319](https://github.com/tendermint/tendermint/pull/7319))
 
-## v0.37.4
-
 ## v0.37.0
 
 *March 6, 2023*
@@ -363,8 +361,6 @@ See below for more details.
   ([\#9650](https://github.com/tendermint/tendermint/pull/9650))
 - `[consensus]` Save peer LastCommit correctly to achieve 50% reduction in gossiped precommits.
   ([\#9760](https://github.com/tendermint/tendermint/pull/9760))
-
-## v0.34.31
 
 ## v0.34.27
 

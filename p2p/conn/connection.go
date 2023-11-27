@@ -14,7 +14,7 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1beta1"
+	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	"github.com/cometbft/cometbft/config"
 	flow "github.com/cometbft/cometbft/internal/flowrate"
 	"github.com/cometbft/cometbft/internal/protoio"

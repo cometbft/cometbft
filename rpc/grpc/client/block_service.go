@@ -6,9 +6,8 @@ import (
 
 	"github.com/cosmos/gogoproto/grpc"
 
-	blocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v1beta1"
-	cmtproto1 "github.com/cometbft/cometbft/api/cometbft/types/v1beta1"
-	cmtproto3 "github.com/cometbft/cometbft/api/cometbft/types/v1beta3"
+	blocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v1"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -18,7 +17,7 @@ type Block struct {
 	Block   *types.Block   `json:"block"`
 }
 
-func blockFromProto(pblockID *cmtproto1.BlockID, pblock *cmtproto3.Block) (*Block, error) {
+func blockFromProto(pblockID *cmtproto.BlockID, pblock *cmtproto.Block) (*Block, error) {
 	blockID, err := types.BlockIDFromProto(pblockID)
 	if err != nil {
 		return nil, err

@@ -9,12 +9,12 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 
-	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1beta1"
+	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
+	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/state/mocks"
-	cmtstate "github.com/cometbft/cometbft/internal/state/proto"
 	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"

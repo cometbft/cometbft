@@ -1,7 +1,7 @@
 package mempool
 
 import (
-	memprotos "github.com/cometbft/cometbft/api/cometbft/mempool/v1beta1"
+	memprotos "github.com/cometbft/cometbft/api/cometbft/mempool/v1"
 	"github.com/cometbft/cometbft/types"
 )
 

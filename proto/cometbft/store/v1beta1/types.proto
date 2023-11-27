@@ -1,9 +1,0 @@
-syntax = "proto3";
-package cometbft.store.v1beta1;
-
-option go_package = "github.com/cometbft/cometbft/api/cometbft/store/v1beta1";
-
-message BlockStoreState {
-  int64 base   = 1;
-  int64 height = 2;
-}

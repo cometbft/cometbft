@@ -7,7 +7,7 @@ option go_package = "github.com/cometbft/cometbft/api/cometbft/abci/v1beta3";
 // https://github.com/cosmos/gogoproto/blob/master/extensions.md
 import "cometbft/abci/v1beta1/types.proto";
 import "cometbft/abci/v1beta2/types.proto";
-import "cometbft/types/v1beta3/params.proto";
+import "cometbft/types/v1/params.proto";
 import "cometbft/types/v1beta1/validator.proto";
 import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
@@ -44,7 +44,7 @@ message Request {
     v1beta1.RequestEcho               echo                  = 1;
     v1beta1.RequestFlush              flush                 = 2;
     v1beta2.RequestInfo               info                  = 3;
-    RequestInitChain             init_chain            = 5;
+    RequestInitChain                  init_chain            = 5;
     v1beta1.RequestQuery              query                 = 6;
     v1beta1.RequestCheckTx            check_tx              = 8;
     v1beta1.RequestCommit             commit                = 11;
@@ -52,11 +52,11 @@ message Request {
     v1beta1.RequestOfferSnapshot      offer_snapshot        = 13;
     v1beta1.RequestLoadSnapshotChunk  load_snapshot_chunk   = 14;
     v1beta1.RequestApplySnapshotChunk apply_snapshot_chunk  = 15;
-    RequestPrepareProposal       prepare_proposal      = 16;
-    RequestProcessProposal       process_proposal      = 17;
-    RequestExtendVote            extend_vote           = 18;
-    RequestVerifyVoteExtension   verify_vote_extension = 19;
-    RequestFinalizeBlock         finalize_block        = 20;
+    RequestPrepareProposal            prepare_proposal      = 16;
+    RequestProcessProposal            process_proposal      = 17;
+    RequestExtendVote                 extend_vote           = 18;
+    RequestVerifyVoteExtension        verify_vote_extension = 19;
+    RequestFinalizeBlock              finalize_block        = 20;
   }
   reserved 4, 7, 9, 10;  // SetOption, BeginBlock, DeliverTx, EndBlock
 }
@@ -65,10 +65,10 @@ message RequestInitChain {
   google.protobuf.Timestamp time = 1
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
   string                            chain_id         = 2;
-  cometbft.types.v1beta3.ConsensusParams consensus_params = 3;
-  repeated v1beta1.ValidatorUpdate validators             = 4 [(gogoproto.nullable) = false];
-  bytes                       app_state_bytes        = 5;
-  int64                       initial_height         = 6;
+  cometbft.types.v1.ConsensusParams consensus_params = 3;
+  repeated v1beta1.ValidatorUpdate validators        = 4 [(gogoproto.nullable) = false];
+  bytes                            app_state_bytes   = 5;
+  int64                            initial_height    = 6;
 }
 
 message RequestPrepareProposal {
@@ -76,19 +76,19 @@ message RequestPrepareProposal {
   int64 max_tx_bytes = 1;
   // txs is an array of transactions that will be included in a block,
   // sent to the app for possible modifications.
-  repeated bytes     txs                         = 2;
-  ExtendedCommitInfo local_last_commit           = 3 [(gogoproto.nullable) = false];
-  repeated v1beta2.Misbehavior   misbehavior          = 4 [(gogoproto.nullable) = false];
-  int64                     height               = 5;
-  google.protobuf.Timestamp time                 = 6 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
-  bytes                     next_validators_hash = 7;
+  repeated bytes     txs                            = 2;
+  ExtendedCommitInfo local_last_commit              = 3 [(gogoproto.nullable) = false];
+  repeated v1beta2.Misbehavior misbehavior          = 4 [(gogoproto.nullable) = false];
+  int64                        height               = 5;
+  google.protobuf.Timestamp    time                 = 6 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  bytes                        next_validators_hash = 7;
   // address of the public key of the validator proposing the block.
   bytes proposer_address = 8;
 }
 
 message RequestProcessProposal {
-  repeated bytes txs                  = 1;
-  CommitInfo     proposed_last_commit = 2 [(gogoproto.nullable) = false];
+  repeated bytes txs                       = 1;
+  CommitInfo     proposed_last_commit      = 2 [(gogoproto.nullable) = false];
   repeated v1beta2.Misbehavior misbehavior = 3 [(gogoproto.nullable) = false];
   // hash is the merkle root hash of the fields of the proposed block.
   bytes                     hash                 = 4;
@@ -106,11 +106,11 @@ message RequestExtendVote {
   // the height of the extended vote
   int64 height = 2;
   // info of the block that this vote may be referring to
-  google.protobuf.Timestamp time                 = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
-  repeated bytes            txs                  = 4;
-  CommitInfo                proposed_last_commit = 5 [(gogoproto.nullable) = false];
-  repeated v1beta2.Misbehavior   misbehavior          = 6 [(gogoproto.nullable) = false];
-  bytes                     next_validators_hash = 7;
+  google.protobuf.Timestamp time                    = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  repeated bytes            txs                     = 4;
+  CommitInfo                proposed_last_commit    = 5 [(gogoproto.nullable) = false];
+  repeated v1beta2.Misbehavior misbehavior          = 6 [(gogoproto.nullable) = false];
+  bytes                        next_validators_hash = 7;
   // address of the public key of the original proposer of the block.
   bytes proposer_address = 8;
 }
@@ -126,8 +126,8 @@ message RequestVerifyVoteExtension {
 }
 
 message RequestFinalizeBlock {
-  repeated bytes txs                  = 1;
-  CommitInfo     decided_last_commit  = 2 [(gogoproto.nullable) = false];
+  repeated bytes txs                       = 1;
+  CommitInfo     decided_last_commit       = 2 [(gogoproto.nullable) = false];
   repeated v1beta2.Misbehavior misbehavior = 3 [(gogoproto.nullable) = false];
   // hash is the merkle root hash of the fields of the decided block.
   bytes                     hash                 = 4;
@@ -147,36 +147,36 @@ message Response {
     v1beta1.ResponseEcho               echo                  = 2;
     v1beta1.ResponseFlush              flush                 = 3;
     v1beta1.ResponseInfo               info                  = 4;
-    ResponseInitChain             init_chain            = 6;
+    ResponseInitChain                  init_chain            = 6;
     v1beta1.ResponseQuery              query                 = 7;
-    ResponseCheckTx               check_tx              = 9;
-    ResponseCommit                commit                = 12;
+    ResponseCheckTx                    check_tx              = 9;
+    ResponseCommit                     commit                = 12;
     v1beta1.ResponseListSnapshots      list_snapshots        = 13;
     v1beta1.ResponseOfferSnapshot      offer_snapshot        = 14;
     v1beta1.ResponseLoadSnapshotChunk  load_snapshot_chunk   = 15;
     v1beta1.ResponseApplySnapshotChunk apply_snapshot_chunk  = 16;
     v1beta2.ResponsePrepareProposal    prepare_proposal      = 17;
     v1beta2.ResponseProcessProposal    process_proposal      = 18;
-    ResponseExtendVote            extend_vote           = 19;
-    ResponseVerifyVoteExtension   verify_vote_extension = 20;
-    ResponseFinalizeBlock         finalize_block        = 21;
+    ResponseExtendVote                 extend_vote           = 19;
+    ResponseVerifyVoteExtension        verify_vote_extension = 20;
+    ResponseFinalizeBlock              finalize_block        = 21;
   }
   reserved 5, 8, 10, 11;  // SetOption, BeginBlock, DeliverTx, EndBlock
 }
 
 message ResponseInitChain {
-  cometbft.types.v1beta3.ConsensusParams consensus_params = 1;
-  repeated v1beta1.ValidatorUpdate validators             = 2 [(gogoproto.nullable) = false];
-  bytes                       app_hash               = 3;
+  cometbft.types.v1.ConsensusParams consensus_params = 1;
+  repeated v1beta1.ValidatorUpdate validators        = 2 [(gogoproto.nullable) = false];
+  bytes                            app_hash          = 3;
 }
 
 message ResponseCheckTx {
-  uint32   code            = 1;
-  bytes    data            = 2;
-  string   log             = 3;  // nondeterministic
-  string   info            = 4;  // nondeterministic
-  int64    gas_wanted      = 5 [json_name = "gas_wanted"];
-  int64    gas_used        = 6 [json_name = "gas_used"];
+  uint32   code                 = 1;
+  bytes    data                 = 2;
+  string   log                  = 3;  // nondeterministic
+  string   info                 = 4;  // nondeterministic
+  int64    gas_wanted           = 5 [json_name = "gas_wanted"];
+  int64    gas_used             = 6 [json_name = "gas_used"];
   repeated v1beta2.Event events = 7
       [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
   string codespace = 8;
@@ -221,7 +221,7 @@ message ResponseFinalizeBlock {
   // a list of updates to the validator set. These will reflect the validator set at current height + 2.
   repeated v1beta1.ValidatorUpdate validator_updates = 3 [(gogoproto.nullable) = false];
   // updates to the consensus params, if any.
-  cometbft.types.v1beta3.ConsensusParams consensus_param_updates = 4;
+  cometbft.types.v1.ConsensusParams consensus_param_updates = 4;
   // app_hash is the hash of the applications' state which is used to confirm
   // that execution of the transactions was deterministic.
   // It is up to the application to decide which algorithm to use.
@@ -274,12 +274,12 @@ message ExtendedCommitInfo {
 //
 // * Its structure is equivalent to #ResponseDeliverTx which will be deprecated/deleted
 message ExecTxResult {
-  uint32   code            = 1;
-  bytes    data            = 2;
-  string   log             = 3;  // nondeterministic
-  string   info            = 4;  // nondeterministic
-  int64    gas_wanted      = 5 [json_name = "gas_wanted"];
-  int64    gas_used        = 6 [json_name = "gas_used"];
+  uint32   code                 = 1;
+  bytes    data                 = 2;
+  string   log                  = 3;  // nondeterministic
+  string   info                 = 4;  // nondeterministic
+  int64    gas_wanted           = 5 [json_name = "gas_wanted"];
+  int64    gas_used             = 6 [json_name = "gas_used"];
   repeated v1beta2.Event events = 7
       [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];  // nondeterministic
   string codespace = 8;

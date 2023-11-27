@@ -10,12 +10,12 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
-	cmtproto "github.com/cometbft/cometbft/types/proto"
 )
 
 // Evidence represents any provable malicious activity by a validator.

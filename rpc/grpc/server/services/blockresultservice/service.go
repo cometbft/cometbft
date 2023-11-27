@@ -10,7 +10,7 @@ import (
 	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
 
-	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v1beta1"
+	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v1"
 )
 
 type blockResultsService struct {

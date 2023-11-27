@@ -11,7 +11,7 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/libs/protoio"
+	"github.com/cometbft/cometbft/internal/protoio"
 	"github.com/cometbft/cometbft/p2p/conn"
 	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
 )
@@ -162,8 +162,10 @@ type MultiplexTransport struct {
 }
 
 // Test multiplexTransport for interface completeness.
-var _ Transport = (*MultiplexTransport)(nil)
-var _ transportLifecycle = (*MultiplexTransport)(nil)
+var (
+	_ Transport          = (*MultiplexTransport)(nil)
+	_ transportLifecycle = (*MultiplexTransport)(nil)
+)
 
 // NewMultiplexTransport returns a tcp connected multiplexed peer.
 func NewMultiplexTransport(
@@ -216,6 +218,11 @@ func (mt *MultiplexTransport) Dial(
 	c, err := addr.DialTimeout(mt.dialTimeout)
 	if err != nil {
 		return nil, err
+	}
+
+	if mt.mConfig.TestFuzz {
+		// so we have time to do peer handshakes and get set up.
+		c = FuzzConnAfterFromConfig(c, 10*time.Second, mt.mConfig.TestFuzzConfig)
 	}
 
 	// TODO(xla): Evaluate if we should apply filters if we explicitly dial.
@@ -395,7 +402,6 @@ func (mt *MultiplexTransport) filterConn(c net.Conn) (err error) {
 		case <-time.After(mt.filterTimeout):
 			return ErrFilterTimeout{}
 		}
-
 	}
 
 	mt.conns.Set(c, ips)
@@ -498,7 +504,6 @@ func (mt *MultiplexTransport) wrapPeer(
 	cfg peerConfig,
 	socketAddr *NetAddress,
 ) Peer {
-
 	persistent := false
 	if cfg.isPersistent != nil {
 		if cfg.outbound {

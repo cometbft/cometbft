@@ -13,7 +13,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 
 	cfg "github.com/cometbft/cometbft/config"
-	cmtnet "github.com/cometbft/cometbft/libs/net"
+	cmtnet "github.com/cometbft/cometbft/internal/net"
 	nm "github.com/cometbft/cometbft/node"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
@@ -105,13 +105,13 @@ func GetConfig(forceCreate ...bool) *cfg.Config {
 	return globalConfig
 }
 
-// StartTendermint starts a test CometBFT server in a go routine and returns when it is initialized
-func StartTendermint(app abci.Application, opts ...func(*Options)) *nm.Node {
+// StartCometBFT starts a test CometBFT server in a go routine and returns when it is initialized
+func StartCometBFT(app abci.Application, opts ...func(*Options)) *nm.Node {
 	nodeOpts := defaultOptions
 	for _, opt := range opts {
 		opt(&nodeOpts)
 	}
-	node := NewTendermint(app, &nodeOpts)
+	node := NewCometBFT(app, &nodeOpts)
 	err := node.Start()
 	if err != nil {
 		panic(err)
@@ -127,9 +127,9 @@ func StartTendermint(app abci.Application, opts ...func(*Options)) *nm.Node {
 	return node
 }
 
-// StopTendermint stops a test CometBFT server, waits until it's stopped and
+// StopCometBFT stops a test CometBFT server, waits until it's stopped and
 // cleans up test/config files.
-func StopTendermint(node *nm.Node) {
+func StopCometBFT(node *nm.Node) {
 	if err := node.Stop(); err != nil {
 		node.Logger.Error("Error when trying to stop node", "err", err)
 	}
@@ -137,8 +137,8 @@ func StopTendermint(node *nm.Node) {
 	os.RemoveAll(node.Config().RootDir)
 }
 
-// NewTendermint creates a new CometBFT server and sleeps forever
-func NewTendermint(app abci.Application, opts *Options) *nm.Node {
+// NewCometBFT creates a new CometBFT server and sleeps forever
+func NewCometBFT(app abci.Application, opts *Options) *nm.Node {
 	// Create & start node
 	config := GetConfig(opts.recreateConfig)
 	var logger log.Logger

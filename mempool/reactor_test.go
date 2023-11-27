@@ -3,6 +3,7 @@ package mempool
 import (
 	"encoding/hex"
 	"errors"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -17,7 +18,6 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/p2p/mock"
 	memproto "github.com/cometbft/cometbft/proto/tendermint/mempool"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
@@ -236,35 +236,6 @@ func TestBroadcastTxForPeerStopsWhenReactorStops(t *testing.T) {
 	leaktest.CheckTimeout(t, 10*time.Second)()
 }
 
-// TODO: This test tests that we don't panic and are able to generate new
-// PeerIDs for each peer we add. It seems as though we should be able to test
-// this in a much more direct way.
-// https://github.com/cometbft/cometbft/issues/9639
-func TestDontExhaustMaxActiveIDs(t *testing.T) {
-	config := cfg.TestConfig()
-	const N = 1
-	reactors, _ := makeAndConnectReactors(config, N)
-	defer func() {
-		for _, r := range reactors {
-			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
-			}
-		}
-	}()
-	reactor := reactors[0]
-
-	for i := 0; i < MaxActiveIDs+1; i++ {
-		peer := mock.NewPeer(nil)
-		reactor.Receive(p2p.Envelope{
-			ChannelID: MempoolChannel,
-			Src:       peer,
-			Message:   &memproto.Message{}, // This uses the wrong message type on purpose to stop the peer as in an error state in the reactor.
-		},
-		)
-		reactor.AddPeer(peer)
-	}
-}
-
 func TestReactorTxSendersLocal(t *testing.T) {
 	config := cfg.TestConfig()
 	const N = 1
@@ -363,6 +334,183 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 	require.Zero(t, len(firstReactor.txSenders))
 }
 
+func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
+	if os.Getenv("CI") != "" {
+		t.Skip("FIFO is not supposed to be guaranteed and this this is just used to evidence one of the cases where it does not happen. Hence we skip this test during CI.")
+	}
+
+	config := cfg.TestConfig()
+	reactors, _ := makeAndConnectReactors(config, 4)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				assert.NoError(t, err)
+			}
+		}
+	}()
+	for _, r := range reactors {
+		for _, peer := range r.Switch.Peers().List() {
+			peer.Set(types.PeerStateKey, peerState{1})
+		}
+	}
+
+	// Deliver the same sequence of transactions from multiple sources, in parallel.
+	txs := newUniqueTxs(200)
+	mp := reactors[0].mempool
+	for i := 0; i < 3; i++ {
+		go func() {
+			for _, tx := range txs {
+				mp.CheckTx(tx) //nolint:errcheck
+			}
+		}()
+	}
+
+	// Confirm that FIFO order was respected.
+	checkTxsInOrder(t, txs, reactors[0], 0)
+}
+
+// Test the experimental feature that limits the number of outgoing connections for gossiping
+// transactions (only non-persistent peers).
+// Note: in this test we know which gossip connections are active or not because of how the p2p
+// functions are currently implemented, which affects the order in which peers are added to the
+// mempool reactor.
+func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = 1
+	reactors, _ := makeAndConnectReactors(config, 4)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				assert.NoError(t, err)
+			}
+		}
+	}()
+	for _, r := range reactors {
+		for _, peer := range r.Switch.Peers().List() {
+			peer.Set(types.PeerStateKey, peerState{1})
+		}
+	}
+
+	// Add a bunch transactions to the first reactor.
+	txs := newUniqueTxs(100)
+	callCheckTx(t, reactors[0].mempool, txs)
+
+	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
+	// receive any tx. (The second reactor only sends transactions to the first reactor.)
+	checkTxsInMempool(t, txs, reactors[1], 0)
+	for _, r := range reactors[2:] {
+		require.Zero(t, r.mempool.Size())
+	}
+
+	// Disconnect the second reactor from the first reactor.
+	firstPeer := reactors[0].Switch.Peers().List()[0]
+	reactors[0].Switch.StopPeerGracefully(firstPeer)
+
+	// Now the third reactor should start receiving transactions from the first reactor; the fourth
+	// reactor's mempool should still be empty.
+	checkTxsInMempool(t, txs, reactors[2], 0)
+	for _, r := range reactors[3:] {
+		require.Zero(t, r.mempool.Size())
+	}
+}
+
+// Test the experimental feature that limits the number of outgoing connections for gossiping
+// transactions (only non-persistent peers).
+// Given the disconnections, no transaction should be received in duplicate.
+// Note: in this test we know which gossip connections are active or not because of how the p2p
+// functions are currently implemented, which affects the order in which peers are added to the
+// mempool reactor.
+func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = 1
+	reactors, _ := makeAndConnectReactors(config, 4)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				assert.NoError(t, err)
+			}
+		}
+	}()
+	for _, r := range reactors {
+		for _, peer := range r.Switch.Peers().List() {
+			peer.Set(types.PeerStateKey, peerState{1})
+		}
+	}
+
+	// Disconnect the second reactor from the third reactor.
+	pCon1_2 := reactors[1].Switch.Peers().List()[1]
+	reactors[1].Switch.StopPeerGracefully(pCon1_2)
+
+	// Add a bunch transactions to the first reactor.
+	txs := newUniqueTxs(100)
+	callCheckTx(t, reactors[0].mempool, txs)
+
+	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
+	// receive any tx. (The second reactor only sends transactions to the first reactor.)
+	checkTxsInOrder(t, txs, reactors[1], 0)
+	for _, r := range reactors[2:] {
+		require.Zero(t, r.mempool.Size())
+	}
+
+	// Disconnect the second reactor from the first reactor.
+	pCon0_1 := reactors[0].Switch.Peers().List()[0]
+	reactors[0].Switch.StopPeerGracefully(pCon0_1)
+
+	// Now the third reactor should start receiving transactions from the first reactor and
+	// the fourth reactor from the second
+	checkTxsInOrder(t, txs, reactors[2], 0)
+	checkTxsInOrder(t, txs, reactors[3], 0)
+}
+
+// Test the experimental feature that limits the number of outgoing connections for gossiping
+// transactions (only non-persistent peers) on a star shaped network.
+// The star center will need to deliver the transactions to each point.
+// Note: in this test we know which gossip connections are active or not because of how the p2p
+// functions are currently implemented, which affects the order in which peers are added to the
+// mempool reactor.
+func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = 1
+	reactors, _ := makeAndConnectReactorsStar(config, 0, 4)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				assert.NoError(t, err)
+			}
+		}
+	}()
+	for _, r := range reactors {
+		for _, peer := range r.Switch.Peers().List() {
+			peer.Set(types.PeerStateKey, peerState{1})
+		}
+	}
+	// Add a bunch transactions to the first reactor.
+	txs := newUniqueTxs(5)
+	callCheckTx(t, reactors[0].mempool, txs)
+
+	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
+	// receive any tx. (The second reactor only sends transactions to the first reactor.)
+	checkTxsInOrder(t, txs, reactors[0], 0)
+	checkTxsInOrder(t, txs, reactors[1], 0)
+
+	for _, r := range reactors[2:] {
+		require.Zero(t, r.mempool.Size())
+	}
+
+	// Disconnect the second reactor from the first reactor.
+	firstPeer := reactors[0].Switch.Peers().List()[0]
+	reactors[0].Switch.StopPeerGracefully(firstPeer)
+
+	// Now the third reactor should start receiving transactions from the first reactor; the fourth
+	// reactor's mempool should still be empty.
+	checkTxsInOrder(t, txs, reactors[0], 0)
+	checkTxsInOrder(t, txs, reactors[1], 0)
+	checkTxsInOrder(t, txs, reactors[2], 0)
+	for _, r := range reactors[3:] {
+		require.Zero(t, r.mempool.Size())
+	}
+}
+
 // Check that the mempool has exactly the given list of txs and, if it's not the
 // first reactor (reactorIndex == 0), then each tx has a non-empty list of senders.
 func checkTxsInMempoolAndSenders(t *testing.T, r *Reactor, txs types.Txs, reactorIndex int) {
@@ -412,15 +560,35 @@ func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switc
 		mempool, cleanup := newMempoolWithApp(cc)
 		defer cleanup()
 
-		reactors[i] = NewReactor(config.Mempool, mempool) // so we dont start the consensus states
+		reactors[i] = NewReactor(config.Mempool, mempool, false) // so we dont start the consensus states
 		reactors[i].SetLogger(logger.With("validator", i))
 	}
 
 	switches := p2p.MakeConnectedSwitches(config.P2P, n, func(i int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("MEMPOOL", reactors[i])
 		return s
-
 	}, p2p.Connect2Switches)
+	return reactors, switches
+}
+
+// connect N mempool reactors through N switches as a star centered in c
+func makeAndConnectReactorsStar(config *cfg.Config, c, n int) ([]*Reactor, []*p2p.Switch) {
+	reactors := make([]*Reactor, n)
+	logger := mempoolLogger()
+	for i := 0; i < n; i++ {
+		app := kvstore.NewInMemoryApplication()
+		cc := proxy.NewLocalClientCreator(app)
+		mempool, cleanup := newMempoolWithApp(cc)
+		defer cleanup()
+
+		reactors[i] = NewReactor(config.Mempool, mempool, false) // so we dont start the consensus states
+		reactors[i].SetLogger(logger.With("validator", i))
+	}
+
+	switches := p2p.MakeConnectedSwitches(config.P2P, n, func(i int, s *p2p.Switch) *p2p.Switch {
+		s.AddReactor("MEMPOOL", reactors[i])
+		return s
+	}, p2p.ConnectStarSwitches(c))
 	return reactors, switches
 }
 

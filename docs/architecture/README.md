@@ -47,8 +47,11 @@ numbering our ADRs from 100 onwards.
 
 ### Accepted
 
+- [ADR-101: Data companion pull API](./adr-101-data-companion-pull-api.md)
 - [ADR-104: State sync from local snapshot](./adr-104-out-of-band-state-sync.md)
 - [ADR-107: Rename protobuf versions of 0.x releases to pre-v1 betas](./adr-107-betaize-proto-versions.md)
+- [ADR-109: Reduce CometBFT Go API Surface Area](./adr-109-reduce-go-api-surface.md)
+- [ADR-111: `nop` Mempool](./adr-111-nop-mempool.md)
 
 ### Implemented
 
@@ -59,3 +62,4 @@ numbering our ADRs from 100 onwards.
 ### Rejected
 
 - [ADR-100: Data companion push API](./adr-100-data-companion-push-api.md)
+- [ADR-110: Remote mempool](./adr-110-remote-mempool.md)

@@ -75,7 +75,7 @@ Given a test configuration, the test runner has the following stages:
 
 - **Setup:** configures the Docker containers and networks, but does not start them.
 
-- **Initialization:** starts the Docker containers, performs fast sync/state sync. Accomodates for different start heights.
+- **Initialization:** starts the Docker containers, performs fast sync/state sync. Accommodates for different start heights.
 
 - **Perturbation:** adds/removes validators, restarts nodes, perturbs networking, etc - liveness and readiness checked between each operation.
 

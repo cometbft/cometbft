@@ -26,7 +26,7 @@ func TestHTTPClientMakeHTTPDialer(t *testing.T) {
 	for _, testURL := range []string{ts.URL, tsTLS.URL} {
 		u, err := newParsedURL(testURL)
 		require.NoError(t, err)
-		dialFn, err := makeHTTPDialer(testURL)
+		dialFn, err := MakeHTTPDialer(testURL)
 		require.Nil(t, err)
 
 		addr, err := dialFn(u.Scheme, u.GetHostWithPath())
@@ -69,6 +69,12 @@ func Test_parsedURL(t *testing.T) {
 			url:                  "https://example.com:8080/rpc",
 			expectedURL:          "https://example.com:8080/rpc",
 			expectedHostWithPath: "example.com:8080/rpc",
+			expectedDialAddress:  "example.com:8080",
+		},
+		"http path routed endpoint with version": {
+			url:                  "https://example.com:8080/rpc/v1",
+			expectedURL:          "https://example.com:8080/rpc/v1",
+			expectedHostWithPath: "example.com:8080/rpc/v1",
 			expectedDialAddress:  "example.com:8080",
 		},
 	}

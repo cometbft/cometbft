@@ -13,18 +13,20 @@ The minimum Go version has been bumped to [v1.21][go121].
 * The `Mempool` interface was modified on the following methods. Note that this
   interface is meant for internal use only, so you should be aware of these
   changes only if you happen to call these methods directly.
-  - `CheckTx`'s signature changed from
+    * `CheckTx`'s signature changed from
     `CheckTx(tx types.Tx, cb func(*abci.ResponseCheckTx), txInfo TxInfo) error`
     to `CheckTx(tx types.Tx) (abcicli.ReqRes, error)`.
-    - The method used to take a callback function `cb` to be applied to the ABCI
+        * The method used to take a callback function `cb` to be applied to the ABCI
     `CheckTx` response. Now `CheckTx` returns the ABCI response of type
     `abcicli.ReqRes`, on which the callback must be applied manually. For
     example:
+
       ```golang
       reqRes, err := CheckTx(tx)
       cb(reqRes.Response.GetCheckTx())
       ```
-    - The second parameter was `txInfo`, which essentially contained information
+
+        * The second parameter was `txInfo`, which essentially contained information
     about the sender of the transaction. Now that information is stored in the
     mempool reactor instead of the data structure, so it is no longer needed in
     this method.
@@ -40,6 +42,24 @@ The minimum Go version has been bumped to [v1.21][go121].
 
 * Removed the `replay` and `replay-console` subcommands
   ([\#1170](https://github.com/cometbft/cometbft/pull/1170))
+
+### RPC API
+
+* The RPC API is now versioned.
+  Although invoking methods without specifying the version is still supported for now,
+  support will be dropped in future releases and users are urged to use the versioned
+  approach.
+  For example, instead of `curl localhost:26657/block?height=5`, use
+  `curl localhost:26657/v1/block?height=5`.
+
+* The `/websocket` endpoint path is no longer configurable in the client or
+  server. Creating an RPC client now takes the form:
+
+  ```golang
+  // The WebSocket endpoint in the following example is assumed to be available
+  // at http://localhost:26657/v1/websocket
+  rpcClient, err := client.New("http://localhost:26657/v1")
+  ```
 
 ## v0.38.0
 
@@ -105,7 +125,7 @@ The main motivation is the reduction of the storage footprint.
 
 Events indexed with previous CometBFT or Tendermint Core versions, will still be transparently processed.
 There is no need to re-index the events. This function field is not exposed to queries, and was not
-visible to users. However, if you forked CometBFT and changed the indexer code directly to accomodate for this,
+visible to users. However, if you forked CometBFT and changed the indexer code directly to accommodate for this,
 this will impact your code.
 
 ## v0.37.0

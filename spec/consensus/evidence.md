@@ -4,7 +4,7 @@
 # Evidence
 
 Evidence is an important component of CometBFT's security model. Whilst the core
-consensus protocol provides correctness gaurantees for state machine replication
+consensus protocol provides correctness guarantees for state machine replication
 that can tolerate less than 1/3 failures, the evidence system looks to detect and
 gossip byzantine faults whose combined power is greater than  or equal to 1/3. It is worth noting that
 the evidence system is designed purely to detect possible attacks, gossip them,
@@ -126,11 +126,11 @@ Valid Light Client Attack Evidence must adhere to the following rules:
 
 ## Gossiping
 
-If a node verifies evidence it then broadcasts it to all peers, continously sending
+If a node verifies evidence it then broadcasts it to all peers, continuously sending
 the same evidence once every 10 seconds until the evidence is seen on chain or
 expires.
 
-## Commiting on Chain
+## Committing on Chain
 
 Evidence takes strict priority over regular transactions, thus a block is filled
 with evidence first and transactions take up the remainder of the space. To

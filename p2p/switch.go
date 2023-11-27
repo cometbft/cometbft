@@ -9,9 +9,9 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/libs/cmap"
-	"github.com/cometbft/cometbft/libs/rand"
-	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/internal/cmap"
+	"github.com/cometbft/cometbft/internal/rand"
+	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/p2p/conn"
 )
 
@@ -39,6 +39,8 @@ func MConnConfig(cfg *config.P2PConfig) conn.MConnConfig {
 	mConfig.SendRate = cfg.SendRate
 	mConfig.RecvRate = cfg.RecvRate
 	mConfig.MaxPacketMsgPayloadSize = cfg.MaxPacketMsgPayloadSize
+	mConfig.TestFuzz = cfg.TestFuzz
+	mConfig.TestFuzzConfig = cfg.TestFuzzConfig
 	return mConfig
 }
 
@@ -111,7 +113,6 @@ func NewSwitch(
 	transport Transport,
 	options ...SwitchOption,
 ) *Switch {
-
 	sw := &Switch{
 		config:               cfg,
 		reactors:             make(map[string]Reactor),

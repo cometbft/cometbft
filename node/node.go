@@ -14,15 +14,21 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
 
-	bc "github.com/cometbft/cometbft/blocksync"
 	cfg "github.com/cometbft/cometbft/config"
-	cs "github.com/cometbft/cometbft/consensus"
-	"github.com/cometbft/cometbft/evidence"
+	bc "github.com/cometbft/cometbft/internal/blocksync"
+	cs "github.com/cometbft/cometbft/internal/consensus"
+	"github.com/cometbft/cometbft/internal/evidence"
 	"github.com/cometbft/cometbft/light"
 
+	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
+	"github.com/cometbft/cometbft/internal/service"
+	sm "github.com/cometbft/cometbft/internal/state"
+	"github.com/cometbft/cometbft/internal/state/indexer"
+	"github.com/cometbft/cometbft/internal/state/txindex"
+	"github.com/cometbft/cometbft/internal/state/txindex/null"
+	"github.com/cometbft/cometbft/internal/statesync"
+	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
-	"github.com/cometbft/cometbft/libs/service"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/pex"
@@ -31,12 +37,6 @@ import (
 	grpcserver "github.com/cometbft/cometbft/rpc/grpc/server"
 	grpcprivserver "github.com/cometbft/cometbft/rpc/grpc/server/privileged"
 	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/state/indexer"
-	"github.com/cometbft/cometbft/state/txindex"
-	"github.com/cometbft/cometbft/state/txindex/null"
-	"github.com/cometbft/cometbft/statesync"
-	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
@@ -67,8 +67,8 @@ type Node struct {
 	stateStore        sm.Store
 	blockStore        *store.BlockStore // store the blockchain to disk
 	pruner            *sm.Pruner
-	bcReactor         p2p.Reactor // for block-syncing
-	mempoolReactor    p2p.Reactor // for gossipping transactions
+	bcReactor         p2p.Reactor        // for block-syncing
+	mempoolReactor    waitSyncP2PReactor // for gossipping transactions
 	mempool           mempl.Mempool
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
@@ -85,6 +85,12 @@ type Node struct {
 	indexerService    *txindex.IndexerService
 	prometheusSrv     *http.Server
 	pprofSrv          *http.Server
+}
+
+type waitSyncP2PReactor interface {
+	p2p.Reactor
+	// required by RPC service
+	WaitSync() bool
 }
 
 // Option sets a parameter for the node.
@@ -369,13 +375,12 @@ func NewNode(ctx context.Context,
 	// Determine whether we should do block sync. This must happen after the handshake, since the
 	// app may modify the validator set, specifying ourself as the only validator.
 	blockSync := !onlyValidatorIsUs(state, pubKey)
+	waitSync := stateSync || blockSync
 
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
 
-	// Make MempoolReactor
-	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, memplMetrics, logger)
+	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, waitSync, memplMetrics, logger)
 
-	// Make Evidence Reactor
 	evidenceReactor, evidencePool, err := createEvidenceReactor(config, dbProvider, stateStore, blockStore, logger)
 	if err != nil {
 		return nil, err
@@ -413,16 +418,15 @@ func NewNode(ctx context.Context,
 			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s; expected state store height to be %v", err, state.LastBlockHeight))
 		}
 	}
-	// Make BlocksyncReactor. Don't start block sync if we're doing a state sync first.
+	// Don't start block sync if we're doing a state sync first.
 	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, logger, bsMetrics, offlineStateSyncHeight)
 	if err != nil {
 		return nil, fmt.Errorf("could not create blocksync reactor: %w", err)
 	}
 
-	// Make ConsensusReactor
 	consensusReactor, consensusState := createConsensusReactor(
 		config, state, blockExec, blockStore, mempool, evidencePool,
-		privValidator, csMetrics, stateSync || blockSync, eventBus, consensusLogger, offlineStateSyncHeight,
+		privValidator, csMetrics, waitSync, eventBus, consensusLogger, offlineStateSyncHeight,
 	)
 
 	err = stateStore.SetOfflineStateSyncHeight(0)
@@ -446,10 +450,8 @@ func NewNode(ctx context.Context,
 		return nil, err
 	}
 
-	// Setup Transport.
 	transport, peerFilters := createTransport(config, nodeInfo, nodeKey, proxyApp)
 
-	// Setup Switch.
 	p2pLogger := logger.With("module", "p2p")
 	sw := createSwitch(
 		config, transport, p2pMetrics, peerFilters, mempoolReactor, bcReactor,
@@ -698,6 +700,7 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 		TxIndexer:        n.txIndexer,
 		BlockIndexer:     n.blockIndexer,
 		ConsensusReactor: n.consensusReactor,
+		MempoolReactor:   n.mempoolReactor,
 		EventBus:         n.eventBus,
 		Mempool:          n.mempool,
 
@@ -753,6 +756,7 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 		)
 		wm.SetLogger(wmLogger)
 		mux.HandleFunc("/websocket", wm.WebsocketHandler)
+		mux.HandleFunc("/v1/websocket", wm.WebsocketHandler)
 		rpcserver.RegisterRPCFuncs(mux, routes, rpcLogger)
 		listener, err := rpcserver.Listen(
 			listenAddr,
@@ -983,7 +987,7 @@ func makeNodeInfo(
 		),
 		DefaultNodeID: nodeKey.ID(),
 		Network:       genDoc.ChainID,
-		Version:       version.TMCoreSemVer,
+		Version:       version.CMTSemVer,
 		Channels: []byte{
 			bc.BlocksyncChannel,
 			cs.StateChannel, cs.DataChannel, cs.VoteChannel, cs.VoteSetBitsChannel,

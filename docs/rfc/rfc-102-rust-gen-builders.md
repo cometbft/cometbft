@@ -61,7 +61,7 @@ struct initializer or matching syntax where all defined struct fields must be
 present. If more fields are later added to the message definition without
 changing its package name, and the generated struct type is updated, such
 usages will fail to compile. This is not the case in Go, where field-keyed
-struct initializers are allowed to omit fields, which then get initalized to
+struct initializers are allowed to omit fields, which then get initialized to
 the zero value (which conveniently corresponds to the protobuf specification
 for optional fields).
 

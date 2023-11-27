@@ -1,4 +1,4 @@
-# Light Client Verificaiton
+# Light Client Verification
 
 #### **[LCV-FUNC-VERIFYCOMMITLIGHT.1]**
 

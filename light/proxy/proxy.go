@@ -6,8 +6,8 @@ import (
 	"net"
 	"net/http"
 
+	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
 	"github.com/cometbft/cometbft/light"
 	lrpc "github.com/cometbft/cometbft/light/rpc"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
@@ -32,7 +32,7 @@ func NewProxy(
 	logger log.Logger,
 	opts ...lrpc.Option,
 ) (*Proxy, error) {
-	rpcClient, err := rpchttp.NewWithTimeout(providerAddr, "/websocket", uint(config.WriteTimeout.Seconds()))
+	rpcClient, err := rpchttp.NewWithTimeout(providerAddr, uint(config.WriteTimeout.Seconds()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create http client for %s: %w", providerAddr, err)
 	}
@@ -104,6 +104,7 @@ func (p *Proxy) listen() (net.Listener, *http.ServeMux, error) {
 	)
 	wm.SetLogger(wmLogger)
 	mux.HandleFunc("/websocket", wm.WebsocketHandler)
+	mux.HandleFunc("/v1/websocket", wm.WebsocketHandler)
 
 	// 3) Start a client.
 	if !p.Client.IsRunning() {

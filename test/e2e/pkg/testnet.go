@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"math/rand"
 	"net"
 	"os"
@@ -384,10 +383,8 @@ func (t Testnet) Validate() error {
 }
 
 func (t Testnet) validateZones(nodes []*Node) error {
-	latencyFile := filepath.Join(t.Dir, "../../latency/aws-latencies.csv")
-	zoneMatrix, err := loadZoneLatenciesMatrix(latencyFile)
-	fileNotFoundErr := errors.Is(err, fs.ErrNotExist)
-	if !fileNotFoundErr && err != nil {
+	zoneMatrix, err := loadZoneLatenciesMatrix()
+	if err != nil {
 		return err
 	}
 
@@ -404,13 +401,9 @@ func (t Testnet) validateZones(nodes []*Node) error {
 			nodesWithoutZone = append(nodesWithoutZone, node.Name)
 			continue
 		}
-		if fileNotFoundErr {
-			return fmt.Errorf("node %s has zone set to %s but zone-latencies matrix file was not found in %s",
-				node.Name, string(node.Zone), latencyFile)
-		}
 		if !slices.Contains(zones, node.Zone) {
-			return fmt.Errorf("invalid zone %s for node %s, not present in zone-latencies matrix file %s",
-				string(node.Zone), node.Name, latencyFile)
+			return fmt.Errorf("invalid zone %s for node %s, not present in zone-latencies matrix",
+				string(node.Zone), node.Name)
 		}
 	}
 
@@ -732,8 +725,11 @@ func (g *ipGenerator) Next() net.IP {
 	return ip
 }
 
-func loadZoneLatenciesMatrix(filePath string) (map[ZoneID][]uint32, error) {
-	records, err := readCsvFile(filePath)
+//go:embed latency/aws-latencies.csv
+var awsLatenciesMatrixCsvContent string
+
+func loadZoneLatenciesMatrix() (map[ZoneID][]uint32, error) {
+	records, err := parseCsv(awsLatenciesMatrixCsvContent)
 	if err != nil {
 		return nil, err
 	}
@@ -762,14 +758,8 @@ func (e ErrInvalidZoneID) Error() string {
 	return fmt.Sprintf("invalid zone id (%s): %v", e.ZoneID, e.Err)
 }
 
-func readCsvFile(filePath string) ([][]string, error) {
-	f, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	csvReader := csv.NewReader(f)
+func parseCsv(csvString string) ([][]string, error) {
+	csvReader := csv.NewReader(strings.NewReader(csvString))
 	csvReader.Comment = '#'
 	records, err := csvReader.ReadAll()
 	if err != nil {

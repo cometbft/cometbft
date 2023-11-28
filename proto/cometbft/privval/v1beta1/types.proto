@@ -7,15 +7,23 @@ import "gogoproto/gogo.proto";
 
 option go_package = "github.com/cometbft/cometbft/api/cometbft/privval/v1beta1";
 
+// Errors is a list of error codes that can be returned by the remote signer.
 enum Errors {
+  // Unknown error
   ERRORS_UNKNOWN             = 0;
+  // Unexpected response
   ERRORS_UNEXPECTED_RESPONSE = 1;
+  // Connection lost
   ERRORS_NO_CONNECTION       = 2;
+  // Connection timeout
   ERRORS_CONNECTION_TIMEOUT  = 3;
+  // Read timeout
   ERRORS_READ_TIMEOUT        = 4;
+  // Write timeout
   ERRORS_WRITE_TIMEOUT       = 5;
 }
 
+// A service for broadcasting transactions.
 message RemoteSignerError {
   int32  code        = 1;
   string description = 2;
@@ -62,7 +70,9 @@ message PingRequest {}
 // PingResponse is a response to confirm that the connection is alive.
 message PingResponse {}
 
+// Message is an abstract message to/from the remote signer.
 message Message {
+  // Sum of all possible messages.
   oneof sum {
     PubKeyRequest          pub_key_request          = 1;
     PubKeyResponse         pub_key_response         = 2;

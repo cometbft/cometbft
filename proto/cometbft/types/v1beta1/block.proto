@@ -7,6 +7,7 @@ import "gogoproto/gogo.proto";
 import "cometbft/types/v1beta1/types.proto";
 import "cometbft/types/v1beta1/evidence.proto";
 
+// Block defines the structure of a block in the CometBFT blockchain.
 message Block {
   Header                         header      = 1 [(gogoproto.nullable) = false];
   Data                           data        = 2 [(gogoproto.nullable) = false];

@@ -32,16 +32,19 @@ message ConsensusParamsInfo {
   int64                                  last_height_changed = 2;
 }
 
+// ABCIResponsesInfo retains the responses of the ABCI calls during block processing.
 message ABCIResponsesInfo {
   ABCIResponses abci_responses = 1;
   int64         height         = 2;
 }
 
+// Version is a message for storing versioning information.
 message Version {
   cometbft.version.v1.Consensus consensus = 1 [(gogoproto.nullable) = false];
   string                        software  = 2;
 }
 
+// State represents the state of the blockchain.
 message State {
   Version version = 1 [(gogoproto.nullable) = false];
 

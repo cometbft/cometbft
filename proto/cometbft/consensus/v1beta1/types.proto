@@ -77,7 +77,9 @@ message VoteSetBits {
   cometbft.libs.bits.v1.BitArray       votes    = 5 [(gogoproto.nullable) = false];
 }
 
+// Message is an abstract consensus message.
 message Message {
+  // Sum of all possible messages.
   oneof sum {
     NewRoundStep  new_round_step  = 1;
     NewValidBlock new_valid_block = 2;

@@ -17,7 +17,9 @@ import "google/protobuf/timestamp.proto";
 //----------------------------------------
 // Request types
 
+// Request represents a request to the ABCI application.
 message Request {
+  // Sum of all possible messages.
   oneof value {
     v1beta1.RequestEcho               echo                 = 1;
     v1beta1.RequestFlush              flush                = 2;
@@ -39,6 +41,7 @@ message Request {
   reserved 4;
 }
 
+// RequestInfo is a request for the ABCI application version.
 message RequestInfo {
   string version       = 1;
   uint64 block_version = 2;
@@ -46,6 +49,7 @@ message RequestInfo {
   string abci_version  = 4;
 }
 
+// RequestInitChain is a request to initialize the blockchain.
 message RequestInitChain {
   google.protobuf.Timestamp time = 1
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
@@ -56,6 +60,7 @@ message RequestInitChain {
   int64                       initial_height         = 6;
 }
 
+// RequestBeginBlock indicates the beginning of commiting the block.
 message RequestBeginBlock {
   bytes                    hash                 = 1;
   cometbft.types.v1beta1.Header header               = 2 [(gogoproto.nullable) = false];
@@ -63,6 +68,8 @@ message RequestBeginBlock {
   repeated Misbehavior     byzantine_validators = 4 [(gogoproto.nullable) = false];
 }
 
+// RequestPrepareProposal is a request for the ABCI application to prepare a new
+// block proposal.
 message RequestPrepareProposal {
   // the modified transactions cannot exceed this size.
   int64 max_tx_bytes = 1;
@@ -78,6 +85,7 @@ message RequestPrepareProposal {
   bytes proposer_address = 8;
 }
 
+// RequestProcessProposal is a request for the ABCI application to process proposal.
 message RequestProcessProposal {
   repeated bytes       txs                  = 1;
   CommitInfo           proposed_last_commit = 2 [(gogoproto.nullable) = false];
@@ -94,7 +102,9 @@ message RequestProcessProposal {
 //----------------------------------------
 // Response types
 
+// Response represents a response from the ABCI application.
 message Response {
+  // Sum of all possible messages.
   oneof value {
     v1beta1.ResponseException          exception            = 1;
     v1beta1.ResponseEcho               echo                 = 2;
@@ -117,17 +127,22 @@ message Response {
   reserved 5;
 }
 
+// ResponseInitChain contains the ABCI application's hash and updates to the
+// validator set and/or the consensus params, if any.
 message ResponseInitChain {
   cometbft.types.v1beta2.ConsensusParams consensus_params = 1;
   repeated v1beta1.ValidatorUpdate validators             = 2 [(gogoproto.nullable) = false];
   bytes                       app_hash               = 3;
 }
 
+// ResponseBeginBlock contains a list of block-level events.
 message ResponseBeginBlock {
   repeated Event events = 1
       [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
 }
 
+// ResponseCheckTx shows if the transaction was deemed valid by the ABCI
+// application.
 message ResponseCheckTx {
   uint32         code       = 1;
   bytes          data       = 2;
@@ -146,6 +161,8 @@ message ResponseCheckTx {
   string mempool_error = 11;
 }
 
+// ResponseDeliverTx contains a result of committing the given transaction and a
+// list of events.
 message ResponseDeliverTx {
   uint32         code       = 1;
   bytes          data       = 2;
@@ -160,6 +177,7 @@ message ResponseDeliverTx {
   string codespace = 8;
 }
 
+// ResponseEndBlock contains updates to consensus params and/or validator set changes, if any.
 message ResponseEndBlock {
   repeated v1beta1.ValidatorUpdate       validator_updates       = 1 [(gogoproto.nullable) = false];
   cometbft.types.v1beta2.ConsensusParams consensus_param_updates = 2;
@@ -167,16 +185,22 @@ message ResponseEndBlock {
       [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
 }
 
+// ResponsePrepareProposal contains the list of transactions that will be included in the proposal.
 message ResponsePrepareProposal {
   repeated bytes txs = 1;
 }
 
+// ResponseProcessProposal contains the result of processing a proposal.
 message ResponseProcessProposal {
   ProposalStatus status = 1;
 
+  // The status.
   enum ProposalStatus {
+    // Unknown
     UNKNOWN = 0;
+    // Accepted
     ACCEPT  = 1;
+    // Rejected
     REJECT  = 2;
   }
 }
@@ -184,6 +208,7 @@ message ResponseProcessProposal {
 //----------------------------------------
 // Misc.
 
+// CommitInfo contains votes for the particular round.
 message CommitInfo {
   int32    round             = 1;
   repeated v1beta1.VoteInfo votes = 2 [(gogoproto.nullable) = false];
@@ -223,6 +248,7 @@ message EventAttribute {
 //----------------------------------------
 // Blockchain Types
 
+// ExtendedVoteInfo extends VoteInfo with the vote extentions (non-deterministic).
 message ExtendedVoteInfo {
   // The validator that sent the vote.
   v1beta1.Validator validator = 1 [(gogoproto.nullable) = false];
@@ -232,12 +258,17 @@ message ExtendedVoteInfo {
   bytes vote_extension = 3;
 }
 
+// The type of misbehavior committed by a validator.
 enum MisbehaviorType {
+  // Unknown
   UNKNOWN             = 0;
+  // Duplicate vote
   DUPLICATE_VOTE      = 1;
+  // Light client attack
   LIGHT_CLIENT_ATTACK = 2;
 }
 
+// Misbehavior is a type of misbehavior committed by a validator.
 message Misbehavior {
   MisbehaviorType type = 1;
   // The offending validator
@@ -256,23 +287,40 @@ message Misbehavior {
 //----------------------------------------
 // Service Definition
 
+// ABCIApplication is a service for an ABCI application.
 service ABCIApplication {
+  // Echo returns back the same message it is sent.
   rpc Echo(v1beta1.RequestEcho) returns (v1beta1.ResponseEcho);
+  // Flush flushes the write buffer.
   rpc Flush(v1beta1.RequestFlush) returns (v1beta1.ResponseFlush);
+  // Info returns information about the application state.
   rpc Info(RequestInfo) returns (v1beta1.ResponseInfo);
+  // DeliverTx applies a transaction.
   rpc DeliverTx(v1beta1.RequestDeliverTx) returns (ResponseDeliverTx);
+  // CheckTx validates a transaction.
   rpc CheckTx(v1beta1.RequestCheckTx) returns (ResponseCheckTx);
+  // Query queries the application state.
   rpc Query(v1beta1.RequestQuery) returns (v1beta1.ResponseQuery);
+  // Commit commits a block of transactions.
   rpc Commit(v1beta1.RequestCommit) returns (v1beta1.ResponseCommit);
+  // InitChain initializes the blockchain.
   rpc InitChain(RequestInitChain) returns (ResponseInitChain);
+  // BeginBlock signals the beginning of a block.
   rpc BeginBlock(RequestBeginBlock) returns (ResponseBeginBlock);
+  // EndBlock signals the end of a block, returns changes to the validator set.
   rpc EndBlock(v1beta1.RequestEndBlock) returns (ResponseEndBlock);
+  // ListSnapshots lists all the available snapshots.
   rpc ListSnapshots(v1beta1.RequestListSnapshots) returns (v1beta1.ResponseListSnapshots);
+  // OfferSnapshot sends a snapshot offer.
   rpc OfferSnapshot(v1beta1.RequestOfferSnapshot) returns (v1beta1.ResponseOfferSnapshot);
+  // LoadSnapshotChunk returns a chunk of snapshot.
   rpc LoadSnapshotChunk(v1beta1.RequestLoadSnapshotChunk)
       returns (v1beta1.ResponseLoadSnapshotChunk);
+  // ApplySnapshotChunk applies a chunk of snapshot.
   rpc ApplySnapshotChunk(v1beta1.RequestApplySnapshotChunk)
       returns (v1beta1.ResponseApplySnapshotChunk);
+  // PrepareProposal returns a proposal for the next block.
   rpc PrepareProposal(RequestPrepareProposal) returns (ResponsePrepareProposal);
+  // ProcessProposal validates a proposal.
   rpc ProcessProposal(RequestProcessProposal) returns (ResponseProcessProposal);
 }

@@ -7,6 +7,7 @@ import "gogoproto/gogo.proto";
 
 option go_package = "github.com/cometbft/cometbft/api/cometbft/privval/v1";
 
+// remotesignererror is returned when the remote signer fails.
 message RemoteSignerError {
   int32  code        = 1;
   string description = 2;
@@ -53,7 +54,9 @@ message PingRequest {}
 // PingResponse is a response to confirm that the connection is alive.
 message PingResponse {}
 
+// Message is an abstract message to/from the remote signer.
 message Message {
+  // Sum of all possible messages.
   oneof sum {
     PubKeyRequest          pub_key_request          = 1;
     PubKeyResponse         pub_key_response         = 2;

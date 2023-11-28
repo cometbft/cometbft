@@ -8,7 +8,9 @@ import "cometbft/types/v1/validator.proto";
 import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
 
+// Evidence is a generic type for wrapping evidence of misbehavior by a validator.
 message Evidence {
+  // The type of evidence.
   oneof sum {
     DuplicateVoteEvidence     duplicate_vote_evidence      = 1;
     LightClientAttackEvidence light_client_attack_evidence = 2;
@@ -33,6 +35,7 @@ message LightClientAttackEvidence {
   google.protobuf.Timestamp timestamp            = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
 }
 
+// EvidenceList is a list of evidence.
 message EvidenceList {
   repeated Evidence evidence = 1 [(gogoproto.nullable) = false];
 }

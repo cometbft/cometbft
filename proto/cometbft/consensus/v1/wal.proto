@@ -31,7 +31,9 @@ message EndHeight {
   int64 height = 1;
 }
 
+// WALMessage describes a consensus WAL (Write Ahead Log) entry.
 message WALMessage {
+  // Sum of all possible messages.
   oneof sum {
     cometbft.types.v1.EventDataRoundState event_data_round_state = 1;
     MsgInfo                               msg_info               = 2;

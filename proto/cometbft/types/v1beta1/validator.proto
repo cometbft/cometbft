@@ -14,11 +14,11 @@ enum BlockIDFlag {
   // Indicates an error condition
   BLOCK_ID_FLAG_UNKNOWN = 0 [(gogoproto.enumvalue_customname) = "BlockIDFlagUnknown"];
   // The vote was not received
-  BLOCK_ID_FLAG_ABSENT  = 1 [(gogoproto.enumvalue_customname) = "BlockIDFlagAbsent"];
+  BLOCK_ID_FLAG_ABSENT = 1 [(gogoproto.enumvalue_customname) = "BlockIDFlagAbsent"];
   // Voted for the block that received the majority
-  BLOCK_ID_FLAG_COMMIT  = 2 [(gogoproto.enumvalue_customname) = "BlockIDFlagCommit"];
+  BLOCK_ID_FLAG_COMMIT = 2 [(gogoproto.enumvalue_customname) = "BlockIDFlagCommit"];
   // Voted for nil
-  BLOCK_ID_FLAG_NIL     = 3 [(gogoproto.enumvalue_customname) = "BlockIDFlagNil"];
+  BLOCK_ID_FLAG_NIL = 3 [(gogoproto.enumvalue_customname) = "BlockIDFlagNil"];
 }
 
 // ValidatorSet defines a set of validators.

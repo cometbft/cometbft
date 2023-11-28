@@ -228,7 +228,7 @@ message ResponseExtendVote {
   bytes vote_extension = 1;
 }
 
-// ResponseVerifyVoteExtension is the result of verifying a vote extension. 
+// ResponseVerifyVoteExtension is the result of verifying a vote extension.
 message ResponseVerifyVoteExtension {
   VerifyStatus status = 1;
 
@@ -237,7 +237,7 @@ message ResponseVerifyVoteExtension {
     // Unknown
     UNKNOWN = 0;
     // Accepted
-    ACCEPT  = 1;
+    ACCEPT = 1;
     // Rejecting the vote extension will reject the entire precommit by the sender.
     // Incorrectly implementing this thus has liveness implications as it may affect
     // CometBFT's ability to receive 2/3+ valid votes to finalize the block.

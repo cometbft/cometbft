@@ -11,7 +11,7 @@ option (gogoproto.equal_all) = true;
 // ConsensusParams contains consensus critical parameters that determine the
 // validity of blocks.
 message ConsensusParams {
-  BlockParams        block     = 1;
+  BlockParams             block     = 1;
   v1beta1.EvidenceParams  evidence  = 2;
   v1beta1.ValidatorParams validator = 3;
   v1beta1.VersionParams   version   = 4;

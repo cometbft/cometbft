@@ -10,17 +10,17 @@ option go_package = "github.com/cometbft/cometbft/api/cometbft/privval/v1beta1";
 // Errors is a list of error codes that can be returned by the remote signer.
 enum Errors {
   // Unknown error
-  ERRORS_UNKNOWN             = 0;
+  ERRORS_UNKNOWN = 0;
   // Unexpected response
   ERRORS_UNEXPECTED_RESPONSE = 1;
   // Connection lost
-  ERRORS_NO_CONNECTION       = 2;
+  ERRORS_NO_CONNECTION = 2;
   // Connection timeout
-  ERRORS_CONNECTION_TIMEOUT  = 3;
+  ERRORS_CONNECTION_TIMEOUT = 3;
   // Read timeout
-  ERRORS_READ_TIMEOUT        = 4;
+  ERRORS_READ_TIMEOUT = 4;
   // Write timeout
-  ERRORS_WRITE_TIMEOUT       = 5;
+  ERRORS_WRITE_TIMEOUT = 5;
 }
 
 // A service for broadcasting transactions.

@@ -93,7 +93,7 @@ message RequestBeginBlock {
 // Type of the transaction check request.
 enum CheckTxType {
   // New
-  NEW     = 0 [(gogoproto.enumvalue_customname) = "New"];
+  NEW = 0 [(gogoproto.enumvalue_customname) = "New"];
   // Recheck (2nd, 3rd, etc.)
   RECHECK = 1 [(gogoproto.enumvalue_customname) = "Recheck"];
 }
@@ -296,16 +296,16 @@ message ResponseOfferSnapshot {
   // The status code.
   enum Result {
     // Unknown result, abort all snapshot restoration
-    UNKNOWN       = 0;
-      // Snapshot accepted, apply chunks
-    ACCEPT        = 1;
-      // Abort all snapshot restoration
-    ABORT         = 2;
-      // Reject this specific snapshot, try others
-    REJECT        = 3;
-      // Reject all snapshots of this format, try others
+    UNKNOWN = 0;
+    // Snapshot accepted, apply chunks
+    ACCEPT = 1;
+    // Abort all snapshot restoration
+    ABORT = 2;
+    // Reject this specific snapshot, try others
+    REJECT = 3;
+    // Reject all snapshots of this format, try others
     REJECT_FORMAT = 4;
-      // Reject all snapshots from the sender(s), try others
+    // Reject all snapshots from the sender(s), try others
     REJECT_SENDER = 5;
   }
 }
@@ -324,16 +324,16 @@ message ResponseApplySnapshotChunk {
   // The status code.
   enum Result {
     // Unknown result, abort all snapshot restoration
-    UNKNOWN         = 0;
-      // Chunk successfully accepted
-    ACCEPT          = 1;
-      // Abort all snapshot restoration
-    ABORT           = 2;
-      // Retry chunk (combine with refetch and reject)
-    RETRY           = 3;
-      // Retry snapshot (combine with refetch and reject)
-    RETRY_SNAPSHOT  = 4;
-      // Reject this snapshot, try others
+    UNKNOWN = 0;
+    // Chunk successfully accepted
+    ACCEPT = 1;
+    // Abort all snapshot restoration
+    ABORT = 2;
+    // Retry chunk (combine with refetch and reject)
+    RETRY = 3;
+    // Retry snapshot (combine with refetch and reject)
+    RETRY_SNAPSHOT = 4;
+    // Reject this snapshot, try others
     REJECT_SNAPSHOT = 5;
   }
 }
@@ -417,9 +417,9 @@ message VoteInfo {
 // The type of evidence.
 enum EvidenceType {
   // Unknown
-  UNKNOWN             = 0;
+  UNKNOWN = 0;
   // Duplicate vote
-  DUPLICATE_VOTE      = 1;
+  DUPLICATE_VOTE = 1;
   // Light client attack
   LIGHT_CLIENT_ATTACK = 2;
 }

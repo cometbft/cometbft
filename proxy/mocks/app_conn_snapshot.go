@@ -19,6 +19,10 @@ type AppConnSnapshot struct {
 func (_m *AppConnSnapshot) ApplySnapshotChunk(_a0 context.Context, _a1 *v1.ApplySnapshotChunkRequest) (*v1.ApplySnapshotChunkResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for ApplySnapshotChunk")
+	}
+
 	var r0 *v1.ApplySnapshotChunkResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.ApplySnapshotChunkRequest) (*v1.ApplySnapshotChunkResponse, error)); ok {
@@ -45,6 +49,10 @@ func (_m *AppConnSnapshot) ApplySnapshotChunk(_a0 context.Context, _a1 *v1.Apply
 func (_m *AppConnSnapshot) Error() error {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for Error")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
 		r0 = rf()
@@ -58,6 +66,10 @@ func (_m *AppConnSnapshot) Error() error {
 // ListSnapshots provides a mock function with given fields: _a0, _a1
 func (_m *AppConnSnapshot) ListSnapshots(_a0 context.Context, _a1 *v1.ListSnapshotsRequest) (*v1.ListSnapshotsResponse, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListSnapshots")
+	}
 
 	var r0 *v1.ListSnapshotsResponse
 	var r1 error
@@ -85,6 +97,10 @@ func (_m *AppConnSnapshot) ListSnapshots(_a0 context.Context, _a1 *v1.ListSnapsh
 func (_m *AppConnSnapshot) LoadSnapshotChunk(_a0 context.Context, _a1 *v1.LoadSnapshotChunkRequest) (*v1.LoadSnapshotChunkResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for LoadSnapshotChunk")
+	}
+
 	var r0 *v1.LoadSnapshotChunkResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.LoadSnapshotChunkRequest) (*v1.LoadSnapshotChunkResponse, error)); ok {
@@ -110,6 +126,10 @@ func (_m *AppConnSnapshot) LoadSnapshotChunk(_a0 context.Context, _a1 *v1.LoadSn
 // OfferSnapshot provides a mock function with given fields: _a0, _a1
 func (_m *AppConnSnapshot) OfferSnapshot(_a0 context.Context, _a1 *v1.OfferSnapshotRequest) (*v1.OfferSnapshotResponse, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for OfferSnapshot")
+	}
 
 	var r0 *v1.OfferSnapshotResponse
 	var r1 error

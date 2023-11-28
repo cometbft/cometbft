@@ -14,9 +14,9 @@ var VersionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Show version info",
 	Run: func(cmd *cobra.Command, args []string) {
-		cmtVersion := version.TMCoreSemVer
-		if version.TMGitCommitHash != "" {
-			cmtVersion += "+" + version.TMGitCommitHash
+		cmtVersion := version.CMTSemVer
+		if version.CMTGitCommitHash != "" {
+			cmtVersion += "+" + version.CMTGitCommitHash
 		}
 
 		if verbose {

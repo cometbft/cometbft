@@ -158,7 +158,7 @@ func (s *lightClientStateProvider) State(ctx context.Context, height uint64) (sm
 
 	state.Version = cmtstate.Version{
 		Consensus: currentLightBlock.Version,
-		Software:  version.TMCoreSemVer,
+		Software:  version.CMTSemVer,
 	}
 	state.LastBlockHeight = lastLightBlock.Height
 	state.LastBlockTime = lastLightBlock.Time

@@ -19,6 +19,10 @@ type AppConnConsensus struct {
 func (_m *AppConnConsensus) Commit(_a0 context.Context) (*v1.CommitResponse, error) {
 	ret := _m.Called(_a0)
 
+	if len(ret) == 0 {
+		panic("no return value specified for Commit")
+	}
+
 	var r0 *v1.CommitResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context) (*v1.CommitResponse, error)); ok {
@@ -45,6 +49,10 @@ func (_m *AppConnConsensus) Commit(_a0 context.Context) (*v1.CommitResponse, err
 func (_m *AppConnConsensus) Error() error {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for Error")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
 		r0 = rf()
@@ -58,6 +66,10 @@ func (_m *AppConnConsensus) Error() error {
 // ExtendVote provides a mock function with given fields: _a0, _a1
 func (_m *AppConnConsensus) ExtendVote(_a0 context.Context, _a1 *v1.ExtendVoteRequest) (*v1.ExtendVoteResponse, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ExtendVote")
+	}
 
 	var r0 *v1.ExtendVoteResponse
 	var r1 error
@@ -85,6 +97,10 @@ func (_m *AppConnConsensus) ExtendVote(_a0 context.Context, _a1 *v1.ExtendVoteRe
 func (_m *AppConnConsensus) FinalizeBlock(_a0 context.Context, _a1 *v1.FinalizeBlockRequest) (*v1.FinalizeBlockResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for FinalizeBlock")
+	}
+
 	var r0 *v1.FinalizeBlockResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.FinalizeBlockRequest) (*v1.FinalizeBlockResponse, error)); ok {
@@ -110,6 +126,10 @@ func (_m *AppConnConsensus) FinalizeBlock(_a0 context.Context, _a1 *v1.FinalizeB
 // InitChain provides a mock function with given fields: _a0, _a1
 func (_m *AppConnConsensus) InitChain(_a0 context.Context, _a1 *v1.InitChainRequest) (*v1.InitChainResponse, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for InitChain")
+	}
 
 	var r0 *v1.InitChainResponse
 	var r1 error
@@ -137,6 +157,10 @@ func (_m *AppConnConsensus) InitChain(_a0 context.Context, _a1 *v1.InitChainRequ
 func (_m *AppConnConsensus) PrepareProposal(_a0 context.Context, _a1 *v1.PrepareProposalRequest) (*v1.PrepareProposalResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for PrepareProposal")
+	}
+
 	var r0 *v1.PrepareProposalResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.PrepareProposalRequest) (*v1.PrepareProposalResponse, error)); ok {
@@ -163,6 +187,10 @@ func (_m *AppConnConsensus) PrepareProposal(_a0 context.Context, _a1 *v1.Prepare
 func (_m *AppConnConsensus) ProcessProposal(_a0 context.Context, _a1 *v1.ProcessProposalRequest) (*v1.ProcessProposalResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for ProcessProposal")
+	}
+
 	var r0 *v1.ProcessProposalResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.ProcessProposalRequest) (*v1.ProcessProposalResponse, error)); ok {
@@ -188,6 +216,10 @@ func (_m *AppConnConsensus) ProcessProposal(_a0 context.Context, _a1 *v1.Process
 // VerifyVoteExtension provides a mock function with given fields: _a0, _a1
 func (_m *AppConnConsensus) VerifyVoteExtension(_a0 context.Context, _a1 *v1.VerifyVoteExtensionRequest) (*v1.VerifyVoteExtensionResponse, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for VerifyVoteExtension")
+	}
 
 	var r0 *v1.VerifyVoteExtensionResponse
 	var r1 error

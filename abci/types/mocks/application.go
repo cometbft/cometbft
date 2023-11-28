@@ -19,6 +19,10 @@ type Application struct {
 func (_m *Application) ApplySnapshotChunk(_a0 context.Context, _a1 *v1.ApplySnapshotChunkRequest) (*v1.ApplySnapshotChunkResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for ApplySnapshotChunk")
+	}
+
 	var r0 *v1.ApplySnapshotChunkResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.ApplySnapshotChunkRequest) (*v1.ApplySnapshotChunkResponse, error)); ok {
@@ -44,6 +48,10 @@ func (_m *Application) ApplySnapshotChunk(_a0 context.Context, _a1 *v1.ApplySnap
 // CheckTx provides a mock function with given fields: _a0, _a1
 func (_m *Application) CheckTx(_a0 context.Context, _a1 *v1.CheckTxRequest) (*v1.CheckTxResponse, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CheckTx")
+	}
 
 	var r0 *v1.CheckTxResponse
 	var r1 error
@@ -71,6 +79,10 @@ func (_m *Application) CheckTx(_a0 context.Context, _a1 *v1.CheckTxRequest) (*v1
 func (_m *Application) Commit(_a0 context.Context, _a1 *v1.CommitRequest) (*v1.CommitResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for Commit")
+	}
+
 	var r0 *v1.CommitResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.CommitRequest) (*v1.CommitResponse, error)); ok {
@@ -96,6 +108,10 @@ func (_m *Application) Commit(_a0 context.Context, _a1 *v1.CommitRequest) (*v1.C
 // ExtendVote provides a mock function with given fields: _a0, _a1
 func (_m *Application) ExtendVote(_a0 context.Context, _a1 *v1.ExtendVoteRequest) (*v1.ExtendVoteResponse, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ExtendVote")
+	}
 
 	var r0 *v1.ExtendVoteResponse
 	var r1 error
@@ -123,6 +139,10 @@ func (_m *Application) ExtendVote(_a0 context.Context, _a1 *v1.ExtendVoteRequest
 func (_m *Application) FinalizeBlock(_a0 context.Context, _a1 *v1.FinalizeBlockRequest) (*v1.FinalizeBlockResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for FinalizeBlock")
+	}
+
 	var r0 *v1.FinalizeBlockResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.FinalizeBlockRequest) (*v1.FinalizeBlockResponse, error)); ok {
@@ -148,6 +168,10 @@ func (_m *Application) FinalizeBlock(_a0 context.Context, _a1 *v1.FinalizeBlockR
 // Info provides a mock function with given fields: _a0, _a1
 func (_m *Application) Info(_a0 context.Context, _a1 *v1.InfoRequest) (*v1.InfoResponse, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Info")
+	}
 
 	var r0 *v1.InfoResponse
 	var r1 error
@@ -175,6 +199,10 @@ func (_m *Application) Info(_a0 context.Context, _a1 *v1.InfoRequest) (*v1.InfoR
 func (_m *Application) InitChain(_a0 context.Context, _a1 *v1.InitChainRequest) (*v1.InitChainResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for InitChain")
+	}
+
 	var r0 *v1.InitChainResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.InitChainRequest) (*v1.InitChainResponse, error)); ok {
@@ -200,6 +228,10 @@ func (_m *Application) InitChain(_a0 context.Context, _a1 *v1.InitChainRequest) 
 // ListSnapshots provides a mock function with given fields: _a0, _a1
 func (_m *Application) ListSnapshots(_a0 context.Context, _a1 *v1.ListSnapshotsRequest) (*v1.ListSnapshotsResponse, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListSnapshots")
+	}
 
 	var r0 *v1.ListSnapshotsResponse
 	var r1 error
@@ -227,6 +259,10 @@ func (_m *Application) ListSnapshots(_a0 context.Context, _a1 *v1.ListSnapshotsR
 func (_m *Application) LoadSnapshotChunk(_a0 context.Context, _a1 *v1.LoadSnapshotChunkRequest) (*v1.LoadSnapshotChunkResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for LoadSnapshotChunk")
+	}
+
 	var r0 *v1.LoadSnapshotChunkResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.LoadSnapshotChunkRequest) (*v1.LoadSnapshotChunkResponse, error)); ok {
@@ -252,6 +288,10 @@ func (_m *Application) LoadSnapshotChunk(_a0 context.Context, _a1 *v1.LoadSnapsh
 // OfferSnapshot provides a mock function with given fields: _a0, _a1
 func (_m *Application) OfferSnapshot(_a0 context.Context, _a1 *v1.OfferSnapshotRequest) (*v1.OfferSnapshotResponse, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for OfferSnapshot")
+	}
 
 	var r0 *v1.OfferSnapshotResponse
 	var r1 error
@@ -279,6 +319,10 @@ func (_m *Application) OfferSnapshot(_a0 context.Context, _a1 *v1.OfferSnapshotR
 func (_m *Application) PrepareProposal(_a0 context.Context, _a1 *v1.PrepareProposalRequest) (*v1.PrepareProposalResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for PrepareProposal")
+	}
+
 	var r0 *v1.PrepareProposalResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.PrepareProposalRequest) (*v1.PrepareProposalResponse, error)); ok {
@@ -304,6 +348,10 @@ func (_m *Application) PrepareProposal(_a0 context.Context, _a1 *v1.PreparePropo
 // ProcessProposal provides a mock function with given fields: _a0, _a1
 func (_m *Application) ProcessProposal(_a0 context.Context, _a1 *v1.ProcessProposalRequest) (*v1.ProcessProposalResponse, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ProcessProposal")
+	}
 
 	var r0 *v1.ProcessProposalResponse
 	var r1 error
@@ -331,6 +379,10 @@ func (_m *Application) ProcessProposal(_a0 context.Context, _a1 *v1.ProcessPropo
 func (_m *Application) Query(_a0 context.Context, _a1 *v1.QueryRequest) (*v1.QueryResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for Query")
+	}
+
 	var r0 *v1.QueryResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.QueryRequest) (*v1.QueryResponse, error)); ok {
@@ -356,6 +408,10 @@ func (_m *Application) Query(_a0 context.Context, _a1 *v1.QueryRequest) (*v1.Que
 // VerifyVoteExtension provides a mock function with given fields: _a0, _a1
 func (_m *Application) VerifyVoteExtension(_a0 context.Context, _a1 *v1.VerifyVoteExtensionRequest) (*v1.VerifyVoteExtensionResponse, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for VerifyVoteExtension")
+	}
 
 	var r0 *v1.VerifyVoteExtensionResponse
 	var r1 error

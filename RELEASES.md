@@ -170,7 +170,7 @@ backport branch (see above). Otherwise:
    * Ensure that `UPGRADING.md` is up-to-date and includes notes on any breaking
      changes or other upgrading flows.
 4. Prepare the versioning:
-   * Bump TMVersionDefault version in  `version.go`
+   * Bump CometBFT version in  `version.go`
    * Bump P2P and block protocol versions in  `version.go`, if necessary.
      Check the changelog for breaking changes in these components.
    * Bump ABCI protocol version in `version.go`, if necessary
@@ -201,7 +201,7 @@ Before performing these steps, be sure the
    * Build the changelog using unclog, and commit the built changelog.
    * Ensure that `UPGRADING.md` is up-to-date and includes notes on any breaking changes
       or other upgrading flows.
-   * Bump TMVersionDefault version in  `version.go`
+   * Bump CometBFT version in  `version.go`
    * Bump P2P and block protocol versions in  `version.go`, if necessary
    * Bump ABCI protocol version in `version.go`, if necessary
 4. Open a PR with these changes against the backport branch.
@@ -229,7 +229,7 @@ To create a patch release:
      ensuring that you write up a good summary of the major highlights of the
      release that users would be interested in.
    * Build the changelog using unclog, and commit the built changelog.
-   * Bump the TMDefaultVersion in `version.go`
+   * Bump the CometBFT in `version.go`
    * Bump the ABCI version number, if necessary. (Note that ABCI follows semver,
      and that ABCI versions are the only versions which can change during patch
      releases, and only field additions are valid patch changes.)

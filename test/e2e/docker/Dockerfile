@@ -6,6 +6,12 @@ FROM golang:1.21-bullseye
 RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
 RUN apt-get -qq install -y libleveldb-dev librocksdb-dev >/dev/null
 
+# For the latency-setter script
+RUN apt-get -qq install -y iputils-ping iproute2 python3-netifaces >/dev/null
+RUN mkdir -p /scripts
+COPY test/e2e/pkg/latency/aws-latencies.csv /scripts/
+COPY test/e2e/pkg/latency/latency-setter.py /scripts/
+
 # Set up build directory /src/cometbft
 ENV COMETBFT_BUILD_OPTIONS badgerdb,boltdb,cleveldb,rocksdb
 WORKDIR /src/cometbft

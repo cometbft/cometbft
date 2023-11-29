@@ -32,7 +32,7 @@ var InitStateVersion = cmtstate.Version{
 		Block: version.BlockProtocol,
 		App:   0,
 	},
-	Software: version.TMCoreSemVer,
+	Software: version.CMTSemVer,
 }
 
 //-----------------------------------------------------------------------------

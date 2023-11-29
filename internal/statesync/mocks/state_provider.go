@@ -20,6 +20,10 @@ type StateProvider struct {
 func (_m *StateProvider) AppHash(ctx context.Context, height uint64) ([]byte, error) {
 	ret := _m.Called(ctx, height)
 
+	if len(ret) == 0 {
+		panic("no return value specified for AppHash")
+	}
+
 	var r0 []byte
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, uint64) ([]byte, error)); ok {
@@ -46,6 +50,10 @@ func (_m *StateProvider) AppHash(ctx context.Context, height uint64) ([]byte, er
 func (_m *StateProvider) Commit(ctx context.Context, height uint64) (*types.Commit, error) {
 	ret := _m.Called(ctx, height)
 
+	if len(ret) == 0 {
+		panic("no return value specified for Commit")
+	}
+
 	var r0 *types.Commit
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, uint64) (*types.Commit, error)); ok {
@@ -71,6 +79,10 @@ func (_m *StateProvider) Commit(ctx context.Context, height uint64) (*types.Comm
 // State provides a mock function with given fields: ctx, height
 func (_m *StateProvider) State(ctx context.Context, height uint64) (state.State, error) {
 	ret := _m.Called(ctx, height)
+
+	if len(ret) == 0 {
+		panic("no return value specified for State")
+	}
 
 	var r0 state.State
 	var r1 error

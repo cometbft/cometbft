@@ -305,6 +305,16 @@ dial_timeout = "3s"
 #######################################################
 [mempool]
 
+# The type of mempool for this node to use.
+#
+#  Possible types:
+#  - "flood" : concurrent linked list mempool with flooding gossip protocol
+#  (default)
+#  - "nop"   : nop-mempool (short for no operation; the ABCI app is responsible
+#  for storing, disseminating and proposing txs). "create_empty_blocks=false" is
+#  not supported.
+type = "flood"
+
 # recheck (default: true) defines whether CometBFT should recheck the
 # validity for all remaining transaction in the mempool after a block.
 # Since a block affects the application state, some transactions in the

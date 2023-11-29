@@ -23,6 +23,10 @@ type Client struct {
 func (_m *Client) ApplySnapshotChunk(_a0 context.Context, _a1 *v1.ApplySnapshotChunkRequest) (*v1.ApplySnapshotChunkResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for ApplySnapshotChunk")
+	}
+
 	var r0 *v1.ApplySnapshotChunkResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.ApplySnapshotChunkRequest) (*v1.ApplySnapshotChunkResponse, error)); ok {
@@ -48,6 +52,10 @@ func (_m *Client) ApplySnapshotChunk(_a0 context.Context, _a1 *v1.ApplySnapshotC
 // CheckTx provides a mock function with given fields: _a0, _a1
 func (_m *Client) CheckTx(_a0 context.Context, _a1 *v1.CheckTxRequest) (*v1.CheckTxResponse, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CheckTx")
+	}
 
 	var r0 *v1.CheckTxResponse
 	var r1 error
@@ -75,6 +83,10 @@ func (_m *Client) CheckTx(_a0 context.Context, _a1 *v1.CheckTxRequest) (*v1.Chec
 func (_m *Client) CheckTxAsync(_a0 context.Context, _a1 *v1.CheckTxRequest) (*abcicli.ReqRes, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for CheckTxAsync")
+	}
+
 	var r0 *abcicli.ReqRes
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.CheckTxRequest) (*abcicli.ReqRes, error)); ok {
@@ -100,6 +112,10 @@ func (_m *Client) CheckTxAsync(_a0 context.Context, _a1 *v1.CheckTxRequest) (*ab
 // Commit provides a mock function with given fields: _a0, _a1
 func (_m *Client) Commit(_a0 context.Context, _a1 *v1.CommitRequest) (*v1.CommitResponse, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Commit")
+	}
 
 	var r0 *v1.CommitResponse
 	var r1 error
@@ -127,6 +143,10 @@ func (_m *Client) Commit(_a0 context.Context, _a1 *v1.CommitRequest) (*v1.Commit
 func (_m *Client) Echo(_a0 context.Context, _a1 string) (*v1.EchoResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for Echo")
+	}
+
 	var r0 *v1.EchoResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string) (*v1.EchoResponse, error)); ok {
@@ -153,6 +173,10 @@ func (_m *Client) Echo(_a0 context.Context, _a1 string) (*v1.EchoResponse, error
 func (_m *Client) Error() error {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for Error")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
 		r0 = rf()
@@ -166,6 +190,10 @@ func (_m *Client) Error() error {
 // ExtendVote provides a mock function with given fields: _a0, _a1
 func (_m *Client) ExtendVote(_a0 context.Context, _a1 *v1.ExtendVoteRequest) (*v1.ExtendVoteResponse, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ExtendVote")
+	}
 
 	var r0 *v1.ExtendVoteResponse
 	var r1 error
@@ -193,6 +221,10 @@ func (_m *Client) ExtendVote(_a0 context.Context, _a1 *v1.ExtendVoteRequest) (*v
 func (_m *Client) FinalizeBlock(_a0 context.Context, _a1 *v1.FinalizeBlockRequest) (*v1.FinalizeBlockResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for FinalizeBlock")
+	}
+
 	var r0 *v1.FinalizeBlockResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.FinalizeBlockRequest) (*v1.FinalizeBlockResponse, error)); ok {
@@ -219,6 +251,10 @@ func (_m *Client) FinalizeBlock(_a0 context.Context, _a1 *v1.FinalizeBlockReques
 func (_m *Client) Flush(_a0 context.Context) error {
 	ret := _m.Called(_a0)
 
+	if len(ret) == 0 {
+		panic("no return value specified for Flush")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
 		r0 = rf(_a0)
@@ -232,6 +268,10 @@ func (_m *Client) Flush(_a0 context.Context) error {
 // Info provides a mock function with given fields: _a0, _a1
 func (_m *Client) Info(_a0 context.Context, _a1 *v1.InfoRequest) (*v1.InfoResponse, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Info")
+	}
 
 	var r0 *v1.InfoResponse
 	var r1 error
@@ -259,6 +299,10 @@ func (_m *Client) Info(_a0 context.Context, _a1 *v1.InfoRequest) (*v1.InfoRespon
 func (_m *Client) InitChain(_a0 context.Context, _a1 *v1.InitChainRequest) (*v1.InitChainResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for InitChain")
+	}
+
 	var r0 *v1.InitChainResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.InitChainRequest) (*v1.InitChainResponse, error)); ok {
@@ -285,6 +329,10 @@ func (_m *Client) InitChain(_a0 context.Context, _a1 *v1.InitChainRequest) (*v1.
 func (_m *Client) IsRunning() bool {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for IsRunning")
+	}
+
 	var r0 bool
 	if rf, ok := ret.Get(0).(func() bool); ok {
 		r0 = rf()
@@ -298,6 +346,10 @@ func (_m *Client) IsRunning() bool {
 // ListSnapshots provides a mock function with given fields: _a0, _a1
 func (_m *Client) ListSnapshots(_a0 context.Context, _a1 *v1.ListSnapshotsRequest) (*v1.ListSnapshotsResponse, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListSnapshots")
+	}
 
 	var r0 *v1.ListSnapshotsResponse
 	var r1 error
@@ -325,6 +377,10 @@ func (_m *Client) ListSnapshots(_a0 context.Context, _a1 *v1.ListSnapshotsReques
 func (_m *Client) LoadSnapshotChunk(_a0 context.Context, _a1 *v1.LoadSnapshotChunkRequest) (*v1.LoadSnapshotChunkResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for LoadSnapshotChunk")
+	}
+
 	var r0 *v1.LoadSnapshotChunkResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.LoadSnapshotChunkRequest) (*v1.LoadSnapshotChunkResponse, error)); ok {
@@ -350,6 +406,10 @@ func (_m *Client) LoadSnapshotChunk(_a0 context.Context, _a1 *v1.LoadSnapshotChu
 // OfferSnapshot provides a mock function with given fields: _a0, _a1
 func (_m *Client) OfferSnapshot(_a0 context.Context, _a1 *v1.OfferSnapshotRequest) (*v1.OfferSnapshotResponse, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for OfferSnapshot")
+	}
 
 	var r0 *v1.OfferSnapshotResponse
 	var r1 error
@@ -377,6 +437,10 @@ func (_m *Client) OfferSnapshot(_a0 context.Context, _a1 *v1.OfferSnapshotReques
 func (_m *Client) OnReset() error {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for OnReset")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
 		r0 = rf()
@@ -390,6 +454,10 @@ func (_m *Client) OnReset() error {
 // OnStart provides a mock function with given fields:
 func (_m *Client) OnStart() error {
 	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for OnStart")
+	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
@@ -409,6 +477,10 @@ func (_m *Client) OnStop() {
 // PrepareProposal provides a mock function with given fields: _a0, _a1
 func (_m *Client) PrepareProposal(_a0 context.Context, _a1 *v1.PrepareProposalRequest) (*v1.PrepareProposalResponse, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for PrepareProposal")
+	}
 
 	var r0 *v1.PrepareProposalResponse
 	var r1 error
@@ -436,6 +508,10 @@ func (_m *Client) PrepareProposal(_a0 context.Context, _a1 *v1.PrepareProposalRe
 func (_m *Client) ProcessProposal(_a0 context.Context, _a1 *v1.ProcessProposalRequest) (*v1.ProcessProposalResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for ProcessProposal")
+	}
+
 	var r0 *v1.ProcessProposalResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.ProcessProposalRequest) (*v1.ProcessProposalResponse, error)); ok {
@@ -461,6 +537,10 @@ func (_m *Client) ProcessProposal(_a0 context.Context, _a1 *v1.ProcessProposalRe
 // Query provides a mock function with given fields: _a0, _a1
 func (_m *Client) Query(_a0 context.Context, _a1 *v1.QueryRequest) (*v1.QueryResponse, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Query")
+	}
 
 	var r0 *v1.QueryResponse
 	var r1 error
@@ -488,6 +568,10 @@ func (_m *Client) Query(_a0 context.Context, _a1 *v1.QueryRequest) (*v1.QueryRes
 func (_m *Client) Quit() <-chan struct{} {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for Quit")
+	}
+
 	var r0 <-chan struct{}
 	if rf, ok := ret.Get(0).(func() <-chan struct{}); ok {
 		r0 = rf()
@@ -503,6 +587,10 @@ func (_m *Client) Quit() <-chan struct{} {
 // Reset provides a mock function with given fields:
 func (_m *Client) Reset() error {
 	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Reset")
+	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
@@ -528,6 +616,10 @@ func (_m *Client) SetResponseCallback(_a0 abcicli.Callback) {
 func (_m *Client) Start() error {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for Start")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
 		r0 = rf()
@@ -541,6 +633,10 @@ func (_m *Client) Start() error {
 // Stop provides a mock function with given fields:
 func (_m *Client) Stop() error {
 	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Stop")
+	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
@@ -556,6 +652,10 @@ func (_m *Client) Stop() error {
 func (_m *Client) String() string {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for String")
+	}
+
 	var r0 string
 	if rf, ok := ret.Get(0).(func() string); ok {
 		r0 = rf()
@@ -569,6 +669,10 @@ func (_m *Client) String() string {
 // VerifyVoteExtension provides a mock function with given fields: _a0, _a1
 func (_m *Client) VerifyVoteExtension(_a0 context.Context, _a1 *v1.VerifyVoteExtensionRequest) (*v1.VerifyVoteExtensionResponse, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for VerifyVoteExtension")
+	}
 
 	var r0 *v1.VerifyVoteExtensionResponse
 	var r1 error

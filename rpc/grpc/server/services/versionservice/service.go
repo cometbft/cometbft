@@ -17,7 +17,7 @@ func New() pbsvc.VersionServiceServer {
 // GetVersion implements v1.VersionServiceServer
 func (s *versionServiceServer) GetVersion(context.Context, *pbsvc.GetVersionRequest) (*pbsvc.GetVersionResponse, error) {
 	return &pbsvc.GetVersionResponse{
-		Node:  version.TMCoreSemVer,
+		Node:  version.CMTSemVer,
 		Abci:  version.ABCIVersion,
 		P2P:   version.P2PProtocol,
 		Block: version.BlockProtocol,

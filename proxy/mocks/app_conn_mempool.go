@@ -21,6 +21,10 @@ type AppConnMempool struct {
 func (_m *AppConnMempool) CheckTx(_a0 context.Context, _a1 *v1.CheckTxRequest) (*v1.CheckTxResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for CheckTx")
+	}
+
 	var r0 *v1.CheckTxResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.CheckTxRequest) (*v1.CheckTxResponse, error)); ok {
@@ -46,6 +50,10 @@ func (_m *AppConnMempool) CheckTx(_a0 context.Context, _a1 *v1.CheckTxRequest) (
 // CheckTxAsync provides a mock function with given fields: _a0, _a1
 func (_m *AppConnMempool) CheckTxAsync(_a0 context.Context, _a1 *v1.CheckTxRequest) (*abcicli.ReqRes, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CheckTxAsync")
+	}
 
 	var r0 *abcicli.ReqRes
 	var r1 error
@@ -73,6 +81,10 @@ func (_m *AppConnMempool) CheckTxAsync(_a0 context.Context, _a1 *v1.CheckTxReque
 func (_m *AppConnMempool) Error() error {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for Error")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
 		r0 = rf()
@@ -86,6 +98,10 @@ func (_m *AppConnMempool) Error() error {
 // Flush provides a mock function with given fields: _a0
 func (_m *AppConnMempool) Flush(_a0 context.Context) error {
 	ret := _m.Called(_a0)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Flush")
+	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context) error); ok {

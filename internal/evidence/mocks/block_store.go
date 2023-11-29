@@ -16,6 +16,10 @@ type BlockStore struct {
 func (_m *BlockStore) Height() int64 {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for Height")
+	}
+
 	var r0 int64
 	if rf, ok := ret.Get(0).(func() int64); ok {
 		r0 = rf()
@@ -29,6 +33,10 @@ func (_m *BlockStore) Height() int64 {
 // LoadBlockCommit provides a mock function with given fields: height
 func (_m *BlockStore) LoadBlockCommit(height int64) *types.Commit {
 	ret := _m.Called(height)
+
+	if len(ret) == 0 {
+		panic("no return value specified for LoadBlockCommit")
+	}
 
 	var r0 *types.Commit
 	if rf, ok := ret.Get(0).(func(int64) *types.Commit); ok {
@@ -45,6 +53,10 @@ func (_m *BlockStore) LoadBlockCommit(height int64) *types.Commit {
 // LoadBlockMeta provides a mock function with given fields: height
 func (_m *BlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 	ret := _m.Called(height)
+
+	if len(ret) == 0 {
+		panic("no return value specified for LoadBlockMeta")
+	}
 
 	var r0 *types.BlockMeta
 	if rf, ok := ret.Get(0).(func(int64) *types.BlockMeta); ok {

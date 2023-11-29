@@ -1,5 +1,5 @@
-- `[proto]` Add the `abci.v1beta4` versioned proto package with naming changes
-  to satisfy the
+- `[proto]` The names in the `cometbft.abci.v1` versioned proto package
+  are changed to satisfy the
   [buf guidelines](https://buf.build/docs/best-practices/style-guide/)
   ([#736](https://github.com/cometbft/cometbft/issues/736),
    [#1504](https://github.com/cometbft/cometbft/issues/1504),
@@ -24,5 +24,5 @@
     `VERIFY_VOTE_EXTENSION_STATUS_` prefix.
   * New definition of `Misbehavior` using the changed `MisbehaviorType`.
   * The gRPC service is renamed `ABCIService` and defined using the types listed above.
-- `[proto]` Add `state.v1beta4` package with a new definition for
-  `ABCIResponsesInfo`, renaming `response_finalize_block` field to `finalize_block`.
+- `[proto]` In the `cometbft.state.v1` package, the definition for `ABCIResponsesInfo`
+  is changed, renaming `response_finalize_block` field to `finalize_block`.

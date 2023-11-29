@@ -199,6 +199,7 @@ func (m *ConsensusParamsInfo) GetLastHeightChanged() int64 {
 	return 0
 }
 
+// ABCIResponsesInfo retains the responses of the ABCI calls during block processing.
 type ABCIResponsesInfo struct {
 	AbciResponses *ABCIResponses `protobuf:"bytes,1,opt,name=abci_responses,json=abciResponses,proto3" json:"abci_responses,omitempty"`
 	Height        int64          `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
@@ -251,6 +252,7 @@ func (m *ABCIResponsesInfo) GetHeight() int64 {
 	return 0
 }
 
+// Version is a message for storing versioning information.
 type Version struct {
 	Consensus v1.Consensus `protobuf:"bytes,1,opt,name=consensus,proto3" json:"consensus"`
 	Software  string       `protobuf:"bytes,2,opt,name=software,proto3" json:"software,omitempty"`
@@ -303,6 +305,7 @@ func (m *Version) GetSoftware() string {
 	return ""
 }
 
+// State represents the state of the blockchain.
 type State struct {
 	Version Version `protobuf:"bytes,1,opt,name=version,proto3" json:"version"`
 	// immutable

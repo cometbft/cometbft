@@ -23,6 +23,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Block defines the structure of a block in the CometBFT blockchain.
 type Block struct {
 	Header     Header       `protobuf:"bytes,1,opt,name=header,proto3" json:"header"`
 	Data       Data         `protobuf:"bytes,2,opt,name=data,proto3" json:"data"`

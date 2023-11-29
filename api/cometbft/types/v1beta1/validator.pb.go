@@ -28,10 +28,14 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 type BlockIDFlag int32
 
 const (
+	// Indicates an error condition
 	BlockIDFlagUnknown BlockIDFlag = 0
-	BlockIDFlagAbsent  BlockIDFlag = 1
-	BlockIDFlagCommit  BlockIDFlag = 2
-	BlockIDFlagNil     BlockIDFlag = 3
+	// The vote was not received
+	BlockIDFlagAbsent BlockIDFlag = 1
+	// Voted for the block that received the majority
+	BlockIDFlagCommit BlockIDFlag = 2
+	// Voted for nil
+	BlockIDFlagNil BlockIDFlag = 3
 )
 
 var BlockIDFlag_name = map[int32]string{
@@ -56,6 +60,7 @@ func (BlockIDFlag) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_2e1661b4f555b138, []int{0}
 }
 
+// ValidatorSet defines a set of validators.
 type ValidatorSet struct {
 	Validators       []*Validator `protobuf:"bytes,1,rep,name=validators,proto3" json:"validators,omitempty"`
 	Proposer         *Validator   `protobuf:"bytes,2,opt,name=proposer,proto3" json:"proposer,omitempty"`
@@ -116,6 +121,7 @@ func (m *ValidatorSet) GetTotalVotingPower() int64 {
 	return 0
 }
 
+// Validator represents a node participating in the consensus protocol.
 type Validator struct {
 	Address          []byte       `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	PubKey           v1.PublicKey `protobuf:"bytes,2,opt,name=pub_key,json=pubKey,proto3" json:"pub_key"`
@@ -184,6 +190,9 @@ func (m *Validator) GetProposerPriority() int64 {
 	return 0
 }
 
+// SimpleValidator is a Validator, which is serialized and hashed in consensus.
+// Address is removed because it's redundant with the pubkey.
+// Proposer priority is removed because it changes every round.
 type SimpleValidator struct {
 	PubKey      *v1.PublicKey `protobuf:"bytes,1,opt,name=pub_key,json=pubKey,proto3" json:"pub_key,omitempty"`
 	VotingPower int64         `protobuf:"varint,2,opt,name=voting_power,json=votingPower,proto3" json:"voting_power,omitempty"`

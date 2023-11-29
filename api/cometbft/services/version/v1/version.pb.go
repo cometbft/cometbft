@@ -22,6 +22,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// GetVersionRequest is the request for the ABCI version.
 type GetVersionRequest struct {
 }
 
@@ -58,6 +59,7 @@ func (m *GetVersionRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetVersionRequest proto.InternalMessageInfo
 
+// GetVersionResponse contains the ABCI application version info.
 type GetVersionResponse struct {
 	Node  string `protobuf:"bytes,1,opt,name=node,proto3" json:"node,omitempty"`
 	Abci  string `protobuf:"bytes,2,opt,name=abci,proto3" json:"abci,omitempty"`

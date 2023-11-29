@@ -28,6 +28,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// PingRequest is a request to confirm that the connection is alive.
 type RequestPing struct {
 }
 
@@ -64,6 +65,7 @@ func (m *RequestPing) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_RequestPing proto.InternalMessageInfo
 
+// RequestBroadcastTx is a request to broadcast the transaction.
 type RequestBroadcastTx struct {
 	Tx []byte `protobuf:"bytes,1,opt,name=tx,proto3" json:"tx,omitempty"`
 }
@@ -108,6 +110,7 @@ func (m *RequestBroadcastTx) GetTx() []byte {
 	return nil
 }
 
+// PingResponse is a response to confirm that the connection is alive.
 type ResponsePing struct {
 }
 
@@ -144,6 +147,7 @@ func (m *ResponsePing) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ResponsePing proto.InternalMessageInfo
 
+// ResponseBroadcastTx is a response of broadcasting the transaction.
 type ResponseBroadcastTx struct {
 	CheckTx   *v1beta1.ResponseCheckTx   `protobuf:"bytes,1,opt,name=check_tx,json=checkTx,proto3" json:"check_tx,omitempty"`
 	DeliverTx *v1beta1.ResponseDeliverTx `protobuf:"bytes,2,opt,name=deliver_tx,json=deliverTx,proto3" json:"deliver_tx,omitempty"`
@@ -244,7 +248,9 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type BroadcastAPIClient interface {
+	// Ping the connection.
 	Ping(ctx context.Context, in *RequestPing, opts ...grpc.CallOption) (*ResponsePing, error)
+	// BroadcastTx broadcasts the transaction.
 	BroadcastTx(ctx context.Context, in *RequestBroadcastTx, opts ...grpc.CallOption) (*ResponseBroadcastTx, error)
 }
 
@@ -276,7 +282,9 @@ func (c *broadcastAPIClient) BroadcastTx(ctx context.Context, in *RequestBroadca
 
 // BroadcastAPIServer is the server API for BroadcastAPI service.
 type BroadcastAPIServer interface {
+	// Ping the connection.
 	Ping(context.Context, *RequestPing) (*ResponsePing, error)
+	// BroadcastTx broadcasts the transaction.
 	BroadcastTx(context.Context, *RequestBroadcastTx) (*ResponseBroadcastTx, error)
 }
 

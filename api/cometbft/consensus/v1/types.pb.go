@@ -670,7 +670,10 @@ func (m *HasProposalBlockPart) GetIndex() int32 {
 	return 0
 }
 
+// Message is an abstract consensus message.
 type Message struct {
+	// Sum of all possible messages.
+	//
 	// Types that are valid to be assigned to Sum:
 	//	*Message_NewRoundStep
 	//	*Message_NewValidBlock

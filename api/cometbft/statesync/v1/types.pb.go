@@ -22,7 +22,10 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Message is the top-level message type for the statesync service.
 type Message struct {
+	// The message type.
+	//
 	// Types that are valid to be assigned to Sum:
 	//
 	//	*Message_SnapshotsRequest
@@ -134,6 +137,7 @@ func (*Message) XXX_OneofWrappers() []interface{} {
 	}
 }
 
+// SnapshotsRequest is sent to request a snapshot.
 type SnapshotsRequest struct {
 }
 
@@ -170,6 +174,7 @@ func (m *SnapshotsRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SnapshotsRequest proto.InternalMessageInfo
 
+// SnapshotsResponse contains the snapshot metadata.
 type SnapshotsResponse struct {
 	Height   uint64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
 	Format   uint32 `protobuf:"varint,2,opt,name=format,proto3" json:"format,omitempty"`
@@ -246,6 +251,7 @@ func (m *SnapshotsResponse) GetMetadata() []byte {
 	return nil
 }
 
+// ChunkRequest is sent to request a chunk.
 type ChunkRequest struct {
 	Height uint64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
 	Format uint32 `protobuf:"varint,2,opt,name=format,proto3" json:"format,omitempty"`
@@ -306,6 +312,7 @@ func (m *ChunkRequest) GetIndex() uint32 {
 	return 0
 }
 
+// ChunkResponse contains a chunk of the snapshot.
 type ChunkResponse struct {
 	Height  uint64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
 	Format  uint32 `protobuf:"varint,2,opt,name=format,proto3" json:"format,omitempty"`

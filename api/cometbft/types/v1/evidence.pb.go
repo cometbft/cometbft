@@ -27,7 +27,10 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Evidence is a generic type for wrapping evidence of misbehavior by a validator.
 type Evidence struct {
+	// The type of evidence.
+	//
 	// Types that are valid to be assigned to Sum:
 	//	*Evidence_DuplicateVoteEvidence
 	//	*Evidence_LightClientAttackEvidence
@@ -266,6 +269,7 @@ func (m *LightClientAttackEvidence) GetTimestamp() time.Time {
 	return time.Time{}
 }
 
+// EvidenceList is a list of evidence.
 type EvidenceList struct {
 	Evidence []Evidence `protobuf:"bytes,1,rep,name=evidence,proto3" json:"evidence"`
 }

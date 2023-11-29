@@ -256,7 +256,10 @@ func (m *BlockResponse) GetExtCommit() *v1.ExtendedCommit {
 	return nil
 }
 
+// Message is an abtract blocksync message.
 type Message struct {
+	// Sum of all possible messages.
+	//
 	// Types that are valid to be assigned to Sum:
 	//	*Message_BlockRequest
 	//	*Message_NoBlockResponse

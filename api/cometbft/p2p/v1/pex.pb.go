@@ -23,6 +23,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// PexRequest is a request for peer addresses.
 type PexRequest struct {
 }
 
@@ -59,6 +60,7 @@ func (m *PexRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_PexRequest proto.InternalMessageInfo
 
+// PexAddrs is a response with peer addresses.
 type PexAddrs struct {
 	Addrs []NetAddress `protobuf:"bytes,1,rep,name=addrs,proto3" json:"addrs"`
 }
@@ -103,7 +105,10 @@ func (m *PexAddrs) GetAddrs() []NetAddress {
 	return nil
 }
 
+// Message is an abstract PEX message.
 type Message struct {
+	// Sum of all possible messages.
+	//
 	// Types that are valid to be assigned to Sum:
 	//	*Message_PexRequest
 	//	*Message_PexAddrs

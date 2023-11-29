@@ -22,6 +22,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// SetBlockRetainHeightRequest sets the retain height for blocks.
 type SetBlockRetainHeightRequest struct {
 	Height uint64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
 }
@@ -66,6 +67,7 @@ func (m *SetBlockRetainHeightRequest) GetHeight() uint64 {
 	return 0
 }
 
+// SetBlockRetainHeightResponse is empty.
 type SetBlockRetainHeightResponse struct {
 }
 
@@ -102,6 +104,7 @@ func (m *SetBlockRetainHeightResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SetBlockRetainHeightResponse proto.InternalMessageInfo
 
+// GetBlockRetainHeightRequest is a request for the retain height.
 type GetBlockRetainHeightRequest struct {
 }
 
@@ -138,6 +141,7 @@ func (m *GetBlockRetainHeightRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetBlockRetainHeightRequest proto.InternalMessageInfo
 
+// GetBlockRetainHeightResponse returns the retain height for blocks.
 type GetBlockRetainHeightResponse struct {
 	// The retain height set by the application.
 	AppRetainHeight uint64 `protobuf:"varint,1,opt,name=app_retain_height,json=appRetainHeight,proto3" json:"app_retain_height,omitempty"`
@@ -193,6 +197,7 @@ func (m *GetBlockRetainHeightResponse) GetPruningServiceRetainHeight() uint64 {
 	return 0
 }
 
+// SetBlockResultsRetainHeightRequest sets the retain height for block results.
 type SetBlockResultsRetainHeightRequest struct {
 	Height uint64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
 }
@@ -237,6 +242,7 @@ func (m *SetBlockResultsRetainHeightRequest) GetHeight() uint64 {
 	return 0
 }
 
+// SetBlockResultsRetainHeightResponse is empty.
 type SetBlockResultsRetainHeightResponse struct {
 }
 
@@ -273,6 +279,7 @@ func (m *SetBlockResultsRetainHeightResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SetBlockResultsRetainHeightResponse proto.InternalMessageInfo
 
+// GetBlockResultsRetainHeightRequest is a request for the retain height.
 type GetBlockResultsRetainHeightRequest struct {
 }
 
@@ -309,6 +316,7 @@ func (m *GetBlockResultsRetainHeightRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetBlockResultsRetainHeightRequest proto.InternalMessageInfo
 
+// GetBlockResultsRetainHeightResponse returns the retain height for block results.
 type GetBlockResultsRetainHeightResponse struct {
 	// The retain height set by the pruning service (e.g. by the data
 	// companion) specifically for block results.
@@ -355,6 +363,7 @@ func (m *GetBlockResultsRetainHeightResponse) GetPruningServiceRetainHeight() ui
 	return 0
 }
 
+// SetTxIndexerRetainHeightRequest sets the retain height for the tx indexer.
 type SetTxIndexerRetainHeightRequest struct {
 	Height uint64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
 }
@@ -399,6 +408,7 @@ func (m *SetTxIndexerRetainHeightRequest) GetHeight() uint64 {
 	return 0
 }
 
+// SetTxIndexerRetainHeightResponse is empty.
 type SetTxIndexerRetainHeightResponse struct {
 }
 
@@ -435,6 +445,7 @@ func (m *SetTxIndexerRetainHeightResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SetTxIndexerRetainHeightResponse proto.InternalMessageInfo
 
+// GetTxIndexerRetainHeightRequest is a request for the retain height.
 type GetTxIndexerRetainHeightRequest struct {
 }
 
@@ -471,6 +482,7 @@ func (m *GetTxIndexerRetainHeightRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetTxIndexerRetainHeightRequest proto.InternalMessageInfo
 
+// GetTxIndexerRetainHeightResponse returns the retain height for the tx indexer.
 type GetTxIndexerRetainHeightResponse struct {
 	Height uint64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
 }
@@ -515,6 +527,7 @@ func (m *GetTxIndexerRetainHeightResponse) GetHeight() uint64 {
 	return 0
 }
 
+// SetBlockIndexerRetainHeightRequest sets the retain height for the block indexer.
 type SetBlockIndexerRetainHeightRequest struct {
 	Height uint64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
 }
@@ -559,6 +572,7 @@ func (m *SetBlockIndexerRetainHeightRequest) GetHeight() uint64 {
 	return 0
 }
 
+// SetBlockIndexerRetainHeightResponse is empty.
 type SetBlockIndexerRetainHeightResponse struct {
 }
 
@@ -595,6 +609,7 @@ func (m *SetBlockIndexerRetainHeightResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SetBlockIndexerRetainHeightResponse proto.InternalMessageInfo
 
+// GetBlockIndexerRetainHeightRequest is a request for the retain height.
 type GetBlockIndexerRetainHeightRequest struct {
 }
 
@@ -631,6 +646,7 @@ func (m *GetBlockIndexerRetainHeightRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetBlockIndexerRetainHeightRequest proto.InternalMessageInfo
 
+// GetBlockIndexerRetainHeightResponse returns the retain height for the block indexer.
 type GetBlockIndexerRetainHeightResponse struct {
 	Height uint64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
 }

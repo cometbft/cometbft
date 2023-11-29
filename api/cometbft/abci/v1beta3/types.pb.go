@@ -36,11 +36,14 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Verification status.
 type ResponseVerifyVoteExtension_VerifyStatus int32
 
 const (
+	// Unknown
 	ResponseVerifyVoteExtension_UNKNOWN ResponseVerifyVoteExtension_VerifyStatus = 0
-	ResponseVerifyVoteExtension_ACCEPT  ResponseVerifyVoteExtension_VerifyStatus = 1
+	// Accepted
+	ResponseVerifyVoteExtension_ACCEPT ResponseVerifyVoteExtension_VerifyStatus = 1
 	// Rejecting the vote extension will reject the entire precommit by the sender.
 	// Incorrectly implementing this thus has liveness implications as it may affect
 	// CometBFT's ability to receive 2/3+ valid votes to finalize the block.
@@ -68,7 +71,10 @@ func (ResponseVerifyVoteExtension_VerifyStatus) EnumDescriptor() ([]byte, []int)
 	return fileDescriptor_1cabe0dccee1dedf, []int{12, 0}
 }
 
+// Request represents a request to the ABCI application.
 type Request struct {
+	// Sum of all possible messages.
+	//
 	// Types that are valid to be assigned to Value:
 	//	*Request_Echo
 	//	*Request_Flush
@@ -335,6 +341,7 @@ func (*Request) XXX_OneofWrappers() []interface{} {
 	}
 }
 
+// RequestInitChain is a request to initialize the blockchain.
 type RequestInitChain struct {
 	Time            time.Time                 `protobuf:"bytes,1,opt,name=time,proto3,stdtime" json:"time"`
 	ChainId         string                    `protobuf:"bytes,2,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
@@ -419,6 +426,8 @@ func (m *RequestInitChain) GetInitialHeight() int64 {
 	return 0
 }
 
+// RequestPrepareProposal is a request for the ABCI application to prepare a new
+// block proposal.
 type RequestPrepareProposal struct {
 	// the modified transactions cannot exceed this size.
 	MaxTxBytes int64 `protobuf:"varint,1,opt,name=max_tx_bytes,json=maxTxBytes,proto3" json:"max_tx_bytes,omitempty"`
@@ -523,6 +532,7 @@ func (m *RequestPrepareProposal) GetProposerAddress() []byte {
 	return nil
 }
 
+// RequestProcessProposal is a request for the ABCI application to process proposal.
 type RequestProcessProposal struct {
 	Txs                [][]byte              `protobuf:"bytes,1,rep,name=txs,proto3" json:"txs,omitempty"`
 	ProposedLastCommit CommitInfo            `protobuf:"bytes,2,opt,name=proposed_last_commit,json=proposedLastCommit,proto3" json:"proposed_last_commit"`
@@ -801,6 +811,7 @@ func (m *RequestVerifyVoteExtension) GetVoteExtension() []byte {
 	return nil
 }
 
+// RequestFinalizeBlock is a request to finalize the block.
 type RequestFinalizeBlock struct {
 	Txs               [][]byte              `protobuf:"bytes,1,rep,name=txs,proto3" json:"txs,omitempty"`
 	DecidedLastCommit CommitInfo            `protobuf:"bytes,2,opt,name=decided_last_commit,json=decidedLastCommit,proto3" json:"decided_last_commit"`
@@ -903,7 +914,10 @@ func (m *RequestFinalizeBlock) GetProposerAddress() []byte {
 	return nil
 }
 
+// Response represents a response from the ABCI application.
 type Response struct {
+	// Sum of all possible messages.
+	//
 	// Types that are valid to be assigned to Value:
 	//	*Response_Exception
 	//	*Response_Echo
@@ -1183,6 +1197,8 @@ func (*Response) XXX_OneofWrappers() []interface{} {
 	}
 }
 
+// ResponseInitChain contains the ABCI application's hash and updates to the
+// validator set and/or the consensus params, if any.
 type ResponseInitChain struct {
 	ConsensusParams *v1.ConsensusParams       `protobuf:"bytes,1,opt,name=consensus_params,json=consensusParams,proto3" json:"consensus_params,omitempty"`
 	Validators      []v1beta1.ValidatorUpdate `protobuf:"bytes,2,rep,name=validators,proto3" json:"validators"`
@@ -1243,6 +1259,8 @@ func (m *ResponseInitChain) GetAppHash() []byte {
 	return nil
 }
 
+// ResponseCheckTx shows if the transaction was deemed valid by the ABCI
+// application.
 type ResponseCheckTx struct {
 	Code      uint32          `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
 	Data      []byte          `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
@@ -1343,6 +1361,7 @@ func (m *ResponseCheckTx) GetCodespace() string {
 	return ""
 }
 
+// ResponseCommit indicates how much blocks should CometBFT retain.
 type ResponseCommit struct {
 	RetainHeight int64 `protobuf:"varint,3,opt,name=retain_height,json=retainHeight,proto3" json:"retain_height,omitempty"`
 }
@@ -1387,6 +1406,7 @@ func (m *ResponseCommit) GetRetainHeight() int64 {
 	return 0
 }
 
+// ResponseExtendVote is the result of extending a vote with application-injected data.
 type ResponseExtendVote struct {
 	VoteExtension []byte `protobuf:"bytes,1,opt,name=vote_extension,json=voteExtension,proto3" json:"vote_extension,omitempty"`
 }
@@ -1431,6 +1451,7 @@ func (m *ResponseExtendVote) GetVoteExtension() []byte {
 	return nil
 }
 
+// ResponseVerifyVoteExtension is the result of verifying a vote extension.
 type ResponseVerifyVoteExtension struct {
 	Status ResponseVerifyVoteExtension_VerifyStatus `protobuf:"varint,1,opt,name=status,proto3,enum=cometbft.abci.v1beta3.ResponseVerifyVoteExtension_VerifyStatus" json:"status,omitempty"`
 }
@@ -1475,6 +1496,7 @@ func (m *ResponseVerifyVoteExtension) GetStatus() ResponseVerifyVoteExtension_Ve
 	return ResponseVerifyVoteExtension_UNKNOWN
 }
 
+// FinalizeBlockResponse contains the result of executing the block.
 type ResponseFinalizeBlock struct {
 	// set of block events emmitted as part of executing the block
 	Events []v1beta2.Event `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`
@@ -1560,6 +1582,7 @@ func (m *ResponseFinalizeBlock) GetAppHash() []byte {
 	return nil
 }
 
+// VoteInfo contains the information about the vote.
 type VoteInfo struct {
 	Validator   v1beta1.Validator    `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator"`
 	BlockIdFlag v1beta11.BlockIDFlag `protobuf:"varint,3,opt,name=block_id_flag,json=blockIdFlag,proto3,enum=cometbft.types.v1beta1.BlockIDFlag" json:"block_id_flag,omitempty"`
@@ -1612,6 +1635,7 @@ func (m *VoteInfo) GetBlockIdFlag() v1beta11.BlockIDFlag {
 	return v1beta11.BlockIDFlagUnknown
 }
 
+// ExtendedVoteInfo extends VoteInfo with the vote extentions (non-deterministic).
 type ExtendedVoteInfo struct {
 	// The validator that sent the vote.
 	Validator v1beta1.Validator `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator"`
@@ -1684,6 +1708,7 @@ func (m *ExtendedVoteInfo) GetBlockIdFlag() v1beta11.BlockIDFlag {
 	return v1beta11.BlockIDFlagUnknown
 }
 
+// CommitInfo contains votes for the particular round.
 type CommitInfo struct {
 	Round int32      `protobuf:"varint,1,opt,name=round,proto3" json:"round,omitempty"`
 	Votes []VoteInfo `protobuf:"bytes,2,rep,name=votes,proto3" json:"votes"`
@@ -2150,21 +2175,37 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ABCIClient interface {
+	// Echo returns back the same message it is sent.
 	Echo(ctx context.Context, in *v1beta1.RequestEcho, opts ...grpc.CallOption) (*v1beta1.ResponseEcho, error)
+	// Flush flushes the write buffer.
 	Flush(ctx context.Context, in *v1beta1.RequestFlush, opts ...grpc.CallOption) (*v1beta1.ResponseFlush, error)
+	// Info returns information about the application state.
 	Info(ctx context.Context, in *v1beta2.RequestInfo, opts ...grpc.CallOption) (*v1beta1.ResponseInfo, error)
+	// CheckTx validates a transaction.
 	CheckTx(ctx context.Context, in *v1beta1.RequestCheckTx, opts ...grpc.CallOption) (*ResponseCheckTx, error)
+	// Query queries the application state.
 	Query(ctx context.Context, in *v1beta1.RequestQuery, opts ...grpc.CallOption) (*v1beta1.ResponseQuery, error)
+	// Commit commits a block of transactions.
 	Commit(ctx context.Context, in *v1beta1.RequestCommit, opts ...grpc.CallOption) (*ResponseCommit, error)
+	// InitChain initializes the blockchain.
 	InitChain(ctx context.Context, in *RequestInitChain, opts ...grpc.CallOption) (*ResponseInitChain, error)
+	// ListSnapshots lists all the available snapshots.
 	ListSnapshots(ctx context.Context, in *v1beta1.RequestListSnapshots, opts ...grpc.CallOption) (*v1beta1.ResponseListSnapshots, error)
+	// OfferSnapshot sends a snapshot offer.
 	OfferSnapshot(ctx context.Context, in *v1beta1.RequestOfferSnapshot, opts ...grpc.CallOption) (*v1beta1.ResponseOfferSnapshot, error)
+	// LoadSnapshotChunk returns a chunk of snapshot.
 	LoadSnapshotChunk(ctx context.Context, in *v1beta1.RequestLoadSnapshotChunk, opts ...grpc.CallOption) (*v1beta1.ResponseLoadSnapshotChunk, error)
+	// ApplySnapshotChunk applies a chunk of snapshot.
 	ApplySnapshotChunk(ctx context.Context, in *v1beta1.RequestApplySnapshotChunk, opts ...grpc.CallOption) (*v1beta1.ResponseApplySnapshotChunk, error)
+	// PrepareProposal returns a proposal for the next block.
 	PrepareProposal(ctx context.Context, in *RequestPrepareProposal, opts ...grpc.CallOption) (*v1beta2.ResponsePrepareProposal, error)
+	// ProcessProposal validates a proposal.
 	ProcessProposal(ctx context.Context, in *RequestProcessProposal, opts ...grpc.CallOption) (*v1beta2.ResponseProcessProposal, error)
+	// ExtendVote extends a vote with application-injected data (vote extentions).
 	ExtendVote(ctx context.Context, in *RequestExtendVote, opts ...grpc.CallOption) (*ResponseExtendVote, error)
+	// VerifyVoteExtension verifies a vote extension.
 	VerifyVoteExtension(ctx context.Context, in *RequestVerifyVoteExtension, opts ...grpc.CallOption) (*ResponseVerifyVoteExtension, error)
+	// FinalizeBlock finalizes a block.
 	FinalizeBlock(ctx context.Context, in *RequestFinalizeBlock, opts ...grpc.CallOption) (*ResponseFinalizeBlock, error)
 }
 
@@ -2322,21 +2363,37 @@ func (c *aBCIClient) FinalizeBlock(ctx context.Context, in *RequestFinalizeBlock
 
 // ABCIServer is the server API for ABCI service.
 type ABCIServer interface {
+	// Echo returns back the same message it is sent.
 	Echo(context.Context, *v1beta1.RequestEcho) (*v1beta1.ResponseEcho, error)
+	// Flush flushes the write buffer.
 	Flush(context.Context, *v1beta1.RequestFlush) (*v1beta1.ResponseFlush, error)
+	// Info returns information about the application state.
 	Info(context.Context, *v1beta2.RequestInfo) (*v1beta1.ResponseInfo, error)
+	// CheckTx validates a transaction.
 	CheckTx(context.Context, *v1beta1.RequestCheckTx) (*ResponseCheckTx, error)
+	// Query queries the application state.
 	Query(context.Context, *v1beta1.RequestQuery) (*v1beta1.ResponseQuery, error)
+	// Commit commits a block of transactions.
 	Commit(context.Context, *v1beta1.RequestCommit) (*ResponseCommit, error)
+	// InitChain initializes the blockchain.
 	InitChain(context.Context, *RequestInitChain) (*ResponseInitChain, error)
+	// ListSnapshots lists all the available snapshots.
 	ListSnapshots(context.Context, *v1beta1.RequestListSnapshots) (*v1beta1.ResponseListSnapshots, error)
+	// OfferSnapshot sends a snapshot offer.
 	OfferSnapshot(context.Context, *v1beta1.RequestOfferSnapshot) (*v1beta1.ResponseOfferSnapshot, error)
+	// LoadSnapshotChunk returns a chunk of snapshot.
 	LoadSnapshotChunk(context.Context, *v1beta1.RequestLoadSnapshotChunk) (*v1beta1.ResponseLoadSnapshotChunk, error)
+	// ApplySnapshotChunk applies a chunk of snapshot.
 	ApplySnapshotChunk(context.Context, *v1beta1.RequestApplySnapshotChunk) (*v1beta1.ResponseApplySnapshotChunk, error)
+	// PrepareProposal returns a proposal for the next block.
 	PrepareProposal(context.Context, *RequestPrepareProposal) (*v1beta2.ResponsePrepareProposal, error)
+	// ProcessProposal validates a proposal.
 	ProcessProposal(context.Context, *RequestProcessProposal) (*v1beta2.ResponseProcessProposal, error)
+	// ExtendVote extends a vote with application-injected data (vote extentions).
 	ExtendVote(context.Context, *RequestExtendVote) (*ResponseExtendVote, error)
+	// VerifyVoteExtension verifies a vote extension.
 	VerifyVoteExtension(context.Context, *RequestVerifyVoteExtension) (*ResponseVerifyVoteExtension, error)
+	// FinalizeBlock finalizes a block.
 	FinalizeBlock(context.Context, *RequestFinalizeBlock) (*ResponseFinalizeBlock, error)
 }
 

@@ -23,6 +23,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Proof is a Merkle proof.
 type Proof struct {
 	Total    int64    `protobuf:"varint,1,opt,name=total,proto3" json:"total,omitempty"`
 	Index    int64    `protobuf:"varint,2,opt,name=index,proto3" json:"index,omitempty"`
@@ -91,6 +92,7 @@ func (m *Proof) GetAunts() [][]byte {
 	return nil
 }
 
+// ValueOp is a Merkle proof for a single key.
 type ValueOp struct {
 	// Encoded in ProofOp.Key.
 	Key []byte `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
@@ -145,6 +147,7 @@ func (m *ValueOp) GetProof() *Proof {
 	return nil
 }
 
+// DominoOp always returns the given output.
 type DominoOp struct {
 	Key    string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 	Input  string `protobuf:"bytes,2,opt,name=input,proto3" json:"input,omitempty"`

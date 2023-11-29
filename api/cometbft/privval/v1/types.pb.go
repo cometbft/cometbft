@@ -25,6 +25,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// remotesignererror is returned when the remote signer fails.
 type RemoteSignerError struct {
 	Code        int32  `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
 	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
@@ -461,7 +462,10 @@ func (m *PingResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_PingResponse proto.InternalMessageInfo
 
+// Message is an abstract message to/from the remote signer.
 type Message struct {
+	// Sum of all possible messages.
+	//
 	// Types that are valid to be assigned to Sum:
 	//	*Message_PubKeyRequest
 	//	*Message_PubKeyResponse

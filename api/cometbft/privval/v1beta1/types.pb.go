@@ -25,15 +25,22 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Errors is a list of error codes that can be returned by the remote signer.
 type Errors int32
 
 const (
-	Errors_ERRORS_UNKNOWN             Errors = 0
+	// Unknown error
+	Errors_ERRORS_UNKNOWN Errors = 0
+	// Unexpected response
 	Errors_ERRORS_UNEXPECTED_RESPONSE Errors = 1
-	Errors_ERRORS_NO_CONNECTION       Errors = 2
-	Errors_ERRORS_CONNECTION_TIMEOUT  Errors = 3
-	Errors_ERRORS_READ_TIMEOUT        Errors = 4
-	Errors_ERRORS_WRITE_TIMEOUT       Errors = 5
+	// Connection lost
+	Errors_ERRORS_NO_CONNECTION Errors = 2
+	// Connection timeout
+	Errors_ERRORS_CONNECTION_TIMEOUT Errors = 3
+	// Read timeout
+	Errors_ERRORS_READ_TIMEOUT Errors = 4
+	// Write timeout
+	Errors_ERRORS_WRITE_TIMEOUT Errors = 5
 )
 
 var Errors_name = map[int32]string{
@@ -62,6 +69,7 @@ func (Errors) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_2e82066b29171f6d, []int{0}
 }
 
+// A service for broadcasting transactions.
 type RemoteSignerError struct {
 	Code        int32  `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
 	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
@@ -498,7 +506,10 @@ func (m *PingResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_PingResponse proto.InternalMessageInfo
 
+// Message is an abstract message to/from the remote signer.
 type Message struct {
+	// Sum of all possible messages.
+	//
 	// Types that are valid to be assigned to Sum:
 	//	*Message_PubKeyRequest
 	//	*Message_PubKeyResponse

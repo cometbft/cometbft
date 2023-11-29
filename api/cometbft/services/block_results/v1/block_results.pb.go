@@ -24,6 +24,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// GetBlockResults is a request for the BlockResults of a given height.
 type GetBlockResultsRequest struct {
 	Height int64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
 }
@@ -68,6 +69,7 @@ func (m *GetBlockResultsRequest) GetHeight() int64 {
 	return 0
 }
 
+// GetLatestBlockResultsRequest is a request for the BlockResults of the latest block.
 type GetLatestBlockResultsRequest struct {
 }
 
@@ -104,6 +106,7 @@ func (m *GetLatestBlockResultsRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetLatestBlockResultsRequest proto.InternalMessageInfo
 
+// GetBlockResultsResponse contains the block results for the given height.
 type GetBlockResultsResponse struct {
 	Height                int64                 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
 	TxResults             []*v1.ExecTxResult    `protobuf:"bytes,2,rep,name=tx_results,json=txResults,proto3" json:"tx_results,omitempty"`
@@ -188,6 +191,7 @@ func (m *GetBlockResultsResponse) GetAppHash() []byte {
 	return nil
 }
 
+// GetLatestBlockResultsResponse contains the block results for the latest block.
 type GetLatestBlockResultsResponse struct {
 	Height                int64                 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
 	TxResults             []*v1.ExecTxResult    `protobuf:"bytes,2,rep,name=tx_results,json=txResults,proto3" json:"tx_results,omitempty"`

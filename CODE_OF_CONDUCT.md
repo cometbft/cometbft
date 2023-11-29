@@ -35,7 +35,7 @@ hence to CometBFT.
 
 * Private harassment is also unacceptable. No matter who you are, if you feel
   you have been or are being harassed or made uncomfortable by a community
-  member, please contact one of the channel admins or the contat address above
+  member, please get in touch with one of the channel admins or the contact address above
   immediately. Whether you’re a regular contributor or a newcomer, we care about
   making this community a safe place for you and we’ve got your back.
 

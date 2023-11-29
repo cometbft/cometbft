@@ -31,7 +31,7 @@ func TestMempoolNoProgressUntilTxsAvailable(t *testing.T) {
 	config.Consensus.CreateEmptyBlocks = false
 	state, privVals := randGenesisState(1, false, 10, nil)
 	app := kvstore.NewInMemoryApplication()
-	resp, err := app.Info(context.Background(), proxy.RequestInfo)
+	resp, err := app.Info(context.Background(), proxy.InfoRequest)
 	require.NoError(t, err)
 	state.AppHash = resp.LastBlockAppHash
 	cs := newStateWithConfig(config, state, privVals[0], app)
@@ -55,7 +55,7 @@ func TestMempoolProgressAfterCreateEmptyBlocksInterval(t *testing.T) {
 	config.Consensus.CreateEmptyBlocksInterval = ensureTimeout
 	state, privVals := randGenesisState(1, false, 10, nil)
 	app := kvstore.NewInMemoryApplication()
-	resp, err := app.Info(context.Background(), proxy.RequestInfo)
+	resp, err := app.Info(context.Background(), proxy.InfoRequest)
 	require.NoError(t, err)
 	state.AppHash = resp.LastBlockAppHash
 	cs := newStateWithConfig(config, state, privVals[0], app)
@@ -110,8 +110,9 @@ func TestMempoolProgressInHigherRound(t *testing.T) {
 func deliverTxsRange(t *testing.T, cs *State, start, end int) {
 	// Deliver some txs.
 	for i := start; i < end; i++ {
-		_, err := assertMempool(cs.txNotifier).CheckTx(kvstore.NewTx(fmt.Sprintf("%d", i), "true"))
+		reqRes, err := assertMempool(cs.txNotifier).CheckTx(kvstore.NewTx(fmt.Sprintf("%d", i), "true"))
 		require.NoError(t, err)
+		require.False(t, reqRes.Response.GetCheckTx().IsErr())
 	}
 }
 
@@ -151,12 +152,12 @@ func TestMempoolRmBadTx(t *testing.T) {
 
 	// increment the counter by 1
 	txBytes := kvstore.NewTx("key", "value")
-	res, err := app.FinalizeBlock(context.Background(), &abci.RequestFinalizeBlock{Txs: [][]byte{txBytes}})
+	res, err := app.FinalizeBlock(context.Background(), &abci.FinalizeBlockRequest{Txs: [][]byte{txBytes}})
 	require.NoError(t, err)
 	assert.False(t, res.TxResults[0].IsErr())
 	assert.True(t, len(res.AppHash) > 0)
 
-	_, err = app.Commit(context.Background(), &abci.RequestCommit{})
+	_, err = app.Commit(context.Background(), &abci.CommitRequest{})
 	require.NoError(t, err)
 
 	emptyMempoolCh := make(chan struct{})

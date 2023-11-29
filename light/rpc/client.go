@@ -411,7 +411,7 @@ func (c *Client) BlockResults(ctx context.Context, height *int64) (*ctypes.Resul
 	}
 
 	// Build a Merkle tree out of the above 3 binary slices.
-	rH := state.TxResultsHash(res.TxsResults)
+	rH := state.TxResultsHash(res.TxResults)
 
 	// Verify block results.
 	if !bytes.Equal(rH, trustedBlock.LastResultsHash) {

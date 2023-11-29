@@ -10,7 +10,6 @@ import (
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
@@ -88,7 +87,7 @@ func makeVoteHR(
 		valIndex,
 		height,
 		round,
-		cmtproto.PrecommitType,
+		types.PrecommitType,
 		types.BlockID{Hash: randBytes, PartSetHeader: types.PartSetHeader{}},
 		cmttime.Now(),
 	)

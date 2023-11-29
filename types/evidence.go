@@ -10,11 +10,11 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
 
@@ -81,7 +81,7 @@ func NewDuplicateVoteEvidence(vote1, vote2 *Vote, blockTime time.Time, valSet *V
 // ABCI returns the application relevant representation of the evidence
 func (dve *DuplicateVoteEvidence) ABCI() []abci.Misbehavior {
 	return []abci.Misbehavior{{
-		Type: abci.MisbehaviorType_DUPLICATE_VOTE,
+		Type: abci.MISBEHAVIOR_TYPE_DUPLICATE_VOTE,
 		Validator: abci.Validator{
 			Address: dve.VoteA.ValidatorAddress,
 			Power:   dve.ValidatorPower,
@@ -224,7 +224,7 @@ func (l *LightClientAttackEvidence) ABCI() []abci.Misbehavior {
 	abciEv := make([]abci.Misbehavior, len(l.ByzantineValidators))
 	for idx, val := range l.ByzantineValidators {
 		abciEv[idx] = abci.Misbehavior{
-			Type:             abci.MisbehaviorType_LIGHT_CLIENT_ATTACK,
+			Type:             abci.MISBEHAVIOR_TYPE_LIGHT_CLIENT_ATTACK,
 			Validator:        TM2PB.Validator(val),
 			Height:           l.Height(),
 			Time:             l.Timestamp,
@@ -621,7 +621,7 @@ func makeMockVote(height int64, round, index int32, addr Address,
 	blockID BlockID, time time.Time,
 ) *Vote {
 	return &Vote{
-		Type:             cmtproto.SignedMsgType(2),
+		Type:             SignedMsgType(2),
 		Height:           height,
 		Round:            round,
 		BlockID:          blockID,

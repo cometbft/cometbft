@@ -42,7 +42,7 @@ message EchoRequest {
   string message = 1;
 }
 
-// FlushRequest is a request to flush all data?
+// FlushRequest is a request to flush the write buffer.
 message FlushRequest {}
 
 // InfoRequest is a request for the ABCI application version.
@@ -90,7 +90,7 @@ enum CheckTxType {
   CHECK_TX_TYPE_CHECK = 2;
 }
 
-// CheckTxRequest is a request to check the transaction.
+// CheckTxRequest is a request to check that the transaction is valid.
 message CheckTxRequest {
   bytes       tx   = 1;
   CheckTxType type = 3;
@@ -143,7 +143,8 @@ message PrepareProposalRequest {
   bytes proposer_address = 8;
 }
 
-// ProcessProposalRequest is a request for the ABCI application to process proposal.
+// ProcessProposalRequest is a request for the ABCI application to process a proposal
+// received from another validator.
 message ProcessProposalRequest {
   repeated bytes       txs                  = 1;
   CommitInfo           proposed_last_commit = 2 [(gogoproto.nullable) = false];
@@ -160,7 +161,7 @@ message ProcessProposalRequest {
   bytes proposer_address = 8;
 }
 
-// Extends a vote with application-injected data.
+// ExtendVoteRequest extends a precommit vote with application-injected data.
 message ExtendVoteRequest {
   // the hash of the block that this vote may be referring to
   bytes hash = 1;
@@ -179,7 +180,8 @@ message ExtendVoteRequest {
   bytes proposer_address = 8;
 }
 
-// Request to verify a vote extension.
+// VerifyVoteExtensionRequest is a request for the application to verify a vote extension
+// produced by a different validator.
 message VerifyVoteExtensionRequest {
   // the hash of the block that this received vote corresponds to
   bytes hash = 1;
@@ -244,7 +246,7 @@ message EchoResponse {
   string message = 1;
 }
 
-// FlushResponse indicates that the ABCI application state was flushed?
+// FlushResponse indicates that the write buffer was flushed.
 message FlushResponse {}
 
 // InfoResponse contains the ABCI application version information.
@@ -389,7 +391,8 @@ enum ProcessProposalStatus {
   PROCESS_PROPOSAL_STATUS_REJECT = 2;
 }
 
-// ExtendVoteResponse contains the resulting bytes after extending the vote.
+// ExtendVoteResponse contains the vote extension that the application would like to
+// attach to its next precommit vote.
 message ExtendVoteResponse {
   bytes vote_extension = 1;
 }

@@ -93,7 +93,6 @@ type Testnet struct {
 	UpgradeVersion                                       string
 	Prometheus                                           bool
 	VoteExtensionsEnableHeight                           int64
-	VoteExtensionSize                                    uint
 	PeerGossipIntraloopSleepDuration                     time.Duration
 	ExperimentalMaxGossipConnectionsToPersistentPeers    uint
 	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint
@@ -178,7 +177,6 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		UpgradeVersion:                   manifest.UpgradeVersion,
 		Prometheus:                       manifest.Prometheus,
 		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
-		VoteExtensionSize:                manifest.VoteExtensionSize,
 		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,

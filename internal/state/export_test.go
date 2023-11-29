@@ -26,7 +26,7 @@ func UpdateState(
 	state State,
 	blockID types.BlockID,
 	header *types.Header,
-	resp *abci.ResponseFinalizeBlock,
+	resp *abci.FinalizeBlockResponse,
 	validatorUpdates []*types.Validator,
 ) (State, error) {
 	return updateState(state, blockID, header, resp, validatorUpdates)

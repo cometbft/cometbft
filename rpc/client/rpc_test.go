@@ -295,9 +295,9 @@ func TestAppCalls(t *testing.T) {
 		blockResults, err := c.BlockResults(context.Background(), &txh)
 		require.Nil(err, "%d: %+v", i, err)
 		assert.Equal(txh, blockResults.Height)
-		if assert.Equal(1, len(blockResults.TxsResults)) {
+		if assert.Equal(1, len(blockResults.TxResults)) {
 			// check success code
-			assert.EqualValues(0, blockResults.TxsResults[0].Code)
+			assert.EqualValues(0, blockResults.TxResults[0].Code)
 		}
 
 		// check blockchain info, now that we know there is info
@@ -374,7 +374,7 @@ func TestBroadcastTxCommit(t *testing.T) {
 func TestUnconfirmedTxs(t *testing.T) {
 	_, _, tx := MakeTxKV()
 
-	ch := make(chan *abci.ResponseCheckTx, 1)
+	ch := make(chan *abci.CheckTxResponse, 1)
 	mempool := node.Mempool()
 	reqRes, err := mempool.CheckTx(tx)
 	require.NoError(t, err)
@@ -405,7 +405,7 @@ func TestUnconfirmedTxs(t *testing.T) {
 func TestNumUnconfirmedTxs(t *testing.T) {
 	_, _, tx := MakeTxKV()
 
-	ch := make(chan *abci.ResponseCheckTx, 1)
+	ch := make(chan *abci.CheckTxResponse, 1)
 	mempool := node.Mempool()
 	reqRes, err := mempool.CheckTx(tx)
 	require.NoError(t, err)

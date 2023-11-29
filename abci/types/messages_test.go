@@ -9,7 +9,7 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/assert"
 
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 )
 
 func TestMarshalJSON(t *testing.T) {
@@ -17,7 +17,7 @@ func TestMarshalJSON(t *testing.T) {
 	assert.NoError(t, err)
 	// include empty fields.
 	assert.True(t, strings.Contains(string(b), "code"))
-	r1 := ResponseCheckTx{
+	r1 := CheckTxResponse{
 		Code:      1,
 		Data:      []byte("hello"),
 		GasWanted: 43,
@@ -33,7 +33,7 @@ func TestMarshalJSON(t *testing.T) {
 	b, err = json.Marshal(&r1)
 	assert.Nil(t, err)
 
-	var r2 ResponseCheckTx
+	var r2 CheckTxResponse
 	err = json.Unmarshal(b, &r2)
 	assert.Nil(t, err)
 	assert.Equal(t, r1, r2)
@@ -41,7 +41,7 @@ func TestMarshalJSON(t *testing.T) {
 
 func TestWriteReadMessageSimple(t *testing.T) {
 	cases := []proto.Message{
-		&RequestEcho{
+		&EchoRequest{
 			Message: "Hello",
 		},
 	}
@@ -51,7 +51,7 @@ func TestWriteReadMessageSimple(t *testing.T) {
 		err := WriteMessage(c, buf)
 		assert.Nil(t, err)
 
-		msg := new(RequestEcho)
+		msg := new(EchoRequest)
 		err = ReadMessage(buf, msg)
 		assert.Nil(t, err)
 
@@ -84,7 +84,7 @@ func TestWriteReadMessage(t *testing.T) {
 func TestWriteReadMessage2(t *testing.T) {
 	phrase := "hello-world"
 	cases := []proto.Message{
-		&ResponseCheckTx{
+		&CheckTxResponse{
 			Data:      []byte(phrase),
 			Log:       phrase,
 			GasWanted: 10,
@@ -105,7 +105,7 @@ func TestWriteReadMessage2(t *testing.T) {
 		err := WriteMessage(c, buf)
 		assert.Nil(t, err)
 
-		msg := new(ResponseCheckTx)
+		msg := new(CheckTxResponse)
 		err = ReadMessage(buf, msg)
 		assert.Nil(t, err)
 

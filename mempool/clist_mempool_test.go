@@ -184,7 +184,7 @@ func TestMempoolFilters(t *testing.T) {
 	emptyTxArr := []types.Tx{[]byte{}}
 
 	nopPreFilter := func(tx types.Tx) error { return nil }
-	nopPostFilter := func(tx types.Tx, res *abci.ResponseCheckTx) error { return nil }
+	nopPostFilter := func(tx types.Tx, res *abci.CheckTxResponse) error { return nil }
 
 	// each table driven test creates numTxsToCreate txs with checkTx, and at the end clears all remaining txs.
 	// each tx has 20 bytes
@@ -272,8 +272,8 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 	// Add 4 transactions to the mempool by calling the mempool's `CheckTx` on each of them.
 	txs := []types.Tx{[]byte{0x01}, []byte{0x02}, []byte{0x03}, []byte{0x04}}
 	for _, tx := range txs {
-		reqRes := abciclient.NewReqRes(abci.ToRequestCheckTx(&abci.RequestCheckTx{Tx: tx}))
-		reqRes.Response = abci.ToResponseCheckTx(&abci.ResponseCheckTx{Code: abci.CodeTypeOK})
+		reqRes := abciclient.NewReqRes(abci.ToCheckTxRequest(&abci.CheckTxRequest{Tx: tx, Type: abci.CHECK_TX_TYPE_CHECK}))
+		reqRes.Response = abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK})
 
 		mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes, nil)
 		_, err := mp.CheckTx(tx)
@@ -294,12 +294,12 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 	// This simulates the client dropping the second request.
 	// Previous versions of this code panicked when the ABCI application missed
 	// a recheck-tx request.
-	resp := &abci.ResponseCheckTx{Code: abci.CodeTypeOK}
-	req := &abci.RequestCheckTx{Tx: txs[1]}
-	callback(abci.ToRequestCheckTx(req), abci.ToResponseCheckTx(resp))
+	resp := &abci.CheckTxResponse{Code: abci.CodeTypeOK}
+	req := &abci.CheckTxRequest{Tx: txs[1], Type: abci.CHECK_TX_TYPE_CHECK}
+	callback(abci.ToCheckTxRequest(req), abci.ToCheckTxResponse(resp))
 
-	req = &abci.RequestCheckTx{Tx: txs[3]}
-	callback(abci.ToRequestCheckTx(req), abci.ToResponseCheckTx(resp))
+	req = &abci.CheckTxRequest{Tx: txs[3], Type: abci.CHECK_TX_TYPE_CHECK}
+	callback(abci.ToCheckTxRequest(req), abci.ToCheckTxResponse(resp))
 	mockClient.AssertExpectations(t)
 }
 
@@ -323,7 +323,7 @@ func TestMempool_KeepInvalidTxsInCache(t *testing.T) {
 		require.NoError(t, err)
 
 		// simulate new block
-		_, err = app.FinalizeBlock(context.Background(), &abci.RequestFinalizeBlock{
+		_, err = app.FinalizeBlock(context.Background(), &abci.FinalizeBlockRequest{
 			Txs: [][]byte{a, b},
 		})
 		require.NoError(t, err)
@@ -455,7 +455,7 @@ func TestSerialReap(t *testing.T) {
 			txs[i-start] = kvstore.NewTx(fmt.Sprintf("%d", i), "true")
 		}
 
-		res, err := appConnCon.FinalizeBlock(context.Background(), &abci.RequestFinalizeBlock{Txs: txs})
+		res, err := appConnCon.FinalizeBlock(context.Background(), &abci.FinalizeBlockRequest{Txs: txs})
 		if err != nil {
 			t.Errorf("client error committing tx: %v", err)
 		}
@@ -469,7 +469,7 @@ func TestSerialReap(t *testing.T) {
 			t.Errorf("error committing. Hash:%X", res.AppHash)
 		}
 
-		_, err = appConnCon.Commit(context.Background(), &abci.RequestCommit{})
+		_, err = appConnCon.Commit(context.Background(), &abci.CommitRequest{})
 		if err != nil {
 			t.Errorf("client error committing: %v", err)
 		}
@@ -623,12 +623,12 @@ func TestMempoolTxsBytes(t *testing.T) {
 		}
 	})
 
-	res, err := appConnCon.FinalizeBlock(context.Background(), &abci.RequestFinalizeBlock{Txs: [][]byte{txBytes}})
+	res, err := appConnCon.FinalizeBlock(context.Background(), &abci.FinalizeBlockRequest{Txs: [][]byte{txBytes}})
 	require.NoError(t, err)
 	require.EqualValues(t, 0, res.TxResults[0].Code)
 	require.NotEmpty(t, res.AppHash)
 
-	_, err = appConnCon.Commit(context.Background(), &abci.RequestCommit{})
+	_, err = appConnCon.Commit(context.Background(), &abci.CommitRequest{})
 	require.NoError(t, err)
 
 	// Pretend like we committed nothing so txBytes gets rechecked and removed.
@@ -752,7 +752,7 @@ func abciResponses(n int, code uint32) []*abci.ExecTxResult {
 }
 
 func doCommit(t require.TestingT, mp Mempool, app abci.Application, txs types.Txs, height int64) {
-	rfb := &abci.RequestFinalizeBlock{Txs: make([][]byte, len(txs))}
+	rfb := &abci.FinalizeBlockRequest{Txs: make([][]byte, len(txs))}
 	for i, tx := range txs {
 		rfb.Txs[i] = tx
 	}
@@ -761,7 +761,7 @@ func doCommit(t require.TestingT, mp Mempool, app abci.Application, txs types.Tx
 	mp.Lock()
 	e = mp.FlushAppConn()
 	require.True(t, e == nil)
-	_, e = app.Commit(context.Background(), &abci.RequestCommit{})
+	_, e = app.Commit(context.Background(), &abci.CommitRequest{})
 	require.True(t, e == nil)
 	e = mp.Update(height, txs, abciResponses(txs.Len(), abci.CodeTypeOK), nil, nil)
 	require.True(t, e == nil)

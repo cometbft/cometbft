@@ -57,7 +57,12 @@ func TestGRPC(t *testing.T) {
 	// Write requests
 	for counter := 0; counter < numCheckTxs; counter++ {
 		// Send request
-		response, err := client.CheckTx(context.Background(), &types.RequestCheckTx{Tx: []byte("test")})
+		response, err := client.CheckTx(
+			context.Background(),
+			&types.CheckTxRequest{
+				Tx:   []byte("test"),
+				Type: types.CHECK_TX_TYPE_CHECK,
+			})
 		require.NoError(t, err)
 		counter++
 		if response.Code != 0 {

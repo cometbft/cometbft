@@ -6,9 +6,9 @@ import (
 
 	"google.golang.org/grpc"
 
+	pbpruningsvc "github.com/cometbft/cometbft/api/cometbft/services/pruning/v1"
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/libs/log"
-	pbpruningsvc "github.com/cometbft/cometbft/proto/tendermint/services/pruning/v1"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/pruningservice"
 )
 

@@ -75,7 +75,7 @@ func TestEventBusPublishEventNewBlock(t *testing.T) {
 	})
 
 	block := MakeBlock(0, []Tx{}, nil, []Evidence{})
-	resultFinalizeBlock := abci.ResponseFinalizeBlock{
+	resultFinalizeBlock := abci.FinalizeBlockResponse{
 		Events: []abci.Event{
 			{Type: "testType", Attributes: []abci.EventAttribute{{Key: "baz", Value: "1"}}},
 		},

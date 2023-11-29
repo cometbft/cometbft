@@ -7,8 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
-	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/cometbft/cometbft/version"
 )
 
@@ -54,7 +54,6 @@ func TestLightBlockValidateBasic(t *testing.T) {
 			assert.NoError(t, err, tc.name)
 		}
 	}
-
 }
 
 func TestLightBlockProtobuf(t *testing.T) {
@@ -107,7 +106,6 @@ func TestLightBlockProtobuf(t *testing.T) {
 			assert.Equal(t, lightBlock, lb)
 		}
 	}
-
 }
 
 func TestSignedHeaderValidateBasic(t *testing.T) {

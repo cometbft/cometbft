@@ -240,7 +240,7 @@ func (h *Handshaker) NBlocks() int {
 // TODO: retry the handshake/replay if it fails ?
 func (h *Handshaker) Handshake(ctx context.Context, proxyApp proxy.AppConns) error {
 	// Handshake is done via ABCI Info on the query conn.
-	res, err := proxyApp.Query().Info(ctx, proxy.RequestInfo)
+	res, err := proxyApp.Query().Info(ctx, proxy.InfoRequest)
 	if err != nil {
 		return fmt.Errorf("error calling Info: %v", err)
 	}
@@ -308,7 +308,7 @@ func (h *Handshaker) ReplayBlocks(
 		validatorSet := types.NewValidatorSet(validators)
 		nextVals := types.TM2PB.ValidatorUpdates(validatorSet)
 		pbparams := h.genDoc.ConsensusParams.ToProto()
-		req := &abci.RequestInitChain{
+		req := &abci.InitChainRequest{
 			Time:            h.genDoc.GenesisTime,
 			ChainId:         h.genDoc.ChainID,
 			InitialHeight:   h.genDoc.InitialHeight,

@@ -9,7 +9,6 @@ import (
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/p2p"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -115,12 +114,12 @@ func (hvs *HeightVoteSet) addRound(round int32) {
 		panic("addRound() for an existing round")
 	}
 	// log.Debug("addRound(round)", "round", round)
-	prevotes := types.NewVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrevoteType, hvs.valSet)
+	prevotes := types.NewVoteSet(hvs.chainID, hvs.height, round, types.PrevoteType, hvs.valSet)
 	var precommits *types.VoteSet
 	if hvs.extensionsEnabled {
-		precommits = types.NewExtendedVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrecommitType, hvs.valSet)
+		precommits = types.NewExtendedVoteSet(hvs.chainID, hvs.height, round, types.PrecommitType, hvs.valSet)
 	} else {
-		precommits = types.NewVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrecommitType, hvs.valSet)
+		precommits = types.NewVoteSet(hvs.chainID, hvs.height, round, types.PrecommitType, hvs.valSet)
 	}
 	hvs.roundVoteSets[round] = RoundVoteSet{
 		Prevotes:   prevotes,
@@ -158,13 +157,13 @@ func (hvs *HeightVoteSet) AddVote(vote *types.Vote, peerID p2p.ID, extEnabled bo
 func (hvs *HeightVoteSet) Prevotes(round int32) *types.VoteSet {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
-	return hvs.getVoteSet(round, cmtproto.PrevoteType)
+	return hvs.getVoteSet(round, types.PrevoteType)
 }
 
 func (hvs *HeightVoteSet) Precommits(round int32) *types.VoteSet {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
-	return hvs.getVoteSet(round, cmtproto.PrecommitType)
+	return hvs.getVoteSet(round, types.PrecommitType)
 }
 
 // Last round and blockID that has +2/3 prevotes for a particular block or nil.
@@ -173,7 +172,7 @@ func (hvs *HeightVoteSet) POLInfo() (polRound int32, polBlockID types.BlockID) {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
 	for r := hvs.round; r >= 0; r-- {
-		rvs := hvs.getVoteSet(r, cmtproto.PrevoteType)
+		rvs := hvs.getVoteSet(r, types.PrevoteType)
 		polBlockID, ok := rvs.TwoThirdsMajority()
 		if ok {
 			return r, polBlockID
@@ -182,15 +181,15 @@ func (hvs *HeightVoteSet) POLInfo() (polRound int32, polBlockID types.BlockID) {
 	return -1, types.BlockID{}
 }
 
-func (hvs *HeightVoteSet) getVoteSet(round int32, voteType cmtproto.SignedMsgType) *types.VoteSet {
+func (hvs *HeightVoteSet) getVoteSet(round int32, voteType types.SignedMsgType) *types.VoteSet {
 	rvs, ok := hvs.roundVoteSets[round]
 	if !ok {
 		return nil
 	}
 	switch voteType {
-	case cmtproto.PrevoteType:
+	case types.PrevoteType:
 		return rvs.Prevotes
-	case cmtproto.PrecommitType:
+	case types.PrecommitType:
 		return rvs.Precommits
 	default:
 		panic(fmt.Sprintf("Unexpected vote type %X", voteType))
@@ -203,7 +202,7 @@ func (hvs *HeightVoteSet) getVoteSet(round int32, voteType cmtproto.SignedMsgTyp
 // TODO: implement ability to remove peers too
 func (hvs *HeightVoteSet) SetPeerMaj23(
 	round int32,
-	voteType cmtproto.SignedMsgType,
+	voteType types.SignedMsgType,
 	peerID p2p.ID,
 	blockID types.BlockID) error {
 	hvs.mtx.Lock()

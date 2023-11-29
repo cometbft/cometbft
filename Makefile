@@ -126,14 +126,14 @@ endif
 
 proto-gen: check-proto-deps
 	@echo "Generating Protobuf files"
-	@go run github.com/bufbuild/buf/cmd/buf generate --path proto/cometbft
+	@go run github.com/bufbuild/buf/cmd/buf@latest generate --path proto/cometbft
 .PHONY: proto-gen
 
 # These targets are provided for convenience and are intended for local
 # execution only.
 proto-lint: check-proto-deps
 	@echo "Linting Protobuf files"
-	@go run github.com/bufbuild/buf/cmd/buf lint
+	@go run github.com/bufbuild/buf/cmd/buf@latest lint
 .PHONY: proto-lint
 
 proto-format: check-proto-format-deps
@@ -146,11 +146,11 @@ proto-check-breaking: check-proto-deps
 	@echo "Note: This is only useful if your changes have not yet been committed."
 	@echo "      Otherwise read up on buf's \"breaking\" command usage:"
 	@echo "      https://docs.buf.build/breaking/usage"
-	@go run github.com/bufbuild/buf/cmd/buf breaking --against ".git"
+	@go run github.com/bufbuild/buf/cmd/buf@latest breaking --against ".git"
 .PHONY: proto-check-breaking
 
 proto-check-breaking-ci:
-	@go run github.com/bufbuild/buf/cmd/buf breaking --against $(HTTPS_GIT)#branch=v0.34.x
+	@go run github.com/bufbuild/buf/cmd/buf@latest breaking --against $(HTTPS_GIT)#branch=v0.34.x
 .PHONY: proto-check-breaking-ci
 
 ###############################################################################

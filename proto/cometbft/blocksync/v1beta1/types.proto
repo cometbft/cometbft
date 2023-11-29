@@ -30,7 +30,9 @@ message StatusResponse {
   int64 base   = 2;
 }
 
+// Message is an abtract blocksync message.
 message Message {
+  // Sum of all possible messages.
   oneof sum {
     BlockRequest    block_request     = 1;
     NoBlockResponse no_block_response = 2;

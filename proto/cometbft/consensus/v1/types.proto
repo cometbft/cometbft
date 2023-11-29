@@ -84,7 +84,9 @@ message HasProposalBlockPart {
   int32 index  = 3;
 }
 
+// Message is an abstract consensus message.
 message Message {
+  // Sum of all possible messages.
   oneof sum {
     NewRoundStep         new_round_step          = 1;
     NewValidBlock        new_valid_block         = 2;

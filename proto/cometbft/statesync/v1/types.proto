@@ -3,7 +3,9 @@ package cometbft.statesync.v1;
 
 option go_package = "github.com/cometbft/cometbft/api/cometbft/statesync/v1";
 
+// Message is the top-level message type for the statesync service.
 message Message {
+  // The message type.
   oneof sum {
     SnapshotsRequest  snapshots_request  = 1;
     SnapshotsResponse snapshots_response = 2;
@@ -12,8 +14,10 @@ message Message {
   }
 }
 
+// SnapshotsRequest is sent to request a snapshot.
 message SnapshotsRequest {}
 
+// SnapshotsResponse contains the snapshot metadata.
 message SnapshotsResponse {
   uint64 height   = 1;
   uint32 format   = 2;
@@ -22,12 +26,14 @@ message SnapshotsResponse {
   bytes  metadata = 5;
 }
 
+// ChunkRequest is sent to request a chunk.
 message ChunkRequest {
   uint64 height = 1;
   uint32 format = 2;
   uint32 index  = 3;
 }
 
+// ChunkResponse contains a chunk of the snapshot.
 message ChunkResponse {
   uint64 height  = 1;
   uint32 format  = 2;

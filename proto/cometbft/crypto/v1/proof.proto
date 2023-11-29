@@ -5,6 +5,7 @@ option go_package = "github.com/cometbft/cometbft/api/cometbft/crypto/v1";
 
 import "gogoproto/gogo.proto";
 
+// Proof is a Merkle proof.
 message Proof {
   int64          total     = 1;
   int64          index     = 2;
@@ -12,6 +13,7 @@ message Proof {
   repeated bytes aunts     = 4;
 }
 
+// ValueOp is a Merkle proof for a single key.
 message ValueOp {
   // Encoded in ProofOp.Key.
   bytes key = 1;
@@ -20,6 +22,7 @@ message ValueOp {
   Proof proof = 2;
 }
 
+// DominoOp always returns the given output.
 message DominoOp {
   string key    = 1;
   string input  = 2;

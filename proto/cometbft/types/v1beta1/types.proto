@@ -14,28 +14,30 @@ enum SignedMsgType {
   option (gogoproto.goproto_enum_stringer) = true;
   option (gogoproto.goproto_enum_prefix)   = false;
 
+  // Unknown
   SIGNED_MSG_TYPE_UNKNOWN = 0 [(gogoproto.enumvalue_customname) = "UnknownType"];
-  // Votes
-  SIGNED_MSG_TYPE_PREVOTE   = 1 [(gogoproto.enumvalue_customname) = "PrevoteType"];
+  // Prevote
+  SIGNED_MSG_TYPE_PREVOTE = 1 [(gogoproto.enumvalue_customname) = "PrevoteType"];
+  // Precommit
   SIGNED_MSG_TYPE_PRECOMMIT = 2 [(gogoproto.enumvalue_customname) = "PrecommitType"];
-
-  // Proposals
+  // Proposal
   SIGNED_MSG_TYPE_PROPOSAL = 32 [(gogoproto.enumvalue_customname) = "ProposalType"];
 }
 
-// PartsetHeader
+// Header of the parts set for a block.
 message PartSetHeader {
   uint32 total = 1;
   bytes  hash  = 2;
 }
 
+// Part of the block.
 message Part {
   uint32                   index = 1;
   bytes                    bytes = 2;
   cometbft.crypto.v1.Proof proof = 3 [(gogoproto.nullable) = false];
 }
 
-// BlockID
+// BlockID defines the unique ID of a block as its hash and its `PartSetHeader`.
 message BlockID {
   bytes         hash            = 1;
   PartSetHeader part_set_header = 2 [(gogoproto.nullable) = false];
@@ -110,6 +112,7 @@ message CommitSig {
   bytes signature = 4;
 }
 
+// Block proposal.
 message Proposal {
   SignedMsgType             type      = 1;
   int64                     height    = 2;
@@ -121,16 +124,19 @@ message Proposal {
   bytes signature = 7;
 }
 
+// SignedHeader contains a Header(H) and Commit(H+1) with signatures of validators who signed it.
 message SignedHeader {
   Header header = 1;
   Commit commit = 2;
 }
 
+// LightBlock is a combination of SignedHeader and ValidatorSet. It is used by light clients.
 message LightBlock {
   SignedHeader                        signed_header = 1;
   cometbft.types.v1beta1.ValidatorSet validator_set = 2;
 }
 
+// BlockMeta contains meta information about a block.
 message BlockMeta {
   BlockID block_id   = 1 [(gogoproto.customname) = "BlockID", (gogoproto.nullable) = false];
   int64   block_size = 2;

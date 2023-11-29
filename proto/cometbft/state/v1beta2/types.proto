@@ -23,14 +23,16 @@ message ABCIResponses {
 // ConsensusParamsInfo represents the latest consensus params, or the last height it changed
 message ConsensusParamsInfo {
   cometbft.types.v1beta2.ConsensusParams consensus_params    = 1 [(gogoproto.nullable) = false];
-  int64                             last_height_changed = 2;
+  int64                                  last_height_changed = 2;
 }
 
+// ABCIResponsesInfo retains the responses of the ABCI calls during block processing.
 message ABCIResponsesInfo {
   ABCIResponses abci_responses = 1;
   int64         height         = 2;
 }
 
+// State represents the state of the blockchain.
 message State {
   v1beta1.Version version = 1 [(gogoproto.nullable) = false];
 
@@ -39,7 +41,7 @@ message State {
   int64  initial_height = 14;
 
   // LastBlockHeight=0 at genesis (ie. block(H=0) does not exist)
-  int64                     last_block_height = 3;
+  int64                          last_block_height = 3;
   cometbft.types.v1beta1.BlockID last_block_id     = 4 [
     (gogoproto.nullable)   = false,
     (gogoproto.customname) = "LastBlockID"
@@ -58,12 +60,12 @@ message State {
   cometbft.types.v1beta1.ValidatorSet next_validators                = 6;
   cometbft.types.v1beta1.ValidatorSet validators                     = 7;
   cometbft.types.v1beta1.ValidatorSet last_validators                = 8;
-  int64                          last_height_validators_changed = 9;
+  int64                               last_height_validators_changed = 9;
 
   // Consensus parameters used for validating blocks.
   // Changes returned by EndBlock and updated after Commit.
   cometbft.types.v1beta2.ConsensusParams consensus_params                     = 10 [(gogoproto.nullable) = false];
-  int64                             last_height_consensus_params_changed = 11;
+  int64                                  last_height_consensus_params_changed = 11;
 
   // Merkle root of the results from executing prev block
   bytes last_results_hash = 12;

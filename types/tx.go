@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 // TxKeySize is the size of the transaction key index
@@ -157,7 +157,6 @@ func (tp TxProof) Validate(dataHash []byte) error {
 }
 
 func (tp TxProof) ToProto() cmtproto.TxProof {
-
 	pbProof := tp.Proof.ToProto()
 
 	pbtp := cmtproto.TxProof{
@@ -168,8 +167,8 @@ func (tp TxProof) ToProto() cmtproto.TxProof {
 
 	return pbtp
 }
-func TxProofFromProto(pb cmtproto.TxProof) (TxProof, error) {
 
+func TxProofFromProto(pb cmtproto.TxProof) (TxProof, error) {
 	pbProof, err := merkle.ProofFromProto(pb.Proof)
 	if err != nil {
 		return TxProof{}, err

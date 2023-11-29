@@ -1,5 +1,5 @@
 - `[proto]` Add definitions and generated code for [ADR-101] `PruningService`
-  in the `tendermint.services.pruning.v1` proto package
+  in the `cometbft.services.pruning.v1` proto package
   ([\#1097](https://github.com/cometbft/cometbft/issues/1097)).
 - `[rpc/grpc]` Add privileged gRPC server and client facilities, in
   `server/privileged` and `client/privileged` packages respectively, to

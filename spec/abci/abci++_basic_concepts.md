@@ -78,11 +78,10 @@ call sequences of these methods.
   every time CometBFT is about to broadcast a Proposal message and _validValue_ is `nil`.
   CometBFT gathers outstanding transactions from the
   mempool, generates a block header, and uses them to create a block to propose. Then, it calls
-  `RequestPrepareProposal` with the newly created proposal, called *raw proposal*. The Application
+  `PrepareProposal` with the newly created proposal, called *raw proposal*. The Application
   can make changes to the raw proposal, such as modifying the set of transactions or the order
   in which they appear, and returns the
-  (potentially) modified proposal, called *prepared proposal* in the `ResponsePrepareProposal`
-  call.
+  (potentially) modified proposal, called *prepared proposal* in the `PrepareProposalResponse`.
   The logic modifying the raw proposal MAY be non-deterministic.
 
 - [**ProcessProposal:**](./abci++_methods.md#processproposal) It allows a validator to
@@ -117,20 +116,20 @@ call sequences of these methods.
   many (+2/3) validators send precommit votes for that block. Thus, `VerifyVoteExtension`
   should be used with special care.
   As a general rule, an Application that detects an invalid vote extension SHOULD
-  accept it in `ResponseVerifyVoteExtension` and ignore it in its own logic. CometBFT calls it when
+  accept it in `VerifyVoteExtensionResponse` and ignore it in its own logic. CometBFT calls it when
   a process receives a precommit message with a (possibly empty) vote extension.
   The logic in `VerifyVoteExtension` MUST be deterministic.
 
 - [**FinalizeBlock:**](./abci++_methods.md#finalizeblock) It delivers a decided block to the
   Application. The Application must execute the transactions in the block deterministically and
   update its state accordingly. Cryptographic commitments to the block and transaction results,
-  returned via the corresponding parameters in `ResponseFinalizeBlock`, are included in the header
+  returned via the corresponding parameters in `FinalizeBlockResponse`, are included in the header
   of the next block. CometBFT calls it when a new block is decided.
 
 - [**Commit:**](./abci++_methods.md#commit) Instructs the Application to persist its
   state. It is a fundamental part of CometBFT's crash-recovery mechanism that ensures the
   synchronization between CometBFT and the Application upon recovery. CometBFT calls it just after
-  having persisted the data returned by calls to `ResponseFinalizeBlock`. The Application can now discard
+  having persisted the data returned by calls to `FinalizeBlockResponse`. The Application can now discard
   any state or data except the one resulting from executing the transactions in the decided block.
 
 ### Mempool methods
@@ -250,7 +249,7 @@ The same is true to Applications that quickly accept blocks and execute the bloc
 
 Additionally, vote extensions or the validation thereof (via `ExtendVote` or
 `VerifyVoteExtension`) must *never* have side effects on the current state.
-They can only be used when their data is provided in a `RequestPrepareProposal` call.
+They can only be used when their data is provided in a `PrepareProposal` call.
 
 If there is some non-determinism in the state machine, consensus will eventually
 fail as nodes disagree over the correct values for the block header. The
@@ -279,14 +278,14 @@ Note that some methods (`Query`, `FinalizeBlock`) return non-deterministic data 
 of `Info` and `Log` fields. The `Log` is intended for the literal output from the Application's
 logger, while the `Info` is any additional info that should be returned. These are the only fields
 that are not included in block header computations, so we don't need agreement
-on them. All other fields in the `Response*` must be strictly deterministic.
+on them. All other fields in the `*Response` must be strictly deterministic.
 
 ## Events
 
 [&#8593; Back to Outline](#outline)
 
 Method `FinalizeBlock` includes an `events` field at the top level in its
-`Response*`, and one `events` field per transaction included in the block.
+`FinalizeBlockResponse`, and one `events` field per transaction included in the block.
 Applications may respond to this ABCI 2.0 method with an event list for each executed
 transaction, and a general event list for the block itself.
 Events allow applications to associate metadata with transactions and blocks.
@@ -299,7 +298,8 @@ execution. `Event` values can be used to index transactions and blocks according
 happened during their execution.
 
 Each event has a `type` which is meant to categorize the event for a particular
-`Response*` or `Tx`. A `Response*` or `Tx` may contain multiple events with duplicate
+`FinalizeBlockResponse` or `Tx`. A `FinalizeBlockResponse` or `Tx` may contain
+multiple events with duplicate
 `type` values, where each distinct entry is meant to categorize attributes for a
 particular event. Every key and value in an event's attributes must be UTF-8
 encoded strings along with the event type itself.
@@ -326,7 +326,7 @@ message EventAttribute {
 Example:
 
 ```go
- abci.ResponseFinalizeBlock{
+ abci.FinalizeBlockResponse{
   // ...
  Events: []abci.Event{
   {
@@ -388,7 +388,7 @@ enum EvidenceType {
 
 [&#8593; Back to Outline](#outline)
 
-The `Query` and `CheckTx` methods include a `Code` field in their `Response*`.
+The `Query` and `CheckTx` methods include a `Code` field in their `*Response`.
 Field `Code` is meant to contain an application-specific response code.
 A response code of `0` indicates no error.  Any other response code
 indicates to CometBFT that an error occurred.
@@ -414,18 +414,18 @@ The handling of non-zero response codes by CometBFT is described below.
 
 ### `CheckTx`
 
-When CometBFT receives a `ResponseCheckTx` with a non-zero `Code`, the associated
+When CometBFT receives a `CheckTxResponse` with a non-zero `Code`, the associated
 transaction will not be added to CometBFT's mempool or it will be removed if
 it is already included.
 
 ### `ExecTxResult` (as part of `FinalizeBlock`)
 
 The `ExecTxResult` type delivers transaction results from the Application to CometBFT. When
-CometBFT receives a `ResponseFinalizeBlock` containing an `ExecTxResult` with a non-zero `Code`,
+CometBFT receives a `FinalizeBlockResponse` containing an `ExecTxResult` with a non-zero `Code`,
 the response code is logged. Past `Code` values can be queried by clients. As the transaction was
 part of a decided block, the `Code` does not influence consensus.
 
 ### `Query`
 
-When CometBFT receives a `ResponseQuery` with a non-zero `Code`, this code is
+When CometBFT receives a `QueryResponse` with a non-zero `Code`, this code is
 returned directly to the client that initiated the query.

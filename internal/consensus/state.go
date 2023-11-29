@@ -13,6 +13,7 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
@@ -26,7 +27,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/p2p"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 	cmttime "github.com/cometbft/cometbft/types/time"
@@ -1340,7 +1340,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 	// We did not receive a proposal within this round. (and thus executing this from a timeout)
 	if cs.ProposalBlock == nil {
 		logger.Debug("prevote step: ProposalBlock is nil; prevoting nil")
-		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
+		cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 		return
 	}
 
@@ -1350,7 +1350,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		// ProposalBlock is invalid, prevote nil.
 		logger.Error("prevote step: consensus deems this block invalid; prevoting nil",
 			"err", err)
-		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
+		cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 		return
 	}
 
@@ -1384,7 +1384,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		if cs.LockedRound == -1 {
 			if cs.ValidRound != -1 && cs.ProposalBlock.HashesTo(cs.ValidBlock.Hash()) {
 				logger.Debug("prevote step: ProposalBlock matches our valid block; prevoting the proposal")
-				cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
+				cs.signAddVote(types.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
 				return
 			}
 
@@ -1407,23 +1407,23 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 			if !isAppValid {
 				logger.Error("prevote step: state machine rejected a proposed block; this should not happen:"+
 					"the proposer may be misbehaving; prevoting nil", "err", err)
-				cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
+				cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 				return
 			}
 
 			logger.Debug("prevote step: ProposalBlock is valid and there is no locked block; prevoting the proposal")
-			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
+			cs.signAddVote(types.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
 			return
 		}
 
 		if cs.ProposalBlock.HashesTo(cs.LockedBlock.Hash()) {
 			logger.Debug("prevote step: ProposalBlock is valid (POLRound is -1) and matches our locked block; prevoting the proposal")
-			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
+			cs.signAddVote(types.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
 			return
 		}
 
 		logger.Debug("prevote step: ProposalBlock is valid (POLRound is -1), but doesn't match our locked block; prevoting nil")
-		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
+		cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 		return
 	}
 
@@ -1459,19 +1459,19 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		if cs.LockedRound <= cs.Proposal.POLRound {
 			logger.Debug("prevote step: ProposalBlock is valid and received a 2/3" +
 				"majority in a round later than the locked round; prevoting the proposal")
-			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
+			cs.signAddVote(types.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
 			return
 		}
 		if cs.ProposalBlock.HashesTo(cs.LockedBlock.Hash()) {
 			logger.Debug("prevote step: ProposalBlock is valid and matches our locked block; prevoting the proposal")
-			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
+			cs.signAddVote(types.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
 			return
 		}
 	}
 
 	logger.Debug("prevote step: ProposalBlock is valid but was not our locked block or" +
 		"did not receive a more recent majority; prevoting nil")
-	cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
+	cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 }
 
 // Enter: any +2/3 prevotes at next round.
@@ -1540,7 +1540,7 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 			logger.Debug("precommit step; no +2/3 prevotes during enterPrecommit; precommitting nil")
 		}
 
-		cs.signAddVote(cmtproto.PrecommitType, nil, types.PartSetHeader{}, nil)
+		cs.signAddVote(types.PrecommitType, nil, types.PartSetHeader{}, nil)
 		return
 	}
 
@@ -1558,7 +1558,7 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 	// +2/3 prevoted nil. Precommit nil.
 	if blockID.IsNil() {
 		logger.Debug("precommit step; +2/3 prevoted for nil")
-		cs.signAddVote(cmtproto.PrecommitType, nil, types.PartSetHeader{}, nil)
+		cs.signAddVote(types.PrecommitType, nil, types.PartSetHeader{}, nil)
 		return
 	}
 
@@ -1573,7 +1573,7 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 			logger.Error("failed publishing event relock", "err", err)
 		}
 
-		cs.signAddVote(cmtproto.PrecommitType, blockID.Hash, blockID.PartSetHeader, cs.LockedBlock)
+		cs.signAddVote(types.PrecommitType, blockID.Hash, blockID.PartSetHeader, cs.LockedBlock)
 		return
 	}
 
@@ -1596,7 +1596,7 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 			logger.Error("failed publishing event lock", "err", err)
 		}
 
-		cs.signAddVote(cmtproto.PrecommitType, blockID.Hash, blockID.PartSetHeader, cs.ProposalBlock)
+		cs.signAddVote(types.PrecommitType, blockID.Hash, blockID.PartSetHeader, cs.ProposalBlock)
 		return
 	}
 
@@ -1609,7 +1609,7 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 		cs.ProposalBlockParts = types.NewPartSetFromHeader(blockID.PartSetHeader)
 	}
 
-	cs.signAddVote(cmtproto.PrecommitType, nil, types.PartSetHeader{}, nil)
+	cs.signAddVote(types.PrecommitType, nil, types.PartSetHeader{}, nil)
 }
 
 // Enter: any +2/3 precommits for next round.
@@ -2175,7 +2175,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 
 	// A precommit for the previous height?
 	// These come in while we wait timeoutCommit
-	if vote.Height+1 == cs.Height && vote.Type == cmtproto.PrecommitType {
+	if vote.Height+1 == cs.Height && vote.Type == types.PrecommitType {
 		if cs.Step != cstypes.RoundStepNewHeight {
 			// Late precommit at prior height is ignored
 			cs.Logger.Debug("precommit vote came in after commit timeout and has been ignored", "vote", vote)
@@ -2228,7 +2228,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 		}
 		// Verify VoteExtension if precommit and not nil
 		// https://github.com/tendermint/tendermint/issues/8487
-		if vote.Type == cmtproto.PrecommitType && !vote.BlockID.IsNil() &&
+		if vote.Type == types.PrecommitType && !vote.BlockID.IsNil() &&
 			!bytes.Equal(vote.ValidatorAddress, myAddr) { // Skip the VerifyVoteExtension call if the vote was issued by this validator.
 
 			// The core fields of the vote message were already validated in the
@@ -2281,7 +2281,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 	cs.evsw.FireEvent(types.EventVote, vote)
 
 	switch vote.Type {
-	case cmtproto.PrevoteType:
+	case types.PrevoteType:
 		prevotes := cs.Votes.Prevotes(vote.Round)
 		cs.Logger.Debug("added vote to prevote", "vote", vote, "prevotes", prevotes.StringShort())
 
@@ -2340,7 +2340,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 			}
 		}
 
-	case cmtproto.PrecommitType:
+	case types.PrecommitType:
 		precommits := cs.Votes.Precommits(vote.Round)
 		cs.Logger.Debug("added vote to precommit",
 			"height", vote.Height,
@@ -2377,7 +2377,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 
 // CONTRACT: cs.privValidator is not nil.
 func (cs *State) signVote(
-	msgType cmtproto.SignedMsgType,
+	msgType types.SignedMsgType,
 	hash []byte,
 	header types.PartSetHeader,
 	block *types.Block,
@@ -2406,7 +2406,7 @@ func (cs *State) signVote(
 	}
 
 	extEnabled := cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(vote.Height)
-	if msgType == cmtproto.PrecommitType && !vote.BlockID.IsNil() {
+	if msgType == types.PrecommitType && !vote.BlockID.IsNil() {
 		// if the signedMessage type is for a non-nil precommit, add
 		// VoteExtension
 		if extEnabled {
@@ -2418,7 +2418,7 @@ func (cs *State) signVote(
 		}
 	}
 
-	recoverable, err := types.SignAndCheckVote(vote, cs.privValidator, cs.state.ChainID, extEnabled && (msgType == cmtproto.PrecommitType))
+	recoverable, err := types.SignAndCheckVote(vote, cs.privValidator, cs.state.ChainID, extEnabled && (msgType == types.PrecommitType))
 	if err != nil && !recoverable {
 		panic(fmt.Sprintf("non-recoverable error when signing vote (%d/%d)", vote.Height, vote.Round))
 	}
@@ -2450,7 +2450,7 @@ func (cs *State) voteTime() time.Time {
 // sign the vote and publish on internalMsgQueue
 // block information is only used to extend votes (precommit only); should be nil in all other cases
 func (cs *State) signAddVote(
-	msgType cmtproto.SignedMsgType,
+	msgType types.SignedMsgType,
 	hash []byte,
 	header types.PartSetHeader,
 	block *types.Block,
@@ -2478,7 +2478,7 @@ func (cs *State) signAddVote(
 	}
 	hasExt := len(vote.ExtensionSignature) > 0
 	extEnabled := cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(vote.Height)
-	if vote.Type == cmtproto.PrecommitType && !vote.BlockID.IsNil() && hasExt != extEnabled {
+	if vote.Type == types.PrecommitType && !vote.BlockID.IsNil() && hasExt != extEnabled {
 		panic(fmt.Errorf("vote extension absence/presence does not match extensions enabled %t!=%t, height %d, type %v",
 			hasExt, extEnabled, vote.Height, vote.Type))
 	}

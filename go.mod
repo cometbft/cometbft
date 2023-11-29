@@ -10,7 +10,7 @@ require (
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
 	github.com/go-logfmt/logfmt v0.6.0
-	github.com/golang/protobuf v1.5.3
+	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golangci/golangci-lint v1.55.2
 	github.com/google/orderedcode v0.0.1
 	github.com/gorilla/websocket v1.5.1
@@ -45,6 +45,7 @@ require (
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2
 	github.com/btcsuite/btcd/btcutil v1.1.3
 	github.com/cometbft/cometbft-db v0.7.0
+	github.com/cometbft/cometbft/api v0.0.0
 	github.com/cosmos/gogoproto v1.4.11
 	github.com/go-git/go-git/v5 v5.10.1
 	github.com/goccmack/goutil v1.2.3
@@ -324,3 +325,5 @@ require (
 	mvdan.cc/lint v0.0.0-20170908181259-adc824a0674b // indirect
 	mvdan.cc/unparam v0.0.0-20221223090309-7455f1af531d // indirect
 )
+
+replace github.com/cometbft/cometbft/api => ./api

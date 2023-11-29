@@ -66,7 +66,7 @@ func init() {
 type EventDataNewBlock struct {
 	Block               *Block                     `json:"block"`
 	BlockID             BlockID                    `json:"block_id"`
-	ResultFinalizeBlock abci.ResponseFinalizeBlock `json:"result_finalize_block"`
+	ResultFinalizeBlock abci.FinalizeBlockResponse `json:"result_finalize_block"`
 }
 
 type EventDataNewBlockHeader struct {

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -20,7 +19,7 @@ func MakeCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet, valida
 			ValidatorIndex:   int32(i),
 			Height:           voteSet.GetHeight(),
 			Round:            voteSet.GetRound(),
-			Type:             cmtproto.PrecommitType,
+			Type:             types.PrecommitType,
 			BlockID:          blockID,
 			Timestamp:        now,
 		}
@@ -62,7 +61,7 @@ func MakeCommit(blockID types.BlockID, height int64, round int32, valSet *types.
 			ValidatorIndex:   idx,
 			Height:           height,
 			Round:            round,
-			Type:             cmtproto.PrecommitType,
+			Type:             types.PrecommitType,
 			BlockID:          blockID,
 			Timestamp:        now,
 		}

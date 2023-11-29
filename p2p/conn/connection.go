@@ -14,6 +14,7 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
+	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	"github.com/cometbft/cometbft/config"
 	flow "github.com/cometbft/cometbft/internal/flowrate"
 	"github.com/cometbft/cometbft/internal/protoio"
@@ -22,7 +23,6 @@ import (
 	"github.com/cometbft/cometbft/internal/timer"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
 )
 
 const (

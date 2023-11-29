@@ -23,6 +23,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// GetByHeightRequest is a request for a block at the specified height.
 type GetByHeightRequest struct {
 	// The height of the block requested. If set to 0, the latest height will be returned.
 	Height int64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
@@ -68,6 +69,7 @@ func (m *GetByHeightRequest) GetHeight() int64 {
 	return 0
 }
 
+// GetByHeightResponse contains the block ID and the block at the specified height.
 type GetByHeightResponse struct {
 	BlockId *v1.BlockID `protobuf:"bytes,1,opt,name=block_id,json=blockId,proto3" json:"block_id,omitempty"`
 	Block   *v1.Block   `protobuf:"bytes,2,opt,name=block,proto3" json:"block,omitempty"`
@@ -120,6 +122,7 @@ func (m *GetByHeightResponse) GetBlock() *v1.Block {
 	return nil
 }
 
+// GetLatestRequest is a request for the latest block.
 type GetLatestRequest struct {
 }
 
@@ -156,6 +159,7 @@ func (m *GetLatestRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetLatestRequest proto.InternalMessageInfo
 
+// GetLatestResponse contains the latest block ID and the latest block.
 type GetLatestResponse struct {
 	BlockId *v1.BlockID `protobuf:"bytes,1,opt,name=block_id,json=blockId,proto3" json:"block_id,omitempty"`
 	Block   *v1.Block   `protobuf:"bytes,2,opt,name=block,proto3" json:"block,omitempty"`

@@ -75,21 +75,37 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ABCIServiceClient interface {
+	// Echo returns back the same message it is sent.
 	Echo(ctx context.Context, in *EchoRequest, opts ...grpc.CallOption) (*EchoResponse, error)
+	// Flush flushes the write buffer.
 	Flush(ctx context.Context, in *FlushRequest, opts ...grpc.CallOption) (*FlushResponse, error)
+	// Info returns information about the application state.
 	Info(ctx context.Context, in *InfoRequest, opts ...grpc.CallOption) (*InfoResponse, error)
+	// CheckTx validates a transaction.
 	CheckTx(ctx context.Context, in *CheckTxRequest, opts ...grpc.CallOption) (*CheckTxResponse, error)
+	// Query queries the application state.
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
+	// Commit commits a block of transactions.
 	Commit(ctx context.Context, in *CommitRequest, opts ...grpc.CallOption) (*CommitResponse, error)
+	// InitChain initializes the blockchain.
 	InitChain(ctx context.Context, in *InitChainRequest, opts ...grpc.CallOption) (*InitChainResponse, error)
+	// ListSnapshots lists all the available snapshots.
 	ListSnapshots(ctx context.Context, in *ListSnapshotsRequest, opts ...grpc.CallOption) (*ListSnapshotsResponse, error)
+	// OfferSnapshot sends a snapshot offer.
 	OfferSnapshot(ctx context.Context, in *OfferSnapshotRequest, opts ...grpc.CallOption) (*OfferSnapshotResponse, error)
+	// LoadSnapshotChunk returns a chunk of snapshot.
 	LoadSnapshotChunk(ctx context.Context, in *LoadSnapshotChunkRequest, opts ...grpc.CallOption) (*LoadSnapshotChunkResponse, error)
+	// ApplySnapshotChunk applies a chunk of snapshot.
 	ApplySnapshotChunk(ctx context.Context, in *ApplySnapshotChunkRequest, opts ...grpc.CallOption) (*ApplySnapshotChunkResponse, error)
+	// PrepareProposal returns a proposal for the next block.
 	PrepareProposal(ctx context.Context, in *PrepareProposalRequest, opts ...grpc.CallOption) (*PrepareProposalResponse, error)
+	// ProcessProposal validates a proposal.
 	ProcessProposal(ctx context.Context, in *ProcessProposalRequest, opts ...grpc.CallOption) (*ProcessProposalResponse, error)
+	// ExtendVote extends a vote with application-injected data (vote extentions).
 	ExtendVote(ctx context.Context, in *ExtendVoteRequest, opts ...grpc.CallOption) (*ExtendVoteResponse, error)
+	// VerifyVoteExtension verifies a vote extension.
 	VerifyVoteExtension(ctx context.Context, in *VerifyVoteExtensionRequest, opts ...grpc.CallOption) (*VerifyVoteExtensionResponse, error)
+	// FinalizeBlock finalizes a block.
 	FinalizeBlock(ctx context.Context, in *FinalizeBlockRequest, opts ...grpc.CallOption) (*FinalizeBlockResponse, error)
 }
 
@@ -247,21 +263,37 @@ func (c *aBCIServiceClient) FinalizeBlock(ctx context.Context, in *FinalizeBlock
 
 // ABCIServiceServer is the server API for ABCIService service.
 type ABCIServiceServer interface {
+	// Echo returns back the same message it is sent.
 	Echo(context.Context, *EchoRequest) (*EchoResponse, error)
+	// Flush flushes the write buffer.
 	Flush(context.Context, *FlushRequest) (*FlushResponse, error)
+	// Info returns information about the application state.
 	Info(context.Context, *InfoRequest) (*InfoResponse, error)
+	// CheckTx validates a transaction.
 	CheckTx(context.Context, *CheckTxRequest) (*CheckTxResponse, error)
+	// Query queries the application state.
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
+	// Commit commits a block of transactions.
 	Commit(context.Context, *CommitRequest) (*CommitResponse, error)
+	// InitChain initializes the blockchain.
 	InitChain(context.Context, *InitChainRequest) (*InitChainResponse, error)
+	// ListSnapshots lists all the available snapshots.
 	ListSnapshots(context.Context, *ListSnapshotsRequest) (*ListSnapshotsResponse, error)
+	// OfferSnapshot sends a snapshot offer.
 	OfferSnapshot(context.Context, *OfferSnapshotRequest) (*OfferSnapshotResponse, error)
+	// LoadSnapshotChunk returns a chunk of snapshot.
 	LoadSnapshotChunk(context.Context, *LoadSnapshotChunkRequest) (*LoadSnapshotChunkResponse, error)
+	// ApplySnapshotChunk applies a chunk of snapshot.
 	ApplySnapshotChunk(context.Context, *ApplySnapshotChunkRequest) (*ApplySnapshotChunkResponse, error)
+	// PrepareProposal returns a proposal for the next block.
 	PrepareProposal(context.Context, *PrepareProposalRequest) (*PrepareProposalResponse, error)
+	// ProcessProposal validates a proposal.
 	ProcessProposal(context.Context, *ProcessProposalRequest) (*ProcessProposalResponse, error)
+	// ExtendVote extends a vote with application-injected data (vote extentions).
 	ExtendVote(context.Context, *ExtendVoteRequest) (*ExtendVoteResponse, error)
+	// VerifyVoteExtension verifies a vote extension.
 	VerifyVoteExtension(context.Context, *VerifyVoteExtensionRequest) (*VerifyVoteExtensionResponse, error)
+	// FinalizeBlock finalizes a block.
 	FinalizeBlock(context.Context, *FinalizeBlockRequest) (*FinalizeBlockResponse, error)
 }
 

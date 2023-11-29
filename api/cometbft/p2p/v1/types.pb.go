@@ -23,6 +23,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// NetAddress represents a peer's network address.
 type NetAddress struct {
 	ID   string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	IP   string `protobuf:"bytes,2,opt,name=ip,proto3" json:"ip,omitempty"`
@@ -83,6 +84,7 @@ func (m *NetAddress) GetPort() uint32 {
 	return 0
 }
 
+// ProtocolVersion represents the current p2p protocol version.
 type ProtocolVersion struct {
 	P2P   uint64 `protobuf:"varint,1,opt,name=p2p,proto3" json:"p2p,omitempty"`
 	Block uint64 `protobuf:"varint,2,opt,name=block,proto3" json:"block,omitempty"`
@@ -143,6 +145,8 @@ func (m *ProtocolVersion) GetApp() uint64 {
 	return 0
 }
 
+// DefaultNodeInfo is a basic node's information sent to other peers during the
+// p2p handshake.
 type DefaultNodeInfo struct {
 	ProtocolVersion ProtocolVersion      `protobuf:"bytes,1,opt,name=protocol_version,json=protocolVersion,proto3" json:"protocol_version"`
 	DefaultNodeID   string               `protobuf:"bytes,2,opt,name=default_node_id,json=defaultNodeId,proto3" json:"default_node_id,omitempty"`
@@ -243,6 +247,7 @@ func (m *DefaultNodeInfo) GetOther() DefaultNodeInfoOther {
 	return DefaultNodeInfoOther{}
 }
 
+// DefaultNodeInfoOther is the misc. application specific data.
 type DefaultNodeInfoOther struct {
 	TxIndex    string `protobuf:"bytes,1,opt,name=tx_index,json=txIndex,proto3" json:"tx_index,omitempty"`
 	RPCAddress string `protobuf:"bytes,2,opt,name=rpc_address,json=rpcAddress,proto3" json:"rpc_address,omitempty"`

@@ -260,6 +260,7 @@ func (m *ConsensusParamsInfo) GetLastHeightChanged() int64 {
 	return 0
 }
 
+// ABCIResponsesInfo retains the responses of the ABCI calls during block processing.
 type ABCIResponsesInfo struct {
 	// Retains the responses of the legacy ABCI calls during block processing.
 	LegacyAbciResponses   *LegacyABCIResponses           `protobuf:"bytes,1,opt,name=legacy_abci_responses,json=legacyAbciResponses,proto3" json:"legacy_abci_responses,omitempty"`
@@ -321,6 +322,7 @@ func (m *ABCIResponsesInfo) GetResponseFinalizeBlock() *v1beta3.ResponseFinalize
 	return nil
 }
 
+// State represents the state of the blockchain.
 type State struct {
 	Version v1beta11.Version `protobuf:"bytes,1,opt,name=version,proto3" json:"version"`
 	// immutable

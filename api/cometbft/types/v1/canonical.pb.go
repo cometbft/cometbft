@@ -28,6 +28,8 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// CanonicalBlockID is a canonical representation of a BlockID, which gets
+// serialized and signed.
 type CanonicalBlockID struct {
 	Hash          []byte                 `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
 	PartSetHeader CanonicalPartSetHeader `protobuf:"bytes,2,opt,name=part_set_header,json=partSetHeader,proto3" json:"part_set_header"`
@@ -80,6 +82,8 @@ func (m *CanonicalBlockID) GetPartSetHeader() CanonicalPartSetHeader {
 	return CanonicalPartSetHeader{}
 }
 
+// CanonicalPartSetHeader is a canonical representation of a PartSetHeader,
+// which gets serialized and signed.
 type CanonicalPartSetHeader struct {
 	Total uint32 `protobuf:"varint,1,opt,name=total,proto3" json:"total,omitempty"`
 	Hash  []byte `protobuf:"bytes,2,opt,name=hash,proto3" json:"hash,omitempty"`
@@ -132,6 +136,8 @@ func (m *CanonicalPartSetHeader) GetHash() []byte {
 	return nil
 }
 
+// CanonicalProposal is a canonical representation of a Proposal, which gets
+// serialized and signed.
 type CanonicalProposal struct {
 	Type      SignedMsgType     `protobuf:"varint,1,opt,name=type,proto3,enum=cometbft.types.v1.SignedMsgType" json:"type,omitempty"`
 	Height    int64             `protobuf:"fixed64,2,opt,name=height,proto3" json:"height,omitempty"`
@@ -224,6 +230,8 @@ func (m *CanonicalProposal) GetChainID() string {
 	return ""
 }
 
+// CanonicalVote is a canonical representation of a Vote, which gets
+// serialized and signed.
 type CanonicalVote struct {
 	Type      SignedMsgType     `protobuf:"varint,1,opt,name=type,proto3,enum=cometbft.types.v1.SignedMsgType" json:"type,omitempty"`
 	Height    int64             `protobuf:"fixed64,2,opt,name=height,proto3" json:"height,omitempty"`

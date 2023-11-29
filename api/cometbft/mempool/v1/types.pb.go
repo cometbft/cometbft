@@ -22,6 +22,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Txs contains a list of transaction from the mempool.
 type Txs struct {
 	Txs [][]byte `protobuf:"bytes,1,rep,name=txs,proto3" json:"txs,omitempty"`
 }
@@ -66,7 +67,10 @@ func (m *Txs) GetTxs() [][]byte {
 	return nil
 }
 
+// Message is an abstract mempool message.
 type Message struct {
+	// Sum of all possible messages.
+	//
 	// Types that are valid to be assigned to Sum:
 	//
 	//	*Message_Txs

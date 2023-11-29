@@ -33,11 +33,13 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 type SignedMsgType int32
 
 const (
+	// Unknown
 	UnknownType SignedMsgType = 0
-	// Votes
-	PrevoteType   SignedMsgType = 1
+	// Prevote
+	PrevoteType SignedMsgType = 1
+	// Precommit
 	PrecommitType SignedMsgType = 2
-	// Proposals
+	// Proposal
 	ProposalType SignedMsgType = 32
 )
 
@@ -63,6 +65,7 @@ func (SignedMsgType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_8ea20b664d765b5f, []int{0}
 }
 
+// Header of the parts set for a block.
 type PartSetHeader struct {
 	Total uint32 `protobuf:"varint,1,opt,name=total,proto3" json:"total,omitempty"`
 	Hash  []byte `protobuf:"bytes,2,opt,name=hash,proto3" json:"hash,omitempty"`
@@ -115,6 +118,7 @@ func (m *PartSetHeader) GetHash() []byte {
 	return nil
 }
 
+// Part of the block.
 type Part struct {
 	Index uint32   `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
 	Bytes []byte   `protobuf:"bytes,2,opt,name=bytes,proto3" json:"bytes,omitempty"`
@@ -175,6 +179,7 @@ func (m *Part) GetProof() v1.Proof {
 	return v1.Proof{}
 }
 
+// BlockID defines the unique ID of a block as its hash and its `PartSetHeader`.
 type BlockID struct {
 	Hash          []byte        `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
 	PartSetHeader PartSetHeader `protobuf:"bytes,2,opt,name=part_set_header,json=partSetHeader,proto3" json:"part_set_header"`
@@ -692,6 +697,7 @@ func (m *CommitSig) GetSignature() []byte {
 	return nil
 }
 
+// ExtendedCommit is a Commit with ExtendedCommitSig.
 type ExtendedCommit struct {
 	Height             int64               `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
 	Round              int32               `protobuf:"varint,2,opt,name=round,proto3" json:"round,omitempty"`
@@ -849,6 +855,7 @@ func (m *ExtendedCommitSig) GetExtensionSignature() []byte {
 	return nil
 }
 
+// Block proposal.
 type Proposal struct {
 	Type      SignedMsgType `protobuf:"varint,1,opt,name=type,proto3,enum=cometbft.types.v1.SignedMsgType" json:"type,omitempty"`
 	Height    int64         `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
@@ -941,6 +948,7 @@ func (m *Proposal) GetSignature() []byte {
 	return nil
 }
 
+// SignedHeader contains a Header(H) and Commit(H+1) with signatures of validators who signed it.
 type SignedHeader struct {
 	Header *Header `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	Commit *Commit `protobuf:"bytes,2,opt,name=commit,proto3" json:"commit,omitempty"`
@@ -993,6 +1001,7 @@ func (m *SignedHeader) GetCommit() *Commit {
 	return nil
 }
 
+// LightBlock is a combination of SignedHeader and ValidatorSet. It is used by light clients.
 type LightBlock struct {
 	SignedHeader *SignedHeader `protobuf:"bytes,1,opt,name=signed_header,json=signedHeader,proto3" json:"signed_header,omitempty"`
 	ValidatorSet *ValidatorSet `protobuf:"bytes,2,opt,name=validator_set,json=validatorSet,proto3" json:"validator_set,omitempty"`
@@ -1045,6 +1054,7 @@ func (m *LightBlock) GetValidatorSet() *ValidatorSet {
 	return nil
 }
 
+// BlockMeta contains meta information about a block.
 type BlockMeta struct {
 	BlockID   BlockID `protobuf:"bytes,1,opt,name=block_id,json=blockId,proto3" json:"block_id"`
 	BlockSize int64   `protobuf:"varint,2,opt,name=block_size,json=blockSize,proto3" json:"block_size,omitempty"`

@@ -35,11 +35,15 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// The type of misbehavior committed by a validator.
 type MisbehaviorType int32
 
 const (
-	MisbehaviorType_UNKNOWN             MisbehaviorType = 0
-	MisbehaviorType_DUPLICATE_VOTE      MisbehaviorType = 1
+	// Unknown
+	MisbehaviorType_UNKNOWN MisbehaviorType = 0
+	// Duplicate vote
+	MisbehaviorType_DUPLICATE_VOTE MisbehaviorType = 1
+	// Light client attack
 	MisbehaviorType_LIGHT_CLIENT_ATTACK MisbehaviorType = 2
 )
 
@@ -63,12 +67,16 @@ func (MisbehaviorType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_84748304b8d8ccc3, []int{0}
 }
 
+// The status.
 type ResponseProcessProposal_ProposalStatus int32
 
 const (
+	// Unknown
 	ResponseProcessProposal_UNKNOWN ResponseProcessProposal_ProposalStatus = 0
-	ResponseProcessProposal_ACCEPT  ResponseProcessProposal_ProposalStatus = 1
-	ResponseProcessProposal_REJECT  ResponseProcessProposal_ProposalStatus = 2
+	// Accepted
+	ResponseProcessProposal_ACCEPT ResponseProcessProposal_ProposalStatus = 1
+	// Rejected
+	ResponseProcessProposal_REJECT ResponseProcessProposal_ProposalStatus = 2
 )
 
 var ResponseProcessProposal_ProposalStatus_name = map[int32]string{
@@ -91,7 +99,10 @@ func (ResponseProcessProposal_ProposalStatus) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_84748304b8d8ccc3, []int{13, 0}
 }
 
+// Request represents a request to the ABCI application.
 type Request struct {
+	// Sum of all possible messages.
+	//
 	// Types that are valid to be assigned to Value:
 	//	*Request_Echo
 	//	*Request_Flush
@@ -358,6 +369,7 @@ func (*Request) XXX_OneofWrappers() []interface{} {
 	}
 }
 
+// RequestInfo is a request for the ABCI application version.
 type RequestInfo struct {
 	Version      string `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
 	BlockVersion uint64 `protobuf:"varint,2,opt,name=block_version,json=blockVersion,proto3" json:"block_version,omitempty"`
@@ -426,6 +438,7 @@ func (m *RequestInfo) GetAbciVersion() string {
 	return ""
 }
 
+// RequestInitChain is a request to initialize the blockchain.
 type RequestInitChain struct {
 	Time            time.Time                 `protobuf:"bytes,1,opt,name=time,proto3,stdtime" json:"time"`
 	ChainId         string                    `protobuf:"bytes,2,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
@@ -510,6 +523,7 @@ func (m *RequestInitChain) GetInitialHeight() int64 {
 	return 0
 }
 
+// RequestBeginBlock indicates the beginning of commiting the block.
 type RequestBeginBlock struct {
 	Hash                []byte          `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
 	Header              v1beta11.Header `protobuf:"bytes,2,opt,name=header,proto3" json:"header"`
@@ -578,6 +592,8 @@ func (m *RequestBeginBlock) GetByzantineValidators() []Misbehavior {
 	return nil
 }
 
+// RequestPrepareProposal is a request for the ABCI application to prepare a new
+// block proposal.
 type RequestPrepareProposal struct {
 	// the modified transactions cannot exceed this size.
 	MaxTxBytes int64 `protobuf:"varint,1,opt,name=max_tx_bytes,json=maxTxBytes,proto3" json:"max_tx_bytes,omitempty"`
@@ -682,6 +698,7 @@ func (m *RequestPrepareProposal) GetProposerAddress() []byte {
 	return nil
 }
 
+// RequestProcessProposal is a request for the ABCI application to process proposal.
 type RequestProcessProposal struct {
 	Txs                [][]byte      `protobuf:"bytes,1,rep,name=txs,proto3" json:"txs,omitempty"`
 	ProposedLastCommit CommitInfo    `protobuf:"bytes,2,opt,name=proposed_last_commit,json=proposedLastCommit,proto3" json:"proposed_last_commit"`
@@ -784,7 +801,10 @@ func (m *RequestProcessProposal) GetProposerAddress() []byte {
 	return nil
 }
 
+// Response represents a response from the ABCI application.
 type Response struct {
+	// Sum of all possible messages.
+	//
 	// Types that are valid to be assigned to Value:
 	//	*Response_Exception
 	//	*Response_Echo
@@ -1064,6 +1084,8 @@ func (*Response) XXX_OneofWrappers() []interface{} {
 	}
 }
 
+// ResponseInitChain contains the ABCI application's hash and updates to the
+// validator set and/or the consensus params, if any.
 type ResponseInitChain struct {
 	ConsensusParams *v1beta2.ConsensusParams  `protobuf:"bytes,1,opt,name=consensus_params,json=consensusParams,proto3" json:"consensus_params,omitempty"`
 	Validators      []v1beta1.ValidatorUpdate `protobuf:"bytes,2,rep,name=validators,proto3" json:"validators"`
@@ -1124,6 +1146,7 @@ func (m *ResponseInitChain) GetAppHash() []byte {
 	return nil
 }
 
+// ResponseBeginBlock contains a list of block-level events.
 type ResponseBeginBlock struct {
 	Events []Event `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`
 }
@@ -1168,6 +1191,8 @@ func (m *ResponseBeginBlock) GetEvents() []Event {
 	return nil
 }
 
+// ResponseCheckTx shows if the transaction was deemed valid by the ABCI
+// application.
 type ResponseCheckTx struct {
 	Code      uint32  `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
 	Data      []byte  `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
@@ -1294,6 +1319,8 @@ func (m *ResponseCheckTx) GetMempoolError() string {
 	return ""
 }
 
+// ResponseDeliverTx contains a result of committing the given transaction and a
+// list of events.
 type ResponseDeliverTx struct {
 	Code      uint32  `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
 	Data      []byte  `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
@@ -1394,6 +1421,7 @@ func (m *ResponseDeliverTx) GetCodespace() string {
 	return ""
 }
 
+// ResponseEndBlock contains updates to consensus params and/or validator set changes, if any.
 type ResponseEndBlock struct {
 	ValidatorUpdates      []v1beta1.ValidatorUpdate `protobuf:"bytes,1,rep,name=validator_updates,json=validatorUpdates,proto3" json:"validator_updates"`
 	ConsensusParamUpdates *v1beta2.ConsensusParams  `protobuf:"bytes,2,opt,name=consensus_param_updates,json=consensusParamUpdates,proto3" json:"consensus_param_updates,omitempty"`
@@ -1454,6 +1482,7 @@ func (m *ResponseEndBlock) GetEvents() []Event {
 	return nil
 }
 
+// ResponsePrepareProposal contains the list of transactions that will be included in the proposal.
 type ResponsePrepareProposal struct {
 	Txs [][]byte `protobuf:"bytes,1,rep,name=txs,proto3" json:"txs,omitempty"`
 }
@@ -1498,6 +1527,7 @@ func (m *ResponsePrepareProposal) GetTxs() [][]byte {
 	return nil
 }
 
+// ResponseProcessProposal contains the result of processing a proposal.
 type ResponseProcessProposal struct {
 	Status ResponseProcessProposal_ProposalStatus `protobuf:"varint,1,opt,name=status,proto3,enum=cometbft.abci.v1beta2.ResponseProcessProposal_ProposalStatus" json:"status,omitempty"`
 }
@@ -1542,6 +1572,7 @@ func (m *ResponseProcessProposal) GetStatus() ResponseProcessProposal_ProposalSt
 	return ResponseProcessProposal_UNKNOWN
 }
 
+// CommitInfo contains votes for the particular round.
 type CommitInfo struct {
 	Round int32              `protobuf:"varint,1,opt,name=round,proto3" json:"round,omitempty"`
 	Votes []v1beta1.VoteInfo `protobuf:"bytes,2,rep,name=votes,proto3" json:"votes"`
@@ -1770,6 +1801,7 @@ func (m *EventAttribute) GetIndex() bool {
 	return false
 }
 
+// ExtendedVoteInfo extends VoteInfo with the vote extentions (non-deterministic).
 type ExtendedVoteInfo struct {
 	// The validator that sent the vote.
 	Validator v1beta1.Validator `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator"`
@@ -1833,6 +1865,7 @@ func (m *ExtendedVoteInfo) GetVoteExtension() []byte {
 	return nil
 }
 
+// Misbehavior is a type of misbehavior committed by a validator.
 type Misbehavior struct {
 	Type MisbehaviorType `protobuf:"varint,1,opt,name=type,proto3,enum=cometbft.abci.v1beta2.MisbehaviorType" json:"type,omitempty"`
 	// The offending validator
@@ -2100,21 +2133,37 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ABCIApplicationClient interface {
+	// Echo returns back the same message it is sent.
 	Echo(ctx context.Context, in *v1beta1.RequestEcho, opts ...grpc.CallOption) (*v1beta1.ResponseEcho, error)
+	// Flush flushes the write buffer.
 	Flush(ctx context.Context, in *v1beta1.RequestFlush, opts ...grpc.CallOption) (*v1beta1.ResponseFlush, error)
+	// Info returns information about the application state.
 	Info(ctx context.Context, in *RequestInfo, opts ...grpc.CallOption) (*v1beta1.ResponseInfo, error)
+	// DeliverTx applies a transaction.
 	DeliverTx(ctx context.Context, in *v1beta1.RequestDeliverTx, opts ...grpc.CallOption) (*ResponseDeliverTx, error)
+	// CheckTx validates a transaction.
 	CheckTx(ctx context.Context, in *v1beta1.RequestCheckTx, opts ...grpc.CallOption) (*ResponseCheckTx, error)
+	// Query queries the application state.
 	Query(ctx context.Context, in *v1beta1.RequestQuery, opts ...grpc.CallOption) (*v1beta1.ResponseQuery, error)
+	// Commit commits a block of transactions.
 	Commit(ctx context.Context, in *v1beta1.RequestCommit, opts ...grpc.CallOption) (*v1beta1.ResponseCommit, error)
+	// InitChain initializes the blockchain.
 	InitChain(ctx context.Context, in *RequestInitChain, opts ...grpc.CallOption) (*ResponseInitChain, error)
+	// BeginBlock signals the beginning of a block.
 	BeginBlock(ctx context.Context, in *RequestBeginBlock, opts ...grpc.CallOption) (*ResponseBeginBlock, error)
+	// EndBlock signals the end of a block, returns changes to the validator set.
 	EndBlock(ctx context.Context, in *v1beta1.RequestEndBlock, opts ...grpc.CallOption) (*ResponseEndBlock, error)
+	// ListSnapshots lists all the available snapshots.
 	ListSnapshots(ctx context.Context, in *v1beta1.RequestListSnapshots, opts ...grpc.CallOption) (*v1beta1.ResponseListSnapshots, error)
+	// OfferSnapshot sends a snapshot offer.
 	OfferSnapshot(ctx context.Context, in *v1beta1.RequestOfferSnapshot, opts ...grpc.CallOption) (*v1beta1.ResponseOfferSnapshot, error)
+	// LoadSnapshotChunk returns a chunk of snapshot.
 	LoadSnapshotChunk(ctx context.Context, in *v1beta1.RequestLoadSnapshotChunk, opts ...grpc.CallOption) (*v1beta1.ResponseLoadSnapshotChunk, error)
+	// ApplySnapshotChunk applies a chunk of snapshot.
 	ApplySnapshotChunk(ctx context.Context, in *v1beta1.RequestApplySnapshotChunk, opts ...grpc.CallOption) (*v1beta1.ResponseApplySnapshotChunk, error)
+	// PrepareProposal returns a proposal for the next block.
 	PrepareProposal(ctx context.Context, in *RequestPrepareProposal, opts ...grpc.CallOption) (*ResponsePrepareProposal, error)
+	// ProcessProposal validates a proposal.
 	ProcessProposal(ctx context.Context, in *RequestProcessProposal, opts ...grpc.CallOption) (*ResponseProcessProposal, error)
 }
 
@@ -2272,21 +2321,37 @@ func (c *aBCIApplicationClient) ProcessProposal(ctx context.Context, in *Request
 
 // ABCIApplicationServer is the server API for ABCIApplication service.
 type ABCIApplicationServer interface {
+	// Echo returns back the same message it is sent.
 	Echo(context.Context, *v1beta1.RequestEcho) (*v1beta1.ResponseEcho, error)
+	// Flush flushes the write buffer.
 	Flush(context.Context, *v1beta1.RequestFlush) (*v1beta1.ResponseFlush, error)
+	// Info returns information about the application state.
 	Info(context.Context, *RequestInfo) (*v1beta1.ResponseInfo, error)
+	// DeliverTx applies a transaction.
 	DeliverTx(context.Context, *v1beta1.RequestDeliverTx) (*ResponseDeliverTx, error)
+	// CheckTx validates a transaction.
 	CheckTx(context.Context, *v1beta1.RequestCheckTx) (*ResponseCheckTx, error)
+	// Query queries the application state.
 	Query(context.Context, *v1beta1.RequestQuery) (*v1beta1.ResponseQuery, error)
+	// Commit commits a block of transactions.
 	Commit(context.Context, *v1beta1.RequestCommit) (*v1beta1.ResponseCommit, error)
+	// InitChain initializes the blockchain.
 	InitChain(context.Context, *RequestInitChain) (*ResponseInitChain, error)
+	// BeginBlock signals the beginning of a block.
 	BeginBlock(context.Context, *RequestBeginBlock) (*ResponseBeginBlock, error)
+	// EndBlock signals the end of a block, returns changes to the validator set.
 	EndBlock(context.Context, *v1beta1.RequestEndBlock) (*ResponseEndBlock, error)
+	// ListSnapshots lists all the available snapshots.
 	ListSnapshots(context.Context, *v1beta1.RequestListSnapshots) (*v1beta1.ResponseListSnapshots, error)
+	// OfferSnapshot sends a snapshot offer.
 	OfferSnapshot(context.Context, *v1beta1.RequestOfferSnapshot) (*v1beta1.ResponseOfferSnapshot, error)
+	// LoadSnapshotChunk returns a chunk of snapshot.
 	LoadSnapshotChunk(context.Context, *v1beta1.RequestLoadSnapshotChunk) (*v1beta1.ResponseLoadSnapshotChunk, error)
+	// ApplySnapshotChunk applies a chunk of snapshot.
 	ApplySnapshotChunk(context.Context, *v1beta1.RequestApplySnapshotChunk) (*v1beta1.ResponseApplySnapshotChunk, error)
+	// PrepareProposal returns a proposal for the next block.
 	PrepareProposal(context.Context, *RequestPrepareProposal) (*ResponsePrepareProposal, error)
+	// ProcessProposal validates a proposal.
 	ProcessProposal(context.Context, *RequestProcessProposal) (*ResponseProcessProposal, error)
 }
 

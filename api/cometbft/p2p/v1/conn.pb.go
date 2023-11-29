@@ -24,6 +24,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// PacketPing is a request to confirm that the connection is alive.
 type PacketPing struct {
 }
 
@@ -60,6 +61,7 @@ func (m *PacketPing) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_PacketPing proto.InternalMessageInfo
 
+// PacketPong is a response to confirm that the connection is alive.
 type PacketPong struct {
 }
 
@@ -96,6 +98,8 @@ func (m *PacketPong) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_PacketPong proto.InternalMessageInfo
 
+// PacketMsg contains data for the specified channel ID. EOF means the message
+// is fully received.
 type PacketMsg struct {
 	ChannelID int32  `protobuf:"varint,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	EOF       bool   `protobuf:"varint,2,opt,name=eof,proto3" json:"eof,omitempty"`
@@ -156,7 +160,10 @@ func (m *PacketMsg) GetData() []byte {
 	return nil
 }
 
+// Packet is an abstract p2p message.
 type Packet struct {
+	// Sum of all possible messages.
+	//
 	// Types that are valid to be assigned to Sum:
 	//
 	//	*Packet_PacketPing
@@ -255,6 +262,8 @@ func (*Packet) XXX_OneofWrappers() []interface{} {
 	}
 }
 
+// AuthSigMessage is sent during the authentication and contains our/remote's
+// signature along with the public key.
 type AuthSigMessage struct {
 	PubKey v1.PublicKey `protobuf:"bytes,1,opt,name=pub_key,json=pubKey,proto3" json:"pub_key"`
 	Sig    []byte       `protobuf:"bytes,2,opt,name=sig,proto3" json:"sig,omitempty"`

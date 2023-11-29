@@ -29,6 +29,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// ResponseBroadcastTx is a response of broadcasting the transaction.
 type ResponseBroadcastTx struct {
 	CheckTx  *v1beta3.ResponseCheckTx `protobuf:"bytes,1,opt,name=check_tx,json=checkTx,proto3" json:"check_tx,omitempty"`
 	TxResult *v1beta3.ExecTxResult    `protobuf:"bytes,2,opt,name=tx_result,json=txResult,proto3" json:"tx_result,omitempty"`
@@ -125,7 +126,9 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type BroadcastAPIClient interface {
+	// Ping the connection.
 	Ping(ctx context.Context, in *v1beta1.RequestPing, opts ...grpc.CallOption) (*v1beta1.ResponsePing, error)
+	// BroadcastTx broadcasts a transaction.
 	BroadcastTx(ctx context.Context, in *v1beta1.RequestBroadcastTx, opts ...grpc.CallOption) (*ResponseBroadcastTx, error)
 }
 
@@ -157,7 +160,9 @@ func (c *broadcastAPIClient) BroadcastTx(ctx context.Context, in *v1beta1.Reques
 
 // BroadcastAPIServer is the server API for BroadcastAPI service.
 type BroadcastAPIServer interface {
+	// Ping the connection.
 	Ping(context.Context, *v1beta1.RequestPing) (*v1beta1.ResponsePing, error)
+	// BroadcastTx broadcasts a transaction.
 	BroadcastTx(context.Context, *v1beta1.RequestBroadcastTx) (*ResponseBroadcastTx, error)
 }
 

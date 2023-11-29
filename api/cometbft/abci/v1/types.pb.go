@@ -37,9 +37,12 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 type CheckTxType int32
 
 const (
+	// Unknown
 	CHECK_TX_TYPE_UNKNOWN CheckTxType = 0
+	// Recheck (2nd, 3rd, etc.)
 	CHECK_TX_TYPE_RECHECK CheckTxType = 1
-	CHECK_TX_TYPE_CHECK   CheckTxType = 2
+	// Check (1st time)
+	CHECK_TX_TYPE_CHECK CheckTxType = 2
 )
 
 var CheckTxType_name = map[int32]string{
@@ -62,14 +65,21 @@ func (CheckTxType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_95dd8f7b670b96e3, []int{0}
 }
 
+// The result of offering a snapshot.
 type OfferSnapshotResult int32
 
 const (
-	OFFER_SNAPSHOT_RESULT_UNKNOWN       OfferSnapshotResult = 0
-	OFFER_SNAPSHOT_RESULT_ACCEPT        OfferSnapshotResult = 1
-	OFFER_SNAPSHOT_RESULT_ABORT         OfferSnapshotResult = 2
-	OFFER_SNAPSHOT_RESULT_REJECT        OfferSnapshotResult = 3
+	// Unknown result, abort all snapshot restoration
+	OFFER_SNAPSHOT_RESULT_UNKNOWN OfferSnapshotResult = 0
+	// Snapshot accepted, apply chunks
+	OFFER_SNAPSHOT_RESULT_ACCEPT OfferSnapshotResult = 1
+	// Abort all snapshot restoration
+	OFFER_SNAPSHOT_RESULT_ABORT OfferSnapshotResult = 2
+	// Reject this specific snapshot, try others
+	OFFER_SNAPSHOT_RESULT_REJECT OfferSnapshotResult = 3
+	// Reject all snapshots of this format, try others
 	OFFER_SNAPSHOT_RESULT_REJECT_FORMAT OfferSnapshotResult = 4
+	// Reject all snapshots from the sender(s), try others
 	OFFER_SNAPSHOT_RESULT_REJECT_SENDER OfferSnapshotResult = 5
 )
 
@@ -99,14 +109,21 @@ func (OfferSnapshotResult) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_95dd8f7b670b96e3, []int{1}
 }
 
+// The result of applying a snapshot chunk.
 type ApplySnapshotChunkResult int32
 
 const (
-	APPLY_SNAPSHOT_CHUNK_RESULT_UNKNOWN         ApplySnapshotChunkResult = 0
-	APPLY_SNAPSHOT_CHUNK_RESULT_ACCEPT          ApplySnapshotChunkResult = 1
-	APPLY_SNAPSHOT_CHUNK_RESULT_ABORT           ApplySnapshotChunkResult = 2
-	APPLY_SNAPSHOT_CHUNK_RESULT_RETRY           ApplySnapshotChunkResult = 3
-	APPLY_SNAPSHOT_CHUNK_RESULT_RETRY_SNAPSHOT  ApplySnapshotChunkResult = 4
+	// Unknown result, abort all snapshot restoration
+	APPLY_SNAPSHOT_CHUNK_RESULT_UNKNOWN ApplySnapshotChunkResult = 0
+	// Chunk successfully accepted
+	APPLY_SNAPSHOT_CHUNK_RESULT_ACCEPT ApplySnapshotChunkResult = 1
+	// Abort all snapshot restoration
+	APPLY_SNAPSHOT_CHUNK_RESULT_ABORT ApplySnapshotChunkResult = 2
+	// Retry chunk (combine with refetch and reject)
+	APPLY_SNAPSHOT_CHUNK_RESULT_RETRY ApplySnapshotChunkResult = 3
+	// Retry snapshot (combine with refetch and reject)
+	APPLY_SNAPSHOT_CHUNK_RESULT_RETRY_SNAPSHOT ApplySnapshotChunkResult = 4
+	// Reject this snapshot, try others
 	APPLY_SNAPSHOT_CHUNK_RESULT_REJECT_SNAPSHOT ApplySnapshotChunkResult = 5
 )
 
@@ -136,12 +153,16 @@ func (ApplySnapshotChunkResult) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_95dd8f7b670b96e3, []int{2}
 }
 
+// ProcessProposalStatus is the status of the proposal processing.
 type ProcessProposalStatus int32
 
 const (
+	// Unknown
 	PROCESS_PROPOSAL_STATUS_UNKNOWN ProcessProposalStatus = 0
-	PROCESS_PROPOSAL_STATUS_ACCEPT  ProcessProposalStatus = 1
-	PROCESS_PROPOSAL_STATUS_REJECT  ProcessProposalStatus = 2
+	// Accepted
+	PROCESS_PROPOSAL_STATUS_ACCEPT ProcessProposalStatus = 1
+	// Rejected
+	PROCESS_PROPOSAL_STATUS_REJECT ProcessProposalStatus = 2
 )
 
 var ProcessProposalStatus_name = map[int32]string{
@@ -164,11 +185,14 @@ func (ProcessProposalStatus) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_95dd8f7b670b96e3, []int{3}
 }
 
+// VerifyVoteExtensionStatus is the status of the vote extension verification.
 type VerifyVoteExtensionStatus int32
 
 const (
+	// Unknown
 	VERIFY_VOTE_EXTENSION_STATUS_UNKNOWN VerifyVoteExtensionStatus = 0
-	VERIFY_VOTE_EXTENSION_STATUS_ACCEPT  VerifyVoteExtensionStatus = 1
+	// Accepted
+	VERIFY_VOTE_EXTENSION_STATUS_ACCEPT VerifyVoteExtensionStatus = 1
 	// Rejecting the vote extension will reject the entire precommit by the sender.
 	// Incorrectly implementing this thus has liveness implications as it may affect
 	// CometBFT's ability to receive 2/3+ valid votes to finalize the block.
@@ -196,11 +220,15 @@ func (VerifyVoteExtensionStatus) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_95dd8f7b670b96e3, []int{4}
 }
 
+// The type of misbehavior committed by a validator.
 type MisbehaviorType int32
 
 const (
-	MISBEHAVIOR_TYPE_UNKNOWN             MisbehaviorType = 0
-	MISBEHAVIOR_TYPE_DUPLICATE_VOTE      MisbehaviorType = 1
+	// Unknown
+	MISBEHAVIOR_TYPE_UNKNOWN MisbehaviorType = 0
+	// Duplicate vote
+	MISBEHAVIOR_TYPE_DUPLICATE_VOTE MisbehaviorType = 1
+	// Light client attack
 	MISBEHAVIOR_TYPE_LIGHT_CLIENT_ATTACK MisbehaviorType = 2
 )
 
@@ -224,7 +252,10 @@ func (MisbehaviorType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_95dd8f7b670b96e3, []int{5}
 }
 
+// Request represents a request to the ABCI application.
 type Request struct {
+	// Sum of all possible messages.
+	//
 	// Types that are valid to be assigned to Value:
 	//	*Request_Echo
 	//	*Request_Flush
@@ -491,6 +522,7 @@ func (*Request) XXX_OneofWrappers() []interface{} {
 	}
 }
 
+// EchoRequest is a request to "echo" the given string.
 type EchoRequest struct {
 	Message string `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
 }
@@ -535,6 +567,7 @@ func (m *EchoRequest) GetMessage() string {
 	return ""
 }
 
+// FlushRequest is a request to flush the write buffer.
 type FlushRequest struct {
 }
 
@@ -571,6 +604,7 @@ func (m *FlushRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_FlushRequest proto.InternalMessageInfo
 
+// InfoRequest is a request for the ABCI application version.
 type InfoRequest struct {
 	Version      string `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
 	BlockVersion uint64 `protobuf:"varint,2,opt,name=block_version,json=blockVersion,proto3" json:"block_version,omitempty"`
@@ -639,6 +673,7 @@ func (m *InfoRequest) GetAbciVersion() string {
 	return ""
 }
 
+// InitChainRequest is a request to initialize the blockchain.
 type InitChainRequest struct {
 	Time            time.Time           `protobuf:"bytes,1,opt,name=time,proto3,stdtime" json:"time"`
 	ChainId         string              `protobuf:"bytes,2,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
@@ -723,6 +758,7 @@ func (m *InitChainRequest) GetInitialHeight() int64 {
 	return 0
 }
 
+// QueryRequest is a request to query the application state.
 type QueryRequest struct {
 	Data   []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
 	Path   string `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
@@ -791,6 +827,7 @@ func (m *QueryRequest) GetProve() bool {
 	return false
 }
 
+// CheckTxRequest is a request to check that the transaction is valid.
 type CheckTxRequest struct {
 	Tx   []byte      `protobuf:"bytes,1,opt,name=tx,proto3" json:"tx,omitempty"`
 	Type CheckTxType `protobuf:"varint,3,opt,name=type,proto3,enum=cometbft.abci.v1.CheckTxType" json:"type,omitempty"`
@@ -843,6 +880,7 @@ func (m *CheckTxRequest) GetType() CheckTxType {
 	return CHECK_TX_TYPE_UNKNOWN
 }
 
+// CommitRequest is a request to commit the pending application state.
 type CommitRequest struct {
 }
 
@@ -879,7 +917,7 @@ func (m *CommitRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_CommitRequest proto.InternalMessageInfo
 
-// Request to list available snapshots
+// Request to list available snapshots.
 type ListSnapshotsRequest struct {
 }
 
@@ -916,7 +954,7 @@ func (m *ListSnapshotsRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ListSnapshotsRequest proto.InternalMessageInfo
 
-// Request offering a snapshot to the application
+// Request offering a snapshot to the application.
 type OfferSnapshotRequest struct {
 	Snapshot *Snapshot `protobuf:"bytes,1,opt,name=snapshot,proto3" json:"snapshot,omitempty"`
 	AppHash  []byte    `protobuf:"bytes,2,opt,name=app_hash,json=appHash,proto3" json:"app_hash,omitempty"`
@@ -969,7 +1007,7 @@ func (m *OfferSnapshotRequest) GetAppHash() []byte {
 	return nil
 }
 
-// Request to load a snapshot chunk
+// Request to load a snapshot chunk.
 type LoadSnapshotChunkRequest struct {
 	Height uint64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
 	Format uint32 `protobuf:"varint,2,opt,name=format,proto3" json:"format,omitempty"`
@@ -1030,7 +1068,7 @@ func (m *LoadSnapshotChunkRequest) GetChunk() uint32 {
 	return 0
 }
 
-// Request to apply a snapshot chunk
+// Request to apply a snapshot chunk.
 type ApplySnapshotChunkRequest struct {
 	Index  uint32 `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
 	Chunk  []byte `protobuf:"bytes,2,opt,name=chunk,proto3" json:"chunk,omitempty"`
@@ -1091,6 +1129,8 @@ func (m *ApplySnapshotChunkRequest) GetSender() string {
 	return ""
 }
 
+// PrepareProposalRequest is a request for the ABCI application to prepare a new
+// block proposal.
 type PrepareProposalRequest struct {
 	// the modified transactions cannot exceed this size.
 	MaxTxBytes int64 `protobuf:"varint,1,opt,name=max_tx_bytes,json=maxTxBytes,proto3" json:"max_tx_bytes,omitempty"`
@@ -1195,6 +1235,8 @@ func (m *PrepareProposalRequest) GetProposerAddress() []byte {
 	return nil
 }
 
+// ProcessProposalRequest is a request for the ABCI application to process a proposal
+// received from another validator.
 type ProcessProposalRequest struct {
 	Txs                [][]byte      `protobuf:"bytes,1,rep,name=txs,proto3" json:"txs,omitempty"`
 	ProposedLastCommit CommitInfo    `protobuf:"bytes,2,opt,name=proposed_last_commit,json=proposedLastCommit,proto3" json:"proposed_last_commit"`
@@ -1297,7 +1339,7 @@ func (m *ProcessProposalRequest) GetProposerAddress() []byte {
 	return nil
 }
 
-// Extends a vote with application-injected data
+// ExtendVoteRequest extends a precommit vote with application-injected data.
 type ExtendVoteRequest struct {
 	// the hash of the block that this vote may be referring to
 	Hash []byte `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
@@ -1402,7 +1444,8 @@ func (m *ExtendVoteRequest) GetProposerAddress() []byte {
 	return nil
 }
 
-// Request to verify a vote extension
+// VerifyVoteExtensionRequest is a request for the application to verify a vote extension
+// produced by a different validator.
 type VerifyVoteExtensionRequest struct {
 	// the hash of the block that this received vote corresponds to
 	Hash []byte `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
@@ -1473,6 +1516,7 @@ func (m *VerifyVoteExtensionRequest) GetVoteExtension() []byte {
 	return nil
 }
 
+// FinalizeBlockRequest is a request to finalize the block.
 type FinalizeBlockRequest struct {
 	Txs               [][]byte      `protobuf:"bytes,1,rep,name=txs,proto3" json:"txs,omitempty"`
 	DecidedLastCommit CommitInfo    `protobuf:"bytes,2,opt,name=decided_last_commit,json=decidedLastCommit,proto3" json:"decided_last_commit"`
@@ -1575,7 +1619,10 @@ func (m *FinalizeBlockRequest) GetProposerAddress() []byte {
 	return nil
 }
 
+// Response represents a response from the ABCI application.
 type Response struct {
+	// Sum of all possible messages.
+	//
 	// Types that are valid to be assigned to Value:
 	//
 	//	*Response_Exception
@@ -1901,6 +1948,7 @@ func (m *ExceptionResponse) GetError() string {
 	return ""
 }
 
+// EchoResponse indicates that the connection is still alive.
 type EchoResponse struct {
 	Message string `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
 }
@@ -1945,6 +1993,7 @@ func (m *EchoResponse) GetMessage() string {
 	return ""
 }
 
+// FlushResponse indicates that the write buffer was flushed.
 type FlushResponse struct {
 }
 
@@ -1981,6 +2030,7 @@ func (m *FlushResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_FlushResponse proto.InternalMessageInfo
 
+// InfoResponse contains the ABCI application version information.
 type InfoResponse struct {
 	Data             string `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
 	Version          string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
@@ -2057,6 +2107,8 @@ func (m *InfoResponse) GetLastBlockAppHash() []byte {
 	return nil
 }
 
+// InitChainResponse contains the ABCI application's hash and updates to the
+// validator set and/or the consensus params, if any.
 type InitChainResponse struct {
 	ConsensusParams *v1.ConsensusParams `protobuf:"bytes,1,opt,name=consensus_params,json=consensusParams,proto3" json:"consensus_params,omitempty"`
 	Validators      []ValidatorUpdate   `protobuf:"bytes,2,rep,name=validators,proto3" json:"validators"`
@@ -2117,6 +2169,7 @@ func (m *InitChainResponse) GetAppHash() []byte {
 	return nil
 }
 
+// QueryResponse contains the ABCI application data along with a proof.
 type QueryResponse struct {
 	Code uint32 `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
 	// bytes data = 2; // use "value" instead.
@@ -2226,6 +2279,8 @@ func (m *QueryResponse) GetCodespace() string {
 	return ""
 }
 
+// CheckTxResponse shows if the transaction was deemed valid by the ABCI
+// application.
 type CheckTxResponse struct {
 	Code      uint32  `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
 	Data      []byte  `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
@@ -2326,6 +2381,7 @@ func (m *CheckTxResponse) GetCodespace() string {
 	return ""
 }
 
+// CommitResponse indicates how much blocks should CometBFT retain.
 type CommitResponse struct {
 	RetainHeight int64 `protobuf:"varint,3,opt,name=retain_height,json=retainHeight,proto3" json:"retain_height,omitempty"`
 }
@@ -2370,6 +2426,7 @@ func (m *CommitResponse) GetRetainHeight() int64 {
 	return 0
 }
 
+// ListSnapshotsResponse contains the list of snapshots.
 type ListSnapshotsResponse struct {
 	Snapshots []*Snapshot `protobuf:"bytes,1,rep,name=snapshots,proto3" json:"snapshots,omitempty"`
 }
@@ -2414,6 +2471,8 @@ func (m *ListSnapshotsResponse) GetSnapshots() []*Snapshot {
 	return nil
 }
 
+// OfferSnapshotResponse indicates the ABCI application decision whenever to
+// provide a snapshot to the requester or not.
 type OfferSnapshotResponse struct {
 	Result OfferSnapshotResult `protobuf:"varint,1,opt,name=result,proto3,enum=cometbft.abci.v1.OfferSnapshotResult" json:"result,omitempty"`
 }
@@ -2458,6 +2517,7 @@ func (m *OfferSnapshotResponse) GetResult() OfferSnapshotResult {
 	return OFFER_SNAPSHOT_RESULT_UNKNOWN
 }
 
+// LoadSnapshotChunkResponse returns a snapshot's chunk.
 type LoadSnapshotChunkResponse struct {
 	Chunk []byte `protobuf:"bytes,1,opt,name=chunk,proto3" json:"chunk,omitempty"`
 }
@@ -2502,6 +2562,7 @@ func (m *LoadSnapshotChunkResponse) GetChunk() []byte {
 	return nil
 }
 
+// ApplySnapshotChunkResponse returns a result of applying the specified chunk.
 type ApplySnapshotChunkResponse struct {
 	Result        ApplySnapshotChunkResult `protobuf:"varint,1,opt,name=result,proto3,enum=cometbft.abci.v1.ApplySnapshotChunkResult" json:"result,omitempty"`
 	RefetchChunks []uint32                 `protobuf:"varint,2,rep,packed,name=refetch_chunks,json=refetchChunks,proto3" json:"refetch_chunks,omitempty"`
@@ -2562,6 +2623,7 @@ func (m *ApplySnapshotChunkResponse) GetRejectSenders() []string {
 	return nil
 }
 
+// PrepareProposalResponse contains a list of transactions, which will form a block.
 type PrepareProposalResponse struct {
 	Txs [][]byte `protobuf:"bytes,1,rep,name=txs,proto3" json:"txs,omitempty"`
 }
@@ -2606,6 +2668,8 @@ func (m *PrepareProposalResponse) GetTxs() [][]byte {
 	return nil
 }
 
+// ProcessProposalResponse indicates the ABCI application's decision whenever
+// the given proposal should be accepted or not.
 type ProcessProposalResponse struct {
 	Status ProcessProposalStatus `protobuf:"varint,1,opt,name=status,proto3,enum=cometbft.abci.v1.ProcessProposalStatus" json:"status,omitempty"`
 }
@@ -2650,6 +2714,8 @@ func (m *ProcessProposalResponse) GetStatus() ProcessProposalStatus {
 	return PROCESS_PROPOSAL_STATUS_UNKNOWN
 }
 
+// ExtendVoteResponse contains the vote extension that the application would like to
+// attach to its next precommit vote.
 type ExtendVoteResponse struct {
 	VoteExtension []byte `protobuf:"bytes,1,opt,name=vote_extension,json=voteExtension,proto3" json:"vote_extension,omitempty"`
 }
@@ -2694,6 +2760,8 @@ func (m *ExtendVoteResponse) GetVoteExtension() []byte {
 	return nil
 }
 
+// VerifyVoteExtensionResponse indicates the ABCI application's decision
+// whenever the vote extension should be accepted or not.
 type VerifyVoteExtensionResponse struct {
 	Status VerifyVoteExtensionStatus `protobuf:"varint,1,opt,name=status,proto3,enum=cometbft.abci.v1.VerifyVoteExtensionStatus" json:"status,omitempty"`
 }
@@ -2738,6 +2806,7 @@ func (m *VerifyVoteExtensionResponse) GetStatus() VerifyVoteExtensionStatus {
 	return VERIFY_VOTE_EXTENSION_STATUS_UNKNOWN
 }
 
+// FinalizeBlockResponse contains the result of executing the block.
 type FinalizeBlockResponse struct {
 	// set of block events emmitted as part of executing the block
 	Events []Event `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`
@@ -2823,6 +2892,7 @@ func (m *FinalizeBlockResponse) GetAppHash() []byte {
 	return nil
 }
 
+// CommitInfo contains votes for the particular round.
 type CommitInfo struct {
 	Round int32      `protobuf:"varint,1,opt,name=round,proto3" json:"round,omitempty"`
 	Votes []VoteInfo `protobuf:"bytes,2,rep,name=votes,proto3" json:"votes"`
@@ -3225,6 +3295,7 @@ func (m *TxResult) GetResult() ExecTxResult {
 	return ExecTxResult{}
 }
 
+// Validator in the validator set.
 type Validator struct {
 	Address []byte `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	// PubKey pub_key = 2 [(gogoproto.nullable)=false];
@@ -3278,6 +3349,7 @@ func (m *Validator) GetPower() int64 {
 	return 0
 }
 
+// ValidatorUpdate is a singular update to a validator set.
 type ValidatorUpdate struct {
 	PubKey v11.PublicKey `protobuf:"bytes,1,opt,name=pub_key,json=pubKey,proto3" json:"pub_key"`
 	Power  int64         `protobuf:"varint,2,opt,name=power,proto3" json:"power,omitempty"`
@@ -3330,6 +3402,7 @@ func (m *ValidatorUpdate) GetPower() int64 {
 	return 0
 }
 
+// VoteInfo contains the information about the vote.
 type VoteInfo struct {
 	Validator   Validator      `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator"`
 	BlockIdFlag v1.BlockIDFlag `protobuf:"varint,3,opt,name=block_id_flag,json=blockIdFlag,proto3,enum=cometbft.types.v1.BlockIDFlag" json:"block_id_flag,omitempty"`
@@ -3382,6 +3455,7 @@ func (m *VoteInfo) GetBlockIdFlag() v1.BlockIDFlag {
 	return v1.BlockIDFlagUnknown
 }
 
+// ExtendedVoteInfo extends VoteInfo with the vote extentions (non-deterministic).
 type ExtendedVoteInfo struct {
 	// The validator that sent the vote.
 	Validator Validator `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator"`
@@ -3454,6 +3528,7 @@ func (m *ExtendedVoteInfo) GetBlockIdFlag() v1.BlockIDFlag {
 	return v1.BlockIDFlagUnknown
 }
 
+// Misbehavior is a type of misbehavior committed by a validator.
 type Misbehavior struct {
 	Type MisbehaviorType `protobuf:"varint,1,opt,name=type,proto3,enum=cometbft.abci.v1.MisbehaviorType" json:"type,omitempty"`
 	// The offending validator
@@ -3536,6 +3611,7 @@ func (m *Misbehavior) GetTotalVotingPower() int64 {
 	return 0
 }
 
+// Snapshot of the ABCI application state.
 type Snapshot struct {
 	Height   uint64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
 	Format   uint32 `protobuf:"varint,2,opt,name=format,proto3" json:"format,omitempty"`

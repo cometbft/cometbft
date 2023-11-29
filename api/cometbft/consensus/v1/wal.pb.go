@@ -197,7 +197,10 @@ func (m *EndHeight) GetHeight() int64 {
 	return 0
 }
 
+// WALMessage describes a consensus WAL (Write Ahead Log) entry.
 type WALMessage struct {
+	// Sum of all possible messages.
+	//
 	// Types that are valid to be assigned to Sum:
 	//	*WALMessage_EventDataRoundState
 	//	*WALMessage_MsgInfo

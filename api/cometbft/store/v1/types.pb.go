@@ -22,6 +22,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// BlockStoreState represents the state of the block store.
 type BlockStoreState struct {
 	Base   int64 `protobuf:"varint,1,opt,name=base,proto3" json:"base,omitempty"`
 	Height int64 `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`

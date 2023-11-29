@@ -24,8 +24,10 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// PublicKey defines the keys available for use with Validators
+// PublicKey is a ED25519 or a secp256k1 public key.
 type PublicKey struct {
+	// The type of key.
+	//
 	// Types that are valid to be assigned to Sum:
 	//
 	//	*PublicKey_Ed25519

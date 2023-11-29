@@ -609,7 +609,10 @@ func (m *VoteSetBits) GetVotes() v1.BitArray {
 	return v1.BitArray{}
 }
 
+// Message is an abstract consensus message.
 type Message struct {
+	// Sum of all possible messages.
+	//
 	// Types that are valid to be assigned to Sum:
 	//	*Message_NewRoundStep
 	//	*Message_NewValidBlock

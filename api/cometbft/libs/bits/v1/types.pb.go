@@ -22,6 +22,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// BitArray is an array of bits.
 type BitArray struct {
 	Bits  int64    `protobuf:"varint,1,opt,name=bits,proto3" json:"bits,omitempty"`
 	Elems []uint64 `protobuf:"varint,2,rep,packed,name=elems,proto3" json:"elems,omitempty"`

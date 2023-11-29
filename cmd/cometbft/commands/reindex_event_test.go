@@ -139,7 +139,7 @@ func TestReIndexEvent(t *testing.T) {
 		On("LoadBlock", base).Return(&types.Block{Data: types.Data{Txs: types.Txs{make(types.Tx, 1)}}}, &types.BlockMeta{}).
 		On("LoadBlock", height).Return(&types.Block{Data: types.Data{Txs: types.Txs{make(types.Tx, 1)}}}, &types.BlockMeta{})
 
-	abciResp := &abcitypes.ResponseFinalizeBlock{
+	abciResp := &abcitypes.FinalizeBlockResponse{
 		TxResults: []*abcitypes.ExecTxResult{
 			{Code: 1},
 		},

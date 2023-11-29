@@ -22,6 +22,7 @@ import (
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/abci/types/mocks"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cfg "github.com/cometbft/cometbft/config"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
@@ -31,7 +32,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/privval"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 )
@@ -359,7 +359,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	ensureNewRound(newRoundCh, height, 0)
 	ensureNewProposal(proposalCh, height, round)
 	rs := css[0].GetRoundState()
-	signAddVotes(css[0], cmtproto.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, vss[1:nVals]...)
+	signAddVotes(css[0], types.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, vss[1:nVals]...)
 	ensureNewRound(newRoundCh, height+1, 0)
 
 	// HEIGHT 2
@@ -391,7 +391,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	}
 	ensureNewProposal(proposalCh, height, round)
 	rs = css[0].GetRoundState()
-	signAddVotes(css[0], cmtproto.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, vss[1:nVals]...)
+	signAddVotes(css[0], types.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, vss[1:nVals]...)
 	ensureNewRound(newRoundCh, height+1, 0)
 
 	// HEIGHT 3
@@ -423,7 +423,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	}
 	ensureNewProposal(proposalCh, height, round)
 	rs = css[0].GetRoundState()
-	signAddVotes(css[0], cmtproto.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, vss[1:nVals]...)
+	signAddVotes(css[0], types.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, vss[1:nVals]...)
 	ensureNewRound(newRoundCh, height+1, 0)
 
 	// HEIGHT 4
@@ -491,7 +491,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 		if i == selfIndex {
 			continue
 		}
-		signAddVotes(css[0], cmtproto.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, newVss[i])
+		signAddVotes(css[0], types.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, newVss[i])
 	}
 
 	ensureNewRound(newRoundCh, height+1, 0)
@@ -510,7 +510,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 		if i == selfIndex {
 			continue
 		}
-		signAddVotes(css[0], cmtproto.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, newVss[i])
+		signAddVotes(css[0], types.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, newVss[i])
 	}
 	ensureNewRound(newRoundCh, height+1, 0)
 
@@ -547,7 +547,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 		if i == selfIndex {
 			continue
 		}
-		signAddVotes(css[0], cmtproto.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, newVss[i])
+		signAddVotes(css[0], types.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, newVss[i])
 	}
 	ensureNewRound(newRoundCh, height+1, 0)
 
@@ -735,7 +735,7 @@ func testHandshakeReplay(t *testing.T, config *cfg.Config, nBlocks int, mode uin
 	require.NoError(t, err)
 
 	// get the latest app hash from the app
-	res, err := proxyApp.Query().Info(context.Background(), proxy.RequestInfo)
+	res, err := proxyApp.Query().Info(context.Background(), proxy.InfoRequest)
 	require.NoError(t, err)
 
 	// block store and app height should be in sync
@@ -790,7 +790,7 @@ func buildAppStateFromChain(t *testing.T, proxyApp proxy.AppConns, stateStore sm
 
 	state.Version.Consensus.App = kvstore.AppVersion // simulate handshake, receive app version
 	validators := types.TM2PB.ValidatorUpdates(state.Validators)
-	if _, err := proxyApp.Consensus().InitChain(context.Background(), &abci.RequestInitChain{
+	if _, err := proxyApp.Consensus().InitChain(context.Background(), &abci.InitChainRequest{
 		Validators: validators,
 	}); err != nil {
 		panic(err)
@@ -847,7 +847,7 @@ func buildTMStateFromChain(
 
 	state.Version.Consensus.App = kvstore.AppVersion // simulate handshake, receive app version
 	validators := types.TM2PB.ValidatorUpdates(state.Validators)
-	if _, err := proxyApp.Consensus().InitChain(context.Background(), &abci.RequestInitChain{
+	if _, err := proxyApp.Consensus().InitChain(context.Background(), &abci.InitChainRequest{
 		Validators: validators,
 	}); err != nil {
 		panic(err)
@@ -876,7 +876,7 @@ func buildTMStateFromChain(
 		vals, _ := stateStore.LoadValidators(penultimateHeight)
 		dummyStateStore.On("LoadValidators", penultimateHeight).Return(vals, nil)
 		dummyStateStore.On("Save", mock.Anything).Return(nil)
-		dummyStateStore.On("SaveFinalizeBlockResponse", lastHeight, mock.MatchedBy(func(response *abci.ResponseFinalizeBlock) bool {
+		dummyStateStore.On("SaveFinalizeBlockResponse", lastHeight, mock.MatchedBy(func(response *abci.FinalizeBlockResponse) bool {
 			require.NoError(t, stateStore.SaveFinalizeBlockResponse(lastHeight, response))
 			return true
 		})).Return(nil)
@@ -997,15 +997,15 @@ type badApp struct {
 	onlyLastHashIsWrong bool
 }
 
-func (app *badApp) FinalizeBlock(context.Context, *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
+func (app *badApp) FinalizeBlock(context.Context, *abci.FinalizeBlockRequest) (*abci.FinalizeBlockResponse, error) {
 	app.height++
 	if app.onlyLastHashIsWrong {
 		if app.height == app.numBlocks {
-			return &abci.ResponseFinalizeBlock{AppHash: cmtrand.Bytes(8)}, nil
+			return &abci.FinalizeBlockResponse{AppHash: cmtrand.Bytes(8)}, nil
 		}
-		return &abci.ResponseFinalizeBlock{AppHash: []byte{app.height}}, nil
+		return &abci.FinalizeBlockResponse{AppHash: []byte{app.height}}, nil
 	} else if app.allHashesAreWrong {
-		return &abci.ResponseFinalizeBlock{AppHash: cmtrand.Bytes(8)}, nil
+		return &abci.FinalizeBlockResponse{AppHash: cmtrand.Bytes(8)}, nil
 	}
 
 	panic("either allHashesAreWrong or onlyLastHashIsWrong must be set")
@@ -1087,7 +1087,7 @@ func makeBlockchainFromWAL(wal WAL) ([]*types.Block, []*types.ExtendedCommit, er
 				return nil, nil, err
 			}
 		case *types.Vote:
-			if p.Type == cmtproto.PrecommitType {
+			if p.Type == types.PrecommitType {
 				thisBlockExtCommit = &types.ExtendedCommit{
 					Height:             p.Height,
 					Round:              p.Round,
@@ -1247,10 +1247,10 @@ func TestHandshakeUpdatesValidators(t *testing.T) {
 	val, _ := types.RandValidator(true, 10)
 	vals := types.NewValidatorSet([]*types.Validator{val})
 	app := &mocks.Application{}
-	app.On("Info", mock.Anything, mock.Anything).Return(&abci.ResponseInfo{
+	app.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{
 		LastBlockHeight: 0,
 	}, nil)
-	app.On("InitChain", mock.Anything, mock.Anything).Return(&abci.ResponseInitChain{
+	app.On("InitChain", mock.Anything, mock.Anything).Return(&abci.InitChainResponse{
 		Validators: types.TM2PB.ValidatorUpdates(vals),
 	}, nil)
 	clientCreator := proxy.NewLocalClientCreator(app)

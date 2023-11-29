@@ -9,9 +9,9 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/light/store"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 )
 

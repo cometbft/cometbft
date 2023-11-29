@@ -7,12 +7,12 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	blocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v1"
+	ptypes "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
 	"github.com/cometbft/cometbft/internal/rpctrace"
 	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
-	blocksvc "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
-	ptypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 )
 

@@ -1,8 +1,6 @@
 syntax = "proto3";
 package tendermint.services.version.v1;
 
-option go_package = "github.com/cometbft/cometbft/proto/tendermint/services/version/v1";
-
 import "tendermint/services/version/v1/version.proto";
 
 // VersionService simply provides version information about the node and the

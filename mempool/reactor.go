@@ -8,12 +8,12 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	protomem "github.com/cometbft/cometbft/api/cometbft/mempool/v1"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/clist"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
-	protomem "github.com/cometbft/cometbft/proto/tendermint/mempool"
 	"github.com/cometbft/cometbft/types"
 	"golang.org/x/sync/semaphore"
 )
@@ -107,32 +107,37 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 		go func() {
 			// Always forward transactions to unconditional peers.
 			if !memR.Switch.IsPeerUnconditional(peer.ID()) {
+				// Depending on the type of peer, we choose a semaphore to limit the gossiping peers.
+				var peerSemaphore *semaphore.Weighted
 				if peer.IsPersistent() && memR.config.ExperimentalMaxGossipConnectionsToPersistentPeers > 0 {
-					// Block sending transactions to peer until one of the connections become
-					// available in the semaphore.
-					if err := memR.activePersistentPeersSemaphore.Acquire(context.TODO(), 1); err != nil {
-						memR.Logger.Error("Failed to acquire semaphore: %v", err)
-						return
-					}
-					// Release semaphore to allow other peer to start sending transactions.
-					defer memR.activePersistentPeersSemaphore.Release(1)
-					defer memR.mempool.metrics.ActiveOutboundConnections.Add(-1)
+					peerSemaphore = memR.activePersistentPeersSemaphore
+				} else if !peer.IsPersistent() && memR.config.ExperimentalMaxGossipConnectionsToNonPersistentPeers > 0 {
+					peerSemaphore = memR.activeNonPersistentPeersSemaphore
 				}
 
-				if !peer.IsPersistent() && memR.config.ExperimentalMaxGossipConnectionsToNonPersistentPeers > 0 {
-					// Block sending transactions to peer until one of the connections become
-					// available in the semaphore.
-					if err := memR.activeNonPersistentPeersSemaphore.Acquire(context.TODO(), 1); err != nil {
-						memR.Logger.Error("Failed to acquire semaphore: %v", err)
-						return
+				if peerSemaphore != nil {
+					for peer.IsRunning() {
+						// Block on the semaphore until a slot is available to start gossiping with this peer.
+						// Do not block indefinitely, in case the peer is disconnected before gossiping starts.
+						ctxTimeout, cancel := context.WithTimeout(context.TODO(), 30*time.Second)
+						// Block sending transactions to peer until one of the connections become
+						// available in the semaphore.
+						err := peerSemaphore.Acquire(ctxTimeout, 1)
+						cancel()
+
+						if err != nil {
+							continue
+						}
+
+						// Release semaphore to allow other peer to start sending transactions.
+						defer peerSemaphore.Release(1)
+						break
 					}
-					// Release semaphore to allow other peer to start sending transactions.
-					defer memR.activeNonPersistentPeersSemaphore.Release(1)
-					defer memR.mempool.metrics.ActiveOutboundConnections.Add(-1)
 				}
 			}
 
 			memR.mempool.metrics.ActiveOutboundConnections.Add(1)
+			defer memR.mempool.metrics.ActiveOutboundConnections.Add(-1)
 			memR.broadcastTxRoutine(peer)
 		}()
 	}

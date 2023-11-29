@@ -31,6 +31,12 @@ issues:
     - path: _test\.go
       linters:
         - gosec
+    - path: \.pb\.go
+      linters:
+        - gofmt
+        - goimports
+        - govet
+        - stylecheck
   max-same-issues: 50
 
 linters-settings:

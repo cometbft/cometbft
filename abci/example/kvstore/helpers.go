@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/cometbft/cometbft/abci/types"
+	pbcrypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	cryptoencoding "github.com/cometbft/cometbft/crypto/encoding"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 )
 
 // RandVal creates one random validator, with a key derived
@@ -37,7 +37,7 @@ func RandVals(cnt int) []types.ValidatorUpdate {
 // which allows tests to pass and is fine as long as you
 // don't make any tx that modify the validator state
 func InitKVStore(ctx context.Context, app *Application) error {
-	_, err := app.InitChain(ctx, &types.RequestInitChain{
+	_, err := app.InitChain(ctx, &types.InitChainRequest{
 		Validators: RandVals(1),
 	})
 	return err
@@ -69,7 +69,7 @@ func NewTxFromID(i int) []byte {
 
 // Create a transaction to add/remove/update a validator
 // To remove, set power to 0.
-func MakeValSetChangeTx(pubkey crypto.PublicKey, power int64) []byte {
+func MakeValSetChangeTx(pubkey pbcrypto.PublicKey, power int64) []byte {
 	pk, err := cryptoencoding.PubKeyFromProto(pubkey)
 	if err != nil {
 		panic(err)

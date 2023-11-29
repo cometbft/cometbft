@@ -17,6 +17,7 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
@@ -24,7 +25,6 @@ import (
 	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -170,7 +170,7 @@ func TestPruneStates(t *testing.T) {
 				err := stateStore.Save(state)
 				require.NoError(t, err)
 
-				err = stateStore.SaveFinalizeBlockResponse(h, &abci.ResponseFinalizeBlock{
+				err = stateStore.SaveFinalizeBlockResponse(h, &abci.FinalizeBlockResponse{
 					TxResults: []*abci.ExecTxResult{
 						{Data: []byte{1}},
 						{Data: []byte{2}},
@@ -283,7 +283,7 @@ func initStateStoreRetainHeights(stateStore sm.Store, appBlockRH, dcBlockRH, dcB
 	return nil
 }
 
-func fillStore(t *testing.T, height int64, stateStore sm.Store, bs *store.BlockStore, state sm.State, response1 *abci.ResponseFinalizeBlock) {
+func fillStore(t *testing.T, height int64, stateStore sm.Store, bs *store.BlockStore, state sm.State, response1 *abci.FinalizeBlockResponse) {
 	if response1 != nil {
 		for h := int64(1); h <= height; h++ {
 			err := stateStore.SaveFinalizeBlockResponse(h, response1)
@@ -363,7 +363,7 @@ func TestABCIResPruningStandalone(t *testing.T) {
 	require.Error(t, err)
 	require.Nil(t, responses)
 	// stub the abciresponses.
-	response1 := &abci.ResponseFinalizeBlock{
+	response1 := &abci.FinalizeBlockResponse{
 		TxResults: []*abci.ExecTxResult{
 			{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
 		},
@@ -456,7 +456,7 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 		require.Error(t, err)
 		require.Nil(t, responses)
 		// stub the abciresponses.
-		response1 := &abci.ResponseFinalizeBlock{
+		response1 := &abci.FinalizeBlockResponse{
 			TxResults: []*abci.ExecTxResult{
 				{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
 			},
@@ -514,7 +514,7 @@ func TestLastFinalizeBlockResponses(t *testing.T) {
 		require.Error(t, err)
 		require.Nil(t, responses)
 		// stub the abciresponses.
-		response1 := &abci.ResponseFinalizeBlock{
+		response1 := &abci.FinalizeBlockResponse{
 			TxResults: []*abci.ExecTxResult{
 				{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
 			},
@@ -544,7 +544,7 @@ func TestLastFinalizeBlockResponses(t *testing.T) {
 		stateDB := dbm.NewMemDB()
 		height := int64(10)
 		// stub the second abciresponse.
-		response2 := &abci.ResponseFinalizeBlock{
+		response2 := &abci.FinalizeBlockResponse{
 			TxResults: []*abci.ExecTxResult{
 				{Code: 44, Data: []byte("Hello again"), Log: "????"},
 			},

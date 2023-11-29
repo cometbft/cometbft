@@ -1,5 +1,40 @@
 # CHANGELOG
 
+## v0.38.2
+
+*November 27, 2023*
+
+This release provides the **nop** mempool for applications that want to build their own mempool.
+Using this mempool effectively disables all mempool functionality in CometBFT, including transaction dissemination and the `broadcast_tx_*` endpoints.
+
+Also fixes a small bug in the mempool for an experimental feature.
+
+### BUG FIXES
+
+- `[mempool]` Avoid infinite wait in transaction sending routine when
+  using experimental parameters to limiting transaction gossiping to peers
+  ([\#1654](https://github.com/cometbft/cometbft/pull/1654))
+
+### FEATURES
+
+- `[mempool]` Add `nop` mempool ([\#1643](https://github.com/cometbft/cometbft/pull/1643))
+
+  If you want to use it, change mempool's `type` to `nop`:
+
+  ```toml
+  [mempool]
+
+  # The type of mempool for this node to use.
+  #
+  # Possible types:
+  # - "flood" : concurrent linked list mempool with flooding gossip protocol
+  # (default)
+  # - "nop"   : nop-mempool (short for no operation; the ABCI app is responsible
+  # for storing, disseminating and proposing txs). "create_empty_blocks=false"
+  # is not supported.
+  type = "nop"
+  ```
+
 ## v0.38.1
 
 *November 17, 2023*
@@ -64,10 +99,10 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
 - `[rpc]` Removed `begin_block_events` and `end_block_events` from `BlockResultsResponse`.
   The events are merged into one field called `finalize_block_events`.
   ([\#9427](https://github.com/tendermint/tendermint/issues/9427))
-- `[kvindexer]` Added support for big integers and big floats in the kvindexer.
+- `[pubsub]` Added support for big integers and big floats in the pubsub event query system.
   Breaking changes: function `Number` in package `libs/pubsub/query/syntax` changed its return value.
   ([\#797](https://github.com/cometbft/cometbft/pull/797))
-- `[pubsub]` Added support for big integers and big floats in the pubsub event query system.
+- `[kvindexer]` Added support for big integers and big floats in the kvindexer.
   Breaking changes: function `Number` in package `libs/pubsub/query/syntax` changed its return value.
   ([\#797](https://github.com/cometbft/cometbft/pull/797))
 - `[mempool]` Application can now set `ConsensusParams.Block.MaxBytes` to -1
@@ -190,6 +225,44 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
 - `[pubsub]` Performance improvements for the event query API
   ([\#7319](https://github.com/tendermint/tendermint/pull/7319))
 
+## v0.37.4
+
+*November 27, 2023*
+
+This release provides the **nop** mempool for applications that want to build
+their own mempool. Using this mempool effectively disables all mempool
+functionality in CometBFT, including transaction dissemination and the
+`broadcast_tx_*` endpoints.
+
+Also fixes a small bug in the mempool for an experimental feature, and reverts
+the change from v0.37.3 that bumped the minimum Go version to v1.21.
+
+### BUG FIXES
+
+- `[mempool]` Avoid infinite wait in transaction sending routine when
+  using experimental parameters to limiting transaction gossiping to peers
+  ([\#1654](https://github.com/cometbft/cometbft/pull/1654))
+
+### FEATURES
+
+- `[mempool]` Add `nop` mempool ([\#1643](https://github.com/cometbft/cometbft/pull/1643))
+
+  If you want to use it, change mempool's `type` to `nop`:
+
+  ```toml
+  [mempool]
+
+  # The type of mempool for this node to use.
+  #
+  # Possible types:
+  # - "flood" : concurrent linked list mempool with flooding gossip protocol
+  # (default)
+  # - "nop"   : nop-mempool (short for no operation; the ABCI app is responsible
+  # for storing, disseminating and proposing txs). "create_empty_blocks=false"
+  # is not supported.
+  type = "nop"
+  ```
+
 ## v0.37.3
 
 *November 17, 2023*
@@ -239,14 +312,14 @@ security issues.
 
 ### BUG FIXES
 
-- `[pubsub]` Pubsub queries are now able to parse big integers (larger than
-  int64). Very big floats are also properly parsed into very big integers
-  instead of being truncated to int64.
-  ([\#771](https://github.com/cometbft/cometbft/pull/771))
 - `[state/kvindex]` Querying event attributes that are bigger than int64 is now
   enabled. We are not supporting reading floats from the db into the indexer
   nor parsing them into BigFloats to not introduce breaking changes in minor
   releases. ([\#771](https://github.com/cometbft/cometbft/pull/771))
+- `[pubsub]` Pubsub queries are now able to parse big integers (larger than
+  int64). Very big floats are also properly parsed into very big integers
+  instead of being truncated to int64.
+  ([\#771](https://github.com/cometbft/cometbft/pull/771))
 
 ### IMPROVEMENTS
 
@@ -440,6 +513,18 @@ See below for more details.
 - `[consensus]` Save peer LastCommit correctly to achieve 50% reduction in gossiped precommits.
   ([\#9760](https://github.com/tendermint/tendermint/pull/9760))
 
+## v0.34.31
+
+*November 27, 2023*
+
+Fixes a small bug in the mempool for an experimental feature.
+
+### BUG FIXES
+
+- `[mempool]` Avoid infinite wait in transaction sending routine when
+  using experimental parameters to limiting transaction gossiping to peers
+  ([\#1654](https://github.com/cometbft/cometbft/pull/1654))
+
 ## v0.34.30
 
 *November 17, 2023*
@@ -481,12 +566,12 @@ security issues.
 
 ### BUG FIXES
 
+- `[state/kvindex]` Querying event attributes that are bigger than int64 is now
+  enabled. ([\#771](https://github.com/cometbft/cometbft/pull/771))
 - `[pubsub]` Pubsub queries are now able to parse big integers (larger than
   int64). Very big floats are also properly parsed into very big integers
   instead of being truncated to int64.
   ([\#771](https://github.com/cometbft/cometbft/pull/771))
-- `[state/kvindex]` Querying event attributes that are bigger than int64 is now
-  enabled. ([\#771](https://github.com/cometbft/cometbft/pull/771))
 
 ### IMPROVEMENTS
 

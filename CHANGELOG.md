@@ -9,7 +9,7 @@ that aim to improve integrators' experience and increase the velocity of the
 CometBFT development team, including:
 
 1. The first officially supported release of the [data companion
-   API](./docs/architecture/adr-101-data-companion-pull-api.md)
+   API](./docs/architecture/adr-101-data-companion-pull-api.md).
 2. Versioning of both the Protobuf definitions _and_ RPC. By versioning our
    APIs, we aim to provide a level of commitment to API stability while
    simultaneously affording ourselves the ability to roll out substantial

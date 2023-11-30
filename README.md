@@ -88,30 +88,28 @@ yourself with our [Architectural Decision Records
 
 ## Versioning
 
-### Semantic Versioning
+As of v1, CometBFT uses the following approach to versioning:
 
-CometBFT uses [Semantic Versioning](http://semver.org/) to determine when and
-how the version changes. According to SemVer, anything in the public API can
-change at any time before version 1.0.0
+- Major version bumps (e.g. v1.0.0 to v2.0.0) would generally involve
+  state-breaking changes, such as changes to how block hashes are computed.
 
-To provide some stability to users of 0.X.X versions of CometBFT, the MINOR
-version is used to signal breaking changes across CometBFT's API. This API
-includes all publicly exposed types, functions, and methods in non-internal Go
-packages as well as the types and methods accessible via the CometBFT RPC
-interface.
+- Minor version bumps (e.g. v1.1.0 to v1.2.0) are reserved for rolling out new
+  features. **NB: Go API-breaking changes could be rolled out in new minor
+  releases.**
 
-Breaking changes to these public APIs will be documented in the CHANGELOG.
+- Patch version bumps (v1.0.0 to v1.0.1) are reserved for bug/security fixes
+  that are not state- or Go API-breaking.
 
 ### Upgrades
 
-In an effort to avoid accumulating technical debt prior to 1.0.0, we do not
-guarantee that breaking changes (i.e. bumps in the MINOR version) will work with
-existing CometBFT blockchains. In these cases you will have to start a new
-blockchain, or write something custom to get the old data into the new chain.
-However, any bump in the PATCH version should be compatible with existing
-blockchain histories.
+We do not guarantee compatibility between major releases of CometBFT. Minor
+releases of the same major release series (v1.1, v1.2, etc.) should, unless
+otherwise specified, be compatible with each other. Patch releases of the same
+minor release series (v1.0.1, v1.0.2, etc.) are guaranteed to be compatible with
+each other.
 
-For more information on upgrading, see [UPGRADING.md](./UPGRADING.md).
+For more detailed information on upgrading from one version to another, see
+[UPGRADING.md](./UPGRADING.md).
 
 ### Supported Versions
 
@@ -122,6 +120,10 @@ CometBFT up-to-date. Upgrading instructions can be found in
 
 Currently supported versions include:
 
+- v1.0.x: Currently in pre-release with no guarantees as to API stability until
+  a release candidate is cut. See [RELEASES.md](./RELEASES.md) for details on
+  our process as to API stability guarantees that can be expected of CometBFT
+  pre-releases.
 - v0.38.x: CometBFT v0.38 introduces ABCI 2.0, which implements the entirety of
   ABCI++
 - v0.37.x: CometBFT v0.37 introduces ABCI 1.0, which is the first major step

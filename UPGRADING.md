@@ -76,26 +76,27 @@ into the `internal` directory:
 
 ### Mempool
 
-- The `Mempool` interface was modified on the following methods. Note that this
-  interface is meant for internal use only, so you should be aware of these
-  changes only if you happen to call these methods directly.
-    - `CheckTx`'s signature changed from `CheckTx(tx types.Tx, cb
-      func(*abci.ResponseCheckTx), txInfo TxInfo) error` to `CheckTx(tx
-      types.Tx) (abcicli.ReqRes, error)`.
-        - The method used to take a callback function `cb` to be applied to the ABCI
-        `CheckTx` response. Now `CheckTx` returns the ABCI response of type
-        `abcicli.ReqRes`, on which the callback must be applied manually. For
-        example:
+The `Mempool` interface was modified on `CheckTx`. Note that this interface is
+meant for internal use only, so you should be aware of these changes only if you
+happen to call these methods directly.
 
-        ```golang
-        reqRes, err := CheckTx(tx)
-        cb(reqRes.Response.GetCheckTx())
-        ```
+`CheckTx`'s signature changed from `CheckTx(tx types.Tx, cb
+func(*abci.ResponseCheckTx), txInfo TxInfo) error` to `CheckTx(tx types.Tx)
+(abcicli.ReqRes, error)`.
+- The method used to take a callback function `cb` to be applied to the
+  ABCI `CheckTx` response. Now `CheckTx` returns the ABCI response of
+  type `abcicli.ReqRes`, on which the callback must be applied manually.
+  For example:
 
-        - The second parameter was `txInfo`, which essentially contained information
-        about the sender of the transaction. Now that information is stored in the
-        mempool reactor instead of the data structure, so it is no longer needed
-        in this method.
+  ```golang
+  reqRes, err := CheckTx(tx)
+  cb(reqRes.Response.GetCheckTx())
+  ```
+
+- The second parameter was `txInfo`, which essentially contained
+  information about the sender of the transaction. Now that information
+  is stored in the mempool reactor instead of the data structure, so it
+  is no longer needed in this method.
 
 ### Protobufs and Generated Go Code
 

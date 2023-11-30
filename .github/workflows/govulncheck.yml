@@ -9,8 +9,7 @@ on:
   merge_group:
   push:
     branches:
-      - main
-      - release/**
+      - v1.x
 
 jobs:
   govulncheck:

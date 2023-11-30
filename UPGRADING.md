@@ -31,14 +31,14 @@ The minimum Go version has been bumped to [v1.21][go121].
 
 ### Consensus
 
-* Removed the `consensus.State.ReplayFile` and `consensus.RunReplayFile`
+- Removed the `consensus.State.ReplayFile` and `consensus.RunReplayFile`
   methods, as these were exclusively used by the `replay` and `replay-console`
   subcommands, which were also removed
   ([\#1170](https://github.com/cometbft/cometbft/pull/1170))
 
 ### CLI Subcommands
 
-* The `replay` and `replay-console` subcommands were removed
+- The `replay` and `replay-console` subcommands were removed
   ([\#1170](https://github.com/cometbft/cometbft/pull/1170)).
 
 ### Go API
@@ -76,13 +76,13 @@ into the `internal` directory:
 
 ### Mempool
 
-* The `Mempool` interface was modified on the following methods. Note that this
+- The `Mempool` interface was modified on the following methods. Note that this
   interface is meant for internal use only, so you should be aware of these
   changes only if you happen to call these methods directly.
-    * `CheckTx`'s signature changed from `CheckTx(tx types.Tx, cb
+    - `CheckTx`'s signature changed from `CheckTx(tx types.Tx, cb
       func(*abci.ResponseCheckTx), txInfo TxInfo) error` to `CheckTx(tx
       types.Tx) (abcicli.ReqRes, error)`.
-      * The method used to take a callback function `cb` to be applied to the ABCI
+        - The method used to take a callback function `cb` to be applied to the ABCI
         `CheckTx` response. Now `CheckTx` returns the ABCI response of type
         `abcicli.ReqRes`, on which the callback must be applied manually. For
         example:
@@ -92,7 +92,7 @@ into the `internal` directory:
         cb(reqRes.Response.GetCheckTx())
         ```
 
-      * The second parameter was `txInfo`, which essentially contained information
+        - The second parameter was `txInfo`, which essentially contained information
         about the sender of the transaction. Now that information is stored in the
         mempool reactor instead of the data structure, so it is no longer needed
         in this method.
@@ -138,7 +138,7 @@ definitions:
 
 ### RPC
 
-* The RPC API is now versioned, with the existing RPC being available under both
+- The RPC API is now versioned, with the existing RPC being available under both
   the `/` path (as in CometBFT v0.38) and a `/v1` path.
 
   Although invoking methods without specifying the version is still supported
@@ -146,7 +146,7 @@ definitions:
   to use the versioned approach. For example, instead of
   `curl localhost:26657/block?height=5`, use `curl localhost:26657/v1/block?height=5`.
 
-* The `/websocket` endpoint path is no longer configurable in the client or
+- The `/websocket` endpoint path is no longer configurable in the client or
   server. Creating an RPC client now takes the form:
 
   ```golang
@@ -163,44 +163,44 @@ coordinated upgrade.
 
 ### Config Changes
 
-* The field `Version` in the mempool section has been removed. The priority
+- The field `Version` in the mempool section has been removed. The priority
   mempool (what was called version `v1`) has been removed (see below), thus
   there is only one implementation of the mempool available (what was called
   `v0`).
-* Config fields `TTLDuration` and `TTLNumBlocks`, which were only used by the
+- Config fields `TTLDuration` and `TTLNumBlocks`, which were only used by the
   priority mempool, have been removed.
 
 ### Mempool Changes
 
-* The priority mempool (what was referred in the code as version `v1`) has been
+- The priority mempool (what was referred in the code as version `v1`) has been
   removed. There is now only one mempool (what was called version `v0`), that
   is, the default implementation as a queue of transactions.
-* In the protobuf message `ResponseCheckTx`, fields `sender`, `priority`, and
+- In the protobuf message `ResponseCheckTx`, fields `sender`, `priority`, and
   `mempool_error`, which were only used by the priority mempool, were removed
   but still kept in the message as "reserved".
 
 ### ABCI Changes
 
-* The `ABCIVersion` is now `2.0.0`.
-* Added new ABCI methods `ExtendVote`, and `VerifyVoteExtension`.
+- The `ABCIVersion` is now `2.0.0`.
+- Added new ABCI methods `ExtendVote`, and `VerifyVoteExtension`.
   Applications upgrading to v0.38.0 must implement these methods as described
   [here](./spec/abci/abci%2B%2B_comet_expected_behavior.md#adapting-existing-applications-that-use-abci)
-* Removed methods `BeginBlock`, `DeliverTx`, `EndBlock`, and replaced them by
+- Removed methods `BeginBlock`, `DeliverTx`, `EndBlock`, and replaced them by
   method `FinalizeBlock`. Applications upgrading to `v0.38.0` must refactor
   the logic handling the methods removed to handle `FinalizeBlock`.
-* The Application's hash (or any data representing the Application's current state)
+- The Application's hash (or any data representing the Application's current state)
   is known by the time `FinalizeBlock` finishes its execution.
   Accordingly, the `app_hash` parameter has been moved from `ResponseCommit`
   to `ResponseFinalizeBlock`.
-* Field `signed_last_block` in structure `VoteInfo` has been replaced by the
+- Field `signed_last_block` in structure `VoteInfo` has been replaced by the
   more expressive `block_id_flag`. Applications willing to keep the semantics
   of `signed_last_block` can now use the following predicate
-    * `voteInfo.block_id_flag != BlockIDFlagAbsent`
-* For further details, please see the updated [specification](spec/abci/README.md)
+    - `voteInfo.block_id_flag != BlockIDFlagAbsent`
+- For further details, please see the updated [specification](spec/abci/README.md)
 
 ### `block_results` RPC endpoint - query result display change (breaking)
 
-* When returning a block, all block events are displayed within the `finalize_block_events` field.
+- When returning a block, all block events are displayed within the `finalize_block_events` field.
  For blocks generated with older versions of CometBFT,  that means that block results that appeared
  as `begin_block_events` and `end_block_events` are merged into `finalize_block_events`.
  For users who rely on the events to be grouped by the function they were generated by, this change
@@ -211,7 +211,7 @@ coordinated upgrade.
 The changes described here are internal to the implementation of the kvindexer, and they are transparent to the
 user. However, if you own a fork with a modified version of the indexer, you should be aware of these changes.
 
-* Indexer key for block events will not contain information about the function that returned the event.
+- Indexer key for block events will not contain information about the function that returned the event.
 The events were indexed by their attributes, event type, the function that returned them, the height and
 event sequence. The functions returning events in old (pre `v0.38.0`) versions of CometBFT were `BeginBlock` or `EndBlock`.
 As events are returned now only via `FinalizeBlock`, the value of this field has no use, and has been removed.
@@ -234,25 +234,25 @@ now changed to `github.com/cometbft/cometbft`.
 
 ### ABCI Changes
 
-* The `ABCIVersion` is now `1.0.0`.
-* Added new ABCI methods `PrepareProposal` and `ProcessProposal`. For details,
+- The `ABCIVersion` is now `1.0.0`.
+- Added new ABCI methods `PrepareProposal` and `ProcessProposal`. For details,
   please see the [spec](spec/abci/README.md). Applications upgrading to
   v0.37.0 must implement these methods, at the very minimum, as described
   [here](./spec/abci/abci++_app_requirements.md)
-* Deduplicated `ConsensusParams` and `BlockParams`.
+- Deduplicated `ConsensusParams` and `BlockParams`.
   In the v0.34 branch they are defined both in `abci/types.proto` and `types/params.proto`.
   The definitions in `abci/types.proto` have been removed.
   In-process applications should make sure they are not using the deleted
   version of those structures.
-* In v0.34, messages on the wire used to be length-delimited with `int64` varint
+- In v0.34, messages on the wire used to be length-delimited with `int64` varint
   values, which was inconsistent with the `uint64` varint length delimiters used
   in the P2P layer. Both now consistently use `uint64` varint length delimiters.
-* Added `AbciVersion` to `RequestInfo`.
+- Added `AbciVersion` to `RequestInfo`.
   Applications should check that CometBFT's ABCI version matches the one they expect
   in order to ensure compatibility.
-* The `SetOption` method has been removed from the ABCI `Client` interface.
+- The `SetOption` method has been removed from the ABCI `Client` interface.
   The corresponding Protobuf types have been deprecated.
-* The `key` and `value` fields in the `EventAttribute` type have been changed
+- The `key` and `value` fields in the `EventAttribute` type have been changed
   from type `bytes` to `string`. As per the [Protocol Buffers updating
   guidelines](https://developers.google.com/protocol-buffers/docs/proto3#updating),
   this should have no effect on the wire-level encoding for UTF8-encoded

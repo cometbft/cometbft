@@ -37,25 +37,24 @@ Complete documentation can be found on the
 
 ## Releases
 
-Please do not depend on `main` as your production branch. Use
+Please do not depend on `main` as your production branch, as it may receive
+significant breaking changes at any time. Use
 [releases](https://github.com/cometbft/cometbft/releases) instead.
 
-We haven't released v1.0 yet
-since we are making breaking changes to the protocol and the APIs. See below for
-more details about [versioning](#versioning).
+If you intend to run CometBFT in production, we're happy to help. To contact us,
+in order of preference:
 
-In any case, if you intend to run CometBFT in production, we're happy to help.
-
-To contact us, you can also
-[join the chat](https://discord.com/channels/669268347736686612/669283915743232011).
+- [Create a new discussion on
+  GitHub](https://github.com/cometbft/cometbft/discussions)
+- Reach out to us via [Telegram](https://t.me/CometBFT)
+- [Join the chat on
+  Discord](https://discord.com/channels/669268347736686612/669283915743232011).
 
 More on how releases are conducted can be found [here](./RELEASES.md).
 
 ## Security
 
-To report a security vulnerability, see our [bug bounty
-program](https://hackerone.com/cosmos). For examples of the kinds of bugs we're
-looking for, see [our security policy](SECURITY.md).
+Please see [SECURITY.md](./SECURITY.md).
 
 ## Minimum requirements
 
@@ -135,8 +134,8 @@ Currently supported versions include:
 
 ### Libraries
 
-- [Cosmos SDK](http://github.com/cosmos/cosmos-sdk); A framework for building
-  applications in Golang
+- [Cosmos SDK](http://github.com/cosmos/cosmos-sdk): A framework for building
+  high-value public blockchain applications in Go
 - [Tendermint in Rust](https://github.com/informalsystems/tendermint-rs)
 - [ABCI Tower](https://github.com/penumbra-zone/tower-abci)
 

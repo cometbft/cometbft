@@ -91,11 +91,9 @@ As of v1, CometBFT uses the following approach to versioning:
 
 - Major version bumps (e.g. v1.0.0 to v2.0.0) would generally involve
   state-breaking changes, such as changes to how block hashes are computed.
-
 - Minor version bumps (e.g. v1.1.0 to v1.2.0) are reserved for rolling out new
   features. **NB: Go API-breaking changes could be rolled out in new minor
   releases.**
-
 - Patch version bumps (v1.0.0 to v1.0.1) are reserved for bug/security fixes
   that are not state- or Go API-breaking.
 

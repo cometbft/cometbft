@@ -213,8 +213,8 @@ Before performing these steps, be sure the
 
 ## Minor and patch releases
 
-Minor and patch releases are done differently from major releases: They are
-built off of long-lived backport branches, rather than from main.  As
+Minor and patch releases are done differently from major releases: they are
+built off of long-lived backport branches, rather than from `main`.  As
 non-breaking changes land on `main`, they should also be backported into these
 backport branches.
 
@@ -242,8 +242,8 @@ To create a patch release:
    The process for minor releases is similar to patch releases:
    * `git tag -a v2.1.0 -s -m 'Release v2.1.0`
    * `git push origin v2.1.0`
-6. Create a pull request back to main with the CHANGELOG & version changes from the latest release.
-   * Remove all `R:patch` labels from the pull requests that were included in the release.
+6. Create a pull request back to main with the CHANGELOG and version changes
+   from the latest release.
    * Do not merge the backport branch into main.
 
 ## Major Release Checklist

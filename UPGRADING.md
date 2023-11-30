@@ -2,55 +2,132 @@
 
 This guide provides instructions for upgrading to specific versions of CometBFT.
 
-## Unreleased
+## v1.0.0
+
+CometBFT v1.0 is mostly functionally equivalent to CometBFT v0.38, but includes
+some substantial breaking API changes that will hopefully allow future changes
+to be rolled out quicker.
 
 ### Building CometBFT
 
 The minimum Go version has been bumped to [v1.21][go121].
 
-### Mempool Changes
-
-* The `Mempool` interface was modified on the following methods. Note that this
-  interface is meant for internal use only, so you should be aware of these
-  changes only if you happen to call these methods directly.
-    * `CheckTx`'s signature changed from
-    `CheckTx(tx types.Tx, cb func(*abci.ResponseCheckTx), txInfo TxInfo) error`
-    to `CheckTx(tx types.Tx) (abcicli.ReqRes, error)`.
-        * The method used to take a callback function `cb` to be applied to the ABCI
-    `CheckTx` response. Now `CheckTx` returns the ABCI response of type
-    `abcicli.ReqRes`, on which the callback must be applied manually. For
-    example:
-
-      ```golang
-      reqRes, err := CheckTx(tx)
-      cb(reqRes.Response.GetCheckTx())
-      ```
-
-        * The second parameter was `txInfo`, which essentially contained information
-    about the sender of the transaction. Now that information is stored in the
-    mempool reactor instead of the data structure, so it is no longer needed in
-    this method.
-
-### Consensus Changes
+### Consensus
 
 * Removed the `consensus.State.ReplayFile` and `consensus.RunReplayFile`
   methods, as these were exclusively used by the `replay` and `replay-console`
   subcommands, which were also removed
   ([\#1170](https://github.com/cometbft/cometbft/pull/1170))
 
-### Command Line Subcommands
+### CLI Subcommands
 
-* Removed the `replay` and `replay-console` subcommands
-  ([\#1170](https://github.com/cometbft/cometbft/pull/1170))
+* The `replay` and `replay-console` subcommands were removed
+  ([\#1170](https://github.com/cometbft/cometbft/pull/1170)).
 
-### RPC API
+### Go API
 
-* The RPC API is now versioned.
-  Although invoking methods without specifying the version is still supported for now,
-  support will be dropped in future releases and users are urged to use the versioned
-  approach.
-  For example, instead of `curl localhost:26657/block?height=5`, use
-  `curl localhost:26657/v1/block?height=5`.
+As per [ADR 109](./docs/architecture/adr-109-reduce-go-api-surface.md), the
+following packages that were publicly accessible in CometBFT v0.38 were moved
+into the `internal` directory:
+
+- `blocksync`
+- `consensus`
+- `evidence`
+- `inspect`
+- `libs/async`
+- `libs/autofile`
+- `libs/bits`
+- `libs/clist`
+- `libs/cmap`
+- `libs/events`
+- `libs/fail`
+- `libs/flowrate`
+- `libs/net`
+- `libs/os`
+- `libs/progressbar`
+- `libs/protoio`
+- `libs/pubsub`
+- `libs/rand`
+- `libs/service`
+- `libs/strings`
+- `libs/sync`
+- `libs/tempfile`
+- `libs/timer`
+- `state`
+- `statesync`
+- `store`
+
+### Mempool
+
+* The `Mempool` interface was modified on the following methods. Note that this
+  interface is meant for internal use only, so you should be aware of these
+  changes only if you happen to call these methods directly.
+    * `CheckTx`'s signature changed from `CheckTx(tx types.Tx, cb
+      func(*abci.ResponseCheckTx), txInfo TxInfo) error` to `CheckTx(tx
+      types.Tx) (abcicli.ReqRes, error)`.
+      * The method used to take a callback function `cb` to be applied to the ABCI
+        `CheckTx` response. Now `CheckTx` returns the ABCI response of type
+        `abcicli.ReqRes`, on which the callback must be applied manually. For
+        example:
+
+        ```golang
+        reqRes, err := CheckTx(tx)
+        cb(reqRes.Response.GetCheckTx())
+        ```
+
+      * The second parameter was `txInfo`, which essentially contained information
+        about the sender of the transaction. Now that information is stored in the
+        mempool reactor instead of the data structure, so it is no longer needed
+        in this method.
+
+### Protobufs and Generated Go Code
+
+Several major changes have been implemented relating to the Protobuf
+definitions:
+
+1. CometBFT now makes use of the `cometbft.*` Protobuf definitions in
+   [`proto/cometbft`](./proto/cometbft/). This is a breaking change for all
+   users who rely on serialization of the Protobuf type paths, such as
+   integrators who serialize CometBFT's Protobuf data types into `Any`-typed
+   fields. For example, the `tendermint.types.Block` type in CometBFT v0.38.x is
+   now accessible as `cometbft.types.v1.Block` (see the next point in the list
+   for details on versioning).
+
+   See the CometBFT Protobufs [README](/proto/README.md) file for more details.
+
+2. All CometBFT Protobuf packages include a version whose number will be
+   independent of the CometBFT version. As mentioned in (1), the
+   `tendermint.types.Block` type is now available under
+   `cometbft.types.v1.Block` - the `v1` in the type path indicates the version
+   of the `types` package used by this version of CometBFT.
+
+   The Protobuf definitions that are wire-level compatible (but not type
+   path-compatible) with CometBFT v0.34, v0.37 and v0.38, where breaking changes
+   were introduced, are available under `v1beta*`-versioned types. For example:
+
+   - The `tendermint.abci.Request` type from CometBFT v0.34 is now available as
+     `cometbft.abci.v1beta1.Request`.
+   - The `tendermint.abci.Request` type from CometBFT v0.37 is now available as
+     `cometbft.abci.v1beta2.Request`.
+   - The `tendermint.abci.Request` type from CometBFT v0.38 is now available as
+     `cometbft.abci.v1beta3.Request`.
+
+   See the CometBFT Protobufs [README](/proto/README.md) file for more details.
+
+3. All Go code generated from the `cometbft.*` types is now available under the
+   [`api`](./api/) directory. This directory is also an independently versioned
+   Go module. This code is still generated using the Cosmos SDK's [gogoproto
+   fork](https://github.com/cosmos/gogoproto) at present.
+
+### RPC
+
+* The RPC API is now versioned, with the existing RPC being available under both
+  the `/` path (as in CometBFT v0.38) and a `/v1` path.
+
+  Although invoking methods without specifying the version is still supported
+  for now, support will be dropped in future releases and users are encouraged
+  to use the versioned approach. For example, instead of
+  `curl localhost:26657/block?height=5`, use `curl localhost:26657/v1/block?height=5`.
 
 * The `/websocket` endpoint path is no longer configurable in the client or
   server. Creating an RPC client now takes the form:

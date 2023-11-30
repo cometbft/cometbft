@@ -13,6 +13,7 @@
 | Branch  | Tests                                          | Linting                                     |
 |---------|------------------------------------------------|---------------------------------------------|
 | main    | [![Tests][tests-badge]][tests-url]             | [![Lint][lint-badge]][lint-url]             |
+| v1.x    | [![Tests][tests-badge-v1x]][tests-url-v1x]     | [![Lint][lint-badge-v1x]][lint-url-v1x]     |
 | v0.38.x | [![Tests][tests-badge-v038x]][tests-url-v038x] | [![Lint][lint-badge-v038x]][lint-url-v038x] |
 | v0.37.x | [![Tests][tests-badge-v037x]][tests-url-v037x] | [![Lint][lint-badge-v037x]][lint-url-v037x] |
 | v0.34.x | [![Tests][tests-badge-v034x]][tests-url-v034x] | [![Lint][lint-badge-v034x]][lint-url-v034x] |
@@ -61,6 +62,7 @@ Please see [SECURITY.md](./SECURITY.md).
 | CometBFT version | Requirement | Version        | Tested with |
 |------------------|-------------|----------------|-------------|
 | main             | Go version  | 1.21 or higher | 1.21        |
+| v1.x             | Go version  | 1.21 or higher | 1.21        |
 | v0.38.x          | Go version  | 1.20 or higher | 1.21        |
 | v0.37.x          | Go version  | 1.20 or higher | 1.21        |
 | v0.34.x          | Go version  | 1.20 or higher | 1.20        |
@@ -121,9 +123,9 @@ CometBFT up-to-date. Upgrading instructions can be found in
 
 Currently supported versions include:
 
-- v1.0.x: Currently in pre-release with no guarantees as to API stability until
-  a release candidate is cut. See [RELEASES.md](./RELEASES.md) for details on
-  our process as to API stability guarantees that can be expected of CometBFT
+- v1.x: Currently in pre-release with no guarantees as to API stability until a
+  release candidate is cut. See [RELEASES.md](./RELEASES.md) for details on our
+  process as to API stability guarantees that can be expected of CometBFT
   pre-releases.
 - v0.38.x: CometBFT v0.38 introduces ABCI 2.0, which implements the entirety of
   ABCI++
@@ -184,10 +186,12 @@ maintains [cometbft.com](https://cometbft.com).
 [sg-badge]: https://sourcegraph.com/github.com/cometbft/cometbft/-/badge.svg
 [sg-url]: https://sourcegraph.com/github.com/cometbft/cometbft?badge
 [tests-url]: https://github.com/cometbft/cometbft/actions/workflows/tests.yml
+[tests-url-v1x]: https://github.com/cometbft/cometbft/actions/workflows/tests.yml?query=branch%3Av1.x
 [tests-url-v038x]: https://github.com/cometbft/cometbft/actions/workflows/tests.yml?query=branch%3Av0.38.x
 [tests-url-v037x]: https://github.com/cometbft/cometbft/actions/workflows/tests.yml?query=branch%3Av0.37.x
 [tests-url-v034x]: https://github.com/cometbft/cometbft/actions/workflows/tests.yml?query=branch%3Av0.34.x
 [tests-badge]: https://github.com/cometbft/cometbft/actions/workflows/tests.yml/badge.svg?branch=main
+[tests-badge-v1x]: https://github.com/cometbft/cometbft/actions/workflows/tests.yml/badge.svg?branch=v1.x
 [tests-badge-v038x]: https://github.com/cometbft/cometbft/actions/workflows/tests.yml/badge.svg?branch=v0.38.x
 [tests-badge-v037x]: https://github.com/cometbft/cometbft/actions/workflows/tests.yml/badge.svg?branch=v0.37.x
 [tests-badge-v034x]: https://github.com/cometbft/cometbft/actions/workflows/tests.yml/badge.svg?branch=v0.34.x
@@ -195,8 +199,10 @@ maintains [cometbft.com](https://cometbft.com).
 [lint-badge-v034x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml/badge.svg?branch=v0.34.x
 [lint-badge-v037x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml/badge.svg?branch=v0.37.x
 [lint-badge-v038x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml/badge.svg?branch=v0.38.x
+[lint-badge-v1x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml/badge.svg?branch=v1.x
 [lint-url]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml
 [lint-url-v034x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml?query=branch%3Av0.34.x
 [lint-url-v037x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml?query=branch%3Av0.37.x
 [lint-url-v038x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml?query=branch%3Av0.38.x
+[lint-url-v1x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml?query=branch%3Av1.x
 [tm-core]: https://github.com/tendermint/tendermint

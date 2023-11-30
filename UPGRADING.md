@@ -2,11 +2,25 @@
 
 This guide provides instructions for upgrading to specific versions of CometBFT.
 
-## v1.0.0
+## v1.0.0-alpha.1
 
 CometBFT v1.0 is mostly functionally equivalent to CometBFT v0.38, but includes
 some substantial breaking API changes that will hopefully allow future changes
 to be rolled out quicker.
+
+### Versioning
+
+As of v1.0, the CometBFT team provides the following guarantees relating to
+versioning:
+
+1. State-breaking changes, such as the way that block hashes are computed, will
+   require a major version bump (e.g. upgrading from CometBFT v1.0 to v2.0 could
+   involve state-breaking changes).
+
+2. Minor version bumps (e.g. v1.0 to v1.1) could include new features, but
+   **could also introduce Go API-breaking changes**.
+
+3. Patch version bumps will only generally include bug and security fixes.
 
 ### Building CometBFT
 

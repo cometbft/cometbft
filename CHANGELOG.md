@@ -5,18 +5,32 @@
 *December 4, 2023*
 
 This is a major release of CometBFT that includes several substantial changes
-that aim to improve integrators' experience and increase the velocity of the
-CometBFT development team, including:
+that aim to reduce bandwidth consumption, enable modularity, improve
+integrators' experience and increase the velocity of the CometBFT development
+team, including:
 
-1. The first officially supported release of the [data companion
+1. Validators now proactively communicate the block parts they already have so
+   others do not resend them, reducing amplification in the network and reducing
+   bandwidth consumption.
+2. An experimental feature in the mempool that allows limiting the number of
+   peers to which transactions are forwarded, allowing operators to optimize
+   gossip-related bandwidth consumption further.
+3. An opt-in `nop` mempool, which allows application developers to turn off all
+   mempool-related functionality in Comet such that they can build their own
+   transaction dissemination mechanism, for example a standalone mempool-like
+   process that can be scaled independently of the consensus engine/application.
+   This requires application developers to implement their own gossip/networking
+   mechanisms. See [ADR 111](./docs/architecture/adr-111-nop-mempool.md) for
+   details.
+4. The first officially supported release of the [data companion
    API](./docs/architecture/adr-101-data-companion-pull-api.md).
-2. Versioning of both the Protobuf definitions _and_ RPC. By versioning our
+5. Versioning of both the Protobuf definitions _and_ RPC. By versioning our
    APIs, we aim to provide a level of commitment to API stability while
    simultaneously affording ourselves the ability to roll out substantial
    changes in non-breaking releases of CometBFT. See [ADR
    103](./docs/architecture/adr-103-proto-versioning.md) and [ADR
    107](./docs/architecture/adr-107-betaize-proto-versions.md).
-3. Moving many Go packages that are currently publicly accessible into the
+6. Moving many Go packages that are currently publicly accessible into the
    `internal` directory such that the team can roll out substantial changes in
    future without needing to worry about causing breakages in users' codebases.
    The massive surface area of previous versions has in the past significantly

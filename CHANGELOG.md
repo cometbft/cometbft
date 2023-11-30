@@ -332,6 +332,8 @@ the stability guarantees we provide for pre-releases.
   which the node gossip transactions. 
   ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
   ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
+- `[e2e]` Allow latency emulation between nodes.
+  ([\#1560](https://github.com/cometbft/cometbft/pull/1560))
 - `[e2e]` Allow disabling the PEX reactor on all nodes in the testnet
   ([\#1579](https://github.com/cometbft/cometbft/pull/1579))
 - `[rpc]` Export `MakeHTTPDialer` to allow HTTP client constructors more flexibility.

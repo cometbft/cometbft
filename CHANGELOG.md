@@ -5,8 +5,8 @@
 *December 4, 2023*
 
 This is a major release of CometBFT that includes several substantial changes
-that aim to improve integrators' experience and increase the velocity of the CometBFT
-development team, including:
+that aim to improve integrators' experience and increase the velocity of the
+CometBFT development team, including:
 
 1. The first officially supported release of the [data companion
    API](./docs/architecture/adr-101-data-companion-pull-api.md)
@@ -29,6 +29,11 @@ None of these changes are state machine-breaking for CometBFT-based networks,
 but could be breaking for some users who depend on the Protobuf definitions type
 URLs. See the [upgrading guidelines](./UPGRADING.md) and specific changes below
 for more details.
+
+**NB: This version is still an alpha-series release, which means that
+API-breaking changes might still be introduced until such time that a _release
+candidate_ is cut.** See [RELEASES.md](./RELEASES.md) for more information on
+the stability guarantees we provide for pre-releases.
 
 ### BREAKING CHANGES
 

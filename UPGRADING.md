@@ -31,10 +31,10 @@ The minimum Go version has been bumped to [v1.21][go121].
 
 ### Consensus
 
-- Removed the `consensus.State.ReplayFile` and `consensus.RunReplayFile`
-  methods, as these were exclusively used by the `replay` and `replay-console`
-  subcommands, which were also removed
-  ([\#1170](https://github.com/cometbft/cometbft/pull/1170))
+Removed the `consensus.State.ReplayFile` and `consensus.RunReplayFile` methods,
+as these were exclusively used by the `replay` and `replay-console` subcommands,
+which were also removed. (See
+[\#1170](https://github.com/cometbft/cometbft/pull/1170))
 
 ### CLI Subcommands
 
@@ -74,7 +74,40 @@ into the `internal` directory:
 - `statesync`
 - `store`
 
+If you rely on any of these packages and would like us to make them public
+again, please [log an issue on
+GitHub](https://github.com/cometbft/cometbft/issues/new/choose) describing your
+use case and we will evaluate the best approach to helping you address it.
+
 ### Mempool
+
+#### `nop` mempool
+
+CometBFT v1.0.0 provides users with the option of a `nop` (no-op) mempool which,
+if selected via configuration, turns off all mempool-related functionality in
+Comet (e.g. ability to receive transactions, transaction gossip). Comet then
+expects applications to provide their transactions when it calls
+`PrepareProposal`, and that application developers will use some external means
+of disseminating their transactions.
+
+If you want to use it, change mempool's `type` to `nop` in your `config.toml`
+file:
+
+```toml
+[mempool]
+
+# The type of mempool for this node to use.
+#
+# Possible types:
+# - "flood" : concurrent linked list mempool with flooding gossip protocol
+# (default)
+# - "nop"   : nop-mempool (short for no operation; the ABCI app is responsible
+# for storing, disseminating and proposing txs). "create_empty_blocks=false"
+# is not supported.
+type = "nop"
+```
+
+#### Internal `CheckTx` Go API changes
 
 The `Mempool` interface was modified on `CheckTx`. Note that this interface is
 meant for internal use only, so you should be aware of these changes only if you

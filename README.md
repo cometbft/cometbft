@@ -89,13 +89,17 @@ yourself with our [Architectural Decision Records
 
 As of v1, CometBFT uses the following approach to versioning:
 
-- Major version bumps (e.g. v1.0.0 to v2.0.0) would generally involve
-  state-breaking changes, such as changes to how block hashes are computed.
-- Minor version bumps (e.g. v1.1.0 to v1.2.0) are reserved for rolling out new
-  features. **NB: Go API-breaking changes could be rolled out in new minor
-  releases.**
-- Patch version bumps (v1.0.0 to v1.0.1) are reserved for bug/security fixes
-  that are not state- or Go API-breaking.
+- **Major version** bumps, such as v1.0.0 to v2.0.0, would generally involve
+  changes that _force_ users to perform a coordinated upgrade in order to use
+  the new version, such as protocol-breaking changes (e.g. changes to how block
+  hashes are computed and thus what the network considers to be "valid blocks",
+  or how the consensus protocol works, or changes that affect network-level
+  compatibility between nodes, etc.).
+- **Minor version** bumps, such as v1.1.0 to v1.2.0, are reserved for rolling
+  out new features or substantial changes that do not force a coordinated
+  upgrade (i.e. not protocol-breaking), but could potentially break Go APIs.
+- **Patch version** bumps, such as v1.0.0 to v1.0.1, are reserved for
+  bug/security fixes that are not protocol- or Go API-breaking.
 
 ### Upgrades
 

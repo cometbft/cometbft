@@ -13,14 +13,17 @@ to be rolled out quicker.
 As of v1.0, the CometBFT team provides the following guarantees relating to
 versioning:
 
-1. State-breaking changes, such as the way that block hashes are computed, will
-   require a major version bump (e.g. upgrading from CometBFT v1.0 to v2.0 could
-   involve state-breaking changes).
-
-2. Minor version bumps (e.g. v1.0 to v1.1) could include new features, but
-   **could also introduce Go API-breaking changes**.
-
-3. Patch version bumps will only generally include bug and security fixes.
+- **Major version** bumps, such as v1.0.0 to v2.0.0, would generally involve
+  changes that _force_ users to perform a coordinated upgrade in order to use
+  the new version, such as protocol-breaking changes (e.g. changes to how block
+  hashes are computed and thus what the network considers to be "valid blocks",
+  or how the consensus protocol works, or changes that affect network-level
+  compatibility between nodes, etc.).
+- **Minor version** bumps, such as v1.1.0 to v1.2.0, are reserved for rolling
+  out new features or substantial changes that do not force a coordinated
+  upgrade (i.e. not protocol-breaking), but could potentially break Go APIs.
+- **Patch version** bumps, such as v1.0.0 to v1.0.1, are reserved for
+  bug/security fixes that are not protocol- or Go API-breaking.
 
 ### Building CometBFT
 

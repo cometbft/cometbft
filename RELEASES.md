@@ -1,10 +1,17 @@
 # Releases
 
 CometBFT uses modified [semantic versioning](https://semver.org/) with each
-release following a `vX.Y.Z` format. The versioning approach used by CometBFT
-v1.x onwards differs from that of the v0.x series (see [README.md](./README.md)
-for more details). The `main` branch is used for active development and thus it
-is not advisable to build against it.
+release following a `vX.Y.Z` format. The `main` branch is used for active
+development and thus it is not advisable to build against it.
+
+The versioning approach used by CometBFT v1.x onwards differs from that of the
+v0.x series:
+
+- **Major releases**, such as v1.0.0 to v2.0.0, signal state-breaking changes
+  that are incompatible with the previous major release.
+- **Minor releases**, such as v1.0.0 to v1.1.0, signal the release either of
+  significant new features and/or, in some cases, Go API-breaking changes.
+- **Patch releases**, such as v1.0.0 to v1.0.1, signal bug/security fixes.
 
 The latest changes are always initially merged into `main`. Releases are
 specified using tags and are built from long-lived "backport" branches that are

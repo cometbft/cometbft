@@ -192,6 +192,11 @@ the stability guarantees we provide for pre-releases.
 - `[state/pruning]` When no blocks are pruned, do not attempt to prune statestore
    ([\#1616](https://github.com/cometbft/cometbft/pull/1616))
 
+### DEPENDENCIES
+
+- Bump cometbft-db to v0.9.0, providing support for RocksDB v8
+  ([\#1725](https://github.com/cometbft/cometbft/pull/1725))
+
 ### FEATURES
 
 - `[rpc/grpc]` Add gRPC version service to allow clients to

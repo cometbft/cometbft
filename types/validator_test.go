@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -74,7 +75,7 @@ func TestValidatorValidateBasic(t *testing.T) {
 				Address: nil,
 			},
 			err: true,
-			msg: "validator address is the wrong size: ",
+			msg: fmt.Sprintf("validator address is incorrectly derived from pubkey. Exp: %v, got ", pubKey.Address()),
 		},
 		{
 			val: &Validator{
@@ -82,7 +83,7 @@ func TestValidatorValidateBasic(t *testing.T) {
 				Address: []byte{'a'},
 			},
 			err: true,
-			msg: "validator address is the wrong size: 61",
+			msg: fmt.Sprintf("validator address is incorrectly derived from pubkey. Exp: %v, got 61", pubKey.Address()),
 		},
 	}
 

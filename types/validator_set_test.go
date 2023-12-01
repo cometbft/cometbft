@@ -300,18 +300,22 @@ func TestProposerSelection2(t *testing.T) {
 }
 
 func TestProposerSelection3(t *testing.T) {
-	vset := NewValidatorSet([]*Validator{
+	vals := []*Validator{
 		newValidator([]byte("avalidator_address12"), 1),
 		newValidator([]byte("bvalidator_address12"), 1),
 		newValidator([]byte("cvalidator_address12"), 1),
 		newValidator([]byte("dvalidator_address12"), 1),
-	})
+	}
 
+	for i := 0; i < 4; i++ {
+		pk := ed25519.GenPrivKey().PubKey()
+		vals[i].PubKey = pk
+		vals[i].Address = pk.Address()
+	}
+	sort.Sort(ValidatorsByAddress(vals))
+	vset := NewValidatorSet(vals)
 	proposerOrder := make([]*Validator, 4)
 	for i := 0; i < 4; i++ {
-		// need to give all validators to have keys
-		pk := ed25519.GenPrivKey().PubKey()
-		vset.Validators[i].PubKey = pk
 		proposerOrder[i] = vset.GetProposer()
 		vset.IncrementProposerPriority(1)
 	}

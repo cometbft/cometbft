@@ -12,3 +12,6 @@ release_date_formats = [
     # "2023-12-01" (ISO format)
     "%F",
 ]
+
+[change_set_sections]
+sort_entries_by = "entry-text"

@@ -357,6 +357,7 @@ the stability guarantees we provide for pre-releases.
   ([\#1096](https://github.com/cometbft/cometbft/issues/1096))
 - `[state]` Block pruning has been moved from the block executor into a
   background process ([\#1096](https://github.com/cometbft/cometbft/issues/1096))
+- `[types]` Validate `Validator#Address` in `ValidateBasic` ([\#1715](https://github.com/cometbft/cometbft/pull/1715))
 
 ### MINIMUM GO VERSION
 

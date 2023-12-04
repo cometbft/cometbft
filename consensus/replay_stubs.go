@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"context"
+	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/clist"
@@ -32,6 +33,7 @@ func (emptyMempool) ReapMaxBytesMaxGas(int64, int64) types.Txs { return types.Tx
 func (emptyMempool) ReapMaxTxs(int) types.Txs                  { return types.Txs{} }
 func (emptyMempool) Update(
 	int64,
+	time.Time,
 	types.Txs,
 	[]*abci.ExecTxResult,
 	mempl.PreCheckFunc,

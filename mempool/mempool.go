@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/types"
@@ -66,6 +67,7 @@ type Mempool interface {
 	// 2. Lock/Unlock must be managed by the caller.
 	Update(
 		blockHeight int64,
+		blockTime time.Time,
 		blockTxs types.Txs,
 		deliverTxResponses []*abci.ExecTxResult,
 		newPreFn PreCheckFunc,

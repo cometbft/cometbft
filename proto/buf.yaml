@@ -4,6 +4,9 @@ deps:
 breaking:
   use:
     - FILE
+build:
+  excludes:
+    - tendermint
 lint:
   use:
     - DEFAULT
@@ -11,8 +14,6 @@ lint:
     - FILE_LOWER_SNAKE_CASE
   except:
     - COMMENT_FIELD
-  ignore:
-    - tendermint
   ignore_only:
     ENUM_VALUE_PREFIX:
       - cometbft/abci/v1beta1

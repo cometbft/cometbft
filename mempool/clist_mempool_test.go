@@ -221,6 +221,8 @@ func TestMempoolUpdate(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
 	mp, cleanup := newMempoolWithApp(cc)
+	// dYdX fork: The default is true but this test expects that the default is false.
+	mp.config.KeepInvalidTxsInCache = false
 	defer cleanup()
 
 	// 1. Adds valid txs to the cache

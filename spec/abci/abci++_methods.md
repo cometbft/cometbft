@@ -79,14 +79,14 @@ title: Methods
 
 * **Usage**:
     * Called once upon genesis.
-    * If `ResponseInitChain.Validators` is empty, the initial validator set will be the `RequestInitChain.Validators`
-    * If `ResponseInitChain.Validators` is not empty, it will be the initial
-      validator set (regardless of what is in `RequestInitChain.Validators`).
+    * If `InitChainResponse.Validators` is empty, the initial validator set will be the `InitChainRequest.Validators`
+    * If `InitChainResponse.Validators` is not empty, it will be the initial
+      validator set (regardless of what is in `InitChainRequest.Validators`).
     * This allows the app to decide if it wants to accept the initial validator
       set proposed by CometBFT (ie. in the genesis file), or if it wants to use
       a different one (perhaps computed based on some application specific
       information in the genesis file).
-    * Both `RequestInitChain.Validators` and `ResponseInitChain.Validators` are [ValidatorUpdate](#validatorupdate) structs.
+    * Both `InitChainRequest.Validators` and `InitChainResponse.Validators` are [ValidatorUpdate](#validatorupdate) structs.
       So, technically, they both are _updating_ the set of validators from the empty set.
 
 ### Query
@@ -149,7 +149,7 @@ title: Methods
     * `CheckTx` validates the transaction against the current state of the application,
       for example, checking signatures and account balances, but does not apply any
       of the state changes described in the transaction.
-    * Transactions where `ResponseCheckTx.Code != 0` will be rejected - they will not be broadcast
+    * Transactions where `CheckTxResponse.Code != 0` will be rejected - they will not be broadcast
       to other nodes or included in a proposal block.
       CometBFT attributes no other value to the response code.
 
@@ -173,8 +173,8 @@ title: Methods
 * **Usage**:
 
     * Signal the Application to persist the application state.
-      Application is expected to persist its state at the end of this call, before calling `ResponseCommit`.
-    * Use `ResponseCommit.retain_height` with caution! If all nodes in the network remove historical
+      Application is expected to persist its state at the end of this call, before calling `Commit`.
+    * Use `CommitResponse.retain_height` with caution! If all nodes in the network remove historical
       blocks then this data is permanently lost, and no new nodes will be able to join the network and
       bootstrap, unless state sync is enabled on the chain. Historical blocks may also be required for other purposes, e.g. auditing, replay of
       non-persisted heights, light client verification, and so on.
@@ -325,23 +325,23 @@ title: Methods
     | txs              | repeated bytes                   | Possibly modified list of transactions that have been picked as part of the proposed block. | 2            |
 
 * **Usage**:
-    * `RequestPrepareProposal`'s parameters `txs`, `misbehavior`, `height`, `time`,
-      `next_validators_hash`, and `proposer_address` are the same as in `RequestProcessProposal`
-      and `RequestFinalizeBlock`.
-    * `RequestPrepareProposal.local_last_commit` is a set of the precommit votes that allowed the
+    * `PrepareProposalRequest`'s fields `txs`, `misbehavior`, `height`, `time`,
+      `next_validators_hash`, and `proposer_address` are the same as in `ProcessProposalRequest`
+      and `FinalizeBlockRequest`.
+    * `PrepareProposalRequest.local_last_commit` is a set of the precommit votes that allowed the
       decision of the previous block, together with their corresponding vote extensions.
     * The `height`, `time`, and `proposer_address` values match the values from the header of the
       proposed block.
-    * `RequestPrepareProposal` contains a preliminary set of transactions `txs` that CometBFT
+    * `PrepareProposalRequest` contains a preliminary set of transactions `txs` that CometBFT
       retrieved from the mempool, called _raw proposal_. The Application can modify this
-      set and return a modified set of transactions via `ResponsePrepareProposal.txs` .
+      set and return a modified set of transactions via `PrepareProposalResponse.txs` .
         * The Application _can_ modify the raw proposal: it can reorder, remove or add transactions.
-          Let `tx` be a transaction in `txs` (set of transactions within `RequestPrepareProposal`):
+          Let `tx` be a transaction in `txs` (set of transactions within `PrepareProposalRequest`):
             * If the Application considers that `tx` should not be proposed in this block, e.g.,
               there are other transactions with higher priority, then it should not include it in
-              `ResponsePrepareProposal.txs`. However, this will not remove `tx` from the mempool.
+              `PrepareProposalResponse.txs`. However, this will not remove `tx` from the mempool.
             * If the Application wants to add a new transaction to the proposed block, then the
-              Application includes it in `ResponsePrepareProposal.txs`. CometBFT will not add
+              Application includes it in `PrepareProposalResponse.txs`. CometBFT will not add
               the transaction to the mempool.
         * The Application should be aware that removing and adding transactions may compromise
           _traceability_.
@@ -355,26 +355,26 @@ title: Methods
             traceability, it is its responsibility's to support it. For instance, the Application
             could attach to a transformed transaction a list with the hashes of the transactions it
             derives from.
-    * The Application MAY configure CometBFT to include a list of transactions in `RequestPrepareProposal.txs`
-      whose total size in bytes exceeds `RequestPrepareProposal.max_tx_bytes`.
+    * The Application MAY configure CometBFT to include a list of transactions in `PrepareProposalRequest.txs`
+      whose total size in bytes exceeds `PrepareProposalRequest.max_tx_bytes`.
       If the Application sets `ConsensusParams.Block.MaxBytes` to -1, CometBFT
-      will include _all_ transactions currently in the mempool in `RequestPrepareProposal.txs`,
-      which may not fit in `RequestPrepareProposal.max_tx_bytes`.
-      Therefore, if the size of `RequestPrepareProposal.txs` is greater than
-      `RequestPrepareProposal.max_tx_bytes`, the Application MUST remove transactions to ensure
-      that the `RequestPrepareProposal.max_tx_bytes` limit is respected by those transactions
-      returned in `ResponsePrepareProposal.txs`.
+      will include _all_ transactions currently in the mempool in `PrepareProposalRequest.txs`,
+      which may not fit in `PrepareProposalRequest.max_tx_bytes`.
+      Therefore, if the size of `PrepareProposalRequest.txs` is greater than
+      `PrepareProposalRequest.max_tx_bytes`, the Application MUST remove transactions to ensure
+      that the `PrepareProposalRequest.max_tx_bytes` limit is respected by those transactions
+      returned in `PrepareProposalResponse.txs`.
       This is specified in [Requirement 2](./abci%2B%2B_app_requirements.md).
     * As a result of executing the prepared proposal, the Application may produce block events or transaction events.
       The Application must keep those events until a block is decided and then pass them on to CometBFT via
-      `ResponseFinalizeBlock`.
+      `FinalizeBlockResponse`.
     * CometBFT does NOT provide any additional validity checks (such as checking for duplicate
       transactions).
       <!--
       As a sanity check, CometBFT will check the returned parameters for validity if the Application modified them.
-      In particular, `ResponsePrepareProposal.txs` will be deemed invalid if there are duplicate transactions in the list.
+      In particular, `PrepareProposalResponse.txs` will be deemed invalid if there are duplicate transactions in the list.
        -->
-    * If CometBFT fails to validate the `ResponsePrepareProposal`, CometBFT will assume the
+    * If CometBFT fails to validate the `PrepareProposalResponse`, CometBFT will assume the
       Application is faulty and crash.
     * The implementation of `PrepareProposal` can be non-deterministic.
 
@@ -388,7 +388,7 @@ and _p_'s _validValue_ is `nil`:
 1. CometBFT collects outstanding transactions from _p_'s mempool
     * the transactions will be collected in order of priority
     * _p_'s CometBFT creates a block header.
-2. _p_'s CometBFT calls `RequestPrepareProposal` with the newly generated block, the local
+2. _p_'s CometBFT calls `PrepareProposal` with the newly generated block, the local
    commit of the previous height (with vote extensions), and any outstanding evidence of
    misbehavior. The call is synchronous: CometBFT's execution will block until the Application
    returns from the call.
@@ -399,7 +399,7 @@ and _p_'s _validValue_ is `nil`:
         * leave transactions untouched
         * add new transactions (not present initially) to the proposal
         * remove transactions from the proposal (but not from the mempool thus effectively _delaying_ them) - the
-          Application does not include the transaction in `ResponsePrepareProposal.txs`.
+          Application does not include the transaction in `PrepareProposalResponse.txs`.
         * modify transactions (e.g. aggregate them). As explained above, this compromises client traceability, unless
           it is implemented at the Application level.
         * reorder transactions - the Application reorders transactions in the list
@@ -408,7 +408,7 @@ and _p_'s _validValue_ is `nil`:
 5. _p_ uses the (possibly) modified block as _p_'s proposal in round _r_, height _h_.
 
 Note that, if _p_ has a non-`nil` _validValue_ in round _r_, height _h_,
-the consensus algorithm will use it as proposal and will not call `RequestPrepareProposal`.
+the consensus algorithm will use it as proposal and will not call `PrepareProposal`.
 
 ### ProcessProposal
 
@@ -436,24 +436,24 @@ the consensus algorithm will use it as proposal and will not call `RequestPrepar
 * **Usage**:
     * Contains all information on the proposed block needed to fully execute it.
         * The Application may fully execute the block as though it was handling
-         `RequestFinalizeBlock`.
+         `FinalizeBlock`.
         * However, any resulting state changes must be kept as _candidate state_,
           and the Application should be ready to discard it in case another block is decided.
-    * `RequestProcessProposal` is also called at the proposer of a round.
-      Normally the call to `RequestProcessProposal` occurs right after the call to `RequestPrepareProposal` and
-      `RequestProcessProposal` matches the block produced based on `ResponsePrepareProposal` (i.e.,
-      `RequestPrepareProposal.txs` equals `RequestProcessProposal.txs`).
-      However, no such guarantee is made since, in the presence of failures, `RequestProcessProposal` may match
-      `ResponsePrepareProposal` from an earlier invocation or `ProcessProposal` may not be invoked at all.
+    * `ProcessProposal` is also called at the proposer of a round.
+      Normally the call to `ProcessProposal` occurs right after the call to `PrepareProposal` and
+      `ProcessProposalRequest` matches the block produced based on `PrepareProposalResponse` (i.e.,
+      `PrepareProposalRequest.txs` equals `ProcessProposalRequest.txs`).
+      However, no such guarantee is made since, in the presence of failures, `ProcessProposalRequest` may match
+      `PrepareProposalResponse` from an earlier invocation or `ProcessProposal` may not be invoked at all.
     * The height and time values match the values from the header of the proposed block.
-    * If `ResponseProcessProposal.status` is `REJECT`, consensus assumes the proposal received
+    * If `ProcessProposalResponse.status` is `REJECT`, consensus assumes the proposal received
       is not valid.
     * The Application MAY fully execute the block &mdash; immediate execution
     * The implementation of `ProcessProposal` MUST be deterministic. Moreover, the value of
-      `ResponseProcessProposal.status` MUST **exclusively** depend on the parameters passed in
-      the call to `RequestProcessProposal`, and the last committed Application state
+      `ProcessProposalResponse.status` MUST **exclusively** depend on the parameters passed in
+      the `ProcessProposalRequest`, and the last committed Application state
       (see [Requirements](./abci++_app_requirements.md) section).
-    * Moreover, application implementors SHOULD always set `ResponseProcessProposal.status` to `ACCEPT`,
+    * Moreover, application implementors SHOULD always set `ProcessProposalResponse.status` to `ACCEPT`,
       unless they _really_ know what the potential liveness implications of returning `REJECT` are.
 
 #### When does CometBFT call "ProcessProposal" ?
@@ -468,10 +468,10 @@ When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the prop
    from _q_, _p_ follows the validators' algorithm to check whether it should prevote for the
    proposed block, or `nil`.
 5. If the validators' consensus algorithm indicates _p_ should prevote non-nil:
-    1. CometBFT calls `RequestProcessProposal` with the block. The call is synchronous.
+    1. CometBFT calls `ProcessProposal` with the block. The call is synchronous.
     2. The Application checks/processes the proposed block, which is read-only, and returns
-       `ACCEPT` or `REJECT` in the `ResponseProcessProposal.status` field.
-       * The Application, depending on its needs, may call `ResponseProcessProposal`
+       `ACCEPT` or `REJECT` in the `ProcessProposalResponse.status` field.
+       * The Application, depending on its needs, may call `ProcessProposal`
          * either after it has completely processed the block (immediate execution),
          * or after doing some basic checks, and process the block asynchronously. In this case the
            Application will not be able to reject the block, or force prevote/precommit `nil`
@@ -506,13 +506,13 @@ When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the prop
     | vote_extension    | bytes | Information signed by by CometBFT. Can have 0 length.   | 1            |
 
 * **Usage**:
-    * `ResponseExtendVote.vote_extension` is application-generated information that will be signed
+    * `ExtendVoteResponse.vote_extension` is application-generated information that will be signed
       by CometBFT and attached to the Precommit message.
     * The Application may choose to use an empty vote extension (0 length).
-    * The contents of `RequestExtendVote` correspond to the proposed block on which the consensus algorithm
+    * The contents of `ExtendVoteRequest` correspond to the proposed block on which the consensus algorithm
       will send the Precommit message.
-    * `ResponseExtendVote.vote_extension` will only be attached to a non-`nil` Precommit message. If the consensus algorithm is to
-      precommit `nil`, it will not call `RequestExtendVote`.
+    * `ExtendVoteResponse.vote_extension` will only be attached to a non-`nil` Precommit message. If the consensus algorithm is to
+      precommit `nil`, it will not call `ExtendVote`.
     * The Application logic that creates the extension can be non-deterministic.
 
 #### When does CometBFT call `ExtendVote`?
@@ -525,9 +525,9 @@ When a validator _p_ is in consensus state _prevote_ of round _r_, height _h_, i
 then _p_ locks _v_  and sends a Precommit message in the following way
 
 1. _p_ sets _lockedValue_ and _validValue_ to _v_, and sets _lockedRound_ and _validRound_ to _r_
-2. _p_'s CometBFT calls `RequestExtendVote` with _v_ (`RequestExtendVote`). The call is synchronous.
-3. The Application returns an array of bytes, `ResponseExtendVote.extension`, which is not interpreted by the consensus algorithm.
-4. _p_ sets `ResponseExtendVote.extension` as the value of the `extension` field of type
+2. _p_'s CometBFT calls `ExtendVote` with _v_ (in `ExtendVoteRequest`). The call is synchronous.
+3. The Application returns an array of bytes, `ExtendVoteResponse.extension`, which is not interpreted by the consensus algorithm.
+4. _p_ sets `ExtendVoteResponse.extension` as the value of the `extension` field of type
    [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension),
    populates the other fields in [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension),
    and signs the populated data structure.
@@ -538,7 +538,7 @@ then _p_ locks _v_  and sends a Precommit message in the following way
 7. _p_ broadcasts the Precommit message.
 
 In the cases when _p_ is to broadcast `precommit nil` messages (either _2f+1_ `prevote nil` messages received,
-or _timeoutPrevote_ triggered), _p_'s CometBFT does **not** call `RequestExtendVote` and will not include
+or _timeoutPrevote_ triggered), _p_'s CometBFT does **not** call `ExtendVote` and will not include
 a [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension) field in the `precommit nil` message.
 
 ### VerifyVoteExtension
@@ -561,21 +561,21 @@ a [CanonicalVoteExtension](../core/data_structures.md#canonicalvoteextension) fi
     | status | [VerifyStatus](#verifystatus) | `enum` signaling if the application accepts the vote extension | 1            |
 
 * **Usage**:
-    * `RequestVerifyVoteExtension.vote_extension` can be an empty byte array. The Application's
+    * `VerifyVoteExtensionRequest.vote_extension` can be an empty byte array. The Application's
       interpretation of it should be
       that the Application running at the process that sent the vote chose not to extend it.
-      CometBFT will always call `RequestVerifyVoteExtension`, even for 0 length vote extensions.
-    * `RequestVerifyVoteExtension` is not called for precommit votes sent by the local process.
-    * `RequestVerifyVoteExtension.hash` refers to a proposed block. There is not guarantee that
+      CometBFT will always call `VerifyVoteExtension`, even for 0 length vote extensions.
+    * `VerifyVoteExtension` is not called for precommit votes sent by the local process.
+    * `VerifyVoteExtensionRequest.hash` refers to a proposed block. There is not guarantee that
       this proposed block has previously been exposed to the Application via `ProcessProposal`.
-    * If `ResponseVerifyVoteExtension.status` is `REJECT`, the consensus algorithm will reject the whole received vote.
+    * If `VerifyVoteExtensionResponse.status` is `REJECT`, the consensus algorithm will reject the whole received vote.
       See the [Requirements](./abci++_app_requirements.md) section to understand the potential
       liveness implications of this.
     * The implementation of `VerifyVoteExtension` MUST be deterministic. Moreover, the value of
-      `ResponseVerifyVoteExtension.status` MUST **exclusively** depend on the parameters passed in
-      the call to `RequestVerifyVoteExtension`, and the last committed Application state
+      `VerifyVoteExtensionResponse.status` MUST **exclusively** depend on the parameters passed in
+      the `VerifyVoteExtensionRequest`, and the last committed Application state
       (see [Requirements](./abci++_app_requirements.md) section).
-    * Moreover, application implementers SHOULD always set `ResponseVerifyVoteExtension.status` to `ACCEPT`,
+    * Moreover, application implementers SHOULD always set `VerifyVoteExtensionResponse.status` to `ACCEPT`,
       unless they _really_ know what the potential liveness implications of returning `REJECT` are.
 
 #### When does CometBFT call `VerifyVoteExtension`?
@@ -586,12 +586,12 @@ message for round _r_, height _h_ from validator _q_ (_q_ &ne; _p_):
 1. If the Precommit message does not contain a vote extension with a valid signature, _p_
    discards the Precommit message as invalid.
    * a 0-length vote extension is valid as long as its accompanying signature is also valid.
-2. Else, _p_'s CometBFT calls `RequestVerifyVoteExtension`.
-3. The Application returns `ACCEPT` or `REJECT` via `ResponseVerifyVoteExtension.status`.
+2. Else, _p_'s CometBFT calls `VerifyVoteExtension`.
+3. The Application returns `ACCEPT` or `REJECT` via `VerifyVoteExtensionResponse.status`.
 4. If the Application returns
    * `ACCEPT`, _p_ will keep the received vote, together with its corresponding
      vote extension in its internal data structures. It will be used to populate the [ExtendedCommitInfo](#extendedcommitinfo)
-     structure in calls to `RequestPrepareProposal`, in rounds of height _h + 1_ where _p_ is the proposer.
+     structure in calls to `PrepareProposal`, in rounds of height _h + 1_ where _p_ is the proposer.
    * `REJECT`, _p_ will deem the Precommit message invalid and discard it.
 
 ### FinalizeBlock
@@ -626,40 +626,40 @@ message for round _r_, height _h_ from validator _q_ (_q_ &ne; _p_):
     * This method is equivalent to the call sequence `BeginBlock`, [`DeliverTx`],
       and `EndBlock` in the previous version of ABCI.
     * The height and time values match the values from the header of the proposed block.
-    * The Application can use `RequestFinalizeBlock.decided_last_commit` and `RequestFinalizeBlock.misbehavior`
+    * The Application can use `FinalizeBlockRequest.decided_last_commit` and `FinalizeBlockRequest.misbehavior`
       to determine rewards and punishments for the validators.
-    * The Application executes the transactions in `RequestFinalizeBlock.txs` deterministically,
+    * The Application executes the transactions in `FinalizeBlockRequest.txs` deterministically,
       according to the rules set up by the Application, before returning control to CometBFT.
       Alternatively, it can apply the candidate state corresponding to the same block previously
       executed via `PrepareProposal` or `ProcessProposal`.
-    * `ResponseFinalizeBlock.tx_results[i].Code == 0` only if the _i_-th transaction is fully valid.
-    * The Application must provide values for `ResponseFinalizeBlock.app_hash`,
-      `ResponseFinalizeBlock.tx_results`, `ResponseFinalizeBlock.validator_updates`, and
-      `ResponseFinalizeBlock.consensus_param_updates` as a result of executing the block.
-        * The values for `ResponseFinalizeBlock.validator_updates`, or
-          `ResponseFinalizeBlock.consensus_param_updates` may be empty. In this case, CometBFT will keep
+    * `FinalizeBlockResponse.tx_results[i].Code == 0` only if the _i_-th transaction is fully valid.
+    * The Application must provide values for `FinalizeBlockResponse.app_hash`,
+      `FinalizeBlockResponse.tx_results`, `FinalizeBlockResponse.validator_updates`, and
+      `FinalizeBlockResponse.consensus_param_updates` as a result of executing the block.
+        * The values for `FinalizeBlockResponse.validator_updates`, or
+          `FinalizeBlockResponse.consensus_param_updates` may be empty. In this case, CometBFT will keep
           the current values.
-        * `ResponseFinalizeBlock.validator_updates`, triggered by block `H`, affect validation
+        * `FinalizeBlockResponse.validator_updates`, triggered by block `H`, affect validation
           for blocks `H+1`, `H+2`, and `H+3`. Heights following a validator update are affected in the following way:
             * Height `H+1`: `NextValidatorsHash` includes the new `validator_updates` value.
             * Height `H+2`: The validator set change takes effect and `ValidatorsHash` is updated.
             * Height `H+3`: `*_last_commit` fields in `PrepareProposal`, `ProcessProposal`, and
               `FinalizeBlock` now include the altered validator set.
-        * `ResponseFinalizeBlock.consensus_param_updates` returned for block `H` apply to the consensus
+        * `FinalizeBlockResponse.consensus_param_updates` returned for block `H` apply to the consensus
           params for block `H+1`. For more information on the consensus parameters,
           see the [consensus parameters](./abci%2B%2B_app_requirements.md#consensus-parameters)
           section.
-    * `ResponseFinalizeBlock.app_hash` contains an (optional) Merkle root hash of the application state.
-    * `ResponseFinalizeBlock.app_hash` is included as the `Header.AppHash` in the next block.
-        * `ResponseFinalizeBlock.app_hash` may also be empty or hard-coded, but MUST be
+    * `FinalizeBlockResponse.app_hash` contains an (optional) Merkle root hash of the application state.
+    * `FinalizeBlockResponse.app_hash` is included as the `Header.AppHash` in the next block.
+        * `FinalizeBlockResponse.app_hash` may also be empty or hard-coded, but MUST be
           **deterministic** - it must not be a function of anything that did not come from the parameters
-          of `RequestFinalizeBlock` and the previous committed state.
+          of `FinalizeBlockRequest` and the previous committed state.
     * Later calls to `Query` can return proofs about the application state anchored
       in this Merkle root hash.
     * The implementation of `FinalizeBlock` MUST be deterministic, since it is
       making the Application's state evolve in the context of state machine replication.
-    * Currently, CometBFT will fill up all fields in `RequestFinalizeBlock`, even if they were
-      already passed on to the Application via `RequestPrepareProposal` or `RequestProcessProposal`.
+    * Currently, CometBFT will fill up all fields in `FinalizeBlockRequest`, even if they were
+      already passed on to the Application via `PrepareProposalRequest` or `ProcessProposalRequest`.
 
 #### When does CometBFT call `FinalizeBlock`?
 
@@ -673,14 +673,14 @@ When a node _p_ is in consensus height _h_, and _p_ receives
 then _p_ decides block _v_ and finalizes consensus for height _h_ in the following way
 
 1. _p_ persists _v_ as the decision for height _h_.
-2. _p_'s CometBFT calls `RequestFinalizeBlock` with _v_'s data. The call is synchronous.
+2. _p_'s CometBFT calls `FinalizeBlock` with _v_'s data. The call is synchronous.
 3. _p_'s Application executes block _v_.
 4. _p_'s Application calculates and returns the _AppHash_, along with a list containing
    the outputs of each of the transactions executed.
 5. _p_'s CometBFT hashes all the transaction outputs and stores it in _ResultHash_.
 6. _p_'s CometBFT persists the transaction outputs, _AppHash_, and _ResultsHash_.
 7. _p_'s CometBFT locks the mempool &mdash; no calls to `CheckTx` on new transactions.
-8. _p_'s CometBFT calls `RequestCommit` to instruct the Application to persist its state.
+8. _p_'s CometBFT calls `Commit` to instruct the Application to persist its state.
 9. _p_'s CometBFT, optionally, re-checks all outstanding transactions in the mempool
    against the newly persisted Application state.
 10. _p_'s CometBFT unlocks the mempool &mdash; newly received transactions can now be checked.

@@ -21,6 +21,7 @@ import (
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cfg "github.com/cometbft/cometbft/config"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
 	cmtos "github.com/cometbft/cometbft/internal/os"
@@ -34,7 +35,6 @@ import (
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
@@ -88,7 +88,7 @@ func newValidatorStub(privValidator types.PrivValidator, valIndex int32) *valida
 }
 
 func (vs *validatorStub) signVote(
-	voteType cmtproto.SignedMsgType,
+	voteType types.SignedMsgType,
 	hash []byte,
 	header types.PartSetHeader,
 	voteExtension []byte,
@@ -132,11 +132,11 @@ func (vs *validatorStub) signVote(
 }
 
 // Sign vote for type/hash/header
-func signVote(vs *validatorStub, voteType cmtproto.SignedMsgType, hash []byte, header types.PartSetHeader, extEnabled bool) *types.Vote {
+func signVote(vs *validatorStub, voteType types.SignedMsgType, hash []byte, header types.PartSetHeader, extEnabled bool) *types.Vote {
 	var ext []byte
 	// Only non-nil precommits are allowed to carry vote extensions.
 	if extEnabled {
-		if voteType != cmtproto.PrecommitType {
+		if voteType != types.PrecommitType {
 			panic(fmt.Errorf("vote type is not precommit but extensions enabled"))
 		}
 		if len(hash) != 0 || !header.IsZero() {
@@ -154,7 +154,7 @@ func signVote(vs *validatorStub, voteType cmtproto.SignedMsgType, hash []byte, h
 }
 
 func signVotes(
-	voteType cmtproto.SignedMsgType,
+	voteType types.SignedMsgType,
 	hash []byte,
 	header types.PartSetHeader,
 	extEnabled bool,
@@ -259,7 +259,7 @@ func addVotes(to *State, votes ...*types.Vote) {
 
 func signAddVotes(
 	to *State,
-	voteType cmtproto.SignedMsgType,
+	voteType types.SignedMsgType,
 	hash []byte,
 	header types.PartSetHeader,
 	extEnabled bool,
@@ -666,15 +666,15 @@ func ensureProposal(proposalCh <-chan cmtpubsub.Message, height int64, round int
 }
 
 func ensurePrecommit(voteCh <-chan cmtpubsub.Message, height int64, round int32) {
-	ensureVote(voteCh, height, round, cmtproto.PrecommitType)
+	ensureVote(voteCh, height, round, types.PrecommitType)
 }
 
 func ensurePrevote(voteCh <-chan cmtpubsub.Message, height int64, round int32) {
-	ensureVote(voteCh, height, round, cmtproto.PrevoteType)
+	ensureVote(voteCh, height, round, types.PrevoteType)
 }
 
 func ensureVote(voteCh <-chan cmtpubsub.Message, height int64, round int32,
-	voteType cmtproto.SignedMsgType,
+	voteType types.SignedMsgType,
 ) {
 	select {
 	case <-time.After(ensureTimeout):
@@ -700,15 +700,15 @@ func ensureVote(voteCh <-chan cmtpubsub.Message, height int64, round int32,
 
 func ensurePrevoteMatch(t *testing.T, voteCh <-chan cmtpubsub.Message, height int64, round int32, hash []byte) {
 	t.Helper()
-	ensureVoteMatch(t, voteCh, height, round, hash, cmtproto.PrevoteType)
+	ensureVoteMatch(t, voteCh, height, round, hash, types.PrevoteType)
 }
 
 func ensurePrecommitMatch(t *testing.T, voteCh <-chan cmtpubsub.Message, height int64, round int32, hash []byte) {
 	t.Helper()
-	ensureVoteMatch(t, voteCh, height, round, hash, cmtproto.PrecommitType)
+	ensureVoteMatch(t, voteCh, height, round, hash, types.PrecommitType)
 }
 
-func ensureVoteMatch(t *testing.T, voteCh <-chan cmtpubsub.Message, height int64, round int32, hash []byte, voteType cmtproto.SignedMsgType) {
+func ensureVoteMatch(t *testing.T, voteCh <-chan cmtpubsub.Message, height int64, round int32, hash []byte, voteType types.SignedMsgType) {
 	t.Helper()
 	select {
 	case <-time.After(ensureTimeout):
@@ -784,7 +784,7 @@ func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc
 		ensureDir(filepath.Dir(thisConfig.Consensus.WalFile()), 0o700) // dir for wal
 		app := appFunc()
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
-		_, err := app.InitChain(context.Background(), &abci.RequestInitChain{Validators: vals})
+		_, err := app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
 		require.NoError(t, err)
 
 		css[i] = newStateWithConfigAndBlockStore(thisConfig, state, privVals[i], app, stateDB)
@@ -848,7 +848,7 @@ func randConsensusNetWithPeers(
 			// simulate handshake, receive app version. If don't do this, replay test will fail
 			state.Version.Consensus.App = kvstore.AppVersion
 		}
-		_, err := app.InitChain(context.Background(), &abci.RequestInitChain{Validators: vals})
+		_, err := app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
 		require.NoError(t, err)
 
 		css[i] = newStateWithConfig(thisConfig, state, privVal, app)

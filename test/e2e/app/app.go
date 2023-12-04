@@ -18,12 +18,12 @@ import (
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
+	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/internal/protoio"
 	"github.com/cometbft/cometbft/libs/log"
-	cryptoproto "github.com/cometbft/cometbft/proto/tendermint/crypto"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/version"
 )
 
@@ -137,15 +137,14 @@ func NewApplication(cfg *Config) (*Application, error) {
 }
 
 // Info implements ABCI.
-func (app *Application) Info(context.Context, *abci.RequestInfo) (*abci.ResponseInfo, error) {
-
-	r := &abci.Request{Value: &abci.Request_Info{Info: &abci.RequestInfo{}}}
+func (app *Application) Info(context.Context, *abci.InfoRequest) (*abci.InfoResponse, error) {
+	r := &abci.Request{Value: &abci.Request_Info{Info: &abci.InfoRequest{}}}
 	if err := app.logABCIRequest(r); err != nil {
 		return nil, err
 	}
 
 	height, hash := app.state.Info()
-	return &abci.ResponseInfo{
+	return &abci.InfoResponse{
 		Version:          version.ABCIVersion,
 		AppVersion:       appVersion,
 		LastBlockHeight:  int64(height),
@@ -154,9 +153,8 @@ func (app *Application) Info(context.Context, *abci.RequestInfo) (*abci.Response
 }
 
 // Info implements ABCI.
-func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
-
-	r := &abci.Request{Value: &abci.Request_InitChain{InitChain: &abci.RequestInitChain{}}}
+func (app *Application) InitChain(_ context.Context, req *abci.InitChainRequest) (*abci.InitChainResponse, error) {
+	r := &abci.Request{Value: &abci.Request_InitChain{InitChain: &abci.InitChainRequest{}}}
 	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
@@ -184,7 +182,7 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 			}
 		}
 	}
-	resp := &abci.ResponseInitChain{
+	resp := &abci.InitChainResponse{
 		AppHash: app.state.GetHash(),
 	}
 	if resp.Validators, err = app.validatorUpdates(0); err != nil {
@@ -194,9 +192,8 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 }
 
 // CheckTx implements ABCI.
-func (app *Application) CheckTx(_ context.Context, req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
-
-	r := &abci.Request{Value: &abci.Request_CheckTx{CheckTx: &abci.RequestCheckTx{}}}
+func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*abci.CheckTxResponse, error) {
+	r := &abci.Request{Value: &abci.Request_CheckTx{CheckTx: &abci.CheckTxRequest{}}}
 	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
@@ -204,7 +201,7 @@ func (app *Application) CheckTx(_ context.Context, req *abci.RequestCheckTx) (*a
 
 	key, _, err := parseTx(req.Tx)
 	if err != nil || key == prefixReservedKey {
-		return &abci.ResponseCheckTx{
+		return &abci.CheckTxResponse{
 			Code: kvstore.CodeTypeEncodingError,
 			Log:  err.Error(),
 		}, nil
@@ -214,13 +211,12 @@ func (app *Application) CheckTx(_ context.Context, req *abci.RequestCheckTx) (*a
 		time.Sleep(app.cfg.CheckTxDelay)
 	}
 
-	return &abci.ResponseCheckTx{Code: kvstore.CodeTypeOK, GasWanted: 1}, nil
+	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1}, nil
 }
 
 // FinalizeBlock implements ABCI.
-func (app *Application) FinalizeBlock(_ context.Context, req *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
-
-	r := &abci.Request{Value: &abci.Request_FinalizeBlock{FinalizeBlock: &abci.RequestFinalizeBlock{}}}
+func (app *Application) FinalizeBlock(_ context.Context, req *abci.FinalizeBlockRequest) (*abci.FinalizeBlockResponse, error) {
+	r := &abci.Request{Value: &abci.Request_FinalizeBlock{FinalizeBlock: &abci.FinalizeBlockRequest{}}}
 	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
@@ -250,7 +246,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.RequestFinali
 		time.Sleep(app.cfg.FinalizeBlockDelay)
 	}
 
-	return &abci.ResponseFinalizeBlock{
+	return &abci.FinalizeBlockResponse{
 		TxResults:        txs,
 		ValidatorUpdates: valUpdates,
 		AppHash:          app.state.Finalize(),
@@ -273,9 +269,8 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.RequestFinali
 }
 
 // Commit implements ABCI.
-func (app *Application) Commit(_ context.Context, _ *abci.RequestCommit) (*abci.ResponseCommit, error) {
-
-	r := &abci.Request{Value: &abci.Request_Commit{Commit: &abci.RequestCommit{}}}
+func (app *Application) Commit(_ context.Context, _ *abci.CommitRequest) (*abci.CommitResponse, error) {
+	r := &abci.Request{Value: &abci.Request_Commit{Commit: &abci.CommitRequest{}}}
 	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
@@ -300,22 +295,21 @@ func (app *Application) Commit(_ context.Context, _ *abci.RequestCommit) (*abci.
 	if app.cfg.RetainBlocks > 0 {
 		retainHeight = int64(height - app.cfg.RetainBlocks + 1)
 	}
-	return &abci.ResponseCommit{
+	return &abci.CommitResponse{
 		RetainHeight: retainHeight,
 	}, nil
 }
 
 // Query implements ABCI.
-func (app *Application) Query(_ context.Context, req *abci.RequestQuery) (*abci.ResponseQuery, error) {
-
-	r := &abci.Request{Value: &abci.Request_Query{Query: &abci.RequestQuery{}}}
+func (app *Application) Query(_ context.Context, req *abci.QueryRequest) (*abci.QueryResponse, error) {
+	r := &abci.Request{Value: &abci.Request_Query{Query: &abci.QueryRequest{}}}
 	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
 	}
 
 	value, height := app.state.Query(string(req.Data))
-	return &abci.ResponseQuery{
+	return &abci.QueryResponse{
 		Height: int64(height),
 		Key:    req.Data,
 		Value:  []byte(value),
@@ -323,9 +317,8 @@ func (app *Application) Query(_ context.Context, req *abci.RequestQuery) (*abci.
 }
 
 // ListSnapshots implements ABCI.
-func (app *Application) ListSnapshots(context.Context, *abci.RequestListSnapshots) (*abci.ResponseListSnapshots, error) {
-
-	r := &abci.Request{Value: &abci.Request_ListSnapshots{ListSnapshots: &abci.RequestListSnapshots{}}}
+func (app *Application) ListSnapshots(context.Context, *abci.ListSnapshotsRequest) (*abci.ListSnapshotsResponse, error) {
+	r := &abci.Request{Value: &abci.Request_ListSnapshots{ListSnapshots: &abci.ListSnapshotsRequest{}}}
 	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
@@ -335,13 +328,12 @@ func (app *Application) ListSnapshots(context.Context, *abci.RequestListSnapshot
 	if err != nil {
 		panic(err)
 	}
-	return &abci.ResponseListSnapshots{Snapshots: snapshots}, nil
+	return &abci.ListSnapshotsResponse{Snapshots: snapshots}, nil
 }
 
 // LoadSnapshotChunk implements ABCI.
-func (app *Application) LoadSnapshotChunk(_ context.Context, req *abci.RequestLoadSnapshotChunk) (*abci.ResponseLoadSnapshotChunk, error) {
-
-	r := &abci.Request{Value: &abci.Request_LoadSnapshotChunk{LoadSnapshotChunk: &abci.RequestLoadSnapshotChunk{}}}
+func (app *Application) LoadSnapshotChunk(_ context.Context, req *abci.LoadSnapshotChunkRequest) (*abci.LoadSnapshotChunkResponse, error) {
+	r := &abci.Request{Value: &abci.Request_LoadSnapshotChunk{LoadSnapshotChunk: &abci.LoadSnapshotChunkRequest{}}}
 	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
@@ -351,13 +343,12 @@ func (app *Application) LoadSnapshotChunk(_ context.Context, req *abci.RequestLo
 	if err != nil {
 		panic(err)
 	}
-	return &abci.ResponseLoadSnapshotChunk{Chunk: chunk}, nil
+	return &abci.LoadSnapshotChunkResponse{Chunk: chunk}, nil
 }
 
 // OfferSnapshot implements ABCI.
-func (app *Application) OfferSnapshot(_ context.Context, req *abci.RequestOfferSnapshot) (*abci.ResponseOfferSnapshot, error) {
-
-	r := &abci.Request{Value: &abci.Request_OfferSnapshot{OfferSnapshot: &abci.RequestOfferSnapshot{}}}
+func (app *Application) OfferSnapshot(_ context.Context, req *abci.OfferSnapshotRequest) (*abci.OfferSnapshotResponse, error) {
+	r := &abci.Request{Value: &abci.Request_OfferSnapshot{OfferSnapshot: &abci.OfferSnapshotRequest{}}}
 	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
@@ -368,13 +359,12 @@ func (app *Application) OfferSnapshot(_ context.Context, req *abci.RequestOfferS
 	}
 	app.restoreSnapshot = req.Snapshot
 	app.restoreChunks = [][]byte{}
-	return &abci.ResponseOfferSnapshot{Result: abci.ResponseOfferSnapshot_ACCEPT}, nil
+	return &abci.OfferSnapshotResponse{Result: abci.OFFER_SNAPSHOT_RESULT_ACCEPT}, nil
 }
 
 // ApplySnapshotChunk implements ABCI.
-func (app *Application) ApplySnapshotChunk(_ context.Context, req *abci.RequestApplySnapshotChunk) (*abci.ResponseApplySnapshotChunk, error) {
-
-	r := &abci.Request{Value: &abci.Request_ApplySnapshotChunk{ApplySnapshotChunk: &abci.RequestApplySnapshotChunk{}}}
+func (app *Application) ApplySnapshotChunk(_ context.Context, req *abci.ApplySnapshotChunkRequest) (*abci.ApplySnapshotChunkResponse, error) {
+	r := &abci.Request{Value: &abci.Request_ApplySnapshotChunk{ApplySnapshotChunk: &abci.ApplySnapshotChunkRequest{}}}
 	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
@@ -396,7 +386,7 @@ func (app *Application) ApplySnapshotChunk(_ context.Context, req *abci.RequestA
 		app.restoreSnapshot = nil
 		app.restoreChunks = nil
 	}
-	return &abci.ResponseApplySnapshotChunk{Result: abci.ResponseApplySnapshotChunk_ACCEPT}, nil
+	return &abci.ApplySnapshotChunkResponse{Result: abci.APPLY_SNAPSHOT_CHUNK_RESULT_ACCEPT}, nil
 }
 
 // PrepareProposal will take the given transactions and attempt to prepare a
@@ -420,10 +410,9 @@ func (app *Application) ApplySnapshotChunk(_ context.Context, req *abci.RequestA
 // The special vote extension-generated transaction must fit within an empty block
 // and takes precedence over all other transactions coming from the mempool.
 func (app *Application) PrepareProposal(
-	_ context.Context, req *abci.RequestPrepareProposal,
-) (*abci.ResponsePrepareProposal, error) {
-
-	r := &abci.Request{Value: &abci.Request_PrepareProposal{PrepareProposal: &abci.RequestPrepareProposal{}}}
+	_ context.Context, req *abci.PrepareProposalRequest,
+) (*abci.PrepareProposalResponse, error) {
+	r := &abci.Request{Value: &abci.Request_PrepareProposal{PrepareProposal: &abci.PrepareProposalRequest{}}}
 	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
@@ -479,16 +468,15 @@ func (app *Application) PrepareProposal(
 		time.Sleep(app.cfg.PrepareProposalDelay)
 	}
 
-	return &abci.ResponsePrepareProposal{Txs: txs}, nil
+	return &abci.PrepareProposalResponse{Txs: txs}, nil
 }
 
 // ProcessProposal implements part of the Application interface.
 // It accepts any proposal that does not contain a malformed transaction.
 // NOTE It is up to real Applications to effect punitive behavior in the cases ProcessProposal
-// returns ResponseProcessProposal_REJECT, as it is evidence of misbehavior.
-func (app *Application) ProcessProposal(_ context.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
-
-	r := &abci.Request{Value: &abci.Request_ProcessProposal{ProcessProposal: &abci.RequestProcessProposal{}}}
+// returns PROCESS_PROPOSAL_STATUS_REJECT, as it is evidence of misbehavior.
+func (app *Application) ProcessProposal(_ context.Context, req *abci.ProcessProposalRequest) (*abci.ProcessProposalResponse, error) {
+	r := &abci.Request{Value: &abci.Request_ProcessProposal{ProcessProposal: &abci.ProcessProposalRequest{}}}
 	err := app.logABCIRequest(r)
 	if err != nil {
 		return nil, err
@@ -500,18 +488,18 @@ func (app *Application) ProcessProposal(_ context.Context, req *abci.RequestProc
 		k, v, err := parseTx(tx)
 		if err != nil {
 			app.logger.Error("malformed transaction in ProcessProposal", "tx", tx, "err", err)
-			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+			return &abci.ProcessProposalResponse{Status: abci.PROCESS_PROPOSAL_STATUS_REJECT}, nil
 		}
 		switch {
 		case areExtensionsEnabled && k == voteExtensionKey:
 			// Additional check for vote extension-related txs
 			if err := app.verifyExtensionTx(req.Height, v); err != nil {
 				app.logger.Error("vote extension transaction failed verification, rejecting proposal", k, v, "err", err)
-				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+				return &abci.ProcessProposalResponse{Status: abci.PROCESS_PROPOSAL_STATUS_REJECT}, nil
 			}
 		case strings.HasPrefix(k, prefixReservedKey):
 			app.logger.Error("key prefix %q is reserved and cannot be used in transactions, rejecting proposal", k)
-			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+			return &abci.ProcessProposalResponse{Status: abci.PROCESS_PROPOSAL_STATUS_REJECT}, nil
 		}
 	}
 
@@ -519,7 +507,7 @@ func (app *Application) ProcessProposal(_ context.Context, req *abci.RequestProc
 		time.Sleep(app.cfg.ProcessProposalDelay)
 	}
 
-	return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
+	return &abci.ProcessProposalResponse{Status: abci.PROCESS_PROPOSAL_STATUS_ACCEPT}, nil
 }
 
 // ExtendVote will produce vote extensions in the form of random numbers to
@@ -529,7 +517,7 @@ func (app *Application) ProcessProposal(_ context.Context, req *abci.RequestProc
 // a new transaction will be proposed that updates a special value in the
 // key/value store ("extensionSum") with the sum of all of the numbers collected
 // from the vote extensions.
-func (app *Application) ExtendVote(_ context.Context, req *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
+func (app *Application) ExtendVote(_ context.Context, req *abci.ExtendVoteRequest) (*abci.ExtendVoteResponse, error) {
 	appHeight, areExtensionsEnabled := app.checkHeightAndExtensions(false, req.Height, "ExtendVote")
 	if !areExtensionsEnabled {
 		panic(fmt.Errorf("received call to ExtendVote at height %d, when vote extensions are disabled", appHeight))
@@ -557,7 +545,7 @@ func (app *Application) ExtendVote(_ context.Context, req *abci.RequestExtendVot
 	}
 
 	app.logger.Info("generated vote extension", "height", appHeight, "vote_extension", fmt.Sprintf("%x", ext[:4]), "len", extLen)
-	return &abci.ResponseExtendVote{
+	return &abci.ExtendVoteResponse{
 		VoteExtension: ext[:extLen],
 	}, nil
 }
@@ -565,7 +553,7 @@ func (app *Application) ExtendVote(_ context.Context, req *abci.RequestExtendVot
 // VerifyVoteExtension simply validates vote extensions from other validators
 // without doing anything about them. In this case, it just makes sure that the
 // vote extension is a well-formed integer value.
-func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.RequestVerifyVoteExtension) (*abci.ResponseVerifyVoteExtension, error) {
+func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.VerifyVoteExtensionRequest) (*abci.VerifyVoteExtensionResponse, error) {
 	appHeight, areExtensionsEnabled := app.checkHeightAndExtensions(false, req.Height, "VerifyVoteExtension")
 	if !areExtensionsEnabled {
 		panic(fmt.Errorf("received call to VerifyVoteExtension at height %d, when vote extensions are disabled", appHeight))
@@ -573,16 +561,16 @@ func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.Request
 	// We don't allow vote extensions to be optional
 	if len(req.VoteExtension) == 0 {
 		app.logger.Error("received empty vote extension")
-		return &abci.ResponseVerifyVoteExtension{
-			Status: abci.ResponseVerifyVoteExtension_REJECT,
+		return &abci.VerifyVoteExtensionResponse{
+			Status: abci.VERIFY_VOTE_EXTENSION_STATUS_REJECT,
 		}, nil
 	}
 
 	num, err := parseVoteExtension(app.cfg, req.VoteExtension)
 	if err != nil {
 		app.logger.Error("failed to parse vote extension", "vote_extension", fmt.Sprintf("%x", req.VoteExtension[:4]), "err", err)
-		return &abci.ResponseVerifyVoteExtension{
-			Status: abci.ResponseVerifyVoteExtension_REJECT,
+		return &abci.VerifyVoteExtensionResponse{
+			Status: abci.VERIFY_VOTE_EXTENSION_STATUS_REJECT,
 		}, nil
 	}
 
@@ -591,8 +579,8 @@ func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.Request
 	}
 
 	app.logger.Info("verified vote extension value", "height", req.Height, "vote_extension", fmt.Sprintf("%x", req.VoteExtension[:4]), "num", num)
-	return &abci.ResponseVerifyVoteExtension{
-		Status: abci.ResponseVerifyVoteExtension_ACCEPT,
+	return &abci.VerifyVoteExtensionResponse{
+		Status: abci.VERIFY_VOTE_EXTENSION_STATUS_ACCEPT,
 	}, nil
 }
 

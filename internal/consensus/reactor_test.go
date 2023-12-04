@@ -18,6 +18,7 @@ import (
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
 	cfg "github.com/cometbft/cometbft/config"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/crypto/tmhash"
@@ -33,8 +34,6 @@ import (
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
-	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
@@ -146,7 +145,7 @@ func TestReactorWithEvidence(t *testing.T) {
 		ensureDir(path.Dir(thisConfig.Consensus.WalFile()), 0o700) // dir for wal
 		app := appFunc()
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
-		_, err := app.InitChain(context.Background(), &abci.RequestInitChain{Validators: vals})
+		_, err := app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
 		require.NoError(t, err)
 
 		pv := privVals[i]
@@ -268,7 +267,7 @@ func TestReactorReceiveDoesNotPanicIfAddPeerHasntBeenCalledYet(t *testing.T) {
 				Height: 1,
 				Round:  1,
 				Index:  1,
-				Type:   cmtproto.PrevoteType,
+				Type:   types.PrevoteType,
 			},
 		})
 		reactor.AddPeer(peer)
@@ -298,7 +297,7 @@ func TestReactorReceivePanicsIfInitPeerHasntBeenCalledYet(t *testing.T) {
 				Height: 1,
 				Round:  1,
 				Index:  1,
-				Type:   cmtproto.PrevoteType,
+				Type:   types.PrevoteType,
 			},
 		})
 	})
@@ -373,11 +372,11 @@ func TestSwitchToConsensusVoteExtensions(t *testing.T) {
 
 			var voteSet *types.VoteSet
 			if testCase.includeExtensions {
-				voteSet = types.NewExtendedVoteSet(cs.state.ChainID, testCase.storedHeight, 0, cmtproto.PrecommitType, cs.state.Validators)
+				voteSet = types.NewExtendedVoteSet(cs.state.ChainID, testCase.storedHeight, 0, types.PrecommitType, cs.state.Validators)
 			} else {
-				voteSet = types.NewVoteSet(cs.state.ChainID, testCase.storedHeight, 0, cmtproto.PrecommitType, cs.state.Validators)
+				voteSet = types.NewVoteSet(cs.state.ChainID, testCase.storedHeight, 0, types.PrecommitType, cs.state.Validators)
 			}
-			signedVote := signVote(validator, cmtproto.PrecommitType, propBlock.Hash(), blockParts.Header(), testCase.includeExtensions)
+			signedVote := signVote(validator, types.PrecommitType, propBlock.Hash(), blockParts.Header(), testCase.includeExtensions)
 
 			var veHeight int64
 			if testCase.includeExtensions {
@@ -975,8 +974,8 @@ func TestBlockPartMessageValidateBasic(t *testing.T) {
 
 func TestHasVoteMessageValidateBasic(t *testing.T) {
 	const (
-		validSignedMsgType   cmtproto.SignedMsgType = 0x01
-		invalidSignedMsgType cmtproto.SignedMsgType = 0x03
+		validSignedMsgType   types.SignedMsgType = 0x01
+		invalidSignedMsgType types.SignedMsgType = 0x03
 	)
 
 	testCases := []struct { //nolint: maligned
@@ -985,7 +984,7 @@ func TestHasVoteMessageValidateBasic(t *testing.T) {
 		messageIndex  int32
 		messageHeight int64
 		testName      string
-		messageType   cmtproto.SignedMsgType
+		messageType   types.SignedMsgType
 	}{
 		{false, 0, 0, 0, "Valid Message", validSignedMsgType},
 		{true, -1, 0, 0, "Invalid Message", validSignedMsgType},
@@ -1011,8 +1010,8 @@ func TestHasVoteMessageValidateBasic(t *testing.T) {
 
 func TestVoteSetMaj23MessageValidateBasic(t *testing.T) {
 	const (
-		validSignedMsgType   cmtproto.SignedMsgType = 0x01
-		invalidSignedMsgType cmtproto.SignedMsgType = 0x03
+		validSignedMsgType   types.SignedMsgType = 0x01
+		invalidSignedMsgType types.SignedMsgType = 0x03
 	)
 
 	validBlockID := types.BlockID{}
@@ -1029,7 +1028,7 @@ func TestVoteSetMaj23MessageValidateBasic(t *testing.T) {
 		messageRound   int32
 		messageHeight  int64
 		testName       string
-		messageType    cmtproto.SignedMsgType
+		messageType    types.SignedMsgType
 		messageBlockID types.BlockID
 	}{
 		{false, 0, 0, "Valid Message", validSignedMsgType, validBlockID},

@@ -11,12 +11,12 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
+	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
 	auto "github.com/cometbft/cometbft/internal/autofile"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/internal/service"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )

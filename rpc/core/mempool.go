@@ -39,7 +39,7 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 		return nil, ErrEndpointClosedCatchingUp
 	}
 
-	resCh := make(chan *abci.ResponseCheckTx, 1)
+	resCh := make(chan *abci.CheckTxResponse, 1)
 	reqRes, err := env.Mempool.CheckTx(tx)
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 	}()
 
 	// Broadcast tx and wait for CheckTx result
-	checkTxResCh := make(chan *abci.ResponseCheckTx, 1)
+	checkTxResCh := make(chan *abci.CheckTxResponse, 1)
 	reqRes, err := env.Mempool.CheckTx(tx)
 	if err != nil {
 		env.Logger.Error("Error on broadcastTxCommit", "err", err)
@@ -186,9 +186,9 @@ func (env *Environment) NumUnconfirmedTxs(*rpctypes.Context) (*ctypes.ResultUnco
 // be added to the mempool either.
 // More: https://docs.cometbft.com/main/rpc/#/Tx/check_tx
 func (env *Environment) CheckTx(_ *rpctypes.Context, tx types.Tx) (*ctypes.ResultCheckTx, error) {
-	res, err := env.ProxyAppMempool.CheckTx(context.TODO(), &abci.RequestCheckTx{Tx: tx})
+	res, err := env.ProxyAppMempool.CheckTx(context.TODO(), &abci.CheckTxRequest{Tx: tx, Type: abci.CHECK_TX_TYPE_CHECK})
 	if err != nil {
 		return nil, err
 	}
-	return &ctypes.ResultCheckTx{ResponseCheckTx: *res}, nil
+	return &ctypes.ResultCheckTx{CheckTxResponse: *res}, nil
 }

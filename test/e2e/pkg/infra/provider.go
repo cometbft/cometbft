@@ -19,6 +19,9 @@ type Provider interface {
 	// If no nodes are passed, start the whole network
 	StartNodes(context.Context, ...*e2e.Node) error
 
+	// Set emulated latencies from a node to other nodes.
+	SetLatency(context.Context, *e2e.Node) error
+
 	// Stops the whole network
 	StopTestnet(context.Context) error
 

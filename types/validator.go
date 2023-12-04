@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"strings"
 
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	ce "github.com/cometbft/cometbft/crypto/encoding"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 // Volatile state for each Validator
@@ -46,8 +46,9 @@ func (v *Validator) ValidateBasic() error {
 		return errors.New("validator has negative voting power")
 	}
 
-	if len(v.Address) != crypto.AddressSize {
-		return fmt.Errorf("validator address is the wrong size: %v", v.Address)
+	addr := v.PubKey.Address()
+	if !bytes.Equal(v.Address, addr) {
+		return fmt.Errorf("validator address is incorrectly derived from pubkey. Exp: %v, got %v", addr, v.Address)
 	}
 
 	return nil

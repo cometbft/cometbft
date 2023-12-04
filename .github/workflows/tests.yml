@@ -6,8 +6,7 @@ on:
     paths:
       - "**.go"
     branches:
-      - main
-      - release/**
+      - v1.x
 
 jobs:
   tests:

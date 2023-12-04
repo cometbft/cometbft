@@ -796,6 +796,8 @@ func DefaultMempoolConfig() *MempoolConfig {
 		MaxTxBytes:  1024 * 1024, // 1MB
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: 0,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    0,
+		// Note this is true to avoid re-processing invalid order transactions more than once.
+		KeepInvalidTxsInCache: true,
 	}
 }
 

@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"errors"
+	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/service"
@@ -43,6 +44,7 @@ func (*NopMempool) Unlock() {}
 // Update does nothing.
 func (*NopMempool) Update(
 	int64,
+	time.Time,
 	types.Txs,
 	[]*abci.ExecTxResult,
 	PreCheckFunc,

@@ -10,7 +10,7 @@ cd "$(git rev-parse --show-toplevel)"
 
 # Run inside Docker to install the correct versions of the required tools
 # without polluting the local system.
-docker run --rm -i -v "$PWD":/w --workdir=/w golang:1.20-alpine sh <<"EOF"
+docker run --rm -i -v "$PWD":/w --workdir=/w golang:1.21-alpine sh <<"EOF"
 apk add git make
 
 go install github.com/bufbuild/buf/cmd/buf

@@ -120,7 +120,7 @@ func VerifyLightClientAttack(
 	// In the case of lunatic attack there will be a different commonHeader height. Therefore the node perform a single
 	// verification jump between the common header and the conflicting one
 	if commonHeader.Height != e.ConflictingBlock.Height {
-		err := commonVals.VerifyCommitLightTrusting(trustedHeader.ChainID, e.ConflictingBlock.Commit, light.DefaultTrustLevel)
+		err := commonVals.VerifyCommitLightTrusting(trustedHeader.ChainID, e.ConflictingBlock.Commit, light.DefaultTrustLevel, true)
 		if err != nil {
 			return ErrConflictingBlock{fmt.Errorf("skipping verification of conflicting block failed: %w", err)}
 		}
@@ -133,7 +133,7 @@ func VerifyLightClientAttack(
 
 	// Verify that the 2/3+ commits from the conflicting validator set were for the conflicting header
 	if err := e.ConflictingBlock.ValidatorSet.VerifyCommitLight(trustedHeader.ChainID, e.ConflictingBlock.Commit.BlockID,
-		e.ConflictingBlock.Height, e.ConflictingBlock.Commit); err != nil {
+		e.ConflictingBlock.Height, e.ConflictingBlock.Commit, true); err != nil {
 		return ErrConflictingBlock{fmt.Errorf("invalid commit from conflicting block: %w", err)}
 	}
 

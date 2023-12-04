@@ -461,7 +461,7 @@ FOR_LOOP:
 			// currently necessary.
 			// TODO(sergio): Should we also validate against the extended commit?
 			err = state.Validators.VerifyCommitLight(
-				chainID, firstID, first.Height, second.LastCommit)
+				chainID, firstID, first.Height, second.LastCommit, true)
 
 			if err == nil {
 				// validate the block before we persist it

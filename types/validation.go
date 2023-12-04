@@ -57,8 +57,14 @@ func VerifyCommit(chainID string, vals *ValidatorSet, blockID BlockID,
 //
 // This method is primarily used by the light client and does not check all the
 // signatures.
-func VerifyCommitLight(chainID string, vals *ValidatorSet, blockID BlockID,
-	height int64, commit *Commit) error {
+func VerifyCommitLight(
+	chainID string,
+	vals *ValidatorSet,
+	blockID BlockID,
+	height int64,
+	commit *Commit,
+	countAllSignatures bool,
+) error {
 	// run a basic validation of the arguments
 	if err := verifyBasicValsAndCommit(vals, commit, height, blockID); err != nil {
 		return err
@@ -76,12 +82,12 @@ func VerifyCommitLight(chainID string, vals *ValidatorSet, blockID BlockID,
 	// attempt to batch verify
 	if shouldBatchVerify(vals, commit) {
 		return verifyCommitBatch(chainID, vals, commit,
-			votingPowerNeeded, ignore, count, false, true)
+			votingPowerNeeded, ignore, count, countAllSignatures, true)
 	}
 
 	// if verification failed or is not supported then fallback to single verification
 	return verifyCommitSingle(chainID, vals, commit, votingPowerNeeded,
-		ignore, count, false, true)
+		ignore, count, countAllSignatures, true)
 }
 
 // VerifyCommitLightTrusting verifies that trustLevel of the validator set signed
@@ -92,7 +98,13 @@ func VerifyCommitLight(chainID string, vals *ValidatorSet, blockID BlockID,
 //
 // This method is primarily used by the light client and does not check all the
 // signatures.
-func VerifyCommitLightTrusting(chainID string, vals *ValidatorSet, commit *Commit, trustLevel cmtmath.Fraction) error {
+func VerifyCommitLightTrusting(
+	chainID string,
+	vals *ValidatorSet,
+	commit *Commit,
+	trustLevel cmtmath.Fraction,
+	countAllSignatures bool,
+) error {
 	// sanity checks
 	if vals == nil {
 		return errors.New("nil validator set")
@@ -122,12 +134,12 @@ func VerifyCommitLightTrusting(chainID string, vals *ValidatorSet, commit *Commi
 	// up by address rather than index.
 	if shouldBatchVerify(vals, commit) {
 		return verifyCommitBatch(chainID, vals, commit,
-			votingPowerNeeded, ignore, count, false, false)
+			votingPowerNeeded, ignore, count, countAllSignatures, false)
 	}
 
 	// attempt with single verification
 	return verifyCommitSingle(chainID, vals, commit, votingPowerNeeded,
-		ignore, count, false, false)
+		ignore, count, countAllSignatures, false)
 }
 
 // ValidateHash returns an error if the hash is not empty, but its

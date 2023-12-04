@@ -672,15 +672,20 @@ func (vals *ValidatorSet) VerifyCommit(chainID string, blockID BlockID,
 
 // VerifyCommitLight verifies +2/3 of the set had signed the given commit.
 func (vals *ValidatorSet) VerifyCommitLight(chainID string, blockID BlockID,
-	height int64, commit *Commit,
+	height int64, commit *Commit, countAllSignatures bool,
 ) error {
-	return VerifyCommitLight(chainID, vals, blockID, height, commit)
+	return VerifyCommitLight(chainID, vals, blockID, height, commit, countAllSignatures)
 }
 
 // VerifyCommitLightTrusting verifies that trustLevel of the validator set signed
 // this commit.
-func (vals *ValidatorSet) VerifyCommitLightTrusting(chainID string, commit *Commit, trustLevel cmtmath.Fraction) error {
-	return VerifyCommitLightTrusting(chainID, vals, commit, trustLevel)
+func (vals *ValidatorSet) VerifyCommitLightTrusting(
+	chainID string,
+	commit *Commit,
+	trustLevel cmtmath.Fraction,
+	countAllSignatures bool,
+) error {
+	return VerifyCommitLightTrusting(chainID, vals, commit, trustLevel, countAllSignatures)
 }
 
 // findPreviousProposer reverses the compare proposer priority function to find the validator

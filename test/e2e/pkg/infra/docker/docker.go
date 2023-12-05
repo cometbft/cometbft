@@ -26,12 +26,23 @@ func (p *Provider) Setup() error {
 	if err != nil {
 		return err
 	}
-	//nolint: gosec
-	// G306: Expect WriteFile permissions to be 0600 or less
+	//nolint: gosec // G306: Expect WriteFile permissions to be 0600 or less
 	err = os.WriteFile(filepath.Join(p.Testnet.Dir, "docker-compose.yml"), compose, 0o644)
 	if err != nil {
 		return err
 	}
+
+	// Generate file with table mapping IP addresses to geographical zone for latencies.
+	zonesTable, err := zonesTableBytes(p.Testnet.Nodes)
+	if err != nil {
+		return err
+	}
+	//nolint: gosec // G306: Expect WriteFile permissions to be 0600 or less
+	err = os.WriteFile(filepath.Join(p.Testnet.Dir, "zones.csv"), zonesTable, 0o644)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -68,6 +79,25 @@ func (p Provider) CheckUpgraded(ctx context.Context, node *e2e.Node) (string, bo
 		upgraded = true
 	}
 	return name, upgraded, nil
+}
+
+func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
+	containerDir := "/scripts/"
+
+	// Copy zone file used by the script that sets latency.
+	zonesFile := filepath.Join(p.Testnet.Dir, "zones.csv")
+	if err := Exec(ctx, "cp", zonesFile, node.Name+":"+containerDir); err != nil {
+		return err
+	}
+
+	// Execute the latency setter script in the container.
+	if err := ExecVerbose(ctx, "exec", "--privileged", node.Name,
+		filepath.Join(containerDir, "latency-setter.py"), "set",
+		filepath.Join(containerDir, "zones.csv"),
+		filepath.Join(containerDir, "aws-latencies.csv"), "eth0"); err != nil {
+		return err
+	}
+	return nil
 }
 
 // dockerComposeBytes generates a Docker Compose config file for a testnet and returns the
@@ -158,6 +188,24 @@ services:
 	return buf.Bytes(), nil
 }
 
+func zonesTableBytes(nodes []*e2e.Node) ([]byte, error) {
+	tmpl, err := template.New("zones").Parse(`Node,IP,Zone
+{{- range . }}
+{{- if .Zone }}
+{{ .Name }},{{ .InternalIP }},{{ .Zone }}
+{{- end }}
+{{- end }}`)
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, nodes)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
 // ExecCompose runs a Docker Compose command for a testnet.
 func ExecCompose(ctx context.Context, dir string, args ...string) error {
 	return exec.Command(ctx, append(
@@ -182,4 +230,9 @@ func ExecComposeVerbose(ctx context.Context, dir string, args ...string) error {
 // Exec runs a Docker command.
 func Exec(ctx context.Context, args ...string) error {
 	return exec.Command(ctx, append([]string{"docker"}, args...)...)
+}
+
+// Exec runs a Docker command while displaying its output.
+func ExecVerbose(ctx context.Context, args ...string) error {
+	return exec.CommandVerbose(ctx, append([]string{"docker"}, args...)...)
 }

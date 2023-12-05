@@ -382,20 +382,23 @@ title of the PR _very_ clearly explains the benefit of a change to a user.
 Some good examples of changelog entry descriptions:
 
 ```md
-- [consensus] \#1111 Small transaction throughput improvement (approximately
-  3-5\% from preliminary tests) through refactoring the way we use channels
-- [mempool] \#1112 Refactor Go API to be able to easily swap out the current
-  mempool implementation in CometBFT forks
-- [p2p] \#1113 Automatically ban peers when their messages are unsolicited or
-  are received too frequently
+- `[consensus]` Small transaction throughput improvement (approximately 3-5\%
+  from preliminary tests) through refactoring the way we use channels
+  ([\#1111](https://github.com/cometbft/cometbft/issues/1111))
+- `[mempool]` Refactor Go API to be able to easily swap out the current mempool
+  implementation in CometBFT forks
+  ([\#1112](https://github.com/cometbft/cometbft/issues/1112))
+- `[p2p]` Automatically ban peers when their messages are unsolicited or are
+  received too frequently
+  ([\#1113](https://github.com/cometbft/cometbft/issues/1113))
 ```
 
 Some bad examples of changelog entry descriptions:
 
 ```md
-- [consensus] \#1111 Refactor channel usage
-- [mempool] \#1112 Make API generic
-- [p2p] \#1113 Ban for PEX message abuse
+- `[consensus]` Refactor channel usage
+- `[mempool]` Make API generic
+- `[p2p]` Ban for PEX message abuse
 ```
 
 For more on how to write good changelog entries, see:
@@ -409,24 +412,24 @@ For more on how to write good changelog entries, see:
 Changelog entries should be formatted as follows:
 
 ```md
-- [module] \#xxx Some description of the change (@contributor)
+- `[module]` Some description of the change
+  ([\#1234](https://github.com/cometbft/cometbft/issues/1234): @contributor)
 ```
 
 Here, `module` is the part of the code that changed (typically a top-level Go
-package), `xxx` is the pull-request number, and `contributor` is the author/s of
-the change.
+package), `1234` is the pull-request number, and `contributor` is the author/s
+of the change (only necessary if you are not a member of the CometBFT core
+team).
 
-It's also acceptable for `xxx` to refer to the relevant issue number, but
+It's also acceptable for `1234` to refer to the relevant issue number, but
 pull-request numbers are preferred. Note this means pull-requests should be
 opened first so the changelog can then be updated with the pull-request's
-number. There is no need to include the full link, as this will be added
-automatically during release. But please include the backslash and pound, eg.
-`\#2313`.
+number.
 
 Changelog entries should be ordered alphabetically according to the `module`,
 and numerically according to the pull-request number.
 
-Changes with multiple classifications should be doubly included (eg. a bug fix
+Changes with multiple classifications should be doubly included (e.g. a bug fix
 that is also a breaking change should be recorded under both).
 
 Breaking changes are further subdivided according to the APIs/users they impact.
@@ -439,7 +442,8 @@ removed from the header in RPC responses as well.
 
 The main development branch is `main`.
 
-Every release is maintained in a release branch named `vX.Y.Z`.
+Every release is maintained in a release branch named according to its major
+release number (e.g. `v0.38.x` or `v1.x`).
 
 Pending minor releases have long-lived release candidate ("RC") branches. Minor
 release changes should be merged to these long-lived RC branches at the same
@@ -454,8 +458,8 @@ the feature is complete, the feature branch is merged back (merge commit) into
 different features in different releases.
 
 Note, all pull requests should be squash merged except for merging to a release
-branch (named `vX.Y`). This keeps the commit history clean and makes it easy to
-reference the pull request where a change was introduced.
+branch. This keeps the commit history clean and makes it easy to reference the
+pull request where a change was introduced.
 
 ### Development Procedure
 
@@ -494,25 +498,6 @@ Before merging a pull request:
   merge without this!)
 - Run `make test` to ensure that all tests pass
 - [Squash][git-squash] merge pull request
-
-#### Pull Requests for Minor Releases
-
-If your change should be included in a minor release, please also open a PR
-against the long-lived minor release candidate branch (e.g., `rc1/v0.33.5`)
-_immediately after your change has been merged to main_.
-
-You can do this by cherry-picking your commit off `main`:
-
-```sh
-$ git checkout rc1/v0.33.5
-$ git checkout -b {new branch name}
-$ git cherry-pick {commit SHA from main}
-# may need to fix conflicts, and then use git add and git cherry-pick --continue
-$ git push origin {new branch name}
-```
-
-After this, you can open a PR. Please note in the PR body if there were merge
-conflicts so that reviewers can be sure to take a thorough look.
 
 ### Git Commit Style
 

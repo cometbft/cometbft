@@ -107,7 +107,7 @@ func ToTxs(txl [][]byte) Txs {
 func (txs Txs) Validate(maxSizeBytes int64) error {
 	var size int64
 	for _, tx := range txs {
-		size += int64(len(tx))
+		size += ComputeProtoSizeForTxs([]Tx{tx})
 		if size > maxSizeBytes {
 			return fmt.Errorf("transaction data size exceeds maximum %d", maxSizeBytes)
 		}

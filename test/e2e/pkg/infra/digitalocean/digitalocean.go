@@ -46,6 +46,12 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 
 	return execAnsible(ctx, p.Testnet.Dir, playbookFile, nodeIPs)
 }
+
+// Currently unsupported.
+func (p Provider) SetLatency(_ context.Context, _ *e2e.Node) error {
+	return fmt.Errorf("SetLatency() currently unsupported for Digital Ocean")
+}
+
 func (p Provider) StopTestnet(ctx context.Context) error {
 	nodeIPs := make([]string, len(p.Testnet.Nodes))
 	for i, n := range p.Testnet.Nodes {
@@ -59,6 +65,7 @@ func (p Provider) StopTestnet(ctx context.Context) error {
 	}
 	return execAnsible(ctx, p.Testnet.Dir, playbookFile, nodeIPs)
 }
+
 func (p Provider) Disconnect(ctx context.Context, _ string, ip string) error {
 	playbook := ansiblePerturbConnectionBytes(true)
 	playbookFile := getNextPlaybookFilename()
@@ -67,6 +74,7 @@ func (p Provider) Disconnect(ctx context.Context, _ string, ip string) error {
 	}
 	return execAnsible(ctx, p.Testnet.Dir, playbookFile, []string{ip})
 }
+
 func (p Provider) Reconnect(ctx context.Context, _ string, ip string) error {
 	playbook := ansiblePerturbConnectionBytes(false)
 	playbookFile := getNextPlaybookFilename()

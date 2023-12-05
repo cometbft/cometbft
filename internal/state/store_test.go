@@ -18,9 +18,7 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
-	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/internal/test"
@@ -135,7 +133,7 @@ func TestPruneStates(t *testing.T) {
 
 			// Generate a bunch of state data. Validators change for heights ending with 3, and
 			// parameters when ending with 5.
-			validator := &types.Validator{Address: cmtrand.Bytes(crypto.AddressSize), VotingPower: 100, PubKey: pk}
+			validator := &types.Validator{Address: pk.Address(), VotingPower: 100, PubKey: pk}
 			validatorSet := &types.ValidatorSet{
 				Validators: []*types.Validator{validator},
 				Proposer:   validator,

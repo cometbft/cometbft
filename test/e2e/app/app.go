@@ -24,6 +24,7 @@ import (
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/internal/protoio"
 	"github.com/cometbft/cometbft/libs/log"
+	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
 )
 
@@ -434,7 +435,8 @@ func (app *Application) PrepareProposal(
 		}
 		extCommitHex := hex.EncodeToString(extCommitBytes)
 		extTx := []byte(fmt.Sprintf("%s%d|%s", extTxPrefix, sum, extCommitHex))
-		extTxLen := int64(len(extTx))
+		extTxLen := int64(cmttypes.ComputeProtoSizeForTxs([]cmttypes.Tx{extTx}))
+
 		app.logger.Info("preparing proposal with special transaction from vote extensions", "extTxLen", extTxLen)
 		if extTxLen > req.MaxTxBytes {
 			panic(fmt.Errorf("serious problem in the e2e app configuration; "+
@@ -456,10 +458,10 @@ func (app *Application) PrepareProposal(
 			app.logger.Error("detected tx that should not come from the mempool", "tx", tx)
 			continue
 		}
-		if totalBytes+int64(len(tx)) > req.MaxTxBytes {
+		if totalBytes+int64(cmttypes.ComputeProtoSizeForTxs([]cmttypes.Tx{tx})) > req.MaxTxBytes {
 			break
 		}
-		totalBytes += int64(len(tx))
+		totalBytes += int64(cmttypes.ComputeProtoSizeForTxs([]cmttypes.Tx{tx}))
 		// Coherence: No need to call parseTx, as the check is stateless and has been performed by CheckTx
 		txs = append(txs, tx)
 	}

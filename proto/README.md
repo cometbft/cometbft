@@ -1,6 +1,9 @@
-<!-- NB: Ensure that all hyperlinks in this doc are absolute URLs, not relative
-ones, as this doc gets published to the Buf registry and relative URLs will fail
-to resolve. -->
+[NB]: # (
+  Ensure that all hyperlinks in this doc are absolute URLs, not relative ones,
+  as this doc gets published to the Buf registry and relative URLs will fail
+  to resolve.
+)
+
 # CometBFT Protocol Buffers Definitions
 
 This is the set of [Protobuf][protobuf] definitions of types used by various

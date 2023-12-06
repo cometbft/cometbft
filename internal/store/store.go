@@ -19,6 +19,12 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+// Assuming the length of a block part is 64kB (`types.BlockPartSizeBytes`),
+// the maximum size of a block, that will be batch saved, is 640kB. The
+// benchmarks have shown that `goleveldb` still performs well with blocks of
+// this size. However, if the block is larger than 1MB, the performance degrades.
+const maxBlockPartsToBatch = 10
+
 /*
 BlockStore is a simple low level store for blocks.
 
@@ -412,11 +418,6 @@ func (bs *BlockStore) SaveBlock(block *types.Block, blockParts *types.PartSet, s
 		}
 	}(batch)
 
-	// Assuming the length of a block part is 64kB (`types.BlockPartSizeBytes`),
-	// the maximum size of a block, that will be batch saved, is 640kB. The
-	// benchmarks have shown that `goleveldb` still performs well with blocks of
-	// this size. However, if the block is larger than 1MB, the performance degrades.
-	const maxBlockPartsToBatch = 10
 	saveBlockPartsToBatch := blockParts.Count() > maxBlockPartsToBatch
 
 	if err := bs.saveBlockToBatch(block, blockParts, seenCommit, batch, saveBlockPartsToBatch); err != nil {
@@ -453,11 +454,6 @@ func (bs *BlockStore) SaveBlockWithExtendedCommit(block *types.Block, blockParts
 		}
 	}(batch)
 
-	// Assuming the length of a block part is 64kB (`types.BlockPartSizeBytes`),
-	// the maximum size of a block, that will be batch saved, is 640kB. The
-	// benchmarks have shown that `goleveldb` still performs well with blocks of
-	// this size. However, if the block is larger than 1MB, the performance degrades.
-	const maxBlockPartsToBatch = 10
 	saveBlockPartsToBatch := blockParts.Count() > maxBlockPartsToBatch
 
 	if err := bs.saveBlockToBatch(block, blockParts, seenExtendedCommit.ToCommit(), batch, saveBlockPartsToBatch); err != nil {

@@ -436,7 +436,6 @@ func (app *Application) PrepareProposal(
 		extCommitHex := hex.EncodeToString(extCommitBytes)
 		extTx := []byte(fmt.Sprintf("%s%d|%s", extTxPrefix, sum, extCommitHex))
 		extTxLen := int64(cmttypes.ComputeProtoSizeForTxs([]cmttypes.Tx{extTx}))
-
 		app.logger.Info("preparing proposal with special transaction from vote extensions", "extTxLen", extTxLen)
 		if extTxLen > req.MaxTxBytes {
 			panic(fmt.Errorf("serious problem in the e2e app configuration; "+

@@ -962,16 +962,6 @@ func TestPrepareProposalCountSerializationOverhead(t *testing.T) {
 	require.Nil(t, block)
 	require.ErrorContains(t, err, "transaction data size exceeds maximum")
 
-	/*
-		require.NoError(t, err)
-		pb := block.Data.ToProto()
-		//pb, err := block.ToProto()
-		require.NoError(t, err)
-		assert.LessOrEqual(t, int64(pb.Size()), maxDataBytes)
-		pb2, err := block.ToProto()
-		require.NoError(t, err)
-		assert.LessOrEqual(t, int64(pb2.Size()), state.ConsensusParams.Block.MaxBytes)
-	*/
 	mp.AssertExpectations(t)
 }
 

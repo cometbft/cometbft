@@ -935,7 +935,7 @@ func TestPrepareProposalCountSerializationOverhead(t *testing.T) {
 	mp.On("ReapMaxBytesMaxGas", mock.Anything, mock.Anything).Return(txs)
 
 	app := &abcimocks.Application{}
-	app.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.PrepareProposalResponse{
+	app.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{
 		Txs: txs.ToSliceOfBytes(),
 	}, nil)
 

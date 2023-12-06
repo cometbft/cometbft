@@ -412,7 +412,14 @@ func (bs *BlockStore) SaveBlock(block *types.Block, blockParts *types.PartSet, s
 		}
 	}(batch)
 
-	if err := bs.saveBlockToBatch(block, blockParts, seenCommit, batch); err != nil {
+	// Assuming the length of a block part is 64kB (`types.BlockPartSizeBytes`),
+	// the maximum size of a block, that will be batch saved, is 640kB. The
+	// benchmarks have shown that `goleveldb` still performs well with blocks of
+	// this size. However, if the block is larger than 1MB, the performance degrades.
+	const maxBlockPartsToBatch = 10
+	saveBlockPartsToBatch := blockParts.Count() > maxBlockPartsToBatch
+
+	if err := bs.saveBlockToBatch(block, blockParts, seenCommit, batch, saveBlockPartsToBatch); err != nil {
 		panic(err)
 	}
 
@@ -446,7 +453,14 @@ func (bs *BlockStore) SaveBlockWithExtendedCommit(block *types.Block, blockParts
 		}
 	}(batch)
 
-	if err := bs.saveBlockToBatch(block, blockParts, seenExtendedCommit.ToCommit(), batch); err != nil {
+	// Assuming the length of a block part is 64kB (`types.BlockPartSizeBytes`),
+	// the maximum size of a block, that will be batch saved, is 640kB. The
+	// benchmarks have shown that `goleveldb` still performs well with blocks of
+	// this size. However, if the block is larger than 1MB, the performance degrades.
+	const maxBlockPartsToBatch = 10
+	saveBlockPartsToBatch := blockParts.Count() > maxBlockPartsToBatch
+
+	if err := bs.saveBlockToBatch(block, blockParts, seenExtendedCommit.ToCommit(), batch, saveBlockPartsToBatch); err != nil {
 		panic(err)
 	}
 	height := block.Height
@@ -466,7 +480,13 @@ func (bs *BlockStore) SaveBlockWithExtendedCommit(block *types.Block, blockParts
 	}
 }
 
-func (bs *BlockStore) saveBlockToBatch(block *types.Block, blockParts *types.PartSet, seenCommit *types.Commit, batch dbm.Batch) error {
+func (bs *BlockStore) saveBlockToBatch(
+	block *types.Block,
+	blockParts *types.PartSet,
+	seenCommit *types.Commit,
+	batch dbm.Batch,
+	saveBlockPartsToBatch bool) error {
+
 	if block == nil {
 		panic("BlockStore can only save a non-nil block")
 	}
@@ -490,7 +510,7 @@ func (bs *BlockStore) saveBlockToBatch(block *types.Block, blockParts *types.Par
 	// complete as soon as the block meta is written.
 	for i := 0; i < int(blockParts.Total()); i++ {
 		part := blockParts.GetPart(i)
-		bs.saveBlockPart(height, i, part, batch)
+		bs.saveBlockPart(height, i, part, batch, saveBlockPartsToBatch)
 	}
 
 	// Save block meta
@@ -533,13 +553,18 @@ func (bs *BlockStore) saveBlockToBatch(block *types.Block, blockParts *types.Par
 	return nil
 }
 
-func (bs *BlockStore) saveBlockPart(height int64, index int, part *types.Part, batch dbm.Batch) {
+func (bs *BlockStore) saveBlockPart(height int64, index int, part *types.Part, batch dbm.Batch, saveBlockPartsToBatch bool) {
 	pbp, err := part.ToProto()
 	if err != nil {
 		panic(cmterrors.ErrMsgToProto{MessageName: "Part", Err: err})
 	}
 	partBytes := mustEncode(pbp)
-	if err := batch.Set(calcBlockPartKey(height, index), partBytes); err != nil {
+	if saveBlockPartsToBatch {
+		err = batch.Set(calcBlockPartKey(height, index), partBytes)
+	} else {
+		err = bs.db.Set(calcBlockPartKey(height, index), partBytes)
+	}
+	if err != nil {
 		panic(err)
 	}
 }

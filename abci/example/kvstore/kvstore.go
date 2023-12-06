@@ -156,10 +156,10 @@ func isValidTx(tx []byte) bool {
 	return false
 }
 
-// PrepareProposal is called when the node is a proposer. Tendermint stages a set of transactions to the application. As the
+// PrepareProposal is called when the node is a proposer. CometBFT stages a set of transactions to the application. As the
 // KVStore has two accepted formats, `:` and `=`, we modify all instances of `:` with `=` to make it consistent. Note: this is
 // quite a trivial example of transaction modification.
-// NOTE: we assume that Tendermint will never provide more transactions than can fit in a block.
+// NOTE: we assume that CometBFT will never provide more transactions than can fit in a block.
 func (app *Application) PrepareProposal(ctx context.Context, req *types.PrepareProposalRequest) (*types.PrepareProposalResponse, error) {
 	return &types.PrepareProposalResponse{Txs: app.formatTxs(ctx, req.Txs)}, nil
 }

@@ -457,10 +457,11 @@ func (app *Application) PrepareProposal(
 			app.logger.Error("detected tx that should not come from the mempool", "tx", tx)
 			continue
 		}
-		if totalBytes+cmttypes.ComputeProtoSizeForTxs([]cmttypes.Tx{tx}) > req.MaxTxBytes {
+		txLen := cmttypes.ComputeProtoSizeForTxs([]cmttypes.Tx{tx})
+		if totalBytes+txLen > req.MaxTxBytes {
 			break
 		}
-		totalBytes += cmttypes.ComputeProtoSizeForTxs([]cmttypes.Tx{tx})
+		totalBytes += txLen
 		// Coherence: No need to call parseTx, as the check is stateless and has been performed by CheckTx
 		txs = append(txs, tx)
 	}

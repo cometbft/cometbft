@@ -112,7 +112,11 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 				assert.NoError(t, err, "VerifyCommit")
 			}
 
-			err = valSet.VerifyCommitLight(chainID, blockID, height, commit, countAllSignatures)
+			if countAllSignatures {
+				err = valSet.VerifyCommitLightAllSignatures(chainID, blockID, height, commit)
+			} else {
+				err = valSet.VerifyCommitLight(chainID, blockID, height, commit)
+			}
 			if tc.expErr {
 				if assert.Error(t, err, "VerifyCommitLight") {
 					assert.Contains(t, err.Error(), tc.description, "VerifyCommitLight")
@@ -126,7 +130,11 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 			if (!countAllSignatures && totalVotes != tc.valSize) || totalVotes < tc.valSize || !tc.blockID.Equals(blockID) || tc.height != height {
 				expErr = false
 			}
-			err = valSet.VerifyCommitLightTrusting(chainID, commit, trustLevel, countAllSignatures)
+			if countAllSignatures {
+				err = valSet.VerifyCommitLightTrustingAllSignatures(chainID, commit, trustLevel)
+			} else {
+				err = valSet.VerifyCommitLightTrusting(chainID, commit, trustLevel)
+			}
 			if expErr {
 				if assert.Error(t, err, "VerifyCommitLightTrusting") {
 					errStr := tc.description2
@@ -195,13 +203,13 @@ func TestValidatorSet_VerifyCommitLight_ReturnsAsSoonAsMajorityOfVotingPowerSign
 	vote.ExtensionSignature = v.ExtensionSignature
 	commit.Signatures[3] = vote.CommitSig()
 
-	err = valSet.VerifyCommitLight(chainID, blockID, h, commit, false)
+	err = valSet.VerifyCommitLight(chainID, blockID, h, commit)
 	assert.NoError(t, err)
-	err = valSet.VerifyCommitLight(chainID, blockID, h, commit, true)
+	err = valSet.VerifyCommitLightAllSignatures(chainID, blockID, h, commit)
 	assert.Error(t, err) // counting all signatures detects the malleated signature
 }
 
-func TestValidatorSet_VerifyCommitLightTrusting_ReturnsAsSoonAsTrustLevelOfVotingPowerSigned(t *testing.T) {
+func TestValidatorSet_VerifyCommitLightTrusting_ReturnsAsSoonAsTrustLevelSignedIffNotAllSigs(t *testing.T) {
 	var (
 		chainID = "test_chain_id"
 		h       = int64(3)
@@ -223,9 +231,13 @@ func TestValidatorSet_VerifyCommitLightTrusting_ReturnsAsSoonAsTrustLevelOfVotin
 	vote.ExtensionSignature = v.ExtensionSignature
 	commit.Signatures[2] = vote.CommitSig()
 
-	err = valSet.VerifyCommitLightTrusting(chainID, commit, cmtmath.Fraction{Numerator: 1, Denominator: 3}, false)
+	err = valSet.VerifyCommitLightTrusting(chainID, commit, cmtmath.Fraction{Numerator: 1, Denominator: 3})
 	assert.NoError(t, err)
-	err = valSet.VerifyCommitLightTrusting(chainID, commit, cmtmath.Fraction{Numerator: 1, Denominator: 3}, true)
+	err = valSet.VerifyCommitLightTrustingAllSignatures(
+		chainID,
+		commit,
+		cmtmath.Fraction{Numerator: 1, Denominator: 3},
+	)
 	assert.Error(t, err) // counting all signatures detects the malleated signature
 }
 
@@ -262,7 +274,7 @@ func TestValidatorSet_VerifyCommitLightTrusting(t *testing.T) {
 
 	for _, tc := range testCases {
 		err = tc.valSet.VerifyCommitLightTrusting("test_chain_id", commit,
-			cmtmath.Fraction{Numerator: 1, Denominator: 3}, false)
+			cmtmath.Fraction{Numerator: 1, Denominator: 3})
 		if tc.err {
 			assert.Error(t, err)
 		} else {
@@ -280,7 +292,7 @@ func TestValidatorSet_VerifyCommitLightTrustingErrorsOnOverflow(t *testing.T) {
 	require.NoError(t, err)
 
 	err = valSet.VerifyCommitLightTrusting("test_chain_id", extCommit.ToCommit(),
-		cmtmath.Fraction{Numerator: 25, Denominator: 55}, false)
+		cmtmath.Fraction{Numerator: 25, Denominator: 55})
 	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "int64 overflow")
 	}

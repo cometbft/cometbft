@@ -55,9 +55,33 @@ func VerifyCommit(chainID string, vals *ValidatorSet, blockID BlockID,
 
 // VerifyCommitLight verifies +2/3 of the set had signed the given commit.
 //
-// This method is primarily used by the light client and does not check all the
+// This method is primarily used by the light client and does NOT check all the
 // signatures.
 func VerifyCommitLight(
+	chainID string,
+	vals *ValidatorSet,
+	blockID BlockID,
+	height int64,
+	commit *Commit,
+) error {
+	return verifyCommitLightInternal(chainID, vals, blockID, height, commit, false)
+}
+
+// VerifyCommitLightAllSignatures verifies +2/3 of the set had signed the given commit.
+//
+// This method is primarily used by the light client and DOES check all the
+// signatures.
+func VerifyCommitLightAllSignatures(
+	chainID string,
+	vals *ValidatorSet,
+	blockID BlockID,
+	height int64,
+	commit *Commit,
+) error {
+	return verifyCommitLightInternal(chainID, vals, blockID, height, commit, true)
+}
+
+func verifyCommitLightInternal(
 	chainID string,
 	vals *ValidatorSet,
 	blockID BlockID,
@@ -96,9 +120,35 @@ func VerifyCommitLight(
 // NOTE the given validators do not necessarily correspond to the validator set
 // for this commit, but there may be some intersection.
 //
-// This method is primarily used by the light client and does not check all the
+// This method is primarily used by the light client and does NOT check all the
 // signatures.
 func VerifyCommitLightTrusting(
+	chainID string,
+	vals *ValidatorSet,
+	commit *Commit,
+	trustLevel cmtmath.Fraction,
+) error {
+	return verifyCommitLightTrustingInternal(chainID, vals, commit, trustLevel, false)
+}
+
+// VerifyCommitLightTrustingAllSignatures verifies that trustLevel of the validator
+// set signed this commit.
+//
+// NOTE the given validators do not necessarily correspond to the validator set
+// for this commit, but there may be some intersection.
+//
+// This method is primarily used by the light client and DOES check all the
+// signatures.
+func VerifyCommitLightTrustingAllSignatures(
+	chainID string,
+	vals *ValidatorSet,
+	commit *Commit,
+	trustLevel cmtmath.Fraction,
+) error {
+	return verifyCommitLightTrustingInternal(chainID, vals, commit, trustLevel, true)
+}
+
+func verifyCommitLightTrustingInternal(
 	chainID string,
 	vals *ValidatorSet,
 	commit *Commit,

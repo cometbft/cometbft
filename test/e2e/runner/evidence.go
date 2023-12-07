@@ -190,6 +190,7 @@ func generateLightClientAttackEvidence(
 		return nil, err
 	}
 
+	// malleate the last signature of the commit by adding one to its first byte
 	if !validEvidence {
 		commit.Signatures[len(commit.Signatures)-1].Signature[0]++
 	}

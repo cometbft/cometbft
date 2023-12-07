@@ -13,6 +13,7 @@ import (
 	"github.com/cometbft/cometbft/abci/example/code"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
+	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
 )
 
@@ -275,10 +276,11 @@ func (app *Application) PrepareProposal(
 	txs := make([][]byte, 0, len(req.Txs))
 	var totalBytes int64
 	for _, tx := range req.Txs {
-		totalBytes += int64(len(tx))
-		if totalBytes > req.MaxTxBytes {
+		txLen := cmttypes.ComputeProtoSizeForTxs([]cmttypes.Tx{tx})
+		if totalBytes+txLen > req.MaxTxBytes {
 			break
 		}
+		totalBytes += txLen
 		txs = append(txs, tx)
 	}
 

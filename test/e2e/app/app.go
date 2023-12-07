@@ -20,13 +20,10 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/libs/log"
-<<<<<<< HEAD
 	"github.com/cometbft/cometbft/libs/protoio"
 	cryptoproto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-=======
 	cmttypes "github.com/cometbft/cometbft/types"
->>>>>>> 0bf3f0a3e ([e2e] Fixes prepareProposal not to return oversized set of transactions (#1756))
 	"github.com/cometbft/cometbft/version"
 )
 

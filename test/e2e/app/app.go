@@ -13,6 +13,7 @@ import (
 	"github.com/cometbft/cometbft/abci/example/code"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
+	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
 )
 
@@ -274,11 +275,54 @@ func (app *Application) PrepareProposal(
 	req abci.RequestPrepareProposal) abci.ResponsePrepareProposal {
 	txs := make([][]byte, 0, len(req.Txs))
 	var totalBytes int64
+<<<<<<< HEAD
 	for _, tx := range req.Txs {
 		totalBytes += int64(len(tx))
 		if totalBytes > req.MaxTxBytes {
 			break
 		}
+=======
+	extTxPrefix := fmt.Sprintf("%s=", voteExtensionKey)
+	sum, err := app.verifyAndSum(areExtensionsEnabled, req.Height, &req.LocalLastCommit, "prepare_proposal")
+	if err != nil {
+		panic(fmt.Errorf("failed to sum and verify in PrepareProposal; err %w", err))
+	}
+	if areExtensionsEnabled {
+		extCommitBytes, err := req.LocalLastCommit.Marshal()
+		if err != nil {
+			panic("unable to marshall extended commit")
+		}
+		extCommitHex := hex.EncodeToString(extCommitBytes)
+		extTx := []byte(fmt.Sprintf("%s%d|%s", extTxPrefix, sum, extCommitHex))
+		extTxLen := cmttypes.ComputeProtoSizeForTxs([]cmttypes.Tx{extTx})
+		app.logger.Info("preparing proposal with special transaction from vote extensions", "extTxLen", extTxLen)
+		if extTxLen > req.MaxTxBytes {
+			panic(fmt.Errorf("serious problem in the e2e app configuration; "+
+				"the tx conveying the vote extension data does not fit in an empty block(%d > %d); "+
+				"please review the app's configuration",
+				extTxLen, req.MaxTxBytes))
+		}
+		txs = append(txs, extTx)
+		// Coherence: No need to call parseTx, as the check is stateless and has been performed by CheckTx
+		totalBytes = extTxLen
+	}
+	for _, tx := range req.Txs {
+		if areExtensionsEnabled && strings.HasPrefix(string(tx), extTxPrefix) {
+			// When vote extensions are enabled, our generated transaction takes precedence
+			// over any supplied transaction that attempts to modify the "extensionSum" value.
+			continue
+		}
+		if strings.HasPrefix(string(tx), prefixReservedKey) {
+			app.logger.Error("detected tx that should not come from the mempool", "tx", tx)
+			continue
+		}
+		txLen := cmttypes.ComputeProtoSizeForTxs([]cmttypes.Tx{tx})
+		if totalBytes+txLen > req.MaxTxBytes {
+			break
+		}
+		totalBytes += txLen
+		// Coherence: No need to call parseTx, as the check is stateless and has been performed by CheckTx
+>>>>>>> 0bf3f0a3e ([e2e] Fixes prepareProposal not to return oversized set of transactions (#1756))
 		txs = append(txs, tx)
 	}
 

@@ -38,7 +38,7 @@ var (
 
 //------------------------------------------------------------------------
 
-func encodeKey(prefix int64, height int64) []byte {
+func encodeKey(prefix, height int64) []byte {
 	res, err := orderedcode.Append(nil, prefix, height)
 	if err != nil {
 		panic(err)

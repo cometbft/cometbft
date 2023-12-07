@@ -20,9 +20,13 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/libs/log"
+<<<<<<< HEAD
 	"github.com/cometbft/cometbft/libs/protoio"
 	cryptoproto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+=======
+	cmttypes "github.com/cometbft/cometbft/types"
+>>>>>>> 0bf3f0a3e ([e2e] Fixes prepareProposal not to return oversized set of transactions (#1756))
 	"github.com/cometbft/cometbft/version"
 )
 
@@ -356,7 +360,7 @@ func (app *Application) PrepareProposal(
 		}
 		extCommitHex := hex.EncodeToString(extCommitBytes)
 		extTx := []byte(fmt.Sprintf("%s%d|%s", extTxPrefix, sum, extCommitHex))
-		extTxLen := int64(len(extTx))
+		extTxLen := cmttypes.ComputeProtoSizeForTxs([]cmttypes.Tx{extTx})
 		app.logger.Info("preparing proposal with special transaction from vote extensions", "extTxLen", extTxLen)
 		if extTxLen > req.MaxTxBytes {
 			panic(fmt.Errorf("serious problem in the e2e app configuration; "+
@@ -378,10 +382,11 @@ func (app *Application) PrepareProposal(
 			app.logger.Error("detected tx that should not come from the mempool", "tx", tx)
 			continue
 		}
-		if totalBytes+int64(len(tx)) > req.MaxTxBytes {
+		txLen := cmttypes.ComputeProtoSizeForTxs([]cmttypes.Tx{tx})
+		if totalBytes+txLen > req.MaxTxBytes {
 			break
 		}
-		totalBytes += int64(len(tx))
+		totalBytes += txLen
 		// Coherence: No need to call parseTx, as the check is stateless and has been performed by CheckTx
 		txs = append(txs, tx)
 	}

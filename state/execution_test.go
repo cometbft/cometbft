@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/cometbft/cometbft-db"
 	abciclientmocks "github.com/cometbft/cometbft/abci/client/mocks"
 	abci "github.com/cometbft/cometbft/abci/types"
 	abcimocks "github.com/cometbft/cometbft/abci/types/mocks"
@@ -26,7 +25,6 @@ import (
 	pmocks "github.com/cometbft/cometbft/proxy/mocks"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/state/mocks"
-	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
@@ -816,19 +814,17 @@ func TestPrepareProposalCountSerializationOverhead(t *testing.T) {
 	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	blockStore := store.NewBlockStore(dbm.NewMemDB())
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		log.NewNopLogger(),
 		proxyApp.Consensus(),
 		mp,
 		evpool,
-		blockStore,
 	)
 	pa, _ := state.Validators.GetByIndex(0)
-	commit, _, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
+	commit, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
 	require.NoError(t, err)
-	block, err := blockExec.CreateProposalBlock(ctx, height, state, commit, pa)
+	block, err := blockExec.CreateProposalBlock(height, state, commit, pa)
 	require.Nil(t, block)
 	require.ErrorContains(t, err, "transaction data size exceeds maximum")
 

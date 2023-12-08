@@ -1975,6 +1975,8 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 		// NOTE: we are disregarding possible duplicates above where heights dont match or we're not expecting block parts yet
 		// but between the matches_current = true and false, we have all the info.
 		cs.metrics.DuplicateBlockPart.Add(1)
+	} else {
+		cs.evsw.FireEvent(types.EventProposalBlockPart, msg)
 	}
 
 	maxBytes := cs.state.ConsensusParams.Block.MaxBytes

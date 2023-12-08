@@ -93,6 +93,7 @@ type Testnet struct {
 	UpgradeVersion                                       string
 	Prometheus                                           bool
 	VoteExtensionsEnableHeight                           int64
+	PeerGossipIntraloopSleepDuration                     time.Duration
 	ExperimentalMaxGossipConnectionsToPersistentPeers    uint
 	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint
 }
@@ -154,28 +155,29 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	testnet := &Testnet{
-		Name:                       filepath.Base(dir),
-		File:                       file,
-		Dir:                        dir,
-		IP:                         ipNet,
-		InitialHeight:              1,
-		InitialState:               manifest.InitialState,
-		Validators:                 map[*Node]int64{},
-		ValidatorUpdates:           map[int64]map[*Node]int64{},
-		Nodes:                      []*Node{},
-		Evidence:                   manifest.Evidence,
-		LoadTxSizeBytes:            manifest.LoadTxSizeBytes,
-		LoadTxBatchSize:            manifest.LoadTxBatchSize,
-		LoadTxConnections:          manifest.LoadTxConnections,
-		ABCIProtocol:               manifest.ABCIProtocol,
-		PrepareProposalDelay:       manifest.PrepareProposalDelay,
-		ProcessProposalDelay:       manifest.ProcessProposalDelay,
-		CheckTxDelay:               manifest.CheckTxDelay,
-		VoteExtensionDelay:         manifest.VoteExtensionDelay,
-		FinalizeBlockDelay:         manifest.FinalizeBlockDelay,
-		UpgradeVersion:             manifest.UpgradeVersion,
-		Prometheus:                 manifest.Prometheus,
-		VoteExtensionsEnableHeight: manifest.VoteExtensionsEnableHeight,
+		Name:                             filepath.Base(dir),
+		File:                             file,
+		Dir:                              dir,
+		IP:                               ipNet,
+		InitialHeight:                    1,
+		InitialState:                     manifest.InitialState,
+		Validators:                       map[*Node]int64{},
+		ValidatorUpdates:                 map[int64]map[*Node]int64{},
+		Nodes:                            []*Node{},
+		Evidence:                         manifest.Evidence,
+		LoadTxSizeBytes:                  manifest.LoadTxSizeBytes,
+		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
+		LoadTxConnections:                manifest.LoadTxConnections,
+		ABCIProtocol:                     manifest.ABCIProtocol,
+		PrepareProposalDelay:             manifest.PrepareProposalDelay,
+		ProcessProposalDelay:             manifest.ProcessProposalDelay,
+		CheckTxDelay:                     manifest.CheckTxDelay,
+		VoteExtensionDelay:               manifest.VoteExtensionDelay,
+		FinalizeBlockDelay:               manifest.FinalizeBlockDelay,
+		UpgradeVersion:                   manifest.UpgradeVersion,
+		Prometheus:                       manifest.Prometheus,
+		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
+		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
 	}

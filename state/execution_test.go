@@ -781,8 +781,6 @@ func TestPrepareProposalErrorOnTooManyTxs(t *testing.T) {
 // its size and will go beyond the limit upon serialization.
 func TestPrepareProposalCountSerializationOverhead(t *testing.T) {
 	const height = 2
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	state, stateDB, privVals := makeState(1, height)
 	// limit max block size

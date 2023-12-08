@@ -11,7 +11,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
- 	"github.com/cometbft/cometbft/version"
+	"github.com/cometbft/cometbft/version"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 )

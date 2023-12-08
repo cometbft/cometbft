@@ -418,9 +418,7 @@ func (bs *BlockStore) SaveBlock(block *types.Block, blockParts *types.PartSet, s
 		}
 	}(batch)
 
-	saveBlockPartsToBatch := blockParts.Count() > maxBlockPartsToBatch
-
-	if err := bs.saveBlockToBatch(block, blockParts, seenCommit, batch, saveBlockPartsToBatch); err != nil {
+	if err := bs.saveBlockToBatch(block, blockParts, seenCommit, batch); err != nil {
 		panic(err)
 	}
 
@@ -454,9 +452,7 @@ func (bs *BlockStore) SaveBlockWithExtendedCommit(block *types.Block, blockParts
 		}
 	}(batch)
 
-	saveBlockPartsToBatch := blockParts.Count() > maxBlockPartsToBatch
-
-	if err := bs.saveBlockToBatch(block, blockParts, seenExtendedCommit.ToCommit(), batch, saveBlockPartsToBatch); err != nil {
+	if err := bs.saveBlockToBatch(block, blockParts, seenExtendedCommit.ToCommit(), batch); err != nil {
 		panic(err)
 	}
 	height := block.Height
@@ -480,8 +476,7 @@ func (bs *BlockStore) saveBlockToBatch(
 	block *types.Block,
 	blockParts *types.PartSet,
 	seenCommit *types.Commit,
-	batch dbm.Batch,
-	saveBlockPartsToBatch bool) error {
+	batch dbm.Batch) error {
 
 	if block == nil {
 		panic("BlockStore can only save a non-nil block")
@@ -499,6 +494,10 @@ func (bs *BlockStore) saveBlockToBatch(
 	if height != seenCommit.Height {
 		return fmt.Errorf("BlockStore cannot save seen commit of a different height (block: %d, commit: %d)", height, seenCommit.Height)
 	}
+
+	// If the block is small, batch save the block parts. Otherwise, save the
+	// parts individually.
+	saveBlockPartsToBatch := blockParts.Count() <= maxBlockPartsToBatch
 
 	// Save block parts. This must be done before the block meta, since callers
 	// typically load the block meta first as an indication that the block exists

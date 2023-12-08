@@ -803,7 +803,7 @@ func TestPrepareProposalCountSerializationOverhead(t *testing.T) {
 
 	app := &abcimocks.Application{}
 	app.On("PrepareProposal", mock.Anything, mock.Anything).Return(abci.ResponsePrepareProposal{
-		Txs: txs.ToSliceOfBytes(),
+		Txs: types.Txs(txs).ToSliceOfBytes(),
 	}, nil)
 
 	cc := proxy.NewLocalClientCreator(app)

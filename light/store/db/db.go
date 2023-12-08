@@ -16,8 +16,8 @@ import (
 
 const (
 	// prefixes must be unique across all db's
-	prefixLightBlock = int64(0x0a)
-	prefixSize       = int64(0x0b)
+	prefixLightBlock = int64(11)
+	prefixSize       = int64(12)
 )
 
 type dbs struct {

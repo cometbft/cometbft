@@ -411,12 +411,7 @@ func (bs *BlockStore) SaveBlock(block *types.Block, blockParts *types.PartSet, s
 	}
 
 	batch := bs.db.NewBatch()
-	defer func(batch dbm.Batch) {
-		err := batch.Close()
-		if err != nil {
-			panic(err)
-		}
-	}(batch)
+	defer batch.Close()
 
 	if err := bs.saveBlockToBatch(block, blockParts, seenCommit, batch); err != nil {
 		panic(err)
@@ -445,12 +440,7 @@ func (bs *BlockStore) SaveBlockWithExtendedCommit(block *types.Block, blockParts
 	}
 
 	batch := bs.db.NewBatch()
-	defer func(batch dbm.Batch) {
-		err := batch.Close()
-		if err != nil {
-			panic(err)
-		}
-	}(batch)
+	defer batch.Close()
 
 	if err := bs.saveBlockToBatch(block, blockParts, seenExtendedCommit.ToCommit(), batch); err != nil {
 		panic(err)

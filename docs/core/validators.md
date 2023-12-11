@@ -10,14 +10,13 @@ _votes_ which contain cryptographic signatures signed by each
 validator's private key.
 
 Some Proof-of-Stake consensus algorithms aim to create a "completely"
-decentralized system where all stakeholders (even those who are not
-always available online) participate in the committing of blocks.
-CometBFT has a different approach to block creation. Validators are
-expected to be online, and the set of validators is permissioned/curated
-by some external process. Proof-of-stake is not required, but can be
-implemented on top of CometBFT consensus. That is, validators may be
-required to post collateral on-chain, off-chain, or may not be required
-to post any collateral at all.
+decentralized system where all stakeholders (even those who are not always
+available online) participate in the committing of blocks. CometBFT has a
+different approach to block creation. Validators are expected to be online, and
+the set of validators is permissioned/curated by the ABCI application.
+Proof-of-stake is not required, but can be implemented on top of CometBFT
+consensus. That is, validators may be required to post collateral on-chain,
+off-chain, or may not be required to post any collateral at all.
 
 Validators have a cryptographic key-pair and an associated amount of
 "voting power". Voting power need not be the same.
@@ -27,7 +26,7 @@ Validators have a cryptographic key-pair and an associated amount of
 There are two ways to become validator.
 
 1. They can be pre-established in the [genesis state](./using-cometbft.md#genesis)
-2. The ABCI app responds to the EndBlock message with changes to the
+2. The ABCI app responds to the FinalizeBlock message with changes to the
    existing validator set.
 
 ## Setting up a Validator
@@ -100,16 +99,3 @@ More Information can be found at these links:
 Protecting a validator's consensus key is the most important factor to take in when designing your setup. The key that a validator is given upon creation of the node is called a consensus key, it has to be online at all times in order to vote on blocks. It is **not recommended** to merely hold your private key in the default json file (`priv_validator_key.json`). Fortunately, the [Interchain Foundation](https://interchain.io) has worked with a team to build a key management server for validators. You can find documentation on how to use it [here](https://github.com/iqlusioninc/tmkms), it is used extensively in production. You are not limited to using this tool, there are also [HSMs](https://safenet.gemalto.com/data-encryption/hardware-security-modules-hsms/), there is not a recommended HSM.
 
 Currently CometBFT uses [Ed25519](https://ed25519.cr.yp.to/) keys which are widely supported across the security sector and HSMs.
-
-## Committing a Block
-
-> **+2/3 is short for "more than 2/3"**
-
-A block is committed when +2/3 of the validator set sign
-[precommit votes](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/core/data_structures.md#vote)
-for that block at the same `round`.
-The +2/3 set of precommit votes is called a
-[commit](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/core/data_structures.md#commit).
-While any +2/3 set of precommits for the same block at the same height&round can serve as
-validation, the canonical commit is included in the next block (see
-[LastCommit](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/core/data_structures.md#block)).

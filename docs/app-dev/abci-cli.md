@@ -1,5 +1,5 @@
 ---
-order: 2
+order: 3
 ---
 
 # Using ABCI-CLI
@@ -62,6 +62,7 @@ The most important messages are `deliver_tx`, `check_tx`, and `commit`,
 but there are others for convenience, configuration, and information
 purposes.
 
+<<<<<<< HEAD
 We'll start a kvstore application, which was installed at the same time
 as `abci-cli` above. The kvstore just stores transactions in a merkle
 tree. Its code can be found
@@ -107,6 +108,12 @@ func cmdKVStore(cmd *cobra.Command, args []string) error {
 }
 
 ```
+=======
+We'll start a kvstore application, which was installed at the same time as
+`abci-cli` above. The kvstore just stores transactions in a Merkle tree. Its
+code can be found
+[here](https://github.com/cometbft/cometbft/blob/main/abci/example/kvstore/kvstore.go).
+>>>>>>> 9020ce234 (chore(docs): small improvements (#1781))
 
 Start the application by running:
 

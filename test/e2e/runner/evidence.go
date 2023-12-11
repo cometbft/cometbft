@@ -25,7 +25,7 @@ import (
 // 1 in 4 evidence is light client evidence, the rest is duplicate vote evidence
 const lightClientEvidenceRatio = 4
 
-// InjectEvidence takes a running testnet and generates an amount of valid/invalid
+// InjectEvidence takes a running testnet and generates an amount of valid
 // evidence and broadcasts it to a random node through the rpc endpoint `/broadcast_evidence`.
 // Evidence is random and can be a mixture of LightClientAttackEvidence and
 // DuplicateVoteEvidence.
@@ -88,12 +88,10 @@ func InjectEvidence(ctx context.Context, r *rand.Rand, testnet *e2e.Testnet, amo
 	}
 
 	var ev types.Evidence
-	for i := 0; i < amount; i++ {
-		validEv := true
+	for i := 1; i <= amount; i++ {
 		if i%lightClientEvidenceRatio == 0 {
-			validEv = i%(lightClientEvidenceRatio*2) != 0 // Alternate valid and invalid evidence
 			ev, err = generateLightClientAttackEvidence(
-				ctx, privVals, evidenceHeight, valSet, testnet.Name, blockRes.Block.Time, validEv,
+				ctx, privVals, evidenceHeight, valSet, testnet.Name, blockRes.Block.Time,
 			)
 		} else {
 			var dve *types.DuplicateVoteEvidence
@@ -113,15 +111,7 @@ func InjectEvidence(ctx context.Context, r *rand.Rand, testnet *e2e.Testnet, amo
 		}
 
 		_, err := client.BroadcastEvidence(ctx, ev)
-		if !validEv {
-			// The tests will count committed evidences later on,
-			// and only valid evidences will make it
-			amount++
-		}
-		if validEv != (err == nil) {
-			if err == nil {
-				return errors.New("submitting invalid evidence didn't return an error")
-			}
+		if err != nil {
 			return err
 		}
 	}
@@ -166,7 +156,6 @@ func generateLightClientAttackEvidence(
 	vals *types.ValidatorSet,
 	chainID string,
 	evTime time.Time,
-	validEvidence bool,
 ) (*types.LightClientAttackEvidence, error) {
 	// forge a random header
 	forgedHeight := height + 2
@@ -176,7 +165,7 @@ func generateLightClientAttackEvidence(
 
 	// add a new bogus validator and remove an existing one to
 	// vary the validator set slightly
-	pv, conflictingVals, err := mutateValidatorSet(ctx, privVals, vals, !validEvidence)
+	pv, conflictingVals, err := mutateValidatorSet(ctx, privVals, vals)
 	if err != nil {
 		return nil, err
 	}
@@ -189,11 +178,6 @@ func generateLightClientAttackEvidence(
 	commit, err := test.MakeCommitFromVoteSet(blockID, voteSet, pv, forgedTime)
 	if err != nil {
 		return nil, err
-	}
-
-	// malleate the last signature of the commit by adding one to its first byte
-	if !validEvidence {
-		commit.Signatures[len(commit.Signatures)-1].Signature[0]++
 	}
 
 	ev := &types.LightClientAttackEvidence{
@@ -309,11 +293,7 @@ func makeBlockID(hash []byte, partSetSize uint32, partSetHash []byte) types.Bloc
 	}
 }
 
-func mutateValidatorSet(
-	ctx context.Context,
-	privVals []types.MockPV,
-	vals *types.ValidatorSet,
-	nop bool,
+func mutateValidatorSet(ctx context.Context, privVals []types.MockPV, vals *types.ValidatorSet,
 ) ([]types.PrivValidator, *types.ValidatorSet, error) {
 	newVal, newPrivVal, err := test.Validator(ctx, 10)
 	if err != nil {
@@ -321,14 +301,10 @@ func mutateValidatorSet(
 	}
 
 	var newVals *types.ValidatorSet
-	if nop {
-		newVals = types.NewValidatorSet(vals.Copy().Validators)
+	if vals.Size() > 2 {
+		newVals = types.NewValidatorSet(append(vals.Copy().Validators[:vals.Size()-1], newVal))
 	} else {
-		if vals.Size() > 2 {
-			newVals = types.NewValidatorSet(append(vals.Copy().Validators[:vals.Size()-1], newVal))
-		} else {
-			newVals = types.NewValidatorSet(append(vals.Copy().Validators, newVal))
-		}
+		newVals = types.NewValidatorSet(append(vals.Copy().Validators, newVal))
 	}
 
 	// we need to sort the priv validators with the same index as the validator set

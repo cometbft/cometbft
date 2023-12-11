@@ -47,7 +47,7 @@ require (
 	github.com/cometbft/cometbft-db v0.9.1
 	github.com/cometbft/cometbft/api v0.0.0
 	github.com/cosmos/gogoproto v1.4.11
-	github.com/go-git/go-git/v5 v5.10.1
+	github.com/go-git/go-git/v5 v5.11.0
 	github.com/goccmack/goutil v1.2.3
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/google/uuid v1.4.0

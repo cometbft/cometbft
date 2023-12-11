@@ -171,7 +171,7 @@ func getSplitPoint(k int) { ... }
 func MerkleRoot(items [][]byte) []byte{
  switch len(items) {
  case 0:
-  return empthHash()
+  return emptyHash()
  case 1:
   return leafHash(items[0])
  default:

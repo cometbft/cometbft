@@ -631,7 +631,7 @@ What happens in reality is, however, a little bit different:
 #1 block - Bob
 #2 block - Bob
 #3 block - Bob
-#1 block - Alice
+#4 block - Alice
 ```
 
 That's because Bob is too fast at proposing blocks. This leaves Alice very

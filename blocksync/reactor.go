@@ -454,7 +454,7 @@ FOR_LOOP:
 			// first.Hash() doesn't verify the tx contents, so MakePartSet() is
 			// currently necessary.
 			// TODO(sergio): Should we also validate against the extended commit?
-			err = state.Validators.VerifyCommitLight(
+			err = state.Validators.VerifyCommitLightAllSignatures(
 				chainID, firstID, first.Height, second.LastCommit)
 
 			if err == nil {

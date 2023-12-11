@@ -51,15 +51,6 @@ running:
 cometbft version
 ```
 
-## Run
-
-To start a one-node blockchain with a simple in-process application:
-
-```sh
-cometbft init
-cometbft node --proxy_app=kvstore
-```
-
 ## Reinstall
 
 If you already have CometBFT installed, and you make updates, simply

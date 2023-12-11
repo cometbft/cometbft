@@ -3,7 +3,7 @@ order: 1
 parent:
   title: CometBFT Quality Assurance
   description: This is a report on the process followed and results obtained when running v0.34.x on testnets
-  order: 2
+  order: 6
 ---
 
 # CometBFT Quality Assurance

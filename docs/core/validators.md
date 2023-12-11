@@ -99,19 +99,3 @@ More Information can be found at these links:
 Protecting a validator's consensus key is the most important factor to take in when designing your setup. The key that a validator is given upon creation of the node is called a consensus key, it has to be online at all times in order to vote on blocks. It is **not recommended** to merely hold your private key in the default json file (`priv_validator_key.json`). Fortunately, the [Interchain Foundation](https://interchain.io) has worked with a team to build a key management server for validators. You can find documentation on how to use it [here](https://github.com/iqlusioninc/tmkms), it is used extensively in production. You are not limited to using this tool, there are also [HSMs](https://safenet.gemalto.com/data-encryption/hardware-security-modules-hsms/), there is not a recommended HSM.
 
 Currently CometBFT uses [Ed25519](https://ed25519.cr.yp.to/) keys which are widely supported across the security sector and HSMs.
-<<<<<<< HEAD
-
-## Committing a Block
-
-> **+2/3 is short for "more than 2/3"**
-
-A block is committed when +2/3 of the validator set sign
-[precommit votes](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/core/data_structures.md#vote)
-for that block at the same `round`.
-The +2/3 set of precommit votes is called a
-[commit](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/core/data_structures.md#commit).
-While any +2/3 set of precommits for the same block at the same height&round can serve as
-validation, the canonical commit is included in the next block (see
-[LastCommit](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/core/data_structures.md#block)).
-=======
->>>>>>> 9020ce234 (chore(docs): small improvements (#1781))

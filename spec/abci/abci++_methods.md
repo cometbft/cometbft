@@ -104,15 +104,15 @@ title: Methods
 
     | Name      | Type                  | Description                                                                                                                                                                                                        | Field Number | Deterministic |
     |-----------|-----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|---------------|
-    | code      | uint32                | Response code.                                                                                                                                                                                                     | 1            | No            |
-    | log       | string                | The output of the application's logger.                                                                                                                                                                            | 3            | No            |
-    | info      | string                | Additional information.                                                                                                                                                                                            | 4            | No            |
-    | index     | int64                 | The index of the key in the tree.                                                                                                                                                                                  | 5            | No            |
-    | key       | bytes                 | The key of the matching data.                                                                                                                                                                                      | 6            | No            |
-    | value     | bytes                 | The value of the matching data.                                                                                                                                                                                    | 7            | No            |
-    | proof_ops | [ProofOps](#proofops) | Serialized proof for the value data, if requested, to be verified against the `app_hash` for the given Height.                                                                                                     | 8            | No            |
-    | height    | int64                 | The block height from which data was derived. Note that this is the height of the block containing the application's Merkle root hash, which represents the state as it was after committing the block at Height-1 | 9            | No            |
-    | codespace | string                | Namespace for the `code`.                                                                                                                                                                                          | 10           | No            |
+    | code      | uint32                | Response code.                                                                                                                                                                                                     | 1            | N/A           |
+    | log       | string                | The output of the application's logger.                                                                                                                                                                            | 3            | N/A           |
+    | info      | string                | Additional information.                                                                                                                                                                                            | 4            | N/A           |
+    | index     | int64                 | The index of the key in the tree.                                                                                                                                                                                  | 5            | N/A           |
+    | key       | bytes                 | The key of the matching data.                                                                                                                                                                                      | 6            | N/A           |
+    | value     | bytes                 | The value of the matching data.                                                                                                                                                                                    | 7            | N/A           |
+    | proof_ops | [ProofOps](#proofops) | Serialized proof for the value data, if requested, to be verified against the `app_hash` for the given Height.                                                                                                     | 8            | N/A           |
+    | height    | int64                 | The block height from which data was derived. Note that this is the height of the block containing the application's Merkle root hash, which represents the state as it was after committing the block at Height-1 | 9            | N/A           |
+    | codespace | string                | Namespace for the `code`.                                                                                                                                                                                          | 10           | N/A           |
 
 * **Usage**:
     * Query for data from the application at current or past height.
@@ -133,14 +133,14 @@ title: Methods
 
     | Name       | Type                                              | Description                                                          | Field Number | Deterministic |
     |------------|---------------------------------------------------|----------------------------------------------------------------------|--------------|---------------|
-    | code       | uint32                                            | Response code.                                                       | 1            | No            |
-    | data       | bytes                                             | Result bytes, if any.                                                | 2            | No            |
-    | log        | string                                            | The output of the application's logger.                              | 3            | No            |
-    | info       | string                                            | Additional information.                                              | 4            | No            |
-    | gas_wanted | int64                                             | Amount of gas requested for transaction.                             | 5            | No            |
-    | gas_used   | int64                                             | Amount of gas consumed by transaction.                               | 6            | No            |
-    | events     | repeated [Event](abci++_basic_concepts.md#events) | Type & Key-Value events for indexing transactions (e.g. by account). | 7            | No            |
-    | codespace  | string                                            | Namespace for the `code`.                                            | 8            | No            |
+    | code       | uint32                                            | Response code.                                                       | 1            | N/A           |
+    | data       | bytes                                             | Result bytes, if any.                                                | 2            | N/A           |
+    | log        | string                                            | The output of the application's logger.                              | 3            | N/A           |
+    | info       | string                                            | Additional information.                                              | 4            | N/A           |
+    | gas_wanted | int64                                             | Amount of gas requested for transaction.                             | 5            | N/A           |
+    | gas_used   | int64                                             | Amount of gas consumed by transaction.                               | 6            | N/A           |
+    | events     | repeated [Event](abci++_basic_concepts.md#events) | Type & Key-Value events for indexing transactions (e.g. by account). | 7            | N/A           |
+    | codespace  | string                                            | Namespace for the `code`.                                            | 8            | N/A           |
 
 * **Usage**:
 
@@ -194,7 +194,7 @@ title: Methods
 
     | Name      | Type                           | Description                    | Field Number | Deterministic |
     |-----------|--------------------------------|--------------------------------|--------------|---------------|
-    | snapshots | repeated [Snapshot](#snapshot) | List of local state snapshots. | 1            | No            |
+    | snapshots | repeated [Snapshot](#snapshot) | List of local state snapshots. | 1            | N/A           |
 
 * **Usage**:
     * Used during state sync to discover available snapshots on peers.
@@ -214,7 +214,7 @@ title: Methods
 
     | Name  | Type  | Description                                                                                                                                            | Field Number | Deterministic |
     |-------|-------|--------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|---------------|
-    | chunk | bytes | The binary chunk contents, in an arbitrary format. Chunk messages cannot be larger than 16 MB _including metadata_, so 10 MB is a good starting point. | 1            | No            |
+    | chunk | bytes | The binary chunk contents, in an arbitrary format. Chunk messages cannot be larger than 16 MB _including metadata_, so 10 MB is a good starting point. | 1            | N/A           |
 
 * **Usage**:
     * Used during state sync to retrieve snapshot chunks from peers.
@@ -232,7 +232,7 @@ title: Methods
 
     | Name   | Type              | Description                       | Field Number | Deterministic |
     |--------|-------------------|-----------------------------------|--------------|---------------|
-    | result | [Result](#result) | The result of the snapshot offer. | 1            | No            |
+    | result | [Result](#result) | The result of the snapshot offer. | 1            | N/A           |
 
 #### Result
 
@@ -273,9 +273,9 @@ title: Methods
 
     | Name           | Type                | Description                                                                                                                                                                                                                             | Field Number | Deterministic |
     |----------------|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|---------------|
-    | result         | Result  (see below) | The result of applying this chunk.                                                                                                                                                                                                      | 1            | No            |
-    | refetch_chunks | repeated uint32     | Refetch and reapply the given chunks, regardless of `result`. Only the listed chunks will be refetched, and reapplied in sequential order.                                                                                              | 2            | No            |
-    | reject_senders | repeated string     | Reject the given P2P senders, regardless of `Result`. Any chunks already applied will not be refetched unless explicitly requested, but queued chunks from these senders will be discarded, and new chunks or other snapshots rejected. | 3            | No            |
+    | result         | Result  (see below) | The result of applying this chunk.                                                                                                                                                                                                      | 1            | N/A           |
+    | refetch_chunks | repeated uint32     | Refetch and reapply the given chunks, regardless of `result`. Only the listed chunks will be refetched, and reapplied in sequential order.                                                                                              | 2            | N/A           |
+    | reject_senders | repeated string     | Reject the given P2P senders, regardless of `Result`. Any chunks already applied will not be refetched unless explicitly requested, but queued chunks from these senders will be discarded, and new chunks or other snapshots rejected. | 3            | N/A           |
 
 ```proto
   enum Result {
@@ -761,7 +761,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
     | Name | Type                         | Description                                                                                                                                                                                                                  | Field Number | Deterministic |
     |------|------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|---------------|
-    | ops  | repeated [ProofOp](#proofop) | List of chained Merkle proofs, of possibly different types. The Merkle root of one op is the value being proven in the next op. The Merkle root of the final op should equal the ultimate root hash being verified against.. | 1            | No            |
+    | ops  | repeated [ProofOp](#proofop) | List of chained Merkle proofs, of possibly different types. The Merkle root of one op is the value being proven in the next op. The Merkle root of the final op should equal the ultimate root hash being verified against.. | 1            | N/A           |
 
 ### ProofOp
 
@@ -769,9 +769,9 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
     | Name | Type   | Description                                    | Field Number | Deterministic |
     |------|--------|------------------------------------------------|--------------|---------------|
-    | type | string | Type of Merkle proof and how it's encoded.     | 1            | No            |
-    | key  | bytes  | Key in the Merkle tree that this proof is for. | 2            | No            |
-    | data | bytes  | Encoded Merkle proof for the key.              | 3            | No            |
+    | type | string | Type of Merkle proof and how it's encoded.     | 1            | N/A           |
+    | key  | bytes  | Key in the Merkle tree that this proof is for. | 2            | N/A           |
+    | data | bytes  | Encoded Merkle proof for the key.              | 3            | N/A           |
 
 ### Snapshot
 

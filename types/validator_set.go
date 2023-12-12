@@ -762,8 +762,7 @@ func (vals *ValidatorSet) verifyCommitLightInternal(
 	}
 
 	talliedVotingPower := int64(0)
-	totalVotingPower := vals.TotalVotingPower()
-	votingPowerNeeded := totalVotingPower * 2 / 3
+	votingPowerNeeded := vals.TotalVotingPower() * 2 / 3
 	for idx, commitSig := range commit.Signatures {
 		// No need to verify absent or nil votes if not counting all signatures,
 		// but need to verify nil votes if counting all signatures.
@@ -843,8 +842,7 @@ func (vals *ValidatorSet) verifyCommitLightTrustingInternal(
 	)
 
 	// Safely calculate voting power needed.
-	totalVotingPower := vals.TotalVotingPower()
-	totalVotingPowerMulByNumerator, overflow := safeMul(totalVotingPower, int64(trustLevel.Numerator))
+	totalVotingPowerMulByNumerator, overflow := safeMul(vals.TotalVotingPower(), int64(trustLevel.Numerator))
 	if overflow {
 		return errors.New("int64 overflow while calculating voting power needed. please provide smaller trustLevel numerator")
 	}

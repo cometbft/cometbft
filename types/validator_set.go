@@ -717,10 +717,36 @@ func (vals *ValidatorSet) VerifyCommit(chainID string, blockID BlockID,
 
 // VerifyCommitLight verifies +2/3 of the set had signed the given commit.
 //
-// This method is primarily used by the light client and does not check all the
+// This method is primarily used by the light client and does NOT check all the
 // signatures.
-func (vals *ValidatorSet) VerifyCommitLight(chainID string, blockID BlockID,
-	height int64, commit *Commit) error {
+func (vals *ValidatorSet) VerifyCommitLight(
+	chainID string,
+	blockID BlockID,
+	height int64,
+	commit *Commit,
+) error {
+	return vals.verifyCommitLightInternal(chainID, blockID, height, commit, false)
+}
+
+// VerifyCommitLightAllSignatures verifies +2/3 of the set had signed the given commit.
+//
+// This method DOES check all the signatures.
+func (vals *ValidatorSet) VerifyCommitLightAllSignatures(
+	chainID string,
+	blockID BlockID,
+	height int64,
+	commit *Commit,
+) error {
+	return vals.verifyCommitLightInternal(chainID, blockID, height, commit, true)
+}
+
+func (vals *ValidatorSet) verifyCommitLightInternal(
+	chainID string,
+	blockID BlockID,
+	height int64,
+	commit *Commit,
+	countAllSignatures bool,
+) error {
 
 	if vals.Size() != len(commit.Signatures) {
 		return NewErrInvalidCommitSignatures(vals.Size(), len(commit.Signatures))
@@ -736,10 +762,12 @@ func (vals *ValidatorSet) VerifyCommitLight(chainID string, blockID BlockID,
 	}
 
 	talliedVotingPower := int64(0)
-	votingPowerNeeded := vals.TotalVotingPower() * 2 / 3
+	totalVotingPower := vals.TotalVotingPower()
+	votingPowerNeeded := totalVotingPower * 2 / 3
 	for idx, commitSig := range commit.Signatures {
-		// No need to verify absent or nil votes.
-		if !commitSig.ForBlock() {
+		// No need to verify absent or nil votes if not counting all signatures,
+		// but need to verify nil votes if counting all signatures.
+		if !countAllSignatures && !commitSig.ForBlock() || countAllSignatures && commitSig.Absent() {
 			continue
 		}
 
@@ -756,11 +784,14 @@ func (vals *ValidatorSet) VerifyCommitLight(chainID string, blockID BlockID,
 		talliedVotingPower += val.VotingPower
 
 		// return as soon as +2/3 of the signatures are verified
-		if talliedVotingPower > votingPowerNeeded {
+		if !countAllSignatures && talliedVotingPower > votingPowerNeeded {
 			return nil
 		}
 	}
 
+	if countAllSignatures && talliedVotingPower > votingPowerNeeded {
+		return nil
+	}
 	return ErrNotEnoughVotingPowerSigned{Got: talliedVotingPower, Needed: votingPowerNeeded}
 }
 
@@ -770,9 +801,37 @@ func (vals *ValidatorSet) VerifyCommitLight(chainID string, blockID BlockID,
 // NOTE the given validators do not necessarily correspond to the validator set
 // for this commit, but there may be some intersection.
 //
-// This method is primarily used by the light client and does not check all the
+// This method is primarily used by the light client and does NOT check all the
 // signatures.
-func (vals *ValidatorSet) VerifyCommitLightTrusting(chainID string, commit *Commit, trustLevel cmtmath.Fraction) error {
+func (vals *ValidatorSet) VerifyCommitLightTrusting(
+	chainID string,
+	commit *Commit,
+	trustLevel cmtmath.Fraction,
+) error {
+	return vals.verifyCommitLightTrustingInternal(chainID, commit, trustLevel, false)
+}
+
+// VerifyCommitLightTrustingAllSignatures verifies that trustLevel of the validator
+// set signed this commit.
+//
+// NOTE the given validators do not necessarily correspond to the validator set
+// for this commit, but there may be some intersection.
+//
+// This method DOES check all the signatures.
+func (vals *ValidatorSet) VerifyCommitLightTrustingAllSignatures(
+	chainID string,
+	commit *Commit,
+	trustLevel cmtmath.Fraction,
+) error {
+	return vals.verifyCommitLightTrustingInternal(chainID, commit, trustLevel, true)
+}
+
+func (vals *ValidatorSet) verifyCommitLightTrustingInternal(
+	chainID string,
+	commit *Commit,
+	trustLevel cmtmath.Fraction,
+	countAllSignatures bool,
+) error {
 	// sanity check
 	if trustLevel.Denominator == 0 {
 		return errors.New("trustLevel has zero Denominator")
@@ -784,15 +843,17 @@ func (vals *ValidatorSet) VerifyCommitLightTrusting(chainID string, commit *Comm
 	)
 
 	// Safely calculate voting power needed.
-	totalVotingPowerMulByNumerator, overflow := safeMul(vals.TotalVotingPower(), int64(trustLevel.Numerator))
+	totalVotingPower := vals.TotalVotingPower()
+	totalVotingPowerMulByNumerator, overflow := safeMul(totalVotingPower, int64(trustLevel.Numerator))
 	if overflow {
 		return errors.New("int64 overflow while calculating voting power needed. please provide smaller trustLevel numerator")
 	}
 	votingPowerNeeded := totalVotingPowerMulByNumerator / int64(trustLevel.Denominator)
 
 	for idx, commitSig := range commit.Signatures {
-		// No need to verify absent or nil votes.
-		if !commitSig.ForBlock() {
+		// No need to verify absent or nil votes if not counting all signatures,
+		// but need to verify nil votes if counting all signatures.
+		if !countAllSignatures && !commitSig.ForBlock() || countAllSignatures && commitSig.Absent() {
 			continue
 		}
 
@@ -816,12 +877,14 @@ func (vals *ValidatorSet) VerifyCommitLightTrusting(chainID string, commit *Comm
 
 			talliedVotingPower += val.VotingPower
 
-			if talliedVotingPower > votingPowerNeeded {
+			if !countAllSignatures && talliedVotingPower > votingPowerNeeded {
 				return nil
 			}
 		}
 	}
-
+	if countAllSignatures && talliedVotingPower > votingPowerNeeded {
+		return nil
+	}
 	return ErrNotEnoughVotingPowerSigned{Got: talliedVotingPower, Needed: votingPowerNeeded}
 }
 

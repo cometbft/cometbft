@@ -13,7 +13,7 @@ Addresses:
 - [#2046](https://github.com/tendermint/tendermint/issues/2046)
 - [#2047](https://github.com/tendermint/tendermint/issues/2047)
 
-First iteraton in [#2067](https://github.com/tendermint/tendermint/issues/2067)
+First iteration in [#2067](https://github.com/tendermint/tendermint/issues/2067)
 
 ## Decision
 

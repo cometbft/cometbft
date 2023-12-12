@@ -46,7 +46,7 @@ but I don't really see this as an issue.
 
 If there is no error in encryption, Encrypt will return `algo_name || nonce || aead_ciphertext`.
 `algo_name` should be length prefixed, using standard varuint encoding.
-This will be binary data, but thats not a problem considering the nonce and ciphertext are also binary.
+This will be binary data, but that's not a problem considering the nonce and ciphertext are also binary.
 
 This solution requires a mapping from aead type to name.
 We can achieve this via reflection.

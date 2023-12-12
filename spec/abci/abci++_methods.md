@@ -453,7 +453,7 @@ the consensus algorithm will use it as proposal and will not call `PreparePropos
       `ProcessProposalResponse.status` MUST **exclusively** depend on the parameters passed in
       the `ProcessProposalRequest`, and the last committed Application state
       (see [Requirements](./abci++_app_requirements.md) section).
-    * Moreover, application implementors SHOULD always set `ProcessProposalResponse.status` to `ACCEPT`,
+    * Moreover, application implementers SHOULD always set `ProcessProposalResponse.status` to `ACCEPT`,
       unless they _really_ know what the potential liveness implications of returning `REJECT` are.
 
 #### When does CometBFT call "ProcessProposal" ?

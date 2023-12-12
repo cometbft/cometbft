@@ -97,7 +97,7 @@ data structure that the digital signature signed using the process's local data.
 2. Reordered all message fields to be in tag-sorted order.
 
 Tag-sorting top-level fields will place all fields of the same tag in a adjacent
-to eachother within the serialized representation.
+to each other within the serialized representation.
 
 3. Reordered the contents of all `repeated` fields to be in lexicographically sorted order.
 

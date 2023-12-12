@@ -273,7 +273,7 @@ message BlockCommittedRequest {
     optional tendermint.abci.FinalizeBlockResponse finalize_block_response = 2;
 }
 
-// BlockCommittedResponse is either empty upon succes, or returns one or more
+// BlockCommittedResponse is either empty upon success, or returns one or more
 // errors. Note that returning any errors here will cause CometBFT to crash.
 message BlockCommittedResponse {
     // If an error occurred during the companion's processing of the request.

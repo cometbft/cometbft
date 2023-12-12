@@ -8,7 +8,7 @@
 * 14-08-2020: Introduce light traces (listed now as an alternative approach)
 * 20-08-2020: Light client produces evidence when detected instead of passing to full node
 * 16-09-2020: Post-implementation revision
-* 15-03-2020: Ammends for the case of a forward lunatic attack
+* 15-03-2020: Amends for the case of a forward lunatic attack
 
 ### Glossary of Terms
 

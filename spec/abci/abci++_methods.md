@@ -131,14 +131,16 @@ title: Methods
 
 * **Response**:
 
-    | Name       | Type   | Description                                       | Field Number | Deterministic |
-    |------------|--------|---------------------------------------------------|--------------|---------------|
-    | code       | uint32 | Response code.                                    | 1            | No            |
-    | data       | bytes  | Result bytes, if any.                             | 2            | No            |
-    | gas_wanted | int64  | Amount of gas requested for transaction.          | 5            | No            |
-    | codespace  | string | Namespace for the `code`.                         | 8            | No            |
-    | sender     | string | The transaction's sender (e.g. the signer)        | 9            | No            |
-    | priority   | int64  | The transaction's priority (for mempool ordering) | 10           | No            |
+    | Name       | Type                                              | Description                                                          | Field Number | Deterministic |
+    |------------|---------------------------------------------------|----------------------------------------------------------------------|--------------|---------------|
+    | code       | uint32                                            | Response code.                                                       | 1            | No            |
+    | data       | bytes                                             | Result bytes, if any.                                                | 2            | No            |
+    | log        | string                                            | The output of the application's logger.                              | 3            | No            |
+    | info       | string                                            | Additional information.                                              | 4            | No            |
+    | gas_wanted | int64                                             | Amount of gas requested for transaction.                             | 5            | No            |
+    | gas_used   | int64                                             | Amount of gas consumed by transaction.                               | 6            | No            |
+    | events     | repeated [Event](abci++_basic_concepts.md#events) | Type & Key-Value events for indexing transactions (e.g. by account). | 7            | No            |
+    | codespace  | string                                            | Namespace for the `code`.                                            | 8            | No            |
 
 * **Usage**:
 

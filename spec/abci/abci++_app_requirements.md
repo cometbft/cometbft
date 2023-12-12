@@ -109,7 +109,7 @@ the bug from fulfilling Requirements 4 or 5 (effectively making those processes 
 In such a scenario, CometBFT's liveness cannot be guaranteed.
 Again, this is a problem in practice if most validators are running the same software, as they are likely
 to hit the bug at the same point. There is currently no clear solution to help with this situation, so
-the Application designers/implementors must proceed very carefully with the logic/implementation
+the Application designers/implementers must proceed very carefully with the logic/implementation
 of `ProcessProposal`. As a general rule `ProcessProposal` SHOULD always accept the block.
 
 According to the Tendermint consensus algorithm, currently adopted in CometBFT,

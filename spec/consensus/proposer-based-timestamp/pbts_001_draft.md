@@ -21,7 +21,7 @@ In CometBFT, the first version of how time is computed and stored in a block wor
 1. **Liveness.** The liveness of the protocol:
    1. does not depend on clock synchronization,
    1. depends on bounded message delays.
-1. **Relation to real time.** There is no clock synchronizaton, which implies that there is **no relation** between the computed block `time` and real time.
+1. **Relation to real time.** There is no clock synchronization, which implies that there is **no relation** between the computed block `time` and real time.
 1. **Aggregate signatures.** As the `precommit` messages contain the local times, all these `precommit` messages typically differ in the time field, which **prevents** the use of aggregate signatures.
 
 ## Suggested Proposer-Based Time

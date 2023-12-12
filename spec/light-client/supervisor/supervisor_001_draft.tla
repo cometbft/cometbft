@@ -67,5 +67,5 @@ InvEnoughPeers ==
 
 =============================================================================
 \* Modification History
-\* Last modified Sun Oct 18 11:48:45 CEST 2020 by widder
-\* Created Sun Oct 18 11:18:53 CEST 2020 by widder
+\* Last modified Sun Oct 18 11:48:45 CEST 2020 by wider
+\* Created Sun Oct 18 11:18:53 CEST 2020 by wider

@@ -8,7 +8,7 @@
  * Version 1. A preliminary specification.
 
  Zarko Milosevic, Igor Konnov, Informal Systems, 2019-2020.
- Ilina Stoilkovska, Josef Widder, Informal Systems, 2021.
+ Ilina Stoilkovska, Josef Wider, Informal Systems, 2021.
  *)
 
 EXTENDS Integers, FiniteSets

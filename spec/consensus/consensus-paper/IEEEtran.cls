@@ -125,7 +125,7 @@
 %    margins will be the same and the text will be horizontally centered. 
 %    For final submission to IEEE, authors should use US letter (8.5 X 11in)
 %    paper. Note that authors should ensure that all post-processing 
-%    (ps, pdf, etc.) uses the same paper specificiation as the .tex document.
+%    (ps, pdf, etc.) uses the same paper specification as the .tex document.
 %    Problems here are by far the number one reason for incorrect margins.
 %    IEEEtran will automatically set the default paper size under pdflatex 
 %    (without requiring a change to pdftex.cfg), so this issue is more
@@ -342,7 +342,7 @@
 
 % default to US letter paper, 10pt, twocolumn, one sided, final, journal
 \ExecuteOptions{letterpaper,10pt,twocolumn,oneside,final,journal}
-% overrride these defaults per user requests
+% override these defaults per user requests
 \ProcessOptions
 
 
@@ -1000,7 +1000,7 @@
 % \leftmargin, the spacing from the left margin of the main text to
 % the left of the main body of a list item is set by \list.
 % Hence this statement does nothing for lists.
-% But, quote and verse do use it for indention.
+% But, quote and verse do use it for indentation.
 \leftmargin         2em
 
 % we retain this stuff from the older IEEEtran.cls so that \list
@@ -1053,7 +1053,7 @@
 \def\labelenumiii{\theenumiii)} \def\theenumiii{\roman{enumiii}}
 
 % IEEE uses A) not A.
-\def\labelenumiv{\theenumiv)}   \def\theenumiv{\Alph{enumiv}}
+\def\labelenumiv{\theenumiv)}   \def\theenumiv{\Alpha{enumiv}}
 
 % exactly the same as in article.cls
 \def\p@enumii{\theenumi}
@@ -1077,7 +1077,7 @@
 % which ITEMIZED list labels are indented to the right
 % For The Journal of Lightwave Technology (JLT) and The Journal
 % on Selected Areas in Communications (JSAC), they tend to use
-% an indention equal to \parindent. For Transactions on Communications
+% an indentation equal to \parindent. For Transactions on Communications
 % they tend to indent ITEMIZED lists a little more--- 1.3\parindent.
 % We'll provide both values here for you so that you can choose 
 % which one you like in your document using a command such as:
@@ -1095,13 +1095,13 @@
 
 % This controls the default amount the enumerated list labels
 % are indented to the right.
-% Normally, this is the same as the paragraph indention
+% Normally, this is the same as the paragraph indentation
 \newdimen\IEEEelabelindent
 \IEEEelabelindent \parindent
 
 % This controls the default amount the description list labels
 % are indented to the right.
-% Normally, this is the same as the paragraph indention
+% Normally, this is the same as the paragraph indentation
 \newdimen\IEEEdlabelindent
 \IEEEdlabelindent \parindent
 
@@ -1121,7 +1121,7 @@
 % There may not be such a thing as correct "standard IEEE"
 % values. What IEEE actually does may depend on the specific
 % circumstances.
-% The first list level almost always has full indention.
+% The first list level almost always has full indentation.
 % The second levels I've seen have only 75% of the normal indentation
 % Three level or greater nestings are very rare. I am guessing
 % that they don't use any indentation.
@@ -1598,7 +1598,7 @@
 \else
 \def\thesection{\Roman{section}}                             % I
 % V1.7, \mbox prevents breaks around - 
-\def\thesubsection{\mbox{\thesection-\Alph{subsection}}}     % I-A
+\def\thesubsection{\mbox{\thesection-\Alpha{subsection}}}     % I-A
 % V1.7 use I-A1 format used by IEEE rather than I-A.1
 \def\thesubsubsection{\thesubsection\arabic{subsubsection}}  % I-A1
 \def\theparagraph{\thesubsubsection\alph{paragraph}}         % I-A1a
@@ -1629,7 +1629,7 @@
   \fi
 \else% not compsoc
   \def\thesectiondis{\thesection.}                   % I.
-  \def\thesubsectiondis{\Alph{subsection}.}          % B.
+  \def\thesubsectiondis{\Alpha{subsection}.}          % B.
   \def\thesubsubsectiondis{\arabic{subsubsection})}  % 3)
   \def\theparagraphdis{\alph{paragraph})}            % d)
 \fi
@@ -2359,7 +2359,7 @@ Using a default centering column instead}%
 \vrule width0pt height\dimen0 depth\dimen2\relax\fi}
 
 
-% creates an invisible strut, useable even outside \IEEEeqnarray
+% creates an invisible strut, usable even outside \IEEEeqnarray
 % if \IEEEvisiblestrutstrue, the strut will be visible and 0.2pt wide. 
 % usage: \IEEEstrut[height][depth][font size commands]
 % default is \IEEEstrut[0.7\normalbaselineskip][0.3\normalbaselineskip][\relax]
@@ -2469,7 +2469,7 @@ $$\@ignoretrue}
 \newif\if@IEEElastlinewassubequation%
 \@IEEElastlinewassubequationfalse
 
-% IEEEeqnarray uses a modifed \\ instead of the plain \cr to
+% IEEEeqnarray uses a modified \\ instead of the plain \cr to
 % end rows. This allows for things like \\*[vskip amount]
 % This "cr" macros are modified versions those for LaTeX2e's eqnarray
 % the {\ifnum0=`} braces must be kept away from the last column to avoid
@@ -2639,7 +2639,7 @@ $$\@ignoretrue}
 
 
 
-% IEEEeqnarraybox uses a modifed \\ instead of the plain \cr to
+% IEEEeqnarraybox uses a modified \\ instead of the plain \cr to
 % end rows. This allows for things like \\[vskip amount]
 % This "cr" macros are modified versions those for LaTeX2e's eqnarray
 % For IEEEeqnarraybox, \\* is the same as \\
@@ -3305,7 +3305,7 @@ between column types.}%
 \rule[-0.3\@IEEEtrantmpdimenA]{0pt}{\@IEEEtrantmpdimenA}}
 
 
-% blocks to hold the authors' names and affilations. 
+% blocks to hold the authors' names and affiliations. 
 % Makes formatting easy for conferences
 %
 % use real definitions in conference mode
@@ -3423,7 +3423,7 @@ between column types.}%
   \let\@makefnmark\relax% V1.7, must *really* kill footnotemark to remove all \textsuperscript spacing as well.
   \footnotesize%       equal spacing between thanks lines
   \footnotesep 0.7\baselineskip%see global setting of \footnotesep for more info
-  % V1.7 disable \thanks note indention for compsoc
+  % V1.7 disable \thanks note indentation for compsoc
   \@IEEEcompsoconly{\long\def\@makefntext##1{\parindent 1em\noindent\hbox{\@makefnmark}##1}}%
   \normalsize%
   \ifCLASSOPTIONpeerreview
@@ -4120,7 +4120,7 @@ between column types.}%
     \setcounter{paragraph}{0}%
     \gdef\thesection{A}%
     \gdef\thesectiondis{}% 
-    \gdef\thesubsection{\Alph{subsection}}%
+    \gdef\thesubsection{\Alpha{subsection}}%
     \gdef\@IEEEthmcounterinsection##1{A}
     \refstepcounter{section}% update the \ref counter
     \@ifmtarg{#1}{\@IEEEappendixsavesection*{\appendixname}%
@@ -4141,7 +4141,7 @@ between column types.}%
 % declare the individual appendices
 \def\appendices{\@IEEEsaveoriginalsectiononce\par
     % v1.6 keep hyperref's identifiers unique
-    \gdef\theHsection{Appendix.\Alph{section}}%
+    \gdef\theHsection{Appendix.\Alpha{section}}%
     % v1.6 adjust hyperref's string name for the section
     \xdef\Hy@chapapp{appendix}%
     \setcounter{section}{-1}% we want \refstepcounter to use section 0
@@ -4154,10 +4154,10 @@ between column types.}%
     \@IEEEcompsocconfonly{\gdef\thesectiondis{\Roman{section}.}}%
     \gdef\@IEEEthmcounterinsection##1{A\arabic{##1}}
     \else%
-    \gdef\thesection{\Alph{section}}%
-    \gdef\thesectiondis{\Alph{section}}%
-    \@IEEEcompsocconfonly{\gdef\thesectiondis{\Alph{section}.}}%
-    \gdef\@IEEEthmcounterinsection##1{\Alph{##1}}
+    \gdef\thesection{\Alpha{section}}%
+    \gdef\thesectiondis{\Alpha{section}}%
+    \@IEEEcompsocconfonly{\gdef\thesectiondis{\Alpha{section}.}}%
+    \gdef\@IEEEthmcounterinsection##1{\Alpha{##1}}
     \fi%
     \refstepcounter{section}% update the \ref counter
     \setcounter{section}{0}% NEXT \section will be the FIRST appendix
@@ -4381,7 +4381,7 @@ between column types.}%
 % if this page does not have enough space, break it and lets start
 % with a new one
 \@IEEEtranneedspace{\@IEEEtrantmpdimenA}{\relax}%
-% nominal spacer can strech, not shrink use 1fil so user can out stretch with \vfill
+% nominal spacer can stretch, not shrink use 1fil so user can out stretch with \vfill
 \vskip \@IEEEBIOskipN plus 1fil minus 0\baselineskip%
 % the default box for where the photo goes
 \def\@IEEEtempbiographybox{{\setlength{\fboxsep}{0pt}\framebox{%

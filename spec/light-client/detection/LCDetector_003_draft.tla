@@ -16,7 +16,7 @@
  *
  *  - the ratio of the faulty validators is set as the parameter.
  *
- * Igor Konnov, Josef Widder, 2020
+ * Igor Konnov, Josef Wider, 2020
  *)
 
 EXTENDS Integers

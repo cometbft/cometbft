@@ -242,7 +242,7 @@ FUNCTION {bbl.part}{ "pt." }
 FUNCTION {bbl.patent}{ "Patent" }
 FUNCTION {bbl.patentUS}{ "U.S." }
 FUNCTION {bbl.revision}{ "Rev." }
-FUNCTION {bbl.series}{ "ser." }
+FUNCTION {bbl.series}{ "set." }
 FUNCTION {bbl.standard}{ "Std." }
 FUNCTION {bbl.techrep}{ "Tech. Rep." }
 FUNCTION {bbl.mthesis}{ "Master's thesis" }
@@ -635,7 +635,7 @@ numnames
 % item.
 % 
 % "output" does check for the presence of a previous empty item and will
-% remove an empty item rather than outputing it.
+% remove an empty item rather than outputting it.
 % 
 % "output.warn" is like "output", but will issue a warning if it detects
 % an empty item.

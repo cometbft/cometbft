@@ -31,7 +31,7 @@ In the [Discussion](#discussion) section, subsection [Solutions Proposed](#solut
 worded abstracting away from implementation details, whilst subsections
 [Feasibility of the Proposed Solutions](#feasibility-of-the-proposed-solutions) and
 [Current Limitations and Possible Implementations](#current-limitations-and-possible-implementations)
-analize the viability of one of the proposed solutions in the context of Tendermint's architecture
+analyze the viability of one of the proposed solutions in the context of Tendermint's architecture
 based on reactors. Finally, [Formalization Work](#formalization-work) briefly discusses the work
 still needed demonstrate the correctness of the chosen solution.
 
@@ -149,7 +149,7 @@ discussions and need to be addressed. They are (roughly) ordered from easiest to
 
     If sets *valset<sub>h</sub>* and *valset<sub>h+1</sub>* are disjoint,
     more than *2n<sub>h</sub>/3* of validators in height *h* should
-    have actively participated in conensus in *h*. So, as of height *h*, only a minority of validators
+    have actively participated in consensus in *h*. So, as of height *h*, only a minority of validators
     in *h* can be lagging behind, although they could all lag behind from *h+1* on, as they are no
     longer validators, only full nodes. This situation falls under the assumptions of case (h) below.
 
@@ -369,7 +369,7 @@ These are the solutions proposed in discussions leading up to this RFC.
 
     At this point, *all* full nodes, including all validators in *valset<sub>h+1</sub>*, have advanced
     to height *h+1* believing they are late, and so, expecting the *hypothetical* leading majority of
-    validators in *valset<sub>h+1</sub>* to propose for *h+1*. As a result, the blockhain
+    validators in *valset<sub>h+1</sub>* to propose for *h+1*. As a result, the blockchain
     grinds to a halt.
     A (rather complex) ad-hoc mechanism would need to be carried out by node operators to roll
     back all validators to the precommit step of height *h*, round *r*, so that they can regenerate
@@ -538,7 +538,7 @@ However, there is a possibility to optimize the base implementation. Every time 
 we could prune from the block store all extended commits that are more than *d* heights in the past.
 Then, we need to handle two new situations, roughly equivalent to cases (h.1) and (h.2) described above.
 
-- (h.1) A node starts from scratch or recovers after a crash. In thisy case, we need to modify the
+- (h.1) A node starts from scratch or recovers after a crash. In this case, we need to modify the
     blocksync reactor's base implementation.
     - when receiving a `BlockResponse` message, it MUST accept that the extended commit set to `nil`,
     - when sending a `BlockResponse` message, if the block store contains the extended commit for that

@@ -13,7 +13,7 @@
 
 We currently use MaxTxs to reap txs from the mempool when proposing a block,
 but enforce MaxBytes when unmarshaling a block, so we could easily propose a
-block thats too large to be valid.
+block that's too large to be valid.
 
 We should just remove MaxTxs all together and stick with MaxBytes, and have a
 `mempool.ReapMaxBytes`.

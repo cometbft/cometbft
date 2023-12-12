@@ -164,7 +164,7 @@ TwoThirdsPrevotes(vr, v) ==
   Cardinality(PV) >= THRESHOLD2
 
 \* if a process sends a PREVOTE, then there are three possibilities:
-\* 1) the process is faulty, 2) the PREVOTE cotains Nil,
+\* 1) the process is faulty, 2) the PREVOTE contains Nil,
 \* 3) there is a proposal in an earlier (valid) round and two thirds of PREVOTES
 IfSentPrevoteThenReceivedProposalOrTwoThirds(r) ==
   \A mpv \in msgsPrevote[r]:
@@ -254,7 +254,7 @@ NoEquivocationByCorrect(r, msgs) ==
         \/ m.src /= p
         \/ m.id = v
 
-\* a proposer nevers sends two values
+\* a proposer never sends two values
 \* @type: ($round, $round -> Set($proposeMsg)) => Bool;
 ProposalsByProposer(r, msgs) ==
   \* if the proposer is not faulty, it sends only one value
@@ -273,7 +273,7 @@ AllNoEquivocationByCorrect ==
 \* @type: (Set({ src: $process, a })) => Set($process);
 Senders(M) == { m.src: m \in M }
 
-\* The final piece by Josef Widder:
+\* The final piece by Josef Wider:
 \* if T + 1 processes precommit on the same value in a round,
 \* then in the future rounds there are less than 2T + 1 prevotes for another value
 PrecommitsLockValue ==

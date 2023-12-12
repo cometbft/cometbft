@@ -4,7 +4,7 @@
 
 One of the biggest challenges this project faces is to proof that the
 implementations of the specifications are correct, much like we strive to
-formaly verify our alogrithms and protocols we should work towards high
+formaly verify our algorithms and protocols we should work towards high
 confidence about the correctness of our program code. One of those is the core
 of Tendermint - Consensus - which currently resides in the `consensus` package.
 Over time there has been high friction making changes to the package due to the
@@ -23,10 +23,10 @@ Addresses:
 ## Decision
 
 To remedy these issues we plan a gradual, non-invasive refactoring of the
-`consensus` package. Starting of by isolating the consensus alogrithm into
+`consensus` package. Starting of by isolating the consensus algorithm into
 a pure function and a finite state machine to address the most pressuring issue
 of lack of confidence. Doing so while leaving the rest of the package in tact
-and have follow-up optional changes to improve the sepration of concerns.
+and have follow-up optional changes to improve the separation of concerns.
 
 ### Implementation changes
 
@@ -111,7 +111,7 @@ func TestConsensusXXX(t *testing.T) {
 	)
 
 	for _, e := range events {
-		sate, msg = Consensus(e.event, state)
+		state, msg = Consensus(e.event, state)
 
 		// Test message expectation.
 		if msg != e.want.message {

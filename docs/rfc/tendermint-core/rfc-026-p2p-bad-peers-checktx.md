@@ -102,7 +102,7 @@ Any further mentions of `banning` will be agnostic to the actual way banning is 
 ### 1. What does banning a peer mean 
 
 Tendermint recognizes that peers can accept transactions into their mempool as valid but then when the state changes, they can become invalid. 
-There are also transactions that are received that could never have been valid (for examle due to misconfiguration on one node). 
+There are also transactions that are received that could never have been valid (for example due to misconfiguration on one node). 
 We thus differentiate two scenarios - a) where `CheckTx` fails due to reasons already 
 known and b) where `CheckTx` deems a transaction could never have been valid.
 
@@ -223,7 +223,7 @@ we also need to keep track of the `CheckTx` response code for each transaction. 
 If invalid transactions are kept in the cache, the check is ran only when a transaction is 
 seen for the first time. Afterwards, the  transaction is cached, to avoid running `CheckTx` on transactions already checked. 
 Thus when a transaction is received from a peer, if it is in the cache,
-`CheckTx` is not ran again, but the peers' ID is addded to the list of peers who sent this particular transaction.
+`CheckTx` is not ran again, but the peers' ID is added to the list of peers who sent this particular transaction.
 These transactions are rechecked once a block is committed to verify that they are still valid. 
 
 If invalid transactions are not kept in the cache, they can be resubmitted multiple times, and `CheckTx` will be executed on them upon submission. 

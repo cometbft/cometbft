@@ -164,7 +164,7 @@ covers some of the background and approach.
 
 While the changes are in this project are relatively rote, this will provide
 exposure to lots of different areas of the codebase as well as insight into
-how different areas of the codebase interact with eachother, as well as
+how different areas of the codebase interact with each other, as well as
 experience with the test suites and infrastructure.
 
 Implement more Expressive ABCI Applications
@@ -216,7 +216,7 @@ messages that might be (e.g. increment a counter for certain kinds of errors)
 
 One approach might be to look at various logging statements, particularly
 debug statements or errors that are logged but not returned, and see if
-they're convertable to counters or other metrics.
+they're convertible to counters or other metrics.
 
 Expose Metrics to Tests
 +++++++++++++++++++++++

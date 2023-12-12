@@ -507,7 +507,7 @@ func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 			// Done!
 			mem.logger.Debug("done rechecking txs")
 
-			// incase the recheck removed all txs
+			// in case the recheck removed all txs
 			if mem.Size() > 0 {
 				mem.notifyTxsAvailable()
 			}

@@ -101,7 +101,7 @@ type ABCIServiceClient interface {
 	PrepareProposal(ctx context.Context, in *PrepareProposalRequest, opts ...grpc.CallOption) (*PrepareProposalResponse, error)
 	// ProcessProposal validates a proposal.
 	ProcessProposal(ctx context.Context, in *ProcessProposalRequest, opts ...grpc.CallOption) (*ProcessProposalResponse, error)
-	// ExtendVote extends a vote with application-injected data (vote extentions).
+	// ExtendVote extends a vote with application-injected data (vote extensions).
 	ExtendVote(ctx context.Context, in *ExtendVoteRequest, opts ...grpc.CallOption) (*ExtendVoteResponse, error)
 	// VerifyVoteExtension verifies a vote extension.
 	VerifyVoteExtension(ctx context.Context, in *VerifyVoteExtensionRequest, opts ...grpc.CallOption) (*VerifyVoteExtensionResponse, error)
@@ -289,7 +289,7 @@ type ABCIServiceServer interface {
 	PrepareProposal(context.Context, *PrepareProposalRequest) (*PrepareProposalResponse, error)
 	// ProcessProposal validates a proposal.
 	ProcessProposal(context.Context, *ProcessProposalRequest) (*ProcessProposalResponse, error)
-	// ExtendVote extends a vote with application-injected data (vote extentions).
+	// ExtendVote extends a vote with application-injected data (vote extensions).
 	ExtendVote(context.Context, *ExtendVoteRequest) (*ExtendVoteResponse, error)
 	// VerifyVoteExtension verifies a vote extension.
 	VerifyVoteExtension(context.Context, *VerifyVoteExtensionRequest) (*VerifyVoteExtensionResponse, error)

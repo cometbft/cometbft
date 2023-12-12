@@ -36,7 +36,7 @@ Furthermore this allows for a new light client provider which offers the ability
 
 ## Detailed Design
 
-This section will focus first on the reverse sync (here we call it `backfill`) mechanism as a standalone protocol and then look to decribe how it integrates within the state sync reactor and how we define the new p2p light client provider.
+This section will focus first on the reverse sync (here we call it `backfill`) mechanism as a standalone protocol and then look to describe how it integrates within the state sync reactor and how we define the new p2p light client provider.
 
 ```go
 // Backfill fetches, verifies, and stores necessary history

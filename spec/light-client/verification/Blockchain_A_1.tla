@@ -35,7 +35,7 @@ BlockHeaders == [
   (* in the implementation, only the hashes of V and NextV are stored in a block,
      as V and NextV are stored in the application state *) 
   VS: SUBSET AllNodes,
-    \* the validators of this bloc. We store the validators instead of the hash.
+    \* the validators of this block. We store the validators instead of the hash.
   NextVS: SUBSET AllNodes
     \* the validators of the next block. We store the next validators instead of the hash.
 ]

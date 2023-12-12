@@ -163,7 +163,7 @@ func ParseMetricsDir(dir string, structName string) (TemplateData, error) {
 		return TemplateData{}, fmt.Errorf("multiple packages found in %s", dir)
 	}
 	if len(d) == 0 {
-		return TemplateData{}, fmt.Errorf("no go pacakges found in %s", dir)
+		return TemplateData{}, fmt.Errorf("no go packages found in %s", dir)
 	}
 
 	// Grab the package name.

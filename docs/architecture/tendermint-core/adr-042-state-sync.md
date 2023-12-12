@@ -15,7 +15,7 @@ facilitate setting up a new node as quickly as possible.
 ## Considerations
 Because Tendermint doesn't know anything about the application state,
 StateSync will broker messages between nodes and through
-the ABCI to an opaque applicaton. The implementation will have multiple
+the ABCI to an opaque application. The implementation will have multiple
 touch points on both the tendermint code base and ABCI application.
 
 * A StateSync reactor to facilitate peer communication - Tendermint
@@ -60,7 +60,7 @@ optimized for batch read/writes.
 Additionally the propsosals tend to vary on how they provide safety
 properties.
 
-**LightClient** Where a client can aquire the merkle root from the block
+**LightClient** Where a client can acquire the merkle root from the block
 headers synchronized from a trusted validator set. Subsets of the application state,
 called chunks can therefore be validated on receipt to ensure each chunk
 is part of the merkle root.
@@ -85,7 +85,7 @@ happens lazily and in a dynamic way: nodes request key ranges from their peers,
 and peers respond with some subset of the
 requested range and with notes on how to request the rest in parallel from other
 peers. Unlike chunk numbers, keys can be verified directly. And if some keys in the
-range are ommitted, proofs for the range will fail to verify.
+range are omitted, proofs for the range will fail to verify.
 This way a node can start by requesting the entire tree from one peer,
 and that peer can respond with say the first few keys, and the ranges to request
 from other peers.
@@ -100,7 +100,7 @@ design for tendermint was originally tracked in
 Warp Sync as implemented in OpenEthereum to rapidly
 download both blocks and state snapshots from peers. Data is carved into ~4MB
 chunks and snappy compressed. Hashes of snappy compressed chunks are stored in a
-manifest file which co-ordinates the state-sync. Obtaining a correct manifest
+manifest file which coordinates the state-sync. Obtaining a correct manifest
 file seems to require an honest majority of peers. This means you may not find
 out the state is incorrect until you download the whole thing and compare it
 with a verified block header.
@@ -134,12 +134,12 @@ State sync](https://github.com/tendermint/tendermint/pull/3243), The
 of the performance, and follow up implementation of [Warp
 Sync](http://github.com/tendermint/tendermint/pull/3594).
 
-#### Compairing Security Models
+#### Comparing Security Models
 There are several different security models which have been
 discussed/proposed in the past but generally fall into two categories.
 
 Light client validation: In which the node receiving data is expected to
-first perform a light client sync and have all the nessesary block
+first perform a light client sync and have all the necessary block
 headers. Within the trusted block header (trusted in terms of from a
 validator set subject to [weak
 subjectivity](https://github.com/tendermint/tendermint/pull/3795)) and
@@ -169,12 +169,12 @@ giving the block propser enough time to complete the snapshot
 asynchronousy.
 
 ## Proposal: Eager StateSync With Per Chunk Light Client Validation
-The conclusion after some concideration of the advantages/disadvances of
+The conclusion after some consideration of the advantages/disadvances of
 eager/lazy and different security models is to produce a state sync
 which eagerly produces snapshots and uses light client validation. This
 approach has the performance advantages of pre-computing efficient
 snapshots which can streamed to new nodes on demand using sequential IO.
-Secondly, by using light client validation we cna validate each chunk on
+Secondly, by using light client validation we can validate each chunk on
 receipt and avoid the potential eclipse attack of majority of peer based
 security.
 
@@ -214,7 +214,7 @@ will need implement:
 
 Proposed
 
-## Concequences
+## Consequences
 
 ### Neutral
 

@@ -120,7 +120,7 @@ func SubmitIBCProofOfFork(
     else {
         // the ibc component does not have the TrustedBlock and might
   // even be on yet a different branch. We have to compute a PoF
-  // that the ibc component can verifiy based on its current
+  // that the ibc component can verify based on its current
         // knowledge
   
         ibcLightBlock, lblock, _, result := commonRoot(lightStore, ibc, PoF.TrustedBlock)

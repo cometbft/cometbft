@@ -32,7 +32,7 @@ formalized in TLA+ and model checked.
 ## Issues that are addressed in this revision
 
 As it is part of the larger light node, its data structures and
-functions interact with the attack dectection functionality of the light
+functions interact with the attack detection functionality of the light
 client. As a result of the work on
 
 - [attack detection](https://github.com/tendermint/spec/pull/164) for light nodes

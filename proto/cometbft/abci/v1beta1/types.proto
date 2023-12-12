@@ -82,7 +82,7 @@ message RequestQuery {
   bool   prove  = 4;
 }
 
-// RequestBeginBlock indicates the beginning of commiting the block.
+// RequestBeginBlock indicates the beginning of committing the block.
 message RequestBeginBlock {
   bytes                         hash                 = 1;
   cometbft.types.v1beta1.Header header               = 2 [(gogoproto.nullable) = false];
@@ -246,7 +246,7 @@ message ResponseCheckTx {
   int64  priority  = 10;
 
   // mempool_error is set by CometBFT.
-  // ABCI applictions creating a ResponseCheckTX should not set mempool_error.
+  // ABCI applications creating a ResponseCheckTX should not set mempool_error.
   string mempool_error = 11;
 }
 

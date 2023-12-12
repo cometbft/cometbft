@@ -69,7 +69,7 @@ Currently, the mempool triggers a disconnect from a peer in the case of the foll
 
   - [Unknown message type](https://github.com/cometbft/cometbft/blob/main/mempool/reactor.go#L119)
 
-However, disconnecting from a peer is not the same as banning the peer. The p2p layer will close the connecton but 
+However, disconnecting from a peer is not the same as banning the peer. The p2p layer will close the connection but 
 the peer can reconnect without any penalty, and if the peer it is connecting to is configured to be its persistent peer, 
 a reconnect will be initiated
 from the node. 
@@ -110,7 +110,7 @@ Any further mentions of `banning` will be agnostic to the actual way banning is 
 ### 1. What does banning a peer mean 
 
 CometBFT recognizes that peers can accept transactions into their mempool as valid but then when the state changes, they can become invalid. 
-There are also transactions that are received that could never have been valid (for examle due to misconfiguration on one node). 
+There are also transactions that are received that could never have been valid (for example due to misconfiguration on one node). 
 We thus differentiate two scenarios - a) where `CheckTx` fails due to reasons already 
 known and b) where `CheckTx` deems a transaction could never have been valid.
 
@@ -241,7 +241,7 @@ we also need to keep track of the `CheckTx` response code for each transaction. 
 If invalid transactions are kept in the cache, the check is ran only when a transaction is 
 seen for the first time. Afterwards, the  transaction is cached, to avoid running `CheckTx` on transactions already checked. 
 Thus when a transaction is received from a peer, if it is in the cache,
-`CheckTx` is not ran again, but the peers' ID is addded to the list of peers who sent this particular transaction.
+`CheckTx` is not ran again, but the peers' ID is added to the list of peers who sent this particular transaction.
 These transactions are rechecked once a block is committed to verify that they are still valid. 
 
 If invalid transactions are not kept in the cache, they can be resubmitted multiple times, and `CheckTx` will be executed on them upon submission. 
@@ -445,7 +445,7 @@ The previous code snippets do not incroporate these in peer banning. If we adopt
 
 ### Github discussion summary
 
-The main concern that arose from the dicussion on github is whether banning peers based on the return code of `CheckTx` 
+The main concern that arose from the discussion on github is whether banning peers based on the return code of `CheckTx` 
 can lead to unwanted side effects, such as partitioning the network or influencing the behaviour of other nodes.  
 
 #### *Potential failure scenarios*
@@ -491,7 +491,7 @@ For completeness, and to make sure the information is not lost, there were a few
 *Keeping transactions failing `CheckTx` with a special code in the cache*
 
 Without any change to the  current logic, these transactions are kept in the cache, as long as they are not evicted. 
-Users argued for these transactions to be rare enough, that they can safely be discared in the case a peer is actually banned after sending them. 
+Users argued for these transactions to be rare enough, that they can safely be discarded in the case a peer is actually banned after sending them. 
 
 *Banning based on IP or nodeID*
 

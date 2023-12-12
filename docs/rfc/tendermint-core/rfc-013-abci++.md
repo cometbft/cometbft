@@ -182,7 +182,7 @@ In most configurations, we expect that the consensus engine and the application 
 This memory model conversion is typically considered negligible, as delay here is measured on the order of microseconds at most, whereas we face millisecond delays due to cryptography and network overheads.
 Thus we ignore the overhead in the case of linked libraries.
 
-In the case where the consensus engine and the application are ran in separate processes, and thus communicate with a form of Inter-process communication (IPC), the delays can easily become on the order of miliseconds based upon the data sent. Thus its important to consider whats happening here.
+In the case where the consensus engine and the application are ran in separate processes, and thus communicate with a form of Inter-process communication (IPC), the delays can easily become on the order of milliseconds based upon the data sent. Thus its important to consider what's happening here.
 We go through this phase by phase.
 
 ##### Prepare proposal IPC overhead

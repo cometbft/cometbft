@@ -69,8 +69,7 @@ func VerifyCommitLight(
 
 // VerifyCommitLightAllSignatures verifies +2/3 of the set had signed the given commit.
 //
-// This method is primarily used by the light client and DOES check all the
-// signatures.
+// This method DOES check all the signatures.
 func VerifyCommitLightAllSignatures(
 	chainID string,
 	vals *ValidatorSet,
@@ -137,8 +136,7 @@ func VerifyCommitLightTrusting(
 // NOTE the given validators do not necessarily correspond to the validator set
 // for this commit, but there may be some intersection.
 //
-// This method is primarily used by the light client and DOES check all the
-// signatures.
+// This method DOES check all the signatures.
 func VerifyCommitLightTrustingAllSignatures(
 	chainID string,
 	vals *ValidatorSet,

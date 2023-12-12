@@ -69,7 +69,7 @@ Currently, the mempool triggers a disconnect from a peer in the case of the foll
 
   - [Unknown message type](https://github.com/cometbft/cometbft/blob/main/mempool/reactor.go#L119)
 
-However, disconnecting from a peer is not the same as banning the peer. The p2p layer will close the connecton but 
+However, disconnecting from a peer is not the same as banning the peer. The p2p layer will close the connection but 
 the peer can reconnect without any penalty, and if the peer it is connecting to is configured to be its persistent peer, 
 a reconnect will be initiated
 from the node. 
@@ -491,7 +491,7 @@ For completeness, and to make sure the information is not lost, there were a few
 *Keeping transactions failing `CheckTx` with a special code in the cache*
 
 Without any change to the  current logic, these transactions are kept in the cache, as long as they are not evicted. 
-Users argued for these transactions to be rare enough, that they can safely be discared in the case a peer is actually banned after sending them. 
+Users argued for these transactions to be rare enough, that they can safely be discarded in the case a peer is actually banned after sending them. 
 
 *Banning based on IP or nodeID*
 

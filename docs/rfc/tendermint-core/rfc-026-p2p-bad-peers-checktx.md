@@ -64,7 +64,7 @@ Currently, the mempool triggers a disconnect from a peer in the case of the foll
 
   - [Unknown message type](https://github.com/tendermint/tendermint/blob/ff0f98892f24aac11e46aeff2b6d2c0ad816701a/mempool/v0/reactor.go#L184)
 
-However, disconnecting from a peer is not the same as banning the peer. The p2p layer will close the connecton but 
+However, disconnecting from a peer is not the same as banning the peer. The p2p layer will close the connection but 
 the peer can reconnect without any penalty, and if it as a persistent peer, a reconnect will be initiated
 from the node. 
 

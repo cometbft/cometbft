@@ -530,7 +530,7 @@ The two main drawbacks of this base implementation are:
 #### Possible Optimization: Pruning the Extended Commit History
 
 If we cannot switch from the consensus reactor back to the blocksync reactor we cannot prune the extended commit backlog in the block store without sacrificing the implementation's correctness. The asynchronous
-nature of our distributed system model allows a process to fall behing an arbitrary number of
+nature of our distributed system model allows a process to fall behind an arbitrary number of
 heights, and thus all extended commits need to be kept *just in case* a node that late had
 previously switched to the consensus reactor.
 

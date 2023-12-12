@@ -420,7 +420,7 @@ enum VerifyVoteExtensionStatus {
 
 // FinalizeBlockResponse contains the result of executing the block.
 message FinalizeBlockResponse {
-  // set of block events emmitted as part of executing the block
+  // set of block events emitted as part of executing the block
   repeated Event events = 1 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag)  = "events,omitempty"
@@ -528,7 +528,7 @@ message VoteInfo {
   reserved 2;  // signed_last_block
 }
 
-// ExtendedVoteInfo extends VoteInfo with the vote extentions (non-deterministic).
+// ExtendedVoteInfo extends VoteInfo with the vote extensions (non-deterministic).
 message ExtendedVoteInfo {
   // The validator that sent the vote.
   Validator validator = 1 [(gogoproto.nullable) = false];

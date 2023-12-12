@@ -53,7 +53,7 @@ as described below.
 The BlockVersion defines the core of the blockchain data structures and
 should change infrequently.
 
-The P2PVersion defines how peers connect and communicate with eachother - it's
+The P2PVersion defines how peers connect and communicate with each other - it's
 not part of the blockchain data structures, but defines the protocols used to build the
 blockchain. It may change gradually.
 
@@ -227,7 +227,7 @@ BlockVersion is included in both the Header and the NodeInfo.
 
 Changing BlockVersion should happen quite infrequently and ideally only for
 critical upgrades. For now, it is not encoded in ABCI, though it's always
-possible to use tags to signal an external process to co-ordinate an upgrade.
+possible to use tags to signal an external process to coordinate an upgrade.
 
 Note Ethereum has not had to make an upgrade like this (everything has been at state machine level, AFAIK).
 

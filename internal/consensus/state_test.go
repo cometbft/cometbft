@@ -710,7 +710,7 @@ func TestStateLockPOLUpdateLock(t *testing.T) {
 		Round 1:
 		Create a block, D and send a proposal for it to cs1
 		Send a prevote for D from each of the validators to cs1.
-		Send a precommit for nil from all of the validtors to cs1.
+		Send a precommit for nil from all of the validators to cs1.
 
 		Check that cs1 is now locked on the new block, D and no longer on the old block.
 	*/
@@ -808,7 +808,7 @@ func TestStateLockPOLRelock(t *testing.T) {
 		Round 1:
 		Create a proposal for block B, the same block from round 1.
 		Send a prevote for B from each of the validators to cs1.
-		Send a precommit for nil from all of the validtors to cs1.
+		Send a precommit for nil from all of the validators to cs1.
 
 		Check that cs1 updates its 'locked round' value to the current round.
 	*/
@@ -901,7 +901,7 @@ func TestStateLockPrevoteNilWhenLockedAndMissProposal(t *testing.T) {
 	/*
 		Round 1:
 		Send a prevote for nil from each of the validators to cs1.
-		Send a precommit for nil from all of the validtors to cs1.
+		Send a precommit for nil from all of the validators to cs1.
 
 		Check that cs1 prevotes nil instead of its locked block, but ensure
 		that it maintains its locked block.
@@ -987,7 +987,7 @@ func TestStateLockPrevoteNilWhenLockedAndDifferentProposal(t *testing.T) {
 		Round 1:
 		Create a proposal for a new block.
 		Send a prevote for nil from each of the validators to cs1.
-		Send a precommit for nil from all of the validtors to cs1.
+		Send a precommit for nil from all of the validators to cs1.
 
 		Check that cs1 prevotes nil instead of its locked block, but ensure
 		that it maintains its locked block.
@@ -1053,7 +1053,7 @@ func TestStateLockPOLDoesNotUnlock(t *testing.T) {
 		Round 0:
 		Create a block, B
 		Send a prevote for B from each of the validators to `cs1`.
-		Send a precommit for B from one of the validtors to `cs1`.
+		Send a precommit for B from one of the validators to `cs1`.
 
 		This ensures that cs1 will lock on B in this round.
 	*/
@@ -1164,7 +1164,7 @@ func TestStateLockPOLDoesNotUnlock(t *testing.T) {
 }
 
 // TestStateLockMissingProposalWhenPOLSeenDoesNotUnlock tests that observing
-// a two thirds majority for a block does not cause a validator to upate its lock on the
+// a two thirds majority for a block does not cause a validator to update its lock on the
 // new block if a proposal was not seen for that block.
 func TestStateLockMissingProposalWhenPOLSeenDoesNotUpdateLock(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -1249,7 +1249,7 @@ func TestStateLockMissingProposalWhenPOLSeenDoesNotUpdateLock(t *testing.T) {
 
 // TestStateLockMissingProposalWhenPOLForLockedBlock tests that observing
 // a two thirds majority for a block that matches the validator's locked block
-// causes a validator to upate its lock round and Precommit the locked block.
+// causes a validator to update its lock round and Precommit the locked block.
 func TestStateLockMissingProposalWhenPOLForLockedBlock(t *testing.T) {
 	cs1, vss := randState(4)
 	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
@@ -1457,7 +1457,7 @@ func TestStateLockPOLSafety1(t *testing.T) {
 
 	ensureNewRound(newRoundCh, height, round)
 
-	// XXX: this isnt guaranteed to get there before the timeoutPropose ...
+	// XXX: this isn't guaranteed to get there before the timeoutPropose ...
 	if err := cs1.SetProposalAndBlock(prop, propBlock, propBlockParts, "some peer"); err != nil {
 		t.Fatal(err)
 	}
@@ -1609,7 +1609,7 @@ func TestStateLockPOLSafety2(t *testing.T) {
 	ensureNewRound(newRoundCh, height, round)
 	t.Log("### ONTO Round 2")
 	/*Round2
-	// now we see the polka from round 1, but we shouldnt unlock
+	// now we see the polka from round 1, but we shouldn't unlock
 	*/
 	ensureNewProposal(proposalCh, height, round)
 
@@ -1678,7 +1678,7 @@ func TestStatePrevotePOLFromPreviousRound(t *testing.T) {
 		Round 1:
 		Create a block, D but do not send a proposal for it to cs1.
 		Send a prevote for D from each of the validators to cs1 so that cs1 sees a POL.
-		Send a precommit for nil from all of the validtors to cs1.
+		Send a precommit for nil from all of the validators to cs1.
 
 		cs1 has now seen greater than 2/3 of the voting power prevote D in this round
 		but cs1 did not see the proposal for D in this round so it will not prevote or precommit it.
@@ -2940,7 +2940,7 @@ func TestStateHalt1(t *testing.T) {
 	validatePrecommit(t, cs1, round, round, vss[0], propBlock.Hash(), propBlock.Hash())
 
 	// add precommits from the rest
-	signAddVotes(cs1, types.PrecommitType, nil, types.PartSetHeader{}, true, vs2) // didnt receive proposal
+	signAddVotes(cs1, types.PrecommitType, nil, types.PartSetHeader{}, true, vs2) // didn't receive proposal
 	signAddVotes(cs1, types.PrecommitType, propBlock.Hash(), propBlockParts.Header(), true, vs3)
 	// we receive this later, but vs3 might receive it earlier and with ours will go to commit!
 	precommit4 := signVote(vs4, types.PrecommitType, propBlock.Hash(), propBlockParts.Header(), true)

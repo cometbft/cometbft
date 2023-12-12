@@ -33,7 +33,7 @@ continue to be used in the consensus reactor and elsewhere.
 
 A primary question is what should be included in the `CommitSig` beyond the
 signature. One current constraint is that we must include a timestamp, since
-this is how we calculuate BFT time, though we may be able to change this [in the
+this is how we calculate BFT time, though we may be able to change this [in the
 future](https://github.com/tendermint/tendermint/issues/2840).
 
 Other concerns here include:
@@ -89,7 +89,7 @@ BFT time [can be
 mitigated](https://github.com/tendermint/tendermint/issues/2840#issuecomment-529122431).
 
 **ValidatorAddress**: we include it in the `CommitSig` for now. While this
-does increase the block size unecessarily (20-bytes per validator), it has some ergonomic and debugging advantages:
+does increase the block size unnecessarily (20-bytes per validator), it has some ergonomic and debugging advantages:
 
 - `Commit` contains everything necessary to reconstruct `[]Vote`, and doesn't depend on additional access to a `ValidatorSet`
 - Lite clients can check if they know the validators in a commit without

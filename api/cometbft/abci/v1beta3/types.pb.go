@@ -1498,7 +1498,7 @@ func (m *ResponseVerifyVoteExtension) GetStatus() ResponseVerifyVoteExtension_Ve
 
 // FinalizeBlockResponse contains the result of executing the block.
 type ResponseFinalizeBlock struct {
-	// set of block events emmitted as part of executing the block
+	// set of block events emitted as part of executing the block
 	Events []v1beta2.Event `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`
 	// the result of executing each transaction including the events
 	// the particular transaction emitted. This should match the order
@@ -1635,7 +1635,7 @@ func (m *VoteInfo) GetBlockIdFlag() v1beta11.BlockIDFlag {
 	return v1beta11.BlockIDFlagUnknown
 }
 
-// ExtendedVoteInfo extends VoteInfo with the vote extentions (non-deterministic).
+// ExtendedVoteInfo extends VoteInfo with the vote extensions (non-deterministic).
 type ExtendedVoteInfo struct {
 	// The validator that sent the vote.
 	Validator v1beta1.Validator `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator"`
@@ -2201,7 +2201,7 @@ type ABCIClient interface {
 	PrepareProposal(ctx context.Context, in *RequestPrepareProposal, opts ...grpc.CallOption) (*v1beta2.ResponsePrepareProposal, error)
 	// ProcessProposal validates a proposal.
 	ProcessProposal(ctx context.Context, in *RequestProcessProposal, opts ...grpc.CallOption) (*v1beta2.ResponseProcessProposal, error)
-	// ExtendVote extends a vote with application-injected data (vote extentions).
+	// ExtendVote extends a vote with application-injected data (vote extensions).
 	ExtendVote(ctx context.Context, in *RequestExtendVote, opts ...grpc.CallOption) (*ResponseExtendVote, error)
 	// VerifyVoteExtension verifies a vote extension.
 	VerifyVoteExtension(ctx context.Context, in *RequestVerifyVoteExtension, opts ...grpc.CallOption) (*ResponseVerifyVoteExtension, error)
@@ -2389,7 +2389,7 @@ type ABCIServer interface {
 	PrepareProposal(context.Context, *RequestPrepareProposal) (*v1beta2.ResponsePrepareProposal, error)
 	// ProcessProposal validates a proposal.
 	ProcessProposal(context.Context, *RequestProcessProposal) (*v1beta2.ResponseProcessProposal, error)
-	// ExtendVote extends a vote with application-injected data (vote extentions).
+	// ExtendVote extends a vote with application-injected data (vote extensions).
 	ExtendVote(context.Context, *RequestExtendVote) (*ResponseExtendVote, error)
 	// VerifyVoteExtension verifies a vote extension.
 	VerifyVoteExtension(context.Context, *RequestVerifyVoteExtension) (*ResponseVerifyVoteExtension, error)

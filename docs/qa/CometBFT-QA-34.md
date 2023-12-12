@@ -114,7 +114,7 @@ This section reports on the key Prometheus metrics extracted from the following 
 * Mixed network, 1/3 Tendermint Core `v0.34.26` and 2/3 running CometBFT: experiment with UUID starting with `fc5e`.
 * Mixed network, 2/3 Tendermint Core `v0.34.26` and 1/3 running CometBFT: experiment with UUID starting with `4759`.
 
-We make explicit comparisons between the baseline and the homogenous setups, but refrain from
+We make explicit comparisons between the baseline and the homogeneous setups, but refrain from
 commenting on the mixed network experiment unless they show some exceptional results.
 
 ### Mempool Size
@@ -236,7 +236,7 @@ The thick red dashed line show the rates' moving averages.
 
 #### Baseline
 
-The average number of blocks/minute oscilate between 10 and 40.
+The average number of blocks/minute oscillate between 10 and 40.
 
 ![heights](img34/baseline/block_rate_regular.png)
 
@@ -327,7 +327,7 @@ command, and their average value.
 
 #### CometBFT Homogeneous network
 
-The load in the homogenous network is, similarly to the baseline case, below 5 and, therefore, normal.
+The load in the homogeneous network is, similarly to the baseline case, below 5 and, therefore, normal.
 
 ![load1-homogeneous](img34/homogeneous/cpu.png)
 
@@ -358,7 +358,7 @@ As expected, the average plot also looks similar.
 The comparison of the baseline results and the homogeneous case show that both scenarios had similar numbers and are therefore equivalent.
 
 The mixed nodes cases show that networks operate normally with a mix of compatible Tendermint Core and CometBFT versions.
-Although not the main goal, a comparison of metric numbers with the homogenous case and the baseline scenarios show similar results and therefore we can conclude that mixing compatible Tendermint Core and CometBFT introduces not performance degradation.
+Although not the main goal, a comparison of metric numbers with the homogeneous case and the baseline scenarios show similar results and therefore we can conclude that mixing compatible Tendermint Core and CometBFT introduces not performance degradation.
 
 A conclusion of these tests is shown in the following table, along with the commit versions used in the experiments.
 

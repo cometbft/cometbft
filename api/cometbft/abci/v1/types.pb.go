@@ -2808,7 +2808,7 @@ func (m *VerifyVoteExtensionResponse) GetStatus() VerifyVoteExtensionStatus {
 
 // FinalizeBlockResponse contains the result of executing the block.
 type FinalizeBlockResponse struct {
-	// set of block events emmitted as part of executing the block
+	// set of block events emitted as part of executing the block
 	Events []Event `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`
 	// the result of executing each transaction including the events
 	// the particular transaction emitted. This should match the order
@@ -3455,7 +3455,7 @@ func (m *VoteInfo) GetBlockIdFlag() v1.BlockIDFlag {
 	return v1.BlockIDFlagUnknown
 }
 
-// ExtendedVoteInfo extends VoteInfo with the vote extentions (non-deterministic).
+// ExtendedVoteInfo extends VoteInfo with the vote extensions (non-deterministic).
 type ExtendedVoteInfo struct {
 	// The validator that sent the vote.
 	Validator Validator `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator"`

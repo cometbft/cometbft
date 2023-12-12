@@ -789,7 +789,7 @@ func (m *RequestQuery) GetProve() bool {
 	return false
 }
 
-// RequestBeginBlock indicates the beginning of commiting the block.
+// RequestBeginBlock indicates the beginning of committing the block.
 type RequestBeginBlock struct {
 	Hash                []byte         `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
 	Header              v1beta1.Header `protobuf:"bytes,2,opt,name=header,proto3" json:"header"`
@@ -2018,7 +2018,7 @@ type ResponseCheckTx struct {
 	Sender    string  `protobuf:"bytes,9,opt,name=sender,proto3" json:"sender,omitempty"`
 	Priority  int64   `protobuf:"varint,10,opt,name=priority,proto3" json:"priority,omitempty"`
 	// mempool_error is set by CometBFT.
-	// ABCI applictions creating a ResponseCheckTX should not set mempool_error.
+	// ABCI applications creating a ResponseCheckTX should not set mempool_error.
 	MempoolError string `protobuf:"bytes,11,opt,name=mempool_error,json=mempoolError,proto3" json:"mempool_error,omitempty"`
 }
 

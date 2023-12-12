@@ -1820,7 +1820,7 @@ func (cs *State) finalizeCommit(height int64) {
 	stateCopy := cs.state.Copy()
 
 	// Execute and commit the block, update and save the state, and update the mempool.
-	// NOTE The block.AppHash wont reflect these txs until the next block.
+	// NOTE The block.AppHash won't reflect these txs until the next block.
 	stateCopy, err := cs.blockExec.ApplyBlock(
 		stateCopy,
 		types.BlockID{
@@ -2184,7 +2184,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 
 		added, err = cs.LastCommit.AddVote(vote)
 		if !added {
-			// If the vote wasnt added but there's no error, its a duplicate vote
+			// If the vote wasn't added but there's no error, its a duplicate vote
 			if err == nil {
 				cs.metrics.DuplicateVote.Add(1)
 			}
@@ -2263,7 +2263,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 	if !added {
 		// Either duplicate, or error upon cs.Votes.AddByIndex()
 
-		// If the vote wasnt added but there's no error, its a duplicate vote
+		// If the vote wasn't added but there's no error, its a duplicate vote
 		if err == nil {
 			cs.metrics.DuplicateVote.Add(1)
 		}
@@ -2486,7 +2486,7 @@ func (cs *State) signAddVote(
 	cs.Logger.Debug("signed and pushed vote", "height", cs.Height, "round", cs.Round, "vote", vote)
 }
 
-// updatePrivValidatorPubKey get's the private validator public key and
+// updatePrivValidatorPubKey gets the private validator public key and
 // memoizes it. This func returns an error if the private validator is not
 // responding or responds with an error.
 func (cs *State) updatePrivValidatorPubKey() error {

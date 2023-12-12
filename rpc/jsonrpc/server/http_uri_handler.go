@@ -77,7 +77,7 @@ func makeHTTPHandler(rpcFunc *RPCFunc, logger log.Logger) func(http.ResponseWrit
 	}
 }
 
-// Covert an http query to a list of properly typed values.
+// Convert an http query to a list of properly typed values.
 // To be properly decoded the arg must be a concrete type from CometBFT (if its an interface).
 func httpParamsToArgs(rpcFunc *RPCFunc, r *http.Request) ([]reflect.Value, error) {
 	// skip types.Context

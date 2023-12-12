@@ -22,7 +22,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// EventDataRoundState is emmitted with each new round step.
+// EventDataRoundState is emitted with each new round step.
 type EventDataRoundState struct {
 	Height int64  `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
 	Round  int32  `protobuf:"varint,2,opt,name=round,proto3" json:"round,omitempty"`

@@ -40,11 +40,11 @@ title: Methods
 
     | Name                | Type   | Description                                         | Field Number | Deterministic |
     |---------------------|--------|-----------------------------------------------------|--------------|---------------|
-    | data                | string | Some arbitrary information                          | 1            | No            |
-    | version             | string | The application software semantic version           | 2            | No            |
-    | app_version         | uint64 | The application protocol version                    | 3            | No            |
-    | last_block_height   | int64  | Latest height for which the app persisted its state | 4            | No            |
-    | last_block_app_hash | bytes  | Latest AppHash returned by `FinalizeBlock`          | 5            | No            |
+    | data                | string | Some arbitrary information                          | 1            | N/A           |
+    | version             | string | The application software semantic version           | 2            | N/A           |
+    | app_version         | uint64 | The application protocol version                    | 3            | N/A           |
+    | last_block_height   | int64  | Latest height for which the app persisted its state | 4            | N/A           |
+    | last_block_app_hash | bytes  | Latest AppHash returned by `FinalizeBlock`          | 5            | N/A           |
 
 * **Usage**:
     * Return information about the application state.

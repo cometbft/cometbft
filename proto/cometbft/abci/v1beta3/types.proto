@@ -45,7 +45,7 @@ service ABCI {
   rpc PrepareProposal(v1beta3.RequestPrepareProposal) returns (v1beta2.ResponsePrepareProposal);
   // ProcessProposal validates a proposal.
   rpc ProcessProposal(RequestProcessProposal) returns (v1beta2.ResponseProcessProposal);
-  // ExtendVote extends a vote with application-injected data (vote extentions).
+  // ExtendVote extends a vote with application-injected data (vote extensions).
   rpc ExtendVote(RequestExtendVote) returns (ResponseExtendVote);
   // VerifyVoteExtension verifies a vote extension.
   rpc VerifyVoteExtension(RequestVerifyVoteExtension) returns (ResponseVerifyVoteExtension);
@@ -248,7 +248,7 @@ message ResponseVerifyVoteExtension {
 
 // FinalizeBlockResponse contains the result of executing the block.
 message ResponseFinalizeBlock {
-  // set of block events emmitted as part of executing the block
+  // set of block events emitted as part of executing the block
   repeated v1beta2.Event events = 1
       [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
   // the result of executing each transaction including the events
@@ -276,7 +276,7 @@ message VoteInfo {
   reserved 2;  // signed_last_block
 }
 
-// ExtendedVoteInfo extends VoteInfo with the vote extentions (non-deterministic).
+// ExtendedVoteInfo extends VoteInfo with the vote extensions (non-deterministic).
 message ExtendedVoteInfo {
   // The validator that sent the vote.
   v1beta1.Validator validator = 1 [(gogoproto.nullable) = false];

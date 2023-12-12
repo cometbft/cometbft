@@ -779,11 +779,11 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
     | Name     | Type   | Description                                                                                                                                                                     | Field Number | Deterministic |
     |----------|--------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|---------------|
-    | height   | uint64 | The height at which the snapshot was taken (after commit).                                                                                                                      | 1            | No            |
-    | format   | uint32 | An application-specific snapshot format, allowing applications to version their snapshot data format and make backwards-incompatible changes. CometBFT does not interpret this. | 2            | No            |
-    | chunks   | uint32 | The number of chunks in the snapshot. Must be at least 1 (even if empty).                                                                                                       | 3            | No            |
-    | hash     | bytes  | An arbitrary snapshot hash. Must be equal only for identical snapshots across nodes. CometBFT does not interpret the hash, it only compares them.                               | 4            | No            |
-    | metadata | bytes  | Arbitrary application metadata, for example chunk hashes or other verification data.                                                                                            | 5            | No            |
+    | height   | uint64 | The height at which the snapshot was taken (after commit).                                                                                                                      | 1            | N/A           |
+    | format   | uint32 | An application-specific snapshot format, allowing applications to version their snapshot data format and make backwards-incompatible changes. CometBFT does not interpret this. | 2            | N/A           |
+    | chunks   | uint32 | The number of chunks in the snapshot. Must be at least 1 (even if empty).                                                                                                       | 3            | N/A           |
+    | hash     | bytes  | An arbitrary snapshot hash. Must be equal only for identical snapshots across nodes. CometBFT does not interpret the hash, it only compares them.                               | 4            | N/A           |
+    | metadata | bytes  | Arbitrary application metadata, for example chunk hashes or other verification data.                                                                                            | 5            | N/A           |
 
 * **Usage**:
     * Used for state sync snapshots, see the [state sync section](../p2p/legacy-docs/messages/state-sync.md) for details.

@@ -17,7 +17,7 @@
  *  - Cosmos security model is violated
  *    (there are Byzantine validators who signed a conflicting block)
  *
- * Igor Konnov, Zarko Milosevic, Josef Wider, Informal Systems, 2020
+ * Igor Konnov, Zarko Milosevic, Josef Widder, Informal Systems, 2020
  *)
 
 

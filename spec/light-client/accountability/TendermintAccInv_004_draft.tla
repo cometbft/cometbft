@@ -273,7 +273,7 @@ AllNoEquivocationByCorrect ==
 \* @type: (Set({ src: $process, a })) => Set($process);
 Senders(M) == { m.src: m \in M }
 
-\* The final piece by Josef Wider:
+\* The final piece by Josef Widder:
 \* if T + 1 processes precommit on the same value in a round,
 \* then in the future rounds there are less than 2T + 1 prevotes for another value
 PrecommitsLockValue ==

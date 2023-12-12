@@ -45,12 +45,13 @@ including recovery runs, from the point of view of the Application.
 ```abnf
 start               = clean-start / recovery
 
-clean-start         = init-chain [state-sync] consensus-exec
+clean-start         = ( app-handshake / state-sync ) consensus-exec
+app-handshake       = info [init-chain]
 state-sync          = *state-sync-attempt success-sync info
 state-sync-attempt  = offer-snapshot *apply-chunk
 success-sync        = offer-snapshot 1*apply-chunk
 
-recovery            = info consensus-exec
+recovery            = app-handshake consensus-exec
 
 consensus-exec      = (inf)consensus-height
 consensus-height    = *consensus-round finalize-block commit
@@ -88,7 +89,7 @@ by the grammar above. Other reasons depend on the method in question:
 Finally, method `Info` is a special case. The method's purpose is three-fold, it can be used
 
 1. as part of handling an RPC call from an external client,
-2. as a handshake between CometBFT and the Application upon recovery to check whether any blocks need
+2. as a handshake between CometBFT and the Application to check whether any blocks need
    to be replayed, and
 3. at the end of _state-sync_ to verify that the correct state has been reached.
 
@@ -104,12 +105,21 @@ Let us now examine the grammar line by line, providing further details.
 >start               = clean-start / recovery
 >```
 
-* If the process is starting from scratch, CometBFT first calls `InitChain`, then it may optionally
-  start a _state-sync_ mechanism to catch up with other processes. Finally, it enters normal
-  consensus execution.
+* If the process is starting from scratch, depending on whether the _state-sync_ is enabled, it involves in the handshake 
+with the Application, or it starts the _state-sync_ mechanism to catch up with other processes. Finally, it enters 
+normal consensus execution.
 
 >```abnf
->clean-start         = init-chain [state-sync] consensus-exec
+>clean-start         = ( app-handshake / state-sync ) consensus-exec
+>```
+
+* If _state-sync_ is disabled, CometBFT engages in the handshake with the Application. In 
+the beginning of the handshake, CometBFT calls the `Info` method. The process does this to 
+know from which height it needs to replay decisions to the Application. In this case, since the 
+process starts from scratch, no blocks can be replayed, and the process calls `InitChain`. 
+
+>```abnf
+>app-handshake         = info [init_chain]
 >```
 
 * In _state-sync_ mode, CometBFT makes one or more attempts at synchronizing the Application's state.
@@ -129,12 +139,12 @@ Let us now examine the grammar line by line, providing further details.
 >success-sync        = offer-snapshot 1*apply-chunk
 >```
 
-* In recovery mode, CometBFT first calls `Info` to know from which height it needs to replay decisions
-  to the Application. After this, CometBFT enters consensus execution, first in replay mode and then
-  in normal mode.
+* If the process is recovering, the process first does the application handshake. In this case, the application may or may not have 
+some state stored. If the application has no state stored, the `InitChain` will be called. Otherwise, not. After this, CometBFT enters consensus 
+execution, first in replay mode and then in normal mode.
 
 >```abnf
->recovery            = info consensus-exec
+>recovery            = app-handshake consensus-exec
 >```
 
 * The non-terminal `consensus-exec` is a key point in this grammar. It is an infinite sequence of

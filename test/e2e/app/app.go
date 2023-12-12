@@ -125,9 +125,13 @@ func NewApplication(cfg *Config) (*Application, error) {
 		return nil, err
 	}
 
-	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
-	logger.Info("Application started!")
+	executionType := "recovery"
+	if state.height == 0 {
+		executionType = "clean-start"
+	}
 
+	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+	logger.Info("Application started %v execution!", executionType)
 	return &Application{
 		logger:    logger,
 		state:     state,

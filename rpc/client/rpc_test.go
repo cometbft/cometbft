@@ -328,8 +328,8 @@ func TestAppCalls(t *testing.T) {
 		// and we got a proof that works!
 		_pres, err := c.ABCIQueryWithOptions(context.Background(), "/key", k, client.ABCIQueryOptions{Prove: true})
 		require.NoError(err)
-		press := _pres.Response
-		assert.True(press.IsOK())
+		pres := _pres.Response
+		assert.True(pres.IsOK())
 
 		// XXX Test proof
 	}

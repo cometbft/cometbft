@@ -1122,9 +1122,9 @@
 % values. What IEEE actually does may depend on the specific
 % circumstances.
 % The first list level almost always has full indention.
-% The second levels I've seen have only 75% of the normal indention
+% The second levels I've seen have only 75% of the normal indentation
 % Three level or greater nestings are very rare. I am guessing
-% that they don't use any indention.
+% that they don't use any indentation.
 \def\IEEElabelindentfactori{1.0}   % almost always one
 \def\IEEElabelindentfactorii{0.75} % 0.0 or 1.0 may be used in some cases
 \def\IEEElabelindentfactoriii{0.0} % 0.75? 0.5? 0.0?

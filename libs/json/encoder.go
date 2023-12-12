@@ -28,7 +28,7 @@ func Marshal(v interface{}) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// MarshalIndent marshals the value as JSON, using the given prefix and indention.
+// MarshalIndent marshals the value as JSON, using the given prefix and indentation.
 func MarshalIndent(v interface{}, prefix, indent string) ([]byte, error) {
 	bz, err := Marshal(v)
 	if err != nil {

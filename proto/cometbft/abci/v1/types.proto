@@ -294,7 +294,7 @@ message CheckTxResponse {
   repeated Event events     = 7 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag)  = "events,omitempty"
-  ];
+  ];  // nondeterministic
   string codespace = 8;
 
   // These reserved fields were used till v0.37 by the priority mempool (now
@@ -424,7 +424,7 @@ message FinalizeBlockResponse {
   repeated Event events = 1 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag)  = "events,omitempty"
-  ];
+  ];  // nondeterministic
   // the result of executing each transaction including the events
   // the particular transaction emitted. This should match the order
   // of the transactions delivered in the block itself

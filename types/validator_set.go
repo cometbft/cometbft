@@ -766,7 +766,7 @@ func (vals *ValidatorSet) verifyCommitLightInternal(
 	for idx, commitSig := range commit.Signatures {
 		// No need to verify absent or nil votes if not counting all signatures,
 		// but need to verify nil votes if counting all signatures.
-		if !countAllSignatures && !commitSig.ForBlock() || countAllSignatures && commitSig.Absent() {
+		if (!countAllSignatures && !commitSig.ForBlock()) || (countAllSignatures && commitSig.Absent()) {
 			continue
 		}
 
@@ -788,7 +788,7 @@ func (vals *ValidatorSet) verifyCommitLightInternal(
 		}
 	}
 
-	if countAllSignatures && talliedVotingPower > votingPowerNeeded {
+	if talliedVotingPower > votingPowerNeeded {
 		return nil
 	}
 	return ErrNotEnoughVotingPowerSigned{Got: talliedVotingPower, Needed: votingPowerNeeded}
@@ -851,7 +851,7 @@ func (vals *ValidatorSet) verifyCommitLightTrustingInternal(
 	for idx, commitSig := range commit.Signatures {
 		// No need to verify absent or nil votes if not counting all signatures,
 		// but need to verify nil votes if counting all signatures.
-		if !countAllSignatures && !commitSig.ForBlock() || countAllSignatures && commitSig.Absent() {
+		if (!countAllSignatures && !commitSig.ForBlock()) || (countAllSignatures && commitSig.Absent()) {
 			continue
 		}
 
@@ -880,7 +880,7 @@ func (vals *ValidatorSet) verifyCommitLightTrustingInternal(
 			}
 		}
 	}
-	if countAllSignatures && talliedVotingPower > votingPowerNeeded {
+	if talliedVotingPower > votingPowerNeeded {
 		return nil
 	}
 	return ErrNotEnoughVotingPowerSigned{Got: talliedVotingPower, Needed: votingPowerNeeded}

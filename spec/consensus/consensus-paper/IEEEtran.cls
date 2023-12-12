@@ -1000,7 +1000,7 @@
 % \leftmargin, the spacing from the left margin of the main text to
 % the left of the main body of a list item is set by \list.
 % Hence this statement does nothing for lists.
-% But, quote and verse do use it for indentation.
+% But, quote and verse do use it for indention.
 \leftmargin         2em
 
 % we retain this stuff from the older IEEEtran.cls so that \list
@@ -1053,7 +1053,7 @@
 \def\labelenumiii{\theenumiii)} \def\theenumiii{\roman{enumiii}}
 
 % IEEE uses A) not A.
-\def\labelenumiv{\theenumiv)}   \def\theenumiv{\Alpha{enumiv}}
+\def\labelenumiv{\theenumiv)}   \def\theenumiv{\Alph{enumiv}}
 
 % exactly the same as in article.cls
 \def\p@enumii{\theenumi}
@@ -1077,7 +1077,7 @@
 % which ITEMIZED list labels are indented to the right
 % For The Journal of Lightwave Technology (JLT) and The Journal
 % on Selected Areas in Communications (JSAC), they tend to use
-% an indentation equal to \parindent. For Transactions on Communications
+% an indention equal to \parindent. For Transactions on Communications
 % they tend to indent ITEMIZED lists a little more--- 1.3\parindent.
 % We'll provide both values here for you so that you can choose 
 % which one you like in your document using a command such as:
@@ -1095,13 +1095,13 @@
 
 % This controls the default amount the enumerated list labels
 % are indented to the right.
-% Normally, this is the same as the paragraph indentation
+% Normally, this is the same as the paragraph indention
 \newdimen\IEEEelabelindent
 \IEEEelabelindent \parindent
 
 % This controls the default amount the description list labels
 % are indented to the right.
-% Normally, this is the same as the paragraph indentation
+% Normally, this is the same as the paragraph indention
 \newdimen\IEEEdlabelindent
 \IEEEdlabelindent \parindent
 
@@ -1121,10 +1121,10 @@
 % There may not be such a thing as correct "standard IEEE"
 % values. What IEEE actually does may depend on the specific
 % circumstances.
-% The first list level almost always has full indentation.
-% The second levels I've seen have only 75% of the normal indentation
+% The first list level almost always has full indention.
+% The second levels I've seen have only 75% of the normal indention
 % Three level or greater nestings are very rare. I am guessing
-% that they don't use any indentation.
+% that they don't use any indention.
 \def\IEEElabelindentfactori{1.0}   % almost always one
 \def\IEEElabelindentfactorii{0.75} % 0.0 or 1.0 may be used in some cases
 \def\IEEElabelindentfactoriii{0.0} % 0.75? 0.5? 0.0?
@@ -1598,7 +1598,7 @@
 \else
 \def\thesection{\Roman{section}}                             % I
 % V1.7, \mbox prevents breaks around - 
-\def\thesubsection{\mbox{\thesection-\Alpha{subsection}}}     % I-A
+\def\thesubsection{\mbox{\thesection-\Alph{subsection}}}     % I-A
 % V1.7 use I-A1 format used by IEEE rather than I-A.1
 \def\thesubsubsection{\thesubsection\arabic{subsubsection}}  % I-A1
 \def\theparagraph{\thesubsubsection\alph{paragraph}}         % I-A1a
@@ -1629,7 +1629,7 @@
   \fi
 \else% not compsoc
   \def\thesectiondis{\thesection.}                   % I.
-  \def\thesubsectiondis{\Alpha{subsection}.}          % B.
+  \def\thesubsectiondis{\Alph{subsection}.}          % B.
   \def\thesubsubsectiondis{\arabic{subsubsection})}  % 3)
   \def\theparagraphdis{\alph{paragraph})}            % d)
 \fi
@@ -3423,7 +3423,7 @@ between column types.}%
   \let\@makefnmark\relax% V1.7, must *really* kill footnotemark to remove all \textsuperscript spacing as well.
   \footnotesize%       equal spacing between thanks lines
   \footnotesep 0.7\baselineskip%see global setting of \footnotesep for more info
-  % V1.7 disable \thanks note indentation for compsoc
+  % V1.7 disable \thanks note indention for compsoc
   \@IEEEcompsoconly{\long\def\@makefntext##1{\parindent 1em\noindent\hbox{\@makefnmark}##1}}%
   \normalsize%
   \ifCLASSOPTIONpeerreview
@@ -4120,7 +4120,7 @@ between column types.}%
     \setcounter{paragraph}{0}%
     \gdef\thesection{A}%
     \gdef\thesectiondis{}% 
-    \gdef\thesubsection{\Alpha{subsection}}%
+    \gdef\thesubsection{\Alph{subsection}}%
     \gdef\@IEEEthmcounterinsection##1{A}
     \refstepcounter{section}% update the \ref counter
     \@ifmtarg{#1}{\@IEEEappendixsavesection*{\appendixname}%
@@ -4141,7 +4141,7 @@ between column types.}%
 % declare the individual appendices
 \def\appendices{\@IEEEsaveoriginalsectiononce\par
     % v1.6 keep hyperref's identifiers unique
-    \gdef\theHsection{Appendix.\Alpha{section}}%
+    \gdef\theHsection{Appendix.\Alph{section}}%
     % v1.6 adjust hyperref's string name for the section
     \xdef\Hy@chapapp{appendix}%
     \setcounter{section}{-1}% we want \refstepcounter to use section 0
@@ -4154,10 +4154,10 @@ between column types.}%
     \@IEEEcompsocconfonly{\gdef\thesectiondis{\Roman{section}.}}%
     \gdef\@IEEEthmcounterinsection##1{A\arabic{##1}}
     \else%
-    \gdef\thesection{\Alpha{section}}%
-    \gdef\thesectiondis{\Alpha{section}}%
-    \@IEEEcompsocconfonly{\gdef\thesectiondis{\Alpha{section}.}}%
-    \gdef\@IEEEthmcounterinsection##1{\Alpha{##1}}
+    \gdef\thesection{\Alph{section}}%
+    \gdef\thesectiondis{\Alph{section}}%
+    \@IEEEcompsocconfonly{\gdef\thesectiondis{\Alph{section}.}}%
+    \gdef\@IEEEthmcounterinsection##1{\Alph{##1}}
     \fi%
     \refstepcounter{section}% update the \ref counter
     \setcounter{section}{0}% NEXT \section will be the FIRST appendix

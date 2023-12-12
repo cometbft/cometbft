@@ -88,7 +88,7 @@ different programming languages include:
 - [Proto Actor] (Go/C\#/Java/Kotlin)
 - [Akka] (Java/Scala/C\#)
 - [Quasar] (Java/Kotlin)
-- [CALF] (C++)
+- [CAF] (C++)
 - [ractor] (Rust)
 - [Actix] (Rust)
 
@@ -198,6 +198,6 @@ progressive refactoring of reactors/services over time.
 [Akka]: https://akka.io/
 [Proto Actor]: https://proto.actor/
 [Quasar]: http://docs.paralleluniverse.co/quasar/
-[CALF]: https://www.actor-framework.org/
+[CAF]: https://www.actor-framework.org/
 [Actix]: https://actix.rs/docs/actix/actor
 [ractor]: https://github.com/slawlor/ractor

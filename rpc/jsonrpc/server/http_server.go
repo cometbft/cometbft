@@ -171,7 +171,7 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 			// to avoid any further panics. However, we try to return a 500, since it otherwise
 			// defaults to 200 and there is no other way to terminate the connection. If that
 			// should panic for whatever reason then the Go HTTP server will handle it and
-			// terminate the connection - panicing is the de-facto and only way to get the Go HTTP
+			// terminate the connection - panicking is the de-facto and only way to get the Go HTTP
 			// server to terminate the request and close the connection/stream:
 			// https://github.com/golang/go/issues/17790#issuecomment-258481416
 			if e := recover(); e != nil {

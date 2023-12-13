@@ -346,7 +346,7 @@ func (r *Reactor) RequestAddrs(p Peer) {
 	})
 }
 
-// ReceiveAddrs adds the given addrs to the addrbook if theres an open
+// ReceiveAddrs adds the given addrs to the addrbook if there's an open
 // request for this peer and deletes the open request.
 // If there's no open request for the src peer, it returns an error.
 func (r *Reactor) ReceiveAddrs(addrs []*p2p.NetAddress, src Peer) error {

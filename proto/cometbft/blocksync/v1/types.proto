@@ -32,7 +32,7 @@ message BlockResponse {
   cometbft.types.v1.ExtendedCommit ext_commit = 2;
 }
 
-// Message is an abtract blocksync message.
+// Message is an abstract blocksync message.
 message Message {
   // Sum of all possible messages.
   oneof sum {

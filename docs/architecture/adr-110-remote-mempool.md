@@ -203,7 +203,7 @@ package tendermint.services.remote_mempool.v1;
 // validator makes use of a client generated from this interface definition to
 // interact with the remote mempool.
 //
-// It is up to the implementor of the remote mempool to define transaction
+// It is up to the implementer of the remote mempool to define transaction
 // submission mechanisms/interfaces.
 service RemoteMempoolService {
     // Fetch allows a CometBFT validator to obtain the next batch of

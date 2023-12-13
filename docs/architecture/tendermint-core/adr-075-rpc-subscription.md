@@ -483,7 +483,7 @@ crashes and connectivity issues:
   then discard any older than the time window before the latest.
 
   To minimize coordination interference between the publisher (the event bus)
-  and the subcribers (the `events` service handlers), the event log will be
+  and the subscribers (the `events` service handlers), the event log will be
   stored as a persistent linear queue with shared structure (a cons list).  A
   single reader-writer mutex will guard the "head" of the queue where new
   items are published:

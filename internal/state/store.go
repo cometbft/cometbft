@@ -938,32 +938,22 @@ func encodeKey(height, prefix int64) []byte {
 }
 
 func validatorsKey(height int64) []byte {
-	// Since validators for the block H are those decided at H-1, we subtract 1
-	// here so that the block's header and validators are colocated.
-	//
-	// This is the standard access pattern:
-	//
-	// ```
-	// 1/{subkeyBlockMeta}
-	// 2/{subkeyValidators}
-	// ```
-	// where 1 and 2 are the heights of the blocks.
-	//
-	// If we store validators at the same height as the block:
+	// Since validators for the block H are those decided at H-1, we add 1
+	// here so that the block's header and validators are co-located.
 	//
 	// ```
 	// 1/{subkeyBlockMeta}
 	// 1/{subkeyValidators}
 	// ```
+	// where 1 is the height of the block.
 	return encodeKey(height-1, subkeyValidators)
 }
 
 func consensusParamsKey(height int64) []byte {
 	// see the above comment in validatorsKey
-	return encodeKey(height-1, subkeyConsensusParams)
+	return encodeKey(height+1, subkeyConsensusParams)
 }
 
 func abciResponsesKey(height int64) []byte {
-	// see the above comment in validatorsKey
-	return encodeKey(height-1, subkeyABCIResponses)
+	return encodeKey(height, subkeyABCIResponses)
 }

@@ -93,21 +93,12 @@ title: Methods
 
 * **Request**:
 
-<<<<<<< HEAD
-    | Name   | Type   | Description                                                                                                                                                                                                                                                                            | Field Number |
-    |--------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
-    | data   | bytes  | Raw query bytes. Can be used with or in lieu of Path.                                                                                                                                                                                                                                  | 1            |
-    | path   | string | Path field of the request URI. Can be used with or in lieu of `data`. Apps MUST interpret `/store` as a query by key on the underlying store. The key SHOULD be specified in the `data` field. Apps SHOULD allow queries over specific types like `/accounts/...` or `/votes/...`      | 2            |
-    | height | int64  | The block height for which you want the query (default=0 returns data for the latest committed block). Note that this is the height of the block containing the application's Merkle root hash, which represents the state as it was after committing the block at Height-1            | 3            |
-    | prove  | bool   | Return Merkle proof with response if possible                                                                                                                                                                                                                                          | 4            |
-=======
     | Name   | Type   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Field Number |
     |--------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
     | data   | bytes  | Request parameters for the application to interpret analogously to a [URI query component](https://www.rfc-editor.org/rfc/rfc3986#section-3.4). Can be used with or in lieu of `path`.                                                                                                                                                                                                                                                                               | 1            |
     | path   | string | A request path for the application to interpret analogously to a [URI path component](https://www.rfc-editor.org/rfc/rfc3986#section-3.3) in e.g. routing. Can be used with or in lieu of `data`. Applications MUST interpret "/store" or any path starting with "/store/" as a query by key on the underlying store, in which case a key SHOULD be specified in `data`. Applications SHOULD allow queries over specific types like `/accounts/...` or `/votes/...`. | 2            |
     | height | int64  | The block height against which to query (default=0 returns data for the latest committed block). Note that this is the height of the block containing the application's Merkle root hash, which represents the state as it was after committing the block at Height-1.                                                                                                                                                                                               | 3            |
     | prove  | bool   | Return Merkle proof with response if possible.                                                                                                                                                                                                                                                                                                                                                                                                                       | 4            |
->>>>>>> 7c6951feb (chore(spec): specify which fields must be deterministic (#1804))
 
 * **Response**:
 
@@ -624,15 +615,6 @@ message for round _r_, height _h_ from validator _q_ (_q_ &ne; _p_):
 
 * **Response**:
 
-<<<<<<< HEAD
-    | Name                    | Type                                                        | Description                                                                      | Field Number |
-    |-------------------------|-------------------------------------------------------------|----------------------------------------------------------------------------------|--------------|
-    | events                  | repeated [Event](./abci++_basic_concepts.md#events)           | Type & Key-Value events for indexing                                             | 1            |
-    | tx_results              | repeated [ExecTxResult](#exectxresult)                      | List of structures containing the data resulting from executing the transactions | 2            |
-    | validator_updates       | repeated [ValidatorUpdate](#validatorupdate)                | Changes to validator set (set voting power to 0 to remove).                      | 3            |
-    | consensus_param_updates | [ConsensusParams](#consensusparams)                         | Changes to gas, size, and other consensus-related parameters.                    | 4            |
-    | app_hash                | bytes                                                       | The Merkle root hash of the application state.                                   | 5            |
-=======
     | Name                    | Type                                              | Description                                                                      | Field Number | Deterministic |
     |-------------------------|---------------------------------------------------|----------------------------------------------------------------------------------|--------------|---------------|
     | events                  | repeated [Event](abci++_basic_concepts.md#events) | Type & Key-Value events for indexing                                             | 1            | No            |
@@ -640,7 +622,6 @@ message for round _r_, height _h_ from validator _q_ (_q_ &ne; _p_):
     | validator_updates       | repeated [ValidatorUpdate](#validatorupdate)      | Changes to validator set (set voting power to 0 to remove).                      | 3            | Yes           |
     | consensus_param_updates | [ConsensusParams](#consensusparams)               | Changes to gas, size, and other consensus-related parameters.                    | 4            | Yes           |
     | app_hash                | bytes                                             | The Merkle root hash of the application state.                                   | 5            | Yes           |
->>>>>>> 7c6951feb (chore(spec): specify which fields must be deterministic (#1804))
 
 * **Usage**:
     * Contains the fields of the newly decided block.
@@ -731,17 +712,10 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
 * **Fields**:
 
-<<<<<<< HEAD
-    | Name    | Type                                               | Description                   | Field Number |
-    |---------|----------------------------------------------------|-------------------------------|--------------|
-    | pub_key | [Public Key](../core/data_structures.md#validator) | Public key of the validator   | 1            |
-    | power   | int64                                              | Voting power of the validator | 2            |
-=======
     | Name    | Type                                             | Description                   | Field Number | Deterministic |
     |---------|--------------------------------------------------|-------------------------------|--------------|---------------|
     | pub_key | [Public Key](../core/data_structures.md#pub_key) | Public key of the validator   | 1            | Yes           |
     | power   | int64                                            | Voting power of the validator | 2            | Yes           |
->>>>>>> 7c6951feb (chore(spec): specify which fields must be deterministic (#1804))
 
 * **Usage**:
     * Validator identified by PubKey
@@ -870,18 +844,6 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
 * **Fields**:
 
-<<<<<<< HEAD
-    | Name       | Type                                                        | Description                                                           | Field Number |
-    |------------|-------------------------------------------------------------|-----------------------------------------------------------------------|--------------|
-    | code       | uint32                                                      | Response code.                                                        | 1            |
-    | data       | bytes                                                       | Result bytes, if any.                                                 | 2            |
-    | log        | string                                                      | The output of the application's logger. **May be non-deterministic.** | 3            |
-    | info       | string                                                      | Additional information. **May be non-deterministic.**                 | 4            |
-    | gas_wanted | int64                                                       | Amount of gas requested for transaction.                              | 5            |
-    | gas_used   | int64                                                       | Amount of gas consumed by transaction.                                | 6            |
-    | events     | repeated [Event](./abci++_basic_concepts.md#events)           | Type & Key-Value events for indexing transactions (e.g. by account).  | 7            |
-    | codespace  | string                                                      | Namespace for the `code`.                                             | 8            |
-=======
     | Name       | Type                                              | Description                                                          | Field Number | Deterministic |
     |------------|---------------------------------------------------|----------------------------------------------------------------------|--------------|---------------|
     | code       | uint32                                            | Response code.                                                       | 1            | Yes           |
@@ -892,7 +854,6 @@ Most of the data structures used in ABCI are shared [common data structures](../
     | gas_used   | int64                                             | Amount of gas consumed by transaction.                               | 6            | Yes           |
     | events     | repeated [Event](abci++_basic_concepts.md#events) | Type & Key-Value events for indexing transactions (e.g. by account). | 7            | No            |
     | codespace  | string                                            | Namespace for the `code`.                                            | 8            | Yes           |
->>>>>>> 7c6951feb (chore(spec): specify which fields must be deterministic (#1804))
 
 ### ProposalStatus
 

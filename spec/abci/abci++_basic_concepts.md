@@ -276,20 +276,12 @@ Sources of non-determinism in applications may include:
 
 See [#56](https://github.com/tendermint/abci/issues/56) for the original discussion.
 
-<<<<<<< HEAD
-Note that some methods (`Query`, `FinalizeBlock`) return non-deterministic data in the form
-of `Info` and `Log` fields. The `Log` is intended for the literal output from the Application's
-logger, while the `Info` is any additional info that should be returned. These are the only fields
-that are not included in block header computations, so we don't need agreement
-on them. All other fields in the `Response*` must be strictly deterministic.
-=======
 Note that some methods (e.g., `Query` and `FinalizeBlock`) may return
 non-deterministic data in the form of `Info`, `Log` and/or `Events` fields. The
 `Log` is intended for the literal output from the Application's logger, while
 the `Info` is any additional info that should be returned. These fields are not
 included in block header computations, so we don't need agreement on them. See
 each field's description on whether it must be deterministic or not.
->>>>>>> 7c6951feb (chore(spec): specify which fields must be deterministic (#1804))
 
 ## Events
 

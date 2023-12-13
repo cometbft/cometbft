@@ -194,6 +194,9 @@ func TestValidatorSet_VerifyCommitLight_ReturnsAsSoonAsMajOfVotingPowerSignedIff
 	commit := extCommit.ToCommit()
 	require.NoError(t, valSet.VerifyCommit(chainID, blockID, h, commit))
 
+	err = valSet.VerifyCommitLightAllSignatures(chainID, blockID, h, commit)
+	assert.NoError(t, err)
+
 	// malleate 4th signature (3 signatures are enough for 2/3+)
 	vote := voteSet.GetByIndex(3)
 	v := vote.ToProto()
@@ -221,6 +224,13 @@ func TestValidatorSet_VerifyCommitLightTrusting_ReturnsAsSoonAsTrustLevelSignedI
 	require.NoError(t, err)
 	commit := extCommit.ToCommit()
 	require.NoError(t, valSet.VerifyCommit(chainID, blockID, h, commit))
+
+	err = valSet.VerifyCommitLightTrustingAllSignatures(
+		chainID,
+		commit,
+		cmtmath.Fraction{Numerator: 1, Denominator: 3},
+	)
+	assert.NoError(t, err)
 
 	// malleate 3rd signature (2 signatures are enough for 1/3+ trust level)
 	vote := voteSet.GetByIndex(2)

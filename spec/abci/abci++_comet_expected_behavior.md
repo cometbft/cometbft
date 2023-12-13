@@ -46,12 +46,12 @@ including recovery runs, from the point of view of the Application.
 start               = clean-start / recovery
 
 clean-start         = ( app-handshake / state-sync ) consensus-exec
-app-handshake       = info [init-chain]
+app-handshake       = info init-chain
 state-sync          = *state-sync-attempt success-sync info
 state-sync-attempt  = offer-snapshot *apply-chunk
 success-sync        = offer-snapshot 1*apply-chunk
 
-recovery            = app-handshake consensus-exec
+recovery            = info [init-chain] consensus-exec
 
 consensus-exec      = (inf)consensus-height
 consensus-height    = *consensus-round finalize-block commit
@@ -113,13 +113,11 @@ normal consensus execution.
 >clean-start         = ( app-handshake / state-sync ) consensus-exec
 >```
 
-* If _state-sync_ is disabled, CometBFT engages in the handshake with the Application. In 
-the beginning of the handshake, CometBFT calls the `Info` method. The process does this to 
-know from which height it needs to replay decisions to the Application. In this case, since the 
-process starts from scratch, no blocks can be replayed, and the process calls `InitChain`. 
+* If _state-sync_ is disabled, CometBFT calls `Info` method and then 
+since the process is starting from scratch and the Application has no state CometBFT calls `InitChain`.
 
 >```abnf
->app-handshake         = info [init_chain]
+>app-handshake         = info init_chain
 >```
 
 * In _state-sync_ mode, CometBFT makes one or more attempts at synchronizing the Application's state.
@@ -139,12 +137,11 @@ process starts from scratch, no blocks can be replayed, and the process calls `I
 >success-sync        = offer-snapshot 1*apply-chunk
 >```
 
-* If the process is recovering, the process first does the application handshake. In this case, the application may or may not have 
-some state stored. If the application has no state stored, the `InitChain` will be called. Otherwise, not. After this, CometBFT enters consensus 
-execution, first in replay mode and then in normal mode.
+* In recovery mode, CometBFT first calls `Info` to know from which height it needs to replay decisions to the Application. If the Application 
+did not store any state CometBFT calls `InitChain`. After this, CometBFT enters consensus execution, first in replay mode, if there are blocks to replay, and then in normal mode.
 
 >```abnf
->recovery            = app-handshake consensus-exec
+>recovery            = info [init-chain] consensus-exec
 >```
 
 * The non-terminal `consensus-exec` is a key point in this grammar. It is an infinite sequence of

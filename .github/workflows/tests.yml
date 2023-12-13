@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.20"
       - uses: actions/checkout@v4
@@ -54,7 +54,7 @@ jobs:
     needs: build
     timeout-minutes: 5
     steps:
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.20"
       - uses: actions/checkout@v4
@@ -86,7 +86,7 @@ jobs:
     needs: build
     timeout-minutes: 5
     steps:
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.20"
       - uses: actions/checkout@v4
@@ -117,7 +117,7 @@ jobs:
     needs: build
     timeout-minutes: 5
     steps:
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.20"
       - uses: actions/checkout@v4

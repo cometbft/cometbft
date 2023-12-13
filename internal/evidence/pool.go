@@ -22,12 +22,6 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-const (
-	// prefixes must be unique across all db's
-	prefixCommitted = int64(9)
-	prefixPending   = int64(10)
-)
-
 // Pool maintains a pool of valid evidence to be broadcasted and committed
 type Pool struct {
 	logger log.Logger
@@ -74,7 +68,7 @@ func NewPool(evidenceDB dbm.DB, stateDB sm.Store, blockStore BlockStore) (*Pool,
 	// if pending evidence already in db, in event of prior failure, then check for expiration,
 	// update the size and load it back to the evidenceList
 	pool.pruningHeight, pool.pruningTime = pool.removeExpiredPendingEvidence()
-	evList, _, err := pool.listEvidence(prefixPending, -1)
+	evList, _, err := pool.listEvidence(-1)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +85,7 @@ func (evpool *Pool) PendingEvidence(maxBytes int64) ([]types.Evidence, int64) {
 	if evpool.Size() == 0 {
 		return []types.Evidence{}, 0
 	}
-	evidence, size, err := evpool.listEvidence(prefixPending, maxBytes)
+	evidence, size, err := evpool.listEvidence(maxBytes)
 	if err != nil {
 		evpool.logger.Error("Unable to retrieve pending evidence", "err", err)
 	}
@@ -358,9 +352,10 @@ func (evpool *Pool) markEvidenceAsCommitted(evidence types.EvidenceList) {
 	}
 }
 
-// listEvidence retrieves lists evidence from oldest to newest within maxBytes.
-// If maxBytes is -1, there's no cap on the size of returned evidence.
-func (evpool *Pool) listEvidence(prefixKey, maxBytes int64) ([]types.Evidence, int64, error) {
+// listEvidence retrieves the list of pending evidence from oldest to newest
+// within maxBytes. If maxBytes is -1, there's no cap on the size of returned
+// evidence.
+func (evpool *Pool) listEvidence(maxBytes int64) ([]types.Evidence, int64, error) {
 	var (
 		evSize    int64
 		totalSize int64
@@ -368,7 +363,7 @@ func (evpool *Pool) listEvidence(prefixKey, maxBytes int64) ([]types.Evidence, i
 		evList    cmtproto.EvidenceList // used for calculating the bytes size
 	)
 
-	iter, err := dbm.IteratePrefix(evpool.evidenceStore, prefixToBytes(prefixKey))
+	iter, err := dbm.IteratePrefix(evpool.evidenceStore, prefixPendingBytes())
 	if err != nil {
 		return nil, totalSize, fmt.Errorf("database error: %v", err)
 	}
@@ -404,7 +399,7 @@ func (evpool *Pool) listEvidence(prefixKey, maxBytes int64) ([]types.Evidence, i
 }
 
 func (evpool *Pool) removeExpiredPendingEvidence() (int64, time.Time) {
-	iter, err := dbm.IteratePrefix(evpool.evidenceStore, prefixToBytes(prefixPending))
+	iter, err := dbm.IteratePrefix(evpool.evidenceStore, prefixPendingBytes())
 	if err != nil {
 		evpool.logger.Error("Unable to iterate over pending evidence", "err", err)
 		return evpool.State().LastBlockHeight, evpool.State().LastBlockTime
@@ -558,24 +553,34 @@ func evMapKey(ev types.Evidence) string {
 	return string(ev.Hash())
 }
 
-func prefixToBytes(prefix int64) []byte {
-	key, err := orderedcode.Append(nil, prefix)
+//---------------------------------- KEY ENCODING -----------------------------------------
+
+const (
+	// subkeys must be unique within a single DB
+	subkeyCommitted = int64(8)
+
+	// prefixes must be unique within a single DB
+	prefixPending = int64(-2)
+)
+
+func prefixPendingBytes() []byte {
+	prefix, err := orderedcode.Append(nil, prefixPending)
+	if err != nil {
+		panic(err)
+	}
+	return prefix
+}
+
+func keyCommitted(ev types.Evidence) []byte {
+	key, err := orderedcode.Append(nil, ev.Height(), subkeyCommitted, string(ev.Hash()))
 	if err != nil {
 		panic(err)
 	}
 	return key
 }
 
-func keyCommitted(evidence types.Evidence) []byte {
-	key, err := orderedcode.Append(nil, prefixCommitted, evidence.Height(), string(evidence.Hash()))
-	if err != nil {
-		panic(err)
-	}
-	return key
-}
-
-func keyPending(evidence types.Evidence) []byte {
-	key, err := orderedcode.Append(nil, prefixPending, evidence.Height(), string(evidence.Hash()))
+func keyPending(ev types.Evidence) []byte {
+	key, err := orderedcode.Append(nil, prefixPending, ev.Height(), string(ev.Hash()))
 	if err != nil {
 		panic(err)
 	}

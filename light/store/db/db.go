@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	// prefixes must be unique across all db's
-	prefixLightBlock = int64(11)
-	prefixSize       = int64(12)
+	// subkeys must be unique within a single DB.
+	subkeyLightBlock = int64(9)
+	subkeySize       = int64(10)
 )
 
 type dbs struct {
@@ -284,7 +284,7 @@ func (s *dbs) Size() uint16 {
 }
 
 func (s *dbs) sizeKey() []byte {
-	key, err := orderedcode.Append(nil, s.prefix, prefixSize)
+	key, err := orderedcode.Append(nil, s.prefix, subkeySize)
 	if err != nil {
 		panic(err)
 	}
@@ -292,7 +292,7 @@ func (s *dbs) sizeKey() []byte {
 }
 
 func (s *dbs) lbKey(height int64) []byte {
-	key, err := orderedcode.Append(nil, s.prefix, prefixLightBlock, height)
+	key, err := orderedcode.Append(nil, s.prefix, subkeyLightBlock, height)
 	if err != nil {
 		panic(err)
 	}
@@ -301,18 +301,18 @@ func (s *dbs) lbKey(height int64) []byte {
 
 func (s *dbs) decodeLbKey(key []byte) (height int64, err error) {
 	var (
-		dbPrefix         string
-		lightBlockPrefix int64
+		dbPrefix string
+		subkey   int64
 	)
-	remaining, err := orderedcode.Parse(string(key), &dbPrefix, &lightBlockPrefix, &height)
+	remaining, err := orderedcode.Parse(string(key), &dbPrefix, &subkey, &height)
 	if err != nil {
 		err = fmt.Errorf("failed to parse light block key: %w", err)
 	}
 	if len(remaining) != 0 {
 		err = fmt.Errorf("expected no remainder when parsing light block key but got: %s", remaining)
 	}
-	if lightBlockPrefix != prefixLightBlock {
-		err = fmt.Errorf("expected light block prefix but got: %d", lightBlockPrefix)
+	if subkey != subkeyLightBlock {
+		err = fmt.Errorf("expected light block subkey but got: %d", subkey)
 	}
 	if dbPrefix != s.prefix {
 		err = fmt.Errorf("parsed key has a different prefix. Expected: %s, got: %s", s.prefix, dbPrefix)

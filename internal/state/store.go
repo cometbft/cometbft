@@ -24,46 +24,11 @@ const (
 	// https://github.com/tendermint/tendermint/pull/3438
 	// 100000 results in ~ 100ms to get 100 validators (see BenchmarkLoadValidators)
 	valSetCheckpointInterval = 100000
-
-	// prefixes must be unique across all db's
-	prefixValidators      = int64(6)
-	prefixConsensusParams = int64(7)
-	prefixABCIResponses   = int64(8)
 )
 
 var (
 	ErrKeyNotFound        = errors.New("key not found")
 	ErrInvalidHeightValue = errors.New("invalid height value")
-)
-
-//------------------------------------------------------------------------
-
-func encodeKey(prefix, height int64) []byte {
-	res, err := orderedcode.Append(nil, prefix, height)
-	if err != nil {
-		panic(err)
-	}
-	return res
-}
-
-func validatorsKey(height int64) []byte {
-	return encodeKey(prefixValidators, height)
-}
-
-func consensusParamsKey(height int64) []byte {
-	return encodeKey(prefixConsensusParams, height)
-}
-
-func abciResponsesKey(height int64) []byte {
-	return encodeKey(prefixABCIResponses, height)
-}
-
-//------------------------------------------------------------------------
-
-var (
-	lastABCIResponseKey              = []byte("lastABCIResponseKey")
-	lastABCIResponsesRetainHeightKey = []byte("lastABCIResponsesRetainHeight")
-	offlineStateSyncHeight           = []byte("offlineStateSyncHeightKey")
 )
 
 //go:generate ../../scripts/mockery_generate.sh Store
@@ -945,4 +910,60 @@ func int64ToBytes(i int64) []byte {
 	buf := make([]byte, binary.MaxVarintLen64)
 	n := binary.PutVarint(buf, i)
 	return buf[:n]
+}
+
+//---------------------------------- KEY ENCODING -----------------------------------------
+
+const (
+	// subkeys must be unique within a single DB
+	subkeyValidators      = int64(5)
+	subkeyConsensusParams = int64(6)
+	subkeyABCIResponses   = int64(7)
+)
+
+var (
+	stateKey = []byte("stateKey")
+
+	lastABCIResponseKey              = []byte("lastABCIResponseKey")
+	lastABCIResponsesRetainHeightKey = []byte("lastABCIResponsesRetainHeight")
+	offlineStateSyncHeight           = []byte("offlineStateSyncHeightKey")
+)
+
+func encodeKey(height, prefix int64) []byte {
+	res, err := orderedcode.Append(nil, height, prefix)
+	if err != nil {
+		panic(err)
+	}
+	return res
+}
+
+func validatorsKey(height int64) []byte {
+	// Since validators for the block H are those decided at H-1, we subtract 1
+	// here so that the block's header and validators are colocated.
+	//
+	// This is the standard access pattern:
+	//
+	// ```
+	// 1/{subkeyBlockMeta}
+	// 2/{subkeyValidators}
+	// ```
+	// where 1 and 2 are the heights of the blocks.
+	//
+	// If we store validators at the same height as the block:
+	//
+	// ```
+	// 1/{subkeyBlockMeta}
+	// 1/{subkeyValidators}
+	// ```
+	return encodeKey(height-1, subkeyValidators)
+}
+
+func consensusParamsKey(height int64) []byte {
+	// see the above comment in validatorsKey
+	return encodeKey(height-1, subkeyConsensusParams)
+}
+
+func abciResponsesKey(height int64) []byte {
+	// see the above comment in validatorsKey
+	return encodeKey(height-1, subkeyABCIResponses)
 }

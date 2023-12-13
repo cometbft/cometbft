@@ -16,11 +16,6 @@ import (
 	"github.com/cometbft/cometbft/version"
 )
 
-// database keys
-var (
-	stateKey = []byte("stateKey")
-)
-
 //-----------------------------------------------------------------------------
 
 // InitStateVersion sets the Consensus.Block and Software versions,

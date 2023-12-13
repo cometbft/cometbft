@@ -20,11 +20,13 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-// Assuming the length of a block part is 64kB (`types.BlockPartSizeBytes`),
-// the maximum size of a block, that will be batch saved, is 640kB. The
-// benchmarks have shown that `goleveldb` still performs well with blocks of
-// this size. However, if the block is larger than 1MB, the performance degrades.
-const maxBlockPartsToBatch = 10
+const (
+	// Assuming the length of a block part is 64kB (`types.BlockPartSizeBytes`),
+	// the maximum size of a block, that will be batch saved, is 640kB. The
+	// benchmarks have shown that `goleveldb` still performs well with blocks of
+	// this size. However, if the block is larger than 1MB, the performance degrades.
+	maxBlockPartsToBatch = 10
+)
 
 /*
 BlockStore is a simple low level store for blocks.
@@ -579,70 +581,7 @@ func (bs *BlockStore) Close() error {
 	return bs.db.Close()
 }
 
-//---------------------------------- KEY ENCODING -----------------------------------------
-
-// key prefixes
-const (
-	// prefixes are unique across all tm db's
-	prefixBlockMeta   = int64(0)
-	prefixBlockPart   = int64(1)
-	prefixBlockCommit = int64(2)
-	prefixSeenCommit  = int64(3)
-	prefixExtCommit   = int64(4)
-	prefixBlockHash   = int64(5)
-)
-
-func blockMetaKey(height int64) []byte {
-	key, err := orderedcode.Append(nil, prefixBlockMeta, height)
-	if err != nil {
-		panic(err)
-	}
-	return key
-}
-
-func blockPartKey(height int64, partIndex int) []byte {
-	key, err := orderedcode.Append(nil, prefixBlockPart, height, int64(partIndex))
-	if err != nil {
-		panic(err)
-	}
-	return key
-}
-
-func blockCommitKey(height int64) []byte {
-	key, err := orderedcode.Append(nil, prefixBlockCommit, height)
-	if err != nil {
-		panic(err)
-	}
-	return key
-}
-
-func seenCommitKey(height int64) []byte {
-	key, err := orderedcode.Append(nil, prefixSeenCommit, height)
-	if err != nil {
-		panic(err)
-	}
-	return key
-}
-
-func extCommitKey(height int64) []byte {
-	key, err := orderedcode.Append(nil, prefixExtCommit, height)
-	if err != nil {
-		panic(err)
-	}
-	return key
-}
-
-func blockHashKey(hash []byte) []byte {
-	key, err := orderedcode.Append(nil, prefixBlockHash, string(hash))
-	if err != nil {
-		panic(err)
-	}
-	return key
-}
-
 //-----------------------------------------------------------------------------
-
-var blockStoreKey = []byte("blockStore")
 
 // SaveBlockStoreState persists the blockStore state to the database.
 func SaveBlockStoreState(bsj *cmtstore.BlockStoreState, batch dbm.Batch) {
@@ -680,15 +619,6 @@ func LoadBlockStoreState(db dbm.DB) cmtstore.BlockStoreState {
 		bsj.Base = 1
 	}
 	return bsj
-}
-
-// mustEncode proto encodes a proto.message and panics if fails
-func mustEncode(pb proto.Message) []byte {
-	bz, err := proto.Marshal(pb)
-	if err != nil {
-		panic(fmt.Errorf("unable to marshal: %w", err))
-	}
-	return bz
 }
 
 //-----------------------------------------------------------------------------
@@ -736,4 +666,69 @@ func (bs *BlockStore) DeleteLatestBlock() error {
 		return fmt.Errorf("failed to delete height %v: %w", targetHeight, err)
 	}
 	return nil
+}
+
+// mustEncode proto encodes a proto.message and panics if fails
+func mustEncode(pb proto.Message) []byte {
+	bz, err := proto.Marshal(pb)
+	if err != nil {
+		panic(fmt.Errorf("unable to marshal: %w", err))
+	}
+	return bz
+}
+
+//---------------------------------- KEY ENCODING -----------------------------------------
+
+const (
+	// subkeys must be unique within a single DB
+	subkeyBlockMeta   = int64(0)
+	subkeyBlockPart   = int64(1)
+	subkeyBlockCommit = int64(2)
+	subkeySeenCommit  = int64(3)
+	subkeyExtCommit   = int64(4)
+
+	// prefixes must be unique within a single DB
+	prefixBlockHash = int64(-1)
+)
+
+var blockStoreKey = []byte("blockStore")
+
+func encodeKey(height, prefix int64) []byte {
+	res, err := orderedcode.Append(nil, height, prefix)
+	if err != nil {
+		panic(err)
+	}
+	return res
+}
+
+func blockMetaKey(height int64) []byte {
+	return encodeKey(height, subkeyBlockMeta)
+}
+
+func blockPartKey(height int64, partIndex int) []byte {
+	key, err := orderedcode.Append(nil, height, subkeyBlockPart, int64(partIndex))
+	if err != nil {
+		panic(err)
+	}
+	return key
+}
+
+func blockCommitKey(height int64) []byte {
+	return encodeKey(height, subkeyBlockCommit)
+}
+
+func seenCommitKey(height int64) []byte {
+	return encodeKey(height, subkeySeenCommit)
+}
+
+func extCommitKey(height int64) []byte {
+	return encodeKey(height, subkeyExtCommit)
+}
+
+func blockHashKey(hash []byte) []byte {
+	key, err := orderedcode.Append(nil, prefixBlockHash, string(hash))
+	if err != nil {
+		panic(err)
+	}
+	return key
 }

@@ -1,0 +1,4 @@
+[codespell]
+skip = *.sum,go.mod,LOG,consensus-paper,./test/e2e/pkg/grammar,*.tla
+quiet-level = 2
+ignore-words = .github/workflows/ignore-words.txt

@@ -31,7 +31,7 @@ type Application interface {
 	ListSnapshots(context.Context, *ListSnapshotsRequest) (*ListSnapshotsResponse, error)                // List available snapshots
 	OfferSnapshot(context.Context, *OfferSnapshotRequest) (*OfferSnapshotResponse, error)                // Offer a snapshot to the application
 	LoadSnapshotChunk(context.Context, *LoadSnapshotChunkRequest) (*LoadSnapshotChunkResponse, error)    // Load a snapshot chunk
-	ApplySnapshotChunk(context.Context, *ApplySnapshotChunkRequest) (*ApplySnapshotChunkResponse, error) // Apply a shapshot chunk
+	ApplySnapshotChunk(context.Context, *ApplySnapshotChunkRequest) (*ApplySnapshotChunkResponse, error) // Apply a snapshot chunk
 }
 
 //-------------------------------------------------------

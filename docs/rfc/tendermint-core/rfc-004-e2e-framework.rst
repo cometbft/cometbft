@@ -199,7 +199,7 @@ interesting to engage with. These could include dimensions, such as:
 - As a flavor or mult-version testing, include upgrade testing, to build
   confidence in migration code and procedures.
 
-- Additional test applications, particularly practical-type applciations
+- Additional test applications, particularly practical-type applications
   including some that use gaiad and/or the cosmos-sdk. Test-only applications
   that simulate other kinds of applications (e.g. variable application
   operation latency.)

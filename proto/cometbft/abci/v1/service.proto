@@ -33,7 +33,7 @@ service ABCIService {
   rpc PrepareProposal(PrepareProposalRequest) returns (PrepareProposalResponse);
   // ProcessProposal validates a proposal.
   rpc ProcessProposal(ProcessProposalRequest) returns (ProcessProposalResponse);
-  // ExtendVote extends a vote with application-injected data (vote extentions).
+  // ExtendVote extends a vote with application-injected data (vote extensions).
   rpc ExtendVote(ExtendVoteRequest) returns (ExtendVoteResponse);
   // VerifyVoteExtension verifies a vote extension.
   rpc VerifyVoteExtension(VerifyVoteExtensionRequest) returns (VerifyVoteExtensionResponse);

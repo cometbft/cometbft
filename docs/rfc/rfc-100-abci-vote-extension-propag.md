@@ -156,7 +156,7 @@ discussions and need to be addressed. They are (roughly) ordered from easiest to
 
     If sets *valset<sub>h</sub>* and *valset<sub>h+1</sub>* are disjoint,
     more than *2n<sub>h</sub>/3* of validators in height *h* should
-    have actively participated in conensus in *h*. So, as of height *h*, only a minority of validators
+    have actively participated in consensus in *h*. So, as of height *h*, only a minority of validators
     in *h* can be lagging behind, although they could all lag behind from *h+1* on, as they are no
     longer validators, only full nodes. This situation falls under the assumptions of case (h) below.
 

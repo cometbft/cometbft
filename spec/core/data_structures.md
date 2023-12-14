@@ -72,7 +72,7 @@ set (TODO). Execute is defined as:
 
 ```go
 func Execute(state State, app ABCIApp, block Block) State {
- // Fuction ApplyBlock executes block of transactions against the app and returns the new root hash of the app state,
+ // Function ApplyBlock executes block of transactions against the app and returns the new root hash of the app state,
  // modifications to the validator set and the changes of the consensus parameters.
  AppHash, ValidatorChanges, ConsensusParamChanges := app.ApplyBlock(block)
 

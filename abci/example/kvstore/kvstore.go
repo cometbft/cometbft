@@ -80,7 +80,7 @@ func (app *Application) SetGenBlockEvents() {
 	app.genBlockEvents = true
 }
 
-// Info returns information about the state of the application. This is generally used everytime a Tendermint instance
+// Info returns information about the state of the application. This is generally used every time a Tendermint instance
 // begins and let's the application know what Tendermint versions it's interacting with. Based from this information,
 // Tendermint will ensure it is in sync with the application by potentially replaying the blocks it has. If the
 // Application returns a 0 appBlockHeight, Tendermint will call InitChain to initialize the application with consensus related data
@@ -156,10 +156,10 @@ func isValidTx(tx []byte) bool {
 	return false
 }
 
-// PrepareProposal is called when the node is a proposer. Tendermint stages a set of transactions to the application. As the
+// PrepareProposal is called when the node is a proposer. CometBFT stages a set of transactions to the application. As the
 // KVStore has two accepted formats, `:` and `=`, we modify all instances of `:` with `=` to make it consistent. Note: this is
 // quite a trivial example of transaction modification.
-// NOTE: we assume that Tendermint will never provide more transactions than can fit in a block.
+// NOTE: we assume that CometBFT will never provide more transactions than can fit in a block.
 func (app *Application) PrepareProposal(ctx context.Context, req *types.PrepareProposalRequest) (*types.PrepareProposalResponse, error) {
 	return &types.PrepareProposalResponse{Txs: app.formatTxs(ctx, req.Txs)}, nil
 }

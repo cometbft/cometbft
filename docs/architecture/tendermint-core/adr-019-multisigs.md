@@ -19,7 +19,7 @@ This allows for complex conditionals of when to validate a signature.
 
 Suppose the set of signers is of size _n_.
 If we validate a signature if any subgroup of size _k_ signs a message,
-this becomes what is commonly reffered to as a _k of n multisig_ in Bitcoin.
+this becomes what is commonly referred to as a _k of n multisig_ in Bitcoin.
 
 This ADR specifies the encoding standard for general accountable subgroup multisignatures,
 k of n accountable subgroup multisignatures, and its weighted variant.

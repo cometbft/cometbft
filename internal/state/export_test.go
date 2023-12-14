@@ -42,12 +42,21 @@ func ValidateValidatorUpdates(abciUpdates []abci.ValidatorUpdate, params types.V
 // store.go, exported exclusively and explicitly for testing.
 func SaveValidatorsInfo(db dbm.DB, height, lastHeightChanged int64, valSet *types.ValidatorSet) error {
 	stateStore := dbStore{db, StoreOptions{DiscardABCIResponses: false}}
-	return stateStore.saveValidatorsInfo(height, lastHeightChanged, valSet)
+	batch := stateStore.db.NewBatch()
+	err := stateStore.saveValidatorsInfo(height, lastHeightChanged, valSet, batch)
+	if err != nil {
+		return err
+	}
+	err = batch.WriteSync()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // FindMinBlockRetainHeight is an alias for the private
 // findMinBlockRetainHeight method in pruner.go, exported exclusively and
-// expicitly for testing.
+// explicitly for testing.
 func (p *Pruner) FindMinRetainHeight() int64 {
 	return p.findMinBlockRetainHeight()
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"testing/quick"
@@ -725,7 +726,8 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 
 	for _, tc := range testCases {
 		tc := tc
-		t.Run(tc.description, func(t *testing.T) {
+		countAllSignatures := false
+		f := func(t *testing.T) {
 			err := vset.VerifyCommit(tc.chainID, tc.blockID, tc.height, tc.commit)
 			if tc.expErr {
 				if assert.Error(t, err, "VerifyCommit") {
@@ -735,7 +737,11 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 				assert.NoError(t, err, "VerifyCommit")
 			}
 
-			err = vset.VerifyCommitLight(tc.chainID, tc.blockID, tc.height, tc.commit)
+			if countAllSignatures {
+				err = vset.VerifyCommitLightAllSignatures(tc.chainID, tc.blockID, tc.height, tc.commit)
+			} else {
+				err = vset.VerifyCommitLight(tc.chainID, tc.blockID, tc.height, tc.commit)
+			}
 			if tc.expErr {
 				if assert.Error(t, err, "VerifyCommitLight") {
 					assert.Contains(t, err.Error(), tc.description, "VerifyCommitLight")
@@ -743,7 +749,10 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 			} else {
 				assert.NoError(t, err, "VerifyCommitLight")
 			}
-		})
+		}
+		t.Run(tc.description+"/"+strconv.FormatBool(countAllSignatures), f)
+		countAllSignatures = true
+		t.Run(tc.description+"/"+strconv.FormatBool(countAllSignatures), f)
 	}
 }
 
@@ -772,7 +781,7 @@ func TestValidatorSet_VerifyCommit_CheckAllSignatures(t *testing.T) {
 	}
 }
 
-func TestValidatorSet_VerifyCommitLight_ReturnsAsSoonAsMajorityOfVotingPowerSigned(t *testing.T) {
+func TestValidatorSet_VerifyCommitLight_ReturnsAsSoonAsMajOfVotingPowerSignedIffNotAllSigs(t *testing.T) {
 	var (
 		chainID = "test_chain_id"
 		h       = int64(3)
@@ -782,6 +791,9 @@ func TestValidatorSet_VerifyCommitLight_ReturnsAsSoonAsMajorityOfVotingPowerSign
 	voteSet, valSet, vals := randVoteSet(h, 0, cmtproto.PrecommitType, 4, 10)
 	commit, err := MakeCommit(blockID, h, 0, voteSet, vals, time.Now())
 	require.NoError(t, err)
+
+	err = valSet.VerifyCommitLightAllSignatures(chainID, blockID, h, commit)
+	assert.NoError(t, err)
 
 	// malleate 4th signature (3 signatures are enough for 2/3+)
 	vote := voteSet.GetByIndex(3)
@@ -793,9 +805,11 @@ func TestValidatorSet_VerifyCommitLight_ReturnsAsSoonAsMajorityOfVotingPowerSign
 
 	err = valSet.VerifyCommitLight(chainID, blockID, h, commit)
 	assert.NoError(t, err)
+	err = valSet.VerifyCommitLightAllSignatures(chainID, blockID, h, commit)
+	assert.Error(t, err) // counting all signatures detects the malleated signature
 }
 
-func TestValidatorSet_VerifyCommitLightTrusting_ReturnsAsSoonAsTrustLevelOfVotingPowerSigned(t *testing.T) {
+func TestValidatorSet_VerifyCommitLightTrusting_ReturnsAsSoonAsTrustLevelSignedIffNotAllSigs(t *testing.T) {
 	var (
 		chainID = "test_chain_id"
 		h       = int64(3)
@@ -805,6 +819,13 @@ func TestValidatorSet_VerifyCommitLightTrusting_ReturnsAsSoonAsTrustLevelOfVotin
 	voteSet, valSet, vals := randVoteSet(h, 0, cmtproto.PrecommitType, 4, 10)
 	commit, err := MakeCommit(blockID, h, 0, voteSet, vals, time.Now())
 	require.NoError(t, err)
+
+	err = valSet.VerifyCommitLightTrustingAllSignatures(
+		chainID,
+		commit,
+		cmtmath.Fraction{Numerator: 1, Denominator: 3},
+	)
+	assert.NoError(t, err)
 
 	// malleate 3rd signature (2 signatures are enough for 1/3+ trust level)
 	vote := voteSet.GetByIndex(2)
@@ -816,6 +837,12 @@ func TestValidatorSet_VerifyCommitLightTrusting_ReturnsAsSoonAsTrustLevelOfVotin
 
 	err = valSet.VerifyCommitLightTrusting(chainID, commit, cmtmath.Fraction{Numerator: 1, Denominator: 3})
 	assert.NoError(t, err)
+	err = valSet.VerifyCommitLightTrustingAllSignatures(
+		chainID,
+		commit,
+		cmtmath.Fraction{Numerator: 1, Denominator: 3},
+	)
+	assert.Error(t, err) // counting all signatures detects the malleated signature
 }
 
 func TestEmptySet(t *testing.T) {

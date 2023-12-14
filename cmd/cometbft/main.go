@@ -14,20 +14,21 @@ import (
 func main() {
 	rootCmd := cmd.RootCmd
 	rootCmd.AddCommand(
+		cmd.CompactGoLevelDBCmd,
+		cmd.GenNodeKeyCmd,
 		cmd.GenValidatorCmd,
 		cmd.InitFilesCmd,
+		cmd.InspectCmd,
 		cmd.LightCmd,
+		cmd.MigrateDBCmd,
 		cmd.ResetAllCmd,
 		cmd.ResetPrivValidatorCmd,
 		cmd.ResetStateCmd,
+		cmd.RollbackStateCmd,
+		cmd.ShowNodeIDCmd,
 		cmd.ShowValidatorCmd,
 		cmd.TestnetFilesCmd,
-		cmd.ShowNodeIDCmd,
-		cmd.GenNodeKeyCmd,
 		cmd.VersionCmd,
-		cmd.RollbackStateCmd,
-		cmd.CompactGoLevelDBCmd,
-		cmd.InspectCmd,
 		debug.DebugCmd,
 		cli.NewCompletionCmd(rootCmd, true),
 	)

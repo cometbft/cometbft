@@ -74,8 +74,32 @@ func ansibleSystemdBytes(starting bool) string {
     ansible_host_key_checking: false
 
   tasks:
+<<<<<<< HEAD
   - name: operate on the systemd-unit
     ansible.builtin.systemd:
+=======
+`
+
+func ansibleAddTask(playbook, name, contents string) string {
+	return playbook + "  - name: " + name + "\n" + contents + "\n"
+}
+
+func ansibleAddCopyTask(playbook, name, src, dest string) string {
+	copyTask := fmt.Sprintf("    ansible.builtin.copy:\n"+
+		"      src: %s\n"+
+		"      dest: %s\n",
+		src, dest)
+	return ansibleAddTask(playbook, name, copyTask)
+}
+
+func ansibleAddSystemdTask(playbook string, starting bool) string {
+	startStop := "stopped"
+	if starting {
+		startStop = "started"
+	}
+	// testappd is the name of the daemon running the node in the ansible scripts in the qa-infra repo.
+	contents := fmt.Sprintf(`    ansible.builtin.systemd:
+>>>>>>> 61d508ee2 (chore(docs): explain the effect of `timeout_propose` (#1798))
       name: testappd
       state: %s
       enabled: yes`, startStop)

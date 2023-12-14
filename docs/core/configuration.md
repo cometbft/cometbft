@@ -639,10 +639,10 @@ little chances to propose a block and not always be catching up. Note every
 block Bob creates needs a vote from Alice to constitute 2/3+.
 
 Imagine now there are ten geographically distributed validators. One of them
-(Bob) sets `timeout_propose` to 1s. Now, Bob won't be able to move with the
-speed of 1s blocks because it won't gather 2/3+ of votes for its block proposal
-in time (1s). I.e., the network moves with the speed of time to accumulate 2/3+
-of votes, not with the speed of the fastest proposer.
+(Bob) sets `timeout_propose` to 1s. Others have it set to 3s. Now, Bob won't be
+able to move with the speed of 1s blocks because it won't gather 2/3+ of votes
+for its block proposal in time (1s). I.e., the network moves with the speed of
+time to accumulate 2/3+ of votes, not with the speed of the fastest proposer.
 
 > Isn't block production determined by voting power?
 

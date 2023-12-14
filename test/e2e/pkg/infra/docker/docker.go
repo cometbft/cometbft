@@ -32,13 +32,7 @@ func (p *Provider) Setup() error {
 		return err
 	}
 
-	// Generate file with table mapping IP addresses to geographical zone for latencies.
-	zonesTable, err := zonesTableBytes(p.Testnet.Nodes)
-	if err != nil {
-		return err
-	}
-	//nolint: gosec // G306: Expect WriteFile permissions to be 0600 or less
-	err = os.WriteFile(filepath.Join(p.Testnet.Dir, "zones.csv"), zonesTable, 0o644)
+	err = infra.GenerateIPZonesTable(p.Testnet.Nodes, p.IPZonesFilePath(), true)
 	if err != nil {
 		return err
 	}
@@ -85,15 +79,14 @@ func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
 	containerDir := "/scripts/"
 
 	// Copy zone file used by the script that sets latency.
-	zonesFile := filepath.Join(p.Testnet.Dir, "zones.csv")
-	if err := Exec(ctx, "cp", zonesFile, node.Name+":"+containerDir); err != nil {
+	if err := Exec(ctx, "cp", p.IPZonesFilePath(), node.Name+":"+containerDir); err != nil {
 		return err
 	}
 
 	// Execute the latency setter script in the container.
 	if err := ExecVerbose(ctx, "exec", "--privileged", node.Name,
 		filepath.Join(containerDir, "latency-setter.py"), "set",
-		filepath.Join(containerDir, "zones.csv"),
+		filepath.Join(containerDir, filepath.Base(p.IPZonesFilePath())),
 		filepath.Join(containerDir, "aws-latencies.csv"), "eth0"); err != nil {
 		return err
 	}
@@ -182,24 +175,6 @@ services:
 	}
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, testnet)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-func zonesTableBytes(nodes []*e2e.Node) ([]byte, error) {
-	tmpl, err := template.New("zones").Parse(`Node,IP,Zone
-{{- range . }}
-{{- if .Zone }}
-{{ .Name }},{{ .InternalIP }},{{ .Zone }}
-{{- end }}
-{{- end }}`)
-	if err != nil {
-		return nil, err
-	}
-	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, nodes)
 	if err != nil {
 		return nil, err
 	}

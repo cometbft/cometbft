@@ -236,6 +236,14 @@ vulncheck:
 	@go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 .PHONY: vulncheck
 
+lint-typo:
+	@codespell
+.PHONY: lint-typo
+
+lint-fix-typo:
+	@codespell -w
+.PHONY: lint-fix-typo
+
 DESTINATION = ./index.html.md
 
 

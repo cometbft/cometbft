@@ -326,10 +326,10 @@ func TestAppCalls(t *testing.T) {
 		assert.Equal(block.Block.LastCommitHash, commit2.Commit.Hash())
 
 		// and we got a proof that works!
-		_pres, err := c.ABCIQueryWithOptions(context.Background(), "/key", k, client.ABCIQueryOptions{Prove: true})
+		_proof_resp, err := c.ABCIQueryWithOptions(context.Background(), "/key", k, client.ABCIQueryOptions{Prove: true})
 		require.NoError(err)
-		pres := _pres.Response
-		assert.True(pres.IsOK())
+		proof_resp := _proof_resp.Response
+		assert.True(proof_resp.IsOK())
 
 		// XXX Test proof
 	}

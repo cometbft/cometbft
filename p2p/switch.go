@@ -464,8 +464,8 @@ type privateAddr interface {
 }
 
 func isPrivateAddr(err error) bool {
-	te, ok := err.(privateAddr)
-	return ok && te.PrivateAddr()
+	e, ok := err.(privateAddr)
+	return ok && e.PrivateAddr()
 }
 
 // DialPeersAsync dials a list of peers asynchronously in random order.

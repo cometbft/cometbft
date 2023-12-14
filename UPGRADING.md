@@ -170,6 +170,12 @@ definitions:
    Go module. This code is still generated using the Cosmos SDK's [gogoproto
    fork](https://github.com/cosmos/gogoproto) at present.
 
+4. Several ABCI-related types were renamed in order to align with [Buf
+   guidelines](https://buf.build/docs/best-practices/style-guide/). `Request*`
+   and `Response*` were renamed to `*Request` and `*Response` (e.g.
+   `RequestQuery` was renamed to `QueryRequest`). See the changelog for more
+   details.
+
 ### RPC
 
 - The RPC API is now versioned, with the existing RPC being available under both

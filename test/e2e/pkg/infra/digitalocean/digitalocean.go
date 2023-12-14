@@ -153,7 +153,7 @@ func ansibleAddSystemdTask(playbook string, starting bool) string {
 	if starting {
 		startStop = "started"
 	}
-	// testappd is the name of the deamon running the node in the ansible scripts in the qa-infra repo.
+	// testappd is the name of the daemon running the node in the ansible scripts in the qa-infra repo.
 	contents := fmt.Sprintf(`    ansible.builtin.systemd:
       name: testappd
       state: %s

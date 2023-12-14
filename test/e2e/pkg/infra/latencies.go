@@ -8,7 +8,7 @@ import (
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
-// Generate file with table mapping IP addresses to geographical zone for latencies.
+// GenerateIPZonesTable generates a file with a table mapping IP addresses to geographical zone for latencies.
 func GenerateIPZonesTable(nodes []*e2e.Node, zonesPath string, useInternalIP bool) error {
 	// Generate file with table mapping IP addresses to geographical zone for latencies.
 	zonesTable, err := zonesTableBytes(nodes, useInternalIP)

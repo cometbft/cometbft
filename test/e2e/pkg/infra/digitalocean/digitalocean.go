@@ -52,7 +52,7 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 	return execAnsible(ctx, p.Testnet.Dir, playbookFile, nodeIPs)
 }
 
-// SetLatency prepares and executee the latency-setter script in the given node.
+// SetLatency prepares and executes the latency-setter script in the given node.
 func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
 	// Directory in the DigitalOcean node that contains all latency files.
 	remoteDir := "/root/cometbft/test/e2e/latency/"

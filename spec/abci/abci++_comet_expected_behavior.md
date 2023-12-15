@@ -105,7 +105,7 @@ Let us now examine the grammar line by line, providing further details.
 >start               = clean-start / recovery
 >```
 
-* If the process is starting from scratch, depending on whether the _state-sync_ is enabled, it involves in the handshake 
+* If the process is starting from scratch, depending on whether the _state-sync_ is enabled, it engages in the handshake 
 with the Application, or it starts the _state-sync_ mechanism to catch up with other processes. Finally, it enters 
 normal consensus execution.
 

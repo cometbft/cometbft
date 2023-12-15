@@ -63,7 +63,7 @@ got-vote            = %s"<VerifyVoteExtension>"
 finalize-block      = %s"<FinalizeBlock>"
 commit              = %s"<Commit>"
 
-*Note* `Info` and parts related to vote extensions are missing. 
+*Note* `Info` and parts related to vote extensions are missing. We ignore `Info` since it can be triggered by the e2e tests at unpredictable places because of its role in RPC handling from external clients. 
 
 
 

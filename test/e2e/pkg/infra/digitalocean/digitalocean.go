@@ -117,10 +117,6 @@ func ansibleAddSystemdTask(playbook string, starting bool) string {
 	if starting {
 		startStop = "started"
 	}
-<<<<<<< HEAD
-=======
-	// testappd is the name of the daemon running the node in the ansible scripts in the qa-infra repo.
->>>>>>> 61d508ee2 (chore(docs): explain the effect of `timeout_propose` (#1798))
 	contents := fmt.Sprintf(`    ansible.builtin.systemd:
       name: testappd
       state: %s

@@ -73,14 +73,14 @@ func TestVerify(t *testing.T) {
 
 		// recovery = consensus-exec
 		// consensus-height = finalizeBlock commit
-		{"empty-block-2", []*abci.Request{finalizeBlock, commit}, !CleanStart, Pass},
-		{"finalize-block-missing-2", []*abci.Request{commit}, !CleanStart, Fail},
-		{"commit-missing-2", []*abci.Request{finalizeBlock}, !CleanStart, Fail},
+		{"empty-block-3", []*abci.Request{finalizeBlock, commit}, !CleanStart, Pass},
+		{"finalize-block-missing-3", []*abci.Request{commit}, !CleanStart, Fail},
+		{"commit-missing-3", []*abci.Request{finalizeBlock}, !CleanStart, Fail},
 		// consensus-height = *consensus-round finalizeBlock commit
-		{"proposer-round-3", []*abci.Request{prepareProposal, processProposal, finalizeBlock, commit}, !CleanStart, Pass},
-		{"proposer-round-4", []*abci.Request{prepareProposal, finalizeBlock, commit}, !CleanStart, Pass},
-		{"non-proposer-round-2", []*abci.Request{processProposal, finalizeBlock, commit}, !CleanStart, Pass},
-		{"multiple-rounds-2", []*abci.Request{prepareProposal, processProposal, processProposal, prepareProposal, processProposal, processProposal, processProposal, finalizeBlock, commit}, !CleanStart, Pass},
+		{"proposer-round-4", []*abci.Request{prepareProposal, processProposal, finalizeBlock, commit}, !CleanStart, Pass},
+		{"proposer-round-5", []*abci.Request{prepareProposal, finalizeBlock, commit}, !CleanStart, Pass},
+		{"non-proposer-round-3", []*abci.Request{processProposal, finalizeBlock, commit}, !CleanStart, Pass},
+		{"multiple-rounds-3", []*abci.Request{prepareProposal, processProposal, processProposal, prepareProposal, processProposal, processProposal, processProposal, finalizeBlock, commit}, !CleanStart, Pass},
 
 		// corner cases
 		{"empty execution", nil, CleanStart, Fail},

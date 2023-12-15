@@ -260,7 +260,7 @@ func (blockExec *BlockExecutor) ApplyBlock(
 	// validate the validator updates and convert to CometBFT types
 	err = validateValidatorUpdates(abciResponse.ValidatorUpdates, state.ConsensusParams.Validator)
 	if err != nil {
-		return state, fmt.Errorf("error in validator updates: %v", err)
+		return state, fmt.Errorf("error in validator updates: %w", err)
 	}
 
 	validatorUpdates, err := types.PB2TM.ValidatorUpdates(abciResponse.ValidatorUpdates)
@@ -278,13 +278,13 @@ func (blockExec *BlockExecutor) ApplyBlock(
 	// Update the state with the block and responses.
 	state, err = updateState(state, blockID, &block.Header, abciResponse, validatorUpdates)
 	if err != nil {
-		return state, fmt.Errorf("commit failed for application: %v", err)
+		return state, fmt.Errorf("commit failed for application: %w", err)
 	}
 
 	// Lock mempool, commit app state, update mempoool.
 	retainHeight, err := blockExec.Commit(state, block, abciResponse)
 	if err != nil {
-		return state, fmt.Errorf("commit failed for application: %v", err)
+		return state, fmt.Errorf("commit failed for application: %w", err)
 	}
 
 	// Update evpool with the latest state.
@@ -601,7 +601,7 @@ func updateState(
 		if err != nil {
 			return state, fmt.Errorf("changing validator set: %w", err)
 		}
-		// Change results from this height but only applies to the next next height.
+		// Change results from this height but only applies to the height + 2.
 		lastHeightValsChanged = header.Height + 1 + 1
 	}
 

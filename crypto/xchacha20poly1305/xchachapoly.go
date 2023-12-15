@@ -10,7 +10,7 @@ import (
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
-// Implements crypto.AEAD
+// Implements crypto.AEAD.
 type xchacha20poly1305 struct {
 	key [KeySize]byte
 }
@@ -20,12 +20,12 @@ const (
 	KeySize = 32
 	// NonceSize is the size of the nonce used with this AEAD, in bytes.
 	NonceSize = 24
-	// TagSize is the size added from poly1305
+	// TagSize is the size added from poly1305.
 	TagSize = 16
-	// MaxPlaintextSize is the max size that can be passed into a single call of Seal
+	// MaxPlaintextSize is the max size that can be passed into a single call of Seal.
 	MaxPlaintextSize = (1 << 38) - 64
 	// MaxCiphertextSize is the max size that can be passed into a single call of Open,
-	// this differs from plaintext size due to the tag
+	// this differs from plaintext size due to the tag.
 	MaxCiphertextSize = (1 << 38) - 48
 
 	// sigma are constants used in xchacha.
@@ -42,7 +42,7 @@ var (
 	ErrInvalidCipherTextLen = errors.New("xchacha20poly1305: ciphertext too large")
 )
 
-// New returns a new xchachapoly1305 AEAD
+// New returns a new xchachapoly1305 AEAD.
 func New(key []byte) (cipher.AEAD, error) {
 	if len(key) != KeySize {
 		return nil, ErrInvalidKeyLen

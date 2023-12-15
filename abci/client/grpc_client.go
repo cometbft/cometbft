@@ -7,18 +7,17 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-
 	"github.com/cometbft/cometbft/abci/types"
 	cmtnet "github.com/cometbft/cometbft/internal/net"
 	"github.com/cometbft/cometbft/internal/service"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var _ Client = (*grpcClient)(nil)
 
 // A stripped copy of the remoteClient that makes
-// synchronous calls using grpc
+// synchronous calls using grpc.
 type grpcClient struct {
 	service.BaseService
 	mustConnect bool

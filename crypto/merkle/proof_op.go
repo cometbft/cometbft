@@ -21,7 +21,7 @@ var ErrKeyPathNotConsumed = errors.New("merkle: keypath not consumed")
 // ProofOp() encodes the ProofOperator in a generic way so it can later be
 // decoded with OpDecoder.
 type ProofOperator interface {
-	Run([][]byte) ([][]byte, error)
+	Run(leaves [][]byte) ([][]byte, error)
 	GetKey() []byte
 	ProofOp() cmtcrypto.ProofOp
 }
@@ -31,7 +31,7 @@ type ProofOperator interface {
 
 // ProofOperators is a slice of ProofOperator(s).
 // Each operator will be applied to the input value sequentially
-// and the last Merkle root will be verified with already known data
+// and the last Merkle root will be verified with already known data.
 type ProofOperators []ProofOperator
 
 func (poz ProofOperators) VerifyValue(root []byte, keypath string, value []byte) (err error) {

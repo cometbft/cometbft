@@ -15,18 +15,18 @@ import (
 const (
 	atomicWriteFilePrefix = "write-file-atomic-"
 	// Maximum number of atomic write file conflicts before we start reseeding
-	// (reduced from golang's default 10 due to using an increased randomness space)
+	// (reduced from golang's default 10 due to using an increased randomness space).
 	atomicWriteFileMaxNumConflicts = 5
 	// Maximum number of attempts to make at writing the write file before giving up
-	// (reduced from golang's default 10000 due to using an increased randomness space)
+	// (reduced from golang's default 10000 due to using an increased randomness space).
 	atomicWriteFileMaxNumWriteAttempts = 1000
 	// LCG constants from Donald Knuth MMIX
-	// This LCG's has a period equal to 2**64
+	// This LCG's has a period equal to 2**64.
 	lcgA = 6364136223846793005
 	lcgC = 1442695040888963407
 	// Create in case it doesn't exist and force kernel
 	// flush, which still leaves the potential of lingering disk cache.
-	// Never overwrites files
+	// Never overwrites files.
 	atomicWriteFileFlag = os.O_WRONLY | os.O_CREATE | os.O_SYNC | os.O_TRUNC | os.O_EXCL
 )
 

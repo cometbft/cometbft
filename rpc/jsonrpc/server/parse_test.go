@@ -7,10 +7,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/cometbft/cometbft/libs/bytes"
 	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParseJSONMap(t *testing.T) {
@@ -166,7 +165,6 @@ func TestParseJSONRPC(t *testing.T) {
 				assert.Equal(t, tc.name, vals[1].String(), i)
 			}
 		}
-
 	}
 }
 
@@ -208,6 +206,5 @@ func TestParseURI(t *testing.T) {
 				assert.Equal(t, tc.name, vals[1].String(), i)
 			}
 		}
-
 	}
 }

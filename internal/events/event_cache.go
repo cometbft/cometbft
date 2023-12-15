@@ -1,20 +1,20 @@
 package events
 
 // An EventCache buffers events for a Fireable
-// All events are cached. Filtering happens on Flush
+// All events are cached. Filtering happens on Flush.
 type EventCache struct {
 	evsw   Fireable
 	events []eventInfo
 }
 
-// Create a new EventCache with an EventSwitch as backend
+// Create a new EventCache with an EventSwitch as backend.
 func NewEventCache(evsw Fireable) *EventCache {
 	return &EventCache{
 		evsw: evsw,
 	}
 }
 
-// a cached event
+// a cached event.
 type eventInfo struct {
 	event string
 	data  EventData
@@ -27,7 +27,7 @@ func (evc *EventCache) FireEvent(event string, data EventData) {
 }
 
 // Fire events by running evsw.FireEvent on all cached events. Blocks.
-// Clears cached events
+// Clears cached events.
 func (evc *EventCache) Flush() {
 	for _, ei := range evc.events {
 		evc.evsw.FireEvent(ei.event, ei.data)

@@ -9,7 +9,6 @@ import (
 	cmtnet "github.com/cometbft/cometbft/internal/net"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/libs/log"
-
 	"github.com/cometbft/cometbft/privval"
 )
 

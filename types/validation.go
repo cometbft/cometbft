@@ -24,7 +24,8 @@ func shouldBatchVerify(vals *ValidatorSet, commit *Commit) bool {
 // includes which validators signed. For instance, Gaia incentivizes proposers
 // with a bonus for including more than +2/3 of the signatures.
 func VerifyCommit(chainID string, vals *ValidatorSet, blockID BlockID,
-	height int64, commit *Commit) error {
+	height int64, commit *Commit,
+) error {
 	// run a basic validation of the arguments
 	if err := verifyBasicValsAndCommit(vals, commit, height, blockID); err != nil {
 		return err
@@ -322,7 +323,7 @@ func verifyCommitBatch(
 // If a key does not support batch verification, or batch verification fails this will be used
 // This method is used to check all the signatures included in a commit.
 // It is used in consensus for validating a block LastCommit.
-// CONTRACT: both commit and validator set should have passed validate basic
+// CONTRACT: both commit and validator set should have passed validate basic.
 func verifyCommitSingle(
 	chainID string,
 	vals *ValidatorSet,

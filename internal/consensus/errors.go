@@ -14,7 +14,7 @@ var (
 	ErrProposalWithoutPreviousCommit = errors.New("propose step; cannot propose anything without commit for the previous block")
 )
 
-// Consensus sentinel errors
+// Consensus sentinel errors.
 var (
 	ErrInvalidProposalSignature   = errors.New("error invalid proposal signature")
 	ErrInvalidProposalPOLRound    = errors.New("error invalid proposal POL round")

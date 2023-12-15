@@ -5,14 +5,12 @@ import (
 	"math/big"
 	"testing"
 
+	underlyingSecp256k1 "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcutil/base58"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
-
-	underlyingSecp256k1 "github.com/btcsuite/btcd/btcec/v2"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type keyData struct {

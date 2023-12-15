@@ -5,9 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/cometbft/cometbft/libs/log"
-
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/log"
 	clean_start_lexer "github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/grammar-auto/lexer"
 	clean_start_parser "github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/grammar-auto/parser"
 	recovery_lexer "github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/grammar-auto/lexer"

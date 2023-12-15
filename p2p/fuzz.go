@@ -107,7 +107,7 @@ func (fc *FuzzedConnection) randomDuration() time.Duration {
 }
 
 // implements the fuzz (delay, kill conn)
-// and returns whether or not the read/write should be ignored
+// and returns whether or not the read/write should be ignored.
 func (fc *FuzzedConnection) fuzz() bool {
 	if !fc.shouldFuzz() {
 		return false

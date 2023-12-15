@@ -5,10 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/version"
+	"github.com/stretchr/testify/require"
 )
 
 func MakeExtCommit(blockID BlockID, height int64, round int32,
@@ -98,6 +97,8 @@ func MakeVoteNoError(
 	blockID BlockID,
 	time time.Time,
 ) *Vote {
+	t.Helper()
+
 	vote, err := MakeVote(val, chainID, valIndex, height, round, step, blockID, time)
 	require.NoError(t, err)
 	return vote

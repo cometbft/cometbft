@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/google/orderedcode"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	idxutil "github.com/cometbft/cometbft/internal/indexer"
 	cmtsyntax "github.com/cometbft/cometbft/internal/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/internal/state/indexer"
 	"github.com/cometbft/cometbft/types"
+	"github.com/google/orderedcode"
 )
 
 type HeightInfo struct {
@@ -102,11 +101,10 @@ func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) (bool, error)
 		if err != nil || !withinBounds {
 			return false, err
 		}
-	} else {
-		if heightInfo.height != 0 && keyHeight != heightInfo.height {
-			return false, nil
-		}
+	} else if heightInfo.height != 0 && keyHeight != heightInfo.height {
+		return false, nil
 	}
+
 	return true, nil
 }
 
@@ -119,19 +117,6 @@ func int64ToBytes(i int64) []byte {
 	buf := make([]byte, binary.MaxVarintLen64)
 	n := binary.PutVarint(buf, i)
 	return buf[:n]
-}
-
-func getKeys(indexer *TxIndex) [][]byte {
-	var keys [][]byte
-
-	itr, err := indexer.store.Iterator(nil, nil)
-	if err != nil {
-		panic(err)
-	}
-	for ; itr.Valid(); itr.Next() {
-		keys = append(keys, itr.Key())
-	}
-	return keys
 }
 
 type TxResultByHeight []*abci.TxResult

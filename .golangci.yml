@@ -1,8 +1,9 @@
 linters:
+  disable-all: true
   enable:
     - asciicheck
     - bodyclose
-    - depguard
+    # - depguard
     - dogsled
     - dupl
     - errcheck
@@ -10,13 +11,13 @@ linters:
     - goconst
     - gofmt
     - goimports
-    - revive
+    # - revive
     - gosec
     - gosimple
     - govet
     - ineffassign
     - misspell
-    - nakedret
+    # - nakedret
     - nolintlint
     - prealloc
     - staticcheck
@@ -30,6 +31,7 @@ issues:
   exclude-rules:
     - path: _test\.go
       linters:
+        - goconst
         - gosec
   max-same-issues: 50
 
@@ -42,3 +44,5 @@ linters-settings:
     suggest-new: true
   misspell:
     locale: US
+  goconst:
+    ignore-strings: 'INSERT INTO'

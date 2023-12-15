@@ -538,8 +538,6 @@ Here's a brief summary of the timeouts:
   on the new height (this gives us a chance to receive some more precommits,
   even though we already have +2/3)
 
-<<<<<<< HEAD
-=======
 ### The effect of `timeout_propose` on the proposer selection process
 
 Here's an interesting question. What if the particular validator sets a very
@@ -590,4 +588,3 @@ being available and must move on if such is not responding.
 
 The impact shown above is negligible in a decentralized network with enough
 decentralization.
->>>>>>> 61d508ee2 (chore(docs): explain the effect of `timeout_propose` (#1798))

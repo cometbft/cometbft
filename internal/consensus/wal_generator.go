@@ -135,7 +135,7 @@ func WALWithNBlocks(t *testing.T, numBlocks int, config *cfg.Config) (data []byt
 	return b.Bytes(), nil
 }
 
-//nolint:deadcode,unused
+//nolint:unused
 func randPort() int {
 	// returns between base and base + spread
 	base, spread := 20000, 20000

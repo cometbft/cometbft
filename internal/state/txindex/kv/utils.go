@@ -119,6 +119,20 @@ func int64ToBytes(i int64) []byte {
 	return buf[:n]
 }
 
+//nolint:deadcode,unused
+func getKeys(indexer *TxIndex) [][]byte {
+	var keys [][]byte
+
+	itr, err := indexer.store.Iterator(nil, nil)
+	if err != nil {
+		panic(err)
+	}
+	for ; itr.Valid(); itr.Next() {
+		keys = append(keys, itr.Key())
+	}
+	return keys
+}
+
 type TxResultByHeight []*abci.TxResult
 
 func (a TxResultByHeight) Len() int           { return len(a) }

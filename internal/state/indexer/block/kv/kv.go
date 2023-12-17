@@ -88,6 +88,20 @@ func (idx *BlockerIndexer) Index(bh types.EventDataNewBlockEvents) error {
 	return batch.WriteSync()
 }
 
+//nolint:unused
+func getKeys(indexer BlockerIndexer) [][]byte {
+	var keys [][]byte
+
+	itr, err := indexer.store.Iterator(nil, nil)
+	if err != nil {
+		panic(err)
+	}
+	for ; itr.Valid(); itr.Next() {
+		keys = append(keys, itr.Key())
+	}
+	return keys
+}
+
 func (idx *BlockerIndexer) Prune(retainHeight int64) (int64, int64, error) {
 	// Returns numPruned, newRetainHeight, err
 	// numPruned: the number of heights pruned or 0 in case of error. E.x. if heights {1, 3, 7} were pruned and there was no error, numPruned == 3

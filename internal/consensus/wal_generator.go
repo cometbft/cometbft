@@ -12,6 +12,7 @@ import (
 	db "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	cfg "github.com/cometbft/cometbft/config"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
@@ -132,6 +133,20 @@ func WALWithNBlocks(t *testing.T, numBlocks int, config *cfg.Config) (data []byt
 
 	wr.Flush()
 	return b.Bytes(), nil
+}
+
+//nolint:deadcode,unused
+func randPort() int {
+	// returns between base and base + spread
+	base, spread := 20000, 20000
+	return base + cmtrand.Intn(spread)
+}
+
+//nolint:deadcode,unused
+func makeAddrs() (string, string) {
+	start := randPort()
+	return fmt.Sprintf("tcp://127.0.0.1:%d", start),
+		fmt.Sprintf("tcp://127.0.0.1:%d", start+1)
 }
 
 // byteBufferWAL is a WAL which writes all msgs to a byte buffer. Writing stops

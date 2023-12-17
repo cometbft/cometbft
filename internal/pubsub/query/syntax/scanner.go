@@ -267,16 +267,15 @@ func (s *Scanner) scanWhile(ok func(rune) bool) error {
 	for {
 		ch, err := s.rune()
 		switch {
-		case err == nil:
-			s.buf.WriteRune(ch)
 		case err == io.EOF:
 			return nil
 		case !ok(ch):
 			s.unrune()
 			return nil
-		default:
+		case err != nil:
 			return s.fail(err)
 		}
+		s.buf.WriteRune(ch)
 	}
 }
 

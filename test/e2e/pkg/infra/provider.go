@@ -16,26 +16,26 @@ type Provider interface {
 	// Starts the nodes passed as parameter. A nodes MUST NOT
 	// be started twice before calling StopTestnet
 	// If no nodes are passed, start the whole network
-	StartNodes(context.Context, ...*e2e.Node) error
+	StartNodes(ctx context.Context, nodes ...*e2e.Node) error
 
 	// Set emulated latencies from a node to other nodes.
-	SetLatency(context.Context, *e2e.Node) error
+	SetLatency(ctx context.Context, node *e2e.Node) error
 
 	// Stops the whole network
-	StopTestnet(context.Context) error
+	StopTestnet(ctx context.Context) error
 
 	// Disconnects the node from the network
-	Disconnect(context.Context, string, string) error
+	Disconnect(ctx context.Context, name string, ip string) error
 
 	// Reconnects the node to the network.
 	// This should only be called after Disconnect
-	Reconnect(context.Context, string, string) error
+	Reconnect(ctx context.Context, name string, ip string) error
 
-	// Returns the the provider's infrastructure data
+	// Returns the provider's infrastructure data
 	GetInfrastructureData() *e2e.InfrastructureData
 
 	// Checks whether the node has been upgraded in this run
-	CheckUpgraded(context.Context, *e2e.Node) (string, bool, error)
+	CheckUpgraded(ctx context.Context, node *e2e.Node) (string, bool, error)
 }
 
 type ProviderData struct {
@@ -43,7 +43,7 @@ type ProviderData struct {
 	InfrastructureData e2e.InfrastructureData
 }
 
-// Returns the the provider's infrastructure data
+// Returns the the provider's infrastructure data.
 func (pd ProviderData) GetInfrastructureData() *e2e.InfrastructureData {
 	return &pd.InfrastructureData
 }

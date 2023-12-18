@@ -5,17 +5,18 @@ import (
 	"crypto/rand"
 	"os"
 	"path/filepath"
-
-	// "sync"
+	// "sync".
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/internal/autofile"
 	"github.com/cometbft/cometbft/internal/consensus/types"
+	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	cmttypes "github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
@@ -287,4 +288,15 @@ func BenchmarkWalDecode100MB(b *testing.B) {
 
 func BenchmarkWalDecode1GB(b *testing.B) {
 	benchmarkWalDecode(b, 1024*1024*1024)
+}
+
+// getConfig returns a config for test cases.
+func getConfig(t *testing.T) *cfg.Config {
+	c := test.ResetTestRoot(t.Name())
+
+	// and we use random ports to run in parallel
+	cmt, rpc := makeAddrs()
+	c.P2P.ListenAddress = cmt
+	c.RPC.ListenAddress = rpc
+	return c
 }

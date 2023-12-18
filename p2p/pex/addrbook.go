@@ -14,8 +14,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/minio/highwayhash"
-
 	"github.com/cometbft/cometbft/crypto"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/service"
@@ -23,6 +21,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/p2p"
+	"github.com/minio/highwayhash"
 )
 
 const (
@@ -38,18 +37,18 @@ type AddrBook interface {
 	service.Service
 
 	// Add our own addresses so we don't later add ourselves
-	AddOurAddress(*p2p.NetAddress)
+	AddOurAddress(addr *p2p.NetAddress)
 	// Check if it is our address
-	OurAddress(*p2p.NetAddress) bool
+	OurAddress(addr *p2p.NetAddress) bool
 
-	AddPrivateIDs([]string)
+	AddPrivateIDs(ids []string)
 
 	// Add and remove an address
 	AddAddress(addr *p2p.NetAddress, src *p2p.NetAddress) error
-	RemoveAddress(*p2p.NetAddress)
+	RemoveAddress(addr *p2p.NetAddress)
 
 	// Check if the address is in the book
-	HasAddress(*p2p.NetAddress) bool
+	HasAddress(addr *p2p.NetAddress) bool
 
 	// Do we need more peers?
 	NeedMoreAddrs() bool
@@ -61,14 +60,14 @@ type AddrBook interface {
 	PickAddress(biasTowardsNewAddrs int) *p2p.NetAddress
 
 	// Mark address
-	MarkGood(p2p.ID)
-	MarkAttempt(*p2p.NetAddress)
-	MarkBad(*p2p.NetAddress, time.Duration) // Move peer to bad peers list
+	MarkGood(id p2p.ID)
+	MarkAttempt(addr *p2p.NetAddress)
+	MarkBad(addr *p2p.NetAddress, dur time.Duration) // Move peer to bad peers list
 	// Add bad peers back to addrBook
 	ReinstateBadPeers()
 
-	IsGood(*p2p.NetAddress) bool
-	IsBanned(*p2p.NetAddress) bool
+	IsGood(addr *p2p.NetAddress) bool
+	IsBanned(addr *p2p.NetAddress) bool
 
 	// Send a selection of addresses to peers
 	GetSelection() []*p2p.NetAddress
@@ -136,7 +135,7 @@ func NewAddrBook(filePath string, routabilityStrict bool) AddrBook {
 }
 
 // Initialize the buckets.
-// When modifying this, don't forget to update loadFromFile()
+// When modifying this, don't forget to update loadFromFile().
 func (a *addrBook) init() {
 	a.key = crypto.CRandHex(24) // 24/2 * 8 = 96 bits
 	// New addr buckets
@@ -209,7 +208,7 @@ func (a *addrBook) AddPrivateIDs(ids []string) {
 // AddAddress implements AddrBook
 // Add address to a "new" bucket. If it's already in one, only add it probabilistically.
 // Returns error if the addr is non-routable. Does not add self.
-// NOTE: addr must not be nil
+// NOTE: addr must not be nil.
 func (a *addrBook) AddAddress(addr *p2p.NetAddress, src *p2p.NetAddress) error {
 	a.mtx.Lock()
 	defer a.mtx.Unlock()
@@ -234,7 +233,7 @@ func (a *addrBook) IsGood(addr *p2p.NetAddress) bool {
 	return a.addrLookup[addr.ID].isOld()
 }
 
-// IsBanned returns true if the peer is currently banned
+// IsBanned returns true if the peer is currently banned.
 func (a *addrBook) IsBanned(addr *p2p.NetAddress) bool {
 	a.mtx.Lock()
 	_, ok := a.badPeers[addr.ID]
@@ -636,7 +635,7 @@ func (a *addrBook) pickOldest(bucketType byte, bucketIdx int) *knownAddress {
 }
 
 // adds the address to a "new" bucket. if its already in one,
-// it only adds it probabilistically
+// it only adds it probabilistically.
 func (a *addrBook) addAddress(addr, src *p2p.NetAddress) error {
 	if addr == nil || src == nil {
 		return ErrAddrBookNilAddr{addr, src}
@@ -825,7 +824,7 @@ func (a *addrBook) addBadPeer(addr *p2p.NetAddress, banTime time.Duration) bool 
 //---------------------------------------------------------------------
 // calculate bucket placements
 
-// hash(key + sourcegroup + int64(hash(key + group + sourcegroup)) % bucket_per_group) % num_new_buckets
+// hash(key + sourcegroup + int64(hash(key + group + sourcegroup)) % bucket_per_group) % num_new_buckets.
 func (a *addrBook) calcNewBucket(addr, src *p2p.NetAddress) (int, error) {
 	data1 := []byte{}
 	data1 = append(data1, []byte(a.key)...)
@@ -852,7 +851,7 @@ func (a *addrBook) calcNewBucket(addr, src *p2p.NetAddress) (int, error) {
 	return result, nil
 }
 
-// hash(key + group + int64(hash(key + addr)) % buckets_per_group) % num_old_buckets
+// hash(key + group + int64(hash(key + addr)) % buckets_per_group) % num_old_buckets.
 func (a *addrBook) calcOldBucket(addr *p2p.NetAddress) (int, error) {
 	data1 := []byte{}
 	data1 = append(data1, []byte(a.key)...)

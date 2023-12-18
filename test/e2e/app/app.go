@@ -31,7 +31,6 @@ import (
 const (
 	appVersion                 = 1
 	voteExtensionKey    string = "extensionSum"
-	voteExtensionMaxLen int64  = 1024 * 1024 * 128 // TODO: should be smaller.
 	voteExtensionMaxVal int64  = 128
 	prefixReservedKey   string = "reservedTxKey_"
 	suffixChainID       string = "ChainID"
@@ -234,6 +233,7 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 
 	key, _, err := parseTx(req.Tx)
 	if err != nil || key == prefixReservedKey {
+		//nolint:nilerr
 		return &abci.CheckTxResponse{
 			Code: kvstore.CodeTypeEncodingError,
 			Log:  err.Error(),
@@ -591,7 +591,7 @@ func (app *Application) ExtendVote(_ context.Context, req *abci.ExtendVoteReques
 		extLen = binary.PutVarint(ext, num.Int64())
 	}
 
-	app.logger.Info("generated vote extension", "height", appHeight, "vote_extension", fmt.Sprintf("%x", ext[:4]), "len", extLen)
+	app.logger.Info("generated vote extension", "height", appHeight, "vote_extension", hex.EncodeToString(ext[:4]), "len", extLen)
 	return &abci.ExtendVoteResponse{
 		VoteExtension: ext[:extLen],
 	}, nil
@@ -615,7 +615,7 @@ func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.VerifyV
 
 	num, err := parseVoteExtension(app.cfg, req.VoteExtension)
 	if err != nil {
-		app.logger.Error("failed to parse vote extension", "vote_extension", fmt.Sprintf("%x", req.VoteExtension[:4]), "err", err)
+		app.logger.Error("failed to parse vote extension", "vote_extension", hex.EncodeToString(req.VoteExtension[:4]), "err", err)
 		return &abci.VerifyVoteExtensionResponse{
 			Status: abci.VERIFY_VOTE_EXTENSION_STATUS_REJECT,
 		}, nil
@@ -625,7 +625,7 @@ func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.VerifyV
 		time.Sleep(app.cfg.VoteExtensionDelay)
 	}
 
-	app.logger.Info("verified vote extension value", "height", req.Height, "vote_extension", fmt.Sprintf("%x", req.VoteExtension[:4]), "num", num)
+	app.logger.Info("verified vote extension value", "height", req.Height, "vote_extension", hex.EncodeToString(req.VoteExtension[:4]), "num", num)
 	return &abci.VerifyVoteExtensionResponse{
 		Status: abci.VERIFY_VOTE_EXTENSION_STATUS_ACCEPT,
 	}, nil
@@ -697,14 +697,13 @@ func (app *Application) storeValidator(valUpdate *abci.ValidatorUpdate) error {
 
 // validatorUpdates generates a validator set update.
 func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, error) {
-	updates := app.cfg.ValidatorUpdates[fmt.Sprintf("%v", height)]
+	updates := app.cfg.ValidatorUpdates[strconv.FormatUint(height, 10)]
 	if len(updates) == 0 {
 		return nil, nil
 	}
 
 	valUpdates := abci.ValidatorUpdates{}
 	for keyString, power := range updates {
-
 		keyBytes, err := base64.StdEncoding.DecodeString(keyString)
 		if err != nil {
 			return nil, fmt.Errorf("invalid base64 pubkey value %q: %w", keyString, err)
@@ -803,7 +802,7 @@ func (app *Application) verifyAndSum(
 			return 0, fmt.Errorf("error when marshaling signed bytes: %w", err)
 		}
 
-		//... and verify
+		// ... and verify
 		valAddr := crypto.Address(vote.Validator.Address).String()
 		pubKeyHex := app.state.Get(prefixReservedKey + valAddr)
 		if len(pubKeyHex) == 0 {
@@ -848,7 +847,7 @@ func (app *Application) verifyAndSum(
 	return sum, nil
 }
 
-// verifyExtensionTx parses and verifies the payload of a vote extension-generated tx
+// verifyExtensionTx parses and verifies the payload of a vote extension-generated tx.
 func (app *Application) verifyExtensionTx(height int64, payload string) error {
 	parts := strings.Split(payload, "|")
 	if len(parts) != 2 {

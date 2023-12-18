@@ -480,7 +480,7 @@ func (s *syncer) requestChunk(snapshot *snapshot, chunk uint32) {
 	})
 }
 
-// verifyApp verifies the sync, checking the app hash, last block height and app version
+// verifyApp verifies the sync, checking the app hash, last block height and app version.
 func (s *syncer) verifyApp(snapshot *snapshot, appVersion uint64) error {
 	resp, err := s.connQuery.Info(context.TODO(), proxy.InfoRequest)
 	if err != nil {

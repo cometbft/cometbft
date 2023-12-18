@@ -7,12 +7,11 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/oasisprotocol/curve25519-voi/primitives/ed25519"
-	"github.com/oasisprotocol/curve25519-voi/primitives/ed25519/extra/cache"
-
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
+	"github.com/oasisprotocol/curve25519-voi/primitives/ed25519"
+	"github.com/oasisprotocol/curve25519-voi/primitives/ed25519/extra/cache"
 )
 
 var (
@@ -47,7 +46,7 @@ var (
 const (
 	PrivKeyName = "tendermint/PrivKeyEd25519"
 	PubKeyName  = "tendermint/PubKeyEd25519"
-	// PubKeySize is is the size, in bytes, of public keys as used in this package.
+	// PubKeySize is the size, in bytes, of public keys as used in this package.
 	PubKeySize = 32
 	// PrivateKeySize is the size, in bytes, of private keys as used in this package.
 	PrivateKeySize = 64

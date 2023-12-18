@@ -22,7 +22,7 @@ type Metrics struct {
 	SizeBytes metrics.Gauge
 
 	// Histogram of transaction sizes in bytes.
-	TxSizeBytes metrics.Histogram `metrics_buckettype:"exp" metrics_bucketsizes:"1,3,7"`
+	TxSizeBytes metrics.Histogram `metrics_bucketsizes:"1,3,7" metrics_buckettype:"exp"`
 
 	// Number of failed transactions.
 	FailedTxs metrics.Counter

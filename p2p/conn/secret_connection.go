@@ -13,14 +13,6 @@ import (
 	"net"
 	"time"
 
-	gogotypes "github.com/cosmos/gogoproto/types"
-	pool "github.com/libp2p/go-buffer-pool"
-	"github.com/oasisprotocol/curve25519-voi/primitives/merlin"
-	"golang.org/x/crypto/chacha20poly1305"
-	"golang.org/x/crypto/curve25519"
-	"golang.org/x/crypto/hkdf"
-	"golang.org/x/crypto/nacl/box"
-
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
@@ -28,9 +20,16 @@ import (
 	"github.com/cometbft/cometbft/internal/async"
 	"github.com/cometbft/cometbft/internal/protoio"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	gogotypes "github.com/cosmos/gogoproto/types"
+	pool "github.com/libp2p/go-buffer-pool"
+	"github.com/oasisprotocol/curve25519-voi/primitives/merlin"
+	"golang.org/x/crypto/chacha20poly1305"
+	"golang.org/x/crypto/curve25519"
+	"golang.org/x/crypto/hkdf"
+	"golang.org/x/crypto/nacl/box"
 )
 
-// 4 + 1024 == 1028 total frame size
+// 4 + 1024 == 1028 total frame size.
 const (
 	dataLenSize      = 4
 	dataMaxSize      = 1024
@@ -174,7 +173,7 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 	return sc, nil
 }
 
-// RemotePubKey returns authenticated remote pubkey
+// RemotePubKey returns authenticated remote pubkey.
 func (sc *SecretConnection) RemotePubKey() crypto.PubKey {
 	return sc.remPubKey
 }
@@ -269,7 +268,7 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 	return n, err
 }
 
-// Implements net.Conn
+// Implements net.Conn.
 func (sc *SecretConnection) Close() error                  { return sc.conn.Close() }
 func (sc *SecretConnection) LocalAddr() net.Addr           { return sc.conn.(net.Conn).LocalAddr() }
 func (sc *SecretConnection) RemoteAddr() net.Addr          { return sc.conn.(net.Conn).RemoteAddr() }

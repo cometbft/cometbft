@@ -125,7 +125,7 @@ func TestParallelRecover(t *testing.T) {
 	checkResult(t, taskResultSet, 2, nil, nil, fmt.Errorf("panic in task %v", 2).Error())
 }
 
-// Wait for result
+// Wait for result.
 func checkResult(t *testing.T, taskResultSet *TaskResultSet, index int,
 	val interface{}, err error, pnk interface{},
 ) {
@@ -143,7 +143,7 @@ func checkResult(t *testing.T, taskResultSet *TaskResultSet, index int,
 	}
 }
 
-// Wait for timeout (no result)
+// Wait for timeout (no result).
 func waitTimeout(t *testing.T, taskResultCh TaskResultCh, taskName string) {
 	select {
 	case _, ok := <-taskResultCh:

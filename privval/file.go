@@ -7,8 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/cosmos/gogoproto/proto"
-
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
@@ -19,6 +17,7 @@ import (
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/cosmos/gogoproto/proto"
 )
 
 // TODO: type ?
@@ -416,7 +415,7 @@ func (pv *FilePV) signProposal(chainID string, proposal *cmtproto.Proposal) erro
 	return nil
 }
 
-// Persist height/round/step and signature
+// Persist height/round/step and signature.
 func (pv *FilePV) saveSigned(height int64, round int32, step int8,
 	signBytes []byte, sig []byte,
 ) {
@@ -453,7 +452,7 @@ func checkVotesOnlyDifferByTimestamp(lastSignBytes, newSignBytes []byte) (time.T
 }
 
 // returns the timestamp from the lastSignBytes.
-// returns true if the only difference in the proposals is their timestamp
+// returns true if the only difference in the proposals is their timestamp.
 func checkProposalsOnlyDifferByTimestamp(lastSignBytes, newSignBytes []byte) (time.Time, bool) {
 	var lastProposal, newProposal cmtproto.CanonicalProposal
 	if err := protoio.UnmarshalDelimited(lastSignBytes, &lastProposal); err != nil {

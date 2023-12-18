@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/cli"
 	cmtflags "github.com/cometbft/cometbft/libs/cli/flags"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -27,7 +26,7 @@ func registerFlagsRootCmd(cmd *cobra.Command) {
 }
 
 // ParseConfig retrieves the default environment configuration,
-// sets up the CometBFT root and ensures that the root exists
+// sets up the CometBFT root and ensures that the root exists.
 func ParseConfig(cmd *cobra.Command) (*cfg.Config, error) {
 	conf := cfg.DefaultConfig()
 	err := viper.Unmarshal(conf)
@@ -36,13 +35,14 @@ func ParseConfig(cmd *cobra.Command) (*cfg.Config, error) {
 	}
 
 	var home string
-	if os.Getenv("CMTHOME") != "" {
+	switch {
+	case os.Getenv("CMTHOME") != "":
 		home = os.Getenv("CMTHOME")
-	} else if os.Getenv("TMHOME") != "" {
+	case os.Getenv("TMHOME") != "":
 		// XXX: Deprecated.
 		home = os.Getenv("TMHOME")
 		logger.Error("Deprecated environment variable TMHOME identified. CMTHOME should be used instead.")
-	} else {
+	default:
 		home, err = cmd.Flags().GetString(cli.HomeFlag)
 		if err != nil {
 			return nil, err

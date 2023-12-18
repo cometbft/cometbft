@@ -26,7 +26,7 @@ import (
 )
 
 // Run go test -update from within this module
-// to update the golden test vector file
+// to update the golden test vector file.
 var update = flag.Bool("update", false, "update .golden files")
 
 type kvstoreConn struct {
@@ -308,7 +308,7 @@ func readLots(t *testing.T, wg *sync.WaitGroup, conn io.Reader, n int) {
 
 // Creates the data for a test vector file.
 // The file format is:
-// Hex(diffie_hellman_secret), loc_is_least, Hex(recvSecret), Hex(sendSecret), Hex(challenge)
+// Hex(diffie_hellman_secret), loc_is_least, Hex(recvSecret), Hex(sendSecret), Hex(challenge).
 func createGoldenTestVectors(*testing.T) string {
 	data := ""
 	for i := 0; i < 32; i++ {
@@ -325,7 +325,7 @@ func createGoldenTestVectors(*testing.T) string {
 	return data
 }
 
-// Each returned ReadWriteCloser is akin to a net.Connection
+// Each returned ReadWriteCloser is akin to a net.Connection.
 func makeKVStoreConnPair() (fooConn, barConn kvstoreConn) {
 	barReader, fooWriter := io.Pipe()
 	fooReader, barWriter := io.Pipe()

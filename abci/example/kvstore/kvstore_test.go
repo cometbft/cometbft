@@ -8,12 +8,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/internal/service"
-	"github.com/cometbft/cometbft/libs/log"
-
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abciserver "github.com/cometbft/cometbft/abci/server"
 	"github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/internal/service"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 const (
@@ -135,7 +134,7 @@ func TestPersistentKVStoreInfo(t *testing.T) {
 	require.Equal(t, height, resInfo.LastBlockHeight)
 }
 
-// add a validator, remove a validator, update a validator
+// add a validator, remove a validator, update a validator.
 func TestValUpdates(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -180,7 +179,7 @@ func TestValUpdates(t *testing.T) {
 
 	makeApplyBlock(ctx, t, kvstore, 2, diff, tx1, tx2, tx3)
 
-	vals1 = append(vals[:nInit-2], vals[nInit+1]) //nolint: gocritic
+	vals1 = append(vals[:nInit-2], vals[nInit+1])
 	vals2 = kvstore.getValidators()
 	valsEqual(t, vals1, vals2)
 
@@ -274,7 +273,7 @@ func makeApplyBlock(
 	valsEqual(t, diff, resFinalizeBlock.ValidatorUpdates)
 }
 
-// order doesn't matter
+// order doesn't matter.
 func valsEqual(t *testing.T, vals1, vals2 []types.ValidatorUpdate) {
 	t.Helper()
 	if len(vals1) != len(vals2) {

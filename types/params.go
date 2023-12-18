@@ -291,7 +291,7 @@ func (params ConsensusParams) Hash() []byte {
 }
 
 // Update returns a copy of the params with updates from the non-zero fields of p2.
-// NOTE: note: must not modify the original
+// NOTE: note: must not modify the original.
 func (params ConsensusParams) Update(params2 *cmtproto.ConsensusParams) ConsensusParams {
 	res := params // explicit copy
 

@@ -2,7 +2,7 @@ package merkle
 
 import (
 	// it is ok to use math/rand here: we do not need a cryptographically secure random
-	// number generator here and we can run the tests a bit faster
+	// number generator here and we can run the tests a bit faster.
 	crand "crypto/rand"
 	"math/rand"
 	"testing"

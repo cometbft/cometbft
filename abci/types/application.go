@@ -8,30 +8,30 @@ import "context"
 // to be driven by a blockchain-based replication engine via the ABCI.
 type Application interface {
 	// Info/Query Connection
-	Info(context.Context, *InfoRequest) (*InfoResponse, error)    // Return application info
-	Query(context.Context, *QueryRequest) (*QueryResponse, error) // Query for state
+	Info(ctx context.Context, req *InfoRequest) (*InfoResponse, error)    // Return application info
+	Query(ctx context.Context, req *QueryRequest) (*QueryResponse, error) // Query for state
 
 	// Mempool Connection
-	CheckTx(context.Context, *CheckTxRequest) (*CheckTxResponse, error) // Validate a tx for the mempool
+	CheckTx(ctx context.Context, req *CheckTxRequest) (*CheckTxResponse, error) // Validate a tx for the mempool
 
 	// Consensus Connection
-	InitChain(context.Context, *InitChainRequest) (*InitChainResponse, error) // Initialize blockchain w validators/other info from CometBFT
-	PrepareProposal(context.Context, *PrepareProposalRequest) (*PrepareProposalResponse, error)
-	ProcessProposal(context.Context, *ProcessProposalRequest) (*ProcessProposalResponse, error)
+	InitChain(ctx context.Context, req *InitChainRequest) (*InitChainResponse, error) // Initialize blockchain w validators/other info from CometBFT
+	PrepareProposal(ctx context.Context, req *PrepareProposalRequest) (*PrepareProposalResponse, error)
+	ProcessProposal(ctx context.Context, req *ProcessProposalRequest) (*ProcessProposalResponse, error)
 	// Deliver the decided block with its txs to the Application
-	FinalizeBlock(context.Context, *FinalizeBlockRequest) (*FinalizeBlockResponse, error)
+	FinalizeBlock(ctx context.Context, req *FinalizeBlockRequest) (*FinalizeBlockResponse, error)
 	// Create application specific vote extension
-	ExtendVote(context.Context, *ExtendVoteRequest) (*ExtendVoteResponse, error)
+	ExtendVote(ctx context.Context, req *ExtendVoteRequest) (*ExtendVoteResponse, error)
 	// Verify application's vote extension data
-	VerifyVoteExtension(context.Context, *VerifyVoteExtensionRequest) (*VerifyVoteExtensionResponse, error)
+	VerifyVoteExtension(ctx context.Context, req *VerifyVoteExtensionRequest) (*VerifyVoteExtensionResponse, error)
 	// Commit the state and return the application Merkle root hash
-	Commit(context.Context, *CommitRequest) (*CommitResponse, error)
+	Commit(ctx context.Context, req *CommitRequest) (*CommitResponse, error)
 
 	// State Sync Connection
-	ListSnapshots(context.Context, *ListSnapshotsRequest) (*ListSnapshotsResponse, error)                // List available snapshots
-	OfferSnapshot(context.Context, *OfferSnapshotRequest) (*OfferSnapshotResponse, error)                // Offer a snapshot to the application
-	LoadSnapshotChunk(context.Context, *LoadSnapshotChunkRequest) (*LoadSnapshotChunkResponse, error)    // Load a snapshot chunk
-	ApplySnapshotChunk(context.Context, *ApplySnapshotChunkRequest) (*ApplySnapshotChunkResponse, error) // Apply a snapshot chunk
+	ListSnapshots(ctx context.Context, req *ListSnapshotsRequest) (*ListSnapshotsResponse, error)                // List available snapshots
+	OfferSnapshot(ctx context.Context, req *OfferSnapshotRequest) (*OfferSnapshotResponse, error)                // Offer a snapshot to the application
+	LoadSnapshotChunk(ctx context.Context, req *LoadSnapshotChunkRequest) (*LoadSnapshotChunkResponse, error)    // Load a snapshot chunk
+	ApplySnapshotChunk(ctx context.Context, req *ApplySnapshotChunkRequest) (*ApplySnapshotChunkResponse, error) // Apply a snapshot chunk
 }
 
 //-------------------------------------------------------

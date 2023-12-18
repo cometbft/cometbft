@@ -60,7 +60,7 @@ func (p *Proposal) ValidateBasic() error {
 		return errors.New("negative POLRound (exception: -1)")
 	}
 	if err := p.BlockID.ValidateBasic(); err != nil {
-		return fmt.Errorf("wrong BlockID: %v", err)
+		return fmt.Errorf("wrong BlockID: %w", err)
 	}
 	// ValidateBasic above would pass even if the BlockID was empty:
 	if !p.BlockID.IsComplete() {
@@ -106,7 +106,7 @@ func (p *Proposal) String() string {
 // for backwards-compatibility with the Amino encoding, due to e.g. hardware
 // devices that rely on this encoding.
 //
-// See CanonicalizeProposal
+// See CanonicalizeProposal.
 func ProposalSignBytes(chainID string, p *cmtproto.Proposal) []byte {
 	pb := CanonicalizeProposal(chainID, p)
 	bz, err := protoio.MarshalDelimited(&pb)
@@ -117,7 +117,7 @@ func ProposalSignBytes(chainID string, p *cmtproto.Proposal) []byte {
 	return bz
 }
 
-// ToProto converts Proposal to protobuf
+// ToProto converts Proposal to protobuf.
 func (p *Proposal) ToProto() *cmtproto.Proposal {
 	if p == nil {
 		return &cmtproto.Proposal{}

@@ -21,7 +21,7 @@ import (
 // for out-of-process go applications. Note, in the case of an application written in golang,
 // the developer may also run both Tendermint and the application within the same process.
 //
-// The socket server deliver
+// The socket server deliver.
 type SocketServer struct {
 	service.BaseService
 	isLoggerSet bool
@@ -97,7 +97,7 @@ func (s *SocketServer) addConn(conn net.Conn) int {
 	return connID
 }
 
-// deletes conn even if close errs
+// deletes conn even if close errs.
 func (s *SocketServer) rmConn(connID int) error {
 	s.connsMtx.Lock()
 	defer s.connsMtx.Unlock()
@@ -159,7 +159,7 @@ func (s *SocketServer) waitForClose(closeConn chan error, connID int) {
 	}
 }
 
-// Read requests from conn and deal with them
+// Read requests from conn and deal with them.
 func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, responses chan<- *types.Response) {
 	var count int
 	bufReader := bufio.NewReader(conn)
@@ -183,7 +183,6 @@ func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, resp
 	}()
 
 	for {
-
 		req := &types.Request{}
 		err := types.ReadMessage(bufReader, req)
 		if err != nil {
@@ -209,7 +208,7 @@ func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, resp
 	}
 }
 
-// handleRequests takes a request and calls the application passing the returned
+// handleRequests takes a request and calls the application passing the returned.
 func (s *SocketServer) handleRequest(ctx context.Context, req *types.Request) (*types.Response, error) {
 	switch r := req.Value.(type) {
 	case *types.Request_Echo:

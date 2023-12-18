@@ -5,18 +5,15 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/cosmos/gogoproto/proto"
-
-	cmterrors "github.com/cometbft/cometbft/types/errors"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	cmtstore "github.com/cometbft/cometbft/api/cometbft/store/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/internal/evidence"
 	sm "github.com/cometbft/cometbft/internal/state"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/types"
+	cmterrors "github.com/cometbft/cometbft/types/errors"
+	"github.com/cosmos/gogoproto/proto"
 )
 
 // Assuming the length of a block part is 64kB (`types.BlockPartSizeBytes`),
@@ -73,7 +70,7 @@ func NewBlockStore(db dbm.DB) *BlockStore {
 func (bs *BlockStore) IsEmpty() bool {
 	bs.mtx.RLock()
 	defer bs.mtx.RUnlock()
-	return bs.base == bs.height && bs.base == 0
+	return bs.base == 0 && bs.height == 0
 }
 
 // Base returns the first known contiguous block height, or 0 for empty block stores.
@@ -340,7 +337,6 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 
 	evidencePoint := height
 	for h := base; h < height; h++ {
-
 		meta := bs.LoadBlockMeta(h)
 		if meta == nil { // assume already deleted
 			continue
@@ -516,7 +512,7 @@ func (bs *BlockStore) saveBlockToBatch(
 	if err := batch.Set(calcBlockMetaKey(height), metaBytes); err != nil {
 		return err
 	}
-	if err := batch.Set(calcBlockHashKey(hash), []byte(fmt.Sprintf("%d", height))); err != nil {
+	if err := batch.Set(calcBlockHashKey(hash), []byte(strconv.FormatInt(height, 10))); err != nil {
 		return err
 	}
 
@@ -653,7 +649,7 @@ func LoadBlockStoreState(db dbm.DB) cmtstore.BlockStoreState {
 	return bsj
 }
 
-// mustEncode proto encodes a proto.message and panics if fails
+// mustEncode proto encodes a proto.message and panics if fails.
 func mustEncode(pb proto.Message) []byte {
 	bz, err := proto.Marshal(pb)
 	if err != nil {

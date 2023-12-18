@@ -213,7 +213,7 @@ func (c *Client) sendEvidence(ctx context.Context, ev *types.LightClientAttackEv
 }
 
 // handleConflictingHeaders handles the primary style of attack, which is where a primary and witness have
-// two headers of the same height but with different hashes
+// two headers of the same height but with different hashes.
 func (c *Client) handleConflictingHeaders(
 	ctx context.Context,
 	primaryTrace []*types.LightBlock,

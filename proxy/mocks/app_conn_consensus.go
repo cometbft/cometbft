@@ -15,9 +15,9 @@ type AppConnConsensus struct {
 	mock.Mock
 }
 
-// Commit provides a mock function with given fields: _a0
-func (_m *AppConnConsensus) Commit(_a0 context.Context) (*v1.CommitResponse, error) {
-	ret := _m.Called(_a0)
+// Commit provides a mock function with given fields: ctx
+func (_m *AppConnConsensus) Commit(ctx context.Context) (*v1.CommitResponse, error) {
+	ret := _m.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Commit")
@@ -26,10 +26,10 @@ func (_m *AppConnConsensus) Commit(_a0 context.Context) (*v1.CommitResponse, err
 	var r0 *v1.CommitResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context) (*v1.CommitResponse, error)); ok {
-		return rf(_a0)
+		return rf(ctx)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context) *v1.CommitResponse); ok {
-		r0 = rf(_a0)
+		r0 = rf(ctx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1.CommitResponse)
@@ -37,7 +37,7 @@ func (_m *AppConnConsensus) Commit(_a0 context.Context) (*v1.CommitResponse, err
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(_a0)
+		r1 = rf(ctx)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -63,9 +63,9 @@ func (_m *AppConnConsensus) Error() error {
 	return r0
 }
 
-// ExtendVote provides a mock function with given fields: _a0, _a1
-func (_m *AppConnConsensus) ExtendVote(_a0 context.Context, _a1 *v1.ExtendVoteRequest) (*v1.ExtendVoteResponse, error) {
-	ret := _m.Called(_a0, _a1)
+// ExtendVote provides a mock function with given fields: ctx, req
+func (_m *AppConnConsensus) ExtendVote(ctx context.Context, req *v1.ExtendVoteRequest) (*v1.ExtendVoteResponse, error) {
+	ret := _m.Called(ctx, req)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ExtendVote")
@@ -74,10 +74,10 @@ func (_m *AppConnConsensus) ExtendVote(_a0 context.Context, _a1 *v1.ExtendVoteRe
 	var r0 *v1.ExtendVoteResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.ExtendVoteRequest) (*v1.ExtendVoteResponse, error)); ok {
-		return rf(_a0, _a1)
+		return rf(ctx, req)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.ExtendVoteRequest) *v1.ExtendVoteResponse); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(ctx, req)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1.ExtendVoteResponse)
@@ -85,7 +85,7 @@ func (_m *AppConnConsensus) ExtendVote(_a0 context.Context, _a1 *v1.ExtendVoteRe
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, *v1.ExtendVoteRequest) error); ok {
-		r1 = rf(_a0, _a1)
+		r1 = rf(ctx, req)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -93,9 +93,9 @@ func (_m *AppConnConsensus) ExtendVote(_a0 context.Context, _a1 *v1.ExtendVoteRe
 	return r0, r1
 }
 
-// FinalizeBlock provides a mock function with given fields: _a0, _a1
-func (_m *AppConnConsensus) FinalizeBlock(_a0 context.Context, _a1 *v1.FinalizeBlockRequest) (*v1.FinalizeBlockResponse, error) {
-	ret := _m.Called(_a0, _a1)
+// FinalizeBlock provides a mock function with given fields: ctx, req
+func (_m *AppConnConsensus) FinalizeBlock(ctx context.Context, req *v1.FinalizeBlockRequest) (*v1.FinalizeBlockResponse, error) {
+	ret := _m.Called(ctx, req)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FinalizeBlock")
@@ -104,10 +104,10 @@ func (_m *AppConnConsensus) FinalizeBlock(_a0 context.Context, _a1 *v1.FinalizeB
 	var r0 *v1.FinalizeBlockResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.FinalizeBlockRequest) (*v1.FinalizeBlockResponse, error)); ok {
-		return rf(_a0, _a1)
+		return rf(ctx, req)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.FinalizeBlockRequest) *v1.FinalizeBlockResponse); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(ctx, req)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1.FinalizeBlockResponse)
@@ -115,7 +115,7 @@ func (_m *AppConnConsensus) FinalizeBlock(_a0 context.Context, _a1 *v1.FinalizeB
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, *v1.FinalizeBlockRequest) error); ok {
-		r1 = rf(_a0, _a1)
+		r1 = rf(ctx, req)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -123,9 +123,9 @@ func (_m *AppConnConsensus) FinalizeBlock(_a0 context.Context, _a1 *v1.FinalizeB
 	return r0, r1
 }
 
-// InitChain provides a mock function with given fields: _a0, _a1
-func (_m *AppConnConsensus) InitChain(_a0 context.Context, _a1 *v1.InitChainRequest) (*v1.InitChainResponse, error) {
-	ret := _m.Called(_a0, _a1)
+// InitChain provides a mock function with given fields: ctx, req
+func (_m *AppConnConsensus) InitChain(ctx context.Context, req *v1.InitChainRequest) (*v1.InitChainResponse, error) {
+	ret := _m.Called(ctx, req)
 
 	if len(ret) == 0 {
 		panic("no return value specified for InitChain")
@@ -134,10 +134,10 @@ func (_m *AppConnConsensus) InitChain(_a0 context.Context, _a1 *v1.InitChainRequ
 	var r0 *v1.InitChainResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.InitChainRequest) (*v1.InitChainResponse, error)); ok {
-		return rf(_a0, _a1)
+		return rf(ctx, req)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.InitChainRequest) *v1.InitChainResponse); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(ctx, req)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1.InitChainResponse)
@@ -145,7 +145,7 @@ func (_m *AppConnConsensus) InitChain(_a0 context.Context, _a1 *v1.InitChainRequ
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, *v1.InitChainRequest) error); ok {
-		r1 = rf(_a0, _a1)
+		r1 = rf(ctx, req)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -153,9 +153,9 @@ func (_m *AppConnConsensus) InitChain(_a0 context.Context, _a1 *v1.InitChainRequ
 	return r0, r1
 }
 
-// PrepareProposal provides a mock function with given fields: _a0, _a1
-func (_m *AppConnConsensus) PrepareProposal(_a0 context.Context, _a1 *v1.PrepareProposalRequest) (*v1.PrepareProposalResponse, error) {
-	ret := _m.Called(_a0, _a1)
+// PrepareProposal provides a mock function with given fields: ctx, req
+func (_m *AppConnConsensus) PrepareProposal(ctx context.Context, req *v1.PrepareProposalRequest) (*v1.PrepareProposalResponse, error) {
+	ret := _m.Called(ctx, req)
 
 	if len(ret) == 0 {
 		panic("no return value specified for PrepareProposal")
@@ -164,10 +164,10 @@ func (_m *AppConnConsensus) PrepareProposal(_a0 context.Context, _a1 *v1.Prepare
 	var r0 *v1.PrepareProposalResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.PrepareProposalRequest) (*v1.PrepareProposalResponse, error)); ok {
-		return rf(_a0, _a1)
+		return rf(ctx, req)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.PrepareProposalRequest) *v1.PrepareProposalResponse); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(ctx, req)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1.PrepareProposalResponse)
@@ -175,7 +175,7 @@ func (_m *AppConnConsensus) PrepareProposal(_a0 context.Context, _a1 *v1.Prepare
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, *v1.PrepareProposalRequest) error); ok {
-		r1 = rf(_a0, _a1)
+		r1 = rf(ctx, req)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -183,9 +183,9 @@ func (_m *AppConnConsensus) PrepareProposal(_a0 context.Context, _a1 *v1.Prepare
 	return r0, r1
 }
 
-// ProcessProposal provides a mock function with given fields: _a0, _a1
-func (_m *AppConnConsensus) ProcessProposal(_a0 context.Context, _a1 *v1.ProcessProposalRequest) (*v1.ProcessProposalResponse, error) {
-	ret := _m.Called(_a0, _a1)
+// ProcessProposal provides a mock function with given fields: ctx, req
+func (_m *AppConnConsensus) ProcessProposal(ctx context.Context, req *v1.ProcessProposalRequest) (*v1.ProcessProposalResponse, error) {
+	ret := _m.Called(ctx, req)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ProcessProposal")
@@ -194,10 +194,10 @@ func (_m *AppConnConsensus) ProcessProposal(_a0 context.Context, _a1 *v1.Process
 	var r0 *v1.ProcessProposalResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.ProcessProposalRequest) (*v1.ProcessProposalResponse, error)); ok {
-		return rf(_a0, _a1)
+		return rf(ctx, req)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.ProcessProposalRequest) *v1.ProcessProposalResponse); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(ctx, req)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1.ProcessProposalResponse)
@@ -205,7 +205,7 @@ func (_m *AppConnConsensus) ProcessProposal(_a0 context.Context, _a1 *v1.Process
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, *v1.ProcessProposalRequest) error); ok {
-		r1 = rf(_a0, _a1)
+		r1 = rf(ctx, req)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -213,9 +213,9 @@ func (_m *AppConnConsensus) ProcessProposal(_a0 context.Context, _a1 *v1.Process
 	return r0, r1
 }
 
-// VerifyVoteExtension provides a mock function with given fields: _a0, _a1
-func (_m *AppConnConsensus) VerifyVoteExtension(_a0 context.Context, _a1 *v1.VerifyVoteExtensionRequest) (*v1.VerifyVoteExtensionResponse, error) {
-	ret := _m.Called(_a0, _a1)
+// VerifyVoteExtension provides a mock function with given fields: ctx, req
+func (_m *AppConnConsensus) VerifyVoteExtension(ctx context.Context, req *v1.VerifyVoteExtensionRequest) (*v1.VerifyVoteExtensionResponse, error) {
+	ret := _m.Called(ctx, req)
 
 	if len(ret) == 0 {
 		panic("no return value specified for VerifyVoteExtension")
@@ -224,10 +224,10 @@ func (_m *AppConnConsensus) VerifyVoteExtension(_a0 context.Context, _a1 *v1.Ver
 	var r0 *v1.VerifyVoteExtensionResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.VerifyVoteExtensionRequest) (*v1.VerifyVoteExtensionResponse, error)); ok {
-		return rf(_a0, _a1)
+		return rf(ctx, req)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.VerifyVoteExtensionRequest) *v1.VerifyVoteExtensionResponse); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(ctx, req)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1.VerifyVoteExtensionResponse)
@@ -235,7 +235,7 @@ func (_m *AppConnConsensus) VerifyVoteExtension(_a0 context.Context, _a1 *v1.Ver
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, *v1.VerifyVoteExtensionRequest) error); ok {
-		r1 = rf(_a0, _a1)
+		r1 = rf(ctx, req)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -248,7 +248,8 @@ func (_m *AppConnConsensus) VerifyVoteExtension(_a0 context.Context, _a1 *v1.Ver
 func NewAppConnConsensus(t interface {
 	mock.TestingT
 	Cleanup(func())
-}) *AppConnConsensus {
+},
+) *AppConnConsensus {
 	mock := &AppConnConsensus{}
 	mock.Mock.Test(t)
 

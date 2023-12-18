@@ -26,7 +26,7 @@ type (
 		Evidence types.Evidence
 	}
 
-	// ErrVotingPowerDoesNotMatch is returned when voting power from trusted validator set does not match voting power from evidence
+	// ErrVotingPowerDoesNotMatch is returned when voting power from trusted validator set does not match voting power from evidence.
 	ErrVotingPowerDoesNotMatch struct {
 		TrustedVotingPower  int64
 		EvidenceVotingPower int64
@@ -37,18 +37,18 @@ type (
 		Height  int64
 	}
 
-	// ErrValidatorAddressesDoNotMatch is returned when provided DuplicateVoteEvidence's votes have different validators as signers
+	// ErrValidatorAddressesDoNotMatch is returned when provided DuplicateVoteEvidence's votes have different validators as signers.
 	ErrValidatorAddressesDoNotMatch struct {
 		ValidatorA bytes.HexBytes
 		ValidatorB bytes.HexBytes
 	}
 
-	// ErrSameBlockIDs is returned if a duplicate vote evidence has votes from the same block id (should be different)
+	// ErrSameBlockIDs is returned if a duplicate vote evidence has votes from the same block id (should be different).
 	ErrSameBlockIDs struct {
 		BlockID types.BlockID
 	}
 
-	// ErrInvalidEvidenceValidators is returned when evidence validation spots an error related to validator set
+	// ErrInvalidEvidenceValidators is returned when evidence validation spots an error related to validator set.
 	ErrInvalidEvidenceValidators struct {
 		ValError error
 	}

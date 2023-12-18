@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-
 	"github.com/cometbft/cometbft/test/e2e/app"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
@@ -39,7 +38,7 @@ type Config struct {
 	ABCIRequestsLoggingEnabled bool `toml:"abci_requests_logging_enabled"`
 }
 
-// App extracts out the application specific configuration parameters
+// App extracts out the application specific configuration parameters.
 func (cfg *Config) App() *app.Config {
 	return &app.Config{
 		Dir:                        cfg.Dir,

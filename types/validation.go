@@ -323,7 +323,7 @@ func verifyCommitBatch(
 // If a key does not support batch verification, or batch verification fails this will be used
 // This method is used to check all the signatures included in a commit.
 // It is used in consensus for validating a block LastCommit.
-// CONTRACT: both commit and validator set should have passed validate basic
+// CONTRACT: both commit and validator set should have passed validate basic.
 func verifyCommitSingle(
 	chainID string,
 	vals *ValidatorSet,

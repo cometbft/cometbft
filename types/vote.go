@@ -7,7 +7,6 @@ import (
 	"time"
 
 	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
-
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/internal/protoio"
@@ -138,7 +137,7 @@ func (vote *Vote) ExtendedCommitSig() ExtendedCommitSig {
 // for backwards-compatibility with the Amino encoding, due to e.g. hardware
 // devices that rely on this encoding.
 //
-// See CanonicalizeVote
+// See CanonicalizeVote.
 func VoteSignBytes(chainID string, vote *cmtproto.Vote) []byte {
 	pb := CanonicalizeVote(chainID, vote)
 	bz, err := protoio.MarshalDelimited(&pb)
@@ -180,7 +179,7 @@ func (vote *Vote) Copy() *Vote {
 // 7. first 6 bytes of block hash
 // 8. first 6 bytes of signature
 // 9. first 6 bytes of vote extension
-// 10. timestamp
+// 10. timestamp.
 func (vote *Vote) String() string {
 	if vote == nil {
 		return nilVoteStr
@@ -288,7 +287,7 @@ func (vote *Vote) ValidateBasic() error {
 	// NOTE: Timestamp validation is subtle and handled elsewhere.
 
 	if err := vote.BlockID.ValidateBasic(); err != nil {
-		return fmt.Errorf("wrong BlockID: %v", err)
+		return fmt.Errorf("wrong BlockID: %w", err)
 	}
 
 	// BlockID.ValidateBasic would not err if we for instance have an empty hash but a
@@ -338,7 +337,7 @@ func (vote *Vote) ValidateBasic() error {
 		}
 
 		// NOTE: extended votes should have a signature regardless of
-		// of whether there is any data in the extension or not however
+		// whether there is any data in the extension or not however
 		// we don't know if extensions are enabled so we can only
 		// enforce the signature when extension size is not nil
 		if len(vote.ExtensionSignature) == 0 && len(vote.Extension) != 0 {
@@ -366,7 +365,7 @@ func (vote *Vote) EnsureExtension() error {
 }
 
 // ToProto converts the handwritten type to proto generated type
-// return type, nil if everything converts safely, otherwise nil, error
+// return type, nil if everything converts safely, otherwise nil, error.
 func (vote *Vote) ToProto() *cmtproto.Vote {
 	if vote == nil {
 		return nil

@@ -7,9 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cosmos/gogoproto/proto"
-	gogotypes "github.com/cosmos/gogoproto/types"
-
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
@@ -20,12 +17,14 @@ import (
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/version"
+	"github.com/cosmos/gogoproto/proto"
+	gogotypes "github.com/cosmos/gogoproto/types"
 )
 
 const (
 	// MaxHeaderBytes is a maximum header size.
 	// NOTE: Because app hash can be of arbitrary size, the header is therefore not
-	// capped in size and thus this number should be seen as a soft max
+	// capped in size and thus this number should be seen as a soft max.
 	MaxHeaderBytes int64 = 626
 
 	// MaxOverheadForBlock - maximum overhead to encode a block (up to
@@ -35,7 +34,7 @@ const (
 	// Uvarint length of MaxBlockSizeBytes: 4 bytes
 	// 2 fields (2 embedded):               2 bytes
 	// Uvarint length of Data.Txs:          4 bytes
-	// Data.Txs field:                      1 byte
+	// Data.Txs field:                      1 byte.
 	MaxOverheadForBlock int64 = 11
 )
 
@@ -69,7 +68,7 @@ func (b *Block) ValidateBasic() error {
 		return errors.New("nil LastCommit")
 	}
 	if err := b.LastCommit.ValidateBasic(); err != nil {
-		return fmt.Errorf("wrong LastCommit: %v", err)
+		return fmt.Errorf("wrong LastCommit: %w", err)
 	}
 
 	if !bytes.Equal(b.LastCommitHash, b.LastCommit.Hash()) {
@@ -91,7 +90,7 @@ func (b *Block) ValidateBasic() error {
 	// NOTE: b.Evidence.Evidence may be nil, but we're just looping.
 	for i, ev := range b.Evidence.Evidence {
 		if err := ev.ValidateBasic(); err != nil {
-			return fmt.Errorf("invalid evidence (#%d): %v", i, err)
+			return fmt.Errorf("invalid evidence (#%d): %w", i, err)
 		}
 	}
 
@@ -105,7 +104,7 @@ func (b *Block) ValidateBasic() error {
 	return nil
 }
 
-// fillHeader fills in any remaining header fields that are a function of the block data
+// fillHeader fills in any remaining header fields that are a function of the block data.
 func (b *Block) fillHeader() {
 	if b.LastCommitHash == nil {
 		b.LastCommitHash = b.LastCommit.Hash()
@@ -190,7 +189,7 @@ func (b *Block) String() string {
 // Data
 // Evidence
 // LastCommit
-// Hash
+// Hash.
 func (b *Block) StringIndented(indent string) string {
 	if b == nil {
 		return "nil-Block"
@@ -216,7 +215,7 @@ func (b *Block) StringShort() string {
 	return fmt.Sprintf("Block#%X", b.Hash())
 }
 
-// ToProto converts Block to protobuf
+// ToProto converts Block to protobuf.
 func (b *Block) ToProto() (*cmtproto.Block, error) {
 	if b == nil {
 		return nil, errors.New("nil Block")
@@ -393,15 +392,15 @@ func (h Header) ValidateBasic() error {
 	}
 
 	if err := ValidateHash(h.LastCommitHash); err != nil {
-		return fmt.Errorf("wrong LastCommitHash: %v", err)
+		return fmt.Errorf("wrong LastCommitHash: %w", err)
 	}
 
 	if err := ValidateHash(h.DataHash); err != nil {
-		return fmt.Errorf("wrong DataHash: %v", err)
+		return fmt.Errorf("wrong DataHash: %w", err)
 	}
 
 	if err := ValidateHash(h.EvidenceHash); err != nil {
-		return fmt.Errorf("wrong EvidenceHash: %v", err)
+		return fmt.Errorf("wrong EvidenceHash: %w", err)
 	}
 
 	if len(h.ProposerAddress) != crypto.AddressSize {
@@ -414,17 +413,17 @@ func (h Header) ValidateBasic() error {
 	// Basic validation of hashes related to application data.
 	// Will validate fully against state in state#ValidateBlock.
 	if err := ValidateHash(h.ValidatorsHash); err != nil {
-		return fmt.Errorf("wrong ValidatorsHash: %v", err)
+		return fmt.Errorf("wrong ValidatorsHash: %w", err)
 	}
 	if err := ValidateHash(h.NextValidatorsHash); err != nil {
-		return fmt.Errorf("wrong NextValidatorsHash: %v", err)
+		return fmt.Errorf("wrong NextValidatorsHash: %w", err)
 	}
 	if err := ValidateHash(h.ConsensusHash); err != nil {
-		return fmt.Errorf("wrong ConsensusHash: %v", err)
+		return fmt.Errorf("wrong ConsensusHash: %w", err)
 	}
 	// NOTE: AppHash is arbitrary length
 	if err := ValidateHash(h.LastResultsHash); err != nil {
-		return fmt.Errorf("wrong LastResultsHash: %v", err)
+		return fmt.Errorf("wrong LastResultsHash: %w", err)
 	}
 
 	return nil
@@ -512,7 +511,7 @@ func (h *Header) StringIndented(indent string) string {
 	)
 }
 
-// ToProto converts Header to protobuf
+// ToProto converts Header to protobuf.
 func (h *Header) ToProto() *cmtproto.Header {
 	if h == nil {
 		return nil
@@ -587,7 +586,7 @@ const (
 	// Max size of commit without any commitSigs -> 82 for BlockID, 8 for Height, 4 for Round.
 	MaxCommitOverheadBytes int64 = 94
 	// Commit sig size is made up of 64 bytes for the signature, 20 bytes for the address,
-	// 1 byte for the flag and 14 bytes for the timestamp
+	// 1 byte for the flag and 14 bytes for the timestamp.
 	MaxCommitSigBytes int64 = 109
 )
 
@@ -618,7 +617,7 @@ func NewCommitSigAbsent() CommitSig {
 // 1. first 6 bytes of signature
 // 2. first 6 bytes of validator address
 // 3. block ID flag
-// 4. timestamp
+// 4. timestamp.
 func (cs CommitSig) String() string {
 	return fmt.Sprintf("CommitSig{%X by %X on %v @ %s}",
 		cmtbytes.Fingerprint(cs.Signature),
@@ -684,7 +683,7 @@ func (cs CommitSig) ValidateBasic() error {
 	return nil
 }
 
-// ToProto converts CommitSig to protobuf
+// ToProto converts CommitSig to protobuf.
 func (cs *CommitSig) ToProto() *cmtproto.CommitSig {
 	if cs == nil {
 		return nil
@@ -729,7 +728,7 @@ func NewExtendedCommitSigAbsent() ExtendedCommitSig {
 //
 // 1. commit sig
 // 2. first 6 bytes of vote extension
-// 3. first 6 bytes of vote extension signature
+// 3. first 6 bytes of vote extension signature.
 func (ecs ExtendedCommitSig) String() string {
 	return fmt.Sprintf("ExtendedCommitSig{%s with %X %X}",
 		ecs.CommitSig,
@@ -876,7 +875,7 @@ func (commit *Commit) GetVote(valIdx int32) *Vote {
 //
 // Panics if valIdx >= commit.Size().
 //
-// See VoteSignBytes
+// See VoteSignBytes.
 func (commit *Commit) VoteSignBytes(chainID string, valIdx int32) []byte {
 	v := commit.GetVote(valIdx).ToProto()
 	return VoteSignBytes(chainID, v)
@@ -910,14 +909,14 @@ func (commit *Commit) ValidateBasic() error {
 		}
 		for i, commitSig := range commit.Signatures {
 			if err := commitSig.ValidateBasic(); err != nil {
-				return fmt.Errorf("wrong CommitSig #%d: %v", i, err)
+				return fmt.Errorf("wrong CommitSig #%d: %w", i, err)
 			}
 		}
 	}
 	return nil
 }
 
-// Hash returns the hash of the commit
+// Hash returns the hash of the commit.
 func (commit *Commit) Hash() cmtbytes.HexBytes {
 	if commit == nil {
 		return nil
@@ -982,7 +981,7 @@ func (commit *Commit) StringIndented(indent string) string {
 		indent, commit.hash)
 }
 
-// ToProto converts Commit to protobuf
+// ToProto converts Commit to protobuf.
 func (commit *Commit) ToProto() *cmtproto.Commit {
 	if commit == nil {
 		return nil
@@ -1216,14 +1215,14 @@ func (ec *ExtendedCommit) ValidateBasic() error {
 		}
 		for i, extCommitSig := range ec.ExtendedSignatures {
 			if err := extCommitSig.ValidateBasic(); err != nil {
-				return fmt.Errorf("wrong ExtendedCommitSig #%d: %v", i, err)
+				return fmt.Errorf("wrong ExtendedCommitSig #%d: %w", i, err)
 			}
 		}
 	}
 	return nil
 }
 
-// ToProto converts ExtendedCommit to protobuf
+// ToProto converts ExtendedCommit to protobuf.
 func (ec *ExtendedCommit) ToProto() *cmtproto.ExtendedCommit {
 	if ec == nil {
 		return nil
@@ -1273,7 +1272,7 @@ func ExtendedCommitFromProto(ecp *cmtproto.ExtendedCommit) (*ExtendedCommit, err
 
 //-------------------------------------
 
-// Data contains the set of transactions included in the block
+// Data contains the set of transactions included in the block.
 type Data struct {
 	// Txs that will be applied by state @ block.Height+1.
 	// NOTE: not all txs here are valid.  We're just agreeing on the order first.
@@ -1284,7 +1283,7 @@ type Data struct {
 	hash cmtbytes.HexBytes
 }
 
-// Hash returns the hash of the data
+// Hash returns the hash of the data.
 func (data *Data) Hash() cmtbytes.HexBytes {
 	if data == nil {
 		return (Txs{}).Hash()
@@ -1315,7 +1314,7 @@ func (data *Data) StringIndented(indent string) string {
 		indent, data.hash)
 }
 
-// ToProto converts Data to protobuf
+// ToProto converts Data to protobuf.
 func (data *Data) ToProto() cmtproto.Data {
 	tp := new(cmtproto.Data)
 
@@ -1353,7 +1352,7 @@ func DataFromProto(dp *cmtproto.Data) (Data, error) {
 
 //-----------------------------------------------------------------------------
 
-// EvidenceData contains any evidence of malicious wrong-doing by validators
+// EvidenceData contains any evidence of malicious wrong-doing by validators.
 type EvidenceData struct {
 	Evidence EvidenceList `json:"evidence"`
 
@@ -1370,7 +1369,7 @@ func (data *EvidenceData) Hash() cmtbytes.HexBytes {
 	return data.hash
 }
 
-// ByteSize returns the total byte size of all the evidence
+// ByteSize returns the total byte size of all the evidence.
 func (data *EvidenceData) ByteSize() int64 {
 	if data.byteSize == 0 && len(data.Evidence) != 0 {
 		pb, err := data.ToProto()
@@ -1402,7 +1401,7 @@ func (data *EvidenceData) StringIndented(indent string) string {
 		indent, data.hash)
 }
 
-// ToProto converts EvidenceData to protobuf
+// ToProto converts EvidenceData to protobuf.
 func (data *EvidenceData) ToProto() (*cmtproto.EvidenceList, error) {
 	if data == nil {
 		return nil, errors.New("nil evidence data")
@@ -1444,19 +1443,19 @@ func (data *EvidenceData) FromProto(eviData *cmtproto.EvidenceList) error {
 
 //--------------------------------------------------------------------------------
 
-// BlockID
+// BlockID.
 type BlockID struct {
 	Hash          cmtbytes.HexBytes `json:"hash"`
 	PartSetHeader PartSetHeader     `json:"parts"`
 }
 
-// Equals returns true if the BlockID matches the given BlockID
+// Equals returns true if the BlockID matches the given BlockID.
 func (blockID BlockID) Equals(other BlockID) bool {
 	return bytes.Equal(blockID.Hash, other.Hash) &&
 		blockID.PartSetHeader.Equals(other.PartSetHeader)
 }
 
-// Key returns a machine-readable string representation of the BlockID
+// Key returns a machine-readable string representation of the BlockID.
 func (blockID BlockID) Key() string {
 	pbph := blockID.PartSetHeader.ToProto()
 	bz, err := pbph.Marshal()
@@ -1474,7 +1473,7 @@ func (blockID BlockID) ValidateBasic() error {
 		return fmt.Errorf("wrong Hash")
 	}
 	if err := blockID.PartSetHeader.ValidateBasic(); err != nil {
-		return fmt.Errorf("wrong PartSetHeader: %v", err)
+		return fmt.Errorf("wrong PartSetHeader: %w", err)
 	}
 	return nil
 }
@@ -1497,12 +1496,12 @@ func (blockID BlockID) IsComplete() bool {
 // 1. hash
 // 2. part set header
 //
-// See PartSetHeader#String
+// See PartSetHeader#String.
 func (blockID BlockID) String() string {
 	return fmt.Sprintf(`%v:%v`, blockID.Hash, blockID.PartSetHeader)
 }
 
-// ToProto converts BlockID to protobuf
+// ToProto converts BlockID to protobuf.
 func (blockID *BlockID) ToProto() cmtproto.BlockID {
 	if blockID == nil {
 		return cmtproto.BlockID{}

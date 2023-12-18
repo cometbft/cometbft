@@ -1,29 +1,8 @@
+run:
+  tests: false
+  timeout: 5m
+
 linters:
-<<<<<<< HEAD
-  enable:
-    - asciicheck
-    - bodyclose
-    - depguard
-    - dogsled
-    - dupl
-    - errcheck
-    - exportloopref
-    - goconst
-    - gofmt
-    - goimports
-    - revive
-    - gosec
-    - gosimple
-    - govet
-    - ineffassign
-    - misspell
-    - nakedret
-    - nolintlint
-    - prealloc
-    - staticcheck
-    # - structcheck // to be fixed by golangci-lint
-    - stylecheck
-=======
   enable-all: true
   disable:
     - containedctx
@@ -67,10 +46,13 @@ linters:
     - structcheck
     - tagliatelle
     - testifylint
->>>>>>> a03158b85 (ci: run golangci-lint linters for all files (not only ones which were modified) (#2250))
     - typecheck
-    - unconvert
-    - unused
+    - varnamelen
+    - wrapcheck
+    - wsl
+    - scopelint
+    - unparam
+    - revive
 
 issues:
   exclude-rules:
@@ -88,8 +70,6 @@ issues:
 linters-settings:
   dogsled:
     max-blank-identifiers: 3
-  golint:
-    min-confidence: 0
   goconst:
     ignore-tests: true
   maligned:

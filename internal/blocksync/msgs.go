@@ -3,14 +3,13 @@ package blocksync
 import (
 	"fmt"
 
-	"github.com/cosmos/gogoproto/proto"
-
 	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v1"
 	"github.com/cometbft/cometbft/types"
+	"github.com/cosmos/gogoproto/proto"
 )
 
 const (
-	// NOTE: keep up to date with bcproto.BlockResponse
+	// NOTE: keep up to date with bcproto.BlockResponse.
 	BlockResponseMessagePrefixSize   = 4
 	BlockResponseMessageFieldKeySize = 1
 	MaxMsgSize                       = types.MaxBlockSizeBytes +

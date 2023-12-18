@@ -250,9 +250,9 @@ func (_m *Store) LoadFinalizeBlockResponse(height int64) (*v1.FinalizeBlockRespo
 	return r0, r1
 }
 
-// LoadFromDBOrGenesisDoc provides a mock function with given fields: _a0
-func (_m *Store) LoadFromDBOrGenesisDoc(_a0 *types.GenesisDoc) (state.State, error) {
-	ret := _m.Called(_a0)
+// LoadFromDBOrGenesisDoc provides a mock function with given fields: doc
+func (_m *Store) LoadFromDBOrGenesisDoc(doc *types.GenesisDoc) (state.State, error) {
+	ret := _m.Called(doc)
 
 	if len(ret) == 0 {
 		panic("no return value specified for LoadFromDBOrGenesisDoc")
@@ -261,16 +261,16 @@ func (_m *Store) LoadFromDBOrGenesisDoc(_a0 *types.GenesisDoc) (state.State, err
 	var r0 state.State
 	var r1 error
 	if rf, ok := ret.Get(0).(func(*types.GenesisDoc) (state.State, error)); ok {
-		return rf(_a0)
+		return rf(doc)
 	}
 	if rf, ok := ret.Get(0).(func(*types.GenesisDoc) state.State); ok {
-		r0 = rf(_a0)
+		r0 = rf(doc)
 	} else {
 		r0 = ret.Get(0).(state.State)
 	}
 
 	if rf, ok := ret.Get(1).(func(*types.GenesisDoc) error); ok {
-		r1 = rf(_a0)
+		r1 = rf(doc)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -278,9 +278,9 @@ func (_m *Store) LoadFromDBOrGenesisDoc(_a0 *types.GenesisDoc) (state.State, err
 	return r0, r1
 }
 
-// LoadFromDBOrGenesisFile provides a mock function with given fields: _a0
-func (_m *Store) LoadFromDBOrGenesisFile(_a0 string) (state.State, error) {
-	ret := _m.Called(_a0)
+// LoadFromDBOrGenesisFile provides a mock function with given fields: filepath
+func (_m *Store) LoadFromDBOrGenesisFile(filepath string) (state.State, error) {
+	ret := _m.Called(filepath)
 
 	if len(ret) == 0 {
 		panic("no return value specified for LoadFromDBOrGenesisFile")
@@ -289,16 +289,16 @@ func (_m *Store) LoadFromDBOrGenesisFile(_a0 string) (state.State, error) {
 	var r0 state.State
 	var r1 error
 	if rf, ok := ret.Get(0).(func(string) (state.State, error)); ok {
-		return rf(_a0)
+		return rf(filepath)
 	}
 	if rf, ok := ret.Get(0).(func(string) state.State); ok {
-		r0 = rf(_a0)
+		r0 = rf(filepath)
 	} else {
 		r0 = ret.Get(0).(state.State)
 	}
 
 	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(_a0)
+		r1 = rf(filepath)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -532,7 +532,8 @@ func (_m *Store) SetOfflineStateSyncHeight(height int64) error {
 func NewStore(t interface {
 	mock.TestingT
 	Cleanup(func())
-}) *Store {
+},
+) *Store {
 	mock := &Store{}
 	mock.Mock.Test(t)
 

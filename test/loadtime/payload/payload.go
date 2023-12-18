@@ -21,24 +21,24 @@ const (
 // to create the payload.
 func NewBytes(p *Payload) ([]byte, error) {
 	p.Padding = make([]byte, 1)
-	if p.Time == nil {
+	if p.GetTime() == nil {
 		p.Time = timestamppb.Now()
 	}
 	us, err := CalculateUnpaddedSize(p)
 	if err != nil {
 		return nil, err
 	}
-	if p.Size > maxPayloadSize {
-		return nil, fmt.Errorf("configured size %d is too large (>%d)", p.Size, maxPayloadSize)
+	if p.GetSize() > maxPayloadSize {
+		return nil, fmt.Errorf("configured size %d is too large (>%d)", p.GetSize(), maxPayloadSize)
 	}
-	pSize := int(p.Size) // #nosec -- The "if" above makes this cast safe
+	pSize := int(p.GetSize()) // #nosec -- The "if" above makes this cast safe
 	if pSize < us {
 		return nil, fmt.Errorf("configured size %d not large enough to fit unpadded transaction of size %d", pSize, us)
 	}
 
 	// We halve the padding size because we transform the TX to hex
 	p.Padding = make([]byte, (pSize-us)/2)
-	_, err = rand.Read(p.Padding)
+	_, err = rand.Read(p.GetPadding())
 	if err != nil {
 		return nil, err
 	}
@@ -91,8 +91,8 @@ func MaxUnpaddedSize() (int, error) {
 // purpose of determining how much padding to add to add to reach the target size.
 // CalculateUnpaddedSize returns an error if the payload Padding field is longer than 1.
 func CalculateUnpaddedSize(p *Payload) (int, error) {
-	if len(p.Padding) != 1 {
-		return 0, fmt.Errorf("expected length of padding to be 1, received %d", len(p.Padding))
+	if len(p.GetPadding()) != 1 {
+		return 0, fmt.Errorf("expected length of padding to be 1, received %d", len(p.GetPadding()))
 	}
 	b, err := proto.Marshal(p)
 	if err != nil {

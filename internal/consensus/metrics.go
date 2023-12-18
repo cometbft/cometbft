@@ -4,10 +4,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-kit/kit/metrics"
-
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
 	"github.com/cometbft/cometbft/types"
+	"github.com/go-kit/kit/metrics"
 )
 
 const (
@@ -30,7 +29,7 @@ type Metrics struct {
 	Rounds metrics.Gauge
 
 	// Histogram of round duration.
-	RoundDurationSeconds metrics.Histogram `metrics_buckettype:"exprange" metrics_bucketsizes:"0.1, 100, 8"`
+	RoundDurationSeconds metrics.Histogram `metrics_bucketsizes:"0.1, 100, 8" metrics_buckettype:"exprange"`
 
 	// Number of validators.
 	Validators metrics.Gauge
@@ -73,7 +72,7 @@ type Metrics struct {
 	DuplicateVote metrics.Counter
 
 	// Histogram of durations for each step in the consensus protocol.
-	StepDurationSeconds metrics.Histogram `metrics_labels:"step" metrics_buckettype:"exprange" metrics_bucketsizes:"0.1, 100, 8"`
+	StepDurationSeconds metrics.Histogram `metrics_bucketsizes:"0.1, 100, 8" metrics_buckettype:"exprange" metrics_labels:"step"`
 	stepStart           time.Time
 
 	// Number of block parts received by the node, separated by whether the part

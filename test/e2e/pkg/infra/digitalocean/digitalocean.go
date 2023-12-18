@@ -134,7 +134,7 @@ func ansibleAddShellTasks(playbook, name string, shells ...string) string {
 }
 
 // file as bytes to be written out to disk.
-// ansibleStartBytes generates an Ansible playbook to start the network
+// ansibleStartBytes generates an Ansible playbook to start the network.
 func ansibleSystemdBytes(starting bool) string {
 	return ansibleAddSystemdTask(basePlaybook, starting)
 }

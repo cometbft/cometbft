@@ -4,15 +4,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/cosmos/gogoproto/proto"
-
 	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
+	"github.com/cosmos/gogoproto/proto"
 )
 
 const (
-	// snapshotMsgSize is the maximum size of a snapshotResponseMessage
+	// snapshotMsgSize is the maximum size of a snapshotResponseMessage.
 	snapshotMsgSize = int(4e6)
-	// chunkMsgSize is the maximum size of a chunkResponseMessage
+	// chunkMsgSize is the maximum size of a chunkResponseMessage.
 	chunkMsgSize = int(16e6)
 )
 

@@ -9,14 +9,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/websocket"
-	metrics "github.com/rcrowley/go-metrics"
-
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/service"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/log"
 	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/gorilla/websocket"
+	metrics "github.com/rcrowley/go-metrics"
 )
 
 const (
@@ -30,7 +29,7 @@ const (
 // the remote server.
 //
 // WSClient is safe for concurrent use by multiple goroutines.
-type WSClient struct { //nolint: maligned
+type WSClient struct {
 	conn *websocket.Conn
 
 	Address  string // IP:PORT or /path/to/socket

@@ -4,7 +4,7 @@ import (
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
 )
 
-// CMap is a goroutine-safe map
+// CMap is a goroutine-safe map.
 type CMap struct {
 	m map[string]interface{}
 	l cmtsync.Mutex

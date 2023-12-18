@@ -18,7 +18,7 @@ const (
 // InfrastructureData contains the relevant information for a set of existing
 // infrastructure that is to be used for running a testnet.
 type InfrastructureData struct {
-	Path string
+	Path string `json:"path"`
 
 	// Provider is the name of infrastructure provider backing the testnet.
 	// For example, 'docker' if it is running locally in a docker network or

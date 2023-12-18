@@ -15,9 +15,9 @@ type AppConnSnapshot struct {
 	mock.Mock
 }
 
-// ApplySnapshotChunk provides a mock function with given fields: _a0, _a1
-func (_m *AppConnSnapshot) ApplySnapshotChunk(_a0 context.Context, _a1 *v1.ApplySnapshotChunkRequest) (*v1.ApplySnapshotChunkResponse, error) {
-	ret := _m.Called(_a0, _a1)
+// ApplySnapshotChunk provides a mock function with given fields: ctx, req
+func (_m *AppConnSnapshot) ApplySnapshotChunk(ctx context.Context, req *v1.ApplySnapshotChunkRequest) (*v1.ApplySnapshotChunkResponse, error) {
+	ret := _m.Called(ctx, req)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ApplySnapshotChunk")
@@ -26,10 +26,10 @@ func (_m *AppConnSnapshot) ApplySnapshotChunk(_a0 context.Context, _a1 *v1.Apply
 	var r0 *v1.ApplySnapshotChunkResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.ApplySnapshotChunkRequest) (*v1.ApplySnapshotChunkResponse, error)); ok {
-		return rf(_a0, _a1)
+		return rf(ctx, req)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.ApplySnapshotChunkRequest) *v1.ApplySnapshotChunkResponse); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(ctx, req)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1.ApplySnapshotChunkResponse)
@@ -37,7 +37,7 @@ func (_m *AppConnSnapshot) ApplySnapshotChunk(_a0 context.Context, _a1 *v1.Apply
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, *v1.ApplySnapshotChunkRequest) error); ok {
-		r1 = rf(_a0, _a1)
+		r1 = rf(ctx, req)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -63,9 +63,9 @@ func (_m *AppConnSnapshot) Error() error {
 	return r0
 }
 
-// ListSnapshots provides a mock function with given fields: _a0, _a1
-func (_m *AppConnSnapshot) ListSnapshots(_a0 context.Context, _a1 *v1.ListSnapshotsRequest) (*v1.ListSnapshotsResponse, error) {
-	ret := _m.Called(_a0, _a1)
+// ListSnapshots provides a mock function with given fields: ctx, req
+func (_m *AppConnSnapshot) ListSnapshots(ctx context.Context, req *v1.ListSnapshotsRequest) (*v1.ListSnapshotsResponse, error) {
+	ret := _m.Called(ctx, req)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListSnapshots")
@@ -74,10 +74,10 @@ func (_m *AppConnSnapshot) ListSnapshots(_a0 context.Context, _a1 *v1.ListSnapsh
 	var r0 *v1.ListSnapshotsResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.ListSnapshotsRequest) (*v1.ListSnapshotsResponse, error)); ok {
-		return rf(_a0, _a1)
+		return rf(ctx, req)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.ListSnapshotsRequest) *v1.ListSnapshotsResponse); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(ctx, req)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1.ListSnapshotsResponse)
@@ -85,7 +85,7 @@ func (_m *AppConnSnapshot) ListSnapshots(_a0 context.Context, _a1 *v1.ListSnapsh
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, *v1.ListSnapshotsRequest) error); ok {
-		r1 = rf(_a0, _a1)
+		r1 = rf(ctx, req)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -93,9 +93,9 @@ func (_m *AppConnSnapshot) ListSnapshots(_a0 context.Context, _a1 *v1.ListSnapsh
 	return r0, r1
 }
 
-// LoadSnapshotChunk provides a mock function with given fields: _a0, _a1
-func (_m *AppConnSnapshot) LoadSnapshotChunk(_a0 context.Context, _a1 *v1.LoadSnapshotChunkRequest) (*v1.LoadSnapshotChunkResponse, error) {
-	ret := _m.Called(_a0, _a1)
+// LoadSnapshotChunk provides a mock function with given fields: ctx, req
+func (_m *AppConnSnapshot) LoadSnapshotChunk(ctx context.Context, req *v1.LoadSnapshotChunkRequest) (*v1.LoadSnapshotChunkResponse, error) {
+	ret := _m.Called(ctx, req)
 
 	if len(ret) == 0 {
 		panic("no return value specified for LoadSnapshotChunk")
@@ -104,10 +104,10 @@ func (_m *AppConnSnapshot) LoadSnapshotChunk(_a0 context.Context, _a1 *v1.LoadSn
 	var r0 *v1.LoadSnapshotChunkResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.LoadSnapshotChunkRequest) (*v1.LoadSnapshotChunkResponse, error)); ok {
-		return rf(_a0, _a1)
+		return rf(ctx, req)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.LoadSnapshotChunkRequest) *v1.LoadSnapshotChunkResponse); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(ctx, req)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1.LoadSnapshotChunkResponse)
@@ -115,7 +115,7 @@ func (_m *AppConnSnapshot) LoadSnapshotChunk(_a0 context.Context, _a1 *v1.LoadSn
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, *v1.LoadSnapshotChunkRequest) error); ok {
-		r1 = rf(_a0, _a1)
+		r1 = rf(ctx, req)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -123,9 +123,9 @@ func (_m *AppConnSnapshot) LoadSnapshotChunk(_a0 context.Context, _a1 *v1.LoadSn
 	return r0, r1
 }
 
-// OfferSnapshot provides a mock function with given fields: _a0, _a1
-func (_m *AppConnSnapshot) OfferSnapshot(_a0 context.Context, _a1 *v1.OfferSnapshotRequest) (*v1.OfferSnapshotResponse, error) {
-	ret := _m.Called(_a0, _a1)
+// OfferSnapshot provides a mock function with given fields: ctx, req
+func (_m *AppConnSnapshot) OfferSnapshot(ctx context.Context, req *v1.OfferSnapshotRequest) (*v1.OfferSnapshotResponse, error) {
+	ret := _m.Called(ctx, req)
 
 	if len(ret) == 0 {
 		panic("no return value specified for OfferSnapshot")
@@ -134,10 +134,10 @@ func (_m *AppConnSnapshot) OfferSnapshot(_a0 context.Context, _a1 *v1.OfferSnaps
 	var r0 *v1.OfferSnapshotResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.OfferSnapshotRequest) (*v1.OfferSnapshotResponse, error)); ok {
-		return rf(_a0, _a1)
+		return rf(ctx, req)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.OfferSnapshotRequest) *v1.OfferSnapshotResponse); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(ctx, req)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1.OfferSnapshotResponse)
@@ -145,7 +145,7 @@ func (_m *AppConnSnapshot) OfferSnapshot(_a0 context.Context, _a1 *v1.OfferSnaps
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, *v1.OfferSnapshotRequest) error); ok {
-		r1 = rf(_a0, _a1)
+		r1 = rf(ctx, req)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -158,7 +158,8 @@ func (_m *AppConnSnapshot) OfferSnapshot(_a0 context.Context, _a1 *v1.OfferSnaps
 func NewAppConnSnapshot(t interface {
 	mock.TestingT
 	Cleanup(func())
-}) *AppConnSnapshot {
+},
+) *AppConnSnapshot {
 	mock := &AppConnSnapshot{}
 	mock.Mock.Test(t)
 

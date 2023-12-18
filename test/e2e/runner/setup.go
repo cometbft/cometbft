@@ -10,11 +10,11 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/BurntSushi/toml"
-
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/log"
@@ -340,7 +340,7 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 			for node, power := range validators {
 				updateVals[base64.StdEncoding.EncodeToString(node.PrivvalKey.PubKey().Bytes())] = power
 			}
-			validatorUpdates[fmt.Sprintf("%v", height)] = updateVals
+			validatorUpdates[strconv.FormatInt(height, 10)] = updateVals
 		}
 		cfg["validator_update"] = validatorUpdates
 	}

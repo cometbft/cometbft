@@ -10,13 +10,11 @@ import (
 	"time"
 
 	db "github.com/cometbft/cometbft-db"
-
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	cfg "github.com/cometbft/cometbft/config"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/store"
-	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
@@ -29,6 +27,8 @@ import (
 // (byteBufferWAL) and waits until numBlocks are created.
 // If the node fails to produce given numBlocks, it returns an error.
 func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int, config *cfg.Config) (err error) {
+	t.Helper()
+
 	app := kvstore.NewPersistentApplication(filepath.Join(config.DBDir(), "wal_generator"))
 
 	logger := log.TestingLogger().With("wal_generator", "wal_generator")
@@ -122,6 +122,8 @@ func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int, config *cfg.C
 
 // WALWithNBlocks returns a WAL content with numBlocks.
 func WALWithNBlocks(t *testing.T, numBlocks int, config *cfg.Config) (data []byte, err error) {
+	t.Helper()
+
 	var b bytes.Buffer
 	wr := bufio.NewWriter(&b)
 
@@ -133,27 +135,18 @@ func WALWithNBlocks(t *testing.T, numBlocks int, config *cfg.Config) (data []byt
 	return b.Bytes(), nil
 }
 
+//nolint:unused
 func randPort() int {
 	// returns between base and base + spread
 	base, spread := 20000, 20000
 	return base + cmtrand.Intn(spread)
 }
 
+//nolint:deadcode,unused
 func makeAddrs() (string, string) {
 	start := randPort()
 	return fmt.Sprintf("tcp://127.0.0.1:%d", start),
 		fmt.Sprintf("tcp://127.0.0.1:%d", start+1)
-}
-
-// getConfig returns a config for test cases
-func getConfig(t *testing.T) *cfg.Config {
-	c := test.ResetTestRoot(t.Name())
-
-	// and we use random ports to run in parallel
-	cmt, rpc := makeAddrs()
-	c.P2P.ListenAddress = cmt
-	c.RPC.ListenAddress = rpc
-	return c
 }
 
 // byteBufferWAL is a WAL which writes all msgs to a byte buffer. Writing stops
@@ -168,7 +161,7 @@ type byteBufferWAL struct {
 	logger log.Logger
 }
 
-// needed for determinism
+// needed for determinism.
 var fixedTime, _ = time.Parse(time.RFC3339, "2017-01-02T15:04:05Z")
 
 func newByteBufferWAL(logger log.Logger, enc *WALEncoder, nBlocks int64, signalStop chan<- struct{}) *byteBufferWAL {

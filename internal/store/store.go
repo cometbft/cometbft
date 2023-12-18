@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"time"
 
 	dbm "github.com/cometbft/cometbft-db"
 	cmtstore "github.com/cometbft/cometbft/api/cometbft/store/v1"
@@ -558,8 +557,6 @@ func (bs *BlockStore) saveStateAndWriteDB(batch dbm.Batch, errMsg string) error 
 		Height: bs.height,
 	}
 	SaveBlockStoreState(&bss, batch)
-
-	time.Sleep(5 * time.Second)
 
 	err := batch.WriteSync()
 	if err != nil {

@@ -34,5 +34,5 @@ jobs:
 
       - name: Run CI testnet
         working-directory: test/e2e
-        run: ./run-multiple.sh networks/simple.toml
+        run: ./run-multiple.sh networks/ci.toml
         if: "env.GIT_DIFF != ''"

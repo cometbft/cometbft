@@ -97,8 +97,13 @@ func migrateDBs(targetVersion uint, config *cfg.Config) error {
 		return fmt.Errorf("evidence: %w", err)
 	}
 
-	// light clients
-	// TODO
+	lightClientDB, err := cfg.DefaultDBProvider(&cfg.DBContext{ID: "light-client-db", Config: config})
+	if err != nil {
+		return err
+	}
+	if err := migrateLightClientDB(lightClientDB, targetVersion); err != nil {
+		return fmt.Errorf("light client db: %w", err)
+	}
 
 	return nil
 }
@@ -125,6 +130,15 @@ func migrateEvidenceDB(db dbm.DB, targetVersion uint) error {
 	switch targetVersion {
 	case 2:
 		return v2.MigrateEvidenceDB(db)
+	default:
+		return fmt.Errorf("unsupported target version: %d", targetVersion)
+	}
+}
+
+func migrateLightClientDB(db dbm.DB, targetVersion uint) error {
+	switch targetVersion {
+	case 2:
+		return v2.MigrateLightClientDB(db)
 	default:
 		return fmt.Errorf("unsupported target version: %d", targetVersion)
 	}

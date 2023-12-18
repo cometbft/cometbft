@@ -18,6 +18,7 @@ var (
 	logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 )
 
+// MigrateBlockStore migrates the block store database from version 1 to 2.
 func MigrateBlockStore(db dbm.DB) error {
 	if err := migratePrefix(db, []byte("H:"), blockMetaKey); err != nil {
 		return fmt.Errorf("migrate block meta: %w", err)
@@ -45,7 +46,9 @@ func MigrateBlockStore(db dbm.DB) error {
 			logger.Info("skipping invalid key", "key", it.Key(), "err", err)
 			continue
 		}
-		db.Set(blockPartKey(height, partIndex), it.Value())
+		if err = db.Set(blockPartKey(height, partIndex), it.Value()); err != nil {
+			return fmt.Errorf("db.Set: %w", err)
+		}
 	}
 
 	if err := it.Error(); err != nil {
@@ -65,7 +68,9 @@ func MigrateBlockStore(db dbm.DB) error {
 			logger.Info("skipping invalid key", "key", it.Key(), "err", err)
 			continue
 		}
-		db.Set(blockHashKey(hash), it.Value())
+		if err = db.Set(blockHashKey(hash), it.Value()); err != nil {
+			return fmt.Errorf("db.Set: %w", err)
+		}
 	}
 
 	if err := it.Error(); err != nil {
@@ -75,6 +80,8 @@ func MigrateBlockStore(db dbm.DB) error {
 	return nil
 }
 
+// migratePrefix migrates all keys with the given prefix to the new key format
+// defined by keyFn.
 func migratePrefix(db dbm.DB, prefix []byte, keyFn func(int64) []byte) error {
 	it, err := dbm.IteratePrefix(db, prefix)
 	if err != nil {
@@ -88,7 +95,9 @@ func migratePrefix(db dbm.DB, prefix []byte, keyFn func(int64) []byte) error {
 			logger.Info("skipping invalid key", "key", it.Key(), "err", err)
 			continue
 		}
-		db.Set(blockMetaKey(height), it.Value())
+		if err = db.Set(keyFn(height), it.Value()); err != nil {
+			return fmt.Errorf("db.Set: %w", err)
+		}
 	}
 
 	if err := it.Error(); err != nil {
@@ -98,6 +107,7 @@ func migratePrefix(db dbm.DB, prefix []byte, keyFn func(int64) []byte) error {
 	return nil
 }
 
+// parseHeight parses the height from a key of the form "{suffix}:{height}".
 func parseHeight(key []byte) (int64, error) {
 	parts := strings.Split(string(key), ":")
 	if len(parts) != 2 {
@@ -106,6 +116,8 @@ func parseHeight(key []byte) (int64, error) {
 	return strconv.ParseInt(parts[1], 10, 64)
 }
 
+// parseHeightFromPartKey parses the height and part index from a key of the
+// form "{suffix}:{height}:{partIndex}".
 func parseHeightFromPartKey(key []byte) (int64, int, error) {
 	parts := strings.Split(string(key), ":")
 	if len(parts) != 3 {
@@ -122,6 +134,7 @@ func parseHeightFromPartKey(key []byte) (int64, int, error) {
 	return height, int(partIndex), nil
 }
 
+// parseBlockHash parses the block hash from a key of the form "{suffix}:{hash}".
 func parseBlockHash(key []byte) ([]byte, error) {
 	parts := bytes.Split(key, []byte(":"))
 	if len(parts) != 2 {
@@ -162,7 +175,9 @@ func MigrateEvidenceDB(db dbm.DB) error {
 		if err != nil {
 			panic(err)
 		}
-		db.Set(key, it.Value())
+		if err = db.Set(key, it.Value()); err != nil {
+			return fmt.Errorf("db.Set: %w", err)
+		}
 	}
 
 	if err := it.Error(); err != nil {
@@ -186,12 +201,52 @@ func MigrateEvidenceDB(db dbm.DB) error {
 		if err != nil {
 			panic(err)
 		}
-		db.Set(key, it.Value())
+		if err = db.Set(key, it.Value()); err != nil {
+			return fmt.Errorf("db.Set: %w", err)
+		}
 	}
 
 	if err := it.Error(); err != nil {
 		panic(err)
 	}
+
+	return nil
+}
+
+func MigrateLightClientDB(db dbm.DB) error {
+	// var (
+	// 	size []byte
+	// 	err   error
+	// )
+	// if size, err = db.Get([]byte("size")); err != nil {
+	// 	return fmt.Errorf("db.Get: %w", err)
+	// }
+
+	// migrate light blocks
+	// it, err := dbm.IteratePrefix(db, []byte("lb/"))
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer it.Close()
+
+	// for ; it.Valid(); it.Next() {
+	// 	chainID, height, err := parseLbKey(it.Key())
+	// 	if err != nil {
+	// 		logger.Info("skipping invalid key", "key", it.Key(), "err", err)
+	// 		continue
+	// 	}
+	// 	key, err := orderedcode.Append(nil, chainID, subkeyLightBlock, height)
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+	// 	if err = db.Set(key, it.Value()); err != nil {
+	// 		return fmt.Errorf("db.Set: %w", err)
+	// 	}
+	// }
+
+	// if err = db.Set(sizeKey([]byte("")), size); err != nil {
+	// 	return fmt.Errorf("db.Set: %w", err)
+	// }
 
 	return nil
 }
@@ -303,4 +358,26 @@ func parseEvidenceKey(key []byte) (int64, string, error) {
 		return 0, "", fmt.Errorf("error decoding height: %w", err)
 	}
 	return height, strings.ToLower(string(parts[1])), nil
+}
+
+const (
+	// subkeys must be unique within a single DB.
+	subkeyLightBlock = int64(9)
+	subkeySize       = int64(10)
+)
+
+func sizeKey(prefix []byte) []byte {
+	key, err := orderedcode.Append(nil, prefix, subkeySize)
+	if err != nil {
+		panic(err)
+	}
+	return key
+}
+
+func lbKey(prefix []byte, height int64) []byte {
+	key, err := orderedcode.Append(nil, prefix, subkeyLightBlock, height)
+	if err != nil {
+		panic(err)
+	}
+	return key
 }

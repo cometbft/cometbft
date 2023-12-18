@@ -307,3 +307,16 @@ func TestValidatorSet_VerifyCommitLightTrustingErrorsOnOverflow(t *testing.T) {
 		assert.Contains(t, err.Error(), "int64 overflow")
 	}
 }
+
+func TestValidatorSet_VerifyCommit(t *testing.T) {
+	vs := &ValidatorSet{
+		Validators: []*Validator{{}, {}},
+	}
+	commit := &Commit{
+		Height:     100,
+		Signatures: []CommitSig{{}, {}},
+	}
+	var bid BlockID
+	err := vs.VerifyCommit("", bid, 100, commit)
+	assert.NoError(t, err)
+}

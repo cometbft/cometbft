@@ -951,7 +951,7 @@ func validatorsKey(height int64) []byte {
 
 func consensusParamsKey(height int64) []byte {
 	// see the above comment in validatorsKey
-	return encodeKey(height+1, subkeyConsensusParams)
+	return encodeKey(height-1, subkeyConsensusParams)
 }
 
 func abciResponsesKey(height int64) []byte {

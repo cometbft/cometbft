@@ -1,0 +1,306 @@
+package v2
+
+import (
+	"bytes"
+	"encoding/binary"
+	"encoding/hex"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+
+	dbm "github.com/cometbft/cometbft-db"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/google/orderedcode"
+)
+
+var (
+	logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+)
+
+func MigrateBlockStore(db dbm.DB) error {
+	if err := migratePrefix(db, []byte("H:"), blockMetaKey); err != nil {
+		return fmt.Errorf("migrate block meta: %w", err)
+	}
+	if err := migratePrefix(db, []byte("C:"), blockCommitKey); err != nil {
+		return fmt.Errorf("migrate block commit: %w", err)
+	}
+	if err := migratePrefix(db, []byte("SC:"), seenCommitKey); err != nil {
+		return fmt.Errorf("migrate seen commit: %w", err)
+	}
+	if err := migratePrefix(db, []byte("EC:"), extCommitKey); err != nil {
+		return fmt.Errorf("migrate ext commit: %w", err)
+	}
+
+	// migrate block parts
+	it, err := dbm.IteratePrefix(db, []byte("P:"))
+	if err != nil {
+		panic(err)
+	}
+	defer it.Close()
+
+	for ; it.Valid(); it.Next() {
+		height, partIndex, err := parseHeightFromPartKey(it.Key())
+		if err != nil {
+			logger.Info("skipping invalid key", "key", it.Key(), "err", err)
+			continue
+		}
+		db.Set(blockPartKey(height, partIndex), it.Value())
+	}
+
+	if err := it.Error(); err != nil {
+		panic(err)
+	}
+
+	// migrate block hashes
+	it, err = dbm.IteratePrefix(db, []byte("BH:"))
+	if err != nil {
+		panic(err)
+	}
+	defer it.Close()
+
+	for ; it.Valid(); it.Next() {
+		hash, err := parseBlockHash(it.Key())
+		if err != nil {
+			logger.Info("skipping invalid key", "key", it.Key(), "err", err)
+			continue
+		}
+		db.Set(blockHashKey(hash), it.Value())
+	}
+
+	if err := it.Error(); err != nil {
+		panic(err)
+	}
+
+	return nil
+}
+
+func migratePrefix(db dbm.DB, prefix []byte, keyFn func(int64) []byte) error {
+	it, err := dbm.IteratePrefix(db, prefix)
+	if err != nil {
+		panic(err)
+	}
+	defer it.Close()
+
+	for ; it.Valid(); it.Next() {
+		height, err := parseHeight(it.Key())
+		if err != nil {
+			logger.Info("skipping invalid key", "key", it.Key(), "err", err)
+			continue
+		}
+		db.Set(blockMetaKey(height), it.Value())
+	}
+
+	if err := it.Error(); err != nil {
+		panic(err)
+	}
+
+	return nil
+}
+
+func parseHeight(key []byte) (int64, error) {
+	parts := strings.Split(string(key), ":")
+	if len(parts) != 2 {
+		return -1, fmt.Errorf("expected key to have 2 parts, got %d", len(parts))
+	}
+	return strconv.ParseInt(parts[1], 10, 64)
+}
+
+func parseHeightFromPartKey(key []byte) (int64, int, error) {
+	parts := strings.Split(string(key), ":")
+	if len(parts) != 3 {
+		return -1, 0, fmt.Errorf("expected key to have 3 parts, got %d", len(parts))
+	}
+	height, err := strconv.ParseInt(parts[1], 10, 64)
+	if err != nil {
+		return -1, 0, fmt.Errorf("error parsing height: %w", err)
+	}
+	partIndex, err := strconv.ParseInt(parts[2], 10, 64)
+	if err != nil {
+		return -1, 0, fmt.Errorf("error parsing part index: %w", err)
+	}
+	return height, int(partIndex), nil
+}
+
+func parseBlockHash(key []byte) ([]byte, error) {
+	parts := bytes.Split(key, []byte(":"))
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("expected key to have 2 parts, got %d", len(parts))
+	}
+	return parts[1], nil
+}
+
+func MigrateStateDB(db dbm.DB) error {
+	if err := migratePrefix(db, []byte("validatorsKey:"), validatorsKey); err != nil {
+		return fmt.Errorf("migrate validators: %w", err)
+	}
+	if err := migratePrefix(db, []byte("consensusParamsKey:"), consensusParamsKey); err != nil {
+		return fmt.Errorf("migrate consensus params: %w", err)
+	}
+
+	if err := migratePrefix(db, []byte("abciResponsesKey:"), abciResponsesKey); err != nil {
+		return fmt.Errorf("migrate abci responses: %w", err)
+	}
+	return nil
+}
+
+func MigrateEvidenceDB(db dbm.DB) error {
+	// migrate committed evidence
+	it, err := dbm.IteratePrefix(db, []byte{byte(0x00)})
+	if err != nil {
+		panic(err)
+	}
+	defer it.Close()
+
+	for ; it.Valid(); it.Next() {
+		height, hash, err := parseEvidenceKey(it.Key())
+		if err != nil {
+			logger.Info("skipping invalid key", "key", it.Key(), "err", err)
+			continue
+		}
+		key, err := orderedcode.Append(nil, height, subkeyCommitted, hash)
+		if err != nil {
+			panic(err)
+		}
+		db.Set(key, it.Value())
+	}
+
+	if err := it.Error(); err != nil {
+		panic(err)
+	}
+
+	// migrate pending evidence
+	it, err = dbm.IteratePrefix(db, []byte{byte(0x01)})
+	if err != nil {
+		panic(err)
+	}
+	defer it.Close()
+
+	for ; it.Valid(); it.Next() {
+		height, hash, err := parseEvidenceKey(it.Key())
+		if err != nil {
+			logger.Info("skipping invalid key", "key", it.Key(), "err", err)
+			continue
+		}
+		key, err := orderedcode.Append(nil, prefixPending, height, hash)
+		if err != nil {
+			panic(err)
+		}
+		db.Set(key, it.Value())
+	}
+
+	if err := it.Error(); err != nil {
+		panic(err)
+	}
+
+	return nil
+}
+
+//---------------------------------- KEY ENCODING -----------------------------------------
+
+const (
+	// subkeys must be unique within a single DB
+	subkeyBlockMeta   = int64(0)
+	subkeyBlockPart   = int64(1)
+	subkeyBlockCommit = int64(2)
+	subkeySeenCommit  = int64(3)
+	subkeyExtCommit   = int64(4)
+
+	// prefixes must be unique within a single DB
+	prefixBlockHash = int64(-1)
+)
+
+func encodeKey(height, prefix int64) []byte {
+	res, err := orderedcode.Append(nil, height, prefix)
+	if err != nil {
+		panic(err)
+	}
+	return res
+}
+
+func blockMetaKey(height int64) []byte {
+	return encodeKey(height, subkeyBlockMeta)
+}
+
+func blockPartKey(height int64, partIndex int) []byte {
+	key, err := orderedcode.Append(nil, height, subkeyBlockPart, int64(partIndex))
+	if err != nil {
+		panic(err)
+	}
+	return key
+}
+
+func blockCommitKey(height int64) []byte {
+	return encodeKey(height, subkeyBlockCommit)
+}
+
+func seenCommitKey(height int64) []byte {
+	return encodeKey(height, subkeySeenCommit)
+}
+
+func extCommitKey(height int64) []byte {
+	return encodeKey(height, subkeyExtCommit)
+}
+
+func blockHashKey(hash []byte) []byte {
+	key, err := orderedcode.Append(nil, prefixBlockHash, string(hash))
+	if err != nil {
+		panic(err)
+	}
+	return key
+}
+
+const (
+	// subkeys must be unique within a single DB
+	subkeyValidators      = int64(5)
+	subkeyConsensusParams = int64(6)
+	subkeyABCIResponses   = int64(7)
+)
+
+func validatorsKey(height int64) []byte {
+	// Since validators for the block H are those decided at H-1, we add 1
+	// here so that the block's header and validators are co-located.
+	//
+	// ```
+	// 1/{subkeyBlockMeta}
+	// 1/{subkeyValidators}
+	// ```
+	// where 1 is the height of the block.
+	return encodeKey(height-1, subkeyValidators)
+}
+
+func consensusParamsKey(height int64) []byte {
+	// see the above comment in validatorsKey
+	return encodeKey(height-1, subkeyConsensusParams)
+}
+
+func abciResponsesKey(height int64) []byte {
+	return encodeKey(height, subkeyABCIResponses)
+}
+
+const (
+	// subkeys must be unique within a single DB
+	subkeyCommitted = int64(8)
+
+	// prefixes must be unique within a single DB
+	prefixPending = int64(-2)
+)
+
+func parseEvidenceKey(key []byte) (int64, string, error) {
+	parts := bytes.Split(key, []byte("/"))
+	if len(parts) != 2 {
+		return -1, "", fmt.Errorf("expected key to have 2 parts, got %d", len(parts))
+	}
+
+	decoded, err := hex.DecodeString(string(parts[0]))
+	if err != nil {
+		return 0, "", fmt.Errorf("error decoding height: %w", err)
+	}
+	var height int64
+	buf := bytes.NewReader(decoded)
+	err = binary.Read(buf, binary.BigEndian, &height)
+	if err != nil {
+		return 0, "", fmt.Errorf("error decoding height: %w", err)
+	}
+	return height, strings.ToLower(string(parts[1])), nil
+}

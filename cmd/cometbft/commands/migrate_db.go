@@ -4,20 +4,20 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
+	dbm "github.com/cometbft/cometbft-db"
+	v2 "github.com/cometbft/cometbft/cmd/cometbft/commands/migrate_db/v2"
+	cfg "github.com/cometbft/cometbft/config"
 	"github.com/spf13/cobra"
 )
 
 var (
 	migrateDBTargetVersion uint
-	db_dir                 string
 )
 
 func init() {
 	MigrateDBCmd.Flags().UintVar(&migrateDBTargetVersion, "target_version", 2, "version to migrate to")
-	MigrateDBCmd.Flags().StringVar(&db_dir, "db_dir", "~/.cometbft/data", "path to the database directory")
 }
 
 var MigrateDBCmd = &cobra.Command{
@@ -35,7 +35,12 @@ IMPORTANT: please backup your database before running this
 command! You can do so by stopping the node and copying the
 "data" directory.
 `,
-	RunE: func(*cobra.Command, []string) error {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		config, err := ParseConfig(cmd)
+		if err != nil {
+			return fmt.Errorf("failed to parse config: %w", err)
+		}
+
 		fmt.Print("Did you backup your data? Y/N: ")
 
 		// Read user input
@@ -50,9 +55,9 @@ command! You can do so by stopping the node and copying the
 			// TODO: read the current version from the database
 			// https://github.com/cometbft/cometbft/issues/1822
 			targetVersion := migrateDBTargetVersion
-			fmt.Printf("Migrating database to version %d...\n", targetVersion)
-			if err := migrateDB(targetVersion); err != nil {
-				return fmt.Errorf("error migrating database: %w", err)
+			fmt.Printf("Migrating databases to version %d...\n", targetVersion)
+			if err := migrateDBs(targetVersion, config); err != nil {
+				return fmt.Errorf("error migrating databases: %w", err)
 			}
 		case "N":
 			fmt.Println("Please consider backing up your data before proceeding.")
@@ -64,12 +69,63 @@ command! You can do so by stopping the node and copying the
 	},
 }
 
-func migrateDB(targetVersion uint) error {
-	blockdb := filepath.Join(dbDir, "blockstore.db")
-	state := filepath.Join(dbDir, "state.db")
-	wal := filepath.Join(dbDir, "cs.wal")
-	evidence := filepath.Join(dbDir, "evidence.db")
-	txIndex := filepath.Join(dbDir, "tx_index.db")
+func migrateDBs(targetVersion uint, config *cfg.Config) error {
+	// blockstore
+	blockStoreDB, err := cfg.DefaultDBProvider(&cfg.DBContext{ID: "blockstore", Config: config})
+	if err != nil {
+		return err
+	}
+	if err := migrateBlockStoreDB(blockStoreDB, targetVersion); err != nil {
+		return fmt.Errorf("blockstore: %w", err)
+	}
+
+	// state
+	stateDB, err := cfg.DefaultDBProvider(&cfg.DBContext{ID: "state", Config: config})
+	if err != nil {
+		return err
+	}
+	if err := migrateStateDB(stateDB, targetVersion); err != nil {
+		return fmt.Errorf("state: %w", err)
+	}
+
+	// evidence
+	evidenceDB, err := cfg.DefaultDBProvider(&cfg.DBContext{ID: "evidence", Config: config})
+	if err != nil {
+		return err
+	}
+	if err := migrateEvidenceDB(evidenceDB, targetVersion); err != nil {
+		return fmt.Errorf("evidence: %w", err)
+	}
+
+	// light clients
+	// TODO
 
 	return nil
+}
+
+func migrateBlockStoreDB(db dbm.DB, targetVersion uint) error {
+	switch targetVersion {
+	case 2:
+		return v2.MigrateBlockStore(db)
+	default:
+		return fmt.Errorf("unsupported target version: %d", targetVersion)
+	}
+}
+
+func migrateStateDB(db dbm.DB, targetVersion uint) error {
+	switch targetVersion {
+	case 2:
+		return v2.MigrateStateDB(db)
+	default:
+		return fmt.Errorf("unsupported target version: %d", targetVersion)
+	}
+}
+
+func migrateEvidenceDB(db dbm.DB, targetVersion uint) error {
+	switch targetVersion {
+	case 2:
+		return v2.MigrateEvidenceDB(db)
+	default:
+		return fmt.Errorf("unsupported target version: %d", targetVersion)
+	}
 }

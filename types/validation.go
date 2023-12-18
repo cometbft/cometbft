@@ -372,6 +372,10 @@ func verifyCommitSingle(
 			seenVals[valIdx] = idx
 		}
 
+		if val.PubKey == nil {
+			return fmt.Errorf("validator has a nil PubKey")
+		}
+
 		voteSignBytes = commit.VoteSignBytes(chainID, int32(idx))
 
 		if !val.PubKey.VerifySignature(voteSignBytes, commitSig.Signature) {

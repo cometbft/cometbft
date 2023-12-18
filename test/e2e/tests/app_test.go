@@ -36,31 +36,33 @@ func TestApp_InitialState(t *testing.T) {
 // Tests that the app hash (as reported by the app) matches the last
 // block and the node sync status.
 func TestApp_Hash(t *testing.T) {
-	testNode(t, func(t *testing.T, node e2e.Node) {
-		client, err := node.Client()
-		require.NoError(t, err)
-
-		info, err := client.ABCIInfo(ctx)
-		require.NoError(t, err)
-		require.NotEmpty(t, info.Response.LastBlockAppHash, "expected app to return app hash")
-
-		// In next-block execution, the app hash is stored in the next block
-		requestedHeight := info.Response.LastBlockHeight + 1
-
-		require.Eventually(t, func() bool {
-			status, err := client.Status(ctx)
+	for i := 0; i < 200; i++ {
+		testNode(t, func(t *testing.T, node e2e.Node) {
+			client, err := node.Client()
 			require.NoError(t, err)
-			require.NotZero(t, status.SyncInfo.LatestBlockHeight)
-			return status.SyncInfo.LatestBlockHeight >= requestedHeight
-		}, 5*time.Second, 500*time.Millisecond)
 
-		block, err := client.Block(ctx, &requestedHeight)
-		require.NoError(t, err)
-		require.Equal(t,
-			fmt.Sprintf("%x", info.Response.LastBlockAppHash),
-			fmt.Sprintf("%x", block.Block.AppHash.Bytes()),
-			"app hash does not match last block's app hash")
-	})
+			info, err := client.ABCIInfo(ctx)
+			require.NoError(t, err)
+			require.NotEmpty(t, info.Response.LastBlockAppHash, "expected app to return app hash")
+
+			// In next-block execution, the app hash is stored in the next block
+			requestedHeight := info.Response.LastBlockHeight + 1
+
+			require.Eventually(t, func() bool {
+				status, err := client.Status(ctx)
+				require.NoError(t, err)
+				require.NotZero(t, status.SyncInfo.LatestBlockHeight)
+				return status.SyncInfo.LatestBlockHeight >= requestedHeight
+			}, 5*time.Second, 500*time.Millisecond)
+
+			block, err := client.Block(ctx, &requestedHeight)
+			require.NoError(t, err)
+			require.Equal(t,
+				fmt.Sprintf("%x", info.Response.LastBlockAppHash),
+				fmt.Sprintf("%x", block.Block.AppHash.Bytes()),
+				"app hash does not match last block's app hash")
+		})
+	}
 }
 
 // Tests that we can set a value and retrieve it.

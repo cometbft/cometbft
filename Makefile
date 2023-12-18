@@ -232,6 +232,11 @@ lint:
 	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
 .PHONY: lint
 
+lint-format:
+	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --fix
+	@go run mvdan.cc/gofumpt -l -w ./..
+.PHONY: lint-format
+
 vulncheck:
 	@go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 .PHONY: vulncheck

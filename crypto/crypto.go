@@ -23,7 +23,7 @@ type PubKey interface {
 	Address() Address
 	Bytes() []byte
 	VerifySignature(msg []byte, sig []byte) bool
-	Equals(PubKey) bool
+	Equals(other PubKey) bool
 	Type() string
 }
 
@@ -31,7 +31,7 @@ type PrivKey interface {
 	Bytes() []byte
 	Sign(msg []byte) ([]byte, error)
 	PubKey() PubKey
-	Equals(PrivKey) bool
+	Equals(other PrivKey) bool
 	Type() string
 }
 
@@ -42,7 +42,7 @@ type Symmetric interface {
 }
 
 // If a new key type implements batch verification,
-// the key type must be registered in github.com/cometbft/cometbft/crypto/batch
+// the key type must be registered in github.com/cometbft/cometbft/crypto/batch.
 type BatchVerifier interface {
 	// Add appends an entry into the BatchVerifier.
 	Add(key PubKey, message, signature []byte) error

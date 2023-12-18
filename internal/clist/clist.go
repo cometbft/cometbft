@@ -177,7 +177,7 @@ func (e *CElement) SetNext(newNext *CElement) {
 }
 
 // NOTE: This function needs to be safe for
-// concurrent goroutines waiting on prevWg
+// concurrent goroutines waiting on prevWg.
 func (e *CElement) SetPrev(newPrev *CElement) {
 	e.mtx.Lock()
 

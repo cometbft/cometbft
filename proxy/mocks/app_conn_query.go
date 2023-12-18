@@ -15,9 +15,9 @@ type AppConnQuery struct {
 	mock.Mock
 }
 
-// Echo provides a mock function with given fields: _a0, _a1
-func (_m *AppConnQuery) Echo(_a0 context.Context, _a1 string) (*v1.EchoResponse, error) {
-	ret := _m.Called(_a0, _a1)
+// Echo provides a mock function with given fields: ctx, echo
+func (_m *AppConnQuery) Echo(ctx context.Context, echo string) (*v1.EchoResponse, error) {
+	ret := _m.Called(ctx, echo)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Echo")
@@ -26,10 +26,10 @@ func (_m *AppConnQuery) Echo(_a0 context.Context, _a1 string) (*v1.EchoResponse,
 	var r0 *v1.EchoResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string) (*v1.EchoResponse, error)); ok {
-		return rf(_a0, _a1)
+		return rf(ctx, echo)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string) *v1.EchoResponse); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(ctx, echo)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1.EchoResponse)
@@ -37,7 +37,7 @@ func (_m *AppConnQuery) Echo(_a0 context.Context, _a1 string) (*v1.EchoResponse,
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(_a0, _a1)
+		r1 = rf(ctx, echo)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -63,9 +63,9 @@ func (_m *AppConnQuery) Error() error {
 	return r0
 }
 
-// Info provides a mock function with given fields: _a0, _a1
-func (_m *AppConnQuery) Info(_a0 context.Context, _a1 *v1.InfoRequest) (*v1.InfoResponse, error) {
-	ret := _m.Called(_a0, _a1)
+// Info provides a mock function with given fields: ctx, req
+func (_m *AppConnQuery) Info(ctx context.Context, req *v1.InfoRequest) (*v1.InfoResponse, error) {
+	ret := _m.Called(ctx, req)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Info")
@@ -74,10 +74,10 @@ func (_m *AppConnQuery) Info(_a0 context.Context, _a1 *v1.InfoRequest) (*v1.Info
 	var r0 *v1.InfoResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.InfoRequest) (*v1.InfoResponse, error)); ok {
-		return rf(_a0, _a1)
+		return rf(ctx, req)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.InfoRequest) *v1.InfoResponse); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(ctx, req)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1.InfoResponse)
@@ -85,7 +85,7 @@ func (_m *AppConnQuery) Info(_a0 context.Context, _a1 *v1.InfoRequest) (*v1.Info
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, *v1.InfoRequest) error); ok {
-		r1 = rf(_a0, _a1)
+		r1 = rf(ctx, req)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -93,9 +93,9 @@ func (_m *AppConnQuery) Info(_a0 context.Context, _a1 *v1.InfoRequest) (*v1.Info
 	return r0, r1
 }
 
-// Query provides a mock function with given fields: _a0, _a1
-func (_m *AppConnQuery) Query(_a0 context.Context, _a1 *v1.QueryRequest) (*v1.QueryResponse, error) {
-	ret := _m.Called(_a0, _a1)
+// Query provides a mock function with given fields: ctx, req
+func (_m *AppConnQuery) Query(ctx context.Context, req *v1.QueryRequest) (*v1.QueryResponse, error) {
+	ret := _m.Called(ctx, req)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Query")
@@ -104,10 +104,10 @@ func (_m *AppConnQuery) Query(_a0 context.Context, _a1 *v1.QueryRequest) (*v1.Qu
 	var r0 *v1.QueryResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.QueryRequest) (*v1.QueryResponse, error)); ok {
-		return rf(_a0, _a1)
+		return rf(ctx, req)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.QueryRequest) *v1.QueryResponse); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(ctx, req)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1.QueryResponse)
@@ -115,7 +115,7 @@ func (_m *AppConnQuery) Query(_a0 context.Context, _a1 *v1.QueryRequest) (*v1.Qu
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, *v1.QueryRequest) error); ok {
-		r1 = rf(_a0, _a1)
+		r1 = rf(ctx, req)
 	} else {
 		r1 = ret.Error(1)
 	}

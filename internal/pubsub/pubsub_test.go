@@ -7,13 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
-	"github.com/cometbft/cometbft/libs/log"
-
 	"github.com/cometbft/cometbft/internal/pubsub"
 	"github.com/cometbft/cometbft/internal/pubsub/query"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (

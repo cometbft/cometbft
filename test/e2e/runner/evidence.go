@@ -21,7 +21,7 @@ import (
 	"github.com/cometbft/cometbft/version"
 )
 
-// 1 in 4 evidence is light client evidence, the rest is duplicate vote evidence
+// 1 in 4 evidence is light client evidence, the rest is duplicate vote evidence.
 const lightClientEvidenceRatio = 4
 
 // InjectEvidence takes a running testnet and generates an amount of valid/invalid
@@ -214,7 +214,7 @@ func generateLightClientAttackEvidence(
 }
 
 // generateDuplicateVoteEvidence picks a random validator from the val set and
-// returns duplicate vote evidence against the validator
+// returns duplicate vote evidence against the validator.
 func generateDuplicateVoteEvidence(
 	privVals []types.MockPV,
 	height int64,
@@ -243,7 +243,7 @@ func generateDuplicateVoteEvidence(
 }
 
 // getRandomValidatorIndex picks a random validator from a slice of mock PrivVals that's
-// also part of the validator set, returning the PrivVal and its index in the validator set
+// also part of the validator set, returning the PrivVal and its index in the validator set.
 func getRandomValidatorIndex(privVals []types.MockPV, vals *types.ValidatorSet) (types.MockPV, int32, error) {
 	for _, idx := range rand.Perm(len(privVals)) {
 		pv := privVals[idx]

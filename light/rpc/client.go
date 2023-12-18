@@ -67,7 +67,7 @@ func KeyPathFn(fn KeyPathFunc) Option {
 
 // DefaultMerkleKeyPathFn creates a function used to generate merkle key paths
 // from a path string and a key. This is the default used by the cosmos SDK.
-// This merkle key paths are required when verifying /abci_query calls
+// This merkle key paths are required when verifying /abci_query calls.
 func DefaultMerkleKeyPathFn() KeyPathFunc {
 	// regexp for extracting store name from /abci_query path
 	storeNameRegexp := regexp.MustCompile(`\/store\/(.+)\/key`)
@@ -378,7 +378,7 @@ func (c *Client) BlockByHash(ctx context.Context, hash []byte) (*ctypes.ResultBl
 
 // BlockResults returns the block results for the given height. If no height is
 // provided, the results of the block preceding the latest are returned.
-// NOTE: Light client only verifies the tx results
+// NOTE: Light client only verifies the tx results.
 func (c *Client) BlockResults(ctx context.Context, height *int64) (*ctypes.ResultBlockResults, error) {
 	var h int64
 	if height == nil {
@@ -422,7 +422,7 @@ func (c *Client) BlockResults(ctx context.Context, height *int64) (*ctypes.Resul
 	return res, nil
 }
 
-// Header fetches and verifies the header directly via the light client
+// Header fetches and verifies the header directly via the light client.
 func (c *Client) Header(ctx context.Context, height *int64) (*ctypes.ResultHeader, error) {
 	lb, err := c.updateLightClientIfNeededTo(ctx, height)
 	if err != nil {
@@ -583,7 +583,7 @@ func (c *Client) RegisterOpDecoder(typ string, dec merkle.OpDecoder) {
 
 // SubscribeWS subscribes for events using the given query and remote address as
 // a subscriber, but does not verify responses (UNSAFE)!
-// TODO: verify data
+// TODO: verify data.
 func (c *Client) SubscribeWS(ctx *rpctypes.Context, query string) (*ctypes.ResultSubscribe, error) {
 	out, err := c.next.Subscribe(context.Background(), ctx.RemoteAddr(), query)
 	if err != nil {
@@ -630,9 +630,9 @@ func (c *Client) UnsubscribeAllWS(ctx *rpctypes.Context) (*ctypes.ResultUnsubscr
 	return &ctypes.ResultUnsubscribe{}, nil
 }
 
-// XXX: Copied from rpc/core/env.go
+// XXX: Copied from rpc/core/env.go.
 const (
-	// see README
+	// see README.
 	defaultPerPage = 30
 	maxPerPage     = 100
 )

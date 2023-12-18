@@ -17,7 +17,7 @@ import (
 
 var reInt = regexp.MustCompile(`^-?[0-9]+$`)
 
-// convert from a function name to the http handler
+// convert from a function name to the http handler.
 func makeHTTPHandler(rpcFunc *RPCFunc, logger log.Logger) func(http.ResponseWriter, *http.Request) {
 	// Always return -1 as there's no ID here.
 	dummyID := types.JSONRPCIntID(-1) // URIClientRequestID
@@ -145,7 +145,7 @@ func nonJSONStringToArg(rt reflect.Type, arg string) (reflect.Value, bool, error
 
 // NOTE: rt.Kind() isn't a pointer.
 func _nonJSONStringToArg(rt reflect.Type, arg string) (reflect.Value, bool, error) {
-	isIntString := reInt.Match([]byte(arg))
+	isIntString := reInt.MatchString(arg)
 	isQuotedString := strings.HasPrefix(arg, `"`) && strings.HasSuffix(arg, `"`)
 	isHexString := strings.HasPrefix(strings.ToLower(arg), "0x")
 

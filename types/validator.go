@@ -14,7 +14,7 @@ import (
 
 // Volatile state for each Validator
 // NOTE: The ProposerPriority is not included in Validator.Hash();
-// make sure to update that method if changes are made here
+// make sure to update that method if changes are made here.
 type Validator struct {
 	Address     Address       `json:"address"`
 	PubKey      crypto.PubKey `json:"pub_key"`
@@ -89,7 +89,7 @@ func (v *Validator) CompareProposerPriority(other *Validator) *Validator {
 // 1. address
 // 2. public key
 // 3. voting power
-// 4. proposer priority
+// 4. proposer priority.
 func (v *Validator) String() string {
 	if v == nil {
 		return "nil-Validator"
@@ -133,7 +133,7 @@ func (v *Validator) Bytes() []byte {
 	return bz
 }
 
-// ToProto converts Validator to protobuf
+// ToProto converts Validator to protobuf.
 func (v *Validator) ToProto() (*cmtproto.Validator, error) {
 	if v == nil {
 		return nil, errors.New("nil validator")
@@ -178,7 +178,7 @@ func ValidatorFromProto(vp *cmtproto.Validator) (*Validator, error) {
 // RandValidator
 
 // RandValidator returns a randomized validator, useful for testing.
-// UNSTABLE
+// UNSTABLE.
 func RandValidator(randPower bool, minPower int64) (*Validator, PrivValidator) {
 	privVal := NewMockPV()
 	votePower := minPower

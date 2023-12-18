@@ -1,12 +1,11 @@
-//nolint:revive,stylecheck
+//nolint:stylecheck,revive
 package types
 
 import (
 	"encoding/json"
 
-	"github.com/cosmos/gogoproto/grpc"
-
 	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	"github.com/cosmos/gogoproto/grpc"
 )
 
 type (
@@ -181,7 +180,7 @@ const (
 // have accidental runtime surprises later on.
 
 // jsonEncodingRoundTripper ensures that asserted
-// interfaces implement both MarshalJSON and UnmarshalJSON
+// interfaces implement both MarshalJSON and UnmarshalJSON.
 type jsonRoundTripper interface {
 	json.Marshaler
 	json.Unmarshaler
@@ -207,7 +206,7 @@ func DeterministicExecTxResult(response *ExecTxResult) *ExecTxResult {
 	}
 }
 
-// MarshalTxResults encodes the the TxResults as a list of byte
+// MarshalTxResults encodes the TxResults as a list of byte
 // slices. It strips off the non-deterministic pieces of the TxResults
 // so that the resulting data can be used for hash comparisons and used
 // in Merkle proofs.

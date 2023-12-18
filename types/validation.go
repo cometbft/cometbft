@@ -346,6 +346,10 @@ func verifyCommitSingle(
 			continue
 		}
 
+		if commitSig.ValidateBasic() != nil {
+			return fmt.Errorf("invalid signatures from %v at index %d", val, idx)
+		}
+
 		// If the vals and commit have a 1-to-1 correspondence we can retrieve
 		// them by index else we need to retrieve them by address
 		if lookUpByIndex {

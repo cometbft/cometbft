@@ -318,5 +318,5 @@ func TestValidatorSet_VerifyCommit(t *testing.T) {
 	}
 	var bid BlockID
 	err := vs.VerifyCommit("", bid, 100, commit)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 }

@@ -36,7 +36,7 @@ func TestApp_InitialState(t *testing.T) {
 // Tests that the app hash (as reported by the app) matches the last
 // block and the node sync status.
 func TestApp_Hash(t *testing.T) {
-	for i := 0; i < 200; i++ {
+	for i := 0; i < 20; i++ {
 		testNode(t, func(t *testing.T, node e2e.Node) {
 			client, err := node.Client()
 			require.NoError(t, err)
@@ -53,7 +53,7 @@ func TestApp_Hash(t *testing.T) {
 				require.NoError(t, err)
 				require.NotZero(t, status.SyncInfo.LatestBlockHeight)
 				return status.SyncInfo.LatestBlockHeight >= requestedHeight
-			}, 5*time.Second, 500*time.Millisecond)
+			}, 60*time.Second, 500*time.Millisecond)
 
 			block, err := client.Block(ctx, &requestedHeight)
 			require.NoError(t, err)

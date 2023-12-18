@@ -696,5 +696,4 @@ func (bs *BlockStore) DeleteLatestBlock() error {
 	defer bs.mtx.Unlock()
 	bs.height = targetHeight - 1
 	return bs.saveStateAndWriteDB(batch, "failed to delete the latest block")
-
 }

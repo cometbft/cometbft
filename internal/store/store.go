@@ -377,7 +377,7 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 			return 0, -1, err
 		}
 		for p := 0; p < int(meta.BlockID.PartSetHeader.Total); p++ {
-			if err := batch.Delete(blockPartKey(h, p)); err != nil {
+			if err := batch.Delete(blockPartKey(h, int64(p))); err != nil {
 				return 0, -1, err
 			}
 		}

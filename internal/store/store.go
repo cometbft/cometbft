@@ -169,7 +169,7 @@ func (bs *BlockStore) LoadBlockByHash(hash []byte) (*types.Block, *types.BlockMe
 func (bs *BlockStore) LoadBlockPart(height int64, index int) *types.Part {
 	pbpart := new(cmtproto.Part)
 
-	bz, err := bs.db.Get(blockPartKey(height, index))
+	bz, err := bs.db.Get(blockPartKey(height, int64(index)))
 	if err != nil {
 		panic(err)
 	}
@@ -548,9 +548,9 @@ func (bs *BlockStore) saveBlockPart(height int64, index int, part *types.Part, b
 	}
 	partBytes := mustEncode(pbp)
 	if saveBlockPartsToBatch {
-		err = batch.Set(blockPartKey(height, index), partBytes)
+		err = batch.Set(blockPartKey(height, int64(index)), partBytes)
 	} else {
-		err = bs.db.Set(blockPartKey(height, index), partBytes)
+		err = bs.db.Set(blockPartKey(height, int64(index)), partBytes)
 	}
 	if err != nil {
 		panic(err)
@@ -640,7 +640,7 @@ func (bs *BlockStore) DeleteLatestBlock() error {
 			return err
 		}
 		for p := 0; p < int(meta.BlockID.PartSetHeader.Total); p++ {
-			if err := batch.Delete(blockPartKey(targetHeight, p)); err != nil {
+			if err := batch.Delete(blockPartKey(targetHeight, int64(p))); err != nil {
 				return err
 			}
 		}
@@ -705,8 +705,8 @@ func blockMetaKey(height int64) []byte {
 	return encodeKey(height, subkeyBlockMeta)
 }
 
-func blockPartKey(height int64, partIndex int) []byte {
-	key, err := orderedcode.Append(nil, height, subkeyBlockPart, int64(partIndex))
+func blockPartKey(height int64, partIndex int64) []byte {
+	key, err := orderedcode.Append(nil, height, subkeyBlockPart, partIndex)
 	if err != nil {
 		panic(err)
 	}

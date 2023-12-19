@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -20,20 +21,24 @@ var (
 
 // MigrateBlockStore migrates the block store database from version 1 to 2.
 func MigrateBlockStore(db dbm.DB) error {
+	logger.Info("migrating block metas...")
 	if err := migratePrefix(db, []byte("H:"), blockMetaKey); err != nil {
-		return fmt.Errorf("migrate block meta: %w", err)
+		return fmt.Errorf("block meta: %w", err)
 	}
+	logger.Info("migrating block commits...")
 	if err := migratePrefix(db, []byte("C:"), blockCommitKey); err != nil {
-		return fmt.Errorf("migrate block commit: %w", err)
+		return fmt.Errorf("block commit: %w", err)
 	}
+	logger.Info("migrating seen commits...")
 	if err := migratePrefix(db, []byte("SC:"), seenCommitKey); err != nil {
-		return fmt.Errorf("migrate seen commit: %w", err)
+		return fmt.Errorf("seen commit: %w", err)
 	}
+	logger.Info("migrating extended commits...")
 	if err := migratePrefix(db, []byte("EC:"), extCommitKey); err != nil {
-		return fmt.Errorf("migrate ext commit: %w", err)
+		return fmt.Errorf("extended commit: %w", err)
 	}
 
-	// migrate block parts
+	logger.Info("migrating block parts...")
 	it, err := dbm.IteratePrefix(db, []byte("P:"))
 	if err != nil {
 		panic(err)
@@ -55,7 +60,7 @@ func MigrateBlockStore(db dbm.DB) error {
 		panic(err)
 	}
 
-	// migrate block hashes
+	logger.Info("migrating block hashes...")
 	it, err = dbm.IteratePrefix(db, []byte("BH:"))
 	if err != nil {
 		panic(err)
@@ -118,7 +123,7 @@ func parseHeight(key []byte) (int64, error) {
 
 // parseHeightFromPartKey parses the height and part index from a key of the
 // form "{suffix}:{height}:{partIndex}".
-func parseHeightFromPartKey(key []byte) (int64, int, error) {
+func parseHeightFromPartKey(key []byte) (int64, int64, error) {
 	parts := strings.Split(string(key), ":")
 	if len(parts) != 3 {
 		return -1, 0, fmt.Errorf("expected key to have 3 parts, got %d", len(parts))
@@ -131,7 +136,7 @@ func parseHeightFromPartKey(key []byte) (int64, int, error) {
 	if err != nil {
 		return -1, 0, fmt.Errorf("error parsing part index: %w", err)
 	}
-	return height, int(partIndex), nil
+	return height, partIndex, nil
 }
 
 // parseBlockHash parses the block hash from a key of the form "{suffix}:{hash}".
@@ -144,21 +149,23 @@ func parseBlockHash(key []byte) ([]byte, error) {
 }
 
 func MigrateStateDB(db dbm.DB) error {
+	logger.Info("migrating validators...")
 	if err := migratePrefix(db, []byte("validatorsKey:"), validatorsKey); err != nil {
 		return fmt.Errorf("migrate validators: %w", err)
 	}
+	logger.Info("migrating consensus params...")
 	if err := migratePrefix(db, []byte("consensusParamsKey:"), consensusParamsKey); err != nil {
 		return fmt.Errorf("migrate consensus params: %w", err)
 	}
-
+	logger.Info("migrating ABCI responses...")
 	if err := migratePrefix(db, []byte("abciResponsesKey:"), abciResponsesKey); err != nil {
-		return fmt.Errorf("migrate abci responses: %w", err)
+		return fmt.Errorf("migrate ABCI responses: %w", err)
 	}
 	return nil
 }
 
 func MigrateEvidenceDB(db dbm.DB) error {
-	// migrate committed evidence
+	logger.Info("migrating committed evidence...")
 	it, err := dbm.IteratePrefix(db, []byte{byte(0x00)})
 	if err != nil {
 		panic(err)
@@ -184,7 +191,7 @@ func MigrateEvidenceDB(db dbm.DB) error {
 		panic(err)
 	}
 
-	// migrate pending evidence
+	logger.Info("migrating pending evidence...")
 	it, err = dbm.IteratePrefix(db, []byte{byte(0x01)})
 	if err != nil {
 		panic(err)
@@ -214,41 +221,82 @@ func MigrateEvidenceDB(db dbm.DB) error {
 }
 
 func MigrateLightClientDB(db dbm.DB) error {
-	// var (
-	// 	size []byte
-	// 	err   error
-	// )
-	// if size, err = db.Get([]byte("size")); err != nil {
-	// 	return fmt.Errorf("db.Get: %w", err)
-	// }
+	var (
+		chainIDtoSizeMap = make(map[string]uint16)
+		err              error
+	)
 
-	// migrate light blocks
-	// it, err := dbm.IteratePrefix(db, []byte("lb/"))
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer it.Close()
+	logger.Info("migrating light blocks...")
+	it, err := dbm.IteratePrefix(db, []byte("lb/"))
+	if err != nil {
+		panic(err)
+	}
+	defer it.Close()
 
-	// for ; it.Valid(); it.Next() {
-	// 	chainID, height, err := parseLbKey(it.Key())
-	// 	if err != nil {
-	// 		logger.Info("skipping invalid key", "key", it.Key(), "err", err)
-	// 		continue
-	// 	}
-	// 	key, err := orderedcode.Append(nil, chainID, subkeyLightBlock, height)
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-	// 	if err = db.Set(key, it.Value()); err != nil {
-	// 		return fmt.Errorf("db.Set: %w", err)
-	// 	}
-	// }
+	for ; it.Valid(); it.Next() {
+		chainID, height, ok := parseLbKey(it.Key())
+		if !ok {
+			logger.Info("skipping invalid key", "key", it.Key())
+			continue
+		}
+		key, err := orderedcode.Append(nil, chainID, subkeyLightBlock, height)
+		if err != nil {
+			panic(err)
+		}
+		if err = db.Set(key, it.Value()); err != nil {
+			return fmt.Errorf("db.Set: %w", err)
+		}
 
-	// if err = db.Set(sizeKey([]byte("")), size); err != nil {
-	// 	return fmt.Errorf("db.Set: %w", err)
-	// }
+		// one per chainID
+		if _, ok := chainIDtoSizeMap[chainID]; !ok {
+			chainIDtoSizeMap[chainID] = 1
+		} else {
+			chainIDtoSizeMap[chainID]++
+		}
+	}
+
+	for chainID, size := range chainIDtoSizeMap {
+		logger.Info("setting size for...", "chainID", chainID, "size", size)
+
+		if err = db.Set(sizeKey([]byte(chainID)), marshalSize(size)); err != nil {
+			return fmt.Errorf("db.Set: %w", err)
+		}
+	}
 
 	return nil
+}
+
+func marshalSize(size uint16) []byte {
+	bs := make([]byte, 2)
+	binary.LittleEndian.PutUint16(bs, size)
+	return bs
+}
+
+var keyPattern = regexp.MustCompile(`^(lb)/([^/]*)/([0-9]+)$`)
+
+func parseKey(key []byte) (part string, chainID string, height int64, ok bool) {
+	submatch := keyPattern.FindSubmatch(key)
+	if submatch == nil {
+		return "", "", 0, false
+	}
+	part = string(submatch[1])
+	chainID = string(submatch[2])
+	height, err := strconv.ParseInt(string(submatch[3]), 10, 64)
+	if err != nil {
+		return "", "", 0, false
+	}
+	ok = true // good!
+	return
+}
+
+// parseLbKey parses the chainID and height from a key of the form "lb/{chainID}/{height}".
+func parseLbKey(key []byte) (chainID string, height int64, ok bool) {
+	var part string
+	part, chainID, height, ok = parseKey(key)
+	if part != "lb" {
+		return "", 0, false
+	}
+	return
 }
 
 //---------------------------------- KEY ENCODING -----------------------------------------
@@ -277,8 +325,8 @@ func blockMetaKey(height int64) []byte {
 	return encodeKey(height, subkeyBlockMeta)
 }
 
-func blockPartKey(height int64, partIndex int) []byte {
-	key, err := orderedcode.Append(nil, height, subkeyBlockPart, int64(partIndex))
+func blockPartKey(height int64, partIndex int64) []byte {
+	key, err := orderedcode.Append(nil, height, subkeyBlockPart, partIndex)
 	if err != nil {
 		panic(err)
 	}

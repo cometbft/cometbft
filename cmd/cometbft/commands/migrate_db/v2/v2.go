@@ -23,19 +23,34 @@ var (
 func MigrateBlockStore(db dbm.DB) error {
 	logger.Info("migrating block metas...")
 	if err := migratePrefix(db, []byte("H:"), blockMetaKey); err != nil {
-		return fmt.Errorf("block meta: %w", err)
+		return fmt.Errorf("migrate block metas: %w", err)
 	}
+	if err := deletePrefix(db, []byte("H:")); err != nil {
+		return fmt.Errorf("delete old block metas: %w", err)
+	}
+
 	logger.Info("migrating block commits...")
 	if err := migratePrefix(db, []byte("C:"), blockCommitKey); err != nil {
-		return fmt.Errorf("block commit: %w", err)
+		return fmt.Errorf("migrate block commits: %w", err)
 	}
+	if err := deletePrefix(db, []byte("C:")); err != nil {
+		return fmt.Errorf("delete old block commits: %w", err)
+	}
+
 	logger.Info("migrating seen commits...")
 	if err := migratePrefix(db, []byte("SC:"), seenCommitKey); err != nil {
-		return fmt.Errorf("seen commit: %w", err)
+		return fmt.Errorf("migrate seen commits: %w", err)
 	}
+	if err := deletePrefix(db, []byte("SC:")); err != nil {
+		return fmt.Errorf("delete old seen commits: %w", err)
+	}
+
 	logger.Info("migrating extended commits...")
 	if err := migratePrefix(db, []byte("EC:"), extCommitKey); err != nil {
-		return fmt.Errorf("extended commit: %w", err)
+		return fmt.Errorf("migrate extended commits: %w", err)
+	}
+	if err := deletePrefix(db, []byte("EC:")); err != nil {
+		return fmt.Errorf("delete old extended commits: %w", err)
 	}
 
 	logger.Info("migrating block parts...")
@@ -59,6 +74,9 @@ func MigrateBlockStore(db dbm.DB) error {
 	if err := it.Error(); err != nil {
 		panic(err)
 	}
+	if err := deletePrefix(db, []byte("P:")); err != nil {
+		return fmt.Errorf("delete old block parts: %w", err)
+	}
 
 	logger.Info("migrating block hashes...")
 	it, err = dbm.IteratePrefix(db, []byte("BH:"))
@@ -75,6 +93,29 @@ func MigrateBlockStore(db dbm.DB) error {
 		}
 		if err = db.Set(blockHashKey(hash), it.Value()); err != nil {
 			return fmt.Errorf("db.Set: %w", err)
+		}
+	}
+
+	if err := it.Error(); err != nil {
+		panic(err)
+	}
+	if err := deletePrefix(db, []byte("BH:")); err != nil {
+		return fmt.Errorf("delete old block hashes: %w", err)
+	}
+
+	return nil
+}
+
+func deletePrefix(db dbm.DB, prefix []byte) error {
+	it, err := dbm.IteratePrefix(db, prefix)
+	if err != nil {
+		panic(err)
+	}
+	defer it.Close()
+
+	for ; it.Valid(); it.Next() {
+		if err = db.Delete(it.Key()); err != nil {
+			return fmt.Errorf("db.Delete: %w", err)
 		}
 	}
 
@@ -153,14 +194,26 @@ func MigrateStateDB(db dbm.DB) error {
 	if err := migratePrefix(db, []byte("validatorsKey:"), validatorsKey); err != nil {
 		return fmt.Errorf("migrate validators: %w", err)
 	}
+	if err := deletePrefix(db, []byte("validatorsKey:")); err != nil {
+		return fmt.Errorf("delete old validators: %w", err)
+	}
+
 	logger.Info("migrating consensus params...")
 	if err := migratePrefix(db, []byte("consensusParamsKey:"), consensusParamsKey); err != nil {
 		return fmt.Errorf("migrate consensus params: %w", err)
 	}
+	if err := deletePrefix(db, []byte("consensusParamsKey:")); err != nil {
+		return fmt.Errorf("delete old consensus params: %w", err)
+	}
+
 	logger.Info("migrating ABCI responses...")
 	if err := migratePrefix(db, []byte("abciResponsesKey:"), abciResponsesKey); err != nil {
 		return fmt.Errorf("migrate ABCI responses: %w", err)
 	}
+	if err := deletePrefix(db, []byte("abciResponsesKey:")); err != nil {
+		return fmt.Errorf("delete old ABCI responses: %w", err)
+	}
+
 	return nil
 }
 
@@ -184,6 +237,11 @@ func MigrateEvidenceDB(db dbm.DB) error {
 		}
 		if err = db.Set(key, it.Value()); err != nil {
 			return fmt.Errorf("db.Set: %w", err)
+		}
+
+		// for safety, don't use deletePrefix here.
+		if err = db.Delete(it.Key()); err != nil {
+			return fmt.Errorf("db.Delete: %w", err)
 		}
 	}
 
@@ -210,6 +268,10 @@ func MigrateEvidenceDB(db dbm.DB) error {
 		}
 		if err = db.Set(key, it.Value()); err != nil {
 			return fmt.Errorf("db.Set: %w", err)
+		}
+		// for safety, don't use deletePrefix here.
+		if err = db.Delete(it.Key()); err != nil {
+			return fmt.Errorf("db.Delete: %w", err)
 		}
 	}
 
@@ -253,6 +315,15 @@ func MigrateLightClientDB(db dbm.DB) error {
 		} else {
 			chainIDtoSizeMap[chainID]++
 		}
+	}
+
+	if err := deletePrefix(db, []byte("lb/")); err != nil {
+		return fmt.Errorf("delete old light blocks: %w", err)
+	}
+
+	logger.Info("deleting old size key...")
+	if err := db.Delete([]byte("size")); err != nil {
+		return fmt.Errorf("delete old size: %w", err)
 	}
 
 	for chainID, size := range chainIDtoSizeMap {

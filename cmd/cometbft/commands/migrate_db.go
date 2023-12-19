@@ -34,6 +34,12 @@ an old version of CometBFT.
 IMPORTANT: please backup your database before running this
 command! You can do so by stopping the node and copying the
 "data" directory.
+
+After the migration is complete, it's recommended to run:
+
+cometbft experimental-compact-goleveldb
+
+to compact the database IF you're using goleveldb.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		config, err := ParseConfig(cmd)

@@ -28,12 +28,21 @@ require (
 	github.com/rs/cors v1.8.3
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/snikch/goodman v0.0.0-20171125024755-10e37e294daa
+<<<<<<< HEAD
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.2
 	golang.org/x/crypto v0.14.0
 	golang.org/x/net v0.17.0
 	google.golang.org/grpc v1.58.3
+=======
+	github.com/spf13/cobra v1.8.0
+	github.com/spf13/viper v1.18.1
+	github.com/stretchr/testify v1.8.4
+	golang.org/x/crypto v0.17.0
+	golang.org/x/net v0.19.0
+	google.golang.org/grpc v1.60.0
+>>>>>>> fd87fdaf6 (Updates go crypto package to v0.17.0 (#1859))
 )
 
 require (

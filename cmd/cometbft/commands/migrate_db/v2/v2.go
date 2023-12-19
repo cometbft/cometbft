@@ -432,8 +432,9 @@ const (
 )
 
 func validatorsKey(height int64) []byte {
-	// Since validators for the block H are those decided at H-1, we add 1
-	// here so that the block's header and validators are co-located.
+	// Since CometBFT requests block H and validators H+1 on every height, we
+	// subtract 1 here so that the block's header and next validators are
+	// co-located.
 	//
 	// ```
 	// 1/{subkeyBlockMeta}
@@ -444,8 +445,7 @@ func validatorsKey(height int64) []byte {
 }
 
 func consensusParamsKey(height int64) []byte {
-	// see the above comment in validatorsKey
-	return encodeKey(height-1, subkeyConsensusParams)
+	return encodeKey(height, subkeyConsensusParams)
 }
 
 func abciResponsesKey(height int64) []byte {

@@ -228,7 +228,7 @@ func MigrateEvidenceDB(db dbm.DB) error {
 	for ; it.Valid(); it.Next() {
 		height, hash, err := parseEvidenceKey(it.Key())
 		if err != nil {
-			logger.Info("skipping invalid key", "key", it.Key(), "err", err)
+			logger.Debug("not an evidence key", "key", it.Key(), "err", err)
 			continue
 		}
 		key, err := orderedcode.Append(nil, height, subkeyCommitted, hash)
@@ -259,7 +259,7 @@ func MigrateEvidenceDB(db dbm.DB) error {
 	for ; it.Valid(); it.Next() {
 		height, hash, err := parseEvidenceKey(it.Key())
 		if err != nil {
-			logger.Info("skipping invalid key", "key", it.Key(), "err", err)
+			logger.Debug("not an evidence key", "key", it.Key(), "err", err)
 			continue
 		}
 		key, err := orderedcode.Append(nil, prefixPending, height, hash)

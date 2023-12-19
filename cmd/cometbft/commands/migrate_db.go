@@ -81,6 +81,7 @@ func migrateDBs(targetVersion uint, config *cfg.Config) error {
 	if err != nil {
 		return err
 	}
+	defer blockStoreDB.Close()
 	if err := migrateBlockStoreDB(blockStoreDB, targetVersion); err != nil {
 		return fmt.Errorf("blockstore: %w", err)
 	}
@@ -90,6 +91,7 @@ func migrateDBs(targetVersion uint, config *cfg.Config) error {
 	if err != nil {
 		return err
 	}
+	defer stateDB.Close()
 	if err := migrateStateDB(stateDB, targetVersion); err != nil {
 		return fmt.Errorf("state: %w", err)
 	}
@@ -99,6 +101,7 @@ func migrateDBs(targetVersion uint, config *cfg.Config) error {
 	if err != nil {
 		return err
 	}
+	defer evidenceDB.Close()
 	if err := migrateEvidenceDB(evidenceDB, targetVersion); err != nil {
 		return fmt.Errorf("evidence: %w", err)
 	}
@@ -107,6 +110,7 @@ func migrateDBs(targetVersion uint, config *cfg.Config) error {
 	if err != nil {
 		return err
 	}
+	defer lightClientDB.Close()
 	if err := migrateLightClientDB(lightClientDB, targetVersion); err != nil {
 		return fmt.Errorf("light client db: %w", err)
 	}

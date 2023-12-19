@@ -3,8 +3,6 @@ package commands
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
-
 	cfg "github.com/cometbft/cometbft/config"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
@@ -12,6 +10,7 @@ import (
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/spf13/cobra"
 )
 
 // InitFilesCmd initializes a fresh CometBFT instance.

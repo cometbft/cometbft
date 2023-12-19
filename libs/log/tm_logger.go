@@ -18,7 +18,7 @@ type tmLogger struct {
 	srcLogger kitlog.Logger
 }
 
-// Interface assertions
+// Interface assertions.
 var _ Logger = (*tmLogger)(nil)
 
 // NewTMLogger returns a logger that encodes msg and keyvals to the Writer

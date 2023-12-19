@@ -31,8 +31,3 @@ proto-gen: check-proto-gen-deps
 	@find . -name '*.proto' -exec protoc \
 		--go_out=paths=source_relative:. {} \;
 .PHONY: proto-gen
-
-lint:
-	@echo "--> Running linter for loadtime tool"
-	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
-.PHONY: lint

@@ -13,7 +13,7 @@ import (
 )
 
 // NewServer is a utility function for out of process applications to set up either a socket or
-// grpc server that can listen to requests from the equivalent Tendermint client
+// grpc server that can listen to requests from the equivalent Tendermint client.
 func NewServer(protoAddr, transport string, app types.Application) (service.Service, error) {
 	var s service.Service
 	var err error

@@ -5,16 +5,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/version"
+	"github.com/stretchr/testify/require"
 )
 
 func MakeExtCommit(blockID BlockID, height int64, round int32,
-	voteSet *VoteSet, validators []PrivValidator, now time.Time, extEnabled bool) (*ExtendedCommit, error) {
-
+	voteSet *VoteSet, validators []PrivValidator, now time.Time, extEnabled bool,
+) (*ExtendedCommit, error) {
 	// all sign
 	for i := 0; i < len(validators); i++ {
 		pubKey, err := validators[i].GetPubKey()
@@ -26,7 +24,7 @@ func MakeExtCommit(blockID BlockID, height int64, round int32,
 			ValidatorIndex:   int32(i),
 			Height:           height,
 			Round:            round,
-			Type:             cmtproto.PrecommitType,
+			Type:             PrecommitType,
 			BlockID:          blockID,
 			Timestamp:        now,
 		}
@@ -61,7 +59,7 @@ func MakeVote(
 	valIndex int32,
 	height int64,
 	round int32,
-	step cmtproto.SignedMsgType,
+	step SignedMsgType,
 	blockID BlockID,
 	time time.Time,
 ) (*Vote, error) {
@@ -80,7 +78,7 @@ func MakeVote(
 		Timestamp:        time,
 	}
 
-	extensionsEnabled := step == cmtproto.PrecommitType
+	extensionsEnabled := step == PrecommitType
 	if _, err := SignAndCheckVote(vote, val, chainID, extensionsEnabled); err != nil {
 		return nil, err
 	}
@@ -95,10 +93,12 @@ func MakeVoteNoError(
 	valIndex int32,
 	height int64,
 	round int32,
-	step cmtproto.SignedMsgType,
+	step SignedMsgType,
 	blockID BlockID,
 	time time.Time,
 ) *Vote {
+	t.Helper()
+
 	vote, err := MakeVote(val, chainID, valIndex, height, round, step, blockID, time)
 	require.NoError(t, err)
 	return vote

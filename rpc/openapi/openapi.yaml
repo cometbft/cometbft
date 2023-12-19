@@ -474,7 +474,7 @@ paths:
         `Cache-Control` header will be set with the default maximum age.
       responses:
         "200":
-          description: Header informations.
+          description: Header information.
           content:
             application/json:
               schema:
@@ -506,7 +506,7 @@ paths:
         maximum age.
       responses:
         "200":
-          description: Header informations.
+          description: Header information.
           content:
             application/json:
               schema:
@@ -538,7 +538,7 @@ paths:
         `Cache-Control` header will be set with the default maximum age.
       responses:
         "200":
-          description: Block informations.
+          description: Block information.
           content:
             application/json:
               schema:
@@ -570,7 +570,7 @@ paths:
         maximum age.
       responses:
         "200":
-          description: Block informations.
+          description: Block information.
           content:
             application/json:
               schema:
@@ -620,7 +620,7 @@ paths:
       parameters:
         - in: query
           name: height
-          description: height to return. If no height is provided, it will fetch commit informations regarding the latest block.
+          description: height to return. If no height is provided, it will fetch commit information regarding the latest block.
           schema:
             type: integer
             default: 0
@@ -812,7 +812,7 @@ paths:
       parameters:
         - in: query
           name: height
-          description: height to return. If no height is provided, it will fetch commit informations regarding the latest block.
+          description: height to return. If no height is provided, it will fetch commit information regarding the latest block.
           schema:
             type: integer
             default: 0
@@ -2734,9 +2734,9 @@ components:
               example: 2
           type: object
 
-    ###### Reuseable types ######
+    ###### Reusable types ######
 
-    # Validator type with proposer prioirty
+    # Validator type with proposer priority
     ValidatorPriority:
       type: object
       properties:

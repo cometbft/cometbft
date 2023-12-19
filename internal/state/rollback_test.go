@@ -9,13 +9,13 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 
+	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
+	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/state/mocks"
 	"github.com/cometbft/cometbft/internal/store"
-	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
-	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
 )
@@ -124,7 +124,7 @@ func TestRollbackHard(t *testing.T) {
 	currState := state.State{
 		Version: cmtstate.Version{
 			Consensus: block.Header.Version,
-			Software:  version.TMCoreSemVer,
+			Software:  version.CMTSemVer,
 		},
 		LastBlockHeight:                  block.Height,
 		LastBlockTime:                    block.Time,
@@ -181,7 +181,7 @@ func TestRollbackHard(t *testing.T) {
 	nextState := state.State{
 		Version: cmtstate.Version{
 			Consensus: block.Header.Version,
-			Software:  version.TMCoreSemVer,
+			Software:  version.CMTSemVer,
 		},
 		LastBlockHeight:                  nextBlock.Height,
 		LastBlockTime:                    nextBlock.Time,
@@ -251,7 +251,7 @@ func setupStateStore(t *testing.T, height int64) state.Store {
 				Block: version.BlockProtocol,
 				App:   10,
 			},
-			Software: version.TMCoreSemVer,
+			Software: version.CMTSemVer,
 		},
 		ChainID:                          "test-chain",
 		InitialHeight:                    10,

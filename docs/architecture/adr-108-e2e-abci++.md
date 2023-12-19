@@ -232,7 +232,7 @@ will be replaced with a corresponding terminal. For example, request `r` of type
 
 ```
 FAIL: TestCheckABCIGrammar/full02 (8.76s)
-        abci_test.go:24: ABCI grammar verification failed: The error: "Invalid execution: parser was expecting one of [init_chain], got [offer_snapshot] instead." has occured at height 0.
+        abci_test.go:24: ABCI grammar verification failed: The error: "Invalid execution: parser was expecting one of [init_chain], got [offer_snapshot] instead." has occurred at height 0.
             
             Full execution:
             0: offer_snapshot apply_snapshot_chunk finalize_block commit
@@ -306,7 +306,7 @@ make grammar-gen
 
 Make sure you commit any changes to the auto-generated code together with the changes to the grammar.
 
-### Suporting additional ABCI requests
+### Supporting additional ABCI requests
 
 Here we present all the steps we need to do if we want to support other 
 ABCI requests in the future: 

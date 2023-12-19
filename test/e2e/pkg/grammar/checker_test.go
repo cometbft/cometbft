@@ -8,13 +8,13 @@ import (
 )
 
 var (
-	initChain       = &abci.Request{Value: &abci.Request_InitChain{InitChain: &abci.RequestInitChain{}}}
-	finalizeBlock   = &abci.Request{Value: &abci.Request_FinalizeBlock{FinalizeBlock: &abci.RequestFinalizeBlock{}}}
-	commit          = &abci.Request{Value: &abci.Request_Commit{Commit: &abci.RequestCommit{}}}
-	offerSnapshot   = &abci.Request{Value: &abci.Request_OfferSnapshot{OfferSnapshot: &abci.RequestOfferSnapshot{}}}
-	applyChunk      = &abci.Request{Value: &abci.Request_ApplySnapshotChunk{ApplySnapshotChunk: &abci.RequestApplySnapshotChunk{}}}
-	prepareProposal = &abci.Request{Value: &abci.Request_PrepareProposal{PrepareProposal: &abci.RequestPrepareProposal{}}}
-	processProposal = &abci.Request{Value: &abci.Request_ProcessProposal{ProcessProposal: &abci.RequestProcessProposal{}}}
+	initChain       = &abci.Request{Value: &abci.Request_InitChain{InitChain: &abci.InitChainRequest{}}}
+	finalizeBlock   = &abci.Request{Value: &abci.Request_FinalizeBlock{FinalizeBlock: &abci.FinalizeBlockRequest{}}}
+	commit          = &abci.Request{Value: &abci.Request_Commit{Commit: &abci.CommitRequest{}}}
+	offerSnapshot   = &abci.Request{Value: &abci.Request_OfferSnapshot{OfferSnapshot: &abci.OfferSnapshotRequest{}}}
+	applyChunk      = &abci.Request{Value: &abci.Request_ApplySnapshotChunk{ApplySnapshotChunk: &abci.ApplySnapshotChunkRequest{}}}
+	prepareProposal = &abci.Request{Value: &abci.Request_PrepareProposal{PrepareProposal: &abci.PrepareProposalRequest{}}}
+	processProposal = &abci.Request{Value: &abci.Request_ProcessProposal{ProcessProposal: &abci.ProcessProposalRequest{}}}
 )
 
 const (

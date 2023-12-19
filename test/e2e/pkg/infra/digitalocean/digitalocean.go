@@ -20,8 +20,13 @@ type Provider struct {
 	infra.ProviderData
 }
 
-// Noop currently. Setup is performed externally to the e2e test tool.
+// Setup generates the file mapping IPs to zones, used for emulating latencies.
 func (p *Provider) Setup() error {
+	err := infra.GenerateIPZonesTable(p.Testnet.Nodes, p.IPZonesFilePath(), false)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -46,6 +51,35 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 
 	return execAnsible(ctx, p.Testnet.Dir, playbookFile, nodeIPs)
 }
+
+// SetLatency prepares and executes the latency-setter script in the given node.
+func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
+	// Directory in the DigitalOcean node that contains all latency files.
+	remoteDir := "/root/cometbft/test/e2e/latency/"
+
+	playbook := "- name: e2e custom playbook\n" +
+		"  hosts: all\n" +
+		"  tasks:\n"
+
+	// Add task to copy the necessary files to the node.
+	playbook = ansibleAddCopyTask(playbook, "copy zones file to node", filepath.Base(p.IPZonesFilePath()), remoteDir)
+
+	// Add task to execute latency-setter script in the node.
+	cmd := fmt.Sprintf("%s set %s %s eth0",
+		filepath.Join(remoteDir, "latency-setter.py"),
+		filepath.Join(remoteDir, filepath.Base(p.IPZonesFilePath())),
+		filepath.Join(remoteDir, "aws-latencies.csv"),
+	)
+	playbook = ansibleAddShellTasks(playbook, "execute latency setter script", cmd)
+
+	// Execute playbook
+	playbookFile := getNextPlaybookFilename()
+	if err := p.writePlaybook(playbookFile, playbook); err != nil {
+		return err
+	}
+	return execAnsible(ctx, p.Testnet.Dir, playbookFile, []string{node.ExternalIP.String()})
+}
+
 func (p Provider) StopTestnet(ctx context.Context) error {
 	nodeIPs := make([]string, len(p.Testnet.Nodes))
 	for i, n := range p.Testnet.Nodes {
@@ -59,6 +93,7 @@ func (p Provider) StopTestnet(ctx context.Context) error {
 	}
 	return execAnsible(ctx, p.Testnet.Dir, playbookFile, nodeIPs)
 }
+
 func (p Provider) Disconnect(ctx context.Context, _ string, ip string) error {
 	playbook := ansiblePerturbConnectionBytes(true)
 	playbookFile := getNextPlaybookFilename()
@@ -67,6 +102,7 @@ func (p Provider) Disconnect(ctx context.Context, _ string, ip string) error {
 	}
 	return execAnsible(ctx, p.Testnet.Dir, playbookFile, []string{ip})
 }
+
 func (p Provider) Reconnect(ctx context.Context, _ string, ip string) error {
 	playbook := ansiblePerturbConnectionBytes(false)
 	playbookFile := getNextPlaybookFilename()
@@ -101,7 +137,15 @@ const basePlaybook = `- name: e2e custom playbook
 `
 
 func ansibleAddTask(playbook, name, contents string) string {
-	return playbook + "  - name: " + name + "\n" + contents
+	return playbook + "  - name: " + name + "\n" + contents + "\n"
+}
+
+func ansibleAddCopyTask(playbook, name, src, dest string) string {
+	copyTask := fmt.Sprintf("    ansible.builtin.copy:\n"+
+		"      src: %s\n"+
+		"      dest: %s\n",
+		src, dest)
+	return ansibleAddTask(playbook, name, copyTask)
 }
 
 func ansibleAddSystemdTask(playbook string, starting bool) string {
@@ -109,6 +153,7 @@ func ansibleAddSystemdTask(playbook string, starting bool) string {
 	if starting {
 		startStop = "started"
 	}
+	// testappd is the name of the daemon running the node in the ansible scripts in the qa-infra repo.
 	contents := fmt.Sprintf(`    ansible.builtin.systemd:
       name: testappd
       state: %s
@@ -126,7 +171,7 @@ func ansibleAddShellTasks(playbook, name string, shells ...string) string {
 }
 
 // file as bytes to be written out to disk.
-// ansibleStartBytes generates an Ansible playbook to start the network
+// ansibleStartBytes generates an Ansible playbook to start the network.
 func ansibleSystemdBytes(starting bool) string {
 	return ansibleAddSystemdTask(basePlaybook, starting)
 }

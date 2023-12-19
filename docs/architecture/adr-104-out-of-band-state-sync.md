@@ -62,7 +62,7 @@ The ADR presents two solutions:
 
 1. The first solution is implemented by the application and was proposed and 
 implemented by the Cosmos SDK (PR [#16067][sdk-pr2] and [#16061][sdk-pr1] ). This ADR describes the solution 
-in a general way, proividing guidlines to non-SDK based applications if they wish
+in a general way, proividing guidelines to non-SDK based applications if they wish
 to implement their own local state sync. 
 2. The second part of the ADR proposes a more general solution, that uses ABCI
 to achieve the same behavior provided by the SDK's solution.
@@ -263,7 +263,7 @@ In addition to managing snapshots, it is necessary to bootstrap (setup) the stat
 Upon a successful start, CometBFT performs block sync and consensus. 
 At the moment of writing this ADR, there is no command line in CometBFT that supports this, but an [issue][state-bootstrap]
 has been opened to address this.
-Until it has been resolved, the application developers have to, within their bootstraping command:
+Until it has been resolved, the application developers have to, within their bootstrapping command:
 
 - Create a state and block store
 - Launch a light client to obtain and verify the block header for the snapshot's height.
@@ -299,7 +299,7 @@ In order to support local State sync, the following changes to CometBFT are nece
 operators decide not to generate periodical exports.
 3. Extract a snapshot from the exported format.
 4. Potentially alter existing ABCI calls to signal to the application that we want to create a snapshot export periodically. 
-5. Allow reading a snaphsot from a compressed format into CometBFT and offer it to the application via
+5. Allow reading a snapshot from a compressed format into CometBFT and offer it to the application via
 the existing `OfferSnapshot` ABCI call. 
 
 

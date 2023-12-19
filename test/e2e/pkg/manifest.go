@@ -102,13 +102,17 @@ type Manifest struct {
 	// Upper bound of sleep duration then gossipping votes and block parts
 	PeerGossipIntraloopSleepDuration time.Duration `toml:"peer_gossip_intraloop_sleep_duration"`
 
-	// Maximum number of peers to which the node gossip transactions
+	// Maximum number of peers to which the node gossips transactions
 	ExperimentalMaxGossipConnectionsToPersistentPeers    uint `toml:"experimental_max_gossip_connections_to_persistent_peers"`
 	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint `toml:"experimental_max_gossip_connections_to_non_persistent_peers"`
 
 	// Enable or disable e2e tests for CometBFT's expected behavior with respect
 	// to ABCI.
 	ABCITestsEnabled bool `toml:"abci_tests_enabled"`
+
+	// Default geographical zone ID for simulating latencies, assigned to nodes that don't have a
+	// specific zone assigned.
+	DefaultZone string `toml:"default_zone"`
 }
 
 // ManifestNode represents a node in a testnet manifest.
@@ -189,6 +193,9 @@ type ManifestNode struct {
 	// It defaults to false so unless the configured, the node will
 	// receive load.
 	SendNoLoad bool `toml:"send_no_load"`
+
+	// Geographical zone ID for simulating latencies.
+	Zone string `toml:"zone"`
 }
 
 // Save saves the testnet manifest to a file.

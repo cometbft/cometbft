@@ -292,7 +292,7 @@ func (p *Pruner) GetABCIResRetainHeight() (int64, error) {
 }
 
 // GetTxIndexerRetainHeight is a convenience method for accessing the
-// GetTxIndexerRetainHeight method of the underlying indexer
+// GetTxIndexerRetainHeight method of the underlying indexer.
 func (p *Pruner) GetTxIndexerRetainHeight() (int64, error) {
 	return p.txIndexer.GetRetainHeight()
 }

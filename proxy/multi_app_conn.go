@@ -40,7 +40,7 @@ func NewAppConns(clientCreator ClientCreator, metrics *Metrics) AppConns {
 //
 // A multiAppConn is made of a few appConns and manages their underlying abci
 // clients.
-// TODO: on app restart, clients must reboot together
+// TODO: on app restart, clients must reboot together.
 type multiAppConn struct {
 	service.BaseService
 

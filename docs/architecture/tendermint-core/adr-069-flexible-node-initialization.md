@@ -1,6 +1,6 @@
 # ADR 069: Flexible Node Initialization
 
-## Changlog
+## Changelog
 
 - 2021-06-09: Initial Draft (@tychoish)
 
@@ -31,7 +31,7 @@ vendor copy of the code. Adding these features requires rather extensive
 ADR describes a model for changing the way that tendermint nodes initialize, in
 service of providing this kind of functionality.
 
-We consider node initialization, because the current implemention
+We consider node initialization, because the current implementation
 provides strong connections between all components, as well as between
 the components of the node and the RPC layer, and being able to think
 about the interactions of these components will help enable these
@@ -41,7 +41,7 @@ features and help define the requirements of the node package.
 
 These alternatives are presented to frame the design space and to
 contextualize the decision in terms of product requirements. These
-ideas are not inherently bad, and may even be possible or desireable
+ideas are not inherently bad, and may even be possible or desirable
 in the (distant) future, and merely provide additional context for how
 we, in the moment came to our decision(s).
 

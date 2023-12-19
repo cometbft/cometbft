@@ -50,7 +50,7 @@ func cleanupDocker() error {
 	return nil
 }
 
-// cleanupDir cleans up a testnet directory
+// cleanupDir cleans up a testnet directory.
 func cleanupDir(dir string) error {
 	if dir == "" {
 		return errors.New("no directory set")

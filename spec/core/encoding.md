@@ -19,7 +19,7 @@ For details on varints, see the [protobuf
 spec](https://developers.google.com/protocol-buffers/docs/encoding#varints).
 
 For example, the byte-array `[0xA, 0xB]` would be encoded as `0x020A0B`,
-while a byte-array containing 300 entires beginning with `[0xA, 0xB, ...]` would
+while a byte-array containing 300 entries beginning with `[0xA, 0xB, ...]` would
 be encoded as `0xAC020A0B...` where `0xAC02` is the UVarint encoding of 300.
 
 ## Hashing
@@ -171,7 +171,7 @@ func getSplitPoint(k int) { ... }
 func MerkleRoot(items [][]byte) []byte{
  switch len(items) {
  case 0:
-  return empthHash()
+  return emptyHash()
  case 1:
   return leafHash(items[0])
  default:

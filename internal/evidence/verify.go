@@ -15,7 +15,7 @@ import (
 // - it is sufficiently recent (MaxAge)
 // - it is from a key who was a validator at the given height
 // - it is internally consistent with state
-// - it was properly signed by the alleged equivocator and meets the individual evidence verification requirements
+// - it was properly signed by the alleged equivocator and meets the individual evidence verification requirements.
 func (evpool *Pool) verify(evidence types.Evidence) error {
 	var (
 		state          = evpool.State()
@@ -103,6 +103,7 @@ func (evpool *Pool) verify(evidence types.Evidence) error {
 //     the conflicting header's commit
 //   - 2/3+ of the conflicting validator set correctly signed the conflicting block
 //   - the nodes trusted header at the same height as the conflicting header has a different hash
+//   - all signatures must be checked as this will be used as evidence
 //
 // CONTRACT: must run ValidateBasic() on the evidence before verifying
 //
@@ -111,8 +112,8 @@ func VerifyLightClientAttack(
 	e *types.LightClientAttackEvidence,
 	commonHeader, trustedHeader *types.SignedHeader,
 	commonVals *types.ValidatorSet,
-	now time.Time, //nolint:revive
-	trustPeriod time.Duration, //nolint:revive
+	now time.Time,
+	trustPeriod time.Duration,
 ) error {
 	// TODO: Should the current time and trust period be used in this method?
 	// If not, why were the parameters present?
@@ -120,7 +121,7 @@ func VerifyLightClientAttack(
 	// In the case of lunatic attack there will be a different commonHeader height. Therefore the node perform a single
 	// verification jump between the common header and the conflicting one
 	if commonHeader.Height != e.ConflictingBlock.Height {
-		err := commonVals.VerifyCommitLightTrusting(trustedHeader.ChainID, e.ConflictingBlock.Commit, light.DefaultTrustLevel)
+		err := commonVals.VerifyCommitLightTrustingAllSignatures(trustedHeader.ChainID, e.ConflictingBlock.Commit, light.DefaultTrustLevel)
 		if err != nil {
 			return ErrConflictingBlock{fmt.Errorf("skipping verification of conflicting block failed: %w", err)}
 		}
@@ -132,7 +133,7 @@ func VerifyLightClientAttack(
 	}
 
 	// Verify that the 2/3+ commits from the conflicting validator set were for the conflicting header
-	if err := e.ConflictingBlock.ValidatorSet.VerifyCommitLight(trustedHeader.ChainID, e.ConflictingBlock.Commit.BlockID,
+	if err := e.ConflictingBlock.ValidatorSet.VerifyCommitLightAllSignatures(trustedHeader.ChainID, e.ConflictingBlock.Commit.BlockID,
 		e.ConflictingBlock.Height, e.ConflictingBlock.Commit); err != nil {
 		return ErrConflictingBlock{fmt.Errorf("invalid commit from conflicting block: %w", err)}
 	}
@@ -216,7 +217,7 @@ func VerifyDuplicateVote(e *types.DuplicateVoteEvidence, chainID string, valSet 
 }
 
 // validateABCIEvidence validates the ABCI component of the light client attack
-// evidence i.e voting power and byzantine validators
+// evidence i.e voting power and byzantine validators.
 func validateABCIEvidence(
 	ev *types.LightClientAttackEvidence,
 	commonVals *types.ValidatorSet,
@@ -278,7 +279,7 @@ func getSignedHeader(blockStore BlockStore, height int64) (*types.SignedHeader, 
 	}, nil
 }
 
-// check that the evidence hasn't expired
+// check that the evidence hasn't expired.
 func IsEvidenceExpired(heightNow int64, timeNow time.Time, heightEv int64, timeEv time.Time, evidenceParams types.EvidenceParams) bool {
 	ageDuration := timeNow.Sub(timeEv)
 	ageNumBlocks := heightNow - heightEv

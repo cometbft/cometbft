@@ -4,16 +4,15 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/spf13/cobra"
-
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	nm "github.com/cometbft/cometbft/node"
+	"github.com/spf13/cobra"
 )
 
 var genesisHash []byte
 
 // AddNodeFlags exposes some common configuration options on the command-line
-// These are exposed for convenience of commands embedding a CometBFT node
+// These are exposed for convenience of commands embedding a CometBFT node.
 func AddNodeFlags(cmd *cobra.Command) {
 	// bind flags
 	cmd.Flags().String("moniker", config.Moniker, "node name")

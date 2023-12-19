@@ -5,16 +5,14 @@ import (
 	"fmt"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-
+	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v1"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cosmos/gogoproto/grpc"
-
-	brs "github.com/cometbft/cometbft/proto/tendermint/services/block_results/v1"
 )
 
 type BlockResults struct {
 	Height                int64                     `json:"height"`
-	TxsResults            []*abci.ExecTxResult      `json:"txs_results"`
+	TxResults             []*abci.ExecTxResult      `json:"txs_results"`
 	FinalizeBlockEvents   []*abci.Event             `json:"finalize_block_events"`
 	ValidatorUpdates      []*abci.ValidatorUpdate   `json:"validator_updates"`
 	ConsensusParamUpdates *cmtproto.ConsensusParams `json:"consensus_param_updates"`
@@ -39,7 +37,7 @@ func (b blockResultServiceClient) GetBlockResults(ctx context.Context, height in
 
 	return &BlockResults{
 		Height:                res.Height,
-		TxsResults:            res.TxsResults,
+		TxResults:             res.TxResults,
 		FinalizeBlockEvents:   res.FinalizeBlockEvents,
 		ValidatorUpdates:      res.ValidatorUpdates,
 		ConsensusParamUpdates: res.ConsensusParamUpdates,
@@ -55,7 +53,7 @@ func (b blockResultServiceClient) GetLatestBlockResults(ctx context.Context) (*B
 
 	return &BlockResults{
 		Height:                res.Height,
-		TxsResults:            res.TxsResults,
+		TxResults:             res.TxResults,
 		FinalizeBlockEvents:   res.FinalizeBlockEvents,
 		ValidatorUpdates:      res.ValidatorUpdates,
 		ConsensusParamUpdates: res.ConsensusParamUpdates,
@@ -75,12 +73,12 @@ func newDisabledBlockResultsServiceClient() BlockResultsServiceClient {
 	return &disabledBlockResultsServiceClient{}
 }
 
-// GetBlockResults implements BlockResultsServiceClient
+// GetBlockResults implements BlockResultsServiceClient.
 func (*disabledBlockResultsServiceClient) GetBlockResults(_ context.Context, _ int64) (*BlockResults, error) {
 	panic("block results service client is disabled")
 }
 
-// GetLatestBlockResults implements BlockResultsServiceClient
+// GetLatestBlockResults implements BlockResultsServiceClient.
 func (*disabledBlockResultsServiceClient) GetLatestBlockResults(_ context.Context) (*BlockResults, error) {
 	panic("block results service client is disabled")
 }

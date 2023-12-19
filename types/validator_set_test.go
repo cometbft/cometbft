@@ -12,11 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 func TestValidatorSetBasic(t *testing.T) {
@@ -299,18 +299,22 @@ func TestProposerSelection2(t *testing.T) {
 }
 
 func TestProposerSelection3(t *testing.T) {
-	vset := NewValidatorSet([]*Validator{
+	vals := []*Validator{
 		newValidator([]byte("avalidator_address12"), 1),
 		newValidator([]byte("bvalidator_address12"), 1),
 		newValidator([]byte("cvalidator_address12"), 1),
 		newValidator([]byte("dvalidator_address12"), 1),
-	})
+	}
 
+	for i := 0; i < 4; i++ {
+		pk := ed25519.GenPrivKey().PubKey()
+		vals[i].PubKey = pk
+		vals[i].Address = pk.Address()
+	}
+	sort.Sort(ValidatorsByAddress(vals))
+	vset := NewValidatorSet(vals)
 	proposerOrder := make([]*Validator, 4)
 	for i := 0; i < 4; i++ {
-		// need to give all validators to have keys
-		pk := ed25519.GenPrivKey().PubKey()
-		vset.Validators[i].PubKey = pk
 		proposerOrder[i] = vset.GetProposer()
 		vset.IncrementProposerPriority(1)
 	}

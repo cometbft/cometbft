@@ -14,19 +14,18 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/sr25519"
 	"github.com/cometbft/cometbft/internal/async"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Run go test -update from within this module
-// to update the golden test vector file
+// to update the golden test vector file.
 var update = flag.Bool("update", false, "update .golden files")
 
 type kvstoreConn struct {
@@ -121,7 +120,7 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 	// A helper that will run with (fooConn, fooWrites, fooReads) and vice versa
 	genNodeRunner := func(id string, nodeConn kvstoreConn, nodeWrites []string, nodeReads *[]string) async.Task {
 		return func(_ int) (interface{}, bool, error) {
-			// Initiate cryptographic private key and secret connection trhough nodeConn.
+			// Initiate cryptographic private key and secret connection through nodeConn.
 			nodePrvKey := ed25519.GenPrivKey()
 			nodeSecretConn, err := MakeSecretConnection(nodeConn, nodePrvKey)
 			if err != nil {
@@ -308,7 +307,7 @@ func readLots(t *testing.T, wg *sync.WaitGroup, conn io.Reader, n int) {
 
 // Creates the data for a test vector file.
 // The file format is:
-// Hex(diffie_hellman_secret), loc_is_least, Hex(recvSecret), Hex(sendSecret), Hex(challenge)
+// Hex(diffie_hellman_secret), loc_is_least, Hex(recvSecret), Hex(sendSecret), Hex(challenge).
 func createGoldenTestVectors(*testing.T) string {
 	data := ""
 	for i := 0; i < 32; i++ {
@@ -325,7 +324,7 @@ func createGoldenTestVectors(*testing.T) string {
 	return data
 }
 
-// Each returned ReadWriteCloser is akin to a net.Connection
+// Each returned ReadWriteCloser is akin to a net.Connection.
 func makeKVStoreConnPair() (fooConn, barConn kvstoreConn) {
 	barReader, fooWriter := io.Pipe()
 	fooReader, barWriter := io.Pipe()

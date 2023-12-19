@@ -8,7 +8,7 @@ import (
 	"github.com/cometbft/cometbft/test/e2e/pkg/exec"
 )
 
-// Test runs test cases under tests/
+// Test runs test cases under tests.
 func Test(testnet *e2e.Testnet, ifd *e2e.InfrastructureData) error {
 	logger.Info("Running tests in ./tests/...")
 

@@ -71,7 +71,7 @@ Changes to Published Events
 As part of this process, the Tendermint team should do a study of the existing
 event types and ensure that there are viable production use cases for
 subscriptions to all event types. Instinctively it seems plausible that some
-of the events may not be useable outside of tendermint, (e.g. ``TimeoutWait``
+of the events may not be usable outside of tendermint, (e.g. ``TimeoutWait``
 or ``NewRoundStep``) and it might make sense to remove them. Certainly, it
 would be good to make sure that we don't maintain infrastructure for unused or
 un-useful message indefinitely.

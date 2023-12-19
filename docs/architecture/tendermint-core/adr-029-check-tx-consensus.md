@@ -85,7 +85,7 @@ func (app *CounterApplication) CheckBlock(block types.Request_CheckBlock) types.
 }
 ```
 
-In BeginBlock, the app should restore the state to the orignal state before checking the block:
+In BeginBlock, the app should restore the state to the original state before checking the block:
 
 ```
 func (app *CounterApplication) DeliverTx(tx []byte) types.ResponseDeliverTx {

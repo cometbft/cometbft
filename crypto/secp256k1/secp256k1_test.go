@@ -5,14 +5,12 @@ import (
 	"math/big"
 	"testing"
 
+	underlyingSecp256k1 "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcutil/base58"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
-
-	underlyingSecp256k1 "github.com/btcsuite/btcd/btcec/v2"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type keyData struct {
@@ -86,7 +84,7 @@ func TestSecp256k1LoadPrivkeyAndSerializeIsIdentity(t *testing.T) {
 }
 
 func TestGenPrivKeySecp256k1(t *testing.T) {
-	// curve oder N
+	// curve order N
 	N := underlyingSecp256k1.S256().N
 	tests := []struct {
 		name   string

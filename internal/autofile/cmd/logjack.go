@@ -17,7 +17,7 @@ const (
 	readBufferSize = 1024 // 1KB at a time
 )
 
-// Parse command-line options
+// Parse command-line options.
 func parseFlags() (headPath string, chopSize int64, limitSize int64, version bool) {
 	flagSet := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	var chopSizeStr, limitSizeStr string

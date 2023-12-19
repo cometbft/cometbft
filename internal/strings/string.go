@@ -82,7 +82,7 @@ func ASCIITrim(s string) string {
 	return string(r)
 }
 
-// StringSliceEqual checks if string slices a and b are equal
+// StringSliceEqual checks if string slices a and b are equal.
 func StringSliceEqual(a, b []string) bool {
 	if len(a) != len(b) {
 		return false

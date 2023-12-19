@@ -7,11 +7,11 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/internal/fail"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/mempool"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 )
@@ -135,7 +135,7 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	block := state.MakeBlock(height, txs, commit, evidence, proposerAddr)
 	rpp, err := blockExec.proxyApp.PrepareProposal(
 		ctx,
-		&abci.RequestPrepareProposal{
+		&abci.PrepareProposalRequest{
 			MaxTxBytes:         maxDataBytes,
 			Txs:                block.Txs.ToSliceOfBytes(),
 			LocalLastCommit:    buildExtendedCommitInfoFromStore(lastExtCommit, blockExec.store, state.InitialHeight, state.ConsensusParams.ABCI),
@@ -170,7 +170,7 @@ func (blockExec *BlockExecutor) ProcessProposal(
 	block *types.Block,
 	state State,
 ) (bool, error) {
-	resp, err := blockExec.proxyApp.ProcessProposal(context.TODO(), &abci.RequestProcessProposal{
+	resp, err := blockExec.proxyApp.ProcessProposal(context.TODO(), &abci.ProcessProposalRequest{
 		Hash:               block.Header.Hash(),
 		Height:             block.Header.Height,
 		Time:               block.Header.Time,
@@ -216,7 +216,7 @@ func (blockExec *BlockExecutor) ApplyBlock(
 	}
 
 	startTime := time.Now().UnixNano()
-	abciResponse, err := blockExec.proxyApp.FinalizeBlock(context.TODO(), &abci.RequestFinalizeBlock{
+	abciResponse, err := blockExec.proxyApp.FinalizeBlock(context.TODO(), &abci.FinalizeBlockRequest{
 		Hash:               block.Hash(),
 		NextValidatorsHash: block.NextValidatorsHash,
 		ProposerAddress:    block.ProposerAddress,
@@ -260,7 +260,7 @@ func (blockExec *BlockExecutor) ApplyBlock(
 	// validate the validator updates and convert to CometBFT types
 	err = validateValidatorUpdates(abciResponse.ValidatorUpdates, state.ConsensusParams.Validator)
 	if err != nil {
-		return state, fmt.Errorf("error in validator updates: %v", err)
+		return state, fmt.Errorf("error in validator updates: %w", err)
 	}
 
 	validatorUpdates, err := types.PB2TM.ValidatorUpdates(abciResponse.ValidatorUpdates)
@@ -278,13 +278,13 @@ func (blockExec *BlockExecutor) ApplyBlock(
 	// Update the state with the block and responses.
 	state, err = updateState(state, blockID, &block.Header, abciResponse, validatorUpdates)
 	if err != nil {
-		return state, fmt.Errorf("commit failed for application: %v", err)
+		return state, fmt.Errorf("commit failed for application: %w", err)
 	}
 
 	// Lock mempool, commit app state, update mempoool.
 	retainHeight, err := blockExec.Commit(state, block, abciResponse)
 	if err != nil {
-		return state, fmt.Errorf("commit failed for application: %v", err)
+		return state, fmt.Errorf("commit failed for application: %w", err)
 	}
 
 	// Update evpool with the latest state.
@@ -309,7 +309,7 @@ func (blockExec *BlockExecutor) ApplyBlock(
 	}
 
 	// Events are fired after everything else.
-	// NOTE: if we crash between Commit and Save, events wont be fired during replay
+	// NOTE: if we crash between Commit and Save, events won't be fired during replay
 	fireEvents(blockExec.logger, blockExec.eventBus, block, blockID, abciResponse, validatorUpdates)
 
 	return state, nil
@@ -327,8 +327,7 @@ func (blockExec *BlockExecutor) ExtendVote(
 	if vote.Height != block.Height {
 		panic(fmt.Sprintf("vote's and block's heights do not match %d!=%d", block.Height, vote.Height))
 	}
-
-	req := abci.RequestExtendVote{
+	req := abci.ExtendVoteRequest{
 		Hash:               vote.BlockID.Hash,
 		Height:             vote.Height,
 		Time:               block.Time,
@@ -347,7 +346,7 @@ func (blockExec *BlockExecutor) ExtendVote(
 }
 
 func (blockExec *BlockExecutor) VerifyVoteExtension(ctx context.Context, vote *types.Vote) error {
-	req := abci.RequestVerifyVoteExtension{
+	req := abci.VerifyVoteExtensionRequest{
 		Hash:             vote.BlockID.Hash,
 		ValidatorAddress: vote.ValidatorAddress,
 		Height:           vote.Height,
@@ -380,7 +379,7 @@ func (blockExec *BlockExecutor) VerifyVoteExtension(ctx context.Context, vote *t
 func (blockExec *BlockExecutor) Commit(
 	state State,
 	block *types.Block,
-	abciResponse *abci.ResponseFinalizeBlock,
+	abciResponse *abci.FinalizeBlockResponse,
 ) (int64, error) {
 	blockExec.mempool.Lock()
 	defer blockExec.mempool.Unlock()
@@ -588,7 +587,7 @@ func updateState(
 	state State,
 	blockID types.BlockID,
 	header *types.Header,
-	abciResponse *abci.ResponseFinalizeBlock,
+	abciResponse *abci.FinalizeBlockResponse,
 	validatorUpdates []*types.Validator,
 ) (State, error) {
 	// Copy the valset so we can apply changes from EndBlock
@@ -602,7 +601,7 @@ func updateState(
 		if err != nil {
 			return state, fmt.Errorf("changing validator set: %w", err)
 		}
-		// Change results from this height but only applies to the next next height.
+		// Change results from this height but only applies to the height + 2.
 		lastHeightValsChanged = header.Height + 1 + 1
 	}
 
@@ -661,7 +660,7 @@ func fireEvents(
 	eventBus types.BlockEventPublisher,
 	block *types.Block,
 	blockID types.BlockID,
-	abciResponse *abci.ResponseFinalizeBlock,
+	abciResponse *abci.FinalizeBlockResponse,
 	validatorUpdates []*types.Validator,
 ) {
 	if err := eventBus.PublishEventNewBlock(types.EventDataNewBlock{
@@ -730,7 +729,7 @@ func ExecCommitBlock(
 ) ([]byte, error) {
 	commitInfo := buildLastCommitInfoFromStore(block, store, initialHeight)
 
-	resp, err := appConnConsensus.FinalizeBlock(context.TODO(), &abci.RequestFinalizeBlock{
+	resp, err := appConnConsensus.FinalizeBlock(context.TODO(), &abci.FinalizeBlockRequest{
 		Hash:               block.Hash(),
 		NextValidatorsHash: block.NextValidatorsHash,
 		ProposerAddress:    block.ProposerAddress,

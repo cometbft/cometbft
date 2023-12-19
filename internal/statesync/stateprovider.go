@@ -7,7 +7,7 @@ import (
 	"time"
 
 	dbm "github.com/cometbft/cometbft-db"
-
+	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	sm "github.com/cometbft/cometbft/internal/state"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/log"
@@ -16,7 +16,6 @@ import (
 	lighthttp "github.com/cometbft/cometbft/light/provider/http"
 	lightrpc "github.com/cometbft/cometbft/light/rpc"
 	lightdb "github.com/cometbft/cometbft/light/store/db"
-	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
@@ -158,7 +157,7 @@ func (s *lightClientStateProvider) State(ctx context.Context, height uint64) (sm
 
 	state.Version = cmtstate.Version{
 		Consensus: currentLightBlock.Version,
-		Software:  version.TMCoreSemVer,
+		Software:  version.CMTSemVer,
 	}
 	state.LastBlockHeight = lastLightBlock.Height
 	state.LastBlockTime = lastLightBlock.Time
@@ -191,7 +190,7 @@ func (s *lightClientStateProvider) State(ctx context.Context, height uint64) (sm
 	return state, nil
 }
 
-// rpcClient sets up a new RPC client
+// rpcClient sets up a new RPC client.
 func rpcClient(server string) (*rpchttp.HTTP, error) {
 	if !strings.Contains(server, "://") {
 		server = "http://" + server

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
-	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
+	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/version"
 )
 
@@ -84,7 +84,7 @@ func Rollback(bs BlockStore, ss Store, removeBlock bool) (int64, []byte, error) 
 				Block: version.BlockProtocol,
 				App:   previousParams.Version.App,
 			},
-			Software: version.TMCoreSemVer,
+			Software: version.CMTSemVer,
 		},
 		// immutable fields
 		ChainID:       invalidState.ChainID,

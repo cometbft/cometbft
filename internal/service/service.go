@@ -49,7 +49,7 @@ type Service interface {
 	String() string
 
 	// SetLogger sets a logger.
-	SetLogger(log.Logger)
+	SetLogger(l log.Logger)
 }
 
 /*
@@ -159,7 +159,7 @@ func (bs *BaseService) Start() error {
 
 // OnStart implements Service by doing nothing.
 // NOTE: Do not put anything in here,
-// that way users don't need to call BaseService.OnStart()
+// that way users don't need to call BaseService.OnStart().
 func (bs *BaseService) OnStart() error { return nil }
 
 // Stop implements Service by calling OnStop (if defined) and closing quit
@@ -192,7 +192,7 @@ func (bs *BaseService) Stop() error {
 
 // OnStop implements Service by doing nothing.
 // NOTE: Do not put anything in here,
-// that way users don't need to call BaseService.OnStop()
+// that way users don't need to call BaseService.OnStop().
 func (bs *BaseService) OnStop() {}
 
 // Reset implements Service by calling OnReset callback (if defined). An error

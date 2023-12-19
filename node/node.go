@@ -7,19 +7,14 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	_ "net/http/pprof" //nolint: gosec
 	"os"
 	"time"
-
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/rs/cors"
 
 	cfg "github.com/cometbft/cometbft/config"
 	bc "github.com/cometbft/cometbft/internal/blocksync"
 	cs "github.com/cometbft/cometbft/internal/consensus"
 	"github.com/cometbft/cometbft/internal/evidence"
-	"github.com/cometbft/cometbft/light"
-
 	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
 	"github.com/cometbft/cometbft/internal/service"
 	sm "github.com/cometbft/cometbft/internal/state"
@@ -29,6 +24,7 @@ import (
 	"github.com/cometbft/cometbft/internal/statesync"
 	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/light"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/pex"
@@ -40,8 +36,9 @@ import (
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
-
-	_ "net/http/pprof" //nolint: gosec
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rs/cors"
 )
 
 // Node is the highest level interface to a full CometBFT node.
@@ -67,8 +64,8 @@ type Node struct {
 	stateStore        sm.Store
 	blockStore        *store.BlockStore // store the blockchain to disk
 	pruner            *sm.Pruner
-	bcReactor         p2p.Reactor    // for block-syncing
-	mempoolReactor    *mempl.Reactor // for gossipping transactions
+	bcReactor         p2p.Reactor        // for block-syncing
+	mempoolReactor    waitSyncP2PReactor // for gossipping transactions
 	mempool           mempl.Mempool
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
@@ -85,6 +82,12 @@ type Node struct {
 	indexerService    *txindex.IndexerService
 	prometheusSrv     *http.Server
 	pprofSrv          *http.Server
+}
+
+type waitSyncP2PReactor interface {
+	p2p.Reactor
+	// required by RPC service
+	WaitSync() bool
 }
 
 // Option sets a parameter for the node.
@@ -219,16 +222,14 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	}
 	if appHash == nil {
 		logger.Info("warning: cannot verify appHash. Verification will happen when node boots up!")
-	} else {
-		if !bytes.Equal(appHash, state.AppHash) {
-			if err := blockStore.Close(); err != nil {
-				logger.Error("failed to close blockstore: %w", err)
-			}
-			if err := stateStore.Close(); err != nil {
-				logger.Error("failed to close statestore: %w", err)
-			}
-			return fmt.Errorf("the app hash returned by the light client does not match the provided appHash, expected %X, got %X", state.AppHash, appHash)
+	} else if !bytes.Equal(appHash, state.AppHash) {
+		if err := blockStore.Close(); err != nil {
+			logger.Error("failed to close blockstore: %w", err)
 		}
+		if err := stateStore.Close(); err != nil {
+			logger.Error("failed to close statestore: %w", err)
+		}
+		return fmt.Errorf("the app hash returned by the light client does not match the provided appHash, expected %X, got %X", state.AppHash, appHash)
 	}
 
 	commit, err := stateProvider.Commit(ctx, height)
@@ -365,10 +366,8 @@ func NewNode(ctx context.Context,
 
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
 
-	// Make MempoolReactor
 	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, waitSync, memplMetrics, logger)
 
-	// Make Evidence Reactor
 	evidenceReactor, evidencePool, err := createEvidenceReactor(config, dbProvider, stateStore, blockStore, logger)
 	if err != nil {
 		return nil, err
@@ -406,13 +405,12 @@ func NewNode(ctx context.Context,
 			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s; expected state store height to be %v", err, state.LastBlockHeight))
 		}
 	}
-	// Make BlocksyncReactor. Don't start block sync if we're doing a state sync first.
+	// Don't start block sync if we're doing a state sync first.
 	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, logger, bsMetrics, offlineStateSyncHeight)
 	if err != nil {
 		return nil, fmt.Errorf("could not create blocksync reactor: %w", err)
 	}
 
-	// Make ConsensusReactor
 	consensusReactor, consensusState := createConsensusReactor(
 		config, state, blockExec, blockStore, mempool, evidencePool,
 		privValidator, csMetrics, waitSync, eventBus, consensusLogger, offlineStateSyncHeight,
@@ -439,10 +437,8 @@ func NewNode(ctx context.Context,
 		return nil, err
 	}
 
-	// Setup Transport.
 	transport, peerFilters := createTransport(config, nodeInfo, nodeKey, proxyApp)
 
-	// Setup Switch.
 	p2pLogger := logger.With("module", "p2p")
 	sw := createSwitch(
 		config, transport, p2pMetrics, peerFilters, mempoolReactor, bcReactor,
@@ -730,8 +726,8 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 	}
 
 	// we may expose the rpc over both a unix and tcp socket
-	listeners := make([]net.Listener, len(listenAddrs))
-	for i, listenAddr := range listenAddrs {
+	listeners := make([]net.Listener, 0, len(listenAddrs))
+	for _, listenAddr := range listenAddrs {
 		mux := http.NewServeMux()
 		rpcLogger := n.Logger.With("module", "rpc-server")
 		wmLogger := rpcLogger.With("protocol", "websocket")
@@ -792,7 +788,7 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 			}()
 		}
 
-		listeners[i] = listener
+		listeners = append(listeners, listener)
 	}
 
 	if n.config.GRPC.ListenAddress != "" {
@@ -864,7 +860,7 @@ func (n *Node) startPrometheusServer() *http.Server {
 	return srv
 }
 
-// starts a ppro
+// starts a ppro.
 func (n *Node) startPprofServer() *http.Server {
 	srv := &http.Server{
 		Addr:              n.config.RPC.PprofListenAddress,
@@ -978,7 +974,7 @@ func makeNodeInfo(
 		),
 		DefaultNodeID: nodeKey.ID(),
 		Network:       genDoc.ChainID,
-		Version:       version.TMCoreSemVer,
+		Version:       version.CMTSemVer,
 		Channels: []byte{
 			bc.BlocksyncChannel,
 			cs.StateChannel, cs.DataChannel, cs.VoteChannel, cs.VoteSetBitsChannel,

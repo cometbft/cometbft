@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/internal/protoio"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
@@ -23,7 +23,7 @@ var (
 // a so-called Proof-of-Lock (POL) round, as noted in the POLRound.
 // If POLRound >= 0, then BlockID corresponds to the block that is locked in POLRound.
 type Proposal struct {
-	Type      cmtproto.SignedMsgType
+	Type      SignedMsgType
 	Height    int64     `json:"height"`
 	Round     int32     `json:"round"`     // there can not be greater than 2_147_483_647 rounds
 	POLRound  int32     `json:"pol_round"` // -1 if null.
@@ -36,7 +36,7 @@ type Proposal struct {
 // If there is no POLRound, polRound should be -1.
 func NewProposal(height int64, round int32, polRound int32, blockID BlockID) *Proposal {
 	return &Proposal{
-		Type:      cmtproto.ProposalType,
+		Type:      ProposalType,
 		Height:    height,
 		Round:     round,
 		BlockID:   blockID,
@@ -47,7 +47,7 @@ func NewProposal(height int64, round int32, polRound int32, blockID BlockID) *Pr
 
 // ValidateBasic performs basic validation.
 func (p *Proposal) ValidateBasic() error {
-	if p.Type != cmtproto.ProposalType {
+	if p.Type != ProposalType {
 		return errors.New("invalid Type")
 	}
 	if p.Height < 0 {
@@ -60,7 +60,7 @@ func (p *Proposal) ValidateBasic() error {
 		return errors.New("negative POLRound (exception: -1)")
 	}
 	if err := p.BlockID.ValidateBasic(); err != nil {
-		return fmt.Errorf("wrong BlockID: %v", err)
+		return fmt.Errorf("wrong BlockID: %w", err)
 	}
 	// ValidateBasic above would pass even if the BlockID was empty:
 	if !p.BlockID.IsComplete() {
@@ -106,7 +106,7 @@ func (p *Proposal) String() string {
 // for backwards-compatibility with the Amino encoding, due to e.g. hardware
 // devices that rely on this encoding.
 //
-// See CanonicalizeProposal
+// See CanonicalizeProposal.
 func ProposalSignBytes(chainID string, p *cmtproto.Proposal) []byte {
 	pb := CanonicalizeProposal(chainID, p)
 	bz, err := protoio.MarshalDelimited(&pb)
@@ -117,7 +117,7 @@ func ProposalSignBytes(chainID string, p *cmtproto.Proposal) []byte {
 	return bz
 }
 
-// ToProto converts Proposal to protobuf
+// ToProto converts Proposal to protobuf.
 func (p *Proposal) ToProto() *cmtproto.Proposal {
 	if p == nil {
 		return &cmtproto.Proposal{}

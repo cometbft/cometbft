@@ -6,6 +6,7 @@ services:
     image: "cometbft/localnode"
     ports:
       - "26656-26657:26656-26657"
+      - "26680:26660"
     environment:
       - ID=0
       - LOG=${LOG:-cometbft.log}

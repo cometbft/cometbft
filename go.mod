@@ -206,7 +206,7 @@ require (
 	github.com/ldez/gomoddirectives v0.2.3 // indirect
 	github.com/ldez/tagliatelle v0.5.0 // indirect
 	github.com/leonklingele/grouper v1.1.1 // indirect
-	github.com/linxGnu/grocksdb v1.8.6 // indirect
+	github.com/linxGnu/grocksdb v1.8.10 // indirect
 	github.com/lufeee/execinquery v1.2.1 // indirect
 	github.com/macabu/inamedparam v0.1.2 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
@@ -324,3 +324,5 @@ require (
 )
 
 replace github.com/cometbft/cometbft/api => ./api
+
+replace github.com/cometbft/cometbft-db => /Users/jasminamalicevic/Work/Comet/cometbft-db

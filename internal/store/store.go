@@ -329,8 +329,8 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 		// We can't trust batches to be atomic, so update base first to make sure no one
 		// tries to access missing blocks.
 		bs.mtx.Lock()
-		defer bs.mtx.Unlock()
 		defer batch.Close()
+		defer bs.mtx.Unlock()
 		bs.base = base
 		return bs.saveStateAndWriteDB(batch, "failed to prune")
 	}

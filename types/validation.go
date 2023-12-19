@@ -344,7 +344,15 @@ func verifyCommitSingle(
 			continue
 		}
 
+<<<<<<< HEAD
 		// If the vals and commit have a 1-to-1 correspondance we can retrieve
+=======
+		if commitSig.ValidateBasic() != nil {
+			return fmt.Errorf("invalid signatures from %v at index %d", val, idx)
+		}
+
+		// If the vals and commit have a 1-to-1 correspondence we can retrieve
+>>>>>>> c88a25f85 (Adds checks for nil keys and signatures (#1855))
 		// them by index else we need to retrieve them by address
 		if lookUpByIndex {
 			val = vals.Validators[idx]
@@ -364,6 +372,10 @@ func verifyCommitSingle(
 				return fmt.Errorf("double vote from %v (%d and %d)", val, firstIndex, secondIndex)
 			}
 			seenVals[valIdx] = idx
+		}
+
+		if val.PubKey == nil {
+			return fmt.Errorf("validator %v has a nil PubKey at index %d", val, idx)
 		}
 
 		voteSignBytes = commit.VoteSignBytes(chainID, int32(idx))

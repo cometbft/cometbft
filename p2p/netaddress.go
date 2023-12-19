@@ -17,7 +17,7 @@ import (
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 )
 
-// EmptyNetAddress defines the string representation of an empty NetAddress
+// EmptyNetAddress defines the string representation of an empty NetAddress.
 const EmptyNetAddress = "<nil-NetAddress>"
 
 // NetAddress defines information about a peer on the network
@@ -66,7 +66,7 @@ func NewNetAddress(id ID, addr net.Addr) *NetAddress {
 // NewNetAddressString returns a new NetAddress using the provided address in
 // the form of "ID@IP:Port".
 // Also resolves the host if host is not an IP.
-// Errors are of type ErrNetAddressXxx where Xxx is in (NoID, Invalid, Lookup)
+// Errors are of type ErrNetAddressXxx where Xxx is in (NoID, Invalid, Lookup).
 func NewNetAddressString(addr string) (*NetAddress, error) {
 	addrWithoutProtocol := removeProtocolIfDefined(addr)
 	spl := strings.Split(addrWithoutProtocol, "@")
@@ -208,7 +208,7 @@ func (na *NetAddress) Same(other interface{}) bool {
 	return false
 }
 
-// String representation: <ID>@<IP>:<PORT>
+// String representation: <ID>@<IP>:<PORT>.
 func (na *NetAddress) String() string {
 	if na == nil {
 		return EmptyNetAddress
@@ -346,7 +346,7 @@ func (na *NetAddress) ReachabilityTo(o *NetAddress) int {
 // RFC4843: IPv6 ORCHID: (2001:10::/28)
 // RFC4862: IPv6 Autoconfig (FE80::/64)
 // RFC6052: IPv6 well known prefix (64:FF9B::/96)
-// RFC6145: IPv6 IPv4 translated address ::FFFF:0:0:0/96
+// RFC6145: IPv6 IPv4 translated address ::FFFF:0:0:0/96.
 var (
 	rfc1918_10  = net.IPNet{IP: net.ParseIP("10.0.0.0"), Mask: net.CIDRMask(8, 32)}
 	rfc1918_192 = net.IPNet{IP: net.ParseIP("192.168.0.0"), Mask: net.CIDRMask(16, 32)}
@@ -368,11 +368,11 @@ var (
 	// byte number. It then stores the first 6 bytes of the address as
 	// 0xfd, 0x87, 0xd8, 0x7e, 0xeb, 0x43.
 	//
-	// This is the same range used by OnionCat, which is part part of the
+	// This is the same range used by OnionCat, which is part of the
 	// RFC4193 unique local IPv6 range.
 	//
 	// In summary the format is:
-	// { magic 6 bytes, 10 bytes base32 decode of key hash }
+	// { magic 6 bytes, 10 bytes base32 decode of key hash }.
 	onionCatNet = ipNet("fd87:d87e:eb43::", 48, 128)
 )
 

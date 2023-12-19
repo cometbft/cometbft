@@ -5,19 +5,16 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/cosmos/gogoproto/proto"
-	"github.com/google/orderedcode"
-
-	cmterrors "github.com/cometbft/cometbft/types/errors"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	cmtstore "github.com/cometbft/cometbft/api/cometbft/store/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/internal/evidence"
 	sm "github.com/cometbft/cometbft/internal/state"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/types"
+	cmterrors "github.com/cometbft/cometbft/types/errors"
+	"github.com/cosmos/gogoproto/proto"
+	"github.com/google/orderedcode"
 )
 
 const (
@@ -72,7 +69,7 @@ func NewBlockStore(db dbm.DB) *BlockStore {
 func (bs *BlockStore) IsEmpty() bool {
 	bs.mtx.RLock()
 	defer bs.mtx.RUnlock()
-	return bs.base == bs.height && bs.base == 0
+	return bs.base == 0 && bs.height == 0
 }
 
 // Base returns the first known contiguous block height, or 0 for empty block stores.
@@ -328,7 +325,7 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 	batch := bs.db.NewBatch()
 	defer batch.Close()
 	flush := func(batch dbm.Batch, base int64) error {
-		// We can't trust batches to be atomic, so update base first to make sure noone
+		// We can't trust batches to be atomic, so update base first to make sure no one
 		// tries to access missing blocks.
 		bs.mtx.Lock()
 		bs.base = base
@@ -345,7 +342,6 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 
 	evidencePoint := height
 	for h := base; h < height; h++ {
-
 		meta := bs.LoadBlockMeta(h)
 		if meta == nil { // assume already deleted
 			continue
@@ -469,8 +465,8 @@ func (bs *BlockStore) saveBlockToBatch(
 	block *types.Block,
 	blockParts *types.PartSet,
 	seenCommit *types.Commit,
-	batch dbm.Batch) error {
-
+	batch dbm.Batch,
+) error {
 	if block == nil {
 		panic("BlockStore can only save a non-nil block")
 	}
@@ -511,7 +507,7 @@ func (bs *BlockStore) saveBlockToBatch(
 	if err := batch.Set(blockMetaKey(height), metaBytes); err != nil {
 		return err
 	}
-	if err := batch.Set(blockHashKey(hash), []byte(fmt.Sprintf("%d", height))); err != nil {
+	if err := batch.Set(blockHashKey(hash), []byte(strconv.FormatInt(height, 10))); err != nil {
 		return err
 	}
 
@@ -668,7 +664,7 @@ func (bs *BlockStore) DeleteLatestBlock() error {
 	return nil
 }
 
-// mustEncode proto encodes a proto.message and panics if fails
+// mustEncode proto encodes a proto.message and panics if fails.
 func mustEncode(pb proto.Message) []byte {
 	bz, err := proto.Marshal(pb)
 	if err != nil {
@@ -680,14 +676,14 @@ func mustEncode(pb proto.Message) []byte {
 //---------------------------------- KEY ENCODING -----------------------------------------
 
 const (
-	// subkeys must be unique within a single DB
+	// subkeys must be unique within a single DB.
 	subkeyBlockMeta   = int64(0)
 	subkeyBlockPart   = int64(1)
 	subkeyBlockCommit = int64(2)
 	subkeySeenCommit  = int64(3)
 	subkeyExtCommit   = int64(4)
 
-	// prefixes must be unique within a single DB
+	// prefixes must be unique within a single DB.
 	prefixBlockHash = int64(-1)
 )
 

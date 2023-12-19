@@ -3,7 +3,7 @@ package cometbft.types.v1;
 
 option go_package = "github.com/cometbft/cometbft/api/cometbft/types/v1";
 
-// EventDataRoundState is emmitted with each new round step.
+// EventDataRoundState is emitted with each new round step.
 message EventDataRoundState {
   int64  height = 1;
   int32  round  = 2;

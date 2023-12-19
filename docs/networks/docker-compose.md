@@ -87,7 +87,7 @@ Adding 4 more nodes is required in order to fully utilize the config files that 
         ipv4_address: 192.167.10.5 # bump the final digit by 1 for every node
 ```
 
-Before running it, don't forget to cleanup the old files:
+Before running it, don't forget to clean up the old files:
 
 ```sh
 # Clear the build folder
@@ -145,7 +145,7 @@ To use your own ABCI applications with 4-node setup edit the [docker-compose.yam
 
 ```
 
-Override the [command](https://github.com/cometbft/cometbft/blob/main/networks/local/localnode/Dockerfile#L11) in each node to connect to it's ABCI.
+Override the [command](https://github.com/cometbft/cometbft/blob/main/networks/local/localnode/Dockerfile#L11) in each node to connect to its ABCI.
 
 ```yml
   node0:

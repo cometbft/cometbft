@@ -17,7 +17,7 @@ import (
 
 // HTTP + JSON handler
 
-// jsonrpc calls grab the given method's function info and runs reflect.Call
+// jsonrpc calls grab the given method's function info and runs reflect.Call.
 func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		b, err := io.ReadAll(r.Body)
@@ -218,7 +218,7 @@ func jsonParamsToArgs(rpcFunc *RPCFunc, raw []byte) ([]reflect.Value, error) {
 	return nil, fmt.Errorf("unknown type for JSON params: %v. Expected map or array", err)
 }
 
-// writes a list of available rpc endpoints as an html page
+// writes a list of available rpc endpoints as an html page.
 func writeListOfEndpoints(w http.ResponseWriter, r *http.Request, funcMap map[string]*RPCFunc) {
 	noArgNames := []string{}
 	argNames := []string{}
@@ -255,6 +255,6 @@ func writeListOfEndpoints(w http.ResponseWriter, r *http.Request, funcMap map[st
 	}
 	buf.WriteString("</body></html>")
 	w.Header().Set("Content-Type", "text/html")
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 	w.Write(buf.Bytes()) //nolint: errcheck
 }

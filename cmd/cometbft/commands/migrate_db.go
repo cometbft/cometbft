@@ -12,9 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	migrateDBTargetVersion uint
-)
+var migrateDBTargetVersion uint
 
 func init() {
 	MigrateDBCmd.Flags().UintVar(&migrateDBTargetVersion, "target_version", 2, "version to migrate to")

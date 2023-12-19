@@ -7,19 +7,14 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	_ "net/http/pprof" //nolint: gosec
 	"os"
 	"time"
-
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/rs/cors"
 
 	cfg "github.com/cometbft/cometbft/config"
 	bc "github.com/cometbft/cometbft/internal/blocksync"
 	cs "github.com/cometbft/cometbft/internal/consensus"
 	"github.com/cometbft/cometbft/internal/evidence"
-	"github.com/cometbft/cometbft/light"
-
 	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
 	"github.com/cometbft/cometbft/internal/service"
 	sm "github.com/cometbft/cometbft/internal/state"
@@ -29,6 +24,7 @@ import (
 	"github.com/cometbft/cometbft/internal/statesync"
 	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/light"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/pex"
@@ -40,8 +36,9 @@ import (
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
-
-	_ "net/http/pprof" //nolint: gosec
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rs/cors"
 )
 
 // Node is the highest level interface to a full CometBFT node.
@@ -225,16 +222,14 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	}
 	if appHash == nil {
 		logger.Info("warning: cannot verify appHash. Verification will happen when node boots up!")
-	} else {
-		if !bytes.Equal(appHash, state.AppHash) {
-			if err := blockStore.Close(); err != nil {
-				logger.Error("failed to close blockstore: %w", err)
-			}
-			if err := stateStore.Close(); err != nil {
-				logger.Error("failed to close statestore: %w", err)
-			}
-			return fmt.Errorf("the app hash returned by the light client does not match the provided appHash, expected %X, got %X", state.AppHash, appHash)
+	} else if !bytes.Equal(appHash, state.AppHash) {
+		if err := blockStore.Close(); err != nil {
+			logger.Error("failed to close blockstore: %w", err)
 		}
+		if err := stateStore.Close(); err != nil {
+			logger.Error("failed to close statestore: %w", err)
+		}
+		return fmt.Errorf("the app hash returned by the light client does not match the provided appHash, expected %X, got %X", state.AppHash, appHash)
 	}
 
 	commit, err := stateProvider.Commit(ctx, height)
@@ -731,8 +726,8 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 	}
 
 	// we may expose the rpc over both a unix and tcp socket
-	listeners := make([]net.Listener, len(listenAddrs))
-	for i, listenAddr := range listenAddrs {
+	listeners := make([]net.Listener, 0, len(listenAddrs))
+	for _, listenAddr := range listenAddrs {
 		mux := http.NewServeMux()
 		rpcLogger := n.Logger.With("module", "rpc-server")
 		wmLogger := rpcLogger.With("protocol", "websocket")
@@ -793,7 +788,7 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 			}()
 		}
 
-		listeners[i] = listener
+		listeners = append(listeners, listener)
 	}
 
 	if n.config.GRPC.ListenAddress != "" {
@@ -865,7 +860,7 @@ func (n *Node) startPrometheusServer() *http.Server {
 	return srv
 }
 
-// starts a ppro
+// starts a ppro.
 func (n *Node) startPprofServer() *http.Server {
 	srv := &http.Server{
 		Addr:              n.config.RPC.PprofListenAddress,

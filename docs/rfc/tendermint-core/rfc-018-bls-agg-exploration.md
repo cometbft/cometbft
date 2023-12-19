@@ -60,7 +60,7 @@ elliptic curves over a finite field. With some original curve, you can define tw
 `G1` and `G2` which are points of the original curve _modulo_ different values.
 Finally, you define a third group `Gt`, where points from `G1` and `G2` satisfy
 the property of bilinearity with `Gt`. In this scheme, the function `e` takes
-as inputs points in `G1` and `G2` and outputs values in `Gt`. Succintly, given
+as inputs points in `G1` and `G2` and outputs values in `Gt`. Succinctly, given
 some point `P` in `G1` and some point `Q` in `G1`, `e(P, Q) = C` where `C` is in `Gt`.
 You can efficiently compute the mapping of points in `G1` and `G2` into `Gt`,
 but you cannot efficiently determine what points were summed and paired to

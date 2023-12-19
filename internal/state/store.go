@@ -5,24 +5,22 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/cosmos/gogoproto/proto"
-	"github.com/google/orderedcode"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/types"
+	"github.com/cosmos/gogoproto/proto"
+	"github.com/google/orderedcode"
 )
 
 const (
 	// persist validators every valSetCheckpointInterval blocks to avoid
 	// LoadValidators taking too much time.
 	// https://github.com/tendermint/tendermint/pull/3438
-	// 100000 results in ~ 100ms to get 100 validators (see BenchmarkLoadValidators)
+	// 100000 results in ~ 100ms to get 100 validators (see BenchmarkLoadValidators).
 	valSetCheckpointInterval = 100000
 )
 
@@ -36,14 +34,14 @@ var (
 // Store defines the state store interface
 //
 // It is used to retrieve current state and save and load ABCI responses,
-// validators and consensus parameters
+// validators and consensus parameters.
 type Store interface {
 	// LoadFromDBOrGenesisFile loads the most recent state.
 	// If the chain is new it will use the genesis file from the provided genesis file path as the current state.
-	LoadFromDBOrGenesisFile(string) (State, error)
+	LoadFromDBOrGenesisFile(filepath string) (State, error)
 	// LoadFromDBOrGenesisDoc loads the most recent state.
 	// If the chain is new it will use the genesis doc as the current state.
-	LoadFromDBOrGenesisDoc(*types.GenesisDoc) (State, error)
+	LoadFromDBOrGenesisDoc(doc *types.GenesisDoc) (State, error)
 	// Load loads the current state of the blockchain
 	Load() (State, error)
 	// LoadValidators loads the validator set at a given height
@@ -84,7 +82,7 @@ type Store interface {
 	Close() error
 }
 
-// dbStore wraps a db (github.com/cometbft/cometbft-db)
+// dbStore wraps a db (github.com/cometbft/cometbft-db).
 type dbStore struct {
 	db dbm.DB
 
@@ -453,7 +451,7 @@ func (store dbStore) PruneABCIResponses(targetRetainHeight int64) (int64, int64,
 // TxResultsHash returns the root hash of a Merkle tree of
 // ExecTxResulst responses (see ABCIResults.Hash)
 //
-// See merkle.SimpleHashFromByteSlices
+// See merkle.SimpleHashFromByteSlices.
 func TxResultsHash(txResults []*abci.ExecTxResult) []byte {
 	return types.NewResults(txResults).Hash()
 }
@@ -593,7 +591,7 @@ func (store dbStore) getValue(key []byte) ([]byte, error) {
 	return bz, nil
 }
 
-// ApplicationRetainHeight
+// ApplicationRetainHeight.
 func (store dbStore) SaveApplicationRetainHeight(height int64) error {
 	return store.db.SetSync(AppRetainHeightKey, int64ToBytes(height))
 }
@@ -612,7 +610,7 @@ func (store dbStore) GetApplicationRetainHeight() (int64, error) {
 	return height, nil
 }
 
-// DataCompanionRetainHeight
+// DataCompanionRetainHeight.
 func (store dbStore) SaveCompanionBlockRetainHeight(height int64) error {
 	return store.db.SetSync(CompanionBlockRetainHeightKey, int64ToBytes(height))
 }
@@ -631,7 +629,7 @@ func (store dbStore) GetCompanionBlockRetainHeight() (int64, error) {
 	return height, nil
 }
 
-// DataCompanionRetainHeight
+// DataCompanionRetainHeight.
 func (store dbStore) SaveABCIResRetainHeight(height int64) error {
 	return store.db.SetSync(ABCIResultsRetainHeightKey, int64ToBytes(height))
 }
@@ -858,7 +856,7 @@ func (store dbStore) SetOfflineStateSyncHeight(height int64) error {
 	return nil
 }
 
-// Gets the height at which the store is bootstrapped after out of band statesync
+// Gets the height at which the store is bootstrapped after out of band statesync.
 func (store dbStore) GetOfflineStateSyncHeight() (int64, error) {
 	buf, err := store.db.Get(offlineStateSyncHeight)
 	if err != nil {
@@ -888,7 +886,7 @@ func min(a int64, b int64) int64 {
 }
 
 // responseFinalizeBlockFromLegacy is a convenience function that takes the old abci responses and morphs
-// it to the finalize block response. Note that the app hash is missing
+// it to the finalize block response. Note that the app hash is missing.
 func responseFinalizeBlockFromLegacy(legacyResp *cmtstate.LegacyABCIResponses) *abci.FinalizeBlockResponse {
 	return &abci.FinalizeBlockResponse{
 		TxResults:             legacyResp.DeliverTxs,
@@ -900,7 +898,7 @@ func responseFinalizeBlockFromLegacy(legacyResp *cmtstate.LegacyABCIResponses) *
 	}
 }
 
-// ----- Util
+// ----- Util.
 func int64FromBytes(bz []byte) int64 {
 	v, _ := binary.Varint(bz)
 	return v
@@ -915,7 +913,7 @@ func int64ToBytes(i int64) []byte {
 //---------------------------------- KEY ENCODING -----------------------------------------
 
 const (
-	// subkeys must be unique within a single DB
+	// subkeys must be unique within a single DB.
 	subkeyValidators      = int64(5)
 	subkeyConsensusParams = int64(6)
 	subkeyABCIResponses   = int64(7)

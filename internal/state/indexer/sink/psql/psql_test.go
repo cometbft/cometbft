@@ -46,6 +46,8 @@ const (
 
 	viewBlockEvents = "block_events"
 	viewTxEvents    = "tx_events"
+
+	eventTypeFinalizeBlock = "finalize_block"
 )
 
 func TestMain(m *testing.M) {

@@ -160,7 +160,7 @@ func (r *BlockchainReacor) ioRoutine(ioMesgs chan Message, outMsgs chan Message)
 			case scStatusRequestMessage
 				r.sendStatusRequestToPeer(...)
 			case bcPeerError
-				r.Swtich.StopPeerForError(msg.src)
+				r.Switch.StopPeerForError(msg.src)
 				...
 			...
 			case bcFinished

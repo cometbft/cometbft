@@ -14,18 +14,18 @@ import (
 )
 
 const (
-	// BlocksyncChannel is a channel for blocks and status updates (`BlockStore` height)
+	// BlocksyncChannel is a channel for blocks and status updates (`BlockStore` height).
 	BlocksyncChannel = byte(0x40)
 
 	trySyncIntervalMS = 10
 
 	// stop syncing when last block's time is
 	// within this much of the system time.
-	// stopSyncingDurationMinutes = 10
+	// stopSyncingDurationMinutes = 10.
 
-	// ask for best height every 10s
+	// ask for best height every 10s.
 	statusUpdateIntervalSeconds = 10
-	// check if we should switch to consensus reactor
+	// check if we should switch to consensus reactor.
 	switchToConsensusIntervalSeconds = 1
 )
 
@@ -153,7 +153,7 @@ func (bcR *Reactor) OnStop() {
 	}
 }
 
-// GetChannels implements Reactor
+// GetChannels implements Reactor.
 func (bcR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 	return []*p2p.ChannelDescriptor{
 		{
@@ -339,7 +339,6 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 			case <-statusUpdateTicker.C:
 				// ask for status updates
 				go bcR.BroadcastStatusRequest()
-
 			}
 		}
 	}()
@@ -460,7 +459,7 @@ FOR_LOOP:
 			// first.Hash() doesn't verify the tx contents, so MakePartSet() is
 			// currently necessary.
 			// TODO(sergio): Should we also validate against the extended commit?
-			err = state.Validators.VerifyCommitLight(
+			err = state.Validators.VerifyCommitLightAllSignatures(
 				chainID, firstID, first.Height, second.LastCommit)
 
 			if err == nil {
@@ -471,10 +470,8 @@ FOR_LOOP:
 				// if vote extensions were required at this height, ensure they exist.
 				if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
 					err = extCommit.EnsureExtensions(true)
-				} else {
-					if extCommit != nil {
-						err = fmt.Errorf("received non-nil extCommit for height %d (extensions disabled)", first.Height)
-					}
+				} else if extCommit != nil {
+					err = fmt.Errorf("received non-nil extCommit for height %d (extensions disabled)", first.Height)
 				}
 			}
 			if err != nil {

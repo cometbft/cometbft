@@ -15,9 +15,7 @@ import (
 	"github.com/google/orderedcode"
 )
 
-var (
-	logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
-)
+var logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 
 // MigrateBlockStore migrates the block store database from version 1 to 2.
 func MigrateBlockStore(db dbm.DB) error {
@@ -373,14 +371,14 @@ func parseLbKey(key []byte) (chainID string, height int64, ok bool) {
 //---------------------------------- KEY ENCODING -----------------------------------------
 
 const (
-	// subkeys must be unique within a single DB
+	// subkeys must be unique within a single DB.
 	subkeyBlockMeta   = int64(0)
 	subkeyBlockPart   = int64(1)
 	subkeyBlockCommit = int64(2)
 	subkeySeenCommit  = int64(3)
 	subkeyExtCommit   = int64(4)
 
-	// prefixes must be unique within a single DB
+	// prefixes must be unique within a single DB.
 	prefixBlockHash = int64(-1)
 )
 
@@ -425,7 +423,7 @@ func blockHashKey(hash []byte) []byte {
 }
 
 const (
-	// subkeys must be unique within a single DB
+	// subkeys must be unique within a single DB.
 	subkeyValidators      = int64(5)
 	subkeyConsensusParams = int64(6)
 	subkeyABCIResponses   = int64(7)
@@ -453,10 +451,10 @@ func abciResponsesKey(height int64) []byte {
 }
 
 const (
-	// subkeys must be unique within a single DB
+	// subkeys must be unique within a single DB.
 	subkeyCommitted = int64(8)
 
-	// prefixes must be unique within a single DB
+	// prefixes must be unique within a single DB.
 	prefixPending = int64(-2)
 )
 
@@ -487,14 +485,6 @@ const (
 
 func sizeKey(prefix []byte) []byte {
 	key, err := orderedcode.Append(nil, prefix, subkeySize)
-	if err != nil {
-		panic(err)
-	}
-	return key
-}
-
-func lbKey(prefix []byte, height int64) []byte {
-	key, err := orderedcode.Append(nil, prefix, subkeyLightBlock, height)
 	if err != nil {
 		panic(err)
 	}

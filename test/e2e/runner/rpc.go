@@ -72,7 +72,6 @@ func waitForHeight(ctx context.Context, testnet *e2e.Testnet, height int64) (*ty
 			}
 			timer.Reset(1 * time.Second)
 		}
-
 	}
 }
 

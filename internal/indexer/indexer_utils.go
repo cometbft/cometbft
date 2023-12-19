@@ -8,7 +8,7 @@ import (
 )
 
 // If the actual event value is a float, we get the condition and parse it as a float
-// to compare against
+// to compare against.
 func compareFloat(op1 *big.Float, op2 interface{}) (int, bool, error) {
 	switch opVal := op2.(type) {
 	case *big.Int:
@@ -62,7 +62,7 @@ func CheckBounds(ranges indexer.QueryRange, v interface{}) (bool, error) {
 
 	// *Explanation for the isFloat condition below.*
 	// In LowerBoundValue(), for floating points, we cannot simply add 1 due to the reasons explained in
-	// in the comment at the beginning. The same is true for subtracting one for UpperBoundValue().
+	// the comment at the beginning. The same is true for subtracting one for UpperBoundValue().
 	// That means that for integers, if the condition is >=, cmp will be either 0 or 1
 	// ( cmp == -1 should always be false).
 	// 	But if the lowerBound is a float, we have not subtracted one, so returning a 0

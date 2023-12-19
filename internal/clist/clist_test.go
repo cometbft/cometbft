@@ -7,9 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPanicOnMaxLength(t *testing.T) {
@@ -220,7 +219,6 @@ func TestScanRightDeleteRandom(t *testing.T) {
 		if i%100000 == 0 {
 			fmt.Printf("Pushed %vK elements so far...\n", i/1000)
 		}
-
 	}
 
 	// Stop scanners

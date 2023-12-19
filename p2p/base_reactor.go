@@ -16,7 +16,7 @@ type Reactor interface {
 	service.Service // Start, Stop
 
 	// SetSwitch allows setting a switch.
-	SetSwitch(*Switch)
+	SetSwitch(sw *Switch)
 
 	// GetChannels returns the list of MConnection.ChannelDescriptor. Make sure
 	// that each ID is unique across all the reactors added to the switch.
@@ -40,7 +40,7 @@ type Reactor interface {
 
 	// Receive is called by the switch when an envelope is received from any connected
 	// peer on any of the channels registered by the reactor
-	Receive(Envelope)
+	Receive(e Envelope)
 }
 
 //--------------------------------------

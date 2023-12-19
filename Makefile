@@ -7,7 +7,7 @@ OUTPUT?=$(BUILDDIR)/cometbft
 HTTPS_GIT := https://github.com/cometbft/cometbft.git
 CGO_ENABLED ?= 0
 
-# Process Docker environment varible TARGETPLATFORM
+# Process Docker environment variable TARGETPLATFORM
 # in order to build binary with correspondent ARCH
 # by default will always build for linux/amd64
 TARGETPLATFORM ?=
@@ -232,9 +232,22 @@ lint:
 	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
 .PHONY: lint
 
+lint-format:
+	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --fix
+	@go run mvdan.cc/gofumpt -l -w ./..
+.PHONY: lint-format
+
 vulncheck:
 	@go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 .PHONY: vulncheck
+
+lint-typo:
+	@codespell
+.PHONY: lint-typo
+
+lint-fix-typo:
+	@codespell -w
+.PHONY: lint-fix-typo
 
 DESTINATION = ./index.html.md
 
@@ -304,7 +317,7 @@ endif
 
 # Run a nodejs tool to test endpoints against a localnet
 # The command takes care of starting and stopping the network
-# prerequisits: build-contract-tests-hooks build-linux
+# prerequisites: build-contract-tests-hooks build-linux
 # the two build commands were not added to let this command run from generic containers or machines.
 # The binaries should be built beforehand
 contract-tests:

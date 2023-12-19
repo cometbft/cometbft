@@ -359,7 +359,7 @@ func (evpool *Pool) listEvidence(maxBytes int64) ([]types.Evidence, int64, error
 		evList    cmtproto.EvidenceList // used for calculating the bytes size
 	)
 
-	iter, err := dbm.IteratePrefix(evpool.evidenceStore, prefixPendingBytes())
+	iter, err := dbm.IteratePrefix(evpool.evidenceStore, prefixPendingBytes)
 	if err != nil {
 		return nil, totalSize, fmt.Errorf("database error: %v", err)
 	}
@@ -395,7 +395,7 @@ func (evpool *Pool) listEvidence(maxBytes int64) ([]types.Evidence, int64, error
 }
 
 func (evpool *Pool) removeExpiredPendingEvidence() (int64, time.Time) {
-	iter, err := dbm.IteratePrefix(evpool.evidenceStore, prefixPendingBytes())
+	iter, err := dbm.IteratePrefix(evpool.evidenceStore, prefixPendingBytes)
 	if err != nil {
 		evpool.logger.Error("Unable to iterate over pending evidence", "err", err)
 		return evpool.State().LastBlockHeight, evpool.State().LastBlockTime
@@ -558,12 +558,14 @@ const (
 	prefixPending = int64(-2)
 )
 
-func prefixPendingBytes() []byte {
+var prefixPendingBytes []byte
+
+func init() {
 	prefix, err := orderedcode.Append(nil, prefixPending)
 	if err != nil {
 		panic(err)
 	}
-	return prefix
+	prefixPendingBytes = prefix
 }
 
 func keyCommitted(ev types.Evidence) []byte {

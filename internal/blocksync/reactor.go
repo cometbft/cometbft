@@ -3,6 +3,7 @@ package blocksync
 import (
 	"fmt"
 	"reflect"
+	"sync"
 	"time"
 
 	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v1"
@@ -60,6 +61,7 @@ type Reactor struct {
 	store     sm.BlockStore
 	pool      *BlockPool
 	blockSync bool
+	wg        sync.WaitGroup
 
 	requestsCh <-chan BlockRequest
 	errorsCh   <-chan peerError
@@ -125,6 +127,7 @@ func (bcR *Reactor) OnStart() error {
 		if err != nil {
 			return err
 		}
+		bcR.wg.Add(1)
 		go bcR.poolRoutine(false)
 	}
 	return nil
@@ -140,6 +143,7 @@ func (bcR *Reactor) SwitchToBlockSync(state sm.State) error {
 	if err != nil {
 		return err
 	}
+	bcR.wg.Add(1)
 	go bcR.poolRoutine(true)
 	return nil
 }
@@ -150,6 +154,7 @@ func (bcR *Reactor) OnStop() {
 		if err := bcR.pool.Stop(); err != nil {
 			bcR.Logger.Error("Error stopping pool", "err", err)
 		}
+		bcR.wg.Wait()
 	}
 }
 
@@ -284,6 +289,8 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 // Handle messages from the poolReactor telling the reactor what to do.
 // NOTE: Don't sleep in the FOR_LOOP or otherwise slow it down!
 func (bcR *Reactor) poolRoutine(stateSynced bool) {
+	defer bcR.wg.Done()
+
 	bcR.metrics.Syncing.Set(1)
 	defer bcR.metrics.Syncing.Set(0)
 
@@ -442,6 +449,11 @@ FOR_LOOP:
 				panic(fmt.Errorf("peeked first block without extended commit at height %d - possible node store corruption", first.Height))
 			}
 
+			select {
+			case <-bcR.pool.Quit():
+				break FOR_LOOP
+			default:
+			}
 			// Try again quickly next loop.
 			didProcessCh <- struct{}{}
 
@@ -526,6 +538,8 @@ FOR_LOOP:
 			continue FOR_LOOP
 
 		case <-bcR.Quit():
+			break FOR_LOOP
+		case <-bcR.pool.Quit():
 			break FOR_LOOP
 		}
 	}

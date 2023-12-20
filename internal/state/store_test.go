@@ -17,14 +17,12 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/crypto"
+	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -135,7 +133,7 @@ func TestPruneStates(t *testing.T) {
 
 			// Generate a bunch of state data. Validators change for heights ending with 3, and
 			// parameters when ending with 5.
-			validator := &types.Validator{Address: cmtrand.Bytes(crypto.AddressSize), VotingPower: 100, PubKey: pk}
+			validator := &types.Validator{Address: pk.Address(), VotingPower: 100, PubKey: pk}
 			validatorSet := &types.ValidatorSet{
 				Validators: []*types.Validator{validator},
 				Proposer:   validator,
@@ -170,7 +168,7 @@ func TestPruneStates(t *testing.T) {
 				err := stateStore.Save(state)
 				require.NoError(t, err)
 
-				err = stateStore.SaveFinalizeBlockResponse(h, &abci.ResponseFinalizeBlock{
+				err = stateStore.SaveFinalizeBlockResponse(h, &abci.FinalizeBlockResponse{
 					TxResults: []*abci.ExecTxResult{
 						{Data: []byte{1}},
 						{Data: []byte{2}},
@@ -283,7 +281,7 @@ func initStateStoreRetainHeights(stateStore sm.Store, appBlockRH, dcBlockRH, dcB
 	return nil
 }
 
-func fillStore(t *testing.T, height int64, stateStore sm.Store, bs *store.BlockStore, state sm.State, response1 *abci.ResponseFinalizeBlock) {
+func fillStore(t *testing.T, height int64, stateStore sm.Store, bs *store.BlockStore, state sm.State, response1 *abci.FinalizeBlockResponse) {
 	if response1 != nil {
 		for h := int64(1); h <= height; h++ {
 			err := stateStore.SaveFinalizeBlockResponse(h, response1)
@@ -294,7 +292,7 @@ func fillStore(t *testing.T, height int64, stateStore sm.Store, bs *store.BlockS
 		require.NoError(t, err)
 		// check to see if the saved response height is the same as the loaded height.
 		assert.Equal(t, lastResponse, response1)
-		// check if the abci response didnt save in the abciresponses.
+		// check if the abci response didn't save in the abciresponses.
 		responses, err := stateStore.LoadFinalizeBlockResponse(height)
 		require.NoError(t, err, responses)
 		require.Equal(t, response1, responses)
@@ -363,7 +361,7 @@ func TestABCIResPruningStandalone(t *testing.T) {
 	require.Error(t, err)
 	require.Nil(t, responses)
 	// stub the abciresponses.
-	response1 := &abci.ResponseFinalizeBlock{
+	response1 := &abci.FinalizeBlockResponse{
 		TxResults: []*abci.ExecTxResult{
 			{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
 		},
@@ -456,7 +454,7 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 		require.Error(t, err)
 		require.Nil(t, responses)
 		// stub the abciresponses.
-		response1 := &abci.ResponseFinalizeBlock{
+		response1 := &abci.FinalizeBlockResponse{
 			TxResults: []*abci.ExecTxResult{
 				{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
 			},
@@ -514,7 +512,7 @@ func TestLastFinalizeBlockResponses(t *testing.T) {
 		require.Error(t, err)
 		require.Nil(t, responses)
 		// stub the abciresponses.
-		response1 := &abci.ResponseFinalizeBlock{
+		response1 := &abci.FinalizeBlockResponse{
 			TxResults: []*abci.ExecTxResult{
 				{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
 			},
@@ -531,10 +529,10 @@ func TestLastFinalizeBlockResponses(t *testing.T) {
 		require.NoError(t, err)
 		// check to see if the saved response height is the same as the loaded height.
 		assert.Equal(t, lastResponse, response1)
-		// use an incorret height to make sure the state store errors.
+		// use an incorrect height to make sure the state store errors.
 		_, err = stateStore.LoadLastFinalizeBlockResponse(height + 1)
 		assert.Error(t, err)
-		// check if the abci response didnt save in the abciresponses.
+		// check if the abci response didn't save in the abciresponses.
 		responses, err = stateStore.LoadFinalizeBlockResponse(height)
 		require.NoError(t, err, responses)
 		require.Equal(t, response1, responses)
@@ -544,7 +542,7 @@ func TestLastFinalizeBlockResponses(t *testing.T) {
 		stateDB := dbm.NewMemDB()
 		height := int64(10)
 		// stub the second abciresponse.
-		response2 := &abci.ResponseFinalizeBlock{
+		response2 := &abci.FinalizeBlockResponse{
 			TxResults: []*abci.ExecTxResult{
 				{Code: 44, Data: []byte("Hello again"), Log: "????"},
 			},

@@ -1,8 +1,6 @@
 syntax = "proto3";
 package tendermint.services.block.v1;
 
-option go_package = "github.com/cometbft/cometbft/proto/tendermint/services/block/v1";
-
 import "tendermint/services/block/v1/block.proto";
 
 // BlockService provides information about blocks

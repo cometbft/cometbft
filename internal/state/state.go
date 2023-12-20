@@ -7,16 +7,15 @@ import (
 	"os"
 	"time"
 
-	"github.com/cosmos/gogoproto/proto"
-
-	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
-	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
+	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
+	"github.com/cosmos/gogoproto/proto"
 )
 
-// database keys
+// database keys.
 var (
 	stateKey = []byte("stateKey")
 )
@@ -81,7 +80,6 @@ type State struct {
 
 // Copy makes a copy of the State for mutating.
 func (state State) Copy() State {
-
 	return State{
 		Version:       state.Version,
 		ChainID:       state.ChainID,
@@ -130,7 +128,7 @@ func (state State) IsEmpty() bool {
 	return state.Validators == nil // XXX can't compare to Empty
 }
 
-// ToProto takes the local state type and returns the equivalent proto type
+// ToProto takes the local state type and returns the equivalent proto type.
 func (state *State) ToProto() (*cmtstate.State, error) {
 	if state == nil {
 		return nil, errors.New("state is nil")
@@ -174,7 +172,7 @@ func (state *State) ToProto() (*cmtstate.State, error) {
 	return sm, nil
 }
 
-// FromProto takes a state proto message & returns the local state type
+// FromProto takes a state proto message & returns the local state type.
 func FromProto(pb *cmtstate.State) (*State, error) { //nolint:golint
 	if pb == nil {
 		return nil, errors.New("nil State")
@@ -238,7 +236,6 @@ func (state State) MakeBlock(
 	evidence []types.Evidence,
 	proposerAddress []byte,
 ) *types.Block {
-
 	// Build base block with block data.
 	block := types.MakeBlock(height, txs, lastCommit, evidence)
 
@@ -304,11 +301,11 @@ func MakeGenesisStateFromFile(genDocFile string) (State, error) {
 func MakeGenesisDocFromFile(genDocFile string) (*types.GenesisDoc, error) {
 	genDocJSON, err := os.ReadFile(genDocFile)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't read GenesisDoc file: %v", err)
+		return nil, fmt.Errorf("couldn't read GenesisDoc file: %w", err)
 	}
 	genDoc, err := types.GenesisDocFromJSON(genDocJSON)
 	if err != nil {
-		return nil, fmt.Errorf("error reading GenesisDoc: %v", err)
+		return nil, fmt.Errorf("error reading GenesisDoc: %w", err)
 	}
 	return genDoc, nil
 }

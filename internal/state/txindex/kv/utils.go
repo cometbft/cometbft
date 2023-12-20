@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/google/orderedcode"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	idxutil "github.com/cometbft/cometbft/internal/indexer"
 	cmtsyntax "github.com/cometbft/cometbft/internal/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/internal/state/indexer"
 	"github.com/cometbft/cometbft/types"
+	"github.com/google/orderedcode"
 )
 
 type HeightInfo struct {
@@ -102,11 +101,10 @@ func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) (bool, error)
 		if err != nil || !withinBounds {
 			return false, err
 		}
-	} else {
-		if heightInfo.height != 0 && keyHeight != heightInfo.height {
-			return false, nil
-		}
+	} else if heightInfo.height != 0 && keyHeight != heightInfo.height {
+		return false, nil
 	}
+
 	return true, nil
 }
 
@@ -121,6 +119,7 @@ func int64ToBytes(i int64) []byte {
 	return buf[:n]
 }
 
+//nolint:deadcode,unused
 func getKeys(indexer *TxIndex) [][]byte {
 	var keys [][]byte
 

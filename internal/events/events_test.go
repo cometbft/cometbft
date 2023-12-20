@@ -5,10 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cometbft/cometbft/internal/rand"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/cometbft/cometbft/internal/rand"
 )
 
 // TestAddListenerForEventFireOnce sets up an EventSwitch, subscribes a single
@@ -298,7 +297,7 @@ func TestAddAndRemoveListener(t *testing.T) {
 	}
 }
 
-// TestRemoveListener does basic tests on adding and removing
+// TestRemoveListener does basic tests on adding and removing.
 func TestRemoveListener(t *testing.T) {
 	evsw := NewEventSwitch()
 	err := evsw.Start()

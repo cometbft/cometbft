@@ -82,7 +82,7 @@ Define `ChainID = TMHASH(ChainDescriptor)`. It's the unique ID of a blockchain.
 
 It should be Bech32 encoded when handled by users, eg. with `cosmoschain` prefix.
 
-#### Forks and Uprades
+#### Forks and Upgrades
 
 When a chain forks or upgrades but continues the same history, it takes a new ChainDescription as follows:
 

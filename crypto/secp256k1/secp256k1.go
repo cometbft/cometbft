@@ -10,13 +10,12 @@ import (
 
 	secp256k1 "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
-	"golang.org/x/crypto/ripemd160" //nolint: staticcheck // necessary for Bitcoin address format
-
 	"github.com/cometbft/cometbft/crypto"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
+	"golang.org/x/crypto/ripemd160" //nolint: staticcheck // necessary for Bitcoin address format
 )
 
-// -------------------------------------
+// -------------------------------------.
 const (
 	PrivKeyName = "tendermint/PrivKeySecp256k1"
 	PubKeyName  = "tendermint/PubKeySecp256k1"
@@ -152,7 +151,7 @@ const PubKeySize = 33
 // This prefix is followed with the x-coordinate.
 type PubKey []byte
 
-// Address returns a Bitcoin style addresses: RIPEMD160(SHA256(pubkey))
+// Address returns a Bitcoin style addresses: RIPEMD160(SHA256(pubkey)).
 func (pubKey PubKey) Address() crypto.Address {
 	if len(pubKey) != PubKeySize {
 		panic("length of pubkey is incorrect")
@@ -205,7 +204,7 @@ func (pubKey PubKey) VerifySignature(msg []byte, sigStr []byte) bool {
 	// see: https://github.com/ethereum/go-ethereum/blob/f9401ae011ddf7f8d2d95020b7446c17f8d98dc1/crypto/signature_nocgo.go#L90-L93
 	// Serialize() would negate S value if it is over half order.
 	// Hence, if the signature is different after Serialize() if should be rejected.
-	var modifiedSignature, parseErr = ecdsa.ParseDERSignature(signature.Serialize())
+	modifiedSignature, parseErr := ecdsa.ParseDERSignature(signature.Serialize())
 	if parseErr != nil {
 		return false
 	}

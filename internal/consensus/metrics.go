@@ -4,10 +4,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-kit/kit/metrics"
-
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/types"
+	"github.com/go-kit/kit/metrics"
 )
 
 const (
@@ -30,7 +29,7 @@ type Metrics struct {
 	Rounds metrics.Gauge
 
 	// Histogram of round duration.
-	RoundDurationSeconds metrics.Histogram `metrics_buckettype:"exprange" metrics_bucketsizes:"0.1, 100, 8"`
+	RoundDurationSeconds metrics.Histogram `metrics_bucketsizes:"0.1, 100, 8" metrics_buckettype:"exprange"`
 
 	// Number of validators.
 	Validators metrics.Gauge
@@ -71,7 +70,7 @@ type Metrics struct {
 	DuplicateVote metrics.Counter
 
 	// Histogram of durations for each step in the consensus protocol.
-	StepDurationSeconds metrics.Histogram `metrics_labels:"step" metrics_buckettype:"exprange" metrics_bucketsizes:"0.1, 100, 8"`
+	StepDurationSeconds metrics.Histogram `metrics_bucketsizes:"0.1, 100, 8" metrics_buckettype:"exprange" metrics_labels:"step"`
 	stepStart           time.Time
 
 	// Number of block parts received by the node, separated by whether the part
@@ -140,7 +139,7 @@ func (m *Metrics) MarkVoteExtensionReceived(accepted bool) {
 	m.VoteExtensionReceiveCount.With("status", status).Add(1)
 }
 
-func (m *Metrics) MarkVoteReceived(vt cmtproto.SignedMsgType, power, totalPower int64) {
+func (m *Metrics) MarkVoteReceived(vt types.SignedMsgType, power, totalPower int64) {
 	p := float64(power) / float64(totalPower)
 	n := strings.ToLower(strings.TrimPrefix(vt.String(), "SIGNED_MSG_TYPE_"))
 	m.RoundVotingPowerPercent.With("vote_type", n).Add(p)
@@ -151,16 +150,16 @@ func (m *Metrics) MarkRound(r int32, st time.Time) {
 	roundTime := time.Since(st).Seconds()
 	m.RoundDurationSeconds.Observe(roundTime)
 
-	pvt := cmtproto.PrevoteType
+	pvt := types.PrevoteType
 	pvn := strings.ToLower(strings.TrimPrefix(pvt.String(), "SIGNED_MSG_TYPE_"))
 	m.RoundVotingPowerPercent.With("vote_type", pvn).Set(0)
 
-	pct := cmtproto.PrecommitType
+	pct := types.PrecommitType
 	pcn := strings.ToLower(strings.TrimPrefix(pct.String(), "SIGNED_MSG_TYPE_"))
 	m.RoundVotingPowerPercent.With("vote_type", pcn).Set(0)
 }
 
-func (m *Metrics) MarkLateVote(vt cmtproto.SignedMsgType) {
+func (m *Metrics) MarkLateVote(vt types.SignedMsgType) {
 	n := strings.ToLower(strings.TrimPrefix(vt.String(), "SIGNED_MSG_TYPE_"))
 	m.LateVotes.With("vote_type", n).Add(1)
 }

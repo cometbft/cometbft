@@ -5,27 +5,27 @@ import (
 	"reflect"
 	"time"
 
+	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v1"
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
-	bcproto "github.com/cometbft/cometbft/proto/tendermint/blocksync"
 	"github.com/cometbft/cometbft/types"
 )
 
 const (
-	// BlocksyncChannel is a channel for blocks and status updates (`BlockStore` height)
+	// BlocksyncChannel is a channel for blocks and status updates (`BlockStore` height).
 	BlocksyncChannel = byte(0x40)
 
 	trySyncIntervalMS = 10
 
 	// stop syncing when last block's time is
 	// within this much of the system time.
-	// stopSyncingDurationMinutes = 10
+	// stopSyncingDurationMinutes = 10.
 
-	// ask for best height every 10s
+	// ask for best height every 10s.
 	statusUpdateIntervalSeconds = 10
-	// check if we should switch to consensus reactor
+	// check if we should switch to consensus reactor.
 	switchToConsensusIntervalSeconds = 1
 )
 
@@ -153,7 +153,7 @@ func (bcR *Reactor) OnStop() {
 	}
 }
 
-// GetChannels implements Reactor
+// GetChannels implements Reactor.
 func (bcR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 	return []*p2p.ChannelDescriptor{
 		{
@@ -339,7 +339,6 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 			case <-statusUpdateTicker.C:
 				// ask for status updates
 				go bcR.BroadcastStatusRequest()
-
 			}
 		}
 	}()
@@ -471,10 +470,8 @@ FOR_LOOP:
 				// if vote extensions were required at this height, ensure they exist.
 				if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
 					err = extCommit.EnsureExtensions(true)
-				} else {
-					if extCommit != nil {
-						err = fmt.Errorf("received non-nil extCommit for height %d (extensions disabled)", first.Height)
-					}
+				} else if extCommit != nil {
+					err = fmt.Errorf("received non-nil extCommit for height %d (extensions disabled)", first.Height)
 				}
 			}
 			if err != nil {

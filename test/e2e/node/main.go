@@ -7,10 +7,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
-
-	"github.com/spf13/viper"
 
 	"github.com/cometbft/cometbft/abci/server"
 	"github.com/cometbft/cometbft/config"
@@ -29,6 +28,7 @@ import (
 	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
 	"github.com/cometbft/cometbft/test/e2e/app"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/spf13/viper"
 )
 
 var logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
@@ -277,7 +277,7 @@ func setupNode() (*config.Config, log.Logger, *p2p.NodeKey, error) {
 }
 
 // rpcEndpoints takes a list of persistent peers and splits them into a list of rpc endpoints
-// using 26657 as the port number
+// using 26657 as the port number.
 func rpcEndpoints(peers string) []string {
 	arr := strings.Split(peers, ",")
 	endpoints := make([]string, len(arr))
@@ -286,7 +286,7 @@ func rpcEndpoints(peers string) []string {
 		hostName := strings.Split(urlString, ":26656")[0]
 		// use RPC port instead
 		port := 26657
-		rpcEndpoint := "http://" + hostName + ":" + fmt.Sprint(port)
+		rpcEndpoint := "http://" + hostName + ":" + strconv.Itoa(port)
 		endpoints[i] = rpcEndpoint
 	}
 	return endpoints

@@ -19,14 +19,14 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 
+	cmtstore "github.com/cometbft/cometbft/api/cometbft/store/v1"
+	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtstore "github.com/cometbft/cometbft/proto/tendermint/store"
-	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
@@ -92,9 +92,14 @@ func TestLoadBlockStoreState(t *testing.T) {
 
 	for _, tc := range testCases {
 		db := dbm.NewMemDB()
-		SaveBlockStoreState(tc.bss, db)
+		batch := db.NewBatch()
+		SaveBlockStoreState(tc.bss, batch)
+		err := batch.WriteSync()
+		require.NoError(t, err)
 		retrBSJ := LoadBlockStoreState(db)
 		assert.Equal(t, tc.want, retrBSJ, "expected the retrieved DBs to match: %s", tc.testName)
+		err = batch.Close()
+		require.NoError(t, err)
 	}
 }
 
@@ -608,7 +613,7 @@ func TestPruningService(t *testing.T) {
 	// Generate a bunch of state data.
 	// This is needed because the pruning is expecting to load the state from the database thus
 	// We have to have acceptable values for all fields of the state
-	validator := &types.Validator{Address: cmtrand.Bytes(crypto.AddressSize), VotingPower: 100, PubKey: pk}
+	validator := &types.Validator{Address: pk.Address(), VotingPower: 100, PubKey: pk}
 	validatorSet := &types.ValidatorSet{
 		Validators: []*types.Validator{validator},
 		Proposer:   validator,

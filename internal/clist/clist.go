@@ -166,7 +166,7 @@ func (e *CElement) SetNext(newNext *CElement) {
 		// If a WaitGroup is reused to wait for several independent sets of
 		// events, new Add calls must happen after all previous Wait calls have
 		// returned.
-		e.nextWg = waitGroup1() // WaitGroups are difficult to re-use.
+		e.nextWg = waitGroup1() // WaitGroups are difficult to reuse.
 		e.nextWaitCh = make(chan struct{})
 	}
 	if oldNext == nil && newNext != nil {
@@ -177,14 +177,14 @@ func (e *CElement) SetNext(newNext *CElement) {
 }
 
 // NOTE: This function needs to be safe for
-// concurrent goroutines waiting on prevWg
+// concurrent goroutines waiting on prevWg.
 func (e *CElement) SetPrev(newPrev *CElement) {
 	e.mtx.Lock()
 
 	oldPrev := e.prev
 	e.prev = newPrev
 	if oldPrev != nil && newPrev == nil {
-		e.prevWg = waitGroup1() // WaitGroups are difficult to re-use.
+		e.prevWg = waitGroup1() // WaitGroups are difficult to reuse.
 		e.prevWaitCh = make(chan struct{})
 	}
 	if oldPrev == nil && newPrev != nil {
@@ -374,7 +374,7 @@ func (l *CList) Remove(e *CElement) interface{} {
 
 	// If we're removing the only item, make CList FrontWait/BackWait wait.
 	if l.curLen == 1 {
-		l.wg = waitGroup1() // WaitGroups are difficult to re-use.
+		l.wg = waitGroup1() // WaitGroups are difficult to reuse.
 		l.waitCh = make(chan struct{})
 	}
 

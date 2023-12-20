@@ -6,14 +6,12 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net"
+	_ "net/http/pprof" //nolint: gosec // securely exposed on separate, optional port
 	"os"
 	"strings"
 	"time"
 
-	_ "net/http/pprof" //nolint: gosec // securely exposed on separate, optional port
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
@@ -21,12 +19,11 @@ import (
 	"github.com/cometbft/cometbft/internal/blocksync"
 	cs "github.com/cometbft/cometbft/internal/consensus"
 	"github.com/cometbft/cometbft/internal/evidence"
-	"github.com/cometbft/cometbft/internal/statesync"
-
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/state/indexer"
 	"github.com/cometbft/cometbft/internal/state/indexer/block"
 	"github.com/cometbft/cometbft/internal/state/txindex"
+	"github.com/cometbft/cometbft/internal/statesync"
 	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
@@ -37,7 +34,6 @@ import (
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
-
 	_ "github.com/lib/pq" // provide the psql db driver
 )
 
@@ -120,7 +116,7 @@ func DefaultMetricsProvider(config *cfg.InstrumentationConfig) MetricsProvider {
 }
 
 type blockSyncReactor interface {
-	SwitchToBlockSync(sm.State) error
+	SwitchToBlockSync(state sm.State) error
 }
 
 //------------------------------------------------------------------------------
@@ -382,7 +378,7 @@ func createTransport(
 			connFilters,
 			// ABCI query for address filtering.
 			func(_ p2p.ConnSet, c net.Conn, _ []net.IP) error {
-				res, err := proxyApp.Query().Query(context.TODO(), &abci.RequestQuery{
+				res, err := proxyApp.Query().Query(context.TODO(), &abci.QueryRequest{
 					Path: fmt.Sprintf("/p2p/filter/addr/%s", c.RemoteAddr().String()),
 				})
 				if err != nil {
@@ -400,7 +396,7 @@ func createTransport(
 			peerFilters,
 			// ABCI query for ID filtering.
 			func(_ p2p.IPeerSet, p p2p.Peer) error {
-				res, err := proxyApp.Query().Query(context.TODO(), &abci.RequestQuery{
+				res, err := proxyApp.Query().Query(context.TODO(), &abci.QueryRequest{
 					Path: fmt.Sprintf("/p2p/filter/id/%s", p.ID()),
 				})
 				if err != nil {

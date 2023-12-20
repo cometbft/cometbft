@@ -6,14 +6,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
-
-	"github.com/cosmos/gogoproto/proto"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/pubsub/query"
 	"github.com/cometbft/cometbft/types"
+	"github.com/cosmos/gogoproto/proto"
 )
 
 const (
@@ -165,7 +165,7 @@ INSERT INTO `+tableBlocks+` (height, chain_id, created_at)
 
 		// Insert the special block meta-event for height.
 		if err := insertEvents(dbtx, blockID, 0, []abci.Event{
-			makeIndexedEvent(types.BlockHeightKey, fmt.Sprint(h.Height)),
+			makeIndexedEvent(types.BlockHeightKey, strconv.FormatInt(h.Height, 10)),
 		}); err != nil {
 			return fmt.Errorf("block meta-events: %w", err)
 		}
@@ -216,7 +216,7 @@ INSERT INTO `+tableTxResults+` (block_id, index, created_at, tx_hash, tx_result)
 			// Insert the special transaction meta-events for hash and height.
 			if err := insertEvents(dbtx, blockID, txID, []abci.Event{
 				makeIndexedEvent(types.TxHashKey, txHash),
-				makeIndexedEvent(types.TxHeightKey, fmt.Sprint(txr.Height)),
+				makeIndexedEvent(types.TxHeightKey, strconv.FormatInt(txr.Height, 10)),
 			}); err != nil {
 				return fmt.Errorf("indexing transaction meta-events: %w", err)
 			}

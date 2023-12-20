@@ -6,24 +6,23 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cosmos/gogoproto/proto"
-
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/go-kit/kit/metrics"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
+	"github.com/cosmos/gogoproto/proto"
 )
 
 const (
 	// persist validators every valSetCheckpointInterval blocks to avoid
 	// LoadValidators taking too much time.
 	// https://github.com/tendermint/tendermint/pull/3438
-	// 100000 results in ~ 100ms to get 100 validators (see BenchmarkLoadValidators)
+	// 100000 results in ~ 100ms to get 100 validators (see BenchmarkLoadValidators).
 	valSetCheckpointInterval = 100000
 )
 
@@ -59,28 +58,28 @@ var (
 // Store defines the state store interface
 //
 // It is used to retrieve current state and save and load ABCI responses,
-// validators and consensus parameters
+// validators and consensus parameters.
 type Store interface {
 	// LoadFromDBOrGenesisFile loads the most recent state.
 	// If the chain is new it will use the genesis file from the provided genesis file path as the current state.
-	LoadFromDBOrGenesisFile(string) (State, error)
+	LoadFromDBOrGenesisFile(filepath string) (State, error)
 	// LoadFromDBOrGenesisDoc loads the most recent state.
 	// If the chain is new it will use the genesis doc as the current state.
-	LoadFromDBOrGenesisDoc(*types.GenesisDoc) (State, error)
+	LoadFromDBOrGenesisDoc(doc *types.GenesisDoc) (State, error)
 	// Load loads the current state of the blockchain
 	Load() (State, error)
 	// LoadValidators loads the validator set at a given height
 	LoadValidators(height int64) (*types.ValidatorSet, error)
 	// LoadFinalizeBlockResponse loads the abciResponse for a given height
-	LoadFinalizeBlockResponse(height int64) (*abci.ResponseFinalizeBlock, error)
+	LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error)
 	// LoadLastABCIResponse loads the last abciResponse for a given height
-	LoadLastFinalizeBlockResponse(height int64) (*abci.ResponseFinalizeBlock, error)
+	LoadLastFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error)
 	// LoadConsensusParams loads the consensus params for a given height
 	LoadConsensusParams(height int64) (types.ConsensusParams, error)
 	// Save overwrites the previous state with the updated one
 	Save(state State) error
 	// SaveFinalizeBlockResponse saves ABCIResponses for a given height
-	SaveFinalizeBlockResponse(height int64, res *abci.ResponseFinalizeBlock) error
+	SaveFinalizeBlockResponse(height int64, res *abci.FinalizeBlockResponse) error
 	// Bootstrap is used for bootstrapping state when not starting from a initial height.
 	Bootstrap(state State) error
 	// PruneStates takes the height from which to start pruning and which height stop at
@@ -107,7 +106,7 @@ type Store interface {
 	Close() error
 }
 
-// dbStore wraps a db (github.com/cometbft/cometbft-db)
+// dbStore wraps a db (github.com/cometbft/cometbft-db).
 type dbStore struct {
 	db dbm.DB
 
@@ -229,36 +228,50 @@ func (store dbStore) Save(state State) error {
 }
 
 func (store dbStore) save(state State, key []byte) error {
+	batch := store.db.NewBatch()
+	defer func(batch dbm.Batch) {
+		err := batch.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(batch)
 	nextHeight := state.LastBlockHeight + 1
 	// If first block, save validators for the block.
 	if nextHeight == 1 {
 		nextHeight = state.InitialHeight
 		// This extra logic due to validator set changes being delayed 1 block.
 		// It may get overwritten due to InitChain validator updates.
-		if err := store.saveValidatorsInfo(nextHeight, nextHeight, state.Validators); err != nil {
+		if err := store.saveValidatorsInfo(nextHeight, nextHeight, state.Validators, batch); err != nil {
 			return err
 		}
 	}
 	// Save next validators.
-	if err := store.saveValidatorsInfo(nextHeight+1, state.LastHeightValidatorsChanged, state.NextValidators); err != nil {
+	if err := store.saveValidatorsInfo(nextHeight+1, state.LastHeightValidatorsChanged, state.NextValidators, batch); err != nil {
 		return err
 	}
-
 	// Save next consensus params.
 	if err := store.saveConsensusParamsInfo(nextHeight,
-		state.LastHeightConsensusParamsChanged, state.ConsensusParams); err != nil {
+		state.LastHeightConsensusParamsChanged, state.ConsensusParams, batch); err != nil {
 		return err
 	}
-	err := store.db.SetSync(key, state.Bytes())
-	if err != nil {
+	if err := batch.Set(key, state.Bytes()); err != nil {
 		return err
 	}
-
+	if err := batch.WriteSync(); err != nil {
+		panic(err)
+	}
 	return nil
 }
 
 // BootstrapState saves a new state, used e.g. by state sync when starting from non-zero height.
 func (store dbStore) Bootstrap(state State) error {
+	batch := store.db.NewBatch()
+	defer func(batch dbm.Batch) {
+		err := batch.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(batch)
 	height := state.LastBlockHeight + 1
 	defer addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "bootstrap"))()
 	if height == 1 {
@@ -266,25 +279,33 @@ func (store dbStore) Bootstrap(state State) error {
 	}
 
 	if height > 1 && !state.LastValidators.IsNilOrEmpty() {
-		if err := store.saveValidatorsInfo(height-1, height-1, state.LastValidators); err != nil {
+		if err := store.saveValidatorsInfo(height-1, height-1, state.LastValidators, batch); err != nil {
 			return err
 		}
 	}
 
-	if err := store.saveValidatorsInfo(height, height, state.Validators); err != nil {
+	if err := store.saveValidatorsInfo(height, height, state.Validators, batch); err != nil {
 		return err
 	}
 
-	if err := store.saveValidatorsInfo(height+1, height+1, state.NextValidators); err != nil {
+	if err := store.saveValidatorsInfo(height+1, height+1, state.NextValidators, batch); err != nil {
 		return err
 	}
 
 	if err := store.saveConsensusParamsInfo(height,
-		state.LastHeightConsensusParamsChanged, state.ConsensusParams); err != nil {
+		state.LastHeightConsensusParamsChanged, state.ConsensusParams, batch); err != nil {
 		return err
 	}
 
-	return store.db.SetSync(stateKey, state.Bytes())
+	if err := batch.Set(stateKey, state.Bytes()); err != nil {
+		return err
+	}
+
+	if err := batch.WriteSync(); err != nil {
+		panic(err)
+	}
+
+	return batch.Close()
 }
 
 // PruneStates deletes states between the given heights (including from, excluding to). It is not
@@ -475,7 +496,7 @@ func (store dbStore) PruneABCIResponses(targetRetainHeight int64) (int64, int64,
 // TxResultsHash returns the root hash of a Merkle tree of
 // ExecTxResulst responses (see ABCIResults.Hash)
 //
-// See merkle.SimpleHashFromByteSlices
+// See merkle.SimpleHashFromByteSlices.
 func TxResultsHash(txResults []*abci.ExecTxResult) []byte {
 	return types.NewResults(txResults).Hash()
 }
@@ -483,11 +504,11 @@ func TxResultsHash(txResults []*abci.ExecTxResult) []byte {
 // LoadFinalizeBlockResponse loads the DiscardABCIResponses for the given height from the
 // database. If the node has D set to true, ErrABCIResponsesNotPersisted
 // is persisted. If not found, ErrNoABCIResponsesForHeight is returned.
-func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.ResponseFinalizeBlock, error) {
-	defer addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "load_abci_responses"))()
+func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error) {
 	if store.DiscardABCIResponses {
 		return nil, ErrFinalizeBlockResponsesNotPersisted
 	}
+	defer addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "load_abci_responses"))()
 
 	buf, err := store.db.Get(calcABCIResponsesKey(height))
 	if err != nil {
@@ -497,7 +518,7 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.ResponseFina
 		return nil, ErrNoABCIResponsesForHeight{height}
 	}
 
-	resp := new(abci.ResponseFinalizeBlock)
+	resp := new(abci.FinalizeBlockResponse)
 	err = resp.Unmarshal(buf)
 	if err != nil {
 		// The data might be of the legacy ABCI response type, so
@@ -510,7 +531,7 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.ResponseFina
 					changed: %v\n`, err))
 		}
 		// The state store contains the old format. Migrate to
-		// the new ResponseFinalizeBlock format. Note that the
+		// the new FinalizeBlockResponse format. Note that the
 		// new struct expects the AppHash which we don't have.
 		return responseFinalizeBlockFromLegacy(legacyResp), nil
 	}
@@ -526,7 +547,7 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.ResponseFina
 //
 // This method is used for recovering in the case that we called the Commit ABCI
 // method on the application but crashed before persisting the results.
-func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.ResponseFinalizeBlock, error) {
+func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error) {
 	defer addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "load_last_abci_response"))()
 	bz, err := store.db.Get(lastABCIResponseKey)
 	if err != nil {
@@ -550,9 +571,9 @@ func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.Response
 	}
 
 	// It is possible if this is called directly after an upgrade that
-	// ResponseFinalizeBlock is nil. In which case we use the legacy
+	// FinalizeBlockResponse is nil. In which case we use the legacy
 	// ABCI responses
-	if info.ResponseFinalizeBlock == nil {
+	if info.FinalizeBlock == nil {
 		// sanity check
 		if info.LegacyAbciResponses == nil {
 			panic("state store contains last abci response but it is empty")
@@ -560,16 +581,16 @@ func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.Response
 		return responseFinalizeBlockFromLegacy(info.LegacyAbciResponses), nil
 	}
 
-	return info.ResponseFinalizeBlock, nil
+	return info.FinalizeBlock, nil
 }
 
-// SaveFinalizeBlockResponse persists the ResponseFinalizeBlock to the database.
+// SaveFinalizeBlockResponse persists the FinalizeBlockResponse to the database.
 // This is useful in case we crash after app.Commit and before s.Save().
 // Responses are indexed by height so they can also be loaded later to produce
 // Merkle proofs.
 //
 // CONTRACT: height must be monotonically increasing every time this is called.
-func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.ResponseFinalizeBlock) error {
+func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.FinalizeBlockResponse) error {
 	defer addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "save_abci_responses"))()
 	var dtxs []*abci.ExecTxResult
 	// strip nil values,
@@ -595,8 +616,8 @@ func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.Response
 	// We always save the last ABCI response for crash recovery.
 	// This overwrites the previous saved ABCI Response.
 	response := &cmtstate.ABCIResponsesInfo{
-		ResponseFinalizeBlock: resp,
-		Height:                height,
+		FinalizeBlock: resp,
+		Height:        height,
 	}
 	bz, err := response.Marshal()
 	if err != nil {
@@ -618,7 +639,7 @@ func (store dbStore) getValue(key []byte) ([]byte, error) {
 	return bz, nil
 }
 
-// ApplicationRetainHeight
+// ApplicationRetainHeight.
 func (store dbStore) SaveApplicationRetainHeight(height int64) error {
 	return store.db.SetSync(AppRetainHeightKey, int64ToBytes(height))
 }
@@ -637,7 +658,7 @@ func (store dbStore) GetApplicationRetainHeight() (int64, error) {
 	return height, nil
 }
 
-// DataCompanionRetainHeight
+// DataCompanionRetainHeight.
 func (store dbStore) SaveCompanionBlockRetainHeight(height int64) error {
 	return store.db.SetSync(CompanionBlockRetainHeightKey, int64ToBytes(height))
 }
@@ -656,7 +677,7 @@ func (store dbStore) GetCompanionBlockRetainHeight() (int64, error) {
 	return height, nil
 }
 
-// DataCompanionRetainHeight
+// DataCompanionRetainHeight.
 func (store dbStore) SaveABCIResRetainHeight(height int64) error {
 	return store.db.SetSync(ABCIResultsRetainHeightKey, int64ToBytes(height))
 }
@@ -769,7 +790,7 @@ func loadValidatorsInfo(db dbm.DB, height int64) (*cmtstate.ValidatorsInfo, erro
 // `height` is the effective height for which the validator is responsible for
 // signing. It should be called from s.Save(), right before the state itself is
 // persisted.
-func (store dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet *types.ValidatorSet) error {
+func (store dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet *types.ValidatorSet, batch dbm.Batch) error {
 	if lastHeightChanged > height {
 		return errors.New("lastHeightChanged cannot be greater than ValidatorsInfo height")
 	}
@@ -791,7 +812,7 @@ func (store dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet 
 		return err
 	}
 
-	err = store.db.Set(calcValidatorsKey(height), bz)
+	err = batch.Set(calcValidatorsKey(height), bz)
 	if err != nil {
 		return err
 	}
@@ -856,7 +877,7 @@ func (store dbStore) loadConsensusParamsInfo(height int64) (*cmtstate.ConsensusP
 // It should be called from s.Save(), right before the state itself is persisted.
 // If the consensus params did not change after processing the latest block,
 // only the last height for which they changed is persisted.
-func (store dbStore) saveConsensusParamsInfo(nextHeight, changeHeight int64, params types.ConsensusParams) error {
+func (store dbStore) saveConsensusParamsInfo(nextHeight, changeHeight int64, params types.ConsensusParams, batch dbm.Batch) error {
 	paramsInfo := &cmtstate.ConsensusParamsInfo{
 		LastHeightChanged: changeHeight,
 	}
@@ -869,7 +890,7 @@ func (store dbStore) saveConsensusParamsInfo(nextHeight, changeHeight int64, par
 		return err
 	}
 
-	err = store.db.Set(calcConsensusParamsKey(nextHeight), bz)
+	err = batch.Set(calcConsensusParamsKey(nextHeight), bz)
 	if err != nil {
 		return err
 	}
@@ -885,7 +906,7 @@ func (store dbStore) SetOfflineStateSyncHeight(height int64) error {
 	return nil
 }
 
-// Gets the height at which the store is bootstrapped after out of band statesync
+// Gets the height at which the store is bootstrapped after out of band statesync.
 func (store dbStore) GetOfflineStateSyncHeight() (int64, error) {
 	buf, err := store.db.Get(offlineStateSyncHeight)
 	if err != nil {
@@ -915,9 +936,9 @@ func min(a int64, b int64) int64 {
 }
 
 // responseFinalizeBlockFromLegacy is a convenience function that takes the old abci responses and morphs
-// it to the finalize block response. Note that the app hash is missing
-func responseFinalizeBlockFromLegacy(legacyResp *cmtstate.LegacyABCIResponses) *abci.ResponseFinalizeBlock {
-	return &abci.ResponseFinalizeBlock{
+// it to the finalize block response. Note that the app hash is missing.
+func responseFinalizeBlockFromLegacy(legacyResp *cmtstate.LegacyABCIResponses) *abci.FinalizeBlockResponse {
+	return &abci.FinalizeBlockResponse{
 		TxResults:             legacyResp.DeliverTxs,
 		ValidatorUpdates:      legacyResp.EndBlock.ValidatorUpdates,
 		ConsensusParamUpdates: legacyResp.EndBlock.ConsensusParamUpdates,
@@ -927,7 +948,7 @@ func responseFinalizeBlockFromLegacy(legacyResp *cmtstate.LegacyABCIResponses) *
 	}
 }
 
-// ----- Util
+// ----- Util.
 func int64FromBytes(bz []byte) int64 {
 	v, _ := binary.Varint(bz)
 	return v

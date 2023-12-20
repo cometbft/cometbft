@@ -57,7 +57,7 @@ Arguments in favor of leaving evidence handling in Tendermint:
   Validators must submit all the votes they saw for the relevant consensus
   height to justify their precommits. This is quite specific to the Tendermint
   protocol and may change if the protocol is upgraded. Hence it would be awkward
-  to co-ordinate this from the app.
+  to coordinate this from the app.
 
 3) Evidence gossipping is similar to tx gossipping, but it should be higher
   priority. Since the mempool does not support any notion of priority yet,

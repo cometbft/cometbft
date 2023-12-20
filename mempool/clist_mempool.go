@@ -3,6 +3,7 @@ package mempool
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -146,7 +147,7 @@ func (mem *CListMempool) removeAllTxs() {
 	})
 }
 
-// NOTE: not thread safe - should only be called once, on startup
+// NOTE: not thread safe - should only be called once, on startup.
 func (mem *CListMempool) EnableTxsAvailable() {
 	mem.txsAvailable = make(chan struct{}, 1)
 }
@@ -289,7 +290,10 @@ func (mem *CListMempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
 	}
 	mem.logger.Debug("Cached", "tx", tx)
 
-	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{Tx: tx})
+	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.CheckTxRequest{
+		Tx:   tx,
+		Type: abci.CHECK_TX_TYPE_CHECK,
+	})
 	if err != nil {
 		mem.logger.Error("RequestCheckTx", "err", err)
 		return nil, ErrCheckTxAsync{Err: err}
@@ -302,20 +306,24 @@ func (mem *CListMempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
 func (mem *CListMempool) globalCb(req *abci.Request, res *abci.Response) {
 	switch res.Value.(type) {
 	case *abci.Response_CheckTx:
-		switch req.GetCheckTx().GetType() {
-		case abci.CheckTxType_New:
+		checkType := req.GetCheckTx().GetType()
+		switch checkType {
+		case abci.CHECK_TX_TYPE_CHECK:
 			if mem.recheckCursor != nil {
 				// this should never happen
 				panic("recheck cursor is not nil before resCbFirstTime")
 			}
 			mem.resCbFirstTime(req.GetCheckTx().Tx, res)
 
-		case abci.CheckTxType_Recheck:
+		case abci.CHECK_TX_TYPE_RECHECK:
 			if mem.recheckCursor == nil {
 				return
 			}
 			mem.metrics.RecheckTimes.Add(1)
 			mem.resCbRecheck(req, res)
+
+		default:
+			panic(fmt.Sprintf("unexpected value %d of RequestCheckTx.type", checkType))
 		}
 
 		// update metrics
@@ -499,7 +507,7 @@ func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 			// Done!
 			mem.logger.Debug("done rechecking txs")
 
-			// incase the recheck removed all txs
+			// in case the recheck removed all txs
 			if mem.Size() > 0 {
 				mem.notifyTxsAvailable()
 			}
@@ -587,7 +595,7 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 }
 
 // Lock() must be help by the caller during execution.
-// TODO: this function always returns nil; remove the return value
+// TODO: this function always returns nil; remove the return value.
 func (mem *CListMempool) Update(
 	height int64,
 	txs types.Txs,
@@ -664,9 +672,9 @@ func (mem *CListMempool) recheckTxs() {
 	// NOTE: globalCb may be called concurrently.
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
 		memTx := e.Value.(*mempoolTx)
-		_, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{
+		_, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.CheckTxRequest{
 			Tx:   memTx.tx,
-			Type: abci.CheckTxType_Recheck,
+			Type: abci.CHECK_TX_TYPE_RECHECK,
 		})
 		if err != nil {
 			mem.logger.Error("recheckTx", err, "err")

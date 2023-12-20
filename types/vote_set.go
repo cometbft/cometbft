@@ -8,7 +8,6 @@ import (
 	"github.com/cometbft/cometbft/internal/bits"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 const (
@@ -62,7 +61,7 @@ type VoteSet struct {
 	chainID           string
 	height            int64
 	round             int32
-	signedMsgType     cmtproto.SignedMsgType
+	signedMsgType     SignedMsgType
 	valSet            *ValidatorSet
 	extensionsEnabled bool
 
@@ -78,7 +77,8 @@ type VoteSet struct {
 // NewVoteSet instantiates all fields of a new vote set. This constructor requires
 // that no vote extension data be present on the votes that are added to the set.
 func NewVoteSet(chainID string, height int64, round int32,
-	signedMsgType cmtproto.SignedMsgType, valSet *ValidatorSet) *VoteSet {
+	signedMsgType SignedMsgType, valSet *ValidatorSet,
+) *VoteSet {
 	if height == 0 {
 		panic("Cannot make VoteSet for height == 0, doesn't make sense.")
 	}
@@ -101,7 +101,8 @@ func NewVoteSet(chainID string, height int64, round int32,
 // The VoteSet constructed with NewExtendedVoteSet verifies the vote extension
 // data for every vote added to the set.
 func NewExtendedVoteSet(chainID string, height int64, round int32,
-	signedMsgType cmtproto.SignedMsgType, valSet *ValidatorSet) *VoteSet {
+	signedMsgType SignedMsgType, valSet *ValidatorSet,
+) *VoteSet {
 	vs := NewVoteSet(chainID, height, round, signedMsgType, valSet)
 	vs.extensionsEnabled = true
 	return vs
@@ -153,7 +154,7 @@ func (voteSet *VoteSet) Size() int {
 // Conflicting votes return added=*, err=ErrVoteConflictingVotes.
 // NOTE: vote should not be mutated after adding.
 // NOTE: VoteSet must not be nil
-// NOTE: Vote must not be nil
+// NOTE: Vote must not be nil.
 func (voteSet *VoteSet) AddVote(vote *Vote) (added bool, err error) {
 	if voteSet == nil {
 		panic("AddVote() on nil VoteSet")
@@ -330,7 +331,7 @@ func (voteSet *VoteSet) addVerifiedVote(
 // NOTE: if there are too many peers, or too much peer churn,
 // this can cause memory issues.
 // TODO: implement ability to remove peers too
-// NOTE: VoteSet must not be nil
+// NOTE: VoteSet must not be nil.
 func (voteSet *VoteSet) SetPeerMaj23(peerID P2PID, blockID BlockID) error {
 	if voteSet == nil {
 		panic("SetPeerMaj23() on nil VoteSet")
@@ -441,7 +442,7 @@ func (voteSet *VoteSet) IsCommit() bool {
 	if voteSet == nil {
 		return false
 	}
-	if voteSet.signedMsgType != cmtproto.PrecommitType {
+	if voteSet.signedMsgType != PrecommitType {
 		return false
 	}
 	voteSet.mtx.Lock()
@@ -543,7 +544,7 @@ func (voteSet *VoteSet) MarshalJSON() ([]byte, error) {
 
 // More human readable JSON of the vote set
 // NOTE: insufficient for unmarshalling from (compressed votes)
-// TODO: make the peerMaj23s nicer to read (eg just the block hash)
+// TODO: make the peerMaj23s nicer to read (eg just the block hash).
 type VoteSetJSON struct {
 	Votes         []string          `json:"votes"`
 	VotesBitArray string            `json:"votes_bit_array"`
@@ -552,7 +553,7 @@ type VoteSetJSON struct {
 
 // BitArrayString returns the bit-array of votes including
 // the fraction of power that has voted like:
-// "BA{29:xx__x__x_x___x__x_______xxx__} 856/1304 = 0.66"
+// "BA{29:xx__x__x_x___x__x_______xxx__} 856/1304 = 0.66".
 func (voteSet *VoteSet) BitArrayString() string {
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
@@ -592,7 +593,7 @@ func (voteSet *VoteSet) voteStrings() []string {
 // 4. first 2/3+ majority
 // 5. fraction of voted power
 // 6. votes bit array
-// 7. 2/3+ majority for each peer
+// 7. 2/3+ majority for each peer.
 func (voteSet *VoteSet) StringShort() string {
 	if voteSet == nil {
 		return nilVoteSetString
@@ -617,7 +618,7 @@ func (voteSet *VoteSet) LogString() string {
 	return fmt.Sprintf("Votes:%d/%d(%.3f)", voted, total, frac)
 }
 
-// sumTotalFrac returns the power voted, the total, and the fraction
+// sumTotalFrac returns the power voted, the total, and the fraction.
 func (voteSet *VoteSet) sumTotalFrac() (int64, int64, float64) {
 	voted, total := voteSet.sum, voteSet.valSet.TotalVotingPower()
 	fracVoted := float64(voted) / float64(total)
@@ -636,7 +637,7 @@ func (voteSet *VoteSet) MakeExtendedCommit(ap ABCIParams) *ExtendedCommit {
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
 
-	if voteSet.signedMsgType != cmtproto.PrecommitType {
+	if voteSet.signedMsgType != PrecommitType {
 		panic("Cannot MakeExtendCommit() unless VoteSet.Type is PrecommitType")
 	}
 
@@ -676,7 +677,7 @@ func (voteSet *VoteSet) MakeExtendedCommit(ap ABCIParams) *ExtendedCommit {
 Votes for a particular block
 There are two ways a *blockVotes gets created for a blockKey.
 1. first (non-conflicting) vote of a validator w/ blockKey (peerMaj23=false)
-2. A peer claims to have a 2/3 majority w/ blockKey (peerMaj23=true)
+2. A peer claims to have a 2/3 majority w/ blockKey (peerMaj23=true).
 */
 type blockVotes struct {
 	peerMaj23 bool           // peer claims to have maj23
@@ -712,13 +713,13 @@ func (vs *blockVotes) getByIndex(index int32) *Vote {
 
 //--------------------------------------------------------------------------------
 
-// Common interface between *consensus.VoteSet and types.Commit
+// Common interface between *consensus.VoteSet and types.Commit.
 type VoteSetReader interface {
 	GetHeight() int64
 	GetRound() int32
 	Type() byte
 	Size() int
 	BitArray() *bits.BitArray
-	GetByIndex(int32) *Vote
+	GetByIndex(idx int32) *Vote
 	IsCommit() bool
 }

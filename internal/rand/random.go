@@ -284,7 +284,7 @@ func (r *Rand) Intn(n int) int {
 	return i
 }
 
-// Bool returns a uniformly random boolean
+// Bool returns a uniformly random boolean.
 func (r *Rand) Bool() bool {
 	// See https://github.com/golang/go/issues/23804#issuecomment-365370418
 	// for reasoning behind computing like this

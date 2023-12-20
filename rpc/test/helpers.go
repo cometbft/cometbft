@@ -9,11 +9,10 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/test"
-	"github.com/cometbft/cometbft/libs/log"
-
 	cfg "github.com/cometbft/cometbft/config"
 	cmtnet "github.com/cometbft/cometbft/internal/net"
+	"github.com/cometbft/cometbft/internal/test"
+	"github.com/cometbft/cometbft/libs/log"
 	nm "github.com/cometbft/cometbft/node"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
@@ -55,7 +54,7 @@ func waitForRPC() {
 	}
 }
 
-// f**ing long, but unique for each test
+// f**ing long, but unique for each test.
 func makePathname() string {
 	// get path
 	p, err := os.Getwd()
@@ -97,7 +96,7 @@ func createConfig() *cfg.Config {
 	return c
 }
 
-// GetConfig returns a config for the test cases as a singleton
+// GetConfig returns a config for the test cases as a singleton.
 func GetConfig(forceCreate ...bool) *cfg.Config {
 	if globalConfig == nil || (len(forceCreate) > 0 && forceCreate[0]) {
 		globalConfig = createConfig()
@@ -105,7 +104,7 @@ func GetConfig(forceCreate ...bool) *cfg.Config {
 	return globalConfig
 }
 
-// StartCometBFT starts a test CometBFT server in a go routine and returns when it is initialized
+// StartCometBFT starts a test CometBFT server in a go routine and returns when it is initialized.
 func StartCometBFT(app abci.Application, opts ...func(*Options)) *nm.Node {
 	nodeOpts := defaultOptions
 	for _, opt := range opts {
@@ -137,7 +136,7 @@ func StopCometBFT(node *nm.Node) {
 	os.RemoveAll(node.Config().RootDir)
 }
 
-// NewCometBFT creates a new CometBFT server and sleeps forever
+// NewCometBFT creates a new CometBFT server and sleeps forever.
 func NewCometBFT(app abci.Application, opts *Options) *nm.Node {
 	// Create & start node
 	config := GetConfig(opts.recreateConfig)

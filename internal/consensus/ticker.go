@@ -18,7 +18,7 @@ type TimeoutTicker interface {
 	Chan() <-chan timeoutInfo       // on which to receive a timeout
 	ScheduleTimeout(ti timeoutInfo) // reset the timer
 
-	SetLogger(log.Logger)
+	SetLogger(l log.Logger)
 }
 
 // timeoutTicker wraps time.Timer,
@@ -73,7 +73,7 @@ func (t *timeoutTicker) ScheduleTimeout(ti timeoutInfo) {
 
 //-------------------------------------------------------------
 
-// stop the timer and drain if necessary
+// stop the timer and drain if necessary.
 func (t *timeoutTicker) stopTimer() {
 	// Stop() returns false if it was already fired or was stopped
 	if !t.timer.Stop() {
@@ -86,8 +86,8 @@ func (t *timeoutTicker) stopTimer() {
 }
 
 // send on tickChan to start a new timer.
-// timers are interupted and replaced by new ticks from later steps
-// timeouts of 0 on the tickChan will be immediately relayed to the tockChan
+// timers are interrupted and replaced by new ticks from later steps
+// timeouts of 0 on the tickChan will be immediately relayed to the tockChan.
 func (t *timeoutTicker) timeoutRoutine() {
 	t.Logger.Debug("Starting timeout routine")
 	var ti timeoutInfo

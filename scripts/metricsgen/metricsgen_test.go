@@ -11,9 +11,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	metricsgen "github.com/cometbft/cometbft/scripts/metricsgen"
+	"github.com/stretchr/testify/require"
 )
 
 const testDataDir = "./testdata"
@@ -244,16 +243,15 @@ func TestParseAliasedMetric(t *testing.T) {
 	td, err := metricsgen.ParseMetricsDir(dir, "Metrics")
 	require.NoError(t, err)
 
-	expected :=
-		metricsgen.TemplateData{
-			Package: "mypkg",
-			ParsedMetrics: []metricsgen.ParsedMetricField{
-				{
-					TypeName:   "Gauge",
-					FieldName:  "m",
-					MetricName: "m",
-				},
+	expected := metricsgen.TemplateData{
+		Package: "mypkg",
+		ParsedMetrics: []metricsgen.ParsedMetricField{
+			{
+				TypeName:   "Gauge",
+				FieldName:  "m",
+				MetricName: "m",
 			},
-		}
+		},
+	}
 	require.Equal(t, expected, td)
 }

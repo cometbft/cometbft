@@ -15,6 +15,8 @@ import (
 	abciclientmocks "github.com/cometbft/cometbft/abci/client/mocks"
 	abci "github.com/cometbft/cometbft/abci/types"
 	abcimocks "github.com/cometbft/cometbft/abci/types/mocks"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
@@ -25,8 +27,6 @@ import (
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	mpmocks "github.com/cometbft/cometbft/mempool/mocks"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/cometbft/cometbft/proxy"
 	pmocks "github.com/cometbft/cometbft/proxy/mocks"
 	"github.com/cometbft/cometbft/types"
@@ -311,14 +311,14 @@ func TestFinalizeBlockMisbehavior(t *testing.T) {
 
 	abciMb := []abci.Misbehavior{
 		{
-			Type:             abci.MisbehaviorType_DUPLICATE_VOTE,
+			Type:             abci.MISBEHAVIOR_TYPE_DUPLICATE_VOTE,
 			Height:           3,
 			Time:             defaultEvidenceTime,
 			Validator:        types.TM2PB.Validator(state.Validators.Validators[0]),
 			TotalVotingPower: 10,
 		},
 		{
-			Type:             abci.MisbehaviorType_LIGHT_CLIENT_ATTACK,
+			Type:             abci.MISBEHAVIOR_TYPE_LIGHT_CLIENT_ATTACK,
 			Height:           8,
 			Time:             defaultEvidenceTime,
 			Validator:        types.TM2PB.Validator(state.Validators.Validators[0]),
@@ -368,7 +368,7 @@ func TestProcessProposal(t *testing.T) {
 
 	logger := log.NewNopLogger()
 	app := &abcimocks.Application{}
-	app.On("ProcessProposal", mock.Anything, mock.Anything).Return(&abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil)
+	app.On("ProcessProposal", mock.Anything, mock.Anything).Return(&abci.ProcessProposalResponse{Status: abci.PROCESS_PROPOSAL_STATUS_ACCEPT}, nil)
 
 	cc := proxy.NewLocalClientCreator(app)
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
@@ -424,7 +424,7 @@ func TestProcessProposal(t *testing.T) {
 
 	block1.Txs = txs
 
-	expectedRpp := &abci.RequestProcessProposal{
+	expectedRpp := &abci.ProcessProposalRequest{
 		Txs:         block1.Txs.ToSliceOfBytes(),
 		Hash:        block1.Hash(),
 		Height:      block1.Header.Height,
@@ -769,7 +769,7 @@ func TestPrepareProposalTxsAllIncluded(t *testing.T) {
 	mp.On("ReapMaxBytesMaxGas", mock.Anything, mock.Anything).Return(txs[2:])
 
 	app := &abcimocks.Application{}
-	app.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{
+	app.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.PrepareProposalResponse{
 		Txs: txs.ToSliceOfBytes(),
 	}, nil)
 	cc := proxy.NewLocalClientCreator(app)
@@ -823,7 +823,7 @@ func TestPrepareProposalReorderTxs(t *testing.T) {
 	txs = append(txs[len(txs)/2:], txs[:len(txs)/2]...)
 
 	app := &abcimocks.Application{}
-	app.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{
+	app.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.PrepareProposalResponse{
 		Txs: txs.ToSliceOfBytes(),
 	}, nil)
 
@@ -879,7 +879,64 @@ func TestPrepareProposalErrorOnTooManyTxs(t *testing.T) {
 	mp.On("ReapMaxBytesMaxGas", mock.Anything, mock.Anything).Return(txs)
 
 	app := &abcimocks.Application{}
-	app.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{
+	app.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.PrepareProposalResponse{
+		Txs: txs.ToSliceOfBytes(),
+	}, nil)
+
+	cc := proxy.NewLocalClientCreator(app)
+	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
+	err := proxyApp.Start()
+	require.NoError(t, err)
+	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
+
+	blockStore := store.NewBlockStore(dbm.NewMemDB())
+	blockExec := sm.NewBlockExecutor(
+		stateStore,
+		log.NewNopLogger(),
+		proxyApp.Consensus(),
+		mp,
+		evpool,
+		blockStore,
+	)
+	pa, _ := state.Validators.GetByIndex(0)
+	commit, _, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
+	require.NoError(t, err)
+	block, err := blockExec.CreateProposalBlock(ctx, height, state, commit, pa)
+	require.Nil(t, block)
+	require.ErrorContains(t, err, "transaction data size exceeds maximum")
+
+	mp.AssertExpectations(t)
+}
+
+// TestPrepareProposalCountSerializationOverhead tests that the block creation logic returns
+// an error if the ResponsePrepareProposal returned from the application is at the limit of
+// its size and will go beyond the limit upon serialization.
+func TestPrepareProposalCountSerializationOverhead(t *testing.T) {
+	const height = 2
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	state, stateDB, privVals := makeState(1, height)
+	// limit max block size
+	var bytesPerTx int64 = 4
+	const nValidators = 1
+	nonDataSize := 5000 - types.MaxDataBytes(5000, 0, nValidators)
+	state.ConsensusParams.Block.MaxBytes = bytesPerTx*1024 + nonDataSize
+	maxDataBytes := types.MaxDataBytes(state.ConsensusParams.Block.MaxBytes, 0, nValidators)
+
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
+
+	evpool := &mocks.EvidencePool{}
+	evpool.On("PendingEvidence", mock.Anything).Return([]types.Evidence{}, int64(0))
+
+	txs := test.MakeNTxs(height, maxDataBytes/bytesPerTx)
+	mp := &mpmocks.Mempool{}
+	mp.On("ReapMaxBytesMaxGas", mock.Anything, mock.Anything).Return(txs)
+
+	app := &abcimocks.Application{}
+	app.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.PrepareProposalResponse{
 		Txs: txs.ToSliceOfBytes(),
 	}, nil)
 
@@ -1007,7 +1064,7 @@ func TestCreateProposalAbsentVoteExtensions(t *testing.T) {
 
 			app := abcimocks.NewApplication(t)
 			if !testCase.expectPanic {
-				app.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{}, nil)
+				app.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.PrepareProposalResponse{}, nil)
 			}
 			cc := proxy.NewLocalClientCreator(app)
 			proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())

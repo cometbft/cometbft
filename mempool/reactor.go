@@ -8,12 +8,12 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	protomem "github.com/cometbft/cometbft/api/cometbft/mempool/v1"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/clist"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
-	protomem "github.com/cometbft/cometbft/proto/tendermint/mempool"
 	"github.com/cometbft/cometbft/types"
 	"golang.org/x/sync/semaphore"
 )
@@ -163,11 +163,12 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 		for _, txBytes := range protoTxs {
 			tx := types.Tx(txBytes)
 			reqRes, err := memR.mempool.CheckTx(tx)
-			if errors.Is(err, ErrTxInCache) {
+			switch {
+			case errors.Is(err, ErrTxInCache):
 				memR.Logger.Debug("Tx already exists in cache", "tx", tx.String())
-			} else if err != nil {
+			case err != nil:
 				memR.Logger.Info("Could not check tx", "tx", tx.String(), "err", err)
-			} else {
+			default:
 				// Record the sender only when the transaction is valid and, as
 				// a consequence, added to the mempool. Senders are stored until
 				// the transaction is removed from the mempool. Note that it's

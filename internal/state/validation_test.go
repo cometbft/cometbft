@@ -21,7 +21,6 @@ import (
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	mpmocks "github.com/cometbft/cometbft/mempool/mocks"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
@@ -232,7 +231,7 @@ func TestValidateBlockCommit(t *testing.T) {
 			idx,
 			height,
 			0,
-			cmtproto.PrecommitType,
+			types.PrecommitType,
 			blockID,
 			time.Now(),
 		)
@@ -246,7 +245,7 @@ func TestValidateBlockCommit(t *testing.T) {
 			Height:           height,
 			Round:            0,
 			Timestamp:        cmttime.Now(),
-			Type:             cmtproto.PrecommitType,
+			Type:             types.PrecommitType,
 			BlockID:          blockID,
 		}
 

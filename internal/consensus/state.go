@@ -11,8 +11,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/cosmos/gogoproto/proto"
-
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
@@ -26,21 +25,21 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/p2p"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/cosmos/gogoproto/proto"
 )
 
 var msgQueueSize = 1000
 
-// msgs from the reactor which may update the state
+// msgs from the reactor which may update the state.
 type msgInfo struct {
 	Msg    Message `json:"msg"`
 	PeerID p2p.ID  `json:"peer_key"`
 }
 
-// internally generated messages which may update the state
+// internally generated messages which may update the state.
 type timeoutInfo struct {
 	Duration time.Duration         `json:"duration"`
 	Height   int64                 `json:"height"`
@@ -52,12 +51,12 @@ func (ti *timeoutInfo) String() string {
 	return fmt.Sprintf("%v ; %d/%d %v", ti.Duration, ti.Height, ti.Round, ti.Step)
 }
 
-// interface to the mempool
+// interface to the mempool.
 type txNotifier interface {
 	TxsAvailable() <-chan struct{}
 }
 
-// interface to the evidence pool
+// interface to the evidence pool.
 type evidencePool interface {
 	// reports conflicting votes to the evidence pool to be processed into evidence
 	ReportConflictingVotes(voteA, voteB *types.Vote)
@@ -256,7 +255,7 @@ func (cs *State) GetRoundStateJSON() ([]byte, error) {
 	return cmtjson.Marshal(cs.RoundState)
 }
 
-// GetRoundStateSimpleJSON returns a json of RoundStateSimple
+// GetRoundStateSimpleJSON returns a json of RoundStateSimple.
 func (cs *State) GetRoundStateSimpleJSON() ([]byte, error) {
 	cs.mtx.RLock()
 	defer cs.mtx.RUnlock()
@@ -395,7 +394,9 @@ func (cs *State) OnStart() error {
 }
 
 // timeoutRoutine: receive requests for timeouts on tickChan and fire timeouts on tockChan
-// receiveRoutine: serializes processing of proposoals, block parts, votes; coordinates state transitions
+// receiveRoutine: serializes processing of proposoals, block parts, votes; coordinates state transitions.
+//
+//nolint:unused
 func (cs *State) startRoutines(maxSteps int) {
 	err := cs.timeoutTicker.Start()
 	if err != nil {
@@ -432,7 +433,7 @@ func (cs *State) OnStop() {
 
 // Wait waits for the the main routine to return.
 // NOTE: be sure to Stop() the event switch and drain
-// any event channels or this may deadlock
+// any event channels or this may deadlock.
 func (cs *State) Wait() {
 	<-cs.done
 }
@@ -502,7 +503,7 @@ func (cs *State) AddProposalBlockPart(height int64, round int32, part *types.Par
 // SetProposalAndBlock inputs the proposal and all block parts.
 func (cs *State) SetProposalAndBlock(
 	proposal *types.Proposal,
-	block *types.Block, //nolint:revive
+	block *types.Block,
 	parts *types.PartSet,
 	peerID p2p.ID,
 ) error {
@@ -549,12 +550,12 @@ func (cs *State) scheduleRound0(rs *cstypes.RoundState) {
 	cs.scheduleTimeout(sleepDuration, rs.Height, 0, cstypes.RoundStepNewHeight)
 }
 
-// Attempt to schedule a timeout (by sending timeoutInfo on the tickChan)
+// Attempt to schedule a timeout (by sending timeoutInfo on the tickChan).
 func (cs *State) scheduleTimeout(duration time.Duration, height int64, round int32, step cstypes.RoundStepType) {
 	cs.timeoutTicker.ScheduleTimeout(timeoutInfo{duration, height, round, step})
 }
 
-// send a msg into the receiveRoutine regarding our own proposal, block part, or vote
+// send a msg into the receiveRoutine regarding our own proposal, block part, or vote.
 func (cs *State) sendInternalMessage(mi msgInfo) {
 	select {
 	case cs.internalMsgQueue <- mi:
@@ -861,7 +862,7 @@ func (cs *State) receiveRoutine(maxSteps int) {
 	}
 }
 
-// state transitions on complete-proposal, 2/3-any, 2/3-one
+// state transitions on complete-proposal, 2/3-any, 2/3-one.
 func (cs *State) handleMsg(mi msgInfo) {
 	cs.mtx.Lock()
 	defer cs.mtx.Unlock()
@@ -1104,7 +1105,7 @@ func (cs *State) enterNewRound(height int64, round int32) {
 }
 
 // needProofBlock returns true on the first height (so the genesis app hash is signed right away)
-// and where the last block (height-1) caused the app hash to change
+// and where the last block (height-1) caused the app hash to change.
 func (cs *State) needProofBlock(height int64) bool {
 	if height == cs.state.InitialHeight {
 		return true
@@ -1125,7 +1126,7 @@ func (cs *State) needProofBlock(height int64) bool {
 //
 //	after enterNewRound(height,round), after timeout of CreateEmptyBlocksInterval
 //
-// Enter (!CreateEmptyBlocks) : after enterNewRound(height,round), once txs are in the mempool
+// Enter (!CreateEmptyBlocks) : after enterNewRound(height,round), once txs are in the mempool.
 func (cs *State) enterPropose(height int64, round int32) {
 	logger := cs.Logger.With("height", height, "round", round)
 
@@ -1340,7 +1341,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 	// We did not receive a proposal within this round. (and thus executing this from a timeout)
 	if cs.ProposalBlock == nil {
 		logger.Debug("prevote step: ProposalBlock is nil; prevoting nil")
-		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
+		cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 		return
 	}
 
@@ -1350,7 +1351,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		// ProposalBlock is invalid, prevote nil.
 		logger.Error("prevote step: consensus deems this block invalid; prevoting nil",
 			"err", err)
-		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
+		cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 		return
 	}
 
@@ -1384,7 +1385,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		if cs.LockedRound == -1 {
 			if cs.ValidRound != -1 && cs.ProposalBlock.HashesTo(cs.ValidBlock.Hash()) {
 				logger.Debug("prevote step: ProposalBlock matches our valid block; prevoting the proposal")
-				cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
+				cs.signAddVote(types.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
 				return
 			}
 
@@ -1407,23 +1408,23 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 			if !isAppValid {
 				logger.Error("prevote step: state machine rejected a proposed block; this should not happen:"+
 					"the proposer may be misbehaving; prevoting nil", "err", err)
-				cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
+				cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 				return
 			}
 
 			logger.Debug("prevote step: ProposalBlock is valid and there is no locked block; prevoting the proposal")
-			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
+			cs.signAddVote(types.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
 			return
 		}
 
 		if cs.ProposalBlock.HashesTo(cs.LockedBlock.Hash()) {
 			logger.Debug("prevote step: ProposalBlock is valid (POLRound is -1) and matches our locked block; prevoting the proposal")
-			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
+			cs.signAddVote(types.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
 			return
 		}
 
 		logger.Debug("prevote step: ProposalBlock is valid (POLRound is -1), but doesn't match our locked block; prevoting nil")
-		cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
+		cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 		return
 	}
 
@@ -1459,19 +1460,19 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		if cs.LockedRound <= cs.Proposal.POLRound {
 			logger.Debug("prevote step: ProposalBlock is valid and received a 2/3" +
 				"majority in a round later than the locked round; prevoting the proposal")
-			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
+			cs.signAddVote(types.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
 			return
 		}
 		if cs.ProposalBlock.HashesTo(cs.LockedBlock.Hash()) {
 			logger.Debug("prevote step: ProposalBlock is valid and matches our locked block; prevoting the proposal")
-			cs.signAddVote(cmtproto.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
+			cs.signAddVote(types.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
 			return
 		}
 	}
 
 	logger.Debug("prevote step: ProposalBlock is valid but was not our locked block or" +
 		"did not receive a more recent majority; prevoting nil")
-	cs.signAddVote(cmtproto.PrevoteType, nil, types.PartSetHeader{}, nil)
+	cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 }
 
 // Enter: any +2/3 prevotes at next round.
@@ -1540,7 +1541,7 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 			logger.Debug("precommit step; no +2/3 prevotes during enterPrecommit; precommitting nil")
 		}
 
-		cs.signAddVote(cmtproto.PrecommitType, nil, types.PartSetHeader{}, nil)
+		cs.signAddVote(types.PrecommitType, nil, types.PartSetHeader{}, nil)
 		return
 	}
 
@@ -1558,7 +1559,7 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 	// +2/3 prevoted nil. Precommit nil.
 	if blockID.IsNil() {
 		logger.Debug("precommit step; +2/3 prevoted for nil")
-		cs.signAddVote(cmtproto.PrecommitType, nil, types.PartSetHeader{}, nil)
+		cs.signAddVote(types.PrecommitType, nil, types.PartSetHeader{}, nil)
 		return
 	}
 
@@ -1573,7 +1574,7 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 			logger.Error("failed publishing event relock", "err", err)
 		}
 
-		cs.signAddVote(cmtproto.PrecommitType, blockID.Hash, blockID.PartSetHeader, cs.LockedBlock)
+		cs.signAddVote(types.PrecommitType, blockID.Hash, blockID.PartSetHeader, cs.LockedBlock)
 		return
 	}
 
@@ -1596,7 +1597,7 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 			logger.Error("failed publishing event lock", "err", err)
 		}
 
-		cs.signAddVote(cmtproto.PrecommitType, blockID.Hash, blockID.PartSetHeader, cs.ProposalBlock)
+		cs.signAddVote(types.PrecommitType, blockID.Hash, blockID.PartSetHeader, cs.ProposalBlock)
 		return
 	}
 
@@ -1609,7 +1610,7 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 		cs.ProposalBlockParts = types.NewPartSetFromHeader(blockID.PartSetHeader)
 	}
 
-	cs.signAddVote(cmtproto.PrecommitType, nil, types.PartSetHeader{}, nil)
+	cs.signAddVote(types.PrecommitType, nil, types.PartSetHeader{}, nil)
 }
 
 // Enter: any +2/3 precommits for next round.
@@ -1644,7 +1645,7 @@ func (cs *State) enterPrecommitWait(height int64, round int32) {
 	cs.scheduleTimeout(cs.config.Precommit(round), height, round, cstypes.RoundStepPrecommitWait)
 }
 
-// Enter: +2/3 precommits for block
+// Enter: +2/3 precommits for block.
 func (cs *State) enterCommit(height int64, commitRound int32) {
 	logger := cs.Logger.With("height", height, "commit_round", commitRound)
 
@@ -1735,7 +1736,7 @@ func (cs *State) tryFinalizeCommit(height int64) {
 	cs.finalizeCommit(height)
 }
 
-// Increment height and goto cstypes.RoundStepNewHeight
+// Increment height and goto cstypes.RoundStepNewHeight.
 func (cs *State) finalizeCommit(height int64) {
 	logger := cs.Logger.With("height", height)
 
@@ -1820,7 +1821,7 @@ func (cs *State) finalizeCommit(height int64) {
 	stateCopy := cs.state.Copy()
 
 	// Execute and commit the block, update and save the state, and update the mempool.
-	// NOTE The block.AppHash wont reflect these txs until the next block.
+	// NOTE The block.AppHash won't reflect these txs until the next block.
 	stateCopy, err := cs.blockExec.ApplyBlock(
 		stateCopy,
 		types.BlockID{
@@ -1909,7 +1910,6 @@ func (cs *State) recordMetrics(height int64, block *types.Block) {
 					cs.metrics.ValidatorMissedBlocks.With(label...).Add(float64(1))
 				}
 			}
-
 		}
 	}
 	cs.metrics.MissingValidators.Set(float64(missingValidators))
@@ -2106,7 +2106,7 @@ func (cs *State) handleCompleteProposal(blockHeight int64) {
 	}
 }
 
-// Attempt to add the vote. if its a duplicate signature, dupeout the validator
+// Attempt to add the vote. if its a duplicate signature, dupeout the validator.
 func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 	added, err := cs.addVote(vote, peerID)
 	// NOTE: some of these errors are swallowed here
@@ -2175,7 +2175,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 
 	// A precommit for the previous height?
 	// These come in while we wait timeoutCommit
-	if vote.Height+1 == cs.Height && vote.Type == cmtproto.PrecommitType {
+	if vote.Height+1 == cs.Height && vote.Type == types.PrecommitType {
 		if cs.Step != cstypes.RoundStepNewHeight {
 			// Late precommit at prior height is ignored
 			cs.Logger.Debug("precommit vote came in after commit timeout and has been ignored", "vote", vote)
@@ -2184,7 +2184,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 
 		added, err = cs.LastCommit.AddVote(vote)
 		if !added {
-			// If the vote wasnt added but there's no error, its a duplicate vote
+			// If the vote wasn't added but there's no error, its a duplicate vote
 			if err == nil {
 				cs.metrics.DuplicateVote.Add(1)
 			}
@@ -2228,9 +2228,8 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 		}
 		// Verify VoteExtension if precommit and not nil
 		// https://github.com/tendermint/tendermint/issues/8487
-		if vote.Type == cmtproto.PrecommitType && !vote.BlockID.IsNil() &&
+		if vote.Type == types.PrecommitType && !vote.BlockID.IsNil() &&
 			!bytes.Equal(vote.ValidatorAddress, myAddr) { // Skip the VerifyVoteExtension call if the vote was issued by this validator.
-
 			// The core fields of the vote message were already validated in the
 			// consensus reactor when the vote was received.
 			// Here, we verify the signature of the vote extension included in the vote
@@ -2246,16 +2245,14 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 				return false, err
 			}
 		}
-	} else {
+	} else if len(vote.Extension) > 0 || len(vote.ExtensionSignature) > 0 {
 		// Vote extensions are not enabled on the network.
 		// Reject the vote, as it is malformed
 		//
 		// TODO punish a peer if it sent a vote with an extension when the feature
 		// is disabled on the network.
 		// https://github.com/tendermint/tendermint/issues/8565
-		if len(vote.Extension) > 0 || len(vote.ExtensionSignature) > 0 {
-			return false, fmt.Errorf("received vote with vote extension for height %v (extensions disabled) from peer ID %s", vote.Height, peerID)
-		}
+		return false, fmt.Errorf("received vote with vote extension for height %v (extensions disabled) from peer ID %s", vote.Height, peerID)
 	}
 
 	height := cs.Height
@@ -2263,7 +2260,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 	if !added {
 		// Either duplicate, or error upon cs.Votes.AddByIndex()
 
-		// If the vote wasnt added but there's no error, its a duplicate vote
+		// If the vote wasn't added but there's no error, its a duplicate vote
 		if err == nil {
 			cs.metrics.DuplicateVote.Add(1)
 		}
@@ -2281,7 +2278,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 	cs.evsw.FireEvent(types.EventVote, vote)
 
 	switch vote.Type {
-	case cmtproto.PrevoteType:
+	case types.PrevoteType:
 		prevotes := cs.Votes.Prevotes(vote.Round)
 		cs.Logger.Debug("added vote to prevote", "vote", vote, "prevotes", prevotes.StringShort())
 
@@ -2340,7 +2337,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 			}
 		}
 
-	case cmtproto.PrecommitType:
+	case types.PrecommitType:
 		precommits := cs.Votes.Precommits(vote.Round)
 		cs.Logger.Debug("added vote to precommit",
 			"height", vote.Height,
@@ -2377,7 +2374,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 
 // CONTRACT: cs.privValidator is not nil.
 func (cs *State) signVote(
-	msgType cmtproto.SignedMsgType,
+	msgType types.SignedMsgType,
 	hash []byte,
 	header types.PartSetHeader,
 	block *types.Block,
@@ -2406,7 +2403,7 @@ func (cs *State) signVote(
 	}
 
 	extEnabled := cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(vote.Height)
-	if msgType == cmtproto.PrecommitType && !vote.BlockID.IsNil() {
+	if msgType == types.PrecommitType && !vote.BlockID.IsNil() {
 		// if the signedMessage type is for a non-nil precommit, add
 		// VoteExtension
 		if extEnabled {
@@ -2418,7 +2415,7 @@ func (cs *State) signVote(
 		}
 	}
 
-	recoverable, err := types.SignAndCheckVote(vote, cs.privValidator, cs.state.ChainID, extEnabled && (msgType == cmtproto.PrecommitType))
+	recoverable, err := types.SignAndCheckVote(vote, cs.privValidator, cs.state.ChainID, extEnabled && (msgType == types.PrecommitType))
 	if err != nil && !recoverable {
 		panic(fmt.Sprintf("non-recoverable error when signing vote (%d/%d)", vote.Height, vote.Round))
 	}
@@ -2448,9 +2445,9 @@ func (cs *State) voteTime() time.Time {
 }
 
 // sign the vote and publish on internalMsgQueue
-// block information is only used to extend votes (precommit only); should be nil in all other cases
+// block information is only used to extend votes (precommit only); should be nil in all other cases.
 func (cs *State) signAddVote(
-	msgType cmtproto.SignedMsgType,
+	msgType types.SignedMsgType,
 	hash []byte,
 	header types.PartSetHeader,
 	block *types.Block,
@@ -2478,7 +2475,7 @@ func (cs *State) signAddVote(
 	}
 	hasExt := len(vote.ExtensionSignature) > 0
 	extEnabled := cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(vote.Height)
-	if vote.Type == cmtproto.PrecommitType && !vote.BlockID.IsNil() && hasExt != extEnabled {
+	if vote.Type == types.PrecommitType && !vote.BlockID.IsNil() && hasExt != extEnabled {
 		panic(fmt.Errorf("vote extension absence/presence does not match extensions enabled %t!=%t, height %d, type %v",
 			hasExt, extEnabled, vote.Height, vote.Type))
 	}
@@ -2486,7 +2483,7 @@ func (cs *State) signAddVote(
 	cs.Logger.Debug("signed and pushed vote", "height", cs.Height, "round", cs.Round, "vote", vote)
 }
 
-// updatePrivValidatorPubKey get's the private validator public key and
+// updatePrivValidatorPubKey gets the private validator public key and
 // memoizes it. This func returns an error if the private validator is not
 // responding or responds with an error.
 func (cs *State) updatePrivValidatorPubKey() error {
@@ -2502,7 +2499,7 @@ func (cs *State) updatePrivValidatorPubKey() error {
 	return nil
 }
 
-// look back to check existence of the node's consensus votes before joining consensus
+// look back to check existence of the node's consensus votes before joining consensus.
 func (cs *State) checkDoubleSigningRisk(height int64) error {
 	if cs.privValidator != nil && cs.privValidatorPubKey != nil && cs.config.DoubleSignCheckHeight > 0 && height > 0 {
 		valAddr := cs.privValidatorPubKey.Address()
@@ -2607,5 +2604,6 @@ func repairWalFile(src, dst string) error {
 		}
 	}
 
+	//nolint:nilerr
 	return nil
 }

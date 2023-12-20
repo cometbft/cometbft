@@ -4,7 +4,7 @@
 
 - 04/09/2020: Initial Draft (Unabridged)
 - 07/09/2020: First Version
-- 13/03/2021: Ammendment to accomodate forward lunatic attack
+- 13/03/2021: Amendment to accommodate forward lunatic attack
 - 29/06/2021: Add information about ABCI specific fields
 
 ## Scope

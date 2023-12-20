@@ -7,8 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/cosmos/gogoproto/proto"
-
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtos "github.com/cometbft/cometbft/internal/os"
@@ -16,9 +15,9 @@ import (
 	"github.com/cometbft/cometbft/internal/tempfile"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/cosmos/gogoproto/proto"
 )
 
 // TODO: type ?
@@ -32,9 +31,9 @@ const (
 // A vote is either stepPrevote or stepPrecommit.
 func voteToStep(vote *cmtproto.Vote) int8 {
 	switch vote.Type {
-	case cmtproto.PrevoteType:
+	case types.PrevoteType:
 		return stepPrevote
-	case cmtproto.PrecommitType:
+	case types.PrecommitType:
 		return stepPrecommit
 	default:
 		panic(fmt.Sprintf("Unknown vote type: %v", vote.Type))
@@ -322,7 +321,7 @@ func (pv *FilePV) signVote(chainID string, vote *cmtproto.Vote) error {
 	// precommits, the extension signature will always be empty.
 	// Even if the signed over data is empty, we still add the signature
 	var extSig []byte
-	if vote.Type == cmtproto.PrecommitType && !types.ProtoBlockIDIsNil(&vote.BlockID) {
+	if vote.Type == types.PrecommitType && !types.ProtoBlockIDIsNil(&vote.BlockID) {
 		extSignBytes := types.VoteExtensionSignBytes(chainID, vote)
 		extSig, err = pv.Key.PrivKey.Sign(extSignBytes)
 		if err != nil {
@@ -408,7 +407,7 @@ func (pv *FilePV) signProposal(chainID string, proposal *cmtproto.Proposal) erro
 	return nil
 }
 
-// Persist height/round/step and signature
+// Persist height/round/step and signature.
 func (pv *FilePV) saveSigned(height int64, round int32, step int8,
 	signBytes []byte, sig []byte,
 ) {
@@ -445,7 +444,7 @@ func checkVotesOnlyDifferByTimestamp(lastSignBytes, newSignBytes []byte) (time.T
 }
 
 // returns the timestamp from the lastSignBytes.
-// returns true if the only difference in the proposals is their timestamp
+// returns true if the only difference in the proposals is their timestamp.
 func checkProposalsOnlyDifferByTimestamp(lastSignBytes, newSignBytes []byte) (time.Time, bool) {
 	var lastProposal, newProposal cmtproto.CanonicalProposal
 	if err := protoio.UnmarshalDelimited(lastSignBytes, &lastProposal); err != nil {

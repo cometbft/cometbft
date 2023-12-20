@@ -889,7 +889,7 @@ func TestPrepareProposalErrorOnTooManyTxs(t *testing.T) {
 	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	blockStore := store.NewBlockStore(dbm.NewMemDB())
+	blockStore := store.NewBlockStore(dbm.NewMemDB(), store.BlockStoreOptions{})
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		log.NewNopLogger(),

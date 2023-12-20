@@ -368,7 +368,12 @@ FOR_LOOP:
 			// NOTE: we can probably make this more efficient, but note that calling
 			// first.Hash() doesn't verify the tx contents, so MakePartSet() is
 			// currently necessary.
+<<<<<<< HEAD:blocksync/reactor.go
 			err = state.Validators.VerifyCommitLightAllSignatures(
+=======
+			// TODO(sergio): Should we also validate against the extended commit?
+			err = state.Validators.VerifyCommitLight(
+>>>>>>> 9446e3135 (Allow blocksync to not verify all signatures (#1858)):internal/blocksync/reactor.go
 				chainID, firstID, first.Height, second.LastCommit)
 
 			if err == nil {

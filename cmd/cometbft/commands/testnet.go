@@ -40,7 +40,7 @@ const (
 )
 
 func init() {
-	TestnetFilesCmd.Flags().IntVar(&nValidators, "v", 1,
+	TestnetFilesCmd.Flags().IntVar(&nValidators, "v", 4,
 		"number of validators to initialize the testnet with")
 	TestnetFilesCmd.Flags().StringVar(&configFile, "config", "",
 		"config file to use (note some options may be overwritten)")

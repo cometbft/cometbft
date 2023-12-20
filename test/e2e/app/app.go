@@ -111,7 +111,6 @@ func DefaultConfig(dir string) *Config {
 		PersistInterval:  1,
 		SnapshotInterval: 100,
 		Dir:              dir,
-		RetainBlocks:     5,
 	}
 }
 

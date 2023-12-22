@@ -7,10 +7,9 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
-	clean_start_lexer "github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/grammar-auto/lexer"
-	clean_start_parser "github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/grammar-auto/parser"
-	recovery_lexer "github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/grammar-auto/lexer"
-	recovery_parser "github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/grammar-auto/parser"
+	lexer "github.com/cometbft/cometbft/test/e2e/pkg/grammar/grammar-auto/lexer"
+	parser "github.com/cometbft/cometbft/test/e2e/pkg/grammar/grammar-auto/parser"
+	symbols "github.com/cometbft/cometbft/test/e2e/pkg/grammar/grammar-auto/parser/symbols"
 )
 
 const Commit = "commit"
@@ -134,24 +133,19 @@ func (g *Checker) Verify(reqs []*abci.Request, isCleanStart bool) (bool, error) 
 	if len(r) == 0 {
 		return true, nil
 	}
-	var errors []*Error
 	execution := g.getExecutionString(r)
-	if isCleanStart {
-		errors = g.verifyCleanStart(execution)
-	} else {
-		errors = g.verifyRecovery(execution)
-	}
-	if len(errors) == 0 {
+	errors := g.verify(execution, isCleanStart)
+	if errors == nil {
 		return true, nil
 	}
 	return false, fmt.Errorf("%v\nFull execution:\n%v", g.combineErrors(errors, g.cfg.NumberOfErrorsToShow), g.addHeightNumbersToTheExecution(execution))
 }
 
-// verifyCleanStart verifies if a specific execution is a valid clean-start execution.
-func (g *Checker) verifyCleanStart(execution string) []*Error {
+// verifyCleanStart verifies if a specific execution is a valid execution.
+func (g *Checker) verify(execution string, isCleanStart bool) []*Error {
 	errors := make([]*Error, 0)
-	lexer := clean_start_lexer.New([]rune(execution))
-	_, errs := clean_start_parser.Parse(lexer)
+	lexer := lexer.New([]rune(execution))
+	bsrForest, errs := parser.Parse(lexer)
 	for _, err := range errs {
 		exp := []string{}
 		for _, ex := range err.Expected {
@@ -160,32 +154,31 @@ func (g *Checker) verifyCleanStart(execution string) []*Error {
 		expectedTokens := strings.Join(exp, ",")
 		unexpectedToken := err.Token.TypeID()
 		e := &Error{
-			description: fmt.Sprintf("Invalid clean-start execution: parser was expecting one of [%v], got [%v] instead.", expectedTokens, unexpectedToken),
+			description: fmt.Sprintf("Invalid execution: parser was expecting one of [%v], got [%v] instead.", expectedTokens, unexpectedToken),
 			height:      err.Line - 1,
 		}
 		errors = append(errors, e)
 	}
-	return errors
-}
-
-// verifyRecovery verifies if a specific execution is a valid recovery execution.
-func (g *Checker) verifyRecovery(execution string) []*Error {
-	errors := make([]*Error, 0)
-	lexer := recovery_lexer.New([]rune(execution))
-	_, errs := recovery_parser.Parse(lexer)
-	for _, err := range errs {
-		exp := []string{}
-		for _, ex := range err.Expected {
-			exp = append(exp, ex)
-		}
-		expectedTokens := strings.Join(exp, ",")
-		unexpectedToken := err.Token.TypeID()
-		e := &Error{
-			description: fmt.Sprintf("Invalid recovery execution: parser was expecting one of [%v], got [%v] instead.", expectedTokens, unexpectedToken),
-			height:      err.Line - 1,
-		}
-		errors = append(errors, e)
+	if len(errors) != 0 {
+		return errors
 	}
+	eType := symbols.NT_Recovery
+	if isCleanStart {
+		eType = symbols.NT_CleanStart
+	}
+	roots := bsrForest.GetRoots()
+	for _, r := range roots {
+		for _, s := range r.Label.Slot().Symbols {
+			if s == eType {
+				return nil
+			}
+		}
+	}
+	e := &Error{
+		description: "The execution is not of valid type.",
+		height:      0,
+	}
+	errors = append(errors, e)
 	return errors
 }
 
